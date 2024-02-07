@@ -16,6 +16,7 @@ import inet.node.ethernet.Eth10G;
 import inet.node.inet.Router;
 import inet.node.inet.StandardHost;
 import simu5g.common.binder.Binder;
+import simu5g.common.binder.GlobalData;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.ExtCell;
 import simu5g.nodes.PgwStandard;
@@ -31,6 +32,14 @@ network MultiCell_X2Mesh
         int numUe2 = default(0);
         int numUe3 = default(0);
         int numExtCells = default(0);
+        bool useQosModel = default(false);
+        bool packetDropEnabled = default(true);
+        string qosModelPriority = default("priority");
+        double lambdaPriority = default(1);
+        double lambdaRemainDelayBudget = default(0);
+        double lambdaCqi = default(0);
+        double lambdaRtx = default(0);
+        double lambdaByteSize = default(0);
         @display("i=block/network2;bgb=701,558;bgi=background/budapest");
     submodules:
         channelControl: LteChannelControl {
@@ -44,6 +53,9 @@ network MultiCell_X2Mesh
         }
         binder: Binder {
             @display("p=50,175;is=s");
+        }
+        globalData: GlobalData {
+            @display("p=90,221;is=s");
         }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");

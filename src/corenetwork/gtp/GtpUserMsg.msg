@@ -17,4 +17,6 @@ namespace simu5g;
 class GtpUserMsg extends inet::FieldsChunk {
     unsigned int teid;
     chunkLength = inet::B(1); // TODO: size 0
+    unsigned int qfi;
+    
 }

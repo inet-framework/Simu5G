@@ -17,7 +17,6 @@
 #include <inet/transportlayer/udp/Udp.h>
 #include <inet/transportlayer/udp/UdpHeader_m.h>
 #include <inet/transportlayer/common/L4Tools.h>
-
 #include <inet/networklayer/common/NetworkInterface.h>
 #include <inet/networklayer/ipv4/Ipv4InterfaceData.h>
 #include <inet/networklayer/ipv4/Ipv4Route.h>
@@ -31,6 +30,7 @@
 #include "stack/mac/LteMacBase.h"
 #include "common/binder/Binder.h"
 #include "common/cellInfo/CellInfo.h"
+#include "corenetwork/gtp/GtpUser.h"
 
 namespace simu5g {
 
@@ -266,6 +266,14 @@ void IP2Nic::fromIpBs(Packet *pkt)
     EV << "IP2Nic::fromIpBs - message from IP layer: send to stack" << endl;
     // Remove control info from IP datagram
     pkt->removeTagIfPresent<SocketInd>();
+
+    //Get control information
+    //const auto& gtpHdr = pkt->peekAtFront<GtpUserMsg>();
+    //auto qfi = gtpHdr->getQfi();
+
+    //auto chunk = pkt->peekAtFront<Chunk>();
+    //const auto& qHeader = dynamicPtrCast<const GtpUserMsg>(chunk);
+
     removeAllSimu5GTags(pkt);
 
     // Remove InterfaceReq Tag (we already are on an interface now)
@@ -274,10 +282,28 @@ void IP2Nic::fromIpBs(Packet *pkt)
     // TODO: Add support for IPv6
     auto ipHeader = pkt->peekAtFront<Ipv4Header>();
     const Ipv4Address& destAddr = ipHeader->getDestAddress();
+    MacNodeId destId;
 
-    // handle "forwarding" of packets during handover
-    MacNodeId destId = binder_->getMacNodeId(destAddr);
-    if (hoForwarding_.find(destId) != hoForwarding_.end()) {
+    //Handle devices outside the cellular network
+    std::vector<inet::Ipv4Address> UeEthDevice = binder_->getUeConnectedEthernetDevices();
+
+    for (int i=0;i<UeEthDevice.size();++i){
+            if (destAddr.str() == UeEthDevice[i].str()){
+                EV<<"UeEthernetDeviceFound!!!!!"<<endl;
+                //Ipv4Address ueDefault(binder_->getIpAddressOfTheUeToWhichTsnRadioLinkIsConnected());
+                destId = binder_->getMacNodeId(binder_->getIpAddressOfTheUeToWhichTsnRadioLinkIsConnected());
+
+            }
+            else{
+                // handle "forwarding" of packets during handover
+                destId = binder_->getMacNodeId(destAddr);
+            }
+
+        }
+
+
+    if (hoForwarding_.find(destId) != hoForwarding_.end())
+    {
         // data packet must be forwarded (via X2) to another eNB
         MacNodeId targetEnb = hoForwarding_.at(destId);
         sendTunneledPacketOnHandover(pkt, targetEnb);
@@ -313,6 +339,8 @@ void IP2Nic::toIpBs(Packet *pkt)
 void IP2Nic::toStackBs(Packet *pkt)
 {
     EV << "IP2Nic::toStackBs - packet is forwarded to stack" << endl;
+    unsigned short srcPort;
+    unsigned short dstPort;
     auto ipHeader = pkt->peekAtFront<Ipv4Header>();
     int transportProtocol = ipHeader->getProtocolId();
     auto srcAddr = ipHeader->getSrcAddress();
@@ -320,18 +348,36 @@ void IP2Nic::toStackBs(Packet *pkt)
     short int tos = ipHeader->getTypeOfService();
     int headerSize = ipHeader->getHeaderLength().get();
 
-    switch (transportProtocol) {
+    std::vector<inet::Ipv4Address> UeEthDevice = binder_->getUeConnectedEthernetDevices();
+    for (int i=0;i<UeEthDevice.size();++i){
+       if (destAddr.str() == UeEthDevice[i].str()){
+           EV<<"UeEthernetDeviceFound!!!!!"<<endl;
+           //Ipv4Address ueDefault("10.0.0.19");
+            destAddr = binder_->getIpAddressOfTheUeToWhichTsnRadioLinkIsConnected();
+
+     }
+    }
+    switch(transportProtocol)
+    {
         case IP_PROT_TCP: {
             auto tcpHeader = pkt->peekDataAt<tcp::TcpHeader>(ipHeader->getChunkLength());
             headerSize += B(tcpHeader->getHeaderLength()).get();
+            srcPort = tcpHeader->getSrcPort();
+            dstPort = tcpHeader->getDestPort();
             break;
         }
         case IP_PROT_UDP: {
             headerSize += inet::UDP_HEADER_LENGTH.get();
+            auto udpHeader = pkt->peekDataAt<inet::UdpHeader>(ipHeader->getChunkLength());
+            srcPort = udpHeader->getSrcPort();
+            dstPort = udpHeader->getDestPort();
+
+
             break;
         }
         default: {
-            EV_ERROR << "Unknown transport protocol id." << endl;
+            //EV_ERROR << "Unknown transport protocol id." << endl;
+            throw cRuntimeError("Unknown transport protocol id %d", transportProtocol);
         }
     }
 
@@ -340,7 +386,8 @@ void IP2Nic::toStackBs(Packet *pkt)
     pkt->addTagIfAbsent<FlowControlInfo>()->setDstAddr(destAddr.getInt());
     pkt->addTagIfAbsent<FlowControlInfo>()->setTypeOfService(tos);
     pkt->addTagIfAbsent<FlowControlInfo>()->setHeaderSize(headerSize);
-
+    pkt->addTagIfAbsent<FlowControlInfo>()->setSrcPort(srcPort);
+    pkt->addTagIfAbsent<FlowControlInfo>()->setDstPort(dstPort);
     // mark packet for using NR
     if (!markPacket(pkt->getTagForUpdate<FlowControlInfo>())) {
         EV << "IP2Nic::toStackBs - UE is not attached to any serving node. Delete packet." << endl;

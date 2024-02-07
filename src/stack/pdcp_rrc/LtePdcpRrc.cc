@@ -17,6 +17,7 @@
 
 #include "stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "stack/pdcp_rrc/packet/LteRohcPdu_m.h"
+#include "stack/sdap/utils/QosHandler.h"
 
 namespace simu5g {
 
@@ -116,27 +117,42 @@ void LtePdcpRrcBase::headerDecompress(Packet *pkt)
 
 void LtePdcpRrcBase::setTrafficInformation(cPacket *pkt, inet::Ptr<FlowControlInfo> lteInfo)
 {
-    if ((strcmp(pkt->getName(), "VoIP")) == 0) {
+    ASSERT(qosHandler != nullptr);
+    std::string pktName = pkt->getName();
+    if ((strcmp(pkt->getName(), "VoIP")) == 0 || (pktName.find("audio") == 0)) {
         lteInfo->setApplication(VOIP);
         lteInfo->setTraffic(CONVERSATIONAL);
-        lteInfo->setRlcType(conversationalRlc_);
+        lteInfo->setRlcType(aToRlcType(par("conversationalRlc")));
+        lteInfo->setQfi(qosHandler->getQfi(VOIP));
+        lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(VOIP));
     }
     else if ((strcmp(pkt->getName(), "gaming")) == 0) {
         lteInfo->setApplication(GAMING);
         lteInfo->setTraffic(INTERACTIVE);
-        lteInfo->setRlcType(interactiveRlc_);
+        lteInfo->setRlcType(aToRlcType(par("interactiveRlc")));
+        lteInfo->setQfi(qosHandler->getQfi(CBR));
+        lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(GAMING));
     }
-    else if ((strcmp(pkt->getName(), "VoDPacket") == 0)
-             || (strcmp(pkt->getName(), "VoDFinishPacket") == 0))
-    {
+    else if ((strcmp(pkt->getName(), "VoDPacket") == 0) || pktName.find("video") == 0) {
         lteInfo->setApplication(VOD);
         lteInfo->setTraffic(STREAMING);
-        lteInfo->setRlcType(streamingRlc_);
+        lteInfo->setRlcType(aToRlcType(par("streamingRlc")));
+        lteInfo->setQfi(qosHandler->getQfi(VOD));
+        lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(VOD));
     }
+    else if ((pktName.find("network control") == 0) || (pktName.find("networkControl") == 0)) {
+          lteInfo->setApplication(NETWORK_CONTROL);
+          lteInfo->setTraffic(HIGH_PRIORITY_TSN);
+          lteInfo->setRlcType(aToRlcType(par("interactiveRlc")));
+          lteInfo->setQfi(qosHandler->getQfi(NETWORK_CONTROL));
+          lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(NETWORK_CONTROL));
+      }
     else {
         lteInfo->setApplication(CBR);
         lteInfo->setTraffic(BACKGROUND);
-        lteInfo->setRlcType(backgroundRlc_);
+        lteInfo->setRlcType(aToRlcType(par("backgroundRlc")));
+        lteInfo->setQfi(qosHandler->getQfi(CBR));
+        lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(CBR));
     }
 
     lteInfo->setDirection(getDirection());
@@ -339,6 +355,29 @@ void LtePdcpRrcBase::initialize(int stage)
         if (NRpacketFlowManager_) {
             EV << "LtePdcpRrcBase::initialize - NRpacketFlowManager present" << endl;
         }
+        if(getParentModule()->findSubmodule("qosHandlerGnb")!= -1)
+        {
+            EV << "LtePdcpRrcBase::initialize - QosHandlerGNB present" << endl;
+            // try{
+               qosHandler = check_and_cast<QosHandlerGNB *> (getParentModule()->getSubmodule("qosHandlerGnb"));
+            // }
+            // catch(...){
+            //     //EV << "LtePdcpRrcBase::initialize - QosHandlerUE present" << endl;
+            // }
+
+        }
+        if(getParentModule()->findSubmodule("qosHandlerUe")!= -1)
+        {
+            // try{
+                EV << "LtePdcpRrcBase::initialize - QosHandlerUE present" << endl;
+               qosHandler = check_and_cast<QosHandlerUE *> (getParentModule()->getSubmodule("qosHandlerUe"));
+            // }
+            // catch (...){
+            //     //EV << "LtePdcpRrcBase::initialize - QosHandlerGNB present" << endl;
+            // }
+
+        }
+
 
         conversationalRlc_ = aToRlcType(par("conversationalRlc"));
         interactiveRlc_ = aToRlcType(par("interactiveRlc"));

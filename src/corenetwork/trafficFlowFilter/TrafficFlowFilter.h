@@ -17,6 +17,7 @@
 
 #include "corenetwork/trafficFlowFilter/TftControlInfo_m.h"
 #include "common/binder/Binder.h"
+#include "stack/sdap/QosChecker.h"
 
 namespace simu5g {
 
@@ -63,6 +64,9 @@ class TrafficFlowFilter : public cSimpleModule
     // for emulation when the MEC host is directly connected to the BS
     inet::L3Address meAppsExtAddress_;
     int meAppsExtAddressMask_;
+    QosChecker qosChecker;
+
+    //cXMLElement qosConfig = "";
 
   protected:
     int numInitStages() const override { return inet::INITSTAGE_LAST + 1; }
@@ -73,6 +77,7 @@ class TrafficFlowFilter : public cSimpleModule
 
     // functions for managing filter tables
     TrafficFlowTemplateId findTrafficFlow(inet::L3Address srcAddress, inet::L3Address destAddress);
+
 };
 
 } //namespace

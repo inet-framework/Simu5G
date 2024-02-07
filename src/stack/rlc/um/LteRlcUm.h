@@ -21,6 +21,7 @@
 #include "stack/rlc/packet/LteRlcDataPdu.h"
 #include "stack/mac/LteMacBase.h"
 #include "nodes/mec/utils/MecCommon.h"
+#include "stack/sdap/utils/QosHandler.h"
 
 namespace simu5g {
 
@@ -119,6 +120,11 @@ class LteRlcUm : public cSimpleModule
     double getUeThroughput(MacNodeId nodeId);
     void resetThroughputStats(MacNodeId nodeId);
 
+    virtual QosHandler * getQosHandler(){
+            Enter_Method_Silent();
+            return qosHandler;
+        }
+
   protected:
 
     cGate *upInGate_ = nullptr;
@@ -127,6 +133,9 @@ class LteRlcUm : public cSimpleModule
     cGate *downOutGate_ = nullptr;
 
     RanNodeType nodeType;
+
+  protected:
+    QosHandler *qosHandler;
 
     // statistics
     static simsignal_t receivedPacketFromUpperLayerSignal_;

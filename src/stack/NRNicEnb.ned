@@ -12,6 +12,9 @@
 
 package simu5g.stack;
 
+import simu5g.stack.sdap.utils.IQosHandler;
+
+
 //
 // The NRNicEnb module serves as a network interface that provides 5G connectivity
 // within a gNodeB. It implements the data and signaling plane of the NR (New Radio) stack,
@@ -27,5 +30,6 @@ module NRNicEnb extends LteNicEnbD2D
         LteChannelModelType = default("NRChannelModel_3GPP38_901");
         @display("bgb=694,443");
         packetFlowManager.typename = default("NRPacketFlowManagerGnb");
+        qosHandlerType = "QosHandlerGNB";  //TODO add default()? or remove this parameter
 }
 

@@ -20,6 +20,7 @@ import simu5g.stack.pdcp_rrc.ILtePdcpRrc;
 import simu5g.stack.phy.ChannelModel.ILteChannelModel;
 import simu5g.stack.phy.ILtePhy;
 import simu5g.stack.rlc.LteRlc;
+import simu5g.stack.sdap.utils.IQosHandler;
 
 //
 // The LteNicBase module serves as the foundational building block for LTE networking
@@ -53,6 +54,8 @@ module LteNicBase extends NetworkInterface like ICellularNic
         string address @mutable = default("auto");
         *.interfaceTableModule = default(absPath(this.interfaceTableModule));
         *.routingTableModule = default(absPath(this.routingTableModule));
+
+        string qosHandlerType = default("QosHandlerGNB");  //TODO there is no "QosHandlerENB"
 
     gates:
         //#
@@ -102,6 +105,10 @@ module LteNicBase extends NetworkInterface like ICellularNic
         //#
         packetFlowManager: <default("")> like IPacketFlowManager if hasRNISupport {
             @display("p=70,300");
+        }
+
+        qosHandlerGnb: <qosHandlerType> like IQosHandler {  //TODO probably makes no sense with LTE, but LtePdcpRrcBase expects to find it
+            @display("p=186,200");
         }
 
     connections allowunconnected:

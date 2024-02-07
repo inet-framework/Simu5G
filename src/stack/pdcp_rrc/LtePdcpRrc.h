@@ -22,6 +22,8 @@
 #include "stack/pdcp_rrc/LteTxPdcpEntity.h"
 #include "stack/pdcp_rrc/LteRxPdcpEntity.h"
 #include "stack/pdcp_rrc/packet/LtePdcpPdu_m.h"
+#include "stack/sdap/sdap.h"
+#include "stack/sdap/utils/QosHandler.h"
 
 namespace simu5g {
 
@@ -69,9 +71,6 @@ class LtePdcpRrcBase : public cSimpleModule
     friend class DualConnectivityManager;
 
   public:
-    /**
-     * Initializes the connection table
-     */
 
     /**
      * Cleans the connection table
@@ -83,6 +82,8 @@ class LtePdcpRrcBase : public cSimpleModule
      */
     virtual void deleteEntities(MacNodeId nodeId) {}
 
+    Sdap sdap;
+    QosHandler * qosHandler;
   protected:
 
     /**

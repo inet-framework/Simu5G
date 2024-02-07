@@ -17,6 +17,16 @@ import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 
 network TestFeedback
 {
+    parameters:
+        bool useQosModel = default(false);
+        bool packetDropEnabled = default(true);
+        string qosModelPriority = default("priority");
+        double lambdaPriority = default(1);
+        double lambdaRemainDelayBudget = default(0);
+        double lambdaCqi = default(0);
+        double lambdaRtx = default(0);
+        double lambdaByteSize = default(0);
+
     submodules:
         lteDlFbGenerator: LteDlFeedbackGenerator {
             @display("p=96,71");

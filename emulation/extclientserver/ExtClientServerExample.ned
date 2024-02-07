@@ -16,6 +16,7 @@ import inet.networklayer.ipv4.RoutingTableRecorder;
 import inet.node.ethernet.Eth10G;
 import inet.node.inet.Router;
 import simu5g.common.binder.Binder;
+import simu5g.common.binder.GlobalData;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.ExtCell;
 import simu5g.nodes.NR.NRUe;
@@ -32,7 +33,16 @@ network ExtClientServerExample
 {
     parameters:
         int numExtCells = default(0);
+        bool useQosModel = default(false);
+        bool packetDropEnabled = default(true);
+        string qosModelPriority = default("priority");
+        double lambdaPriority = default(1);
+        double lambdaRemainDelayBudget = default(0);
+        double lambdaCqi = default(0);
+        double lambdaRtx = default(0);
+        double lambdaByteSize = default(0);
         @display("i=block/network2;bgb=800,554;bgi=background/pisa");
+
     submodules:
         routingRecorder: RoutingTableRecorder {
             @display("p=73,130;is=s");
@@ -45,6 +55,9 @@ network ExtClientServerExample
         }
         binder: Binder {
             @display("p=73,261;is=s");
+        }
+        globalData: GlobalData {
+            @display("p=90,221;is=s");
         }
         carrierAggregation: CarrierAggregation {
             @display("p=72,343;is=s");

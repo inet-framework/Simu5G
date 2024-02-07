@@ -18,7 +18,8 @@ import simu5g.stack.phy.ChannelModel.ILteChannelModel;
 import simu5g.stack.phy.ILtePhy;
 import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 import simu5g.stack.rlc.LteRlc;
-
+import simu5g.stack.packetFlowManager.PacketFlowManager;
+import simu5g.stack.sdap.utils.*;
 
 //
 // This module defines a User Equipment (UE) network interface card that
@@ -40,7 +41,6 @@ module NRNicUe extends LteNicUeD2D
         											// LtePhy is of type NRPhyUe so that it is
         											// be aware of the existing of the second
         											// PHY layer (needed at handover)
-
         @display("bgb=694,443");
         nrPhy.rlcUmModule = "^.nrRlc.um";
         nrPhy.otherPhyModule = "^.phy";
