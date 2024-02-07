@@ -27,7 +27,12 @@ simple TrafficFlowFilter
         string binderModule = default("binder");
         string ownerType @enum(ENODEB,GNODEB,PGW,UPF,UPF_MEC); // must be one between ENODEB,GNODEB,PGW,UPF,UPF_MEC
         bool fastForwarding = default(true);
+        
+        
+        
     gates:
         input internetFilterGateIn;
         output gtpUserGateOut;
+        output out;
 }
+

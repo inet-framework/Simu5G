@@ -31,7 +31,9 @@ simple GtpUser
         int localPort = default(31);
         int tunnelPeerPort = default(31);
         string gateway = default("");			// optional
-
+        bool filter = default(true);
+        //xml pcpQfiProfile = xmldoc("/home/devika/Omnet6/omnetpp-6.0/ThesisProject/simu-5g-tsn/Simu5G/src/corenetwork/gtp/TsnQoSMapper.xml");
+       
         @display("i=block/tunnel");
 
     gates:

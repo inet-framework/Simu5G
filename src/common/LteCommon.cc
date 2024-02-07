@@ -356,6 +356,12 @@ bool isBaseStation(CoreNodeType nodeType)
     return nodeType == ENB || nodeType == GNB;
 }
 
+bool isUpf(CoreNodeType nodeType){
+    if (nodeType == UPF)
+        return true;
+    return false;
+}
+
 bool isNrUe(MacNodeId id)
 {
     return getNodeTypeById(id) == UE && id >= NR_UE_MIN_ID;

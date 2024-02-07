@@ -25,6 +25,7 @@ import simu5g.corenetwork.statsCollector.IStatsCollector;
 import simu5g.corenetwork.trafficFlowFilter.TrafficFlowFilter;
 import simu5g.stack.ICellularNic;
 import simu5g.x2.LteX2App;
+import simu5g.stack.sdap.utils.*;
 
 //
 // This module models an evolved Node B (eNB) of a 4G LTE network. It is a specialized device equipped
@@ -96,6 +97,7 @@ module eNodeB
         //# Plmn params (used by RNI Service in EnodeBStatsCollector)
         string mcc = default("001"); // Test network
         string mnc = default("01");  // Test network
+        string qosHandlerType = "QosHandlerGNB";
 
     gates:
         inout ppp @loose;         // connection to the Core Network
@@ -106,6 +108,9 @@ module eNodeB
         inout pppMEHost @loose;		// connection to the GtpEndpoint module inside MEHost
 
     submodules:
+        qosHandlerGnb: <qosHandlerType> like IQosHandler {
+            @display("p=186,200");
+        }
         interfaceTable: InterfaceTable {
             parameters:
                 @display("p=110,158;is=s");

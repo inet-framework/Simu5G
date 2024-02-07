@@ -20,6 +20,7 @@
 #include "stack/mac/scheduling_modules/LteMaxCiOptMB.h"
 #include "stack/mac/scheduling_modules/LteMaxCiComp.h"
 #include "stack/mac/scheduling_modules/LteAllocatorBestFit.h"
+#include "stack/mac/scheduling_modules/DQos.h"
 #include "stack/mac/buffer/LteMacBuffer.h"
 #include "stack/mac/buffer/LteMacQueue.h"
 #include "stack/phy/LtePhyBase.h"
@@ -947,6 +948,8 @@ LteScheduler *LteSchedulerEnb::getScheduler(SchedDiscipline discipline)
             return new LteMaxCiComp(binder_);
         case ALLOCATOR_BESTFIT:
             return new LteAllocatorBestFit(binder_);
+        case DQOS:
+            return new DQos();
 
         default:
             throw cRuntimeError("LteScheduler not recognized");

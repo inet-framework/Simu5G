@@ -13,6 +13,7 @@
 #define _NRMACGNB_H_
 
 #include "stack/mac/LteMacEnbD2D.h"
+#include "stack/mac/LteMacEnb.h"
 
 namespace simu5g {
 
@@ -27,6 +28,11 @@ class NRMacGnb : public LteMacEnbD2D
      */
     void initialize(int stage) override;
 
+    virtual void handleMessage(inet::cMessage* msg);
+
+    //virtual bool bufferizePacket(inet::cPacket* pkt);
+
+    //virtual void handleUpperMessage(cPacket* pkt);
 };
 
 } //namespace

@@ -24,6 +24,9 @@
 
 #include "common/binder/Binder.h"
 #include "corenetwork/gtp/GtpUserMsg_m.h"
+#include "common/binder/GlobalData.h"
+#include "stack/pdcp_rrc/LtePdcpRrc.h"
+#include "stack/sdap/utils/QosHandler.h"
 
 namespace simu5g {
 
@@ -62,6 +65,8 @@ class GtpUser : public cSimpleModule
 
     opp_component_ptr<cModule> networkNode_;
 
+    QosHandler *qosHandler;
+
   protected:
 
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
@@ -76,6 +81,8 @@ class GtpUser : public cSimpleModule
 
     // detect outgoing interface name (CellularNic)
     inet::NetworkInterface *detectInterface();
+
+    //void getQoSMapParametersFromXml();
 };
 
 } //namespace

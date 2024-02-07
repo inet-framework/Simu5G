@@ -19,6 +19,7 @@
 #include "stack/mac/amc/LteAmc.h"
 #include "common/LteCommon.h"
 #include "stack/backgroundTrafficGenerator/IBackgroundTrafficManager.h"
+#include "stack/sdap/utils/QosHandler.h"
 
 namespace simu5g {
 
@@ -34,6 +35,7 @@ class LteHarqProcessRx;
 class LteMacEnb : public LteMacBase
 {
   protected:
+    QosHandler *qosHandler;
     /// Local CellInfo
     inet::ModuleRefByPar<CellInfo> cellInfo_;
 
@@ -262,6 +264,11 @@ class LteMacEnb : public LteMacBase
      * @param direction
      */
     int getActiveUesNumber(Direction dir);
+
+    virtual QosHandler* getQosHandler() {
+            return qosHandler;
+        }
+
 
 };
 
