@@ -221,9 +221,5 @@ TrafficFlowTemplateId TrafficFlowFilter::findTrafficFlow(L3Address srcAddress, L
     return destMaster;
 }
 
-void TrafficFlowFilter::finish()
-{
-}
-
 } //namespace
 
