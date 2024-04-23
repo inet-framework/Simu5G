@@ -33,9 +33,7 @@
 #include "stack/phy/layer/LtePhyBase.h"
 #include "stack/rlc/packet/LteRlcDataPdu.h"
 #include "stack/rlc/am/packet/LteRlcAmPdu_m.h"
-
 #include "stack/packetFlowManager/PacketFlowManagerBase.h"
-
 #include "stack/rlc/um/LteRlcUm.h"
 #include "stack/pdcp_rrc/layer/NRPdcpRrcEnb.h"
 
@@ -1007,8 +1005,6 @@ int LteMacEnb::getProcessForRtx(double carrierFrequency, Direction dir)
     return needRtx->at(carrierFrequency);
 }
 
-
-
 void LteMacEnb::flushHarqBuffers()
 {
     std::map<double, HarqTxBuffers>::iterator mit = harqTxBuffers_.begin();
@@ -1083,6 +1079,7 @@ void LteMacEnb::updateUserTxParam(cPacket* pktAux)
     lteInfo->setGrantedBlocks(rbMap);
     lteInfo->setTotalGrantedBlocks(grantedBlocks);
 }
+
 ActiveSet* LteMacEnb::getActiveSet(Direction dir)
 {
     if (dir == DL)
@@ -1107,7 +1104,6 @@ ConflictGraph* LteMacEnb::getConflictGraph()
 {
     return nullptr;
 }
-
 
 double LteMacEnb::getUtilization(Direction dir)
 {
@@ -1135,8 +1131,6 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
      * transmissions not yet terminated.
      */
     if(dir == DL){
-
-
         // from macCid to NodeId
         for (auto& item : mbuf_) {
             if(item.second->getQueueLength() != 0)
@@ -1178,7 +1172,6 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
                 if(elem.second->isHarqBufferActive()){
                     activeUeSet.insert(elem.first); // active users in HARQ
                 }
-
             }
         }
 
@@ -1215,12 +1208,11 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
             }
         }
     }
-
     else {
         throw cRuntimeError("LteMacEnb::getSchedDiscipline(): unrecognized direction %d", (int) dir);
     }
-    return activeUeSet.size();
 
+    return activeUeSet.size();
 }
 
 } //namespace
