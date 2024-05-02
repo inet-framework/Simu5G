@@ -55,7 +55,7 @@ void BackgroundCellChannelModel::initialize(int stage)
         else if (fType == "RAYLEIGH")
             fadingType_ = RAYLEIGH;
         else
-            fadingType_ = JAKES;
+            fadingType_ = JAKES;    // TODO unrecognized fading value
 
         fadingPaths_ = par("fading_paths");
         delayRMS_ = par("delay_rms");

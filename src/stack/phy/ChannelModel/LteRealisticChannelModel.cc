@@ -81,7 +81,7 @@ void LteRealisticChannelModel::initialize(int stage)
         else if (fType == "RAYLEIGH")
             fadingType_ = RAYLEIGH;
         else
-            fadingType_ = JAKES;
+            fadingType_ = JAKES;    // TODO unrecognized
 
         fadingPaths_ = par("fading_paths");
         enableBackgroundCellInterference_ = par("bgCell_interference");
