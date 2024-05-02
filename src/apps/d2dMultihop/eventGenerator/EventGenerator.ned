@@ -30,7 +30,7 @@ simple EventGenerator
         double startingCoordX @unit(m) = default(-1.0m);
         double startingCoordY @unit(m) = default(-1.0m);
 
-        int startingUe = default(0);
+        int startingUe = default(0);  //TODO unused?
 
         @display("i=block/cogwheel");
 }
