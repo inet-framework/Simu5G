@@ -21,13 +21,13 @@ simple VoDUDPClient like IApp
     parameters:
         int localPort;
         double startStreamTime @unit("s") = default(0s);
-        string startMetrics = default("off");
+        string startMetrics = default("off"); // TODO boolean on/off
         string vod_trace_file;
         string bsePath = default("");
         string origVideoYuv = default("");
         string origVideoSvc = default("");
         string decPath = default("");
-        string traceType = default("SVC");
+        string traceType = default("SVC");  // TODO uses only "ns2", ignores all others
         int playbackSize @unit("s") = default(2s);
         string avipluginPath = default("");
         int numFrame = default(0);
