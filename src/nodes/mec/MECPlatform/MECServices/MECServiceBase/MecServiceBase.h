@@ -64,6 +64,8 @@ class ServiceRegistry;
 class MecPlatformManager;
 class EventNotification;
 
+// TODO add NED file, too
+
 class MecServiceBase: public inet::ApplicationBase, public inet::TcpSocket::ICallback
 {
     public:
