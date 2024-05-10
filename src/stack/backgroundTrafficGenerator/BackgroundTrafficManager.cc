@@ -59,6 +59,7 @@ void BackgroundTrafficManager::initialize(int stage)
     {
         numBgUEs_ = getAncestorPar("numBgUes");
         binder_.reference(this, "binderModule", true);
+        phy_.reference(this, "phyModule", true);
     }
     if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT)
     {
@@ -78,10 +79,9 @@ void BackgroundTrafficManager::initialize(int stage)
         if (channelModel_ == nullptr)
         {
             // get the reference to the channel model for the given carrier
-            LtePhyEnb* phy = check_and_cast<LtePhyEnb*>(getParentModule()->getParentModule()->getSubmodule("phy"));
-            bsTxPower_ = phy->getTxPwr();
-            bsCoord_ = phy->getCoord();
-            channelModel_ = phy->getChannelModel(carrierFrequency_);
+            bsTxPower_ = phy_->getTxPwr();
+            bsCoord_ = phy_->getCoord();
+            channelModel_ = phy_->getChannelModel(carrierFrequency_);
             if (channelModel_ == nullptr)
                 throw cRuntimeError("BackgroundTrafficManager::initialize - cannot find channel model for carrier frequency %f", carrierFrequency_);
         }
@@ -148,10 +148,9 @@ Cqi BackgroundTrafficManager::computeCqi(int bgUeIndex, Direction dir, inet::Coo
     if (channelModel_ == nullptr)
     {
         // get the reference to the channel model for the given carrier
-        LtePhyEnb* phy = check_and_cast<LtePhyEnb*>(getParentModule()->getParentModule()->getSubmodule("phy"));
-        bsTxPower_ = phy->getTxPwr();
-        bsCoord_ = phy->getCoord();
-        channelModel_ = phy->getChannelModel(carrierFrequency_);
+        bsTxPower_ = phy_->getTxPwr();
+        bsCoord_ = phy_->getCoord();
+        channelModel_ = phy_->getChannelModel(carrierFrequency_);
         if (channelModel_ == nullptr)
             throw cRuntimeError("BackgroundTrafficManager::getCqi - cannot find channel model for carrier frequency %f", carrierFrequency_);
     }
