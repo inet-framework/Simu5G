@@ -36,7 +36,7 @@ class LteHandoverManager : public omnetpp::cSimpleModule
     X2NodeId nodeId_;
 
     // reference to the gates
-    omnetpp::cGate* x2Manager_[2];
+    omnetpp::cGate* x2Manager_[2];   // TODO replace to *inGate, *outGate
 
     // reference to the PDCP layer
     inet::ModuleRefByPar<IP2Nic> ip2nic_;

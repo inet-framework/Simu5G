@@ -43,6 +43,7 @@ protected:
 
     // reference to the MAC layer
     inet::ModuleRefByPar<LteMacEnb> mac_;
+    // TODO LteMacEnbD2D ????
 
     // reference to the binder
     inet::ModuleRefByPar<Binder> binder_;
