@@ -144,7 +144,7 @@ class LteMacBase : public omnetpp::cSimpleModule
     std::map<MacNodeId, ::omnetpp::simtime_t> resetHarq_;
 
     // reference to the phy layer
-    LtePhyBase* phy_;
+    omnetpp::opp_component_ptr<LtePhyBase> phy_;
 
     // @author Alessandro Noferi
     // reference to the packetFlowManager
