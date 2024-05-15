@@ -147,7 +147,7 @@ void LteMacUe::initialize(int stage)
         info->id = nodeId_;            // local mac ID
         info->cellId = cellId_;        // cell ID
         info->init = false;            // flag for phy initialization
-        info->ue = this->getParentModule()->getParentModule();  // reference to the UE module
+        info->ue = getContainingNode(this);  // reference to the UE module
         info->phy = phy_;
 
         binder_->addUeInfo(info);
