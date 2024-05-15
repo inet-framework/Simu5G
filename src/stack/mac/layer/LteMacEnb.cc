@@ -218,7 +218,7 @@ void LteMacEnb::initialize(int stage)
         for ( ; it != carriers->end(); ++it, ++i)
         {
             double carrierFrequency = it->second.carrierFrequency;
-            bgTrafficManager_[carrierFrequency] = check_and_cast<BackgroundTrafficManager*>(getParentModule()->getSubmodule("bgTrafficGenerator",i)->getSubmodule("manager"));
+            bgTrafficManager_[carrierFrequency] = check_and_cast<BackgroundTrafficManager*>(getParentModule()->getSubmodule("bgTrafficGenerator",i)->getSubmodule("manager")); // TODO "^.bgTrafficGenerator[i].manager"
             bgTrafficManager_[carrierFrequency]->setCarrierFrequency(carrierFrequency);
         }
     }
