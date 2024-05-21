@@ -33,7 +33,7 @@ BackgroundCellTrafficManager::~BackgroundCellTrafficManager()
 
 void BackgroundCellTrafficManager::initialize(int stage)
 {
-    cSimpleModule::initialize(stage);
+    cSimpleModule::initialize(stage);   // TODO call BackgroundTrafficManager::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL)
     {
         numBgUEs_ = getAncestorPar("numBgUes");
