@@ -138,9 +138,9 @@ void LteMacUe::initialize(int stage)
     else if (stage == INITSTAGE_NETWORK_LAYER)
     {
         if (strcmp(getFullName(),"nrMac") == 0)
-            nodeId_ = getAncestorPar("nrMacNodeId");
+            nodeId_ = networkNode_->par("nrMacNodeId");
         else
-            nodeId_ = getAncestorPar("macNodeId");
+            nodeId_ = networkNode_->par("macNodeId");
 
         /* Insert UeInfo in the Binder */
         UeInfo* info = new UeInfo();
