@@ -582,6 +582,7 @@ void getParametersFromXML(cXMLElement *xmlData, ParameterMap& outputMap)
     }
 }
 
+// TODO: Used for parse string ned parameters. Use object parameters instead.
 void parseStringToIntArray(std::string str, int *values, int dim, int pad)
 {
     for (int i = 0; i < dim; i++) {
