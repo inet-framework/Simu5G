@@ -52,10 +52,10 @@ simple CellInfo
         double ruStartingAngle @unit(deg) = default(0deg);
 
         // CSV string supplying TX power for i-th ru (integer values)
-        string ruTxPower = default("0;");
+        string ruTxPower = default("0;");   // TODO use object par
 
         // cws for each antenna, note that first position refers to the MACRO
-        string antennaCws = default("1;");
+        string antennaCws = default("1;");   // TODO use object par
 
         //#
         //# Physical layer properties
