@@ -71,7 +71,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
             @display("p=412,67");
         }
         // PDCP-RRC Layer
-        pdcpRrc: <default("")> like LtePdcpRrc {
+        pdcpRrc: <> like LtePdcpRrc {
             @display("p=362,141");
         }
         // RLC Layer
