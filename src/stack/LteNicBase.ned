@@ -82,11 +82,11 @@ module LteNicBase extends NetworkInterface like ICellularNic
             *.packetFlowManagerModule = parent.hasRNISupport ? "^.^.packetFlowManager" : "";
         }
         // MAC Layer
-        mac: <default("")> like LteMac {
+        mac: <> like LteMac {
             @display("p=363,314");
         }
         // LtePhy submodule
-        phy: <default("")> like LtePhy {
+        phy: <> like LtePhy {
             @display("p=363,389");
         }
 
