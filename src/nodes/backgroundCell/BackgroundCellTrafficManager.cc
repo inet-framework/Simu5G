@@ -118,7 +118,7 @@ Cqi BackgroundCellTrafficManager::computeCqi(int bgUeIndex, Direction dir, inet:
 
 void BackgroundCellTrafficManager::racHandled(MacNodeId bgUeId)
 {
-    Enter_Method("BackgroundTrafficManager::racHandled");
+    Enter_Method("BackgroundCellTrafficManager::racHandled");
 
     int index = bgUeId - BGUE_MIN_ID;
 
