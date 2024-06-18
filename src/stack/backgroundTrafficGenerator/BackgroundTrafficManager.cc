@@ -27,13 +27,10 @@ void BackgroundTrafficManager::initialize(int stage)
     {
         phy_.reference(this, "phyModule", true);
     }
-    if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT)
-    {
-    }
     if (stage == inet::INITSTAGE_PHYSICAL_LAYER)
     {
         // get the reference to the MAC layer
-        mac_.reference(this, "macModule", true); // ?????
+        mac_.reference(this, "macModule", true); // TODO mac_ used in BackgroundTrafficManagerBase
     }
     if (stage == inet::INITSTAGE_LAST-1)
     {
