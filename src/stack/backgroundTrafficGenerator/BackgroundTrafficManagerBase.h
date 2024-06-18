@@ -73,9 +73,6 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
     // position of the e/gNodeB
     inet::Coord bsCoord_;
 
-    // reference to the channel model for the given carrier
-    LteChannelModel* channelModel_;
-
     /**************************************
      * Support to average CQI computation *
      * ***********************************/
@@ -107,9 +104,6 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
     // set carrier frequency
     void setCarrierFrequency(double carrierFrequency) { carrierFrequency_ = carrierFrequency; }
 
-    // get the number of RBs
-    virtual unsigned int getNumBands();
-
     // get the tx power of the BS
     double getBsTxPower() { return bsTxPower_; }
 
@@ -118,9 +112,6 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
 
     // invoked by the UE's traffic generator when new data is backlogged
     virtual void notifyBacklog(int index, Direction dir, bool rtx = false);
-
-    // returns the CQI based on the given position and power
-    virtual Cqi computeCqi(int bgUeIndex, Direction dir, inet::Coord bgUePos, double bgUeTxPower = 0.0);
 
     // returns the CQI based on the given sinr
     virtual Cqi computeCqiFromSinr(double sinr);
@@ -151,9 +142,6 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
 
     // update background UE's backlog and returns true if the buffer is empty
     virtual unsigned int consumeBackloggedUeBytes(MacNodeId bgUeId, unsigned int bytes, Direction dir, bool rtx = false);
-
-    // Compute received power for a background UE according to pathloss
-    virtual double getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus);
 };
 
 } //namespace
