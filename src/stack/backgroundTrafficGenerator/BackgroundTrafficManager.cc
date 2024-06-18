@@ -15,5 +15,23 @@ namespace simu5g {
 
 Define_Module(BackgroundTrafficManager);
 
+void BackgroundTrafficManager::initialize(int stage)
+{
+    BackgroundTrafficManagerBase::initialize(stage);
+    if (stage == inet::INITSTAGE_LOCAL)
+    {
+        phy_.reference(this, "phyModule", true);
+    }
+    if (stage == inet::INITSTAGE_LAST-1)
+    {
+        // get the reference to the channel model for the given carrier
+        bsTxPower_ = phy_->getTxPwr();
+        bsCoord_ = phy_->getCoord();
+        channelModel_ = phy_->getChannelModel(carrierFrequency_);
+        if (channelModel_ == nullptr)
+            throw cRuntimeError("BackgroundTrafficManagerBase::initialize - cannot find channel model for carrier frequency %f", carrierFrequency_);
+    }
+}
+
 } //namespace
 

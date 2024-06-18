@@ -35,6 +35,12 @@ class LteChannelModel;
 //
 class BackgroundTrafficManager : public BackgroundTrafficManagerBase
 {
+  protected:
+    // reference to phy module
+    inet::ModuleRefByPar<LtePhyEnb> phy_;
+
+  protected:
+    virtual void initialize(int stage);
 };
 
 } //namespace

@@ -56,7 +56,6 @@ void BackgroundTrafficManagerBase::initialize(int stage)
     {
         numBgUEs_ = par("numBgUes");
         binder_.reference(this, "binderModule", true);
-        phy_.reference(this, "phyModule", true);
     }
     if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT)
     {
@@ -73,13 +72,6 @@ void BackgroundTrafficManagerBase::initialize(int stage)
     }
     if (stage == inet::INITSTAGE_LAST-1)
     {
-        // get the reference to the channel model for the given carrier
-        bsTxPower_ = phy_->getTxPwr();
-        bsCoord_ = phy_->getCoord();
-        channelModel_ = phy_->getChannelModel(carrierFrequency_);
-        if (channelModel_ == nullptr)
-            throw cRuntimeError("BackgroundTrafficManagerBase::initialize - cannot find channel model for carrier frequency %f", carrierFrequency_);
-
         BgTrafficManagerInfo* info = new BgTrafficManagerInfo();
         info->init = false;
         info->bgTrafficManager = this;
