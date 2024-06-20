@@ -97,7 +97,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
          		//#
         //# Modules used to take trace of PDCP pkt flow
         //#
-        packetFlowManager: <> like PacketFlowManager if hasRNISupport {
+        packetFlowManager: <default("")> like PacketFlowManager if hasRNISupport {
             @display("p=69,299");
         }
 
