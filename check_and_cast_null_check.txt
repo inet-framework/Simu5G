@@ -1,0 +1,30 @@
+Pointer is checked for nullness after check_and_cast:
+
+
+src/apps/burst/BurstReceiver.cc:45
+void BurstReceiver::handleMessage(cMessage *msg)
+{
+..
+    Packet* pPacket = check_and_cast<Packet*>(msg);
+    if (pPacket == nullptr)
+..
+}
+
+src/corenetwork/statsCollector/BaseStationStatsCollector.cc:50
+void BaseStationStatsCollector::initialize(int stage){
+..
+            packetFlowManager_ = check_and_cast<PacketFlowManagerEnb *>(getParentModule()->getSubmodule("cellularNic")->getSubmodule("packetFlowManager"));
+..
+        if(packetFlowManager_ != nullptr)
+..
+}
+
+src/stack/mac/layer/LteMacEnb.cc:541
+void LteMacEnb::macPduMake(MacCid cid)
+{
+..
+                auto pkt = check_and_cast<Packet *>(mbuf_[destCid]->popFront());
+                ASSERT(pkt != nullptr);
+..
+}
+
