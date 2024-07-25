@@ -528,7 +528,7 @@ void LtePhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVe
     auto fbPkt = makeShared<LteFeedbackPkt>();
     //Set the feedback
     fbPkt->setLteFeedbackDoubleVectorDl(fbDl);
-    fbPkt->setLteFeedbackDoubleVectorDl(fbUl);
+    fbPkt->setLteFeedbackDoubleVectorUl(fbUl); // Fix: changed from fbDl to fbUl
     fbPkt->setSourceNodeId(nodeId_);
 
     auto pkt = new Packet("feedback_pkt");
