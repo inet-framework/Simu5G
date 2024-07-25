@@ -20,10 +20,29 @@ namespace simu5g {
 Define_Module(VoIPSender);
 using namespace inet;
 
-VoIPSender::VoIPSender()
+VoIPSender::VoIPSender() :
+    selfSource_(nullptr),
+    selfSender_(nullptr),
+    durTalk_(0),
+    durSil_(0),
+    scaleTalk_(0.0),
+    shapeTalk_(0.0),
+    scaleSil_(0.0),
+    shapeSil_(0.0),
+    isTalk_(false),
+    iDtalk_(0),
+    nframes_(0),
+    iDframe_(0),
+    nframesTmp_(0),
+    size_(0),
+    sampling_time(0),
+    silences_(false),
+    totalSentBytes_(0),
+    warmUpPer_(0),
+    timestamp_(0),
+    localPort_(0),
+    destPort_(0)
 {
-    selfSource_ = nullptr;
-    selfSender_ = nullptr;
 }
 
 VoIPSender::~VoIPSender()

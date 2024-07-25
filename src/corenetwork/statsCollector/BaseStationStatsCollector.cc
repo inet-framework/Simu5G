@@ -21,17 +21,13 @@ namespace simu5g {
 
 Define_Module(BaseStationStatsCollector);
 BaseStationStatsCollector::BaseStationStatsCollector()
+    : prbUsage_(nullptr),
+      activeUsers_(nullptr),
+      discardRate_(nullptr),
+      packetDelay_(nullptr),
+      pdcpBytes_(nullptr),
+      tPut_(nullptr)
 {
-    prbUsage_ = nullptr;
-    activeUsers_ = nullptr;
-    ;
-    discardRate_ = nullptr;
-    ;
-    packetDelay_ = nullptr;
-    ;
-    pdcpBytes_ = nullptr;
-    ;
-    tPut_ = nullptr;
 }
 
 BaseStationStatsCollector::~BaseStationStatsCollector()
@@ -42,7 +38,6 @@ BaseStationStatsCollector::~BaseStationStatsCollector()
     cancelAndDelete(activeUsers_);
     cancelAndDelete(packetDelay_);
     cancelAndDelete(tPut_);
-
 }
 
 void BaseStationStatsCollector::initialize(int stage) {

@@ -25,9 +25,9 @@ UserControlInfo::~UserControlInfo()
 }
 
 UserControlInfo::UserControlInfo() :
-    UserControlInfo_Base()
+    UserControlInfo_Base(),
+    userTxParams(nullptr)
 {
-    userTxParams = nullptr;
     grantedBlocks.clear();
 }
 
