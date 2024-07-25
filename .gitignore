@@ -12,6 +12,17 @@ src/Makefile
 .vscode/*
 precompiled_*.h.*
 **/__pycache__
+*.prompt
+*.prompt0
+*.prompt1
+*.prompt2
+*.prompt3
+*.prompt4
+*.prompt5
+*.prompt6
+*.prompt7
+*.reply
+
 
 # output and result files
 .settings/
