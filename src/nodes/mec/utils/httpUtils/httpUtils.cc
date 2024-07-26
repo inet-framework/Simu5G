@@ -350,7 +350,6 @@ bool parseReceivedMsg(int socketId, std::string& packet, omnetpp::cQueue& messag
                 throw cRuntimeError("httpUtils parseReceivedMsg - current Http Message is incomplete, but there is still data to read");
             case (Http::INCOMPLETE_NO_DATA):
                 return completeMsg;
-
         }
     }
 
@@ -418,7 +417,6 @@ bool parseReceivedMsg(int socketId, std::string& packet, omnetpp::cQueue& messag
         return completeMsg;
     }
     return completeMsg = true;
-    ;
 }
 
 void addBodyChunk(std::string *data, HttpBaseMessage *httpMessage)
@@ -435,7 +433,6 @@ void addBodyChunk(std::string *data, HttpBaseMessage *httpMessage)
         EV << "httpUtils::addBodyChunk - RESPONSE " << endl;
         HttpResponseMessage *resp = dynamic_cast<HttpResponseMessage *>(httpMessage);
         resp->addBodyChunk(data->substr(0, remainingLength));
-
     }
     else if (httpMessage->getType() == REQUEST) {
         EV << "httpUtils::addBodyChunk - REQUEST " << endl;
@@ -446,7 +443,6 @@ void addBodyChunk(std::string *data, HttpBaseMessage *httpMessage)
     data->erase(0, remainingLength);
     httpMessage->setRemainingDataToRecv(remainingLength - (len - data->length()));
     EV << "httpUtils - addBodyChunk: Remaining bytes: " << httpMessage->getRemainingDataToRecv() << endl;
-
 }
 
 void sendHttpResponse(inet::TcpSocket *socket, int code, const char *reason, const char *body)
@@ -513,7 +509,6 @@ void sendHttpResponse(inet::TcpSocket *socket, int code, const char *reason, std
 
     packet->insertAtBack(resPkt);
     socket->send(packet);
-
 }
 
 void sendHttpRequest(inet::TcpSocket *socket, const char *method, const char *host, const char *uri, const char *parameters, const char *body)
@@ -563,7 +558,6 @@ void sendHttpRequest(inet::TcpSocket *socket, const char *method, const char *ho
 
     packet->insertAtBack(reqPkt);
     socket->send(packet);
-
 }
 
 void sendHttpRequest(inet::TcpSocket *socket, const char *method, const char *host, std::map<std::string, std::string>& headers, const char *uri, const char *parameters, const char *body)
