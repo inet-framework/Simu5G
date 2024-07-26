@@ -253,7 +253,7 @@ void LteMacEnbD2D::sendGrants(std::map<double, LteMacScheduleList> *scheduleList
             pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(cit->first);
 
             const UserTxParams& ui = getAmc()->computeTxParams(nodeId, dir, cit->first);
-            UserTxParams *txPara = new UserTxParams(ui);
+            auto txPara = new UserTxParams(ui);
             // FIXME: possible memory leak
             grant->setUserTxParams(txPara);
 
