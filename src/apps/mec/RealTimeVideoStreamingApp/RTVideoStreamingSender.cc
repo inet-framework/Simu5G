@@ -157,7 +157,6 @@ void RTVideoStreamingSender::handleMessage(cMessage *msg)
                 scheduleAfter(mobilityUpdateInterval_, mobilityStats_);
                 return;
             }
-            break;
             case KIND_SELF_MEC_APP_START:
                 sendStartMECApp();
                 break;
