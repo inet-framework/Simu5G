@@ -55,13 +55,11 @@ int32_t TimeStamp::getSeconds() const
 void TimeStamp::setSeconds(int32_t value)
 {
     seconds_ = value;
-
 }
 void TimeStamp::setSeconds() // TODO rename
 {
     // TODO fix it, set seconds_ and nanoseconds_ correctly from current simTime
     seconds_ = seconds_ = omnetpp::simTime().dbl();
-
 }
 
 int32_t TimeStamp::getNanoSeconds() const
@@ -72,7 +70,6 @@ int32_t TimeStamp::getNanoSeconds() const
 void TimeStamp::setNanoSeconds(int32_t value)
 {
     nanoSeconds_ = value;
-
 }
 
 void TimeStamp::setValid(bool valid)
