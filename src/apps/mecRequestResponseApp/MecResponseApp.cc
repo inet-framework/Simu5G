@@ -96,6 +96,7 @@ void MecResponseApp::sendResponse(cMessage *msg)
     respPkt->setDestPort(reqSourcePort);
     packet->insertAtBack(respPkt);
     socket.sendTo(packet, inet::L3AddressResolver().resolve(reqSourceAddress), reqSourcePort);
+    delete[] reqSourceAddress; // Added to prevent memory leak
 }
 
 } //namespace
