@@ -75,7 +75,7 @@ void X2AppClient::socketDataArrived(SctpSocket *, Packet *msg, bool)
 
         throw cRuntimeError("X2AppClient::socketDataArrived: No encapsulated message.");
 
-        delete msg;
+        delete msg; // Unreachable code
     }
 }
 
