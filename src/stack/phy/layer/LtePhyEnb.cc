@@ -420,7 +420,7 @@ LteFeedbackComputation *LtePhyEnb::getFeedbackComputationFromName(std::string na
         if (it != params.end()) {
             lambdaRatioTh = params["lambdaRatioTh"].doubleValue();
         }
-        LteFeedbackComputation *fbcomp = new LteFeedbackComputationRealistic(
+        auto fbcomp = new LteFeedbackComputationRealistic(
                 binder_,
                 targetBler, cellInfo_->getLambda(), lambdaMinTh, lambdaMaxTh,
                 lambdaRatioTh, cellInfo_->getNumBands());

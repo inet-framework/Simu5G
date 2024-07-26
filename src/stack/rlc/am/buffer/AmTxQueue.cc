@@ -99,7 +99,7 @@ std::deque<Packet *> *AmTxQueue::fragmentFrame(Packet *frame, std::deque<int>& w
 
     EV_DEBUG << "Fragmenting " << *frame << " into " << rlcFragDesc.totalFragments_ << " fragments.\n";
     B offset = B(0);
-    std::deque<Packet *> *fragments = new std::deque<Packet *>();
+    auto fragments = new std::deque<Packet *>();
     const auto& frameHeader = frame->peekAtFront<LteRlcAmSdu>();
     windowsIndex.clear();
     RlcWindowDesc tmp = txWindowDesc_;

@@ -23,7 +23,7 @@ cModule *MecServiceSelectionBased::findBestMecHost(const ApplicationDescriptor& 
 
     for (auto mecHost : mecOrchestrator_->mecHosts) {
         EV << "MecServiceSelectionBased::findBestMecHost - MEC host [" << mecHost->getName() << "] size of mecHost " << mecOrchestrator_->mecHosts.size() << endl;
-        VirtualisationInfrastructureManager *vim = check_and_cast<VirtualisationInfrastructureManager *>(mecHost->getSubmodule("vim"));
+        auto vim = check_and_cast<VirtualisationInfrastructureManager *>(mecHost->getSubmodule("vim"));
         ResourceDescriptor resources = appDesc.getVirtualResources();
         bool res = vim->isAllocable(resources.ram, resources.disk, resources.cpu);
         if (!res) {
@@ -35,7 +35,7 @@ cModule *MecServiceSelectionBased::findBestMecHost(const ApplicationDescriptor& 
         EV << "MecServiceSelectionBased::findBestMecHost - MEC host [" << mecHost->getName() << "] temporally chosen as bet MEC host, checking for the required MEC services.." << endl;
         bestHost = mecHost;
 
-        MecPlatformManager *mecpm = check_and_cast<MecPlatformManager *>(mecHost->getSubmodule("mecPlatformManager"));
+        auto mecpm = check_and_cast<MecPlatformManager *>(mecHost->getSubmodule("mecPlatformManager"));
         auto mecServices = mecpm->getAvailableMecServices();
         std::string serviceName;
 

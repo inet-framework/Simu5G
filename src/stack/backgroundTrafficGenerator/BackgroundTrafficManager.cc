@@ -53,8 +53,8 @@ unsigned int BackgroundTrafficManager::getNumBands()
 std::vector<double> BackgroundTrafficManager::getSINR(int bgUeIndex, Direction dir, inet::Coord bgUePos, double bgUeTxPower)
 {
     // this is a fictitious frame that needs to compute the SINR
-    LteAirFrame *frame = new LteAirFrame("bgUeSinrComputationFrame");
-    UserControlInfo *cInfo = new UserControlInfo();
+    auto frame = new LteAirFrame("bgUeSinrComputationFrame");
+    auto cInfo = new UserControlInfo();
 
     // build a control info
     cInfo->setSourceId(BGUE_MIN_ID + bgUeIndex);  // MacNodeId for the bgUe

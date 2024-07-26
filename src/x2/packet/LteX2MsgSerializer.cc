@@ -59,17 +59,17 @@ void LteX2MsgSerializer::serialize(MemoryOutputStream& stream, const Ptr<const C
                 break;
 
             case COMP_PROP_REQUEST_IE: {
-                X2CompProportionalRequestIE *propRequest = check_and_cast<X2CompProportionalRequestIE *>(ie);
+                auto propRequest = check_and_cast<X2CompProportionalRequestIE *>(ie);
                 stream.writeUint32Be(propRequest->getNumBlocks());
                 break;
             }
             case COMP_PROP_REPLY_IE: {
-                X2CompProportionalReplyIE *propReply = check_and_cast<X2CompProportionalReplyIE *>(ie);
+                auto propReply = check_and_cast<X2CompProportionalReplyIE *>(ie);
                 serializeStatusMap(stream, propReply->getAllowedBlocksMap());
                 break;
             }
             case X2_HANDOVER_CMD_IE: {
-                X2HandoverCommandIE *handoverCmd = check_and_cast<X2HandoverCommandIE *>(ie);
+                auto handoverCmd = check_and_cast<X2HandoverCommandIE *>(ie);
                 stream.writeByte(handoverCmd->isStartHandover());
                 stream.writeUint16Be(handoverCmd->getUeId());
                 break;
