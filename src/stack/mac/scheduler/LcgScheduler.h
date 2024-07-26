@@ -125,7 +125,7 @@ class LcgScheduler
 //
 };
 
-} //namespace
+} //namespace simu5g
 
 #endif
 
