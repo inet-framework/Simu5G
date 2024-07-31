@@ -39,7 +39,7 @@ class DualConnectivityManager : public cSimpleModule
     X2NodeId nodeId_;
 
     // reference to the gates
-    cGate* x2Manager_[2];
+    cGate* x2Manager_[2];   // TODO replace to *inGate, *outGate
 
     void handleX2Message(cMessage* msg);
 

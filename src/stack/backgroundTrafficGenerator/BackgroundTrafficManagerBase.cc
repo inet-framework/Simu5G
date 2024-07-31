@@ -60,7 +60,7 @@ void BackgroundTrafficManagerBase::initialize(int stage)
     {
         // create vector of BackgroundUEs
         for (int i=0; i < numBgUEs_; i++)
-            bgUe_.push_back(check_and_cast<TrafficGeneratorBase*>(getParentModule()->getSubmodule("bgUE", i)->getSubmodule("generator")));
+            bgUe_.push_back(check_and_cast<TrafficGeneratorBase*>(getParentModule()->getSubmodule("bgUE", i)->getSubmodule("generator"))); // TODO "^.bgUE[i].generator"
 
         phyPisaData_ = &(binder_->phyPisaData);
     }
