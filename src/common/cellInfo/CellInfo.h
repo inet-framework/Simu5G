@@ -45,66 +45,66 @@ class CellInfo : public omnetpp::cSimpleModule
     EnbType eNbType_;
 
     /// x playground lower bound
-    double pgnMinX_;
+    double pgnMinX_ = 0;
     /// y playground lower bound
-    double pgnMinY_;
+    double pgnMinY_ = 0;
     /// x playground upper bound
-    double pgnMaxX_;
+    double pgnMaxX_ = 0;
     /// y playground upper bound
-    double pgnMaxY_;
+    double pgnMaxY_ = 0;
 
     /// x eNB position
-    double nodeX_;
+    double nodeX_ = 0;
     /// y eNB position
-    double nodeY_;
+    double nodeY_ = 0;
     /// z eNB position
-    double nodeZ_;
+    double nodeZ_ = 0;
 
     /// Number of DAS RU
-    int numRus_;
+    int numRus_ = 0;
     /// Remote and its CW
     std::map<Remote, int> antennaCws_;
 
     /// number of logical bands in the system
-    int totalBands_;
+    int totalBands_ = 0;
     /// number of preferred bands to use (meaningful only in PREFERRED mode)
-    int numPreferredBands_;
+    int numPreferredBands_ = 0;
 
     // TODO these should be parameters per carrier, move to CarrierComponent
 
     /// number of sub-carriers per RB, DL
-    int rbyDl_;
+    int rbyDl_ = 0;
     /// number of sub-carriers per RB, UL
-    int rbyUl_;
+    int rbyUl_ = 0;
     /// number of OFDM symbols per slot, DL
-    int rbxDl_;
+    int rbxDl_ = 0;
     /// number of OFDM symbols per slot, UL
-    int rbxUl_;
+    int rbxUl_ = 0;
     /// number of pilot REs per RB, DL
-    int rbPilotDl_;
+    int rbPilotDl_ = 0;
     /// number of pilot REs per RB, UL
-    int rbPilotUl_;
+    int rbPilotUl_ = 0;
     /// number of signaling symbols for RB, DL
-    int signalDl_;
+    int signalDl_ = 0;
     /// number of signaling symbols for RB, UL
-    int signalUl_;
+    int signalUl_ = 0;
     /// MCS scale UL
-    double mcsScaleUl_;
+    double mcsScaleUl_ = 0;
     /// MCS scale DL
-    double mcsScaleDl_;
+    double mcsScaleDl_ = 0;
 
     /*
      * Carrier Aggregation support
      */
     // total number of logical bands *in this cell* (sum of bands used by carriers enabled in this cell)
-    unsigned int numBands_;
+    unsigned int numBands_ = 0;
     CarrierInfoMap carrierMap_;
 
     // store the carrier frequencies used by this cell
     std::vector<double> carriersVector_;
 
     // max numerology index used in this cell
-    NumerologyIndex maxNumerologyIndex_;
+    NumerologyIndex maxNumerologyIndex_ = 0;
     /************************************/
 
     // Position of each UE

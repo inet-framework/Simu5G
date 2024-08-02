@@ -33,67 +33,67 @@ class TrafficGeneratorBase : public cSimpleModule, public cListener
     inet::ModuleRefByPar<IBackgroundTrafficManager> bgTrafficManager_;
 
     // index of the bg UE within the vector of bg UEs
-    int bgUeIndex_;
+    int bgUeIndex_ = 0;
 
     // self messages for DL and UL
-    cMessage *selfSource_[2];
+    cMessage *selfSource_[2] = {nullptr, nullptr};
 
     // starting time for DL and UL traffic
-    simtime_t startTime_[2];
+    simtime_t startTime_[2] = {0, 0};
 
-    bool trafficEnabled_[2];
+    bool trafficEnabled_[2] = {false, false};
 
     // total length of above-the-MAC-layer headers
-    unsigned int headerLen_;
+    unsigned int headerLen_ = 0;
 
     // tx power of the bg UE
-    double txPower_;
+    double txPower_ = 0.0;
 
     // if true, the CQI of the bg UE is affected by external interference
-    bool enablePeriodicCqiUpdate_;
+    bool enablePeriodicCqiUpdate_ = false;
 
     // if true, the CQI of the bg UE is computed by using an estimation of the average interference
-    bool computeAvgInterference_;
+    bool computeAvgInterference_ = false;
 
     // CQI reporting period
-    simtime_t fbPeriod_;
+    simtime_t fbPeriod_ = 0;
 
     // retransmission probability
-    double rtxRate_[2];
+    double rtxRate_[2] = {0.0, 0.0};
 
     // retransmission delay
-    double rtxDelay_[2];
+    double rtxDelay_[2] = {0.0, 0.0};
 
     // loss probability
-    double lossRate_[2];
+    double lossRate_[2] = {0.0, 0.0};
 
     // message for scheduling CQI reporting
-    cMessage *fbSource_;
+    cMessage *fbSource_ = nullptr;
 
     /*
      * STATUS
      */
 
     // current DL and UL backlog
-    unsigned int bufferedBytes_[2];
+    unsigned int bufferedBytes_[2] = {0, 0};
 
     // current DL and UL backlog for retransmissions
-    unsigned int bufferedBytesRtx_[2];
+    unsigned int bufferedBytesRtx_[2] = {0, 0};
 
     // the physical position of the UE (derived from display string or from mobility models)
     inet::Coord pos_;
 
     // flag that signals when new SNR and CQI must be computed
-    bool positionUpdated_;
+    bool positionUpdated_ = false;
 
-    bool useProbabilisticCqi_;
-    double cqiMeanDl_;
-    double cqiStddevDl_;
-    double cqiMeanUl_;
-    double cqiStddevUl_;
+    bool useProbabilisticCqi_ = false;
+    double cqiMeanDl_ = 0.0;
+    double cqiStddevDl_ = 0.0;
+    double cqiMeanUl_ = 0.0;
+    double cqiStddevUl_ = 0.0;
 
     // current CQI based on the last position update
-    Cqi cqi_[2];
+    Cqi cqi_[2] = {0, 0};
 
     // statistics
     simsignal_t bgMeasuredSinrDl_;

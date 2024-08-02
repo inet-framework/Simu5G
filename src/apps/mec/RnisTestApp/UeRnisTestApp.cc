@@ -32,17 +32,17 @@ using namespace std;
 
 Define_Module(UeRnisTestApp);
 
-UeRnisTestApp::UeRnisTestApp() {
-    selfStart_ = nullptr;
-    selfStop_ = nullptr;
-    selfMecAppStart_ = nullptr;
+UeRnisTestApp::UeRnisTestApp()
+    : selfStart_(nullptr),
+      selfStop_(nullptr),
+      selfMecAppStart_(nullptr)
+{
 }
 
 UeRnisTestApp::~UeRnisTestApp() {
     cancelAndDelete(selfStart_);
     cancelAndDelete(selfStop_);
     cancelAndDelete(selfMecAppStart_);
-
 }
 
 void UeRnisTestApp::initialize(int stage)

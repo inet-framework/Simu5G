@@ -63,7 +63,7 @@ class MultihopD2D : public omnetpp::cSimpleModule
     inet::L3Address destAddress_;
     inet::UdpSocket socket;
 
-    omnetpp::cMessage *selfSender_;
+    omnetpp::cMessage *selfSender_ = nullptr;
 
     ModuleRefByPar<EventGenerator> eventGen_;          // reference to the eventGenerator
     ModuleRefByPar<LtePhyBase> ltePhy_;                // reference to the LtePhy

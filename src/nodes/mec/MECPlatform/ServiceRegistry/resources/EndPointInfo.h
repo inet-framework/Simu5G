@@ -20,7 +20,7 @@ class EndPointInfo : public AttributeBase
 {
   protected:
     std::string host_;
-    int port_;
+    int port_ = 0; // Initialized inline
 
   public:
     EndPointInfo() {};

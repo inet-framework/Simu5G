@@ -51,8 +51,8 @@ class ServiceInfo : public AttributeBase
     TransportInfo transportInfo_;
     std::string serializer_;
     std::string scopeOfLocality_;
-    bool consumedLocalOnly_;
-    bool isLocal_;
+    bool consumedLocalOnly_ = false; // Initialize inline
+    bool isLocal_ = false; // Initialize inline
 };
 
 } //namespace

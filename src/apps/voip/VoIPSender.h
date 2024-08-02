@@ -26,37 +26,37 @@ class VoIPSender : public omnetpp::cSimpleModule
     inet::UdpSocket socket;
 
     //source
-    omnetpp::simtime_t durTalk_;
-    omnetpp::simtime_t durSil_;
-    double scaleTalk_;
-    double shapeTalk_;
-    double scaleSil_;
-    double shapeSil_;
-    bool isTalk_;
-    omnetpp::cMessage *selfSource_;
+    omnetpp::simtime_t durTalk_ = 0;
+    omnetpp::simtime_t durSil_ = 0;
+    double scaleTalk_ = 0.0;
+    double shapeTalk_ = 0.0;
+    double scaleSil_ = 0.0;
+    double shapeSil_ = 0.0;
+    bool isTalk_ = false;
+    omnetpp::cMessage *selfSource_ = nullptr;
     //sender
-    int iDtalk_;
-    int nframes_;
-    int iDframe_;
-    int nframesTmp_;
-    int size_;
+    int iDtalk_ = 0;
+    int nframes_ = 0;
+    int iDframe_ = 0;
+    int nframesTmp_ = 0;
+    int size_ = 0;
     omnetpp::simtime_t sampling_time;
 
-    bool silences_;
+    bool silences_ = false;
 
-    unsigned int totalSentBytes_;
+    unsigned int totalSentBytes_ = 0;
     omnetpp::simtime_t warmUpPer_;
 
     omnetpp::simsignal_t voIPGeneratedThroughtput_;
     // ----------------------------
 
-    omnetpp::cMessage *selfSender_;
+    omnetpp::cMessage *selfSender_ = nullptr;
 
-    omnetpp::cMessage *initTraffic_;
+    omnetpp::cMessage *initTraffic_ = nullptr;
 
     omnetpp::simtime_t timestamp_;
-    int localPort_;
-    int destPort_;
+    int localPort_ = 0;
+    int destPort_ = 0;
     inet::L3Address destAddress_;
 
     void initTraffic();

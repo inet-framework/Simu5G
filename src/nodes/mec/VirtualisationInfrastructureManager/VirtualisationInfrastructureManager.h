@@ -88,20 +88,20 @@ class VirtualisationInfrastructureManager : public cSimpleModule
     inet::Ipv4Address mecAppLocalAddress_;
     inet::Ipv4Address mecAppRemoteAddress_;
     inet::Ipv4Address mp1Address_;
-    int mp1Port_;
+    int mp1Port_ = 0;
 
     //------------------------------------
     //parameters to control the number of MEC APPs instantiated and to set gate sizes
-    int maxMECApps;
-    int currentMEApps;
+    int maxMECApps = 0;
+    int currentMEApps = 0;
 
-    int mecAppPortCounter; // counter to assign socket ports to Mec Apps
+    int mecAppPortCounter = 0; // counter to assign socket ports to Mec Apps
     //------------------------------------
 
     //-------------------------------------
     // OMNeT++-like MEC service management
     // set of MEC Services loaded into the MEC host & platform
-    int numServices;
+    int numServices = 0;
     std::vector<cModule *> meServices;
     // ------------------------------------
     // set of free gates to use for connecting MEC apps and MEC Services
@@ -115,13 +115,13 @@ class VirtualisationInfrastructureManager : public cSimpleModule
     //------------------------------------
     // Resources manager
     // maximum resources
-    double maxRam;
-    double maxDisk;
-    double maxCPU;
+    double maxRam = 0.0;
+    double maxDisk = 0.0;
+    double maxCPU = 0.0;
     //allocated resources
-    double allocatedRam;
-    double allocatedDisk;
-    double allocatedCPU;
+    double allocatedRam = 0.0;
+    double allocatedDisk = 0.0;
+    double allocatedCPU = 0.0;
 
     SchedulingMode scheduling; // SEGREGATION or FAIR_SHARING
 

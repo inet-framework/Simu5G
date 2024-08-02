@@ -34,13 +34,13 @@ class LteHarqProcessMirrorD2D
     std::vector<unsigned char> transmissions_;
 
     // number of units
-    unsigned int numUnits_;
+    unsigned int numUnits_ = 0;
 
     // max number of transmissions
-    unsigned char maxTransmissions_;
+    unsigned char maxTransmissions_ = 0;
 
     // reference to the MAC module
-    LteMacEnb *macOwner_;
+    LteMacEnb *macOwner_ = nullptr;
 
   public:
 

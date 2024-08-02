@@ -26,11 +26,6 @@ Define_Module(PacketFlowManagerEnb);
 
 PacketFlowManagerEnb::PacketFlowManagerEnb()
 {
-    connectionMap_.clear();
-    pktDiscardCounterPerUe_.clear();
-    pdcpDelay_.clear();
-    pdcpThroughput_.clear();
-    pktDiscardCounterTotal_ = { 0, 0 };
 }
 
 PacketFlowManagerEnb::~PacketFlowManagerEnb()

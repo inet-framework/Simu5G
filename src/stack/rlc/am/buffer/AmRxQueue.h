@@ -47,7 +47,7 @@ class AmRxQueue : public omnetpp::cSimpleModule
     omnetpp::simtime_t statusReportInterval_;
 
     //! SDU reconstructed at the beginning of the Receiver buffer
-    int firstSdu_;
+    int firstSdu_ = -1;
 
     //! Timer to manage the buffer status report
     TTimer timer_;
@@ -73,11 +73,11 @@ class AmRxQueue : public omnetpp::cSimpleModule
     /*
      * FlowControlInfo matrix : used for CTRL messages generation
      */
-    FlowControlInfo *flowControlInfo_;
+    FlowControlInfo *flowControlInfo_ = nullptr;
 
     //Statistics
     static unsigned int totalCellRcvdBytes_;
-    unsigned int totalRcvdBytes_;
+    unsigned int totalRcvdBytes_ = 0;
     omnetpp::simsignal_t rlcCellPacketLoss_;
     omnetpp::simsignal_t rlcPacketLoss_;
     omnetpp::simsignal_t rlcPduPacketLoss_;

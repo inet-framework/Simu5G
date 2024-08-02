@@ -20,7 +20,7 @@ Define_Module(EventGenerator);
 using namespace omnetpp;
 
 EventGenerator::EventGenerator()
-    : selfMessage_(nullptr), eventId_(0) {}
+    : selfMessage_(nullptr), eventId_(0), singleEventSource_(false) {}
 
 EventGenerator::~EventGenerator()
 {

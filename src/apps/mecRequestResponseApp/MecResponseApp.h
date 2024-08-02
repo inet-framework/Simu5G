@@ -24,7 +24,7 @@ using namespace omnetpp;
 class MecResponseApp : public cSimpleModule
 {
     inet::UdpSocket socket;
-    double coreNetworkDelay_;
+    double coreNetworkDelay_ = 0.0;
 
     static simsignal_t recvRequestSno_;
 

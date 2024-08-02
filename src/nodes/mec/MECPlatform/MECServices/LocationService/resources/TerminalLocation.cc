@@ -13,11 +13,6 @@
 
 namespace simu5g {
 
-TerminalLocation::TerminalLocation() {}
-TerminalLocation::TerminalLocation(const std::string& address, const std::string& locationRetreivalStatus, const CurrentLocation& currentLocation):
-    address(address), locationRetreivalStatus(locationRetreivalStatus), currentLocation(currentLocation) {}
-
-TerminalLocation::~TerminalLocation() {}
 nlohmann::ordered_json TerminalLocation::toJson() const
 {
     nlohmann::ordered_json val;

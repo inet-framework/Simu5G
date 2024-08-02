@@ -28,7 +28,7 @@ class User : public AttributeBase
     User();
     User(const inet::Ipv4Address& address, const MacCellId accessPointId, const std::string& resourceUrl, int zoneId = 0);
 
-    virtual ~User() {};
+    virtual ~User() {} 
 
     inet::Ipv4Address getIpv4Address() const { return address_; }
 
@@ -38,7 +38,7 @@ class User : public AttributeBase
   protected:
     TimeStamp timestamp_;
     inet::Ipv4Address address_;
-    int zoneId_;
+    int zoneId_ = 0;
     MacCellId accessPointId_;
     std::string resourceUrl_;
 

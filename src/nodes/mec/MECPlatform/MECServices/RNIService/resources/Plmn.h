@@ -22,8 +22,8 @@ namespace simu5g {
 class Plmn : public AttributeBase
 {
   protected:
-    std::string mcc_; // 3 decimal digits
-    std::string mnc_; // 2 or 3 decimal digits
+    std::string mcc_ = "001"; // 3 decimal digits
+    std::string mnc_ = "01"; // 2 or 3 decimal digits
 
     nlohmann::ordered_json toJsonCell() const; //should be private?
     /* data */

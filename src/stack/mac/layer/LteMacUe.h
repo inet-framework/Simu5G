@@ -28,7 +28,7 @@ class LteMacUe : public LteMacBase
 {
   protected:
     // false if currentHarq_ counter needs to be initialized
-    bool firstTx;
+    bool firstTx = false;
 
     // one per carrier
     std::map<double, LteSchedulerUeUl *> lcgScheduler_;
@@ -40,34 +40,34 @@ class LteMacUe : public LteMacBase
     std::map<double, LteMacScheduleList *> scheduleList_;
 
     // current H-ARQ process counter
-    unsigned char currentHarq_;
+    unsigned char currentHarq_ = 0;
 
     // perodic grant handling - one per carrier
     std::map<double, unsigned int> periodCounter_;
     std::map<double, unsigned int> expirationCounter_;
 
     // number of MAC SDUs requested to the RLC
-    int requestedSdus_;
+    int requestedSdus_ = 0;
 
-    bool debugHarq_;
+    bool debugHarq_ = false;
 
     // RAC Handling variables
 
-    bool racRequested_;
-    unsigned int racBackoffTimer_;
-    unsigned int maxRacTryouts_;
-    unsigned int currentRacTry_;
-    unsigned int minRacBackoff_;
-    unsigned int maxRacBackoff_;
+    bool racRequested_ = false;
+    unsigned int racBackoffTimer_ = 0;
+    unsigned int maxRacTryouts_ = 0;
+    unsigned int currentRacTry_ = 0;
+    unsigned int minRacBackoff_ = 0;
+    unsigned int maxRacBackoff_ = 1;
 
-    unsigned int raRespTimer_;
-    unsigned int raRespWinStart_;
+    unsigned int raRespTimer_ = 0;
+    unsigned int raRespWinStart_ = 3;
 
-    unsigned int bsrRtxTimer_;
-    unsigned int bsrRtxTimerStart_;
+    unsigned int bsrRtxTimer_ = 0;
+    unsigned int bsrRtxTimerStart_ = 40;
 
     // BSR handling
-    bool bsrTriggered_;
+    bool bsrTriggered_ = false;
 
 //    // reference to the channel models
 //    std::map<double, LteChannelModel*> channelModel_;

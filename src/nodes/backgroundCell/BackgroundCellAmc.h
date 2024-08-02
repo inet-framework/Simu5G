@@ -29,9 +29,9 @@ class BackgroundCellAmc
     McsTable dlMcsTable_;
     McsTable ulMcsTable_;
     McsTable d2dMcsTable_;
-    double mcsScaleDl_;
-    double mcsScaleUl_;
-    double mcsScaleD2D_;
+    double mcsScaleDl_ = 0;
+    double mcsScaleUl_ = 0;
+    double mcsScaleD2D_ = 0;
 
     void calculateMcsScale();
 

@@ -37,7 +37,7 @@ static int parseInt(const char *s, int defaultValue)
 // the destructor unregister the radio module
 ChannelAccess::~ChannelAccess()
 {
-    if (cc && myRadioRef) {
+    if (cc != nullptr && myRadioRef != nullptr) {
         // check if channel control exist
         IChannelControl *cc = dynamic_cast<IChannelControl *>(getSimulation()->findModuleByPath("channelControl"));
         if (cc)

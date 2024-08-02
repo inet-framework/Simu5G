@@ -33,16 +33,16 @@ class VoDUDPServer : public omnetpp::cSimpleModule
     inet::UdpSocket socket;
     /* Server parameters */
 
-    int serverPort;
+    int serverPort = 0;
     std::ifstream infile;
     std::string inputFileName;
-    int fps;
+    int fps = 0;
     std::string traceType;
     std::fstream outfile;
-    double TIME_SLOT;
+    double TIME_SLOT = 0.0;
 
-    int clientsPort;
-    double clientsStartStreamTime;
+    int clientsPort = 0;
+    double clientsStartStreamTime = 0.0;
 
     std::vector<std::string> vclientsIP;
 
@@ -53,8 +53,8 @@ class VoDUDPServer : public omnetpp::cSimpleModule
 
     /* Statistics */
 
-    unsigned int numStreams;  // number of video streams served
-    unsigned long numPkSent;  // total number of packets sent
+    unsigned int numStreams = 0;  // number of video streams served
+    unsigned long numPkSent = 0;  // total number of packets sent
 
     struct tracerec
     {
@@ -63,13 +63,13 @@ class VoDUDPServer : public omnetpp::cSimpleModule
     };
     struct svcPacket
     {
-        int tid;
-        int lid;
-        int qid;
-        int length;
-        int frameNumber;
-        int timestamp;
-        int currentFrame;
+        int tid = -1;
+        int lid = -1;
+        int qid = -1;
+        int length = -1;
+        int frameNumber = -1;
+        int timestamp = -1;
+        int currentFrame = -1;
         std::string memoryAdd;
         std::string isDiscardable;
         std::string isTruncatable;
@@ -77,18 +77,12 @@ class VoDUDPServer : public omnetpp::cSimpleModule
         std::string frameType;
         long int index;
 
-        svcPacket() {
-            tid = lid = qid = -1;
-            length = -1;
-            frameNumber = -1;
-            currentFrame = -1;
-            timestamp = -1;
-        }
-
+        svcPacket() {}
     };
-    unsigned int nrec_;
 
-    tracerec *trace_;
+    unsigned int nrec_ = 0;
+
+    tracerec *trace_ = nullptr;
 
     std::vector<svcPacket> svcTrace_;
 

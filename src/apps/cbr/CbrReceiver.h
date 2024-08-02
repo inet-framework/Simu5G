@@ -27,11 +27,11 @@ class CbrReceiver : public omnetpp::cSimpleModule
 {
     inet::UdpSocket socket;
 
-    int numReceived_;
-    int totFrames_;
-    int recvBytes_;
+    int numReceived_ = 0;
+    int totFrames_ = 0;
+    int recvBytes_ = 0;
 
-    bool mInit_;
+    bool mInit_ = false;
 
     static omnetpp::simsignal_t cbrFrameLossSignal_;
     static omnetpp::simsignal_t cbrFrameDelaySignal_;

@@ -44,9 +44,7 @@ class LteMacQueue : public omnetpp::cPacketQueue
      */
     LteMacQueue(int queueSize);
 
-    virtual ~LteMacQueue()
-    {
-    }
+    virtual ~LteMacQueue() {}
 
     /**
      * Copy Constructors
@@ -145,7 +143,7 @@ class LteMacQueue : public omnetpp::cPacketQueue
 
   private:
     /// Size of queue
-    int queueSize_;
+    int queueSize_ = 0;
 };
 
 } //namespace

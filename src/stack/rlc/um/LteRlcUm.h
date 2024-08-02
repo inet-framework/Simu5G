@@ -149,7 +149,7 @@ class LteRlcUm : public omnetpp::cSimpleModule
     virtual void handleMessage(omnetpp::cMessage *msg) override;
 
     // parameters
-    bool mapAllLcidsToSingleBearer_;
+    bool mapAllLcidsToSingleBearer_ = false;
 
     /**
      * getTxBuffer() is used by the sender to gather the TXBuffer

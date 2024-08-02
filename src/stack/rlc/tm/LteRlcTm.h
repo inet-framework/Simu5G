@@ -37,13 +37,9 @@ namespace simu5g {
 class LteRlcTm : public omnetpp::cSimpleModule
 {
   public:
-    LteRlcTm()
-    {
-    }
+    LteRlcTm() {}
 
-    virtual ~LteRlcTm()
-    {
-    }
+    virtual ~LteRlcTm() {}
 
   protected:
     /**
@@ -99,7 +95,7 @@ class LteRlcTm : public omnetpp::cSimpleModule
      * The maximum available queue size (in bytes)
      * (amount of data in sduQueue_ must not exceed this value)
      */
-    int queueSize_;
+    int queueSize_ = 0;
 
     // statistics
     inet::simsignal_t receivedPacketFromUpperLayer;

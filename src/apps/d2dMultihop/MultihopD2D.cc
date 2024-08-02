@@ -30,10 +30,10 @@ using namespace inet;
 uint16_t MultihopD2D::numMultihopD2DApps = 0;
 
 MultihopD2D::MultihopD2D()
+    : senderAppId_(numMultihopD2DApps++),
+      localMsgId_(0),
+      selfSender_(nullptr)
 {
-    senderAppId_ = numMultihopD2DApps++;
-    localMsgId_ = 0;
-    selfSender_ = nullptr;
 }
 
 MultihopD2D::~MultihopD2D()
@@ -41,8 +41,7 @@ MultihopD2D::~MultihopD2D()
     cancelAndDelete(selfSender_);
 
     if (trickleEnabled_) {
-        std::map<unsigned int, inet::Packet *>::iterator it = last_.begin();
-        for ( ; it != last_.end(); ++it)
+        for (auto it = last_.begin(); it != last_.end(); ++it)
             if (it->second != nullptr)
                 delete it->second;
         last_.clear();

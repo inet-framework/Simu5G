@@ -29,10 +29,10 @@ class BurstReceiver : public cSimpleModule
 {
     UdpSocket socket;
 
-    int numReceived_;
-    int recvBytes_;
+    int numReceived_ = 0;
+    int recvBytes_ = 0;
 
-    bool mInit_;
+    bool mInit_ = false;
 
     simsignal_t burstRcvdPkt_;
     simsignal_t burstPktDelay_;

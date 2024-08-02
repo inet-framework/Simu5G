@@ -78,10 +78,10 @@ class MecServiceBase : public inet::ApplicationBase, public inet::TcpSocket::ICa
     ThreadSet threadSet;
     std::string host_;
     inet::ModuleRefByPar<Binder> binder_;
-    omnetpp::cModule *meHost_;
+    omnetpp::cModule *meHost_ = nullptr;
 
-    MecPlatformManager *mecPlatformManager_;
-    ServiceRegistry *servRegistry_;
+    MecPlatformManager *mecPlatformManager_ = nullptr;
+    ServiceRegistry *servRegistry_ = nullptr;
 
     std::string baseUriQueries_;
     std::string baseUriSubscriptions_;
@@ -91,7 +91,7 @@ class MecServiceBase : public inet::ApplicationBase, public inet::TcpSocket::ICa
      * Load generator variables
      * the current implementation assumes a M/M/1 system
      */
-    bool loadGenerator_;
+    bool loadGenerator_ = false;
     double lambda_; // arrival rate of a BG request form a BG app
     double beta_; // arrival rate of a BG request form a BG app
 
@@ -112,7 +112,7 @@ class MecServiceBase : public inet::ApplicationBase, public inet::TcpSocket::ICa
 
     int requestQueueSize_;
 
-    HttpRequestMessage *currentRequestMessageServed_;
+    HttpRequestMessage *currentRequestMessageServed_ = nullptr;
 
     omnetpp::cMessage *requestService_;
     double requestServiceTime_;
@@ -122,7 +122,7 @@ class MecServiceBase : public inet::ApplicationBase, public inet::TcpSocket::ICa
     double subscriptionServiceTime_;
     int subscriptionQueueSize_;
     std::queue<EventNotification *> subscriptionEvents_;          // queue that holds events relative to subscriptions
-    EventNotification *currentSubscriptionServed_;
+    EventNotification *currentSubscriptionServed_ = nullptr;
 
     // signals for statistics
     omnetpp::simsignal_t requestQueueSizeSignal_;

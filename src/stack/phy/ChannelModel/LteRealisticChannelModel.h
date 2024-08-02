@@ -24,41 +24,41 @@ class LteRealisticChannelModel : public LteChannelModel
   protected:
 
     // Information needed about the playground
-    bool useTorus_;
+    bool useTorus_ = false;
 
     // eNodeB Height
-    double hNodeB_;
+    double hNodeB_ = 0.0;
 
     // UE Height
-    double hUe_;
+    double hUe_ = 0.0;
 
     // average Building Heights
-    double hBuilding_;
+    double hBuilding_ = 0.0;
 
     // true if the UE is inside a building
-    bool inside_building_;
+    bool inside_building_ = false;
 
     // distance from the building wall
-    double inside_distance_;
+    double inside_distance_ = 0.0;
 
     // flag for using high-loss or low-loss model for building penetration
     // see table 7.4.3-2 in TR 38.901
-    bool useBuildingPenetrationHighLossModel_;
+    bool useBuildingPenetrationHighLossModel_ = false;
 
     // Average street's wide
-    double wStreet_;
+    double wStreet_ = 0.0;
 
     // enable/disable the shadowing
-    bool shadowing_;
+    bool shadowing_ = false;
 
     // enable/disable intercell interference computation
-    bool enableBackgroundCellInterference_;
-    bool enableExtCellInterference_;
-    bool enableDownlinkInterference_;
-    bool enableUplinkInterference_;
-    bool enableD2DInterference_;
+    bool enableBackgroundCellInterference_ = false;
+    bool enableExtCellInterference_ = false;
+    bool enableDownlinkInterference_ = false;
+    bool enableUplinkInterference_ = false;
+    bool enableD2DInterference_ = false;
 
-    bool enable_extCell_los_;
+    bool enable_extCell_los_ = false;
 
     typedef std::pair<inet::simtime_t, inet::Coord> Position;
 
@@ -81,48 +81,48 @@ class LteRealisticChannelModel : public LteChannelModel
 
     //correlation distance used in shadowing computation and
     //also used to recompute the probability of LOS
-    double correlationDistance_;
+    double correlationDistance_ = 0.0;
 
     //percentage of error probability reduction for each h-arq retransmission
-    double harqReduction_;
+    double harqReduction_ = 0.0;
 
     // eigen values of channel matrix
     //used to compute the rank
-    double lambdaMinTh_;
-    double lambdaMaxTh_;
-    double lambdaRatioTh_;
+    double lambdaMinTh_ = 0.0;
+    double lambdaMaxTh_ = 0.0;
+    double lambdaRatioTh_ = 0.0;
 
     //Antenna gain of eNodeB
-    double antennaGainEnB_;
+    double antennaGainEnB_ = 0.0;
 
     //Antenna gain of micro node
-    double antennaGainMicro_;
+    double antennaGainMicro_ = 0.0;
 
     //Antenna gain of UE
-    double antennaGainUe_;
+    double antennaGainUe_ = 0.0;
 
     //Thermal noise
-    double thermalNoise_;
+    double thermalNoise_ = 0.0;
 
     //Cable loss
-    double cableLoss_;
+    double cableLoss_ = 0.0;
 
     //UE noise figure
-    double ueNoiseFigure_;
+    double ueNoiseFigure_ = 0.0;
 
     //eNodeB noise figure
-    double bsNoiseFigure_;
+    double bsNoiseFigure_ = 0.0;
 
     //Enabale disable fading
-    bool fading_;
+    bool fading_ = false;
 
     //Number of fading paths in jakes fading
-    int fadingPaths_;
+    int fadingPaths_ = 0;
 
     //avg delay spred in jakes fading
-    double delayRMS_;
+    double delayRMS_ = 0.0;
 
-    bool tolerateMaxDistViolation_;
+    bool tolerateMaxDistViolation_ = false;
 
     //Struct used to store information about jakes fading
     struct JakesFadingData
@@ -145,16 +145,16 @@ class LteRealisticChannelModel : public LteChannelModel
     };
 
     //Fading type (JAKES or RAYLEIGH)
-    FadingType fadingType_;
+    FadingType fadingType_ = JAKES;
 
     //enable or disable the dynamic computation of LOS NLOS probability for each user
-    bool dynamicLos_;
+    bool dynamicLos_ = false;
 
     //if dynamicLos is false this boolean is initialized to true if all user will be in LOS or false otherwise
-    bool fixedLos_;
+    bool fixedLos_ = false;
 
     // if false, disable the collection of SINR statistics, which might be quite time-consuming
-    bool collectSinrStatistics_;
+    bool collectSinrStatistics_ = false;
 
     // statistics
     static omnetpp::simsignal_t rcvdSinrDl_;

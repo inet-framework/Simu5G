@@ -53,26 +53,26 @@ class LteDlFeedbackGenerator : public omnetpp::cSimpleModule
      * for periodic feedback (when calling start() on busy
      * transmission timer we have no operation)
      */
-    omnetpp::simtime_t fbPeriod_;    /// period for Periodic feedback in TTI
-    omnetpp::simtime_t fbDelay_;     /// time interval between sensing and transmission in TTI
+    omnetpp::simtime_t fbPeriod_ = 0;    /// period for Periodic feedback in TTI
+    omnetpp::simtime_t fbDelay_ = 0;     /// time interval between sensing and transmission in TTI
 
-    bool usePeriodic_;      /// true if we want to use also periodic feedback
+    bool usePeriodic_ = false;      /// true if we want to use also periodic feedback
     TxMode currentTxMode_;  /// transmission mode to use in feedback generation
 
-    DasFilter *dasFilter_;  /// reference to das filter
+    DasFilter *dasFilter_ = nullptr;  /// reference to das filter
     omnetpp::opp_component_ptr<CellInfo> cellInfo_; /// reference to cellInfo
     inet::ModuleRefByPar<Binder> binder_;
     inet::ModuleRefByPar<LtePhyUe> phy_;
 
     // cellInfo parameters
     std::map<Remote, int> antennaCws_; /// number of antenna per remote
-    int numPreferredBands_;           /// number of preferred bands to use (meaningful only in PREFERRED mode)
-    int numBands_;                      /// number of cell bands
+    int numPreferredBands_ = 0;           /// number of preferred bands to use (meaningful only in PREFERRED mode)
+    int numBands_ = 0;                      /// number of cell bands
 
     // Timers
-    TTimer *tPeriodicSensing_;
-    TTimer *tPeriodicTx_;
-    TTimer *tAperiodicTx_;
+    TTimer *tPeriodicSensing_ = nullptr;
+    TTimer *tPeriodicTx_ = nullptr;
+    TTimer *tAperiodicTx_ = nullptr;
 
     // Feedback Maps
     //typedef std::map<Remote,LteFeedback> FeedbackMap_;
@@ -83,7 +83,7 @@ class LteDlFeedbackGenerator : public omnetpp::cSimpleModule
     MacNodeId masterId_;
     MacNodeId nodeId_;
 
-    bool feedbackComputationPisa_;
+    bool feedbackComputationPisa_ = false;
 
   private:
 

@@ -28,16 +28,8 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-LteSchedulerEnb::LteSchedulerEnb()
+LteSchedulerEnb::LteSchedulerEnb() : direction_(DL), mac_(nullptr), allocator_(nullptr), vbuf_(nullptr), harqTxBuffers_(nullptr), harqRxBuffers_(nullptr), resourceBlocks_(0), utilization_(0)
 {
-    direction_ = DL;
-    mac_ = nullptr;
-    allocator_ = nullptr;
-    vbuf_ = nullptr;
-    harqTxBuffers_ = nullptr;
-    harqRxBuffers_ = nullptr;
-    resourceBlocks_ = 0;
-    utilization_ = 0;
 }
 
 LteSchedulerEnb& LteSchedulerEnb::operator=(const LteSchedulerEnb& other)
@@ -89,8 +81,7 @@ LteSchedulerEnb& LteSchedulerEnb::operator=(const LteSchedulerEnb& other)
 LteSchedulerEnb::~LteSchedulerEnb()
 {
     delete allocator_;
-    std::vector<LteScheduler *>::iterator it = scheduler_.begin();
-    for ( ; it != scheduler_.end(); ++it)
+    for (auto it = scheduler_.begin(); it != scheduler_.end(); ++it)
         delete *it;
 }
 

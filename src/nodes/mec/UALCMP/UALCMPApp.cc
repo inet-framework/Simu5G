@@ -41,14 +41,14 @@ namespace simu5g {
 
 Define_Module(UALCMPApp);
 
-UALCMPApp::UALCMPApp()
+UALCMPApp::UALCMPApp() :
+    scheduledSubscription(false),
+    requestSno(0)
 {
     baseUriQueries_ = "/example/dev_app/v1";
     baseUriSubscriptions_ = baseUriQueries_;
     supportedQueryParams_.insert("app_list");
     supportedQueryParams_.insert("app_contexts");
-    scheduledSubscription = false;
-    requestSno = 0;
 }
 
 void UALCMPApp::initialize(int stage)
@@ -388,7 +388,8 @@ void UALCMPApp::finish()
     return;
 }
 
-UALCMPApp::~UALCMPApp() {
+UALCMPApp::~UALCMPApp()
+{
 }
 
 } //namespace

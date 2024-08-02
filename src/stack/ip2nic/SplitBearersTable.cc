@@ -13,7 +13,7 @@
 
 namespace simu5g {
 
-SplitBearersTable::SplitBearersTable()
+SplitBearersTable::SplitBearersTable() : ht_()
 {
     // Table is resetted by putting all fields equal to 0x00
     memset(ht_, 0x0, sizeof(struct entry_) * TABLE_SIZE);

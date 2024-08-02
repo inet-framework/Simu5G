@@ -49,10 +49,10 @@ class D2DModeSelectionBase : public omnetpp::cSimpleModule
     inet::ModuleRefByPar<Binder> binder_;
 
     // period between two selection instances
-    double modeSelectionPeriod_;
+    double modeSelectionPeriod_ = 0.0;
 
     // Self message
-    omnetpp::cMessage *modeSelectionTick_;
+    omnetpp::cMessage *modeSelectionTick_ = nullptr;
 
     // run the mode selection algorithm. To be implemented by derived classes
     // it must build a switch list (see above)

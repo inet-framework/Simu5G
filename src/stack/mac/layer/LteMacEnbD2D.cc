@@ -27,7 +27,16 @@ using namespace omnetpp;
 using namespace inet;
 
 LteMacEnbD2D::LteMacEnbD2D() :
-    LteMacEnb()
+    LteMacEnb(),
+    usePreconfiguredTxParams_(false),
+    preconfiguredTxParams_(nullptr),
+    conflictGraph_(nullptr),
+    reuseD2D_(false),
+    reuseD2DMulti_(false),
+    conflictGraphUpdatePeriod_(0),
+    conflictGraphThreshold_(0),
+    msHarqInterrupt_(false),
+    msClearRlcBuffer_(false)
 {
 }
 

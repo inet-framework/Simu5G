@@ -21,7 +21,7 @@ namespace simu5g {
 class MecHostSelectionBased : public SelectionPolicyBase
 {
   protected:
-    int mecHostIndex_;
+    int mecHostIndex_ = 0;
     virtual cModule *findBestMecHost(const ApplicationDescriptor&) override;
 
   public:

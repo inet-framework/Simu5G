@@ -32,16 +32,13 @@ using namespace std;
 
 Define_Module(UEWarningAlertApp);
 
-UEWarningAlertApp::UEWarningAlertApp() {
-    selfStart_ = nullptr;
-    selfStop_ = nullptr;
+UEWarningAlertApp::UEWarningAlertApp() : selfStart_(nullptr), selfStop_(nullptr) {
 }
 
 UEWarningAlertApp::~UEWarningAlertApp() {
     cancelAndDelete(selfStart_);
     cancelAndDelete(selfStop_);
     cancelAndDelete(selfMecAppStart_);
-
 }
 
 void UEWarningAlertApp::initialize(int stage)

@@ -46,7 +46,7 @@ class AmcPilot
     LteAmc *amc_;
 
     //! Pilot Name
-    std::string name_;
+    std::string name_ = "NONE";
 
     //! contains for each user, the subset of Bands that will be considered in the AMC operations
     UsableBandsList usableBandsList_;
@@ -64,7 +64,6 @@ class AmcPilot
     {
         binder_ = binder;
         amc_ = amc;
-        name_ = "NONE";
     }
 
     /**

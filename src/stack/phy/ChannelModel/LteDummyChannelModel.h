@@ -20,8 +20,8 @@ namespace simu5g {
 class LteDummyChannelModel : public LteChannelModel
 {
   private:
-    double per_;
-    double harqReduction_;
+    double per_ = 0.0;
+    double harqReduction_ = 0.0;
 
   public:
     void initialize(int stage);

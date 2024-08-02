@@ -19,14 +19,14 @@ namespace simu5g {
 class DistanceBasedConflictGraph : public ConflictGraph
 {
     // path loss-based thresholds (used by default)
-    double d2dDbmThreshold_;
-    double d2dMultiTxDbmThreshold_;
-    double d2dMultiInterfDbmThreshold_;
+    double d2dDbmThreshold_ = 0.0;
+    double d2dMultiTxDbmThreshold_ = 0.0;
+    double d2dMultiInterfDbmThreshold_ = 0.0;
 
     // distance-based thresholds
-    double d2dInterferenceRadius_;
-    double d2dMultiTransmissionRadius_;
-    double d2dMultiInterferenceRadius_;
+    double d2dInterferenceRadius_ = -1.0;
+    double d2dMultiTransmissionRadius_ = -1.0;
+    double d2dMultiInterferenceRadius_ = -1.0;
 
     // utility function to convert a distance to dBm according to the channel model
     double getDbmFromDistance(double distance);

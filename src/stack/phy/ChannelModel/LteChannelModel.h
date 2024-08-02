@@ -46,10 +46,10 @@ class LteChannelModel : public omnetpp::cSimpleModule
     inet::ModuleRefByPar<ComponentCarrier> componentCarrier_;
 
     // Carrier Frequency
-    double carrierFrequency_;
+    double carrierFrequency_ = 0.0;
 
     // Number of bands for this carrier
-    unsigned int numBands_;
+    unsigned int numBands_ = 0;
 
   public:
 

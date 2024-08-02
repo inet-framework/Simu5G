@@ -70,11 +70,11 @@ class PacketFlowManagerBase : public omnetpp::cSimpleModule
 
     // when a mode switch occurs, the PDCP and RLC entities should be informed about the next SN to use,
     // i.e., the first SN not transmitted due to the mode switch
-    unsigned int nextPdcpSno_;
-    unsigned int nextRlcSno_;
+    unsigned int nextPdcpSno_ = 0;
+    unsigned int nextRlcSno_ = 0;
     std::string pfmType;
 
-    int headerCompressedSize_;
+    int headerCompressedSize_ = 0;
 
     virtual int numInitStages() const { return 2; }
     virtual void initialize(int stage);

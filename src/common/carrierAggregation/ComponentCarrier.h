@@ -31,20 +31,20 @@ class ComponentCarrier : public omnetpp::cSimpleModule
     inet::ModuleRefByPar<Binder> binder_;
 
     // Carrier Frequency
-    double carrierFrequency_;
+    double carrierFrequency_ = 0.0;
 
     // Number of bands for this carrier
-    unsigned int numBands_;
+    unsigned int numBands_ = 0;
 
     // Numerology used for this carrier
-    unsigned int numerologyIndex_;
+    unsigned int numerologyIndex_ = 0;
 
     // Index of the slot format for TDD (-1 stands for FDD)
-//    int tddSlotFormatIndex_;
+//    int tddSlotFormatIndex_ = -1;
 
-    bool useTdd_;
-    unsigned int tddNumSymbolsDl_;
-    unsigned int tddNumSymbolsUl_;
+    bool useTdd_ = false;
+    unsigned int tddNumSymbolsDl_ = 0;
+    unsigned int tddNumSymbolsUl_ = 0;
 
   public:
 

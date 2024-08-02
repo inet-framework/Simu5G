@@ -39,11 +39,11 @@ class ServiceRegistry : public MecServiceBase
      * To be ETSI compliant. Each MEC service has a uuid. This implementation does not
      * take into account this information, i.e. service discovery is only available via
      * service name. It is used only in the responses.
-     * uuidBase is fixed at 123e4567-e89b-12d3-a456-4266141, with the  last5 digits
+     * uuidBase is fixed at 123e4567-e89b-12d3-a456-4266141, with the last5 digits
      * used to create uniquely id in a quicker way through the servIdCounter
      */
-    std::string uuidBase;
-    int servIdCounter;
+    std::string uuidBase = "123e4567-e89b-12d3-a456-4266141";
+    int servIdCounter = 10000;
 
   public:
     ServiceRegistry();

@@ -147,12 +147,10 @@ class LteMacPdu : public LteMacPdu_Base
     {
         // delete the SDU queue
         // (since it is derived of cPacketQueue, it will automatically delete all contained SDUs)
-
         drop(sduList_);
         delete sduList_;
 
-        MacControlElementsList::iterator cit;
-        for (cit = ceList_.begin(); cit != ceList_.end(); cit++) {
+        for (auto cit = ceList_.begin(); cit != ceList_.end(); cit++) {
             delete *cit;
         }
     }

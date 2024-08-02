@@ -14,17 +14,22 @@
 
 namespace simu5g {
 
-RNICellInfo::RNICellInfo() {}
-
-RNICellInfo::RNICellInfo(BaseStationStatsCollector *eNodeB) {
-    collector_ = eNodeB;
-    ecgi_.setEcgi(collector_->getEcgi());
-//  ueList_ =    eNodeB->getUeListCollectors();
+RNICellInfo::RNICellInfo() : collector_(nullptr), ecgi_()
+{
 }
 
-RNICellInfo::~RNICellInfo() {}
+RNICellInfo::RNICellInfo(BaseStationStatsCollector *eNodeB)
+    : collector_(eNodeB), ecgi_(collector_->getEcgi())
+{
+    //  ueList_ =    eNodeB->getUeListCollectors();
+}
 
-nlohmann::ordered_json RNICellInfo::toJsonCell() const {
+RNICellInfo::~RNICellInfo() 
+{
+}
+
+nlohmann::ordered_json RNICellInfo::toJsonCell() const 
+{
     nlohmann::ordered_json val;
     val["ecgi"] = ecgi_.toJson();
 
@@ -95,7 +100,8 @@ Ecgi RNICellInfo::getEcgi() const
     return ecgi_;
 }
 
-nlohmann::ordered_json RNICellInfo::toJson() const {
+nlohmann::ordered_json RNICellInfo::toJson() const 
+{
     nlohmann::ordered_json val = toJsonCell();
 
 //	// per UE

@@ -39,19 +39,19 @@ class MecRnisTestApp : public MecAppBase
 {
     //UDP socket to communicate with the UeApp
     inet::UdpSocket ueSocket;
-    int localUePort;
+    int localUePort = 0;
 
     inet::L3Address ueAppAddress;
-    int ueAppPort;
+    int ueAppPort = 0;
 
-    inet::TcpSocket *serviceSocket_;
-    inet::TcpSocket *mp1Socket_;
+    inet::TcpSocket *serviceSocket_ = nullptr;
+    inet::TcpSocket *mp1Socket_ = nullptr;
 
-    HttpBaseMessage *mp1HttpMessage;
-    HttpBaseMessage *serviceHttpMessage;
+    HttpBaseMessage *mp1HttpMessage = nullptr;
+    HttpBaseMessage *serviceHttpMessage = nullptr;
 
-    simtime_t rnisQueryingPeriod_;
-    cMessage *rnisQueryingTimer_;
+    simtime_t rnisQueryingPeriod_ = 0;
+    cMessage *rnisQueryingTimer_ = nullptr;
 
   protected:
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }

@@ -81,8 +81,8 @@ class LtePhyBase : public ChannelAccess
     /** Pointer to the World Utility, to obtain some global information*/
     //BaseWorldUtility* world_;
     /** Statistics */
-    unsigned int numAirFrameReceived_;    /// number of LteAirFrame correctly received
-    unsigned int numAirFrameNotReceived_; /// number of LteAirFrame not received
+    unsigned int numAirFrameReceived_ = 0;    /// number of LteAirFrame correctly received
+    unsigned int numAirFrameNotReceived_ = 0; /// number of LteAirFrame not received
 
     /** Local device MacNodeId */
     MacNodeId nodeId_;
@@ -97,39 +97,39 @@ class LtePhyBase : public ChannelAccess
     omnetpp::opp_component_ptr<CellInfo> cellInfo_;
 
     // used in multicast D2D to prevent a send direct towards out-of-range UEs. Range is expressed via multicastD2DRange_
-    bool enableMulticastD2DRangeCheck_;
+    bool enableMulticastD2DRangeCheck_ = false;
 
     // used with the enableMulticastD2DRangeCheck_ parameter
-    double multicastD2DRange_;
+    double multicastD2DRange_ = 0.0;
 
     /*
      * If true, UEs associate to the best serving cell at initialization
      */
-    bool dynamicCellAssociation_;
+    bool dynamicCellAssociation_ = false;
 
     //Ue  Tx Power
-    double ueTxPower_;
+    double ueTxPower_ = 0.0;
     // eNodeB Tx Power
-    double eNodeBtxPower_;
+    double eNodeBtxPower_ = 0.0;
     //Micro eNb Tx Power
-    double microTxPower_;
+    double microTxPower_ = 0.0;
     // Tx Power
-    double txPower_;
+    double txPower_ = 0.0;
     // Tx Direction
     TxDirectionType txDirection_;
     // Tx Angle
-    double txAngle_;
+    double txAngle_ = 0.0;
     // Attenuation array
     AttenuationVector attenuationVector_;
     //Used only for PisaPhy
-    LteFeedbackComputation *lteFeedbackComputation_;
+    LteFeedbackComputation *lteFeedbackComputation_ = nullptr;
 
-    double carrierFrequency_;
+    double carrierFrequency_ = 0.0;
 
     /*
      * NR Support
      */
-    bool isNr_;           // this flag is true if this module is part of the NR stack
+    bool isNr_ = false;           // this flag is true if this module is part of the NR stack
 
     //Statistics
     omnetpp::simsignal_t averageCqiDl_;

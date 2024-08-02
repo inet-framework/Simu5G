@@ -18,15 +18,12 @@ using namespace omnetpp;
 
 SubscriptionBase::SubscriptionBase() {}
 
-SubscriptionBase::SubscriptionBase(unsigned int subId, inet::TcpSocket *socket, const std::string& baseResLocation, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs) {
-    auto it = eNodeBs.begin();
-    for ( ; it != eNodeBs.end(); ++it) {
+SubscriptionBase::SubscriptionBase(unsigned int subId, inet::TcpSocket *socket, const std::string& baseResLocation, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs)
+    : subscriptionId_(subId), socket_(socket), baseResLocation_(baseResLocation) {
+    for (auto it = eNodeBs.begin(); it != eNodeBs.end(); ++it) {
         CellInfo *cellInfo = check_and_cast<CellInfo *>((*it)->getSubmodule("cellInfo"));
         eNodeBs_.insert(std::pair<MacCellId, CellInfo *>(cellInfo->getMacCellId(), cellInfo));
     }
-    subscriptionId_ = subId;
-    socket_ = socket;
-    baseResLocation_ = baseResLocation;
 //	notificationTrigger = nullptr;
 }
 

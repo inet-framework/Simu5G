@@ -63,7 +63,7 @@ class LteHarqProcessRx
     omnetpp::opp_component_ptr<Binder> binder_;
 
     /// Number of (re)transmissions for current pdu (N.B.: values are 1,2,3,4)
-    unsigned char transmissions_;
+    unsigned char transmissions_ = 0;
 
     unsigned char maxHarqRtx_;
 

@@ -20,7 +20,7 @@ class LtePhyEnbD2D : public LtePhyEnb
 {
     friend class DasFilter;
 
-    bool enableD2DCqiReporting_;
+    bool enableD2DCqiReporting_ = false;
 
   protected:
 

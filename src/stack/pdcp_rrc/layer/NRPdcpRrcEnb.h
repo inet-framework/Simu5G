@@ -34,7 +34,7 @@ class NRPdcpRrcEnb : public LtePdcpRrcEnbD2D
   protected:
 
     // flag for enabling Dual Connectivity
-    bool dualConnectivityEnabled_;
+    bool dualConnectivityEnabled_ = false;
 
     // reference to the Dual Connectivity Manager
     inet::ModuleRefByPar<DualConnectivityManager> dualConnectivityManager_;

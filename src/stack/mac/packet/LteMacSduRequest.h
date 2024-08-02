@@ -34,10 +34,10 @@ class LteMacSduRequest : public LteMacSduRequest_Base
 
   protected:
     /// ID of the destination UE associated with the request
-    MacNodeId ueId_;
+    MacNodeId ueId_ = 0;
 
     /// Logical Connection identifier associated with the request
-    LogicalCid lcid_;
+    LogicalCid lcid_ = 0;
 
   public:
 

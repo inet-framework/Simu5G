@@ -26,9 +26,8 @@ struct NRMCSelem
     double coderate_;  /// coderate (R)
 
     NRMCSelem(LteMod mod = _QPSK, double coderate = 0.0)
+        : mod_(mod), coderate_(coderate) // Prefer member initializer list
     {
-        mod_ = mod;
-        coderate_ = coderate;
     }
 
 };

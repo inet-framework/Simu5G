@@ -29,7 +29,7 @@ class AlertReceiver : public omnetpp::cSimpleModule
     omnetpp::simsignal_t alertRcvdMsg_;
 
     omnetpp::simtime_t delaySum;
-    long nrReceived;
+    long nrReceived = 0;
 
   protected:
 

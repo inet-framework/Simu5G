@@ -18,11 +18,8 @@ using namespace omnetpp;
 using namespace inet;
 
 LteAllocationModule::LteAllocationModule(LteMacEnb *mac, Direction direction)
+: mac_(mac), dir_(direction), bands_(0), usedInLastSlot_(false)
 {
-    mac_ = mac;
-    dir_ = direction;
-    bands_ = 0;
-    usedInLastSlot_ = false;
 }
 
 void LteAllocationModule::init(const unsigned int resourceBlocks, const unsigned int bands)

@@ -126,11 +126,11 @@ class ConnectionsTable
      */
     struct entry_
     {
-        uint32_t srcAddr_;
-        uint32_t dstAddr_;
-        uint16_t typeOfService_;
-        uint16_t dir_;
-        LogicalCid lcid_;
+        uint32_t srcAddr_ = 0; // initialized inline
+        uint32_t dstAddr_ = 0; // initialized inline
+        uint16_t typeOfService_ = 0; // initialized inline
+        uint16_t dir_ = 0; // initialized inline
+        LogicalCid lcid_ = 0; // initialized inline
     };
     /// Hash table of size TABLE_SIZE
     entry_ ht_[TABLE_SIZE];

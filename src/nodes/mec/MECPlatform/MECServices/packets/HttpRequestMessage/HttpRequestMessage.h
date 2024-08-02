@@ -40,9 +40,9 @@ namespace simu5g {
 class HttpRequestMessage : public HttpRequestMessage_m
 {
   public:
-    HttpRequestMessage(const char *name = nullptr, short kind = 0);
-    HttpRequestMessage(const std::string method, const char *name = nullptr, short kind = 0);
-    HttpRequestMessage(const char *method, const char *name = nullptr, short kind = 0);
+    HttpRequestMessage(const char *name = nullptr, short kind = 0); // TODO remove name, kind
+    HttpRequestMessage(const std::string method, const char *name = nullptr, short kind = 0); // TODO remove name, kind
+    HttpRequestMessage(const char *method, const char *name = nullptr, short kind = 0); // TODO remove name, kind
     HttpRequestMessage& operator=(const HttpRequestMessage& other) { if (this == &other) return *this; HttpRequestMessage_m::operator=(other); copy(other); return *this; }
 
     virtual HttpRequestMessage *dup() const override { return new HttpRequestMessage(*this); }
@@ -68,8 +68,8 @@ class HttpRequestMessage : public HttpRequestMessage_m
     void copy(const HttpRequestMessage& other);
     std::map<std::string, std::string> headerFields_;
 
-    bool isBackgroundRequest_;
-    bool isLastBackgroundRequest_;
+    bool isBackgroundRequest_ = false;
+    bool isLastBackgroundRequest_ = false;
 
 };
 

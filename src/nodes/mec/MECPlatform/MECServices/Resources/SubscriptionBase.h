@@ -56,7 +56,7 @@ class SubscriptionBase
   protected:
 
 //        subscriptionTimer *notificationTrigger;
-    inet::TcpSocket *socket_;
+    inet::TcpSocket *socket_ = nullptr;
     TimeStamp timestamp_;
 
     std::string baseResLocation_;
@@ -65,7 +65,7 @@ class SubscriptionBase
     std::string clientUri_;
 
     std::map<MacCellId, CellInfo *> eNodeBs_;
-    unsigned int subscriptionId_;
+    unsigned int subscriptionId_ = 0;
 
     std::string subscriptionType_;
     std::string notificationType_;

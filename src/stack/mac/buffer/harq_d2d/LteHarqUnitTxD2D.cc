@@ -17,7 +17,14 @@ namespace simu5g {
 using namespace omnetpp;
 
 LteHarqUnitTxD2D::LteHarqUnitTxD2D(Binder *binder, unsigned char acid, Codeword cw, LteMacBase *macOwner, LteMacBase *dstMac)
-    : LteHarqUnitTx(binder, acid, cw, macOwner, dstMac)
+    : LteHarqUnitTx(binder, acid, cw, macOwner, dstMac),
+      macCellPacketLossD2D_(SIMSIGNAL_NULL),
+      macPacketLossD2D_(SIMSIGNAL_NULL),
+      harqErrorRateD2D_(SIMSIGNAL_NULL),
+      harqErrorRateD2D_1_(SIMSIGNAL_NULL),
+      harqErrorRateD2D_2_(SIMSIGNAL_NULL),
+      harqErrorRateD2D_3_(SIMSIGNAL_NULL),
+      harqErrorRateD2D_4_(SIMSIGNAL_NULL)
 {
     check_and_cast<LteMacEnbD2D *>(nodeB_);
     check_and_cast<LteMacUeD2D *>(macOwner_);
@@ -29,15 +36,6 @@ LteHarqUnitTxD2D::LteHarqUnitTxD2D(Binder *binder, unsigned char acid, Codeword 
         harqErrorRateD2D_2_ = omnetpp::cComponent::registerSignal("harqErrorRate_2nd_D2D");
         harqErrorRateD2D_3_ = omnetpp::cComponent::registerSignal("harqErrorRate_3rd_D2D");
         harqErrorRateD2D_4_ = omnetpp::cComponent::registerSignal("harqErrorRate_4th_D2D");
-    }
-    else {
-        macPacketLossD2D_ = 0;
-        macCellPacketLossD2D_ = 0;
-        harqErrorRateD2D_ = 0;
-        harqErrorRateD2D_1_ = 0;
-        harqErrorRateD2D_2_ = 0;
-        harqErrorRateD2D_3_ = 0;
-        harqErrorRateD2D_4_ = 0;
     }
 }
 

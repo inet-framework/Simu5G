@@ -33,16 +33,16 @@ class LteHandoverManager : public omnetpp::cSimpleModule
   protected:
 
     // X2 identifier
-    X2NodeId nodeId_;
+    X2NodeId nodeId_ = 0;
 
     // reference to the gates
-    omnetpp::cGate *x2Manager_[2];   // TODO replace to *inGate, *outGate
+    omnetpp::cGate *x2Manager_[2] = {nullptr, nullptr};   // TODO replace to *inGate, *outGate
 
     // reference to the PDCP layer
     inet::ModuleRefByPar<IP2Nic> ip2nic_;
 
     // flag for seamless/lossless handover
-    bool losslessHandover_;
+    bool losslessHandover_ = false;
 
     void handleX2Message(omnetpp::cPacket *pkt);
 

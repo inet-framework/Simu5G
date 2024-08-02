@@ -23,13 +23,13 @@ class L2MeasBase
   private:
     std::string name_;
     std::vector<double> values_;
-    double sum_;
-    int lastValue_;
-    int mean_;
-    int index_;
-    int period_;
-    int size_;
-    bool movingAverage_;
+    double sum_ = 0.;
+    int lastValue_ = 0;
+    int mean_ = 0;
+    int index_ = 0;
+    int period_ = 0;
+    int size_ = 0;
+    bool movingAverage_ = false;
 
 //        ::omnetpp::cOutVector outVector_;
 //        ::omnetpp::cHistogram histogram_;

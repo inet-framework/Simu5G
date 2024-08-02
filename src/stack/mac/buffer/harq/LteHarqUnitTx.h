@@ -41,13 +41,13 @@ class LteHarqUnitTx : omnetpp::noncopyable
   protected:
 
     /// Carried sub-burst
-    Packet *pdu_;
+    Packet *pdu_ = nullptr;
 
     /// Omnet ID of the pdu
-    long pduId_;
+    long pduId_ = -1;
 
     /// PDU size in bytes
-    int64_t pduLength_;
+    int64_t pduLength_ = 0;
 
     // H-ARQ process identifier
     unsigned char acid_;
@@ -56,7 +56,7 @@ class LteHarqUnitTx : omnetpp::noncopyable
     Codeword cw_;
 
     /// Number of (re)transmissions for current pdu (N.B.: values are 1,2,3,4)
-    unsigned char transmissions_;
+    unsigned char transmissions_ = 0;
 
     TxHarqPduStatus status_;
 

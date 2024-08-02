@@ -26,7 +26,8 @@ namespace simu5g {
 
 Define_Module(LocationService);
 
-LocationService::LocationService() {
+LocationService::LocationService()
+{
     baseUriQueries_ = "/example/location/v2/queries";
     baseUriSubscriptions_ = "/example/location/v2/subscriptions";
     baseSubscriptionLocation_ = host_ + baseUriSubscriptions_ + "/";

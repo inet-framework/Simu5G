@@ -20,7 +20,7 @@ namespace simu5g {
 class CreateContextAppAckMessage : public CreateContextAppAck
 {
   private:
-    nlohmann::json appContext;
+    nlohmann::json appContext = nullptr;
 
     void copy(const CreateContextAppAckMessage& other);
 

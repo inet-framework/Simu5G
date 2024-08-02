@@ -41,8 +41,8 @@ namespace simu5g {
 class HttpResponseMessage : public HttpResponseMessage_m
 {
   public:
-    HttpResponseMessage(const char *name = nullptr, short kind = 0);
-    HttpResponseMessage(const HttpResponseStatus res, const char *name = nullptr, short kind = 0);
+    HttpResponseMessage(const char *name = nullptr, short kind = 0); // TODO remove name, kind
+    HttpResponseMessage(const HttpResponseStatus res, const char *name = nullptr, short kind = 0); // TODO remove name, kind
     HttpResponseMessage& operator=(const HttpResponseMessage& other) { if (this == &other) return *this; HttpResponseMessage_m::operator=(other); copy(other); return *this; }
 
     virtual HttpResponseMessage *dup() const override { return new HttpResponseMessage(*this); }

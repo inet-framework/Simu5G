@@ -13,15 +13,12 @@
 
 namespace simu5g {
 
-EventNotification::EventNotification() {
+EventNotification::EventNotification() : subId_(0) {
     // TODO Auto-generated constructor stub
-
 }
 
-EventNotification::EventNotification(const std::string& type, const int& subId)
+EventNotification::EventNotification(const std::string& type, const int subId) : type_(type), subId_(subId)
 {
-    type_ = type;
-    subId_ = subId;
 }
 
 int EventNotification::getSubId() const

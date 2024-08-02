@@ -20,32 +20,30 @@
 namespace simu5g {
 using namespace omnetpp;
 
-CircleNotificationSubscription::CircleNotificationSubscription(Binder *binder_)
+CircleNotificationSubscription::CircleNotificationSubscription(Binder *binder_) :
+    binder(binder_), firstNotificationSent(false), lastNotification(0)
 {
-    binder = binder_;
-    firstNotificationSent = false;
-    lastNotification = 0;
 }
 
 CircleNotificationSubscription::CircleNotificationSubscription(Binder *binder_, unsigned int subId, inet::TcpSocket *socket, const std::string& baseResLocation, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs):
-    SubscriptionBase(subId, socket, baseResLocation, eNodeBs) {
-    binder = binder_;
+    SubscriptionBase(subId, socket, baseResLocation, eNodeBs),
+    binder(binder_),
+    firstNotificationSent(false) {
     baseResLocation_ += "area/circle";
-    firstNotificationSent = false;
-};
-
-CircleNotificationSubscription::CircleNotificationSubscription(Binder *binder_, unsigned int subId, inet::TcpSocket *socket, const std::string& baseResLocation, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs, bool firstNotSent, omnetpp::simtime_t lastNot):
-    SubscriptionBase(subId, socket, baseResLocation, eNodeBs) {
-    binder = binder_;
-    baseResLocation_ += "area/circle";
-    firstNotificationSent = firstNotSent;
-    lastNotification = lastNot;
-};
-
-CircleNotificationSubscription::~CircleNotificationSubscription() {
 }
 
-void CircleNotificationSubscription::sendSubscriptionResponse() {}
+CircleNotificationSubscription::CircleNotificationSubscription(Binder *binder_, unsigned int subId, inet::TcpSocket *socket, const std::string& baseResLocation, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs, bool firstNotSent, omnetpp::simtime_t lastNot):
+    SubscriptionBase(subId, socket, baseResLocation, eNodeBs), binder(binder_), firstNotificationSent(firstNotSent), lastNotification(lastNot) {
+    baseResLocation_ += "area/circle";
+}
+
+CircleNotificationSubscription::~CircleNotificationSubscription()
+{
+}
+
+void CircleNotificationSubscription::sendSubscriptionResponse() 
+{
+}
 
 void CircleNotificationSubscription::sendNotification(EventNotification *event)
 {

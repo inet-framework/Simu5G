@@ -26,7 +26,7 @@ class AlertSender : public omnetpp::cSimpleModule
     inet::UdpSocket socket;
 
     //sender
-    int nextSno_;
+    int nextSno_ = 0;
     inet::B size_;
 
     omnetpp::simtime_t stopTime_;
@@ -34,7 +34,7 @@ class AlertSender : public omnetpp::cSimpleModule
     omnetpp::simsignal_t alertSentMsg_;
     // ----------------------------
 
-    omnetpp::cMessage *selfSender_;
+    omnetpp::cMessage *selfSender_ = nullptr;
 
     int localPort_;
     int destPort_;

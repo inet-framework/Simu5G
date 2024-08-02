@@ -70,7 +70,7 @@ class LcgScheduler
     omnetpp::opp_component_ptr<LteMacUe> mac_;
 
     /// Associated LteSchedulerUeUl (it is the one who creates the LteScheduler)
-    LteSchedulerUeUl *ueScheduler_;
+    LteSchedulerUeUl *ueScheduler_ = nullptr;
 
     // schedule List - returned by reference on scheduler invocation
     ScheduleList scheduleList_;

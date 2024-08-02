@@ -21,8 +21,6 @@ Define_Module(NRPhyUe);
 
 NRPhyUe::NRPhyUe()
 {
-    handoverStarter_ = nullptr;
-    handoverTrigger_ = nullptr;
 }
 
 NRPhyUe::~NRPhyUe()

@@ -26,7 +26,7 @@ namespace simu5g {
 
 //Define_Module(PacketFlowManagerBase);
 
-PacketFlowManagerBase::PacketFlowManagerBase()
+PacketFlowManagerBase::PacketFlowManagerBase() : nextPdcpSno_(0), nextRlcSno_(0), headerCompressedSize_(0)
 {
 }
 

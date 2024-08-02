@@ -77,7 +77,7 @@ struct ServiceDescriptor {
     std::string catVersion;
 
     std::string scopeOfLocality;
-    bool isConsumedLocallyOnly;
+    bool isConsumedLocallyOnly = false;
 
     inet::L3Address addr;
     int port;

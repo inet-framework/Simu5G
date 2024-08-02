@@ -32,10 +32,10 @@ class NRPdcpRrcUe : public LtePdcpRrcUeD2D
     cGate *nrAmSap_[2];
 
     /// Identifier for this node
-    MacNodeId nrNodeId_;
+    MacNodeId nrNodeId_ = 0;
 
     // flag for enabling Dual Connectivity
-    bool dualConnectivityEnabled_;
+    bool dualConnectivityEnabled_ = false;
 
   protected:
 

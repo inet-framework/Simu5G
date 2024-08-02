@@ -13,16 +13,16 @@
 
 namespace simu5g {
 
-AperiodicSubscriptionTimer::AperiodicSubscriptionTimer() {
+AperiodicSubscriptionTimer::AperiodicSubscriptionTimer() : AperiodicSubscriptionTimer_m() {
     // TODO Auto-generated constructor stub
 }
 
-AperiodicSubscriptionTimer::AperiodicSubscriptionTimer(const char *name, const double& period):AperiodicSubscriptionTimer_m(name)
+AperiodicSubscriptionTimer::AperiodicSubscriptionTimer(const char *name, const double& period):AperiodicSubscriptionTimer_m(name), subIdSet_()
 {
     setPeriod(period);
 }
 
-AperiodicSubscriptionTimer::AperiodicSubscriptionTimer(const char *name): AperiodicSubscriptionTimer_m(name) {}
+AperiodicSubscriptionTimer::AperiodicSubscriptionTimer(const char *name) : AperiodicSubscriptionTimer_m(name), subIdSet_() {}
 
 AperiodicSubscriptionTimer::~AperiodicSubscriptionTimer() {
     // TODO Auto-generated destructor stub

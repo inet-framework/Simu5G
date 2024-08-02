@@ -31,10 +31,10 @@ class LtePhyUe : public LtePhyBase
 {
   protected:
     /** Master MacNodeId */
-    MacNodeId masterId_;
+    MacNodeId masterId_ = 0;
 
     /** Reference to master node's mobility module */
-    IMobility *masterMobility_;
+    IMobility *masterMobility_ = nullptr;
 
     /** Statistic for distance from serving cell */
     omnetpp::simsignal_t distance_;
@@ -43,32 +43,32 @@ class LtePhyUe : public LtePhyBase
     omnetpp::simsignal_t servingCell_;
 
     /** Self message to trigger handover procedure evaluation */
-    omnetpp::cMessage *handoverStarter_;
+    omnetpp::cMessage *handoverStarter_ = nullptr;
 
     /** Self message to start the handover procedure */
-    omnetpp::cMessage *handoverTrigger_;
+    omnetpp::cMessage *handoverTrigger_ = nullptr;
 
     /** RSSI received from the current serving node */
-    double currentMasterRssi_;
+    double currentMasterRssi_ = 0.0;
 
-    /** ID of not-master node from wich highest RSSI was received */
-    MacNodeId candidateMasterId_;
+    /** ID of not-master node from which highest RSSI was received */
+    MacNodeId candidateMasterId_ = 0;
 
     /** Highest RSSI received from not-master node */
-    double candidateMasterRssi_;
+    double candidateMasterRssi_ = 0.0;
 
     /**
      * Hysteresis threshold to evaluate handover: it introduces a small polarization to
      * avoid multiple subsequent handovers
      */
-    double hysteresisTh_;
+    double hysteresisTh_ = 0.0;
 
     /**
      * Value used to divide currentMasterRssi_ and create an hysteresisTh_
      * Use zero to have hysteresisTh_ == 0.
      */
     // TODO: bring it to ned par!
-    double hysteresisFactor_;
+    double hysteresisFactor_ = 0.0;
 
     /**
      * Time interval elapsing from the reception of first handover broadcast message
@@ -79,36 +79,36 @@ class LtePhyUe : public LtePhyBase
      * (at bdcUpdateInterval_ seconds intervals).
      */
     // TODO: bring it to ned par!
-    double handoverDelta_;
+    double handoverDelta_ = 0.0;
 
     // time for completion of the handover procedure
-    double handoverLatency_;
-    double handoverDetachment_;
-    double handoverAttachment_;
+    double handoverLatency_ = 0.0;
+    double handoverDetachment_ = 0.0;
+    double handoverAttachment_ = 0.0;
 
     // lower threshold of RSSI for detachment
-    double minRssi_;
+    double minRssi_ = 0.0;
 
     /**
      * Handover switch
      */
-    bool enableHandover_;
+    bool enableHandover_ = false;
 
     /**
      * Pointer to the DAS Filter: used to call das function
      * when receiving broadcasts and to retrieve physical
      * antenna properties on packet reception
      */
-    DasFilter *das_;
+    DasFilter *das_ = nullptr;
 
     /// Threshold for antenna association
     // TODO: bring it to ned par!
-    double dasRssiThreshold_;
+    double dasRssiThreshold_ = 0.0;
 
     /** set to false if a battery is not present in module or must have infinite capacity */
-    bool useBattery_;
-    double txAmount_;    // drawn current amount for tx operations (mA)
-    double rxAmount_;    // drawn current amount for rx operations (mA)
+    bool useBattery_ = false;
+    double txAmount_ = 0.0;    // drawn current amount for tx operations (mA)
+    double rxAmount_ = 0.0;    // drawn current amount for rx operations (mA)
 
     opp_component_ptr<LteMacUe> mac_;
     inet::ModuleRefByPar<LteRlcUm> rlcUm_;
@@ -121,10 +121,10 @@ class LtePhyUe : public LtePhyBase
     // support to print averageCqi at the end of the simulation
     std::vector<short int> cqiDlSamples_;
     std::vector<short int> cqiUlSamples_;
-    unsigned int cqiDlSum_;
-    unsigned int cqiUlSum_;
-    unsigned int cqiDlCount_;
-    unsigned int cqiUlCount_;
+    unsigned int cqiDlSum_ = 0;
+    unsigned int cqiUlSum_ = 0;
+    unsigned int cqiDlCount_ = 0;
+    unsigned int cqiUlCount_ = 0;
 
     bool hasCollector = false;
 

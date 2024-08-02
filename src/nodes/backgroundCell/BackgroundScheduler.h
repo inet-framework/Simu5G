@@ -33,29 +33,29 @@ class BackgroundScheduler : public omnetpp::cSimpleModule, public cListener
     inet::Coord pos_;
 
     // id among all the background cells
-    int id_;
+    int id_ = 0;
 
     // tx power
-    double txPower_;
+    double txPower_ = 0.0;
 
     // tx direction
-    TxDirectionType txDirection_;
+    TxDirectionType txDirection_ = OMNI; // Assuming a default value
 
     // tx angle
-    double txAngle_;
+    double txAngle_ = 0.0;
 
     // if true, this is a NR base station
     // if false, this is a LTE base station
-    bool isNr_;
+    bool isNr_ = false;
 
     // numerology
-    unsigned int numerologyIndex_;
+    unsigned int numerologyIndex_ = 0;
 
     // carrier frequency
-    double carrierFrequency_;
+    double carrierFrequency_ = 0.0;
 
     // number of logical bands
-    unsigned int numBands_;
+    unsigned int numBands_ = 0;
 
     // reference to the binder
     inet::ModuleRefByPar<Binder> binder_;
@@ -67,8 +67,8 @@ class BackgroundScheduler : public omnetpp::cSimpleModule, public cListener
     inet::ModuleRefByPar<BackgroundCellChannelModel> bgChannelModel_;
 
     // TTI self message
-    omnetpp::cMessage *ttiTick_;
-    double ttiPeriod_;
+    omnetpp::cMessage *ttiTick_ = nullptr;
+    double ttiPeriod_ = 0.0;
 
     /*** ALLOCATION MANAGEMENT ***/
 

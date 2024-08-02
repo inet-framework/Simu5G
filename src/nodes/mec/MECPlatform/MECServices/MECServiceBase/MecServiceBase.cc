@@ -32,16 +32,10 @@ namespace simu5g {
 using namespace omnetpp;
 
 MecServiceBase::MecServiceBase()
+    : meHost_(nullptr), servRegistry_(nullptr), mecPlatformManager_(nullptr),
+      currentRequestMessageServed_(nullptr), currentSubscriptionServed_(nullptr),
+      lastFGRequestArrived_(0), loadGenerator_(false), rho_(0), subscriptionId_(0)
 {
-    meHost_ = nullptr;
-    servRegistry_ = nullptr;
-    mecPlatformManager_ = nullptr;
-    currentRequestMessageServed_ = nullptr;
-    currentSubscriptionServed_ = nullptr;
-    lastFGRequestArrived_ = 0;
-    loadGenerator_ = false;
-    rho_ = 0;
-    subscriptionId_ = 0;
 }
 
 void MecServiceBase::initialize(int stage)
@@ -522,7 +516,6 @@ MecServiceBase::~MecServiceBase() {
 
     while (!requests_.isEmpty()) {
         delete requests_.pop();
-        ;
     }
 
     while (!subscriptionEvents_.empty()) {

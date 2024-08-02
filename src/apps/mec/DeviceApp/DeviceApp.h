@@ -8,7 +8,6 @@
 // The above files and the present reference are part of the software itself,
 // and cannot be removed from it.
 //
-
 #ifndef APPS_MEC_MEAPPS_DEVICEAPP_H_
 #define APPS_MEC_MEAPPS_DEVICEAPP_H_
 
@@ -54,10 +53,10 @@ class DeviceApp : public omnetpp::cSimpleModule, public inet::TcpSocket::ICallba
     inet::L3Address UALCMPAddress;
     int UALCMPPort;
 
-    HttpBaseMessage *UALCMPMessage;
+    HttpBaseMessage *UALCMPMessage = nullptr;
     std::string UALCMPMessageBuffer;
 
-    omnetpp::cMessage *processedUALCMPMessage;
+    omnetpp::cMessage *processedUALCMPMessage = nullptr;
 
     int localPort;
 

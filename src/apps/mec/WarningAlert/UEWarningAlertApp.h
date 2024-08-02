@@ -52,18 +52,18 @@ class UEWarningAlertApp : public cSimpleModule
     //communication to device app and mec app
     inet::UdpSocket socket;
 
-    int size_;
+    int size_ = 0;
     simtime_t period_;
-    int localPort_;
-    int deviceAppPort_;
+    int localPort_ = 0;
+    int deviceAppPort_ = 0;
     inet::L3Address deviceAppAddress_;
 
-    char *sourceSimbolicAddress;            //Ue[x]
-    char *deviceSimbolicAppAddress_;              //meHost.virtualisationInfrastructure
+    char *sourceSimbolicAddress = nullptr;            //Ue[x]
+    char *deviceSimbolicAppAddress_ = nullptr;              //meHost.virtualisationInfrastructure
 
     // MEC application endPoint (returned by the device app)
     inet::L3Address mecAppAddress_;
-    int mecAppPort_;
+    int mecAppPort_ = 0;
 
     std::string mecAppName;
 
@@ -79,13 +79,13 @@ class UEWarningAlertApp : public cSimpleModule
         KIND_SELF_MEC_APP_START,
     };
 
-    cMessage *selfStart_;
-    cMessage *selfStop_;
+    cMessage *selfStart_ = nullptr;
+    cMessage *selfStop_ = nullptr;
 
-    cMessage *selfMecAppStart_;
+    cMessage *selfMecAppStart_ = nullptr;
 
     // uses to write in a log a file
-    bool log;
+    bool log = false;
 
   public:
     ~UEWarningAlertApp();

@@ -34,7 +34,7 @@ Define_Module(MecRnisTestApp);
 using namespace inet;
 using namespace omnetpp;
 
-MecRnisTestApp::MecRnisTestApp(): MecAppBase()
+MecRnisTestApp::MecRnisTestApp() : MecAppBase(), localUePort(0), serviceSocket_(nullptr), mp1Socket_(nullptr), mp1HttpMessage(nullptr), serviceHttpMessage(nullptr), rnisQueryingPeriod_(0), rnisQueryingTimer_(nullptr)
 {
 }
 

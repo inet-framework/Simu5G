@@ -37,25 +37,25 @@ class TrafficLightController : public omnetpp::cSimpleModule
 {
   protected:
     inet::ModuleRefByPar<inet::StationaryMobility> mobility_;   // reference to the mobility module of the traffic light
-    double areaWidth_;
+    double areaWidth_ = 0.0;
     inet::deg heading_;
 
-    omnetpp::cLineFigure *line_;         // draw a line in the GUI representing the length of the queue of cars
-    omnetpp::cRectangleFigure *rect_;    // draw a rect in the GUI representing the area of the queue of cars
+    omnetpp::cLineFigure *line_ = nullptr;         // draw a line in the GUI representing the length of the queue of cars
+    omnetpp::cRectangleFigure *rect_ = nullptr;    // draw a rect in the GUI representing the area of the queue of cars
 
     inet::Coord tlPosition_;               // position of the traffic light
     inet::Coord direction_;                // direction of the traffic light
-    double redPeriod_;                     // duration of the RED period (in seconds)
-    double greenPeriod_;                   // duration of the GREEN period (in seconds)
-    double yellowPeriod_;                  // duration of the YELLOW period (in seconds)
-    double startTime_;                     // activation time of the traffic light. Before this time, it is in state OFF
-    double meanCarLength_;                 // average length of the cars (useful to select the halt position)
+    double redPeriod_ = 0.0;                     // duration of the RED period (in seconds)
+    double greenPeriod_ = 0.0;                   // duration of the GREEN period (in seconds)
+    double yellowPeriod_ = 0.0;                  // duration of the YELLOW period (in seconds)
+    double startTime_ = 0.0;                     // activation time of the traffic light. Before this time, it is in state OFF
+    double meanCarLength_ = 0.0;                 // average length of the cars (useful to select the halt position)
     std::string startColor_;               // initial color
-    TrafficLightState state_;              // current color of the traffic light
+    TrafficLightState state_ = OFF;              // current color of the traffic light
     std::set<int> queuedCars_[2];          // two queues, the second one is used when the TL is bidirectional
-    bool bidirectional_;                   // if true, cars halt in also in the opposite direction wrt the one of the traffic light
+    bool bidirectional_ = false;                   // if true, cars halt in also in the opposite direction wrt the one of the traffic light
 
-    omnetpp::cMessage *stateMsg_;          // timer regulating the cycles
+    omnetpp::cMessage *stateMsg_ = nullptr;          // timer regulating the cycles
 
     // draw initial line in GUI
     void initDrawLine();

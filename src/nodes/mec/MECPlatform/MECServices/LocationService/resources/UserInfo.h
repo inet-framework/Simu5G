@@ -30,7 +30,7 @@ class UserInfo : public AttributeBase
     UserInfo(const LocationInfo& location, const inet::Ipv4Address& address, MacCellId accessPointId, const std::string& resourceUrl, int zoneId = 0);
     UserInfo(const inet::Coord& location, const inet::Coord& speed, const inet::Ipv4Address& address, MacCellId accessPointId, const std::string& resourceUrl, int zoneId = 0);
 
-    virtual ~UserInfo() {};
+    virtual ~UserInfo() {}
 
     inet::Ipv4Address getIpv4Address() const { return address_; }
 
@@ -40,8 +40,8 @@ class UserInfo : public AttributeBase
   protected:
     TimeStamp timestamp_;
     inet::Ipv4Address address_;
-    MacCellId accessPointId_;
-    int zoneId_;
+    MacCellId accessPointId_ = 0; // initialized inline
+    int zoneId_ = 0; // initialized inline
     std::string resourceUrl_;
     LocationInfo locationInfo_;
 };

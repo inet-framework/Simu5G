@@ -15,23 +15,15 @@ namespace simu5g {
 
 UserInfo::UserInfo() : timestamp_(), locationInfo_() {}
 
-UserInfo::UserInfo(const LocationInfo& location, const inet::Ipv4Address& address, MacCellId accessPointId, const std::string& resourceUrl, int zoneId) : 
-    timestamp_(), locationInfo_(location) 
+UserInfo::UserInfo(const LocationInfo& location, const inet::Ipv4Address& address, MacCellId accessPointId, const std::string& resourceUrl, int zoneId) :
+    timestamp_(), locationInfo_(location), address_(address), accessPointId_(accessPointId), resourceUrl_(resourceUrl), zoneId_(zoneId)
 {
-    address_ = address;
-    accessPointId_ = accessPointId;
-    resourceUrl_ = resourceUrl;
-    zoneId_ = zoneId;
     timestamp_.setSeconds();
 }
 
-UserInfo::UserInfo(const inet::Coord& location, const inet::Coord& speed, const inet::Ipv4Address& address, MacCellId accessPointId, const std::string& resourceUrl, int zoneId) : 
-    timestamp_(), locationInfo_(location, speed) 
+UserInfo::UserInfo(const inet::Coord& location, const inet::Coord& speed, const inet::Ipv4Address& address, MacCellId accessPointId, const std::string& resourceUrl, int zoneId) :
+    timestamp_(), locationInfo_(location, speed), address_(address), accessPointId_(accessPointId), resourceUrl_(resourceUrl), zoneId_(zoneId)
 {
-    address_ = address;
-    accessPointId_ = accessPointId;
-    resourceUrl_ = resourceUrl;
-    zoneId_ = zoneId;
     timestamp_.setSeconds();
 }
 
