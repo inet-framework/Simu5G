@@ -21,11 +21,6 @@ using namespace inet;
 
 LtePhyUeD2D::LtePhyUeD2D()
 {
-    // d2dTxPower_ is already initialized to 0.0
-    // d2dMulticastEnableCaptureEffect_ is already initialized to false
-    // nearestDistance_ is already initialized to 0.0
-    // bestRsrpMean_ is already initialized to 0.0
-    // d2dDecodingTimer_ is already initialized to nullptr
 }
 
 LtePhyUeD2D::~LtePhyUeD2D()

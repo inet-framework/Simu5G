@@ -27,7 +27,6 @@ UserControlInfo::~UserControlInfo()
 UserControlInfo::UserControlInfo() :
     UserControlInfo_Base()
 {
-    grantedBlocks.clear();
 }
 
 UserControlInfo& UserControlInfo::operator=(const UserControlInfo& other)

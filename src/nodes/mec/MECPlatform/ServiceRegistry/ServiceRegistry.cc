@@ -25,7 +25,6 @@ ServiceRegistry::ServiceRegistry() :
 {
     supportedQueryParams_.insert("app_list");
     supportedQueryParams_.insert("app_contexts");
-    mecServices_.clear();
 }
 
 ServiceRegistry::~ServiceRegistry() {

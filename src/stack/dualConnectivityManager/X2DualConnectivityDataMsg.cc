@@ -18,8 +18,7 @@ using namespace inet;
 
 //Register_Serializer(X2DualConnectivityDataMsg, LteX2MsgSerializer);
 
-X2DualConnectivityDataMsg::X2DualConnectivityDataMsg() :
-    LteX2Message()
+X2DualConnectivityDataMsg::X2DualConnectivityDataMsg()
 {
 }
 

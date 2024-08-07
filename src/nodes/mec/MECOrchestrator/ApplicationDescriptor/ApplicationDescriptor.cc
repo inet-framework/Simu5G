@@ -17,9 +17,6 @@ using namespace omnetpp;
 ApplicationDescriptor::ApplicationDescriptor(const char *fileName)
     :
       // Initializers for fields already set to default values in their declarations have been removed
-      virtualResourceDescritor_(),
-      appServicesRequired_(),
-      appServicesProduced_()
 {
     // read a JSON file
     std::ifstream rawFile(fileName);

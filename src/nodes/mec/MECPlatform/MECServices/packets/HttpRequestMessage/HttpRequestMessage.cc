@@ -7,21 +7,18 @@ namespace simu5g {
 HttpRequestMessage::HttpRequestMessage(const char *name, short kind)
 {
     setContentType("application/json");
-    setBody("");
 }
 
 HttpRequestMessage::HttpRequestMessage(const std::string method, const char *name, short kind)
 {
     setMethod(method.c_str());
     setContentType("application/json");
-    setBody("");
 }
 
 HttpRequestMessage::HttpRequestMessage(const char *method, const char *name, short kind)
 {
     setMethod(method);
     setContentType("application/json");
-    setBody("");
 }
 
 void HttpRequestMessage::setHeaderField(const std::string& key, const std::string& value) {

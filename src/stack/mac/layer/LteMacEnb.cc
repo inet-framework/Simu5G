@@ -48,8 +48,7 @@ using namespace omnetpp;
 *********************/
 
 LteMacEnb::LteMacEnb() :
-    LteMacBase(),
-    scheduleListDl_(nullptr)
+    LteMacBase()
 {
     nodeType_ = ENODEB;
     bsrbuf_.clear();

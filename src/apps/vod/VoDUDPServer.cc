@@ -21,7 +21,7 @@ Define_Module(VoDUDPServer);
 using namespace std;
 using namespace inet;
 
-VoDUDPServer::VoDUDPServer() : nrec_(0), trace_(nullptr)
+VoDUDPServer::VoDUDPServer() : nrec_()
 {
 }
 

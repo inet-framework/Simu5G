@@ -23,8 +23,7 @@ LocationResource::LocationResource() {
 }
 
 LocationResource::LocationResource(std::string& baseUri, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs, Binder *binder)
-    : binder_(binder) {
-    this->baseUri_ = baseUri;
+    : binder_(binder), baseUri_(baseUri) {
     auto it = eNodeBs.begin();
     for ( ; it != eNodeBs.end(); ++it) {
         CellInfo *cellInfo = check_and_cast<CellInfo *>((*it)->getSubmodule("cellInfo"));

@@ -24,7 +24,6 @@ using namespace omnetpp;
 using namespace inet;
 
 LtePhyEnb::LtePhyEnb()
-    : das_(nullptr), bdcStarter_(nullptr)
 {
 }
 

@@ -19,11 +19,15 @@ RNICellInfo::RNICellInfo()
 }
 
 RNICellInfo::RNICellInfo(BaseStationStatsCollector *eNodeB)
+    : collector_(eNodeB)
 {
 }
 
 RNICellInfo::RNICellInfo(BaseStationStatsCollector *eNodeB)
-    : ecgi_(collector_->getEcgi())
+{
+}
+
+RNICellInfo::RNICellInfo(BaseStationStatsCollector *eNodeB)
 {
 }
 

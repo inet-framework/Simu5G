@@ -22,7 +22,7 @@ namespace simu5g {
 Define_Module(AlertSender);
 using namespace inet;
 
-AlertSender::AlertSender() : selfSender_(nullptr)
+AlertSender::AlertSender()
 {
 }
 

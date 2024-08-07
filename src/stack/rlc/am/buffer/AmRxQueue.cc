@@ -26,8 +26,7 @@ using namespace omnetpp;
 unsigned int AmRxQueue::totalCellRcvdBytes_ = 0;
 
 AmRxQueue::AmRxQueue() :
-    timer_(this),
-    flowControlInfo_(nullptr)
+    timer_(this)
 {
     // in order create a back connection (AM CTRL) , a flow control
     // info for sending ctrl messages to tx entity is required

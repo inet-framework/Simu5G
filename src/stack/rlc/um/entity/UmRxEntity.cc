@@ -24,10 +24,7 @@ unsigned int UmRxEntity::totalCellPduRcvdBytes_ = 0;
 unsigned int UmRxEntity::totalCellRcvdBytes_ = 0;
 
 UmRxEntity::UmRxEntity() :
-    t_reordering_(this),
-    nodeB_(nullptr),
-    flowControlInfo_(nullptr),
-    buffered_{nullptr, 0}
+    t_reordering_(this)
 {
     t_reordering_.setTimerId(REORDERING_T);
 }

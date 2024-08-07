@@ -17,7 +17,7 @@ using namespace omnetpp;
 
 DasFilter::DasFilter(LtePhyBase *ltePhy, Binder *binder,
         RemoteAntennaSet *ruSet, double rssiThreshold)
-    : ruSet_(ruSet), binder_(binder), ltePhy_(ltePhy)
+    : ruSet_(ruSet), binder_(binder), ltePhy_(ltePhy), rssiThreshold_(rssiThreshold)
 {
 }
 

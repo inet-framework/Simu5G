@@ -21,8 +21,6 @@ short LtePhyBase::airFramePriority_ = 10;
 
 LtePhyBase::LtePhyBase() :
     // Removed fields initialized to the same value inside the class
-    txDirection_(static_cast<TxDirectionType>(-1)),
-    lastActive_(0)
 {
 }
 

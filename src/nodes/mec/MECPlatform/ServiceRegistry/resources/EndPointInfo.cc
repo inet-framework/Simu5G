@@ -13,7 +13,7 @@
 
 namespace simu5g {
 
-EndPointInfo::EndPointInfo(const std::string& host, int port) : host_(host)
+EndPointInfo::EndPointInfo(const std::string& host, int port) : host_(host), port_(port)
 {
 }
 

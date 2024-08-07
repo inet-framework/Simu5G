@@ -15,8 +15,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-LteMacBuffer::LteMacBuffer() :
-    Queue_()
+LteMacBuffer::LteMacBuffer()
 {
     Queue_.clear();
 }

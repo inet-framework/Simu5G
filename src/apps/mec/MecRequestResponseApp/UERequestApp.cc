@@ -33,7 +33,6 @@ using namespace std;
 Define_Module(UERequestApp);
 
 UERequestApp::UERequestApp()
-    : selfStart_(nullptr), selfStop_(nullptr), sendRequest_(nullptr), unBlockingMsg_(nullptr)
 {
 }
 

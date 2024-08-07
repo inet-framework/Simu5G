@@ -19,8 +19,7 @@ using namespace omnetpp;
 using namespace inet;
 
 LteMacQueue::LteMacQueue(int queueSize) :
-    cPacketQueue("LteMacQueue"),
-    lastUnenqueueableMainSno(UINT_MAX)
+    cPacketQueue("LteMacQueue")
 {
     queueSize_ = queueSize;
 }

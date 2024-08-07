@@ -16,8 +16,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-LteFeedback::LteFeedback() :
-    status_(EMPTY) {
+LteFeedback::LteFeedback() {
 }
 
 void LteFeedback::reset() {

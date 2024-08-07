@@ -21,7 +21,6 @@ using namespace inet;
 Register_Serializer(X2HandoverControlMsg, LteX2MsgSerializer);
 
 X2HandoverControlMsg::X2HandoverControlMsg() :
-    LteX2Message()
 {
 }
 

@@ -12,7 +12,7 @@ HttpResponseMessage::HttpResponseMessage(const char *name, short kind)
     // setBody("");
 }
 
-HttpResponseMessage::HttpResponseMessage(const HttpResponseStatus res, const char *name, short kind)
+HttpResponseMessage::HttpResponseMessage(const HttpResponseStatus res)
 {
     setStatus(res);
 }

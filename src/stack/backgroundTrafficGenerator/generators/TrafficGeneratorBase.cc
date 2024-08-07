@@ -18,7 +18,6 @@ namespace simu5g {
 Define_Module(TrafficGeneratorBase);
 
 TrafficGeneratorBase::TrafficGeneratorBase()
-    : fbSource_(nullptr)
 {
 }
 

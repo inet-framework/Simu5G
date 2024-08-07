@@ -35,10 +35,7 @@ RTVideoStreamingSender::RTVideoStreamingSender()
     : selfRTVideoStreamingAppStart_(nullptr),
       selfRTVideoStreamingAppStop_(nullptr),
       selfMecAppStart_(nullptr),
-      selfMecAppStop_(nullptr),
-      _nextFrame(nullptr),
-      selfSessionStart_(nullptr),
-      selfSessionStop_(nullptr) {
+      selfMecAppStop_(nullptr) {
 }
 
 RTVideoStreamingSender::~RTVideoStreamingSender() {

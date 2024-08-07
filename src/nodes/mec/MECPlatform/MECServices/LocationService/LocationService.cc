@@ -31,14 +31,11 @@ LocationService::LocationService()
     baseUriQueries_ = "/example/location/v2/queries";
     baseUriSubscriptions_ = "/example/location/v2/subscriptions";
     baseSubscriptionLocation_ = host_ + baseUriSubscriptions_ + "/";
-    // subscriptionId_ = 0;
     subscriptions_.clear();
     supportedQueryParams_.insert("address");
     supportedQueryParams_.insert("latitude");
     supportedQueryParams_.insert("longitude");
     supportedQueryParams_.insert("zone");
-
-    // supportedQueryParams_s_.insert("ue_ipv6_address");
 }
 
 void LocationService::initialize(int stage)

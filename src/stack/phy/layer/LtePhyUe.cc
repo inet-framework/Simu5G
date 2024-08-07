@@ -26,8 +26,7 @@ using namespace inet;
 LtePhyUe::LtePhyUe() :
     handoverStarter_(nullptr),
     handoverTrigger_(nullptr),
-    masterMobility_(nullptr),
-    hasCollector(false)
+    masterMobility_(nullptr)
 {
 }
 
