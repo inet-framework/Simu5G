@@ -30,7 +30,7 @@ TimeStamp::TimeStamp(bool valid)
     valid_ = valid;
 }
 
-TimeStamp::~TimeStamp(){}
+TimeStamp::~TimeStamp() {}
 
 bool TimeStamp::isValid() const
 {
@@ -43,7 +43,6 @@ nlohmann::ordered_json TimeStamp::toJson() const
 
     val["seconds"] = seconds_;
     val["nanoSeconds"] = nanoSeconds_;
-
 
     return val;
 }
@@ -61,7 +60,7 @@ void TimeStamp::setSeconds(int32_t value)
 void TimeStamp::setSeconds() // TODO rename
 {
     // TODO fix it, set seconds_ and nanoseconds_ correctly from current simTime
-    seconds_ =  seconds_ = omnetpp::simTime().dbl();
+    seconds_ = seconds_ = omnetpp::simTime().dbl();
 
 }
 
@@ -69,6 +68,7 @@ int32_t TimeStamp::getNanoSeconds() const
 {
     return nanoSeconds_;
 }
+
 void TimeStamp::setNanoSeconds(int32_t value)
 {
     nanoSeconds_ = value;

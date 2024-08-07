@@ -26,7 +26,7 @@ namespace simu5g {
 class D2DModeSelectionBase : public omnetpp::cSimpleModule
 {
 
-protected:
+  protected:
 
     typedef std::pair<MacNodeId, MacNodeId> FlowId;
     struct FlowModeInfo {
@@ -39,7 +39,7 @@ protected:
                              // of the flow, whereas the second node represents the receiver
 
     // for each D2D-capable UE, store the list of possible D2D peers and the corresponding communication mode (IM or DM)
-    std::map<MacNodeId, std::map<MacNodeId, LteD2DMode> >* peeringModeMap_;
+    std::map<MacNodeId, std::map<MacNodeId, LteD2DMode>> *peeringModeMap_;
 
     // reference to the MAC layer
     inet::ModuleRefByPar<LteMacEnb> mac_;
@@ -52,7 +52,7 @@ protected:
     double modeSelectionPeriod_;
 
     // Self message
-    omnetpp::cMessage* modeSelectionTick_;
+    omnetpp::cMessage *modeSelectionTick_;
 
     // run the mode selection algorithm. To be implemented by derived classes
     // it must build a switch list (see above)
@@ -62,7 +62,7 @@ protected:
     // switch to the transmitter UE
     void sendModeSwitchNotifications();
 
-public:
+  public:
     D2DModeSelectionBase() {}
     virtual ~D2DModeSelectionBase() {}
 
@@ -81,3 +81,4 @@ public:
 } //namespace
 
 #endif /* LTE_D2DMODESELECTIONBASE_H_ */
+
