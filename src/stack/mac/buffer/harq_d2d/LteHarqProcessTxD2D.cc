@@ -16,7 +16,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 LteHarqProcessTxD2D::LteHarqProcessTxD2D(Binder *binder, unsigned char acid, unsigned int numUnits, unsigned int numProcesses, LteMacBase *macOwner, LteMacBase *dstMac)
-    : LteHarqProcessTx(binder, acid, numUnits, numProcesses, macOwner, dstMac) // TODO is this good? LteHarqProcessTx constructor fills units_ member with another content.
+    : LteHarqProcessTx(binder, acid, numUnits, numProcesses) // TODO is this good? LteHarqProcessTx constructor fills units_ member with another content.
 {
     // H-ARQ unit istances
     for (unsigned int i = 0; i < numHarqUnits_; i++) {

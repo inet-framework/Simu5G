@@ -13,11 +13,11 @@
 
 namespace simu5g {
 
-CreateContextAppMessage::CreateContextAppMessage(const char *name, short kind) : CreateContextApp(name, kind), appContext(nullptr)
+CreateContextAppMessage::CreateContextAppMessage(const char *name, short kind) : CreateContextApp(name, kind)
 {
 }
 
-CreateContextAppMessage::CreateContextAppMessage(const CreateContextAppMessage& other) : CreateContextApp(other), appContext(nullptr)
+CreateContextAppMessage::CreateContextAppMessage(const CreateContextAppMessage& other) : CreateContextApp(other)
 {
     copy(other);
 }

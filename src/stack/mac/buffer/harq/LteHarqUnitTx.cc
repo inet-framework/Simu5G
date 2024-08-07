@@ -19,17 +19,18 @@ using namespace omnetpp;
 
 LteHarqUnitTx::LteHarqUnitTx(Binder *binder, unsigned char acid, Codeword cw,
         LteMacBase *macOwner, LteMacBase *dstMac) :
-    pdu_(nullptr),
-    pduId_(-1),
-    acid_(acid),
-    cw_(cw),
-    transmissions_(0),
-    txTime_(0),
-    status_(TXHARQ_PDU_EMPTY),
     macOwner_(macOwner),
     dstMac_(dstMac),
     maxHarqRtx_(macOwner->par("maxHarqRtx"))
 {
+    pdu_ = nullptr;
+    pduId_ = -1;
+    acid_ = acid;
+    cw_ = cw;
+    transmissions_ = 0;
+    txTime_ = 0;
+    status_ = TXHARQ_PDU_EMPTY;
+
     if (macOwner_->getNodeType() == ENODEB || macOwner_->getNodeType() == GNODEB) {
         nodeB_ = macOwner_;
         macPacketLoss_ = omnetpp::cComponent::registerSignal("macPacketLossDl");

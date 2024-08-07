@@ -20,19 +20,8 @@ using namespace omnetpp;
 short LtePhyBase::airFramePriority_ = 10;
 
 LtePhyBase::LtePhyBase() :
-    numAirFrameReceived_(0),
-    numAirFrameNotReceived_(0),
-    ueTxPower_(0.0),
-    eNodeBtxPower_(0.0),
-    microTxPower_(0.0),
-    txPower_(0.0),
+    // Removed fields initialized to the same value inside the class
     txDirection_(static_cast<TxDirectionType>(-1)),
-    txAngle_(0.0),
-    enableMulticastD2DRangeCheck_(false),
-    multicastD2DRange_(0.0),
-    dynamicCellAssociation_(false),
-    carrierFrequency_(0.0),
-    isNr_(false),
     lastActive_(0)
 {
 }

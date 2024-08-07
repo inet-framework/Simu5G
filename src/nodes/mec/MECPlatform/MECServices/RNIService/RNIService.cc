@@ -32,8 +32,8 @@ Define_Module(RNIService);
 
 RNIService::RNIService()
 {
-    baseUriQueries_ = "/example/rni/v2/queries";
-    baseUriSubscriptions_ = "/example/rni/v2/subscriptions";
+    // baseUriQueries_ = "/example/rni/v2/queries";
+    // baseUriSubscriptions_ = "/example/rni/v2/subscriptions";
     supportedQueryParams_.insert("cell_id");
     supportedQueryParams_.insert("ue_ipv4_address");
     // supportedQueryParams_s_.insert("ue_ipv6_address");

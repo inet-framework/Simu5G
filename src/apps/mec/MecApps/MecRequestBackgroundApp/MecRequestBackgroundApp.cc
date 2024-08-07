@@ -29,13 +29,7 @@ MecRequestBackgroundApp::~MecRequestBackgroundApp() {
 }
 
 MecRequestBackgroundApp::MecRequestBackgroundApp() :
-    burstTimer(nullptr),
-    burstPeriod(nullptr),
-    sendBurst(nullptr),
-    serviceSocket_(nullptr),
-    mp1Socket_(nullptr),
-    mp1HttpMessage(nullptr),
-    serviceHttpMessage(nullptr)
+    // No initializers needed for fields already initialized in the class
 {
 }
 

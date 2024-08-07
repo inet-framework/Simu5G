@@ -8,17 +8,13 @@ using namespace omnetpp;
 
 HttpResponseMessage::HttpResponseMessage(const char *name, short kind)
 {
-    setContentType("application/json");
-    setConnection("keep-alive");
-    setBody("");
+    // Removed initializers for fields that are already initialized to the same value inside the class
+    // setBody("");
 }
 
 HttpResponseMessage::HttpResponseMessage(const HttpResponseStatus res, const char *name, short kind)
 {
     setStatus(res);
-    setContentType("application/json");
-    setConnection("keep-alive");
-    setBody("");
 }
 
 void HttpResponseMessage::addBodyChunk(const std::string& bodyChunk)

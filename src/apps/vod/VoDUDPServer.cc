@@ -21,7 +21,7 @@ Define_Module(VoDUDPServer);
 using namespace std;
 using namespace inet;
 
-VoDUDPServer::VoDUDPServer() : serverPort(0), fps(0), TIME_SLOT(0.0), clientsPort(0), clientsStartStreamTime(0.0), nrec_(0), trace_(nullptr)
+VoDUDPServer::VoDUDPServer() : nrec_(0), trace_(nullptr)
 {
 }
 

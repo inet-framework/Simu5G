@@ -40,13 +40,13 @@ using namespace omnetpp;
 
 LteMacUe::LteMacUe() :
     LteMacBase(),
-    firstTx(false),
-    currentHarq_(0),
-//    periodCounter_(0),
-//    expirationCounter_(0),
+    // firstTx(false),
+    // currentHarq_(0),
+    // periodCounter_(0),
+    // expirationCounter_(0),
     racRequested_(false),
     bsrTriggered_(false),
-    requestedSdus_(0),
+    // requestedSdus_(0),
     debugHarq_(false),
     racBackoffTimer_(0),
     maxRacTryouts_(0),

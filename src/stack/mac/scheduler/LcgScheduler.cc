@@ -17,7 +17,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 LcgScheduler::LcgScheduler(LteMacUe *mac)
-    : lastExecutionTime_(0), mac_(mac), ueScheduler_(nullptr) { }
+    : mac_(mac) { }
 
 LcgScheduler& LcgScheduler::operator=(const LcgScheduler& other)
 {

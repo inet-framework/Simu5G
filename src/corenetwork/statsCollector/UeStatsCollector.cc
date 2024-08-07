@@ -24,15 +24,6 @@ Define_Module(UeStatsCollector);
 UeStatsCollector::UeStatsCollector()
   : collectorType_("") // ueCollectorStatsCollector or NRueCollectorStatsCollector
   , associateId_()
-  , ul_nongbr_delay_ue()
-  , dl_nongbr_delay_ue()
-  , ul_nongbr_pdr_ue()
-  , dl_nongbr_pdr_ue()
-  , ul_nongbr_throughput_ue()
-  , dl_nongbr_throughput_ue()
-  , ul_nongbr_data_volume_ue()
-  , dl_nongbr_data_volume_ue()
-  , handover_(false)
 {
 }
 

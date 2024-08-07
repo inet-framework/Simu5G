@@ -14,15 +14,15 @@
 namespace simu5g {
 
 
-Ecgi::Ecgi(MacCellId cellId) : AttributeBase(), cellId_(cellId)
+Ecgi::Ecgi(MacCellId cellId) : AttributeBase()
 {
 }
 
-Ecgi::Ecgi(const mec::Ecgi ecgi) : AttributeBase(), cellId_(ecgi.cellId), plmn_(ecgi.plmn.mcc, ecgi.plmn.mnc)
+Ecgi::Ecgi(const mec::Ecgi ecgi) : AttributeBase()
 {
 }
 
-Ecgi::Ecgi(MacCellId cellId, Plmn& plmn) : AttributeBase(), cellId_(cellId), plmn_(plmn)
+Ecgi::Ecgi(MacCellId cellId, Plmn& plmn) : AttributeBase()
 {
 }
 

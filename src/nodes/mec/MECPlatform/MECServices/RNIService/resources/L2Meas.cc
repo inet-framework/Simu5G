@@ -18,10 +18,10 @@
 
 namespace simu5g {
 
-L2Meas::L2Meas() : binder_(nullptr) {
+L2Meas::L2Meas() {
 }
 
-L2Meas::L2Meas(std::set<omnetpp::cModule *, simu5g::utils::cModule_LessId>& eNodeBs) : eNodeBs_() {
+L2Meas::L2Meas(std::set<omnetpp::cModule *, simu5g::utils::cModule_LessId>& eNodeBs) {
     auto it = eNodeBs.begin();
     for ( ; it != eNodeBs.end(); ++it) {
         BaseStationStatsCollector *collector = check_and_cast<BaseStationStatsCollector *>((*it)->getSubmodule("collector"));

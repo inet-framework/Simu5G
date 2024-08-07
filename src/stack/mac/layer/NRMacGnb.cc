@@ -17,7 +17,6 @@ Define_Module(NRMacGnb);
 
 NRMacGnb::NRMacGnb() : LteMacEnbD2D()
 {
-    nodeType_ = GNODEB;
 }
 
 NRMacGnb::~NRMacGnb()

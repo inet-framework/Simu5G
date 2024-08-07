@@ -21,7 +21,7 @@ namespace simu5g {
 
 Define_Module(NRMacUe);
 
-NRMacUe::NRMacUe() : LteMacUeD2D()
+NRMacUe::NRMacUe()
 {
 }
 

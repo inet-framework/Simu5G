@@ -27,18 +27,6 @@ UmRxEntity::UmRxEntity() :
     t_reordering_(this),
     nodeB_(nullptr),
     flowControlInfo_(nullptr),
-    init_(false),
-    totalPduRcvdBytes_(0),
-    totalRcvdBytes_(0),
-    timeout_(0),
-    lastSnoDelivered_(0),
-    lastPduReassembled_(0),
-    isBurst_(false),
-    t2Set_(false),
-    totalBits_(0),
-    ttiBits_(0),
-    t2_(0),
-    t1_(0),
     buffered_{nullptr, 0}
 {
     t_reordering_.setTimerId(REORDERING_T);

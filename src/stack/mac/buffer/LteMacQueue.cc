@@ -20,12 +20,12 @@ using namespace inet;
 
 LteMacQueue::LteMacQueue(int queueSize) :
     cPacketQueue("LteMacQueue"),
-    queueSize_(queueSize),
     lastUnenqueueableMainSno(UINT_MAX)
 {
+    queueSize_ = queueSize;
 }
 
-LteMacQueue::LteMacQueue(const LteMacQueue& queue) : queueSize_(queue.queueSize_)
+LteMacQueue::LteMacQueue(const LteMacQueue& queue)
 {
     operator=(queue);
 }

@@ -21,7 +21,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 LteHarqProcessRxD2D::LteHarqProcessRxD2D(unsigned char acid, LteMacBase *owner, Binder *binder)
-    : LteHarqProcessRx(acid, owner, binder)
 {
 }
 

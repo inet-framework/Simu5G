@@ -37,7 +37,6 @@ Define_Module(MecOrchestrator);
 MecOrchestrator::MecOrchestrator() : mecHostSelectionPolicy_(nullptr)
 {
     meAppMap.clear();
-    mecApplicationDescriptors_.clear();
 }
 
 void MecOrchestrator::initialize(int stage)

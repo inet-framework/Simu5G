@@ -13,11 +13,11 @@
 
 namespace simu5g {
 
-CreateContextAppAckMessage::CreateContextAppAckMessage(const char *name, short kind) : CreateContextAppAck(name, kind), appContext(nullptr)
+CreateContextAppAckMessage::CreateContextAppAckMessage(const char *name, short kind) : CreateContextAppAck(name, kind)
 {
 }
 
-CreateContextAppAckMessage::CreateContextAppAckMessage(const CreateContextAppAckMessage& other) : CreateContextAppAck(other), appContext(nullptr)
+CreateContextAppAckMessage::CreateContextAppAckMessage(const CreateContextAppAckMessage& other) : CreateContextAppAck(other)
 {
     copy(other);
 }

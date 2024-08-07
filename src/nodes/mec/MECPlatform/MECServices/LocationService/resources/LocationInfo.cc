@@ -14,17 +14,17 @@
 namespace simu5g {
 
 LocationInfo::LocationInfo()
-    : coordinates_(inet::Coord::NIL), speed_(inet::Coord::NIL)
 {
 }
 
 LocationInfo::LocationInfo(const inet::Coord& coordinates, const inet::Coord& speed)
-    : coordinates_(coordinates), speed_(speed)
+    : speed_(speed)
 {
+    coordinates_ = coordinates;
 }
 
 LocationInfo::LocationInfo(const inet::Coord& coordinates)
-    : coordinates_(coordinates), speed_(inet::Coord::NIL)
+    : coordinates_(coordinates)
 {
 }
 

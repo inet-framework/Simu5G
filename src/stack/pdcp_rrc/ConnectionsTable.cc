@@ -13,7 +13,7 @@
 
 namespace simu5g {
 
-ConnectionsTable::ConnectionsTable() : ht_{} // Table is resetted by putting all fields equal to 0xFF
+ConnectionsTable::ConnectionsTable() // Table is resetted by putting all fields equal to 0xFF
 {
     memset(ht_, 0xFF, sizeof(struct entry_) * TABLE_SIZE);
 }

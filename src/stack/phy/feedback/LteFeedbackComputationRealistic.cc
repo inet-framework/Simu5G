@@ -24,9 +24,6 @@ LteFeedbackComputationRealistic::LteFeedbackComputationRealistic(Binder *binder,
     : targetBler_(targetBler),
       lambda_(lambda),
       numBands_(numBands),
-      lambdaMinTh_(lambdaMinTh),
-      lambdaMaxTh_(lambdaMaxTh),
-      lambdaRatioTh_(lambdaRatioTh),
       phyPisaData_(&(binder->phyPisaData)),
       baseMin_(phyPisaData_->nMcs(), 2)
 {

@@ -15,8 +15,11 @@ namespace simu5g {
 
 using namespace omnetpp;
 ApplicationDescriptor::ApplicationDescriptor(const char *fileName)
-    : appDId_(""), appName_(""), appProvider_(""), appInfoName_(""), appDescription_(""),
-      isEmulated(false), externalPort(0)
+    :
+      // Initializers for fields already set to default values in their declarations have been removed
+      virtualResourceDescritor_(),
+      appServicesRequired_(),
+      appServicesProduced_()
 {
     // read a JSON file
     std::ifstream rawFile(fileName);

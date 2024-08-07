@@ -16,8 +16,10 @@ namespace simu5g {
 ServiceInfo::ServiceInfo(const std::string& serInstanceId, const std::string& serName, const CategoryRef& serCat, const std::string& version,
         const std::string& state, const TransportInfo& tInfo, const std::string& serializer, const std::string& mecHost, const std::string& sol, bool clo, bool local):
     serCategory_(serCat), transportInfo_(tInfo), serInstanceId_(serInstanceId), serName_(serName), version_(version),
-    state_(state), serializer_(serializer), scopeOfLocality_(sol), consumedLocalOnly_(clo), isLocal_(local), mecHost_(mecHost)
+    state_(state), serializer_(serializer), scopeOfLocality_(sol), mecHost_(mecHost)
 {
+    consumedLocalOnly_ = clo;
+    isLocal_ = local;
 }
 
 nlohmann::ordered_json ServiceInfo::toJson() const

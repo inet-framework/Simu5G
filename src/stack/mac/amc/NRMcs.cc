@@ -40,7 +40,7 @@ NRMcsTable::NRMcsTable(bool extended) : extended_(extended)  // make it configur
         cqiTable[14] = CQIelem(_64QAM, 873.0);
         cqiTable[15] = CQIelem(_64QAM, 948.0);
 
-        table[0] = NRMCSelem(_QPSK, 120.0);
+        table[0] = NRMCSelem(_QPSK);
         table[1] = NRMCSelem(_QPSK, 157.0);
         table[2] = NRMCSelem(_QPSK, 193.0);
         table[3] = NRMCSelem(_QPSK, 251.0);
@@ -88,7 +88,7 @@ NRMcsTable::NRMcsTable(bool extended) : extended_(extended)  // make it configur
         cqiTable[14] = CQIelem(_256QAM, 885.0);
         cqiTable[15] = CQIelem(_256QAM, 948.0);
 
-        table[0] = NRMCSelem(_QPSK, 120.0);
+        table[0] = NRMCSelem(_QPSK);
         table[1] = NRMCSelem(_QPSK, 193.0);
         table[2] = NRMCSelem(_QPSK, 308.0);
         table[3] = NRMCSelem(_QPSK, 449.0);

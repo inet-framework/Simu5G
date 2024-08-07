@@ -21,12 +21,6 @@ namespace simu5g {
 
 Define_Module(BaseStationStatsCollector);
 BaseStationStatsCollector::BaseStationStatsCollector()
-    : prbUsage_(nullptr),
-      activeUsers_(nullptr),
-      discardRate_(nullptr),
-      packetDelay_(nullptr),
-      pdcpBytes_(nullptr),
-      tPut_(nullptr)
 {
 }
 

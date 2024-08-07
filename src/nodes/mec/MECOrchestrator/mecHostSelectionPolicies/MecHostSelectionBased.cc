@@ -15,7 +15,7 @@
 
 namespace simu5g {
 
-MecHostSelectionBased::MecHostSelectionBased(MecOrchestrator *mecOrchestrator, int index):SelectionPolicyBase(mecOrchestrator), mecHostIndex_(index)
+MecHostSelectionBased::MecHostSelectionBased(MecOrchestrator *mecOrchestrator, int index):SelectionPolicyBase(mecOrchestrator)
 {
 }
 

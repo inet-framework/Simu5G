@@ -44,12 +44,7 @@ double BackgroundTrafficManagerBase::getCqiFromTable(double snr)
 }
 
 BackgroundTrafficManagerBase::BackgroundTrafficManagerBase()
-    : numBgUEs_(0),
-      phyPisaData_(nullptr),
-      ttiPeriod_(0.0),
-      carrierFrequency_(0.0),
-      bsTxPower_(0.0),
-      avgCellLoad_(0.0)
+    :
 {
 }
 

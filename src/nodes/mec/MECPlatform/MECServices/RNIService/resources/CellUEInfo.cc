@@ -17,13 +17,13 @@ namespace simu5g {
 CellUEInfo::CellUEInfo() {}
 
 CellUEInfo::CellUEInfo(UeStatsCollector *ueCollector, const Ecgi& ecgi):
-    ueCollector_(ueCollector), associateId_(), ecgi_(ecgi)
+    ueCollector_(ueCollector), ecgi_(ecgi)
 {
     associateId_.setAssociateId(ueCollector->getAssociateId());
 }
 
 CellUEInfo::CellUEInfo(UeStatsCollector *ueCollector, const mec::Ecgi& ecgi):
-    ueCollector_(ueCollector), associateId_(), ecgi_(ecgi)
+    ueCollector_(ueCollector), ecgi_(ecgi)
 {
     associateId_.setAssociateId(ueCollector->getAssociateId());
 }

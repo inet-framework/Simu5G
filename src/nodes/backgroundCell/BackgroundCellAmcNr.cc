@@ -21,7 +21,7 @@ BackgroundCellAmcNr::~BackgroundCellAmcNr()
 {
 }
 
-BackgroundCellAmcNr::BackgroundCellAmcNr(Binder *binder) : BackgroundCellAmc(binder), dlNrMcsTable_(), ulNrMcsTable_(), d2dNrMcsTable_()
+BackgroundCellAmcNr::BackgroundCellAmcNr(Binder *binder) : BackgroundCellAmc(binder)
 {
 }
 

@@ -19,9 +19,7 @@ LteHarqBufferTx::LteHarqBufferTx(Binder *binder, unsigned int numProc, LteMacBas
     : numProc_(numProc),
       macOwner_(owner),
       nodeId_(dstMac->getMacNodeId()),
-      selectedAcid_(HARQ_NONE),
-      processes_(new std::vector<LteHarqProcessTx *>(numProc)),
-      numEmptyProc_(numProc)
+      processes_(new std::vector<LteHarqProcessTx *>(numProc))
 {
     for (unsigned int i = 0; i < numProc_; i++) {
         (*processes_)[i] = new LteHarqProcessTx(binder, i, MAX_CODEWORDS, numProc_, macOwner_, dstMac);

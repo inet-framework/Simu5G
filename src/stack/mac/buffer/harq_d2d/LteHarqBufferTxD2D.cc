@@ -17,12 +17,7 @@ using namespace omnetpp;
 
 LteHarqBufferTxD2D::LteHarqBufferTxD2D(Binder *binder, unsigned int numProc, LteMacBase *owner, LteMacBase *dstMac)
 {
-    numProc_ = numProc;
-    macOwner_ = owner;
-    nodeId_ = dstMac->getMacNodeId();
-    selectedAcid_ = HARQ_NONE;
     processes_ = new std::vector<LteHarqProcessTx *>(numProc);
-    numEmptyProc_ = numProc;
     for (unsigned int i = 0; i < numProc_; i++) {
         (*processes_)[i] = new LteHarqProcessTxD2D(binder, i, MAX_CODEWORDS, numProc_, macOwner_, dstMac);
     }

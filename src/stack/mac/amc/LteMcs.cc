@@ -45,35 +45,35 @@ const CQIelem cqiTable[] =
  */
 McsTable::McsTable()
 {
-    table[0] = MCSelem(_QPSK, 0, 86.08);
-    table[1] = MCSelem(_QPSK, 1, 112.80);
-    table[2] = MCSelem(_QPSK, 2, 138.65);
-    table[3] = MCSelem(_QPSK, 3, 179.48);
-    table[4] = MCSelem(_QPSK, 4, 219.96);
-    table[5] = MCSelem(_QPSK, 5, 269.86);
-    table[6] = MCSelem(_QPSK, 6, 319.55);
-    table[7] = MCSelem(_QPSK, 7, 374.48);
-    table[8] = MCSelem(_QPSK, 8, 428.59);
-    table[9] = MCSelem(_QPSK, 9, 483.37);
-    table[10] = MCSelem(_16QAM, 9, 241.69);
-    table[11] = MCSelem(_16QAM, 10, 268.80);
-    table[12] = MCSelem(_16QAM, 11, 308.55);
-    table[13] = MCSelem(_16QAM, 12, 349.13);
-    table[14] = MCSelem(_16QAM, 13, 393.42);
-    table[15] = MCSelem(_16QAM, 14, 437.91);
-    table[16] = MCSelem(_16QAM, 15, 468.67);
-    table[17] = MCSelem(_64QAM, 15, 312.45);
-    table[18] = MCSelem(_64QAM, 16, 331.66);
-    table[19] = MCSelem(_64QAM, 17, 367.66);
-    table[20] = MCSelem(_64QAM, 18, 403.41);
-    table[21] = MCSelem(_64QAM, 19, 438.55);
-    table[22] = MCSelem(_64QAM, 20, 473.85);
-    table[23] = MCSelem(_64QAM, 21, 511.28);
-    table[24] = MCSelem(_64QAM, 22, 549.29);
-    table[25] = MCSelem(_64QAM, 23, 583.51);
-    table[26] = MCSelem(_64QAM, 24, 621.36);
-    table[27] = MCSelem(_64QAM, 25, 646.43);
-    table[28] = MCSelem(_64QAM, 26, 749.52);
+    table[0] = MCSelem(_QPSK, 0);
+    table[1] = MCSelem(_QPSK, 1);
+    table[2] = MCSelem(_QPSK, 2);
+    table[3] = MCSelem(_QPSK, 3);
+    table[4] = MCSelem(_QPSK, 4);
+    table[5] = MCSelem(_QPSK, 5);
+    table[6] = MCSelem(_QPSK, 6);
+    table[7] = MCSelem(_QPSK, 7);
+    table[8] = MCSelem(_QPSK, 8);
+    table[9] = MCSelem(_QPSK, 9);
+    table[10] = MCSelem(_16QAM, 9);
+    table[11] = MCSelem(_16QAM, 10);
+    table[12] = MCSelem(_16QAM, 11);
+    table[13] = MCSelem(_16QAM, 12);
+    table[14] = MCSelem(_16QAM, 13);
+    table[15] = MCSelem(_16QAM, 14);
+    table[16] = MCSelem(_16QAM, 15);
+    table[17] = MCSelem(_64QAM, 15);
+    table[18] = MCSelem(_64QAM, 16);
+    table[19] = MCSelem(_64QAM, 17);
+    table[20] = MCSelem(_64QAM, 18);
+    table[21] = MCSelem(_64QAM, 19);
+    table[22] = MCSelem(_64QAM, 20);
+    table[23] = MCSelem(_64QAM, 21);
+    table[24] = MCSelem(_64QAM, 22);
+    table[25] = MCSelem(_64QAM, 23);
+    table[26] = MCSelem(_64QAM, 24);
+    table[27] = MCSelem(_64QAM, 25);
+    table[28] = MCSelem(_64QAM, 26);
 }
 
 void McsTable::rescale(double scale)

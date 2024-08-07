@@ -27,8 +27,6 @@ unsigned int AmRxQueue::totalCellRcvdBytes_ = 0;
 
 AmRxQueue::AmRxQueue() :
     timer_(this),
-    lastSentAck_(0),
-    firstSdu_(-1),
     flowControlInfo_(nullptr)
 {
     // in order create a back connection (AM CTRL) , a flow control

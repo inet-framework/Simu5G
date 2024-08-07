@@ -26,10 +26,7 @@ DistanceBasedConflictGraph::DistanceBasedConflictGraph(Binder *binder, LteMacEnb
     : ConflictGraph(binder, macEnb, reuseD2D, reuseD2DMulti),
       d2dDbmThreshold_(dbmThresh),
       d2dMultiTxDbmThreshold_(dbmThresh),
-      d2dMultiInterfDbmThreshold_(dbmThresh),
-      d2dInterferenceRadius_(-1.0),
-      d2dMultiTransmissionRadius_(-1.0),
-      d2dMultiInterferenceRadius_(-1.0)
+      d2dMultiInterfDbmThreshold_(dbmThresh)
 {
 }
 

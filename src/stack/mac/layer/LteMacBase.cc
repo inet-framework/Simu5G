@@ -29,7 +29,14 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-LteMacBase::LteMacBase() : ttiPeriod_(TTI), totalHarqErrorRateDlSum_(0), totalHarqErrorRateDlCount_(0), totalHarqErrorRateUlSum_(0), totalHarqErrorRateUlCount_(0)
+LteMacBase::LteMacBase() :
+    mbuf_(),
+    macBuffers_(),
+    ttiPeriod_(TTI),
+    totalHarqErrorRateDlSum_(0),
+    totalHarqErrorRateDlCount_(0),
+    totalHarqErrorRateUlSum_(0),
+    totalHarqErrorRateUlCount_(0)
 {
     mbuf_.clear();
     macBuffers_.clear();

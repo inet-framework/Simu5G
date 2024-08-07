@@ -24,8 +24,7 @@ using namespace omnetpp;
 
 LteHarqBufferRx::LteHarqBufferRx(unsigned int num, LteMacBase *owner, Binder *binder,
         MacNodeId srcId)
-    : binder_(binder), macOwner_(owner), srcId_(srcId), numHarqProcesses_(num),
-      totalRcvdBytes_(0), isMulticast_(false)
+    : binder_(binder), macOwner_(owner), srcId_(srcId), numHarqProcesses_(num)
 {
     initMacUe();
     processes_.resize(numHarqProcesses_);
