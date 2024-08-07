@@ -22,6 +22,9 @@ public:
     AperiodicSubscriptionTimer();
     AperiodicSubscriptionTimer(const char *name=nullptr, const double& period = 0);
     AperiodicSubscriptionTimer(const char *name=nullptr);
+
+    //TODO add copy ctor, operator=, dup()
+
     virtual ~AperiodicSubscriptionTimer();
 
     void insertSubId(int subId)
