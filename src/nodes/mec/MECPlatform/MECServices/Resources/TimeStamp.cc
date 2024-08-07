@@ -18,11 +18,13 @@ using namespace omnetpp;
 
 TimeStamp::TimeStamp() : nanoSeconds_(0), valid_(true)
 {
+    // TODO fix it, set seconds_ and nanoseconds_ correctly from current simTime
     seconds_ = simTime().dbl();
 }
 
 TimeStamp::TimeStamp(bool valid) : nanoSeconds_(0), valid_(valid)
 {
+    // TODO fix it, set seconds_ and nanoseconds_ correctly from current simTime
     seconds_ = simTime().dbl();
 }
 
@@ -51,9 +53,9 @@ void TimeStamp::setSeconds(int32_t value)
 {
     seconds_ = value;
 }
-
 void TimeStamp::setSeconds() // TODO rename
 {
+    // TODO fix it, set seconds_ and nanoseconds_ correctly from current simTime
     seconds_ = simTime().dbl();
 }
 
