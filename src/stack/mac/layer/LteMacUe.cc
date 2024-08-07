@@ -44,8 +44,6 @@ LteMacUe::LteMacUe() :
     firstTx = false;
 
     currentHarq_ = 0;
-//    periodCounter_ = 0;
-//    expirationCounter_ = 0;
     racRequested_ = false;
     bsrTriggered_ = false;
     requestedSdus_ = 0;
@@ -77,7 +75,6 @@ LteMacUe::~LteMacUe()
     auto git = schedulingGrant_.begin();
     for ( ; git != schedulingGrant_.end(); ++git) {
         if (git->second != nullptr) {
-//            delete git->second;
             git->second = nullptr;
         }
     }
@@ -111,20 +108,7 @@ void LteMacUe::initialize(int stage)
         cqiDlSiso3_ = registerSignal("cqiDlSiso3");
         cqiDlSiso4_ = registerSignal("cqiDlSiso4");
     }
-//    else if (stage == INITSTAGE_PHYSICAL_ENVIRONMENT_2)
-//    {
-//        // primary cell
-//        LteChannelModel* chanModel = check_and_cast<LteChannelModel*>(getParentModule()->getSubmodule("channelModel", 0));
-//        double carrierFreq = chanModel->getCarrierFrequency();
-//        channelModel_[carrierFreq] = chanModel;
 //
-//        for (int index=1; index<chanModel->getVectorSize(); index++)
-//        {
-//            chanModel = check_and_cast<LteChannelModel*>(getParentModule()->getSubmodule("channelModel", 0));
-//            carrierFreq = chanModel->getCarrierFrequency();
-//            channelModel_[carrierFreq] = chanModel;
-//        }
-//    }
     else if (stage == INITSTAGE_LINK_LAYER) {
         if (strcmp(getFullName(), "nrMac") == 0)
             cellId_ = networkNode_->par("nrMasterId");
@@ -554,68 +538,6 @@ void LteMacUe::macPduMake(MacCid cid)
             // has to be send even if there is no data in the user's queues. In few words, a BSR is always
             // triggered and has to be send when there are enough resources
 
-            // TODO implement differentiated BSR attach
-            //
-            //            // if there's enough space for a LONG BSR, send it
-            //            if( (availableBytes >= LONG_BSR_SIZE) ) {
-            //                // Create a PDU if data were not scheduled
-            //                if (pdu==0)
-            //                    pdu = new LteMacPdu();
-            //
-            //                if(LteDebug::trace("LteSchedulerUeUl::schedule") || LteDebug::trace("LteSchedulerUeUl::schedule@bsrTracing"))
-            //                    fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - Node %d, sending a Long BSR...\n",NOW,nodeId);
-            //
-            //                // create a full BSR
-            //                pdu->ctrlPush(fullBufferStatusReport());
-            //
-            //                // do not reset BSR flag
-            //                mac_->bsrTriggered() = true;
-            //
-            //                availableBytes -= LONG_BSR_SIZE;
-            //
-            //            }
-            //
-            //            // if there's space only for a SHORT BSR and there are scheduled flows, send it
-            //            else if( (mac_->bsrTriggered() == true) && (availableBytes >= SHORT_BSR_SIZE) && (highestBackloggedFlow != -1) ) {
-            //
-            //                // Create a PDU if data were not scheduled
-            //                if (pdu==0)
-            //                    pdu = new LteMacPdu();
-            //
-            //                if(LteDebug::trace("LteSchedulerUeUl::schedule") || LteDebug::trace("LteSchedulerUeUl::schedule@bsrTracing"))
-            //                    fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - Node %d, sending a Short/Truncated BSR...\n",NOW,nodeId);
-            //
-            //                // create a short BSR
-            //                pdu->ctrlPush(shortBufferStatusReport(highestBackloggedFlow));
-            //
-            //                // do not reset BSR flag
-            //                mac_->bsrTriggered() = true;
-            //
-            //                availableBytes -= SHORT_BSR_SIZE;
-            //
-            //            }
-            //            // if there's a BSR triggered but there's not enough space, collect the appropriate statistic
-            //            else if(availableBytes < SHORT_BSR_SIZE && availableBytes < LONG_BSR_SIZE) {
-            //                Stat::put(LTE_BSR_SUPPRESSED_NODE,nodeId,1.0);
-            //                Stat::put(LTE_BSR_SUPPRESSED_CELL,mac_->cellId(),1.0);
-            //            }
-            //            Stat::put (LTE_GRANT_WASTED_BYTES_UL, nodeId, availableBytes);
-            //        }
-            //
-            //        // 4) PDU creation
-            //
-            //        if (pdu!=0) {
-            //
-            //            pdu->cellId() = mac_->cellId();
-            //            pdu->nodeId() = nodeId;
-            //            pdu->direction() = mac::UL;
-            //            pdu->error() = false;
-            //
-            //            if(LteDebug::trace("LteSchedulerUeUl::schedule"))
-            //                fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - Node %d, creating uplink PDU.\n", NOW, nodeId);
-            //
-            //        }
-
             bool bsrAlreadyMade = false;
             auto header = macPkt->removeAtFront<LteMacPdu>();
             if (bsrTriggered_) {
@@ -911,7 +833,6 @@ void LteMacUe::macHandleGrant(cPacket *pktAux)
     EV << NOW << " LteMacUe::macHandleGrant - Direction: " << dirToA(grant->getDirection()) << " Carrier: " << carrierFrequency << endl;
 
     if (schedulingGrant_.find(carrierFrequency) != schedulingGrant_.end() && schedulingGrant_[carrierFrequency] != nullptr) {
-//        delete schedulingGrant_[carrierFrequency];
         schedulingGrant_[carrierFrequency] = nullptr;
     }
 
@@ -990,7 +911,6 @@ void LteMacUe::checkRAC()
         return;
     }
 
-    //     Avoids double requests whithin same TTI window
     if (racRequested_) {
         EV << NOW << " LteMacUe::checkRAC - double RAC request" << endl;
         racRequested_ = false;

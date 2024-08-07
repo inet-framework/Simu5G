@@ -103,7 +103,6 @@ void LteHarqBufferTx::markSelected(UnitList unitIds, unsigned char availableTbs)
     selectedAcid_ = acid;
 
     // user tx params could have changed, modify them
-    //    UserControlInfo *uInfo = check_and_cast<UserControlInfo *>(basePdu->getControlInfo());
     // TODO: get amc and modify user tx params
     //uInfo->setTxMode(???)
 

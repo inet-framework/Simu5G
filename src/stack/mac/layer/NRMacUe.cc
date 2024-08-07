@@ -553,73 +553,11 @@ void NRMacUe::macPduMake(MacCid cid)
             //Get a reference of the LteMacPdu from pit pointer (extract Pdu from the MAP)
             auto macPkt = pit->second;
 
-            /* BSR related operations
+            // BSR related operations
 
                // according to the TS 36.321 v8.7.0, when there are uplink resources assigned to the UE, a BSR
                // has to be send even if there is no data in the user's queues. In few words, a BSR is always
                // triggered and has to be send when there are enough resources
-
-               // TODO implement differentiated BSR attach
-               //
-               //            // if there's enough space for a LONG BSR, send it
-               //            if( (availableBytes >= LONG_BSR_SIZE) ) {
-               //                // Create a PDU if data were not scheduled
-               //                if (pdu==0)
-               //                    pdu = new LteMacPdu();
-               //
-               //                if(LteDebug::trace("LteSchedulerUeUl::schedule") || LteDebug::trace("LteSchedulerUeUl::schedule@bsrTracing"))
-               //                    fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - Node %d, sending a Long BSR...\n",NOW,nodeId);
-               //
-               //                // create a full BSR
-               //                pdu->ctrlPush(fullBufferStatusReport());
-               //
-               //                // do not reset BSR flag
-               //                mac_->bsrTriggered() = true;
-               //
-               //                availableBytes -= LONG_BSR_SIZE;
-               //
-               //            }
-               //
-               //            // if there's space only for a SHORT BSR and there are scheduled flows, send it
-               //            else if( (mac_->bsrTriggered() == true) && (availableBytes >= SHORT_BSR_SIZE) && (highestBackloggedFlow != -1) ) {
-               //
-               //                // Create a PDU if data were not scheduled
-               //                if (pdu==0)
-               //                    pdu = new LteMacPdu();
-               //
-               //                if(LteDebug::trace("LteSchedulerUeUl::schedule") || LteDebug::trace("LteSchedulerUeUl::schedule@bsrTracing"))
-               //                    fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - Node %d, sending a Short/Truncated BSR...\n",NOW,nodeId);
-               //
-               //                // create a short BSR
-               //                pdu->ctrlPush(shortBufferStatusReport(highestBackloggedFlow));
-               //
-               //                // do not reset BSR flag
-               //                mac_->bsrTriggered() = true;
-               //
-               //                availableBytes -= SHORT_BSR_SIZE;
-               //
-               //            }
-               //            // if there's a BSR triggered but there's not enough space, collect the appropriate statistic
-               //            else if(availableBytes < SHORT_BSR_SIZE && availableBytes < LONG_BSR_SIZE) {
-               //                Stat::put(LTE_BSR_SUPPRESSED_NODE,nodeId,1.0);
-               //                Stat::put(LTE_BSR_SUPPRESSED_CELL,mac_->cellId(),1.0);
-               //            }
-               //            Stat::put (LTE_GRANT_WASTED_BYTES_UL, nodeId, availableBytes);
-               //        }
-               //
-               //        // 4) PDU creation
-               //
-               //        if (pdu!=0) {
-               //
-               //            pdu->cellId() = mac_->cellId();
-               //            pdu->nodeId() = nodeId;
-               //            pdu->direction() = mac::UL;
-               //            pdu->error() = false;
-               //
-               //            if(LteDebug::trace("LteSchedulerUeUl::schedule"))
-               //                fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - Node %d, creating uplink PDU.\n", NOW, nodeId);
-               //
-               //        } */
 
             auto header = macPkt->removeAtFront<LteMacPdu>();
             // Attach BSR to PDU if RAC is won and wasn't already made
