@@ -55,7 +55,6 @@ void LteX2Manager::initialize(int stage)
             cGate *inGate = gate("x2$i", i);
 
             // get the X2App client connected to this gate
-            //                                                  x2  -> X2App.x2ManagerIn ->  X2App.client
             X2AppClient *client = check_and_cast<X2AppClient *>(inGate->getPathStartGate()->getOwnerModule());
 
             // get the connectAddress for the X2App client and the corresponding X2 id

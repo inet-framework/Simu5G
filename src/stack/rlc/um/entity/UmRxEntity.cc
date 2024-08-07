@@ -149,9 +149,6 @@ void UmRxEntity::enque(cPacket *pktAux)
      *  @author Alessandro Noferi
      *  add RLC sdu bits for the burst (if any)
      */
-//    int rlcSduSize = (B(pdu->getChunkLength()) - B(RLC_HEADER_UM)).get(); // RLC pdu size - RLC header
-//    ttiBits_ += rlcSduSize; // test
-
     // emit statistics
     MacNodeId ueId;
     if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                    // This module is at a UE

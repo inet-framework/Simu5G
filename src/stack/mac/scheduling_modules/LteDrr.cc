@@ -101,9 +101,6 @@ void LteDrr::prepareSchedule()
             activeTempList_.move();
         }
         // else
-        //     this connection still has to consume its deficit (e.g., because space has ended)
-        //     so the pointer is not moved
-
         // Terminate scheduling, if the grant function specified so.
         if (terminateFlag)
             break;
@@ -133,15 +130,12 @@ void LteDrr::updateSchedulingInfo()
         throw cRuntimeError("LteDrr::updateSchedulingInfo invalid direction");
     }
 
-    //    // Iterators to cycle through the maps of connection descriptors.
-
     LteMacBufferMap::iterator it = conn->begin(), et = conn->end();
 
     // Select the minimum rate and MAC SDU size.
     double minSize = 0;
     double minRate = 0;
     for (it = conn->begin(); it != et; ++it) {
-//            ConnectionParameters& pars = jt->second.parameters_;
         MacCid cid = it->first;
         MacNodeId nodeId = MacCidToNodeId(cid);
         bool eligible = true;
@@ -155,7 +149,6 @@ void LteDrr::updateSchedulingInfo()
                 eligible = false;
         }
         if (minRate == 0 /* || pars.minReservedRate_ < minRate*/)
-//                TODO add connections parameters and fix this value
             minRate = 500;
         if (minSize == 0 /*|| pars.maxBurst_ < minSize */)
             minSize = 160; /*pars.maxBurst_;*/

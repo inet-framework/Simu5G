@@ -118,9 +118,6 @@ void LteMacEnb::deleteQueues(MacNodeId nodeId)
     }
 
     //update harq status in schedulers
-//    enbSchedulerDl_->updateHarqDescs();
-//    enbSchedulerUl_->updateHarqDescs();
-
     // remove active connections from the schedulers
     enbSchedulerDl_->removeActiveConnections(nodeId);
     enbSchedulerUl_->removeActiveConnections(nodeId);
@@ -962,7 +959,6 @@ void LteMacEnb::macHandleFeedbackPkt(cPacket *pktAux)
 
     for (it = fbMapDl.begin(); it != fbMapDl.end(); ++it) {
         for (jt = it->begin(); jt != it->end(); ++jt) {
-            //            TxMode rx=(TxMode)i;
             if (!jt->isEmptyFeedback()) {
                 amc_->pushFeedback(id, DL, (*jt), lteInfo->getCarrierFrequency());
             }

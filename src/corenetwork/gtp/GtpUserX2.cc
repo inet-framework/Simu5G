@@ -39,17 +39,8 @@ void GtpUserX2::initialize(int stage)
 
     tunnelPeerPort_ = par("tunnelPeerPort");
 
-//    // get the corresponding node ID and the IP address of the X2 PPP interface
-//    X2NodeId nodeId = check_and_cast<LteMacEnb*>(getParentModule()->getSubmodule("cellularNic")->getSubmodule("mac"))->getMacNodeId();
 //
-//    const char* moduleName = getParentModule()->getFullName();
-//    char symbolicName[100];
-//    strcpy(symbolicName, moduleName);
-//    strcat(symbolicName, "%x2ppp0");
-//    L3Address addr = L3AddressResolver().resolve(symbolicName);
 //
-//    EV << " Binder::setX2Address- registering x2 interface [" << symbolicName << "] with address [" << addr.toIPv4().str() << "]" << endl;
-//    binder_->setX2Address(nodeId, addr);
 }
 
 void GtpUserX2::handleMessage(cMessage *msg)

@@ -245,7 +245,6 @@ bool parseReceivedMsg(std::string& packet, std::string *storedData, HttpBaseMess
     std::string delimiter = "\r\n\r\n";
     size_t pos = 0;
     std::string header;
-//        int remainingData;
     if (*currentHttpMessage != nullptr && (*currentHttpMessage)->isReceivingMsg()) {
         EV << "MecAppBase::parseReceivedMsg - Continue receiving data for the current HttpMessage" << endl;
         Http::HttpMsgState res = Http::parseTcpData(&packet, *currentHttpMessage);
@@ -283,7 +282,6 @@ bool parseReceivedMsg(std::string& packet, std::string *storedData, HttpBaseMess
         EV << "MecAppBase::parseReceivedMsgn - new HTTP message" << endl;
         header = packet.substr(0, pos);
         packet.erase(0, pos + delimiter.length()); //remove header
-//           HttpBaseMessage* newHttpMessage = Http::parseHeader(header);
         *currentHttpMessage = Http::parseHeader(header);
 
         Http::HttpMsgState res = Http::parseTcpData(&packet, *currentHttpMessage);
@@ -374,7 +372,6 @@ bool parseReceivedMsg(int socketId, std::string& packet, omnetpp::cQueue& messag
     while ((pos = packet.find(delimiter)) != std::string::npos) {
         header = packet.substr(0, pos);
         packet.erase(0, pos + delimiter.length()); //remove header
-        //            HttpBaseMessage* newHttpMessage = Http::parseHeader(header);
         *currentHttpMessage = Http::parseHeader(header);
 
         Http::HttpMsgState res = Http::parseTcpData(&packet, *currentHttpMessage);
@@ -443,7 +440,6 @@ void sendHttpResponse(inet::TcpSocket *socket, int code, const char *reason, con
 
     inet::Packet *packet = new inet::Packet("HttpResponsePacket");
     auto resPkt = inet::makeShared<HttpResponseMessage>();
-//        resPkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&Protocol::http);
 
     resPkt->setCode(code);
     resPkt->setStatus(reason);
@@ -462,7 +458,6 @@ void sendHttpResponse(inet::TcpSocket *socket, int code, const char *reason, std
 
     inet::Packet *packet = new inet::Packet("HttpResponsePacket");
     auto resPkt = inet::makeShared<HttpResponseMessage>();
-//        resPkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&Protocol::http);
 
     resPkt->setCode(code);
     resPkt->setStatus(reason);
@@ -484,7 +479,6 @@ void sendHttpResponse(inet::TcpSocket *socket, int code, const char *reason, std
     EV << "httpUtils - sendHttpResponse: code: " << code << " to: " << socket->getRemoteAddress() << ":" << socket->getRemotePort() << endl;
     inet::Packet *packet = new inet::Packet("HttpResponsePacket");
     auto resPkt = inet::makeShared<HttpResponseMessage>();
-    //        resPkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&Protocol::http);
 
     resPkt->setCode(code);
     resPkt->setStatus(reason);
@@ -508,7 +502,6 @@ void sendHttpRequest(inet::TcpSocket *socket, const char *method, const char *ho
     EV << "httpUtils - sendHttpRequest: method: " << method << " to: " << socket->getRemoteAddress() << ":" << socket->getRemotePort() << endl;
     inet::Packet *packet = new inet::Packet("HttpRequestPacket");
     auto reqPkt = inet::makeShared<HttpRequestMessage>();
-    //        resPkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&Protocol::http);
 
     reqPkt->setMethod(method);
     reqPkt->setUri(uri);
@@ -532,7 +525,6 @@ void sendHttpRequest(inet::TcpSocket *socket, const char *method, const char *ho
     EV << "httpUtils - sendHttpRequest: method: " << method << " to: " << socket->getRemoteAddress() << ":" << socket->getRemotePort() << endl;
     inet::Packet *packet = new inet::Packet("HttpRequestPacket");
     auto reqPkt = inet::makeShared<HttpRequestMessage>();
-    //        resPkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&Protocol::http);
 
     reqPkt->setMethod(method);
     reqPkt->setUri(uri);
@@ -557,7 +549,6 @@ void sendHttpRequest(inet::TcpSocket *socket, const char *method, const char *ho
     EV << "httpUtils - sendHttpRequest: method: " << method << " to: " << socket->getRemoteAddress() << ":" << socket->getRemotePort() << endl;
     inet::Packet *packet = new inet::Packet("HttpRequestPacket");
     auto reqPkt = inet::makeShared<HttpRequestMessage>();
-    //        resPkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&Protocol::http);
 
     reqPkt->setMethod(method);
     reqPkt->setUri(uri);

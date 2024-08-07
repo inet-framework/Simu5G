@@ -161,7 +161,6 @@ double LteRealisticChannelModel::getAttenuation_D2D(MacNodeId nodeId, Direction 
     double correlationDist = .0;
 
     //COMPUTE DISTANCE between ue1 and ue2
-    //double sqrDistance = phy_->getCoord().distance(coord);
     double sqrDistance = coord.distance(coord_2);
     speed = computeSpeed(nodeId, coord);
     correlationDist = computeCorrelationDistance(nodeId, coord);
@@ -2582,49 +2581,9 @@ double LteRealisticChannelModel::computeExtCellPathLoss(double dist, MacNodeId n
     double dbp = 0;
     double attenuation = LteRealisticChannelModel::computePathLoss(dist, dbp, los);
 
-//   //TODO Apply shadowing to each interfering extCell signal
 //
-//   //    Applying shadowing only if it is enabled by configuration
-//   //    log-normal shadowing
-//   if (shadowing_)
-//   {
-//       // double mean = 0;
 //
-//       //        Get std deviation according to los/nlos and selected scenario
 //
-//       //        double stdDev = getStdDev(dist < dbp, nodeId);
-//       // double time = 0;
-//       // double space = 0;
-//       double att;
-//       //
-//       //
-//       //        //If the shadowing attenuation has been computed at least one time for this user
-//       //        // and the distance traveled by the UE is greated than correlation distance
-//       //        if ((NOW - lastComputedSF_.at(nodeId).first).dbl() * speed > correlationDistance_)
-//       //        {
-//       //            //get the temporal mark of the last computed shadowing attenuation
-//       //            time = (NOW - lastComputedSF_.at(nodeId).first).dbl();
-//       //
-//       //            //compute the traveled distance
-//       //            space = time * speed;
-//       //
-//       //            //Compute shadowing with a EAW (Exponential Average Window) (step1)
-//       //            double a = exp(-0.5 * (space / correlationDistance_));
-//       //
-//       //            //Get last shadowing attenuation computed
-//       //            double old = lastComputedSF_.at(nodeId).second;
-//       //
-//       //            //Compute shadowing with a EAW (Exponential Average Window) (step2)
-//       //            att = a * old + sqrt(1 - pow(a, 2)) * normal(getEnvir()->getRNG(0), mean, stdDev);
-//       //        }
-//       //         if the distance traveled by the UE is smaller than correlation distance shadowing attenuation remain the same
-//       //        else
-//       {
-//           att = lastComputedSF_.at(nodeId).second;
-//       }
-//       attenuation += att;
-//   }
-
     return attenuation;
 }
 
