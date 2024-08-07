@@ -38,7 +38,7 @@ class LteFeedbackPkt : public LteFeedbackPkt_Base
     // map of vector of vector with peering UE, RU and TxMode as indexes
     std::map<MacNodeId, LteFeedbackDoubleVector> lteFeedbackMapDoubleVectorD2D_;
     //MacNodeId of the source
-    MacNodeId sourceNodeId_;
+    MacNodeId sourceNodeId_ = 0;
 
   public:
     LteFeedbackPkt() :

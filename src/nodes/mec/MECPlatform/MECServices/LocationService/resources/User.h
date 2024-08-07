@@ -38,7 +38,7 @@ class User : public AttributeBase
   protected:
     TimeStamp timestamp_;
     inet::Ipv4Address address_;
-    int zoneId_;
+    int zoneId_ = 0;
     MacCellId accessPointId_;
     std::string resourceUrl_;
 };

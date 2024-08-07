@@ -13,13 +13,13 @@
 
 namespace simu5g {
 
-CircleNotificationEvent::CircleNotificationEvent() {
+CircleNotificationEvent::CircleNotificationEvent() : terminalLocations_() {
     // TODO Auto-generated constructor stub
 
 }
 
 CircleNotificationEvent::CircleNotificationEvent(const std::string& type, const int& subId, const std::vector<TerminalLocation>& terminalLocations)
-    : EventNotification(type, subId), terminalLocations_(terminalLocations) {}
+    : EventNotification(type, subId), terminalLocations_{terminalLocations} {}
 
 const std::vector<TerminalLocation>& CircleNotificationEvent::getTerminalLocations() const
 {

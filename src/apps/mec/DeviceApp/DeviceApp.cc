@@ -30,11 +30,7 @@ using namespace inet;
 using namespace omnetpp;
 Define_Module(DeviceApp);
 
-DeviceApp::DeviceApp()
-{
-    UALCMPMessage = nullptr;
-    processedUALCMPMessage = nullptr;
-}
+DeviceApp::DeviceApp() : UALCMPMessage(nullptr), processedUALCMPMessage(nullptr) {}
 
 DeviceApp::~DeviceApp()
 {

@@ -34,14 +34,14 @@ class TrafficFlowFilter : public omnetpp::cSimpleModule
 {
     // specifies the type of the node that contains this filter (it can be ENB or PGW
     // the filterTable_ will be indexed differently depending on this parameter
-    CoreNodeType ownerType_;
+    CoreNodeType ownerType_ = ENB; // Initialized inline as per guideline
 
     // reference to the LTE Binder module
     inet::ModuleRefByPar<Binder> binder_;
 
     // if this flag is set, each packet received from the radio network, having the same radio network as destination
     // must be re-sent down without going through the Internet
-    bool fastForwarding_;
+    bool fastForwarding_ = false; // Initialized inline as per guideline
 
     // store the name of the gateway node (for MEC Hosts and base stations only)
     std::string gateway_;
@@ -60,7 +60,7 @@ class TrafficFlowFilter : public omnetpp::cSimpleModule
     //
     // for emulation when the MEC host is directly connected to the BS
     inet::L3Address meAppsExtAddress_;
-    int meAppsExtAddressMask_;
+    int meAppsExtAddressMask_ = 0; // Initialized inline as per guideline
 
   protected:
     virtual int numInitStages() const override { return inet::INITSTAGE_LAST + 1; }

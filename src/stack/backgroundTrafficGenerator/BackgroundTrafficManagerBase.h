@@ -37,7 +37,7 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
   protected:
 
     // number of background UEs
-    int numBgUEs_;
+    int numBgUEs_ = 0;
 
     // reference to all the background UEs
     std::vector<TrafficGeneratorBase *> bgUe_;
@@ -55,16 +55,16 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
     inet::ModuleRefByPar<Binder> binder_;
 
     //pointer to pisadata
-    PhyPisaData *phyPisaData_;
+    PhyPisaData *phyPisaData_ = nullptr;
 
     /// TTI for this node
-    double ttiPeriod_;
+    double ttiPeriod_ = 0.0;
 
     // carrier frequency for these bg UEs
-    double carrierFrequency_;
+    double carrierFrequency_ = 0.0;
 
     // tx power of the e/gNodeB
-    double bsTxPower_;
+    double bsTxPower_ = 0.0;
 
     // position of the e/gNodeB
     inet::Coord bsCoord_;
@@ -74,7 +74,7 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
      * ***********************************/
 
     // average load for avg interference computation
-    double avgCellLoad_;
+    double avgCellLoad_ = 0.0;
     std::vector<double> avgUeLoad_;
 
     // do preliminary actions to enable avg cqi computation

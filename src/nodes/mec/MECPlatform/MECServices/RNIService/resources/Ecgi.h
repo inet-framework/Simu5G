@@ -16,19 +16,20 @@
 
 #include "nodes/mec/MECPlatform/MECServices/Resources/AttributeBase.h"
 #include "nodes/mec/MECPlatform/MECServices/RNIService/resources/Plmn.h"
+#include "nodes/mec/utils/MecCommon.h"
 
 namespace simu5g {
 
 class Ecgi : public AttributeBase
 {
   protected:
-    MacCellId cellId_;
+    MacCellId cellId_ = -1;
     Plmn plmn_;
 
     nlohmann::ordered_json toJsonCell() const; //should be private?
 
   public:
-    Ecgi();
+    Ecgi() = default;
     Ecgi(MacCellId cellId);
     Ecgi(const mec::Ecgi ecgi);
 

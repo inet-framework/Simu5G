@@ -37,22 +37,22 @@ class ExtCell : public omnetpp::cSimpleModule
     inet::Coord position_;
 
     // id among all the external cells
-    int id_;
+    int id_ = 0;
 
     // tx power
-    double txPower_;
+    double txPower_ = 0.0;
 
     // tx direction
-    TxDirectionType txDirection_;
+    TxDirectionType txDirection_ = OMNI;
 
     // tx angle
-    double txAngle_;
+    double txAngle_ = 0.0;
 
     // carrier frequency
-    double carrierFrequency_;
+    double carrierFrequency_ = 0.0;
 
     // number of logical bands
-    unsigned int numBands_;
+    unsigned int numBands_ = 0;
 
     // reference to the binder
     inet::ModuleRefByPar<Binder> binder_;
@@ -62,7 +62,7 @@ class ExtCell : public omnetpp::cSimpleModule
     BandStatus prevBandStatus_;
 
     // TTI self message
-    omnetpp::cMessage *ttiTick_;
+    omnetpp::cMessage *ttiTick_ = nullptr;
 
     /*** ALLOCATION MANAGEMENT ***/
 
@@ -71,10 +71,10 @@ class ExtCell : public omnetpp::cSimpleModule
 
     // percentage of RBs allocated by the ext cell
     // used for RANDOM_ALLOC and CONTIGUOUS ALLOC allocation types
-    double bandUtilization_;
+    double bandUtilization_ = 0.0;
 
     // index of the first allocated RB for CONTIGUOUS_ALLOC allocation type
-    int startingOffset_;
+    int startingOffset_ = 0;
 
     // update the band status. Called at each TTI (not used for FULL_ALLOC)
     void updateBandStatus();

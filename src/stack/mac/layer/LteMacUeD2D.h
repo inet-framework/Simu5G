@@ -28,21 +28,21 @@ class LteMacUeD2D : public LteMacUe
   protected:
 
     // reference to the eNB
-    LteMacEnbD2D *enb_;
+    LteMacEnbD2D *enb_ = nullptr;
 
     // flag for empty schedule list (true when no carriers have been scheduled)
-    bool emptyScheduleList_;
+    bool emptyScheduleList_ = true;
 
     // RAC Handling variables
-    bool racD2DMulticastRequested_;
+    bool racD2DMulticastRequested_ = false;
     // Multicast D2D BSR handling
-    bool bsrD2DMulticastTriggered_;
+    bool bsrD2DMulticastTriggered_ = false;
 
     omnetpp::simsignal_t rcvdD2DModeSwitchNotification_;
 
     // if true, use the preconfigured TX params for transmission, else use that signaled by the eNB
-    bool usePreconfiguredTxParams_;
-    UserTxParams *preconfiguredTxParams_;
+    bool usePreconfiguredTxParams_ = false;
+    UserTxParams *preconfiguredTxParams_ = nullptr;
     UserTxParams *getPreconfiguredTxParams();  // build and return new user tx params
 
     /**

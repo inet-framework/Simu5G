@@ -83,10 +83,10 @@ class LteRlcMux : public omnetpp::cSimpleModule
      * Data structures
      */
 
-    omnetpp::cGate *macSap_[2];
-    omnetpp::cGate *tmSap_[2];
-    omnetpp::cGate *umSap_[2];
-    omnetpp::cGate *amSap_[2];
+    omnetpp::cGate *macSap_[2] = {nullptr, nullptr};
+    omnetpp::cGate *tmSap_[2] = {nullptr, nullptr};
+    omnetpp::cGate *umSap_[2] = {nullptr, nullptr};
+    omnetpp::cGate *amSap_[2] = {nullptr, nullptr};
 };
 
 } //namespace

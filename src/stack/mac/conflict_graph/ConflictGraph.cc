@@ -21,14 +21,13 @@ using namespace omnetpp;
  * \brief class constructor;
  */
 ConflictGraph::ConflictGraph(Binder *binder, LteMacEnbD2D *macEnb, bool reuseD2D, bool reuseD2DMulti)
+    : binder_(binder),
+      macEnb_(macEnb),
+      reuseD2D_(reuseD2D),
+      reuseD2DMulti_(reuseD2DMulti)
 {
-    binder_ = binder;
     conflictGraph_.clear();
-    macEnb_ = macEnb;
     cellInfo_ = macEnb_->getCellInfo();
-
-    reuseD2D_ = reuseD2D;
-    reuseD2DMulti_ = reuseD2DMulti;
 }
 
 /*!

@@ -29,16 +29,16 @@ namespace simu5g {
 class LteHarqBufferMirrorD2D
 {
     /// number of contained H-ARQ processes
-    unsigned int numProc_;
+    unsigned int numProc_ = 0;
 
     //Max number of harq retransmission
-    unsigned char maxHarqRtx_;
+    unsigned char maxHarqRtx_ = 0;
 
     /// processes vector
     std::vector<LteHarqProcessMirrorD2D *> processes_;
 
     // reference to the MAC module
-    LteMacEnb *macOwner_;
+    LteMacEnb *macOwner_ = nullptr;
 
   public:
 

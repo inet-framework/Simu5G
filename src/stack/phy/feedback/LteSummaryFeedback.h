@@ -25,25 +25,25 @@ class LteSummaryFeedback
   protected:
 
     //! Maximum number of codewords.
-    unsigned char totCodewords_;
+    unsigned char totCodewords_ = 0;
     //! Number of logical bands.
-    unsigned int logicalBandsTot_;
+    unsigned int logicalBandsTot_ = 0;
 
     //! Rank Indication.
-    Rank ri_;
+    Rank ri_ = NORANK;
     //! Channel Quality Indicator (per-codeword).
     std::vector<CqiVector> cqi_;
     //! Precoding Matrix Index.
     PmiVector pmi_;
 
     //! time elapsed from last refresh of RI.
-    omnetpp::simtime_t tRi_;
+    omnetpp::simtime_t tRi_ = omnetpp::simTime();
     //! time elapsed from last refresh of CQI.
     std::vector<std::vector<omnetpp::simtime_t>> tCqi_;
     //! time elapsed from last refresh of PMI.
     std::vector<omnetpp::simtime_t> tPmi_;
     // valid flag
-    bool valid_;
+    bool valid_ = false;
 
     /** Calculate the confidence factor.
      *  @param n the feedback age in tti

@@ -153,17 +153,17 @@ class UmTxEntity : public omnetpp::cSimpleModule
     /*
      * Determine whether the first item in the queue is a fragment or a whole SDU
      */
-    bool firstIsFragment_;
+    bool firstIsFragment_ = false;
 
     /*
      * If true, the entity check when the queue becomes empty
      */
-    bool notifyEmptyBuffer_;
+    bool notifyEmptyBuffer_ = false;
 
     /*
      * If true, the entity temporarily store incoming SDUs in the holding queue (useful at D2D mode switching)
      */
-    bool holdingDownstreamInPackets_;
+    bool holdingDownstreamInPackets_ = false;
 
     /*
      * The SDU holding buffer.
@@ -174,12 +174,12 @@ class UmTxEntity : public omnetpp::cSimpleModule
      * The maximum available queue size (in bytes)
      * (amount of data in sduQueue_ must not exceed this value)
      */
-    unsigned int queueSize_;
+    unsigned int queueSize_ = 0;
 
     /*
      * The currently stored amount of data in the SDU queue (in bytes)
      */
-    unsigned int queueLength_;
+    unsigned int queueLength_ = 0;
 
     /**
      * Initialize fragmentSize and
@@ -193,7 +193,7 @@ class UmTxEntity : public omnetpp::cSimpleModule
     MacNodeId ownerNodeId_;
 
     /// Next PDU sequence number to be assigned
-    unsigned int sno_;
+    unsigned int sno_ = 0;
 };
 
 } //namespace

@@ -30,22 +30,22 @@ class VoIPReceiver : public omnetpp::cSimpleModule
 
     ~VoIPReceiver();
 
-    int emodel_Ie_;
-    int emodel_Bpl_;
-    int emodel_A_;
-    double emodel_Ro_;
+    int emodel_Ie_ = 0;
+    int emodel_Bpl_ = 0;
+    int emodel_A_ = 0;
+    double emodel_Ro_ = 0.0;
 
     typedef std::list<VoipPacket *> PacketsList;
     PacketsList mPacketsList_;
     PacketsList mPlayoutQueue_;
-    unsigned int mCurrentTalkspurt_;
-    unsigned int mBufferSpace_;
+    unsigned int mCurrentTalkspurt_ = 0;
+    unsigned int mBufferSpace_ = 0;
     omnetpp::simtime_t mSamplingDelta_;
     omnetpp::simtime_t mPlayoutDelay_;
 
-    bool mInit_;
+    bool mInit_ = false;
 
-    unsigned int totalRcvdBytes_;
+    unsigned int totalRcvdBytes_ = 0;
     omnetpp::simtime_t warmUpPer_;
 
     omnetpp::simsignal_t voIPFrameLossSignal_;

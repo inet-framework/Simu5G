@@ -21,17 +21,17 @@ class LtePhyUeD2D : public LtePhyUe
   protected:
 
     // D2D Tx Power
-    double d2dTxPower_;
+    double d2dTxPower_ = 0.0;
 
     /*
      * Capture Effect for D2D Multicast communications
      */
-    bool d2dMulticastEnableCaptureEffect_;
-    double nearestDistance_;
+    bool d2dMulticastEnableCaptureEffect_ = false;
+    double nearestDistance_ = 0.0;
     std::vector<double> bestRsrpVector_;
-    double bestRsrpMean_;
+    double bestRsrpMean_ = 0.0;
     std::vector<LteAirFrame *> d2dReceivedFrames_; // airframes received in the current TTI. Only one will be decoded
-    omnetpp::cMessage *d2dDecodingTimer_;                  // timer for triggering decoding at the end of the TTI. Started
+    omnetpp::cMessage *d2dDecodingTimer_ = nullptr;                  // timer for triggering decoding at the end of the TTI. Started
     // when the first airframe is received
     void storeAirFrame(LteAirFrame *newFrame);
     LteAirFrame *extractAirFrame();

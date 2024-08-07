@@ -34,16 +34,16 @@ class SubscriptioNotification : public AttributeBase
 {
   protected:
     std::string callbackData;
-    bool isValidCallbackData;
+    bool isValidCallbackData = false;
 
-    EnteringLeavingCriteria elCriteria;
-    bool isValidElCriteria;
+    EnteringLeavingCriteria elCriteria = EnteringLeavingCriteria();
+    bool isValidElCriteria = false;
 
-    DistanceCriteria dCriteria;
-    bool isValidDCriteria;
+    DistanceCriteria dCriteria = DistanceCriteria();
+    bool isValidDCriteria = false;
 
-    bool isFinalNotification;
-    bool isValidIsFinalNotification;
+    bool isFinalNotification = false;
+    bool isValidIsFinalNotification = false;
 
     std::vector<std::string> links;  // Check done by looking at empty() method
 

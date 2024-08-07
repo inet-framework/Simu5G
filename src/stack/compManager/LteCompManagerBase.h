@@ -39,23 +39,23 @@ class LteCompManagerBase : public omnetpp::cSimpleModule
   protected:
 
     // X2 identifier
-    X2NodeId nodeId_;
+    X2NodeId nodeId_ = 0;
 
     // reference to the gates
-    omnetpp::cGate *x2Manager_[2];
+    omnetpp::cGate *x2Manager_[2] = {nullptr, nullptr};
 
     // reference to the MAC layer
     omnetpp::opp_component_ptr<LteMacEnb> mac_;
 
     // number of available bands
-    int numBands_;
+    int numBands_ = 0;
 
     // period between two coordination instances
-    double coordinationPeriod_;
+    double coordinationPeriod_ = 0.0;
 
     /// Self messages
-    omnetpp::cMessage *compClientTick_;
-    omnetpp::cMessage *compCoordinatorTick_;
+    omnetpp::cMessage *compClientTick_ = nullptr;
+    omnetpp::cMessage *compCoordinatorTick_ = nullptr;
 
     // Comp Node Type specification (client, client and coordinator, coordinator only)
     CompNodeType nodeType_;
@@ -64,7 +64,7 @@ class LteCompManagerBase : public omnetpp::cSimpleModule
     UsableBands usableBands_;
 
     // ID of the coordinator
-    X2NodeId coordinatorId_;
+    X2NodeId coordinatorId_ = 0;
 
     // IDs of the eNB that are slaves of this master node
     std::vector<X2NodeId> clientList_;

@@ -24,7 +24,7 @@ class X2CompProportionalRequestIE : public X2CompRequestIE
   protected:
 
     // number of "ideally" required blocks to satisfy the queue of all UEs
-    uint32_t numBlocks_;
+    uint32_t numBlocks_ = 0;
 
   public:
     X2CompProportionalRequestIE()

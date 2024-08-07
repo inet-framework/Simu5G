@@ -33,13 +33,13 @@ namespace simu5g {
 class GtpUserX2 : public omnetpp::cSimpleModule
 {
     inet::UdpSocket socket_;
-    int localPort_;
+    int localPort_ = 0;
 
     // reference to the LTE Binder module
     inet::ModuleRefByPar<Binder> binder_;
 
     // the GTP protocol Port
-    unsigned int tunnelPeerPort_;
+    unsigned int tunnelPeerPort_ = 0;
 
   protected:
 

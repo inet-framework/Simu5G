@@ -13,14 +13,9 @@
 
 namespace simu5g {
 
-User::User():timestamp_() {}
-User::User(const inet::Ipv4Address& address, const MacCellId accessPointId, const std::string& resourceUrl, int zoneId):timestamp_()
-{
-    address_ = address;
-    accessPointId_ = accessPointId;
-    resourceUrl_ = resourceUrl;
-    zoneId_ = zoneId;
-}
+User::User() : timestamp_(), address_(), accessPointId_(), resourceUrl_(), zoneId_(0) {}
+
+User::User(const inet::Ipv4Address& address, const MacCellId accessPointId, const std::string& resourceUrl, int zoneId) : timestamp_(), address_(address), accessPointId_(accessPointId), resourceUrl_(resourceUrl), zoneId_(zoneId) {}
 
 nlohmann::ordered_json User::toJson() const
 {

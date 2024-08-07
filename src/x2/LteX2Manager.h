@@ -27,7 +27,7 @@ class LteX2Manager : public omnetpp::cSimpleModule
 {
 
     // X2 identifier
-    X2NodeId nodeId_;
+    X2NodeId nodeId_ = 0;
 
     // reference to the LTE Binder module
     inet::ModuleRefByPar<Binder> binder_;

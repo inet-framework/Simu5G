@@ -39,30 +39,26 @@ using namespace inet;
 using namespace omnetpp;
 
 LteMacUe::LteMacUe() :
-    LteMacBase()
+    LteMacBase(),
+    firstTx(false),
+    currentHarq_(0),
+//    periodCounter_(0),
+//    expirationCounter_(0),
+    racRequested_(false),
+    bsrTriggered_(false),
+    requestedSdus_(0),
+    debugHarq_(false),
+    racBackoffTimer_(0),
+    maxRacTryouts_(0),
+    currentRacTry_(0),
+    minRacBackoff_(0),
+    maxRacBackoff_(1),
+    raRespTimer_(0),
+    raRespWinStart_(3),
+    bsrRtxTimer_(0),
+    bsrRtxTimerStart_(40) // TODO check value and make it configurable (see standard 38.331, RetxBSR-Timer)
 {
-    firstTx = false;
-
-    currentHarq_ = 0;
-    racRequested_ = false;
-    bsrTriggered_ = false;
-    requestedSdus_ = 0;
-
-    debugHarq_ = false;
-
-    // TODO setup from NED
-    racBackoffTimer_ = 0;
-    maxRacTryouts_ = 0;
-    currentRacTry_ = 0;
-    minRacBackoff_ = 0;
-    maxRacBackoff_ = 1;
-    raRespTimer_ = 0;
-    raRespWinStart_ = 3;
-    bsrRtxTimer_ = 0;
-    bsrRtxTimerStart_ = 40; // TODO check value and make it configurable (see standard 38.331, RetxBSR-Timer)
     nodeType_ = UE;
-
-    // KLUDGE: this was unitialized, this is just a guess
     harqProcesses_ = 8;
 }
 

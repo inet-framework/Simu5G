@@ -88,8 +88,8 @@ class ConflictGraph
     CGMatrix conflictGraph_;
 
     // flag for enabling/disabling sharing models
-    bool reuseD2D_;
-    bool reuseD2DMulti_;
+    bool reuseD2D_ = false;
+    bool reuseD2DMulti_ = false;
 
     // reset Conflict Graph
     void clearConflictGraph();

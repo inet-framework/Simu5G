@@ -13,17 +13,14 @@
 
 namespace simu5g {
 
-Plmn::Plmn()
+Plmn::Plmn() : mcc_("001"), mnc_("01")
 {
     // test mcc and mnc
-    mcc_ = "001";
-    mnc_ = "01";
 }
 
-Plmn::Plmn(const std::string& mcc, const std::string& mnc)
+Plmn::Plmn(const std::string& mcc, const std::string& mnc) : mcc_(mcc), mnc_(mnc)
 {
-    setMcc(mcc);
-    setMnc(mnc);
+    // setMcc and setMnc are no longer necessary in the constructor body
 }
 
 Plmn::~Plmn() {}

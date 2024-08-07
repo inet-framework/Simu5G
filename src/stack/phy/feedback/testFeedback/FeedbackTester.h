@@ -24,7 +24,7 @@ namespace simu5g {
 class FeedbackTester : public omnetpp::cSimpleModule
 {
     omnetpp::simtime_t interval_;
-    omnetpp::cMessage *aperiodic_;
+    omnetpp::cMessage *aperiodic_ = nullptr;
     ModuleRefByPar<LteDlFeedbackGenerator> generator_;
 
   protected:

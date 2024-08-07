@@ -28,69 +28,69 @@ namespace simu5g {
 class BackgroundCellChannelModel : public omnetpp::cSimpleModule
 {
     // carrier frequency for this cell
-    double carrierFrequency_;
+    double carrierFrequency_ = 0;
 
     // eNodeB Height
-    double hNodeB_;
+    double hNodeB_ = 0;
 
     // UE Height
-    double hUe_;
+    double hUe_ = 0;
 
     // average Building Heights
-    double hBuilding_;
+    double hBuilding_ = 0;
 
     // true if the UE is inside a building
-    bool inside_building_;
+    bool inside_building_ = false;
 
     // distance from the building wall
-    double inside_distance_;
+    double inside_distance_ = 0;
 
     // Average street's wide
-    double wStreet_;
+    double wStreet_ = 0;
 
     // scenario
     DeploymentScenario scenario_;
 
     //Antenna gain of eNodeB
-    double antennaGainEnB_;
+    double antennaGainEnB_ = 0;
 
     //Antenna gain of micro node
-    double antennaGainMicro_;
+    double antennaGainMicro_ = 0;
 
     //Antenna gain of UE
-    double antennaGainUe_;
+    double antennaGainUe_ = 0;
 
     //Thermal noise
-    double thermalNoise_;
+    double thermalNoise_ = 0;
 
     //pointer to Binder module
     inet::ModuleRefByPar<Binder> binder_;
 
     //Cable loss
-    double cableLoss_;
+    double cableLoss_ = 0;
 
     //UE noise figure
-    double ueNoiseFigure_;
+    double ueNoiseFigure_ = 0;
 
     //eNodeB noise figure
-    double bsNoiseFigure_;
+    double bsNoiseFigure_ = 0;
 
     //if true, shadowing is enabled
-    bool shadowing_;
+    bool shadowing_ = false;
 
     //Enabale disable fading
-    bool fading_;
+    bool fading_ = false;
 
     //Number of fading paths in jakes fading
-    int fadingPaths_;
+    int fadingPaths_ = 0;
 
     //avg delay spred in jakes fading
-    double delayRMS_;
+    double delayRMS_ = 0;
 
     // enable/disable intercell interference computation
-    bool enableBackgroundCellInterference_;
-    bool enableDownlinkInterference_;
-    bool enableUplinkInterference_;
+    bool enableBackgroundCellInterference_ = false;
+    bool enableDownlinkInterference_ = false;
+    bool enableUplinkInterference_ = false;
 
     // Store the last computed shadowing for each user
     std::map<MacNodeId, std::pair<inet::simtime_t, double>> lastComputedSF_;
@@ -100,7 +100,7 @@ class BackgroundCellChannelModel : public omnetpp::cSimpleModule
 
     //correlation distance used in shadowing computation and
     //also used to recompute the probability of LOS
-    double correlationDistance_;
+    double correlationDistance_ = 0;
 
     typedef std::pair<inet::simtime_t, inet::Coord> Position;
 
@@ -111,7 +111,7 @@ class BackgroundCellChannelModel : public omnetpp::cSimpleModule
     // was computed.
     std::map<MacNodeId, Position> lastCorrelationPoint_;
 
-    bool tolerateMaxDistViolation_;
+    bool tolerateMaxDistViolation_ = false;
 
     //Struct used to store information about jakes fading
     struct JakesFadingData
@@ -135,10 +135,10 @@ class BackgroundCellChannelModel : public omnetpp::cSimpleModule
     FadingType fadingType_;
 
     //enable or disable the dynamic computation of LOS NLOS probability for each user
-    bool dynamicLos_;
+    bool dynamicLos_ = false;
 
     //if dynamicLos is false this boolean is initialized to true if all user will be in LOS or false otherwise
-    bool fixedLos_;
+    bool fixedLos_ = false;
     /*
      * Compute Attenuation caused by pathloss and shadowing (optional)
      */

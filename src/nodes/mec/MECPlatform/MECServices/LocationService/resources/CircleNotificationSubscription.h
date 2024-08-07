@@ -49,7 +49,7 @@ class CircleNotificationSubscription : public SubscriptionBase
 
     Binder *binder; //used to retrieve NodeId - Ipv4Address mapping
     omnetpp::simtime_t lastNotification;
-    bool firstNotificationSent;
+    bool firstNotificationSent = false; // initialized inline
 
     std::map<MacNodeId, bool> users; // optional: NO the bool is the last position wrt the area
 
@@ -60,17 +60,17 @@ class CircleNotificationSubscription : public SubscriptionBase
     std::string notifyURL; // optional: NO
 
     std::string resourceURL;
-    bool checkImmediate; // optional: NO
+    bool checkImmediate = false; // initialized inline
     std::string clientCorrelator; // optional: YES
 
-    double frequency; // optional: NO
+    double frequency = 0.0; // initialized inline
 
     inet::Coord center; // optional: NO, used for simulation
 
-    double latitude; // optional: NO, used for simulation
-    double longitude;// optional: NO, used for simulation
+    double latitude = 0.0; // initialized inline
+    double longitude = 0.0; // initialized inline
 
-    double radius; // optional: NO
+    double radius = 0.0; // initialized inline
 
     int trackingAccuracy = 0; // optional: NO
     LocationUtils::EnteringLeavingCriteria actionCriteria;// optional: NO

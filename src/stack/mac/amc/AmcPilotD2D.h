@@ -22,8 +22,8 @@ namespace simu5g {
  */
 class AmcPilotD2D : public AmcPilot
 {
-    bool usePreconfiguredTxParams_;
-    UserTxParams *preconfiguredTxParams_;
+    bool usePreconfiguredTxParams_ = false;
+    UserTxParams *preconfiguredTxParams_ = nullptr;
 
   public:
 
@@ -36,8 +36,6 @@ class AmcPilotD2D : public AmcPilot
     {
         name_ = "D2D";
         mode_ = MIN_CQI;
-        usePreconfiguredTxParams_ = false;
-        preconfiguredTxParams_ = nullptr;
     }
 
     /**

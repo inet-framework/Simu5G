@@ -18,9 +18,8 @@ namespace simu5g {
 class EventNotification
 {
   public:
-    EventNotification();
-    virtual ~EventNotification();
-    EventNotification(const std::string& type, int subId);
+    EventNotification() = default;
+    EventNotification(const std::string& type, int subId) : type_(type), subId_(subId) {}
 
     // setters
     virtual int getSubId() const;
@@ -32,7 +31,7 @@ class EventNotification
 
   protected:
     std::string type_; // type of the subscription to cast to the correct notification Event
-    int subId_; // subscription Id
+    int subId_ = 0;
 };
 
 } //namespace

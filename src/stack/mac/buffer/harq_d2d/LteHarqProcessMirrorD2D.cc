@@ -13,14 +13,9 @@
 
 namespace simu5g {
 
-LteHarqProcessMirrorD2D::LteHarqProcessMirrorD2D(unsigned int numUnits, unsigned char maxTransmissions, LteMacEnb *macOwner)
+LteHarqProcessMirrorD2D::LteHarqProcessMirrorD2D(unsigned int numUnits, unsigned char maxTransmissions, LteMacEnb *macOwner) :
+    numUnits_(numUnits), maxTransmissions_(maxTransmissions), macOwner_(macOwner), status_(numUnits, TXHARQ_PDU_EMPTY), pduLength_(numUnits, 0), transmissions_(numUnits, 0)
 {
-    numUnits_ = numUnits;
-    maxTransmissions_ = maxTransmissions;
-    status_.resize(numUnits, TXHARQ_PDU_EMPTY);
-    pduLength_.resize(numUnits, 0);
-    transmissions_.resize(numUnits, 0);
-    macOwner_ = macOwner;
 }
 
 LteHarqProcessMirrorD2D::~LteHarqProcessMirrorD2D()

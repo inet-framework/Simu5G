@@ -13,19 +13,9 @@
 
 namespace simu5g {
 
-AperiodicSubscriptionTimer::AperiodicSubscriptionTimer() {
-    // TODO Auto-generated constructor stub
-}
-
-AperiodicSubscriptionTimer::AperiodicSubscriptionTimer(const char *name, const double& period):AperiodicSubscriptionTimer_m(name)
+AperiodicSubscriptionTimer::AperiodicSubscriptionTimer(const char *name, double period) : AperiodicSubscriptionTimer_m(name)
 {
     setPeriod(period);
-}
-
-AperiodicSubscriptionTimer::AperiodicSubscriptionTimer(const char *name) : AperiodicSubscriptionTimer_m(name) {}
-
-AperiodicSubscriptionTimer::~AperiodicSubscriptionTimer() {
-    // TODO Auto-generated destructor stub
 }
 
 } // namespace

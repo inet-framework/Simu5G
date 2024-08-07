@@ -27,14 +27,14 @@ class CbrSender : public omnetpp::cSimpleModule
 {
     inet::UdpSocket socket;
     //has the sender been initialized?
-    bool initialized_;
+    bool initialized_ = false;
 
-    omnetpp::cMessage *selfSource_;
+    omnetpp::cMessage *selfSource_ = nullptr;
     //sender
-    int nframes_;
-    int iDframe_;
-    int nframesTmp_;
-    int size_;
+    int nframes_ = 0;
+    int iDframe_ = 0;
+    int nframesTmp_ = 0;
+    int size_ = 0;
     omnetpp::simtime_t sampling_time;
     omnetpp::simtime_t startTime_;
     omnetpp::simtime_t finishTime_;
@@ -43,15 +43,15 @@ class CbrSender : public omnetpp::cSimpleModule
     static omnetpp::simsignal_t cbrGeneratedBytesSignal_;
     static omnetpp::simsignal_t cbrSentPktSignal_;
 
-    int txBytes_;
+    int txBytes_ = 0;
     // ----------------------------
 
-    omnetpp::cMessage *selfSender_;
-    omnetpp::cMessage *initTraffic_;
+    omnetpp::cMessage *selfSender_ = nullptr;
+    omnetpp::cMessage *initTraffic_ = nullptr;
 
     omnetpp::simtime_t timestamp_;
-    int localPort_;
-    int destPort_;
+    int localPort_ = 0;
+    int destPort_ = 0;
     inet::L3Address destAddress_;
 
     void initTraffic();

@@ -20,13 +20,9 @@ namespace simu5g {
 class AperiodicSubscriptionTimer : public AperiodicSubscriptionTimer_m
 {
   public:
-    AperiodicSubscriptionTimer();
-    AperiodicSubscriptionTimer(const char *name = nullptr, const double& period = 0);
-    AperiodicSubscriptionTimer(const char *name = nullptr);
+    AperiodicSubscriptionTimer(const char *name = nullptr, double period = 0);
 
     //TODO add copy ctor, operator=, dup()
-
-    virtual ~AperiodicSubscriptionTimer();
 
     void insertSubId(int subId)
     {

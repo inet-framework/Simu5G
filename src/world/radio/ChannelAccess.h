@@ -36,7 +36,7 @@ class ChannelAccess : public omnetpp::cSimpleModule, public omnetpp::cListener
     IChannelControl::RadioRef myRadioRef;  // Identifies this radio in the ChannelControl module
     cModule *hostModule;    // the host that contains this radio model
     inet::Coord radioPos;  // the physical position of the radio (derived from display string or from mobility models)
-    bool positionUpdateArrived;
+    bool positionUpdateArrived = false;
 
   public:
     ChannelAccess() : cc(nullptr), myRadioRef(nullptr), hostModule(nullptr) {}

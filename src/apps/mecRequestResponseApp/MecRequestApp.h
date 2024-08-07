@@ -28,21 +28,21 @@ class MecRequestApp : public cSimpleModule
 {
     inet::UdpSocket socket;
     simtime_t period_;
-    int localPort_;
-    int destPort_;
-    char *sourceSymbolicAddress_;
+    int localPort_ = 0;
+    int destPort_ = 0;
+    char *sourceSymbolicAddress_ = nullptr;
     inet::L3Address destAddress_;
 
     inet::ModuleRefByPar<NRPhyUe> nrPhy_;
 
-    unsigned int sno_;
-    unsigned int bsId_;
-    unsigned int appId_;
+    unsigned int sno_ = 0;
+    unsigned int bsId_ = 0;
+    unsigned int appId_ = 0;
 
-    bool enableMigration_;
+    bool enableMigration_ = false;
 
     //scheduling
-    cMessage *selfSender_;
+    cMessage *selfSender_ = nullptr;
 
     static simsignal_t requestSize_;
     static simsignal_t requestRTT_;

@@ -52,16 +52,16 @@ class LteRlcDataPdu : public LteRlcDataPdu_Base
     RlcSduListSizes sduSizes_;
 
     // number of SDU stored in the message
-    unsigned int numSdu_;
+    unsigned int numSdu_ = 0;
 
     // define the segmentation info for the PDU
-    FramingInfo fi_;
+    FramingInfo fi_ = 0;
 
     // Sequence number of the PDU
-    unsigned int pduSequenceNumber_;
+    unsigned int pduSequenceNumber_ = 0;
 
     // Length of the PDU
-    int64_t rlcPduLength_;
+    int64_t rlcPduLength_ = 0;
 
   public:
 
@@ -71,10 +71,6 @@ class LteRlcDataPdu : public LteRlcDataPdu_Base
     LteRlcDataPdu() : LteRlcDataPdu_Base()
     {
         this->setChunkLength(inet::b(1));
-        numSdu_ = 0;
-        pduSequenceNumber_ = 0;
-        fi_ = 0;
-        rlcPduLength_ = 0;
     }
 
     virtual ~LteRlcDataPdu()
@@ -229,7 +225,7 @@ class LteRlcAmDataPdu : public LteRlcDataPdu
   protected:
 
     // if true, a status PDU is required
-    bool pollStatus_;
+    bool pollStatus_ = false;
 
   public:
 

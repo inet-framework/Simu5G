@@ -33,16 +33,16 @@ namespace simu5g {
 using namespace omnetpp;
 
 struct FragmentedFrameStatus {
-    int frameNumber;
-    int frameSize;
-    int remainingFragments;
-    int numberOfFragments;
-    int bytesPerPacket;
-    int pictureType;
-    uint32_t rtpTimestamp;
+    int frameNumber = 0;
+    int frameSize = 0;
+    int remainingFragments = 0;
+    int numberOfFragments = 0;
+    int bytesPerPacket = 0;
+    int pictureType = 0;
+    uint32_t rtpTimestamp = 0;
 
-    int remainingFrameBytes;
-    int remainingFramesSlices;
+    int remainingFrameBytes = 0;
+    int remainingFramesSlices = 0;
 };
 
 /**
@@ -55,18 +55,18 @@ class RTVideoStreamingSender : public cSimpleModule
     //communication to device app and Mec app
     inet::UdpSocket socket;
 
-    int size_;
-    simtime_t lifeCyclePeriod_;
-    int localPort_;
-    int deviceAppPort_;
+    int size_ = 0;
+    simtime_t lifeCyclePeriod_ = 0;
+    int localPort_ = 0;
+    int deviceAppPort_ = 0;
     inet::L3Address deviceAppAddress_;
 
-    char *sourceSimbolicAddress;            //Ue[x]
-    char *deviceSimbolicAppAddress_;        //meHost.virtualisationInfrastructure
+    char *sourceSimbolicAddress = nullptr;            //Ue[x]
+    char *deviceSimbolicAppAddress_ = nullptr;        //meHost.virtualisationInfrastructure
 
     // MEC application endPoint (returned by the device app)
     inet::L3Address mecAppAddress_;
-    int mecAppPort_;
+    int mecAppPort_ = 0;
 
     std::string mecAppName;
 
@@ -82,59 +82,59 @@ class RTVideoStreamingSender : public cSimpleModule
         KIND_SELF_MOBILITY_STATS,
     };
 
-    cMessage *selfRTVideoStreamingAppStart_;
-    cMessage *selfRTVideoStreamingAppStop_;
+    cMessage *selfRTVideoStreamingAppStart_ = nullptr;
+    cMessage *selfRTVideoStreamingAppStop_ = nullptr;
 
-    cMessage *selfMecAppStart_;
-    cMessage *selfMecAppStop_;
+    cMessage *selfMecAppStart_ = nullptr;
+    cMessage *selfMecAppStop_ = nullptr;
 
-    cMessage *selfSessionStart_;
-    cMessage *selfSessionStop_;
+    cMessage *selfSessionStart_ = nullptr;
+    cMessage *selfSessionStop_ = nullptr;
 
     inet::UdpSocket videoStreamSocket_;
 
-    const char *fileName;
+    const char *fileName = nullptr;
     /**
      * The input file stream for the data file.
      */
     std::ifstream _inputFileStream;
 
-    int mtu_;
-    cMessage *_nextFrame;
+    int mtu_ = 0;
+    cMessage *_nextFrame = nullptr;
 
     /**
      * The initial delay of the mpeg video.
      */
-    double _initialDelay;
+    double _initialDelay = 0.0;
 
     /**
      * The number of frames per second of the video.
      */
-    double _framesPerSecond;
+    double _framesPerSecond = 0.0;
 
     /**
      * The number of the current frame. Needed for calculating
      * the rtp time stamp in the rtp data packets.
      */
-    unsigned long _frameNumber;
-    unsigned long _sequenceNumber;
+    unsigned long _frameNumber = 0;
+    unsigned long _sequenceNumber = 0;
 
-    int sessionId_;
+    int sessionId_ = 0;
 
-    bool sendAllOnOneTime_;
+    bool sendAllOnOneTime_ = false;
 
     // mobility informations
     opp_component_ptr<cModule> ue;
     inet::ModuleRefByPar<inet::IMobility> mobility;
     inet::Coord position;
-    omnetpp::cMessage *mobilityStats_;
+    omnetpp::cMessage *mobilityStats_ = nullptr;
 
     omnetpp::simsignal_t positionSignalX;
     omnetpp::simsignal_t positionSignalY;
     omnetpp::simsignal_t positionSignalZ;
 
     omnetpp::simsignal_t velocitySignal;
-    double mobilityUpdateInterval_; // send pos and speed info
+    double mobilityUpdateInterval_ = 0.0; // send pos and speed info
 
     FragmentedFrameStatus fragFrameStatus_;
 

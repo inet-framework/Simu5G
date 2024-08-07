@@ -21,7 +21,10 @@ using namespace omnetpp;
 ********************/
 
 NRAmc::NRAmc(LteMacEnb *mac, Binder *binder, CellInfo *cellInfo, int numAntennas)
-    : LteAmc(mac, binder, cellInfo, numAntennas)
+    : LteAmc(mac, binder, cellInfo, numAntennas),
+      dlNrMcsTable_(),
+      ulNrMcsTable_(),
+      d2dNrMcsTable_()
 {
 }
 

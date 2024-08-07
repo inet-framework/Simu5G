@@ -170,14 +170,14 @@ class ModulationType
     }
 
   private:
-    bool isMandatory;
-    uint32_t bandwidth;
-    enum CodeRate codeRate;
-    uint32_t dataRate;
-    uint32_t phyRate;
-    uint8_t constellationSize;
-    enum ModulationClass modulationClass;
-    uint32_t frequency;
+    bool isMandatory = false;
+    uint32_t bandwidth = 0;
+    enum CodeRate codeRate = CODE_RATE_UNDEFINED;
+    uint32_t dataRate = 0;
+    uint32_t phyRate = 0;
+    uint8_t constellationSize = 0;
+    enum ModulationClass modulationClass = MOD_CLASS_UNKNOWN;
+    uint32_t frequency = 2400;
 };
 
 bool operator==(const ModulationType& a, const ModulationType& b);

@@ -32,7 +32,7 @@ class UERequestApp : public cSimpleModule
     //communication to device app and mec app
     inet::UdpSocket socket;
 
-    unsigned int sno_;
+    unsigned int sno_ = 0;
     inet::B requestPacketSize_;
     double requestPeriod_;
 
@@ -57,10 +57,10 @@ class UERequestApp : public cSimpleModule
         KIND_SEND_REQUEST,
         KIND_UN_BLOCKING_MSG
     };
-    cMessage *selfStart_;
-    cMessage *selfStop_;
-    cMessage *sendRequest_;
-    cMessage *unBlockingMsg_; //it prevents to stop the send/response pattern if msg gets lost
+    cMessage *selfStart_ = nullptr;
+    cMessage *selfStop_ = nullptr;
+    cMessage *sendRequest_ = nullptr;
+    cMessage *unBlockingMsg_ = nullptr; //it prevents to stop the send/response pattern if msg gets lost
 
     // signals for statistics
     simsignal_t processingTime_;

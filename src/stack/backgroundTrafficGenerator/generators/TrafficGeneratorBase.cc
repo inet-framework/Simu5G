@@ -18,12 +18,12 @@ namespace simu5g {
 Define_Module(TrafficGeneratorBase);
 
 TrafficGeneratorBase::TrafficGeneratorBase()
+    : fbSource_(nullptr),
+      selfSource_{nullptr, nullptr},
+      bufferedBytes_{0, 0},
+      bufferedBytesRtx_{0, 0},
+      trafficEnabled_{false, false}
 {
-    fbSource_ = nullptr;
-    selfSource_[DL] = selfSource_[UL] = nullptr;
-    bufferedBytes_[DL] = bufferedBytes_[UL] = 0;
-    bufferedBytesRtx_[DL] = bufferedBytesRtx_[UL] = 0;
-    trafficEnabled_[DL] = trafficEnabled_[UL] = false;
 }
 
 TrafficGeneratorBase::~TrafficGeneratorBase()

@@ -36,7 +36,7 @@ class X2InformationElement : public X2InformationElement_Base
 {
   protected:
     X2InformationElementType type_;
-    int64_t length_;
+    int64_t length_ = 0;
 
   public:
 

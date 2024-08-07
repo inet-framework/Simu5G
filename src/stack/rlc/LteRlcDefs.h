@@ -45,28 +45,28 @@ struct RlcFragDesc
     /*!
      * Main SDU size (bytes) - the size of  the SDU to be fragmented
      */
-    int sduSize_;
+    int sduSize_ = 0;
 
     /*!
      * Fragmentation Unit (bytes) - the size of fragments the SDU will be divided into
      */
-    int fragUnit_;
+    int fragUnit_ = 0;
 
     /*!
      * the number of fragments the SDU will be partitioned into
      *
      */
-    int totalFragments_;
+    int totalFragments_ = 0;
 
     /*!
      * the fragments of current SDU already added to transmission window
      */
-    int fragCounter_;
+    int fragCounter_ = 0;
 
     /*!
      * the first fragment SN of current SDU
      */
-    int firstSn_;
+    int firstSn_ = 0;
 
     RlcFragDesc()
     {
@@ -113,17 +113,14 @@ struct RlcWindowDesc
 {
   public:
     //! Sequence number of the first PDU in the TxWindow
-    unsigned int firstSeqNum_;
+    unsigned int firstSeqNum_ = 0;
     //! Sequence number of current PDU in the TxWindow
-    unsigned int seqNum_;
+    unsigned int seqNum_ = 0;
     //! Size of the transmission window
-    unsigned int windowSize_;
+    unsigned int windowSize_ = 0;
 
     RlcWindowDesc()
     {
-        seqNum_ = 0;
-        firstSeqNum_ = 0;
-        windowSize_ = 0;
     }
 
 };
@@ -134,14 +131,12 @@ struct RlcWindowDesc
 struct MrwDesc
 {
     //! MRW current Sequence Number
-    unsigned int mrwSeqNum_;
+    unsigned int mrwSeqNum_ = 0;
     //! Last MRW Sequence Number
-    unsigned int lastMrw_;
+    unsigned int lastMrw_ = 0;
 
     MrwDesc()
     {
-        mrwSeqNum_ = 0;
-        lastMrw_ = 0;
     }
 
 };
@@ -170,15 +165,15 @@ struct RlcUmRxWindowDesc
 {
   public:
     //! Sequence number of the first PDU in the RxWindow
-    unsigned int firstSno_;
+    unsigned int firstSno_ = 0;
     //! Sequence number of the first PDU in the RxWindow to be reordered
-    unsigned int firstSnoForReordering_; // VR(UR)
+    unsigned int firstSnoForReordering_ = 0; // VR(UR)
     //! Sequence number of the PDU that triggered t_reordering timer
-    unsigned int reorderingSno_; // VR(UX)
+    unsigned int reorderingSno_ = 0; // VR(UX)
     //! Sequence number of PDU following the highest sequence number in the RxWindow
-    unsigned int highestReceivedSno_;    // VR(UH)
+    unsigned int highestReceivedSno_ = 0;    // VR(UH)
     //! Size of the reception window
-    unsigned int windowSize_;
+    unsigned int windowSize_ = 0;  // the window size must not be cleared
 
     void clear(unsigned int i = 0)
     {

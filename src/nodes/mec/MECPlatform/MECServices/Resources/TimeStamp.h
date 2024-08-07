@@ -20,16 +20,13 @@ class TimeStamp : public AttributeBase
 {
 
   protected:
-    int32_t seconds_;
-    int32_t nanoSeconds_;
+    int32_t seconds_ = 0;
+    int32_t nanoSeconds_ = 0;
 
-    bool valid_;
+    bool valid_ = true;
 
   public:
-    TimeStamp();
-    TimeStamp(bool valid);
-
-    virtual ~TimeStamp();
+    TimeStamp(bool valid=true);
 
     bool isValid() const;
     void setValid(bool valid);

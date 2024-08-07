@@ -9,31 +9,22 @@
 // and cannot be removed from it.
 //
 
-#include "../../RNIService/resources/Ecgi.h"
+#include "nodes/mec/MECPlatform/MECServices/RNIService/resources/Ecgi.h"
 
 namespace simu5g {
 
-Ecgi::Ecgi() : plmn_()
+
+Ecgi::Ecgi(MacCellId cellId) : AttributeBase(), cellId_(cellId)
 {
-    cellId_ = -1;
 }
 
-Ecgi::Ecgi(MacCellId cellId) : plmn_()
+Ecgi::Ecgi(const mec::Ecgi ecgi) : AttributeBase(), cellId_(ecgi.cellId), plmn_(ecgi.plmn.mcc, ecgi.plmn.mnc)
 {
-    setCellId(cellId);
 }
 
-Ecgi::Ecgi(MacCellId cellId, Plmn& plmn) : plmn_(plmn)
+Ecgi::Ecgi(MacCellId cellId, Plmn& plmn) : AttributeBase(), cellId_(cellId), plmn_(plmn)
 {
-    setCellId(cellId);
 }
-
-Ecgi::Ecgi(const mec::Ecgi ecgi)
-{
-    setEcgi(ecgi);
-}
-
-Ecgi::~Ecgi() {}
 
 void Ecgi::setCellId(MacCellId cellId)
 {

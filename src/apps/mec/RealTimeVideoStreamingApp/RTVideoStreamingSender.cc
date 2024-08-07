@@ -31,20 +31,17 @@ using namespace std;
 
 Define_Module(RTVideoStreamingSender);
 
-RTVideoStreamingSender::RTVideoStreamingSender() {
-    selfRTVideoStreamingAppStart_ = nullptr;
-    selfRTVideoStreamingAppStop_ = nullptr;
-
-    selfMecAppStart_ = nullptr;
-    selfMecAppStop_ = nullptr;
-    _nextFrame = nullptr;
-
-    selfSessionStart_ = nullptr;
-    selfSessionStop_ = nullptr;
-
-    _frameNumber = 0;
-    _sequenceNumber = 0;
-    sessionId_ = 0;
+RTVideoStreamingSender::RTVideoStreamingSender()
+    : selfRTVideoStreamingAppStart_(nullptr),
+      selfRTVideoStreamingAppStop_(nullptr),
+      selfMecAppStart_(nullptr),
+      selfMecAppStop_(nullptr),
+      _nextFrame(nullptr),
+      selfSessionStart_(nullptr),
+      selfSessionStop_(nullptr),
+      _frameNumber(0),
+      _sequenceNumber(0),
+      sessionId_(0) {
 }
 
 RTVideoStreamingSender::~RTVideoStreamingSender() {

@@ -40,7 +40,7 @@ class MultihopD2DStatistics : public omnetpp::cSimpleModule
     // If delay < 0, the node has not (yet) received the message
     struct ReceptionStatus {
         omnetpp::simtime_t delay_;
-        int hops_;
+        int hops_ = 0;
     };
     typedef std::map<MacNodeId, ReceptionStatus> DeliveryStatus;
 
@@ -50,11 +50,9 @@ class MultihopD2DStatistics : public omnetpp::cSimpleModule
     // for each event, store the number of transmissions/duplicates/suppressions
     struct TransmissionInfo
     {
-        unsigned int numSent_;
-        unsigned int numSuppressed_;
-        unsigned int numDuplicates_;
-
-        TransmissionInfo() { numSent_ = 0; numSuppressed_ = 0; numDuplicates_ = 0; }
+        unsigned int numSent_ = 0;
+        unsigned int numSuppressed_ = 0;
+        unsigned int numDuplicates_ = 0;
     };
     std::map<unsigned short, TransmissionInfo> eventTransmissionInfo_;
 

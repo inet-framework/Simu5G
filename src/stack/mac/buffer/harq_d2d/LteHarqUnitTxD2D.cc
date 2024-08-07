@@ -30,19 +30,6 @@ LteHarqUnitTxD2D::LteHarqUnitTxD2D(Binder *binder, unsigned char acid, Codeword 
         harqErrorRateD2D_3_ = omnetpp::cComponent::registerSignal("harqErrorRate_3rd_D2D");
         harqErrorRateD2D_4_ = omnetpp::cComponent::registerSignal("harqErrorRate_4th_D2D");
     }
-    else {
-        macPacketLossD2D_ = SIMSIGNAL_NULL;
-        macCellPacketLossD2D_ = SIMSIGNAL_NULL;
-        harqErrorRateD2D_ = SIMSIGNAL_NULL;
-        harqErrorRateD2D_1_ = SIMSIGNAL_NULL;
-        harqErrorRateD2D_2_ = SIMSIGNAL_NULL;
-        harqErrorRateD2D_3_ = SIMSIGNAL_NULL;
-        harqErrorRateD2D_4_ = SIMSIGNAL_NULL;
-    }
-}
-
-LteHarqUnitTxD2D::~LteHarqUnitTxD2D()
-{
 }
 
 bool LteHarqUnitTxD2D::pduFeedback(HarqAcknowledgment a)

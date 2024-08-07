@@ -29,7 +29,7 @@ class LteSchedulerEnbUl : public LteSchedulerEnb
     typedef std::map<MacNodeId, bool> RacStatus;
 
     /// Minimum scheduling unit, represents the MAC SDU size
-    unsigned int scheduleUnit_;
+    unsigned int scheduleUnit_ = 0;
     //---------------------------------------------
 
     /**

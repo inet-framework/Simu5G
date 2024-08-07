@@ -27,7 +27,7 @@ class LteCompManagerProportional : public LteCompManagerBase
      * Client info
      */
     // amount of requested blocks after provisioning
-    unsigned int provisionedBlocks_;
+    unsigned int provisionedBlocks_ = 0;
 
     /*
      * Coordinator info

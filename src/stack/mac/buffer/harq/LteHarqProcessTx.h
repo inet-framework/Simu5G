@@ -34,29 +34,29 @@ class LteHarqProcessTx : omnetpp::noncopyable
   protected:
 
     /// reference to mac module, used to handle errors
-    LteMacBase *macOwner_;
+    LteMacBase *macOwner_ = nullptr;
 
     /// contained units vector
-    UnitVector *units_;
+    UnitVector *units_ = nullptr;
 
     /// total number of processes in this H-ARQ buffer
-    unsigned int numProcesses_;
+    unsigned int numProcesses_ = 0;
 
     /// number of contained H-ARQ units
-    unsigned char numHarqUnits_;
+    unsigned char numHarqUnits_ = 0;
 
     /// H-ARQ process identifier
-    unsigned char acid_;
+    unsigned char acid_ = 0;
 
     /// Number of empty units inside this process
-    unsigned char numEmptyUnits_;
+    unsigned char numEmptyUnits_ = 0;
 
     /// Number of selected units inside this process
-    unsigned int numSelected_;
+    unsigned int numSelected_ = 0;
 
     /// Set this flag when a handover or a D2D switch occurs, so that the HARQ process was interrupted.
     /// This is useful in case the process receives a feedback after reset.
-    bool dropped_;
+    bool dropped_ = false;
 
   public:
 

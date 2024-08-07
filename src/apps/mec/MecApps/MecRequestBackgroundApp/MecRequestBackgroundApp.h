@@ -23,18 +23,18 @@ class MecRequestBackgroundApp : public MecAppBase
 {
   protected:
 
-    int numberOfApplications_;    // requests to send in this session
-    cMessage *burstTimer;
-    cMessage *burstPeriod;
-    bool burstFlag;
-    cMessage *sendBurst;
+    int numberOfApplications_ = 0;    // requests to send in this session
+    cMessage *burstTimer = nullptr;
+    cMessage *burstPeriod = nullptr;
+    bool burstFlag = false;
+    cMessage *sendBurst = nullptr;
 
-    double lambda; // it is the mean, not the rate
-    inet::TcpSocket *serviceSocket_;
-    inet::TcpSocket *mp1Socket_;
+    double lambda = 0.0; // it is the mean, not the rate
+    inet::TcpSocket *serviceSocket_ = nullptr;
+    inet::TcpSocket *mp1Socket_ = nullptr;
 
-    HttpBaseMessage *mp1HttpMessage;
-    HttpBaseMessage *serviceHttpMessage;
+    HttpBaseMessage *mp1HttpMessage = nullptr;
+    HttpBaseMessage *serviceHttpMessage = nullptr;
 
     virtual void handleSelfMessage(cMessage *msg) override;
 

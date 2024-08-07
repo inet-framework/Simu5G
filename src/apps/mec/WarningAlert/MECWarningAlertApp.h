@@ -55,25 +55,25 @@ class MECWarningAlertApp : public MecAppBase
 
     //UDP socket to communicate with the UeApp
     inet::UdpSocket ueSocket;
-    int localUePort;
+    int localUePort = 0;
 
     inet::L3Address ueAppAddress;
-    int ueAppPort;
+    int ueAppPort = 0;
 
-    inet::TcpSocket *serviceSocket_;
-    inet::TcpSocket *mp1Socket_;
+    inet::TcpSocket *serviceSocket_ = nullptr;
+    inet::TcpSocket *mp1Socket_ = nullptr;
 
-    HttpBaseMessage *mp1HttpMessage;
-    HttpBaseMessage *serviceHttpMessage;
+    HttpBaseMessage *mp1HttpMessage = nullptr;
+    HttpBaseMessage *serviceHttpMessage = nullptr;
 
-    int size_;
+    int size_ = 0;
     std::string subId;
 
     // circle danger zone
-    cOvalFigure *circle;
-    double centerPositionX;
-    double centerPositionY;
-    double radius;
+    cOvalFigure *circle = nullptr;
+    double centerPositionX = 0;
+    double centerPositionY = 0;
+    double radius = 0;
 
   protected:
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
@@ -96,7 +96,7 @@ class MECWarningAlertApp : public MecAppBase
     virtual void established(int connId) override;
 
   public:
-    MECWarningAlertApp();
+    MECWarningAlertApp() {}
     virtual ~MECWarningAlertApp();
 
 };

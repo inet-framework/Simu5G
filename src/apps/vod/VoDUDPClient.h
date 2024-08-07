@@ -29,7 +29,7 @@ class VoDUDPClient : public omnetpp::cSimpleModule
 {
     inet::UdpSocket socket;
     std::fstream outfile;
-    unsigned int totalRcvdBytes_;
+    unsigned int totalRcvdBytes_ = 0;
 
   public:
     omnetpp::simsignal_t tptLayer0_;

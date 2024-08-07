@@ -41,7 +41,7 @@ std::ostream& operator<<(std::ostream& os, const ChannelControl::TransmissionLis
     return os;
 }
 
-ChannelControl::ChannelControl()
+ChannelControl::ChannelControl() : coreDebug(false), maxInterferenceDistance(0.0), numChannels(0)
 {
 }
 

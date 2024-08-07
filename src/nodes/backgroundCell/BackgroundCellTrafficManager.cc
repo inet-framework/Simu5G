@@ -22,7 +22,7 @@ namespace simu5g {
 
 Define_Module(BackgroundCellTrafficManager);
 
-BackgroundCellTrafficManager::BackgroundCellTrafficManager()
+BackgroundCellTrafficManager::BackgroundCellTrafficManager() : bgAmc_(nullptr)
 {
 }
 

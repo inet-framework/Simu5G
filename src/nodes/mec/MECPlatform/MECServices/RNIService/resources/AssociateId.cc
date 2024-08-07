@@ -15,22 +15,17 @@
 
 namespace simu5g {
 
-AssociateId::AssociateId()
+AssociateId::AssociateId() : type_(""), value_("")
 {
-    type_ = "";
-    value_ = "";
 }
 
-AssociateId::AssociateId(std::string& type, std::string& value)
+AssociateId::AssociateId(std::string& type, std::string& value) : type_(type), value_(value)
 {
-    setType(type);
-    setValue(value);
+    // No additional initialization required
 }
 
-AssociateId::AssociateId(mec::AssociateId& associateId)
+AssociateId::AssociateId(mec::AssociateId& associateId) : AttributeBase(), type_(associateId.type), value_(associateId.value)
 {
-    setType(associateId.type);
-    setValue(associateId.value);
 }
 
 AssociateId::~AssociateId()

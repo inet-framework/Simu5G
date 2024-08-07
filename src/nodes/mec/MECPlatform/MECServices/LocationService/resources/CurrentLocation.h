@@ -20,7 +20,7 @@ namespace simu5g {
 class CurrentLocation : public AttributeBase
 {
   protected:
-    double accuracy;
+    double accuracy = 0.0;
     inet::Coord coords;
     TimeStamp timeStamp;
 

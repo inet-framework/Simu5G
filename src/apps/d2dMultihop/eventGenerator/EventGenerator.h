@@ -26,12 +26,12 @@ class MultihopD2D;
 
 class EventGenerator : public omnetpp::cSimpleModule
 {
-    omnetpp::cMessage *selfMessage_;
+    omnetpp::cMessage *selfMessage_ = nullptr;
 
-    uint32_t eventId_;
+    uint32_t eventId_ = 0;
     inet::ModuleRefByPar<Binder> binder_;
 
-    bool singleEventSource_;
+    bool singleEventSource_ = false;
 
     // store references to the app modules
     std::vector<omnetpp::opp_component_ptr<MultihopD2D>> appVector_;

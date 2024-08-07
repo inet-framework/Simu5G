@@ -36,13 +36,13 @@ class LteHarqUnitTxD2D : public LteHarqUnitTx
   protected:
 
     // D2D Statistics
-    omnetpp::simsignal_t macCellPacketLossD2D_;
-    omnetpp::simsignal_t macPacketLossD2D_;
-    omnetpp::simsignal_t harqErrorRateD2D_;
-    omnetpp::simsignal_t harqErrorRateD2D_1_;
-    omnetpp::simsignal_t harqErrorRateD2D_2_;
-    omnetpp::simsignal_t harqErrorRateD2D_3_;
-    omnetpp::simsignal_t harqErrorRateD2D_4_;
+    omnetpp::simsignal_t macCellPacketLossD2D_ = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t macPacketLossD2D_= SIMSIGNAL_NULL;
+    omnetpp::simsignal_t harqErrorRateD2D_= SIMSIGNAL_NULL;
+    omnetpp::simsignal_t harqErrorRateD2D_1_= SIMSIGNAL_NULL;
+    omnetpp::simsignal_t harqErrorRateD2D_2_= SIMSIGNAL_NULL;
+    omnetpp::simsignal_t harqErrorRateD2D_3_= SIMSIGNAL_NULL;
+    omnetpp::simsignal_t harqErrorRateD2D_4_= SIMSIGNAL_NULL;
 
   public:
     /**
@@ -68,8 +68,6 @@ class LteHarqUnitTxD2D : public LteHarqUnitTx
      * Before extraction, control info is updated with transmission counter and ndi.
      */
     virtual inet::Packet *extractPdu();
-
-    virtual ~LteHarqUnitTxD2D();
 };
 
 } //namespace

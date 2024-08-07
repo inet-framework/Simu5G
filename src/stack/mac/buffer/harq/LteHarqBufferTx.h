@@ -27,11 +27,11 @@ namespace simu5g {
 class LteHarqBufferTx : omnetpp::noncopyable
 {
   protected:
-    LteMacBase *macOwner_;
-    std::vector<LteHarqProcessTx *> *processes_;
-    unsigned int numProc_;
-    unsigned int numEmptyProc_; // @ fb on reset, @ insert
-    unsigned char selectedAcid_; // @ insert, @ marksel, @ sendseldn
+    LteMacBase *macOwner_ = nullptr;
+    std::vector<LteHarqProcessTx *> *processes_ = nullptr;
+    unsigned int numProc_ = 0;
+    unsigned int numEmptyProc_ = 0; // @ fb on reset, @ insert
+    unsigned char selectedAcid_ = HARQ_NONE; // @ insert, @ marksel, @ sendseldn
     MacNodeId nodeId_; // UE nodeId for which this buffer has been created
 
   public:

@@ -17,7 +17,7 @@ namespace simu5g {
 
 Define_Module(TrafficLightMobility);
 
-TrafficLightMobility::TrafficLightMobility()
+TrafficLightMobility::TrafficLightMobility() : enableTurns_(false)
 {
 }
 

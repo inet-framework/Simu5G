@@ -17,11 +17,10 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-L2MeasSubscription::L2MeasSubscription() : SubscriptionBase() {}
 L2MeasSubscription::L2MeasSubscription(unsigned int subId, inet::TcpSocket *socket, const std::string& baseResLocation,
         std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs) :
-    SubscriptionBase(subId, socket, baseResLocation, eNodeBs) {}
-L2MeasSubscription::~L2MeasSubscription() {}
+    SubscriptionBase(subId, socket, baseResLocation, eNodeBs), filterCriteria_() {}
+
 
 bool L2MeasSubscription::fromJson(const nlohmann::ordered_json& body)
 {

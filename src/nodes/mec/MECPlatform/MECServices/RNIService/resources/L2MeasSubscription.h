@@ -32,9 +32,9 @@ class L2MeasSubscription : public SubscriptionBase
     };
 
   public:
-    L2MeasSubscription();
+    L2MeasSubscription() = default;
     L2MeasSubscription(unsigned int subId, inet::TcpSocket *socket, const std::string& baseResLocation, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs);
-    virtual ~L2MeasSubscription();
+
     virtual bool fromJson(const nlohmann::ordered_json& json) override;
     virtual void sendSubscriptionResponse() override;
     virtual void sendNotification(EventNotification *event) override;

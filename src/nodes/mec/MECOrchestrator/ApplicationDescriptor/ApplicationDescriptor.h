@@ -42,9 +42,9 @@ class ApplicationDescriptor
     /*
      * emulated mecApplication variables
      */
-    bool isEmulated;
+    bool isEmulated = false;
     std::string externalAddress;
-    int externalPort;
+    int externalPort = 0;
 
   public:
     ApplicationDescriptor() {}

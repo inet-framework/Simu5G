@@ -76,11 +76,11 @@ class SplitBearersTable
      */
     struct entry_
     {
-        bool present_;
-        uint32_t srcAddr_;
-        uint32_t dstAddr_;
-        uint16_t typeOfService_;
-        int number_;
+        bool present_ = false;
+        uint32_t srcAddr_ = 0;
+        uint32_t dstAddr_ = 0;
+        uint16_t typeOfService_ = 0;
+        int number_ = 0;
     };
     /// Hash table of size TABLE_SIZE
     entry_ ht_[TABLE_SIZE];

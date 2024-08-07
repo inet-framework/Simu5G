@@ -37,13 +37,13 @@ namespace simu5g {
 class GtpUser : public omnetpp::cSimpleModule
 {
     inet::UdpSocket socket_;
-    int localPort_;
+    int localPort_ = 0;
 
     // reference to the LTE Binder module
     inet::ModuleRefByPar<Binder> binder_;
 
     // the GTP protocol Port
-    unsigned int tunnelPeerPort_;
+    unsigned int tunnelPeerPort_ = 0;
 
     // IP address of the gateway to the Internet
     inet::L3Address gwAddress_;
@@ -54,9 +54,9 @@ class GtpUser : public omnetpp::cSimpleModule
     CoreNodeType selectOwnerType(const char *type);
 
     // if this module is on BS, this variable includes the ID of the BS
-    MacNodeId myMacNodeID;
+    MacNodeId myMacNodeID = 0;
 
-    inet::NetworkInterface *ie_;
+    inet::NetworkInterface *ie_ = nullptr;
 
     omnetpp::opp_component_ptr<cModule> networkNode_;
 

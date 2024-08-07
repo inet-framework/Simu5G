@@ -64,7 +64,7 @@ class UeStatsCollector : public cSimpleModule
 
     // TODO insert signals for statistics
 
-    bool handover_;
+    bool handover_ = false;
 
   public:
     UeStatsCollector();

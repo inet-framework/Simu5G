@@ -143,7 +143,7 @@ class LteMacQueue : public omnetpp::cPacketQueue
 
   private:
     /// Size of queue
-    int queueSize_;
+    int queueSize_ = 0;
 };
 
 } //namespace

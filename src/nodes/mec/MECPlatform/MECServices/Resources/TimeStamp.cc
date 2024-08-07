@@ -14,23 +14,12 @@
 
 namespace simu5g {
 
-TimeStamp::TimeStamp()
+TimeStamp::TimeStamp(bool valid) : valid_(valid)
 {
     // TODO fix it, set seconds_ and nanoseconds_ correctly from current simTime
     seconds_ = omnetpp::simTime().dbl();
     nanoSeconds_ = 0;
-    valid_ = true;
 }
-
-TimeStamp::TimeStamp(bool valid)
-{
-    // TODO fix it, set seconds_ and nanoseconds_ correctly from current simTime
-    seconds_ = omnetpp::simTime().dbl();
-    nanoSeconds_ = 0;
-    valid_ = valid;
-}
-
-TimeStamp::~TimeStamp() {}
 
 bool TimeStamp::isValid() const
 {

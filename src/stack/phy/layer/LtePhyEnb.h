@@ -25,17 +25,17 @@ class LtePhyEnb : public LtePhyBase
 
   protected:
     /** Broadcast messages interval (equal to updatePos interval for mobility) */
-    double bdcUpdateInterval_;
+    double bdcUpdateInterval_ = 0.0;
 
     /** Self message to trigger broadcast message sending for handover purposes */
-    omnetpp::cMessage *bdcStarter_;
+    omnetpp::cMessage *bdcStarter_ = nullptr;
 
     /**
      * Pointer to the DAS Filter: used to call das function
      * when receiving broadcasts and to retrieve physical
      * antenna properties on packet reception
      */
-    DasFilter *das_;
+    DasFilter *das_ = nullptr;
 
     virtual void initialize(int stage);
 

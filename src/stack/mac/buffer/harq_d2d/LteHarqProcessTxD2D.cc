@@ -16,16 +16,8 @@ namespace simu5g {
 using namespace omnetpp;
 
 LteHarqProcessTxD2D::LteHarqProcessTxD2D(Binder *binder, unsigned char acid, unsigned int numUnits, unsigned int numProcesses, LteMacBase *macOwner, LteMacBase *dstMac)
-    : LteHarqProcessTx(binder, acid, numUnits, numProcesses, macOwner, dstMac)
+    : LteHarqProcessTx(binder, acid, numUnits, numProcesses, macOwner, dstMac) // TODO is this good? LteHarqProcessTx constructor fills units_ member with another content.
 {
-    macOwner_ = macOwner;
-    acid_ = acid;
-    numHarqUnits_ = numUnits;
-    units_ = new UnitVector(numUnits);
-    numProcesses_ = numProcesses;
-    numEmptyUnits_ = numUnits; //++ @ insert, -- @ unit reset (ack or fourth nack)
-    numSelected_ = 0; //++ @ markSelected and insert, -- @ extract/sendDown
-
     // H-ARQ unit istances
     for (unsigned int i = 0; i < numHarqUnits_; i++) {
         (*units_)[i] = new LteHarqUnitTxD2D(binder, acid, i, macOwner_, dstMac);
@@ -34,6 +26,7 @@ LteHarqProcessTxD2D::LteHarqProcessTxD2D(Binder *binder, unsigned char acid, uns
 
 LteHarqProcessTxD2D::~LteHarqProcessTxD2D()
 {
+    //TODO delete units_ array?
 }
 
 Packet *LteHarqProcessTxD2D::extractPdu(Codeword cw)

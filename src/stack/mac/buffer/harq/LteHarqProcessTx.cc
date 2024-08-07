@@ -17,16 +17,9 @@ using namespace omnetpp;
 
 LteHarqProcessTx::LteHarqProcessTx(Binder *binder, unsigned char acid, unsigned int numUnits, unsigned int numProcesses,
         LteMacBase *macOwner, LteMacBase *dstMac)
+    : macOwner_(macOwner), acid_(acid), numHarqUnits_(numUnits), units_(new UnitVector(numUnits)),
+      numProcesses_(numProcesses), numEmptyUnits_(numUnits), numSelected_(0), dropped_(false)
 {
-    macOwner_ = macOwner;
-    acid_ = acid;
-    numHarqUnits_ = numUnits;
-    units_ = new UnitVector(numUnits);
-    numProcesses_ = numProcesses;
-    numEmptyUnits_ = numUnits; //++ @ insert, -- @ unit reset (ack or fourth nack)
-    numSelected_ = 0; //++ @ markSelected and insert, -- @ extract/sendDown
-    dropped_ = false;
-
     // H-ARQ unit instances
     for (unsigned int i = 0; i < numHarqUnits_; i++) {
         (*units_)[i] = new LteHarqUnitTx(binder, acid, i, macOwner_, dstMac);

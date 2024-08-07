@@ -27,8 +27,8 @@ class UserInfo : public AttributeBase
      * and creates a CellInfo object
      */
     UserInfo();
-    UserInfo(const LocationInfo& location, const inet::Ipv4Address& address, const MacCellId accessPointId_, const std::string& resourceUrl_, int zoneId = 0);
-    UserInfo(const inet::Coord& location, const inet::Coord& speed, const inet::Ipv4Address& address, const MacCellId accessPointId_, const std::string& resourceUrl, int zoneId = 0);
+    UserInfo(const LocationInfo& location, const inet::Ipv4Address& address, MacCellId accessPointId, const std::string& resourceUrl, int zoneId = 0);
+    UserInfo(const inet::Coord& location, const inet::Coord& speed, const inet::Ipv4Address& address, MacCellId accessPointId, const std::string& resourceUrl, int zoneId = 0);
 
     virtual ~UserInfo() {}
 
@@ -40,8 +40,8 @@ class UserInfo : public AttributeBase
   protected:
     TimeStamp timestamp_;
     inet::Ipv4Address address_;
-    MacCellId accessPointId_;
-    int zoneId_;
+    MacCellId accessPointId_ = 0; // initialized inline
+    int zoneId_ = 0; // initialized inline
     std::string resourceUrl_;
     LocationInfo locationInfo_;
 };

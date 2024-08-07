@@ -16,16 +16,13 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-SubscriptionBase::SubscriptionBase() {}
-
-SubscriptionBase::SubscriptionBase(unsigned int subId, inet::TcpSocket *socket, const std::string& baseResLocation, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs) {
+SubscriptionBase::SubscriptionBase(unsigned int subId, inet::TcpSocket *socket, const std::string& baseResLocation, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs)
+    : subscriptionId_(subId), socket_(socket), baseResLocation_(baseResLocation)
+{
     for (auto it = eNodeBs.begin(); it != eNodeBs.end(); ++it) {
         CellInfo *cellInfo = check_and_cast<CellInfo *>((*it)->getSubmodule("cellInfo"));
         eNodeBs_.insert(std::pair<MacCellId, CellInfo *>(cellInfo->getMacCellId(), cellInfo));
     }
-    subscriptionId_ = subId;
-    socket_ = socket;
-    baseResLocation_ = baseResLocation;
 //	notificationTrigger = nullptr;
 }
 
@@ -43,8 +40,6 @@ void SubscriptionBase::addEnodeB(cModule *eNodeB) {
     EV << "LocationResource::addEnodeB with cellId: " << cellInfo->getMacCellId() << endl;
     EV << "LocationResource::addEnodeB - added eNodeB: " << cellInfo->getMacCellId() << endl;
 }
-
-SubscriptionBase::~SubscriptionBase() {}
 
 bool SubscriptionBase::fromJson(const nlohmann::ordered_json& jsonBody)
 {
