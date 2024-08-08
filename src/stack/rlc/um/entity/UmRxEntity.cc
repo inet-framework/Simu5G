@@ -769,7 +769,6 @@ void UmRxEntity::handleMessage(cMessage *msg)
         }
 
         delete msg;
-
     }
 }
 
