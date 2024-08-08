@@ -24,13 +24,9 @@ BaseStationStatsCollector::BaseStationStatsCollector()
 {
     prbUsage_ = nullptr;
     activeUsers_ = nullptr;
-    ;
     discardRate_ = nullptr;
-    ;
     packetDelay_ = nullptr;
-    ;
     pdcpBytes_ = nullptr;
-    ;
     tPut_ = nullptr;
 }
 
@@ -42,7 +38,6 @@ BaseStationStatsCollector::~BaseStationStatsCollector()
     cancelAndDelete(activeUsers_);
     cancelAndDelete(packetDelay_);
     cancelAndDelete(tPut_);
-
 }
 
 void BaseStationStatsCollector::initialize(int stage) {
@@ -132,7 +127,6 @@ void BaseStationStatsCollector::handleMessage(cMessage *msg)
             add_dl_nongbr_throughput_ue_perUser();
             add_ul_nongbr_throughput_ue_perUser();
             scheduleAt(NOW + tPutPeriod_, tPut_);
-
         }
         else if (msg == discardRate_) {
             add_dl_nongbr_pdr_cell();
@@ -146,7 +140,6 @@ void BaseStationStatsCollector::handleMessage(cMessage *msg)
             packetFlowManager_->resetDiscardCounter();
             resetDiscardCounterPerUe();
             scheduleAt(NOW + discardRatePeriod_, discardRate_);
-
         }
         else if (msg == packetDelay_) {
             add_dl_nongbr_delay_perUser();
