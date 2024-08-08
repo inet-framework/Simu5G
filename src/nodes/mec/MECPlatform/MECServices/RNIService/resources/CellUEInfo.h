@@ -35,6 +35,7 @@ class CellUEInfo : public AttributeBase
      *
      * or std::map<ipv4, cellUeInfo>
      * I prefer the pointer to the list of users in the cell to manage better
+     */
     nlohmann::ordered_json toJsonCell() const;
 
   public:
