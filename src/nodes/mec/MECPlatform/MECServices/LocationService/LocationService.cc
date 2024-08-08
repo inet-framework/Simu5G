@@ -86,7 +86,7 @@ bool LocationService::manageSubscription()
 void LocationService::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage()) {
-        if (msg->isName("subscriptionTimer")) {
+        if (msg == subscriptionTimer_) {
             EV << "subscriptionTimer" << endl;
             AperiodicSubscriptionTimer *subTimer = check_and_cast<AperiodicSubscriptionTimer *>(msg);
             std::set<int> subIds = subTimer->getSubIdSet(); // TODO pass it as reference
