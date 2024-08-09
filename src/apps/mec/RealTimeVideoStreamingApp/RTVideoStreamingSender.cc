@@ -421,7 +421,6 @@ void RTVideoStreamingSender::sendMessage() {
         // send the frame all on once
         if (sendAllOnOneTime_) {
             bool first = true;
-            ;
             int maxDataSize = 0;
             int numberOfFragments = 0;
             int slicedDataSize = 0;
