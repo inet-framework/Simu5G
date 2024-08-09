@@ -105,7 +105,7 @@ SlotFormat Binder::computeSlotFormat(bool useTdd, unsigned int tddNumSymbolsDl, 
     if (!useTdd) {
         sf.tdd = false;
 
-        // these values are not used when tdd is false
+        // these values are not used when TDD is false
         sf.numDlSymbols = 0;
         sf.numUlSymbols = 0;
         sf.numFlexSymbols = 0;
@@ -478,7 +478,7 @@ void Binder::initAndResetUlTransmissionInfo()
     }
 
     for (auto& entry : ulTransmissionMap_) {
-        // the second element (i.e. referring to the old time slot) becomes the first element
+        // the second element (i.e., referring to the old time slot) becomes the first element
         if (!(entry.second.empty()))
             entry.second.erase(entry.second.begin());
     }
@@ -780,7 +780,7 @@ void Binder::computeAverageCqiForBackgroundUes()
     }
 
     // update interference until "condition" becomes true
-    // condition = at least one value of interference is above the threshold and
+    // condition = at least one value of interference is above the threshold
     bool condition = true;
     const int MAX_INTERFERENCE_CHECK = 10;
 
@@ -791,10 +791,10 @@ void Binder::computeAverageCqiForBackgroundUes()
      * Compute SINR for each user and interference between cells (for DL) and UEs (for UL)
      * This will be done in steps:
      * 1) compute SINR without interference and update block usage
-     * 2) while average interference variation between 2 consecutives steps is above a certain threshold
+     * 2) while average interference variation between 2 consecutive steps is above a certain threshold
      *  - Update interference
      *  - Compute SINR with interference
-     *  - Update cell block usage according to connect UEs
+     *  - Update cell block usage according to connected UEs
      */
     while (condition) {
         countInterferenceCheck++;
@@ -814,7 +814,7 @@ void Binder::computeAverageCqiForBackgroundUes()
             //---------------------------------------------------------------------
             // STEP 1: update mutual interference
             // for iterations after the first one, update the interference before analyzing a whole cell
-            // Note that it makes no sense computing this at the first iteration when the cell is allocating
+            // Note that it makes no sense to compute this at the first iteration when the cell is allocating
             // zero blocks still
             if (countInterferenceCheck > 1) {
                 updateMutualInterference(bgTrafficManagerId, numBands, DL);
@@ -853,13 +853,13 @@ void Binder::computeAverageCqiForBackgroundUes()
                 double ueLoadDl = bgUe->getAvgLoad(DL) * 8;
                 double ueLoadUl = bgUe->getAvgLoad(UL) * 8;
 
-                // convert the UE load request to rbs based on SINR
+                // convert the UE load request to RBs based on SINR
                 double ueRbsDl = computeRequestedRbsFromSinr(sinrDl, ueLoadDl);
                 double ueRbsUl = computeRequestedRbsFromSinr(sinrUl, ueLoadUl);
 
                 if (ueRbsDl < 0 || ueRbsUl < 0) {
-                    EV << "Error! Computed negative requested rbs DL[" << ueRbsDl << "] UL[" << ueRbsUl << "]" << endl;
-                    throw cRuntimeError("Binder::computeAverageCqiForBackgroundUes - Error! Computed negative requested rbs\n");
+                    EV << "Error! Computed negative requested RBs DL[" << ueRbsDl << "] UL[" << ueRbsUl << "]" << endl;
+                    throw cRuntimeError("Binder::computeAverageCqiForBackgroundUes - Error! Computed negative requested RBs\n");
                 }
 
                 // check if there is room for ueRbs
@@ -882,7 +882,7 @@ void Binder::computeAverageCqiForBackgroundUes()
                 ++bgUes_it;
             }
 
-            // update allocation elem for this background traffic manager
+            // update allocation element for this background traffic manager
             info->allocatedRbsDl = (cellRbsDl > numBands) ? numBands : cellRbsDl;
             info->allocatedRbsUl = (cellRbsUl > numBands) ? numBands : cellRbsUl;
 
@@ -899,11 +899,6 @@ void Binder::computeAverageCqiForBackgroundUes()
             condition = false;
     }
 
-//
-//
-//
-//            ++bgUes_it;
-//            ++cont;
     EV << " ===== Binder::computeAverageCqiForBackgroundUes - END =====" << endl;
 }
 
@@ -911,7 +906,7 @@ void Binder::updateMutualInterference(unsigned int bgTrafficManagerId, unsigned 
 {
     EV << "Binder::updateMutualInterference - computing interference for traffic manager " << bgTrafficManagerId << " dir[" << dirToA(dir) << "]" << endl;
 
-    double ownRbs, extRbs; // current rbs allocation
+    double ownRbs, extRbs; // current RBs allocation
     BgTrafficManagerInfo *ownInfo = bgTrafficManagerList_.at(bgTrafficManagerId);
 
     if (dir == DL) {
@@ -934,7 +929,7 @@ void Binder::updateMutualInterference(unsigned int bgTrafficManagerId, unsigned 
 
             // update interference
             bgCellsInterferenceMatrix_[bgTrafficManagerId][extId] = newOverlapPercentage;
-        }// end ext-cell computation
+        } // end ext-cell computation
     }
     else {
         // for each UE in the BG cell
@@ -980,7 +975,7 @@ void Binder::updateMutualInterference(unsigned int bgTrafficManagerId, unsigned 
 
                     ++extBgUes_it;
                 }
-            }// end ext-cell computation
+            } // end ext-cell computation
 
             ++bgUes_it;
         }
@@ -1088,7 +1083,7 @@ double Binder::computeRequestedRbsFromSinr(double sinr, double reqLoad)
     const double MIN_SINR = -5.5;
     const double MAX_SINR = 25.5;
 
-    // we let a UE to have a minimum CQI (2) even when SINR is too low (this is what our scheduler does)
+    // we let a UE have a minimum CQI (2) even when SINR is too low (this is what our scheduler does)
     if (sinr <= -3.5)
         sinr = -3.5;
     if (sinr > MAX_SINR)
@@ -1118,7 +1113,7 @@ void Binder::addUeCollectorToEnodeB(MacNodeId ue, UeStatsCollector *ueCollector,
     cModule *enb = nullptr;
     BaseStationStatsCollector *enbColl = nullptr;
 
-    // check if the coallector is already present in a cell
+    // Check if the collector is already present in a cell
     for ( ; it != end; ++it) {
         enb = (*it)->eNodeB;
         if (enb->getSubmodule("collector") != nullptr) {
@@ -1133,7 +1128,7 @@ void Binder::addUeCollectorToEnodeB(MacNodeId ue, UeStatsCollector *ueCollector,
         }
     }
 
-    // no cell has the UeCollector, add it
+    // No cell has the UeCollector, add it
     enb = getModuleByMacNodeId(cell);
     if (enb->getSubmodule("collector") != nullptr) {
         enbColl = check_and_cast<BaseStationStatsCollector *>(enb->getSubmodule("collector"));
@@ -1152,8 +1147,8 @@ void Binder::moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell)
     RanNodeType oldCellType = getBaseStationTypeById(oldCell);
     RanNodeType newCellType = getBaseStationTypeById(newCell);
 
-    // get and remove the UeCollector from the OldCell
-    cModule *oldEnb = getModuleByMacNodeId(oldCell); //  eNobe module
+    // Get and remove the UeCollector from the old cell
+    cModule *oldEnb = getModuleByMacNodeId(oldCell); // eNodeB module
     BaseStationStatsCollector *enbColl = nullptr;
     UeStatsCollector *ueColl = nullptr;
     if (oldEnb->getSubmodule("collector") != nullptr) {
@@ -1170,13 +1165,13 @@ void Binder::moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell)
     else {
         throw cRuntimeError("LteBinder::moveUeCollector - eNodeBStatsCollector not present in eNodeB [%d]", oldCell);
     }
-    // if the two base station are the same type, just move the collector
+    // If the two base stations are the same type, just move the collector
     if (oldCellType == newCellType) {
         addUeCollectorToEnodeB(ue, ueColl, newCell);
     }
     else {
         if (newCellType == GNODEB) {
-            // retrieve NrUeCollector
+            // Retrieve NrUeCollector
             cModule *ueModule = getModuleByMacNodeId(ue);
             if (ueModule->findSubmodule("NRueCollector") == -1)
                 ueColl = check_and_cast<UeStatsCollector *>(ueModule->getSubmodule("NRueCollector"));
@@ -1185,7 +1180,7 @@ void Binder::moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell)
             addUeCollectorToEnodeB(ue, ueColl, newCell);
         }
         else if (newCellType == ENODEB) {
-            // retrieve NrUeCollector
+            // Retrieve NrUeCollector
             cModule *ueModule = getModuleByMacNodeId(ue);
             if (ueModule->findSubmodule("ueCollector") == -1)
                 ueColl = check_and_cast<UeStatsCollector *>(ueModule->getSubmodule("ueCollector"));

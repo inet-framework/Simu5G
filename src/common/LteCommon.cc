@@ -28,7 +28,7 @@ using namespace omnetpp;
 using namespace inet;
 
 const inet::Protocol LteProtocol::ipv4uu("ipv4uu", "IPv4 (LTE Uu link)");
-Register_Protocol_Dissector(&LteProtocol::ipv4uu, Ipv4ProtocolDissector);
+Register_Protocol_DisseCTOR(&LteProtocol::ipv4uu, Ipv4ProtocolDissector);
 
 const inet::Protocol LteProtocol::pdcp("pdcp", "PDCP");         // Packet Data Convergence Protocol
 const inet::Protocol LteProtocol::rlc("rlc", "RLC");            // Radio Link Control
@@ -438,7 +438,7 @@ MacCid ctrlInfoToMacCid(inet::Ptr<LteControlInfo> info)
 }
 
 /*
- * Obtain the MacNodeId of an UE from packet control info
+ * Obtain the MacNodeId of a UE from packet control info
  */
 MacNodeId ctrlInfoToUeId(inet::Ptr<LteControlInfo> info)
 {
@@ -478,7 +478,7 @@ LogicalCid MacCidToLcid(MacCid cid)
 
 CellInfo *getCellInfo(Binder *binder, MacNodeId nodeId)
 {
-    // Check if is an eNodeB
+    // Check if it is an eNodeB
     // function GetNextHop returns nodeId
     MacNodeId id = binder->getNextHop(nodeId);
     OmnetId omnetid = binder->getOmnetId(id);
@@ -580,7 +580,7 @@ void getParametersFromXML(cXMLElement *xmlData, ParameterMap& outputMap)
     }
 }
 
-// TODO: Used for parse string ned parameters. Use object parameters instead.
+// TODO: Used for parsing string NED parameters. Use object parameters instead.
 void parseStringToIntArray(std::string str, int *values, int dim, int pad)
 {
     for (int i = 0; i < dim; i++) {

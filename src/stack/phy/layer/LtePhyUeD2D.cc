@@ -43,14 +43,14 @@ void LtePhyUeD2D::initialize(int stage)
 void LtePhyUeD2D::handleSelfMessage(cMessage *msg)
 {
     if (msg->isName("d2dDecodingTimer")) {
-        // select one frame from the buffer. Implements the capture effect
+        // Select one frame from the buffer. Implements the capture effect.
         LteAirFrame *frame = extractAirFrame();
         UserControlInfo *lteInfo = check_and_cast<UserControlInfo *>(frame->removeControlInfo());
 
-        // decode the selected frame
+        // Decode the selected frame.
         decodeAirFrame(frame, lteInfo);
 
-        // clear buffer
+        // Clear buffer.
         while (!d2dReceivedFrames_.empty()) {
             LteAirFrame *frame = d2dReceivedFrames_.back();
             d2dReceivedFrames_.pop_back();
@@ -61,7 +61,7 @@ void LtePhyUeD2D::handleSelfMessage(cMessage *msg)
         d2dDecodingTimer_ = nullptr;
     }
     else if (msg->isName("doModeSwitchAtHandover")) {
-        // call mode selection module to check if DM connections are possible
+        // Call mode selection module to check if DM connections are possible.
         cModule *enb = getSimulation()->getModule(binder_->getOmnetId(masterId_));
         D2DModeSelectionBase *d2dModeSelection = check_and_cast<D2DModeSelectionBase *>(enb->getSubmodule("cellularNic")->getSubmodule("d2dModeSelection"));
         d2dModeSelection->doModeSwitchAtHandover(nodeId_, true);
@@ -78,7 +78,7 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
     UserControlInfo *lteInfo = check_and_cast<UserControlInfo *>(msg->removeControlInfo());
 
     if (useBattery_) {
-        //TODO BatteryAccess::drawCurrent(rxAmount_, 0);
+        // TODO BatteryAccess::drawCurrent(rxAmount_, 0);
     }
     connectedNodeId_ = masterId_;
     LteAirFrame *frame = check_and_cast<LteAirFrame *>(msg);
@@ -86,7 +86,7 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
 
     int sourceId = lteInfo->getSourceId();
     if (binder_->getOmnetId(sourceId) == 0) {
-        // source has left the simulation
+        // Source has left the simulation.
         delete msg;
         return;
     }
@@ -100,7 +100,7 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
         return;
     }
 
-    // check if the message is from a different cellular technology
+    // Check if the message is from a different cellular technology.
     if (lteInfo->isNr() != isNr_) {
         EV << "Received packet [from NR=" << lteInfo->isNr() << "] from a different radio technology [to NR=" << isNr_ << "]. Delete it." << endl;
         delete lteInfo;
@@ -108,9 +108,9 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
         return;
     }
 
-    //Update coordinates of this user
+    // Update coordinates of this user.
     if (lteInfo->getFrameType() == HANDOVERPKT) {
-        // check if the message is on another carrier frequency or handover is already in process
+        // Check if the message is on another carrier frequency or handover is already in process.
         if (carrierFreq != primaryChannelModel_->getCarrierFrequency() || (handoverTrigger_ != nullptr && handoverTrigger_->isScheduled())) {
             EV << "Received handover packet on a different carrier frequency. Delete it." << endl;
             delete lteInfo;
@@ -122,7 +122,7 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
         return;
     }
 
-    // Check if the frame is for us ( MacNodeId matches or - if this is a multicast communication - enrolled in multicast group)
+    // Check if the frame is for us (MacNodeId matches or - if this is a multicast communication - enrolled in multicast group).
     if (lteInfo->getDestId() != nodeId_ && !(binder_->isInMulticastGroup(nodeId_, lteInfo->getMulticastGroupId()))) {
         EV << "ERROR: Frame is not for us. Delete it." << endl;
         EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
@@ -151,41 +151,41 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
     }
 
     if (binder_->isInMulticastGroup(nodeId_, lteInfo->getMulticastGroupId())) {
-        // HACK: if this is a multicast connection, change the destId of the airframe so that upper layers can handle it
+        // HACK: if this is a multicast connection, change the destId of the airframe so that upper layers can handle it.
         lteInfo->setDestId(nodeId_);
     }
 
-    // send H-ARQ feedback up
+    // Send H-ARQ feedback up.
     if (lteInfo->getFrameType() == HARQPKT || lteInfo->getFrameType() == GRANTPKT || lteInfo->getFrameType() == RACPKT || lteInfo->getFrameType() == D2DMODESWITCHPKT) {
         handleControlMsg(frame, lteInfo);
         return;
     }
 
-    // this is a DATA packet
+    // This is a DATA packet.
 
     if (masterId_ == 0) {
         // UE is not (anymore) associated with any eNB/gNB and all harqBuffers are already deleted.
         // Handing this data packet to the MAC layer will lead to null pointers.
-        EV << "LtePhyUeD2D: UE " << nodeId_ << " received data packet while not associated to any base station. (masterId " << masterId_ << "). Drop it." << endl;
+        EV << "LtePhyUeD2D: UE " << nodeId_ << " received data packet while not associated with any base station. (masterId " << masterId_ << "). Drop it." << endl;
         delete lteInfo;
         delete frame;
         return;
     }
 
-    // if the packet is a D2D multicast one, store it and decode it at the end of the TTI
+    // If the packet is a D2D multicast one, store it and decode it at the end of the TTI.
     if (d2dMulticastEnableCaptureEffect_ && binder_->isInMulticastGroup(nodeId_, lteInfo->getMulticastGroupId())) {
-        // if not already started, auto-send a message to signal the presence of data to be decoded
+        // If not already started, auto-send a message to signal the presence of data to be decoded.
         if (d2dDecodingTimer_ == nullptr) {
             d2dDecodingTimer_ = new cMessage("d2dDecodingTimer");
-            d2dDecodingTimer_->setSchedulingPriority(10);          // last thing to be performed in this TTI
+            d2dDecodingTimer_->setSchedulingPriority(10);          // Last thing to be performed in this TTI.
             scheduleAt(NOW, d2dDecodingTimer_);
         }
 
-        // store frame, together with related control info
+        // Store frame, together with related control info.
         frame->setControlInfo(lteInfo);
-        storeAirFrame(frame);            // implements the capture effect
+        storeAirFrame(frame);            // Implements the capture effect.
 
-        return;                          // exit the function, decoding will be done later
+        return;                          // Exit the function, decoding will be done later.
     }
 
     if ((lteInfo->getUserTxParams()) != nullptr) {
@@ -198,7 +198,7 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
             recordCqi(cqi, DL);
         }
     }
-    // apply decider to received packet
+    // Apply decider to received packet.
     bool result = true;
     RemoteSet r = lteInfo->getUserTxParams()->readAntennaSet();
     if (r.size() > 1) {
@@ -211,20 +211,20 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
              * and tx power to the sender das antenna
              */
 
-            // Set position of sender
+            // Set position of sender.
             RemoteUnitPhyData data;
             data.txPower = lteInfo->getTxPower();
             data.m = getRadioPosition();
             frame->addRemoteUnitPhyDataVector(data);
         }
-        // apply analog models For DAS
+        // Apply analog models For DAS.
         result = channelModel->isErrorDas(frame, lteInfo);
     }
     else {
         result = channelModel->isError(frame, lteInfo);
     }
 
-    // update statistics
+    // Update statistics.
     if (result)
         numAirFrameReceived_++;
     else
@@ -235,15 +235,15 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
 
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
 
-    // here frame has to be destroyed since it is no more useful
+    // Here frame has to be destroyed since it is no more useful.
     delete frame;
 
-    // attach the decider result to the packet as control info
+    // Attach the decider result to the packet as control info.
     lteInfo->setDeciderResult(result);
     *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
     delete lteInfo;
 
-    // send decapsulated message along with result control info to upperGateOut_
+    // Send decapsulated message along with result control info to upperGateOut_.
     send(pkt, upperGateOut_);
 
     if (getEnvir()->isGUI())
@@ -253,10 +253,10 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
 void LtePhyUeD2D::triggerHandover()
 {
     if (masterId_ != 0) {
-        // stop active D2D flows (go back to Infrastructure mode)
-        // currently, DM is possible only for UEs served by the same cell
+        // Stop active D2D flows (go back to Infrastructure mode).
+        // Currently, DM is possible only for UEs served by the same cell.
 
-        // trigger D2D mode switch
+        // Trigger D2D mode switch.
         cModule *enb = getSimulation()->getModule(binder_->getOmnetId(masterId_));
         D2DModeSelectionBase *d2dModeSelection = check_and_cast<D2DModeSelectionBase *>(enb->getSubmodule("cellularNic")->getSubmodule("d2dModeSelection"));
         d2dModeSelection->doModeSwitchAtHandover(nodeId_, false);
@@ -266,7 +266,7 @@ void LtePhyUeD2D::triggerHandover()
 
 void LtePhyUeD2D::doHandover()
 {
-    // amc calls
+    // AMC calls.
     if (masterId_ != 0) {
         LteAmc *oldAmc = getAmcModule(masterId_);
         oldAmc->detachUser(nodeId_, D2D);
@@ -281,7 +281,7 @@ void LtePhyUeD2D::doHandover()
     LtePhyUe::doHandover();
 
     if (candidateMasterId_ != 0) {
-        // send a self-message to schedule the possible mode switch at the end of the TTI (after all UEs have performed the handover)
+        // Send a self-message to schedule the possible mode switch at the end of the TTI (after all UEs have performed the handover).
         cMessage *msg = new cMessage("doModeSwitchAtHandover");
         msg->setSchedulingPriority(10);
         scheduleAt(NOW, msg);
@@ -299,9 +299,9 @@ void LtePhyUeD2D::handleUpperMessage(cMessage *msg)
         throw cRuntimeError("LtePhyUeD2D::handleUpperMessage - Carrier frequency [%f] not supported by any channel model", carrierFreq);
 
     if (lteInfo->getFrameType() == DATAPKT && (channelModel->isUplinkInterferenceEnabled() || channelModel->isD2DInterferenceEnabled())) {
-        // Store the RBs used for data transmission to the binder (for UL interference computation)
+        // Store the RBs used for data transmission to the binder (for UL interference computation).
         RbMap rbMap = lteInfo->getGrantedBlocks();
-        Remote antenna = MACRO;  // TODO fix for multi-antenna
+        Remote antenna = MACRO;  // TODO fix for multi-antenna.
         Direction dir = (Direction)lteInfo->getDirection();
         binder_->storeUlTransmissionMap(channelModel->getCarrierFrequency(), antenna, rbMap, nodeId_, mac_->getMacCellId(), this, dir);
     }
@@ -323,22 +323,22 @@ void LtePhyUeD2D::handleUpperMessage(cMessage *msg)
         frame = new LteAirFrame("harqFeedback-grant");
     }
     else {
-        // create LteAirFrame and encapsulate the received packet
+        // Create LteAirFrame and encapsulate the received packet.
         frame = new LteAirFrame("airframe");
     }
 
     frame->encapsulate(check_and_cast<cPacket *>(msg));
 
-    // initialize frame fields
+    // Initialize frame fields.
 
     frame->setSchedulingPriority(airFramePriority_);
 
-    // set transmission duration according to the numerology
+    // Set transmission duration according to the numerology.
     NumerologyIndex numerologyIndex = binder_->getNumerologyIndexFromCarrierFreq(lteInfo->getCarrierFrequency());
     double slotDuration = binder_->getSlotDurationFromNumerologyIndex(numerologyIndex);
     frame->setDuration(slotDuration);
 
-    // set current position
+    // Set current position.
     lteInfo->setCoord(getRadioPosition());
 
     lteInfo->setTxPower(txPower_);
@@ -348,8 +348,8 @@ void LtePhyUeD2D::handleUpperMessage(cMessage *msg)
     EV << "LtePhyUeD2D::handleUpperMessage - " << nodeTypeToA(nodeType_) << " with id " << nodeId_
        << " sending message to the air channel. Dest=" << lteInfo->getDestId() << endl;
 
-    // if this is a multicast/broadcast connection, send the frame to all neighbors in the hearing range
-    // otherwise, send unicast to the destination
+    // If this is a multicast/broadcast connection, send the frame to all neighbors in the hearing range.
+    // Otherwise, send unicast to the destination.
     if (lteInfo->getDirection() == D2D_MULTI)
         sendMulticast(frame);
     else
@@ -358,8 +358,8 @@ void LtePhyUeD2D::handleUpperMessage(cMessage *msg)
 
 void LtePhyUeD2D::storeAirFrame(LteAirFrame *newFrame)
 {
-    // implements the capture effect
-    // store the frame received from the nearest transmitter
+    // Implements the capture effect
+    // Store the frame received from the nearest transmitter
     UserControlInfo *newInfo = check_and_cast<UserControlInfo *>(newFrame->getControlInfo());
     double carrierFreq = newInfo->getCarrierFrequency();
     LteChannelModel *channelModel = getChannelModel(carrierFreq);
@@ -379,16 +379,16 @@ void LtePhyUeD2D::storeAirFrame(LteAirFrame *newFrame)
         unsigned int allocatedRbs = 0;
         rsrpVector = channelModel->getRSRP_D2D(newFrame, newInfo, nodeId_, myCoord);
 
-        // get the average RSRP on the RBs allocated for the transmission
+        // Get the average RSRP on the RBs allocated for the transmission
         RbMap rbmap = newInfo->getGrantedBlocks();
         RbMap::iterator it;
         std::map<Band, unsigned int>::iterator jt;
-        //for each Remote unit used to transmit the packet
+        // For each Remote unit used to transmit the packet
         for (it = rbmap.begin(); it != rbmap.end(); ++it) {
-            //for each logical band used to transmit the packet
+            // For each logical band used to transmit the packet
             for (jt = it->second.begin(); jt != it->second.end(); ++jt) {
                 Band band = jt->first;
-                if (jt->second == 0) // this Rb is not allocated
+                if (jt->second == 0) // This Rb is not allocated
                     continue;
 
                 sum += rsrpVector.at(band);
@@ -399,7 +399,7 @@ void LtePhyUeD2D::storeAirFrame(LteAirFrame *newFrame)
             rsrpMean = sum / allocatedRbs;
         EV << NOW << " LtePhyUeD2D::storeAirFrame - Average RSRP from node " << newInfo->getSourceId() << ": " << rsrpMean << endl;
     }
-    else { // distance
+    else { // Distance
         Coord newSenderCoord = newInfo->getCoord();
         distance = myCoord.distance(newSenderCoord);
         EV << NOW << " LtePhyUeD2D::storeAirFrame - Distance from node " << newInfo->getSourceId() << ": " << distance << endl;
@@ -410,7 +410,7 @@ void LtePhyUeD2D::storeAirFrame(LteAirFrame *newFrame)
         if (!useRsrp && distance < nearestDistance_) {
             EV << "[ < nearestDistance: " << nearestDistance_ << "]" << endl;
 
-            // remove the previous frame
+            // Remove the previous frame
             d2dReceivedFrames_.pop_back();
             delete prevFrame;
 
@@ -420,7 +420,7 @@ void LtePhyUeD2D::storeAirFrame(LteAirFrame *newFrame)
         else if (rsrpMean > bestRsrpMean_) {
             EV << "[ > bestRsrp: " << bestRsrpMean_ << "]" << endl;
 
-            // remove the previous frame
+            // Remove the previous frame
             d2dReceivedFrames_.pop_back();
             delete prevFrame;
 
@@ -429,7 +429,7 @@ void LtePhyUeD2D::storeAirFrame(LteAirFrame *newFrame)
             d2dReceivedFrames_.push_back(newFrame);
         }
         else {
-            // this frame will not be decoded
+            // This frame will not be decoded
             delete newFrame;
         }
     }
@@ -448,8 +448,8 @@ void LtePhyUeD2D::storeAirFrame(LteAirFrame *newFrame)
 
 LteAirFrame *LtePhyUeD2D::extractAirFrame()
 {
-    // implements the capture effect
-    // the vector is storing the frame received from the strongest/nearest transmitter
+    // Implements the capture effect
+    // The vector is storing the frame received from the strongest/nearest transmitter
 
     return d2dReceivedFrames_.front();
 }
@@ -463,7 +463,7 @@ void LtePhyUeD2D::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo)
     if (channelModel == nullptr)
         throw cRuntimeError("LtePhyUeD2D::decodeAirFrame - Carrier frequency [%f] not supported by any channel model", carrierFreq);
 
-    // apply decider to received packet
+    // Apply decider to received packet
     bool result = true;
 
     RemoteSet r = lteInfo->getUserTxParams()->readAntennaSet();
@@ -474,7 +474,7 @@ void LtePhyUeD2D::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo)
 
             /*
              * On UE set the sender position
-             * and tx power to the sender das antenna
+             * and tx power to the sender DAS antenna
              */
 
             // Set position of sender
@@ -483,7 +483,7 @@ void LtePhyUeD2D::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo)
             data.m = getRadioPosition();
             frame->addRemoteUnitPhyDataVector(data);
         }
-        // apply analog models For DAS
+        // Apply analog models for DAS
         result = channelModel->isErrorDas(frame, lteInfo);
     }
     else {
@@ -493,7 +493,7 @@ void LtePhyUeD2D::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo)
             result = channelModel->isError(frame, lteInfo);
     }
 
-    // update statistics
+    // Update statistics
     if (result)
         numAirFrameReceived_++;
     else
@@ -507,12 +507,12 @@ void LtePhyUeD2D::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo)
     // Note: no need to delete the frame itself - will be deleted later when the buffer of
     // received frames is cleared
 
-    // attach the decider result to the packet as control info
+    // Attach the decider result to the packet as control info
     lteInfo->setDeciderResult(result);
     *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
     delete lteInfo;
 
-    // send decapsulated message along with result control info to upperGateOut_
+    // Send decapsulated message along with result control info to upperGateOut_
     send(pkt, upperGateOut_);
 
     if (getEnvir()->isGUI())
@@ -524,9 +524,9 @@ void LtePhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVe
     Enter_Method("SendFeedback");
     EV << "LtePhyUeD2D: feedback from Feedback Generator" << endl;
 
-    //Create a feedback packet
+    // Create a feedback packet
     auto fbPkt = makeShared<LteFeedbackPkt>();
-    //Set the feedback
+    // Set the feedback
     fbPkt->setLteFeedbackDoubleVectorDl(fbDl);
     fbPkt->setLteFeedbackDoubleVectorUl(fbUl); // Fix: changed from fbDl to fbUl
     fbPkt->setSourceNodeId(nodeId_);
@@ -539,7 +539,7 @@ void LtePhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVe
     uinfo->setDestId(masterId_);
     uinfo->setFrameType(FEEDBACKPKT);
     uinfo->setIsCorruptible(false);
-    // create LteAirFrame and encapsulate a feedback packet
+    // Create LteAirFrame and encapsulate a feedback packet
     LteAirFrame *frame = new LteAirFrame("feedback_pkt");
     frame->encapsulate(check_and_cast<cPacket *>(pkt));
     uinfo->feedbackReq = req;
@@ -547,17 +547,17 @@ void LtePhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVe
     simtime_t signalLength = TTI;
     uinfo->setTxPower(txPower_);
     uinfo->setD2dTxPower(d2dTxPower_);
-    // initialize frame fields
+    // Initialize frame fields
 
     frame->setSchedulingPriority(airFramePriority_);
     frame->setDuration(signalLength);
 
     uinfo->setCoord(getRadioPosition());
 
-    //TODO access speed data Update channel index
+    // TODO access speed data Update channel index
     lastFeedback_ = NOW;
 
-    // send one feedback packet for each carrier
+    // Send one feedback packet for each carrier
     for (auto& cm : channelModel_) {
         double carrierFrequency = cm.first;
         LteAirFrame *carrierFrame = frame->dup();
@@ -577,9 +577,9 @@ void LtePhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVe
 void LtePhyUeD2D::finish()
 {
     if (getSimulation()->getSimulationStage() != CTX_FINISH) {
-        // do this only at deletion of the module during the simulation
+        // Do this only at deletion of the module during the simulation
 
-        // amc calls
+        // AMC calls
         LteAmc *amc = getAmcModule(masterId_);
         if (amc != nullptr)
             amc->detachUser(nodeId_, D2D);

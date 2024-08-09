@@ -38,7 +38,7 @@ class LteHandoverManager : public cSimpleModule
     X2NodeId nodeId_;
 
     // reference to the gates
-    cGate *x2Manager_[2];   // TODO replace to *inGate, *outGate
+    cGate *x2Manager_[2];   // TODO replace with *inGate, *outGate
 
     // reference to the PDCP layer
     inet::ModuleRefByPar<IP2Nic> ip2nic_;
@@ -59,7 +59,7 @@ class LteHandoverManager : public cSimpleModule
     void sendHandoverCommand(MacNodeId ueId, MacNodeId enb, bool startHo);
 
     // receive handover command on X2 from the source eNB
-    void receiveHandoverCommand(MacNodeId ueId, MacNodeId eEnb, bool startHo);
+    void receiveHandoverCommand(MacNodeId ueId, MacNodeId enb, bool startHo);
 
     // send an IP datagram to the X2 Manager
     void forwardDataToTargetEnb(inet::Packet *datagram, MacNodeId targetEnb);

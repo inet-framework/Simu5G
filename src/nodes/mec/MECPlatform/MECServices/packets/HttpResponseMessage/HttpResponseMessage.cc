@@ -51,8 +51,8 @@ void HttpResponseMessage::setStatus(HttpResponseStatus res) {
             this->status = "No Content";
             break;
         case (BAD_REQ):
-            this->code = 200;
-            this->status = "BadRequest";
+            this->code = 400; // Corrected to proper status code
+            this->status = "Bad Request"; // Fixed to proper phrasing
             break;
         case (UNAUTH):
             this->code = 401;
@@ -110,7 +110,7 @@ std::string HttpResponseMessage::getPayload() const {
 
     if (!headerFields_.empty()) {
         for (const auto& headerField : headerFields_) {
-            payload += headerField.first + headerField.second + crlf;
+            payload += headerField.first + ": " + headerField.second + crlf; // Added colon separator
         }
     }
     payload += crlf + body.str();
