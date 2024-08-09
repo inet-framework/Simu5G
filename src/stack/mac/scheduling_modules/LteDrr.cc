@@ -151,7 +151,7 @@ void LteDrr::updateSchedulingInfo()
         if (minRate == 0 /* || pars.minReservedRate_ < minRate*/)
             minRate = 500;
         if (minSize == 0 /*|| pars.maxBurst_ < minSize */)
-            minSize = 160; /*pars.maxBurst_;*/
+            minSize = 160; // pars.maxBurst_;
 
         // Compute the quanta. If descriptors do not exist they are created.
         // The values of the other fields, e.g., active status, are not changed.
