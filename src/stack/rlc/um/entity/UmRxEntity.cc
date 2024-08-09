@@ -891,7 +891,6 @@ void UmRxEntity::handleBurst(BurstCheck event)
 
     // reset temporary (per tti) variables
     ttiBits_ = 0;
-
 }
 
 } //namespace
