@@ -90,7 +90,7 @@ void UmRxEntity::enque(cPacket *pktAux)
     EV << NOW << " UmRxEntity::enque - tsn " << tsn << ", the corresponding index in the buffer is " << index << endl;
 
     // x was already received
-    if (tsn >= rxWindowDesc_.firstSnoForReordering_ && tsn < rxWindowDesc_.highestReceivedSno_ && received_.at(index) == true) {
+    if (tsn >= rxWindowDesc_.firstSnoForReordering_ && tsn < rxWindowDesc_.highestReceivedSno_ && received_.at(index)) {
         EV << NOW << " UmRxEntity::enque the received PDU has index " << index << " which points to an already busy location. Discard the PDU" << endl;
 
         // TODO
@@ -178,13 +178,13 @@ void UmRxEntity::enque(cPacket *pktAux)
     index = rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_; //
 
     // D
-    if (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_) == true) {
+    if (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_)) {
         unsigned int old = rxWindowDesc_.firstSnoForReordering_;
 
         index = rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_; //
 
         // move to the first missing SN
-        while (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_) == true) {
+        while (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_)) {
             rxWindowDesc_.firstSnoForReordering_++;
             if (rxWindowDesc_.firstSnoForReordering_ == rxWindowDesc_.highestReceivedSno_) // end of the window
                 break;
@@ -327,7 +327,7 @@ void UmRxEntity::reassemble(unsigned int index)
 {
     Enter_Method("reassemble()");
 
-    if (received_.at(index) == false) {
+    if (!received_.at(index)) {
         // consider the case when a PDU is missing or already delivered
         EV << NOW << " UmRxEntity::reassemble PDU at index " << index << " has not been received or already delivered" << endl;
         return;
@@ -723,7 +723,7 @@ void UmRxEntity::handleMessage(cMessage *msg)
         unsigned int old = rxWindowDesc_.firstSnoForReordering_;
 
         // move to the first missing SN
-        while (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_) == true
+        while (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_)
                || rxWindowDesc_.firstSnoForReordering_ < rxWindowDesc_.reorderingSno_)
         {
             rxWindowDesc_.firstSnoForReordering_++;

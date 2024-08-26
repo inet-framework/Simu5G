@@ -275,7 +275,7 @@ void AmRxQueue::enque(Packet *pkt)
 
         // Check if the PDU has already been received
 
-        if (received_.at(index) == true) {
+        if (received_.at(index)) {
             EV << NOW << " AmRxQueue::enque the received PDU has index " << index << " which points to an already busy location" << endl;
 
             // Check if the received PDU points
@@ -443,7 +443,7 @@ void AmRxQueue::checkCompleteSdu(const int index)
             else {
                 // check for previous PDUs
                 for (int i = index - 1; i >= 0; i--) {
-                    if (received_.at(i) == false) {
+                    if (!received_.at(i)) {
                         // There is NO RLC PDU in this position
                         // The SDU is not complete
                         EV << NOW << " AmRxQueue::checkCompleteSdu: SDU cannot be reconstructed, no PDU received at positions earlier than " << i << endl;
@@ -498,7 +498,7 @@ void AmRxQueue::checkCompleteSdu(const int index)
     // Go forward looking for remaining PDUs
 
     for (int i = index + 1; i < (rxWindowDesc_.windowSize_); ++i) {
-        if (received_.at(i) == false) {
+        if (!received_.at(i)) {
             EV << NOW << " AmRxQueue::checkCompleteSdu forward search failed, no PDU at position " << i << " corresponding to"
                                                                                                            " SN  " << i + rxWindowDesc_.firstSeqNum_ << endl;
 
@@ -556,7 +556,7 @@ void AmRxQueue::sendStatusReport()
     std::vector<bool> bitmap;
 
     for (int i = 0; i < rxWindowDesc_.windowSize_; ++i) {
-        if ((received_.at(i) == true) && !hole) {
+        if (received_.at(i) && !hole) {
             cumulative++;
         }
         else if ((cumulative > 0) || hole) {
@@ -618,7 +618,7 @@ int AmRxQueue::computeWindowShift() const
     EV << NOW << "AmRxQueue::computeWindowShift" << endl;
     int shift = 0;
     for ( int i = 0; i < rxWindowDesc_.windowSize_; ++i) {
-        if (received_.at(i) == true || discarded_.at(i) == true) {
+        if (received_.at(i) || discarded_.at(i)) {
             ++shift;
         }
         else {

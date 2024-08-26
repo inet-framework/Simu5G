@@ -224,7 +224,7 @@ void UEWarningAlertApp::handleAckStartMEWarningAlertApp(cMessage *msg)
     inet::Packet *packet = check_and_cast<inet::Packet *>(msg);
     auto pkt = packet->peekAtFront<DeviceAppStartAckPacket>();
 
-    if (pkt->getResult() == true) {
+    if (pkt->getResult()) {
         mecAppAddress_ = L3AddressResolver().resolve(pkt->getIpAddress());
         mecAppPort_ = pkt->getPort();
         EV << "UEWarningAlertApp::handleAckStartMEWarningAlertApp - Received " << pkt->getType() << " type WarningAlertPacket. mecApp instance is at: " << mecAppAddress_ << ":" << mecAppPort_ << endl;
@@ -314,7 +314,7 @@ void UEWarningAlertApp::handleAckStopMEWarningAlertApp(cMessage *msg)
     auto pkt = packet->peekAtFront<DeviceAppStopAckPacket>();
 
     EV << "UEWarningAlertApp::handleAckStopMEWarningAlertApp - Received " << pkt->getType() << " type WarningAlertPacket with result: " << pkt->getResult() << endl;
-    if (pkt->getResult() == false)
+    if (!pkt->getResult())
         EV << "Reason: " << pkt->getReason() << endl;
     //updating runtime color of the car icon background
     ue->getDisplayString().setTagArg("i", 1, "white");

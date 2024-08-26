@@ -135,7 +135,7 @@ void MecOrchestrator::startMECApp(UALCMPMessage *msg)
     std::string appDid;
     double processingTime = 0.0;
 
-    if (contAppMsg->getOnboarded() == false) {
+    if (!contAppMsg->getOnboarded()) {
         // Onboard app descriptor
         EV << "MecOrchestrator::startMECApp - onboarding appDescriptor from: " << contAppMsg->getAppPackagePath() << endl;
         const ApplicationDescriptor& appDesc = onboardApplicationPackage(contAppMsg->getAppPackagePath());

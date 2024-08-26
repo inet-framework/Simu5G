@@ -496,7 +496,7 @@ void LteMacUe::macPduMake(MacCid cid)
             //            }
             //
             //            // if there's space only for a SHORT BSR and there are scheduled flows, send it
-            //            else if( (mac_->bsrTriggered() == true) && (availableBytes >= SHORT_BSR_SIZE) && (highestBackloggedFlow != -1) ) {
+            //            else if(mac_->bsrTriggered() && (availableBytes >= SHORT_BSR_SIZE) && (highestBackloggedFlow != -1) ) {
             //
             //                // Create a PDU if data were not scheduled
             //                if (pdu==0)

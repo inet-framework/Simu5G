@@ -137,7 +137,7 @@ void NRRxPdcpEntity::handleMessage(cMessage *msg)
         // deliver buffered SDUs
         while (rxWindowDesc_.rxDeliv_ < rxWindowDesc_.rxReord_) {
             int pos = rxWindowDesc_.rxDeliv_ - old;
-            if (received_.at(pos) == true) {
+            if (received_.at(pos)) {
                 EV << NOW << " NRRxPdcpEntity::handleMessage - Deliver SDU buffered at index[" << pos << "] to upper layer" << endl;
                 cPacket *sdu = check_and_cast<cPacket *>(sduBuffer_.remove(pos));
                 pdcp_->toDataPort(sdu);
@@ -145,7 +145,7 @@ void NRRxPdcpEntity::handleMessage(cMessage *msg)
             rxWindowDesc_.rxDeliv_++;
         }
 
-        while (received_.at(rxWindowDesc_.rxDeliv_ - old) == true) {
+        while (received_.at(rxWindowDesc_.rxDeliv_ - old)) {
             EV << NOW << " NRRxPdcpEntity::handleMessage - Deliver SDU buffered at index[" << (rxWindowDesc_.rxDeliv_ - old) << "] to upper layer" << endl;
             cPacket *sdu = check_and_cast<cPacket *>(sduBuffer_.remove(rxWindowDesc_.rxDeliv_ - old));
             pdcp_->toDataPort(sdu);

@@ -182,7 +182,7 @@ void ChannelControl::updateConnections(RadioRef h)
 
         if (inRange) {
             // nodes within communication range: connect
-            if (h->neighbors.insert(hi).second == true) {
+            if (h->neighbors.insert(hi).second) {
                 hi->neighbors.insert(h);
                 h->isNeighborListValid = hi->isNeighborListValid = false;
             }
