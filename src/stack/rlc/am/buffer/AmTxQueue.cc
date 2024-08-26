@@ -239,7 +239,7 @@ void AmTxQueue::addPdus()
         addedPdus++;
 
         // Activate buffer checking timer
-        if (bufferStatusTimer_.busy() == false) {
+        if (!bufferStatusTimer_.busy()) {
             bufferStatusTimer_.start(bufferStatusTimeout_);
         }
 
@@ -264,7 +264,7 @@ void AmTxQueue::discard(const int seqNum)
                 seqNum, txWindowDesc_.firstSeqNum_);
     }
 
-    if (discarded_.at(txWindowIndex) == true) {
+    if (discarded_.at(txWindowIndex)) {
         EV << " AmTxQueue::discard requested to discard an already discarded PDU :"
               " sequence number" << seqNum << " , window first sequence is " << txWindowDesc_.firstSeqNum_ << endl;
     }
@@ -336,7 +336,7 @@ void AmTxQueue::checkForMrw()
     bool toMove = false;
 
     for (int i = 0; i < (txWindowDesc_.seqNum_ - txWindowDesc_.firstSeqNum_); ++i) {
-        if ((discarded_.at(i) == true) || (received_.at(i) == true)) {
+        if (discarded_.at(i) || received_.at(i)) {
             lastPdu = i;
             toMove = true;
         }
@@ -705,7 +705,7 @@ void AmTxQueue::pduTimerHandle(const int sn)
 
     // Check if the PDU has been correctly received; if so, the
     // timer should have been previously stopped.
-    if (received_.at(index) == true)
+    if (received_.at(index))
         throw cRuntimeError(" AmTxQueue::pduTimerHandle(): The PDU %d [index %d] has already been received", sn, index);
 
     // Get the PDU information

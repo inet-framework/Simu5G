@@ -50,7 +50,7 @@ void DeviceAppMessageSerializer::serialize(MemoryOutputStream& stream, const Ptr
 
         auto ackPk = staticPtrCast<const DeviceAppStartAckPacket>(chunk);
 
-        if (ackPk->getResult() == true) {
+        if (ackPk->getResult()) {
             std::stringstream data;
             data << ackPk->getIpAddress() << ":" << ackPk->getPort();
             std::string sdata = data.str();
@@ -88,7 +88,7 @@ void DeviceAppMessageSerializer::serialize(MemoryOutputStream& stream, const Ptr
     }
     else if (ss == ACK_STOP_MECAPP) {
         auto ackPk = staticPtrCast<const DeviceAppStopAckPacket>(chunk);
-        if (ackPk->getResult() == true) {
+        if (ackPk->getResult()) {
             stream.writeByte((uint8_t)STOP_ACK_CODE);
             stream.writeByte((uint8_t)0);
 
