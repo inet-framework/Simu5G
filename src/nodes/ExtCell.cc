@@ -120,6 +120,7 @@ void ExtCell::updateBandStatus()
         }
     }
     else {  // CONTIGUOUS ALLOC
+        // TODO CONTIGUOUS ALLOC, FULL ALLOC:
         EV << " ExtCell::updateBandStatus() - generating new contiguous allocation for extCell " << id_ << " (carrier " << carrierFrequency_ << ")" << std::endl;
 
         // get the number of bands to be allocated

@@ -30,7 +30,7 @@ simple VoDUDPClient like IApp
         string origVideoYuv = default("");
         string origVideoSvc = default("");
         string decPath = default("");
-        string traceType = default("SVC");
+        string traceType = default("SVC");  // TODO uses only "ns2", ignores all others
         int playbackSize @unit("s") = default(2s);
         string avipluginPath = default("");
         int numFrame = default(0);
