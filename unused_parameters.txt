@@ -1,32 +1,4 @@
 Only occurrence of their names are their definitions:
-    Unused parameter in 'simu5g.apps.d2dMultihop.eventGenerator.EventGenerator': 'startingCoordX' - 1 match
-    Unused parameter in 'simu5g.apps.d2dMultihop.eventGenerator.EventGenerator': 'startingCoordY' - 1 match
-    Unused parameter in 'simu5g.apps.d2dMultihop.eventGenerator.EventGenerator': 'startingUe' - 1 match
-    Unused parameter in 'simu5g.apps.d2dMultihop.eventGenerator.EventGenerator': 'forceStartingCoord' - 1 match
-    Unused parameter in 'simu5g.apps.mec.RealTimeVideoStreamingApp.MecRTVideoStreamingReceiver': 'discardPercentage' - 1 match
-    Unused parameter in 'simu5g.stack.phy.ChannelModel.LteRealisticChannelModel': 'rsrqShift' - 1 match
-    Unused parameter in 'simu5g.stack.phy.ChannelModel.LteRealisticChannelModel': 'rsrqScale' - 1 match
-    Unused parameter in 'simu5g.stack.phy.ChannelModel.LteRealisticChannelModel': 'useRsrqFromLog' - 1 match
-    Unused parameter in 'simu5g.stack.phy.ChannelModel.NRChannelModel': 'rsrqShift' - inherited parameter from LteRealisticChannelModel
-    Unused parameter in 'simu5g.stack.phy.ChannelModel.NRChannelModel': 'rsrqScale' - inherited parameter from LteRealisticChannelModel
-    Unused parameter in 'simu5g.stack.phy.ChannelModel.NRChannelModel': 'useRsrqFromLog' - inherited parameter from LteRealisticChannelModel
-    Unused parameter in 'simu5g.stack.phy.ChannelModel.NRChannelModel_3GPP38_901': 'rsrqShift' - inherited parameter from LteRealisticChannelModel
-    Unused parameter in 'simu5g.stack.phy.ChannelModel.NRChannelModel_3GPP38_901': 'rsrqScale' - inherited parameter from LteRealisticChannelModel
-    Unused parameter in 'simu5g.stack.phy.ChannelModel.NRChannelModel_3GPP38_901': 'useRsrqFromLog' - inherited parameter from LteRealisticChannelModel
-    Unused parameter in 'simu5g.common.cellInfo.CellInfo': 'positionUpdateInterval' - 1 match
-    Unused parameter in 'simu5g.stack.mac.LteMacEnb': 'muMimoMinDistance' - 1 match
-    Unused parameter in 'simu5g.stack.mac.LteMacEnbD2D': 'muMimoMinDistance' - inherited parameter from LteMacEnb
-    Unused parameter in 'simu5g.stack.mac.NRMacGnb': 'muMimoMinDistance' - inherited parameter from LteMacEnb
-    Unused parameter in 'simu5g.world.radio.ChannelControl': 'propagationModel' - 1 match
-    Unused parameter in 'simu5g.world.radio.LteChannelControl': 'propagationModel' - inherited parameter from ChannelControl
-    Unused parameter in 'simu5g.stack.phy.ChannelModel.NRChannelModel_3GPP38_901': 'useBuildingPenetrationLossHighLossModel' - 1 match
-
-No longer exists in INET (except in a TCP tester app), not used in Simu5G directly:
-    Unused parameter in 'simu5g.nodes.mec.MECPlatform.MECServices.LocationService.LocationService': 'dataTransferMode'
-    Unused parameter in 'simu5g.nodes.mec.MECPlatform.MECServices.RNIService.RNIService': 'dataTransferMode'
-    Unused parameter in 'simu5g.nodes.mec.MECPlatform.ServiceRegistry.ServiceRegistry': 'dataTransferMode'
-    Unused parameter in 'simu5g.nodes.mec.UALCMP.UALCMPApp': 'dataTransferMode'
-    (also in 'moduleinterface IMECService')
 
 Inherited from INET...
     Unused parameter in 'simu5g.x2.X2AppClient': 'streamRequestLengths'
@@ -86,38 +58,6 @@ Actually used, by a different class:
         Unused parameter in 'simu5g.stack.mac.NRMacUe': 'maxHarqRtx'
 
 
-Unused parameter in 'simu5g.apps.mec.DeviceApp.DeviceApp': 'stopTime' - UNUSED
-Unused parameter in 'simu5g.apps.mec.DeviceApp.DeviceApp': 'startTime' - UNUSED
-
-Unused parameter in 'simu5g.apps.mec.MecApps.MecRequestBackgroundApp.MecRequestBackgroundApp': 'stopTime'
-Unused parameter in 'simu5g.apps.mec.MecApps.MecRequestBackgroundApp.MecRequestBackgroundApp': 'startTime'
-Unused parameter in 'simu5g.apps.mec.MecApps.MecRequestBackgroundApp.MecRequestBackgroundApp': 'allocateHostResources'
-Unused parameter in 'simu5g.apps.mec.MecApps.MecRequestBackgroundApp.MecRequestBackgroundApp': 'packetSize'
-Unused parameter in 'simu5g.apps.mec.MecApps.MecRequestBackgroundApp.MecRequestBackgroundApp': 'connectAddress'
-Unused parameter in 'simu5g.apps.mec.MecApps.MecRequestBackgroundApp.MecRequestBackgroundApp': 'numberOfApplications'
-Unused parameter in 'simu5g.apps.mec.MecApps.MecRequestBackgroundApp.MecRequestBackgroundApp': 'connectPort'
-
-Unused parameter in 'simu5g.apps.mec.MecApps.MecRequestBackgroundGeneratorApp.MecRequestBackgroundGeneratorApp': 'packetSize'
-
-Unused parameter in 'simu5g.apps.mec.MecApps.MecRequestForegroundApp.MecRequestForegroundApp': 'allocateHostResources'
-Unused parameter in 'simu5g.apps.mec.MecApps.MecRequestForegroundApp.MecRequestForegroundApp': 'packetSize'
-
-Unused parameter in 'simu5g.apps.mec.WarningAlert.UEWarningAlertApp': 'positionZ'
-Unused parameter in 'simu5g.apps.mecRequestResponseApp.MecRequestApp': 'stopTime'
-Unused parameter in 'simu5g.common.cellInfo.CellInfo': 'speed'
-Unused parameter in 'simu5g.corenetwork.gtp.GtpUser': 'filter'
-Unused parameter in 'simu5g.nodes.mec.MECPlatform.ServiceRegistry.ServiceRegistry': 'tos'
-Unused parameter in 'simu5g.nodes.mec.MECPlatform.ServiceRegistry.ServiceRegistry': 'destPort'
-Unused parameter in 'simu5g.nodes.mec.UALCMP.UALCMPApp': 'tos'
-Unused parameter in 'simu5g.nodes.mec.UALCMP.UALCMPApp': 'destPort'
-Unused parameter in 'simu5g.stack.mac.LteMacBase': 'interfaceName'
-Unused parameter in 'simu5g.stack.mac.LteMacBase': 'interfaceTableModule'
-Unused parameter in 'simu5g.stack.mac.LteMacEnb': 'interfaceName'
-Unused parameter in 'simu5g.stack.mac.LteMacEnb': 'interfaceTableModule'
-Unused parameter in 'simu5g.stack.mac.LteMacEnbD2D': 'interfaceName'
-Unused parameter in 'simu5g.stack.mac.LteMacEnbD2D': 'interfaceTableModule'
-Unused parameter in 'simu5g.stack.mac.NRMacGnb': 'interfaceName'
-Unused parameter in 'simu5g.stack.mac.NRMacGnb': 'interfaceTableModule'
 Unused parameter in 'simu5g.stack.phy.ChannelModel.LteRealisticChannelModel': 'targetBler'
 Unused parameter in 'simu5g.stack.phy.ChannelModel.NRChannelModel': 'targetBler'
 Unused parameter in 'simu5g.stack.phy.ChannelModel.NRChannelModel_3GPP38_901': 'targetBler'
