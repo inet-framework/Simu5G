@@ -61,14 +61,14 @@ Actually used, by a different class:
 Unused parameter in 'simu5g.stack.phy.ChannelModel.LteRealisticChannelModel': 'targetBler'
 Unused parameter in 'simu5g.stack.phy.ChannelModel.NRChannelModel': 'targetBler'
 Unused parameter in 'simu5g.stack.phy.ChannelModel.NRChannelModel_3GPP38_901': 'targetBler'
-Unused parameter in 'simu5g.stack.phy.LtePhyBase': 'enableHandover'
-Unused parameter in 'simu5g.stack.phy.LtePhyBase': 'txAngle'
+Unused parameter in 'simu5g.stack.phy.LtePhyBase': 'enableHandover' -- used in LtePhyEnb and LtePhyUe
+Unused parameter in 'simu5g.stack.phy.LtePhyBase': 'txAngle' -- used in LtePhyEnb
 Unused parameter in 'simu5g.stack.phy.LtePhyBase': 'dynamicCellAssociation'
-Unused parameter in 'simu5g.stack.phy.LtePhyBase': 'txDirection'
-Unused parameter in 'simu5g.stack.phy.LtePhyBase': 'handoverLatency'
-Unused parameter in 'simu5g.stack.phy.LtePhyEnb': 'handoverLatency'
+Unused parameter in 'simu5g.stack.phy.LtePhyBase': 'txDirection' -- used in LtePhyEnb
+Unused parameter in 'simu5g.stack.phy.LtePhyBase': 'handoverLatency' -- used in LtePhyUe
+Unused parameter in 'simu5g.stack.phy.LtePhyEnb': 'handoverLatency' -- used in LtePhyUe
 Unused parameter in 'simu5g.stack.phy.LtePhyEnb': 'dynamicCellAssociation'
-Unused parameter in 'simu5g.stack.phy.LtePhyEnbD2D': 'handoverLatency'
+Unused parameter in 'simu5g.stack.phy.LtePhyEnbD2D': 'handoverLatency' -- used in LtePhyUe
 Unused parameter in 'simu5g.stack.phy.LtePhyEnbD2D': 'dynamicCellAssociation'
 Unused parameter in 'simu5g.stack.phy.LtePhyUe': 'txDirection'
 Unused parameter in 'simu5g.stack.phy.LtePhyUe': 'txAngle'
