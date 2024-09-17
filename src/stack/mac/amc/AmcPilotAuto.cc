@@ -69,6 +69,7 @@ const UserTxParams& AmcPilotAuto::computeTxParams(MacNodeId id, const Direction 
                     chosenCqi = s;
                 }
 
+                // TODO FIXME: the next action is missing at Band 0:
                 Band cellWiseBand = amc_->getCellInfo()->getCellwiseBand(carrierFrequency, b);
                 bandSet.insert(cellWiseBand);
             }
@@ -105,6 +106,7 @@ const UserTxParams& AmcPilotAuto::computeTxParams(MacNodeId id, const Direction 
                     chosenBand = b;
                     chosenCqi = s;
                 }
+                // TODO FIXME: the next action is missing at Band 0:
                 Band cellWiseBand = amc_->getCellInfo()->getCellwiseBand(carrierFrequency, b);
                 bandSet.insert(cellWiseBand);
             }
