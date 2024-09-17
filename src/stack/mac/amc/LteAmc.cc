@@ -349,6 +349,7 @@ History_ *LteAmc::getHistory(Direction dir, double carrierFrequency)
         it = connectedUe->begin();
         et = connectedUe->end();
         for ( ; it != et; it++) { // For all UEs (DL)
+            //FIXME the `it` is unused in cycle!!!
             for (auto remote : remoteSet_) {
                 // initialize historical feedback base for this UE (index) for all tx modes and for all RUs
                 history[remote].push_back(
@@ -425,6 +426,7 @@ void LteAmc::pushFeedbackD2D(MacNodeId id, LteFeedback fb, MacNodeId peerId, dou
         it = d2dConnectedUe_.begin();
         et = d2dConnectedUe_.end();
         for ( ; it != et; it++) { // For all UEs (D2D)
+            //FIXME the `it` is unused in cycle!!!
             newHist[antenna].push_back(std::vector<LteSummaryBuffer>(UL_NUM_TXMODE, LteSummaryBuffer(fbhbCapacityD2D_, MAXCW, numBands_, lb_, ub_)));
         }
         (*history)[peerId] = newHist;
@@ -1357,6 +1359,7 @@ void LteAmc::testUe(MacNodeId nodeId, Direction dir)
 
         for (const auto& hit : *history) {
             EV << "History" << endl;
+            // FIXME is this code missing here? `it = remoteSet_.begin();`
             for ( ; it != et; it++ ) {
                 EV << "Remote: " << dasToA(*it) << endl;
                 feedback = (hit.second).at(*it).at(nodeIndex);
