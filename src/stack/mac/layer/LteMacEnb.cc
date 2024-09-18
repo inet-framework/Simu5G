@@ -195,6 +195,7 @@ void LteMacEnb::initialize(int stage)
         int i = 0;
         for (const auto& item : *carriers) {
             double carrierFrequency = item.second.carrierFrequency;
+            // TODO "^.bgTrafficGenerator[i].manager"
             bgTrafficManager_[carrierFrequency] = check_and_cast<IBackgroundTrafficManager *>(getParentModule()->getSubmodule("bgTrafficGenerator", i)->getSubmodule("manager"));
             bgTrafficManager_[carrierFrequency]->setCarrierFrequency(carrierFrequency);
             ++i;
