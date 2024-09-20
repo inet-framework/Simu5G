@@ -37,17 +37,17 @@ simple VoIPReceiver like IApp
         @signal[voIPFrameDelay];
         @statistic[voIPFrameDelay](title="VoIP Frame Delay"; unit="s"; source="voIPFrameDelay"; record=mean,vector);
         @signal[voIPPlayoutDelay];
-        @statistic[voIPPlayoutDelay](title="VoIP Playout Delay"; unit="s"; source="voIPPlayoutDelay"; record=mean,);
+        @statistic[voIPPlayoutDelay](title="VoIP Playout Delay"; unit="s"; source="voIPPlayoutDelay"; record=mean);
         @signal[voIPPlayoutLoss];
         @statistic[voIPPlayoutLoss](title="VoIP Playout Loss"; unit="ratio"; source="voIPPlayoutLoss"; record=mean);
         @signal[voIPJitter];
         @statistic[voIPJitter](title="VoIP Jitter"; unit="s"; source="voIPJitter"; record=mean);
         @signal[voIPMos];
-        @statistic[voIPMos](title="VoIP Mos Signal"; unit="MOS"; source="voIPMos"; record=mean);
+        @statistic[voIPMos](title="VoIP MOS Signal"; unit="MOS"; source="voIPMos"; record=mean);
         @signal[voIPTaildropLoss];
         @statistic[voIPTaildropLoss](title="VoIP Tail Drop Loss"; unit="ratio"; source="voIPTaildropLoss"; record=mean);
         @signal[voIPReceivedThroughput];
-        @statistic[voIPReceivedThroughput](title="Throughput received at the application level"; unit="Bps"; source="voIPReceivedThroughput"; record=mean,vector);
+        @statistic[voIPReceivedThroughput](title="Throughput Received at the Application Level"; unit="Bps"; source="voIPReceivedThroughput"; record=mean,vector);
         @display("i=block/source");
     gates:
         output socketOut;

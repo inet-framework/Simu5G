@@ -34,7 +34,7 @@ simple MecResponseApp like IApp
         int tos = default(-1); // if not -1, set the Type Of Service (IPv4) / Traffic Class (IPv6) field of sent packets to this value
 
         @signal[recvRequestSno];
-        @statistic[recvRequestSno](title="Received Sequence number"; unit=""; source="recvRequestSno"; record=vector);
+        @statistic[recvRequestSno](title="Received Sequence Number"; unit=""; source="recvRequestSno"; record=vector);
 
     gates:
         output socketOut;

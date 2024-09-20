@@ -76,7 +76,7 @@ simple MultihopD2D like IApp
         @statistic[d2dMultihopRcvdDupMsg](title="Number of received duplicate packets"; unit=""; source="d2dMultihopRcvdDupMsg"; record=sum,vector);
 
         @signal[d2dMultihopTrickleSuppressedMsg];
-        @statistic[d2dMultihopTrickleSuppressedMsg](title="Number of suppressed packets by the Trickle suppression mechanism"; unit=""; source="d2dMultihopTrickleSuppressedMsg"; record=sum,vector);
+        @statistic[d2dMultihopTrickleSuppressedMsg](title="Number of packets suppressed by the Trickle suppression mechanism"; unit=""; source="d2dMultihopTrickleSuppressedMsg"; record=sum,vector);
 
         @display("i=block/source");
     gates:

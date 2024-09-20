@@ -35,7 +35,7 @@ simple AlertSender like IApp
         int tos = default(-1); // if not -1, set the Type Of Service (IPv4) / Traffic Class (IPv6) field of sent packets to this value
 
         @signal[alertSentMsg];
-        @statistic[alertSentMsg](title="Alert messages sent"; unit=""; source="alertSentMsg"; record=sum,vector);
+        @statistic[alertSentMsg](title="Alert Messages Sent"; unit=""; source="alertSentMsg"; record=sum,vector);
 
         @display("i=block/source");
     gates:

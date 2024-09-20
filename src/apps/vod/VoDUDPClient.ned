@@ -40,13 +40,13 @@ simple VoDUDPClient like IApp
         @display("i=block/app");
         @class(VoDUDPClient);
         @signal[VoDTptLayer0];
-        @statistic[VoDTptLayer0](title="VoD Tpt Layer 0"; unit=""; source="VoDTptLayer0"; record=mean,vector);
+        @statistic[VoDTptLayer0](title="VoD Throughput Layer 0"; unit=""; source="VoDTptLayer0"; record=mean,vector);
         @signal[VoDTptLayer1];
-        @statistic[VoDTptLayer1](title="VoD Tpt Layer 1"; unit=""; source="VoDTptLayer1"; record=mean,vector);
+        @statistic[VoDTptLayer1](title="VoD Throughput Layer 1"; unit=""; source="VoDTptLayer1"; record=mean,vector);
         @signal[VoDTptLayer2];
-        @statistic[VoDTptLayer2](title="VoD Tpt Layer 2"; unit=""; source="VoDTptLayer2"; record=mean,vector);
+        @statistic[VoDTptLayer2](title="VoD Throughput Layer 2"; unit=""; source="VoDTptLayer2"; record=mean,vector);
         @signal[VoDTptLayer3];
-        @statistic[VoDTptLayer3](title="VoD Tpt Layer 3"; unit=""; source="VoDTptLayer3"; record=mean,vector);
+        @statistic[VoDTptLayer3](title="VoD Throughput Layer 3"; unit=""; source="VoDTptLayer3"; record=mean,vector);
 
         @signal[VoDDelayLayer0];
         @statistic[VoDDelayLayer0](title="VoD Delay Layer 0"; unit=""; source="VoDDelayLayer0"; record=mean,vector);

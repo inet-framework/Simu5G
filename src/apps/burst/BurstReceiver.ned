@@ -24,9 +24,9 @@ simple BurstReceiver like IApp
         int localPort = default(3000);   // the local UDP port to bind to
 
         @signal[burstRcvdPkt];
-        @statistic[burstRcvdPkt](title="Received packet ID"; unit=""; source="burstRcvdPkt"; record=vector);
+        @statistic[burstRcvdPkt](title="Received Packet ID"; unit=""; source="burstRcvdPkt"; record=vector);
         @signal[burstPktDelay];
-        @statistic[burstPktDelay](title="Delay of received packets"; unit="s"; source="burstPktDelay"; record=mean,vector);
+        @statistic[burstPktDelay](title="Delay of Received Packets"; unit="s"; source="burstPktDelay"; record=mean,vector);
 
         @display("i=block/source");
     gates:

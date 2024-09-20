@@ -46,5 +46,5 @@ simple LteMacEnbD2D extends LteMacEnb
         @signal[macCellThroughputD2D];
         @statistic[macCellThroughputD2D](title="Cell Throughput at the MAC layer D2D"; unit="Bps"; source="macCellThroughputD2D"; record=mean);
         @signal[macCellPacketLossD2D];
-        @statistic[macCellPacketLossD2D](title="Mac Cell Packet Loss D2D"; unit=""; source="macCellPacketLossD2D"; record=mean);
+        @statistic[macCellPacketLossD2D](title="MAC Cell Packet Loss D2D"; unit=""; source="macCellPacketLossD2D"; record=mean);
 }

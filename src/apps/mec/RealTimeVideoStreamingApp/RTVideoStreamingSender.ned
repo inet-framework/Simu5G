@@ -65,39 +65,37 @@ simple RTVideoStreamingSender like IApp
         @statistic[rtVideoStreamingFirstFrameElapsedTime](title="Frames displayed"; source="rtVideoStreamingFirstFrameElapsedTime"; record=vector; interpolationmode=none);
 
         @signal[rtVideoStreamingFramesDisplayed](type=double);
-        @statistic[rtVideoStreamingFramesDisplayed](title="Frames displayed"; source="rtVideoStreamingFramesDisplayed"; record=count,vector; interpolationmode=none);
+        @statistic[rtVideoStreamingFramesDisplayed](title="Frames displayed"; source=rtVideoStreamingFramesDisplayed; record=count,vector; interpolationmode=none);
 
         @signal[rtVideoStreamingEnd2endDelaySegment](type=simtime_t);
-        @statistic[rtVideoStreamingEnd2endDelaySegment](title="end to end delay of segment packets"; source="rtVideoStreamingEnd2endDelaySegment"; record=mean,vector);
+        @statistic[rtVideoStreamingEnd2endDelaySegment](title="End-to-end delay of segment packets"; source="rtVideoStreamingEnd2endDelaySegment"; record=mean,vector);
 
         @signal[rtVideoStreamingSegmentPacketSize](type=int);
-        @statistic[rtVideoStreamingSegmentPacketSize](title="size of segment packets"; source="rtVideoStreamingSegmentPacketSize"; record=mean,vector);
+        @statistic[rtVideoStreamingSegmentPacketSize](title="Size of segment packets"; source="rtVideoStreamingSegmentPacketSize"; record=mean,vector);
 
         @signal[rtVideoStreamingFrameSize](type=int);
-        @statistic[rtVideoStreamingFrameSize](title="size of frames"; source="rtVideoStreamingFrameSize"; record=mean,vector);
+        @statistic[rtVideoStreamingFrameSize](title="Size of frames"; source="rtVideoStreamingFrameSize"; record=mean,vector);
 
         @signal[rtVideoStreamingPlayoutBufferLength](type=int);
-        @statistic[rtVideoStreamingPlayoutBufferLength](title="playout buffer Length"; source="rtVideoStreamingPlayoutBufferLength"; record=mean,vector);
+        @statistic[rtVideoStreamingPlayoutBufferLength](title="Playout buffer length"; source="rtVideoStreamingPlayoutBufferLength"; record=mean,vector);
 
         @signal[rtVideoStreamingInterArrivalTimeSegment](type=simtime_t);
-        @statistic[rtVideoStreamingInterArrivalTimeSegment](title="inter arrival of segment packets"; source="rtVideoStreamingInterArrivalTimeSegment"; record=mean,vector);
+        @statistic[rtVideoStreamingInterArrivalTimeSegment](title="Inter-arrival time of segment packets"; source="rtVideoStreamingInterArrivalTimeSegment"; record=mean,vector);
 
         @signal[rtVideoStreamingPlayoutDelay](type=simtime_t);
-        @statistic[rtVideoStreamingPlayoutDelay](title="playout delay"; source="rtVideoStreamingPlayoutDelay"; record=mean,vector);
+        @statistic[rtVideoStreamingPlayoutDelay](title="Playout delay"; source="rtVideoStreamingPlayoutDelay"; record=mean,vector);
 
         @signal[rtVideoStreamingPlayoutDelayAll](type=simtime_t);
-        @statistic[rtVideoStreamingPlayoutDelayAll](title="playout delay"; source="rtVideoStreamingPlayoutDelayAll"; record=mean,vector);
+        @statistic[rtVideoStreamingPlayoutDelayAll](title="Playout delay (all)"; source="rtVideoStreamingPlayoutDelayAll"; record=mean,vector);
 
         @signal[rtVideoStreamingSegmentLoss](type=int);
-        @statistic[rtVideoStreamingSegmentLoss](title="segment packets lost"; source="rtVideoStreamingSegmentLoss"; record=mean,vector; interpolationmode=none);
+        @statistic[rtVideoStreamingSegmentLoss](title="Segment packets lost"; source="rtVideoStreamingSegmentLoss"; record=mean,vector; interpolationmode=none);
 
         @signal[rtVideoStreamingStartSession](type=simtime_t);
-        @statistic[rtVideoStreamingStartSession](title="start session timestamps"; source="rtVideoStreamingStartSession"; record=mean,vector; interpolationmode=none);
+        @statistic[rtVideoStreamingStartSession](title="Start session timestamps"; source="rtVideoStreamingStartSession"; record=mean,vector; interpolationmode=none);
 
         @signal[rtVideoStreamingStopSession](type=simtime_t);
-        @statistic[rtVideoStreamingStopSession](title="stop session timestamps"; source="rtVideoStreamingStopSession"; record=mean,vector; interpolationmode=none);
-
-
+        @statistic[rtVideoStreamingStopSession](title="Stop session timestamps"; source="rtVideoStreamingStopSession"; record=mean,vector; interpolationmode=none);
 
     gates:
         output socketOut;

@@ -35,7 +35,7 @@ simple BurstSender like IApp
         int tos = default(-1);                              // Type Of Service/Traffic Class for the sent packets (-1 means no specific TOS/Traffic Class is set)
 
         @signal[burstSentPkt];
-        @statistic[burstSentPkt](title="Sent packet ID"; unit=""; source="burstSentPkt"; record=vector);
+        @statistic[burstSentPkt](title="Sent Packet ID"; unit=""; source="burstSentPkt"; record=vector);
 
         @display("i=block/source");
     gates:

@@ -39,15 +39,15 @@ simple LtePhyUe extends LtePhyBase
         bool hasCollector = default(false); // true when node has a collector module (ueCollector/NRueCollector) for this PHY module
 
         @signal[distance];
-        @statistic[distance](title="distance between UE and serving base station"; unit="meters"; source="distance"; record=mean,vector);
+        @statistic[distance](title="Distance between UE and serving base station"; unit="meters"; source="distance"; record=mean,vector);
 
         @signal[servingCell];
         @statistic[servingCell](title="ID of the serving cell for the UE"; unit=""; source="servingCell"; record=vector);
 
         //# CQI statistics
         @signal[averageCqiDl];
-        @statistic[averageCqiDl](title="Average Cqi reported in DL"; unit="cqi"; source="averageCqiDl"; record=mean,count,vector);
+        @statistic[averageCqiDl](title="Average CQI reported in DL"; unit="cqi"; source="averageCqiDl"; record=mean,count,vector);
         @signal[averageCqiUl];
-        @statistic[averageCqiUl](title="Average Cqi reported in UL"; unit="cqi"; source="averageCqiUl"; record=mean,count,vector);
+        @statistic[averageCqiUl](title="Average CQI reported in UL"; unit="cqi"; source="averageCqiUl"; record=mean,count,vector);
 }
 

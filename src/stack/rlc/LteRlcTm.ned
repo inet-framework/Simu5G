@@ -24,9 +24,9 @@ simple LteRlcTm
 
         //# SDU-level statistics
         @signal[rlcPacketLossUl];
-        @statistic[rlcPacketLossUl](title="rlc Packet Loss"; unit=""; source="rlcPacketLossUl"; record=mean,sum,vector);
+        @statistic[rlcPacketLossUl](title="RLC Packet Loss"; unit=""; source="rlcPacketLossUl"; record=mean,sum,vector);
         @signal[rlcPacketLossDl];
-        @statistic[rlcPacketLossDl](title="rlc Packet Loss"; unit=""; source="rlcPacketLossDl"; record=mean,sum,vector);
+        @statistic[rlcPacketLossDl](title="RLC Packet Loss"; unit=""; source="rlcPacketLossDl"; record=mean,sum,vector);
 
         //# PDU-level statistics
         @signal[receivedPacketFromUpperLayer];

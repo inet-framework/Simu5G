@@ -44,7 +44,7 @@ simple ServiceRegistry like IApp
         @signal[requestQueueSize];
         @statistic[requestQueueSizeStat](title="Request queue size"; source="requestQueueSize"; record=mean,vector);
         @signal[responseTime];
-        @statistic[responseTimeStat](title="Response time of foreground requests"; source="responseTime"; record=mean,vector);
+        @statistic[responseTimeStat](title="Response time for foreground requests"; source="responseTime"; record=mean,vector);
 
     gates:
         output socketOut;
