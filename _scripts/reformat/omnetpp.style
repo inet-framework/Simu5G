@@ -199,7 +199,7 @@ sp_before_ptr_star              = force    # ignore/add/remove/force/not_defined
 
 # Add or remove space before pointer star '*' that isn't followed by a
 # variable name. If set to ignore, sp_before_ptr_star is used instead.
-sp_before_unnamed_ptr_star      = ignore   # ignore/add/remove/force/not_defined
+sp_before_unnamed_ptr_star      = force   # ignore/add/remove/force/not_defined
 
 # Add or remove space before pointer star '*' that is followed by a qualifier.
 # If set to ignore, sp_before_unnamed_ptr_star is used instead.
@@ -229,7 +229,7 @@ sp_qualifier_unnamed_ptr_star   = ignore   # ignore/add/remove/force/not_defined
 sp_between_ptr_star             = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space between pointer star '*' and reference '&', as in 'int *& a;'.
-sp_between_ptr_ref              = ignore   # ignore/add/remove/force/not_defined
+sp_between_ptr_ref              = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space after pointer star '*', if followed by a word.
 #
@@ -307,7 +307,7 @@ sp_before_byref_func            = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space after a reference sign '&', if followed by an open
 # parenthesis, as in 'char& (*)()'.
-sp_byref_paren                  = ignore   # ignore/add/remove/force/not_defined
+sp_byref_paren                  = force   # ignore/add/remove/force/not_defined
 
 # Add or remove space between type and word. In cases where total removal of
 # whitespace would be a syntax error, a value of 'remove' is treated the same
@@ -410,13 +410,13 @@ sp_after_sparen                 = force    # ignore/add/remove/force/not_defined
 sp_sparen_brace                 = force    # ignore/add/remove/force/not_defined
 
 # Add or remove space between 'do' and '{'.
-sp_do_brace_open                = ignore   # ignore/add/remove/force/not_defined
+sp_do_brace_open                = force   # ignore/add/remove/force/not_defined
 
 # Add or remove space between '}' and 'while'.
-sp_brace_close_while            = ignore   # ignore/add/remove/force/not_defined
+sp_brace_close_while            = force   # ignore/add/remove/force/not_defined
 
 # Add or remove space between 'while' and '('. Overrides sp_before_sparen.
-sp_while_paren_open             = ignore   # ignore/add/remove/force/not_defined
+sp_while_paren_open             = force   # ignore/add/remove/force/not_defined
 
 # (D) Add or remove space between 'invariant' and '('.
 sp_invariant_paren              = ignore   # ignore/add/remove/force/not_defined
@@ -441,7 +441,7 @@ sp_before_semi_for_empty        = force    # ignore/add/remove/force/not_defined
 
 # Add or remove space between the semicolons of an empty middle part of a for
 # statement, as in 'for ( ; <here> ; )'.
-sp_between_semi_for_empty       = ignore   # ignore/add/remove/force/not_defined
+sp_between_semi_for_empty       = force   # ignore/add/remove/force/not_defined
 
 # Add or remove space after ';', except when followed by a comment.
 #
@@ -641,7 +641,7 @@ sp_inside_braces                = force    # ignore/add/remove/force/not_defined
 sp_inside_braces_empty          = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space around trailing return operator '->'.
-sp_trailing_return              = ignore   # ignore/add/remove/force/not_defined
+sp_trailing_return              = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space between return type and function name. A minimum of 1
 # is forced except for pointer return types.
@@ -656,17 +656,17 @@ sp_func_proto_paren             = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space between function name and '()' on function declaration
 # if empty.
-sp_func_proto_paren_empty       = ignore   # ignore/add/remove/force/not_defined
+sp_func_proto_paren_empty       = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space between function name and '(' with a typedef specifier.
-sp_func_type_paren              = ignore   # ignore/add/remove/force/not_defined
+sp_func_type_paren              = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space between alias name and '(' of a non-pointer function type typedef.
 sp_func_def_paren               = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space between function name and '()' on function definition
 # if empty.
-sp_func_def_paren_empty         = ignore   # ignore/add/remove/force/not_defined
+sp_func_def_paren_empty         = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space inside empty function '()'.
 # Overrides sp_after_angle unless use_sp_after_angle_always is set to true.
@@ -676,14 +676,14 @@ sp_inside_fparens               = remove   # ignore/add/remove/force/not_defined
 sp_inside_fparen                = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space inside user functor '(' and ')'.
-sp_func_call_user_inside_rparen = ignore   # ignore/add/remove/force/not_defined
+sp_func_call_user_inside_rparen = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space inside empty functor '()'.
 # Overrides sp_after_angle unless use_sp_after_angle_always is set to true.
-sp_inside_rparens               = ignore   # ignore/add/remove/force/not_defined
+sp_inside_rparens               = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space inside functor '(' and ')'.
-sp_inside_rparen                = ignore   # ignore/add/remove/force/not_defined
+sp_inside_rparen                = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space inside the first parentheses in a function type, as in
 # 'void (*x)(...)'.
@@ -734,7 +734,7 @@ sp_func_class_paren             = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space between a constructor without parameters or destructor
 # and '()'.
-sp_func_class_paren_empty       = ignore   # ignore/add/remove/force/not_defined
+sp_func_class_paren_empty       = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space after 'return'.
 #
@@ -745,7 +745,7 @@ sp_return                       = force    # ignore/add/remove/force/not_defined
 sp_return_paren                 = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space between 'return' and '{'.
-sp_return_brace                 = ignore   # ignore/add/remove/force/not_defined
+sp_return_brace                 = force   # ignore/add/remove/force/not_defined
 
 # Add or remove space between '__attribute__' and '('.
 sp_attribute_paren              = remove   # ignore/add/remove/force/not_defined
@@ -839,7 +839,7 @@ sp_getset_brace                 = force    # ignore/add/remove/force/not_defined
 
 # Add or remove space between a variable and '{' for C++ uniform
 # initialization.
-sp_word_brace_init_lst          = ignore   # ignore/add/remove/force/not_defined
+sp_word_brace_init_lst          = force   # ignore/add/remove/force/not_defined
 
 # Add or remove space between a variable and '{' for a namespace.
 #
@@ -1012,11 +1012,11 @@ sp_range                        = ignore   # ignore/add/remove/force/not_defined
 
 # Add or remove space after ':' in a Java/C++11 range-based 'for',
 # as in 'for (Type var : <here> expr)'.
-sp_after_for_colon              = ignore   # ignore/add/remove/force/not_defined
+sp_after_for_colon              = force   # ignore/add/remove/force/not_defined
 
 # Add or remove space before ':' in a Java/C++11 range-based 'for',
 # as in 'for (Type var <here> : expr)'.
-sp_before_for_colon             = ignore   # ignore/add/remove/force/not_defined
+sp_before_for_colon             = force   # ignore/add/remove/force/not_defined
 
 # (D) Add or remove space between 'extern' and '(' as in 'extern <here> (C)'.
 sp_extern_paren                 = ignore   # ignore/add/remove/force/not_defined
@@ -1055,14 +1055,14 @@ sp_endif_cmt                    = force    # ignore/add/remove/force/not_defined
 sp_after_new                    = force    # ignore/add/remove/force/not_defined
 
 # Add or remove space between 'new' and '(' in 'new()'.
-sp_between_new_paren            = ignore   # ignore/add/remove/force/not_defined
+sp_between_new_paren            = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space between ')' and type in 'new(foo) BAR'.
 sp_after_newop_paren            = ignore   # ignore/add/remove/force/not_defined
 
 # Add or remove space inside parentheses of the new operator
 # as in 'new(foo) BAR'.
-sp_inside_newop_paren           = ignore   # ignore/add/remove/force/not_defined
+sp_inside_newop_paren           = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove space after the open parenthesis of the new operator,
 # as in 'new(foo) BAR'.
@@ -1109,7 +1109,7 @@ sp_annotation_paren             = ignore   # ignore/add/remove/force/not_defined
 sp_skip_vbrace_tokens           = false    # true/false
 
 # Add or remove space after 'noexcept'.
-sp_after_noexcept               = ignore   # ignore/add/remove/force/not_defined
+sp_after_noexcept               = force   # ignore/add/remove/force/not_defined
 
 # Add or remove space after '_'.
 sp_vala_after_translation       = ignore   # ignore/add/remove/force/not_defined
@@ -1735,22 +1735,22 @@ nl_after_square_assign          = ignore   # ignore/add/remove/force/not_defined
 nl_fcall_brace                  = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove newline between 'enum' and '{'.
-nl_enum_brace                   = ignore   # ignore/add/remove/force/not_defined
+nl_enum_brace                   = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove newline between 'enum' and 'class'.
-nl_enum_class                   = ignore   # ignore/add/remove/force/not_defined
+nl_enum_class                   = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove newline between 'enum class' and the identifier.
-nl_enum_class_identifier        = ignore   # ignore/add/remove/force/not_defined
+nl_enum_class_identifier        = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove newline between 'enum class' type and ':'.
-nl_enum_identifier_colon        = ignore   # ignore/add/remove/force/not_defined
+nl_enum_identifier_colon        = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove newline between 'enum class identifier :' and type.
-nl_enum_colon_type              = ignore   # ignore/add/remove/force/not_defined
+nl_enum_colon_type              = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove newline between 'struct and '{'.
-nl_struct_brace                 = ignore   # ignore/add/remove/force/not_defined
+nl_struct_brace                 = force   # ignore/add/remove/force/not_defined
 
 # Add or remove newline between 'union' and '{'.
 nl_union_brace                  = ignore   # ignore/add/remove/force/not_defined
@@ -1772,7 +1772,7 @@ nl_else_brace                   = remove   # ignore/add/remove/force/not_defined
 nl_else_if                      = remove   # ignore/add/remove/force/not_defined
 
 # Add or remove newline before '{' opening brace
-nl_before_opening_brace_func_class_def = ignore   # ignore/add/remove/force/not_defined
+nl_before_opening_brace_func_class_def = force   # ignore/add/remove/force/not_defined
 
 # Add or remove newline before 'if'/'else if' closing parenthesis.
 nl_before_if_closing_paren      = ignore   # ignore/add/remove/force/not_defined
@@ -1853,11 +1853,11 @@ nl_multi_line_cond              = true     # true/false
 
 # Add a newline after '(' if an if/for/while/switch condition spans multiple
 # lines
-nl_multi_line_sparen_open       = ignore   # ignore/add/remove/force/not_defined
+nl_multi_line_sparen_open       = force   # ignore/add/remove/force/not_defined
 
 # Add a newline before ')' if an if/for/while/switch condition spans multiple
 # lines. Overrides nl_before_if_closing_paren if both are specified.
-nl_multi_line_sparen_close      = ignore   # ignore/add/remove/force/not_defined
+nl_multi_line_sparen_close      = force   # ignore/add/remove/force/not_defined
 
 # Force a newline in a define after the macro name for multi-line defines.
 nl_multi_line_define            = false    # true/false
