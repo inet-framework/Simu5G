@@ -66,6 +66,7 @@ class LteMacPdu : public LteMacPdu_Base
 
   protected:
     /// List Of MAC SDUs
+    //TODO maybe cPacketQueue sduList_;
     cPacketQueue *sduList_ = nullptr;
 
     /// List of MAC CEs
