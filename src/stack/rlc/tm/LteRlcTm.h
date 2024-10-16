@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -103,7 +103,7 @@ class LteRlcTm : public cSimpleModule
     static inet::simsignal_t rlcPacketLossUlSignal_;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

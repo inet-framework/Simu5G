@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -104,7 +104,7 @@ HttpBaseMessage *parseHeader(const std::string& data)
                 httpRequest->setUri(uriParams[0].c_str());
             }
             else {
-                //debug
+                // debug
                 EV << "httpUtils::parseHeader - Parameters error" << endl;
                 httpRequest->setState(BAD_REQ_URI);
                 return httpRequest;
@@ -282,7 +282,7 @@ bool parseReceivedMsg(const std::string& inPacket, std::string& storedData, Http
     while ((pos = packet.find(delimiter)) != std::string::npos) {
         EV << "MecAppBase::parseReceivedMsg - new HTTP message" << endl;
         header = packet.substr(0, pos);
-        packet.erase(0, pos + delimiter.length()); //remove header
+        packet.erase(0, pos + delimiter.length());  // remove header
         currentHttpMessage = Http::parseHeader(header);
 
         Http::HttpMsgState res = Http::parseTcpData(packet, currentHttpMessage);
@@ -316,8 +316,8 @@ bool parseReceivedMsg(const std::string& inPacket, std::string& storedData, Http
 bool parseReceivedMsg(int socketId, const std::string& inPacket, cQueue& messageQueue, std::string& storedData, HttpBaseMessage *& currentHttpMessage)
 {
     EV_INFO << "httpUtils::parseReceivedMsg" << endl;
-    //std::cout << "MecAppBase::parseReceivedMsg" << std::endl;
-    //std::cout << "MecAppBase::parseReceivedMsg MSG :" << packet << std::endl;
+    // std::cout << "MecAppBase::parseReceivedMsg" << std::endl;
+    // std::cout << "MecAppBase::parseReceivedMsg MSG :" << packet << std::endl;
 
     std::string delimiter = "\r\n\r\n";
     size_t pos = 0;
@@ -361,8 +361,8 @@ bool parseReceivedMsg(int socketId, const std::string& inPacket, cQueue& message
     std::string temp;
     if (storedData.length() > 0) {
         // EV << "MecAppBase::parseReceivedMsg - buffered data" << endl;
-        //std::cout << "MecAppBase::parseReceivedMsg - buffered data" << std::endl;
-        //std::cout << "MecAppBase::parseReceivedMsg buffered data" << storedData  << std::endl;
+        // std::cout << "MecAppBase::parseReceivedMsg - buffered data" << std::endl;
+        // std::cout << "MecAppBase::parseReceivedMsg buffered data" << storedData  << std::endl;
 
         temp = packet;
         packet = storedData + temp;
@@ -371,7 +371,7 @@ bool parseReceivedMsg(int socketId, const std::string& inPacket, cQueue& message
 
     while ((pos = packet.find(delimiter)) != std::string::npos) {
         header = packet.substr(0, pos);
-        packet.erase(0, pos + delimiter.length()); //remove header
+        packet.erase(0, pos + delimiter.length());  // remove header
         currentHttpMessage = Http::parseHeader(header);
 
         Http::HttpMsgState res = Http::parseTcpData(packet, currentHttpMessage);
@@ -512,7 +512,7 @@ void sendHttpRequest(inet::TcpSocket *socket, const char *method, const char *ho
     if (parameters != nullptr) {
         reqPkt->setParameters(parameters);
     }
-    reqPkt->setChunkLength(B(reqPkt->getPayload().size())); // TODO get size more efficiently
+    reqPkt->setChunkLength(B(reqPkt->getPayload().size()));  // TODO get size more efficiently
     reqPkt->addTagIfAbsent<inet::CreationTimeTag>()->setCreationTime(simTime());
 
     packet->insertAtBack(reqPkt);
@@ -668,7 +668,7 @@ void sendDeleteRequest(inet::TcpSocket *socket, const char *host, const char *ur
     sendHttpRequest(socket, "DELETE", host, uri);
 }
 
-} // namespace Http
+}  // namespace Http
 
-} //namespace
+}  // namespace
 

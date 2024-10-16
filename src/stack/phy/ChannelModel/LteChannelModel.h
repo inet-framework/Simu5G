@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -81,7 +81,7 @@ class LteChannelModel : public cSimpleModule
      * @param lteInfo pointer to the user control info
      */
     virtual bool isError(LteAirFrame *frame, UserControlInfo *lteI) = 0;
-    //TODO NOT IMPLEMENTED YET
+    // TODO NOT IMPLEMENTED YET
     virtual bool isErrorDas(LteAirFrame *frame, UserControlInfo *lteI) = 0;
     /*
      * Compute Attenuation caused by path loss and shadowing (optional)
@@ -159,7 +159,7 @@ class LteChannelModel : public cSimpleModule
     virtual bool isD2DInterferenceEnabled() { return false; }
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

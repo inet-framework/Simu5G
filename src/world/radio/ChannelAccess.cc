@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -16,7 +16,7 @@
 
 namespace inet {
 Define_InitStage_Dependency(PHYSICAL_LAYER, SINGLE_MOBILITY);
-} // namespace inet
+}  // namespace inet
 
 namespace simu5g {
 
@@ -135,5 +135,5 @@ void ChannelAccess::receiveSignal(cComponent *source, simsignal_t signalID, cObj
     }
 }
 
-} //namespace
+}  // namespace
 

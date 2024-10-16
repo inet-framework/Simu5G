@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -158,7 +158,7 @@ class LteSchedulingGrant : public LteSchedulingGrant_Base
 
 };
 
-} //namespace
+}  // namespace
 
 #endif // _LTESCHEDULINGGRANT_H_
 

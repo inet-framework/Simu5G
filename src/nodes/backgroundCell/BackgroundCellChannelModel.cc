@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -65,7 +65,7 @@ void BackgroundCellChannelModel::initialize(int stage)
         enableDownlinkInterference_ = par("downlink_interference");
         enableUplinkInterference_ = par("uplink_interference");
 
-        //get binder
+        // get binder
         binder_.reference(this, "binderModule", true);
     }
 }
@@ -76,21 +76,21 @@ std::vector<double> BackgroundCellChannelModel::getSINR(MacNodeId bgUeId, inet::
     inet::Coord bgBsPos = bgScheduler->getPosition();
     int bgBsId = bgScheduler->getId();
 
-    //get tx power
-    double recvPower = (dir == DL) ? bgScheduler->getTxPower() : bgUe->getTxPwr(); // dBm
+    // get tx power
+    double recvPower = (dir == DL) ? bgScheduler->getTxPower() : bgUe->getTxPwr();  // dBm
 
     double antennaGainTx = 0.0;
     double antennaGainRx = 0.0;
     double noiseFigure = 0.0;
 
     if (dir == DL) {
-        //set noise Figure
-        noiseFigure = ueNoiseFigure_; //dB
-        //set antenna gain Figure
-        antennaGainTx = antennaGainEnB_; //dB
-        antennaGainRx = antennaGainUe_;  //dB
+        // set noise Figure
+        noiseFigure = ueNoiseFigure_;  // dB
+        // set antenna gain Figure
+        antennaGainTx = antennaGainEnB_;  // dB
+        antennaGainRx = antennaGainUe_;  // dB
     }
-    else { // if( dir == UL )
+    else {  // if( dir == UL )
         // TODO check if antennaGainEnB should be added in UL direction too
         antennaGainTx = antennaGainUe_;
         antennaGainRx = antennaGainEnB_;
@@ -99,17 +99,17 @@ std::vector<double> BackgroundCellChannelModel::getSINR(MacNodeId bgUeId, inet::
 
     double attenuation = getAttenuation(bgUeId, dir, bgBsPos, bgUePos);
 
-    //compute attenuation (PATHLOSS + SHADOWING)
-    recvPower -= attenuation; // (dBm-dB)=dBm
+    // compute attenuation (PATHLOSS + SHADOWING)
+    recvPower -= attenuation;  // (dBm-dB)=dBm
 
-    //add antenna gain
-    recvPower += antennaGainTx; // (dBm+dB)=dBm
-    recvPower += antennaGainRx; // (dBm+dB)=dBm
+    // add antenna gain
+    recvPower += antennaGainTx;  // (dBm+dB)=dBm
+    recvPower += antennaGainRx;  // (dBm+dB)=dBm
 
-    //sub cable loss
-    recvPower -= cableLoss_; // (dBm-dB)=dBm
+    // sub cable loss
+    recvPower -= cableLoss_;  // (dBm-dB)=dBm
 
-    //=============== ANGULAR ATTENUATION =================
+    // =============== ANGULAR ATTENUATION =================
     if (dir == DL && bgScheduler->getTxDirection() == ANISOTROPIC) {
 
         // get tx angle
@@ -131,9 +131,9 @@ std::vector<double> BackgroundCellChannelModel::getSINR(MacNodeId bgUeId, inet::
 
         recvPower -= angularAtt;
     }
-    //=============== END ANGULAR ATTENUATION =================
+    // =============== END ANGULAR ATTENUATION =================
 
-    //===================== SINR COMPUTATION ========================
+    // ===================== SINR COMPUTATION ========================
     std::vector<double> snrVector;
     snrVector.resize(numBands, recvPower);
 
@@ -147,9 +147,9 @@ std::vector<double> BackgroundCellChannelModel::getSINR(MacNodeId bgUeId, inet::
     // FIXME compute fading only for used RBs
     for (unsigned int i = 0; i < numBands; i++) {
         fadingAttenuation = 0;
-        //if fading is enabled
+        // if fading is enabled
         if (fading_) {
-            //Appling fading
+            // Appling fading
             if (fadingType_ == RAYLEIGH)
                 fadingAttenuation = rayleighFading(bgUeId, i);
 
@@ -157,16 +157,16 @@ std::vector<double> BackgroundCellChannelModel::getSINR(MacNodeId bgUeId, inet::
                 fadingAttenuation = jakesFading(bgUeId, speed, i, numBands);
         }
         // add fading contribution to the received pwr
-        double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
+        double finalRecvPower = recvPower + fadingAttenuation;  // (dBm+dB)=dBm
 
         snrVector[i] = finalRecvPower;
     }
 
-    //============ MULTI CELL INTERFERENCE COMPUTATION =================
+    // ============ MULTI CELL INTERFERENCE COMPUTATION =================
     // for background UEs, we only compute CQI
     RbMap rbmap;
-    //vector containing the sum of multicell interference for each band
-    std::vector<double> multiCellInterference; // Linear value (mW)
+    // vector containing the sum of multicell interference for each band
+    std::vector<double> multiCellInterference;  // Linear value (mW)
     // prepare data structure
     multiCellInterference.resize(numBands, 0);
     if (enableDownlinkInterference_ && dir == DL) {
@@ -176,13 +176,13 @@ std::vector<double> BackgroundCellChannelModel::getSINR(MacNodeId bgUeId, inet::
         computeUplinkInterference(bgUeId, bgBsPos, carrierFrequency_, rbmap, numBands, &multiCellInterference);
     }
 
-    //============ BACKGROUND CELLS INTERFERENCE COMPUTATION =================
-    //vector containing the sum of bg-cell interference for each band
-    std::vector<double> bgCellInterference; // Linear value (mW)
+    // ============ BACKGROUND CELLS INTERFERENCE COMPUTATION =================
+    // vector containing the sum of bg-cell interference for each band
+    std::vector<double> bgCellInterference;  // Linear value (mW)
     // prepare data structure
     bgCellInterference.resize(numBands, 0);
     if (enableBackgroundCellInterference_) {
-        computeBackgroundCellInterference(bgUeId, bgUePos, bgBsId, bgBsPos, carrierFrequency_, rbmap, dir, numBands, &bgCellInterference); // dBm
+        computeBackgroundCellInterference(bgUeId, bgUePos, bgBsId, bgBsPos, carrierFrequency_, rbmap, dir, numBands, &bgCellInterference);  // dBm
     }
 
     // compute and linearize total noise
@@ -190,7 +190,7 @@ std::vector<double> BackgroundCellChannelModel::getSINR(MacNodeId bgUeId, inet::
 
     for (unsigned int i = 0; i < numBands; i++) {
         // denominator expressed in dBm as (N+extCell+multiCell)
-        //               (      mW                 +          mW           +  mW  )
+        // (      mW                 +          mW           +  mW  )
         double den = linearToDBm(multiCellInterference[i] + bgCellInterference[i] + totN);
 
         // compute final SINR
@@ -201,7 +201,7 @@ std::vector<double> BackgroundCellChannelModel::getSINR(MacNodeId bgUeId, inet::
 
 double BackgroundCellChannelModel::getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord bgBsCoord, inet::Coord bgUeCoord)
 {
-    //COMPUTE DISTANCE between ue and bs
+    // COMPUTE DISTANCE between ue and bs
     double sqrDistance = bgBsCoord.distance(bgUeCoord);
 
     double speed = computeSpeed(nodeId, bgUeCoord);
@@ -218,15 +218,15 @@ double BackgroundCellChannelModel::getAttenuation(MacNodeId nodeId, Direction di
         computeLosProbability(sqrDistance, nodeId);
     }
 
-    //compute attenuation based on selected scenario and based on LOS or NLOS
+    // compute attenuation based on selected scenario and based on LOS or NLOS
     bool los = losMap_[nodeId];
     double dbp = 0;
     double attenuation = computePathLoss(sqrDistance, dbp, los);
 
     // TODO compute shadowing based on speed
 
-    //    Applying shadowing only if it is enabled by configuration
-    //    log-normal shadowing
+    // Applying shadowing only if it is enabled by configuration
+    // log-normal shadowing
     if (shadowing_)
         attenuation += computeShadowing(sqrDistance, nodeId, speed);
 
@@ -291,10 +291,10 @@ double BackgroundCellChannelModel::computeSpeed(const MacNodeId nodeId, const in
         return speed;
     }
     else {
-        //compute distance traveled from last update by UE (eNodeB position is fixed)
+        // compute distance traveled from last update by UE (eNodeB position is fixed)
 
         if (positionHistory_[nodeId].size() == 1) {
-            //  the only element refers to present , return 0
+            // the only element refers to present , return 0
             return speed;
         }
 
@@ -361,7 +361,7 @@ void BackgroundCellChannelModel::computeLosProbability(double d, MacNodeId nodeI
 
 double BackgroundCellChannelModel::computePathLoss(double distance, double dbp, bool los)
 {
-    //compute attenuation based on selected scenario and based on LOS or NLOS
+    // compute attenuation based on selected scenario and based on LOS or NLOS
     double pathLoss = 0;
     switch (scenario_) {
         case INDOOR_HOTSPOT:
@@ -565,7 +565,7 @@ double BackgroundCellChannelModel::computeShadowing(double sqrDistance, MacNodeI
 {
     double mean = 0;
     double dbp = 0.0;
-    //Get std deviation according to los/nlos and selected scenario
+    // Get std deviation according to los/nlos and selected scenario
 
     double stdDev = getStdDev(sqrDistance < dbp, nodeId);
     double time = 0;
@@ -579,14 +579,14 @@ double BackgroundCellChannelModel::computeShadowing(double sqrDistance, MacNodeI
 
     // if shadowing for current user has never been computed
     if (lastComputedSF_.find(nodeId) == lastComputedSF_.end()) {
-        //Get the log normal shadowing with std deviation stdDev
+        // Get the log normal shadowing with std deviation stdDev
         att = normal(mean, stdDev);
 
-        //store the shadowing attenuation for this user and the temporal mark
+        // store the shadowing attenuation for this user and the temporal mark
         std::pair<simtime_t, double> tmp(NOW, att);
         lastComputedSF_[nodeId] = tmp;
 
-        //If the shadowing attenuation has been computed at least one time for this user
+        // If the shadowing attenuation has been computed at least one time for this user
         // and the distance traveled by the UE is greated than correlation distance
     }
     else if (
@@ -595,19 +595,19 @@ double BackgroundCellChannelModel::computeShadowing(double sqrDistance, MacNodeI
         )
     {
 
-        //get the temporal mark of the last computed shadowing attenuation
+        // get the temporal mark of the last computed shadowing attenuation
         time = (NOW - lastComputedSF_.at(nodeId).first).dbl();
 
-        //compute the traveled distance
+        // compute the traveled distance
         space = time * speed;
 
-        //Compute shadowing with a EAW (Exponential Average Window) (step1)
+        // Compute shadowing with a EAW (Exponential Average Window) (step1)
         double a = exp(-0.5 * (space / correlationDistance_));
 
-        //Get last shadowing attenuation computed
+        // Get last shadowing attenuation computed
         double old = lastComputedSF_.at(nodeId).second;
 
-        //Compute shadowing with a EAW (Exponential Average Window) (step2)
+        // Compute shadowing with a EAW (Exponential Average Window) (step2)
         att = a * old + sqrt(1 - pow(a, 2)) * normal(mean, stdDev);
 
         // Store the new computed shadowing
@@ -704,7 +704,7 @@ double BackgroundCellChannelModel::computeAngularAttenuation(double hAngle, doub
     // see TR 36.814 V9.0.0 for more details
     angularAtt = 12 * pow(hAngle / 70.0, 2);
 
-    //  EV << "\t angularAtt[" << angularAtt << "]" << endl;
+    // EV << "\t angularAtt[" << angularAtt << "]" << endl;
     // max value for angular attenuation is 25 dB
     if (angularAtt > angularAttMin)
         angularAtt = angularAttMin;
@@ -714,7 +714,7 @@ double BackgroundCellChannelModel::computeAngularAttenuation(double hAngle, doub
 
 double BackgroundCellChannelModel::rayleighFading(MacNodeId id, unsigned int band)
 {
-    //get raylegh variable from trace file
+    // get raylegh variable from trace file
     double temp1 = binder_->phyPisaData.getChannel(getCellInfo(binder_, id)->getLambda(id)->channelIndex + band);
     return linearToDb(temp1);
 }
@@ -723,35 +723,35 @@ double BackgroundCellChannelModel::jakesFading(MacNodeId nodeId, double speed, u
 {
     JakesFadingMap *actualJakesMap = &jakesFadingMap_;
 
-    //if this is the first time that we compute fading for current user
+    // if this is the first time that we compute fading for current user
     if (actualJakesMap->find(nodeId) == actualJakesMap->end()) {
-        //clear the map
+        // clear the map
         // FIXME: possible memory leak
         (*actualJakesMap)[nodeId].clear();
 
-        //for each band we are going to create a jakes fading
+        // for each band we are going to create a jakes fading
         for (unsigned int j = 0; j < numBands; j++) {
-            //clear some structure
+            // clear some structure
             JakesFadingData temp;
             temp.angleOfArrival.clear();
             temp.delaySpread.clear();
 
-            //for each fading path
+            // for each fading path
             for (int i = 0; i < fadingPaths_; i++) {
-                //get angle of arrivals
+                // get angle of arrivals
                 temp.angleOfArrival.push_back(cos(uniform(0, M_PI)));
 
-                //get delay spread
+                // get delay spread
                 temp.delaySpread.push_back(exponential(delayRMS_));
             }
-            //store the jakes fadint for this user
+            // store the jakes fadint for this user
             (*actualJakesMap)[nodeId].push_back(temp);
         }
     }
     // convert carrier frequency from GHz to Hz
     double f = carrierFrequency_ * 1000000000;
 
-    //get transmission time start (TTI =1ms)
+    // get transmission time start (TTI =1ms)
     simtime_t t = simTime().dbl() - 0.001;
 
     double re_h = 0;
@@ -794,38 +794,38 @@ double BackgroundCellChannelModel::getReceivedPower_bgUe(double txPower, inet::C
 
     EV << NOW << " BackgroundCellChannelModel::getReceivedPower_bgUe" << endl;
 
-    //===================== PARAMETERS SETUP ============================
+    // ===================== PARAMETERS SETUP ============================
     if (dir == DL) {
-        antennaGainTx = antennaGainEnB_; //dB
-        antennaGainRx = antennaGainUe_;  //dB
+        antennaGainTx = antennaGainEnB_;  // dB
+        antennaGainRx = antennaGainUe_;  // dB
     }
-    else { // if( dir == UL )
+    else {  // if( dir == UL )
         antennaGainTx = antennaGainUe_;
         antennaGainRx = antennaGainEnB_;
     }
 
     EV << "BackgroundCellChannelModel::getReceivedPower_bgUe - DIR=" << ((dir == DL) ? "DL" : "UL")
        << " - txPwr " << txPower << " - txPos[" << txPos << "] - rxPos[" << rxPos << "] " << endl;
-    //=================== END PARAMETERS SETUP =======================
+    // =================== END PARAMETERS SETUP =======================
 
-    //=============== PATH LOSS =================
+    // =============== PATH LOSS =================
     // Note that shadowing and fading effects are not applied here and left FFW
 
-    //compute attenuation based on selected scenario and based on LOS or NLOS
+    // compute attenuation based on selected scenario and based on LOS or NLOS
     double sqrDistance = txPos.distance(rxPos);
     double dbp = 0;
     double attenuation = computePathLoss(sqrDistance, dbp, losStatus);
 
-    //compute recvPower
-    double recvPower = txPower - attenuation; // (dBm-dB)=dBm
+    // compute recvPower
+    double recvPower = txPower - attenuation;  // (dBm-dB)=dBm
 
-    //add antenna gain
-    recvPower += antennaGainTx; // (dBm+dB)=dBm
-    recvPower += antennaGainRx; // (dBm+dB)=dBm
-    //sub cable loss
-    recvPower -= cableLoss_; // (dBm-dB)=dBm
+    // add antenna gain
+    recvPower += antennaGainTx;  // (dBm+dB)=dBm
+    recvPower += antennaGainRx;  // (dBm+dB)=dBm
+    // sub cable loss
+    recvPower -= cableLoss_;  // (dBm-dB)=dBm
 
-    //=============== ANGULAR ATTENUATION =================
+    // =============== ANGULAR ATTENUATION =================
     if (dir == DL && bgScheduler->getTxDirection() == ANISOTROPIC) {
         // get tx angle
         double txAngle = bgScheduler->getTxAngle();
@@ -846,9 +846,9 @@ double BackgroundCellChannelModel::getReceivedPower_bgUe(double txPower, inet::C
 
         recvPower -= angularAtt;
     }
-    //=============== END ANGULAR ATTENUATION =================
+    // =============== END ANGULAR ATTENUATION =================
 
-    //============ END PATH LOSS + ANGULAR ATTENUATION ===============
+    // ============ END PATH LOSS + ANGULAR ATTENUATION ===============
 
     return recvPower;
 }
@@ -875,7 +875,7 @@ bool BackgroundCellChannelModel::computeDownlinkInterference(MacNodeId bgUeId, i
             // obtain a reference to enb phy and obtain tx power
             enb->phy = check_and_cast<LtePhyBase *>(getSimulation()->getModule(binder_->getOmnetId(id))->getSubmodule("cellularNic")->getSubmodule("phy"));
 
-            enb->txPwr = enb->phy->getTxPwr();//dBm
+            enb->txPwr = enb->phy->getTxPwr();  // dBm
 
             // get tx direction
             enb->txDirection = enb->phy->getTxDirection();
@@ -883,7 +883,7 @@ bool BackgroundCellChannelModel::computeDownlinkInterference(MacNodeId bgUeId, i
             // get tx angle
             enb->txAngle = enb->phy->getTxAngle();
 
-            //get reference to mac layer
+            // get reference to mac layer
             enb->mac = check_and_cast<LteMacEnb *>(getMacByMacNodeId(binder_, id));
 
             enb->init = true;
@@ -902,10 +902,10 @@ bool BackgroundCellChannelModel::computeDownlinkInterference(MacNodeId bgUeId, i
 
         EV << "BsId [" << id << "] - attenuation [" << att << "]";
 
-        //=============== ANGULAR ATTENUATION =================
+        // =============== ANGULAR ATTENUATION =================
         double angularAtt = 0;
         if (enb->txDirection == ANISOTROPIC) {
-            //get tx angle
+            // get tx angle
             double txAngle = enb->txAngle;
 
             // compute the angle between uePosition and reference axis, considering the eNb as center
@@ -924,7 +924,7 @@ bool BackgroundCellChannelModel::computeDownlinkInterference(MacNodeId bgUeId, i
             EV << "angular attenuation [" << angularAtt << "]";
         }
         // else, antenna is omni-directional
-        //=============== END ANGULAR ATTENUATION =================
+        // =============== END ANGULAR ATTENUATION =================
 
         txPwr = enb->txPwr - angularAtt - cableLoss_ + antennaGainEnB_ + antennaGainUe_;
 
@@ -933,7 +933,7 @@ bool BackgroundCellChannelModel::computeDownlinkInterference(MacNodeId bgUeId, i
             // compute the number of occupied slot (unnecessary)
             temp = enb->mac->getDlBandStatus(i);
             if (temp != 0)
-                (*interference)[i] += dBmToLinear(txPwr - att); //(dBm-dB)=dBm
+                (*interference)[i] += dBmToLinear(txPwr - att); // (dBm-dB)=dBm
 
             EV << "\t band " << i << " occupied " << temp << "/pwr[" << txPwr << "]-int[" << (*interference)[i] << "]" << endl;
         }
@@ -965,7 +965,7 @@ bool BackgroundCellChannelModel::computeUplinkInterference(MacNodeId bgUeId, ine
                     txPwr = uePhy->getTxPwr(dir);
                     ueCoord = uePhy->getCoord();
                 }
-                else { // this is a backgroundUe
+                else {  // this is a backgroundUe
                     trafficGen = check_and_cast<TrafficGeneratorBase *>(ueInfo.trafficGen);
                     txPwr = trafficGen->getTxPwr();
                     ueCoord = trafficGen->getCoord();
@@ -976,7 +976,7 @@ bool BackgroundCellChannelModel::computeUplinkInterference(MacNodeId bgUeId, ine
                 // get rx power and attenuation from this UE
                 double rxPwr = txPwr - cableLoss_ + antennaGainUe_ + antennaGainEnB_;
                 double att = getAttenuation(ueId, UL, bgBsPos, ueCoord);
-                (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
+                (*interference)[i] += dBmToLinear(rxPwr - att);  // (dBm-dB)=dBm
 
                 EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;
             }
@@ -1001,14 +1001,14 @@ bool BackgroundCellChannelModel::computeBackgroundCellInterference(MacNodeId bgU
     BackgroundSchedulerList::iterator it = list->begin();
 
     Coord c;
-    double dist, // meters
-           txPwr, // dBm
-           recvPwr, // watt
-           recvPwrDBm, // dBm
-           att, // dBm
-           angularAtt; // dBm
+    double dist,  // meters
+           txPwr,  // dBm
+           recvPwr,  // watt
+           recvPwrDBm,  // dBm
+           att,  // dBm
+           angularAtt;  // dBm
 
-    //compute distance for each cell
+    // compute distance for each cell
     while (it != list->end()) {
         // skip interference from serving Bg Bs
         if ((*it)->getId() == bgBsId) {
@@ -1036,7 +1036,7 @@ bool BackgroundCellChannelModel::computeBackgroundCellInterference(MacNodeId bgU
 
             txPwr = (*it)->getTxPower();
 
-            //=============== ANGULAR ATTENUATION =================
+            // =============== ANGULAR ATTENUATION =================
             if ((*it)->getTxDirection() == OMNI) {
                 angularAtt = 0;
             }
@@ -1055,7 +1055,7 @@ bool BackgroundCellChannelModel::computeBackgroundCellInterference(MacNodeId bgU
                 // compute attenuation due to sectorial tx
                 angularAtt = computeAngularAttenuation(recvAngle, verticalAngle);
             }
-            //=============== END ANGULAR ATTENUATION =================
+            // =============== END ANGULAR ATTENUATION =================
 
             // TODO do we need to use (- cableLoss_ + antennaGainEnB_) in ext cells too?
             // compute and linearize received power
@@ -1075,7 +1075,7 @@ bool BackgroundCellChannelModel::computeBackgroundCellInterference(MacNodeId bgU
                 }
             }
         }
-        else { // dir == UL
+        else {  // dir == UL
             // for each RB occupied in the background cell, compute interference with respect to the
             // background UE that is using that RB
             TrafficGeneratorBase *bgUe;
@@ -1122,5 +1122,5 @@ bool BackgroundCellChannelModel::computeBackgroundCellInterference(MacNodeId bgU
     return true;
 }
 
-} //namespace
+}  // namespace
 

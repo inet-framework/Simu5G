@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -42,7 +42,7 @@ class LteCompManagerProportional : public LteCompManagerBase
     std::vector<unsigned int> roundVector(std::vector<double>& vec, int sum);
 
     void provisionalSchedule() override;  // run the provisional scheduling algorithm (client side)
-    void doCoordination() override;       // run the coordination algorithm (coordinator side)
+    void doCoordination() override;  // run the coordination algorithm (coordinator side)
 
     X2CompProportionalRequestIE *buildClientRequest() override;
     void handleClientRequest(inet::Ptr<X2CompMsg> compMsg) override;
@@ -57,7 +57,7 @@ class LteCompManagerProportional : public LteCompManagerBase
     void initialize() override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* LTE_LTECOMPMANAGERPROPORTIONAL_H_ */
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -109,7 +109,7 @@ class LteMacUeD2D : public LteMacUe
     void doHandover(MacNodeId targetEnb) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

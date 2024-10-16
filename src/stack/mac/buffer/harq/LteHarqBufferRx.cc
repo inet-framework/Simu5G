@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -40,7 +40,7 @@ LteHarqBufferRx::LteHarqBufferRx(unsigned int num, LteMacBase *owner, Binder *bi
         nodeB_ = macOwner_;
         dir = UL;
     }
-    else { // this is a UE
+    else {  // this is a UE
         nodeB_ = getMacByMacNodeId(binder, macUe_->getMacCellId());
         dir = DL;
     }
@@ -222,5 +222,5 @@ bool LteHarqBufferRx::isHarqBufferActive() const {
     return false;
 }
 
-} //namespace
+}  // namespace
 

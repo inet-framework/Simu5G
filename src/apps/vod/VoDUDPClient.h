@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -52,7 +52,7 @@ class VoDUDPClient : public cSimpleModule
     virtual void receiveStream(const VoDPacket *msg);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

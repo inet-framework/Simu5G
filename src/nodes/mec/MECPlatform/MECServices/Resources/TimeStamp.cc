@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -51,7 +51,7 @@ void TimeStamp::setSeconds(int32_t value)
     seconds_ = value;
 }
 
-void TimeStamp::setSeconds() // TODO rename
+void TimeStamp::setSeconds()  // TODO rename
 {
     seconds_ = simTime().dbl();
 }
@@ -71,5 +71,5 @@ void TimeStamp::setValid(bool valid)
     valid_ = valid;
 }
 
-} //namespace
+}  // namespace
 

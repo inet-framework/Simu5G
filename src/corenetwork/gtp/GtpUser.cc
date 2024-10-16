@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -111,8 +111,8 @@ void GtpUser::handleMessage(cMessage *msg)
     else if (msg->arrivedOn("socketIn")) {
         EV << "GtpUser::handleMessage - message from UDP layer" << endl;
         Packet *packet = check_and_cast<Packet *>(msg);
-        PacketPrinter printer; // turns packets into human-readable strings
-        printer.printPacket(EV, packet); // print to standard output
+        PacketPrinter printer;  // turns packets into human-readable strings
+        printer.printPacket(EV, packet);  // print to standard output
 
         handleFromUdp(packet);
     }
@@ -175,19 +175,19 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
         delete datagram;
 
         L3Address tunnelPeerAddress;
-        if (flowId == -1) { // send to the gateway
+        if (flowId == -1) {  // send to the gateway
             EV << "GtpUser::handleFromTrafficFlowFilter - tunneling to " << gwAddress_.str() << endl;
             tunnelPeerAddress = gwAddress_;
         }
-        else if (flowId == -3) { // send to a MEC host
+        else if (flowId == -3) {  // send to a MEC host
             // check if the destination MEC host is within the same core network
 
             // retrieve the address of the UPF included within the MEC host
             EV << "GtpUser::handleFromTrafficFlowFilter - tunneling to " << destAddr.str() << endl;
             tunnelPeerAddress = binder_->getUpfFromMecHost(inet::L3Address(destAddr));
         }
-        else { // send to a BS
-               // check if the destination is within the same core network
+        else {  // send to a BS
+                // check if the destination is within the same core network
 
             // get the symbolic IP address of the tunnel destination ID
             // then obtain the address via IPvXAddressResolver
@@ -250,7 +250,7 @@ void GtpUser::handleFromUdp(Packet *pkt)
     }
     else if (ownerType_ == PGW || ownerType_ == UPF) {
         MacNodeId destId = binder_->getMacNodeId(destAddr);
-        if (destId != NODEID_NONE) { // final destination is a UE
+        if (destId != NODEID_NONE) {  // final destination is a UE
             MacNodeId destMaster = binder_->getNextHop(destId);
 
             // check if the destination belongs to the same core network (for multi-operator scenarios)
@@ -287,5 +287,5 @@ void GtpUser::handleFromUdp(Packet *pkt)
     }
 }
 
-} //namespace
+}  // namespace
 

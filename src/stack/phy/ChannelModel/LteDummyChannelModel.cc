@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -144,5 +144,5 @@ bool LteDummyChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *lteI
     return true;
 }
 
-} //namespace
+}  // namespace
 

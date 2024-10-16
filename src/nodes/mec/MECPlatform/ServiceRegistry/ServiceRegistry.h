@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -27,7 +27,7 @@ namespace simu5g {
 // Each Service Registry maintains the MEC service endpoint of each MEC service in the
 // MEC system.
 // MEC services register themselves with:
-//  - ServiceName -> IpAddress and port
+// - ServiceName -> IpAddress and port
 
 class ServiceRegistry : public MecServiceBase
 {
@@ -42,8 +42,8 @@ class ServiceRegistry : public MecServiceBase
      * uuidBase is fixed at 123e4567-e89b-12d3-a456-4266141, with the last 5 digits
      * used to create a unique id in a quicker way through the servIdCounter
      */
-    std::string uuidBase = "123e4567-e89b-12d3-a456-4266141"; // last 5 digits are missing and used to create unique id in a quicker way
-    int servIdCounter = 10000; // incremented for every new service and concatenated to the uuidBase
+    std::string uuidBase = "123e4567-e89b-12d3-a456-4266141";  // last 5 digits are missing and used to create unique id in a quicker way
+    int servIdCounter = 10000;  // incremented for every new service and concatenated to the uuidBase
 
   public:
     ServiceRegistry();
@@ -78,7 +78,7 @@ class ServiceRegistry : public MecServiceBase
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* NODES_MEC_MECPLATFORM_SERVICEREGISTRY_H_ */
 

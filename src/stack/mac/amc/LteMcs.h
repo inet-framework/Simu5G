@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -42,9 +42,9 @@ extern const CQIelem cqiTable[];
 
 struct MCSelem
 {
-    LteMod mod_;       /// modulation
-    Tbs iTbs_;         /// iTBS
-    double threshold_; /// code rate threshold
+    LteMod mod_;  /// modulation
+    Tbs iTbs_;  /// iTBS
+    double threshold_;  /// code rate threshold
 
     MCSelem(LteMod mod = _QPSK, Tbs iTbs = 0, double threshold = 0.0) : mod_(mod), iTbs_(iTbs), threshold_(threshold)
     {
@@ -109,7 +109,7 @@ const unsigned int *itbs2tbs(LteMod mod, TxMode txMode, unsigned char layers, un
  */
 std::vector<unsigned char> cwMapping(const TxMode& txMode, const Rank& ri, const unsigned int antennaPorts);
 
-} //namespace
+}  // namespace
 
 #endif
 

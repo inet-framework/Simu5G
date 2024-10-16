@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -107,7 +107,7 @@ class LteHarqBufferRx
         return processes_.at(acid);
     }
 
-    //* Returns the number of contained H-ARQ processes
+    // * Returns the number of contained H-ARQ processes
     unsigned int getProcesses()
     {
         return numHarqProcesses_;
@@ -185,7 +185,7 @@ class LteHarqBufferRx
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -39,7 +39,7 @@ void DistanceBasedConflictGraph::setThresholds(double d2dInterferenceRadius, dou
 
 double DistanceBasedConflictGraph::getDbmFromDistance(double distance)
 {
-    bool los = false;    // TODO make it configurable
+    bool los = false;  // TODO make it configurable
     double dbp = 0;
     double pLoss = 0;
 
@@ -57,7 +57,7 @@ double DistanceBasedConflictGraph::getDbmFromDistance(double distance)
 
 void DistanceBasedConflictGraph::findVertices(std::vector<CGVertex>& vertices)
 {
-    if (reuseD2D_) { // get point-to-point links
+    if (reuseD2D_) {  // get point-to-point links
         // get the list of point-to-point D2D connections
 
         typedef std::map<MacNodeId, std::map<MacNodeId, LteD2DMode>> PeeringMap;
@@ -71,10 +71,10 @@ void DistanceBasedConflictGraph::findVertices(std::vector<CGVertex>& vertices)
         }
     }
 
-    if (reuseD2DMulti_) { // get point-to-multipoint transmitters
+    if (reuseD2DMulti_) {  // get point-to-multipoint transmitters
         std::set<MacNodeId>& multicastTransmitterSet = binder_->getD2DMulticastTransmitters();
         for (const auto& transmitterId : multicastTransmitterSet) {
-            CGVertex v(transmitterId, NODEID_NONE);   // create a "fake" link
+            CGVertex v(transmitterId, NODEID_NONE);  // create a "fake" link
             vertices.push_back(v);
         }
     }
@@ -96,15 +96,15 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
             }
 
             // Depending on the considered pair of vertices, we are in one of the following cases:
-            //  -> P2P-P2P
-            //  -> P2P-P2MP
-            //  -> P2MP-P2P
-            //  -> P2MP-P2MP
+            // -> P2P-P2P
+            // -> P2P-P2MP
+            // -> P2MP-P2P
+            // -> P2MP-P2MP
             //
             // Each case has a different condition to be verified. The condition can be based on either
             // distance or dBm thresholds, depending on whether distance thresholds are initialized or not
 
-            if (!v1.isMulticast() && !v2.isMulticast()) { // check P2P-P2P conflict
+            if (!v1.isMulticast() && !v2.isMulticast()) {  // check P2P-P2P conflict
                 // obtain the position of v1's endpoints
                 Coord v1SenderCoord = cellInfo_->getUePosition(v1.srcId);
                 Coord v1DestCoord = cellInfo_->getUePosition(v1.dstId);
@@ -114,7 +114,7 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
                 double distance1 = v1SenderCoord.distance(v2DestCoord);
                 double distance2 = v2SenderCoord.distance(v1DestCoord);
 
-                if (d2dInterferenceRadius_ > 0.0) { // distance threshold initialized
+                if (d2dInterferenceRadius_ > 0.0) {  // distance threshold initialized
                     // compare distances
 
                     if (distance1 < d2dInterferenceRadius_ || distance2 < d2dInterferenceRadius_) {
@@ -141,7 +141,7 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
                     }
                 }
             }
-            else if (!v1.isMulticast() && v2.isMulticast()) { // check P2P-P2MP conflict
+            else if (!v1.isMulticast() && v2.isMulticast()) {  // check P2P-P2MP conflict
                 // obtain the position of v1's transmitter
                 Coord v1SenderCoord = cellInfo_->getUePosition(v1.srcId);
                 // obtain the position of v2 transmitter
@@ -149,7 +149,7 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
 
                 double distance = v1SenderCoord.distance(v2SenderCoord);
 
-                if (d2dMultiTransmissionRadius_ > 0.0 && d2dInterferenceRadius_ > 0.0) { // distance threshold initialized
+                if (d2dMultiTransmissionRadius_ > 0.0 && d2dInterferenceRadius_ > 0.0) {  // distance threshold initialized
                     // compare distances
 
                     if (distance < d2dMultiTransmissionRadius_ + d2dInterferenceRadius_) {
@@ -176,7 +176,7 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
                     }
                 }
             }
-            else if (v1.isMulticast() && !v2.isMulticast()) { // check P2MP-P2P conflict
+            else if (v1.isMulticast() && !v2.isMulticast()) {  // check P2MP-P2P conflict
                 // obtain the position of v1's transmitter
                 Coord v1SenderCoord = cellInfo_->getUePosition(v1.srcId);
                 // obtain the position of v2's receiver
@@ -184,7 +184,7 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
 
                 double distance = v1SenderCoord.distance(v2DestCoord);
 
-                if (d2dMultiInterferenceRadius_ > 0.0) { // distance threshold initialized
+                if (d2dMultiInterferenceRadius_ > 0.0) {  // distance threshold initialized
                     // compare distances
 
                     if (distance < d2dMultiInterferenceRadius_) {
@@ -219,7 +219,7 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
 
                 double distance = v1SenderCoord.distance(v2SenderCoord);
 
-                if (d2dMultiTransmissionRadius_ > 0.0 && d2dMultiInterferenceRadius_ > 0.0) { // distance threshold initialized
+                if (d2dMultiTransmissionRadius_ > 0.0 && d2dMultiInterferenceRadius_ > 0.0) {  // distance threshold initialized
                     // compare distances
 
                     if (distance < d2dMultiTransmissionRadius_ + d2dMultiInterferenceRadius_) {
@@ -247,8 +247,8 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
                 }
             }
         }  // end inner loop
-    } // end outer loop
+    }  // end outer loop
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -53,16 +53,16 @@ class PacketFlowManagerUe : public PacketFlowManagerBase
      */
     struct StatusDescriptor
     {
-        MacNodeId nodeId_; // destination node of this LCID
-        std::map<unsigned int, PdcpStatus> pdcpStatus_; // a PDCP PDU can be fragmented into many RLC that could be sent and acknowledged at different times (this prevents early removal on acknowledgment)
+        MacNodeId nodeId_;  // destination node of this LCID
+        std::map<unsigned int, PdcpStatus> pdcpStatus_;  // a PDCP PDU can be fragmented into many RLC that could be sent and acknowledged at different times (this prevents early removal on acknowledgment)
         std::map<unsigned int, SequenceNumberSet> rlcPdusPerSdu_;  // for each RLC SDU, stores the RLC PDUs where the former was fragmented
         std::map<unsigned int, SequenceNumberSet> rlcSdusPerPdu_;  // for each RLC PDU, stores the included RLC SDUs
         std::map<unsigned int, SequenceNumberSet> macSdusPerPdu_;  // for each MAC PDU, stores the included MAC SDUs (should be a 1:1 association)
-        std::vector<unsigned int> macPduPerProcess_;               // for each HARQ process, stores the included MAC PDU
+        std::vector<unsigned int> macPduPerProcess_;  // for each HARQ process, stores the included MAC PDU
     };
 
     typedef std::map<LogicalCid, StatusDescriptor> ConnectionMap;
-    ConnectionMap connectionMap_; // LCID to the corresponding StatusDescriptor
+    ConnectionMap connectionMap_;  // LCID to the corresponding StatusDescriptor
 
     Delay pdcpDelay;
 
@@ -148,7 +148,7 @@ class PacketFlowManagerUe : public PacketFlowManagerBase
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

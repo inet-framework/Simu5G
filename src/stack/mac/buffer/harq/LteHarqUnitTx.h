@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -69,9 +69,9 @@ class LteHarqUnitTx : noncopyable
     opp_component_ptr<cModule> nodeB_;
 
     opp_component_ptr<LteMacBase> macOwner_;
-    //used for statistics
+    // used for statistics
     opp_component_ptr<LteMacBase> dstMac_;
-    //Maximum number of H-ARQ retransmissions
+    // Maximum number of H-ARQ retransmissions
     unsigned int maxHarqRtx_;
 
     // Statistics
@@ -207,7 +207,7 @@ class LteHarqUnitTx : noncopyable
     virtual void resetUnit();
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

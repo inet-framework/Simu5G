@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -478,7 +478,7 @@ class LteRealisticChannelModel : public LteChannelModel
     ShadowFadingMap *obtainShadowingMap(MacNodeId id);
 };
 
-} //namespace
+}  // namespace
 
 #endif /* STACK_PHY_CHANNELMODEL_LTEREALISTICCHANNELMODEL_H_ */
 

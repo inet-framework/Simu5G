@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -68,7 +68,7 @@ class BurstSender : public cSimpleModule
     void handleMessage(cMessage *msg) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

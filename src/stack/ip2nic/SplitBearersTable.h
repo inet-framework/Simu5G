@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -87,7 +87,7 @@ class SplitBearersTable
     entry_ ht_[TABLE_SIZE];
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

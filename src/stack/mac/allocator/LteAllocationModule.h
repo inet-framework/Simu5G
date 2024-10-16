@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -293,7 +293,7 @@ class LteAllocationModule
         return allocatedRbsMatrix_.end();
     }
 
-    //  Band Allocation Map
+    // Band Allocation Map
     AllocationList::const_iterator getAllocatedBlocksUeAllocationListBegin(const Remote antenna, const Band b,
             const MacNodeId nodeId)
     {
@@ -331,7 +331,7 @@ class LteAllocationModule
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

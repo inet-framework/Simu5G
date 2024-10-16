@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -29,7 +29,7 @@ using namespace omnetpp;
  *  - circle notification subscription
  */
 
-//class Location;
+// class Location;
 class AperiodicSubscriptionTimer;
 
 class LocationService : public MecServiceBase2
@@ -71,7 +71,7 @@ class LocationService : public MecServiceBase2
 
 };
 
-} //namespace
+}  // namespace
 
 #endif // ifndef _LOCATIONSERVICE_H
 

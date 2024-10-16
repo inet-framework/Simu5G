@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -60,7 +60,7 @@ void BaseStationStatsCollector::initialize(int stage) {
         packetFlowManager_.reference(this, "packetFlowManagerModule", true);
         cellInfo_.reference(this, "cellInfoModule", true);
 
-        ecgi_.cellId = cellInfo_->getMacCellId(); // at least stage 2
+        ecgi_.cellId = cellInfo_->getMacCellId();  // at least stage 2
 
         dl_total_prb_usage_cell.init("dl_total_prb_usage_cell", par("prbUsagePeriods"), par("movingAverage"));
         ul_total_prb_usage_cell.init("ul_total_prb_usage_cell", par("prbUsagePeriods"), par("movingAverage"));
@@ -128,7 +128,7 @@ void BaseStationStatsCollector::handleMessage(cMessage *msg)
             add_dl_nongbr_pdr_cell_perUser();
             add_ul_nongbr_pdr_cell_perUser();
 
-            //reset counters
+            // reset counters
             packetFlowManager_->resetDiscardCounter();
             resetDiscardCounterPerUe();
             scheduleAt(NOW + discardRatePeriod_, discardRate_);
@@ -137,7 +137,7 @@ void BaseStationStatsCollector::handleMessage(cMessage *msg)
             add_dl_nongbr_delay_perUser();
             add_ul_nongbr_delay_perUser();
 
-            //reset counter
+            // reset counter
             resetDelayCounterPerUe();
             scheduleAt(NOW + delayPacketPeriod_, packetDelay_);
         }
@@ -288,7 +288,7 @@ void BaseStationStatsCollector::add_ul_nongbr_pdr_cell()
     ul_nongbr_pdr_cell.addValue((int)pdr);
 }
 
-//TODO handover management
+// TODO handover management
 
 // for each user save stats
 
@@ -435,5 +435,5 @@ void BaseStationStatsCollector::resetStats(MacNodeId nodeId)
         ue->second->resetStats();
 }
 
-} //namespace
+}  // namespace
 

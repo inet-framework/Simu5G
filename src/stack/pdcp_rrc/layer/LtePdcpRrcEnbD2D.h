@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -43,7 +43,7 @@ class LtePdcpRrcEnbD2D : public LtePdcpRrcEnb
     void pdcpHandleD2DModeSwitch(MacNodeId peerId, LteD2DMode newMode);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

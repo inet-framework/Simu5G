@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -162,7 +162,7 @@ class LteX2Message : public LteX2Message_Base
 
 Register_Class(LteX2Message);
 
-} //namespace
+}  // namespace
 
 #endif
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -34,10 +34,10 @@ nlohmann::ordered_json UserInfo::toJson() const
     val["zoneId"] = zoneId_;
     val["resourceURL"] = resourceUrl_;
     val["timeStamp"] = timestamp_.toJson();
-    //val["timeStamp"] = timestamp_.toJson();
+    // val["timeStamp"] = timestamp_.toJson();
     val["locationInfo"] = locationInfo_.toJson();
     return val;
 }
 
-} //namespace
+}  // namespace
 

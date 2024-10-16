@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -81,7 +81,7 @@ class LteRlcUmD2D : public LteRlcUm
     std::map<MacNodeId, std::set<UmTxEntity *, simu5g::utils::cModule_LessId>> perPeerTxEntities_;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

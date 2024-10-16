@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -27,7 +27,7 @@ MacNodeId LtePdcpRrcUeD2D::getDestId(inet::Ptr<FlowControlInfo> lteInfo)
     MacNodeId destId = binder_->getMacNodeId(destAddr);
 
     // check if the destination is inside the LTE network
-    if (destId == NODEID_NONE || getDirection(destId) == UL) { // if not, the packet is destined to the eNB
+    if (destId == NODEID_NONE || getDirection(destId) == UL) {  // if not, the packet is destined to the eNB
         // UE is subject to handovers: master may change
         return binder_->getNextHop(lteInfo->getSourceId());
     }
@@ -64,13 +64,13 @@ void LtePdcpRrcUeD2D::fromDataPort(cPacket *pktAux)
         // We consider the host part of the IP address (the remaining 28 bits) as identifier of the group,
         // so as it is uniquely determined for the whole network
         uint32_t address = Ipv4Address(lteInfo->getDstAddr()).getInt();
-        uint32_t mask = ~((uint32_t)255 << 28);      // 0000 1111 1111 1111
+        uint32_t mask = ~((uint32_t)255 << 28);  // 0000 1111 1111 1111
         uint32_t groupId = address & mask;
         lteInfo->setMulticastGroupId((int32_t)groupId);
     }
     else {
         destId = binder_->getMacNodeId(destAddr);
-        if (destId != NODEID_NONE) { // the destination is a UE within the LTE network
+        if (destId != NODEID_NONE) {  // the destination is a UE within the LTE network
             if (binder_->checkD2DCapability(nodeId_, destId)) {
                 // this way, we record the ID of the endpoints even if the connection is currently in IM
                 // this is useful for mode switching
@@ -85,7 +85,7 @@ void LtePdcpRrcUeD2D::fromDataPort(cPacket *pktAux)
             // set actual flow direction based (D2D/UL) based on the current mode (DM/IM) of this peering
             lteInfo->setDirection(getDirection(destId));
         }
-        else { // the destination is outside the LTE network
+        else {  // the destination is outside the LTE network
             lteInfo->setDirection(UL);
             lteInfo->setD2dTxPeerId(NODEID_NONE);
             lteInfo->setD2dRxPeerId(NODEID_NONE);
@@ -161,5 +161,5 @@ void LtePdcpRrcUeD2D::pdcpHandleD2DModeSwitch(MacNodeId peerId, LteD2DMode newMo
     // add here specific behavior for handling mode switch at the PDCP layer
 }
 
-} //namespace
+}  // namespace
 

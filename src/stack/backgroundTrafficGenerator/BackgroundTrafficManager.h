@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -63,7 +63,7 @@ class BackgroundTrafficManager : public BackgroundTrafficManagerBase
     double getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

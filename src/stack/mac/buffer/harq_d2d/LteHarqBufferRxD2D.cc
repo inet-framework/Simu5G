@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -42,7 +42,7 @@ LteHarqBufferRxD2D::LteHarqBufferRxD2D(unsigned int num, LteMacBase *owner, Bind
         nodeB_ = macOwner_;
         dir = UL;
     }
-    else { // this is a UE
+    else {  // this is a UE
         nodeB_ = getMacByMacNodeId(binder, macOwner_->getMacCellId());
         dir = DL;
     }
@@ -141,8 +141,8 @@ std::list<Packet *> LteHarqBufferRxD2D::extractCorrectPdus()
                         macUe_emit(macThroughputD2D_, tputSample);
                     }
                     else {
-                        nodeB_->emit(macCellThroughputSignal_[dir], cellTputSample); // TODO `info->getDirection()` and `dir` maybe differs
-                        macUe_emit(macThroughputSignal_[dir], tputSample); // TODO `info->getDirection()` and `dir` maybe differs
+                        nodeB_->emit(macCellThroughputSignal_[dir], cellTputSample);  // TODO `info->getDirection()` and `dir` maybe differs
+                        macUe_emit(macThroughputSignal_[dir], tputSample);  // TODO `info->getDirection()` and `dir` maybe differs
                     }
                 }
 
@@ -159,5 +159,5 @@ std::list<Packet *> LteHarqBufferRxD2D::extractCorrectPdus()
     return ret;
 }
 
-} //namespace
+}  // namespace
 

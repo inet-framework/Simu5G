@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -153,7 +153,7 @@ void LteAllocationModule::setRemoteAntenna(const Plane plane, const Remote anten
 
 bool LteAllocationModule::configureMuMimoPeering(const MacNodeId nodeId, const MacNodeId peer)
 {
-    //---------- Peering availability Check ----------
+    // ---------- Peering availability Check ----------
     // peer user already set for the specified nodeId
     if (allocatedRbsUe_[nodeId].muMimoEnabled_)
         return false;
@@ -161,7 +161,7 @@ bool LteAllocationModule::configureMuMimoPeering(const MacNodeId nodeId, const M
     if (allocatedRbsUe_[peer].muMimoEnabled_)
         return false;
 
-    //---- If we reach this point, we can use MuMimo peering by setting the allocator properly ----
+    // ---- If we reach this point, we can use MuMimo peering by setting the allocator properly ----
     // set direct peering
     allocatedRbsUe_[nodeId].muMimoEnabled_ = true;
     allocatedRbsUe_[peer].muMimoEnabled_ = true;
@@ -170,8 +170,8 @@ bool LteAllocationModule::configureMuMimoPeering(const MacNodeId nodeId, const M
     allocatedRbsUe_[nodeId].peerId_ = peer;
     allocatedRbsUe_[peer].peerId_ = nodeId;
 
-    allocatedRbsUe_[nodeId].secondaryUser_ = false; // primary MU-MIMO user
-    allocatedRbsUe_[peer].secondaryUser_ = true;   // secondary MU-MIMO user
+    allocatedRbsUe_[nodeId].secondaryUser_ = false;  // primary MU-MIMO user
+    allocatedRbsUe_[peer].secondaryUser_ = true;  // secondary MU-MIMO user
 
     // set the peer's antennas to the main user's ones.
     RemoteSet peerAntennas = allocatedRbsUe_.at(nodeId).availableAntennaSet_;
@@ -398,5 +398,5 @@ unsigned int LteAllocationModule::rbOccupation(const MacNodeId nodeId, RbMap& rb
     return blocks;
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -53,7 +53,7 @@ void NRPhyUe::handleAirFrame(cMessage *msg)
         return;
     }
 
-    //Update coordinates of this user
+    // Update coordinates of this user
     if (lteInfo->getFrameType() == HANDOVERPKT) {
         // Check if the message is on another carrier frequency or handover is already in process
         if (carrierFreq != primaryChannelModel_->getCarrierFrequency() || (handoverTrigger_ != nullptr && handoverTrigger_->isScheduled())) {
@@ -134,15 +134,15 @@ void NRPhyUe::handleAirFrame(cMessage *msg)
         // If not already started, auto-send a message to signal the presence of data to be decoded
         if (d2dDecodingTimer_ == nullptr) {
             d2dDecodingTimer_ = new cMessage("d2dDecodingTimer");
-            d2dDecodingTimer_->setSchedulingPriority(10);          // Last thing to be performed in this TTI
+            d2dDecodingTimer_->setSchedulingPriority(10);  // Last thing to be performed in this TTI
             scheduleAt(NOW, d2dDecodingTimer_);
         }
 
         // Store frame, together with related control info
         frame->setControlInfo(lteInfo);
-        storeAirFrame(frame);            // Implements the capture effect
+        storeAirFrame(frame);  // Implements the capture effect
 
-        return;                          // Exit the function, decoding will be done later
+        return;  // Exit the function, decoding will be done later
     }
 
     if ((lteInfo->getUserTxParams()) != nullptr) {
@@ -219,7 +219,7 @@ void NRPhyUe::triggerHandover()
     EV << "############" << endl;
 
     MacNodeId masterNode = binder_->getMasterNode(candidateMasterId_);
-    if (masterNode != candidateMasterId_) { // The candidate is a secondary node
+    if (masterNode != candidateMasterId_) {  // The candidate is a secondary node
         if (otherPhy_->getMasterId() == masterNode) {
             MacNodeId otherNodeId = otherPhy_->getMacNodeId();
             const std::pair<MacNodeId, MacNodeId> *handoverPair = binder_->getHandoverTriggered(otherNodeId);
@@ -229,7 +229,7 @@ void NRPhyUe::triggerHandover()
                     double delta = handoverDelta_;
                     if (handoverPair->first != NODEID_NONE) // The other "stack" is performing a complete handover
                         delta += handoverDetachment_ + handoverAttachment_;
-                    else                                                                            // The other "stack" is attaching to an eNodeB
+                    else // The other "stack" is attaching to an eNodeB
                         delta += handoverAttachment_;
 
                     EV << NOW << " NRPhyUe::triggerHandover - Wait for the handover completion for the other stack. Delay this handover." << endl;
@@ -295,11 +295,11 @@ void NRPhyUe::triggerHandover()
     }
 
     double handoverLatency;
-    if (masterId_ == NODEID_NONE)                                                                                  // Attachment only
+    if (masterId_ == NODEID_NONE) // Attachment only
         handoverLatency = handoverAttachment_;
-    else if (candidateMasterId_ == NODEID_NONE)                                                                                                // Detachment only
+    else if (candidateMasterId_ == NODEID_NONE) // Detachment only
         handoverLatency = handoverDetachment_;
-    else                                                         // Complete handover time
+    else // Complete handover time
         handoverLatency = handoverDetachment_ + handoverAttachment_;
 
     handoverTrigger_ = new cMessage("handoverTrigger");
@@ -452,5 +452,5 @@ void NRPhyUe::deleteOldBuffers(MacNodeId masterId)
     pdcp_->deleteEntities(masterId_);
 }
 
-} //namespace
+}  // namespace
 

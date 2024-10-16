@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -68,7 +68,7 @@ class SubscriptionBase
     TimeStamp expiryTime_;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* APPS_MEC_MESERVICES_RESOURCES_SUBSCRIPTIONBASE_H_ */
 

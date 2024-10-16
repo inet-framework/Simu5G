@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -63,5 +63,5 @@ bool LteRlcAmPdu::isLast() const
     return lastSn == snoFragment;
 }
 
-} //namespace
+}  // namespace
 

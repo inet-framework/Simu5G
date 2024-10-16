@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -40,16 +40,16 @@ class PhyPisaData
     int maxChannel2() { return 1000; }
 
     // getBler gets the following parameters: (txMode , CQI, SINR)
-    //double getBler(int i, int j, int k){if (j==0) return 1; else return blerCurves_[i][j][k-1+blerShift_];}
+    // double getBler(int i, int j, int k){if (j==0) return 1; else return blerCurves_[i][j][k-1+blerShift_];}
     double getBler(int i, int j, int k) { return GetBLER_TU(k + blerShift_, j); };
-    int minSnr() { return -14 - blerShift_; }//SINR_15_CQI_TU [0] [0];}
-    int maxSnr() { return 40 - blerShift_; }//SINR_15_CQI_TU [14] [15];}
+    int minSnr() { return -14 - blerShift_; }  // SINR_15_CQI_TU [0] [0];}
+    int maxSnr() { return 40 - blerShift_; }  // SINR_15_CQI_TU [14] [15];}
 
     void setBlerShift(int shift) { blerShift_ = shift; }
     double getChannel(unsigned int i);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

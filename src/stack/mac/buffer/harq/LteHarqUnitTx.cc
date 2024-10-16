@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -34,9 +34,9 @@ LteHarqUnitTx::LteHarqUnitTx(Binder *binder, unsigned char acid, Codeword cw,
         nodeB_ = macOwner_;
         dir_ = DL;
     }
-    else { // UE
+    else {  // UE
         nodeB_ = getMacByMacNodeId(binder, macOwner_->getMacCellId());
-        if (dstMac_ == nodeB_) { // UL
+        if (dstMac_ == nodeB_) {  // UL
             dir_ = UL;
         }
     }
@@ -88,7 +88,7 @@ Packet *LteHarqUnitTx::extractPdu()
 
     txTime_ = NOW;
     transmissions_++;
-    status_ = TXHARQ_PDU_WAITING; // waiting for feedback
+    status_ = TXHARQ_PDU_WAITING;  // waiting for feedback
 
     auto lteInfo = pdu_->getTagForUpdate<UserControlInfo>();
     lteInfo->setTxNumber(transmissions_);
@@ -263,5 +263,5 @@ void LteHarqUnitTx::resetUnit()
     pduLength_ = 0;
 }
 
-} //namespace
+}  // namespace
 

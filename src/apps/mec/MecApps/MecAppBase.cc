@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -43,7 +43,7 @@ void MecAppBase::initialize(int stage)
     mp1Address = L3AddressResolver().resolve(mp1Ip);
     mp1Port = par("mp1Port");
 
-    mecAppId = par("mecAppId"); // FIXME mecAppId is the deviceAppId (it does not change anything, though)
+    mecAppId = par("mecAppId");  // FIXME mecAppId is the deviceAppId (it does not change anything, though)
     mecAppIndex_ = par("mecAppIndex");
     requiredRam = par("requiredRam").doubleValue();
     requiredDisk = par("requiredDisk").doubleValue();
@@ -236,5 +236,5 @@ void MecAppBase::finish()
     EV << "MecAppBase::finish()" << endl;
 }
 
-} //namespace
+}  // namespace
 

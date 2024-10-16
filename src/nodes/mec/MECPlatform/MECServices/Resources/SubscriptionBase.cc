@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -27,7 +27,7 @@ SubscriptionBase::SubscriptionBase(unsigned int subId, inet::TcpSocket *socket, 
     subscriptionId_ = subId;
     socket_ = socket;
     baseResLocation_ = baseResLocation;
-//	notificationTrigger = nullptr;
+// notificationTrigger = nullptr;
 }
 
 void SubscriptionBase::addEnodeB(std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs) {
@@ -50,18 +50,18 @@ SubscriptionBase::~SubscriptionBase() {}
 bool SubscriptionBase::fromJson(const nlohmann::ordered_json& jsonBody)
 {
     if (!jsonBody.contains("callbackReference") || jsonBody["callbackReference"].is_array()) {
-        Http::send400Response(socket_); // callbackReference is mandatory and takes exactly 1 argument
+        Http::send400Response(socket_);  // callbackReference is mandatory and takes exactly 1 argument
         return false;
     }
 
-    if (std::string(jsonBody["callbackReference"]).find('/') == std::string::npos) { //bad uri
-        Http::send400Response(socket_); // must be ipv4
+    if (std::string(jsonBody["callbackReference"]).find('/') == std::string::npos) {  // bad uri
+        Http::send400Response(socket_);  // must be ipv4
         return false;
     }
 
     callbackReference_ = jsonBody["callbackReference"];
 
-    //check expiration time
+    // check expiration time
     // TODO add end timer
     if (jsonBody.contains("expiryDeadline") && !jsonBody["expiryDeadline"].is_array()) {
         expiryTime_.setSeconds(jsonBody["expiryDeadline"]["seconds"]);
@@ -97,5 +97,5 @@ int SubscriptionBase::getSocketConnId() const
     return socket_->getSocketId();
 }
 
-} //namespace
+}  // namespace
 

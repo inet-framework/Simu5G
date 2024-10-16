@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -27,7 +27,7 @@ NRAmc::NRAmc(LteMacEnb *mac, Binder *binder, CellInfo *cellInfo, int numAntennas
 
 unsigned int NRAmc::getSymbolsPerSlot(double carrierFrequency, Direction dir)
 {
-    unsigned totSymbols = 14;   // TODO get this parameter from CellInfo/Carrier
+    unsigned totSymbols = 14;  // TODO get this parameter from CellInfo/Carrier
 
     // use a function from the binder
     SlotFormat sf = binder_->getSlotFormat(carrierFrequency);
@@ -43,7 +43,7 @@ unsigned int NRAmc::getSymbolsPerSlot(double carrierFrequency, Direction dir)
 
 unsigned int NRAmc::getResourceElementsPerBlock(unsigned int symbolsPerSlot)
 {
-    unsigned int numSubcarriers = 12;   // TODO get this parameter from CellInfo/Carrier
+    unsigned int numSubcarriers = 12;  // TODO get this parameter from CellInfo/Carrier
     unsigned int reSignal = 1;
     unsigned int nOverhead = 0;
 
@@ -272,5 +272,5 @@ NRMCSelem NRAmc::getMcsElemPerCqi(Cqi cqi, const Direction dir)
     return ret;
 }
 
-} //namespace
+}  // namespace
 

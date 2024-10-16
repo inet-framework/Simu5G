@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -170,7 +170,7 @@ class LtePhyUe : public LtePhyBase
     double getVarianceCqi(Direction dir);
 };
 
-} //namespace
+}  // namespace
 
 #endif /* _LTE_AIRPHYUE_H_ */
 

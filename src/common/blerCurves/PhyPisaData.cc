@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -2672,5 +2672,5 @@ double PhyPisaData::getChannel(unsigned int i)
     return channel_[i];
 }
 
-} //namespace
+}  // namespace
 

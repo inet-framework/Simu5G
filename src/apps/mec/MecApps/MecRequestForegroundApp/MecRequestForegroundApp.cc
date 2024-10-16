@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -50,7 +50,7 @@ void MecRequestForegroundApp::handleServiceMessage(int connId)
 void MecRequestForegroundApp::handleSelfMessage(cMessage *msg) {
     if (strcmp(msg->getName(), "sendFGRequest") == 0) {
         sendRequest();
-        //scheduleAt(simTime() + exponential(lambda, 2), sendFGRequest);
+        // scheduleAt(simTime() + exponential(lambda, 2), sendFGRequest);
     }
     else if (strcmp(msg->getName(), "connectMp1") == 0) {
         EV << "MecAppBase::handleMessage- " << msg->getName() << endl;
@@ -77,7 +77,7 @@ void MecRequestForegroundApp::established(int connId)
     else if (connId == serviceSocket_->getSocketId()) {
         EV << "MecRequestBackgroundApp::established - serviceSocket" << endl;
         scheduleAt(simTime() + 0, sendFGRequest);
-        //scheduleAt(simTime() + exponential(lambda, 2), sendFGRequest);
+        // scheduleAt(simTime() + exponential(lambda, 2), sendFGRequest);
     }
     else {
         throw cRuntimeError("MecRequestBackgroundApp::socketEstablished - Socket %d not recognized", connId);
@@ -91,7 +91,7 @@ void MecRequestForegroundApp::handleMp1Message(int connId)
     EV << "MecRequestBackgroundApp::handleMp1Message - payload: " << mp1HttpMessage->getBody() << endl;
 
     try {
-        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody()); // get the JSON structure
+        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody());  // get the JSON structure
         if (!jsonBody.empty()) {
             jsonBody = jsonBody[0];
             std::string serName = jsonBody["serName"];
@@ -132,5 +132,5 @@ void MecRequestForegroundApp::sendRequest() {
     Http::sendGetRequest(serviceSocket_, host.c_str(), uri);
 }
 
-} //namespace
+}  // namespace
 

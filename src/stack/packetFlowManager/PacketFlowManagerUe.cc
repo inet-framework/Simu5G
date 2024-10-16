@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -283,7 +283,7 @@ void PacketFlowManagerUe::insertMacPdu(inet::Ptr<const LteMacPdu> macPdu)
         auto macSdu = macPdu->getSdu(i).peekAtFront<LteRlcUmDataPdu>();
         unsigned int rlcSno = macSdu->getPduSequenceNumber();
 
-        auto aa = macPdu->getSdu(i); // all rlc pdus have the same lcid
+        auto aa = macPdu->getSdu(i);  // all rlc pdus have the same lcid
         auto ee = aa.getTag<FlowControlInfo>();
         int ll = ee->getLcid();
         EV << "ALE LCID: " << ll << endl;
@@ -404,7 +404,7 @@ void PacketFlowManagerUe::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
                 if (desc->rlcPdusPerSdu_[pdcpPduSno].empty()) {
 
                     // set the time for pdcpPduSno
-                    if (pit->second.hasArrivedAll && !pit->second.discardedAtRlc && !pit->second.discardedAtMac) { // the whole current pdcp seqNum has been received
+                    if (pit->second.hasArrivedAll && !pit->second.discardedAtRlc && !pit->second.discardedAtMac) {  // the whole current pdcp seqNum has been received
                         EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::macPduArrived - ----> PDCP PDU [" << pdcpPduSno << "] has been completely sent, remove from PDCP buffer" << endl;
 
                         double time = (simTime() - pit->second.entryTime).dbl();
@@ -418,7 +418,7 @@ void PacketFlowManagerUe::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
 
                         // remove pdcp status
                         oit->second.clear();
-                        desc->rlcPdusPerSdu_.erase(oit); // erase PDCP PDU SN
+                        desc->rlcPdusPerSdu_.erase(oit);  // erase PDCP PDU SN
                     }
                 }
             }
@@ -427,7 +427,7 @@ void PacketFlowManagerUe::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
         }
 
         mit->second.clear();
-        desc->macSdusPerPdu_.erase(mit); // erase MAC PDU ID
+        desc->macSdusPerPdu_.erase(mit);  // erase MAC PDU ID
     }
 }
 
@@ -485,7 +485,7 @@ void PacketFlowManagerUe::discardMacPdu(const inet::Ptr<const LteMacPdu> macPdu)
         }
 
         mit->second.clear();
-        desc->macSdusPerPdu_.erase(mit); // erase MAC PDU ID
+        desc->macSdusPerPdu_.erase(mit);  // erase MAC PDU ID
     }
 }
 
@@ -516,5 +516,5 @@ void PacketFlowManagerUe::finish()
 {
 }
 
-} //namespace
+}  // namespace
 

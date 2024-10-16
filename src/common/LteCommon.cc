@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -30,11 +30,11 @@ using namespace inet;
 const inet::Protocol LteProtocol::ipv4uu("ipv4uu", "IPv4 (LTE Uu link)");
 Register_Protocol_Dissector(&LteProtocol::ipv4uu, Ipv4ProtocolDissector);
 
-const inet::Protocol LteProtocol::pdcp("pdcp", "PDCP");         // Packet Data Convergence Protocol
-const inet::Protocol LteProtocol::rlc("rlc", "RLC");            // Radio Link Control
+const inet::Protocol LteProtocol::pdcp("pdcp", "PDCP");  // Packet Data Convergence Protocol
+const inet::Protocol LteProtocol::rlc("rlc", "RLC");  // Radio Link Control
 const inet::Protocol LteProtocol::ltemac("ltemac", "LTE-MAC");  // Medium Access Control
-const inet::Protocol LteProtocol::gtp("gtp", "GTP");            // GPRS Tunneling Protocol
-const inet::Protocol LteProtocol::x2ap("x2ap", "X2AP");         // X2AP Protocol
+const inet::Protocol LteProtocol::gtp("gtp", "GTP");  // GPRS Tunneling Protocol
+const inet::Protocol LteProtocol::x2ap("x2ap", "X2AP");  // X2AP Protocol
 
 const std::string lteTrafficClassToA(LteTrafficClass type)
 {
@@ -172,7 +172,7 @@ FeedbackType getFeedbackType(std::string s)
     if (s == "WIDEBAND")
         return WIDEBAND;
 
-    return WIDEBAND; // default
+    return WIDEBAND;  // default
 }
 
 FeedbackGeneratorType getFeedbackGeneratorType(std::string s)
@@ -183,7 +183,7 @@ FeedbackGeneratorType getFeedbackGeneratorType(std::string s)
         return REAL;
     if (s == "DAS_AWARE")
         return DAS_AWARE;
-    //default
+    // default
     return IDEAL;
 }
 
@@ -194,7 +194,7 @@ RbAllocationType getRbAllocationType(std::string s)
     if (s == "localized")
         return TYPE2_LOCALIZED;
 
-    return TYPE2_DISTRIBUTED; // default type
+    return TYPE2_DISTRIBUTED;  // default type
 }
 
 const std::string txModeToA(TxMode tx)
@@ -457,7 +457,7 @@ MacNodeId ctrlInfoToUeId(inet::Ptr<LteControlInfo> info)
         case DL: case D2D:
             ueId = info->getDestId();
             break;
-        case UL: case D2D_MULTI: // D2D_MULTI goes here, since the destination id is meaningless in that context
+        case UL: case D2D_MULTI:  // D2D_MULTI goes here, since the destination id is meaningless in that context
             ueId = info->getSourceId();
             break;
         default:
@@ -552,8 +552,8 @@ void getParametersFromXML(cXMLElement *xmlData, ParameterMap& outputMap)
             continue;
         }
 
-        std::string sType = type;     // needed for easier comparison
-        std::string sValue = value;    // needed for easier comparison
+        std::string sType = type;  // needed for easier comparison
+        std::string sValue = value;  // needed for easier comparison
 
         cMsgPar param(name);
 
@@ -653,5 +653,5 @@ void removeAllSimu5GTags(inet::Packet *pkt)
     pkt->removeTagIfPresent<LteControlInfo>();
 }
 
-} //namespace
+}  // namespace
 

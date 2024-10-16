@@ -169,7 +169,7 @@ static double GetBLER_AWGN(double SINR, int MCS)
     return BLER;
 }
 
-} //namespace
+}  // namespace
 
 #endif /* BLERVSSINR_15CQI_AWGN_H_ */
 

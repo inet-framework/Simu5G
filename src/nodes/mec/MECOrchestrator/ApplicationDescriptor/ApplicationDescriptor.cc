@@ -1,5 +1,5 @@
 //
-//                           Simu5G
+// Simu5G
 //
 // This file is part of a software released under the license included in file
 // "license.pdf". This license can be also found at http://www.ltesimulator.com/
@@ -8,7 +8,7 @@
 //
 
 #include "nodes/mec/MECOrchestrator/ApplicationDescriptor/ApplicationDescriptor.h"
-#include <math.h>       // pow
+#include <math.h>  // pow
 #include  <iostream>
 
 namespace simu5g {
@@ -30,8 +30,8 @@ ApplicationDescriptor::ApplicationDescriptor(const char *fileName)
     appInfoName_ = jsonFile["appInfoName"];
     appDescription_ = jsonFile["appDescription"];
     virtualResourceDescritor_.cpu = jsonFile["virtualComputeDescriptor"]["virtualCpu"];
-    virtualResourceDescritor_.disk = pow(10, 6) * double(jsonFile["virtualComputeDescriptor"]["virtualDisk"]);   // this quantity is in MB
-    virtualResourceDescritor_.ram = pow(10, 6) * double(jsonFile["virtualComputeDescriptor"]["virtualMemory"]); // this quantity is in MB
+    virtualResourceDescritor_.disk = pow(10, 6) * double(jsonFile["virtualComputeDescriptor"]["virtualDisk"]);  // this quantity is in MB
+    virtualResourceDescritor_.ram = pow(10, 6) * double(jsonFile["virtualComputeDescriptor"]["virtualMemory"]);  // this quantity is in MB
 
     if (jsonFile.contains("appServiceRequired")) {
         if (jsonFile["appServiceRequired"].is_array()) {
@@ -119,5 +119,5 @@ void ApplicationDescriptor::printApplicationDescriptor() const
         "disk: " << virtualResourceDescritor_.disk << "\n";
 }
 
-} //namespace
+}  // namespace
 

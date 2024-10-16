@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -23,7 +23,7 @@ using namespace omnetpp;
 bool LteSchedulerEnbUl::checkEligibility(MacNodeId id, Codeword& cw, double carrierFrequency)
 {
     HarqRxBuffers *harqRxBuff = mac_->getHarqRxBuffers(carrierFrequency);
-    if (harqRxBuff == nullptr)                                                             // a new HARQ buffer will be created at reception
+    if (harqRxBuff == nullptr) // a new HARQ buffer will be created at reception
         return true;
 
     // check if harq buffer has already been created for this node
@@ -81,7 +81,7 @@ bool LteSchedulerEnbUl::racschedule(double carrierFrequency, BandLimitVector *ba
         for (const auto& [nodeId, _] : racStatus) {
             EV << NOW << " LteSchedulerEnbUl::racschedule handling RAC for node " << nodeId << endl;
 
-            const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, UL, carrierFrequency);    // get the user info
+            const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, UL, carrierFrequency);  // get the user info
             const std::set<Band>& allowedBands = txParams.readBands();
             BandLimitVector tempBandLim;
             std::string bands_msg = "BAND_LIMIT_SPECIFIED";
@@ -301,9 +301,9 @@ bool LteSchedulerEnbUl::rtxschedule(double carrierFrequency, BandLimitVector *ba
                 }
 
                 // Get user transmission parameters
-                const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency);// get the user info
+                const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency);  // get the user info
 
-                unsigned int codewords = txParams.getLayers().size();// get the number of available codewords
+                unsigned int codewords = txParams.getLayers().size();  // get the number of available codewords
                 unsigned int allocatedBytes = 0;
 
                 // TODO handle the codewords join case (sizeof(cw0+cw1) < currentTbs && currentLayers ==1)
@@ -328,7 +328,7 @@ bool LteSchedulerEnbUl::rtxschedule(double carrierFrequency, BandLimitVector *ba
             HarqBuffersMirrorD2D *harqBuffersMirrorD2D = check_and_cast<LteMacEnbD2D *>(mac_.get())->getHarqBuffersMirrorD2D(carrierFrequency);
             if (harqBuffersMirrorD2D != nullptr) {
                 for (auto it_d2d = harqBuffersMirrorD2D->begin(); it_d2d != harqBuffersMirrorD2D->end(); ) {
-                    MacNodeId senderId = (it_d2d->first).first; // Transmitter
+                    MacNodeId senderId = (it_d2d->first).first;  // Transmitter
                     MacNodeId destId = (it_d2d->first).second;  // Receiver
 
                     if (senderId == NODEID_NONE || binder_->getOmnetId(senderId) == 0) {
@@ -440,7 +440,7 @@ unsigned int LteSchedulerEnbUl::schedulePerAcidRtx(MacNodeId nodeId, double carr
         std::vector<BandLimit> *bandLim, Remote antenna, bool limitBl)
 {
     try {
-        const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency);    // get the user info
+        const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency);  // get the user info
         const std::set<Band>& allowedBands = txParams.readBands();
         BandLimitVector tempBandLim;
         std::string bands_msg = "BAND_LIMIT_SPECIFIED";
@@ -524,7 +524,7 @@ unsigned int LteSchedulerEnbUl::schedulePerAcidRtx(MacNodeId nodeId, double carr
             int limit = bandLim->at(i).limit_.at(cw);
 
             // TODO add support for multi CW
-//                    ((allocatedCw == MAX_CODEWORDS) ? availableBytes(nodeId,antenna, b, cw) : mac_->getAmc()->blocks2bytes(nodeId, b, cw, allocator_->getBlocks(antenna,b,nodeId) , direction_));    // available space
+// ((allocatedCw == MAX_CODEWORDS) ? availableBytes(nodeId,antenna, b, cw) : mac_->getAmc()->blocks2bytes(nodeId, b, cw, allocator_->getBlocks(antenna,b,nodeId) , direction_));    // available space
             unsigned int bandAvailableBytes = availableBytes(nodeId, antenna, b, cw, direction_, carrierFrequency);
 
             // use the provided limit as cap for available bytes, if it is not set to unlimited
@@ -611,7 +611,7 @@ unsigned int LteSchedulerEnbUl::schedulePerAcidRtxD2D(MacNodeId destId, MacNodeI
 {
     Direction dir = D2D;
     try {
-        const UserTxParams& txParams = mac_->getAmc()->computeTxParams(senderId, dir, carrierFrequency);    // get the user info
+        const UserTxParams& txParams = mac_->getAmc()->computeTxParams(senderId, dir, carrierFrequency);  // get the user info
         const std::set<Band>& allowedBands = txParams.readBands();
         BandLimitVector tempBandLim;
         std::string bands_msg = "BAND_LIMIT_SPECIFIED";
@@ -677,8 +677,8 @@ unsigned int LteSchedulerEnbUl::schedulePerAcidRtxD2D(MacNodeId destId, MacNodeI
         }
 
         Codeword allocatedCw = 0;
-        //search for already allocated codeword
-        //create "mirror" scList ID for other codeword than current
+        // search for already allocated codeword
+        // create "mirror" scList ID for other codeword than current
         std::pair<unsigned int, Codeword> scListMirrorId = { idToMacCid(senderId, D2D_SHORT_BSR), MAX_CODEWORDS - cw - 1 };
         if (scheduleList_.find(carrierFrequency) != scheduleList_.end()) {
             if (scheduleList_[carrierFrequency].find(scListMirrorId) != scheduleList_[carrierFrequency].end()) {
@@ -704,8 +704,8 @@ unsigned int LteSchedulerEnbUl::schedulePerAcidRtxD2D(MacNodeId destId, MacNodeI
             int limit = bandLim->at(i).limit_.at(cw);
 
             // TODO add support for multi CW
-            //unsigned int bandAvailableBytes = // if a codeword has been already scheduled for retransmission, limit available blocks to what's been allocated on that codeword
-            //((allocatedCw == MAX_CODEWORDS) ? availableBytes(nodeId,antenna, b, cw) : mac_->getAmc()->blocks2bytes(nodeId, b, cw, allocator_->getBlocks(antenna,b,nodeId) , direction_));    // available space
+            // unsigned int bandAvailableBytes = // if a codeword has been already scheduled for retransmission, limit available blocks to what's been allocated on that codeword
+            // ((allocatedCw == MAX_CODEWORDS) ? availableBytes(nodeId,antenna, b, cw) : mac_->getAmc()->blocks2bytes(nodeId, b, cw, allocator_->getBlocks(antenna,b,nodeId) , direction_));    // available space
             unsigned int bandAvailableBytes = availableBytes(senderId, antenna, b, cw, dir, carrierFrequency);
 
             // use the provided limit as cap for available bytes, if it is not set to unlimited
@@ -796,7 +796,7 @@ unsigned int LteSchedulerEnbUl::scheduleBgRtx(MacNodeId bgUeId, double carrierFr
         unsigned int bytesPerBlock = bgTrafficManager->getBackloggedUeBytesPerBlock(bgUeId, direction_);
 
         // get the RTX buffer size
-        unsigned int queueLength = bgTrafficManager->getBackloggedUeBuffer(bgUeId, direction_, true); // in bytes
+        unsigned int queueLength = bgTrafficManager->getBackloggedUeBuffer(bgUeId, direction_, true);  // in bytes
         if (queueLength == 0)
             return 0;
 
@@ -842,7 +842,7 @@ unsigned int LteSchedulerEnbUl::scheduleBgRtx(MacNodeId bgUeId, double carrierFr
             Band b = bandLim->at(i).band_;
             int limit = bandLim->at(i).limit_.at(cw);
 
-            unsigned int bandAvailableBytes = availableBytesBackgroundUe(bgUeId, antenna, b, direction_, carrierFrequency, (limitBl) ? limit : -1); // available space (in bytes)
+            unsigned int bandAvailableBytes = availableBytesBackgroundUe(bgUeId, antenna, b, direction_, carrierFrequency, (limitBl) ? limit : -1);  // available space (in bytes)
 
             // use the provided limit as cap for available bytes, if it is not set to unlimited
             if (limit >= 0)
@@ -939,5 +939,5 @@ void LteSchedulerEnbUl::removePendingRac(MacNodeId nodeId)
     }
 }
 
-} //namespace
+}  // namespace
 

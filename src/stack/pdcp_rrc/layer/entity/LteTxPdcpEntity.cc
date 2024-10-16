@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -27,10 +27,10 @@ void LteTxPdcpEntity::handlePacketFromUpperLayer(Packet *pkt)
     EV << NOW << " LteTxPdcpEntity::handlePacketFromUpperLayer - LCID[" << lteInfo->getLcid() << "] - processing packet from IP layer" << endl;
 
     // perform PDCP operations
-    pdcp_->headerCompress(pkt); // header compression
+    pdcp_->headerCompress(pkt);  // header compression
 
     // Write information into the ControlInfo object
-    lteInfo->setSequenceNumber(sno_++); // set sequence number for this PDCP SDU.
+    lteInfo->setSequenceNumber(sno_++);  // set sequence number for this PDCP SDU.
 
     // set source and destination IDs
     setIds(lteInfo);
@@ -73,13 +73,13 @@ void LteTxPdcpEntity::deliverPdcpPdu(Packet *pdcpPkt)
 
 void LteTxPdcpEntity::setIds(inet::Ptr<FlowControlInfo> lteInfo)
 {
-    lteInfo->setSourceId(pdcp_->getNodeId());   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
+    lteInfo->setSourceId(pdcp_->getNodeId());  // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
 
-    if (lteInfo->getMulticastGroupId() > 0)                                                                                           // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
+    if (lteInfo->getMulticastGroupId() > 0) // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
         lteInfo->setDestId(pdcp_->getNodeId());
     else
         lteInfo->setDestId(pdcp_->getDestId(lteInfo));
 }
 
-} //namespace
+}  // namespace
 

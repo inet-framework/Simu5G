@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -31,7 +31,7 @@ class LteSchedulerEnbDl : public LteSchedulerEnb
 
   protected:
 
-    //---------------------------------------------
+    // ---------------------------------------------
 
     /**
      * Checks HARQ descriptors and returns the first free codeword.
@@ -78,7 +78,7 @@ class LteSchedulerEnbDl : public LteSchedulerEnb
 
 };
 
-} //namespace
+}  // namespace
 
 #endif // _LTE_LTE_SCHEDULER_ENB_DL_H_
 

@@ -73,7 +73,7 @@ class HttpRequestMessage : public HttpRequestMessage_m
 
 };
 
-} //namespace
+}  // namespace
 
-#endif //_HTTREQUESTMESSAGE_H_
+#endif // _HTTREQUESTMESSAGE_H_
 

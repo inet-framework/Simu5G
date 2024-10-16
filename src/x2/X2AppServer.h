@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -35,7 +35,7 @@ class X2AppServer : public inet::SctpServer
     void generateAndSend(inet::Packet *pkt);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

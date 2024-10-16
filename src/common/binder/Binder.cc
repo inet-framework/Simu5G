@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -164,9 +164,9 @@ void Binder::unregisterNode(MacNodeId id)
         EV_ERROR << "Cannot unregister node - node id \"" << id << "\" - not found";
     }
     // remove 'id' from ulTransmissionMap_ if currently scheduled
-    for (auto& carrier : ulTransmissionMap_) { // all carrier frequency
-        for (auto& bands : carrier.second) { // all RB's for current and last TTI (vector<vector<vector<UeAllocationInfo>>>)
-            for (auto& ues : bands) { // all Ue's in each block
+    for (auto& carrier : ulTransmissionMap_) {  // all carrier frequency
+        for (auto& bands : carrier.second) {  // all RB's for current and last TTI (vector<vector<vector<UeAllocationInfo>>>)
+            for (auto& ues : bands) {  // all Ue's in each block
                 for (auto itr = ues.begin(); itr != ues.end(); ) {
                     if (itr->nodeId == id) {
                         itr = ues.erase(itr);
@@ -244,7 +244,7 @@ void Binder::registerMasterNode(MacNodeId masterId, MacNodeId slaveId)
     if (secondaryNodeToMasterNode_.size() <= num(slaveId))
         secondaryNodeToMasterNode_.resize(num(slaveId) + 1);
 
-    if (masterId == NODEID_NONE)                                                          // this node is a master itself
+    if (masterId == NODEID_NONE) // this node is a master itself
         masterId = slaveId;
     secondaryNodeToMasterNode_[num(slaveId)] = masterId;
 }
@@ -301,7 +301,7 @@ void Binder::finish()
             double cqiVarianceDl = phyUe->getVarianceCqi(DL);
             double cqiVarianceUl = phyUe->getVarianceCqi(UL);
 
-            if (info->cellId == MacNodeId(1)) {  //TODO magic number
+            if (info->cellId == MacNodeId(1)) {  // TODO magic number
                 // the UE belongs to the central cell
                 ss << "*.gnb.cellularNic.bgTrafficGenerator[0].bgUE[" << ueIndex << "].generator.rtxRateDl = " << harqErrorRateDl << "\n";
                 ss << "*.gnb.cellularNic.bgTrafficGenerator[0].bgUE[" << ueIndex << "].generator.rtxRateUl = " << harqErrorRateUl << "\n";
@@ -696,9 +696,9 @@ void Binder::registerMulticastGroup(MacNodeId nodeId, int32_t groupId)
 bool Binder::isInMulticastGroup(MacNodeId nodeId, int32_t groupId)
 {
     if (multicastGroupMap_.find(nodeId) == multicastGroupMap_.end())
-        return false;                                                 // the node is not enrolled in any group
+        return false; // the node is not enrolled in any group
     if (multicastGroupMap_[nodeId].find(groupId) == multicastGroupMap_[nodeId].end())
-        return false;                                                 // the node is not enrolled in the given group
+        return false; // the node is not enrolled in the given group
 
     return true;
 }
@@ -772,7 +772,7 @@ void Binder::computeAverageCqiForBackgroundUes()
 
     // update interference until "condition" becomes true
     // condition = at least one value of interference is above the threshold and
-    //             we did not reach the maximum number of iteration
+    // we did not reach the maximum number of iteration
     bool condition = true;
     const int MAX_INTERFERENCE_CHECK = 10;
 
@@ -803,7 +803,7 @@ void Binder::computeAverageCqiForBackgroundUes()
             IBackgroundTrafficManager *bgTrafficManager = info->bgTrafficManager;
             unsigned int numBands = bgTrafficManager->getNumBands();
 
-            //---------------------------------------------------------------------
+            // ---------------------------------------------------------------------
             // STEP 1: update mutual interference
             // for iterations after the first one, update the interference before analyzing a whole cell
             // Note that it makes no sense to compute this at the first iteration when the cell is allocating
@@ -822,7 +822,7 @@ void Binder::computeAverageCqiForBackgroundUes()
             while (bgUes_it != bgUes_et) {
                 TrafficGeneratorBase *bgUe = *bgUes_it;
 
-                //---------------------------------------------------------------------
+                // ---------------------------------------------------------------------
                 // STEP 2: compute SINR
                 bool losStatus = false;
                 inet::Coord bsCoord = bgTrafficManager->getBsCoord();
@@ -838,7 +838,7 @@ void Binder::computeAverageCqiForBackgroundUes()
                 bgUe->setCqiFromSinr(sinrDl, DL);
                 bgUe->setCqiFromSinr(sinrUl, UL);
 
-                //---------------------------------------------------------------------
+                // ---------------------------------------------------------------------
                 // STEP 3: update block allocation
 
                 // obtain UE load request (in bits/second)
@@ -898,7 +898,7 @@ void Binder::updateMutualInterference(unsigned int bgTrafficManagerId, unsigned 
 {
     EV << "Binder::updateMutualInterference - computing interference for traffic manager " << bgTrafficManagerId << " dir[" << dirToA(dir) << "]" << endl;
 
-    double ownRbs, extRbs; // current RBs allocation
+    double ownRbs, extRbs;  // current RBs allocation
     BgTrafficManagerInfo *ownInfo = bgTrafficManagerList_.at(bgTrafficManagerId);
 
     if (dir == DL) {
@@ -921,7 +921,7 @@ void Binder::updateMutualInterference(unsigned int bgTrafficManagerId, unsigned 
 
             // update interference
             bgCellsInterferenceMatrix_[bgTrafficManagerId][extId] = newOverlapPercentage;
-        } // end ext-cell computation
+        }  // end ext-cell computation
     }
     else {
         // for each UE in the BG cell
@@ -967,7 +967,7 @@ void Binder::updateMutualInterference(unsigned int bgTrafficManagerId, unsigned 
 
                     ++extBgUes_it;
                 }
-            } // end ext-cell computation
+            }  // end ext-cell computation
 
             ++bgUes_it;
         }
@@ -1139,7 +1139,7 @@ void Binder::moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell)
     RanNodeType newCellType = getBaseStationTypeById(newCell);
 
     // Get and remove the UeCollector from the old cell
-    cModule *oldEnb = getModuleByMacNodeId(oldCell); // eNodeB module
+    cModule *oldEnb = getModuleByMacNodeId(oldCell);  // eNodeB module
     BaseStationStatsCollector *enbColl = nullptr;
     UeStatsCollector *ueColl = nullptr;
     if (oldEnb->getSubmodule("collector") != nullptr) {
@@ -1198,5 +1198,5 @@ RanNodeType Binder::getBaseStationTypeById(MacNodeId cellId)
     }
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -54,7 +54,7 @@ class AmcPilotD2D : public AmcPilot
     UsableBands *getUsableBands(MacNodeId id) override { return nullptr; }
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

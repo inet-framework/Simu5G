@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -70,10 +70,10 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
 
         // -------------------------------------------------------------------------------------------------- //
         // FIXME This is a workaround in case a UE has both UL and D2D active connections.
-        //       When an UL grant has been received, check if there is data in the D2D connections' buffer
-        //       and if the bsrTriggered flag is set. If so, do not schedule any UL connection and use the
-        //       grant for sending the BSR related to the D2D connection(s).
-        //       A smarter policy should be implemented
+        // When an UL grant has been received, check if there is data in the D2D connections' buffer
+        // and if the bsrTriggered flag is set. If so, do not schedule any UL connection and use the
+        // grant for sending the BSR related to the D2D connection(s).
+        // A smarter policy should be implemented
         if (grantDir == UL && mac_->bsrTriggered()) {
             // look for an active D2D connection
             for (it = it_pair.first; it != et; ++it) {
@@ -84,7 +84,7 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                     // get the connection virtual buffer
                     LteMacBuffer *vQueue = it->second.second;
                     // get the buffer size
-                    unsigned int queueLength = vQueue->getQueueOccupancy(); // in bytes
+                    unsigned int queueLength = vQueue->getQueueOccupancy();  // in bytes
                     if (queueLength != 0)
                         return scheduleList_;
                 }
@@ -100,7 +100,7 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
             LteMacBuffer *vQueue = it->second.second;
 
             // get the buffer size
-            unsigned int queueLength = vQueue->getQueueOccupancy(); // in bytes
+            unsigned int queueLength = vQueue->getQueueOccupancy();  // in bytes
 
             // connection id of the processed connection
             MacCid cid = it->second.first;
@@ -117,7 +117,7 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
             // Check whether the virtual buffer is empty
             if (queueLength == 0) {
                 EV << "LcgScheduler::schedule scheduled connection is no longer active " << endl;
-                continue; // go to next connection
+                continue;  // go to next connection
             }
             else {
                 // we need to consider also the size of RLC and MAC headers
@@ -155,14 +155,14 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                 // Update bucket value for this connection
 
                 // get the actual bucket value and the configured max size
-                double bucket = elem->bucket_; // TODO parameters -> bucket ;
-                double maximumBucketSize = 10000.0; // TODO  parameters -> maxBurst;
+                double bucket = elem->bucket_;  // TODO parameters -> bucket ;
+                double maximumBucketSize = 10000.0;  // TODO  parameters -> maxBurst;
 
                 EV << NOW << " LcgScheduler::schedule Bucket size: " << bucket << " bytes (max size " << maximumBucketSize << " bytes) - BEFORE SERVICE " << endl;
 
                 // if the connection started before the last scheduling event, use the
                 // global time interval
-                if (lastExecutionTime_ > 0) { // TODO desc->parameters_.startTime_) {
+                if (lastExecutionTime_ > 0) {  // TODO desc->parameters_.startTime_) {
                     // PBR*(n*TTI) where n is the number of TTI from last update
                     bucket += /* TODO desc->parameters_.minReservedRate_*/ 100.0 * TTI;
                 }
@@ -183,7 +183,7 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
 // TODO                desc->parameters_.bucket_ = bucket;
 
                 // update the tracing element accordingly
-                elem->bucket_ = 100.0; // TODO desc->parameters_.bucket_;
+                elem->bucket_ = 100.0;  // TODO desc->parameters_.bucket_;
                 EV << NOW << " LcgScheduler::schedule Bucket size: " << bucket << " bytes (max size " << maximumBucketSize << " bytes) - AFTER SERVICE " << endl;
             }
 
@@ -202,9 +202,9 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                 // Check if it is possible to serve the sdu, depending on the constraint
                 // of the type of service
                 // Priority service:
-                //    ( sdu->size() <= availableBytes) && ( sdu->size() <= desc->parameters_.bucket_)
+                // ( sdu->size() <= availableBytes) && ( sdu->size() <= desc->parameters_.bucket_)
                 // Best Effort service:
-                //    ( sdu->size() <= availableBytes) && (!priorityService_)
+                // ( sdu->size() <= availableBytes) && (!priorityService_)
 
                 if ((toServe <= availableBytes) /*&& ( !priorityService || ( sduSize <= 0) ) // TODO desc->parameters_.bucket_*/) {
                     // remove SDU from virtual buffer
@@ -327,12 +327,12 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                 // the first phase of the LCP algorithm has completed ...
                 // ... switch to best effort allocation!
                 priorityService = false;
-                //  reset traffic class
+                // reset traffic class
                 i = 0;
                 EV << "LcgScheduler::schedule - Node" << mac_->getMacNodeId() << ", Starting best effort service" << endl;
             }
-        } // END of connections cycle
-    } // END of Traffic Classes cycle
+        }  // END of connections cycle
+    }  // END of Traffic Classes cycle
 
     return scheduleList_;
 }
@@ -342,5 +342,5 @@ ScheduleList& LcgScheduler::getScheduledBytesList()
     return scheduledBytesList_;
 }
 
-} //namespace simu5g
+}  // namespace simu5g
 

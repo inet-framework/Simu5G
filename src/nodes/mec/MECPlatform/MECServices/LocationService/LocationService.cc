@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -62,7 +62,7 @@ bool LocationService::manageSubscription()
     int subId = currentSubscriptionServed_->getSubId();
     if (subscriptions_.find(subId) != subscriptions_.end()) {
         EV << "LocationService::manageSubscription() - subscription with id: " << subId << " found" << endl;
-        SubscriptionBase *sub = subscriptions_[subId];//upcasting (getSubscriptionType is in SubscriptionBase)
+        SubscriptionBase *sub = subscriptions_[subId];  // upcasting (getSubscriptionType is in SubscriptionBase)
         sub->sendNotification(currentSubscriptionServed_);
         if (currentSubscriptionServed_ != nullptr)
             delete currentSubscriptionServed_;
@@ -88,11 +88,11 @@ void LocationService::handleMessage(cMessage *msg)
     if (msg->isSelfMessage()) {
         if (msg == subscriptionTimer_) {
             EV << "subscriptionTimer" << endl;
-            std::set<int> subIds = subscriptionTimer_->getSubIdSet(); // TODO pass it as reference
+            std::set<int> subIds = subscriptionTimer_->getSubIdSet();  // TODO pass it as reference
             for (auto sub : subIds) {
                 if (subscriptions_.find(sub) != subscriptions_.end()) {
                     EV << "subscriptionTimer for subscription: " << sub << endl;
-                    SubscriptionBase *subscription = subscriptions_[sub];//upcasting (getSubscriptionType is in SubscriptionBase)
+                    SubscriptionBase *subscription = subscriptions_[sub];  // upcasting (getSubscriptionType is in SubscriptionBase)
                     EventNotification *event = subscription->handleSubscription();
                     if (event != nullptr)
                         newSubscriptionEvent(event);
@@ -115,9 +115,9 @@ void LocationService::handleGETRequest(const HttpRequestMessage *currentRequestM
     EV_INFO << "LocationService::handleGETRequest" << endl;
     std::string uri = currentRequestMessageServed->getUri();
     // check it is a GET for a query or a subscription
-    if (uri == baseUriQueries_ + "/users") { //queries
+    if (uri == baseUriQueries_ + "/users") {  // queries
         std::string params = currentRequestMessageServed->getParameters();
-        //look for query parameters
+        // look for query parameters
         if (!params.empty()) {
             std::vector<std::string> queryParameters = simu5g::utils::splitString(params, "&");
             /*
@@ -132,14 +132,14 @@ void LocationService::handleGETRequest(const HttpRequestMessage *currentRequestM
             std::vector<std::string> params;
             std::vector<std::string> splittedParams;
             for (const auto& queryParam : queryParameters) {
-                if (queryParam.rfind("accessPointId", 0) == 0) { // accessPointId=par1,par2
+                if (queryParam.rfind("accessPointId", 0) == 0) {  // accessPointId=par1,par2
                     EV << "LocationService::handleGETRequest - parameters: " << endl;
                     params = simu5g::utils::splitString(queryParam, "=");
-                    if (params.size() != 2) { //must be param=values
+                    if (params.size() != 2) {  // must be param=values
                         Http::send400Response(socket);
                         return;
                     }
-                    splittedParams = simu5g::utils::splitString(params[1], ","); //it can be an array, e.g param=v1,v2,v3
+                    splittedParams = simu5g::utils::splitString(params[1], ",");  // it can be an array, e.g param=v1,v2,v3
                     for (const auto& cellIdStr : splittedParams) {
                         EV << "cellId: " << cellIdStr << endl;
                         cellIds.push_back((MacCellId)std::stoi(cellIdStr));
@@ -147,25 +147,25 @@ void LocationService::handleGETRequest(const HttpRequestMessage *currentRequestM
                 }
                 else if (queryParam.rfind("address", 0) == 0) {
                     params = simu5g::utils::splitString(queryParam, "=");
-                    splittedParams = simu5g::utils::splitString(params[1], ","); //it can be an array, e.g param=v1,v2,v3
+                    splittedParams = simu5g::utils::splitString(params[1], ",");  // it can be an array, e.g param=v1,v2,v3
                     for (const auto& addressStr : splittedParams) {
                         std::vector<std::string> address = simu5g::utils::splitString(addressStr, ":");
-                        if (address.size() != 2) { //must be param=acr:values
+                        if (address.size() != 2) {  // must be param=acr:values
                             Http::send400Response(socket);
                             return;
                         }
-                        //manage ipv4 address without any macnode id
-                        //or do the conversion inside Location..
+                        // manage ipv4 address without any macnode id
+                        // or do the conversion inside Location..
                         ues.push_back(inet::Ipv4Address(address[1].c_str()));
                     }
                 }
-                else { // bad parameters
+                else {  // bad parameters
                     Http::send400Response(socket);
                     return;
                 }
             }
 
-            //send response
+            // send response
             if (!ues.empty() && !cellIds.empty()) {
                 EV << "LocationService::handleGETRequest - toJson(cellIds, ues) " << endl;
                 Http::send200Response(socket, LocationResource_.toJson(cellIds, ues).dump(0).c_str());
@@ -182,17 +182,17 @@ void LocationService::handleGETRequest(const HttpRequestMessage *currentRequestM
                 Http::send400Response(socket);
             }
         }
-        else { //no query params
+        else {  // no query params
             EV << "LocationService::handleGETRequest - toJson() " << endl;
             Http::send200Response(socket, LocationResource_.toJson().dump(0).c_str());
             return;
         }
     }
-    else if (uri == baseSubscriptionLocation_) { // return the list of the subscriptions
+    else if (uri == baseSubscriptionLocation_) {  // return the list of the subscriptions
         // TODO implement list of subscriptions
         Http::send404Response(socket);
     }
-    else { // not found
+    else {  // not found
         Http::send404Response(socket);
     }
 }
@@ -208,17 +208,17 @@ void LocationService::handlePOSTRequest(const HttpRequestMessage *currentRequest
     if (uri == (baseUriSubscriptions_ + "/area/circle")) {
         nlohmann::json jsonBody;
         try {
-            jsonBody = nlohmann::json::parse(body); // get the JSON structure
+            jsonBody = nlohmann::json::parse(body);  // get the JSON structure
         }
         catch (nlohmann::detail::parse_error e) {
             std::cout << "LocationService::handlePOSTRequest" << e.what() << "\n" << body << std::endl;
             // body is not correctly formatted in JSON, manage it
-            Http::send400Response(socket); // bad body JSON
+            Http::send400Response(socket);  // bad body JSON
             return;
         }
         CircleNotificationSubscription *newSubscription = new CircleNotificationSubscription(binder_, subscriptionId_, socket, baseSubscriptionLocation_, eNodeB_);
         bool res = newSubscription->fromJson(jsonBody);
-        //correct subscription post
+        // correct subscription post
         if (res) {
             EV << serviceName_ << " - correct subscription created!" << endl;
             // add resource url and send back the response
@@ -235,7 +235,7 @@ void LocationService::handlePOSTRequest(const HttpRequestMessage *currentRequest
                 if (event != nullptr)
                     newSubscriptionEvent(event);
             }
-            //start timer
+            // start timer
             subscriptionTimer_->insertSubId(subscriptionId_);
             if (!subscriptionTimer_->isScheduled())
                 scheduleAt(simTime() + subscriptionTimer_->getPeriod(), subscriptionTimer_);
@@ -247,7 +247,7 @@ void LocationService::handlePOSTRequest(const HttpRequestMessage *currentRequest
         }
     }
     else {
-        Http::send404Response(socket); //resource not found
+        Http::send404Response(socket);  // resource not found
     }
 }
 
@@ -263,8 +263,8 @@ void LocationService::handlePUTRequest(const HttpRequestMessage *currentRequestM
     // in this case subscriptionType would be empty and the baseUri == uri
     // by the way the next if statement solves this problem
 
-    std::size_t lastPart = uri.find_last_of("/"); // split at contextId
-    std::string baseUri = uri.substr(0, lastPart); // uri
+    std::size_t lastPart = uri.find_last_of("/");  // split at contextId
+    std::string baseUri = uri.substr(0, lastPart);  // uri
     int subId = std::stoi(uri.substr(lastPart + 1));
 
     EV << "LocationService::handlePUTRequest - baseuri: " << baseUri << endl;
@@ -275,12 +275,12 @@ void LocationService::handlePUTRequest(const HttpRequestMessage *currentRequestM
         if (it != subscriptions_.end()) {
             nlohmann::json jsonBody;
             try {
-                jsonBody = nlohmann::json::parse(body); // get the JSON structure
+                jsonBody = nlohmann::json::parse(body);  // get the JSON structure
             }
             catch (nlohmann::detail::parse_error e) {
                 std::cout << e.what() << std::endl;
                 // body is not correctly formatted in JSON, manage it
-                Http::send400Response(socket); // bad body JSON
+                Http::send400Response(socket);  // bad body JSON
                 return;
             }
             CircleNotificationSubscription *sub = check_and_cast<CircleNotificationSubscription *>(it->second);
@@ -292,16 +292,16 @@ void LocationService::handlePUTRequest(const HttpRequestMessage *currentRequestM
                 std::string resourceUrl = newSubscription->getResourceUrl();
                 response["circleNotificationSubscription"]["resourceURL"] = resourceUrl;
                 Http::send200Response(socket, response.dump(2).c_str());
-                delete it->second; // remove old subscription
-                subscriptions_[id] = newSubscription; // replace with the new subscription
+                delete it->second;  // remove old subscription
+                subscriptions_[id] = newSubscription;  // replace with the new subscription
             }
             else {
-                delete newSubscription; // delete the new created subscription
+                delete newSubscription;  // delete the new created subscription
             }
         }
     }
     else {
-        Http::send404Response(socket); // bad body JSON
+        Http::send404Response(socket);  // bad body JSON
     }
 }
 
@@ -354,5 +354,5 @@ LocationService::~LocationService()
     cancelAndDelete(subscriptionTimer_);
 }
 
-} //namespace
+}  // namespace
 

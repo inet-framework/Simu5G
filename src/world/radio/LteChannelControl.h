@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -38,7 +38,7 @@ class LteChannelControl : public ChannelControl
     void sendToChannel(RadioRef srcRadio, AirFrame *airFrame) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

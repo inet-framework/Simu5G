@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -27,7 +27,7 @@ void NRTxPdcpEntity::deliverPdcpPdu(Packet *pkt)
         EV << NOW << " NRTxPdcpEntity::deliverPdcpPdu - LCID[" << lteInfo->getLcid() << "] - sending packet to lower layer" << endl;
         LteTxPdcpEntity::deliverPdcpPdu(pkt);
     }
-    else { // ENODEB
+    else {  // ENODEB
         if (!pdcp_->isDualConnectivityEnabled()) {
             MacNodeId destId = lteInfo->getDestId();
             if (getNodeTypeById(destId) != UE)
@@ -46,7 +46,7 @@ void NRTxPdcpEntity::deliverPdcpPdu(Packet *pkt)
                 EV << NOW << " NRTxPdcpEntity::deliverPdcpPdu - LCID[" << lteInfo->getLcid() << "] useNR[" << useNR << "] - the destination is a UE. Sending packet to lower layer." << endl;
                 LteTxPdcpEntity::deliverPdcpPdu(pkt);
             }
-            else { // useNR
+            else {  // useNR
                 if (getNodeTypeById(destId) == UE)
                     throw cRuntimeError("NRTxPdcpEntity::deliverPdcpPdu - the packet has been marked as NR packet, but the destination is not the secondary node");
 
@@ -64,11 +64,11 @@ void NRTxPdcpEntity::setIds(inet::Ptr<FlowControlInfo> lteInfo)
     else
         lteInfo->setSourceId(pdcp_->getNodeId());
 
-    if (lteInfo->getMulticastGroupId() > 0)                                                                                           // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
+    if (lteInfo->getMulticastGroupId() > 0) // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
         lteInfo->setDestId(pdcp_->getNodeId());
     else
         lteInfo->setDestId(pdcp_->getDestId(lteInfo));
 }
 
-} //namespace
+}  // namespace
 

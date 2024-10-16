@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -53,40 +53,40 @@ class BackgroundCellChannelModel : public cSimpleModule
     // scenario
     DeploymentScenario scenario_;
 
-    //Antenna gain of eNodeB
+    // Antenna gain of eNodeB
     double antennaGainEnB_;
 
-    //Antenna gain of micro node
+    // Antenna gain of micro node
     double antennaGainMicro_;
 
-    //Antenna gain of UE
+    // Antenna gain of UE
     double antennaGainUe_;
 
-    //Thermal noise
+    // Thermal noise
     double thermalNoise_;
 
-    //pointer to Binder module
+    // pointer to Binder module
     inet::ModuleRefByPar<Binder> binder_;
 
-    //Cable loss
+    // Cable loss
     double cableLoss_;
 
-    //UE noise figure
+    // UE noise figure
     double ueNoiseFigure_;
 
-    //eNodeB noise figure
+    // eNodeB noise figure
     double bsNoiseFigure_;
 
-    //if true, shadowing is enabled
+    // if true, shadowing is enabled
     bool shadowing_;
 
-    //Enable or disable fading
+    // Enable or disable fading
     bool fading_;
 
-    //Number of fading paths in jakes fading
+    // Number of fading paths in jakes fading
     int fadingPaths_;
 
-    //avg delay spread in jakes fading
+    // avg delay spread in jakes fading
     double delayRMS_;
 
     // enable/disable intercell interference computation
@@ -100,8 +100,8 @@ class BackgroundCellChannelModel : public cSimpleModule
     // map that stores for each user if is in Line of Sight or not with eNodeB
     std::map<MacNodeId, bool> losMap_;
 
-    //correlation distance used in shadowing computation and
-    //also used to recompute the probability of LOS
+    // correlation distance used in shadowing computation and
+    // also used to recompute the probability of LOS
     double correlationDistance_;
 
     typedef std::pair<inet::simtime_t, inet::Coord> Position;
@@ -115,7 +115,7 @@ class BackgroundCellChannelModel : public cSimpleModule
 
     bool tolerateMaxDistViolation_;
 
-    //Struct used to store information about jakes fading
+    // Struct used to store information about jakes fading
     struct JakesFadingData
     {
         std::vector<double> angleOfArrival;
@@ -132,13 +132,13 @@ class BackgroundCellChannelModel : public cSimpleModule
         RAYLEIGH, JAKES
     };
 
-    //Fading type (JAKES or RAYLEIGH)
+    // Fading type (JAKES or RAYLEIGH)
     FadingType fadingType_;
 
-    //enable or disable the dynamic computation of LOS NLOS probability for each user
+    // enable or disable the dynamic computation of LOS NLOS probability for each user
     bool dynamicLos_;
 
-    //if dynamicLos is false this boolean is initialized to true if all users will be in LOS or false otherwise
+    // if dynamicLos is false this boolean is initialized to true if all users will be in LOS or false otherwise
     bool fixedLos_;
     /*
      * Compute Attenuation caused by pathloss and shadowing (optional)
@@ -280,7 +280,7 @@ class BackgroundCellChannelModel : public cSimpleModule
     virtual double getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, const BackgroundScheduler *bgScheduler);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

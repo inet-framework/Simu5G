@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -25,10 +25,10 @@ namespace simu5g {
 class RNICellInfo : public AttributeBase
 {
   protected:
-    opp_component_ptr<BaseStationStatsCollector> collector_; // it has the cellCollector and the map <Ipue -> uecollector>
+    opp_component_ptr<BaseStationStatsCollector> collector_;  // it has the cellCollector and the map <Ipue -> uecollector>
     Ecgi ecgi_;
 
-    nlohmann::ordered_json toJsonCell() const; // should this be private?
+    nlohmann::ordered_json toJsonCell() const;  // should this be private?
 
   public:
     RNICellInfo();
@@ -41,7 +41,7 @@ class RNICellInfo : public AttributeBase
     nlohmann::ordered_json toJson() const override;
 };
 
-} //namespace
+}  // namespace
 
 #endif // _RNICELLINFO_H_
 

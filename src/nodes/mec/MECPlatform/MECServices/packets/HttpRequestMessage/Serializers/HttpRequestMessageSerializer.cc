@@ -54,5 +54,5 @@ const Ptr<Chunk> HttpRequestMessageSerializer::deserialize(MemoryInputStream& st
     return applicationPacket;
 }
 
-} //namespace
+}  // namespace
 

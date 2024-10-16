@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -75,7 +75,7 @@ void TrafficFlowFilter::initialize(int stage)
             EV << "TrafficFlowFilter::initialize - meHost: " << meHost << " meHostAddress: " << meHostAddress.str() << endl;
         }
     }
-    //end mec
+    // end mec
 
     // register service processing IP packets on the LTE Uu Link
     auto gateIn = gate("internetFilterGateIn");
@@ -124,7 +124,7 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
 
     // run packet filter and associate a flowId to the connection (default bearer?)
     // search within tftTable the proper entry for this destination
-    TrafficFlowTemplateId tftId = findTrafficFlow(srcAddr, destAddr);   // search for the tftId in the binder
+    TrafficFlowTemplateId tftId = findTrafficFlow(srcAddr, destAddr);  // search for the tftId in the binder
 
     // add control info to the normal IP datagram. This info will be read by the GTP-U application
     auto tftInfo = pkt->addTag<TftControlInfo>();
@@ -163,18 +163,18 @@ TrafficFlowTemplateId TrafficFlowFilter::findTrafficFlow(L3Address srcAddress, L
         EV << "TrafficFlowFilter::findTrafficFlow - destination " << destAddress.str() << " is not a UE. ";
         if (ownerType_ == UPF || ownerType_ == PGW) {
             EV << "Remove packet from the simulation." << endl;
-            return -2;   // the destination UE has been removed from the simulation
+            return -2;  // the destination UE has been removed from the simulation
         }
-        else { // BS or MEC
+        else {  // BS or MEC
             EV << "Forward packet to the gateway." << endl;
-            return -1;   // the destination might be outside the cellular network, send the packet to the gateway
+            return -1;  // the destination might be outside the cellular network, send the packet to the gateway
         }
     }
 
     MacNodeId destBS = binder_->getNextHop(destId);
     if (destBS == NODEID_NONE) {
         EV << "TrafficFlowFilter::findTrafficFlow - destination " << destAddress.str() << " is a UE [" << destId << "] not attached to any BS. Remove packet from the simulation." << endl;
-        return -2;   // the destination UE is not attached to any nodeB
+        return -2;  // the destination UE is not attached to any nodeB
     }
 
     // the serving node for the UE might be a secondary node in case of NR Dual Connectivity
@@ -184,12 +184,12 @@ TrafficFlowTemplateId TrafficFlowFilter::findTrafficFlow(L3Address srcAddress, L
 
     if (isBaseStation(ownerType_)) {
         if (fastForwarding_ && srcMaster == destMaster)
-            return 0;                                                               // local delivery
+            return 0; // local delivery
 
-        return -1;   // send the packet to the PGW/UPF. It will forward the packet to the correct BS
-                     // TODO if the BS is within the same core network, there should be a direct tunnel to
-                     //      it without going through the gateway (for now, this is not implemented as it
-                     //      may cause packets being transmitted via the X2
+        return -1;  // send the packet to the PGW/UPF. It will forward the packet to the correct BS
+                    // TODO if the BS is within the same core network, there should be a direct tunnel to
+                    // it without going through the gateway (for now, this is not implemented as it
+                    // may cause packets being transmitted via the X2
     }
 
     // MEC host or PGW/UPF
@@ -206,5 +206,5 @@ TrafficFlowTemplateId TrafficFlowFilter::findTrafficFlow(L3Address srcAddress, L
     return num(destMaster);
 }
 
-} //namespace
+}  // namespace
 

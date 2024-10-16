@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -17,7 +17,7 @@
 #include "apps/mec/WarningAlert/packets/WarningAlertPacket_m.h"
 #include "apps/mec/WarningAlert/packets/WarningAlertPacket_Types.h"
 
-#include <iostream> // used for debugging in emulation
+#include <iostream>  // used for debugging in emulation
 
 namespace simu5g {
 
@@ -56,8 +56,8 @@ void WarningAlertPacketSerializer::serialize(MemoryOutputStream& stream, const P
     }
     else if (ss == STOP_WARNING) {
         auto stopPk = staticPtrCast<const WarningStopPacket>(chunk);
-        stream.writeByte((uint8_t)1); // CODE
-        stream.writeByte((uint8_t)0); // Length
+        stream.writeByte((uint8_t)1);  // CODE
+        stream.writeByte((uint8_t)0);  // Length
 
         int64_t remainders = B(stopPk->getChunkLength() - (stream.getLength() - startPosition)).get();
         if (remainders < 0)
@@ -115,7 +115,7 @@ const Ptr<Chunk> WarningAlertPacketSerializer::deserialize(MemoryInputStream& st
     std::vector<uint8_t> bytes;
 
     switch (messageCode) {
-        case 0: // START
+        case 0:  // START
         {
             auto startPacket = makeShared<WarningStartPacket>();
 
@@ -139,13 +139,13 @@ const Ptr<Chunk> WarningAlertPacketSerializer::deserialize(MemoryInputStream& st
 
             return startPacket;
         }
-        case 1: // STOP
+        case 1:  // STOP
         {
             auto stopPacket = makeShared<WarningStopPacket>();
             stopPacket->setType(STOP_WARNING);
             return stopPacket;
         }
-        case 2: // ALERT
+        case 2:  // ALERT
         {
             auto alertPacket = makeShared<WarningAlertPacket>();
             alertPacket->setType(WARNING_ALERT);
@@ -173,7 +173,7 @@ const Ptr<Chunk> WarningAlertPacketSerializer::deserialize(MemoryInputStream& st
             break;
         }
 
-        case 3: // ACK START
+        case 3:  // ACK START
         {
             auto ackStartPacket = makeShared<WarningAppPacket>();
             ackStartPacket->setType(START_ACK);
@@ -184,7 +184,7 @@ const Ptr<Chunk> WarningAlertPacketSerializer::deserialize(MemoryInputStream& st
 
             return ackStartPacket;
         }
-        case 4: // NACK START
+        case 4:  // NACK START
         {
             auto nackStartPacket = makeShared<WarningAppPacket>();
             nackStartPacket->setType(START_NACK);
@@ -202,5 +202,5 @@ const Ptr<Chunk> WarningAlertPacketSerializer::deserialize(MemoryInputStream& st
     }
 }
 
-} //namespace
+}  // namespace
 

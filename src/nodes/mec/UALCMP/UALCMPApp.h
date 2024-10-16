@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -28,9 +28,9 @@ class UALCMPMessage;
 // request lifecycle operations of a MEC app (i.e. instantiation, termination, relocation).
 // This API follows the ETSI MEC specification of ETSI GS MEC 016 V2.2.1 (2020-04) and in
 // particular:
-//   - GET /app_list Retrieve available application information.
-//   - POST /app_contexts For requesting the creation of a new application context.
-//   - DELETE /app_contexts/{contextId} For requesting the deletion of an existing application context
+// - GET /app_list Retrieve available application information.
+// - POST /app_contexts For requesting the creation of a new application context.
+// - DELETE /app_contexts/{contextId} For requesting the deletion of an existing application context
 //
 // Communications with the MEC orchestrator occur via OMNeT connections and messages
 
@@ -43,14 +43,14 @@ class UALCMPApp : public MecServiceBase
      */
     struct LcmRequestStatus
     {
-        int connId;    // to retrieve the socket for the response
+        int connId;  // to retrieve the socket for the response
         unsigned int requestId;
-        nlohmann::json appCont; // for POST the app context used in the request is sent back with new fields (according to the result)
+        nlohmann::json appCont;  // for POST the app context used in the request is sent back with new fields (according to the result)
     };
 
-    inet::ModuleRefByPar<MecOrchestrator> mecOrchestrator_; // reference to the MecOrchestrator used to get AppList
+    inet::ModuleRefByPar<MecOrchestrator> mecOrchestrator_;  // reference to the MecOrchestrator used to get AppList
 
-    unsigned int requestSno = 0;    // counter to keep track of the requests
+    unsigned int requestSno = 0;  // counter to keep track of the requests
     std::map<unsigned int, LcmRequestStatus> pendingRequests;
 
   public:
@@ -94,7 +94,7 @@ class UALCMPApp : public MecServiceBase
 
 };
 
-} //namespace
+}  // namespace
 
-#endif //_UALCMPAPP_H
+#endif // _UALCMPAPP_H
 

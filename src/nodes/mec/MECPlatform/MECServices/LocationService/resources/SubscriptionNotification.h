@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -51,7 +51,7 @@ class SubscriptionNotification : public AttributeBase
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* APPS_MEC_MESERVICES_LOCATIONSERVICE_RESOURCES_SUBSCRIPTIONNOTIFICATION_H_ */
 

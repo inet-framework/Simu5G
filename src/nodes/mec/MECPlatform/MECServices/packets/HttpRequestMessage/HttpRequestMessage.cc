@@ -67,5 +67,5 @@ void HttpRequestMessage::copy(const HttpRequestMessage& other)
     this->headerFields_ = other.headerFields_;
 }
 
-} //namespace
+}  // namespace
 

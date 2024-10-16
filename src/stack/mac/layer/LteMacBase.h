@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -85,9 +85,9 @@ class LteMacBase : public cSimpleModule
     /*
      * Gates
      */
-    cGate *upInGate_ = nullptr;     /// MAC <-- RLC
-    cGate *upOutGate_ = nullptr;    /// MAC --> RLC
-    cGate *downInGate_ = nullptr;   /// MAC <-- PHY
+    cGate *upInGate_ = nullptr;  /// MAC <-- RLC
+    cGate *upOutGate_ = nullptr;  /// MAC --> RLC
+    cGate *downInGate_ = nullptr;  /// MAC <-- PHY
     cGate *downOutGate_ = nullptr;  /// MAC --> PHY
 
     /*
@@ -199,13 +199,13 @@ class LteMacBase : public cSimpleModule
      */
     virtual void deleteQueues(MacNodeId nodeId);
 
-    //* public utility function - drops ownership of an object
+    // * public utility function - drops ownership of an object
     void dropObj(cOwnedObject *obj)
     {
         drop(obj);
     }
 
-    //* public utility function - takes ownership of an object
+    // * public utility function - takes ownership of an object
     void takeObj(cOwnedObject *obj)
     {
         take(obj);
@@ -439,7 +439,7 @@ class LteMacBase : public cSimpleModule
     virtual void fromPhy(cPacket *pkt);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

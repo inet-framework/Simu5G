@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -86,7 +86,7 @@ void LteMaxCiOptMB::generateProblem()
 
     double MAX_RATE = 100 * numBands;
 
-    //======= init string and files =======
+    // ======= init string and files =======
     stringstream appStream;
     ofstream appFileStream;
     remove(problemFile_.c_str());
@@ -94,7 +94,7 @@ void LteMaxCiOptMB::generateProblem()
     // open delta file
     appFileStream.clear();
     appFileStream.open(problemFile_.c_str(), (std::ios::app) | (std::ios::out));
-    //=====================================
+    // =====================================
 
     // config UE ids
     // for each band configuration
@@ -495,5 +495,5 @@ void LteMaxCiOptMB::commitSchedule()
     *activeConnectionSet_ = activeConnectionTempSet_;
 }
 
-} //namespace
+}  // namespace
 

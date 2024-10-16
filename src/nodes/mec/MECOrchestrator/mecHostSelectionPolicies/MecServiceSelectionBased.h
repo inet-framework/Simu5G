@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -16,7 +16,7 @@
 
 namespace simu5g {
 
-//class MecOrchestrator;
+// class MecOrchestrator;
 
 class MecServiceSelectionBased : public SelectionPolicyBase
 {
@@ -27,7 +27,7 @@ class MecServiceSelectionBased : public SelectionPolicyBase
     MecServiceSelectionBased(MecOrchestrator *mecOrchestrator) : SelectionPolicyBase(mecOrchestrator) {}
 };
 
-} //namespace
+}  // namespace
 
 #endif /* NODES_MEC_MECORCHESTRATOR_MECHOSTSELECTIONPOLICIES_MECSERVICESELECTIONBASED_H_ */
 

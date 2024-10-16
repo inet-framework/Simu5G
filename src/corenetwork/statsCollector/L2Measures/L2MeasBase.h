@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -33,8 +33,8 @@ class L2MeasBase
     int size_;
     bool movingAverage_;
 
-//        ::cOutVector outVector_;
-//        ::cHistogram histogram_;
+// ::cOutVector outVector_;
+// ::cHistogram histogram_;
 
   public:
     virtual void init(std::string name, int period, bool movingAverage);
@@ -49,7 +49,7 @@ class L2MeasBase
     virtual void reset();
 };
 
-} //namespace
+}  // namespace
 
-#endif //_L2MEASBASE_H_
+#endif // _L2MEASBASE_H_
 

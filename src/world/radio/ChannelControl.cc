@@ -120,7 +120,7 @@ ChannelControl::RadioRef ChannelControl::registerRadio(cModule *radio, cGate *ra
     re.channel = 0;  // for now
     re.isActive = true;
     radios.push_back(re);
-    return &radios.back(); // last element
+    return &radios.back();  // last element
 }
 
 void ChannelControl::unregisterRadio(RadioRef radio)
@@ -246,7 +246,7 @@ void ChannelControl::addOngoingTransmission(RadioRef h, AirFrame *frame)
 
     // register ongoing transmission
     take(frame);
-    frame->setTimestamp(); // store time of transmission start
+    frame->setTimestamp();  // store time of transmission start
     transmissions[frame->getChannelNumber()].push_back(frame);
 }
 
@@ -294,5 +294,5 @@ void ChannelControl::sendToChannel(RadioRef srcRadio, AirFrame *airFrame)
     addOngoingTransmission(srcRadio, airFrame);
 }
 
-} //namespace
+}  // namespace
 

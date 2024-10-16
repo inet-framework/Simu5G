@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -36,7 +36,7 @@ class NRAmc : public LteAmc
 
   public:
 
-    NRMcsTable dlNrMcsTable_;    // TODO tables for UL and DL should be different
+    NRMcsTable dlNrMcsTable_;  // TODO tables for UL and DL should be different
     NRMcsTable ulNrMcsTable_;
     NRMcsTable d2dNrMcsTable_;
 
@@ -50,7 +50,7 @@ class NRAmc : public LteAmc
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

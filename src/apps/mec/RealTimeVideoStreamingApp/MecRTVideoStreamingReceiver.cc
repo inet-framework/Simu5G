@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -343,7 +343,7 @@ void MecRTVideoStreamingReceiver::processPacket(Packet *packet)
             ReceivingFrameStatus newFrame;
             newFrame.frameSize = header->getFrameLength();
             newFrame.currentSize = header->getPayloadLength();
-            //newFrame.playoutTime = simTime().dbl() + playoutTime;
+            // newFrame.playoutTime = simTime().dbl() + playoutTime;
             newFrame.frameNumber = frameNumber;
             newFrame.numberOfFragments = header->getTotalFrags();
             newFrame.numberOfFragmentsReceived = 1;
@@ -373,5 +373,5 @@ void MecRTVideoStreamingReceiver::processPacket(Packet *packet)
     }
 }
 
-} //namespace
+}  // namespace
 

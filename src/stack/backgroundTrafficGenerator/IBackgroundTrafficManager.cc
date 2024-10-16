@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -13,5 +13,5 @@
 
 namespace simu5g {
 
-} //namespace
+}  // namespace
 

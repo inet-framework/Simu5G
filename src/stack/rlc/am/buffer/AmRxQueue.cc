@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -370,7 +370,7 @@ void AmRxQueue::passUp(const int index)
         nodeb = getRlcByMacNodeId(binder_, srcId, UM);
         ue = getRlcByMacNodeId(binder_, dstId, UM);
     }
-    else { // dir == one of UL, D2D, D2D_MULTI
+    else {  // dir == one of UL, D2D, D2D_MULTI
         nodeb = getRlcByMacNodeId(binder_, dstId, UM);
         ue = getRlcByMacNodeId(binder_, srcId, UM);
     }
@@ -635,7 +635,7 @@ void AmRxQueue::moveRxWindow(const int seqNum)
     int pos = seqNum - rxWindowDesc_.firstSeqNum_;
 
     if (pos <= 0)
-        return;                                    // ignore the shift, it is ineffective.
+        return; // ignore the shift, it is ineffective.
 
     if (pos > rxWindowDesc_.windowSize_)
         throw cRuntimeError("AmRxQueue::moveRxWindow(): positions %d win size %d, seq num %d", pos, rxWindowDesc_.windowSize_, seqNum);
@@ -716,5 +716,5 @@ AmRxQueue::~AmRxQueue()
     delete flowControlInfo_;
 }
 
-} //namespace
+}  // namespace
 

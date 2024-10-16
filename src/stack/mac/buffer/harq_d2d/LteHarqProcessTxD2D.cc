@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -21,8 +21,8 @@ LteHarqProcessTxD2D::LteHarqProcessTxD2D(Binder *binder, unsigned char acid, uns
     macOwner_ = macOwner;
     acid_ = acid;
     numProcesses_ = numProcesses;
-    numEmptyUnits_ = numUnits; //++ @ insert, -- @ unit reset (ack or fourth nack)
-    numSelected_ = 0; //++ @ markSelected and insert, -- @ extract/sendDown
+    numEmptyUnits_ = numUnits;  // ++ @ insert, -- @ unit reset (ack or fourth nack)
+    numSelected_ = 0;  // ++ @ markSelected and insert, -- @ extract/sendDown
 
     // H-ARQ unit instances (overwrite the items the base class allocated)
     for (unsigned int i = 0; i < numHarqUnits_; i++) {
@@ -51,5 +51,5 @@ Packet *LteHarqProcessTxD2D::extractPdu(Codeword cw)
     return pkt;
 }
 
-} //namespace
+}  // namespace
 

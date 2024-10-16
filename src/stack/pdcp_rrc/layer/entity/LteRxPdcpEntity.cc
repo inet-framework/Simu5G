@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -37,7 +37,7 @@ void LteRxPdcpEntity::handlePacketFromLowerLayer(Packet *pkt)
     }
 
     // perform PDCP operations
-    pdcp_->headerDecompress(pkt); // Decompress packet header
+    pdcp_->headerDecompress(pkt);  // Decompress packet header
 
     // handle PDCP SDU
     handlePdcpSdu(pkt);
@@ -55,5 +55,5 @@ void LteRxPdcpEntity::handlePdcpSdu(Packet *pkt)
     pdcp_->toDataPort(pkt);
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -71,7 +71,7 @@ void LteCompManagerBase::initialize()
 
         // Start coordinator tick
         compCoordinatorTick_ = new cMessage("compCoordinatorTick_");
-        compCoordinatorTick_->setSchedulingPriority(3);        // compCoordinatorTick_ after slaves' TTI TICK. TODO check if it must be done before or after..
+        compCoordinatorTick_->setSchedulingPriority(3);  // compCoordinatorTick_ after slaves' TTI TICK. TODO check if it must be done before or after..
         scheduleAt(NOW + coordinationPeriod_, compCoordinatorTick_);
     }
 
@@ -80,7 +80,7 @@ void LteCompManagerBase::initialize()
 
         // Start TTI tick
         compClientTick_ = new cMessage("compClientTick_");
-        compClientTick_->setSchedulingPriority(2);        // compClientTick_ after MAC's TTI TICK. TODO check if it must be done before or after..
+        compClientTick_->setSchedulingPriority(2);  // compClientTick_ after MAC's TTI TICK. TODO check if it must be done before or after..
         scheduleAt(NOW + TTI, compClientTick_);
     }
 }
@@ -226,5 +226,5 @@ void LteCompManagerBase::setUsableBands(UsableBands& usableBands)
     mac_->getAmc()->setPilotUsableBands(nodeId_, usableBands_);
 }
 
-} //namespace
+}  // namespace
 

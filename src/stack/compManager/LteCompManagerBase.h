@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -80,7 +80,7 @@ class LteCompManagerBase : public cSimpleModule
     void sendCoordinatorReply(X2NodeId clientId, X2CompReplyIE *replyIe);
 
     virtual void provisionalSchedule() = 0;  // run the provisional scheduling algorithm (client side)
-    virtual void doCoordination() = 0;       // run the coordination algorithm (coordinator side)
+    virtual void doCoordination() = 0;  // run the coordination algorithm (coordinator side)
 
     virtual X2CompRequestIE *buildClientRequest() = 0;
     virtual void handleClientRequest(inet::IntrusivePtr<X2CompMsg> compMsg) = 0;
@@ -95,7 +95,7 @@ class LteCompManagerBase : public cSimpleModule
     void handleMessage(cMessage *msg) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* LTE_LTECOMPMANAGERBASE_H_ */
 

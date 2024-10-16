@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -23,9 +23,9 @@ void AmcPilotD2D::setPreconfiguredTxParams(Cqi cqi)
     // default parameters for D2D
     preconfiguredTxParams_->isSet() = true;
     preconfiguredTxParams_->writeTxMode(TRANSMIT_DIVERSITY);
-    Rank ri = 1;                                              // rank for TxD is one
+    Rank ri = 1;  // rank for TxD is one
     preconfiguredTxParams_->writeRank(ri);
-    preconfiguredTxParams_->writePmi(intuniform(getEnvir()->getRNG(0), 1, pow(ri, (double)2)));   // taken from LteFeedbackComputationRealistic::computeFeedback
+    preconfiguredTxParams_->writePmi(intuniform(getEnvir()->getRNG(0), 1, pow(ri, (double)2)));  // taken from LteFeedbackComputationRealistic::computeFeedback
 
     if (cqi < 0 || cqi > 15)
         throw cRuntimeError("AmcPilotD2D::setPreconfiguredTxParams - CQI %hu is not a valid value. Aborting", cqi);
@@ -101,7 +101,7 @@ const UserTxParams& AmcPilotD2D::computeTxParams(MacNodeId id, const Direction d
         // translate carrier-local band index to cell-wise band index
         Band cellWiseBand = amc_->getCellInfo()->getCellwiseBand(carrierFrequency, band);
         chosenCqi = summaryCqi.at(band);
-        unsigned int bands = summaryCqi.size();// number of bands
+        unsigned int bands = summaryCqi.size();  // number of bands
         for (Band i = 1; i < bands; ++i) {
             // For all LBs
             double s = (double)summaryCqi.at(i);
@@ -132,12 +132,12 @@ const UserTxParams& AmcPilotD2D::computeTxParams(MacNodeId id, const Direction d
     EV << NOW << " AmcPilot" << getName() << "::computeTxParams NEW values assigned! - CQI =" << chosenCqi << "\n";
     info.print("AmcPilotD2D::computeTxParams");
 
-    //return amc_->setTxParams(id, dir, info,user_type); OLD solution
+    // return amc_->setTxParams(id, dir, info,user_type); OLD solution
     // Debug
     const UserTxParams& info2 = amc_->setTxParams(id, dir, info, carrierFrequency);
 
     return info2;
 }
 
-} //namespace
+}  // namespace
 

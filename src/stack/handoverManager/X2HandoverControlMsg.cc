@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -43,5 +43,5 @@ X2HandoverControlMsg *X2HandoverControlMsg::dup() const {
     return new X2HandoverControlMsg(*this);
 }
 
-} //namespace
+}  // namespace
 

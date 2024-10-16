@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -38,11 +38,11 @@ void LtePhyUe::initialize(int stage)
     LtePhyBase::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
-        isNr_ = false;        // this might be true only if this module is a NrPhyUe
+        isNr_ = false;  // this might be true only if this module is a NrPhyUe
         nodeType_ = UE;
         enableHandover_ = par("enableHandover");
         handoverLatency_ = par("handoverLatency").doubleValue();
-        handoverDetachment_ = handoverLatency_ / 2.0;                      // TODO: make this configurable from NED
+        handoverDetachment_ = handoverLatency_ / 2.0;  // TODO: make this configurable from NED
         handoverAttachment_ = handoverLatency_ - handoverDetachment_;
         dynamicCellAssociation_ = par("dynamicCellAssociation");
         if (par("minRssiDefault").boolValue())
@@ -145,7 +145,7 @@ void LtePhyUe::initialize(int stage)
                 std::vector<double> rssiV = primaryChannelModel_->getRSRP(frame, cInfo);
                 for (auto value : rssiV)
                     rssi += value;
-                rssi /= rssiV.size();   // compute the mean over all RBs
+                rssi /= rssiV.size();  // compute the mean over all RBs
 
                 EV << "LtePhyUe::initialize - RSSI from cell " << cellId << ": " << rssi << " dB (current candidate cell " << candidateMasterId_ << ": " << candidateMasterRssi_ << " dB)" << endl;
 
@@ -283,13 +283,13 @@ void LtePhyUe::handoverHandler(LteAirFrame *frame, UserControlInfo *lteInfo)
                 candidateMasterRssi_ = rssi;
                 hysteresisTh_ = updateHysteresisTh(rssi);
             }
-            else { // lost connection from current master
-                if (candidateMasterId_ == masterId_) { // trigger detachment
+            else {  // lost connection from current master
+                if (candidateMasterId_ == masterId_) {  // trigger detachment
                     candidateMasterId_ = NODEID_NONE;
                     currentMasterRssi_ = -999.0;
-                    candidateMasterRssi_ = -999.0; // set candidate RSSI very bad as we currently do not have any.
-                                                   // this ensures that each candidate with is at least as 'bad'
-                                                   // as the minRssi_ has a chance.
+                    candidateMasterRssi_ = -999.0;  // set candidate RSSI very bad as we currently do not have any.
+                                                    // this ensures that each candidate with is at least as 'bad'
+                                                    // as the minRssi_ has a chance.
 
                     hysteresisTh_ = updateHysteresisTh(0);
                     binder_->addHandoverTriggered(nodeId_, masterId_, candidateMasterId_);
@@ -339,9 +339,9 @@ void LtePhyUe::triggerHandover()
     }
 
     double handoverLatency;
-    if (masterId_ == NODEID_NONE)                                                                                  // attachment only
+    if (masterId_ == NODEID_NONE) // attachment only
         handoverLatency = handoverAttachment_;
-    else if (candidateMasterId_ == NODEID_NONE)                                                                                                // detachment only
+    else if (candidateMasterId_ == NODEID_NONE) // detachment only
         handoverLatency = handoverDetachment_;
     else
         handoverLatency = handoverDetachment_ + handoverAttachment_;
@@ -474,7 +474,7 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
         return;
     }
 
-    //Update coordinates of this user
+    // Update coordinates of this user
     if (lteInfo->getFrameType() == HANDOVERPKT) {
         // check if the message is on another carrier frequency or handover is already in process
         if (carrierFreq != primaryChannelModel_->getCarrierFrequency() || (handoverTrigger_ != nullptr && handoverTrigger_->isScheduled())) {
@@ -674,9 +674,9 @@ void LtePhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVecto
     Enter_Method("SendFeedback");
     EV << "LtePhyUe: feedback from Feedback Generator" << endl;
 
-    //Create a feedback packet
+    // Create a feedback packet
     auto fbPkt = makeShared<LteFeedbackPkt>();
-    //Set the feedback
+    // Set the feedback
     fbPkt->setLteFeedbackDoubleVectorDl(fbDl);
     fbPkt->setLteFeedbackDoubleVectorDl(fbUl);
     fbPkt->setSourceNodeId(nodeId_);
@@ -703,7 +703,7 @@ void LtePhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVecto
 
     uinfo->setCoord(getRadioPosition());
 
-    //TODO access speed data Update channel index
+    // TODO access speed data Update channel index
     lastFeedback_ = NOW;
 
     // send one feedback packet for each carrier
@@ -800,5 +800,5 @@ void LtePhyUe::finish()
     }
 }
 
-} //namespace
+}  // namespace
 

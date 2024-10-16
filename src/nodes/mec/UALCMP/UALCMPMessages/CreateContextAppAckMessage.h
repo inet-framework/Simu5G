@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -35,7 +35,7 @@ class CreateContextAppAckMessage : public CreateContextAppAck
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* NODES_MEC_LCMPROXY_LCMPROXYMESSAGES_CREATECONTEXTAPPACKMESSAGE_H_ */
 

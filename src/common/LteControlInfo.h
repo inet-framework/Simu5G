@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -34,7 +34,7 @@ class UserControlInfo : public UserControlInfo_Base
     const UserTxParams *userTxParams = nullptr;
     RbMap grantedBlocks;
     /** @brief The movement of the sending host.*/
-    //Move senderMovement;
+    // Move senderMovement;
     /** @brief The playground position of the sending host.*/
     inet::Coord senderCoord;
 
@@ -109,7 +109,7 @@ class UserControlInfo : public UserControlInfo_Base
 
 Register_Class(UserControlInfo);
 
-} //namespace
+}  // namespace
 
 #endif
 

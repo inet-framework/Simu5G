@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -77,8 +77,8 @@ void UALCMPApp::handleStartOperation(inet::LifecycleOperation *operation)
 
     serverSocket.setOutputGate(gate("socketOut"));
     serverSocket.setCallback(this);
-    //serverSocket.bind(localAddress[0] ? L3Address(localAddress) : L3Address(), localPort);
-    serverSocket.bind(inet::L3Address(), localPort); // bind socket for any address
+    // serverSocket.bind(localAddress[0] ? L3Address(localAddress) : L3Address(), localPort);
+    serverSocket.bind(inet::L3Address(), localPort);  // bind socket for any address
 
     int tos = par("tos");
     if (tos != -1)
@@ -135,7 +135,7 @@ void UALCMPApp::handleCreateContextAppAckMessage(UALCMPMessage *msg)
 
             jsonBody["contextId"] = std::to_string(ack->getContextId());
             jsonBody["appInfo"]["userAppInstanceInfo"]["appInstanceId"] = ack->getAppInstanceId();
-            jsonBody["appInfo"]["userAppInstanceInfo"]["referenceURI"] = ack->getAppInstanceUri(); // add the end point
+            jsonBody["appInfo"]["userAppInstanceInfo"]["referenceURI"] = ack->getAppInstanceUri();  // add the end point
             std::stringstream uri;
             uri << baseUriQueries_ << "/app_contexts/" << ack->getContextId();
             std::pair<std::string, std::string> locHeader("Location: ", uri.str());
@@ -189,9 +189,9 @@ void UALCMPApp::handleGETRequest(const HttpRequestMessage *currentRequestMessage
     std::string uri = currentRequestMessageServed->getUri();
 
     // check it is a GET for a query or a subscription
-    if (uri == (baseUriQueries_ + "/app_list")) { //queries
+    if (uri == (baseUriQueries_ + "/app_list")) {  // queries
         std::string params = currentRequestMessageServed->getParameters();
-        //look for query parameters
+        // look for query parameters
         if (!params.empty()) {
             std::vector<std::string> queryParameters = simu5g::utils::splitString(params, "&");
             /*
@@ -205,20 +205,20 @@ void UALCMPApp::handleGETRequest(const HttpRequestMessage *currentRequestMessage
             std::vector<std::string> splittedParams;
 
             for (const auto& queryParam : queryParameters) {
-                if (queryParam.rfind("appName", 0) == 0) { // cell_id=par1,par2
+                if (queryParam.rfind("appName", 0) == 0) {  // cell_id=par1,par2
                     EV << "UALCMPApp::handleGETRequest - parameters: " << endl;
                     params = simu5g::utils::splitString(queryParam, "=");
-                    if (params.size() != 2) { //must be param=values
+                    if (params.size() != 2) {  // must be param=values
                         Http::send400Response(socket);
                         return;
                     }
-                    splittedParams = simu5g::utils::splitString(params[1], ","); //it can be an array, e.g param=v1,v2,v3
+                    splittedParams = simu5g::utils::splitString(params[1], ",");  // it can be an array, e.g param=v1,v2,v3
                     for (const auto& appName : splittedParams) {
                         EV << "appName: " << appName << endl;
                         appNames.push_back(appName);
                     }
                 }
-                else { // bad parameters
+                else {  // bad parameters
                     Http::send400Response(socket);
                     return;
                 }
@@ -236,7 +236,7 @@ void UALCMPApp::handleGETRequest(const HttpRequestMessage *currentRequestMessage
             // if the appList is empty, send an empty 200 response
             Http::send200Response(socket, appList.dump().c_str());
         }
-        else { //no query params
+        else {  // no query params
             nlohmann::ordered_json appList;
             auto appDescs = mecOrchestrator_->getApplicationDescriptors();
             for (const auto& [key, appDesc] : *appDescs) {
@@ -246,7 +246,7 @@ void UALCMPApp::handleGETRequest(const HttpRequestMessage *currentRequestMessage
             Http::send200Response(socket, appList.dump().c_str());
         }
     }
-    else { //bad uri
+    else {  // bad uri
         Http::send404Response(socket);
     }
 }
@@ -261,12 +261,12 @@ void UALCMPApp::handlePOSTRequest(const HttpRequestMessage *currentRequestMessag
     if (uri == (baseUriSubscriptions_ + "/app_contexts")) {
         nlohmann::json jsonBody;
         try {
-            jsonBody = nlohmann::json::parse(body); // get the JSON structure
+            jsonBody = nlohmann::json::parse(body);  // get the JSON structure
         }
         catch (nlohmann::detail::parse_error e) {
             throw cRuntimeError("UALCMPApp::handlePOSTRequest - %s", e.what());
             // body is not correctly formatted in JSON, manage it
-            Http::send400Response(socket); // bad body JSON
+            Http::send400Response(socket);  // bad body JSON
             return;
         }
         // Parse the JSON body to organize the App instantiation
@@ -287,11 +287,11 @@ void UALCMPApp::handlePOSTRequest(const HttpRequestMessage *currentRequestMessag
             send(createContext, "toMecOrchestrator");
         }
         else {
-            Http::send400Response(socket); // bad body JSON
+            Http::send400Response(socket);  // bad body JSON
         }
     }
     else {
-        Http::send404Response(socket); //
+        Http::send404Response(socket);  //
     }
 }
 
@@ -305,9 +305,9 @@ void UALCMPApp::handleDELETERequest(const HttpRequestMessage *currentRequestMess
     // uri must be in form /example/dev_app/v1/app_context/contextId
     std::string uri = currentRequestMessageServed->getUri();
 
-    std::size_t lastPart = uri.find_last_of("/"); // split at contextId
-    std::string baseUri = uri.substr(0, lastPart); // uri
-    std::string contextId = uri.substr(lastPart + 1); // contextId
+    std::size_t lastPart = uri.find_last_of("/");  // split at contextId
+    std::string baseUri = uri.substr(0, lastPart);  // uri
+    std::string contextId = uri.substr(lastPart + 1);  // contextId
 
     if (baseUri == (baseUriSubscriptions_ + "/app_contexts")) {
         DeleteContextAppMessage *deleteContext = new DeleteContextAppMessage();
@@ -372,5 +372,5 @@ void UALCMPApp::finish()
 {
 }
 
-} //namespace
+}  // namespace
 

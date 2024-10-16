@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -268,5 +268,5 @@ void LtePhyEnbD2D::handleAirFrame(cMessage *msg)
         updateDisplayString();
 }
 
-} //namespace
+}  // namespace
 

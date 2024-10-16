@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -39,5 +39,5 @@ X2CompMsg& X2CompMsg::operator=(const X2CompMsg& other)
 
 X2CompMsg *X2CompMsg::dup() const { return new X2CompMsg(*this); }
 
-} //namespace
+}  // namespace
 

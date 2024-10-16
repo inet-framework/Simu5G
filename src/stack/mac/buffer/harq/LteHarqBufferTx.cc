@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -72,7 +72,7 @@ void LteHarqBufferTx::markSelected(UnitList unitIds, unsigned char availableTbs)
     CwList cwList = unitIds.second;
 
     if (cwList.size() > availableTbs) {
-        //eg: tx mode siso trying to rtx 2 TBs
+        // eg: tx mode siso trying to rtx 2 TBs
         // this is the codeword which will contain the jumbo TB
         Codeword cw = cwList.front();
         cwList.pop_front();
@@ -177,7 +177,7 @@ void LteHarqBufferTx::receiveHarqFeedback(Packet *pkt)
     HarqAcknowledgment harqResult = result ? HARQACK : HARQNACK;
     Codeword cw = fbpkt->getCw();
     unsigned char acid = fbpkt->getAcid();
-    long fbPduId = fbpkt->getFbMacPduId(); // id of the pdu that should receive this feedback
+    long fbPduId = fbpkt->getFbMacPduId();  // id of the pdu that should receive this feedback
     long unitPduId = processes_[acid]->getPduId(cw);
 
     // After handover or a D2D mode switch, the process may have been dropped. The received feedback must be ignored.
@@ -348,5 +348,5 @@ bool LteHarqBufferTx::isInUnitList(unsigned char acid, Codeword cw, UnitList uni
     return false;
 }
 
-} //namespace
+}  // namespace
 

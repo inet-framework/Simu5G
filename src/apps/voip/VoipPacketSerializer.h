@@ -30,7 +30,7 @@ class VoipPacketSerializer : public inet::FieldsChunkSerializer
     const inet::Ptr<inet::Chunk> deserialize(inet::MemoryInputStream& stream) const override;
 };
 
-} //namespace
+}  // namespace
 
 #endif // ifndef __INET_VOIPPACKETSERIALIZER_H
 

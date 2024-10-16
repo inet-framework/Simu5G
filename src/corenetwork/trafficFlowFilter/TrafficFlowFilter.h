@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -58,7 +58,7 @@ class TrafficFlowFilter : public cSimpleModule
     // only if owner type is GTPENDPOINT
     inet::L3Address eNodeBAddress;
 
-    //@author Alessandro Noferi
+    // @author Alessandro Noferi
     //
     // for emulation when the MEC host is directly connected to the BS
     inet::L3Address meAppsExtAddress_;
@@ -75,7 +75,7 @@ class TrafficFlowFilter : public cSimpleModule
     TrafficFlowTemplateId findTrafficFlow(inet::L3Address srcAddress, inet::L3Address destAddress);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

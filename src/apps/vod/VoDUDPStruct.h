@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -21,12 +21,12 @@ namespace simu5g {
  */
 struct Media1
 {
-    inet::L3Address clientAddr;   // client address
-    int clientPort;               // client UDP port
-    long numPkSent;               // number of packets sent
+    inet::L3Address clientAddr;  // client address
+    int clientPort;  // client UDP port
+    long numPkSent;  // number of packets sent
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -97,7 +97,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
         auto pkt = check_and_cast<inet::Packet *>(sduQueue_.front());
         auto rlcSdu = pkt->peekAtFront<LteRlcSdu>();
         unsigned int sduSequenceNumber = rlcSdu->getSnoMainPacket();
-        int sduLength = rlcSdu->getLengthMainPacket(); // length without the SDU header
+        int sduLength = rlcSdu->getLengthMainPacket();  // length without the SDU header
 
         if (fragmentInfo != nullptr) {
             if (fragmentInfo->pkt != pkt)
@@ -173,7 +173,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
         // (TODO: ugly, should be indicated in a better way)
         EV << NOW << " UmTxEntity::rlcPduMake - cannot send PDU with data, pdulength requested by MAC (" << pduLength << "B) is too small." << std::endl;
         pkt->setName("lteRlcFragment (empty)");
-        rlcPdu->setChunkLength(inet::b(1)); // send only a bit, minimum size
+        rlcPdu->setChunkLength(inet::b(1));  // send only a bit, minimum size
     }
     else {
         // compute FI
@@ -181,11 +181,11 @@ void UmTxEntity::rlcPduMake(int pduLength)
         FramingInfo fi = 0;
         unsigned short int mask;
         if (endFrag) {
-            mask = 1;   // 01
+            mask = 1;  // 01
             fi |= mask;
         }
         if (startFrag) {
-            mask = 2;   // 10
+            mask = 2;  // 10
             fi |= mask;
         }
 
@@ -237,7 +237,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
                 if (burstStatus_ == INACTIVE) {
                     burstStatus_ = ACTIVE;
                     EV << NOW << " UmTxEntity::burstStatus - INACTIVE -> ACTIVE" << endl;
-                    //start a new burst
+                    // start a new burst
                     packetFlowManager_->insertRlcPdu(lcid, rlcPdu, START);
                 }
                 else {
@@ -373,5 +373,5 @@ void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
     }
 }
 
-} //namespace
+}  // namespace
 

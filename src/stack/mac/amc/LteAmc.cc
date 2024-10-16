@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -100,14 +100,14 @@ void LteAmc::printFbhb(Direction dir)
         throw cRuntimeError("LteAmc::printFbhb(): Unrecognized direction");
     }
 
-    for (auto& [carrier, hist] : *history) { // for each antenna
+    for (auto& [carrier, hist] : *history) {  // for each antenna
         EV << simTime() << " # Carrier: " << carrier << "\n";
         for (auto& histItem : hist) {
             EV << simTime() << " # Remote: " << dasToA(histItem.first) << "\n";
-            for (size_t i = 0; i < histItem.second.size(); i++) { // for each UE
+            for (size_t i = 0; i < histItem.second.size(); i++) {  // for each UE
                 EV << "Ue index: " << i << ", MacNodeId: " << (*revIndex)[i] << endl;
                 auto& txVec = histItem.second[i];
-                for (size_t t = 0; t < txVec.size(); t++) { // for each tx mode
+                for (size_t t = 0; t < txVec.size(); t++) {  // for each tx mode
                     TxMode txMode = TxMode(t);
 
                     // Print only non-empty feedback summary! (all cqi are != NOSIGNALCQI)
@@ -154,7 +154,7 @@ void LteAmc::printTxParams(Direction dir, double carrierFrequency)
 
         // Print only non-empty user transmission parameters
         // testCqi = userInfo->at(index).readCqiVector().at(0);
-        //if(testCqi!=0)
+        // if(testCqi!=0)
         userInfo->at(index).print("info");
     }
 }
@@ -286,7 +286,7 @@ void LteAmc::initialize()
     // DOWNLINK
     EV << "DL CONNECTED: " << dlConnectedUe_.size() << endl;
 
-    for (auto [nodeId, flag] : dlConnectedUe_) { // For all UEs (DL)
+    for (auto [nodeId, flag] : dlConnectedUe_) {  // For all UEs (DL)
         dlNodeIndex_[nodeId] = dlRevNodeIndex_.size();
         dlRevNodeIndex_.push_back(nodeId);
 
@@ -296,7 +296,7 @@ void LteAmc::initialize()
     // UPLINK
     EV << "UL CONNECTED: " << dlConnectedUe_.size() << endl;
 
-    for (auto [nodeId, flag] : ulConnectedUe_) { // For all UEs (UL)
+    for (auto [nodeId, flag] : ulConnectedUe_) {  // For all UEs (UL)
         ulNodeIndex_[nodeId] = ulRevNodeIndex_.size();
         ulRevNodeIndex_.push_back(nodeId);
     }
@@ -304,15 +304,15 @@ void LteAmc::initialize()
     // D2D
     EV << "D2D CONNECTED: " << d2dConnectedUe_.size() << endl;
 
-    for (auto [nodeId, flag] : d2dConnectedUe_) { // For all UEs (D2D)
+    for (auto [nodeId, flag] : d2dConnectedUe_) {  // For all UEs (D2D)
         d2dNodeIndex_[nodeId] = d2dRevNodeIndex_.size();
         d2dRevNodeIndex_.push_back(nodeId);
     }
 
-    //printFbhb(DL);
-    //printFbhb(UL);
-    //printTxParams(DL);
-    //printTxParams(UL);
+    // printFbhb(DL);
+    // printFbhb(UL);
+    // printTxParams(DL);
+    // printTxParams(UL);
 }
 
 void LteAmc::rescaleMcs(double rePerRb, Direction dir)
@@ -348,7 +348,7 @@ History_ *LteAmc::getHistory(Direction dir, double carrierFrequency)
 
         it = connectedUe->begin();
         et = connectedUe->end();
-        for ( ; it != et; it++) { // For all UEs (DL)
+        for ( ; it != et; it++) {  // For all UEs (DL)
             for (auto remote : remoteSet_) {
                 // initialize historical feedback base for this UE (index) for all tx modes and for all RUs
                 history[remote].push_back(
@@ -424,7 +424,7 @@ void LteAmc::pushFeedbackD2D(MacNodeId id, LteFeedback fb, MacNodeId peerId, dou
         ConnectedUesMap::const_iterator it, et;
         it = d2dConnectedUe_.begin();
         et = d2dConnectedUe_.end();
-        for ( ; it != et; it++) { // For all UEs (D2D)
+        for ( ; it != et; it++) {  // For all UEs (D2D)
             newHist[antenna].push_back(std::vector<LteSummaryBuffer>(UL_NUM_TXMODE, LteSummaryBuffer(fbhbCapacityD2D_, MAXCW, numBands_, lb_, ub_)));
         }
         (*history)[peerId] = newHist;
@@ -584,7 +584,7 @@ const UserTxParams& LteAmc::computeTxParams(MacNodeId id, const Direction dir, d
 
 unsigned int LteAmc::computeBitsOnNRbs(MacNodeId id, Band b, unsigned int blocks, const Direction dir, double carrierFrequency)
 {
-    if (blocks > 110)                                                // Safety check to avoid segmentation fault
+    if (blocks > 110) // Safety check to avoid segmentation fault
         throw cRuntimeError("LteAmc::computeBitsOnNRbs(): Too many blocks");
 
     if (blocks == 0)
@@ -633,7 +633,7 @@ unsigned int LteAmc::computeBitsOnNRbs(MacNodeId id, Band b, unsigned int blocks
 
 unsigned int LteAmc::computeBitsOnNRbs(MacNodeId id, Band b, Codeword cw, unsigned int blocks, const Direction dir, double carrierFrequency)
 {
-    if (blocks > 110)                                                // Safety check to avoid segmentation fault
+    if (blocks > 110) // Safety check to avoid segmentation fault
         throw cRuntimeError("LteAmc::blocks2bits(): Too many blocks");
 
     if (blocks == 0)
@@ -720,7 +720,7 @@ unsigned int LteAmc::computeBytesOnNRbs_MB(MacNodeId id, Band b, unsigned int bl
 
 unsigned int LteAmc::computeBitsOnNRbs_MB(MacNodeId id, Band b, unsigned int blocks, const Direction dir, double carrierFrequency)
 {
-    if (blocks > 110)                                                // Safety check to avoid segmentation fault
+    if (blocks > 110) // Safety check to avoid segmentation fault
         throw cRuntimeError("LteAmc::computeBitsOnNRbs_MB(): Too many blocks");
 
     if (blocks == 0)
@@ -814,8 +814,8 @@ unsigned int LteAmc::getItbsPerCqi(Cqi cqi, const Direction dir)
     double rate = entry.rate_;
 
     // Select the ranges for searching in the McsTable.
-    unsigned int min = 0; // _QPSK
-    unsigned int max = 9; // _QPSK
+    unsigned int min = 0;  // _QPSK
+    unsigned int max = 9;  // _QPSK
     if (mod == _16QAM) {
         min = 10;
         max = 16;
@@ -862,10 +862,10 @@ const UserTxParams& LteAmc::getTxParams(MacNodeId id, const Direction dir, doubl
 
 unsigned int LteAmc::blockGain(Cqi cqi, unsigned int layers, unsigned int blocks, Direction dir)
 {
-    if (blocks > 110)                                              // Safety check to avoid segmentation fault
+    if (blocks > 110) // Safety check to avoid segmentation fault
         throw cRuntimeError("LteAmc::blocksGain(): Too many blocks (%d)", blocks);
 
-    if (cqi > 15)                                      // Safety check to avoid segmentation fault
+    if (cqi > 15) // Safety check to avoid segmentation fault
         throw cRuntimeError("LteAmc::blocksGain(): CQI greater than 15 (%d)", cqi);
 
     if (blocks == 0)
@@ -1144,10 +1144,10 @@ void LteAmc::detachUser(MacNodeId nodeId, Direction dir)
                 }
             }
         }
-        else { // D2D
+        else {  // D2D
             for (auto& hit : *d2dHistory) {
                 for (auto& ht : hit.second) {
-                    if (ht.first == NODEID_NONE)                                                                                           // skip fake UE 0
+                    if (ht.first == NODEID_NONE) // skip fake UE 0
                         continue;
 
                     for (auto remote : remoteSet_) {
@@ -1238,10 +1238,10 @@ void LteAmc::attachUser(MacNodeId nodeId, Direction dir)
                 }
             }
         }
-        else { // D2D
+        else {  // D2D
             for (auto& hit : *d2dHistory) {
                 for (auto& ht : hit.second) {
-                    if (ht.first == NODEID_NONE)                                                                                           // skip fake UE 0
+                    if (ht.first == NODEID_NONE) // skip fake UE 0
                         continue;
 
                     for (auto remote : remoteSet_) {
@@ -1269,18 +1269,18 @@ void LteAmc::attachUser(MacNodeId nodeId, Direction dir)
         if (dir == UL || dir == DL) {
             for (auto& [key, hist] : *history) {
                 for (auto remote : remoteSet_) {
-                    hist[remote].push_back(v); // XXX DEBUG THIS!!
+                    hist[remote].push_back(v);  // XXX DEBUG THIS!!
                 }
             }
         }
-        else { // D2D
+        else {  // D2D
             // initialize an empty feedback for a fake user (id 0), in order to manage
             // the case of transmission before a feedback has been reported
             for (auto& [key, hist] : *d2dHistory) {
                 hist[NODEID_NONE] = History_();
                 for (auto& [key2, d2dHistory] : hist) {
                     for (auto remote : remoteSet_) {
-                        d2dHistory[remote].push_back(v); // XXX DEBUG THIS!!
+                        d2dHistory[remote].push_back(v);  // XXX DEBUG THIS!!
                     }
                 }
             }
@@ -1371,7 +1371,7 @@ void LteAmc::testUe(MacNodeId nodeId, Direction dir)
             }
         }
     }
-    else { // D2D
+    else {  // D2D
         for (const auto& hit : *d2dHistory) {
             for (const auto& ht : hit.second) {
                 const History_& d2dHistory = ht.second;
@@ -1398,5 +1398,5 @@ void LteAmc::testUe(MacNodeId nodeId, Direction dir)
 
 void LteAmc::setPilotMode(PilotComputationModes mode) { pilot_->setMode(mode); }
 
-} //namespace
+}  // namespace
 

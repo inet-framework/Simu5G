@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -56,7 +56,7 @@ class L2Meas : public AttributeBase
     opp_component_ptr<Binder> binder_;
 };
 
-} //namespace
+}  // namespace
 
 #endif // _L2MEAS_H_
 

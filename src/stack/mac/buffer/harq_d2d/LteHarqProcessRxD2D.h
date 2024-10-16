@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -54,7 +54,7 @@ class LteHarqProcessRxD2D : public LteHarqProcessRx
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

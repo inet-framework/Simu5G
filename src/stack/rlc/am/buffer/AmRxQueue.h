@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -58,8 +58,8 @@ class AmRxQueue : public cSimpleModule
     cArray pduBuffer_;
 
     //! AM PDU fragment buffer
-    //  (stores PDUs of the next SDU if they are shifted out of the PDU buffer before the SDU is completely
-    //   received and can be passed to the upper layer)
+    // (stores PDUs of the next SDU if they are shifted out of the PDU buffer before the SDU is completely
+    // received and can be passed to the upper layer)
     std::deque<inet::Packet *> pendingPduBuffer_;
 
     //! AM PDU received vector
@@ -77,7 +77,7 @@ class AmRxQueue : public cSimpleModule
      */
     FlowControlInfo *flowControlInfo_ = nullptr;
 
-    //Statistics
+    // Statistics
     static unsigned int totalCellRcvdBytes_;
     unsigned int totalRcvdBytes_;
     Direction dir_ = UNKNOWN_DIRECTION;
@@ -102,7 +102,7 @@ class AmRxQueue : public cSimpleModule
     //! Send a buffer status report to the ACK manager
     void handleMessage(cMessage *msg) override;
 
-    //initialize
+    // initialize
     void initialize() override;
 
   protected:
@@ -142,7 +142,7 @@ class AmRxQueue : public cSimpleModule
     inet::Packet *defragmentFrames(std::deque<inet::Packet *>& fragmentFrames);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

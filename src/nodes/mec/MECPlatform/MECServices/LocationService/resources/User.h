@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -41,7 +41,7 @@ class User : public AttributeBase
     std::string resourceUrl_;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* CORENETWORK_NODES_MEC_MECPLATFORM_MEC_SERVICES_LOCATION_SERVICE_RESOURCES_USER_H_ */
 

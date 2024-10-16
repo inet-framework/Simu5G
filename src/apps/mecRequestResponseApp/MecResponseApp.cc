@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -60,7 +60,7 @@ void MecResponseApp::handleRequest(cMessage *msg)
     MacNodeId ueBsId = reqPkt->getBsId();
 
     double responseTime = 0.0;
-    if (ueAppId != num(ueBsId)) {  //TODO type mismatch
+    if (ueAppId != num(ueBsId)) {  // TODO type mismatch
         // add delay
         responseTime += uniform(0.015, 0.035);
     }
@@ -97,5 +97,5 @@ void MecResponseApp::sendResponse(cMessage *msg)
     socket.sendTo(packet, inet::L3AddressResolver().resolve(reqSourceAddress), reqSourcePort);
 }
 
-} //namespace
+}  // namespace
 

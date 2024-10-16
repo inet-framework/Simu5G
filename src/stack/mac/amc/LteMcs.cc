@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -368,5 +368,5 @@ std::vector<unsigned char> cwMapping(const TxMode& txMode, const Rank& ri, const
     return res;
 }
 
-} //namespace
+}  // namespace
 

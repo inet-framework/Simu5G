@@ -1,5 +1,5 @@
 //
-//                           Simu5G
+// Simu5G
 //
 // This file is part of a software released under the license included in file
 // "license.pdf". This license can be also found at http://www.ltesimulator.com/
@@ -102,7 +102,7 @@ void MecRequestBackgroundGeneratorApp::handleMp1Message(int connId)
     EV << "MEWarningAlertApp_rest::handleMp1Message - payload: " << mp1HttpMessage->getBody() << endl;
 
     try {
-        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody()); // get the JSON structure
+        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody());  // get the JSON structure
         if (!jsonBody.empty()) {
             jsonBody = jsonBody[0];
             std::string serName = jsonBody["serName"];
@@ -182,5 +182,5 @@ void MecRequestBackgroundGeneratorApp::finish()
     }
 }
 
-} //namespace
+}  // namespace
 

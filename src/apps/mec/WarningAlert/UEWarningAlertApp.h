@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -19,12 +19,12 @@
 
 #include "common/binder/Binder.h"
 
-//inet mobility
+// inet mobility
 #include "inet/common/geometry/common/Coord.h"
 #include "inet/common/geometry/common/EulerAngles.h"
 #include "inet/mobility/contract/IMobility.h"
 
-//WarningAlertPacket
+// WarningAlertPacket
 #include "nodes/mec/MECPlatform/MEAppPacket_Types.h"
 #include "apps/mec/WarningAlert/packets/WarningAlertPacket_m.h"
 
@@ -49,7 +49,7 @@ using namespace omnetpp;
 class UEWarningAlertApp : public cSimpleModule
 {
 
-    //communication to device app and mec app
+    // communication to device app and mec app
     inet::UdpSocket socket;
 
     int size_;
@@ -69,7 +69,7 @@ class UEWarningAlertApp : public cSimpleModule
     inet::ModuleRefByPar<inet::IMobility> mobility;
     inet::Coord position;
 
-    //scheduling
+    // scheduling
     enum MsgKind {
         KIND_SELF_START = 1000,
         KIND_SELF_STOP,
@@ -103,7 +103,7 @@ class UEWarningAlertApp : public cSimpleModule
     void handleAckStopMEWarningAlertApp(cMessage *msg);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

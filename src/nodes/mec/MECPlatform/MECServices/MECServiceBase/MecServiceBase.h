@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -20,7 +20,7 @@
 #include "inet/common/socket/SocketMap.h"
 #include <vector>
 #include <map>
-//#include "inet/applications/tcpapp/TCPSrvHostApp.h"
+// #include "inet/applications/tcpapp/TCPSrvHostApp.h"
 #include <queue>
 #include "inet/applications/base/ApplicationBase.h"
 
@@ -67,8 +67,8 @@ class MecServiceBase : public inet::ApplicationBase, public inet::TcpSocket::ICa
 {
   protected:
     std::string serviceName_;
-    inet::TcpSocket serverSocket; // Used to listen to incoming connections
-    inet::SocketMap socketMap; // Stores the connections
+    inet::TcpSocket serverSocket;  // Used to listen to incoming connections
+    inet::SocketMap socketMap;  // Stores the connections
     typedef std::set<SocketManager *, simu5g::utils::cModule_LessId> ThreadSet;
     ThreadSet threadSet;
     std::string host_;
@@ -87,23 +87,23 @@ class MecServiceBase : public inet::ApplicationBase, public inet::TcpSocket::ICa
      * the current implementation assumes a M/M/1 system
      */
     bool loadGenerator_ = false;
-    double lambda_; // arrival rate of a BG request from a BG app
-    double beta_; // arrival rate of a BG request from a BG app
+    double lambda_;  // arrival rate of a BG request from a BG app
+    double beta_;  // arrival rate of a BG request from a BG app
 
-    int numBGApps_; // number of BG apps
+    int numBGApps_;  // number of BG apps
     double rho_ = 0;
     simtime_t lastFGRequestArrived_ = 0;
 
-    unsigned int subscriptionId_ = 0; // identifier for new subscriptions
+    unsigned int subscriptionId_ = 0;  // identifier for new subscriptions
 
     // currently not used
     std::set<std::string> supportedQueryParams_;
     std::set<std::string> supportedSubscriptionParams_;
 
     typedef std::map<unsigned int, SubscriptionBase *> Subscriptions;
-    Subscriptions subscriptions_; // list of all active subscriptions
+    Subscriptions subscriptions_;  // list of all active subscriptions
 
-    std::set<cModule *, simu5g::utils::cModule_LessId> eNodeB_;     // eNodeBs connected to the MEC Host
+    std::set<cModule *, simu5g::utils::cModule_LessId> eNodeB_;  // eNodeBs connected to the MEC Host
 
     int requestQueueSize_;
 
@@ -111,12 +111,12 @@ class MecServiceBase : public inet::ApplicationBase, public inet::TcpSocket::ICa
 
     cMessage *requestService_ = nullptr;
     double requestServiceTime_;
-    cQueue requests_;               // queue that holds incoming requests
+    cQueue requests_;  // queue that holds incoming requests
 
     cMessage *subscriptionService_ = nullptr;
     double subscriptionServiceTime_;
     int subscriptionQueueSize_;
-    std::queue<EventNotification *> subscriptionEvents_;          // queue that holds events related to subscriptions
+    std::queue<EventNotification *> subscriptionEvents_;  // queue that holds events related to subscriptions
     EventNotification *currentSubscriptionServed_ = nullptr;
 
     // signals for statistics
@@ -268,7 +268,7 @@ class MecServiceBase : public inet::ApplicationBase, public inet::TcpSocket::ICa
     virtual void removeSubscriptions(int connId);
 };
 
-} //namespace
+}  // namespace
 
 #endif // __INET_GENERICSERVICE_H
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -105,9 +105,9 @@ void VoDUDPClient::finish()
         f << "#!/bin/bash" << endl;
         f << createOutput << " && " << anaPar << " && " << plot << endl;
         f.close();
-        //system(createOutput.c_str());
-        //system(anaPar.c_str());
-        //system(plot.c_str());
+        // system(createOutput.c_str());
+        // system(anaPar.c_str());
+        // system(plot.c_str());
     }
     else {
         if (traceType == "ns2") {
@@ -175,5 +175,5 @@ void VoDUDPClient::receiveStream(const VoDPacket *msg)
     }
 }
 
-} //namespace
+}  // namespace
 

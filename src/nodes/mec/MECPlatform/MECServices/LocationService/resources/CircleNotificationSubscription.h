@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -48,37 +48,37 @@ class CircleNotificationSubscription : public SubscriptionBase
 
   protected:
 
-    opp_component_ptr<Binder> binder; // used to retrieve NodeId - Ipv4Address mapping
+    opp_component_ptr<Binder> binder;  // used to retrieve NodeId - Ipv4Address mapping
     simtime_t lastNotification;
     bool firstNotificationSent;
 
-    std::map<MacNodeId, bool> users; // optional: NO the bool is the last position with respect to the area
+    std::map<MacNodeId, bool> users;  // optional: NO the bool is the last position with respect to the area
 
-    std::vector<TerminalLocation> terminalLocations; // it stores the user that entered or exited the area
+    std::vector<TerminalLocation> terminalLocations;  // it stores the user that entered or exited the area
 
     // callbackReference
-    std::string callbackData; // optional: YES
-    std::string notifyURL; // optional: NO
+    std::string callbackData;  // optional: YES
+    std::string notifyURL;  // optional: NO
 
     std::string resourceURL;
-    bool checkImmediate; // optional: NO
-    std::string clientCorrelator; // optional: YES
+    bool checkImmediate;  // optional: NO
+    std::string clientCorrelator;  // optional: YES
 
-    double frequency; // optional: NO
+    double frequency;  // optional: NO
 
-    inet::Coord center; // optional: NO, used for simulation
+    inet::Coord center;  // optional: NO, used for simulation
 
-    double latitude; // optional: NO, used for simulation
-    double longitude;// optional: NO, used for simulation
+    double latitude;  // optional: NO, used for simulation
+    double longitude;  // optional: NO, used for simulation
 
-    double radius; // optional: NO
+    double radius;  // optional: NO
 
-    int trackingAccuracy = 0; // optional: NO
-    LocationUtils::EnteringLeavingCriteria actionCriteria; // optional: NO
+    int trackingAccuracy = 0;  // optional: NO
+    LocationUtils::EnteringLeavingCriteria actionCriteria;  // optional: NO
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* APPS_MEC_MESERVICES_LOCATIONSERVICE_RESOURCES_CIRCLENOTIFICATIONSUBSCRIPTION_H_ */
 

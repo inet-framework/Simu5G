@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -27,5 +27,5 @@ const std::vector<TerminalLocation>& CircleNotificationEvent::getTerminalLocatio
     return terminalLocations_;
 }
 
-} //namespace
+}  // namespace
 

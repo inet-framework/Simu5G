@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -45,7 +45,7 @@ class RNIService : public MecServiceBase2
 
 };
 
-} //namespace
+}  // namespace
 
 #endif // ifndef _RNISERVICE_H
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -51,7 +51,7 @@ void CbrReceiver::handleMessage(cMessage *msg)
     auto cbrHeader = pPacket->popAtFront<CbrPacket>();
 
     numReceived_++;
-    totFrames_ = cbrHeader->getNframes(); // XXX this value can be written just once
+    totFrames_ = cbrHeader->getNframes();  // XXX this value can be written just once
     int pktSize = (int)cbrHeader->getPayloadSize();
 
     // just to make sure we do not update recvBytes AND we avoid dividing by 0
@@ -82,5 +82,5 @@ void CbrReceiver::finish()
     emit(cbrReceivedThroughputSignal_, recvBytes_ / elapsedTime.dbl());
 }
 
-} //namespace
+}  // namespace
 

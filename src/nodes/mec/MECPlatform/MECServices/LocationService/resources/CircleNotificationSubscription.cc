@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -98,7 +98,7 @@ bool CircleNotificationSubscription::fromJson(const nlohmann::ordered_json& body
     // trackingAccuracy; // optional: NO
     // EnteringLeavingCriteria; // optional: NO
 
-    if (body.contains("circleNotificationSubscription")) { // mandatory attribute
+    if (body.contains("circleNotificationSubscription")) {  // mandatory attribute
         subscriptionType_ = "circleNotificationSubscription";
     }
     else {
@@ -125,7 +125,7 @@ bool CircleNotificationSubscription::fromJson(const nlohmann::ordered_json& body
         else {
             EV << "2" << endl;
 
-            Http::send400Response(socket_); //notifyUrl is mandatory
+            Http::send400Response(socket_);  // notifyUrl is mandatory
             return false;
         }
     }
@@ -171,8 +171,8 @@ bool CircleNotificationSubscription::fromJson(const nlohmann::ordered_json& body
             center.z = jsonBody["center"]["z"];
         }
         else {
-            latitude = jsonBody["latitude"]; //  y in the simulator
-            longitude = jsonBody["longitude"]; // x in the simulator
+            latitude = jsonBody["latitude"];  // y in the simulator
+            longitude = jsonBody["longitude"];  // x in the simulator
         }
     }
     else {
@@ -184,7 +184,7 @@ bool CircleNotificationSubscription::fromJson(const nlohmann::ordered_json& body
         trackingAccuracy = jsonBody["trackingAccuracy"];
     }
     else {
-        Http::send400Response(socket_, "trackingAccuracy JSON name is mandatory");//trackingAccuracy is mandatory
+        Http::send400Response(socket_, "trackingAccuracy JSON name is mandatory");  // trackingAccuracy is mandatory
         return false;
     }
 
@@ -197,10 +197,10 @@ bool CircleNotificationSubscription::fromJson(const nlohmann::ordered_json& body
             actionCriteria = LocationUtils::Leaving;
         }
 
-        //get the current state of the ue
+        // get the current state of the ue
     }
     else {
-        Http::send400Response(socket_, "enteringLeavingCriteria JSON name is mandatory");//trackingAccuracy is mandatory
+        Http::send400Response(socket_, "enteringLeavingCriteria JSON name is mandatory");  // trackingAccuracy is mandatory
         return false;
     }
 
@@ -218,9 +218,9 @@ bool CircleNotificationSubscription::fromJson(const nlohmann::ordered_json& body
 
                 if (id == NODEID_NONE || !findUe(id)) {
                     EV << "IP DOES NOT EXIST" << endl;
-                    Http::send400Response(socket_); //address is mandatory
+                    Http::send400Response(socket_);  // address is mandatory
                     return false;
-                    //TODO what to do in case an address does not exist?
+                    // TODO what to do in case an address does not exist?
                 }
                 else {
                     // set the initial state
@@ -230,7 +230,7 @@ bool CircleNotificationSubscription::fromJson(const nlohmann::ordered_json& body
                     EV << "coord: [" << coord.x << ";" << coord.y << "]" << endl;
                     EV << "distance: " << coord.distance(center) << endl;
 
-                    users[id] = (coord.distance(center) <= radius); // true = inside
+                    users[id] = (coord.distance(center) <= radius);  // true = inside
                 }
             }
         }
@@ -252,7 +252,7 @@ bool CircleNotificationSubscription::fromJson(const nlohmann::ordered_json& body
         }
     }
     else {
-        Http::send400Response(socket_, "address JSON name is mandatory");//address is mandatory
+        Http::send400Response(socket_, "address JSON name is mandatory");  // address is mandatory
         return false;
     }
 
@@ -266,7 +266,7 @@ EventNotification *CircleNotificationSubscription::handleSubscription()
     terminalLocations.clear();
     for (auto&[macNodeId, isInside] : users) {
         bool found = false;
-        //check if the user is under one of the EnodeB connected to the Mehost
+        // check if the user is under one of the EnodeB connected to the Mehost
 
         if (!findUe(macNodeId))
             continue; // TODO manage what to do
@@ -320,5 +320,5 @@ bool CircleNotificationSubscription::findUe(MacNodeId nodeId)
     return false;
 }
 
-} //namespace
+}  // namespace
 

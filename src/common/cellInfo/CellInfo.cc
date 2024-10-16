@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -123,9 +123,9 @@ void CellInfo::calculateMCSScale(double *mcsUl, double *mcsDl)
     int ulRbSubcarriers = par("rbyUl");
     int dlRbSubCarriers = par("rbyDl");
     int ulRbSymbols = par("rbxUl");
-    ulRbSymbols *= 2; // slot --> RB
+    ulRbSymbols *= 2;  // slot --> RB
     int dlRbSymbols = par("rbxDl");
-    dlRbSymbols *= 2; // slot --> RB
+    dlRbSymbols *= 2;  // slot --> RB
     int ulSigSymbols = par("signalUl");
     int dlSigSymbols = par("signalDl");
     int ulPilotRe = par("rbPilotUl");
@@ -143,7 +143,7 @@ void CellInfo::updateMCSScale(double *mcs, double signalRe,
     int rbSubcarriers = (dir == DL) ? par("rbyDl") : par("rbyUl");
     int rbSymbols = (dir == DL) ? par("rbxDl") : par("rbxUl");
 
-    rbSymbols *= 2; // slot --> RB
+    rbSymbols *= 2;  // slot --> RB
 
     int sigSymbols = signalRe;
     int pilotRe = signalCarriers;
@@ -347,5 +347,5 @@ SlotFormat CellInfo::computeSlotFormat(bool useTdd, unsigned int tddNumSymbolsDl
     return sf;
 }
 
-} //namespace
+}  // namespace
 

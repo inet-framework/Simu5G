@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -23,7 +23,7 @@
 #include "nodes/mec/MECPlatform/MECServices/LocationService/resources/UserInfo.h"
 
 namespace simu5g {
-//#include "inet/common/geometry/common/Coord.h"
+// #include "inet/common/geometry/common/Coord.h"
 
 using namespace omnetpp;
 
@@ -63,7 +63,7 @@ class LocationResource : public AttributeBase
 
 };
 
-} //namespace
+}  // namespace
 
 #endif // _LOCATION_H_
 

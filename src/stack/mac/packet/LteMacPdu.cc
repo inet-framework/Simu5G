@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -15,5 +15,5 @@ namespace simu5g {
 
 int64_t LteMacPdu::numMacPdus_ = 0;
 
-} //namespace
+}  // namespace
 

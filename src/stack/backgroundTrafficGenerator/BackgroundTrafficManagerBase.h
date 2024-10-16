@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -54,7 +54,7 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
     // reference to binder module
     inet::ModuleRefByPar<Binder> binder_;
 
-    //pointer to pisadata
+    // pointer to pisadata
     PhyPisaData *phyPisaData_ = nullptr;
 
     /// TTI for this node
@@ -141,7 +141,7 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
     unsigned int consumeBackloggedUeBytes(MacNodeId bgUeId, unsigned int bytes, Direction dir, bool rtx = false) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

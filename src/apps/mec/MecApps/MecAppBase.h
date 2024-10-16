@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -83,7 +83,7 @@ class MecAppBase : public cSimpleModule, public inet::TcpSocket::ICallback
 
     cMessage *sendTimer = nullptr;
 
-    //references to modules
+    // references to modules
     inet::ModuleRefByPar<cModule> mecPlatform;
     inet::ModuleRefByPar<ServiceRegistry> serviceRegistry;
 
@@ -131,7 +131,7 @@ class MecAppBase : public cSimpleModule, public inet::TcpSocket::ICallback
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* APPS_MEC_MEAPPS_MECAPPBASE_H_ */
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -67,7 +67,7 @@ class LteHandoverManager : public cSimpleModule
     void receiveDataFromSourceEnb(inet::Packet *datagram, MacNodeId sourceEnb);
 };
 
-} //namespace
+}  // namespace
 
 #endif /* __LTEHANDOVERMANAGER_H_ */
 

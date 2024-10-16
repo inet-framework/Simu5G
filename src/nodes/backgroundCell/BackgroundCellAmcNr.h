@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -40,7 +40,7 @@ class BackgroundCellAmcNr : public BackgroundCellAmc
     unsigned int computeBitsPerRbBackground(Cqi cqi, const Direction dir, double carrierFrequency) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

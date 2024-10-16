@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -78,7 +78,7 @@ bool LteHarqProcessRx::isEvaluated(Codeword cw)
     return false;
 }
 
-//LteHarqFeedback *LteHarqProcessRx::createFeedback(Codeword cw)
+// LteHarqFeedback *LteHarqProcessRx::createFeedback(Codeword cw)
 Packet *LteHarqProcessRx::createFeedback(Codeword cw)
 {
     if (!isEvaluated(cw))
@@ -93,7 +93,7 @@ Packet *LteHarqProcessRx::createFeedback(Codeword cw)
     fb->setCw(cw);
     fb->setResult(result_.at(cw));
     fb->setFbMacPduId(pdu->getMacPduId());
-    fb->setChunkLength(b(1)); // TODO: should be 0
+    fb->setChunkLength(b(1));  // TODO: should be 0
     // fb->setByteLength(0);
     auto pkt = new Packet("harqFeedback");
     pkt->insertAtFront(fb);
@@ -242,5 +242,5 @@ bool LteHarqProcessRx::isHarqProcessActive()
     return false;
 }
 
-} //namespace
+}  // namespace
 

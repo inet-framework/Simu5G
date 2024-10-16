@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -24,7 +24,7 @@ class X2HandoverCommandIE : public X2InformationElement
   protected:
 
     bool startHandover_ = false;
-    MacNodeId ueId_ = NODEID_NONE;      // ID of the user performing the handover
+    MacNodeId ueId_ = NODEID_NONE;  // ID of the user performing the handover
 
   public:
     X2HandoverCommandIE()
@@ -61,7 +61,7 @@ class X2HandoverCommandIE : public X2InformationElement
     MacNodeId getUeId() { return ueId_; }
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

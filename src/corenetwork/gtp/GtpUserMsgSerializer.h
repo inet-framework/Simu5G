@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -26,7 +26,7 @@ class GtpUserMsgSerializer : public inet::FieldsChunkSerializer
     const inet::Ptr<inet::Chunk> deserialize(inet::MemoryInputStream& stream) const override;
 };
 
-} //namespace
+}  // namespace
 
 #endif // ifndef __INET_GTPUSERMSGSERIALIZER_H
 

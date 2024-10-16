@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -177,5 +177,5 @@ const Ptr<Chunk> DeviceAppMessageSerializer::deserialize(MemoryInputStream& stre
     throw cRuntimeError("DeviceAppMessageSerializer::deserialize - Delete code below!");
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -163,15 +163,15 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
         // If not already started, auto-send a message to signal the presence of data to be decoded.
         if (d2dDecodingTimer_ == nullptr) {
             d2dDecodingTimer_ = new cMessage("d2dDecodingTimer");
-            d2dDecodingTimer_->setSchedulingPriority(10);          // Last thing to be performed in this TTI.
+            d2dDecodingTimer_->setSchedulingPriority(10);  // Last thing to be performed in this TTI.
             scheduleAt(NOW, d2dDecodingTimer_);
         }
 
         // Store frame, together with related control info.
         frame->setControlInfo(lteInfo);
-        storeAirFrame(frame);            // Implements the capture effect.
+        storeAirFrame(frame);  // Implements the capture effect.
 
-        return;                          // Exit the function, decoding will be done later.
+        return;  // Exit the function, decoding will be done later.
     }
 
     if ((lteInfo->getUserTxParams()) != nullptr) {
@@ -381,7 +381,7 @@ void LtePhyUeD2D::storeAirFrame(LteAirFrame *newFrame)
             rsrpMean = sum / allocatedRbs;
         EV << NOW << " LtePhyUeD2D::storeAirFrame - Average RSRP from node " << newInfo->getSourceId() << ": " << rsrpMean << endl;
     }
-    else { // Distance
+    else {  // Distance
         Coord newSenderCoord = newInfo->getCoord();
         distance = myCoord.distance(newSenderCoord);
         EV << NOW << " LtePhyUeD2D::storeAirFrame - Distance from node " << newInfo->getSourceId() << ": " << distance << endl;
@@ -568,5 +568,5 @@ void LtePhyUeD2D::finish()
     }
 }
 
-} //namespace
+}  // namespace
 

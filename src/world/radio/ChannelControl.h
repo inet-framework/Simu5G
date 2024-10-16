@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -40,7 +40,7 @@ struct IChannelControl::RadioEntry
     opp_component_ptr<cModule> radioModule;  // the module that registered this radio interface
     cGate *radioInGate = nullptr;  // gate on host module used to receive airframes
     int channel;
-    inet::Coord pos; // cached radio position
+    inet::Coord pos;  // cached radio position
 
     struct Compare
     {
@@ -53,7 +53,7 @@ struct IChannelControl::RadioEntry
     };
     // we cache neighbors set in a std::vector, because std::set iteration is slow;
     // std::vector is created and updated on demand
-    std::set<RadioRef, Compare> neighbors; // cached neighbor list
+    std::set<RadioRef, Compare> neighbors;  // cached neighbor list
     std::vector<RadioRef> neighborList;
     bool isNeighborListValid;
     bool isActive;
@@ -78,7 +78,7 @@ class ChannelControl : public cSimpleModule, public IChannelControl
      * is empty or busy)
      */
     typedef std::vector<TransmissionList> ChannelTransmissionLists;
-    ChannelTransmissionLists transmissions; // indexed by channel number (size=numChannels)
+    ChannelTransmissionLists transmissions;  // indexed by channel number (size=numChannels)
 
     /** used to clear the transmission list from time to time */
     simtime_t lastOngoingTransmissionsUpdate;
@@ -165,7 +165,7 @@ class ChannelControl : public cSimpleModule, public IChannelControl
     double getPropagationSpeed() override { return SPEED_OF_LIGHT; }
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

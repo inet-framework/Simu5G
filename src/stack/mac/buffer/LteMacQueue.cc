@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -103,7 +103,7 @@ bool LteMacQueue::isEnqueueablePacket(Packet *pkt) {
      *         accepted as long as the MAC queue size is not exceeded.
      * For TM: No fragments are to be checked, anyway.
      */
-    if (pdu != nullptr) { // for AM we need to check if all fragments will fit
+    if (pdu != nullptr) {  // for AM we need to check if all fragments will fit
         if (pdu->getTotalFragments() > 1) {
             int remainingFrags = (pdu->getLastSn() - pdu->getSnoFragment() + 1);
             bool allFragsWillFit = (remainingFrags * pkt->getByteLength()) + getByteLength() < queueSize_;
@@ -136,5 +136,5 @@ std::ostream& operator<<(std::ostream& stream, const LteMacQueue *queue)
     return stream;
 }
 
-} //namespace
+}  // namespace
 

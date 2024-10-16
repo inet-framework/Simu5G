@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -67,9 +67,9 @@ class AmTxQueue : public cSimpleModule
 
     FlowControlInfo *lteInfo_ = nullptr;
 
-    //--------------------------------------------------------------------------------------
-    //        Buffers
-    //--------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------
+    // Buffers
+    // --------------------------------------------------------------------------------------
 
     /*
      * The SDU enqueue buffer.
@@ -91,7 +91,7 @@ class AmTxQueue : public cSimpleModule
      */
     inet::cPacketQueue pduBuffer_;
 
-    //----------------------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------
 
     // Received status variable
     std::vector<bool> received_;
@@ -105,9 +105,9 @@ class AmTxQueue : public cSimpleModule
     // Move receive window command descriptor
     MrwDesc mrwDesc_;
 
-    //-------------------------------------------------------------------------
-    //                Timers and Timeouts
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Timers and Timeouts
+    // -------------------------------------------------------------------------
     // A multi-timer is kept to manage retransmissions and PDUs discard
     TMultiTimer pduTimer_;
 
@@ -129,7 +129,7 @@ class AmTxQueue : public cSimpleModule
     // Buffer analyze timeout
     simtime_t bufferStatusTimeout_;
 
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     // Map of RLC Control PDUs that are waiting for ACK
     std::map<int, LteRlcAmPdu *> unackedMrw_;
@@ -233,7 +233,7 @@ class AmTxQueue : public cSimpleModule
     std::deque<Packet *> *fragmentFrame(Packet *frame, std::deque<int>& windowsIndex, RlcFragDesc rlcFragDesc);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

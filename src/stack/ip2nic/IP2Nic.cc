@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -78,7 +78,7 @@ void IP2Nic::initialize(int stage)
             masterId_ = MacNodeId(ue->par("masterId").intValue());
             nodeId_ = binder_->registerNode(ue, nodeType_, masterId_);
 
-            if (ue->hasPar("nrMasterId") && ue->par("nrMasterId").intValue() != 0) { // register also the NR MacNodeId
+            if (ue->hasPar("nrMasterId") && ue->par("nrMasterId").intValue() != 0) {  // register also the NR MacNodeId
                 nrMasterId_ = MacNodeId(ue->par("nrMasterId").intValue());
                 nrNodeId_ = binder_->registerNode(ue, nodeType_, nrMasterId_, true);
             }
@@ -193,7 +193,7 @@ void IP2Nic::fromIpUe(Packet *datagram)
         ueHoldFromIp_.push_back(datagram);
     }
     else {
-        if (masterId_ == NODEID_NONE && nrMasterId_ == NODEID_NONE) { // UE is detached
+        if (masterId_ == NODEID_NONE && nrMasterId_ == NODEID_NONE) {  // UE is detached
             EV << "IP2Nic::fromIpUe - UE is not attached to any serving node. Delete packet." << endl;
             delete datagram;
         }
@@ -238,7 +238,7 @@ void IP2Nic::toStackUe(Packet *pkt)
         delete pkt;
     }
 
-    //** Send datagram to LTE stack or LteIp peer **
+    // ** Send datagram to LTE stack or LteIp peer **
     send(pkt, stackGateOut_);
 }
 
@@ -399,7 +399,7 @@ void IP2Nic::registerMulticastGroups()
         Ipv4Address addr = iface->getProtocolData<Ipv4InterfaceData>()->getJoinedMulticastGroup(i);
         // get the group id and add it to the binder
         uint32_t address = addr.getInt();
-        uint32_t mask = ~((uint32_t)255 << 24);      // 00000000 11111111 11111111 11111111
+        uint32_t mask = ~((uint32_t)255 << 24);  // 00000000 11111111 11111111 11111111
         uint32_t groupId = address & mask;
         binder_->registerMulticastGroup(nodeId_, groupId);
         // register also the NR stack, if any
@@ -427,7 +427,7 @@ bool IP2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
         bool ueLteStack = (binder_->getNextHop(ueId) != NODEID_NONE);
         bool ueNrStack = (binder_->getNextHop(nrUeId) != NODEID_NONE);
 
-        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && ci->getTypeOfService() >= 20) { // use split bearer TODO fix threshold
+        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && ci->getTypeOfService() >= 20) {  // use split bearer TODO fix threshold
             // even packets go through the LTE eNodeB
             // odd packets go through the gNodeB
 
@@ -442,9 +442,9 @@ bool IP2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
         }
         else {
             if (ueLteStack && ueNrStack) {
-                if (ci->getTypeOfService() >= 10)                                                                                                       // use secondary cell group bearer TODO fix threshold
+                if (ci->getTypeOfService() >= 10) // use secondary cell group bearer TODO fix threshold
                     ci->setUseNR(true);
-                else                                                                       // use master cell group bearer
+                else // use master cell group bearer
                     ci->setUseNR(false);
             }
             else if (ueLteStack)
@@ -459,7 +459,7 @@ bool IP2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
     if (nodeType_ == UE) {
         bool ueLteStack = (binder_->getNextHop(nodeId_) != NODEID_NONE);
         bool ueNrStack = (binder_->getNextHop(nrNodeId_) != NODEID_NONE);
-        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && ci->getTypeOfService() >= 20) { // use split bearer TODO fix threshold
+        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && ci->getTypeOfService() >= 20) {  // use split bearer TODO fix threshold
             int sentPackets;
             if ((sentPackets = sbTable_->find_entry(ci->getSrcAddr(), ci->getDstAddr(), ci->getTypeOfService())) < 0)
                 sentPackets = sbTable_->create_entry(ci->getSrcAddr(), ci->getDstAddr(), ci->getTypeOfService());
@@ -476,9 +476,9 @@ bool IP2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
                 ci->setUseNR(false);
             else {
                 // both != 0
-                if (ci->getTypeOfService() >= 10)                                                                                                       // use secondary cell group bearer TODO fix threshold
+                if (ci->getTypeOfService() >= 10) // use secondary cell group bearer TODO fix threshold
                     ci->setUseNR(true);
-                else                                                                            // use master cell group bearer
+                else // use master cell group bearer
                     ci->setUseNR(false);
             }
         }
@@ -644,5 +644,5 @@ void IP2Nic::finish()
     }
 }
 
-} //namespace
+}  // namespace
 

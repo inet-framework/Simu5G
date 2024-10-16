@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -184,7 +184,7 @@ bool LteMacBase::bufferizePacket(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
 
-    pkt->setTimestamp();        // Add timestamp with current time to the packet
+    pkt->setTimestamp();  // Add timestamp with current time to the packet
 
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
@@ -236,7 +236,7 @@ bool LteMacBase::bufferizePacket(cPacket *pktAux)
             else if (lteInfo->getDirection() == UL) {
                 emit(macBufferOverflowUlSignal_, sample);
             }
-            else { // D2D
+            else {  // D2D
                 emit(macBufferOverflowD2DSignal_, sample);
             }
 
@@ -268,8 +268,8 @@ void LteMacBase::deleteQueues(MacNodeId nodeId)
                 cPacket *pkt = mit->second->popFront();
                 delete pkt;
             }
-            delete mit->second;        // Delete Queue
-            mit = mbuf_.erase(mit);    // Delete Element
+            delete mit->second;  // Delete Queue
+            mit = mbuf_.erase(mit);  // Delete Element
         }
         else {
             ++mit;
@@ -279,8 +279,8 @@ void LteMacBase::deleteQueues(MacNodeId nodeId)
         if (MacCidToNodeId(vit->first) == nodeId) {
             while (!vit->second->isEmpty())
                 vit->second->popFront();
-            delete vit->second;        // Delete Queue
-            vit = macBuffers_.erase(vit);        // Delete Element
+            delete vit->second;  // Delete Queue
+            vit = macBuffers_.erase(vit);  // Delete Element
         }
         else {
             ++vit;
@@ -291,8 +291,8 @@ void LteMacBase::deleteQueues(MacNodeId nodeId)
     for (auto& [key, harqBuffers] : harqTxBuffers_) {
         for (auto hit = harqBuffers.begin(); hit != harqBuffers.end(); ) {
             if (hit->first == nodeId) {
-                delete hit->second; // Delete Queue
-                hit = harqBuffers.erase(hit); // Delete Element
+                delete hit->second;  // Delete Queue
+                hit = harqBuffers.erase(hit);  // Delete Element
             }
             else {
                 ++hit;
@@ -303,8 +303,8 @@ void LteMacBase::deleteQueues(MacNodeId nodeId)
     for (auto& [key, harqBuffers] : harqRxBuffers_) {
         for (auto hit2 = harqBuffers.begin(); hit2 != harqBuffers.end(); ) {
             if (hit2->first == nodeId) {
-                delete hit2->second; // Delete Queue
-                hit2 = harqBuffers.erase(hit2); // Delete Element
+                delete hit2->second;  // Delete Queue
+                hit2 = harqBuffers.erase(hit2);  // Delete Element
             }
             else {
                 ++hit2;
@@ -478,5 +478,5 @@ double LteMacBase::getHarqErrorRate(Direction dir)
     throw cRuntimeError("LteMacBase::getHarqErrorRate - unhandled direction %d", dir);
 }
 
-} //namespace
+}  // namespace
 

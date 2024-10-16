@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -45,7 +45,7 @@ class BaseStationStatsCollector : public cSimpleModule
 {
   private:
     std::string collectorType_;
-    RanNodeType nodeType_; // ENODEB or GNODEB
+    RanNodeType nodeType_;  // ENODEB or GNODEB
 
     // used by the RNI service
     mec::Ecgi ecgi_;
@@ -228,7 +228,7 @@ class BaseStationStatsCollector : public cSimpleModule
 
 };
 
-} //namespace
+}  // namespace
 
-#endif //_LTE_ENOBSTATSCOLLECTOR_H_
+#endif // _LTE_ENOBSTATSCOLLECTOR_H_
 

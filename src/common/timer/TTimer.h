@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -17,7 +17,7 @@
 
 namespace simu5g {
 
-//using namespace omnetpp;
+// using namespace omnetpp;
 
 //! Generic timer interface
 class TTimer : public cObject
@@ -105,7 +105,7 @@ class TTimer : public cObject
     }
 
   protected:
-    //!Timer identifier - will be inserted in each timer-generated message
+    //! Timer identifier - will be inserted in each timer-generated message
     unsigned int timerId_ = 0;
 
     //! Object for handling the event.
@@ -204,7 +204,7 @@ class TMultiTimer : public cObject
     }
 
   protected:
-    //!Timer identifier - will be inserted in each timer-generated message
+    //! Timer identifier - will be inserted in each timer-generated message
     unsigned int timerId_ = 0;
 
     //! Object for handling the event.
@@ -228,7 +228,7 @@ class TMultiTimer : public cObject
     std::map<const unsigned int, const Event_it> reverseList_;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

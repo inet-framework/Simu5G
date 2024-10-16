@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -83,5 +83,5 @@ void GtpUserX2::handleFromUdp(Packet *pkt)
     send(pkt, "lteStackOut");
 }
 
-} //namespace
+}  // namespace
 

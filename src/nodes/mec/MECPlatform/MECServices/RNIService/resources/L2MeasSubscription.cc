@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -24,11 +24,11 @@ L2MeasSubscription::L2MeasSubscription(unsigned int subId, inet::TcpSocket *sock
 
 bool L2MeasSubscription::fromJson(const nlohmann::ordered_json& body)
 {
-    if (body.contains("L2MeasurementSubscription")) { // mandatory attribute
+    if (body.contains("L2MeasurementSubscription")) {  // mandatory attribute
         subscriptionType_ = "L2MeasurementSubscription";
     }
     else {
-        Http::send400Response(socket_); // callbackReference is mandatory and takes exactly 1 attribute
+        Http::send400Response(socket_);  // callbackReference is mandatory and takes exactly 1 attribute
         return false;
     }
 
@@ -42,29 +42,29 @@ bool L2MeasSubscription::fromJson(const nlohmann::ordered_json& body)
 
         if (!jsonBody.contains("filterCriteria") || jsonBody["filterCriteria"].is_array()) {
             std::cout << "1" << std::endl;
-            Http::send400Response(socket_); // filterCriteria is mandatory and takes exactly 1 attribute
+            Http::send400Response(socket_);  // filterCriteria is mandatory and takes exactly 1 attribute
             return false;
         }
 
         nlohmann::json filterCriteria = jsonBody["filterCriteria"];
 
-        //check for appInstanceId filter
+        // check for appInstanceId filter
         if (filterCriteria.contains("appInstanceId")) {
             if (filterCriteria["appInstanceId"].is_array()) {
                 std::cout << "2" << std::endl;
 
-                Http::send400Response(socket_); // appInstanceId, if present, takes exactly 1 attribute
+                Http::send400Response(socket_);  // appInstanceId, if present, takes exactly 1 attribute
                 return false;
             }
             filterCriteria_.appInstanceId = filterCriteria["appInstanceId"];
         }
 
-        //check users filter
+        // check users filter
         if (filterCriteria.contains("associateId")) {
             if (filterCriteria["associateId"].is_array()) {
                 std::cout << "3" << std::endl;
 
-                Http::send400Response(socket_); // only one ip
+                Http::send400Response(socket_);  // only one ip
                 return false;
             }
             else {
@@ -77,11 +77,11 @@ bool L2MeasSubscription::fromJson(const nlohmann::ordered_json& body)
         else {
             std::cout << "4" << std::endl;
 
-            Http::send400Response(socket_); // a user must be indicated
+            Http::send400Response(socket_);  // a user must be indicated
             return false;
         }
 
-        //check cellIds filter
+        // check cellIds filter
         if (filterCriteria.contains("ecgi")) {
             if (filterCriteria["ecgi"].is_array()) {
             }
@@ -97,15 +97,15 @@ bool L2MeasSubscription::fromJson(const nlohmann::ordered_json& body)
                 else {
                     std::cout << "5" << std::endl;
 
-                    Http::send400Response(socket_); // a user must be indicated
+                    Http::send400Response(socket_);  // a user must be indicated
                     return false;
                 }
             }
         }
 
-        //check trigger filter
+        // check trigger filter
         if (filterCriteria.contains("trigger")) {
-            //check if it is event trigger and notify, based on the state of the users and cells
+            // check if it is event trigger and notify, based on the state of the users and cells
         }
 
         nlohmann::ordered_json response = body;
@@ -130,5 +130,5 @@ void L2MeasSubscription::sendSubscriptionResponse() {
 
 void L2MeasSubscription::sendNotification(EventNotification *event) {}
 
-} //namespace
+}  // namespace
 

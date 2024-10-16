@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -44,7 +44,7 @@ void LteMacEnbD2D::initialize(int stage)
         msHarqInterrupt_ = par("msHarqInterrupt").boolValue();
         msClearRlcBuffer_ = par("msClearRlcBuffer").boolValue();
     }
-    else if (stage == INITSTAGE_LAST) { // be sure that all UEs have been initialized
+    else if (stage == INITSTAGE_LAST) {  // be sure that all UEs have been initialized
         reuseD2D_ = par("reuseD2D");
         reuseD2DMulti_ = par("reuseD2DMulti");
 
@@ -78,7 +78,7 @@ void LteMacEnbD2D::macHandleFeedbackPkt(cPacket *pktAux)
 
     // skip if no D2D CQI has been reported
     if (!fbMapD2D.empty()) {
-        //get Source Node Id<
+        // get Source Node Id<
         MacNodeId id = fb->getSourceNodeId();
 
         // extract feedback for D2D links
@@ -163,9 +163,9 @@ void LteMacEnbD2D::macPduUnmake(cPacket *pktAux)
         auto lteInfo = pkt->getTag<UserControlInfo>();
         LogicalCid lcid = lteInfo->getLcid();  // one of SHORT_BSR or D2D_MULTI_SHORT_BSR
 
-        MacCid cid = idToMacCid(lteInfo->getSourceId(), lcid); // this way, different connections from the same UE (e.g. one UL and one D2D)
-                                                               // obtain different CIDs. With the inverse operation, you can get
-                                                               // the LCID and discover if the connection is UL or D2D
+        MacCid cid = idToMacCid(lteInfo->getSourceId(), lcid);  // this way, different connections from the same UE (e.g. one UL and one D2D)
+                                                                // obtain different CIDs. With the inverse operation, you can get
+                                                                // the LCID and discover if the connection is UL or D2D
         bufferizeBsr(bsr, cid);
     }
     pkt->insertAtFront(macPkt);
@@ -250,7 +250,7 @@ void LteMacEnbD2D::sendGrants(std::map<double, LteMacScheduleList> *scheduleList
             const unsigned int firstBand = cellInfo_->getCarrierStartingBand(carrierFreq);
             const unsigned int lastBand = cellInfo_->getCarrierLastBand(carrierFreq);
 
-            //  HANDLE MULTICW
+            // HANDLE MULTICW
             for ( ; cw < codewords; ++cw) {
                 unsigned int grantedBytes = 0;
 
@@ -329,7 +329,7 @@ void LteMacEnbD2D::deleteHarqBuffersMirrorD2D(MacNodeId nodeId)
     for (auto& mit : harqBuffersMirrorD2D_) {
         for (auto it = mit.second.begin(); it != mit.second.end(); ) {
             // get current nodeIDs
-            MacNodeId senderId = (it->first).first; // Transmitter
+            MacNodeId senderId = (it->first).first;  // Transmitter
             MacNodeId destId = (it->first).second;  // Receiver
 
             if (senderId == nodeId || destId == nodeId) {
@@ -349,7 +349,7 @@ void LteMacEnbD2D::deleteHarqBuffersMirrorD2D(MacNodeId txPeer, MacNodeId rxPeer
     for (auto& mit : harqBuffersMirrorD2D_) {
         for (auto it = mit.second.begin(); it != mit.second.end(); ) {
             // get current nodeIDs
-            MacNodeId senderId = (it->first).first; // Transmitter
+            MacNodeId senderId = (it->first).first;  // Transmitter
             MacNodeId destId = (it->first).second;  // Receiver
 
             if (senderId == txPeer && destId == rxPeer) {
@@ -420,7 +420,7 @@ void LteMacEnbD2D::macHandleD2DModeSwitch(cPacket *pktAux)
     MacNodeId nodeId = uinfo->getDestId();
     LteD2DMode oldMode = switchPkt->getOldMode();
 
-    if (!switchPkt->getTxSide()) { // address the receiving endpoint of the D2D flow (tx entities at the eNB)
+    if (!switchPkt->getTxSide()) {  // address the receiving endpoint of the D2D flow (tx entities at the eNB)
         // get the outgoing connection corresponding to the DL connection for the RX endpoint of the D2D flow
         for (auto& [cid, lteInfo] : connDesc_) {
             if (MacCidToNodeId(cid) == nodeId) {
@@ -442,22 +442,22 @@ void LteMacEnbD2D::macHandleD2DModeSwitch(cPacket *pktAux)
             }
         }
     }
-    else { // tx side: address the transmitting endpoint of the D2D flow (rx entities at the eNB)
+    else {  // tx side: address the transmitting endpoint of the D2D flow (rx entities at the eNB)
         // clear BSR buffers for the UE
         clearBsrBuffers(nodeId);
 
         // get the incoming connection corresponding to the UL connection for the TX endpoint of the D2D flow
         for (auto& [cid, lteInfo] : connDescIn_) {
             if (MacCidToNodeId(cid) == nodeId) {
-                if (msHarqInterrupt_) { // interrupt H-ARQ processes for UL
+                if (msHarqInterrupt_) {  // interrupt H-ARQ processes for UL
                     for (auto& mit : harqRxBuffers_) {
                         HarqRxBuffers::iterator hit = mit.second.find(nodeId);
                         if (hit != mit.second.end()) {
                             for (unsigned int proc = 0; proc < (unsigned int)ENB_RX_HARQ_PROCESSES; proc++) {
                                 unsigned int numUnits = hit->second->getProcess(proc)->getNumHarqUnits();
                                 for (unsigned int i = 0; i < numUnits; i++) {
-                                    hit->second->getProcess(proc)->purgeCorruptedPdu(i); // delete contained PDU
-                                    hit->second->getProcess(proc)->resetCodeword(i);     // reset unit
+                                    hit->second->getProcess(proc)->purgeCorruptedPdu(i);  // delete contained PDU
+                                    hit->second->getProcess(proc)->resetCodeword(i);  // reset unit
                                 }
                             }
                         }
@@ -517,7 +517,7 @@ void LteMacEnbD2D::fromPhy(cPacket *pktAux)
 
         // this feedback refers to a mirrored H-ARQ buffer
         auto hfbpkt = pkt->peekAtFront<LteHarqFeedback>();
-        if (!hfbpkt->getD2dFeedback()) { // this is not a mirror feedback
+        if (!hfbpkt->getD2dFeedback()) {  // this is not a mirror feedback
             LteMacBase::fromPhy(pkt);
             return;
         }
@@ -550,5 +550,5 @@ void LteMacEnbD2D::fromPhy(cPacket *pktAux)
     }
 }
 
-} //namespace
+}  // namespace
 

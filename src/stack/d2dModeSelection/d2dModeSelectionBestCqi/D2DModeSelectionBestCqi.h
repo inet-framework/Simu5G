@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -35,7 +35,7 @@ class D2DModeSelectionBestCqi : public D2DModeSelectionBase
     void doModeSwitchAtHandover(MacNodeId nodeId, bool handoverCompleted) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* LTE_D2DMODESELECTIONBESTCQI_H_ */
 

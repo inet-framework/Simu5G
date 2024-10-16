@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -20,7 +20,7 @@ namespace simu5g {
 //
 // This channel model implements path loss, LOS probability, and shadowing according to
 // the following specifications:
-//     3GPP TR 38.901, "Study on channel model for frequencies from 0.5 to 100 GHz", v16.1.0, December 2019
+// 3GPP TR 38.901, "Study on channel model for frequencies from 0.5 to 100 GHz", v16.1.0, December 2019
 //
 class NRChannelModel_3GPP38_901 : public NRChannelModel
 {
@@ -104,7 +104,7 @@ class NRChannelModel_3GPP38_901 : public NRChannelModel
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* NRCHANNELMODEL_3GPP38_901_H_ */
 

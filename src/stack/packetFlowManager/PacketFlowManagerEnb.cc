@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -75,7 +75,7 @@ void PacketFlowManagerEnb::clearLcid(LogicalCid lcid)
         connectionMap_[lcid].burstId_ = 0;
         connectionMap_[lcid].burstState_ = false;
 
-        //connectionMap_[lcid].macPduPerProcess_[i] = 0;
+        // connectionMap_[lcid].macPduPerProcess_[i] = 0;
     }
 
     EV_FATAL << NOW << " node id " << connectionMap_[lcid].nodeId_ << " " << pfmType << "::clearLcid - cleared data structures for lcid " << lcid << endl;
@@ -101,7 +101,7 @@ void PacketFlowManagerEnb::initPdcpStatus(StatusDescriptor *desc, unsigned int p
     newpdcpStatus.discardedAtRlc = false;
     newpdcpStatus.hasArrivedAll = false;
     newpdcpStatus.sentOverTheAir = false;
-    newpdcpStatus.pdcpSduSize = sduHeaderSize; // ************************* pdcpSduSize is headerSize!!!
+    newpdcpStatus.pdcpSduSize = sduHeaderSize;  // ************************* pdcpSduSize is headerSize!!!
     newpdcpStatus.entryTime = arrivalTime;
     desc->pdcpStatus_[pdcp] = newpdcpStatus;
     EV_FATAL << pfmType << "::initPdcpStatus - PDCP PDU " << pdcp << "  with header size " << sduHeaderSize << " added" << endl;
@@ -270,7 +270,7 @@ void PacketFlowManagerEnb::insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcU
     for ( ; lit != rlcSduList->end(); ++lit, ++sit) {
         auto rlcSdu = (*lit)->peekAtFront<LteRlcSdu>();
         unsigned int pdcpSno = rlcSdu->getSnoMainPacket();
-        unsigned int pdcpPduLength = *(sit); // TODO fix with size of the chunk!!
+        unsigned int pdcpPduLength = *(sit);  // TODO fix with size of the chunk!!
 
         EV << "PacketFlowManagerEnb::insertRlcPdu - pdcpSdu " << pdcpSno << " with length: " << pdcpPduLength << " bytes" << endl;
         //
@@ -311,7 +311,7 @@ void PacketFlowManagerEnb::insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcU
          * According to TS 128 552 V15 (5G performance measurements) the throughput volume
          * is counted at the RLC SDU level
          */
-        int rlcSduSize = (B(rlcPdu->getChunkLength()) - B(RLC_HEADER_UM)).get(); // RLC pdu size - RLC header
+        int rlcSduSize = (B(rlcPdu->getChunkLength()) - B(RLC_HEADER_UM)).get();  // RLC pdu size - RLC header
 
         auto bsit = desc->burstStatus_.find(desc->burstId_);
         if (bsit == desc->burstStatus_.end())
@@ -375,12 +375,12 @@ void PacketFlowManagerEnb::discardRlcPdu(LogicalCid lcid, unsigned int rlcSno, b
         // if the pdcp was entire and the set of rlc is empty, discard it
         if (rit->second.empty() && pit->second.hasArrivedAll) {
             desc->rlcPdusPerSdu_.erase(rit);
-            //remove pdcp status
+            // remove pdcp status
             desc->pdcpStatus_.erase(pit);
         }
     }
     removePdcpBurstRLC(desc, rlcSno, false);
-    //remove discarded rlc pdu
+    // remove discarded rlc pdu
     desc->rlcSdusPerPdu_.erase(rlcSno);
 }
 
@@ -520,7 +520,7 @@ void PacketFlowManagerEnb::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
 
                         auto dit = pdcpDelay_.find(desc->nodeId_);
                         if (dit == pdcpDelay_.end()) {
-                            pdcpDelay_[desc->nodeId_] = { 0, 0 }; // create new structure
+                            pdcpDelay_[desc->nodeId_] = { 0, 0 };  // create new structure
                             dit = pdcpDelay_.find(desc->nodeId_);
                         }
 
@@ -538,17 +538,17 @@ void PacketFlowManagerEnb::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
                         // remove pdcp status
                         desc->pdcpStatus_.erase(pit);
                         oit->second.clear();
-                        desc->rlcPdusPerSdu_.erase(oit); // erase PDCP PDU SN
+                        desc->rlcPdusPerSdu_.erase(oit);  // erase PDCP PDU SN
                     }
                 }
             }
-            desc->rlcSdusPerPdu_.erase(nit); // erase RLC PDU SN
+            desc->rlcSdusPerPdu_.erase(nit);  // erase RLC PDU SN
             // update next sno
             nextRlcSno_ = rlcPduSno + 1;
-            removePdcpBurstRLC(desc, rlcPduSno, true); // check if the pdcp is part of a burst
+            removePdcpBurstRLC(desc, rlcPduSno, true);  // check if the pdcp is part of a burst
         }
 
-        desc->macSdusPerPdu_.erase(mit); // erase MAC PDU ID
+        desc->macSdusPerPdu_.erase(mit);  // erase MAC PDU ID
     }
 }
 
@@ -591,7 +591,7 @@ void PacketFlowManagerEnb::discardMacPdu(const inet::Ptr<const LteMacPdu> macPdu
             discardRlcPdu(lcid, sn, true);
         }
 
-        desc->macSdusPerPdu_.erase(mit); // erase MAC PDU ID
+        desc->macSdusPerPdu_.erase(mit);  // erase MAC PDU ID
     }
 }
 
@@ -618,12 +618,12 @@ void PacketFlowManagerEnb::removePdcpBurstRLC(StatusDescriptor *desc, unsigned i
                             });
                     tit = pdcpThroughput_.find(desc->nodeId_);
                 }
-                tit->second.pktSizeCount += burstStatus.burstSize; //*8 --> bits
+                tit->second.pktSizeCount += burstStatus.burstSize;  // *8 --> bits
                 tit->second.time += (simTime() - burstStatus.startBurstTransmission);
                 double tp = ((double)burstStatus.burstSize) / (simTime() - burstStatus.startBurstTransmission).dbl();
 
                 EV_FATAL << NOW << " node id " << desc->nodeId_ << " " << pfmType << "::removePdcpBurst Burst " << burstId << " length " << simTime() - burstStatus.startBurstTransmission << "s, with size " << burstStatus.burstSize << "B -> tput: " << tp << " B/s" << endl;
-                desc->burstStatus_.erase(burstId); // remove emptied burst
+                desc->burstStatus_.erase(burstId);  // remove emptied burst
             }
             break;
         }
@@ -647,7 +647,7 @@ double PacketFlowManagerEnb::getDiscardedPktPerUe(MacNodeId id)
     if (it == pktDiscardCounterPerUe_.end()) {
         // maybe it is possible? think about it
         // yes, if I do not discard anything
-        //throw cRuntimeError("%s::getTotalDiscardedPckPerUe - nodeId [%hu] not present",pfmType.c_str(),  id);
+        // throw cRuntimeError("%s::getTotalDiscardedPckPerUe - nodeId [%hu] not present",pfmType.c_str(),  id);
         return 0;
     }
     return ((double)it->second.discarded * 1000000) / it->second.total;
@@ -686,7 +686,7 @@ void PacketFlowManagerEnb::ulMacPduArrived(MacNodeId nodeId, unsigned int grantI
             ULPktDelay_[nodeId].time += time;
 
             it = ulGrants_[nodeId].erase(it);
-            return; // it is present only one grant with this grantId for this nodeId
+            return;  // it is present only one grant with this grantId for this nodeId
         }
         else {
             ++it;
@@ -707,7 +707,7 @@ double PacketFlowManagerEnb::getDelayStatsPerUe(MacNodeId id)
     if (it->second.pktCount == 0)
         return 0;
     EV_FATAL << NOW << " " << pfmType << "::getDelayStatsPerUe - Delay Stats for Node Id " << id << " total time: " << (it->second.time.dbl()) * 1000 << "ms, pktCount: " << it->second.pktCount << endl;
-    double totalMs = (it->second.time.dbl()) * 1000; // ms
+    double totalMs = (it->second.time.dbl()) * 1000;  // ms
     double delayMean = totalMs / it->second.pktCount;
     return delayMean;
 }
@@ -724,7 +724,7 @@ double PacketFlowManagerEnb::getUlDelayStatsPerUe(MacNodeId id)
     if (it->second.pktCount == 0)
         return 0;
     EV_FATAL << NOW << " " << pfmType << "::getUlDelayStatsPerUe - Delay Stats for Node Id " << id << " total time: " << (it->second.time.dbl()) * 1000 << "ms, pktCount: " << it->second.pktCount << endl;
-    double totalMs = (it->second.time.dbl()) * 1000; // ms
+    double totalMs = (it->second.time.dbl()) * 1000;  // ms
     double delayMean = totalMs / it->second.pktCount;
     return delayMean;
 }
@@ -762,7 +762,7 @@ double PacketFlowManagerEnb::getThroughputStatsPerUe(MacNodeId id)
         return 0.0;
     }
 
-    double time = it->second.time.dbl(); // seconds
+    double time = it->second.time.dbl();  // seconds
     if (time == 0) {
         return 0.0;
     }
@@ -805,8 +805,8 @@ void PacketFlowManagerEnb::deleteUe(MacNodeId nodeId)
 
 double PacketFlowManagerEnb::getPdpcLossRate()
 {
-    unsigned int lossPackets = 0; // Dloss
-    unsigned int totalPackets = 0; // N (it also counts missing pdcp sno)
+    unsigned int lossPackets = 0;  // Dloss
+    unsigned int totalPackets = 0;  // N (it also counts missing pdcp sno)
 
     for (const auto& ue : packetLossRate_) {
         lossPackets += ue.second.totalLossPdcp;
@@ -883,5 +883,5 @@ void PacketFlowManagerEnb::finish()
 {
 }
 
-} //namespace
+}  // namespace
 

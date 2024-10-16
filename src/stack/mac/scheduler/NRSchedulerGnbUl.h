@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -37,7 +37,7 @@ class NRSchedulerGnbUl : public LteSchedulerEnbUl
     bool rtxschedule(double carrierFrequency, BandLimitVector *bandLim = nullptr) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif // _NRSCHEDULER_GNB_UL_H_
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -19,7 +19,7 @@ using namespace omnetpp;
 
 short LtePhyBase::airFramePriority_ = 10;
 
-//Statistics
+// Statistics
 simsignal_t LtePhyBase::averageCqiDlSignal_ = registerSignal("averageCqiDl");
 simsignal_t LtePhyBase::averageCqiUlSignal_ = registerSignal("averageCqiUl");
 simsignal_t LtePhyBase::averageCqiD2DSignal_ = registerSignal("averageCqiD2D");
@@ -265,7 +265,7 @@ void LtePhyBase::sendUnicast(LteAirFrame *frame)
     }
     catch (std::out_of_range& e) {
         delete frame;
-        return;         // make sure that nodes that left the simulation do not send
+        return;  // make sure that nodes that left the simulation do not send
     }
     OmnetId destOmnetId = binder_->getOmnetId(dest);
     if (destOmnetId == 0) {
@@ -292,5 +292,5 @@ int LtePhyBase::getReceiverGateIndex(const cModule *receiver, bool isNr) const
     return gate;
 }
 
-} //namespace
+}  // namespace
 

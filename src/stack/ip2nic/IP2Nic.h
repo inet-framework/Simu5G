@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -35,7 +35,7 @@ typedef std::pair<inet::Ipv4Address, inet::Ipv4Address> AddressPair;
  */
 class IP2Nic : public cSimpleModule
 {
-    RanNodeType nodeType_;      // node type: can be ENODEB, GNODEB, UE
+    RanNodeType nodeType_;  // node type: can be ENODEB, GNODEB, UE
 
     // reference to the binder
     inet::ModuleRefByPar<Binder> binder_;
@@ -129,8 +129,8 @@ class IP2Nic : public cSimpleModule
     void handleMessage(cMessage *msg) override;
     void finish() override;
 
-    cGate *stackGateOut_ = nullptr;       // gate connecting IP2Nic module to cellular stack
-    cGate *ipGateOut_ = nullptr;          // gate connecting IP2Nic module to network layer
+    cGate *stackGateOut_ = nullptr;  // gate connecting IP2Nic module to cellular stack
+    cGate *ipGateOut_ = nullptr;  // gate connecting IP2Nic module to network layer
 
     // corresponding entry for our interface
     opp_component_ptr<inet::NetworkInterface> networkIf;
@@ -156,7 +156,7 @@ class IP2Nic : public cSimpleModule
     ~IP2Nic() override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

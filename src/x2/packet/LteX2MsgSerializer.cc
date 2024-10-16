@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -161,5 +161,5 @@ std::vector<CompRbStatus> LteX2MsgSerializer::deserializeStatusMap(inet::MemoryI
     return map;
 }
 
-} //namespace
+}  // namespace
 

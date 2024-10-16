@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -37,7 +37,7 @@ AmTxQueue *LteRlcAm::getTxBuffer(MacNodeId nodeId, LogicalCid lcid)
         AmTxQueue *txbuf = check_and_cast<AmTxQueue *>(
                 moduleType->createScheduleInit(buf.str().c_str(),
                         getParentModule()));
-        txBuffers_[cid] = txbuf; // Add to tx_buffers map
+        txBuffers_[cid] = txbuf;  // Add to tx_buffers map
 
         EV << NOW << " LteRlcAm : Added new AmTxBuffer: " << txbuf->getId()
            << " for node: " << nodeId << " for Lcid: " << lcid << "\n";
@@ -67,7 +67,7 @@ AmRxQueue *LteRlcAm::getRxBuffer(MacNodeId nodeId, LogicalCid lcid)
         AmRxQueue *rxbuf = check_and_cast<AmRxQueue *>(
                 moduleType->createScheduleInit(buf.str().c_str(),
                         getParentModule()));
-        rxBuffers_[cid] = rxbuf; // Add to rx_buffers map
+        rxBuffers_[cid] = rxbuf;  // Add to rx_buffers map
 
         EV << NOW << " LteRlcAm : Added new AmRxBuffer: " << rxbuf->getId()
            << " for node: " << nodeId << " for Lcid: " << lcid << "\n";
@@ -85,8 +85,8 @@ AmRxQueue *LteRlcAm::getRxBuffer(MacNodeId nodeId, LogicalCid lcid)
 
 void LteRlcAm::sendDefragmented(cPacket *pktAux)
 {
-    Enter_Method("sendDefragmented()"); // Direct Method Call
-    take(pktAux); // Take ownership
+    Enter_Method("sendDefragmented()");  // Direct Method Call
+    take(pktAux);  // Take ownership
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
     pkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&LteProtocol::pdcp);
 
@@ -104,8 +104,8 @@ void LteRlcAm::bufferControlPdu(cPacket *pktAux) {
 
 void LteRlcAm::sendFragmented(cPacket *pktAux)
 {
-    Enter_Method("sendFragmented()"); // Direct Method Call
-    take(pktAux); // Take ownership
+    Enter_Method("sendFragmented()");  // Direct Method Call
+    take(pktAux);  // Take ownership
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
     pkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&LteProtocol::rlc);
 
@@ -190,8 +190,8 @@ void LteRlcAm::deleteQueues(MacNodeId nodeId)
 {
     for (auto tit = txBuffers_.begin(); tit != txBuffers_.end(); ) {
         if (MacCidToNodeId(tit->first) == nodeId) {
-            delete tit->second; // Delete Queue
-            tit = txBuffers_.erase(tit); // Delete Element
+            delete tit->second;  // Delete Queue
+            tit = txBuffers_.erase(tit);  // Delete Element
         }
         else {
             ++tit;
@@ -199,8 +199,8 @@ void LteRlcAm::deleteQueues(MacNodeId nodeId)
     }
     for (auto rit = rxBuffers_.begin(); rit != rxBuffers_.end(); ) {
         if (MacCidToNodeId(rit->first) == nodeId) {
-            delete rit->second; // Delete Queue
-            rit = rxBuffers_.erase(rit); // Delete Element
+            delete rit->second;  // Delete Queue
+            rit = rxBuffers_.erase(rit);  // Delete Element
         }
         else {
             ++rit;
@@ -266,5 +266,5 @@ void LteRlcAm::handleMessage(cMessage *msg)
     }
 }
 
-} //namespace
+}  // namespace
 

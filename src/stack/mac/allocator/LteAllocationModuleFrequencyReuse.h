@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -28,7 +28,7 @@ class LteAllocationModuleFrequencyReuse : public LteAllocationModule
     std::set<Band> getAllocatorOccupiedBands() override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

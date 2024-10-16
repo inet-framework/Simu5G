@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -182,7 +182,7 @@ class LteRlcAm : public cSimpleModule
     void indicateNewDataToMac(cPacket *pkt);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

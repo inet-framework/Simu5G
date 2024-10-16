@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -13,12 +13,12 @@
 
 #include <inet/common/ModuleRefByPar.h>
 
-//BINDER and UTILITIES
+// BINDER and UTILITIES
 #include "common/LteCommon.h"
 #include "common/binder/Binder.h"
 #include "inet/networklayer/common/InterfaceTable.h"
 
-//INET
+// INET
 #include "inet/networklayer/common/L3Address.h"
 #include "inet/networklayer/common/L3AddressResolver.h"
 
@@ -26,8 +26,8 @@
 
 namespace simu5g {
 
-//###########################################################################
-//data structures and values
+// ###########################################################################
+// data structures and values
 
 #define NO_SERVICE               -1
 #define SERVICE_NOT_AVAILABLE    -2
@@ -36,13 +36,13 @@ using namespace omnetpp;
 
 struct mecAppEntry
 {
-    int meAppGateIndex;         // map key
-    int serviceIndex;           // OMNeT service index
-    opp_component_ptr<cModule> meAppModule;       // for MEC app termination
+    int meAppGateIndex;  // map key
+    int serviceIndex;  // OMNeT service index
+    opp_component_ptr<cModule> meAppModule;  // for MEC app termination
     inet::L3Address ueAddress;  // for downstream using UDP Socket
     int uePort;
-    int ueAppID;                // for identifying the UEApp
-    int meAppPort;              // socket port of the MEC app
+    int ueAppID;  // for identifying the UEApp
+    int meAppPort;  // socket port of the MEC app
     ResourceDescriptor resources;
 };
 
@@ -56,14 +56,14 @@ struct MecAppInstanceInfo
 // used to calculate processing time needed to execute a number of instructions
 enum SchedulingMode { SEGREGATION, FAIR_SHARING };
 
-//###########################################################################
+// ###########################################################################
 
 //
 // VirtualisationInfrastructureManager
 //
-//  Simple Module for handling the availability of virtualised resources on the MEC host.
-//  From ETSI GS MEC 003, it is responsible for allocating, managing and releasing virtualised
-//  resources of the virtualisation infrastructure;
+// Simple Module for handling the availability of virtualised resources on the MEC host.
+// From ETSI GS MEC 003, it is responsible for allocating, managing and releasing virtualised
+// resources of the virtualisation infrastructure;
 //
 
 class CreateAppMessage;
@@ -71,18 +71,18 @@ class DeleteAppMessage;
 
 class VirtualisationInfrastructureManager : public cSimpleModule
 {
-    friend class MecOrchestrator; // Friend Class
+    friend class MecOrchestrator;  // Friend Class
 
-    //------------------------------------
+    // ------------------------------------
     // SIMULTE Binder module
     inet::ModuleRefByPar<Binder> binder_;
-    //------------------------------------
+    // ------------------------------------
 
     // other modules
     opp_component_ptr<cModule> mecHost;
     opp_component_ptr<cModule> mecPlatform;
     opp_component_ptr<cModule> virtualisationInfr;
-    //------------------------------------
+    // ------------------------------------
     std::string interfaceTableModule;
     opp_component_ptr<inet::InterfaceTable> interfaceTable;
     inet::Ipv4Address mecAppLocalAddress_;
@@ -90,15 +90,15 @@ class VirtualisationInfrastructureManager : public cSimpleModule
     inet::Ipv4Address mp1Address_;
     int mp1Port_;
 
-    //------------------------------------
-    //parameters to control the number of MEC APPs instantiated and to set gate sizes
+    // ------------------------------------
+    // parameters to control the number of MEC APPs instantiated and to set gate sizes
     int maxMECApps;
     int currentMEApps = 0;
 
-    int mecAppPortCounter; // counter to assign socket ports to Mec Apps
-    //------------------------------------
+    int mecAppPortCounter;  // counter to assign socket ports to Mec Apps
+    // ------------------------------------
 
-    //-------------------------------------
+    // -------------------------------------
     // OMNeT++-like MEC service management
     // set of MEC Services loaded into the MEC host & platform
     int numServices;
@@ -112,18 +112,18 @@ class VirtualisationInfrastructureManager : public cSimpleModule
     // key = MEC App gate index - value mecAppMapEntry
     std::map<int, mecAppEntry> mecAppMap;
 
-    //------------------------------------
+    // ------------------------------------
     // Resources manager
     // maximum resources
     double maxRam;
     double maxDisk;
     double maxCPU;
-    //allocated resources
+    // allocated resources
     double allocatedRam;
     double allocatedDisk;
     double allocatedCPU;
 
-    SchedulingMode scheduling; // SEGREGATION or FAIR_SHARING
+    SchedulingMode scheduling;  // SEGREGATION or FAIR_SHARING
 
   public:
 
@@ -206,11 +206,11 @@ class VirtualisationInfrastructureManager : public cSimpleModule
     void handleMessage(cMessage *msg) override;
 
     // OMNeT++-like MEC service management
-    //finding the MEC Service requested by UE App among the MEC Services available on the MEC Host
-    //return: the index of service (in mePlatform.udpService) or SERVICE_NOT_AVAILABLE or NO_SERVICE
+    // finding the MEC Service requested by UE App among the MEC Services available on the MEC Host
+    // return: the index of service (in mePlatform.udpService) or SERVICE_NOT_AVAILABLE or NO_SERVICE
     int findService(const char *serviceName);
 
-    //------------------------------------
+    // ------------------------------------
 
     void allocateResources(double ram, double disk, double cpu) {
         allocatedRam += ram;
@@ -229,7 +229,7 @@ class VirtualisationInfrastructureManager : public cSimpleModule
     void reserveResourcesBGApps();
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

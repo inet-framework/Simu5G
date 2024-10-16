@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -22,7 +22,7 @@ namespace simu5g {
 
 struct NRMCSelem
 {
-    LteMod mod_;       /// modulation (Qm)
+    LteMod mod_;  /// modulation (Qm)
     double coderate_;  /// code rate (R)
 
     NRMCSelem(LteMod mod = _QPSK, double coderate = 0.0) : mod_(mod), coderate_(coderate)
@@ -70,7 +70,7 @@ class NRMcsTable
 const unsigned int TBSTABLESIZE = 94;
 extern const unsigned int nInfoToTbs[TBSTABLESIZE];
 
-} //namespace
+}  // namespace
 
 #endif
 

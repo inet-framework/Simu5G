@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -58,7 +58,7 @@ UmTxEntity *LteRlcUm::getTxBuffer(inet::Ptr<FlowControlInfo> lteInfo)
         buf << "UmTxEntity Lcid: " << lcid;
         cModuleType *moduleType = cModuleType::get("simu5g.stack.rlc.UmTxEntity");
         UmTxEntity *txEnt = check_and_cast<UmTxEntity *>(moduleType->createScheduleInit(buf.str().c_str(), getParentModule()));
-        txEntities_[cid] = txEnt;    // Add to tx_entities map
+        txEntities_[cid] = txEnt;  // Add to tx_entities map
 
         if (lteInfo != nullptr) {
             // store control info for this flow
@@ -99,7 +99,7 @@ UmRxEntity *LteRlcUm::getRxBuffer(inet::Ptr<FlowControlInfo> lteInfo)
         cModuleType *moduleType = cModuleType::get("simu5g.stack.rlc.UmRxEntity");
         UmRxEntity *rxEnt = check_and_cast<UmRxEntity *>(
                 moduleType->createScheduleInit(buf.str().c_str(), getParentModule()));
-        rxEntities_[cid] = rxEnt;    // Add to rx_entities map
+        rxEntities_[cid] = rxEnt;  // Add to rx_entities map
 
         // store control info for this flow
         rxEnt->setFlowControlInfo(lteInfo.get());
@@ -120,8 +120,8 @@ UmRxEntity *LteRlcUm::getRxBuffer(inet::Ptr<FlowControlInfo> lteInfo)
 
 void LteRlcUm::sendDefragmented(cPacket *pkt)
 {
-    Enter_Method_Silent("sendDefragmented()");                    // Direct Method Call
-    take(pkt);                                                    // Take ownership
+    Enter_Method_Silent("sendDefragmented()");  // Direct Method Call
+    take(pkt);  // Take ownership
 
     EV << "LteRlcUm : Sending packet " << pkt->getName() << " to port UM_Sap_up$o\n";
     send(pkt, upOutGate_);
@@ -131,8 +131,8 @@ void LteRlcUm::sendDefragmented(cPacket *pkt)
 
 void LteRlcUm::sendToLowerLayer(cPacket *pktAux)
 {
-    Enter_Method_Silent("sendToLowerLayer()");                    // Direct Method Call
-    take(pktAux);                                                    // Take ownership
+    Enter_Method_Silent("sendToLowerLayer()");  // Direct Method Call
+    take(pktAux);  // Take ownership
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
     pkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&LteProtocol::rlc);
     EV << "LteRlcUm : Sending packet " << pktAux->getName() << " to port UM_Sap_down$o\n";
@@ -142,8 +142,8 @@ void LteRlcUm::sendToLowerLayer(cPacket *pktAux)
 
 void LteRlcUm::dropBufferOverflow(cPacket *pktAux)
 {
-    Enter_Method_Silent("dropBufferOverflow()");                  // Direct Method Call
-    take(pktAux);                                                    // Take ownership
+    Enter_Method_Silent("dropBufferOverflow()");  // Direct Method Call
+    take(pktAux);  // Take ownership
 
     EV << "LteRlcUm : Dropping packet " << pktAux->getName() << " (queue full) \n";
     delete pktAux;
@@ -241,8 +241,8 @@ void LteRlcUm::deleteQueues(MacNodeId nodeId)
     // at the eNB, delete connections related to the given UE
     for (auto tit = txEntities_.begin(); tit != txEntities_.end(); ) {
         if (nodeType == UE || ((nodeType == ENODEB || nodeType == GNODEB) && MacCidToNodeId(tit->first) == nodeId)) {
-            tit->second->deleteModule(); // Delete Entity
-            tit = txEntities_.erase(tit);    // Delete Element
+            tit->second->deleteModule();  // Delete Entity
+            tit = txEntities_.erase(tit);  // Delete Element
         }
         else {
             ++tit;
@@ -250,8 +250,8 @@ void LteRlcUm::deleteQueues(MacNodeId nodeId)
     }
     for (auto rit = rxEntities_.begin(); rit != rxEntities_.end(); ) {
         if (nodeType == UE || ((nodeType == ENODEB || nodeType == GNODEB) && MacCidToNodeId(rit->first) == nodeId)) {
-            rit->second->deleteModule(); // Delete Entity
-            rit = rxEntities_.erase(rit);    // Delete Element
+            rit->second->deleteModule();  // Delete Entity
+            rit = rxEntities_.erase(rit);  // Delete Element
         }
         else {
             ++rit;
@@ -337,5 +337,5 @@ void LteRlcUm::resetThroughputStats(MacNodeId nodeId)
     }
 }
 
-} //namespace
+}  // namespace
 

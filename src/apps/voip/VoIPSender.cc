@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -85,7 +85,7 @@ void VoIPSender::initTraffic()
         // this might happen when users are created dynamically
         EV << simTime() << "VoIPSender::initTraffic - destination " << destAddress << " not found" << endl;
 
-        simtime_t offset = 0.01; // TODO check value
+        simtime_t offset = 0.01;  // TODO check value
         scheduleAt(simTime() + offset, initTraffic_);
         EV << simTime() << "VoIPSender::initTraffic - the node will retry to initialize traffic in " << offset << " seconds " << endl;
     }
@@ -183,5 +183,5 @@ void VoIPSender::sendVoIPPacket()
         scheduleAt(simTime() + sampling_time, selfSender_);
 }
 
-} //namespace
+}  // namespace
 

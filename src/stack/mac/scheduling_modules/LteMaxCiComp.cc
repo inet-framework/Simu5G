@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -165,5 +165,5 @@ void LteMaxCiComp::commitSchedule()
     *activeConnectionSet_ = activeConnectionTempSet_;
 }
 
-} //namespace
+}  // namespace
 
