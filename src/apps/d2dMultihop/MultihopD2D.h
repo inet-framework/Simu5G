@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -39,14 +39,14 @@ class MultihopD2D : public cSimpleModule
         KIND_RELAY,
         KIND_TRICKLE_TIMER
     };
-    uint16_t senderAppId_;             // unique identifier of the application within the network
-    uint16_t localMsgId_ = 0;          // least-significant bits for the identifier of the next message
+    uint16_t senderAppId_;  // unique identifier of the application within the network
+    uint16_t localMsgId_ = 0;  // least-significant bits for the identifier of the next message
     inet::B msgSize_;
 
-    double selfishProbability_;         // if = 0, the node is always collaborative
-    int ttl_;                           // if < 0, do not use hops to limit the flooding
-    double maxBroadcastRadius_;         // if < 0, do not use radius to limit the flooding
-    simtime_t maxTransmissionDelay_;    // if > 0, when a new message has to be transmitted, choose an offset between 0 and maxTransmissionDelay_
+    double selfishProbability_;  // if = 0, the node is always collaborative
+    int ttl_;  // if < 0, do not use hops to limit the flooding
+    double maxBroadcastRadius_;  // if < 0, do not use radius to limit the flooding
+    simtime_t maxTransmissionDelay_;  // if > 0, when a new message has to be transmitted, choose an offset between 0 and maxTransmissionDelay_
 
     /*
      * Trickle parameters
@@ -67,10 +67,10 @@ class MultihopD2D : public cSimpleModule
 
     cMessage *selfSender_ = nullptr;
 
-    ModuleRefByPar<EventGenerator> eventGen_;          // reference to the eventGenerator
-    ModuleRefByPar<LtePhyBase> ltePhy_;                // reference to the LtePhy
-    MacNodeId lteNodeId_;               // LTE Node Id
-    MacNodeId lteCellId_;               // LTE Cell Id
+    ModuleRefByPar<EventGenerator> eventGen_;  // reference to the eventGenerator
+    ModuleRefByPar<LtePhyBase> ltePhy_;  // reference to the LtePhy
+    MacNodeId lteNodeId_;  // LTE Node Id
+    MacNodeId lteCellId_;  // LTE Cell Id
 
     // local statistics
     static simsignal_t d2dMultihopGeneratedMsgSignal_;
@@ -87,10 +87,10 @@ class MultihopD2D : public cSimpleModule
     void handleMessage(cMessage *msg) override;
     void finish() override;
 
-    void markAsReceived(uint32_t msgId);      // store the msg id in the set of received messages
-    bool isAlreadyReceived(uint32_t msgId);   // returns true if the given msg has already been received
-    void markAsRelayed(uint32_t msgId);       // set the corresponding entry in the set as relayed
-    bool isAlreadyRelayed(uint32_t msgId);   // returns true if the given msg has already been relayed
+    void markAsReceived(uint32_t msgId);  // store the msg id in the set of received messages
+    bool isAlreadyReceived(uint32_t msgId);  // returns true if the given msg has already been received
+    void markAsRelayed(uint32_t msgId);  // set the corresponding entry in the set as relayed
+    bool isAlreadyRelayed(uint32_t msgId);  // returns true if the given msg has already been relayed
     bool isWithinBroadcastArea(inet::Coord srcCoord, double maxRadius);
 
     virtual void sendPacket();
@@ -105,7 +105,7 @@ class MultihopD2D : public cSimpleModule
     virtual void handleEvent(unsigned int eventId);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

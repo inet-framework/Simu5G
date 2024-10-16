@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -56,7 +56,7 @@ class DualConnectivityManager : public cSimpleModule
     void receiveDataFromSourceNode(inet::Packet *pkt, MacNodeId sourceNode);
 };
 
-} //namespace
+}  // namespace
 
 #endif /* DUALCONNECTIVITYMANAGER_H_ */
 

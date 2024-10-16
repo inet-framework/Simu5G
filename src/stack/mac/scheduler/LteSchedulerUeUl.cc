@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -108,7 +108,7 @@ LteMacScheduleList *LteSchedulerUeUl::schedule()
         // get the highest backlogged flow id and priority
         backlog = mac_->getHighestBackloggedFlow(highestBackloggedFlow, highestBackloggedPriority);
 
-        if (backlog) { // at least one backlogged flow exists
+        if (backlog) {  // at least one backlogged flow exists
             // get the lowest backlogged flow id and priority
             mac_->getLowestBackloggedFlow(lowestBackloggedFlow, lowestBackloggedPriority);
         }
@@ -123,5 +123,5 @@ LteMacScheduleList *LteSchedulerUeUl::getScheduledBytesList()
     return &scheduledBytesList_;
 }
 
-} //namespace
+}  // namespace
 

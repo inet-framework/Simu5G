@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -109,7 +109,7 @@ void TrafficLightController::handleMessage(cMessage *msg)
     }
 }
 
-bool TrafficLightController::isTrafficLightRed(int carId, inet::Coord carPosition, inet::deg carDirection)  //inet::Quaternion carOrientation)
+bool TrafficLightController::isTrafficLightRed(int carId, inet::Coord carPosition, inet::deg carDirection)  // inet::Quaternion carOrientation)
 {
     if (state_ == RED && (carDirection == heading_ || (bidirectional_ && carDirection == inet::deg(fmod(heading_.get() + 180, 360))))) {
         EV << "TrafficLightController::isTrafficLightRed - tl coord [" << tlPosition_ << "] car coord [" << carPosition << "] bidirectional: " << bidirectional_ <<
@@ -117,7 +117,7 @@ bool TrafficLightController::isTrafficLightRed(int carId, inet::Coord carPositio
 
         bool reverseDir = (carDirection == inet::deg(fmod(heading_.get() + 180, 360)));
         std::set<int>& queue = (!reverseDir) ? queuedCars_[0] : queuedCars_[1];
-        //check if the car is already queued
+        // check if the car is already queued
         if (queue.find(carId) != queue.end()) {
             EV << "TrafficLightController::isTrafficLightRed - The car is already in the queue of the RED traffic light" << endl;
             return true;
@@ -129,7 +129,7 @@ bool TrafficLightController::isTrafficLightRed(int carId, inet::Coord carPositio
             EV << "TrafficLightController::isTrafficLightRed - The car is in the queue of the RED traffic light" << endl;
             queue.insert(carId);
 
-            //increase the line
+            // increase the line
             if (reverseDir)
                 line_->setStart({ tlPosition_.x - direction_.x * -1 * meanCarLength_ * (queue.size() + 1), tlPosition_.y - direction_.y * -1 * meanCarLength_ * (queue.size() + 1) });
             else
@@ -187,7 +187,7 @@ bool TrafficLightController::isSameAngle(inet::Coord carPosition, inet::deg head
             inRange = true;
         }
     }
-    else { // if (angle > 270 && angle < 360)
+    else {  // if (angle > 270 && angle < 360)
         if (tlPosition_.x >= carPosition.x && tlPosition_.y <= carPosition.y) {
             inRange = true;
         }
@@ -386,5 +386,5 @@ void TrafficLightController::drawRect()
         getSimulation()->getSystemModule()->getCanvas()->addFigure(rect_);
 }
 
-} //namespace
+}  // namespace
 

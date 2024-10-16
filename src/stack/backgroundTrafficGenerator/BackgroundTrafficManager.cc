@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -23,7 +23,7 @@ void BackgroundTrafficManager::initialize(int stage)
     }
     if (stage == inet::INITSTAGE_PHYSICAL_LAYER) {
         // Get the reference to the MAC layer
-        mac_.reference(this, "macModule", true); // TODO: mac_ used in BackgroundTrafficManagerBase
+        mac_.reference(this, "macModule", true);  // TODO: mac_ used in BackgroundTrafficManagerBase
     }
     if (stage == inet::INITSTAGE_LAST - 1) {
         // Get the reference to the channel model for the given carrier
@@ -92,5 +92,5 @@ double BackgroundTrafficManager::getReceivedPower_bgUe(double txPower, inet::Coo
     return channelModel_->getReceivedPower_bgUe(txPower, txPos, rxPos, dir, losStatus, bsId);
 }
 
-} //namespace
+}  // namespace
 

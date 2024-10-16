@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -32,8 +32,8 @@ class LtePhyUeD2D : public LtePhyUe
     double nearestDistance_;
     std::vector<double> bestRsrpVector_;
     double bestRsrpMean_;
-    std::vector<LteAirFrame *> d2dReceivedFrames_; // airframes received in the current TTI. Only one will be decoded
-    cMessage *d2dDecodingTimer_ = nullptr;    // timer for triggering decoding at the end of the TTI. Started
+    std::vector<LteAirFrame *> d2dReceivedFrames_;  // airframes received in the current TTI. Only one will be decoded
+    cMessage *d2dDecodingTimer_ = nullptr;  // timer for triggering decoding at the end of the TTI. Started
     // when the first airframe is received
     void storeAirFrame(LteAirFrame *newFrame);
     LteAirFrame *extractAirFrame();
@@ -61,7 +61,7 @@ class LtePhyUeD2D : public LtePhyUe
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* _LTE_AIRPHYUED2D_H_ */
 

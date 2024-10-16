@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -49,5 +49,5 @@ void CreateContextAppMessage::setAppContext(nlohmann::json& appContext)
     this->appContext = appContext;
 }
 
-} //namespace
+}  // namespace
 

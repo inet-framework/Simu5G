@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -116,7 +116,7 @@ class ExtCell : public cSimpleModule
     void setBandUtilization(double bandUtilization);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

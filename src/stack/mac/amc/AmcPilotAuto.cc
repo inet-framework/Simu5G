@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -59,7 +59,7 @@ const UserTxParams& AmcPilotAuto::computeTxParams(MacNodeId id, const Direction 
         if (usableB == nullptr || usableB->empty()) {
             chosenBand = 0;
             chosenCqi = summaryCqi.at(chosenBand);
-            unsigned int bands = summaryCqi.size();// number of bands
+            unsigned int bands = summaryCqi.size();  // number of bands
             // computing MAX
             for (Band b = 1; b < bands; ++b) {
                 // For all Bands
@@ -96,7 +96,7 @@ const UserTxParams& AmcPilotAuto::computeTxParams(MacNodeId id, const Direction 
         if (usableB == nullptr || usableB->empty()) {
             chosenBand = 0;
             chosenCqi = summaryCqi.at(chosenBand);
-            unsigned int bands = summaryCqi.size();// number of bands
+            unsigned int bands = summaryCqi.size();  // number of bands
             // computing MIN
             for (Band b = 1; b < bands; ++b) {
                 // For all LBs
@@ -130,7 +130,7 @@ const UserTxParams& AmcPilotAuto::computeTxParams(MacNodeId id, const Direction 
     else if (mode_ == ROBUST_CQI) {
         int target = 0;
         int s;
-        unsigned int bands = summaryCqi.size();// number of bands
+        unsigned int bands = summaryCqi.size();  // number of bands
 
         EV << "AmcPilotAuto::computeTxParams - computing ROBUST CQI" << endl;
 
@@ -261,5 +261,5 @@ UsableBands *AmcPilotAuto::getUsableBands(MacNodeId id)
     return nullptr;
 }
 
-} //namespace
+}  // namespace
 

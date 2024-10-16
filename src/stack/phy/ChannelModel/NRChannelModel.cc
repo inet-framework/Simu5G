@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -338,12 +338,12 @@ bool NRChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeI
     ExtCellList list = binder_->getExtCellList(carrierFrequency);
 
     Coord c;
-    double threeDimDist, // meters
-           twoDimDist, // meters
-           recvPwr, // watt
-           recvPwrDBm, // dBm
-           att, // dBm
-           angularAtt; // dBm
+    double threeDimDist,  // meters
+           twoDimDist,  // meters
+           recvPwr,  // watt
+           recvPwrDBm,  // dBm
+           att,  // dBm
+           angularAtt;  // dBm
 
     std::vector<double> fadingAttenuation;
 
@@ -362,7 +362,7 @@ bool NRChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeI
         // compute attenuation according to some path loss model
         att = computeExtCellPathLoss(threeDimDist, twoDimDist, nodeId);
 
-        //=============== ANGULAR ATTENUATION =================
+        // =============== ANGULAR ATTENUATION =================
         if (extCell->getTxDirection() == OMNI) {
             angularAtt = 0;
         }
@@ -381,7 +381,7 @@ bool NRChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeI
             // compute attenuation due to sectorial tx
             angularAtt = computeAngularAttenuation(recvAngle, verticalAngle);
         }
-        //=============== END ANGULAR ATTENUATION =================
+        // =============== END ANGULAR ATTENUATION =================
 
         // TODO do we need to use (- cableLoss_ + antennaGainEnB_) in ext cells too?
         // compute and linearize received power
@@ -394,10 +394,10 @@ bool NRChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeI
         // add interference in those bands where the ext cell is active
         for (unsigned int i = 0; i < numBands; i++) {
             int occ;
-            if (isCqi) { // check slot occupation for this TTI
+            if (isCqi) {  // check slot occupation for this TTI
                 occ = extCell->getBandStatus(i);
             }
-            else {      // error computation. We need to check the slot occupation of the previous TTI
+            else {  // error computation. We need to check the slot occupation of the previous TTI
                 occ = extCell->getPrevBandStatus(i);
             }
 
@@ -437,5 +437,5 @@ double NRChannelModel::computeExtCellPathLoss(double threeDimDistance, double tw
     return attenuation;
 }
 
-} //namespace
+}  // namespace
 

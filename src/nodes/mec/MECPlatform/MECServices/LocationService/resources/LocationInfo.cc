@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -42,7 +42,7 @@ nlohmann::ordered_json LocationInfo::toJson() const
     val["shape"] = 2;
     if (!speed_.isUnspecified()) {
         inet::Coord North(0, 1, 0);
-        inet::Coord temp(speed_); // this method is const and angle() does not.
+        inet::Coord temp(speed_);  // this method is const and angle() does not.
         double angle = temp.angle(North);
 
         val["velocity"]["velocityType"] = 1;
@@ -52,5 +52,5 @@ nlohmann::ordered_json LocationInfo::toJson() const
     return val;
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -64,7 +64,7 @@ class LteAirFrame : public LteAirFrame_Base
 
 Register_Class(LteAirFrame);
 
-} //namespace
+}  // namespace
 
 #endif
 

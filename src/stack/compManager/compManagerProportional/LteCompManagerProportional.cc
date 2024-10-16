@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -44,7 +44,7 @@ void LteCompManagerProportional::provisionalSchedule()
         Codeword cw = 0;
         Band band = 0;
         bytesPerBlock = mac_->getAmc()->computeBytesOnNRbs(ueId, band, cw,
-                blocks, dir, primaryCarrierFrequency); // The index of the band is useless
+                blocks, dir, primaryCarrierFrequency);  // The index of the band is useless
         EV << NOW << " LteCompManagerProportional::provisionalSchedule - For the node: " << ueId << " available: " << bytesPerBlock << " bytes in one block" << endl;
 
         // Compute the number of blocks required to satisfy the UE's buffer
@@ -82,7 +82,7 @@ void LteCompManagerProportional::doCoordination()
         // compute the number of blocks to reserve
         double percentage;
         if (requestsSum == 0)
-            percentage = 1.0 / (clientList_.size() + 1);                                                                                                                      // slaves + master
+            percentage = 1.0 / (clientList_.size() + 1); // slaves + master
         else
             percentage = (double)req / requestsSum;
 
@@ -272,5 +272,5 @@ std::vector<unsigned int> LteCompManagerProportional::roundVector(std::vector<do
     return integerVec;
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -32,7 +32,7 @@ void LteDrr::prepareSchedule()
 
         // Check if node is still a valid node in the simulation - might have been dynamically removed.
         if (binder_->getOmnetId(nodeId) == 0) {
-            activeTempList_.erase();          // Remove from the active list.
+            activeTempList_.erase();  // Remove from the active list.
             activeConnectionTempSet_.erase(cid);
             carrierActiveConnectionSet_.erase(cid);
             EV << "CID " << cid << " of node " << nodeId << " removed from active connection set - no OmnetId in Binder known.";
@@ -70,17 +70,17 @@ void LteDrr::prepareSchedule()
 
         // Update the number of eligible connections.
         if (!eligibleFlag || !activeFlag) {
-            eligible--;              // Decrement the number of eligible connections.
+            eligible--;  // Decrement the number of eligible connections.
             desc.eligible_ = false;  // This queue is not eligible for service.
         }
 
         // Remove the queue if it has become inactive.
         if (!activeFlag) {
-            activeTempList_.erase();          // Remove from the active list.
+            activeTempList_.erase();  // Remove from the active list.
             activeConnectionTempSet_.erase(cid);
             carrierActiveConnectionSet_.erase(cid);
-            desc.deficit_ = 0;       // Reset the deficit to zero.
-            desc.active_ = false;   // Set this descriptor as inactive.
+            desc.deficit_ = 0;  // Reset the deficit to zero.
+            desc.active_ = false;  // Set this descriptor as inactive.
             desc.addQuantum_ = true;
 
             // If scheduling is going to stop and the current queue has not
@@ -101,8 +101,8 @@ void LteDrr::prepareSchedule()
             activeTempList_.move();
         }
         // else
-        //     this connection still has to consume its deficit (e.g., because space has ended)
-        //     so the pointer is not moved
+        // this connection still has to consume its deficit (e.g., because space has ended)
+        // so the pointer is not moved
 
         // Terminate scheduling, if the grant function specified so.
         if (terminateFlag)
@@ -150,7 +150,7 @@ void LteDrr::updateSchedulingInfo()
                 eligible = false;
         }
         if (minRate == 0 /* || pars.minReservedRate_ < minRate*/)
-//                TODO add connections parameters and fix this value
+// TODO add connections parameters and fix this value
             minRate = 500;
         if (minSize == 0 /*|| pars.maxBurst_ < minSize */)
             minSize = 160; // pars.maxBurst_;
@@ -180,5 +180,5 @@ void LteDrr::notifyActiveConnection(MacCid cid)
     EV << NOW << "LteSchedulerEnb::notifyDrr active: " << drrMap_[cid].active_ << endl;
 }
 
-} //namespace
+}  // namespace
 

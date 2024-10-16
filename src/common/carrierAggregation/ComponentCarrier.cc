@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -37,5 +37,5 @@ void ComponentCarrier::initialize()
     binder_->registerCarrier(carrierFrequency_, numBands_, numerologyIndex_, useTdd_, tddNumSymbolsDl_, tddNumSymbolsUl_);
 }
 
-} //namespace
+}  // namespace
 

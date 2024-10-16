@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -118,7 +118,7 @@ class LcgScheduler
     virtual ScheduleList& getScheduledBytesList();
 };
 
-} //namespace simu5g
+}  // namespace simu5g
 
 #endif
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -10,9 +10,9 @@
 //
 
 //
-//  Description:
-//  This file contains LTE typedefs and constants.
-//  At the end of the file there are some utility functions.
+// Description:
+// This file contains LTE typedefs and constants.
+// At the end of the file there are some utility functions.
 //
 
 #ifndef _LTE_LTECOMMON_H_
@@ -62,11 +62,11 @@ class LteProtocol
 {
   public:
     static const inet::Protocol ipv4uu;  // IP protocol on the uU interface
-    static const inet::Protocol pdcp;    // Packet Data Convergence Protocol
-    static const inet::Protocol rlc;     // Radio Link Control
+    static const inet::Protocol pdcp;  // Packet Data Convergence Protocol
+    static const inet::Protocol rlc;  // Radio Link Control
     static const inet::Protocol ltemac;  // LTE Medium Access Control
-    static const inet::Protocol gtp;     // GPRS Tunneling Protocol
-    static const inet::Protocol x2ap;    // X2AP Protocol
+    static const inet::Protocol gtp;  // GPRS Tunneling Protocol
+    static const inet::Protocol x2ap;  // X2AP Protocol
 };
 
 /**
@@ -242,7 +242,7 @@ struct FeedbackRequest
     bool request;
     FeedbackGeneratorType genType;
     FeedbackType type;
-    //used if genType==real
+    // used if genType==real
     TxMode txMode;
     bool dasAware;
     RbAllocationType rbAllocationType;
@@ -379,7 +379,7 @@ const RanNodeTable nodetypes[] = {
     ELEM(UNKNOWN_NODE_TYPE)
 };
 
-//|--------------------------------------------------|
+// |--------------------------------------------------|
 
 /*****************
 * X2 Support
@@ -439,8 +439,8 @@ const Rank NORANK = 1;
 const Tbs CQI2ITBSSIZE = 29;
 const unsigned int PDCP_HEADER_UM = 1;
 const unsigned int PDCP_HEADER_AM = 2;
-const unsigned int RLC_HEADER_UM = 2; // TODO
-const unsigned int RLC_HEADER_AM = 2; // TODO
+const unsigned int RLC_HEADER_UM = 2;  // TODO
+const unsigned int RLC_HEADER_AM = 2;  // TODO
 const unsigned int MAC_HEADER = 2;
 const unsigned int MAXGRANT = 4294967295U;
 
@@ -539,9 +539,9 @@ typedef std::pair<unsigned char, CwList> UnitList;
 *********************/
 struct EnbInfo
 {
-    bool init;         // initialization flag
-    RanNodeType nodeType; // ENODEB or GNODEB
-    EnbType type;     // MICRO_ENB or MACRO_ENB
+    bool init;  // initialization flag
+    RanNodeType nodeType;  // ENODEB or GNODEB
+    EnbType type;  // MICRO_ENB or MACRO_ENB
     double txPwr;
     TxDirectionType txDirection;
     double txAngle;
@@ -555,7 +555,7 @@ struct EnbInfo
 
 struct UeInfo
 {
-    bool init;         // initialization flag
+    bool init;  // initialization flag
     double txPwr;
     MacNodeId id;
     MacNodeId cellId;
@@ -569,7 +569,7 @@ struct UeInfo
  *********************************/
 struct BgTrafficManagerInfo
 {
-    bool init;         // initialization flag
+    bool init;  // initialization flag
     IBackgroundTrafficManager *bgTrafficManager = nullptr;
     double carrierFrequency;
     double allocatedRbsDl;
@@ -672,7 +672,7 @@ LteRlcType aToRlcType(std::string s);
 const std::string planeToA(Plane p);
 MacNodeId ctrlInfoToUeId(inet::Ptr<LteControlInfo> info);
 MacCid idToMacCid(MacNodeId nodeId, LogicalCid lcid);
-MacCid ctrlInfoToMacCid(inet::Ptr<LteControlInfo> info);        // get the CID from the packet control info
+MacCid ctrlInfoToMacCid(inet::Ptr<LteControlInfo> info);  // get the CID from the packet control info
 MacNodeId MacCidToNodeId(MacCid cid);
 LogicalCid MacCidToLcid(MacCid cid);
 CellInfo *getCellInfo(Binder *binder, MacNodeId nodeId);
@@ -763,7 +763,7 @@ std::vector<T> getTagsWithInherit(inet::Packet *pkt)
     return t;
 }
 
-} //namespace
+}  // namespace
 
 #endif
 

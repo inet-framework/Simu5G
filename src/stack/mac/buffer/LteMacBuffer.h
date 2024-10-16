@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -163,7 +163,7 @@ class LteMacBuffer
     std::list<PacketInfo> Queue_;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

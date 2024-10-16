@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -88,5 +88,5 @@ void AlertReceiver::refreshDisplay() const
     getDisplayString().setTagArg("t", 0, buf);
 }
 
-} //namespace
+}  // namespace
 

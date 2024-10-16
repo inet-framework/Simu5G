@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -91,7 +91,7 @@ void TrafficLightMobility::move()
                 if (!tl->isApproaching(newPotentialPosition, current_heading_deg_normalized_)) {
                     // if you are here, it means that you would get past the traffic light,
                     // so you need to check if you want to turn
-                    if (enableTurns_) { // TODO check heading less than 0
+                    if (enableTurns_) {  // TODO check heading less than 0
                         // when leaving the traffic light, direction may change
                         // heading can vary as -90, 0, +90 degrees
                         int offset = intuniform(-1, 1);
@@ -139,7 +139,7 @@ void TrafficLightMobility::move()
 
     Coord dummyCoord;
     handleIfOutside(REFLECT, dummyCoord, lastVelocity, heading_);
-    //if heading < 0 --> abs, sum 180 and normalize to 360
+    // if heading < 0 --> abs, sum 180 and normalize to 360
     if (heading_ < rad(0)) {
         double angle = M_PI / 2;
         if (std::abs(deg(heading_).get()) == 270 || std::abs(deg(heading_).get()) == 90)
@@ -172,9 +172,9 @@ void TrafficLightMobility::getTrafficLights()
 
 double TrafficLightMobility::getOrientationAngleDegree()
 {
-    double angleRad = lastOrientation.getRotationAngle(); // in rad
+    double angleRad = lastOrientation.getRotationAngle();  // in rad
     double angleDeg = std::round(angleRad * 180 / M_PI);
-    auto rotC = lastOrientation.getRotationAxis(); // suppose the car moves in xy plane
+    auto rotC = lastOrientation.getRotationAxis();  // suppose the car moves in xy plane
     int rot = 0;
     if (rotC == inet::Coord::NIL)
         rot = 0;
@@ -187,5 +187,5 @@ double TrafficLightMobility::getOrientationAngleDegree()
     return rot > 0 ? angleDeg : angleDeg + 180;
 }
 
-} //namespace
+}  // namespace
 

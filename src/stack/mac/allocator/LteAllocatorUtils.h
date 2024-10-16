@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -14,9 +14,9 @@
 
 namespace simu5g {
 
-//----------------------------------------------------------------------
-//             STRUCT AND TYPE_DEF FOR allocatedRbsPerBand_
-//----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// STRUCT AND TYPE_DEF FOR allocatedRbsPerBand_
+// ----------------------------------------------------------------------
 typedef std::map<MacNodeId, unsigned int> UeAllocatedBlocksMapA;
 typedef std::map<MacNodeId, unsigned int> UeAllocatedBytesMapA;
 /// This structure contains information for a single band
@@ -38,9 +38,9 @@ struct AllocatedRbsPerBandInfo
 
 typedef std::map<Band, AllocatedRbsPerBandInfo> AllocatedRbsPerBandMapA;
 
-//----------------------------------------------------------------------
-//             STRUCT AND TYPE_DEF FOR allocatedRbsUe_
-//----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// STRUCT AND TYPE_DEF FOR allocatedRbsUe_
+// ----------------------------------------------------------------------
 
 // Amount of bytes served by a single set of allocated blocks
 struct AllocationElem
@@ -102,7 +102,7 @@ enum AllocationUeType {
     UNUSED,
 };
 
-} // namespace simu5g
+}  // namespace simu5g
 
 #endif /* LTEALLOCATORUTILS_H_ */
 

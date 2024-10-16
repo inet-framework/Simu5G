@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -43,7 +43,7 @@ class NRTxPdcpEntity : public LteTxPdcpEntity
     void initialize() override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

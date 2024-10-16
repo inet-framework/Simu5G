@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -25,7 +25,7 @@ void UserTxParams::print(const char *s) const {
         EV << NOW << " " << s << " TxMode: " << txModeToA(txMode_) << "\n";
         EV << NOW << " " << s << " RI: " << ri_ << "\n";
 
-        //*** CQIs *********************************************
+        // *** CQIs *********************************************
         unsigned int codewords = cqiVector_.size();
         EV << NOW << " " << s << " CQI = {";
         if (codewords > 0) {
@@ -34,11 +34,11 @@ void UserTxParams::print(const char *s) const {
                 EV << ", " << cqiVector_.at(cw);
         }
         EV << "}\n";
-        //******************************************************
+        // ******************************************************
 
         EV << NOW << " " << s << " PMI: " << pmi_ << "\n";
 
-        //*** Bands ********************************************
+        // *** Bands ********************************************
         EV << NOW << " " << s << " Bands = {";
         if (!allowedBands_.empty()) {
             auto it = allowedBands_.begin();
@@ -48,7 +48,7 @@ void UserTxParams::print(const char *s) const {
                 EV << ", " << *it;
         }
         EV << "}\n";
-        //******************************************************
+        // ******************************************************
 
         EV << NOW << " " << s << " --------------------------\n";
     }
@@ -57,5 +57,5 @@ void UserTxParams::print(const char *s) const {
     }
 }
 
-} //namespace
+}  // namespace
 

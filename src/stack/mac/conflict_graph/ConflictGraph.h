@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -109,7 +109,7 @@ class ConflictGraph
     const CGMatrix *getConflictMatrix() const { return &conflictGraph_; }
 };
 
-} //namespace
+}  // namespace
 
 #endif /* CONFLICTGRAPH_H */
 

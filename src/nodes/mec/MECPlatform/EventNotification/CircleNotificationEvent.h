@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -29,7 +29,7 @@ class CircleNotificationEvent : public EventNotification
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* NODES_MEC_MEPLATFORM_EVENTNOTIFICATION_CIRCLENOTIFICATIONEVENT_H_ */
 

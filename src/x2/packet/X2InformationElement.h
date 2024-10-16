@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -19,11 +19,11 @@ namespace simu5g {
 
 // add here new IE types
 enum X2InformationElementType {
-    COMP_REQUEST_IE,         // CoMP slave -> master
-    COMP_REPLY_IE,           // CoMP master -> slave
-    COMP_PROP_REQUEST_IE,    // CoMP slave -> master (for compManagerProportional, with RB value)
-    COMP_PROP_REPLY_IE,      // CoMP master -> slave (for compManagerProportional, with map)
-    X2_HANDOVER_CMD_IE       // HO command source eNB -> target eNB
+    COMP_REQUEST_IE,  // CoMP slave -> master
+    COMP_REPLY_IE,  // CoMP master -> slave
+    COMP_PROP_REQUEST_IE,  // CoMP slave -> master (for compManagerProportional, with RB value)
+    COMP_PROP_REPLY_IE,  // CoMP master -> slave (for compManagerProportional, with map)
+    X2_HANDOVER_CMD_IE  // HO command source eNB -> target eNB
 };
 
 //
@@ -68,7 +68,7 @@ class X2InformationElement : public X2InformationElement_Base
     virtual int64_t getLength() const { return length_; }
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

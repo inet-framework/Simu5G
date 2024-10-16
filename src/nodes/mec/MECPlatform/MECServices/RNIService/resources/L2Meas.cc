@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -113,7 +113,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
             ueArray.push_back(notFound);
             break;
         }
-        else if (lteNodeId != NODEID_NONE && lteNodeId == nrNodeId) { //only nr
+        else if (lteNodeId != NODEID_NONE && lteNodeId == nrNodeId) {  // only nr
             found = false;
             for (const auto& [cellId, baseStation] : eNodeBs_) {
                 if (baseStation->getCellNodeType() == ENODEB) // enodeb does not have nrNodeId
@@ -123,7 +123,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
                     CellUEInfo cellUeInfo = CellUEInfo(ueColl, baseStation->getEcgi());
                     ueArray.push_back(cellUeInfo.toJson());
                     found = true;
-                    break; // next ue id
+                    break;  // next ue id
                 }
             }
             if (!found) {
@@ -132,7 +132,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
                 ueArray.push_back(notFound);
             }
         }
-        else if (lteNodeId != NODEID_NONE && nrNodeId == NODEID_NONE) { //only lte
+        else if (lteNodeId != NODEID_NONE && nrNodeId == NODEID_NONE) {  // only lte
             found = false;
             for (const auto& [cellId, baseStation] : eNodeBs_) {
                 if (baseStation->getCellNodeType() == GNODEB) // gnodeb does not have lteNodeId
@@ -142,7 +142,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
                     CellUEInfo cellUeInfo = CellUEInfo(ueColl, baseStation->getEcgi());
                     ueArray.push_back(cellUeInfo.toJson());
                     found = true;
-                    break; // next ue id
+                    break;  // next ue id
                 }
             }
             if (!found) {
@@ -150,7 +150,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
                 ueArray.push_back(notFound);
             }
         }
-        else if (lteNodeId != nrNodeId && nrNodeId != NODEID_NONE && lteNodeId != NODEID_NONE) { // both lte and nr
+        else if (lteNodeId != nrNodeId && nrNodeId != NODEID_NONE && lteNodeId != NODEID_NONE) {  // both lte and nr
             found = false;
             for (const auto& [cellId, baseStation] : eNodeBs_) {
                 if (baseStation->hasUeCollector(lteNodeId)) {
@@ -158,7 +158,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
                     CellUEInfo cellUeInfo = CellUEInfo(ueColl, baseStation->getEcgi());
                     ueArray.push_back(cellUeInfo.toJson());
                     found = true;
-                    break; // next ue id
+                    break;  // next ue id
                 }
             }
 
@@ -169,7 +169,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
                     CellUEInfo cellUeInfo = CellUEInfo(ueColl, baseStation->getEcgi());
                     ueArray.push_back(cellUeInfo.toJson());
                     found = true;
-                    break; // next ue id
+                    break;  // next ue id
                 }
             }
             if (!found) {
@@ -242,5 +242,5 @@ nlohmann::ordered_json L2Meas::toJson(std::vector<MacCellId>& cellsID, std::vect
     return l2Meas;
 }
 
-} //namespace
+}  // namespace
 

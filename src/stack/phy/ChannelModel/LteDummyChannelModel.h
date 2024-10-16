@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -105,7 +105,7 @@ class LteDummyChannelModel : public LteChannelModel
      */
     std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId) override;
     std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) override;
-    //TODO
+    // TODO
     bool isErrorDas(LteAirFrame *frame, UserControlInfo *lteInfo) override
     {
         throw cRuntimeError("DAS PHY LAYER TO BE IMPLEMENTED");
@@ -114,7 +114,7 @@ class LteDummyChannelModel : public LteChannelModel
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* STACK_PHY_CHANNELMODEL_LTEDUMMYCHANNELMODEL_H_ */
 

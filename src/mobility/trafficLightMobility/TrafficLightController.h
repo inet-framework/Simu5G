@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -37,26 +37,26 @@ typedef enum {
 class TrafficLightController : public cSimpleModule
 {
   protected:
-    inet::ModuleRefByPar<inet::StationaryMobility> mobility_;   // reference to the mobility module of the traffic light
+    inet::ModuleRefByPar<inet::StationaryMobility> mobility_;  // reference to the mobility module of the traffic light
     double areaWidth_;
     inet::deg heading_;
 
-    cLineFigure *line_ = nullptr;          // draw a line in the GUI representing the length of the queue of cars
-    cRectangleFigure *rect_ = nullptr;     // draw a rectangle in the GUI representing the area of the queue of cars
+    cLineFigure *line_ = nullptr;  // draw a line in the GUI representing the length of the queue of cars
+    cRectangleFigure *rect_ = nullptr;  // draw a rectangle in the GUI representing the area of the queue of cars
 
-    inet::Coord tlPosition_;               // position of the traffic light
-    inet::Coord direction_;                // direction of the traffic light
-    double redPeriod_;                     // duration of the RED period (in seconds)
-    double greenPeriod_;                   // duration of the GREEN period (in seconds)
-    double yellowPeriod_;                  // duration of the YELLOW period (in seconds)
-    double startTime_;                     // activation time of the traffic light. Before this time, it is in state OFF
-    double meanCarLength_;                 // average length of the cars (useful to select the halt position)
-    std::string startColor_;               // initial color
-    TrafficLightState state_;              // current color of the traffic light
-    std::set<int> queuedCars_[2];          // two queues, the second one is used when the traffic light is bidirectional
-    bool bidirectional_;                   // if true, cars stop also in the opposite direction with respect to the one of the traffic light
+    inet::Coord tlPosition_;  // position of the traffic light
+    inet::Coord direction_;  // direction of the traffic light
+    double redPeriod_;  // duration of the RED period (in seconds)
+    double greenPeriod_;  // duration of the GREEN period (in seconds)
+    double yellowPeriod_;  // duration of the YELLOW period (in seconds)
+    double startTime_;  // activation time of the traffic light. Before this time, it is in state OFF
+    double meanCarLength_;  // average length of the cars (useful to select the halt position)
+    std::string startColor_;  // initial color
+    TrafficLightState state_;  // current color of the traffic light
+    std::set<int> queuedCars_[2];  // two queues, the second one is used when the traffic light is bidirectional
+    bool bidirectional_;  // if true, cars stop also in the opposite direction with respect to the one of the traffic light
 
-    cMessage *stateMsg_ = nullptr;         // timer regulating the cycles
+    cMessage *stateMsg_ = nullptr;  // timer regulating the cycles
 
     // draw initial line in GUI
     void initDrawLine();
@@ -88,7 +88,7 @@ class TrafficLightController : public cSimpleModule
     ~TrafficLightController() override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* MOBILITY_TRAFFICLIGHTCONTROLLER_H_ */
 

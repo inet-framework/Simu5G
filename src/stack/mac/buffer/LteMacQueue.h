@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -138,14 +138,14 @@ class LteMacQueue : public cPacketQueue
      *
      */
     bool isEnqueueablePacket(inet::Packet *pkt);
-    unsigned int lastUnenqueueableMainSno; //<seq. number of
+    unsigned int lastUnenqueueableMainSno;  // <seq. number of
 
   private:
     /// Size of queue
     int queueSize_;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

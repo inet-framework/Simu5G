@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -23,7 +23,7 @@ class MecRequestBackgroundGeneratorApp : public MecAppBase
 {
   protected:
 
-    int numberOfApplications_;    // requests to send in this session
+    int numberOfApplications_;  // requests to send in this session
     cMessage *burstTimer = nullptr;
     cMessage *burstPeriod = nullptr;
     bool burstFlag;
@@ -54,7 +54,7 @@ class MecRequestBackgroundGeneratorApp : public MecAppBase
     ~MecRequestBackgroundGeneratorApp() override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* APPS_MEC_MEAPPS_MEBGAPP_H_ */
 

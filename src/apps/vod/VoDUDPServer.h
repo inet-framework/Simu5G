@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -100,7 +100,7 @@ class VoDUDPServer : public cSimpleModule
     virtual void handleSVCMessage(cMessage *msg);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

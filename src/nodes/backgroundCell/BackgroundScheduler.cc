@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -55,7 +55,7 @@ void BackgroundScheduler::initialize(int stage)
         // TODO: if BackgroundScheduler interference is disabled, do not send selfMessages
         // Start TTI tick
         ttiTick_ = new cMessage("ttiTick_");
-        ttiTick_->setSchedulingPriority(1);        // TTI TICK after other messages
+        ttiTick_->setSchedulingPriority(1);  // TTI TICK after other messages
         ttiPeriod_ = binder_->getSlotDurationFromNumerologyIndex(numerologyIndex_);
         scheduleAt(NOW + ttiPeriod_, ttiTick_);
 
@@ -295,5 +295,5 @@ TrafficGeneratorBase *BackgroundScheduler::getPrevBandInterferingUe(int band)
     return bgTrafficManager_->getTrafficGenerator(bgUeId);
 }
 
-} //namespace
+}  // namespace
 

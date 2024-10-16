@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -85,7 +85,7 @@ class LteAllocatorBestFit : public virtual LteScheduler
     void setAllocationType(std::vector<Band> bandVect, AllocationUeType type, MacNodeId nodeId);
 };
 
-} //namespace
+}  // namespace
 
 #endif // _LTE_LTEALLOCATORBESTFIT_H_
 

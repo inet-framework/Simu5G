@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -422,7 +422,7 @@ const ApplicationDescriptor& MecOrchestrator::onboardApplicationPackage(const ch
         EV << "MecOrchestrator::onboardApplicationPackages() - Application descriptor with appName [" << fileName << "] is already present.\n" << endl;
     }
     else {
-        mecApplicationDescriptors_[appDesc.getAppDId()] = appDesc; // add to the mecApplicationDescriptors_
+        mecApplicationDescriptors_[appDesc.getAppDId()] = appDesc;  // add to the mecApplicationDescriptors_
     }
 
     return mecApplicationDescriptors_[appDesc.getAppDId()];
@@ -467,5 +467,5 @@ const ApplicationDescriptor *MecOrchestrator::getApplicationDescriptorByAppName(
     return nullptr;
 }
 
-} //namespace
+}  // namespace
 

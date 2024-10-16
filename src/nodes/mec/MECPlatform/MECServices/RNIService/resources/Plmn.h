@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -22,10 +22,10 @@ namespace simu5g {
 class Plmn : public AttributeBase
 {
   protected:
-    std::string mcc_; // 3 decimal digits
-    std::string mnc_; // 2 or 3 decimal digits
+    std::string mcc_;  // 3 decimal digits
+    std::string mnc_;  // 2 or 3 decimal digits
 
-    nlohmann::ordered_json toJsonCell() const; // should this be private?
+    nlohmann::ordered_json toJsonCell() const;  // should this be private?
     /* data */
 
   public:
@@ -41,7 +41,7 @@ class Plmn : public AttributeBase
 
 };
 
-} //namespace
+}  // namespace
 
 #endif // _PLMN_H_
 

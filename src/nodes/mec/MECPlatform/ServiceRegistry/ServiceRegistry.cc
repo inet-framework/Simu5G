@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -52,7 +52,7 @@ void ServiceRegistry::handleStartOperation(inet::LifecycleOperation *operation)
 
     serverSocket.setOutputGate(gate("socketOut"));
     serverSocket.setCallback(this);
-    serverSocket.bind(inet::L3Address(), localPort); // bind socket for any address
+    serverSocket.bind(inet::L3Address(), localPort);  // bind socket for any address
 
     int tos = par("tos");
     if (tos != -1)
@@ -66,9 +66,9 @@ void ServiceRegistry::handleGETRequest(const HttpRequestMessage *currentRequestM
     std::string uri = currentRequestMessageServed->getUri();
 
     // check if it is a GET for a query or a subscription
-    if (uri == (baseUriQueries_ + "/services")) { //queries
+    if (uri == (baseUriQueries_ + "/services")) {  // queries
         std::string params = currentRequestMessageServed->getParameters();
-        //look for query parameters
+        // look for query parameters
         if (!params.empty()) {
             std::vector<std::string> queryParameters = simu5g::utils::splitString(params, "&");
             /*
@@ -81,14 +81,14 @@ void ServiceRegistry::handleGETRequest(const HttpRequestMessage *currentRequestM
             std::vector<std::string> ser_instance_id;
 
             for (const auto& queryParam : queryParameters) {
-                if (queryParam.rfind("ser_instance_id", 0) == 0) { // cell_id=par1,par2
+                if (queryParam.rfind("ser_instance_id", 0) == 0) {  // cell_id=par1,par2
                     EV << "ServiceRegistry::handleGETRequest - parameters: " << endl;
                     auto params = simu5g::utils::splitString(queryParam, "=");
-                    if (params.size() != 2) { //must be param=values
+                    if (params.size() != 2) {  // must be param=values
                         Http::send400Response(socket);
                         return;
                     }
-                    auto splittedParams = simu5g::utils::splitString(params[1], ","); //it can be an array, e.g param=v1,v2,v3
+                    auto splittedParams = simu5g::utils::splitString(params[1], ",");  // it can be an array, e.g param=v1,v2,v3
                     for (const auto& pit : splittedParams) {
                         EV << "ser_instance_id: " << pit << endl;
                         ser_instance_id.push_back(pit);
@@ -96,13 +96,13 @@ void ServiceRegistry::handleGETRequest(const HttpRequestMessage *currentRequestM
                 }
                 else if (queryParam.rfind("ser_name", 0) == 0) {
                     auto params = simu5g::utils::splitString(queryParam, "=");
-                    auto splittedParams = simu5g::utils::splitString(params[1], ","); //it can be an array, e.g param=v1,v2,v3
+                    auto splittedParams = simu5g::utils::splitString(params[1], ",");  // it can be an array, e.g param=v1,v2,v3
                     for (const auto& pit : splittedParams) {
                         EV << "ser_name: " << pit << endl;
                         ser_name.push_back(pit);
                     }
                 }
-                else { // bad parameters
+                else {  // bad parameters
                     Http::send400Response(socket);
                     return;
                 }
@@ -120,7 +120,7 @@ void ServiceRegistry::handleGETRequest(const HttpRequestMessage *currentRequestM
             // TODO: add for serviceid!
             Http::send200Response(socket, jsonResBody.dump().c_str());
         }
-        else { //no query params
+        else {  // no query params
             nlohmann::ordered_json jsonResBody;
             for (auto& sName : mecServices_) {
                 jsonResBody.push_back(sName.toJson());
@@ -129,7 +129,7 @@ void ServiceRegistry::handleGETRequest(const HttpRequestMessage *currentRequestM
         }
     }
     else {
-        Http::send404Response(socket); //it is not a correct uri
+        Http::send404Response(socket);  // it is not a correct uri
     }
 }
 
@@ -169,5 +169,5 @@ const std::vector<ServiceInfo> *ServiceRegistry::getAvailableMecServices() const
     return &mecServices_;
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -76,7 +76,7 @@ class MecPlatformManager : public cSimpleModule
     void registerMecService(ServiceDescriptor&) const;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -56,7 +56,7 @@ class GtpUserX2 : public cSimpleModule
     void handleFromUdp(inet::Packet *gtpMsg);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

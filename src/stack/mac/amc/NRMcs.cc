@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -21,7 +21,7 @@ using namespace omnetpp;
  * This table contains values taken from (TS 36.213)
  */
 NRMcsTable::NRMcsTable(bool extended)
-    : extended_(extended) // make it configurable
+    : extended_(extended)  // make it configurable
 {
     if (!extended) {
         cqiTable[0] = CQIelem(_QPSK, 0.0);
@@ -170,5 +170,5 @@ const unsigned int nInfoToTbs[TBSTABLESIZE] =
     3624, 3752, 3824
 };
 
-} //namespace
+}  // namespace
 

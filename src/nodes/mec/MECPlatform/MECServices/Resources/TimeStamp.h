@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -48,7 +48,7 @@ class TimeStamp : public AttributeBase
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* _TIMESTAMP_H_ */
 

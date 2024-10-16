@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -55,7 +55,7 @@ class LteX2Manager : public cSimpleModule
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* LTE_LTEX2MANAGER_H_ */
 

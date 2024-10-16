@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -50,7 +50,7 @@ class Binder : public cSimpleModule
     std::map<MacNodeId, std::string> macNodeIdToModuleName_;
     std::map<MacNodeId, opp_component_ptr<cModule>> macNodeIdToModuleRef_;
     std::map<MacNodeId, opp_component_ptr<LteMacBase>> macNodeIdToModule_;
-    std::vector<MacNodeId> nextHop_; // MacNodeIdMaster --> MacNodeIdSlave
+    std::vector<MacNodeId> nextHop_;  // MacNodeIdMaster --> MacNodeIdSlave
     std::vector<MacNodeId> secondaryNodeToMasterNode_;
     std::map<MacNodeId, OmnetId> nodeIds_;
 
@@ -85,9 +85,9 @@ class Binder : public cSimpleModule
     // maximum data rate achievable in one RB (NED parameter)
     double maxDataRatePerRb_;
 
-    //TODO perhaps split the next one into 3 distinct variables, named after roles?
-    unsigned int macNodeIdCounter_[3]; // MacNodeId Counter
-    DeployedUesMap dMap_; // DeployedUes --> Master Mapping
+    // TODO perhaps split the next one into 3 distinct variables, named after roles?
+    unsigned int macNodeIdCounter_[3];  // MacNodeId Counter
+    DeployedUesMap dMap_;  // DeployedUes --> Master Mapping
 
     /*
      * Carrier Aggregation support
@@ -626,7 +626,7 @@ class Binder : public cSimpleModule
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

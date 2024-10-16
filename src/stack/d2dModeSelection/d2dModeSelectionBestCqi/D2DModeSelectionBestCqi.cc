@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -39,8 +39,8 @@ void D2DModeSelectionBestCqi::doModeSelection()
             continue;
 
         for (auto& jt : it.second) {
-            MacNodeId dstId = jt.first;   // since the D2D CQI is the same for all D2D connections,
-                                          // the mode will be the same for all destinations
+            MacNodeId dstId = jt.first;  // since the D2D CQI is the same for all D2D connections,
+                                         // the mode will be the same for all destinations
 
             // consider only UEs within this cell
             if (binder_->getNextHop(dstId) != mac_->getMacCellId())
@@ -92,5 +92,5 @@ void D2DModeSelectionBestCqi::doModeSwitchAtHandover(MacNodeId nodeId, bool hand
     D2DModeSelectionBase::doModeSwitchAtHandover(nodeId, handoverCompleted);
 }
 
-} //namespace
+}  // namespace
 

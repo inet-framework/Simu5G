@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -66,5 +66,5 @@ void AssociateId::setValue(std::string value)
     value_ = value;
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -50,5 +50,5 @@ nlohmann::ordered_json AttributeBase::toJson(AttributeBase& content)
     return content.toJson();
 }
 
-} //namespace
+}  // namespace
 

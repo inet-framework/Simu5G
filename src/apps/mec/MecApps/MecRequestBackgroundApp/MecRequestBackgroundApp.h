@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -23,13 +23,13 @@ class MecRequestBackgroundApp : public MecAppBase
 {
   protected:
 
-    int numberOfApplications_;    // requests to send in this session
+    int numberOfApplications_;  // requests to send in this session
     cMessage *burstTimer = nullptr;
     cMessage *burstPeriod = nullptr;
     bool burstFlag;
     cMessage *sendBurst = nullptr;
 
-    double lambda; // it is the mean, not the rate
+    double lambda;  // it is the mean, not the rate
     inet::TcpSocket *serviceSocket_ = nullptr;
     inet::TcpSocket *mp1Socket_ = nullptr;
 
@@ -57,7 +57,7 @@ class MecRequestBackgroundApp : public MecAppBase
     ~MecRequestBackgroundApp() override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* APPS_MEC_MEAPPS_MEBGAPP_H_ */
 

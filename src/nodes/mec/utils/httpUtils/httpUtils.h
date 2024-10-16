@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -184,9 +184,9 @@ void sendPutRequest(inet::TcpSocket *socket, const char *body, const char *host,
 void sendGetRequest(inet::TcpSocket *socket, const char *host, const char *uri, const char *body = nullptr, const char *parameters = nullptr);
 void sendDeleteRequest(inet::TcpSocket *socket, const char *host, const char *uri);
 
-} // namespace Http
+}  // namespace Http
 
-} //namespace
+}  // namespace
 
 #endif
 

@@ -34,9 +34,9 @@ class cModule_LessId
     bool operator()(const cModule *left, const cModule *right) const;
 };
 
-} // namespace utils
+}  // namespace utils
 
-} // namespace simu5g
+}  // namespace simu5g
 
 #endif // ifndef __UTILS_H
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -13,7 +13,7 @@
 
 namespace simu5g {
 
-Plmn::Plmn() : mcc_("001"), mnc_("01") // test mcc and mnc
+Plmn::Plmn() : mcc_("001"), mnc_("01")  // test mcc and mnc
 {
 }
 
@@ -52,5 +52,5 @@ nlohmann::ordered_json Plmn::toJson() const
     return val;
 }
 
-} //namespace
+}  // namespace
 

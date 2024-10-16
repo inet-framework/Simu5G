@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -20,7 +20,7 @@
 
 #include <string>
 #include <vector>
-//#include "apps/mec/MECServices/packets/HttpResponsePacket.h"
+// #include "apps/mec/MECServices/packets/HttpResponsePacket.h"
 #include "nodes/mec/utils/httpUtils/httpUtils.h"
 #include "common/utils/utils.h"
 #include "inet/networklayer/contract/ipv4/Ipv4Address.h"
@@ -57,9 +57,9 @@ void RNIService::handleGETRequest(const HttpRequestMessage *currentRequestMessag
     std::string uri = currentRequestMessageServed->getUri();
 
     // check if it is a GET for a query or a subscription
-    if (uri == (baseUriQueries_ + "/layer2_meas")) { //queries
+    if (uri == (baseUriQueries_ + "/layer2_meas")) {  // queries
         std::string params = currentRequestMessageServed->getParameters();
-        //look for query parameters
+        // look for query parameters
         if (!params.empty()) {
             std::vector<std::string> queryParameters = simu5g::utils::splitString(params, "&");
             /*
@@ -72,14 +72,14 @@ void RNIService::handleGETRequest(const HttpRequestMessage *currentRequestMessag
             std::vector<MacNodeId> cellIds;
             std::vector<inet::Ipv4Address> ues;
 
-            std::map<std::string, std::vector<std::string>> queryParamsMap; // e.g cell_id -> [0, 1]
+            std::map<std::string, std::vector<std::string>> queryParamsMap;  // e.g cell_id -> [0, 1]
 
             std::vector<std::string> params;
             std::vector<std::string> splittedParams;
             for (const auto& queryParam : queryParameters) {
-                if (queryParam.rfind("cell_id", 0) == 0) { // cell_id=par1,par2
+                if (queryParam.rfind("cell_id", 0) == 0) {  // cell_id=par1,par2
                     params = simu5g::utils::splitString(queryParam, "=");
-                    if (params.size() != 2) { //must be param=values
+                    if (params.size() != 2) {  // must be param=values
                         Http::send400Response(socket);
                         return;
                     }
@@ -91,7 +91,7 @@ void RNIService::handleGETRequest(const HttpRequestMessage *currentRequestMessag
                 else if (queryParam.rfind("ue_ipv4_address", 0) == 0) {
                     // TO DO manage acr:10.12
                     params = simu5g::utils::splitString(queryParam, "=");
-                    if (params.size() != 2) { //must be param=values
+                    if (params.size() != 2) {  // must be param=values
                         Http::send400Response(socket);
                         return;
                     }
@@ -99,13 +99,13 @@ void RNIService::handleGETRequest(const HttpRequestMessage *currentRequestMessag
                     for (const auto& ueAddress : splittedParams)
                         ues.push_back(inet::Ipv4Address(ueAddress.c_str()));
                 }
-                else { // bad parameters
+                else {  // bad parameters
                     Http::send400Response(socket);
                     return;
                 }
             }
 
-            //send response
+            // send response
             if (!ues.empty() && !cellIds.empty()) {
                 Http::send200Response(socket, L2MeasResource_.toJson(cellIds, ues).dump().c_str());
             }
@@ -120,16 +120,16 @@ void RNIService::handleGETRequest(const HttpRequestMessage *currentRequestMessag
             }
         }
         else {
-            //no query params
+            // no query params
             Http::send200Response(socket, L2MeasResource_.toJson().dump().c_str());
             return;
         }
     }
-    else if (uri == baseUriSubscriptions_) { //subs
+    else if (uri == baseUriSubscriptions_) {  // subs
         // TODO implement subscription?
         Http::send404Response(socket);
     }
-    else { // not found
+    else {  // not found
         Http::send404Response(socket);
     }
 }
@@ -146,5 +146,5 @@ void RNIService::finish()
 {
 }
 
-} //namespace
+}  // namespace
 

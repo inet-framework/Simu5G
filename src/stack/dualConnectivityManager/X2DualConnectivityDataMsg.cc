@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -16,7 +16,7 @@ namespace simu5g {
 using namespace omnetpp;
 using namespace inet;
 
-//Register_Serializer(X2DualConnectivityDataMsg, LteX2MsgSerializer);
+// Register_Serializer(X2DualConnectivityDataMsg, LteX2MsgSerializer);
 
 X2DualConnectivityDataMsg::X2DualConnectivityDataMsg() :
     LteX2Message()
@@ -41,5 +41,5 @@ X2DualConnectivityDataMsg *X2DualConnectivityDataMsg::dup() const {
     return new X2DualConnectivityDataMsg(*this);
 }
 
-} //namespace
+}  // namespace
 

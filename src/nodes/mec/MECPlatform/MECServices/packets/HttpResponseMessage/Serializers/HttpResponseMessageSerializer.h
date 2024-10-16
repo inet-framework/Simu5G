@@ -34,7 +34,7 @@ class HttpResponseMessageSerializer : public FieldsChunkSerializer
     const Ptr<Chunk> deserialize(MemoryInputStream& stream) const override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

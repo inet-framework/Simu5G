@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -33,9 +33,9 @@ enum DistanceCriteria { AllWithinDistance, AnyWithinDistance, AllBeyondDistance,
 inet::Coord getCoordinates(Binder *binder, const MacNodeId id);
 inet::Coord getSpeed(Binder *binder, const MacNodeId id);
 
-} // namespace LocationUtils
+}  // namespace LocationUtils
 
-} //namespace
+}  // namespace
 
 #endif /* APPS_MEC_MESERVICES_LOCATIONSERVICE_RESOURCES_LOCATIONAPIDEFS_H_ */
 

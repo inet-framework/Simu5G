@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -54,8 +54,8 @@ double DasFilter::receiveBroadcast(LteAirFrame *frame, UserControlInfo *lteInfo)
         for (const auto& value : rssiV)
             rssi += value;
         rssi /= rssiV.size();
-        //EV << "Sender Position: (" << senderPos.getX() << "," << senderPos.getY() << ")\n";
-        //EV << "My Position: (" << myPos.getX() << "," << myPos.getY() << ")\n";
+        // EV << "Sender Position: (" << senderPos.getX() << "," << senderPos.getY() << ")\n";
+        // EV << "My Position: (" << myPos.getX() << "," << myPos.getY() << ")\n";
 
         EV << "RU" << i << " RSSI: " << rssi;
         if (rssi > rssiThreshold_) {
@@ -96,5 +96,5 @@ std::ostream& operator<<(std::ostream& stream, const DasFilter *das)
     return stream;
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -69,7 +69,7 @@ void MultihopD2DStatistics::recordNewBroadcast(unsigned int msgId, UeSet& destin
 
 void MultihopD2DStatistics::recordReception(MacNodeId nodeId, unsigned int msgId, simtime_t delay, int hops)
 {
-    if (delay > 0.500)                                                // TODO fix this. packets with higher delay should be discarded by the sender
+    if (delay > 0.500) // TODO fix this. packets with higher delay should be discarded by the sender
         return;
 
     // consider the least-significant 16 bits
@@ -78,7 +78,7 @@ void MultihopD2DStatistics::recordReception(MacNodeId nodeId, unsigned int msgId
     if (eventDeliveryInfo_.find(eventId) == eventDeliveryInfo_.end())
         throw cRuntimeError("d2dMultihopStatistics::recordReception - Event with ID %d does not exist.", eventId);
     if (eventDeliveryInfo_[eventId].find(nodeId) != eventDeliveryInfo_[eventId].end()) {
-        if (eventDeliveryInfo_[eventId][nodeId].delay_ < 0) { // store only the minimum
+        if (eventDeliveryInfo_[eventId][nodeId].delay_ < 0) {  // store only the minimum
             eventDeliveryInfo_[eventId][nodeId].delay_ = delay;
             eventDeliveryInfo_[eventId][nodeId].hops_ = hops;
         }
@@ -159,5 +159,5 @@ void MultihopD2DStatistics::finish()
     }
 }
 
-} //namespace
+}  // namespace
 

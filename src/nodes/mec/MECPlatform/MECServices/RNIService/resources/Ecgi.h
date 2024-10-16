@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -25,7 +25,7 @@ class Ecgi : public AttributeBase
     MacCellId cellId_ = MacCellId(-1);
     Plmn plmn_;
 
-    nlohmann::ordered_json toJsonCell() const; //should this be private?
+    nlohmann::ordered_json toJsonCell() const;  // should this be private?
 
   public:
     Ecgi();
@@ -46,7 +46,7 @@ class Ecgi : public AttributeBase
 
 };
 
-} //namespace
+}  // namespace
 
 #endif // _ECGI_H_
 

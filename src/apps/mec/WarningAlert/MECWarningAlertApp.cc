@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -132,8 +132,8 @@ void MECWarningAlertApp::modifySubscription()
                                                                 "\"frequency\": 5,"
                                                                 "\"radius\": " + std::to_string(radius) + ","
                                                                                                           "\"trackingAccuracy\": 10,"
-                                                                                                          "\"latitude\": " + std::to_string(centerPositionX) + ","           // as x
-                                                                                                                                                               "\"longitude\": " + std::to_string(centerPositionY) + ""        // as y
+                                                                                                          "\"latitude\": " + std::to_string(centerPositionX) + ","  // as x
+                                                                                                                                                               "\"longitude\": " + std::to_string(centerPositionY) + ""  // as y
                                                                                                                                                                                                                      "}"
                                                                                                                                                                                                                      "}\r\n";
     std::string uri = "/example/location/v2/subscriptions/area/circle/" + subId;
@@ -154,8 +154,8 @@ void MECWarningAlertApp::sendSubscription()
                                                                 "\"frequency\": 5,"
                                                                 "\"radius\": " + std::to_string(radius) + ","
                                                                                                           "\"trackingAccuracy\": 10,"
-                                                                                                          "\"latitude\": " + std::to_string(centerPositionX) + ","           // as x
-                                                                                                                                                               "\"longitude\": " + std::to_string(centerPositionY) + ""        // as y
+                                                                                                          "\"latitude\": " + std::to_string(centerPositionX) + ","  // as x
+                                                                                                                                                               "\"longitude\": " + std::to_string(centerPositionY) + ""  // as y
                                                                                                                                                                                                                      "}"
                                                                                                                                                                                                                      "}\r\n";
     std::string uri = "/example/location/v2/subscriptions/area/circle";
@@ -227,7 +227,7 @@ void MECWarningAlertApp::handleMp1Message(int connId)
     EV << "MECWarningAlertApp::handleMp1Message - payload: " << mp1HttpMessage->getBody() << endl;
 
     try {
-        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody()); // get the JSON structure
+        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody());  // get the JSON structure
         if (!jsonBody.empty()) {
             jsonBody = jsonBody[0];
             std::string serName = jsonBody["serName"];
@@ -260,11 +260,11 @@ void MECWarningAlertApp::handleServiceMessage(int connId)
     serviceHttpMessage = check_and_cast_nullable<HttpBaseMessage *>(msgStatus->httpMessageQueue.front());
 
     if (serviceHttpMessage->getType() == REQUEST) {
-        Http::send204Response(serviceSocket_); // send back 204 no content
+        Http::send204Response(serviceSocket_);  // send back 204 no content
         nlohmann::json jsonBody;
         EV << "MECWarningAlertApp::handleTcpMsg - REQUEST " << serviceHttpMessage->getBody() << endl;
         try {
-            jsonBody = nlohmann::json::parse(serviceHttpMessage->getBody()); // get the JSON structure
+            jsonBody = nlohmann::json::parse(serviceHttpMessage->getBody());  // get the JSON structure
         }
         catch (nlohmann::detail::parse_error e) {
             std::cout << e.what() << std::endl;
@@ -321,16 +321,16 @@ void MECWarningAlertApp::handleServiceMessage(int connId)
     else if (serviceHttpMessage->getType() == RESPONSE) {
         HttpResponseMessage *rspMsg = dynamic_cast<HttpResponseMessage *>(serviceHttpMessage);
 
-        if (rspMsg->getCode() == 204) { // in response to a DELETE
+        if (rspMsg->getCode() == 204) {  // in response to a DELETE
             EV << "MECWarningAlertApp::handleTcpMsg - response 204, removing circle" << rspMsg->getBody() << endl;
             serviceSocket_->close();
             getSimulation()->getSystemModule()->getCanvas()->removeFigure(circle);
         }
-        else if (rspMsg->getCode() == 201) { // in response to a POST
+        else if (rspMsg->getCode() == 201) {  // in response to a POST
             nlohmann::json jsonBody;
             EV << "MECWarningAlertApp::handleTcpMsg - response 201 " << rspMsg->getBody() << endl;
             try {
-                jsonBody = nlohmann::json::parse(rspMsg->getBody()); // get the JSON structure
+                jsonBody = nlohmann::json::parse(rspMsg->getBody());  // get the JSON structure
             }
             catch (nlohmann::detail::parse_error e) {
                 EV << e.what() << endl;
@@ -347,7 +347,7 @@ void MECWarningAlertApp::handleServiceMessage(int connId)
             // in this case subscriptionType would be empty and the baseUri == uri
             // by the way the next if statement solves this problem
             std::string baseUri = resourceUri.substr(0, lastPart);
-            //save the id
+            // save the id
             subId = resourceUri.substr(lastPart + 1);
             EV << "subId: " << subId << endl;
 
@@ -402,5 +402,5 @@ void MECWarningAlertApp::handleProcessedMessage(cMessage *msg)
     MecAppBase::handleProcessedMessage(msg);
 }
 
-} //namespace
+}  // namespace
 

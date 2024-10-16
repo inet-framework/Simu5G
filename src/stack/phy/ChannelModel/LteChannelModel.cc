@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -13,7 +13,7 @@
 
 namespace simu5g {
 
-//Define_Module(LteChannelModel);
+// Define_Module(LteChannelModel);
 
 void LteChannelModel::initialize(int stage)
 {
@@ -22,12 +22,12 @@ void LteChannelModel::initialize(int stage)
 
         componentCarrier_.reference(this, "componentCarrierModule", true);
 
-        numBands_ = componentCarrier_->getNumBands();   // TODO fix this for UEs' channel model (probably it's not used)
+        numBands_ = componentCarrier_->getNumBands();  // TODO fix this for UEs' channel model (probably it's not used)
         carrierFrequency_ = componentCarrier_->getCarrierFrequency();
 
         // register the carrier to the cellInfo module and the binder
         cellInfo_.reference(this, "cellInfoModule", false);
-        if (cellInfo_ != nullptr) { // cInfo is NULL on UEs
+        if (cellInfo_ != nullptr) {  // cInfo is NULL on UEs
             cellInfo_->registerCarrier(carrierFrequency_, numBands_, componentCarrier_->getNumerologyIndex());
         }
     }
@@ -84,5 +84,5 @@ bool LteChannelModel::isErrorDas(LteAirFrame *frame, UserControlInfo *lteInfo)
     return true;
 }
 
-} //namespace
+}  // namespace
 

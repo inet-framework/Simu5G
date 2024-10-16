@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -31,7 +31,7 @@ enum {
 
 class UERequestApp : public cSimpleModule
 {
-    //communication to device app and mec app
+    // communication to device app and mec app
     inet::UdpSocket socket;
 
     unsigned int sno_;
@@ -52,7 +52,7 @@ class UERequestApp : public cSimpleModule
 
     std::string mecAppName;
 
-    //scheduling
+    // scheduling
     enum MsgKind {
         KIND_SELF_START = 1000,
         KIND_SELF_STOP,
@@ -62,7 +62,7 @@ class UERequestApp : public cSimpleModule
     cMessage *selfStart_ = nullptr;
     cMessage *selfStop_ = nullptr;
     cMessage *sendRequest_ = nullptr;
-    cMessage *unBlockingMsg_ = nullptr; //it prevents to stop the send/response pattern if msg gets lost
+    cMessage *unBlockingMsg_ = nullptr;  // it prevents to stop the send/response pattern if msg gets lost
 
     // signals for statistics
     static simsignal_t processingTimeSignal_;
@@ -98,7 +98,7 @@ class UERequestApp : public cSimpleModule
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

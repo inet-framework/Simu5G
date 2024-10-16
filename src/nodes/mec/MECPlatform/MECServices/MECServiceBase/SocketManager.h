@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -34,7 +34,7 @@ class SocketManager : public cSimpleModule, public inet::TcpSocket::ICallback
 {
   protected:
     MecServiceBase *service = nullptr;
-    inet::TcpSocket *sock = nullptr;    // pointer into socketMap managed by TCPSrvHostApp
+    inet::TcpSocket *sock = nullptr;  // pointer into socketMap managed by TCPSrvHostApp
     HttpBaseMessage *currentHttpMessage = nullptr;
     cQueue httpMessageQueue;
     std::string bufferedData;
@@ -102,7 +102,7 @@ class SocketManager : public cSimpleModule, public inet::TcpSocket::ICallback
     virtual void statusArrived(inet::TcpStatusInfo *status) { delete status; }
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

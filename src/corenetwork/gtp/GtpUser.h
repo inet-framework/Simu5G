@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -78,7 +78,7 @@ class GtpUser : public cSimpleModule
     inet::NetworkInterface *detectInterface();
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

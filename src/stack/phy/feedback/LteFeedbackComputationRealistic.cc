@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -9,7 +9,7 @@
 // and cannot be removed from it.
 //
 
-//#include <math.h>
+// #include <math.h>
 #include <cmath>
 #include "stack/phy/feedback/LteFeedbackComputationRealistic.h"
 #include "common/blerCurves/PhyPisaData.h"
@@ -75,7 +75,7 @@ void LteFeedbackComputationRealistic::generateBaseFeedback(int numBands, int num
         }
     }
     else if (fbType == PREFERRED) {
-        //TODO
+        // TODO
     }
 }
 
@@ -238,5 +238,5 @@ double LteFeedbackComputationRealistic::meanSnr(std::vector<double> snr)
     return mean;
 }
 
-} //namespace
+}  // namespace
 

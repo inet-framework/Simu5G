@@ -30,7 +30,7 @@ bool cModule_LessId::operator()(const cModule *left, const cModule *right) const
     return (left != nullptr ? left->getId() : -1) < (right != nullptr ? right->getId() : -1);
 }
 
-} // namespace utils
+}  // namespace utils
 
-} //namespace
+}  // namespace
 

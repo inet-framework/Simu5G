@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -318,7 +318,7 @@ class CellInfo : public cSimpleModule
         return &lambdaMap_;
     }
 
-    //---------------------------------------------------------------
+    // ---------------------------------------------------------------
 
     /*
      * Carrier Aggregation support
@@ -356,7 +356,7 @@ class CellInfo : public cSimpleModule
     ~CellInfo() override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

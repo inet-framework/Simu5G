@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -31,11 +31,11 @@ class EventNotification
     virtual void setType(const std::string& type);
 
   protected:
-    std::string type_; // type of the subscription to cast to the correct notification event
-    int subId_; // subscription id
+    std::string type_;  // type of the subscription to cast to the correct notification event
+    int subId_;  // subscription id
 };
 
-} //namespace
+}  // namespace
 
 #endif /* NODES_MEC_MEPLATFORM_EVENTNOTIFICATION_EVENTNOTIFICATION_H_ */
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -37,10 +37,10 @@ void L2MeasBase::addValue(double value) {
     }
     values_.at(index_++) = value;
 
-    if (movingAverage_ || index_ == period_) { // compute mean
+    if (movingAverage_ || index_ == period_) {  // compute mean
         mean_ = computeMean();
-        //outVector_.record(mean_);
-        //histogram_.collect(mean_);
+        // outVector_.record(mean_);
+        // histogram_.collect(mean_);
     }
 }
 
@@ -52,7 +52,7 @@ int L2MeasBase::computeMean()
         return 0;
     else {
         int mean = floor(sum_ / size_);
-        return mean < 0 ? 0 : mean; // round could return -0.00 -> -1
+        return mean < 0 ? 0 : mean;  // round could return -0.00 -> -1
     }
 }
 
@@ -71,5 +71,5 @@ void L2MeasBase::reset()
     mean_ = 0;
 }
 
-} //namespace
+}  // namespace
 

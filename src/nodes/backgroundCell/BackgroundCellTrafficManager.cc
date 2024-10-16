@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -75,5 +75,5 @@ double BackgroundCellTrafficManager::getReceivedPower_bgUe(double txPower, inet:
     return bgChannelModel->getReceivedPower_bgUe(txPower, txPos, rxPos, dir, losStatus, bgScheduler_);
 }
 
-} //namespace
+}  // namespace
 

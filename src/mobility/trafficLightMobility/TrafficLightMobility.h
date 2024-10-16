@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -31,11 +31,11 @@ class TrafficLightController;
 class TrafficLightMobility : public LinearMobility
 {
   protected:
-    rad heading_;                                        // current heading
-    deg current_heading_deg_normalized_;                 // adjust the heading between 0 and 360 deg
-    std::vector<TrafficLightController *> trafficLights_; // references to the traffic lights affecting this mobility module
+    rad heading_;  // current heading
+    deg current_heading_deg_normalized_;  // adjust the heading between 0 and 360 deg
+    std::vector<TrafficLightController *> trafficLights_;  // references to the traffic lights affecting this mobility module
 
-    bool enableTurns_; // flag for enabling random turns at a traffic light
+    bool enableTurns_;  // flag for enabling random turns at a traffic light
 
   protected:
     int numInitStages() const override { return NUM_INIT_STAGES; }
@@ -51,7 +51,7 @@ class TrafficLightMobility : public LinearMobility
     void getTrafficLights();
 };
 
-} //namespace
+}  // namespace
 
 #endif /* MOBILITY_TRAFFICLIGHTMOBILITY_H_ */
 

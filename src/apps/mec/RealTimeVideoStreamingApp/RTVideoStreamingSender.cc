@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -178,7 +178,7 @@ void RTVideoStreamingSender::handleMessage(cMessage *msg)
          * From Device app
          * device app usually runs in the UE (loopback), but it could also run in other places
          */
-        if (ipAdd == deviceAppAddress_ || ipAdd == inet::L3Address("127.0.0.1")) { // device app
+        if (ipAdd == deviceAppAddress_ || ipAdd == inet::L3Address("127.0.0.1")) {  // device app
             auto mePkt = packet->peekAtFront<DeviceAppPacket>();
             if (!strcmp(mePkt->getType(), ACK_START_MECAPP)) {
                 handleAckStartMECApp(msg);
@@ -355,9 +355,9 @@ void RTVideoStreamingSender::sendMessage() {
 
     // read a new frame
     if (sendAllOnOneTime_ || (fragFrameStatus_.remainingFragments == 0 && !sendAllOnOneTime_)) {
-        _inputFileStream >> bits; // the function sets the eofbit flag.
-        _inputFileStream >> unit; // the function sets the eofbit flag.
-        _inputFileStream.get(description, 100, '\n'); // the function sets the eofbit flag.
+        _inputFileStream >> bits;  // the function sets the eofbit flag.
+        _inputFileStream >> unit;  // the function sets the eofbit flag.
+        _inputFileStream.get(description, 100, '\n');  // the function sets the eofbit flag.
         EV << "RTVideoStreamingSender::sendPacket - new frame of size: " << bits << " bits, description " << description << " bytes eof " << _inputFileStream.eof() << endl;
         if (_inputFileStream.eof()) {
             EV << "RTVideoStreamingSender::sendMessage - file ended, start reading from the beginning" << endl;
@@ -372,9 +372,9 @@ void RTVideoStreamingSender::sendMessage() {
             // second line: initial delay unit description
             _inputFileStream.get(line, 100, '\n');
 
-            _inputFileStream >> bits; // the function sets the eofbit flag.
-            _inputFileStream >> unit; // the function sets the eofbit flag.
-            _inputFileStream.get(description, 100, '\n'); // the function sets the eofbit flag.
+            _inputFileStream >> bits;  // the function sets the eofbit flag.
+            _inputFileStream >> unit;  // the function sets the eofbit flag.
+            _inputFileStream.get(description, 100, '\n');  // the function sets the eofbit flag.
         }
 
         int bytesRemaining = bits / 8;
@@ -423,7 +423,7 @@ void RTVideoStreamingSender::sendMessage() {
 
                 if (first) {
                     // the maximum number of real data bytes
-                    maxDataSize = mtu_ - 4 - 20 - 8;//B(mtu_) - B(mpegHeader->getChunkLength()).get();
+                    maxDataSize = mtu_ - 4 - 20 - 8;  // B(mtu_) - B(mpegHeader->getChunkLength()).get();
                     EV << "r " << bytesRemaining / maxDataSize << " ceil " << ceil((double)bytesRemaining / maxDataSize) << endl;
                     numberOfFragments = ceil((double)bytesRemaining / maxDataSize);
                     slicedDataSize = bytesRemaining / (numberOfFragments);
@@ -482,10 +482,10 @@ void RTVideoStreamingSender::sendMessage() {
             fragFrameStatus_.frameNumber = frameNum;
             fragFrameStatus_.frameSize = bytesRemaining;
 
-            int maxDataSize = mtu_ - 4 - 20 - 8; // FIXME RTP header = 12B (fixed), rtpCarHeader is 4B
+            int maxDataSize = mtu_ - 4 - 20 - 8;  // FIXME RTP header = 12B (fixed), rtpCarHeader is 4B
             int numberOfFragments = ceil((double)bytesRemaining / maxDataSize);
             fragFrameStatus_.numberOfFragments = numberOfFragments;
-            fragFrameStatus_.remainingFragments = numberOfFragments - 1; // since I send the first one now
+            fragFrameStatus_.remainingFragments = numberOfFragments - 1;  // since I send the first one now
             fragFrameStatus_.bytesPerPacket = maxDataSize;
             fragFrameStatus_.remainingFrameBytes = fragFrameStatus_.frameSize - fragFrameStatus_.bytesPerPacket;
 
@@ -644,7 +644,7 @@ void RTVideoStreamingSender::handleStopSessionAck(cMessage *msg)
 
     sessionId_++;
 
-    _frameNumber = 0; // reset frame
+    _frameNumber = 0;  // reset frame
     // schedule stop session
     if (!selfSessionStart_->isScheduled()) {
         double periodBetweenSession = par("periodBetweenSession").doubleValue();
@@ -693,5 +693,5 @@ void RTVideoStreamingSender::initializeVideoStream()
     _initialDelay = delay;
 }
 
-} //namespace
+}  // namespace
 

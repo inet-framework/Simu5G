@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -45,7 +45,7 @@ void LtePdcpRrcEnbD2D::fromDataPort(cPacket *pktAux)
     // set direction based on the destination Id. If the destination can be reached
     // using D2D, set D2D direction. Otherwise, set UL direction
     srcId = binder_->getMacNodeId(srcAddr);
-    destId = binder_->getMacNodeId(destAddr);   // get final destination
+    destId = binder_->getMacNodeId(destAddr);  // get final destination
     lteInfo->setDirection(getDirection());
 
     // check if src and dest of the flow are D2D-capable (currently in IM)
@@ -133,5 +133,5 @@ void LtePdcpRrcEnbD2D::pdcpHandleD2DModeSwitch(MacNodeId peerId, LteD2DMode newM
     // add here specific behavior for handling mode switch at the PDCP layer
 }
 
-} //namespace
+}  // namespace
 

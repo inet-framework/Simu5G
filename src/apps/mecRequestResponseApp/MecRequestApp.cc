@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -32,7 +32,7 @@ void MecRequestApp::initialize(int stage)
     if (stage != inet::INITSTAGE_APPLICATION_LAYER)
         return;
 
-    //retrieve parameters
+    // retrieve parameters
     period_ = par("period");
     localPort_ = par("localPort");
     destPort_ = par("destPort");
@@ -40,7 +40,7 @@ void MecRequestApp::initialize(int stage)
     const char *destSymbolicAddress = par("destAddress").stringValue();
     destAddress_ = inet::L3AddressResolver().resolve(destSymbolicAddress);
 
-    //binding socket UDP
+    // binding socket UDP
     socket.setOutputGate(gate("socketOut"));
     socket.bind(localPort_);
 
@@ -55,10 +55,10 @@ void MecRequestApp::initialize(int stage)
 
     enableMigration_ = par("enableMigration").boolValue();
 
-    //initializing the auto-scheduling messages
+    // initializing the auto-scheduling messages
     selfSender_ = new cMessage("selfSender");
 
-    //starting MecRequestApp
+    // starting MecRequestApp
     simtime_t startTime = par("startTime");
     EV << "MecRequestApp::initialize - sending first packet in " << startTime << " seconds " << endl;
     scheduleAt(simTime() + startTime, selfSender_);
@@ -83,7 +83,7 @@ void MecRequestApp::handleMessage(cMessage *msg)
             bsId_ = nrPhy_->getMasterId();
             sendRequest();
 
-            //rescheduling
+            // rescheduling
             scheduleAt(simTime() + period_, selfSender_);
         }
         else if (!strcmp(msg->getName(), "migrationTimer")) {
@@ -156,5 +156,5 @@ void MecRequestApp::recvResponse(cMessage *msg)
     emit(recvResponseSnoSignal_, (long)sno);
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -150,7 +150,7 @@ class TrafficGeneratorBase : public cSimpleModule, public cListener
     void collectMeasuredSinr(double sample, Direction dir);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

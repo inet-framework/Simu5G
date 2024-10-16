@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -206,7 +206,7 @@ void AmTxQueue::addPdus()
         if (pduRtxQueue_.get(txWindowIndex) == nullptr) {
             // Store a copy of the current PDU
             auto pduCopy = pdu->dup();
-            //pduCopy->setControlInfo(lteInfo->dup());
+            // pduCopy->setControlInfo(lteInfo->dup());
             pduRtxQueue_.addAt(txWindowIndex, pduCopy);
 
             if (txWindowIndex >= 200)
@@ -493,8 +493,8 @@ void AmTxQueue::bufferControlPdu(cPacket *pkt) {
 
 void AmTxQueue::bufferPdu(cPacket *pktAux)
 {
-    Enter_Method("bufferFragmented()"); // Direct Method Call
-    take(pktAux); // Take ownership
+    Enter_Method("bufferFragmented()");  // Direct Method Call
+    take(pktAux);  // Take ownership
 
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
 
@@ -533,9 +533,9 @@ void AmTxQueue::sendPdus(int size) {
         pktCopy->setName("lteRlcFragment (empty)");
         auto rlcPdu = pktCopy->removeAtFront<LteRlcAmPdu>();
         rlcPdu->markMutableIfExclusivelyOwned();
-        rlcPdu->setChunkLength(inet::b(1)); // send only a bit, minimum size
+        rlcPdu->setChunkLength(inet::b(1));  // send only a bit, minimum size
         pktCopy->insertAtFront(rlcPdu);
-        pkt = pktCopy; // send modified copy; the original packet will be sent when it fits
+        pkt = pktCopy;  // send modified copy; the original packet will be sent when it fits
     }
 
     lteRlc_->sendFragmented(pkt);
@@ -810,5 +810,5 @@ void AmTxQueue::handleMessage(cMessage *msg)
     }
 }
 
-} //namespace
+}  // namespace
 

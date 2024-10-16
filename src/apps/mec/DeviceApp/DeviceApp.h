@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -110,7 +110,7 @@ class DeviceApp : public cSimpleModule, public inet::TcpSocket::ICallback, publi
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* APPS_MEC_MEAPPS_DEVICEAPP_H_ */
 

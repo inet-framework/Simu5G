@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -33,8 +33,8 @@ void LteAllocatorBestFit::checkHole(Candidate& candidate, Band holeIndex, unsign
             candidate.index = holeIndex;
             candidate.len = holeLen;
         }
-        else { // The current candidate would satisfy the requested load.
-               // compare the length of the hole with that of the best candidate
+        else {  // The current candidate would satisfy the requested load.
+                // compare the length of the hole with that of the best candidate
             if (candidate.len > holeLen) {
                 // the hole is a better candidate. Update
                 candidate.greater = true;
@@ -199,7 +199,7 @@ void LteAllocatorBestFit::prepareSchedule()
         EV << NOW << " LteAllocatorBestFit::schedule computed for cid " << cid << " score of " << desc.score_ << endl;
     }
 
-    //Delete inactive connections
+    // Delete inactive connections
     for (unsigned int inactive_connection : inactive_connections) {
         carrierActiveConnectionSet_.erase(inactive_connection);
         activeConnectionTempSet_.erase(inactive_connection);
@@ -216,7 +216,7 @@ void LteAllocatorBestFit::prepareSchedule()
         // get the node Id
         MacNodeId nodeId = MacCidToNodeId(cid);
 
-        //Set the right direction for nodeId
+        // Set the right direction for nodeId
         Direction dir;
         if (direction_ == UL)
             dir = (MacCidToLcid(cid) == D2D_SHORT_BSR) ? D2D : (MacCidToLcid(cid) == D2D_MULTI_SHORT_BSR) ? D2D_MULTI : direction_;
@@ -243,7 +243,7 @@ void LteAllocatorBestFit::prepareSchedule()
         unsigned int req_RBs = 0;
 
         // Calculate the number of Bytes available in a block
-        unsigned int req_Bytes1RB = eNbScheduler_->mac_->getAmc()->computeBytesOnNRbs(nodeId, 0, cw, 1, dir, carrierFrequency_); // The band (here equals to 0) is useless
+        unsigned int req_Bytes1RB = eNbScheduler_->mac_->getAmc()->computeBytesOnNRbs(nodeId, 0, cw, 1, dir, carrierFrequency_);  // The band (here equals to 0) is useless
 
         // This calculation is for coherence with the allocation done in the ScheduleGrant function
         req_RBs = (vQueueFrontSize + req_Bytes1RB - 1) / req_Bytes1RB;
@@ -274,7 +274,7 @@ void LteAllocatorBestFit::prepareSchedule()
         // whereas non-reuse-enabled ones are allocated from the end of the subframe
 
         bool enableFrequencyReuse = (reuseD2D && dir == D2D) || (reuseD2DMulti && dir == D2D_MULTI);
-        if (enableFrequencyReuse) { // if frequency reuse is possible for the connection's direction
+        if (enableFrequencyReuse) {  // if frequency reuse is possible for the connection's direction
             EV << NOW << " Connection " << cid << " can exploit frequency reuse, dir[" << dirToA(dir) << "]" << endl;
 
             // Check if the allocation is possible starting from the first unallocated band
@@ -411,7 +411,7 @@ void LteAllocatorBestFit::prepareSchedule()
             // Add the nodeId to the scheduleList (needed for Grants)
             std::pair<unsigned int, Codeword> scListId;
             scListId.first = cid;
-            scListId.second = 0; // TODO add support for codewords different from 0
+            scListId.second = 0;  // TODO add support for codewords different from 0
             eNbScheduler_->storeScListId(carrierFrequency_, scListId, blocks);
 
             // If it is a Cell UE we must reserve the bands
@@ -428,7 +428,7 @@ void LteAllocatorBestFit::prepareSchedule()
                 conn->popFront();
             }
             else {
-                conn->front().first -= (blocks * req_Bytes1RB - MAC_HEADER - RLC_HEADER_UM); // Otherwise update the BSR size
+                conn->front().first -= (blocks * req_Bytes1RB - MAC_HEADER - RLC_HEADER_UM);  // Otherwise update the BSR size
             }
         }
 
@@ -481,5 +481,5 @@ void LteAllocatorBestFit::setAllocationType(std::vector<Band> bookedBands, Alloc
     }
 }
 
-} //namespace
+}  // namespace
 

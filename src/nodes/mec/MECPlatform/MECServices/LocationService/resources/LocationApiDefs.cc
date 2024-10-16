@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -36,7 +36,7 @@ inet::Coord getSpeed(Binder *binder, const MacNodeId id)
     return mobility_->getCurrentVelocity();
 }
 
-} // namespace LocationUtils
+}  // namespace LocationUtils
 
-} //namespace
+}  // namespace
 

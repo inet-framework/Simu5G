@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -371,7 +371,7 @@ class LteMuMimoMatrix
     void print(const char *s) const;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

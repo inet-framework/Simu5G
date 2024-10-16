@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -28,7 +28,7 @@ class LteX2MsgSerializer : public inet::FieldsChunkSerializer
     const inet::Ptr<inet::Chunk> deserialize(inet::MemoryInputStream& stream) const override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* X2_PACKET_LTEX2MSGSERIALIZER_H_ */
 

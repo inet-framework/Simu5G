@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -41,8 +41,8 @@ class ServiceInfo : public AttributeBase
     // getters
 
   private:
-    std::string serInstanceId_; // Identifier of the service instance assigned by the MEPM/MEC platform.
-                                // For uniqueness, UUID format is recommended.
+    std::string serInstanceId_;  // Identifier of the service instance assigned by the MEPM/MEC platform.
+                                 // For uniqueness, UUID format is recommended.
     std::string serName_;
     std::string mecHost_;
     CategoryRef serCategory_;
@@ -55,7 +55,7 @@ class ServiceInfo : public AttributeBase
     bool isLocal_;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* NODES_MEC_MECPLATFORM_SERVICEREGISTRY_RESOURCES_SERVICEINFO_H_ */
 

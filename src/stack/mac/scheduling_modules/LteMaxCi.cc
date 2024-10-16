@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -86,7 +86,7 @@ void LteMaxCi::prepareSchedule()
         EV << NOW << " LteMaxCI::schedule computed for cid " << cid << " score of " << desc.score_ << endl;
     }
 
-    if (direction_ == UL || direction_ == DL) { // D2D background traffic not supported (yet?)
+    if (direction_ == UL || direction_ == DL) {  // D2D background traffic not supported (yet?)
         // Query the BgTrafficManager to get the list of backlogged bg UEs to be added to the scorelist. This work
         // is done by this module itself, so that backgroundTrafficManager is transparent to the scheduling policy in use
 
@@ -160,5 +160,5 @@ void LteMaxCi::commitSchedule()
     *activeConnectionSet_ = activeConnectionTempSet_;
 }
 
-} //namespace
+}  // namespace
 

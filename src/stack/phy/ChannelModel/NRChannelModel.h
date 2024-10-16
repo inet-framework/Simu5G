@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -100,7 +100,7 @@ class NRChannelModel : public LteRealisticChannelModel
     double computeExtCellPathLoss(double threeDimDistance, double twoDimDistance, MacNodeId nodeId);
 };
 
-} //namespace
+}  // namespace
 
 #endif /* NRCHANNELMODEL_H_ */
 

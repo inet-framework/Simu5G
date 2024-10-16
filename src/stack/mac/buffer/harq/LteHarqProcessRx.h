@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -43,7 +43,7 @@ class LteHarqProcessRx
 {
   protected:
     /// contained PDUs
-    //std::vector<LteMacPdu *> pdu_;
+    // std::vector<LteMacPdu *> pdu_;
     std::vector<inet::Packet *> pdu_;
 
     /// current status for each codeword
@@ -104,7 +104,7 @@ class LteHarqProcessRx
      *
      * @return feedback message to be sent.
      */
-    //virtual LteHarqFeedback *createFeedback(Codeword cw);
+    // virtual LteHarqFeedback *createFeedback(Codeword cw);
     virtual inet::Packet *createFeedback(Codeword cw);
 
     /**
@@ -186,7 +186,7 @@ class LteHarqProcessRx
     virtual ~LteHarqProcessRx();
 };
 
-} //namespace
+}  // namespace
 
 #endif
 
