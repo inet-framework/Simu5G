@@ -64,7 +64,7 @@ void NRTxPdcpEntity::setIds(inet::Ptr<FlowControlInfo> lteInfo)
     else
         lteInfo->setSourceId(pdcp_->getNodeId());
 
-    if (lteInfo->getMulticastGroupId() > 0)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
+    if (lteInfo->getMulticastGroupId() > 0)                                                                                           // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
         lteInfo->setDestId(pdcp_->getNodeId());
     else
         lteInfo->setDestId(pdcp_->getDestId(lteInfo));

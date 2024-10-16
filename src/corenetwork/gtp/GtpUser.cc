@@ -187,7 +187,7 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
             tunnelPeerAddress = binder_->getUpfFromMecHost(inet::L3Address(destAddr));
         }
         else { // send to a BS
-            // check if the destination is within the same core network
+               // check if the destination is within the same core network
 
             // get the symbolic IP address of the tunnel destination ID
             // then obtain the address via IPvXAddressResolver

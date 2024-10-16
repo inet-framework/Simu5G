@@ -229,7 +229,7 @@ void NRPhyUe::triggerHandover()
                     double delta = handoverDelta_;
                     if (handoverPair->first != NODEID_NONE) // The other "stack" is performing a complete handover
                         delta += handoverDetachment_ + handoverAttachment_;
-                    else                                                   // The other "stack" is attaching to an eNodeB
+                    else                                                                            // The other "stack" is attaching to an eNodeB
                         delta += handoverAttachment_;
 
                     EV << NOW << " NRPhyUe::triggerHandover - Wait for the handover completion for the other stack. Delay this handover." << endl;
@@ -295,11 +295,11 @@ void NRPhyUe::triggerHandover()
     }
 
     double handoverLatency;
-    if (masterId_ == NODEID_NONE)                                                // Attachment only
+    if (masterId_ == NODEID_NONE)                                                                                  // Attachment only
         handoverLatency = handoverAttachment_;
-    else if (candidateMasterId_ == NODEID_NONE)                                                // Detachment only
+    else if (candidateMasterId_ == NODEID_NONE)                                                                                                // Detachment only
         handoverLatency = handoverDetachment_;
-    else                                                // Complete handover time
+    else                                                         // Complete handover time
         handoverLatency = handoverDetachment_ + handoverAttachment_;
 
     handoverTrigger_ = new cMessage("handoverTrigger");

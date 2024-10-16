@@ -28,12 +28,12 @@ int SplitBearersTable::find_entry(uint32_t srcAddr, uint32_t dstAddr, uint16_t t
 {
     int hashIndex = hash_func(srcAddr, dstAddr, typeOfService);
     while (true) {
-        if (!ht_[hashIndex].present_)                                                  // Entry not found
+        if (!ht_[hashIndex].present_)                                                                                        // Entry not found
             return -1;
         if (ht_[hashIndex].srcAddr_ == srcAddr &&
             ht_[hashIndex].dstAddr_ == dstAddr &&
             ht_[hashIndex].typeOfService_ == typeOfService)
-            return ++ht_[hashIndex].number_;                                                                // Entry found
+            return ++ht_[hashIndex].number_;                                                                                                              // Entry found
         hashIndex = (hashIndex + 1) % TABLE_SIZE;    // Linear scanning of the hash table
     }
 }
@@ -42,7 +42,7 @@ int SplitBearersTable::create_entry(uint32_t srcAddr, uint32_t dstAddr, uint16_t
 {
     int hashIndex = hash_func(srcAddr, dstAddr, typeOfService);
     while (ht_[hashIndex].present_)
-        hashIndex = (hashIndex + 1) % TABLE_SIZE;                                                       // Linear scanning of the hash table
+        hashIndex = (hashIndex + 1) % TABLE_SIZE;                                                                                                          // Linear scanning of the hash table
     ht_[hashIndex].present_ = true;
     ht_[hashIndex].srcAddr_ = srcAddr;
     ht_[hashIndex].dstAddr_ = dstAddr;

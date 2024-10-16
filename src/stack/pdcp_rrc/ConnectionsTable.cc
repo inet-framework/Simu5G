@@ -33,12 +33,12 @@ LogicalCid ConnectionsTable::find_entry(uint32_t srcAddr, uint32_t dstAddr, uint
 {
     int hashIndex = hash_func(srcAddr, dstAddr, typeOfService);
     while (true) {
-        if (ht_[hashIndex].lcid_ == 0xFFFF)                                                        // Entry not found
+        if (ht_[hashIndex].lcid_ == 0xFFFF)                                                                                                    // Entry not found
             return 0xFFFF;
         if (ht_[hashIndex].srcAddr_ == srcAddr &&
             ht_[hashIndex].dstAddr_ == dstAddr &&
             ht_[hashIndex].typeOfService_ == typeOfService)
-            return ht_[hashIndex].lcid_;                                                          // Entry found
+            return ht_[hashIndex].lcid_;                                                                                                    // Entry found
         hashIndex = (hashIndex + 1) % TABLE_SIZE;    // Linear scanning of the hash table
     }
 }
@@ -47,13 +47,13 @@ LogicalCid ConnectionsTable::find_entry(uint32_t srcAddr, uint32_t dstAddr, uint
 {
     int hashIndex = hash_func(srcAddr, dstAddr, typeOfService, dir);
     while (true) {
-        if (ht_[hashIndex].lcid_ == 0xFFFF)                                                        // Entry not found
+        if (ht_[hashIndex].lcid_ == 0xFFFF)                                                                                                    // Entry not found
             return 0xFFFF;
         if (ht_[hashIndex].srcAddr_ == srcAddr &&
             ht_[hashIndex].dstAddr_ == dstAddr &&
             ht_[hashIndex].typeOfService_ == typeOfService &&
             ht_[hashIndex].dir_ == dir)
-            return ht_[hashIndex].lcid_;                                                          // Entry found
+            return ht_[hashIndex].lcid_;                                                                                                    // Entry found
         hashIndex = (hashIndex + 1) % TABLE_SIZE;    // Linear scanning of the hash table
     }
 }
@@ -62,7 +62,7 @@ void ConnectionsTable::create_entry(uint32_t srcAddr, uint32_t dstAddr, uint16_t
 {
     int hashIndex = hash_func(srcAddr, dstAddr, typeOfService);
     while (ht_[hashIndex].lcid_ != 0xFFFF)
-        hashIndex = (hashIndex + 1) % TABLE_SIZE;                                                       // Linear scanning of the hash table
+        hashIndex = (hashIndex + 1) % TABLE_SIZE;                                                                                                          // Linear scanning of the hash table
     ht_[hashIndex].srcAddr_ = srcAddr;
     ht_[hashIndex].dstAddr_ = dstAddr;
     ht_[hashIndex].typeOfService_ = typeOfService;
@@ -73,7 +73,7 @@ void ConnectionsTable::create_entry(uint32_t srcAddr, uint32_t dstAddr, uint16_t
 {
     int hashIndex = hash_func(srcAddr, dstAddr, typeOfService, dir);
     while (ht_[hashIndex].lcid_ != 0xFFFF)
-        hashIndex = (hashIndex + 1) % TABLE_SIZE;                                                       // Linear scanning of the hash table
+        hashIndex = (hashIndex + 1) % TABLE_SIZE;                                                                                                          // Linear scanning of the hash table
     ht_[hashIndex].srcAddr_ = srcAddr;
     ht_[hashIndex].dstAddr_ = dstAddr;
     ht_[hashIndex].typeOfService_ = typeOfService;

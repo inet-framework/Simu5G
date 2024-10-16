@@ -635,7 +635,7 @@ void AmRxQueue::moveRxWindow(const int seqNum)
     int pos = seqNum - rxWindowDesc_.firstSeqNum_;
 
     if (pos <= 0)
-        return;                   // ignore the shift, it is ineffective.
+        return;                                    // ignore the shift, it is ineffective.
 
     if (pos > rxWindowDesc_.windowSize_)
         throw cRuntimeError("AmRxQueue::moveRxWindow(): positions %d win size %d, seq num %d", pos, rxWindowDesc_.windowSize_, seqNum);

@@ -76,14 +76,14 @@ void ChannelAccess::initialize(int stage)
 
             if (radioPos.x == -1 || radioPos.y == -1)
                 throw cRuntimeError("The coordinates of '%s' host are invalid. Please set coordinates in "
-                      "'@display' attribute, or configure Mobility for this host.",
+                                    "'@display' attribute, or configure Mobility for this host.",
                         hostModule->getFullPath().c_str());
 
             const char *s = hostModule->getDisplayString().getTagArg("p", 2);
             if (s != nullptr && *s)
                 throw cRuntimeError("The coordinates of '%s' host are invalid. Please remove automatic arrangement"
-                      " (3rd argument of 'p' tag)"
-                      " from '@display' attribute, or configure Mobility for this host.",
+                                    " (3rd argument of 'p' tag)"
+                                    " from '@display' attribute, or configure Mobility for this host.",
                         hostModule->getFullPath().c_str());
         }
         myRadioRef = cc->registerRadio(this);
