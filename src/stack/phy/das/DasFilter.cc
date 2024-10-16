@@ -20,7 +20,6 @@ DasFilter::DasFilter(LtePhyBase *ltePhy, Binder *binder,
 {
 }
 
-
 void DasFilter::setMasterRuSet(MacNodeId masterId)
 {
     cModule *module = getSimulation()->getModule(binder_->getOmnetId(masterId));

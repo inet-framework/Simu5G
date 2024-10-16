@@ -18,7 +18,6 @@ namespace simu5g {
 
 Define_Module(MecPlatformManager);
 
-
 void MecPlatformManager::initialize(int stage)
 {
     EV << "VirtualisationInfrastructureManager::initialize - stage " << stage << endl;

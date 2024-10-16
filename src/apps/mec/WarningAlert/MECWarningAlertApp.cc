@@ -33,7 +33,6 @@ Define_Module(MECWarningAlertApp);
 using namespace inet;
 using namespace omnetpp;
 
-
 MECWarningAlertApp::~MECWarningAlertApp()
 {
     if (circle != nullptr) {

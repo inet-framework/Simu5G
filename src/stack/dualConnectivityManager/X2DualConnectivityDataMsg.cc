@@ -39,6 +39,5 @@ X2DualConnectivityDataMsg *X2DualConnectivityDataMsg::dup() const {
     return new X2DualConnectivityDataMsg(*this);
 }
 
-
 } //namespace
 

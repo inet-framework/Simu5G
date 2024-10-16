@@ -24,8 +24,6 @@ namespace simu5g {
 
 Define_Module(PacketFlowManagerEnb);
 
-
-
 void PacketFlowManagerEnb::initialize(int stage)
 {
     if (stage == 1) {
@@ -213,7 +211,6 @@ void PacketFlowManagerEnb::insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcU
 
     if (desc->rlcSdusPerPdu_.find(rlcSno) != desc->rlcSdusPerPdu_.end())
         throw cRuntimeError("%s::insertRlcPdu - RLC PDU SN %d already present for logical CID %d. Aborting", pfmType.c_str(), rlcSno, lcid);
-
 
     // manage burst state, for debugging and avoid errors between rlc state and packetflowmanager state
     if (status == START) {
@@ -605,7 +602,7 @@ void PacketFlowManagerEnb::removePdcpBurstRLC(StatusDescriptor *desc, unsigned i
     // it has been assumed that the bursts are quickly emptied so the operation
     // is not computationally heavy
     // the other solution is to create <rlcPdu, burst_id> map
-    for (auto &[burstId, burstStatus] : desc->burstStatus_) {
+    for (auto&[burstId, burstStatus] : desc->burstStatus_) {
         auto rlcpit = burstStatus.rlcPdu.find(rlcSno);
         if (rlcpit != burstStatus.rlcPdu.end()) {
             if (ack) {
@@ -689,7 +686,8 @@ void PacketFlowManagerEnb::ulMacPduArrived(MacNodeId nodeId, unsigned int grantI
 
             it = ulGrants_[nodeId].erase(it);
             return; // it is present only one grant with this grantId for this nodeId
-        } else {
+        }
+        else {
             ++it;
         }
     }

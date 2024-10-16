@@ -239,7 +239,7 @@ void LteRlcUm::deleteQueues(MacNodeId nodeId)
 
     // at the UE, delete all connections
     // at the eNB, delete connections related to the given UE
-    for (auto tit = txEntities_.begin(); tit != txEntities_.end();) {
+    for (auto tit = txEntities_.begin(); tit != txEntities_.end(); ) {
         if (nodeType == UE || ((nodeType == ENODEB || nodeType == GNODEB) && MacCidToNodeId(tit->first) == nodeId)) {
             tit->second->deleteModule(); // Delete Entity
             tit = txEntities_.erase(tit);    // Delete Element
@@ -248,7 +248,7 @@ void LteRlcUm::deleteQueues(MacNodeId nodeId)
             ++tit;
         }
     }
-    for (auto rit = rxEntities_.begin(); rit != rxEntities_.end();) {
+    for (auto rit = rxEntities_.begin(); rit != rxEntities_.end(); ) {
         if (nodeType == UE || ((nodeType == ENODEB || nodeType == GNODEB) && MacCidToNodeId(rit->first) == nodeId)) {
             rit->second->deleteModule(); // Delete Entity
             rit = rxEntities_.erase(rit);    // Delete Element

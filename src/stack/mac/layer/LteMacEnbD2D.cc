@@ -26,8 +26,6 @@ Define_Module(LteMacEnbD2D);
 using namespace omnetpp;
 using namespace inet;
 
-
-
 void LteMacEnbD2D::initialize(int stage)
 {
     LteMacEnb::initialize(stage);

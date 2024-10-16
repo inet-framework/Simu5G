@@ -124,7 +124,7 @@ struct RlcWindowDesc
 
 };
 
- /*!
+/*!
  * Move Receiver Window command descriptor
  */
 struct MrwDesc
@@ -184,7 +184,7 @@ struct RlcUmRxWindowDesc
 
     RlcUmRxWindowDesc()
     {
-         // the window size must not be cleared
+        // the window size must not be cleared
         clear();
     }
 

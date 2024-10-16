@@ -63,11 +63,11 @@ bool LteAllocatorBestFit::checkConflict(const CGMatrix *cgMatrix, MacNodeId node
 {
     bool conflict = false;
 
-    for (const auto &[key, value] : *cgMatrix) {
+    for (const auto&[key, value] : *cgMatrix) {
         if (key.srcId != nodeIdA)
             continue;
 
-        for (const auto &[confKey, confValue] : value) {
+        for (const auto&[confKey, confValue] : value) {
             if (confKey.srcId != nodeIdB)
                 continue;
 

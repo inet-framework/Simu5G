@@ -91,12 +91,12 @@ LteMacScheduleList *LteSchedulerUeUl::schedule()
 
         for (const auto& [cid, sdu] : sdus) {
             // set schedule list entry
-            scheduleList_[{cid, cw}] = sdu;
+            scheduleList_[{ cid, cw }] = sdu;
         }
 
         for (const auto& [cid, byte] : bytes) {
             // set schedule list entry
-            scheduledBytesList_[{cid, cw}] = byte;
+            scheduledBytesList_[{ cid, cw }] = byte;
         }
 
         MacCid highestBackloggedFlow = 0;

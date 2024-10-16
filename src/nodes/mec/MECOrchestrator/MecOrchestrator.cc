@@ -34,7 +34,6 @@ namespace simu5g {
 
 Define_Module(MecOrchestrator);
 
-
 void MecOrchestrator::initialize(int stage)
 {
     cSimpleModule::initialize(stage);

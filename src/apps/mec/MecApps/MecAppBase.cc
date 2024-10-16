@@ -23,7 +23,6 @@ namespace simu5g {
 using namespace omnetpp;
 using namespace inet;
 
-
 MecAppBase::~MecAppBase()
 {
     std::cout << "MecAppBase::~MecAppBase()" << std::endl;

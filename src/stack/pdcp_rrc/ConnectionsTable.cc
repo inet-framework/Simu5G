@@ -81,6 +81,5 @@ void ConnectionsTable::create_entry(uint32_t srcAddr, uint32_t dstAddr, uint16_t
     ht_[hashIndex].lcid_ = lcid;
 }
 
-
 } //namespace
 

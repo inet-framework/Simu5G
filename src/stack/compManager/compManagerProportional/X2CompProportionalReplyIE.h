@@ -58,7 +58,6 @@ class X2CompProportionalReplyIE : public X2CompReplyIE
         return new X2CompProportionalReplyIE(*this);
     }
 
-
     // Getter/setter methods
     void setAllowedBlocksMap(std::vector<CompRbStatus>& map)
     {

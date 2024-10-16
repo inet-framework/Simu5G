@@ -80,9 +80,10 @@ class VoDUDPServer : public cSimpleModule
         std::string frameType;
         long int index;
 
-        svcPacket()  {
+        svcPacket() {
 
         }
+
     };
     unsigned int nrec_;
 

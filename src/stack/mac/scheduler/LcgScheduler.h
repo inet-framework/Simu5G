@@ -52,6 +52,7 @@ class LcgScheduler
         SortedDesc(const T x, const S score) : x_(x), score_(score)
         {
         }
+
     };
 
     struct StatusElem

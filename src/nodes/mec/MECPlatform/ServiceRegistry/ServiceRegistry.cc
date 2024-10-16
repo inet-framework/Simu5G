@@ -27,7 +27,6 @@ ServiceRegistry::ServiceRegistry()
     supportedQueryParams_.insert("app_contexts");
 }
 
-
 void ServiceRegistry::initialize(int stage)
 {
     EV << "ServiceRegistry::initialize - stage " << stage << endl;

@@ -54,6 +54,5 @@ void LteHarqBufferMirrorD2D::markSelectedAsWaiting()
     }
 }
 
-
 } //namespace
 

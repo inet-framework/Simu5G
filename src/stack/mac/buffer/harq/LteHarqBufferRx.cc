@@ -206,7 +206,7 @@ RxBufferStatus LteHarqBufferRx::getBufferStatus()
 
 LteHarqBufferRx::~LteHarqBufferRx()
 {
-    for (auto* process : processes_)
+    for (auto *process : processes_)
         delete process;
     macOwner_ = nullptr;
 }

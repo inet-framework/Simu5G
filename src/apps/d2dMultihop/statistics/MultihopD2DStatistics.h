@@ -56,7 +56,7 @@ class MultihopD2DStatistics : public cSimpleModule
         unsigned int numSuppressed_ = 0;
         unsigned int numDuplicates_ = 0;
 
-        TransmissionInfo()  { }
+        TransmissionInfo() {}
     };
     std::map<unsigned short, TransmissionInfo> eventTransmissionInfo_;
 

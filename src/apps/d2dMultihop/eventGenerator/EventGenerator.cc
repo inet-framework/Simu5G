@@ -19,7 +19,6 @@ Define_Module(EventGenerator);
 
 using namespace omnetpp;
 
-
 EventGenerator::~EventGenerator()
 {
     cancelAndDelete(selfMessage_);

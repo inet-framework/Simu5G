@@ -16,7 +16,6 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-
 void LteFeedback::reset() {
     wideBandCqi_.clear();
     perBandCqi_.clear();

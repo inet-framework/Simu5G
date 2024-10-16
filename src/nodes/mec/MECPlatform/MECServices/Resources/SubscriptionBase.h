@@ -46,6 +46,7 @@ class SubscriptionBase
     virtual std::string getSubscriptionType() const;
     virtual int getSubscriptionId() const;
     virtual int getSocketConnId() const;
+
   protected:
 
     inet::TcpSocket *socket_ = nullptr;

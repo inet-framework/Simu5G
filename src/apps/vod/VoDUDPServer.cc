@@ -21,8 +21,6 @@ Define_Module(VoDUDPServer);
 using namespace std;
 using namespace inet;
 
-
-
 void VoDUDPServer::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
@@ -100,7 +98,7 @@ void VoDUDPServer::handleMessage(cMessage *msg)
 
             // Register video streams
 
-            for (const auto & i : clientAddr) {
+            for (const auto& i : clientAddr) {
                 M1Message *M1 = new M1Message();
                 M1->setClientAddr(i);
                 M1->setClientPort(clientsPort);

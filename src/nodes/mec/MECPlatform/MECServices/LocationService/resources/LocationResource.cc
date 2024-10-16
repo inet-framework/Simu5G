@@ -23,23 +23,23 @@ LocationResource::LocationResource() : binder_(nullptr) {
 }
 
 LocationResource::LocationResource(const std::string& baseUri, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs, Binder *binder) : binder_(binder), baseUri_(baseUri) {
-    for (auto* eNodeB : eNodeBs) {
+    for (auto *eNodeB : eNodeBs) {
         CellInfo *cellInfo = check_and_cast<CellInfo *>((eNodeB)->getSubmodule("cellInfo"));
-        eNodeBs_.insert({cellInfo->getMacCellId(), cellInfo});
+        eNodeBs_.insert({ cellInfo->getMacCellId(), cellInfo });
     }
 }
 
 void LocationResource::addEnodeB(std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs) {
     for (auto& eNodeB : eNodeBs) {
         CellInfo *cellInfo = check_and_cast<CellInfo *>(eNodeB->getSubmodule("cellInfo"));
-        eNodeBs_.insert({cellInfo->getMacCellId(), cellInfo});
+        eNodeBs_.insert({ cellInfo->getMacCellId(), cellInfo });
         EV << "LocationResource::addEnodeB - added eNodeB: " << cellInfo->getMacCellId() << endl;
     }
 }
 
 void LocationResource::addEnodeB(cModule *eNodeB) {
     CellInfo *cellInfo = check_and_cast<CellInfo *>(eNodeB->getSubmodule("cellInfo"));
-    eNodeBs_.insert({cellInfo->getMacCellId(), cellInfo});
+    eNodeBs_.insert({ cellInfo->getMacCellId(), cellInfo });
     EV << "LocationResource::addEnodeB with cellId: " << cellInfo->getMacCellId() << endl;
     EV << "LocationResource::addEnodeB - added eNodeB: " << cellInfo->getMacCellId() << endl;
 }
@@ -53,7 +53,6 @@ void LocationResource::setBaseUri(const std::string& baseUri)
 {
     baseUri_ = baseUri;
 }
-
 
 UserInfo LocationResource::getUserInfoByNodeId(MacNodeId nodeId, MacCellId cellId) const
 {
@@ -132,7 +131,7 @@ nlohmann::ordered_json LocationResource::toJsonUe(std::vector<inet::Ipv4Address>
         MacNodeId nodeId = binder_->getMacNodeId(ueId);
         bool found = false;
         for (const auto& [macCellId, eNodeB] : eNodeBs_) {
-            const std::map<MacNodeId, inet::Coord>* uePositionList = eNodeB->getUePositionList();
+            const std::map<MacNodeId, inet::Coord> *uePositionList = eNodeB->getUePositionList();
             auto pit = uePositionList->find(nodeId);
             if (pit != uePositionList->end()) {
                 UserInfo ueInfo = getUserInfoByNodeId(pit->first, macCellId);

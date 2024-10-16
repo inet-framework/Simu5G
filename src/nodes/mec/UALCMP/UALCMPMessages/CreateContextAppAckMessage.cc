@@ -22,7 +22,6 @@ CreateContextAppAckMessage::CreateContextAppAckMessage(const CreateContextAppAck
     copy(other);
 }
 
-
 CreateContextAppAckMessage& CreateContextAppAckMessage::operator=(const CreateContextAppAckMessage& other)
 {
     if (this == &other) return *this;

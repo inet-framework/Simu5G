@@ -43,7 +43,6 @@ double BackgroundTrafficManagerBase::getCqiFromTable(double snr)
     return 15;
 }
 
-
 void BackgroundTrafficManagerBase::initialize(int stage)
 {
     cSimpleModule::initialize(stage);

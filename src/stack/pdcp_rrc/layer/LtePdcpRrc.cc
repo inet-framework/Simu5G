@@ -326,7 +326,8 @@ void LtePdcpRrcBase::initialize(int stage)
         binder_.reference(this, "binderModule", true);
         headerCompressedSize_ = B(par("headerCompressedSize"));
         if (headerCompressedSize_ != LTE_PDCP_HEADER_COMPRESSION_DISABLED &&
-            headerCompressedSize_ < MIN_COMPRESSED_HEADER_SIZE) {
+            headerCompressedSize_ < MIN_COMPRESSED_HEADER_SIZE)
+        {
             throw cRuntimeError("Size of compressed header must not be less than %" PRId64 "B.", MIN_COMPRESSED_HEADER_SIZE.get());
         }
 

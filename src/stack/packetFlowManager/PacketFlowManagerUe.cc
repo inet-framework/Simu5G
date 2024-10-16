@@ -24,8 +24,6 @@ namespace simu5g {
 
 Define_Module(PacketFlowManagerUe);
 
-
-
 void PacketFlowManagerUe::initialize(int stage)
 {
     if (stage == 1) {

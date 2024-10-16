@@ -53,7 +53,6 @@ class X2CompProportionalRequestIE : public X2CompRequestIE
         return new X2CompProportionalRequestIE(*this);
     }
 
-
     // getter/setter methods
     void setNumBlocks(unsigned int numBlocks) { numBlocks_ = numBlocks; }
     unsigned int getNumBlocks() { return numBlocks_; }

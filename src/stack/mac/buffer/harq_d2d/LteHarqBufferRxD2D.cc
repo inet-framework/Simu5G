@@ -159,6 +159,5 @@ std::list<Packet *> LteHarqBufferRxD2D::extractCorrectPdus()
     return ret;
 }
 
-
 } //namespace
 

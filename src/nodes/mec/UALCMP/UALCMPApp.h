@@ -91,7 +91,6 @@ class UALCMPApp : public MecServiceBase
      */
     CreateContextAppMessage *parseContextCreateRequest(const nlohmann::json&);
 
-
 };
 
 } //namespace

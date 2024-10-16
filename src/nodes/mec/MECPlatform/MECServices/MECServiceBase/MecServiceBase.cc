@@ -488,7 +488,7 @@ MecServiceBase::~MecServiceBase() {
         subscriptionEvents_.pop();
         delete notEv;
     }
-    for (auto &[subscriptionId, subscription] : subscriptions_) {
+    for (auto&[subscriptionId, subscription] : subscriptions_) {
         delete subscription;
     }
 }

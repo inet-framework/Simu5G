@@ -478,7 +478,7 @@ bool LteSchedulerEnbDl::rtxscheduleBackground(double carrierFrequency, BandLimit
     std::map<MacNodeId, unsigned int> bgScheduledRtx;
     IBackgroundTrafficManager *bgTrafficManager = mac_->getBackgroundTrafficManager(carrierFrequency);
     auto it = bgTrafficManager->getBackloggedUesBegin(direction_, true),
-                                   et = bgTrafficManager->getBackloggedUesEnd(direction_, true);
+         et = bgTrafficManager->getBackloggedUesEnd(direction_, true);
     for ( ; it != et; ++it) {
         int bgUeIndex = *it;
         MacNodeId bgUeId = BGUE_MIN_ID + bgUeIndex;
@@ -492,7 +492,7 @@ bool LteSchedulerEnbDl::rtxscheduleBackground(double carrierFrequency, BandLimit
     }
 
     // consume bytes
-    for (auto & it : bgScheduledRtx)
+    for (auto& it : bgScheduledRtx)
         bgTrafficManager->consumeBackloggedUeBytes(it.first, it.second, direction_, true); // in bytes
 
     unsigned int availableBlocks = allocator_->computeTotalRbs();

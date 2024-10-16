@@ -24,7 +24,6 @@ Define_Module(TrafficLightController);
 
 using namespace omnetpp;
 
-
 TrafficLightController::~TrafficLightController() {
     cancelAndDelete(stateMsg_);
     if (line_ != nullptr) {
@@ -204,7 +203,6 @@ bool TrafficLightController::isInStraightLine(inet::Coord carPosition)
 
     int dx1 = tempPoint.x - carPosition.x;
     int dy1 = tempPoint.y - carPosition.y;
-
 
     // TODO does this only work for 0, 90, 180 and 270 degrees?
     if (dx1 * dy != dy1 * dx)

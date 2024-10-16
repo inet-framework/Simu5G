@@ -109,7 +109,6 @@ std::vector<double> BackgroundCellChannelModel::getSINR(MacNodeId bgUeId, inet::
     //sub cable loss
     recvPower -= cableLoss_; // (dBm-dB)=dBm
 
-
     //=============== ANGULAR ATTENUATION =================
     if (dir == DL && bgScheduler->getTxDirection() == ANISOTROPIC) {
 

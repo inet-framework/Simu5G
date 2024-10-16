@@ -13,8 +13,6 @@
 
 namespace simu5g {
 
-
-
 std::string AttributeBase::toJson(const std::string& value)
 {
     return value;

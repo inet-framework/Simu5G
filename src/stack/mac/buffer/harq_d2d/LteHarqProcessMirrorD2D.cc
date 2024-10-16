@@ -22,7 +22,6 @@ LteHarqProcessMirrorD2D::LteHarqProcessMirrorD2D(unsigned int numUnits, unsigned
     transmissions_.resize(numUnits, 0);
 }
 
-
 void LteHarqProcessMirrorD2D::storeFeedback(HarqAcknowledgment harqAck, int64_t pduLength, MacNodeId d2dSenderId, double carrierFrequency, Codeword cw)
 {
     pduLength_[cw] = pduLength;

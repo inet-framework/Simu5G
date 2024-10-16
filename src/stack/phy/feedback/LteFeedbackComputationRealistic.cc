@@ -25,7 +25,6 @@ LteFeedbackComputationRealistic::LteFeedbackComputationRealistic(Binder *binder,
     baseMin_.resize(phyPisaData_->nMcs(), 2);
 }
 
-
 void LteFeedbackComputationRealistic::generateBaseFeedback(int numBands, int numPreferredBands, LteFeedback& fb,
         FeedbackType fbType, int cw, RbAllocationType rbAllocationType, TxMode txmode, std::vector<double> snr)
 {
@@ -47,7 +46,7 @@ void LteFeedbackComputationRealistic::generateBaseFeedback(int numBands, int num
     if (fbType == WIDEBAND) {
         cqiTmp.resize(layer, 0);
         cqi = getCqi(txmode, mean);
-        for (unsigned short & i : cqiTmp)
+        for (unsigned short& i : cqiTmp)
             i = cqi;
         fb.setWideBandCqi(cqiTmp);
     }

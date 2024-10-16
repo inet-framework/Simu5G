@@ -81,7 +81,7 @@ void McsTable::rescale(double scale)
     if (scale <= 0)
         throw cRuntimeError("Bad rescaling value: %f", scale);
 
-    for (auto & i : table) {
+    for (auto& i : table) {
         i.threshold_ *= (168.0 / scale);
     }
 }

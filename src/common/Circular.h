@@ -145,7 +145,7 @@ class CircularList
     {
         if (size_ == 0)
             return;
-        for (auto it = list_.begin(); it != list_.end();) {
+        for (auto it = list_.begin(); it != list_.end(); ) {
             if (*it == t) {
                 if (cur_ == it) {
                     cur_++;
@@ -155,7 +155,8 @@ class CircularList
                 it = list_.erase(it);
                 --size_;
                 return;
-            } else {
+            }
+            else {
                 ++it;
             }
         }

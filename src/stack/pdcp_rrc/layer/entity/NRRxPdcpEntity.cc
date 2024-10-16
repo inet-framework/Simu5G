@@ -15,8 +15,6 @@ namespace simu5g {
 
 Define_Module(NRRxPdcpEntity);
 
-
-
 void NRRxPdcpEntity::initialize()
 {
     outOfOrderDelivery_ = par("outOfOrderDelivery").boolValue();

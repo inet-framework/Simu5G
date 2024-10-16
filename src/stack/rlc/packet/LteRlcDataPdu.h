@@ -184,7 +184,6 @@ class LteRlcUmDataPdu : public LteRlcDataPdu
         this->setChunkLength(inet::B(rlcPduLength_));
     }
 
-
     LteRlcUmDataPdu(const LteRlcUmDataPdu& other) : LteRlcDataPdu(other)
     {
         copy(other);
@@ -244,7 +243,6 @@ class LteRlcAmDataPdu : public LteRlcDataPdu
         LteRlcDataPdu::operator=(other);
         return *this;
     }
-
 
     void setPollStatus(bool p) { pollStatus_ = p; }
     bool getPollStatus() const { return pollStatus_; }

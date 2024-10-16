@@ -75,7 +75,7 @@ void RNIService::handleGETRequest(const HttpRequestMessage *currentRequestMessag
 
             std::vector<std::string> params;
             std::vector<std::string> splittedParams;
-            for (const auto &queryParam : queryParameters) {
+            for (const auto& queryParam : queryParameters) {
                 if (queryParam.rfind("cell_id", 0) == 0) { // cell_id=par1,par2
                     params = simu5g::utils::splitString(queryParam, "=");
                     if (params.size() != 2) { //must be param=values
@@ -83,7 +83,7 @@ void RNIService::handleGETRequest(const HttpRequestMessage *currentRequestMessag
                         return;
                     }
                     splittedParams = simu5g::utils::splitString(params[1], ",");
-                    for (const auto &cellIdParam : splittedParams) {
+                    for (const auto& cellIdParam : splittedParams) {
                         cellIds.push_back((MacNodeId)std::stoi(cellIdParam));
                     }
                 }
@@ -95,7 +95,7 @@ void RNIService::handleGETRequest(const HttpRequestMessage *currentRequestMessag
                         return;
                     }
                     splittedParams = simu5g::utils::splitString(params[1], ",");
-                    for (const auto &ueAddress : splittedParams)
+                    for (const auto& ueAddress : splittedParams)
                         ues.push_back(inet::Ipv4Address(ueAddress.c_str()));
                 }
                 else { // bad parameters
@@ -144,7 +144,6 @@ void RNIService::handleDELETERequest(const HttpRequestMessage *currentRequestMes
 void RNIService::finish()
 {
 }
-
 
 } //namespace
 

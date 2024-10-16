@@ -24,7 +24,7 @@ LteHarqBufferTx::LteHarqBufferTx(Binder *binder, unsigned int numProc, LteMacBas
 }
 
 LteHarqBufferTx::LteHarqBufferTx(Binder *binder, unsigned int numProc, LteMacBase *owner)
-    : macOwner_(owner), processes_(numProc, nullptr), numProc_(numProc), numEmptyProc_(numProc), selectedAcid_(HARQ_NONE), nodeId_((MacNodeId)-1)
+    : macOwner_(owner), processes_(numProc, nullptr), numProc_(numProc), numEmptyProc_(numProc), selectedAcid_(HARQ_NONE), nodeId_((MacNodeId) - 1)
 {
 }
 

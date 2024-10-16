@@ -83,7 +83,6 @@ class PacketFlowManagerBase : public cSimpleModule
 
   public:
 
-
     // return true if a structure for this lcid is present
     virtual bool hasLcid(LogicalCid lcid) = 0;
     /*

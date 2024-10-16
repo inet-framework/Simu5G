@@ -21,7 +21,6 @@ namespace simu5g {
 
 Define_Module(UeStatsCollector);
 
-
 void UeStatsCollector::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {

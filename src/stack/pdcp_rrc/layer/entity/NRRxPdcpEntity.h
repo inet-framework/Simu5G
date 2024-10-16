@@ -91,7 +91,6 @@ class NRRxPdcpEntity : public LteRxPdcpEntity
 
   public:
 
-
     void initialize() override;
 
     void handleMessage(cMessage *msg) override;

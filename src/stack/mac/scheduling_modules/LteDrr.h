@@ -42,6 +42,7 @@ class LteDrr : public LteScheduler
         DrrDesc()
         {
         }
+
     };
 
     typedef std::map<MacCid, DrrDesc> DrrDescMap;

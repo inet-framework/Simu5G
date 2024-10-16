@@ -13,7 +13,6 @@
 
 namespace simu5g {
 
-
 void L2MeasBase::init(std::string name, int period, bool movingAverage)
 {
     name_ = name;
@@ -25,7 +24,6 @@ void L2MeasBase::init(std::string name, int period, bool movingAverage)
     mean_ = 0;
     movingAverage_ = movingAverage;
 }
-
 
 void L2MeasBase::addValue(double value) {
     lastValue_ = (int)value;

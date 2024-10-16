@@ -372,6 +372,5 @@ void UALCMPApp::finish()
 {
 }
 
-
 } //namespace
 

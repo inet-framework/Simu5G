@@ -50,7 +50,6 @@ class LteTxPdcpEntity : public cSimpleModule
 
   public:
 
-
     void initialize() override;
 
     // create a PDCP PDU from the IP datagram

@@ -19,8 +19,6 @@ namespace simu5g {
 
 Define_Module(NRPhyUe);
 
-
-
 void NRPhyUe::initialize(int stage)
 {
     LtePhyUeD2D::initialize(stage);

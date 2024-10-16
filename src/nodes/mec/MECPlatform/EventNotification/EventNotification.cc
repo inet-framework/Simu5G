@@ -42,6 +42,5 @@ void EventNotification::setType(const std::string& type)
     type_ = type;
 }
 
-
 } //namespace
 

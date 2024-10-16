@@ -42,7 +42,6 @@ std::ostream& operator<<(std::ostream& os, const ChannelControl::TransmissionLis
     return os;
 }
 
-
 ChannelControl::~ChannelControl()
 {
     for (auto& channelTransmission : transmissions)
@@ -136,7 +135,7 @@ void ChannelControl::unregisterRadio(RadioRef radio)
 
     // erase radio from all registered radios' neighbor list
     RadioRef radioToRemove = &(*radioIt);
-    for (auto & otherRadio : radios) {
+    for (auto& otherRadio : radios) {
         otherRadio.neighbors.erase(radioToRemove);
         otherRadio.isNeighborListValid = false;
         radioToRemove->isNeighborListValid = false;
@@ -149,7 +148,7 @@ void ChannelControl::unregisterRadio(RadioRef radio)
 ChannelControl::RadioRef ChannelControl::lookupRadio(cModule *radio)
 {
     Enter_Method_Silent();
-    for (auto & it : radios)
+    for (auto& it : radios)
         if (it.radioModule.get() == radio)
             return &it;
     return nullptr;
@@ -171,7 +170,7 @@ void ChannelControl::updateConnections(RadioRef h)
 {
     inet::Coord& hpos = h->pos;
     double maxDistSquared = maxInterferenceDistance * maxInterferenceDistance;
-    for (auto & radio : radios) {
+    for (auto& radio : radios) {
         RadioEntry *hi = &radio;
         if (hi == h)
             continue;

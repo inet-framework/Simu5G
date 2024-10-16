@@ -362,7 +362,7 @@ double LteRealisticChannelModel::computeAngle(Coord center, Coord point) {
         // quadrant I
         angle = arcoSen;
 
-        //          "] - relativePos[" << relx << "," << rely <<
+    //          "] - relativePos[" << relx << "," << rely <<
     //          "] - siny[" << rely/dist << "] - senx[" << relx/dist <<
     //          "]" << endl;
 
@@ -1818,9 +1818,9 @@ bool LteRealisticChannelModel::isError(LteAirFrame *frame, UserControlInfo *lteI
     int usedRBs = 0;
 
     // for each Remote unit used to transmit the packet
-    for (const auto &[remoteUnit, rbList] : rbmap) {
+    for (const auto&[remoteUnit, rbList] : rbmap) {
         // for each logical band used to transmit the packet
-        for (const auto &[band, allocation] : rbList) {
+        for (const auto&[band, allocation] : rbList) {
             // this Rb is not allocated
             if (allocation == 0)
                 continue;
