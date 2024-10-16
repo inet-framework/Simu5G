@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -33,7 +33,7 @@ class X2CompProportionalReplyIE : public X2CompReplyIE
   public:
     X2CompProportionalReplyIE()
     {
-        length_ = sizeof(uint32_t);    // Required to store the length of the map
+        length_ = sizeof(uint32_t);  // Required to store the length of the map
         type_ = COMP_PROP_REPLY_IE;
     }
 
@@ -68,7 +68,7 @@ class X2CompProportionalReplyIE : public X2CompReplyIE
     std::vector<CompRbStatus>& getAllowedBlocksMap() { return allowedBlocksMap_; }
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

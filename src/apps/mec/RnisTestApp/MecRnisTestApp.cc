@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -48,7 +48,7 @@ void MecRnisTestApp::initialize(int stage)
     localUePort = par("localUePort");
     ueSocket.bind(localUePort);
 
-    //testing
+    // testing
     EV << "MecRnisTestApp::initialize - Mec application " << getClassName() << " with mecAppId[" << mecAppId << "] has started!" << endl;
 
     mp1Socket_ = addNewSocket();
@@ -231,7 +231,7 @@ void MecRnisTestApp::handleMp1Message(int connId)
     EV << "MecRnisTestApp::handleMp1Message - payload: " << mp1HttpMessage->getBody() << endl;
 
     try {
-        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody()); // get the JSON structure
+        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody());  // get the JSON structure
         if (!jsonBody.empty()) {
             jsonBody = jsonBody[0];
             std::string serName = jsonBody["serName"];
@@ -272,13 +272,13 @@ void MecRnisTestApp::handleServiceMessage(int connId)
     else if (serviceHttpMessage->getType() == RESPONSE) {
         HttpResponseMessage *rspMsg = dynamic_cast<HttpResponseMessage *>(serviceHttpMessage);
 
-        if (rspMsg->getCode() == 200) { // in response to a GET
+        if (rspMsg->getCode() == 200) {  // in response to a GET
             // read values
 
             nlohmann::json jsonBody;
             EV << "MecRnisTestApp::handleServiceMessage - response 200 " << rspMsg->getBody() << endl;
             try {
-                jsonBody = nlohmann::json::parse(rspMsg->getBody()); // get the JSON structure
+                jsonBody = nlohmann::json::parse(rspMsg->getBody());  // get the JSON structure
             }
             catch (nlohmann::detail::parse_error e) {
                 EV << e.what() << endl;
@@ -360,5 +360,5 @@ void MecRnisTestApp::handleProcessedMessage(cMessage *msg)
     MecAppBase::handleProcessedMessage(msg);
 }
 
-} //namespace
+}  // namespace
 

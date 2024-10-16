@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -69,7 +69,7 @@ void LteHandoverManager::handleX2Message(cPacket *pkt)
     if (x2msg->getType() == X2_HANDOVER_DATA_MSG) {
         receiveDataFromSourceEnb(datagram, sourceId);
     }
-    else { // X2_HANDOVER_CONTROL_MSG
+    else {  // X2_HANDOVER_CONTROL_MSG
         X2HandoverCommandIE *hoCommandIe = check_and_cast<X2HandoverCommandIE *>(x2msg->popIe());
         receiveHandoverCommand(hoCommandIe->getUeId(), x2msg->getSourceId(), hoCommandIe->isStartHandover());
 
@@ -150,5 +150,5 @@ void LteHandoverManager::receiveDataFromSourceEnb(Packet *datagram, MacNodeId so
     ip2nic_->receiveTunneledPacketOnHandover(datagram, sourceEnb);
 }
 
-} //namespace
+}  // namespace
 

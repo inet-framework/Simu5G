@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -49,7 +49,7 @@ class DeviceAppMessageSerializer : public inet::FieldsChunkSerializer
     const Ptr<Chunk> deserialize(MemoryInputStream& stream) const override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

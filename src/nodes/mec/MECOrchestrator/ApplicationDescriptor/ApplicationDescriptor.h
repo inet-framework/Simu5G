@@ -1,5 +1,5 @@
 //
-//                           Simu5G
+// Simu5G
 //
 // This file is part of a software released under the license included in file
 // "license.pdf". This license can be also found at http://www.ltesimulator.com/
@@ -48,7 +48,7 @@ class ApplicationDescriptor
 
   public:
     ApplicationDescriptor() {}
-    ApplicationDescriptor(const char *fileName); // read the AppD from file
+    ApplicationDescriptor(const char *fileName);  // read the AppD from file
     ApplicationDescriptor(const std::string& appDid, const std::string& appName, const std::string& appProvider, const std::string& appInfoName, const std::string& appDescription,
             const ResourceDescriptor& resources, std::vector<std::string> appServicesRequired, std::vector<std::string> appServicesProduced);
 
@@ -88,7 +88,7 @@ class ApplicationDescriptor
     void printApplicationDescriptor() const;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* NODES_MEC_MECORCHESTRATOR_APPLICATIONDESCRIPTOR_APPLICATIONDESCRIPTOR_H_ */
 

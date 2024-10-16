@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -36,7 +36,7 @@ class ChannelAccess : public cSimpleModule, public cListener
   protected:
     opp_component_ptr<IChannelControl> cc = nullptr;  // Pointer to the ChannelControl module
     IChannelControl::RadioRef myRadioRef = nullptr;  // Identifies this radio in the ChannelControl module
-    opp_component_ptr<cModule> hostModule;    // the host that contains this radio model
+    opp_component_ptr<cModule> hostModule;  // the host that contains this radio model
     inet::Coord radioPos;  // the physical position of the radio (derived from display string or from mobility models)
     bool positionUpdateArrived;
 
@@ -73,7 +73,7 @@ class ChannelAccess : public cSimpleModule, public cListener
     int numInitStages() const override { return inet::INITSTAGE_PHYSICAL_LAYER + 1; }
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

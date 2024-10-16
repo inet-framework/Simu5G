@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -82,7 +82,7 @@ void CbrSender::initTraffic()
         // this might happen when users are created dynamically
         EV << simTime() << "CbrSender::initTraffic - destination " << destAddress << " not found" << endl;
 
-        simtime_t offset = 0.01; // TODO check value
+        simtime_t offset = 0.01;  // TODO check value
         scheduleAt(simTime() + offset, initTraffic_);
         EV << simTime() << "CbrSender::initTraffic - the node will retry to initialize traffic in " << offset << " seconds " << endl;
     }
@@ -135,5 +135,5 @@ void CbrSender::finish()
     emit(cbrGeneratedThroughputSignal_, txBytes_ / elapsedTime.dbl());
 }
 
-} //namespace
+}  // namespace
 

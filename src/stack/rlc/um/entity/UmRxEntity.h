@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -70,7 +70,7 @@ class UmRxEntity : public cSimpleModule
     void initialize() override;
     void handleMessage(cMessage *msg) override;
 
-    //Statistics
+    // Statistics
     static unsigned int totalCellPduRcvdBytes_;
     static unsigned int totalCellRcvdBytes_;
     unsigned int totalPduRcvdBytes_;
@@ -133,7 +133,7 @@ class UmRxEntity : public cSimpleModule
     {
         inet::Packet *pkt = nullptr;
         size_t size;
-        unsigned int currentPduSno;   // next PDU sequence number expected
+        unsigned int currentPduSno;  // next PDU sequence number expected
     } buffered_;
 
     // Sequence number of the last SDU delivered to the upper layer
@@ -162,11 +162,11 @@ class UmRxEntity : public cSimpleModule
         ENQUE, REORDERING
     };
 
-    bool isBurst_ = false; // a burst has started last TTI
-    unsigned int totalBits_ = 0; // total bytes during the burst
-    unsigned int ttiBits_ = 0; // bytes during this TTI
-    simtime_t t2_; // point in time the burst begins
-    simtime_t t1_; // point in time last packet sent during burst
+    bool isBurst_ = false;  // a burst has started last TTI
+    unsigned int totalBits_ = 0;  // total bytes during the burst
+    unsigned int ttiBits_ = 0;  // bytes during this TTI
+    simtime_t t2_;  // point in time the burst begins
+    simtime_t t1_;  // point in time last packet sent during burst
 
     /*
      * This method is used to manage a burst and calculate the UL throughput of a UE
@@ -192,7 +192,7 @@ class UmRxEntity : public cSimpleModule
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -16,7 +16,7 @@
 #ifndef _LTE_USERTXPARAMS_H_
 #define _LTE_USERTXPARAMS_H_
 
-//#include "common/LteCommon.h"
+// #include "common/LteCommon.h"
 #include <omnetpp.h>
 
 #include "stack/mac/amc/LteMcs.h"
@@ -36,14 +36,14 @@ class UserTxParams
 {
   protected:
 
-    TxMode txMode_; // tx mode to use
-    Rank ri_;       // RI
-    CqiVector cqiVector_; // vector with as many elements as there are cw: therefore it contains wb cqi
-    Pmi pmi_;       // WB pmi
+    TxMode txMode_;  // tx mode to use
+    Rank ri_;  // RI
+    CqiVector cqiVector_;  // vector with as many elements as there are cw: therefore it contains wb cqi
+    Pmi pmi_;  // WB pmi
 
-    std::set<Band> allowedBands_;     // bands on which the user can transmit
+    std::set<Band> allowedBands_;  // bands on which the user can transmit
 
-    bool isValid_; // indicates whether the user info is set
+    bool isValid_;  // indicates whether the user info is set
 
     //! set of Remote Antennas in use for transmission  (DAS support)
     RemoteSet antennaSet_;
@@ -213,7 +213,7 @@ class UserTxParams
     void print(const char *s) const;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

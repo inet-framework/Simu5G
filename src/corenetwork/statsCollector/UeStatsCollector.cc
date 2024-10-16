@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -26,12 +26,12 @@ void UeStatsCollector::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         collectorType_ = par("collectorType").stringValue();
     }
-    else if (stage == inet::INITSTAGE_APPLICATION_LAYER) { // same as lteMacUe, when reading the interface entry
+    else if (stage == inet::INITSTAGE_APPLICATION_LAYER) {  // same as lteMacUe, when reading the interface entry
         Binder *binder = inet::getModuleFromPar<Binder>(par("binderModule"), this);
 
         mac_.reference(this, "macModule", true);
-        associateId_.value = binder->getIPv4Address(mac_->getMacNodeId()).str(); // UE_IPV4_ADDRESS
-        associateId_.type = "1"; // UE_IPV4_ADDRESS
+        associateId_.value = binder->getIPv4Address(mac_->getMacNodeId()).str();  // UE_IPV4_ADDRESS
+        associateId_.type = "1";  // UE_IPV4_ADDRESS
 
         /*
          * Get packetFlowManager if present.
@@ -164,7 +164,7 @@ DiscardedPkts UeStatsCollector::getULDiscardedPkt()
     if (packetFlowManager_ != nullptr) {
 
         pair = packetFlowManager_->getDiscardedPkt();
-        //double rate = ((double)pair.discarded * 1000000) / pair.total;
+        // double rate = ((double)pair.discarded * 1000000) / pair.total;
     }
     return pair;
 }
@@ -186,5 +186,5 @@ void UeStatsCollector::resetStats()
     dl_nongbr_data_volume_ue.reset();
 }
 
-} //namespace
+}  // namespace
 

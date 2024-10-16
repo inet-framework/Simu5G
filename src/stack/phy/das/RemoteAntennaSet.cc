@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -54,5 +54,5 @@ std::ostream& operator<<(std::ostream& stream, const RemoteAntennaSet *ruSet)
     return stream;
 }
 
-} //namespace
+}  // namespace
 

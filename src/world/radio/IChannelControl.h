@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -36,7 +36,7 @@ class IChannelControl
     struct RadioEntry;
 
   public:
-    typedef RadioEntry *RadioRef; // handle for ChannelControl's clients
+    typedef RadioEntry *RadioRef;  // handle for ChannelControl's clients
     typedef std::list<AirFrame *> TransmissionList;
 
   public:
@@ -84,7 +84,7 @@ class IChannelControl
     virtual double getPropagationSpeed() = 0;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

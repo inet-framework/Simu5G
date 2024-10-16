@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -33,7 +33,7 @@ class MecRTVideoStreamingReceiver : public MecAppBase
 
     struct ReceivingFrameStatus
     {
-        int frameNumber; // i.e. segment sequence number
+        int frameNumber;  // i.e. segment sequence number
         int frameSize;
         int currentSize;
         int numberOfFragments;
@@ -47,7 +47,7 @@ class MecRTVideoStreamingReceiver : public MecAppBase
     bool stopped;
     int fps;
 
-    //UDP socket to communicate with the UeApp
+    // UDP socket to communicate with the UeApp
     inet::UdpSocket ueSocket;
     int localUePort;
 
@@ -109,7 +109,7 @@ class MecRTVideoStreamingReceiver : public MecAppBase
     ~MecRTVideoStreamingReceiver() override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* APPS_MEC_MECRTVIDEOSTREAMINGRECEIVER_H_ */
 

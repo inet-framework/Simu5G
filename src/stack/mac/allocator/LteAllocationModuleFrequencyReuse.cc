@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -43,14 +43,14 @@ void LteAllocationModuleFrequencyReuse::storeAllocation(std::vector<std::vector<
 
             auto& storedAllocInfo = allocatedRbsPerBand_[plane][antenna][band];
             while (it_ext != et_ext && it2_ext != et2_ext) {
-                storedAllocInfo.ueAllocatedRbsMap_[it_ext->first] = it_ext->second;    // Blocks
-                storedAllocInfo.ueAllocatedBytesMap_[it_ext->first] = it2_ext->second; // Bytes
+                storedAllocInfo.ueAllocatedRbsMap_[it_ext->first] = it_ext->second;  // Blocks
+                storedAllocInfo.ueAllocatedBytesMap_[it_ext->first] = it2_ext->second;  // Bytes
 
                 // Creates a pair (a key) for the Map
                 std::pair<MacNodeId, Band> Key_pair(it_ext->first, band);
                 // Creates a pair for the blocks and bytes values
                 std::pair<unsigned int, unsigned int> Value_pair(it_ext->second, it2_ext->second);
-                //Store the nodeId RBs
+                // Store the nodeId RBs
                 nodeIdRbsBytesMap.insert({ Key_pair, Value_pair });
                 it_ext++;
                 it2_ext++;
@@ -66,9 +66,9 @@ void LteAllocationModuleFrequencyReuse::storeAllocation(std::vector<std::vector<
     for (const auto&[key, value] : nodeIdRbsBytesMap) {
         // Skip allocation if the band is untouchable (this means that the information is already allocated)
         if (untouchableBands->find(key.second) == untouchableBands->end()) {
-            allocatedRbsUe_[key.first].ueAllocatedRbsMap_[antenna][key.second] = value.first; //Blocks
-            allocatedRbsUe_[key.first].allocatedBlocks_ += value.first; //Blocks
-            allocatedRbsUe_[key.first].allocatedBytes_ += value.second; //Bytes
+            allocatedRbsUe_[key.first].ueAllocatedRbsMap_[antenna][key.second] = value.first;  // Blocks
+            allocatedRbsUe_[key.first].allocatedBlocks_ += value.first;  // Blocks
+            allocatedRbsUe_[key.first].allocatedBytes_ += value.second;  // Bytes
 
             // Creates and store the allocation Elem
             AllocationElem elem;
@@ -92,5 +92,5 @@ std::set<Band> LteAllocationModuleFrequencyReuse::getAllocatorOccupiedBands()
     return vectorBand;
 }
 
-} //namespace
+}  // namespace
 

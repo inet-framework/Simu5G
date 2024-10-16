@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -33,5 +33,5 @@ FramingInfo LteRlcDataPdu::getFramingInfo() const
     return fi_;
 }
 
-} //namespace
+}  // namespace
 

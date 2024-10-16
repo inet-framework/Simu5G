@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -50,7 +50,7 @@ void NRPdcpRrcEnb::fromDataPort(cPacket *pktAux)
     // set direction based on the destination Id. If the destination can be reached
     // using D2D, set D2D direction. Otherwise, set UL direction
     srcId = (lteInfo->getUseNR()) ? binder_->getNrMacNodeId(srcAddr) : binder_->getMacNodeId(srcAddr);
-    destId = (lteInfo->getUseNR()) ? binder_->getNrMacNodeId(destAddr) : binder_->getMacNodeId(destAddr);   // get final destination
+    destId = (lteInfo->getUseNR()) ? binder_->getNrMacNodeId(destAddr) : binder_->getMacNodeId(destAddr);  // get final destination
     lteInfo->setDirection(getDirection());
 
     // check if src and dest of the flow are D2D-capable UEs (currently in IM)
@@ -124,7 +124,7 @@ void NRPdcpRrcEnb::fromLowerLayer(cPacket *pktAux)
     EV << "LtePdcp : Received packet with CID " << lteInfo->getLcid() << "\n";
     EV << "LtePdcp : Packet size " << pkt->getByteLength() << " Bytes\n";
 
-    MacCid cid = idToMacCid(lteInfo->getSourceId(), lteInfo->getLcid());   // TODO: check if you have to get master node id
+    MacCid cid = idToMacCid(lteInfo->getSourceId(), lteInfo->getLcid());  // TODO: check if you have to get master node id
 
     LteRxPdcpEntity *entity = getRxEntity(cid);
     entity->handlePacketFromLowerLayer(pkt);
@@ -165,7 +165,7 @@ LteTxPdcpEntity *NRPdcpRrcEnb::getTxEntity(MacCid cid)
         buf << "NRTxPdcpEntity Cid: " << cid;
         cModuleType *moduleType = cModuleType::get("simu5g.stack.pdcp_rrc.NRTxPdcpEntity");
         NRTxPdcpEntity *txEnt = check_and_cast<NRTxPdcpEntity *>(moduleType->createScheduleInit(buf.str().c_str(), this));
-        txEntities_[cid] = txEnt;    // Add to entities map
+        txEntities_[cid] = txEnt;  // Add to entities map
 
         EV << "NRPdcpRrcEnb::getEntity - Added new PdcpEntity for Cid: " << cid << "\n";
 
@@ -190,7 +190,7 @@ LteRxPdcpEntity *NRPdcpRrcEnb::getRxEntity(MacCid cid)
         buf << "NRRxPdcpEntity Cid: " << cid;
         cModuleType *moduleType = cModuleType::get("simu5g.stack.pdcp_rrc.NRRxPdcpEntity");
         LteRxPdcpEntity *rxEnt = check_and_cast<LteRxPdcpEntity *>(moduleType->createScheduleInit(buf.str().c_str(), this));
-        rxEntities_[cid] = rxEnt;    // Add to entities map
+        rxEntities_[cid] = rxEnt;  // Add to entities map
 
         EV << "NRPdcpRrcEnb::getRxEntity - Added new RxPdcpEntity for Cid: " << cid << "\n";
 
@@ -228,7 +228,7 @@ void NRPdcpRrcEnb::receiveDataFromSourceNode(Packet *pkt, MacNodeId sourceNode)
 
         sendToLowerLayer(pkt);
     }
-    else { // UL
+    else {  // UL
         // if UL, call the handler for reception from RLC layer (of the secondary node)
         EV << NOW << " NRPdcpRrcEnb::receiveDataFromSourceNode - Received PDCP PDU from secondary node with id " << sourceNode << endl;
         fromLowerLayer(pkt);
@@ -244,5 +244,5 @@ void NRPdcpRrcEnb::activeUeUL(std::set<MacNodeId> *ueSet)
     }
 }
 
-} //namespace
+}  // namespace
 

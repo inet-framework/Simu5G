@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -49,7 +49,7 @@ void UeRnisTestApp::initialize(int stage)
 
     log = par("logger").boolValue();
 
-    //retrieve parameters
+    // retrieve parameters
     period_ = par("period");
     int localPort = par("localPort");
     deviceAppPort_ = par("deviceAppPort");
@@ -57,7 +57,7 @@ void UeRnisTestApp::initialize(int stage)
     const char *deviceSymbolicAppAddress = par("deviceAppAddress").stringValue();
     deviceAppAddress_ = inet::L3AddressResolver().resolve(deviceSymbolicAppAddress);
 
-    //binding socket
+    // binding socket
     socket.setOutputGate(gate("socketOut"));
     socket.bind(localPort);
 
@@ -67,17 +67,17 @@ void UeRnisTestApp::initialize(int stage)
 
     mecAppName = par("mecAppName").stringValue();
 
-    //initializing the auto-scheduling messages
+    // initializing the auto-scheduling messages
     selfStart_ = new cMessage("selfStart", KIND_SELF_START);
     selfStop_ = new cMessage("selfStop", KIND_SELF_STOP);
     selfMecAppStart_ = new cMessage("selfMecAppStart", KIND_SELF_MEC_APP_START);
 
-    //starting UeRnisTestApp
+    // starting UeRnisTestApp
     simtime_t startTime = par("startTime");
     EV << "UeRnisTestApp::initialize - starting sendStartMecApp() in " << startTime << " seconds " << endl;
     scheduleAt(simTime() + startTime, selfStart_);
 
-    //testing
+    // testing
     EV << "UeRnisTestApp::initialize - sourceAddress: " << sourceSymbolicAddress << " [" << inet::L3AddressResolver().resolve(sourceSymbolicAddress).str() << "]" << endl;
     EV << "UeRnisTestApp::initialize - destAddress: " << deviceSymbolicAppAddress << " [" << deviceAppAddress_.str() << "]" << endl;
     EV << "UeRnisTestApp::initialize - binding to port: local:" << localPort << " , dest:" << deviceAppPort_ << endl;
@@ -114,7 +114,7 @@ void UeRnisTestApp::handleMessage(cMessage *msg)
          * From Device app
          * The device app usually runs in the UE (loopback), but it could also run in other places
          */
-        if (ipAdd == deviceAppAddress_ || ipAdd == inet::L3Address("127.0.0.1")) { // device app
+        if (ipAdd == deviceAppAddress_ || ipAdd == inet::L3Address("127.0.0.1")) {  // device app
             auto mePkt = packet->peekAtFront<DeviceAppPacket>();
             if (!strcmp(mePkt->getType(), ACK_START_MECAPP)) handleAckStartMecApp(msg);
 
@@ -159,7 +159,7 @@ void UeRnisTestApp::sendStartMecApp()
     inet::Packet *packet = new inet::Packet("DeviceAppStartPacket");
     auto start = inet::makeShared<DeviceAppStartPacket>();
 
-    //instantiation requirements and info
+    // instantiation requirements and info
     start->setType(START_MECAPP);
     start->setMecAppName(mecAppName.c_str());
     start->setChunkLength(inet::B(2 + mecAppName.size() + 1));
@@ -177,7 +177,7 @@ void UeRnisTestApp::sendStartMecApp()
         }
     }
 
-    //rescheduling
+    // rescheduling
     scheduleAt(simTime() + period_, selfStart_);
 }
 
@@ -188,7 +188,7 @@ void UeRnisTestApp::sendStopMecApp()
     inet::Packet *packet = new inet::Packet("DeviceAppStopPacket");
     auto stop = inet::makeShared<DeviceAppStopPacket>();
 
-    //termination requirements and info
+    // termination requirements and info
     stop->setType(STOP_MECAPP);
     stop->setChunkLength(inet::B(10));
     stop->addTagIfAbsent<inet::CreationTimeTag>()->setCreationTime(simTime());
@@ -205,7 +205,7 @@ void UeRnisTestApp::sendStopMecApp()
         }
     }
 
-    //rescheduling
+    // rescheduling
     if (selfStop_->isScheduled())
         cancelEvent(selfStop_);
     scheduleAt(simTime() + period_, selfStop_);
@@ -225,7 +225,7 @@ void UeRnisTestApp::handleAckStartMecApp(cMessage *msg)
         EV << "UeRnisTestApp::handleAckStartMecApp - Received " << pkt->getType() << ". MecApp instance is at: " << mecAppAddress_ << ":" << mecAppPort_ << endl;
         cancelEvent(selfStart_);
 
-        //scheduling sendStopMecApp()
+        // scheduling sendStopMecApp()
         if (!selfStop_->isScheduled()) {
             simtime_t stopTime = par("stopTime");
             scheduleAt(simTime() + stopTime, selfStop_);
@@ -299,5 +299,5 @@ void UeRnisTestApp::handleAckStopMecApp(cMessage *msg)
     cancelEvent(selfStop_);
 }
 
-} //namespace
+}  // namespace
 

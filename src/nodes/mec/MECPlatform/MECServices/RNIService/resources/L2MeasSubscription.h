@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -27,7 +27,7 @@ class L2MeasSubscription : public SubscriptionBase
 
     struct FilterCriteriaL2Meas
     {
-        std::string appInstanceId; // Fixed spelling from appIstanceId to appInstanceId
+        std::string appInstanceId;  // Fixed spelling from appIstanceId to appInstanceId
         AssociateId associteId_;
         Ecgi ecgi;
     };
@@ -45,7 +45,7 @@ class L2MeasSubscription : public SubscriptionBase
 
 };
 
-} //namespace
+}  // namespace
 
 #endif /* APPS_MEC_MESERVICES_RNISERVICE_RESOURCES_L2MEASSUBSCRIPTION_H_ */
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -127,7 +127,7 @@ class BackgroundScheduler : public cSimpleModule, public cListener
     TrafficGeneratorBase *getPrevBandInterferingUe(int band);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

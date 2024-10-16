@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -85,7 +85,7 @@ void ExtCell::initialize(int stage)
             // TODO: if extCell-interference is disabled, do not send selfMessages
             // Start TTI tick
             ttiTick_ = new cMessage("ttiTick_");
-            ttiTick_->setSchedulingPriority(1);        // TTI TICK after other messages
+            ttiTick_->setSchedulingPriority(1);  // TTI TICK after other messages
             scheduleAt(NOW + TTI, ttiTick_);
         }
 
@@ -153,5 +153,5 @@ void ExtCell::setBandUtilization(double bandUtilization)
     bandUtilization_ = bandUtilization;
 }
 
-} //namespace
+}  // namespace
 

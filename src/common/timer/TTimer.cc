@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -155,5 +155,5 @@ void TMultiTimer::remove(const unsigned int event)
     reverseList_.erase(rIt);
 }
 
-} //namespace
+}  // namespace
 

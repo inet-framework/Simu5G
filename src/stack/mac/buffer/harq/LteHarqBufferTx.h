@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -33,9 +33,9 @@ class LteHarqBufferTx : noncopyable
     opp_component_ptr<LteMacBase> macOwner_;
     std::vector<LteHarqProcessTx *> processes_;
     unsigned int numProc_;
-    unsigned int numEmptyProc_; // @ fb on reset, @ insert
-    unsigned char selectedAcid_; // @ insert, @ marksel, @ sendseldn
-    MacNodeId nodeId_; // UE nodeId for which this buffer has been created
+    unsigned int numEmptyProc_;  // @ fb on reset, @ insert
+    unsigned char selectedAcid_;  // @ insert, @ marksel, @ sendseldn
+    MacNodeId nodeId_;  // UE nodeId for which this buffer has been created
 
   protected:
     /**
@@ -211,7 +211,7 @@ class LteHarqBufferTx : noncopyable
     bool isInUnitList(unsigned char acid, Codeword cw, UnitList unitIds);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

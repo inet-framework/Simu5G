@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -59,7 +59,7 @@ void MecRequestBackgroundApp::sendRequest() {
      * the signal queuedRequests.
      *
      */
-    std::string payload = "BulkRequest: 1";// + std::to_string(numberOfApplications_);
+    std::string payload = "BulkRequest: 1";  // + std::to_string(numberOfApplications_);
     Http::sendPacket(payload.c_str(), serviceSocket_);
     EV << "sent 1 request to the server" << endl;
 }
@@ -121,7 +121,7 @@ void MecRequestBackgroundApp::handleMp1Message(int connId)
     EV << "MecRequestBackgroundApp::handleMp1Message - payload: " << mp1HttpMessage->getBody() << endl;
 
     try {
-        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody()); // get the JSON structure
+        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody());  // get the JSON structure
         if (!jsonBody.empty()) {
             jsonBody = jsonBody[0];
             std::string serName = jsonBody["serName"];
@@ -149,5 +149,5 @@ void MecRequestBackgroundApp::finish()
 {
 }
 
-} //namespace
+}  // namespace
 

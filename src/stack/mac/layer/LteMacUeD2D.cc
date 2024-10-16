@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -69,7 +69,7 @@ void LteMacUeD2D::initialize(int stage)
     }
 }
 
-//Function to create only a BSR for the eNB
+// Function to create only a BSR for the eNB
 Packet *LteMacUeD2D::makeBsr(int size) {
 
     auto macPkt = new Packet("LteMacPdu");
@@ -201,7 +201,7 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                     // Create a PDU
                     macPkt = new Packet("LteMacPdu");
                     auto header = makeShared<LteMacPdu>();
-                    //macPkt = new LteMacPdu("LteMacPdu");
+                    // macPkt = new LteMacPdu("LteMacPdu");
                     header->setHeaderLength(MAC_HEADER);
                     macPkt->insertAtFront(header);
                     macPkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
@@ -297,7 +297,7 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                 if (info->getDirection() == UL) {
                     hb = new LteHarqBufferTx(binder_, (unsigned int)ENB_TX_HARQ_PROCESSES, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
                 }
-                else { // D2D or D2D_MULTI
+                else {  // D2D or D2D_MULTI
                     hb = new LteHarqBufferTxD2D(binder_, (unsigned int)ENB_TX_HARQ_PROCESSES, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
                 }
                 harqTxBuffers[destId] = hb;
@@ -319,65 +319,65 @@ void LteMacUeD2D::macPduMake(MacCid cid)
 
             // TODO implement differentiated BSR attach
             //
-            //            // if there's enough space for a LONG BSR, send it
-            //            if( (availableBytes >= LONG_BSR_SIZE) ) {
-            //                // Create a PDU if data were not scheduled
-            //                if (pdu==0)
-            //                    pdu = new LteMacPdu();
+            //// if there's enough space for a LONG BSR, send it
+            // if( (availableBytes >= LONG_BSR_SIZE) ) {
+            //// Create a PDU if data were not scheduled
+            // if (pdu==0)
+            // pdu = new LteMacPdu();
             //
-            //                if(LteDebug::trace("LteSchedulerUeUl::schedule") || LteDebug::trace("LteSchedulerUeUl::schedule@bsrTracing"))
-            //                    fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - node %hu, sending a Long BSR...\n",NOW,nodeId);
+            // if(LteDebug::trace("LteSchedulerUeUl::schedule") || LteDebug::trace("LteSchedulerUeUl::schedule@bsrTracing"))
+            // fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - node %hu, sending a Long BSR...\n",NOW,nodeId);
             //
-            //                // create a full BSR
-            //                pdu->ctrlPush(fullBufferStatusReport());
+            //// create a full BSR
+            // pdu->ctrlPush(fullBufferStatusReport());
             //
-            //                // do not reset BSR flag
-            //                mac_->bsrTriggered() = true;
+            //// do not reset BSR flag
+            // mac_->bsrTriggered() = true;
             //
-            //                availableBytes -= LONG_BSR_SIZE;
+            // availableBytes -= LONG_BSR_SIZE;
             //
-            //            }
+            // }
             //
-            //            // if there's space only for a SHORT BSR and there are scheduled flows, send it
-            //            else if( (mac_->bsrTriggered() == true) && (availableBytes >= SHORT_BSR_SIZE) && (highestBackloggedFlow != -1) ) {
+            //// if there's space only for a SHORT BSR and there are scheduled flows, send it
+            // else if( (mac_->bsrTriggered() == true) && (availableBytes >= SHORT_BSR_SIZE) && (highestBackloggedFlow != -1) ) {
             //
-            //                // Create a PDU if data were not scheduled
-            //                if (pdu==0)
-            //                    pdu = new LteMacPdu();
+            //// Create a PDU if data were not scheduled
+            // if (pdu==0)
+            // pdu = new LteMacPdu();
             //
-            //                if(LteDebug::trace("LteSchedulerUeUl::schedule") || LteDebug::trace("LteSchedulerUeUl::schedule@bsrTracing"))
-            //                    fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - node %hu, sending a Short/Truncated BSR...\n",NOW,nodeId);
+            // if(LteDebug::trace("LteSchedulerUeUl::schedule") || LteDebug::trace("LteSchedulerUeUl::schedule@bsrTracing"))
+            // fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - node %hu, sending a Short/Truncated BSR...\n",NOW,nodeId);
             //
-            //                // create a short BSR
-            //                pdu->ctrlPush(shortBufferStatusReport(highestBackloggedFlow));
+            //// create a short BSR
+            // pdu->ctrlPush(shortBufferStatusReport(highestBackloggedFlow));
             //
-            //                // do not reset BSR flag
-            //                mac_->bsrTriggered() = true;
+            //// do not reset BSR flag
+            // mac_->bsrTriggered() = true;
             //
-            //                availableBytes -= SHORT_BSR_SIZE;
+            // availableBytes -= SHORT_BSR_SIZE;
             //
-            //            }
-            //            // if there's a BSR triggered but there's not enough space, collect the appropriate statistic
-            //            else if(availableBytes < SHORT_BSR_SIZE && availableBytes < LONG_BSR_SIZE) {
-            //                Stat::put(LTE_BSR_SUPPRESSED_NODE,nodeId,1.0);
-            //                Stat::put(LTE_BSR_SUPPRESSED_CELL,mac_->cellId(),1.0);
-            //            }
-            //            Stat::put (LTE_GRANT_WASTED_BYTES_UL, nodeId, availableBytes);
-            //        }
+            // }
+            //// if there's a BSR triggered but there's not enough space, collect the appropriate statistic
+            // else if(availableBytes < SHORT_BSR_SIZE && availableBytes < LONG_BSR_SIZE) {
+            // Stat::put(LTE_BSR_SUPPRESSED_NODE,nodeId,1.0);
+            // Stat::put(LTE_BSR_SUPPRESSED_CELL,mac_->cellId(),1.0);
+            // }
+            // Stat::put (LTE_GRANT_WASTED_BYTES_UL, nodeId, availableBytes);
+            // }
             //
-            //        // 4) PDU creation
+            //// 4) PDU creation
             //
-            //        if (pdu!=0) {
+            // if (pdu!=0) {
             //
-            //            pdu->cellId() = mac_->cellId();
-            //            pdu->nodeId() = nodeId;
-            //            pdu->direction() = mac::UL;
-            //            pdu->error() = false;
+            // pdu->cellId() = mac_->cellId();
+            // pdu->nodeId() = nodeId;
+            // pdu->direction() = mac::UL;
+            // pdu->error() = false;
             //
-            //            if(LteDebug::trace("LteSchedulerUeUl::schedule"))
-            //                fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - node %hu, creating uplink PDU.\n", NOW, nodeId);
+            // if(LteDebug::trace("LteSchedulerUeUl::schedule"))
+            // fprintf(stderr, "%.9f LteSchedulerUeUl::schedule - node %hu, creating uplink PDU.\n", NOW, nodeId);
             //
-            //        }
+            // }
 
             auto header = macPkt->removeAtFront<LteMacPdu>();
             // Attach BSR to PDU if RAC is won and wasn't already made
@@ -392,7 +392,7 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                 EV << "LteMacUeD2D::macPduMake - BSR created with size " << size << endl;
             }
 
-            if (bsrAlreadyMade && size > 0)                                                                                          // this prevents the UE from sending an unnecessary RAC request
+            if (bsrAlreadyMade && size > 0) // this prevents the UE from sending an unnecessary RAC request
                 bsrRtxTimer_ = bsrRtxTimerStart_;
             else
                 bsrRtxTimer_ = 0;
@@ -573,7 +573,7 @@ void LteMacUeD2D::macHandleRac(cPacket *pktAux)
 
         // reset RAC counter
         currentRacTry_ = 0;
-        //reset RAC backoff timer
+        // reset RAC backoff timer
         racBackoffTimer_ = 0;
     }
     else {
@@ -582,9 +582,9 @@ void LteMacUeD2D::macHandleRac(cPacket *pktAux)
             EV << NOW << " Ue " << nodeId_ << ", RAC reached max attempts : " << currentRacTry_ << endl;
             // no more RAC allowed
             //! TODO flush all buffers here
-            //reset RAC counter
+            // reset RAC counter
             currentRacTry_ = 0;
-            //reset RAC backoff timer
+            // reset RAC backoff timer
             racBackoffTimer_ = 0;
         }
         else {
@@ -645,7 +645,7 @@ void LteMacUeD2D::handleSelfMessage()
                     git.second = nullptr;
                     // if necessary, a RAC request will be sent to obtain a grant
                     checkRac = true;
-                    //return;
+                    // return;
                 }
                 else if (--periodCounter_[carrierFreq] > 0) {
                     skip = true;
@@ -672,7 +672,7 @@ void LteMacUeD2D::handleSelfMessage()
 
     scheduleList_.clear();
     requestedSdus_ = 0;
-    if (!noSchedulingGrants) { // if a grant is configured
+    if (!noSchedulingGrants) {  // if a grant is configured
         if (!firstTx) {
             EV << "\t currentHarq_ counter initialized " << endl;
             firstTx = true;
@@ -741,18 +741,18 @@ void LteMacUeD2D::handleSelfMessage()
                 macPduMake();
             }
             else {
-                requestedSdus_ = macSduRequest(); // returns an integer
+                requestedSdus_ = macSduRequest();  // returns an integer
             }
         }
 
         // Message that triggers flushing of Tx H-ARQ buffers for all users
         // This way, flushing is performed after the (possible) reception of new MAC PDUs
         cMessage *flushHarqMsg = new cMessage("flushHarqMsg");
-        flushHarqMsg->setSchedulingPriority(1);        // after other messages
+        flushHarqMsg->setSchedulingPriority(1);  // after other messages
         scheduleAt(NOW, flushHarqMsg);
     }
 
-    //============================ DEBUG ==========================
+    // ============================ DEBUG ==========================
     if (debugHarq_) {
         for (const auto& mtit : harqTxBuffers_) {
             EV << "\n carrier[ " << mtit.first << "] htxbuf.size " << mtit.second.size() << endl;
@@ -771,7 +771,7 @@ void LteMacUeD2D::handleSelfMessage()
             }
         }
     }
-    //======================== END DEBUG ==========================
+    // ======================== END DEBUG ==========================
 
     unsigned int purged = 0;
     // purge from corrupted PDUs all Rx H-HARQ buffers
@@ -799,7 +799,7 @@ UserTxParams *LteMacUeD2D::getPreconfiguredTxParams()
     // default parameters for D2D
     txParams->isSet() = true;
     txParams->writeTxMode(TRANSMIT_DIVERSITY);
-    Rank ri = 1;                                              // rank for TxD is one
+    Rank ri = 1;  // rank for TxD is one
     txParams->writeRank(ri);
     txParams->writePmi(intuniform(1, pow(ri, (double)2)));  // taken from LteFeedbackComputationRealistic::computeFeedback
 
@@ -945,7 +945,7 @@ void LteMacUeD2D::macHandleD2DModeSwitch(cPacket *pktAux)
             }
         }
     }
-    else { // rx side
+    else {  // rx side
         Direction newDirection = (newMode == DM) ? D2D : DL;
         Direction oldDirection = (oldMode == DM) ? D2D : DL;
 
@@ -965,8 +965,8 @@ void LteMacUeD2D::macHandleD2DModeSwitch(cPacket *pktAux)
                                 for (unsigned int proc = 0; proc < (unsigned int)UE_RX_HARQ_PROCESSES; proc++) {
                                     unsigned int numUnits = hit->second->getProcess(proc)->getNumHarqUnits();
                                     for (unsigned int i = 0; i < numUnits; i++) {
-                                        hit->second->getProcess(proc)->purgeCorruptedPdu(i); // delete contained PDU
-                                        hit->second->getProcess(proc)->resetCodeword(i);     // reset unit
+                                        hit->second->getProcess(proc)->purgeCorruptedPdu(i);  // delete contained PDU
+                                        hit->second->getProcess(proc)->resetCodeword(i);  // reset unit
                                     }
                                 }
                             }
@@ -1018,5 +1018,5 @@ void LteMacUeD2D::doHandover(MacNodeId targetEnb)
     LteMacUe::doHandover(targetEnb);
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -57,7 +57,7 @@ void UERequestApp::initialize(int stage)
 
     sno_ = 0;
 
-    //retrieve parameters
+    // retrieve parameters
     requestPacketSize_ = B(par("requestPacketSize"));
     requestPeriod_ = par("period");
 
@@ -67,7 +67,7 @@ void UERequestApp::initialize(int stage)
     const char *deviceAppAddressStr = par("deviceAppAddress").stringValue();
     deviceAppAddress_ = inet::L3AddressResolver().resolve(deviceAppAddressStr);
 
-    //binding socket
+    // binding socket
     socket.setOutputGate(gate("socketOut"));
     socket.bind(localPort_);
 
@@ -77,18 +77,18 @@ void UERequestApp::initialize(int stage)
 
     mecAppName = par("mecAppName").stringValue();
 
-    //initializing the auto-scheduling messages
+    // initializing the auto-scheduling messages
     selfStart_ = new cMessage("selfStart", KIND_SELF_START);
     selfStop_ = new cMessage("selfStop", KIND_SELF_STOP);
     sendRequest_ = new cMessage("sendRequest", KIND_SEND_REQUEST);
     unBlockingMsg_ = new cMessage("unBlockingMsg", KIND_UN_BLOCKING_MSG);
 
-    //starting UERequestApp
+    // starting UERequestApp
     simtime_t startTime = par("startTime");
     EV << "UERequestApp::initialize - starting sendStartMEWarningAlertApp() in " << startTime << " seconds " << endl;
     scheduleAt(simTime() + startTime, selfStart_);
 
-    //testing
+    // testing
     EV << "UERequestApp::initialize - binding to port: local:" << localPort_ << " , dest:" << deviceAppPort_ << endl;
 }
 
@@ -121,7 +121,7 @@ void UERequestApp::handleMessage(cMessage *msg)
          * From Device app
          * device app usually runs in the UE (loopback), but it could also run in other places
          */
-        if (ipAdd == deviceAppAddress_ || ipAdd == inet::L3Address("127.0.0.1")) { // dev app
+        if (ipAdd == deviceAppAddress_ || ipAdd == inet::L3Address("127.0.0.1")) {  // dev app
             auto mePkt = packet->peekAtFront<DeviceAppPacket>();
             if (!strcmp(mePkt->getType(), ACK_START_MECAPP))
                 handleAckStartMECRequestApp(msg);
@@ -154,7 +154,7 @@ void UERequestApp::sendStartMECRequestApp()
     inet::Packet *packet = new inet::Packet("RequestAppStart");
     auto start = inet::makeShared<DeviceAppStartPacket>();
 
-    //instantiation requirements and info
+    // instantiation requirements and info
     start->setType(START_MECAPP);
     start->setMecAppName(mecAppName.c_str());
     start->setChunkLength(inet::B(2 + mecAppName.size() + 1));
@@ -163,7 +163,7 @@ void UERequestApp::sendStartMECRequestApp()
 
     socket.sendTo(packet, deviceAppAddress_, deviceAppPort_);
 
-    //rescheduling
+    // rescheduling
     scheduleAt(simTime() + 0.5, selfStart_);
 }
 
@@ -174,7 +174,7 @@ void UERequestApp::sendStopMECRequestApp()
     inet::Packet *packet = new inet::Packet("DeviceAppStopPacket");
     auto stop = inet::makeShared<DeviceAppStopPacket>();
 
-    //termination requirements and info
+    // termination requirements and info
     stop->setType(STOP_MECAPP);
     stop->setChunkLength(inet::B(10));
     stop->addTagIfAbsent<inet::CreationTimeTag>()->setCreationTime(simTime());
@@ -186,7 +186,7 @@ void UERequestApp::sendStopMECRequestApp()
         cancelEvent(sendRequest_);
     }
 
-    //rescheduling
+    // rescheduling
     if (selfStop_->isScheduled())
         cancelEvent(selfStop_);
     scheduleAt(simTime() + 0.5, selfStop_);
@@ -203,13 +203,13 @@ void UERequestApp::handleAckStartMECRequestApp(cMessage *msg)
         mecAppPort_ = pkt->getPort();
         EV << "UERequestApp::handleAckStartMECRequestApp - Received " << pkt->getType() << " type RequestPacket. mecApp instance is at: " << mecAppAddress_ << ":" << mecAppPort_ << endl;
         cancelEvent(selfStart_);
-        //scheduling sendStopMEWarningAlertApp()
+        // scheduling sendStopMEWarningAlertApp()
         if (!selfStop_->isScheduled()) {
             simtime_t stopTime = par("stopTime");
             scheduleAt(simTime() + stopTime, selfStop_);
             EV << "UERequestApp::handleAckStartMECRequestApp - Starting sendStopMECRequestApp() in " << stopTime << " seconds " << endl;
         }
-        //send the first reuqest to the MEC app
+        // send the first reuqest to the MEC app
         sendRequest();
     }
     else {
@@ -293,7 +293,7 @@ void UERequestApp::recvResponse(cMessage *msg)
         "serviceResponseTime [" << res->getServiceResponseTime() << "ms]\t" <<
         "responseTime [" << respTime << "ms]" << endl;
 
-    //emit stats
+    // emit stats
     emit(upLinkTimeSignal_, upLinkDelay);
     emit(downLinkTimeSignal_, downLinkDelay);
     emit(processingTimeSignal_, res->getProcessingTime());
@@ -308,5 +308,5 @@ void UERequestApp::recvResponse(cMessage *msg)
         scheduleAt(simTime() + requestPeriod_, sendRequest_);
 }
 
-} //namespace
+}  // namespace
 

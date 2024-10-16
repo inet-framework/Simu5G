@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -56,5 +56,5 @@ void MecServiceBase2::initialize(int stage)
     }
 }
 
-} //namespace
+}  // namespace
 

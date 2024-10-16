@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -36,9 +36,9 @@ void BackgroundCellAmc::calculateMcsScale()
     int ulRbSubcarriers = 12;
     int dlRbSubCarriers = 12;
     int ulRbSymbols = 7;
-    ulRbSymbols *= 2; // slot --> RB
+    ulRbSymbols *= 2;  // slot --> RB
     int dlRbSymbols = 7;
-    dlRbSymbols *= 2; // slot --> RB
+    dlRbSymbols *= 2;  // slot --> RB
     int ulSigSymbols = 1;
     int dlSigSymbols = 1;
     int ulPilotRe = 0;
@@ -89,8 +89,8 @@ unsigned int BackgroundCellAmc::getItbsPerCqi(Cqi cqi, const Direction dir)
     double rate = entry.rate_;
 
     // Select the ranges for searching in the MCS table.
-    unsigned int min = 0; // _QPSK
-    unsigned int max = 9; // _QPSK
+    unsigned int min = 0;  // _QPSK
+    unsigned int max = 9;  // _QPSK
     if (mod == _16QAM) {
         min = 10;
         max = 16;
@@ -118,5 +118,5 @@ unsigned int BackgroundCellAmc::getItbsPerCqi(Cqi cqi, const Direction dir)
     return iTbs;
 }
 
-} //namespace
+}  // namespace
 

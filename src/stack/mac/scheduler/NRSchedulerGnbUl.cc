@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -19,7 +19,7 @@ namespace simu5g {
 bool NRSchedulerGnbUl::checkEligibility(MacNodeId id, Codeword& cw, double carrierFrequency)
 {
     HarqRxBuffers *harqRxBuff = mac_->getHarqRxBuffers(carrierFrequency);
-    if (harqRxBuff == nullptr)                                                             // a new HARQ buffer will be created at reception
+    if (harqRxBuff == nullptr) // a new HARQ buffer will be created at reception
         return true;
 
     // check if HARQ buffer has already been created for this node
@@ -64,10 +64,10 @@ bool NRSchedulerGnbUl::rtxschedule(double carrierFrequency, BandLimitVector *ban
                 }
 
                 // Get user transmission parameters
-                const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency);// get the user info
+                const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency);  // get the user info
                 // TODO SK Get the number of codewords - FIX with correct mapping
                 // TODO is there a way to get codewords without calling computeTxParams??
-                unsigned int codewords = txParams.getLayers().size();// get the number of available codewords
+                unsigned int codewords = txParams.getLayers().size();  // get the number of available codewords
 
                 EV << NOW << " NRSchedulerGnbUl::rtxschedule UE: " << nodeId << endl;
 
@@ -117,7 +117,7 @@ bool NRSchedulerGnbUl::rtxschedule(double carrierFrequency, BandLimitVector *ban
                 for (auto it_d2d = harqBuffersMirrorD2D->begin(); it_d2d != harqBuffersMirrorD2D->end(); ) {
 
                     // get current nodeIDs
-                    MacNodeId senderId = (it_d2d->first).first; // Transmitter
+                    MacNodeId senderId = (it_d2d->first).first;  // Transmitter
                     MacNodeId destId = (it_d2d->first).second;  // Receiver
 
                     if (senderId == NODEID_NONE || binder_->getOmnetId(senderId) == 0) {
@@ -134,9 +134,9 @@ bool NRSchedulerGnbUl::rtxschedule(double carrierFrequency, BandLimitVector *ban
                     LteHarqBufferMirrorD2D *currHarq = it_d2d->second;
 
                     // Get user transmission parameters
-                    const UserTxParams& txParams = mac_->getAmc()->computeTxParams(senderId, dir, carrierFrequency);// get the user info
+                    const UserTxParams& txParams = mac_->getAmc()->computeTxParams(senderId, dir, carrierFrequency);  // get the user info
 
-                    unsigned int codewords = txParams.getLayers().size();// get the number of available codewords
+                    unsigned int codewords = txParams.getLayers().size();  // get the number of available codewords
                     unsigned int allocatedBytes = 0;
 
                     // TODO handle the codewords join case (size of(cw0+cw1) < currentTBS && currentLayers ==1)
@@ -195,5 +195,5 @@ bool NRSchedulerGnbUl::rtxschedule(double carrierFrequency, BandLimitVector *ban
     return false;
 }
 
-} //namespace
+}  // namespace
 

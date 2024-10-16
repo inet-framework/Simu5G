@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -40,7 +40,7 @@ UmTxEntity *LteRlcUmD2D::getTxBuffer(inet::Ptr<FlowControlInfo> lteInfo)
         buf << "UmTxEntity Lcid: " << lcid;
         cModuleType *moduleType = cModuleType::get("simu5g.stack.rlc.UmTxEntity");
         UmTxEntity *txEnt = check_and_cast<UmTxEntity *>(moduleType->createScheduleInit(buf.str().c_str(), getParentModule()));
-        txEntities_[cid] = txEnt;    // Add to tx_entities map
+        txEntities_[cid] = txEnt;  // Add to tx_entities map
 
         if (lteInfo != nullptr) {
             // store control info for this flow
@@ -93,7 +93,7 @@ void LteRlcUmD2D::handleLowerMessage(cPacket *pktAux)
             EV << "LteRlcUmD2D::handleLowerMessage - Sending packet " << pkt->getName() << " to port UM_Sap_up$o\n";
             send(pkt, upOutGate_);
         }
-        else { // rx side
+        else {  // rx side
             // get the corresponding Rx buffer & call handler
             UmRxEntity *rxbuf = getRxBuffer(lteInfo);
             rxbuf->rlcHandleD2DModeSwitch(switchPkt->getOldConnection(), switchPkt->getOldMode(), switchPkt->getClearRlcBuffer());
@@ -148,8 +148,8 @@ void LteRlcUmD2D::deleteQueues(MacNodeId nodeId)
         }
 
         if (nodeType == UE || ((nodeType == ENODEB || nodeType == GNODEB) && MacCidToNodeId(tit->first) == nodeId)) {
-            tit->second->deleteModule(); // Delete Entity
-            tit = txEntities_.erase(tit);    // Delete Elem
+            tit->second->deleteModule();  // Delete Entity
+            tit = txEntities_.erase(tit);  // Delete Elem
         }
         else {
             ++tit;
@@ -168,8 +168,8 @@ void LteRlcUmD2D::deleteQueues(MacNodeId nodeId)
         }
 
         if (nodeType == UE || ((nodeType == ENODEB || nodeType == GNODEB) && MacCidToNodeId(rit->first) == nodeId)) {
-            rit->second->deleteModule(); // Delete Entity
-            rit = rxEntities_.erase(rit);    // Delete Elem
+            rit->second->deleteModule();  // Delete Entity
+            rit = rxEntities_.erase(rit);  // Delete Elem
         }
         else {
             ++rit;
@@ -177,5 +177,5 @@ void LteRlcUmD2D::deleteQueues(MacNodeId nodeId)
     }
 }
 
-} //namespace
+}  // namespace
 

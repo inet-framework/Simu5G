@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -40,7 +40,7 @@ class AmcPilotAuto : public AmcPilot
     AmcPilotAuto(Binder *binder, LteAmc *amc) :
         AmcPilot(binder, amc)
     {
-        mode_ = AVG_CQI;//MAX_CQI;//MIN_CQI;
+        mode_ = AVG_CQI;  // MAX_CQI;//MIN_CQI;
         name_ = "Auto";
     }
 
@@ -74,7 +74,7 @@ class AmcPilotAuto : public AmcPilot
     std::vector<Cqi> getMultiBandCqi(MacNodeId id, const Direction dir, double carrierFrequency) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -217,7 +217,7 @@ void LtePdcpRrcBase::fromLowerLayer(cPacket *pktAux)
 
     auto lteInfo = pkt->getTag<FlowControlInfo>();
 
-    MacCid cid = idToMacCid(lteInfo->getSourceId(), lteInfo->getLcid());   // TODO: check if you have to get master node id
+    MacCid cid = idToMacCid(lteInfo->getSourceId(), lteInfo->getLcid());  // TODO: check if you have to get master node id
 
     LteRxPdcpEntity *entity = getRxEntity(cid);
     entity->handlePacketFromLowerLayer(pkt);
@@ -392,7 +392,7 @@ LteTxPdcpEntity *LtePdcpRrcBase::getTxEntity(MacCid cid)
         buf << "LteTxPdcpEntity cid: " << cid;
         cModuleType *moduleType = cModuleType::get("simu5g.stack.pdcp_rrc.LteTxPdcpEntity");
         LteTxPdcpEntity *txEnt = check_and_cast<LteTxPdcpEntity *>(moduleType->createScheduleInit(buf.str().c_str(), this));
-        txEntities_[cid] = txEnt;    // Add to entities map
+        txEntities_[cid] = txEnt;  // Add to entities map
 
         EV << "LtePdcpRrcBase::getTxEntity - Added new TxPdcpEntity for Cid: " << cid << "\n";
 
@@ -417,7 +417,7 @@ LteRxPdcpEntity *LtePdcpRrcBase::getRxEntity(MacCid cid)
         buf << "LteRxPdcpEntity Cid: " << cid;
         cModuleType *moduleType = cModuleType::get("simu5g.stack.pdcp_rrc.LteRxPdcpEntity");
         LteRxPdcpEntity *rxEnt = check_and_cast<LteRxPdcpEntity *>(moduleType->createScheduleInit(buf.str().c_str(), this));
-        rxEntities_[cid] = rxEnt;    // Add to entities map
+        rxEntities_[cid] = rxEnt;  // Add to entities map
 
         EV << "LtePdcpRrcBase::getRxEntity - Added new RxPdcpEntity for Cid: " << cid << "\n";
 
@@ -473,12 +473,12 @@ void LtePdcpRrcUe::deleteEntities(MacNodeId nodeId)
     for (auto& [txId, txEntity] : txEntities_) {
         txEntity->deleteModule();  // Delete Entity
     }
-    txEntities_.clear(); // Clear all entities after deletion
+    txEntities_.clear();  // Clear all entities after deletion
 
     for (auto& [rxId, rxEntity] : rxEntities_) {
         rxEntity->deleteModule();  // Delete Entity
     }
-    rxEntities_.clear(); // Clear all entities after deletion
+    rxEntities_.clear();  // Clear all entities after deletion
 }
 
 void LtePdcpRrcUe::initialize(int stage)
@@ -490,5 +490,5 @@ void LtePdcpRrcUe::initialize(int stage)
     }
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -57,7 +57,7 @@ void LtePhyEnb::initialize(int stage)
     else if (stage == 1) {
         initializeFeedbackComputation();
 
-        //check eNb type and set TX power
+        // check eNb type and set TX power
         if (cellInfo_->getEnbType() == MICRO_ENB)
             txPower_ = microTxPower_;
         else
@@ -105,7 +105,7 @@ bool LtePhyEnb::handleControlPkt(UserControlInfo *lteinfo, LteAirFrame *frame)
     if (binder_->getOmnetId(senderMacNodeId) == 0) {
         EV << "Sender (" << senderMacNodeId << ") does not exist anymore!" << std::endl;
         delete frame;
-        return true;    // FIXME ? make sure that nodes that left the simulation do not send
+        return true;  // FIXME ? make sure that nodes that left the simulation do not send
     }
     if (lteinfo->getFrameType() == HANDOVERPKT) {
         // handover broadcast frames must not be relayed or processed by eNB
@@ -121,7 +121,7 @@ bool LtePhyEnb::handleControlPkt(UserControlInfo *lteinfo, LteAirFrame *frame)
         handleControlMsg(frame, lteinfo);
         return true;
     }
-    //handle feedback packet
+    // handle feedback packet
     if (lteinfo->getFrameType() == FEEDBACKPKT) {
         handleFeedbackPkt(lteinfo, frame);
         delete frame;
@@ -186,7 +186,7 @@ void LtePhyEnb::handleAirFrame(cMessage *msg)
         return;
     }
 
-    //handle all control packets
+    // handle all control packets
     if (handleControlPkt(lteInfo, frame))
         return; // If frame contains a control packet no further action is needed
 
@@ -247,24 +247,24 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
     // select the correct channel model according to the carrier frequency
     LteChannelModel *channelModel = getChannelModel(lteinfo->getCarrierFrequency());
 
-    //get UE Position
+    // get UE Position
     Coord sendersPos = lteinfo->getCoord();
     cellInfo_->setUePosition(lteinfo->getSourceId(), sendersPos);
 
     std::vector<double> snr;
     auto header = pktAux->removeAtFront<LteFeedbackPkt>();
 
-    //Apply analog model (path loss)
-    //Get snr for UL direction
+    // Apply analog model (path loss)
+    // Get snr for UL direction
     if (channelModel != nullptr)
         snr = channelModel->getSINR(frame, lteinfo);
     else
         throw cRuntimeError("LtePhyEnbD2D::requestFeedback - channelModel is a null pointer. Abort");
 
     FeedbackRequest req = lteinfo->feedbackReq;
-    //Feedback computation
+    // Feedback computation
     fb.clear();
-    //get number of RU
+    // get number of RU
     int nRus = cellInfo_->getNumRus();
     TxMode txmode = req.txMode;
     FeedbackType type = req.type;
@@ -277,7 +277,7 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
         dir = ((dir == UL) ? DL : UNKNOWN_DIRECTION)
         )
     {
-        //for each RU is called the computation feedback function
+        // for each RU is called the computation feedback function
         if (req.genType == IDEAL) {
             fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,
                     antennaCws, numPreferredBand, IDEAL, nRus, snr,
@@ -305,11 +305,11 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
 
         if (dir == UL) {
             header->setLteFeedbackDoubleVectorUl(fb);
-            //Prepare  parameters for next loop iteration - in order to compute SNR in DL
+            // Prepare  parameters for next loop iteration - in order to compute SNR in DL
             lteinfo->setTxPower(txPower_);
             lteinfo->setDirection(DL);
 
-            //Get snr for DL direction
+            // Get snr for DL direction
             if (channelModel != nullptr)
                 snr = channelModel->getSINR(frame, lteinfo);
             else
@@ -429,5 +429,5 @@ void LtePhyEnb::initializeFeedbackComputation()
     EV << "Feedback Computation \"" << name << "\" loaded." << endl;
 }
 
-} //namespace
+}  // namespace
 

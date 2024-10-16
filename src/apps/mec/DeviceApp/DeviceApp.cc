@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -45,7 +45,7 @@ void DeviceApp::handleUALCMPMessage()
         switch (appState) {
             case START: {
                 EV << "DeviceApp::handleUALCMPMessage - START" << endl;
-                if (response->getCode() == 200) { // Successful response of the get
+                if (response->getCode() == 200) {  // Successful response of the get
                     nlohmann::json jsonResponseBody = nlohmann::json::parse(response->getBody());
                     nlohmann::json jsonRequestBody;
 
@@ -55,9 +55,9 @@ void DeviceApp::handleUALCMPMessage()
                         nlohmann::json appInfo = jsonResponseBody["appList"];
                         if (appName == appInfo.at(i)["appName"]) {
                             jsonRequestBody["associateDevAppId"] = std::to_string(getId());
-                            jsonRequestBody["appInfo"]["appDId"] = appInfo.at(i)["appDId"];// "WAMECAPP_External"; //startPk->getMecAppDId()
-                            jsonRequestBody["appInfo"]["appName"] = appName;//"MEWarningAlertApp_rest";
-                            jsonRequestBody["appInfo"]["appProvider"] = appInfo.at(i)["appProvider"];//startPk->getMecAppProvider();//"lte.apps.mec.warningAlert_rest.MEWarningAlertApp_rest";
+                            jsonRequestBody["appInfo"]["appDId"] = appInfo.at(i)["appDId"];  // "WAMECAPP_External"; //startPk->getMecAppDId()
+                            jsonRequestBody["appInfo"]["appName"] = appName;  // "MEWarningAlertApp_rest";
+                            jsonRequestBody["appInfo"]["appProvider"] = appInfo.at(i)["appProvider"];  // startPk->getMecAppProvider();//"lte.apps.mec.warningAlert_rest.MEWarningAlertApp_rest";
                             found = true;
                             break;
                         }
@@ -66,9 +66,9 @@ void DeviceApp::handleUALCMPMessage()
                     if (!found) {
                         EV << "DeviceApp::handleUALCMPMessage: application descriptor for appName: " << appName << " not found." << endl;
                         jsonRequestBody["associateDevAppId"] = std::to_string(getId());
-                        jsonRequestBody["appInfo"]["appPackageSource"] = appPackageSource; //"ApplicationDescriptors/WarningAlertApp.json";
+                        jsonRequestBody["appInfo"]["appPackageSource"] = appPackageSource;  // "ApplicationDescriptors/WarningAlertApp.json";
 
-                        jsonRequestBody["appInfo"]["appName"] = appName;//"MEWarningAlertApp_rest";
+                        jsonRequestBody["appInfo"]["appName"] = appName;  // "MEWarningAlertApp_rest";
                         // do not add the appProvider field (even if it is mandatory in ETSI specs. The MEC orchestrator we implemented does not use it
                         // jsonRequestBody["appInfo"]["appProvider"] = appProvider;//startPk->getMecAppProvider();//"lte.apps.mec.warningAlert_rest.MEWarningAlertApp_rest";
                     }
@@ -79,7 +79,7 @@ void DeviceApp::handleUALCMPMessage()
 
                     Http::sendPostRequest(&UALCMPSocket_, jsonRequestBody.dump().c_str(), host.c_str(), uri);
 
-                    //send request
+                    // send request
                     appState = CREATING;
                     return;
                 }
@@ -92,7 +92,7 @@ void DeviceApp::handleUALCMPMessage()
 
             case CREATING: {
                 EV << "DeviceApp::handleUALCMPMessage - CREATING" << endl;
-                if (response->getCode() == 201) { // Successful response of the post
+                if (response->getCode() == 201) {  // Successful response of the post
                     nlohmann::json jsonBody = nlohmann::json::parse(UALCMPMessage->getBody());
 
                     inet::Packet *packet = new inet::Packet("DeviceAppStartAckPacket");
@@ -100,19 +100,19 @@ void DeviceApp::handleUALCMPMessage()
                     std::string contextUri = response->getHeaderField("Location");
 
                     if (contextUri.empty()) {
-                        //ERROR
+                        // ERROR
                         EV << "DeviceApp::handleUALCMPMessage - ERROR (on CREATE 201) - Mec Application Context not created, i.e. the MEC app has not been instantiated" << endl;
 
                         auto nack = inet::makeShared<DeviceAppStartAckPacket>();
 
-                        //instantiation requirements and info
+                        // instantiation requirements and info
                         nack->setType(ACK_START_MECAPP);
 
-                        //connection info
+                        // connection info
                         nack->setResult(false);
                         // TODO add reason?
                         throw cRuntimeError("201 empty");
-                        nack->setChunkLength(inet::B(2)); //just code and data length = 0
+                        nack->setChunkLength(inet::B(2));  // just code and data length = 0
                         nack->addTagIfAbsent<inet::CreationTimeTag>()->setCreationTime(simTime());
 
                         packet->insertAtBack(nack);
@@ -129,10 +129,10 @@ void DeviceApp::handleUALCMPMessage()
 
                         auto ack = inet::makeShared<DeviceAppStartAckPacket>();
 
-                        //instantiation requirements and info
+                        // instantiation requirements and info
                         ack->setType(ACK_START_MECAPP);
 
-                        //connection info
+                        // connection info
                         std::string contextId = jsonBody["contextId"];
                         ack->setContextId(contextId.c_str());
                         ack->setResult(true);
@@ -151,27 +151,27 @@ void DeviceApp::handleUALCMPMessage()
                     return;
                 }
                 else if (response->getCode() == 500) {
-                    //ERROR
+                    // ERROR
                     EV << "DeviceApp::handleUALCMPMessage - ERROR (on CREATE " << response->getCode() << ") - Mec Application Context not created, i.e. the MEC app has not been instantiated" << endl;
                     auto nack = inet::makeShared<DeviceAppStartAckPacket>();
 
-                    //instantiation requirements and info
+                    // instantiation requirements and info
                     nack->setType(ACK_START_MECAPP);
 
-                    //connection info
+                    // connection info
                     nack->setResult(false);
                     nack->setReason(response->getPayload().c_str());
                     if (strlen(nack->getReason())) {
-                        nack->setChunkLength(inet::B(2 + strlen(nack->getReason()))); //just code and data length = 0
+                        nack->setChunkLength(inet::B(2 + strlen(nack->getReason())));  // just code and data length = 0
                     }
                     else {
-                        nack->setChunkLength(inet::B(2)); //just code and data length = 0
+                        nack->setChunkLength(inet::B(2));  // just code and data length = 0
                     }
                     nack->addTagIfAbsent<inet::CreationTimeTag>()->setCreationTime(simTime());
 
                     inet::Packet *packet = new inet::Packet("DeviceAppStartAckPacket");
                     packet->insertAtBack(nack);
-                    //throw cRuntimeError("LCM proxy responded 500");
+                    // throw cRuntimeError("LCM proxy responded 500");
                     ueAppSocket_.sendTo(packet, ueAppAddress, ueAppPort);
 
                     appState = IDLE;
@@ -187,10 +187,10 @@ void DeviceApp::handleUALCMPMessage()
             case DELETING: {
                 inet::Packet *packet = new inet::Packet("DeviceAppStopAckPacket");
                 auto ack = inet::makeShared<DeviceAppStopAckPacket>();
-                //instantiation requirements and info
+                // instantiation requirements and info
                 ack->setType(ACK_STOP_MECAPP);
 
-                if (response->getCode() == 204) { // Successful response of the delete
+                if (response->getCode() == 204) {  // Successful response of the delete
                     ack->setResult(true);
                     ack->setChunkLength(inet::B(2));
                     ack->addTagIfAbsent<inet::CreationTimeTag>()->setCreationTime(simTime());
@@ -201,10 +201,10 @@ void DeviceApp::handleUALCMPMessage()
                     ack->setResult(false);
                     ack->setReason("ContextId not found, maybe it has been already deleted");
                     if (strlen(ack->getReason())) {
-                        ack->setChunkLength(inet::B(2 + strlen(ack->getReason()))); //just code and data length = 0
+                        ack->setChunkLength(inet::B(2 + strlen(ack->getReason())));  // just code and data length = 0
                     }
                     else {
-                        ack->setChunkLength(inet::B(2)); //just code and data length = 0
+                        ack->setChunkLength(inet::B(2));  // just code and data length = 0
                     }
                     ack->addTagIfAbsent<inet::CreationTimeTag>()->setCreationTime(simTime());
                     packet->insertAtBack(ack);
@@ -214,10 +214,10 @@ void DeviceApp::handleUALCMPMessage()
                     ack->setResult(false);
                     ack->setReason("MEC app termination did not success");
                     if (strlen(ack->getReason())) {
-                        ack->setChunkLength(inet::B(2 + strlen(ack->getReason()))); //just code and data length = 0
+                        ack->setChunkLength(inet::B(2 + strlen(ack->getReason())));  // just code and data length = 0
                     }
                     else {
-                        ack->setChunkLength(inet::B(2)); //just code and data length = 0
+                        ack->setChunkLength(inet::B(2));  // just code and data length = 0
                     }
                     ack->addTagIfAbsent<inet::CreationTimeTag>()->setCreationTime(simTime());
                     packet->insertAtBack(ack);
@@ -269,25 +269,25 @@ void DeviceApp::initialize(int stage) {
     ueAppSocket_.setOutputGate(gate("socketOut"));
     UALCMPSocket_.setOutputGate(gate("socketOut"));
 
-    ueAppSocket_.bind(localAddress, localPort); // bind ueSocket to listen on local port
-    UALCMPSocket_.bind(localAddress, par("ualcmpLocalPort")); // bind UALCMP Socket to listen on ualcmpLocalPort
+    ueAppSocket_.bind(localAddress, localPort);  // bind ueSocket to listen on local port
+    UALCMPSocket_.bind(localAddress, par("ualcmpLocalPort"));  // bind UALCMP Socket to listen on ualcmpLocalPort
 
     ueAppSocket_.setCallback(this);
     UALCMPSocket_.setCallback(this);
 
-    int timeToLive = par("timeToLive"); // TODO split to 2 parameters, when need different value for ue and UALCMP socket
+    int timeToLive = par("timeToLive");  // TODO split to 2 parameters, when need different value for ue and UALCMP socket
     if (timeToLive != -1) {
         ueAppSocket_.setTimeToLive(timeToLive);
         UALCMPSocket_.setTimeToLive(timeToLive);
     }
 
-    int dscp = par("dscp"); // TODO split to 2 parameters, when need different value for ue and UALCMP socket
+    int dscp = par("dscp");  // TODO split to 2 parameters, when need different value for ue and UALCMP socket
     if (dscp != -1) {
         ueAppSocket_.setDscp(dscp);
         UALCMPSocket_.setDscp(dscp);
     }
 
-    int tos = par("tos"); // TODO split to 2 parameters, when need different value for ue and UALCMP socket
+    int tos = par("tos");  // TODO split to 2 parameters, when need different value for ue and UALCMP socket
     if (tos != -1) {
         ueAppSocket_.setTos(tos);
         UALCMPSocket_.setTos(tos);
@@ -372,18 +372,18 @@ void DeviceApp::sendStartAppContext(inet::Ptr<const DeviceAppPacket> pk)
         inet::Packet *packet = new inet::Packet("DeviceAppStartAckPacket");
         auto nack = inet::makeShared<DeviceAppStartAckPacket>();
 
-        //instantiation requirements and info
+        // instantiation requirements and info
         nack->setType(ACK_START_MECAPP);
 
-        //connection info
+        // connection info
         nack->setResult(false);
 
         nack->setReason("LCM proxy not connected");
         if (strlen(nack->getReason())) {
-            nack->setChunkLength(inet::B(2 + strlen(nack->getReason()))); //just code and data length = 0
+            nack->setChunkLength(inet::B(2 + strlen(nack->getReason())));  // just code and data length = 0
         }
         else {
-            nack->setChunkLength(inet::B(2)); //just code and data length = 0
+            nack->setChunkLength(inet::B(2));  // just code and data length = 0
         }
         nack->addTagIfAbsent<inet::CreationTimeTag>()->setCreationTime(simTime());
         packet->insertAtBack(nack);
@@ -425,17 +425,17 @@ void DeviceApp::sendStopAppContext(inet::Ptr<const DeviceAppPacket> pk)
         inet::Packet *packet = new inet::Packet("DeviceAppStopAckPacket");
         auto ack = inet::makeShared<DeviceAppStopAckPacket>();
 
-        //instantiation requirements and info
+        // instantiation requirements and info
         ack->setType(ACK_STOP_MECAPP);
 
         ack->setResult(false);
         ack->setReason("LCM proxy not connected");
 
         if (strlen(ack->getReason())) {
-            ack->setChunkLength(inet::B(2 + strlen(ack->getReason()))); //just code and data length = 0
+            ack->setChunkLength(inet::B(2 + strlen(ack->getReason())));  // just code and data length = 0
         }
         else {
-            ack->setChunkLength(inet::B(2)); //just code and data length = 0
+            ack->setChunkLength(inet::B(2));  // just code and data length = 0
         }
         ack->addTagIfAbsent<inet::CreationTimeTag>()->setCreationTime(simTime());
         packet->insertAtBack(ack);
@@ -515,5 +515,5 @@ void DeviceApp::finish()
         UALCMPSocket_.close();
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -30,7 +30,7 @@ class LteMaxCiMultiband : public virtual LteScheduler
     void commitSchedule() override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* LTEMAXCIMULTIBAND_H_ */
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -28,7 +28,7 @@ class EndPointInfo : public AttributeBase
     nlohmann::ordered_json toJson() const override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* NODES_MEC_MECPLATFORM_SERVICEREGISTRY_RESOURCES_ENDPOINTINFO_H_ */
 

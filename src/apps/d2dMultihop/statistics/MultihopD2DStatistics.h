@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -62,13 +62,13 @@ class MultihopD2DStatistics : public cSimpleModule
     std::map<unsigned short, TransmissionInfo> eventTransmissionInfo_;
 
     // statistics
-    static simsignal_t d2dMultihopEventDelaySignal_;           // average reception delay of one event within the target area
-    static simsignal_t d2dMultihopEventDelay95PerSignal_;      // latency required to cover the 95% of nodes within the target area
-    static simsignal_t d2dMultihopEventDeliveryRatioSignal_;   // percentage of nodes covered within the target area
-    static simsignal_t d2dMultihopEventSentMsgSignal_;         // number of transmitted messages for broadcasting an event within the target area
-    static simsignal_t d2dMultihopEventTrickleSuppressedMsgSignal_;   // number of message relaying suppressed by the Trickle algorithm (if enabled)
-    static simsignal_t d2dMultihopEventRcvdDupMsgSignal_;      // number of duplicates within the target area
-    static simsignal_t d2dMultihopEventCompleteDeliveriesSignal_;    // percentage of clusters completely-covered within the target area
+    static simsignal_t d2dMultihopEventDelaySignal_;  // average reception delay of one event within the target area
+    static simsignal_t d2dMultihopEventDelay95PerSignal_;  // latency required to cover the 95% of nodes within the target area
+    static simsignal_t d2dMultihopEventDeliveryRatioSignal_;  // percentage of nodes covered within the target area
+    static simsignal_t d2dMultihopEventSentMsgSignal_;  // number of transmitted messages for broadcasting an event within the target area
+    static simsignal_t d2dMultihopEventTrickleSuppressedMsgSignal_;  // number of message relaying suppressed by the Trickle algorithm (if enabled)
+    static simsignal_t d2dMultihopEventRcvdDupMsgSignal_;  // number of duplicates within the target area
+    static simsignal_t d2dMultihopEventCompleteDeliveriesSignal_;  // percentage of clusters completely-covered within the target area
 
   protected:
 
@@ -83,7 +83,7 @@ class MultihopD2DStatistics : public cSimpleModule
     void recordDuplicateReception(unsigned int msgId);
 };
 
-} //namespace
+}  // namespace
 
 #endif /* MULTIHOPD2DSTATISTICS_H_ */
 

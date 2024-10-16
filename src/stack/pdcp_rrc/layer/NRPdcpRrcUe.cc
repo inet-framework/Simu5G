@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -29,9 +29,9 @@ void NRPdcpRrcUe::initialize(int stage)
         // initialize gates
         // nrTmSapInGate_ = gate("TM_Sap$i", 1);
         nrTmSapOutGate_ = gate("TM_Sap$o", 1);
-        //nrUmSapInGate_ = gate("UM_Sap$i", 1);
+        // nrUmSapInGate_ = gate("UM_Sap$i", 1);
         nrUmSapOutGate_ = gate("UM_Sap$o", 1);
-        //nrAmSapInGate_ = gate("AM_Sap$i", 1);
+        // nrAmSapInGate_ = gate("AM_Sap$i", 1);
         nrAmSapOutGate_ = gate("AM_Sap$o", 1);
     }
 
@@ -90,13 +90,13 @@ void NRPdcpRrcUe::fromDataPort(cPacket *pktAux)
         // We consider the host part of the IP address (the remaining 28 bits) as identifier of the group,
         // so it is univocally determined for the whole network
         uint32_t address = Ipv4Address(lteInfo->getDstAddr()).getInt();
-        uint32_t mask = ~((uint32_t)255 << 28);      // 0000 1111 1111 1111
+        uint32_t mask = ~((uint32_t)255 << 28);  // 0000 1111 1111 1111
         uint32_t groupId = address & mask;
         lteInfo->setMulticastGroupId((int32_t)groupId);
     }
     else {
         destId = binder_->getMacNodeId(destAddr);
-        if (destId != NODEID_NONE) { // the destination is a UE within the LTE network
+        if (destId != NODEID_NONE) {  // the destination is a UE within the LTE network
             if (binder_->checkD2DCapability(nodeId, destId)) {
                 // this way, we record the ID of the endpoints even if the connection is currently in IM
                 // this is useful for mode switching
@@ -111,7 +111,7 @@ void NRPdcpRrcUe::fromDataPort(cPacket *pktAux)
             // set actual flow direction based (D2D/UL) based on the current mode (DM/IM) of this pairing
             lteInfo->setDirection(getDirection(nodeId, destId));
         }
-        else { // the destination is outside the LTE network
+        else {  // the destination is outside the LTE network
             lteInfo->setDirection(UL);
             lteInfo->setD2dTxPeerId(NODEID_NONE);
             lteInfo->setD2dRxPeerId(NODEID_NONE);
@@ -169,7 +169,7 @@ LteTxPdcpEntity *NRPdcpRrcUe::getTxEntity(MacCid cid)
         cModuleType *moduleType = cModuleType::get("simu5g.stack.pdcp_rrc.NRTxPdcpEntity");
         NRTxPdcpEntity *txEnt = check_and_cast<NRTxPdcpEntity *>(moduleType->createScheduleInit(buf.str().c_str(), this));
 
-        txEntities_[cid] = txEnt;    // Add to entities map
+        txEntities_[cid] = txEnt;  // Add to entities map
 
         EV << "NRPdcpRrcUe::getEntity - Added new PdcpEntity for Cid: " << cid << "\n";
 
@@ -194,7 +194,7 @@ LteRxPdcpEntity *NRPdcpRrcUe::getRxEntity(MacCid cid)
         buf << "NRRxPdcpEntity cid: " << cid;
         cModuleType *moduleType = cModuleType::get("simu5g.stack.pdcp_rrc.NRRxPdcpEntity");
         NRRxPdcpEntity *rxEnt = check_and_cast<NRRxPdcpEntity *>(moduleType->createScheduleInit(buf.str().c_str(), this));
-        rxEntities_[cid] = rxEnt;    // Add to entities map
+        rxEntities_[cid] = rxEnt;  // Add to entities map
 
         EV << "NRPdcpRrcUe::getRxEntity - Added new RxPdcpEntity for Cid: " << cid << "\n";
 
@@ -215,7 +215,7 @@ void NRPdcpRrcUe::deleteEntities(MacNodeId nodeId)
     for (auto tit = txEntities_.begin(); tit != txEntities_.end(); ) {
         if (MacCidToNodeId(tit->first) == nodeId) {
             tit->second->deleteModule();  // Delete Entity
-            tit = txEntities_.erase(tit);       // Delete Element
+            tit = txEntities_.erase(tit);  // Delete Element
         }
         else {
             ++tit;
@@ -224,7 +224,7 @@ void NRPdcpRrcUe::deleteEntities(MacNodeId nodeId)
     for (auto rit = rxEntities_.begin(); rit != rxEntities_.end(); ) {
         if (MacCidToNodeId(rit->first) == nodeId) {
             rit->second->deleteModule();  // Delete Entity
-            rit = rxEntities_.erase(rit);       // Delete Element
+            rit = rxEntities_.erase(rit);  // Delete Element
         }
         else
             ++rit;
@@ -258,5 +258,5 @@ void NRPdcpRrcUe::sendToLowerLayer(Packet *pkt)
         LtePdcpRrcBase::sendToLowerLayer(pkt);
 }
 
-} //namespace
+}  // namespace
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -118,7 +118,7 @@ class LteSchedulerEnb
     std::vector<BandLimit> emptyBandLim_;
 
     // @author Alessandro Noferi
-    double utilization_ = 0; // it records the utilization in the last TTI
+    double utilization_ = 0;  // it records the utilization in the last TTI
 
   public:
 
@@ -375,7 +375,7 @@ class LteSchedulerEnb
     LteScheduler *getScheduler(SchedDiscipline discipline);
 };
 
-} //namespace
+}  // namespace
 
 #endif // _LTE_LTESCHEDULERENB_H_
 

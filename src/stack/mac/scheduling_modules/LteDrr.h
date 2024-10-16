@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -65,7 +65,7 @@ class LteDrr : public LteScheduler
 
     // Scheduling functions ********************************************************************
 
-    //virtual void schedule ();
+    // virtual void schedule ();
 
     void prepareSchedule() override;
 
@@ -78,7 +78,7 @@ class LteDrr : public LteScheduler
     void updateSchedulingInfo() override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

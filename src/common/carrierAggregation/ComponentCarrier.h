@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -42,7 +42,7 @@ class ComponentCarrier : public cSimpleModule
     unsigned int numerologyIndex_;
 
     // Index of the slot format for TDD (-1 stands for FDD)
-//    int tddSlotFormatIndex_;
+// int tddSlotFormatIndex_;
 
     bool useTdd_;
     unsigned int tddNumSymbolsDl_;
@@ -73,7 +73,7 @@ class ComponentCarrier : public cSimpleModule
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

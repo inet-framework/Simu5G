@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -71,7 +71,7 @@ void BurstSender::initTraffic()
         // this might happen when users are created dynamically
         EV << simTime() << "BurstSender::initTraffic - destination " << destAddress << " not found" << endl;
 
-        simtime_t offset = 0.01; // TODO check value
+        simtime_t offset = 0.01;  // TODO check value
         scheduleAt(simTime() + offset, initTraffic_);
         EV << simTime() << "BurstSender::initTraffic - the node will retry to initialize traffic in " << offset << " seconds " << endl;
     }
@@ -113,7 +113,7 @@ void BurstSender::sendPacket()
 {
     EV << "BurstSender::sendPacket - Sending frame[" << idFrame_ << "] of burst [" << idBurst_ << "], next packet at " << simTime() + intraBurstTime_ << endl;
 
-    //unsigned int msgId = (idBurst_ << 16) | idFrame_;
+    // unsigned int msgId = (idBurst_ << 16) | idFrame_;
     unsigned int msgId = (idBurst_ * burstSize_) + idFrame_;
 
     Packet *packet = new inet::Packet("Burst");
@@ -136,5 +136,5 @@ void BurstSender::sendPacket()
         scheduleAt(simTime() + intraBurstTime_, selfPacket_);
 }
 
-} //namespace
+}  // namespace
 

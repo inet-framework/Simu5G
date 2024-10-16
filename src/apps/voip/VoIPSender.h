@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -27,7 +27,7 @@ class VoIPSender : public cSimpleModule
 {
     inet::UdpSocket socket;
 
-    //source
+    // source
     simtime_t durTalk_;
     simtime_t durSil_;
     double scaleTalk_;
@@ -36,7 +36,7 @@ class VoIPSender : public cSimpleModule
     double shapeSil_;
     bool isTalk_;
     cMessage *selfSource_ = nullptr;
-    //sender
+    // sender
     int iDtalk_;
     int nframes_;
     int iDframe_;
@@ -77,7 +77,7 @@ class VoIPSender : public cSimpleModule
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

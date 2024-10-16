@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -45,5 +45,5 @@ const Ptr<Chunk> GtpUserMsgSerializer::deserialize(MemoryInputStream& stream) co
     return gtpUserMsg;
 }
 
-} //namespace
+}  // namespace
 

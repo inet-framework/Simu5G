@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -33,7 +33,7 @@ class TerminalLocation : public AttributeBase
 {
   protected:
     std::string address;
-    std::string locationRetrievalStatus; // Retrieved or error
+    std::string locationRetrievalStatus;  // Retrieved or error
     CurrentLocation currentLocation;
     std::string errorInformation;
 
@@ -43,7 +43,7 @@ class TerminalLocation : public AttributeBase
     nlohmann::ordered_json toJson() const override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* APPS_MEC_MECSERVICES_LOCATIONSERVICE_RESOURCES_TERMINALLOCATION_H_ */
 

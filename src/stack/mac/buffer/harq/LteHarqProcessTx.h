@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -52,10 +52,10 @@ class LteHarqProcessTx : noncopyable
     unsigned char acid_;
 
     /// Number of empty units inside this process
-    unsigned char numEmptyUnits_; //++ @ insert, -- @ unit reset (ack or fourth nack)
+    unsigned char numEmptyUnits_;  // ++ @ insert, -- @ unit reset (ack or fourth nack)
 
     /// Number of selected units inside this process
-    unsigned int numSelected_; //++ @ markSelected and insert, -- @ extract/sendDown
+    unsigned int numSelected_;  // ++ @ markSelected and insert, -- @ extract/sendDown
 
     /// Set this flag when a handover or a D2D switch occurs, so that the HARQ process was interrupted.
     /// This is useful in case the process receives a feedback after reset.
@@ -194,7 +194,7 @@ class LteHarqProcessTx : noncopyable
     virtual ~LteHarqProcessTx();
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

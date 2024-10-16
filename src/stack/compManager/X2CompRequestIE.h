@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -50,7 +50,7 @@ class X2CompRequestIE : public X2InformationElement
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

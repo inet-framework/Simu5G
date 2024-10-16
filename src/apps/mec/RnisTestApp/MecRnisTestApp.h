@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -17,8 +17,8 @@
 #include "inet/networklayer/common/L3Address.h"
 #include "inet/networklayer/common/L3AddressResolver.h"
 
-//MEWarningAlertPacket
-//#include "nodes/mec/MECPlatform/MECAppPacket_Types.h"
+// MEWarningAlertPacket
+// #include "nodes/mec/MECPlatform/MECAppPacket_Types.h"
 #include "apps/mec/WarningAlert/packets/WarningAlertPacket_m.h"
 
 #include "nodes/mec/MECPlatform/ServiceRegistry/ServiceRegistry.h"
@@ -37,7 +37,7 @@ using namespace omnetpp;
 //
 class MecRnisTestApp : public MecAppBase
 {
-    //UDP socket to communicate with the UeApp
+    // UDP socket to communicate with the UeApp
     inet::UdpSocket ueSocket;
     int localUePort;
 
@@ -72,7 +72,7 @@ class MecRnisTestApp : public MecAppBase
     void established(int connId) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

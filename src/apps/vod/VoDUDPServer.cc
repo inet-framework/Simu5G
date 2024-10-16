@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -87,7 +87,7 @@ void VoDUDPServer::handleMessage(cMessage *msg)
         if (!strcmp(msg->getName(), "Timer")) {
             clientsPort = par("destPort");
             clientsStartStreamTime = par("clientsStartStreamTime").doubleValue();
-            //vclientsStartStreamTime = cStringTokenizer(clientsStartStreamTime).asDoubleVector();
+            // vclientsStartStreamTime = cStringTokenizer(clientsStartStreamTime).asDoubleVector();
 
             vclientsReqTime = check_and_cast<cValueArray *>(par("clientsReqTime").objectValue())->asDoubleVectorInUnit("s");
 
@@ -139,7 +139,7 @@ void VoDUDPServer::handleSVCMessage(cMessage *msg)
         frame->setFrameSeqNum(seq_num);
         frame->setPayloadTimestamp(simTime());
         frame->setChunkLength(B(svcTrace_[numPkSentApp].length));
-        frame->setFrameLength(svcTrace_[numPkSentApp].length + 2 * sizeof(int)); // Seq_num plus frame length plus payload
+        frame->setFrameLength(svcTrace_[numPkSentApp].length + 2 * sizeof(int));  // Seq_num plus frame length plus payload
         frame->setTid(svcTrace_[numPkSentApp].tid);
         frame->setQid(svcTrace_[numPkSentApp].qid);
         frame->addTag<CreationTimeTag>()->setCreationTime(simTime());
@@ -164,7 +164,7 @@ void VoDUDPServer::handleSVCMessage(cMessage *msg)
             frame->setFrameSeqNum(seq_num);
             frame->setPayloadTimestamp(simTime());
             frame->setChunkLength(B(svcTrace_[numPkSentApp].length));
-            frame->setFrameLength(svcTrace_[numPkSentApp].length + 2 * sizeof(int)); // Seq_num plus frame length plus payload
+            frame->setFrameLength(svcTrace_[numPkSentApp].length + 2 * sizeof(int));  // Seq_num plus frame length plus payload
             frame->addTag<CreationTimeTag>()->setCreationTime(simTime());
             packet->insertAtBack(frame);
             socket.sendTo(packet, msgNew->getClientAddr(), msgNew->getClientPort());
@@ -176,5 +176,5 @@ void VoDUDPServer::handleSVCMessage(cMessage *msg)
     }
 }
 
-} //namespace
+}  // namespace
 

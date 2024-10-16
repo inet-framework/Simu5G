@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -22,7 +22,7 @@ using namespace omnetpp;
 bool LteSchedulerEnbDl::checkEligibility(MacNodeId id, Codeword& cw, double carrierFrequency)
 {
     HarqTxBuffers *harqTxBuff = mac_->getHarqTxBuffers(carrierFrequency);
-    if (harqTxBuff == nullptr)                                                             // a new HARQ buffer will be created at transmission
+    if (harqTxBuff == nullptr) // a new HARQ buffer will be created at transmission
         return true;
 
     // check if HARQ buffer has already been created for this node
@@ -49,10 +49,10 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, double carr
         std::vector<BandLimit> *bandLim, Remote antenna, bool limitBl)
 {
     // Get user transmission parameters
-    const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency);    // get the user info
+    const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency);  // get the user info
     const std::set<Band>& allowedBands = txParams.readBands();
     // TODO SK Get the number of codewords - FIX with correct mapping
-    unsigned int codewords = txParams.getLayers().size();                // get the number of available codewords
+    unsigned int codewords = txParams.getLayers().size();  // get the number of available codewords
 
     std::vector<BandLimit> tempBandLim;
 
@@ -107,7 +107,7 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, double carr
         MacNodeId peer = mac_->getAmc()->computeMuMimoPairing(nodeId);
         if (peer != nodeId) {
             // this user has a valid pairing
-            //1) register pairing  - if pairing is already registered false is returned
+            // 1) register pairing  - if pairing is already registered false is returned
             if (allocator_->configureMuMimoPeering(nodeId, peer)) {
                 EV << "LteSchedulerEnb::grant MU-MIMO pairing established: main user [" << nodeId << "], paired user [" << peer << "]" << endl;
             }
@@ -119,7 +119,7 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, double carr
             EV << "LteSchedulerEnb::grant no MU-MIMO pairing available for user [" << nodeId << "]" << endl;
         }
     }
-    //!\test experimental DAS support
+    //! \test experimental DAS support
     // registering DAS spaces to the allocator
     Plane plane = allocator_->getOFDMPlane(nodeId);
     allocator_->setRemoteAntenna(plane, antenna);
@@ -167,11 +167,11 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, double carr
             int b1 = allocator_->getBlocks(antenna, b, nodeId);
 
             // limit eventually allocated blocks on other codeword to limit for current cw
-            //b1 = (limitBl ? (b1>limit?limit:b1) : b1);
+            // b1 = (limitBl ? (b1>limit?limit:b1) : b1);
             available = (b1 == 0) ? 0 : mac_->getAmc()->computeBytesOnNRbs(nodeId, b, remappedCw, b1, direction_, carrierFrequency);
         }
         else
-            available = availableBytes(nodeId, antenna, b, remappedCw, direction_, carrierFrequency, (limitBl) ? limit : -1);                                                                                                                                                                                                                                                                  // available space
+            available = availableBytes(nodeId, antenna, b, remappedCw, direction_, carrierFrequency, (limitBl) ? limit : -1); // available space
 
         // use the provided limit as cap for available bytes, if it is not set to unlimited
         if (limit >= 0 && !limitBl)
@@ -263,7 +263,7 @@ unsigned int LteSchedulerEnbDl::scheduleBgRtx(MacNodeId bgUeId, double carrierFr
         unsigned int bytesPerBlock = bgTrafficManager->getBackloggedUeBytesPerBlock(bgUeId, direction_);
 
         // get the RTX buffer size
-        unsigned int queueLength = bgTrafficManager->getBackloggedUeBuffer(bgUeId, direction_, true); // in bytes
+        unsigned int queueLength = bgTrafficManager->getBackloggedUeBuffer(bgUeId, direction_, true);  // in bytes
         if (queueLength == 0)
             return 0;
 
@@ -308,7 +308,7 @@ unsigned int LteSchedulerEnbDl::scheduleBgRtx(MacNodeId bgUeId, double carrierFr
             Band b = bandLim->at(i).band_;
             int limit = bandLim->at(i).limit_.at(cw);
 
-            unsigned int bandAvailableBytes = availableBytesBackgroundUe(bgUeId, antenna, b, direction_, carrierFrequency, (limitBl) ? limit : -1); // available space (in bytes)
+            unsigned int bandAvailableBytes = availableBytesBackgroundUe(bgUeId, antenna, b, direction_, carrierFrequency, (limitBl) ? limit : -1);  // available space (in bytes)
 
             // use the provided limit as cap for available bytes, if it is not set to unlimited
             if (limit >= 0)
@@ -408,9 +408,9 @@ bool LteSchedulerEnbDl::rtxschedule(double carrierFrequency, BandLimitVector *ba
             std::vector<LteHarqProcessTx *> *processes = currHarq->getHarqProcesses();
 
             // Get user transmission parameters
-            const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency); // get the user info
+            const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency);  // get the user info
             // TODO SK Get the number of codewords - FIX with correct mapping
-            unsigned int codewords = txParams.getLayers().size(); // get the number of available codewords
+            unsigned int codewords = txParams.getLayers().size();  // get the number of available codewords
 
             EV << NOW << " LteSchedulerEnbDl::rtxschedule  UE: " << nodeId << endl;
             // get the number of HARQ processes
@@ -439,7 +439,7 @@ bool LteSchedulerEnbDl::rtxschedule(double carrierFrequency, BandLimitVector *ba
                     // Get the bandLimit for the current user
                     bool ret = getBandLimit(&usableBands, nodeId);
                     if (ret)
-                        bandLim = &usableBands;                                                                                                    // TODO fix this, must be combined with the band limit of the carrier
+                        bandLim = &usableBands; // TODO fix this, must be combined with the band limit of the carrier
                     else
                         bandLim = nullptr;
 
@@ -542,5 +542,5 @@ bool LteSchedulerEnbDl::getBandLimit(std::vector<BandLimit> *bandLimit, MacNodeI
     return true;
 }
 
-} //namespace
+}  // namespace
 

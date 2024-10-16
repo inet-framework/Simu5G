@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -32,7 +32,7 @@ class TransportInfo : public AttributeBase
     nlohmann::ordered_json toJson() const override;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* NODES_MEC_MECPLATFORM_SERVICEREGISTRY_RESOURCES_TRANSINFO_H_ */
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -42,7 +42,7 @@ class DistanceBasedConflictGraph : public ConflictGraph
     void setThresholds(double d2dInterferenceRadius = -1.0, double d2dMultiTransmissionRadius = -1.0, double d2dMultiInterferenceRadius = -1.0);
 };
 
-} //namespace
+}  // namespace
 
 #endif /* DISTANCEBASEDCONFLICTGRAPH_H */
 

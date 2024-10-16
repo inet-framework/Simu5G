@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -99,7 +99,7 @@ NRMCSelem BackgroundCellAmcNr::getMcsElemPerCqi(Cqi cqi, const Direction dir)
 
 unsigned int BackgroundCellAmcNr::getSymbolsPerSlot(double carrierFrequency, Direction dir)
 {
-    unsigned int totSymbols = 14;   // TODO get this parameter from CellInfo/Carrier
+    unsigned int totSymbols = 14;  // TODO get this parameter from CellInfo/Carrier
 
     SlotFormat sf = binder_->getSlotFormat(carrierFrequency);
     if (!sf.tdd)
@@ -114,7 +114,7 @@ unsigned int BackgroundCellAmcNr::getSymbolsPerSlot(double carrierFrequency, Dir
 
 unsigned int BackgroundCellAmcNr::getResourceElementsPerBlock(unsigned int symbolsPerSlot)
 {
-    unsigned int numSubcarriers = 12;   // TODO get this parameter from CellInfo/Carrier
+    unsigned int numSubcarriers = 12;  // TODO get this parameter from CellInfo/Carrier
     unsigned int reSignal = 1;
     unsigned int nOverhead = 0;
 
@@ -170,5 +170,5 @@ unsigned int BackgroundCellAmcNr::computeTbsFromNinfo(double nInfo, double coder
     return tbs;
 }
 
-} //namespace
+}  // namespace
 

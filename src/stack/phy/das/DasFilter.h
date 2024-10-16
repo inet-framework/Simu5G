@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -156,7 +156,7 @@ class DasFilter
     opp_component_ptr<LtePhyBase> ltePhy_;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

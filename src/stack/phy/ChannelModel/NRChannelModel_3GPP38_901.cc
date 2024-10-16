@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -234,7 +234,7 @@ double NRChannelModel_3GPP38_901::computeRuralMacro(double threeDimDistance, dou
     // Compute break-point distance
     double dbp = 2 * M_PI * hNodeB_ * hUe_ * ((carrierFrequency_ * 1000000000) / SPEED_OF_LIGHT);
 
-    double h = 5.0; // Average building height
+    double h = 5.0;  // Average building height
     double A = 0.03 * pow(h, 1.72);
     double B = 0.044 * pow(h, 1.72);
     double min1 = (A < 10) ? A : 10;
@@ -399,5 +399,5 @@ double NRChannelModel_3GPP38_901::computeShadowing(double sqrDistance, MacNodeId
     return att;
 }
 
-} //namespace
+}  // namespace
 

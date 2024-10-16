@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -90,7 +90,7 @@ class AmcPilot
     void setMode(PilotComputationModes mode) { mode_ = mode; }
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

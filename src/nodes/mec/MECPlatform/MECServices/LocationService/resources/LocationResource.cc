@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -140,7 +140,7 @@ nlohmann::ordered_json LocationResource::toJsonUe(std::vector<inet::Ipv4Address>
                 if (ueInfo.getIpv4Address() != inet::Ipv4Address::UNSPECIFIED_ADDRESS)
                     ueArray.push_back(ueInfo.toJson());
                 found = true;
-                break; // next ue id
+                break;  // next ue id
             }
         }
         if (!found) {
@@ -192,5 +192,5 @@ nlohmann::ordered_json LocationResource::toJson(std::vector<MacCellId>& cellsID,
     return val;
 }
 
-} //namespace
+}  // namespace
 

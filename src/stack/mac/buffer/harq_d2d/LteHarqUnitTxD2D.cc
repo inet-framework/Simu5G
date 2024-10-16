@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -149,7 +149,7 @@ Packet *LteHarqUnitTxD2D::extractPdu()
 
     txTime_ = NOW;
     transmissions_++;
-    status_ = TXHARQ_PDU_WAITING; // waiting for feedback
+    status_ = TXHARQ_PDU_WAITING;  // waiting for feedback
     auto lteInfo = pdu_->getTagForUpdate<UserControlInfo>();
     lteInfo->setTxNumber(transmissions_);
     lteInfo->setNdi(transmissions_ == 1);
@@ -166,5 +166,5 @@ Packet *LteHarqUnitTxD2D::extractPdu()
     return extractedPdu;
 }
 
-} //namespace
+}  // namespace
 

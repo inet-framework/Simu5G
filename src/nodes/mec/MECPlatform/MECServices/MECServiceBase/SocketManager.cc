@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -88,7 +88,7 @@ void SocketManager::peerClosed()
 {
     EV << "Closed connection from: " << sock->getRemoteAddress() << std::endl;
     sock->setState(inet::TcpSocket::PEER_CLOSED);
-    service->removeSubscriptions(sock->getSocketId()); // if any
+    service->removeSubscriptions(sock->getSocketId());  // if any
 }
 
 void SocketManager::closed()
@@ -106,5 +106,5 @@ void SocketManager::failure(int code)
     service->removeConnection(this);
 }
 
-} //namespace
+}  // namespace
 

@@ -141,7 +141,7 @@ static double GetBLER_TU(double SINR, int MCS)
         for (int i = 0; i < 15; i++) {
             if (SINR >= SINR_15_CQI_TU[CQI - 1][i] && SINR < SINR_15_CQI_TU[CQI - 1][i + 1]) {
                 index = i;
-                //std::cout << SINR_15_CQI_TU [CQI-1] [i] << " - " << SINR_15_CQI_TU [CQI-1] [i+1] << std::endl;
+                // std::cout << SINR_15_CQI_TU [CQI-1] [i] << " - " << SINR_15_CQI_TU [CQI-1] [i+1] << std::endl;
             }
         }
     }
@@ -169,7 +169,7 @@ static double GetBLER_TU(double SINR, int MCS)
     return BLER;
 }
 
-} //namespace
+}  // namespace
 
 #endif /* BLERVSSINR_15CQI_TU_H_ */
 

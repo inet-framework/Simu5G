@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -24,5 +24,5 @@ LteHarqBufferTxD2D::LteHarqBufferTxD2D(Binder *binder, unsigned int numProc, Lte
     }
 }
 
-} //namespace
+}  // namespace
 

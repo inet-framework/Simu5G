@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -36,7 +36,7 @@ class NRPhyUe : public LtePhyUeD2D
     void deleteOldBuffers(MacNodeId masterId);
 };
 
-} //namespace
+}  // namespace
 
 #endif /* _NRPHYUE_H_ */
 

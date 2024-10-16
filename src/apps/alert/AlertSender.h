@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -27,7 +27,7 @@ class AlertSender : public cSimpleModule
 {
     inet::UdpSocket socket;
 
-    //sender
+    // sender
     int nextSno_ = 0;
     inet::B size_;
 
@@ -57,7 +57,7 @@ class AlertSender : public cSimpleModule
     void refreshDisplay() const override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

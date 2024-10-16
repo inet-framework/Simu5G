@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -61,7 +61,7 @@ class EventGenerator : public cSimpleModule
     void unregisterNode(MultihopD2D *app, MacNodeId lteNodeId);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

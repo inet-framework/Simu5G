@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -36,7 +36,7 @@ void NRRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu)
 
     EV << NOW << " NRRxPdcpEntity::handlePdcpSdu - processing PDCP SDU with SN[" << rcvdSno << "]" << endl;
 
-    if (!(pdcp_->isDualConnectivityEnabled()) || outOfOrderDelivery_) { // deliver packet to upper layer
+    if (!(pdcp_->isDualConnectivityEnabled()) || outOfOrderDelivery_) {  // deliver packet to upper layer
         EV << NOW << " NRRxPdcpEntity::handlePdcpSdu - Deliver SDU SN[" << rcvdSno << "] to upper layer" << endl;
         pdcp_->toDataPort(pdcpSdu);
         return;
@@ -172,5 +172,5 @@ void NRRxPdcpEntity::handleMessage(cMessage *msg)
     }
 }
 
-} //namespace
+}  // namespace
 

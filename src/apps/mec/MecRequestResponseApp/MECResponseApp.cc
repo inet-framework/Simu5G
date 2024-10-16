@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -109,7 +109,7 @@ void MECResponseApp::handleRequest(cMessage *msg)
 {
     EV << "MECResponseApp::handleRequest" << endl;
     // this method pretends to perform some computation after having
-    //.request some info to the RNI
+    // .request some info to the RNI
     if (currentRequestfMsg_ != nullptr)
         throw cRuntimeError("MECResponseApp::handleRequest - currentRequestfMsg_ not null!");
 
@@ -143,7 +143,7 @@ void MECResponseApp::sendResponse()
 
     ueAppSocket_.sendTo(pkt, ueAppAddress, ueAppPort);
 
-    //clean current request
+    // clean current request
     delete packet;
     currentRequestfMsg_ = nullptr;
     msgArrived_ = 0;
@@ -170,7 +170,7 @@ void MECResponseApp::handleMp1Message(int connId)
     EV << "MECPlatooningApp::handleMp1Message - payload: " << mp1HttpMessage->getBody() << endl;
 
     try {
-        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody()); // get the JSON structure
+        nlohmann::json jsonBody = nlohmann::json::parse(mp1HttpMessage->getBody());  // get the JSON structure
         if (!jsonBody.empty()) {
             jsonBody = jsonBody[0];
             std::string serName = jsonBody["serName"];
@@ -191,7 +191,7 @@ void MECResponseApp::handleMp1Message(int connId)
             }
         }
 
-        //close service registry socket
+        // close service registry socket
         mp1Socket_->close();
     }
     catch (nlohmann::detail::parse_error e) {
@@ -208,7 +208,7 @@ void MECResponseApp::handleServiceMessage(int connId)
 
     if (httpMessage->getType() == RESPONSE) {
         HttpResponseMessage *rspMsg = dynamic_cast<HttpResponseMessage *>(httpMessage);
-        if (rspMsg->getCode() == 200) { // in response to a successful GET request
+        if (rspMsg->getCode() == 200) {  // in response to a successful GET request
             EV << "MECResponseApp::handleServiceMessage - response 200 from Socket with Id [" << connId << "]" << endl;
             getRequestArrived_ = simTime();
             EV << "response time " << getRequestArrived_ - getRequestSent_ << endl;
@@ -230,11 +230,11 @@ void MECResponseApp::doComputation()
 
 void MECResponseApp::sendGetRequest()
 {
-    //check if the ueAppAddress is specified
+    // check if the ueAppAddress is specified
     if (serviceSocket_->getState() == inet::TcpSocket::CONNECTED) {
         EV << "MECResponseApp::sendGetRequest(): send request to the Location Service" << endl;
         std::stringstream uri;
-        uri << "/example/rni/v2/queries/layer2_meas"; //TODO filter the request to get less data
+        uri << "/example/rni/v2/queries/layer2_meas";  // TODO filter the request to get less data
         EV << "MECResponseApp::requestLocation(): uri: " << uri.str() << endl;
         std::string host = serviceSocket_->getRemoteAddress().str() + ":" + std::to_string(serviceSocket_->getRemotePort());
         Http::sendGetRequest(serviceSocket_, host.c_str(), uri.str().c_str());
@@ -286,5 +286,5 @@ void MECResponseApp::sendStopAck()
     ueAppSocket_.sendTo(pkt, ueAppAddress, ueAppPort);
 }
 
-} //namespace
+}  // namespace
 

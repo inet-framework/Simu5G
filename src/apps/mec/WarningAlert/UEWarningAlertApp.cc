@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -49,10 +49,10 @@ void UEWarningAlertApp::initialize(int stage)
 
     log = par("logger").boolValue();
 
-    //retrieving car cModule
+    // retrieving car cModule
     ue = getContainingNode(this);
 
-    //retrieve parameters
+    // retrieve parameters
     size_ = par("packetSize");
     period_ = par("period");
     localPort_ = par("localPort");
@@ -61,7 +61,7 @@ void UEWarningAlertApp::initialize(int stage)
     const char *deviceSimbolicAppAddress_ = par("deviceAppAddress").stringValue();
     deviceAppAddress_ = inet::L3AddressResolver().resolve(deviceSimbolicAppAddress_);
 
-    //binding socket
+    // binding socket
     socket.setOutputGate(gate("socketOut"));
     socket.bind(localPort_);
 
@@ -69,22 +69,22 @@ void UEWarningAlertApp::initialize(int stage)
     if (tos != -1)
         socket.setTos(tos);
 
-    //retrieving mobility module
+    // retrieving mobility module
     mobility.reference(this, "mobilityModule", true);
 
     mecAppName = par("mecAppName").stringValue();
 
-    //initializing the auto-scheduling messages
+    // initializing the auto-scheduling messages
     selfStart_ = new cMessage("selfStart", KIND_SELF_START);
     selfStop_ = new cMessage("selfStop", KIND_SELF_STOP);
     selfMecAppStart_ = new cMessage("selfMecAppStart", KIND_SELF_MEC_APP_START);
 
-    //starting UEWarningAlertApp
+    // starting UEWarningAlertApp
     simtime_t startTime = par("startTime");
     EV << "UEWarningAlertApp::initialize - starting sendStartMEWarningAlertApp() in " << startTime << " seconds " << endl;
     scheduleAt(simTime() + startTime, selfStart_);
 
-    //testing
+    // testing
     EV << "UEWarningAlertApp::initialize - sourceAddress: " << sourceSimbolicAddress << " [" << inet::L3AddressResolver().resolve(sourceSimbolicAddress).str() << "]" << endl;
     EV << "UEWarningAlertApp::initialize - destAddress: " << deviceSimbolicAppAddress_ << " [" << deviceAppAddress_.str() << "]" << endl;
     EV << "UEWarningAlertApp::initialize - binding to port: local:" << localPort_ << " , dest:" << deviceAppPort_ << endl;
@@ -121,7 +121,7 @@ void UEWarningAlertApp::handleMessage(cMessage *msg)
          * From Device app
          * device app usually runs in the UE (loopback), but it could also run in other places
          */
-        if (ipAdd == deviceAppAddress_ || ipAdd == inet::L3Address("127.0.0.1")) { // dev app
+        if (ipAdd == deviceAppAddress_ || ipAdd == inet::L3Address("127.0.0.1")) {  // dev app
             auto mePkt = packet->peekAtFront<DeviceAppPacket>();
             if (!strcmp(mePkt->getType(), ACK_START_MECAPP)) handleAckStartMEWarningAlertApp(msg);
             else if (!strcmp(mePkt->getType(), ACK_STOP_MECAPP)) handleAckStopMEWarningAlertApp(msg);
@@ -162,10 +162,10 @@ void UEWarningAlertApp::sendStartMEWarningAlertApp()
     inet::Packet *packet = new inet::Packet("WarningAlertPacketStart");
     auto start = inet::makeShared<DeviceAppStartPacket>();
 
-    //instantiation requirements and info
+    // instantiation requirements and info
     start->setType(START_MECAPP);
     start->setMecAppName(mecAppName.c_str());
-    //start->setMecAppProvider("lte.apps.mec.warningAlert_rest.MEWarningAlertApp_rest_External");
+    // start->setMecAppProvider("lte.apps.mec.warningAlert_rest.MEWarningAlertApp_rest_External");
 
     start->setChunkLength(inet::B(2 + mecAppName.size() + 1));
     start->addTagIfAbsent<inet::CreationTimeTag>()->setCreationTime(simTime());
@@ -183,7 +183,7 @@ void UEWarningAlertApp::sendStartMEWarningAlertApp()
         }
     }
 
-    //rescheduling
+    // rescheduling
     scheduleAt(simTime() + period_, selfStart_);
 }
 
@@ -194,7 +194,7 @@ void UEWarningAlertApp::sendStopMEWarningAlertApp()
     inet::Packet *packet = new inet::Packet("DeviceAppStopPacket");
     auto stop = inet::makeShared<DeviceAppStopPacket>();
 
-    //termination requirements and info
+    // termination requirements and info
     stop->setType(STOP_MECAPP);
 
     stop->setChunkLength(inet::B(size_));
@@ -212,7 +212,7 @@ void UEWarningAlertApp::sendStopMEWarningAlertApp()
         }
     }
 
-    //rescheduling
+    // rescheduling
     if (selfStop_->isScheduled())
         cancelEvent(selfStop_);
     scheduleAt(simTime() + period_, selfStop_);
@@ -231,7 +231,7 @@ void UEWarningAlertApp::handleAckStartMEWarningAlertApp(cMessage *msg)
         mecAppPort_ = pkt->getPort();
         EV << "UEWarningAlertApp::handleAckStartMEWarningAlertApp - Received " << pkt->getType() << " type WarningAlertPacket. mecApp instance is at: " << mecAppAddress_ << ":" << mecAppPort_ << endl;
         cancelEvent(selfStart_);
-        //scheduling sendStopMEWarningAlertApp()
+        // scheduling sendStopMEWarningAlertApp()
         if (!selfStop_->isScheduled()) {
             simtime_t stopTime = par("stopTime");
             scheduleAt(simTime() + stopTime, selfStop_);
@@ -280,7 +280,7 @@ void UEWarningAlertApp::handleInfoMEWarningAlertApp(cMessage *msg)
 
     EV << "UEWarningAlertApp::handleInfoMEWarningAlertApp - Received " << pkt->getType() << " type WarningAlertPacket" << endl;
 
-    //updating runtime color of the car icon background
+    // updating runtime color of the car icon background
     if (pkt->getDanger()) {
         if (log) {
             ofstream myfile;
@@ -318,11 +318,11 @@ void UEWarningAlertApp::handleAckStopMEWarningAlertApp(cMessage *msg)
     EV << "UEWarningAlertApp::handleAckStopMEWarningAlertApp - Received " << pkt->getType() << " type WarningAlertPacket with result: " << pkt->getResult() << endl;
     if (pkt->getResult() == false)
         EV << "Reason: " << pkt->getReason() << endl;
-    //updating runtime color of the car icon background
+    // updating runtime color of the car icon background
     ue->getDisplayString().setTagArg("i", 1, "white");
 
     cancelEvent(selfStop_);
 }
 
-} //namespace
+}  // namespace
 

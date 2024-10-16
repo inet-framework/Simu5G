@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -164,10 +164,10 @@ void LteMacEnb::initialize(int stage)
 
         // Insert EnbInfo in the Binder
         EnbInfo *info = new EnbInfo();
-        info->id = nodeId_;            // local MAC ID
-        info->nodeType = nodeType_;    // eNB or gNB
-        info->type = MACRO_ENB;        // eNB Type
-        info->init = false;            // flag for PHY initialization
+        info->id = nodeId_;  // local MAC ID
+        info->nodeType = nodeType_;  // eNB or gNB
+        info->type = MACRO_ENB;  // eNB Type
+        info->init = false;  // flag for PHY initialization
         info->eNodeB = hostModule;  // reference to the eNodeB module
         binder_->addEnbInfo(info);
 
@@ -204,7 +204,7 @@ void LteMacEnb::initialize(int stage)
         // Start TTI tick
         // the period is equal to the minimum period according to the numerologies used by the carriers in this node
         ttiTick_ = new cMessage("ttiTick_");
-        ttiTick_->setSchedulingPriority(1);                                              // TTI TICK after other messages
+        ttiTick_->setSchedulingPriority(1);  // TTI TICK after other messages
         ttiPeriod_ = binder_->getSlotDurationFromNumerologyIndex(cellInfo_->getMaxNumerologyIndex());
         scheduleAt(NOW + ttiPeriod_, ttiTick_);
 
@@ -212,7 +212,7 @@ void LteMacEnb::initialize(int stage)
         for (const auto& item : *carriers) {
             // set periodicity for this carrier according to its numerology
             NumerologyPeriodCounter info;
-            info.max = 1 << (cellInfo_->getMaxNumerologyIndex() - item.second.numerologyIndex); // 2^(maxNumerologyIndex - numerologyIndex)
+            info.max = 1 << (cellInfo_->getMaxNumerologyIndex() - item.second.numerologyIndex);  // 2^(maxNumerologyIndex - numerologyIndex)
             info.current = info.max - 1;
             numerologyPeriodCounter_[item.second.numerologyIndex] = info;
         }
@@ -241,9 +241,9 @@ void LteMacEnb::macSduRequest()
 
     // Ask for a MAC SDU for each scheduled user on each carrier and each codeword
     std::map<double, LteMacScheduleList>::iterator cit;
-    for (const auto& cit : *scheduleListDl_) { // loop on carriers
+    for (const auto& cit : *scheduleListDl_) {  // loop on carriers
 
-        for (const auto& item : cit.second) { // loop on CIDs
+        for (const auto& item : cit.second) {  // loop on CIDs
             MacCid destCid = item.first.first;
             // Codeword cw = item.first.second;
             MacNodeId destId = MacCidToNodeId(destCid);
@@ -261,10 +261,10 @@ void LteMacEnb::macSduRequest()
             auto pkt = new Packet("LteMacSduRequest");
             auto macSduRequest = makeShared<LteMacSduRequest>();
             macSduRequest->setUeId(destId);
-            macSduRequest->setChunkLength(b(1)); // TODO: should be 0
+            macSduRequest->setChunkLength(b(1));  // TODO: should be 0
             macSduRequest->setUeId(destId);
             macSduRequest->setLcid(MacCidToLcid(destCid));
-            macSduRequest->setSduSize(allocatedBytes - MAC_HEADER);    // do not consider MAC header size
+            macSduRequest->setSduSize(allocatedBytes - MAC_HEADER);  // do not consider MAC header size
             pkt->insertAtFront(macSduRequest);
             if (queueSize_ != 0 && queueSize_ < macSduRequest->getSduSize()) {
                 throw cRuntimeError("LteMacEnb::macSduRequest: configured queueSize too low - requested SDU will not fit in queue!"
@@ -370,7 +370,7 @@ void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList> *scheduleList)
                 cw = otherCw;
             }
 
-            std::pair<MacCid, Codeword> otherPair(num(nodeId), otherCw); // note: MacNodeId used as MacCid
+            std::pair<MacCid, Codeword> otherPair(num(nodeId), otherCw);  // note: MacNodeId used as MacCid
 
             if ((ot = (carrierScheduleList.find(otherPair))) != (carrierScheduleList.end())) {
                 // Increment the number of allocated Cw
@@ -663,12 +663,12 @@ bool LteMacEnb::bufferizePacket(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
 
-    if (pkt->getBitLength() <= 1) { // no data in this packet
+    if (pkt->getBitLength() <= 1) {  // no data in this packet
         delete pktAux;
         return false;
     }
 
-    pkt->setTimestamp();        // Add timestamp with current time to packet
+    pkt->setTimestamp();  // Add timestamp with current time to packet
 
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
@@ -720,7 +720,7 @@ bool LteMacEnb::bufferizePacket(cPacket *pktAux)
         }
 
         delete pkt;
-        return true; // this is only a new packet indication - only buffered in virtual queue
+        return true;  // this is only a new packet indication - only buffered in virtual queue
     }
 
     // this is a MAC SDU, buffer it in the MAC buffer
@@ -822,7 +822,7 @@ void LteMacEnb::handleSelfMessage()
     // UPLINK
     EV << "============================================== UPLINK ==============================================" << endl;
     // init and reset global allocation information
-    if (binder_->getLastUpdateUlTransmissionInfo() < NOW)                                                                                                                      // once per TTI, even in case of multicell scenarios
+    if (binder_->getLastUpdateUlTransmissionInfo() < NOW) // once per TTI, even in case of multicell scenarios
         binder_->initAndResetUlTransmissionInfo();
 
     enbSchedulerUl_->updateHarqDescs();
@@ -866,7 +866,7 @@ void LteMacEnb::handleSelfMessage()
     // Message that triggers flushing of TX HARQ buffers for all users
     // This way, flushing is performed after the (possible) reception of new MAC PDUs
     cMessage *flushHarqMsg = new cMessage("flushHarqMsg");
-    flushHarqMsg->setSchedulingPriority(1);        // after other messages
+    flushHarqMsg->setSchedulingPriority(1);  // after other messages
     scheduleAt(NOW, flushHarqMsg);
 
     decreaseNumerologyPeriodCounter();
@@ -915,10 +915,10 @@ void LteMacEnb::macHandleFeedbackPkt(cPacket *pktAux)
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto fb = pkt->peekAtFront<LteFeedbackPkt>();
 
-    //LteFeedbackPkt* fb = check_and_cast<LteFeedbackPkt*>(pkt);
+    // LteFeedbackPkt* fb = check_and_cast<LteFeedbackPkt*>(pkt);
     LteFeedbackDoubleVector fbMapDl = fb->getLteFeedbackDoubleVectorDl();
     LteFeedbackDoubleVector fbMapUl = fb->getLteFeedbackDoubleVectorUl();
-    //get Source Node Id<
+    // get Source Node Id<
     MacNodeId id = fb->getSourceNodeId();
 
     auto lteInfo = pkt->getTag<UserControlInfo>();
@@ -1025,7 +1025,7 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
             const HarqTxBuffers& harqBuffer = it1.second;
             for (const auto& itHarq : harqBuffer) {
                 if (itHarq.second->isHarqBufferActive()) {
-                    activeUeSet.insert(itHarq.first); // active users in HARQ
+                    activeUeSet.insert(itHarq.first);  // active users in HARQ
                 }
             }
         }
@@ -1042,7 +1042,7 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
         for (const auto& mit : harqRxBuffers_) {
             for (const auto& elem : mit.second) {
                 if (elem.second->isHarqBufferActive()) {
-                    activeUeSet.insert(elem.first); // active users in HARQ
+                    activeUeSet.insert(elem.first);  // active users in HARQ
                 }
             }
         }
@@ -1053,7 +1053,7 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
             std::set<MacNodeId> activeRlcUe;
             rlcUm->activeUeUL(&activeRlcUe);
             for (auto ue : activeRlcUe) {
-                activeUeSet.insert(ue); // active users in RLC
+                activeUeSet.insert(ue);  // active users in RLC
             }
         }
 
@@ -1069,7 +1069,7 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
             std::set<MacNodeId> activePdcpUe;
             nrPdpc->activeUeUL(&activePdcpUe);
             for (auto ue : activePdcpUe) {
-                activeUeSet.insert(ue); // active users in RLC
+                activeUeSet.insert(ue);  // active users in RLC
             }
         }
     }
@@ -1080,5 +1080,5 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
     return activeUeSet.size();
 }
 
-} //namespace
+}  // namespace
 

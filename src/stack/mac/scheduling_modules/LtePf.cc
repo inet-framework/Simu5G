@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -80,7 +80,7 @@ void LtePf::prepareSchedule()
         // for each antenna
         for (auto antenna : info.readAntennaSet()) {
             // for each logical band
-            //FIXME missing reset `it`??? it = bands.begin();
+            // FIXME missing reset `it`??? it = bands.begin();
             for ( ; it != et; ++it) {
                 unsigned int blocks = eNbScheduler_->readAvailableRbs(nodeId, antenna, *it);
                 availableBlocks += blocks;
@@ -106,7 +106,7 @@ void LtePf::prepareSchedule()
     while (!score.empty()) {
         // Pop the top connection from the list.
         ScoreDesc current = score.top();
-        MacCid cid = current.x_; // The CID
+        MacCid cid = current.x_;  // The CID
 
         EV << NOW << "LtePf::execSchedule @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
         EV << NOW << "LtePf::execSchedule CID: " << cid;
@@ -175,5 +175,5 @@ void LtePf::commitSchedule()
     *activeConnectionSet_ = activeConnectionTempSet_;
 }
 
-} //namespace
+}  // namespace
 

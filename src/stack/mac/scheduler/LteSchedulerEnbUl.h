@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -30,7 +30,7 @@ class LteSchedulerEnbUl : public LteSchedulerEnb
 
     /// Minimum scheduling unit, represents the MAC SDU size
     unsigned int scheduleUnit_;
-    //---------------------------------------------
+    // ---------------------------------------------
 
     /**
      * Checks Harq Descriptors and returns the first free codeword.
@@ -107,7 +107,7 @@ class LteSchedulerEnbUl : public LteSchedulerEnb
     void removePendingRac(MacNodeId nodeId);
 };
 
-} //namespace
+}  // namespace
 
 #endif // _LTE_LTE_SCHEDULER_ENB_UL_H_
 

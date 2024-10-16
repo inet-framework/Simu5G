@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -86,7 +86,7 @@ class LteAmc
     std::map<double, std::vector<UserTxParams>> ulTxParams_;
     std::map<double, std::vector<UserTxParams>> d2dTxParams_;
 
-    int fType_; //CQI synchronization Debugging
+    int fType_;  // CQI synchronization Debugging
 
     // one History per carrier
     std::map<double, History_> dlFeedbackHistory_;
@@ -130,7 +130,7 @@ class LteAmc
     const LteSummaryFeedback& getFeedback(MacNodeId id, Remote antenna, TxMode txMode, const Direction dir, double carrierFrequency);
     const LteSummaryFeedback& getFeedbackD2D(MacNodeId id, Remote antenna, TxMode txMode, MacNodeId peerId, double carrierFrequency);
 
-    //used when it is necessary to know if the requested feedback exists or not
+    // used when it is necessary to know if the requested feedback exists or not
     // LteSummaryFeedback getFeedback(MacNodeId id, Remote antenna, TxMode txMode, const Direction dir,bool& valid);
 
     MacNodeId computeMuMimoPairing(const MacNodeId nodeId, Direction dir = DL);
@@ -225,7 +225,7 @@ class LteAmc
     void setPilotMode(PilotComputationModes mode);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

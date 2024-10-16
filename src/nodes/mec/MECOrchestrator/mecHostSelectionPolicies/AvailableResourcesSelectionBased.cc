@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -44,5 +44,5 @@ cModule *AvailableResourcesSelectionBased::findBestMecHost(const ApplicationDesc
     return bestHost;
 }
 
-} //namespace
+}  // namespace
 

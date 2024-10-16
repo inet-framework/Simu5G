@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -82,10 +82,10 @@ class LtePhyBase : public ChannelAccess
     int radioInGate_ = -1;
 
     /** Pointer to the World Utility, to obtain some global information*/
-    //BaseWorldUtility* world_;
+    // BaseWorldUtility* world_;
     /** Statistics */
-    unsigned int numAirFrameReceived_ = 0;    /// number of LteAirFrame correctly received
-    unsigned int numAirFrameNotReceived_ = 0; /// number of LteAirFrame not received
+    unsigned int numAirFrameReceived_ = 0;  /// number of LteAirFrame correctly received
+    unsigned int numAirFrameNotReceived_ = 0;  /// number of LteAirFrame not received
 
     /** Local device MacNodeId */
     MacNodeId nodeId_ = NODEID_NONE;
@@ -110,11 +110,11 @@ class LtePhyBase : public ChannelAccess
      */
     bool dynamicCellAssociation_ = false;
 
-    //Ue  Tx Power
+    // Ue  Tx Power
     double ueTxPower_ = NAN;
     // eNodeB Tx Power
     double eNodeBtxPower_ = NAN;
-    //Micro eNb Tx Power
+    // Micro eNb Tx Power
     double microTxPower_ = NAN;
     // Tx Power
     double txPower_ = NAN;
@@ -124,7 +124,7 @@ class LtePhyBase : public ChannelAccess
     double txAngle_ = NAN;
     // Attenuation array
     AttenuationVector attenuationVector_;
-    //Used only for PisaPhy
+    // Used only for PisaPhy
     LteFeedbackComputation *lteFeedbackComputation_ = nullptr;
 
     double carrierFrequency_ = NAN;
@@ -132,9 +132,9 @@ class LtePhyBase : public ChannelAccess
     /*
      * NR Support
      */
-    bool isNr_ = false;           // this flag is true if this module is part of the NR stack
+    bool isNr_ = false;  // this flag is true if this module is part of the NR stack
 
-    //Statistics
+    // Statistics
     static simsignal_t averageCqiDlSignal_;
     static simsignal_t averageCqiUlSignal_;
     static simsignal_t averageCqiD2DSignal_;
@@ -342,7 +342,7 @@ class LtePhyBase : public ChannelAccess
     MacNodeId getMacNodeId() { return nodeId_; }
 };
 
-} //namespace
+}  // namespace
 
 #endif /* _LTE_AIRPHYBASE_H_ */
 

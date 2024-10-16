@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -66,10 +66,10 @@ class PacketFlowManagerBase : public cSimpleModule
         simtime_t entryTime;
     };
 
-    DiscardedPkts pktDiscardCounterTotal_; // total discarded packets counter of the node
+    DiscardedPkts pktDiscardCounterTotal_;  // total discarded packets counter of the node
 
-    RanNodeType nodeType_; // UE or ENODEB (used for set MACROS)
-    short int harqProcesses_; // number of harq processes
+    RanNodeType nodeType_;  // UE or ENODEB (used for set MACROS)
+    short int harqProcesses_;  // number of harq processes
 
     // when a mode switch occurs, the PDCP and RLC entities should be informed about the next SN to use,
     // i.e., the first SN not transmitted due to the mode switch
@@ -175,7 +175,7 @@ class PacketFlowManagerBase : public cSimpleModule
 
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

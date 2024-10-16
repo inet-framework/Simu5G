@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -14,17 +14,17 @@
 
 #include <inet/common/ModuleRefByPar.h>
 
-//BINDER and UTILITIES
+// BINDER and UTILITIES
 #include "common/LteCommon.h"
 #include "nodes/mec/utils/MecCommon.h"
-#include "common/binder/Binder.h"           //to handle cars dynamically leaving the Network
+#include "common/binder/Binder.h"  // to handle cars dynamically leaving the Network
 
-//UDP SOCKET for INET COMMUNICATION WITH UE APPs
+// UDP SOCKET for INET COMMUNICATION WITH UE APPs
 #include "inet/transportlayer/contract/udp/UdpSocket.h"
 #include "inet/networklayer/common/L3Address.h"
 #include "inet/networklayer/common/L3AddressResolver.h"
 
-//MEAppPacket
+// MEAppPacket
 #include "nodes/mec/MECPlatform/MEAppPacket_Types.h"
 #include "nodes/mec/MECPlatform/MEAppPacket_m.h"
 
@@ -40,15 +40,15 @@ struct mecAppMapEntry
     std::string appDId;
     std::string mecAppName;
     std::string mecAppInstanceId;
-    int mecUeAppID;         //ID
-    cModule *mecHost = nullptr; // reference to the mecHost where the mec app has been deployed
-    cModule *vim = nullptr;       // for VirtualisationInfrastructureManager methods
-    cModule *mecpm = nullptr;     // for mecPlatformManager methods
+    int mecUeAppID;  // ID
+    cModule *mecHost = nullptr;  // reference to the mecHost where the mec app has been deployed
+    cModule *vim = nullptr;  // for VirtualisationInfrastructureManager methods
+    cModule *mecpm = nullptr;  // for mecPlatformManager methods
 
     std::string ueSymbolicAddress;
-    inet::L3Address ueAddress;  //for downstream using UDP Socket
+    inet::L3Address ueAddress;  // for downstream using UDP Socket
     int uePort;
-    inet::L3Address mecAppAddress;  //for downstream using UDP Socket
+    inet::L3Address mecAppAddress;  // for downstream using UDP Socket
     int mecAppPort;
 
     bool isEmulated;
@@ -69,9 +69,9 @@ class SelectionPolicyBase;
 // Communications with the LCM proxy occur via connections, while the MEC hosts associated with
 // the MEC system (and the MEC orchestrator) are managed with the mecHostList parameter.
 // This MEC orchestrator provides:
-//   - MEC app instantiation
-//   - MEC app termination
-//   - MEC app run-time onboarding
+// - MEC app instantiation
+// - MEC app termination
+// - MEC app run-time onboarding
 //
 
 class MecOrchestrator : public cSimpleModule
@@ -84,17 +84,17 @@ class MecOrchestrator : public cSimpleModule
 
     SelectionPolicyBase *mecHostSelectionPolicy_ = nullptr;
 
-    //------------------------------------
-    //Binder module
+    // ------------------------------------
+    // Binder module
     inet::ModuleRefByPar<Binder> binder_;
-    //------------------------------------
+    // ------------------------------------
 
-    //parent modules
+    // parent modules
 
     std::vector<cModule *> mecHosts;
 
-    //storing the UEApp and MEApp information
-    //key = contextId - value mecAppMapEntry
+    // storing the UEApp and MEApp information
+    // key = contextId - value mecAppMapEntry
     std::map<int, mecAppMapEntry> meAppMap;
     std::map<std::string, ApplicationDescriptor> mecApplicationDescriptors_;
 
@@ -177,7 +177,7 @@ class MecOrchestrator : public cSimpleModule
     const ApplicationDescriptor& onboardApplicationPackage(const char *fileName);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

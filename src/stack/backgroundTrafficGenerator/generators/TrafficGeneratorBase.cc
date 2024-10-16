@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -82,7 +82,7 @@ void TrafficGeneratorBase::initialize(int stage)
         useProbabilisticCqi_ = par("useProbabilisticCqi");
         computeAvgInterference_ = par("computeAvgInterference");
         if (enablePeriodicCqiUpdate_) {
-            fbPeriod_ = (simtime_t)(int(par("fbPeriod")) * TTI); // TTI -> seconds
+            fbPeriod_ = (simtime_t)(int(par("fbPeriod")) * TTI);  // TTI -> seconds
             fbSource_ = new cMessage("fbSource");
             scheduleAt(simTime(), fbSource_);
         }
@@ -295,5 +295,5 @@ void TrafficGeneratorBase::collectMeasuredSinr(double sample, Direction dir)
         emit(bgMeasuredSinrUlSignal_, sample);
 }
 
-} //namespace
+}  // namespace
 

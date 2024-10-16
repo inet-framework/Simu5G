@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -26,20 +26,20 @@ void LteSummaryBuffer::createSummary(LteFeedback fb) {
         }
 
         // CQI
-        if (fb.hasBandCqi()) { // Per-band
+        if (fb.hasBandCqi()) {  // Per-band
             std::vector<CqiVector> cqi = fb.getBandCqi();
             for (Codeword cw = 0; cw < cqi.size(); ++cw)
                 for (Band i = 0; i < totBands_; ++i)
                     cumulativeSummary_.setCqi(cqi.at(cw).at(i), cw, i);
         }
         else {
-            if (fb.hasWbCqi()) { // Wide-band
+            if (fb.hasWbCqi()) {  // Wide-band
                 CqiVector cqi(fb.getWbCqi());
                 for (Codeword cw = 0; cw < cqi.size(); ++cw)
                     for (Band i = 0; i < totBands_; ++i)
                         cumulativeSummary_.setCqi(cqi.at(cw), cw, i); // repeats the same wb cqi on each band of the same cw
             }
-            if (fb.hasPreferredCqi()) { // Preferred-band
+            if (fb.hasPreferredCqi()) {  // Preferred-band
                 CqiVector cqi(fb.getPreferredCqi());
                 BandSet bands(fb.getPreferredBands());
                 for (Codeword cw = 0; cw < cqi.size(); ++cw)
@@ -51,7 +51,7 @@ void LteSummaryBuffer::createSummary(LteFeedback fb) {
         // For the PMI it behaves similarly
 
         // PMI
-        if (fb.hasBandPmi()) { // Per-band
+        if (fb.hasBandPmi()) {  // Per-band
             PmiVector pmi(fb.getBandPmi());
             for (Band i = 0; i < totBands_; ++i)
                 cumulativeSummary_.setPmi(pmi.at(i), i);
@@ -78,5 +78,5 @@ void LteSummaryBuffer::createSummary(LteFeedback fb) {
     }
 }
 
-} //namespace
+}  // namespace
 

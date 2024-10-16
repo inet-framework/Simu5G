@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -50,7 +50,7 @@ class LteHarqProcessMirrorD2D
     int64_t getPduLength(Codeword cw) { return pduLength_[cw]; }
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

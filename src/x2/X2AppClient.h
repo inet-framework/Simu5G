@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -37,7 +37,7 @@ class X2AppClient : public inet::SctpClient
     void socketDataArrived(inet::SctpSocket *socket, inet::Packet *msg, bool urgent) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

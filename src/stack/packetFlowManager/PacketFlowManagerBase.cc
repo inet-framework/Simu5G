@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -24,7 +24,7 @@
 
 namespace simu5g {
 
-//Define_Module(PacketFlowManagerBase);
+// Define_Module(PacketFlowManagerBase);
 
 void PacketFlowManagerBase::initialize(int stage)
 {
@@ -45,5 +45,5 @@ void PacketFlowManagerBase::finish()
 {
 }
 
-} //namespace
+}  // namespace
 

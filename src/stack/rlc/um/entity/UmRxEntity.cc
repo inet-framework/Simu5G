@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -49,9 +49,9 @@ UmRxEntity::UmRxEntity() :
     buffered_.size = 0;
 
     // @author Alessandro Noferi
-//    ttiT2_ = 0;
-//    ttiT1_ = 0;
-//    lastTTI_ = 0;
+// ttiT2_ = 0;
+// ttiT1_ = 0;
+// lastTTI_ = 0;
 }
 
 UmRxEntity::~UmRxEntity()
@@ -124,7 +124,7 @@ void UmRxEntity::enque(cPacket *pktAux)
 
                 int p = (shift < rxWindowDesc_.windowSize_) ? shift : rxWindowDesc_.windowSize_;
                 shift -= p;
-                if (rxWindowDesc_.firstSno_ + p > tsn) { // HACK to avoid that the window goes ahead of the received tsn
+                if (rxWindowDesc_.firstSno_ + p > tsn) {  // HACK to avoid that the window goes ahead of the received tsn
                     p = tsn - rxWindowDesc_.firstSno_;
                 }
 
@@ -152,9 +152,9 @@ void UmRxEntity::enque(cPacket *pktAux)
 
     // emit statistics
     MacNodeId ueId;
-    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                                                                                                                                     // This module is at a UE
+    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI) // This module is at a UE
         ueId = ownerNodeId_;
-    else                    // UL. This module is at the eNB: get the node id of the sender
+    else // UL. This module is at the eNB: get the node id of the sender
         ueId = lteInfo->getSourceId();
 
     double tputSample = (double)totalPduRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
@@ -162,11 +162,11 @@ void UmRxEntity::enque(cPacket *pktAux)
     // emit statistics
     cModule *ue = getRlcByMacNodeId(binder_, ueId, UM);
     if (ue != nullptr) {
-        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
+        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) {  // UE in IM
             ue->emit(rlcPduThroughputSignal_[dir_], tputSample);
             ue->emit(rlcPduDelaySignal_[dir_], (NOW - pktPdu->getCreationTime()).dbl());
         }
-        else { // UE in DM
+        else {  // UE in DM
             ue->emit(rlcPduThroughputD2DSignal_, tputSample);
             ue->emit(rlcPduDelayD2DSignal_, (NOW - pktPdu->getCreationTime()).dbl());
         }
@@ -175,13 +175,13 @@ void UmRxEntity::enque(cPacket *pktAux)
     EV << NOW << " UmRxEntity::enque - tsn " << tsn << ", the corresponding index after shift in the buffer is " << index << endl;
     EV << NOW << " UmRxEntity::enque - firstSnoReordering " << rxWindowDesc_.firstSnoForReordering_ << endl;
 
-    index = rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_; //
+    index = rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_;  //
 
     // D
     if (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_) == true) {
         unsigned int old = rxWindowDesc_.firstSnoForReordering_;
 
-        index = rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_; //
+        index = rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_;  //
 
         // move to the first missing SN
         while (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_) == true) {
@@ -224,7 +224,7 @@ void UmRxEntity::enque(cPacket *pktAux)
      * it has occurred if t1 - t2 > TTI
      */
 
-    if (flowControlInfo_->getDirection() == UL) { //only eNodeB checks the burst
+    if (flowControlInfo_->getDirection() == UL) {  // only eNodeB checks the burst
         handleBurst(ENQUE);
     }
 }
@@ -234,7 +234,7 @@ void UmRxEntity::moveRxWindow(int pos)
     EV << NOW << " UmRxEntity::moveRxWindow moving forth by " << pos << " locations" << endl;
 
     if (pos <= 0)
-        return;                                    // ignore the shift, it is ineffective.
+        return; // ignore the shift, it is ineffective.
 
     if (pos > rxWindowDesc_.windowSize_)
         throw cRuntimeError("AmRxQueue::moveRxWindow(): positions %d win size %d ", pos, rxWindowDesc_.windowSize_);
@@ -255,7 +255,7 @@ void UmRxEntity::moveRxWindow(int pos)
     EV << NOW << " UmRxEntity::moveRxWindow first sequence number updated to " << rxWindowDesc_.firstSno_ << endl;
 }
 
-//void UmRxEntity::toPdcp(LteRlcSdu* rlcSdu)
+// void UmRxEntity::toPdcp(LteRlcSdu* rlcSdu)
 void UmRxEntity::toPdcp(Packet *pktAux)
 {
 
@@ -269,9 +269,9 @@ void UmRxEntity::toPdcp(Packet *pktAux)
 
     // create a PDCP PDU and send it to the upper layer
     MacNodeId ueId;
-    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                                                                                                                                     // This module is at a UE
+    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI) // This module is at a UE
         ueId = ownerNodeId_;
-    else                    // UL. This module is at the eNB: get the node id of the sender
+    else // UL. This module is at the eNB: get the node id of the sender
         ueId = lteInfo->getSourceId();
 
     cModule *ue = getRlcByMacNodeId(binder_, ueId, UM);
@@ -301,7 +301,7 @@ void UmRxEntity::toPdcp(Packet *pktAux)
     double cellTputSample = (double)totalCellRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
     double tputSample = (double)totalRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
     if (ue != nullptr) {
-        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
+        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) {  // UE in IM
             ue->emit(rlcThroughputSignal_[dir_], tputSample);
             ue->emit(rlcPacketLossSignal_[dir_], 0.0);
             ue->emit(rlcPacketLossTotalSignal_, 0.0);
@@ -363,9 +363,9 @@ void UmRxEntity::reassemble(unsigned int index)
 
         auto rlcSdu = pktSdu->peekAtFront<LteRlcSdu>();
         unsigned int sduSno = rlcSdu->getSnoMainPacket();
-        unsigned int sduWholeLength = rlcSdu->getLengthMainPacket(); // the length of the whole sdu
+        unsigned int sduWholeLength = rlcSdu->getLengthMainPacket();  // the length of the whole sdu
 
-        if (i == 0) { // first SDU
+        if (i == 0) {  // first SDU
             bool ignoreFragment = false;
             if (resetFlag_) {
                 // by doing this, the first extracted SDU will be considered in order. For example, when D2D is enabled,
@@ -375,7 +375,7 @@ void UmRxEntity::reassemble(unsigned int index)
                 ignoreFragment = true;
             }
 
-            if (i == numSdu - 1) { // [first SDU, i==0] there is only one SDU in this PDU
+            if (i == numSdu - 1) {  // [first SDU, i==0] there is only one SDU in this PDU
                 // read the FI field
                 switch (fi) {
                     case 0: {  // FI=00
@@ -427,7 +427,7 @@ void UmRxEntity::reassemble(unsigned int index)
                             }
                             clearBufferedSdu();
 
-                            //delete rlcSdu;
+                            // delete rlcSdu;
                             delete pktSdu;
                             pktSdu = nullptr;
                             continue;
@@ -440,7 +440,7 @@ void UmRxEntity::reassemble(unsigned int index)
                             clearBufferedSdu();
                             EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, mid part missing" << endl;
 
-                            //delete rlcSdu;
+                            // delete rlcSdu;
                             delete pktSdu;
                             pktSdu = nullptr;
                             continue;
@@ -502,7 +502,7 @@ void UmRxEntity::reassemble(unsigned int index)
                     }
                 }
             }
-            else { // [first SDU, i==0] there is more than one SDU in this PDU
+            else {  // [first SDU, i==0] there is more than one SDU in this PDU
                 EV << NOW << " UmRxEntity::reassemble Read the first chunk of the PDU" << endl;
 
                 // read the FI field
@@ -567,7 +567,7 @@ void UmRxEntity::reassemble(unsigned int index)
                         }
 
                         // for burst
-                        ttiBits_ += sduWholeLength; // remove the discarded SDU size from the throughput
+                        ttiBits_ += sduWholeLength;  // remove the discarded SDU size from the throughput
                         toPdcp(pktSdu);
                         pktSdu = nullptr;
 
@@ -581,7 +581,7 @@ void UmRxEntity::reassemble(unsigned int index)
                 }
             }
         }
-        else if (i == numSdu - 1) { // last SDU in PDU with at least 2 SDUs
+        else if (i == numSdu - 1) {  // last SDU in PDU with at least 2 SDUs
             // read the FI field
             switch (fi) {
                 case 0: case 2: {  // FI=00 or FI=10
@@ -649,16 +649,16 @@ void UmRxEntity::reassemble(unsigned int index)
 
     // emit statistics
     MacNodeId ueId;
-    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                                                                                                                                     // This module is at a UE
+    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI) // This module is at a UE
         ueId = ownerNodeId_;
-    else                    // UL. This module is at the eNB: get the node id of the sender
+    else // UL. This module is at the eNB: get the node id of the sender
         ueId = lteInfo->getSourceId();
 
     cModule *ue = getRlcByMacNodeId(binder_, ueId, UM);
     // check whether some PDCP PDUs have not been delivered
     while (pduSno > lastPduReassembled_ + 1) {
         // emit statistic: packet loss
-        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
+        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) {  // UE in IM
             ue->emit(rlcPduPacketLossSignal_[dir_], 1.0);
         }
         else {
@@ -672,7 +672,7 @@ void UmRxEntity::reassemble(unsigned int index)
     lastPduReassembled_ = pduSno;
 
     // emit statistic: packet loss
-    if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
+    if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) {  // UE in IM
         ue->emit(rlcPduPacketLossSignal_[dir_], 0.0);
     }
     else {
@@ -701,7 +701,7 @@ void UmRxEntity::initialize()
 
     rlc_.reference(this, "umModule", true);
 
-    //statistics
+    // statistics
 
     LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
     nodeB_ = getRlcByMacNodeId(binder_, mac->getMacCellId(), UM);
@@ -711,7 +711,7 @@ void UmRxEntity::initialize()
     if (mac->getNodeType() == ENODEB || mac->getNodeType() == GNODEB) {
         dir_ = UL;
     }
-    else { // UE
+    else {  // UE
         dir_ = DL;
     }
 
@@ -759,7 +759,7 @@ void UmRxEntity::handleMessage(cMessage *msg)
 void UmRxEntity::clearBufferedSdu() {
     if (buffered_.pkt != nullptr) {
         // for burst
-        ttiBits_ -= buffered_.size; // remove the discarded SDU size from the throughput
+        ttiBits_ -= buffered_.size;  // remove the discarded SDU size from the throughput
         delete buffered_.pkt;
         buffered_.pkt = nullptr;
         buffered_.size = 0;
@@ -833,8 +833,8 @@ void UmRxEntity::handleBurst(BurstCheck event)
 
     simtime_t t1 = simTime();
 
-    if (pduBuffer_.size() + (buffered_.pkt == nullptr ? 0 : 1) == 0) { // last TTI emptied the burst
-        if (isBurst_) { // burst ends
+    if (pduBuffer_.size() + (buffered_.pkt == nullptr ? 0 : 1) == 0) {  // last TTI emptied the burst
+        if (isBurst_) {  // burst ends
             // send stats
             // if the transmission requires two TTIs and I do not count
             // the second last, in the simulator t1 - t2 is 0.
@@ -858,7 +858,7 @@ void UmRxEntity::handleBurst(BurstCheck event)
     }
     else {
         if (isBurst_) {
-            if (event == ENQUE) { // handleBurst called at the end of the TTI
+            if (event == ENQUE) {  // handleBurst called at the end of the TTI
                 totalBits_ += ttiBits_;
                 t1_ = t1;
                 EV_FATAL << "BURST CONTINUES - size : " << totalBits_ << endl;
@@ -868,7 +868,7 @@ void UmRxEntity::handleBurst(BurstCheck event)
             isBurst_ = true;
             totalBits_ = ttiBits_;
             t2_ = t1;
-            t1_ = t1; // it will be updated
+            t1_ = t1;  // it will be updated
             EV_FATAL << "BURST STARTED - size : " << totalBits_ << endl;
         }
     }
@@ -877,5 +877,5 @@ void UmRxEntity::handleBurst(BurstCheck event)
     ttiBits_ = 0;
 }
 
-} //namespace
+}  // namespace
 

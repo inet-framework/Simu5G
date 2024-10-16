@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -30,7 +30,7 @@ class LocationInfo : public AttributeBase
     inet::Coord speed_;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* CORENETWORK_NODES_MEC_MECPLATFORM_MEC_SERVICES_LOCATIONSERVICE_RESOURCES_LOCATIONINFO_H_ */
 

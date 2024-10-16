@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -176,7 +176,7 @@ void MultihopD2D::sendPacket()
     mhop->setPayloadTimestamp(simTime());
     mhop->setPayloadSize(B(msgSize_).get());
     mhop->setTtl(ttl_ - 1);
-    mhop->setHops(1);                // first hop
+    mhop->setHops(1);  // first hop
     mhop->setLastHopSenderId(lteNodeId_);
     if (maxBroadcastRadius_ > 0) {
         mhop->setSrcCoord(ltePhy_->getCoord());
@@ -342,7 +342,7 @@ void MultihopD2D::relayPacket(cMessage *msg)
     EV << "MultihopD2D::relayPacket - Relay msg " << dst->getMsgid() << " to address " << destAddress_ << endl;
     socket.sendTo(relayPacket, destAddress_, destPort_);
 
-    markAsRelayed(dst->getMsgid());    // mark the message as relayed
+    markAsRelayed(dst->getMsgid());  // mark the message as relayed
 
     emit(d2dMultihopSentMsgSignal_, (long)1);
     stat_->recordSentMessage(dst->getMsgid());
@@ -369,7 +369,7 @@ bool MultihopD2D::isAlreadyRelayed(uint32_t msgId)
 {
     if (relayedMsgMap_.find(msgId) == relayedMsgMap_.end()) // the message has not been received
         return false;
-    return relayedMsgMap_[msgId];                                    // the message has been received but not relayed yet
+    return relayedMsgMap_[msgId];  // the message has been received but not relayed yet
 }
 
 bool MultihopD2D::isWithinBroadcastArea(Coord srcCoord, double maxRadius)
@@ -385,5 +385,5 @@ void MultihopD2D::finish()
     eventGen_->unregisterNode(this, lteNodeId_);
 }
 
-} //namespace
+}  // namespace
 

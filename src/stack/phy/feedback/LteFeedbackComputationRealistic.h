@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -64,7 +64,7 @@ class LteFeedbackComputationRealistic : public LteFeedbackComputation
             std::vector<double> snr, MacNodeId id = NODEID_NONE) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

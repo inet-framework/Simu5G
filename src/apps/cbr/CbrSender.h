@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -28,11 +28,11 @@ using namespace omnetpp;
 class CbrSender : public cSimpleModule
 {
     inet::UdpSocket socket;
-    //has the sender been initialized?
+    // has the sender been initialized?
     bool initialized_ = false;
 
     cMessage *selfSource_ = nullptr;
-    //sender
+    // sender
     int nframes_;
     int iDframe_;
     int nframesTmp_;
@@ -70,7 +70,7 @@ class CbrSender : public cSimpleModule
     void handleMessage(cMessage *msg) override;
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

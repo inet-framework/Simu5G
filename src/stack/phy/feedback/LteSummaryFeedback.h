@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -171,7 +171,7 @@ class LteSummaryFeedback
     void print(MacCellId cellId, MacNodeId nodeId, const Direction dir, TxMode txm, const char *s) const;
 };
 
-} //namespace
+}  // namespace
 
 #endif /* STACK_PHY_FEEDBACK_LTESUMMARYFEEDBACK_H_ */
 

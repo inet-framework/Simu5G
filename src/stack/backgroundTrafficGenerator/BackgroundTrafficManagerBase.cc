@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -77,7 +77,7 @@ void BackgroundTrafficManagerBase::initialize(int stage)
 
 void BackgroundTrafficManagerBase::handleMessage(cMessage *msg)
 {
-    if (msg->isSelfMessage()) { // this is an activeUeNotification message
+    if (msg->isSelfMessage()) {  // this is an activeUeNotification message
         ActiveUeNotification *notification = check_and_cast<ActiveUeNotification *>(msg);
 
         // add the bg UE to the list of active UEs in x slots
@@ -147,7 +147,7 @@ Cqi BackgroundTrafficManagerBase::computeCqiFromSinr(double sinr)
     // TODO do this once in the initialize
     min.resize(phyPisaData_->nMcs(), 2);
 
-    double targetBler = 0.01; // TODO get this from parameters
+    double targetBler = 0.01;  // TODO get this from parameters
 
     for (int i = 0; i < phyPisaData_->nMcs(); i++) {
         double tmp = phyPisaData_->getBler(txm, i, newsnr);
@@ -214,7 +214,7 @@ unsigned int BackgroundTrafficManagerBase::consumeBackloggedUeBytes(MacNodeId bg
     int index = bgUeId - BGUE_MIN_ID;
     int newBuffLen = bgUe_.at(index)->consumeBytes(bytes, dir, rtx);
 
-    if (newBuffLen == 0) { // bg UE is no longer active
+    if (newBuffLen == 0) {  // bg UE is no longer active
         if (!rtx)
             backloggedBgUes_[dir].remove(index);
         else
@@ -242,7 +242,7 @@ void BackgroundTrafficManagerBase::racHandled(MacNodeId bgUeId)
         notification->setIndex(index);
 
         double offset = getTtiPeriod() * 6;  // TODO make it configurable
-                                             //      there are 6 slots between the first BSR and actual data
+                                             // there are 6 slots between the first BSR and actual data
         scheduleAt(NOW + offset, notification);
     }
 }
@@ -258,5 +258,5 @@ void BackgroundTrafficManagerBase::initializeAvgInterferenceComputation()
     }
 }
 
-} //namespace
+}  // namespace
 

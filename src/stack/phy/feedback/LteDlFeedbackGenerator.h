@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -44,8 +44,8 @@ class LteDlFeedbackGenerator : public cSimpleModule
 
   private:
 
-    FeedbackType fbType_;               /// feedback type (ALLBANDS, PREFERRED, WIDEBAND)
-    RbAllocationType rbAllocationType_; /// resource allocation type
+    FeedbackType fbType_;  /// feedback type (ALLBANDS, PREFERRED, WIDEBAND)
+    RbAllocationType rbAllocationType_;  /// resource allocation type
     // LteFeedbackComputation* lteFeedbackComputation_; // Object used to compute the feedback
     FeedbackGeneratorType generatorType_;
     /**
@@ -54,20 +54,20 @@ class LteDlFeedbackGenerator : public cSimpleModule
      * for periodic feedback (when calling start() on busy
      * transmission timer we have no operation)
      */
-    simtime_t fbPeriod_;    /// period for Periodic feedback in TTI
-    simtime_t fbDelay_;     /// time interval between sensing and transmission in TTI
+    simtime_t fbPeriod_;  /// period for Periodic feedback in TTI
+    simtime_t fbDelay_;  /// time interval between sensing and transmission in TTI
 
-    bool usePeriodic_;      /// true if we want to use also periodic feedback
+    bool usePeriodic_;  /// true if we want to use also periodic feedback
     TxMode currentTxMode_;  /// transmission mode to use in feedback generation
 
-    opp_component_ptr<CellInfo> cellInfo_; /// reference to cellInfo
+    opp_component_ptr<CellInfo> cellInfo_;  /// reference to cellInfo
     inet::ModuleRefByPar<Binder> binder_;
     inet::ModuleRefByPar<LtePhyUe> phy_;
 
     // cellInfo parameters
-    std::map<Remote, int> antennaCws_; /// number of antennas per remote
-    int numPreferredBands_;           /// number of preferred bands to use (meaningful only in PREFERRED mode)
-    int numBands_;                      /// number of cell bands
+    std::map<Remote, int> antennaCws_;  /// number of antennas per remote
+    int numPreferredBands_;  /// number of preferred bands to use (meaningful only in PREFERRED mode)
+    int numBands_;  /// number of cell bands
 
     // Timers
     TTimer *tPeriodicSensing_ = nullptr;
@@ -75,11 +75,11 @@ class LteDlFeedbackGenerator : public cSimpleModule
     TTimer *tAperiodicTx_ = nullptr;
 
     // Feedback Maps
-    //typedef std::map<Remote,LteFeedback> FeedbackMap_;
+    // typedef std::map<Remote,LteFeedback> FeedbackMap_;
     LteFeedbackDoubleVector periodicFeedback;
     LteFeedbackDoubleVector aperiodicFeedback;
 
-    //MacNodeID
+    // MacNodeID
     MacNodeId masterId_;
     MacNodeId nodeId_;
 
@@ -144,7 +144,7 @@ class LteDlFeedbackGenerator : public cSimpleModule
     void handleHandover(MacCellId newEnbId);
 };
 
-} //namespace
+}  // namespace
 
 #endif
 

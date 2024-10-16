@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -40,7 +40,7 @@ class UeStatsCollector : public cSimpleModule
 {
   private:
 
-    std::string collectorType_; // ueCollectorStatsCollector or NRueCollectorStatsCollector
+    std::string collectorType_;  // ueCollectorStatsCollector or NRueCollectorStatsCollector
 
     // Used by the RNI service
     mec::AssociateId associateId_;
@@ -72,21 +72,21 @@ class UeStatsCollector : public cSimpleModule
 
     // packet delay
     void add_ul_nongbr_delay_ue();
-    void add_dl_nongbr_delay_ue(double value); // called by the eNodeBCollector
+    void add_dl_nongbr_delay_ue(double value);  // called by the eNodeBCollector
 
     // packet discard rate
     void add_ul_nongbr_pdr_ue();
-    void add_dl_nongbr_pdr_ue(double value); // called by the eNodeBCollector
+    void add_dl_nongbr_pdr_ue(double value);  // called by the eNodeBCollector
 
     // throughput
     void add_ul_nongbr_throughput_ue(double value);
     void add_dl_nongbr_throughput_ue(double value);
 
     // PDPC bytes
-    void add_ul_nongbr_data_volume_ue(unsigned int value); // called by the eNodeBCollector
-    void add_dl_nongbr_data_volume_ue(unsigned int value); // called by the eNodeBCollector
+    void add_ul_nongbr_data_volume_ue(unsigned int value);  // called by the eNodeBCollector
+    void add_dl_nongbr_data_volume_ue(unsigned int value);  // called by the eNodeBCollector
 
-    void resetDelayCounter(); // reset structures to calculate the measures
+    void resetDelayCounter();  // reset structures to calculate the measures
 
     /* this method is used by the eNodeBStatsCollector to calculate
      * packet discard rate per cell
@@ -145,7 +145,7 @@ class UeStatsCollector : public cSimpleModule
     void handleMessage(cMessage *msg) override {}
 };
 
-} //namespace
+}  // namespace
 
-#endif //_LTE_ENOBSTATSCOLLECTOR_H_
+#endif // _LTE_ENOBSTATSCOLLECTOR_H_
 

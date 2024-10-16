@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -60,8 +60,8 @@ void MecServiceBase::initialize(int stage)
 
         // ---- >>>>> ---- not found in UALCMPApp ----
 
-        meHost_ = getParentModule() // MECPlatform
-                    ->getParentModule(); // MeHost
+        meHost_ = getParentModule()  // MECPlatform
+                    ->getParentModule();  // MeHost
         // ---- <<<<< ---- not found in UALCMPApp ----
     }
 }
@@ -114,8 +114,8 @@ void MecServiceBase::handleStartOperation(inet::LifecycleOperation *operation)
 
     serverSocket.setOutputGate(gate("socketOut"));
     serverSocket.setCallback(this);
-    //serverSocket.bind(localAddress[0] ? L3Address(localAddress) : L3Address(), localPort);
-    serverSocket.bind(inet::L3Address(), localPort); // bind socket for any address
+    // serverSocket.bind(localAddress[0] ? L3Address(localAddress) : L3Address(), localPort);
+    serverSocket.bind(inet::L3Address(), localPort);  // bind socket for any address
 
     serverSocket.listen();
 }
@@ -208,7 +208,7 @@ bool MecServiceBase::manageRequest()
 
         if (currentRequestMessageServed_->isBackgroundRequest()) {
             if (currentRequestMessageServed_->isLastBackgroundRequest()) {
-                Http::send200Response(socket, "{Done}"); //notify the client last bg request served
+                Http::send200Response(socket, "{Done}");  // notify the client last bg request served
             }
         }
         else {
@@ -224,7 +224,7 @@ bool MecServiceBase::manageRequest()
         }
         return true;
     }
-    else { // socket has been closed or some error occurred, discard request
+    else {  // socket has been closed or some error occurred, discard request
         // I should schedule immediately a new request execution
         if (currentRequestMessageServed_ != nullptr) {
             delete currentRequestMessageServed_;
@@ -245,7 +245,7 @@ void MecServiceBase::scheduleNextEvent(bool now)
         if (now)
             scheduleAt(simTime() + 0, subscriptionService_);
         else {
-            double serviceTime = calculateSubscriptionServiceTime(); //must be >0
+            double serviceTime = calculateSubscriptionServiceTime();  // must be >0
             EV << "MecServiceBase::scheduleNextEvent- subscription service time: " << serviceTime << endl;
             scheduleAt(simTime() + serviceTime, subscriptionService_);
         }
@@ -266,8 +266,8 @@ void MecServiceBase::scheduleNextEvent(bool now)
         if (now)
             scheduleAt(simTime() + 0, subscriptionService_);
         else {
-            //calculate the serviceTime based on the type | parameters
-            double serviceTime = calculateRequestServiceTime(); //must be >0
+            // calculate the serviceTime based on the type | parameters
+            double serviceTime = calculateRequestServiceTime();  // must be >0
             EV << "MecServiceBase::scheduleNextEvent- request service time: " << serviceTime << endl;
             scheduleAt(simTime() + serviceTime, requestService_);
         }
@@ -321,7 +321,7 @@ void MecServiceBase::newRequest(HttpRequestMessage *msg)
         }
         else {
             simtime_t deltaTime = simTime() - lastFGRequestArrived_;
-            numOfBGReqs = poisson(deltaTime.dbl() * numBGApps_ * lambda_, 0); // BG requests arrived in the period of time deltaTime
+            numOfBGReqs = poisson(deltaTime.dbl() * numBGApps_ * lambda_, 0);  // BG requests arrived in the period of time deltaTime
             // debug
             EV << "MecServiceBase::newRequest - number of BG requests between this and the last FG request: " << numOfBGReqs << endl;
         }
@@ -396,18 +396,18 @@ void MecServiceBase::handleCurrentRequest(inet::TcpSocket *socket) {}
 void MecServiceBase::handleRequest(inet::TcpSocket *socket) {
     EV << "MecServiceBase::handleRequest" << endl;
 
-    if (currentRequestMessageServed_->getState() == CORRECT) { // request-line is well formatted
+    if (currentRequestMessageServed_->getState() == CORRECT) {  // request-line is well formatted
         if (std::strcmp(currentRequestMessageServed_->getMethod(), "GET") == 0) {
-            handleGETRequest(currentRequestMessageServed_, socket); // pass URI
+            handleGETRequest(currentRequestMessageServed_, socket);  // pass URI
         }
-        else if (std::strcmp(currentRequestMessageServed_->getMethod(), "POST") == 0) { // subscription
-            handlePOSTRequest(currentRequestMessageServed_, socket); // pass URI
+        else if (std::strcmp(currentRequestMessageServed_->getMethod(), "POST") == 0) {  // subscription
+            handlePOSTRequest(currentRequestMessageServed_, socket);  // pass URI
         }
         else if (std::strcmp(currentRequestMessageServed_->getMethod(), "PUT") == 0) {
-            handlePUTRequest(currentRequestMessageServed_, socket); // pass URI
+            handlePUTRequest(currentRequestMessageServed_, socket);  // pass URI
         }
         else if (std::strcmp(currentRequestMessageServed_->getMethod(), "DELETE") == 0) {
-            handleDELETERequest(currentRequestMessageServed_, socket); // pass URI
+            handleDELETERequest(currentRequestMessageServed_, socket);  // pass URI
         }
         else {
             Http::send405Response(socket);
@@ -514,5 +514,5 @@ void MecServiceBase::removeSubscriptions(int connId)
     }
 }
 
-} //namespace
+}  // namespace
 

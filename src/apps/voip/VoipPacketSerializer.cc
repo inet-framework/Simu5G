@@ -61,5 +61,5 @@ const Ptr<Chunk> VoipPacketSerializer::deserialize(MemoryInputStream& stream) co
     return voipPacket;
 }
 
-} //namespace
+}  // namespace
 

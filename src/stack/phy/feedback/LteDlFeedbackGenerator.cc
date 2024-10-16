@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -32,8 +32,8 @@ void LteDlFeedbackGenerator::initialize(int stage)
     if (stage == INITSTAGE_LOCAL) {
         // Read NED parameters
         binder_.reference(this, "binderModule", true);
-        fbPeriod_ = (simtime_t)(int(par("fbPeriod")) * TTI);// TTI -> seconds
-        fbDelay_ = (simtime_t)(int(par("fbDelay")) * TTI);// TTI -> seconds
+        fbPeriod_ = (simtime_t)(int(par("fbPeriod")) * TTI);  // TTI -> seconds
+        fbDelay_ = (simtime_t)(int(par("fbDelay")) * TTI);  // TTI -> seconds
         if (fbPeriod_ <= fbDelay_) {
             throw cRuntimeError("Feedback Period MUST be greater than Feedback Delay");
         }
@@ -76,7 +76,7 @@ void LteDlFeedbackGenerator::initialize(int stage)
         EV << "DLFeedbackGenerator Stage " << stage << " nodeid: " << nodeId_
            << " init" << endl;
 
-        if (masterId_ != NODEID_NONE)                                                                // only if not detached
+        if (masterId_ != NODEID_NONE) // only if not detached
             initCellInfo();
 
         phy_.reference(this, "phyModule", true);
@@ -224,7 +224,7 @@ void LteDlFeedbackGenerator::sendFeedback(LteFeedbackDoubleVector fb,
         feedbackReq.request = false;
     }
 
-    //use PHY function to send feedback
+    // use PHY function to send feedback
     phy_->sendFeedback(fb, fb, feedbackReq);
 }
 
@@ -247,7 +247,7 @@ void LteDlFeedbackGenerator::handleHandover(MacCellId newEnbId)
     if (masterId_ != NODEID_NONE) {
         initCellInfo();
         EV << NOW << " LteDlFeedbackGenerator::handleHandover - Master ID updated to " << masterId_ << endl;
-        if (tPeriodicSensing_->idle())                                                                                // resume feedback
+        if (tPeriodicSensing_->idle()) // resume feedback
             tPeriodicSensing_->start(0);
     }
     else {
@@ -258,5 +258,5 @@ void LteDlFeedbackGenerator::handleHandover(MacCellId newEnbId)
     }
 }
 
-} //namespace
+}  // namespace
 

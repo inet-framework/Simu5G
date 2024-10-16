@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -45,7 +45,7 @@ Packet *LteHarqProcessRxD2D::createFeedback(Codeword cw)
         fb->setCw(cw);
         fb->setResult(result_.at(cw));
         fb->setFbMacPduId(pdu->getMacPduId());
-        //fb->setByteLength(0);
+        // fb->setByteLength(0);
         fb->setChunkLength(b(1));
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(pduInfo->getDestId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(pduInfo->getSourceId());
@@ -111,7 +111,7 @@ Packet *LteHarqProcessRxD2D::createFeedbackMirror(Codeword cw)
         fb->setCw(cw);
         fb->setResult(result_.at(cw));
         fb->setFbMacPduId(pdu->getMacPduId());
-        fb->setChunkLength(b(1)); // TODO: should be 0
+        fb->setChunkLength(b(1));  // TODO: should be 0
         fb->setPduLength(pdu->getByteLength());
         fb->setD2dSenderId(pduInfo->getSourceId());
         fb->setD2dReceiverId(pduInfo->getDestId());
@@ -125,5 +125,5 @@ Packet *LteHarqProcessRxD2D::createFeedbackMirror(Codeword cw)
     return pkt;
 }
 
-} //namespace
+}  // namespace
 

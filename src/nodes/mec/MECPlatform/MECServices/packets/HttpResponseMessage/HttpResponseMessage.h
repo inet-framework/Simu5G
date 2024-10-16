@@ -62,7 +62,7 @@ class HttpResponseMessage : public HttpResponseMessage_m
 
 };
 
-} //namespace
+}  // namespace
 
-#endif //_HTTRESPONSEMESSAGE_H_
+#endif // _HTTRESPONSEMESSAGE_H_
 

@@ -1,5 +1,5 @@
 //
-//                  Simu5G
+// Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
@@ -67,7 +67,7 @@ class LteRlcAmPdu : public LteRlcAmPdu_Base
 
 Register_Class(LteRlcAmPdu);
 
-} //namespace
+}  // namespace
 
 #endif
 
