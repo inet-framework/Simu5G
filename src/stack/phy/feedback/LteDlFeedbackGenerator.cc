@@ -76,7 +76,7 @@ void LteDlFeedbackGenerator::initialize(int stage)
         EV << "DLFeedbackGenerator Stage " << stage << " nodeid: " << nodeId_
            << " init" << endl;
 
-        if (masterId_ != NODEID_NONE)                          // only if not detached
+        if (masterId_ != NODEID_NONE)                                                                // only if not detached
             initCellInfo();
 
         phy_.reference(this, "phyModule", true);
@@ -243,7 +243,7 @@ void LteDlFeedbackGenerator::handleHandover(MacCellId newEnbId)
     if (masterId_ != NODEID_NONE) {
         initCellInfo();
         EV << NOW << " LteDlFeedbackGenerator::handleHandover - Master ID updated to " << masterId_ << endl;
-        if (tPeriodicSensing_->idle())                                         // resume feedback
+        if (tPeriodicSensing_->idle())                                                                                // resume feedback
             tPeriodicSensing_->start(0);
     }
     else {
