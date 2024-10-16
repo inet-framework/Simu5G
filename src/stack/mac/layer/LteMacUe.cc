@@ -48,10 +48,10 @@ LteMacUe::LteMacUe()
 
 LteMacUe::~LteMacUe()
 {
-    for (auto &[key, scheduler] : lcgScheduler_)
+    for (auto&[key, scheduler] : lcgScheduler_)
         delete scheduler;
 
-    for (auto &[key, grant] : schedulingGrant_) {
+    for (auto&[key, grant] : schedulingGrant_) {
         if (grant != nullptr) {
             grant = nullptr;
         }
@@ -376,7 +376,7 @@ void LteMacUe::macPduMake(MacCid cid)
             // from a UE perspective, the destId is always the one of the eNB
             MacNodeId destId = getMacCellId();
 
-            std::pair<MacNodeId, Codeword> pktId = {destId, cw};
+            std::pair<MacNodeId, Codeword> pktId = { destId, cw };
             unsigned int sduPerCid = item.second;
 
             if (macPduList_.find(carrierFreq) == macPduList_.end()) {
@@ -448,7 +448,7 @@ void LteMacUe::macPduMake(MacCid cid)
         }
         HarqTxBuffers& harqTxBuffers = harqTxBuffers_[carrierFreq];
 
-        for (auto & pit : lit.second) {
+        for (auto& pit : lit.second) {
 
             MacNodeId destId = pit.first.first;
             Codeword cw = pit.first.second;

@@ -27,7 +27,7 @@ simsignal_t LteHarqUnitTx::harqErrorRate_4Signal_[2] = { cComponent::registerSig
 simsignal_t LteHarqUnitTx::harqTxAttemptsSignal_[2] = { cComponent::registerSignal("harqTxAttemptsDl"), cComponent::registerSignal("harqTxAttemptsUl") };
 
 LteHarqUnitTx::LteHarqUnitTx(Binder *binder, unsigned char acid, Codeword cw,
-        LteMacBase *macOwner, LteMacBase *dstMac) :  acid_(acid), cw_(cw),  txTime_(0), macOwner_(macOwner), dstMac_(dstMac), maxHarqRtx_(macOwner->par("maxHarqRtx"))
+        LteMacBase *macOwner, LteMacBase *dstMac) :  acid_(acid), cw_(cw), txTime_(0), macOwner_(macOwner), dstMac_(dstMac), maxHarqRtx_(macOwner->par("maxHarqRtx"))
 {
 
     if (macOwner_->getNodeType() == ENODEB || macOwner_->getNodeType() == GNODEB) {

@@ -1232,7 +1232,7 @@ void LteAmc::attachUser(MacNodeId nodeId, Direction dir)
 
         // initialize empty feedback structures
         if (dir == UL || dir == DL) {
-            for (auto&  hist : *history) {
+            for (auto& hist : *history) {
                 for (auto remote : remoteSet_) {
                     (hist.second)[remote].at(nodeIndex) = v;
                 }

@@ -54,7 +54,6 @@ class X2HandoverCommandIE : public X2InformationElement
         return new X2HandoverCommandIE(*this);
     }
 
-
     // getter/setter methods
     void setStartHandover() { startHandover_ = true; }
     bool isStartHandover() { return startHandover_; }

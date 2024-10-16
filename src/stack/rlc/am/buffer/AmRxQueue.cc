@@ -37,7 +37,7 @@ simsignal_t AmRxQueue::rlcCellThroughputSignal_[2] = { registerSignal("rlcCellTh
 AmRxQueue::AmRxQueue() :
     // In order to create a back connection (AM CTRL), a flow control
     // info for sending control messages to the transmitting entity is required
-    lastSentAck_(0),  timer_(this)
+    lastSentAck_(0), timer_(this)
 {
     rxWindowDesc_.firstSeqNum_ = 0;
     rxWindowDesc_.seqNum_ = 0;

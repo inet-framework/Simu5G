@@ -12,15 +12,15 @@
 #ifndef __RNISTESTAPPPACKET_TYPES_H_
 #define __RNISTESTAPPPACKET_TYPES_H_
 
-constexpr const char* START_QUERY_RNIS = "StartQueryRnis";
-constexpr const char* START_QUERY_RNIS_ACK = "StartQueryRnisAck";
-constexpr const char* START_QUERY_RNIS_NACK = "StartQueryRnisNack";
+constexpr const char *START_QUERY_RNIS = "StartQueryRnis";
+constexpr const char *START_QUERY_RNIS_ACK = "StartQueryRnisAck";
+constexpr const char *START_QUERY_RNIS_NACK = "StartQueryRnisNack";
 
-constexpr const char* STOP_QUERY_RNIS = "StopQueryRnis";
-constexpr const char* STOP_QUERY_RNIS_ACK = "StopQueryRnisAck";
-constexpr const char* STOP_QUERY_RNIS_NACK = "StopQueryRnisNack";
+constexpr const char *STOP_QUERY_RNIS = "StopQueryRnis";
+constexpr const char *STOP_QUERY_RNIS_ACK = "StopQueryRnisAck";
+constexpr const char *STOP_QUERY_RNIS_NACK = "StopQueryRnisNack";
 
-constexpr const char* RNIS_INFO = "RnisInfo";
+constexpr const char *RNIS_INFO = "RnisInfo";
 
 #endif /* __RNISTESTAPPPACKET_TYPES_H_ */
 

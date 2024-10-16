@@ -23,7 +23,6 @@ using namespace omnetpp;
 
 #define coreEV    EV << "LteChannelControl: "
 
-
 /**
  * Calculates maxInterferenceDistance.
  *

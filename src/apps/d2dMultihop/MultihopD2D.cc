@@ -352,7 +352,7 @@ void MultihopD2D::relayPacket(cMessage *msg)
 
 void MultihopD2D::markAsReceived(uint32_t msgId)
 {
-    relayedMsgMap_.insert({msgId, false});
+    relayedMsgMap_.insert({ msgId, false });
 }
 
 bool MultihopD2D::isAlreadyReceived(uint32_t msgId)

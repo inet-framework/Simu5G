@@ -23,7 +23,6 @@ Define_Module(LtePhyEnb);
 using namespace omnetpp;
 using namespace inet;
 
-
 LtePhyEnb::~LtePhyEnb()
 {
     cancelAndDelete(bdcStarter_);
@@ -282,8 +281,7 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
         }
         else if (req.genType == REAL) {
             fb.resize(das_->getReportingSet().size());
-            for (const auto &remote : das_->getReportingSet())
-            {
+            for (const auto& remote : das_->getReportingSet()) {
                 fb[remote].resize((int)txmode);
                 fb[remote][(int)txmode] =
                     lteFeedbackComputation_->computeFeedback(remote, txmode,
@@ -294,8 +292,7 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
         // the reports are computed only for the antenna in the reporting set
         else if (req.genType == DAS_AWARE) {
             fb.resize(das_->getReportingSet().size());
-            for (const auto &remote : das_->getReportingSet())
-            {
+            for (const auto& remote : das_->getReportingSet()) {
                 fb[remote] = lteFeedbackComputation_->computeFeedback(remote, type,
                         rbtype, txmode, antennaCws[remote], numPreferredBand,
                         DAS_AWARE, nRus, snr, lteinfo->getSourceId());

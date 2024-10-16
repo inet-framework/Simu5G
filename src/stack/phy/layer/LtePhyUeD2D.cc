@@ -19,8 +19,6 @@ namespace simu5g {
 Define_Module(LtePhyUeD2D);
 using namespace inet;
 
-
-
 void LtePhyUeD2D::initialize(int stage)
 {
     LtePhyUe::initialize(stage);
@@ -369,9 +367,9 @@ void LtePhyUeD2D::storeAirFrame(LteAirFrame *newFrame)
         // Get the average RSRP on the RBs allocated for the transmission
         RbMap rbmap = newInfo->getGrantedBlocks();
         // For each Remote unit used to transmit the packet
-        for (const auto &[remoteUnit, rbList] : rbmap) {
+        for (const auto&[remoteUnit, rbList] : rbmap) {
             // For each logical band used to transmit the packet
-            for (const auto &[band, allocation] : rbList) {
+            for (const auto&[band, allocation] : rbList) {
                 if (allocation == 0) // This Rb is not allocated
                     continue;
 

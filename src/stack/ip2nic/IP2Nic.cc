@@ -615,7 +615,7 @@ void IP2Nic::signalHandoverCompleteUe(bool isNr)
 
 IP2Nic::~IP2Nic()
 {
-    for (auto &[macNodeId, ipDatagramQueue] : hoFromX2_) {
+    for (auto&[macNodeId, ipDatagramQueue] : hoFromX2_) {
         while (!ipDatagramQueue.empty()) {
             Packet *pkt = ipDatagramQueue.front();
             ipDatagramQueue.pop_front();
@@ -623,7 +623,7 @@ IP2Nic::~IP2Nic()
         }
     }
 
-    for (auto &[macNodeId, ipDatagramQueue] : hoFromIp_) {
+    for (auto&[macNodeId, ipDatagramQueue] : hoFromIp_) {
         while (!ipDatagramQueue.empty()) {
             Packet *pkt = ipDatagramQueue.front();
             ipDatagramQueue.pop_front();

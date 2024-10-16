@@ -16,7 +16,6 @@ namespace simu5g {
 
 Define_Module(LteRxPdcpEntity);
 
-
 void LteRxPdcpEntity::initialize()
 {
     pdcp_ = check_and_cast<LtePdcpRrcBase *>(getParentModule());
@@ -55,7 +54,6 @@ void LteRxPdcpEntity::handlePdcpSdu(Packet *pkt)
     // deliver to IP layer
     pdcp_->toDataPort(pkt);
 }
-
 
 } //namespace
 

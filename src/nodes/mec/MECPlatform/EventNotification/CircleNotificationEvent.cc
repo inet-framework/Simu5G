@@ -27,6 +27,5 @@ const std::vector<TerminalLocation>& CircleNotificationEvent::getTerminalLocatio
     return terminalLocations_;
 }
 
-
 } //namespace
 

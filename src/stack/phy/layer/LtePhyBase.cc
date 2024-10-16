@@ -24,7 +24,6 @@ simsignal_t LtePhyBase::averageCqiDlSignal_ = registerSignal("averageCqiDl");
 simsignal_t LtePhyBase::averageCqiUlSignal_ = registerSignal("averageCqiUl");
 simsignal_t LtePhyBase::averageCqiD2DSignal_ = registerSignal("averageCqiD2D");
 
-
 void LtePhyBase::initialize(int stage)
 {
     ChannelAccess::initialize(stage);

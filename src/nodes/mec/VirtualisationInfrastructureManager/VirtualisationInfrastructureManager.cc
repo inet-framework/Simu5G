@@ -17,7 +17,6 @@ namespace simu5g {
 
 Define_Module(VirtualisationInfrastructureManager);
 
-
 void VirtualisationInfrastructureManager::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
@@ -158,7 +157,7 @@ bool VirtualisationInfrastructureManager::instantiateEmulatedMEApp(CreateAppMess
         newAppEntry.resources.disk = disk;
         newAppEntry.resources.cpu = cpu;
 
-        mecAppMap.insert({key, newAppEntry});
+        mecAppMap.insert({ key, newAppEntry });
 
         currentMEApps++;
 
@@ -235,7 +234,7 @@ MecAppInstanceInfo *VirtualisationInfrastructureManager::instantiateMEApp(Create
         newAppEntry.resources.disk = disk;
         newAppEntry.resources.cpu = cpu;
 
-        mecAppMap.insert({key, newAppEntry});
+        mecAppMap.insert({ key, newAppEntry });
 
         //displaying ME App dynamically created (after 70 they will overlap..)
         std::stringstream display;
@@ -263,7 +262,6 @@ MecAppInstanceInfo *VirtualisationInfrastructureManager::instantiateMEApp(Create
         EV << "VirtualisationInfrastructureManager::instantiateMEApp port" << instanceInfo->endPoint.port << endl;
 
         mecAppPortCounter++;
-
 
         //connecting VirtualisationInfrastructure gates to the MEApp gates
 

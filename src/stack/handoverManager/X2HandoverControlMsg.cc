@@ -41,6 +41,5 @@ X2HandoverControlMsg *X2HandoverControlMsg::dup() const {
     return new X2HandoverControlMsg(*this);
 }
 
-
 } //namespace
 

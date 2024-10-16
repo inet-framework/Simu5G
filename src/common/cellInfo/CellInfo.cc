@@ -21,7 +21,6 @@ using namespace std;
 
 Define_Module(CellInfo);
 
-
 CellInfo::~CellInfo()
 {
     delete ruSet_;

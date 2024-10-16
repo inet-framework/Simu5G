@@ -24,8 +24,6 @@ LteMacBuffer::LteMacBuffer(const LteMacQueue& queue)
     operator=(queue);
 }
 
-
-
 LteMacBuffer& LteMacBuffer::operator=(const LteMacBuffer& queue)
 {
     queueOccupancy_ = queue.queueOccupancy_;
