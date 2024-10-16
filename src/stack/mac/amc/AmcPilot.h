@@ -61,7 +61,8 @@ class AmcPilot
     /**
      * Destructor
      */
-    virtual ~AmcPilot() {
+    virtual ~AmcPilot()
+    {
     }
 
     /**

@@ -41,7 +41,8 @@ class LteRlcPdu : public LteRlcPdu_Base
     }
 
     virtual LteRlcPdu *dup() const { return new LteRlcPdu(*this); }
-    virtual ~LteRlcPdu() {
+    virtual ~LteRlcPdu()
+    {
         cObject *ctrlInfo = removeControlInfo();
         if (ctrlInfo != nullptr) {
             delete ctrlInfo;

@@ -472,7 +472,8 @@ void MecServiceBase::finish()
     }
 }
 
-MecServiceBase::~MecServiceBase() {
+MecServiceBase::~MecServiceBase()
+{
     // remove and delete threads
     cancelAndDelete(requestService_);
     cancelAndDelete(subscriptionService_);

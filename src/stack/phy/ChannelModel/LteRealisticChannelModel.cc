@@ -120,8 +120,10 @@ double LteRealisticChannelModel::getAttenuation(MacNodeId nodeId, Direction dir,
     // If Euclidean distance since last LOS probability computation is greater than
     // correlation distance the UE could have changed its state and
     // its visibility from eNodeB, hence it is correct to recompute the LOS probability
-    if (correlationDist > correlationDistance_
-        || losMap_.find(nodeId) == losMap_.end())
+    if (
+        correlationDist > correlationDistance_
+        || losMap_.find(nodeId) == losMap_.end()
+        )
     {
         computeLosProbability(sqrDistance, nodeId);
     }
@@ -168,8 +170,10 @@ double LteRealisticChannelModel::getAttenuation_D2D(MacNodeId nodeId, Direction 
     // If Euclidean distance since last LOS probability computation is greater than
     // correlation distance the UE could have changed its state and
     // its visibility from eNodeB, hence it is correct to recompute the LOS probability
-    if (correlationDist > correlationDistance_
-        || losMap_.find(nodeId) == losMap_.end())
+    if (
+        correlationDist > correlationDistance_
+        || losMap_.find(nodeId) == losMap_.end()
+        )
     {
         computeLosProbability(sqrDistance, nodeId);
     }
@@ -230,8 +234,10 @@ double LteRealisticChannelModel::computeShadowing(double sqrDistance, MacNodeId 
         //If the shadowing attenuation has been computed at least one time for this user
         // and the distance traveled by the UE is greater than correlation distance
     }
-    else if ((NOW - actualShadowingMap->at(nodeId).first).dbl() * speed
-             > correlationDistance_)
+    else if (
+        (NOW - actualShadowingMap->at(nodeId).first).dbl() * speed
+        > correlationDistance_
+        )
     {
 
         //get the temporal mark of the last computed shadowing attenuation
@@ -285,8 +291,10 @@ void LteRealisticChannelModel::updateCorrelationDistance(const MacNodeId nodeId,
         // no lastCorrelationPoint set current point.
         lastCorrelationPoint_[nodeId] = Position(NOW, coord);
     }
-    else if ((lastCorrelationPoint_[nodeId].first != NOW) &&
-             lastCorrelationPoint_[nodeId].second.distance(coord) > correlationDistance_)
+    else if (
+        (lastCorrelationPoint_[nodeId].first != NOW) &&
+        lastCorrelationPoint_[nodeId].second.distance(coord) > correlationDistance_
+        )
     {
         // check simtime_t first
         lastCorrelationPoint_[nodeId] = Position(NOW, coord);
@@ -1783,8 +1791,10 @@ bool LteRealisticChannelModel::isError(LteAirFrame *frame, UserControlInfo *lteI
     TxMode txmode = (TxMode)lteInfo->getTxMode();
 
     // If rank is 1 and we used SMUX to transmit we have to corrupt this packet
-    if (txmode == CL_SPATIAL_MULTIPLEXING
-        || txmode == OL_SPATIAL_MULTIPLEXING)
+    if (
+        txmode == CL_SPATIAL_MULTIPLEXING
+        || txmode == OL_SPATIAL_MULTIPLEXING
+        )
     {
         // compare lambda min (smaller eigenvalues of channel matrix) with the threshold used to compute the rank
         if (binder_->phyPisaData.getLambda(num(id), 1) < lambdaMinTh_)
@@ -1826,9 +1836,11 @@ bool LteRealisticChannelModel::isError(LteAirFrame *frame, UserControlInfo *lteI
                 continue;
 
             // check the antenna used in Das
-            if ((lteInfo->getTxMode() == CL_SPATIAL_MULTIPLEXING
+            if (
+                (lteInfo->getTxMode() == CL_SPATIAL_MULTIPLEXING
                  || lteInfo->getTxMode() == OL_SPATIAL_MULTIPLEXING)
-                && rbmap.size() > 1)
+                && rbmap.size() > 1
+                )
                 // we consider only the snr associated with the LB used
                 if (remoteUnit != lteInfo->getCw())
                     continue;
@@ -1944,8 +1956,10 @@ bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *
     TxMode txmode = (TxMode)lteInfo->getTxMode();
 
     // If rank is 1 and we used SMUX to transmit we have to corrupt this packet
-    if (txmode == CL_SPATIAL_MULTIPLEXING
-        || txmode == OL_SPATIAL_MULTIPLEXING)
+    if (
+        txmode == CL_SPATIAL_MULTIPLEXING
+        || txmode == OL_SPATIAL_MULTIPLEXING
+        )
     {
         // compare lambda min (smaller eigenvalues of channel matrix) with the threshold used to compute the rank
         if (binder_->phyPisaData.getLambda(num(id), 1) < lambdaMinTh_)
@@ -1966,7 +1980,7 @@ bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *
         }
     }
     // ROSSALI-------END------------------------------------------------
-    else snrV = getSINR(frame, lteInfo);                                           // Take SINR
+    else snrV = getSINR(frame, lteInfo);                                                                                     // Take SINR
 
     // Get the resource Block id used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();
@@ -1990,9 +2004,11 @@ bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *
             if (allocation == 0) continue;
 
             // check the antenna used in Das
-            if ((lteInfo->getTxMode() == CL_SPATIAL_MULTIPLEXING
+            if (
+                (lteInfo->getTxMode() == CL_SPATIAL_MULTIPLEXING
                  || lteInfo->getTxMode() == OL_SPATIAL_MULTIPLEXING)
-                && rbmap.size() > 1)
+                && rbmap.size() > 1
+                )
                 // we consider only the snr associated with the LB used
                 if (remoteUnitId != lteInfo->getCw()) continue;
 
@@ -2005,7 +2021,7 @@ bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *
             usedRBs++;
 
             int snr = snrV[band];// XXX because band is a Band (=unsigned short)
-            if (snr < 1)                           // XXX it was < 0
+            if (snr < 1)                                                    // XXX it was < 0
                 return false;
             else if (snr > binder_->phyPisaData.maxSnr())
                 bler = 0;

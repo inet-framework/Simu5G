@@ -18,7 +18,8 @@ using namespace omnetpp;
 
 SubscriptionBase::SubscriptionBase() {}
 
-SubscriptionBase::SubscriptionBase(unsigned int subId, inet::TcpSocket *socket, const std::string& baseResLocation, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs) {
+SubscriptionBase::SubscriptionBase(unsigned int subId, inet::TcpSocket *socket, const std::string& baseResLocation, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs)
+{
     for (cModule *eNodeB : eNodeBs) {
         CellInfo *cellInfo = check_and_cast<CellInfo *>(eNodeB->getSubmodule("cellInfo"));
         eNodeBs_.insert({ cellInfo->getMacCellId(), cellInfo });

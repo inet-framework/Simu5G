@@ -32,7 +32,8 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-struct FragmentedFrameStatus {
+struct FragmentedFrameStatus
+{
     int frameNumber;
     int frameSize;
     int remainingFragments;

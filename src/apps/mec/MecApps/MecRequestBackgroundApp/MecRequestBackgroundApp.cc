@@ -22,7 +22,8 @@ namespace simu5g {
 using namespace inet;
 Define_Module(MecRequestBackgroundApp);
 
-MecRequestBackgroundApp::~MecRequestBackgroundApp() {
+MecRequestBackgroundApp::~MecRequestBackgroundApp()
+{
     cancelAndDelete(sendBurst);
     cancelAndDelete(burstPeriod);
     cancelAndDelete(burstTimer);

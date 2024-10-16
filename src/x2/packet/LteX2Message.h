@@ -19,8 +19,7 @@
 namespace simu5g {
 
 // add here new X2 message types
-enum LteX2MessageType
-{
+enum LteX2MessageType {
     X2_COMP_MSG, X2_HANDOVER_CONTROL_MSG, X2_HANDOVER_DATA_MSG, X2_DUALCONNECTIVITY_CONTROL_MSG, X2_DUALCONNECTIVITY_DATA_MSG, X2_UNKNOWN_MSG
 };
 
@@ -78,7 +77,8 @@ class LteX2Message : public LteX2Message_Base
         return *this;
     }
 
-    LteX2Message(const LteX2Message& other) : LteX2Message_Base() {
+    LteX2Message(const LteX2Message& other) : LteX2Message_Base()
+    {
         operator=(other);
     }
 

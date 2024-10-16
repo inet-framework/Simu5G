@@ -26,32 +26,36 @@ using namespace omnetpp;
 
 class ResourceManager;
 
-enum RlcBurstStatus
-{
+enum RlcBurstStatus {
     START, STOP, ACTIVE, INACTIVE
 };
 
-struct Delay {
+struct Delay
+{
     unsigned int pktCount = 0;
     simtime_t time = 0;
 };
 
-struct Throughput {
+struct Throughput
+{
     unsigned int pktSizeCount = 0;
     simtime_t time = 0;
 };
 
-struct DiscardedPkts {
+struct DiscardedPkts
+{
     unsigned int discarded = 0;
     unsigned int total = 0;
 };
 
-struct DataVolume {
+struct DataVolume
+{
     uint64_t ulBits = 0;
     uint64_t dlBits = 0;
 };
 
-struct SockAddr {
+struct SockAddr
+{
     inet::L3Address addr;
     int port;
     std::string str() const { return addr.str() + ":" + std::to_string(port); }
@@ -62,7 +66,8 @@ struct SockAddr {
  * attribute according to the ETSI standard:
  * ETSI GS MEC 011 V2.2.1 (2020-12) - 8.1.2.2 Type: ServiceInfo
  */
-struct ServiceDescriptor {
+struct ServiceDescriptor
+{
     std::string mecHostname;
     std::string name;
     std::string version;
@@ -86,7 +91,8 @@ struct ServiceDescriptor {
     std::string str() const { return addr.str() + ":" + std::to_string(port); }
 };
 
-struct ResourceDescriptor {
+struct ResourceDescriptor
+{
     double ram;
     double disk;
     double cpu;

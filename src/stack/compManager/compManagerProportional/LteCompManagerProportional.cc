@@ -82,7 +82,7 @@ void LteCompManagerProportional::doCoordination()
         // compute the number of blocks to reserve
         double percentage;
         if (requestsSum == 0)
-            percentage = 1.0 / (clientList_.size() + 1);                                                            // slaves + master
+            percentage = 1.0 / (clientList_.size() + 1);                                                                                                                      // slaves + master
         else
             percentage = (double)req / requestsSum;
 
