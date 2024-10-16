@@ -339,9 +339,9 @@ void LtePhyUe::triggerHandover()
     }
 
     double handoverLatency;
-    if (masterId_ == NODEID_NONE)                                                // attachment only
+    if (masterId_ == NODEID_NONE)                                                                                  // attachment only
         handoverLatency = handoverAttachment_;
-    else if (candidateMasterId_ == NODEID_NONE)                                                // detachment only
+    else if (candidateMasterId_ == NODEID_NONE)                                                                                                // detachment only
         handoverLatency = handoverDetachment_;
     else
         handoverLatency = handoverDetachment_ + handoverAttachment_;
