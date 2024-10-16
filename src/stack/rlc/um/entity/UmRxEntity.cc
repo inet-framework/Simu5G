@@ -152,9 +152,9 @@ void UmRxEntity::enque(cPacket *pktAux)
 
     // emit statistics
     MacNodeId ueId;
-    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                                                                                                                                     // This module is at a UE
+    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                    // This module is at a UE
         ueId = ownerNodeId_;
-    else                    // UL. This module is at the eNB: get the node id of the sender
+    else           // UL. This module is at the eNB: get the node id of the sender
         ueId = lteInfo->getSourceId();
 
     double tputSample = (double)totalPduRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
@@ -232,7 +232,7 @@ void UmRxEntity::moveRxWindow(int pos)
     EV << NOW << " UmRxEntity::moveRxWindow moving forth by " << pos << " locations" << endl;
 
     if (pos <= 0)
-        return;                                    // ignore the shift, it is ineffective.
+        return;                   // ignore the shift, it is ineffective.
 
     if (pos > rxWindowDesc_.windowSize_)
         throw cRuntimeError("AmRxQueue::moveRxWindow(): positions %d win size %d ", pos, rxWindowDesc_.windowSize_);
@@ -267,9 +267,9 @@ void UmRxEntity::toPdcp(Packet *pktAux)
 
     // create a PDCP PDU and send it to the upper layer
     MacNodeId ueId;
-    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                                                                                                                                     // This module is at a UE
+    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                    // This module is at a UE
         ueId = ownerNodeId_;
-    else                    // UL. This module is at the eNB: get the node id of the sender
+    else           // UL. This module is at the eNB: get the node id of the sender
         ueId = lteInfo->getSourceId();
 
     cModule *ue = getRlcByMacNodeId(binder_, ueId, UM);
@@ -641,9 +641,9 @@ void UmRxEntity::reassemble(unsigned int index)
 
     // emit statistics
     MacNodeId ueId;
-    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                                                                                                                                     // This module is at a UE
+    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                    // This module is at a UE
         ueId = ownerNodeId_;
-    else                    // UL. This module is at the eNB: get the node id of the sender
+    else           // UL. This module is at the eNB: get the node id of the sender
         ueId = lteInfo->getSourceId();
 
     cModule *ue = getRlcByMacNodeId(binder_, ueId, UM);

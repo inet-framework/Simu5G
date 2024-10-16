@@ -1966,7 +1966,7 @@ bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *
         }
     }
     // ROSSALI-------END------------------------------------------------
-    else snrV = getSINR(frame, lteInfo);                                                                                     // Take SINR
+    else snrV = getSINR(frame, lteInfo);                                           // Take SINR
 
     // Get the resource Block id used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();
@@ -2005,7 +2005,7 @@ bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *
             usedRBs++;
 
             int snr = snrV[band];// XXX because band is a Band (=unsigned short)
-            if (snr < 1)                                                    // XXX it was < 0
+            if (snr < 1)                           // XXX it was < 0
                 return false;
             else if (snr > binder_->phyPisaData.maxSnr())
                 bler = 0;

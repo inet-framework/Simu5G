@@ -392,7 +392,7 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                 EV << "LteMacUeD2D::macPduMake - BSR created with size " << size << endl;
             }
 
-            if (bsrAlreadyMade && size > 0)                                                                                          // this prevents the UE from sending an unnecessary RAC request
+            if (bsrAlreadyMade && size > 0)                                              // this prevents the UE from sending an unnecessary RAC request
                 bsrRtxTimer_ = bsrRtxTimerStart_;
             else
                 bsrRtxTimer_ = 0;

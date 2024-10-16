@@ -69,7 +69,7 @@ void MultihopD2DStatistics::recordNewBroadcast(unsigned int msgId, UeSet& destin
 
 void MultihopD2DStatistics::recordReception(MacNodeId nodeId, unsigned int msgId, simtime_t delay, int hops)
 {
-    if (delay > 0.500)                                                // TODO fix this. packets with higher delay should be discarded by the sender
+    if (delay > 0.500)                         // TODO fix this. packets with higher delay should be discarded by the sender
         return;
 
     // consider the least-significant 16 bits

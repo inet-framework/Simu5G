@@ -19,7 +19,7 @@ namespace simu5g {
 bool NRSchedulerGnbUl::checkEligibility(MacNodeId id, Codeword& cw, double carrierFrequency)
 {
     HarqRxBuffers *harqRxBuff = mac_->getHarqRxBuffers(carrierFrequency);
-    if (harqRxBuff == nullptr)                                                             // a new HARQ buffer will be created at reception
+    if (harqRxBuff == nullptr)                              // a new HARQ buffer will be created at reception
         return true;
 
     // check if HARQ buffer has already been created for this node

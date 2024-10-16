@@ -17,9 +17,9 @@ using namespace omnetpp;
 
 LteHarqProcessTx::LteHarqProcessTx(Binder *binder, unsigned char acid, unsigned int numUnits, unsigned int numProcesses,
         LteMacBase *macOwner, LteMacBase *dstMac) : macOwner_(macOwner), numProcesses_(numProcesses), numHarqUnits_(numUnits),
-    acid_(acid),
-    numEmptyUnits_(numUnits), numSelected_(0),
-    dropped_(false)
+        acid_(acid),
+        numEmptyUnits_(numUnits), numSelected_(0),
+        dropped_(false)
 {
     units_.resize(numUnits);
 

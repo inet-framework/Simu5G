@@ -244,7 +244,7 @@ void Binder::registerMasterNode(MacNodeId masterId, MacNodeId slaveId)
     if (secondaryNodeToMasterNode_.size() <= num(slaveId))
         secondaryNodeToMasterNode_.resize(num(slaveId) + 1);
 
-    if (masterId == NODEID_NONE)                                                          // this node is a master itself
+    if (masterId == NODEID_NONE)                         // this node is a master itself
         masterId = slaveId;
     secondaryNodeToMasterNode_[num(slaveId)] = masterId;
 }
@@ -690,9 +690,9 @@ void Binder::registerMulticastGroup(MacNodeId nodeId, int32_t groupId)
 bool Binder::isInMulticastGroup(MacNodeId nodeId, int32_t groupId)
 {
     if (multicastGroupMap_.find(nodeId) == multicastGroupMap_.end())
-        return false;                                                 // the node is not enrolled in any group
+        return false;                          // the node is not enrolled in any group
     if (multicastGroupMap_[nodeId].find(groupId) == multicastGroupMap_[nodeId].end())
-        return false;                                                 // the node is not enrolled in the given group
+        return false;                          // the node is not enrolled in the given group
 
     return true;
 }
