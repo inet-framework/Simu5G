@@ -31,7 +31,8 @@ class D2DModeSelectionBase : public cSimpleModule
   protected:
 
     typedef std::pair<MacNodeId, MacNodeId> FlowId;
-    struct FlowModeInfo {
+    struct FlowModeInfo
+    {
         FlowId flow;
         LteD2DMode oldMode;
         LteD2DMode newMode;

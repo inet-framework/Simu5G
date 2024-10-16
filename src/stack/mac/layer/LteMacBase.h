@@ -157,7 +157,8 @@ class LteMacBase : public cSimpleModule
     inet::ModuleRefByPar<PacketFlowManagerBase> packetFlowManager_;
 
     // support to different numerologies
-    struct NumerologyPeriodCounter {
+    struct NumerologyPeriodCounter
+    {
         unsigned int max;
         unsigned int current;
     };

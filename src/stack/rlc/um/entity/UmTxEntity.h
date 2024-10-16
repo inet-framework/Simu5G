@@ -52,7 +52,8 @@ class PacketFlowManagerBase;
  */
 class UmTxEntity : public cSimpleModule
 {
-    struct FragmentInfo {
+    struct FragmentInfo
+    {
         inet::Packet *pkt = nullptr;
         int size = 0;
     };

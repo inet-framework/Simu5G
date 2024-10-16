@@ -105,15 +105,14 @@ inline MacNodeId operator-(unsigned int a, MacNodeId b) { return MacNodeId(a - s
 inline unsigned short operator-(MacNodeId a, MacNodeId b) { return static_cast<unsigned short>(a) - static_cast<unsigned short>(b); }
 
 /// Node Id bounds
-constexpr MacNodeId NODEID_NONE  = MacNodeId(0);
-constexpr MacNodeId ENB_MIN_ID   = MacNodeId(1);
-constexpr MacNodeId ENB_MAX_ID   = MacNodeId(1023);
-constexpr MacNodeId BGUE_ID      = MacNodeId(1024);
-constexpr MacNodeId UE_MIN_ID    = MacNodeId(1025);
+constexpr MacNodeId NODEID_NONE = MacNodeId(0);
+constexpr MacNodeId ENB_MIN_ID = MacNodeId(1);
+constexpr MacNodeId ENB_MAX_ID = MacNodeId(1023);
+constexpr MacNodeId BGUE_ID = MacNodeId(1024);
+constexpr MacNodeId UE_MIN_ID = MacNodeId(1025);
 constexpr MacNodeId NR_UE_MIN_ID = MacNodeId(2049);
-constexpr MacNodeId BGUE_MIN_ID  = MacNodeId(4097);
-constexpr MacNodeId UE_MAX_ID    = MacNodeId(65535);
-
+constexpr MacNodeId BGUE_MIN_ID = MacNodeId(4097);
+constexpr MacNodeId UE_MAX_ID = MacNodeId(65535);
 
 /// Cell node ID. It is numerically equal to eNodeB MAC node ID.
 typedef MacNodeId MacCellId;
@@ -579,7 +578,8 @@ struct BgTrafficManagerInfo
 };
 
 // uplink interference support
-struct UeAllocationInfo {
+struct UeAllocationInfo
+{
     MacNodeId nodeId;
     MacCellId cellId;
     LtePhyBase *phy = nullptr;
@@ -596,14 +596,16 @@ typedef std::vector<BackgroundScheduler *> BackgroundSchedulerList;
 
 typedef std::vector<std::vector<std::vector<double>>> BlerCurves;
 
-struct SlotFormat {
+struct SlotFormat
+{
     bool tdd;
     unsigned int numDlSymbols;
     unsigned int numUlSymbols;
     unsigned int numFlexSymbols;
 };
 
-struct CarrierInfo {
+struct CarrierInfo
+{
     double carrierFrequency;
     unsigned int numBands;
     unsigned int firstBand;

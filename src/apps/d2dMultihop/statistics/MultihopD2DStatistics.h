@@ -40,7 +40,8 @@ class MultihopD2DStatistics : public cSimpleModule
     // at nodes comprised within the target area of the event. For each node,
     // the reception status includes the reception delay and number of hops.
     // If delay < 0, the node has not (yet) received the message
-    struct ReceptionStatus {
+    struct ReceptionStatus
+    {
         simtime_t delay_;
         int hops_;
     };

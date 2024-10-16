@@ -210,8 +210,10 @@ double BackgroundCellChannelModel::getAttenuation(MacNodeId nodeId, Direction di
     // If euclidean distance since last Los probabilty computation is greater than
     // correlation distance UE could have changed its state and
     // its visibility from eNodeb, hence it is correct to recompute the los probability
-    if (correlationDist > correlationDistance_
-        || losMap_.find(nodeId) == losMap_.end())
+    if (
+        correlationDist > correlationDistance_
+        || losMap_.find(nodeId) == losMap_.end()
+        )
     {
         computeLosProbability(sqrDistance, nodeId);
     }
@@ -256,8 +258,10 @@ void BackgroundCellChannelModel::updateCorrelationDistance(const MacNodeId nodeI
         // no lastCorrelationPoint set current point.
         lastCorrelationPoint_[nodeId] = Position(NOW, coord);
     }
-    else if ((lastCorrelationPoint_[nodeId].first != NOW) &&
-             lastCorrelationPoint_[nodeId].second.distance(coord) > correlationDistance_)
+    else if (
+        (lastCorrelationPoint_[nodeId].first != NOW) &&
+        lastCorrelationPoint_[nodeId].second.distance(coord) > correlationDistance_
+        )
     {
         // check simtime_t first
         lastCorrelationPoint_[nodeId] = Position(NOW, coord);
@@ -585,8 +589,10 @@ double BackgroundCellChannelModel::computeShadowing(double sqrDistance, MacNodeI
         //If the shadowing attenuation has been computed at least one time for this user
         // and the distance traveled by the UE is greated than correlation distance
     }
-    else if ((NOW - lastComputedSF_.at(nodeId).first).dbl() * speed
-             > correlationDistance_)
+    else if (
+        (NOW - lastComputedSF_.at(nodeId).first).dbl() * speed
+        > correlationDistance_
+        )
     {
 
         //get the temporal mark of the last computed shadowing attenuation

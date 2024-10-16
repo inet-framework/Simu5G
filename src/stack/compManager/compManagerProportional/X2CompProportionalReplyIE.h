@@ -16,8 +16,7 @@
 
 namespace simu5g {
 
-enum CompRbStatus
-{
+enum CompRbStatus {
     AVAILABLE_RB, NOT_AVAILABLE_RB
 };
 

@@ -19,12 +19,14 @@ using namespace inet;
 //Register_Serializer(X2DualConnectivityDataMsg, LteX2MsgSerializer);
 
 X2DualConnectivityDataMsg::X2DualConnectivityDataMsg() :
-    LteX2Message() {
+    LteX2Message()
+{
     type_ = X2_DUALCONNECTIVITY_DATA_MSG;
 }
 
 X2DualConnectivityDataMsg::X2DualConnectivityDataMsg(const X2DualConnectivityDataMsg& other) :
-    LteX2Message() {
+    LteX2Message()
+{
     operator=(other);
 }
 

@@ -56,7 +56,8 @@ class PacketFlowManagerBase : public cSimpleModule
      * this structure maintains the state of a PDCP
      * used to calculate L2Meas of RNI service
      */
-    struct PdcpStatus {
+    struct PdcpStatus
+    {
         bool hasArrivedAll;
         bool discardedAtRlc;
         bool discardedAtMac;

@@ -51,8 +51,7 @@ struct PdcpRxWindowDesc
 
 };
 
-enum PdcpRxTimerType
-{
+enum PdcpRxTimerType {
     REORDERING_T = 0
 };
 

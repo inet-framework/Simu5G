@@ -442,9 +442,9 @@ bool IP2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
         }
         else {
             if (ueLteStack && ueNrStack) {
-                if (ci->getTypeOfService() >= 10)                                                     // use secondary cell group bearer TODO fix threshold
+                if (ci->getTypeOfService() >= 10)                                                                                                       // use secondary cell group bearer TODO fix threshold
                     ci->setUseNR(true);
-                else                                                  // use master cell group bearer
+                else                                                                       // use master cell group bearer
                     ci->setUseNR(false);
             }
             else if (ueLteStack)
@@ -476,9 +476,9 @@ bool IP2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
                 ci->setUseNR(false);
             else {
                 // both != 0
-                if (ci->getTypeOfService() >= 10)                                                     // use secondary cell group bearer TODO fix threshold
+                if (ci->getTypeOfService() >= 10)                                                                                                       // use secondary cell group bearer TODO fix threshold
                     ci->setUseNR(true);
-                else                                                       // use master cell group bearer
+                else                                                                            // use master cell group bearer
                     ci->setUseNR(false);
             }
         }

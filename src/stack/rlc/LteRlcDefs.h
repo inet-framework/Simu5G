@@ -21,8 +21,7 @@ namespace simu5g {
 /*!
  * LTE RLC AM Types
  */
-enum LteAmType
-{
+enum LteAmType {
     //! Data packet
     DATA    = 0,
     //****** control packets ********
@@ -140,8 +139,7 @@ struct MrwDesc
 
 };
 
-enum RlcAmTimerType
-{
+enum RlcAmTimerType {
     PDU_T = 0, MRW_T = 1, BUFFER_T = 2, BUFFERSTATUS_T = 3
 };
 
@@ -190,8 +188,7 @@ struct RlcUmRxWindowDesc
 
 };
 
-enum RlcUmTimerType
-{
+enum RlcUmTimerType {
     REORDERING_T = 0
 };
 

@@ -20,10 +20,12 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-L2Meas::L2Meas() : binder_(nullptr) {
+L2Meas::L2Meas() : binder_(nullptr)
+{
 }
 
-L2Meas::L2Meas(std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs) {
+L2Meas::L2Meas(std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs)
+{
     for (auto *module : eNodeBs) {
         BaseStationStatsCollector *collector = check_and_cast<BaseStationStatsCollector *>(module->getSubmodule("collector"));
         eNodeBs_.insert({ collector->getCellId(), collector });
@@ -92,7 +94,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
     std::map<MacCellId, BaseStationStatsCollector *>::const_iterator eit;
     bool found = false;
     ASSERT(binder_ != nullptr);
-    for (auto ipAddress: uesID) {
+    for (auto ipAddress : uesID) {
 
         /*
          * An UE can be connected to both eNB and gNB (at the same time)
@@ -113,7 +115,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
         }
         else if (lteNodeId != NODEID_NONE && lteNodeId == nrNodeId) { //only nr
             found = false;
-            for (const auto& [cellId, baseStation]: eNodeBs_) {
+            for (const auto& [cellId, baseStation] : eNodeBs_) {
                 if (baseStation->getCellNodeType() == ENODEB) // enodeb does not have nrNodeId
                     continue;
                 if (baseStation->hasUeCollector(nrNodeId)) {
@@ -132,7 +134,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
         }
         else if (lteNodeId != NODEID_NONE && nrNodeId == NODEID_NONE) { //only lte
             found = false;
-            for (const auto& [cellId, baseStation]: eNodeBs_) {
+            for (const auto& [cellId, baseStation] : eNodeBs_) {
                 if (baseStation->getCellNodeType() == GNODEB) // gnodeb does not have lteNodeId
                     continue;
                 if (baseStation->hasUeCollector(lteNodeId)) {
@@ -150,7 +152,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
         }
         else if (lteNodeId != nrNodeId && nrNodeId != NODEID_NONE && lteNodeId != NODEID_NONE) { // both lte and nr
             found = false;
-            for (const auto& [cellId, baseStation]: eNodeBs_) {
+            for (const auto& [cellId, baseStation] : eNodeBs_) {
                 if (baseStation->hasUeCollector(lteNodeId)) {
                     UeStatsCollector *ueColl = baseStation->getUeCollector(lteNodeId);
                     CellUEInfo cellUeInfo = CellUEInfo(ueColl, baseStation->getEcgi());
@@ -161,7 +163,7 @@ nlohmann::ordered_json L2Meas::toJsonUe(std::vector<inet::Ipv4Address>& uesID) c
             }
 
             found = false;
-            for (const auto& [cellId, baseStation]: eNodeBs_) {
+            for (const auto& [cellId, baseStation] : eNodeBs_) {
                 if (baseStation->hasUeCollector(nrNodeId)) {
                     UeStatsCollector *ueColl = baseStation->getUeCollector(nrNodeId);
                     CellUEInfo cellUeInfo = CellUEInfo(ueColl, baseStation->getEcgi());

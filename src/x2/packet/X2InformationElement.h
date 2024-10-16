@@ -18,8 +18,7 @@
 namespace simu5g {
 
 // add here new IE types
-enum X2InformationElementType
-{
+enum X2InformationElementType {
     COMP_REQUEST_IE,         // CoMP slave -> master
     COMP_REPLY_IE,           // CoMP master -> slave
     COMP_PROP_REQUEST_IE,    // CoMP slave -> master (for compManagerProportional, with RB value)

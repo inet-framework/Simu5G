@@ -113,8 +113,10 @@ bool LtePhyEnb::handleControlPkt(UserControlInfo *lteinfo, LteAirFrame *frame)
         return true;
     }
     // send H-ARQ feedback up
-    if (lteinfo->getFrameType() == HARQPKT
-        || lteinfo->getFrameType() == RACPKT)
+    if (
+        lteinfo->getFrameType() == HARQPKT
+        || lteinfo->getFrameType() == RACPKT
+        )
     {
         handleControlMsg(frame, lteinfo);
         return true;
@@ -270,8 +272,10 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
     std::map<Remote, int> antennaCws = cellInfo_->getAntennaCws();
     unsigned int numPreferredBand = cellInfo_->getNumPreferredBands();
 
-    for (Direction dir = UL; dir != UNKNOWN_DIRECTION;
-         dir = ((dir == UL) ? DL : UNKNOWN_DIRECTION))
+    for (
+        Direction dir = UL; dir != UNKNOWN_DIRECTION;
+        dir = ((dir == UL) ? DL : UNKNOWN_DIRECTION)
+        )
     {
         //for each RU is called the computation feedback function
         if (req.genType == IDEAL) {

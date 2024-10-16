@@ -40,8 +40,10 @@ double NRChannelModel::getAttenuation(MacNodeId nodeId, Direction dir, inet::Coo
 
     // If the traveled distance is greater than the correlation distance, the UE could have changed its state and
     // its visibility from the eNodeB, hence it is correct to recompute the LOS probability.
-    if (movement > correlationDistance_
-        || losMap_.find(nodeId) == losMap_.end())
+    if (
+        movement > correlationDistance_
+        || losMap_.find(nodeId) == losMap_.end()
+        )
     {
         computeLosProbability(twoDimDistance, nodeId);
     }

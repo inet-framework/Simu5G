@@ -52,19 +52,22 @@ class PacketFlowManagerEnb : public PacketFlowManagerBase
 {
   protected:
 
-    struct Grant {
+    struct Grant
+    {
         unsigned int grantId;
         simtime_t sendTimestamp;
     };
 
-    struct BurstStatus {
+    struct BurstStatus
+    {
         std::map<unsigned int, unsigned int> rlcPdu; // RLC PDU of the burst and the relative RLC SDU size
         simtime_t startBurstTransmission; // moment of the first transmission of the burst
         unsigned int burstSize; // PDCP SDU size of the burst
         bool isCompleted;
     };
 
-    struct PacketLoss {
+    struct PacketLoss
+    {
         int lastPdpcSno;
         int totalLossPdcp;
         unsigned int totalPdcpArrived;
@@ -92,7 +95,8 @@ class PacketFlowManagerEnb : public PacketFlowManagerBase
      * The node can have different active connections (LCID) at the same time, hence we need to
      * maintain the status for each of them
      */
-    struct StatusDescriptor {
+    struct StatusDescriptor
+    {
         MacNodeId nodeId_; // destination node of this LCID
         bool burstState_; // control variable that controls one burst active at a time
         BurstId burstId_; // separates the bursts

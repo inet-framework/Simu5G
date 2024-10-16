@@ -244,7 +244,7 @@ void Binder::registerMasterNode(MacNodeId masterId, MacNodeId slaveId)
     if (secondaryNodeToMasterNode_.size() <= num(slaveId))
         secondaryNodeToMasterNode_.resize(num(slaveId) + 1);
 
-    if (masterId == NODEID_NONE)                         // this node is a master itself
+    if (masterId == NODEID_NONE)                                                          // this node is a master itself
         masterId = slaveId;
     secondaryNodeToMasterNode_[num(slaveId)] = masterId;
 }
@@ -593,8 +593,10 @@ Cqi Binder::medianCqi(std::vector<Cqi> bandCqi, MacNodeId id, Direction dir)
 
 bool Binder::checkD2DCapability(MacNodeId src, MacNodeId dst)
 {
-    if (src < UE_MIN_ID || (src >= MacNodeId(macNodeIdCounter_[1]) && src < NR_UE_MIN_ID) || src >= MacNodeId(macNodeIdCounter_[2])
-        || dst < UE_MIN_ID || (dst >= MacNodeId(macNodeIdCounter_[1]) && dst < NR_UE_MIN_ID) || dst >= MacNodeId(macNodeIdCounter_[2]))
+    if (
+        src < UE_MIN_ID || (src >= MacNodeId(macNodeIdCounter_[1]) && src < NR_UE_MIN_ID) || src >= MacNodeId(macNodeIdCounter_[2])
+        || dst < UE_MIN_ID || (dst >= MacNodeId(macNodeIdCounter_[1]) && dst < NR_UE_MIN_ID) || dst >= MacNodeId(macNodeIdCounter_[2])
+        )
         throw cRuntimeError("Binder::checkD2DCapability - Node Id not valid. Src %hu Dst %hu", num(src), num(dst));
 
     // if the entry is missing, check if the receiver is D2D capable and update the map
@@ -632,8 +634,10 @@ bool Binder::checkD2DCapability(MacNodeId src, MacNodeId dst)
 
 bool Binder::getD2DCapability(MacNodeId src, MacNodeId dst)
 {
-    if (src < UE_MIN_ID || (src >= MacNodeId(macNodeIdCounter_[1]) && src < NR_UE_MIN_ID) || src >= MacNodeId(macNodeIdCounter_[2])
-        || dst < UE_MIN_ID || (dst >= MacNodeId(macNodeIdCounter_[1]) && dst < NR_UE_MIN_ID) || dst >= MacNodeId(macNodeIdCounter_[2]))
+    if (
+        src < UE_MIN_ID || (src >= MacNodeId(macNodeIdCounter_[1]) && src < NR_UE_MIN_ID) || src >= MacNodeId(macNodeIdCounter_[2])
+        || dst < UE_MIN_ID || (dst >= MacNodeId(macNodeIdCounter_[1]) && dst < NR_UE_MIN_ID) || dst >= MacNodeId(macNodeIdCounter_[2])
+        )
         throw cRuntimeError("Binder::getD2DCapability - Node Id not valid. Src %hu Dst %hu", num(src), num(dst));
 
     // if the entry is missing, returns false
@@ -651,8 +655,10 @@ std::map<MacNodeId, std::map<MacNodeId, LteD2DMode>> *Binder::getD2DPeeringMap()
 
 LteD2DMode Binder::getD2DMode(MacNodeId src, MacNodeId dst)
 {
-    if (src < UE_MIN_ID || (src >= MacNodeId(macNodeIdCounter_[1]) && src < NR_UE_MIN_ID) || src >= MacNodeId(macNodeIdCounter_[2])
-        || dst < UE_MIN_ID || (dst >= MacNodeId(macNodeIdCounter_[1]) && dst < NR_UE_MIN_ID) || dst >= MacNodeId(macNodeIdCounter_[2]))
+    if (
+        src < UE_MIN_ID || (src >= MacNodeId(macNodeIdCounter_[1]) && src < NR_UE_MIN_ID) || src >= MacNodeId(macNodeIdCounter_[2])
+        || dst < UE_MIN_ID || (dst >= MacNodeId(macNodeIdCounter_[1]) && dst < NR_UE_MIN_ID) || dst >= MacNodeId(macNodeIdCounter_[2])
+        )
         throw cRuntimeError("Binder::getD2DMode - Node Id not valid. Src %hu Dst %hu", num(src), num(dst));
 
     return d2dPeeringMap_[src][dst];
@@ -690,9 +696,9 @@ void Binder::registerMulticastGroup(MacNodeId nodeId, int32_t groupId)
 bool Binder::isInMulticastGroup(MacNodeId nodeId, int32_t groupId)
 {
     if (multicastGroupMap_.find(nodeId) == multicastGroupMap_.end())
-        return false;                          // the node is not enrolled in any group
+        return false;                                                 // the node is not enrolled in any group
     if (multicastGroupMap_[nodeId].find(groupId) == multicastGroupMap_[nodeId].end())
-        return false;                          // the node is not enrolled in the given group
+        return false;                                                 // the node is not enrolled in the given group
 
     return true;
 }

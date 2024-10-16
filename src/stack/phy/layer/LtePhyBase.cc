@@ -115,10 +115,12 @@ void LtePhyBase::handleUpperMessage(cMessage *msg)
 
     LteAirFrame *frame = nullptr;
 
-    if (lteInfo->getFrameType() == HARQPKT
+    if (
+        lteInfo->getFrameType() == HARQPKT
         || lteInfo->getFrameType() == GRANTPKT
         || lteInfo->getFrameType() == RACPKT
-        || lteInfo->getFrameType() == D2DMODESWITCHPKT)
+        || lteInfo->getFrameType() == D2DMODESWITCHPKT
+        )
     {
         frame = new LteAirFrame("harqFeedback-grant");
     }

@@ -22,7 +22,7 @@ using namespace omnetpp;
 bool LteSchedulerEnbDl::checkEligibility(MacNodeId id, Codeword& cw, double carrierFrequency)
 {
     HarqTxBuffers *harqTxBuff = mac_->getHarqTxBuffers(carrierFrequency);
-    if (harqTxBuff == nullptr)                              // a new HARQ buffer will be created at transmission
+    if (harqTxBuff == nullptr)                                                             // a new HARQ buffer will be created at transmission
         return true;
 
     // check if HARQ buffer has already been created for this node
@@ -171,7 +171,7 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, double carr
             available = (b1 == 0) ? 0 : mac_->getAmc()->computeBytesOnNRbs(nodeId, b, remappedCw, b1, direction_, carrierFrequency);
         }
         else
-            available = availableBytes(nodeId, antenna, b, remappedCw, direction_, carrierFrequency, (limitBl) ? limit : -1);                                                                                                                                   // available space
+            available = availableBytes(nodeId, antenna, b, remappedCw, direction_, carrierFrequency, (limitBl) ? limit : -1);                                                                                                                                                                                                                                                                  // available space
 
         // use the provided limit as cap for available bytes, if it is not set to unlimited
         if (limit >= 0 && !limitBl)
@@ -439,7 +439,7 @@ bool LteSchedulerEnbDl::rtxschedule(double carrierFrequency, BandLimitVector *ba
                     // Get the bandLimit for the current user
                     bool ret = getBandLimit(&usableBands, nodeId);
                     if (ret)
-                        bandLim = &usableBands;                                                   // TODO fix this, must be combined with the band limit of the carrier
+                        bandLim = &usableBands;                                                                                                    // TODO fix this, must be combined with the band limit of the carrier
                     else
                         bandLim = nullptr;
 

@@ -21,12 +21,14 @@ using namespace inet;
 Register_Serializer(X2HandoverControlMsg, LteX2MsgSerializer);
 
 X2HandoverControlMsg::X2HandoverControlMsg() :
-    LteX2Message() {
+    LteX2Message()
+{
     type_ = X2_HANDOVER_CONTROL_MSG;
 }
 
 X2HandoverControlMsg::X2HandoverControlMsg(const X2HandoverControlMsg& other) :
-    LteX2Message() {
+    LteX2Message()
+{
     operator=(other);
 }
 

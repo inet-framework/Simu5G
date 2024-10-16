@@ -129,7 +129,8 @@ class UmRxEntity : public cSimpleModule
     std::vector<bool> received_;
 
     // The SDU waiting for the missing portion
-    struct Buffered {
+    struct Buffered
+    {
         inet::Packet *pkt = nullptr;
         size_t size;
         unsigned int currentPduSno;   // next PDU sequence number expected
@@ -157,8 +158,7 @@ class UmRxEntity : public cSimpleModule
      * excluding transmission of the last piece of data.
      */
 
-    enum BurstCheck
-    {
+    enum BurstCheck {
         ENQUE, REORDERING
     };
 

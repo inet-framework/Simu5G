@@ -280,8 +280,10 @@ void AmTxQueue::discard(const int seqNum)
         pduTimer_.remove(seqNum);
 
     // Check forward in the buffer if there are other PDUs related to the same SDU
-    for (int i = (txWindowIndex + 1);
-         i < (txWindowDesc_.seqNum_ - txWindowDesc_.firstSeqNum_); ++i)
+    for (
+        int i = (txWindowIndex + 1);
+        i < (txWindowDesc_.seqNum_ - txWindowDesc_.firstSeqNum_); ++i
+        )
     {
         if (pduRtxQueue_.get(i) != nullptr) {
             auto nextPdu = check_and_cast<Packet *>(pduRtxQueue_.get(i))->peekAtFront<LteRlcAmPdu>();
@@ -641,7 +643,7 @@ void AmTxQueue::recvCumulativeAck(const int seqNum)
                << (i + txWindowDesc_.firstSeqNum_)
                << " first sequence n. [" << txWindowDesc_.firstSeqNum_
                << "] "
-               "index [" << i << "] " << endl;
+                "index [" << i << "] " << endl;
 
             // the ACK could have already been received
             if (!(received_.at(i))) {

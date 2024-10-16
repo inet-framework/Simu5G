@@ -321,7 +321,7 @@ void AmRxQueue::passUp(const int index)
         // handle special case: some fragments have already been moved out of the receive window and
         // are available in the pendingPduBuffer
         if (index == 0 && !header->isFirst()) {
-            for (auto& p: pendingPduBuffer_) {
+            for (auto& p : pendingPduBuffer_) {
                 auto frgId = p->peekAtFront<LteRlcAmPdu>()->getSnoMainPacket();
                 if (frgId != pkId) {
                     throw cRuntimeError("AmRxQueue::passUp(): fragment buffer has fragments for SDU %d while trying to pass up %d", frgId, pkId);
@@ -635,7 +635,7 @@ void AmRxQueue::moveRxWindow(const int seqNum)
     int pos = seqNum - rxWindowDesc_.firstSeqNum_;
 
     if (pos <= 0)
-        return;                   // ignore the shift, it is ineffective.
+        return;                                    // ignore the shift, it is ineffective.
 
     if (pos > rxWindowDesc_.windowSize_)
         throw cRuntimeError("AmRxQueue::moveRxWindow(): positions %d win size %d, seq num %d", pos, rxWindowDesc_.windowSize_, seqNum);
@@ -658,7 +658,7 @@ void AmRxQueue::moveRxWindow(const int seqNum)
                 // Reset the last PDU seen.
                 currentSdu = -1;
                 // Remove all PDUs from pending PDU buffer.
-                for (auto& p: pendingPduBuffer_) {
+                for (auto& p : pendingPduBuffer_) {
                     delete p;
                 }
                 pendingPduBuffer_.clear();
@@ -708,7 +708,7 @@ AmRxQueue::~AmRxQueue()
     }
 
     // Remove all PDUs from the pending PDU buffer.
-    for (auto& p: pendingPduBuffer_) {
+    for (auto& p : pendingPduBuffer_) {
         delete p;
     }
     pendingPduBuffer_.clear();

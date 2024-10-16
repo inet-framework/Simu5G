@@ -365,8 +365,10 @@ double NRChannelModel_3GPP38_901::computeShadowing(double sqrDistance, MacNodeId
         // If the shadowing attenuation has been computed at least one time for this user
         // and the distance traveled by the UE is greater than correlation distance
     }
-    else if ((NOW - actualShadowingMap->at(nodeId).first).dbl() * speed
-             > correlationDistance_)
+    else if (
+        (NOW - actualShadowingMap->at(nodeId).first).dbl() * speed
+        > correlationDistance_
+        )
     {
         // Get the temporal mark of the last computed shadowing attenuation
         time = (NOW - actualShadowingMap->at(nodeId).first).dbl();

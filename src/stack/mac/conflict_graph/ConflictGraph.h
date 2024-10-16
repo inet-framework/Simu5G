@@ -19,8 +19,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-enum CGType
-{
+enum CGType {
     CG_DISTANCE,
     CG_UNKNOWN
 };

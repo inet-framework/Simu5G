@@ -19,7 +19,8 @@
 
 namespace simu5g {
 
-struct Candidate {
+struct Candidate
+{
     Band index;
     unsigned int len;
     bool greater;

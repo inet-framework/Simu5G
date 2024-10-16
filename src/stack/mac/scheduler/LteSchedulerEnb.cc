@@ -71,7 +71,7 @@ LteSchedulerEnb& LteSchedulerEnb::operator=(const LteSchedulerEnb& other)
     }
 
     // Copy Allocator
-    if (discipline == ALLOCATOR_BESTFIT)                                            // NOTE: create this type of allocator for every scheduler using Frequency Reuse
+    if (discipline == ALLOCATOR_BESTFIT)                                                                                     // NOTE: create this type of allocator for every scheduler using Frequency Reuse
         allocator_ = new LteAllocationModuleFrequencyReuse(mac_, direction_);
     else
         allocator_ = new LteAllocationModule(mac_, direction_);
@@ -114,7 +114,7 @@ void LteSchedulerEnb::initialize(Direction dir, LteMacEnb *mac, Binder *binder)
     }
 
     // Create Allocator
-    if (discipline == ALLOCATOR_BESTFIT)                                            // NOTE: create this type of allocator for every scheduler using Frequency Reuse
+    if (discipline == ALLOCATOR_BESTFIT)                                                                                     // NOTE: create this type of allocator for every scheduler using Frequency Reuse
         allocator_ = new LteAllocationModuleFrequencyReuse(mac_, direction_);
     else
         allocator_ = new LteAllocationModule(mac_, direction_);
@@ -183,9 +183,9 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
     if (dir == UL) {
         // check if this connection is a D2D connection
         if (flowId == D2D_SHORT_BSR)
-            dir = D2D;                                   // if yes, change direction
+            dir = D2D;                                                           // if yes, change direction
         if (flowId == D2D_MULTI_SHORT_BSR)
-            dir = D2D_MULTI;                                   // if yes, change direction
+            dir = D2D_MULTI;                                                                 // if yes, change direction
         // else dir == UL
     }
     // else dir == DL
@@ -296,9 +296,11 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
     // Check OFDM space
     // OFDM space is not zero if this if we are trying to allocate the second cw in SPMUX or
     // if we are trying to allocate a peer user in mu_mimo plane
-    if (allocator_->computeTotalRbs() == 0 && (((txParams.readTxMode() != OL_SPATIAL_MULTIPLEXING &&
+    if (
+        allocator_->computeTotalRbs() == 0 && (((txParams.readTxMode() != OL_SPATIAL_MULTIPLEXING &&
                                                  txParams.readTxMode() != CL_SPATIAL_MULTIPLEXING) || cwAlreadyAllocated == 0) &&
-                                               (txParams.readTxMode() != MULTI_USER || plane != MU_MIMO_PLANE)))
+                                               (txParams.readTxMode() != MULTI_USER || plane != MU_MIMO_PLANE))
+        )
     {
         terminate = true; // OFDM space ended, issuing terminate flag
         EV << "LteSchedulerEnb::grant Space ended, no scheduling." << endl;
@@ -456,7 +458,7 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
             if (toServe == 0) {
                 // all bytes booked, go to allocation
                 stop = true;
-                if (queueLength == 0)                                        // the connection has also terminated the buffer
+                if (queueLength == 0)                                                                              // the connection has also terminated the buffer
                     active = false;
                 break;
             }
@@ -464,7 +466,7 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
         }// Closes loop on bands
 
         if (cwAllocatedBytes > 0)
-            vQueueItemCounter++;                                    // increase counter of served SDU
+            vQueueItemCounter++;                                                                      // increase counter of served SDU
 
         // === update virtual buffer === //
 

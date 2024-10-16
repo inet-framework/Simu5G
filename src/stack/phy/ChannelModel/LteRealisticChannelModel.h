@@ -140,8 +140,7 @@ class LteRealisticChannelModel : public LteChannelModel
     typedef std::vector<JakesFadingData> JakesFadingVector;
     typedef std::map<MacNodeId, JakesFadingVector> JakesFadingMap;
 
-    enum FadingType
-    {
+    enum FadingType {
         RAYLEIGH, JAKES
     };
 

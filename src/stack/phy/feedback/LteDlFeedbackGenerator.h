@@ -38,8 +38,7 @@ class LtePhyUe;
  */
 class LteDlFeedbackGenerator : public cSimpleModule
 {
-    enum FbTimerType
-    {
+    enum FbTimerType {
         PERIODIC_SENSING = 0, PERIODIC_TX, APERIODIC_TX
     };
 

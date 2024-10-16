@@ -22,7 +22,8 @@ namespace simu5g {
 using namespace inet;
 Define_Module(MecRequestForegroundApp);
 
-MecRequestForegroundApp::~MecRequestForegroundApp() {
+MecRequestForegroundApp::~MecRequestForegroundApp()
+{
     cancelAndDelete(sendFGRequest);
 }
 

@@ -30,7 +30,8 @@
 namespace simu5g {
 Define_Module(RNIService);
 
-RNIService::RNIService():L2MeasResource_() {
+RNIService::RNIService():L2MeasResource_()
+{
     baseUriQueries_ = "/example/rni/v2/queries";
     baseUriSubscriptions_ = "/example/rni/v2/subscriptions";
     supportedQueryParams_.insert("cell_id");
