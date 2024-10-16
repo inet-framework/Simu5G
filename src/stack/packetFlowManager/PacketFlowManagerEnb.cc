@@ -614,8 +614,7 @@ void PacketFlowManagerEnb::removePdcpBurstRLC(StatusDescriptor *desc, unsigned i
                 // compute throughput
                 auto tit = pdcpThroughput_.find(desc->nodeId_);
                 if (tit == pdcpThroughput_.end()) {
-                    pdcpThroughput_.insert({ desc->nodeId_, { 0, 0 }
-                            });
+                    pdcpThroughput_.insert({desc->nodeId_, { 0, 0 }});
                     tit = pdcpThroughput_.find(desc->nodeId_);
                 }
                 tit->second.pktSizeCount += burstStatus.burstSize; //*8 --> bits

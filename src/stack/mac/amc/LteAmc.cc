@@ -584,7 +584,7 @@ const UserTxParams& LteAmc::computeTxParams(MacNodeId id, const Direction dir, d
 
 unsigned int LteAmc::computeBitsOnNRbs(MacNodeId id, Band b, unsigned int blocks, const Direction dir, double carrierFrequency)
 {
-    if (blocks > 110)                                                // Safety check to avoid segmentation fault
+    if (blocks > 110)                          // Safety check to avoid segmentation fault
         throw cRuntimeError("LteAmc::computeBitsOnNRbs(): Too many blocks");
 
     if (blocks == 0)
@@ -633,7 +633,7 @@ unsigned int LteAmc::computeBitsOnNRbs(MacNodeId id, Band b, unsigned int blocks
 
 unsigned int LteAmc::computeBitsOnNRbs(MacNodeId id, Band b, Codeword cw, unsigned int blocks, const Direction dir, double carrierFrequency)
 {
-    if (blocks > 110)                                                // Safety check to avoid segmentation fault
+    if (blocks > 110)                          // Safety check to avoid segmentation fault
         throw cRuntimeError("LteAmc::blocks2bits(): Too many blocks");
 
     if (blocks == 0)
@@ -720,7 +720,7 @@ unsigned int LteAmc::computeBytesOnNRbs_MB(MacNodeId id, Band b, unsigned int bl
 
 unsigned int LteAmc::computeBitsOnNRbs_MB(MacNodeId id, Band b, unsigned int blocks, const Direction dir, double carrierFrequency)
 {
-    if (blocks > 110)                                                // Safety check to avoid segmentation fault
+    if (blocks > 110)                          // Safety check to avoid segmentation fault
         throw cRuntimeError("LteAmc::computeBitsOnNRbs_MB(): Too many blocks");
 
     if (blocks == 0)
@@ -862,10 +862,10 @@ const UserTxParams& LteAmc::getTxParams(MacNodeId id, const Direction dir, doubl
 
 unsigned int LteAmc::blockGain(Cqi cqi, unsigned int layers, unsigned int blocks, Direction dir)
 {
-    if (blocks > 110)                                              // Safety check to avoid segmentation fault
+    if (blocks > 110)                        // Safety check to avoid segmentation fault
         throw cRuntimeError("LteAmc::blocksGain(): Too many blocks (%d)", blocks);
 
-    if (cqi > 15)                                      // Safety check to avoid segmentation fault
+    if (cqi > 15)                    // Safety check to avoid segmentation fault
         throw cRuntimeError("LteAmc::blocksGain(): CQI greater than 15 (%d)", cqi);
 
     if (blocks == 0)
@@ -1147,7 +1147,7 @@ void LteAmc::detachUser(MacNodeId nodeId, Direction dir)
         else { // D2D
             for (auto& hit : *d2dHistory) {
                 for (auto& ht : hit.second) {
-                    if (ht.first == NODEID_NONE)                                                                                           // skip fake UE 0
+                    if (ht.first == NODEID_NONE)                                          // skip fake UE 0
                         continue;
 
                     for (auto remote : remoteSet_) {
@@ -1241,7 +1241,7 @@ void LteAmc::attachUser(MacNodeId nodeId, Direction dir)
         else { // D2D
             for (auto& hit : *d2dHistory) {
                 for (auto& ht : hit.second) {
-                    if (ht.first == NODEID_NONE)                                                                                           // skip fake UE 0
+                    if (ht.first == NODEID_NONE)                                          // skip fake UE 0
                         continue;
 
                     for (auto remote : remoteSet_) {
