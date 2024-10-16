@@ -29,7 +29,6 @@ class TimeStamp : public AttributeBase
     TimeStamp();
     TimeStamp(bool valid);
 
-
     bool isValid() const;
     void setValid(bool valid);
 

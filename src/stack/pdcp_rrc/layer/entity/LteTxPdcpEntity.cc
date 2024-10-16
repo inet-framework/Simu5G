@@ -16,7 +16,6 @@ namespace simu5g {
 
 Define_Module(LteTxPdcpEntity);
 
-
 void LteTxPdcpEntity::initialize()
 {
     pdcp_ = check_and_cast<LtePdcpRrcBase *>(getParentModule());
@@ -81,7 +80,6 @@ void LteTxPdcpEntity::setIds(inet::Ptr<FlowControlInfo> lteInfo)
     else
         lteInfo->setDestId(pdcp_->getDestId(lteInfo));
 }
-
 
 } //namespace
 

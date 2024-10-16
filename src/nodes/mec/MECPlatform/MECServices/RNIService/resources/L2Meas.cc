@@ -26,22 +26,21 @@ L2Meas::L2Meas() : binder_(nullptr) {
 L2Meas::L2Meas(std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs) {
     for (auto *module : eNodeBs) {
         BaseStationStatsCollector *collector = check_and_cast<BaseStationStatsCollector *>(module->getSubmodule("collector"));
-        eNodeBs_.insert({collector->getCellId(), collector});
+        eNodeBs_.insert({ collector->getCellId(), collector });
     }
 }
 
 void L2Meas::addEnodeB(std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs) {
-    for (cModule* module : eNodeBs) {
+    for (cModule *module : eNodeBs) {
         BaseStationStatsCollector *collector = check_and_cast<BaseStationStatsCollector *>(module->getSubmodule("collector"));
-        eNodeBs_.insert({collector->getCellId(), collector});
+        eNodeBs_.insert({ collector->getCellId(), collector });
     }
 }
 
 void L2Meas::addEnodeB(cModule *eNodeB) {
     BaseStationStatsCollector *collector = check_and_cast<BaseStationStatsCollector *>(eNodeB->getSubmodule("collector"));
-    eNodeBs_.insert({collector->getCellId(), collector});
+    eNodeBs_.insert({ collector->getCellId(), collector });
 }
-
 
 nlohmann::ordered_json L2Meas::toJson() const {
     nlohmann::ordered_json val;
@@ -53,9 +52,9 @@ nlohmann::ordered_json L2Meas::toJson() const {
         val["timestamp"] = timestamp_.toJson();
     }
 
-    for (const auto &[macCellId, baseStationStatsCollector] : eNodeBs_) {
+    for (const auto&[macCellId, baseStationStatsCollector] : eNodeBs_) {
         UeStatsCollectorMap *ueMap = baseStationStatsCollector->getCollectorMap();
-        for (const auto &[ueId, ueStatsCollector] : *ueMap) {
+        for (const auto&[ueId, ueStatsCollector] : *ueMap) {
             CellUEInfo cellUeInfo = CellUEInfo(ueStatsCollector, baseStationStatsCollector->getEcgi());
             ueArray.push_back(cellUeInfo.toJson());
         }

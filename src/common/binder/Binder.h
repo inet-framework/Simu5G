@@ -430,7 +430,7 @@ class Binder : public cSimpleModule
 
     void setX2PeerAddress(X2NodeId srcId, X2NodeId destId, inet::L3Address interfAddr)
     {
-        x2PeerAddress_[srcId].insert({destId, interfAddr});
+        x2PeerAddress_[srcId].insert({ destId, interfAddr });
     }
 
     /**

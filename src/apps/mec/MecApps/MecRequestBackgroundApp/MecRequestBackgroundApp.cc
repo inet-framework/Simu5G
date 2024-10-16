@@ -28,7 +28,6 @@ MecRequestBackgroundApp::~MecRequestBackgroundApp() {
     cancelAndDelete(burstTimer);
 }
 
-
 void MecRequestBackgroundApp::handleServiceMessage(int connId)
 {
     HttpMessageStatus *msgStatus = static_cast<HttpMessageStatus *>(serviceSocket_->getUserData());

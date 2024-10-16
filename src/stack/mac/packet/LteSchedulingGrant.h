@@ -48,7 +48,7 @@ class LteSchedulingGrant : public LteSchedulingGrant_Base
   public:
 
     LteSchedulingGrant() :
-        LteSchedulingGrant_Base(),  grantId(getChunkId())
+        LteSchedulingGrant_Base(), grantId(getChunkId())
     {
         grantedCwBytes.resize(MAX_CODEWORDS);
     }

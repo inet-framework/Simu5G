@@ -35,7 +35,6 @@ LcgScheduler& LcgScheduler::operator=(const LcgScheduler& other)
     return *this;
 }
 
-
 ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction grantDir)
 {
     // Clean up old schedule decisions.

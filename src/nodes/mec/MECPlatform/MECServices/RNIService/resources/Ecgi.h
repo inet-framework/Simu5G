@@ -34,7 +34,6 @@ class Ecgi : public AttributeBase
 
     Ecgi(MacCellId cellId, Plmn& plmn);
 
-
     void setCellId(const MacCellId cellId);
     void setPlmn(const Plmn& plmn);
     void setPlmn(const mec::Plmn plmn);

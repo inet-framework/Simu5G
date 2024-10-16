@@ -48,8 +48,8 @@ void LteSchedulerEnbUl::updateHarqDescs()
 {
     EV << NOW << "LteSchedulerEnbUl::updateHarqDescs  cell " << mac_->getMacCellId() << endl;
 
-    for (const auto &[harqKey, harqBuffers] : *harqRxBuffers_) {
-        for (const auto &[ueKey, ueBuffer] : harqBuffers) {
+    for (const auto&[harqKey, harqBuffers] : *harqRxBuffers_) {
+        for (const auto&[ueKey, ueBuffer] : harqBuffers) {
             auto currentStatus = harqStatus_[harqKey].find(ueKey);
             if (currentStatus != harqStatus_[harqKey].end()) {
                 EV << NOW << "LteSchedulerEnbUl::updateHarqDescs UE " << ueKey << " OLD Current Process is  " << (unsigned int)currentStatus->second << endl;
@@ -161,7 +161,7 @@ bool LteSchedulerEnbUl::racschedule(double carrierFrequency, BandLimitVector *ba
                 // create scList id for current cid/codeword
                 MacCid cid = idToMacCid(nodeId, SHORT_BSR);  // build the cid. Since this grant will be used for a BSR,
                                                              // we use the LCID corresponding to the SHORT_BSR
-                std::pair<unsigned int, Codeword> scListId = {cid, cw};
+                std::pair<unsigned int, Codeword> scListId = { cid, cw };
                 scheduleList_[carrierFrequency][scListId] = blocks;
             }
         }
@@ -406,7 +406,7 @@ bool LteSchedulerEnbUl::rtxscheduleBackground(double carrierFrequency, BandLimit
         std::map<MacNodeId, unsigned int> bgScheduledRtx;
         IBackgroundTrafficManager *bgTrafficManager = mac_->getBackgroundTrafficManager(carrierFrequency);
         auto it = bgTrafficManager->getBackloggedUesBegin(direction_, true),
-                                       et = bgTrafficManager->getBackloggedUesEnd(direction_, true);
+             et = bgTrafficManager->getBackloggedUesEnd(direction_, true);
         for ( ; it != et; ++it) {
             int bgUeIndex = *it;
             MacNodeId bgUeId = BGUE_MIN_ID + bgUeIndex;
@@ -419,7 +419,7 @@ bool LteSchedulerEnbUl::rtxscheduleBackground(double carrierFrequency, BandLimit
         }
 
         // consume bytes
-        for (auto & it : bgScheduledRtx)
+        for (auto& it : bgScheduledRtx)
             bgTrafficManager->consumeBackloggedUeBytes(it.first, it.second, direction_, true); // in bytes
 
         int availableBlocks = allocator_->computeTotalRbs();
@@ -679,7 +679,7 @@ unsigned int LteSchedulerEnbUl::schedulePerAcidRtxD2D(MacNodeId destId, MacNodeI
         Codeword allocatedCw = 0;
         //search for already allocated codeword
         //create "mirror" scList ID for other codeword than current
-        std::pair<unsigned int, Codeword> scListMirrorId = {idToMacCid(senderId, D2D_SHORT_BSR), MAX_CODEWORDS - cw - 1};
+        std::pair<unsigned int, Codeword> scListMirrorId = { idToMacCid(senderId, D2D_SHORT_BSR), MAX_CODEWORDS - cw - 1 };
         if (scheduleList_.find(carrierFrequency) != scheduleList_.end()) {
             if (scheduleList_[carrierFrequency].find(scListMirrorId) != scheduleList_[carrierFrequency].end()) {
                 allocatedCw = MAX_CODEWORDS - cw - 1;
@@ -749,7 +749,7 @@ unsigned int LteSchedulerEnbUl::schedulePerAcidRtxD2D(MacNodeId destId, MacNodeI
             unsigned int cwAllocatedBlocks = 0;
 
             // create scList id for current cid/codeword
-            std::pair<unsigned int, Codeword> scListId = {idToMacCid(senderId, D2D_SHORT_BSR), cw};
+            std::pair<unsigned int, Codeword> scListId = { idToMacCid(senderId, D2D_SHORT_BSR), cw };
 
             for (unsigned int i = 0; i < size; ++i) {
                 // For each LB for which blocks have been allocated

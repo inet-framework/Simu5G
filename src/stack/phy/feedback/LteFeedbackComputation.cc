@@ -13,9 +13,9 @@
 
 namespace simu5g {
 
-
 LteFeedbackComputation::~LteFeedbackComputation()
 {
 }
 
 } //namespace
+

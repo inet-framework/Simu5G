@@ -24,7 +24,6 @@ class CircleNotificationEvent : public EventNotification
 
     const std::vector<TerminalLocation>& getTerminalLocations() const;
 
-
   private:
     std::vector<TerminalLocation> terminalLocations_;
 

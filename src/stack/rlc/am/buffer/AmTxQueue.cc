@@ -18,7 +18,7 @@ namespace simu5g {
 Define_Module(AmTxQueue);
 
 AmTxQueue::AmTxQueue() :
-     pduTimer_(this), mrwTimer_(this), bufferStatusTimer_(this)
+    pduTimer_(this), mrwTimer_(this), bufferStatusTimer_(this)
 {
 
     // Initialize timer IDs

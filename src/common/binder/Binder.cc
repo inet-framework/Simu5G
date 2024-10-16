@@ -167,7 +167,7 @@ void Binder::unregisterNode(MacNodeId id)
     for (auto& carrier : ulTransmissionMap_) { // all carrier frequency
         for (auto& bands : carrier.second) { // all RB's for current and last TTI (vector<vector<vector<UeAllocationInfo>>>)
             for (auto& ues : bands) { // all Ue's in each block
-                for(auto itr = ues.begin(); itr != ues.end(); ) {
+                for (auto itr = ues.begin(); itr != ues.end(); ) {
                     if (itr->nodeId == id) {
                         itr = ues.erase(itr);
                     }
@@ -734,7 +734,7 @@ void Binder::removeUeHandoverTriggered(MacNodeId nodeId)
 
 void Binder::addHandoverTriggered(MacNodeId nodeId, MacNodeId srcId, MacNodeId destId)
 {
-    handoverTriggered_[nodeId] = {srcId, destId};
+    handoverTriggered_[nodeId] = { srcId, destId };
 }
 
 const std::pair<MacNodeId, MacNodeId> *Binder::getHandoverTriggered(MacNodeId nodeId)
@@ -875,7 +875,7 @@ void Binder::computeAverageCqiForBackgroundUes()
             // if the total cellRbsUl is higher than numBands, then scale the allocation for all UEs
             if (cellRbsUl > numBands) {
                 double scaleFactor = (double)numBands / cellRbsUl;
-                for (double & i : info->allocatedRbsUeUl)
+                for (double& i : info->allocatedRbsUeUl)
                     i *= scaleFactor;
             }
         }
@@ -1099,7 +1099,7 @@ void Binder::addUeCollectorToEnodeB(MacNodeId ue, UeStatsCollector *ueCollector,
     BaseStationStatsCollector *enbColl = nullptr;
 
     // Check if the collector is already present in a cell
-    for (auto & enbInfo : enbList_) {
+    for (auto& enbInfo : enbList_) {
         enb = enbInfo->eNodeB;
         if (enb->getSubmodule("collector") != nullptr) {
             enbColl = check_and_cast<BaseStationStatsCollector *>(enb->getSubmodule("collector"));

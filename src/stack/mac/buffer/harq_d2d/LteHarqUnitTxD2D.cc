@@ -31,7 +31,6 @@ LteHarqUnitTxD2D::LteHarqUnitTxD2D(Binder *binder, unsigned char acid, Codeword 
     check_and_cast<LteMacUeD2D *>(macOwner_.get());
 }
 
-
 bool LteHarqUnitTxD2D::pduFeedback(HarqAcknowledgment a)
 {
     EV << "LteHarqUnitTxD2D::pduFeedback - Welcome!" << endl;

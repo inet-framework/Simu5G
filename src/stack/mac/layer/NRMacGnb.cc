@@ -20,7 +20,6 @@ NRMacGnb::NRMacGnb() : LteMacEnbD2D()
     nodeType_ = GNODEB;
 }
 
-
 void NRMacGnb::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LINK_LAYER) {

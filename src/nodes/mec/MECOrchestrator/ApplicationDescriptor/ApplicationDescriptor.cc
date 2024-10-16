@@ -49,7 +49,7 @@ ApplicationDescriptor::ApplicationDescriptor(const char *fileName)
     if (jsonFile.contains("appServiceProvided")) {
         if (jsonFile["appServiceProvided"].is_array()) {
             nlohmann::json serviceVector = jsonFile["appServiceProvided"];
-            for (const auto & i : serviceVector) {
+            for (const auto& i : serviceVector) {
                 appServicesProduced_.push_back((std::string)i);
             }
         }

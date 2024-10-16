@@ -161,7 +161,6 @@ class CellInfo : public cSimpleModule
 
   public:
 
-
     MacCellId getMacCellId()
     {
         return cellId_;

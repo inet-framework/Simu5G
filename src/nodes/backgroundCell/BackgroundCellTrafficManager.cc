@@ -22,7 +22,6 @@ namespace simu5g {
 
 Define_Module(BackgroundCellTrafficManager);
 
-
 BackgroundCellTrafficManager::~BackgroundCellTrafficManager()
 {
     delete bgAmc_;

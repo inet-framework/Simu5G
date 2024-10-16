@@ -59,7 +59,7 @@ LteMacEnb::~LteMacEnb()
     delete enbSchedulerDl_;
     delete enbSchedulerUl_;
 
-    for (auto &[key, value] : bsrbuf_)
+    for (auto&[key, value] : bsrbuf_)
         delete value;
 }
 
@@ -504,7 +504,7 @@ void LteMacEnb::macPduMake(MacCid cid)
 
             Codeword cw = it.first.second;
             MacNodeId destId = MacCidToNodeId(destCid);
-            std::pair<MacNodeId, Codeword> pktId = {destId, cw};
+            std::pair<MacNodeId, Codeword> pktId = { destId, cw };
             unsigned int sduPerCid = it.second;
             unsigned int grantedBlocks = 0;
             TxMode txmode;
@@ -882,7 +882,7 @@ void LteMacEnb::signalProcessForRtx(MacNodeId nodeId, double carrierFrequency, D
     if (needRtx->find(carrierFrequency) == needRtx->end()) {
         if (!rtx)
             return;
-        needRtx->insert({carrierFrequency, 0});
+        needRtx->insert({ carrierFrequency, 0 });
     }
 
     if (!rtx)

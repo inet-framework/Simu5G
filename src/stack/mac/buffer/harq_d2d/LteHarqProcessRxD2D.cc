@@ -25,7 +25,6 @@ LteHarqProcessRxD2D::LteHarqProcessRxD2D(unsigned char acid, LteMacBase *owner, 
 {
 }
 
-
 Packet *LteHarqProcessRxD2D::createFeedback(Codeword cw)
 {
     if (!isEvaluated(cw))

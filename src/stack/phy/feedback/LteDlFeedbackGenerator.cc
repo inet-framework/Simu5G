@@ -182,7 +182,6 @@ void LteDlFeedbackGenerator::sensing(FbPeriodicity per)
 *    PUBLIC FUNCTIONS
 ***************************/
 
-
 LteDlFeedbackGenerator::~LteDlFeedbackGenerator()
 {
     delete tPeriodicSensing_;

@@ -19,7 +19,7 @@
 #define ACK_DELETE_CONTEXT_APP    "DeleteContextAppAck"
 
 #define UPDATE_CONTEXT_APP        "UpdateContextApp"
-#define ACK_UPDATE_CONTEXT_APP     "UpdateContextAppAck"
+#define ACK_UPDATE_CONTEXT_APP    "UpdateContextAppAck"
 
 #endif /* NODES_MEC_LCMPROXY_LCMPROXYMESSAGES_LCMPROXYMESSAGES_TYPES_H_ */
 

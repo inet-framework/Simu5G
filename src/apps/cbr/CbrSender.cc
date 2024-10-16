@@ -25,7 +25,6 @@ simsignal_t CbrSender::cbrGeneratedThroughputSignal_ = registerSignal("cbrGenera
 simsignal_t CbrSender::cbrGeneratedBytesSignal_ = registerSignal("cbrGeneratedBytesSignal");
 simsignal_t CbrSender::cbrSentPktSignal_ = registerSignal("cbrSentPktSignal");
 
-
 CbrSender::~CbrSender()
 {
     cancelAndDelete(selfSource_);

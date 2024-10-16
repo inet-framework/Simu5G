@@ -778,7 +778,7 @@ void UmRxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool oldMode, bool c
             // clear the buffer
             pduBuffer_.clear();
 
-            for (auto && i : received_) {
+            for (auto&& i : received_) {
                 i = false;
             }
 

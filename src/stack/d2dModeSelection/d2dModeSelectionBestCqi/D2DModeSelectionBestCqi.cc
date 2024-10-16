@@ -40,7 +40,7 @@ void D2DModeSelectionBestCqi::doModeSelection()
 
         for (auto& jt : it.second) {
             MacNodeId dstId = jt.first;   // since the D2D CQI is the same for all D2D connections,
-                                           // the mode will be the same for all destinations
+                                          // the mode will be the same for all destinations
 
             // consider only UEs within this cell
             if (binder_->getNextHop(dstId) != mac_->getMacCellId())

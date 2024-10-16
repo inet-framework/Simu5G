@@ -34,7 +34,6 @@ CircleNotificationSubscription::CircleNotificationSubscription(Binder *binder_, 
     baseResLocation_ += "area/circle";
 }
 
-
 void CircleNotificationSubscription::sendSubscriptionResponse()
 {
 }
@@ -206,7 +205,7 @@ bool CircleNotificationSubscription::fromJson(const nlohmann::ordered_json& body
     if (jsonBody.contains("address")) {
         if (jsonBody["address"].is_array()) {
             nlohmann::json addressVector = jsonBody["address"];
-            for (const auto & i : addressVector) {
+            for (const auto& i : addressVector) {
                 std::string add = i;
                 MacNodeId id = binder->getMacNodeId(inet::Ipv4Address(add.c_str()));
                 /*
@@ -263,7 +262,7 @@ EventNotification *CircleNotificationSubscription::handleSubscription()
 {
     EV << "CircleNotificationSubscription::handleSubscription()" << endl;
     terminalLocations.clear();
-    for (auto &[macNodeId, isInside] : users) {
+    for (auto&[macNodeId, isInside] : users) {
         bool found = false;
         //check if the user is under one of the EnodeB connected to the Mehost
 
