@@ -96,8 +96,7 @@ typedef std::map<MacNodeId, AllocatedRbsPerUeInfo> AllocatedRbsPerUeMapA;
 /**
  *  Type used to discriminate the UEs in the allocation phase.
  */
-enum AllocationUeType
-{
+enum AllocationUeType {
     EXCLUSIVE,
     SHARED,
     UNUSED,

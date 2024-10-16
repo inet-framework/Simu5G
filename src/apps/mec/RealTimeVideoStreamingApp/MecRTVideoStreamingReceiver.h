@@ -31,7 +31,8 @@ using namespace omnetpp;
 class MecRTVideoStreamingReceiver : public MecAppBase
 {
 
-    struct ReceivingFrameStatus {
+    struct ReceivingFrameStatus
+    {
         int frameNumber; // i.e. segment sequence number
         int frameSize;
         int currentSize;

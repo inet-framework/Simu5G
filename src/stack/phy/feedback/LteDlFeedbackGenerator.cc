@@ -76,7 +76,7 @@ void LteDlFeedbackGenerator::initialize(int stage)
         EV << "DLFeedbackGenerator Stage " << stage << " nodeid: " << nodeId_
            << " init" << endl;
 
-        if (masterId_ != NODEID_NONE)                          // only if not detached
+        if (masterId_ != NODEID_NONE)                                                                // only if not detached
             initCellInfo();
 
         phy_.reference(this, "phyModule", true);
@@ -142,8 +142,10 @@ void LteDlFeedbackGenerator::initCellInfo()
 
 void LteDlFeedbackGenerator::sensing(FbPeriodicity per)
 {
-    if (per == PERIODIC && tAperiodicTx_->busy()
-        && tAperiodicTx_->elapsed() < 0.001)
+    if (
+        per == PERIODIC && tAperiodicTx_->busy()
+        && tAperiodicTx_->elapsed() < 0.001
+        )
     {
         /* In this TTI an APERIODIC sensing has been done
          * (an APERIODIC tx is scheduled).
@@ -161,8 +163,10 @@ void LteDlFeedbackGenerator::sensing(FbPeriodicity per)
         return;
     }
 
-    if (per == APERIODIC && tPeriodicTx_->busy()
-        && tPeriodicTx_->elapsed() < 0.001)
+    if (
+        per == APERIODIC && tPeriodicTx_->busy()
+        && tPeriodicTx_->elapsed() < 0.001
+        )
     {
         /* In this TTI a PERIODIC sensing has been done.
          * Deschedule the PERIODIC tx and continue with APERIODIC.
@@ -243,7 +247,7 @@ void LteDlFeedbackGenerator::handleHandover(MacCellId newEnbId)
     if (masterId_ != NODEID_NONE) {
         initCellInfo();
         EV << NOW << " LteDlFeedbackGenerator::handleHandover - Master ID updated to " << masterId_ << endl;
-        if (tPeriodicSensing_->idle())                                         // resume feedback
+        if (tPeriodicSensing_->idle())                                                                                // resume feedback
             tPeriodicSensing_->start(0);
     }
     else {

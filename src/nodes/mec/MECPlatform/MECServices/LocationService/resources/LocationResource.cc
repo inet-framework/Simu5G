@@ -19,10 +19,12 @@
 
 namespace simu5g {
 
-LocationResource::LocationResource() : binder_(nullptr) {
+LocationResource::LocationResource() : binder_(nullptr)
+{
 }
 
-LocationResource::LocationResource(const std::string& baseUri, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs, Binder *binder) : binder_(binder), baseUri_(baseUri) {
+LocationResource::LocationResource(const std::string& baseUri, std::set<cModule *, simu5g::utils::cModule_LessId>& eNodeBs, Binder *binder) : binder_(binder), baseUri_(baseUri)
+{
     for (auto *eNodeB : eNodeBs) {
         CellInfo *cellInfo = check_and_cast<CellInfo *>((eNodeB)->getSubmodule("cellInfo"));
         eNodeBs_.insert({ cellInfo->getMacCellId(), cellInfo });

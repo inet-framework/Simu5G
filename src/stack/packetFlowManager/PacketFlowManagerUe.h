@@ -51,7 +51,8 @@ class PacketFlowManagerUe : public PacketFlowManagerBase
      * The node can have different active connections (LCID) at the same time, hence we need to
      * maintain the status for each of them.
      */
-    struct StatusDescriptor {
+    struct StatusDescriptor
+    {
         MacNodeId nodeId_; // destination node of this LCID
         std::map<unsigned int, PdcpStatus> pdcpStatus_; // a PDCP PDU can be fragmented into many RLC that could be sent and acknowledged at different times (this prevents early removal on acknowledgment)
         std::map<unsigned int, SequenceNumberSet> rlcPdusPerSdu_;  // for each RLC SDU, stores the RLC PDUs where the former was fragmented

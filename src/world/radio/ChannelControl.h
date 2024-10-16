@@ -35,13 +35,15 @@ class AirFrame;
  * also caches neighbor info (which other Radios are within
  * interference distance).
  */
-struct IChannelControl::RadioEntry {
+struct IChannelControl::RadioEntry
+{
     opp_component_ptr<cModule> radioModule;  // the module that registered this radio interface
     cGate *radioInGate = nullptr;  // gate on host module used to receive airframes
     int channel;
     inet::Coord pos; // cached radio position
 
-    struct Compare {
+    struct Compare
+    {
         bool operator()(const RadioRef& lhs, const RadioRef& rhs) const {
             ASSERT(lhs != nullptr);
             ASSERT(rhs != nullptr);

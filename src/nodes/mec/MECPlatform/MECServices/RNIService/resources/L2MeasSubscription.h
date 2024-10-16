@@ -25,7 +25,8 @@ using namespace omnetpp;
 class L2MeasSubscription : public SubscriptionBase
 {
 
-    struct FilterCriteriaL2Meas {
+    struct FilterCriteriaL2Meas
+    {
         std::string appInstanceId; // Fixed spelling from appIstanceId to appInstanceId
         AssociateId associteId_;
         Ecgi ecgi;

@@ -30,8 +30,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-typedef enum
-{
+typedef enum {
     OFF, GREEN, YELLOW, RED
 } TrafficLightState;
 

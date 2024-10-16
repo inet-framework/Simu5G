@@ -822,7 +822,7 @@ void LteMacEnb::handleSelfMessage()
     // UPLINK
     EV << "============================================== UPLINK ==============================================" << endl;
     // init and reset global allocation information
-    if (binder_->getLastUpdateUlTransmissionInfo() < NOW)                                                            // once per TTI, even in case of multicell scenarios
+    if (binder_->getLastUpdateUlTransmissionInfo() < NOW)                                                                                                                      // once per TTI, even in case of multicell scenarios
         binder_->initAndResetUlTransmissionInfo();
 
     enbSchedulerUl_->updateHarqDescs();
@@ -1068,7 +1068,7 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
             nrPdpc = check_and_cast<NRPdcpRrcEnb *>(pdcp);
             std::set<MacNodeId> activePdcpUe;
             nrPdpc->activeUeUL(&activePdcpUe);
-            for (auto ue: activePdcpUe) {
+            for (auto ue : activePdcpUe) {
                 activeUeSet.insert(ue); // active users in RLC
             }
         }

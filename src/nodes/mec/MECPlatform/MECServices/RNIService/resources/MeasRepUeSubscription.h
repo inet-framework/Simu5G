@@ -25,7 +25,8 @@ using namespace omnetpp;
 class MeasRepUeSubscription : public SubscriptionBase
 {
 
-    struct FilterCriteriaAssocTri {
+    struct FilterCriteriaAssocTri
+    {
         std::string appInstanceId; // Fixed spelling from "appIstanceId" to "appInstanceId"
         AssociateId associateId_; // Fixed spelling from "associteId_" to "associateId_"
         Ecgi ecgi;

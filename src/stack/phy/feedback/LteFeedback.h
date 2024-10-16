@@ -30,8 +30,7 @@ class LteFeedback
 {
   protected:
     //! Feedback status type enumerator.
-    enum
-    {
+    enum {
         EMPTY           = 0x0000,
         RANK_INDICATION = 0x0001,
         WB_CQI          = 0x0002,

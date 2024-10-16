@@ -191,7 +191,7 @@ void LteHarqBufferTx::receiveHarqFeedback(Packet *pkt)
     if (fbPduId != unitPduId) {
         // feedback is not for the pdu in this unit, maybe the addressed one was dropped
         EV << "H-ARQ TX buffer: received pdu for acid " << (int)acid << " Codeword " << cw << " not addressed"
-                                                                                             " to the actually contained pdu (maybe it was dropped)" << endl;
+                                                                                              " to the actually contained pdu (maybe it was dropped)" << endl;
         EV << "Received id: " << fbPduId << endl;
         EV << "PDU id: " << unitPduId << endl;
         // todo: comment endsim after tests
@@ -240,7 +240,7 @@ void LteHarqBufferTx::sendSelectedDown()
 
         // debug output
         EV << "\t H-ARQ TX: pdu (id " << pduToSend->getId() << " ) extracted from process " << (int)selectedAcid_ << " "
-                "codeword " << (int)id << " for node with id " << cinfo->getDestId() << endl;
+                                                                                                                     "codeword " << (int)id << " for node with id " << cinfo->getDestId() << endl;
     }
     selectedAcid_ = HARQ_NONE;
 }

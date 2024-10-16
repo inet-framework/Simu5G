@@ -152,9 +152,9 @@ void UmRxEntity::enque(cPacket *pktAux)
 
     // emit statistics
     MacNodeId ueId;
-    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                    // This module is at a UE
+    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                                                                                                                                     // This module is at a UE
         ueId = ownerNodeId_;
-    else           // UL. This module is at the eNB: get the node id of the sender
+    else                    // UL. This module is at the eNB: get the node id of the sender
         ueId = lteInfo->getSourceId();
 
     double tputSample = (double)totalPduRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
@@ -201,8 +201,10 @@ void UmRxEntity::enque(cPacket *pktAux)
 
     // if t_reordering is running
     if (t_reordering_.busy()) {
-        if (rxWindowDesc_.reorderingSno_ <= rxWindowDesc_.firstSnoForReordering_ ||
-            rxWindowDesc_.reorderingSno_ < rxWindowDesc_.firstSno_ || rxWindowDesc_.reorderingSno_ > rxWindowDesc_.highestReceivedSno_)
+        if (
+            rxWindowDesc_.reorderingSno_ <= rxWindowDesc_.firstSnoForReordering_ ||
+            rxWindowDesc_.reorderingSno_ < rxWindowDesc_.firstSno_ || rxWindowDesc_.reorderingSno_ > rxWindowDesc_.highestReceivedSno_
+            )
         {
             t_reordering_.stop();
         }
@@ -232,7 +234,7 @@ void UmRxEntity::moveRxWindow(int pos)
     EV << NOW << " UmRxEntity::moveRxWindow moving forth by " << pos << " locations" << endl;
 
     if (pos <= 0)
-        return;                   // ignore the shift, it is ineffective.
+        return;                                    // ignore the shift, it is ineffective.
 
     if (pos > rxWindowDesc_.windowSize_)
         throw cRuntimeError("AmRxQueue::moveRxWindow(): positions %d win size %d ", pos, rxWindowDesc_.windowSize_);
@@ -267,9 +269,9 @@ void UmRxEntity::toPdcp(Packet *pktAux)
 
     // create a PDCP PDU and send it to the upper layer
     MacNodeId ueId;
-    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                    // This module is at a UE
+    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                                                                                                                                     // This module is at a UE
         ueId = ownerNodeId_;
-    else           // UL. This module is at the eNB: get the node id of the sender
+    else                    // UL. This module is at the eNB: get the node id of the sender
         ueId = lteInfo->getSourceId();
 
     cModule *ue = getRlcByMacNodeId(binder_, ueId, UM);
@@ -410,10 +412,12 @@ void UmRxEntity::reassemble(unsigned int index)
                         EV << NOW << " UmRxEntity::reassemble The PDU includes the last part [" << sduLengthPktLeng << " B] of an SDU [sno=" << sduSno << "]" << endl;
 
                         // check SDU SN
-                        if (buffered_.pkt == nullptr ||
+                        if (
+                            buffered_.pkt == nullptr ||
                             (rlcSdu->getSnoMainPacket() != buffered_.pkt->peekAtFront<LteRlcSdu>()->getSnoMainPacket()) ||
                             (pduSno != (buffered_.currentPduSno + 1)) ||  // first and only SDU in PDU. PduSno must be last+1, otherwise drop SDU.
-                            ignoreFragment)
+                            ignoreFragment
+                            )
                         {
                             if (pduSno != buffered_.currentPduSno) {
                                 EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, Pdu sequence numbers are not in sequence" << endl;
@@ -459,10 +463,12 @@ void UmRxEntity::reassemble(unsigned int index)
                         EV << NOW << " UmRxEntity::reassemble The PDU includes the mid part [" << sduLengthPktLeng << " B] of an SDU [sno=" << sduSno << "]" << endl;
 
                         // check SDU SN
-                        if (buffered_.pkt == nullptr ||
+                        if (
+                            buffered_.pkt == nullptr ||
                             (rlcSdu->getSnoMainPacket() != buffered_.pkt->peekAtFront<LteRlcSdu>()->getSnoMainPacket()) ||
                             (pduSno != (buffered_.currentPduSno + 1)) ||  // first SDU but NOT only in PDU. PduSno must be last+1, otherwise drop SDU.
-                            ignoreFragment)
+                            ignoreFragment
+                            )
                         {
                             if (pduSno != buffered_.currentPduSno) {
                                 EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, Pdu sequence numbers are not in sequence" << endl;
@@ -523,10 +529,12 @@ void UmRxEntity::reassemble(unsigned int index)
                         EV << NOW << " UmRxEntity::reassemble This is the last part [" << sduLengthPktLeng << " B] of an SDU [sno=" << sduSno << "]" << endl;
 
                         // check SDU SN
-                        if (buffered_.pkt == nullptr ||
+                        if (
+                            buffered_.pkt == nullptr ||
                             (rlcSdu->getSnoMainPacket() != buffered_.pkt->peekAtFront<LteRlcSdu>()->getSnoMainPacket()) ||
                             (pduSno != (buffered_.currentPduSno + 1)) ||  // first SDU but NOT only in PDU. PduSno must be last+1, otherwise drop SDU.
-                            ignoreFragment)
+                            ignoreFragment
+                            )
                         {
                             if (pduSno != (buffered_.currentPduSno + 1)) {
                                 EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, Pdu sequence numbers are not in sequence" << endl;
@@ -641,9 +649,9 @@ void UmRxEntity::reassemble(unsigned int index)
 
     // emit statistics
     MacNodeId ueId;
-    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                    // This module is at a UE
+    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                                                                                                                                     // This module is at a UE
         ueId = ownerNodeId_;
-    else           // UL. This module is at the eNB: get the node id of the sender
+    else                    // UL. This module is at the eNB: get the node id of the sender
         ueId = lteInfo->getSourceId();
 
     cModule *ue = getRlcByMacNodeId(binder_, ueId, UM);
@@ -723,8 +731,10 @@ void UmRxEntity::handleMessage(cMessage *msg)
         unsigned int old = rxWindowDesc_.firstSnoForReordering_;
 
         // move to the first missing SN
-        while (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_) == true
-               || rxWindowDesc_.firstSnoForReordering_ < rxWindowDesc_.reorderingSno_)
+        while (
+            received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_) == true
+            || rxWindowDesc_.firstSnoForReordering_ < rxWindowDesc_.reorderingSno_
+            )
         {
             rxWindowDesc_.firstSnoForReordering_++;
             if (rxWindowDesc_.firstSnoForReordering_ == rxWindowDesc_.highestReceivedSno_) // end of the window

@@ -36,7 +36,8 @@ simsignal_t RTVideoStreamingSender::positionSignalXSignal_ = registerSignal("pos
 simsignal_t RTVideoStreamingSender::positionSignalYSignal_ = registerSignal("positionY");
 simsignal_t RTVideoStreamingSender::positionSignalZSignal_ = registerSignal("positionZ");
 
-RTVideoStreamingSender::~RTVideoStreamingSender() {
+RTVideoStreamingSender::~RTVideoStreamingSender()
+{
     cancelAndDelete(selfRTVideoStreamingAppStart_);
     cancelAndDelete(selfRTVideoStreamingAppStop_);
     cancelAndDelete(selfMecAppStart_);
