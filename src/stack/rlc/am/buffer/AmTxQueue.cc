@@ -641,7 +641,7 @@ void AmTxQueue::recvCumulativeAck(const int seqNum)
                << (i + txWindowDesc_.firstSeqNum_)
                << " first sequence n. [" << txWindowDesc_.firstSeqNum_
                << "] "
-                "index [" << i << "] " << endl;
+               "index [" << i << "] " << endl;
 
             // the ACK could have already been received
             if (!(received_.at(i))) {

@@ -184,7 +184,7 @@ TrafficFlowTemplateId TrafficFlowFilter::findTrafficFlow(L3Address srcAddress, L
 
     if (isBaseStation(ownerType_)) {
         if (fastForwarding_ && srcMaster == destMaster)
-            return 0;                                                               // local delivery
+            return 0;                                        // local delivery
 
         return -1;   // send the packet to the PGW/UPF. It will forward the packet to the correct BS
                      // TODO if the BS is within the same core network, there should be a direct tunnel to
