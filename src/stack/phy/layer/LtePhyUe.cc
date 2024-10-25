@@ -135,6 +135,7 @@ void LtePhyUe::initialize(int stage)
 
                 // build a control info
                 cInfo->setSourceId(cellId);
+                // TODO FIXME missing destId:  cInfo->setDestId(destId);
                 cInfo->setTxPower(cellTxPower);
                 cInfo->setCoord(cellPos);
                 cInfo->setFrameType(BROADCASTPKT);
