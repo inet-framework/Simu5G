@@ -65,7 +65,7 @@ module eNodeB
         int masterId @mutable = default(0);  // ID of the master eNodeB. Used in case of Dual Connectivity
         int macNodeId @mutable = default(0); // TODO: this is not a real parameter
         int macCellId @mutable = default(0);  // TODO: this is not a real parameter
-        double txPower @unit(mw) = default(100mw);
+        double txPower @unit(dBm) = default(0dBm);
 
         //# Network Layer specs
         bool hasIpv4 = default(true);
