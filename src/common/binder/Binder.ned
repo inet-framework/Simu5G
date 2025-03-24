@@ -35,7 +35,10 @@ simple Binder
         string packetErrorRate = "1e-2 1e-3 1e-3 1e-6 1e-2 1e-2 1e-3 0 1e-6 1e-4 1e-8 1e-8 1e-4 1e-6 1e-6 1e-3 1e-6 1e-6 1e-6 1e-6 1e-2 1e-6 1e-4 1e-4 1e-5 1e-5 1e-4";
         string maxDataBurstVolume = "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 255 1354 1354 255 1354";
         string defAveragingWindow = "2 2 2 2 2 2 2 0 2 2 2 2 2 0 0 0 0 0 0 0 0 0 2 2 2 2 2";//@unit(s)
-        
+        string RBmin = "5 5 5 5 5 5 5 5 5 5 5 1 1 1 1 1 1 1 1 1 5 5 5 5 5 5 5 5 5 1"; 
+        string PreAllocation = "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1";
+        string Periodicity = "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 10 10 10 10 10";
+
         bool exchangeBuffersOnHandover = default(false);
         @display("i=block/cogwheel");
 }

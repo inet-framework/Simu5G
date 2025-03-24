@@ -45,6 +45,24 @@ class LteMacEnb : public LteMacBase
     /// reference to the background traffic manager
     std::map<double, BackgroundTrafficManager*> bgTrafficManager_;
 
+    // current slot number
+    int slot_nr;
+
+    // current UL slot offset for the UL scheduler
+    int schedule_slot_offset;
+
+     // minimum amount of blocks assigned to guarantee connectivity to the node
+    int min_block_amount;
+
+    // indicates number of blocks granted for CG UEs
+    int cg_blocks;
+
+    // indicates whether CG is enabled
+    bool cg_enabled;
+
+    int cg_offset;
+
+
     /*******************************************************************************************/
 
     /// Buffer for the BSRs
@@ -61,6 +79,11 @@ class LteMacEnb : public LteMacBase
     std::map<double, int> needRtxUl_;
     std::map<double, int> needRtxD2D_;
 
+    // used to indicate if an UE switches to RRC connected state such that a periodic grant should be established
+    std::map<MacNodeId, bool> cg_map_req_initial_grant;
+
+    int PDCCH_slot_ = -1;
+
     /**
      * Reads MAC parameters for eNb and performs initialization.
      */
@@ -76,7 +99,7 @@ class LteMacEnb : public LteMacBase
      * creates scheduling grants (one for each nodeId) according to the Schedule List.
      * It sends them to the  lower layer
      */
-    virtual void sendGrants(std::map<double, LteMacScheduleList>* scheduleList);
+    virtual void sendGrants(std::map<double, LteMacScheduleList>* scheduleList, int slot_offset=-1);
 
     /**
      * macPduMake() creates MAC PDUs (one for each CID)
@@ -144,6 +167,11 @@ class LteMacEnb : public LteMacBase
      * Receives and handles RAC requests
      */
     virtual void macHandleRac(omnetpp::cPacket* pkt) override;
+
+    /*
+     * Receives and handles Scheduling requests
+     */
+    virtual void macHandleSR(omnetpp::cPacket* pkt) override;
 
     /*
      * Update UserTxParam stored in every lteMacPdu when an rtx change this information
@@ -263,6 +291,21 @@ class LteMacEnb : public LteMacBase
             return qosHandler;
         }
 
+    SlotType defineSlotType();
+
+    int getCurrentSlotOffset(){
+        return schedule_slot_offset;
+    }
+
+    int getMinBlockAmount(){ return min_block_amount;}
+
+    int getCGBlocks(){return cg_blocks;}
+
+    bool getCGStatus(){return cg_enabled;}
+
+    int getCGOffset(){return cg_offset; }
+
+    int getSlotNr(){ return slot_nr; }
 
 };
 

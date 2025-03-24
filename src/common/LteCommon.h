@@ -263,6 +263,7 @@ const DeploymentScenarioMapping DeploymentScenarioTable[] = {
     ELEM(URBAN_MACROCELL),
     ELEM(RURAL_MACROCELL),
     ELEM(SUBURBAN_MACROCELL),
+    ELEM(OPTIMAL),
     ELEM(UNKNOW_SCENARIO)
 };
 
@@ -594,6 +595,14 @@ typedef struct {
 } SlotFormat;
 
 typedef struct {
+    bool tdd;
+    unsigned int numDlSlots;
+    unsigned int numUlSlots;
+    unsigned int Periodicity;
+    SlotFormat sharedSlot;
+} TddPattern;
+
+typedef struct {
     double carrierFrequency;
     unsigned int numBands;
     unsigned int firstBand;
@@ -601,9 +610,13 @@ typedef struct {
     BandLimitVector bandLimit;
     NumerologyIndex numerologyIndex;
     SlotFormat slotFormat;
+    TddPattern tddPattern;
 } CarrierInfo;
 typedef std::map<double, CarrierInfo> CarrierInfoMap;
 
+enum SlotType {
+    DL_SLOT = 0, SHARED_SLOT = 1, UL_SLOT = 2, FDD = 3
+};
 
 /*************************************
  * Shortcut for structures using STL

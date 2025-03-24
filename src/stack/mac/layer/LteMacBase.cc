@@ -199,6 +199,11 @@ void LteMacBase::fromPhy(cPacket *pktAux)
         EV << NOW << "Mac::fromPhy: node " << nodeId_ << " Received RAC packet" << endl;
         macHandleRac(pkt);
     }
+    else if (userInfo->getFrameType() == SCHEDULINGREQPKT)
+    {
+        EV << NOW << "Mac::fromPhy: node " << nodeId_ << " Received SchedulingRequest packet" << endl;
+        macHandleSR(pkt);
+    }
     else
     {
         throw cRuntimeError("Unknown packet type %d", (int)userInfo->getFrameType());
@@ -449,6 +454,7 @@ void LteMacBase::initialize(int stage)
         WATCH(nodeId_);
         WATCH_MAP(mbuf_);
         WATCH_MAP(macBuffers_);
+
     }
 }
 

@@ -410,6 +410,15 @@ double LteRealisticChannelModel::computeAngolarAttenuation(double hAngle, double
 
 std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserControlInfo* lteInfo)
 {
+   if (scenario_ == OPTIMAL)
+   {
+        double optimalSinrValue = 30.0; // in dB
+
+        std::vector<double> optimalSnrVector;
+        optimalSnrVector.resize(numBands_, optimalSinrValue);
+
+        return optimalSnrVector;
+   }
    if (useRsrqFromLog_)
    {
        int time = -1, rsrq = oldRsrq_;
@@ -430,7 +439,6 @@ std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserCo
            oldTime_ = simTime().dbl();
            oldRsrq_ = rsrq;
 
-           std::cout << "LteRealisticChannelModel::getSINR - time["<<time<<"] rsrq["<<rsrq<<"]" << endl;
        }
 
        double sinr = rsrqScale_ * (rsrq + rsrqShift_);
@@ -1007,6 +1015,15 @@ std::vector<double> LteRealisticChannelModel::getRSRP(LteAirFrame *frame, UserCo
 
 std::vector<double> LteRealisticChannelModel::getSINR_bgUe(LteAirFrame *frame, UserControlInfo* lteInfo)
 {
+
+   if (scenario_ == OPTIMAL)
+   {
+        double optimalSinrValue = 30.0; // in dB
+        std::vector<double> optimalSnrVector;
+        optimalSnrVector.resize(numBands_, optimalSinrValue);
+
+        return optimalSnrVector;
+   }
    //get tx power
    double recvPower = lteInfo->getTxPower(); // dBm
 
@@ -1427,6 +1444,15 @@ std::vector<double> LteRealisticChannelModel::getRSRP_D2D(LteAirFrame *frame, Us
 
 std::vector<double> LteRealisticChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo* lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId)
 {
+   if (scenario_ == OPTIMAL)
+   {
+        double optimalSinrValue = 30.0; // in dB
+
+        std::vector<double> optimalSnrVector;
+        optimalSnrVector.resize(numBands_, optimalSinrValue);
+
+        return optimalSnrVector;
+   }
    // AttenuationVector::iterator it;
    // Get Tx power
    double recvPower = lteInfo->getD2dTxPower(); // dBm
@@ -1626,6 +1652,15 @@ std::vector<double> LteRealisticChannelModel::getSINR_D2D(LteAirFrame *frame, Us
 
 std::vector<double> LteRealisticChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo* lteInfo_1, MacNodeId destId, Coord destCoord,MacNodeId enbId,const std::vector<double>& rsrpVector)
 {
+   if (scenario_ == OPTIMAL)
+   {
+        double optimalSinrValue = 30.0; // in dB
+
+        std::vector<double> optimalSnrVector;
+        optimalSnrVector.resize(numBands_, optimalSinrValue);
+
+        return optimalSnrVector;
+   }
    std::vector<double> snrVector = rsrpVector;
 
    MacNodeId sourceId = lteInfo_1->getSourceId();
@@ -2032,7 +2067,7 @@ bool LteRealisticChannelModel::isError(LteAirFrame *frame, UserControlInfo* lteI
                               << " node " << id << " remote unit " << dasToA((*it).first)
                               << " Band " << (*jt).first << " SNR " << snr << " CQI " << cqi
                               << " BLER " << bler << " success probability " << successPacket
-                              << " total success probability " << finalSuccess << endl;
+                              << " total success probability " << finalSuccess  << " nTX " << nTx << endl;
        }
    }
    //Compute total error probability
@@ -2073,7 +2108,7 @@ bool LteRealisticChannelModel::isError(LteAirFrame *frame, UserControlInfo* lteI
    EV << "This is your lucky day (" << er << " > " << totalPer
            << ") -> Receive AirFrame." << endl;
 
-   return true;
+   return true; 
 }
 
 bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo* lteInfo, const std::vector<double>& rsrpVector)
@@ -2208,7 +2243,7 @@ bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo* 
               << " node " << id << " remote unit " << dasToA((*it).first)
               << " Band " << (*jt).first << " SNR " << snr << " CQI " << cqi
               << " BLER " << bler << " success probability " << successPacket
-              << " total success probability " << finalSuccess << endl;
+              << " total success probability " << finalSuccess << " nTX " << nTx << endl;
        }
    }
    // Compute total error probability
@@ -2280,6 +2315,9 @@ void LteRealisticChannelModel::computeLosProbability(double d,
        else
            p = exp(-1 * (d - 10) / 1000);
        break;
+   case OPTIMAL:
+       p = 0;
+       break;
    default:
        throw cRuntimeError("Wrong path-loss scenario value %d", scenario_);
    }
@@ -2310,6 +2348,9 @@ double LteRealisticChannelModel::computePathLoss(double distance, double dbp, bo
         break;
     case SUBURBAN_MACROCELL:
         pathLoss = computeSubUrbanMacro(distance, dbp, los);
+        break;
+    case OPTIMAL:
+        pathLoss = 0;
         break;
     default:
         throw cRuntimeError("Wrong value %d for path-loss scenario", scenario_);
@@ -2537,6 +2578,7 @@ double LteRealisticChannelModel::getStdDev(bool dist, MacNodeId nodeId)
        else
            return 8.;
        break;
+   case OPTIMAL:
    default:
        throw cRuntimeError("Wrong path-loss scenario value %d", scenario_);
    }

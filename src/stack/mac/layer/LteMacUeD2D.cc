@@ -517,7 +517,6 @@ LteMacUeD2D::macHandleGrant(cPacket* pktAux)
 
     auto userInfo = pkt->getTag<UserControlInfo>();
     double carrierFrequency = userInfo->getCarrierFrequency();
-    EV << NOW << " LteMacUeD2D::macHandleGrant - Direction: " << dirToA(grant->getDirection()) << " Carrier: " << carrierFrequency << endl;
 
     // delete old grant
     if (schedulingGrant_.find(carrierFrequency) != schedulingGrant_.end() && schedulingGrant_[carrierFrequency]!=nullptr)

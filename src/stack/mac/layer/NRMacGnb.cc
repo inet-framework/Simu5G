@@ -37,6 +37,7 @@ void NRMacGnb::initialize(int stage)
         }
        //enbSchedulerDl_ = check_and_cast<LteSchedulerEnbDl*>(new LteSchedulerEnbDl());
         //enbSchedulerDl_->initialize(DL, this);
+        PDCCH_slot_ = par("PDCCH_slot").intValue();
     }
 
 }
@@ -60,6 +61,13 @@ void NRMacGnb::handleMessage(cMessage *msg) {
             flushHarqBuffers();
             delete msg;
             return;
+        }
+        else if (strcmp(msg->getName(), "ttiTick_") == 0 && cellInfo_->tddUsed() == true){
+            if (slot_nr == ((cellInfo_->getTddPattern().Periodicity) - 1)){
+                slot_nr = 0;
+            }
+            else
+                slot_nr++;
         }
     }
 

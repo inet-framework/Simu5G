@@ -30,7 +30,11 @@ void LteChannelModel::initialize(int stage)
         if (cInfo != NULL)   // cInfo is NULL on UEs
         {
             cellInfo_ = check_and_cast<CellInfo*>(cInfo);
-            cellInfo_->registerCarrier(carrierFrequency_, numBands_, componentCarrier_->getNumerologyIndex());
+            cellInfo_->registerCarrier(carrierFrequency_, numBands_, componentCarrier_->getNumerologyIndex(),
+                                       componentCarrier_->isTddEnabled(),
+                                       componentCarrier_->getTddNumSymbolsDl(),componentCarrier_->getTddNumSymbolsUl(),
+                                       componentCarrier_->getTddNumSlotsDl(), componentCarrier_->getTddNumSlotsUl(),
+                                       componentCarrier_->getTddPeriodicity());
         }
     }
 }

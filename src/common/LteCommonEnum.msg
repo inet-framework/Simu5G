@@ -169,7 +169,8 @@ enum DeploymentScenario
     URBAN_MACROCELL = 2;
     RURAL_MACROCELL = 3;
     SUBURBAN_MACROCELL = 4;
-    UNKNOW_SCENARIO = 5;
+    OPTIMAL = 5;
+    UNKNOW_SCENARIO = 6;
 };
 
 
@@ -198,7 +199,8 @@ enum LtePhyFrameType
     GRANTPKT = 5;
     RACPKT = 6;
     D2DMODESWITCHPKT = 7;
-    UNKNOWN_TYPE = 8;
+    SCHEDULINGREQPKT = 8;
+    UNKNOWN_TYPE = 9;
 };
 
 

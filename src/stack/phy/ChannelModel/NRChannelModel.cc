@@ -122,6 +122,9 @@ void NRChannelModel::computeLosProbability(double d, MacNodeId nodeId)
        else
            p = exp(-1 * (d - 10) / 1000);
        break;
+   case OPTIMAL:
+        p = 0;
+        break;
    default:
        LteRealisticChannelModel::computeLosProbability(d,nodeId);
        return;
@@ -151,6 +154,9 @@ double NRChannelModel::computePathLoss(double threeDimDistance, double twoDimDis
         break;
     case RURAL_MACROCELL:
         pathLoss = computeRuralMacro(threeDimDistance, twoDimDistance, los);
+        break;
+    case OPTIMAL:
+        pathLoss = 0;
         break;
     default:
         return LteRealisticChannelModel::computePathLoss(twoDimDistance, 0.0, los);

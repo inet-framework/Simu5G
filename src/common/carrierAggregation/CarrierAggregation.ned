@@ -44,5 +44,8 @@ simple ComponentCarrier
     bool useTdd = default(false);
     int tddNumSymbolsDl = default(7);
     int tddNumSymbolsUl = default(7);
+    int tddNumSlotsDl 	= default(6);
+    int tddNumSlotsUl 	= default(6);
+    int tddPatternPeriodicity = default(10); // is defined in terms of slots --> has to be checked!
 }
 

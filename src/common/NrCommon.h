@@ -25,7 +25,7 @@ public:
     QosCharacteristic() {
     }
     QosCharacteristic(ResourceType resType, unsigned short priorityLevel, double PDB, double PER, uint16_t DMDBV, uint16_t defAveragingWindow) :
-            resType(resType), priorityLevel(priorityLevel), PDB(PDB), PER(PER), DMDBV(DMDBV), defAveragingWindow(defAveragingWindow) {
+            resType(resType), priorityLevel(priorityLevel), PDB(PDB), PER(PER), DMDBV(DMDBV), defAveragingWindow(defAveragingWindow){
         ASSERT(priorityLevel >= 0 && priorityLevel <= 127);
         ASSERT(DMDBV >= 0 && DMDBV <= 4095);
         ASSERT(defAveragingWindow >= 0 && defAveragingWindow <= 4095);
@@ -35,6 +35,9 @@ public:
     unsigned short priorityLevel; // TS 38.413, 9.3.1.84, 1...127
     double PDB; //Packet Delay Budget, in milliseconds,
     double PER; //Packet Error Rate
+    int RBmin; // Min amount of RBs
+    bool PreAllocationEnabled; 
+    int periodicity;
     uint16_t DMDBV; //Default Maximum Data Burst Volume, in Bytes, 0...4095, 38.413, 9.3.1.83
     uint16_t defAveragingWindow; // in milliseconds, 38.413, 9.3.1.82, 0...4095
 
@@ -48,6 +51,18 @@ public:
 
     double getPer(){
         return PER;
+    }
+
+    double getMinRB(){
+        return RBmin;
+    }
+
+    bool getPreAllocation(){
+        return PreAllocationEnabled;
+    }
+
+    bool getPeriodicity(){
+        return periodicity;
     }
 };
 

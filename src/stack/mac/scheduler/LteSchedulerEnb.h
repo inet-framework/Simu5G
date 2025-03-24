@@ -368,7 +368,7 @@ class LteSchedulerEnb
      * implementing the given discipline.
      * @param discipline scheduler discipline
      */
-    LteScheduler* getScheduler(SchedDiscipline discipline);
+    LteScheduler* getScheduler(SchedDiscipline discipline, Direction dir);
 };
 
 #endif // _LTE_LTESCHEDULERENB_H_

@@ -159,8 +159,15 @@ bool LteSchedulerEnbUl::racschedule(double carrierFrequency, BandLimitVector* ba
             //try to allocate one block to selected UE on at least one logical band of MACRO antenna, first codeword
 
             const unsigned int cw =0;
-            const unsigned int blocks =1;
 
+            int blocks = 0;
+
+            if (mac_->getCGStatus() == true)
+                blocks = mac_->getCGBlocks();
+            else{    
+                blocks = mac_->getMinBlockAmount();
+            }
+            
             bool allocation=false;
 
             unsigned int size = bandLim->size();
@@ -186,7 +193,8 @@ bool LteSchedulerEnbUl::racschedule(double carrierFrequency, BandLimitVector* ba
                         EV << NOW << "LteSchedulerEnbUl::racschedule UE: " << nodeId << "Handled RAC on band: " << b << endl;
 
                         allocation=true;
-                        break;
+                        if (racAllocatedBlocks == blocks)
+                            break;
                     }
                 }
             }
@@ -1086,8 +1094,7 @@ LteSchedulerEnbUl::scheduleBgRtx(MacNodeId bgUeId, double carrierFrequency, Code
     return 0;
 }
 
-void LteSchedulerEnbUl::removePendingRac(MacNodeId nodeId)
-{
+void LteSchedulerEnbUl::removePendingRac(MacNodeId nodeId){
     std::map<double, RacStatus>::iterator it=racStatus_.begin();
     for (; it != racStatus_.end(); ++it)
     {

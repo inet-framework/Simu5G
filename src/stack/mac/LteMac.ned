@@ -50,6 +50,24 @@ simple LteMacBase like LteMac {
         
         //# Statistics display (in GUI)
         bool statDisplay = default(false);
+        
+        // enables configured grant
+        //string CG_enabled = default("false");
+        bool CG_enabled = default(false);
+
+        // set amount of blocks for configured grant
+        //string CGBlocks = default("1");
+        int CGBlocks = default(1);
+
+        // default slot offset of cg slot
+        int CGOffset = default(0);
+        
+         // minimum amount of blocks which are granted after a RAC or SR
+        int MinBlockAmount = default(1);
+        
+         // slot for the gNB to schedule the uplink grants in case a TDD pattern is defined
+        int PDCCH_slot = default(1);
+        
          
         //#
         //# Statistics recording
@@ -222,7 +240,7 @@ simple LteMacEnb extends LteMacBase {
       
         // number of eNodeBs - set to 0 if unknown
         int eNodeBCount = default(0);
-        
+       
         //#
         //# eNb Scheduler Parameters
         //#    

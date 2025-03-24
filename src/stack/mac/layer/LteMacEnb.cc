@@ -27,6 +27,7 @@
 #include "stack/mac/amc/NRAmc.h"
 #include "stack/mac/amc/UserTxParams.h"
 #include "stack/mac/packet/LteRac_m.h"
+#include "stack/mac/packet/LteSchedulingRequest_m.h"
 #include "stack/mac/packet/LteMacSduRequest.h"
 #include "stack/phy/layer/LtePhyBase.h"
 #include "stack/rlc/packet/LteRlcDataPdu.h"
@@ -155,6 +156,7 @@ void LteMacEnb::initialize(int stage)
         eNodeBCount = par("eNodeBCount");
         WATCH(numAntennas_);
         WATCH_MAP(bsrbuf_);
+
     }
     else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT)
     {
@@ -235,6 +237,10 @@ void LteMacEnb::initialize(int stage)
         ttiPeriod_ = binder_->getSlotDurationFromNumerologyIndex(cellInfo_->getMaxNumerologyIndex());
         scheduleAt(NOW + ttiPeriod_, ttiTick_);
 
+        if (cellInfo_->tddUsed() == true){
+            slot_nr = 0;
+        }
+
         const CarrierInfoMap* carriers = cellInfo_->getCarrierInfoMap();
         CarrierInfoMap::const_iterator it = carriers->begin();
         for ( ; it != carriers->end(); ++it)
@@ -249,6 +255,11 @@ void LteMacEnb::initialize(int stage)
         // set the periodicity for each scheduler
         enbSchedulerDl_->initializeSchedulerPeriodCounter(cellInfo_->getMaxNumerologyIndex());
         enbSchedulerUl_->initializeSchedulerPeriodCounter(cellInfo_->getMaxNumerologyIndex());
+
+        min_block_amount = par("MinBlockAmount");
+        cg_blocks = par("CGBlocks");
+        cg_enabled = par("CG_enabled");
+        cg_offset = par("CGOffset");
     }
 }
 
@@ -370,9 +381,9 @@ void LteMacEnb::bufferizeBsr(MacBsr* bsr, MacCid cid)
     }
 }
 
-void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList>* scheduleList)
+void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList>* scheduleList, int slot_offset)
 {
-    EV << NOW << "LteMacEnb::sendGrants " << endl;
+    EV << NOW << "LteMacEnb::sendGrants ----------[Start]-------------------" << endl;
 
     std::map<double, LteMacScheduleList>::iterator cit = scheduleList->begin();
     for (; cit != scheduleList->end(); ++cit)
@@ -429,9 +440,14 @@ void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList>* scheduleList)
             if (granted == 0)
             continue; // avoiding transmission of 0 grant (0 grant should not be created)
 
+
             EV << NOW << " LteMacEnb::sendGrants Node[" << getMacNodeId() << "] - "
                << granted << " blocks to grant for user " << nodeId << " on "
                << codewords << " codewords. CW[" << cw << "\\" << otherCw << "] carrier[" << cit->first << "]" << endl;
+
+            // avoiding a periodic grant although the node already has one
+            if (cg_map_req_initial_grant[nodeId] == false && getCGStatus() == true)
+                return;
 
             // TODO: change to tag instead chunk
             // TODO Grant is set aperiodic as default
@@ -444,20 +460,26 @@ void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList>* scheduleList)
             // set total granted blocks
             grant->setTotalGrantedBlocks(granted);
 
+            // set slot offset 
+            // is != -1 if tddpattern is used
+            if (slot_offset != -1){
+                grant->setSlotOffset(slot_offset);
+            }
+
             pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
             pkt->addTagIfAbsent<UserControlInfo>()->setDestId(nodeId);
             pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(GRANTPKT);
             pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(cit->first);
 
+            
             // get and set the user's UserTxParams
             const UserTxParams& ui = getAmc()->computeTxParams(nodeId, UL,cit->first);
             UserTxParams* txPara = new UserTxParams(ui);
             grant->setUserTxParams(txPara);
-
+   
             // acquiring remote antennas set from user info
             const std::set<Remote>& antennas = ui.readAntennaSet();
             std::set<Remote>::const_iterator antenna_it, antenna_et = antennas.end();
-
             // get bands for this carrier
             const unsigned int firstBand = cellInfo_->getCarrierStartingBand(cit->first);
             const unsigned int lastBand = cellInfo_->getCarrierLastBand(cit->first);
@@ -482,7 +504,6 @@ void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList>* scheduleList)
                 }
 
                 grant->setGrantedCwBytes(cw, grantedBytes);
-                EV << NOW << " LteMacEnb::sendGrants - granting " << grantedBytes << " on cw " << cw << endl;
             }
 
             RbMap map;
@@ -490,6 +511,15 @@ void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList>* scheduleList)
             enbSchedulerUl_->readRbOccupation(nodeId, cit->first, map);
 
             grant->setGrantedBlocks(map);
+
+            // check for UE which should be pre-allocated whether it's got an initial grant
+            if (cg_map_req_initial_grant[nodeId] == true && getCGStatus() == true){
+                grant->setPeriodic(true);
+                grant->setPeriod(5);
+                grant->setExpiration(2147483647);
+                cg_map_req_initial_grant[nodeId] = false;
+            }
+
             pkt->insertAtFront(grant);
 
             /*
@@ -506,17 +536,19 @@ void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList>* scheduleList)
             sendLowerPackets(pkt);
         }
     }
+    EV << NOW << "LteMacEnb::sendGrants ----------[End]-------------------" << endl;
 }
 
 void LteMacEnb::macHandleRac(cPacket* pktAux)
 {
-    EV << NOW << " LteMacEnb::macHandleRac" << endl;
 
     auto pkt = check_and_cast<Packet *>(pktAux);
 
     auto racPkt = pkt->removeAtFront<LteRac>();
     auto uinfo = pkt->getTagForUpdate<UserControlInfo>();
 
+    EV << "uinfo->getSourceId()" << uinfo->getSourceId() << endl;
+    cg_map_req_initial_grant[uinfo->getSourceId()] = true;
     enbSchedulerUl_->signalRac(uinfo->getSourceId(), uinfo->getCarrierFrequency());
 
     // TODO all RACs are marked are successful
@@ -528,6 +560,19 @@ void LteMacEnb::macHandleRac(cPacket* pktAux)
     uinfo->setDirection(DL);
 
     sendLowerPackets(pkt);
+}
+
+void LteMacEnb::macHandleSR(cPacket* pktAux)
+{
+    auto pkt = check_and_cast<Packet *>(pktAux);
+
+    auto racPkt = pkt->removeAtFront<LteSchedulingRequest>();
+    auto uinfo = pkt->getTagForUpdate<UserControlInfo>();
+
+    enbSchedulerUl_->signalRac(uinfo->getSourceId(), uinfo->getCarrierFrequency());
+
+    delete pkt;
+    pktAux = NULL;
 }
 
 void LteMacEnb::macPduMake(MacCid cid)
@@ -666,7 +711,6 @@ void LteMacEnb::macPduMake(MacCid cid)
 
             auto macPacket = pit->second;
             auto header = macPacket->peekAtFront<LteMacPdu>();
-            EV << "LteMacBase: pduMaker created PDU: " << macPacket->str() << endl;
 
             // pdu transmission here (if any)
             if (txList.second.empty())
@@ -869,13 +913,13 @@ bool LteMacEnb::bufferizePacket(cPacket* pktAux)
 
 void LteMacEnb::handleUpperMessage(cPacket* pktAux)
 {
-	auto pkt = check_and_cast<Packet *>(pktAux);
+    auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTag<FlowControlInfo>();
     MacCid cid = idToMacCid(lteInfo->getDestId(), lteInfo->getLcid());
 
     bool isLteRlcPduNewData = checkIfHeaderType<LteRlcPduNewData>(pkt);
 
-	bool packetIsBuffered = bufferizePacket(pkt);  // will buffer (or destroy if queue is full)
+    bool packetIsBuffered = bufferizePacket(pkt);  // will buffer (or destroy if queue is full)
 
     if(!isLteRlcPduNewData && packetIsBuffered) {
         // new MAC SDU has been received (was requested by MAC, no need to notify scheduler)
@@ -888,6 +932,21 @@ void LteMacEnb::handleUpperMessage(cPacket* pktAux)
 }
 
 
+SlotType LteMacEnb::defineSlotType(){
+    if (slot_nr < cellInfo_->getTddPattern().numDlSlots){
+        EV_INFO << "Current Slot: DL, slot number " << slot_nr << endl;
+        return DL_SLOT;
+    }
+    else if (slot_nr < (cellInfo_->getTddPattern().Periodicity - cellInfo_->getTddPattern().numUlSlots)){
+        EV_INFO << "Current Slot: Shared, slot number " << slot_nr << endl;
+        return SHARED_SLOT;
+    }
+    else{
+        EV_INFO << "Current Slot: UL, slot number " << slot_nr << endl;
+        return UL_SLOT;
+    }
+}
+
 void LteMacEnb::handleSelfMessage()
 {
     /***************
@@ -895,68 +954,156 @@ void LteMacEnb::handleSelfMessage()
      ***************/
 
     EV << "-----" << "ENB MAIN LOOP -----" << endl;
-
     /* Reception */
 
-    // extract pdus from all harqrxbuffers and pass them to unmaker
+    // in case of carrier aggregation with TDD --> all component carriers have to use the same TDD pattern
+    // mix of TDD and FDD is not considered here!
+    if (cellInfo_->tddUsed() == true){
+        cellInfo_->setCurrentSlotType(defineSlotType());
+    }
+
     auto mit = harqRxBuffers_.begin();
     auto met = harqRxBuffers_.end();
-    for (; mit != met; mit++)
-    {
-        if (getNumerologyPeriodCounter(binder_->getNumerologyIndexFromCarrierFreq(mit->first)) > 0)
-            continue;
 
-        auto hit = mit->second.begin();
-        auto het = mit->second.end();
-        for (; hit != het; hit++)
+    // Only in DL/S slot:
+    // Check received frames
+    // transmit ACK/NACK and forward to upper layer
+    if (cellInfo_->getCurrentSlotType() != UL_SLOT || cellInfo_->tddUsed() == false){
+        for (; mit != met; mit++)
         {
-            auto pduList = hit->second->extractCorrectPdus();
-            while (!pduList.empty())
+            if (getNumerologyPeriodCounter(binder_->getNumerologyIndexFromCarrierFreq(mit->first)) > 0)
+                continue;
+
+            auto hit = mit->second.begin();
+            auto het = mit->second.end();
+            for (; hit != het; hit++)
             {
-                auto pdu = pduList.front();
-                pduList.pop_front();
-                macPduUnmake(pdu);
+                auto pduList = hit->second->extractCorrectPdus();
+                while (!pduList.empty())
+                {
+                    auto pdu = pduList.front();
+                    pduList.pop_front();
+                    macPduUnmake(pdu);
+                }
             }
         }
     }
 
-    /*UPLINK*/
     EV << "============================================== UPLINK ==============================================" << endl;
-    // init and reset global allocation information
-    if (binder_->getLastUpdateUlTransmissionInfo() < NOW)  // once per TTI, even in case of multicell scenarios
-        binder_->initAndResetUlTransmissionInfo();
 
-    enbSchedulerUl_->updateHarqDescs();
+    // if TDD pattern is used and scheduling slot of gnb --> schedule grants
+    if (PDCCH_slot_ == slot_nr && cellInfo_->tddUsed() == true){
 
-    std::map<double, LteMacScheduleList>* scheduleListUl = enbSchedulerUl_->schedule();
-    // send uplink grants to PHY layer
-    sendGrants(scheduleListUl);
+        // if shared slot contains UL symbols
+        if (cellInfo_->getTddPattern().sharedSlot.numUlSymbols > 0){
+            cellInfo_->setSlotTypeForULSchedule(SHARED_SLOT);
+            int slot_offset = 0;
+            for (int i = 0; i < cellInfo_->getTddPattern().numUlSlots + 1; i++){
+
+                if (cg_enabled == true && cg_offset - cellInfo_->getTddPattern().numDlSlots != i){
+                    if (i < cellInfo_->getTddPattern().numUlSlots + 1){
+                        cellInfo_->setSlotTypeForULSchedule(UL_SLOT);
+                        slot_offset++;
+                    }
+                    else{
+                        cellInfo_->setSlotTypeForULSchedule(SHARED_SLOT);
+                        slot_offset = 0;
+                    }
+                    continue;
+                }
+
+                // reset  UL transmission info
+                binder_->initAndResetUlTransmissionInfo();
+
+                enbSchedulerUl_->updateHarqDescs();
+
+                std::map<double, LteMacScheduleList>* scheduleListUl = enbSchedulerUl_->schedule();
+
+                sendGrants(scheduleListUl, slot_offset);
+
+                if (i < cellInfo_->getTddPattern().numUlSlots + 1){
+                    cellInfo_->setSlotTypeForULSchedule(UL_SLOT);
+                    slot_offset++;
+                }
+                else{
+                    cellInfo_->setSlotTypeForULSchedule(SHARED_SLOT);
+                    slot_offset = 0;
+                }
+            }
+        }
+        // TDD and scheduling slot
+        else {
+            cellInfo_->setSlotTypeForULSchedule(UL_SLOT);
+            int slot_offset = 1;
+            for (int i = 1; i < cellInfo_->getTddPattern().numUlSlots + 1; i++){
+
+                if (cg_enabled == true && cg_offset - cellInfo_->getTddPattern().numDlSlots != i){
+                    if (i < cellInfo_->getTddPattern().numUlSlots + 1){
+                        slot_offset++;
+                    }
+                    else{
+                        slot_offset = 1;
+                    }
+                    continue;
+                }
+
+                binder_->initAndResetUlTransmissionInfo();
+
+                enbSchedulerUl_->updateHarqDescs();
+
+                std::map<double, LteMacScheduleList>* scheduleListUl = enbSchedulerUl_->schedule();
+                sendGrants(scheduleListUl, slot_offset);
+
+                if (i < cellInfo_->getTddPattern().numUlSlots + 1){
+                    slot_offset++;
+                }
+                else{
+                    slot_offset = 1;
+                }
+            }
+        }
+    }
+
+    // FDD
+    else if(cellInfo_->tddUsed() == false){
+        if (binder_->getLastUpdateUlTransmissionInfo() < NOW)  // once per TTI, even in case of multicell scenarios
+            binder_->initAndResetUlTransmissionInfo();
+
+        enbSchedulerUl_->updateHarqDescs();
+
+        std::map<double, LteMacScheduleList>* scheduleListUl = enbSchedulerUl_->schedule();
+        // send uplink grants to PHY layer
+        sendGrants(scheduleListUl);
+    }
+
+
     EV << "============================================ END UPLINK ============================================" << endl;
 
-    EV << "============================================ DOWNLINK ==============================================" << endl;
-    /*DOWNLINK*/
+    if ((cellInfo_->getCurrentSlotType() != UL_SLOT) || cellInfo_->tddUsed() == false){
+        EV << "============================================= DOWNLINK =============================================" << endl;
+        // use this flag to enable/disable scheduling...don't look at me, this is very useful!!!
+        bool activation = true;
 
-    // use this flag to enable/disable scheduling...don't look at me, this is very useful!!!
-    bool activation = true;
-
-    if (activation)
-    {
-        // clear previous schedule list
-        if (scheduleListDl_ != nullptr)
+        if (activation)
         {
-            std::map<double, LteMacScheduleList>::iterator cit = scheduleListDl_->begin();
-            for (; cit != scheduleListDl_->end(); ++cit)
-                cit->second.clear();
-            scheduleListDl_->clear();
+            // clear previous schedule list
+            if (scheduleListDl_ != nullptr)
+            {
+                std::map<double, LteMacScheduleList>::iterator cit = scheduleListDl_->begin();
+                for (; cit != scheduleListDl_->end(); ++cit)
+                    cit->second.clear();
+                scheduleListDl_->clear();
+            }
+
+            // perform Downlink scheduling
+            scheduleListDl_ = enbSchedulerDl_->schedule();
+
+            // requests SDUs to the RLC layer
+            macSduRequest();
         }
-
-        // perform Downlink scheduling
-        scheduleListDl_ = enbSchedulerDl_->schedule();
-
-        // requests SDUs to the RLC layer
-        macSduRequest();
+        EV << "========================================== END DOWNLINK ============================================" << endl;
     }
-    EV << "========================================== END DOWNLINK ============================================" << endl;
+
 
     // purge from corrupted PDUs all Rx H-HARQ buffers for all users
     for (mit = harqRxBuffers_.begin(); mit != met; mit++)
@@ -969,12 +1116,12 @@ void LteMacEnb::handleSelfMessage()
         for (; hit != het; hit++)
             hit->second->purgeCorruptedPdus();
     }
-
     // Message that triggers flushing of Tx H-ARQ buffers for all users
     // This way, flushing is performed after the (possible) reception of new MAC PDUs
     cMessage* flushHarqMsg = new cMessage("flushHarqMsg");
     flushHarqMsg->setSchedulingPriority(1);        // after other messages
     scheduleAt(NOW, flushHarqMsg);
+
 
     decreaseNumerologyPeriodCounter();
 
@@ -1086,7 +1233,6 @@ void LteMacEnb::updateUserTxParam(cPacket* pktAux)
     LteSchedulerEnb* scheduler = ((dir == DL) ? (LteSchedulerEnb*) enbSchedulerDl_ : (LteSchedulerEnb*) enbSchedulerUl_);
 
     int grantedBlocks = scheduler->readRbOccupation(lteInfo->getDestId(), lteInfo->getCarrierFrequency(), rbMap);
-
     lteInfo->setGrantedBlocks(rbMap);
     lteInfo->setTotalGrantedBlocks(grantedBlocks);
 }

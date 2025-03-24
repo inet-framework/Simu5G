@@ -207,7 +207,7 @@ void LteMacEnbD2D::macPduUnmake(cPacket* pktAux)
 
 void LteMacEnbD2D::sendGrants(std::map<double, LteMacScheduleList>* scheduleList)
 {
-    EV << NOW << "LteMacEnbD2D::sendGrants " << endl;
+    EV << NOW << "LteMacEnbD2D::sendGrants START" << endl;
 
     std::map<double, LteMacScheduleList>::iterator cit = scheduleList->begin();
     for (; cit != scheduleList->end(); ++cit)
@@ -331,6 +331,7 @@ void LteMacEnbD2D::sendGrants(std::map<double, LteMacScheduleList>* scheduleList
             sendLowerPackets(pkt);
         }
     }
+    EV << NOW << "LteMacEnbD2D::sendGrants END" << endl;
 }
 
 void LteMacEnbD2D::clearBsrBuffers(MacNodeId ueId)

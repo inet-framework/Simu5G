@@ -302,9 +302,10 @@ void IP2Nic::fromIpBs(Packet * pkt)
 
     for (int i=0;i<UeEthDevice.size();++i){
             if (destAddr.str() == UeEthDevice[i].str()){
-                EV<<"UeEthernetDeviceFound!!!!!"<<endl;
+                EV<<"UeEthernetDeviceFound!!!!! destAddr " << destAddr.str()<<endl;
                 //Ipv4Address ueDefault(binder_->getIpAddressOfTheUeToWhichTsnRadioLinkIsConnected());
-                destId = binder_->getMacNodeId(binder_->getIpAddressOfTheUeToWhichTsnRadioLinkIsConnected());
+                //destId = binder_->getMacNodeId(binder_->getIpAddressOfTheUeToWhichTsnRadioLinkIsConnected());
+                destId = binder_->getMacNodeId(binder_->getIpCellularAddressConnectedToTsnDevice(destAddr));
 
             }
             else{
@@ -368,7 +369,8 @@ void IP2Nic::toStackBs(Packet* pkt)
        if (destAddr.str() == UeEthDevice[i].str()){
            EV<<"UeEthernetDeviceFound!!!!!"<<endl;
            //Ipv4Address ueDefault("10.0.0.19");
-            destAddr = binder_->getIpAddressOfTheUeToWhichTsnRadioLinkIsConnected();
+           // destAddr = binder_->getIpAddressOfTheUeToWhichTsnRadioLinkIsConnected();
+            destAddr = binder_->getIpCellularAddressConnectedToTsnDevice(UeEthDevice[i]);
 
      }
     }

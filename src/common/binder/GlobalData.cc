@@ -36,16 +36,16 @@ void GlobalData::readIpXmlConfig(){
         iface.name = element->getAttribute("name");
         iface.ipAddress = element->getAttribute("ipAddressoftheDestinationNode");
         iface.macAddress = element->getAttribute("macAddressOfTheDestinationNode");
-         iface.interfaceId = element->getAttribute("interfaceIdOfTheUe");
-         if (element->getAttribute("connectedUeIpAddress")){
-             iface.connectedUeIpAddress = element->getAttribute("connectedUeIpAddress");
-         }
-         else{
-             iface.connectedUeIpAddress = "";
-         }
+        iface.interfaceId = element->getAttribute("interfaceIdOfTheUe");
+   //     iface.trafficType = element->getAttribute("trafficTypes");
+        if (element->getAttribute("connectedUeIpAddress")){
+            iface.connectedUeIpAddress = element->getAttribute("connectedUeIpAddress");
+        }
+        else{
+            iface.connectedUeIpAddress = "";
+        }
 
-         this->ueEthInterfaceMapping[iface.ipAddress]=iface;
-
+        this->ueEthInterfaceMapping[iface.ipAddress]=iface;
     }
 }
 void GlobalData::readQosXmlConfiguration(){
@@ -53,14 +53,15 @@ void GlobalData::readQosXmlConfiguration(){
     cXMLElementList trafficElements = root->getChildrenByTagName("TrafficType");
         for (auto& element: trafficElements){
             QosConfiguration qosConfiguration;
+       //     qosConfiguration.index = element->getAttribute("index");
             qosConfiguration.trafficType = element->getAttribute("name");
             qosConfiguration.pcp = element->getAttribute("pcp");
             qosConfiguration.fiveQi = element->getAttribute("fiveQi");
 
-             this->qosMappingTable[qosConfiguration.trafficType]=qosConfiguration;
-
+            this->qosMappingTable[qosConfiguration.trafficType]=qosConfiguration;
         }
 }
+
 int GlobalData::convertPcpToFiveqi(Packet *datagram){
     std::string packetName = datagram->getName();
     size_t found = -1;

@@ -60,6 +60,9 @@ void NRChannelModel_3GPP38_901::computeLosProbability(double d, MacNodeId nodeId
            else
                p = exp(-1 * (d - 49.0) / 211.7);
            break;
+    case OPTIMAL:
+        p = 0;
+        break;
     default:
         NRChannelModel::computeLosProbability(d,nodeId);
         return;
@@ -113,6 +116,9 @@ double NRChannelModel_3GPP38_901::computePathLoss(double threeDimDistance, doubl
     case RURAL_MACROCELL:
         pathLoss = computeRuralMacro(threeDimDistance, twoDimDistance, los);
         break;
+    case OPTIMAL:
+        pathLoss = 0;
+        break;
     default:
         return NRChannelModel::computePathLoss(twoDimDistance, 0.0, los);
     }
@@ -122,6 +128,7 @@ double NRChannelModel_3GPP38_901::computePathLoss(double threeDimDistance, doubl
 
 double NRChannelModel_3GPP38_901::computeUrbanMacro(double threeDimDistance, double twoDimDistance, bool los)
 {
+   EV << "NRChannelModel_3GPP38_901::computeUrbanMacro" << endl;
    if (twoDimDistance < 10)
        twoDimDistance = 10;
 
@@ -175,11 +182,13 @@ double NRChannelModel_3GPP38_901::computeUrbanMacro(double threeDimDistance, dou
 
        pLoss = (pLoss_los > pLoss_nlos) ? pLoss_los : pLoss_nlos;
    }
+   EV << "NRChannelModel_3GPP38_901::computeUrbanMacro" << pLoss << endl;
    return pLoss;
 }
 
 double NRChannelModel_3GPP38_901::computeUrbanMicro(double threeDimDistance, double twoDimDistance, bool los)
 {
+   EV << "NRChannelModel_3GPP38_901::computeUrbanMicro" << endl;
    if (twoDimDistance < 10)
        twoDimDistance = 10;
 
@@ -216,11 +225,13 @@ double NRChannelModel_3GPP38_901::computeUrbanMicro(double threeDimDistance, dou
 
        pLoss = (pLoss_los > pLoss_nlos) ? pLoss_los : pLoss_nlos;
    }
+   EV << "NRChannelModel_3GPP38_901::computeUrbanMicro" << pLoss << endl;
    return pLoss;
 }
 
 double NRChannelModel_3GPP38_901::computeRuralMacro(double threeDimDistance, double twoDimDistance, bool los)
 {
+   EV << "NRChannelModel_3GPP38_901::computeRuralMacro" << endl;
    if (twoDimDistance < 10)
        twoDimDistance = 10;
 
@@ -274,11 +285,13 @@ double NRChannelModel_3GPP38_901::computeRuralMacro(double threeDimDistance, dou
        pLoss = (pLoss_los > pLoss_nlos) ? pLoss_los : pLoss_nlos;
    }
 
+   EV << "NRChannelModel_3GPP38_901::computeRuralMacro" << pLoss << endl;
    return pLoss;
 }
 
 double NRChannelModel_3GPP38_901::computeIndoor(double threeDimDistance, double twoDimDistance, bool los)
 {
+   EV << "NRChannelModel_3GPP38_901::computeIndoor" << endl;
    if (threeDimDistance < 1)
        threeDimDistance = 1;
 
@@ -305,11 +318,13 @@ double NRChannelModel_3GPP38_901::computeIndoor(double threeDimDistance, double 
 
        pLoss = (pLoss_los > pLoss_nlos) ? pLoss_los : pLoss_nlos;
    }
+   EV << "NRChannelModel_3GPP38_901::computeIndoor" << pLoss << endl;
    return pLoss;
 }
 
 double NRChannelModel_3GPP38_901::getStdDev(bool dist, MacNodeId nodeId)
 {
+    EV << "NRChannelModel_3GPP38_901::getStdDev" << endl;
     switch (scenario_)
     {
     case URBAN_MICROCELL:
@@ -325,10 +340,14 @@ double NRChannelModel_3GPP38_901::getStdDev(bool dist, MacNodeId nodeId)
             return 8.03;
         break;
     case URBAN_MACROCELL:
-        if (losMap_[nodeId])
+        if (losMap_[nodeId]){
+            EV << "NRChannelModel_3GPP38_901::getStdDev Urban 4" << endl;
             return 4.;
-        else
+        }
+        else{
+            EV << "NRChannelModel_3GPP38_901::getStdDev Urban 6" << endl;
             return 6.;
+        }
         break;
     case RURAL_MACROCELL:
         if (losMap_[nodeId])
@@ -341,6 +360,10 @@ double NRChannelModel_3GPP38_901::getStdDev(bool dist, MacNodeId nodeId)
         else
             return 8.;
         break;
+    case OPTIMAL:
+        EV << "NRChannelModel_3GPP38_901::getStdDev"<< "Optimal 0" << endl;
+        return 0.0;
+        break;
     default:
         throw cRuntimeError("Wrong path-loss scenario value %d", scenario_);
     }
@@ -349,6 +372,7 @@ double NRChannelModel_3GPP38_901::getStdDev(bool dist, MacNodeId nodeId)
 
 double NRChannelModel_3GPP38_901::computeShadowing(double sqrDistance, MacNodeId nodeId, double speed, bool cqiDl)
 {
+    EV << "NRChannelModel_3GPP38_901::computeShadowing" << endl;
     ShadowFadingMap* actualShadowingMap;
 
     if (cqiDl) // if we are computing a DL CQI we need the Shadowing Map stored on the UE side

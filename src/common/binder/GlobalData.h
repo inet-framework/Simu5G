@@ -27,13 +27,14 @@ struct InterfaceTable{
    std::string ipAddress;
    std::string name;
    std::string connectedUeIpAddress;
-
+   std::string trafficType;
 };
 
 struct QosConfiguration{
     std::string trafficType;
     std::string pcp;
     std::string fiveQi;
+    std::string index;
 };
 class GlobalData : public cSimpleModule
 {

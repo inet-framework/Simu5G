@@ -31,16 +31,25 @@ unsigned int NRAmc::getSymbolsPerSlot(double carrierFrequency, Direction dir)
 {
     unsigned totSymbols = 14;   // TODO get this parameter from CellInfo/Carrier
 
-    // use a function from the binder
     SlotFormat sf = binder_->getSlotFormat(carrierFrequency);
+
     if (!sf.tdd)
         return totSymbols;
-
-    // TODO handle FLEX symbols: so far, they are used as guard (hence, not used for scheduling)
-    if (dir == DL)
-        return sf.numDlSymbols;
-    // else UL
-    return sf.numUlSymbols;
+    else if (dir == DL){
+        if (cellInfo_->getCurrentSlotType() == DL_SLOT)
+            return totSymbols;
+        else if (cellInfo_->getCurrentSlotType() == SHARED_SLOT)
+            return sf.numDlSymbols;
+    }
+    else if (dir == UL){
+        if (cellInfo_->getSlotTypeForULSchedule() == UL_SLOT){
+            return totSymbols;
+        }    
+        else if (cellInfo_->getSlotTypeForULSchedule() == SHARED_SLOT){
+            return sf.numUlSymbols;
+        }
+    }
+    return 0;
 }
 
 unsigned int NRAmc::getResourceElementsPerBlock(unsigned int symbolsPerSlot)
@@ -161,7 +170,7 @@ unsigned int NRAmc::computeReqRbs(MacNodeId id, Band b, Codeword cw, unsigned in
     for(j = 0; j < 110; ++j)   // TODO check number of blocks
         if(computeCodewordTbs(&info, cw, dir, numRe) >= bits)
             break;
-
+        
     // DEBUG
     EV << NOW << " NRAmc::computeReqRbs Occupation: " << bytes << " bytes , CQI : " << info.readCqiVector().at(cw) << " \n";
     EV << NOW << " NRAmc::computeReqRbs Number of RBs: " << j+1 << "\n";

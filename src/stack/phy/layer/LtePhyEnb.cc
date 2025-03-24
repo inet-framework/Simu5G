@@ -133,7 +133,8 @@ bool LtePhyEnb::handleControlPkt(UserControlInfo* lteinfo, LteAirFrame* frame)
     }
     // send H-ARQ feedback up
     if (lteinfo->getFrameType() == HARQPKT
-        || lteinfo->getFrameType() == RACPKT)
+        || lteinfo->getFrameType() == RACPKT
+        || lteinfo->getFrameType() == SCHEDULINGREQPKT)
     {
         handleControlMsg(frame, lteinfo);
         return true;

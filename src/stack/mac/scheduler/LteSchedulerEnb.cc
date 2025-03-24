@@ -69,7 +69,7 @@ LteSchedulerEnb& LteSchedulerEnb::operator=(const LteSchedulerEnb& other)
     LteScheduler* newSched = NULL;
     for ( ; it != carriers->end(); ++it)
     {
-        newSched = getScheduler(discipline);
+        newSched = getScheduler(discipline,direction_);
         newSched->setEnbScheduler(this);
         newSched->setCarrierFrequency(it->second.carrierFrequency);
         newSched->setNumerologyIndex(it->second.numerologyIndex);     // set periodicity for this scheduler according to numerology
@@ -115,7 +115,7 @@ void LteSchedulerEnb::initialize(Direction dir, LteMacEnb* mac)
     CarrierInfoMap::const_iterator it = carriers->begin();
     for ( ; it != carriers->end(); ++it)
     {
-        newSched = getScheduler(discipline);
+        newSched = getScheduler(discipline, dir);
         newSched->setEnbScheduler(this);
         newSched->setCarrierFrequency(it->second.carrierFrequency);
         newSched->setNumerologyIndex(it->second.numerologyIndex);     // set periodicity for this scheduler according to numerology
@@ -878,16 +878,15 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
 
 void LteSchedulerEnb::backlog(MacCid cid)
 {
-    EV << "LteSchedulerEnb::backlog - backlogged data for Logical Cid " << cid << endl;
     if(cid == 1)
         return;
 
-    EV << NOW << "LteSchedulerEnb::backlog CID notified " << cid << endl;
     activeConnectionSet_.insert(cid);
 
     std::vector<LteScheduler*>::iterator it = scheduler_.begin();
-    for ( ; it != scheduler_.end(); ++it)
+    for ( ; it != scheduler_.end(); ++it){ // differentiate 
         (*it)->notifyActiveConnection(cid);
+    }
 }
 
 unsigned int LteSchedulerEnb::readPerUeAllocatedBlocks(const MacNodeId nodeId,
@@ -1021,7 +1020,7 @@ void LteSchedulerEnb::storeScListId(double carrierFrequency,std::pair<unsigned i
      * UTILITIES
      *****************/
 
-LteScheduler* LteSchedulerEnb::getScheduler(SchedDiscipline discipline)
+LteScheduler* LteSchedulerEnb::getScheduler(SchedDiscipline discipline, Direction dir)
 {
     EV << "Creating LteScheduler " << schedDisciplineToA(discipline) << endl;
     auto val = discipline;
@@ -1042,7 +1041,7 @@ LteScheduler* LteSchedulerEnb::getScheduler(SchedDiscipline discipline)
         case ALLOCATOR_BESTFIT:
         return new LteAllocatorBestFit();
         case DQOS:
-        return new DQos();
+        return new DQos(dir);
 
         default:
         throw cRuntimeError("LteScheduler not recognized");

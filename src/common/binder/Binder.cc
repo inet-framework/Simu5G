@@ -34,10 +34,12 @@ void Binder::registerUeConnectedEthernetDevices(){
     for (auto& item: ueEthInterfaceMapping){
         Ipv4Address ipAddress(item.second.ipAddress.c_str());
         ueEthernetConnectedDevices.push_back(ipAddress);
-        if (item.second.connectedUeIpAddress!= ""){
+        /*if (item.second.connectedUeIpAddress!= ""){
             Ipv4Address ip(item.second.connectedUeIpAddress.c_str());
             this->ipAddressOfTheUeToWhichTsnRadioLinkIsConnected = ip;
-        }
+        }*/
+        Ipv4Address cellular_ip(item.second.connectedUeIpAddress.c_str());
+        this->tsnDestAddress_to_cellularAddress[ipAddress] = cellular_ip;
     }
 
 }
@@ -47,7 +49,7 @@ std::vector<inet::Ipv4Address> Binder::getUeConnectedEthernetDevices(){
 GlobalData* Binder::getGlobalDataModule(){
     return this->globalData;
 }
-void Binder::registerCarrier(double carrierFrequency, unsigned int carrierNumBands, unsigned int numerologyIndex, bool useTdd, unsigned int tddNumSymbolsDl, unsigned int tddNumSymbolsUl)
+void Binder::registerCarrier(double carrierFrequency, unsigned int carrierNumBands, unsigned int numerologyIndex, bool useTdd, unsigned int tddNumSymbolsDl, unsigned int tddNumSymbolsUl, unsigned int tddNumSlotsDl, unsigned int tddNumSlotsUl, unsigned int tddPatternPeriodicity)
 {
     CarrierInfoMap::iterator it = componentCarriers_.find(carrierFrequency);
     if (it != componentCarriers_.end() && carrierNumBands <= componentCarriers_[carrierFrequency].numBands)
@@ -61,6 +63,9 @@ void Binder::registerCarrier(double carrierFrequency, unsigned int carrierNumBan
         cInfo.numBands = carrierNumBands;
         cInfo.numerologyIndex = numerologyIndex;
         cInfo.slotFormat = computeSlotFormat(useTdd,tddNumSymbolsDl,tddNumSymbolsUl);
+        cInfo.tddPattern = computeTddPattern(useTdd, tddNumSlotsDl, tddNumSlotsUl, tddPatternPeriodicity, cInfo.slotFormat);
+        if (useTdd)
+            global_tdd_pattern = cInfo.tddPattern;
         componentCarriers_[carrierFrequency] = cInfo;
 
         // update total number of bands in the system
@@ -147,6 +152,7 @@ SlotFormat Binder::computeSlotFormat(bool useTdd, unsigned int tddNumSymbolsDl, 
         sf.numDlSymbols = tddNumSymbolsDl;
         sf.numUlSymbols = tddNumSymbolsUl;
         sf.numFlexSymbols = numSymbols - tddNumSymbolsDl - tddNumSymbolsUl;
+
     }
     return sf;
 }
@@ -160,6 +166,36 @@ SlotFormat Binder::getSlotFormat(double carrierFrequency)
     return it->second.slotFormat;
 }
 
+TddPattern Binder::computeTddPattern(bool useTdd, unsigned int tddNumSlotsDl, unsigned int tddNumSlotsUl, unsigned int tddPatternPeriodicity, SlotFormat sf)
+{
+    TddPattern tf;
+    if (!useTdd)
+    {
+        tf.tdd = false;
+
+        tf.numDlSlots = 0;
+        tf.numUlSlots = 0;
+        tf.Periodicity = 0;
+        tf.sharedSlot = {false, 0, 0, 0}; // tdd, numDlSymbols, numUlSymbols, numFlexSymbols
+    }
+    else
+    {
+        tf.tdd = true;
+        tf.Periodicity = tddPatternPeriodicity;
+        tf.numDlSlots = tddNumSlotsDl;
+        tf.numUlSlots = tddNumSlotsUl;
+        tf.sharedSlot = sf;
+
+        if (tddNumSlotsDl+tddNumSlotsUl > tddPatternPeriodicity-1)
+            throw cRuntimeError("Binder::computeTddPattern - Number of UL and DL slot is not valid - DL[%d] UL[%d]", tddNumSlotsDl,tddNumSlotsUl);
+    }
+    return tf;
+}
+
+TddPattern Binder::getTddPattern()
+{
+    return global_tdd_pattern;
+}
 
 void Binder::unregisterNode(MacNodeId id)
 {

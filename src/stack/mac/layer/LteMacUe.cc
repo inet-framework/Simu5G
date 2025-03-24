@@ -55,7 +55,7 @@ LteMacUe::LteMacUe() :
     currentRacTry_ = 0;
     minRacBackoff_ = 0;
     maxRacBackoff_ = 1;
-    raRespTimer_ = 0;
+    raRespTimer_ = 0; 
     raRespWinStart_ = 3;
     bsrRtxTimer_ = 0;
     bsrRtxTimerStart_ = 40; // TODO check value and make it configurable (see standard 38.331, RetxBSR-Timer)
@@ -236,6 +236,8 @@ void LteMacUe::initialize(int stage)
     else if (stage == inet::INITSTAGE_LAST)
     {
 
+        cg_enabled = par("CG_enabled");
+        
         /* Start TTI tick */
         ttiTick_ = new cMessage("ttiTick_");
         ttiTick_->setSchedulingPriority(1);    // TTI TICK after other messages
@@ -768,6 +770,7 @@ void LteMacUe::handleUpperMessage(cPacket* pktAux)
 
 void LteMacUe::handleSelfMessage()
 {
+    
     EV << "----- UE MAIN LOOP -----" << endl;
 
     // extract pdus from all harqrxbuffers and pass them to unmaker
@@ -813,10 +816,7 @@ void LteMacUe::handleSelfMessage()
     if (noSchedulingGrants)
     {
         EV << NOW << " LteMacUe::handleSelfMessage " << nodeId_ << " NO configured grant" << endl;
-
-        // if necessary, a RAC request will be sent to obtain a grant
         checkRAC();
-
         // TODO ensure all operations done  before return ( i.e. move H-ARQ rx purge before this point)
     }
     else
@@ -997,11 +997,9 @@ LteMacUe::macHandleGrant(cPacket* pktAux)
     auto userInfo = pkt->getTag<UserControlInfo>();
     double carrierFrequency = userInfo->getCarrierFrequency();
 
-    EV << NOW << " LteMacUe::macHandleGrant - Direction: " << dirToA(grant->getDirection()) << " Carrier: " << carrierFrequency << endl;
-
+    int slot_offset = grant->getSlotOffset();
     if (schedulingGrant_.find(carrierFrequency) != schedulingGrant_.end() && schedulingGrant_[carrierFrequency]!=nullptr)
     {
-//        delete schedulingGrant_[carrierFrequency];
         schedulingGrant_[carrierFrequency] = nullptr;
     }
 

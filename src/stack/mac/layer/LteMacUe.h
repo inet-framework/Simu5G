@@ -49,6 +49,7 @@ class LteMacUe : public LteMacBase
 
     bool debugHarq_;
 
+
     // RAC Handling variables
 
     bool racRequested_;
@@ -63,6 +64,8 @@ class LteMacUe : public LteMacBase
 
     unsigned int bsrRtxTimer_;
     unsigned int bsrRtxTimerStart_;
+
+    bool cg_enabled;
 
 
     // BSR handling
@@ -178,7 +181,7 @@ class LteMacUe : public LteMacBase
     /*
      * Access scheduling grant
      */
-    inline const LteSchedulingGrant* getSchedulingGrant(double carrierFrequency) const
+    virtual const LteSchedulingGrant* getSchedulingGrant(double carrierFrequency)
     {
         if (schedulingGrant_.find(carrierFrequency) == schedulingGrant_.end())
             return NULL;

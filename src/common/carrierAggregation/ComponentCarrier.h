@@ -41,6 +41,9 @@ class ComponentCarrier : public omnetpp::cSimpleModule
     bool useTdd_;
     unsigned int tddNumSymbolsDl_;
     unsigned int tddNumSymbolsUl_;
+    unsigned int tddNumSlotsDl_;
+    unsigned int tddNumSlotsUl_;
+    unsigned int tddPatternPeriodicity_;
 
   public:
 
@@ -66,10 +69,12 @@ class ComponentCarrier : public omnetpp::cSimpleModule
 //     */
 //    int getTddSlotFormatIndex() { return tddSlotFormatIndex_; }
 
-    bool isTddEnabled() { return useTdd_; }
-    unsigned int getTddNumSymbolsDl() { return tddNumSymbolsDl_; }
-    unsigned int getTddNumSymbolsUl() { return tddNumSymbolsUl_; }
-
+      bool isTddEnabled() { return useTdd_; }
+      unsigned int getTddNumSymbolsDl() { return tddNumSymbolsDl_; }
+      unsigned int getTddNumSymbolsUl() { return tddNumSymbolsUl_; }
+      unsigned int getTddNumSlotsDl() { return tddNumSlotsDl_; }
+      unsigned int getTddNumSlotsUl() { return tddNumSlotsUl_; }
+      unsigned int getTddPeriodicity() { return tddPatternPeriodicity_; }
 };
 
 #endif

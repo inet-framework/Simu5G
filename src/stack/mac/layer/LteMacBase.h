@@ -424,6 +424,13 @@ class LteMacBase : public omnetpp::cSimpleModule
     }
 
     /*
+     * Receives and handles SRs (eNodeB implementation)
+     */
+    virtual void macHandleSR(omnetpp::cPacket* pkt)
+    {
+    }
+
+    /*
      * Update UserTxParam stored in every lteMacPdu when an rtx change this information
      */
     virtual void updateUserTxParam(omnetpp::cPacket* pkt)=0;

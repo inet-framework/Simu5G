@@ -27,6 +27,8 @@ class LteSchedulingGrant extends inet::FieldsChunk
     unsigned int codewords;
     // granted bytes per codeword
     abstract unsigned int grantedCwBytes[];
+    
+    unsigned int SlotOffset; 
 
     //#  in LteSchedulingGrant.h
     //# const UserTxParams* userTxParams;
