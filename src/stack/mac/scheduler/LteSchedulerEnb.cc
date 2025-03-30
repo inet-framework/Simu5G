@@ -949,7 +949,7 @@ LteScheduler *LteSchedulerEnb::getScheduler(SchedDiscipline discipline)
         case ALLOCATOR_BESTFIT:
             return new LteAllocatorBestFit(binder_);
         case DQOS:
-            return new DQos();
+            return new DQos(binder_);
 
         default:
             throw cRuntimeError("LteScheduler not recognized");

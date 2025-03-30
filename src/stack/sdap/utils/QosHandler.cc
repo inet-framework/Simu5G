@@ -15,6 +15,8 @@
 
 #include "QosHandler.h"
 
+namespace simu5g {
+
 Define_Module(QosHandlerUE);
 Define_Module(QosHandlerGNB);
 Define_Module(QosHandlerUPF);
@@ -78,3 +80,6 @@ void QosHandlerUPF::handleMessage(cMessage *msg) {
 
     //std::cout << "QosHandlerUPF::handleMessage start at " << simTime().dbl() << std::endl;
 }
+
+} // namespace
+

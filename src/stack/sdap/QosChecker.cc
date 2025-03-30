@@ -13,10 +13,8 @@ using namespace std;
 
 using namespace omnetpp;
 using namespace inet;
-QosChecker::QosChecker(){
-    // get reference to the binder
-     binder_ = getBinder();
-}
+
+namespace simu5g {
 
 TrafficFlowTemplateId QosChecker::qosCheckerUpf(const inet::Ipv4Address &destAddr){
     std::vector<inet::Ipv4Address> UeEthDevice = binder_->getUeConnectedEthernetDevices();
@@ -29,8 +27,7 @@ TrafficFlowTemplateId QosChecker::qosCheckerUpf(const inet::Ipv4Address &destAdd
                 return tftId;
             }
         }
-    if (flag == 0)
-            return -1;
+    return -1;
 }
 TrafficFlowTemplateId QosChecker::qosCheckerGnb(const inet::Ipv4Address &destAddr){
     std::vector<inet::Ipv4Address> UeEthDevice = binder_->getUeConnectedEthernetDevices();
@@ -41,7 +38,10 @@ TrafficFlowTemplateId QosChecker::qosCheckerGnb(const inet::Ipv4Address &destAdd
                     return tftId;
                 }
             }
+            return -1;
 }
 TrafficFlowTemplateId QosChecker::qosCheckerUe(const inet::Ipv4Address &destAddr){
-
+    ASSERT(false); // TODO unimplemented
 }
+
+} // namespace

@@ -28,7 +28,7 @@ class NRMacGnb : public LteMacEnbD2D
      */
     void initialize(int stage) override;
 
-    virtual void handleMessage(inet::cMessage* msg);
+    virtual void handleMessage(inet::cMessage* msg) override;
 
     //virtual bool bufferizePacket(inet::cPacket* pkt);
 

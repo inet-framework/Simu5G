@@ -77,7 +77,7 @@ void NRPdcpRrcEnb::fromDataPort(cPacket *pktAux)
      */
 
     LogicalCid mylcid;
-    if ((mylcid = ht_->find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(),
+    if ((mylcid = ht_.find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(),
                 lteInfo->getSrcPort(), lteInfo->getDstPort(),
                 lteInfo->getDirection(), lteInfo->getApplication())) == 0xFFFF)
     //if ((mylcid = ht_->find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection())) == 0xFFFF)
@@ -89,7 +89,7 @@ void NRPdcpRrcEnb::fromDataPort(cPacket *pktAux)
 
         EV << "NRPdcpRrcEnb : Connection not found, new CID created with LCID " << mylcid << "\n";
 
-        ht_->create_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(),
+        ht_.create_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(),
                         lteInfo->getSrcPort(), lteInfo->getDstPort(),
                         lteInfo->getDirection(), mylcid, lteInfo->getApplication());
         //ht_->create_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection(), mylcid);

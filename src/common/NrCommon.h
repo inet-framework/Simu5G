@@ -15,6 +15,8 @@
 #include <list>
 #include <algorithm>
 
+namespace simu5g {
+	
 enum ResourceType {
     GBR, NGBR, DCGBR, UNKNOWN_RES
 //GBR -> Guaranteed Bitrate, NGBR -> NonGBR, DCGBR -> Delay-CriticalGBR
@@ -142,5 +144,7 @@ public:
 protected:
     NRQosParameters *qosParam;
 };
+
+} // namespace
 
 #endif

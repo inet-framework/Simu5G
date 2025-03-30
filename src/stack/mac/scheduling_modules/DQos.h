@@ -13,6 +13,8 @@
 
 #include "stack/mac/scheduler/LteScheduler.h"
 
+namespace simu5g {
+
 class DQos : public virtual LteScheduler
 {
   protected:
@@ -24,10 +26,8 @@ class DQos : public virtual LteScheduler
     Direction dir;
 
   public:
-    DQos(){
-        LteScheduler();
-    }
-    DQos(Direction dir);
+    DQos(Binder *binder) : LteScheduler(binder) {}
+    DQos(Binder *binder, Direction dir) : LteScheduler(binder), dir(dir) {}
 
     virtual void prepareSchedule();
 
@@ -38,5 +38,7 @@ class DQos : public virtual LteScheduler
     virtual void removeActiveConnection(MacCid cid);
 
 };
+
+} // namespace
 
 #endif // _LTE_DQOS_H_

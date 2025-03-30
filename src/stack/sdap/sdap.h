@@ -14,12 +14,14 @@
 
 using namespace omnetpp;
 
+namespace simu5g {
+
 class Sdap{
 public:
      void setTrafficFlowInformation(cPacket *pkt, FlowControlInfo *lteInfo, Binder *binder_);
 
 };
 
-
+} // namespace
 
 #endif /* STACK_SDAP_SDAP_H_ */

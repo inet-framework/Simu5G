@@ -10,6 +10,8 @@
 
 //using namespace inet;
 
+namespace simu5g {
+
 NRQosCharacteristics * NRQosCharacteristics::instance = nullptr;
 ResourceType convertStringToResourceType(std::string type){
 
@@ -24,3 +26,5 @@ ResourceType convertStringToResourceType(std::string type){
     else
         return UNKNOWN_RES;
 }
+
+} // namespace

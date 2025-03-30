@@ -46,10 +46,10 @@ void NRMacGnb::handleMessage(cMessage *msg) {
 
     if (strcmp(msg->getName(), "RRC") == 0) {
         cGate *incoming = msg->getArrivalGate();
-        if (incoming == up_[IN_GATE]) {
+        if (incoming == upInGate_) {
             //from pdcp to mac
             send(msg, gate("lowerLayer$o"));
-        } else if (incoming == down_[IN_GATE]) {
+        } else if (incoming == downInGate_) {
             //from mac to pdcp
             send(msg, gate("upperLayer$o"));
         }

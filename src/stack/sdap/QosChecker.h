@@ -18,6 +18,8 @@
 
 using namespace omnetpp;
 
+namespace simu5g {
+
 struct QoSInfo{
     void QosInfo(Direction dir){
         this->dir = dir;
@@ -42,7 +44,7 @@ struct FiveQI{
 
 class QosChecker{
     // reference to the LTE Binder module
-        Binder* binder_;
+        Binder* binder_ = nullptr;
 public:
     //std::map<std::string, std::array<int,5>> pcpToQfi;
     std::map<std::string, int> pcpToQfi = {
@@ -70,12 +72,13 @@ public:
             {"isochronous", 7},
             {"network control", 8}
         };
-    QosChecker();
+    void setBinder(Binder *binder) { binder_ = binder; }
     TrafficFlowTemplateId qosCheckerUpf(const inet::Ipv4Address &destAddr);
     TrafficFlowTemplateId qosCheckerGnb(const inet::Ipv4Address &destAddr);
     TrafficFlowTemplateId qosCheckerUe(const inet::Ipv4Address &destAddr);
 
 };
 
+} // namespace
 
 #endif /* STACK_SDAP_QOSHANDLERS_H_ */

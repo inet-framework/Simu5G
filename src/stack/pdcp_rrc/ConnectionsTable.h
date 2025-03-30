@@ -139,6 +139,9 @@ void create_entry(uint32_t srcAddr, uint32_t dstAddr,
      * associated LCID (Logical Connection ID).
      */
 
+    /// This is the maximum number of allowed connections * 2
+    static constexpr int TABLE_SIZE = 2048;
+
     /// Hash table of size TABLE_SIZE
     entry_ ht_[TABLE_SIZE];
     std::vector<entry_> entries_;

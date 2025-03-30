@@ -39,6 +39,7 @@ void TrafficFlowFilter::initialize(int stage)
 
     // get reference to the binder
     binder_.reference(this, "binderModule", true);
+    qosChecker.setBinder(binder_);
 
     fastForwarding_ = par("fastForwarding");
 

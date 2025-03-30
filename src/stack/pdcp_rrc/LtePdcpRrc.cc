@@ -117,6 +117,7 @@ void LtePdcpRrcBase::headerDecompress(Packet *pkt)
 
 void LtePdcpRrcBase::setTrafficInformation(cPacket *pkt, inet::Ptr<FlowControlInfo> lteInfo)
 {
+    std::string pktName = pkt->getName();
     if ((strcmp(pkt->getName(), "VoIP")) == 0 || (pktName.find("audio") == 0)) {
         lteInfo->setApplication(VOIP);
         lteInfo->setTraffic(CONVERSATIONAL);

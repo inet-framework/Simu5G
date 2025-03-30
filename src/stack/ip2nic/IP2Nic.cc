@@ -376,7 +376,8 @@ void IP2Nic::toStackBs(Packet *pkt)
             break;
         }
         default: {
-            EV_ERROR << "Unknown transport protocol id." << endl;
+            //EV_ERROR << "Unknown transport protocol id." << endl;
+            throw cRuntimeError("Unknown transport protocol id %d", transportProtocol);
         }
     }
 

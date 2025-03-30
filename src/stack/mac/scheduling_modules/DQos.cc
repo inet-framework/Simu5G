@@ -12,11 +12,8 @@
 
 using namespace omnetpp;
 
-DQos::DQos(Direction dir) {
+namespace simu5g {
 
-    LteScheduler();
-    this->dir = dir;
-}
 void DQos::notifyActiveConnection(MacCid cid) {
     //std::cout << "NRQoSModel::notifyActiveConnection start at " << simTime().dbl() << std::endl;
 
@@ -34,9 +31,6 @@ void DQos::removeActiveConnection(MacCid cid) {
 }
 void DQos::prepareSchedule(){
     EV << NOW << " LteMaxCI::schedule " << eNbScheduler_->mac_->getMacNodeId() << endl;
-
-        if (binder_ == nullptr)
-            binder_ = getBinder();
 
         activeConnectionTempSet_ = *activeConnectionSet_;
 
@@ -86,7 +80,7 @@ void DQos::prepareSchedule(){
                     }
                     MacNodeId nodeId = MacCidToNodeId(cid);
                     OmnetId id = binder_->getOmnetId(nodeId);
-                    if(nodeId == 0 || id == 0){
+                    if(nodeId == NODEID_NONE || id == 0){
                             // node has left the simulation - erase corresponding CIDs
                             activeConnectionSet_->erase(cid);
                             activeConnectionTempSet_.erase(cid);
@@ -153,7 +147,7 @@ void DQos::prepareSchedule(){
                     // query the BgTrafficManager to get the list of backlogged bg UEs to be added to the scorelist. This work
                     // is done by this module itself, so that backgroundTrafficManager is transparent to the scheduling policy in use
 
-                    BackgroundTrafficManager* bgTrafficManager = eNbScheduler_->mac_->getBackgroundTrafficManager(carrierFrequency_);
+                    IBackgroundTrafficManager* bgTrafficManager = eNbScheduler_->mac_->getBackgroundTrafficManager(carrierFrequency_);
                     std::list<int>::const_iterator it = bgTrafficManager->getBackloggedUesBegin(direction_),
                                                      et = bgTrafficManager->getBackloggedUesEnd(direction_);
 
@@ -169,7 +163,7 @@ void DQos::prepareSchedule(){
                         // the cid for a background UE is a 32bit integer composed as:
                         // - the most significant 16 bits are set to the background UE id (BGUE_MIN_ID+index)
                         // - the least significant 16 bits are set to 0 (lcid=0)
-                        bgCid = bgUeId << 16;
+                        bgCid = num(bgUeId) << 16;
 
                         bytesPerBlock = bgTrafficManager->getBackloggedUeBytesPerBlock(bgUeId, direction_);
 
@@ -397,3 +391,5 @@ void DQos::prepareSchedule(){
 void DQos::commitSchedule(){
     *activeConnectionSet_ = activeConnectionTempSet_;
 }
+
+} // namespace
