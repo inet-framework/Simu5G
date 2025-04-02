@@ -12,6 +12,9 @@
 
 package simu5g.stack;
 
+import simu5g.stack.sdap.utils.IQosHandler;
+
+
 //
 // The NRNicEnb module serves as a network interface that provides 5G connectivity
 // within a gNodeB. It implements the data and signaling plane of the NR (New Radio) stack,
