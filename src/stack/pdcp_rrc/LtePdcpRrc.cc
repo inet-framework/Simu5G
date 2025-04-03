@@ -121,35 +121,35 @@ void LtePdcpRrcBase::setTrafficInformation(cPacket *pkt, inet::Ptr<FlowControlIn
     if ((strcmp(pkt->getName(), "VoIP")) == 0 || (pktName.find("audio") == 0)) {
         lteInfo->setApplication(VOIP);
         lteInfo->setTraffic(CONVERSATIONAL);
-        lteInfo->setRlcType((int) par("conversationalRlc"));
+        lteInfo->setRlcType(aToRlcType(par("conversationalRlc")));
         lteInfo->setQfi(qosHandler->getQfi(VOIP));
         lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(VOIP));
     }
     else if ((strcmp(pkt->getName(), "gaming")) == 0) {
         lteInfo->setApplication(GAMING);
         lteInfo->setTraffic(INTERACTIVE);
-        lteInfo->setRlcType((int) par("interactiveRlc"));
+        lteInfo->setRlcType(aToRlcType(par("interactiveRlc")));
         lteInfo->setQfi(qosHandler->getQfi(CBR));
         lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(GAMING));
     }
     else if ((strcmp(pkt->getName(), "VoDPacket") == 0) || pktName.find("video") == 0) {
         lteInfo->setApplication(VOD);
         lteInfo->setTraffic(STREAMING);
-        lteInfo->setRlcType((int) par("streamingRlc"));
+        lteInfo->setRlcType(aToRlcType(par("streamingRlc")));
         lteInfo->setQfi(qosHandler->getQfi(VOD));
         lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(VOD));
     }
     else if ((pktName.find("network control") == 0) || (pktName.find("networkControl") == 0)) {
           lteInfo->setApplication(NETWORK_CONTROL);
           lteInfo->setTraffic(HIGH_PRIORITY_TSN);
-          lteInfo->setRlcType((int) par("interactiveRlc"));
+          lteInfo->setRlcType(aToRlcType(par("interactiveRlc")));
           lteInfo->setQfi(qosHandler->getQfi(NETWORK_CONTROL));
           lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(NETWORK_CONTROL));
       }
     else {
         lteInfo->setApplication(CBR);
         lteInfo->setTraffic(BACKGROUND);
-        lteInfo->setRlcType((int) par("backgroundRlc"));
+        lteInfo->setRlcType(aToRlcType(par("backgroundRlc")));
         lteInfo->setQfi(qosHandler->getQfi(CBR));
         lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(CBR));
     }
