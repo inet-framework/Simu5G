@@ -121,6 +121,7 @@ void LtePdcpRrcBase::headerDecompress(Packet* pkt)
 
 void LtePdcpRrcBase::setTrafficInformation(cPacket* pkt, inet::Ptr<FlowControlInfo> lteInfo)
 {
+    ASSERT(qosHandler != nullptr);
     std::string pktName = pkt->getName();
     if ((strcmp(pkt->getName(), "VoIP")) == 0 || (pktName.find("audio") == 0))
     {
@@ -393,23 +394,23 @@ void LtePdcpRrcBase::initialize(int stage)
         if(getParentModule()->findSubmodule("qosHandlerGnb")!= -1)
         {
             EV << "LtePdcpRrcBase::initialize - QosHandlerGNB present" << endl;
-            try{
+            // try{
                qosHandler = check_and_cast<QosHandlerGNB *> (getParentModule()->getSubmodule("qosHandlerGnb"));
-            }
-            catch(...){
-                //EV << "LtePdcpRrcBase::initialize - QosHandlerUE present" << endl;
-            }
+            // }
+            // catch(...){
+            //     //EV << "LtePdcpRrcBase::initialize - QosHandlerUE present" << endl;
+            // }
 
         }
         if(getParentModule()->findSubmodule("qosHandlerUe")!= -1)
         {
-            try{
+            // try{
                 EV << "LtePdcpRrcBase::initialize - QosHandlerUE present" << endl;
                qosHandler = check_and_cast<QosHandlerUE *> (getParentModule()->getSubmodule("qosHandlerUe"));
-            }
-            catch (...){
-                //EV << "LtePdcpRrcBase::initialize - QosHandlerGNB present" << endl;
-            }
+            // }
+            // catch (...){
+            //     //EV << "LtePdcpRrcBase::initialize - QosHandlerGNB present" << endl;
+            // }
 
         }
 
