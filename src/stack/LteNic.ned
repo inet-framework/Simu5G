@@ -28,6 +28,7 @@ import simu5g.stack.handoverManager.LteHandoverManager;
 import simu5g.stack.dualConnectivityManager.DualConnectivityManager;
 import simu5g.stack.phy.ChannelModel.LteChannelModelInterface;
 import simu5g.x2.LteX2Manager;
+import simu5g.stack.sdap.utils.*;
 
 import simu5g.stack.packetFlowManager.PacketFlowManager;
 // 
@@ -263,9 +264,15 @@ module LteNicEnbD2D extends LteNicEnb
         PacketFlowManagerType = default("PacketFlowManagerEnb");
         d2dCapable = default(true);   // DO NOT CHANGE
         string d2dModeSelectionType = default("D2DModeSelectionBase");
+        string qosHandlerType = default("QosHandlerGNB");  //TODO there is no "QosHandlerENB"
 
     submodules:
         d2dModeSelection: <d2dModeSelectionType> like D2DModeSelection {
             @display("p=623,314,row");
         }
+
+        qosHandlerGnb: <qosHandlerType> like IQosHandler {  //TODO probably makes no sense with LTE, but LtePdcpRrcBase expects to find it
+            @display("p=186,200");
+        }
+
 }
