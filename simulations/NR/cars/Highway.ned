@@ -21,6 +21,7 @@ import simu5g.world.radio.LteChannelControl;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.Upf;
 import simu5g.common.binder.Binder;
+import simu5g.common.binder.GlobalData;
 import simu5g.nodes.NR.gNodeB;
 import simu5g.nodes.cars.NRCar;
 
@@ -55,6 +56,9 @@ network Highway
         }
         binder: Binder {
             @display("p=50,175;is=s");
+        }
+        globalData: GlobalData {
+            @display("p=90,221;is=s");
         }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");

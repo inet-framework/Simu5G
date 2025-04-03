@@ -16,6 +16,7 @@ import inet.networklayer.ipv4.RoutingTableRecorder;
 import inet.node.ethernet.Eth10G;
 import inet.node.inet.Router;
 import simu5g.common.binder.Binder;
+import simu5g.common.binder.GlobalData;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.ExtCell;
 import simu5g.nodes.NR.NRUe;
@@ -47,6 +48,9 @@ network ExtServerExample
         }
         binder: Binder {
             @display("p=73,261;is=s");
+        }
+        globalData: GlobalData {
+            @display("p=90,221;is=s");
         }
         carrierAggregation: CarrierAggregation {
             @display("p=72,335;is=s");

@@ -18,6 +18,7 @@ import inet.node.inet.StandardHost;
 import simu5g.apps.d2dMultihop.eventGenerator.EventGenerator;
 import simu5g.apps.d2dMultihop.statistics.MultihopD2DStatistics;
 import simu5g.common.binder.Binder;
+import simu5g.common.binder.GlobalData;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.PgwStandard;
 import simu5g.nodes.Ue;
@@ -46,6 +47,9 @@ network MultiCell_D2DMultihop
         }
         binder: Binder {
             @display("p=90,171;is=s");
+        }
+        globalData: GlobalData {
+            @display("p=90,221;is=s");
         }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");

@@ -14,6 +14,7 @@ import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.networklayer.ipv4.RoutingTableRecorder;
 import inet.node.ethernet.Eth10G;
 import simu5g.common.binder.Binder;
+import simu5g.common.binder.GlobalData;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.NR.NRUe;
 import simu5g.nodes.NR.gNodeB;
@@ -47,6 +48,9 @@ network MultiMecHost
         }
         binder: Binder {
             @display("p=50,175;is=s");
+        }
+        globalData: GlobalData {
+            @display("p=90,221;is=s");
         }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
