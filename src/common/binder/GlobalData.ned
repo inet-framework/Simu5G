@@ -20,6 +20,6 @@ package simu5g.common.binder;
 //
 simple GlobalData
 {	parameters:
-    	xml config;
-    	xml qosMappingConfig;
+        xml config = default(xml("<root/>"));
+        xml qosMappingConfig = default(xml("<root/>"));
 }
