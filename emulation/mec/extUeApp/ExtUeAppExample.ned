@@ -17,6 +17,7 @@ import inet.node.inet.Router;
 import inet.node.ethernet.Eth10G;
 import simu5g.world.radio.LteChannelControl;
 import simu5g.common.binder.Binder;
+import simu5g.common.binder.GlobalData;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.Upf;
 import simu5g.nodes.NR.gNodeB;
@@ -47,6 +48,9 @@ network ExtUeAppExample
         }
         binder: Binder {
             @display("p=474.27625,34.3825;is=s");
+        }
+        globalData: GlobalData {
+            @display("p=90,221;is=s");
         }
         carrierAggregation: CarrierAggregation {
             @display("p=368.095,34.3825;is=s");

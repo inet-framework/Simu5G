@@ -16,6 +16,7 @@ import inet.networklayer.ipv4.RoutingTableRecorder;
 import inet.node.ethernet.Eth10G;
 import simu5g.world.radio.LteChannelControl;
 import simu5g.common.binder.Binder;
+import simu5g.common.binder.GlobalData;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.Upf;
 import simu5g.nodes.NR.gNodeB;
@@ -49,6 +50,9 @@ network singleMecHost
         }
         binder: Binder {
             @display("p=690,264.96;is=s");
+        }
+        globalData: GlobalData {
+            @display("p=90,221;is=s");
         }
         carrierAggregation: CarrierAggregation {
             @display("p=691.38,342.24;is=s");
