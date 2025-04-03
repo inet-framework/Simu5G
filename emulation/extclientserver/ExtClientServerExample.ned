@@ -29,12 +29,21 @@ import simu5g.world.radio.LteChannelControl;
 // ExtClientServerExample
 //
 // One real UE receives data from a real server
-// 
+//
 network ExtClientServerExample
 {
     parameters:
         int numExtCells = default(0);
+        bool useQosModel = default(false);
+        bool packetDropEnabled = default(true);
+        string qosModelPriority = default("priority");
+        double lambdaPriority = default(1);
+        double lambdaRemainDelayBudget = default(0);
+        double lambdaCqi = default(0);
+        double lambdaRtx = default(0);
+        double lambdaByteSize = default(0);
         @display("i=block/network2;bgb=796,554.7125;bgi=background/pisa");
+
     submodules:
         routingRecorder: RoutingTableRecorder {
             @display("p=73.38125,130.59375;is=s");

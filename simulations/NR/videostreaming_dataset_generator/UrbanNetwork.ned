@@ -1,13 +1,13 @@
-// 
+//
 //                  Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
-// 
+//
 // This file is part of a software released under the license included in file
 // "license.pdf". Please read LICENSE and README files before using it.
-// The above files and the present reference are part of the software itself, 
+// The above files and the present reference are part of the software itself,
 // and cannot be removed from it.
-// 
+//
 
 package simu5g.simulations.NR.videostreaming_dataset_generator;
 
@@ -36,6 +36,14 @@ network UrbanNetwork
     parameters:
         int numUe = default(1);
         int numBgCells = default(0);
+        bool useQosModel = default(false);
+        bool packetDropEnabled = default(true);
+        string qosModelPriority = default("priority");
+        double lambdaPriority = default(1);
+        double lambdaRemainDelayBudget = default(0);
+        double lambdaCqi = default(0);
+        double lambdaRtx = default(0);
+        double lambdaByteSize = default(0);
         @display("i=block/network2;bgb=2000,2000;bgi=intersections");
     submodules:
 

@@ -29,7 +29,7 @@ import simu5g.world.radio.LteChannelControl;
 //
 // One real UE receives data from a real server
 // The network includes a configurable number of background cells
-// 
+//
 network ExtClientServer_bgCells
 {
     parameters:
@@ -37,6 +37,14 @@ network ExtClientServer_bgCells
 
         // number of BG cells
         int numBgCells = default(0);
+        bool useQosModel = default(false);
+        bool packetDropEnabled = default(true);
+        string qosModelPriority = default("priority");
+        double lambdaPriority = default(1);
+        double lambdaRemainDelayBudget = default(0);
+        double lambdaCqi = default(0);
+        double lambdaRtx = default(0);
+        double lambdaByteSize = default(0);
 
     submodules:
         routingRecorder: RoutingTableRecorder {

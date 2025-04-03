@@ -1,13 +1,13 @@
-// 
+//
 //                  Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
-// 
+//
 // This file is part of a software released under the license included in file
 // "license.pdf". Please read LICENSE and README files before using it.
-// The above files and the present reference are part of the software itself, 
+// The above files and the present reference are part of the software itself,
 // and cannot be removed from it.
-// 
+//
 package simu5g.simulations.LTE.networks;
 
 import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
@@ -29,6 +29,14 @@ network MultiCell
 {
     parameters:
         int numExtCells = default(0);
+        bool useQosModel = default(false);
+        bool packetDropEnabled = default(true);
+        string qosModelPriority = default("priority");
+        double lambdaPriority = default(1);
+        double lambdaRemainDelayBudget = default(0);
+        double lambdaCqi = default(0);
+        double lambdaRtx = default(0);
+        double lambdaByteSize = default(0);
         @display("i=block/network2;bgb=991,558;bgi=background/budapest");
     submodules:
         channelControl: LteChannelControl {
@@ -84,7 +92,7 @@ network MultiCell
         router.pppg++ <--> Eth10G <--> pgw.filterGate;
         pgw.pppg++ <--> Eth10G <--> eNodeB1.ppp;
         pgw.pppg++ <--> Eth10G <--> eNodeB2.ppp;
-        
+
         //# X2 connections
         eNodeB1.x2++ <--> Eth10G <--> eNodeB2.x2++;
 }

@@ -1,13 +1,13 @@
-// 
+//
 //                  Simu5G
 //
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
-// 
+//
 // This file is part of a software released under the license included in file
 // "license.pdf". Please read LICENSE and README files before using it.
-// The above files and the present reference are part of the software itself, 
+// The above files and the present reference are part of the software itself,
 // and cannot be removed from it.
-// 
+//
 
 package simu5g.simulations.NR.mec.multiOperator;
 
@@ -30,11 +30,11 @@ import simu5g.world.radio.LteChannelControl;
 
 // MultiOperator
 //
-// This network showcases a scenario with two 5G networks (CN+RAN), each of them 
+// This network showcases a scenario with two 5G networks (CN+RAN), each of them
 // including three gNBs and one MEC host.
 // Operator B's MEC system can be disabled using the 'enableMecOperatorB' parameter
 //
-// Also see 'demo.xml' for the correct configuration of network interfaces 
+// Also see 'demo.xml' for the correct configuration of network interfaces
 //
 network MultiOperator
 {
@@ -43,6 +43,14 @@ network MultiOperator
         int numUe_B = default(1);
         int numBgCells = default(0);
         bool enableMecOperatorB = default(true);
+        bool useQosModel = default(false);
+        bool packetDropEnabled = default(true);
+        string qosModelPriority = default("priority");
+        double lambdaPriority = default(1);
+        double lambdaRemainDelayBudget = default(0);
+        double lambdaCqi = default(0);
+        double lambdaRtx = default(0);
+        double lambdaByteSize = default(0);
         @display("i=block/network2;bgb=1627.08,801.255;bgi=background/pisa");
     submodules:
         channelControl: LteChannelControl {
