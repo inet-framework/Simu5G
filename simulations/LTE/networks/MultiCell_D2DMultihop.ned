@@ -34,6 +34,14 @@ network MultiCell_D2DMultihop
         int numUe3 = default(1);
         int numUe4 = default(1);
         int numUe5 = default(1);
+        bool useQosModel = default(false);
+        bool packetDropEnabled = default(true);
+        string qosModelPriority = default("priority");
+        double lambdaPriority = default(1);
+        double lambdaRemainDelayBudget = default(0);
+        double lambdaCqi = default(0);
+        double lambdaRtx = default(0);
+        double lambdaByteSize = default(0);
         @display("i=block/network2;bgb=2000,500;");
     submodules:
         channelControl: LteChannelControl {

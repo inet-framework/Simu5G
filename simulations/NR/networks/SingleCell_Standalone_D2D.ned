@@ -32,6 +32,14 @@ network SingleCell_Standalone_D2D
         int numUeD2DTx = default(0);
         int numUeD2DRx = default(0);
         int numBgCells = default(0);
+        bool useQosModel = default(false);
+        bool packetDropEnabled = default(true);
+        string qosModelPriority = default("priority");
+        double lambdaPriority = default(1);
+        double lambdaRemainDelayBudget = default(0);
+        double lambdaCqi = default(0);
+        double lambdaRtx = default(0);
+        double lambdaByteSize = default(0);
         @display("i=block/network2;bgb=826,558;bgi=background/pisa");
 
     submodules:

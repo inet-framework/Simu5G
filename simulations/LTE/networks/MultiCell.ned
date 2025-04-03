@@ -29,6 +29,14 @@ network MultiCell
 {
     parameters:
         int numExtCells = default(0);
+        bool useQosModel = default(false);
+        bool packetDropEnabled = default(true);
+        string qosModelPriority = default("priority");
+        double lambdaPriority = default(1);
+        double lambdaRemainDelayBudget = default(0);
+        double lambdaCqi = default(0);
+        double lambdaRtx = default(0);
+        double lambdaByteSize = default(0);
         @display("i=block/network2;bgb=991,558;bgi=background/budapest");
     submodules:
         channelControl: LteChannelControl {
