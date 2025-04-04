@@ -123,6 +123,8 @@ void LteMacEnb::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         nodeId_ = MacNodeId(networkNode_->par("macNodeId").intValue());
 
+        qosHandler = check_and_cast<QosHandlerGNB*>(getParentModule()->getSubmodule("qosHandlerGnb"));
+
         cellId_ = nodeId_;
 
         cellInfo_.reference(this, "cellInfoModule", true);
@@ -674,6 +676,7 @@ bool LteMacEnb::bufferizePacket(cPacket *pktAux)
 
     // obtain the cid from the packet information
     MacCid cid = ctrlInfoToMacCid(lteInfo);
+    ASSERT(qosHandler != nullptr);
     if (qosHandler->getQosInfo().find(cid) == qosHandler->getQosInfo().end()){
         qosHandler->getQosInfo()[cid].appType = static_cast<ApplicationType>(lteInfo->getApplication());
         qosHandler->getQosInfo()[cid].destNodeId = lteInfo->getDestId();

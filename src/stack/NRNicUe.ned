@@ -41,7 +41,6 @@ module NRNicUe extends LteNicUeD2D
         											// LtePhy is of type NRPhyUe so that it is
         											// be aware of the existing of the second
         											// PHY layer (needed at handover)
-        string qosHandlerType = "QosHandlerUE";	
         @display("bgb=694,443");
         nrPhy.rlcUmModule = "^.nrRlc.um";
         nrPhy.otherPhyModule = "^.phy";
@@ -51,11 +50,6 @@ module NRNicUe extends LteNicUeD2D
         phy.otherPhyModule = "^.nrPhy";
 
     submodules:
-        // sdap
-        qosHandlerUe: <qosHandlerType> like IQosHandler {
-            @display("p=186,200");
-        }
-        
         // RLC Layer
         nrRlc: LteRlc {
             @display("p=466,226");

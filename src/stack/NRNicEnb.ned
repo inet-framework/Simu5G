@@ -30,12 +30,6 @@ module NRNicEnb extends LteNicEnbD2D
         LteChannelModelType = default("NRChannelModel_3GPP38_901");
         @display("bgb=694,443");
         packetFlowManager.typename = default("NRPacketFlowManagerGnb");
-        string qosHandlerType = "QosHandlerGNB";  //TODO add default()? or remove this parameter
-
-    submodules:
-        //sdap
-        qosHandlerGnb: <qosHandlerType> like IQosHandler {
-            @display("p=186,200");
-        }
+        qosHandlerType = "QosHandlerGNB";  //TODO add default()? or remove this parameter
 }
 
