@@ -17,11 +17,16 @@ ConnectionsTable::ConnectionsTable()
 {
     // Table is reset by putting all fields equal to 0xFF
     memset(ht_, 0xFF, sizeof(struct entry_) * TABLE_SIZE);
+#ifdef FIVEGTQ
     entries_.clear();
+#endif // FIVEGTQ
 }
+#ifdef FIVEGTQ
 LogicalCid ConnectionsTable::find_entry(uint32_t srcAddr, uint32_t dstAddr,
         uint16_t srcPort, uint16_t dstPort, uint16_t dir, unsigned char msgCat) {
+#endif // FIVEGTQ
 
+#ifdef FIVEGTQ
     for (auto & var : entries_) {
         if (var.srcAddr_ == srcAddr)
             if (var.dstAddr_ == dstAddr)
@@ -78,6 +83,7 @@ void ConnectionsTable::create_entry(uint32_t srcAddr, uint32_t dstAddr,
         entries_.push_back(tmp);
     }
 }
+#endif // FIVEGTQ
 unsigned int ConnectionsTable::hash_func(uint32_t srcAddr, uint32_t dstAddr, uint16_t typeOfService)
 {
     return (typeOfService | srcAddr | dstAddr) % TABLE_SIZE;
@@ -140,11 +146,13 @@ void ConnectionsTable::create_entry(uint32_t srcAddr, uint32_t dstAddr, uint16_t
     ht_[hashIndex].lcid_ = lcid;
 }
 
+#ifdef FIVEGTQ
 // ConnectionsTable::~ConnectionsTable()
 // {
 //     memset(ht_, 0xFF, sizeof(struct entry_) * TABLE_SIZE);
 //     entries_.clear();
 // }
+#endif // FIVEGTQ
 
 } //namespace
 

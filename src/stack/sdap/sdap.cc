@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 #include "sdap.h"
 
 namespace simu5g {
@@ -9,3 +10,5 @@ void Sdap::setTrafficFlowInformation(cPacket *pkt, FlowControlInfo *lteInfo, Bin
 }
 
 } // namespace
+
+#endif // FIVEGTQ

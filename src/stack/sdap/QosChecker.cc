@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 /*
  * qosHandlers.cc
  *
@@ -45,3 +46,5 @@ TrafficFlowTemplateId QosChecker::qosCheckerUe(const inet::Ipv4Address &destAddr
 }
 
 } // namespace
+
+#endif // FIVEGTQ

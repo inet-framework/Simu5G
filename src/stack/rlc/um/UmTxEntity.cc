@@ -61,7 +61,9 @@ void UmTxEntity::initialize()
     burstStatus_ = INACTIVE;
 }
 
+#ifdef FIVEGTQ
 bool UmTxEntity::enque(cPacket *pkt)
+#endif // FIVEGTQ
 {
     EV << NOW << " UmTxEntity::enque - buffering new SDU  " << endl;
     if (queueSize_ == 0 || queueLength_ + pkt->getByteLength() < queueSize_) {
@@ -95,10 +97,15 @@ void UmTxEntity::rlcPduMake(int pduLength)
 
     while (!sduQueue_.isEmpty() && pduLength > 0) {
         // detach data from the SDU buffer
+#ifdef FIVEGTQ
         cPacket* pktDel = sduQueue_.front();
         auto pkt = check_and_cast<inet::Packet *>(pktDel);
         //auto pkt = check_and_cast<inet::Packet *>(sduQueue_.front());
+#else // FIVEGTQ
+        auto pkt = check_and_cast<inet::Packet *>(sduQueue_.front());
+#endif // FIVEGTQ
         auto rlcSdu = pkt->peekAtFront<LteRlcSdu>();
+#ifdef FIVEGTQ
         auto chunk = pkt->peekAtFront<Chunk>();
         //LteRlcSdu rlcSduDel = check_and_cast<LteRlcSdu>(pktDel);
         auto rlcSduDel = dynamicPtrCast<const LteRlcSdu>(chunk);
@@ -129,6 +136,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
         }
 
 
+#endif // FIVEGTQ
         unsigned int sduSequenceNumber = rlcSdu->getSnoMainPacket();
         int sduLength = rlcSdu->getLengthMainPacket(); // length without the SDU header
 

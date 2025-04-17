@@ -43,7 +43,9 @@ LtePdcpRrcBase::~LtePdcpRrcBase()
 
 bool LtePdcpRrcBase::isCompressionEnabled()
 {
+#ifdef FIVEGTQ
     return headerCompressedSize_ != LTE_PDCP_HEADER_COMPRESSION_DISABLED;
+#endif // FIVEGTQ
 }
 
 void LtePdcpRrcBase::headerCompress(Packet *pkt)
@@ -117,42 +119,70 @@ void LtePdcpRrcBase::headerDecompress(Packet *pkt)
 
 void LtePdcpRrcBase::setTrafficInformation(cPacket *pkt, inet::Ptr<FlowControlInfo> lteInfo)
 {
+#ifdef FIVEGTQ
     ASSERT(qosHandler != nullptr);
     std::string pktName = pkt->getName();
     if ((strcmp(pkt->getName(), "VoIP")) == 0 || (pktName.find("audio") == 0)) {
+#else // FIVEGTQ
+    if ((strcmp(pkt->getName(), "VoIP")) == 0) {
+#endif // FIVEGTQ
         lteInfo->setApplication(VOIP);
         lteInfo->setTraffic(CONVERSATIONAL);
+#ifdef FIVEGTQ
         lteInfo->setRlcType(aToRlcType(par("conversationalRlc")));
         lteInfo->setQfi(qosHandler->getQfi(VOIP));
         lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(VOIP));
+#else // FIVEGTQ
+        lteInfo->setRlcType(conversationalRlc_);
+#endif // FIVEGTQ
     }
     else if ((strcmp(pkt->getName(), "gaming")) == 0) {
         lteInfo->setApplication(GAMING);
         lteInfo->setTraffic(INTERACTIVE);
+#ifdef FIVEGTQ
         lteInfo->setRlcType(aToRlcType(par("interactiveRlc")));
         lteInfo->setQfi(qosHandler->getQfi(CBR));
         lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(GAMING));
+#else // FIVEGTQ
+        lteInfo->setRlcType(interactiveRlc_);
+#endif // FIVEGTQ
     }
+#ifdef FIVEGTQ
     else if ((strcmp(pkt->getName(), "VoDPacket") == 0) || pktName.find("video") == 0) {
+#else // FIVEGTQ
+    else if ((strcmp(pkt->getName(), "VoDPacket") == 0)
+             || (strcmp(pkt->getName(), "VoDFinishPacket") == 0))
+    {
+#endif // FIVEGTQ
         lteInfo->setApplication(VOD);
         lteInfo->setTraffic(STREAMING);
+#ifdef FIVEGTQ
         lteInfo->setRlcType(aToRlcType(par("streamingRlc")));
         lteInfo->setQfi(qosHandler->getQfi(VOD));
         lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(VOD));
+#else // FIVEGTQ
+        lteInfo->setRlcType(streamingRlc_);
+#endif // FIVEGTQ
     }
     else if ((pktName.find("network control") == 0) || (pktName.find("networkControl") == 0)) {
           lteInfo->setApplication(NETWORK_CONTROL);
           lteInfo->setTraffic(HIGH_PRIORITY_TSN);
           lteInfo->setRlcType(aToRlcType(par("interactiveRlc")));
+#ifdef FIVEGTQ
           lteInfo->setQfi(qosHandler->getQfi(NETWORK_CONTROL));
           lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(NETWORK_CONTROL));
       }
     else {
         lteInfo->setApplication(CBR);
         lteInfo->setTraffic(BACKGROUND);
+#ifdef FIVEGTQ
+#endif // FIVEGTQ
         lteInfo->setRlcType(aToRlcType(par("backgroundRlc")));
         lteInfo->setQfi(qosHandler->getQfi(CBR));
         lteInfo->setRadioBearerId(qosHandler->getRadioBearerId(CBR));
+#else // FIVEGTQ
+        lteInfo->setRlcType(backgroundRlc_);
+#endif // FIVEGTQ
     }
 
     lteInfo->setDirection(getDirection());
@@ -355,6 +385,7 @@ void LtePdcpRrcBase::initialize(int stage)
         if (NRpacketFlowManager_) {
             EV << "LtePdcpRrcBase::initialize - NRpacketFlowManager present" << endl;
         }
+#ifdef FIVEGTQ
         if(getParentModule()->findSubmodule("qosHandlerGnb")!= -1)
         {
             EV << "LtePdcpRrcBase::initialize - QosHandlerGNB present" << endl;
@@ -378,6 +409,7 @@ void LtePdcpRrcBase::initialize(int stage)
 
         }
 
+#endif // FIVEGTQ
 
         conversationalRlc_ = aToRlcType(par("conversationalRlc"));
         interactiveRlc_ = aToRlcType(par("interactiveRlc"));

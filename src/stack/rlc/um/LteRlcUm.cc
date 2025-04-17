@@ -276,6 +276,7 @@ void LteRlcUm::initialize(int stage)
         WATCH_MAP(txEntities_);
         WATCH_MAP(rxEntities_);
     }
+#ifdef FIVEGTQ
     if(getParentModule()->getParentModule()->findSubmodule("qosHandlerGnb")!= -1)
     {
         EV << "LteRlcUm::initialize - QosHandlerGNB present" << endl;
@@ -299,6 +300,7 @@ void LteRlcUm::initialize(int stage)
 
     }
    // qosHandler = check_and_cast<QosHandler *>(getParentModule()->getParentModule()->getSubmodule("qosHandlerGnb"));
+#endif // FIVEGTQ
 }
 
 void LteRlcUm::handleMessage(cMessage *msg)

@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 /*
  * DQos.h
  *
@@ -42,3 +43,5 @@ class DQos : public virtual LteScheduler
 } // namespace
 
 #endif // _LTE_DQOS_H_
+
+#endif // FIVEGTQ

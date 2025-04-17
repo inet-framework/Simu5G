@@ -127,8 +127,10 @@ void LteMacEnb::initialize(int stage)
 
         cellId_ = nodeId_;
 
+#ifdef FIVEGTQ
         cellInfo_.reference(this, "cellInfoModule", true);
 
+#endif // FIVEGTQ
         // Get number of antennas
         numAntennas_ = getNumAntennas();
 
@@ -676,6 +678,7 @@ bool LteMacEnb::bufferizePacket(cPacket *pktAux)
 
     // obtain the cid from the packet information
     MacCid cid = ctrlInfoToMacCid(lteInfo);
+#ifdef FIVEGTQ
     ASSERT(qosHandler != nullptr);
     if (qosHandler->getQosInfo().find(cid) == qosHandler->getQosInfo().end()){
         qosHandler->getQosInfo()[cid].appType = static_cast<ApplicationType>(lteInfo->getApplication());
@@ -690,6 +693,9 @@ bool LteMacEnb::bufferizePacket(cPacket *pktAux)
         qosHandler->getQosInfo()[cid].rlcType = lteInfo->getRlcType();
         qosHandler->getQosInfo()[cid].containsSeveralCids = lteInfo->getContainsSeveralCids();
     }
+#else // FIVEGTQ
+
+#endif // FIVEGTQ
     // this packet is used to signal the arrival of new data in the RLC buffers
     if (checkIfHeaderType<LteRlcPduNewData>(pkt)) {
         // update the virtual buffer for this connection

@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 /*
  * qosHandlers.h
  *
@@ -82,3 +83,5 @@ public:
 } // namespace
 
 #endif /* STACK_SDAP_QOSHANDLERS_H_ */
+
+#endif // FIVEGTQ

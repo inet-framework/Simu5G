@@ -356,12 +356,14 @@ bool isBaseStation(CoreNodeType nodeType)
     return nodeType == ENB || nodeType == GNB;
 }
 
+#ifdef FIVEGTQ
 bool isUpf(CoreNodeType nodeType){
     if (nodeType == UPF)
         return true;
     return false;
 }
 
+#endif // FIVEGTQ
 bool isNrUe(MacNodeId id)
 {
     return getNodeTypeById(id) == UE && id >= NR_UE_MIN_ID;

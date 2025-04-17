@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 /*
  * TsnFiveGTranslator.h
  *
@@ -21,3 +22,5 @@ static inet::Packet convertFiveGPacketToTsnPacket(inet::Packet *pkt){
     return *pkt;
 }
 #endif /* STACK_SDAP_TSNFIVEGTRANSLATOR_H_ */
+
+#endif // FIVEGTQ

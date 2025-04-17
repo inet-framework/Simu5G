@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 /*
  * NrCommon.cc
  *
@@ -28,3 +29,5 @@ ResourceType convertStringToResourceType(std::string type){
 }
 
 } // namespace
+
+#endif // FIVEGTQ

@@ -23,6 +23,7 @@ NRMacGnb::NRMacGnb() : LteMacEnbD2D()
 
 void NRMacGnb::initialize(int stage)
 {
+#ifdef FIVEGTQ
     LteMacEnbD2D::initialize(stage);
     if (stage == inet::INITSTAGE_LINK_LAYER)
     {
@@ -30,6 +31,11 @@ void NRMacGnb::initialize(int stage)
         /* Create and initialize NR MAC Uplink scheduler */
         if (enbSchedulerUl_ == nullptr)
         {
+#else // FIVEGTQ
+    if (stage == inet::INITSTAGE_LINK_LAYER) {
+        // Create and initialize NR MAC Uplink scheduler
+        if (enbSchedulerUl_ == nullptr) {
+#endif // FIVEGTQ
             enbSchedulerUl_ = new NRSchedulerGnbUl();
             enbSchedulerUl_->resourceBlocks() = cellInfo_->getNumBands();
             enbSchedulerUl_->initialize(UL, this, binder_);
@@ -37,6 +43,7 @@ void NRMacGnb::initialize(int stage)
        //enbSchedulerDl_ = check_and_cast<LteSchedulerEnbDl*>(new LteSchedulerEnbDl());
         //enbSchedulerDl_->initialize(DL, this);
     }
+#ifdef FIVEGTQ
 
 }
 
@@ -66,6 +73,9 @@ void NRMacGnb::handleMessage(cMessage *msg) {
     LteMacBase::handleMessage(msg);
 
     //std::cout << "NRMacGnbRealistic::handleMessage end at " << simTime().dbl() << std::endl;
+#else // FIVEGTQ
+    LteMacEnbD2D::initialize(stage);
+#endif // FIVEGTQ
 }
 
 } //namespace

@@ -17,6 +17,7 @@
 
 #include "inet/linklayer/common/InterfaceTag_m.h"
 #include "inet/linklayer/common/MacAddressTag_m.h"
+#ifdef FIVEGTQ
 #include "inet/linklayer/common/PcpTag_m.h"
 #include "inet/linklayer/common/VlanTag_m.h"
 #include "inet/networklayer/common/L3AddressResolver.h"
@@ -27,6 +28,7 @@
 namespace simu5g {
 
 Define_Module(TrafficFlowFilter);
+#endif // FIVEGTQ
 
 using namespace inet;
 using namespace omnetpp;
@@ -43,7 +45,9 @@ void TrafficFlowFilter::initialize(int stage)
 
     fastForwarding_ = par("fastForwarding");
 
+#ifdef FIVEGTQ
     // reading and setting owner type
+#endif // FIVEGTQ
     ownerType_ = selectOwnerType(par("ownerType"));
     if (ownerType_ == PGW || ownerType_ == UPF) {
         gateway_ = binder_->getNetworkName() + "." + std::string(getParentModule()->getFullName());
@@ -95,16 +99,24 @@ void TrafficFlowFilter::initialize(int stage)
     //getQoSMapParametersFromXml();
 
     // register service processing IP packets on the LTE Uu Link
+#ifdef FIVEGTQ
     auto gateIn = gate("internetFilterGateIn");
+#ifdef FIVEGTQ
     //if (isUpf(ownerType_)){
+#endif // FIVEGTQ
 
     //}
     //else{
         registerProtocol(LteProtocol::ipv4uu, gateIn, SP_INDICATION);
+#else // FIVEGTQ
+    registerProtocol(LteProtocol::ipv4uu, gateIn, SP_INDICATION);
+#endif // FIVEGTQ
     registerProtocol(LteProtocol::ipv4uu, gateIn, SP_CONFIRM);
+#ifdef FIVEGTQ
     //registerProtocol(inet::Protocol::ethernetMac, gateIn, SP_INDICATION);
     //registerProtocol(inet::Protocol::ethernetMac, gateIn, SP_CONFIRM);
 //}
+#endif // FIVEGTQ
 }
 
 CoreNodeType TrafficFlowFilter::selectOwnerType(const char *type)
@@ -134,7 +146,9 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
 
     Packet *pkt = check_and_cast<Packet *>(msg);
 
+#ifdef FIVEGTQ
 
+#endif // FIVEGTQ
     // receive and read IP datagram
     // TODO: needs to be adapted for IPv6
     const auto& ipv4Header = pkt->peekAtFront<Ipv4Header>();
@@ -143,6 +157,7 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
     pkt->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ipv4);
     pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
 
+#ifdef FIVEGTQ
 
 
     //TSN Ethernet Frame Handling
@@ -176,6 +191,7 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
 
 
 
+#endif // FIVEGTQ
     // TODO check for source and dest port number
 
     EV << "TrafficFlowFilter::handleMessage - Received datagram : " << pkt->getName() << " - src[" << srcAddr << "] - dest[" << destAddr << "]\n";
@@ -184,11 +200,13 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
     // search within tftTable the proper entry for this destination
     TrafficFlowTemplateId tftId = findTrafficFlow(srcAddr, destAddr);   // search for the tftId in the binder
 
+#ifdef FIVEGTQ
     //Handle devices outside the cellular network
     if (tftId==-1 || tftId == -2){
         tftId = qosChecker.qosCheckerUpf(destAddr);
     }
 
+#endif // FIVEGTQ
     // add control info to the normal IP datagram. This info will be read by the GTP-U application
     auto tftInfo = pkt->addTag<TftControlInfo>();
     tftInfo->setTft(tftId);

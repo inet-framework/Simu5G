@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 /*
  * sdap.h
  *
@@ -25,3 +26,5 @@ public:
 } // namespace
 
 #endif /* STACK_SDAP_SDAP_H_ */
+
+#endif // FIVEGTQ

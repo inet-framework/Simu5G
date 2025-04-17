@@ -13,14 +13,18 @@
 #include <cctype>
 
 #include <inet/networklayer/common/L3AddressResolver.h>
+#ifdef FIVEGTQ
 #include <inet/networklayer/configurator/ipv4/Ipv4NetworkConfigurator.h>
+#endif // FIVEGTQ
 
 #include "common/binder/Binder.h"
 #include "corenetwork/statsCollector/BaseStationStatsCollector.h"
 #include "corenetwork/statsCollector/UeStatsCollector.h"
 #include "stack/mac/LteMacUe.h"
 #include "stack/phy/LtePhyUe.h"
+#ifdef FIVEGTQ
 #include "inet/common/XMLUtils.h"
+#endif // FIVEGTQ
 
 namespace simu5g {
 
@@ -31,6 +35,7 @@ using namespace inet;
 
 Define_Module(Binder);
 
+#ifdef FIVEGTQ
 void Binder::registerUeConnectedEthernetDevices(){
 
     globalData = check_and_cast<GlobalData*>(getSimulation()->getModuleByPath("globalData"));
@@ -51,6 +56,7 @@ std::vector<inet::Ipv4Address> Binder::getUeConnectedEthernetDevices(){
 GlobalData* Binder::getGlobalDataModule(){
     return this->globalData;
 }
+#endif // FIVEGTQ
 void Binder::registerCarrier(double carrierFrequency, unsigned int carrierNumBands, unsigned int numerologyIndex, bool useTdd, unsigned int tddNumSymbolsDl, unsigned int tddNumSymbolsUl)
 {
     CarrierInfoMap::iterator it = componentCarriers_.find(carrierFrequency);
@@ -277,6 +283,7 @@ void Binder::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         phyPisaData.setBlerShift(par("blerShift"));
         networkName_ = getSystemModule()->getName();
+#ifdef FIVEGTQ
 
         const char *stringValue;
         qosChar = NRQosCharacteristics::getNRQosCharacteristics();
@@ -330,6 +337,7 @@ void Binder::initialize(int stage)
                     defAveragingWindow[i]);
         }
 
+#endif // FIVEGTQ
     }
 
     if (stage == inet::INITSTAGE_LAST) {
@@ -337,8 +345,10 @@ void Binder::initialize(int stage)
 
         // if avg interference enabled, compute CQIs
         computeAverageCqiForBackgroundUes();
+#ifdef FIVEGTQ
         registerUeConnectedEthernetDevices();
         readTsnFiveGTrafficXml();
+#endif // FIVEGTQ
     }
 }
 
@@ -1270,6 +1280,7 @@ RanNodeType Binder::getBaseStationTypeById(MacNodeId cellId)
     }
 }
 
+#ifdef FIVEGTQ
 int Binder::getCurrentPacketQfi(){
     return this->currentPacketQfi;
 }
@@ -1301,5 +1312,6 @@ void Binder::readTsnFiveGTrafficXml(){
     //}*/
 }
 
+#endif // FIVEGTQ
 } //namespace
 

@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 /*
  * DQos.cc
  *
@@ -393,3 +394,5 @@ void DQos::commitSchedule(){
 }
 
 } // namespace
+
+#endif // FIVEGTQ

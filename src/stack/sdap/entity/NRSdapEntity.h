@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 //
 // SPDX-FileCopyrightText: 2020 Friedrich-Alexander University Erlangen-Nuernberg (FAU), Computer Science 7 - Computer Networks and Communication Systems
 //
@@ -51,3 +52,5 @@ class NRSdapEntity
     // reset numbering
     void resetSequenceNumber() { sequenceNumber_ = 0; }
 };
+
+#endif // FIVEGTQ

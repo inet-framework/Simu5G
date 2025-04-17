@@ -20,9 +20,11 @@
 #include "inet/linklayer/common/PcpTag_m.h"
 #include "stack/sdap/utils/TsnFiveGTranslator.h"
 
+#ifdef FIVEGTQ
 namespace simu5g {
 
 Define_Module(GtpUser);
+#endif // FIVEGTQ
 
 using namespace omnetpp;
 using namespace inet;
@@ -72,6 +74,7 @@ void GtpUser::initialize(int stage)
         {
             try{
                 EV << "GtpUser::initialize - QosHandlerUPF present" << endl;
+#ifdef FIVEGTQ
                qosHandler = check_and_cast<QosHandlerUPF *> (getParentModule()->getSubmodule("qosHandlerUPF"));
             }
             catch (...){
@@ -95,6 +98,7 @@ void GtpUser::initialize(int stage)
 
 NetworkInterface *GtpUser::detectInterface()
 {
+#endif // FIVEGTQ
     IInterfaceTable *ift = getModuleFromPar<IInterfaceTable>(par("interfaceTableModule"), this);
     const char *interfaceName = par("ipOutInterface");
     NetworkInterface *ie = nullptr;
@@ -123,8 +127,10 @@ CoreNodeType GtpUser::selectOwnerType(const char *type)
         return UPF; //TODO fishy
     else if (strcmp(type, "UPF_MEC") == 0)
         return UPF_MEC;
+#ifdef FIVEGTQ
 
     throw cRuntimeError("GtpUser::selectOwnerType - unknown owner type [%s]. Aborting...", type);
+#endif // FIVEGTQ
 
     // you should not be here
     return ENB;
@@ -174,6 +180,7 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
     auto convertedQfi = 0;
     if (getSimulation()->getSystemModule()->hasPar("tsnEnabled")) {
         std::string name = datagram->getName();
+#ifdef FIVEGTQ
         //qosHandler->getQfi(name);
          convertedQfi = qosHandler->getFlowQfi(name);
         //convertedQfi = binder_->getGlobalDataModule()->convertPcpToQfi(datagram);
@@ -186,6 +193,7 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
     auto tftInfo = datagram->removeTag<TftControlInfo>();
     TrafficFlowTemplateId flowId = tftInfo->getTft();
 
+#endif // FIVEGTQ
     EV << "GtpUser::handleFromTrafficFlowFilter - Received a tftMessage with flowId[" << flowId << "]" << endl;
 
     if (flowId == -2) {
@@ -212,11 +220,13 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
         //TSN
         if (getSimulation()->getSystemModule()->hasPar("tsnEnabled")) {
             header->setQfi(convertedQfi);
+#ifdef FIVEGTQ
         }
         header->setChunkLength(B(8));
         auto gtpPacket = new Packet(datagram->getName());
         gtpPacket->insertAtFront(header);
         auto data = datagram->peekData();
+#endif // FIVEGTQ
         gtpPacket->insertAtBack(data);
 
         delete datagram;
@@ -238,7 +248,9 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
             // check if the destination is within the same core network
 
             // get the symbolic IP address of the tunnel destination ID
+#ifdef FIVEGTQ
             // then obtain the address via IPvXAddressResolver
+#endif // FIVEGTQ
             const char *symbolicName = binder_->getModuleNameByMacNodeId(MacNodeId(flowId));
             EV << "GtpUser::handleFromTrafficFlowFilter - tunneling to " << symbolicName << endl;
             tunnelPeerAddress = L3AddressResolver().resolve(symbolicName);
@@ -273,12 +285,15 @@ void GtpUser::handleFromUdp(Packet *pkt)
 
 
     // re-create the original IP datagram and send it to the local network
+#ifdef FIVEGTQ
     auto originalPacket = new Packet(pkt->getName());
     auto gtpUserMsg = pkt->popAtFront<GtpUserMsg>();
     auto qfi = gtpUserMsg->getQfi();
+#endif // FIVEGTQ
     //binder_->setCurrentPacketQfi(gtpUserMsg->getQfi());
     /*
     //TSN Handling
+#ifdef FIVEGTQ
         auto tsnHeader = makeShared<Ieee8021qTagEpdHeader>();
          int pcp = convertQfiToPcp(originalPacket);
          tsnHeader->setPcp(pcp);
@@ -289,8 +304,13 @@ void GtpUser::handleFromUdp(Packet *pkt)
     originalPacket->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
     // remove any pending socket indications
     auto sockInd = pkt->removeTagIfPresent<SocketInd>();
+#endif // FIVEGTQ
 
+#ifdef FIVEGTQ
     //delete pkt;
+#else // FIVEGTQ
+    delete pkt;
+#endif // FIVEGTQ
 
     const auto& hdr = originalPacket->peekAtFront<Ipv4Header>();
     const Ipv4Address& destAddr = hdr->getDestAddress();
@@ -302,13 +322,17 @@ void GtpUser::handleFromUdp(Packet *pkt)
 
         EV << "GtpUser::handleFromUdp - Datagram local delivery to " << destAddr.str() << endl;
         // local delivery
+#ifdef FIVEGTQ
         delete pkt;
+#endif // FIVEGTQ
         send(originalPacket, "pppGate");
     }
     else if (ownerType_ == UPF_MEC) {
         // we are on the MEC, local delivery
         EV << "GtpUser::handleFromUdp - Datagram local delivery to " << destAddr.str() << endl;
+#ifdef FIVEGTQ
         delete pkt;
+#endif // FIVEGTQ
         send(originalPacket, "pppGate");
     }
     else if (ownerType_ == PGW || ownerType_ == UPF) {
@@ -340,12 +364,15 @@ void GtpUser::handleFromUdp(Packet *pkt)
                 // create a new GtpUserMessage
                 EV << "GtpUser::handleFromUdp - Tunneling datagram to " << tunnelPeerAddress.str() << ", final destination[" << destAddr.str() << "]" << endl;
                 socket_.sendTo(gtpMsg, tunnelPeerAddress, tunnelPeerPort_);
+#ifdef FIVEGTQ
                 delete pkt;
+#endif // FIVEGTQ
                 return;
             }
         }
 
         // destination is outside the radio network
+#ifdef FIVEGTQ
         int convertedPcp;
         if (getSimulation()->getSystemModule()->hasPar("tsnEnabled")) {
                 convertedPcp = binder_->getGlobalDataModule()->convertFiveqiToPcp(originalPacket);
@@ -354,12 +381,16 @@ void GtpUser::handleFromUdp(Packet *pkt)
                 convertedPcp = -1;
             }
 
+#endif // FIVEGTQ
         EV << "GtpUser::handleFromUdp - Sending datagram outside the radio network, destination[" << destAddr.str() << "]" << endl;
+#ifdef FIVEGTQ
         delete pkt;
+#endif // FIVEGTQ
         send(originalPacket, "pppGate");
     }
 }
 
+#ifdef FIVEGTQ
 /*
 int GtpUser::convertQfiToPcp(Packet *datagram){
     EV<<"Packets name is"<<datagram->getName()<<endl;
@@ -413,5 +444,6 @@ void GtpUser::getQoSMapParametersFromXml(){
 }
 */
 
+#endif // FIVEGTQ
 } //namespace
 

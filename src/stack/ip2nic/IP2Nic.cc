@@ -34,6 +34,9 @@
 
 namespace simu5g {
 
+#ifndef FIVEGTQ
+
+#endif // FIVEGTQ
 using namespace std;
 using namespace inet;
 using namespace omnetpp;
@@ -48,7 +51,9 @@ void IP2Nic::initialize(int stage)
 
         setNodeType(par("nodeType").stdstringValue());
 
+#ifdef FIVEGTQ
         hoManager_.reference(this, "handoverManagerModule", false);
+#endif // FIVEGTQ
 
         ueHold_ = false;
 
@@ -284,6 +289,7 @@ void IP2Nic::fromIpBs(Packet *pkt)
     const Ipv4Address& destAddr = ipHeader->getDestAddress();
     MacNodeId destId;
 
+#ifdef FIVEGTQ
     //Handle devices outside the cellular network
     std::vector<inet::Ipv4Address> UeEthDevice = binder_->getUeConnectedEthernetDevices();
 
@@ -292,6 +298,7 @@ void IP2Nic::fromIpBs(Packet *pkt)
                 EV<<"UeEthernetDeviceFound!!!!!"<<endl;
                 //Ipv4Address ueDefault(binder_->getIpAddressOfTheUeToWhichTsnRadioLinkIsConnected());
                 destId = binder_->getMacNodeId(binder_->getIpAddressOfTheUeToWhichTsnRadioLinkIsConnected());
+#endif // FIVEGTQ
 
             }
             else{
@@ -299,11 +306,17 @@ void IP2Nic::fromIpBs(Packet *pkt)
                 destId = binder_->getMacNodeId(destAddr);
             }
 
+#ifdef FIVEGTQ
         }
 
 
     if (hoForwarding_.find(destId) != hoForwarding_.end())
     {
+#else // FIVEGTQ
+    // handle "forwarding" of packets during handover
+    MacNodeId destId = binder_->getMacNodeId(destAddr);
+    if (hoForwarding_.find(destId) != hoForwarding_.end()) {
+#endif // FIVEGTQ
         // data packet must be forwarded (via X2) to another eNB
         MacNodeId targetEnb = hoForwarding_.at(destId);
         sendTunneledPacketOnHandover(pkt, targetEnb);
@@ -348,6 +361,7 @@ void IP2Nic::toStackBs(Packet *pkt)
     short int tos = ipHeader->getTypeOfService();
     int headerSize = ipHeader->getHeaderLength().get();
 
+#ifdef FIVEGTQ
     std::vector<inet::Ipv4Address> UeEthDevice = binder_->getUeConnectedEthernetDevices();
     for (int i=0;i<UeEthDevice.size();++i){
        if (destAddr.str() == UeEthDevice[i].str()){
@@ -359,6 +373,9 @@ void IP2Nic::toStackBs(Packet *pkt)
     }
     switch(transportProtocol)
     {
+#else // FIVEGTQ
+    switch (transportProtocol) {
+#endif // FIVEGTQ
         case IP_PROT_TCP: {
             auto tcpHeader = pkt->peekDataAt<tcp::TcpHeader>(ipHeader->getChunkLength());
             headerSize += B(tcpHeader->getHeaderLength()).get();
@@ -370,14 +387,22 @@ void IP2Nic::toStackBs(Packet *pkt)
             headerSize += inet::UDP_HEADER_LENGTH.get();
             auto udpHeader = pkt->peekDataAt<inet::UdpHeader>(ipHeader->getChunkLength());
             srcPort = udpHeader->getSrcPort();
+#ifdef FIVEGTQ
             dstPort = udpHeader->getDestPort();
 
+#endif // FIVEGTQ
 
             break;
         }
         default: {
+#ifdef FIVEGTQ
+#ifdef FIVEGTQ
             //EV_ERROR << "Unknown transport protocol id." << endl;
             throw cRuntimeError("Unknown transport protocol id %d", transportProtocol);
+#else // FIVEGTQ
+            EV_ERROR << "Unknown transport protocol id." << endl;
+#endif // FIVEGTQ
+#endif // FIVEGTQ
         }
     }
 
@@ -386,8 +411,12 @@ void IP2Nic::toStackBs(Packet *pkt)
     pkt->addTagIfAbsent<FlowControlInfo>()->setDstAddr(destAddr.getInt());
     pkt->addTagIfAbsent<FlowControlInfo>()->setTypeOfService(tos);
     pkt->addTagIfAbsent<FlowControlInfo>()->setHeaderSize(headerSize);
+#ifdef FIVEGTQ
     pkt->addTagIfAbsent<FlowControlInfo>()->setSrcPort(srcPort);
     pkt->addTagIfAbsent<FlowControlInfo>()->setDstPort(dstPort);
+#else // FIVEGTQ
+
+#endif // FIVEGTQ
     // mark packet for using NR
     if (!markPacket(pkt->getTagForUpdate<FlowControlInfo>())) {
         EV << "IP2Nic::toStackBs - UE is not attached to any serving node. Delete packet." << endl;

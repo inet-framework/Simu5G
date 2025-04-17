@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 /*
  * TsnFiveGTranslator.cc
  *
@@ -8,3 +9,5 @@
 
 
 
+
+#endif // FIVEGTQ

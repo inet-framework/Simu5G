@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 #ifndef _LTE_NRCOMMON_H_
 #define _LTE_NRCOMMON_H_
 
@@ -148,3 +149,5 @@ protected:
 } // namespace
 
 #endif
+
+#endif // FIVEGTQ

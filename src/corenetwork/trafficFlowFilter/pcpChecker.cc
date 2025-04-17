@@ -1,3 +1,4 @@
+#ifdef FIVEGTQ
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -28,3 +29,5 @@ void PcpChecker::handleMessage(cMessage *msg)
     // TODO - Generated method body
     EV<<"Inside handle message of pcp checker"<<endl;
 }
+
+#endif // FIVEGTQ

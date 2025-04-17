@@ -77,11 +77,15 @@ void NRPdcpRrcEnb::fromDataPort(cPacket *pktAux)
      */
 
     LogicalCid mylcid;
+#ifdef FIVEGTQ
     if ((mylcid = ht_.find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(),
                 lteInfo->getSrcPort(), lteInfo->getDstPort(),
                 lteInfo->getDirection(), lteInfo->getApplication())) == 0xFFFF)
     //if ((mylcid = ht_->find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection())) == 0xFFFF)
     {
+#else // FIVEGTQ
+    if ((mylcid = ht_.find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection())) == 0xFFFF) {
+#endif // FIVEGTQ
         // LCID not found
 
         // assign a new LCID to the connection
@@ -89,6 +93,7 @@ void NRPdcpRrcEnb::fromDataPort(cPacket *pktAux)
 
         EV << "NRPdcpRrcEnb : Connection not found, new CID created with LCID " << mylcid << "\n";
 
+#ifdef FIVEGTQ
         ht_.create_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(),
                         lteInfo->getSrcPort(), lteInfo->getDstPort(),
                         lteInfo->getDirection(), mylcid, lteInfo->getApplication());
@@ -110,6 +115,9 @@ void NRPdcpRrcEnb::fromDataPort(cPacket *pktAux)
             qosinfo.trafficClass = (LteTrafficClass) lteInfo->getTraffic();
             qosHandler->insertQosInfo(key, qosinfo);
         }
+#else // FIVEGTQ
+        ht_.create_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection(), mylcid);
+#endif // FIVEGTQ
     }
 
     // assign LCID
