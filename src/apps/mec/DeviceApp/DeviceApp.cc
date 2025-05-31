@@ -349,14 +349,11 @@ void DeviceApp::connectToUALCMP()
     // we need a new connId if this is not the first connection
     UALCMPSocket_.renewSocket();
 
-    if (UALCMPAddress.isUnspecified()) {
-        EV_ERROR << "Connecting to " << UALCMPAddress << " port=" << UALCMPPort << ": cannot resolve destination address\n";
-        throw cRuntimeError("LCM proxy address is unspecified!");
-    }
-    else {
-        EV << "Connecting to " << UALCMPAddress << " port=" << UALCMPPort << endl;
-        UALCMPSocket_.connect(UALCMPAddress, UALCMPPort);
-    }
+    if (UALCMPAddress.isUnspecified())
+        throw cRuntimeError("Connecting to %s port=%d: cannot resolve destination address: LCM proxy address is unspecified", UALCMPAddress.str().c_str(), UALCMPPort);
+
+    EV << "Connecting to " << UALCMPAddress << " port=" << UALCMPPort << endl;
+    UALCMPSocket_.connect(UALCMPAddress, UALCMPPort);
 }
 
 void DeviceApp::sendStartAppContext(inet::Ptr<const DeviceAppPacket> pk)
