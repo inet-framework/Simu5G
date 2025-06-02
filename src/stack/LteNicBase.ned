@@ -14,6 +14,7 @@ package simu5g.stack;
 
 import inet.networklayer.common.NetworkInterface;
 import simu5g.stack.ip2nic.INetworkLayer2CellularNic;
+import simu5g.stack.ip2nic.MacAddressMapper;
 import simu5g.stack.mac.ILteMac;
 import simu5g.stack.packetFlowManager.IPacketFlowManager;
 import simu5g.stack.pdcp_rrc.ILtePdcpRrc;
@@ -38,6 +39,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
         string routingTableModule;
 
         bool hasRNISupport = default(false);
+        bool hasAddressMapper = default(false);
 
         string nodeType;
         double processingDelayIn @unit(s) = default(0s);   // additional processing delay for incoming ip packets
@@ -72,6 +74,10 @@ module LteNicBase extends NetworkInterface like ICellularNic
             nodeType = parent.nodeType;
             @display("p=412,67");
         }
+        // MAC address mapper between IP2Nic and PDCP-RRC
+        macAddressMapper: MacAddressMapper if hasAddressMapper {
+            @display("p=387,104");
+        }
         // PDCP-RRC Layer
         pdcpRrc: <> like ILtePdcpRrc {
             @display("p=362,141");
@@ -105,7 +111,13 @@ module LteNicBase extends NetworkInterface like ICellularNic
         }
 
     connections allowunconnected:
-        ip2nic.stackNic <--> pdcpRrc.DataPort;
+        ip2nic.stackNic$o --> macAddressMapper.upperLayerIn if hasAddressMapper; 
+        ip2nic.stackNic$i <-- macAddressMapper.upperLayerOut if hasAddressMapper;
+        macAddressMapper.lowerLayerOut --> pdcpRrc.DataPort$i if hasAddressMapper;
+        macAddressMapper.lowerLayerIn <-- pdcpRrc.DataPort$o if hasAddressMapper;
+
+        ip2nic.stackNic$o --> pdcpRrc.DataPort$i if !hasAddressMapper;
+        ip2nic.stackNic$i <-- pdcpRrc.DataPort$o if !hasAddressMapper;
 
         //#
         //# Internal LTE Stack Connections
@@ -133,4 +145,3 @@ module LteNicBase extends NetworkInterface like ICellularNic
         ip2nic.upperLayerOut --> {  delay = parent.processingDelayOut; } --> upperLayerOut;
         upperLayerIn --> {  delay = parent.processingDelayIn; } --> ip2nic.upperLayerIn;
 }
-

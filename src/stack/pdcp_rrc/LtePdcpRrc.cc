@@ -177,7 +177,8 @@ void LtePdcpRrcBase::fromDataPort(cPacket *pktAux)
     // assign LCID
     lteInfo->setLcid(mylcid);
     lteInfo->setSourceId(nodeId_);
-    lteInfo->setDestId(destId);
+    if (lteInfo->getDestId() == 0) //TODO HACK: do not overwrite destId set by higher layers (it is NOT the task of PDCP to determine destId anyway, should rather happen in GTP-U from TEID)
+        lteInfo->setDestId(destId);
 
     // obtain CID
     MacCid cid = idToMacCid(destId, mylcid);
