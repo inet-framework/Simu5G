@@ -18,6 +18,7 @@
 #include "common/LteCommon.h"
 
 #include "common/LteControlInfo.h"
+#include "common/LteControlInfoTags_m.h"
 #include <sstream>
 
 namespace simu5g {
@@ -122,7 +123,8 @@ void PacketFlowManagerEnb::insertPdcpSdu(inet::Packet *pdcpPkt)
     if (connectionMap_.find(lcid) == connectionMap_.end())
         initLcid(lcid, lteInfo->getDestId());
 
-    unsigned int pdcpSno = lteInfo->getSequenceNumber();
+    auto ipFlowTag = pdcpPkt->getTag<LteIpFlowTag>();
+    unsigned int pdcpSno = ipFlowTag->getSequenceNumber();
     int64_t pduSize = pdcpPkt->getByteLength();
     MacNodeId nodeId = lteInfo->getDestId();
     simtime_t entryTime = simTime();
@@ -176,7 +178,8 @@ void PacketFlowManagerEnb::receivedPdcpSdu(inet::Packet *pdcpPkt)
     /*
      * update packetLossRate UL
      */
-    unsigned int sno = lteInfo->getSequenceNumber();
+    auto ipFlowTag = pdcpPkt->getTag<LteIpFlowTag>();
+    unsigned int sno = ipFlowTag->getSequenceNumber();
     auto cit = packetLossRate_.find(nodeId);
     if (cit == packetLossRate_.end()) {
         packetLossRate_[nodeId].clear();
@@ -885,4 +888,3 @@ void PacketFlowManagerEnb::finish()
 }
 
 } //namespace
-

@@ -12,6 +12,7 @@
 #include "stack/pdcp_rrc/LteTxPdcpEntity.h"
 
 #include <inet/common/ProtocolTag_m.h>
+#include "common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -31,7 +32,8 @@ void LteTxPdcpEntity::handlePacketFromUpperLayer(Packet *pkt)
     pdcp_->headerCompress(pkt); // header compression
 
     // Write information into the ControlInfo object
-    lteInfo->setSequenceNumber(sno_++); // set sequence number for this PDCP SDU.
+    auto ipFlowTag = pkt->getTagForUpdate<LteIpFlowTag>();
+    ipFlowTag->setSequenceNumber(sno_++); // set sequence number for this PDCP SDU.
 
     // set source and destination IDs
     setIds(lteInfo);
@@ -84,4 +86,3 @@ void LteTxPdcpEntity::setIds(inet::Ptr<FlowControlInfo> lteInfo)
 
 
 } //namespace
-

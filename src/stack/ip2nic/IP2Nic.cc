@@ -31,6 +31,7 @@
 #include "stack/mac/LteMacBase.h"
 #include "common/binder/Binder.h"
 #include "common/cellInfo/CellInfo.h"
+#include "common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -227,10 +228,16 @@ void IP2Nic::toStackUe(Packet *pkt)
         EV_ERROR << "Unknown transport protocol id " << transportProtocol << " in packet " << pkt->getName() << std::endl;
     }
 
-    pkt->addTagIfAbsent<FlowControlInfo>()->setSrcAddr(srcAddr.getInt());
-    pkt->addTagIfAbsent<FlowControlInfo>()->setDstAddr(destAddr.getInt());
-    pkt->addTagIfAbsent<FlowControlInfo>()->setHeaderSize(headerSize);
-    pkt->addTagIfAbsent<FlowControlInfo>()->setTypeOfService(tos);
+    // Add IP flow information to LteIpFlowTag
+    auto ipFlowTag = pkt->addTagIfAbsent<LteIpFlowTag>();
+    ipFlowTag->setSrcAddr(srcAddr.getInt());
+    ipFlowTag->setDstAddr(destAddr.getInt());
+    ipFlowTag->setHeaderSize(headerSize);
+    ipFlowTag->setTypeOfService(tos);
+    ipFlowTag->setSequenceNumber(0); // Will be set by PDCP
+
+    // Add FlowControlInfo (without the IP fields)
+    pkt->addTagIfAbsent<FlowControlInfo>();
     printControlInfo(pkt);
 
     // mark packet for using NR
@@ -337,11 +344,16 @@ void IP2Nic::toStackBs(Packet *pkt)
         }
     }
 
-    // prepare flow info for NIC
-    pkt->addTagIfAbsent<FlowControlInfo>()->setSrcAddr(srcAddr.getInt());
-    pkt->addTagIfAbsent<FlowControlInfo>()->setDstAddr(destAddr.getInt());
-    pkt->addTagIfAbsent<FlowControlInfo>()->setTypeOfService(tos);
-    pkt->addTagIfAbsent<FlowControlInfo>()->setHeaderSize(headerSize);
+    // Add IP flow information to LteIpFlowTag
+    auto ipFlowTag = pkt->addTagIfAbsent<LteIpFlowTag>();
+    ipFlowTag->setSrcAddr(srcAddr.getInt());
+    ipFlowTag->setDstAddr(destAddr.getInt());
+    ipFlowTag->setHeaderSize(headerSize);
+    ipFlowTag->setTypeOfService(tos);
+    ipFlowTag->setSequenceNumber(0); // Will be set by PDCP
+
+    // Add FlowControlInfo (without the IP fields)
+    pkt->addTagIfAbsent<FlowControlInfo>();
 
     // mark packet for using NR
     if (!markPacket(pkt->getTagForUpdate<FlowControlInfo>())) {
@@ -356,11 +368,12 @@ void IP2Nic::toStackBs(Packet *pkt)
 
 void IP2Nic::printControlInfo(Packet *pkt)
 {
-    EV << "Src IP : " << Ipv4Address(pkt->getTag<FlowControlInfo>()->getSrcAddr()) << endl;
-    EV << "Dst IP : " << Ipv4Address(pkt->getTag<FlowControlInfo>()->getDstAddr()) << endl;
-    EV << "ToS : " << pkt->getTag<FlowControlInfo>()->getTypeOfService() << endl;
-    EV << "Seq Num  : " << pkt->getTag<FlowControlInfo>()->getSequenceNumber() << endl;
-    EV << "Header Size : " << pkt->getTag<FlowControlInfo>()->getHeaderSize() << endl;
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
+    EV << "Src IP : " << Ipv4Address(ipFlowTag->getSrcAddr()) << endl;
+    EV << "Dst IP : " << Ipv4Address(ipFlowTag->getDstAddr()) << endl;
+    EV << "ToS : " << ipFlowTag->getTypeOfService() << endl;
+    EV << "Seq Num  : " << ipFlowTag->getSequenceNumber() << endl;
+    EV << "Header Size : " << ipFlowTag->getHeaderSize() << endl;
 }
 
 void IP2Nic::registerInterface()
@@ -423,19 +436,23 @@ bool IP2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
     // TODO use a better policy
     // TODO make it configurable from INI or XML?
 
+    // Get the packet to access the IP flow tag
+    auto pkt = check_and_cast<inet::Packet*>(ci->getOwner());
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
+
     if (nodeType_ == ENODEB || nodeType_ == GNODEB) {
-        MacNodeId ueId = binder_->getMacNodeId((Ipv4Address)ci->getDstAddr());
-        MacNodeId nrUeId = binder_->getNrMacNodeId((Ipv4Address)ci->getDstAddr());
+        MacNodeId ueId = binder_->getMacNodeId((Ipv4Address)ipFlowTag->getDstAddr());
+        MacNodeId nrUeId = binder_->getNrMacNodeId((Ipv4Address)ipFlowTag->getDstAddr());
         bool ueLteStack = (binder_->getNextHop(ueId) != NODEID_NONE);
         bool ueNrStack = (binder_->getNextHop(nrUeId) != NODEID_NONE);
 
-        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && ci->getTypeOfService() >= 20) { // use split bearer TODO fix threshold
+        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && ipFlowTag->getTypeOfService() >= 20) { // use split bearer TODO fix threshold
             // even packets go through the LTE eNodeB
             // odd packets go through the gNodeB
 
             int sentPackets;
-            if ((sentPackets = sbTable_->find_entry(ci->getSrcAddr(), ci->getDstAddr(), ci->getTypeOfService())) < 0)
-                sentPackets = sbTable_->create_entry(ci->getSrcAddr(), ci->getDstAddr(), ci->getTypeOfService());
+            if ((sentPackets = sbTable_->find_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService())) < 0)
+                sentPackets = sbTable_->create_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService());
 
             if (sentPackets % 2 == 0)
                 ci->setUseNR(false);
@@ -444,7 +461,7 @@ bool IP2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
         }
         else {
             if (ueLteStack && ueNrStack) {
-                if (ci->getTypeOfService() >= 10)                                                     // use secondary cell group bearer TODO fix threshold
+                if (ipFlowTag->getTypeOfService() >= 10)                                                     // use secondary cell group bearer TODO fix threshold
                     ci->setUseNR(true);
                 else                                                  // use master cell group bearer
                     ci->setUseNR(false);
@@ -461,10 +478,10 @@ bool IP2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
     if (nodeType_ == UE) {
         bool ueLteStack = (binder_->getNextHop(nodeId_) != NODEID_NONE);
         bool ueNrStack = (binder_->getNextHop(nrNodeId_) != NODEID_NONE);
-        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && ci->getTypeOfService() >= 20) { // use split bearer TODO fix threshold
+        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && ipFlowTag->getTypeOfService() >= 20) { // use split bearer TODO fix threshold
             int sentPackets;
-            if ((sentPackets = sbTable_->find_entry(ci->getSrcAddr(), ci->getDstAddr(), ci->getTypeOfService())) < 0)
-                sentPackets = sbTable_->create_entry(ci->getSrcAddr(), ci->getDstAddr(), ci->getTypeOfService());
+            if ((sentPackets = sbTable_->find_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService())) < 0)
+                sentPackets = sbTable_->create_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService());
 
             if (sentPackets % 2 == 0)
                 ci->setUseNR(false);
@@ -478,7 +495,7 @@ bool IP2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
                 ci->setUseNR(false);
             else {
                 // both != 0
-                if (ci->getTypeOfService() >= 10)                                                     // use secondary cell group bearer TODO fix threshold
+                if (ipFlowTag->getTypeOfService() >= 10)                                                     // use secondary cell group bearer TODO fix threshold
                     ci->setUseNR(true);
                 else                                                       // use master cell group bearer
                     ci->setUseNR(false);
@@ -647,4 +664,3 @@ void IP2Nic::finish()
 }
 
 } //namespace
-

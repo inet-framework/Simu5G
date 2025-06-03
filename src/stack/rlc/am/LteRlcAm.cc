@@ -12,6 +12,7 @@
 #include <inet/common/ProtocolTag_m.h>
 
 #include "common/LteCommon.h"
+#include "common/LteControlInfoTags_m.h"
 #include "stack/rlc/am/LteRlcAm.h"
 #include "stack/rlc/am/buffer/AmTxQueue.h"
 #include "stack/rlc/am/buffer/AmRxQueue.h"
@@ -124,7 +125,8 @@ void LteRlcAm::handleUpperMessage(cPacket *pktAux)
 
     // Create a new RLC packet
     auto rlcPkt = makeShared<LteRlcAmSdu>();
-    rlcPkt->setSnoMainPacket(lteInfo->getSequenceNumber());
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
+    rlcPkt->setSnoMainPacket(ipFlowTag->getSequenceNumber());
     rlcPkt->setChunkLength(B(RLC_HEADER_AM));
     pkt->insertAtFront(rlcPkt);
     drop(pkt);
@@ -267,4 +269,3 @@ void LteRlcAm::handleMessage(cMessage *msg)
 }
 
 } //namespace
-

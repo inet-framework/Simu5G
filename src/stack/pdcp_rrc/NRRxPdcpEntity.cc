@@ -10,6 +10,7 @@
 //
 
 #include "stack/pdcp_rrc/NRRxPdcpEntity.h"
+#include "common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -34,7 +35,8 @@ void NRRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu)
     Enter_Method("NRRxPdcpEntity::handlePdcpSdu");
 
     auto controlInfo = pdcpSdu->getTag<FlowControlInfo>();
-    unsigned int rcvdSno = controlInfo->getSequenceNumber();
+    auto ipFlowTag = pdcpSdu->getTag<LteIpFlowTag>();
+    unsigned int rcvdSno = ipFlowTag->getSequenceNumber();
 
     EV << NOW << " NRRxPdcpEntity::handlePdcpSdu - processing PDCP SDU with SN[" << rcvdSno << "]" << endl;
 
@@ -175,4 +177,3 @@ void NRRxPdcpEntity::handleMessage(cMessage *msg)
 }
 
 } //namespace
-

@@ -11,6 +11,7 @@
 
 #include "stack/pdcp_rrc/LteRxPdcpEntity.h"
 #include "stack/packetFlowManager/PacketFlowManagerBase.h"
+#include "common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -49,8 +50,9 @@ void LteRxPdcpEntity::handlePdcpSdu(Packet *pkt)
     Enter_Method("LteRxPdcpEntity::handlePdcpSdu");
 
     auto controlInfo = pkt->getTag<FlowControlInfo>();
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
 
-    EV << NOW << " LteRxPdcpEntity::handlePdcpSdu - processing PDCP SDU with SN[" << controlInfo->getSequenceNumber() << "]" << endl;
+    EV << NOW << " LteRxPdcpEntity::handlePdcpSdu - processing PDCP SDU with SN[" << ipFlowTag->getSequenceNumber() << "]" << endl;
 
     // deliver to IP layer
     pdcp_->toDataPort(pkt);
@@ -58,4 +60,3 @@ void LteRxPdcpEntity::handlePdcpSdu(Packet *pkt)
 
 
 } //namespace
-

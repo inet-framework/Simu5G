@@ -12,6 +12,7 @@
 #include <inet/networklayer/common/NetworkInterface.h>
 
 #include "stack/pdcp_rrc/NRPdcpRrcUe.h"
+#include "common/LteControlInfoTags_m.h"
 #include "stack/pdcp_rrc/NRTxPdcpEntity.h"
 #include "stack/pdcp_rrc/NRRxPdcpEntity.h"
 #include "stack/packetFlowManager/PacketFlowManagerBase.h"
@@ -41,9 +42,12 @@ void NRPdcpRrcUe::initialize(int stage)
     LtePdcpRrcUeD2D::initialize(stage);
 }
 
-MacNodeId NRPdcpRrcUe::getDestId(inet::Ptr<FlowControlInfo> lteInfo)
+MacNodeId NRPdcpRrcUe::getDestId(inet::Ptr<FlowControlInfo> lteInfo)  //TODO fishy!!!
 {
-    Ipv4Address destAddr = Ipv4Address(lteInfo->getDstAddr());
+    // Get the IP flow information from the packet
+    auto pkt = check_and_cast<inet::Packet*>(lteInfo->getOwner());
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
+    Ipv4Address destAddr = Ipv4Address(ipFlowTag->getDstAddr());
     MacNodeId destId = binder_->getMacNodeId(destAddr);
     MacNodeId srcId = (lteInfo->getUseNR()) ? nrNodeId_ : nodeId_;
 
@@ -68,6 +72,7 @@ void NRPdcpRrcUe::fromDataPort(cPacket *pktAux)
     // Control Information
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
     setTrafficInformation(pkt, lteInfo);
 
     // select the correct nodeId for the source
@@ -75,7 +80,7 @@ void NRPdcpRrcUe::fromDataPort(cPacket *pktAux)
     lteInfo->setSourceId(nodeId);
 
     // get destination info
-    Ipv4Address destAddr = Ipv4Address(lteInfo->getDstAddr());
+    Ipv4Address destAddr = Ipv4Address(ipFlowTag->getDstAddr());
     MacNodeId destId;
 
     // the direction of the incoming connection is a D2D_MULTI one if the application is of the same type,
@@ -89,7 +94,7 @@ void NRPdcpRrcUe::fromDataPort(cPacket *pktAux)
         // multicast IP addresses are 224.0.0.0/4.
         // We consider the host part of the IP address (the remaining 28 bits) as identifier of the group,
         // so it is univocally determined for the whole network
-        uint32_t address = Ipv4Address(lteInfo->getDstAddr()).getInt();
+        uint32_t address = Ipv4Address(ipFlowTag->getDstAddr()).getInt();
         uint32_t mask = ~((uint32_t)255 << 28);      // 0000 1111 1111 1111
         uint32_t groupId = address & mask;
         lteInfo->setMulticastGroupId((int32_t)groupId);
@@ -119,9 +124,9 @@ void NRPdcpRrcUe::fromDataPort(cPacket *pktAux)
     }
 
     // Cid Request
-    EV << "NRPdcpRrcUe : Received CID request for Traffic [ " << "Source: " << Ipv4Address(lteInfo->getSrcAddr())
-       << " Destination: " << Ipv4Address(lteInfo->getDstAddr())
-       << " , ToS: " << lteInfo->getTypeOfService()
+    EV << "NRPdcpRrcUe : Received CID request for Traffic [ " << "Source: " << Ipv4Address(ipFlowTag->getSrcAddr())
+       << " Destination: " << Ipv4Address(ipFlowTag->getDstAddr())
+       << " , ToS: " << ipFlowTag->getTypeOfService()
        << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
 
     /*
@@ -130,7 +135,7 @@ void NRPdcpRrcUe::fromDataPort(cPacket *pktAux)
      */
 
     LogicalCid mylcid;
-    if ((mylcid = ht_.find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection())) == 0xFFFF) {
+    if ((mylcid = ht_.find_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService(), lteInfo->getDirection())) == 0xFFFF) {
         // LCID not found
 
         // assign a new LCID to the connection
@@ -138,7 +143,7 @@ void NRPdcpRrcUe::fromDataPort(cPacket *pktAux)
 
         EV << "NRPdcpRrcUe : Connection not found, new CID created with LCID " << mylcid << "\n";
 
-        ht_.create_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection(), mylcid);
+        ht_.create_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService(), lteInfo->getDirection(), mylcid);
     }
 
     // assign LCID
@@ -259,4 +264,3 @@ void NRPdcpRrcUe::sendToLowerLayer(Packet *pkt)
 }
 
 } //namespace
-

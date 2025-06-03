@@ -15,6 +15,7 @@
 
 #include "stack/d2dModeSelection/D2DModeSwitchNotification_m.h"
 #include "stack/packetFlowManager/PacketFlowManagerBase.h"
+#include "common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -33,13 +34,14 @@ void LtePdcpRrcEnbD2D::fromDataPort(cPacket *pktAux)
     // Control Information
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
 
     setTrafficInformation(pkt, lteInfo);
 
     // get source info
-    Ipv4Address srcAddr = Ipv4Address(lteInfo->getSrcAddr());
+    Ipv4Address srcAddr = Ipv4Address(ipFlowTag->getSrcAddr());
     // get destination info
-    Ipv4Address destAddr = Ipv4Address(lteInfo->getDstAddr());
+    Ipv4Address destAddr = Ipv4Address(ipFlowTag->getDstAddr());
     MacNodeId srcId, destId;
 
     // set direction based on the destination Id. If the destination can be reached
@@ -61,9 +63,9 @@ void LtePdcpRrcEnbD2D::fromDataPort(cPacket *pktAux)
     }
 
     // Cid Request
-    EV << "LtePdcpRrcEnbD2D : Received CID request for Traffic [ " << "Source: " << Ipv4Address(lteInfo->getSrcAddr())
-       << " Destination: " << Ipv4Address(lteInfo->getDstAddr())
-       << " , ToS: " << lteInfo->getTypeOfService()
+    EV << "LtePdcpRrcEnbD2D : Received CID request for Traffic [ " << "Source: " << Ipv4Address(ipFlowTag->getSrcAddr())
+       << " Destination: " << Ipv4Address(ipFlowTag->getDstAddr())
+       << " , ToS: " << ipFlowTag->getTypeOfService()
        << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
 
     /*
@@ -72,7 +74,7 @@ void LtePdcpRrcEnbD2D::fromDataPort(cPacket *pktAux)
      */
 
     LogicalCid mylcid;
-    if ((mylcid = ht_.find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection())) == 0xFFFF) {
+    if ((mylcid = ht_.find_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService(), lteInfo->getDirection())) == 0xFFFF) {
         // LCID not found
 
         // assign a new LCID to the connection
@@ -80,7 +82,7 @@ void LtePdcpRrcEnbD2D::fromDataPort(cPacket *pktAux)
 
         EV << "LtePdcpRrcEnbD2D : Connection not found, new CID created with LCID " << mylcid << "\n";
 
-        ht_.create_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection(), mylcid);
+        ht_.create_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService(), lteInfo->getDirection(), mylcid);
     }
 
     // assign LCID
@@ -134,4 +136,3 @@ void LtePdcpRrcEnbD2D::pdcpHandleD2DModeSwitch(MacNodeId peerId, LteD2DMode newM
 }
 
 } //namespace
-

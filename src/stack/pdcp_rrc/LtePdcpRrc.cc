@@ -17,6 +17,7 @@
 
 #include "stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "stack/pdcp_rrc/packet/LteRohcPdu_m.h"
+#include "common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -153,31 +154,32 @@ void LtePdcpRrcBase::fromDataPort(cPacket *pktAux)
     // Control Information
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
 
     setTrafficInformation(pkt, lteInfo);
 
     MacNodeId destId = getDestId(lteInfo);
 
     // CID Request
-    EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << Ipv4Address(lteInfo->getSrcAddr())
-       << " Destination: " << Ipv4Address(lteInfo->getDstAddr())
-       << " ToS: " << lteInfo->getTypeOfService() << " ]\n";
+    EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << Ipv4Address(ipFlowTag->getSrcAddr())
+       << " Destination: " << Ipv4Address(ipFlowTag->getDstAddr())
+       << " ToS: " << ipFlowTag->getTypeOfService() << " ]\n";
 
     // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
     LogicalCid mylcid;
-    if ((mylcid = ht_.find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService())) == 0xFFFF) {
+    if ((mylcid = ht_.find_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService())) == 0xFFFF) {
         // LCID not found
         mylcid = lcid_++;
 
         EV << "LteRrc : Connection not found, new CID created with LCID " << mylcid << "\n";
 
-        ht_.create_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), mylcid);
+        ht_.create_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService(), mylcid);
     }
 
     // assign LCID
     lteInfo->setLcid(mylcid);
     lteInfo->setSourceId(nodeId_);
-    if (lteInfo->getDestId() == 0) //TODO HACK: do not overwrite destId set by higher layers (it is NOT the task of PDCP to determine destId anyway, should rather happen in GTP-U from TEID)
+    if (lteInfo->getDestId() == NODEID_NONE) //TODO HACK: do not overwrite destId set by higher layers (it is NOT the task of PDCP to determine destId anyway, should rather happen in GTP-U from TEID)
         lteInfo->setDestId(destId);
 
     // obtain CID
@@ -484,5 +486,28 @@ void LtePdcpRrcUe::initialize(int stage)
     }
 }
 
-} //namespace
+MacNodeId LtePdcpRrcEnb::getDestId(inet::Ptr<FlowControlInfo> lteInfo)
+{
+    // Get the IP flow information from the packet
+    auto pkt = check_and_cast<inet::Packet*>(lteInfo->getOwner());
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
 
+    // destination id
+    MacNodeId destId = binder_->getMacNodeId(inet::Ipv4Address(ipFlowTag->getDstAddr()));
+    // master of this UE (myself)
+    MacNodeId master = binder_->getNextHop(destId);
+    if (master != nodeId_) {
+        destId = master;
+    }
+    else {
+        // for dual connectivity
+        master = binder_->getMasterNode(master);
+        if (master != nodeId_) {
+            destId = master;
+        }
+    }
+    // else UE is directly attached
+    return destId;
+}
+
+} //namespace

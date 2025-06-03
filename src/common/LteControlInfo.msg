@@ -86,13 +86,9 @@ class LteControlInfo extends inet::TagBase {
 // - Connection information: Logical CID
 //
 class FlowControlInfo extends LteControlInfo {
-    //# IP Control Information
+    //# IP Control Information moved to LteIpFlowTag
+    // srcAddr, dstAddr, typeOfService, sequenceNumber, headerSize are now in LteIpFlowTag
 
-    uint32 srcAddr = 0;                     // source IP
-    uint32 dstAddr = 0;                     // destination IP
-    uint16 typeOfService = 0;               // IP Type Of Service
-    unsigned int sequenceNumber = 0;        // packet sequence number
-    int headerSize = 0;                     // IP + Transport header size (used by pdcp ROHC)
     bool useNR = false;                     // flag for sending this packet using NR
 }
 

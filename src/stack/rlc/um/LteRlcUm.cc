@@ -14,6 +14,7 @@
 
 #include "stack/rlc/um/LteRlcUm.h"
 #include "stack/mac/packet/LteMacSduRequest.h"
+#include "common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -164,7 +165,8 @@ void LteRlcUm::handleUpperMessage(cPacket *pktAux)
 
     // Create a new RLC packet
     auto rlcPkt = inet::makeShared<LteRlcSdu>();
-    rlcPkt->setSnoMainPacket(lteInfo->getSequenceNumber());
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
+    rlcPkt->setSnoMainPacket(ipFlowTag->getSequenceNumber());
     rlcPkt->setLengthMainPacket(pkt->getByteLength());
     pkt->insertAtFront(rlcPkt);
 
@@ -337,4 +339,3 @@ void LteRlcUm::resetThroughputStats(MacNodeId nodeId)
 }
 
 } //namespace
-

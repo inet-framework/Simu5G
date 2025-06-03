@@ -13,6 +13,7 @@
 
 #include "common/LteCommon.h"
 #include "common/LteControlInfo.h"
+#include "common/LteControlInfoTags_m.h"
 #include "stack/mac/LteMacBase.h"
 #include "stack/rlc/am/LteRlcAm.h"
 
@@ -230,16 +231,20 @@ void AmRxQueue::enque(Packet *pkt)
     }
 
     // Check if we need to extract FlowControlInfo for building up the matrix
-    if (flowControlInfo_ == nullptr) {
+    if (flowControlInfo_ == nullptr) {   //TODO this is fishy -- maybe flowControlInfo_ should actually be LteIpFlowTag?
         auto orig = pkt->getTag<FlowControlInfo>();
         // Make a copy of the original control info
         flowControlInfo_ = orig->dup();
+        // Get IP flow information from the packet
+        auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
         // Swap source and destination fields
         flowControlInfo_->setSourceId(orig->getDestId());
-        flowControlInfo_->setSrcAddr(orig->getDstAddr());
-        flowControlInfo_->setTypeOfService(orig->getTypeOfService());
         flowControlInfo_->setDestId(orig->getSourceId());
-        flowControlInfo_->setDstAddr(orig->getSrcAddr());
+        // Create a new IP flow tag with swapped addresses
+        auto newIpFlowTag = pkt->addTagIfAbsent<LteIpFlowTag>();
+        newIpFlowTag->setSrcAddr(ipFlowTag->getDstAddr());
+        newIpFlowTag->setDstAddr(ipFlowTag->getSrcAddr());
+        newIpFlowTag->setTypeOfService(ipFlowTag->getTypeOfService());
         // Set up other fields
         flowControlInfo_->setDirection((orig->getDirection() == DL) ? UL : DL);
     }
@@ -717,4 +722,3 @@ AmRxQueue::~AmRxQueue()
 }
 
 } //namespace
-

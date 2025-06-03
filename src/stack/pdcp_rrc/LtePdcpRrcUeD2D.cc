@@ -10,6 +10,7 @@
 //
 
 #include "stack/pdcp_rrc/LtePdcpRrcUeD2D.h"
+#include "common/LteControlInfoTags_m.h"
 #include <inet/networklayer/common/L3AddressResolver.h>
 #include "stack/d2dModeSelection/D2DModeSwitchNotification_m.h"
 #include "stack/packetFlowManager/PacketFlowManagerBase.h"
@@ -23,7 +24,10 @@ using namespace omnetpp;
 
 MacNodeId LtePdcpRrcUeD2D::getDestId(inet::Ptr<FlowControlInfo> lteInfo)
 {
-    Ipv4Address destAddr = Ipv4Address(lteInfo->getDstAddr());
+    // Get the IP flow information from the packet
+    auto pkt = check_and_cast<inet::Packet*>(lteInfo->getOwner());
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
+    Ipv4Address destAddr = Ipv4Address(ipFlowTag->getDstAddr());
     MacNodeId destId = binder_->getMacNodeId(destAddr);
 
     // check if the destination is inside the LTE network
@@ -45,11 +49,12 @@ void LtePdcpRrcUeD2D::fromDataPort(cPacket *pktAux)
     // Control Information
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+    auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
 
     setTrafficInformation(pkt, lteInfo);
 
     // get destination info
-    Ipv4Address destAddr = Ipv4Address(lteInfo->getDstAddr());
+    Ipv4Address destAddr = Ipv4Address(ipFlowTag->getDstAddr());
     MacNodeId destId;
 
     // the direction of the incoming connection is a D2D_MULTI one if the application is of the same type,
@@ -63,7 +68,7 @@ void LtePdcpRrcUeD2D::fromDataPort(cPacket *pktAux)
         // multicast IP addresses are 224.0.0.0/4.
         // We consider the host part of the IP address (the remaining 28 bits) as identifier of the group,
         // so as it is uniquely determined for the whole network
-        uint32_t address = Ipv4Address(lteInfo->getDstAddr()).getInt();
+        uint32_t address = Ipv4Address(ipFlowTag->getDstAddr()).getInt();
         uint32_t mask = ~((uint32_t)255 << 28);      // 0000 1111 1111 1111
         uint32_t groupId = address & mask;
         lteInfo->setMulticastGroupId((int32_t)groupId);
@@ -93,9 +98,9 @@ void LtePdcpRrcUeD2D::fromDataPort(cPacket *pktAux)
     }
 
     // Cid Request
-    EV << "LtePdcpRrcUeD2D : Received CID request for Traffic [ " << "Source: " << Ipv4Address(lteInfo->getSrcAddr())
-       << " Destination: " << Ipv4Address(lteInfo->getDstAddr())
-       << " , ToS: " << lteInfo->getTypeOfService()
+    EV << "LtePdcpRrcUeD2D : Received CID request for Traffic [ " << "Source: " << Ipv4Address(ipFlowTag->getSrcAddr())
+       << " Destination: " << Ipv4Address(ipFlowTag->getDstAddr())
+       << " , ToS: " << ipFlowTag->getTypeOfService()
        << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
 
     /*
@@ -104,7 +109,7 @@ void LtePdcpRrcUeD2D::fromDataPort(cPacket *pktAux)
      */
 
     LogicalCid mylcid;
-    if ((mylcid = ht_.find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection())) == 0xFFFF) {
+    if ((mylcid = ht_.find_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService(), lteInfo->getDirection())) == 0xFFFF) {
         // LCID not found
 
         // assign a new LCID to the connection
@@ -112,7 +117,7 @@ void LtePdcpRrcUeD2D::fromDataPort(cPacket *pktAux)
 
         EV << "LtePdcpRrcUeD2D : Connection not found, new CID created with LCID " << mylcid << "\n";
 
-        ht_.create_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection(), mylcid);
+        ht_.create_entry(ipFlowTag->getSrcAddr(), ipFlowTag->getDstAddr(), ipFlowTag->getTypeOfService(), lteInfo->getDirection(), mylcid);
     }
 
     // assign LCID
@@ -162,4 +167,3 @@ void LtePdcpRrcUeD2D::pdcpHandleD2DModeSwitch(MacNodeId peerId, LteD2DMode newMo
 }
 
 } //namespace
-

@@ -358,25 +358,8 @@ class LtePdcpRrcEnb : public LtePdcpRrcBase
         delete lteInfo;
     }
 
-    MacNodeId getDestId(inet::Ptr<FlowControlInfo> lteInfo) override
-    {
-        // destination id
-        MacNodeId destId = binder_->getMacNodeId(inet::Ipv4Address(lteInfo->getDstAddr()));
-        // master of this UE (myself)
-        MacNodeId master = binder_->getNextHop(destId);
-        if (master != nodeId_) {
-            destId = master;
-        }
-        else {
-            // for dual connectivity
-            master = binder_->getMasterNode(master);
-            if (master != nodeId_) {
-                destId = master;
-            }
-        }
-        // else UE is directly attached
-        return destId;
-    }
+    MacNodeId getDestId(inet::Ptr<FlowControlInfo> lteInfo) override;
+    // Implementation moved to .cc file to access LteIpFlowTag
 
     Direction getDirection() override
     {
@@ -392,4 +375,3 @@ class LtePdcpRrcEnb : public LtePdcpRrcBase
 } //namespace
 
 #endif
-

@@ -17,6 +17,7 @@
 #include "stack/mac/packet/LteMacPdu.h"
 
 #include "common/LteControlInfo.h"
+#include "common/LteControlInfoTags_m.h"
 
 #include <sstream>
 
@@ -119,7 +120,8 @@ void PacketFlowManagerUe::insertPdcpSdu(inet::Packet *pdcpPkt)
     if (connectionMap_.find(lcid) == connectionMap_.end())
         initLcid(lcid, lteInfo->getSourceId());
 
-    unsigned int pdcpSno = lteInfo->getSequenceNumber();
+    auto ipFlowTag = pdcpPkt->getTag<LteIpFlowTag>();
+    unsigned int pdcpSno = ipFlowTag->getSequenceNumber();
     int64_t pdcpSize = pdcpPkt->getByteLength();
     simtime_t arrivalTime = simTime();
 
@@ -519,4 +521,3 @@ void PacketFlowManagerUe::finish()
 }
 
 } //namespace
-
