@@ -26,6 +26,7 @@ namespace simu5g {
  */
 class NrPdcpUe : public LtePdcpUeD2D
 {
+
     cGate *nrTmSapOutGate_ = nullptr;
     cGate *nrUmSapOutGate_ = nullptr;
     cGate *nrAmSapOutGate_ = nullptr;
@@ -37,7 +38,7 @@ class NrPdcpUe : public LtePdcpUeD2D
     bool dualConnectivityEnabled_;
 
   protected:
-
+    int drbIndex;
     void initialize(int stage) override;
 
     /**
