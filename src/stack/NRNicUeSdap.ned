@@ -14,19 +14,19 @@ package simu5g.stack;
 
 import simu5g.stack.sdap.NrTxSdapEntity;
 
-//
 // This module extends the UE NIC to insert SDAP functionality (transmit-side only)
 // between IP and PDCP layers, allowing QoS Flow management per 3GPP 5G specifications.
-//
 module NRNicUeSdap extends NRNicUe
 {
     parameters:
 		nrSdapDisabled = false; 
+		int numDrbs;
         @display("bgb=694,443");
 
     submodules:
 
         nrTxSdapEntity: NrTxSdapEntity {
+            numDrbs = parent.numDrbs;
             @display("p=466,141");
         }
 
@@ -35,5 +35,5 @@ module NRNicUeSdap extends NRNicUe
         ip2nic.stackNic <--> nrTxSdapEntity.DataPort;
 
         //# SDAP <-> PDCP
-        nrTxSdapEntity.stackSdap <--> pdcpRrc.DataPort;
+        nrTxSdapEntity.stackSdap++ <--> pdcpRrc.DataPort;
 }

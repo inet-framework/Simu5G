@@ -13,19 +13,19 @@
 package simu5g.stack;
 
 import simu5g.stack.sdap.NrRxSdapEntity;
-//
-// This module extends the Enb NIC to insert SDAP functionality (receiver-side only)
+//This module extends the Enb NIC to insert SDAP functionality (receiver-side only)
 // between IP and PDCP layers, allowing QoS Flow management per 3GPP 5G specifications.
-//
 module NRNicEnbSdap extends NRNicEnb
 {
     parameters:
         nrSdapDisabled = false;
+        int numDrbs;
         @display("bgb=694,443");
 
     submodules:
 
         nrRxSdapEntity: NrRxSdapEntity {
+            numDrbs = parent. numDrbs;
             @display("p=493,67");
         }
 
@@ -33,7 +33,7 @@ module NRNicEnbSdap extends NRNicEnb
         ip2nic.stackNic <--> nrRxSdapEntity.DataPort;
 
         //# SDAP <-> PDCP
-        nrRxSdapEntity.stackSdap <--> pdcpRrc.DataPort;
+        nrRxSdapEntity.stackSdap++ <--> pdcpRrc.DataPort;
 
 }
 
