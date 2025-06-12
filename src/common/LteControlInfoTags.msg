@@ -68,7 +68,7 @@ class LteIpFlowTag extends inet::TagBase {
     uint32 srcAddr = 0;                                 // source IP address
     uint32 dstAddr = 0;                                 // destination IP address
     uint16 typeOfService = 0;                           // IP Type Of Service
-    unsigned int sequenceNumber = 0;                    // packet sequence number
+    unsigned int sequenceNumber = 0;                    // packet sequence number --TODO this is some other seqNum, not IP!
     int headerSize = 0;                                 // IP + Transport header size (used by pdcp ROHC)
 }
 

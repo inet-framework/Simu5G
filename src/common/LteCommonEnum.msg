@@ -51,7 +51,7 @@ enum LteTrafficClass
 /// Scheduler grant type
 enum GrantType
 {
-    FITALL = 0; FIXED_ = 1; URGENT = 2; UNKNOWN_GRANT_TYPE = 3; // Note: FIXED would clash with <windows.h> 
+    FITALL = 0; FIXED_ = 1; URGENT = 2; UNKNOWN_GRANT_TYPE = 3; // Note: FIXED would clash with <windows.h>
 };
 
 /// Lte RLC Types
@@ -75,8 +75,8 @@ enum LteD2DMode
 };
 
 ///
-//      Applications  
-// 
+//      Applications
+//
 
 enum ApplicationType
 {
@@ -93,7 +93,7 @@ enum ApplicationType
 
 //
 //  Scheduling discipline
-// 
+//
 
 enum SchedDiscipline
 {
@@ -118,7 +118,7 @@ enum PilotComputationModes
 };
 
 
-///   Transmission Modes  
+///   Transmission Modes
 enum TxMode
 {
     // Note: If you add more tx modes, update DL_NUM_TXMODE and UL_NUM_TXMODE
@@ -165,7 +165,7 @@ enum DeploymentScenario
 };
 
 
-//        DAS Support      
+//        DAS Support
 /// OFDMA Remotes (see FIXME LteAllocationModule.h for "antenna" meaning)
 enum Remote
 {
@@ -179,7 +179,7 @@ enum Remote
     UNKNOWN_RU = 7;
 };
 
-// Lte PHY Frame Types 
+// Lte PHY Frame Types
 enum LtePhyFrameType
 {
     DATAPKT = 0;
@@ -194,7 +194,7 @@ enum LtePhyFrameType
 };
 
 
-//  RAN Node Types  
+//  RAN Node Types
 enum RanNodeType
 {
     INTERNET = 0; /// Internet side of the Lte network
@@ -204,7 +204,7 @@ enum RanNodeType
     UNKNOWN_NODE_TYPE  = 4;/// unknown
 };
 
-//  Core Network Types  
+//  Core Network Types
 enum CoreNodeType
 {
     ENB = 0;          // LTE
@@ -216,7 +216,7 @@ enum CoreNodeType
 };
 
 
-// Types of BSR  * TODO add LONG/TRUNCATED BSR  
+// Types of BSR  * TODO add LONG/TRUNCATED BSR
 enum BsrType
 {
     SHORT_BSR  = 0;
@@ -265,4 +265,14 @@ enum EnbType
     MACRO_ENB = 0;
     // micro eNb
     MICRO_ENB = 1;
+};
+
+//  ********************* * PDU Session Type Support *********************
+enum PduSessionType
+{
+    PDU_SESSION_IPV4 = 1;
+    PDU_SESSION_IPV6 = 2;
+    PDU_SESSION_IPV4V6 = 3;
+    PDU_SESSION_ETHERNET = 5;
+    PDU_SESSION_UNSTRUCTURED = 6;
 };

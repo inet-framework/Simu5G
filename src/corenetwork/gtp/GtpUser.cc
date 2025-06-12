@@ -146,6 +146,9 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
     auto tftInfo = datagram->removeTag<TftControlInfo>();
     TrafficFlowTemplateId flowId = tftInfo->getTft();
 
+    // TODO: Add PDU session type support - hardcoded for now
+    PduSessionType pduSessionType = PDU_SESSION_ETHERNET; //TODO
+
     EV << "GtpUser::handleFromTrafficFlowFilter - Received a tftMessage with flowId[" << flowId << "]" << endl;
 
     if (flowId == -2) {
@@ -290,4 +293,3 @@ void GtpUser::handleFromUdp(Packet *pkt)
 }
 
 } //namespace
-

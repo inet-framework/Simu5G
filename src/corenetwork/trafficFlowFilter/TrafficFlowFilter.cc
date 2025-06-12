@@ -125,6 +125,9 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
 
     EV << "TrafficFlowFilter::handleMessage - Received datagram : " << pkt->getName() << " - src[" << srcAddr << "] - dest[" << destAddr << "]\n";
 
+    // TODO: Add PDU session type support - hardcoded for now
+    PduSessionType pduSessionType = PDU_SESSION_ETHERNET; //TODO
+
     // run packet filter and associate a flowId to the connection (default bearer?)
     // search within tftTable the proper entry for this destination
     TrafficFlowTemplateId tftId = findTrafficFlow(srcAddr, destAddr);   // search for the tftId in the binder
@@ -210,4 +213,3 @@ TrafficFlowTemplateId TrafficFlowFilter::findTrafficFlow(L3Address srcAddress, L
 }
 
 } //namespace
-

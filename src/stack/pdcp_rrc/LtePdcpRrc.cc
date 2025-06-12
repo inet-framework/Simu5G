@@ -156,6 +156,9 @@ void LtePdcpRrcBase::fromDataPort(cPacket *pktAux)
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
     auto ipFlowTag = pkt->getTag<LteIpFlowTag>();
 
+    // TODO: Add PDU session type support - hardcoded for now
+    PduSessionType pduSessionType = PDU_SESSION_ETHERNET; //TODO
+
     setTrafficInformation(pkt, lteInfo);
 
     MacNodeId destId = getDestId(lteInfo);

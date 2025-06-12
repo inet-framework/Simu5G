@@ -779,6 +779,9 @@ void LteMacEnb::handleUpperMessage(cPacket *pktAux)
     auto lteInfo = pkt->getTag<FlowControlInfo>();
     MacCid cid = idToMacCid(lteInfo->getDestId(), lteInfo->getLcid());
 
+    // TODO: Add PDU session type support - hardcoded for now
+    PduSessionType pduSessionType = PDU_SESSION_ETHERNET; //TODO
+
     bool isLteRlcPduNewData = checkIfHeaderType<LteRlcPduNewData>(pkt);
 
     bool packetIsBuffered = bufferizePacket(pkt);  // will buffer (or destroy if the queue is full)
@@ -1081,4 +1084,3 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
 }
 
 } //namespace
-
