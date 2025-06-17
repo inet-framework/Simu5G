@@ -83,6 +83,9 @@ void QoSAwareScheduler::prepareSchedule()
                           : UL)
                         : DL;
 
+	// Filtering Invalid Directions in the QoS Scheduler
+	if (dir != UL && dir != DL) continue;
+
         const UserTxParams& info = eNbScheduler_->mac_->getAmc()->computeTxParams(nodeId, dir, carrierFrequency_);
         if (info.readCqiVector().empty() || info.readBands().empty()) continue;
         if (eNbScheduler_->allocatedCws(nodeId) == info.getLayers().size()) continue;
