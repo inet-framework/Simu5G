@@ -57,7 +57,7 @@ module NRNicUeDrb extends LteNicUeD2D
         											// PHY layer (needed at handover)
 
         @display("bgb=694,443");
-        nrPhy.rlcUmModule = "^.nrRlc[0].um";
+        //nrPhy.rlcUmModule = "^.nrRlc[0].um";
         nrPhy.otherPhyModule = "^.phy";
         nrPhy.channelModelModule = "^.nrChannelModel[0]";
         nrPhy.feedbackGeneratorModule = "^.nrDlFbGen";
