@@ -19,4 +19,5 @@ namespace simu5g;
 class LtePdcpPdu extends inet::FieldsChunk
 {
     chunkLength = inet::B(1); // TODO: size 0
+    //TODO 12-bit sequenceNumber (PDCP SN)
 }

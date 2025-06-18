@@ -16,5 +16,6 @@ namespace simu5g;
 
 class GtpUserMsg extends inet::FieldsChunk {
     unsigned int teid;
+    // Note: no QFI extension header -- packet QFI will be inferred from TEID
     chunkLength = inet::B(1); // TODO: size 0
 }
