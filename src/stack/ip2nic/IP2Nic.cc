@@ -205,36 +205,63 @@ void IP2Nic::fromIpUe(Packet *datagram)
 
 void IP2Nic::toStackUe(Packet *pkt)
 {
-    auto ipHeader = pkt->peekAtFront<Ipv4Header>();
-    auto srcAddr = ipHeader->getSrcAddress();
-    auto destAddr = ipHeader->getDestAddress();
-    short int tos = ipHeader->getTypeOfService();
-    int headerSize = ipHeader->getHeaderLength().get();
-    int transportProtocol = ipHeader->getProtocolId();
+    // TODO: Add PDU session type support - hardcoded for now
+    PduSessionType pduSessionType = PDU_SESSION_ETHERNET; //TODO
 
-    // TODO: Add support for IPv6 (=> see L3Tools.cc of INET)
+    if (pduSessionType == PDU_SESSION_ETHERNET) {
+        EV << "IP2Nic::toStackUe - Ethernet PDU session: processing L2 frame from upper layer" << endl;
+        // For Ethernet sessions, the packet contains an Ethernet frame
+        // Extract Ethernet frame information for flow tagging
+        // In a real implementation, would parse Ethernet header for VLAN tags, etc.
 
-    // inspect packet depending on the transport protocol type
-    // TODO: needs refactoring (redundant code, see toStackBs())
-    if (transportProtocol == IP_PROT_TCP) {
-        auto tcpHeader = pkt->peekDataAt<tcp::TcpHeader>(ipHeader->getChunkLength());
-        headerSize += B(tcpHeader->getHeaderLength()).get();
-    }
-    else if (transportProtocol == IP_PROT_UDP) {
-        headerSize += inet::UDP_HEADER_LENGTH.get();
-    }
-    else {
-        //TODO: throw cRuntimeError("Unknown transport protocol id %d in packet %s", transportProtocol, pkt->getName());
-        EV_ERROR << "Unknown transport protocol id " << transportProtocol << " in packet " << pkt->getName() << std::endl;
-    }
+        // Create minimal flow information for Ethernet frames
+        auto ipFlowTag = pkt->addTagIfAbsent<LteIpFlowTag>();
+        ipFlowTag->setSrcAddr(0); // No IP addresses for Ethernet
+        ipFlowTag->setDstAddr(0);
+        ipFlowTag->setHeaderSize(14); // Standard Ethernet header size
+        ipFlowTag->setTypeOfService(0); // No ToS for Ethernet
+        ipFlowTag->setSequenceNumber(0); // Will be set by PDCP
 
-    // Add IP flow information to LteIpFlowTag
-    auto ipFlowTag = pkt->addTagIfAbsent<LteIpFlowTag>();
-    ipFlowTag->setSrcAddr(srcAddr.getInt());
-    ipFlowTag->setDstAddr(destAddr.getInt());
-    ipFlowTag->setHeaderSize(headerSize);
-    ipFlowTag->setTypeOfService(tos);
-    ipFlowTag->setSequenceNumber(0); // Will be set by PDCP
+    } else if (pduSessionType == PDU_SESSION_IPV4 || pduSessionType == PDU_SESSION_IPV6 || pduSessionType == PDU_SESSION_IPV4V6) {
+        EV << "IP2Nic::toStackUe - IP PDU session: processing IP packet from upper layer" << endl;
+        // For IP sessions, process as normal IP packet
+        auto ipHeader = pkt->peekAtFront<Ipv4Header>();
+        auto srcAddr = ipHeader->getSrcAddress();
+        auto destAddr = ipHeader->getDestAddress();
+        short int tos = ipHeader->getTypeOfService();
+        int headerSize = ipHeader->getHeaderLength().get();
+        int transportProtocol = ipHeader->getProtocolId();
+
+        // inspect packet depending on the transport protocol type
+        if (transportProtocol == IP_PROT_TCP) {
+            auto tcpHeader = pkt->peekDataAt<tcp::TcpHeader>(ipHeader->getChunkLength());
+            headerSize += B(tcpHeader->getHeaderLength()).get();
+        }
+        else if (transportProtocol == IP_PROT_UDP) {
+            headerSize += inet::UDP_HEADER_LENGTH.get();
+        }
+        else {
+            EV_ERROR << "Unknown transport protocol id " << transportProtocol << " in packet " << pkt->getName() << std::endl;
+        }
+
+        // Add IP flow information to LteIpFlowTag
+        auto ipFlowTag = pkt->addTagIfAbsent<LteIpFlowTag>();
+        ipFlowTag->setSrcAddr(srcAddr.getInt());
+        ipFlowTag->setDstAddr(destAddr.getInt());
+        ipFlowTag->setHeaderSize(headerSize);
+        ipFlowTag->setTypeOfService(tos);
+        ipFlowTag->setSequenceNumber(0); // Will be set by PDCP
+
+    } else if (pduSessionType == PDU_SESSION_UNSTRUCTURED) {
+        EV << "IP2Nic::toStackUe - Unstructured PDU session: processing raw data from upper layer" << endl;
+        // For unstructured sessions, create minimal flow information
+        auto ipFlowTag = pkt->addTagIfAbsent<LteIpFlowTag>();
+        ipFlowTag->setSrcAddr(0); // No addresses for unstructured data
+        ipFlowTag->setDstAddr(0);
+        ipFlowTag->setHeaderSize(0); // No standard header
+        ipFlowTag->setTypeOfService(0); // No ToS
+        ipFlowTag->setSequenceNumber(0); // Will be set by PDCP
+    }
 
     // Add FlowControlInfo (without the IP fields)
     pkt->addTagIfAbsent<FlowControlInfo>();
@@ -244,6 +271,7 @@ void IP2Nic::toStackUe(Packet *pkt)
     if (!markPacket(pkt->getTagForUpdate<FlowControlInfo>())) {
         EV << "IP2Nic::toStackUe - UE is not attached to any serving node. Delete packet." << endl;
         delete pkt;
+        return;
     }
 
     //** Send datagram to LTE stack or LteIp peer **
@@ -260,12 +288,35 @@ void IP2Nic::prepareForIpv4(Packet *datagram, const Protocol *protocol) {
 
 void IP2Nic::toIpUe(Packet *pkt)
 {
-    auto ipHeader = pkt->peekAtFront<Ipv4Header>();
-    auto networkProtocolInd = pkt->addTagIfAbsent<NetworkProtocolInd>();
-    networkProtocolInd->setProtocol(&Protocol::ipv4);
-    networkProtocolInd->setNetworkProtocolHeader(ipHeader);
-    prepareForIpv4(pkt);
-    EV << "IP2Nic::toIpUe - message from stack: send to IP layer" << endl;
+    // TODO: Add PDU session type support - hardcoded for now
+    PduSessionType pduSessionType = PDU_SESSION_ETHERNET; //TODO
+
+    if (pduSessionType == PDU_SESSION_ETHERNET) {
+        EV << "IP2Nic::toIpUe - Ethernet PDU session: forwarding L2 frame to upper layer" << endl;
+        // For Ethernet sessions, the packet contains an Ethernet frame, not an IP packet
+        // Forward directly without IP processing
+        auto networkProtocolInd = pkt->addTagIfAbsent<NetworkProtocolInd>();
+        networkProtocolInd->setProtocol(&Protocol::ethernetMac);
+        pkt->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ethernetMac);
+        pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ethernetMac);
+        pkt->addTagIfAbsent<InterfaceInd>()->setInterfaceId(networkIf->getInterfaceId());
+    } else if (pduSessionType == PDU_SESSION_IPV4 || pduSessionType == PDU_SESSION_IPV6 || pduSessionType == PDU_SESSION_IPV4V6) {
+        EV << "IP2Nic::toIpUe - IP PDU session: processing as IP packet" << endl;
+        // For IP sessions, process as normal IP packet
+        auto ipHeader = pkt->peekAtFront<Ipv4Header>();
+        auto networkProtocolInd = pkt->addTagIfAbsent<NetworkProtocolInd>();
+        networkProtocolInd->setProtocol(&Protocol::ipv4);
+        networkProtocolInd->setNetworkProtocolHeader(ipHeader);
+        prepareForIpv4(pkt);
+    } else if (pduSessionType == PDU_SESSION_UNSTRUCTURED) {
+        EV << "IP2Nic::toIpUe - Unstructured PDU session: forwarding raw data" << endl;
+        // For unstructured sessions, forward as raw data
+        auto networkProtocolInd = pkt->addTagIfAbsent<NetworkProtocolInd>();
+        networkProtocolInd->setProtocol(nullptr); // No specific protocol
+        pkt->addTagIfAbsent<InterfaceInd>()->setInterfaceId(networkIf->getInterfaceId());
+    }
+
+    EV << "IP2Nic::toIpUe - message from stack: send to upper layer" << endl;
     send(pkt, ipGateOut_);
 }
 

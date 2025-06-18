@@ -149,6 +149,38 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
     // TODO: Add PDU session type support - hardcoded for now
     PduSessionType pduSessionType = PDU_SESSION_ETHERNET; //TODO
 
+    // Handle different PDU session types in GTP tunneling
+    uint8_t gtpPduType = 0; // Default PDU type
+    if (pduSessionType == PDU_SESSION_ETHERNET) {
+        EV << "GtpUser: Tunneling Ethernet PDU session - preserving L2 frame" << endl;
+        // For Ethernet sessions, preserve the entire Ethernet frame
+        gtpPduType = 2; // Ethernet PDU type in GTP-U extension header
+    } else if (pduSessionType == PDU_SESSION_IPV4) {
+        EV << "GtpUser: Tunneling IPv4 PDU session" << endl;
+        // For IPv4 sessions, handle IPv4 packets
+        gtpPduType = 1; // IPv4 PDU type
+    } else if (pduSessionType == PDU_SESSION_IPV6) {
+        EV << "GtpUser: Tunneling IPv6 PDU session" << endl;
+        // For IPv6 sessions, handle IPv6 packets
+        gtpPduType = 3; // IPv6 PDU type
+    } else if (pduSessionType == PDU_SESSION_IPV4V6) {
+        EV << "GtpUser: Tunneling dual-stack IPv4/IPv6 PDU session" << endl;
+        // For dual-stack sessions, detect actual IP version from packet
+        const auto& hdr = datagram->peekAtFront<Ipv4Header>();
+        if (hdr->getVersion() == 4) {
+            gtpPduType = 1; // IPv4
+        } else {
+            gtpPduType = 3; // IPv6
+        }
+    } else if (pduSessionType == PDU_SESSION_UNSTRUCTURED) {
+        EV << "GtpUser: Tunneling unstructured PDU session - transparent mode" << endl;
+        // For unstructured sessions, pass data transparently
+        gtpPduType = 0; // Unstructured data
+    }
+
+    // Store PDU type for use in GTP header (would be used in actual GTP-U implementation)
+    EV << "GtpUser: Using GTP PDU type " << (int)gtpPduType << " for session type " << (int)pduSessionType << endl;
+
     EV << "GtpUser::handleFromTrafficFlowFilter - Received a tftMessage with flowId[" << flowId << "]" << endl;
 
     if (flowId == -2) {

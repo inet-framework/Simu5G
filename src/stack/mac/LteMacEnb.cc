@@ -782,6 +782,29 @@ void LteMacEnb::handleUpperMessage(cPacket *pktAux)
     // TODO: Add PDU session type support - hardcoded for now
     PduSessionType pduSessionType = PDU_SESSION_ETHERNET; //TODO
 
+    // Handle different PDU session types in MAC scheduling
+    LteTrafficClass modifiedTrafficClass = lteInfo->getTraffic();
+    if (pduSessionType == PDU_SESSION_ETHERNET) {
+        EV << "LteMacEnb: Scheduling Ethernet PDU session - L2 frame scheduling" << endl;
+        // For Ethernet sessions, schedule based on Ethernet frame priorities
+        // Promote to interactive class for better L2 frame handling
+        if (modifiedTrafficClass == BACKGROUND) {
+            modifiedTrafficClass = INTERACTIVE;
+            lteInfo->setTraffic(modifiedTrafficClass);
+            EV << "LteMacEnb: Promoted Ethernet session from BACKGROUND to INTERACTIVE" << endl;
+        }
+    } else if (pduSessionType == PDU_SESSION_IPV4 || pduSessionType == PDU_SESSION_IPV6 || pduSessionType == PDU_SESSION_IPV4V6) {
+        EV << "LteMacEnb: Scheduling IP PDU session - DSCP-based scheduling" << endl;
+        // For IP sessions, use DSCP markings for QoS scheduling (keep original traffic class)
+        EV << "LteMacEnb: Using original traffic class " << modifiedTrafficClass << " for IP session" << endl;
+    } else if (pduSessionType == PDU_SESSION_UNSTRUCTURED) {
+        EV << "LteMacEnb: Scheduling unstructured PDU session - best-effort scheduling" << endl;
+        // For unstructured sessions, force to background class for best-effort scheduling
+        modifiedTrafficClass = BACKGROUND;
+        lteInfo->setTraffic(modifiedTrafficClass);
+        EV << "LteMacEnb: Set unstructured session to BACKGROUND traffic class" << endl;
+    }
+
     bool isLteRlcPduNewData = checkIfHeaderType<LteRlcPduNewData>(pkt);
 
     bool packetIsBuffered = bufferizePacket(pkt);  // will buffer (or destroy if the queue is full)

@@ -159,6 +159,22 @@ void LtePdcpRrcBase::fromDataPort(cPacket *pktAux)
     // TODO: Add PDU session type support - hardcoded for now
     PduSessionType pduSessionType = PDU_SESSION_ETHERNET; //TODO
 
+    // Handle different PDU session types
+    if (pduSessionType == PDU_SESSION_ETHERNET) {
+        EV << "LtePdcp: Processing Ethernet PDU session - no IP header compression" << endl;
+        // For Ethernet sessions, skip IP header compression
+        // Ethernet frames are passed transparently without any header processing
+        // Do NOT call headerCompress() for Ethernet sessions
+    } else if (pduSessionType == PDU_SESSION_IPV4 || pduSessionType == PDU_SESSION_IPV6 || pduSessionType == PDU_SESSION_IPV4V6) {
+        EV << "LtePdcp: Processing IP PDU session - applying header compression" << endl;
+        // For IP sessions, apply header compression if enabled
+        headerCompress(pkt);
+    } else if (pduSessionType == PDU_SESSION_UNSTRUCTURED) {
+        EV << "LtePdcp: Processing unstructured PDU session - transparent mode" << endl;
+        // For unstructured sessions, pass data transparently without header compression
+        // Do NOT call headerCompress() for unstructured sessions
+    }
+
     setTrafficInformation(pkt, lteInfo);
 
     MacNodeId destId = getDestId(lteInfo);

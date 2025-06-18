@@ -128,6 +128,37 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
     // TODO: Add PDU session type support - hardcoded for now
     PduSessionType pduSessionType = PDU_SESSION_ETHERNET; //TODO
 
+    // Handle different PDU session types in traffic flow classification
+    bool useAlternativeClassification = false;
+    if (pduSessionType == PDU_SESSION_ETHERNET) {
+        EV << "TrafficFlowFilter: Processing Ethernet PDU session - L2 frame classification" << endl;
+        // For Ethernet sessions, classify based on Ethernet frame headers
+        // In a real implementation, would examine VLAN tags, EtherType, etc.
+        // For now, use a different classification approach
+        useAlternativeClassification = true;
+    } else if (pduSessionType == PDU_SESSION_IPV4) {
+        EV << "TrafficFlowFilter: Processing IPv4 PDU session - IP-based classification" << endl;
+        // For IPv4 sessions, use standard IP-based classification (default behavior)
+        useAlternativeClassification = false;
+    } else if (pduSessionType == PDU_SESSION_IPV6) {
+        EV << "TrafficFlowFilter: Processing IPv6 PDU session - IPv6-based classification" << endl;
+        // For IPv6 sessions, handle IPv6 addresses and flow labels
+        // Would need different logic for IPv6 address resolution
+        useAlternativeClassification = true;
+    } else if (pduSessionType == PDU_SESSION_IPV4V6) {
+        EV << "TrafficFlowFilter: Processing dual-stack PDU session - IP version detection" << endl;
+        // For dual-stack sessions, detect IP version and classify accordingly
+        if (ipv4Header->getVersion() == 4) {
+            useAlternativeClassification = false; // Use IPv4 classification
+        } else {
+            useAlternativeClassification = true;  // Use IPv6 classification
+        }
+    } else if (pduSessionType == PDU_SESSION_UNSTRUCTURED) {
+        EV << "TrafficFlowFilter: Processing unstructured PDU session - transparent classification" << endl;
+        // For unstructured sessions, minimal classification - always use gateway
+        useAlternativeClassification = true;
+    }
+
     // run packet filter and associate a flowId to the connection (default bearer?)
     // search within tftTable the proper entry for this destination
     TrafficFlowTemplateId tftId = findTrafficFlow(srcAddr, destAddr);   // search for the tftId in the binder
