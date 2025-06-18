@@ -198,7 +198,6 @@ void LteMacEnbD2D::macPduUnmake(cPacket *pktAux)
        		<< ", TS=" << bsr->getTimestamp() << endl;
 
     		bufferizeBsr(bsr, derivedCid);
-		}
 	}        
     }
     pkt->insertAtFront(macPkt);
