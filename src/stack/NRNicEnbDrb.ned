@@ -18,6 +18,7 @@ import simu5g.stack.rlc.LteRlc;
 import simu5g.stack.mac.ILteMac;
 import simu5g.stack.phy.ILtePhy;
 import simu5g.stack.multiplexer.RlcToMacMultiplexer;
+
 //
 // This module extends the Enb NIC to insert DRB functionality 
 // allowing QoS Flow management per 3GPP 5G specifications.
@@ -44,13 +45,13 @@ module NRNicEnbDrb extends LteNicEnbD2D
 
         // CASE SDAP active: → multiple DRBs activated
         nrPdcpRrc[numDrbs]: NRPdcpRrcEnb if !nrSdapDisabled {
-            @display("p=245,149");
+            @display("p=245,149,r,10");
             drbIndex = index;  // assign DRB ID
         }
 
 		// RLC Layer
         nrRlc[numDrbs]: LteRlc {
-            @display("p=245,231");
+            @display("p=245,231,r,10");
             drbIndex = index;
             d2dCapable = parent.d2dCapable;
             *.macModule = "^.^.mac";
