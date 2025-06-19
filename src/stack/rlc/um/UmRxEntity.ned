@@ -25,6 +25,8 @@ simple UmRxEntity
     parameters:
         @dynamic(true);
         @display("i=block/segm");
+        @signal[rlcPduThroughputUl];
+        @signal[rlcPduThroughputDl];
         string binderModule = default("binder");
         string umModule = default("^.um");
         string macModule = default("^.^.mac");  // TODO set to "^.^.nrMac" when parent module name is "nrRlc"
