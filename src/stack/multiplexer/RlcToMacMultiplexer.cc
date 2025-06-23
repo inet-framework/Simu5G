@@ -10,6 +10,7 @@
 //
 
 #include "RlcToMacMultiplexer.h"
+#include "common/DrbTag_m.h"
 
 namespace simu5g {
 
@@ -30,11 +31,15 @@ void RlcToMacMultiplexer::handleMessage(cMessage *msg)
         auto pktInet = check_and_cast<inet::Packet *>(pkt);
         auto lteInfo = pktInet->getTag<FlowControlInfo>();
 
-        int drbId = lteInfo->getLcid();  // Assuming LCID == DRB index
-        if (drbId >= numDrbs)
-            throw cRuntimeError("RlcToMacMultiplexer: Invalid DRB index %d", drbId);
+        int drbIndex = lteInfo->getLcid();  // Assuming LCID == DRB index
+        if (drbIndex >= numDrbs)
+            throw cRuntimeError("RlcToMacMultiplexer: Invalid DRB index %d", drbIndex);
 
-        send(pkt, "rlcOut", drbId);
+        // Add DrbIndTag here (as MAC does not do it for now)
+        auto drbTag = pktInet->addTagIfAbsent<DrbIndTag>();
+        drbTag->setDrbIndex(drbIndex);
+
+        send(pkt, "rlcOut", drbIndex);
     }
     else {
         // Packet coming from RLC --> Forward to MAC

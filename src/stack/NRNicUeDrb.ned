@@ -13,15 +13,15 @@
 package simu5g.stack;
 
 import simu5g.stack.mac.ILteMac;
+import simu5g.stack.multiplexer.PdcpToSdapMultiplexer;
+import simu5g.stack.multiplexer.RlcToMacMultiplexer;
 import simu5g.stack.packetFlowManager.IPacketFlowManager;
+import simu5g.stack.pdcp_rrc.NRPdcpRrcUe;
 import simu5g.stack.phy.ChannelModel.ILteChannelModel;
 import simu5g.stack.phy.ILtePhy;
 import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 import simu5g.stack.rlc.LteRlc;
 import simu5g.stack.sdap.NrTxSdapEntity;
-import simu5g.stack.pdcp_rrc.NRPdcpRrcUe;
-import simu5g.stack.multiplexer.RlcToMacMultiplexer;
-import simu5g.stack.pdcp_rrc.ILtePdcpRrc;
 //
 // This module defines a User Equipment (UE) network interface card that
 // supports NR (New Radio) technology with extended SDAP functionality.
@@ -48,7 +48,7 @@ module NRNicUeDrb extends LteNicUeD2D
 
         nrSdapDisabled = false;
         drbDisabled = false;
-        
+
         int numDrbs; // this to allow multiple DRBs
 
         phy.typename = default("NRPhyUe");	        // TODO fix this
@@ -67,12 +67,12 @@ module NRNicUeDrb extends LteNicUeD2D
     submodules:
         nrTxSdapEntity: NrTxSdapEntity {
             numDrbs = parent.numDrbs;
-            @display("p=596,67");
+            @display("p=596,50");
         }
 
         // CASE SDAP active: → multiple DRBs activated
         nrPdcpRrc[numDrbs]: NRPdcpRrcUe if !nrSdapDisabled {
-            @display("p=596,141,r,10");
+            @display("p=595.9,175.1,r,10");
             drbIndex = index;  // assign DRB ID
         }
 
@@ -115,13 +115,20 @@ module NRNicUeDrb extends LteNicUeD2D
             numDrbs = parent.numDrbs;
             @display("p=466,238");
         }
+
+        pdcpToSdapMultiplexer: PdcpToSdapMultiplexer {
+            numDrbs = parent.numDrbs;
+            @display("p=595.9,111.2");
+        }
+
     connections:
 
         ip2nic.stackNic <--> nrTxSdapEntity.DataPort;
 
         // New multi-DRB connections when SDAP is enabled
         for i=0..numDrbs-1 {
-            nrTxSdapEntity.stackSdap[i] <--> nrPdcpRrc[i].DataPort;
+            pdcpToSdapMultiplexer.pdcpOut[i] --> nrPdcpRrc[i].DataPort$i;
+            pdcpToSdapMultiplexer.pdcpIn[i] <-- nrPdcpRrc[i].DataPort$o;
 
             //# PDCP <-> RLC
             nrPdcpRrc[i].AM_Sap++ <--> nrRlc[i].AM_Sap;
@@ -133,12 +140,15 @@ module NRNicUeDrb extends LteNicUeD2D
             nrRlc[i].MAC_to_RLC <-- rlcToMacMultiplexer.rlcOut[i];
         }
 
+        pdcpToSdapMultiplexer.sdapIn <-- nrTxSdapEntity.stackSdap$o;
+        pdcpToSdapMultiplexer.sdapOut --> nrTxSdapEntity.stackSdap$i;
+
 		// while this is logically correct, simu5g rigid layers stacking causing issues.
 		// todo: Either make changes to RLC layer or Mac layer to provide modularity.
 		//# MUX <-> MAC
         rlcToMacMultiplexer.macOut --> nrMac.RLC_to_MAC;
-        rlcToMacMultiplexer.macIn<-- nrMac.MAC_to_RLC;
-        
+        rlcToMacMultiplexer.macIn <-- nrMac.MAC_to_RLC;
+
 		//nrRlc[3].RLC_to_MAC --> nrMac.RLC_to_MAC;
 		//nrRlc[3].MAC_to_RLC <-- nrMac.MAC_to_RLC;
 

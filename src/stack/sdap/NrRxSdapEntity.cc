@@ -14,6 +14,7 @@
 
 #include "packet/NrSdapPdu_m.h"
 #include "common/QosTag_m.h"
+#include "common/RadioBearerTag_m.h"
 #include "inet/common/packet/Packet.h"
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/transportlayer/tcp_common/TcpHeader.h>
@@ -41,8 +42,9 @@ void NrRxSdapEntity::handleMessage(cMessage *msg)
         EV_INFO << "NrRxSdapEntity: Packet from IP → PDCP\n";
         send(msg, "stackSdap$o", 0); // todo: the gate assigment should be dynamic to enable reflective qos
     }
-    else if (strcmp(arrivalGate->getBaseName(), "stackSdap") == 0) {
-        int drbIndex = arrivalGate->getIndex();
+    else if (arrivalGate == gate("stackSdap$i")) {
+        auto drbIndTag = pkt->findTag<RadioBearerInd>();
+        int drbIndex = drbIndTag ? drbIndTag->getDrbIndex() : -1;
 
         EV_INFO << "Before IP: " << pkt->peekAtFront() << "\n";
 
@@ -101,8 +103,7 @@ void NrRxSdapEntity::handleMessage(cMessage *msg)
         send(pkt, "DataPort$o");
     }
     else {
-        EV_ERROR << "NrRxSdapEntity: Unknown arrival gate\n";
-        delete msg;
+        throw cRuntimeError("Message arrived on unknown gate: %s", arrivalGate->getFullName());
     }
 }
 
