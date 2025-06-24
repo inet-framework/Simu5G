@@ -12,7 +12,7 @@
 #include <cmath>
 #include <inet/common/TimeTag_m.h>
 #include "apps/voip/VoIPSender.h"
-#include "../../stack/sdap/common/QosTag_m.h"
+#include "common/QosTag_m.h"
 
 namespace simu5g {
 
@@ -168,7 +168,7 @@ void VoIPSender::sendVoIPPacket()
     packet->insertAtBack(voip);
     EV << "VoIPSender::sendVoIPPacket - Talkspurt[" << iDtalk_ - 1 << "] - Sending frame[" << iDframe_ << "]\n";
 
-    packet->addTagIfAbsent<simu5g::QosTagReq>()->setQfi(par("qfi")); //setting qfi tag
+    packet->addTagIfAbsent<simu5g::QosReq>()->setQfi(par("qfi")); //setting qfi tag
     EV_INFO << "VoIPSender: QFI = " << par("qfi") << "<n";
 
     socket.sendTo(packet, destAddress_, destPort_);

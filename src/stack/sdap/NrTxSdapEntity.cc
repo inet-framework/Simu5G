@@ -41,12 +41,12 @@ void NrTxSdapEntity::handleMessage(cMessage *msg)
 
         uint8_t qfi = 0;
 
-        // Extract QFI from QosTagReq if present
-        if (pkt->hasTag<simu5g::QosTagReq>()) {
-            qfi = pkt->getTag<simu5g::QosTagReq>()->getQfi();
-            EV_INFO << "SDAP TX: QFI = " << (int)qfi << " extracted from QosTagReq\n";
+        // Extract QFI from QosReq if present
+        if (pkt->hasTag<simu5g::QosReq>()) {
+            qfi = pkt->getTag<simu5g::QosReq>()->getQfi();
+            EV_INFO << "SDAP TX: QFI = " << (int)qfi << " extracted from QosReq\n";
         } else {
-            EV_WARN << "SDAP TX: QosTagReq not found, defaulting QFI to 0\n";
+            EV_WARN << "SDAP TX: QosReq not found, defaulting QFI to 0\n";
         }
 
         const QfiContext* ctx = contextManager->getContextByQfi(qfi);
