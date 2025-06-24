@@ -13,28 +13,30 @@
 package simu5g.stack;
 
 import simu5g.stack.mac.ILteMac;
-import simu5g.stack.multiplexer.SdapDrbMultiplexer;
 import simu5g.stack.multiplexer.MacDrbMultiplexer;
+import simu5g.stack.multiplexer.SdapDrbMultiplexer;
 import simu5g.stack.packetFlowManager.IPacketFlowManager;
 import simu5g.stack.pdcp_rrc.NRPdcpRrcUe;
 import simu5g.stack.phy.ChannelModel.ILteChannelModel;
 import simu5g.stack.phy.ILtePhy;
 import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 import simu5g.stack.rlc.LteRlc;
-import simu5g.stack.sdap.NrTxSdapEntity;
+import simu5g.stack.sdap.INrSdap;
+import simu5g.stack.sdap.common.IReflectiveQosTable;
+
 
 //
 // This module defines a User Equipment (UE) network interface card that
 // supports NR (New Radio) technology with extended SDAP functionality.
 // It builds upon the LTE-based LteNicUeD2D module by introducing full
-// SDAP-based QoS Flow multiplexing, QFI-based flow differentiation, and 
+// SDAP-based QoS Flow multiplexing, QFI-based flow differentiation, and
 // support for multiple Data Radio Bearers (DRBs).
 //
-// When SDAP is enabled, the NIC dynamically routes packets to multiple 
-// PDCP and RLC instances based on their assigned DRBs, enabling per-flow 
+// When SDAP is enabled, the NIC dynamically routes packets to multiple
+// PDCP and RLC instances based on their assigned DRBs, enabling per-flow
 // bearer separation and future extension toward full 5G QoS-compliant simulation.
 // The number of DRBs is fully configurable via the 'numDrbs' parameter.
-// When SDAP is disabled, the NIC operates in legacy single-DRB mode 
+// When SDAP is disabled, the NIC operates in legacy single-DRB mode
 // for backward compatibility with existing Simu5G configurations.
 //
 module NRNicUeDrb extends LteNicUeD2D
@@ -46,8 +48,9 @@ module NRNicUeDrb extends LteNicUeD2D
 
         int numNRCarriers = default(1);
 
-        nrSdapDisabled = false;
-        drbDisabled = false;
+        hasNrSdap = true;
+        drbSupport = true;
+        bool hasReflectiveQosTable = default(false);  // Enable/disable reflective QoS table
 
         int numDrbs; // this to allow multiple DRBs
 
@@ -65,13 +68,15 @@ module NRNicUeDrb extends LteNicUeD2D
         phy.otherPhyModule = "^.nrPhy";
 
     submodules:
-        nrTxSdapEntity: NrTxSdapEntity {
+        sdap: <default("NrSdap")> like INrSdap {
             numDrbs = parent.numDrbs;
+            nodeRole = "UE";
+            reflectiveQosTableModule = parent.hasReflectiveQosTable ? "^.reflectiveQosTable" : "";
             @display("p=596,66");
         }
 
         // CASE SDAP active: → multiple DRBs activated
-        nrPdcpRrc[numDrbs]: NRPdcpRrcUe if !nrSdapDisabled {
+        nrPdcpRrc[numDrbs]: NRPdcpRrcUe if hasNrSdap {
             @display("p=596,175,r,10");
             drbIndex = index;  // assign DRB ID
         }
@@ -125,9 +130,14 @@ module NRNicUeDrb extends LteNicUeD2D
                 pdcpOut[parent.numDrbs];
         }
 
+        // Conditional Reflective QoS Table for UE
+        reflectiveQosTable: <default("ReflectiveQosTable")> like IReflectiveQosTable if hasReflectiveQosTable {
+            @display("p=162.1,199.4;is=s");
+        }
+
     connections:
 
-        ip2nic.stackNic <--> nrTxSdapEntity.DataPort;
+        ip2nic.stackNic <--> sdap.DataPort;
 
         // New multi-DRB connections when SDAP is enabled
         for i=0..numDrbs-1 {
@@ -144,8 +154,8 @@ module NRNicUeDrb extends LteNicUeD2D
             nrRlc[i].MAC_to_RLC <-- lMux.rlcOut[i];
         }
 
-        hMux.sdapIn <-- nrTxSdapEntity.stackSdap$o;
-        hMux.sdapOut --> nrTxSdapEntity.stackSdap$i;
+        hMux.sdapIn <-- sdap.stackSdap$o;
+        hMux.sdapOut --> sdap.stackSdap$i;
 
 		// while this is logically correct, simu5g rigid layers stacking causing issues.
 		// todo: Either make changes to RLC layer or Mac layer to provide modularity.

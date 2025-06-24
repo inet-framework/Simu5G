@@ -12,22 +12,22 @@
 
 package simu5g.stack;
 
-import simu5g.stack.multiplexer.SdapDrbMultiplexer;
 import simu5g.stack.multiplexer.MacDrbMultiplexer;
+import simu5g.stack.multiplexer.SdapDrbMultiplexer;
 import simu5g.stack.pdcp_rrc.NRPdcpRrcEnb;
 import simu5g.stack.rlc.LteRlc;
-import simu5g.stack.sdap.NrRxSdapEntity;
+import simu5g.stack.sdap.INrSdap;
 
 
 //
-// This module extends the Enb NIC to insert DRB functionality 
+// This module extends the Enb NIC to insert DRB functionality
 // allowing QoS Flow management per 3GPP 5G specifications.
 //
 module NRNicEnbDrb extends LteNicEnbD2D
 {
     parameters:
-        nrSdapDisabled = false;
-        drbDisabled = false;
+        hasNrSdap = true;
+        drbSupport = true;
 
         int numDrbs; // this to allow multiple DRBs
         @display("bgb=694,443");
@@ -38,13 +38,14 @@ module NRNicEnbDrb extends LteNicEnbD2D
 
     submodules:
 
-        nrRxSdapEntity: NrRxSdapEntity {
+        sdap: <default("NrSdap")> like INrSdap {
             numDrbs = parent.numDrbs;
+            nodeRole = "gNB";
             @display("p=245,67");
         }
 
         // CASE SDAP active: → multiple DRBs activated
-        nrPdcpRrc[numDrbs]: NRPdcpRrcEnb if !nrSdapDisabled {
+        nrPdcpRrc[numDrbs]: NRPdcpRrcEnb if hasNrSdap {
             @display("p=245,177,r,10");
             drbIndex = index;  // assign DRB ID
         }
@@ -75,7 +76,7 @@ module NRNicEnbDrb extends LteNicEnbD2D
         }
 
     connections:
-        ip2nic.stackNic <--> nrRxSdapEntity.DataPort;
+        ip2nic.stackNic <--> sdap.DataPort;
 
 
 		// New multi-DRB connections when SDAP is enabled
@@ -96,8 +97,7 @@ module NRNicEnbDrb extends LteNicEnbD2D
         lMux.macOut --> mac.RLC_to_MAC;
         lMux.macIn <-- mac.MAC_to_RLC;
 
-        hMux.sdapOut --> nrRxSdapEntity.stackSdap$i;
-        hMux.sdapIn <-- nrRxSdapEntity.stackSdap$o;
+        hMux.sdapOut --> sdap.stackSdap$i;
+        hMux.sdapIn <-- sdap.stackSdap$o;
 
 }
-
