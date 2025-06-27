@@ -14,9 +14,12 @@
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/transportlayer/tcp_common/TcpHeader.h>
 #include <inet/transportlayer/udp/UdpHeader_m.h>
+#include <inet/common/packet/chunk/SequenceChunk.h>
+#include <inet/common/ProtocolTag_m.h>
 
 #include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
-#include "simu5g/stack/pdcp/packet/LteRohcPdu_m.h"
+#include "simu5g/stack/pdcp/packet/RohcHeader.h"
+#include "simu5g/stack/sdap/packet/NrSdapHeader_m.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
@@ -49,38 +52,54 @@ bool LtePdcpBase::isCompressionEnabled()
 void LtePdcpBase::headerCompress(Packet *pkt)
 {
     if (isCompressionEnabled()) {
+        // Check PacketProtocolTag to determine packet type
+        auto protocolTag = pkt->findTag<PacketProtocolTag>();
+        inet::Ptr<inet::Chunk> sdapHeader = nullptr;
+
+        // If packet has SDAP protocol tag, remove SDAP header first
+        if (protocolTag && protocolTag->getProtocol() == &LteProtocol::sdap) {
+            sdapHeader = pkt->removeAtFront<NrSdapHeader>();
+            EV << "LtePdcp : Removed SDAP header before compression\n";
+        }
+
+        // Extract IP and transport headers to be compressed
         auto ipHeader = pkt->removeAtFront<Ipv4Header>();
+        inet::Ptr<inet::Chunk> transportHeader = nullptr;
 
         int transportProtocol = ipHeader->getProtocolId();
-        B transportHeaderCompressedSize = B(0);
-
-        auto rohcHeader = makeShared<LteRohcPdu>();
-        rohcHeader->setOrigSizeIpHeader(ipHeader->getHeaderLength());
 
         if (IP_PROT_TCP == transportProtocol) {
-            auto tcpHeader = pkt->removeAtFront<tcp::TcpHeader>();
-            rohcHeader->setOrigSizeTransportHeader(tcpHeader->getHeaderLength());
-            tcpHeader->setChunkLength(B(1));
-            transportHeaderCompressedSize = B(1);
-            pkt->insertAtFront(tcpHeader);
+            transportHeader = pkt->removeAtFront<tcp::TcpHeader>();
         }
         else if (IP_PROT_UDP == transportProtocol) {
-            auto udpHeader = pkt->removeAtFront<UdpHeader>();
-            rohcHeader->setOrigSizeTransportHeader(inet::UDP_HEADER_LENGTH);
-            udpHeader->setChunkLength(B(1));
-            transportHeaderCompressedSize = B(1);
-            pkt->insertAtFront(udpHeader);
-        }
-        else {
-            EV_WARN << "LtePdcp : unknown transport header - cannot perform transport header compression";
-            rohcHeader->setOrigSizeTransportHeader(B(0));
+            transportHeader = pkt->removeAtFront<UdpHeader>();
         }
 
-        ipHeader->setChunkLength(B(1));
-        pkt->insertAtFront(ipHeader);
+        // Create a sequence chunk containing the original headers
+        auto originalHeaders = inet::makeShared<inet::SequenceChunk>();
 
-        rohcHeader->setChunkLength(headerCompressedSize_ - transportHeaderCompressedSize - B(1));
+        // Make headers immutable before inserting into SequenceChunk
+        ipHeader->markImmutable();
+        originalHeaders->insertAtBack(ipHeader);
+        if (transportHeader) {
+            transportHeader->markImmutable();
+            originalHeaders->insertAtBack(transportHeader);
+        }
+
+        // Make originalHeaders immutable before passing to RohcHeader
+        originalHeaders->markImmutable();
+
+        // Create ROHC header with original headers and compressed size
+        auto rohcHeader = makeShared<RohcHeader>(originalHeaders, headerCompressedSize_);
+        rohcHeader->markImmutable();
         pkt->insertAtFront(rohcHeader);
+
+        // If we had an SDAP header, add it back on top of the ROHC header
+        if (sdapHeader) {
+            sdapHeader->markImmutable();
+            pkt->insertAtFront(sdapHeader);
+            EV << "LtePdcp : Added SDAP header back on top of ROHC header\n";
+        }
 
         EV << "LtePdcp : Header compression performed\n";
     }
@@ -90,26 +109,27 @@ void LtePdcpBase::headerDecompress(Packet *pkt)
 {
     if (isCompressionEnabled()) {
         pkt->trim();
-        auto rohcHeader = pkt->removeAtFront<LteRohcPdu>();
-        auto ipHeader = pkt->removeAtFront<Ipv4Header>();
-        int transportProtocol = ipHeader->getProtocolId();
 
-        if (IP_PROT_TCP == transportProtocol) {
-            auto tcpHeader = pkt->removeAtFront<tcp::TcpHeader>();
-            tcpHeader->setChunkLength(rohcHeader->getOrigSizeTransportHeader());
-            pkt->insertAtFront(tcpHeader);
-        }
-        else if (IP_PROT_UDP == transportProtocol) {
-            auto udpHeader = pkt->removeAtFront<UdpHeader>();
-            udpHeader->setChunkLength(rohcHeader->getOrigSizeTransportHeader());
-            pkt->insertAtFront(udpHeader);
-        }
-        else {
-            EV_WARN << "LtePdcp : unknown transport header - cannot perform transport header decompression";
+        // Check if there's an SDAP header on top
+        inet::Ptr<inet::Chunk> sdapHeader = nullptr;
+        if (pkt->peekAtFront<NrSdapHeader>()) {
+            sdapHeader = pkt->removeAtFront<NrSdapHeader>();
+            EV << "LtePdcp : Removed SDAP header before decompression\n";
         }
 
-        ipHeader->setChunkLength(rohcHeader->getOrigSizeIpHeader());
-        pkt->insertAtFront(ipHeader);
+        auto rohcHeader = pkt->removeAtFront<RohcHeader>();
+
+        // Get the original headers from the ROHC header
+        auto originalHeaders = rohcHeader->getChunk();
+
+        // Insert the original headers back into the packet
+        pkt->insertAtFront(originalHeaders);
+
+        // If we had an SDAP header, add it back on top
+        if (sdapHeader) {
+            pkt->insertAtFront(sdapHeader);
+            EV << "LtePdcp : Added SDAP header back on top after decompression\n";
+        }
 
         EV << "LtePdcp : Header decompression performed\n";
     }
@@ -459,4 +479,3 @@ void LtePdcpUe::initialize(int stage)
 }
 
 } //namespace
-
