@@ -137,7 +137,7 @@ void LtePdcpBase::headerDecompress(Packet *pkt)
 
 void LtePdcpBase::setTrafficInformation(cPacket *pkt, inet::Ptr<FlowControlInfo> lteInfo)
 {
-    if ((strcmp(pkt->getName(), "VoIP")) == 0) {
+    if ((strcmp(pkt->getName(), "VoIP")) == 0) {  //FIXME do not hardcode this stuff!!!!
         lteInfo->setTraffic(CONVERSATIONAL);
         lteInfo->setRlcType(conversationalRlc_);
     }
