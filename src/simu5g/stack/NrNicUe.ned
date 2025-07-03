@@ -37,7 +37,7 @@ module NrNicUe extends LteNicUeD2D
 
         pdcpRrc.typename = default("NrPdcpRrcUe");
         phy.typename = default("NrPhyUe");	        // TODO fix this
-        											// LtePhy is of type NRPhyUe so that it is
+        											// LtePhy is of type NrPhyUe so that it is
         											// be aware of the existing of the second
         											// PHY layer (needed at handover)
 
