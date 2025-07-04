@@ -16,6 +16,7 @@ import simu5g.stack.multiplexer.MacDrbMultiplexer;
 import simu5g.stack.multiplexer.SdapDrbMultiplexer;
 import simu5g.stack.pdcp.NrPdcpEnb;
 import simu5g.stack.rlc.LteRlc;
+import simu5g.stack.rlcModeDispatcher.RlcModeDispatcher;
 import simu5g.stack.sdap.INrSdap;
 
 
@@ -50,6 +51,11 @@ module NRNicEnbDrb extends LteNicEnbD2D
             drbIndex = index;  // assign DRB ID
         }
 
+        // RLC Mode Dispatcher
+        nrRlcModeDispatcher[numDrbs]: RlcModeDispatcher {
+            @display("p=245,210,r,10");
+        }
+
 		// RLC Layer
         nrRlc[numDrbs]: LteRlc {
             @display("p=245,231,r,10");
@@ -82,9 +88,12 @@ module NRNicEnbDrb extends LteNicEnbD2D
 		// New multi-DRB connections when SDAP is enabled
         for i=0..numDrbs-1 {
             //# PDCP <-> RLC
-            nrPdcp[i].AM_Sap++ <--> nrRlc[i].AM_Sap;
-            nrPdcp[i].UM_Sap++ <--> nrRlc[i].UM_Sap;
-            nrPdcp[i].TM_Sap++ <--> nrRlc[i].TM_Sap;
+            nrPdcp[i].rlcDispatcherOut --> nrRlcModeDispatcher[i].pdcpIn;
+            nrPdcp[i].rlcDispatcherIn <-- nrRlcModeDispatcher[i].pdcpOut;
+
+            nrRlcModeDispatcher[i].AM_Sap++ <--> nrRlc[i].AM_Sap;
+            nrRlcModeDispatcher[i].UM_Sap++ <--> nrRlc[i].UM_Sap;
+            nrRlcModeDispatcher[i].TM_Sap++ <--> nrRlc[i].TM_Sap;
 
             //# RLC <-> MUX
             nrRlc[i].RLC_to_MAC --> lMux.rlcIn[i];

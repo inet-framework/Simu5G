@@ -21,6 +21,7 @@
 #include "simu5g/stack/pdcp/LteTxPdcpEntity.h"
 #include "simu5g/stack/pdcp/LteRxPdcpEntity.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
+#include "simu5g/stack/rlcModeDispatcher/RlcModeDispatcher.h"
 
 namespace simu5g {
 
@@ -256,17 +257,10 @@ class LtePdcpBase : public cSimpleModule
 
     cGate *dataPortInGate_ = nullptr;
     cGate *dataPortOutGate_ = nullptr;
-    cGate *tmSapInGate_ = nullptr;
-    cGate *tmSapOutGate_ = nullptr;
-    cGate *umSapInGate_ = nullptr;
-    cGate *umSapOutGate_ = nullptr;
-    cGate *amSapInGate_ = nullptr;
-    cGate *amSapOutGate_ = nullptr;
 
-    LteRlcType conversationalRlc_ = UNKNOWN_RLC_TYPE;
-    LteRlcType streamingRlc_ = UNKNOWN_RLC_TYPE;
-    LteRlcType interactiveRlc_ = UNKNOWN_RLC_TYPE;
-    LteRlcType backgroundRlc_ = UNKNOWN_RLC_TYPE;
+    /// Gates to RLC Mode Dispatcher
+    cGate *rlcDispatcherOutGate_ = nullptr;
+    cGate *rlcDispatcherInGate_ = nullptr;
 
     /**
      * The entities map associates each CID with a PDCP Entity, identified by its ID
@@ -369,4 +363,3 @@ class LtePdcpEnb : public LtePdcpBase
 } //namespace
 
 #endif
-

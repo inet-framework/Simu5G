@@ -137,25 +137,7 @@ void LtePdcpBase::headerDecompress(Packet *pkt)
 
 void LtePdcpBase::setTrafficInformation(cPacket *pkt, inet::Ptr<FlowControlInfo> lteInfo)
 {
-    if ((strcmp(pkt->getName(), "VoIP")) == 0) {  //FIXME do not hardcode this stuff!!!!
-        lteInfo->setTraffic(CONVERSATIONAL);
-        lteInfo->setRlcType(conversationalRlc_);
-    }
-    else if ((strcmp(pkt->getName(), "gaming")) == 0) {
-        lteInfo->setTraffic(INTERACTIVE);
-        lteInfo->setRlcType(interactiveRlc_);
-    }
-    else if ((strcmp(pkt->getName(), "VoDPacket") == 0)
-             || (strcmp(pkt->getName(), "VoDFinishPacket") == 0))
-    {
-        lteInfo->setTraffic(STREAMING);
-        lteInfo->setRlcType(streamingRlc_);
-    }
-    else {
-        lteInfo->setTraffic(BACKGROUND);
-        lteInfo->setRlcType(backgroundRlc_);
-    }
-
+    // Set basic traffic information - RLC mode selection is now handled by RlcModeDispatcher
     lteInfo->setDirection(getDirection());
 }
 
@@ -257,23 +239,6 @@ void LtePdcpBase::sendToLowerLayer(Packet *pkt)
 {
     auto lteInfo = pkt->getTag<FlowControlInfo>();
 
-    cGate *gate;
-    switch (lteInfo->getRlcType()) {
-        case UM:
-            gate = umSapOutGate_;
-            break;
-        case AM:
-            gate = amSapOutGate_;
-            break;
-        case TM:
-            gate = tmSapOutGate_;
-            break;
-        default:
-            throw cRuntimeError("LtePdcpBase::sendToLowerLayer(): invalid RlcType %d", lteInfo->getRlcType());
-    }
-
-    EV << "LtePdcp : Sending packet " << pkt->getName() << " on port " << gate->getFullName() << endl;
-
     /*
      * @author Alessandro Noferi
      *
@@ -292,8 +257,10 @@ void LtePdcpBase::sendToLowerLayer(Packet *pkt)
             packetFlowManager_->insertPdcpSdu(pkt);
     }
 
-    // Send message
-    send(pkt, gate);
+    // Send to RLC Mode Dispatcher for classification and dispatch
+    EV << "LtePdcp : Sending packet " << pkt->getName() << " to RLC Mode Dispatcher" << endl;
+    send(pkt, rlcDispatcherOutGate_);
+
     emit(sentPacketToLowerLayerSignal_, pkt);
 }
 
@@ -315,12 +282,8 @@ void LtePdcpBase::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         dataPortInGate_ = gate("DataPort$i");
         dataPortOutGate_ = gate("DataPort$o");
-        tmSapInGate_ = gate("TM_Sap$i", 0);
-        tmSapOutGate_ = gate("TM_Sap$o", 0);
-        umSapInGate_ = gate("UM_Sap$i", 0);
-        umSapOutGate_ = gate("UM_Sap$o", 0);
-        amSapInGate_ = gate("AM_Sap$i", 0);
-        amSapOutGate_ = gate("AM_Sap$o", 0);
+        rlcDispatcherOutGate_ = gate("rlcDispatcherOut");
+        rlcDispatcherInGate_ = gate("rlcDispatcherIn");
 
         binder_.reference(this, "binderModule", true);
         headerCompressedSize_ = B(par("headerCompressedSize"));
@@ -341,10 +304,7 @@ void LtePdcpBase::initialize(int stage)
             EV << "LtePdcpBase::initialize - NRpacketFlowManager present" << endl;
         }
 
-        conversationalRlc_ = aToRlcType(par("conversationalRlc"));
-        interactiveRlc_ = aToRlcType(par("interactiveRlc"));
-        streamingRlc_ = aToRlcType(par("streamingRlc"));
-        backgroundRlc_ = aToRlcType(par("backgroundRlc"));
+        EV << "LtePdcpBase::initialize - Using RLC Mode Dispatcher for RLC mode selection" << endl;
 
         // TODO WATCH_MAP(gatemap_);
         WATCH(headerCompressedSize_);
@@ -363,8 +323,11 @@ void LtePdcpBase::handleMessage(cMessage *msg)
     if (incoming == dataPortInGate_) {
         fromDataPort(pkt);
     }
-    else {
+    else if (incoming == rlcDispatcherInGate_) {
         fromLowerLayer(pkt);
+    }
+    else {
+        throw cRuntimeError("LtePdcpBase::handleMessage - Unknown arrival gate: %s", incoming->getFullName());
     }
 }
 

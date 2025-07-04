@@ -26,11 +26,6 @@ namespace simu5g {
  */
 class NrPdcpUe : public LtePdcpUeD2D
 {
-
-    cGate *nrTmSapOutGate_ = nullptr;
-    cGate *nrUmSapOutGate_ = nullptr;
-    cGate *nrAmSapOutGate_ = nullptr;
-
     /// Identifier for this node
     MacNodeId nrNodeId_;
 
@@ -95,4 +90,3 @@ class NrPdcpUe : public LtePdcpUeD2D
 } //namespace
 
 #endif
-

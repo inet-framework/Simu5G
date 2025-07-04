@@ -17,14 +17,14 @@ import simu5g.stack.multiplexer.MacDrbMultiplexer;
 import simu5g.stack.multiplexer.SdapDrbMultiplexer;
 import simu5g.stack.packetFlowManager.IPacketFlowManager;
 import simu5g.stack.pdcp.NrPdcpUe;
-import simu5g.stack.pdcp.ILtePdcp;
-import simu5g.stack.phy.channelmodel.ILteChannelModel;
 import simu5g.stack.phy.ILtePhy;
+import simu5g.stack.phy.channelmodel.ILteChannelModel;
 import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 import simu5g.stack.rlc.LteRlc;
-import simu5g.stack.sdap.NrTxSdapEntity;
+import simu5g.stack.rlcModeDispatcher.RlcModeDispatcher;
 import simu5g.stack.sdap.INrSdap;
 import simu5g.stack.sdap.common.IReflectiveQosTable;
+
 
 //
 // This module defines a User Equipment (UE) network interface card that
@@ -80,6 +80,11 @@ module NRNicUeDrb extends LteNicUeD2D
         nrPdcp[numDrbs]: NrPdcpUe if hasNrSdap {
             @display("p=596,175,r,10");
             drbIndex = index;  // assign DRB ID
+        }
+
+        // RLC Mode Dispatcher
+        nrRlcModeDispatcher[numDrbs]: RlcModeDispatcher {
+            @display("p=596,210,r,10");
         }
 
         // RLC Layer
@@ -146,9 +151,12 @@ module NRNicUeDrb extends LteNicUeD2D
             hMux.pdcpIn[i] <-- nrPdcp[i].DataPort$o;
 
             //# PDCP <-> RLC
-            nrPdcp[i].AM_Sap++ <--> nrRlc[i].AM_Sap;
-            nrPdcp[i].UM_Sap++ <--> nrRlc[i].UM_Sap;
-            nrPdcp[i].TM_Sap++ <--> nrRlc[i].TM_Sap;
+            nrPdcp[i].rlcDispatcherOut --> nrRlcModeDispatcher[i].pdcpIn;
+            nrPdcp[i].rlcDispatcherIn <-- nrRlcModeDispatcher[i].pdcpOut;
+
+            nrRlcModeDispatcher[i].AM_Sap++ <--> nrRlc[i].AM_Sap;
+            nrRlcModeDispatcher[i].UM_Sap++ <--> nrRlc[i].UM_Sap;
+            nrRlcModeDispatcher[i].TM_Sap++ <--> nrRlc[i].TM_Sap;
 
             //# RLC <-> MUX
             nrRlc[i].RLC_to_MAC --> lMux.rlcIn[i];

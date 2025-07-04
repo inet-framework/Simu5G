@@ -26,10 +26,6 @@ simple LtePdcpBase like ILtePdcp
         string packetFlowManagerModule = default("^.packetFlowManager"); // optional
         string nrPacketFlowManagerModule = default("^.nrPacketFlowManager"); // optional
         int headerCompressedSize @unit(B) = default(-1B);   // TODO test header compression (headerCompressedSize=3B)!!!   Header compressed size (bytes), -1B = compression disabled
-        string conversationalRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
-        string streamingRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
-        string interactiveRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
-        string backgroundRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
 
         //# Statistics
         @signal[receivedPacketFromUpperLayer];
@@ -53,8 +49,6 @@ simple LtePdcpBase like ILtePdcp
         //#
         //# Data Ports
 
-        inout TM_Sap[];            // Transparent Mode SAP
-        inout UM_Sap[];            // Unacknowledged Mode SAP
-        inout AM_Sap[];            // Acknowledged Mode SAP
+        output rlcDispatcherOut;   // Output to RLC Mode Dispatcher
+        input rlcDispatcherIn;     // Input from RLC Mode Dispatcher
 }
-

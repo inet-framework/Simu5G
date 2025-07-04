@@ -30,23 +30,6 @@ void NrPdcpUe::initialize(int stage)
         drbIndex = par("drbIndex");
         if (drbIndex != -1)
             lcid_ = drbIndex;  // assign LCID = DRB index directly
-
-        // initialize gates
-        if (drbIndex == -1) {
-            nrTmSapOutGate_ = gate("TM_Sap$o", 1);
-            nrUmSapOutGate_ = gate("UM_Sap$o", 1);
-            nrAmSapOutGate_ = gate("AM_Sap$o", 1);
-        }
-        else {
-            // drbIndex != -1: assume there are multiple RLC submodules so we need gates to be connected differently
-            setGateSize("TM_Sap", 2);
-            setGateSize("UM_Sap", 2);
-            setGateSize("AM_Sap", 2);  //TODO needed????
-
-            nrTmSapOutGate_ = gate("TM_Sap$o", 0);
-            nrUmSapOutGate_ = gate("UM_Sap$o", 0);
-            nrAmSapOutGate_ = gate("AM_Sap$o", 0);
-        }
     }
 
     if (stage == inet::INITSTAGE_NETWORK_CONFIGURATION){
@@ -54,7 +37,6 @@ void NrPdcpUe::initialize(int stage)
         Binder* binder = check_and_cast<Binder*>(getModuleByPath("binder"));
         binder->registerPdcpInstance(nrNodeId_, drbIndex, this);
     }
-
 
     LtePdcpUeD2D::initialize(stage);
 }
@@ -259,27 +241,20 @@ void NrPdcpUe::sendToLowerLayer(Packet *pkt)
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
 
     if (!dualConnectivityEnabled_ || useNR) {
-        EV << "NrPdcpUe : Sending packet " << pkt->getName() << " on port "
-           << (lteInfo->getRlcType() == UM ? "NR_UM_Sap$o\n" : "NR_AM_Sap$o\n");
-
         // use NR id as source
         lteInfo->setSourceId(nrNodeId_);
 
         // notify the packetFlowManager only with UL packet
         if (lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D) {
             if (NRpacketFlowManager_ != nullptr) {
-                EV << "LteTxPdcpEntity::handlePacketFromUpperLayer - notify NRpacketFlowManager_" << endl;
+                EV << "NrPdcpUe::sendToLowerLayer - notify NRpacketFlowManager_" << endl;
                 NRpacketFlowManager_->insertPdcpSdu(pkt);
             }
         }
-
-        // Send message
-        send(pkt, (lteInfo->getRlcType() == UM ? nrUmSapOutGate_ : nrAmSapOutGate_));
-
-        emit(sentPacketToLowerLayerSignal_, pkt);
     }
-    else
-        LtePdcpBase::sendToLowerLayer(pkt);
+
+    // Use base class implementation that sends to RlcModeDispatcher
+    LtePdcpBase::sendToLowerLayer(pkt);
 }
 
 } //namespace

@@ -21,6 +21,7 @@ import simu5g.stack.pdcp.ILtePdcp;
 import simu5g.stack.phy.channelmodel.ILteChannelModel;
 import simu5g.stack.phy.ILtePhy;
 import simu5g.stack.rlc.LteRlc;
+import simu5g.stack.rlcModeDispatcher.RlcModeDispatcher;
 
 //
 // The LteNicBase module serves as the foundational building block for LTE networking
@@ -80,6 +81,10 @@ module LteNicBase extends NetworkInterface like ICellularNic
         pdcp: <> like ILtePdcp {
             @display("p=362,141");
         }
+        // RLC Mode Dispatcher
+        rlcModeDispatcher: RlcModeDispatcher {
+            @display("p=362,183");
+        }
         // RLC Layer
         rlc: LteRlc {
             @display("p=362,226");
@@ -116,10 +121,13 @@ module LteNicBase extends NetworkInterface like ICellularNic
         //# Internal LTE Stack Connections
         //#
 
-        //# PDCP <-> RLC
-        pdcp.UM_Sap++ <--> rlc.UM_Sap;
-        pdcp.AM_Sap++ <--> rlc.AM_Sap;
-        pdcp.TM_Sap++ <--> rlc.TM_Sap;
+        pdcp.rlcDispatcherOut --> rlcModeDispatcher.pdcpIn;
+        rlcModeDispatcher.pdcpOut --> pdcp.rlcDispatcherIn;
+
+        //# PDCP <-> RLC Mode Dispatcher <-> RLC
+        rlcModeDispatcher.UM_Sap++ <--> rlc.UM_Sap;
+        rlcModeDispatcher.AM_Sap++ <--> rlc.AM_Sap;
+        rlcModeDispatcher.TM_Sap++ <--> rlc.TM_Sap;
 
         //# RLC <-> MAC
         rlc.RLC_to_MAC --> mac.RLC_to_MAC if !drbSupport;

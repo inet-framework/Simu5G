@@ -28,9 +28,6 @@ moduleinterface ILtePdcp
 
     gates:
         inout DataPort;
-        inout TM_Sap[];
-        inout UM_Sap[];
-        inout AM_Sap[];
+        output rlcDispatcherOut;
+        input rlcDispatcherIn;
 }
-
-
