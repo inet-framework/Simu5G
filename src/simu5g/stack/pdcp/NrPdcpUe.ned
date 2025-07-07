@@ -20,6 +20,6 @@ simple NrPdcpUe extends LtePdcpUeD2D
 {
     parameters:
         @class("NrPdcpUe");
-        int drbIndex;  // NEW: passed by compound module
+        int drbIndex = default(-1);
 }
 

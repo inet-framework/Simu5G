@@ -421,6 +421,7 @@ cModule *getMacByMacNodeId(Binder *binder, MacNodeId nodeId)
     return getSimulation()->getModule(id)->getSubmodule("cellularNic")->getSubmodule("mac");
 }
 
+//TODO looks fragile and is only used by UmRxEntity, can be eliminated
 cModule *getRlcByMacNodeId(Binder *binder, MacNodeId nodeId, LteRlcType rlcType)
 {
     cModule *module = getMacByMacNodeId(binder, nodeId);
