@@ -122,7 +122,7 @@ void RlcModeDispatcher::setTrafficInformation(cPacket *pkt, inet::Ptr<FlowContro
     // Update the control info
     lteInfo->setApplication(appType);
     lteInfo->setTraffic(trafficClass);
-    lteInfo->setRlcType(rlcType);
+    lteInfo->setRlcType(UM); //TODO FIXME
     lteInfo->setDirection(direction);
 
     EV << "RlcModeDispatcher::setTrafficInformation - Packet: " << pkt->getName()

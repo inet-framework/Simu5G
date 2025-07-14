@@ -139,6 +139,9 @@ void LtePdcpBase::setTrafficInformation(cPacket *pkt, inet::Ptr<FlowControlInfo>
 {
     // Set basic traffic information - RLC mode selection is now handled by RlcModeDispatcher
     lteInfo->setDirection(getDirection());
+
+    // TODO HACK! REMOVE! Set a default RLC type for PDCP entity processing - will be overridden by RlcModeDispatcher
+    lteInfo->setRlcType(UM);
 }
 
 /*
