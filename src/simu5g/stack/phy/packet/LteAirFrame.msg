@@ -30,7 +30,7 @@ struct RemoteUnitPhyDataVector
 // This is LteAirFrame.
 //
 packet LteAirFrame extends AirFrame {
-    RemoteUnitPhyDataVector remoteUnitPhyDataVector;
+    RemoteUnitPhyDataVector remoteUnitPhyDataVector @nopack;
     UserControlInfo additionalInfo @nopack;
 }
 
