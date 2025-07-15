@@ -144,8 +144,8 @@ void LtePhyEnbD2D::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame,
 
 void LtePhyEnbD2D::handleAirFrame(cMessage *msg)
 {
-    UserControlInfo *lteInfo = check_and_cast<UserControlInfo *>(msg->removeControlInfo());
     LteAirFrame *frame = static_cast<LteAirFrame *>(msg);
+    UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
 
     EV << "LtePhyEnbD2D::handleAirFrame - received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
 

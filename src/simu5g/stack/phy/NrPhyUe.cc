@@ -33,10 +33,10 @@ void NrPhyUe::initialize(int stage)
 // TODO: ***reorganize*** method
 void NrPhyUe::handleAirFrame(cMessage *msg)
 {
-    UserControlInfo *lteInfo = check_and_cast<UserControlInfo *>(msg->removeControlInfo());
+    LteAirFrame *frame = static_cast<LteAirFrame *>(msg);
+    UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
 
     connectedNodeId_ = masterId_;
-    LteAirFrame *frame = check_and_cast<LteAirFrame *>(msg);
     EV << "NrPhyUe: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
 
     MacNodeId sourceId = lteInfo->getSourceId();
