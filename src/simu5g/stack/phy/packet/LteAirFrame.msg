@@ -10,6 +10,11 @@
 //
 
 import simu5g.stack.phy.packet.AirFrame;
+import simu5g.common.LteControlInfo;
+
+cplusplus {{
+#include "simu5g/common/LteControlInfo.h"
+}}
 
 namespace simu5g;
 
@@ -18,4 +23,5 @@ namespace simu5g;
 //
 packet LteAirFrame extends AirFrame {
     @customize(true);
+    UserControlInfo additionalInfo @nopack;
 }

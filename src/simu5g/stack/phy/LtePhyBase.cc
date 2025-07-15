@@ -187,6 +187,13 @@ void LtePhyBase::updateDisplayString()
 
 void LtePhyBase::sendBroadcast(LteAirFrame *airFrame)
 {
+    // Remove control info to allow parsim packing
+    if (airFrame->getControlInfo() != nullptr) {
+        UserControlInfo *userControlInfo = check_and_cast<UserControlInfo *>(airFrame->removeControlInfo());
+        airFrame->setAdditionalInfo(*userControlInfo);
+        delete userControlInfo;
+    }
+
     // delegate the ChannelControl to send the airframe
     sendToChannel(airFrame);
 }
@@ -212,6 +219,10 @@ void LtePhyBase::sendMulticast(LteAirFrame *frame)
     int32_t groupId = ci->getMulticastGroupId();
     if (groupId < 0)
         throw cRuntimeError("LtePhyBase::sendMulticast - Error. Group ID %d is not valid.", groupId);
+
+    // transfer control info into airframe fields
+    frame->setAdditionalInfo(*ci);
+    delete frame->removeControlInfo();
 
     // send the frame to nodes belonging to the multicast group only
     for (auto nodeIt = binder_->getNodeIdListBegin(); nodeIt != binder_->getNodeIdListEnd(); ++nodeIt) {
@@ -244,7 +255,9 @@ void LtePhyBase::sendMulticast(LteAirFrame *frame)
 
             EV << NOW << " LtePhyBase::sendMulticast - sending frame to node " << destId << endl;
 
-            sendDirect(frame->dup(), 0, frame->getDuration(), receiver, getReceiverGateIndex(receiver, isNrUe(destId)));
+            // Create a duplicate frame before sending
+            LteAirFrame *frameToSend = frame->dup();
+            sendDirect(frameToSend, 0, frame->getDuration(), receiver, getReceiverGateIndex(receiver, isNrUe(destId)));
         }
     }
 
@@ -274,6 +287,13 @@ void LtePhyBase::sendUnicast(LteAirFrame *frame)
     }
     // get a pointer to receiving module
     cModule *receiver = getSimulation()->getModule(destOmnetId);
+
+    // Remove control info to allow parsim packing
+    if (frame->getControlInfo() != nullptr) {
+        UserControlInfo *userControlInfo = check_and_cast<UserControlInfo *>(frame->removeControlInfo());
+        frame->setAdditionalInfo(*userControlInfo);
+        delete userControlInfo;
+    }
 
     sendDirect(frame, 0, frame->getDuration(), receiver, getReceiverGateIndex(receiver, isNrUe(dest)));
 }
