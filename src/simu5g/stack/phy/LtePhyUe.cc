@@ -450,10 +450,10 @@ void LtePhyUe::doHandover()
 // TODO: ***reorganize*** method
 void LtePhyUe::handleAirFrame(cMessage *msg)
 {
-    UserControlInfo *lteInfo = dynamic_cast<UserControlInfo *>(msg->removeControlInfo());
+    LteAirFrame *frame = static_cast<LteAirFrame *>(msg);
+    UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
 
     connectedNodeId_ = masterId_;
-    LteAirFrame *frame = check_and_cast<LteAirFrame *>(msg);
     EV << "LtePhy: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
 
     if (!binder_->nodeExists(lteInfo->getSourceId())) {
