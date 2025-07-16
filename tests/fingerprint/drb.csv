@@ -1,5 +1,5 @@
 # working directory, command line arguments, simulation time limit, fingerprint, expected result, tags
-/simulations/nr/standalone/,         -f omnetpp_drb.ini -c Standalone -r 0,         5s,         2140-9269/tplx;6f92-2bc6/~tNl;9061-3f1b/~tNd;6b1c-d391/s, PASS,
+/simulations/nr/standalone/,         -f omnetpp_drb.ini -c Standalone -r 0,         5s,         2140-9269/tplx;6f92-2bc6/~tNl;9061-3f1b/~tNd;6b1c-d391/s,  PASS,
 /simulations/nr/standalone/,         -f omnetpp_drb.ini -c VoIP-DL -r 0,            5s,         21ef-2b20/tplx;7a2f-c60f/~tNl;c631-fdd4/~tNd;deec-acf7/s, PASS,
 /simulations/nr/standalone/,         -f omnetpp_drb.ini -c VoIP-UL -r 0,            5s,         15fe-092f/tplx;7e25-8c83/~tNl;3f35-86e2/~tNd;bf14-2f70/s, PASS,
 /simulations/nr/standalone/,         -f omnetpp_sdap.ini -c Standalone -r 0,        5s,         6b88-a362/tplx;bd5b-6cf6/~tNl;3807-3eb8/~tNd;0afb-33f7/s, PASS,
