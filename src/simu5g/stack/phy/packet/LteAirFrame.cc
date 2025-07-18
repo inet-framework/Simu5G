@@ -16,13 +16,7 @@ namespace simu5g {
 LteAirFrame& LteAirFrame::operator=(const LteAirFrame& other)
 {
     LteAirFrame_Base::operator=(other);
-
-    // copy the attached control info, if any
-    if (other.getControlInfo() != nullptr) {
-        UserControlInfo *info = check_and_cast<UserControlInfo *>(other.getControlInfo());
-        UserControlInfo *info_dup = info->dup();
-        this->setControlInfo(info_dup);
-    }
+    ASSERT(other.getControlInfo() == nullptr);
     return *this;
 }
 
