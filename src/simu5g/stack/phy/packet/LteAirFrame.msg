@@ -13,15 +13,27 @@ import simu5g.stack.phy.packet.AirFrame;
 import simu5g.common.LteControlInfo;
 
 cplusplus {{
+#include "simu5g/common/LteCommon.h"  // for RemoteUnitPhyDataVector
 #include "simu5g/common/LteControlInfo.h"
 }}
 
 namespace simu5g;
 
+struct RemoteUnitPhyDataVector
+{
+    @existingClass;
+    @opaque;
+    //@toString(.str());
+}
+
 //
 // This is LteAirFrame.
 //
 packet LteAirFrame extends AirFrame {
-    @customize(true);
+    RemoteUnitPhyDataVector remoteUnitPhyDataVector;
     UserControlInfo additionalInfo @nopack;
 }
+
+cplusplus(LteAirFrame) {{
+    void addRemoteUnitPhyDataVector(const RemoteUnitPhyData& data) { remoteUnitPhyDataVector.push_back(data); }
+}}
