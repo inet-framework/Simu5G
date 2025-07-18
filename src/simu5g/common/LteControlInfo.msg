@@ -12,6 +12,11 @@
 import inet.common.INETDefs;
 import inet.common.TagBase;
 import simu5g.common.LteCommon;
+import inet.common.geometry.Geometry; // for Coord
+
+cplusplus {{
+#include "simu5g/stack/mac/amc/UserTxParams.h"
+}}
 
 namespace simu5g;
 
@@ -21,6 +26,18 @@ enum TxMode;
 enum Direction;
 enum ApplicationType;
 enum LteTrafficClass;
+
+class RbMap
+{
+    @existingClass;
+    @opaque;
+}
+
+class UserTxParams
+{
+    @existingClass;
+    @opaque;
+}
 
 //
 // Control info usage in Simu5G simulator
@@ -106,8 +123,6 @@ class FlowControlInfo extends LteControlInfo {
 //   txMode, Resource blocks used, RemoteSet
 //
 class UserControlInfo extends LteControlInfo {
-    @customize(true);
-
     bool isNr = false;
     double carrierFrequency = NaN;       // carrier frequency
 
@@ -131,13 +146,21 @@ class UserControlInfo extends LteControlInfo {
     double d2dTxPower = NaN;                            // D2D Transmission Power (used for feedback reporting of D2D links
     // blocks granted on all Remotes, all Bands
     unsigned int totalGrantedBlocks = 0;
-
     unsigned int grantId = 0;                           // grantId related to the grand that allowed the sending of a MEC PDU (used only for MAC PDU sent by UEs)
 
-    //#
-    //# Follows a list of elements only present in
-    //# the customized class (see LteControlInfo.h):
-    //#
-    //# RemoteSet ru;                                // Remote Antenna Set
-    //# RbMap grantedBlocks;                        // Blocks allocated per Remote, per Band.
+    UserTxParams *userTxParams @owned;
+    RbMap grantedBlocks;
+    inet::Coord coord;                                  // The playground position of the sending host
+    FeedbackRequest feedbackReq;
 }
+
+cplusplus (UserControlInfo) {{
+    virtual const unsigned int getBlocks(Remote antenna, Band b) const { return grantedBlocks.at(antenna).at(b); }
+    virtual void setBlocks(Remote antenna, Band b, const unsigned int blocks) { grantedBlocks[antenna][b] = blocks; }
+}}
+
+cplusplus (UserControlInfo::setUserTxParams) {{
+    // Code inserted at top of setUserTxParams(); allows silent overwrite of earlier object.
+    delete this->userTxParams;
+    this->userTxParams = nullptr;
+}}
