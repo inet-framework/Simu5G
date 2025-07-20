@@ -127,6 +127,7 @@ class LteRlcDataPdu : public LteRlcDataPdu_Base
      */
     virtual void pushSdu(inet::Packet *pkt)
     {
+        cleanDirectionMark(pkt);
         take(pkt);
         rlcPduLength_ += pkt->getByteLength();
         sduList_.push_back(pkt);
@@ -136,6 +137,7 @@ class LteRlcDataPdu : public LteRlcDataPdu_Base
 
     virtual void pushSdu(inet::Packet *pkt, int size)
     {
+        cleanDirectionMark(pkt);
         take(pkt);
         rlcPduLength_ += size;
         sduList_.push_back(pkt);

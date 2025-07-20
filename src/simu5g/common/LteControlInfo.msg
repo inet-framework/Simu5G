@@ -15,6 +15,31 @@ import simu5g.common.LteCommon;
 import simu5g.common.LteCommonImpl;
 import inet.common.geometry.Geometry; // for Coord
 
+cplusplus {{
+#include "inet/common/ModuleAccess.h"  // for findContainingNode()
+#include "simu5g/stack/mac/amc/UserTxParams.h"
+}}
+
+cplusplus {{
+inline const char *dirOnStack(bool down, bool up) {
+    if (down && up)
+        throw cRuntimeError("BOTH DIRS!!!");
+    if (down)
+        return "DOWN";
+    else if (up)
+        return "UP";
+    else
+        throw cRuntimeError("DIR NOT FILLED IN");
+}
+
+#define LOG_FIELD_ACCESS(field, access)  \
+  std::cout << "@ " << field << " " << getClassName() << " " << dirOnStack(isDownStack(), isUpStack()) << " " << access \
+            << " by " << getSimulation()->getContextModule()->getClassName() \
+            << " in " << inet::findContainingNode(getSimulation()->getContextModule())->getModuleType()->getName() << std::endl;
+#define LOG_FIELD_READ(field)   LOG_FIELD_ACCESS(field, "READ")
+#define LOG_FIELD_WRITE(field)  LOG_FIELD_ACCESS(field, "WRITE")
+}}
+
 namespace simu5g;
 
 enum LtePhyFrameType;
@@ -51,6 +76,10 @@ enum LteTrafficClass;
 // - Destination MAC Node ID
 //
 class LteControlInfo extends inet::TagBase {
+    // TMP fields to allow tracking of control info usage
+    bool isDownStack = false;
+    bool isUpStack = false;
+
     //# Information shared between FlowControlInfo and UserControlInfo
 
     MacNodeId sourceId = NODEID_NONE;                    // Source MacNodeId
@@ -157,3 +186,194 @@ cplusplus (UserControlInfo::setUserTxParams) {{
     delete this->userTxParams;
     this->userTxParams = nullptr;
 }}
+
+// LteControlInfo field logging
+
+cplusplus (LteControlInfo::setSourceId) {{
+    LOG_FIELD_WRITE("sourceId")
+}}
+cplusplus (LteControlInfo::getSourceId) {{
+    LOG_FIELD_READ("sourceId")
+}}
+
+cplusplus (LteControlInfo::setDestId) {{
+    LOG_FIELD_WRITE("destId")
+}}
+cplusplus (LteControlInfo::getDestId) {{
+    LOG_FIELD_READ("destId")
+}}
+
+cplusplus (LteControlInfo::setDirection) {{
+    LOG_FIELD_WRITE("direction")
+}}
+cplusplus (LteControlInfo::getDirection) {{
+    LOG_FIELD_READ("direction")
+}}
+
+cplusplus (LteControlInfo::setD2dTxPeerId) {{
+    LOG_FIELD_WRITE("d2dTxPeerId")
+}}
+cplusplus (LteControlInfo::getD2dTxPeerId) {{
+    LOG_FIELD_READ("d2dTxPeerId")
+}}
+
+cplusplus (LteControlInfo::setD2dRxPeerId) {{
+    LOG_FIELD_WRITE("d2dRxPeerId")
+}}
+cplusplus (LteControlInfo::getD2dRxPeerId) {{
+    LOG_FIELD_READ("d2dRxPeerId")
+}}
+
+cplusplus (LteControlInfo::setTraffic) {{
+    LOG_FIELD_WRITE("traffic")
+}}
+cplusplus (LteControlInfo::getTraffic) {{
+    LOG_FIELD_READ("traffic")
+}}
+
+cplusplus (LteControlInfo::setRlcType) {{
+    LOG_FIELD_WRITE("rlcType")
+}}
+cplusplus (LteControlInfo::getRlcType) {{
+    LOG_FIELD_READ("rlcType")
+}}
+
+cplusplus (LteControlInfo::setLcid) {{
+    LOG_FIELD_WRITE("lcid")
+}}
+cplusplus (LteControlInfo::getLcid) {{
+    LOG_FIELD_READ("lcid")
+}}
+
+cplusplus (LteControlInfo::setMulticastGroupId) {{
+    LOG_FIELD_WRITE("multicastGroupId")
+}}
+cplusplus (LteControlInfo::getMulticastGroupId) {{
+    LOG_FIELD_READ("multicastGroupId")
+}}
+
+// FlowControlInfo field logging
+cplusplus (FlowControlInfo::setSequenceNumber) {{
+    LOG_FIELD_WRITE("sequenceNumber")
+}}
+cplusplus (FlowControlInfo::getSequenceNumber) {{
+    LOG_FIELD_READ("sequenceNumber")
+}}
+
+// UserControlInfo field logging
+cplusplus (UserControlInfo::setIsNr) {{
+    LOG_FIELD_WRITE("isNr")
+}}
+cplusplus (UserControlInfo::isNr) {{
+    LOG_FIELD_READ("isNr")
+}}
+
+cplusplus (UserControlInfo::setCarrierFrequency) {{
+    LOG_FIELD_WRITE("carrierFrequency")
+}}
+cplusplus (UserControlInfo::getCarrierFrequency) {{
+    LOG_FIELD_READ("carrierFrequency")
+}}
+
+cplusplus (UserControlInfo::setAcid) {{
+    LOG_FIELD_WRITE("acid")
+}}
+cplusplus (UserControlInfo::getAcid) {{
+    LOG_FIELD_READ("acid")
+}}
+
+cplusplus (UserControlInfo::setCw) {{
+    LOG_FIELD_WRITE("cw")
+}}
+cplusplus (UserControlInfo::getCw) {{
+    LOG_FIELD_READ("cw")
+}}
+
+cplusplus (UserControlInfo::setTxNumber) {{
+    LOG_FIELD_WRITE("txNumber")
+}}
+cplusplus (UserControlInfo::getTxNumber) {{
+    LOG_FIELD_READ("txNumber")
+}}
+
+cplusplus (UserControlInfo::setNdi) {{
+    LOG_FIELD_WRITE("ndi")
+}}
+cplusplus (UserControlInfo::getNdi) {{
+    LOG_FIELD_READ("ndi")
+}}
+
+cplusplus (UserControlInfo::setDeciderResult) {{
+    LOG_FIELD_WRITE("deciderResult")
+}}
+cplusplus (UserControlInfo::getDeciderResult) {{
+    LOG_FIELD_READ("deciderResult")
+}}
+
+cplusplus (UserControlInfo::setTxMode) {{
+    LOG_FIELD_WRITE("txMode")
+}}
+cplusplus (UserControlInfo::getTxMode) {{
+    LOG_FIELD_READ("txMode")
+}}
+
+cplusplus (UserControlInfo::setFrameType) {{
+    LOG_FIELD_WRITE("frameType")
+}}
+cplusplus (UserControlInfo::getFrameType) {{
+    LOG_FIELD_READ("frameType")
+}}
+
+cplusplus (UserControlInfo::setTxPower) {{
+    LOG_FIELD_WRITE("txPower")
+}}
+cplusplus (UserControlInfo::getTxPower) {{
+    LOG_FIELD_READ("txPower")
+}}
+
+cplusplus (UserControlInfo::setD2dTxPower) {{
+    LOG_FIELD_WRITE("d2dTxPower")
+}}
+cplusplus (UserControlInfo::getD2dTxPower) {{
+    LOG_FIELD_READ("d2dTxPower")
+}}
+
+cplusplus (UserControlInfo::setTotalGrantedBlocks) {{
+    LOG_FIELD_WRITE("totalGrantedBlocks")
+}}
+cplusplus (UserControlInfo::getTotalGrantedBlocks) {{
+    LOG_FIELD_READ("totalGrantedBlocks")
+}}
+
+cplusplus (UserControlInfo::setGrantId) {{
+    LOG_FIELD_WRITE("grantId")
+}}
+cplusplus (UserControlInfo::getGrantId) {{
+    LOG_FIELD_READ("grantId")
+}}
+
+cplusplus (UserControlInfo::getUserTxParams) {{
+    LOG_FIELD_READ("userTxParams")
+}}
+
+cplusplus (UserControlInfo::setGrantedBlocks) {{
+    LOG_FIELD_WRITE("grantedBlocks")
+}}
+cplusplus (UserControlInfo::getGrantedBlocks) {{
+    LOG_FIELD_READ("grantedBlocks")
+}}
+
+cplusplus (UserControlInfo::setCoord) {{
+    LOG_FIELD_WRITE("coord")
+}}
+cplusplus (UserControlInfo::getCoord) {{
+    LOG_FIELD_READ("coord")
+}}
+
+cplusplus (UserControlInfo::setFeedbackReq) {{
+    LOG_FIELD_WRITE("feedbackReq")
+}}
+cplusplus (UserControlInfo::getFeedbackReq) {{
+    LOG_FIELD_READ("feedbackReq")
+}}
+

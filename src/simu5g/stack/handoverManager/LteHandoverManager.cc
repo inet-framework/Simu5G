@@ -38,6 +38,7 @@ void LteHandoverManager::initialize()
 
     // register to the X2 Manager
     auto x2Packet = new Packet("X2HandoverControlMsg");
+    markDownstack(x2Packet);
     auto initMsg = makeShared<X2HandoverControlMsg>();
     auto ctrlInfo = x2Packet->addTagIfAbsent<X2ControlInfoTag>();
     ctrlInfo->setInit(true);
@@ -87,6 +88,7 @@ void LteHandoverManager::sendHandoverCommand(MacNodeId ueId, MacNodeId enb, bool
     EV << NOW << " LteHandoverManager::sendHandoverCommand - Send handover command over X2 to eNB " << enb << " for UE " << ueId << endl;
 
     auto pkt = new Packet("X2HandoverControlMsg");
+    markDownstack(pkt);
 
     // build control info
     auto ctrlInfo = pkt->addTagIfAbsent<X2ControlInfoTag>();

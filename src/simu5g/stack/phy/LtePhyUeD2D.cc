@@ -223,6 +223,7 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
        << (result ? "RECEIVED" : "NOT RECEIVED") << endl;
 
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
+    markUpstack(pkt);
 
     // Here frame has to be destroyed since it is no more useful.
     delete frame;
@@ -231,6 +232,8 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
     lteInfo->setDeciderResult(result);
     *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
     delete lteInfo;
+
+    markUpstack(pkt);
 
     // Send decapsulated message along with result control info to upperGateOut_.
     send(pkt, upperGateOut_);
@@ -488,6 +491,7 @@ void LtePhyUeD2D::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo)
        << (result ? "RECEIVED" : "NOT RECEIVED") << endl;
 
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
+    markUpstack(pkt);
 
     // Note: no need to delete the frame itself - will be deleted later when the buffer of
     // received frames is cleared
@@ -517,9 +521,11 @@ void LtePhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVe
     fbPkt->setSourceNodeId(nodeId_);
 
     auto pkt = new Packet("feedback_pkt");
+    markDownstack(pkt);
     pkt->insertAtFront(fbPkt);
 
     UserControlInfo *uinfo = new UserControlInfo();
+    uinfo->setIsDownStack(true);
     uinfo->setSourceId(nodeId_);
     uinfo->setDestId(masterId_);
     uinfo->setFrameType(FEEDBACKPKT);

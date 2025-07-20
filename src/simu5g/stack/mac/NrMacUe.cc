@@ -270,6 +270,7 @@ int NrMacUe::macSduRequest()
                 // send the request message to the upper layer
                 // TODO: Replace by tag
                 auto pkt = new Packet("LteMacSduRequest");
+                markDownstack(pkt);
                 auto macSduRequest = makeShared<LteMacSduRequest>();
                 macSduRequest->setChunkLength(b(1)); // TODO: should be 0
                 macSduRequest->setUeId(destId);
@@ -401,6 +402,7 @@ void NrMacUe::macPduMake(MacCid cid)
                 if (pit == macPduList_[carrierFreq].end()) {
                     // Create a PDU
                     macPkt = new Packet("LteMacPdu");
+                    markDownstack(macPkt);
                     auto header = makeShared<LteMacPdu>();
                     header->setHeaderLength(MAC_HEADER);
                     macPkt->insertAtFront(header);

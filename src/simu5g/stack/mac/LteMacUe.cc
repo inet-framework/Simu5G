@@ -220,6 +220,7 @@ int LteMacUe::macSduRequest()
                 // send the request message to the upper layer
                 // TODO: Replace by tag
                 auto pkt = new Packet("LteMacSduRequest");
+                markDownstack(pkt);
                 auto macSduRequest = makeShared<LteMacSduRequest>();
                 macSduRequest->setChunkLength(b(1)); // TODO: should be 0
                 macSduRequest->setUeId(destId);
@@ -379,6 +380,7 @@ void LteMacUe::macPduMake(MacCid cid)
             // No packets for this user on this codeword
             if (pit == macPduList_[carrierFreq].end()) {
                 macPkt = new Packet("LteMacPdu");
+                markDownstack(macPkt);
                 auto header = makeShared<LteMacPdu>();
                 header->setHeaderLength(MAC_HEADER);
                 macPkt->insertAtFront(header);
@@ -581,6 +583,7 @@ void LteMacUe::macPduUnmake(cPacket *pktAux)
     while (macPkt->hasSdu()) {
         // Extract and send SDU
         auto upPkt = macPkt->popSdu();
+        markUpstack(upPkt);
         take(upPkt);
 
         EV << "LteMacBase: pduUnmaker extracted SDU" << endl;
@@ -912,6 +915,7 @@ void LteMacUe::checkRAC()
 
     if ((racRequested_ = trigger)) {
         auto pkt = new Packet("RacRequest");
+        markDownstack(pkt);
 
         auto racReq = makeShared<LteRac>();
         pkt->insertAtFront(racReq);

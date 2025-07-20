@@ -141,6 +141,7 @@ void LteMacEnbD2D::macPduUnmake(cPacket *pktAux)
     while (macPkt->hasSdu()) {
         // Extract and send SDU
         auto upPkt = check_and_cast<Packet *>(macPkt->popSdu());
+        markUpstack(upPkt);
         take(upPkt);
 
         EV << "LteMacEnbD2D: pduUnmaker extracted SDU" << endl;
@@ -226,6 +227,7 @@ void LteMacEnbD2D::sendGrants(std::map<double, LteMacScheduleList> *scheduleList
             // TODO Grant is set aperiodic as default
             // TODO: change to tag instead of header
             auto pkt = new Packet("LteGrant");
+            markDownstack(pkt);
             auto grant = makeShared<LteSchedulingGrant>();
             grant->setDirection(dir);
             grant->setCodewords(codewords);

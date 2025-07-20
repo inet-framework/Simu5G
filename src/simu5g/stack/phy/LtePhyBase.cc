@@ -81,6 +81,8 @@ void LtePhyBase::handleControlMsg(LteAirFrame *frame,
         UserControlInfo *userInfo)
 {
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
+    cleanDirectionMark(pkt);
+    markUpstack(pkt);
     delete frame;
     *(pkt->addTagIfAbsent<UserControlInfo>()) = *userInfo;
     delete userInfo;
@@ -92,6 +94,7 @@ LteAirFrame *LtePhyBase::createHandoverMessage()
     // broadcast airframe
     LteAirFrame *bdcAirFrame = new LteAirFrame("handoverFrame");
     UserControlInfo *cInfo = new UserControlInfo();
+    cInfo->setIsDownStack(true);
     cInfo->setSourceId(nodeId_);
     cInfo->setFrameType(HANDOVERPKT);
     cInfo->setTxPower(txPower_);
@@ -110,6 +113,7 @@ void LtePhyBase::handleUpperMessage(cMessage *msg)
     EV << "LtePhy: message from stack" << endl;
 
     auto pkt = check_and_cast<inet::Packet *>(msg);
+    pkt->removeTag<FlowControlInfo>();
     auto lteInfo = pkt->removeTag<UserControlInfo>();
 
     LteAirFrame *frame = nullptr;

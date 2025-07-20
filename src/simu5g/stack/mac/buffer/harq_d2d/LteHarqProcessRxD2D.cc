@@ -41,6 +41,7 @@ Packet *LteHarqProcessRxD2D::createFeedback(Codeword cw)
     if (pduInfo->getDirection() != D2D_MULTI) {
         // TODO: Change LteHarqFeedback from chunk to tag,
         pkt = new Packet();
+        markDownstack(pkt);
         auto fb = makeShared<LteHarqFeedback>();
         fb->setAcid(acid_);
         fb->setCw(cw);
@@ -107,6 +108,7 @@ Packet *LteHarqProcessRxD2D::createFeedbackMirror(Codeword cw)
     if (pduInfo->getDirection() != D2D_MULTI) {
         // TODO: Change LteHarqFeedbackMirror from chunk to tag,
         pkt = new Packet();
+        markDownstack(pkt);
         auto fb = makeShared<LteHarqFeedbackMirror>();
         fb->setAcid(acid_);
         fb->setCw(cw);

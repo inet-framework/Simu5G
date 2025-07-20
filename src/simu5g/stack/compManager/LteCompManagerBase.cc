@@ -51,6 +51,7 @@ void LteCompManagerBase::initialize()
 
     // register to the X2 Manager
     auto pkt = new Packet("X2CompMsg");
+    markDownstack(pkt);
     auto initMsg = makeShared<X2CompMsg>();
     pkt->insertAtFront(initMsg);
     auto ctrlInfo = pkt->addTagIfAbsent<X2ControlInfoTag>();
@@ -173,6 +174,7 @@ void LteCompManagerBase::sendClientRequest(X2CompRequestIE *requestIe)
     }
     else {
         auto pkt = new Packet("X2CompMsg");
+        markDownstack(pkt);
 
         // build control info
         auto ctrlInfo = pkt->addTagIfAbsent<X2ControlInfoTag>();
@@ -206,6 +208,7 @@ void LteCompManagerBase::sendCoordinatorReply(X2NodeId clientId, X2CompReplyIE *
     else {
         // create a new packet to be able to send info to X2 manager
         auto pkt = new Packet("X2CompMsg");
+        markDownstack(pkt);
 
         // build control info and add it to the packet
         auto ctrlInfo = pkt->addTagIfAbsent<X2ControlInfoTag>();

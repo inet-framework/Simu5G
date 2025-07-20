@@ -69,6 +69,7 @@ void LteMacUeD2D::initialize(int stage)
 Packet *LteMacUeD2D::makeBsr(int size) {
 
     auto macPkt = new Packet("LteMacPdu");
+    markDownstack(macPkt);
     auto header = makeShared<LteMacPdu>();
     header->setHeaderLength(MAC_HEADER);
     macPkt->setTimestamp(NOW);
@@ -196,6 +197,7 @@ void LteMacUeD2D::macPduMake(MacCid cid)
 
                     // Create a PDU
                     macPkt = new Packet("LteMacPdu");
+                    markDownstack(macPkt);
                     auto header = makeShared<LteMacPdu>();
                     //macPkt = new LteMacPdu("LteMacPdu");
                     header->setHeaderLength(MAC_HEADER);
@@ -535,6 +537,7 @@ void LteMacUeD2D::checkRAC()
 
     if ((racRequested_ = trigger) || (racD2DMulticastRequested_ = triggerD2DMulticast)) {
         auto pkt = new Packet("RacRequest");
+        markDownstack(pkt);
         double carrierFrequency = phy_->getPrimaryChannelModel()->getCarrierFrequency();
         pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(carrierFrequency);
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());

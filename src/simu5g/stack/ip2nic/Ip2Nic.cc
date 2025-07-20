@@ -202,6 +202,7 @@ void Ip2Nic::fromIpUe(Packet *datagram)
 
 void Ip2Nic::toStackUe(Packet *pkt)
 {
+    markDownstack(pkt);
     auto ipHeader = pkt->peekAtFront<Ipv4Header>();
     auto srcAddr = ipHeader->getSrcAddress();
     auto destAddr = ipHeader->getDestAddress();
@@ -300,6 +301,7 @@ void Ip2Nic::toIpBs(Packet *pkt)
 
 void Ip2Nic::toStackBs(Packet *pkt)
 {
+    markDownstack(pkt);
     EV << "Ip2Nic::toStackBs - packet is forwarded to stack" << endl;
     auto ipHeader = pkt->peekAtFront<Ipv4Header>();
     auto srcAddr = ipHeader->getSrcAddress();

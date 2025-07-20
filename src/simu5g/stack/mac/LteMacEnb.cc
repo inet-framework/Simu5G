@@ -259,6 +259,7 @@ void LteMacEnb::macSduRequest()
 
             // send the request message to the upper layer
             auto pkt = new Packet("LteMacSduRequest");
+            markDownstack(pkt);
             auto macSduRequest = makeShared<LteMacSduRequest>();
             macSduRequest->setUeId(destId);
             macSduRequest->setChunkLength(b(1)); // TODO: should be 0
@@ -270,7 +271,7 @@ void LteMacEnb::macSduRequest()
                 throw cRuntimeError("LteMacEnb::macSduRequest: configured queueSize too low - requested SDU will not fit in queue!"
                                     " (queue size: %d, SDU request requires: %d)", queueSize_, macSduRequest->getSduSize());
             }
-            auto tag = pkt->addTag<FlowControlInfo>();
+            auto tag = pkt->addTagIfAbsent<FlowControlInfo>();
             *tag = connDesc_[destCid].toFlowControlInfo();
             sendUpperPackets(pkt);
         }
@@ -390,7 +391,7 @@ void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList> *scheduleList)
             // TODO: change to tag instead of chunk
             // TODO: Grant is set as aperiodic by default
             auto pkt = new Packet("LteGrant");
-
+            markDownstack(pkt);
             auto grant = makeShared<LteSchedulingGrant>();
             grant->setDirection(UL);
             grant->setCodewords(codewords);
@@ -520,6 +521,7 @@ void LteMacEnb::macPduMake(MacCid cid)
             // No packets for this user on this codeword
             if (pit == macPduList_[carrierFreq].end()) {
                 auto pkt = new Packet("LteMacPdu");
+                markDownstack(pkt);
                 pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
                 pkt->addTagIfAbsent<UserControlInfo>()->setDestId(destId);
                 pkt->addTagIfAbsent<UserControlInfo>()->setDirection(DL);
@@ -566,6 +568,7 @@ void LteMacEnb::macPduMake(MacCid cid)
                 auto macPkt = macPacket->removeAtFront<LteMacPdu>();
                 macPkt->pushSdu(pkt);
                 macPacket->insertAtFront(macPkt);
+                markDownstack(macPacket);
                 sduPerCid--;
             }
         }
@@ -636,7 +639,8 @@ void LteMacEnb::macPduUnmake(cPacket *pktAux)
 
     while (macPkt->hasSdu()) {
         // Extract and send SDU
-        cPacket *upPkt = macPkt->popSdu();
+        Packet *upPkt = macPkt->popSdu();
+        markUpstack(pkt);
         take(upPkt);
 
         // TODO: upPkt->info()

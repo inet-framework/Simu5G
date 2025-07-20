@@ -14,5 +14,43 @@
 
 #include "simu5g/common/LteControlInfo_m.h"
 
+namespace simu5g {
+inline void markUpstack(inet::Packet *pkt) {
+    EV_STATICCONTEXT;
+    EV << "markUpstack " << pkt->getName() << std::endl;
+    auto& uci = pkt->addTagIfAbsent<UserControlInfo>();
+    auto& fci = pkt->addTagIfAbsent<FlowControlInfo>();
+    if (uci->isDownStack())
+        throw cRuntimeError(pkt, "markUpstack: Already marked DownStack in uci!");
+    if (fci->isDownStack())
+        throw cRuntimeError(pkt, "marUpstack: Already marked DownStack in fci!");
+    uci->setIsUpStack(true);
+    fci->setIsUpStack(true);
+}
+
+inline void markDownstack(inet::Packet *pkt) {
+    EV_STATICCONTEXT;
+    EV << "markDownstack " << pkt->getName() << std::endl;
+    auto& uci = pkt->addTagIfAbsent<UserControlInfo>();
+    auto& fci = pkt->addTagIfAbsent<FlowControlInfo>();
+    if (uci->isUpStack())
+        throw cRuntimeError(pkt, "markDownstack: Already marked upstack in uci!");
+    if (fci->isUpStack())
+        throw cRuntimeError(pkt, "markDownstack: Already marked upstack in fci!");
+    uci->setIsDownStack(true);
+    fci->setIsDownStack(true);
+}
+
+inline void cleanDirectionMark(inet::Packet *pkt) {
+    EV_STATICCONTEXT;
+    EV << "clearDirectionMark " << pkt->getName() << std::endl;
+    pkt->addTagIfAbsent<UserControlInfo>()->setIsUpStack(false);
+    pkt->addTagIfAbsent<FlowControlInfo>()->setIsUpStack(false);
+    pkt->addTagIfAbsent<UserControlInfo>()->setIsDownStack(false);
+    pkt->addTagIfAbsent<FlowControlInfo>()->setIsDownStack(false);
+}
+
+} // namespace
+
 #endif
 

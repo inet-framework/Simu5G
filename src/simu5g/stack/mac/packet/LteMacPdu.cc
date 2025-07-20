@@ -85,6 +85,7 @@ void LteMacPdu::forEachChild(cVisitor *v)
 
 void LteMacPdu_Base::pushSdu(Packet *pkt)
 {
+    cleanDirectionMark(pkt);
     appendSdu(pkt);
     macPduLength_ += pkt->getByteLength();
     // addChunkLength(pkt->getDataLength());
@@ -94,6 +95,7 @@ void LteMacPdu_Base::pushSdu(Packet *pkt)
 Packet* LteMacPdu_Base::popSdu()
 {
     Packet *pkt = removeSdu(0);
+    cleanDirectionMark(pkt);
     eraseSdu(0);
     macPduLength_ -= pkt->getByteLength();
     // addChunkLength(-pkt->getDataLength());
