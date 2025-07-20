@@ -15,15 +15,7 @@ import inet.common.geometry.Geometry; // for Coord
 import simu5g.common.LteCommon;
 import simu5g.stack.mac.amc.UserTxParams;
 
-
 namespace simu5g;
-
-
-class RbMap
-{
-    @existingClass;
-    @opaque;
-}
 
 //
 // Control info usage in Simu5G simulator

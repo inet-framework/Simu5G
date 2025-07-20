@@ -80,6 +80,12 @@ typedef unsigned short Tbs;
 
 /// Logical band
 typedef unsigned short Band;
+
+/**
+ *  Block allocation Map: # of Rbs per Band, per Remote.
+ */
+typedef std::map<Remote, std::map<Band, unsigned int>> RbMap;
+
 }}
 
 class MacCellId {
@@ -220,6 +226,12 @@ class Band {
     @defaultValue(0);
     @toValue((omnetpp::intval_t)($));
     @fromValue(omnetpp::checked_int_cast<int64_t>($.intValue()));
+};
+
+class RbMap
+{
+    @existingClass;
+    @opaque;
 };
 
 struct RemoteUnitPhyData

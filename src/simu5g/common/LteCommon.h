@@ -166,11 +166,6 @@ const unsigned char NUM_RUS = RU6;
  */
 const unsigned char NUM_ANTENNAS = NUM_RUS + 1;
 
-/**
- *  Block allocation Map: # of Rbs per Band, per Remote.
- */
-typedef std::map<Remote, std::map<Band, unsigned int>> RbMap;
-
 
 //|--------------------------------------------------|
 
