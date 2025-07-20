@@ -244,6 +244,12 @@ class Band {
     @fromValue(omnetpp::checked_int_cast<int64_t>($.intValue()));
 };
 
+class RbMap
+{
+    @existingClass;
+    @opaque;
+};
+
 struct RemoteUnitPhyData
 {
     int txPower;
