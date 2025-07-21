@@ -117,24 +117,20 @@ void LtePdcpBase::headerDecompress(Packet *pkt)
 void LtePdcpBase::setTrafficInformation(cPacket *pkt, inet::Ptr<FlowControlInfo> lteInfo)
 {
     if ((strcmp(pkt->getName(), "VoIP")) == 0) {
-        lteInfo->setApplication(VOIP);
         lteInfo->setTraffic(CONVERSATIONAL);
         lteInfo->setRlcType(conversationalRlc_);
     }
     else if ((strcmp(pkt->getName(), "gaming")) == 0) {
-        lteInfo->setApplication(GAMING);
         lteInfo->setTraffic(INTERACTIVE);
         lteInfo->setRlcType(interactiveRlc_);
     }
     else if ((strcmp(pkt->getName(), "VoDPacket") == 0)
              || (strcmp(pkt->getName(), "VoDFinishPacket") == 0))
     {
-        lteInfo->setApplication(VOD);
         lteInfo->setTraffic(STREAMING);
         lteInfo->setRlcType(streamingRlc_);
     }
     else {
-        lteInfo->setApplication(CBR);
         lteInfo->setTraffic(BACKGROUND);
         lteInfo->setRlcType(backgroundRlc_);
     }
