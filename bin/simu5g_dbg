@@ -8,4 +8,6 @@ if [ -f $SIMU5G_SRC/libsimu5g_dbg.so -o -f $SIMU5G_SRC/libsimu5g_dbg.dll -o -f $
   opp_run_dbg -l $SIMU5G_SRC/simu5g $COMMAND_LINE_OPTIONS "$@"
 elif [ -x $SIMU5G_SRC/simu5g_dbg -o -x $SIMU5G_SRC/simu5g_dbg.exe ]; then
   $SIMU5G_SRC/simu5g_dbg $COMMAND_LINE_OPTIONS "$@"
+else
+  echo 'PROGRAM NOT FOUND !!!'
 fi
