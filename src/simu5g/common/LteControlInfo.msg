@@ -94,7 +94,6 @@ class FlowControlInfo extends LteControlInfo {
     uint32 dstAddr = 0;                     // destination IP
     uint16 typeOfService = 0;               // IP Type Of Service
     unsigned int sequenceNumber = 0;        // packet sequence number
-    int headerSize = 0;                     // IP + Transport header size (used by pdcp ROHC)
     bool useNR = false;                     // flag for sending this packet using NR
 }
 
@@ -120,8 +119,6 @@ class UserControlInfo extends LteControlInfo {
 
     //# PHY Control Informations
 
-    bool isCorruptible = false;                         // Frame is corruptible
-    bool isBroadcast = false;                           // Broadcast packet
     bool deciderResult = false;                         // Decider result
     double blerTh = NaN;                                // Calculated BLER threshold for this transmission
     double blerValue = NaN;                             // Extracted BLER for this transmission (blerValue > blerTh ==> corrupted)

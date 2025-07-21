@@ -208,28 +208,11 @@ void Ip2Nic::toStackUe(Packet *pkt)
     auto srcAddr = ipHeader->getSrcAddress();
     auto destAddr = ipHeader->getDestAddress();
     short int tos = ipHeader->getTypeOfService();
-    int headerSize = ipHeader->getHeaderLength().get();
-    int transportProtocol = ipHeader->getProtocolId();
 
     // TODO: Add support for IPv6 (=> see L3Tools.cc of INET)
 
-    // inspect packet depending on the transport protocol type
-    // TODO: needs refactoring (redundant code, see toStackBs())
-    if (transportProtocol == IP_PROT_TCP) {
-        auto tcpHeader = pkt->peekDataAt<tcp::TcpHeader>(ipHeader->getChunkLength());
-        headerSize += B(tcpHeader->getHeaderLength()).get();
-    }
-    else if (transportProtocol == IP_PROT_UDP) {
-        headerSize += inet::UDP_HEADER_LENGTH.get();
-    }
-    else {
-        //TODO: throw cRuntimeError("Unknown transport protocol id %d in packet %s", transportProtocol, pkt->getName());
-        EV_ERROR << "Unknown transport protocol id " << transportProtocol << " in packet " << pkt->getName() << std::endl;
-    }
-
     pkt->addTagIfAbsent<FlowControlInfo>()->setSrcAddr(srcAddr.getInt());
     pkt->addTagIfAbsent<FlowControlInfo>()->setDstAddr(destAddr.getInt());
-    pkt->addTagIfAbsent<FlowControlInfo>()->setHeaderSize(headerSize);
     pkt->addTagIfAbsent<FlowControlInfo>()->setTypeOfService(tos);
     printControlInfo(pkt);
 
@@ -315,33 +298,14 @@ void Ip2Nic::toStackBs(Packet *pkt)
 {
     EV << "Ip2Nic::toStackBs - packet is forwarded to stack" << endl;
     auto ipHeader = pkt->peekAtFront<Ipv4Header>();
-    int transportProtocol = ipHeader->getProtocolId();
     auto srcAddr = ipHeader->getSrcAddress();
     auto destAddr = ipHeader->getDestAddress();
     short int tos = ipHeader->getTypeOfService();
-    int headerSize = ipHeader->getHeaderLength().get();
-
-    switch (transportProtocol) {
-        case IP_PROT_TCP: {
-            auto tcpHeader = pkt->peekDataAt<tcp::TcpHeader>(ipHeader->getChunkLength());
-            headerSize += B(tcpHeader->getHeaderLength()).get();
-            break;
-        }
-        case IP_PROT_UDP: {
-            headerSize += inet::UDP_HEADER_LENGTH.get();
-            break;
-        }
-        default: {
-            //TODO: throw cRuntimeError("Unknown transport protocol id %d in packet %s", transportProtocol, pkt->getName());
-            EV_ERROR << "Unknown transport protocol id " << transportProtocol << " in packet " << pkt->getName() << std::endl;
-        }
-    }
 
     // prepare flow info for NIC
     pkt->addTagIfAbsent<FlowControlInfo>()->setSrcAddr(srcAddr.getInt());
     pkt->addTagIfAbsent<FlowControlInfo>()->setDstAddr(destAddr.getInt());
     pkt->addTagIfAbsent<FlowControlInfo>()->setTypeOfService(tos);
-    pkt->addTagIfAbsent<FlowControlInfo>()->setHeaderSize(headerSize);
 
     // mark packet for using NR
     if (!markPacket(pkt->getTagForUpdate<FlowControlInfo>())) {
@@ -360,7 +324,6 @@ void Ip2Nic::printControlInfo(Packet *pkt)
     EV << "Dst IP : " << Ipv4Address(pkt->getTag<FlowControlInfo>()->getDstAddr()) << endl;
     EV << "ToS : " << pkt->getTag<FlowControlInfo>()->getTypeOfService() << endl;
     EV << "Seq Num  : " << pkt->getTag<FlowControlInfo>()->getSequenceNumber() << endl;
-    EV << "Header Size : " << pkt->getTag<FlowControlInfo>()->getHeaderSize() << endl;
 }
 
 void Ip2Nic::registerInterface()
