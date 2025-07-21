@@ -221,11 +221,6 @@ class LtePdcpBase : public cSimpleModule
     MacNodeId getNodeId() { return nodeId_; }
 
     /**
-     * getApplication(): determines the application type based on packet name
-     */
-    ApplicationType getApplication(cPacket *pkt);
-
-    /**
      * getTrafficCategory(): determines the traffic category based on packet name
      */
     LteTrafficClass getTrafficCategory(cPacket *pkt);

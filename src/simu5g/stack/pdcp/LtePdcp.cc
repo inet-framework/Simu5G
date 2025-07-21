@@ -36,18 +36,6 @@ LtePdcpBase::~LtePdcpBase()
 {
 }
 
-ApplicationType LtePdcpBase::getApplication(cPacket *pkt)
-{
-    if ((strcmp(pkt->getName(), "VoIP")) == 0)
-        return VOIP;
-    else if ((strcmp(pkt->getName(), "gaming")) == 0)
-        return GAMING;
-    else if ((strcmp(pkt->getName(), "VoDPacket") == 0) || (strcmp(pkt->getName(), "VoDFinishPacket") == 0))
-        return VOD;
-    else
-        return CBR;
-}
-
 LteTrafficClass LtePdcpBase::getTrafficCategory(cPacket *pkt)
 {
     if ((strcmp(pkt->getName(), "VoIP")) == 0)
@@ -78,11 +66,9 @@ LteRlcType LtePdcpBase::getRlcType(LteTrafficClass trafficCategory)
 
 void LtePdcpBase::setTrafficInformation(cPacket *pkt, inet::Ptr<FlowControlInfo> lteInfo)
 {
-    ApplicationType application = getApplication(pkt);
     LteTrafficClass trafficCategory = getTrafficCategory(pkt);
     LteRlcType rlcType = getRlcType(trafficCategory);
 
-    lteInfo->setApplication(application);
     lteInfo->setTraffic(trafficCategory);
     lteInfo->setRlcType(rlcType);
 
