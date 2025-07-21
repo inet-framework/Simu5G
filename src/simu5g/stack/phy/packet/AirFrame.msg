@@ -24,7 +24,7 @@ class ModulationType {@existingClass;};
 //
 // subclass if you want to create your own ~AirFrame message class
 //
-packet AirFrame extends cPacket
+packet AirFrame extends cPacket  // note: not inet::Packet as it does not allow encapsulation
 {
     double pSend; // Power with which this packet is transmitted
     int channelNumber; // Channel on which the packet is sent
