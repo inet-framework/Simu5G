@@ -323,7 +323,6 @@ void Ip2Nic::printControlInfo(Packet *pkt)
     EV << "Src IP : " << Ipv4Address(pkt->getTag<FlowControlInfo>()->getSrcAddr()) << endl;
     EV << "Dst IP : " << Ipv4Address(pkt->getTag<FlowControlInfo>()->getDstAddr()) << endl;
     EV << "ToS : " << pkt->getTag<FlowControlInfo>()->getTypeOfService() << endl;
-    EV << "Seq Num  : " << pkt->getTag<FlowControlInfo>()->getSequenceNumber() << endl;
 }
 
 void Ip2Nic::registerInterface()
