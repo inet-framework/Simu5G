@@ -92,8 +92,6 @@ LteAirFrame *LtePhyBase::createHandoverMessage()
     // broadcast airframe
     LteAirFrame *bdcAirFrame = new LteAirFrame("handoverFrame");
     UserControlInfo *cInfo = new UserControlInfo();
-    cInfo->setIsBroadcast(true);
-    cInfo->setIsCorruptible(false);
     cInfo->setSourceId(nodeId_);
     cInfo->setFrameType(HANDOVERPKT);
     cInfo->setTxPower(txPower_);
