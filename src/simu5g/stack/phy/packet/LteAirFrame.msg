@@ -23,7 +23,7 @@ namespace simu5g;
 // This is LteAirFrame.
 //
 packet LteAirFrame extends AirFrame {
-    RemoteUnitPhyData remoteUnitPhyDataVector[] @nopack;
+    RemoteUnitPhyData remoteUnitPhyDataVector[] @nopack; //TODO shouldn't this be an Indication tag?
     UserControlInfo additionalInfo @nopack;
 }
 
