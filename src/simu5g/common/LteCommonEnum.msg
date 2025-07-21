@@ -74,27 +74,9 @@ enum LteD2DMode
     IM = 0; DM = 1;
 };
 
-///
-//      Applications  
-// 
-
-enum ApplicationType
-{
-    VOIP = 0;
-    VOD = 1;
-    WEB = 2;
-    CBR = 3;
-    FTP = 4;
-    GAMING = 5;
-    FULLBUFFER = 6;
-    UNKNOWN_APP = 7;
-};
-
-
 //
 //  Scheduling discipline
-// 
-
+//
 enum SchedDiscipline
 {
     DRR = 0;
