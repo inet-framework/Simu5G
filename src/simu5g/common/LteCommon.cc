@@ -254,17 +254,6 @@ RanNodeType aToNodeType(std::string name)
     return static_cast<RanNodeType>(omnetpp::cEnum::get("simu5g::RanNodeType")->lookup(name.c_str(), UNKNOWN_NODE_TYPE));
 }
 
-const std::string applicationTypeToA(ApplicationType a)
-{
-    const char * str = omnetpp::cEnum::get("simu5g::ApplicationType")->getStringFor((intval_t)a);
-    return str ? str : "UNKNOWN_APP";
-}
-
-ApplicationType aToApplicationType(std::string s)
-{
-    return static_cast<ApplicationType>(omnetpp::cEnum::get("simu5g::ApplicationType")->lookup(s.c_str(), UNKNOWN_APP));
-}
-
 const std::string fbGeneratorTypeToA(FeedbackGeneratorType type)
 {
     const char * str = omnetpp::cEnum::get("simu5g::FeedbackGeneratorType")->getStringFor((intval_t)type);
