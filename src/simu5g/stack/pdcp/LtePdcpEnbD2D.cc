@@ -36,14 +36,10 @@ MacCid LtePdcpEnbD2D::analyzePacket(inet::Packet *pkt)
 
     // Get IP flow information from the new tag
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
-    uint32_t srcAddr_int = ipFlowInd->getSrcAddr();
-    uint32_t dstAddr_int = ipFlowInd->getDstAddr();
+    Ipv4Address srcAddr = ipFlowInd->getSrcAddr();
+    Ipv4Address destAddr = ipFlowInd->getDstAddr();
     uint16_t typeOfService = ipFlowInd->getTypeOfService();
 
-    // get source info
-    Ipv4Address srcAddr = Ipv4Address(srcAddr_int);
-    // get destination info
-    Ipv4Address destAddr = Ipv4Address(dstAddr_int);
     MacNodeId srcId, destId;
 
     // set direction based on the destination Id. If the destination can be reached
@@ -64,8 +60,8 @@ MacCid LtePdcpEnbD2D::analyzePacket(inet::Packet *pkt)
     }
 
     // Cid Request
-    EV << "LtePdcpEnbD2D : Received CID request for Traffic [ " << "Source: " << Ipv4Address(srcAddr_int)
-       << " Destination: " << Ipv4Address(dstAddr_int)
+    EV << "LtePdcpEnbD2D : Received CID request for Traffic [ " << "Source: " << srcAddr
+       << " Destination: " << destAddr
        << " , ToS: " << typeOfService
        << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
 
@@ -121,4 +117,3 @@ void LtePdcpEnbD2D::pdcpHandleD2DModeSwitch(MacNodeId peerId, LteD2DMode newMode
 }
 
 } //namespace
-

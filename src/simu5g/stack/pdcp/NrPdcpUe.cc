@@ -75,12 +75,9 @@ MacCid NrPdcpUe::analyzePacket(inet::Packet *pkt)
 
     // Get IP flow information from the new tag
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
-    uint32_t srcAddr_int = ipFlowInd->getSrcAddr();
-    uint32_t dstAddr_int = ipFlowInd->getDstAddr();
+    Ipv4Address srcAddr = ipFlowInd->getSrcAddr();
+    Ipv4Address destAddr = ipFlowInd->getDstAddr();
     uint16_t typeOfService = ipFlowInd->getTypeOfService();
-
-    // get destination info
-    Ipv4Address destAddr = Ipv4Address(dstAddr_int);
 
     // the direction of the incoming connection is a D2D_MULTI one if the application is of the same type,
     // else the direction will be selected according to the current status of the UE, i.e., D2D or UL
@@ -93,7 +90,7 @@ MacCid NrPdcpUe::analyzePacket(inet::Packet *pkt)
         // multicast IP addresses are 224.0.0.0/4.
         // We consider the host part of the IP address (the remaining 28 bits) as identifier of the group,
         // so it is univocally determined for the whole network
-        uint32_t address = dstAddr_int;
+        uint32_t address = destAddr.getInt();
         uint32_t mask = ~((uint32_t)255 << 28);      // 0000 1111 1111 1111
         uint32_t groupId = address & mask;
         lteInfo->setMulticastGroupId((int32_t)groupId);
@@ -123,8 +120,8 @@ MacCid NrPdcpUe::analyzePacket(inet::Packet *pkt)
     }
 
     // Cid Request
-    EV << "NrPdcpUe : Received CID request for Traffic [ " << "Source: " << Ipv4Address(srcAddr_int)
-       << " Destination: " << Ipv4Address(dstAddr_int)
+    EV << "NrPdcpUe : Received CID request for Traffic [ " << "Source: " << srcAddr
+       << " Destination: " << destAddr
        << " , ToS: " << typeOfService
        << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
 
@@ -133,7 +130,7 @@ MacCid NrPdcpUe::analyzePacket(inet::Packet *pkt)
      * The RLC layer will create different RLC entities for different LCIDs
      */
 
-    ConnectionKey key{Ipv4Address(srcAddr_int), destAddr, typeOfService, lteInfo->getDirection()};
+    ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
     LogicalCid lcid = lookupOrAssignLcid(key);
 
     // assign LCID
@@ -143,7 +140,7 @@ MacCid NrPdcpUe::analyzePacket(inet::Packet *pkt)
     EV << "NrPdcpUe : Assigned Node ID: " << nodeId << "\n";
 
     // get effective next hop dest ID
-    MacNodeId destId = getDestId(Ipv4Address(destAddr), useNR, lteInfo->getSourceId());
+    MacNodeId destId = getDestId(destAddr, useNR, lteInfo->getSourceId());
 
     // obtain CID
     return MacCid(destId, lcid);
@@ -202,4 +199,3 @@ void NrPdcpUe::sendToLowerLayer(Packet *pkt)
 }
 
 } //namespace
-

@@ -23,8 +23,8 @@ namespace simu5g;
 // Usually sent by Ip2Nic to PDCP.
 //
 class IpFlowInd extends inet::TagBase {
-    uint32 srcAddr = 0;                 // Source IP address
-    uint32 dstAddr = 0;                 // Destination IP address
+    inet::Ipv4Address srcAddr;          // Source IP address
+    inet::Ipv4Address dstAddr;          // Destination IP address
     uint16 typeOfService = 0;           // IP Type of Service field
 }
 
