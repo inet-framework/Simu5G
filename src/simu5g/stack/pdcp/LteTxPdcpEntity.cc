@@ -19,6 +19,7 @@
 #include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/stack/pdcp/packet/LteRohcPdu_m.h"
 #include <inet/common/ProtocolTag_m.h>
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 // We require a minimum length of 1 Byte for each header even in compressed state
 // (transport, network and ROHC header, i.e. minimum is 3 Bytes)
@@ -50,7 +51,7 @@ void LteTxPdcpEntity::handlePacketFromUpperLayer(Packet *pkt)
     lteInfo->setSequenceNumber(sno_++); // set sequence number for this PDCP SDU.
 
     // set source and destination IDs
-    setIds(lteInfo);
+    setIds(pkt);
 
     // PDCP Packet creation
     auto pdcpHeader = makeShared<LtePdcpHeader>();
@@ -129,14 +130,17 @@ void LteTxPdcpEntity::deliverPdcpPdu(Packet *pdcpPkt)
     pdcp_->sendToLowerLayer(pdcpPkt);
 }
 
-void LteTxPdcpEntity::setIds(inet::Ptr<FlowControlInfo> lteInfo)
+void LteTxPdcpEntity::setIds(Packet *pkt)
 {
+    FlowControlInfo *lteInfo = pkt->getTagForUpdate<FlowControlInfo>().get();
     lteInfo->setSourceId(pdcp_->getNodeId());   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
 
     if (lteInfo->getMulticastGroupId() > 0)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
         lteInfo->setDestId(pdcp_->getNodeId());
-    else
-        lteInfo->setDestId(pdcp_->getDestId(lteInfo));
+    else {
+        Ipv4Address destAddr = Ipv4Address(pkt->getTag<IpFlowInd>()->getDstAddr());
+        lteInfo->setDestId(pdcp_->getDestId(destAddr, false, lteInfo->getSourceId()));
+    }
 }
 
 
