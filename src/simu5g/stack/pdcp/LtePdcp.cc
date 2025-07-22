@@ -17,6 +17,7 @@
 
 #include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/stack/pdcp/packet/LteRohcPdu_m.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -148,29 +149,36 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
 
     // Control Information
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
-    auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+    auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
 
     setTrafficInformation(pkt, lteInfo);
 
-    MacNodeId destId = getDestId(lteInfo);
+    // Get IP flow information from the new tag
+    auto ipFlowInd = pkt->getTag<IpFlowInd>();
+    uint32_t srcAddr = ipFlowInd->getSrcAddr();
+    uint32_t dstAddr = ipFlowInd->getDstAddr();
+    uint16_t typeOfService = ipFlowInd->getTypeOfService();
+
+    bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
+    MacNodeId destId = getDestId(Ipv4Address(dstAddr), useNR, lteInfo->getSourceId());
 
     // CID Request
-    EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << Ipv4Address(lteInfo->getSrcAddr())
-       << " Destination: " << Ipv4Address(lteInfo->getDstAddr())
-       << " ToS: " << lteInfo->getTypeOfService() << " ]\n";
+    EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << Ipv4Address(srcAddr)
+       << " Destination: " << Ipv4Address(dstAddr)
+       << " ToS: " << typeOfService << " ]\n";
 
     // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
     LogicalCid mylcid;
-    if ((mylcid = ht_.find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService())) == 0xFFFF) {
+    if ((mylcid = ht_.find_entry(srcAddr, dstAddr, typeOfService)) == 0xFFFF) {
         // LCID not found
         mylcid = lcid_++;
 
         EV << "LteRrc : Connection not found, new CID created with LCID " << mylcid << "\n";
 
-        ht_.create_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), mylcid);
+        ht_.create_entry(srcAddr, dstAddr, typeOfService, mylcid);
     }
 
-    // assign LCID
+    // assign LCID and node IDs
     lteInfo->setLcid(mylcid);
     lteInfo->setSourceId(nodeId_);
     lteInfo->setDestId(destId);

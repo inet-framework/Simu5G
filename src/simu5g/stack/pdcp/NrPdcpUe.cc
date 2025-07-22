@@ -15,6 +15,7 @@
 #include "simu5g/stack/pdcp/NrTxPdcpEntity.h"
 #include "simu5g/stack/pdcp/NrRxPdcpEntity.h"
 #include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -41,18 +42,17 @@ void NrPdcpUe::initialize(int stage)
     LtePdcpUeD2D::initialize(stage);
 }
 
-MacNodeId NrPdcpUe::getDestId(inet::Ptr<FlowControlInfo> lteInfo)
+MacNodeId NrPdcpUe::getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
 {
-    Ipv4Address destAddr = Ipv4Address(lteInfo->getDstAddr());
     MacNodeId destId = binder_->getMacNodeId(destAddr);
-    MacNodeId srcId = (lteInfo->getUseNR()) ? nrNodeId_ : nodeId_;
+    MacNodeId srcId = useNR ? nrNodeId_ : nodeId_;
 
     // check whether the destination is inside or outside the LTE network
     if (destId == NODEID_NONE || getDirection(srcId, destId) == UL) {
         // if not, the packet is destined to the eNB
 
         // UE is subject to handovers: master may change
-        return binder_->getNextHop(lteInfo->getSourceId());
+        return binder_->getNextHop(sourceId);
     }
 
     return destId;
@@ -67,16 +67,24 @@ void NrPdcpUe::fromDataPort(cPacket *pktAux)
 
     // Control Information
     auto pkt = check_and_cast<Packet *>(pktAux);
-    auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+    auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
+
     setTrafficInformation(pkt, lteInfo);
 
+    bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
+
     // select the correct nodeId for the source
-    MacNodeId nodeId = (lteInfo->getUseNR()) ? nrNodeId_ : nodeId_;
+    MacNodeId nodeId = useNR ? nrNodeId_ : nodeId_;
     lteInfo->setSourceId(nodeId);
 
+    // Get IP flow information from the new tag
+    auto ipFlowInd = pkt->getTag<IpFlowInd>();
+    uint32_t srcAddr_int = ipFlowInd->getSrcAddr();
+    uint32_t dstAddr_int = ipFlowInd->getDstAddr();
+    uint16_t typeOfService = ipFlowInd->getTypeOfService();
+
     // get destination info
-    Ipv4Address destAddr = Ipv4Address(lteInfo->getDstAddr());
-    MacNodeId destId;
+    Ipv4Address destAddr = Ipv4Address(dstAddr_int);
 
     // the direction of the incoming connection is a D2D_MULTI one if the application is of the same type,
     // else the direction will be selected according to the current status of the UE, i.e., D2D or UL
@@ -89,13 +97,13 @@ void NrPdcpUe::fromDataPort(cPacket *pktAux)
         // multicast IP addresses are 224.0.0.0/4.
         // We consider the host part of the IP address (the remaining 28 bits) as identifier of the group,
         // so it is univocally determined for the whole network
-        uint32_t address = Ipv4Address(lteInfo->getDstAddr()).getInt();
+        uint32_t address = dstAddr_int;
         uint32_t mask = ~((uint32_t)255 << 28);      // 0000 1111 1111 1111
         uint32_t groupId = address & mask;
         lteInfo->setMulticastGroupId((int32_t)groupId);
     }
     else {
-        destId = binder_->getMacNodeId(destAddr);
+        MacNodeId destId = binder_->getMacNodeId(destAddr);
         if (destId != NODEID_NONE) { // the destination is a UE within the LTE network
             if (binder_->checkD2DCapability(nodeId, destId)) {
                 // this way, we record the ID of the endpoints even if the connection is currently in IM
@@ -119,9 +127,9 @@ void NrPdcpUe::fromDataPort(cPacket *pktAux)
     }
 
     // Cid Request
-    EV << "NrPdcpUe : Received CID request for Traffic [ " << "Source: " << Ipv4Address(lteInfo->getSrcAddr())
-       << " Destination: " << Ipv4Address(lteInfo->getDstAddr())
-       << " , ToS: " << lteInfo->getTypeOfService()
+    EV << "NrPdcpUe : Received CID request for Traffic [ " << "Source: " << Ipv4Address(srcAddr_int)
+       << " Destination: " << Ipv4Address(dstAddr_int)
+       << " , ToS: " << typeOfService
        << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
 
     /*
@@ -130,7 +138,7 @@ void NrPdcpUe::fromDataPort(cPacket *pktAux)
      */
 
     LogicalCid mylcid;
-    if ((mylcid = ht_.find_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection())) == 0xFFFF) {
+    if ((mylcid = ht_.find_entry(srcAddr_int, dstAddr_int, typeOfService, lteInfo->getDirection())) == 0xFFFF) {
         // LCID not found
 
         // assign a new LCID to the connection
@@ -138,7 +146,7 @@ void NrPdcpUe::fromDataPort(cPacket *pktAux)
 
         EV << "NrPdcpUe : Connection not found, new CID created with LCID " << mylcid << "\n";
 
-        ht_.create_entry(lteInfo->getSrcAddr(), lteInfo->getDstAddr(), lteInfo->getTypeOfService(), lteInfo->getDirection(), mylcid);
+        ht_.create_entry(srcAddr_int, dstAddr_int, typeOfService, lteInfo->getDirection(), mylcid);
     }
 
     // assign LCID
@@ -148,7 +156,7 @@ void NrPdcpUe::fromDataPort(cPacket *pktAux)
     EV << "NrPdcpUe : Assigned Node ID: " << nodeId << "\n";
 
     // get effective next hop dest ID
-    destId = getDestId(lteInfo);
+    MacNodeId destId = getDestId(Ipv4Address(destAddr), useNR, lteInfo->getSourceId());
 
     // obtain CID
     MacCid cid = idToMacCid(destId, mylcid);
@@ -234,7 +242,9 @@ void NrPdcpUe::deleteEntities(MacNodeId nodeId)
 void NrPdcpUe::sendToLowerLayer(Packet *pkt)
 {
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
-    if (!dualConnectivityEnabled_ || lteInfo->getUseNR()) {
+    bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
+
+    if (!dualConnectivityEnabled_ || useNR) {
         EV << "NrPdcpUe : Sending packet " << pkt->getName() << " on port "
            << (lteInfo->getRlcType() == UM ? "NR_UM_Sap$o\n" : "NR_AM_Sap$o\n");
 

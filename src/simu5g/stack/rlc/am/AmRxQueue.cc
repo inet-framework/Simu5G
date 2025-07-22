@@ -13,6 +13,7 @@
 
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/rlc/am/LteRlcAm.h"
 
@@ -234,12 +235,13 @@ void AmRxQueue::enque(Packet *pkt)
         auto orig = pkt->getTag<FlowControlInfo>();
         // Make a copy of the original control info
         flowControlInfo_ = orig->dup();
+
         // Swap source and destination fields
         flowControlInfo_->setSourceId(orig->getDestId());
-        flowControlInfo_->setSrcAddr(orig->getDstAddr());
-        flowControlInfo_->setTypeOfService(orig->getTypeOfService());
         flowControlInfo_->setDestId(orig->getSourceId());
-        flowControlInfo_->setDstAddr(orig->getSrcAddr());
+
+        ASSERT(pkt->findTag<IpFlowInd>() == nullptr); // Note: not swapping IpFlowInd srcAddr/dstAddr fields, as that tag is normally no longer present here
+
         // Set up other fields
         flowControlInfo_->setDirection((orig->getDirection() == DL) ? UL : DL);
     }

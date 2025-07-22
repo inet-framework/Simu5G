@@ -45,7 +45,7 @@ class LteTxPdcpEntity : public cSimpleModule
     // deliver the PDCP PDU to the lower layer
     virtual void deliverPdcpPdu(Packet *pdcpPkt);
 
-    virtual void setIds(inet::Ptr<FlowControlInfo> lteInfo);
+    virtual void setIds(inet::Packet *pkt);
 
   public:
 
