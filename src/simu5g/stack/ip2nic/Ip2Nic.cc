@@ -214,14 +214,15 @@ void Ip2Nic::toStackUe(Packet *pkt)
 
     // TODO: Add support for IPv6 (=> see L3Tools.cc of INET)
 
-    pkt->addTagIfAbsent<IpFlowInd>()->setSrcAddr(srcAddr.getInt());
-    pkt->addTagIfAbsent<IpFlowInd>()->setDstAddr(destAddr.getInt());
-    pkt->addTagIfAbsent<IpFlowInd>()->setTypeOfService(tos);
+    auto ipFlowInd = pkt->addTagIfAbsent<IpFlowInd>();
+    ipFlowInd->setSrcAddr(srcAddr);
+    ipFlowInd->setDstAddr(destAddr);
+    ipFlowInd->setTypeOfService(tos);
     printControlInfo(pkt);
 
     // mark packet for using NR
     bool useNR;
-    if (!markPacket(srcAddr.getInt(), destAddr.getInt(), tos, useNR)) {
+    if (!markPacket(srcAddr, destAddr, tos, useNR)) {
         EV << "Ip2Nic::toStackUe - UE is not attached to any serving node. Delete packet." << endl;
         delete pkt;
         return;
@@ -311,13 +312,14 @@ void Ip2Nic::toStackBs(Packet *pkt)
     short int tos = ipHeader->getTypeOfService();
 
     // prepare flow info for NIC
-    pkt->addTagIfAbsent<IpFlowInd>()->setSrcAddr(srcAddr.getInt());
-    pkt->addTagIfAbsent<IpFlowInd>()->setDstAddr(destAddr.getInt());
-    pkt->addTagIfAbsent<IpFlowInd>()->setTypeOfService(tos);
+    auto ipFlowInd = pkt->addTagIfAbsent<IpFlowInd>();
+    ipFlowInd->setSrcAddr(srcAddr);
+    ipFlowInd->setDstAddr(destAddr);
+    ipFlowInd->setTypeOfService(tos);
 
     // mark packet for using NR
     bool useNR;
-    if (!markPacket(srcAddr.getInt(), destAddr.getInt(), tos, useNR)) {
+    if (!markPacket(srcAddr, destAddr, tos, useNR)) {
         EV << "Ip2Nic::toStackBs - UE is not attached to any serving node. Delete packet." << endl;
         delete pkt;
     }
@@ -331,8 +333,8 @@ void Ip2Nic::toStackBs(Packet *pkt)
 
 void Ip2Nic::printControlInfo(Packet *pkt)
 {
-    EV << "Src IP : " << Ipv4Address(pkt->getTag<IpFlowInd>()->getSrcAddr()) << endl;
-    EV << "Dst IP : " << Ipv4Address(pkt->getTag<IpFlowInd>()->getDstAddr()) << endl;
+    EV << "Src IP : " << pkt->getTag<IpFlowInd>()->getSrcAddr() << endl;
+    EV << "Dst IP : " << pkt->getTag<IpFlowInd>()->getDstAddr() << endl;
     EV << "ToS : " << pkt->getTag<IpFlowInd>()->getTypeOfService() << endl;
 }
 
@@ -383,7 +385,7 @@ void Ip2Nic::registerMulticastGroups()
     }
 }
 
-bool Ip2Nic::markPacket(uint32_t srcAddr, uint32_t dstAddr, uint16_t typeOfService, bool& useNR)
+bool Ip2Nic::markPacket(inet::Ipv4Address srcAddr, inet::Ipv4Address dstAddr, uint16_t typeOfService, bool& useNR)
 {
     // In the current version, the Ip2Nic module of the master eNB (the UE) selects which path
     // to follow based on the Type of Service (TOS) field:
@@ -397,8 +399,8 @@ bool Ip2Nic::markPacket(uint32_t srcAddr, uint32_t dstAddr, uint16_t typeOfServi
     // TODO make it configurable from INI or XML?
 
     if (nodeType_ == ENODEB || nodeType_ == GNODEB) {
-        MacNodeId ueId = binder_->getMacNodeId((Ipv4Address)dstAddr);
-        MacNodeId nrUeId = binder_->getNrMacNodeId((Ipv4Address)dstAddr);
+        MacNodeId ueId = binder_->getMacNodeId(dstAddr);
+        MacNodeId nrUeId = binder_->getNrMacNodeId(dstAddr);
         bool ueLteStack = (binder_->getNextHop(ueId) != NODEID_NONE);
         bool ueNrStack = (binder_->getNextHop(nrUeId) != NODEID_NONE);
 
@@ -407,8 +409,8 @@ bool Ip2Nic::markPacket(uint32_t srcAddr, uint32_t dstAddr, uint16_t typeOfServi
             // odd packets go through the gNodeB
 
             int sentPackets;
-            if ((sentPackets = sbTable_->find_entry(srcAddr, dstAddr, typeOfService)) < 0)
-                sentPackets = sbTable_->create_entry(srcAddr, dstAddr, typeOfService);
+            if ((sentPackets = sbTable_->find_entry(srcAddr.getInt(), dstAddr.getInt(), typeOfService)) < 0)
+                sentPackets = sbTable_->create_entry(srcAddr.getInt(), dstAddr.getInt(), typeOfService);
 
             if (sentPackets % 2 == 0)
                 useNR = false;
@@ -436,8 +438,8 @@ bool Ip2Nic::markPacket(uint32_t srcAddr, uint32_t dstAddr, uint16_t typeOfServi
         bool ueNrStack = (binder_->getNextHop(nrNodeId_) != NODEID_NONE);
         if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && typeOfService >= 20) { // use split bearer TODO fix threshold
             int sentPackets;
-            if ((sentPackets = sbTable_->find_entry(srcAddr, dstAddr, typeOfService)) < 0)
-                sentPackets = sbTable_->create_entry(srcAddr, dstAddr, typeOfService);
+            if ((sentPackets = sbTable_->find_entry(srcAddr.getInt(), dstAddr.getInt(), typeOfService)) < 0)
+                sentPackets = sbTable_->create_entry(srcAddr.getInt(), dstAddr.getInt(), typeOfService);
 
             if (sentPackets % 2 == 0)
                 useNR = false;
@@ -620,4 +622,3 @@ void Ip2Nic::finish()
 }
 
 } //namespace
-

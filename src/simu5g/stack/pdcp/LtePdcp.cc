@@ -106,20 +106,20 @@ void LtePdcpBase::analyzePacket(inet::Packet *pkt)
 
     // Get IP flow information from the new tag
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
-    uint32_t srcAddr = ipFlowInd->getSrcAddr();
-    uint32_t dstAddr = ipFlowInd->getDstAddr();
+    Ipv4Address srcAddr = ipFlowInd->getSrcAddr();
+    Ipv4Address dstAddr = ipFlowInd->getDstAddr();
     uint16_t typeOfService = ipFlowInd->getTypeOfService();
 
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
-    MacNodeId destId = getDestId(Ipv4Address(dstAddr), useNR, lteInfo->getSourceId());
+    MacNodeId destId = getDestId(dstAddr, useNR, lteInfo->getSourceId());
 
     // CID Request
-    EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << Ipv4Address(srcAddr)
-       << " Destination: " << Ipv4Address(dstAddr)
+    EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << srcAddr
+       << " Destination: " << dstAddr
        << " ToS: " << typeOfService << " ]\n";
 
     // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
-    ConnectionKey key{Ipv4Address(srcAddr), Ipv4Address(dstAddr), typeOfService, 0xFFFF};
+    ConnectionKey key{srcAddr, dstAddr, typeOfService, 0xFFFF};
     LogicalCid lcid = lookupOrAssignLcid(key);
 
     // assign LCID and node IDs
@@ -132,7 +132,7 @@ void LtePdcpBase::analyzePacket(inet::Packet *pkt)
     if (lteInfo->getMulticastGroupId() > 0)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
         lteInfo->setDestId(getNodeId());
     else {
-        Ipv4Address destAddr = Ipv4Address(pkt->getTag<IpFlowInd>()->getDstAddr());
+        Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
         lteInfo->setDestId(getDestId(destAddr, false, lteInfo->getSourceId()));
     }
 }
