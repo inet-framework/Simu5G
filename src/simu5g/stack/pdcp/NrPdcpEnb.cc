@@ -43,17 +43,13 @@ MacCid NrPdcpEnb::analyzePacket(inet::Packet *pkt)
 
     // Get IP flow information from the new tag
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
-    uint32_t srcAddr_int = ipFlowInd->getSrcAddr();
-    uint32_t dstAddr_int = ipFlowInd->getDstAddr();
+    Ipv4Address srcAddr = ipFlowInd->getSrcAddr();
+    Ipv4Address destAddr = ipFlowInd->getDstAddr();
     uint16_t typeOfService = ipFlowInd->getTypeOfService();
 
     // Get technology selection from the new tag
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
 
-    // get source info
-    Ipv4Address srcAddr = Ipv4Address(srcAddr_int);
-    // get destination info
-    Ipv4Address destAddr = Ipv4Address(dstAddr_int);
     MacNodeId srcId, destId;
 
     // set direction based on the destination Id. If the destination can be reached
@@ -81,13 +77,13 @@ MacCid NrPdcpEnb::analyzePacket(inet::Packet *pkt)
     if (lteInfo->getMulticastGroupId() > 0)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
         lteInfo->setDestId(getNodeId());
     else {
-        Ipv4Address destAddr = Ipv4Address(pkt->getTag<IpFlowInd>()->getDstAddr());
+        Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
         lteInfo->setDestId(getDestId(destAddr, useNR, lteInfo->getSourceId()));
     }
 
     // CID Request
-    EV << "NrPdcpEnb : Received CID request for Traffic [ " << "Source: " << Ipv4Address(srcAddr_int)
-       << " Destination: " << Ipv4Address(dstAddr_int)
+    EV << "NrPdcpEnb : Received CID request for Traffic [ " << "Source: " << srcAddr
+       << " Destination: " << destAddr
        << " , ToS: " << typeOfService
        << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
 
