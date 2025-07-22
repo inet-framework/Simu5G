@@ -55,7 +55,7 @@ class NrPdcpUe : public LtePdcpUeD2D
     }
 
     // this function was redefined so as to use the getDirection() function implemented above
-    MacNodeId getDestId(inet::Ptr<FlowControlInfo> lteInfo) override;
+    MacNodeId getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override;
 
     /**
      * handler for data port

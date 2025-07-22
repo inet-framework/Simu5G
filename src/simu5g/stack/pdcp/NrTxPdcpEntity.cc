@@ -10,6 +10,7 @@
 //
 
 #include "simu5g/stack/pdcp/NrTxPdcpEntity.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -39,7 +40,8 @@ void NrTxPdcpEntity::deliverPdcpPdu(Packet *pkt)
         }
         else {
             MacNodeId destId = lteInfo->getDestId();
-            bool useNR = lteInfo->getUseNR();
+            bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
+
             if (!useNR) {
                 if (getNodeTypeById(destId) != UE)
                     throw cRuntimeError("NrTxPdcpEntity::deliverPdcpPdu - the destination is a UE under the control of a secondary node, but the packet has not been marked as NR packet.");
@@ -58,17 +60,22 @@ void NrTxPdcpEntity::deliverPdcpPdu(Packet *pkt)
     }
 }
 
-void NrTxPdcpEntity::setIds(inet::Ptr<FlowControlInfo> lteInfo)
+void NrTxPdcpEntity::setIds(Packet *pkt)
 {
-    if (lteInfo->getUseNR() && getNodeTypeById(pdcp_->getNodeId()) != ENODEB && getNodeTypeById(pdcp_->getNodeId()) != GNODEB)
+    FlowControlInfo *lteInfo = pkt->getTagForUpdate<FlowControlInfo>().get();
+    bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
+
+    if (useNR && getNodeTypeById(pdcp_->getNodeId()) != ENODEB && getNodeTypeById(pdcp_->getNodeId()) != GNODEB)
         lteInfo->setSourceId(pdcp_->getNrNodeId());
     else
         lteInfo->setSourceId(pdcp_->getNodeId());
 
     if (lteInfo->getMulticastGroupId() > 0)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
         lteInfo->setDestId(pdcp_->getNodeId());
-    else
-        lteInfo->setDestId(pdcp_->getDestId(lteInfo));
+    else {
+        Ipv4Address destAddr = Ipv4Address(pkt->getTag<IpFlowInd>()->getDstAddr());
+        lteInfo->setDestId(pdcp_->getDestId(destAddr, useNR, lteInfo->getSourceId()));
+    }
 }
 
 

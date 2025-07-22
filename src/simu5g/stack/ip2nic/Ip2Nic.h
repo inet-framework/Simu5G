@@ -16,6 +16,7 @@
 #include <inet/networklayer/common/NetworkInterface.h>
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/handoverManager/LteHandoverManager.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/ip2nic/SplitBearersTable.h"
@@ -121,7 +122,7 @@ class Ip2Nic : public cSimpleModule
     // To change the policy, change the implementation of the Ip2Nic::markPacket() function
     //
     // TODO use a better policy
-    bool markPacket(inet::Ptr<FlowControlInfo> ci);
+    bool markPacket(uint32_t srcAddr, uint32_t dstAddr, uint16_t typeOfService, bool& useNR);
 
     void initialize(int stage) override;
     int numInitStages() const override { return inet::INITSTAGE_LAST; }
