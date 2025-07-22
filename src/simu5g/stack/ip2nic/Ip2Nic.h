@@ -122,7 +122,7 @@ class Ip2Nic : public cSimpleModule
     // To change the policy, change the implementation of the Ip2Nic::markPacket() function
     //
     // TODO use a better policy
-    bool markPacket(uint32_t srcAddr, uint32_t dstAddr, uint16_t typeOfService, bool& useNR);
+    bool markPacket(inet::Ipv4Address srcAddr, inet::Ipv4Address dstAddr, uint16_t typeOfService, bool& useNR);
 
     void initialize(int stage) override;
     int numInitStages() const override { return inet::INITSTAGE_LAST; }
