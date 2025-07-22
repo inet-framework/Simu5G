@@ -39,14 +39,10 @@ void LtePdcpEnbD2D::fromDataPort(cPacket *pktAux)
 
     // Get IP flow information from the new tag
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
-    uint32_t srcAddr_int = ipFlowInd->getSrcAddr();
-    uint32_t dstAddr_int = ipFlowInd->getDstAddr();
+    Ipv4Address srcAddr = ipFlowInd->getSrcAddr();
+    Ipv4Address destAddr = ipFlowInd->getDstAddr();
     uint16_t typeOfService = ipFlowInd->getTypeOfService();
 
-    // get source info
-    Ipv4Address srcAddr = Ipv4Address(srcAddr_int);
-    // get destination info
-    Ipv4Address destAddr = Ipv4Address(dstAddr_int);
     MacNodeId srcId, destId;
 
     // set direction based on the destination Id. If the destination can be reached
@@ -68,8 +64,8 @@ void LtePdcpEnbD2D::fromDataPort(cPacket *pktAux)
     }
 
     // Cid Request
-    EV << "LtePdcpEnbD2D : Received CID request for Traffic [ " << "Source: " << Ipv4Address(srcAddr_int)
-       << " Destination: " << Ipv4Address(dstAddr_int)
+    EV << "LtePdcpEnbD2D : Received CID request for Traffic [ " << "Source: " << srcAddr
+       << " Destination: " << destAddr
        << " , ToS: " << typeOfService
        << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
 
@@ -79,7 +75,7 @@ void LtePdcpEnbD2D::fromDataPort(cPacket *pktAux)
      */
 
     LogicalCid mylcid;
-    if ((mylcid = ht_.find_entry(srcAddr_int, dstAddr_int, typeOfService, lteInfo->getDirection())) == 0xFFFF) {
+    if ((mylcid = ht_.find_entry(srcAddr.getInt(), destAddr.getInt(), typeOfService, lteInfo->getDirection())) == 0xFFFF) {
         // LCID not found
 
         // assign a new LCID to the connection
@@ -87,7 +83,7 @@ void LtePdcpEnbD2D::fromDataPort(cPacket *pktAux)
 
         EV << "LtePdcpEnbD2D : Connection not found, new CID created with LCID " << mylcid << "\n";
 
-        ht_.create_entry(srcAddr_int, dstAddr_int, typeOfService, lteInfo->getDirection(), mylcid);
+        ht_.create_entry(srcAddr.getInt(), destAddr.getInt(), typeOfService, lteInfo->getDirection(), mylcid);
     }
 
     // assign LCID
@@ -142,4 +138,3 @@ void LtePdcpEnbD2D::pdcpHandleD2DModeSwitch(MacNodeId peerId, LteD2DMode newMode
 }
 
 } //namespace
-

@@ -50,12 +50,10 @@ void LtePdcpUeD2D::fromDataPort(cPacket *pktAux)
 
     // Get IP flow information from the new tag
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
-    uint32_t srcAddr_int = ipFlowInd->getSrcAddr();
-    uint32_t dstAddr_int = ipFlowInd->getDstAddr();
+    Ipv4Address srcAddr = ipFlowInd->getSrcAddr();
+    Ipv4Address destAddr = ipFlowInd->getDstAddr();
     uint16_t typeOfService = ipFlowInd->getTypeOfService();
 
-    // get destination info
-    Ipv4Address destAddr = Ipv4Address(dstAddr_int);
     MacNodeId destId;
 
     // the direction of the incoming connection is a D2D_MULTI one if the application is of the same type,
@@ -69,7 +67,7 @@ void LtePdcpUeD2D::fromDataPort(cPacket *pktAux)
         // multicast IP addresses are 224.0.0.0/4.
         // We consider the host part of the IP address (the remaining 28 bits) as identifier of the group,
         // so as it is uniquely determined for the whole network
-        uint32_t address = dstAddr_int;
+        uint32_t address = destAddr.getInt();
         uint32_t mask = ~((uint32_t)255 << 28);      // 0000 1111 1111 1111
         uint32_t groupId = address & mask;
         lteInfo->setMulticastGroupId((int32_t)groupId);
@@ -99,8 +97,8 @@ void LtePdcpUeD2D::fromDataPort(cPacket *pktAux)
     }
 
     // Cid Request
-    EV << "LtePdcpUeD2D : Received CID request for Traffic [ " << "Source: " << Ipv4Address(srcAddr_int)
-       << " Destination: " << Ipv4Address(dstAddr_int)
+    EV << "LtePdcpUeD2D : Received CID request for Traffic [ " << "Source: " << srcAddr
+       << " Destination: " << destAddr
        << " , ToS: " << typeOfService
        << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
 
@@ -110,7 +108,7 @@ void LtePdcpUeD2D::fromDataPort(cPacket *pktAux)
      */
 
     LogicalCid mylcid;
-    if ((mylcid = ht_.find_entry(srcAddr_int, dstAddr_int, typeOfService, lteInfo->getDirection())) == 0xFFFF) {
+    if ((mylcid = ht_.find_entry(srcAddr.getInt(), destAddr.getInt(), typeOfService, lteInfo->getDirection())) == 0xFFFF) {
         // LCID not found
 
         // assign a new LCID to the connection
@@ -118,7 +116,7 @@ void LtePdcpUeD2D::fromDataPort(cPacket *pktAux)
 
         EV << "LtePdcpUeD2D : Connection not found, new CID created with LCID " << mylcid << "\n";
 
-        ht_.create_entry(srcAddr_int, dstAddr_int, typeOfService, lteInfo->getDirection(), mylcid);
+        ht_.create_entry(srcAddr.getInt(), destAddr.getInt(), typeOfService, lteInfo->getDirection(), mylcid);
     }
 
     // assign LCID
@@ -169,4 +167,3 @@ void LtePdcpUeD2D::pdcpHandleD2DModeSwitch(MacNodeId peerId, LteD2DMode newMode)
 }
 
 } //namespace
-

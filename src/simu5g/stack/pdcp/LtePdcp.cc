@@ -155,27 +155,27 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
 
     // Get IP flow information from the new tag
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
-    uint32_t srcAddr = ipFlowInd->getSrcAddr();
-    uint32_t dstAddr = ipFlowInd->getDstAddr();
+    Ipv4Address srcAddr = ipFlowInd->getSrcAddr();
+    Ipv4Address dstAddr = ipFlowInd->getDstAddr();
     uint16_t typeOfService = ipFlowInd->getTypeOfService();
 
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
-    MacNodeId destId = getDestId(Ipv4Address(dstAddr), useNR, lteInfo->getSourceId());
+    MacNodeId destId = getDestId(dstAddr, useNR, lteInfo->getSourceId());
 
     // CID Request
-    EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << Ipv4Address(srcAddr)
-       << " Destination: " << Ipv4Address(dstAddr)
+    EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << srcAddr
+       << " Destination: " << dstAddr
        << " ToS: " << typeOfService << " ]\n";
 
     // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
     LogicalCid mylcid;
-    if ((mylcid = ht_.find_entry(srcAddr, dstAddr, typeOfService)) == 0xFFFF) {
+    if ((mylcid = ht_.find_entry(srcAddr.getInt(), dstAddr.getInt(), typeOfService)) == 0xFFFF) {
         // LCID not found
         mylcid = lcid_++;
 
         EV << "LteRrc : Connection not found, new CID created with LCID " << mylcid << "\n";
 
-        ht_.create_entry(srcAddr, dstAddr, typeOfService, mylcid);
+        ht_.create_entry(srcAddr.getInt(), dstAddr.getInt(), typeOfService, mylcid);
     }
 
     // assign LCID and node IDs
