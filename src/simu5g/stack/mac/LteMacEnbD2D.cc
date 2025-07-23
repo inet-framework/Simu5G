@@ -135,7 +135,6 @@ void LteMacEnbD2D::macPduUnmake(cPacket *cpkt)
     while (macPdu->hasSdu()) {
         // Extract and send SDU
         auto upPkt = macPdu->popSdu();
-        markUpstack(upPkt);
         take(upPkt);
 
         EV << "LteMacEnbD2D: pduUnmaker extracted SDU" << endl;

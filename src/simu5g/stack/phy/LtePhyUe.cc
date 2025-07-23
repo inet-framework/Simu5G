@@ -561,7 +561,6 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
        << (result ? "RECEIVED" : "NOT RECEIVED") << endl;
 
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
-    markUpstack(pkt);
 
     // here frame has to be destroyed since it is no longer useful
     delete frame;
@@ -685,8 +684,6 @@ void LtePhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVecto
     pkt->insertAtFront(fbPkt);
 
     UserControlInfo *uinfo = new UserControlInfo();
-    uinfo->setIsDownStack(true);
-
     uinfo->setSourceId(nodeId_);
     uinfo->setDestId(masterId_);
     uinfo->setFrameType(FEEDBACKPKT);

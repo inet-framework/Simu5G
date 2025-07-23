@@ -125,11 +125,6 @@ void Ip2Nic::initialize(int stage)
 
 void Ip2Nic::handleMessage(cMessage *msg)
 {
-    if (msg->getArrivalGate()->isName("upperLayerIn")) {
-        auto pkt = check_and_cast<Packet *>(msg);
-        markDownstack(pkt);
-    }
-
     if (nodeType_ == ENODEB || nodeType_ == GNODEB) {
         // message from IP Layer: send to stack
         if (msg->getArrivalGate()->isName("upperLayerIn")) {
