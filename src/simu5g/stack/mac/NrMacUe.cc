@@ -402,7 +402,6 @@ void NrMacUe::macPduMake(MacCid cid)
                     // Create a PDU
                     macPkt = new Packet("LteMacPdu");
                     auto header = makeShared<LteMacPdu>();
-                    markDownstack(macPkt);
                     header->setHeaderLength(MAC_HEADER);
                     macPkt->insertAtFront(header);
 
