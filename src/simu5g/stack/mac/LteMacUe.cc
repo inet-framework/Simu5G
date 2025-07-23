@@ -339,7 +339,6 @@ void LteMacUe::macPduMake(MacCid cid)
             if (pit == macPduList_[carrierFreq].end()) {
                 macPkt = new Packet("LteMacPdu");
                 auto header = makeShared<LteMacPdu>();
-                markDownstack(macPkt);
                 header->setHeaderLength(MAC_HEADER);
                 macPkt->insertAtFront(header);
 
@@ -550,7 +549,6 @@ void LteMacUe::macPduUnmake(cPacket *cpkt)
     while (macPdu->hasSdu()) {
         // Extract and send SDU
         auto upPkt = macPdu->popSdu();
-        markUpstack(upPkt);
         take(upPkt);
 
         EV << "LteMacBase: pduUnmaker extracted SDU" << endl;

@@ -251,7 +251,6 @@ void LtePhyEnbD2D::handleAirFrame(cMessage *msg)
        << (result ? "RECEIVED" : "NOT RECEIVED") << endl;
 
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
-    markUpstack(pkt);
 
     // Here frame has to be destroyed since it is no longer useful
     delete frame;
