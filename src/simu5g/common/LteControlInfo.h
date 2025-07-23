@@ -14,18 +14,5 @@
 
 #include "simu5g/common/LteControlInfo_m.h"
 
-namespace simu5g {
-inline void markUpstack(inet::Packet *pkt) {
-    pkt->addTagIfAbsent<UserControlInfo>()->setIsUpStack(true);
-    pkt->addTagIfAbsent<FlowControlInfo>()->setIsUpStack(true);
-}
-
-inline void markDownstack(inet::Packet *pkt) {
-    pkt->addTagIfAbsent<UserControlInfo>()->setIsDownStack(true);
-    pkt->addTagIfAbsent<FlowControlInfo>()->setIsDownStack(true);
-}
-
-} // namespace
-
 #endif
 

@@ -566,7 +566,6 @@ void LteMacEnb::macPduMake(MacCid cid)
                 auto macPkt = macPacket->removeAtFront<LteMacPdu>();
                 macPkt->pushSdu(pkt);
                 macPacket->insertAtFront(macPkt);
-                markDownstack(macPacket);
                 sduPerCid--;
             }
         }
@@ -637,8 +636,7 @@ void LteMacEnb::macPduUnmake(cPacket *pktAux)
 
     while (macPkt->hasSdu()) {
         // Extract and send SDU
-        Packet *upPkt = macPkt->popSdu();
-        markUpstack(pkt);
+        cPacket *upPkt = macPkt->popSdu();
         take(upPkt);
 
         // TODO: upPkt->info()

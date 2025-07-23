@@ -70,7 +70,6 @@ Packet *LteMacUeD2D::makeBsr(int size) {
 
     auto macPkt = new Packet("LteMacPdu");
     auto header = makeShared<LteMacPdu>();
-    markDownstack(macPkt);
     header->setHeaderLength(MAC_HEADER);
     macPkt->setTimestamp(NOW);
 
@@ -198,7 +197,6 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                     // Create a PDU
                     macPkt = new Packet("LteMacPdu");
                     auto header = makeShared<LteMacPdu>();
-                    markDownstack(macPkt);
                     //macPkt = new LteMacPdu("LteMacPdu");
                     header->setHeaderLength(MAC_HEADER);
                     macPkt->insertAtFront(header);

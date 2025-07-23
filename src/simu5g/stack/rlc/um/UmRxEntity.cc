@@ -358,7 +358,6 @@ void UmRxEntity::reassemble(unsigned int index)
     for (unsigned int i = 0; i < numSdu; i++) {
         size_t sduLengthPktLeng;
         auto pktSdu = check_and_cast<Packet *>(pdu->popSdu(sduLengthPktLeng));
-        markUpstack(pktSdu);
 
         auto rlcSdu = pktSdu->peekAtFront<LteRlcSdu>();
         unsigned int sduSno = rlcSdu->getSnoMainPacket();
