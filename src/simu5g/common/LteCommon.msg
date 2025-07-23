@@ -11,6 +11,7 @@
 
 cplusplus {{
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/stack/mac/amc/UserTxParams.h"
 }}
 
 namespace simu5g;
@@ -135,4 +136,16 @@ class ExtCell
     @opaque;
     @polymorphic(false);
     @toString(.str());
+}
+
+class RbMap
+{
+    @existingClass;
+    @opaque;
+}
+
+class UserTxParams
+{
+    @existingClass;
+    @opaque;
 }

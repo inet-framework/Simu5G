@@ -12,11 +12,8 @@
 import inet.common.INETDefs;
 import inet.common.TagBase;
 import simu5g.common.LteCommon;
+import simu5g.common.LteCommonImpl;
 import inet.common.geometry.Geometry; // for Coord
-
-cplusplus {{
-#include "simu5g/stack/mac/amc/UserTxParams.h"
-}}
 
 namespace simu5g;
 
@@ -26,18 +23,6 @@ enum TxMode;
 enum Direction;
 enum ApplicationType;
 enum LteTrafficClass;
-
-class RbMap
-{
-    @existingClass;
-    @opaque;
-}
-
-class UserTxParams
-{
-    @existingClass;
-    @opaque;
-}
 
 //
 // Control info usage in Simu5G simulator
