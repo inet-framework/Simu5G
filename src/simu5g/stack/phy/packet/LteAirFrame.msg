@@ -11,9 +11,9 @@
 
 import simu5g.stack.phy.packet.AirFrame;
 import simu5g.common.LteControlInfo;
+import simu5g.common.LteCommon;
 
 cplusplus {{
-#include "simu5g/common/LteCommon.h"  // for RemoteUnitPhyDataVector
 #include "simu5g/common/LteControlInfo.h"
 }}
 
