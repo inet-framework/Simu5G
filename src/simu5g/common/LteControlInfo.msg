@@ -120,7 +120,7 @@ class UserControlInfo extends LteControlInfo {
     double txPower = NaN;                               //Transmission Power
     double d2dTxPower = NaN;                            // D2D Transmission Power (used for feedback reporting of D2D links
     // blocks granted on all Remotes, all Bands
-    unsigned int totalGrantedBlocks = 0;
+    unsigned int totalGrantedBlocks = 0;                // note: currently unread
     unsigned int grantId = 0;                           // grantId related to the grand that allowed the sending of a MEC PDU (used only for MAC PDU sent by UEs)
 
     UserTxParams *userTxParams @owned;
