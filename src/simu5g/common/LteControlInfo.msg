@@ -110,14 +110,12 @@ class UserControlInfo extends LteControlInfo {
     //# PHY Control Informations
 
     bool deciderResult = false;                         // Decider result
-    double blerTh = NaN;                                // Calculated BLER threshold for this transmission
-    double blerValue = NaN;                             // Extracted BLER for this transmission (blerValue > blerTh ==> corrupted)
     unsigned short txMode = 0 enum(TxMode);             // Traffic Type
     unsigned int frameType = 0 enum(LtePhyFrameType);   // Frame Type
     double txPower = NaN;                               //Transmission Power
     double d2dTxPower = NaN;                            // D2D Transmission Power (used for feedback reporting of D2D links
     // blocks granted on all Remotes, all Bands
-    unsigned int totalGrantedBlocks = 0;
+    unsigned int totalGrantedBlocks = 0;                // note: currently unread
     unsigned int grantId = 0;                           // grantId related to the grand that allowed the sending of a MEC PDU (used only for MAC PDU sent by UEs)
 
     UserTxParams *userTxParams @owned;

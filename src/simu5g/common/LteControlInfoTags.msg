@@ -154,8 +154,6 @@ class UserTransmissionParametersInd extends inet::TagBase {
 //
 class PhyReceptionInd extends inet::TagBase {
     bool deciderResult = false;         // Decoding result
-    double blerTh = NaN;                // BLER threshold
-    double blerValue = NaN;             // Actual BLER value
 }
 
 cplusplus (UserTransmissionParametersInd::setUserTxParams) {{
