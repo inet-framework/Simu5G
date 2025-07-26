@@ -115,8 +115,6 @@ class UserControlInfo extends LteControlInfo {
     //# PHY Control Informations
 
     bool deciderResult = false;                         // Decider result
-    double blerTh = NaN;                                // Calculated BLER threshold for this transmission
-    double blerValue = NaN;                             // Extracted BLER for this transmission (blerValue > blerTh ==> corrupted)
     unsigned short txMode = 0 enum(TxMode);             // Traffic Type
     unsigned int frameType = 0 enum(LtePhyFrameType);   // Frame Type
     double txPower = NaN;                               //Transmission Power
