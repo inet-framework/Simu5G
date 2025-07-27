@@ -13,6 +13,7 @@
 #include "simu5g/stack/phy/LtePhyUeD2D.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/d2dModeSelection/D2dModeSelectionBase.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -228,9 +229,10 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
     delete frame;
 
     // Attach the decider result to the packet as control info.
-    lteInfo->setDeciderResult(result);
     *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
     delete lteInfo;
+
+    pkt->addTagIfAbsent<PhyReceptionInd>()->setDeciderResult(result);
 
     // Send decapsulated message along with result control info to upperGateOut_.
     send(pkt, upperGateOut_);
@@ -493,9 +495,10 @@ void LtePhyUeD2D::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo)
     // received frames is cleared
 
     // Attach the decider result to the packet as control info
-    lteInfo->setDeciderResult(result);
     *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
     delete lteInfo;
+
+    pkt->addTagIfAbsent<PhyReceptionInd>()->setDeciderResult(result);
 
     // Send decapsulated message along with result control info to upperGateOut_
     send(pkt, upperGateOut_);
