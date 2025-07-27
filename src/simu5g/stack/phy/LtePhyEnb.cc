@@ -15,6 +15,7 @@
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/phy/das/DasFilter.h"
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -223,9 +224,10 @@ void LtePhyEnb::handleAirFrame(cMessage *msg)
     delete frame;
 
     // attach the decider result to the packet as control info
-    lteInfo->setDeciderResult(result);
     *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
     delete lteInfo;
+
+    pkt->addTagIfAbsent<PhyReceptionInd>()->setDeciderResult(result);
 
     // send decapsulated message along with result control info to upperGateOut_
     send(pkt, upperGateOut_);
