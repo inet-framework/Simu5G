@@ -109,7 +109,6 @@ class UserControlInfo extends LteControlInfo {
 
     //# PHY Control Informations
 
-    bool deciderResult = false;                         // Decider result
     unsigned short txMode = 0 enum(TxMode);             // Traffic Type
     unsigned int frameType = 0 enum(LtePhyFrameType);   // Frame Type
     double txPower = NaN;                               //Transmission Power
