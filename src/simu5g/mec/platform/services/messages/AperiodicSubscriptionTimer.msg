@@ -17,7 +17,8 @@ namespace simu5g;
 
 message AperiodicSubscriptionTimer
 {
-	double period;
+    double period;
+    // TODO make std::set<int> subIdSet_ as visible
 }
 
 cplusplus(AperiodicSubscriptionTimer) {{
