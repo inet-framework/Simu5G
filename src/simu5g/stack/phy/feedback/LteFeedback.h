@@ -28,6 +28,7 @@ typedef std::vector<LteFeedbackVector> LteFeedbackDoubleVector;
 //! LTE feedback message exchanged between PHY and AMC.
 class LteFeedback
 {
+    // TODO move to msg
   protected:
     //! Feedback status type enumerator.
     enum
