@@ -24,6 +24,7 @@ class LteFeedbackPkt extends inet::FieldsChunk {
 
     // MacNodeId of the source
     MacNodeId sourceNodeId;
+    // TODO make visible lteFeedbackDoubleVectorDl_, lteFeedbackDoubleVectorUl_, lteFeedbackMapDoubleVectorD2D_
 }
 
 cplusplus(LteFeedbackPkt) {{
