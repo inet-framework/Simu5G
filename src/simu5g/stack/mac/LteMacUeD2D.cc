@@ -173,9 +173,9 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                 Codeword cw = item.first.second;
 
                 // get the direction (UL/D2D/D2D_MULTI) and the corresponding destination ID
-                FlowControlInfo *lteInfo = &(connDesc_.at(destCid));
-                MacNodeId destId = lteInfo->getDestId();
-                Direction dir = (Direction)lteInfo->getDirection();
+                const FlowDescriptor& lteInfo = connDesc_.at(destCid);
+                MacNodeId destId = lteInfo.getDestId();
+                Direction dir = (Direction)lteInfo.getDirection();
 
                 std::pair<MacNodeId, Codeword> pktId = {destId, cw};
                 unsigned int sduPerCid = item.second;
@@ -847,9 +847,9 @@ void LteMacUeD2D::macHandleD2DModeSwitch(cPacket *pktAux)
         // Find the correct connection involved in the mode switch
         for (auto& it : connDesc_) {
             MacCid cid = it.first;
-            FlowControlInfo *lteInfo = &(it.second);
+            const FlowDescriptor& lteInfo = it.second;
 
-            if (lteInfo->getD2dRxPeerId() == peerId && (Direction)lteInfo->getDirection() == oldDirection) {
+            if (lteInfo.getD2dRxPeerId() == peerId && (Direction)lteInfo.getDirection() == oldDirection) {
                 EV << NOW << " LteMacUeD2D::macHandleD2DModeSwitch - found old connection with cid " << cid << ", erasing buffered data" << endl;
                 if (oldDirection != newDirection) {
                     if (switchPkt->getClearRlcBuffer()) {
@@ -908,7 +908,7 @@ void LteMacUeD2D::macHandleD2DModeSwitch(cPacket *pktAux)
                 auto switchPkt_dup = pktDup->removeAtFront<D2DModeSwitchNotification>();
                 switchPkt_dup->setOldConnection(true);
                 pktDup->insertAtFront(switchPkt_dup);
-                *(pktDup->addTagIfAbsent<FlowControlInfo>()) = *lteInfo;
+                *(pktDup->addTagIfAbsent<FlowControlInfo>()) = lteInfo.toFlowControlInfo();
                 sendUpperPackets(pktDup);
 
                 if (oldDirection != newDirection && switchPkt->getClearRlcBuffer()) {
@@ -926,7 +926,7 @@ void LteMacUeD2D::macHandleD2DModeSwitch(cPacket *pktAux)
                 }
                 EV << NOW << " LteMacUeD2D::macHandleD2DModeSwitch - send switch signal to the RLC TX entity corresponding to the old mode, cid " << cid << endl;
             }
-            else if (lteInfo->getD2dRxPeerId() == peerId && (Direction)lteInfo->getDirection() == newDirection) {
+            else if (lteInfo.getD2dRxPeerId() == peerId && (Direction)lteInfo.getDirection() == newDirection) {
                 EV << NOW << " LteMacUeD2D::macHandleD2DModeSwitch - send switch signal to the RLC TX entity corresponding to the new mode, cid " << cid << endl;
                 if (oldDirection != newDirection) {
 
@@ -935,7 +935,7 @@ void LteMacUeD2D::macHandleD2DModeSwitch(cPacket *pktAux)
                     switchPkt_dup->setOldConnection(false);
                     // switchPkt_dup->setSchedulingPriority(1);        // always after the old mode
                     pktDup->insertAtFront(switchPkt_dup);
-                    *(pktDup->addTagIfAbsent<FlowControlInfo>()) = *lteInfo;
+                    *(pktDup->addTagIfAbsent<FlowControlInfo>()) = lteInfo.toFlowControlInfo();
                     sendUpperPackets(pktDup);
                 }
             }
@@ -948,8 +948,8 @@ void LteMacUeD2D::macHandleD2DModeSwitch(cPacket *pktAux)
         // Find the correct connection involved in the mode switch
         for (auto& item : connDescIn_) {
             MacCid cid = item.first;
-            FlowControlInfo *lteInfo = &(item.second);
-            if (lteInfo->getD2dTxPeerId() == peerId && (Direction)lteInfo->getDirection() == oldDirection) {
+            const FlowDescriptor& lteInfo = item.second;
+            if (lteInfo.getD2dTxPeerId() == peerId && (Direction)lteInfo.getDirection() == oldDirection) {
                 EV << NOW << " LteMacUeD2D::macHandleD2DModeSwitch - found old connection with cid " << cid << ", send signal to the RLC RX entity" << endl;
                 if (oldDirection != newDirection) {
                     if (switchPkt->getInterruptHarq()) {
@@ -979,11 +979,11 @@ void LteMacUeD2D::macHandleD2DModeSwitch(cPacket *pktAux)
                     auto switchPkt_dup = pktDup->removeAtFront<D2DModeSwitchNotification>();
                     switchPkt_dup->setOldConnection(true);
                     pktDup->insertAtFront(switchPkt_dup);
-                    *(pktDup->addTagIfAbsent<FlowControlInfo>()) = *lteInfo;
+                    *(pktDup->addTagIfAbsent<FlowControlInfo>()) = lteInfo.toFlowControlInfo();
                     sendUpperPackets(pktDup);
                 }
             }
-            else if (lteInfo->getD2dTxPeerId() == peerId && (Direction)lteInfo->getDirection() == newDirection) {
+            else if (lteInfo.getD2dTxPeerId() == peerId && (Direction)lteInfo.getDirection() == newDirection) {
                 EV << NOW << " LteMacUeD2D::macHandleD2DModeSwitch - found new connection with cid " << cid << ", send signal to the RLC RX entity" << endl;
                 if (oldDirection != newDirection) {
 
@@ -991,7 +991,7 @@ void LteMacUeD2D::macHandleD2DModeSwitch(cPacket *pktAux)
                     auto switchPkt_dup = pktDup->removeAtFront<D2DModeSwitchNotification>();
                     switchPkt_dup->setOldConnection(false);
                     pktDup->insertAtFront(switchPkt_dup);
-                    *(pktDup->addTagIfAbsent<FlowControlInfo>()) = *lteInfo;
+                    *(pktDup->addTagIfAbsent<FlowControlInfo>()) = lteInfo.toFlowControlInfo();
                     sendUpperPackets(pktDup);
                 }
             }

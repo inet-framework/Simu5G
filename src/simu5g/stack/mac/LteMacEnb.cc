@@ -271,7 +271,7 @@ void LteMacEnb::macSduRequest()
                                     " (queue size: %d, SDU request requires: %d)", queueSize_, macSduRequest->getSduSize());
             }
             auto tag = pkt->addTag<FlowControlInfo>();
-            *tag = connDesc_[destCid];
+            *tag = connDesc_[destCid].toFlowControlInfo();
             sendUpperPackets(pkt);
         }
     }
@@ -691,8 +691,7 @@ bool LteMacEnb::bufferizePacket(cPacket *pktAux)
             macBuffers_[cid] = vqueue;
 
             // make a copy of lte control info and store it to the traffic descriptors map
-            FlowControlInfo toStore(*lteInfo);
-            connDesc_[cid] = toStore;
+            connDesc_[cid] = FlowDescriptor::fromFlowControlInfo(*lteInfo);
             // register connection to lcg map.
             LteTrafficClass tClass = (LteTrafficClass)lteInfo->getTraffic();
 

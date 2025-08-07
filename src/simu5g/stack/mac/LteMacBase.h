@@ -132,12 +132,12 @@ class LteMacBase : public cSimpleModule
     /* Connection Descriptors
      * Holds flow-related information
      */
-    std::map<MacCid, FlowControlInfo> connDesc_;
+    std::map<MacCid, FlowDescriptor> connDesc_;
 
     /* Incoming Connection Descriptors:
      * a connection is stored at the first MAC SDU delivered to the RLC
      */
-    std::map<MacCid, FlowControlInfo> connDescIn_;
+    std::map<MacCid, FlowDescriptor> connDescIn_;
 
     /* LCG to CID and buffers map - used for supporting LCG - based scheduler operations
      * TODO: delete/update entries on handover
@@ -247,7 +247,7 @@ class LteMacBase : public cSimpleModule
     }
 
     // Returns connection descriptors
-    std::map<MacCid, FlowControlInfo>& getConnDesc()
+    std::map<MacCid, FlowDescriptor>& getConnDesc()
     {
         return connDesc_;
     }

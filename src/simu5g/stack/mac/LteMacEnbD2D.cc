@@ -151,8 +151,7 @@ void LteMacEnbD2D::macPduUnmake(cPacket *pktAux)
         LogicalCid lcid = lteInfo->getLcid();
         MacCid cid = idToMacCid(senderId, lcid);
         if (connDescIn_.find(cid) == connDescIn_.end()) {
-            FlowControlInfo toStore(*lteInfo);
-            connDescIn_[cid] = toStore;
+            connDescIn_[cid] = FlowDescriptor::fromFlowControlInfo(*lteInfo);
         }
 
         sendUpperPackets(upPkt);
@@ -438,7 +437,7 @@ void LteMacEnbD2D::macHandleD2DModeSwitch(cPacket *pktAux)
                 else
                     switchPktTx->setOldConnection(false);
                 pktTx->insertAtFront(switchPktTx);
-                *(pktTx->addTag<FlowControlInfo>()) = lteInfo;
+                *(pktTx->addTag<FlowControlInfo>()) = lteInfo.toFlowControlInfo();
                 sendUpperPackets(pktTx);
                 break;
             }
@@ -482,7 +481,7 @@ void LteMacEnbD2D::macHandleD2DModeSwitch(cPacket *pktAux)
                     switchPktRx->setOldConnection(false);
 
                 pktRx->insertAtFront(switchPktRx);
-                *(pktRx->addTag<FlowControlInfo>()) = lteInfo;
+                *(pktRx->addTag<FlowControlInfo>()) = lteInfo.toFlowControlInfo();
                 sendUpperPackets(pktRx);
                 break;
             }

@@ -226,7 +226,7 @@ int LteMacUe::macSduRequest()
                 macSduRequest->setLcid(MacCidToLcid(destCid));
                 macSduRequest->setSduSize(bit->second);
                 pkt->insertAtFront(macSduRequest);
-                *(pkt->addTag<FlowControlInfo>()) = connDesc_[destCid];
+                *(pkt->addTag<FlowControlInfo>()) = connDesc_[destCid].toFlowControlInfo();
                 sendUpperPackets(pkt);
 
                 numRequestedSdus++;
@@ -270,8 +270,7 @@ bool LteMacUe::bufferizePacket(cPacket *pktAux)
             macBuffers_[cid] = vqueue;
 
             // make a copy of lte control info and store it to traffic descriptors map
-            FlowControlInfo toStore(*lteInfo);
-            connDesc_[cid] = toStore;
+            connDesc_[cid] = FlowDescriptor::fromFlowControlInfo(*lteInfo);
             // register connection to lcg map.
             LteTrafficClass tClass = (LteTrafficClass)lteInfo->getTraffic();
 
@@ -592,8 +591,7 @@ void LteMacUe::macPduUnmake(cPacket *pktAux)
         LogicalCid lcid = lteInfo->getLcid();
         MacCid cid = idToMacCid(senderId, lcid);
         if (connDescIn_.find(cid) == connDescIn_.end()) {
-            FlowControlInfo toStore(*lteInfo);
-            connDescIn_[cid] = toStore;
+            connDescIn_[cid] = FlowDescriptor::fromFlowControlInfo(*lteInfo);
         }
         sendUpperPackets(upPkt);
     }

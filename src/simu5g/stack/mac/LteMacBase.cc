@@ -207,8 +207,7 @@ bool LteMacBase::bufferizePacket(cPacket *pktAux)
         macBuffers_[cid] = vqueue;
 
         // make a copy of LTE control info and store it in the traffic descriptors map
-        FlowControlInfo toStore(*lteInfo);
-        connDesc_[cid] = toStore;
+        connDesc_[cid] = FlowDescriptor::fromFlowControlInfo(*lteInfo);
         // register connection to LCG map.
         LteTrafficClass tClass = (LteTrafficClass)lteInfo->getTraffic();
 

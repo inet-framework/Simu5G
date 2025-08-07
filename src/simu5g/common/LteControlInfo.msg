@@ -92,6 +92,24 @@ class FlowControlInfo extends LteControlInfo {
     unsigned int sequenceNumber = 0;        // packet sequence number
 }
 
+// Describes logical channels (identified by remote node + LCID) in MAC
+class FlowDescriptor extends LteControlInfo {
+}
+
+cplusplus(FlowDescriptor) {{
+    static FlowDescriptor fromFlowControlInfo(const FlowControlInfo& ci) {
+       FlowDescriptor result;
+       static_cast<LteControlInfo&>(result) = static_cast<const LteControlInfo&>(ci);
+       return result;
+    }
+    FlowControlInfo toFlowControlInfo() const {
+       FlowControlInfo result;
+       static_cast<LteControlInfo&>(result) = static_cast<const LteControlInfo&>(*this);
+       return result;
+    }
+
+}}
+
 //
 // @class UserControlInfo
 // @brief contains information flowing from Mac to Phy
