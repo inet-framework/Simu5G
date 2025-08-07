@@ -119,12 +119,12 @@ class LteMacBase : public cSimpleModule
      * Consolidates connection descriptor, real buffer, and virtual buffer
      */
     struct OutgoingConnectionInfo {
-        FlowControlInfo flowInfo;       // Connection flow information
+        FlowDescriptor flowInfo;        // Connection flow information
         LteMacQueue *queue = nullptr;   // Real MAC buffer for actual packets
         LteMacBuffer *buffer = nullptr; // Virtual buffer for scheduling decisions
 
         OutgoingConnectionInfo() {}
-        OutgoingConnectionInfo(const FlowControlInfo& info, LteMacQueue *q, LteMacBuffer *buf) : flowInfo(info), queue(q), buffer(buf) {}
+        OutgoingConnectionInfo(const FlowDescriptor& info, LteMacQueue *q, LteMacBuffer *buf) : flowInfo(info), queue(q), buffer(buf) {}
     };
 
     /// Consolidated outgoing connection information (replaces mbuf_, macBuffers_, and connDesc_)
@@ -142,7 +142,7 @@ class LteMacBase : public cSimpleModule
     /* Incoming Connection Descriptors:
      * a connection is stored at the first MAC SDU delivered to the RLC
      */
-    std::map<MacCid, FlowControlInfo> connDescIn_;
+    std::map<MacCid, FlowDescriptor> connDescIn_;
 
     /* LCG to CID and buffers map - used for supporting LCG - based scheduler operations
      * TODO: delete/update entries on handover
@@ -264,7 +264,7 @@ class LteMacBase : public cSimpleModule
     }
 
     // Returns flow control info for a specific CID
-    const FlowControlInfo& getConnDesc(MacCid cid)
+    const FlowDescriptor& getConnDesc(MacCid cid)
     {
         auto it = connDescOut_.find(cid);
         if (it == connDescOut_.end())
@@ -424,7 +424,7 @@ class LteMacBase : public cSimpleModule
      * createOutgoingConnection() creates MAC queues and buffers for a given CID
      * and registers the outgoing connection if they don't already exist
      */
-    virtual void createOutgoingConnection(MacCid cid, const FlowControlInfo& lteInfo);
+    virtual void createOutgoingConnection(MacCid cid, const FlowDescriptor& connInfo);
 
     /**
      * deleteOutgoingConnection() deletes MAC queues and buffers for a given CID
@@ -439,7 +439,7 @@ class LteMacBase : public cSimpleModule
      * createIncomingConnection() registers an incoming connection for a given CID
      * if it doesn't already exist
      */
-    virtual void createIncomingConnection(MacCid cid, const FlowControlInfo& lteInfo);
+    virtual void createIncomingConnection(MacCid cid, const FlowDescriptor& connInfo);
 
     /**
      * bufferizePacket() is called every time a packet is

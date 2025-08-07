@@ -272,7 +272,7 @@ int NrMacUe::macSduRequest()
                 macSduRequest->setLcid(destCid.getLcid());
                 macSduRequest->setSduSize(bit->second);
                 pkt->insertAtFront(macSduRequest);
-                *(pkt->addTag<FlowControlInfo>()) = connDescOut_[destCid].flowInfo;
+                *(pkt->addTag<FlowControlInfo>()) = connDescOut_[destCid].flowInfo.toFlowControlInfo();
                 sendUpperPackets(pkt);
 
                 numRequestedSdus++;
@@ -371,9 +371,9 @@ void NrMacUe::macPduMake(MacCid cid)
                 Codeword cw = item.first.second;
 
                 // get the direction (UL/D2D/D2D_MULTI) and the corresponding destination ID
-                FlowControlInfo *lteInfo = &(connDescOut_.at(destCid).flowInfo);
-                MacNodeId destId = lteInfo->getDestId();
-                Direction dir = (Direction)lteInfo->getDirection();
+                const FlowDescriptor& connInfo = connDescOut_.at(destCid).flowInfo;
+                MacNodeId destId = connInfo.getDestId();
+                Direction dir = (Direction)connInfo.getDirection();
 
                 std::pair<MacNodeId, Codeword> pktId = {destId, cw};
                 unsigned int sduPerCid = item.second;
