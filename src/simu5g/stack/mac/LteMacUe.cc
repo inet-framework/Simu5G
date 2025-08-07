@@ -231,7 +231,7 @@ int LteMacUe::macSduRequest()
                 macSduRequest->setLcid(destCid.getLcid());
                 macSduRequest->setSduSize(bit->second);
                 pkt->insertAtFront(macSduRequest);
-                *(pkt->addTag<FlowControlInfo>()) = connDescOut_[destCid].flowInfo;
+                *(pkt->addTag<FlowControlInfo>()) = connDescOut_[destCid].flowInfo.toFlowControlInfo();
                 sendUpperPackets(pkt);
 
                 numRequestedSdus++;
@@ -261,7 +261,7 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
 
     // check if queues exist, create them if they don't
     if (connDescOut_.find(cid) == connDescOut_.end())
-        createOutgoingConnection(cid, *lteInfo);
+        createOutgoingConnection(cid, FlowDescriptor::fromFlowControlInfo(*lteInfo));
     OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
     LteMacQueue *queue = connInfo.queue;
     LteMacBuffer *vqueue = connInfo.buffer;
@@ -558,7 +558,7 @@ void LteMacUe::macPduUnmake(cPacket *cpkt)
         LogicalCid lcid = flowInfo->getLcid();
         MacCid cid = MacCid(senderId, lcid);
         if (connDescIn_.find(cid) == connDescIn_.end()) {
-            createIncomingConnection(cid, *flowInfo);
+            createIncomingConnection(cid, FlowDescriptor::fromFlowControlInfo(*flowInfo));
         }
         sendUpperPackets(upPkt);
     }

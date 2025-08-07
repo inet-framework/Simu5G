@@ -272,7 +272,7 @@ void LteMacEnb::macSduRequest()
                                     " (queue size: %d, SDU request requires: %d)", queueSize_, macSduRequest->getSduSize());
             }
             auto tag = pkt->addTag<FlowControlInfo>();
-            *tag = connDescOut_[destCid].flowInfo;
+            *tag = connDescOut_[destCid].flowInfo.toFlowControlInfo();
             sendUpperPackets(pkt);
         }
     }
@@ -675,7 +675,7 @@ bool LteMacEnb::bufferizePacket(cPacket *cpkt)
 
     // check if queues exist, create them if they don't
     if (connDescOut_.find(cid) == connDescOut_.end())
-        createOutgoingConnection(cid, *lteInfo);
+        createOutgoingConnection(cid, FlowDescriptor::fromFlowControlInfo(*lteInfo));
     OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
     LteMacQueue *queue = connInfo.queue;
     LteMacBuffer *vqueue = connInfo.buffer;
