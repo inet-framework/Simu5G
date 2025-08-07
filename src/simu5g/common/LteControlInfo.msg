@@ -78,6 +78,19 @@ class FlowControlInfo extends LteControlInfo {
     unsigned short rlcType enum(LteRlcType) = 0;            // RLC Traffic Type
 }
 
+// WIP: Describes logical channels (identified by remote node + LCID) in MAC
+class FlowDescriptor extends FlowControlInfo {
+}
+
+cplusplus(FlowDescriptor) {{
+    static FlowDescriptor fromFlowControlInfo(const FlowControlInfo& ci) {
+       return FlowDescriptor(*(FlowDescriptor*)&ci);
+    }
+    FlowControlInfo toFlowControlInfo() const {
+       return FlowControlInfo(*this);
+    }
+}}
+
 //
 // @class UserControlInfo
 // @brief contains information flowing from Mac to Phy

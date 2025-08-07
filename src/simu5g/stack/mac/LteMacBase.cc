@@ -180,7 +180,7 @@ void LteMacBase::fromPhy(cPacket *pktAux)
     }
 }
 
-void LteMacBase::createOutgoingConnection(MacCid cid, const FlowControlInfo& lteInfo)
+void LteMacBase::createOutgoingConnection(MacCid cid, const FlowDescriptor& connInfo)
 {
     ASSERT(connDescOut_.find(cid) == connDescOut_.end());
 
@@ -188,10 +188,10 @@ void LteMacBase::createOutgoingConnection(MacCid cid, const FlowControlInfo& lte
     LteMacBuffer* virtualBuffer = new LteMacBuffer();
     take(realBuffer);
 
-    connDescOut_[cid] = OutgoingConnectionInfo(lteInfo, realBuffer, virtualBuffer);
+    connDescOut_[cid] = OutgoingConnectionInfo(connInfo, realBuffer, virtualBuffer);
 
     // register connection to LCG map.
-    LteTrafficClass tClass = (LteTrafficClass)lteInfo.getTraffic();
+    LteTrafficClass tClass = (LteTrafficClass)connInfo.getTraffic();
     lcgMap_.insert(LcgPair(tClass, CidBufferPair(cid, virtualBuffer)));
 }
 
@@ -226,10 +226,10 @@ void LteMacBase::deleteOutgoingConnection(MacCid cid)
     connDescOut_.erase(it);
 }
 
-void LteMacBase::createIncomingConnection(MacCid cid, const FlowControlInfo& lteInfo)
+void LteMacBase::createIncomingConnection(MacCid cid, const FlowDescriptor& connInfo)
 {
     ASSERT(connDescIn_.find(cid) == connDescIn_.end());
-    connDescIn_[cid] = lteInfo;
+    connDescIn_[cid] = connInfo;
 }
 
 // note: this method is never called, as it is overridden (in the same way!) in both LteMacEnb and LteMacUe
@@ -246,7 +246,7 @@ bool LteMacBase::bufferizePacket(cPacket *cpkt)
 
     // check if queues exist, create them if they don't
     if (connDescOut_.find(cid) == connDescOut_.end())
-        createOutgoingConnection(cid, *lteInfo);
+        createOutgoingConnection(cid, FlowDescriptor::fromFlowControlInfo(*lteInfo));
 
     OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
     LteMacQueue *queue = connInfo.queue;
