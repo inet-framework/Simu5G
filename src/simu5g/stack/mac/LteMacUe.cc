@@ -351,7 +351,7 @@ bool LteMacUe::bufferizePacket(cPacket *pktAux)
     return true;
 }
 
-void LteMacUe::macPduMake(MacCid cid)
+void LteMacUe::macPduMake(MacCid cid)  //TODO note cid is unused here!!!!
 {
     int64_t size = 0;
 
