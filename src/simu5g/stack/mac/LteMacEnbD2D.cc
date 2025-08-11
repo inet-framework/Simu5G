@@ -141,11 +141,17 @@ void LteMacEnbD2D::macPduUnmake(cPacket *cpkt)
 
         // store descriptor for the incoming connection, if not already stored
         auto flowInfo = upPkt->getTag<FlowControlInfo>();
-        MacNodeId senderId = flowInfo->getSourceId();
+        ASSERT(flowInfo->getSourceId() == userInfo->getSourceId());
+        MacNodeId senderId = userInfo->getSourceId();
         LogicalCid lcid = flowInfo->getLcid();
         MacCid cid = MacCid(senderId, lcid);
         if (connDescIn_.find(cid) == connDescIn_.end()) {
             createIncomingConnection(cid, FlowDescriptor::fromFlowControlInfo(*flowInfo));
+        }
+        else {
+            // pretend FlowControlInfo did not arrive (we only have CID), and fill it from connDescIn_
+            upPkt->removeTag<FlowControlInfo>();
+            *upPkt->addTag<FlowControlInfo>() = connDescIn_[cid].toFlowControlInfo();
         }
 
         sendUpperPackets(upPkt);
