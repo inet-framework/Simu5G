@@ -634,10 +634,24 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
 
     while (macPdu->hasSdu()) {
         // Extract and send SDU
-        cPacket *upPkt = macPdu->popSdu();
+        Packet *upPkt = macPdu->popSdu();
         take(upPkt);
 
-        // TODO: upPkt->info()
+        // store descriptor for the incoming connection, if not already stored
+        auto flowInfo = upPkt->getTag<FlowControlInfo>();
+        ASSERT(flowInfo->getSourceId() == userInfo->getSourceId());
+        MacNodeId senderId = userInfo->getSourceId();
+        LogicalCid lcid = flowInfo->getLcid();
+        MacCid cid = MacCid(senderId, lcid);
+        if (connDescIn_.find(cid) == connDescIn_.end()) {
+            createIncomingConnection(cid, FlowDescriptor::fromFlowControlInfo(*flowInfo));
+        }
+        else {
+            // pretend FlowControlInfo did not arrive (we only have CID), and fill it from connDescIn_
+            upPkt->removeTag<FlowControlInfo>();
+            *upPkt->addTag<FlowControlInfo>() = connDescIn_[cid].toFlowControlInfo();
+        }
+
         EV << "LteMacBase: PDU Unmaker extracted SDU" << endl;
         sendUpperPackets(upPkt);
     }
