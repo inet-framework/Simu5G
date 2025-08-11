@@ -385,6 +385,11 @@ void LteMacUe::macPduMake(MacCid cid)
                 pkt->removeTagIfPresent<PdcpTrackingTag>();
 
                 auto macPdu = macPkt->removeAtFront<LteMacPdu>();
+
+                // ensure the connection exists in the remote node
+                auto flowInfo = pkt->getTag<FlowControlInfo>();
+                ensureIncomingConnectionInRemoteMac(destId, FlowDescriptor::fromFlowControlInfo(*flowInfo));
+
                 macPdu->pushSdu(pkt);
                 macPkt->insertAtFront(macPdu);
                 sduPerCid--;
@@ -559,6 +564,7 @@ void LteMacUe::macPduUnmake(cPacket *cpkt)
         LogicalCid lcid = flowInfo->getLcid();
         MacCid cid = MacCid(senderId, lcid);
         if (connDescIn_.find(cid) == connDescIn_.end()) {
+            ASSERT(false);
             createIncomingConnection(cid, FlowDescriptor::fromFlowControlInfo(*flowInfo));
         }
         else {

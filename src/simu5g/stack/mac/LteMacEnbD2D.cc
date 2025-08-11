@@ -146,6 +146,7 @@ void LteMacEnbD2D::macPduUnmake(cPacket *cpkt)
         LogicalCid lcid = flowInfo->getLcid();
         MacCid cid = MacCid(senderId, lcid);
         if (connDescIn_.find(cid) == connDescIn_.end()) {
+            ASSERT(false);
             createIncomingConnection(cid, FlowDescriptor::fromFlowControlInfo(*flowInfo));
         }
         else {
