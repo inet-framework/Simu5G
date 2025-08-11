@@ -282,6 +282,8 @@ class LteMacBase : public cSimpleModule
         return activeCids;
     }
 
+    virtual void ensureConnection(const FlowDescriptor& desc);
+
     // Returns the harq tx buffers
     std::map<GHz, HarqTxBuffers> *getHarqTxBuffers()
     {
@@ -419,6 +421,8 @@ class LteMacBase : public cSimpleModule
 
     virtual void macPduMake(MacCid cid = MacCid()) = 0;
     virtual void macPduUnmake(cPacket *pkt) = 0;
+
+    virtual void ensureConnectionInRemoteMac(MacNodeId destId, const FlowDescriptor& desc);
 
     /**
      * createOutgoingConnection() creates MAC queues and buffers for a given CID

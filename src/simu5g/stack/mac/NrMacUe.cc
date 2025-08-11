@@ -437,6 +437,11 @@ void NrMacUe::macPduMake(MacCid cid)
                     drop(pkt);
 
                     auto macPdu = macPkt->removeAtFront<LteMacPdu>();
+
+                    // ensure the connection exists in the remote node
+                    auto flowInfo = pkt->getTag<FlowControlInfo>();
+                    ensureConnectionInRemoteMac(destId, FlowDescriptor::fromFlowControlInfo(*flowInfo));
+
                     macPdu->pushSdu(pkt);
                     macPkt->insertAtFront(macPdu);
                     sduPerCid--;

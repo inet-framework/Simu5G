@@ -404,6 +404,52 @@ void LteMacBase::handleMessage(cMessage *msg)
     }
 }
 
+void LteMacBase::ensureConnection(const FlowDescriptor& desc)
+{
+    Enter_Method_Silent("ensureConnection()");
+    MacNodeId senderId = desc.getSourceId();
+    LogicalCid lcid = desc.getLcid();
+    MacCid cid = MacCid(senderId, lcid);
+    if (connDescIn_.find(cid) == connDescIn_.end())
+        connDescIn_[cid] = desc;
+}
+
+void LteMacBase::ensureConnectionInRemoteMac(MacNodeId destId, const FlowDescriptor& desc)
+{
+    if (desc.getDirection() == D2D_MULTI) {
+        // For multicast, ensure connection on all recipients in the multicast group
+        int32_t groupId = desc.getMulticastGroupId();
+        if (groupId == -1) {
+            throw cRuntimeError("D2D_MULTI connection must have a valid multicast group ID");
+        }
+
+        // Iterate through all nodes to find multicast group members
+        for (auto pair : binder_->getNodeInfoMap()) {
+            MacNodeId nodeId = pair.first;
+
+            // Skip the source node (this node)
+            if (nodeId == nodeId_)
+                continue;
+
+            // Check if this node is in the multicast group
+            if (binder_->isInMulticastGroup(nodeId, groupId)) {
+                LteMacBase *recipientMac = binder_->getMacFromMacNodeId(nodeId);
+                if (recipientMac != nullptr && recipientMac != this) {
+                    recipientMac->ensureConnection(desc);
+                }
+            }
+        }
+    }
+    else {
+        // For unicast connections, use the original logic
+        LteMacBase *destMac = binder_->getMacFromMacNodeId(destId);
+        if (destMac == nullptr)
+            throw cRuntimeError("Cannot find remote MAC for nodeId=%d", num(destId));
+        ASSERT(destMac != this);
+        destMac->ensureConnection(desc);
+    }
+}
+
 void LteMacBase::insertMacPdu(const inet::Packet *macPdu)
 {
     auto lteInfo = macPdu->getTag<UserControlInfo>();
