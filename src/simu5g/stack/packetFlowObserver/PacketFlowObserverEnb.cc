@@ -398,7 +398,7 @@ void PacketFlowObserverEnb::discardRlcPdu(DrbKey drbKey, unsigned int rlcSno, bo
 void PacketFlowObserverEnb::ensureMacPduMapping(MacNodeId peerId, const LteMacPdu *macPdu)
 {
     int macPduId = macPdu->getId();
-    int len = macPdu->getSduArraySize();
+    int len = macPdu->getSduCount();
     if (len == 0)
         return; // BSR-only MAC PDU, nothing to track
     for (int i = 0; i < len; ++i) {
@@ -455,7 +455,7 @@ void PacketFlowObserverEnb::macPduArrived(MacNodeId peerId, const LteMacPdu *mac
      * retrieve the macPduId and the DRB ID (from MAC's LCID, which maps 1:1)
      */
     int macPduId = macPdu->getId();
-    int len = macPdu->getSduArraySize();
+    int len = macPdu->getSduCount();
     if (len == 0)
         return; // BSR-only MAC PDU, nothing to track
     for (int i = 0; i < len; ++i) {
@@ -562,7 +562,7 @@ void PacketFlowObserverEnb::discardMacPdu(MacNodeId peerId, const LteMacPdu *mac
      * retrieve the macPduId and the DRB ID
      */
     int macPduId = macPdu->getId();
-    int len = macPdu->getSduArraySize();
+    int len = macPdu->getSduCount();
     if (len == 0)
         return; // BSR-only MAC PDU, nothing to track
     for (int i = 0; i < len; ++i) {

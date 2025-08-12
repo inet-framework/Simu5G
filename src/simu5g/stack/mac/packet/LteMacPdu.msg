@@ -25,6 +25,17 @@ using namespace inet;
 namespace simu5g;
 
 //
+// NR MAC subPDU header (R/F/LCID/L).
+//
+class NrMacSubheader extends inet::FieldsChunk
+{
+    chunkLength = B(1);
+    uint8_t lcid;   // 6 bits
+    bool fBit;  // whether sduLength is 8 (false) or 16 (true) bits
+    uint32_t sduLength; // 8 or 16 bits
+}
+
+//
 // MAC PDU. MAC PDUs in LTE and NR are similar, with differences that mostly
 // affect the layout of the packet. This class is an abstract representation
 // that is suitable for both LTE and NR.
@@ -34,8 +45,8 @@ namespace simu5g;
 // of the SDU, while in NR, a subPDU header precedes each SDU.) However, the logical
 // content is the same.
 //
-// This class stores LCIDs and SDUs in separate arrays, but an NR serializer
-// or a more faithful chunked representation can store it like NR does.
+// This class stores the SDUs like NR does: as a sequence of subPDUs, each
+// an NrMacSubheader (carrying the LCID) followed by the SDU's data.
 //
 // For control elements, there is no need for the class to store the LCIDs,
 // as they correspond one-to-one to C++ subclasses of MacControlElement.
@@ -48,11 +59,9 @@ class LteMacPdu extends inet::FieldsChunk
     // Length of the PDU
     int64_t macPduLength_ = 0;
 
-    // LCID for each SDU (same array size as sdu[])
-    LogicalCid lcid[];
-
-    // List Of MAC SDUs
-    inet::Packet* sdu[] @owned @getter(getSduPtr);
+    // Internal chunk storage for MAC subPDUs (NrMacSubheader + payload chunks)
+    // This will be managed internally as a SequenceChunk
+    inet::SequenceChunk* subPdus @owned = nullptr;
 
     // List of MAC CEs
     MacControlElement* ce[] @owned;
@@ -92,9 +101,28 @@ cplusplus(LteMacPdu) {{
      *
      * @return true if the list is not empty, false otherwise
      */
-    virtual bool hasSdu() { return sdu_arraysize != 0; }
+    virtual bool hasSdu() const;
 
-    const inet::Packet& getSdu(size_t k) const { return *getSduPtr(k); }
+    /**
+     * getSdu() returns the k-th SDU as a packet
+     * Note: This creates a new packet from the stored chunk data
+     *
+     * @param k index of the SDU
+     * @return packet containing the SDU
+     */
+    virtual inet::Packet getSdu(size_t k) const;
+
+    /**
+     * getLcid() returns the logical channel ID of the k-th SDU
+     */
+    virtual LogicalCid getLcid(size_t k) const;
+
+    /**
+     * getSduCount() returns the number of SDUs stored
+     *
+     * @return number of SDUs
+     */
+    virtual size_t getSduCount() const;
 
     int64_t getByteLength() const { return macPduLength_ + getHeaderLength(); }
 
@@ -141,17 +169,7 @@ cplusplus(LteMacPdu::setHeaderLength) {{
 cplusplus(LteMacPdu::copy) {{
     macPduLength_ = other.macPduLength_;
     macPduId_ = other.macPduId_;
-
-    // duplication of the SDU queue duplicates all packets but not
-    // the ControlInfo - iterate over all packets and restore ControlInfo if necessary
-    for (size_t idx = 0; idx < sdu_arraysize; idx++) {
-        Packet *p1 = sdu[idx];
-        Packet *p2 = other.sdu[idx];
-        if (p1->getControlInfo() == nullptr && p2->getControlInfo() != nullptr) {
-            // FIXME: this never worked. implement proper duplication
-            // p1->setControlInfo(p2->getControlInfo()->dup());
-        }
-    }
+    // Chunk-based storage is handled automatically by FieldsChunk base class
 }}
 
 //
