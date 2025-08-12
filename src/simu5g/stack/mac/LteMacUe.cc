@@ -537,7 +537,7 @@ void LteMacUe::macPduUnmake(cPacket *cpkt)
 {
     auto pkt = check_and_cast<Packet *>(cpkt);
     auto macPdu = pkt->removeAtFront<LteMacPdu>();
-    auto userControlInfo = pkt->getTag<UserControlInfo>();
+    auto userInfo = pkt->getTag<UserControlInfo>();
 
     while (macPdu->hasSdu()) {
         // Extract and send SDU
@@ -546,20 +546,14 @@ void LteMacUe::macPduUnmake(cPacket *cpkt)
 
         EV << "LteMacBase: pduUnmaker extracted SDU" << endl;
 
+        // fill FlowControlInfo from stored descriptors
         auto flowInfo = upPkt->getTag<FlowControlInfo>();
-        ASSERT(flowInfo->getSourceId() == userControlInfo->getSourceId());
-        MacNodeId senderId = userControlInfo->getSourceId();
+        MacNodeId senderId = userInfo->getSourceId();
         LogicalCid lcid = flowInfo->getLcid();
         MacCid cid = MacCid(senderId, lcid);
-        if (connDescIn_.find(cid) == connDescIn_.end()) {
-            ASSERT(false);
-            createIncomingConnection(cid, FlowDescriptor::fromFlowControlInfo(*flowInfo));
-        }
-        else {
-            // pretend FlowControlInfo did not arrive (we only have CID), and fill it from connDescIn_
-            upPkt->removeTag<FlowControlInfo>();
-            *upPkt->addTag<FlowControlInfo>() = connDescIn_[cid].toFlowControlInfo();
-        }
+        ASSERT(connDescIn_.find(cid) != connDescIn_.end());
+        upPkt->removeTag<FlowControlInfo>();
+        *upPkt->addTag<FlowControlInfo>() = connDescIn_[cid].toFlowControlInfo();
 
         sendUpperPackets(upPkt);
     }
