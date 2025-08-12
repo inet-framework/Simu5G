@@ -23,15 +23,31 @@ using namespace inet;
 namespace simu5g;
 
 //
-// This is the MAC message flowing through LTE stack.
+// MAC PDU. MAC PDUs in LTE and NR are similar, with differences that mostly
+// affect the layout of the packet. This class is an abstract representation
+// that is suitable for both LTE and NR.
+//
+// LCIDs size depends between LTE (5 bits) and NR (6 bits), as well the layout
+// of the PDU (in LTE, subheaders that contain the LCIDs are at the beginning
+// of the SDU, while in NR, a subPDU header precedes each SDU.) However, the logical
+// content is the same.
+//
+// This class stores LCIDs and SDUs in separate arrays, but an NR serializer
+// or a more faithful chunked representation can store it like NR does.
+//
+// For control elements, there is no need for the class to store the LCIDs,
+// as they correspond one-to-one to C++ subclasses of MacControlElement.
 //
 class LteMacPdu extends inet::FieldsChunk
 {
-    /// ID of the MAC PDU: incrementally set according to the static variable numMacPdus
+    // ID of the MAC PDU
     int64_t macPduId_ = getChunkId();
 
     // Length of the PDU
     int64_t macPduLength_ = 0;
+
+    // LCID for each SDU (same array size as sdu[])
+    int8_t lcid[];
 
     // List Of MAC SDUs
     inet::Packet* sdu[] @owned @getter(getSduPtr);
@@ -40,6 +56,7 @@ class LteMacPdu extends inet::FieldsChunk
     MacControlElement* ce[] @owned;
 
     unsigned int headerLength = 0;
+
     // need separate macPduId (e.g. for feedback packets) since OMNET PDU id is automatically updated
     // whenever a new packet is created, e.g. when this PDU is duplicated
     long macPduId = 0;
