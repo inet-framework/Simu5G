@@ -38,6 +38,10 @@ namespace simu5g;
 // For control elements, there is no need for the class to store the LCIDs,
 // as they correspond one-to-one to C++ subclasses of MacControlElement.
 //
+//TODO refine the above comment
+//TODO macPduId_ vs macPduId
+//TODO what is headerLength for? what is macPduLength_ for?
+//TODO SIZE COMPUTATION CURRENTLY DOES NOT TAKE SUBPDU HEADERS INTO ACCOUNT!!!
 class LteMacPdu extends inet::FieldsChunk
 {
     // ID of the MAC PDU
