@@ -16,6 +16,7 @@
 #include "simu5g/stack/rlc/packet/LteRlcDataPdu.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 
 #include "simu5g/common/LteControlInfo.h"
 #include <sstream>
@@ -118,7 +119,9 @@ void PacketFlowManagerEnb::insertPdcpSdu(inet::Packet *pdcpPkt)
     if (connectionMap_.find(lcid) == connectionMap_.end())
         initLcid(lcid, lteInfo->getDestId());
 
-    unsigned int pdcpSno = lteInfo->getSequenceNumber();
+    // Extract sequence number from PDCP header
+    auto pdcpHeader = pdcpPkt->peekAtFront<LtePdcpHeader>();
+    unsigned int pdcpSno = pdcpHeader->getSequenceNumber();
     int64_t pduSize = pdcpPkt->getByteLength();
     MacNodeId nodeId = lteInfo->getDestId();
     simtime_t entryTime = simTime();
@@ -172,7 +175,9 @@ void PacketFlowManagerEnb::receivedPdcpSdu(inet::Packet *pdcpPkt)
     /*
      * update packetLossRate UL
      */
-    unsigned int sno = lteInfo->getSequenceNumber();
+    // Extract sequence number from PDCP header
+    auto pdcpHeader = pdcpPkt->peekAtFront<LtePdcpHeader>();
+    unsigned int sno = pdcpHeader->getSequenceNumber();
     auto cit = packetLossRate_.find(nodeId);
     if (cit == packetLossRate_.end()) {
         packetLossRate_[nodeId].clear();

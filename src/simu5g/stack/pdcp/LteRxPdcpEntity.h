@@ -42,7 +42,7 @@ class LteRxPdcpEntity : public cSimpleModule
     LogicalCid lcid_;
 
     // handler for PDCP SDU
-    virtual void handlePdcpSdu(Packet *pkt);
+    virtual void handlePdcpSdu(Packet *pkt, unsigned int sequenceNumber);
 
     virtual void decompressHeader(inet::Packet *pkt);
 

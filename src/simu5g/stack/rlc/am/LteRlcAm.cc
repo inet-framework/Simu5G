@@ -16,6 +16,7 @@
 #include "simu5g/stack/rlc/am/AmTxQueue.h"
 #include "simu5g/stack/rlc/am/AmRxQueue.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
+#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 
 namespace simu5g {
 
@@ -111,9 +112,13 @@ void LteRlcAm::handleUpperMessage(cPacket *pktAux)
     if (txbuf == nullptr)
         txbuf = createTxBuffer(cid);
 
+    // Extract sequence number from PDCP header
+    auto pdcpHeader = pkt->peekAtFront<LtePdcpHeader>();
+    unsigned int sequenceNumber = pdcpHeader->getSequenceNumber();
+
     // Create a new RLC packet
     auto rlcPkt = makeShared<LteRlcAmSdu>();
-    rlcPkt->setSnoMainPacket(lteInfo->getSequenceNumber());
+    rlcPkt->setSnoMainPacket(sequenceNumber);
     rlcPkt->setChunkLength(B(RLC_HEADER_AM));
     pkt->insertAtFront(rlcPkt);
     drop(pkt);

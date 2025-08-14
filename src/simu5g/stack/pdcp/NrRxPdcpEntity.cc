@@ -10,6 +10,7 @@
 //
 
 #include "simu5g/stack/pdcp/NrRxPdcpEntity.h"
+#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 
 namespace simu5g {
 
@@ -29,12 +30,11 @@ void NrRxPdcpEntity::initialize()
     LteRxPdcpEntity::initialize();
 }
 
-void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu)
+void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
 {
     Enter_Method("NrRxPdcpEntity::handlePdcpSdu");
 
-    auto controlInfo = pdcpSdu->getTag<FlowControlInfo>();
-    unsigned int rcvdSno = controlInfo->getSequenceNumber();
+    unsigned int rcvdSno = sequenceNumber;
 
     EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - processing PDCP SDU with SN[" << rcvdSno << "]" << endl;
 
