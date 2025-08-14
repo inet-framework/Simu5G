@@ -334,6 +334,8 @@ void UmRxEntity::reassemble(unsigned int index)
         size_t sduLengthPktLeng;
         auto pktSdu = check_and_cast<Packet *>(pdu->popSdu(sduLengthPktLeng));
 
+        *pktSdu->addTag<FlowControlInfo>() = *flowControlInfo_;
+
         auto pdcpTag = pktSdu->getTag<PdcpTrackingTag>();
         unsigned int sduSno = pdcpTag->getPdcpSequenceNumber();
         unsigned int sduWholeLength = pdcpTag->getOriginalPacketLength(); // the length of the whole sdu

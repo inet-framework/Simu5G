@@ -14,6 +14,9 @@ import inet.common.packet.chunk.Chunk;
 import inet.common.packet.Packet;
 import simu5g.stack.rlc.LteRlcDefs;
 
+cplusplus {{
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
+}}
 
 class size_t {
     @existingClass; // size_t
@@ -72,6 +75,13 @@ void LteRlcDataPdu::pushSdu(inet::Packet *pkt)
 
 void LteRlcDataPdu::pushSdu(inet::Packet *pkt, int size)
 {
+    // Clear tags to make sure they are not "tunnelled" over to the receiver node and "accidentally"
+    // used there -- with the exception of PdcpTrackingTag, as RLC-UM (UmRxEntity.cc) still refers to it.
+    auto pdcpTag = pkt->removeTagIfPresent<PdcpTrackingTag>();
+    pkt->clearTags();
+    if (pdcpTag != nullptr)
+        *pkt->addTag<PdcpTrackingTag>() = *pdcpTag;
+
     appendSdu(pkt);
     appendSduSize(size);
 }
