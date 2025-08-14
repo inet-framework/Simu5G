@@ -359,6 +359,8 @@ void UmRxEntity::reassemble(unsigned int index)
         size_t sduLengthPktLeng;
         auto pktSdu = check_and_cast<Packet *>(pdu->popSdu(sduLengthPktLeng));
 
+        *pktSdu->addTag<FlowControlInfo>() = *flowControlInfo_;
+
         auto rlcSdu = pktSdu->peekAtFront<LteRlcSdu>();
         unsigned int sduSno = rlcSdu->getSnoMainPacket();
         unsigned int sduWholeLength = rlcSdu->getLengthMainPacket(); // the length of the whole sdu
