@@ -24,6 +24,7 @@ void LteRlcDataPdu::pushSdu(inet::Packet *pkt)
 
 void LteRlcDataPdu::pushSdu(inet::Packet *pkt, int size)
 {
+    pkt->clearTags();
     appendSdu(pkt);
     appendSduSize(size);
     rlcPduLength += size;
