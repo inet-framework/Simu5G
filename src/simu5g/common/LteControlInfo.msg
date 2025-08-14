@@ -31,8 +31,6 @@ namespace simu5g;
 // to avoid replication of common parts.
 //
 // The Mac layer receives packets (MAC sdu) with FlowControlInfo attached
-// and creates a MAC pdu with UserControlInfo attached.
-// The MacPduMaker does the job.
 //
 // NOTE: a MAC pdu contains different MAC sdus that may belong to different flows.
 //
@@ -44,10 +42,11 @@ namespace simu5g;
 // This class contains information present in both Flow and User ControlInfo:
 // - Source MAC Node ID
 // - Destination MAC Node ID
+// - D2D MAC Node Ids
+// - Traffic Direction
+// - Connection information: LCID
 //
 class LteControlInfo extends inet::TagBase {
-    //# Information shared between FlowControlInfo and UserControlInfo
-
     MacNodeId sourceId = NODEID_NONE;                    // Source MacNodeId
     MacNodeId destId = NODEID_NONE;                      // Destination MacNodeId
     unsigned short direction enum(Direction);            // Traffic Direction (UL, DL, D2D)
@@ -62,15 +61,7 @@ class LteControlInfo extends inet::TagBase {
 
 //
 // @class FlowControlInfo
-// @brief contains information flowing from LteIp to Mac
-//
-// It contains the following information:
-// - Traffic Control Informations: Application, Direction, Traffic
-// - RLC Control Informations: the traffic type (TM, UM, AM)
-// - Connection information: Logical CID
-//
-// Note: IP Control Information (srcAddr, dstAddr, typeOfService) is now handled by IpFlowInd tag
-// Note: Technology selection (useNR) is now handled by TechnologyReq tag
+// @brief Contains flow information in layers above the MAC
 //
 class FlowControlInfo extends LteControlInfo {
     unsigned short traffic enum(LteTrafficClass) = 0;       // Lte Traffic Type; analogous to LCG IDs (Logical Channel Group Identifiers) in LTE/NR
