@@ -87,7 +87,7 @@ class NrRxPdcpEntity : public LteRxPdcpEntity
     double timeout_;
 
     // handler for PDCP SDU
-    void handlePdcpSdu(Packet *pdcpSdu) override;
+    void handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber) override;
 
   public:
 

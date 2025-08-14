@@ -14,9 +14,11 @@ import inet.common.packet.chunk.Chunk;
 namespace simu5g;
 
 //
-// This is the PDCP message flowing through LTE stack.
+// Represents the PDCP header in LTE and NR.
 //
 class LtePdcpHeader extends inet::FieldsChunk
 {
-    chunkLength = inet::B(1); // TODO: size 0
+    chunkLength = inet::B(1);
+
+    unsigned int sequenceNumber = 0;  // PDCP sequence number (7, 12 or 18 bits)
 }

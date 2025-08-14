@@ -73,7 +73,6 @@ class LteControlInfo extends inet::TagBase {
 // Note: Technology selection (useNR) is now handled by TechnologyReq tag
 //
 class FlowControlInfo extends LteControlInfo {
-    unsigned int sequenceNumber = 0;                        // PDCP sequence number
     unsigned short traffic enum(LteTrafficClass) = 0;       // Lte Traffic Type; analogous to LCG IDs (Logical Channel Group Identifiers) in LTE/NR
     unsigned short rlcType enum(LteRlcType) = 0;            // RLC Traffic Type
 }
