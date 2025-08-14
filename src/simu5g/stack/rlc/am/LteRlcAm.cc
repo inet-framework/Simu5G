@@ -18,6 +18,7 @@
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
+#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 
 namespace simu5g {
 
@@ -113,9 +114,13 @@ void LteRlcAm::handleUpperMessage(cPacket *pktAux)
     if (txbuf == nullptr)
         txbuf = createTxBuffer(cid);
 
+    // Extract sequence number from PDCP header
+    auto pdcpHeader = pkt->peekAtFront<LtePdcpHeader>();
+    unsigned int sequenceNumber = pdcpHeader->getSequenceNumber();
+
     // Add PDCP tracking information
     auto pdcpTag = pkt->addTag<PdcpTrackingTag>();
-    pdcpTag->setPdcpSequenceNumber(lteInfo->getSequenceNumber());
+    pdcpTag->setPdcpSequenceNumber(sequenceNumber);
     pdcpTag->setOriginalPacketLength(pkt->getByteLength());
 
     drop(pkt);
@@ -231,10 +236,13 @@ void LteRlcAm::indicateNewDataToMac(cPacket *pktAux) {
 
     auto newData = new Packet("AM-NewData");
 
+    // Extract sequence number from PDCP header
+    auto pdcpHeader = pkt->peekAtFront<LtePdcpHeader>();
+    unsigned int sequenceNumber = pdcpHeader->getSequenceNumber();
+
     // Add PDCP tracking information
-    auto lteInfo = pkt->getTag<FlowControlInfo>();
     auto pdcpTag = newData->addTag<PdcpTrackingTag>();
-    pdcpTag->setPdcpSequenceNumber(lteInfo->getSequenceNumber());
+    pdcpTag->setPdcpSequenceNumber(sequenceNumber);
     pdcpTag->setOriginalPacketLength(pkt->getByteLength());
 
     // add tag to indicate new data availability to MAC

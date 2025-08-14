@@ -18,6 +18,7 @@
 #include <inet/transportlayer/udp/UdpHeader_m.h>
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverBase.h"
 #include "simu5g/stack/pdcp/packet/LteRohcPdu_m.h"
+#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include <inet/common/ProtocolTag_m.h>
 #include "simu5g/common/LteControlInfoTags_m.h"
 
@@ -47,11 +48,9 @@ void LteTxPdcpEntity::handlePacketFromUpperLayer(Packet *pkt)
     // perform PDCP operations
     compressHeader(pkt); // header compression
 
-    // Write information into the ControlInfo object
-    lteInfo->setSequenceNumber(sno_++); // set sequence number for this PDCP SDU.
-
     // PDCP Packet creation
     auto pdcpHeader = makeShared<LtePdcpHeader>();
+    pdcpHeader->setSequenceNumber(sno_++); // set sequence number in PDCP header
 
     unsigned int headerLength;
     switch (lteInfo->getRlcType()) {

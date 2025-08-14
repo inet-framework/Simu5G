@@ -16,9 +16,10 @@
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
+#include "simu5g/common/LteCommon.h"
+#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 
 #include "simu5g/common/LteControlInfo.h"
-
 #include <sstream>
 
 namespace simu5g {
@@ -120,7 +121,9 @@ void PacketFlowObserverUe::insertPdcpSdu(inet::Packet *pdcpPkt)
     if (connectionMap_.find(lcid) == connectionMap_.end())
         initLcid(lcid, lteInfo->getSourceId());
 
-    unsigned int pdcpSno = lteInfo->getSequenceNumber();
+    // Extract sequence number from PDCP header
+    auto pdcpHeader = pdcpPkt->peekAtFront<LtePdcpHeader>();
+    unsigned int pdcpSno = pdcpHeader->getSequenceNumber();
     int64_t pdcpSize = pdcpPkt->getByteLength();
     simtime_t arrivalTime = simTime();
 

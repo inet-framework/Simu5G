@@ -16,6 +16,7 @@
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
+#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 
 namespace simu5g {
 
@@ -53,9 +54,13 @@ void LteRlcTm::handleUpperMessage(cPacket *pktAux)
         return;
     }
 
+    // Extract sequence number from PDCP header
+    auto pdcpHeader = pkt->peekAtFront<LtePdcpHeader>();
+    unsigned int sequenceNumber = pdcpHeader->getSequenceNumber();
+
     // Add PDCP tracking information
     auto pdcpTag = pkt->addTag<PdcpTrackingTag>();
-    pdcpTag->setPdcpSequenceNumber(lteInfo->getSequenceNumber());
+    pdcpTag->setPdcpSequenceNumber(sequenceNumber);
     pdcpTag->setOriginalPacketLength(pkt->getByteLength());
 
     pkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&LteProtocol::rlc);
