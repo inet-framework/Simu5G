@@ -43,8 +43,9 @@ class LteChannelModel : public cSimpleModule
     // Reference to the component carrier
     inet::ModuleRefByPar<ComponentCarrier> componentCarrier_;
 
-    // Carrier Frequency
-    double carrierFrequency_;
+    // Carrier Frequency and its base-10 logarithm
+    GHz carrierFrequency_;
+    double log10_carrierFrequencyGHz_;
 
     // Number of bands for this carrier
     unsigned int numBands_;
@@ -57,7 +58,7 @@ class LteChannelModel : public cSimpleModule
     /*
      * Returns the carrier frequency
      */
-    virtual double getCarrierFrequency() const { return carrierFrequency_; }
+    virtual GHz getCarrierFrequency() const { return carrierFrequency_; }
 
     /*
      * Returns the number of logical bands
