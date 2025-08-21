@@ -139,7 +139,6 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
 
     auto lteInfo = pkt->getTag<FlowControlInfo>();
     MacCid cid = MacCid(lteInfo->getDestId(), lteInfo->getLcid());
-
     LteTxPdcpEntity *entity = lookupTxEntity(cid);
 
     // get the PDCP entity for this LCID and process the packet
@@ -148,8 +147,12 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
        << " multicast=" << lteInfo->getMulticastGroupId() << " direction=" << dirToA((Direction)lteInfo->getDirection())
        << " ---> CID " << cid << (entity == nullptr ? " (NEW)" : " (existing)") << std::endl;
 
-    if (entity == nullptr)
-        entity = createTxEntity(cid);
+    if (entity == nullptr) {
+        binder_->establishUnidirectionalDataConnection((FlowControlInfo *)lteInfo.get());
+        entity = lookupTxEntity(cid);
+        ASSERT(entity != nullptr);
+    }
+
     entity->handlePacketFromUpperLayer(pkt);
 }
 
@@ -163,7 +166,6 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
     emit(receivedPacketFromLowerLayerSignal_, pkt);
 
     auto lteInfo = pkt->getTag<FlowControlInfo>();
-
     MacCid cid = MacCid(lteInfo->getSourceId(), lteInfo->getLcid());   // TODO: check if you have to get master node id
     LteRxPdcpEntity *entity = lookupRxEntity(cid);
 
@@ -172,8 +174,8 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
        << " multicast=" << lteInfo->getMulticastGroupId() << " direction=" << dirToA((Direction)lteInfo->getDirection())
        << " ---> CID " << cid << (entity == nullptr ? " (NEW)" : " (existing)") << std::endl;
 
-    if (entity == nullptr)
-        entity = createRxEntity(cid);
+    ASSERT(entity != nullptr);
+
     entity->handlePacketFromLowerLayer(pkt);
 }
 

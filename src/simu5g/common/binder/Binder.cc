@@ -21,6 +21,7 @@
 #include "simu5g/stack/mac/LteMacUe.h"
 #include "simu5g/stack/phy/LtePhyUe.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
+#include "simu5g/stack/rrc/Rrc.h"
 
 namespace simu5g {
 
@@ -1314,6 +1315,34 @@ cModule *Binder::getPdcpByMacNodeId(MacNodeId nodeId)
 LteMacBase *Binder::getMacUe(MacNodeId nodeId)
 {
     return check_and_cast<LteMacBase *>(getMacByMacNodeId(nodeId));
+}
+
+void Binder::establishUnidirectionalDataConnection(FlowControlInfo *lteInfo)
+{
+    MacNodeId sourceId = lteInfo->getSourceId();
+    MacNodeId destId = lteInfo->getDestId();
+    MacNodeId groupId = lteInfo->getMulticastGroupId();
+
+    createOutgoingConnectionOnNode(sourceId, lteInfo);
+    if (groupId == NODEID_NONE)
+        createIncomingConnectionOnNode(destId, lteInfo);
+    else {
+        for (auto& [nodeId,_] : getNodeInfoMap())
+            if (nodeId != sourceId && isInMulticastGroup(nodeId, groupId))
+                createIncomingConnectionOnNode(nodeId, lteInfo);
+    }
+}
+
+void Binder::createIncomingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo)
+{
+    Rrc *rrc = check_and_cast<Rrc*>(getMacFromMacNodeId(nodeId)->getModuleByPath("^.rrc"));
+    rrc->createIncomingConnection(lteInfo);
+}
+
+void Binder::createOutgoingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo)
+{
+    Rrc *rrc = check_and_cast<Rrc*>(getMacFromMacNodeId(nodeId)->getModuleByPath("^.rrc"));
+    rrc->createOutgoingConnection(lteInfo);
 }
 
 } //namespace
