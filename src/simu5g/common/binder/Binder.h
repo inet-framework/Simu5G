@@ -22,6 +22,9 @@
 #include "simu5g/nodes/ExtCell.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 
+// Forward declaration
+class FlowDescriptor;
+
 namespace simu5g {
 
 using namespace omnetpp;
@@ -633,6 +636,64 @@ class Binder : public cSimpleModule
     void moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell);
 
     RanNodeType getBaseStationTypeById(MacNodeId);
+
+    /*
+     * SMF-like Session Management Functions
+     */
+
+    /**
+     * Establishes a data connection with IP flow information
+     *
+     * @param sourceId MacNodeId of the source node
+     * @param destId MacNodeId of the destination node
+     * @param lcid Logical Channel ID for the connection
+     * @param direction Direction of the connection (UL/DL/D2D)
+     * @param trafficClass Traffic class for QoS handling
+     * @param rlcType RLC mode (TM/UM/AM)
+     * @param srcAddr Source IP address for connection table
+     * @param dstAddr Destination IP address for connection table
+     * @param typeOfService Type of Service field for connection table
+     */
+    void establishDataConnection(MacNodeId sourceId, MacNodeId destId,
+                               LogicalCid lcid, Direction direction,
+                               LteTrafficClass trafficClass, LteRlcType rlcType,
+                               const inet::Ipv4Address& srcAddr,
+                               const inet::Ipv4Address& dstAddr,
+                               uint16_t typeOfService);
+
+    /**
+     * Extended version supporting multicast connections
+     */
+    void establishDataConnection(MacNodeId sourceId, MacNodeId destId,
+                               LogicalCid lcid, Direction direction,
+                               LteTrafficClass trafficClass, LteRlcType rlcType,
+                               int32_t multicastGroupId);
+
+  private:
+    /**
+     * Helper method to establish connection on a specific node with IP flow information
+     */
+    void establishConnectionOnNode(MacNodeId nodeId, const FlowDescriptor& desc,
+                                 const inet::Ipv4Address& srcAddr,
+                                 const inet::Ipv4Address& dstAddr,
+                                 uint16_t typeOfService);
+
+    /**
+     * Helper method for unicast connections with IP flow information
+     */
+    void establishUnicastDataConnection(MacNodeId sourceId, MacNodeId destId,
+                                      LogicalCid lcid, Direction direction,
+                                      LteTrafficClass trafficClass, LteRlcType rlcType,
+                                      const inet::Ipv4Address& srcAddr,
+                                      const inet::Ipv4Address& dstAddr,
+                                      uint16_t typeOfService);
+
+    /**
+     * Helper method for multicast connections
+     */
+    void establishMulticastDataConnection(MacNodeId sourceId, int32_t groupId,
+                                        LogicalCid lcid, LteTrafficClass trafficClass,
+                                        LteRlcType rlcType);
 
 };
 

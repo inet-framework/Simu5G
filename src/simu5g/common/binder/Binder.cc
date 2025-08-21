@@ -19,6 +19,7 @@
 #include "simu5g/corenetwork/statsCollector/UeStatsCollector.h"
 #include "simu5g/stack/mac/LteMacUe.h"
 #include "simu5g/stack/phy/LtePhyUe.h"
+#include "simu5g/stack/rrc/Rrc.h"
 
 namespace simu5g {
 
@@ -1239,6 +1240,110 @@ RanNodeType Binder::getBaseStationTypeById(MacNodeId cellId)
     else {
         return UNKNOWN_NODE_TYPE;
     }
+}
+
+/*
+ * SMF-like Session Management Functions
+ */
+
+void Binder::establishDataConnection(MacNodeId sourceId, MacNodeId destId,
+                                   LogicalCid lcid, Direction direction,
+                                   LteTrafficClass trafficClass, LteRlcType rlcType,
+                                   const inet::Ipv4Address& srcAddr,
+                                   const inet::Ipv4Address& dstAddr,
+                                   uint16_t typeOfService)
+{
+    establishUnicastDataConnection(sourceId, destId, lcid, direction, trafficClass, rlcType, srcAddr, dstAddr, typeOfService);
+}
+
+void Binder::establishDataConnection(MacNodeId sourceId, MacNodeId destId,
+                                   LogicalCid lcid, Direction direction,
+                                   LteTrafficClass trafficClass, LteRlcType rlcType,
+                                   int32_t multicastGroupId)
+{
+    if (direction == D2D_MULTI && multicastGroupId != -1) {
+        establishMulticastDataConnection(sourceId, multicastGroupId, lcid, trafficClass, rlcType);
+    }
+    else {
+        establishUnicastDataConnection(sourceId, destId, lcid, direction, trafficClass, rlcType,
+                                     inet::Ipv4Address::UNSPECIFIED_ADDRESS, inet::Ipv4Address::UNSPECIFIED_ADDRESS, 0);
+    }
+}
+
+void Binder::establishUnicastDataConnection(MacNodeId sourceId, MacNodeId destId,
+                                          LogicalCid lcid, Direction direction,
+                                          LteTrafficClass trafficClass, LteRlcType rlcType,
+                                          const inet::Ipv4Address& srcAddr,
+                                          const inet::Ipv4Address& dstAddr,
+                                          uint16_t typeOfService)
+{
+    Enter_Method_Silent("establishUnicastDataConnection()");
+
+    EV << "Binder: Establishing data connection from " << sourceId << " to " << destId
+       << " on LCID " << lcid << " with direction " << dirToA(direction) << endl;
+
+    // Create FlowDescriptor
+    FlowDescriptor desc;
+    desc.setSourceId(sourceId);
+    desc.setDestId(destId);
+    desc.setLcid(lcid);
+    desc.setDirection(direction);
+    desc.setTraffic(trafficClass);
+    desc.setRlcType(rlcType);
+
+    // Set up connection on both source and destination nodes
+    establishConnectionOnNode(sourceId, desc, srcAddr, dstAddr, typeOfService);
+    establishConnectionOnNode(destId, desc, srcAddr, dstAddr, typeOfService);
+
+}
+
+void Binder::establishMulticastDataConnection(MacNodeId sourceId, int32_t groupId,
+                                            LogicalCid lcid, LteTrafficClass trafficClass,
+                                            LteRlcType rlcType)
+{
+    Enter_Method_Silent("establishMulticastDataConnection()");
+
+    EV << "Binder: Establishing multicast data connection from " << sourceId
+       << " to group " << groupId << " on LCID " << lcid << endl;
+
+    // Create descriptor for multicast
+    FlowDescriptor desc;
+    desc.setSourceId(sourceId);
+    desc.setDestId(NODEID_NONE); // Not used for multicast
+    desc.setLcid(lcid);
+    desc.setDirection(D2D_MULTI);
+    desc.setTraffic(trafficClass);
+    desc.setRlcType(rlcType);
+    desc.setMulticastGroupId(groupId);
+
+    // Set up connection on source with placeholder IP addresses
+    establishConnectionOnNode(sourceId, desc, inet::Ipv4Address::UNSPECIFIED_ADDRESS,
+                            inet::Ipv4Address::UNSPECIFIED_ADDRESS, 0);
+
+    // Set up connection on all group members
+    for (auto pair : getNodeInfoMap()) {
+        MacNodeId nodeId = pair.first;
+        if (nodeId != sourceId && isInMulticastGroup(nodeId, groupId)) {
+            establishConnectionOnNode(nodeId, desc, inet::Ipv4Address::UNSPECIFIED_ADDRESS,
+                                    inet::Ipv4Address::UNSPECIFIED_ADDRESS, 0);
+        }
+    }
+}
+
+void Binder::establishConnectionOnNode(MacNodeId nodeId, const FlowDescriptor& desc,
+                                     const inet::Ipv4Address& srcAddr,
+                                     const inet::Ipv4Address& dstAddr,
+                                     uint16_t typeOfService)
+{
+    EV << "Binder: Setting up connection on node " << nodeId << " for LCID " << desc.getLcid()
+       << " with IP flow " << srcAddr << " -> " << dstAddr << endl;
+
+    // Get RRC and call createDataConnection with IP flow information
+    Rrc *rrc = check_and_cast<Rrc*>(getMacFromMacNodeId(nodeId)->getModuleByPath("^.rrc"));
+    rrc->createDataConnection(desc.getSourceId(), desc.getDestId(),
+                             desc.getLcid(), (Direction)desc.getDirection(),
+                             (LteTrafficClass)desc.getTraffic(), (LteRlcType)desc.getRlcType(),
+                             srcAddr, dstAddr, typeOfService);
 }
 
 } //namespace

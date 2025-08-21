@@ -36,6 +36,9 @@ UmTxEntity *LteRlcUm::lookupTxBuffer(MacCid cid)
 
 UmTxEntity *LteRlcUm::createTxBuffer(MacCid cid, inet::Ptr<FlowControlInfo> lteInfo)
 {
+    if (txEntities_.find(cid) != txEntities_.end())
+        throw cRuntimeError("Already exists"); //TODO
+
     std::stringstream buf;
     buf << "UmTxEntity Lcid: " << cid.getLcid() << " cid: " << cid.asPackedInt();
     UmTxEntity *txEnt = check_and_cast<UmTxEntity *>(txEntityModuleType_->createScheduleInit(buf.str().c_str(), getParentModule()));
@@ -57,6 +60,9 @@ UmRxEntity *LteRlcUm::lookupRxBuffer(MacCid cid)
 
 UmRxEntity *LteRlcUm::createRxBuffer(MacCid cid, inet::Ptr<FlowControlInfo> lteInfo)
 {
+    if (rxEntities_.find(cid) != rxEntities_.end())
+        throw cRuntimeError("Already exists"); //TODO
+
     std::stringstream buf;
     buf << "UmRxEntity Lcid: " << cid.getLcid() << " cid: " << cid.asPackedInt();
     UmRxEntity *rxEnt = check_and_cast<UmRxEntity *>(rxEntityModuleType_->createScheduleInit(buf.str().c_str(), getParentModule()));

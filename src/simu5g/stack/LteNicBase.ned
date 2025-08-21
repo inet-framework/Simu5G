@@ -20,6 +20,7 @@ import simu5g.stack.pdcp.ILtePdcp;
 import simu5g.stack.phy.channelmodel.ILteChannelModel;
 import simu5g.stack.phy.ILtePhy;
 import simu5g.stack.rlc.LteRlc;
+import simu5g.stack.rrc.IRrc;
 
 //
 // The LteNicBase module serves as the foundational building block for LTE networking
@@ -71,7 +72,14 @@ module LteNicBase extends NetworkInterface like ICellularNic
             nodeType = parent.nodeType;
             @display("p=412,67");
         }
-        // PDCP-RRC Layer
+        // RRC Layer
+        rrc: <default("Rrc")> like IRrc {
+            @display("p=200,141");
+            macModule = "^.mac";
+            rlcModule = "^.rlc";
+            pdcpModule = "^.pdcp";
+        }
+        // PDCP Layer
         pdcp: <> like ILtePdcp {
             @display("p=362,141");
         }
@@ -130,4 +138,3 @@ module LteNicBase extends NetworkInterface like ICellularNic
         ip2nic.upperLayerOut --> {  delay = parent.processingDelayOut; } --> upperLayerOut;
         upperLayerIn --> {  delay = parent.processingDelayIn; } --> ip2nic.upperLayerIn;
 }
-

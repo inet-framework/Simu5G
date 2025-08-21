@@ -160,6 +160,7 @@ class LteRlcUm : public cSimpleModule
      */
     void handleMessage(cMessage *msg) override;
 
+  public:
     /**
      * lookupTxBuffer() searches for an existing TXBuffer for the given CID.
      *
@@ -195,7 +196,7 @@ class LteRlcUm : public cSimpleModule
      */
     virtual UmRxEntity *createRxBuffer(MacCid cid, inet::Ptr<FlowControlInfo> lteInfo);
 
-
+  protected:
     /**
      * handler for traffic coming
      * from the upper layer (PDCP)
