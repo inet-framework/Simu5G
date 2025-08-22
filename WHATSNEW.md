@@ -1,5 +1,23 @@
 # What's New in Simu5G
 
+## v1.3.1 (2025-09-04)
+
+Changes:
+- Example simulations: Marked abstract configs as such (abstract=true) in omnetpp.ini files
+- FlowControlInfo's MacNodeId fields are now properly shown in Qtenv object inspectors
+- Replaced EV_ERROR<< lines with throwing cRuntimeError
+- TrafficLightController: fix startState NED parameter (also changed type from int to string)
+- Fingerprints: CSV files merged into simulations.csv, added missing simulations,
+  standardized on the set of fingerprints computed (tplx,~tNl, sz), translated
+  gen_runallexamples.py into Python and improved it
+
+Fix regressions in v1.3.0:
+- MECResponseApp: fixed wrong @class annotation
+- BackgroundScheduler: fix "binder_ not initialized" error
+- MecRequestForegroundApp, MecRequestBackgroundGeneratorApp: add back lost parameter defaults
+- BackgroundCellTrafficManager: fix "Not implemented" thrown from getBackloggedUeBytesPerBlock()
+- tutorials/nr/omnetpp.ini: fix missing unit for txPower parameter (dBm)
+
 ## v1.3.0 (2025-02-06)
 
 - Compatible with **OMNeT++ 6.1.0** and **INET 4.5.4**
