@@ -14,11 +14,13 @@ import simu5g.stack.phy.packet.AirFrame;
 cplusplus {{
 #include "simu5g/common/LteCommon.h"  // for RemoteUnitPhyDataVector
 }}
- 
+
 namespace simu5g;
 
 //
-// This is LteAirFrame.
+// Represents a transport block (TB) carrying a MAC PDU, as transmitted
+// in the PDSCH / PUSCH channel. In the simulation, a MAC PDU
+// (LteMacPdu) travels encapsulated within an LteAirFrame.
 //
 packet LteAirFrame extends AirFrame {
     @customize(true);
