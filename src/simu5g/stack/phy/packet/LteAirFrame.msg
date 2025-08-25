@@ -13,11 +13,8 @@ import simu5g.stack.phy.packet.AirFrame;
 import simu5g.common.LteControlInfo;
 
 cplusplus {{
-#include "simu5g/common/LteControlInfo.h"
-}}
-
-cplusplus {{
 #include "simu5g/common/LteCommon.h"  // for RemoteUnitPhyDataVector
+#include "simu5g/common/LteControlInfo.h"
 }}
 
 namespace simu5g;
@@ -28,7 +25,6 @@ namespace simu5g;
 // (LteMacPdu) travels encapsulated within an LteAirFrame.
 //
 packet LteAirFrame extends AirFrame {
-    @customize(true);
     RemoteUnitPhyData remoteUnitPhyDataVector[] @nopack;
     UserControlInfo additionalInfo @nopack;
 }
