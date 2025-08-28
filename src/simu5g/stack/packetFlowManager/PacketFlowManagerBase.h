@@ -80,7 +80,7 @@ class PacketFlowManagerBase : public cSimpleModule
     void finish() override;
 
     // Return true if a data structure for this LCID is present
-    virtual bool hasLcid(LogicalCid lcid) = 0;
+    virtual bool hasLcid(MacNodeId nodeId, LogicalCid lcid) = 0;
 
     // Initialize a new data structure for this LCID. Abstract since in eNodeB case,
     // it initializes different structures with respect to the UE
@@ -88,7 +88,7 @@ class PacketFlowManagerBase : public cSimpleModule
 
     // Reset the data structure for this LCID. Abstract since in eNodeB case,
     // it clears different structures with respect to the UE
-    virtual void clearLcid(LogicalCid lcid) = 0;
+    virtual void clearLcid(MacNodeId nodeId, LogicalCid lcid) = 0;
 
     // Reset data structures for all connections
     virtual void clearAllLcid() = 0;
@@ -112,7 +112,7 @@ class PacketFlowManagerBase : public cSimpleModule
      * It records the mapping between the RLC PDU and its contained PDCP SDUs in the tracking
      * data structures, along with burst status information for throughput measurement.
      */
-    virtual void insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcUmDataPdu> rlcPdu, RlcBurstStatus status) = 0;
+    virtual void insertRlcPdu(MacNodeId nodeId, LogicalCid lcid, const inet::Ptr<LteRlcUmDataPdu> rlcPdu, RlcBurstStatus status) = 0;
 
     /**
      * This method is called when a MAC PDU is inserted into the HARQ buffer for transmission.

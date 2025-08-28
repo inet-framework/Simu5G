@@ -37,15 +37,17 @@ void PacketFlowManagerEnb::initialize(int stage)
     }
 }
 
-bool PacketFlowManagerEnb::hasLcid(LogicalCid lcid)
+bool PacketFlowManagerEnb::hasLcid(MacNodeId nodeId, LogicalCid lcid)
 {
-    return connectionMap_.find(lcid) != connectionMap_.end();
+    MacCid macCid(nodeId, lcid);
+    return connectionMap_.find(macCid) != connectionMap_.end();
 }
 
 void PacketFlowManagerEnb::initLcid(LogicalCid lcid, MacNodeId nodeId)
 {
-    if (connectionMap_.find(lcid) != connectionMap_.end())
-        throw cRuntimeError("%s::initLcid - Logical CID %d already present", pfmType.c_str(), lcid);
+    MacCid macCid(nodeId, lcid);
+    if (connectionMap_.find(macCid) != connectionMap_.end())
+        throw cRuntimeError("%s::initLcid - Connection (nodeId=%d, LCID=%d) already present", pfmType.c_str(), num(nodeId), lcid);
 
     // init new descriptor
     StatusDescriptor newDesc;
@@ -53,30 +55,29 @@ void PacketFlowManagerEnb::initLcid(LogicalCid lcid, MacNodeId nodeId)
     newDesc.burstId_ = 0;
     newDesc.burstState_ = false;
 
-    connectionMap_[lcid] = newDesc;
-    EV_FATAL << NOW << " node id " << nodeId << " " << pfmType << "::initLcid - initialized lcid " << lcid << endl;
+    connectionMap_[macCid] = newDesc;
+    EV_FATAL << NOW << " node id " << num(nodeId) << " " << pfmType << "::initLcid - initialized connection (nodeId=" << num(nodeId) << ", lcid=" << lcid << ")" << endl;
 }
 
-void PacketFlowManagerEnb::clearLcid(LogicalCid lcid)
+void PacketFlowManagerEnb::clearLcid(MacNodeId nodeId, LogicalCid lcid)
 {
-    if (connectionMap_.find(lcid) == connectionMap_.end()) {
+    MacCid macCid(nodeId, lcid);
+    auto it = connectionMap_.find(macCid);
+    if (it != connectionMap_.end()) {
+        it->second.pdcpStatus_.clear();
+        it->second.rlcPdusPerSdu_.clear();
+        it->second.rlcSdusPerPdu_.clear();
+        it->second.macSdusPerPdu_.clear();
+        it->second.burstStatus_.clear();
+        it->second.burstId_ = 0;
+        it->second.burstState_ = false;
+
+        EV_FATAL << NOW << " node id " << num(nodeId) << " " << pfmType << "::clearLcid - cleared data structures for connection (nodeId=" << num(nodeId) << ", lcid=" << lcid << ")" << endl;
+        connectionMap_.erase(it);
+    } else {
         // this may occur after a handover, when data structures are cleared
-        EV_FATAL << NOW << " " << pfmType << "::clearLcid - Logical CID " << lcid << " not present." << endl;
-        return;
+        EV_FATAL << NOW << " " << pfmType << "::clearLcid - Connection (nodeId=" << num(nodeId) << ", LCID=" << lcid << ") not present." << endl;
     }
-    else {
-        connectionMap_[lcid].pdcpStatus_.clear();
-        connectionMap_[lcid].rlcPdusPerSdu_.clear();
-        connectionMap_[lcid].rlcSdusPerPdu_.clear();
-        connectionMap_[lcid].macSdusPerPdu_.clear();
-        connectionMap_[lcid].burstStatus_.clear();
-        connectionMap_[lcid].burstId_ = 0;
-        connectionMap_[lcid].burstState_ = false;
-
-        //connectionMap_[lcid].macPduPerProcess_[i] = 0;
-    }
-
-    EV_FATAL << NOW << " node id " << connectionMap_[lcid].nodeId_ << " " << pfmType << "::clearLcid - cleared data structures for lcid " << lcid << endl;
 }
 
 void PacketFlowManagerEnb::clearAllLcid()
@@ -109,18 +110,18 @@ void PacketFlowManagerEnb::insertPdcpSdu(inet::Packet *pdcpPkt)
 {
     auto lteInfo = pdcpPkt->getTagForUpdate<FlowControlInfo>();
     LogicalCid lcid = lteInfo->getLcid();
+    MacNodeId nodeId = lteInfo->getDestId();
 
     /*
-     * check here if the LCID relative to this pdcp pdu is
+     * check here if the connection (nodeId, LCID) relative to this pdcp pdu is
      * already present in the pfm
      */
-
-    if (connectionMap_.find(lcid) == connectionMap_.end())
-        initLcid(lcid, lteInfo->getDestId());
+    MacCid macCid(nodeId, lcid);
+    if (connectionMap_.find(macCid) == connectionMap_.end())
+        initLcid(lcid, nodeId);
 
     unsigned int pdcpSno = lteInfo->getSequenceNumber();
     int64_t pduSize = pdcpPkt->getByteLength();
-    MacNodeId nodeId = lteInfo->getDestId();
     simtime_t entryTime = simTime();
     ////
     auto header = pdcpPkt->peekAtFront<LtePdcpHeader>();
@@ -137,11 +138,10 @@ void PacketFlowManagerEnb::insertPdcpSdu(inet::Packet *pdcpPkt)
     EV << pfmType << "::insertPdcpSdu - DL PDPC sdu bits: " << sduSizeBits << " sent to node: " << nodeId << endl;
     EV << pfmType << "::insertPdcpSdu - DL PDPC sdu bits: " << sduDataVolume_[nodeId].dlBits << " sent to node: " << nodeId << " in this period" << endl;
 
-    auto cit = connectionMap_.find(lcid);
+    auto cit = connectionMap_.find(macCid);
     if (cit == connectionMap_.end()) {
         // this may occur after a handover, when data structures are cleared
-        // EV_FATAL << NOW << " node id "<< desc->nodeId_<< " " << pfmType << "::insertRlcPdu - Logical CID " << lcid << " not present." << endl;
-        throw cRuntimeError("%s::insertPdcpSdu - Logical CID %d not present. It must be initialized before", pfmType.c_str(), lcid);
+        throw cRuntimeError("%s::insertPdcpSdu - Connection (nodeId=%d, LCID=%d) not present. It must be initialized before", pfmType.c_str(), num(nodeId), lcid);
         return;
     }
 
@@ -149,7 +149,7 @@ void PacketFlowManagerEnb::insertPdcpSdu(inet::Packet *pdcpPkt)
     StatusDescriptor *desc = &cit->second;
 
     initPdcpStatus(desc, pdcpSno, sduSize, entryTime);
-    EV_FATAL << NOW << " node id " << desc->nodeId_ << " " << pfmType << "::insertPdcpSdu - PDCP status for PDCP PDU SN " << pdcpSno << " added. Logical cid " << lcid << endl;
+    EV_FATAL << NOW << " node id " << desc->nodeId_ << " " << pfmType << "::insertPdcpSdu - PDCP status for PDCP PDU SN " << pdcpSno << " added. Connection (nodeId=" << nodeId << ", lcid=" << lcid << ")" << endl;
 
     // add user to delay time map if not already present since many LCIDs can belong to one nodeId (UE)
     // consider to add at run time in case it is needed
@@ -190,20 +190,20 @@ void PacketFlowManagerEnb::receivedPdcpSdu(inet::Packet *pdcpPkt)
     EV << pfmType << "::insertPdcpSdu - UL PDPC sdu bits: " << sduDataVolume_[nodeId].ulBits << " received from node: " << nodeId << endl;
 }
 
-void PacketFlowManagerEnb::insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcUmDataPdu> rlcPdu, RlcBurstStatus status) {
-    EV << pfmType << "::insertRlcPdu - Logical Cid: " << lcid << endl;
+void PacketFlowManagerEnb::insertRlcPdu(MacNodeId nodeId, LogicalCid lcid, const inet::Ptr<LteRlcUmDataPdu> rlcPdu, RlcBurstStatus status) {
+    EV << pfmType << "::insertRlcPdu - NodeId: " << num(nodeId) << ", Logical Cid: " << lcid << endl;
 
-    auto cit = connectionMap_.find(lcid);
+    MacCid macCid(nodeId, lcid);
+    auto cit = connectionMap_.find(macCid);
     if (cit == connectionMap_.end()) {
         // this may occur after a handover, when data structures are cleared
-        // EV_FATAL << NOW << " node id "<< desc->nodeId_<< " " << pfmType << "::insertRlcPdu - Logical CID " << lcid << " not present." << endl;
-        throw cRuntimeError("%s::insertRlcPdu - Logical CID %d not present. It must be initialized before", pfmType.c_str(), lcid);
+        throw cRuntimeError("%s::insertRlcPdu - Connection (nodeId=%d, LCID=%d) not present. It must be initialized before", pfmType.c_str(), num(nodeId), lcid);
         return;
     }
 
     // get the descriptor for this connection
     StatusDescriptor *desc = &cit->second;
-    EV_FATAL << NOW << " node id " << desc->nodeId_ << " " << pfmType << "::insertRlcPdu - Logical CID " << lcid << endl;
+    EV_FATAL << NOW << " node id " << desc->nodeId_ << " " << pfmType << "::insertRlcPdu - Connection (nodeId=" << nodeId << ", LCID=" << lcid << ")" << endl;
 
     unsigned int rlcSno = rlcPdu->getPduSequenceNumber();
 
@@ -320,16 +320,22 @@ void PacketFlowManagerEnb::insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcU
 
 void PacketFlowManagerEnb::discardRlcPdu(LogicalCid lcid, unsigned int rlcSno, bool fromMac)
 {
-    auto cit = connectionMap_.find(lcid);
-    if (cit == connectionMap_.end()) {
+    // Find the connection with this LCID - we need to search through all connections
+    // since we don't have the nodeId parameter
+    StatusDescriptor *desc = nullptr;
+
+    for (auto& conn : connectionMap_) {
+        if (conn.first.getLcid() == lcid) {
+            desc = &conn.second;
+            break;
+        }
+    }
+
+    if (desc == nullptr) {
         // this may occur after a handover, when data structures are cleared
-        // EV_FATAL << NOW << " node id "<< desc->nodeId_<< " " << pfmType << "::discardRlcPdu - Logical CID " << lcid << " not present." << endl;
         throw cRuntimeError("%s::discardRlcPdu - Logical CID %d not present. It must be initialized before", pfmType.c_str(), lcid);
         return;
     }
-
-    // get the descriptor for this connection
-    StatusDescriptor *desc = &cit->second;
     if (desc->rlcSdusPerPdu_.find(rlcSno) == desc->rlcSdusPerPdu_.end())
         throw cRuntimeError("%s::discardRlcPdu - RLC PDU SN %d not present for logical CID %d", pfmType.c_str(), rlcSno, lcid);
 
@@ -394,14 +400,22 @@ void PacketFlowManagerEnb::insertMacPdu(inet::Ptr<const LteMacPdu> macPdu)
         auto rlcPdu = macPdu->getSdu(i);
         auto lteInfo = rlcPdu.getTag<FlowControlInfo>();
         int lcid = lteInfo->getLcid();
-        auto cit = connectionMap_.find(lcid);
-        if (cit == connectionMap_.end()) {
+
+        // Find the connection with this LCID - we need to search through all connections
+        // since we don't have the nodeId parameter
+        StatusDescriptor *desc = nullptr;
+
+        for (auto& conn : connectionMap_) {
+            if (conn.first.getLcid() == lcid) {
+                desc = &conn.second;
+                break;
+            }
+        }
+
+        if (desc == nullptr) {
             // this may occur after a handover, when data structures are cleared
             throw cRuntimeError("%s::insertMacPdu - Logical CID %d not present. It must be initialized before", pfmType.c_str(), lcid);
         }
-
-        // get the descriptor for this connection
-        StatusDescriptor *desc = &cit->second;
         if (desc->macSdusPerPdu_.find(macPduId) != desc->macSdusPerPdu_.end())
             throw cRuntimeError("%s::insertMacPdu - MAC PDU ID %d already present for logical CID %d", pfmType.c_str(), macPduId, lcid);
 
@@ -445,12 +459,20 @@ void PacketFlowManagerEnb::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
         auto rlcPdu = macPdu->getSdu(i);
         auto lteInfo = rlcPdu.getTag<FlowControlInfo>();
         int lcid = lteInfo->getLcid();
-        auto cit = connectionMap_.find(lcid);
-        if (cit == connectionMap_.end())
-            throw cRuntimeError("%s::macPduArrived - Logical CID %d not present. It must be initialized before", pfmType.c_str(), lcid);
 
-        // get the descriptor for this connection
-        StatusDescriptor *desc = &cit->second;
+        // Find the connection with this LCID - we need to search through all connections
+        // since we don't have the nodeId parameter
+        StatusDescriptor *desc = nullptr;
+
+        for (auto& conn : connectionMap_) {
+            if (conn.first.getLcid() == lcid) {
+                desc = &conn.second;
+                break;
+            }
+        }
+
+        if (desc == nullptr)
+            throw cRuntimeError("%s::macPduArrived - Logical CID %d not present. It must be initialized before", pfmType.c_str(), lcid);
         EV_FATAL << NOW << " node id " << desc->nodeId_ << " " << pfmType << "::macPduArrived - MAC PDU " << macPduId << " of lcid " << lcid << " arrived." << endl;
         EV_FATAL << NOW << " node id " << desc->nodeId_ << " " << pfmType << "::macPduArrived - Get MAC PDU ID [" << macPduId << "], which contains:" << endl;
 
@@ -552,13 +574,21 @@ void PacketFlowManagerEnb::discardMacPdu(const inet::Ptr<const LteMacPdu> macPdu
         auto lteInfo = rlcPdu.getTag<FlowControlInfo>();
         int lcid = lteInfo->getLcid();
 
-        auto cit = connectionMap_.find(lcid);
-        if (cit == connectionMap_.end()) {
+        // Find the connection with this LCID - we need to search through all connections
+        // since we don't have the nodeId parameter
+        StatusDescriptor *desc = nullptr;
+
+        for (auto& conn : connectionMap_) {
+            if (conn.first.getLcid() == lcid) {
+                desc = &conn.second;
+                break;
+            }
+        }
+
+        if (desc == nullptr) {
             throw cRuntimeError("%s::discardMacPdu - Logical CID %d not present. It must be initialized before", pfmType.c_str(), lcid);
             return;
         }
-
-        StatusDescriptor *desc = &cit->second;
         EV_FATAL << NOW << " node id " << desc->nodeId_ << " " << pfmType << "::discardMacPdu - MAC PDU " << macPduId << " of lcid " << lcid << " arrived." << endl;
 
         EV_FATAL << NOW << " node id " << desc->nodeId_ << " " << pfmType << "::discardMacPdu - Get MAC PDU ID [" << macPduId << "], which contains:" << endl;
@@ -864,4 +894,3 @@ void PacketFlowManagerEnb::finish()
 }
 
 } //namespace
-

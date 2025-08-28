@@ -51,22 +51,22 @@ class PacketFlowManagerUe : public PacketFlowManagerBase
 
     void initPdcpStatus(StatusDescriptor *desc, unsigned int pdcp, unsigned int sduHeaderSize, simtime_t& arrivalTime);
     // return true if a structure for this LCID is present
-    bool hasLcid(LogicalCid lcid) override;
+    bool hasLcid(MacNodeId nodeId, LogicalCid lcid) override;
     // initialize a new structure for this LCID
     void initLcid(LogicalCid lcid, MacNodeId nodeId) override;
-    // reset the structure for this LCID
-    void clearLcid(LogicalCid lcid) override;
+    // reset the structure for this (nodeId, LCID)
+    void clearLcid(MacNodeId nodeId, LogicalCid lcid) override;
     // reset structures for all connections
     void clearAllLcid() override;
 
   public:
     void insertPdcpSdu(inet::Packet *pdcpPkt) override;
     void receivedPdcpSdu(inet::Packet *pdcpPkt) override { /*TODO*/ }
-    void insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcUmDataPdu> rlcPdu, RlcBurstStatus status) override;
+    void insertRlcPdu(MacNodeId nodeId, LogicalCid lcid, const inet::Ptr<LteRlcUmDataPdu> rlcPdu, RlcBurstStatus status) override;
     void insertMacPdu(const inet::Ptr<const LteMacPdu> macPdu) override;
     void macPduArrived(const inet::Ptr<const LteMacPdu> macPdu) override;
     void discardMacPdu(const inet::Ptr<const LteMacPdu> macPdu) override;
-    void discardRlcPdu(LogicalCid lcid, unsigned int rlcSno, bool fromMac = false) override;
+    void discardRlcPdu(MacNodeId nodeId, LogicalCid lcid, unsigned int rlcSno, bool fromMac = false) override;
 
     DiscardedPkts getDiscardedPkt();
     double getDelayStats();

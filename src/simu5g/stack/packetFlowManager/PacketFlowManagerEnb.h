@@ -25,6 +25,7 @@ using namespace omnetpp;
 
 class LteRlcUmDataPdu;
 
+
 /**
  * The eNB-specific version of PacketFlowManager.
  */
@@ -83,8 +84,8 @@ class PacketFlowManagerEnb : public PacketFlowManagerBase
         //std::vector<unsigned int> macPduPerProcess_;               // for each HARQ process, stores the included MAC PDU
     };
 
-    typedef  std::map<LogicalCid, StatusDescriptor> ConnectionMap;
-    ConnectionMap connectionMap_; // LCID to the corresponding StatusDescriptor
+    typedef  std::map<MacCid, StatusDescriptor> ConnectionMap;
+    ConnectionMap connectionMap_; // MacCid (nodeId, LCID) to the corresponding StatusDescriptor
 
     opp_component_ptr<LtePdcpEnb> pdcp_;
 
@@ -122,18 +123,18 @@ class PacketFlowManagerEnb : public PacketFlowManagerBase
     void initPdcpStatus(StatusDescriptor *desc, unsigned int pdcp, unsigned int sduHeaderSize, simtime_t arrivalTime);
 
     // return true if a structure for this LCID is present
-    bool hasLcid(LogicalCid lcid) override;
+    bool hasLcid(MacNodeId nodeId, LogicalCid lcid) override;
     // initialize a new structure for this LCID
     void initLcid(LogicalCid lcid, MacNodeId nodeId) override;
-    // reset the structure for this LCID
-    void clearLcid(LogicalCid lcid) override;
+    // reset the structure for this (nodeId, LCID)
+    void clearLcid(MacNodeId nodeId, LogicalCid lcid) override;
     // reset structures for all connections
     void clearAllLcid() override;
 
   public:
     void insertPdcpSdu(inet::Packet *pdcpPkt) override;
     void receivedPdcpSdu(inet::Packet *pdcpPkt) override;
-    void insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcUmDataPdu> rlcPdu, RlcBurstStatus status) override;
+    void insertRlcPdu(MacNodeId nodeId, LogicalCid lcid, const inet::Ptr<LteRlcUmDataPdu> rlcPdu, RlcBurstStatus status) override;
     void insertMacPdu(inet::Ptr<const LteMacPdu>) override;
     void macPduArrived(inet::Ptr<const LteMacPdu>) override;
     void ulMacPduArrived(MacNodeId nodeId, unsigned int grantId) override;
@@ -174,4 +175,3 @@ class PacketFlowManagerEnb : public PacketFlowManagerBase
 } //namespace
 
 #endif
-

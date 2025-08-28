@@ -33,7 +33,7 @@ void PacketFlowManagerUe::initialize(int stage)
     }
 }
 
-bool PacketFlowManagerUe::hasLcid(LogicalCid lcid)
+bool PacketFlowManagerUe::hasLcid(MacNodeId nodeId, LogicalCid lcid)
 {
     return connectionMap_.find(lcid) != connectionMap_.end();
 }
@@ -56,7 +56,7 @@ void PacketFlowManagerUe::initLcid(LogicalCid lcid, MacNodeId nodeId)
     EV_FATAL << NOW << "node id " << nodeId << " " << pfmType << "::initLcid - initialized lcid " << lcid << endl;
 }
 
-void PacketFlowManagerUe::clearLcid(LogicalCid lcid)
+void PacketFlowManagerUe::clearLcid(MacNodeId nodeId, LogicalCid lcid)
 {
     ConnectionMap::iterator it = connectionMap_.find(lcid);
     if (it == connectionMap_.end()) {
@@ -140,7 +140,7 @@ void PacketFlowManagerUe::insertPdcpSdu(inet::Packet *pdcpPkt)
     EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::insertPdcpSdu - PDCP status for PDCP PDU SN " << pdcpSno << " added. Logical cid " << lcid << endl;
 }
 
-void PacketFlowManagerUe::insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcUmDataPdu> rlcPdu, RlcBurstStatus status)
+void PacketFlowManagerUe::insertRlcPdu(MacNodeId nodeId, LogicalCid lcid, const inet::Ptr<LteRlcUmDataPdu> rlcPdu, RlcBurstStatus status)
 {
     ConnectionMap::iterator cit = connectionMap_.find(lcid);
     if (cit == connectionMap_.end()) {
@@ -504,4 +504,3 @@ void PacketFlowManagerUe::finish()
 }
 
 } //namespace
-

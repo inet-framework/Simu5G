@@ -213,17 +213,20 @@ void UmTxEntity::rlcPduMake(int pduLength)
              * Tell the flow manager to keep track of burst RLCs
              */
 
+            // Get the destination nodeId from the flow control info
+            MacNodeId destNodeId = flowControlInfo_->getDestId();
+
             if (sduQueue_.isEmpty()) {
                 if (burstStatus_ == ACTIVE) {
                     EV << NOW << " UmTxEntity::burstStatus - ACTIVE -> INACTIVE" << endl;
 
-                    packetFlowManager_->insertRlcPdu(lcid, rlcPdu, STOP);
+                    packetFlowManager_->insertRlcPdu(destNodeId, lcid, rlcPdu, STOP);
                     burstStatus_ = INACTIVE;
                 }
                 else {
                     EV << NOW << " UmTxEntity::burstStatus - " << burstStatus_ << endl;
 
-                    packetFlowManager_->insertRlcPdu(lcid, rlcPdu, burstStatus_);
+                    packetFlowManager_->insertRlcPdu(destNodeId, lcid, rlcPdu, burstStatus_);
                 }
             }
             else {
@@ -231,13 +234,13 @@ void UmTxEntity::rlcPduMake(int pduLength)
                     burstStatus_ = ACTIVE;
                     EV << NOW << " UmTxEntity::burstStatus - INACTIVE -> ACTIVE" << endl;
                     //start a new burst
-                    packetFlowManager_->insertRlcPdu(lcid, rlcPdu, START);
+                    packetFlowManager_->insertRlcPdu(destNodeId, lcid, rlcPdu, START);
                 }
                 else {
                     EV << NOW << " UmTxEntity::burstStatus - burstStatus: " << burstStatus_ << endl;
 
                     // burst is still active
-                    packetFlowManager_->insertRlcPdu(lcid, rlcPdu, burstStatus_);
+                    packetFlowManager_->insertRlcPdu(destNodeId, lcid, rlcPdu, burstStatus_);
                 }
             }
         }
@@ -373,4 +376,3 @@ void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
 }
 
 } //namespace
-
