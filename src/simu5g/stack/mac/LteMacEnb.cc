@@ -709,7 +709,7 @@ bool LteMacEnb::bufferizePacket(cPacket *cpkt)
 
         // discard the RLC
         if (packetFlowObserver_ != nullptr) {
-            unsigned int rlcSno = check_and_cast<LteRlcUmDataPdu *>(pkt)->getPduSequenceNumber();
+            unsigned int rlcSno = check_and_cast<LteRlcUmDataPdu *>(pkt)->getPduSequenceNumber(); //FIXME guaranteed cast error! Packet is not a FieldsChunk!
             packetFlowObserver_->discardRlcPdu(lteInfo->getLcid(), rlcSno);
         }
 
