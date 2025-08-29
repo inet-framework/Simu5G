@@ -263,8 +263,7 @@ void PacketFlowManagerUe::insertMacPdu(inet::Ptr<const LteMacPdu> macPdu)
         throw cRuntimeError("%s::macPduArrived - macPdu has no Rlc pdu! This should not happen", pfmType.c_str());
     for (int i = 0; i < len; ++i) {
         auto rlcPdu = macPdu->getSdu(i);
-        auto lteInfo = rlcPdu.getTag<FlowControlInfo>();
-        int lcid = lteInfo->getLcid();
+        LogicalCid lcid = macPdu->getLcid(i);
 
         ConnectionMap::iterator cit = connectionMap_.find(lcid);
         if (cit == connectionMap_.end()) {
@@ -280,10 +279,7 @@ void PacketFlowManagerUe::insertMacPdu(inet::Ptr<const LteMacPdu> macPdu)
         auto macSdu = macPdu->getSdu(i).peekAtFront<LteRlcUmDataPdu>();
         unsigned int rlcSno = macSdu->getPduSequenceNumber();
 
-        auto aa = macPdu->getSdu(i); // all rlc pdus have the same lcid
-        auto ee = aa.getTag<FlowControlInfo>();
-        int ll = ee->getLcid();
-        EV << "ALE LCID: " << ll << endl;
+        EV << "ALE LCID: " << macPdu->getLcid(i) << endl;
 
         EV << "MAC pdu: " << macPduId << " has RLC pdu: " << rlcSno << endl;
 
@@ -323,8 +319,7 @@ void PacketFlowManagerUe::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
         throw cRuntimeError("%s::macPduArrived - macPdu has no Rlc pdu! This, here, should not happen", pfmType.c_str());
     for (int i = 0; i < len; ++i) {
         auto rlcPdu = macPdu->getSdu(i);
-        auto lteInfo = rlcPdu.getTag<FlowControlInfo>();
-        int lcid = lteInfo->getLcid();
+        int lcid = macPdu->getLcid(i);
 
         std::map<LogicalCid, StatusDescriptor>::iterator cit = connectionMap_.find(lcid);
         if (cit == connectionMap_.end()) {
