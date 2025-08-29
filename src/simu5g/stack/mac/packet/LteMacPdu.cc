@@ -40,19 +40,29 @@ void LteMacPdu::forEachChild(cVisitor *v)
 
 void LteMacPdu::pushSdu(Packet *pkt)
 {
+    LogicalCid lcid = pkt->getTag<FlowControlInfo>()->getLcid();
+    pkt->clearTags();
+
+    appendLcid(lcid);
     appendSdu(pkt);
+
     macPduLength_ += pkt->getByteLength();
     // addChunkLength(pkt->getDataLength());
-    this->setChunkLength(b(getBitLength()));
+    setChunkLength(b(getBitLength()));
 }
 
 Packet* LteMacPdu::popSdu()
 {
     Packet *pkt = removeSdu(0);
+    LogicalCid lcid = getLcid(0);
+    pkt->addTag<FlowControlInfo>()->setLcid(lcid);
+
     eraseSdu(0);
+    eraseLcid(0);
+
     macPduLength_ -= pkt->getByteLength();
     // addChunkLength(-pkt->getDataLength());
-    this->setChunkLength(b(getBitLength()));
+    setChunkLength(b(getBitLength()));
     return pkt;
 }
 
