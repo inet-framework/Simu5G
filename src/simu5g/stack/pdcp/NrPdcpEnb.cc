@@ -131,6 +131,7 @@ void NrPdcpEnb::forwardDataToTargetNode(Packet *pkt, MacNodeId targetNode)
     dualConnectivityManager_->forwardDataToTargetNode(pkt, targetNode);
 }
 
+//TODO this is called from DualConnectivityManager, likely has nothing to do with the PDCP protocol
 void NrPdcpEnb::receiveDataFromSourceNode(Packet *pkt, MacNodeId sourceNode)
 {
     Enter_Method("receiveDataFromSourceNode");
