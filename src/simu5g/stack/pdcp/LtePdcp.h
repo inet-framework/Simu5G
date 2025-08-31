@@ -285,7 +285,7 @@ class LtePdcpBase : public cSimpleModule
      *
      * Returns the (nodeId,LCID) pair that identifies the connection for the packet.
      */
-    virtual MacCid analyzePacket(inet::Packet *pkt);
+    virtual MacCid analyzePacket(inet::Packet *pkt);  //TODO this stuff in here has 99% nothing to do with the PDCP protocol, should be moved out into a different module
 
     /**
      * Process data packets from higher layers.
