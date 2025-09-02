@@ -351,6 +351,26 @@ MacNodeId ctrlInfoToUeId(const FlowControlInfo *info)
      *    D2D    | UE  ---->  UE
      *
      */
+
+    // Potential design flaw: returning sourceId for D2D_MULTI.
+    //
+    // ISSUE: If the `destId` actually represents a "group RNTI" (Radio Network Temporary Identifier
+    // for the multicast group), then using `sourceId` could cause
+    // multiple multicast groups from the same source UE to be *conflated into a single MacCid*!!!
+    //
+    // Could use destId orulticastGroupId.
+    // However, destId is explicitly MEANINGLESS in the D2D_MULTI case.
+    // Should use this:
+    //    case D2D_MULTI:
+    //            ueId = MacNodeId(info->getMulticastGroupId());   // however: collision with "real" nodeIds!!!!
+    // Maybe:
+    //    case D2D_MULTI:
+    //            // Use high bit as multicast flag, remaining 15 bits for group ID --
+    //            // prevents nodeId-group collisions, although collates multiple groups to one.
+    //            ueId = MacNodeId(0x8000 | (info->getMulticastGroupId() & 0x7FFF));
+    //            break;
+    // Even better: let Binder assign numbers dynamically for each used multicast IP address
+
     switch (info->getDirection()) {
         case DL: case D2D:
             return info->getDestId();
