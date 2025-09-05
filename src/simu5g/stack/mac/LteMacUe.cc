@@ -968,6 +968,7 @@ void LteMacUe::deleteQueues(MacNodeId nodeId)
 {
     Enter_Method_Silent();
 
+    //TODO: shouldn't deletion be selective to nodeId? see mac_->deleteQueues(masterId_) call!
 
     // Delete each connection
     for (auto cid : getActiveConnectionCids())
