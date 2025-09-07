@@ -52,6 +52,7 @@ class LteMacBase;
 class LtePhyBase;
 class LteRealisticChannelModel;
 class LteControlInfo;
+class FlowControlInfo;
 class ExtCell;
 class IBackgroundTrafficManager;
 class BackgroundScheduler;
@@ -444,7 +445,7 @@ char *cStringToLower(char *str);
 LteRlcType aToRlcType(std::string s);
 const std::string planeToA(Plane p);
 MacNodeId ctrlInfoToUeId(inet::Ptr<LteControlInfo> info);
-MacCid ctrlInfoToMacCid(inet::Ptr<LteControlInfo> info);        // get the CID from the packet control info
+MacCid ctrlInfoToMacCid(inet::Ptr<FlowControlInfo> info);        // get the CID from the packet control info
 CellInfo *getCellInfo(Binder *binder, MacNodeId nodeId);
 cModule *getPhyByMacNodeId(Binder *binder, MacNodeId nodeId);
 cModule *getMacByMacNodeId(Binder *binder, MacNodeId nodeId);
@@ -455,7 +456,7 @@ FeedbackGeneratorType getFeedbackGeneratorType(std::string s);
 const std::string fbGeneratorTypeToA(FeedbackGeneratorType type);
 const std::string DeploymentScenarioToA(DeploymentScenario type);
 DeploymentScenario aToDeploymentScenario(std::string s);
-bool isMulticastConnection(LteControlInfo *lteInfo);
+bool isMulticastConnection(FlowControlInfo *lteInfo);
 
 /**
  * Utility function that reads the parameters of an XML element

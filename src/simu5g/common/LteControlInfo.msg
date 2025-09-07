@@ -54,14 +54,6 @@ class LteControlInfo extends inet::TagBase {
     MacNodeId d2dTxPeerId = NODEID_NONE;
     MacNodeId d2dRxPeerId = NODEID_NONE;
 
-    //# Traffic Control Information
-
-    unsigned short traffic enum(LteTrafficClass) = 0;        // Lte Traffic Type
-
-    //# RLC Control Information
-
-    unsigned short rlcType enum(LteRlcType) = 0;            // RLC Traffic Type
-
     //# Connection Information
 
     uint16 lcid = 0;                                        // Logical Connection Identifier
@@ -85,6 +77,14 @@ class FlowControlInfo extends LteControlInfo {
     //# IP Control Information
 
     unsigned int sequenceNumber = 0;        // packet sequence number
+
+    //# Traffic Control Information
+
+    unsigned short traffic enum(LteTrafficClass) = 0;        // Lte Traffic Type
+
+    //# RLC Control Information
+
+    unsigned short rlcType enum(LteRlcType) = 0;            // RLC Traffic Type
 }
 
 //
