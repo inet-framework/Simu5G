@@ -302,7 +302,7 @@ DeploymentScenario aToDeploymentScenario(std::string s)
     return static_cast<DeploymentScenario>(omnetpp::cEnum::get("simu5g::DeploymentScenario")->lookup(s.c_str(), UNKNOW_SCENARIO));
 }
 
-bool isMulticastConnection(LteControlInfo *lteInfo)
+bool isMulticastConnection(FlowControlInfo *lteInfo)
 {
     return lteInfo->getMulticastGroupId() >= 0;
 }
@@ -311,7 +311,7 @@ bool isMulticastConnection(LteControlInfo *lteInfo)
 /*
  * Obtain the CID from the Control Info
  */
-MacCid ctrlInfoToMacCid(inet::Ptr<LteControlInfo> info)
+MacCid ctrlInfoToMacCid(inet::Ptr<FlowControlInfo> info)
 {
     /*
      * Given the fact that  CID = <UE_MAC_ID,LCID>
