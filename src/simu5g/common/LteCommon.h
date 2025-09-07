@@ -451,7 +451,7 @@ FeedbackGeneratorType getFeedbackGeneratorType(std::string s);
 const std::string fbGeneratorTypeToA(FeedbackGeneratorType type);
 const std::string DeploymentScenarioToA(DeploymentScenario type);
 DeploymentScenario aToDeploymentScenario(std::string s);
-bool isMulticastConnection(LteControlInfo *lteInfo);
+bool isMulticastConnection(FlowControlInfo *lteInfo);
 
 /**
  * Utility function that reads the parameters of an XML element
