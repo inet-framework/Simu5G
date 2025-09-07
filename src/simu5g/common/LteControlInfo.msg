@@ -55,10 +55,9 @@ class LteControlInfo extends inet::TagBase {
     MacNodeId d2dRxPeerId = NODEID_NONE;
 
     //# Connection Information
-
-    uint16 lcid = 0;                                        // Logical Connection Identifier
-    int32 multicastGroupId = -1;                        // Identifier for a multicast group (it is in range [0:[2^28)-1] )
-                                                        // For unicast communications, this field is -1
+    uint16 lcid = 0;                                     //  Logical Channel Identifier -- TODO this should be rather in FlowControlInfo not here (a MAC PDU itself has no LCID), but unfortunately still misused for BSR type in MAC
+    int32 multicastGroupId = -1;                         // Identifier for a multicast group (it is in range [0:[2^28)-1] ) -- TODO seems to be used instead of proper MBMS RNTIs stored in destId
+                                                         // For unicast communications, this field is -1
 }
 
 //
@@ -74,16 +73,8 @@ class LteControlInfo extends inet::TagBase {
 // Note: Technology selection (useNR) is now handled by TechnologyReq tag
 //
 class FlowControlInfo extends LteControlInfo {
-    //# IP Control Information
-
-    unsigned int sequenceNumber = 0;        // packet sequence number
-
-    //# Traffic Control Information
-
-    unsigned short traffic enum(LteTrafficClass) = 0;        // Lte Traffic Type
-
-    //# RLC Control Information
-
+    unsigned int sequenceNumber = 0;                        // PDCP sequence number
+    unsigned short traffic enum(LteTrafficClass) = 0;       // Lte Traffic Type; analogous to LCG IDs (Logical Channel Group Identifiers) in LTE/NR
     unsigned short rlcType enum(LteRlcType) = 0;            // RLC Traffic Type
 }
 
