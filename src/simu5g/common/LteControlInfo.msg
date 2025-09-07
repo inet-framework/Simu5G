@@ -53,7 +53,7 @@ class LteControlInfo extends inet::TagBase {
     MacNodeId d2dTxPeerId = NODEID_NONE;
     MacNodeId d2dRxPeerId = NODEID_NONE;
 
-    //# Connection Information
+    //TODO the following fields make no sense in UserControlInfo, should be moved to FlowControlInfo!!!
     uint16 lcid = 0;                                     //  Logical Channel Identifier -- TODO this should be rather in FlowControlInfo not here (a MAC PDU itself has no LCID), but unfortunately still misused for BSR type in MAC
     int32 multicastGroupId = -1;                         // Identifier for a multicast group (it is in range [0:[2^28)-1] ) -- TODO seems to be used instead of proper MBMS RNTIs stored in destId
                                                          // For unicast communications, this field is -1
