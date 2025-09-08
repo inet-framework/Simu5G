@@ -179,14 +179,17 @@ void LtePhyEnbD2D::handleAirFrame(cMessage *msg)
         return;
     }
 
-    if (lteInfo->getMulticastGroupId() != -1 && !(binder_->isInMulticastGroup(nodeId_, lteInfo->getMulticastGroupId()))) {
-        EV << "Frame is for a multicast group, but we do not belong to that group. Delete the frame." << endl;
-        EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
-        EV << "Frame MacNodeId: " << lteInfo->getDestId() << endl;
-        EV << "Local MacNodeId: " << nodeId_ << endl;
-        delete lteInfo;
-        delete frame;
-        return;
+    if (isMulticastDestId(lteInfo->getDestId())) {
+        inet::Ipv4Address multicastAddr = binder_->getMulticastAddressFromNodeId(lteInfo->getDestId());
+        if (!(binder_->isInMulticastNodeGroup(nodeId_, lteInfo->getDestId()))) {
+            EV << "Frame is for a multicast group, but we do not belong to that group. Delete the frame." << endl;
+            EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
+            EV << "Frame MacNodeId: " << lteInfo->getDestId() << endl;
+            EV << "Local MacNodeId: " << nodeId_ << endl;
+            delete lteInfo;
+            delete frame;
+            return;
+        }
     }
 
     /*
@@ -273,4 +276,3 @@ void LtePhyEnbD2D::handleAirFrame(cMessage *msg)
 }
 
 } //namespace
-

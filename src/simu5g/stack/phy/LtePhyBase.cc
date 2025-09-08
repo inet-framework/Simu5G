@@ -213,10 +213,12 @@ void LtePhyBase::sendMulticast(LteAirFrame *frame)
 {
     UserControlInfo *ci = check_and_cast<UserControlInfo *>(frame->getControlInfo());
 
-    // get the group Id
-    int32_t groupId = ci->getMulticastGroupId();
-    if (groupId < 0)
-        throw cRuntimeError("LtePhyBase::sendMulticast - Error. Group ID %d is not valid.", groupId);
+    // get the multicast node ID and convert it to IPv4 address
+    MacNodeId multicastDestId = ci->getDestId();
+    if (!isMulticastDestId(multicastDestId))
+        throw cRuntimeError("LtePhyBase::sendMulticast - Error. Node ID %d is not a valid multicast node ID.", multicastDestId);
+
+    inet::Ipv4Address multicastAddr = binder_->getMulticastAddressFromNodeId(multicastDestId);
 
     // transfer control info into airframe fields
     frame->setAdditionalInfo(*ci);
@@ -230,7 +232,7 @@ void LtePhyBase::sendMulticast(LteAirFrame *frame)
         if (isNrUe(destId) != isNr_)
             continue;
 
-        if (destId != nodeId_ && binder_->isInMulticastGroup(destId, groupId)) {
+        if (destId != nodeId_ && binder_->isInMulticastNodeGroup(destId, multicastDestId)) {
             EV << NOW << " LtePhyBase::sendMulticast - node " << destId << " is in the multicast group" << endl;
 
             // get a pointer to receiving module

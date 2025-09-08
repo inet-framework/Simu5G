@@ -724,8 +724,64 @@ bool Binder::isFrequencyReuseEnabled(MacNodeId nodeId)
     return true;
 }
 
-void Binder::registerMulticastGroup(MacNodeId nodeId, int32_t groupId)
+MacNodeId Binder::getOrAllocateMulticastDestId(inet::Ipv4Address multicastAddr)
 {
+    // Check if already allocated
+    auto it = multicastGroupToNodeId_.find(multicastAddr);
+    if (it != multicastGroupToNodeId_.end()) {
+        return it->second;
+    }
+
+    // Check if we have exceeded the multicast node ID range
+    if (multicastDestIdCounter_ > MULTICAST_NODE_ID_MAX) {
+        throw cRuntimeError("Binder::getOrAllocateMulticastDestId - Multicast node ID range exhausted");
+    }
+
+    // Allocate new multicast node ID
+    MacNodeId newNodeId = multicastDestIdCounter_;
+    multicastDestIdCounter_ = static_cast<MacNodeId>(multicastDestIdCounter_ + 1);
+    multicastGroupToNodeId_[multicastAddr] = newNodeId;
+    nodeIdToMulticastGroup_[newNodeId] = multicastAddr;
+
+    EV << "Binder::getOrAllocateMulticastDestId - Allocated node ID " << newNodeId << " for multicast address " << multicastAddr << endl;
+
+    return newNodeId;
+}
+
+MacNodeId Binder::getMulticastDestId(inet::Ipv4Address multicastAddr)
+{
+    auto it = multicastGroupToNodeId_.find(multicastAddr);
+    if (it != multicastGroupToNodeId_.end()) {
+        return it->second;
+    }
+    return NODEID_NONE;
+}
+
+inet::Ipv4Address Binder::getMulticastAddressFromNodeId(MacNodeId nodeId)
+{
+    auto it = nodeIdToMulticastGroup_.find(nodeId);
+    if (it != nodeIdToMulticastGroup_.end()) {
+        return it->second;
+    }
+    return inet::Ipv4Address::UNSPECIFIED_ADDRESS;
+}
+
+uint32_t Binder::getOriginalGroupId(MacNodeId multicastDestId)
+{
+    inet::Ipv4Address addr = getMulticastAddressFromNodeId(multicastDestId);
+    if (addr == inet::Ipv4Address::UNSPECIFIED_ADDRESS) {
+        throw cRuntimeError("Binder::getOriginalGroupId - Invalid multicast node ID %hu", num(multicastDestId));
+    }
+    // Extract the lower 28 bits as the original group ID (same logic as before)
+    uint32_t mask = ~((uint32_t)255 << 28);  // 0x0FFFFFFF
+    return addr.getInt() & mask;
+}
+
+void Binder::registerMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId)
+{
+    // Convert the multicast node ID back to the original group ID for storage compatibility
+    uint32_t groupId = getOriginalGroupId(multicastDestId);
+
     if (multicastGroupMap_.find(nodeId) == multicastGroupMap_.end()) {
         MulticastGroupIdSet newSet;
         newSet.insert(groupId);
@@ -736,8 +792,11 @@ void Binder::registerMulticastGroup(MacNodeId nodeId, int32_t groupId)
     }
 }
 
-bool Binder::isInMulticastGroup(MacNodeId nodeId, int32_t groupId)
+bool Binder::isInMulticastNodeGroup(MacNodeId nodeId, MacNodeId multicastDestId)
 {
+    // Convert the multicast node ID back to the original group ID for compatibility
+    uint32_t groupId = getOriginalGroupId(multicastDestId);
+
     if (multicastGroupMap_.find(nodeId) == multicastGroupMap_.end())
         return false;                          // the node is not enrolled in any group
     if (multicastGroupMap_[nodeId].find(groupId) == multicastGroupMap_[nodeId].end())

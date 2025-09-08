@@ -239,6 +239,14 @@ const unsigned int MAC_HEADER = 2;
 const unsigned int MAXGRANT = 4294967295U;
 
 /*****************
+* Multicast Support
+*****************/
+
+/// Multicast node ID range (similar to MBMS RNTI in 5G NR)
+const MacNodeId MULTICAST_NODE_ID_MIN = static_cast<MacNodeId>(0x8000);
+const MacNodeId MULTICAST_NODE_ID_MAX = static_cast<MacNodeId>(0xFFFF);
+
+/*****************
 * MAC Support
 *****************/
 
@@ -457,6 +465,14 @@ const std::string fbGeneratorTypeToA(FeedbackGeneratorType type);
 const std::string DeploymentScenarioToA(DeploymentScenario type);
 DeploymentScenario aToDeploymentScenario(std::string s);
 bool isMulticastConnection(FlowControlInfo *lteInfo);
+
+/**
+ * Check if a MacNodeId is a multicast node ID (allocated for multicast groups)
+ *
+ * @param nodeId MacNodeId to check
+ * @return true if the node ID is in the multicast range, false otherwise
+ */
+bool isMulticastDestId(MacNodeId nodeId);
 
 /**
  * Utility function that reads the parameters of an XML element

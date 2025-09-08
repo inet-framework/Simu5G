@@ -369,14 +369,12 @@ void Ip2Nic::registerMulticastGroups()
 
     for (unsigned int i = 0; i < numOfAddresses; ++i) {
         Ipv4Address addr = iface->getProtocolData<Ipv4InterfaceData>()->getJoinedMulticastGroup(i);
-        // get the group id and add it to the binder
-        uint32_t address = addr.getInt();
-        uint32_t mask = ~((uint32_t)255 << 24);      // 00000000 11111111 11111111 11111111
-        uint32_t groupId = address & mask;
-        binder_->registerMulticastGroup(nodeId_, groupId);
+        // get or allocate a multicast node ID for this address
+        MacNodeId multicastDestId = binder_->getOrAllocateMulticastDestId(addr);
+        binder_->registerMulticastGroup(nodeId_, multicastDestId);
         // register also the NR stack, if any
         if (nrNodeId_ != NODEID_NONE)
-            binder_->registerMulticastGroup(nrNodeId_, groupId);
+            binder_->registerMulticastGroup(nrNodeId_, multicastDestId);
     }
 }
 

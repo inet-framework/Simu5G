@@ -151,6 +151,11 @@ class Binder : public cSimpleModule
     std::map<MacNodeId, MulticastGroupIdSet> multicastGroupMap_;
     std::set<MacNodeId> multicastTransmitterSet_;
 
+    // Dynamic multicast node ID allocation (5G NR-style MBMS RNTI)
+    MacNodeId multicastDestIdCounter_;
+    std::map<inet::Ipv4Address, MacNodeId> multicastGroupToNodeId_;
+    std::map<MacNodeId, inet::Ipv4Address> nodeIdToMulticastGroup_;
+
     /*
      * Handover support
      */
@@ -168,7 +173,7 @@ class Binder : public cSimpleModule
     void finish() override;
 
   public:
-    Binder() :  lastUpdateUplinkTransmissionInfo_(0.0), lastUplinkTransmission_(0.0)
+    Binder() :  lastUpdateUplinkTransmissionInfo_(0.0), lastUplinkTransmission_(0.0), multicastDestIdCounter_(MULTICAST_NODE_ID_MIN)
     {
         macNodeIdCounter_[0] = num(ENB_MIN_ID);
         macNodeIdCounter_[1] = num(UE_MIN_ID);
@@ -577,13 +582,29 @@ class Binder : public cSimpleModule
      * Multicast Support
      */
     // add the group to the set of multicast group of nodeId
-    void registerMulticastGroup(MacNodeId nodeId, int32_t groupId);
+    void registerMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId);
     // check if the node is enrolled in the group
-    bool isInMulticastGroup(MacNodeId nodeId, int32_t groupId);
+    bool isInMulticastNodeGroup(MacNodeId nodeId, MacNodeId multicastDestId);
     // add one multicast transmitter
     void addD2DMulticastTransmitter(MacNodeId nodeId);
     // get multicast transmitters
     std::set<MacNodeId>& getD2DMulticastTransmitters();
+
+    /*
+     * Dynamic Multicast Node ID Allocation (5G NR-style)
+     */
+    // allocate or get existing multicast node ID for an IPv4 multicast address
+    MacNodeId getOrAllocateMulticastDestId(inet::Ipv4Address multicastAddr);
+    // get multicast node ID if already allocated (returns NODEID_NONE if not found)
+    MacNodeId getMulticastDestId(inet::Ipv4Address multicastAddr);
+    // get the original IPv4 multicast address from a multicast node ID
+    inet::Ipv4Address getMulticastAddressFromNodeId(MacNodeId nodeId);
+
+  private:
+    // helper method to get the original IPv4-derived group ID for storage compatibility
+    uint32_t getOriginalGroupId(MacNodeId multicastDestId);
+
+  public:
 
     /*
      *  Handover support

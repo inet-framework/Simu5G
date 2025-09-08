@@ -70,14 +70,15 @@ void NrTxPdcpEntity::setIds(Packet *pkt)
     else
         lteInfo->setSourceId(pdcp_->getNodeId());
 
-    if (lteInfo->getMulticastGroupId() > 0)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
+    Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
+    MacNodeId destId = pdcp_->getDestId(destAddr, useNR, lteInfo->getSourceId());
+
+    if (isMulticastDestId(destId))                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
         lteInfo->setDestId(pdcp_->getNodeId());
     else {
-        Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
-        lteInfo->setDestId(pdcp_->getDestId(destAddr, useNR, lteInfo->getSourceId()));
+        lteInfo->setDestId(destId);
     }
 }
 
 
 } //namespace
-

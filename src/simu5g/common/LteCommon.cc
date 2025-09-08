@@ -302,9 +302,14 @@ DeploymentScenario aToDeploymentScenario(std::string s)
     return static_cast<DeploymentScenario>(omnetpp::cEnum::get("simu5g::DeploymentScenario")->lookup(s.c_str(), UNKNOW_SCENARIO));
 }
 
+bool isMulticastDestId(MacNodeId nodeId)
+{
+    return nodeId >= MULTICAST_NODE_ID_MIN && nodeId <= MULTICAST_NODE_ID_MAX;
+}
+
 bool isMulticastConnection(FlowControlInfo *lteInfo)
 {
-    return lteInfo->getMulticastGroupId() >= 0;
+    return isMulticastDestId(lteInfo->getDestId());
 }
 
 

@@ -265,9 +265,8 @@ class LtePdcpBase : public cSimpleModule
     /**
      * Analyze the metadata of the higher-layer packet (source and destination
      * IP addresses, for example), and fills in several fields of lteInfo:
-     * - sourceId, destID
+     * - sourceId, destID (destId is set to a dynamically allocated multicast node ID if destAddr is multicast)
      * - d2dTxDestId, d2dRxSrcId
-     * - multicastGroupId (if destAddr is a multicast address)
      * - direction
      * - application, traffic
      * - rlcType

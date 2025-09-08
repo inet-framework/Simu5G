@@ -57,12 +57,12 @@ class TrafficClassInd extends inet::TagBase {
 }
 
 //
-// Identifies the logical connection and multicast group for the packet.
+// Identifies the logical connection for the packet.
 // Usually sent by PDCP to RLC and MAC layers.
+// Note: Multicast information is now carried via destId in NodeIdentificationInd
 //
 class LogicalConnectionInd extends inet::TagBase {
     uint16 lcid = 0;                    // Logical Connection Identifier
-    int32 multicastGroupId = -1;        // Multicast group ID (-1 for unicast)
 }
 
 //
