@@ -296,6 +296,7 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                     hb = new LteHarqBufferTx(binder_, (unsigned int)ENB_TX_HARQ_PROCESSES, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
                 }
                 else { // D2D or D2D_MULTI
+                    //FIXME this won't work now that destId can be a mulitcastDestId@!!!!!
                     hb = new LteHarqBufferTxD2D(binder_, (unsigned int)ENB_TX_HARQ_PROCESSES, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
                 }
                 harqTxBuffers[destId] = hb;

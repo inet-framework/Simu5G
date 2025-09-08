@@ -124,10 +124,8 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
         return;
     }
 
-    if (isMulticastDestId(lteInfo->getDestId())) {
-        // HACK: If this is a multicast connection, change the destId of the airframe so that upper layers can handle it
-        lteInfo->setDestId(nodeId_);
-    }
+    // For multicast packets, preserve the multicast destination ID
+    // Upper layers now properly handle multicast destination IDs
 
     // Send H-ARQ feedback up
     if (lteInfo->getFrameType() == HARQPKT || lteInfo->getFrameType() == GRANTPKT || lteInfo->getFrameType() == RACPKT || lteInfo->getFrameType() == D2DMODESWITCHPKT) {

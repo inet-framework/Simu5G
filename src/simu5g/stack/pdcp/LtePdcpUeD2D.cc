@@ -63,6 +63,7 @@ MacCid LtePdcpUeD2D::analyzePacket(inet::Packet *pkt)
         // allocate or get multicast node ID for this IPv4 multicast address
         MacNodeId multicastDestId = binder_->getOrAllocateMulticastDestId(destAddr);
         lteInfo->setDestId(multicastDestId);
+        EV << "Allocated node ID " << multicastDestId << " for multicast address " << destAddr << endl;
     }
     else {
         destId = binder_->getMacNodeId(destAddr);

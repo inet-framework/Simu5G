@@ -138,11 +138,10 @@ void LteTxPdcpEntity::setIds(Packet *pkt)
     Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
     MacNodeId destId = pdcp_->getDestId(destAddr, false, lteInfo->getSourceId());
 
-    if (isMulticastDestId(destId))                                               // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
-        lteInfo->setDestId(pdcp_->getNodeId());
-    else {
-        lteInfo->setDestId(destId);
-    }
+    EV << "LteTxPdcpEntity::setIds - destAddr[" << destAddr << "] - destId[" << destId << "]" << endl;
+
+    // Always use the destId - for multicast, this will be the allocated multicast destination ID
+//    lteInfo->setDestId(destId);
 }
 
 

@@ -89,6 +89,7 @@ MacCid NrPdcpUe::analyzePacket(inet::Packet *pkt)
         // Use dynamic multicast node ID allocation instead of computed group ID
         MacNodeId multicastDestId = binder_->getOrAllocateMulticastDestId(destAddr);
         lteInfo->setDestId(multicastDestId);
+        EV << "Allocated node ID " << multicastDestId << " for multicast address " << destAddr << endl;
     }
     else {
         MacNodeId destId = binder_->getMacNodeId(destAddr);
