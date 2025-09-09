@@ -45,6 +45,7 @@ class LtePdcpRxEntity : public PdcpRxEntityBase
     MacNodeId nodeId_;
 
     // whether headers are compressed
+    //TODO this should NOT be a parameter, but an attribute of the logical channel!
     bool headerCompressionEnabled_;
 
     // DRB ID for this connection
