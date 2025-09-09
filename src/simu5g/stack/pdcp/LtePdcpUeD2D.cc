@@ -108,7 +108,7 @@ void LtePdcpUeD2D::analyzePacket(inet::Packet *pkt)
     EV << "LtePdcpUeD2D : Assigned Node ID: " << nodeId_ << "\n";
 
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
-    destId = getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());
+    destId = getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());  //TODO this value is NOT set on LteInfo -- is this correct?
 
     lteInfo->setSourceId(getNodeId());   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
     if (lteInfo->getMulticastGroupId() != NODEID_NONE)   // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
