@@ -152,7 +152,7 @@ MacCid NrPdcpUe::analyzePacket(inet::Packet *pkt)
     EV << "NrPdcpUe : Assigned Node ID: " << nodeId << "\n";
 
     // get effective next hop dest ID
-    MacNodeId destId = getDestId(destAddr, useNR, lteInfo->getSourceId());
+    MacNodeId destId = getDestId(destAddr, useNR, lteInfo->getSourceId());  //TODO this value is NOT set on LteInfo -- is this correct?
 
     // obtain CID
     return MacCid(destId, lcid);
