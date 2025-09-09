@@ -36,6 +36,7 @@ class LteRxPdcpEntity : public cSimpleModule
     LtePdcpBase *pdcp_ = nullptr;
 
     // whether headers are compressed
+    //TODO this should NOT be a parameter, but an attribute of the logical channel!
     bool headerCompressionEnabled_;
 
     // Logical CID for this connection
