@@ -76,6 +76,7 @@ cplusplus (FlowControlInfo::setDrbId) {{
 }}
 
 // WIP: Describes logical channels (identified by remote node + LCID) in MAC
+// TODO: this is not control info, do NOT subclass from LteControlInfo! also, move into C++
 class FlowDescriptor extends FlowControlInfo {
 }
 
