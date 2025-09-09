@@ -87,7 +87,7 @@ void LtePdcpEnbD2D::analyzePacket(inet::Packet *pkt)
 
     // get effective next hop dest ID
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
-    destId = getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());
+    destId = getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());  //TODO this value is NOT set on LteInfo -- is this correct?
 
     // this is the body of former LteTxPdcpEntity::setIds()
     lteInfo->setSourceId(getNodeId());   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
