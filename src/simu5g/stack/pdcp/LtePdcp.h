@@ -257,7 +257,7 @@ class LtePdcpBase : public cSimpleModule
      *
      * @param lteInfo Control Info
      */
-    virtual MacNodeId getDestId(inet::Ptr<FlowControlInfo> lteInfo) = 0;
+    virtual MacNodeId getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) = 0;
 
     /**
      * getDirection() is used only on UEs and ENODEBs:
@@ -337,7 +337,7 @@ class LtePdcpUe : public LtePdcpBase
 {
   protected:
 
-    MacNodeId getDestId(inet::Ptr<FlowControlInfo> lteInfo) override
+    MacNodeId getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override
     {
         // UE is subject to handovers: master may change
         return binder_->getNextHop(nodeId_);
@@ -356,10 +356,10 @@ class LtePdcpEnb : public LtePdcpBase
         delete lteInfo;
     }
 
-    MacNodeId getDestId(inet::Ptr<FlowControlInfo> lteInfo) override
+    MacNodeId getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override
     {
         // destination id
-        MacNodeId destId = binder_->getMacNodeId(inet::Ipv4Address(lteInfo->getDstAddr()));
+        MacNodeId destId = binder_->getMacNodeId(destAddr);
         // master of this UE (myself)
         MacNodeId master = binder_->getNextHop(destId);
         if (master != nodeId_) {

@@ -10,9 +10,12 @@
 //
 
 #include <inet/networklayer/common/NetworkInterface.h>
+#include <inet/networklayer/ipv4/Ipv4Header_m.h>
 
 #include "simu5g/stack/pdcp/NrPdcpEnb.h"
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverBase.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
+#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 
 namespace simu5g {
 
@@ -35,19 +38,28 @@ void NrPdcpEnb::initialize(int stage)
 
 void NrPdcpEnb::analyzePacket(inet::Packet *pkt)
 {
-    auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+    auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
     setTrafficInformation(pkt, lteInfo);
 
+    // Get IP flow information from the new tag
+    auto ipFlowInd = pkt->getTag<IpFlowInd>();
+    uint32_t srcAddr_int = ipFlowInd->getSrcAddr();
+    uint32_t dstAddr_int = ipFlowInd->getDstAddr();
+    uint16_t typeOfService = ipFlowInd->getTypeOfService();
+
+    // Get technology selection from the new tag
+    bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
+
     // get source info
-    Ipv4Address srcAddr = Ipv4Address(lteInfo->getSrcAddr());
+    Ipv4Address srcAddr = Ipv4Address(srcAddr_int);
     // get destination info
-    Ipv4Address destAddr = Ipv4Address(lteInfo->getDstAddr());
+    Ipv4Address destAddr = Ipv4Address(dstAddr_int);
     MacNodeId srcId, destId;
 
     // set direction based on the destination Id. If the destination can be reached
     // using D2D, set D2D direction. Otherwise, set UL direction
-    srcId = (lteInfo->getUseNR()) ? binder_->getNrMacNodeId(srcAddr) : binder_->getMacNodeId(srcAddr);
-    destId = (lteInfo->getUseNR()) ? binder_->getNrMacNodeId(destAddr) : binder_->getMacNodeId(destAddr);   // get final destination
+    srcId = useNR ? binder_->getNrMacNodeId(srcAddr) : binder_->getMacNodeId(srcAddr);
+    destId = useNR ? binder_->getNrMacNodeId(destAddr) : binder_->getMacNodeId(destAddr);   // get final destination
 
     // check if src and dest of the flow are D2D-capable UEs (currently in IM)
     if (getNodeTypeById(srcId) == UE && getNodeTypeById(destId) == UE && binder_->getD2DCapability(srcId, destId)) {
@@ -62,20 +74,21 @@ void NrPdcpEnb::analyzePacket(inet::Packet *pkt)
     }
 
     // this is the body of former NrTxPdcpEntity::setIds()
-    if (lteInfo->getUseNR() && getNodeTypeById(getNodeId()) != ENODEB && getNodeTypeById(getNodeId()) != GNODEB)
+    if (useNR && getNodeTypeById(getNodeId()) != ENODEB && getNodeTypeById(getNodeId()) != GNODEB)
         lteInfo->setSourceId(getNrNodeId());
     else
         lteInfo->setSourceId(getNodeId());
-
     if (lteInfo->getMulticastGroupId() > 0)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
         lteInfo->setDestId(getNodeId());
-    else
-        lteInfo->setDestId(getDestId(lteInfo));
+    else {
+        Ipv4Address destAddr = Ipv4Address(pkt->getTag<IpFlowInd>()->getDstAddr());
+        lteInfo->setDestId(getDestId(destAddr, useNR, lteInfo->getSourceId()));
+    }
 
     // CID Request
-    EV << "NrPdcpEnb : Received CID request for Traffic [ " << "Source: " << Ipv4Address(lteInfo->getSrcAddr())
-       << " Destination: " << Ipv4Address(lteInfo->getDstAddr())
-       << " , ToS: " << lteInfo->getTypeOfService()
+    EV << "NrPdcpEnb : Received CID request for Traffic [ " << "Source: " << Ipv4Address(srcAddr_int)
+       << " Destination: " << Ipv4Address(dstAddr_int)
+       << " , ToS: " << typeOfService
        << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
 
     /*
@@ -83,13 +96,13 @@ void NrPdcpEnb::analyzePacket(inet::Packet *pkt)
      * RLC layer will create different RLC entities for different LCIDs
      */
 
-    ConnectionKey key{srcAddr, destAddr, lteInfo->getTypeOfService(), lteInfo->getDirection()};
+    ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
     LogicalCid lcid = lookupOrAssignLcid(key);
 
     // Dual Connectivity: adjust source and dest IDs for downlink packets in DC scenarios.
     // If this is a master eNB in DC and there's a secondary for this UE which will get this packet via X2 and transmit it via its RAN
     MacNodeId secondaryNodeId = binder_->getSecondaryNode(nodeId_);
-    if (dualConnectivityEnabled_ && secondaryNodeId != NODEID_NONE && lteInfo->getUseNR()) {
+    if (dualConnectivityEnabled_ && secondaryNodeId != NODEID_NONE && useNR) {
         lteInfo->setSourceId(secondaryNodeId);
         lteInfo->setDestId(binder_->getNrMacNodeId(destAddr)); // use NR nodeId of the UE
     }
@@ -115,13 +128,13 @@ void NrPdcpEnb::fromLowerLayer(cPacket *pktAux)
     LtePdcpEnbD2D::fromLowerLayer(pktAux);
 }
 
-MacNodeId NrPdcpEnb::getDestId(inet::Ptr<FlowControlInfo> lteInfo)
+MacNodeId NrPdcpEnb::getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
 {
     MacNodeId destId;
-    if (!dualConnectivityEnabled_ || lteInfo->getUseNR())
-        destId = binder_->getNrMacNodeId(Ipv4Address(lteInfo->getDstAddr()));
+    if (!dualConnectivityEnabled_ || useNR)
+        destId = binder_->getNrMacNodeId(destAddr);
     else
-        destId = binder_->getMacNodeId(Ipv4Address(lteInfo->getDstAddr()));
+        destId = binder_->getMacNodeId(destAddr);
 
     // master of this UE
     MacNodeId master = binder_->getNextHop(destId);

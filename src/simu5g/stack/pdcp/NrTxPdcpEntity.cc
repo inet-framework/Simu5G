@@ -10,6 +10,7 @@
 //
 
 #include "simu5g/stack/pdcp/NrTxPdcpEntity.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -38,7 +39,8 @@ void NrTxPdcpEntity::deliverPdcpPdu(Packet *pkt)
             LteTxPdcpEntity::deliverPdcpPdu(pkt);
         }
         else {
-            bool useNR = lteInfo->getUseNR();
+            bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
+
             if (!useNR) {
                 EV << NOW << " NrTxPdcpEntity::deliverPdcpPdu - LCID[" << lteInfo->getLcid() << "] useNR[" << useNR << "] - the destination is a UE. Sending packet to lower layer." << endl;
                 LteTxPdcpEntity::deliverPdcpPdu(pkt);

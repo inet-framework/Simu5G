@@ -74,20 +74,17 @@ class LteControlInfo extends inet::TagBase {
 // @brief contains information flowing from LteIp to Mac
 //
 // It contains the following information:
-// - IP Control Informations: the four tuple, a sequence number and
-//   the header size (IP + Transport) to be used by pdcp ROHC.
 // - Traffic Control Informations: Application, Direction, Traffic
 // - RLC Control Informations: the traffic type (TM, UM, AM)
 // - Connection information: Logical CID
 //
+// Note: IP Control Information (srcAddr, dstAddr, typeOfService) is now handled by IpFlowInd tag
+// Note: Technology selection (useNR) is now handled by TechnologyReq tag
+//
 class FlowControlInfo extends LteControlInfo {
     //# IP Control Information
 
-    uint32 srcAddr = 0;                     // source IP
-    uint32 dstAddr = 0;                     // destination IP
-    uint16 typeOfService = 0;               // IP Type Of Service
     unsigned int sequenceNumber = 0;        // packet sequence number
-    bool useNR = false;                     // flag for sending this packet using NR
 }
 
 //
