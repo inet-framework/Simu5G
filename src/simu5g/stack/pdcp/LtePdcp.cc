@@ -17,6 +17,7 @@
 
 #include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/stack/pdcp/packet/LteRohcPdu_m.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -97,32 +98,41 @@ LogicalCid LtePdcpBase::lookupOrAssignLcid(const ConnectionKey& key)
 MacCid LtePdcpBase::analyzePacket(inet::Packet *pkt)
 {
     // Control Information
-    auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+    auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
 
     setTrafficInformation(pkt, lteInfo);
 
-    MacNodeId destId = getDestId(lteInfo);
+    // Get IP flow information from the new tag
+    auto ipFlowInd = pkt->getTag<IpFlowInd>();
+    uint32_t srcAddr = ipFlowInd->getSrcAddr();
+    uint32_t dstAddr = ipFlowInd->getDstAddr();
+    uint16_t typeOfService = ipFlowInd->getTypeOfService();
+
+    bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
+    MacNodeId destId = getDestId(Ipv4Address(dstAddr), useNR, lteInfo->getSourceId());
 
     // CID Request
-    EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << Ipv4Address(lteInfo->getSrcAddr())
-       << " Destination: " << Ipv4Address(lteInfo->getDstAddr())
-       << " ToS: " << lteInfo->getTypeOfService() << " ]\n";
+    EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << Ipv4Address(srcAddr)
+       << " Destination: " << Ipv4Address(dstAddr)
+       << " ToS: " << typeOfService << " ]\n";
 
     // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
-    ConnectionKey key{Ipv4Address(lteInfo->getSrcAddr()), Ipv4Address(lteInfo->getDstAddr()), lteInfo->getTypeOfService(), 0xFFFF};
+    ConnectionKey key{Ipv4Address(srcAddr), Ipv4Address(dstAddr), typeOfService, 0xFFFF};
     LogicalCid lcid = lookupOrAssignLcid(key);
 
-    // assign LCID
+    // assign LCID and node IDs
     lteInfo->setLcid(lcid);
     lteInfo->setSourceId(nodeId_);
     lteInfo->setDestId(destId);
 
     // this is the body of former LteTxPdcpEntity::setIds()
-    lteInfo->setSourceId(getNodeId());
+    lteInfo->setSourceId(getNodeId());   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
     if (lteInfo->getMulticastGroupId() > 0)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
         lteInfo->setDestId(getNodeId());
-    else
-        lteInfo->setDestId(getDestId(lteInfo));
+    else {
+        Ipv4Address destAddr = Ipv4Address(pkt->getTag<IpFlowInd>()->getDstAddr());
+        lteInfo->setDestId(getDestId(destAddr, false, lteInfo->getSourceId()));
+    }
 
     // obtain CID
     return MacCid(destId, lcid);

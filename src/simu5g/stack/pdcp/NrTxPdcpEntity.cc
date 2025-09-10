@@ -10,6 +10,7 @@
 //
 
 #include "simu5g/stack/pdcp/NrTxPdcpEntity.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -39,7 +40,8 @@ void NrTxPdcpEntity::deliverPdcpPdu(Packet *pkt)
         }
         else {
             MacNodeId destId = lteInfo->getDestId();
-            bool useNR = lteInfo->getUseNR();
+            bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
+
             if (!useNR) {
                 if (getNodeTypeById(destId) != UE)
                     throw cRuntimeError("NrTxPdcpEntity::deliverPdcpPdu - the destination is a UE under the control of a secondary node, but the packet has not been marked as NR packet.");

@@ -19,6 +19,7 @@
 #include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/stack/pdcp/packet/LteRohcPdu_m.h"
 #include <inet/common/ProtocolTag_m.h>
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 // We require a minimum length of 1 Byte for each header even in compressed state
 // (transport, network and ROHC header, i.e. minimum is 3 Bytes)
@@ -125,7 +126,6 @@ void LteTxPdcpEntity::deliverPdcpPdu(Packet *pdcpPkt)
 {
     pdcp_->sendToLowerLayer(pdcpPkt);
 }
-
 
 } //namespace
 
