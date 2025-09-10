@@ -31,6 +31,7 @@
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -208,16 +209,21 @@ void Ip2Nic::toStackUe(Packet *pkt)
 
     // TODO: Add support for IPv6 (=> see L3Tools.cc of INET)
 
-    pkt->addTagIfAbsent<FlowControlInfo>()->setSrcAddr(srcAddr.getInt());
-    pkt->addTagIfAbsent<FlowControlInfo>()->setDstAddr(destAddr.getInt());
-    pkt->addTagIfAbsent<FlowControlInfo>()->setTypeOfService(tos);
+    pkt->addTagIfAbsent<IpFlowInd>()->setSrcAddr(srcAddr.getInt());
+    pkt->addTagIfAbsent<IpFlowInd>()->setDstAddr(destAddr.getInt());
+    pkt->addTagIfAbsent<IpFlowInd>()->setTypeOfService(tos);
     printControlInfo(pkt);
 
     // mark packet for using NR
-    if (!markPacket(pkt->getTagForUpdate<FlowControlInfo>())) {
+    bool useNR;
+    if (!markPacket(srcAddr.getInt(), destAddr.getInt(), tos, useNR)) {
         EV << "Ip2Nic::toStackUe - UE is not attached to any serving node. Delete packet." << endl;
         delete pkt;
+        return;
     }
+
+    // Set useNR on the packet control info
+    pkt->addTagIfAbsent<TechnologyReq>()->setUseNR(useNR);
 
     //** Send datagram to LTE stack or LteIp peer **
     send(pkt, stackGateOut_);
@@ -300,16 +306,19 @@ void Ip2Nic::toStackBs(Packet *pkt)
     short int tos = ipHeader->getTypeOfService();
 
     // prepare flow info for NIC
-    pkt->addTagIfAbsent<FlowControlInfo>()->setSrcAddr(srcAddr.getInt());
-    pkt->addTagIfAbsent<FlowControlInfo>()->setDstAddr(destAddr.getInt());
-    pkt->addTagIfAbsent<FlowControlInfo>()->setTypeOfService(tos);
+    pkt->addTagIfAbsent<IpFlowInd>()->setSrcAddr(srcAddr.getInt());
+    pkt->addTagIfAbsent<IpFlowInd>()->setDstAddr(destAddr.getInt());
+    pkt->addTagIfAbsent<IpFlowInd>()->setTypeOfService(tos);
 
     // mark packet for using NR
-    if (!markPacket(pkt->getTagForUpdate<FlowControlInfo>())) {
+    bool useNR;
+    if (!markPacket(srcAddr.getInt(), destAddr.getInt(), tos, useNR)) {
         EV << "Ip2Nic::toStackBs - UE is not attached to any serving node. Delete packet." << endl;
         delete pkt;
     }
     else {
+        // Set useNR on the packet control info
+        pkt->addTagIfAbsent<TechnologyReq>()->setUseNR(useNR);
         printControlInfo(pkt);
         send(pkt, stackGateOut_);
     }
@@ -317,9 +326,9 @@ void Ip2Nic::toStackBs(Packet *pkt)
 
 void Ip2Nic::printControlInfo(Packet *pkt)
 {
-    EV << "Src IP : " << Ipv4Address(pkt->getTag<FlowControlInfo>()->getSrcAddr()) << endl;
-    EV << "Dst IP : " << Ipv4Address(pkt->getTag<FlowControlInfo>()->getDstAddr()) << endl;
-    EV << "ToS : " << pkt->getTag<FlowControlInfo>()->getTypeOfService() << endl;
+    EV << "Src IP : " << Ipv4Address(pkt->getTag<IpFlowInd>()->getSrcAddr()) << endl;
+    EV << "Dst IP : " << Ipv4Address(pkt->getTag<IpFlowInd>()->getDstAddr()) << endl;
+    EV << "ToS : " << pkt->getTag<IpFlowInd>()->getTypeOfService() << endl;
 }
 
 void Ip2Nic::registerInterface()
@@ -369,7 +378,7 @@ void Ip2Nic::registerMulticastGroups()
     }
 }
 
-bool Ip2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
+bool Ip2Nic::markPacket(uint32_t srcAddr, uint32_t dstAddr, uint16_t typeOfService, bool& useNR)
 {
     // In the current version, the Ip2Nic module of the master eNB (the UE) selects which path
     // to follow based on the Type of Service (TOS) field:
@@ -383,35 +392,35 @@ bool Ip2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
     // TODO make it configurable from INI or XML?
 
     if (nodeType_ == ENODEB || nodeType_ == GNODEB) {
-        MacNodeId ueId = binder_->getMacNodeId((Ipv4Address)ci->getDstAddr());
-        MacNodeId nrUeId = binder_->getNrMacNodeId((Ipv4Address)ci->getDstAddr());
+        MacNodeId ueId = binder_->getMacNodeId((Ipv4Address)dstAddr);
+        MacNodeId nrUeId = binder_->getNrMacNodeId((Ipv4Address)dstAddr);
         bool ueLteStack = (binder_->getNextHop(ueId) != NODEID_NONE);
         bool ueNrStack = (binder_->getNextHop(nrUeId) != NODEID_NONE);
 
-        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && ci->getTypeOfService() >= 20) { // use split bearer TODO fix threshold
+        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && typeOfService >= 20) { // use split bearer TODO fix threshold
             // even packets go through the LTE eNodeB
             // odd packets go through the gNodeB
 
             int sentPackets;
-            if ((sentPackets = sbTable_->find_entry(ci->getSrcAddr(), ci->getDstAddr(), ci->getTypeOfService())) < 0)
-                sentPackets = sbTable_->create_entry(ci->getSrcAddr(), ci->getDstAddr(), ci->getTypeOfService());
+            if ((sentPackets = sbTable_->find_entry(srcAddr, dstAddr, typeOfService)) < 0)
+                sentPackets = sbTable_->create_entry(srcAddr, dstAddr, typeOfService);
 
             if (sentPackets % 2 == 0)
-                ci->setUseNR(false);
+                useNR = false;
             else
-                ci->setUseNR(true);
+                useNR = true;
         }
         else {
             if (ueLteStack && ueNrStack) {
-                if (ci->getTypeOfService() >= 10)                                                     // use secondary cell group bearer TODO fix threshold
-                    ci->setUseNR(true);
+                if (typeOfService >= 10)                                                     // use secondary cell group bearer TODO fix threshold
+                    useNR = true;
                 else                                                  // use master cell group bearer
-                    ci->setUseNR(false);
+                    useNR = false;
             }
             else if (ueLteStack)
-                ci->setUseNR(false);
+                useNR = false;
             else if (ueNrStack)
-                ci->setUseNR(true);
+                useNR = true;
             else
                 return false;
         }
@@ -420,27 +429,27 @@ bool Ip2Nic::markPacket(inet::Ptr<FlowControlInfo> ci)
     if (nodeType_ == UE) {
         bool ueLteStack = (binder_->getNextHop(nodeId_) != NODEID_NONE);
         bool ueNrStack = (binder_->getNextHop(nrNodeId_) != NODEID_NONE);
-        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && ci->getTypeOfService() >= 20) { // use split bearer TODO fix threshold
+        if (dualConnectivityEnabled_ && ueLteStack && ueNrStack && typeOfService >= 20) { // use split bearer TODO fix threshold
             int sentPackets;
-            if ((sentPackets = sbTable_->find_entry(ci->getSrcAddr(), ci->getDstAddr(), ci->getTypeOfService())) < 0)
-                sentPackets = sbTable_->create_entry(ci->getSrcAddr(), ci->getDstAddr(), ci->getTypeOfService());
+            if ((sentPackets = sbTable_->find_entry(srcAddr, dstAddr, typeOfService)) < 0)
+                sentPackets = sbTable_->create_entry(srcAddr, dstAddr, typeOfService);
 
             if (sentPackets % 2 == 0)
-                ci->setUseNR(false);
+                useNR = false;
             else
-                ci->setUseNR(true);
+                useNR = true;
         }
         else {
             if (masterId_ == NODEID_NONE && nrMasterId_ != NODEID_NONE)
-                ci->setUseNR(true);
+                useNR = true;
             else if (masterId_ != NODEID_NONE && nrMasterId_ == NODEID_NONE)
-                ci->setUseNR(false);
+                useNR = false;
             else {
                 // both != 0
-                if (ci->getTypeOfService() >= 10)                                                     // use secondary cell group bearer TODO fix threshold
-                    ci->setUseNR(true);
+                if (typeOfService >= 10)                                                     // use secondary cell group bearer TODO fix threshold
+                    useNR = true;
                 else                                                       // use master cell group bearer
-                    ci->setUseNR(false);
+                    useNR = false;
             }
         }
     }

@@ -55,7 +55,6 @@ class LteTxPdcpEntity : public cSimpleModule
 
     bool isCompressionEnabled() { return headerCompressedSize_ != LTE_PDCP_HEADER_COMPRESSION_DISABLED; }
 
-
   public:
 
 
