@@ -59,8 +59,8 @@ class LteControlInfo extends inet::TagBase {
 // @brief Contains flow information in layers above the MAC
 //
 class FlowControlInfo extends LteControlInfo {
-    uint16 lcid = 0;                                     //  Logical Channel Identifier -- TODO this should be rather in FlowControlInfo not here (a MAC PDU itself has no LCID), but unfortunately still misused for BSR type in MAC
-    int32 multicastGroupId = -1;                         // Identifier for a multicast group (it is in range [0:[2^28)-1] ) -- TODO seems to be used instead of proper MBMS RNTIs stored in destId
+    uint16 lcid = 0;                                     //  Logical Channel Identifier
+    int32 multicastGroupId = -1;                         // Identifier for a multicast group (it is in range [0:[2^28)-1] ) -- TODO probably should not be needed
                                                          // For unicast communications, this field is -1
 
     unsigned short traffic enum(LteTrafficClass) = 0;       // Lte Traffic Type; analogous to LCG IDs (Logical Channel Group Identifiers) in LTE/NR
@@ -91,10 +91,10 @@ cplusplus(FlowDescriptor) {{
 //   txMode, Resource blocks used, RemoteSet
 //
 class UserControlInfo extends LteControlInfo {
-    //TODO the following fields make no sense in UserControlInfo, eliminate
-    uint16 lcid = 0;                                     //  Logical Channel Identifier -- TODO this should be rather in FlowControlInfo not here (a MAC PDU itself has no LCID), but unfortunately still misused for BSR type in MAC
-    int32 multicastGroupId = -1;                         // Identifier for a multicast group (it is in range [0:[2^28)-1] ) -- TODO seems to be used instead of proper MBMS RNTIs stored in destId
-                                                         // For unicast communications, this field is -1
+    //TODO packetLcid and packetMulticastGroupId make no sense in UserControlInfo, eliminate
+    uint16 packetLcid = 0;                 //  only used to indicate BSR type in MAC
+    int32 packetMulticastGroupId = -1;     // Identifier for a multicast group (it is in range [0:[2^28)-1] ) -- TODO seems to be used instead of proper MBMS RNTIs stored in destId
+                                           // For unicast communications, this field is -1
 
     bool isNr = false;
     inet::GHz carrierFrequency;       // carrier frequency

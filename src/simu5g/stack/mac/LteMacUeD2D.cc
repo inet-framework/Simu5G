@@ -127,11 +127,11 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                     info->setCarrierFrequency(carrierFreq);
                     info->setUserTxParams(grant->getUserTxParams()->dup());
                     if (bsrD2DMulticastTriggered_) {
-                        info->setLcid(D2D_MULTI_SHORT_BSR);
+                        info->setPacketLcid(D2D_MULTI_SHORT_BSR);
                         bsrD2DMulticastTriggered_ = false;
                     }
                     else
-                        info->setLcid(D2D_SHORT_BSR);
+                        info->setPacketLcid(D2D_SHORT_BSR);
 
                     // Add the created BSR to the PDU List
                     // select channel model for given carrier frequency
@@ -196,7 +196,7 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                     macPkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
                     macPkt->addTagIfAbsent<UserControlInfo>()->setDestId(destId);
                     macPkt->addTagIfAbsent<UserControlInfo>()->setDirection(dir);
-                    macPkt->addTagIfAbsent<UserControlInfo>()->setLcid(SHORT_BSR);
+                    macPkt->addTagIfAbsent<UserControlInfo>()->setPacketLcid(SHORT_BSR);
                     macPkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(carrierFreq);
                     if (usePreconfiguredTxParams_)
                         macPkt->addTagIfAbsent<UserControlInfo>()->setUserTxParams(preconfiguredTxParams_->dup());
@@ -228,7 +228,7 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                     auto flowInfo = pkt->getTag<FlowControlInfo>();
                     int32_t groupId = flowInfo->getMulticastGroupId();
                     if (groupId >= 0) // for unicast, group id is -1
-                        macPkt->getTagForUpdate<UserControlInfo>()->setMulticastGroupId(groupId);
+                        macPkt->getTagForUpdate<UserControlInfo>()->setPacketMulticastGroupId(groupId);
 
                     drop(pkt);
 
