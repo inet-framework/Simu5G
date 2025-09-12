@@ -481,7 +481,7 @@ void LteMacBase::discardMacPdu(const inet::Packet *macPdu)
 void LteMacBase::discardRlcPdu(inet::Ptr<const UserControlInfo> lteInfo, unsigned int rlcSno)
 {
     Direction dir = (Direction)lteInfo->getDirection();
-    LogicalCid lcid = lteInfo->getLcid();
+    LogicalCid lcid = lteInfo->getPacketLcid();
     if (packetFlowObserver_ != nullptr && (dir == DL || dir == UL))
         packetFlowObserver_->discardRlcPdu(lcid, rlcSno);
 }

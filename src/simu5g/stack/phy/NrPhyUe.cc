@@ -91,7 +91,7 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
     }
 
     // Check if the frame is for us ( MacNodeId matches or - if this is a multicast communication - enrolled in multicast group)
-    if (lteInfo->getDestId() != nodeId_ && !(binder_->isInMulticastGroup(nodeId_, lteInfo->getMulticastGroupId()))) {
+    if (lteInfo->getDestId() != nodeId_ && !(binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId()))) {
         EV << "ERROR: Frame is not for us. Delete it." << endl;
         EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
         EV << "Frame MacNodeId: " << lteInfo->getDestId() << endl;
@@ -118,7 +118,7 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
         return;
     }
 
-    if (binder_->isInMulticastGroup(nodeId_, lteInfo->getMulticastGroupId())) {
+    if (binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId())) {
         // HACK: If this is a multicast connection, change the destId of the airframe so that upper layers can handle it
         lteInfo->setDestId(nodeId_);
     }
@@ -132,7 +132,7 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
     // This is a DATA packet
 
     // If the packet is a D2D multicast one, store it and decode it at the end of the TTI
-    if (d2dMulticastEnableCaptureEffect_ && binder_->isInMulticastGroup(nodeId_, lteInfo->getMulticastGroupId())) {
+    if (d2dMulticastEnableCaptureEffect_ && binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId())) {
         // If not already started, auto-send a message to signal the presence of data to be decoded
         if (d2dDecodingTimer_ == nullptr) {
             d2dDecodingTimer_ = new cMessage("d2dDecodingTimer");
