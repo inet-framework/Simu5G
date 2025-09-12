@@ -122,16 +122,13 @@ void LteMacUeD2D::macPduMake(MacCid cid)
 
                 if (sizeBsr > 0) {
                     // Call the appropriate function to make a BSR for a D2D communication
+                    BsrType bsrType = bsrD2DMulticastTriggered_ ? D2D_MULTI_SHORT_BSR : D2D_SHORT_BSR;
+                    bsrD2DMulticastTriggered_ = false;
                     auto macPktBsr = makeBsr(sizeBsr);
                     auto info = macPktBsr->getTagForUpdate<UserControlInfo>();
+                    info->setPacketLcid(bsrType);
                     info->setCarrierFrequency(carrierFreq);
                     info->setUserTxParams(grant->getUserTxParams()->dup());
-                    if (bsrD2DMulticastTriggered_) {
-                        info->setPacketLcid(D2D_MULTI_SHORT_BSR);
-                        bsrD2DMulticastTriggered_ = false;
-                    }
-                    else
-                        info->setPacketLcid(D2D_SHORT_BSR);
 
                     // Add the created BSR to the PDU List
                     // select channel model for given carrier frequency
