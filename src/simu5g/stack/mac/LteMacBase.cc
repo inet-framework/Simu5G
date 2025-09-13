@@ -481,7 +481,26 @@ void LteMacBase::discardMacPdu(const inet::Packet *macPdu)
 void LteMacBase::discardRlcPdu(inet::Ptr<const UserControlInfo> lteInfo, unsigned int rlcSno)
 {
     Direction dir = (Direction)lteInfo->getDirection();
-    LogicalCid lcid = lteInfo->getPacketLcid();
+    LogicalCid lcid;
+    switch (dir) {
+        case UL:
+        case DL:
+            lcid = SHORT_BSR;
+            break;
+        case D2D:
+            lcid = D2D_SHORT_BSR;
+            break;
+        case D2D_MULTI:
+            lcid = D2D_MULTI_SHORT_BSR;
+            break;
+        default:
+            lcid = SHORT_BSR; // fallback
+            break;
+    }
+
+    // Verify that our direction-based inference matches the original packetLcid value
+    ASSERT(lteInfo->getPacketLcid() == lcid);
+
     if (packetFlowManager_ != nullptr && (dir == DL || dir == UL))
         packetFlowManager_->discardRlcPdu(lcid, rlcSno);
 }

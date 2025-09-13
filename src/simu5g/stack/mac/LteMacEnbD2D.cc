@@ -156,7 +156,27 @@ void LteMacEnbD2D::macPduUnmake(cPacket *cpkt)
         // TODO: see if for cid or lcid
         MacBsr *bsr = check_and_cast<MacBsr *>(macPdu->popCe());
         auto lteInfo = pkt->getTag<UserControlInfo>();
-        LogicalCid lcid = lteInfo->getPacketLcid();  // one of SHORT_BSR or D2D_MULTI_SHORT_BSR
+        //NOTE: BSR type can be figured out using the direction field
+        Direction dir = (Direction)lteInfo->getDirection();
+        LogicalCid lcid;
+        switch (dir) {
+            case UL:
+            case DL:
+                lcid = SHORT_BSR;
+                break;
+            case D2D:
+                lcid = D2D_SHORT_BSR;
+                break;
+            case D2D_MULTI:
+                lcid = D2D_MULTI_SHORT_BSR;
+                break;
+            default:
+                lcid = SHORT_BSR; // fallback
+                break;
+        }
+
+        // Verify that our direction-based inference matches the original packetLcid value
+        ASSERT(lteInfo->getPacketLcid() == lcid);
 
         MacCid cid = MacCid(lteInfo->getSourceId(), lcid); // this way, different connections from the same UE (e.g. one UL and one D2D)
                                                                // obtain different CIDs. With the inverse operation, you can get
