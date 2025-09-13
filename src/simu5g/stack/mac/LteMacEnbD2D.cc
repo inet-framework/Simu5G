@@ -17,7 +17,6 @@
 #include "simu5g/stack/mac/scheduler/LteSchedulerEnbUl.h"
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
 #include "simu5g/stack/mac/conflict_graph/DistanceBasedConflictGraph.h"
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 
 namespace simu5g {
 
@@ -127,10 +126,7 @@ void LteMacEnbD2D::macPduUnmake(cPacket *cpkt)
     auto macPdu = pkt->removeAtFront<LteMacPdu>();
     auto userInfo = pkt->getTag<UserControlInfo>();
 
-    // Notify the packet flow manager about the successful arrival of a TB from a UE.
-    // From ETSI TS 138314 V16.0.0 (2020-07)
-    if (packetFlowManager_ != nullptr)
-        packetFlowManager_->ulMacPduArrived(userInfo->getSourceId(), userInfo->getGrantId());
+    // PacketFlowManager functionality removed
 
     while (macPdu->hasSdu()) {
         // Extract and send SDU
@@ -266,15 +262,7 @@ void LteMacEnbD2D::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
 
             grant->setGrantedBlocks(map);
 
-            /*
-             * @author Alessandro Noferi
-             * Notify the packet flow manager about the successful arrival of a TB from a UE.
-             * From ETSI TS 138314 V16.0.0 (2020-07)
-             *   tSched: the point in time when the UL MAC SDU i is scheduled as
-             *   per the scheduling grant provided
-             */
-            if (packetFlowManager_ != nullptr)
-                packetFlowManager_->grantSent(nodeId, grant->getGrantId());
+            // PacketFlowManager functionality removed
 
             // send grant to PHY layer
             pkt->insertAtFront(grant);

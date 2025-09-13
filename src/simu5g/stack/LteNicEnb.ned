@@ -32,7 +32,7 @@ module LteNicEnb extends LteNicBase
         pdcp.typename = default("LtePdcpEnb");
         mac.typename = default("LteMacEnb");
         phy.typename = default("LtePhyEnb");
-        packetFlowManager.typename = default("PacketFlowManagerEnb");
+        // PacketFlowManager functionality removed
         d2dCapable = default(false);          // DO NOT CHANGE
         bool compEnabled = default(false);
         *.handoverManagerModule = "^.handoverManager";
@@ -81,4 +81,3 @@ module LteNicEnb extends LteNicBase
             x2$o[i] <-- x2Manager.x2$o++;
         }
 }
-

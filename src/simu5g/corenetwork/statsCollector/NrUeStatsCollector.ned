@@ -20,5 +20,5 @@ module NrUeStatsCollector extends UeStatsCollector
 {
     parameters:
         collectorType = default("NrUeStatsCollector");
-        packetFlowManagerModule = default("^.cellularNic.nrPacketFlowManager");
+        // PacketFlowManager functionality removed
 }

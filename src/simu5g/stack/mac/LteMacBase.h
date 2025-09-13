@@ -27,7 +27,6 @@ class LteHarqBufferRx;
 class Binder;
 class FlowControlInfo;
 class LteMacBuffer;
-class PacketFlowManagerBase;
 
 /**
  * Map associating a nodeId with the corresponding TX H-ARQ buffer.
@@ -158,9 +157,6 @@ class LteMacBase : public cSimpleModule
     // reference to the phy layer
     opp_component_ptr<LtePhyBase> phy_;
 
-    // @author Alessandro Noferi
-    // reference to the packetFlowManager
-    inet::ModuleRefByPar<PacketFlowManagerBase> packetFlowManager_;
 
     // support to different numerologies
     struct NumerologyPeriodCounter {

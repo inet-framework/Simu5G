@@ -12,8 +12,6 @@
 #include "simu5g/stack/rlc/um/UmTxEntity.h"
 #include "simu5g/stack/rlc/am/packet/LteRlcAmPdu.h"
 
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerUe.h"
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerEnb.h"
 
 namespace simu5g {
 
@@ -42,21 +40,7 @@ void UmTxEntity::initialize()
     queueSize_ = lteRlc_->par("queueSize");
     queueLength_ = 0;
 
-    packetFlowManager_.reference(this, "packetFlowManagerModule", false);
-
-    // @author Alessandro Noferi
-    if (mac->getNodeType() == ENODEB || mac->getNodeType() == GNODEB) {
-        if (packetFlowManager_) {
-            EV << "UmTxEntity::initialize - RLC layer is for a base station" << endl;
-            ASSERT(check_and_cast<PacketFlowManagerEnb *>(packetFlowManager_.get()));
-        }
-    }
-    else if (mac->getNodeType() == UE) {
-        if (packetFlowManager_) {
-            EV << "UmTxEntity::initialize - RLC layer, casting the packetFlowManager " << endl;
-            ASSERT(check_and_cast<PacketFlowManagerUe *>(packetFlowManager_.get()));
-        }
-    }
+    // PacketFlowManager functionality removed
     burstStatus_ = INACTIVE;
 }
 
@@ -189,60 +173,6 @@ void UmTxEntity::rlcPduMake(int pduLength)
 
     *pkt->addTagIfAbsent<FlowControlInfo>() = *flowControlInfo_;
 
-    /*
-     * @author Alessandro Noferi
-     *
-     * Notify the packetFlowManager about the new RLC PDU
-     * only in UL or DL cases
-     */
-    if (flowControlInfo_->getDirection() == DL || flowControlInfo_->getDirection() == UL) {
-        // add RLC PDU to packetFlowManager
-        if (len != 0 && packetFlowManager_ != nullptr) {
-            LogicalCid lcid = flowControlInfo_->getLcid();
-
-            /*
-             * Burst management.
-             *
-             * If the buffer is empty, the burst, if ACTIVE,
-             * now is finished. Tell the flow manager to STOP
-             * keep track of burst RLCs (not the timer). Set burst as INACTIVE
-             *
-             * if the buffer is NOT empty,
-             *      if burst is already ACTIVE, do not start the timer T2
-             *      if burst is INACTIVE, START the timer T2 and set it as ACTIVE
-             * Tell the flow manager to keep track of burst RLCs
-             */
-
-            if (sduQueue_.isEmpty()) {
-                if (burstStatus_ == ACTIVE) {
-                    EV << NOW << " UmTxEntity::burstStatus - ACTIVE -> INACTIVE" << endl;
-
-                    packetFlowManager_->insertRlcPdu(lcid, rlcPdu, STOP);
-                    burstStatus_ = INACTIVE;
-                }
-                else {
-                    EV << NOW << " UmTxEntity::burstStatus - " << burstStatus_ << endl;
-
-                    packetFlowManager_->insertRlcPdu(lcid, rlcPdu, burstStatus_);
-                }
-            }
-            else {
-                if (burstStatus_ == INACTIVE) {
-                    burstStatus_ = ACTIVE;
-                    EV << NOW << " UmTxEntity::burstStatus - INACTIVE -> ACTIVE" << endl;
-                    //start a new burst
-                    packetFlowManager_->insertRlcPdu(lcid, rlcPdu, START);
-                }
-                else {
-                    EV << NOW << " UmTxEntity::burstStatus - burstStatus: " << burstStatus_ << endl;
-
-                    // burst is still active
-                    packetFlowManager_->insertRlcPdu(lcid, rlcPdu, burstStatus_);
-                }
-            }
-        }
-    }
-
     // send to MAC layer
     pkt->insertAtFront(rlcPdu);
     EV << NOW << " UmTxEntity::rlcPduMake - send PDU " << rlcPdu->getPduSequenceNumber() << " with size " << pkt->getByteLength() << " bytes to lower layer" << endl;
@@ -373,4 +303,3 @@ void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
 }
 
 } //namespace
-

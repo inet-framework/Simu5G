@@ -26,7 +26,7 @@ module LteNicUe extends LteNicBase
         pdcp.typename = default("LtePdcpUe");
         mac.typename = default("LteMacUe");
         phy.typename = default("LtePhyUe");
-        packetFlowManager.typename = default("PacketFlowManagerUe");
+        // PacketFlowManager functionality removed
         d2dCapable = default(false);          // DO NOT CHANGE
 
     submodules:
@@ -35,4 +35,3 @@ module LteNicUe extends LteNicBase
             @display("p=50,50;is=s");
         }
 }
-

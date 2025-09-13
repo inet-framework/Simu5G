@@ -288,10 +288,7 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
         emit(signal, sample);
 
         // discard the RLC
-        if (packetFlowManager_ != nullptr) {
-            unsigned int rlcSno = check_and_cast<LteRlcUmDataPdu *>(pkt)->getPduSequenceNumber(); //FIXME guaranteed cast error! Packet is not a FieldsChunk!
-            packetFlowManager_->discardRlcPdu(lteInfo->getLcid(), rlcSno);
-        }
+        // PacketFlowManager functionality removed
 
         delete pkt;
         return false;

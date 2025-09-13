@@ -22,7 +22,6 @@
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 #include "simu5g/stack/mac/buffer/LteMacBuffer.h"
 #include <assert.h>
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/stack/phy/LtePhyBase.h"
 
 namespace simu5g {
@@ -367,7 +366,6 @@ void LteMacBase::initialize(int stage)
         nrToUpper_ = 0;
         nrToLower_ = 0;
 
-        packetFlowManager_.reference(this, "packetFlowManagerModule", false);
 
         WATCH(queueSize_);
         WATCH(nodeId_);
@@ -452,38 +450,22 @@ void LteMacBase::ensureConnectionInRemoteMac(MacNodeId destId, const FlowDescrip
 
 void LteMacBase::insertMacPdu(const inet::Packet *macPdu)
 {
-    auto lteInfo = macPdu->getTag<UserControlInfo>();
-    Direction dir = (Direction)lteInfo->getDirection();
-    if (packetFlowManager_ != nullptr && (dir == DL || dir == UL)) {
-        EV << "LteMacBase::insertMacPdu" << endl;
-        auto pdu = macPdu->peekAtFront<LteMacPdu>();
-        packetFlowManager_->insertMacPdu(pdu);
-    }
+    // PacketFlowManager functionality removed - method now empty
 }
 
 void LteMacBase::harqAckToFlowManager(inet::Ptr<const UserControlInfo> lteInfo, inet::Ptr<const LteMacPdu> macPdu)
 {
-    Direction dir = (Direction)lteInfo->getDirection();
-    if (packetFlowManager_ != nullptr && (dir == DL || dir == UL))
-        packetFlowManager_->macPduArrived(macPdu);
+    // PacketFlowManager functionality removed - method now empty
 }
 
 void LteMacBase::discardMacPdu(const inet::Packet *macPdu)
 {
-    auto lteInfo = macPdu->getTag<UserControlInfo>();
-    Direction dir = (Direction)lteInfo->getDirection();
-    if (packetFlowManager_ != nullptr && (dir == DL || dir == UL)) {
-        auto pdu = macPdu->peekAtFront<LteMacPdu>();
-        packetFlowManager_->discardMacPdu(pdu);
-    }
+    // PacketFlowManager functionality removed - method now empty
 }
 
 void LteMacBase::discardRlcPdu(inet::Ptr<const UserControlInfo> lteInfo, unsigned int rlcSno)
 {
-    Direction dir = (Direction)lteInfo->getDirection();
-    LogicalCid lcid = lteInfo->getPacketLcid();
-    if (packetFlowManager_ != nullptr && (dir == DL || dir == UL))
-        packetFlowManager_->discardRlcPdu(lcid, rlcSno);
+    // PacketFlowManager functionality removed - method now empty
 }
 
 void LteMacBase::finish()

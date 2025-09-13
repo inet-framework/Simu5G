@@ -15,7 +15,6 @@
 #include <inet/transportlayer/tcp_common/TcpHeader.h>
 #include <inet/transportlayer/udp/UdpHeader_m.h>
 
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/stack/pdcp/packet/LteRohcPdu_m.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
@@ -215,23 +214,7 @@ void LtePdcpBase::sendToLowerLayer(Packet *pkt)
 
     EV << "LtePdcp : Sending packet " << pkt->getName() << " on port " << gate->getFullName() << endl;
 
-    /*
-     * @author Alessandro Noferi
-     *
-     * Since the other methods, e.g. fromData, are overridden
-     * in many classes, this method is the only one used by
-     * all the classes (except the NRPdcpUe that has its
-     * own sendToLowerLayer method).
-     * So, the notification about the new PDCP to the pfm
-     * is done here.
-     *
-     * packets sent in D2D mode are not considered
-     */
-
-    if (lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D) {
-        if (packetFlowManager_ != nullptr)
-            packetFlowManager_->insertPdcpSdu(pkt);
-    }
+    // PacketFlowManager functionality removed
 
     // Send message
     send(pkt, gate);
@@ -258,15 +241,7 @@ void LtePdcpBase::initialize(int stage)
 
         nodeId_ = MacNodeId(getContainingNode(this)->par("macNodeId").intValue());
 
-        packetFlowManager_.reference(this, "packetFlowManagerModule", false);
-        NRpacketFlowManager_.reference(this, "nrPacketFlowManagerModule", false);
-
-        if (packetFlowManager_) {
-            EV << "LtePdcpBase::initialize - PacketFlowManager present" << endl;
-        }
-        if (NRpacketFlowManager_) {
-            EV << "LtePdcpBase::initialize - NRpacketFlowManager present" << endl;
-        }
+        // PacketFlowManager functionality removed
 
         conversationalRlc_ = aToRlcType(par("conversationalRlc"));
         interactiveRlc_ = aToRlcType(par("interactiveRlc"));

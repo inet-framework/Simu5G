@@ -24,7 +24,7 @@ simple LtePdcpBase like ILtePdcp
         @display("i=block/fork");
         string binderModule = default("binder");
         string packetFlowManagerModule = default("^.packetFlowManager"); // optional
-        string nrPacketFlowManagerModule = default("^.nrPacketFlowManager"); // optional
+        // PacketFlowManager functionality removed
         int headerCompressedSize @unit(B) = default(-1B);    // Header compressed size (bytes) ( -1B = compression disabled
         string conversationalRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
         string streamingRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
@@ -59,4 +59,3 @@ simple LtePdcpBase like ILtePdcp
         inout UM_Sap[];            // Unacknowledged Mode SAP
         inout AM_Sap[];            // Acknowledged Mode SAP
 }
-

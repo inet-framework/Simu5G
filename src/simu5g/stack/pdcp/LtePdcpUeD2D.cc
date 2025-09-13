@@ -12,7 +12,6 @@
 #include "simu5g/stack/pdcp/LtePdcpUeD2D.h"
 #include <inet/networklayer/common/L3AddressResolver.h>
 #include "simu5g/stack/d2dModeSelection/D2DModeSwitchNotification_m.h"
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {

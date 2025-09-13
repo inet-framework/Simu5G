@@ -16,9 +16,7 @@
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/transportlayer/tcp_common/TcpHeader.h>
 #include <inet/transportlayer/udp/UdpHeader_m.h>
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/stack/pdcp/packet/LteRohcPdu_m.h"
-#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include <inet/common/ProtocolTag_m.h>
 #include "simu5g/common/LteControlInfoTags_m.h"
 
@@ -127,4 +125,3 @@ void LteTxPdcpEntity::deliverPdcpPdu(Packet *pdcpPkt)
 }
 
 } //namespace
-

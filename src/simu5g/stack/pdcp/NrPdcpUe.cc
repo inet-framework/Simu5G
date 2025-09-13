@@ -14,7 +14,6 @@
 #include "simu5g/stack/pdcp/NrPdcpUe.h"
 #include "simu5g/stack/pdcp/NrTxPdcpEntity.h"
 #include "simu5g/stack/pdcp/NrRxPdcpEntity.h"
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
@@ -195,13 +194,7 @@ void NrPdcpUe::sendToLowerLayer(Packet *pkt)
         // use NR id as source
         lteInfo->setSourceId(nrNodeId_);
 
-        // notify the packetFlowManager only with UL packet
-        if (lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D) {
-            if (NRpacketFlowManager_ != nullptr) {
-                EV << "LteTxPdcpEntity::handlePacketFromUpperLayer - notify NRpacketFlowManager_" << endl;
-                NRpacketFlowManager_->insertPdcpSdu(pkt);
-            }
-        }
+        // PacketFlowManager functionality removed
 
         // Send message
         send(pkt, (lteInfo->getRlcType() == UM ? nrUmSapOutGate_ : nrAmSapOutGate_));

@@ -10,15 +10,12 @@
 //
 
 #include "simu5g/stack/pdcp/LteRxPdcpEntity.h"
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/transportlayer/tcp_common/TcpHeader.h>
 #include <inet/transportlayer/udp/UdpHeader_m.h>
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/stack/pdcp/packet/LteRohcPdu_m.h"
-#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 
 namespace simu5g {
@@ -41,13 +38,7 @@ void LteRxPdcpEntity::handlePacketFromLowerLayer(Packet *pkt)
     auto pdcpHeader = pkt->peekAtFront<LtePdcpHeader>();
     unsigned int sequenceNumber = pdcpHeader->getSequenceNumber();
 
-    // TODO NRRxEntity could delete this packet in handlePdcpSdu()...
-    auto lteInfo = pkt->getTag<FlowControlInfo>();
-    if (lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D) {
-        PacketFlowManagerBase *flowManager = pdcp_->getPacketFlowManager();
-        if (flowManager != nullptr)
-            flowManager->receivedPdcpSdu(pkt);
-    }
+    // PacketFlowManager functionality removed
 
     // pop PDCP header
     pkt->popAtFront<LtePdcpHeader>();
@@ -100,4 +91,3 @@ void LteRxPdcpEntity::decompressHeader(Packet *pkt)
 
 
 } //namespace
-

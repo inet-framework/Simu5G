@@ -13,7 +13,6 @@
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 
 #include "simu5g/stack/pdcp/NrPdcpEnb.h"
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 

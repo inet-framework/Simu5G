@@ -29,7 +29,6 @@ using namespace omnetpp;
 class LteTxPdcpEntity;
 class LteRxPdcpEntity;
 
-class PacketFlowManagerBase;
 
 struct ConnectionKey {
     inet::Ipv4Address srcAddr;
@@ -92,8 +91,6 @@ class LtePdcpBase : public cSimpleModule
   protected:
     // Modules references
     inet::ModuleRefByPar<Binder> binder_;
-    inet::ModuleRefByPar<PacketFlowManagerBase> packetFlowManager_;
-    inet::ModuleRefByPar<PacketFlowManagerBase> NRpacketFlowManager_;
 
     // Connection Identifier
     LogicalCid lcid_ = 1;
@@ -329,7 +326,6 @@ class LtePdcpBase : public cSimpleModule
      */
     virtual void sendToLowerLayer(inet::Packet *pkt);
 
-    virtual PacketFlowManagerBase *getPacketFlowManager() { return packetFlowManager_.getNullable(); }
 
 };
 

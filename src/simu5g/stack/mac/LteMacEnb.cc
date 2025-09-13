@@ -33,7 +33,6 @@
 #include "simu5g/stack/phy/LtePhyBase.h"
 #include "simu5g/stack/rlc/packet/LteRlcDataPdu.h"
 #include "simu5g/stack/rlc/am/packet/LteRlcAmPdu_m.h"
-#include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "simu5g/stack/rlc/um/LteRlcUm.h"
 #include "simu5g/stack/pdcp/NrPdcpEnb.h"
 
@@ -439,15 +438,7 @@ void LteMacEnb::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
             grant->setGrantedBlocks(map);
             pkt->insertAtFront(grant);
 
-            /*
-             * @author Alessandro Noferi
-             * Notify the pfm about the successful arrival of a TB from a UE.
-             * From ETSI TS 138314 V16.0.0 (2020-07)
-             *   tSched: the point in time when the UL MAC SDU i is scheduled as
-             *   per the scheduling grant provided
-             */
-            if (packetFlowManager_ != nullptr)
-                packetFlowManager_->grantSent(nodeId, grant->getGrantId());
+            // PacketFlowManager functionality removed
 
             // Send grant to PHY layer
             sendLowerPackets(pkt);
@@ -622,10 +613,7 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
     auto macPdu = pkt->removeAtFront<LteMacPdu>();
     auto userInfo = pkt->getTag<UserControlInfo>();
 
-    // Notify the pfm about the successful arrival of a TB from a UE.
-    // From ETSI TS 138314 V16.0.0 (2020-07)
-    if (packetFlowManager_ != nullptr)
-        packetFlowManager_->ulMacPduArrived(userInfo->getSourceId(), userInfo->getGrantId());
+    // PacketFlowManager functionality removed
 
     while (macPdu->hasSdu()) {
         // Extract and send SDU
@@ -709,11 +697,7 @@ bool LteMacEnb::bufferizePacket(cPacket *cpkt)
         simsignal_t signal = (lteInfo->getDirection() == DL) ? macBufferOverflowDlSignal_ : macBufferOverflowUlSignal_; //TODO D2DSignel??
         emit(signal, sample);
 
-        // discard the RLC
-        if (packetFlowManager_ != nullptr) {
-            unsigned int rlcSno = check_and_cast<LteRlcUmDataPdu *>(pkt)->getPduSequenceNumber(); //FIXME guaranteed cast error! Packet is not a FieldsChunk!
-            packetFlowManager_->discardRlcPdu(lteInfo->getLcid(), rlcSno);
-        }
+        // PacketFlowManager functionality removed
 
         delete pkt;
         return false;

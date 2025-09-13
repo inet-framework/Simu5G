@@ -15,7 +15,6 @@ package simu5g.stack;
 import inet.networklayer.common.NetworkInterface;
 import simu5g.stack.ip2nic.INetworkLayer2CellularNic;
 import simu5g.stack.mac.ILteMac;
-import simu5g.stack.packetFlowManager.IPacketFlowManager;
 import simu5g.stack.pdcp.ILtePdcp;
 import simu5g.stack.phy.channelmodel.ILteChannelModel;
 import simu5g.stack.phy.ILtePhy;
@@ -80,7 +79,6 @@ module LteNicBase extends NetworkInterface like ICellularNic
             @display("p=362,226");
             d2dCapable = parent.d2dCapable;
             *.macModule = "^.^.mac";
-            *.packetFlowManagerModule = parent.hasRniSupport ? "^.^.packetFlowManager" : "";
             um.nodeType = parent.nodeType;
         }
         // MAC Layer
@@ -96,12 +94,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
             @display("p=100,389");
         }
 
-         		//#
-        //# Modules used to take trace of PDCP pkt flow
-        //#
-        packetFlowManager: <default("")> like IPacketFlowManager if hasRniSupport {
-            @display("p=70,300");
-        }
+        // PacketFlowManager functionality removed
 
     connections allowunconnected:
         ip2nic.stackNic <--> pdcp.DataPort;
@@ -130,4 +123,3 @@ module LteNicBase extends NetworkInterface like ICellularNic
         ip2nic.upperLayerOut --> {  delay = parent.processingDelayOut; } --> upperLayerOut;
         upperLayerIn --> {  delay = parent.processingDelayIn; } --> ip2nic.upperLayerIn;
 }
-
