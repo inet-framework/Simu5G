@@ -387,7 +387,7 @@ void NrMacUe::macPduMake(MacCid cid)
                 // No packets for this user on this codeword
                 if (pit == macPduList_[carrierFreq].end()) {
                     // Create a PDU
-                    macPkt = new Packet("LteMacPdu");
+                    macPkt = new Packet("LteMacPdu-C");
                     auto header = makeShared<LteMacPdu>();
                     header->setHeaderLength(MAC_HEADER);
                     macPkt->insertAtFront(header);

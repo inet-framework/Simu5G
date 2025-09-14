@@ -516,7 +516,7 @@ void LteMacEnb::macPduMake(MacCid cid)
 
             // No packets for this user on this codeword
             if (pit == macPduList_[carrierFreq].end()) {
-                auto pkt = new Packet("LteMacPdu");
+                auto pkt = new Packet("LteMacPdu-A");
                 pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
                 pkt->addTagIfAbsent<UserControlInfo>()->setDestId(destId);
                 pkt->addTagIfAbsent<UserControlInfo>()->setDirection(DL);

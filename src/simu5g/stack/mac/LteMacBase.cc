@@ -481,24 +481,39 @@ void LteMacBase::discardMacPdu(const inet::Packet *macPdu)
 void LteMacBase::discardRlcPdu(inet::Ptr<const UserControlInfo> lteInfo, unsigned int rlcSno)
 {
     Direction dir = (Direction)lteInfo->getDirection();
+    int32_t groupId = lteInfo->getPacketMulticastGroupId();
     LogicalCid lcid;
-    switch (dir) {
-        case UL:
-        case DL:
-            lcid = SHORT_BSR;
-            break;
-        case D2D:
-            lcid = D2D_SHORT_BSR;
-            break;
-        case D2D_MULTI:
+
+    if (dir == UL) {
+        // BSR packets are always UL, so check multicast group ID
+        if (groupId >= 0) {
+            // Has multicast group ID -> D2D multicast BSR
             lcid = D2D_MULTI_SHORT_BSR;
-            break;
-        default:
-            lcid = SHORT_BSR; // fallback
-            break;
+        } else {
+            // No multicast group ID -> could be SHORT_BSR or D2D_SHORT_BSR
+            // For this context (discardRlcPdu), we primarily deal with regular BSRs
+            // This is likely a regular UL BSR for packet flow management
+            lcid = SHORT_BSR;
+        }
+    } else {
+        // Non-UL packets use direction-based inference
+        switch (dir) {
+            case DL:
+                lcid = SHORT_BSR;
+                break;
+            case D2D:
+                lcid = D2D_SHORT_BSR;
+                break;
+            case D2D_MULTI:
+                lcid = D2D_MULTI_SHORT_BSR;
+                break;
+            default:
+                lcid = SHORT_BSR;
+                break;
+        }
     }
 
-    // Verify that our direction-based inference matches the original packetLcid value
+    // Verify that our inference matches the original packetLcid value
     ASSERT(lteInfo->getPacketLcid() == lcid);
 
     if (packetFlowManager_ != nullptr && (dir == DL || dir == UL))

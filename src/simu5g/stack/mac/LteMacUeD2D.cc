@@ -68,7 +68,7 @@ void LteMacUeD2D::initialize(int stage)
 //Function to create only a BSR for the eNB
 Packet *LteMacUeD2D::makeBsr(int size) {
 
-    auto macPkt = new Packet("LteMacPdu");
+    auto macPkt = new Packet("LteMacPdu-BSR");
     auto header = makeShared<LteMacPdu>();
     header->setHeaderLength(MAC_HEADER);
     macPkt->setTimestamp(NOW);

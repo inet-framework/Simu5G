@@ -156,27 +156,57 @@ void LteMacEnbD2D::macPduUnmake(cPacket *cpkt)
         // TODO: see if for cid or lcid
         MacBsr *bsr = check_and_cast<MacBsr *>(macPdu->popCe());
         auto lteInfo = pkt->getTag<UserControlInfo>();
-        //NOTE: BSR type can be figured out using the direction field
+        //NOTE: BSR type can be figured out using multicast group ID and other context
         Direction dir = (Direction)lteInfo->getDirection();
+        int32_t groupId = lteInfo->getPacketMulticastGroupId();
         LogicalCid lcid;
-        switch (dir) {
-            case UL:
-            case DL:
-                lcid = SHORT_BSR;
-                break;
-            case D2D:
-                lcid = D2D_SHORT_BSR;
-                break;
-            case D2D_MULTI:
+
+        if (dir == UL) {
+            // BSR packets are always UL, so check multicast group ID
+            if (groupId >= 0) {
+                // Has multicast group ID -> D2D multicast BSR
                 lcid = D2D_MULTI_SHORT_BSR;
-                break;
-            default:
-                lcid = SHORT_BSR; // fallback
-                break;
+            } else {
+                // No multicast group ID -> could be SHORT_BSR or D2D_SHORT_BSR
+                // For now, we need additional logic to distinguish these
+                // Let's check if this is a BSR by looking at source/dest pattern
+                MacNodeId srcId = lteInfo->getSourceId();
+                MacNodeId destId = lteInfo->getDestId();
+
+                // If source is a UE and dest is eNB, likely a regular BSR
+                // This is a heuristic that might need refinement
+                RanNodeType destNodeType = getNodeTypeById(destId);
+                if (destNodeType == ENODEB || destNodeType == GNODEB) {
+                    lcid = SHORT_BSR;  // Regular UL BSR to eNB
+                } else {
+                    lcid = D2D_SHORT_BSR; // D2D unicast BSR
+                }
+            }
+        } else {
+            // Non-UL packets use direction-based inference
+            switch (dir) {
+                case DL:
+                    lcid = SHORT_BSR;
+                    break;
+                case D2D:
+                    lcid = D2D_SHORT_BSR;
+                    break;
+                case D2D_MULTI:
+                    lcid = D2D_MULTI_SHORT_BSR;
+                    break;
+                default:
+                    lcid = SHORT_BSR;
+                    break;
+            }
         }
 
-        // Verify that our direction-based inference matches the original packetLcid value
-        ASSERT(lteInfo->getPacketLcid() == lcid);
+        // Verify that our inference matches the original packetLcid value
+        if (lteInfo->getPacketLcid() != lcid)
+            throw cRuntimeError("LteMacEnbD2D::macPduUnmake - inferred LCID %d does not match original packet LCID %d "
+                "for packet %s, direction %s, D2DTxPeerId %d, D2DRxPeerId %d, MulticastGroupId %d",
+                    lcid, lteInfo->getPacketLcid(), pkt->getName(),
+                    dirToA((Direction)lteInfo->getDirection()).c_str(),
+                    lteInfo->getD2dTxPeerId(), lteInfo->getD2dRxPeerId(), lteInfo->getPacketMulticastGroupId());
 
         MacCid cid = MacCid(lteInfo->getSourceId(), lcid); // this way, different connections from the same UE (e.g. one UL and one D2D)
                                                                // obtain different CIDs. With the inverse operation, you can get
