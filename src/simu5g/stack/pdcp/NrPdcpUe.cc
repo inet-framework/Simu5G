@@ -42,7 +42,7 @@ void NrPdcpUe::initialize(int stage)
     LtePdcpUeD2D::initialize(stage);
 }
 
-MacNodeId NrPdcpUe::getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
+MacNodeId NrPdcpUe::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
 {
     MacNodeId destId = binder_->getMacNodeId(destAddr);
     MacNodeId srcId = useNR ? nrNodeId_ : nodeId_;
@@ -137,7 +137,7 @@ void NrPdcpUe::analyzePacket(inet::Packet *pkt)
         lteInfo->setDestId(getNodeId());
     else {
         Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
-        lteInfo->setDestId(getDestId(destAddr, useNR, lteInfo->getSourceId()));
+        lteInfo->setDestId(getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId()));
     }
 
     // Cid Request
@@ -162,7 +162,7 @@ void NrPdcpUe::analyzePacket(inet::Packet *pkt)
 
     // get effective next hop dest ID
     // TODO this was in the original code, but has no effect:
-    // MacNodeId destId = getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());  //TODO this value is NOT set on LteInfo -- is this correct?
+    // MacNodeId destId = getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());
 }
 
 void NrPdcpUe::deleteEntities(MacNodeId nodeId)

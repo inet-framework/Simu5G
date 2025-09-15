@@ -22,7 +22,7 @@ Define_Module(LtePdcpUeD2D);
 using namespace inet;
 using namespace omnetpp;
 
-MacNodeId LtePdcpUeD2D::getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
+MacNodeId LtePdcpUeD2D::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
 {
     MacNodeId destId = binder_->getMacNodeId(destAddr);
 
@@ -124,7 +124,7 @@ void LtePdcpUeD2D::analyzePacket(inet::Packet *pkt)
 
     // get effective next hop dest ID
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
-    destId = getDestId(destAddr, useNR, lteInfo->getSourceId());
+    destId = getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());
 
     // this is the body of former LteTxPdcpEntity::setIds()
     lteInfo->setSourceId(getNodeId());   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
@@ -132,7 +132,7 @@ void LtePdcpUeD2D::analyzePacket(inet::Packet *pkt)
         lteInfo->setDestId(getNodeId());
     else {
         Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
-        lteInfo->setDestId(getDestId(destAddr, false, lteInfo->getSourceId()));
+        lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
     }
 }
 

@@ -55,7 +55,7 @@ class NrPdcpUe : public LtePdcpUeD2D
     }
 
     // this function was redefined so as to use the getDirection() function implemented above
-    MacNodeId getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override;
+    MacNodeId getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override;
 
     /**
      * Analyze the packet and fill out its lteInfo.

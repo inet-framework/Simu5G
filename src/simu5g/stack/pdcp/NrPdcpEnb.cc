@@ -87,7 +87,7 @@ void NrPdcpEnb::analyzePacket(inet::Packet *pkt)
         lteInfo->setDestId(getNodeId());
     else {
         Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
-        lteInfo->setDestId(getDestId(destAddr, useNR, lteInfo->getSourceId()));
+        lteInfo->setDestId(getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId()));
     }
 
     // CID Request
@@ -133,7 +133,7 @@ void NrPdcpEnb::fromLowerLayer(cPacket *pktAux)
     LtePdcpEnbD2D::fromLowerLayer(pktAux);
 }
 
-MacNodeId NrPdcpEnb::getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
+MacNodeId NrPdcpEnb::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
 {
     MacNodeId destId;
     if (!dualConnectivityEnabled_ || useNR)
