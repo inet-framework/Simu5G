@@ -43,7 +43,15 @@ MacCid LtePdcpUeD2D::analyzePacket(inet::Packet *pkt)
 {
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
 
-    setTrafficInformation(pkt, lteInfo);
+    // Traffic category, RLC type
+    LteTrafficClass trafficCategory = getTrafficCategory(pkt);
+    LteRlcType rlcType = getRlcType(trafficCategory);
+    lteInfo->setTraffic(trafficCategory);
+    lteInfo->setRlcType(rlcType);
+
+    // direction of transmitted packets depends on node type
+    Direction dir = getNodeTypeById(nodeId_) == UE ? UL : DL;
+    lteInfo->setDirection(dir);
 
     // Get IP flow information from the new tag
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
