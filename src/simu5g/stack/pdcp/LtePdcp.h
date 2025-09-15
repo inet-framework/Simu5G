@@ -257,7 +257,7 @@ class LtePdcpBase : public cSimpleModule
      *
      * @param lteInfo Control Info
      */
-    virtual MacNodeId getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) = 0;
+    virtual MacNodeId getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) = 0;
 
     /*
      * Upper Layer Handlers
@@ -328,7 +328,7 @@ class LtePdcpUe : public LtePdcpBase
 {
   protected:
 
-    MacNodeId getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override
+    MacNodeId getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override
     {
         // UE is subject to handovers: master may change
         return binder_->getNextHop(nodeId_);
@@ -347,7 +347,7 @@ class LtePdcpEnb : public LtePdcpBase
         delete lteInfo;
     }
 
-    MacNodeId getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override
+    MacNodeId getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override
     {
         // destination id
         MacNodeId destId = binder_->getMacNodeId(destAddr);

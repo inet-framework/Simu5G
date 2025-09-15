@@ -59,7 +59,7 @@ class NrPdcpEnb : public LtePdcpEnbD2D
      */
     void fromLowerLayer(cPacket *pkt) override;
 
-    MacNodeId getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override;
+    MacNodeId getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override;
 
     /*
      * Dual Connectivity support

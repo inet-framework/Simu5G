@@ -104,7 +104,7 @@ MacCid LtePdcpBase::analyzePacket(inet::Packet *pkt)
     uint16_t typeOfService = ipFlowInd->getTypeOfService();
 
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
-    MacNodeId destId = getDestId(dstAddr, useNR, lteInfo->getSourceId());
+    MacNodeId destId = getNextHopNodeId(dstAddr, useNR, lteInfo->getSourceId());
 
     // CID Request
     EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << srcAddr
@@ -126,7 +126,7 @@ MacCid LtePdcpBase::analyzePacket(inet::Packet *pkt)
         lteInfo->setDestId(getNodeId());
     else {
         Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
-        lteInfo->setDestId(getDestId(destAddr, false, lteInfo->getSourceId()));
+        lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
     }
 
     // obtain CID
