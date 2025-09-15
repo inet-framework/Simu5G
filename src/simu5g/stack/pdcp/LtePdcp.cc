@@ -67,19 +67,6 @@ LteRlcType LtePdcpBase::getRlcType(LteTrafficClass trafficCategory)
     }
 }
 
-void LtePdcpBase::setTrafficInformation(cPacket *pkt, inet::Ptr<FlowControlInfo> lteInfo)
-{
-    LteTrafficClass trafficCategory = getTrafficCategory(pkt);
-    LteRlcType rlcType = getRlcType(trafficCategory);
-
-    lteInfo->setTraffic(trafficCategory);
-    lteInfo->setRlcType(rlcType);
-
-    // direction of transmitted packets depends on node type
-    Direction dir = getNodeTypeById(nodeId_) == UE ? UL : DL;
-    lteInfo->setDirection(dir);
-}
-
 LogicalCid LtePdcpBase::lookupOrAssignLcid(const ConnectionKey& key)
 {
     auto it = lcidTable_.find(key);
@@ -102,7 +89,15 @@ void LtePdcpBase::analyzePacket(inet::Packet *pkt)
     // Control Information
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
 
-    setTrafficInformation(pkt, lteInfo);
+    // Traffic category, RLC type
+    LteTrafficClass trafficCategory = getTrafficCategory(pkt);
+    LteRlcType rlcType = getRlcType(trafficCategory);
+    lteInfo->setTraffic(trafficCategory);
+    lteInfo->setRlcType(rlcType);
+
+    // direction of transmitted packets depends on node type
+    Direction dir = getNodeTypeById(nodeId_) == UE ? UL : DL;
+    lteInfo->setDirection(dir);
 
     // Get IP flow information from the new tag
     auto ipFlowInd = pkt->getTag<IpFlowInd>();

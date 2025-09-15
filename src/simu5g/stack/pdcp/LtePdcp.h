@@ -259,15 +259,6 @@ class LtePdcpBase : public cSimpleModule
      */
     virtual MacNodeId getDestId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) = 0;
 
-    /**
-     * getDirection() is used only on UEs and ENODEBs:
-     * - direction is downlink for ENODEB
-     * - direction is uplink for UE
-     *
-     * @return Direction of traffic
-     */
-    void setTrafficInformation(cPacket *pkt, inet::Ptr<FlowControlInfo> lteInfo);
-
     /*
      * Upper Layer Handlers
      */
