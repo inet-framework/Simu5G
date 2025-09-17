@@ -369,14 +369,11 @@ void Ip2Nic::registerMulticastGroups()
 
     for (unsigned int i = 0; i < numOfAddresses; ++i) {
         Ipv4Address addr = iface->getProtocolData<Ipv4InterfaceData>()->getJoinedMulticastGroup(i);
-        // get the group id and add it to the binder
-        uint32_t address = addr.getInt();
-        uint32_t mask = ~((uint32_t)255 << 24);      // 00000000 11111111 11111111 11111111
-        uint32_t groupId = address & mask;
-        binder_->joinMulticastGroup(nodeId_, groupId);
-        // register also the NR stack, if any
+        MacNodeId groupId = binder_->getOrAssignDestIdForMulticastAddress(addr);
+        // register in the LTE and also the NR stack, if any
+        binder_->joinMulticastGroup(nodeId_, num(groupId));
         if (nrNodeId_ != NODEID_NONE)
-            binder_->joinMulticastGroup(nrNodeId_, groupId);
+            binder_->joinMulticastGroup(nrNodeId_, num(groupId)); //TODO change the Binder instead of cast!
     }
 }
 
