@@ -150,6 +150,16 @@ class Binder : public cSimpleModule
     std::set<MacNodeId> multicastTransmitterSet_;
 
     /*
+     * Multicast destination ID support
+     */
+    // Counter for allocating new multicast destination IDs
+    int16_t multicastDestIdCounter_ = num(MULTICAST_DEST_MIN_ID);
+    // Mapping from IPv4 multicast addresses to allocated multicast destination IDs
+    std::map<inet::Ipv4Address, MacNodeId> multicastAddrToDestId_;
+    // Reverse mapping from multicast destination IDs to IPv4 addresses (optional, for debugging)
+    std::map<MacNodeId, inet::Ipv4Address> multicastDestIdToAddr_;
+
+    /*
      * Handover support
      */
     // store the id of the UEs that are performing handover
@@ -548,6 +558,7 @@ class Binder : public cSimpleModule
     void setD2DMode(MacNodeId src, MacNodeId dst, LteD2DMode mode);
     LteD2DMode getD2DMode(MacNodeId src, MacNodeId dst);
     bool isFrequencyReuseEnabled(MacNodeId nodeId);
+
     /*
      * Multicast Support
      */
@@ -559,6 +570,20 @@ class Binder : public cSimpleModule
     void addD2DMulticastTransmitter(MacNodeId nodeId);
     // get multicast transmitters
     std::set<MacNodeId>& getD2DMulticastTransmitters();
+
+    /*
+     * Multicast Destination ID Support
+     */
+    // Allocate an (MBMS-RNTI-like) multicast destination ID for a multicast IPv4 address
+    MacNodeId getOrAssignDestIdForMulticastAddress(inet::Ipv4Address multicastAddr);
+    // Checks if a multicast destination ID was already assigned for a multicast IPv4 address
+    bool hasMulticastDestIdAssigned(inet::Ipv4Address multicastAddr) const {
+        return multicastAddrToDestId_.find(multicastAddr) != multicastAddrToDestId_.end();
+    }
+    // Get existing multicast destination ID for a multicast address (returns NODEID_NONE if not found)
+    MacNodeId getDestIdForMulticastAddress(inet::Ipv4Address multicastAddr);
+    // Get multicast address from destination ID
+    inet::Ipv4Address getAddressForMulticastDestId(MacNodeId multicastDestId);
 
     /*
      *  Handover support

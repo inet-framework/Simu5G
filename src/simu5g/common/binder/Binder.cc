@@ -1305,4 +1305,33 @@ cModule *Binder::getPdcpByNodeId(MacNodeId nodeId)
     return module->getSubmodule("cellularNic")->getSubmodule("pdcp");
 }
 
+MacNodeId Binder::getOrAssignDestIdForMulticastAddress(inet::Ipv4Address multicastAddr)
+{
+    if (inet::containsKey(multicastAddrToDestId_, multicastAddr))
+        return multicastAddrToDestId_[multicastAddr];
+
+    // Allocate new ID
+    MacNodeId newDestId = MacNodeId(multicastDestIdCounter_++);
+    multicastAddrToDestId_[multicastAddr] = newDestId;
+    multicastDestIdToAddr_[newDestId] = multicastAddr;
+
+    EV << "Binder::allocateMulticastDestId - allocated multicast destination ID " << newDestId << " for multicast address " << multicastAddr << endl;
+
+    return newDestId;
+}
+
+MacNodeId Binder::getDestIdForMulticastAddress(inet::Ipv4Address multicastAddr)
+{
+    if (!inet::containsKey(multicastAddrToDestId_, multicastAddr))
+        throw cRuntimeError("Binder::getDestIdForMulticastAddress - no destination ID allocated for multicast address %s", multicastAddr.str().c_str());
+    return multicastAddrToDestId_[multicastAddr];
+}
+
+inet::Ipv4Address Binder::getAddressForMulticastDestId(MacNodeId multicastDestId)
+{
+    if (!inet::containsKey(multicastDestIdToAddr_, multicastDestId))
+        throw cRuntimeError("Binder::getAddressForMulticastDestId - no address allocated for multicast destination ID %hu", num(multicastDestId));
+    return multicastDestIdToAddr_[multicastDestId];
+}
+
 } //namespace
