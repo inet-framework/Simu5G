@@ -418,10 +418,9 @@ void LteMacBase::ensureIncomingConnectionInRemoteMac(MacNodeId destId, const Flo
 {
     if (desc.getDirection() == D2D_MULTI) {
         // For multicast, ensure connection on all recipients in the multicast group
-        int32_t groupId = desc.getMulticastGroupId();
-        if (groupId == -1) {
+        MacNodeId groupId = desc.getMulticastGroupId();
+        if (groupId == NODEID_NONE)
             throw cRuntimeError("D2D_MULTI connection must have a valid multicast group ID");
-        }
 
         // Iterate through all nodes to find multicast group members
         for (auto pair : binder_->getNodeInfoMap()) {

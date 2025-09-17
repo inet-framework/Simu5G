@@ -304,7 +304,7 @@ DeploymentScenario aToDeploymentScenario(std::string s)
 
 bool isMulticastConnection(FlowControlInfo *lteInfo)
 {
-    return lteInfo->getMulticastGroupId() >= 0;
+    return lteInfo->getMulticastGroupId() != NODEID_NONE;
 }
 
 
