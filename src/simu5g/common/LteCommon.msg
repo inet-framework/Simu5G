@@ -41,7 +41,7 @@ inline unsigned short operator-(MacNodeId a, MacNodeId b) { return static_cast<u
 inline void doParsimPacking(omnetpp::cCommBuffer *buffer, MacNodeId d) {buffer->pack(num(d));}
 inline void doParsimUnpacking(omnetpp::cCommBuffer *buffer, MacNodeId& d) {unsigned short tmp; buffer->unpack(tmp); d = MacNodeId(tmp);}
 
-/// Node Id bounds
+/// Node Id bounds  --TODO the MAX bounds are completely messed up
 constexpr MacNodeId NODEID_NONE  = MacNodeId(0);
 constexpr MacNodeId ENB_MIN_ID   = MacNodeId(1);
 constexpr MacNodeId ENB_MAX_ID   = MacNodeId(1023);
@@ -50,6 +50,8 @@ constexpr MacNodeId UE_MIN_ID    = MacNodeId(1025);
 constexpr MacNodeId NR_UE_MIN_ID = MacNodeId(2049);
 constexpr MacNodeId BGUE_MIN_ID  = MacNodeId(4097);
 constexpr MacNodeId UE_MAX_ID    = MacNodeId(65535);
+constexpr MacNodeId MULTICAST_DEST_MIN_ID = MacNodeId(32768);
+
 
 /// Cell node ID. It is numerically equal to eNodeB MAC node ID.
 typedef MacNodeId MacCellId;
