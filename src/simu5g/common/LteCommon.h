@@ -459,6 +459,16 @@ DeploymentScenario aToDeploymentScenario(std::string s);
 bool isMulticastConnection(FlowControlInfo *lteInfo);
 
 /**
+ * Check if a MacNodeId represents a multicast destination ID
+ *
+ * @param nodeId the MacNodeId to check
+ * @return true if the nodeId is in the multicast destination ID range
+ */
+inline bool isMulticastDestId(MacNodeId nodeId) {
+    return nodeId >= MULTICAST_DEST_MIN_ID;
+}
+
+/**
  * Utility function that reads the parameters of an XML element
  * and stores them in the passed ParameterMap reference.
  *
