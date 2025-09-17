@@ -124,7 +124,7 @@ void LtePdcpBase::analyzePacket(inet::Packet *pkt)
 
     // this is the body of former LteTxPdcpEntity::setIds()
     lteInfo->setSourceId(getNodeId());   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
-    if (lteInfo->getMulticastGroupId() > 0)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
+    if (lteInfo->getMulticastGroupId() != NODEID_NONE)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
         lteInfo->setDestId(getNodeId());
     else {
         Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
@@ -144,7 +144,7 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
 
     MacCid cid = MacCid(lteInfo->getDestId(), lteInfo->getLcid());
 
-    if (isDualConnectivityEnabled() && lteInfo->getMulticastGroupId() == -1) {
+    if (isDualConnectivityEnabled() && lteInfo->getMulticastGroupId() == NODEID_NONE) {
         // Handle DC setup: Assume packet arrives in Master nodeB (LTE), and wants to use Secondary nodeB (NR).
         // Packet is processed by local PDCP entity, then needs to be tunneled over X2 to Secondary for transmission.
         // However, local PDCP entity is keyed on LTE nodeIds, so we need to tweak the cid and replace NR nodeId
@@ -211,7 +211,7 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
 
     // Handle DC setup on UE side: UE receives packet from base station
     // and needs to use the correct PDCP entity based on technology matching
-    if (getNodeTypeById(nodeId_) == UE && lteInfo->getMulticastGroupId() == -1 && isDualConnectivityEnabled()) {
+    if (getNodeTypeById(nodeId_) == UE && lteInfo->getMulticastGroupId() == NODEID_NONE && isDualConnectivityEnabled()) {
         MacNodeId servingNodeId = binder_->getServingNode(nodeId_);
 
         // Check if there's a technology mismatch between packet source and UE's serving base station

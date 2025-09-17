@@ -273,7 +273,7 @@ void verifyControlInfo(const FlowControlInfo *info)
 {
     auto srcType = getNodeTypeById(info->getSourceId());
     auto destType = getNodeTypeById(info->getDestId());
-    bool isMulticast = info->getMulticastGroupId() != -1;
+    bool isMulticast = info->getMulticastGroupId() != NODEID_NONE;
 
     switch ((Direction)info->getDirection()) {
         case UL:
@@ -336,7 +336,7 @@ DeploymentScenario aToDeploymentScenario(std::string s)
 
 bool isMulticastConnection(FlowControlInfo *lteInfo)
 {
-    return lteInfo->getMulticastGroupId() >= 0;
+    return lteInfo->getMulticastGroupId() != NODEID_NONE;
 }
 
 

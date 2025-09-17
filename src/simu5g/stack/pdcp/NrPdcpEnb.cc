@@ -83,7 +83,7 @@ void NrPdcpEnb::analyzePacket(inet::Packet *pkt)
         lteInfo->setSourceId(getNrNodeId());
     else
         lteInfo->setSourceId(getNodeId());
-    if (lteInfo->getMulticastGroupId() > 0)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
+    if (lteInfo->getMulticastGroupId() != NODEID_NONE)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
         lteInfo->setDestId(getNodeId());
     else {
         Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();

@@ -145,7 +145,7 @@ class Binder : public cSimpleModule
      * Multicast support
      */
     // register here the IDs of the multicast group where UEs participate
-    typedef std::set<uint32_t> MulticastGroupIdSet;
+    typedef std::set<MacNodeId> MulticastGroupIdSet;
     std::map<MacNodeId, MulticastGroupIdSet> nodeGroupMemberships_;
     std::set<MacNodeId> multicastTransmitterSet_;
 
@@ -563,9 +563,9 @@ class Binder : public cSimpleModule
      * Multicast Support
      */
     // add the group to the set of multicast group of nodeId
-    void joinMulticastGroup(MacNodeId nodeId, int32_t groupId);
+    void joinMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId);
     // check if the node is enrolled in the group
-    bool isInMulticastGroup(MacNodeId nodeId, int32_t groupId);
+    bool isInMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId);
     // add one multicast transmitter
     void addD2DMulticastTransmitter(MacNodeId nodeId);
     // get multicast transmitters

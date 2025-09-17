@@ -97,7 +97,7 @@ void NrPdcpUe::analyzePacket(inet::Packet *pkt)
 
         // assign a multicast group id
         MacNodeId groupId = binder_->getOrAssignDestIdForMulticastAddress(destAddr);
-        lteInfo->setMulticastGroupId(num(groupId));
+        lteInfo->setMulticastGroupId(groupId);
     }
     else {
         MacNodeId destId = binder_->getMacNodeId(destAddr);
@@ -128,7 +128,7 @@ void NrPdcpUe::analyzePacket(inet::Packet *pkt)
         lteInfo->setSourceId(getNrNodeId());
     else
         lteInfo->setSourceId(getNodeId());
-    if (lteInfo->getMulticastGroupId() > 0)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
+    if (lteInfo->getMulticastGroupId() != NODEID_NONE)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
         lteInfo->setDestId(getNodeId());
     else {
         Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
