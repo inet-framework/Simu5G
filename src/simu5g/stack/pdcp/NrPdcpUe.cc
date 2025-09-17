@@ -96,13 +96,8 @@ void NrPdcpUe::analyzePacket(inet::Packet *pkt)
         lteInfo->setDirection(D2D_MULTI);
 
         // assign a multicast group id
-        // multicast IP addresses are 224.0.0.0/4.
-        // We consider the host part of the IP address (the remaining 28 bits) as identifier of the group,
-        // so it is univocally determined for the whole network
-        uint32_t address = destAddr.getInt();
-        uint32_t mask = ~((uint32_t)255 << 28);      // 0000 1111 1111 1111
-        uint32_t groupId = address & mask;
-        lteInfo->setMulticastGroupId((int32_t)groupId);
+        MacNodeId groupId = binder_->getOrAssignDestIdForMulticastAddress(destAddr);
+        lteInfo->setMulticastGroupId(num(groupId));
     }
     else {
         MacNodeId destId = binder_->getMacNodeId(destAddr);
