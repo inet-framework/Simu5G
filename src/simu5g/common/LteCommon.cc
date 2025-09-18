@@ -352,8 +352,11 @@ MacNodeId ctrlInfoToUeId(inet::Ptr<FlowControlInfo> info)
     switch (info->getDirection()) {
         case DL: case D2D:
             return info->getDestId();
-        case UL: case D2D_MULTI: // D2D_MULTI goes here, since the destination id is meaningless in that context
+        case UL:
             return info->getSourceId();
+        case D2D_MULTI:
+            ASSERT(info->getMulticastGroupId() != NODEID_NONE);
+            return info->getMulticastGroupId();
         default:
             throw cRuntimeError("ctrlInfoToMacCid - unknown direction %d", info->getDirection());
     }
