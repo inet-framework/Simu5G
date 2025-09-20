@@ -138,11 +138,14 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
     emit(receivedPacketFromUpperLayerSignal_, pktAux);
 
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
-    MacCid cid = analyzePacket(pkt);
+    analyzePacket(pkt);
+
+    auto lteInfo = pkt->getTag<FlowControlInfo>();
+    MacCid cid = MacCid(lteInfo->getDestId(), lteInfo->getLcid());
+
     LteTxPdcpEntity *entity = lookupTxEntity(cid);
 
     // get the PDCP entity for this LCID and process the packet
-    auto lteInfo = pkt->getTag<FlowControlInfo>();
     EV << "fromDataPort in " << getFullPath() << " event #" << getSimulation()->getEventNumber()
        << ": Processing packet " << pkt->getName() << " src=" << lteInfo->getSourceId() << " dest=" << lteInfo->getDestId()
        << " multicast=" << lteInfo->getMulticastGroupId() << " direction=" << dirToA((Direction)lteInfo->getDirection())
