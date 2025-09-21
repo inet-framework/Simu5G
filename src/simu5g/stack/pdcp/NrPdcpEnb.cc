@@ -36,7 +36,7 @@ void NrPdcpEnb::initialize(int stage)
  * Upper Layer handlers
  */
 
-MacCid NrPdcpEnb::analyzePacket(inet::Packet *pkt)
+void NrPdcpEnb::analyzePacket(inet::Packet *pkt)
 {
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
 
@@ -106,9 +106,6 @@ MacCid NrPdcpEnb::analyzePacket(inet::Packet *pkt)
 
     // assign LCID
     lteInfo->setLcid(lcid);
-
-    // obtain CID
-    return MacCid(destId, lcid);
 }
 
 void NrPdcpEnb::fromLowerLayer(cPacket *pktAux)

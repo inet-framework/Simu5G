@@ -39,7 +39,7 @@ MacNodeId LtePdcpUeD2D::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR
  * Upper Layer handlers
  */
 
-MacCid LtePdcpUeD2D::analyzePacket(inet::Packet *pkt)
+void LtePdcpUeD2D::analyzePacket(inet::Packet *pkt)
 {
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
 
@@ -129,9 +129,6 @@ MacCid LtePdcpUeD2D::analyzePacket(inet::Packet *pkt)
         Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
         lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
     }
-
-    // obtain CID
-    return MacCid(destId, lcid);
 }
 
 void LtePdcpUeD2D::handleMessage(cMessage *msg)

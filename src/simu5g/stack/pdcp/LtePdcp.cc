@@ -82,7 +82,7 @@ LogicalCid LtePdcpBase::lookupOrAssignLcid(const ConnectionKey& key)
  * Upper Layer handlers
  */
 
-MacCid LtePdcpBase::analyzePacket(inet::Packet *pkt)
+void LtePdcpBase::analyzePacket(inet::Packet *pkt)
 {
     // Control Information
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
@@ -128,9 +128,6 @@ MacCid LtePdcpBase::analyzePacket(inet::Packet *pkt)
         Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
         lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
     }
-
-    // obtain CID
-    return MacCid(destId, lcid);
 }
 
 void LtePdcpBase::fromDataPort(cPacket *pktAux)
