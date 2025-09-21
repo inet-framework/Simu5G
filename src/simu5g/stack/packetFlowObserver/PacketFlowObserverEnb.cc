@@ -394,8 +394,7 @@ void PacketFlowObserverEnb::insertMacPdu(inet::Ptr<const LteMacPdu> macPdu)
         throw cRuntimeError("%s::macPduArrived - macPdu has no Rlc pdu! This, here, should not happen", pfmType.c_str());
     for (int i = 0; i < len; ++i) {
         auto rlcPdu = macPdu->getSdu(i);
-        auto lteInfo = rlcPdu.getTag<FlowControlInfo>();
-        int lcid = lteInfo->getLcid();
+        int lcid = macPdu->getLcid(i);
         auto cit = connectionMap_.find(lcid);
         if (cit == connectionMap_.end()) {
             // this may occur after a handover, when data structures are cleared
@@ -445,8 +444,7 @@ void PacketFlowObserverEnb::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
         throw cRuntimeError("%s::macPduArrived - macPdu has no Rlc pdu! This, here, should not happen", pfmType.c_str());
     for (int i = 0; i < len; ++i) {
         auto rlcPdu = macPdu->getSdu(i);
-        auto lteInfo = rlcPdu.getTag<FlowControlInfo>();
-        int lcid = lteInfo->getLcid();
+        int lcid = macPdu->getLcid(i);
         auto cit = connectionMap_.find(lcid);
         if (cit == connectionMap_.end())
             throw cRuntimeError("%s::macPduArrived - Logical CID %d not present. It must be initialized before", pfmType.c_str(), lcid);
