@@ -199,12 +199,12 @@ void LtePhyBase::sendBroadcast(LteAirFrame *airFrame)
 LteAmc *LtePhyBase::getAmcModule(MacNodeId id)
 {
     LteAmc *amc = nullptr;
-    OmnetId omid = binder_->getOmnetId(id);
-    if (omid == 0)
+    cModule *module = binder_->getNodeModule(id);
+    if (module == nullptr)
         return nullptr;
 
     amc = check_and_cast<LteMacEnb *>(
-            getSimulation()->getModule(omid)->getSubmodule("cellularNic")->getSubmodule(
+            module->getSubmodule("cellularNic")->getSubmodule(
                     "mac"))->getAmc();
     return amc;
 }
@@ -267,22 +267,12 @@ void LtePhyBase::sendUnicast(LteAirFrame *frame)
             frame->getControlInfo());
     // dest MacNodeId from control info
     MacNodeId dest = ci->getDestId();
-    // destination node (UE or ENODEB) omnet id
-    try {
-        binder_->getOmnetId(dest);
-    }
-    catch (std::out_of_range& e) {
-        delete frame;
-        return;         // make sure that nodes that left the simulation do not send
-    }
-    OmnetId destOmnetId = binder_->getOmnetId(dest);
-    if (destOmnetId == 0) {
+    cModule *receiver = binder_->getNodeModule(dest);
+    if (receiver == nullptr) {
         // destination node has left the simulation
         delete frame;
         return;
     }
-    // get a pointer to receiving module
-    cModule *receiver = getSimulation()->getModule(destOmnetId);
 
     // Remove control info to allow parsim packing
     if (frame->getControlInfo() != nullptr) {

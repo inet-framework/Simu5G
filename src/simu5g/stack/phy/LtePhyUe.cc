@@ -334,7 +334,7 @@ void LtePhyUe::triggerHandover()
 
     // inform the eNB's Ip2Nic module to forward data to the target eNB
     if (masterId_ != NODEID_NONE && candidateMasterId_ != NODEID_NONE) {
-        Ip2Nic *enbIp2Nic = check_and_cast<Ip2Nic *>(getSimulation()->getModule(binder_->getOmnetId(masterId_))->getSubmodule("cellularNic")->getSubmodule("ip2nic"));
+        Ip2Nic *enbIp2Nic = check_and_cast<Ip2Nic *>(binder_->getNodeModule(masterId_)->getSubmodule("cellularNic")->getSubmodule("ip2nic"));
         enbIp2Nic->triggerHandoverSource(nodeId_, candidateMasterId_);
     }
 
@@ -414,7 +414,7 @@ void LtePhyUe::doHandover()
 
     if (candidateMasterId_ != NODEID_NONE) {
         CellInfo *oldCellInfo = cellInfo_;
-        LteMacEnb *newMacEnb = check_and_cast<LteMacEnb *>(getSimulation()->getModule(binder_->getOmnetId(candidateMasterId_))->getSubmodule("cellularNic")->getSubmodule("mac"));
+        LteMacEnb *newMacEnb = check_and_cast<LteMacEnb *>(binder_->getNodeModule(candidateMasterId_)->getSubmodule("cellularNic")->getSubmodule("mac"));
         CellInfo *newCellInfo = newMacEnb->getCellInfo();
         newCellInfo->attachUser(nodeId_);
         cellInfo_ = newCellInfo;
@@ -443,7 +443,7 @@ void LtePhyUe::doHandover()
 
     // inform the eNB's Ip2Nic module to forward data to the target eNB
     if (oldMaster != NODEID_NONE && candidateMasterId_ != NODEID_NONE) {
-        Ip2Nic *enbIp2Nic = check_and_cast<Ip2Nic *>(getSimulation()->getModule(binder_->getOmnetId(masterId_))->getSubmodule("cellularNic")->getSubmodule("ip2nic"));
+        Ip2Nic *enbIp2Nic = check_and_cast<Ip2Nic *>(binder_->getNodeModule(masterId_)->getSubmodule("cellularNic")->getSubmodule("ip2nic"));
         enbIp2Nic->signalHandoverCompleteTarget(nodeId_, oldMaster);
     }
 }
@@ -457,8 +457,7 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
     connectedNodeId_ = masterId_;
     EV << "LtePhy: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
 
-    int sourceId = binder_->getOmnetId(lteInfo->getSourceId());
-    if (sourceId == 0) {
+    if (!binder_->nodeExists(lteInfo->getSourceId())) {
         // source has left the simulation
         delete msg;
         return;
