@@ -278,6 +278,7 @@ class Binder : public cSimpleModule
     /**
      * Returns nullptr if not found.
      */
+    //TODO see getModuleByMacNodeId() which does the same except throws when not found
     virtual cModule *getNodeModule(MacNodeId nodeId);
 
     /*
