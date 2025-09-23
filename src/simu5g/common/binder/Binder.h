@@ -283,6 +283,7 @@ class Binder : public cSimpleModule
     /*
      * getNodeInfoMap returns information on all nodes in a map
      */
+    //TODO 1 call site -- eliminate??
     virtual const std::map<MacNodeId, NodeInfo>& getNodeInfoMap() const { return nodeInfoMap_; }
 
     /*
