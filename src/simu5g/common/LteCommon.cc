@@ -311,7 +311,7 @@ bool isMulticastConnection(FlowControlInfo *lteInfo)
 /*
  * Obtain the CID from the Control Info
  */
-MacCid ctrlInfoToMacCid(inet::Ptr<FlowControlInfo> info)
+MacCid ctrlInfoToMacCid(const FlowControlInfo *info)
 {
     return MacCid(ctrlInfoToUeId(info), info->getLcid());
 }
@@ -319,7 +319,7 @@ MacCid ctrlInfoToMacCid(inet::Ptr<FlowControlInfo> info)
 /*
  * Obtain the MacNodeId of a UE from packet control info
  */
-MacNodeId ctrlInfoToUeId(inet::Ptr<FlowControlInfo> info)
+MacNodeId ctrlInfoToUeId(const FlowControlInfo *info)
 {
     /*
      * direction | src       dest
