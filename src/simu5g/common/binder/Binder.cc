@@ -168,7 +168,7 @@ MacNodeId Binder::registerNode(cModule *module, RanNodeType type, MacNodeId mast
         module->par("nrMacNodeId") = num(macNodeId);
 
     if (type == UE) {
-        registerNextHop(masterId, macNodeId);
+        registerServingNodeB(masterId, macNodeId);
     }
     else if (type == ENODEB || type == GNODEB) {
         module->par("macCellId") = num(macNodeId);
@@ -217,38 +217,35 @@ void Binder::unregisterNode(MacNodeId id)
     }
 }
 
-void Binder::registerNextHop(MacNodeId masterId, MacNodeId slaveId)
+void Binder::registerServingNodeB(MacNodeId enbId, MacNodeId ueId)
 {
-    Enter_Method_Silent("registerNextHop");
+    Enter_Method_Silent("registerServingNodeB");
 
-    EV << "Binder : Registering slave " << slaveId << " to master "
-       << masterId << "\n";
+    EV << "Binder : Registering UE " << ueId << " to serving eNB/gNB " << enbId << "\n";
 
-    ASSERT(masterId == NODEID_NONE || getNodeTypeById(masterId) == ENODEB);
-    ASSERT(getNodeTypeById(slaveId) == UE);
+    ASSERT(enbId == NODEID_NONE || getNodeTypeById(enbId) == ENODEB);
+    ASSERT(getNodeTypeById(ueId) == UE);
 
-    if (masterId != slaveId) {
-        dMap_[masterId][slaveId] = true;
-    }
+    dMap_[enbId][ueId] = true;
 
-    if (nextHop_.size() <= num(slaveId))
-        nextHop_.resize(num(slaveId) + 1);
-    nextHop_[num(slaveId)] = masterId;
+    if (servingNodeB_.size() <= num(ueId))
+        servingNodeB_.resize(num(ueId) + 1);
+    servingNodeB_[num(ueId)] = enbId;
 }
 
-void Binder::unregisterNextHop(MacNodeId masterId, MacNodeId slaveId)
+void Binder::unregisterServingNodeB(MacNodeId enbId, MacNodeId ueId)
 {
-    Enter_Method_Silent("unregisterNextHop");
-    EV << "Binder : Unregistering slave " << slaveId << " from master " << masterId << "\n";
+    Enter_Method_Silent("unregisterServingNodeB");
+    EV << "Binder : Unregistering UE " << ueId << " from serving eNodeB/gNodeB " << enbId << "\n";
 
-    ASSERT(masterId == NODEID_NONE || getNodeTypeById(masterId) == ENODEB);
-    ASSERT(getNodeTypeById(slaveId) == UE);
+    ASSERT(enbId == NODEID_NONE || getNodeTypeById(enbId) == ENODEB);
+    ASSERT(getNodeTypeById(ueId) == UE);
 
-    dMap_[masterId][slaveId] = false;
+    dMap_[enbId][ueId] = false;
 
-    if (nextHop_.size() <= num(slaveId))
+    if (servingNodeB_.size() <= num(ueId))
         return;
-    nextHop_[num(slaveId)] = NODEID_NONE;
+    servingNodeB_[num(ueId)] = NODEID_NONE;
 }
 
 
@@ -281,7 +278,7 @@ void Binder::initialize(int stage)
         WATCH_MAP(ipAddressToMacNodeId_);
         WATCH_MAP(ipAddressToNrMacNodeId_);
         // WATCH_MAP(nodeInfoMap_); // Commented out - contains complex NodeInfo structs that don't have stream operators
-        WATCH_VECTOR(nextHop_);
+        WATCH_VECTOR(servingNodeB_);
         WATCH_VECTOR(secondaryNodeToMasterNode_);
         WATCH_SET(mecHostAddress_);
         WATCH_MAP(mecHostToUpfAddress_);
@@ -421,9 +418,9 @@ MacNodeId Binder::getNextHop(MacNodeId slaveId)
     Enter_Method_Silent("getNextHop");
     if (getNodeTypeById(slaveId) == ENODEB)
         return slaveId;
-    if (num(slaveId) >= nextHop_.size())
+    if (num(slaveId) >= servingNodeB_.size())
         throw cRuntimeError("Binder::getNextHop(): bad slave id %hu", num(slaveId));
-    return nextHop_[num(slaveId)];
+    return servingNodeB_[num(slaveId)];
 }
 
 MacNodeId Binder::getMasterNode(MacNodeId slaveId)
@@ -653,7 +650,7 @@ bool Binder::checkD2DCapability(MacNodeId src, MacNodeId dst)
         LteMacBase *dstMac = getMacFromMacNodeId(dst);
         if (dstMac->isD2DCapable()) {
             // set the initial mode
-            if (nextHop_[num(src)] == nextHop_[num(dst)]) {
+            if (servingNodeB_[num(src)] == servingNodeB_[num(dst)]) {
                 // if served by the same cell, then the mode is selected according to the corresponding parameter
                 LteMacBase *srcMac = getMacFromMacNodeId(src);
                 inet::NetworkInterface *srcNic = getContainingNicModule(srcMac);
