@@ -164,8 +164,12 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
        << " multicast=" << lteInfo->getMulticastGroupId() << " direction=" << dirToA((Direction)lteInfo->getDirection())
        << " ---> CID " << cid << (entity == nullptr ? " (NEW)" : " (existing)") << std::endl;
 
-    if (entity == nullptr)
-        entity = createTxEntity(cid);
+    if (entity == nullptr) {
+        binder_->establishUnidirectionalDataConnection((FlowControlInfo *)lteInfo.get());
+        entity = lookupTxEntity(cid);
+        ASSERT(entity != nullptr);
+    }
+
     entity->handlePacketFromUpperLayer(pkt);
 }
 
@@ -181,7 +185,6 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
     ASSERT(pkt->findTag<PdcpTrackingTag>() == nullptr);
 
     auto lteInfo = pkt->getTag<FlowControlInfo>();
-
     MacCid cid = MacCid(lteInfo->getSourceId(), lteInfo->getLcid());
 
     if (isDualConnectivityEnabled()) {
@@ -238,8 +241,8 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
        << " multicast=" << lteInfo->getMulticastGroupId() << " direction=" << dirToA((Direction)lteInfo->getDirection())
        << " ---> CID " << cid << (entity == nullptr ? " (NEW)" : " (existing)") << std::endl;
 
-    if (entity == nullptr)
-        entity = createRxEntity(cid);
+    ASSERT(entity != nullptr);
+
     entity->handlePacketFromLowerLayer(pkt);
 }
 

@@ -21,6 +21,7 @@
 #include "simu5g/stack/mac/LteMacUe.h"
 #include "simu5g/stack/phy/LtePhyUe.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
+#include "simu5g/stack/rrc/Rrc.h"
 
 namespace simu5g {
 
@@ -1325,6 +1326,124 @@ inet::Ipv4Address Binder::getAddressForMulticastDestId(MacNodeId multicastDestId
     if (!inet::containsKey(multicastDestIdToAddr_, multicastDestId))
         throw cRuntimeError("Binder::getAddressForMulticastDestId - no address allocated for multicast destination ID %hu", num(multicastDestId));
     return multicastDestIdToAddr_[multicastDestId];
+}
+
+cModule *Binder::getRrcByNodeId(MacNodeId nodeId)
+{
+    cModule *module = getNodeModule(nodeId);
+    if (module == nullptr) {
+        return nullptr;
+    }
+    return module->getSubmodule("cellularNic")->getSubmodule("rrc");
+}
+
+bool Binder::isDualConnectivityRequired(FlowControlInfo *info)
+{
+    MacNodeId sourceId = info->getSourceId();
+    MacNodeId destId = info->getDestId();
+
+    // Part 1: Check if NodeB is in DC setup
+    MacNodeId nodeB = (getNodeTypeById(sourceId) == UE) ? getServingNode(sourceId) : sourceId;
+    ASSERT(nodeB != NODEID_NONE);
+
+    MacNodeId secondaryNode = getSecondaryNode(nodeB);
+    MacNodeId masterNode = getMasterNodeOrSelf(nodeB);
+    bool nodeBInDC = (secondaryNode != NODEID_NONE) || (masterNode != nodeB);
+
+    // Part 2: Check if UE is dual technology capable
+    MacNodeId ue = getNodeTypeById(sourceId) == UE ? sourceId :
+                   getNodeTypeById(destId) == UE ? destId :
+                   NODEID_NONE;
+
+    bool ueIsDualTech = false;  //TODO true? if a nodeB in DC setup sends multicast, can it use dual connectivity?
+    if (ue != NODEID_NONE) {
+        Rrc *rrc = check_and_cast<Rrc*>(getRrcByNodeId(ue));
+        ueIsDualTech = rrc->isDualTechnology();
+    }
+
+    return nodeBInDC && ueIsDualTech;
+}
+
+void Binder::establishUnidirectionalDataConnection(FlowControlInfo *info)
+{
+    bool dualConnected = isDualConnectivityRequired(info);
+    if (!dualConnected) {
+        createConnection(info, true);
+    }
+    else {
+        MacNodeId sourceId = info->getSourceId();
+        MacNodeId destId = info->getDestId();
+        bool isMulticast = info->getMulticastGroupId() != NODEID_NONE;
+
+        // Get UE RRC if any endpoint is UE
+        Rrc *ueRrc = (getNodeTypeById(sourceId) == UE) ? check_and_cast<Rrc*>(getRrcByNodeId(sourceId)) :
+                     (!isMulticast && getNodeTypeById(destId) == UE) ? check_and_cast<Rrc*>(getRrcByNodeId(destId)) :
+                     nullptr;
+
+        //TODO assert that master is LTE, and secondary is NT;   alternatively, choose the UE nodeId that matches the technology of the NODEB
+
+        // LTE Connection (Master)
+        FlowControlInfo lteInfo = *info;
+        lteInfo.setSourceId(getNodeTypeById(sourceId) == UE ?
+                            ueRrc->getLteNodeId() :
+                            getMasterNodeOrSelf(sourceId));
+        if (!isMulticast) {  // Only set destId for unicast
+            lteInfo.setDestId(getNodeTypeById(destId) == UE ?
+                              ueRrc->getLteNodeId() :
+                              getMasterNodeOrSelf(destId));
+        }
+        createConnection(&lteInfo, true);
+
+        // NR Connection (Secondary)
+        FlowControlInfo nrInfo = *info;
+        nrInfo.setSourceId(getNodeTypeById(sourceId) == UE ?
+                           ueRrc->getNrNodeId() :
+                           getSecondaryNode(getMasterNodeOrSelf(sourceId)));
+        if (!isMulticast) {  // Only set destId for unicast
+            nrInfo.setDestId(getNodeTypeById(destId) == UE ?
+                             ueRrc->getNrNodeId() :
+                             getSecondaryNode(getMasterNodeOrSelf(destId)));
+        }
+        createConnection(&nrInfo, false);
+    }
+}
+
+void Binder::createConnection(FlowControlInfo *lteInfo, bool withPdcp)
+{
+    MacNodeId sourceId = lteInfo->getSourceId();
+    MacNodeId destId = lteInfo->getDestId();
+    MacNodeId groupId = lteInfo->getMulticastGroupId();
+
+    EV << "Binder::establishUnidirectionalDataConnection - establishing connection from sourceId=" << sourceId
+       << " to destId=" << destId << " groupId=" << groupId << endl;
+
+    bool sourceIsEnb = getNodeTypeById(sourceId) == NODEB;
+    bool destIsEnb = getNodeTypeById(destId) == NODEB;
+    ASSERT(!sourceIsEnb || !destIsEnb);  // they cannot be both NodeBs
+
+    createOutgoingConnectionOnNode(sourceId, lteInfo, getNodeTypeById(sourceId)==UE || withPdcp);
+
+    if (groupId == NODEID_NONE) {
+        createIncomingConnectionOnNode(destId, lteInfo, getNodeTypeById(destId)==UE || withPdcp);
+    }
+    else {
+        for (auto& [nodeId,_] : getNodeInfoMap())  //TODO use lte ones if LTE in DC setup, and NR ones if NR in DC setup
+            if (nodeId != sourceId && isInMulticastGroup(nodeId, groupId))
+                createIncomingConnectionOnNode(nodeId, lteInfo, getNodeTypeById(nodeId)==UE || withPdcp);
+    }
+}
+
+
+void Binder::createIncomingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp)
+{
+    Rrc *rrc = check_and_cast<Rrc*>(getRrcByNodeId(nodeId));
+    rrc->createIncomingConnection(lteInfo, withPdcp);
+}
+
+void Binder::createOutgoingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp)
+{
+    Rrc *rrc = check_and_cast<Rrc*>(getRrcByNodeId(nodeId));
+    rrc->createOutgoingConnection(lteInfo, withPdcp);
 }
 
 } //namespace

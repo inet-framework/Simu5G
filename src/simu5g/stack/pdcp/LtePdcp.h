@@ -136,7 +136,7 @@ class LtePdcpBase : public cSimpleModule
     static simsignal_t sentPacketToUpperLayerSignal_;
     static simsignal_t sentPacketToLowerLayerSignal_;
 
-  protected:
+  public:
 
     /**
      * lookupTxEntity() searches for an existing TX PDCP entity for the given CID.
@@ -170,6 +170,7 @@ class LtePdcpBase : public cSimpleModule
      */
     virtual LteRxPdcpEntity *createRxEntity(MacCid cid);
 
+  protected:
     /*
      * Dual Connectivity support
      */

@@ -22,6 +22,9 @@
 #include "simu5g/nodes/ExtCell.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 
+// Forward declaration
+class FlowDescriptor;
+
 namespace simu5g {
 
 using namespace omnetpp;
@@ -637,7 +640,16 @@ class Binder : public cSimpleModule
     cModule *getMacByNodeId(MacNodeId nodeId);
     cModule *getRlcByNodeId(MacNodeId nodeId, LteRlcType rlcType);
     cModule *getPdcpByNodeId(MacNodeId nodeId);
+    cModule *getRrcByNodeId(MacNodeId nodeId);
 
+    // SMF-like Session Management Functions
+    void establishUnidirectionalDataConnection(FlowControlInfo *lteInfo);
+
+  private:
+    bool isDualConnectivityRequired(FlowControlInfo *info);
+    void createConnection(FlowControlInfo *lteInfo, bool withPdcp);
+    void createIncomingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp);
+    void createOutgoingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp);
 };
 
 } //namespace

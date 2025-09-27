@@ -258,9 +258,10 @@ bool LteMacBase::bufferizePacket(cPacket *cpkt)
     // obtain the CID from the packet information
     MacCid cid = ctrlInfoToMacCid(lteInfo.get());
 
-    // check if queues exist, create them if they don't
+    // check if queues exist
     if (connDescOut_.find(cid) == connDescOut_.end())
-        createOutgoingConnection(cid, FlowDescriptor::fromFlowControlInfo(*lteInfo));
+        //TODO this is dead code -- this throw needs to be added in subclasses too!!!!!!!!!!!
+        throw cRuntimeError("LteMacBase::bufferizePacket - Buffer for CID %s not found. Connection must be established via Binder SMF before use.", cid.str().c_str());
 
     OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
     LteMacQueue *queue = connInfo.queue;
@@ -427,6 +428,7 @@ void LteMacBase::handleMessage(cMessage *msg)
     }
 }
 
+//TODO should be a no-op now that connections are added proactively from Binder::establishDataConnection() system-wide, with the help of Rrc::createDataConnection() on each node, triggered from PDCP -- TODO remove
 void LteMacBase::ensureIncomingConnection(const FlowDescriptor& desc)
 {
     Enter_Method_Silent("ensureConnection()");
@@ -437,6 +439,7 @@ void LteMacBase::ensureIncomingConnection(const FlowDescriptor& desc)
         createIncomingConnection(cid,desc);
 }
 
+//TODO should be a no-op now that connections are added proactively from Binder::establishDataConnection() system-wide, with the help of Rrc::createDataConnection() on each node, triggered from PDCP -- TODO remove
 void LteMacBase::ensureIncomingConnectionInRemoteMac(MacNodeId destId, const FlowDescriptor& desc)
 {
     if (desc.getDirection() == D2D_MULTI) {
