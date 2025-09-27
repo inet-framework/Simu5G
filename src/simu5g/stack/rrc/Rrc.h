@@ -23,6 +23,7 @@ namespace simu5g {
 class LteMacBase;
 class LtePdcpBase;
 class LteRlcUm;
+class Binder;
 
 /**
  * @brief RRC (Radio Resource Control) module for LTE/NR networks.
@@ -33,6 +34,10 @@ class Rrc : public cSimpleModule
     inet::ModuleRefByPar<LteMacBase> macModule;
     inet::ModuleRefByPar<LteRlcUm> rlcUmModule;  // Compound module with TM/UM/AM submodules
     inet::ModuleRefByPar<LtePdcpBase> pdcpModule;
+
+    // Dual connectivity support
+    Binder* binder_;
+    MacNodeId nodeId_;
 
   protected:
     virtual void initialize() override;

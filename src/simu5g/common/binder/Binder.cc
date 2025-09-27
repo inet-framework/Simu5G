@@ -1323,13 +1323,76 @@ void Binder::establishUnidirectionalDataConnection(FlowControlInfo *lteInfo)
     MacNodeId destId = lteInfo->getDestId();
     MacNodeId groupId = lteInfo->getMulticastGroupId();
 
+    // Create outgoing connection on source
     createOutgoingConnectionOnNode(sourceId, lteInfo);
-    if (groupId == NODEID_NONE)
-        createIncomingConnectionOnNode(destId, lteInfo);
+
+    // For dual connectivity, we need to consider the serving eNB/gNB of source UE
+    if (getNodeTypeById(sourceId) == UE) {
+        MacNodeId servingNodeId = getServingNode(sourceId);
+        if (servingNodeId != NODEID_NONE) {
+            // Check if serving node is a secondary node in dual connectivity
+            MacNodeId masterNodeId = getMasterNode(servingNodeId);
+            if (servingNodeId != masterNodeId) {
+                // Source UE is connected to a secondary node - create connections on both secondary and master
+                EV << "Binder::establishUnidirectionalDataConnection - UE " << sourceId
+                   << " connected to secondary node " << servingNodeId
+                   << ", creating connections on both secondary and master " << masterNodeId << endl;
+
+                createIncomingConnectionOnNode(servingNodeId, lteInfo);  // RLC/MAC on secondary
+                createIncomingConnectionOnNode(masterNodeId, lteInfo);   // PDCP on master
+            }
+        }
+    }
+
+    if (groupId == NODEID_NONE) {
+        // For destination, also consider dual connectivity topology
+        if (getNodeTypeById(destId) == UE) {
+            MacNodeId destServingNodeId = getServingNode(destId);
+            if (destServingNodeId != NODEID_NONE) {
+                MacNodeId destMasterNodeId = getMasterNode(destServingNodeId);
+                if (destServingNodeId != destMasterNodeId) {
+                    // Destination UE is connected to a secondary node
+                    EV << "Binder::establishUnidirectionalDataConnection - Dest UE " << destId
+                       << " connected to secondary node " << destServingNodeId
+                       << ", creating connections on both secondary and master " << destMasterNodeId << endl;
+
+                    createIncomingConnectionOnNode(destServingNodeId, lteInfo);  // RLC/MAC on secondary
+                    createIncomingConnectionOnNode(destMasterNodeId, lteInfo);   // PDCP on master
+                } else {
+                    // Normal case - destination UE connected to master node directly
+                    createIncomingConnectionOnNode(destServingNodeId, lteInfo);
+                }
+            } else {
+                // Direct connection to destination UE (shouldn't happen in normal scenarios)
+                createIncomingConnectionOnNode(destId, lteInfo);
+            }
+        } else {
+            // Destination is not a UE (e.g., server)
+            createIncomingConnectionOnNode(destId, lteInfo);
+        }
+    }
     else {
-        for (auto& [nodeId,_] : getNodeInfoMap())
-            if (nodeId != sourceId && isInMulticastGroup(nodeId, groupId))
-                createIncomingConnectionOnNode(nodeId, lteInfo);
+        for (auto& [nodeId,_] : getNodeInfoMap()) {
+            if (nodeId != sourceId && isInMulticastGroup(nodeId, groupId)) {
+                // Apply same dual connectivity logic for multicast destinations
+                if (getNodeTypeById(nodeId) == UE) {
+                    MacNodeId mcServingNodeId = getServingNode(nodeId);
+                    if (mcServingNodeId != NODEID_NONE) {
+                        MacNodeId mcMasterNodeId = getMasterNode(mcServingNodeId);
+                        if (mcServingNodeId != mcMasterNodeId) {
+                            createIncomingConnectionOnNode(mcServingNodeId, lteInfo);  // RLC/MAC on secondary
+                            createIncomingConnectionOnNode(mcMasterNodeId, lteInfo);   // PDCP on master
+                        } else {
+                            createIncomingConnectionOnNode(mcServingNodeId, lteInfo);
+                        }
+                    } else {
+                        createIncomingConnectionOnNode(nodeId, lteInfo);
+                    }
+                } else {
+                    createIncomingConnectionOnNode(nodeId, lteInfo);
+                }
+            }
+        }
     }
 }
 

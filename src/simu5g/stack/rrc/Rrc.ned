@@ -27,4 +27,5 @@ simple Rrc like IRrc
         string macModule = default("^.mac");
         string rlcUmModule = default("^.rlc.um");
         string pdcpModule = default("^.pdcp");
+        string binderModule = default("binder");
 }
