@@ -397,18 +397,19 @@ MacNodeId Binder::getNextHop(MacNodeId nodeId)
     return (nodeId == NODEID_NONE || getNodeTypeById(nodeId) == NODEB) ? nodeId : getServingNode(nodeId);
 }
 
-MacNodeId Binder::getMasterNodeOrSelf(MacNodeId secondaryEnbId)
+MacNodeId Binder::getMasterNodeOrSelf(MacNodeId secondaryEnbId, MacNodeId forUeId)
 {
     ASSERT(secondaryEnbId == NODEID_NONE || getNodeTypeById(secondaryEnbId) == NODEB);
-
+    (void)forUeId; // ignore for now
     if (num(secondaryEnbId) >= secondaryNodeToMasterNodeOrSelf_.size())
         throw cRuntimeError("Binder::getMasterNode(): bad secondaryEnbId %hu", num(secondaryEnbId));
     return secondaryNodeToMasterNodeOrSelf_[num(secondaryEnbId)];
 }
 
-MacNodeId Binder::getSecondaryNode(MacNodeId masterEnbId)
+MacNodeId Binder::getSecondaryNode(MacNodeId masterEnbId, MacNodeId forUeId)
 {
     //TODO proper solution! (maintain reverse mapping)
+    (void)forUeId; // ignore for now
     for (size_t i = 0; i < secondaryNodeToMasterNodeOrSelf_.size(); i++)
         if (secondaryNodeToMasterNodeOrSelf_[i] == masterEnbId && i != num(masterEnbId))  // exclude "self"!
             return MacNodeId(i);

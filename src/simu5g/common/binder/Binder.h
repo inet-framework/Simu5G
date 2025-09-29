@@ -303,15 +303,18 @@ class Binder : public cSimpleModule
 
     /**
      * In a Dual Connectivity / Split Bearer setup, returns the Master Node (MeNB, MN)
-     * for the given Secondary Node (SeNB, SN).
+     * for the given Secondary Node (SeNB, SN) with respect to the given UE.
+     * (Note that the roles (master/secondary) are per UE, not per bearer.)
      */
     //TODO add  MacNodeId ueId arg: In LTE DC, the roles (master/secondary) are per UE, not per bearer.
     virtual MacNodeId getMasterNodeOrSelf(MacNodeId secondaryEnbId);
 
     /**
-     * TODO add "forUeId" argument, to getMasterNode() too
+     * In a Dual Connectivity / Split Bearer setup, returns the Secondary Node (SeNB, SN)
+     * for the given Master Node (MeNB, MN) with respect to the given UE.
+     * (Note that the roles (master/secondary) are per UE, not per bearer.)
      */
-    virtual MacNodeId getSecondaryNode(MacNodeId masterEnbId);
+    MacNodeId getSecondaryNode(MacNodeId masterEnbId, MacNodeId forUeId);
 
     /**
      * Returns the MacNodeId for the given IP address

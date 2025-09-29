@@ -91,7 +91,8 @@ void NrPdcpEnb::fromLowerLayer(cPacket *pktAux)
 
     // if dual connectivity is enabled and this is a secondary node,
     // forward the packet to the PDCP of the master node
-    MacNodeId masterId = binder_->getMasterNodeOrSelf(nodeId_);
+    MacNodeId ueId = pkt->getTag<FlowControlInfo>()->getSourceId();
+    MacNodeId masterId = binder_->getMasterNodeOrSelf(nodeId_, ueId);
     if (dualConnectivityEnabled_ && (nodeId_ != masterId)) {
         EV << NOW << " NrPdcpEnb::fromLowerLayer - forward packet to the master node - id [" << masterId << "]" << endl;
         forwardDataToTargetNode(pkt, masterId);
@@ -116,7 +117,8 @@ MacNodeId NrPdcpEnb::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, M
     }
     else {
         // for dual connectivity
-        master = binder_->getMasterNodeOrSelf(master);
+        ASSERT(getNodeTypeById(sourceId) == UE);
+        master = binder_->getMasterNodeOrSelf(master, sourceId);
         if (master != nodeId_) {
             destId = master;
         }

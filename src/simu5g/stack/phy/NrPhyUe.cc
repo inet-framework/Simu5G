@@ -73,7 +73,7 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
         }
 
         // Check if the eNodeB is a secondary node
-        MacNodeId masterNodeId = binder_->getMasterNodeOrSelf(sourceId);
+        MacNodeId masterNodeId = binder_->getMasterNodeOrSelf(sourceId, nodeId_);
         if (masterNodeId != sourceId) {
             // The node has a master node, check if the other PHY of this UE is attached to that master.
             // If not, the UE cannot attach to this secondary node and the packet must be deleted.
@@ -199,7 +199,7 @@ void NrPhyUe::triggerHandover()
     EV << "Candidate RSSI: " << candidateMasterRssi_ << endl;
     EV << "############" << endl;
 
-    MacNodeId masterNode = binder_->getMasterNodeOrSelf(candidateMasterId_);
+    MacNodeId masterNode = binder_->getMasterNodeOrSelf(candidateMasterId_, nodeId_);
     if (masterNode != candidateMasterId_) { // The candidate is a secondary node
         if (otherPhy_->getMasterId() == masterNode) {
             MacNodeId otherNodeId = otherPhy_->getMacNodeId();
@@ -239,7 +239,7 @@ void NrPhyUe::triggerHandover()
 
     if (otherPhy_->getMasterId() != NODEID_NONE) {
         // Check if there are secondary nodes connected
-        MacNodeId otherMasterId = binder_->getMasterNodeOrSelf(otherPhy_->getMasterId());
+        MacNodeId otherMasterId = binder_->getMasterNodeOrSelf(otherPhy_->getMasterId(), nodeId_);
         if (otherMasterId == masterId_) {
             EV << NOW << " NrPhyUe::triggerHandover - Forcing detachment from " << otherPhy_->getMasterId() << " which was a secondary node to " << masterId_ << ". Delay this handover." << endl;
 
@@ -411,7 +411,7 @@ void NrPhyUe::deleteOldBuffers(MacNodeId masterId)
     // Delete PDCP Entities
     // delete pdcpEntities[nodeId_] at old master
     // in case of NR dual connectivity, the master can be a secondary node, hence we have to delete PDCP entities residing in the node's master
-    MacNodeId masterNodeId = binder_->getMasterNodeOrSelf(masterId);
+    MacNodeId masterNodeId = binder_->getMasterNodeOrSelf(masterId, nodeId_);
     LtePdcpEnb *masterPdcp = check_and_cast<LtePdcpEnb *>(binder_->getPdcpByNodeId(masterNodeId));
     masterPdcp->deleteEntities(nodeId_);
 

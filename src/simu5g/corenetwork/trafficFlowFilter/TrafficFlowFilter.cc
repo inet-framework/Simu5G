@@ -182,7 +182,8 @@ TrafficFlowTemplateId TrafficFlowFilter::findTrafficFlow(L3Address srcAddress, L
 
     // the serving node for the UE might be a secondary node in case of NR Dual Connectivity
     // obtains the master node, if any (the function returns destEnb if it is a master already)
-    MacNodeId destMaster = binder_->getMasterNodeOrSelf(destBS);
+    MacNodeId ueId = NODEID_NONE; //TODO!!!
+    MacNodeId destMaster = binder_->getMasterNodeOrSelf(destBS, ueId);
     MacNodeId srcMaster = binder_->getNextHop(binder_->getMacNodeId(srcAddress.toIpv4()));
 
     if (isBaseStation(ownerType_)) {
