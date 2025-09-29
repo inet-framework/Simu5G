@@ -99,22 +99,18 @@ void LtePdcpBase::analyzePacket(inet::Packet *pkt)
     Direction dir = getNodeTypeById(nodeId_) == UE ? UL : DL;
     lteInfo->setDirection(dir);
 
-    // Get IP flow information from the new tag
+    // get IP flow information
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
     Ipv4Address srcAddr = ipFlowInd->getSrcAddr();
-    Ipv4Address dstAddr = ipFlowInd->getDstAddr();
+    Ipv4Address destAddr = ipFlowInd->getDstAddr();
     uint16_t typeOfService = ipFlowInd->getTypeOfService();
+    EV << "Received packet from data port, src= " << srcAddr << " dest=" << destAddr << " ToS=" << typeOfService << endl;
 
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
-    MacNodeId destId = getNextHopNodeId(dstAddr, useNR, lteInfo->getSourceId());
-
-    // CID Request
-    EV << "LteRrc : Received CID request for Traffic [ " << "Source: " << srcAddr
-       << " Destination: " << dstAddr
-       << " ToS: " << typeOfService << " ]\n";
+    MacNodeId destId = getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());
 
     // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
-    ConnectionKey key{srcAddr, dstAddr, typeOfService, 0xFFFF};
+    ConnectionKey key{srcAddr, destAddr, typeOfService, 0xFFFF};
     LogicalCid lcid = lookupOrAssignLcid(key);
 
     // assign LCID and node IDs
@@ -122,14 +118,11 @@ void LtePdcpBase::analyzePacket(inet::Packet *pkt)
     lteInfo->setSourceId(nodeId_);
     lteInfo->setDestId(destId);
 
-    // this is the body of former LteTxPdcpEntity::setIds()
     lteInfo->setSourceId(getNodeId());   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
-    if (lteInfo->getMulticastGroupId() != NODEID_NONE)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
+    if (lteInfo->getMulticastGroupId() != NODEID_NONE)  // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
         lteInfo->setDestId(getNodeId());
-    else {
-        Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
+    else
         lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
-    }
 }
 
 void LtePdcpBase::fromDataPort(cPacket *pktAux)

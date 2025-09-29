@@ -50,59 +50,24 @@ void NrPdcpEnb::analyzePacket(inet::Packet *pkt)
     Direction dir = getNodeTypeById(nodeId_) == UE ? UL : DL;
     lteInfo->setDirection(dir);
 
-    // Get IP flow information from the new tag
+    // get IP flow information
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
     Ipv4Address srcAddr = ipFlowInd->getSrcAddr();
     Ipv4Address destAddr = ipFlowInd->getDstAddr();
     uint16_t typeOfService = ipFlowInd->getTypeOfService();
+    EV << "Received packet from data port, src= " << srcAddr << " dest=" << destAddr << " ToS=" << typeOfService << endl;
 
-    // Get technology selection from the new tag
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
 
-    MacNodeId srcId, destId;
+    lteInfo->setD2dTxPeerId(NODEID_NONE);
+    lteInfo->setD2dRxPeerId(NODEID_NONE);
 
-    // set direction based on the destination Id. If the destination can be reached
-    // using D2D, set D2D direction. Otherwise, set UL direction
-    srcId = useNR ? binder_->getNrMacNodeId(srcAddr) : binder_->getMacNodeId(srcAddr);
-    destId = useNR ? binder_->getNrMacNodeId(destAddr) : binder_->getMacNodeId(destAddr);   // get final destination
+    lteInfo->setSourceId(getNodeId());
 
-    // check if src and dest of the flow are D2D-capable UEs (currently in IM)
-    if (getNodeTypeById(srcId) == UE && getNodeTypeById(destId) == UE && binder_->getD2DCapability(srcId, destId)) {
-        // this way, we record the ID of the endpoint even if the connection is in IM
-        // this is useful for mode switching
-        lteInfo->setD2dTxPeerId(srcId);
-        lteInfo->setD2dRxPeerId(destId);
-    }
-    else {
-        lteInfo->setD2dTxPeerId(NODEID_NONE);
-        lteInfo->setD2dRxPeerId(NODEID_NONE);
-    }
-
-    // this is the body of former NrTxPdcpEntity::setIds()
-    if (useNR && getNodeTypeById(getNodeId()) != ENODEB && getNodeTypeById(getNodeId()) != GNODEB)
-        lteInfo->setSourceId(getNrNodeId());
-    else
-        lteInfo->setSourceId(getNodeId());
-    if (lteInfo->getMulticastGroupId() != NODEID_NONE)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
+    if (lteInfo->getMulticastGroupId() != NODEID_NONE)   // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
         lteInfo->setDestId(getNodeId());
-    else {
-        Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
+    else
         lteInfo->setDestId(getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId()));
-    }
-
-    // CID Request
-    EV << "NrPdcpEnb : Received CID request for Traffic [ " << "Source: " << srcAddr
-       << " Destination: " << destAddr
-       << " , ToS: " << typeOfService
-       << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
-
-    /*
-     * Different LCID for different directions of the same flow are assigned.
-     * RLC layer will create different RLC entities for different LCIDs
-     */
-
-    ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
-    LogicalCid lcid = lookupOrAssignLcid(key);
 
     // Dual Connectivity: adjust source and dest IDs for downlink packets in DC scenarios.
     // If this is a master eNB in DC and there's a secondary for this UE which will get this packet via X2 and transmit it via its RAN
@@ -113,6 +78,8 @@ void NrPdcpEnb::analyzePacket(inet::Packet *pkt)
     }
 
     // assign LCID
+    ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
+    LogicalCid lcid = lookupOrAssignLcid(key);
     lteInfo->setLcid(lcid);
 }
 

@@ -53,11 +53,12 @@ void LtePdcpUeD2D::analyzePacket(inet::Packet *pkt)
     Direction dir = getNodeTypeById(nodeId_) == UE ? UL : DL;
     lteInfo->setDirection(dir);
 
-    // Get IP flow information from the new tag
+    // get IP flow information
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
     Ipv4Address srcAddr = ipFlowInd->getSrcAddr();
     Ipv4Address destAddr = ipFlowInd->getDstAddr();
     uint16_t typeOfService = ipFlowInd->getTypeOfService();
+    EV << "Received packet from data port, src= " << srcAddr << " dest=" << destAddr << " ToS=" << typeOfService << endl;
 
     MacNodeId destId;
 
@@ -96,39 +97,24 @@ void LtePdcpUeD2D::analyzePacket(inet::Packet *pkt)
         }
     }
 
-    // Cid Request
-    EV << "LtePdcpUeD2D : Received CID request for Traffic [ " << "Source: " << srcAddr
-       << " Destination: " << destAddr
-       << " , ToS: " << typeOfService
-       << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
-
-    /*
-     * Different lcid for different directions of the same flow are assigned.
-     * RLC layer will create different RLC entities for different LCIDs
-     */
-
+    // assign LCID
     ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
     LogicalCid lcid = lookupOrAssignLcid(key);
-
-    // assign LCID
     lteInfo->setLcid(lcid);
+
     lteInfo->setSourceId(nodeId_);
 
     EV << "LtePdcpUeD2D : Assigned Lcid: " << lcid << "\n";
     EV << "LtePdcpUeD2D : Assigned Node ID: " << nodeId_ << "\n";
 
-    // get effective next hop dest ID
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
     destId = getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());
 
-    // this is the body of former LteTxPdcpEntity::setIds()
     lteInfo->setSourceId(getNodeId());   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
-    if (lteInfo->getMulticastGroupId() != NODEID_NONE)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
+    if (lteInfo->getMulticastGroupId() != NODEID_NONE)   // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
         lteInfo->setDestId(getNodeId());
-    else {
-        Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
+    else
         lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
-    }
 }
 
 void LtePdcpUeD2D::handleMessage(cMessage *msg)

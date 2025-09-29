@@ -82,7 +82,7 @@ void NrPdcpUe::analyzePacket(inet::Packet *pkt)
     MacNodeId nodeId = useNR ? nrNodeId_ : nodeId_;
     lteInfo->setSourceId(nodeId);
 
-    // Get IP flow information from the new tag
+    // get IP flow information
     auto ipFlowInd = pkt->getTag<IpFlowInd>();
     Ipv4Address srcAddr = ipFlowInd->getSrcAddr();
     Ipv4Address destAddr = ipFlowInd->getDstAddr();
@@ -123,33 +123,16 @@ void NrPdcpUe::analyzePacket(inet::Packet *pkt)
         }
     }
 
-    // this is the body of former NrTxPdcpEntity::setIds()
-    if (useNR && getNodeTypeById(getNodeId()) != ENODEB && getNodeTypeById(getNodeId()) != GNODEB)
-        lteInfo->setSourceId(getNrNodeId());
-    else
-        lteInfo->setSourceId(getNodeId());
-    if (lteInfo->getMulticastGroupId() != NODEID_NONE)                                               // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
+    lteInfo->setSourceId(useNR ? getNrNodeId() : getNodeId());
+
+    if (lteInfo->getMulticastGroupId() != NODEID_NONE)   // destId is meaningless for multicast D2D (we use the id of the source for statistical purposes at lower levels)
         lteInfo->setDestId(getNodeId());
-    else {
-        Ipv4Address destAddr = pkt->getTag<IpFlowInd>()->getDstAddr();
+    else
         lteInfo->setDestId(getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId()));
-    }
-
-    // Cid Request
-    EV << "NrPdcpUe : Received CID request for Traffic [ " << "Source: " << srcAddr
-       << " Destination: " << destAddr
-       << " , ToS: " << typeOfService
-       << " , Direction: " << dirToA((Direction)lteInfo->getDirection()) << " ]\n";
-
-    /*
-     * Different LCIDs for different directions of the same flow are assigned.
-     * The RLC layer will create different RLC entities for different LCIDs
-     */
-
-    ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
-    LogicalCid lcid = lookupOrAssignLcid(key);
 
     // assign LCID
+    ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
+    LogicalCid lcid = lookupOrAssignLcid(key);
     lteInfo->setLcid(lcid);
 
     EV << "NrPdcpUe : Assigned Lcid: " << lcid << "\n";
