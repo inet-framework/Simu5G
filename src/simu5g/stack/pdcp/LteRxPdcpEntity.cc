@@ -65,6 +65,7 @@ void LteRxPdcpEntity::handlePdcpSdu(Packet *pkt, unsigned int sequenceNumber)
 {
     Enter_Method("LteRxPdcpEntity::handlePdcpSdu");
 
+    // TODO what about checking the sequence number to detect out-of-order packets, and reordering them?
     EV << NOW << " LteRxPdcpEntity::handlePdcpSdu - processing PDCP SDU with SN[" << sequenceNumber << "]" << endl;
 
     // deliver to IP layer
