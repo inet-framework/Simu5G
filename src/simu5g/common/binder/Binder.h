@@ -49,8 +49,6 @@ class Binder : public cSimpleModule
     // name of the system (top-level) module
     std::string networkName_;
 
-    typedef std::map<MacNodeId, std::map<MacNodeId, bool>> DeployedUesMap;
-
     std::map<inet::Ipv4Address, MacNodeId> ipAddressToMacNodeId_;
     std::map<inet::Ipv4Address, MacNodeId> ipAddressToNrMacNodeId_;
 
@@ -95,8 +93,6 @@ class Binder : public cSimpleModule
     unsigned int macNodeIdCounterEnb_ = num(ENB_MIN_ID); // eNodeB and gNodeB
     unsigned int macNodeIdCounterUe_ = num(UE_MIN_ID);
     unsigned int macNodeIdCounterNrUe_ = num(NR_UE_MIN_ID);
-
-    DeployedUesMap dMap_; // DeployedUes --> Master Mapping
 
     /*
      * Carrier Aggregation support

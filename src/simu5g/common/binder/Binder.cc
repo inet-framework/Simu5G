@@ -216,8 +216,6 @@ void Binder::registerServingNode(MacNodeId enbId, MacNodeId ueId)
     ASSERT(enbId == NODEID_NONE || getNodeTypeById(enbId) == ENODEB);
     ASSERT(getNodeTypeById(ueId) == UE);
 
-    dMap_[enbId][ueId] = true;
-
     if (servingNode_.size() <= num(ueId))
         servingNode_.resize(num(ueId) + 1);
     servingNode_[num(ueId)] = enbId;
@@ -230,8 +228,6 @@ void Binder::unregisterServingNode(MacNodeId enbId, MacNodeId ueId)
 
     ASSERT(enbId == NODEID_NONE || getNodeTypeById(enbId) == ENODEB);
     ASSERT(getNodeTypeById(ueId) == UE);
-
-    dMap_[enbId][ueId] = false;
 
     if (servingNode_.size() <= num(ueId))
         return;
@@ -289,7 +285,6 @@ void Binder::initialize(int stage)
         WATCH(macNodeIdCounterUe_);
         WATCH(macNodeIdCounterNrUe_);
         WATCH(macNodeIdCounterEnb_);
-        // WATCH_MAP(dMap_); // Commented out - contains nested maps that don't have stream operators
         WATCH(totalBands_);
         // WATCH_MAP(componentCarriers_); // Commented out - contains complex CarrierInfo structs that don't have stream operators
         // WATCH_MAP(carrierUeMap_); // Commented out - contains sets that don't have stream operators
@@ -501,68 +496,19 @@ cModule *Binder::getModuleByMacNodeId(MacNodeId nodeId)
 
 ConnectedUesMap Binder::getDeployedUes(MacNodeId enbNodeId)
 {
-    Enter_Method_Silent("getDeployedUes");
-
-    // Original implementation using dMap_
-    ConnectedUesMap originalResult = dMap_[enbNodeId];
-
-    // New implementation using servingNode_ array
-    ConnectedUesMap newResult;
+    ConnectedUesMap connectedUes;
 
     // Collect LTE UEs
     for (unsigned int ueIdNum = num(UE_MIN_ID); ueIdNum < macNodeIdCounterUe_; ++ueIdNum)
         if (ueIdNum < servingNode_.size() && servingNode_[ueIdNum] == enbNodeId)
-            newResult[MacNodeId(ueIdNum)] = true;
+            connectedUes[MacNodeId(ueIdNum)] = true;
 
     // Collect NR UEs
     for (unsigned int ueIdNum = num(NR_UE_MIN_ID); ueIdNum < macNodeIdCounterNrUe_; ++ueIdNum)
         if (ueIdNum < servingNode_.size() && servingNode_[ueIdNum] == enbNodeId)
-            newResult[MacNodeId(ueIdNum)] = true;
+            connectedUes[MacNodeId(ueIdNum)] = true;
 
-    // Assert that both implementations return identical results
-    // This validates our assumption that dMap_ and servingNode_ are consistent at initialization
-    bool mapsEqual = (originalResult.size() == newResult.size());
-    if (mapsEqual) {
-        for (const auto& [ueId, connected] : originalResult) {
-            if (connected) {
-                // UE should be in new result
-                if (newResult.find(ueId) == newResult.end() || !newResult[ueId]) {
-                    mapsEqual = false;
-                    break;
-                }
-            }
-            // Note: We don't check for false entries in originalResult since
-            // newResult only contains connected UEs (true entries)
-        }
-        // Also check that newResult doesn't have extra entries
-        if (mapsEqual) {
-            for (const auto& [ueId, connected] : newResult) {
-                if (originalResult.find(ueId) == originalResult.end() || !originalResult[ueId]) {
-                    mapsEqual = false;
-                    break;
-                }
-            }
-        }
-    }
-
-    if (!mapsEqual) {
-        EV << "ERROR: getDeployedUes implementations differ for localId=" << enbNodeId << endl;
-        EV << "Original dMap_ result: " << originalResult.size() << " entries" << endl;
-        for (const auto& [ueId, connected] : originalResult) {
-            EV << "  UE " << ueId << ": " << (connected ? "true" : "false") << endl;
-        }
-        EV << "New servingNode_ result: " << newResult.size() << " entries" << endl;
-        for (const auto& [ueId, connected] : newResult) {
-            EV << "  UE " << ueId << ": " << (connected ? "true" : "false") << endl;
-        }
-        throw cRuntimeError("Binder::getDeployedUes - Assertion failed: dMap_ and servingNode_-based implementations return different results for localId=%hu", num(enbNodeId));
-    }
-
-    EV << "SUCCESS: Both getDeployedUes implementations agree for localId=" << enbNodeId
-       << " (" << originalResult.size() << " UEs found)" << endl;
-
-    // Return the original result for now to maintain current behavior
-    return originalResult;
+    return connectedUes;
 }
 
 simtime_t Binder::getLastUpdateUlTransmissionInfo()
