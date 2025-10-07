@@ -236,8 +236,10 @@ void LteAmc::initialize()
     nodeId_ = mac_->getMacNodeId();
     cellId_ = mac_->getMacCellId();
 
-    // Get deployed UEs maps from Binder
-    auto ueMap = binder_->getDeployedUes(nodeId_);
+    // Get deployed UEs lists from Binder and convert to map
+    ConnectedUesMap ueMap;
+    for (MacNodeId ueId : binder_->getDeployedUes(nodeId_))
+        ueMap[ueId] = true;
     dlConnectedUe_ = ueMap;
     ulConnectedUe_ = ueMap;
     d2dConnectedUe_ = ueMap;

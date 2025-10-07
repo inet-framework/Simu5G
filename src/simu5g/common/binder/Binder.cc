@@ -494,19 +494,21 @@ cModule *Binder::getModuleByMacNodeId(MacNodeId nodeId)
     return it->second.moduleRef;
 }
 
-ConnectedUesMap Binder::getDeployedUes(MacNodeId enbNodeId)
+std::vector<MacNodeId> Binder::getDeployedUes(MacNodeId enbNodeId)
 {
-    ConnectedUesMap connectedUes;
+    ASSERT(getNodeTypeById(enbNodeId) == ENODEB);
+
+    std::vector<MacNodeId> connectedUes;
 
     // Collect LTE UEs
     for (unsigned int ueIdNum = num(UE_MIN_ID); ueIdNum < macNodeIdCounterUe_; ++ueIdNum)
         if (ueIdNum < servingNode_.size() && servingNode_[ueIdNum] == enbNodeId)
-            connectedUes[MacNodeId(ueIdNum)] = true;
+            connectedUes.push_back(MacNodeId(ueIdNum));
 
     // Collect NR UEs
     for (unsigned int ueIdNum = num(NR_UE_MIN_ID); ueIdNum < macNodeIdCounterNrUe_; ++ueIdNum)
         if (ueIdNum < servingNode_.size() && servingNode_[ueIdNum] == enbNodeId)
-            connectedUes[MacNodeId(ueIdNum)] = true;
+            connectedUes.push_back(MacNodeId(ueIdNum));
 
     return connectedUes;
 }

@@ -461,7 +461,7 @@ class Binder : public cSimpleModule
      * getDeployedUes() returns the affiliates
      * of a given eNodeB
      */
-    ConnectedUesMap getDeployedUes(MacNodeId enbNodeId);
+    std::vector<MacNodeId> getDeployedUes(MacNodeId enbNodeId);
 
     PhyPisaData phyPisaData;
 
