@@ -237,9 +237,10 @@ void LteAmc::initialize()
     cellId_ = mac_->getMacCellId();
 
     // Get deployed UEs maps from Binder
-    dlConnectedUe_ = binder_->getDeployedUes(nodeId_, DL);
-    ulConnectedUe_ = binder_->getDeployedUes(nodeId_, UL);
-    d2dConnectedUe_ = binder_->getDeployedUes(nodeId_, UL);
+    auto ueMap = binder_->getDeployedUes(nodeId_);
+    dlConnectedUe_ = ueMap;
+    ulConnectedUe_ = ueMap;
+    d2dConnectedUe_ = ueMap;
 
     // Get parameters from cellInfo
     numBands_ = cellInfo_->getPrimaryCarrierNumBands();

@@ -499,7 +499,7 @@ cModule *Binder::getModuleByMacNodeId(MacNodeId nodeId)
     return it->second.moduleRef;
 }
 
-ConnectedUesMap Binder::getDeployedUes(MacNodeId localId, Direction dir)
+ConnectedUesMap Binder::getDeployedUes(MacNodeId localId)
 {
     Enter_Method_Silent("getDeployedUes");
     return dMap_[localId];
