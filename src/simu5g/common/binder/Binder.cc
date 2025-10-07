@@ -499,10 +499,70 @@ cModule *Binder::getModuleByMacNodeId(MacNodeId nodeId)
     return it->second.moduleRef;
 }
 
-ConnectedUesMap Binder::getDeployedUes(MacNodeId localId)
+ConnectedUesMap Binder::getDeployedUes(MacNodeId enbNodeId)
 {
     Enter_Method_Silent("getDeployedUes");
-    return dMap_[localId];
+
+    // Original implementation using dMap_
+    ConnectedUesMap originalResult = dMap_[enbNodeId];
+
+    // New implementation using servingNode_ array
+    ConnectedUesMap newResult;
+
+    // Collect LTE UEs
+    for (unsigned int ueIdNum = num(UE_MIN_ID); ueIdNum < macNodeIdCounterUe_; ++ueIdNum)
+        if (ueIdNum < servingNode_.size() && servingNode_[ueIdNum] == enbNodeId)
+            newResult[MacNodeId(ueIdNum)] = true;
+
+    // Collect NR UEs
+    for (unsigned int ueIdNum = num(NR_UE_MIN_ID); ueIdNum < macNodeIdCounterNrUe_; ++ueIdNum)
+        if (ueIdNum < servingNode_.size() && servingNode_[ueIdNum] == enbNodeId)
+            newResult[MacNodeId(ueIdNum)] = true;
+
+    // Assert that both implementations return identical results
+    // This validates our assumption that dMap_ and servingNode_ are consistent at initialization
+    bool mapsEqual = (originalResult.size() == newResult.size());
+    if (mapsEqual) {
+        for (const auto& [ueId, connected] : originalResult) {
+            if (connected) {
+                // UE should be in new result
+                if (newResult.find(ueId) == newResult.end() || !newResult[ueId]) {
+                    mapsEqual = false;
+                    break;
+                }
+            }
+            // Note: We don't check for false entries in originalResult since
+            // newResult only contains connected UEs (true entries)
+        }
+        // Also check that newResult doesn't have extra entries
+        if (mapsEqual) {
+            for (const auto& [ueId, connected] : newResult) {
+                if (originalResult.find(ueId) == originalResult.end() || !originalResult[ueId]) {
+                    mapsEqual = false;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!mapsEqual) {
+        EV << "ERROR: getDeployedUes implementations differ for localId=" << enbNodeId << endl;
+        EV << "Original dMap_ result: " << originalResult.size() << " entries" << endl;
+        for (const auto& [ueId, connected] : originalResult) {
+            EV << "  UE " << ueId << ": " << (connected ? "true" : "false") << endl;
+        }
+        EV << "New servingNode_ result: " << newResult.size() << " entries" << endl;
+        for (const auto& [ueId, connected] : newResult) {
+            EV << "  UE " << ueId << ": " << (connected ? "true" : "false") << endl;
+        }
+        throw cRuntimeError("Binder::getDeployedUes - Assertion failed: dMap_ and servingNode_-based implementations return different results for localId=%hu", num(enbNodeId));
+    }
+
+    EV << "SUCCESS: Both getDeployedUes implementations agree for localId=" << enbNodeId
+       << " (" << originalResult.size() << " UEs found)" << endl;
+
+    // Return the original result for now to maintain current behavior
+    return originalResult;
 }
 
 simtime_t Binder::getLastUpdateUlTransmissionInfo()

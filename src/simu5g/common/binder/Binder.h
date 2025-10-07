@@ -465,7 +465,7 @@ class Binder : public cSimpleModule
      * getDeployedUes() returns the affiliates
      * of a given eNodeB
      */
-    ConnectedUesMap getDeployedUes(MacNodeId localId);
+    ConnectedUesMap getDeployedUes(MacNodeId enbNodeId);
 
     PhyPisaData phyPisaData;
 
