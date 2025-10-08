@@ -35,6 +35,8 @@ class LteMacEnb;
 
 typedef std::map<Remote, std::vector<std::vector<LteSummaryBuffer>>> History_;
 
+//  TODO MAKE THIS A MODULE!!!!
+
 /**
  * @class LteAMC
  * @brief Lte AMC module for Omnet++ simulator
