@@ -18,9 +18,10 @@ namespace simu5g {
 
 class NrMacUe : public LteMacUeD2D
 {
+  public:
+    NrMacUe();
 
   protected:
-
     /**
      * Main loop
      */

@@ -63,12 +63,7 @@ void AmRxQueue::initialize()
     // Statistics
     LteMacBase *mac = inet::getConnectedModule<LteMacBase>(getParentModule()->gate("RLC_to_MAC"), 0);
 
-    if (mac->getNodeType() == ENODEB || mac->getNodeType() == GNODEB) {
-        dir_ = UL;
-    }
-    else {
-        dir_ = DL;
-    }
+    dir_ = mac->getNodeType() == NODEB ? UL : DL;
 }
 
 void AmRxQueue::handleMessage(cMessage *msg)

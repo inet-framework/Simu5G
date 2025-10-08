@@ -35,8 +35,6 @@ class LteRlcUmD2D : public LteRlcUm
 
   protected:
 
-    RanNodeType nodeType_;
-
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
     /**

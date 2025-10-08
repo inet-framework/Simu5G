@@ -23,7 +23,7 @@ DasFilter::DasFilter(LtePhyBase *ltePhy, Binder *binder,
 
 void DasFilter::setMasterRuSet(MacNodeId masterId)
 {
-    if (getNodeTypeById(masterId) == ENODEB || getNodeTypeById(masterId) == GNODEB) {
+    if (getNodeTypeById(masterId) == NODEB) {
         cModule *module = binder_->getModuleByMacNodeId(masterId);
         das_ = check_and_cast<LtePhyEnb *>(module->getSubmodule("cellularNic")->getSubmodule("phy"))->getDasFilter();
         ruSet_ = das_->getRemoteAntennaSet();

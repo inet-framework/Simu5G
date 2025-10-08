@@ -243,15 +243,23 @@ LtePhyFrameType aToPhyFrameType(std::string s)
     return static_cast<LtePhyFrameType>(omnetpp::cEnum::get("simu5g::LtePhyFrameType")->lookup(s.c_str(), UNKNOWN_TYPE));
 }
 
-const std::string nodeTypeToA(const RanNodeType t)
+const char *nodeTypeToA(RanNodeType t)
 {
-    const char * str = omnetpp::cEnum::get("simu5g::RanNodeType")->getStringFor((intval_t)t);
-    return str ? str : "UNKNOWN_NODE_TYPE";
+    switch (t) {
+        case UE: return "UE";
+        case NODEB: return "NODEB";
+        default: return "UNKNOWN";
+    }
 }
 
 RanNodeType aToNodeType(std::string name)
 {
-    return static_cast<RanNodeType>(omnetpp::cEnum::get("simu5g::RanNodeType")->lookup(name.c_str(), UNKNOWN_NODE_TYPE));
+    if (name == "UE")
+        return UE;
+    else if (name == "ENODEB" || name == "GNODEB")
+        return NODEB;
+    else
+        throw cRuntimeError("Unknown node type: %s", name.c_str());
 }
 
 const std::string fbGeneratorTypeToA(FeedbackGeneratorType type)
@@ -263,7 +271,7 @@ const std::string fbGeneratorTypeToA(FeedbackGeneratorType type)
 RanNodeType getNodeTypeById(MacNodeId id)
 {
     if (id >= ENB_MIN_ID && id <= ENB_MAX_ID)
-        return ENODEB;
+        return NODEB;
     if (id >= UE_MIN_ID && id <= UE_MAX_ID)
         return UE;
     return UNKNOWN_NODE_TYPE;
@@ -279,11 +287,11 @@ void verifyControlInfo(const FlowControlInfo *info)
         case UL:
             ASSERT(!isMulticast);
             ASSERT(srcType == UE);
-            ASSERT(destType == ENODEB);
+            ASSERT(destType == NODEB);
             break;
         case DL:
             ASSERT(!isMulticast);
-            ASSERT(srcType == ENODEB);
+            ASSERT(srcType == NODEB);
             ASSERT(destType == UE);
             break;
         case D2D:
@@ -494,7 +502,7 @@ std::string EnbInfo::str() const
 {
     std::ostringstream oss;
     oss << "EnbInfo[id=" << id << ", module=" << (eNodeB ? eNodeB->getFullName() : "null")
-        << ", type=" << nodeTypeToA(nodeType) << "/" << (type == MACRO_ENB ? "MACRO" : "MICRO")
+        << ", type=" << (isNr ? "NR" : "LTE") << "/" << (type == MACRO_ENB ? "MACRO" : "MICRO")
         << ", init=" << (init ? "Y" : "N") << ", txPwr=" << txPwr << "dBm]";
     return oss.str();
 }

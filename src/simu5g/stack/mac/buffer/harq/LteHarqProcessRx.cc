@@ -119,7 +119,7 @@ Packet *LteHarqProcessRx::createFeedback(Codeword cw)
             resetCodeword(cw);
         }
         else {
-            if (macOwner_->getNodeType() == ENODEB || macOwner_->getNodeType() == GNODEB) {
+            if (macOwner_->getNodeType() == NODEB) {
                 // signal the MAC the need for retransmission
                 check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(pduInfo->getSourceId(), pduInfo->getCarrierFrequency(), (Direction)pduInfo->getDirection());
             }

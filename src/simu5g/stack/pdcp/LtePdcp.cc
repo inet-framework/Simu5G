@@ -142,7 +142,7 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
         // Packet is processed by local PDCP entity, then needs to be tunneled over X2 to Secondary for transmission.
         // However, local PDCP entity is keyed on LTE nodeIds, so we need to tweak the cid and replace NR nodeId
         // with LTE nodeId so that lookup succeeds.
-        if (getNodeTypeById(nodeId_) == ENODEB && binder_->isGNodeB(nodeId_) != isNrUe(lteInfo->getDestId()) ) {
+        if (getNodeTypeById(nodeId_) == NODEB && binder_->isGNodeB(nodeId_) != isNrUe(lteInfo->getDestId()) ) {
             // use another CID whose technology matches the nodeB
             MacNodeId otherDestId = binder_->getUeNodeId(lteInfo->getDestId(), !isNrUe(lteInfo->getDestId()));
             ASSERT(otherDestId != NODEID_NONE);
@@ -150,7 +150,7 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
         }
 
         // Handle DC setup on UE side: both legs should use the *same* key for entity lookup
-        if (getNodeTypeById(nodeId_) == UE && getNodeTypeById(lteInfo->getDestId()) == ENODEB)  {
+        if (getNodeTypeById(nodeId_) == UE && getNodeTypeById(lteInfo->getDestId()) == NODEB)  {
             MacNodeId lteNodeB = binder_->getServingNode(nodeId_);
             cid = MacCid(lteNodeB, lteInfo->getLcid());
         }
@@ -188,7 +188,7 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
         // Handle DC setup: Assume packet arrives at this Master nodeB (LTE) from Secondary (NR) over X2.
         // Packet needs to be processed by local PDCP entity. However, local PDCP entity is keyed on LTE nodeIds,
         // so we need to tweak the cid and replace NR nodeId with LTE nodeId so that lookup succeeds.
-        if (getNodeTypeById(nodeId_) == ENODEB && binder_->isGNodeB(nodeId_) != isNrUe(lteInfo->getSourceId()) ) {
+        if (getNodeTypeById(nodeId_) == NODEB && binder_->isGNodeB(nodeId_) != isNrUe(lteInfo->getSourceId()) ) {
             // use another CID whose technology matches the nodeB
             MacNodeId otherSourceId = binder_->getUeNodeId(lteInfo->getSourceId(), !isNrUe(lteInfo->getSourceId()));
             ASSERT(otherSourceId != NODEID_NONE);
@@ -196,7 +196,7 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
         }
 
         // Handle DC setup on UE side: both legs should use the *same* key for entity lookup
-        if (getNodeTypeById(nodeId_) == UE && getNodeTypeById(lteInfo->getSourceId()) == ENODEB)  {
+        if (getNodeTypeById(nodeId_) == UE && getNodeTypeById(lteInfo->getSourceId()) == NODEB)  {
             MacNodeId lteNodeB = binder_->getServingNode(nodeId_);
             cid = MacCid(lteNodeB, lteInfo->getLcid());
         }

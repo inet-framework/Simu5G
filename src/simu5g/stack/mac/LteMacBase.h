@@ -149,8 +149,11 @@ class LteMacBase : public cSimpleModule
      */
     LcgMap lcgMap_;
 
-    // Node Type;
+    // Node Type
     RanNodeType nodeType_;
+
+    // LTE or NR
+    bool isNr_ = false;
 
     // record the last TTI that HARQ processes for a given UE have been aborted (useful for D2D switching)
     std::map<MacNodeId, simtime_t> resetHarq_;
@@ -188,10 +191,6 @@ class LteMacBase : public cSimpleModule
     void decreaseNumerologyPeriodCounter();
 
   public:
-
-    /**
-     * Initializes MAC Buffers
-     */
 
     /**
      * Deletes MAC Buffers

@@ -114,12 +114,9 @@ void LtePhyUe::initialize(int stage)
 
             // get the list of all eNodeBs in the network
             for (const auto& enbInfo : binder_->getEnbList()) {
-                // the NR phy layer only checks signal from gNBs
-                if (isNr_ && enbInfo->nodeType != GNODEB)
-                    continue;
-
+                // the NR phy layer only checks signal from gNBs, and
                 // the LTE phy layer only checks signal from eNBs
-                if (!isNr_ && enbInfo->nodeType != ENODEB)
+                if (isNr_ != enbInfo->isNr)
                     continue;
 
                 MacNodeId cellId = enbInfo->id;
@@ -217,7 +214,7 @@ void LtePhyUe::handoverHandler(LteAirFrame *frame, UserControlInfo *lteInfo)
     if (!enableHandover_) {
         // Even if handover is not enabled, this call is necessary
         // to allow Reporting Set computation.
-        if (getNodeTypeById(lteInfo->getSourceId()) == ENODEB && lteInfo->getSourceId() == masterId_) {
+        if (getNodeTypeById(lteInfo->getSourceId()) == NODEB && lteInfo->getSourceId() == masterId_) {
             // Broadcast message from my master enb
             das_->receiveBroadcast(frame, lteInfo);
         }
@@ -230,7 +227,7 @@ void LtePhyUe::handoverHandler(LteAirFrame *frame, UserControlInfo *lteInfo)
     frame->setControlInfo(lteInfo);
     double rssi;
 
-    if (getNodeTypeById(lteInfo->getSourceId()) == ENODEB && lteInfo->getSourceId() == masterId_) {
+    if (getNodeTypeById(lteInfo->getSourceId()) == NODEB && lteInfo->getSourceId() == masterId_) {
         // Broadcast message from my master enb
         rssi = das_->receiveBroadcast(frame, lteInfo);
     }

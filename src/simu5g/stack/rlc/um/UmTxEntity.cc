@@ -47,7 +47,7 @@ void UmTxEntity::initialize()
     packetFlowObserver_.reference(this, "packetFlowObserverModule", false);
 
     // @author Alessandro Noferi
-    if (mac->getNodeType() == ENODEB || mac->getNodeType() == GNODEB) {
+    if (mac->getNodeType() == NODEB) {
         if (packetFlowObserver_) {
             EV << "UmTxEntity::initialize - RLC layer is for a base station" << endl;
             ASSERT(check_and_cast<PacketFlowObserverEnb *>(packetFlowObserver_.get()));
@@ -340,7 +340,7 @@ void UmTxEntity::resumeDownstreamInPackets()
 void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
 {
     if (oldConnection) {
-        if (getNodeTypeById(ownerNodeId_) == ENODEB || getNodeTypeById(ownerNodeId_) == GNODEB) {
+        if (getNodeTypeById(ownerNodeId_) == NODEB) {
             EV << NOW << " UmRxEntity::rlcHandleD2DModeSwitch - nothing to do on DL leg of IM flow" << endl;
             return;
         }

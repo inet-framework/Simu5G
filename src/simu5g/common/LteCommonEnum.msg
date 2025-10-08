@@ -181,18 +181,18 @@ enum LtePhyFrameType
     UNKNOWN_TYPE = 8;
 };
 
-
-//  RAN Node Types  
+// Node types on the Radio Access Network. Note that the LTE vs 5G (NR)
+// distinction is usually represented with isNr booleans and/or nodeId/nrNodeId
+// variables being empty or not.
 enum RanNodeType
 {
-    INTERNET = 0; /// Internet side of the Lte network
-    ENODEB  = 1; /// eNodeB
-    GNODEB  = 2; /// gNodeB
-    UE = 3; /// UE
-    UNKNOWN_NODE_TYPE  = 4;/// unknown
+    NODEB  = 0; // eNodeB / gNodeB
+    UE = 1; // UE
+    UNKNOWN_NODE_TYPE  = 2;
 };
 
-//  Core Network Types  
+
+//  Core Network Types
 enum CoreNodeType
 {
     ENB = 0;          // LTE

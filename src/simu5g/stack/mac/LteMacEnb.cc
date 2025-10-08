@@ -52,7 +52,7 @@ using namespace omnetpp;
 LteMacEnb::LteMacEnb() :
     LteMacBase()
 {
-    nodeType_ = ENODEB;
+    nodeType_ = NODEB;
 }
 
 LteMacEnb::~LteMacEnb()
@@ -169,7 +169,7 @@ void LteMacEnb::initialize(int stage)
         // Insert EnbInfo in the Binder
         EnbInfo *info = new EnbInfo();
         info->id = nodeId_;            // local MAC ID
-        info->nodeType = nodeType_;    // eNB or gNB
+        info->isNr = isNr_;            // eNB or gNB
         info->type = MACRO_ENB;        // eNB Type
         info->init = false;            // flag for PHY initialization
         info->eNodeB = hostModule;  // reference to the eNodeB module

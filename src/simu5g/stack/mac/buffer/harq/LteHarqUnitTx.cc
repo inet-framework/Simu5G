@@ -30,7 +30,7 @@ LteHarqUnitTx::LteHarqUnitTx(Binder *binder, unsigned char acid, Codeword cw,
         LteMacBase *macOwner, LteMacBase *dstMac) :  acid_(acid), cw_(cw),  txTime_(0), macOwner_(macOwner), dstMac_(dstMac), maxHarqRtx_(macOwner->par("maxHarqRtx"))
 {
 
-    if (macOwner_->getNodeType() == ENODEB || macOwner_->getNodeType() == GNODEB) {
+    if (macOwner_->getNodeType() == NODEB) {
         nodeB_ = macOwner_;
         dir_ = DL;
     }
@@ -140,7 +140,7 @@ bool LteHarqUnitTx::pduFeedback(HarqAcknowledgment a)
             EV << NOW << " LteHarqUnitTx::pduFeedback H-ARQ process  " << (unsigned int)acid_ << " Codeword " << cw_ << " PDU "
                << pdu_->getId() << " set for RTX " << endl;
 
-            if (macOwner_->getNodeType() == ENODEB || macOwner_->getNodeType() == GNODEB) {
+            if (macOwner_->getNodeType() == NODEB) {
                 // signal the MAC the need for retransmission
                 check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(lteInfo->getDestId(), lteInfo->getCarrierFrequency(), (Direction)lteInfo->getDirection());
             }

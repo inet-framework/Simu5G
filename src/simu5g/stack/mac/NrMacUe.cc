@@ -23,6 +23,11 @@ namespace simu5g {
 
 Define_Module(NrMacUe);
 
+NrMacUe::NrMacUe()
+{
+    isNr_ = true;
+}
+
 void NrMacUe::handleSelfMessage()
 {
     EV << "----- UE MAIN LOOP -----" << endl;

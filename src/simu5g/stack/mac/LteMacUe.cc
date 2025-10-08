@@ -94,21 +94,16 @@ void LteMacUe::initialize(int stage)
              * It checks the NIC, i.e. Lte or NR and chooses the correct UeCollector to connect.
              */
 
-            cModule *module = binder_->getModuleByMacNodeId(cellId_);
-            std::string nodeType;
-            if (module->hasPar("nodeType"))
-                nodeType = module->par("nodeType").stdstringValue();
+            bool isNrCell = binder_->isGNodeB(cellId_);
 
-            RanNodeType eNBType = binder_->getBaseStationTypeById(cellId_);
-
-            if (isNrUe(nodeId_) && eNBType == GNODEB) {
+            if (isNrUe(nodeId_) && isNrCell) {
                 EV << "I am a NR Ue with node id: " << nodeId_ << " connected to gnb with id: " << cellId_ << endl;
                 if (!par("collectorModule").isEmptyString()) {
                     UeStatsCollector *ue = getModuleFromPar<UeStatsCollector>(par("collectorModule"), this);
                     binder_->addUeCollectorToEnodeB(nodeId_, ue, cellId_);
                 }
             }
-            else if (!isNrUe(nodeId_) && eNBType == ENODEB) {
+            else if (!isNrUe(nodeId_) && !isNrCell) {
                 EV << "I am an LTE Ue with node id: " << nodeId_ << " connected to gnb with id: " << cellId_ << endl;
                 if (!par("collectorModule").isEmptyString()) {
                     UeStatsCollector *ue = getModuleFromPar<UeStatsCollector>(par("collectorModule"), this);

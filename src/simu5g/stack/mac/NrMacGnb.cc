@@ -17,7 +17,7 @@ Define_Module(NrMacGnb);
 
 NrMacGnb::NrMacGnb() : LteMacEnbD2D()
 {
-    nodeType_ = GNODEB;
+    isNr_ = true;
 }
 
 

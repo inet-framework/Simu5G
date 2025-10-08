@@ -63,8 +63,8 @@ void GtpUserX2::handleFromStack(Packet *pkt)
     auto x2Msg = pkt->peekAtFront<LteX2Message>();
     X2NodeId destId = x2Msg->getDestinationId();
     X2NodeId srcId = x2Msg->getSourceId();
-    ASSERT(getNodeTypeById(srcId) == ENODEB);
-    ASSERT(getNodeTypeById(destId) == ENODEB);
+    ASSERT(getNodeTypeById(srcId) == NODEB);
+    ASSERT(getNodeTypeById(destId) == NODEB);
     ASSERT(srcId != destId);
     EV << "GtpUserX2::handleFromStack - Received a LteX2Message with destId[" << destId << "]" << endl;
 

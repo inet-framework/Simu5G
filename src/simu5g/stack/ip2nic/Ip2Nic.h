@@ -36,7 +36,7 @@ typedef std::pair<inet::Ipv4Address, inet::Ipv4Address> AddressPair;
 class Ip2Nic : public cSimpleModule
 {
   protected:
-    RanNodeType nodeType_;      // node type: can be ENODEB, GNODEB, UE
+    RanNodeType nodeType_;      // UE or NODEB
 
     // reference to the binder
     inet::ModuleRefByPar<Binder> binder_;

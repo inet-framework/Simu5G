@@ -316,7 +316,7 @@ typedef std::pair<unsigned char, CwList> UnitList;
 struct EnbInfo
 {
     bool init;         // initialization flag
-    RanNodeType nodeType; // ENODEB or GNODEB
+    bool isNr;        // eNodeB or gNodeB
     EnbType type;     // MICRO_ENB or MACRO_ENB
     double txPwr;
     TxDirectionType txDirection;
@@ -429,7 +429,7 @@ const std::string schedDisciplineToA(SchedDiscipline discipline);
 SchedDiscipline aToSchedDiscipline(std::string s);
 Remote aToDas(std::string s);
 const std::string dasToA(const Remote r);
-const std::string nodeTypeToA(const RanNodeType t);
+const char *nodeTypeToA(RanNodeType t);
 RanNodeType aToNodeType(std::string name);
 RanNodeType getNodeTypeById(MacNodeId id);
 bool isBaseStation(CoreNodeType nodeType);

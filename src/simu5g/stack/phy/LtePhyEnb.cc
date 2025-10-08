@@ -53,7 +53,7 @@ void LtePhyEnb::initialize(int stage)
         }
         isNr_ = (std::string(getContainingNicModule(this)->getComponentType()->getName()) == "NrNicEnb");
 
-        nodeType_ = (isNr_) ? GNODEB : ENODEB;
+        nodeType_ = NODEB;
         WATCH(nodeType_);
     }
     else if (stage == 1) {

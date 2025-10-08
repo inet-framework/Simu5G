@@ -114,7 +114,7 @@ void LteRlcUmD2D::deleteQueues(MacNodeId nodeId)
             continue;
         }
 
-        if (nodeType == UE || ((nodeType == ENODEB || nodeType == GNODEB) && tit->first.getNodeId() == nodeId)) {
+        if (nodeType == UE || (nodeType == NODEB && tit->first.getNodeId() == nodeId)) {
             tit->second->deleteModule(); // Delete Entity
             tit = txEntities_.erase(tit);    // Delete Elem
         }
@@ -134,7 +134,7 @@ void LteRlcUmD2D::deleteQueues(MacNodeId nodeId)
             continue;
         }
 
-        if (nodeType == UE || ((nodeType == ENODEB || nodeType == GNODEB) && rit->first.getNodeId() == nodeId)) {
+        if (nodeType == UE || (nodeType == NODEB && rit->first.getNodeId() == nodeId)) {
             rit->second->deleteModule(); // Delete Entity
             rit = rxEntities_.erase(rit);    // Delete Elem
         }

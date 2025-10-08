@@ -67,7 +67,7 @@ class PacketFlowObserverBase : public cSimpleModule
 
     DiscardedPkts pktDiscardCounterTotal_; // total discarded packets counter of the node
 
-    RanNodeType nodeType_; // UE or ENODEB (used for set MACROS)
+    RanNodeType nodeType_; // UE or NODEB (used for set MACROS)
     short int harqProcesses_; // number of HARQ processes
 
     std::string pfmType;

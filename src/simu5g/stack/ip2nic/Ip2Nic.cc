@@ -60,7 +60,7 @@ void Ip2Nic::initialize(int stage)
         if (dualConnectivityEnabled_)
             sbTable_ = new SplitBearersTable();
 
-        if (nodeType_ == ENODEB || nodeType_ == GNODEB) {
+        if (nodeType_ == NODEB) {
             // TODO: not so elegant
             cModule *bs = getContainingNode(this);
             MacNodeId masterId = MacNodeId(bs->par("masterId").intValue());
@@ -73,7 +73,7 @@ void Ip2Nic::initialize(int stage)
         }
     }
     else if (stage == INITSTAGE_PHYSICAL_ENVIRONMENT) {
-        if (nodeType_ == ENODEB || nodeType_ == GNODEB) {
+        if (nodeType_ == NODEB) {
             registerInterface();
         }
         else if (nodeType_ == UE) {
@@ -131,7 +131,7 @@ void Ip2Nic::initialize(int stage)
 
 void Ip2Nic::handleMessage(cMessage *msg)
 {
-    if (nodeType_ == ENODEB || nodeType_ == GNODEB) {
+    if (nodeType_ == NODEB) {
         // message from IP Layer: send to stack
         if (msg->getArrivalGate()->isName("upperLayerIn")) {
             auto ipDatagram = check_and_cast<Packet *>(msg);
@@ -178,7 +178,7 @@ void Ip2Nic::handleMessage(cMessage *msg)
 void Ip2Nic::setNodeType(std::string s)
 {
     nodeType_ = aToNodeType(s);
-    EV << "Node type: " << s << " -> " << nodeType_ << endl;
+    EV << "Node type: " << s << endl;
 }
 
 void Ip2Nic::fromIpUe(Packet *datagram)
@@ -395,7 +395,7 @@ bool Ip2Nic::markPacket(inet::Ipv4Address srcAddr, inet::Ipv4Address dstAddr, ui
     // TODO use a better policy
     // TODO make it configurable from INI or XML?
 
-    if (nodeType_ == ENODEB || nodeType_ == GNODEB) {
+    if (nodeType_ == NODEB) {
         MacNodeId ueId = binder_->getMacNodeId(dstAddr);
         MacNodeId nrUeId = binder_->getNrMacNodeId(dstAddr);
         bool ueLteStack = (binder_->getNextHop(ueId) != NODEID_NONE);

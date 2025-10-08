@@ -38,7 +38,7 @@ LteHarqBufferRxD2D::LteHarqBufferRxD2D(unsigned int num, LteMacBase *owner, Bind
 
     // Signals initialization: these are used to gather statistics
 
-    if (macOwner_->getNodeType() == ENODEB || macOwner_->getNodeType() == GNODEB) {
+    if (macOwner_->getNodeType() == NODEB) {
         nodeB_ = macOwner_;
         dir = UL;
     }

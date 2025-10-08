@@ -203,7 +203,7 @@ void LteRlcUm::deleteQueues(MacNodeId nodeId)
     // at the UE, delete all connections
     // at the eNB, delete connections related to the given UE
     for (auto tit = txEntities_.begin(); tit != txEntities_.end();) {
-        if (nodeType == UE || ((nodeType == ENODEB || nodeType == GNODEB) && tit->first.getNodeId() == nodeId)) {
+        if (nodeType == UE || (nodeType == NODEB && tit->first.getNodeId() == nodeId)) {
             tit->second->deleteModule(); // Delete Entity
             tit = txEntities_.erase(tit);    // Delete Element
         }
@@ -212,7 +212,7 @@ void LteRlcUm::deleteQueues(MacNodeId nodeId)
         }
     }
     for (auto rit = rxEntities_.begin(); rit != rxEntities_.end();) {
-        if (nodeType == UE || ((nodeType == ENODEB || nodeType == GNODEB) && rit->first.getNodeId() == nodeId)) {
+        if (nodeType == UE || (nodeType == NODEB && rit->first.getNodeId() == nodeId)) {
             rit->second->deleteModule(); // Delete Entity
             rit = rxEntities_.erase(rit);    // Delete Element
         }
@@ -238,8 +238,8 @@ void LteRlcUm::initialize(int stage)
         txEntityModuleType_ = cModuleType::get(par("txEntityModuleType").stringValue());
         rxEntityModuleType_ = cModuleType::get(par("rxEntityModuleType").stringValue());
 
-        std::string nodeTypePar = par("nodeType").stdstringValue();
-        nodeType = static_cast<RanNodeType>(cEnum::get("simu5g::RanNodeType")->lookup(nodeTypePar.c_str()));
+        std::string nodeTypeStr = par("nodeType").stdstringValue();
+        nodeType = aToNodeType(nodeTypeStr);
 
         WATCH_MAP(txEntities_);
         WATCH_MAP(rxEntities_);

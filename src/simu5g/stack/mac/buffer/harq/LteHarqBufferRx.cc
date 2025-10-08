@@ -37,7 +37,7 @@ LteHarqBufferRx::LteHarqBufferRx(unsigned int num, LteMacBase *owner, Binder *bi
     }
 
     // Signals initialization: these are used to gather statistics
-    if (macOwner_->getNodeType() == ENODEB || macOwner_->getNodeType() == GNODEB) {
+    if (macOwner_->getNodeType() == NODEB) {
         nodeB_ = macOwner_;
         dir = UL;
     }

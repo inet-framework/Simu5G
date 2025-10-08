@@ -177,7 +177,7 @@ class LteHarqBufferRx
      * function to emit statistics (hence, checking against nullptr)
      */
     void initMacUe() {
-        if (macOwner_->getNodeType() == ENODEB || macOwner_->getNodeType() == GNODEB)
+        if (macOwner_->getNodeType() == NODEB)
             macUe_ = check_and_cast<LteMacBase *>(binder_->getMacByNodeId(srcId_));
         else
             macUe_ = macOwner_;

@@ -639,12 +639,7 @@ void UmRxEntity::initialize()
 
     resetFlag_ = false;
 
-    if (mac->getNodeType() == ENODEB || mac->getNodeType() == GNODEB) {
-        dir_ = UL;
-    }
-    else { // UE
-        dir_ = DL;
-    }
+    dir_ = mac->getNodeType() == NODEB ? UL : DL;
 
     // store the node id of the owner module (useful for statistics)
     ownerNodeId_ = mac->getMacNodeId();

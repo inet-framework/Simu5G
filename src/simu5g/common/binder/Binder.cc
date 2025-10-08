@@ -142,7 +142,7 @@ MacNodeId Binder::registerNode(cModule *nodeModule, RanNodeType type, MacNodeId 
 {
     Enter_Method_Silent("registerNode");
 
-    ASSERT(type == UE || type == ENODEB || type == GNODEB);
+    ASSERT(type == UE || type == NODEB);
     MacNodeId nodeId = type == UE ?
             MacNodeId(isNr ? macNodeIdCounterNrUe_++ : macNodeIdCounterUe_++) :
             MacNodeId(macNodeIdCounterEnb_++);  // eNB/gNB
@@ -160,7 +160,7 @@ MacNodeId Binder::registerNode(cModule *nodeModule, RanNodeType type, MacNodeId 
     if (type == UE) {
         registerServingNode(masterId, nodeId);
     }
-    else if (type == ENODEB || type == GNODEB) {
+    else if (type == NODEB) {
         nodeModule->par("macCellId") = num(nodeId);
         registerMasterNode(masterId, nodeId);  // note: even if masterId == NODEID_NONE!
     }
@@ -213,7 +213,7 @@ void Binder::registerServingNode(MacNodeId enbId, MacNodeId ueId)
 
     EV << "Binder : Registering UE " << ueId << " to serving eNB/gNB " << enbId << "\n";
 
-    ASSERT(enbId == NODEID_NONE || getNodeTypeById(enbId) == ENODEB);
+    ASSERT(enbId == NODEID_NONE || getNodeTypeById(enbId) == NODEB);
     ASSERT(getNodeTypeById(ueId) == UE);
 
     if (servingNode_.size() <= num(ueId))
@@ -226,7 +226,7 @@ void Binder::unregisterServingNode(MacNodeId enbId, MacNodeId ueId)
     Enter_Method_Silent("unregisterServingNode");
     EV << "Binder : Unregistering UE " << ueId << " from serving eNodeB/gNodeB " << enbId << "\n";
 
-    ASSERT(enbId == NODEID_NONE || getNodeTypeById(enbId) == ENODEB);
+    ASSERT(enbId == NODEID_NONE || getNodeTypeById(enbId) == NODEB);
     ASSERT(getNodeTypeById(ueId) == UE);
 
     if (servingNode_.size() <= num(ueId))
@@ -245,8 +245,8 @@ void Binder::registerMasterNode(MacNodeId masterId, MacNodeId slaveId)
     Enter_Method_Silent("registerMasterNode");
     EV << "Binder : Registering slave " << slaveId << " to master " << masterId << "\n";
 
-    ASSERT(masterId == NODEID_NONE || getNodeTypeById(masterId) == ENODEB);
-    ASSERT(getNodeTypeById(slaveId) == ENODEB);
+    ASSERT(masterId == NODEID_NONE || getNodeTypeById(masterId) == NODEB);
+    ASSERT(getNodeTypeById(slaveId) == NODEB);
     ASSERT(masterId != slaveId);
 
     if (secondaryNodeToMasterNodeOrSelf_.size() <= num(slaveId))
@@ -406,12 +406,12 @@ LteMacBase *Binder::getMacFromMacNodeId(MacNodeId id)
 
 MacNodeId Binder::getNextHop(MacNodeId nodeId)
 {
-    return (nodeId == NODEID_NONE || getNodeTypeById(nodeId) == ENODEB) ? nodeId : getServingNode(nodeId);
+    return (nodeId == NODEID_NONE || getNodeTypeById(nodeId) == NODEB) ? nodeId : getServingNode(nodeId);
 }
 
 MacNodeId Binder::getMasterNodeOrSelf(MacNodeId secondaryEnbId)
 {
-    ASSERT(secondaryEnbId == NODEID_NONE || getNodeTypeById(secondaryEnbId) == ENODEB);
+    ASSERT(secondaryEnbId == NODEID_NONE || getNodeTypeById(secondaryEnbId) == NODEB);
 
     if (num(secondaryEnbId) >= secondaryNodeToMasterNodeOrSelf_.size())
         throw cRuntimeError("Binder::getMasterNode(): bad secondaryEnbId %hu", num(secondaryEnbId));
@@ -496,7 +496,7 @@ cModule *Binder::getModuleByMacNodeId(MacNodeId nodeId)
 
 std::vector<MacNodeId> Binder::getDeployedUes(MacNodeId enbNodeId)
 {
-    ASSERT(getNodeTypeById(enbNodeId) == ENODEB);
+    ASSERT(getNodeTypeById(enbNodeId) == NODEB);
 
     std::vector<MacNodeId> connectedUes;
 
@@ -1185,8 +1185,8 @@ void Binder::addUeCollectorToEnodeB(MacNodeId ue, UeStatsCollector *ueCollector,
 void Binder::moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell)
 {
     EV << "LteBinder::moveUeCollector" << endl;
-    RanNodeType oldCellType = getBaseStationTypeById(oldCell);
-    RanNodeType newCellType = getBaseStationTypeById(newCell);
+    bool oldCellIsGNodeB = isGNodeB(oldCell);
+    bool newCellIsGNodeB = isGNodeB(newCell);
 
     // Get and remove the UeCollector from the old cell
     cModule *oldEnb = getModuleByMacNodeId(oldCell); // eNodeB module
@@ -1207,11 +1207,11 @@ void Binder::moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell)
         throw cRuntimeError("LteBinder::moveUeCollector - eNodeBStatsCollector not present in eNodeB [%hu]", num(oldCell));
     }
     // If the two base stations are the same type, just move the collector
-    if (oldCellType == newCellType) {
+    if (oldCellIsGNodeB == newCellIsGNodeB) {
         addUeCollectorToEnodeB(ue, ueColl, newCell);
     }
     else {
-        if (newCellType == GNODEB) {
+        if (newCellIsGNodeB) {
             // Retrieve NrUeCollector
             cModule *ueModule = getModuleByMacNodeId(ue);
             if (ueModule->findSubmodule("nrUeCollector") == -1)
@@ -1220,8 +1220,8 @@ void Binder::moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell)
                 throw cRuntimeError("LteBinder::moveUeCollector - Ue [%hu] does not have an 'nrUeCollector' submodule required for the gNB", num(ue));
             addUeCollectorToEnodeB(ue, ueColl, newCell);
         }
-        else if (newCellType == ENODEB) {
-            // Retrieve NrUeCollector
+        else {
+            // Retrieve ueCollector for eNodeB
             cModule *ueModule = getModuleByMacNodeId(ue);
             if (ueModule->findSubmodule("ueCollector") == -1)
                 ueColl = check_and_cast<UeStatsCollector *>(ueModule->getSubmodule("ueCollector"));
@@ -1229,28 +1229,12 @@ void Binder::moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell)
                 throw cRuntimeError("LteBinder::moveUeCollector - Ue [%hu] does not have an 'ueCollector' submodule required for the eNB", num(ue));
             addUeCollectorToEnodeB(ue, ueColl, newCell);
         }
-        else {
-            throw cRuntimeError("LteBinder::moveUeCollector - The new cell is not a cell [%u]", newCellType);
-        }
-    }
-}
-
-RanNodeType Binder::getBaseStationTypeById(MacNodeId cellId)
-{
-    cModule *module = getModuleByMacNodeId(cellId);
-    std::string nodeType;
-    if (module->hasPar("nodeType")) {
-        nodeType = module->par("nodeType").stdstringValue();
-        return static_cast<RanNodeType>(cEnum::get("simu5g::RanNodeType")->lookup(nodeType.c_str()));
-    }
-    else {
-        return UNKNOWN_NODE_TYPE;
     }
 }
 
 bool Binder::isGNodeB(MacNodeId enbId)
 {
-    ASSERT(getNodeTypeById(enbId) == ENODEB);
+    ASSERT(getNodeTypeById(enbId) == NODEB);
     cModule *module = getModuleByMacNodeId(enbId);
     std::string nodeTypeStr = module->par("nodeType").stdstringValue();
     return nodeTypeStr == "GNODEB";
