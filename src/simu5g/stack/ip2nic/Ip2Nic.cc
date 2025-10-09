@@ -64,7 +64,8 @@ void Ip2Nic::initialize(int stage)
             // TODO: not so elegant
             cModule *bs = getContainingNode(this);
             MacNodeId masterId = MacNodeId(bs->par("masterId").intValue());
-            MacNodeId cellId = binder_->registerNode(bs, nodeType_, masterId);
+            bool isNr = bs->par("nodeType").stdstringValue() == "GNODEB";
+            MacNodeId cellId = binder_->registerNode(bs, nodeType_, masterId, isNr);
             nodeId_ = cellId;
             nrNodeId_ = NODEID_NONE;
 

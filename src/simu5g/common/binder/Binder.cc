@@ -155,7 +155,8 @@ MacNodeId Binder::registerNode(cModule *nodeModule, RanNodeType type, MacNodeId 
     NodeInfo nodeInfo(nodeModule);
     nodeInfoMap_[nodeId] = nodeInfo;
 
-    nodeModule->par(isNr ? "nrMacNodeId" : "macNodeId") = num(nodeId);
+    const char *nodeIdParName = (type == UE && isNr) ? "nrMacNodeId" : "macNodeId";
+    nodeModule->par(nodeIdParName) = num(nodeId);
 
     if (type == UE) {
         registerServingNode(masterId, nodeId);
