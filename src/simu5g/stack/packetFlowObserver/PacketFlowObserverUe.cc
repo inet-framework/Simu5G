@@ -27,10 +27,9 @@ namespace simu5g {
 Define_Module(PacketFlowObserverUe);
 
 
-
 void PacketFlowObserverUe::initialize(int stage)
 {
-    if (stage == 1) {
+    if (stage == inet::INITSTAGE_LOCAL) {
         PacketFlowObserverBase::initialize(stage);
     }
 }

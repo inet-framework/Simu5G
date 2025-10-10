@@ -30,7 +30,7 @@ Define_Module(PacketFlowObserverEnb);
 
 void PacketFlowObserverEnb::initialize(int stage)
 {
-    if (stage == 1) {
+    if (stage == inet::INITSTAGE_LOCAL) {
         PacketFlowObserverBase::initialize(stage);
         if (headerCompressedSize_ == -1)
             headerCompressedSize_ = 0;

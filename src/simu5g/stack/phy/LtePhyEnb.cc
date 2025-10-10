@@ -56,7 +56,7 @@ void LtePhyEnb::initialize(int stage)
         nodeType_ = NODEB;
         WATCH(nodeType_);
     }
-    else if (stage == 1) {
+    else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT) {
         initializeFeedbackComputation();
 
         //check eNb type and set TX power

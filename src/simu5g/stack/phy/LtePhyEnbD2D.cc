@@ -26,7 +26,7 @@ using namespace inet;
 void LtePhyEnbD2D::initialize(int stage)
 {
     LtePhyEnb::initialize(stage);
-    if (stage == INITSTAGE_LOCAL)
+    if (stage == inet::INITSTAGE_LOCAL)
         enableD2DCqiReporting_ = par("enableD2DCqiReporting");
 }
 
