@@ -366,12 +366,12 @@ void NrPhyUe::doHandover()
         masterMobility_ = check_and_cast<IMobility *>(masterModule->getSubmodule("mobility"));
     }
     // update cellInfo
-    if (masterId_ != NODEID_NONE)
+    if (oldMaster != NODEID_NONE)
         cellInfo_->detachUser(nodeId_);
 
-    if (candidateMasterId_ != NODEID_NONE) {
+    if (masterId_ != NODEID_NONE) {
         CellInfo *oldCellInfo = cellInfo_;
-        LteMacEnb *newMacEnb = check_and_cast<LteMacEnb *>(binder_->getMacByNodeId(candidateMasterId_));
+        LteMacEnb *newMacEnb = check_and_cast<LteMacEnb *>(binder_->getMacByNodeId(masterId_));
         CellInfo *newCellInfo = newMacEnb->getCellInfo();
         newCellInfo->attachUser(nodeId_);
         cellInfo_ = newCellInfo;
