@@ -138,6 +138,11 @@ SlotFormat Binder::getSlotFormat(GHz carrierFrequency)
     return it->second.slotFormat;
 }
 
+/*
+ * TODO:
+ * - registerMasterNode() -> setMasterNode(enb, masterNode-or-NONE), and remove unregister
+ * - registerServingNode() -> setServingNode(enb, masterNode-or-NONE) , and remove unregister
+ */
 void Binder::registerNode(MacNodeId nodeId, cModule *nodeModule, RanNodeType type, bool isNr)
 {
     Enter_Method_Silent();
