@@ -55,8 +55,8 @@ class Binder : public cSimpleModule
     // Consolidated node information - replaces nodeIds_, macNodeIdToModuleName_, macNodeIdToModuleRef_, macNodeIdToModule_
     std::map<MacNodeId, NodeInfo> nodeInfoMap_;
 
-    std::vector<MacNodeId> servingNode_;  // ueId -> servingEnbId
-    std::vector<MacNodeId> secondaryNodeToMasterNodeOrSelf_;
+    std::vector<MacNodeId> servingNode_;  // ueId -> servingEnbId //TODO eliminate
+    std::vector<MacNodeId> secondaryNodeToMasterNodeOrSelf_;  //TODO eliminate
 
     // stores the IP address of the MEC hosts in the simulation
     std::set<inet::L3Address> mecHostAddress_;
@@ -438,7 +438,7 @@ class Binder : public cSimpleModule
     /**
      * Returns the module for the given MAC node ID
      */
-    virtual cModule *getModuleByMacNodeId(MacNodeId nodeId);
+    virtual cModule *getModuleByMacNodeId(MacNodeId nodeId); //TODO rename to getNodeModuleByNodeId() [will clash with getNodeModule()!!!]
 
     /*
      * getDeployedUes() returns the affiliates
