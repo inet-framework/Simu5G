@@ -94,6 +94,7 @@ class LteRlcUm : public cSimpleModule
     cGate *downOutGate_ = nullptr;
 
   public:
+    void checkMatch(const char *label, FlowControlInfo *first, FlowControlInfo *second); //TEMP!
 
     /**
      * sendToUpperLayer() is invoked by the RXBuffer as a direct method

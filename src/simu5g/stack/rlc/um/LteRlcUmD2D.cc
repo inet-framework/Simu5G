@@ -54,6 +54,8 @@ void LteRlcUmD2D::handleLowerMessage(cPacket *pktAux)
             UmTxEntity *txbuf = lookupTxBuffer(cid);
             if (txbuf == nullptr)
                 txbuf = createTxBuffer(cid, lteInfo.get());
+            else
+                checkMatch("LteRlcUmD2D::handleLowerMessage TX", lteInfo.get(), txbuf->getFlowControlInfo());
             txbuf->rlcHandleD2DModeSwitch(switchPkt->getOldConnection(), switchPkt->getClearRlcBuffer());
 
             // forward packet to PDCP
@@ -67,6 +69,8 @@ void LteRlcUmD2D::handleLowerMessage(cPacket *pktAux)
             UmRxEntity *rxbuf = lookupRxBuffer(cid);
             if (rxbuf == nullptr)
                 rxbuf = createRxBuffer(cid, lteInfo.get());
+            else
+                checkMatch("LteRlcUmD2D::handleLowerMessage RX", lteInfo.get(), rxbuf->getFlowControlInfo());
             rxbuf->rlcHandleD2DModeSwitch(switchPkt->getOldConnection(), switchPkt->getOldMode(), switchPkt->getClearRlcBuffer());
 
             delete pkt;

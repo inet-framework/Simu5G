@@ -30,6 +30,28 @@ simsignal_t LteRlcUm::receivedPacketFromLowerLayerSignal_ = registerSignal("rece
 simsignal_t LteRlcUm::sentPacketToUpperLayerSignal_ = registerSignal("sentPacketToUpperLayer");
 simsignal_t LteRlcUm::sentPacketToLowerLayerSignal_ = registerSignal("sentPacketToLowerLayer");
 
+std::string formatAddrInfo(FlowControlInfo *lteInfo)
+ {
+    std::stringstream ss;
+    ss << "(" << lteInfo->getSourceId() << "->" << lteInfo->getDestId();
+    ss << " multicastGroupID=" << lteInfo->getMulticastGroupId();
+    ss << " dir=" << dirToA((Direction)lteInfo->getDirection());
+    ss << " lcid=" << lteInfo->getLcid() << ")";
+    return ss.str();
+}
+
+void LteRlcUm::checkMatch(const char *label, FlowControlInfo *first, FlowControlInfo *second)
+{
+    bool match =     first->getLcid() == second->getLcid() &&
+                     first->getSourceId() == second->getSourceId() &&
+                     first->getDestId() == second->getDestId() &&
+                     first->getMulticastGroupId() == second->getMulticastGroupId() &&
+                     first->getDirection() == second->getDirection();
+    if (!match)
+        throw cRuntimeError("LteRlcUm::checkMatch - %s: FlowControlInfo objects do not match: %s --VS-- %s",
+            label, formatAddrInfo(first).c_str(), formatAddrInfo(second).c_str());
+}
+
 UmTxEntity *LteRlcUm::lookupTxBuffer(MacCid cid)
 {
     UmTxEntities::iterator it = txEntities_.find(cid);
@@ -115,6 +137,8 @@ void LteRlcUm::handleUpperMessage(cPacket *pktAux)
     UmTxEntity *txbuf = lookupTxBuffer(cid);
     if (txbuf == nullptr)
         txbuf = createTxBuffer(cid, lteInfo.get());
+    else
+        checkMatch("LteRlcUm::handleUpperMessage TX", lteInfo.get(), txbuf->getFlowControlInfo());
 
     // Extract sequence number from PDCP header
     auto pdcpHeader = pkt->peekAtFront<LtePdcpHeader>();
@@ -168,7 +192,8 @@ void LteRlcUm::handleLowerMessage(cPacket *pktAux)
         UmTxEntity *txbuf = lookupTxBuffer(cid);
         if (txbuf == nullptr)
             txbuf = createTxBuffer(cid, lteInfo.get());
-
+        else
+            checkMatch("LteRlcUm::handleLowerMessage TX", lteInfo.get(), txbuf->getFlowControlInfo());
         auto macSduRequest = pkt->peekAtFront<LteMacSduRequest>();
         unsigned int size = macSduRequest->getSduSize();
 
@@ -188,6 +213,8 @@ void LteRlcUm::handleLowerMessage(cPacket *pktAux)
         UmRxEntity *rxbuf = lookupRxBuffer(cid);
         if (rxbuf == nullptr)
             rxbuf = createRxBuffer(cid, lteInfo.get());
+        else
+            checkMatch("LteRlcUm::handleLowerMessage RX", lteInfo.get(), rxbuf->getFlowControlInfo());
         drop(pkt);
 
         // Bufferize PDU
