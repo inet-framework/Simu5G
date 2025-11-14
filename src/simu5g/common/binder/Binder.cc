@@ -251,7 +251,7 @@ void Binder::registerMasterNode(MacNodeId masterId, MacNodeId slaveId)
     ASSERT(masterId != slaveId);
 
     if (secondaryNodeToMasterNodeOrSelf_.size() <= num(slaveId))
-        secondaryNodeToMasterNodeOrSelf_.resize(num(slaveId) + 1);
+        secondaryNodeToMasterNodeOrSelf_.resize(num(slaveId) + 1, NODEID_NONE); //????? FIXME should be "self"???
     secondaryNodeToMasterNodeOrSelf_[num(slaveId)] = (masterId != NODEID_NONE) ? masterId : slaveId;  // the "or self" bit
 }
 

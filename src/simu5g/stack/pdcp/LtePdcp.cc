@@ -165,7 +165,7 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
        << " ---> CID " << cid << (entity == nullptr ? " (NEW)" : " (existing)") << std::endl;
 
     if (entity == nullptr) {
-        binder_->establishUnidirectionalDataConnection((FlowControlInfo *)lteInfo.get());
+        binder_->establishUnidirectionalDataConnection((FlowControlInfo *)lteInfo.get()); //TODO make arg const
         entity = lookupTxEntity(cid);
         ASSERT(entity != nullptr);
     }
