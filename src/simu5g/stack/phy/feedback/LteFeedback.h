@@ -342,12 +342,12 @@ class LteMuMimoMatrix
 
     MacNodeId toNodeId(unsigned int i)
     {
-        return UE_MIN_ID + i;
+        return MacNodeId(num(UE_MIN_ID) + i);
     }
 
     unsigned int toIndex(MacNodeId nodeId)
     {
-        return nodeId - UE_MIN_ID;
+        return num(nodeId) - num(UE_MIN_ID);
     }
 
   public:
@@ -375,4 +375,3 @@ class LteMuMimoMatrix
 } //namespace
 
 #endif
-

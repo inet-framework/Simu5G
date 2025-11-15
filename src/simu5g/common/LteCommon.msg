@@ -27,15 +27,6 @@ inline unsigned short num(MacNodeId id) { return static_cast<unsigned short>(id)
 
 inline std::ostream& operator<<(std::ostream& os, MacNodeId id) { os << static_cast<unsigned short>(id); return os; }
 
-// The following operators are mostly for simplifying comparisons and transformations involving UE_MIN_ID and similar constants
-inline bool operator<(MacNodeId a, MacNodeId b) { return static_cast<unsigned short>(a) < static_cast<unsigned short>(b); }
-inline bool operator>(MacNodeId a, MacNodeId b) { return static_cast<unsigned short>(a) > static_cast<unsigned short>(b); }
-inline bool operator<=(MacNodeId a, MacNodeId b) { return static_cast<unsigned short>(a) <= static_cast<unsigned short>(b); }
-inline bool operator>=(MacNodeId a, MacNodeId b) { return static_cast<unsigned short>(a) >= static_cast<unsigned short>(b); }
-inline MacNodeId operator+(MacNodeId a, unsigned int b) { return MacNodeId(static_cast<unsigned short>(a) + b); }
-inline MacNodeId operator-(MacNodeId a, unsigned int b) { return MacNodeId(static_cast<unsigned short>(a) - b); }
-inline MacNodeId operator-(unsigned int a, MacNodeId b) { return MacNodeId(a - static_cast<unsigned short>(b)); }
-inline unsigned short operator-(MacNodeId a, MacNodeId b) { return static_cast<unsigned short>(a) - static_cast<unsigned short>(b); }
 
 // parsimPack() needed fpr the "d" fingerprint ingredient
 inline void doParsimPacking(omnetpp::cCommBuffer *buffer, MacNodeId d) {buffer->pack(num(d));}

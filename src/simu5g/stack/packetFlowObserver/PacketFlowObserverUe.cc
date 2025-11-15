@@ -75,7 +75,7 @@ void PacketFlowObserverUe::clearLcid(LogicalCid lcid)
     for (int i = 0; i < harqProcesses_; i++)
         desc->macPduPerProcess_[i] = 0;
 
-    EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::clearLcid - cleared data structures for lcid " << lcid << endl;
+    EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::clearLcid - cleared data structures for lcid " << lcid << endl;
 }
 
 void PacketFlowObserverUe::clearAllLcid()
@@ -140,7 +140,7 @@ void PacketFlowObserverUe::insertPdcpSdu(inet::Packet *pdcpPkt)
     initPdcpStatus(desc, pdcpSno, pdcpSize, arrivalTime);
     pktDiscardCounterTotal_.total += 1;
 
-    EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::insertPdcpSdu - PDCP status for PDCP PDU SN " << pdcpSno << " added. Logical cid " << lcid << endl;
+    EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::insertPdcpSdu - PDCP status for PDCP PDU SN " << pdcpSno << " added. Logical cid " << lcid << endl;
 }
 
 void PacketFlowObserverUe::insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcUmDataPdu> rlcPdu, RlcBurstStatus status)
@@ -159,7 +159,7 @@ void PacketFlowObserverUe::insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcU
 
     if (desc->rlcSdusPerPdu_.find(rlcSno) != desc->rlcSdusPerPdu_.end())
         throw cRuntimeError("%s::insertRlcPdu - RLC PDU SN %d already present for logical CID %d", pfmType.c_str(), rlcSno, lcid);
-    EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::insertRlcPdu - Logical CID " << lcid << endl;
+    EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::insertRlcPdu - Logical CID " << lcid << endl;
 
     FramingInfo fi = rlcPdu->getFramingInfo();
     for (size_t idx = 0; idx < rlcPdu->getNumSdu(); ++idx) {
@@ -242,7 +242,7 @@ void PacketFlowObserverUe::discardRlcPdu(LogicalCid lcid, unsigned int rlcSno, b
         // compliant with ETSI 136 314 at 4.1.5.1
 
         if (rit->second.empty() && pit->second.hasArrivedAll && !pit->second.discardedAtMac && !pit->second.sentOverTheAir) {
-            EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::discardRlcPdu - lcid[" << lcid << "], discarded PDCP PDU " << pdcpSno << " in RLC PDU " << rlcSno << endl;
+            EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::discardRlcPdu - lcid[" << lcid << "], discarded PDCP PDU " << pdcpSno << " in RLC PDU " << rlcSno << endl;
             pktDiscardCounterTotal_.discarded += 1;
         }
         // if the pdcp was entire and the set of rlc is empty, discard it
@@ -297,7 +297,7 @@ void PacketFlowObserverUe::insertMacPdu(inet::Ptr<const LteMacPdu> macPdu)
 
         // store the MAC SDUs (RLC PDUs) included in the MAC PDU
         desc->macSdusPerPdu_[macPduId].insert(rlcSno);
-        EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::insertMacPdu - lcid[" << lcid << "], insert RLC PDU " << rlcSno << " in MAC PDU " << macPduId << endl;
+        EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::insertMacPdu - lcid[" << lcid << "], insert RLC PDU " << rlcSno << " in MAC PDU " << macPduId << endl;
 
         // set the pdcp pdus related to this RLC as sent over the air since this method is called after the MAC ID
         // has been inserted in the HARQBuffer
@@ -334,8 +334,8 @@ void PacketFlowObserverUe::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
         // get the descriptor for this connection
         StatusDescriptor *desc = &cit->second;
 
-        EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::macPduArrived - Get MAC PDU ID [" << macPduId << "], which contains:" << endl;
-        EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::macPduArrived - MAC PDU " << macPduId << " of lcid " << lcid << " arrived." << endl;
+        EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::macPduArrived - Get MAC PDU ID [" << macPduId << "], which contains:" << endl;
+        EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::macPduArrived - MAC PDU " << macPduId << " of lcid " << lcid << " arrived." << endl;
 
         // === STEP 1 ==================================================== //
         // === recover the set of RLC PDU SN from the above MAC PDU ID === //
@@ -360,7 +360,7 @@ void PacketFlowObserverUe::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
 
         for (auto rlcPduSno : rlcSnoSet) {
             // for each RLC PDU
-            EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::macPduArrived - --> RLC PDU [" << rlcPduSno << "], which contains:" << endl;
+            EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::macPduArrived - --> RLC PDU [" << rlcPduSno << "], which contains:" << endl;
 
             std::map<unsigned int, SequenceNumberSet>::iterator nit = desc->rlcSdusPerPdu_.find(rlcPduSno);
             if (nit == desc->rlcSdusPerPdu_.end())
@@ -376,7 +376,7 @@ void PacketFlowObserverUe::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
 
             for (auto pdcpPduSno : pdcpSnoSet) {
                 // for each RLC SDU (PDCP PDU), get the set of RLC PDUs where it is included
-                EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::macPduArrived - ----> PDCP PDU [" << pdcpPduSno << "]" << endl;
+                EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::macPduArrived - ----> PDCP PDU [" << pdcpPduSno << "]" << endl;
 
                 std::map<unsigned int, SequenceNumberSet>::iterator oit = desc->rlcPdusPerSdu_.find(pdcpPduSno);
                 if (oit == desc->rlcPdusPerSdu_.end())
@@ -400,13 +400,13 @@ void PacketFlowObserverUe::macPduArrived(inet::Ptr<const LteMacPdu> macPdu)
 
                     // set the time for pdcpPduSno
                     if (pit->second.hasArrivedAll && !pit->second.discardedAtRlc && !pit->second.discardedAtMac) { // the whole current pdcp seqNum has been received
-                        EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::macPduArrived - ----> PDCP PDU [" << pdcpPduSno << "] has been completely sent, remove from PDCP buffer" << endl;
+                        EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::macPduArrived - ----> PDCP PDU [" << pdcpPduSno << "] has been completely sent, remove from PDCP buffer" << endl;
 
                         double time = (simTime() - pit->second.entryTime).dbl();
                         pdcpDelay.time += time;
                         pdcpDelay.pktCount += 1;
 
-                        EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::macPduArrived - PDCP PDU " << pdcpPduSno << " of lcid " << lcid << " acknowledged. Delay time: " << time << "s" << endl;
+                        EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::macPduArrived - PDCP PDU " << pdcpPduSno << " of lcid " << lcid << " acknowledged. Delay time: " << time << "s" << endl;
 
                         // remove pdcp status
                         oit->second.clear();
@@ -445,8 +445,8 @@ void PacketFlowObserverUe::discardMacPdu(const inet::Ptr<const LteMacPdu> macPdu
         // get the descriptor for this connection
         StatusDescriptor *desc = &cit->second;
 
-        EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::discardMacPdu - Get MAC PDU ID [" << macPduId << "], which contains:" << endl;
-        EV_FATAL << NOW << "node id " << desc->nodeId_ - 1025 << " " << pfmType << "::discardMacPdu - MAC PDU " << macPduId << " of lcid " << lcid << " arrived." << endl;
+        EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::discardMacPdu - Get MAC PDU ID [" << macPduId << "], which contains:" << endl;
+        EV_FATAL << NOW << "node id " << num(desc->nodeId_) - 1025 << " " << pfmType << "::discardMacPdu - MAC PDU " << macPduId << " of lcid " << lcid << " arrived." << endl;
 
         // === STEP 1 ==================================================== //
         // === recover the set of RLC PDU SN from the above MAC PDU ID === //

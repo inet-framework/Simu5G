@@ -197,7 +197,7 @@ void LteSchedulerEnbUl::racscheduleBackground(unsigned int& racAllocatedBlocks, 
 
     for (auto it = bgTrafficManager->getWaitingForRacUesBegin(), et = bgTrafficManager->getWaitingForRacUesEnd(); it != et; ++it) {
         // get current nodeId
-        MacNodeId bgUeId = BGUE_MIN_ID + *it;
+        MacNodeId bgUeId = MacNodeId(num(BGUE_MIN_ID) + *it);
 
         EV << NOW << " LteSchedulerEnbUl::racscheduleBackground handling RAC for node " << bgUeId << endl;
 
@@ -405,7 +405,7 @@ bool LteSchedulerEnbUl::rtxscheduleBackground(GHz carrierFrequency, BandLimitVec
                                        et = bgTrafficManager->getBackloggedUesEnd(direction_, true);
         for ( ; it != et; ++it) {
             int bgUeIndex = *it;
-            MacNodeId bgUeId = BGUE_MIN_ID + bgUeIndex;
+            MacNodeId bgUeId = MacNodeId(num(BGUE_MIN_ID) + bgUeIndex);
 
             unsigned cw = 0;
             unsigned int rtxBytes = scheduleBgRtx(bgUeId, carrierFrequency, cw, bandLim);

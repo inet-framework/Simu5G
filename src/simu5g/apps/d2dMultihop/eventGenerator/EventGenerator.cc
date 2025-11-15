@@ -71,7 +71,7 @@ void EventGenerator::notifyEvent()
         // find all UEs within a 20m-radius
         std::vector<MacNodeId> tmp;
         for (MacNodeId nodeId : lteNodeIdSet_) {
-            if (UE_MIN_ID + r != nodeId) {
+            if (MacNodeId(num(UE_MIN_ID) + r) != nodeId) {
                 LtePhyBase *phy = lteNodePhy_[nodeId];
                 inet::Coord pos = phy->getCoord();
                 double d = uePos.distance(pos);
@@ -84,7 +84,7 @@ void EventGenerator::notifyEvent()
         if (!tmp.empty()) {
             int r = intuniform(0, tmp.size() - 1, 1);
             MacNodeId id = tmp.at(r);
-            appVector_[id - UE_MIN_ID]->handleEvent(eventId_);
+            appVector_[num(id) - num(UE_MIN_ID)]->handleEvent(eventId_);
         }
     }
 
@@ -145,4 +145,3 @@ void EventGenerator::unregisterNode(MultihopD2D *app, MacNodeId lteNodeId)
 }
 
 } //namespace
-

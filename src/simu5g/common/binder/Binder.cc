@@ -361,7 +361,7 @@ void Binder::finish()
                 toPrint = ss.str();
             }
             else {
-                MacNodeId bgCellId = cellId - 2;
+                MacNodeId bgCellId = MacNodeId(num(cellId) - 2);
 
                 // the UE belongs to a background cell
                 ss << "*.bgCell[" << bgCellId << "].bgTrafficGenerator.bgUE[" << ueIndex << "].generator.rtxRateDl = " << harqErrorRateDl << "\n";
