@@ -133,7 +133,7 @@ double LteRealisticChannelModel::getAttenuation(MacNodeId nodeId, Direction dir,
 
     //    Applying shadowing only if it is enabled by configuration
     //    log-normal shadowing (not available for background UEs)
-    if (nodeId < BGUE_MIN_ID && shadowing_)
+    if (num(nodeId) < BGUE_MIN_ID && shadowing_)
         attenuation += computeShadowing(sqrDistance, nodeId, speed, cqiDl);
 
     // update current user position
@@ -181,7 +181,7 @@ double LteRealisticChannelModel::getAttenuation_D2D(MacNodeId nodeId, Direction 
 
     //    Applying shadowing only if it is enabled by configuration
     //    log-normal shadowing (not available for background UEs)
-    if (nodeId < BGUE_MIN_ID && shadowing_)
+    if (num(nodeId) < BGUE_MIN_ID && shadowing_)
         attenuation += computeShadowing(sqrDistance, nodeId, speed, cqiDl);
 
     // update current user position

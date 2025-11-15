@@ -34,14 +34,14 @@ inline void doParsimUnpacking(omnetpp::cCommBuffer *buffer, MacNodeId& d) {unsig
 
 /// Node Id bounds  --TODO the MAX bounds are completely messed up
 constexpr MacNodeId NODEID_NONE  = MacNodeId(0);
-constexpr MacNodeId ENB_MIN_ID   = MacNodeId(1);
-constexpr MacNodeId ENB_MAX_ID   = MacNodeId(1023);
-constexpr MacNodeId BGUE_ID      = MacNodeId(1024);
-constexpr MacNodeId UE_MIN_ID    = MacNodeId(1025);
-constexpr MacNodeId NR_UE_MIN_ID = MacNodeId(2049);
-constexpr MacNodeId BGUE_MIN_ID  = MacNodeId(4097);
-constexpr MacNodeId UE_MAX_ID    = MacNodeId(32767);
-constexpr MacNodeId MULTICAST_DEST_MIN_ID = MacNodeId(32768);
+constexpr unsigned short ENB_MIN_ID   = 1;
+constexpr unsigned short ENB_MAX_ID   = 1023;
+constexpr unsigned short BGUE_ID      = 1024;
+constexpr unsigned short UE_MIN_ID    = 1025;
+constexpr unsigned short NR_UE_MIN_ID = 2049;
+constexpr unsigned short BGUE_MIN_ID  = 4097;
+constexpr unsigned short UE_MAX_ID    = 32767;
+constexpr unsigned short MULTICAST_DEST_MIN_ID = 32768;
 
 
 /// Cell node ID. It is numerically equal to eNodeB MAC node ID.

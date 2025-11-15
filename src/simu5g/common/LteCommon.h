@@ -460,7 +460,7 @@ bool isMulticastConnection(FlowControlInfo *lteInfo);
  * @return true if the nodeId is in the multicast destination ID range
  */
 inline bool isMulticastDestId(MacNodeId nodeId) {
-    return nodeId >= MULTICAST_DEST_MIN_ID;
+    return num(nodeId) >= MULTICAST_DEST_MIN_ID;
 }
 
 /**

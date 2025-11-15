@@ -270,9 +270,9 @@ const std::string fbGeneratorTypeToA(FeedbackGeneratorType type)
 
 RanNodeType getNodeTypeById(MacNodeId id)
 {
-    if (id >= ENB_MIN_ID && id <= ENB_MAX_ID)
+    if (num(id) >= ENB_MIN_ID && num(id) <= ENB_MAX_ID)
         return NODEB;
-    if (id >= UE_MIN_ID && id <= UE_MAX_ID)
+    if (num(id) >= UE_MIN_ID && num(id) <= UE_MAX_ID)
         return UE;
     return UNKNOWN_NODE_TYPE;
 }
@@ -316,7 +316,7 @@ bool isBaseStation(CoreNodeType nodeType)
 
 bool isNrUe(MacNodeId id)
 {
-    return getNodeTypeById(id) == UE && id >= NR_UE_MIN_ID;
+    return getNodeTypeById(id) == UE && num(id) >= NR_UE_MIN_ID;
 }
 
 const std::string planeToA(Plane p)

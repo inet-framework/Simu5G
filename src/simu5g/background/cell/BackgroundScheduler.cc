@@ -128,7 +128,7 @@ void BackgroundScheduler::updateAllocation(Direction dir)
             }
 
             bgUeIndex = *rit;
-            bgUeId = MacNodeId(num(BGUE_MIN_ID) + bgUeIndex);
+            bgUeId = MacNodeId(BGUE_MIN_ID + bgUeIndex);
 
             EV << NOW << " BackgroundScheduler::updateAllocation - dir[" << dirToA(dir) << "] band[" << b << "] - allocated to ue[" << bgUeId << "]" << endl;
 
@@ -166,7 +166,7 @@ void BackgroundScheduler::updateAllocation(Direction dir)
         }
 
         bgUeIndex = *rit;
-        bgUeId = MacNodeId(num(BGUE_MIN_ID) + bgUeIndex);
+        bgUeId = MacNodeId(BGUE_MIN_ID + bgUeIndex);
 
         bytesPerBlock = bgTrafficManager_->getBackloggedUeBytesPerBlock(bgUeId, dir);
 
@@ -209,7 +209,7 @@ void BackgroundScheduler::updateAllocation(Direction dir)
         }
 
         bgUeIndex = *it;
-        bgUeId = MacNodeId(num(BGUE_MIN_ID) + bgUeIndex);
+        bgUeId = MacNodeId(BGUE_MIN_ID + bgUeIndex);
 
         // if the BG UE has been already scheduled for rtx, skip it
         if (rtxScheduledBgUes.find(bgUeId) != rtxScheduledBgUes.end())

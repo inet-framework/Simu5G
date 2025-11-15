@@ -92,7 +92,7 @@ void LteMaxCi::prepareSchedule()
         IBackgroundTrafficManager *bgTrafficManager = eNbScheduler_->mac_->getBackgroundTrafficManager(carrierFrequency_);
         for (auto it = bgTrafficManager->getBackloggedUesBegin(direction_); it != bgTrafficManager->getBackloggedUesEnd(direction_); ++it) {
             int bgUeIndex = *it;
-            MacNodeId bgUeId = MacNodeId(num(BGUE_MIN_ID) + bgUeIndex);
+            MacNodeId bgUeId = MacNodeId(BGUE_MIN_ID + bgUeIndex);
 
             // The cid for a background UE is a 32-bit integer composed as:
             // - the most significant 16 bits are set to the background UE id (BGUE_MIN_ID+index)
@@ -116,7 +116,7 @@ void LteMaxCi::prepareSchedule()
         bool eligible = true;
         unsigned int granted;
 
-        if (current.x_.getNodeId() >= BGUE_MIN_ID) {
+        if (num(current.x_.getNodeId()) >= BGUE_MIN_ID) {
             EV << NOW << " LteMaxCI::schedule scheduling background UE " << current.x_.getNodeId() << " with score of " << current.score_ << endl;
 
             // Grant data to that background connection.
@@ -146,7 +146,7 @@ void LteMaxCi::prepareSchedule()
         if (!active) {
             EV << NOW << "LteMaxCI::schedule scheduling connection " << current.x_ << " set to inactive " << endl;
 
-            if (current.x_.getNodeId() <= BGUE_MIN_ID) {
+            if (num(current.x_.getNodeId()) <= BGUE_MIN_ID) {
                 carrierActiveConnectionSet_.erase(current.x_);
                 activeConnectionTempSet_.erase(current.x_);
             }

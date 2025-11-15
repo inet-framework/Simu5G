@@ -52,7 +52,7 @@ double NrChannelModel::getAttenuation(MacNodeId nodeId, Direction dir, inet::Coo
 
     // Applying shadowing only if it is enabled by configuration
     // log-normal shadowing (not available for background UEs)
-    if (nodeId < BGUE_MIN_ID && shadowing_)
+    if (num(nodeId) < BGUE_MIN_ID && shadowing_)
         attenuation += computeShadowing(twoDimDistance, nodeId, speed, cqiDl);
 
     // update current user position
@@ -436,4 +436,3 @@ double NrChannelModel::computeExtCellPathLoss(double threeDimDistance, double tw
 }
 
 } //namespace
-

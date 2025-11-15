@@ -118,12 +118,11 @@ void LteMuMimoMatrix::print(const char *s) const {
     EV << NOW << " " << s << " ################" << endl;
     EV << NOW << " " << s << " LteMuMimoMatrix" << endl;
     EV << NOW << " " << s << " ################" << endl;
-    for (unsigned int i = num(UE_MIN_ID); i < num(maxNodeId_); i++)
+    for (unsigned int i = UE_MIN_ID; i < num(maxNodeId_); i++)
         EV << NOW << "" << i;
     EV << endl;
-    for (unsigned int i = num(UE_MIN_ID); i < num(maxNodeId_); i++)
+    for (unsigned int i = UE_MIN_ID; i < num(maxNodeId_); i++)
         EV << NOW << "" << muMatrix_[i];
 }
 
 } //namespace
-

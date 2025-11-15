@@ -60,14 +60,14 @@ std::vector<double> BackgroundCellTrafficManager::getSINR(int bgUeIndex, Directi
     BackgroundCellChannelModel *bgChannelModel = bgScheduler_->getChannelModel();
     TrafficGeneratorBase *bgUe = bgUe_.at(bgUeIndex);
 
-    MacNodeId bgUeId = MacNodeId(num(BGUE_MIN_ID) + bgUeIndex);
+    MacNodeId bgUeId = MacNodeId(BGUE_MIN_ID + bgUeIndex);
     std::vector<double> snr = bgChannelModel->getSINR(bgUeId, bgUePos, bgUe, bgScheduler_, dir);
     return snr;
 }
 
 unsigned int BackgroundCellTrafficManager::getBackloggedUeBytesPerBlock(MacNodeId bgUeId, Direction dir)
 {
-    int index = num(bgUeId) - num(BGUE_MIN_ID);
+    int index = num(bgUeId) - BGUE_MIN_ID;
     Cqi cqi = bgUe_.at(index)->getCqi(dir);
 
     return bgAmc_->computeBitsPerRbBackground(cqi, dir, carrierFrequency_) / 8;

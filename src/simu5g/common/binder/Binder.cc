@@ -331,7 +331,7 @@ void Binder::finish()
         for (UeInfo *info : ueList_) {
             std::stringstream ss;
 
-            if (info->id < NR_UE_MIN_ID)
+            if (num(info->id) < NR_UE_MIN_ID)
                 continue;
 
             MacNodeId cellId = info->cellId;
@@ -502,12 +502,12 @@ std::vector<MacNodeId> Binder::getDeployedUes(MacNodeId enbNodeId)
     std::vector<MacNodeId> connectedUes;
 
     // Collect LTE UEs
-    for (unsigned int ueIdNum = num(UE_MIN_ID); ueIdNum < macNodeIdCounterUe_; ++ueIdNum)
+    for (unsigned int ueIdNum = UE_MIN_ID; ueIdNum < macNodeIdCounterUe_; ++ueIdNum)
         if (ueIdNum < servingNode_.size() && servingNode_[ueIdNum] == enbNodeId)
             connectedUes.push_back(MacNodeId(ueIdNum));
 
     // Collect NR UEs
-    for (unsigned int ueIdNum = num(NR_UE_MIN_ID); ueIdNum < macNodeIdCounterNrUe_; ++ueIdNum)
+    for (unsigned int ueIdNum = NR_UE_MIN_ID; ueIdNum < macNodeIdCounterNrUe_; ++ueIdNum)
         if (ueIdNum < servingNode_.size() && servingNode_[ueIdNum] == enbNodeId)
             connectedUes.push_back(MacNodeId(ueIdNum));
 
@@ -654,11 +654,11 @@ Cqi Binder::medianCqi(std::vector<Cqi> bandCqi, MacNodeId id, Direction dir)
 
 bool Binder::isValidNodeId(MacNodeId  nodeId) const
 {
-    if (nodeId >= UE_MIN_ID && nodeId < MacNodeId(macNodeIdCounterUe_))
+    if (num(nodeId) >= UE_MIN_ID && nodeId < MacNodeId(macNodeIdCounterUe_))
         return true;
-    if (nodeId >= NR_UE_MIN_ID && nodeId < MacNodeId(macNodeIdCounterNrUe_))
+    if (num(nodeId) >= NR_UE_MIN_ID && nodeId < MacNodeId(macNodeIdCounterNrUe_))
         return true;
-    if (nodeId >= ENB_MIN_ID && nodeId < MacNodeId(macNodeIdCounterEnb_))
+    if (num(nodeId) >= ENB_MIN_ID && nodeId < MacNodeId(macNodeIdCounterEnb_))
         return true;
     return false;
 }

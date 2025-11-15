@@ -90,9 +90,9 @@ class Binder : public cSimpleModule
     double maxDataRatePerRb_;
 
     // counters for assigning MacNodeIds
-    unsigned int macNodeIdCounterEnb_ = num(ENB_MIN_ID); // eNodeB and gNodeB
-    unsigned int macNodeIdCounterUe_ = num(UE_MIN_ID);
-    unsigned int macNodeIdCounterNrUe_ = num(NR_UE_MIN_ID);
+    unsigned int macNodeIdCounterEnb_ = ENB_MIN_ID; // eNodeB and gNodeB
+    unsigned int macNodeIdCounterUe_ = UE_MIN_ID;
+    unsigned int macNodeIdCounterNrUe_ = NR_UE_MIN_ID;
 
     /*
      * Carrier Aggregation support
@@ -149,7 +149,7 @@ class Binder : public cSimpleModule
      * Multicast destination ID support
      */
     // Counter for allocating new multicast destination IDs
-    int16_t multicastDestIdCounter_ = num(MULTICAST_DEST_MIN_ID);
+    int16_t multicastDestIdCounter_ = MULTICAST_DEST_MIN_ID;
     // Mapping from IPv4 multicast addresses to allocated multicast destination IDs
     std::map<inet::Ipv4Address, MacNodeId> multicastAddrToDestId_;
     // Reverse mapping from multicast destination IDs to IPv4 addresses (optional, for debugging)
