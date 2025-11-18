@@ -124,19 +124,8 @@ class LteRlcUmDataPdu extends LteRlcDataPdu
 };
 
 //
-// Lte RLC AM Data Pdu.
+// Lte RLC AM Pdu.
 //
-// Define additional fields for AM PDU
-//
-class LteRlcAmDataPdu extends LteRlcDataPdu
-{
-    rlcPduLength = RLC_HEADER_UM;
-    chunkLength = inet::B(RLC_HEADER_UM);
-
-    // if true, a status PDU is required
-    bool pollStatus;
-};
-
 class LteRlcAmPdu extends LteRlcPdu
 {
     unsigned short amType enum(LteAmType);
