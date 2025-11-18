@@ -10,8 +10,6 @@
 //
 
 import simu5g.common.LteControlInfo;
-import simu5g.stack.rlc.packet.LteRlcPdu;
-import simu5g.stack.rlc.packet.LteRlcSdu;
 
 cplusplus {{
 #include "simu5g/common/LteControlInfo.h"

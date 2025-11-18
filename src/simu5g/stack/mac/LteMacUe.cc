@@ -21,7 +21,8 @@
 #include "simu5g/stack/mac/packet/LteRac_m.h"
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
 #include "simu5g/stack/mac/scheduler/LteSchedulerUeUl.h"
-#include "simu5g/stack/rlc/packet/LteRlcDataPdu.h"
+#include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
+#include "simu5g/stack/rlc/packet/LteRlcSdu_m.h"
 
 namespace simu5g {
 

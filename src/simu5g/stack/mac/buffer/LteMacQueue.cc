@@ -11,7 +11,7 @@
 
 #include <climits>
 #include "simu5g/stack/mac/buffer/LteMacQueue.h"
-#include "simu5g/stack/rlc/am/packet/LteRlcAmPdu.h"
+#include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 
 namespace simu5g {
 

@@ -23,3 +23,7 @@ class LteRlcSdu extends inet::FieldsChunk
     unsigned int snoMainPacket;                        // ID of packet (sequence number)
     unsigned int lengthMainPacket;
 }
+
+class LteRlcAmSdu extends LteRlcSdu
+{
+}

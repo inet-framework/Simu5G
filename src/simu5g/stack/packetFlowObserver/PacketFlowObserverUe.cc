@@ -13,7 +13,8 @@
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/pdcp/LtePdcp.h"
 #include "simu5g/stack/rlc/LteRlcDefs.h"
-#include "simu5g/stack/rlc/packet/LteRlcDataPdu.h"
+#include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
+#include "simu5g/stack/rlc/packet/LteRlcSdu_m.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 
 #include "simu5g/common/LteControlInfo.h"

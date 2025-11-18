@@ -10,7 +10,7 @@
 //
 
 #include "simu5g/stack/rlc/um/UmTxEntity.h"
-#include "simu5g/stack/rlc/am/packet/LteRlcAmPdu.h"
+#include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverUe.h"
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverEnb.h"

@@ -17,7 +17,7 @@
 #include "simu5g/stack/rlc/packet/LteRlcSdu_m.h"
 #include "simu5g/stack/rlc/um/UmTxEntity.h"
 #include "simu5g/stack/rlc/um/UmRxEntity.h"
-#include "simu5g/stack/rlc/packet/LteRlcDataPdu.h"
+#include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/mec/utils/MecCommon.h"
 
