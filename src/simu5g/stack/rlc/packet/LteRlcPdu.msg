@@ -37,9 +37,6 @@ class LteRlcDataPdu extends inet::FieldsChunk
 {
     chunkLength = inet::b(1);
 
-    // Length of the PDU
-    int64_t rlcPduLength = 0;
-
     inet::Packet* sdu[] @sizeGetter(getNumSdu) @owned;
     size_t sduSize[];
 
@@ -83,7 +80,6 @@ void LteRlcDataPdu::pushSdu(inet::Packet *pkt, int size)
 {
     appendSdu(pkt);
     appendSduSize(size);
-    rlcPduLength += size;
 }
 
 inet::Packet *LteRlcDataPdu::popSdu(size_t& size)
@@ -93,7 +89,6 @@ inet::Packet *LteRlcDataPdu::popSdu(size_t& size)
 
     size = getSduSize(0);
     eraseSduSize(0);
-    rlcPduLength -= size;
     return pkt;
 }
 
@@ -106,7 +101,6 @@ inet::Packet *LteRlcDataPdu::popSdu(size_t& size)
 //
 class LteRlcUmDataPdu extends LteRlcDataPdu
 {
-    rlcPduLength = RLC_HEADER_UM;
     chunkLength = inet::B(RLC_HEADER_UM);
 };
 
