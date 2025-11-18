@@ -16,6 +16,7 @@
 #include "simu5g/stack/rlc/am/AmTxQueue.h"
 #include "simu5g/stack/rlc/am/AmRxQueue.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
+#include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 
 namespace simu5g {
 
@@ -232,8 +233,8 @@ void LteRlcAm::indicateNewDataToMac(cPacket *pktAux) {
 
     newData->insertAtFront(rlcSdu);
 
-    auto newDataHdr = inet::makeShared<LteRlcPduNewData>();
-    newData->insertAtFront(newDataHdr);
+    // add tag to indicate new data availability to MAC
+    newData->addTag<LteRlcNewDataTag>();
 
     newData->copyTags(*pkt);
 

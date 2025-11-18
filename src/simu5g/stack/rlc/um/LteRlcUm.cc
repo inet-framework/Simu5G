@@ -14,6 +14,7 @@
 
 #include "simu5g/stack/rlc/um/LteRlcUm.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
+#include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 
 namespace simu5g {
 
@@ -131,13 +132,13 @@ void LteRlcUm::handleUpperMessage(cPacket *pktAux)
             EV << "LteRlcUm::handleUpperMessage - Enqueue packet " << rlcPkt->getClassName() << " into the Tx Buffer\n";
 
             // create a message to notify the MAC layer that the queue contains new data
-            auto newDataPkt = inet::makeShared<LteRlcPduNewData>();
             // make a copy of the RLC SDU
             auto pktDup = pkt->dup();
-            pktDup->insertAtFront(newDataPkt);
+            // add tag to indicate new data availability to MAC
+            pktDup->addTag<LteRlcNewDataTag>();
             // the MAC will only be interested in the size of this packet
 
-            EV << "LteRlcUm::handleUpperMessage - Sending message " << newDataPkt->getClassName() << " to port UM_Sap_down$o\n";
+            EV << "LteRlcUm::handleUpperMessage - Sending new data indication to port UM_Sap_down$o\n";
             send(pktDup, downOutGate_);
         }
         else {

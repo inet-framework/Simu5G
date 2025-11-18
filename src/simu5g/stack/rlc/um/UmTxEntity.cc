@@ -11,6 +11,7 @@
 
 #include "simu5g/stack/rlc/um/UmTxEntity.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
+#include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverUe.h"
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverEnb.h"
@@ -321,10 +322,10 @@ void UmTxEntity::resumeDownstreamInPackets()
         // store the SDU in the TX buffer
         if (enque(pktRlc)) {
             // create a message to notify the MAC layer that the queue contains new data
-            auto newDataPkt = inet::makeShared<LteRlcPduNewData>();
             // make a copy of the RLC SDU
             auto pktRlcdup = pktRlc->dup();
-            pktRlcdup->insertAtFront(newDataPkt);
+            // add tag to indicate new data availability to MAC
+            pktRlcdup->addTag<LteRlcNewDataTag>();
             // send the new data indication to the MAC
             lteRlc_->sendToLowerLayer(pktRlcdup);
         }
@@ -373,4 +374,3 @@ void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
 }
 
 } //namespace
-

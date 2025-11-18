@@ -27,12 +27,6 @@ class size_t {
 
 namespace simu5g;
 
-// new data indication for MAC
-class LteRlcPduNewData extends inet::FieldsChunk
-{
-    chunkLength = inet::B(0);
-}
-
 class LteRlcDataPdu extends inet::FieldsChunk
 {
     chunkLength = inet::b(1);

@@ -34,6 +34,7 @@
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverBase.h"
+#include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/um/LteRlcUm.h"
 #include "simu5g/stack/pdcp/NrPdcpEnb.h"
 
@@ -672,10 +673,11 @@ bool LteMacEnb::bufferizePacket(cPacket *cpkt)
     LteMacBuffer *vqueue = connInfo.buffer;
 
     // this packet is used to signal the arrival of new data in the RLC buffers
-    if (checkIfHeaderType<LteRlcPduNewData>(pkt)) {
+    if (pkt->findTag<LteRlcNewDataTag>()) {
         // update the virtual buffer for this connection
         // build the virtual packet corresponding to this incoming packet
-        pkt->popAtFront<LteRlcPduNewData>();
+        // remove the tag since it's just a notification
+        pkt->removeTag<LteRlcNewDataTag>();
         auto rlcSdu = pkt->peekAtFront<LteRlcSdu>();
         PacketInfo vpkt(rlcSdu->getLengthMainPacket(), pkt->getTimestamp());
         vqueue->pushBack(vpkt);
@@ -719,7 +721,7 @@ void LteMacEnb::handleUpperMessage(cPacket *pktAux)
     auto lteInfo = pkt->getTag<FlowControlInfo>();
     MacCid cid = MacCid(lteInfo->getDestId(), lteInfo->getLcid());
 
-    bool isLteRlcPduNewData = checkIfHeaderType<LteRlcPduNewData>(pkt);
+    bool isLteRlcPduNewData = (pkt->findTag<LteRlcNewDataTag>() != nullptr);
 
     bool packetIsBuffered = bufferizePacket(pkt);  // will buffer (or destroy if the queue is full)
 

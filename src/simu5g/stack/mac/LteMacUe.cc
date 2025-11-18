@@ -23,6 +23,7 @@
 #include "simu5g/stack/mac/scheduler/LteSchedulerUeUl.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 #include "simu5g/stack/rlc/packet/LteRlcSdu_m.h"
+#include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 
 namespace simu5g {
 
@@ -266,10 +267,11 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
     LteMacBuffer *vqueue = connInfo.buffer;
 
     // this packet is used to signal the arrival of new data in the RLC buffers
-    if (checkIfHeaderType<LteRlcPduNewData>(pkt)) {
+    if (pkt->findTag<LteRlcNewDataTag>()) {
+        // remove the tag since it's just a notification
+        pkt->removeTag<LteRlcNewDataTag>();
         // update the virtual buffer for this connection
         // build the virtual packet corresponding to this incoming packet
-        pkt->popAtFront<LteRlcPduNewData>();
         auto rlcSdu = pkt->peekAtFront<LteRlcSdu>();
         PacketInfo vpkt(rlcSdu->getLengthMainPacket(), pkt->getTimestamp());
         vqueue->pushBack(vpkt);
@@ -564,7 +566,7 @@ void LteMacUe::macPduUnmake(cPacket *cpkt)
 void LteMacUe::handleUpperMessage(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
-    bool isLteRlcPduNewDataInd = checkIfHeaderType<LteRlcPduNewData>(pkt);
+    bool isLteRlcPduNewDataInd = (pkt->findTag<LteRlcNewDataTag>() != nullptr);
 
     // bufferize packet
     bufferizePacket(pkt);
