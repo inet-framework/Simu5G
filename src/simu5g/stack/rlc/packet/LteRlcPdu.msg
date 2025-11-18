@@ -27,19 +27,6 @@ class size_t {
 
 namespace simu5g;
 
-//
-// RLC PDU flowing through LTE stack. Contains the fields of a fragment that
-// the receiver needs in order to correctly decode the original packet.
-//
-class LteRlcPdu extends inet::FieldsChunk
-{
-    // TODO: size 0
-    chunkLength = inet::B(1); // TODO: should be a tag;
-    unsigned int totalFragments;    // Total number of fragments
-    unsigned int snoFragment;        // Sequence number of this fragment
-    unsigned int snoMainPacket;        // ID of packet (sequence number)
-}
-
 // new data indication for MAC
 class LteRlcPduNewData extends inet::FieldsChunk
 {
@@ -126,8 +113,13 @@ class LteRlcUmDataPdu extends LteRlcDataPdu
 //
 // Lte RLC AM Pdu.
 //
-class LteRlcAmPdu extends LteRlcPdu
+class LteRlcAmPdu extends inet::FieldsChunk
 {
+    chunkLength = inet::B(1);
+    unsigned int totalFragments;    // Total number of fragments
+    unsigned int snoFragment;        // Sequence number of this fragment
+    unsigned int snoMainPacket;        // ID of packet (sequence number)
+
     unsigned short amType enum(LteAmType);
     unsigned short txNumber;
     int firstSn;

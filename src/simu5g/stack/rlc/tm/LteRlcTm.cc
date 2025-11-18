@@ -54,9 +54,7 @@ void LteRlcTm::handleUpperMessage(cPacket *pktAux)
 
     // build the PDU itself
     auto rlcSdu = inet::makeShared<LteRlcSdu>();
-    auto rlcPdu = inet::makeShared<LteRlcPdu>();
     pkt->insertAtFront(rlcSdu);
-    pkt->insertAtFront(rlcPdu);
     pkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&LteProtocol::rlc);
 
     // buffer the PDU
