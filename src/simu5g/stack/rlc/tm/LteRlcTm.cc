@@ -13,9 +13,9 @@
 
 #include "simu5g/stack/rlc/tm/LteRlcTm.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
-#include "simu5g/stack/rlc/packet/LteRlcSdu_m.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 
 namespace simu5g {
 
@@ -53,9 +53,11 @@ void LteRlcTm::handleUpperMessage(cPacket *pktAux)
         return;
     }
 
-    // build the PDU itself
-    auto rlcSdu = inet::makeShared<LteRlcSdu>();
-    pkt->insertAtFront(rlcSdu);
+    // Add PDCP tracking information
+    auto pdcpTag = pkt->addTag<PdcpTrackingTag>();
+    pdcpTag->setPdcpSequenceNumber(lteInfo->getSequenceNumber());
+    pdcpTag->setOriginalPacketLength(pkt->getByteLength());
+
     pkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&LteProtocol::rlc);
 
     // buffer the PDU

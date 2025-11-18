@@ -15,6 +15,7 @@
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/rlc/am/LteRlcAm.h"
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 
 namespace simu5g {
 
@@ -352,10 +353,6 @@ void AmRxQueue::passUp(const int index)
     }
 
     pkt->trim();
-
-    auto sdu = pkt->popAtFront<LteRlcAmSdu>();
-
-    EV << NOW << " AmRxQueue::passUp passing up SDU[" << sdu->getSnoMainPacket() << "] referenced by PDU at position " << index << endl;
 
     auto ci = pkt->getTag<FlowControlInfo>();
 
@@ -717,4 +714,3 @@ AmRxQueue::~AmRxQueue()
 }
 
 } //namespace
-

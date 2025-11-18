@@ -12,6 +12,7 @@
 #include "simu5g/stack/rlc/um/UmTxEntity.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverUe.h"
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverEnb.h"
@@ -96,9 +97,9 @@ void UmTxEntity::rlcPduMake(int pduLength)
     while (!sduQueue_.isEmpty() && pduLength > 0) {
         // detach data from the SDU buffer
         auto pkt = check_and_cast<inet::Packet *>(sduQueue_.front());
-        auto rlcSdu = pkt->peekAtFront<LteRlcSdu>();
-        unsigned int sduSequenceNumber = rlcSdu->getSnoMainPacket();
-        int sduLength = rlcSdu->getLengthMainPacket(); // length without the SDU header
+        auto pdcpTag = pkt->getTag<PdcpTrackingTag>();
+        unsigned int sduSequenceNumber = pdcpTag->getPdcpSequenceNumber();
+        int sduLength = pdcpTag->getOriginalPacketLength();
 
         if (fragmentInfo != nullptr) {
             if (fragmentInfo->pkt != pkt)
@@ -315,7 +316,6 @@ void UmTxEntity::resumeDownstreamInPackets()
     // move all SDUs in the holding buffer to the TX buffer
     while (!sduHoldingQueue_.isEmpty()) {
         auto pktRlc = check_and_cast<inet::Packet *>(sduHoldingQueue_.front());
-        auto rlcHeader = pktRlc->peekAtFront<LteRlcSdu>();
 
         sduHoldingQueue_.pop();
 

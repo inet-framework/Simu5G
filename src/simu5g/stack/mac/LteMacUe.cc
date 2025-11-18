@@ -22,8 +22,8 @@
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
 #include "simu5g/stack/mac/scheduler/LteSchedulerUeUl.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
-#include "simu5g/stack/rlc/packet/LteRlcSdu_m.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 
 namespace simu5g {
 
@@ -272,8 +272,8 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
         pkt->removeTag<LteRlcNewDataTag>();
         // update the virtual buffer for this connection
         // build the virtual packet corresponding to this incoming packet
-        auto rlcSdu = pkt->peekAtFront<LteRlcSdu>();
-        PacketInfo vpkt(rlcSdu->getLengthMainPacket(), pkt->getTimestamp());
+        auto pdcpTag = pkt->getTag<PdcpTrackingTag>();
+        PacketInfo vpkt(pdcpTag->getOriginalPacketLength(), pkt->getTimestamp());
         vqueue->pushBack(vpkt);
 
         delete pkt;
@@ -377,6 +377,12 @@ void LteMacUe::macPduMake(MacCid cid)
 
                 auto pkt = check_and_cast<Packet *>(connInfo.queue->popFront());
                 drop(pkt);
+
+                // Remove PdcpTrackingTag as it's no longer needed below MAC layer
+                // TODO It won't succeed if tag is on a packet *inside* an lteRlcFragment,
+                // but removing those would be very complicated. Tag will be removed anyway
+                // on the receiver side.
+                pkt->removeTagIfPresent<PdcpTrackingTag>();
 
                 auto macPdu = macPkt->removeAtFront<LteMacPdu>();
                 macPdu->pushSdu(pkt);

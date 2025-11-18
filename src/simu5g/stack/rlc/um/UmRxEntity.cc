@@ -13,6 +13,7 @@
 #include "simu5g/stack/rlc/um//UmRxEntity.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 
 namespace simu5g {
 
@@ -251,7 +252,10 @@ void UmRxEntity::moveRxWindow(int pos)
 //void UmRxEntity::toPdcp(LteRlcSdu* rlcSdu)
 void UmRxEntity::toPdcp(Packet *pktAux)
 {
-    auto rlcSdu = pktAux->popAtFront<LteRlcSdu>();
+    // Remove leftover tag added on the TX side. It should have been already removed
+    // in the TX-side MAC, but its cumbersome to implement -- so do it here for now.
+    pktAux->removeTagIfPresent<PdcpTrackingTag>();
+
     LteRlcUm *lteRlc = this->rlc_;
 
     auto lteInfo = pktAux->getTag<FlowControlInfo>();
@@ -330,9 +334,9 @@ void UmRxEntity::reassemble(unsigned int index)
         size_t sduLengthPktLeng;
         auto pktSdu = check_and_cast<Packet *>(pdu->popSdu(sduLengthPktLeng));
 
-        auto rlcSdu = pktSdu->peekAtFront<LteRlcSdu>();
-        unsigned int sduSno = rlcSdu->getSnoMainPacket();
-        unsigned int sduWholeLength = rlcSdu->getLengthMainPacket(); // the length of the whole sdu
+        auto pdcpTag = pktSdu->getTag<PdcpTrackingTag>();
+        unsigned int sduSno = pdcpTag->getPdcpSequenceNumber();
+        unsigned int sduWholeLength = pdcpTag->getOriginalPacketLength(); // the length of the whole sdu
 
         if (i == 0) { // first SDU
             bool ignoreFragment = false;
@@ -381,7 +385,7 @@ void UmRxEntity::reassemble(unsigned int index)
 
                         // check SDU SN
                         if (buffered_.pkt == nullptr ||
-                            (rlcSdu->getSnoMainPacket() != buffered_.pkt->peekAtFront<LteRlcSdu>()->getSnoMainPacket()) ||
+                            (pdcpTag->getPdcpSequenceNumber() != buffered_.pkt->getTag<PdcpTrackingTag>()->getPdcpSequenceNumber()) ||
                             (pduSno != (buffered_.currentPduSno + 1)) ||  // first and only SDU in PDU. PduSno must be last+1, otherwise drop SDU.
                             ignoreFragment)
                         {
@@ -430,7 +434,7 @@ void UmRxEntity::reassemble(unsigned int index)
 
                         // check SDU SN
                         if (buffered_.pkt == nullptr ||
-                            (rlcSdu->getSnoMainPacket() != buffered_.pkt->peekAtFront<LteRlcSdu>()->getSnoMainPacket()) ||
+                            (pdcpTag->getPdcpSequenceNumber() != buffered_.pkt->getTag<PdcpTrackingTag>()->getPdcpSequenceNumber()) ||
                             (pduSno != (buffered_.currentPduSno + 1)) ||  // first SDU but NOT only in PDU. PduSno must be last+1, otherwise drop SDU.
                             ignoreFragment)
                         {
@@ -493,7 +497,7 @@ void UmRxEntity::reassemble(unsigned int index)
 
                         // check SDU SN
                         if (buffered_.pkt == nullptr ||
-                            (rlcSdu->getSnoMainPacket() != buffered_.pkt->peekAtFront<LteRlcSdu>()->getSnoMainPacket()) ||
+                            (pdcpTag->getPdcpSequenceNumber() != buffered_.pkt->getTag<PdcpTrackingTag>()->getPdcpSequenceNumber()) ||
                             (pduSno != (buffered_.currentPduSno + 1)) ||  // first SDU but NOT only in PDU. PduSno must be last+1, otherwise drop SDU.
                             ignoreFragment)
                         {

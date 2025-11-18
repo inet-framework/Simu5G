@@ -15,6 +15,7 @@
 #include "simu5g/stack/rlc/um/LteRlcUm.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 
 namespace simu5g {
 
@@ -114,22 +115,21 @@ void LteRlcUm::handleUpperMessage(cPacket *pktAux)
     if (txbuf == nullptr)
         txbuf = createTxBuffer(cid, lteInfo.get());
 
-    // Create a new RLC packet
-    auto rlcPkt = inet::makeShared<LteRlcSdu>();
-    rlcPkt->setSnoMainPacket(lteInfo->getSequenceNumber());
-    rlcPkt->setLengthMainPacket(pkt->getByteLength());
-    pkt->insertAtFront(rlcPkt);
+    // Add PDCP tracking information
+    auto pdcpTag = pkt->addTag<PdcpTrackingTag>();
+    pdcpTag->setPdcpSequenceNumber(lteInfo->getSequenceNumber());
+    pdcpTag->setOriginalPacketLength(pkt->getByteLength());
 
     drop(pkt);
 
     if (txbuf->isHoldingDownstreamInPackets()) {
         // do not store in the TX buffer and do not signal the MAC layer
-        EV << "LteRlcUm::handleUpperMessage - Enqueue packet " << rlcPkt->getClassName() << " into the Holding Buffer\n";
+        EV << "LteRlcUm::handleUpperMessage - Enqueue packet into the Holding Buffer\n";
         txbuf->enqueHoldingPackets(pkt);
     }
     else {
         if (txbuf->enque(pkt)) {
-            EV << "LteRlcUm::handleUpperMessage - Enqueue packet " << rlcPkt->getClassName() << " into the Tx Buffer\n";
+            EV << "LteRlcUm::handleUpperMessage - Enqueue packet into the Tx Buffer\n";
 
             // create a message to notify the MAC layer that the queue contains new data
             // make a copy of the RLC SDU
@@ -154,6 +154,8 @@ void LteRlcUm::handleLowerMessage(cPacket *pktAux)
     EV << "LteRlcUm::handleLowerMessage - Received packet " << pkt->getName() << " from lower layer\n";
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
     auto chunk = pkt->peekAtFront<inet::Chunk>();
+
+    ASSERT(pkt->findTag<PdcpTrackingTag>() == nullptr);
 
     if (inet::dynamicPtrCast<const LteMacSduRequest>(chunk) != nullptr) {
         // get the corresponding Tx buffer

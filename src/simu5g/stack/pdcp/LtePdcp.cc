@@ -17,6 +17,7 @@
 
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverBase.h"
 #include "simu5g/stack/pdcp/packet/LteRohcPdu_m.h"
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 
 namespace simu5g {
 
@@ -194,6 +195,8 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
     emit(receivedPacketFromLowerLayerSignal_, pkt);
+
+    ASSERT(pkt->findTag<PdcpTrackingTag>() == nullptr);
 
     auto lteInfo = pkt->getTag<FlowControlInfo>();
 

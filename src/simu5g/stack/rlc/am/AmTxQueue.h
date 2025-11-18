@@ -21,7 +21,6 @@
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include "simu5g/stack/rlc/LteRlcDefs.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
-#include "simu5g/stack/rlc/packet/LteRlcSdu_m.h"
 #include "simu5g/stack/rlc/am/LteRlcAm.h"
 
 namespace simu5g {
@@ -236,4 +235,3 @@ class AmTxQueue : public cSimpleModule
 } //namespace
 
 #endif
-

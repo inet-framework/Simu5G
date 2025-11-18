@@ -17,6 +17,7 @@
 #include "simu5g/stack/rlc/am/AmRxQueue.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 
 namespace simu5g {
 
@@ -112,12 +113,13 @@ void LteRlcAm::handleUpperMessage(cPacket *pktAux)
     if (txbuf == nullptr)
         txbuf = createTxBuffer(cid);
 
-    // Create a new RLC packet
-    auto rlcPkt = makeShared<LteRlcAmSdu>();
-    rlcPkt->setSnoMainPacket(lteInfo->getSequenceNumber());
-    rlcPkt->setChunkLength(B(RLC_HEADER_AM));
-    pkt->insertAtFront(rlcPkt);
+    // Add PDCP tracking information
+    auto pdcpTag = pkt->addTag<PdcpTrackingTag>();
+    pdcpTag->setPdcpSequenceNumber(lteInfo->getSequenceNumber());
+    pdcpTag->setOriginalPacketLength(pkt->getByteLength());
+
     drop(pkt);
+
     EV << NOW << " LteRlcAm : handleUpperMessage sending to AM TX Queue" << endl;
     // Fragment Packet
     txbuf->enque(pkt);
@@ -228,10 +230,12 @@ void LteRlcAm::indicateNewDataToMac(cPacket *pktAux) {
     // (MAC is only interested in FlowControlInfo tag and size)
 
     auto newData = new Packet("AM-NewData");
-    auto rlcSdu = inet::makeShared<LteRlcSdu>();
-    rlcSdu->setLengthMainPacket(pkt->getByteLength());
 
-    newData->insertAtFront(rlcSdu);
+    // Add PDCP tracking information
+    auto lteInfo = pkt->getTag<FlowControlInfo>();
+    auto pdcpTag = newData->addTag<PdcpTrackingTag>();
+    pdcpTag->setPdcpSequenceNumber(lteInfo->getSequenceNumber());
+    pdcpTag->setOriginalPacketLength(pkt->getByteLength());
 
     // add tag to indicate new data availability to MAC
     newData->addTag<LteRlcNewDataTag>();

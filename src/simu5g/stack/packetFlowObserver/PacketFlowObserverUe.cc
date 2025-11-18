@@ -14,7 +14,7 @@
 #include "simu5g/stack/pdcp/LtePdcp.h"
 #include "simu5g/stack/rlc/LteRlcDefs.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
-#include "simu5g/stack/rlc/packet/LteRlcSdu_m.h"
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 
 #include "simu5g/common/LteControlInfo.h"
@@ -161,8 +161,9 @@ void PacketFlowObserverUe::insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlcU
 
     FramingInfo fi = rlcPdu->getFramingInfo();
     for (size_t idx = 0; idx < rlcPdu->getNumSdu(); ++idx) {
-        auto rlcSdu = rlcPdu->getSdu(idx)->peekAtFront<LteRlcSdu>();
-        unsigned int pdcpSno = rlcSdu->getSnoMainPacket();
+        auto sduPacket = rlcPdu->getSdu(idx);
+        auto pdcpTag = sduPacket->getTag<PdcpTrackingTag>();
+        unsigned int pdcpSno = pdcpTag->getPdcpSequenceNumber();
         size_t pdcpPduLength = rlcPdu->getSduSize(idx); // TODO fix with size of the chunk!!
 
         EV << pfmType << "::insertRlcPdu - pdcpSdu " << pdcpSno << " with length: " << pdcpPduLength << " bytes" << endl;
@@ -505,4 +506,3 @@ void PacketFlowObserverUe::finish()
 }
 
 } //namespace
-

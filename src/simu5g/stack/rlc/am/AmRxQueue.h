@@ -20,7 +20,6 @@
 #include "simu5g/stack/rlc/LteRlcDefs.h"
 #include "simu5g/stack/rlc/am/LteRlcAm.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
-#include "simu5g/stack/rlc/packet/LteRlcSdu_m.h"
 
 namespace simu5g {
 
@@ -145,4 +144,3 @@ class AmRxQueue : public cSimpleModule
 } //namespace
 
 #endif
-
