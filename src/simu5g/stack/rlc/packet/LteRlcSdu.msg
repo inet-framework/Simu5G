@@ -19,7 +19,7 @@ import inet.common.packet.chunk.Chunk;
 class LteRlcSdu extends inet::FieldsChunk
 {
     // TODO: size 0
-    chunkLength = inet::B(1); // TODO: should be a tag;
+    chunkLength = inet::B(0); // TODO: should be a tag;
     unsigned int snoMainPacket;                        // ID of packet (sequence number)
     unsigned int lengthMainPacket;
 }

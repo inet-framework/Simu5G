@@ -30,7 +30,7 @@ namespace simu5g;
 // new data indication for MAC
 class LteRlcPduNewData extends inet::FieldsChunk
 {
-    chunkLength = inet::B(1);
+    chunkLength = inet::B(0);
 }
 
 class LteRlcDataPdu extends inet::FieldsChunk
