@@ -288,6 +288,14 @@ void UmRxEntity::toPdcp(Packet *pktAux)
             ue->emit(rlcDelayD2DSignal_, (NOW - ts).dbl());
         }
     }
+
+    if (nodeB_ == nullptr) {
+        // retry getting nodeB_, if it failed in initialize() due to cellId=0 in MAC (some race condition?)
+        LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
+        nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
+        ASSERT(nodeB_ != nullptr);
+    }
+
     if (nodeB_ != nullptr) {
         nodeB_->emit(rlcCellThroughputSignal_[dir_], cellTputSample);
     }
@@ -636,6 +644,7 @@ void UmRxEntity::initialize()
 
     LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
     nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
+    // ASSERT(nodeB_ != nullptr); -- see commit message why this is commented out
 
     resetFlag_ = false;
 
