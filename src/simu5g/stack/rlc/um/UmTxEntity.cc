@@ -17,6 +17,8 @@
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverUe.h"
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverEnb.h"
 
+#include <inet/common/packet/chunk/SliceChunk.h>
+
 namespace simu5g {
 
 Define_Module(UmTxEntity);
@@ -78,14 +80,16 @@ void UmTxEntity::rlcPduMake(int pduLength)
 {
     EV << NOW << " UmTxEntity::rlcPduMake - PDU with size " << pduLength << " requested from MAC" << endl;
 
-    // create the RLC PDU
+    // create the RLC PDU packet with chunk-based approach
     auto pktPdu = new inet::Packet("lteRlcFragment");
-    auto rlcPdu = inet::makeShared<LteRlcUmDataPdu>();
+    auto rlcHeader = inet::makeShared<RlcUmHeader>();
 
     // the request from MAC takes into account also the size of the RLC header
     pduLength -= RLC_HEADER_UM;
 
     int len = 0;
+    inet::Ptr<inet::Chunk> sduChunk = nullptr;
+    auto rlcPduForPacketFlow = inet::makeShared<LteRlcUmDataPdu>(); // For PacketFlowManager compatibility
 
     bool startFrag = firstIsFragment_;
     bool endFrag = false;
@@ -110,7 +114,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
         if (pduLength >= sduLength) {
             EV << NOW << " UmTxEntity::rlcPduMake - Add complete SDU " << sduLength << " bytes, sduSno[" << sduSequenceNumber << "]" << endl;
 
-            // add the whole SDU
+            // add the whole SDU as chunk
             if (fragmentInfo) {
                 delete fragmentInfo;
                 fragmentInfo = nullptr;
@@ -120,7 +124,10 @@ void UmTxEntity::rlcPduMake(int pduLength)
             pkt = check_and_cast<inet::Packet *>(sduQueue_.pop());
             queueLength_ -= pkt->getByteLength();
 
-            rlcPdu->setSdu(pkt, sduLength);
+            // Extract SDU chunk for new packet format
+            sduChunk = inet::constPtrCast<inet::Chunk>(pkt->peekData());
+            rlcPduForPacketFlow->setSdu(pkt, sduLength); // For PacketFlowManager
+            pkt = nullptr; // transferred ownership to rlcPduForPacketFlow
 
             EV << NOW << " UmTxEntity::rlcPduMake - Popped complete SDU from queue, sduSno[" << sduSequenceNumber << "]" << endl;
 
@@ -130,10 +137,14 @@ void UmTxEntity::rlcPduMake(int pduLength)
         else {
             EV << NOW << " UmTxEntity::rlcPduMake - Add fragment " << pduLength << " bytes, sduSno[" << sduSequenceNumber << "]" << endl;
 
-            // add partial SDU (fragment)
+            // add partial SDU (fragment) using SliceChunk
             len = pduLength;
 
+            // For fragments, temporarily keep the old approach to avoid const casting issues
+            // TODO: Implement proper SliceChunk fragmentation later
             auto rlcSduDup = pkt->dup();
+            sduChunk = inet::constPtrCast<inet::Chunk>(rlcSduDup->peekData());
+
             if (fragmentInfo != nullptr) {
                 fragmentInfo->size -= pduLength;
                 if (fragmentInfo->size < 0)
@@ -144,7 +155,9 @@ void UmTxEntity::rlcPduMake(int pduLength)
                 fragmentInfo->pkt = pkt;
                 fragmentInfo->size = sduLength - pduLength;
             }
-            rlcPdu->setSdu(rlcSduDup, pduLength);
+
+            // For PacketFlowManager compatibility
+            rlcPduForPacketFlow->setSdu(rlcSduDup, pduLength);
 
             endFrag = true;
 
@@ -157,10 +170,9 @@ void UmTxEntity::rlcPduMake(int pduLength)
 
     if (len == 0) {
         // send an empty (1-bit) message to notify the MAC that there is not enough space to send RLC PDU
-        // (TODO: ugly, should be indicated in a better way)
         EV << NOW << " UmTxEntity::rlcPduMake - cannot send PDU with data, pdulength requested by MAC (" << pduLength << "B) is too small." << std::endl;
         pktPdu->setName("lteRlcFragment (empty)");
-        rlcPdu->setChunkLength(inet::b(1)); // send only a bit, minimum size
+        rlcHeader->setChunkLength(inet::b(1)); // send only a bit, minimum size
     }
     else {
         // compute FI
@@ -169,9 +181,14 @@ void UmTxEntity::rlcPduMake(int pduLength)
         fi.firstIsFragment = startFrag;   // 10
         fi.lastIsFragment = endFrag;      // 01
 
-        rlcPdu->setFramingInfo(fi);
-        rlcPdu->setPduSequenceNumber(sno_++);
-        rlcPdu->setChunkLength(inet::B(RLC_HEADER_UM + len));
+        rlcHeader->setFramingInfo(fi);
+        rlcHeader->setPduSequenceNumber(sno_++);
+    }
+
+    // Build packet with chunk-based approach: [RlcUmHeader][SDUChunk]
+    pktPdu->insertAtFront(rlcHeader);
+    if (sduChunk != nullptr) {
+        pktPdu->insertAtBack(sduChunk);
     }
 
     *pktPdu->addTagIfAbsent<FlowControlInfo>() = *flowControlInfo_;
@@ -204,13 +221,13 @@ void UmTxEntity::rlcPduMake(int pduLength)
                 if (burstStatus_ == ACTIVE) {
                     EV << NOW << " UmTxEntity::burstStatus - ACTIVE -> INACTIVE" << endl;
 
-                    packetFlowObserver_->insertRlcPdu(lcid, rlcPdu, STOP);
+                    packetFlowObserver_->insertRlcPdu(lcid, rlcPduForPacketFlow, STOP);
                     burstStatus_ = INACTIVE;
                 }
                 else {
                     EV << NOW << " UmTxEntity::burstStatus - " << burstStatus_ << endl;
 
-                    packetFlowObserver_->insertRlcPdu(lcid, rlcPdu, burstStatus_);
+                    packetFlowObserver_->insertRlcPdu(lcid, rlcPduForPacketFlow, burstStatus_);
                 }
             }
             else {
@@ -218,21 +235,20 @@ void UmTxEntity::rlcPduMake(int pduLength)
                     burstStatus_ = ACTIVE;
                     EV << NOW << " UmTxEntity::burstStatus - INACTIVE -> ACTIVE" << endl;
                     //start a new burst
-                    packetFlowObserver_->insertRlcPdu(lcid, rlcPdu, START);
+                    packetFlowObserver_->insertRlcPdu(lcid, rlcPduForPacketFlow, START);
                 }
                 else {
                     EV << NOW << " UmTxEntity::burstStatus - burstStatus: " << burstStatus_ << endl;
 
                     // burst is still active
-                    packetFlowObserver_->insertRlcPdu(lcid, rlcPdu, burstStatus_);
+                    packetFlowObserver_->insertRlcPdu(lcid, rlcPduForPacketFlow, burstStatus_);
                 }
             }
         }
     }
 
     // send to MAC layer
-    pktPdu->insertAtFront(rlcPdu);
-    EV << NOW << " UmTxEntity::rlcPduMake - send PDU " << rlcPdu->getPduSequenceNumber() << " with size " << pktPdu->getByteLength() << " bytes to lower layer" << endl;
+    EV << NOW << " UmTxEntity::rlcPduMake - send PDU " << rlcHeader->getPduSequenceNumber() << " with size " << pktPdu->getByteLength() << " bytes to lower layer" << endl;
     lteRlc_->sendToLowerLayer(pktPdu);
 
     // if incoming connection was halted

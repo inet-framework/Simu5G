@@ -65,11 +65,11 @@ void UmRxEntity::enque(cPacket *pktAux)
     EV << NOW << " UmRxEntity::enque - buffering new PDU" << endl;
 
     auto pktPdu = check_and_cast<Packet *>(pktAux);
-    auto pdu = pktPdu->peekAtFront<LteRlcUmDataPdu>();
+    auto rlcHeader = pktPdu->peekAtFront<RlcUmHeader>();
     auto lteInfo = pktPdu->getTag<FlowControlInfo>();
 
     // Get the RLC PDU Transmission sequence number (x)
-    unsigned int tsn = pdu->getPduSequenceNumber();
+    unsigned int tsn = rlcHeader->getPduSequenceNumber();
 
     if (!init_ && isD2DMultiConnection()) {
         // for D2D multicast connections, the first received PDU must be considered as the first valid PDU
@@ -319,11 +319,11 @@ void UmRxEntity::reassemble(unsigned int index)
     EV << NOW << " UmRxEntity::reassemble Consider PDU at index " << index << " for reassembly" << endl;
 
     auto pktPdu = check_and_cast<Packet *>(pduBuffer_.get(index));
-    auto pdu = pktPdu->removeAtFront<LteRlcUmDataPdu>();
+    auto rlcHeader = pktPdu->removeAtFront<RlcUmHeader>();
     auto lteInfo = pktPdu->getTag<FlowControlInfo>();
 
     // get PDU seq number
-    unsigned int pduSno = pdu->getPduSequenceNumber();
+    unsigned int pduSno = rlcHeader->getPduSequenceNumber();
 
     if (resetFlag_) {
         // by doing this, the arrived PDU will be considered in order. For example, when D2D is enabled,
@@ -332,16 +332,27 @@ void UmRxEntity::reassemble(unsigned int index)
     }
 
     // get framing info
-    FramingInfo fi = pdu->getFramingInfo();
+    FramingInfo fi = rlcHeader->getFramingInfo();
 
-    // NR-style: handle single SDU per PDU (no concatenation)
-    if (pdu->hasSdu()) {
-        size_t sduLengthPktLeng;
-        auto pktSdu = check_and_cast<Packet *>(pdu->popSdu(sduLengthPktLeng));
+    // Extract SDU chunk (remaining data after header removal)
+    if (pktPdu->getTotalLength() > b(0)) {
+        auto sduChunk = pktPdu->peekData();
+        int sduLengthPktLeng = B(sduChunk->getChunkLength()).get();
 
         *pktSdu->addTag<FlowControlInfo>() = *flowControlInfo_;
 
-        auto pdcpTag = pktSdu->getTag<PdcpTrackingTag>();
+        // Create a new packet for the SDU with proper tags
+        auto pktSdu = new Packet("rlcSdu");
+        pktSdu->insertAtBack(sduChunk);
+
+        // Copy tags from the original PDU packet to the SDU packet
+        auto pdcpTag = pktPdu->getTag<PdcpTrackingTag>();
+        pktSdu->addTag<PdcpTrackingTag>()->setPdcpSequenceNumber(pdcpTag->getPdcpSequenceNumber());
+        pktSdu->getTagForUpdate<PdcpTrackingTag>()->setOriginalPacketLength(pdcpTag->getOriginalPacketLength());
+
+        // Copy FlowControlInfo
+        *pktSdu->addTag<FlowControlInfo>() = *lteInfo;
+
         unsigned int sduSno = pdcpTag->getPdcpSequenceNumber();
         unsigned int sduWholeLength = pdcpTag->getOriginalPacketLength(); // the length of the whole sdu
 
@@ -358,7 +369,7 @@ void UmRxEntity::reassemble(unsigned int index)
             case 0: {  // FI=00
                 EV << NOW << " UmRxEntity::reassemble The PDU includes one whole SDU [sno=" << sduSno << "]" << endl;
                 if (sduLengthPktLeng != sduWholeLength)
-                    throw cRuntimeError("UmRxEntity::reassemble(): failed reassembly, the reassembled SDU has size %zu B, while the original SDU had size %d B", sduLengthPktLeng, sduWholeLength);
+                    throw cRuntimeError("UmRxEntity::reassemble(): failed reassembly, the reassembled SDU has size %d B, while the original SDU had size %d B", sduLengthPktLeng, sduWholeLength);
 
                 // for burst
                 ttiBits_ += sduLengthPktLeng;
@@ -479,14 +490,10 @@ void UmRxEntity::reassemble(unsigned int index)
     received_.at(index) = false;
     EV << NOW << " UmRxEntity::reassemble Removed PDU from position " << index << endl;
 
-    // RLC-UM reassembly complete - no statistics emission needed here
-    // RLC PDU processing is successful at this point
-
     // update the last PDU reassembled to the current PDU sequence number
     lastPduReassembled_ = pduSno;
 
-    pktPdu->insertAtFront(pdu);
-
+    // Delete the PDU packet (no longer needed)
     delete pktPdu;
 }
 

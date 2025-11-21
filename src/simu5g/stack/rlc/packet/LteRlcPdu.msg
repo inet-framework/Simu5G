@@ -102,9 +102,21 @@ bool LteRlcDataPdu::hasSdu() const
 }}
 
 //
-// Lte RLC UM Data Pdu
+// RLC UM Header (chunk only - no SDU)
 //
-// Define additional fields for UM PDU
+class RlcUmHeader extends inet::FieldsChunk
+{
+    chunkLength = inet::B(RLC_HEADER_UM);
+
+    // Sequence number of the PDU
+    unsigned int pduSequenceNumber = 0;
+
+    // define the segmentation info for the PDU
+    FramingInfo framingInfo;
+};
+
+//
+// Lte RLC UM Data Pdu (deprecated - use RlcUmHeader + chunks instead)
 //
 class LteRlcUmDataPdu extends LteRlcDataPdu
 {
