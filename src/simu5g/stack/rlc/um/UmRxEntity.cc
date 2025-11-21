@@ -334,59 +334,48 @@ void UmRxEntity::reassemble(unsigned int index)
     // get framing info
     FramingInfo fi = rlcHeader->getFramingInfo();
 
-    // Extract SDU chunk (remaining data after header removal)
+    // Get PDU information from the packet
+    auto pdcpTag = pktPdu->getTag<PdcpTrackingTag>();
+    unsigned int sduSno = pdcpTag->getPdcpSequenceNumber();
+    unsigned int sduWholeLength = pdcpTag->getOriginalPacketLength();
+
+    bool ignoreFragment = false;
+    if (resetFlag_) {
+        // by doing this, the first extracted SDU will be considered in order. For example, when D2D is enabled,
+        // this helps to retrieve the synchronization between SNs at the tx and rx after a mode switch
+        resetFlag_ = false;
+        ignoreFragment = true;
+    }
+
+    bool packetConsumed = false;
+
+    // After removing RlcUmHeader, the packet now contains only SDU data - reuse it directly
     if (pktPdu->getTotalLength() > b(0)) {
-        auto sduChunk = pktPdu->peekData();
-        int sduLengthPktLeng = B(sduChunk->getChunkLength()).get();
-
-        *pktSdu->addTag<FlowControlInfo>() = *flowControlInfo_;
-
-        // Create a new packet for the SDU with proper tags
-        auto pktSdu = new Packet("rlcSdu");
-        pktSdu->insertAtBack(sduChunk);
-
-        // Copy tags from the original PDU packet to the SDU packet
-        auto pdcpTag = pktPdu->getTag<PdcpTrackingTag>();
-        pktSdu->addTag<PdcpTrackingTag>()->setPdcpSequenceNumber(pdcpTag->getPdcpSequenceNumber());
-        pktSdu->getTagForUpdate<PdcpTrackingTag>()->setOriginalPacketLength(pdcpTag->getOriginalPacketLength());
-
-        // Copy FlowControlInfo
-        *pktSdu->addTag<FlowControlInfo>() = *lteInfo;
-
-        unsigned int sduSno = pdcpTag->getPdcpSequenceNumber();
-        unsigned int sduWholeLength = pdcpTag->getOriginalPacketLength(); // the length of the whole sdu
-
-        bool ignoreFragment = false;
-        if (resetFlag_) {
-            // by doing this, the first extracted SDU will be considered in order. For example, when D2D is enabled,
-            // this helps to retrieve the synchronization between SNs at the tx and rx after a mode switch
-            resetFlag_ = false;
-            ignoreFragment = true;
-        }
+        int sduLengthPktLeng = B(pktPdu->getTotalLength()).get();
 
         // Since there's only one SDU per PDU, process it directly based on FI field
         switch (fi.toValue()) {
-            case 0: {  // FI=00
+            case 0: {  // FI=00 - Complete SDU
                 EV << NOW << " UmRxEntity::reassemble The PDU includes one whole SDU [sno=" << sduSno << "]" << endl;
                 if (sduLengthPktLeng != sduWholeLength)
                     throw cRuntimeError("UmRxEntity::reassemble(): failed reassembly, the reassembled SDU has size %d B, while the original SDU had size %d B", sduLengthPktLeng, sduWholeLength);
 
                 // for burst
                 ttiBits_ += sduLengthPktLeng;
-                toPdcp(pktSdu);
-                pktSdu = nullptr;
+                toPdcp(pktPdu); // packet ownership transferred
+                packetConsumed = true;
 
                 clearBufferedSdu();
                 break;
             }
-            case 1: {  // FI=01
+            case 1: {  // FI=01 - First fragment
                 EV << NOW << " UmRxEntity::reassemble The PDU includes the first part [" << sduLengthPktLeng << " B] of an SDU [sno=" << sduSno << "]" << endl;
 
                 clearBufferedSdu();
 
                 // buffer the SDU and wait for the missing portion
-                buffered_.pkt = pktSdu;
-                pktSdu = nullptr;
+                buffered_.pkt = pktPdu; // transfer ownership
+                packetConsumed = true;
                 buffered_.size = sduLengthPktLeng;
                 buffered_.currentPduSno = pduSno;
 
@@ -395,7 +384,7 @@ void UmRxEntity::reassemble(unsigned int index)
                 EV << NOW << " UmRxEntity::reassemble Wait for the missing part..." << endl;
                 break;
             }
-            case 2: {  // FI=10
+            case 2: {  // FI=10 - Last fragment
                 // it is the last portion of an SDU, take the awaiting SDU
                 EV << NOW << " UmRxEntity::reassemble The PDU includes the last part [" << sduLengthPktLeng << " B] of an SDU [sno=" << sduSno << "]" << endl;
 
@@ -412,9 +401,6 @@ void UmRxEntity::reassemble(unsigned int index)
                         EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, first part missing" << endl;
                     }
                     clearBufferedSdu();
-
-                    delete pktSdu;
-                    pktSdu = nullptr;
                     break;
                 }
 
@@ -424,24 +410,22 @@ void UmRxEntity::reassemble(unsigned int index)
                 if (reassembledLength < sduWholeLength) {
                     clearBufferedSdu();
                     EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, mid part missing" << endl;
-
-                    delete pktSdu;
-                    pktSdu = nullptr;
                     break;
                 }
                 else if (reassembledLength > sduWholeLength) {
                     throw cRuntimeError("UmRxEntity::reassemble(): failed reassembly, the reassembled SDU has size %d B, while the original SDU had size %d B", reassembledLength, sduWholeLength);
                 }
 
+                // TODO: Implement proper fragment reassembly - for now just send the last fragment
                 // for burst
                 ttiBits_ += sduLengthPktLeng;
-                toPdcp(pktSdu);
-                pktSdu = nullptr;
+                toPdcp(pktPdu); // transfer ownership
+                packetConsumed = true;
 
                 clearBufferedSdu();
                 break;
             }
-            case 3: {  // FI=11
+            case 3: {  // FI=11 - Middle fragment
                 // add the length of this SDU to the awaiting SDU and wait for the missing portion
                 EV << NOW << " UmRxEntity::reassemble The PDU includes the mid part [" << sduLengthPktLeng << " B] of an SDU [sno=" << sduSno << "]" << endl;
 
@@ -458,18 +442,14 @@ void UmRxEntity::reassemble(unsigned int index)
                         EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, first part missing" << endl;
                     }
                     clearBufferedSdu();
-
-                    delete pktSdu;
-                    pktSdu = nullptr;
                     break;
                 }
 
+                // TODO: Implement proper fragment accumulation - for now just track size
                 // for burst
                 ttiBits_ += sduLengthPktLeng;
                 buffered_.size += sduLengthPktLeng;
                 buffered_.currentPduSno = pduSno;
-                delete pktSdu;
-                pktSdu = nullptr;
 
                 EV << NOW << " UmRxEntity::reassemble The waiting SDU has size " << buffered_.size << " bytes, was " << buffered_.size - sduLengthPktLeng << " bytes" << endl;
                 EV << NOW << " UmRxEntity::reassemble Wait for the missing part..." << endl;
@@ -479,12 +459,8 @@ void UmRxEntity::reassemble(unsigned int index)
                 throw cRuntimeError("UmRxEntity::reassemble(): FI field was not valid %d ", fi.toValue());
             }
         }
-
-        if (pktSdu != nullptr) {
-            delete pktSdu;
-            pktSdu = nullptr;
-        }
     }
+
     // remove PDU from buffer
     pduBuffer_.remove(index);
     received_.at(index) = false;
@@ -493,8 +469,10 @@ void UmRxEntity::reassemble(unsigned int index)
     // update the last PDU reassembled to the current PDU sequence number
     lastPduReassembled_ = pduSno;
 
-    // Delete the PDU packet (no longer needed)
-    delete pktPdu;
+    // Clean up: only delete if packet wasn't consumed by PDCP or buffered
+    if (!packetConsumed && pktPdu != nullptr) {
+        delete pktPdu;
+    }
 }
 
 /*
