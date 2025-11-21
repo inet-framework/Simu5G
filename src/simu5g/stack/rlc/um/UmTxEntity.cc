@@ -79,7 +79,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
     EV << NOW << " UmTxEntity::rlcPduMake - PDU with size " << pduLength << " requested from MAC" << endl;
 
     // create the RLC PDU
-    auto pkt = new inet::Packet("lteRlcFragment");
+    auto pktPdu = new inet::Packet("lteRlcFragment");
     auto rlcPdu = inet::makeShared<LteRlcUmDataPdu>();
 
     // the request from MAC takes into account also the size of the RLC header
@@ -90,7 +90,8 @@ void UmTxEntity::rlcPduMake(int pduLength)
     bool startFrag = firstIsFragment_;
     bool endFrag = false;
 
-    while (!sduQueue_.isEmpty() && pduLength > 0) {
+    // NR-style: handle only one SDU per PDU (no concatenation)
+    if (!sduQueue_.isEmpty() && pduLength > 0) {
         // detach data from the SDU buffer
         auto pkt = check_and_cast<inet::Packet *>(sduQueue_.front());
         auto pdcpTag = pkt->getTag<PdcpTrackingTag>();
@@ -103,39 +104,34 @@ void UmTxEntity::rlcPduMake(int pduLength)
             sduLength = fragmentInfo->size;
         }
 
-        EV << NOW << " UmTxEntity::rlcPduMake - Next data chunk from the queue, sduSno[" << sduSequenceNumber
+        EV << NOW << " UmTxEntity::rlcPduMake - Processing SDU from the queue, sduSno[" << sduSequenceNumber
            << "], length[" << sduLength << "]" << endl;
 
         if (pduLength >= sduLength) {
-            EV << NOW << " UmTxEntity::rlcPduMake - Add " << sduLength << " bytes to the new SDU, sduSno[" << sduSequenceNumber << "]" << endl;
+            EV << NOW << " UmTxEntity::rlcPduMake - Add complete SDU " << sduLength << " bytes, sduSno[" << sduSequenceNumber << "]" << endl;
 
             // add the whole SDU
             if (fragmentInfo) {
                 delete fragmentInfo;
                 fragmentInfo = nullptr;
             }
-            pduLength -= sduLength;
-            len += sduLength;
+            len = sduLength;
 
             pkt = check_and_cast<inet::Packet *>(sduQueue_.pop());
             queueLength_ -= pkt->getByteLength();
 
-            rlcPdu->pushSdu(pkt, sduLength);
-            pkt = nullptr;
+            rlcPdu->setSdu(pkt, sduLength);
 
-            EV << NOW << " UmTxEntity::rlcPduMake - Pop data chunk from the queue, sduSno[" << sduSequenceNumber << "]" << endl;
+            EV << NOW << " UmTxEntity::rlcPduMake - Popped complete SDU from queue, sduSno[" << sduSequenceNumber << "]" << endl;
 
             // now, the first SDU in the buffer is not a fragment
             firstIsFragment_ = false;
-
-            EV << NOW << " UmTxEntity::rlcPduMake - The new SDU has length " << len << ", left space is " << pduLength << endl;
         }
         else {
-            EV << NOW << " UmTxEntity::rlcPduMake - Add " << pduLength << " bytes to the new SDU, sduSno[" << sduSequenceNumber << "]" << endl;
+            EV << NOW << " UmTxEntity::rlcPduMake - Add fragment " << pduLength << " bytes, sduSno[" << sduSequenceNumber << "]" << endl;
 
-            // add partial SDU
-
-            len += pduLength;
+            // add partial SDU (fragment)
+            len = pduLength;
 
             auto rlcSduDup = pkt->dup();
             if (fragmentInfo != nullptr) {
@@ -148,21 +144,14 @@ void UmTxEntity::rlcPduMake(int pduLength)
                 fragmentInfo->pkt = pkt;
                 fragmentInfo->size = sduLength - pduLength;
             }
-            rlcPdu->pushSdu(rlcSduDup, pduLength);
+            rlcPdu->setSdu(rlcSduDup, pduLength);
 
             endFrag = true;
 
-            // update SDU in the buffer
-            int newLength = sduLength - pduLength;
-
-            EV << NOW << " UmTxEntity::rlcPduMake - Data chunk in the queue is now " << newLength << " bytes, sduSno[" << sduSequenceNumber << "]" << endl;
-
-            pduLength = 0;
+            EV << NOW << " UmTxEntity::rlcPduMake - SDU fragment created, remaining " << fragmentInfo->size << " bytes, sduSno[" << sduSequenceNumber << "]" << endl;
 
             // now, the first SDU in the buffer is a fragment
             firstIsFragment_ = true;
-
-            EV << NOW << " UmTxEntity::rlcPduMake - The new SDU has length " << len << ", left space is " << pduLength << endl;
         }
     }
 
@@ -170,7 +159,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
         // send an empty (1-bit) message to notify the MAC that there is not enough space to send RLC PDU
         // (TODO: ugly, should be indicated in a better way)
         EV << NOW << " UmTxEntity::rlcPduMake - cannot send PDU with data, pdulength requested by MAC (" << pduLength << "B) is too small." << std::endl;
-        pkt->setName("lteRlcFragment (empty)");
+        pktPdu->setName("lteRlcFragment (empty)");
         rlcPdu->setChunkLength(inet::b(1)); // send only a bit, minimum size
     }
     else {
@@ -185,7 +174,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
         rlcPdu->setChunkLength(inet::B(RLC_HEADER_UM + len));
     }
 
-    *pkt->addTagIfAbsent<FlowControlInfo>() = *flowControlInfo_;
+    *pktPdu->addTagIfAbsent<FlowControlInfo>() = *flowControlInfo_;
 
     /*
      * @author Alessandro Noferi
@@ -242,9 +231,9 @@ void UmTxEntity::rlcPduMake(int pduLength)
     }
 
     // send to MAC layer
-    pkt->insertAtFront(rlcPdu);
-    EV << NOW << " UmTxEntity::rlcPduMake - send PDU " << rlcPdu->getPduSequenceNumber() << " with size " << pkt->getByteLength() << " bytes to lower layer" << endl;
-    lteRlc_->sendToLowerLayer(pkt);
+    pktPdu->insertAtFront(rlcPdu);
+    EV << NOW << " UmTxEntity::rlcPduMake - send PDU " << rlcPdu->getPduSequenceNumber() << " with size " << pktPdu->getByteLength() << " bytes to lower layer" << endl;
+    lteRlc_->sendToLowerLayer(pktPdu);
 
     // if incoming connection was halted
     if (notifyEmptyBuffer_ && sduQueue_.isEmpty()) {

@@ -265,11 +265,12 @@ void PacketFlowObserverEnb::insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlc
     }
 
     FramingInfo fi = rlcPdu->getFramingInfo();
-    for (size_t idx = 0; idx < rlcPdu->getNumSdu(); ++idx) {
-        auto sduPacket = rlcPdu->getSdu(idx);
+    // NR-style: handle single SDU per PDU (no concatenation)
+    if (rlcPdu->hasSdu()) {
+        auto sduPacket = rlcPdu->getSdu();
         auto pdcpTag = sduPacket->getTag<PdcpTrackingTag>();
         unsigned int pdcpSno = pdcpTag->getPdcpSequenceNumber();
-        size_t pdcpPduLength = rlcPdu->getSduSize(idx); // TODO fix with size of the chunk!!
+        size_t pdcpPduLength = rlcPdu->getSduSize(); // single SDU size
 
         EV << "PacketFlowObserverEnb::insertRlcPdu - pdcpSdu " << pdcpSno << " with length: " << pdcpPduLength << " bytes" << endl;
         //
@@ -284,18 +285,12 @@ void PacketFlowObserverEnb::insertRlcPdu(LogicalCid lcid, const inet::Ptr<LteRlc
         if (pit == desc->pdcpStatus_.end())
             throw cRuntimeError("%s::insertRlcPdu - PdcpStatus for PDCP sno [%d] not present, this should not happen", pfmType.c_str(), pdcpSno);
 
-        // last pdcp
-        if (idx == rlcPdu->getNumSdu() - 1) {
-            // 01 or 11, lsb 1 (3GPP TS 36.322)
-            // means -> Last byte of the Data field does not correspond to the last byte of a RLC SDU.
-            if (fi.lastIsFragment) {
-                pit->second.hasArrivedAll = false;
-            }
-            else {
-                pit->second.hasArrivedAll = true;
-            }
+        // Since there's only one SDU per PDU, check if it's a fragment using FI
+        // 01 or 11, lsb 1 (3GPP TS 36.322)
+        // means -> Last byte of the Data field does not correspond to the last byte of a RLC SDU.
+        if (fi.lastIsFragment) {
+            pit->second.hasArrivedAll = false;
         }
-        // since it is not the last part of the rlc, this pdcp has been entirely inserted in RLCs
         else {
             pit->second.hasArrivedAll = true;
         }

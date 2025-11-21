@@ -34,8 +34,8 @@ class LteRlcDataPdu extends inet::FieldsChunk
 {
     chunkLength = inet::b(1);
 
-    inet::Packet* sdu[] @sizeGetter(getNumSdu) @owned;
-    size_t sduSize[];
+    inet::Packet* sdu @owned;
+    size_t sduSize;
 
     // Sequence number of the PDU
     unsigned int pduSequenceNumber = 0;
@@ -47,33 +47,33 @@ class LteRlcDataPdu extends inet::FieldsChunk
 cplusplus(LteRlcDataPdu) {{
   public:
     /**
-     * pushSdu() gets ownership of the packet
-     * and stores it inside the RLC SDU list
-     * in back position
+     * setSdu() gets ownership of the packet
+     * and stores it as the single RLC SDU (with size)
      *
      * @param pkt packet to store
+     * @param size size to store
      */
-    virtual void pushSdu(inet::Packet *pkt);
-    virtual void pushSdu(inet::Packet *pkt, int size);
+    virtual void setSdu(inet::Packet *pkt, int size);
 
     /**
-     * popSdu() pops a packet from the front of
-     * the SDU list and drops ownership before
-     * returning it
+     * popSdu() returns the SDU packet and drops ownership
+     * before returning it
      *
-     * @return popped packet
+     * @return the SDU packet
      */
     virtual inet::Packet *popSdu(size_t& size);
+
+    /**
+     * Check if PDU has an SDU
+     */
+    virtual bool hasSdu() const;
 }}
 
 cplusplus(cc) {{
 
-void LteRlcDataPdu::pushSdu(inet::Packet *pkt)
-{
-    pushSdu(pkt, pkt->getByteLength());
-}
 
-void LteRlcDataPdu::pushSdu(inet::Packet *pkt, int size)
+
+void LteRlcDataPdu::setSdu(inet::Packet *pkt, int size)
 {
     // Clear tags to make sure they are not "tunnelled" over to the receiver node and "accidentally"
     // used there -- with the exception of PdcpTrackingTag, as RLC-UM (UmRxEntity.cc) still refers to it.
@@ -82,19 +82,21 @@ void LteRlcDataPdu::pushSdu(inet::Packet *pkt, int size)
     if (pdcpTag != nullptr)
         *pkt->addTag<PdcpTrackingTag>() = *pdcpTag;
 
-    appendSdu(pkt);
-    appendSduSize(size);
-    ASSERT(getNumSdu() == 1);
+    setSdu(pkt);  // Use the auto-generated setter
+    setSduSize(size);
 }
 
 inet::Packet *LteRlcDataPdu::popSdu(size_t& size)
 {
-    auto pkt = removeSdu(0);
-    eraseSdu(0);
-
-    size = getSduSize(0);
-    eraseSduSize(0);
+    size = getSduSize();
+    auto pkt = const_cast<inet::Packet*>(removeSdu());
+    setSduSize(0);
     return pkt;
+}
+
+bool LteRlcDataPdu::hasSdu() const
+{
+    return getSdu() != nullptr;
 }
 
 }}
