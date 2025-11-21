@@ -84,6 +84,7 @@ void LteRlcDataPdu::pushSdu(inet::Packet *pkt, int size)
 
     appendSdu(pkt);
     appendSduSize(size);
+    ASSERT(getNumSdu() == 1);
 }
 
 inet::Packet *LteRlcDataPdu::popSdu(size_t& size)
