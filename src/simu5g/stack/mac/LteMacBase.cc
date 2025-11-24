@@ -182,6 +182,13 @@ void LteMacBase::fromPhy(cPacket *pktAux)
 
 void LteMacBase::createOutgoingConnection(MacCid cid, const FlowDescriptor& connInfo)
 {
+    Enter_Method("createOutgoingConnection(%s)", cid.str().c_str());
+    EV << "LteMacBase::createOutgoingConnection - CID: " << cid
+       << " sourceId: " << connInfo.getSourceId()
+       << " destId: " << connInfo.getDestId()
+       << " direction: " << dirToA((Direction)connInfo.getDirection())
+       << " multicastGroupId: " << connInfo.getMulticastGroupId() << endl;
+
     ASSERT(connDescOut_.find(cid) == connDescOut_.end());
 
     LteMacQueue* realBuffer = new LteMacQueue(queueSize_);
@@ -228,6 +235,13 @@ void LteMacBase::deleteOutgoingConnection(MacCid cid)
 
 void LteMacBase::createIncomingConnection(MacCid cid, const FlowDescriptor& connInfo)
 {
+    Enter_Method("createIncomingConnection(%s)", cid.str().c_str());
+    EV << "LteMacBase::createIncomingConnection - CID: " << cid
+       << " sourceId: " << connInfo.getSourceId()
+       << " destId: " << connInfo.getDestId()
+       << " direction: " << dirToA((Direction)connInfo.getDirection())
+       << " multicastGroupId: " << connInfo.getMulticastGroupId() << endl;
+
     ASSERT(connDescIn_.find(cid) == connDescIn_.end());
     connDescIn_[cid] = connInfo;
 }
