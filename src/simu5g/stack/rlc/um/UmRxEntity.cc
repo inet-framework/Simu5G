@@ -40,6 +40,7 @@ simsignal_t UmRxEntity::rlcPduThroughputD2DSignal_ = registerSignal("rlcPduThrou
 UmRxEntity::UmRxEntity() :
     t_reordering_(this)
 {
+    pduBuffer_.setName("pduBuffer");
     t_reordering_.setTimerId(REORDERING_T);
     buffered_.pkt = nullptr;
     buffered_.size = 0;
