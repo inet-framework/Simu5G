@@ -231,9 +231,6 @@ void LteMacUeD2D::macPduMake(MacCid cid)
 
                     auto macPdu = macPkt->removeAtFront<LteMacPdu>();
 
-                    // ensure the connection exists in the remote node
-                    ensureIncomingConnectionInRemoteMac(destId, FlowDescriptor::fromFlowControlInfo(*flowInfo));
-
                     macPdu->pushSdu(pkt);
                     macPkt->insertAtFront(macPdu);
                     sduPerCid--;

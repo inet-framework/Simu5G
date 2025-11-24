@@ -428,53 +428,6 @@ void LteMacBase::handleMessage(cMessage *msg)
     }
 }
 
-//TODO should be a no-op now that connections are added proactively from Binder::establishDataConnection() system-wide, with the help of Rrc::createDataConnection() on each node, triggered from PDCP -- TODO remove
-void LteMacBase::ensureIncomingConnection(const FlowDescriptor& desc)
-{
-    Enter_Method_Silent("ensureConnection()");
-    MacNodeId senderId = desc.getSourceId();
-    LogicalCid lcid = desc.getLcid();
-    MacCid cid = MacCid(senderId, lcid);
-    if (connDescIn_.find(cid) == connDescIn_.end())
-        createIncomingConnection(cid,desc);
-}
-
-//TODO should be a no-op now that connections are added proactively from Binder::establishDataConnection() system-wide, with the help of Rrc::createDataConnection() on each node, triggered from PDCP -- TODO remove
-void LteMacBase::ensureIncomingConnectionInRemoteMac(MacNodeId destId, const FlowDescriptor& desc)
-{
-    if (desc.getDirection() == D2D_MULTI) {
-        // For multicast, ensure connection on all recipients in the multicast group
-        MacNodeId groupId = desc.getMulticastGroupId();
-        if (groupId == NODEID_NONE)
-            throw cRuntimeError("D2D_MULTI connection must have a valid multicast group ID");
-
-        // Iterate through all nodes to find multicast group members
-        for (auto pair : binder_->getNodeInfoMap()) {
-            MacNodeId nodeId = pair.first;
-
-            // Skip the source node (this node)
-            if (nodeId == nodeId_)
-                continue;
-
-            // Check if this node is in the multicast group
-            if (binder_->isInMulticastGroup(nodeId, groupId)) {
-                LteMacBase *recipientMac = binder_->getMacFromMacNodeId(nodeId);
-                if (recipientMac != nullptr && recipientMac != this) {
-                    recipientMac->ensureIncomingConnection(desc);
-                }
-            }
-        }
-    }
-    else {
-        // For unicast connections, use the original logic
-        LteMacBase *destMac = binder_->getMacFromMacNodeId(destId);
-        if (destMac == nullptr)
-            throw cRuntimeError("Cannot find remote MAC for nodeId=%d", num(destId));
-        ASSERT(destMac != this);
-        destMac->ensureIncomingConnection(desc);
-    }
-}
-
 void LteMacBase::insertMacPdu(const inet::Packet *macPdu)
 {
     auto lteInfo = macPdu->getTag<UserControlInfo>();

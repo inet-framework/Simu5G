@@ -28,5 +28,5 @@ simple Rrc like IRrc
         string rlcUmModule = default("^.rlc.um");
         string nrRlcUmModule = default("^.nrRlc.um");
         string macModule = default("^.mac");
-        string nrMacModule = default("^.nrMmac");
+        string nrMacModule = default("^.nrMac");
 }

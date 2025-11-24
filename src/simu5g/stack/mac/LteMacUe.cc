@@ -253,10 +253,8 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
 
     // obtain the cid from the packet information
     MacCid cid = MacCid(lteInfo->getDestId(), lteInfo->getLcid());
+    ASSERT(connDescOut_.find(cid) != connDescOut_.end());
 
-    // check if queues exist, create them if they don't
-    if (connDescOut_.find(cid) == connDescOut_.end())
-        createOutgoingConnection(cid, FlowDescriptor::fromFlowControlInfo(*lteInfo));
     OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
     LteMacQueue *queue = connInfo.queue;
     LteMacBuffer *vqueue = connInfo.buffer;
@@ -380,10 +378,6 @@ void LteMacUe::macPduMake(MacCid cid)
                 pkt->removeTagIfPresent<PdcpTrackingTag>();
 
                 auto macPdu = macPkt->removeAtFront<LteMacPdu>();
-
-                // ensure the connection exists in the remote node
-                auto flowInfo = pkt->getTag<FlowControlInfo>();
-                ensureIncomingConnectionInRemoteMac(destId, FlowDescriptor::fromFlowControlInfo(*flowInfo));
 
                 macPdu->pushSdu(pkt);
                 macPkt->insertAtFront(macPdu);

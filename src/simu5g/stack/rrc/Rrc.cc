@@ -60,21 +60,25 @@ void Rrc::createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp)
 
     ASSERT(lteInfo->getDestId() == getLteNodeId() || lteInfo->getDestId() == getNrNodeId() || lteInfo->getMulticastGroupId() != NODEID_NONE);
 
-//    // Create MAC incoming connection
-//    FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
-//    macModule->ensureIncomingConnection(desc);
+    // Create MAC incoming connection
+    FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
+    MacNodeId senderId = desc.getSourceId();
+    LogicalCid lcid = desc.getLcid();
+    MacCid cid = MacCid(senderId, lcid);
+    auto mac = (nodeType==UE && isNrUe(lteInfo->getDestId())) ? nrMacModule.get() : macModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
+    mac->createIncomingConnection(cid, desc);
 
     // RLC: only UM works
     //MacCid cid = ctrlInfoToMacCid(lteInfo);
     MacNodeId nodeIdForCid = (lteInfo->getDirection() == DL) ? lteInfo->getDestId() : lteInfo->getSourceId();
-    MacCid cid = MacCid(nodeIdForCid, lteInfo->getLcid());
+    MacCid cid2 = MacCid(nodeIdForCid, lteInfo->getLcid());
     auto rlcUm = (nodeType==UE && isNrUe(lteInfo->getDestId())) ? nrRlcUmModule.get() : rlcUmModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
-    rlcUm->createRxBuffer(cid, lteInfo);
+    rlcUm->createRxBuffer(cid2, lteInfo);
 
     // PDCP is not needed on Secondary nodes
     if (withPdcp) {
-        MacCid cid2 = MacCid(lteInfo->getSourceId(), lteInfo->getLcid());
-        pdcpModule->createRxEntity(cid2);
+        MacCid cid3 = MacCid(lteInfo->getSourceId(), lteInfo->getLcid());
+        pdcpModule->createRxEntity(cid3);
     }
 }
 
@@ -89,19 +93,23 @@ void Rrc::createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp)
 
     ASSERT(lteInfo->getSourceId() == getLteNodeId() || lteInfo->getSourceId() == getNrNodeId());
 
-    // Create MAC incoming connection
-//    FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
-//    macModule->ensureOutgoingConnection(desc);
+    // Create MAC outgoing connection
+    FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
+    MacNodeId destId = desc.getDestId();
+    LogicalCid lcid = desc.getLcid();
+    MacCid cid = MacCid(destId, lcid);
+    auto mac = (nodeType==UE && isNrUe(lteInfo->getSourceId())) ? nrMacModule.get() : macModule.get();
+    mac->createOutgoingConnection(cid, desc);
 
     // RLC: only UM works
-    MacCid cid = ctrlInfoToMacCid(lteInfo);
+    MacCid cid2 = ctrlInfoToMacCid(lteInfo);
     auto rlcUm = (nodeType==UE && isNrUe(lteInfo->getSourceId())) ? nrRlcUmModule.get() : rlcUmModule.get();
-    rlcUm->createTxBuffer(cid, lteInfo);
+    rlcUm->createTxBuffer(cid2, lteInfo);
 
     // PDCP is not needed on Secondary nodes
     if (withPdcp) {
-        MacCid cid2 = MacCid(lteInfo->getDestId(), lteInfo->getLcid());
-        pdcpModule->createTxEntity(cid2);
+        MacCid cid3 = MacCid(lteInfo->getDestId(), lteInfo->getLcid());
+        pdcpModule->createTxEntity(cid3);
     }
 }
 

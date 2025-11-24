@@ -572,10 +572,6 @@ void LteMacEnb::macPduMake(MacCid cid)
 
                 auto macPkt = macPacket->removeAtFront<LteMacPdu>();
 
-                // ensure the connection exists in the remote node
-                auto flowInfo = pkt->getTag<FlowControlInfo>();
-                ensureIncomingConnectionInRemoteMac(destId, FlowDescriptor::fromFlowControlInfo(*flowInfo));
-
                 macPkt->pushSdu(pkt);
                 macPacket->insertAtFront(macPkt);
                 sduPerCid--;
@@ -685,10 +681,8 @@ bool LteMacEnb::bufferizePacket(cPacket *cpkt)
 
     // obtain the cid from the packet information
     MacCid cid = ctrlInfoToMacCid(lteInfo.get());
+    ASSERT(connDescOut_.find(cid) != connDescOut_.end());
 
-    // check if queues exist, create them if they don't
-    if (connDescOut_.find(cid) == connDescOut_.end())
-        createOutgoingConnection(cid, FlowDescriptor::fromFlowControlInfo(*lteInfo));
     OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
     LteMacQueue *queue = connInfo.queue;
     LteMacBuffer *vqueue = connInfo.buffer;
