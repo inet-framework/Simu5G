@@ -976,9 +976,13 @@ void LteMacUe::deleteQueues(MacNodeId nodeId)
     Enter_Method_Silent();
 
 
-    // Delete each connection
+    // Delete outgoing connection descriptors
     for (auto cid : getActiveConnectionCids())
         deleteOutgoingConnection(cid);
+
+    // delete incoming connection descriptors
+    for (auto it = connDescIn_.begin(); it != connDescIn_.end(); )
+        it = connDescIn_.erase(it);
 
     // delete H-ARQ buffers
     for (auto& [key, buffer] : harqTxBuffers_) {

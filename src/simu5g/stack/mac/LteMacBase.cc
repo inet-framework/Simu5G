@@ -281,15 +281,24 @@ bool LteMacBase::bufferizePacket(cPacket *cpkt)
 
 void LteMacBase::deleteQueues(MacNodeId nodeId)
 {
-    // Create a list of CIDs to delete (to avoid iterator invalidation)
+    // Create a list of outgoing connections CIDs to delete
     std::vector<MacCid> cidsToDelete;
     for (const auto& [cid, connInfo] : connDescOut_)
         if (cid.getNodeId() == nodeId)
             cidsToDelete.push_back(cid);
 
-    // Delete each connection using the new method
     for (const auto& cid : cidsToDelete)
         deleteOutgoingConnection(cid);
+
+    // delete incoming connection descriptors for the departing node
+    for (auto it = connDescIn_.begin(); it != connDescIn_.end(); ) {
+        if (it->first.getNodeId() == nodeId) {
+            it = connDescIn_.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
 
     // delete H-ARQ buffers
     for (auto& [key, harqBuffers] : harqTxBuffers_) {
