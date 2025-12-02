@@ -79,7 +79,6 @@ class UeRequestApp : public cSimpleModule
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;
-    void finish() override;
 
     void emitStats();
 

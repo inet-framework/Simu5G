@@ -148,10 +148,6 @@ void UeWarningAlertApp::handleMessage(cMessage *msg)
     }
 }
 
-void UeWarningAlertApp::finish()
-{
-}
-
 /*
  * -----------------------------------------------Sender Side------------------------------------------
  */

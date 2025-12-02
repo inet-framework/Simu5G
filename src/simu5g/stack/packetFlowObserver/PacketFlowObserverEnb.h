@@ -103,7 +103,6 @@ class PacketFlowObserverEnb : public PacketFlowObserverBase
 
   protected:
     void initialize(int stage) override;
-    void finish() override;
 
     /*
      * This method checks if a PDCP PDU of a LCID is part of a burst of data.

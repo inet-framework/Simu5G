@@ -142,10 +142,6 @@ void UeRnisTestApp::handleMessage(cMessage *msg)
     }
 }
 
-void UeRnisTestApp::finish()
-{
-}
-
 /*
  * -----------------------------------------------Sender Side------------------------------------------
  */

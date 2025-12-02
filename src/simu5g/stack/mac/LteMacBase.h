@@ -379,7 +379,6 @@ class LteMacBase : public cSimpleModule
     /**
      * Statistics recording
      */
-    void finish() override;
 
     /**
      * Deleting the module

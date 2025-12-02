@@ -36,7 +36,6 @@ class RniService : public MecServiceBase2
   protected:
 
     void initialize(int stage) override;
-    void finish() override;
 
     void handleGETRequest(const HttpRequestMessage *currentRequestMessageServed, inet::TcpSocket *socket) override;
     void handlePOSTRequest(const HttpRequestMessage *currentRequestMessageServed, inet::TcpSocket *socket)   override;
@@ -49,4 +48,3 @@ class RniService : public MecServiceBase2
 } //namespace
 
 #endif // ifndef _RNISERVICE_H
-

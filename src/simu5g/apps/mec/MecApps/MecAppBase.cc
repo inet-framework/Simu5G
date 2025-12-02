@@ -230,10 +230,5 @@ void MecAppBase::removeSocket(inet::TcpSocket *tcpSock)
     delete sockets_.removeSocket(tcpSock);
 }
 
-void MecAppBase::finish()
-{
-    EV << "MecAppBase::finish()" << endl;
-}
-
 } //namespace
 

@@ -54,7 +54,6 @@ class LocationService : public MecServiceBase2
   protected:
 
     void initialize(int stage) override;
-    void finish() override;
     void handleMessage(cMessage *msg) override;
 
     void handleGETRequest(const HttpRequestMessage *currentRequestMessageServed, inet::TcpSocket *socket) override;

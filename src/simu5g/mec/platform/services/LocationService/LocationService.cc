@@ -342,11 +342,6 @@ void LocationService::handleDELETERequest(const HttpRequestMessage *currentReque
     }
 }
 
-void LocationService::finish()
-{
-    MecServiceBase::finish();
-}
-
 LocationService::~LocationService() {
     cancelAndDelete(LocationSubscriptionEvent_);
     cancelAndDelete(subscriptionTimer_);

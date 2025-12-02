@@ -139,7 +139,6 @@ class RtVideoStreamingSender : public cSimpleModule
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;
-    void finish() override;
 
     // communication with device app
     void sendStartMecApp();

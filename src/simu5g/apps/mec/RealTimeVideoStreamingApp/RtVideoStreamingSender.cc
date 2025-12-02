@@ -228,10 +228,6 @@ void RtVideoStreamingSender::handleMessage(cMessage *msg)
     }
 }
 
-void RtVideoStreamingSender::finish()
-{
-}
-
 /*
  * -----------------------------------------------Sender Side------------------------------------------
  */

@@ -362,10 +362,6 @@ CreateContextAppMessage *UalcmpApp::parseContextCreateRequest(const nlohmann::js
     }
 }
 
-void UalcmpApp::finish()
-{
-}
-
 
 } //namespace
 

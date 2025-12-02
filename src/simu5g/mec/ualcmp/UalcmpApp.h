@@ -56,9 +56,7 @@ class UalcmpApp : public MecServiceBase
     UalcmpApp();
 
   protected:
-
     void initialize(int stage) override;
-    void finish() override;
 
     void handleMessageWhenUp(cMessage *msg) override;
     void handleStartOperation(inet::LifecycleOperation *operation) override;

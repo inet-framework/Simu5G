@@ -85,7 +85,6 @@ class MecRTVideoStreamingReceiver : public MecAppBase
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;
-    void finish() override;
 
     void handleHttpMessage(int connId) override {};
     void handleServiceMessage(int connId) override {};

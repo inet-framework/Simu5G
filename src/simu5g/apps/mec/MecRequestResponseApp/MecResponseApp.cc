@@ -83,14 +83,6 @@ void MecResponseApp::handleProcessedMessage(cMessage *msg)
     MecAppBase::handleProcessedMessage(msg);
 }
 
-void MecResponseApp::finish()
-{
-    MecAppBase::finish();
-    EV << "MecResponseApp::finish()" << endl;
-    if (gate("socketOut")->isConnected()) {
-    }
-}
-
 double MecResponseApp::scheduleNextMsg(cMessage *msg)
 {
     return MecAppBase::scheduleNextMsg(msg);

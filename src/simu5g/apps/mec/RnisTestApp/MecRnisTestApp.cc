@@ -56,15 +56,6 @@ void MecRnisTestApp::initialize(int stage)
     scheduleAt(simTime() + 0, msg);
 }
 
-void MecRnisTestApp::finish()
-{
-    MecAppBase::finish();
-    EV << "MecRnisTestApp::finish()" << endl;
-
-    if (gate("socketOut")->isConnected()) {
-    }
-}
-
 void MecRnisTestApp::handleUeMessage(cMessage *msg)
 {
     // determine its source address/port

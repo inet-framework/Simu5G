@@ -77,7 +77,6 @@ class PacketFlowObserverBase : public cSimpleModule
   protected:
     int numInitStages() const override { return 2; }
     void initialize(int stage) override;
-    void finish() override;
 
     // Return true if a data structure for this LCID is present
     virtual bool hasLcid(LogicalCid lcid) = 0;

@@ -18,15 +18,12 @@
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
-
 #include "simu5g/common/LteControlInfo.h"
 #include <sstream>
 
 namespace simu5g {
 
 Define_Module(PacketFlowObserverEnb);
-
-
 
 void PacketFlowObserverEnb::initialize(int stage)
 {
@@ -862,10 +859,6 @@ void PacketFlowObserverEnb::resetDataVolume(MacNodeId nodeId)
         return;
     node->second.dlBits = 0;
     node->second.ulBits = 0;
-}
-
-void PacketFlowObserverEnb::finish()
-{
 }
 
 } //namespace

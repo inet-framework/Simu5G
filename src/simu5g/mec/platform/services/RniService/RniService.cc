@@ -142,10 +142,6 @@ void RniService::handleDELETERequest(const HttpRequestMessage *currentRequestMes
 {
 }
 
-void RniService::finish()
-{
-}
-
 
 } //namespace
 

@@ -74,7 +74,6 @@ class LteRlcTm : public cSimpleModule
     void handleMessage(cMessage *msg) override;
 
     void initialize() override;
-    void finish() override {}
 
     /**
      * Handler for traffic coming

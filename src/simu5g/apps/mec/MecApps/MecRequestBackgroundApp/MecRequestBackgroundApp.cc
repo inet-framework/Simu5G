@@ -148,9 +148,5 @@ void MecRequestBackgroundApp::handleMp1Message(int connId)
     }
 }
 
-void MecRequestBackgroundApp::finish()
-{
-}
-
 } //namespace
 

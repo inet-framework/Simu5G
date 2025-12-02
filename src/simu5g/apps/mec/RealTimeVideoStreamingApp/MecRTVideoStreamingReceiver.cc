@@ -79,11 +79,6 @@ void MecRTVideoStreamingReceiver::initialize(int stage)
     displayFrame = new cMessage("displayFrame");
 }
 
-void MecRTVideoStreamingReceiver::finish() {
-    MecAppBase::finish();
-    EV << "MecRTVideoStreamingReceiver::finish()" << endl;
-}
-
 void MecRTVideoStreamingReceiver::handleMessage(cMessage *msg)
 {
     if (!msg->isSelfMessage()) {

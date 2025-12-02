@@ -49,7 +49,6 @@ class MecRnisTestApp : public MecAppBase
   protected:
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;
-    void finish() override;
 
     void handleProcessedMessage(cMessage *msg) override;
 

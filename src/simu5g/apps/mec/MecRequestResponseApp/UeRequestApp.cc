@@ -142,10 +142,6 @@ void UeRequestApp::handleMessage(cMessage *msg)
     }
 }
 
-void UeRequestApp::finish()
-{
-}
-
 void UeRequestApp::sendStartMecRequestApp()
 {
     EV << "UeRequestApp::sendStartMecRequestApp - Sending " << START_MEAPP << " type RequestPacket\n";

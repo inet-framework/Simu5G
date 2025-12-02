@@ -18,7 +18,6 @@
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
-
 #include "simu5g/common/LteControlInfo.h"
 #include <sstream>
 
@@ -496,10 +495,6 @@ double PacketFlowObserverUe::getDelayStats()
 void PacketFlowObserverUe::resetDelayCounter()
 {
     pdcpDelay = { 0, 0 };
-}
-
-void PacketFlowObserverUe::finish()
-{
 }
 
 } //namespace

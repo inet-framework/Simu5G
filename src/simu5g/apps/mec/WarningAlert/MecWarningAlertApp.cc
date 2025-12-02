@@ -67,14 +67,6 @@ void MecWarningAlertApp::initialize(int stage)
     scheduleAt(simTime() + 0, msg);
 }
 
-void MecWarningAlertApp::finish() {
-    MecAppBase::finish();
-    EV << "MecWarningAlertApp::finish()" << endl;
-
-    if (gate("socketOut")->isConnected()) {
-    }
-}
-
 void MecWarningAlertApp::handleUeMessage(cMessage *msg)
 {
     // determine its source address/port

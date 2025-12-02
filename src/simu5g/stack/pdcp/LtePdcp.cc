@@ -412,11 +412,6 @@ LteRxPdcpEntity *LtePdcpBase::createRxEntity(MacCid cid)
 }
 
 
-void LtePdcpBase::finish()
-{
-    // TODO make-finish
-}
-
 void LtePdcpEnb::initialize(int stage)
 {
     LtePdcpBase::initialize(stage);

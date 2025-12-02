@@ -86,10 +86,5 @@ void LteRlcMux::handleMessage(cMessage *msg)
     }
 }
 
-void LteRlcMux::finish()
-{
-    // TODO make-finish
-}
-
 } //namespace
 

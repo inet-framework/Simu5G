@@ -47,7 +47,6 @@ class PacketFlowObserverUe : public PacketFlowObserverBase
 
   protected:
     void initialize(int stage) override;
-    void finish() override;
 
     void initPdcpStatus(StatusDescriptor *desc, unsigned int pdcp, unsigned int sduHeaderSize, simtime_t& arrivalTime);
     // return true if a structure for this LCID is present

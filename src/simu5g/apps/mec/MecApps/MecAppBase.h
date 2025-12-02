@@ -98,7 +98,6 @@ class MecAppBase : public cSimpleModule, public inet::TcpSocket::ICallback
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
-    void finish() override;
 
     /* Method to be implemented for real MEC apps */
     virtual void handleProcessedMessage(cMessage *msg);

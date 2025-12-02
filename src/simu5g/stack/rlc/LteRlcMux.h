@@ -47,11 +47,6 @@ class LteRlcMux : public cSimpleModule
      */
     void handleMessage(cMessage *msg) override;
 
-    /**
-     * Statistics recording
-     */
-    void finish() override;
-
   private:
     /*
      * Data structures

@@ -207,11 +207,6 @@ class LtePdcpBase : public cSimpleModule
      */
     void handleMessage(cMessage *msg) override;
 
-    /**
-     * Statistics recording
-     */
-    void finish() override;
-
     /*
      * Internal functions
      */

@@ -464,10 +464,6 @@ void LteMacBase::discardRlcPdu(inet::Ptr<const UserControlInfo> lteInfo, unsigne
         packetFlowObserver_->discardRlcPdu(lcid, rlcSno);
 }
 
-void LteMacBase::finish()
-{
-}
-
 void LteMacBase::deleteModule() {
     cancelAndDelete(ttiTick_);
     cSimpleModule::deleteModule();
