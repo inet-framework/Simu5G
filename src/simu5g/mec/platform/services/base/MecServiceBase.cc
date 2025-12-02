@@ -463,13 +463,14 @@ void MecServiceBase::removeConnection(SocketManager *connection)
     connection->deleteModule();
 }
 
-void MecServiceBase::finish()
+void MecServiceBase::preDelete(cComponent *root)
 {
-    EV << "MecServiceBase::finish()" << endl;
+    EV << "MecServiceBase::preDelete()" << endl;
     serverSocket.close();
     while (!threadSet.empty()) {
         removeConnection(*threadSet.begin());
     }
+    inet::ApplicationBase::preDelete(root);
 }
 
 MecServiceBase::~MecServiceBase() {

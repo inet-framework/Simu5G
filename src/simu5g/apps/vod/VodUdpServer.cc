@@ -76,10 +76,11 @@ void VodUdpServer::initialize(int stage)
     scheduleAt(offset, timer);
 }
 
-void VodUdpServer::finish()
+void VodUdpServer::preDelete(cComponent *root)
 {
     if (infile.is_open())
         infile.close();
+    cSimpleModule::preDelete(root);
 }
 
 void VodUdpServer::handleMessage(cMessage *msg)

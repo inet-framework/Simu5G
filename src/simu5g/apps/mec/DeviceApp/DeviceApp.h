@@ -88,7 +88,7 @@ class DeviceApp : public cSimpleModule, public inet::TcpSocket::ICallback, publi
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
-    void finish() override;
+    void preDelete(cComponent *root) override;
 
     /* Utility functions */
     virtual void handleSelfMessage(cMessage *msg);

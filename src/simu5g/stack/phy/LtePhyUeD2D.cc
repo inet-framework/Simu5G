@@ -516,18 +516,14 @@ void LtePhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVe
     delete uinfo;
 }
 
-void LtePhyUeD2D::finish()
+void LtePhyUeD2D::preDelete(cComponent *root)
 {
-    if (getSimulation()->getSimulationStage() != CTX_FINISH) {
-        // Do this only at deletion of the module during the simulation
+    // AMC calls
+    LteAmc *amc = getAmcModule(masterId_);
+    if (amc != nullptr)
+        amc->detachUser(nodeId_, D2D);
 
-        // AMC calls
-        LteAmc *amc = getAmcModule(masterId_);
-        if (amc != nullptr)
-            amc->detachUser(nodeId_, D2D);
-
-        LtePhyUe::finish();
-    }
+    LtePhyUe::preDelete(root);
 }
 
 } //namespace

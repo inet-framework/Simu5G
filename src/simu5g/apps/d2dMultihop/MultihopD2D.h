@@ -87,7 +87,7 @@ class MultihopD2D : public cSimpleModule
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;
-    void finish() override;
+    void preDelete(cComponent *root) override;
 
     void markAsReceived(uint32_t msgId);      // store the msg id in the set of received messages
     bool isAlreadyReceived(uint32_t msgId);   // returns true if the given msg has already been received

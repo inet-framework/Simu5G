@@ -299,7 +299,7 @@ void Binder::initialize(int stage)
     }
 }
 
-void Binder::finish()
+void Binder::preDelete(cComponent *root)
 {
     if (par("printTrafficGeneratorConfig").boolValue()) {
         // build filename
@@ -366,6 +366,7 @@ void Binder::finish()
 
         out.close();
     }
+    cSimpleModule::preDelete(root);
 }
 
 cModule *Binder::getNodeModule(MacNodeId nodeId)

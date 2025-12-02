@@ -46,7 +46,7 @@ class VodUdpClient : public cSimpleModule
 
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
-    void finish() override;
+    void preDelete(cComponent *root) override;
     void handleMessage(cMessage *msg) override;
     virtual void receiveStream(const VoDPacket *msg);
 };

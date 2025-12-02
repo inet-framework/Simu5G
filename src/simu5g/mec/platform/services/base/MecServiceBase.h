@@ -146,7 +146,7 @@ class MecServiceBase : public inet::ApplicationBase, public inet::TcpSocket::ICa
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessageWhenUp(cMessage *msg) override;
-    void finish() override;
+    void preDelete(cComponent *root) override;
     void refreshDisplay() const override;
 
     /*

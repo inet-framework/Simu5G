@@ -607,13 +607,11 @@ Ip2Nic::~Ip2Nic()
         delete sbTable_;
 }
 
-void Ip2Nic::finish()
+void Ip2Nic::preDelete(cComponent *root)
 {
-    if (getSimulation()->getSimulationStage() != CTX_FINISH) {
-        // do this only at deletion of the module during the simulation
-        binder_->unregisterNode(nodeId_);
-        binder_->unregisterNode(nrNodeId_);
-    }
+    binder_->unregisterNode(nodeId_);
+    binder_->unregisterNode(nrNodeId_);
+    cSimpleModule::preDelete(root);
 }
 
 } //namespace

@@ -61,7 +61,7 @@ void VodUdpClient::initialize(int stage)
     scheduleAt(simTime(), timer);
 }
 
-void VodUdpClient::finish()
+void VodUdpClient::preDelete(cComponent *root)
 {
     outfile.close();
     bool startMetrics = par("startMetrics");
@@ -124,6 +124,7 @@ void VodUdpClient::finish()
             }
         }
     }
+    cSimpleModule::preDelete(root);
 }
 
 void VodUdpClient::handleMessage(cMessage *msg)

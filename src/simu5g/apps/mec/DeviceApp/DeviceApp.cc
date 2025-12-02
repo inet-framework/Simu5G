@@ -529,10 +529,11 @@ void DeviceApp::socketPeerClosed(inet::TcpSocket *socket)
 void DeviceApp::socketClosed(inet::TcpSocket *socket) {}
 void DeviceApp::socketFailure(inet::TcpSocket *socket, int code) {}
 
-void DeviceApp::finish()
+void DeviceApp::preDelete(cComponent *root)
 {
     if (ualcmpSocket_.getState() == inet::TcpSocket::CONNECTED)
         ualcmpSocket_.close();
+    cSimpleModule::preDelete(root);
 }
 
 } //namespace

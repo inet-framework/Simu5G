@@ -380,10 +380,11 @@ bool MultihopD2D::isWithinBroadcastArea(Coord srcCoord, double maxRadius)
     return dist < maxRadius;
 }
 
-void MultihopD2D::finish()
+void MultihopD2D::preDelete(cComponent *root)
 {
     // unregister from the event generator
     eventGen_->unregisterNode(this, lteNodeId_);
+    cSimpleModule::preDelete(root);
 }
 
 } //namespace

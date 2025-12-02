@@ -170,19 +170,20 @@ void MecRequestBackgroundGeneratorApp::sendBulkRequest() {
     EV << "MecRequestBackgroundGeneratorApp: " << numRequests << " requests to the server" << endl;
 }
 
-void MecRequestBackgroundGeneratorApp::finish()
+void MecRequestBackgroundGeneratorApp::preDelete(cComponent *root)
 {
     if (vim == nullptr)
-        throw cRuntimeError("MecRequestBackgroundGeneratorApp::initialize - vim is null!");
+        throw cRuntimeError("MecRequestBackgroundGeneratorApp::preDelete - vim is null!");
     if (par("allocateHostResources").boolValue()) {
         bool res = vim->deRegisterMecApp(mecAppId);
         if (!res) {
-            EV << "MecRequestBackgroundGeneratorApp::finish - MEC host did not deallocate MecRequestBackgroundGeneratorApp [" << mecAppId << "] resources" << endl;
+            EV << "MecRequestBackgroundGeneratorApp::preDelete - MEC host did not deallocate MecRequestBackgroundGeneratorApp [" << mecAppId << "] resources" << endl;
         }
     }
     else {
-        EV << "MecRequestBackgroundGeneratorApp::finish - MecRequestBackgroundGeneratorApp [" << mecAppId << "] had not allocated resources" << endl;
+        EV << "MecRequestBackgroundGeneratorApp::preDelete - MecRequestBackgroundGeneratorApp [" << mecAppId << "] had not allocated resources" << endl;
     }
+    MecAppBase::preDelete(root);
 }
 
 } //namespace

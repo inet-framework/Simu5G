@@ -116,7 +116,7 @@ class LtePhyUe : public LtePhyBase
     void initialize(int stage) override;
     void handleSelfMessage(cMessage *msg) override;
     void handleAirFrame(cMessage *msg) override;
-    void finish() override;
+    void preDelete(cComponent *root) override;
     void finish(cComponent *component, simsignal_t signalID) override { cIListener::finish(component, signalID); }
 
     void handleUpperMessage(cMessage *msg) override;

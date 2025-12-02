@@ -49,7 +49,7 @@ class MecRequestBackgroundGeneratorApp : public MecAppBase
 
     void established(int connId) override;
 
-    void finish() override;
+    void preDelete(cComponent *root) override;
 
   public:
     ~MecRequestBackgroundGeneratorApp() override;

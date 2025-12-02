@@ -156,7 +156,7 @@ class Binder : public cSimpleModule
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override {}
 
-    void finish() override;
+    void preDelete(cComponent *root) override;
 
     // helpers
     virtual bool isValidNodeId(MacNodeId  nodeId) const;
