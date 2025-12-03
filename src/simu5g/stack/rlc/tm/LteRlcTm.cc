@@ -121,14 +121,16 @@ void LteRlcTm::handleLowerMessage(cPacket *pkt)
  * Main functions
  */
 
-void LteRlcTm::initialize()
+void LteRlcTm::initialize(int stage)
 {
-    upInGate_ = gate("TM_Sap_up$i");
-    upOutGate_ = gate("TM_Sap_up$o");
-    downInGate_ = gate("TM_Sap_down$i");
-    downOutGate_ = gate("TM_Sap_down$o");
+    if (stage == inet::INITSTAGE_LOCAL) {
+        upInGate_ = gate("TM_Sap_up$i");
+        upOutGate_ = gate("TM_Sap_up$o");
+        downInGate_ = gate("TM_Sap_down$i");
+        downOutGate_ = gate("TM_Sap_down$o");
 
-    queueSize_ = par("queueSize");
+        queueSize_ = par("queueSize");
+    }
 }
 
 void LteRlcTm::handleMessage(cMessage *msg)

@@ -17,12 +17,14 @@ Define_Module(FeedbackTester);
 
 using namespace omnetpp;
 
-void FeedbackTester::initialize()
+void FeedbackTester::initialize(int stage)
 {
-    interval_ = par("interval");
-    generator_.reference(this, "feedbackGeneratorModule", true);
-    aperiodic_ = new cMessage("aperiodic");
-    scheduleAt(simTime(), aperiodic_);
+    if (stage == inet::INITSTAGE_LOCAL) {
+        interval_ = par("interval");
+        generator_.reference(this, "feedbackGeneratorModule", true);
+        aperiodic_ = new cMessage("aperiodic");
+        scheduleAt(simTime(), aperiodic_);
+    }
 }
 
 void FeedbackTester::handleMessage(cMessage *msg)

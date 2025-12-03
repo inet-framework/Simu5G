@@ -21,28 +21,29 @@ Define_Module(AmTxQueue);
 AmTxQueue::AmTxQueue() :
      pduTimer_(this), mrwTimer_(this), bufferStatusTimer_(this)
 {
-
     // Initialize timer IDs
     pduTimer_.setTimerId(PDU_T);
     mrwTimer_.setTimerId(MRW_T);
     bufferStatusTimer_.setTimerId(BUFFER_T);
 }
 
-void AmTxQueue::initialize()
+void AmTxQueue::initialize(int stage)
 {
-    // Initialize all parameters from NED.
-    maxRtx_ = par("maxRtx");
-    fragDesc_.fragUnit_ = par("fragmentSize");
-    pduRtxTimeout_ = par("pduRtxTimeout");
-    ctrlPduRtxTimeout_ = par("ctrlPduRtxTimeout");
-    bufferStatusTimeout_ = par("bufferStatusTimeout");
-    txWindowDesc_.windowSize_ = par("txWindowSize");
-    // Resize status vectors
-    received_.resize(txWindowDesc_.windowSize_, false);
-    discarded_.resize(txWindowDesc_.windowSize_ + 1, false);
+    if (stage == inet::INITSTAGE_LOCAL) {
+        // Initialize all parameters from NED.
+        maxRtx_ = par("maxRtx");
+        fragDesc_.fragUnit_ = par("fragmentSize");
+        pduRtxTimeout_ = par("pduRtxTimeout");
+        ctrlPduRtxTimeout_ = par("ctrlPduRtxTimeout");
+        bufferStatusTimeout_ = par("bufferStatusTimeout");
+        txWindowDesc_.windowSize_ = par("txWindowSize");
+        // Resize status vectors
+        received_.resize(txWindowDesc_.windowSize_, false);
+        discarded_.resize(txWindowDesc_.windowSize_ + 1, false);
 
-    // Reference to corresponding RLC AM module
-    lteRlc_.reference(this, "amModule", true);
+        // Reference to corresponding RLC AM module
+        lteRlc_.reference(this, "amModule", true);
+    }
 }
 
 AmTxQueue::~AmTxQueue()

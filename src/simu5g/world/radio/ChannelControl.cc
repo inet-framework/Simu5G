@@ -50,19 +50,16 @@ ChannelControl::~ChannelControl()
             delete airFrame;
 }
 
-/**
- * Calculates maxInterferenceDistance.
- *
- * @ref calcInterfDist
- */
-void ChannelControl::initialize()
+void ChannelControl::initialize(int stage)
 {
-    numChannels = par("numChannels");
-    transmissions.resize(numChannels);
+    if (stage == inet::INITSTAGE_LOCAL) {
+        numChannels = par("numChannels");
+        transmissions.resize(numChannels);
 
-    lastOngoingTransmissionsUpdate = 0;
+        lastOngoingTransmissionsUpdate = 0;
 
-    maxInterferenceDistance = calcInterfDist();
+        maxInterferenceDistance = calcInterfDist();
+    }
 }
 
 /**

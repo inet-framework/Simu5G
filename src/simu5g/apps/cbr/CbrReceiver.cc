@@ -27,12 +27,7 @@ void CbrReceiver::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
 
-    if (stage == INITSTAGE_LOCAL) {
-        mInit_ = true;
-        numReceived_ = 0;
-        recvBytes_ = 0;
-    }
-    else if (stage == INITSTAGE_APPLICATION_LAYER) {
+    if (stage == INITSTAGE_APPLICATION_LAYER) {
         int port = par("localPort");
         EV << "CbrReceiver::initialize - binding to port: local:" << port << endl;
         if (port != -1) {
@@ -44,8 +39,7 @@ void CbrReceiver::initialize(int stage)
 
 void CbrReceiver::handleMessage(cMessage *msg)
 {
-    if (msg->isSelfMessage())
-        return;
+    ASSERT(!msg->isSelfMessage());
 
     Packet *pPacket = check_and_cast<Packet *>(msg);
     auto cbrHeader = pPacket->popAtFront<CbrPacket>();

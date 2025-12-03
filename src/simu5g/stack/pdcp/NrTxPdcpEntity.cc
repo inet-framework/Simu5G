@@ -17,9 +17,9 @@ namespace simu5g {
 Define_Module(NrTxPdcpEntity);
 
 
-void NrTxPdcpEntity::initialize()
+void NrTxPdcpEntity::initialize(int stage)
 {
-    LteTxPdcpEntity::initialize();
+    LteTxPdcpEntity::initialize(stage);
 }
 
 void NrTxPdcpEntity::deliverPdcpPdu(Packet *pkt)

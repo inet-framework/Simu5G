@@ -93,7 +93,8 @@ class LteCompManagerBase : public cSimpleModule
     void setUsableBands(UsableBands& usableBands);
 
   public:
-    void initialize() override;
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
 };
 

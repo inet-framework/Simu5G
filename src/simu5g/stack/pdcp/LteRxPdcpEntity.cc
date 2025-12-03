@@ -26,11 +26,12 @@ namespace simu5g {
 Define_Module(LteRxPdcpEntity);
 
 
-void LteRxPdcpEntity::initialize()
+void LteRxPdcpEntity::initialize(int stage)
 {
-    pdcp_ = check_and_cast<LtePdcpBase *>(getParentModule());
-
-    headerCompressionEnabled_ = pdcp_->par("headerCompressedSize").intValue() > 0;  // TODO a.k.a. LTE_PDCP_HEADER_COMPRESSION_DISABLED
+    if (stage == inet::INITSTAGE_LOCAL) {
+        pdcp_ = check_and_cast<LtePdcpBase *>(getParentModule());
+        headerCompressionEnabled_ = pdcp_->par("headerCompressedSize").intValue() > 0;  // TODO a.k.a. LTE_PDCP_HEADER_COMPRESSION_DISABLED
+    }
 }
 
 void LteRxPdcpEntity::handlePacketFromLowerLayer(Packet *pkt)

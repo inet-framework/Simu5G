@@ -73,7 +73,8 @@ class LteRlcTm : public cSimpleModule
      */
     void handleMessage(cMessage *msg) override;
 
-    void initialize() override;
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
     /**
      * Handler for traffic coming

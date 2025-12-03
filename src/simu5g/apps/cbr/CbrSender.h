@@ -28,15 +28,10 @@ using namespace omnetpp;
 class CbrSender : public cSimpleModule
 {
     inet::UdpSocket socket;
-    //has the sender been initialized?
-    bool initialized_ = false;
 
-    cMessage *selfSource_ = nullptr;
-    //sender
-    int numFrames_;
-    int frameId_;
-    int nframesTmp_;
-    int size_;
+    int numFrames_ = 0;
+    int frameId_ = 0;
+    int packetSize_ = 0;
     simtime_t samplingTime;
     simtime_t startTime_;
     simtime_t finishTime_;
@@ -45,11 +40,10 @@ class CbrSender : public cSimpleModule
     static simsignal_t cbrGeneratedBytesSignal_;
     static simsignal_t cbrSentPktSignal_;
 
-    int txBytes_;
-    // ----------------------------
+    int txBytes_ = 0;
 
-    cMessage *selfSender_ = nullptr;
-    cMessage *initTraffic_ = nullptr;
+    cMessage *sendTimer_ = nullptr;
+    cMessage *initTrafficTimer_ = nullptr;
 
     simtime_t timestamp_;
     int localPort_;

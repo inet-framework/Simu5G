@@ -31,13 +31,15 @@ namespace simu5g {
 
 Define_Module(LteTxPdcpEntity);
 
-void LteTxPdcpEntity::initialize()
+void LteTxPdcpEntity::initialize(int stage) {
 {
-    pdcp_ = check_and_cast<LtePdcpBase *>(getParentModule());
+    if (stage == inet::INITSTAGE_LOCAL)
+        pdcp_ = check_and_cast<LtePdcpBase *>(getParentModule());
 
-    headerCompressedSize_ = B(pdcp_->par("headerCompressedSize"));
-    if (headerCompressedSize_ != LTE_PDCP_HEADER_COMPRESSION_DISABLED && headerCompressedSize_ < MIN_COMPRESSED_HEADER_SIZE)
-        throw cRuntimeError("Size of compressed header must not be less than %" PRId64 "B.", MIN_COMPRESSED_HEADER_SIZE.get());
+        headerCompressedSize_ = B(pdcp_->par("headerCompressedSize"));
+        if (headerCompressedSize_ != LTE_PDCP_HEADER_COMPRESSION_DISABLED && headerCompressedSize_ < MIN_COMPRESSED_HEADER_SIZE)
+            throw cRuntimeError("Size of compressed header must not be less than %" PRId64 "B.", MIN_COMPRESSED_HEADER_SIZE.get());
+    }
 }
 
 void LteTxPdcpEntity::handlePacketFromUpperLayer(Packet *pkt)

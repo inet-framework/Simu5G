@@ -102,7 +102,8 @@ class AmRxQueue : public cSimpleModule
     void handleMessage(cMessage *msg) override;
 
     //initialize
-    void initialize() override;
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
   protected:
 

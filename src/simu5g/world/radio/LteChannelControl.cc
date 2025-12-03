@@ -29,10 +29,9 @@ using namespace omnetpp;
  *
  * @ref calcInterfDist
  */
-void LteChannelControl::initialize()
+void LteChannelControl::initialize(int stage)
 {
-    coreEV << "initializing LteChannelControl\n";
-    ChannelControl::initialize();
+    ChannelControl::initialize(stage);
 }
 
 /**

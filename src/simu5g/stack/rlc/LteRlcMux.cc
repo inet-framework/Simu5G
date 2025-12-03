@@ -59,16 +59,18 @@ void LteRlcMux::mac2rlc(cPacket *pktAux)
  * Main functions
  */
 
-void LteRlcMux::initialize()
+void LteRlcMux::initialize(int stage)
 {
-    macSapInGate_ = gate("MAC_to_RLC");
-    macSapOutGate_ = gate("RLC_to_MAC");
-    tmSapInGate_ = gate("TM_Sap$i");
-    tmSapOutGate_ = gate("TM_Sap$o");
-    umSapInGate_ = gate("UM_Sap$i");
-    umSapOutGate_ = gate("UM_Sap$o");
-    amSapInGate_ = gate("AM_Sap$i");
-    amSapOutGate_ = gate("AM_Sap$o");
+    if (stage == inet::INITSTAGE_LOCAL) {
+        macSapInGate_ = gate("MAC_to_RLC");
+        macSapOutGate_ = gate("RLC_to_MAC");
+        tmSapInGate_ = gate("TM_Sap$i");
+        tmSapOutGate_ = gate("TM_Sap$o");
+        umSapInGate_ = gate("UM_Sap$i");
+        umSapOutGate_ = gate("UM_Sap$o");
+        amSapInGate_ = gate("AM_Sap$i");
+        amSapOutGate_ = gate("AM_Sap$o");
+    }
 }
 
 void LteRlcMux::handleMessage(cMessage *msg)

@@ -29,11 +29,9 @@ class CbrReceiver : public cSimpleModule
 {
     inet::UdpSocket socket;
 
-    int numReceived_;
-    int totFrames_;
-    int recvBytes_;
-
-    bool mInit_;
+    int numReceived_ = 0;
+    int totFrames_ = 0;
+    int recvBytes_ = 0;
 
     static simsignal_t cbrFrameLossSignal_;
     static simsignal_t cbrFrameDelaySignal_;

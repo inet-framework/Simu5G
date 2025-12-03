@@ -58,7 +58,8 @@ class LteTxPdcpEntity : public cSimpleModule
   public:
 
 
-    void initialize() override;
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
     // create a PDCP PDU from the IP datagram
     void handlePacketFromUpperLayer(Packet *pkt);

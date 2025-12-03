@@ -172,7 +172,8 @@ class AmTxQueue : public cSimpleModule
     /**
      * Initialize
      */
-    void initialize() override;
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     /*
      * Analyze the gate of incoming packet and call proper handler
      * @param msg

@@ -627,33 +627,35 @@ void UmRxEntity::reassemble(unsigned int index)
  * Main Functions
  */
 
-void UmRxEntity::initialize()
+void UmRxEntity::initialize(int stage)
 {
-    binder_.reference(this, "binderModule", true);
-    timeout_ = par("timeout").doubleValue();
-    rxWindowDesc_.clear();
-    rxWindowDesc_.windowSize_ = par("rxWindowSize");
-    received_.resize(rxWindowDesc_.windowSize_);
+    if (stage == inet::INITSTAGE_LOCAL) {
+        binder_.reference(this, "binderModule", true);
+        timeout_ = par("timeout").doubleValue();
+        rxWindowDesc_.clear();
+        rxWindowDesc_.windowSize_ = par("rxWindowSize");
+        received_.resize(rxWindowDesc_.windowSize_);
 
-    totalRcvdBytes_ = 0;
-    totalPduRcvdBytes_ = 0;
+        totalRcvdBytes_ = 0;
+        totalPduRcvdBytes_ = 0;
 
-    rlc_.reference(this, "umModule", true);
+        rlc_.reference(this, "umModule", true);
 
-    //statistics
+        //statistics
 
-    LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
-    nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
-    // ASSERT(nodeB_ != nullptr); -- see commit message why this is commented out
+        LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
+        nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
+        // ASSERT(nodeB_ != nullptr); -- see commit message why this is commented out
 
-    resetFlag_ = false;
+        resetFlag_ = false;
 
-    dir_ = mac->getNodeType() == NODEB ? UL : DL;
+        dir_ = mac->getNodeType() == NODEB ? UL : DL;
 
-    // store the node id of the owner module (useful for statistics)
-    ownerNodeId_ = mac->getMacNodeId();
+        // store the node id of the owner module (useful for statistics)
+        ownerNodeId_ = mac->getMacNodeId();
 
-    WATCH(timeout_);
+        WATCH(timeout_);
+    }
 }
 
 void UmRxEntity::handleMessage(cMessage *msg)

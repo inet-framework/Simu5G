@@ -29,16 +29,13 @@ class BurstReceiver : public cSimpleModule
 {
     UdpSocket socket;
 
-    int numReceived_;
-    int recvBytes_;
-
-    bool mInit_;
+    int numReceived_ = 0;
+    int recvBytes_ = 0;
 
     static simsignal_t burstRcvdPktSignal_;
     static simsignal_t burstPktDelaySignal_;
 
   protected:
-
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;

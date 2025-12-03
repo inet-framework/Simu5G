@@ -19,26 +19,28 @@ using namespace omnetpp;
 
 Define_Module(DualConnectivityManager);
 
-void DualConnectivityManager::initialize()
+void DualConnectivityManager::initialize(int stage)
 {
-    pdcp_.reference(this, "pdcpModule", true);
+    if (stage == inet::INITSTAGE_LOCAL) {
+        pdcp_.reference(this, "pdcpModule", true);
 
-    // get the node id
-    nodeId_ = MacNodeId(inet::getContainingNode(this)->par("macCellId").intValue());
+        // get the node id
+        nodeId_ = MacNodeId(inet::getContainingNode(this)->par("macCellId").intValue());
         ASSERT(nodeId_ != MacNodeId(-1));  // i.e. already set programmatically
 
-    // get reference to the gates
-    x2ManagerInGate_ = gate("x2ManagerIn");
-    x2ManagerOutGate_ = gate("x2ManagerOut");
+        // get reference to the gates
+        x2ManagerInGate_ = gate("x2ManagerIn");
+        x2ManagerOutGate_ = gate("x2ManagerOut");
 
-    // register to the X2 Manager
-    auto x2packet = new inet::Packet("X2DualConnectivityDataMsg");
-    auto initMsg = inet::makeShared<X2DualConnectivityDataMsg>();
-    auto ctrlInfo = x2packet->addTagIfAbsent<X2ControlInfoTag>();
-    ctrlInfo->setInit(true);
-    x2packet->insertAtFront(initMsg);
+        // register to the X2 Manager
+        auto x2packet = new inet::Packet("X2DualConnectivityDataMsg");
+        auto initMsg = inet::makeShared<X2DualConnectivityDataMsg>();
+        auto ctrlInfo = x2packet->addTagIfAbsent<X2ControlInfoTag>();
+        ctrlInfo->setInit(true);
+        x2packet->insertAtFront(initMsg);
 
-    send(x2packet, x2ManagerOutGate_);
+        send(x2packet, x2ManagerOutGate_);
+    }
 }
 
 void DualConnectivityManager::handleMessage(cMessage *msg)

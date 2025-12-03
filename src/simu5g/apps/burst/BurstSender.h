@@ -27,19 +27,17 @@ using namespace inet;
 class BurstSender : public cSimpleModule
 {
     UdpSocket socket;
-    // has the sender been initialized?
-    bool initialized_ = false;
 
     // timers
-    cMessage *selfBurst_ = nullptr;
-    cMessage *selfPacket_ = nullptr;
+    cMessage *burstTimer_ = nullptr;
+    cMessage *packetTimer_ = nullptr;
 
     // sender
-    int idBurst_;
-    int idFrame_;
+    int burstId_ = 0;
+    int frameId_ = 0;
 
     int burstSize_;
-    int size_;
+    int packetSize_;
     simtime_t startTime_;
     simtime_t interBurstTime_;
     simtime_t intraBurstTime_;

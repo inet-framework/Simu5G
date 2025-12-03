@@ -16,9 +16,9 @@ namespace simu5g {
 Define_Module(LteCompManagerProportional);
 using namespace inet;
 
-void LteCompManagerProportional::initialize()
+void LteCompManagerProportional::initialize(int stage)
 {
-    LteCompManagerBase::initialize();
+    LteCompManagerBase::initialize(stage);
 }
 
 void LteCompManagerProportional::provisionalSchedule()

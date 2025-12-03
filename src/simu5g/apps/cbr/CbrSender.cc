@@ -18,6 +18,7 @@ namespace simu5g {
 #define round(x)    floor((x) + 0.5)
 
 Define_Module(CbrSender);
+
 using namespace inet;
 using namespace std;
 
@@ -28,26 +29,19 @@ simsignal_t CbrSender::cbrSentPktSignal_ = registerSignal("cbrSentPkt");
 
 CbrSender::~CbrSender()
 {
-    cancelAndDelete(selfSource_);
+    cancelAndDelete(sendTimer_);
 }
 
 void CbrSender::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
-    EV << "CBR Sender initialize: stage " << stage << " - initialize=" << initialized_ << endl;
 
     if (stage == INITSTAGE_LOCAL) {
-        selfSource_ = new cMessage("selfSource");
-        numFrames_ = 0;
-        nframesTmp_ = 0;
-        frameId_ = 0;
-        timestamp_ = 0;
-        size_ = par("packetSize");
+        sendTimer_ = new cMessage("selfSource");
+        packetSize_ = par("packetSize");
         samplingTime = par("samplingTime");
         localPort_ = par("localPort");
         destPort_ = par("destPort");
-
-        txBytes_ = 0;
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER) {
         // calculating traffic starting time
@@ -57,7 +51,7 @@ void CbrSender::initialize(int stage)
         EV << " finish time " << finishTime_ << endl;
         numFrames_ = (finishTime_ - startTime_) / samplingTime;
 
-        initTraffic_ = new cMessage("initTraffic");
+        initTrafficTimer_ = new cMessage("initTraffic");
         initTraffic();
     }
 }
@@ -65,7 +59,7 @@ void CbrSender::initialize(int stage)
 void CbrSender::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage()) {
-        if (msg == selfSource_) {
+        if (msg == sendTimer_) {
             EV << "CbrSender::handleMessage - now[" << simTime() << "] <= finish[" << finishTime_ << "]" << endl;
             if (simTime() <= finishTime_ || finishTime_ == 0)
                 sendCbrPacket();
@@ -84,11 +78,11 @@ void CbrSender::initTraffic()
         EV << simTime() << "CbrSender::initTraffic - destination " << destAddress << " not found" << endl;
 
         simtime_t offset = 0.01; // TODO check value
-        scheduleAt(simTime() + offset, initTraffic_);
+        scheduleAt(simTime() + offset, initTrafficTimer_);
         EV << simTime() << "CbrSender::initTraffic - the node will retry to initialize traffic in " << offset << " seconds " << endl;
     }
     else {
-        delete initTraffic_;
+        delete initTrafficTimer_;
 
         destAddress_ = inet::L3AddressResolver().resolve(par("destAddress").stringValue());
         socket.setOutputGate(gate("socketOut"));
@@ -103,7 +97,7 @@ void CbrSender::initTraffic()
         // calculating traffic starting time
         simtime_t startTime = par("startTime");
 
-        scheduleAt(simTime() + startTime, selfSource_);
+        scheduleAt(simTime() + startTime, sendTimer_);
         EV << "\t starting traffic in " << startTime << " seconds " << endl;
     }
 }
@@ -115,19 +109,19 @@ void CbrSender::sendCbrPacket()
     cbr->setNumFrames(numFrames_);
     cbr->setFrameId(frameId_++);
     cbr->setPayloadTimestamp(simTime());
-    cbr->setPayloadSize(size_);
-    cbr->setChunkLength(B(size_));
+    cbr->setPayloadSize(packetSize_);
+    cbr->setChunkLength(B(packetSize_));
     cbr->addTag<CreationTimeTag>()->setCreationTime(simTime());
     packet->insertAtBack(cbr);
 
-    emit(cbrGeneratedBytesSignal_, size_);
+    emit(cbrGeneratedBytesSignal_, packetSize_);
 
     if (simTime() > getSimulation()->getWarmupPeriod()) {
-        txBytes_ += size_;
+        txBytes_ += packetSize_;
     }
     socket.sendTo(packet, destAddress_, destPort_);
 
-    scheduleAt(simTime() + samplingTime, selfSource_);
+    scheduleAt(simTime() + samplingTime, sendTimer_);
 }
 
 void CbrSender::finish()

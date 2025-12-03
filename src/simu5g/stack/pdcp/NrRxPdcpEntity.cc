@@ -18,16 +18,18 @@ Define_Module(NrRxPdcpEntity);
 
 
 
-void NrRxPdcpEntity::initialize()
+void NrRxPdcpEntity::initialize(int stage)
 {
-    outOfOrderDelivery_ = par("outOfOrderDelivery").boolValue();
-    rxWindowDesc_.windowSize_ = par("rxWindowSize");
-    timeout_ = par("timeout").doubleValue();
+    if (stage == inet::INITSTAGE_LOCAL) {
+        outOfOrderDelivery_ = par("outOfOrderDelivery").boolValue();
+        rxWindowDesc_.windowSize_ = par("rxWindowSize");
+        timeout_ = par("timeout").doubleValue();
 
-    received_.resize(rxWindowDesc_.windowSize_, false);
-    t_reordering_.setTimerId(REORDERING_T);
+        received_.resize(rxWindowDesc_.windowSize_, false);
+        t_reordering_.setTimerId(REORDERING_T);
+    }
 
-    LteRxPdcpEntity::initialize();
+    LteRxPdcpEntity::initialize(stage);
 }
 
 void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)

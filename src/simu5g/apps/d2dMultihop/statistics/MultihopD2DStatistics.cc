@@ -27,7 +27,7 @@ simsignal_t MultihopD2DStatistics::d2dMultihopEventTrickleSuppressedMsgSignal_ =
 simsignal_t MultihopD2DStatistics::d2dMultihopEventRcvdDupMsgSignal_ = registerSignal("d2dMultihopEventRcvdDupMsg");
 simsignal_t MultihopD2DStatistics::d2dMultihopEventCompleteDeliveriesSignal_ = registerSignal("d2dMultihopEventCompleteDeliveries");
 
-void MultihopD2DStatistics::initialize()
+void MultihopD2DStatistics::initialize(int stage)
 {
 }
 

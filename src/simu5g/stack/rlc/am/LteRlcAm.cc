@@ -258,16 +258,18 @@ void LteRlcAm::indicateNewDataToMac(cPacket *pktAux) {
  * Main functions
  */
 
-void LteRlcAm::initialize()
+void LteRlcAm::initialize(int stage)
 {
-    upInGate_ = gate("AM_Sap_up$i");
-    upOutGate_ = gate("AM_Sap_up$o");
-    downInGate_ = gate("AM_Sap_down$i");
-    downOutGate_ = gate("AM_Sap_down$o");
+    if (stage == inet::INITSTAGE_LOCAL) {
+        upInGate_ = gate("AM_Sap_up$i");
+        upOutGate_ = gate("AM_Sap_up$o");
+        downInGate_ = gate("AM_Sap_down$i");
+        downOutGate_ = gate("AM_Sap_down$o");
 
-    // parameters
-    txEntityModuleType_ = cModuleType::get(par("txEntityModuleType").stringValue());
-    rxEntityModuleType_ = cModuleType::get(par("rxEntityModuleType").stringValue());
+        // parameters
+        txEntityModuleType_ = cModuleType::get(par("txEntityModuleType").stringValue());
+        rxEntityModuleType_ = cModuleType::get(par("rxEntityModuleType").stringValue());
+    }
 }
 
 void LteRlcAm::handleMessage(cMessage *msg)

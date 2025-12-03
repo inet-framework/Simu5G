@@ -46,24 +46,26 @@ AmRxQueue::AmRxQueue() :
     timer_.setTimerId(BUFFERSTATUS_T);
 }
 
-void AmRxQueue::initialize()
+void AmRxQueue::initialize(int stage)
 {
-    // Loading parameters from NED
-    rxWindowDesc_.windowSize_ = par("rxWindowSize");
-    ackReportInterval_ = par("ackReportInterval");
-    statusReportInterval_ = par("statusReportInterval");
+    if (stage == inet::INITSTAGE_LOCAL) {
+        // Loading parameters from NED
+        rxWindowDesc_.windowSize_ = par("rxWindowSize");
+        ackReportInterval_ = par("ackReportInterval");
+        statusReportInterval_ = par("statusReportInterval");
 
-    discarded_.resize(rxWindowDesc_.windowSize_);
-    received_.resize(rxWindowDesc_.windowSize_);
-    totalRcvdBytes_ = 0;
+        discarded_.resize(rxWindowDesc_.windowSize_);
+        received_.resize(rxWindowDesc_.windowSize_);
+        totalRcvdBytes_ = 0;
 
-    binder_.reference(this, "binderModule", true);
-    lteRlc_.reference(this, "amModule", true);
+        binder_.reference(this, "binderModule", true);
+        lteRlc_.reference(this, "amModule", true);
 
-    // Statistics
-    LteMacBase *mac = inet::getConnectedModule<LteMacBase>(getParentModule()->gate("RLC_to_MAC"), 0);
+        // Statistics
+        LteMacBase *mac = inet::getConnectedModule<LteMacBase>(getParentModule()->gate("RLC_to_MAC"), 0);
 
-    dir_ = mac->getNodeType() == NODEB ? UL : DL;
+        dir_ = mac->getNodeType() == NODEB ? UL : DL;
+    }
 }
 
 void AmRxQueue::handleMessage(cMessage *msg)

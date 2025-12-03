@@ -51,7 +51,8 @@ class LteRxPdcpEntity : public cSimpleModule
   public:
 
 
-    void initialize() override;
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
     // obtain the IP datagram from the PDCP PDU
     void handlePacketFromLowerLayer(Packet *pkt);

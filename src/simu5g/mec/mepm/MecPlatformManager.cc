@@ -21,17 +21,13 @@ Define_Module(MecPlatformManager);
 
 void MecPlatformManager::initialize(int stage)
 {
-    EV << "VirtualisationInfrastructureManager::initialize - stage " << stage << endl;
-    cSimpleModule::initialize(stage);
-    // avoid multiple initializations
-    if (stage != inet::INITSTAGE_LOCAL)
-        return;
-    vim.reference(this, "vimModule", true);
-    serviceRegistry.reference(this, "serviceRegistryModule", false);
+    if (stage == inet::INITSTAGE_LOCAL) {
+        vim.reference(this, "vimModule", true);
+        serviceRegistry.reference(this, "serviceRegistryModule", false);
 
-    mecOrchestrator.reference(this, "mecOrchestrator", false);
-    if (!mecOrchestrator) {
-        EV << "MecPlatformManager::initialize - MEC Orchestrator [" << par("mecOrchestrator").str() << "] not found" << endl;
+        mecOrchestrator.reference(this, "mecOrchestrator", false);
+        if (!mecOrchestrator)
+            EV << "MecPlatformManager::initialize - MEC Orchestrator [" << par("mecOrchestrator").str() << "] not found" << endl;
     }
 }
 

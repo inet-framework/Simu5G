@@ -51,7 +51,8 @@ class LteHandoverManager : public cSimpleModule
 
   public:
 
-    void initialize() override;
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
 
     // send handover command on X2 to the eNB

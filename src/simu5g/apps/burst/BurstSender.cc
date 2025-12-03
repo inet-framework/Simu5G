@@ -23,22 +23,18 @@ simsignal_t BurstSender::burstSentPktSignal_ = registerSignal("burstSentPkt");
 
 BurstSender::~BurstSender()
 {
-    cancelAndDelete(selfBurst_);
-    cancelAndDelete(selfPacket_);
+    cancelAndDelete(burstTimer_);
+    cancelAndDelete(packetTimer_);
 }
 
 void BurstSender::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
-    EV << "BurstSender initialize: stage " << stage << " - initialize=" << initialized_ << endl;
 
     if (stage == INITSTAGE_LOCAL) {
-        selfBurst_ = new cMessage("selfBurst");
-        selfPacket_ = new cMessage("selfPacket");
-        idBurst_ = 0;
-        idFrame_ = 0;
-        timestamp_ = 0;
-        size_ = par("packetSize");
+        burstTimer_ = new cMessage("selfBurst");
+        packetTimer_ = new cMessage("selfPacket");
+        packetSize_ = par("packetSize");
         burstSize_ = par("burstSize");
         interBurstTime_ = par("interBurstTime");
         intraBurstTime_ = par("intraBurstTime");
@@ -54,9 +50,9 @@ void BurstSender::initialize(int stage)
 void BurstSender::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage()) {
-        if (msg == selfBurst_)
+        if (msg == burstTimer_)
             sendBurst();
-        else if (msg == selfPacket_)
+        else if (msg == packetTimer_)
             sendPacket();
         else
             initTraffic();
@@ -91,38 +87,38 @@ void BurstSender::initTraffic()
         // calculating traffic starting time
         simtime_t startTime = par("startTime");
 
-        scheduleAt(simTime() + startTime, selfBurst_);
+        scheduleAt(simTime() + startTime, burstTimer_);
         EV << "\t starting traffic in " << startTime << " seconds " << endl;
     }
 }
 
 void BurstSender::sendBurst()
 {
-    idBurst_++;
-    idFrame_ = 0;
+    burstId_++;
+    frameId_ = 0;
 
-    EV << simTime() << " BurstSender::sendBurst - Start sending burst[" << idBurst_ << "]" << endl;
+    EV << simTime() << " BurstSender::sendBurst - Start sending burst[" << burstId_ << "]" << endl;
 
     // send first packet
     sendPacket();
 
-    scheduleAt(simTime() + interBurstTime_, selfBurst_);
+    scheduleAt(simTime() + interBurstTime_, burstTimer_);
 }
 
 void BurstSender::sendPacket()
 {
-    EV << "BurstSender::sendPacket - Sending frame[" << idFrame_ << "] of burst [" << idBurst_ << "], next packet at " << simTime() + intraBurstTime_ << endl;
+    EV << "BurstSender::sendPacket - Sending frame[" << frameId_ << "] of burst [" << burstId_ << "], next packet at " << simTime() + intraBurstTime_ << endl;
 
     //unsigned int msgId = (idBurst_ << 16) | idFrame_;
-    unsigned int msgId = (idBurst_ * burstSize_) + idFrame_;
+    unsigned int msgId = (burstId_ * burstSize_) + frameId_;
 
     Packet *packet = new inet::Packet("Burst");
     auto burst = makeShared<BurstPacket>();
 
     burst->setMsgId(msgId);
     burst->setPayloadTimestamp(simTime());
-    burst->setPayloadSize(size_);
-    burst->setChunkLength(B(size_));
+    burst->setPayloadSize(packetSize_);
+    burst->setChunkLength(B(packetSize_));
     burst->addTag<CreationTimeTag>()->setCreationTime(simTime());
 
     packet->insertAtBack(burst);
@@ -131,9 +127,9 @@ void BurstSender::sendPacket()
 
     emit(burstSentPktSignal_, (long)msgId);
 
-    idFrame_++;
-    if (idFrame_ < burstSize_)
-        scheduleAt(simTime() + intraBurstTime_, selfPacket_);
+    frameId_++;
+    if (frameId_ < burstSize_)
+        scheduleAt(simTime() + intraBurstTime_, packetTimer_);
 }
 
 } //namespace

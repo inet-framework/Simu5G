@@ -27,22 +27,23 @@ using namespace inet;
  * Main functions
  */
 
-void UmTxEntity::initialize()
+void UmTxEntity::initialize(int stage)
 {
-    sno_ = 0;
-    firstIsFragment_ = false;
-    notifyEmptyBuffer_ = false;
-    holdingDownstreamInPackets_ = false;
+    if (stage == inet::INITSTAGE_LOCAL) {
+        sno_ = 0;
+        firstIsFragment_ = false;
+        notifyEmptyBuffer_ = false;
+        holdingDownstreamInPackets_ = false;
 
-    LteMacBase *mac = inet::getConnectedModule<LteMacBase>(getParentModule()->gate("RLC_to_MAC"), 0);
+        LteMacBase *mac = inet::getConnectedModule<LteMacBase>(getParentModule()->gate("RLC_to_MAC"), 0);
 
-    // store the node id of the owner module
-    ownerNodeId_ = mac->getMacNodeId();
+        // store the node id of the owner module
+        ownerNodeId_ = mac->getMacNodeId();
 
-    // get the reference to the RLC module
-    lteRlc_.reference(this, "umModule", true);
-    queueSize_ = lteRlc_->par("queueSize");
-    queueLength_ = 0;
+        // get the reference to the RLC module
+        lteRlc_.reference(this, "umModule", true);
+        queueSize_ = lteRlc_->par("queueSize");
+        queueLength_ = 0;
 
     packetFlowObserver_.reference(this, "packetFlowObserverModule", false);
 
@@ -59,7 +60,8 @@ void UmTxEntity::initialize()
             ASSERT(check_and_cast<PacketFlowObserverUe *>(packetFlowObserver_.get()));
         }
     }
-    burstStatus_ = INACTIVE;
+        burstStatus_ = INACTIVE;
+    }
 }
 
 bool UmTxEntity::enque(cPacket *pkt)

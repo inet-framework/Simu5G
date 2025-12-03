@@ -38,30 +38,27 @@ Define_Module(MecOrchestrator);
 
 void MecOrchestrator::initialize(int stage)
 {
-    cSimpleModule::initialize(stage);
-    // Avoid multiple initializations
-    if (stage != inet::INITSTAGE_LOCAL)
-        return;
     EV << "MecOrchestrator::initialize - stage " << stage << endl;
+    if (stage == inet::INITSTAGE_LOCAL) {
+        binder_.reference(this, "binderModule", true);
 
-    binder_.reference(this, "binderModule", true);
+        const char *selectionPolicyPar = par("selectionPolicy");
+        if (!strcmp(selectionPolicyPar, "MecServiceBased"))
+            mecHostSelectionPolicy_ = new MecServiceBasedSelectionPolicy(this);
+        else if (!strcmp(selectionPolicyPar, "AvailableResourcesBased"))
+            mecHostSelectionPolicy_ = new AvailableResourcesBasedSelectionPolicy(this);
+        else if (!strcmp(selectionPolicyPar, "MecHostBased"))
+            mecHostSelectionPolicy_ = new MecHostBasedSelectionPolicy(this, par("mecHostIndex"));
+        else
+            throw cRuntimeError("MecOrchestrator::initialize - Selection policy '%s' not present!", selectionPolicyPar);
 
-    const char *selectionPolicyPar = par("selectionPolicy");
-    if (!strcmp(selectionPolicyPar, "MecServiceBased"))
-        mecHostSelectionPolicy_ = new MecServiceBasedSelectionPolicy(this);
-    else if (!strcmp(selectionPolicyPar, "AvailableResourcesBased"))
-        mecHostSelectionPolicy_ = new AvailableResourcesBasedSelectionPolicy(this);
-    else if (!strcmp(selectionPolicyPar, "MecHostBased"))
-        mecHostSelectionPolicy_ = new MecHostBasedSelectionPolicy(this, par("mecHostIndex"));
-    else
-        throw cRuntimeError("MecOrchestrator::initialize - Selection policy '%s' not present!", selectionPolicyPar);
+        onboardingTime = par("onboardingTime").doubleValue();
+        instantiationTime = par("instantiationTime").doubleValue();
+        terminationTime = par("terminationTime").doubleValue();
 
-    onboardingTime = par("onboardingTime").doubleValue();
-    instantiationTime = par("instantiationTime").doubleValue();
-    terminationTime = par("terminationTime").doubleValue();
-
-    getConnectedMecHosts();
-    onboardApplicationPackages();
+        getConnectedMecHosts();
+        onboardApplicationPackages();
+    }
 }
 
 void MecOrchestrator::handleMessage(cMessage *msg)

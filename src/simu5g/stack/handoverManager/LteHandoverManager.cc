@@ -22,29 +22,31 @@ Define_Module(LteHandoverManager);
 using namespace inet;
 using namespace omnetpp;
 
-void LteHandoverManager::initialize()
+void LteHandoverManager::initialize(int stage)
 {
-    // get the node id
-    nodeId_ = MacNodeId(inet::getContainingNode(this)->par("macCellId").intValue());
-    ASSERT(nodeId_ != MacNodeId(-1));  // i.e. already set programmatically
-
-    // get reference to the gates
-    x2ManagerInGate_ = gate("x2ManagerIn");
-    x2ManagerOutGate_ = gate("x2ManagerOut");
-
-    // get reference to the Ip2Nic layer
-    ip2nic_.reference(this, "ip2nicModule", true);
-
-    losslessHandover_ = par("losslessHandover").boolValue();
-
-    // register to the X2 Manager
-    auto x2Packet = new Packet("X2HandoverControlMsg");
-    auto initMsg = makeShared<X2HandoverControlMsg>();
-    auto ctrlInfo = x2Packet->addTagIfAbsent<X2ControlInfoTag>();
-    ctrlInfo->setInit(true);
-    x2Packet->insertAtFront(initMsg);
-
-    send(x2Packet, x2ManagerOutGate_);
+    if (stage == inet::INITSTAGE_LOCAL) {
+        // get the node id
+        nodeId_ = MacNodeId(inet::getContainingNode(this)->par("macCellId").intValue());
+        ASSERT(nodeId_ != MacNodeId(-1));  // i.e. already set programmatically
+    
+        // get reference to the gates
+        x2ManagerInGate_ = gate("x2ManagerIn");
+        x2ManagerOutGate_ = gate("x2ManagerOut");
+    
+        // get reference to the Ip2Nic layer
+        ip2nic_.reference(this, "ip2nicModule", true);
+    
+        losslessHandover_ = par("losslessHandover").boolValue();
+    
+        // register to the X2 Manager
+        auto x2Packet = new Packet("X2HandoverControlMsg");
+        auto initMsg = makeShared<X2HandoverControlMsg>();
+        auto ctrlInfo = x2Packet->addTagIfAbsent<X2ControlInfoTag>();
+        ctrlInfo->setInit(true);
+        x2Packet->insertAtFront(initMsg);
+    
+        send(x2Packet, x2ManagerOutGate_);
+    }
 }
 
 void LteHandoverManager::handleMessage(cMessage *msg)

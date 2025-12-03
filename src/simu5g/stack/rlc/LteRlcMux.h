@@ -39,7 +39,8 @@ class LteRlcMux : public cSimpleModule
      * Initialize class structures
      * gate map and delay
      */
-    void initialize() override;
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
     /**
      * Analyze gate of incoming packet

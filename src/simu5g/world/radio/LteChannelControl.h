@@ -30,7 +30,8 @@ class LteChannelControl : public ChannelControl
     double calcInterfDist() override;
 
     /** Reads initialization parameters and calculates a maximal interference distance */
-    void initialize() override;
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
   public:
 

@@ -184,7 +184,8 @@ class UmTxEntity : public cSimpleModule
      * Initialize fragmentSize and
      * watches
      */
-    void initialize() override;
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
   private:
 

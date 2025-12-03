@@ -25,21 +25,21 @@ EventGenerator::~EventGenerator()
     cancelAndDelete(selfMessage_);
 }
 
-void EventGenerator::initialize()
+void EventGenerator::initialize(int stage)
 {
-    EV << "EventGenerator initialize " << endl;
+    if (stage == inet::INITSTAGE_LOCAL) {
+        selfMessage_ = new cMessage("selfMessage");
+        binder_.reference(this, "binderModule", true);
+        singleEventSource_ = par("singleEventSource").boolValue();
 
-    selfMessage_ = new cMessage("selfMessage");
-    binder_.reference(this, "binderModule", true);
-    singleEventSource_ = par("singleEventSource").boolValue();
+        simtime_t startTime = par("startTime");
+        if (startTime >= 0) {
+            // this conversion is made in order to obtain ms-aligned start time, even in case of random generated ones
+            simtime_t offset = (round(SIMTIME_DBL(startTime) * 1000) / 1000) + simTime();
 
-    simtime_t startTime = par("startTime");
-    if (startTime >= 0) {
-        // this conversion is made in order to obtain ms-aligned start time, even in case of random generated ones
-        simtime_t offset = (round(SIMTIME_DBL(startTime) * 1000) / 1000) + simTime();
-
-        scheduleAt(offset, selfMessage_);
-        EV << "\t sending event notification in " << offset << " seconds " << endl;
+            scheduleAt(offset, selfMessage_);
+            EV << "\t sending event notification in " << offset << " seconds " << endl;
+        }
     }
 }
 
