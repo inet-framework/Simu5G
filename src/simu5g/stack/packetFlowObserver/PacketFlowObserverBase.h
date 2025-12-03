@@ -75,7 +75,7 @@ class PacketFlowObserverBase : public cSimpleModule
     int headerCompressedSize_;
 
   protected:
-    int numInitStages() const override { return 2; }
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;
 
     // Return true if a data structure for this LCID is present

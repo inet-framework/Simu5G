@@ -86,7 +86,7 @@ class ExtCell : public cSimpleModule
 
   protected:
     void initialize(int stage) override;
-    int numInitStages() const override { return inet::INITSTAGE_LOCAL + 2; }
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
 
   public:

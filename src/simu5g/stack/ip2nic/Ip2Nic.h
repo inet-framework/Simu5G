@@ -132,7 +132,7 @@ class Ip2Nic : public cSimpleModule
     bool markPacket(inet::Ipv4Address srcAddr, inet::Ipv4Address dstAddr, uint16_t typeOfService, bool& useNR);
 
     void initialize(int stage) override;
-    int numInitStages() const override { return inet::INITSTAGE_LAST; }
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
     void finish() override;
 

@@ -78,7 +78,7 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
     std::vector<double> avgUeLoad_;
 
     // do preliminary actions to enable average cqi computation
-    // this is called by the initialize() in the INITSTAGE_PHYSICAL_LAYER
+    // this is called by the initialize() in the INITSTAGE_SIMU5G_PHYSICAL_LAYER
     virtual void initializeAvgInterferenceComputation();
 
     /*************************************/
@@ -88,7 +88,7 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
   protected:
 
     void initialize(int stage) override;
-    int numInitStages() const override { return inet::INITSTAGE_LAST; }
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
 
     static double getCqiFromTable(double snr);

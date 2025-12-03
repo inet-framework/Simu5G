@@ -39,7 +39,7 @@ class TrafficLightMobility : public LinearMobility
     bool enableTurns_; // flag for enabling random turns at a traffic light
 
   protected:
-    int numInitStages() const override { return NUM_INIT_STAGES; }
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;
 
     /** @brief Move the host*/

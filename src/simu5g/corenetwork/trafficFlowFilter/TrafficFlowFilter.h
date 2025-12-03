@@ -65,7 +65,7 @@ class TrafficFlowFilter : public cSimpleModule
 
 
   protected:
-    int numInitStages() const override { return inet::INITSTAGE_LAST + 1; }
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;
 
     // The TrafficFlowFilter module may receive messages only from the input interface of its compound module

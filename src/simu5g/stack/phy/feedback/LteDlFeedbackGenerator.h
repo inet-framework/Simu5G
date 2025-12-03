@@ -104,6 +104,8 @@ class LteDlFeedbackGenerator : public cSimpleModule
      */
     void initialize(int stage) override;
 
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
+
     /**
      * Manage self messages for sensing and transmission.
      * @param msg self message for sensing or transmission
@@ -114,7 +116,6 @@ class LteDlFeedbackGenerator : public cSimpleModule
      * Channel sensing
      */
     void sensing(FbPeriodicity per);
-    int numInitStages() const override { return inet::INITSTAGE_LINK_LAYER + 1; }
 
   public:
 

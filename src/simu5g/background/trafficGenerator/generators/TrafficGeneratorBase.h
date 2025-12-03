@@ -104,7 +104,7 @@ class TrafficGeneratorBase : public cSimpleModule, public cListener
     static simsignal_t bgHarqErrorRateUlSignal_;
 
     void initialize(int stage) override;
-    int numInitStages() const override { return inet::INITSTAGE_SINGLE_MOBILITY + 1; }
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
 
     // get new values for SINR and CQI

@@ -210,7 +210,7 @@ class BaseStationStatsCollector : public cSimpleModule
   protected:
     void initialize(int stages) override;
 
-    int numInitStages() const override { return INITSTAGE_LAST; }
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
     void handleMessage(cMessage *msg) override;
 
