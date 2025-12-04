@@ -39,7 +39,7 @@ void BackgroundCellTrafficManager::initialize(int stage)
         else
             bgAmc_ = new BackgroundCellAmc(binder_);
     }
-    if (stage == INITSTAGE_SIMU5G_LAST_MINUS_ONE) {
+    if (stage == INITSTAGE_SIMU5G_BACKGROUNDTRAFFICMANAGER) {
         bsTxPower_ = bgScheduler_->getTxPower();
         bsCoord_ = bgScheduler_->getPosition();
     }

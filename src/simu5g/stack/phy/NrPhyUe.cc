@@ -25,7 +25,6 @@ void NrPhyUe::initialize(int stage)
 {
     LtePhyUeD2D::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
-        isNr_ = (strcmp(getFullName(), "nrPhy") == 0);
         otherPhy_.reference(this, "otherPhyModule", true);
     }
 }

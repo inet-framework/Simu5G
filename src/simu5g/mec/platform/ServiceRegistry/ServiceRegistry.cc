@@ -36,7 +36,7 @@ void ServiceRegistry::initialize(int stage)
 
     MecServiceBase::initialize(stage);
 
-    if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER_MINUS_ONE) {
+    if (stage == INITSTAGE_SIMU5G_SERVICE_PLATFORM_SETUP) {
         baseSubscriptionLocation_ = host_ + baseUriSubscriptions_ + "/";
     }
 }

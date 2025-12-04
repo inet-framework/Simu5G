@@ -331,7 +331,6 @@ class LtePdcpUe : public LtePdcpBase
     }
 
   public:
-    void initialize(int stage) override;
     void deleteEntities(MacNodeId nodeId) override;
 };
 
@@ -364,7 +363,6 @@ class LtePdcpEnb : public LtePdcpBase
     }
 
   public:
-    void initialize(int stage) override;
     void deleteEntities(MacNodeId nodeId) override;
 };
 

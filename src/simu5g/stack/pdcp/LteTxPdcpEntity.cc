@@ -32,8 +32,7 @@ namespace simu5g {
 Define_Module(LteTxPdcpEntity);
 
 void LteTxPdcpEntity::initialize(int stage) {
-{
-    if (stage == inet::INITSTAGE_LOCAL)
+    if (stage == inet::INITSTAGE_LOCAL) {
         pdcp_ = check_and_cast<LtePdcpBase *>(getParentModule());
 
         headerCompressedSize_ = B(pdcp_->par("headerCompressedSize"));

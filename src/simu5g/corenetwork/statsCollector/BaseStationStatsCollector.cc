@@ -33,13 +33,8 @@ BaseStationStatsCollector::~BaseStationStatsCollector()
 
 void BaseStationStatsCollector::initialize(int stage) {
 
-    if (stage == inet::INITSTAGE_LOCAL) {
-        EV << collectorType_ << "::initialize stage: " << stage << endl;
+    if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
         collectorType_ = par("collectorType").stringValue();
-    }
-    else if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
-        EV << collectorType_ << "::initialize stage: " << stage << endl;
-
         cModule *node = getContainingNode(this);
         ecgi_.plmn.mcc = node->par("mcc").stdstringValue();
         ecgi_.plmn.mnc = node->par("mnc").stdstringValue();

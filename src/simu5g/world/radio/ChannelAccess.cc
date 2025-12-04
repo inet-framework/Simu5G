@@ -67,6 +67,9 @@ void ChannelAccess::initialize(int stage)
             hostModule->subscribe(inet::IMobility::mobilityStateChangedSignal, this);
         }
     }
+    else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS) {
+        myRadioRef = cc->registerRadio(this);
+    }
     else if (stage == INITSTAGE_SIMU5G_SINGLE_MOBILITY) {
         if (!positionUpdateArrived && hostModule->isSubscribed(inet::IMobility::mobilityStateChangedSignal, this)) {
             // ...else, get the initial position from the display string
@@ -85,7 +88,6 @@ void ChannelAccess::initialize(int stage)
                       " from '@display' attribute, or configure Mobility for this host.",
                         hostModule->getFullPath().c_str());
         }
-        myRadioRef = cc->registerRadio(this);
         cc->setRadioPosition(myRadioRef, radioPos);
     }
 }

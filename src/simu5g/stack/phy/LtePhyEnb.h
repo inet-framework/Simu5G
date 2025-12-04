@@ -39,6 +39,8 @@ class LtePhyEnb : public LtePhyBase
      */
     DasFilter *das_ = nullptr;
 
+    int randomChannelIndex_;
+
     void initialize(int stage) override;
 
     void handleSelfMessage(cMessage *msg) override;

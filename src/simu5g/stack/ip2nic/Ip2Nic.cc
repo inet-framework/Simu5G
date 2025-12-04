@@ -57,26 +57,20 @@ void Ip2Nic::initialize(int stage)
         dualConnectivityEnabled_ = nic->par("dualConnectivityEnabled").boolValue();
         if (dualConnectivityEnabled_)
             sbTable_ = new SplitBearersTable();
-
+    }
+    else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS) {
         if (nodeType_ == NODEB) {
             // TODO: not so elegant
             cModule *bs = getContainingNode(this);
             nodeId_ = MacNodeId(bs->par("macNodeId").intValue());
             bool isNr = bs->par("nodeType").stdstringValue() == "GNODEB";
             binder_->registerNode(nodeId_, bs, nodeType_, isNr);
-            MacNodeId masterId = MacNodeId(bs->par("masterId").intValue());
-            binder_->registerMasterNode(masterId, nodeId_);  // note: even if masterId == NODEID_NONE!
-
-            nrNodeId_ = NODEID_NONE;
 
             // display node ID above node icon
             bs->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", nodeId_).c_str());
         }
-    }
-    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
-        if (nodeType_ == UE) {
+        else if (nodeType_ == UE) {
             cModule *ue = getContainingNode(this);
-
             masterId_ = MacNodeId(ue->par("servingNodeId").intValue());
             nodeId_ = MacNodeId(ue->par("macNodeId").intValue());
             binder_->registerNode(nodeId_, ue, nodeType_, false);
@@ -88,13 +82,21 @@ void Ip2Nic::initialize(int stage)
                 binder_->registerNode(nrNodeId_, ue, nodeType_, true);
                 ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d/%d", nodeId_, nrNodeId_).c_str());
             }
+        }
 
+        registerInterface();
+    }
+    else if (stage == INITSTAGE_SIMU5G_NODE_RELATIONSHIPS) {
+        if (nodeType_ == NODEB) {
+            cModule *bs = getContainingNode(this);
+            MacNodeId masterId = MacNodeId(bs->par("masterId").intValue());
+            binder_->registerMasterNode(masterId, nodeId_);  // note: even if masterId == NODEID_NONE!
+        }
+        if (nodeType_ == UE) {
             binder_->registerServingNode(masterId_, nodeId_);
             if (nrNodeId_ != NODEID_NONE)
                 binder_->registerServingNode(nrMasterId_, nrNodeId_);
         }
-
-        registerInterface();
     }
     else if (stage == INITSTAGE_SIMU5G_STATIC_ROUTING) {
         if (nodeType_ == UE) {

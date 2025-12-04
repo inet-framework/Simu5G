@@ -49,7 +49,8 @@ class ComponentCarrier : public cSimpleModule
 
   public:
 
-    void initialize() override;
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
     /*
      * Returns the carrier frequency

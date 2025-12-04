@@ -51,7 +51,8 @@ void BackgroundScheduler::initialize(int stage)
         prevBandStatus_[DL].resize(numBands_, 0);
         ulPrevBandAllocation_.resize(numBands_, NODEID_NONE);
         ulBandAllocation_.resize(numBands_, NODEID_NONE);
-
+    }
+    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         binder_.reference(this, "binderModule", true);
 
         // TODO: if BackgroundScheduler interference is disabled, do not send selfMessages
@@ -63,8 +64,7 @@ void BackgroundScheduler::initialize(int stage)
 
         // register to get a notification when position changes
         getParentModule()->subscribe(inet::IMobility::mobilityStateChangedSignal, this);
-    }
-    if (stage == INITSTAGE_SIMU5G_LOCAL_PLUS_ONE) {
+
         // add this cell to the binder
         id_ = binder_->addBackgroundScheduler(this, carrierFrequency_);
 

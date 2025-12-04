@@ -48,8 +48,7 @@ void CellInfo::initialize(int stage)
         signalDl_ = par("signalDl");
         signalUl_ = par("signalUl");
         binder_.reference(this, "binderModule", true);
-    }
-    if (stage == INITSTAGE_SIMU5G_LOCAL_PLUS_ONE) {
+
         // get the total number of bands in the system
         totalBands_ = binder_->getTotalBands();
 

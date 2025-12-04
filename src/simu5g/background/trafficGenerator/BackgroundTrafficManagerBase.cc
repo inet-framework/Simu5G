@@ -58,7 +58,7 @@ void BackgroundTrafficManagerBase::initialize(int stage)
 
         phyPisaData_ = &(binder_->phyPisaData);
     }
-    if (stage == INITSTAGE_SIMU5G_LAST_MINUS_ONE) {
+    if (stage == INITSTAGE_SIMU5G_BACKGROUNDTRAFFICMANAGER) {
         BgTrafficManagerInfo *info = new BgTrafficManagerInfo();
         info->init = false;
         info->bgTrafficManager = this;

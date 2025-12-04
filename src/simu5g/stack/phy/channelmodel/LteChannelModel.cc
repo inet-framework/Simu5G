@@ -13,11 +13,10 @@
 
 namespace simu5g {
 
-//Define_Module(LteChannelModel);
 
 void LteChannelModel::initialize(int stage)
 {
-    if (stage == inet::INITSTAGE_LOCAL) {
+    if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
         binder_.reference(this, "binderModule", true);
 
         componentCarrier_.reference(this, "componentCarrierModule", true);
@@ -27,10 +26,11 @@ void LteChannelModel::initialize(int stage)
         carrierFrequencyGHz_ = GHz(carrierFrequency_).get();
         carrierFrequencyHz_ = Hz(carrierFrequency_).get();
         log10CarrierFrequencyGHz_ = log10(carrierFrequencyGHz_);
-
+    }
+    if (stage == INITSTAGE_SIMU5G_REGISTRATIONS) {
         // register the carrier to the cellInfo module and the binder
         cellInfo_.reference(this, "cellInfoModule", false);
-        if (cellInfo_ != nullptr) { // cInfo is NULL on UEs
+        if (cellInfo_ != nullptr) { // cellInfo is NULL on UEs
             cellInfo_->registerCarrier(carrierFrequency_, numBands_, componentCarrier_->getNumerologyIndex());
         }
     }

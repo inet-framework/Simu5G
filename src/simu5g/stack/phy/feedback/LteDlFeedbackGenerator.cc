@@ -45,15 +45,9 @@ void LteDlFeedbackGenerator::initialize(int stage)
         generatorType_ = getFeedbackGeneratorType(par("feedbackGeneratorType").stringValue());
 
         cModule *networkNode = getContainingNode(this);
-        // TODO: find a more elegant way
-        if (strcmp(getFullName(), "nrDlFbGen") == 0)
-            masterId_ = MacNodeId(networkNode->par("nrServingNodeId").intValue());
-        else
-            masterId_ = MacNodeId(networkNode->par("servingNodeId").intValue());
         nodeId_ = MacNodeId(networkNode->par("macNodeId").intValue());
 
         // Initialize timers
-
         tPeriodicSensing_ = new TTimer(this);
         tPeriodicSensing_->setTimerId(PERIODIC_SENSING);
 
@@ -69,6 +63,14 @@ void LteDlFeedbackGenerator::initialize(int stage)
         WATCH(fbDelay_);
         WATCH(usePeriodic_);
         WATCH(currentTxMode_);
+    }
+    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
+        cModule *networkNode = getContainingNode(this);
+        // TODO: find a more elegant way
+        if (strcmp(getFullName(), "nrDlFbGen") == 0)
+            masterId_ = MacNodeId(networkNode->par("nrServingNodeId").intValue());
+        else
+            masterId_ = MacNodeId(networkNode->par("servingNodeId").intValue());
     }
     else if (stage == INITSTAGE_SIMU5G_LINK_LAYER) {
         EV << "DLFeedbackGenerator Stage " << stage << " nodeid: " << nodeId_

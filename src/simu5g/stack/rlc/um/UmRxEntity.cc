@@ -630,7 +630,6 @@ void UmRxEntity::reassemble(unsigned int index)
 void UmRxEntity::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
-        binder_.reference(this, "binderModule", true);
         timeout_ = par("timeout").doubleValue();
         rxWindowDesc_.clear();
         rxWindowDesc_.windowSize_ = par("rxWindowSize");
@@ -642,8 +641,6 @@ void UmRxEntity::initialize(int stage)
         //statistics
 
         LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
-        nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
-        // ASSERT(nodeB_ != nullptr); -- see commit message why this is commented out
 
         dir_ = mac->getNodeType() == NODEB ? UL : DL;
 
@@ -651,6 +648,12 @@ void UmRxEntity::initialize(int stage)
         ownerNodeId_ = mac->getMacNodeId();
 
         WATCH(timeout_);
+    }
+    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
+        binder_.reference(this, "binderModule", true);
+        LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this); // duplicate, see above
+        nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
+        // ASSERT(nodeB_ != nullptr); -- see commit message why this is commented out
     }
 }
 

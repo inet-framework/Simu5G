@@ -71,11 +71,6 @@ void LtePdcpEnbD2D::analyzePacket(inet::Packet *pkt)
         lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
 }
 
-void LtePdcpEnbD2D::initialize(int stage)
-{
-    LtePdcpEnb::initialize(stage);
-}
-
 void LtePdcpEnbD2D::handleMessage(cMessage *msg)
 {
     auto pkt = check_and_cast<inet::Packet *>(msg);

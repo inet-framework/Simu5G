@@ -50,7 +50,7 @@ class LteChannelModel : public cSimpleModule
     double log10CarrierFrequencyGHz_;
 
     // Number of bands for this carrier
-    unsigned int numBands_;
+    unsigned int numBands_ = -1;
 
   public:
 

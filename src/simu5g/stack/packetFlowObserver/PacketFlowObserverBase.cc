@@ -22,7 +22,7 @@ namespace simu5g {
 
 void PacketFlowObserverBase::initialize(int stage)
 {
-    if (stage == 1) {
+    if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
         LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
         nodeType_ = mac->getNodeType();
         harqProcesses_ = (nodeType_ == UE) ? UE_TX_HARQ_PROCESSES : ENB_TX_HARQ_PROCESSES;

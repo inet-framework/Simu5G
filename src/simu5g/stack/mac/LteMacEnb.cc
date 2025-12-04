@@ -196,7 +196,7 @@ void LteMacEnb::initialize(int stage)
             ++i;
         }
     }
-    else if (stage == INITSTAGE_SIMU5G_LAST) {
+    else if (stage == INITSTAGE_SIMU5G_AFTER_CARRIER_REGISTRATION) {
         // Start TTI tick
         // the period is equal to the minimum period according to the numerologies used by the carriers in this node
         ttiTick_ = new cMessage("ttiTick_");

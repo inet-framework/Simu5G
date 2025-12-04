@@ -28,7 +28,7 @@ constexpr const char *DATAPORT_OUT = "dataPort$o";
 void LteX2Manager::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
-        // get the node id
+        // get the node id (this is OK in INITSTAGE_LOCAL because the macCellId parameter of NodeBs are non-mutable. i.e. not changed programmatically during initialization)
         nodeId_ = MacNodeId(inet::getContainingNode(this)->par("macCellId").intValue());
         ASSERT(nodeId_ != MacNodeId(-1));// i.e. already set programmatically
 

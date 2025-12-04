@@ -46,15 +46,19 @@ void LtePhyEnb::initialize(int stage)
         nodeId_ = MacNodeId(hostModule->par("macNodeId").intValue());
         EV << "Local MacNodeId: " << nodeId_ << endl;
 
-        cellInfo_ = binder_->getCellInfoByNodeId(nodeId_);
-        if (cellInfo_ != nullptr) {
-            cellInfo_->channelUpdate(nodeId_, intuniform(1, binder_->phyPisaData.maxChannel2()));
-            das_ = new DasFilter(this, binder_, cellInfo_->getRemoteAntennaSet(), 0);
-        }
         isNr_ = (std::string(getContainingNicModule(this)->getComponentType()->getName()) == "NrNicEnb");
+
+        randomChannelIndex_ = intuniform(1, binder_->phyPisaData.maxChannel2()); // NOTE: moving this to the next stage (where it is used will change random number stream and CHANGE FINGERPRINTS!
 
         nodeType_ = NODEB;
         WATCH(nodeType_);
+    }
+    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
+        cellInfo_ = binder_->getCellInfoByNodeId(nodeId_);
+        if (cellInfo_ != nullptr) {
+            cellInfo_->channelUpdate(nodeId_, randomChannelIndex_);
+            das_ = new DasFilter(this, binder_, cellInfo_->getRemoteAntennaSet(), 0);
+        }
     }
     else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
         initializeFeedbackComputation();

@@ -36,17 +36,7 @@ void LteMacEnbD2D::initialize(int stage)
         std::string rlcUmType = rlcUm->getComponentType()->getName();
         if (rlcUmType != "LteRlcUmD2D")
             throw cRuntimeError("LteMacEnbD2D::initialize - '%s' must be 'LteRlcUmD2D' instead of '%s'", par("rlcUmModule").stringValue(), rlcUmType.c_str());
-    }
-    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
-        usePreconfiguredTxParams_ = par("usePreconfiguredTxParams");
-        Cqi d2dCqi = par("d2dCqi");
-        if (usePreconfiguredTxParams_)
-            check_and_cast<AmcPilotD2D *>(amc_->getPilot())->setPreconfiguredTxParams(d2dCqi);
 
-        msHarqInterrupt_ = par("msHarqInterrupt").boolValue();
-        msClearRlcBuffer_ = par("msClearRlcBuffer").boolValue();
-    }
-    else if (stage == INITSTAGE_SIMU5G_LAST) { // be sure that all UEs have been initialized
         reuseD2D_ = par("reuseD2D");
         reuseD2DMulti_ = par("reuseD2DMulti");
 
@@ -67,6 +57,16 @@ void LteMacEnbD2D::initialize(int stage)
 
             scheduleAt(NOW + 0.05, new cMessage("updateConflictGraph"));
         }
+
+    }
+    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
+        usePreconfiguredTxParams_ = par("usePreconfiguredTxParams");
+        Cqi d2dCqi = par("d2dCqi");
+        if (usePreconfiguredTxParams_)
+            check_and_cast<AmcPilotD2D *>(amc_->getPilot())->setPreconfiguredTxParams(d2dCqi);
+
+        msHarqInterrupt_ = par("msHarqInterrupt").boolValue();
+        msClearRlcBuffer_ = par("msClearRlcBuffer").boolValue();
     }
 }
 

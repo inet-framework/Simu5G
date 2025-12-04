@@ -11,7 +11,7 @@
 
 #include <assert.h>
 #include "simu5g/stack/phy/LtePhyUe.h"
-
+#include "simu5g/stack/phy/NrPhyUe.h"
 #include "simu5g/stack/ip2nic/Ip2Nic.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
@@ -71,8 +71,7 @@ void LtePhyUe::initialize(int stage)
         WATCH(hysteresisTh_);
         WATCH(hysteresisFactor_);
         WATCH(handoverDelta_);
-    }
-    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
+
         txPower_ = ueTxPower_;
 
         handoverStarter_ = new cMessage("handoverStarter");
@@ -84,6 +83,9 @@ void LtePhyUe::initialize(int stage)
         pdcp_.reference(this, "pdcpModule", true);
         ip2nic_.reference(this, "ip2nicModule", true);
         fbGen_.reference(this, "feedbackGeneratorModule", true);
+
+        // setting isNr_ was originally done in the NrPhyUe subclass, but it is needed here
+        isNr_ = dynamic_cast<NrPhyUe*>(this) && strcmp(getFullName(), "nrPhy") == 0;
 
         // get local id
         if (isNr_)

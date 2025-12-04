@@ -22,7 +22,7 @@ void VirtualisationInfrastructureManager::initialize(int stage)
     cSimpleModule::initialize(stage);
 
     // avoid multiple initializations
-    if (stage != INITSTAGE_SIMU5G_APPLICATION_LAYER_MINUS_ONE)
+    if (stage != INITSTAGE_SIMU5G_SERVICE_PLATFORM_SETUP)
         return;
 
     EV << "VirtualisationInfrastructureManager::initialize - stage " << stage << endl;

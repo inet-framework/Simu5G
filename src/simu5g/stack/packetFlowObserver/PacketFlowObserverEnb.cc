@@ -27,11 +27,11 @@ Define_Module(PacketFlowObserverEnb);
 
 void PacketFlowObserverEnb::initialize(int stage)
 {
+    PacketFlowObserverBase::initialize(stage);
+
     if (stage == inet::INITSTAGE_LOCAL) {
-        PacketFlowObserverBase::initialize(stage);
         if (headerCompressedSize_ == -1)
             headerCompressedSize_ = 0;
-
         timesUe_.setName("delay");
     }
 }

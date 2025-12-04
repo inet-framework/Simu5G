@@ -78,7 +78,7 @@ class ChannelControl : public cSimpleModule, public IChannelControl
     ChannelTransmissionLists transmissions; // indexed by channel number (size=numChannels)
 
     /** used to clear the transmission list from time to time */
-    simtime_t lastOngoingTransmissionsUpdate;
+    simtime_t lastOngoingTransmissionsUpdate = 0;
 
     friend std::ostream& operator<<(std::ostream&, const RadioEntry&);
     friend std::ostream& operator<<(std::ostream&, const TransmissionList&);

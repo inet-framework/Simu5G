@@ -411,12 +411,6 @@ LteRxPdcpEntity *LtePdcpBase::createRxEntity(MacCid cid)
     return rxEnt;
 }
 
-
-void LtePdcpEnb::initialize(int stage)
-{
-    LtePdcpBase::initialize(stage);
-}
-
 void LtePdcpEnb::deleteEntities(MacNodeId nodeId)
 {
     Enter_Method_Silent();
@@ -457,15 +451,6 @@ void LtePdcpUe::deleteEntities(MacNodeId nodeId)
         rxEntity->deleteModule();  // Delete Entity
     }
     rxEntities_.clear(); // Clear all entities after deletion
-}
-
-void LtePdcpUe::initialize(int stage)
-{
-    LtePdcpBase::initialize(stage);
-    if (stage == INITSTAGE_SIMU5G_NETWORK_LAYER) {
-        // refresh value, the parameter may have changed between inet::INITSTAGE_LOCAL and INITSTAGE_SIMU5G_NETWORK_LAYER
-        nodeId_ = MacNodeId(getContainingNode(this)->par("macNodeId").intValue());
-    }
 }
 
 } //namespace

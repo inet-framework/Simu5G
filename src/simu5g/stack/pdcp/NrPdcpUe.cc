@@ -23,7 +23,11 @@ Define_Module(NrPdcpUe);
 
 void NrPdcpUe::initialize(int stage)
 {
+    LtePdcpUeD2D::initialize(stage);
+
     if (stage == inet::INITSTAGE_LOCAL) {
+        nrNodeId_ = MacNodeId(getContainingNode(this)->par("nrMacNodeId").intValue());
+
         inet::NetworkInterface *nic = inet::getContainingNicModule(this);
         dualConnectivityEnabled_ = nic->par("dualConnectivityEnabled").boolValue();
 
@@ -35,11 +39,6 @@ void NrPdcpUe::initialize(int stage)
         //nrAmSapInGate_ = gate("AM_Sap$i", 1);
         nrAmSapOutGate_ = gate("AM_Sap$o", 1);
     }
-
-    if (stage == INITSTAGE_SIMU5G_NETWORK_CONFIGURATION)
-        nrNodeId_ = MacNodeId(getContainingNode(this)->par("nrMacNodeId").intValue());
-
-    LtePdcpUeD2D::initialize(stage);
 }
 
 MacNodeId NrPdcpUe::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)

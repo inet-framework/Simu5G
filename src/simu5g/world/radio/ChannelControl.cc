@@ -56,8 +56,6 @@ void ChannelControl::initialize(int stage)
         numChannels = par("numChannels");
         transmissions.resize(numChannels);
 
-        lastOngoingTransmissionsUpdate = 0;
-
         maxInterferenceDistance = calcInterfDist();
     }
 }

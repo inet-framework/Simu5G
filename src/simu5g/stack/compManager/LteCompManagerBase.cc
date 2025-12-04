@@ -27,19 +27,10 @@ void LteCompManagerBase::initialize(int stage)
         // get the node id
         nodeId_ = MacNodeId(inet::getContainingNode(this)->par("macCellId").intValue());
         ASSERT(nodeId_ != MacNodeId(-1));  // i.e. already set programmatically
-    
-    // get reference to the binder
-        Binder *binder = inet::getModuleFromPar<Binder>(par("binderModule"), this);
 
         // get reference to the gates
         x2ManagerInGate_ = gate("x2ManagerIn");
         x2ManagerOutGate_ = gate("x2ManagerOut");
-
-        // get reference to mac layer
-        mac_ = check_and_cast<LteMacEnb *>(binder->getMacByNodeId(nodeId_));
-
-        // get the number of available bands
-        numBands_ = mac_->getCellInfo()->getNumBands();
 
         nodeType_ = parseNodeType(par("compNodeType").stringValue());
 
@@ -77,6 +68,16 @@ void LteCompManagerBase::initialize(int stage)
             compClientTick_->setSchedulingPriority(2);        // compClientTick_ after MAC's TTI TICK. TODO check if it must be done before or after..
             scheduleAt(NOW + TTI, compClientTick_);
         }
+    }
+    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
+        // get reference to the binder
+        Binder *binder = inet::getModuleFromPar<Binder>(par("binderModule"), this);
+
+        // get reference to mac layer
+        mac_ = check_and_cast<LteMacEnb *>(binder->getMacByNodeId(nodeId_));
+
+        // get the number of available bands
+        numBands_ = mac_->getCellInfo()->getNumBands();
     }
 }
 

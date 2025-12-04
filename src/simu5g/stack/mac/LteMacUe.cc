@@ -133,13 +133,13 @@ void LteMacUe::initialize(int stage)
             binder_->setMacNodeId(Ipv4Address(extHostAddress), nodeId_);
         }
     }
-    else if (stage == INITSTAGE_SIMU5G_TRANSPORT_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         const auto& channelModels = phy_->getChannelModels();
         for (const auto& cm : channelModels) {
             lcgScheduler_[cm.first] = new LteSchedulerUeUl(this, cm.first);
         }
     }
-    else if (stage == INITSTAGE_SIMU5G_LAST) {
+    else if (stage == INITSTAGE_SIMU5G_AFTER_CARRIER_REGISTRATION) {
 
         // Start TTI tick
         ttiTick_ = new cMessage("ttiTick_");

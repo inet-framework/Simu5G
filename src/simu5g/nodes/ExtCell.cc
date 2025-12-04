@@ -44,8 +44,7 @@ void ExtCell::initialize(int stage)
 
         carrierFrequency_ = GHz(par("carrierFrequency"));
         numBands_ = par("numBands");
-    }
-    if (stage == INITSTAGE_SIMU5G_LOCAL_PLUS_ONE) {
+
         binder_.reference(this, "binderModule", true);
 
         // initialize band status structures
@@ -88,7 +87,8 @@ void ExtCell::initialize(int stage)
             ttiTick_->setSchedulingPriority(1);        // TTI TICK after other messages
             scheduleAt(NOW + TTI, ttiTick_);
         }
-
+    }
+    if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         // add this cell to the binder
         id_ = binder_->addExtCell(this, carrierFrequency_);
     }
