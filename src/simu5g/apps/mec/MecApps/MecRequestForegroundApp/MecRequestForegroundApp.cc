@@ -31,7 +31,7 @@ MecRequestForegroundApp::~MecRequestForegroundApp() {
 
 void MecRequestForegroundApp::initialize(int stage) {
     MecAppBase::initialize(stage);
-    if (stage == inet::INITSTAGE_APPLICATION_LAYER) {
+    if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
         mp1Socket_ = addNewSocket();
         cMessage *m = new cMessage("connectMp1");
         mecAppId = getId();

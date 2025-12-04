@@ -72,7 +72,7 @@ void LtePhyUe::initialize(int stage)
         WATCH(hysteresisFactor_);
         WATCH(handoverDelta_);
     }
-    else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT) {
+    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
         txPower_ = ueTxPower_;
 
         handoverStarter_ = new cMessage("handoverStarter");
@@ -92,7 +92,7 @@ void LtePhyUe::initialize(int stage)
             nodeId_ = MacNodeId(hostModule->par("macNodeId").intValue());
         EV << "Local MacNodeId: " << nodeId_ << endl;
     }
-    else if (stage == inet::INITSTAGE_PHYSICAL_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_LAYER) {
         // get serving cell from configuration
         // TODO find a more elegant way
         if (isNr_)
@@ -133,8 +133,8 @@ void LtePhyUe::initialize(int stage)
             masterMobility_ = check_and_cast<IMobility *>(masterModule->getSubmodule("mobility"));
         }
     }
-    else if (stage == inet::INITSTAGE_NETWORK_CONFIGURATION) {
-        // get cellInfo at this stage because the next hop of the node is registered in the Ip2Nic module at the INITSTAGE_NETWORK_LAYER
+    else if (stage == INITSTAGE_SIMU5G_NETWORK_CONFIGURATION) {
+        // get cellInfo at this stage because the next hop of the node is registered in the Ip2Nic module at the INITSTAGE_SIMU5G_NETWORK_LAYER
         if (masterId_ != NODEID_NONE) {
             cellInfo_ = binder_->getCellInfoByNodeId(nodeId_);
             int index = intuniform(0, binder_->phyPisaData.maxChannel() - 1);

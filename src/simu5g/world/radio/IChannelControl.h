@@ -18,14 +18,12 @@
 
 #include <inet/common/INETDefs.h>
 #include <inet/common/geometry/common/Coord.h>
+#include "simu5g/common/LteDefs.h"
 #include "simu5g/stack/phy/packet/AirFrame_m.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
-
-// Forward declarations
-class AirFrame;
 
 /**
  * Interface to implement for a module that controls radio frequency channel access.

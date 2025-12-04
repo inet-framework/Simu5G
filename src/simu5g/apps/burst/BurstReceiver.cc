@@ -22,7 +22,7 @@ void BurstReceiver::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
 
-    if (stage == INITSTAGE_APPLICATION_LAYER) {
+    if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
         int port = par("localPort");
         EV << "BurstReceiver::initialize - binding to port: local:" << port << endl;
         if (port != -1) {

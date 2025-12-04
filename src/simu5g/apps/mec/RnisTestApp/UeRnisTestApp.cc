@@ -41,7 +41,7 @@ void UeRnisTestApp::initialize(int stage)
     EV << "UeRnisTestApp::initialize - stage " << stage << endl;
     cSimpleModule::initialize(stage);
     // avoid multiple initializations
-    if (stage != inet::INITSTAGE_APPLICATION_LAYER)
+    if (stage != INITSTAGE_SIMU5G_APPLICATION_LAYER)
         return;
 
     log = par("logger").boolValue();

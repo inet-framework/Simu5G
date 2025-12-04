@@ -43,7 +43,7 @@ void LocationService::initialize(int stage)
 {
     MecServiceBase2::initialize(stage);
 
-    if (stage == inet::INITSTAGE_APPLICATION_LAYER) {
+    if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
         LocationResource_.addEnodeB(eNodeB_);
         LocationResource_.addBinder(binder_);
         LocationResource_.setBaseUri(host_ + baseUriQueries_);

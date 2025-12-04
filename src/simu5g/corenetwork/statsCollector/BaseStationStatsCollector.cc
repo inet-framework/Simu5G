@@ -37,7 +37,7 @@ void BaseStationStatsCollector::initialize(int stage) {
         EV << collectorType_ << "::initialize stage: " << stage << endl;
         collectorType_ = par("collectorType").stringValue();
     }
-    else if (stage == inet::INITSTAGE_APPLICATION_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
         EV << collectorType_ << "::initialize stage: " << stage << endl;
 
         cModule *node = getContainingNode(this);

@@ -51,14 +51,14 @@ void BackgroundTrafficManagerBase::initialize(int stage)
         numBgUEs_ = par("numBgUes");
         binder_.reference(this, "binderModule", true);
     }
-    if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT) {
+    if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
         // create vector of BackgroundUEs
         for (int i = 0; i < numBgUEs_; i++)
             bgUe_.push_back(check_and_cast<TrafficGeneratorBase *>(getParentModule()->getSubmodule("bgUE", i)->getSubmodule("generator")));
 
         phyPisaData_ = &(binder_->phyPisaData);
     }
-    if (stage == inet::INITSTAGE_LAST - 1) {
+    if (stage == INITSTAGE_SIMU5G_LAST_MINUS_ONE) {
         BgTrafficManagerInfo *info = new BgTrafficManagerInfo();
         info->init = false;
         info->bgTrafficManager = this;

@@ -55,15 +55,15 @@ LteMacUe::~LteMacUe()
 void LteMacUe::initialize(int stage)
 {
     LteMacBase::initialize(stage);
-    if (stage == INITSTAGE_LOCAL) {
+    if (stage == inet::INITSTAGE_LOCAL) {
     }
-    else if (stage == INITSTAGE_LINK_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_LINK_LAYER) {
         if (strcmp(getFullName(), "nrMac") == 0)
             cellId_ = MacNodeId(networkNode_->par("nrServingNodeId").intValue());
         else
             cellId_ = MacNodeId(networkNode_->par("servingNodeId").intValue());
     }
-    else if (stage == INITSTAGE_NETWORK_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_NETWORK_LAYER) {
         if (strcmp(getFullName(), "nrMac") == 0)
             nodeId_ = MacNodeId(networkNode_->par("nrMacNodeId").intValue());
         else
@@ -133,13 +133,13 @@ void LteMacUe::initialize(int stage)
             binder_->setMacNodeId(Ipv4Address(extHostAddress), nodeId_);
         }
     }
-    else if (stage == inet::INITSTAGE_TRANSPORT_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_TRANSPORT_LAYER) {
         const auto& channelModels = phy_->getChannelModels();
         for (const auto& cm : channelModels) {
             lcgScheduler_[cm.first] = new LteSchedulerUeUl(this, cm.first);
         }
     }
-    else if (stage == inet::INITSTAGE_LAST) {
+    else if (stage == INITSTAGE_SIMU5G_LAST) {
 
         // Start TTI tick
         ttiTick_ = new cMessage("ttiTick_");

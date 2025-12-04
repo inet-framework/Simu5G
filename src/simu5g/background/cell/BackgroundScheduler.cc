@@ -64,7 +64,7 @@ void BackgroundScheduler::initialize(int stage)
         // register to get a notification when position changes
         getParentModule()->subscribe(inet::IMobility::mobilityStateChangedSignal, this);
     }
-    if (stage == inet::INITSTAGE_LOCAL + 1) {
+    if (stage == INITSTAGE_SIMU5G_LOCAL_PLUS_ONE) {
         // add this cell to the binder
         id_ = binder_->addBackgroundScheduler(this, carrierFrequency_);
 

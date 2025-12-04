@@ -48,7 +48,7 @@ void LtePhyBase::initialize(int stage)
         multicastD2DRange_ = par("multicastD2DRange");
         enableMulticastD2DRangeCheck_ = par("enableMulticastD2DRangeCheck");
     }
-    else if (stage == inet::INITSTAGE_PHYSICAL_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_LAYER) {
         initializeChannelModel();
     }
 }

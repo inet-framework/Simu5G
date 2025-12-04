@@ -46,7 +46,7 @@ void RniService::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         L2MeasResource_.setBinder(binder_);
     }
-    else if (stage == inet::INITSTAGE_APPLICATION_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
         L2MeasResource_.addEnodeB(eNodeB_);
         baseSubscriptionLocation_ = host_ + baseUriSubscriptions_ + "/";
     }

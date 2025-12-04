@@ -22,11 +22,11 @@ void BackgroundTrafficManager::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         phy_.reference(this, "phyModule", true);
     }
-    if (stage == inet::INITSTAGE_PHYSICAL_LAYER) {
+    if (stage == INITSTAGE_SIMU5G_PHYSICAL_LAYER) {
         // Get the reference to the MAC layer
         mac_.reference(this, "macModule", true); // TODO: mac_ used in BackgroundTrafficManagerBase
     }
-    if (stage == inet::INITSTAGE_LAST - 1) {
+    if (stage == INITSTAGE_SIMU5G_LAST_MINUS_ONE) {
         // Get the reference to the channel model for the given carrier
         bsTxPower_ = phy_->getTxPwr();
         bsCoord_ = phy_->getCoord();

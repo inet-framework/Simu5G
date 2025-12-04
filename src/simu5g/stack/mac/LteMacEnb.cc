@@ -134,7 +134,7 @@ void LteMacEnb::initialize(int stage)
         eNodeBCount = par("eNodeBCount");
         WATCH_MAP(bsrbuf_);
     }
-    else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT) {
+    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
         // Create and initialize AMC module
         std::string amcType = par("amcType").stdstringValue();
         int numAntennas = getNumAntennas();
@@ -172,7 +172,7 @@ void LteMacEnb::initialize(int stage)
         info->eNodeB = hostModule;  // reference to the eNodeB module
         binder_->addEnbInfo(info);
     }
-    else if (stage == inet::INITSTAGE_LINK_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_LINK_LAYER) {
         // Create and initialize MAC Downlink scheduler
         if (enbSchedulerDl_ == nullptr) {
             enbSchedulerDl_ = new LteSchedulerEnbDl();
@@ -196,7 +196,7 @@ void LteMacEnb::initialize(int stage)
             ++i;
         }
     }
-    else if (stage == inet::INITSTAGE_LAST) {
+    else if (stage == INITSTAGE_SIMU5G_LAST) {
         // Start TTI tick
         // the period is equal to the minimum period according to the numerologies used by the carriers in this node
         ttiTick_ = new cMessage("ttiTick_");

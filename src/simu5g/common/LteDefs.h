@@ -21,6 +21,7 @@
 
 #include <omnetpp.h>
 #include "simu5g/common/features.h"
+#include "simu5g/common/InitStages.h"
 
 #endif
 

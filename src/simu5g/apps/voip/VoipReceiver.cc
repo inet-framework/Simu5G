@@ -42,7 +42,7 @@ VoipReceiver::~VoipReceiver()
 
 void VoipReceiver::initialize(int stage)
 {
-    if (stage != inet::INITSTAGE_APPLICATION_LAYER)
+    if (stage != INITSTAGE_SIMU5G_APPLICATION_LAYER)
         return;
 
     emodel_Ie_ = par("emodel_Ie");

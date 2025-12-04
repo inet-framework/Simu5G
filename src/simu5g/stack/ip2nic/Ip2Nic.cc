@@ -73,7 +73,7 @@ void Ip2Nic::initialize(int stage)
             bs->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", nodeId_).c_str());
         }
     }
-    else if (stage == INITSTAGE_PHYSICAL_ENVIRONMENT) {
+    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
         if (nodeType_ == UE) {
             cModule *ue = getContainingNode(this);
 
@@ -96,7 +96,7 @@ void Ip2Nic::initialize(int stage)
 
         registerInterface();
     }
-    else if (stage == inet::INITSTAGE_STATIC_ROUTING) {
+    else if (stage == INITSTAGE_SIMU5G_STATIC_ROUTING) {
         if (nodeType_ == UE) {
             // TODO: shift to routing stage
             // if the UE has been created dynamically, we need to manually add a default route having our cellular interface as output interface
@@ -116,14 +116,14 @@ void Ip2Nic::initialize(int stage)
 
                 // workaround for nodes using the HostAutoConfigurator:
                 // Since the HostAutoConfigurator calls setBroadcast(true) for all
-                // interfaces in setupNetworking called in INITSTAGE_NETWORK_CONFIGURATION
+                // interfaces in setupNetworking called in INITSTAGE_SIMU5G_NETWORK_CONFIGURATION
                 // we must reset it to false since the cellular NIC does not support broadcasts
                 // at the moment
                 networkIf->setBroadcast(false);
             }
         }
     }
-    else if (stage == inet::INITSTAGE_TRANSPORT_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_TRANSPORT_LAYER) {
         registerMulticastGroups();
     }
 }

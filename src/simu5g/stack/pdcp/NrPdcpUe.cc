@@ -36,7 +36,7 @@ void NrPdcpUe::initialize(int stage)
         nrAmSapOutGate_ = gate("AM_Sap$o", 1);
     }
 
-    if (stage == inet::INITSTAGE_NETWORK_CONFIGURATION)
+    if (stage == INITSTAGE_SIMU5G_NETWORK_CONFIGURATION)
         nrNodeId_ = MacNodeId(getContainingNode(this)->par("nrMacNodeId").intValue());
 
     LtePdcpUeD2D::initialize(stage);

@@ -28,7 +28,7 @@ void Rrc::initialize(int stage)
         macModule.reference(this, "macModule", true);
         nrMacModule.reference(this, "nrMacModule", false);
     }
-    else if (stage == inet::INITSTAGE_NETWORK_CONFIGURATION) {
+    else if (stage == INITSTAGE_SIMU5G_NETWORK_CONFIGURATION) {
         cModule *containingNode = getContainingNode(this);
         MacNodeId nodeId = MacNodeId(containingNode->par("macNodeId").intValue());
         nodeType = getNodeTypeById(nodeId);

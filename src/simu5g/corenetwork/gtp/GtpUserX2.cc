@@ -30,7 +30,7 @@ void GtpUserX2::initialize(int stage)
     cSimpleModule::initialize(stage);
 
     // wait until all the IP addresses are configured
-    if (stage != inet::INITSTAGE_APPLICATION_LAYER)
+    if (stage != INITSTAGE_SIMU5G_APPLICATION_LAYER)
         return;
     localPort_ = par("localPort");
 

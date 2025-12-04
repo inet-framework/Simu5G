@@ -23,7 +23,7 @@ NrMacGnb::NrMacGnb() : LteMacEnbD2D()
 
 void NrMacGnb::initialize(int stage)
 {
-    if (stage == inet::INITSTAGE_LINK_LAYER) {
+    if (stage == INITSTAGE_SIMU5G_LINK_LAYER) {
         // Create and initialize NR MAC Uplink scheduler
         if (enbSchedulerUl_ == nullptr) {
             enbSchedulerUl_ = new NrSchedulerGnbUl();

@@ -27,7 +27,7 @@ void VodUdpServer::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
 
-    if (stage != INITSTAGE_APPLICATION_LAYER)
+    if (stage != INITSTAGE_SIMU5G_APPLICATION_LAYER)
         return;
     EV << "VoD Server initialize: stage " << stage << endl;
     serverPort = par("localPort");

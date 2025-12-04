@@ -462,8 +462,8 @@ void LtePdcpUe::deleteEntities(MacNodeId nodeId)
 void LtePdcpUe::initialize(int stage)
 {
     LtePdcpBase::initialize(stage);
-    if (stage == inet::INITSTAGE_NETWORK_LAYER) {
-        // refresh value, the parameter may have changed between INITSTAGE_LOCAL and INITSTAGE_NETWORK_LAYER
+    if (stage == INITSTAGE_SIMU5G_NETWORK_LAYER) {
+        // refresh value, the parameter may have changed between inet::INITSTAGE_LOCAL and INITSTAGE_SIMU5G_NETWORK_LAYER
         nodeId_ = MacNodeId(getContainingNode(this)->par("macNodeId").intValue());
     }
 }

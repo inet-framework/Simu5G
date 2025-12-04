@@ -56,7 +56,7 @@ void LtePhyEnb::initialize(int stage)
         nodeType_ = NODEB;
         WATCH(nodeType_);
     }
-    else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT) {
+    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
         initializeFeedbackComputation();
 
         //check eNb type and set TX power
@@ -83,7 +83,7 @@ void LtePhyEnb::initialize(int stage)
             scheduleAt(NOW, bdcStarter_);
         }
     }
-    else if (stage == INITSTAGE_LINK_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_LINK_LAYER) {
     }
 }
 

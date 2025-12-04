@@ -45,7 +45,7 @@ void ExtCell::initialize(int stage)
         carrierFrequency_ = GHz(par("carrierFrequency"));
         numBands_ = par("numBands");
     }
-    if (stage == inet::INITSTAGE_LOCAL + 1) {
+    if (stage == INITSTAGE_SIMU5G_LOCAL_PLUS_ONE) {
         binder_.reference(this, "binderModule", true);
 
         // initialize band status structures

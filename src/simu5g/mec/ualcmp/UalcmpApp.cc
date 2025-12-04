@@ -49,7 +49,7 @@ void UalcmpApp::initialize(int stage)
 
     EV << "UalcmpApp::initialize stage " << stage << endl;
 
-    if (stage == inet::INITSTAGE_APPLICATION_LAYER) {
+    if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
         baseSubscriptionLocation_ = host_ + baseUriSubscriptions_ + "/";
         mecOrchestrator_.reference(this, "mecOrchestratorHostname", true);
     }

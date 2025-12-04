@@ -31,7 +31,7 @@ BackgroundCellTrafficManager::~BackgroundCellTrafficManager()
 void BackgroundCellTrafficManager::initialize(int stage)
 {
     BackgroundTrafficManagerBase::initialize(stage);
-    if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT) {
+    if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
         bgScheduler_.reference(this, "bgSchedulerModule", true);
 
         if (bgScheduler_->isNr())
@@ -39,7 +39,7 @@ void BackgroundCellTrafficManager::initialize(int stage)
         else
             bgAmc_ = new BackgroundCellAmc(binder_);
     }
-    if (stage == inet::INITSTAGE_LAST - 1) {
+    if (stage == INITSTAGE_SIMU5G_LAST_MINUS_ONE) {
         bsTxPower_ = bgScheduler_->getTxPower();
         bsCoord_ = bgScheduler_->getPosition();
     }

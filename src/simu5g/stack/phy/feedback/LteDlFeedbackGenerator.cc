@@ -29,7 +29,7 @@ using namespace inet;
 void LteDlFeedbackGenerator::initialize(int stage)
 {
     EV << "DlFeedbackGenerator stage: " << stage << endl;
-    if (stage == INITSTAGE_LOCAL) {
+    if (stage == inet::INITSTAGE_LOCAL) {
         // Read NED parameters
         binder_.reference(this, "binderModule", true);
         fbPeriod_ = (simtime_t)(int(par("fbPeriod")) * TTI);// TTI -> seconds
@@ -70,7 +70,7 @@ void LteDlFeedbackGenerator::initialize(int stage)
         WATCH(usePeriodic_);
         WATCH(currentTxMode_);
     }
-    else if (stage == INITSTAGE_LINK_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_LINK_LAYER) {
         EV << "DLFeedbackGenerator Stage " << stage << " nodeid: " << nodeId_
            << " init" << endl;
 

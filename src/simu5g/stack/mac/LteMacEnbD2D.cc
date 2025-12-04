@@ -31,13 +31,13 @@ using namespace inet;
 void LteMacEnbD2D::initialize(int stage)
 {
     LteMacEnb::initialize(stage);
-    if (stage == INITSTAGE_LOCAL) {
+    if (stage == inet::INITSTAGE_LOCAL) {
         cModule *rlcUm = inet::getModuleFromPar<cModule>(par("rlcUmModule"), this);
         std::string rlcUmType = rlcUm->getComponentType()->getName();
         if (rlcUmType != "LteRlcUmD2D")
             throw cRuntimeError("LteMacEnbD2D::initialize - '%s' must be 'LteRlcUmD2D' instead of '%s'", par("rlcUmModule").stringValue(), rlcUmType.c_str());
     }
-    else if (stage == INITSTAGE_PHYSICAL_ENVIRONMENT) {
+    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
         usePreconfiguredTxParams_ = par("usePreconfiguredTxParams");
         Cqi d2dCqi = par("d2dCqi");
         if (usePreconfiguredTxParams_)
@@ -46,7 +46,7 @@ void LteMacEnbD2D::initialize(int stage)
         msHarqInterrupt_ = par("msHarqInterrupt").boolValue();
         msClearRlcBuffer_ = par("msClearRlcBuffer").boolValue();
     }
-    else if (stage == INITSTAGE_LAST) { // be sure that all UEs have been initialized
+    else if (stage == INITSTAGE_SIMU5G_LAST) { // be sure that all UEs have been initialized
         reuseD2D_ = par("reuseD2D");
         reuseD2DMulti_ = par("reuseD2DMulti");
 

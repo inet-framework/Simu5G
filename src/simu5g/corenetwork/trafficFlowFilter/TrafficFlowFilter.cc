@@ -24,7 +24,7 @@ using namespace omnetpp;
 void TrafficFlowFilter::initialize(int stage)
 {
     // wait until all the IP addresses are configured
-    if (stage != inet::INITSTAGE_NETWORK_LAYER)
+    if (stage != INITSTAGE_SIMU5G_NETWORK_LAYER)
         return;
 
     // get reference to the binder

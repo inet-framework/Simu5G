@@ -36,14 +36,14 @@ void CbrSender::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
 
-    if (stage == INITSTAGE_LOCAL) {
+    if (stage == inet::INITSTAGE_LOCAL) {
         sendTimer_ = new cMessage("selfSource");
         packetSize_ = par("packetSize");
         samplingTime = par("samplingTime");
         localPort_ = par("localPort");
         destPort_ = par("destPort");
     }
-    else if (stage == INITSTAGE_APPLICATION_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
         // calculating traffic starting time
         startTime_ = par("startTime");
         finishTime_ = par("finishTime");

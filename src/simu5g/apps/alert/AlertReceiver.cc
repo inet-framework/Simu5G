@@ -24,7 +24,7 @@ void AlertReceiver::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
 
-    if (stage != inet::INITSTAGE_APPLICATION_LAYER)
+    if (stage != INITSTAGE_SIMU5G_APPLICATION_LAYER)
         return;
 
     int port = par("localPort");

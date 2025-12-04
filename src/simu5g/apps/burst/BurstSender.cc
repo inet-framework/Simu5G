@@ -31,7 +31,7 @@ void BurstSender::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
 
-    if (stage == INITSTAGE_LOCAL) {
+    if (stage == inet::INITSTAGE_LOCAL) {
         burstTimer_ = new cMessage("selfBurst");
         packetTimer_ = new cMessage("selfPacket");
         packetSize_ = par("packetSize");
@@ -41,7 +41,7 @@ void BurstSender::initialize(int stage)
         localPort_ = par("localPort");
         destPort_ = par("destPort");
     }
-    else if (stage == INITSTAGE_APPLICATION_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
         initTraffic_ = new cMessage("initTraffic");
         initTraffic();
     }

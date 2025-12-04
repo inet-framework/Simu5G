@@ -55,7 +55,7 @@ MultihopD2D::~MultihopD2D()
 void MultihopD2D::initialize(int stage)
 {
     // avoid multiple initializations
-    if (stage == INITSTAGE_APPLICATION_LAYER) {
+    if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
         EV << "MultihopD2D initialize: stage " << stage << endl;
 
         localPort_ = par("localPort");
