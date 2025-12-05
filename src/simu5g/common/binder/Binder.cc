@@ -139,7 +139,7 @@ SlotFormat Binder::getSlotFormat(GHz carrierFrequency)
     return it->second.slotFormat;
 }
 
-MacNodeId Binder::registerNode(cModule *nodeModule, RanNodeType type, MacNodeId masterId, bool isNr)
+MacNodeId Binder::registerNode(cModule *nodeModule, RanNodeType type, bool isNr)
 {
     Enter_Method_Silent("registerNode");
 
@@ -159,13 +159,6 @@ MacNodeId Binder::registerNode(cModule *nodeModule, RanNodeType type, MacNodeId 
     const char *nodeIdParName = (type == UE && isNr) ? "nrMacNodeId" : "macNodeId";
     nodeModule->par(nodeIdParName) = num(nodeId);
 
-    if (type == UE) {
-        registerServingNode(masterId, nodeId);
-    }
-    else if (type == NODEB) {
-        nodeModule->par("macCellId") = num(nodeId);
-        registerMasterNode(masterId, nodeId);  // note: even if masterId == NODEID_NONE!
-    }
     return nodeId;
 }
 

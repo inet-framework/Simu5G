@@ -248,14 +248,11 @@ class Binder : public cSimpleModule
     SlotFormat getSlotFormat(GHz carrierFrequency);
 
     /**
-     * Registers a node to the global Binder module. The return value is the
-     * Binder-assigned unique MacNodeId of the node. The masterId argument
-     * has dual purpose depending on the type: for UE, it specifies the
-     * serving nodeB id; for an eNB/gNB, it specifies the master nodeB
-     * for this node, provided it is a secondary node in a Dual-Connectivity setup.
+     * Registers a node to the global Binder module.
      * isNR specifies whether an LTE or 5G NR nodeId of a UE is to be assigned.
+     * The return value is the Binder-assigned unique MacNodeId of the node.
      */
-    MacNodeId registerNode(cModule *nodeModule, RanNodeType type, MacNodeId masterId = NODEID_NONE, bool isNr = false);
+    MacNodeId registerNode(cModule *nodeModule, RanNodeType type, bool isNr = false);
 
     /**
      * Un-registers a node from the global Binder module.
