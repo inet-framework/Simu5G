@@ -76,10 +76,7 @@ void Ip2Nic::initialize(int stage)
         }
     }
     else if (stage == INITSTAGE_PHYSICAL_ENVIRONMENT) {
-        if (nodeType_ == NODEB) {
-            registerInterface();
-        }
-        else if (nodeType_ == UE) {
+        if (nodeType_ == UE) {
             cModule *ue = getContainingNode(this);
 
             masterId_ = MacNodeId(ue->par("servingNodeId").intValue());
@@ -97,12 +94,9 @@ void Ip2Nic::initialize(int stage)
             }
             else
                 nrNodeId_ = NODEID_NONE;
+        }
 
-            registerInterface();
-        }
-        else {
-            throw cRuntimeError("Unhandled node type: %i", nodeType_);
-        }
+        registerInterface();
     }
     else if (stage == inet::INITSTAGE_STATIC_ROUTING) {
         if (nodeType_ == UE) {
