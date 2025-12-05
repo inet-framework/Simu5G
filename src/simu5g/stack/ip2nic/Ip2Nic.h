@@ -42,14 +42,14 @@ class Ip2Nic : public cSimpleModule
     inet::ModuleRefByPar<Binder> binder_;
 
     // LTE MAC node id of this node
-    MacNodeId nodeId_;
+    MacNodeId nodeId_ = NODEID_NONE;
     // NR MAC node id of this node (if enabled)
-    MacNodeId nrNodeId_;
+    MacNodeId nrNodeId_ = NODEID_NONE;
 
     // LTE MAC node id of this node's master
-    MacNodeId masterId_;
+    MacNodeId masterId_ = NODEID_NONE;
     // NR MAC node id of this node's master (if enabled)
-    MacNodeId nrMasterId_;
+    MacNodeId nrMasterId_ = NODEID_NONE;
 
     /*
      * Handover support

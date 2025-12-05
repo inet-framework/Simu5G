@@ -82,18 +82,18 @@ void Ip2Nic::initialize(int stage)
             masterId_ = MacNodeId(ue->par("servingNodeId").intValue());
             nodeId_ = MacNodeId(ue->par("macNodeId").intValue());
             binder_->registerNode(nodeId_, ue, nodeType_, false);
-            binder_->registerServingNode(masterId_, nodeId_);
             ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", nodeId_).c_str());
 
             if (ue->hasPar("nrServingNodeId") && ue->par("nrServingNodeId").intValue() != 0) { // register also the NR MacNodeId
                 nrMasterId_ = MacNodeId(ue->par("nrServingNodeId").intValue());
                 nrNodeId_ = MacNodeId(ue->par("nrMacNodeId").intValue());
                 binder_->registerNode(nrNodeId_, ue, nodeType_, true);
-                binder_->registerServingNode(nrMasterId_, nrNodeId_);
                 ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d/%d", nodeId_, nrNodeId_).c_str());
             }
-            else
-                nrNodeId_ = NODEID_NONE;
+
+            binder_->registerServingNode(masterId_, nodeId_);
+            if (nrNodeId_ != NODEID_NONE)
+                binder_->registerServingNode(nrMasterId_, nrNodeId_);
         }
 
         registerInterface();
