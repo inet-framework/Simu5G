@@ -66,7 +66,7 @@ class Ip2Nic : public cSimpleModule
     std::map<MacNodeId, IpDatagramQueue> hoFromX2_;
     std::map<MacNodeId, IpDatagramQueue> hoFromIp_;
 
-    bool ueHold_;
+    bool ueHold_ = false;
     IpDatagramQueue ueHoldFromIp_;
 
     /*

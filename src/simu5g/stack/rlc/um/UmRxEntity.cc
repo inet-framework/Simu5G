@@ -636,8 +636,6 @@ void UmRxEntity::initialize(int stage)
         rxWindowDesc_.windowSize_ = par("rxWindowSize");
         received_.resize(rxWindowDesc_.windowSize_);
 
-        totalRcvdBytes_ = 0;
-        totalPduRcvdBytes_ = 0;
 
         rlc_.reference(this, "umModule", true);
 
@@ -646,8 +644,6 @@ void UmRxEntity::initialize(int stage)
         LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
         nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
         // ASSERT(nodeB_ != nullptr); -- see commit message why this is commented out
-
-        resetFlag_ = false;
 
         dir_ = mac->getNodeType() == NODEB ? UL : DL;
 

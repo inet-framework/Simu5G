@@ -78,7 +78,7 @@ class AmRxQueue : public cSimpleModule
 
     //Statistics
     static unsigned int totalCellRcvdBytes_;
-    unsigned int totalRcvdBytes_;
+    unsigned int totalRcvdBytes_ = 0;
     Direction dir_ = UNKNOWN_DIRECTION;
     static simsignal_t rlcCellPacketLossSignal_[2];
     static simsignal_t rlcPacketLossSignal_[2];

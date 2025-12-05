@@ -31,14 +31,12 @@ void LtePhyBase::initialize(int stage)
 
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
-        cellInfo_ = nullptr;
         // get gate ids
         upperGateIn_ = findGate("upperGateIn");
         upperGateOut_ = findGate("upperGateOut");
         radioInGate_ = findGate("radioIn");
 
         // Initialize and watch statistics
-        numAirFrameReceived_ = numAirFrameNotReceived_ = 0;
         ueTxPower_ = par("ueTxPower");
         eNodeBtxPower_ = par("eNodeBTxPower");
         microTxPower_ = par("microTxPower");

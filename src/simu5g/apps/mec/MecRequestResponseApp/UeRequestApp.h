@@ -34,7 +34,7 @@ class UeRequestApp : public cSimpleModule
     //communication to device app and mec app
     inet::UdpSocket socket;
 
-    unsigned int sno_;
+    unsigned int sno_ = 0;
     inet::B requestPacketSize_;
     double requestPeriod_;
 

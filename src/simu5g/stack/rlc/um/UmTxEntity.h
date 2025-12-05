@@ -152,17 +152,17 @@ class UmTxEntity : public cSimpleModule
     /*
      * Determine whether the first item in the queue is a fragment or a whole SDU
      */
-    bool firstIsFragment_;
+    bool firstIsFragment_ = false;
 
     /*
      * If true, the entity checks when the queue becomes empty
      */
-    bool notifyEmptyBuffer_;
+    bool notifyEmptyBuffer_ = false;
 
     /*
      * If true, the entity temporarily stores incoming SDUs in the holding queue (useful at D2D mode switching)
      */
-    bool holdingDownstreamInPackets_;
+    bool holdingDownstreamInPackets_ = false;
 
     /*
      * The SDU holding buffer.
@@ -178,7 +178,7 @@ class UmTxEntity : public cSimpleModule
     /*
      * The currently stored amount of data in the SDU queue (in bytes)
      */
-    unsigned int queueLength_;
+    unsigned int queueLength_ = 0;
 
     /**
      * Initialize fragmentSize and
@@ -193,10 +193,9 @@ class UmTxEntity : public cSimpleModule
     MacNodeId ownerNodeId_;
 
     /// Next PDU sequence number to be assigned
-    unsigned int sno_;
+    unsigned int sno_ = 0;
 };
 
 } //namespace
 
 #endif
-

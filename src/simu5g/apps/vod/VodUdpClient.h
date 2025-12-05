@@ -31,7 +31,7 @@ class VodUdpClient : public cSimpleModule
 {
     inet::UdpSocket socket;
     std::fstream outfile;
-    unsigned int totalRcvdBytes_;
+    unsigned int totalRcvdBytes_ = 0;
 
   public:
     static simsignal_t tptLayer0Signal_;

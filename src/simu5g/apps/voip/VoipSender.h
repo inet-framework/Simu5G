@@ -29,8 +29,8 @@ class VoipSender : public cSimpleModule
     inet::UdpSocket socket;
 
     //source
-    simtime_t durTalk_;
-    simtime_t durSil_;
+    simtime_t durTalk_ = 0;
+    simtime_t durSil_ = 0;
     double scaleTalk_;
     double shapeTalk_;
     double scaleSil_;
@@ -38,16 +38,16 @@ class VoipSender : public cSimpleModule
     bool isTalk_;
     cMessage *selfSource_ = nullptr;
     //sender
-    int iDtalk_;
-    int nframes_;
-    int iDframe_;
-    int nframesTmp_;
+    int iDtalk_ = 0;
+    int nframes_ = 0;
+    int iDframe_ = 0;
+    int nframesTmp_ = 0;
     int size_;
     simtime_t sampling_time;
 
     bool silences_;
 
-    unsigned int totalSentBytes_;
+    unsigned int totalSentBytes_ = 0;
     simtime_t warmUpPer_;
 
     static simsignal_t voipGeneratedThroughputSignal_;
@@ -57,7 +57,7 @@ class VoipSender : public cSimpleModule
 
     cMessage *initTraffic_ = nullptr;
 
-    simtime_t timestamp_;
+    simtime_t timestamp_ = 0;
     int localPort_;
     int destPort_;
     inet::L3Address destAddress_;
@@ -81,4 +81,3 @@ class VoipSender : public cSimpleModule
 } //namespace
 
 #endif
-

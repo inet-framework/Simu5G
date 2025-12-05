@@ -75,8 +75,8 @@ class UmRxEntity : public cSimpleModule
     // The SDU waiting for the missing portion
     struct Buffered {
         inet::Packet *pkt = nullptr;
-        size_t size;
-        unsigned int currentPduSno;   // next PDU sequence number expected
+        size_t size = 0;
+        unsigned int currentPduSno = 0;   // next PDU sequence number expected
     } buffered_;
 
     // Sequence number of the last correctly reassembled PDU
@@ -87,7 +87,7 @@ class UmRxEntity : public cSimpleModule
     // If true, the next PDU and the corresponding SDUs are considered in order
     // (modify the lastPduReassembled_ counter)
     // useful for D2D after a mode switch
-    bool resetFlag_;
+    bool resetFlag_ = false;
 
     /**
      *  @author Alessandro Noferi
@@ -106,14 +106,14 @@ class UmRxEntity : public cSimpleModule
     bool isBurst_ = false; // a burst has started last TTI
     unsigned int totalBits_ = 0; // total bytes during the burst
     unsigned int ttiBits_ = 0; // bytes during this TTI
-    simtime_t t2_; // point in time the burst begins
-    simtime_t t1_; // point in time last packet sent during burst
+    simtime_t t2_ = 0; // point in time the burst begins
+    simtime_t t1_ = 0; // point in time last packet sent during burst
 
     //Statistics - RLC-UM only tracks throughput and delay (no packet loss based on PDCP sequence numbers)
     static unsigned int totalCellPduRcvdBytes_;
     static unsigned int totalCellRcvdBytes_;
-    unsigned int totalPduRcvdBytes_;
-    unsigned int totalRcvdBytes_;
+    unsigned int totalPduRcvdBytes_ = 0;
+    unsigned int totalRcvdBytes_ = 0;
     Direction dir_ = UNKNOWN_DIRECTION;
 
     // Valid statistics for RLC-UM (throughput and delay)

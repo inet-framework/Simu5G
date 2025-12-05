@@ -60,8 +60,6 @@ void LteMacUeD2D::initialize(int stage)
 
 // TODO remove it. UeCollector connection made in LteMacUe Initialize
         }
-        else
-            enb_ = nullptr;
     }
 }
 

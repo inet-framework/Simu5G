@@ -31,8 +31,8 @@ class AlertReceiver : public cSimpleModule
     static simsignal_t alertDelaySignal_;
     static simsignal_t alertRcvdMsgSignal_;
 
-    simtime_t delaySum;
-    long nrReceived;
+    simtime_t delaySum = 0;
+    long nrReceived = 0;
 
   protected:
 
@@ -47,4 +47,3 @@ class AlertReceiver : public cSimpleModule
 } //namespace
 
 #endif
-

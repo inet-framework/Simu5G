@@ -57,8 +57,6 @@ void VodUdpClient::initialize(int stage)
     if (outfile.bad()) // File is bad
         throw cRuntimeError("Error while opening output file (File not found or incorrect type)");
 
-    totalRcvdBytes_ = 0;
-
     cMessage *timer = new cMessage("Timer");
     scheduleAt(simTime(), timer);
 }

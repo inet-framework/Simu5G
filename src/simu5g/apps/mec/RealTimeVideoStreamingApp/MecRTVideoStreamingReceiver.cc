@@ -68,13 +68,7 @@ void MecRTVideoStreamingReceiver::initialize(int stage)
     // testing
     EV << "MecRTVideoStreamingReceiver::initialize - Mec application " << getClassName() << " with mecAppId[" << mecAppId << "] has started!" << endl;
 
-    dropPackets_ = true;
-    stopped = true;
-    fps = 0;
-
     firstFrameDisplayed = false;
-    lastFrameDisplayed_ = -1;
-    expectedFrameDisplayed_ = 0;
 
     displayFrame = new cMessage("displayFrame");
 }
@@ -370,4 +364,3 @@ void MecRTVideoStreamingReceiver::processPacket(Packet *packet)
 }
 
 } //namespace
-

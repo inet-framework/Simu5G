@@ -48,7 +48,6 @@ void MecRequestBackgroundApp::initialize(int stage) {
     sendBurst = new cMessage("sendBurst");
     burstPeriod = new cMessage("burstPeriod");
     burstTimer = new cMessage("burstTimer");
-    burstFlag = false;
     lambda = par("lambda").doubleValue();
     mecAppId = getId();
     scheduleAt(simTime() + 0, m);
@@ -149,4 +148,3 @@ void MecRequestBackgroundApp::handleMp1Message(int connId)
 }
 
 } //namespace
-

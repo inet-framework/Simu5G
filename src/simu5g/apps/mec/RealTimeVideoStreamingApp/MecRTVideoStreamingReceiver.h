@@ -40,9 +40,9 @@ class MecRTVideoStreamingReceiver : public MecAppBase
 
     std::map<uint32_t, ReceivingFrameStatus> playoutBuffer_;
 
-    bool dropPackets_;
-    bool stopped;
-    int fps;
+    bool dropPackets_ = true;
+    bool stopped = true;
+    int fps = 0;
 
     //UDP socket to communicate with the UeApp
     inet::UdpSocket ueSocket;
@@ -59,8 +59,8 @@ class MecRTVideoStreamingReceiver : public MecAppBase
     cMessage *displayFrame = nullptr;
 
     bool firstFrameDisplayed;
-    long lastFrameDisplayed_;
-    int expectedFrameDisplayed_;
+    long lastFrameDisplayed_ = -1;
+    int expectedFrameDisplayed_ = 0;
     simtime_t lastfragment_;
 
     // reference to the UE app module, for statistic purposes (statistics will be recorded at the UE side)
@@ -108,4 +108,3 @@ class MecRTVideoStreamingReceiver : public MecAppBase
 } //namespace
 
 #endif /* APPS_MEC_MECRTVIDEOSTREAMINGRECEIVER_H_ */
-

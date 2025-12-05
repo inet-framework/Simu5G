@@ -30,11 +30,6 @@ using namespace inet;
 void UmTxEntity::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
-        sno_ = 0;
-        firstIsFragment_ = false;
-        notifyEmptyBuffer_ = false;
-        holdingDownstreamInPackets_ = false;
-
         LteMacBase *mac = inet::getConnectedModule<LteMacBase>(getParentModule()->gate("RLC_to_MAC"), 0);
 
         // store the node id of the owner module
@@ -43,7 +38,6 @@ void UmTxEntity::initialize(int stage)
         // get the reference to the RLC module
         lteRlc_.reference(this, "umModule", true);
         queueSize_ = lteRlc_->par("queueSize");
-        queueLength_ = 0;
 
     packetFlowObserver_.reference(this, "packetFlowObserverModule", false);
 

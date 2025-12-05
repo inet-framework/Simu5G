@@ -50,8 +50,6 @@ void AlertReceiver::initialize(int stage)
         // -------------------- //
     }
 
-    nrReceived = 0;
-    delaySum = 0;
 }
 
 void AlertReceiver::handleMessage(cMessage *msg)
@@ -89,4 +87,3 @@ void AlertReceiver::refreshDisplay() const
 }
 
 } //namespace
-

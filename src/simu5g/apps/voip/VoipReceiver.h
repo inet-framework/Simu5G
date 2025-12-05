@@ -44,9 +44,9 @@ class VoipReceiver : public cSimpleModule
     simtime_t mSamplingDelta_;
     simtime_t mPlayoutDelay_;
 
-    bool mInit_;
+    bool mInit_ = true;
 
-    unsigned int totalRcvdBytes_;
+    unsigned int totalRcvdBytes_ = 0;
     simtime_t warmUpPer_;
 
     static simsignal_t voipFrameLossSignal_;

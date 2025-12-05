@@ -54,8 +54,6 @@ void VoipReceiver::initialize(int stage)
     mSamplingDelta_ = par("samplingTime");
     mPlayoutDelay_ = par("playoutDelay");
 
-    mInit_ = true;
-
     int port = par("localPort");
     EV << "VoipReceiver::initialize - binding to port: local:" << port << endl;
     if (port != -1) {
@@ -63,7 +61,6 @@ void VoipReceiver::initialize(int stage)
         socket.bind(port);
     }
 
-    totalRcvdBytes_ = 0;
     warmUpPer_ = getSimulation()->getWarmupPeriod();
 }
 

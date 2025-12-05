@@ -44,8 +44,6 @@ void UeStatsCollector::initialize(int stage)
 
         packetFlowObserver_.reference(this, "packetFlowObserverModule", isNr_);
 
-        handover_ = false;
-
         // packet delay
         ul_nongbr_delay_ue.init("ul_nongbr_delay_ue", par("delayPacketPeriods"), par("movingAverage"));
         dl_nongbr_delay_ue.init("dl_nongbr_delay_ue", par("delayPacketPeriods"), par("movingAverage"));
@@ -187,4 +185,3 @@ void UeStatsCollector::resetStats()
 }
 
 } //namespace
-

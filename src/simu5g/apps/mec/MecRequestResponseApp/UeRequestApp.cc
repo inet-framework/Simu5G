@@ -54,8 +54,6 @@ void UeRequestApp::initialize(int stage)
     if (stage != inet::INITSTAGE_APPLICATION_LAYER)
         return;
 
-    sno_ = 0;
-
     //retrieve parameters
     requestPacketSize_ = B(par("requestPacketSize"));
     requestPeriod_ = par("period");

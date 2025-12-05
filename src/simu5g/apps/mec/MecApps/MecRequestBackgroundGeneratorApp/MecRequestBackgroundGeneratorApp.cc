@@ -155,7 +155,6 @@ void MecRequestBackgroundGeneratorApp::initialize(int stage) {
             sendBurst = new cMessage("sendBurst");
             burstPeriod = new cMessage("burstPeriod");
             burstTimer = new cMessage("burstTimer");
-            burstFlag = false;
             mecAppId = getId();
             scheduleAt(simTime() + 0.055, m);
         }
@@ -187,4 +186,3 @@ void MecRequestBackgroundGeneratorApp::finish()
 }
 
 } //namespace
-

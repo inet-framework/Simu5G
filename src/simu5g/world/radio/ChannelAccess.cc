@@ -60,8 +60,6 @@ void ChannelAccess::initialize(int stage)
         hostModule = inet::getContainingNode(this);
         myRadioRef = nullptr;
 
-        positionUpdateArrived = false;
-
         // subscribe to the correct mobility module
 
         if (hostModule->findSubmodule("mobility") != -1) {
@@ -137,4 +135,3 @@ void ChannelAccess::receiveSignal(cComponent *source, simsignal_t signalID, cObj
 }
 
 } //namespace
-

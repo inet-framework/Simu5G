@@ -68,7 +68,7 @@ class LteMacBase : public cSimpleModule
 
   protected:
 
-    unsigned int totalOverflowedBytes_;
+    unsigned int totalOverflowedBytes_ = 0;
     static simsignal_t macBufferOverflowDlSignal_;
     static simsignal_t macBufferOverflowUlSignal_;
     static simsignal_t macBufferOverflowD2DSignal_;
@@ -174,10 +174,10 @@ class LteMacBase : public cSimpleModule
 
     // statistics in visualization
     bool statDisplay_;
-    uint64_t nrFromUpper_;
-    uint64_t nrFromLower_;
-    uint64_t nrToUpper_;
-    uint64_t nrToLower_;
+    uint64_t nrFromUpper_ = 0;
+    uint64_t nrFromLower_ = 0;
+    uint64_t nrToUpper_ = 0;
+    uint64_t nrToLower_ = 0;
 
     // support to print harqErrorRate at the end of the simulation
     unsigned int totalHarqErrorRateDlSum_ = 0;

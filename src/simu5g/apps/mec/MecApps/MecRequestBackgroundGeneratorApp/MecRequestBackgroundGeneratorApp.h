@@ -58,4 +58,3 @@ class MecRequestBackgroundGeneratorApp : public MecAppBase
 } //namespace
 
 #endif /* APPS_MEC_MEAPPS_MEBGAPP_H_ */
-

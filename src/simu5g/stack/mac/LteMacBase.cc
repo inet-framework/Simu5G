@@ -385,12 +385,6 @@ void LteMacBase::initialize(int stage)
         // statistics
         statDisplay_ = par("statDisplay");
 
-        totalOverflowedBytes_ = 0;
-        nrFromUpper_ = 0;
-        nrFromLower_ = 0;
-        nrToUpper_ = 0;
-        nrToLower_ = 0;
-
         packetFlowObserver_.reference(this, "packetFlowObserverModule", false);
 
         WATCH(queueSize_);

@@ -53,9 +53,6 @@ void LtePhyUe::initialize(int stage)
 
         currentMasterRssi_ = -999.0;
         candidateMasterRssi_ = -999.0;
-        hysteresisTh_ = 0;
-        hysteresisFactor_ = 10;
-        handoverDelta_ = 0.00001;
 
         dasRssiThreshold_ = 1.0e-5;
         das_ = new DasFilter(this, binder_, nullptr, dasRssiThreshold_);
@@ -77,8 +74,6 @@ void LtePhyUe::initialize(int stage)
     }
     else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT) {
         txPower_ = ueTxPower_;
-
-        lastFeedback_ = 0;
 
         handoverStarter_ = new cMessage("handoverStarter");
 

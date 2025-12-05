@@ -41,8 +41,6 @@ AmRxQueue::AmRxQueue() :
     // info for sending control messages to the transmitting entity is required
     lastSentAck_(0),  timer_(this)
 {
-    rxWindowDesc_.firstSeqNum_ = 0;
-    rxWindowDesc_.seqNum_ = 0;
     timer_.setTimerId(BUFFERSTATUS_T);
 }
 
@@ -56,8 +54,6 @@ void AmRxQueue::initialize(int stage)
 
         discarded_.resize(rxWindowDesc_.windowSize_);
         received_.resize(rxWindowDesc_.windowSize_);
-        totalRcvdBytes_ = 0;
-
         binder_.reference(this, "binderModule", true);
         lteRlc_.reference(this, "amModule", true);
 

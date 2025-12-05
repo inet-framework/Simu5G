@@ -38,19 +38,12 @@ void VoipSender::initialize(int stage)
     if (stage != inet::INITSTAGE_APPLICATION_LAYER)
         return;
 
-    durTalk_ = 0;
-    durSil_ = 0;
     selfSource_ = new cMessage("selfSource");
     scaleTalk_ = par("scaleTalk");
     shapeTalk_ = par("shapeTalk");
     scaleSil_ = par("scaleSil");
     shapeSil_ = par("shapeSil");
     isTalk_ = par("isTalk");
-    iDtalk_ = 0;
-    nframes_ = 0;
-    nframesTmp_ = 0;
-    iDframe_ = 0;
-    timestamp_ = 0;
     size_ = par("packetSize");
     sampling_time = par("samplingTime");
     selfSender_ = new cMessage("selfSender");
@@ -58,7 +51,6 @@ void VoipSender::initialize(int stage)
     destPort_ = par("destPort");
     silences_ = par("silences");
 
-    totalSentBytes_ = 0;
     warmUpPer_ = getSimulation()->getWarmupPeriod();
 
     initTraffic_ = new cMessage("initTraffic");

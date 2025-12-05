@@ -51,8 +51,6 @@ void Ip2Nic::initialize(int stage)
 
         hoManager_.reference(this, "handoverManagerModule", false);
 
-        ueHold_ = false;
-
         binder_.reference(this, "binderModule", true);
 
         NetworkInterface *nic = getContainingNicModule(this);
