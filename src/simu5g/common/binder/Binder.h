@@ -92,11 +92,6 @@ class Binder : public cSimpleModule
     // maximum data rate achievable in one RB (NED parameter)
     double maxDataRatePerRb_;
 
-    // counters for assigning MacNodeIds
-    unsigned int macNodeIdCounterEnb_ = ENB_MIN_ID; // eNodeB and gNodeB
-    unsigned int macNodeIdCounterUe_ = UE_MIN_ID;
-    unsigned int macNodeIdCounterNrUe_ = NR_UE_MIN_ID;
-
     /*
      * Carrier Aggregation support
      */
@@ -248,11 +243,10 @@ class Binder : public cSimpleModule
     SlotFormat getSlotFormat(GHz carrierFrequency);
 
     /**
-     * Registers a node to the global Binder module.
+     * Registers a node to the global Binder module. If the nodeId is already occupied, an error will be thrown.
      * isNR specifies whether an LTE or 5G NR nodeId of a UE is to be assigned.
-     * The return value is the Binder-assigned unique MacNodeId of the node.
      */
-    MacNodeId registerNode(cModule *nodeModule, RanNodeType type, bool isNr = false);
+    void registerNode(MacNodeId nodeId, cModule *nodeModule, RanNodeType type, bool isNr = false);
 
     /**
      * Un-registers a node from the global Binder module.

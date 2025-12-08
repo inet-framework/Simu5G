@@ -63,10 +63,10 @@ void Ip2Nic::initialize(int stage)
         if (nodeType_ == NODEB) {
             // TODO: not so elegant
             cModule *bs = getContainingNode(this);
-            MacNodeId masterId = MacNodeId(bs->par("masterId").intValue());
+            nodeId_ = MacNodeId(bs->par("macNodeId").intValue());
             bool isNr = bs->par("nodeType").stdstringValue() == "GNODEB";
-            nodeId_ = binder_->registerNode(bs, nodeType_, isNr);
-            bs->par("macCellId") = num(nodeId_);
+            binder_->registerNode(nodeId_, bs, nodeType_, isNr);
+            MacNodeId masterId = MacNodeId(bs->par("masterId").intValue());
             binder_->registerMasterNode(masterId, nodeId_);  // note: even if masterId == NODEID_NONE!
 
             nrNodeId_ = NODEID_NONE;
@@ -83,13 +83,15 @@ void Ip2Nic::initialize(int stage)
             cModule *ue = getContainingNode(this);
 
             masterId_ = MacNodeId(ue->par("masterId").intValue());
-            nodeId_ = binder_->registerNode(ue, nodeType_);
+            nodeId_ = MacNodeId(ue->par("macNodeId").intValue());
+            binder_->registerNode(nodeId_, ue, nodeType_, false);
             binder_->registerServingNode(masterId_, nodeId_);
             ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", nodeId_).c_str());
 
             if (ue->hasPar("nrMasterId") && ue->par("nrMasterId").intValue() != 0) { // register also the NR MacNodeId
                 nrMasterId_ = MacNodeId(ue->par("nrMasterId").intValue());
-                nrNodeId_ = binder_->registerNode(ue, nodeType_, true);
+                nrNodeId_ = MacNodeId(ue->par("nrMacNodeId").intValue());
+                binder_->registerNode(nrNodeId_, ue, nodeType_, true);
                 binder_->registerServingNode(nrMasterId_, nrNodeId_);
                 ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d/%d", nodeId_, nrNodeId_).c_str());
             }

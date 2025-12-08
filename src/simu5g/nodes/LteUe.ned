@@ -64,7 +64,7 @@ module LteUe
         //# Node specs
         string nodeType = "UE";  // DO NOT CHANGE
         int masterId @mutable;
-        int macNodeId @mutable = default(0); // TODO: this is not a real parameter
+        int macNodeId = default(1025+simu5g_seq("LteUe_macNodeId"));
         int macCellId @mutable = default(0); // TODO: this is not a real parameter
 
         //# Network Layer specs

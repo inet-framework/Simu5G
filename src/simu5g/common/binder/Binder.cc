@@ -139,27 +139,33 @@ SlotFormat Binder::getSlotFormat(GHz carrierFrequency)
     return it->second.slotFormat;
 }
 
-MacNodeId Binder::registerNode(cModule *nodeModule, RanNodeType type, bool isNr)
+void Binder::registerNode(MacNodeId nodeId, cModule *nodeModule, RanNodeType type, bool isNr)
 {
-    Enter_Method_Silent("registerNode");
+    Enter_Method_Silent();
 
-    ASSERT(type == UE || type == NODEB);
-    MacNodeId nodeId = type == UE ?
-            MacNodeId(isNr ? macNodeIdCounterNrUe_++ : macNodeIdCounterUe_++) :
-            MacNodeId(macNodeIdCounterEnb_++);  // eNB/gNB
+    // validate input
+    if (nodeInfoMap_.find(nodeId) != nodeInfoMap_.end())
+        throw cRuntimeError("Cannot register node %s in Binder: macNodeId %d already occupied", nodeModule->getFullPath().c_str(), nodeId);
 
-    EV << "Binder : Assigning to module " << nodeModule->getName()
-       << " with module id " << nodeModule->getId() << " and MacNodeId " << nodeId
-       << "\n";
+    if (type == NODEB) {
+        if (getNodeTypeById(nodeId) != NODEB)
+            throw cRuntimeError("Cannot register node %s in Binder: Wrong macNodeId %d: Does not correspond to the range Simu5G reserves for eNodeB/gNodeB nodes", nodeModule->getFullPath().c_str(), num(nodeId));
+    }
+    else if (type == UE) {
+        if (getNodeTypeById(nodeId) != UE)
+            throw cRuntimeError("Cannot register node %s in Binder: Wrong macNodeId %d: Does not correspond to the range Simu5G reserves for UE nodes", nodeModule->getFullPath().c_str(), num(nodeId));
+        if (isNr != (num(nodeId) >= NR_UE_MIN_ID))
+            throw cRuntimeError("Cannot register node %s in Binder: Wrong macNodeId %d: Technology (LTE/NR) mismatch", nodeModule->getFullPath().c_str(), num(nodeId));
+    }
+    else {
+        throw cRuntimeError("Cannot register node %s in Binder: Wrong node type: Expected UE or NODEB, but got %d", nodeModule->getFullPath().c_str(), type);
+    }
+
+    EV << "Binder : Registering module " << nodeModule->getFullPath() << " with MacNodeId " << nodeId << "\n";
 
     // registering new node
     NodeInfo nodeInfo(nodeModule);
     nodeInfoMap_[nodeId] = nodeInfo;
-
-    const char *nodeIdParName = (type == UE && isNr) ? "nrMacNodeId" : "macNodeId";
-    nodeModule->par(nodeIdParName) = num(nodeId);
-
-    return nodeId;
 }
 
 void Binder::unregisterNode(MacNodeId id)
@@ -277,9 +283,6 @@ void Binder::initialize(int stage)
         // WATCH_MAP(bgCellsInterferenceMatrix_); // Commented out - contains nested maps that don't have stream operators
         // WATCH_MAP(bgUesInterferenceMatrix_); // Commented out - contains nested maps that don't have stream operators
         WATCH(maxDataRatePerRb_);
-        WATCH(macNodeIdCounterUe_);
-        WATCH(macNodeIdCounterNrUe_);
-        WATCH(macNodeIdCounterEnb_);
         WATCH(totalBands_);
         // WATCH_MAP(componentCarriers_); // Commented out - contains complex CarrierInfo structs that don't have stream operators
         // WATCH_MAP(carrierUeMap_); // Commented out - contains sets that don't have stream operators
@@ -494,16 +497,9 @@ std::vector<MacNodeId> Binder::getDeployedUes(MacNodeId enbNodeId)
     ASSERT(getNodeTypeById(enbNodeId) == NODEB);
 
     std::vector<MacNodeId> connectedUes;
-
-    // Collect LTE UEs
-    for (unsigned int ueIdNum = UE_MIN_ID; ueIdNum < macNodeIdCounterUe_; ++ueIdNum)
-        if (ueIdNum < servingNode_.size() && servingNode_[ueIdNum] == enbNodeId)
-            connectedUes.push_back(MacNodeId(ueIdNum));
-
-    // Collect NR UEs
-    for (unsigned int ueIdNum = NR_UE_MIN_ID; ueIdNum < macNodeIdCounterNrUe_; ++ueIdNum)
-        if (ueIdNum < servingNode_.size() && servingNode_[ueIdNum] == enbNodeId)
-            connectedUes.push_back(MacNodeId(ueIdNum));
+    for (auto& [nodeId, nodeInfo] : nodeInfoMap_)
+        if (nodeInfo.moduleRef != nullptr && getNodeTypeById(nodeId) == UE && servingNode_[num(nodeId)] == enbNodeId)
+            connectedUes.push_back(nodeId);
 
     return connectedUes;
 }
@@ -648,13 +644,7 @@ Cqi Binder::medianCqi(std::vector<Cqi> bandCqi, MacNodeId id, Direction dir)
 
 bool Binder::isValidNodeId(MacNodeId  nodeId) const
 {
-    if (num(nodeId) >= UE_MIN_ID && nodeId < MacNodeId(macNodeIdCounterUe_))
-        return true;
-    if (num(nodeId) >= NR_UE_MIN_ID && nodeId < MacNodeId(macNodeIdCounterNrUe_))
-        return true;
-    if (num(nodeId) >= ENB_MIN_ID && nodeId < MacNodeId(macNodeIdCounterEnb_))
-        return true;
-    return false;
+    return nodeInfoMap_.find(nodeId) != nodeInfoMap_.end();
 }
 
 LteD2DMode Binder::computeD2DCapability(MacNodeId src, MacNodeId dst)

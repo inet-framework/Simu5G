@@ -63,8 +63,8 @@ module eNodeB
         string nodeType = default("ENODEB");        // DO NOT CHANGE
         string gateway = default("pgw");
         int masterId @mutable = default(0);  // ID of the master eNodeB. Used in case of Dual Connectivity
-        int macNodeId @mutable = default(0); // TODO: this is not a real parameter
-        int macCellId @mutable = default(0);  // TODO: this is not a real parameter
+        int macNodeId = default(1+simu5g_seq("eNodeB_macNodeId"));
+        int macCellId = default(macNodeId);
         double txPower @unit(mw) = default(100mw);
 
         //# Network Layer specs
