@@ -28,7 +28,6 @@ void LtePhyUeD2D::initialize(int stage)
     if (stage == INITSTAGE_LOCAL) {
         d2dTxPower_ = par("d2dTxPower");
         d2dMulticastEnableCaptureEffect_ = par("d2dMulticastCaptureEffect");
-        d2dDecodingTimer_ = nullptr;
     }
 }
 
