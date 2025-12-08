@@ -39,15 +39,7 @@ void LteCompManagerBase::initialize()
     // get the number of available bands
     numBands_ = mac_->getCellInfo()->getNumBands();
 
-    const char *nodeType = par("compNodeType").stringValue();
-    if (strcmp(nodeType, "COMP_CLIENT") == 0)
-        nodeType_ = COMP_CLIENT;
-    else if (strcmp(nodeType, "COMP_CLIENT_COORDINATOR") == 0)
-        nodeType_ = COMP_CLIENT_COORDINATOR;
-    else if (strcmp(nodeType, "COMP_COORDINATOR") == 0)
-        nodeType_ = COMP_COORDINATOR;
-    else
-        throw cRuntimeError("LteCompManagerBase::initialize - Unrecognized node type %s", nodeType);
+        nodeType_ = parseNodeType(par("compNodeType").stringValue());
 
     // register to the X2 Manager
     auto pkt = new Packet("X2CompMsg");
@@ -83,6 +75,18 @@ void LteCompManagerBase::initialize()
         compClientTick_->setSchedulingPriority(2);        // compClientTick_ after MAC's TTI TICK. TODO check if it must be done before or after..
         scheduleAt(NOW + TTI, compClientTick_);
     }
+}
+
+CompNodeType LteCompManagerBase::parseNodeType(const char *nodeType)
+{
+    if (strcmp(nodeType, "COMP_CLIENT") == 0)
+        return COMP_CLIENT;
+    else if (strcmp(nodeType, "COMP_CLIENT_COORDINATOR") == 0)
+        return COMP_CLIENT_COORDINATOR;
+    else if (strcmp(nodeType, "COMP_COORDINATOR") == 0)
+        return COMP_COORDINATOR;
+    else
+        throw cRuntimeError("LteCompManagerBase::parseNodeType - Unrecognized node type %s", nodeType);
 }
 
 void LteCompManagerBase::handleMessage(cMessage *msg)

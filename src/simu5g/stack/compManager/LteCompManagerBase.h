@@ -73,6 +73,8 @@ class LteCompManagerBase : public cSimpleModule
     // statistics
     static simsignal_t compReservedBlocksSignal_;
 
+  protected:
+    static CompNodeType parseNodeType(const char *nodeType);
     void runClientOperations();
     void runCoordinatorOperations();
     void handleX2Message(inet::Packet *pkt);
