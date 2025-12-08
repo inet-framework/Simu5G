@@ -131,20 +131,17 @@ void LteMacEnb::initialize(int stage)
 
         cellInfo_.reference(this, "cellInfoModule", true);
 
-        // Get number of antennas
-        numAntennas_ = getNumAntennas();
-
         eNodeBCount = par("eNodeBCount");
-        WATCH(numAntennas_);
         WATCH_MAP(bsrbuf_);
     }
     else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT) {
         // Create and initialize AMC module
         std::string amcType = par("amcType").stdstringValue();
+        int numAntennas = getNumAntennas();
         if (amcType == "NrAmc")
-            amc_ = new NrAmc(this, binder_, cellInfo_, numAntennas_);
+            amc_ = new NrAmc(this, binder_, cellInfo_, numAntennas);
         else if (amcType == "LteAmc")
-            amc_ = new LteAmc(this, binder_, cellInfo_, numAntennas_);
+            amc_ = new LteAmc(this, binder_, cellInfo_, numAntennas);
         else
             throw cRuntimeError("The amcType '%s' not recognized", amcType.c_str());
 

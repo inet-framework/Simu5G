@@ -40,9 +40,6 @@ class LteMacEnb : public LteMacBase
     /// Lte AMC module
     LteAmc *amc_ = nullptr;
 
-    /// Number of antennas (MACRO included)
-    int numAntennas_ = 0;
-
     /// List of scheduled users (one per carrier) - Downlink
     std::map<GHz, LteMacScheduleList> *scheduleListDl_ = nullptr;
 
