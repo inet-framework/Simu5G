@@ -498,7 +498,7 @@ std::vector<MacNodeId> Binder::getDeployedUes(MacNodeId enbNodeId)
 
     std::vector<MacNodeId> connectedUes;
     for (auto& [nodeId, nodeInfo] : nodeInfoMap_)
-        if (nodeInfo.moduleRef != nullptr && getNodeTypeById(nodeId) == UE && servingNode_[num(nodeId)] == enbNodeId)
+        if (nodeInfo.moduleRef != nullptr && getNodeTypeById(nodeId) == UE && servingNode_.size() > num(nodeId) && servingNode_[num(nodeId)] == enbNodeId)
             connectedUes.push_back(nodeId);
 
     return connectedUes;
