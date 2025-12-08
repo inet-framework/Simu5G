@@ -53,8 +53,6 @@ void BackgroundCellChannelModel::initialize(int stage)
             fadingType_ = JAKES;
         else if (fType == "RAYLEIGH")
             fadingType_ = RAYLEIGH;
-        else if (fType == "JAKES")
-            fadingType_ = JAKES;
         else
             throw cRuntimeError("Unrecognized value in 'fadingType' parameter: \"%s\"", fType.c_str());
 
