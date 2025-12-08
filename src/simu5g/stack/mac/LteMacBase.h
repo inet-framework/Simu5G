@@ -104,7 +104,7 @@ class LteMacBase : public cSimpleModule
     double ttiPeriod_ = TTI;
 
     /// MacNodeId
-    MacNodeId nodeId_;
+    MacNodeId nodeId_ = NODEID_NONE;
 
     opp_component_ptr<cModule> networkNode_;
 
@@ -233,6 +233,7 @@ class LteMacBase : public cSimpleModule
 
     MacNodeId getMacNodeId()
     {
+        ASSERT(nodeId_ != NODEID_NONE);
         return nodeId_;
     }
 
