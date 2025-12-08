@@ -38,13 +38,11 @@ void LteDlFeedbackGenerator::initialize(int stage)
             throw cRuntimeError("Feedback Period MUST be greater than Feedback Delay");
         }
         fbType_ = getFeedbackType(par("feedbackType").stringValue());
-        rbAllocationType_ = getRbAllocationType(
-                par("rbAllocationType").stringValue());
+        rbAllocationType_ = getRbAllocationType(par("rbAllocationType").stringValue());
         usePeriodic_ = par("usePeriodic");
         currentTxMode_ = aToTxMode(par("initialTxMode"));
 
-        generatorType_ = getFeedbackGeneratorType(
-                par("feedbackGeneratorType").stringValue());
+        generatorType_ = getFeedbackGeneratorType(par("feedbackGeneratorType").stringValue());
 
         cModule *networkNode = getContainingNode(this);
         // TODO: find a more elegant way
