@@ -129,8 +129,8 @@ class CellInfo : public cSimpleModule
      * @param ruRange distance between eNB and RUs
      */
     virtual void deployRu(double nodeX, double nodeY, int numRu, int ruRange);
-    virtual void calculateMCSScale(double *mcsUl, double *mcsDl);
-    virtual void updateMCSScale(double *mcs, double signalRe, double signalCarriers = 0, Direction dir = DL);
+    virtual void calculateMcsScale();
+    virtual void updateMCSScale(double& mcs, double signalRe, double signalCarriers = 0, Direction dir = DL);
 
     /**
      * Compute slot format object given the number of DL and UL symbols

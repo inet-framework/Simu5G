@@ -76,7 +76,7 @@ void CellInfo::initialize(int stage)
         deployRu(nodeX_, nodeY_, numRus_, ruRange);
 
         // MCS scaling factor
-        calculateMCSScale(&mcsScaleUl_, &mcsScaleDl_);
+        calculateMcsScale();
 
         createAntennaCwMap();
     }
@@ -121,7 +121,7 @@ void CellInfo::deployRu(double nodeX, double nodeY, int numRu, int ruRange)
     delete[] txPowers;
 }
 
-void CellInfo::calculateMCSScale(double *mcsUl, double *mcsDl)
+void CellInfo::calculateMcsScale()
 {
     // RB subcarriers * (TTI Symbols - Signalling Symbols) - pilot REs
     int ulRbSubcarriers = par("rbyUl");
@@ -135,11 +135,12 @@ void CellInfo::calculateMCSScale(double *mcsUl, double *mcsDl)
     int ulPilotRe = par("rbPilotUl");
     int dlPilotRe = par("rbPilotDl");
 
-    *mcsUl = ulRbSubcarriers * (ulRbSymbols - ulSigSymbols) - ulPilotRe;
-    *mcsDl = dlRbSubCarriers * (dlRbSymbols - dlSigSymbols) - dlPilotRe;
+    mcsScaleUl_ = ulRbSubcarriers * (ulRbSymbols - ulSigSymbols) - ulPilotRe;
+    mcsScaleDl_ = dlRbSubCarriers * (dlRbSymbols - dlSigSymbols) - dlPilotRe;
 }
 
-void CellInfo::updateMCSScale(double *mcs, double signalRe,
+// unused:
+void CellInfo::updateMCSScale(double& mcs, double signalRe,
         double signalCarriers, Direction dir)
 {
     // RB subcarriers * (TTI Symbols - Signalling Symbols) - pilot REs
@@ -152,7 +153,7 @@ void CellInfo::updateMCSScale(double *mcs, double signalRe,
     int sigSymbols = signalRe;
     int pilotRe = signalCarriers;
 
-    *mcs = rbSubcarriers * (rbSymbols - sigSymbols) - pilotRe;
+    mcs = rbSubcarriers * (rbSymbols - sigSymbols) - pilotRe;
 }
 
 void CellInfo::createAntennaCwMap()
