@@ -27,7 +27,6 @@ module NrUe extends LteUe
 
         int nrMasterId @mutable = default(0);
         int nrMacNodeId = default(2049+simu5g_seq("NrUe_macNodeId"));
-        int nrMacCellId @mutable = default(0); // TODO: this is not a real parameter
 
         cellularNic.nrMac.collectorModule = hasRniSupport ? "^.^.nrUeCollector" : "";
         cellularNic.nrPhy.hasCollector = hasRniSupport;
