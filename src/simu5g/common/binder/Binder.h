@@ -168,13 +168,13 @@ class Binder : public cSimpleModule
     void finish() override;
 
     // helpers
-    bool isValidNodeId(MacNodeId  nodeId) const;
-    LteD2DMode computeD2DCapability(MacNodeId src, MacNodeId dst);
+    virtual bool isValidNodeId(MacNodeId  nodeId) const;
+    virtual LteD2DMode computeD2DCapability(MacNodeId src, MacNodeId dst);
 
   public:
     Binder() {}
 
-    unsigned int getTotalBands()
+    virtual unsigned int getTotalBands()
     {
         return totalBands_;
     }
@@ -191,7 +191,7 @@ class Binder : public cSimpleModule
             delete ue;
     }
 
-    std::string& getNetworkName()
+    virtual std::string& getNetworkName()
     {
         return networkName_;
     }
@@ -199,75 +199,75 @@ class Binder : public cSimpleModule
     /**
      * Registers a carrier to the global Binder module
      */
-    void registerCarrier(GHz carrierFrequency, unsigned int carrierNumBands, unsigned int numerologyIndex,
+    virtual void registerCarrier(GHz carrierFrequency, unsigned int carrierNumBands, unsigned int numerologyIndex,
             bool useTdd = false, unsigned int tddNumSymbolsDl = 0, unsigned int tddNumSymbolsUl = 0);
 
     /**
      * Registers a UE to a given carrier
      */
-    void registerCarrierUe(GHz carrierFrequency, unsigned int numerologyIndex, MacNodeId ueId);
+    virtual void registerCarrierUe(GHz carrierFrequency, unsigned int numerologyIndex, MacNodeId ueId);
 
     /**
      * Returns the set of UEs enabled on the given carrier
      */
-    const UeSet& getCarrierUeSet(GHz carrierFrequency);
+    virtual const UeSet& getCarrierUeSet(GHz carrierFrequency);
 
     /**
      * Returns the max numerology index used by the given UE
      */
-    NumerologyIndex getUeMaxNumerologyIndex(MacNodeId ueId);
+    virtual NumerologyIndex getUeMaxNumerologyIndex(MacNodeId ueId);
 
     /**
      * Returns the numerology indices used by the given UE
      */
-    const std::set<NumerologyIndex> *getUeNumerologyIndex(MacNodeId ueId);
+    virtual const std::set<NumerologyIndex> *getUeNumerologyIndex(MacNodeId ueId);
 
     /**
      * Returns the numerology associated to a carrier frequency
      */
-    NumerologyIndex getNumerologyIndexFromCarrierFreq(GHz carrierFreq) { return carrierFreqToNumerologyIndex_[carrierFreq]; }
+    virtual NumerologyIndex getNumerologyIndexFromCarrierFreq(GHz carrierFreq) { return carrierFreqToNumerologyIndex_[carrierFreq]; }
 
     /**
      * Returns the slot duration associated to the numerology (in seconds)
      */
-    double getSlotDurationFromNumerologyIndex(NumerologyIndex numerologyIndex) { return pow(2.0, (-1) * (int)numerologyIndex) / 1000.0; }
+    virtual double getSlotDurationFromNumerologyIndex(NumerologyIndex numerologyIndex) { return pow(2.0, (-1) * (int)numerologyIndex) / 1000.0; }
 
     /**
      * Compute slot format object given the number of DL and UL symbols
      */
-    SlotFormat computeSlotFormat(bool useTdd, unsigned int tddNumSymbolsDl, unsigned int tddNumSymbolsUl);
+    virtual SlotFormat computeSlotFormat(bool useTdd, unsigned int tddNumSymbolsDl, unsigned int tddNumSymbolsUl);
 
     /**
      * Returns the slot format for the given carrier
      */
-    SlotFormat getSlotFormat(GHz carrierFrequency);
+    virtual SlotFormat getSlotFormat(GHz carrierFrequency);
 
     /**
      * Registers a node to the global Binder module. If the nodeId is already occupied, an error will be thrown.
      * isNR specifies whether an LTE or 5G NR nodeId of a UE is to be assigned.
      */
-    void registerNode(MacNodeId nodeId, cModule *nodeModule, RanNodeType type, bool isNr = false);
+    virtual void registerNode(MacNodeId nodeId, cModule *nodeModule, RanNodeType type, bool isNr = false);
 
     /**
      * Un-registers a node from the global Binder module.
      */
-    void unregisterNode(MacNodeId id);
+    virtual void unregisterNode(MacNodeId id);
 
     /**
      * Binds an UE with its serving eNodeB/gNodeB. Invoked at the start of
      * the simulation and on handovers.
      */
-    void registerServingNode(MacNodeId enbId, MacNodeId ueId);
+    virtual void registerServingNode(MacNodeId enbId, MacNodeId ueId);
 
     /**
      * Unregisters the UE from its current eNodeB/gNodeB. Invoked e.g. on handovers.
      */
-    void unregisterServingNode(MacNodeId enbId, MacNodeId ueId);
+    virtual void unregisterServingNode(MacNodeId enbId, MacNodeId ueId);
 
     /**
      * Returns the serving eNodeB/gNodeB of an UE, or NODEID_NONE if there is none.
      */
-    MacNodeId getServingNode(MacNodeId ueId);
+    virtual MacNodeId getServingNode(MacNodeId ueId);
 
     /**
      * registerMasterNode()
@@ -277,22 +277,22 @@ class Binder : public cSimpleModule
      * @param masterId MacNodeId of the Master
      * @param slaveId MacNodeId of the Slave
      */
-    void registerMasterNode(MacNodeId masterId, MacNodeId slaveId);
+    virtual void registerMasterNode(MacNodeId masterId, MacNodeId slaveId);
 
     /**
      * Returns true if the node exists.
      */
-    bool nodeExists(MacNodeId nodeId) { return nodeInfoMap_.find(nodeId) != nodeInfoMap_.end(); }
+    virtual bool nodeExists(MacNodeId nodeId) { return nodeInfoMap_.find(nodeId) != nodeInfoMap_.end(); }
 
     /**
      * Returns nullptr if not found.
      */
-    cModule *getNodeModule(MacNodeId nodeId);
+    virtual cModule *getNodeModule(MacNodeId nodeId);
 
     /*
      * getNodeInfoMap returns information on all nodes in a map
      */
-    const std::map<MacNodeId, NodeInfo>& getNodeInfoMap() const { return nodeInfoMap_; }
+    virtual const std::map<MacNodeId, NodeInfo>& getNodeInfoMap() const { return nodeInfoMap_; }
 
     /*
      * getMacFromMacNodeId() returns the reference to the LteMacBase module
@@ -301,24 +301,24 @@ class Binder : public cSimpleModule
      * @param id MacNodeId of the module
      * @return LteMacBase* of the module
      */
-    LteMacBase *getMacFromMacNodeId(MacNodeId id);
+    virtual LteMacBase *getMacFromMacNodeId(MacNodeId id);
 
     /**
      * For an UE, returns the serving eNodeB/gNodeB; for an eNodeB/gNodeB, returns the nodeId (the arg).
      */
-    MacNodeId getNextHop(MacNodeId nodeId);
+    virtual MacNodeId getNextHop(MacNodeId nodeId);
 
     /**
      * In a Dual Connectivity / Split Bearer setup, returns the Master Node (MeNB, MN)
      * for the given Secondary Node (SeNB, SN).
      */
     //TODO add  MacNodeId ueId arg: In LTE DC, the roles (master/secondary) are per UE, not per bearer.
-    MacNodeId getMasterNodeOrSelf(MacNodeId secondaryEnbId);
+    virtual MacNodeId getMasterNodeOrSelf(MacNodeId secondaryEnbId);
 
     /**
      * TODO add "forUeId" argument, to getMasterNode() too
      */
-    MacNodeId getSecondaryNode(MacNodeId masterEnbId);
+    virtual MacNodeId getSecondaryNode(MacNodeId masterEnbId);
 
     /**
      * Returns the MacNodeId for the given IP address
@@ -326,7 +326,7 @@ class Binder : public cSimpleModule
      * @param address IP address
      * @return MacNodeId corresponding to the IP address
      */
-    MacNodeId getMacNodeId(inet::Ipv4Address address)
+    virtual MacNodeId getMacNodeId(inet::Ipv4Address address)
     {
         if (ipAddressToMacNodeId_.find(address) == ipAddressToMacNodeId_.end())
             return NODEID_NONE;
@@ -344,7 +344,7 @@ class Binder : public cSimpleModule
      * @param address IP address
      * @return MacNodeId corresponding to the IP address
      */
-    MacNodeId getNrMacNodeId(inet::Ipv4Address address)
+    virtual MacNodeId getNrMacNodeId(inet::Ipv4Address address)
     {
         if (ipAddressToNrMacNodeId_.find(address) == ipAddressToNrMacNodeId_.end())
             return NODEID_NONE;
@@ -358,7 +358,7 @@ class Binder : public cSimpleModule
      * @param isNr If true, returns the NR nodeId; if false, returns the LTE nodeId
      * @return The requested nodeId, or NODEID_NONE if not found/available
      */
-    MacNodeId getUeNodeId(MacNodeId ue, bool isNr);
+    virtual MacNodeId getUeNodeId(MacNodeId ue, bool isNr);
 
     /**
      * author Alessandro Noferi
@@ -369,7 +369,7 @@ class Binder : public cSimpleModule
      * @return IP address corresponding to the MacNodeId
      *
      */
-    inet::Ipv4Address getIPv4Address(MacNodeId nodeId)
+    virtual inet::Ipv4Address getIPv4Address(MacNodeId nodeId)
     {
         for (const auto& kv : ipAddressToMacNodeId_) {
             if (kv.second == nodeId)
@@ -388,7 +388,7 @@ class Binder : public cSimpleModule
      * @param address IP address
      * @return X2NodeId corresponding to the IP address
      */
-    X2NodeId getX2NodeId(inet::Ipv4Address address)
+    virtual X2NodeId getX2NodeId(inet::Ipv4Address address)
     {
         return getMacNodeId(address);
     }
@@ -398,7 +398,7 @@ class Binder : public cSimpleModule
      *
      * @param address IP address
      */
-    void setMacNodeId(inet::Ipv4Address address, MacNodeId nodeId)
+    virtual void setMacNodeId(inet::Ipv4Address address, MacNodeId nodeId)
     {
         if (isNrUe(nodeId))
             ipAddressToNrMacNodeId_[address] = nodeId;
@@ -411,17 +411,17 @@ class Binder : public cSimpleModule
      *
      * @param address IP address
      */
-    void setX2NodeId(inet::Ipv4Address address, X2NodeId nodeId)
+    virtual void setX2NodeId(inet::Ipv4Address address, X2NodeId nodeId)
     {
         setMacNodeId(address, nodeId);
     }
 
-    inet::L3Address getX2PeerAddress(X2NodeId srcId, X2NodeId destId)
+    virtual inet::L3Address getX2PeerAddress(X2NodeId srcId, X2NodeId destId)
     {
         return x2PeerAddress_[srcId][destId];
     }
 
-    void setX2PeerAddress(X2NodeId srcId, X2NodeId destId, inet::L3Address interfAddr)
+    virtual void setX2PeerAddress(X2NodeId srcId, X2NodeId destId, inet::L3Address interfAddr)
     {
         x2PeerAddress_[srcId].insert({destId, interfAddr});
     }
@@ -429,41 +429,41 @@ class Binder : public cSimpleModule
     /**
      * Register the address of MEC Hosts in the simulation
      */
-    void registerMecHost(const inet::L3Address& mecHostAddress);
+    virtual void registerMecHost(const inet::L3Address& mecHostAddress);
     /**
      * Associates the given MEC Host address to its corresponding UPF
      */
-    void registerMecHostUpfAddress(const inet::L3Address& mecHostAddress, const inet::L3Address& gtpAddress);
+    virtual void registerMecHostUpfAddress(const inet::L3Address& mecHostAddress, const inet::L3Address& gtpAddress);
     /**
      * Returns true if the given address belongs to a MEC host
      */
-    bool isMecHost(const inet::L3Address& mecHostAddress);
+    virtual bool isMecHost(const inet::L3Address& mecHostAddress);
     /**
      * Returns the UPF address corresponding to the given MEC Host address
      */
-    const inet::L3Address& getUpfFromMecHost(const inet::L3Address& mecHostAddress);
+    virtual const inet::L3Address& getUpfFromMecHost(const inet::L3Address& mecHostAddress);
     /**
      * Associates the given MAC node ID to the module
      */
-    void registerModule(MacNodeId nodeId, cModule *module);
+    virtual void registerModule(MacNodeId nodeId, cModule *module);
     /**
      * Returns the module for the given MAC node ID
      */
-    cModule *getModuleByMacNodeId(MacNodeId nodeId);
+    virtual cModule *getModuleByMacNodeId(MacNodeId nodeId);
 
     /*
      * getDeployedUes() returns the affiliates
      * of a given eNodeB
      */
-    std::vector<MacNodeId> getDeployedUes(MacNodeId enbNodeId);
+    virtual std::vector<MacNodeId> getDeployedUes(MacNodeId enbNodeId);
 
     PhyPisaData phyPisaData;
 
-    int getNodeCount() {
+    virtual int getNodeCount() {
         return nodeInfoMap_.size();
     }
 
-    int addExtCell(ExtCell *extCell, GHz carrierFrequency)
+    virtual int addExtCell(ExtCell *extCell, GHz carrierFrequency)
     {
         if (extCellList_.find(carrierFrequency) == extCellList_.end())
             extCellList_[carrierFrequency] = ExtCellList();
@@ -472,12 +472,12 @@ class Binder : public cSimpleModule
         return extCellList_[carrierFrequency].size() - 1;
     }
 
-    ExtCellList getExtCellList(GHz carrierFrequency)
+    virtual ExtCellList getExtCellList(GHz carrierFrequency)
     {
         return extCellList_[carrierFrequency];
     }
 
-    int addBackgroundScheduler(BackgroundScheduler *bgScheduler, GHz carrierFrequency)
+    virtual int addBackgroundScheduler(BackgroundScheduler *bgScheduler, GHz carrierFrequency)
     {
         if (bgSchedulerList_.find(carrierFrequency) == bgSchedulerList_.end())
             bgSchedulerList_[carrierFrequency] = BackgroundSchedulerList();
@@ -486,118 +486,117 @@ class Binder : public cSimpleModule
         return bgSchedulerList_[carrierFrequency].size() - 1;
     }
 
-    const BackgroundSchedulerList& getBackgroundSchedulerList(GHz carrierFrequency)
+    virtual const BackgroundSchedulerList& getBackgroundSchedulerList(GHz carrierFrequency)
     {
         return bgSchedulerList_[carrierFrequency];
     }
 
-    void addEnbInfo(EnbInfo *info)
+    virtual void addEnbInfo(EnbInfo *info)
     {
         enbList_.push_back(info);
     }
 
-    const std::vector<EnbInfo *>& getEnbList()
+    virtual const std::vector<EnbInfo *>& getEnbList()
     {
         return enbList_;
     }
 
-    void addUeInfo(UeInfo *info)
+    virtual void addUeInfo(UeInfo *info)
     {
         ueList_.push_back(info);
     }
 
-    const std::vector<UeInfo *>& getUeList()
+    virtual const std::vector<UeInfo *>& getUeList()
     {
         return ueList_;
     }
 
-    void addBgTrafficManagerInfo(BgTrafficManagerInfo *info)
+    virtual void addBgTrafficManagerInfo(BgTrafficManagerInfo *info)
     {
         bgTrafficManagerList_.push_back(info);
     }
 
-    const std::vector<BgTrafficManagerInfo *>& getBgTrafficManagerList()
+    virtual const std::vector<BgTrafficManagerInfo *>& getBgTrafficManagerList()
     {
         return bgTrafficManagerList_;
     }
 
-    Cqi meanCqi(std::vector<Cqi> bandCqi, MacNodeId id, Direction dir);
+    virtual Cqi meanCqi(std::vector<Cqi> bandCqi, MacNodeId id, Direction dir);
 
-    Cqi medianCqi(std::vector<Cqi> bandCqi, MacNodeId id, Direction dir);
+    virtual Cqi medianCqi(std::vector<Cqi> bandCqi, MacNodeId id, Direction dir);
 
     /*
      * Uplink interference support
      */
-    simtime_t getLastUpdateUlTransmissionInfo();
-    void initAndResetUlTransmissionInfo();
-    void storeUlTransmissionMap(GHz carrierFreq, Remote antenna, RbMap& rbMap, MacNodeId nodeId, MacCellId cellId, LtePhyBase *phy, Direction dir);
-    void storeUlTransmissionMap(GHz carrierFreq, Remote antenna, RbMap& rbMap, MacNodeId nodeId, MacCellId cellId, TrafficGeneratorBase *trafficGen, Direction dir);  // overloaded function for bgUes
-    const std::vector<std::vector<UeAllocationInfo>> *getUlTransmissionMap(GHz carrierFreq, UlTransmissionMapTTI t);
+    virtual simtime_t getLastUpdateUlTransmissionInfo();
+    virtual void initAndResetUlTransmissionInfo();
+    virtual void storeUlTransmissionMap(GHz carrierFreq, Remote antenna, RbMap& rbMap, MacNodeId nodeId, MacCellId cellId, LtePhyBase *phy, Direction dir);
+    virtual void storeUlTransmissionMap(GHz carrierFreq, Remote antenna, RbMap& rbMap, MacNodeId nodeId, MacCellId cellId, TrafficGeneratorBase *trafficGen, Direction dir);  // overloaded function for bgUes
+    virtual const std::vector<std::vector<UeAllocationInfo>> *getUlTransmissionMap(GHz carrierFreq, UlTransmissionMapTTI t);
     /*
      * X2 Support
      */
-    void registerX2Port(X2NodeId nodeId, int port);
-    int getX2Port(X2NodeId nodeId);
+    virtual void registerX2Port(X2NodeId nodeId, int port);
+    virtual int getX2Port(X2NodeId nodeId);
 
     /*
      * D2D Support
      */
-    bool checkD2DCapability(MacNodeId src, MacNodeId dst);
-    bool getD2DCapability(MacNodeId src, MacNodeId dst);
+    virtual bool checkD2DCapability(MacNodeId src, MacNodeId dst);
+    virtual bool getD2DCapability(MacNodeId src, MacNodeId dst);
 
-    std::map<MacNodeId, std::map<MacNodeId, LteD2DMode>> *getD2DPeeringMap();
-    void setD2DMode(MacNodeId src, MacNodeId dst, LteD2DMode mode);
-    LteD2DMode getD2DMode(MacNodeId src, MacNodeId dst);
-    bool isFrequencyReuseEnabled(MacNodeId nodeId);
+    virtual std::map<MacNodeId, std::map<MacNodeId, LteD2DMode>> *getD2DPeeringMap();
+    virtual LteD2DMode getD2DMode(MacNodeId src, MacNodeId dst);
+    virtual bool isFrequencyReuseEnabled(MacNodeId nodeId);
 
     /*
      * Multicast Support
      */
     // add the group to the set of multicast group of nodeId
-    void joinMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId);
+    virtual void joinMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId);
     // check if the node is enrolled in the group
-    bool isInMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId);
+    virtual bool isInMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId);
     // add one multicast transmitter
-    void addD2DMulticastTransmitter(MacNodeId nodeId);
+    virtual void addD2DMulticastTransmitter(MacNodeId nodeId);
     // get multicast transmitters
-    std::set<MacNodeId>& getD2DMulticastTransmitters();
+    virtual std::set<MacNodeId>& getD2DMulticastTransmitters();
 
     /*
      * Multicast Destination ID Support
      */
     // Allocate an (MBMS-RNTI-like) multicast destination ID for a multicast IPv4 address
-    MacNodeId getOrAssignDestIdForMulticastAddress(inet::Ipv4Address multicastAddr);
+    virtual MacNodeId getOrAssignDestIdForMulticastAddress(inet::Ipv4Address multicastAddr);
     // Checks if a multicast destination ID was already assigned for a multicast IPv4 address
-    bool hasMulticastDestIdAssigned(inet::Ipv4Address multicastAddr) const {
+    virtual bool hasMulticastDestIdAssigned(inet::Ipv4Address multicastAddr) const {
         return multicastAddrToDestId_.find(multicastAddr) != multicastAddrToDestId_.end();
     }
     // Get existing multicast destination ID for a multicast address (returns NODEID_NONE if not found)
-    MacNodeId getDestIdForMulticastAddress(inet::Ipv4Address multicastAddr);
+    virtual MacNodeId getDestIdForMulticastAddress(inet::Ipv4Address multicastAddr);
     // Get multicast address from destination ID
-    inet::Ipv4Address getAddressForMulticastDestId(MacNodeId multicastDestId);
+    virtual inet::Ipv4Address getAddressForMulticastDestId(MacNodeId multicastDestId);
 
     /*
      *  Handover support
      */
-    void addUeHandoverTriggered(MacNodeId nodeId);
-    bool hasUeHandoverTriggered(MacNodeId nodeId);
-    void removeUeHandoverTriggered(MacNodeId nodeId);
+    virtual void addUeHandoverTriggered(MacNodeId nodeId);
+    virtual bool hasUeHandoverTriggered(MacNodeId nodeId);
+    virtual void removeUeHandoverTriggered(MacNodeId nodeId);
 
-    void addHandoverTriggered(MacNodeId nodeId, MacNodeId srcId, MacNodeId destId);
-    const std::pair<MacNodeId, MacNodeId> *getHandoverTriggered(MacNodeId nodeId);
-    void removeHandoverTriggered(MacNodeId nodeId);
+    virtual void addHandoverTriggered(MacNodeId nodeId, MacNodeId srcId, MacNodeId destId);
+    virtual const std::pair<MacNodeId, MacNodeId> *getHandoverTriggered(MacNodeId nodeId);
+    virtual void removeHandoverTriggered(MacNodeId nodeId);
 
-    void updateUeInfoCellId(MacNodeId nodeId, MacCellId cellId);
+    virtual void updateUeInfoCellId(MacNodeId nodeId, MacCellId cellId);
 
     /*
      *  Background UEs and cells Support
      */
-    void computeAverageCqiForBackgroundUes();
-    void updateMutualInterference(unsigned int bgTrafficManagerId, unsigned int numBands, Direction dir);
-    double computeInterferencePercentageDl(double n, double k, unsigned int numBands);
-    double computeInterferencePercentageUl(double n, double k, double nTotal, double kTotal);
-    double computeSinr(unsigned int bgTrafficManagerId, int bgUeId, double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus);
-    double computeRequestedRbsFromSinr(double sinr, double reqLoad);
+    virtual void computeAverageCqiForBackgroundUes();
+    virtual void updateMutualInterference(unsigned int bgTrafficManagerId, unsigned int numBands, Direction dir);
+    virtual double computeInterferencePercentageDl(double n, double k, unsigned int numBands);
+    virtual double computeInterferencePercentageUl(double n, double k, double nTotal, double kTotal);
+    virtual double computeSinr(unsigned int bgTrafficManagerId, int bgUeId, double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus);
+    virtual double computeRequestedRbsFromSinr(double sinr, double reqLoad);
 
     /*
      * author Alessandro Noferi.
@@ -612,7 +611,7 @@ class Binder : public cSimpleModule
      *  ueCollector: reference to the collector
      *  cell: MacCellId of the target eNB
      */
-    void addUeCollectorToEnodeB(MacNodeId ue, UeStatsCollector *ueCollector, MacCellId cell);
+    virtual void addUeCollectorToEnodeB(MacNodeId ue, UeStatsCollector *ueCollector, MacCellId cell);
 
     /* this method moves the UeStatsCollector reference between the eNB/gNB's baseStationStatsCollector
      * structure.
@@ -621,26 +620,26 @@ class Binder : public cSimpleModule
      *  oldCell: MacCellId of the source eNB
      *  newCell: MacCellId of the target eNB
      */
-    void moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell);
+    virtual void moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell);
 
-    bool isGNodeB(MacNodeId enbId);
+    virtual bool isGNodeB(MacNodeId enbId);
 
     // Moved from LteCommon - getter functions that were taking Binder as first parameter
-    CellInfo *getCellInfoByNodeId(MacNodeId nodeId);
-    cModule *getPhyByNodeId(MacNodeId nodeId);
-    cModule *getMacByNodeId(MacNodeId nodeId);
-    cModule *getRlcByNodeId(MacNodeId nodeId, LteRlcType rlcType);
-    cModule *getPdcpByNodeId(MacNodeId nodeId);
-    cModule *getRrcByNodeId(MacNodeId nodeId);
+    virtual CellInfo *getCellInfoByNodeId(MacNodeId nodeId);
+    virtual cModule *getPhyByNodeId(MacNodeId nodeId);
+    virtual cModule *getMacByNodeId(MacNodeId nodeId);
+    virtual cModule *getRlcByNodeId(MacNodeId nodeId, LteRlcType rlcType);
+    virtual cModule *getPdcpByNodeId(MacNodeId nodeId);
+    virtual cModule *getRrcByNodeId(MacNodeId nodeId);
 
     // SMF-like Session Management Functions
-    void establishUnidirectionalDataConnection(FlowControlInfo *lteInfo);
+    virtual void establishUnidirectionalDataConnection(FlowControlInfo *lteInfo);
 
   private:
-    bool isDualConnectivityRequired(FlowControlInfo *info);
-    void createConnection(FlowControlInfo *lteInfo, bool withPdcp);
-    void createIncomingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp);
-    void createOutgoingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp);
+    virtual bool isDualConnectivityRequired(FlowControlInfo *info);
+    virtual void createConnection(FlowControlInfo *lteInfo, bool withPdcp);
+    virtual void createIncomingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp);
+    virtual void createOutgoingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp);
 };
 
 } //namespace
