@@ -64,6 +64,7 @@ void CellInfo::initialize(int stage)
 
         // register the containing eNB to the binder
         cellId_ = MacNodeId(host->par("macCellId").intValue());
+        ASSERT(cellId_ != MacNodeId(-1));  // i.e. already set programmatically
 
         int ruRange = par("ruRange");
         double nodebTxPower = host->par("txPower");

@@ -31,6 +31,7 @@ void X2AppServer::initialize(int stage)
         x2ManagerIn_ = gate("x2ManagerIn");
 
         X2NodeId id = MacNodeId(inet::getContainingNode(this)->par("macCellId").intValue());
+        ASSERT(id != MacNodeId(-1));  // i.e. already set programmatically
 
         // register listening port to the binder. It will be used by
         // the client side as connectPort

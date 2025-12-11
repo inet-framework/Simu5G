@@ -26,6 +26,7 @@ void LteHandoverManager::initialize()
 {
     // get the node id
     nodeId_ = MacNodeId(inet::getContainingNode(this)->par("macCellId").intValue());
+    ASSERT(nodeId_ != MacNodeId(-1));  // i.e. already set programmatically
 
     // get reference to the gates
     x2ManagerInGate_ = gate("x2ManagerIn");
