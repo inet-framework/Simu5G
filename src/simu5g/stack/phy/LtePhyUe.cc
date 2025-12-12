@@ -191,7 +191,7 @@ void LtePhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCand
             rssi += value;
         rssi /= rssiV.size(); // compute the mean over all RBs
         EV << "LtePhyUe::findCandicateEnb - RSSI from cell " << cellId << ": " << rssi << " dB (current candidate cell " << outCandidateMasterId << ": " << outCandidateMasterRssi << " dB)" << endl;
-        if (rssi > outCandidateMasterRssi) {
+        if (outCandidateMasterId == NODEID_NONE || rssi > outCandidateMasterRssi) {
             outCandidateMasterId = cellId;
             outCandidateMasterRssi = rssi;
         }
