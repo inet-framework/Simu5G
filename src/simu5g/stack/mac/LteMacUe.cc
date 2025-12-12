@@ -56,18 +56,13 @@ void LteMacUe::initialize(int stage)
 {
     LteMacBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
+        bool isNr = strcmp(getFullName(), "nrMac") == 0;
+        nodeId_ = MacNodeId(networkNode_->par(isNr ? "nrMacNodeId" : "macNodeId").intValue());
     }
     else if (stage == INITSTAGE_SIMU5G_LINK_LAYER) {
-        if (strcmp(getFullName(), "nrMac") == 0)
-            cellId_ = MacNodeId(networkNode_->par("nrServingNodeId").intValue());
-        else
-            cellId_ = MacNodeId(networkNode_->par("servingNodeId").intValue());
+        cellId_ = binder_->getServingNode(nodeId_);
     }
     else if (stage == INITSTAGE_SIMU5G_NETWORK_LAYER) {
-        if (strcmp(getFullName(), "nrMac") == 0)
-            nodeId_ = MacNodeId(networkNode_->par("nrMacNodeId").intValue());
-        else
-            nodeId_ = MacNodeId(networkNode_->par("macNodeId").intValue());
 
         // display node ID above module icon
         getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", nodeId_).c_str());

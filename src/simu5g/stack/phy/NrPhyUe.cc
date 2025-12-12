@@ -352,12 +352,7 @@ void NrPhyUe::doHandover()
     currentMasterRssi_ = candidateMasterRssi_;
     hysteresisTh_ = updateHysteresisTh(currentMasterRssi_);
 
-    // update NED parameter
-    if (isNr_)
-        hostModule->par("nrServingNodeId").setIntValue(num(masterId_));
-    else
-        hostModule->par("servingNodeId").setIntValue(num(masterId_));
-
+    // update mobility pointer
     if (masterId_ == NODEID_NONE)
         masterMobility_ = nullptr;
     else {

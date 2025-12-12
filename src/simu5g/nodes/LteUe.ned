@@ -63,7 +63,7 @@ module LteUe
 
         //# Node specs
         string nodeType = "UE";  // DO NOT CHANGE
-        int servingNodeId @mutable;
+        int servingNodeId = default(0); // the initial serving eNodeB of the UE; 0 if none
         int macNodeId = default(1025+simu5g_seq("LteUe_macNodeId"));
 
         //# Network Layer specs

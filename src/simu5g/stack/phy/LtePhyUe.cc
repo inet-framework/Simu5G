@@ -88,19 +88,12 @@ void LtePhyUe::initialize(int stage)
         isNr_ = dynamic_cast<NrPhyUe*>(this) && strcmp(getFullName(), "nrPhy") == 0;
 
         // get local id
-        if (isNr_)
-            nodeId_ = MacNodeId(hostModule->par("nrMacNodeId").intValue());
-        else
-            nodeId_ = MacNodeId(hostModule->par("macNodeId").intValue());
+        nodeId_ = MacNodeId(hostModule->par(isNr_ ? "nrMacNodeId" : "macNodeId").intValue());
         EV << "Local MacNodeId: " << nodeId_ << endl;
     }
     else if (stage == INITSTAGE_SIMU5G_PHYSICAL_LAYER) {
         // get serving cell from configuration
-        // TODO find a more elegant way
-        if (isNr_)
-            masterId_ = MacNodeId(hostModule->par("nrServingNodeId").intValue());
-        else
-            masterId_ = MacNodeId(hostModule->par("servingNodeId").intValue());
+        masterId_ = binder_->getServingNode(nodeId_);
         candidateMasterId_ = masterId_;
 
         // find the best candidate master cell
@@ -114,11 +107,6 @@ void LtePhyUe::initialize(int stage)
                 binder_->registerServingNode(candidateMasterId_, nodeId_);
             }
             masterId_ = candidateMasterId_;
-            // set serving cell
-            if (isNr_)
-                hostModule->par("nrServingNodeId").setIntValue(num(masterId_));
-            else
-                hostModule->par("servingNodeId").setIntValue(num(masterId_));
             currentMasterRssi_ = candidateMasterRssi_;
             updateHysteresisTh(candidateMasterRssi_);
         }
@@ -390,12 +378,6 @@ void LtePhyUe::doHandover()
     mac_->doHandover(candidateMasterId_);  // do MAC operations for handover
     currentMasterRssi_ = candidateMasterRssi_;
     hysteresisTh_ = updateHysteresisTh(currentMasterRssi_);
-
-    // update NED parameter
-    if (isNr_)
-        hostModule->par("nrServingNodeId").setIntValue(num(masterId_));
-    else
-        hostModule->par("servingNodeId").setIntValue(num(masterId_));
 
     // update reference to master node's mobility module
     if (masterId_ == NODEID_NONE)
