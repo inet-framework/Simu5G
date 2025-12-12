@@ -147,6 +147,8 @@ class LtePhyUe : public LtePhyBase
     virtual void triggerHandover();
     virtual void doHandover();
 
+    virtual void findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi);
+
   public:
     ~LtePhyUe() override;
     DasFilter *getDasFilter();

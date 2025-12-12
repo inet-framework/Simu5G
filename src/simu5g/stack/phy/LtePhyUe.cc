@@ -108,51 +108,7 @@ void LtePhyUe::initialize(int stage)
 
         // find the best candidate master cell
         if (dynamicCellAssociation_) {
-            // this is a fictitious frame that needs to compute the SINR
-            LteAirFrame *frame = new LteAirFrame("cellSelectionFrame");
-            UserControlInfo *cInfo = new UserControlInfo();
-
-            // get the list of all eNodeBs in the network
-            for (const auto& enbInfo : binder_->getEnbList()) {
-                // the NR phy layer only checks signal from gNBs, and
-                // the LTE phy layer only checks signal from eNBs
-                if (isNr_ != enbInfo->isNr)
-                    continue;
-
-                MacNodeId cellId = enbInfo->id;
-                LtePhyBase *cellPhy = check_and_cast<LtePhyBase *>(enbInfo->eNodeB->getSubmodule("cellularNic")->getSubmodule("phy"));
-                double cellTxPower = cellPhy->getTxPwr();
-                Coord cellPos = cellPhy->getCoord();
-
-                // check whether the BS supports the carrier frequency used by the UE
-                GHz ueCarrierFrequency = primaryChannelModel_->getCarrierFrequency();
-                LteChannelModel *cellChannelModel = cellPhy->getChannelModel(ueCarrierFrequency);
-                if (cellChannelModel == nullptr)
-                    continue;
-
-                // build a control info
-                cInfo->setSourceId(cellId);
-                cInfo->setTxPower(cellTxPower);
-                cInfo->setCoord(cellPos);
-                cInfo->setFrameType(BROADCASTPKT);
-                cInfo->setDirection(DL);
-
-                // get RSSI from the BS
-                double rssi = 0;
-                std::vector<double> rssiV = primaryChannelModel_->getRSRP(frame, cInfo);
-                for (auto value : rssiV)
-                    rssi += value;
-                rssi /= rssiV.size();   // compute the mean over all RBs
-
-                EV << "LtePhyUe::initialize - RSSI from cell " << cellId << ": " << rssi << " dB (current candidate cell " << candidateMasterId_ << ": " << candidateMasterRssi_ << " dB)" << endl;
-
-                if (rssi > candidateMasterRssi_) {
-                    candidateMasterId_ = cellId;
-                    candidateMasterRssi_ = rssi;
-                }
-            }
-            delete cInfo;
-            delete frame;
+            findCandidateEnb(candidateMasterId_, candidateMasterRssi_);
 
             // binder calls
             // if dynamicCellAssociation selected a different master
@@ -195,6 +151,53 @@ void LtePhyUe::initialize(int stage)
         else
             cellInfo_ = nullptr;
     }
+}
+
+void LtePhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi)
+{
+    // this is a fictitious frame that needs to compute the SINR
+    LteAirFrame *frame = new LteAirFrame("cellSelectionFrame");
+    UserControlInfo *cInfo = new UserControlInfo();
+    outCandidateMasterId = NODEID_NONE;
+
+    // get the list of all eNodeBs in the network
+    for (const auto &enbInfo : binder_->getEnbList()) {
+        // the NR phy layer only checks signal from gNBs, and
+        // the LTE phy layer only checks signal from eNBs
+        if (isNr_ != enbInfo->isNr)
+            continue;
+
+        MacNodeId cellId = enbInfo->id;
+        LtePhyBase *cellPhy = check_and_cast<LtePhyBase*>(
+                enbInfo->eNodeB->getSubmodule("cellularNic")->getSubmodule("phy"));
+        double cellTxPower = cellPhy->getTxPwr();
+        Coord cellPos = cellPhy->getCoord();
+        // check whether the BS supports the carrier frequency used by the UE
+        GHz ueCarrierFrequency = primaryChannelModel_->getCarrierFrequency();
+        LteChannelModel *cellChannelModel = cellPhy->getChannelModel(ueCarrierFrequency);
+        if (cellChannelModel == nullptr)
+            continue;
+
+        // build a control info
+        cInfo->setSourceId(cellId);
+        cInfo->setTxPower(cellTxPower);
+        cInfo->setCoord(cellPos);
+        cInfo->setFrameType(BROADCASTPKT);
+        cInfo->setDirection(DL);
+        // get RSSI from the BS
+        double rssi = 0;
+        std::vector<double> rssiV = primaryChannelModel_->getRSRP(frame, cInfo);
+        for (auto value : rssiV)
+            rssi += value;
+        rssi /= rssiV.size(); // compute the mean over all RBs
+        EV << "LtePhyUe::findCandicateEnb - RSSI from cell " << cellId << ": " << rssi << " dB (current candidate cell " << outCandidateMasterId << ": " << outCandidateMasterRssi << " dB)" << endl;
+        if (rssi > outCandidateMasterRssi) {
+            outCandidateMasterId = cellId;
+            outCandidateMasterRssi = rssi;
+        }
+    }
+    delete cInfo;
+    delete frame;
 }
 
 void LtePhyUe::handleSelfMessage(cMessage *msg)
