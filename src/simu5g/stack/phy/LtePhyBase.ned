@@ -32,8 +32,6 @@ simple LtePhyBase like ILtePhy
         string txDirection @enum(ANISOTROPIC,OMNI) = default("OMNI");
         double txAngle @unit(deg) = default(0deg);
 
-        bool dynamicCellAssociation = default(false);
-
         // switch for handover messages handling on UEs
         bool enableHandover = default(false);
         double handoverLatency @unit(s) = default(0.05s);
