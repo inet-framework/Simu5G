@@ -98,15 +98,12 @@ void LtePhyUe::initialize(int stage)
 
             findCandidateEnb(candidateMasterId_, candidateMasterRssi_);
 
-            // binder calls
-            // if dynamicCellAssociation selected a different master
-            if (candidateMasterId_ != NODEID_NONE && candidateMasterId_ != masterId_) {
-                binder_->unregisterServingNode(masterId_, nodeId_);
+            if (candidateMasterId_ != NODEID_NONE) {
                 binder_->registerServingNode(candidateMasterId_, nodeId_);
+                masterId_ = candidateMasterId_;
+                currentMasterRssi_ = candidateMasterRssi_;
+                updateHysteresisTh(candidateMasterRssi_);
             }
-            masterId_ = candidateMasterId_;
-            currentMasterRssi_ = candidateMasterRssi_;
-            updateHysteresisTh(candidateMasterRssi_);
         }
 
         EV << "LtePhyUe::initialize - Attaching to eNodeB " << masterId_ << endl;
