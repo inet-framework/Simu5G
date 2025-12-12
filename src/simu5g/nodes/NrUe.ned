@@ -25,7 +25,7 @@ module NrUe extends LteUe
     parameters:
         cellularNic.typename = default("NrNicUe");
 
-        int nrMasterId @mutable = default(0);
+        int nrServingNodeId @mutable = default(0);
         int nrMacNodeId = default(2049+simu5g_seq("NrUe_macNodeId"));
 
         cellularNic.nrMac.collectorModule = hasRniSupport ? "^.^.nrUeCollector" : "";

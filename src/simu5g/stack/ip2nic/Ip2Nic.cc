@@ -82,14 +82,14 @@ void Ip2Nic::initialize(int stage)
         else if (nodeType_ == UE) {
             cModule *ue = getContainingNode(this);
 
-            masterId_ = MacNodeId(ue->par("masterId").intValue());
+            masterId_ = MacNodeId(ue->par("servingNodeId").intValue());
             nodeId_ = MacNodeId(ue->par("macNodeId").intValue());
             binder_->registerNode(nodeId_, ue, nodeType_, false);
             binder_->registerServingNode(masterId_, nodeId_);
             ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", nodeId_).c_str());
 
-            if (ue->hasPar("nrMasterId") && ue->par("nrMasterId").intValue() != 0) { // register also the NR MacNodeId
-                nrMasterId_ = MacNodeId(ue->par("nrMasterId").intValue());
+            if (ue->hasPar("nrServingNodeId") && ue->par("nrServingNodeId").intValue() != 0) { // register also the NR MacNodeId
+                nrMasterId_ = MacNodeId(ue->par("nrServingNodeId").intValue());
                 nrNodeId_ = MacNodeId(ue->par("nrMacNodeId").intValue());
                 binder_->registerNode(nrNodeId_, ue, nodeType_, true);
                 binder_->registerServingNode(nrMasterId_, nrNodeId_);

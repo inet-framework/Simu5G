@@ -355,9 +355,9 @@ void NrPhyUe::doHandover()
 
     // update NED parameter
     if (isNr_)
-        hostModule->par("nrMasterId").setIntValue(num(masterId_));
+        hostModule->par("nrServingNodeId").setIntValue(num(masterId_));
     else
-        hostModule->par("masterId").setIntValue(num(masterId_));
+        hostModule->par("servingNodeId").setIntValue(num(masterId_));
 
     if (masterId_ == NODEID_NONE)
         masterMobility_ = nullptr;

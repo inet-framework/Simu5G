@@ -63,7 +63,7 @@ module LteUe
 
         //# Node specs
         string nodeType = "UE";  // DO NOT CHANGE
-        int masterId @mutable;
+        int servingNodeId @mutable;
         int macNodeId = default(1025+simu5g_seq("LteUe_macNodeId"));
 
         //# Network Layer specs

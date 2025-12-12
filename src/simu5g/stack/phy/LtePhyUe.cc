@@ -101,9 +101,9 @@ void LtePhyUe::initialize(int stage)
         // get serving cell from configuration
         // TODO find a more elegant way
         if (isNr_)
-            masterId_ = MacNodeId(hostModule->par("nrMasterId").intValue());
+            masterId_ = MacNodeId(hostModule->par("nrServingNodeId").intValue());
         else
-            masterId_ = MacNodeId(hostModule->par("masterId").intValue());
+            masterId_ = MacNodeId(hostModule->par("servingNodeId").intValue());
         candidateMasterId_ = masterId_;
 
         // find the best candidate master cell
@@ -163,9 +163,9 @@ void LtePhyUe::initialize(int stage)
             masterId_ = candidateMasterId_;
             // set serving cell
             if (isNr_)
-                hostModule->par("nrMasterId").setIntValue(num(masterId_));
+                hostModule->par("nrServingNodeId").setIntValue(num(masterId_));
             else
-                hostModule->par("masterId").setIntValue(num(masterId_));
+                hostModule->par("servingNodeId").setIntValue(num(masterId_));
             currentMasterRssi_ = candidateMasterRssi_;
             updateHysteresisTh(candidateMasterRssi_);
         }
@@ -393,9 +393,9 @@ void LtePhyUe::doHandover()
 
     // update NED parameter
     if (isNr_)
-        hostModule->par("nrMasterId").setIntValue(num(masterId_));
+        hostModule->par("nrServingNodeId").setIntValue(num(masterId_));
     else
-        hostModule->par("masterId").setIntValue(num(masterId_));
+        hostModule->par("servingNodeId").setIntValue(num(masterId_));
 
     // update reference to master node's mobility module
     if (masterId_ == NODEID_NONE)

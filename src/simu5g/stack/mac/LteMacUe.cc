@@ -59,9 +59,9 @@ void LteMacUe::initialize(int stage)
     }
     else if (stage == INITSTAGE_LINK_LAYER) {
         if (strcmp(getFullName(), "nrMac") == 0)
-            cellId_ = MacNodeId(networkNode_->par("nrMasterId").intValue());
+            cellId_ = MacNodeId(networkNode_->par("nrServingNodeId").intValue());
         else
-            cellId_ = MacNodeId(networkNode_->par("masterId").intValue());
+            cellId_ = MacNodeId(networkNode_->par("servingNodeId").intValue());
     }
     else if (stage == INITSTAGE_NETWORK_LAYER) {
         if (strcmp(getFullName(), "nrMac") == 0)
