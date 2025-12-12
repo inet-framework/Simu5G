@@ -238,7 +238,9 @@ void Binder::unregisterServingNode(MacNodeId enbId, MacNodeId ueId)
 MacNodeId Binder::getServingNode(MacNodeId ueId)
 {
     ASSERT(getNodeTypeById(ueId) == UE);
-    return servingNode_[num(ueId)]; // overindexing extends vector with zeroes, which is fine
+    if (servingNode_.size() < num(ueId)+1)
+        servingNode_.resize(num(ueId)+1, NODEID_NONE);
+    return servingNode_[num(ueId)];
 }
 
 void Binder::registerMasterNode(MacNodeId masterId, MacNodeId slaveId)
