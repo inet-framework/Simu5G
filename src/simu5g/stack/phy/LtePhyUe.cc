@@ -93,6 +93,9 @@ void LtePhyUe::initialize(int stage)
 
         // find the best candidate master cell
         if (dynamicCellAssociation_) {
+            if (masterId_ != NODEID_NONE)
+                throw cRuntimeError("Conflicting settings: dynamicCellAssociation=true and servingNodeId/nrServingNodeId also specified");
+
             findCandidateEnb(candidateMasterId_, candidateMasterRssi_);
 
             // binder calls
