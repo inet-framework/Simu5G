@@ -85,12 +85,6 @@ class Binder : public cSimpleModule
     std::vector<BgTrafficManagerInfo *> bgTrafficManagerList_;
 
     typedef std::map<unsigned int, std::map<unsigned int, double>> BgInterferenceMatrix;
-    // map of maps storing the mutual interference between BG cells
-    BgInterferenceMatrix bgCellsInterferenceMatrix_;
-    // map of maps storing the mutual interference between BG UEs
-    BgInterferenceMatrix bgUesInterferenceMatrix_;
-    // maximum data rate achievable in one RB (NED parameter)
-    double maxDataRatePerRb_;
 
     /*
      * Carrier Aggregation support
@@ -588,15 +582,6 @@ class Binder : public cSimpleModule
 
     virtual void updateUeInfoCellId(MacNodeId nodeId, MacCellId cellId);
 
-    /*
-     *  Background UEs and cells Support
-     */
-    virtual void computeAverageCqiForBackgroundUes();
-    virtual void updateMutualInterference(unsigned int bgTrafficManagerId, unsigned int numBands, Direction dir);
-    virtual double computeInterferencePercentageDl(double n, double k, unsigned int numBands);
-    virtual double computeInterferencePercentageUl(double n, double k, double nTotal, double kTotal);
-    virtual double computeSinr(unsigned int bgTrafficManagerId, int bgUeId, double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus);
-    virtual double computeRequestedRbsFromSinr(double sinr, double reqLoad);
 
     /*
      * author Alessandro Noferi.
