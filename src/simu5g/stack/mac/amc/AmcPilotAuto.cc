@@ -36,9 +36,6 @@ const UserTxParams& AmcPilotAuto::computeTxParams(MacNodeId id, const Direction 
      */
     const LteSummaryFeedback& sfb = amc_->getFeedback(id, MACRO, txMode, dir, carrierFrequency);
 
-    if (TxMode(txMode) == MULTI_USER) // Initialize MuMiMoMatrix
-        amc_->muMimoMatrixInit(dir, id);
-
     sfb.print(NODEID_NONE, id, dir, txMode, "AmcPilotAuto::computeTxParams");
 
     // get a vector of  CQI over first CW

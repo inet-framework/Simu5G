@@ -93,8 +93,6 @@ class LteMacBase : public cSimpleModule
     /*
      * MAC MIB Params
      */
-    bool muMimo_;
-
     int harqProcesses_;
 
     /// TTI self message
@@ -314,12 +312,6 @@ class LteMacBase : public cSimpleModule
     unsigned int harqProcesses() const
     {
         return harqProcesses_;
-    }
-
-    // Returns the MU-MIMO enabled flag
-    bool muMimo() const
-    {
-        return muMimo_;
     }
 
     RanNodeType getNodeType()

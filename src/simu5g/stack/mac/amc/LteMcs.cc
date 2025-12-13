@@ -258,7 +258,7 @@ const unsigned int *itbs2tbs(LteMod mod, TxMode txMode, unsigned char layers, un
 {
     const unsigned int *res = nullptr;
 
-    if (layers == 1 || (txMode != OL_SPATIAL_MULTIPLEXING && txMode != CL_SPATIAL_MULTIPLEXING)) {
+    if (true) {
         switch (mod) {
             case _QPSK:
                 res = itbs2tbs_qpsk_1[itbs];
@@ -272,42 +272,6 @@ const unsigned int *itbs2tbs(LteMod mod, TxMode txMode, unsigned char layers, un
             default:
                 throw cRuntimeError("Unknown MCS (%d) in LteAmc::itbs2tbs()", mod);
         }
-    }
-    // Here we are sure to use Spatial Multiplexing with more than 1 layer (2 or 4)
-    else if (layers == 2) {
-        switch (mod) {
-            case _QPSK:
-                res = itbs2tbs_qpsk_2[itbs];
-                break;
-            case _16QAM:
-                res = itbs2tbs_16qam_2[itbs];
-                break;
-            case _64QAM:
-                res = itbs2tbs_64qam_2[itbs];
-                break;
-            default:
-                throw cRuntimeError("Unknown MCS (%d) in LteAmc::itbs2tbs()", mod);
-        }
-    }
-    else if (layers == 4) {
-        switch (mod) {
-            case _QPSK:
-                res = itbs2tbs_qpsk_4[itbs];
-                break;
-            case _16QAM:
-                res = itbs2tbs_16qam_4[itbs];
-                break;
-            case _64QAM:
-                res = itbs2tbs_64qam_4[itbs];
-                break;
-            default:
-                throw cRuntimeError("Unknown MCS (%d) in LteAmc::itbs2tbs()", mod);
-                res = nullptr;
-        }
-    }
-    else {
-        throw cRuntimeError("Illegal number of layers in LteAmc::itbs2tbs()");
-        res = nullptr;
     }
 
     if (res == nullptr)
@@ -325,10 +289,8 @@ std::vector<unsigned char> cwMapping(const TxMode& txMode, const Rank& ri, const
     }
     else {
         switch (txMode) {
-            // SISO and MU-MIMO support only rank 1 transmission (1 layer)
+            // SISO support only rank 1 transmission (1 layer)
             case SINGLE_ANTENNA_PORT0:
-            case SINGLE_ANTENNA_PORT5:
-            case MULTI_USER:
                 res.push_back(1);
                 break;
 
@@ -337,28 +299,6 @@ std::vector<unsigned char> cwMapping(const TxMode& txMode, const Rank& ri, const
                 res.push_back(antennaPorts);
                 break;
 
-            // Spatial MUX uses MIN(RI, antennaPorts) layers
-            case OL_SPATIAL_MULTIPLEXING:
-            case CL_SPATIAL_MULTIPLEXING: {
-                int usedRi = (antennaPorts < ri) ? antennaPorts : ri;
-                if (usedRi == 2) {
-                    res.push_back(1);
-                    res.push_back(1);
-                }
-                if (usedRi == 3) {
-                    res.push_back(1);
-                    res.push_back(2);
-                }
-                if (usedRi == 4) {
-                    res.push_back(2);
-                    res.push_back(2);
-                }
-                if (usedRi == 8) {
-                    res.push_back(4);
-                    res.push_back(4);
-                }
-                break;
-            }
 
             default:
                 res.push_back(1);

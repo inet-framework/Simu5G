@@ -262,23 +262,6 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
     EV << "LteSchedulerEnb::grant Cell: " << mac_->getMacCellId() << endl;
     EV << "LteSchedulerEnb::grant CID: " << cid << "(UE: " << nodeId << ", Flow: " << flowId << ") current Antenna [" << dasToA(antenna) << "]" << endl;
 
-    //! Multiuser MIMO support
-    if (mac_->muMimo() && (txParams.readTxMode() == MULTI_USER)) {
-        // request AMC for MU_MIMO pairing
-        MacNodeId peer = mac_->getAmc()->computeMuMimoPairing(nodeId, dir);
-        if (peer != nodeId) {
-            // this user has a valid pairing
-            //1) register pairing  - if pairing is already registered false is returned
-            if (allocator_->configureMuMimoPeering(nodeId, peer))
-                EV << "LteSchedulerEnb::grant MU-MIMO pairing established: main user [" << nodeId << "], paired user [" << peer << "]" << endl;
-            else
-                EV << "LteSchedulerEnb::grant MU-MIMO pairing already exists between users [" << nodeId << "] and [" << peer << "]" << endl;
-        }
-        else {
-            EV << "LteSchedulerEnb::grant no MU-MIMO pairing available for user [" << nodeId << "]" << endl;
-        }
-    }
-
     // registering DAS spaces to the allocator
     Plane plane = allocator_->getOFDMPlane(nodeId);
     allocator_->setRemoteAntenna(plane, antenna);
@@ -289,11 +272,7 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
         cwAlreadyAllocated = allocatedCws_.at(nodeId);
 
     // Check OFDM space
-    // OFDM space is not zero if this if we are trying to allocate the second cw in SPMUX or
-    // if we are trying to allocate a peer user in mu_mimo plane
-    if (allocator_->computeTotalRbs() == 0 && (((txParams.readTxMode() != OL_SPATIAL_MULTIPLEXING &&
-                                                 txParams.readTxMode() != CL_SPATIAL_MULTIPLEXING) || cwAlreadyAllocated == 0) &&
-                                               (txParams.readTxMode() != MULTI_USER || plane != MU_MIMO_PLANE)))
+    if (allocator_->computeTotalRbs() == 0)
     {
         terminate = true; // OFDM space ended, issuing terminate flag
         EV << "LteSchedulerEnb::grant Space ended, no scheduling." << endl;

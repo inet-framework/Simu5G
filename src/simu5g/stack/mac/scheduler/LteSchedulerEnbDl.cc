@@ -101,24 +101,6 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, GHz carrier
     }
 
     EV << NOW << "LteSchedulerEnbDl::rtxAcid - Node [" << mac_->getMacNodeId() << "], User[" << nodeId << "],  Codeword [" << cw << "]  of [" << codewords << "] , ACID [" << (int)acid << "] " << endl;
-    //! \test REALISTIC!!!  Multi User MIMO support
-    if (mac_->muMimo() && (txParams.readTxMode() == MULTI_USER)) {
-        // request amc for MU_MIMO pairing
-        MacNodeId peer = mac_->getAmc()->computeMuMimoPairing(nodeId);
-        if (peer != nodeId) {
-            // this user has a valid pairing
-            //1) register pairing  - if pairing is already registered false is returned
-            if (allocator_->configureMuMimoPeering(nodeId, peer)) {
-                EV << "LteSchedulerEnb::grant MU-MIMO pairing established: main user [" << nodeId << "], paired user [" << peer << "]" << endl;
-            }
-            else {
-                EV << "LteSchedulerEnb::grant MU-MIMO pairing already exists between users [" << nodeId << "] and [" << peer << "]" << endl;
-            }
-        }
-        else {
-            EV << "LteSchedulerEnb::grant no MU-MIMO pairing available for user [" << nodeId << "]" << endl;
-        }
-    }
     //!\test experimental DAS support
     // registering DAS spaces to the allocator
     Plane plane = allocator_->getOFDMPlane(nodeId);

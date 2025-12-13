@@ -111,12 +111,8 @@ enum TxMode
 {
     // Note: If you add more tx modes, update DL_NUM_TXMODE and UL_NUM_TXMODE
     SINGLE_ANTENNA_PORT0 = 0;
-    SINGLE_ANTENNA_PORT5 =1;
-    TRANSMIT_DIVERSITY = 2;
-    OL_SPATIAL_MULTIPLEXING = 3;
-    CL_SPATIAL_MULTIPLEXING = 4;
-    MULTI_USER = 5;
-    UNKNOWN_TX_MODE = 6;
+    TRANSMIT_DIVERSITY = 1;
+    UNKNOWN_TX_MODE = 2;
 };
 
 enum TxDirectionType

@@ -76,9 +76,6 @@ const UserTxParams& AmcPilotD2D::computeTxParams(MacNodeId id, const Direction d
 
     const LteSummaryFeedback& sfb = (dir == UL || dir == DL) ? amc_->getFeedback(id, MACRO, txMode, dir, carrierFrequency) : amc_->getFeedbackD2D(id, MACRO, txMode, peerId, carrierFrequency);
 
-    if (TxMode(txMode) == MULTI_USER) // Initialize MuMiMoMatrix
-        amc_->muMimoMatrixInit(dir, id);
-
     sfb.print(NODEID_NONE, id, dir, txMode, "AmcPilotD2D::computeTxParams");
 
     // get a vector of  CQI over first CW

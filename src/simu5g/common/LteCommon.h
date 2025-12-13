@@ -120,18 +120,17 @@ typedef std::vector<double> AttenuationVector;
 *************************/
 
 /// Number of transmission modes in DL direction.
-const unsigned char DL_NUM_TXMODE = MULTI_USER + 1;
+const unsigned char DL_NUM_TXMODE = 6; //UNKNOWN_TX_MODE;
 
 /// Number of transmission modes in UL direction.
-const unsigned char UL_NUM_TXMODE = MULTI_USER + 1;
+const unsigned char UL_NUM_TXMODE = 6; //UNKNOWN_TX_MODE;
 
 
-const unsigned int txModeToIndex[6] = { 0, 0, 1, 2, 2, 0 };
+const unsigned int txModeToIndex[2] = { 0, 1 };
 
-const TxMode indexToTxMode[3] = {
+const TxMode indexToTxMode[2] = {
     SINGLE_ANTENNA_PORT0,
-    TRANSMIT_DIVERSITY,
-    OL_SPATIAL_MULTIPLEXING
+    TRANSMIT_DIVERSITY
 };
 
 typedef std::map<MacNodeId, TxMode> TxModeMap;

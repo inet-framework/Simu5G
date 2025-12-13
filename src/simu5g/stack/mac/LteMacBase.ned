@@ -31,7 +31,6 @@ simple LteMacBase like ILteMac
         int queueSize @unit(B) = default(2MiB);              // MAC Buffers queue size
 
         //# Mac MIB
-        bool muMimo = default(false);
 
         //# H-ARQ
         int harqProcesses = default(8);

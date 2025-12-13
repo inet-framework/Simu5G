@@ -29,7 +29,7 @@ simple LteDlFeedbackGenerator
         string rbAllocationType @enum(distributed,localized) = default("localized");
 
         // period for Periodic feedback in TTI
-        int fbPeriod @unit(tti) = default(6tti); 
+        int fbPeriod @unit(tti) = default(6tti);
 
         // time interval between sensing and transmission in TTI
         int fbDelay @unit(tti) = default(1tti);
@@ -38,9 +38,7 @@ simple LteDlFeedbackGenerator
         bool usePeriodic = default(true);
 
         // initial txMode (see LteCommon.h)
-        //     SINGLE_ANTENNA_PORT0,SINGLE_ANTENNA_PORT5,TRANSMIT_DIVERSITY,OL_SPATIAL_MULTIPLEXING,
-        // CL_SPATIAL_MULTIPLEXING,MULTI_USER,
-        string initialTxMode @enum(SINGLE_ANTENNA_PORT0,SINGLE_ANTENNA_PORT5,TRANSMIT_DIVERSITY,OL_SPATIAL_MULTIPLEXING,CL_SPATIAL_MULTIPLEXING,MULTI_USER) = default("SINGLE_ANTENNA_PORT0");
+        string initialTxMode @enum(SINGLE_ANTENNA_PORT0,TRANSMIT_DIVERSITY) = default("SINGLE_ANTENNA_PORT0");
 
         // Feedback Computation (warning: this should be compatible with
         // the analogue model and Decider.
@@ -55,4 +53,3 @@ simple LteDlFeedbackGenerator
         string binderModule = default("binder");
         string phyModule = default("^.phy");
 }
-

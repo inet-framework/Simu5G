@@ -378,8 +378,6 @@ void LteMacBase::initialize(int stage)
 
         // Set the MAC MIB
 
-        muMimo_ = par("muMimo");
-
         harqProcesses_ = par("harqProcesses");
 
         // statistics

@@ -580,12 +580,6 @@ std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserCo
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
 
-        // if tx mode is multi-user the tx power is divided by the number of paired users
-        // in dB, divided by 2 means -3dB
-        if (lteInfo->getTxMode() == MULTI_USER) {
-            finalRecvPower -= 3;
-        }
-
         EV << " LteRealisticChannelModel::getSINR node " << ueId
            << ((lteInfo->getFrameType() == FEEDBACKPKT) ?
             " FEEDBACK PACKET " : " NORMAL PACKET ")
@@ -881,12 +875,6 @@ std::vector<double> LteRealisticChannelModel::getRSRP(LteAirFrame *frame, UserCo
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
 
-        // if txmode is multi-user the tx power is divided by the number of paired users
-        // in dB, divided by 2 means -3dB
-        if (lteInfo->getTxMode() == MULTI_USER) {
-            finalRecvPower -= 3;
-        }
-
         EV << " LteRealisticChannelModel::getRSRP node " << ueId
            << ((lteInfo->getFrameType() == FEEDBACKPKT) ?
             " FEEDBACK PACKET " : " NORMAL PACKET ")
@@ -1026,12 +1014,6 @@ std::vector<double> LteRealisticChannelModel::getSINR_bgUe(LteAirFrame *frame, U
         }
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
-
-        //if txmode is multi user the tx power is divided by the number of paired users
-        // in dB divided by 2 means -3dB
-        if (lteInfo->getTxMode() == MULTI_USER) {
-            finalRecvPower -= 3;
-        }
 
         snrVector[i] = finalRecvPower;
     }
@@ -1267,12 +1249,6 @@ std::vector<double> LteRealisticChannelModel::getRSRP_D2D(LteAirFrame *frame, Us
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
 
-        //if txmode is multi-user the tx power is divided by the number of paired users
-        // in dB divided by 2 means -3dB
-        if (lteInfo_1->getTxMode() == MULTI_USER) {
-            finalRecvPower -= 3;
-        }
-
         EV << " LteRealisticChannelModel::getRSRP_D2D node " << sourceId
            << ((lteInfo_1->getFrameType() == FEEDBACKPKT) ?
             " FEEDBACK PACKET " : " NORMAL PACKET ")
@@ -1379,12 +1355,6 @@ std::vector<double> LteRealisticChannelModel::getSINR_D2D(LteAirFrame *frame, Us
         }
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
-
-        //if txmode is multi-user the tx power is divided by the number of paired users
-        // in dB divided by 2 means -3dB
-        if (lteInfo->getTxMode() == MULTI_USER) {
-            finalRecvPower -= 3;
-        }
 
         EV << " LteRealisticChannelModel::getSINR_d2d node " << sourceId
            << ((lteInfo->getFrameType() == FEEDBACKPKT) ?
@@ -1632,11 +1602,6 @@ std::vector<double> LteRealisticChannelModel::getSIR(LteAirFrame *frame,
         // add fading contribution to the final SINR
         double finalSnr = recvPower + fadingAttenuation;
 
-        // if txmode is multi-user, the tx power is divided by the number of paired users
-        // using dB, to divide by 2 means -3dB
-        if (lteInfo->getTxMode() == MULTI_USER)
-            finalSnr -= 3;
-
         snrVector.push_back(finalSnr);
     }
 
@@ -1782,15 +1747,6 @@ bool LteRealisticChannelModel::isError(LteAirFrame *frame, UserControlInfo *lteI
     // Get txmode
     TxMode txmode = (TxMode)lteInfo->getTxMode();
 
-    // If rank is 1 and we used SMUX to transmit we have to corrupt this packet
-    if (txmode == CL_SPATIAL_MULTIPLEXING
-        || txmode == OL_SPATIAL_MULTIPLEXING)
-    {
-        // compare lambda min (smaller eigenvalues of channel matrix) with the threshold used to compute the rank
-        if (binder_->phyPisaData.getLambda(num(id), 1) < lambdaMinTh_)
-            return false;
-    }
-
     // Take sinr
     std::vector<double> snrV;
     if (lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI) {
@@ -1824,14 +1780,6 @@ bool LteRealisticChannelModel::isError(LteAirFrame *frame, UserControlInfo *lteI
             // this Rb is not allocated
             if (allocation == 0)
                 continue;
-
-            // check the antenna used in Das
-            if ((lteInfo->getTxMode() == CL_SPATIAL_MULTIPLEXING
-                 || lteInfo->getTxMode() == OL_SPATIAL_MULTIPLEXING)
-                && rbmap.size() > 1)
-                // we consider only the snr associated with the LB used
-                if (remoteUnit != lteInfo->getCw())
-                    continue;
 
             // Get the Bler
             if (cqi == 0 || cqi > 15)
@@ -1943,14 +1891,6 @@ bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *
     // Get txmode
     TxMode txmode = (TxMode)lteInfo->getTxMode();
 
-    // If rank is 1 and we used SMUX to transmit we have to corrupt this packet
-    if (txmode == CL_SPATIAL_MULTIPLEXING
-        || txmode == OL_SPATIAL_MULTIPLEXING)
-    {
-        // compare lambda min (smaller eigenvalues of channel matrix) with the threshold used to compute the rank
-        if (binder_->phyPisaData.getLambda(num(id), 1) < lambdaMinTh_)
-            return false;
-    }
     // SINR vector(one SINR value for each band)
     std::vector<double> snrV;
     if (lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI) {
@@ -1988,13 +1928,6 @@ bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *
         for (const auto& [band, allocation] : resourceBlocks) {
             // this Rb is not allocated
             if (allocation == 0) continue;
-
-            // check the antenna used in Das
-            if ((lteInfo->getTxMode() == CL_SPATIAL_MULTIPLEXING
-                 || lteInfo->getTxMode() == OL_SPATIAL_MULTIPLEXING)
-                && rbmap.size() > 1)
-                // we consider only the snr associated with the LB used
-                if (remoteUnitId != lteInfo->getCw()) continue;
 
             // Get the Bler
             if (cqi == 0 || cqi > 15)
