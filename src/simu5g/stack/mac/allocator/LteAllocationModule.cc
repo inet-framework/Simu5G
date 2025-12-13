@@ -193,11 +193,14 @@ bool LteAllocationModule::configureMuMimoPeering(const MacNodeId nodeId, const M
 
 Plane LteAllocationModule::getOFDMPlane(const MacNodeId nodeId)
 {
-    return (allocatedRbsUe_[nodeId].secondaryUser_) ? MU_MIMO_PLANE : MAIN_PLANE;
+    Plane result = (allocatedRbsUe_[nodeId].secondaryUser_) ? MU_MIMO_PLANE : MAIN_PLANE;
+    ASSERT(result == MAIN_PLANE);
+    return result;
 }
 
 MacNodeId LteAllocationModule::getMuMimoPeer(const MacNodeId nodeId) const
 {
+    ASSERT(false);
     if (allocatedRbsUe_.find(nodeId) != allocatedRbsUe_.end()) {
         return (allocatedRbsUe_.at(nodeId).muMimoEnabled_) ? allocatedRbsUe_.at(nodeId).peerId_ : nodeId;
     }

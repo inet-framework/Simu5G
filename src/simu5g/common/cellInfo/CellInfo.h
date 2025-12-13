@@ -228,11 +228,13 @@ class CellInfo : public cSimpleModule
 
     int getNumRus()
     {
+        ASSERT(numRus_ == 0);
         return numRus_;
     }
 
     std::map<Remote, int> getAntennaCws()
     {
+        ASSERT(antennaCws_.size() == 1 && antennaCws_.at(MACRO) == 1);
         return antennaCws_;
     }
 

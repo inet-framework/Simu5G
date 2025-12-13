@@ -58,12 +58,14 @@ void LtePhyEnbD2D::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame,
     // Get number of RU
     int nRus = cellInfo_->getNumRus();
     TxMode txmode = req.txMode;
+    ASSERT(txmode == SINGLE_ANTENNA_PORT0 || txmode == TRANSMIT_DIVERSITY);
     FeedbackType type = req.type;
     RbAllocationType rbtype = req.rbAllocationType;
     std::map<Remote, int> antennaCws = cellInfo_->getAntennaCws();
     unsigned int numPreferredBand = cellInfo_->getNumPreferredBands();
     Direction dir = UL;
     while (dir != UNKNOWN_DIRECTION) {
+        ASSERT(req.genType == IDEAL);
         // For each RU the computation feedback function is called
         if (req.genType == IDEAL) {
             fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,

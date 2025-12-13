@@ -512,7 +512,7 @@ bool LteSchedulerEnbDl::getBandLimit(std::vector<BandLimit> *bandLimit, MacNodeI
     }
 
     // check the number of codewords
-    unsigned int numCodewords = 1;
+    const unsigned int numCodewords = 1;
     unsigned int numBands = mac_->getCellInfo()->getNumBands();
     // for each band of the band vector provided
     for (unsigned int i = 0; i < numBands; i++) {

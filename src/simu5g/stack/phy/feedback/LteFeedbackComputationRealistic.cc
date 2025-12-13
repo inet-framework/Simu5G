@@ -36,6 +36,7 @@ void LteFeedbackComputationRealistic::generateBaseFeedback(int numBands, int num
     std::vector<CqiVector> cqiTmp2;
     CqiVector cqiTmp;
     if (txmode == OL_SPATIAL_MULTIPLEXING) {
+        ASSERT(false);
         // If rank is 1, SMUX is not a valid choice as Tx Mode
         if (fb.getRankIndicator() < 2)
             return;
@@ -136,6 +137,7 @@ LteFeedbackDoubleVector LteFeedbackComputationRealistic::computeFeedback(Feedbac
             fb.reset();
             fb.setTxMode((TxMode)z);
             unsigned int rank = 1;
+            //ASSERT(z != OL_SPATIAL_MULTIPLEXING);  // note: this would FAIL because z loops through all TxModes
             if (z == OL_SPATIAL_MULTIPLEXING)
                 rank = computeRank(id);
             if ((z == OL_SPATIAL_MULTIPLEXING && rank > 1) || z == TRANSMIT_DIVERSITY || z == SINGLE_ANTENNA_PORT0) {
@@ -170,6 +172,7 @@ LteFeedbackVector LteFeedbackComputationRealistic::computeFeedback(const Remote 
         LteFeedback fb;
         fb.setTxMode((TxMode)z);
         unsigned int rank = 1;
+        //ASSERT(z != OL_SPATIAL_MULTIPLEXING);  // note: this would FAIL because z loops through all TxModes
         if (z == OL_SPATIAL_MULTIPLEXING)
             rank = computeRank(id);
         if ((z == OL_SPATIAL_MULTIPLEXING && rank > 1) || z == TRANSMIT_DIVERSITY || z == SINGLE_ANTENNA_PORT0) {
@@ -200,6 +203,7 @@ LteFeedback LteFeedbackComputationRealistic::computeFeedback(const Remote remote
     unsigned int rank = 1;
     // Set the rank for all the tx mode except for SISO and Tx diversity
     if (txmode == OL_SPATIAL_MULTIPLEXING || txmode == CL_SPATIAL_MULTIPLEXING || txmode == MULTI_USER) {
+        ASSERT(false);
         // Compute Rank Index
         rank = computeRank(id);
         if (rank < 2 && (txmode == OL_SPATIAL_MULTIPLEXING || txmode == CL_SPATIAL_MULTIPLEXING))
@@ -215,6 +219,7 @@ LteFeedback LteFeedbackComputationRealistic::computeFeedback(const Remote remote
     generateBaseFeedback(numBands_, numPreferredBands, fb, fbType, antennaCws, rbAllocationType, txmode, snr);
     // Set PMI only for CL SMUX and MUMIMO
     if (txmode == CL_SPATIAL_MULTIPLEXING || txmode == MULTI_USER) {
+        ASSERT(false);
         // Set PMI
         fb.setWideBandPmi(EXAMPLE_PMI_VALUE);
     }
