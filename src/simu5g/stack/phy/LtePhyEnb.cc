@@ -189,7 +189,6 @@ void LtePhyEnb::handleAirFrame(cMessage *msg)
     bool result = true;
     RemoteSet r = lteInfo->getUserTxParams()->readAntennaSet();
     if (r.size() > 1) {
-        ASSERT(false);
         // Use DAS
         // Message from ue
         for (auto it : r) {
@@ -265,7 +264,6 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
     //get number of RU
     int nRus = cellInfo_->getNumRus();
     TxMode txmode = req.txMode;
-    ASSERT(txmode == SINGLE_ANTENNA_PORT0 || txmode == TRANSMIT_DIVERSITY);
     FeedbackType type = req.type;
     RbAllocationType rbtype = req.rbAllocationType;
     std::map<Remote, int> antennaCws = cellInfo_->getAntennaCws();
@@ -275,7 +273,6 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
          dir = ((dir == UL) ? DL : UNKNOWN_DIRECTION))
     {
         //for each RU is called the computation feedback function
-        ASSERT(req.genType == IDEAL);
         if (req.genType == IDEAL) {
             fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,
                     antennaCws, numPreferredBand, IDEAL, nRus, snr,

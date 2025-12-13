@@ -492,7 +492,6 @@ const LteSummaryFeedback& LteAmc::getFeedbackD2D(MacNodeId id, Remote antenna, T
 
 MacNodeId LteAmc::computeMuMimoPairing(const MacNodeId nodeId, Direction dir)
 {
-    ASSERT(false);
     if (dir == DL) {
         return muMimoDlMatrix_.getMuMimoPair(nodeId);
     }

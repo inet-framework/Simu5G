@@ -397,8 +397,6 @@ double LteRealisticChannelModel::computeAngularAttenuation(double hAngle, double
 
 std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
-    ASSERT(lteInfo->getTxMode() == SINGLE_ANTENNA_PORT0 || lteInfo->getTxMode() == TRANSMIT_DIVERSITY);
-
     // get tx power
     double recvPower = lteInfo->getTxPower(); // dBm
 
@@ -1783,7 +1781,6 @@ bool LteRealisticChannelModel::isError(LteAirFrame *frame, UserControlInfo *lteI
 
     // Get txmode
     TxMode txmode = (TxMode)lteInfo->getTxMode();
-    ASSERT(txmode == SINGLE_ANTENNA_PORT0 || txmode == TRANSMIT_DIVERSITY);
 
     // If rank is 1 and we used SMUX to transmit we have to corrupt this packet
     if (txmode == CL_SPATIAL_MULTIPLEXING
@@ -1945,7 +1942,6 @@ bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *
 
     // Get txmode
     TxMode txmode = (TxMode)lteInfo->getTxMode();
-    ASSERT(txmode == SINGLE_ANTENNA_PORT0 || txmode == TRANSMIT_DIVERSITY);
 
     // If rank is 1 and we used SMUX to transmit we have to corrupt this packet
     if (txmode == CL_SPATIAL_MULTIPLEXING

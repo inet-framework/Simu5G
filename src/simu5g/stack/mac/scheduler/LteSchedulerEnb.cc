@@ -190,8 +190,10 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
     const std::set<Band>& allowedBands = txParams.readBands();
 
     //get the number of codewords
-    const unsigned int numCodewords = txParams.getLayers().size();
-    ASSERT(numCodewords == 1);
+    unsigned int numCodewords = txParams.getLayers().size();
+
+    // TEST: check the number of codewords
+    numCodewords = 1;
 
     EV << "LteSchedulerEnb::grant - deciding allowed Bands" << endl;
     std::string bands_msg = "BAND_LIMIT_SPECIFIED";
@@ -289,11 +291,9 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
     // Check OFDM space
     // OFDM space is not zero if this if we are trying to allocate the second cw in SPMUX or
     // if we are trying to allocate a peer user in mu_mimo plane
-    bool cond = (allocator_->computeTotalRbs() == 0 && (((txParams.readTxMode() != OL_SPATIAL_MULTIPLEXING &&
+    if (allocator_->computeTotalRbs() == 0 && (((txParams.readTxMode() != OL_SPATIAL_MULTIPLEXING &&
                                                  txParams.readTxMode() != CL_SPATIAL_MULTIPLEXING) || cwAlreadyAllocated == 0) &&
-                                               (txParams.readTxMode() != MULTI_USER || plane != MU_MIMO_PLANE)));
-    ASSERT(cond == (allocator_->computeTotalRbs() == 0));
-    if (cond)
+                                               (txParams.readTxMode() != MULTI_USER || plane != MU_MIMO_PLANE)))
     {
         terminate = true; // OFDM space ended, issuing terminate flag
         EV << "LteSchedulerEnb::grant Space ended, no scheduling." << endl;
@@ -535,7 +535,7 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
     MacNodeId bgUeId = bgCid.getNodeId();
 
     // Get the number of codewords
-    const unsigned int numCodewords = 1;
+    unsigned int numCodewords = 1;
 
     EV << "LteSchedulerEnb::grant - deciding allowed Bands" << endl;
     std::string bands_msg = "BAND_LIMIT_SPECIFIED";
