@@ -867,27 +867,27 @@ void LteMacEnb::flushHarqBuffers()
 void LteMacEnb::macHandleFeedbackPkt(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
-    auto fb = pkt->peekAtFront<LteFeedbackPkt>();
+    auto fbPk = pkt->peekAtFront<LteFeedbackPkt>();
 
     //LteFeedbackPkt* fb = check_and_cast<LteFeedbackPkt*>(pkt);
-    LteFeedbackDoubleVector fbMapDl = fb->getLteFeedbackDoubleVectorDl();
-    LteFeedbackDoubleVector fbMapUl = fb->getLteFeedbackDoubleVectorUl();
+    LteFeedbackDoubleVector fbMapDl = fbPk->getLteFeedbackDoubleVectorDl();
+    LteFeedbackDoubleVector fbMapUl = fbPk->getLteFeedbackDoubleVectorUl();
     //get Source Node Id<
-    MacNodeId id = fb->getSourceNodeId();
+    MacNodeId srcNodeId = fbPk->getSourceNodeId();
 
     auto lteInfo = pkt->getTag<UserControlInfo>();
 
-    for (auto& it : fbMapDl) {
-        for (auto& jt : it) {
-            if (!jt.isEmptyFeedback()) {
-                amc_->pushFeedback(id, DL, jt, lteInfo->getCarrierFrequency());
+    for (auto& fbv : fbMapDl) {
+        for (auto& fb : fbv) {
+            if (!fb.isEmptyFeedback()) {
+                amc_->pushFeedback(srcNodeId, DL, fb, lteInfo->getCarrierFrequency());
             }
         }
     }
-    for (auto& it : fbMapUl) {
-        for (auto& jt : it) {
-            if (!jt.isEmptyFeedback())
-                amc_->pushFeedback(id, UL, jt, lteInfo->getCarrierFrequency());
+    for (auto& fbv : fbMapUl) {
+        for (auto& fb : fbv) {
+            if (!fb.isEmptyFeedback())
+                amc_->pushFeedback(srcNodeId, UL, fb, lteInfo->getCarrierFrequency());
         }
     }
     delete pkt;
