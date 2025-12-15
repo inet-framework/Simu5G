@@ -65,7 +65,7 @@ class LteFeedback
     //! Current status.
     unsigned int status_ = EMPTY;
     //! Current transmission mode.
-    TxMode txMode_ = SINGLE_ANTENNA_PORT0;
+    TxMode txMode_ = UNKNOWN_TX_MODE;
 
     //! Periodicity of the feedback message.
     bool periodicFeedback_ = true;
@@ -82,7 +82,7 @@ class LteFeedback
     //! Return true if feedback is empty.
     bool isEmptyFeedback() const
     {
-        return !(status_);
+        return txMode_ == UNKNOWN_TX_MODE || status_ == EMPTY;
     }
 
     //! Return true if it is periodic.
