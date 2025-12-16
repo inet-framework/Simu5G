@@ -19,6 +19,9 @@ namespace simu5g {
 
 using namespace omnetpp;
 
+// PMI values travel back to eNB in feedback packets but are not used as input for any computation there, so we can set PMI to any value.
+static const Pmi EXAMPLE_PMI_VALUE = 42;
+
 LteFeedbackComputationRealistic::LteFeedbackComputationRealistic(Binder *binder, double targetBler, const std::map<MacNodeId, Lambda>& lambda,
         double lambdaMinTh, double lambdaMaxTh, double lambdaRatioTh, unsigned int numBands) : lambda_(lambda), targetBler_(targetBler), numBands_(numBands), lambdaMinTh_(lambdaMinTh), lambdaMaxTh_(lambdaMaxTh), lambdaRatioTh_(lambdaRatioTh), phyPisaData_(&(binder->phyPisaData))
 {
@@ -143,7 +146,7 @@ LteFeedbackDoubleVector LteFeedbackComputationRealistic::computeFeedback(Feedbac
                 // Set the remote
                 fb.setAntenna((Remote)j);
                 // Set the PMI
-                fb.setWideBandPmi(intuniform(getEnvir()->getRNG(0), 1, pow(rank, (double)2)));
+                fb.setWideBandPmi(EXAMPLE_PMI_VALUE);
                 // Generate feedback for txmode z
                 generateBaseFeedback(numBands_, numPreferredBands, fb, fbType, antennaCws[(Remote)j], rbAllocationType,
                         (TxMode)z, snr);
@@ -183,7 +186,7 @@ LteFeedbackVector LteFeedbackComputationRealistic::computeFeedback(const Remote 
             // Set the remote
             fb.setAntenna(remote);
             // Set the PMI
-            fb.setWideBandPmi(intuniform(getEnvir()->getRNG(0), 1, pow(rank, (double)2)));
+            fb.setWideBandPmi(EXAMPLE_PMI_VALUE);
             // Generate feedback for txmode z
             generateBaseFeedback(numBands_, numPreferredBands, fb, fbType, antennaCws, rbAllocationType, (TxMode)z,
                     snr);
@@ -225,7 +228,7 @@ LteFeedback LteFeedbackComputationRealistic::computeFeedback(const Remote remote
     // Set PMI only for CL SMUX and MUMIMO
     if (txmode == CL_SPATIAL_MULTIPLEXING || txmode == MULTI_USER) {
         // Set PMI
-        fb.setWideBandPmi(intuniform(getEnvir()->getRNG(0), 1, pow(rank, (double)2)));
+        fb.setWideBandPmi(EXAMPLE_PMI_VALUE);
     }
     return fb;
 }
