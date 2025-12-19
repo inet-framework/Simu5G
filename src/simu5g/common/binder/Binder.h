@@ -35,9 +35,6 @@ class UeStatsCollector;
 struct NodeInfo {
     opp_component_ptr<cModule> moduleRef;
     opp_component_ptr<LteMacBase> macModule;
-
-    NodeInfo() {}
-    NodeInfo(cModule *moduleRef) : moduleRef(moduleRef) {}
 };
 
 /**
@@ -436,10 +433,6 @@ class Binder : public cSimpleModule
      * Returns the UPF address corresponding to the given MEC Host address
      */
     virtual const inet::L3Address& getUpfFromMecHost(const inet::L3Address& mecHostAddress);
-    /**
-     * Associates the given MAC node ID to the module
-     */
-    virtual void registerModule(MacNodeId nodeId, cModule *module);
     /**
      * Returns the module for the given MAC node ID
      */

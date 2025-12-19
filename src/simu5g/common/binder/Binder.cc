@@ -163,7 +163,8 @@ void Binder::registerNode(MacNodeId nodeId, cModule *nodeModule, RanNodeType typ
     EV << "Binder : Registering module " << nodeModule->getFullPath() << " with MacNodeId " << nodeId << "\n";
 
     // registering new node
-    NodeInfo nodeInfo(nodeModule);
+    NodeInfo nodeInfo;
+    nodeInfo.moduleRef = nodeModule;
     nodeInfoMap_[nodeId] = nodeInfo;
 }
 
@@ -458,19 +459,6 @@ const inet::L3Address& Binder::getUpfFromMecHost(const inet::L3Address& mecHostA
     if (mecHostToUpfAddress_.find(mecHostAddress) == mecHostToUpfAddress_.end())
         throw cRuntimeError("Binder::getUpfFromMecHost - address %s not found", mecHostAddress.str().c_str());
     return mecHostToUpfAddress_[mecHostAddress];
-}
-
-void Binder::registerModule(MacNodeId nodeId, cModule *module)
-{
-    auto it = nodeInfoMap_.find(nodeId);
-    if (it != nodeInfoMap_.end()) {
-        it->second.moduleRef = module;
-    } else {
-        // If node doesn't exist yet, create a new entry
-        NodeInfo nodeInfo;
-        nodeInfo.moduleRef = module;
-        nodeInfoMap_[nodeId] = nodeInfo;
-    }
 }
 
 cModule *Binder::getModuleByMacNodeId(MacNodeId nodeId)

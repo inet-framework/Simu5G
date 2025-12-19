@@ -171,9 +171,6 @@ void LteMacEnb::initialize(int stage)
         info->init = false;            // flag for PHY initialization
         info->eNodeB = hostModule;  // reference to the eNodeB module
         binder_->addEnbInfo(info);
-
-        // register  <id, module> in the binder
-        binder_->registerModule(nodeId_, hostModule);
     }
     else if (stage == inet::INITSTAGE_LINK_LAYER) {
         // Create and initialize MAC Downlink scheduler
