@@ -155,18 +155,17 @@ void LtePhyBase::initializeChannelModel()
     channelModel_[carrierFreq] = primaryChannelModel_;
 
     if (nodeType_ == UE)
-        binder_->registerCarrierUe(GHz(carrierFreq), numerologyIndex, nodeId_); //TODO check this call in the original!!!
+        binder_->registerCarrierUe(carrierFreq, numerologyIndex, nodeId_);
 
-    int vectSize = primaryChannelModel_->getVectorSize();
-    LteChannelModel *chanModel = nullptr;
-    for (int index = 1; index < vectSize; index++) {
-        chanModel = check_and_cast<LteChannelModel *>(primaryChannelModel_->getParentModule()->getSubmodule(primaryChannelModel_->getName(), index));
+    int numChannelModels = primaryChannelModel_->getVectorSize();
+    for (int index = 1; index < numChannelModels; index++) {
+        LteChannelModel *chanModel = check_and_cast<LteChannelModel *>(primaryChannelModel_->getParentModule()->getSubmodule(primaryChannelModel_->getName(), index));
         chanModel->setPhy(this);
-        carrierFreq = chanModel->getCarrierFrequency();
-        numerologyIndex = chanModel->getNumerologyIndex();
+        GHz carrierFreq = chanModel->getCarrierFrequency();
+        unsigned int numerologyIndex = chanModel->getNumerologyIndex();
         channelModel_[carrierFreq] = chanModel;
         if (nodeType_ == UE)
-            binder_->registerCarrierUe(GHz(carrierFreq), numerologyIndex, nodeId_);
+            binder_->registerCarrierUe(carrierFreq, numerologyIndex, nodeId_);
     }
 }
 
