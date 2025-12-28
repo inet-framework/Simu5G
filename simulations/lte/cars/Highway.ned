@@ -53,9 +53,6 @@ network Highway
         channelControl: LteChannelControl {
             @display("p=50,25;is=s");
         }
-        binder: Binder {
-            @display("p=50,175;is=s");
-        }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
         }
@@ -76,6 +73,10 @@ network Highway
         }
         //# submodule vector to store all cars - will be filled dynamically during simulations
         car[0]: LteCar;
+
+        binder: Binder {
+            @display("p=50,175;is=s");
+        }
 
     connections allowunconnected:
         server.pppg++ <--> Eth10G <--> router.pppg++;

@@ -48,9 +48,6 @@ network MultiMecHost_delay
         configurator: Ipv4NetworkConfigurator {
             @display("p=50,125");
         }
-        binder: Binder {
-            @display("p=50,175;is=s");
-        }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
         }
@@ -88,6 +85,10 @@ network MultiMecHost_delay
         }
         ualcmp: Ualcmp {
             @display("p=603,131");
+        }
+
+        binder: Binder {
+            @display("p=50,175;is=s");
         }
 
     connections:

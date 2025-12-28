@@ -39,9 +39,6 @@ network MultiCell
         configurator: Ipv4NetworkConfigurator {
             @display("p=50,125");
         }
-        binder: Binder {
-            @display("p=50,175;is=s");
-        }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
         }
@@ -74,6 +71,9 @@ network MultiCell
         }
         extCell[numExtCells]: ExtCell {
             @display("p=100,480;is=vl");
+        }
+        binder: Binder {
+            @display("p=50,175;is=s");
         }
     connections:
         server.pppg++ <--> Eth10G <--> router.pppg++;

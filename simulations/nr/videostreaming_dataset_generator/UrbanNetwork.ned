@@ -47,9 +47,6 @@ network UrbanNetwork
         configurator: Ipv4NetworkConfigurator {
             @display("p=115,143;is=s");
         }
-        binder: Binder {
-            @display("p=115,242;is=s");
-        }
         carrierAggregation: CarrierAggregation {
             @display("p=114,337;is=s");
         }
@@ -112,6 +109,10 @@ network UrbanNetwork
 
         ue[numUe]: NrUe {
             @display("p=200,2026");
+        }
+
+        binder: Binder {
+            @display("p=115,242;is=s");
         }
 
     connections:

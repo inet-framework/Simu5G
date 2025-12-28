@@ -47,9 +47,6 @@ network MultiCell_withSecondaryGnb
         configurator: Ipv4NetworkConfigurator {
             @display("p=50,172");
         }
-        binder: Binder {
-            @display("p=106,334;is=s");
-        }
         carrierAggregation: CarrierAggregation {
             @display("p=106,418;is=s");
         }
@@ -79,6 +76,9 @@ network MultiCell_withSecondaryGnb
         }
         ue[numUe]: NrUe {
             @display("p=526,334");
+        }
+        binder: Binder {
+            @display("p=106,334;is=s");
         }
     connections:
         server.pppg++ <--> Eth10G <--> router.pppg++;

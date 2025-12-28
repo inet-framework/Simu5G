@@ -44,9 +44,6 @@ network MultiCell_D2DMultihop
         configurator: Ipv4NetworkConfigurator {
             @display("p=90,121");
         }
-        binder: Binder {
-            @display("p=90,171;is=s");
-        }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
         }
@@ -109,6 +106,9 @@ network MultiCell_D2DMultihop
         }
         d2dMultihopStatistics: MultihopD2DStatistics {
             @display("p=90,272;is=s");
+        }
+        binder: Binder {
+            @display("p=90,171;is=s");
         }
     connections:
         router1.pppg++ <--> Eth10G <--> eNodeB1.ppp;

@@ -47,9 +47,6 @@ network SingleMecHost
         channelControl: LteChannelControl {
             @display("p=690,24;is=s");
         }
-        binder: Binder {
-            @display("p=690,264;is=s");
-        }
         carrierAggregation: CarrierAggregation {
             @display("p=691,342;is=s");
         }
@@ -78,6 +75,9 @@ network SingleMecHost
             @display("p=545,158;i=device/smallrouter");
         }
 
+        binder: Binder {
+            @display("p=690,264;is=s");
+        }
 
     connections allowunconnected:
 

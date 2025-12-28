@@ -39,9 +39,6 @@ network SingleCell_D2DMulticast
         configurator: Ipv4NetworkConfigurator {
             @display("p=50,125");
         }
-        binder: Binder {
-            @display("p=50,175;is=s");
-        }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
         }
@@ -62,6 +59,9 @@ network SingleCell_D2DMulticast
         }
         ueD2D[numUeD2D]: LteUe {
             @display("p=477,367");
+        }
+        binder: Binder {
+            @display("p=50,175;is=s");
         }
     connections:
         server.pppg++ <--> Eth10G <--> router.pppg++;

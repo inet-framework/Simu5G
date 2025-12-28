@@ -44,9 +44,6 @@ network MultiCell_Standalone
         configurator: Ipv4NetworkConfigurator {
             @display("p=50,125");
         }
-        binder: Binder {
-            @display("p=50,175;is=s");
-        }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
         }
@@ -73,6 +70,9 @@ network MultiCell_Standalone
         }
         ue[numUe]: NrUe {
             @display("p=500,428");
+        }
+        binder: Binder {
+            @display("p=50,175;is=s");
         }
     connections:
 

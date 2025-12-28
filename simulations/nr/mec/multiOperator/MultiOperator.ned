@@ -53,9 +53,6 @@ network MultiOperator
         configurator: Ipv4NetworkConfigurator {
             @display("p=50,125;is=s");
         }
-        binder: Binder {
-            @display("p=50,175;is=s");
-        }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
         }
@@ -120,6 +117,9 @@ network MultiOperator
         }
         ualcmp_B: Ualcmp if enableMecOperatorB {
             @display("p=1027,73");
+        }
+        binder: Binder {
+            @display("p=50,175;is=s");
         }
 
     connections:
