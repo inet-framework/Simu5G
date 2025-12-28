@@ -38,18 +38,6 @@ network MultiCell_withSecondaryGnb
         int numBgCells = default(0);
         @display("i=block/network2;bgb=1100,800;bgi=background/pisa");
     submodules:
-        channelControl: LteChannelControl {
-            @display("p=104,62;is=s");
-        }
-        routingRecorder: RoutingTableRecorder {
-            @display("p=106,131;is=s");
-        }
-        configurator: Ipv4NetworkConfigurator {
-            @display("p=50,172");
-        }
-        carrierAggregation: CarrierAggregation {
-            @display("p=106,418;is=s");
-        }
         server: StandardHost {
             @display("p=273,48;is=n;i=device/server");
         }
@@ -79,6 +67,18 @@ network MultiCell_withSecondaryGnb
         }
         binder: Binder {
             @display("p=106,334;is=s");
+        }
+        channelControl: LteChannelControl {
+            @display("p=104,62;is=s");
+        }
+        routingRecorder: RoutingTableRecorder {
+            @display("p=106,131;is=s");
+        }
+        configurator: Ipv4NetworkConfigurator {
+            @display("p=50,172");
+        }
+        carrierAggregation: CarrierAggregation {
+            @display("p=106,418;is=s");
         }
     connections:
         server.pppg++ <--> Eth10G <--> router.pppg++;

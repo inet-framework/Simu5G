@@ -35,21 +35,6 @@ network ExtUeAppExample
         @display("bgb=805,500");
 
     submodules:
-        routingRecorder: RoutingTableRecorder {
-            @display("p=690,104;is=s");
-        }
-        configurator: Ipv4NetworkConfigurator {
-            @display("p=556,34");
-        }
-        channelControl: LteChannelControl {
-            @display("p=690,24;is=s");
-        }
-        binder: Binder {
-            @display("p=474,34;is=s");
-        }
-        carrierAggregation: CarrierAggregation {
-            @display("p=368,34;is=s");
-        }
         upf: Upf {
             @display("p=420,259");
         }
@@ -77,6 +62,21 @@ network ExtUeAppExample
             @display("p=51,259");
         }
 
+        binder: Binder {
+            @display("p=474,34;is=s");
+        }
+        routingRecorder: RoutingTableRecorder {
+            @display("p=690,104;is=s");
+        }
+        configurator: Ipv4NetworkConfigurator {
+            @display("p=556,34");
+        }
+        channelControl: LteChannelControl {
+            @display("p=690,24;is=s");
+        }
+        carrierAggregation: CarrierAggregation {
+            @display("p=368,34;is=s");
+        }
     connections allowunconnected:
 
         gNodeB1.ppp <--> Eth10G <--> iUpf.pppg++;

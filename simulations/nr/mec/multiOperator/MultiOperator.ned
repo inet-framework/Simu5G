@@ -44,18 +44,6 @@ network MultiOperator
         bool enableMecOperatorB = default(true);
         @display("i=block/network2;bgb=1627,801;bgi=background/pisa");
     submodules:
-        channelControl: LteChannelControl {
-            @display("p=50,25;is=s");
-        }
-        routingRecorder: RoutingTableRecorder {
-            @display("p=50,75;is=s");
-        }
-        configurator: Ipv4NetworkConfigurator {
-            @display("p=50,125;is=s");
-        }
-        carrierAggregation: CarrierAggregation {
-            @display("p=50,258;is=s");
-        }
         router: Router {
             @display("p=750,73");
         }
@@ -120,6 +108,18 @@ network MultiOperator
         }
         binder: Binder {
             @display("p=50,175;is=s");
+        }
+        channelControl: LteChannelControl {
+            @display("p=50,25;is=s");
+        }
+        routingRecorder: RoutingTableRecorder {
+            @display("p=50,75;is=s");
+        }
+        configurator: Ipv4NetworkConfigurator {
+            @display("p=50,125;is=s");
+        }
+        carrierAggregation: CarrierAggregation {
+            @display("p=50,258;is=s");
         }
 
     connections:

@@ -35,27 +35,6 @@ network Highway
         @display("bgb=732,483");
 
     submodules:
-
-        routingRecorder: RoutingTableRecorder {
-            @display("p=50,75;is=s");
-        }
-        configurator: Ipv4NetworkConfigurator {
-            @display("p=50,125");
-            config = xmldoc("demo.xml");
-        }
-
-        //# Veins manager module
-        veinsManager: VeinsInetManager {
-            @display("p=50,227;is=s");
-        }
-
-        //# LTE modules
-        channelControl: LteChannelControl {
-            @display("p=50,25;is=s");
-        }
-        carrierAggregation: CarrierAggregation {
-            @display("p=50,258;is=s");
-        }
         server: StandardHost {
             @display("p=660,136;is=n;i=device/server");
         }
@@ -76,6 +55,24 @@ network Highway
 
         binder: Binder {
             @display("p=50,175;is=s");
+        }
+        routingRecorder: RoutingTableRecorder {
+            @display("p=50,75;is=s");
+        }
+        configurator: Ipv4NetworkConfigurator {
+            @display("p=50,125");
+            config = xmldoc("demo.xml");
+        }
+
+        veinsManager: VeinsInetManager {
+            @display("p=50,227;is=s");
+        }
+
+        channelControl: LteChannelControl {
+            @display("p=50,25;is=s");
+        }
+        carrierAggregation: CarrierAggregation {
+            @display("p=50,258;is=s");
         }
 
     connections allowunconnected:

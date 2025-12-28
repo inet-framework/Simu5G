@@ -37,20 +37,6 @@ network UrbanNetwork
         int numBgCells = default(0);
         @display("i=block/network2;bgb=2000,2000;bgi=intersections");
     submodules:
-
-        channelControl: LteChannelControl {
-            @display("p=114,32;is=s");
-        }
-        routingRecorder: RoutingTableRecorder {
-            @display("p=114,82;is=s");
-        }
-        configurator: Ipv4NetworkConfigurator {
-            @display("p=115,143;is=s");
-        }
-        carrierAggregation: CarrierAggregation {
-            @display("p=114,337;is=s");
-        }
-
         //# traffic lights
         tl1: TrafficLight {
             @display("p=500,2026");
@@ -113,6 +99,18 @@ network UrbanNetwork
 
         binder: Binder {
             @display("p=115,242;is=s");
+        }
+        channelControl: LteChannelControl {
+            @display("p=114,32;is=s");
+        }
+        routingRecorder: RoutingTableRecorder {
+            @display("p=114,82;is=s");
+        }
+        configurator: Ipv4NetworkConfigurator {
+            @display("p=115,143;is=s");
+        }
+        carrierAggregation: CarrierAggregation {
+            @display("p=114,337;is=s");
         }
 
     connections:

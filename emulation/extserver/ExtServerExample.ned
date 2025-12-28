@@ -36,21 +36,6 @@ network ExtServerExample
         int numExtCells = default(0);
         @display("i=block/network2;bgb=800,554;bgi=background/pisa");
     submodules:
-        routingRecorder: RoutingTableRecorder {
-            @display("p=73,130;is=s");
-        }
-        configurator: Ipv4NetworkConfigurator {
-            @display("p=73,72");
-        }
-        channelControl: LteChannelControl {
-            @display("p=70,190;is=s");
-        }
-        binder: Binder {
-            @display("p=73,261;is=s");
-        }
-        carrierAggregation: CarrierAggregation {
-            @display("p=72,335;is=s");
-        }
         router: Router {
             @display("p=223,175;i=device/smallrouter");
         }
@@ -68,6 +53,21 @@ network ExtServerExample
         }
         extCell[numExtCells]: ExtCell {
             @display("p=671,432;is=vl");
+        }
+        routingRecorder: RoutingTableRecorder {
+            @display("p=73,130;is=s");
+        }
+        configurator: Ipv4NetworkConfigurator {
+            @display("p=73,72");
+        }
+        channelControl: LteChannelControl {
+            @display("p=70,190;is=s");
+        }
+        binder: Binder {
+            @display("p=73,261;is=s");
+        }
+        carrierAggregation: CarrierAggregation {
+            @display("p=72,335;is=s");
         }
     connections allowunconnected:
         router.pppg++ <--> Eth10G <--> upf.filterGate;
