@@ -54,8 +54,7 @@ void Binder::registerCarrier(GHz carrierFrequency, unsigned int carrierNumBands,
         carrierFreqToNumerologyIndex_[carrierFrequency] = numerologyIndex;
 
         // add new (empty) entry to carrierUeMap
-        std::set<MacNodeId> tempSet;
-        carrierUeMap_[carrierFrequency] = tempSet;
+        carrierUeMap_[carrierFrequency] = {};
     }
 }
 
@@ -64,7 +63,7 @@ void Binder::registerCarrierUe(GHz carrierFrequency, unsigned int numerologyInde
     // check if carrier exists in the system
     CarrierUeMap::iterator it = carrierUeMap_.find(carrierFrequency);
     if (it == carrierUeMap_.end())
-        throw cRuntimeError("Binder::registerCarrierUe - Carrier [%fGHz] not found", carrierFrequency.get());
+        throw cRuntimeError("Binder::registerCarrierUe - Carrier [%gGHz] not found (missing registerCarrier call?)", carrierFrequency.get());
 
     carrierUeMap_[carrierFrequency].insert(ueId);
 
