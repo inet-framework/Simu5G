@@ -45,7 +45,7 @@ void LteMacUeD2D::initialize(int stage)
         if (pdcpType != "LtePdcpUeD2D" && pdcpType != "NrPdcpUe")
             throw cRuntimeError("LteMacUeD2D::initialize - %s module found, must be LtePdcpUeD2D or NrPdcpUe", pdcpType.c_str());
     }
-    if (stage == INITSTAGE_SIMU5G_NETWORK_LAYER) {
+    if (stage == INITSTAGE_SIMU5G_AMC_ATTACHUSER) {
         // get parameters
         usePreconfiguredTxParams_ = par("usePreconfiguredTxParams");
 

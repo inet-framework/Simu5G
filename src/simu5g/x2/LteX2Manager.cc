@@ -35,7 +35,7 @@ void LteX2Manager::initialize(int stage)
         // get reference to the binder
         binder_.reference(this, "binderModule", true);
     }
-    else if (stage == INITSTAGE_SIMU5G_NETWORK_LAYER) {
+    else if (stage == inet::INITSTAGE_NETWORK_LAYER) {
         // find x2ppp interface entries and register their IP addresses to the binder
         // IP addresses will be used in the next init stage to get the X2 id of the peer
         IInterfaceTable *interfaceTable = getModuleFromPar<IInterfaceTable>(par("interfaceTableModule"), this);
@@ -49,7 +49,7 @@ void LteX2Manager::initialize(int stage)
             }
         }
     }
-    else if (stage == INITSTAGE_SIMU5G_TRANSPORT_LAYER) {
+    else if (stage == inet::INITSTAGE_TRANSPORT_LAYER) {
         // for each X2App, get the client submodule and set connection parameters (connectPort)
         for (int i = 0; i < gateSize("x2$i"); i++) {
             // client of the X2Apps is connected to the input sides of "x2" gate

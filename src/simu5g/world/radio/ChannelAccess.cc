@@ -70,7 +70,7 @@ void ChannelAccess::initialize(int stage)
     else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS) {
         myRadioRef = cc->registerRadio(this);
     }
-    else if (stage == INITSTAGE_SIMU5G_SINGLE_MOBILITY) {
+    else if (stage == inet::INITSTAGE_SINGLE_MOBILITY) {
         if (!positionUpdateArrived && hostModule->isSubscribed(inet::IMobility::mobilityStateChangedSignal, this)) {
             // ...else, get the initial position from the display string
             radioPos.x = parseInt(hostModule->getDisplayString().getTagArg("p", 0), -1);

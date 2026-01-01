@@ -134,7 +134,17 @@ void LteMacEnb::initialize(int stage)
         eNodeBCount = par("eNodeBCount");
         WATCH_MAP(bsrbuf_);
     }
-    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
+    else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS) {
+        // Insert EnbInfo in the Binder
+        EnbInfo *info = new EnbInfo();
+        info->id = nodeId_;            // local MAC ID
+        info->isNr = isNr_;            // eNB or gNB
+        info->type = MACRO_ENB;        // eNB Type
+        info->init = false;            // flag for PHY initialization
+        info->eNodeB = getContainingNode(this);  // reference to the eNodeB module
+        binder_->addEnbInfo(info);
+    }
+    else if (stage == INITSTAGE_SIMU5G_AMC_SETUP) {
         // Create and initialize AMC module
         std::string amcType = par("amcType").stdstringValue();
         int numAntennas = getNumAntennas();
@@ -160,19 +170,8 @@ void LteMacEnb::initialize(int stage)
             amc_->setPilotMode(ROBUST_CQI);
         else
             throw cRuntimeError("LteMacEnb::initialize - Unknown Pilot Mode %s \n", modeString.c_str());
-
-        cModule *hostModule = getContainingNode(this);
-
-        // Insert EnbInfo in the Binder
-        EnbInfo *info = new EnbInfo();
-        info->id = nodeId_;            // local MAC ID
-        info->isNr = isNr_;            // eNB or gNB
-        info->type = MACRO_ENB;        // eNB Type
-        info->init = false;            // flag for PHY initialization
-        info->eNodeB = hostModule;  // reference to the eNodeB module
-        binder_->addEnbInfo(info);
     }
-    else if (stage == INITSTAGE_SIMU5G_LINK_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION) {
         // Create and initialize MAC Downlink scheduler
         if (enbSchedulerDl_ == nullptr) {
             enbSchedulerDl_ = new LteSchedulerEnbDl();
@@ -196,7 +195,7 @@ void LteMacEnb::initialize(int stage)
             ++i;
         }
     }
-    else if (stage == INITSTAGE_SIMU5G_AFTER_CARRIER_REGISTRATION) {
+    else if (stage == INITSTAGE_SIMU5G_TTI_SETUP) {
         // Start TTI tick
         // the period is equal to the minimum period according to the numerologies used by the carriers in this node
         ttiTick_ = new cMessage("ttiTick_");

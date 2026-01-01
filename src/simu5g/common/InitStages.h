@@ -1,7 +1,7 @@
 //
 //                  Simu5G
 //
-// Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
+// Authors: Andras Varga
 //
 // This file is part of a software released under the license included in file
 // "license.pdf". Please read LICENSE and README files before using it.
@@ -14,50 +14,23 @@
 
 #include <inet/common/InitStages.h>
 
-//
-// INET stages:
-//
-// LOCAL = 0
-// NETWORK_INTERFACE_CONFIGURATION = 1
-// POWER = 2
-// GROUP_MOBILITY = 3
-// PHYSICAL_ENVIRONMENT = 4
-// CLOCK = 5
-// SINGLE_MOBILITY = 6
-// PHYSICAL_OBJECT_CACHE = 7
-// PHYSICAL_LAYER = 8
-// LINK_LAYER = 9
-// GATE_SCHEDULE_CONFIGURATION = 10
-// PHYSICAL_LAYER_NEIGHBOR_CACHE = 11
-// NETWORK_CONFIGURATION = 12
-// QUEUEING = 13
-// NETWORK_ADDRESS_ASSIGNMENT = 14
-// ROUTER_ID_ASSIGNMENT = 15
-// STATIC_ROUTING = 16
-// NETWORK_LAYER = 17
-// NETWORK_LAYER_PROTOCOLS = 18
-// TRANSPORT_LAYER = 19
-// ROUTING_PROTOCOLS = 20
-// APPLICATION_LAYER = 21
-// LAST = 22
-//
+namespace simu5g {
 
-#define INITSTAGE_SIMU5G_POSTLOCAL                     1  // new, split from LOCAL
-#define INITSTAGE_SIMU5G_REGISTRATIONS                 2  // new, split from LOCAL
-#define INITSTAGE_SIMU5G_REGISTRATIONS2                3  // new, split from LOCAL
-#define INITSTAGE_SIMU5G_NODE_RELATIONSHIPS            4  // new, split from LOCAL
-#define INITSTAGE_SIMU5G_BINDER_ACCESS                 5  // new, split from LOCAL
-#define INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT          6  // inet::INITSTAGE_PHYSICAL_ENVIRONMENT
-#define INITSTAGE_SIMU5G_SINGLE_MOBILITY               7  // inet::INITSTAGE_SINGLE_MOBILITY
-#define INITSTAGE_SIMU5G_PHYSICAL_LAYER                8  // inet::INITSTAGE_PHYSICAL_LAYER
-#define INITSTAGE_SIMU5G_LINK_LAYER                    9  // inet::INITSTAGE_LINK_LAYER
-#define INITSTAGE_SIMU5G_AFTER_CARRIER_REGISTRATION    10 // was 22, inet::INITSTAGE_LAST
-#define INITSTAGE_SIMU5G_NETWORK_CONFIGURATION         12 // inet::INITSTAGE_NETWORK_CONFIGURATION
-#define INITSTAGE_SIMU5G_STATIC_ROUTING                16 // inet::INITSTAGE_STATIC_ROUTING
-#define INITSTAGE_SIMU5G_NETWORK_LAYER                 17 // inet::INITSTAGE_NETWORK_LAYER
-#define INITSTAGE_SIMU5G_TRANSPORT_LAYER               19 // inet::INITSTAGE_TRANSPORT_LAYER
-#define INITSTAGE_SIMU5G_SERVICE_PLATFORM_SETUP        20 // (inet::INITSTAGE_APPLICATION_LAYER-1)
-#define INITSTAGE_SIMU5G_APPLICATION_LAYER             21 // inet::INITSTAGE_APPLICATION_LAYER
-#define INITSTAGE_SIMU5G_BACKGROUNDTRAFFICMANAGER      21 // (inet::INITSTAGE_LAST-1)  DUPLICATE!
+extern const inet::InitStage INITSTAGE_SIMU5G_POSTLOCAL;
+extern const inet::InitStage INITSTAGE_SIMU5G_REGISTRATIONS;
+extern const inet::InitStage INITSTAGE_SIMU5G_REGISTRATIONS2;
+extern const inet::InitStage INITSTAGE_SIMU5G_NODE_RELATIONSHIPS;
+extern const inet::InitStage INITSTAGE_SIMU5G_BINDER_ACCESS;
+
+extern const inet::InitStage INITSTAGE_SIMU5G_AMC_SETUP;
+extern const inet::InitStage INITSTAGE_SIMU5G_PHYSICAL_LAYER;
+extern const inet::InitStage INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION;
+extern const inet::InitStage INITSTAGE_SIMU5G_BACKGROUNDTRAFFICMANAGER;
+extern const inet::InitStage INITSTAGE_SIMU5G_TTI_SETUP;
+extern const inet::InitStage INITSTAGE_SIMU5G_CELLINFO_CHANNELUPDATE;
+extern const inet::InitStage INITSTAGE_SIMU5G_AMC_ATTACHUSER;
+extern const inet::InitStage INITSTAGE_SIMU5G_SERVICE_PLATFORM_SETUP;
+
+}
 
 #endif

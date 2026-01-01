@@ -60,7 +60,7 @@ void LtePhyEnb::initialize(int stage)
             das_ = new DasFilter(this, binder_, cellInfo_->getRemoteAntennaSet(), 0);
         }
     }
-    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
+    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_LAYER) {
         initializeFeedbackComputation();
 
         //check eNb type and set TX power
@@ -86,8 +86,6 @@ void LtePhyEnb::initialize(int stage)
             bdcStarter_ = new cMessage("bdcStarter");
             scheduleAt(NOW, bdcStarter_);
         }
-    }
-    else if (stage == INITSTAGE_SIMU5G_LINK_LAYER) {
     }
 }
 

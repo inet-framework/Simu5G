@@ -31,7 +31,7 @@ BackgroundCellTrafficManager::~BackgroundCellTrafficManager()
 void BackgroundCellTrafficManager::initialize(int stage)
 {
     BackgroundTrafficManagerBase::initialize(stage);
-    if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
+    if (stage == INITSTAGE_SIMU5G_AMC_SETUP) {
         bgScheduler_.reference(this, "bgSchedulerModule", true);
 
         if (bgScheduler_->isNr())

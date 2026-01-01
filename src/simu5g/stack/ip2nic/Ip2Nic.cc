@@ -98,7 +98,7 @@ void Ip2Nic::initialize(int stage)
                 binder_->registerServingNode(nrMasterId_, nrNodeId_);
         }
     }
-    else if (stage == INITSTAGE_SIMU5G_STATIC_ROUTING) {
+    else if (stage == inet::INITSTAGE_STATIC_ROUTING) {
         if (nodeType_ == UE) {
             // TODO: shift to routing stage
             // if the UE has been created dynamically, we need to manually add a default route having our cellular interface as output interface
@@ -125,7 +125,7 @@ void Ip2Nic::initialize(int stage)
             }
         }
     }
-    else if (stage == INITSTAGE_SIMU5G_TRANSPORT_LAYER) {
+    else if (stage == inet::INITSTAGE_TRANSPORT_LAYER) {
         registerMulticastGroups();
     }
 }
@@ -366,11 +366,8 @@ void Ip2Nic::registerInterface()
 void Ip2Nic::registerMulticastGroups()
 {
     // get all the multicast addresses where the node is enrolled
-    NetworkInterface *iface;
     IInterfaceTable *ift = getModuleFromPar<IInterfaceTable>(par("interfaceTableModule"), this);
-    if (!ift)
-        return;
-    iface = ift->findInterfaceByName(par("interfaceName").stdstringValue().c_str());
+    NetworkInterface *iface = ift->findInterfaceByName(par("interfaceName").stdstringValue().c_str());
     unsigned int numOfAddresses = iface->getProtocolData<Ipv4InterfaceData>()->getNumOfJoinedMulticastGroups();
 
     for (unsigned int i = 0; i < numOfAddresses; ++i) {

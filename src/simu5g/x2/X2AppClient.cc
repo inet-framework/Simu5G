@@ -31,7 +31,7 @@ void X2AppClient::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         x2ManagerOut_ = gate("x2ManagerOut");
     }
-    else if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
+    else if (stage == inet::INITSTAGE_APPLICATION_LAYER) {
         Binder *binder = inet::getModuleFromPar<Binder>(par("binderModule"), this);
 
         // TODO set the connect address

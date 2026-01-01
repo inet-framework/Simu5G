@@ -59,10 +59,10 @@ void LteMacUe::initialize(int stage)
         bool isNr = strcmp(getFullName(), "nrMac") == 0;
         nodeId_ = MacNodeId(networkNode_->par(isNr ? "nrMacNodeId" : "macNodeId").intValue());
     }
-    else if (stage == INITSTAGE_SIMU5G_LINK_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION) {
         cellId_ = binder_->getServingNode(nodeId_);
     }
-    else if (stage == INITSTAGE_SIMU5G_NETWORK_LAYER) {
+    else if (stage == inet::INITSTAGE_NETWORK_LAYER) {
 
         // display node ID above module icon
         getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", nodeId_).c_str());
@@ -134,7 +134,7 @@ void LteMacUe::initialize(int stage)
             lcgScheduler_[cm.first] = new LteSchedulerUeUl(this, cm.first);
         }
     }
-    else if (stage == INITSTAGE_SIMU5G_AFTER_CARRIER_REGISTRATION) {
+    else if (stage == INITSTAGE_SIMU5G_TTI_SETUP) {
 
         // Start TTI tick
         ttiTick_ = new cMessage("ttiTick_");

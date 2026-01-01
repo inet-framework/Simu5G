@@ -46,7 +46,7 @@ void TrafficLightController::initialize(int stage)
     cSimpleModule::initialize(stage);
 
     // avoid multiple initializations
-    if (stage != INITSTAGE_SIMU5G_APPLICATION_LAYER)
+    if (stage != inet::INITSTAGE_APPLICATION_LAYER)  // could be "POSTMOBILITY"
         return;
 
     mobility_.reference(this, "mobilityModule", true);

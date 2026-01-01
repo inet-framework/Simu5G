@@ -123,7 +123,7 @@ void LtePhyUe::initialize(int stage)
             masterMobility_ = check_and_cast<IMobility *>(masterModule->getSubmodule("mobility"));
         }
     }
-    else if (stage == INITSTAGE_SIMU5G_NETWORK_CONFIGURATION) {
+    else if (stage == INITSTAGE_SIMU5G_CELLINFO_CHANNELUPDATE) { //TODO being fwd, eliminate stage
         // get cellInfo at this stage because the next hop of the node is registered in the Ip2Nic module at the INITSTAGE_SIMU5G_NETWORK_LAYER
         if (masterId_ != NODEID_NONE) {
             cellInfo_ = binder_->getCellInfoByNodeId(nodeId_);

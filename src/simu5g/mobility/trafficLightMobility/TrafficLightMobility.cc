@@ -25,7 +25,7 @@ void TrafficLightMobility::initialize(int stage)
     LinearMobility::initialize(stage);
 
     EV_TRACE << "initializing TrafficLightMobility stage " << stage << endl;
-    if (stage == INITSTAGE_SIMU5G_SINGLE_MOBILITY) {
+    if (stage == inet::INITSTAGE_SINGLE_MOBILITY) {
         // FIXME this must be made configurable
         int initialRoadIndex = par("initialRoadIndex");
         switch (initialRoadIndex) {

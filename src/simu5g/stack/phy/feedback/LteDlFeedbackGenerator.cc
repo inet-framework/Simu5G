@@ -68,7 +68,7 @@ void LteDlFeedbackGenerator::initialize(int stage)
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         masterId_ = binder_->getServingNode(nodeId_);
     }
-    else if (stage == INITSTAGE_SIMU5G_LINK_LAYER) {
+    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_LAYER) {
         EV << "DLFeedbackGenerator Stage " << stage << " nodeid: " << nodeId_
            << " init" << endl;
 

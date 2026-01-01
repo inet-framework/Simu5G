@@ -59,7 +59,7 @@ void LteMacEnbD2D::initialize(int stage)
         }
 
     }
-    else if (stage == INITSTAGE_SIMU5G_PHYSICAL_ENVIRONMENT) {
+    else if (stage == INITSTAGE_SIMU5G_AMC_SETUP) {
         usePreconfiguredTxParams_ = par("usePreconfiguredTxParams");
         Cqi d2dCqi = par("d2dCqi");
         if (usePreconfiguredTxParams_)
