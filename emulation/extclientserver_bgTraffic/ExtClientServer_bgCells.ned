@@ -38,6 +38,21 @@ network ExtClientServer_bgCells
         int numBgCells = default(0);
 
     submodules:
+        routingRecorder: RoutingTableRecorder {
+            @display("p=73,130;is=s");
+        }
+        configurator: Ipv4NetworkConfigurator {
+            @display("p=73,72");
+        }
+        channelControl: LteChannelControl {
+            @display("p=70,190;is=s");
+        }
+        binder: Binder {
+            @display("p=73,261;is=s");
+        }
+        carrierAggregation: CarrierAggregation {
+            @display("p=72,343;is=s");
+        }
         router: Router {
             @display("p=223,175;i=device/smallrouter");
         }
@@ -52,21 +67,6 @@ network ExtClientServer_bgCells
         }
         ue: NrUe {
             @display("p=670,309");
-        }
-        binder: Binder {
-            @display("p=73,261;is=s");
-        }
-        routingRecorder: RoutingTableRecorder {
-            @display("p=73,130;is=s");
-        }
-        configurator: Ipv4NetworkConfigurator {
-            @display("p=73,72");
-        }
-        channelControl: LteChannelControl {
-            @display("p=70,190;is=s");
-        }
-        carrierAggregation: CarrierAggregation {
-            @display("p=72,343;is=s");
         }
 
     connections allowunconnected:

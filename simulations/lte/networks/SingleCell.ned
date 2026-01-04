@@ -38,6 +38,9 @@ network SingleCell
         configurator: Ipv4NetworkConfigurator {
             @display("p=50,125");
         }
+        binder: Binder {
+            @display("p=50,175;is=s");
+        }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
         }
@@ -55,9 +58,6 @@ network SingleCell
         }
         ue[numUe]: LteUe {
             @display("p=783,278");
-        }
-        binder: Binder {
-            @display("p=50,175;is=s");
         }
     connections:
         server.pppg++ <--> Eth10G <--> router.pppg++;

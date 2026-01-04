@@ -39,6 +39,21 @@ network MultiMecHost_delay
 
         @display("i=block/network2;bgb=1088,678;");//bgi=background/pisa");
     submodules:
+        channelControl: LteChannelControl {
+            @display("p=50,25;is=s");
+        }
+        routingRecorder: RoutingTableRecorder {
+            @display("p=50,75;is=s");
+        }
+        configurator: Ipv4NetworkConfigurator {
+            @display("p=50,125");
+        }
+        binder: Binder {
+            @display("p=50,175;is=s");
+        }
+        carrierAggregation: CarrierAggregation {
+            @display("p=50,258;is=s");
+        }
         upf: Upf {
             @display("p=495,132");
         }
@@ -73,22 +88,6 @@ network MultiMecHost_delay
         }
         ualcmp: Ualcmp {
             @display("p=603,131");
-        }
-
-        binder: Binder {
-            @display("p=50,175;is=s");
-        }
-        channelControl: LteChannelControl {
-            @display("p=50,25;is=s");
-        }
-        routingRecorder: RoutingTableRecorder {
-            @display("p=50,75;is=s");
-        }
-        configurator: Ipv4NetworkConfigurator {
-            @display("p=50,125");
-        }
-        carrierAggregation: CarrierAggregation {
-            @display("p=50,258;is=s");
         }
 
     connections:

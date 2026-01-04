@@ -67,23 +67,18 @@ module LteNicBase extends NetworkInterface like ICellularNic
         inout x2[] @loose;     // optional x2 manager
 
     submodules:
-  		//#
-        //# Modules used to take trace of PDCP pkt flow
-        //#
-        packetFlowObserver: <default("")> like IPacketFlowObserver if hasRniSupport {
-            @display("p=70,300");
+        // bridge between radio nic and network layer
+        ip2nic: <default("Ip2Nic")> like INetworkLayer2CellularNic {
+            nodeType = parent.nodeType;
+            @display("p=412,67");
         }
-
-        channelModel[numCarriers]: <lteChannelModelType> like ILteChannelModel {
-            @display("p=100,389");
+        // RRC Layer
+        rrc: <default("Rrc")> like IRrc {
+            @display("p=200,141");
         }
-        // LtePhy submodule
-        phy: <> like ILtePhy {
-            @display("p=363,389");
-        }
-        // MAC Layer
-        mac: <> like ILteMac {
-            @display("p=363,314");
+        // PDCP Layer
+        pdcp: <> like ILtePdcp {
+            @display("p=362,141");
         }
         // RLC Layer
         rlc: LteRlc {
@@ -93,18 +88,24 @@ module LteNicBase extends NetworkInterface like ICellularNic
             *.packetFlowObserverModule = parent.hasRniSupport ? "^.^.packetFlowObserver" : "";
             um.nodeType = parent.nodeType;
         }
-        // PDCP Layer
-        pdcp: <> like ILtePdcp {
-            @display("p=362,141");
+        // MAC Layer
+        mac: <> like ILteMac {
+            @display("p=363,314");
         }
-        // RRC Layer
-        rrc: <default("Rrc")> like IRrc {
-            @display("p=200,141");
+        // LtePhy submodule
+        phy: <> like ILtePhy {
+            @display("p=363,389");
         }
-        // bridge between radio nic and network layer
-        ip2nic: <default("Ip2Nic")> like INetworkLayer2CellularNic {
-            nodeType = parent.nodeType;
-            @display("p=412,67");
+
+        channelModel[numCarriers]: <lteChannelModelType> like ILteChannelModel {
+            @display("p=100,389");
+        }
+
+         		//#
+        //# Modules used to take trace of PDCP pkt flow
+        //#
+        packetFlowObserver: <default("")> like IPacketFlowObserver if hasRniSupport {
+            @display("p=70,300");
         }
 
     connections allowunconnected:

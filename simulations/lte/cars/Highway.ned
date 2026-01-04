@@ -36,6 +36,29 @@ network Highway
         @display("bgb=732,483");
 
     submodules:
+
+        routingRecorder: RoutingTableRecorder {
+            @display("p=50,75;is=s");
+        }
+        configurator: Ipv4NetworkConfigurator {
+            @display("p=50,125");
+        }
+
+        //# Veins manager module
+        veinsManager: VeinsInetManager {
+            @display("p=50,227;is=s");
+        }
+
+        //# LTE modules
+        channelControl: LteChannelControl {
+            @display("p=50,25;is=s");
+        }
+        binder: Binder {
+            @display("p=50,175;is=s");
+        }
+        carrierAggregation: CarrierAggregation {
+            @display("p=50,258;is=s");
+        }
         server: StandardHost {
             @display("p=660,136;is=n;i=device/server");
         }
@@ -53,28 +76,6 @@ network Highway
         }
         //# submodule vector to store all cars - will be filled dynamically during simulations
         car[0]: LteCar;
-
-        binder: Binder {
-            @display("p=50,175;is=s");
-        }
-
-        routingRecorder: RoutingTableRecorder {
-            @display("p=50,75;is=s");
-        }
-        configurator: Ipv4NetworkConfigurator {
-            @display("p=50,125");
-        }
-
-        veinsManager: VeinsInetManager {
-            @display("p=50,227;is=s");
-        }
-
-        channelControl: LteChannelControl {
-            @display("p=50,25;is=s");
-        }
-        carrierAggregation: CarrierAggregation {
-            @display("p=50,258;is=s");
-        }
 
     connections allowunconnected:
         server.pppg++ <--> Eth10G <--> router.pppg++;

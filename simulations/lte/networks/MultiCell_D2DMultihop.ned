@@ -35,6 +35,21 @@ network MultiCell_D2DMultihop
         int numUe5 = default(1);
         @display("i=block/network2;bgb=2000,500;");
     submodules:
+        channelControl: LteChannelControl {
+            @display("p=90,24;is=s");
+        }
+        routingRecorder: RoutingTableRecorder {
+            @display("p=90,70;is=s");
+        }
+        configurator: Ipv4NetworkConfigurator {
+            @display("p=90,121");
+        }
+        binder: Binder {
+            @display("p=90,171;is=s");
+        }
+        carrierAggregation: CarrierAggregation {
+            @display("p=50,258;is=s");
+        }
         server: StandardHost {
             @display("p=500,50;is=n;i=device/server");
         }
@@ -94,21 +109,6 @@ network MultiCell_D2DMultihop
         }
         d2dMultihopStatistics: MultihopD2DStatistics {
             @display("p=90,272;is=s");
-        }
-        binder: Binder {
-            @display("p=90,171;is=s");
-        }
-        channelControl: LteChannelControl {
-            @display("p=90,24;is=s");
-        }
-        routingRecorder: RoutingTableRecorder {
-            @display("p=90,70;is=s");
-        }
-        configurator: Ipv4NetworkConfigurator {
-            @display("p=90,121");
-        }
-        carrierAggregation: CarrierAggregation {
-            @display("p=50,258;is=s");
         }
     connections:
         router1.pppg++ <--> Eth10G <--> eNodeB1.ppp;

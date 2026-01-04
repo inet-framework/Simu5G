@@ -34,6 +34,21 @@ network SingleCell_Standalone_D2D
         @display("i=block/network2;bgb=826,558;bgi=background/pisa");
 
     submodules:
+        channelControl: LteChannelControl {
+            @display("p=50,25;is=s");
+        }
+        routingRecorder: RoutingTableRecorder {
+            @display("p=50,75;is=s");
+        }
+        configurator: Ipv4NetworkConfigurator {
+            @display("p=50,125");
+        }
+        binder: Binder {
+            @display("p=50,175;is=s");
+        }
+        carrierAggregation: CarrierAggregation {
+            @display("p=50,258;is=s");
+        }
         server: StandardHost {
             @display("p=212,118;is=n;i=device/server");
         }
@@ -60,21 +75,6 @@ network SingleCell_Standalone_D2D
         }
         ueD2DRx[numUeD2DRx]: NrUe {
             @display("p=726,423");
-        }
-        binder: Binder {
-            @display("p=50,175;is=s");
-        }
-        channelControl: LteChannelControl {
-            @display("p=50,25;is=s");
-        }
-        routingRecorder: RoutingTableRecorder {
-            @display("p=50,75;is=s");
-        }
-        configurator: Ipv4NetworkConfigurator {
-            @display("p=50,125");
-        }
-        carrierAggregation: CarrierAggregation {
-            @display("p=50,258;is=s");
         }
     connections:
         server.pppg++ <--> Eth10G <--> router.pppg++;
