@@ -26,7 +26,7 @@ void UeStatsCollector::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         collectorType_ = par("collectorType").stringValue();
     }
-    else if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) { // same as lteMacUe, when reading the interface entry
+    else if (stage == inet::INITSTAGE_APPLICATION_LAYER) { // same as lteMacUe, when reading the interface entry
         Binder *binder = inet::getModuleFromPar<Binder>(par("binderModule"), this);
 
         mac_.reference(this, "macModule", true);

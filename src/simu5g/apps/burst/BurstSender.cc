@@ -41,7 +41,7 @@ void BurstSender::initialize(int stage)
         localPort_ = par("localPort");
         destPort_ = par("destPort");
     }
-    else if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
+    else if (stage == inet::INITSTAGE_APPLICATION_LAYER) {
         initTraffic_ = new cMessage("initTraffic");
         initTraffic();
     }

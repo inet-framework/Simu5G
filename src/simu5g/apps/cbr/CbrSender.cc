@@ -43,7 +43,7 @@ void CbrSender::initialize(int stage)
         localPort_ = par("localPort");
         destPort_ = par("destPort");
     }
-    else if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
+    else if (stage == inet::INITSTAGE_APPLICATION_LAYER) {
         // calculating traffic starting time
         startTime_ = par("startTime");
         finishTime_ = par("finishTime");

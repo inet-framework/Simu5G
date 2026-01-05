@@ -40,7 +40,7 @@ void MecRequestBackgroundApp::handleServiceMessage(int connId)
 }
 
 void MecRequestBackgroundApp::initialize(int stage) {
-    if (stage != INITSTAGE_SIMU5G_APPLICATION_LAYER)
+    if (stage != inet::INITSTAGE_APPLICATION_LAYER)
         return;
     MecAppBase::initialize(stage);
     mp1Socket_ = addNewSocket();

@@ -133,7 +133,7 @@ void MecRequestBackgroundGeneratorApp::handleMp1Message(int connId)
 void MecRequestBackgroundGeneratorApp::initialize(int stage) {
     MecAppBase::initialize(stage);
 
-    if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
+    if (stage == inet::INITSTAGE_APPLICATION_LAYER) {
         EV << "MecRequestBackgroundGeneratorApp::initialize" << endl;
         numberOfApplications_ = par("numberOfApplications");
 

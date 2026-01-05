@@ -32,7 +32,7 @@ simsignal_t VodUdpClient::delayLayer3Signal_ = registerSignal("VoDDelayLayer3");
 
 void VodUdpClient::initialize(int stage)
 {
-    if (stage != INITSTAGE_SIMU5G_APPLICATION_LAYER)
+    if (stage != inet::INITSTAGE_APPLICATION_LAYER)
         return;
     // Get parameters from INI file
     EV << "VoD Client initialized: stage " << stage << endl;

@@ -31,9 +31,9 @@ BaseStationStatsCollector::~BaseStationStatsCollector()
     cancelAndDelete(tPut_);
 }
 
-void BaseStationStatsCollector::initialize(int stage) {
-
-    if (stage == INITSTAGE_SIMU5G_APPLICATION_LAYER) {
+void BaseStationStatsCollector::initialize(int stage)
+{
+    if (stage == inet::INITSTAGE_APPLICATION_LAYER) {
         collectorType_ = par("collectorType").stringValue();
         cModule *node = getContainingNode(this);
         ecgi_.plmn.mcc = node->par("mcc").stdstringValue();

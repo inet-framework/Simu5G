@@ -53,7 +53,7 @@ void MecRTVideoStreamingReceiver::initialize(int stage)
     MecAppBase::initialize(stage);
 
     // avoid multiple initializations
-    if (stage != INITSTAGE_SIMU5G_APPLICATION_LAYER)
+    if (stage != inet::INITSTAGE_APPLICATION_LAYER)
         return;
 
     // retrieving parameters
