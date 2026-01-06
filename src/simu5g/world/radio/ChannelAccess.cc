@@ -88,7 +88,7 @@ void ChannelAccess::initialize(int stage)
                       " from '@display' attribute, or configure Mobility for this host.",
                         hostModule->getFullPath().c_str());
         }
-        cc->setRadioPosition(myRadioRef, radioPos);
+        cc->setRadioPosition(myRadioRef, radioPos);  //TODO this is wrong -- cc should query the position when it needs it
     }
 }
 
