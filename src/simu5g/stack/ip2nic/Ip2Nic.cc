@@ -104,6 +104,7 @@ void Ip2Nic::initialize(int stage)
             // if the UE has been created dynamically, we need to manually add a default route having our cellular interface as output interface
             // otherwise we are not able to reach devices outside the cellular network
             if (NOW > 0) {
+                ASSERT(false);
                 /**
                  * TODO: might need a bit more care, if the interface has changed, the query might, too
                  */
