@@ -33,6 +33,8 @@ BaseStationStatsCollector::~BaseStationStatsCollector()
 
 void BaseStationStatsCollector::initialize(int stage)
 {
+    //TODO code looks like it only requires stage==INITSTAGE_LOCAL or BINDER_ACCESS,
+    // and it almost works (3 fingerprint fails: mec/rnisTest, nr/mec/multiOperator/, nr/mec/multiOperator/)
     if (stage == inet::INITSTAGE_APPLICATION_LAYER) {
         collectorType_ = par("collectorType").stringValue();
         cModule *node = getContainingNode(this);
