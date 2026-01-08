@@ -36,10 +36,6 @@ class LteMacEnbD2D : public LteMacEnb
      */
     std::map<GHz, HarqBuffersMirrorD2D> harqBuffersMirrorD2D_;
 
-    // if true, use the preconfigured TX params for transmission, else use that signaled by the eNB
-    bool usePreconfiguredTxParams_;
-    UserTxParams *preconfiguredTxParams_ = nullptr;
-
     // Conflict Graph builder
     ConflictGraph *conflictGraph_ = nullptr;
 
@@ -142,13 +138,6 @@ class LteMacEnbD2D : public LteMacEnb
 
     bool isMsHarqInterrupt() { return msHarqInterrupt_; }
 
-    /*
-     * getter
-     */
-    UserTxParams *getPreconfiguredTxParams() {
-
-        return preconfiguredTxParams_;
-    }
 
 };
 

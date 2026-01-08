@@ -60,9 +60,9 @@ void LteMacEnbD2D::initialize(int stage)
 
     }
     else if (stage == INITSTAGE_SIMU5G_AMC_SETUP) {
-        usePreconfiguredTxParams_ = par("usePreconfiguredTxParams");
+        bool usePreconfiguredTxParams = par("usePreconfiguredTxParams");
         Cqi d2dCqi = par("d2dCqi");
-        if (usePreconfiguredTxParams_)
+        if (usePreconfiguredTxParams)
             check_and_cast<AmcPilotD2D *>(amc_->getPilot())->setPreconfiguredTxParams(d2dCqi);
 
         msHarqInterrupt_ = par("msHarqInterrupt").boolValue();
