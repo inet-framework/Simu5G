@@ -106,30 +106,6 @@ void LteAllocationModule::reset(const unsigned int resourceBlocks, const unsigne
     usedInLastSlot_ = false;
 }
 
-void LteAllocationModule::configureOFDMplane(const Plane plane)
-{
-    // check if an OFDMA space exists with the given plane ID
-    if (totalRbsMatrix_.size() < (unsigned int)(plane + 1)) {
-        // here we have to add missing planes to the OFDMA space and create the MACRO antenna entry for this plane
-        totalRbsMatrix_.resize(plane + 1);
-        totalRbsMatrix_.at(plane).resize(MACRO + 1);
-
-        allocatedRbsMatrix_.resize(plane + 1);
-        allocatedRbsMatrix_.at(plane).resize(MACRO + 1);
-
-        allocatedRbsPerBand_.resize(plane + 1);
-        allocatedRbsPerBand_.at(plane).resize(MACRO + 1);
-
-        freeRbsMatrix_.resize(plane + 1);
-        freeRbsMatrix_.at(plane).resize(MACRO + 1);
-        freeRbsMatrix_.at(plane).at(MACRO).resize(bands_, 0);
-
-        // we set the newly created OFDMA space equal to its peer space
-        totalRbsMatrix_[plane][MACRO] = totalRbsMatrix_[MAIN_PLANE][MACRO];
-
-        usedInLastSlot_ = true;
-    }
-}
 
 void LteAllocationModule::setRemoteAntenna(const Plane plane, const Remote antenna)
 {
@@ -151,57 +127,9 @@ void LteAllocationModule::setRemoteAntenna(const Plane plane, const Remote anten
     }
 }
 
-bool LteAllocationModule::configureMuMimoPeering(const MacNodeId nodeId, const MacNodeId peer)
-{
-    //---------- Peering availability Check ----------
-    // peer user already set for the specified nodeId
-    if (allocatedRbsUe_[nodeId].muMimoEnabled_)
-        return false;
-    // peer user already set for the specified peer
-    if (allocatedRbsUe_[peer].muMimoEnabled_)
-        return false;
-
-    //---- If we reach this point, we can use MuMimo peering by setting the allocator properly ----
-    // set direct peering
-    allocatedRbsUe_[nodeId].muMimoEnabled_ = true;
-    allocatedRbsUe_[peer].muMimoEnabled_ = true;
-
-    // set peers for each side
-    allocatedRbsUe_[nodeId].peerId_ = peer;
-    allocatedRbsUe_[peer].peerId_ = nodeId;
-
-    allocatedRbsUe_[nodeId].secondaryUser_ = false; // primary MU-MIMO user
-    allocatedRbsUe_[peer].secondaryUser_ = true;   // secondary MU-MIMO user
-
-    // set the peer's antennas to the main user's ones.
-    RemoteSet peerAntennas = allocatedRbsUe_.at(nodeId).availableAntennaSet_;
-    allocatedRbsUe_[peer].availableAntennaSet_ = peerAntennas;
-
-    // check if the mirror MIMO plane has to be created.
-    configureOFDMplane(MU_MIMO_PLANE);
-
-    // for each antenna of the main user, create a mirror MU-MIMO antenna space for the peer user
-    for (const auto& antenna : peerAntennas) {
-        setRemoteAntenna(MU_MIMO_PLANE, antenna);
-    }
-
-    usedInLastSlot_ = true;
-
-    // peering configured successfully
-    return true;
-}
-
 Plane LteAllocationModule::getOFDMPlane(const MacNodeId nodeId)
 {
     return (allocatedRbsUe_[nodeId].secondaryUser_) ? MU_MIMO_PLANE : MAIN_PLANE;
-}
-
-MacNodeId LteAllocationModule::getMuMimoPeer(const MacNodeId nodeId) const
-{
-    if (allocatedRbsUe_.find(nodeId) != allocatedRbsUe_.end()) {
-        return (allocatedRbsUe_.at(nodeId).muMimoEnabled_) ? allocatedRbsUe_.at(nodeId).peerId_ : nodeId;
-    }
-    return nodeId;
 }
 
 unsigned int LteAllocationModule::computeTotalRbs()

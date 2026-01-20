@@ -192,16 +192,10 @@ class LteAllocationModule
     void reset(const unsigned int resourceBlocks, const unsigned int bands);
 
     // ********* MU-MIMO Support *********
-    // Configure MuMimo between "nodeId" and "peer"
-    bool configureMuMimoPeering(const MacNodeId nodeId, const MacNodeId peer);
 
     // MU-MIMO configuration functions
-    void configureOFDMplane(const Plane plane);
     void setRemoteAntenna(const Plane plane, const Remote antenna);
     Plane getOFDMPlane(const MacNodeId nodeId);
-
-    // returns the Mu-MIMO peer id if it exists, own id otherwise
-    MacNodeId getMuMimoPeer(const MacNodeId nodeId) const;
     // **********************************
 
     // ************** Resource Blocks Allocation Status **************
