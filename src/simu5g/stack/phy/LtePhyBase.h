@@ -53,7 +53,6 @@ class LteChannelModel;
 
 class LtePhyBase : public ChannelAccess
 {
-    friend class DasFilter;
 
   protected:
 

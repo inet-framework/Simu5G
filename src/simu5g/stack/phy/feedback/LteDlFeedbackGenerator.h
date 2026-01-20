@@ -16,7 +16,6 @@
 
 #include "simu5g/common/cellInfo/CellInfo.h"
 #include "simu5g/common/LteCommon.h"
-#include "simu5g/stack/phy/das/DasFilter.h"
 #include "simu5g/stack/phy/feedback/LteFeedback.h"
 #include "simu5g/common/timer/TTimer.h"
 #include "simu5g/common/timer/TTimerMsg_m.h"
@@ -27,7 +26,6 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-class DasFilter;
 class LtePhyUe;
 
 /**
@@ -148,4 +146,3 @@ class LteDlFeedbackGenerator : public cSimpleModule
 } //namespace
 
 #endif
-

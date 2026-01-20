@@ -337,7 +337,6 @@ void NrPhyUe::doHandover()
 
     if (candidateMasterId_ != NODEID_NONE) {
         binder_->registerServingNode(candidateMasterId_, nodeId_);
-        das_->setMasterRuSet(candidateMasterId_);
     }
     binder_->updateUeInfoCellId(nodeId_, candidateMasterId_);
     // @author Alessandro Noferi

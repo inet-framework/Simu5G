@@ -20,7 +20,6 @@ using namespace omnetpp;
 
 class LtePhyEnbD2D : public LtePhyEnb
 {
-    friend class DasFilter;
 
     bool enableD2DCqiReporting_;
 
@@ -34,4 +33,3 @@ class LtePhyEnbD2D : public LtePhyEnb
 } //namespace
 
 #endif /* _LTE_AIRPHYENBD2D_H_ */
-

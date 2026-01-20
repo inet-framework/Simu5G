@@ -16,7 +16,6 @@
 
 #include "simu5g/stack/ip2nic/Ip2Nic.h"
 #include "simu5g/stack/phy/LtePhyBase.h"
-#include "simu5g/stack/phy/das/DasFilter.h"
 #include "simu5g/stack/mac/LteMacUe.h"
 #include "simu5g/stack/rlc/um/LteRlcUm.h"
 #include "simu5g/stack/pdcp/LtePdcp.h"
@@ -26,7 +25,6 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-class DasFilter;
 class LteDlFeedbackGenerator;
 
 class LtePhyUe : public LtePhyBase
@@ -96,16 +94,6 @@ class LtePhyUe : public LtePhyBase
      */
     bool enableHandover_;
 
-    /**
-     * Pointer to the DAS Filter: used to call DAS functions
-     * when receiving broadcasts and to retrieve physical
-     * antenna properties on packet reception
-     */
-    DasFilter *das_ = nullptr;
-
-    /// Threshold for antenna association
-    // TODO: bring it to ned par!
-    double dasRssiThreshold_;
 
     opp_component_ptr<LteMacUe> mac_;
     inet::ModuleRefByPar<LteRlcUm> rlcUm_;
@@ -151,7 +139,6 @@ class LtePhyUe : public LtePhyBase
 
   public:
     ~LtePhyUe() override;
-    DasFilter *getDasFilter();
     /**
      * Send feedback, called by feedback generator in DL
      */

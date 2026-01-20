@@ -24,12 +24,6 @@ using namespace std;
 
 Define_Module(CellInfo);
 
-
-CellInfo::~CellInfo()
-{
-    delete ruSet_;
-}
-
 void CellInfo::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
@@ -59,11 +53,6 @@ void CellInfo::initialize(int stage)
         // register the containing eNB to the binder
         cellId_ = MacNodeId(host->par("macCellId").intValue());
         ASSERT(cellId_ != MacNodeId(-1));  // i.e. already set programmatically
-
-        double nodebTxPower = host->par("txPower");
-
-        // first RU to be registered is the MACRO
-        ruSet_->addRemoteAntenna(nodeX_, nodeY_, nodebTxPower);
 
         // MCS scaling factor
         calculateMcsScale();

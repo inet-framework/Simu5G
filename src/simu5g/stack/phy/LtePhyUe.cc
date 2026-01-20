@@ -31,7 +31,6 @@ LtePhyUe::~LtePhyUe()
 {
     cancelAndDelete(handoverStarter_);
     cancelAndDelete(handoverTrigger_);
-    delete das_;
 }
 
 void LtePhyUe::initialize(int stage)
@@ -54,9 +53,6 @@ void LtePhyUe::initialize(int stage)
         currentMasterRssi_ = -999.0;
         candidateMasterRssi_ = -999.0;
 
-        dasRssiThreshold_ = 1.0e-5;
-        das_ = new DasFilter(this, binder_, nullptr, dasRssiThreshold_);
-
         hasCollector = par("hasCollector");
 
         if (!hasListeners(averageCqiDlSignal_))
@@ -65,7 +61,6 @@ void LtePhyUe::initialize(int stage)
         WATCH(nodeType_);
         WATCH(masterId_);
         WATCH(candidateMasterId_);
-        WATCH(dasRssiThreshold_);
         WATCH(currentMasterRssi_);
         WATCH(candidateMasterRssi_);
         WATCH(hysteresisTh_);
@@ -113,7 +108,6 @@ void LtePhyUe::initialize(int stage)
 
         EV << "LtePhyUe::initialize - Attaching to eNodeB " << masterId_ << endl;
 
-        das_->setMasterRuSet(masterId_);
         emit(servingCellSignal_, (long)masterId_);
 
         if (masterId_ == NODEID_NONE)
@@ -200,33 +194,19 @@ void LtePhyUe::handoverHandler(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     lteInfo->setDestId(nodeId_);
     if (!enableHandover_) {
-        // Even if handover is not enabled, this call is necessary
-        // to allow Reporting Set computation.
-        if (getNodeTypeById(lteInfo->getSourceId()) == NODEB && lteInfo->getSourceId() == masterId_) {
-            // Broadcast message from my master enb
-            das_->receiveBroadcast(frame, lteInfo);
-        }
-
         delete frame;
         delete lteInfo;
         return;
     }
 
     frame->setControlInfo(lteInfo);
-    double rssi;
+    double rssi = 0;
 
-    if (getNodeTypeById(lteInfo->getSourceId()) == NODEB && lteInfo->getSourceId() == masterId_) {
-        // Broadcast message from my master enb
-        rssi = das_->receiveBroadcast(frame, lteInfo);
-    }
-    else {
-        // Broadcast message from not-master enb
-        rssi = 0;
-        std::vector<double> rssiV = primaryChannelModel_->getSINR(frame, lteInfo);
-        for (auto value : rssiV)
-            rssi += value;
-        rssi /= rssiV.size();
-    }
+    // Compute RSSI from broadcast message (DAS removed - single antenna)
+    std::vector<double> rssiV = primaryChannelModel_->getSINR(frame, lteInfo);
+    for (auto value : rssiV)
+        rssi += value;
+    rssi /= rssiV.size();
 
     EV << "UE " << nodeId_ << " broadcast frame from " << lteInfo->getSourceId() << " with RSSI: " << rssi << " at " << simTime() << endl;
 
@@ -363,7 +343,6 @@ void LtePhyUe::doHandover()
 
     if (candidateMasterId_ != NODEID_NONE) {
         binder_->registerServingNode(candidateMasterId_, nodeId_);
-        das_->setMasterRuSet(candidateMasterId_);
     }
     binder_->updateUeInfoCellId(nodeId_, candidateMasterId_);
 
@@ -505,30 +484,8 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
         emit(averageCqiDlSignal_, cqi);
         recordCqi(cqi, DL);
     }
-    // apply decider to received packet
-    bool result = true;
-    RemoteSet r = lteInfo->getUserTxParams()->readAntennaSet();
-    if (r.size() > 1) {
-        // DAS
-        for (auto it : r) {
-            EV << "LtePhy: Receiving Packet from antenna " << it << "\n";
-
-            /*
-             * On UE set the sender position
-             * and tx power to the sender das antenna
-             */
-
-            RemoteUnitPhyData data;
-            data.txPower = lteInfo->getTxPower();
-            data.m = getRadioPosition();
-            frame->addRemoteUnitPhyDataVector(data);
-        }
-        // apply analog models For DAS
-        result = channelModel->isErrorDas(frame, lteInfo);
-    }
-    else {
-        result = channelModel->isError(frame, lteInfo);
-    }
+    // apply decider to received packet (DAS removed - single antenna only)
+    bool result = channelModel->isError(frame, lteInfo);
 
     // update statistics
     if (result)
@@ -641,11 +598,6 @@ void LtePhyUe::deleteOldBuffers(MacNodeId masterId)
 
     // delete queues for master at this ue
     pdcp_->deleteEntities(masterId_);
-}
-
-DasFilter *LtePhyUe::getDasFilter()
-{
-    return das_;
 }
 
 void LtePhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req)

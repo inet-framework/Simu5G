@@ -15,15 +15,12 @@
 #include <inet/common/ModuleRefByPar.h>
 #include <inet/networklayer/contract/ipv4/Ipv4Address.h>
 
-#include "simu5g/stack/phy/das/RemoteAntennaSet.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/LteCommon.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
-
-class DasFilter;
 
 /**
  * @class CellInfo
@@ -34,9 +31,6 @@ class CellInfo : public cSimpleModule
   private:
     /// reference to the global module binder
     inet::ModuleRefByPar<Binder> binder_;
-
-    /// Remote Antennas for eNB
-    RemoteAntennaSet *ruSet_ = new RemoteAntennaSet();
 
     /// Cell Id
     MacCellId cellId_;
@@ -202,10 +196,6 @@ class CellInfo : public cSimpleModule
         return numPreferredBands_;
     }
 
-    RemoteAntennaSet *getRemoteAntennaSet()
-    {
-        return ruSet_;
-    }
 
     void setEnbType(EnbType t)
     {
@@ -313,7 +303,6 @@ class CellInfo : public cSimpleModule
     void detachUser(MacNodeId nodeId);
     void attachUser(MacNodeId nodeId);
 
-    ~CellInfo() override;
 };
 
 } //namespace
