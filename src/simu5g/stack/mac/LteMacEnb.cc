@@ -77,8 +77,8 @@ CellInfo *LteMacEnb::getCellInfo()
 
 int LteMacEnb::getNumAntennas()
 {
-    // Get number of antennas: +1 is for MACRO
-    return cellInfo_->getNumRus() + 1;
+    // 0 remote antenna units, +1 is for MACRO
+    return 1;
 }
 
 SchedDiscipline LteMacEnb::getSchedDiscipline(Direction dir)

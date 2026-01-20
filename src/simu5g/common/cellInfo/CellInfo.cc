@@ -52,12 +52,7 @@ void CellInfo::initialize(int stage)
         // get the total number of bands in the system
         totalBands_ = binder_->getTotalBands();
 
-        numRus_ = par("numRus");
-
         numPreferredBands_ = par("numPreferredBands");
-
-        if (numRus_ > NUM_RUS)
-            throw cRuntimeError("The number of antennas specified exceeds the limit of %d", NUM_RUS);
 
         cModule *host = inet::getContainingNode(this);
 
@@ -65,15 +60,10 @@ void CellInfo::initialize(int stage)
         cellId_ = MacNodeId(host->par("macCellId").intValue());
         ASSERT(cellId_ != MacNodeId(-1));  // i.e. already set programmatically
 
-        int ruRange = par("ruRange");
         double nodebTxPower = host->par("txPower");
 
         // first RU to be registered is the MACRO
         ruSet_->addRemoteAntenna(nodeX_, nodeY_, nodebTxPower);
-
-        // REFACTORING: has no effect, as long as numRus_ == 0
-        // deploy RUs
-        deployRu(nodeX_, nodeY_, numRus_, ruRange);
 
         // MCS scaling factor
         calculateMcsScale();
@@ -82,44 +72,6 @@ void CellInfo::initialize(int stage)
     }
 }
 
-void CellInfo::calculateNodePosition(double centerX, double centerY, int nTh,
-        int totalNodes, int range, double startingAngle, double *xPos,
-        double *yPos)
-{
-    if (totalNodes == 0)
-        throw cRuntimeError("CellInfo::calculateNodePosition: divide by 0");
-    // radians (minus sign because position 0,0 is top-left, not bottom-left)
-    double theta = -startingAngle * M_PI / 180;
-
-    double thetaSpacing = (2 * M_PI) / totalNodes;
-    // angle of n-th node
-    theta += nTh * thetaSpacing;
-    double x = centerX + (range * cos(theta));
-    double y = centerY + (range * sin(theta));
-
-    *xPos = (x < pgnMinX_) ? pgnMinX_ : (x > pgnMaxX_) ? pgnMaxX_ : x;
-    *yPos = (y < pgnMinY_) ? pgnMinY_ : (y > pgnMaxY_) ? pgnMaxY_ : y;
-
-    EV << NOW << " CellInfo::calculateNodePosition: Computed node position "
-       << *xPos << " , " << *yPos << std::endl;
-}
-
-void CellInfo::deployRu(double nodeX, double nodeY, int numRu, int ruRange)
-{
-    if (numRu == 0)
-        return;
-    double x = 0;
-    double y = 0;
-    double angle = par("ruStartingAngle");
-    std::string txPowersString = par("ruTxPower");
-    int *txPowers = new int[numRu];
-    parseStringToIntArray(txPowersString, txPowers, numRu, 0);
-    for (int i = 0; i < numRu; i++) {
-        calculateNodePosition(nodeX, nodeY, i, numRu, ruRange, angle, &x, &y);
-        ruSet_->addRemoteAntenna(x, y, (double)txPowers[i]);
-    }
-    delete[] txPowers;
-}
 
 void CellInfo::calculateMcsScale()
 {
@@ -158,16 +110,8 @@ void CellInfo::updateMCSScale(double& mcs, double signalRe,
 
 void CellInfo::createAntennaCwMap()
 {
-    std::string cws = par("antennaCws");
-    // values for the RUs including the MACRO
-    int dim = numRus_ + 1;
-    int *values = new int[dim];
-    // default for missing values is 1
-    parseStringToIntArray(cws, values, dim, 1);
-    for (int i = 0; i < dim; i++) {
-        antennaCws_[(Remote)i] = values[i];
-    }
-    delete[] values;
+    // without MIMO, there is 1 codeword
+    antennaCws_[(Remote)0] = 1;
 }
 
 void CellInfo::detachUser(MacNodeId nodeId)

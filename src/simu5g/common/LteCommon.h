@@ -152,27 +152,6 @@ double dBToLinear(double db);
 double linearToDBm(double lin);
 double linearToDb(double lin);
 
-/*************************
-*      DAS Support      *
-*************************/
-
-
-/**
- * Maximum number of available DAS RU per cell.
- * To increase this number, change former enumerate accordingly.
- * MACRO antenna excluded.
- */
-const unsigned char NUM_RUS = RU6;
-
-/**
- * Maximum number of available ANTENNAS per cell.
- * To increase this number, change former enumerate accordingly.
- * MACRO antenna included.
- */
-const unsigned char NUM_ANTENNAS = NUM_RUS + 1;
-
-
-//|--------------------------------------------------|
 
 /*****************
 * X2 Support

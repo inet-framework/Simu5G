@@ -58,8 +58,6 @@ class CellInfo : public cSimpleModule
     /// y eNB position
     double nodeY_ = 0;
 
-    /// Number of DAS RU
-    int numRus_ = 0;
     /// Remote and its CW
     std::map<Remote, int> antennaCws_;
 
@@ -115,20 +113,6 @@ class CellInfo : public cSimpleModule
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
-    /**
-     * Deploys remote antennas.
-     *
-     * This is a virtual deployment: the cellInfo needs only to inform
-     * the eNB NIC module about the position of the deployed antennas and
-     * their TX power. These parameters are configured via the cellInfo, but
-     * no NED module is created here.
-     *
-     * @param nodeX x coordinate of the center of the master node
-     * @param nodeY y coordinate of the center of the master node
-     * @param numRu number of remote units to be deployed
-     * @param ruRange distance between eNB and RUs
-     */
-    virtual void deployRu(double nodeX, double nodeY, int numRu, int ruRange);
     virtual void calculateMcsScale();
     virtual void updateMCSScale(double& mcs, double signalRe, double signalCarriers = 0, Direction dir = DL);
 
@@ -136,24 +120,6 @@ class CellInfo : public cSimpleModule
      * Compute slot format object given the number of DL and UL symbols
      */
     virtual SlotFormat computeSlotFormat(bool useTdd, unsigned int tddNumSymbolsDl, unsigned int tddNumSymbolsUl);
-
-  private:
-    /**
-     * Calculates node position around a circumference.
-     *
-     * @param centerX x coordinate of the center
-     * @param centerY y coordinate of the center
-     * @param nTh ordering number of the UE to be placed in this circumference
-     * @param totalNodes total number of nodes that will be placed
-     * @param range circumference range
-     * @param startingAngle angle of the first deployed node (degrees)
-     * @param[out] xPos calculated x coordinate
-     * @param[out] yPos calculated y coordinate
-     */
-    // Used by remote units only
-    void calculateNodePosition(double centerX, double centerY, int nTh,
-            int totalNodes, int range, double startingAngle, double *xPos,
-            double *yPos);
 
     void createAntennaCwMap();
 
@@ -224,11 +190,6 @@ class CellInfo : public cSimpleModule
     double getMcsScaleDl()
     {
         return mcsScaleDl_;
-    }
-
-    int getNumRus()
-    {
-        return numRus_;
     }
 
     std::map<Remote, int> getAntennaCws()

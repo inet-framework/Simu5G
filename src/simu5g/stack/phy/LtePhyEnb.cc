@@ -262,7 +262,7 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
     //Feedback computation
     fb.clear();
     //get number of RU
-    int nRus = cellInfo_->getNumRus();
+    int nRus = 0;
     TxMode txmode = req.txMode;
     FeedbackType type = req.type;
     RbAllocationType rbtype = req.rbAllocationType;

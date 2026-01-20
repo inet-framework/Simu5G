@@ -48,25 +48,6 @@ simple CellInfo
         bool microCell = default(false);
 
         //#
-        //# Remote Units (DAS)
-        //#
-
-        // Number of Remote Units
-        int numRus = default(0);
-
-        // Range of Remote Units
-        int ruRange = default(0);
-
-        // Initial angle for remote units (used for graphical representation)
-        double ruStartingAngle @unit(deg) = default(0deg);
-
-        // CSV string specifying the TX power for each remote unit (integer values)
-        string ruTxPower = default("0;");
-
-        // Codewords for each antenna, first position refers to the MACRO
-        string antennaCws = default("1;");
-
-        //#
         //# Physical layer properties
         //#
 
