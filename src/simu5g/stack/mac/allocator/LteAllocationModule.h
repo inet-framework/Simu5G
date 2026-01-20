@@ -102,12 +102,6 @@ class LteAllocationModule
         /// Stores the amount of bytes allocated to every UE in the structure band
         unsigned int allocatedBytes_ = 0;
 
-        // if false this user is not using MU-MIMO
-        bool muMimoEnabled_ = false;
-        // if false this user transmits on MAIN_PLANE, otherwise it is considered as secondary
-        bool secondaryUser_ = false;
-        MacNodeId peerId_ = NODEID_NONE;
-
         // amount of blocks allocated for this UE for each remote and for each band
         std::map<Remote, PerBandAllocatedRbsMap> ueAllocatedRbsMap_;
         /// When an allocation is performed, the amount of blocks requested and the amount of bytes is registered into this list
@@ -234,7 +228,7 @@ class LteAllocationModule
      */
     unsigned int getBlocks(const Remote antenna, const Band band, const MacNodeId nodeId)
     {
-        Plane plane = allocatedRbsUe_[nodeId].secondaryUser_ ? MU_MIMO_PLANE : MAIN_PLANE;
+        Plane plane = MAIN_PLANE;
         return allocatedRbsPerBand_[plane][antenna][band].ueAllocatedRbsMap_[nodeId];
     }
 
@@ -246,7 +240,7 @@ class LteAllocationModule
 
     unsigned int getBytes(const Remote antenna, const Band band, const MacNodeId nodeId)
     {
-        Plane plane = allocatedRbsUe_[nodeId].secondaryUser_ ? MU_MIMO_PLANE : MAIN_PLANE;
+        Plane plane = MAIN_PLANE;
         return allocatedRbsPerBand_[plane][antenna][band].ueAllocatedBytesMap_[nodeId];
     }
 

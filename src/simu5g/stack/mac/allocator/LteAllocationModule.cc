@@ -129,7 +129,8 @@ void LteAllocationModule::setRemoteAntenna(const Plane plane, const Remote anten
 
 Plane LteAllocationModule::getOFDMPlane(const MacNodeId nodeId)
 {
-    return (allocatedRbsUe_[nodeId].secondaryUser_) ? MU_MIMO_PLANE : MAIN_PLANE;
+    allocatedRbsUe_[nodeId]; // KLUDGE for side effect!
+    return MAIN_PLANE;
 }
 
 unsigned int LteAllocationModule::computeTotalRbs()

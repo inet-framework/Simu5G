@@ -63,12 +63,6 @@ struct AllocatedRbsPerUeInfo
     /// Stores the amount of bytes allocated to every UE in the structure band
     unsigned int allocatedBytes_ = 0;
 
-    // if false this user is not using MU-MIMO
-    bool muMimoEnabled_ = false;
-    // if false this user transmits on MAIN_PLANE, otherwise it is considered as secondary
-    bool secondaryUser_ = false;
-    MacNodeId peerId_ = NODEID_NONE;
-
     // amount of blocks allocated for this UE for each remote and for each band
     std::map<Remote, PerBandAllocatedRbsMapA> ueAllocatedRbsMap_;
     /// When an allocation is performed, the amount of blocks requested and the amount of bytes is registered into this list
