@@ -272,52 +272,6 @@ class LteFeedback
     void print(MacCellId cellId, MacNodeId nodeId, Direction dir, const char *s) const;
 };
 
-/**
- * @class LteMuMimoMatrix
- *
- * MU-MIMO compatibility matrix structure.
- * It holds MU-MIMO pairings computed by the MU-MIMO matching function.
- */
-class LteMuMimoMatrix
-{
-    typedef std::vector<MacNodeId> MuMatrix;
-
-  protected:
-    MuMatrix muMatrix_;
-    MacNodeId maxNodeId_ = NODEID_NONE;
-
-    MacNodeId toNodeId(unsigned int i)
-    {
-        return MacNodeId(UE_MIN_ID + i);
-    }
-
-    unsigned int toIndex(MacNodeId nodeId)
-    {
-        return num(nodeId) - UE_MIN_ID;
-    }
-
-  public:
-
-    void initialize(MacNodeId node)
-    {
-        muMatrix_.clear();
-        muMatrix_.resize(toIndex(node) + 1, NODEID_NONE);
-    }
-
-    void addPair(MacNodeId id1, MacNodeId id2)
-    {
-        muMatrix_[toIndex(id1)] = id2;
-        muMatrix_[toIndex(id2)] = id1;
-    }
-
-    MacNodeId getMuMimoPair(MacNodeId id)
-    {
-        return muMatrix_[toIndex(id)];
-    }
-
-    void print(const char *s) const;
-};
-
 } //namespace
 
 #endif

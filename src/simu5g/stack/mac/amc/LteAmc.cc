@@ -157,12 +157,6 @@ void LteAmc::printTxParams(Direction dir, GHz carrierFrequency)
     }
 }
 
-void LteAmc::printMuMimoMatrix(const char *s)
-{
-    muMimoDlMatrix_.print(s);
-    muMimoUlMatrix_.print(s);
-    muMimoD2DMatrix_.print(s);
-}
 
 /********************
 * PUBLIC FUNCTIONS
@@ -221,9 +215,6 @@ LteAmc& LteAmc::operator=(const LteAmc& other)
     lb_ = other.lb_;
     ub_ = other.ub_;
     cqiComputationWeight_ = other.cqiComputationWeight_;
-    muMimoDlMatrix_ = other.muMimoDlMatrix_;
-    muMimoUlMatrix_ = other.muMimoUlMatrix_;
-    muMimoD2DMatrix_ = other.muMimoD2DMatrix_;
 
     return *this;
 }
@@ -481,24 +472,6 @@ const LteSummaryFeedback& LteAmc::getFeedbackD2D(MacNodeId id, Remote antenna, T
             return d2dFeedbackHistory_.at(carrierFrequency).at(NODEID_NONE).at(MACRO).at(0).at(txMode).get();
     }
     return d2dFeedbackHistory_.at(carrierFrequency).at(peerId).at(antenna).at(d2dNodeIndex_.at(id)).at(txMode).get();
-}
-
-/*******************************************
-*    Functions for MU-MIMO support       *
-*******************************************/
-
-MacNodeId LteAmc::computeMuMimoPairing(const MacNodeId nodeId, Direction dir)
-{
-    if (dir == DL) {
-        return muMimoDlMatrix_.getMuMimoPair(nodeId);
-    }
-    else if (dir == UL) {
-        return muMimoUlMatrix_.getMuMimoPair(nodeId);
-    }
-    else if (dir == D2D) {
-        return muMimoD2DMatrix_.getMuMimoPair(nodeId);
-    }
-    throw cRuntimeError("LteAmc::computeMuMimoPairing(): Unrecognized direction");
 }
 
 /********************************
@@ -1333,4 +1306,3 @@ void LteAmc::testUe(MacNodeId nodeId, Direction dir)
 void LteAmc::setPilotMode(PilotComputationModes mode) { pilot_->setMode(mode); }
 
 } //namespace
-

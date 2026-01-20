@@ -51,7 +51,6 @@ class LteAmc
     void printParameters();
     void printFbhb(Direction dir);
     void printTxParams(Direction dir, GHz carrierFrequency);
-    void printMuMimoMatrix(const char *s);
 
   protected:
     opp_component_ptr<LteMacEnb> mac_;
@@ -98,9 +97,6 @@ class LteAmc
     simtime_t lb_;
     simtime_t ub_;
     double cqiComputationWeight_;
-    LteMuMimoMatrix muMimoDlMatrix_;
-    LteMuMimoMatrix muMimoUlMatrix_;
-    LteMuMimoMatrix muMimoD2DMatrix_;
 
     History_ *getHistory(Direction dir, GHz carrierFrequency);
 
@@ -130,8 +126,6 @@ class LteAmc
 
     //used when it is necessary to know if the requested feedback exists or not
     // LteSummaryFeedback getFeedback(MacNodeId id, Remote antenna, TxMode txMode, const Direction dir,bool& valid);
-
-    MacNodeId computeMuMimoPairing(const MacNodeId nodeId, Direction dir = DL);
 
     const RemoteSet *getAntennaSet()
     {
@@ -194,26 +188,6 @@ class LteAmc
         return cellInfo_->getUePosition(id);
     }
 
-    void muMimoMatrixInit(Direction dir, MacNodeId nodeId)
-    {
-        if (dir == DL)
-            muMimoDlMatrix_.initialize(nodeId);
-        else if (dir == UL)
-            muMimoUlMatrix_.initialize(nodeId);
-        else if (dir == D2D)
-            muMimoD2DMatrix_.initialize(nodeId);
-    }
-
-    void addMuMimoPair(Direction dir, MacNodeId id1, MacNodeId id2)
-    {
-        if (dir == DL)
-            muMimoDlMatrix_.addPair(id1, id2);
-        else if (dir == UL)
-            muMimoUlMatrix_.addPair(id1, id2);
-        else if (dir == D2D)
-            muMimoD2DMatrix_.addPair(id1, id2);
-    }
-
     std::vector<Cqi> readMultiBandCqi(MacNodeId id, const Direction dir, GHz carrierFrequency);
 
     int getSystemNumBands() { return numBands_; }
@@ -224,4 +198,3 @@ class LteAmc
 } //namespace
 
 #endif
-
