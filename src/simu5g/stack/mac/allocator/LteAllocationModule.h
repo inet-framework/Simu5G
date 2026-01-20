@@ -132,6 +132,9 @@ class LteAllocationModule
     /// For each UE, stores the amount of blocks allocated for each band
     AllocatedRbsPerUeMap allocatedRbsUe_;
 
+  private:
+    void ensureNodeInitialized(const MacNodeId nodeId);
+
     /************************************************************
     *   From Logical Bands to UE
     ************************************************************/

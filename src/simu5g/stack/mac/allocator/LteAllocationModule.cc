@@ -107,6 +107,13 @@ void LteAllocationModule::reset(const unsigned int resourceBlocks, const unsigne
 }
 
 
+void LteAllocationModule::ensureNodeInitialized(const MacNodeId nodeId)
+{
+    // Ensure the allocatedRbsUe_ map has an entry for this node
+    // Using operator[] creates a default-initialized entry if it doesn't exist
+    allocatedRbsUe_[nodeId];
+}
+
 void LteAllocationModule::setRemoteAntenna(const Plane plane, const Remote antenna)
 {
     /**
@@ -129,7 +136,6 @@ void LteAllocationModule::setRemoteAntenna(const Plane plane, const Remote anten
 
 Plane LteAllocationModule::getOFDMPlane(const MacNodeId nodeId)
 {
-    allocatedRbsUe_[nodeId]; // KLUDGE for side effect!
     return MAIN_PLANE;
 }
 
@@ -194,6 +200,8 @@ unsigned int LteAllocationModule::getInterferingBlocks(Plane plane, const Remote
 
 unsigned int LteAllocationModule::availableBlocks(const MacNodeId nodeId, const Plane plane, const Band band)
 {
+    ensureNodeInitialized(nodeId);
+
     // compute available blocks on all antennas for the given user and plane.
     RemoteSet antennas = allocatedRbsUe_.at(nodeId).availableAntennaSet_;
     unsigned int available = 0;
@@ -208,6 +216,8 @@ unsigned int LteAllocationModule::availableBlocks(const MacNodeId nodeId, const 
 bool LteAllocationModule::addBlocks(const Band band, const MacNodeId nodeId, const unsigned int blocks,
         const unsigned int bytes)
 {
+    ensureNodeInitialized(nodeId);
+
     // all antennas for the given user and plane.
     RemoteSet antennas = allocatedRbsUe_.at(nodeId).availableAntennaSet_;
     bool ret = false;
@@ -281,6 +291,8 @@ unsigned int LteAllocationModule::removeBlocks(const Remote antenna, const Band 
         return 0;
     }
 
+    ensureNodeInitialized(nodeId);
+
     // Retrieving user's plane
     Plane plane = getOFDMPlane(nodeId);
 
@@ -314,6 +326,7 @@ unsigned int LteAllocationModule::removeBlocks(const Remote antenna, const Band 
 
 unsigned int LteAllocationModule::rbOccupation(const MacNodeId nodeId, RbMap& rbMap)
 {
+    ensureNodeInitialized(nodeId);
     // Compute allocated blocks on all antennas for the given user and logical band.
     RemoteSet antennas = allocatedRbsUe_.at(nodeId).availableAntennaSet_;
 
