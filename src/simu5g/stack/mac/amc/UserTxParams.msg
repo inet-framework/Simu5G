@@ -36,7 +36,6 @@ class UserTxParams
 
     Cqi cqiVector[] @custom = CQI_INIT_VALUES; // vector with as many elements as there are cw: therefore it contains wb cqi
 
-    Pmi pmi @getter(readPmi) @setter(writePmi) = NOPMI;       // WB pmi
 
     // std::set<Band> allowedBands_;     // bands on which the user can transmit
     // TODO make as visible
@@ -128,7 +127,6 @@ cplusplus(UserTxParams) {{
 
         txMode = SINGLE_ANTENNA_PORT0;
         ri = NORANK;
-        pmi = NOPMI;
         cqiVector = CQI_INIT_VALUES;
 
         valid = false;

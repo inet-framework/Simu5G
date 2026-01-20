@@ -48,29 +48,6 @@ void LteSummaryBuffer::createSummary(LteFeedback fb) {
             }
         }
 
-        // For the PMI it behaves similarly
-
-        // PMI
-        if (fb.hasBandPmi()) { // Per-band
-            PmiVector pmi(fb.getBandPmi());
-            for (Band i = 0; i < totBands_; ++i)
-                cumulativeSummary_.setPmi(pmi.at(i), i);
-        }
-        else {
-            if (fb.hasWbPmi()) {
-                // Wide-band
-                Pmi pmi(fb.getWbPmi());
-                for (Band i = 0; i < totBands_; ++i)
-                    cumulativeSummary_.setPmi(pmi, i);
-            }
-            if (fb.hasPreferredPmi()) {
-                // Preferred-band
-                Pmi pmi(fb.getPreferredPmi());
-                BandSet bands(fb.getPreferredBands());
-                for (const auto& band : bands)
-                    cumulativeSummary_.setPmi(pmi, band);
-            }
-        }
     }
     catch (std::exception& e) {
         throw cRuntimeError("Exception in LteSummaryBuffer::summarize(): %s",

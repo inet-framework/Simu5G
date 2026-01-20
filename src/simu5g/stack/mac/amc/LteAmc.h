@@ -97,7 +97,6 @@ class LteAmc
     unsigned int fbhbCapacityD2D_;
     simtime_t lb_;
     simtime_t ub_;
-    double pmiComputationWeight_;
     double cqiComputationWeight_;
     LteMuMimoMatrix muMimoDlMatrix_;
     LteMuMimoMatrix muMimoUlMatrix_;
@@ -177,8 +176,6 @@ class LteAmc
     // ---------------------------
     void writeCqiWeight(double weight);
     Cqi readWbCqi(const CqiVector& cqi);
-    void writePmiWeight(double weight);
-    Pmi readWbPmi(const PmiVector& pmi);
     void detachUser(MacNodeId nodeId, Direction dir);
     void attachUser(MacNodeId nodeId, Direction dir);
     void testUe(MacNodeId nodeId, Direction dir);

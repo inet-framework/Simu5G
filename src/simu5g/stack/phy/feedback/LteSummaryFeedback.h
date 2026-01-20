@@ -35,15 +35,11 @@ class LteSummaryFeedback
     Rank ri_;
     //! Channel Quality Indicator (per-codeword).
     std::vector<CqiVector> cqi_;
-    //! Precoding Matrix Index.
-    PmiVector pmi_;
 
     //! time elapsed from last refresh of RI.
     simtime_t tRi_;
     //! time elapsed from last refresh of CQI.
     std::vector<std::vector<simtime_t>> tCqi_;
-    //! time elapsed from last refresh of PMI.
-    std::vector<simtime_t> tPmi_;
     // valid flag
     bool valid_;
 
@@ -85,12 +81,6 @@ class LteSummaryFeedback
         valid_ = true;
     }
 
-    //! Set single-band PMI.
-    void setPmi(Pmi pmi, Band band)
-    {
-        pmi_[band] = pmi;
-        tPmi_[band] = simTime();
-    }
 
     /*************
     *  Getters
@@ -138,23 +128,6 @@ class LteSummaryFeedback
         return confidence(tCqi_.at(cw).at(band));
     }
 
-    //! Get single-band PMI.
-    Pmi getPmi(Band band) const
-    {
-        return pmi_.at(band);
-    }
-
-    //! Get the PMI vector.
-    const PmiVector& getPmi() const
-    {
-        return pmi_;
-    }
-
-    //! Get single-band PMI confidence value.
-    double getPmiConfidence(Band band) const
-    {
-        return confidence(tPmi_.at(band));
-    }
 
     bool isValid()
     {

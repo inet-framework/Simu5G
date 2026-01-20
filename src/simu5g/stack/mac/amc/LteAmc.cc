@@ -70,7 +70,6 @@ void LteAmc::printParameters()
     EV << "RbAllocationType: " << allocationType_ << endl;
     EV << "FBHB capacity DL: " << fbhbCapacityDl_ << endl;
     EV << "FBHB capacity UL: " << fbhbCapacityUl_ << endl;
-    EV << "PmiWeight: " << pmiComputationWeight_ << endl;
     EV << "CqiWeight: " << cqiComputationWeight_ << endl;
     EV << "DL MCS scale: " << mcsScaleDl_ << endl;
     EV << "UL MCS scale: " << mcsScaleUl_ << endl;
@@ -221,7 +220,6 @@ LteAmc& LteAmc::operator=(const LteAmc& other)
     fbhbCapacityD2D_ = other.fbhbCapacityD2D_;
     lb_ = other.lb_;
     ub_ = other.ub_;
-    pmiComputationWeight_ = other.pmiComputationWeight_;
     cqiComputationWeight_ = other.cqiComputationWeight_;
     muMimoDlMatrix_ = other.muMimoDlMatrix_;
     muMimoUlMatrix_ = other.muMimoUlMatrix_;
@@ -254,7 +252,6 @@ void LteAmc::initialize()
     fbhbCapacityDl_ = mac_->par("fbhbCapacityDl");
     fbhbCapacityUl_ = mac_->par("fbhbCapacityUl");
     fbhbCapacityD2D_ = mac_->par("fbhbCapacityD2D");
-    pmiComputationWeight_ = mac_->par("pmiWeight");
     cqiComputationWeight_ = mac_->par("cqiWeight");
     pilot_ = getAmcPilot(mac_->par("amcMode"));
     allocationType_ = getRbAllocationType(mac_->par("rbAllocationType").stringValue());
@@ -1031,71 +1028,6 @@ Cqi LteAmc::readWbCqi(const CqiVector& cqi)
 std::vector<Cqi> LteAmc::readMultiBandCqi(MacNodeId id, const Direction dir, GHz carrierFrequency)
 {
     return pilot_->getMultiBandCqi(id, dir, carrierFrequency);
-}
-
-void LteAmc::writePmiWeight(const double weight)
-{
-    // set the PMI weight
-    pmiComputationWeight_ = weight;
-}
-
-Pmi LteAmc::readWbPmi(const PmiVector& pmi)
-{
-    // during the process, consider
-    // - the pmi value which will be returned
-    Pmi pmiRet = NOPMI;
-    // - a counter to obtain the mean
-    Pmi pmiCounter = NOPMI;
-    // - the mean value
-    Pmi pmiMean = NOPMI;
-    // - the min value
-    Pmi pmiMin = NOPMI;
-    // - the max value
-    Pmi pmiMax = NOPMI;
-
-    // consider the pmi of each band
-    unsigned int bands = pmi.size();
-    for (Band b = 0; b < bands; ++b) {
-        pmiCounter += pmi.at(b);
-        pmiMin = pmiMin < pmi.at(b) ? pmiMin : pmi.at(b);
-        pmiMax = pmiMax > pmi.at(b) ? pmiMax : pmi.at(b);
-    }
-
-    // when casting a double to an unsigned int value, consider the closest one
-
-    // is the module lower than the half of the divisor? ceil, otherwise floor
-    pmiMean = (double)(pmiCounter % bands) > (double)bands / 2.0 ? pmiCounter / bands + 1 : pmiCounter / bands;
-
-    // the 0.0 weight is used in order to obtain the mean
-    if (pmiComputationWeight_ == 0.0)
-        pmiRet = pmiMean;
-    // the -1.0 weight is used in order to obtain the min
-    else if (pmiComputationWeight_ == -1.0)
-        pmiRet = pmiMin;
-    // the 1.0 weight is used in order to obtain the max
-    else if (pmiComputationWeight_ == 1.0)
-        pmiRet = pmiMax;
-    // the following weight is used in order to obtain a value between the min and the mean
-    else if (-1.0 < pmiComputationWeight_ && pmiComputationWeight_ < 0.0) {
-        pmiRet = pmiMin;
-        // ceil or floor depending on decimal part (casting to unsigned int results in a ceiling)
-        double ret = (pmiComputationWeight_ + 1.0) * ((double)pmiMean - (double)pmiMin);
-        pmiRet += ret - ((unsigned int)ret) > 0.5 ? (unsigned int)ret + 1 : (unsigned int)ret;
-    }
-    // the following weight is used in order to obtain a value between the min and the max
-    else if (0.0 < pmiComputationWeight_ && pmiComputationWeight_ < 1.0) {
-        pmiRet = pmiMean;
-        // ceil or floor depending on decimal part (casting to unsigned int results in a ceiling)
-        double ret = (pmiComputationWeight_) * ((double)pmiMax - (double)pmiMean);
-        pmiRet += ret - ((unsigned int)ret) > 0.5 ? (unsigned int)ret + 1 : (unsigned int)ret;
-    }
-    else {
-        throw cRuntimeError("LteAmc::readWbPmi(): Unknown weight %f", pmiComputationWeight_);
-    }
-
-    EV << "LteAmc::getWbPmi - Pmi " << pmiRet << " evaluated\n";
-
-    return pmiRet;
 }
 
 /****************************

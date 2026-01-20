@@ -206,7 +206,6 @@ typedef std::vector<BandLimit> BandLimitVector;
 const unsigned char MAXCW = 2;
 const Cqi MAXCQI = 15;
 const Cqi NOSIGNALCQI = 0;
-const Pmi NOPMI = 0;
 const Rank NORANK = 1;
 const Tbs CQI2ITBSSIZE = 29;
 const unsigned int PDCP_HEADER_UM = 1;
@@ -375,7 +374,6 @@ typedef std::map<GHz, CarrierInfo> CarrierInfoMap;
 *************************************/
 
 typedef std::vector<Cqi> CqiVector;
-typedef std::vector<Pmi> PmiVector;
 typedef std::set<Band> BandSet;
 typedef std::set<Remote> RemoteSet;
 typedef std::map<MacNodeId, bool> ConnectedUesMap;

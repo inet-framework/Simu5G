@@ -62,8 +62,6 @@ typedef unsigned short Rank;
 /// Channel Quality Indicator
 typedef unsigned short Cqi;
 
-/// Precoding Matrix Index
-typedef unsigned short Pmi;
 
 /// Transport Block Size
 typedef unsigned short Tbs;
@@ -198,18 +196,6 @@ class Cqi {
     @fromValue(omnetpp::checked_int_cast<int64_t>($.intValue()));
 };
 
-/// Precoding Matrix Index
-class Pmi {
-    @existingClass; // typedef unsigned short Pmi;
-    @descriptor(false);
-    @primitive;
-    @castFunction(false);
-    @fromString(string2int64($));
-    @toString(int642string($));
-    @defaultValue(0);
-    @toValue((omnetpp::intval_t)($));
-    @fromValue(omnetpp::checked_int_cast<int64_t>($.intValue()));
-};
 
 /// Transport Block Size
 class Tbs {

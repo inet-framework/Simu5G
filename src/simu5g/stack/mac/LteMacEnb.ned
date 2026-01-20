@@ -58,9 +58,6 @@ simple LteMacEnb extends LteMacBase
         // FeedBack Historical Base capacity in D2D (number of stored feedback samples per UE)
         int fbhbCapacityD2D = default(5);
 
-        // wideband PMI generation parameter (0.0 means "use the mean value" )
-        double pmiWeight = default(0.0);
-
         // wideband CQI generation parameter (0.0 means "use the mean value" )
         double cqiWeight = default(0.0);
 

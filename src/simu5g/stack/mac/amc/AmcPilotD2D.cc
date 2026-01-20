@@ -25,7 +25,7 @@ void AmcPilotD2D::setPreconfiguredTxParams(Cqi cqi)
     preconfiguredTxParams_->writeTxMode(TRANSMIT_DIVERSITY);
     Rank ri = 1;                                              // rank for TxD is one
     preconfiguredTxParams_->writeRank(ri);
-    preconfiguredTxParams_->writePmi(intuniform(getEnvir()->getRNG(0), 1, pow(ri, (double)2)));   // taken from LteFeedbackComputationRealistic::computeFeedback
+    intuniform(getEnvir()->getRNG(0), 1, pow(ri, (double)2));  // consume random number
 
     if (cqi < 0 || cqi > 15)
         throw cRuntimeError("AmcPilotD2D::setPreconfiguredTxParams - CQI %hu is not a valid value", cqi);
@@ -119,7 +119,6 @@ const UserTxParams& AmcPilotD2D::computeTxParams(MacNodeId id, const Direction d
     info.writeTxMode(txMode);
     info.writeRank(sfb.getRi());
     info.writeCqi(std::vector<Cqi>(1, chosenCqi));
-    info.writePmi(sfb.getPmi(0));
     info.writeBands(b);
     RemoteSet antennas;
     antennas.insert(MACRO);

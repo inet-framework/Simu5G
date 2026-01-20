@@ -19,8 +19,6 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-// PMI values travel back to eNB in feedback packets but are not used as input for any computation there, so we can set PMI to any value.
-static const Pmi EXAMPLE_PMI_VALUE = 42;
 
 LteFeedbackComputationRealistic::LteFeedbackComputationRealistic(Binder *binder, double targetBler, const std::map<MacNodeId, Lambda>& lambda,
         double lambdaMinTh, double lambdaMaxTh, double lambdaRatioTh, unsigned int numBands) : lambda_(lambda), targetBler_(targetBler), numBands_(numBands), lambdaMinTh_(lambdaMinTh), lambdaMaxTh_(lambdaMaxTh), lambdaRatioTh_(lambdaRatioTh), phyPisaData_(&(binder->phyPisaData))
@@ -134,7 +132,6 @@ LteFeedbackDoubleVector LteFeedbackComputationRealistic::computeFeedback(Feedbac
                 // Generate feedback for txmode z
                 fb.setRankIndicator(rank);
                 fb.setAntenna((Remote)j);
-                fb.setWideBandPmi(EXAMPLE_PMI_VALUE);
                 generateBaseFeedback(numBands_, numPreferredBands, fb, fbType, antennaCws[(Remote)j], rbAllocationType, (TxMode)z, snr);
             }
             fbvv[j][z] = fb;
@@ -160,7 +157,6 @@ LteFeedbackVector LteFeedbackComputationRealistic::computeFeedback(const Remote 
             // Generate feedback for txmode z
             fb.setRankIndicator(rank);
             fb.setAntenna(remote);
-            fb.setWideBandPmi(EXAMPLE_PMI_VALUE);
             generateBaseFeedback(numBands_, numPreferredBands, fb, fbType, antennaCws, rbAllocationType, (TxMode)z, snr);
         }
         fbv[z] = fb;

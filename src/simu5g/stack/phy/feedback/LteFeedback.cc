@@ -80,29 +80,8 @@ void LteFeedback::print(MacCellId cellId, MacNodeId nodeId, Direction dir,
         }
     }
 
-    if (hasPreferredPmi()) {
-        Pmi pmi = getPreferredPmi();
-        EV << NOW << " " << s << " Preferred PMI = " << pmi << "\n";
-    }
 
-    if (hasWbPmi()) {
-        Pmi pmi = getWbPmi();
-        EV << NOW << " " << s << " Wideband PMI = " << pmi << "\n";
-    }
-
-    if (hasBandCqi()) {
-        PmiVector pmi = getBandPmi();
-        EV << NOW << " " << s << " Band PMI = {";
-        unsigned int bands = pmi.size();
-        if (bands > 0) {
-            EV << pmi.at(0);
-            for (Band b = 1; b < bands; ++b)
-                EV << ", " << pmi.at(b);
-        }
-        EV << "}\n";
-    }
-
-    if (hasPreferredCqi() || hasPreferredPmi()) {
+    if (hasPreferredCqi()) {
         BandSet band = getPreferredBands();
         EV << NOW << " " << s << " Preferred Bands = {";
         const char *sep = "";
