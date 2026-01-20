@@ -381,7 +381,7 @@ class SimulationTestCase(unittest.TestCase):
         result = SimulationResult(command, workingdir, exitcode, elapsedTime=elapsedTime)
 
         # process error messages
-        errorLines = re.findall("<!>.*", out, re.M)
+        errorLines = re.findall("^<!>.*", out, re.M)
         errorMsg = ""
         fp = '[a-fA-F0-9]{4}-[a-fA-F0-9]{4}/[a-zA-Z0~]+'
         fps = fp + '(?: '+fp+')*'
