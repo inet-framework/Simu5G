@@ -51,11 +51,6 @@ simple LteRealisticChannelModel extends LteChannelModel
         // HARQ reduction -->
         double harqReduction = default(0.2);
 
-        // Rank indicator tracefile -->
-        double lambdaMinTh = default(0.02);
-        double lambdaMaxTh = default(0.2);
-        double lambdaRatioTh = default(20);
-
         // Antenna Gain of UE -->
         double antennaGainUe @unit(dBi) = default(0dBi);
         // Antenna Gain of eNodeB -->

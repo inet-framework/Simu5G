@@ -348,9 +348,8 @@ void NrPhyUe::doHandover()
         cellInfo_ = newCellInfo;
         if (oldCellInfo == nullptr) {
             // first time the UE is attached to someone
-            int index = intuniform(0, binder_->phyPisaData.maxChannel() - 1);
-            cellInfo_->lambdaInit(nodeId_, index);
-            cellInfo_->channelUpdate(nodeId_, intuniform(1, binder_->phyPisaData.maxChannel2()));
+            intuniform(0, binder_->phyPisaData.maxChannel() - 1);
+            intuniform(1, binder_->phyPisaData.maxChannel2());  // RNG call to preserve fingerprint
         }
 
         // send a self-message to schedule the possible mode switch at the end of the TTI (after all UEs have performed the handover)

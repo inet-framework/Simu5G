@@ -20,8 +20,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 
-LteFeedbackComputationRealistic::LteFeedbackComputationRealistic(Binder *binder, double targetBler, const std::map<MacNodeId, Lambda>& lambda,
-        double lambdaMinTh, double lambdaMaxTh, double lambdaRatioTh, unsigned int numBands) : lambda_(lambda), targetBler_(targetBler), numBands_(numBands), lambdaMinTh_(lambdaMinTh), lambdaMaxTh_(lambdaMaxTh), lambdaRatioTh_(lambdaRatioTh), phyPisaData_(&(binder->phyPisaData))
+LteFeedbackComputationRealistic::LteFeedbackComputationRealistic(Binder *binder, double targetBler, unsigned int numBands) : targetBler_(targetBler), numBands_(numBands), phyPisaData_(&(binder->phyPisaData))
 {
     baseMin_.resize(phyPisaData_->nMcs(), 2);
 }
@@ -77,10 +76,7 @@ void LteFeedbackComputationRealistic::generateBaseFeedback(int numBands, int num
 
 unsigned int LteFeedbackComputationRealistic::computeRank(MacNodeId id)
 {
-    if (lambda_.at(id).lambdaMin < lambdaMinTh_)
-        return 1;
-    else
-        return 2;
+    return 1;
 }
 
 Cqi LteFeedbackComputationRealistic::getCqi(TxMode txmode, double snr)

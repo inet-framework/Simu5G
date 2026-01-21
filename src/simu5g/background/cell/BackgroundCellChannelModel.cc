@@ -708,7 +708,8 @@ double BackgroundCellChannelModel::computeAngularAttenuation(double hAngle, doub
 double BackgroundCellChannelModel::rayleighFading(MacNodeId id, unsigned int band)
 {
     //get raylegh variable from trace file
-    double temp1 = binder_->phyPisaData.getChannel(binder_->getCellInfoByNodeId(id)->getLambda(id)->channelIndex + band);
+    const int channelIndex = 0;
+    double temp1 = binder_->phyPisaData.getChannel(channelIndex + band);
     return linearToDb(temp1);
 }
 

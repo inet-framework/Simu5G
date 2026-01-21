@@ -48,9 +48,6 @@ void LtePhyEnb::initialize(int stage)
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         cellInfo_ = binder_->getCellInfoByNodeId(nodeId_);
-        if (cellInfo_ != nullptr) {
-            cellInfo_->channelUpdate(nodeId_, randomChannelIndex_);
-        }
     }
     else if (stage == INITSTAGE_SIMU5G_PHYSICAL_LAYER) {
         initializeFeedbackComputation();
@@ -346,29 +343,14 @@ LteFeedbackComputation *LtePhyEnb::getFeedbackComputationFromName(std::string na
     if (name == "REAL") {
         // default value
         double targetBler = 0.1;
-        double lambdaMinTh = 0.02;
-        double lambdaMaxTh = 0.2;
-        double lambdaRatioTh = 20;
         it = params.find("targetBler");
         if (it != params.end()) {
             targetBler = params["targetBler"].doubleValue();
         }
-        it = params.find("lambdaMinTh");
-        if (it != params.end()) {
-            lambdaMinTh = params["lambdaMinTh"].doubleValue();
-        }
-        it = params.find("lambdaMaxTh");
-        if (it != params.end()) {
-            lambdaMaxTh = params["lambdaMaxTh"].doubleValue();
-        }
-        it = params.find("lambdaRatioTh");
-        if (it != params.end()) {
-            lambdaRatioTh = params["lambdaRatioTh"].doubleValue();
-        }
         LteFeedbackComputation *fbcomp = new LteFeedbackComputationRealistic(
                 binder_,
-                targetBler, cellInfo_->getLambda(), lambdaMinTh, lambdaMaxTh,
-                lambdaRatioTh, cellInfo_->getNumBands());
+                targetBler,
+                cellInfo_->getNumBands());
         return fbcomp;
     }
     else
@@ -380,16 +362,12 @@ void LtePhyEnb::initializeFeedbackComputation()
     const char *name = "REAL";
 
     double targetBler = par("targetBler");
-    double lambdaMinTh = par("lambdaMinTh");
-    double lambdaMaxTh = par("lambdaMaxTh");
-    double lambdaRatioTh = par("lambdaRatioTh");
 
     // compute feedback for the primary carrier only
     // TODO add support for feedback computation for all carriers
     lteFeedbackComputation_ = new LteFeedbackComputationRealistic(
             binder_,
-            targetBler, cellInfo_->getLambda(), lambdaMinTh, lambdaMaxTh,
-            lambdaRatioTh, cellInfo_->getPrimaryCarrierNumBands());
+            targetBler, cellInfo_->getPrimaryCarrierNumBands());
 
     EV << "Feedback Computation \"" << name << "\" loaded." << endl;
 }

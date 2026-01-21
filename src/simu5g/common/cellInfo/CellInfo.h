@@ -100,8 +100,6 @@ class CellInfo : public cSimpleModule
     // Position of each UE
     std::map<MacNodeId, inet::Coord> uePosition;
 
-    std::map<MacNodeId, Lambda> lambdaMap_;
-
   protected:
 
     void initialize(int stage) override;
@@ -223,49 +221,6 @@ class CellInfo : public cSimpleModule
     void setUePosition(MacNodeId id, inet::Coord c)
     {
         uePosition[id] = c;
-    }
-
-    void lambdaUpdate(MacNodeId id, unsigned int index)
-    {
-        lambdaMap_[id].lambdaMax = binder_->phyPisaData.getLambda(index, 0);
-        lambdaMap_[id].index = index;
-        lambdaMap_[id].lambdaMin = binder_->phyPisaData.getLambda(index, 1);
-        lambdaMap_[id].lambdaRatio = binder_->phyPisaData.getLambda(index, 2);
-    }
-
-    void lambdaIncrease(MacNodeId id, unsigned int i)
-    {
-        lambdaMap_[id].index = lambdaMap_[id].lambdaStart + i;
-        lambdaUpdate(id, lambdaMap_[id].index);
-    }
-
-    void lambdaInit(MacNodeId id, unsigned int i)
-    {
-        lambdaMap_[id].lambdaStart = i;
-        lambdaMap_[id].index = lambdaMap_[id].lambdaStart;
-        lambdaUpdate(id, lambdaMap_[id].index);
-    }
-
-    void channelUpdate(MacNodeId id, unsigned int in)
-    {
-        unsigned int index = in % binder_->phyPisaData.maxChannel2();
-        lambdaMap_[id].channelIndex = index;
-    }
-
-    void channelIncrease(MacNodeId id)
-    {
-        unsigned int i = getNumBands();
-        channelUpdate(id, lambdaMap_[id].channelIndex + i);
-    }
-
-    Lambda *getLambda(MacNodeId id)
-    {
-        return &(lambdaMap_.at(id));
-    }
-
-    const std::map<MacNodeId, Lambda>& getLambda()
-    {
-        return lambdaMap_;
     }
 
     //---------------------------------------------------------------

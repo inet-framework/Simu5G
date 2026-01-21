@@ -108,19 +108,12 @@ void CellInfo::detachUser(MacNodeId nodeId)
     auto pt = uePosition.find(nodeId);
     if (pt != uePosition.end())
         uePosition.erase(pt);
-
-    auto lt = lambdaMap_.find(nodeId);
-    if (lt != lambdaMap_.end())
-        lambdaMap_.erase(lt);
 }
 
 void CellInfo::attachUser(MacNodeId nodeId)
 {
-    // add UE to cellInfo structures (lambda maps)
-    // position will be added by the eNB while computing feedback
-
-    int index = intuniform(0, binder_->phyPisaData.maxChannel() - 1);
-    lambdaInit(nodeId, index);
+    intuniform(0, binder_->phyPisaData.maxChannel() - 1); // consume random number to keep fingerprint
+    // add UE to cellInfo structures (simplified - MIMO functionality removed)
 }
 
 unsigned int CellInfo::getNumBands()

@@ -108,11 +108,6 @@ class LteRealisticChannelModel : public LteChannelModel
     // Percentage of error probability reduction for each h-arq retransmission
     double harqReduction_;
 
-    // Eigen values of channel matrix, used to compute the rank
-    double lambdaMinTh_;
-    double lambdaMaxTh_;
-    double lambdaRatioTh_;
-
     // Antenna gain of eNodeB
     double antennaGainEnB_;
 

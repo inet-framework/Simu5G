@@ -121,10 +121,9 @@ void LtePhyUe::initialize(int stage)
         // get cellInfo at this stage because the next hop of the node is registered in the Ip2Nic module at the INITSTAGE_SIMU5G_NETWORK_LAYER
         if (masterId_ != NODEID_NONE) {
             cellInfo_ = binder_->getCellInfoByNodeId(nodeId_);
-            int index = intuniform(0, binder_->phyPisaData.maxChannel() - 1);
+            intuniform(0, binder_->phyPisaData.maxChannel() - 1);
             if (cellInfo_ != nullptr) {
-                cellInfo_->lambdaInit(nodeId_, index);
-                cellInfo_->channelUpdate(nodeId_, intuniform(1, binder_->phyPisaData.maxChannel2()));
+                intuniform(1, binder_->phyPisaData.maxChannel2()); // RNG call to preserve fingerprint
             }
         }
         else
@@ -378,9 +377,8 @@ void LtePhyUe::doHandover()
         cellInfo_ = newCellInfo;
         if (oldCellInfo == nullptr) {
             // first time the UE is attached to someone
-            int index = intuniform(0, binder_->phyPisaData.maxChannel() - 1);
-            cellInfo_->lambdaInit(nodeId_, index);
-            cellInfo_->channelUpdate(nodeId_, intuniform(1, binder_->phyPisaData.maxChannel2()));
+            intuniform(0, binder_->phyPisaData.maxChannel() - 1);
+            intuniform(1, binder_->phyPisaData.maxChannel2());  // RNG call to preserve fingerprint
         }
     }
 

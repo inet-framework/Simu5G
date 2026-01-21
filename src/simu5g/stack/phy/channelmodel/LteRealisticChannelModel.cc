@@ -58,10 +58,6 @@ void LteRealisticChannelModel::initialize(int stage)
         correlationDistance_ = par("correlationDistance");
         harqReduction_ = par("harqReduction");
 
-        lambdaMinTh_ = par("lambdaMinTh");
-        lambdaMaxTh_ = par("lambdaMaxTh");
-        lambdaRatioTh_ = par("lambdaRatioTh");
-
         antennaGainUe_ = par("antennaGainUe");
         antennaGainEnB_ = par("antennGainEnB");
         antennaGainMicro_ = par("antennGainMicro");
@@ -1619,8 +1615,8 @@ double LteRealisticChannelModel::rayleighFading(MacNodeId id,
         unsigned int band)
 {
     // get rayleigh variable from trace file
-    double temp1 = binder_->phyPisaData.getChannel(
-            binder_->getCellInfoByNodeId(id)->getLambda(id)->channelIndex + band);
+    const int channelndex = 0;
+    double temp1 = binder_->phyPisaData.getChannel(channelndex + band);
     return linearToDb(temp1);
 }
 

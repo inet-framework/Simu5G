@@ -137,16 +137,6 @@ typedef std::map<MacNodeId, TxMode> TxModeMap;
 
 const double cqiToByteTms[16] = { 0, 2, 3, 5, 11, 15, 20, 25, 36, 38, 49, 63, 72, 79, 89, 92 };
 
-struct Lambda
-{
-    unsigned int index;
-    unsigned int lambdaStart;
-    unsigned int channelIndex;
-    double lambdaMin;
-    double lambdaMax;
-    double lambdaRatio;
-};
-
 double dBmToLinear(double dbm);
 double dBToLinear(double db);
 double linearToDBm(double lin);
