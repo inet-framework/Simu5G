@@ -25,7 +25,6 @@ void AmcPilotD2D::setPreconfiguredTxParams(Cqi cqi)
     preconfiguredTxParams_->writeTxMode(TRANSMIT_DIVERSITY);
     Rank ri = 1;                                              // rank for TxD is one
     preconfiguredTxParams_->writeRank(ri);
-    intuniform(getEnvir()->getRNG(0), 1, pow(ri, (double)2));  // consume random number
 
     if (cqi < 0 || cqi > 15)
         throw cRuntimeError("AmcPilotD2D::setPreconfiguredTxParams - CQI %hu is not a valid value", cqi);

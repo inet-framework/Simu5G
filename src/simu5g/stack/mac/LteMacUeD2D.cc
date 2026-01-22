@@ -775,7 +775,6 @@ UserTxParams *LteMacUeD2D::getPreconfiguredTxParams()
     txParams->writeTxMode(TRANSMIT_DIVERSITY);
     Rank ri = 1;                                              // rank for TxD is one
     txParams->writeRank(ri);
-    intuniform(1, pow(ri, (double)2)); // consume random number
 
     Cqi cqi = par("d2dCqi");
     if (cqi < 0 || cqi > 15) {

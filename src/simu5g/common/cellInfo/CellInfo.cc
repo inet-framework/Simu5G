@@ -104,8 +104,6 @@ void CellInfo::detachUser(MacNodeId nodeId)
 
 void CellInfo::attachUser(MacNodeId nodeId)
 {
-    intuniform(0, binder_->phyPisaData.maxChannel() - 1); // consume random number to keep fingerprint
-    // add UE to cellInfo structures (simplified - MIMO functionality removed)
 }
 
 unsigned int CellInfo::getNumBands()

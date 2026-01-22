@@ -341,16 +341,9 @@ void NrPhyUe::doHandover()
         cellInfo_->detachUser(nodeId_);
 
     if (masterId_ != NODEID_NONE) {
-        CellInfo *oldCellInfo = cellInfo_;
         LteMacEnb *newMacEnb = check_and_cast<LteMacEnb *>(binder_->getMacByNodeId(masterId_));
-        CellInfo *newCellInfo = newMacEnb->getCellInfo();
-        newCellInfo->attachUser(nodeId_);
-        cellInfo_ = newCellInfo;
-        if (oldCellInfo == nullptr) {
-            // first time the UE is attached to someone
-            intuniform(0, binder_->phyPisaData.maxChannel() - 1);
-            intuniform(1, binder_->phyPisaData.maxChannel2());  // RNG call to preserve fingerprint
-        }
+        cellInfo_ = newMacEnb->getCellInfo();
+        cellInfo_->attachUser(nodeId_);
 
         // send a self-message to schedule the possible mode switch at the end of the TTI (after all UEs have performed the handover)
         cMessage *msg = new cMessage("doModeSwitchAtHandover");
