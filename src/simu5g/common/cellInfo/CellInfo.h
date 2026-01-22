@@ -200,7 +200,7 @@ class CellInfo : public cSimpleModule
         if (uePosition.find(id) != uePosition.end())
             return uePosition[id];
         else
-            return inet::Coord::ZERO;
+            ASSERT(false);  //return inet::Coord::ZERO;
     }
 
     const std::map<MacNodeId, inet::Coord>& getUePositionList()
