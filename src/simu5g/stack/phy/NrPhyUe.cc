@@ -156,30 +156,8 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
             recordCqi(cqi, DL);
         }
     }
-    // Apply decider to received packet
-    bool result = true;
-    RemoteSet r = lteInfo->getUserTxParams()->readAntennaSet();
-    if (r.size() > 1) {
-        // DAS
-        for (auto it : r) {
-            EV << "NrPhyUe: Receiving Packet from antenna " << it << "\n";
 
-            /*
-             * On UE set the sender position
-             * and tx power to the sender DAS antenna
-             */
-
-            RemoteUnitPhyData data;
-            data.txPower = lteInfo->getTxPower();
-            data.m = getRadioPosition();
-            frame->addRemoteUnitPhyDataVector(data);
-        }
-        // Apply analog models for DAS
-        result = channelModel->isErrorDas(frame, lteInfo);
-    }
-    else {
-        result = channelModel->isError(frame, lteInfo);
-    }
+    bool result = channelModel->isError(frame, lteInfo);
 
     // Update statistics
     if (result)

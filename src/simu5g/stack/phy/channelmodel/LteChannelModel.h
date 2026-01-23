@@ -82,8 +82,7 @@ class LteChannelModel : public cSimpleModule
      * @param lteInfo pointer to the user control info
      */
     virtual bool isError(LteAirFrame *frame, UserControlInfo *lteI) = 0;
-    //TODO NOT IMPLEMENTED YET
-    virtual bool isErrorDas(LteAirFrame *frame, UserControlInfo *lteI) = 0;
+
     /*
      * Compute Attenuation caused by path loss and shadowing (optional)
      *

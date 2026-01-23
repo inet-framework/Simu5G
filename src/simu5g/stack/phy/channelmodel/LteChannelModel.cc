@@ -82,10 +82,5 @@ bool LteChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, 
     return true;
 }
 
-bool LteChannelModel::isErrorDas(LteAirFrame *frame, UserControlInfo *lteInfo)
-{
-    return true;
-}
-
 } //namespace
 

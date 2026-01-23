@@ -188,30 +188,9 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
             recordCqi(cqi, DL);
         }
     }
+
     // Apply decider to received packet.
-    bool result = true;
-    RemoteSet r = lteInfo->getUserTxParams()->readAntennaSet();
-    if (r.size() > 1) {
-        // DAS
-        for (auto it : r) {
-            EV << "LtePhyUeD2D: Receiving Packet from antenna " << it << "\n";
-
-            /*
-             * On UE set the sender position
-             * and tx power to the sender das antenna
-             */
-
-            RemoteUnitPhyData data;
-            data.txPower = lteInfo->getTxPower();
-            data.m = getRadioPosition();
-            frame->addRemoteUnitPhyDataVector(data);
-        }
-        // Apply analog models For DAS.
-        result = channelModel->isErrorDas(frame, lteInfo);
-    }
-    else {
-        result = channelModel->isError(frame, lteInfo);
-    }
+    bool result = channelModel->isError(frame, lteInfo);
 
     // Update statistics.
     if (result)
@@ -451,33 +430,11 @@ void LtePhyUeD2D::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo)
         throw cRuntimeError("LtePhyUeD2D::decodeAirFrame - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 
     // Apply decider to received packet
-    bool result = true;
-
-    RemoteSet r = lteInfo->getUserTxParams()->readAntennaSet();
-    if (r.size() > 1) {
-        // DAS
-        for (auto it : r) {
-            EV << "LtePhyUeD2D::decodeAirFrame: Receiving Packet from antenna " << it << "\n";
-
-            /*
-             * On UE set the sender position
-             * and tx power to the sender DAS antenna
-             */
-
-            RemoteUnitPhyData data;
-            data.txPower = lteInfo->getTxPower();
-            data.m = getRadioPosition();
-            frame->addRemoteUnitPhyDataVector(data);
-        }
-        // Apply analog models for DAS
-        result = channelModel->isErrorDas(frame, lteInfo);
-    }
-    else {
-        if (lteInfo->getDirection() == D2D_MULTI)
-            result = channelModel->isError_D2D(frame, lteInfo, bestRsrpVector_);
-        else
-            result = channelModel->isError(frame, lteInfo);
-    }
+    bool result;
+    if (lteInfo->getDirection() == D2D_MULTI)
+        result = channelModel->isError_D2D(frame, lteInfo, bestRsrpVector_);
+    else
+        result = channelModel->isError(frame, lteInfo);
 
     // Update statistics
     if (result)

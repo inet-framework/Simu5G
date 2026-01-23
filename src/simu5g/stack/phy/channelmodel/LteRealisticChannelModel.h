@@ -312,18 +312,6 @@ class LteRealisticChannelModel : public LteChannelModel
     bool isError(LteAirFrame *frame, UserControlInfo *lteI) override;
 
     /*
-     * The same as before but used for das TODO to be implemented
-     *
-     * @param frame pointer to the packet
-     * @param lteinfo pointer to the user control info
-     */
-    bool isErrorDas(LteAirFrame *frame, UserControlInfo *lteI) override
-    {
-        throw cRuntimeError("DAS PHY LAYER TO BE IMPLEMENTED");
-        return -1;
-    }
-
-    /*
      * Compute the path-loss attenuation according to the selected scenario
      *
      * @param distance between UE and eNodeB

@@ -105,13 +105,6 @@ class LteDummyChannelModel : public LteChannelModel
      */
     std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId) override;
     std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) override;
-    //TODO
-    bool isErrorDas(LteAirFrame *frame, UserControlInfo *lteInfo) override
-    {
-        throw cRuntimeError("DAS PHY LAYER TO BE IMPLEMENTED");
-        return false;
-    }
-
 };
 
 } //namespace
