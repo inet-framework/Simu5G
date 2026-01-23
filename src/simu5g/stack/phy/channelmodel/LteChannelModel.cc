@@ -72,12 +72,7 @@ std::vector<double> LteChannelModel::getSIR(LteAirFrame *frame, UserControlInfo 
     return tmp;
 }
 
-bool LteChannelModel::isError(LteAirFrame *frame, UserControlInfo *lteInfo)
-{
-    return true;
-}
-
-bool LteChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+bool LteChannelModel::isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     return true;
 }

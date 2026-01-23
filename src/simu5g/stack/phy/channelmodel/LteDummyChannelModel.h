@@ -34,7 +34,7 @@ class LteDummyChannelModel : public LteChannelModel
      * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
-    bool isError(LteAirFrame *frame, UserControlInfo *lteInfo) override;
+    bool isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo) override;
     /*
      * Compute the path-loss attenuation according to the selected scenario
      */
@@ -92,7 +92,7 @@ class LteDummyChannelModel : public LteChannelModel
      * @param lteInfo pointer to the user control info
      * @param rsrpVector the received signal for each RB, if it has already been computed
      */
-    bool isError_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) override;
+    bool isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) override;
     /*
      * Compute received useful signal for D2D transmissions
      */

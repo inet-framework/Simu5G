@@ -1705,7 +1705,7 @@ double LteRealisticChannelModel::jakesFading(MacNodeId nodeId, double speed,
     return linearToDb(re_h * re_h + im_h * im_h);
 }
 
-bool LteRealisticChannelModel::isError(LteAirFrame *frame, UserControlInfo *lteInfo)
+bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     EV << "LteRealisticChannelModel::error" << endl;
 
@@ -1847,7 +1847,7 @@ bool LteRealisticChannelModel::isError(LteAirFrame *frame, UserControlInfo *lteI
     return true;
 }
 
-bool LteRealisticChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+bool LteRealisticChannelModel::isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     EV << "LteRealisticChannelModel::error_D2D" << endl;
 

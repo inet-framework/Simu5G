@@ -92,7 +92,7 @@ std::vector<double> LteDummyChannelModel::getSIR(LteAirFrame *frame, UserControl
     return tmp;
 }
 
-bool LteDummyChannelModel::isError(LteAirFrame *frame, UserControlInfo *lteInfo)
+bool LteDummyChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     // Number of RTX
     unsigned char nTx = lteInfo->getTxNumber();
@@ -118,7 +118,7 @@ bool LteDummyChannelModel::isError(LteAirFrame *frame, UserControlInfo *lteInfo)
     return true;
 }
 
-bool LteDummyChannelModel::isError_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+bool LteDummyChannelModel::isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     // Number of RTX
     unsigned char nTx = lteInfo->getTxNumber();

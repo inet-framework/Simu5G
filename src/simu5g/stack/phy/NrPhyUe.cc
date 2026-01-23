@@ -157,7 +157,7 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
         }
     }
 
-    bool result = channelModel->isError(frame, lteInfo);
+    bool result = channelModel->isReceptionSuccessful(frame, lteInfo);
 
     // Update statistics
     if (result)

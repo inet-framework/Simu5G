@@ -295,7 +295,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param lteinfo pointer to the user control info
      * @param rsrpVector the received signal for each RB, if it has already been computed
      */
-    bool isError_D2D(LteAirFrame *frame, UserControlInfo *lteI, const std::vector<double>& rsrpVector) override;
+    bool isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteI, const std::vector<double>& rsrpVector) override;
 
     /*
      * Compute the error probability of the transmitted packet according to cqi used, txmode, and the received power
@@ -304,7 +304,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param frame pointer to the packet
      * @param lteinfo pointer to the user control info
      */
-    bool isError(LteAirFrame *frame, UserControlInfo *lteI) override;
+    bool isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteI) override;
 
     /*
      * Compute the path-loss attenuation according to the selected scenario

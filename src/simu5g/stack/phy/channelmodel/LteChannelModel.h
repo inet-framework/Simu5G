@@ -81,7 +81,7 @@ class LteChannelModel : public cSimpleModule
      * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
-    virtual bool isError(LteAirFrame *frame, UserControlInfo *lteI) = 0;
+    virtual bool isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo) = 0;
 
     /*
      * Compute Attenuation caused by path loss and shadowing (optional)
@@ -134,7 +134,7 @@ class LteChannelModel : public cSimpleModule
      * @param lteInfo pointer to the user control info
      * @param rsrpVector the received signal for each RB, if it has already been computed
      */
-    virtual bool isError_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) = 0;
+    virtual bool isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) = 0;
     /*
      * Compute received useful signal for each band for user nodeId according to path loss, shadowing (optional), and multipath fading
      *
