@@ -316,12 +316,12 @@ const std::string planeToA(Plane p)
 const std::string DeploymentScenarioToA(DeploymentScenario type)
 {
     const char * str = omnetpp::cEnum::get("simu5g::DeploymentScenario")->getStringFor((intval_t)type);
-    return str ? str : "UNKNOW_SCENARIO";
+    return str ? str : "UNKNOWN_SCENARIO";
 }
 
 DeploymentScenario aToDeploymentScenario(std::string s)
 {
-    return static_cast<DeploymentScenario>(omnetpp::cEnum::get("simu5g::DeploymentScenario")->lookup(s.c_str(), UNKNOW_SCENARIO));
+    return static_cast<DeploymentScenario>(omnetpp::cEnum::get("simu5g::DeploymentScenario")->lookup(s.c_str(), UNKNOWN_SCENARIO));
 }
 
 bool isMulticastConnection(FlowControlInfo *lteInfo)

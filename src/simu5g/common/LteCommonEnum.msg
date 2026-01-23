@@ -52,7 +52,7 @@ enum LteTrafficClass
 /// Scheduler grant type
 enum GrantType
 {
-    FITALL = 0; FIXED_ = 1; URGENT = 2; UNKNOWN_GRANT_TYPE = 3; // Note: FIXED would clash with <windows.h> 
+    FITALL = 0; FIXED_ = 1; URGENT = 2; UNKNOWN_GRANT_TYPE = 3; // Note: FIXED would clash with <windows.h>
 };
 
 /// Lte RLC Types
@@ -106,7 +106,7 @@ enum PilotComputationModes
 };
 
 
-///   Transmission Modes  
+///   Transmission Modes
 enum TxMode
 {
     // Note: If you add more tx modes, update DL_NUM_TXMODE and UL_NUM_TXMODE
@@ -136,7 +136,7 @@ enum DeploymentScenario
     URBAN_MACROCELL = 2;
     RURAL_MACROCELL = 3;
     SUBURBAN_MACROCELL = 4;
-    UNKNOW_SCENARIO = 5;
+    UNKNOWN_SCENARIO = 5;
 };
 
 
@@ -153,7 +153,7 @@ enum Remote
     UNKNOWN_RU = 7;
 };
 
-// Lte PHY Frame Types 
+// Lte PHY Frame Types
 enum LtePhyFrameType
 {
     DATAPKT = 0;
@@ -190,7 +190,7 @@ enum CoreNodeType
 };
 
 
-// Types of BSR  * TODO add LONG/TRUNCATED BSR  
+// Types of BSR  * TODO add LONG/TRUNCATED BSR
 enum BsrType
 {
     SHORT_BSR  = 0;
