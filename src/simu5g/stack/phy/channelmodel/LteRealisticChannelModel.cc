@@ -1733,11 +1733,11 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
     else
         id = lteInfo->getSourceId();
 
-    // Get Number of RTX
-    unsigned char nTx = lteInfo->getTxNumber();
+    // Get Number of transmission attempts (includes original + retransmissions)
+    unsigned char transmissionAttempt = lteInfo->getTxNumber();
 
     // consistency check
-    if (nTx == 0)
+    if (transmissionAttempt == 0)
         throw cRuntimeError("Transmissions counter should not be 0");
 
     // Get txmode
@@ -1761,9 +1761,8 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
     // Get txmode
     unsigned int itxmode = txModeToIndex[txmode];
 
-    double bler = 0;
-    std::vector<double> totalbler;
-    double finalSuccess = 1;
+    double blockErrorRate = 0.0;
+    double cumulativeSuccessProbability = 1.0;
 
     // for statistical purposes
     double sumSnr = 0.0;
@@ -1779,7 +1778,7 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
 
             // Get the Bler
             if (cqi == 0 || cqi > 15)
-                throw cRuntimeError("A packet has been transmitted with a cqi equal to 0 or greater than 15 cqi:%d txmode:%d dir:%d rb:%d cw:%d rtx:%d", cqi, lteInfo->getTxMode(), dir, band, cw, nTx);
+                throw cRuntimeError("A packet has been transmitted with a cqi equal to 0 or greater than 15 cqi:%d txmode:%d dir:%d rb:%d cw:%d rtx:%d", cqi, lteInfo->getTxMode(), dir, band, cw, transmissionAttempt);
 
             // for statistical purposes
             sumSnr += snrV[band];
@@ -1789,37 +1788,37 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
             if (snr < binder_->phyPisaData.minSnr())
                 return false;
             else if (snr > binder_->phyPisaData.maxSnr())
-                bler = 0;
+                blockErrorRate = 0.0;
             else
-                bler = binder_->phyPisaData.getBler(itxmode, cqi - 1, snr);
+                blockErrorRate = binder_->phyPisaData.getBler(itxmode, cqi - 1, snr);
 
             EV << "\t bler computation: [itxMode=" << itxmode << "] - [cqi-1=" << cqi - 1
                << "] - [snr=" << snr << "]" << endl;
 
-            double success = 1 - bler;
+            double blockSuccessRate = 1.0 - blockErrorRate;
             // compute the success probability according to the number of RB used
-            double successPacket = pow(success, (double)allocation);
+            double allocationSuccessProbability = pow(blockSuccessRate, (double)allocation);
             // compute the success probability according to the number of LB used
-            finalSuccess *= successPacket;
+            cumulativeSuccessProbability *= allocationSuccessProbability;
 
             EV << " LteRealisticChannelModel::error direction " << dirToA(dir)
                << " node " << id << " remote unit " << dasToA(remoteUnit)
                << " Band " << band << " SNR " << snr << " CQI " << cqi
-               << " BLER " << bler << " success probability " << successPacket
-               << " total success probability " << finalSuccess << endl;
+               << " BLER " << blockErrorRate << " success probability " << allocationSuccessProbability
+               << " total success probability " << cumulativeSuccessProbability << endl;
         }
     }
     // Compute total error probability
-    double per = 1 - finalSuccess;
-    // Harq Reduction
-    double totalPer = per * pow(harqReduction_, nTx - 1);
+    double packetErrorRate = 1.0 - cumulativeSuccessProbability;
+    // Apply HARQ soft combining gain
+    double effectiveErrorRateWithHarq = packetErrorRate * pow(harqReduction_, transmissionAttempt - 1);
 
-    double er = uniform(0.0, 1.0);
+    double randomSample = uniform(0.0, 1.0);
 
     EV << " LteRealisticChannelModel::error direction " << dirToA(dir)
-       << " node " << id << " total ERROR probability  " << per
-       << " per with H-ARQ error reduction " << totalPer
-       << " - CQI[" << cqi << "]- random error extracted[" << er << "]" << endl;
+       << " node " << id << " total ERROR probability  " << packetErrorRate
+       << " per with H-ARQ error reduction " << effectiveErrorRateWithHarq
+       << " - CQI[" << cqi << "]- random error extracted[" << randomSample << "]" << endl;
 
     // emit SINR statistic
     if (collectSinrStatistics_ && usedRBs > 0) {
@@ -1833,15 +1832,16 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
         }
     }
 
-    if (er <= totalPer) {
-        EV << "This is NOT your lucky day (" << er << " < " << totalPer
+    bool receptionFailed = (randomSample <= effectiveErrorRateWithHarq);
+    if (receptionFailed) {
+        EV << "This is NOT your lucky day (" << randomSample << " < " << effectiveErrorRateWithHarq
            << ") -> do not receive." << endl;
 
         // Signal too weak, we can't receive it
         return false;
     }
     // Signal is strong enough, receive this Signal
-    EV << "This is your lucky day (" << er << " > " << totalPer
+    EV << "This is your lucky day (" << randomSample << " > " << effectiveErrorRateWithHarq
        << ") -> Receive AirFrame." << endl;
 
     return true;
