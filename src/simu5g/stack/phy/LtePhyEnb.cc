@@ -233,7 +233,8 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
     TxMode txmode = req.txMode;
     FeedbackType type = req.type;
     RbAllocationType rbtype = req.rbAllocationType;
-    std::map<Remote, int> antennaCws = cellInfo_->getAntennaCws();
+    std::map<Remote, int> antennaCws;
+    antennaCws[MACRO] = 1;
     unsigned int numPreferredBand = cellInfo_->getNumPreferredBands();
 
     for (Direction dir = UL; dir != UNKNOWN_DIRECTION;

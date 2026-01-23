@@ -124,7 +124,6 @@ void LteDlFeedbackGenerator::initCellInfo()
     EV << "DLFeedbackGenerator - nodeid: " << nodeId_ << " cellInfo taken" << endl;
 
     if (cellInfo_ != nullptr) {
-        antennaCws_ = cellInfo_->getAntennaCws();
         numBands_ = cellInfo_->getPrimaryCarrierNumBands();
         numPreferredBands_ = cellInfo_->getNumPreferredBands();
     }

@@ -59,7 +59,8 @@ void LtePhyEnbD2D::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame,
     TxMode txmode = req.txMode;
     FeedbackType type = req.type;
     RbAllocationType rbtype = req.rbAllocationType;
-    std::map<Remote, int> antennaCws = cellInfo_->getAntennaCws();
+    std::map<Remote, int> antennaCws; // DAS functionality removed
+    antennaCws[MACRO] = 1; // Default single antenna
     unsigned int numPreferredBand = cellInfo_->getNumPreferredBands();
     Direction dir = UL;
     while (dir != UNKNOWN_DIRECTION) {

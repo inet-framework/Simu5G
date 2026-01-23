@@ -52,9 +52,6 @@ class CellInfo : public cSimpleModule
     /// y eNB position
     double nodeY_ = 0;
 
-    /// Remote and its CW
-    std::map<Remote, int> antennaCws_;
-
     /// number of logical bands in the system
     int totalBands_;
     /// number of preferred bands to use (meaningful only in PREFERRED mode)
@@ -112,8 +109,6 @@ class CellInfo : public cSimpleModule
      * Compute slot format object given the number of DL and UL symbols
      */
     virtual SlotFormat computeSlotFormat(bool useTdd, unsigned int tddNumSymbolsDl, unsigned int tddNumSymbolsUl);
-
-    void createAntennaCwMap();
 
   public:
 
@@ -182,11 +177,6 @@ class CellInfo : public cSimpleModule
     double getMcsScaleDl()
     {
         return mcsScaleDl_;
-    }
-
-    std::map<Remote, int> getAntennaCws()
-    {
-        return antennaCws_;
     }
 
     int getNumPreferredBands()

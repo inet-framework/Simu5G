@@ -56,8 +56,6 @@ void CellInfo::initialize(int stage)
 
         // MCS scaling factor
         calculateMcsScale();
-
-        createAntennaCwMap();
     }
 }
 
@@ -95,12 +93,6 @@ void CellInfo::updateMCSScale(double& mcs, double signalRe,
     int pilotRe = signalCarriers;
 
     mcs = rbSubcarriers * (rbSymbols - sigSymbols) - pilotRe;
-}
-
-void CellInfo::createAntennaCwMap()
-{
-    // without MIMO, there is 1 codeword
-    antennaCws_[(Remote)0] = 1;
 }
 
 void CellInfo::detachUser(MacNodeId nodeId)
