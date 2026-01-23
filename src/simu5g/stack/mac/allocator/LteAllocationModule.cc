@@ -114,25 +114,6 @@ void LteAllocationModule::ensureNodeInitialized(const MacNodeId nodeId)
     allocatedRbsUe_[nodeId];
 }
 
-void LteAllocationModule::setRemoteAntenna(const Plane plane, const Remote antenna)
-{
-    /**
-     * Check if an antenna already exists in the given OFDMA space,
-     * otherwise creates all antennas between the last one and the given one.
-     */
-    for (int i = totalRbsMatrix_.at(plane).size(); i < antenna + 1; ++i) {
-        // here we have to add missing antennas to the given plane and to set the number of RB for each antenna in this plane
-        totalRbsMatrix_.at(plane).resize(i + 1);
-        allocatedRbsMatrix_.at(plane).resize(i + 1);
-        allocatedRbsPerBand_.at(plane).resize(i + 1);
-        freeRbsMatrix_.at(plane).resize(i + 1);
-        freeRbsMatrix_.at(plane).at(i).resize(bands_, 0);
-        // initialize new antenna space with macro space
-        totalRbsMatrix_[plane][i] = totalRbsMatrix_[plane][MACRO];
-
-        usedInLastSlot_ = true;
-    }
-}
 
 Plane LteAllocationModule::getOFDMPlane(const MacNodeId nodeId)
 {

@@ -262,10 +262,6 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
     EV << "LteSchedulerEnb::grant Cell: " << mac_->getMacCellId() << endl;
     EV << "LteSchedulerEnb::grant CID: " << cid << "(UE: " << nodeId << ", Flow: " << flowId << ") current Antenna [" << dasToA(antenna) << "]" << endl;
 
-    // registering DAS spaces to the allocator
-    Plane plane = allocator_->getOFDMPlane(nodeId);
-    allocator_->setRemoteAntenna(plane, antenna);
-
     // search for already allocated codeword
     unsigned int cwAlreadyAllocated = 0;
     if (allocatedCws_.find(nodeId) != allocatedCws_.end())
@@ -554,10 +550,6 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
     EV << "LteSchedulerEnb::scheduleGrantBackground --------------------::[ START GRANT ]::--------------------" << endl;
     EV << "LteSchedulerEnb::scheduleGrantBackground Cell: " << mac_->getMacCellId() << endl;
     EV << "LteSchedulerEnb::scheduleGrantBackground CID: " << bgCid << "(UE: " << bgUeId << ")" << endl;
-
-    // Registering DAS spaces to the allocator
-    Plane plane = allocator_->getOFDMPlane(bgUeId);
-    allocator_->setRemoteAntenna(plane, antenna);
 
     // Search for already allocated codeword
     unsigned int cwAlreadyAllocated = 0;

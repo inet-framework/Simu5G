@@ -191,7 +191,6 @@ class LteAllocationModule
     // ********* MU-MIMO Support *********
 
     // MU-MIMO configuration functions
-    void setRemoteAntenna(const Plane plane, const Remote antenna);
     Plane getOFDMPlane(const MacNodeId nodeId);
     // **********************************
 

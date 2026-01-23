@@ -101,10 +101,6 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, GHz carrier
     }
 
     EV << NOW << "LteSchedulerEnbDl::rtxAcid - Node [" << mac_->getMacNodeId() << "], User[" << nodeId << "],  Codeword [" << cw << "]  of [" << codewords << "] , ACID [" << (int)acid << "] " << endl;
-    //!\test experimental DAS support
-    // registering DAS spaces to the allocator
-    Plane plane = allocator_->getOFDMPlane(nodeId);
-    allocator_->setRemoteAntenna(plane, antenna);
 
     // blocks to allocate for each band
     std::vector<unsigned int> assignedBlocks;
