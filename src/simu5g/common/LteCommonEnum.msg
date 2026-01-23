@@ -126,7 +126,7 @@ enum TxDirectionType
 enum Plane
 {
     MAIN_PLANE = 0;
-    MU_MIMO_PLANE = 1;
+    MU_MIMO_PLANE = 1; // currently unused
 };
 
 enum DeploymentScenario
@@ -140,8 +140,7 @@ enum DeploymentScenario
 };
 
 
-//        DAS Support      
-/// OFDMA Remotes (see FIXME LteAllocationModule.h for "antenna" meaning)
+/// OFDMA Remotes Antennas (see LteAllocationModule) -- only MACRO is currently supported
 enum Remote
 {
     MACRO = 0;

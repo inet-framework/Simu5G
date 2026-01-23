@@ -188,12 +188,6 @@ class LteAllocationModule
     // reset Allocation Module structure
     void reset(const unsigned int resourceBlocks, const unsigned int bands);
 
-    // ********* MU-MIMO Support *********
-
-    // MU-MIMO configuration functions
-    Plane getOFDMPlane(const MacNodeId nodeId);
-    // **********************************
-
     // ************** Resource Blocks Allocation Status **************
     // Returns the amount of available blocks in the whole system
     unsigned int computeTotalRbs();

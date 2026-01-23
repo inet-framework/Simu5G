@@ -114,12 +114,6 @@ void LteAllocationModule::ensureNodeInitialized(const MacNodeId nodeId)
     allocatedRbsUe_[nodeId];
 }
 
-
-Plane LteAllocationModule::getOFDMPlane(const MacNodeId nodeId)
-{
-    return MAIN_PLANE;
-}
-
 unsigned int LteAllocationModule::computeTotalRbs()
 {
     // The amount of available blocks in all the OFDM spaces is obtained from the overall
@@ -152,7 +146,7 @@ unsigned int LteAllocationModule::computeTotalRbs()
 
 unsigned int LteAllocationModule::availableBlocks(const MacNodeId nodeId, const Remote antenna, const Band band)
 {
-    Plane plane = getOFDMPlane(nodeId);
+    Plane plane = MAIN_PLANE;
 
     // blocks allocated in the current band
     unsigned int allocatedBlocks = allocatedRbsPerBand_[plane][antenna][band].allocated_;
@@ -220,7 +214,7 @@ bool LteAllocationModule::addBlocks(const Remote antenna, const Band band, const
 
     // Check if there's enough OFDM space
     // retrieving user's plane
-    Plane plane = getOFDMPlane(nodeId);
+    Plane plane = MAIN_PLANE;
 
     // Obtain the available blocks on the given band
     int availableBlocksOnBand = availableBlocks(nodeId, antenna, band);
@@ -275,7 +269,7 @@ unsigned int LteAllocationModule::removeBlocks(const Remote antenna, const Band 
     ensureNodeInitialized(nodeId);
 
     // Retrieving user's plane
-    Plane plane = getOFDMPlane(nodeId);
+    Plane plane = MAIN_PLANE;
 
     unsigned int toDrain = allocatedRbsPerBand_[plane][antenna][band].ueAllocatedRbsMap_[nodeId];
 
