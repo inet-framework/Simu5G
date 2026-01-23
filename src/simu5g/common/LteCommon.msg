@@ -238,9 +238,7 @@ struct RemoteUnitPhyData
 struct FeedbackRequest
 {
     bool request;
-    FeedbackGeneratorType genType;
     FeedbackType type;
-    //used if genType==real
     TxMode txMode;
     bool dasAware;
     RbAllocationType rbAllocationType;

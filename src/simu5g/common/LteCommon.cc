@@ -177,18 +177,6 @@ FeedbackType getFeedbackType(std::string s)
     return WIDEBAND; // default
 }
 
-FeedbackGeneratorType getFeedbackGeneratorType(std::string s)
-{
-    if (s == "IDEAL")
-        return IDEAL;
-    if (s == "REAL")
-        return REAL;
-    if (s == "DAS_AWARE")
-        return DAS_AWARE;
-    //default
-    return IDEAL;
-}
-
 RbAllocationType getRbAllocationType(std::string s)
 {
     if (s == "distributed")
@@ -260,12 +248,6 @@ RanNodeType aToNodeType(std::string name)
         return NODEB;
     else
         throw cRuntimeError("Unknown node type: %s", name.c_str());
-}
-
-const std::string fbGeneratorTypeToA(FeedbackGeneratorType type)
-{
-    const char * str = omnetpp::cEnum::get("simu5g::FeedbackGeneratorType")->getStringFor((intval_t)type);
-    return str ? str : "UNKNOW_FB_GEN_TYPE";
 }
 
 RanNodeType getNodeTypeById(MacNodeId id)

@@ -106,7 +106,7 @@ Cqi LteFeedbackComputationRealistic::getCqi(TxMode txmode, double snr)
 
 LteFeedbackDoubleVector LteFeedbackComputationRealistic::computeFeedback(FeedbackType fbType,
         RbAllocationType rbAllocationType, TxMode currentTxMode,
-        std::map<Remote, int> antennaCws, int numPreferredBands, FeedbackGeneratorType feedbackGeneratortype, int numRus,
+        std::map<Remote, int> antennaCws, int numPreferredBands, int numRus,
         std::vector<double> snr, MacNodeId id)
 {
     // Add enodeB to the number of antennas
@@ -138,7 +138,7 @@ LteFeedbackDoubleVector LteFeedbackComputationRealistic::computeFeedback(Feedbac
 
 LteFeedbackVector LteFeedbackComputationRealistic::computeFeedback(const Remote remote, FeedbackType fbType,
         RbAllocationType rbAllocationType, TxMode currentTxMode,
-        int antennaCws, int numPreferredBands, FeedbackGeneratorType feedbackGeneratortype, int numRus,
+        int antennaCws, int numPreferredBands, int numRus,
         std::vector<double> snr, MacNodeId id)
 {
     LteFeedbackVector fbv;
@@ -162,7 +162,7 @@ LteFeedbackVector LteFeedbackComputationRealistic::computeFeedback(const Remote 
 
 LteFeedback LteFeedbackComputationRealistic::computeFeedback(const Remote remote, TxMode txmode, FeedbackType fbType,
         RbAllocationType rbAllocationType,
-        int antennaCws, int numPreferredBands, FeedbackGeneratorType feedbackGeneratortype, int numRus,
+        int antennaCws, int numPreferredBands, int numRus,
         std::vector<double> snr, MacNodeId id)
 {
     // New Feedback

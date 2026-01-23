@@ -42,8 +42,6 @@ void LteDlFeedbackGenerator::initialize(int stage)
         usePeriodic_ = par("usePeriodic");
         currentTxMode_ = aToTxMode(par("initialTxMode"));
 
-        generatorType_ = getFeedbackGeneratorType(par("feedbackGeneratorType").stringValue());
-
         cModule *networkNode = getContainingNode(this);
         bool isNr = strcmp(getFullName(), "nrDlFbGen") == 0;
         nodeId_ = MacNodeId(networkNode->par(isNr ? "nrMacNodeId" : "macNodeId").intValue()); //TODO or
@@ -207,7 +205,6 @@ void LteDlFeedbackGenerator::sendFeedback(LteFeedbackDoubleVector fb,
     FeedbackRequest feedbackReq;
     if (feedbackComputationPisa_) {
         feedbackReq.request = true;
-        feedbackReq.genType = generatorType_;
         feedbackReq.type = fbType_;
         feedbackReq.txMode = currentTxMode_;
         feedbackReq.rbAllocationType = rbAllocationType_;

@@ -122,15 +122,6 @@ enum TxDirectionType
     UNKNOWN_TX_DIRECTION = -1;
 };
 
-// Lte feedback type
-enum FeedbackGeneratorType
-{
-    IDEAL = 0;
-    REAL = 1;
-    DAS_AWARE = 2;
-    UNKNOW_FB_GEN_TYPE = 3;
-};
-
 /// OFDMA layers (see FIXME lteAllocationModuble.h for "layers" meaning)
 enum Plane
 {

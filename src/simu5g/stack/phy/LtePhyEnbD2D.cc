@@ -65,30 +65,9 @@ void LtePhyEnbD2D::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame,
     Direction dir = UL;
     while (dir != UNKNOWN_DIRECTION) {
         // For each RU the computation feedback function is called
-        if (req.genType == IDEAL) {
-            fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,
-                    antennaCws, numPreferredBand, IDEAL, nRus, snr,
-                    lteinfo->getSourceId());
-        }
-        else if (req.genType == REAL) {
-            // Single antenna (remote 0)
-            fb.resize(1);
-            Remote remote = (Remote)0;
-            fb[remote].resize((int)txmode);
-            fb[remote][(int)txmode] =
-                lteFeedbackComputation_->computeFeedback(remote, txmode,
-                        type, rbtype, antennaCws[remote], numPreferredBand,
-                        REAL, nRus, snr, lteinfo->getSourceId());
-        }
-        // The reports are computed only for the antennas in the reporting set
-        else if (req.genType == DAS_AWARE) {
-            // Single antenna (remote 0)
-            fb.resize(1);
-            Remote remote = (Remote)0;
-            fb[remote] = lteFeedbackComputation_->computeFeedback(remote, type,
-                    rbtype, txmode, antennaCws[remote], numPreferredBand,
-                    DAS_AWARE, nRus, snr, lteinfo->getSourceId());
-        }
+        fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,
+                antennaCws, numPreferredBand, nRus, snr,
+                lteinfo->getSourceId());
         if (dir == UL) {
             header->setLteFeedbackDoubleVectorUl(fb);
             // Prepare parameters for next loop iteration - in order to compute SNR in DL
@@ -123,7 +102,7 @@ void LtePhyEnbD2D::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame,
 
                         // Compute the feedback for this link
                         fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,
-                                antennaCws, numPreferredBand, IDEAL, nRus, snr,
+                                antennaCws, numPreferredBand, nRus, snr,
                                 lteinfo->getSourceId());
 
                         header->setLteFeedbackDoubleVectorD2D(peerId, fb);
@@ -134,8 +113,7 @@ void LtePhyEnbD2D::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame,
         }
     }
     EV << "LtePhyEn::requestFeedback : Feedback Generated for nodeId: "
-       << nodeId_ << " with generator type "
-       << fbGeneratorTypeToA(req.genType) << " Fb size: " << fb.size()
+       << nodeId_ << " Fb size: " << fb.size()
        << " Carrier: " << lteinfo->getCarrierFrequency() << endl;
 
     pktAux->insertAtFront(header);

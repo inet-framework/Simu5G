@@ -413,8 +413,6 @@ LteRlcType aToRlcType(std::string s);
 const std::string planeToA(Plane p);
 MacNodeId ctrlInfoToUeId(const FlowControlInfo *info);
 MacCid ctrlInfoToMacCid(const FlowControlInfo *info);        // get the CID from the packet control info
-FeedbackGeneratorType getFeedbackGeneratorType(std::string s);
-const std::string fbGeneratorTypeToA(FeedbackGeneratorType type);
 const std::string DeploymentScenarioToA(DeploymentScenario type);
 DeploymentScenario aToDeploymentScenario(std::string s);
 bool isMulticastConnection(FlowControlInfo *lteInfo);

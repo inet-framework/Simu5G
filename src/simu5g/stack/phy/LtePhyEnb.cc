@@ -240,31 +240,10 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
     for (Direction dir = UL; dir != UNKNOWN_DIRECTION;
          dir = ((dir == UL) ? DL : UNKNOWN_DIRECTION))
     {
-        //for each RU is called the computation feedback function
-        if (req.genType == IDEAL) {
-            fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,
-                    antennaCws, numPreferredBand, IDEAL, nRus, snr,
-                    lteinfo->getSourceId());
-        }
-        else if (req.genType == REAL) {
-            // Single antenna (remote 0)
-            fb.resize(1);
-            Remote remote = (Remote)0;
-            fb[remote].resize((int)txmode);
-            fb[remote][(int)txmode] =
-                lteFeedbackComputation_->computeFeedback(remote, txmode,
-                        type, rbtype, antennaCws[remote], numPreferredBand,
-                        REAL, nRus, snr, lteinfo->getSourceId());
-        }
-        // the reports are computed only for the antenna in the reporting set
-        else if (req.genType == DAS_AWARE) {
-            // Single antenna (remote 0)
-            fb.resize(1);
-            Remote remote = (Remote)0;
-            fb[remote] = lteFeedbackComputation_->computeFeedback(remote, type,
-                    rbtype, txmode, antennaCws[remote], numPreferredBand,
-                    DAS_AWARE, nRus, snr, lteinfo->getSourceId());
-        }
+        // MIMO/DAS support removed. We only support MACRO and treat it as IDEAL for now.
+        fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,
+                antennaCws, numPreferredBand, nRus, snr,
+                lteinfo->getSourceId());
 
         if (dir == UL) {
             header->setLteFeedbackDoubleVectorUl(fb);
@@ -282,8 +261,7 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
             header->setLteFeedbackDoubleVectorDl(fb);
     }
     EV << "LtePhyEnb::requestFeedback : Pisa Feedback Generated for nodeId: "
-       << nodeId_ << " with generator type "
-       << fbGeneratorTypeToA(req.genType) << " Feedback size: " << fb.size()
+       << nodeId_ << " Feedback size: " << fb.size()
        << " Carrier: " << lteinfo->getCarrierFrequency() << endl;
 
     pktAux->insertAtFront(header);

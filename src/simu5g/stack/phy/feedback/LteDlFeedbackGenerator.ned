@@ -44,12 +44,6 @@ simple LteDlFeedbackGenerator
         // the analogue model and Decider.
         // xml feedbackComputation;
 
-        //Type of generator: IDEAL, REAL, DAS_AWARE
-        // IDEAL: feedback generator reports feedback for each txmode and for each rus
-        // REAL: feedback generator reports feedback only for the last txmode used but for each rus
-        // DAS_AWARE: feedback generator reports feedback only for the last txmode used and only for rus in Antenna set
-        string feedbackGeneratorType @enum(IDEAL,REAL,DAS_AWARE) = default("IDEAL");
-
         string binderModule = default("binder");
         string phyModule = default("^.phy");
 }
