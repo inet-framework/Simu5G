@@ -20,6 +20,7 @@
 #include "simu5g/stack/rlc/um/LteRlcUm.h"
 #include "simu5g/stack/pdcp/LtePdcp.h"
 #include "simu5g/stack/phy/feedback/LteDlFeedbackGenerator.h"
+#include "simu5g/stack/rrc/HandoverController.h"
 
 namespace simu5g {
 
@@ -29,7 +30,7 @@ class LteDlFeedbackGenerator;
 
 class LtePhyUe : public LtePhyBase
 {
-  protected:
+public: //protected:
     /** Master MacNodeId */
     MacNodeId masterId_ = NODEID_NONE;
 
@@ -96,6 +97,7 @@ class LtePhyUe : public LtePhyBase
 
 
     opp_component_ptr<LteMacUe> mac_;
+    inet::ModuleRefByPar<HandoverController> handoverController_;
     inet::ModuleRefByPar<LteRlcUm> rlcUm_;
     inet::ModuleRefByPar<LtePdcpBase> pdcp_;
     inet::ModuleRefByPar<Ip2Nic> ip2nic_;
@@ -122,11 +124,6 @@ class LtePhyUe : public LtePhyBase
     void handleUpperMessage(cMessage *msg) override;
 
     void emitMobilityStats() override;
-
-    /**
-     * Utility function to update the hysteresis threshold using hysteresisFactor_.
-     */
-    double updateHysteresisTh(double v);
 
     void handoverHandler(LteAirFrame *frame, UserControlInfo *lteInfo);
 
