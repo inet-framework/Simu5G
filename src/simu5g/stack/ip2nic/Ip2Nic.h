@@ -47,9 +47,9 @@ class Ip2Nic : public cSimpleModule
     MacNodeId nrNodeId_ = NODEID_NONE;
 
     // LTE MAC node id of this node's master
-    MacNodeId masterId_ = NODEID_NONE;
+    MacNodeId servingNodeId_ = NODEID_NONE;
     // NR MAC node id of this node's master (if enabled)
-    MacNodeId nrMasterId_ = NODEID_NONE;
+    MacNodeId nrServingNodeId_ = NODEID_NONE;
 
     /*
      * Handover support

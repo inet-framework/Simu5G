@@ -71,13 +71,13 @@ void Ip2Nic::initialize(int stage)
         }
         else if (nodeType_ == UE) {
             cModule *ue = getContainingNode(this);
-            masterId_ = MacNodeId(ue->par("servingNodeId").intValue());
+            servingNodeId_ = MacNodeId(ue->par("servingNodeId").intValue());
             nodeId_ = MacNodeId(ue->par("macNodeId").intValue());
             binder_->registerNode(nodeId_, ue, nodeType_, false);
             ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", nodeId_).c_str());
 
             if (ue->hasPar("nrServingNodeId") && ue->par("nrServingNodeId").intValue() != 0) { // register also the NR MacNodeId
-                nrMasterId_ = MacNodeId(ue->par("nrServingNodeId").intValue());
+                nrServingNodeId_ = MacNodeId(ue->par("nrServingNodeId").intValue());
                 nrNodeId_ = MacNodeId(ue->par("nrMacNodeId").intValue());
                 binder_->registerNode(nrNodeId_, ue, nodeType_, true);
                 ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d/%d", nodeId_, nrNodeId_).c_str());
@@ -93,9 +93,9 @@ void Ip2Nic::initialize(int stage)
             binder_->registerMasterNode(masterId, nodeId_);  // note: even if masterId == NODEID_NONE!
         }
         if (nodeType_ == UE) {
-            binder_->registerServingNode(masterId_, nodeId_);
+            binder_->registerServingNode(servingNodeId_, nodeId_);
             if (nrNodeId_ != NODEID_NONE)
-                binder_->registerServingNode(nrMasterId_, nrNodeId_);
+                binder_->registerServingNode(nrServingNodeId_, nrNodeId_);
         }
     }
     else if (stage == inet::INITSTAGE_STATIC_ROUTING) {
@@ -197,7 +197,7 @@ void Ip2Nic::fromIpUe(Packet *datagram)
         ueHoldFromIp_.push_back(datagram);
     }
     else {
-        if (masterId_ == NODEID_NONE && nrMasterId_ == NODEID_NONE) { // UE is detached
+        if (servingNodeId_ == NODEID_NONE && nrServingNodeId_ == NODEID_NONE) { // UE is detached
             EV << "Ip2Nic::fromIpUe - UE is not attached to any serving node. Delete packet." << endl;
             delete datagram;
         }
@@ -442,9 +442,9 @@ bool Ip2Nic::markPacket(inet::Ipv4Address srcAddr, inet::Ipv4Address dstAddr, ui
                 useNR = true;
         }
         else {
-            if (masterId_ == NODEID_NONE && nrMasterId_ != NODEID_NONE)
+            if (servingNodeId_ == NODEID_NONE && nrServingNodeId_ != NODEID_NONE)
                 useNR = true;
-            else if (masterId_ != NODEID_NONE && nrMasterId_ == NODEID_NONE)
+            else if (servingNodeId_ != NODEID_NONE && nrServingNodeId_ == NODEID_NONE)
                 useNR = false;
             else {
                 // both != 0
@@ -555,15 +555,15 @@ void Ip2Nic::triggerHandoverUe(MacNodeId newMasterId, bool isNr)
     if (newMasterId != NODEID_NONE) {
         ueHold_ = true;
         if (isNr)
-            nrMasterId_ = newMasterId;
+            nrServingNodeId_ = newMasterId;
         else
-            masterId_ = newMasterId;
+            servingNodeId_ = newMasterId;
     }
     else {
         if (isNr)
-            nrMasterId_ = NODEID_NONE;
+            nrServingNodeId_ = NODEID_NONE;
         else
-            masterId_ = NODEID_NONE;
+            servingNodeId_ = NODEID_NONE;
     }
 }
 
@@ -571,7 +571,7 @@ void Ip2Nic::signalHandoverCompleteUe(bool isNr)
 {
     Enter_Method("signalHandoverCompleteUe");
 
-    if ((!isNr && masterId_ != NODEID_NONE) || (isNr && nrMasterId_ != NODEID_NONE)) {
+    if ((!isNr && servingNodeId_ != NODEID_NONE) || (isNr && nrServingNodeId_ != NODEID_NONE)) {
         // send held packets
         while (!ueHoldFromIp_.empty()) {
             auto pkt = ueHoldFromIp_.front();
