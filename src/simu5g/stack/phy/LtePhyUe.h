@@ -24,7 +24,7 @@ using namespace omnetpp;
 
 class LtePhyUe : public LtePhyBase
 {
-public: //protected:
+  protected:
     /** Master MacNodeId */
     MacNodeId masterId_ = NODEID_NONE;
 
@@ -57,10 +57,6 @@ public: //protected:
 
     void emitMobilityStats() override;
 
-    double computeReceivedBeaconPacketRssi(LteAirFrame *frame, UserControlInfo *lteInfo);
-
-    virtual void findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi);
-
   public:
     ~LtePhyUe() override;
     /**
@@ -71,6 +67,10 @@ public: //protected:
     {
         return masterId_;
     }
+
+    virtual double computeReceivedBeaconPacketRssi(LteAirFrame *frame, UserControlInfo *lteInfo);
+
+    virtual void findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi);
 
     // called on handover
     void setMasterId(MacNodeId masterId);

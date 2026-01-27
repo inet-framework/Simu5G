@@ -54,8 +54,7 @@ class LteChannelModel;
 class LtePhyBase : public ChannelAccess
 {
 
-public: //protected:
-
+  protected:
 
     /**
      * Defines the scheduling priority of AirFrames.
@@ -188,7 +187,7 @@ public: //protected:
         return txAngle_;
     }
 
-  public: //protected:
+  protected:
 
     /**
      * Performs initialization operations to prepare gates' IDs, analog models,
@@ -241,8 +240,7 @@ public: //protected:
      */
     void emitMobilityStats() override {}
 
-  public: //protected:
-
+  protected:
 
     /**
      * Sends the given message to the wireless channel.
@@ -307,11 +305,6 @@ public: //protected:
     void updateDisplayString();
 
     /**
-     * Returns the pointer to the AMC module, given a master ID (ENODEB)
-     */
-    LteAmc *getAmcModule(MacNodeId id);
-
-    /**
      * Determine radio gate index of the receiving node
      */
     int getReceiverGateIndex(const cModule *, bool isNr) const;
@@ -329,6 +322,11 @@ public: //protected:
      * Returns the MAC Node Id
      */
     MacNodeId getMacNodeId() { return nodeId_; }
+
+    /**
+     * Returns the pointer to the AMC module, given a master ID (ENODEB)
+     */
+    LteAmc *getAmcModule(MacNodeId id);
 };
 
 } //namespace
