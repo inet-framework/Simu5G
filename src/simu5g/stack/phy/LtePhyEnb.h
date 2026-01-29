@@ -42,6 +42,7 @@ class LtePhyEnb : public LtePhyBase
     // Feedback computation for PisaPhy
     LteFeedbackComputation *getFeedbackComputationFromName(std::string name, ParameterMap& params);
     void initializeFeedbackComputation();
+    LteAirFrame *createBeaconMessage();
 
     virtual void emitDistanceFromMaster() {}
 
