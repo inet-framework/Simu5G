@@ -565,9 +565,6 @@ void LtePhyUe::handleUpperMessage(cMessage *msg)
 
 void LtePhyUe::emitMobilityStats()
 {
-    // emit serving cell id
-    emit(servingCellSignal_, (long)masterId_);
-
     if (masterMobility_) {
         // emit distance from current serving cell
         inet::Coord masterPos = masterMobility_->getCurrentPosition();
