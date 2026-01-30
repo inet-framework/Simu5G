@@ -108,7 +108,7 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
             return;
         }
 
-        handoverHandler(frame, lteInfo);
+        handoverController_->handoverHandler(frame, lteInfo);
         return;
     }
 
@@ -218,16 +218,6 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
 
     if (getEnvir()->isGUI())
         updateDisplayString();
-}
-
-void LtePhyUeD2D::triggerHandover()
-{
-    handoverController_->LtePhyUeD2D_triggerHandover();
-}
-
-void LtePhyUeD2D::doHandover()
-{
-    handoverController_->LtePhyUeD2D_doHandover();
 }
 
 void LtePhyUeD2D::handleUpperMessage(cMessage *msg)
