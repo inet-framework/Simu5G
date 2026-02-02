@@ -350,6 +350,7 @@ void HandoverController::triggerHandover()
     }
 
     // Calculate handover latency and schedule trigger message
+    //TODO why not simulate detachment and attachment as separate, explicit events?
     double handoverLatency;
     if (servingNodeId_ == NODEID_NONE)                                                // attachment only
         handoverLatency = handoverAttachmentTime_;
