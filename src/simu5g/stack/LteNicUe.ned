@@ -36,6 +36,7 @@ module LteNicUe extends LteNicBase
             @display("p=50,50;is=s");
         }
         handoverController: HandoverController {
+            isNr = false;
             @display("p=50,100;is=s");
         }
 }
