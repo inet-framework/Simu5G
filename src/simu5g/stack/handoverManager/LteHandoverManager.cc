@@ -28,23 +28,23 @@ void LteHandoverManager::initialize(int stage)
         // get the node id
         nodeId_ = MacNodeId(inet::getContainingNode(this)->par("macCellId").intValue());
         ASSERT(nodeId_ != MacNodeId(-1));  // i.e. already set programmatically
-    
+
         // get reference to the gates
         x2ManagerInGate_ = gate("x2ManagerIn");
         x2ManagerOutGate_ = gate("x2ManagerOut");
-    
-        // get reference to the Ip2Nic layer
-        ip2nic_.reference(this, "ip2nicModule", true);
-    
+
+        // get reference to the HandoverPacketFilter layer
+        handoverPacketFilter_.reference(this, "handoverPacketFilterModule", true);
+
         losslessHandover_ = par("losslessHandover").boolValue();
-    
+
         // register to the X2 Manager
         auto x2Packet = new Packet("X2HandoverControlMsg");
         auto initMsg = makeShared<X2HandoverControlMsg>();
         auto ctrlInfo = x2Packet->addTagIfAbsent<X2ControlInfoTag>();
         ctrlInfo->setInit(true);
         x2Packet->insertAtFront(initMsg);
-    
+
         send(x2Packet, x2ManagerOutGate_);
     }
 }
@@ -117,11 +117,11 @@ void LteHandoverManager::receiveHandoverCommand(MacNodeId ueId, MacNodeId enb, b
 {
     EV << NOW << " LteHandoverManager::receiveHandoverCommand - Received handover command over X2 from eNB " << enb << " for UE " << ueId << endl;
 
-    // send command to Ip2Nic
+    // send command to HandoverPacketFilter
     if (startHo)
-        ip2nic_->triggerHandoverTarget(ueId, enb);
+        handoverPacketFilter_->triggerHandoverTarget(ueId, enb);
     else
-        ip2nic_->signalHandoverCompleteSource(ueId, enb);
+        handoverPacketFilter_->signalHandoverCompleteSource(ueId, enb);
 }
 
 void LteHandoverManager::forwardDataToTargetEnb(Packet *datagram, MacNodeId targetEnb)
@@ -151,7 +151,7 @@ void LteHandoverManager::receiveDataFromSourceEnb(Packet *datagram, MacNodeId so
 {
     EV << NOW << " LteHandoverManager::receiveDataFromSourceEnb - Received IP datagram from eNB " << sourceEnb << endl;
 
-    // send data to Ip2Nic for transmission
+    // send data to HandoverPacketFilter for transmission
     send(datagram, "tunnelOut");
 }
 

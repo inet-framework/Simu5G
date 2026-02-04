@@ -13,14 +13,16 @@
 package simu5g.stack;
 
 import inet.networklayer.common.NetworkInterface;
+import simu5g.stack.ip2nic.HandoverPacketFilter;
 import simu5g.stack.ip2nic.INetworkLayer2CellularNic;
 import simu5g.stack.mac.ILteMac;
 import simu5g.stack.packetFlowObserver.IPacketFlowObserver;
 import simu5g.stack.pdcp.ILtePdcp;
 import simu5g.stack.phy.ILtePhy;
+import simu5g.stack.phy.channelmodel.ILteChannelModel;
 import simu5g.stack.rlc.LteRlc;
 import simu5g.stack.rrc.IRrc;
-import simu5g.stack.phy.channelmodel.ILteChannelModel;
+
 
 //
 // The LteNicBase module serves as the foundational building block for LTE networking
@@ -67,10 +69,15 @@ module LteNicBase extends NetworkInterface like ICellularNic
         inout x2[] @loose;     // optional x2 manager
 
     submodules:
+        // handover helper, performs packet holding / forwarding
+        handoverPacketFilter: HandoverPacketFilter {  //TODO make parametric type
+            nodeType = parent.nodeType;
+            @display("p=412,67");
+        }
         // bridge between radio nic and network layer
         ip2nic: <default("Ip2Nic")> like INetworkLayer2CellularNic {
             nodeType = parent.nodeType;
-            @display("p=412,67");
+            @display("p=412,97");
         }
         // RRC Layer
         rrc: <default("Rrc")> like IRrc {
@@ -109,6 +116,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
         }
 
     connections allowunconnected:
+        handoverPacketFilter.stackOut --> ip2nic.upperLayerIn;
         ip2nic.stackNic <--> pdcp.DataPort;
 
         //#
@@ -133,6 +141,6 @@ module LteNicBase extends NetworkInterface like ICellularNic
         //# external: lower connection
         radioIn --> phy.radioIn;
         ip2nic.upperLayerOut --> {  delay = parent.processingDelayOut; } --> upperLayerOut;
-        upperLayerIn --> {  delay = parent.processingDelayIn; } --> ip2nic.upperLayerIn;
+        upperLayerIn --> {  delay = parent.processingDelayIn; } --> handoverPacketFilter.upperLayerIn;
 }
 
