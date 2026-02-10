@@ -144,7 +144,8 @@ cplusplus(LteMacPdu::copy) {{
         Packet *p1 = sdu[idx];
         Packet *p2 = other.sdu[idx];
         if (p1->getControlInfo() == nullptr && p2->getControlInfo() != nullptr) {
-            p1->setControlInfo(p2->getControlInfo()->dup());
+            // FIXME: this never worked. implement proper duplication
+            // p1->setControlInfo(p2->getControlInfo()->dup());
         }
     }
 }}

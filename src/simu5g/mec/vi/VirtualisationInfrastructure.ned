@@ -14,7 +14,8 @@ package simu5g.mec.vi;
 import inet.common.MessageDispatcher;
 import inet.linklayer.contract.IEthernetInterface;
 import inet.linklayer.contract.ILoopbackInterface;
-import inet.linklayer.ethernet.contract.IEthernetLayer;
+import inet.linklayer.ethernet.contract.IEthernetLayer; // for inet-4.5
+import inet.linklayer.contract.IEthernetLayer; // for inet-4.6
 import inet.linklayer.ppp.PppInterface;
 import inet.networklayer.common.InterfaceTable;
 import inet.networklayer.contract.INetworkLayer;

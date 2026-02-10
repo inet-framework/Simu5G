@@ -16,7 +16,8 @@ import inet.applications.contract.IApp;
 import inet.common.MessageDispatcher;
 import simu5g.stack.ICellularNic;
 import inet.common.packet.recorder.PcapRecorder;
-import inet.linklayer.ethernet.contract.IEthernetLayer;
+import inet.linklayer.contract.IEthernetLayer; // for inet-4.6
+import inet.linklayer.ethernet.contract.IEthernetLayer; // for inet-4.5
 import inet.linklayer.contract.IEthernetInterface;
 import inet.linklayer.contract.ILoopbackInterface;
 import inet.mobility.contract.IMobility;
