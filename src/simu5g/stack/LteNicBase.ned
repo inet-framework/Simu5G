@@ -71,7 +71,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
     submodules:
         // handover helper, performs packet holding / forwarding
         handoverPacketHolder: <> like IHandoverPacketHolder {
-            @display("p=412,67");
+            @display("p=340,60");
         }
         // bridge between radio nic and network layer
         ip2nic: <default("Ip2Nic")> like INetworkLayer2CellularNic {

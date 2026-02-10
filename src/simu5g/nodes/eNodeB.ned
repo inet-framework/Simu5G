@@ -84,6 +84,7 @@ module eNodeB
         bool hasUdp = true;
         bool hasTcp = default(firstAvailableOrEmpty("Tcp", "TcpLwip", "TcpNsc") != "");
         bool hasSctp = true;
+        bool hasX2 = default(true);
 
         //# MEC support
         string mecHost = default("");		// symbolic name of the connected MEHost in the Network
@@ -219,7 +220,7 @@ module eNodeB
                 gateway = parent.gateway;
         }
 
-        gtpUserX2: GtpUserX2 {
+        gtpUserX2: GtpUserX2 if hasX2 {
             parameters:
                 @display("p=900,80");
         }
@@ -257,10 +258,10 @@ module eNodeB
         gtpUser.socketIn <-- at.out++;
 
 	    //# GTPUserX2 connections
-        gtpUserX2.lteStackOut --> cellularNic.x2$i++;
-        gtpUserX2.lteStackIn <-- cellularNic.x2$o++;
-        gtpUserX2.socketOut --> at.in++;
-        gtpUserX2.socketIn <-- at.out++;
+        gtpUserX2.lteStackOut --> cellularNic.x2$i++ if hasX2;
+        gtpUserX2.lteStackIn <-- cellularNic.x2$o++ if hasX2;
+        gtpUserX2.socketOut --> at.in++ if hasX2;
+        gtpUserX2.socketIn <-- at.out++ if hasX2;
 
         //# X2 apps connections
         for i=0..numX2Apps-1 {
