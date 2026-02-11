@@ -27,7 +27,8 @@ moduleinterface ILtePdcp
         int headerCompressedSize @unit(B);
 
     gates:
-        inout DataPort;
+        input upperLayerIn;
+        output upperLayerOut;
         inout TM_Sap[];
         inout UM_Sap[];
         inout AM_Sap[];
