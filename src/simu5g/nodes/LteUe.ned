@@ -232,7 +232,7 @@ module LteUe
         cellularNic.upperLayerIn <-- nl.out++;
 
         for i=0..numEthInterfaces-1 {
-            encap.lowerLayerOut --> eth[i].upperLayerIn;
+            encap.lowerLayerOut --> eth[i].upperLayerIn; //TODO BOGUS!!!!
             encap.lowerLayerIn <-- eth[i].upperLayerOut;
         }
         encap.upperLayerOut --> nl.in++ if numEthInterfaces != 0;
