@@ -39,7 +39,7 @@ module PgwStandard extends ApplicationLayerNodeBase
         multicastForwarding = default(false);
 
     gates:
-        inout filterGate @labels(PppFrame-conn);
+        inout dnPppg @labels(PppFrame-conn);
 
     submodules:
         pppIf: PppInterface {
@@ -66,6 +66,6 @@ module PgwStandard extends ApplicationLayerNodeBase
 
         trafficFlowFilter.gtpUserGateOut --> gtp_user.trafficFlowFilterGate;
 
-        pppIf.phys <--> filterGate;
+        pppIf.phys <--> dnPppg;
 }
 
