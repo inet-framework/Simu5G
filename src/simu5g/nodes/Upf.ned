@@ -62,7 +62,7 @@ module Upf extends ApplicationLayerNodeBase
         gtp_user.socketOut --> at.in++;
         gtp_user.socketIn <-- at.out++;
 
-        dnPpp.upperLayerOut --> trafficFlowFilter.internetFilterGateIn;
+        dnPpp.upperLayerOut --> trafficFlowFilter.internetFilterGateIn; //TODO rename these gates
         dnPpp.upperLayerIn <-- gtp_user.pppGate;
 
         trafficFlowFilter.gtpUserGateOut --> gtp_user.trafficFlowFilterGate;
