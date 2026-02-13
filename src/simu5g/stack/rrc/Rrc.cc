@@ -182,7 +182,7 @@ void Rrc::createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp)
     Enter_Method_Silent("createIncomingConnection()");
 
     EV << "Rrc::createIncomingConnection - " << " srcId=" << lteInfo->getSourceId() << " destId=" << lteInfo->getDestId()
-        << " groupId=" << lteInfo->getMulticastGroupId() << " lcid=" << lteInfo->getDrbId()
+        << " groupId=" << lteInfo->getMulticastGroupId() << " drbId=" << lteInfo->getDrbId()
         << " direction=" << dirToA((Direction)lteInfo->getDirection())
         << " withPdcp=" << (withPdcp ? "yes" : "no") << endl;
 
@@ -191,8 +191,8 @@ void Rrc::createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp)
     // Create MAC incoming connection
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacNodeId senderId = desc.getSourceId();
-    LogicalCid lcid = desc.getDrbId();
-    MacCid cid = MacCid(senderId, lcid);
+    DrbId drbId = desc.getDrbId();
+    MacCid cid = MacCid(senderId, drbId);
     auto mac = (nodeType==UE && isNrUe(lteInfo->getDestId())) ? nrMacModule.get() : macModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
     mac->createIncomingConnection(cid, desc);
 
@@ -215,7 +215,7 @@ void Rrc::createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp)
     Enter_Method_Silent("createOutgoingConnection()");
 
     EV << "Rrc::createOutgoingConnection - " << " srcId=" << lteInfo->getSourceId() << " destId=" << lteInfo->getDestId()
-        << " groupId=" << lteInfo->getMulticastGroupId() << " lcid=" << lteInfo->getDrbId()
+        << " groupId=" << lteInfo->getMulticastGroupId() << " drbId=" << lteInfo->getDrbId()
         << " direction=" << dirToA((Direction)lteInfo->getDirection())
         << " withPdcp=" << (withPdcp ? "yes" : "no") << endl;
 
@@ -224,8 +224,8 @@ void Rrc::createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp)
     // Create MAC outgoing connection
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacNodeId destId = desc.getDestId();
-    LogicalCid lcid = desc.getDrbId();
-    MacCid cid = MacCid(destId, lcid);
+    DrbId drbId = desc.getDrbId();
+    MacCid cid = MacCid(destId, drbId);
     auto mac = (nodeType==UE && isNrUe(lteInfo->getSourceId())) ? nrMacModule.get() : macModule.get();
     mac->createOutgoingConnection(cid, desc);
 
