@@ -205,8 +205,8 @@ void Rrc::createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp)
 
     // PDCP is not needed on Secondary nodes
     if (withPdcp) {
-        MacCid cid3 = MacCid(lteInfo->getSourceId(), lteInfo->getDrbId());
-        pdcpModule->createRxEntity(cid3);
+        NodeDrbId id = NodeDrbId(lteInfo->getSourceId(), lteInfo->getDrbId());
+        pdcpModule->createRxEntity(id);
     }
 }
 
@@ -236,8 +236,8 @@ void Rrc::createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp)
 
     // PDCP is not needed on Secondary nodes
     if (withPdcp) {
-        MacCid cid3 = MacCid(lteInfo->getDestId(), lteInfo->getDrbId());
-        pdcpModule->createTxEntity(cid3);
+        NodeDrbId id = NodeDrbId(lteInfo->getDestId(), lteInfo->getDrbId());
+        pdcpModule->createTxEntity(id);
     }
 }
 
