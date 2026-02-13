@@ -50,8 +50,11 @@ typedef MacNodeId MacCellId;
 /// X2 node ID. It is equal to the eNodeB MAC Cell ID
 typedef MacNodeId X2NodeId;
 
-/// Logical Connection Identifier
+/// Logical Connection Identifier (used in MAC layer)
 typedef unsigned short LogicalCid;
+
+/// Data Radio Bearer Identifier (used in PDCP/RLC layers, maps 1:1 to LogicalCid)
+typedef LogicalCid DrbId;
 
 /// Connection Identifier: <MacNodeId,LogicalCid>
 // MacCid is now a class with separate fields instead of a packed integer
@@ -150,7 +153,7 @@ class X2NodeId {
     @fromValue(omnetpp::checked_int_cast<int64_t>($.intValue()));
 };
 
-/// Logical Connection Identifier
+/// Logical Connection Identifier (used in MAC layer)
 class LogicalCid {
     @existingClass; // typedef unsigned short LogicalCid;
     @descriptor(false);
@@ -161,6 +164,19 @@ class LogicalCid {
     @defaultValue(0);
     @toValue((omnetpp::intval_t)($));
     @fromValue(omnetpp::checked_int_cast<LogicalCid>($.intValue()));
+};
+
+/// Data Radio Bearer Identifier (used in PDCP/RLC layers, maps 1:1 to LogicalCid)
+class DrbId {
+    @existingClass; // typedef LogicalCid DrbId;
+    @descriptor(false);
+    @primitive;
+    @castFunction(false);
+    @fromString(string2int64($));
+    @toString(int642string($));
+    @defaultValue(0);
+    @toValue((omnetpp::intval_t)($));
+    @fromValue(omnetpp::checked_int_cast<DrbId>($.intValue()));
 };
 
 /// Connection Identifier: <MacNodeId,LogicalCid>

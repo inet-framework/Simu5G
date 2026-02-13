@@ -66,8 +66,8 @@ class FlowControlInfo extends LteControlInfo {
     unsigned short rlcType enum(LteRlcType) = 0;            // RLC Traffic Type
 }
 
-cplusplus (FlowControlInfo::setLcid) {{
-    ASSERT(lcid <= 63);
+cplusplus (FlowControlInfo::setDrbId) {{
+    ASSERT(drbId <= 63);
 }}
 
 // WIP: Describes logical channels (identified by remote node + LCID) in MAC
