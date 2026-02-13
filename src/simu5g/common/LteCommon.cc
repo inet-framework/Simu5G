@@ -339,6 +339,14 @@ MacCid ctrlInfoToMacCid(const FlowControlInfo *info)
 }
 
 /*
+ * Obtain the NodeDrbId from the Control Info
+ */
+NodeDrbId ctrlInfoToNodeDrbId(const FlowControlInfo *info)
+{
+    return NodeDrbId(ctrlInfoToUeId(info), info->getDrbId());
+}
+
+/*
  * Obtain the MacNodeId of a UE from packet control info
  */
 MacNodeId ctrlInfoToUeId(const FlowControlInfo *info)

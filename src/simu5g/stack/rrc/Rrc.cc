@@ -197,11 +197,10 @@ void Rrc::createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp)
     mac->createIncomingConnection(cid, desc);
 
     // RLC: only UM works
-    //MacCid cid = ctrlInfoToMacCid(lteInfo);
-    MacNodeId nodeIdForCid = (lteInfo->getDirection() == DL) ? lteInfo->getDestId() : lteInfo->getSourceId();
-    MacCid cid2 = MacCid(nodeIdForCid, LteMacBase::drbIdToLcid(lteInfo->getDrbId()));
+    MacNodeId nodeIdForRlc = (lteInfo->getDirection() == DL) ? lteInfo->getDestId() : lteInfo->getSourceId();
+    NodeDrbId rlcId = NodeDrbId(nodeIdForRlc, lteInfo->getDrbId());
     auto rlcUm = (nodeType==UE && isNrUe(lteInfo->getDestId())) ? nrRlcUmModule.get() : rlcUmModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
-    rlcUm->createRxBuffer(cid2, lteInfo);
+    rlcUm->createRxBuffer(rlcId, lteInfo);
 
     // PDCP is not needed on Secondary nodes
     if (withPdcp) {
@@ -230,9 +229,9 @@ void Rrc::createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp)
     mac->createOutgoingConnection(cid, desc);
 
     // RLC: only UM works
-    MacCid cid2 = ctrlInfoToMacCid(lteInfo);  // TODO: ctrlInfoToMacCid should use drbIdToLcid internally
+    NodeDrbId rlcId = ctrlInfoToNodeDrbId(lteInfo);
     auto rlcUm = (nodeType==UE && isNrUe(lteInfo->getSourceId())) ? nrRlcUmModule.get() : rlcUmModule.get();
-    rlcUm->createTxBuffer(cid2, lteInfo);
+    rlcUm->createTxBuffer(rlcId, lteInfo);
 
     // PDCP is not needed on Secondary nodes
     if (withPdcp) {

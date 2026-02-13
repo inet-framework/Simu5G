@@ -42,11 +42,11 @@ class LteRlcAm : public cSimpleModule
      * Data structures
      */
 
-    typedef std::map<MacCid, AmTxQueue *> AmTxBuffers;
-    typedef std::map<MacCid, AmRxQueue *> AmRxBuffers;
+    typedef std::map<NodeDrbId, AmTxQueue *> AmTxBuffers;
+    typedef std::map<NodeDrbId, AmRxQueue *> AmRxBuffers;
 
     /**
-     * The buffers map associates each CID with
+     * The buffers map associates each NodeDrbId with
      * a TX/RX Buffer, identified by its ID
      */
 
@@ -81,37 +81,37 @@ class LteRlcAm : public cSimpleModule
     void deleteQueues(MacNodeId nodeId);
 
     /**
-     * lookupTxBuffer() searches for an existing TXBuffer for the given CID.
+     * lookupTxBuffer() searches for an existing TXBuffer for the given NodeDrbId.
      *
-     * @param cid Connection ID to lookup
+     * @param id NodeDrbId to lookup
      * @return pointer to the TXBuffer if found, nullptr otherwise
      */
-    virtual AmTxQueue *lookupTxBuffer(MacCid cid);
+    virtual AmTxQueue *lookupTxBuffer(NodeDrbId id);
 
     /**
-     * createTxBuffer() creates a new TXBuffer for the given CID.
+     * createTxBuffer() creates a new TXBuffer for the given NodeDrbId.
      *
-     * @param cid Connection ID for the new buffer
+     * @param id NodeDrbId for the new buffer
      * @return pointer to the newly created TXBuffer
      */
-    virtual AmTxQueue *createTxBuffer(MacCid cid);
+    virtual AmTxQueue *createTxBuffer(NodeDrbId id);
 
 
     /**
-     * lookupRxBuffer() searches for an existing RXBuffer for the given CID.
+     * lookupRxBuffer() searches for an existing RXBuffer for the given NodeDrbId.
      *
-     * @param cid Connection ID to lookup
+     * @param id NodeDrbId to lookup
      * @return pointer to the RXBuffer if found, nullptr otherwise
      */
-    virtual AmRxQueue *lookupRxBuffer(MacCid cid);
+    virtual AmRxQueue *lookupRxBuffer(NodeDrbId id);
 
     /**
-     * createRxBuffer() creates a new RXBuffer for the given CID.
+     * createRxBuffer() creates a new RXBuffer for the given NodeDrbId.
      *
-     * @param cid Connection ID for the new buffer
+     * @param id NodeDrbId for the new buffer
      * @return pointer to the newly created RXBuffer
      */
-    virtual AmRxQueue *createRxBuffer(MacCid cid);
+    virtual AmRxQueue *createRxBuffer(NodeDrbId id);
 
 
     /**
