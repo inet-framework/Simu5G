@@ -40,10 +40,10 @@ void LteMacPdu::forEachChild(cVisitor *v)
 
 void LteMacPdu::pushSdu(Packet *pkt)
 {
-    LogicalCid lcid = pkt->getTag<FlowControlInfo>()->getDrbId();
+    DrbId drbId = pkt->getTag<FlowControlInfo>()->getDrbId();  // DRB ID maps 1:1 to LCID
     pkt->clearTags();
 
-    appendLcid(lcid);
+    appendLcid(drbId);  // Store as LCID in MAC PDU
     appendSdu(pkt);
 
     macPduLength_ += pkt->getByteLength();

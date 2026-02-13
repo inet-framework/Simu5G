@@ -545,8 +545,8 @@ void LteMacUe::macPduUnmake(cPacket *cpkt)
         // fill FlowControlInfo from stored descriptors
         auto flowInfo = upPkt->getTag<FlowControlInfo>();
         MacNodeId senderId = userInfo->getSourceId();
-        LogicalCid lcid = flowInfo->getDrbId();
-        MacCid cid = MacCid(senderId, lcid);
+        DrbId drbId = flowInfo->getDrbId();  // DRB ID maps 1:1 to LCID at MAC boundary
+        MacCid cid = MacCid(senderId, drbId);
         ASSERT(connDescIn_.find(cid) != connDescIn_.end());
         upPkt->removeTag<FlowControlInfo>();
         *upPkt->addTag<FlowControlInfo>() = connDescIn_[cid].toFlowControlInfo();
