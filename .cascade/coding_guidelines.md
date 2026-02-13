@@ -19,6 +19,11 @@
 
 - Use `ASSERT()` (of OMNeT++) instead of `assert()`.
 
+- Use `check_and_cast()` instead of `dynamic_cast()`.
+
+- Msg file trick: In msg file generated code, the namespace begins where the
+  namespace directive occurs in the MSG file.
+
 ## Compiling
 
 - Use debug builds with `-j`: `make MODE=debug -j12`.
