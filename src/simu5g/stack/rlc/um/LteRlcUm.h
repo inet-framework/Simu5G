@@ -69,11 +69,11 @@ class LteRlcUm : public cSimpleModule
     */
 
     /**
-    * The entities map associates each NodeDrbId with
+    * The entities map associates each DrbKey with
     * a TX/RX Entity , identified by its ID
     */
-    typedef std::map<NodeDrbId, UmTxEntity *> UmTxEntities;
-    typedef std::map<NodeDrbId, UmRxEntity *> UmRxEntities;
+    typedef std::map<DrbKey, UmTxEntity *> UmTxEntities;
+    typedef std::map<DrbKey, UmRxEntity *> UmRxEntities;
     UmTxEntities txEntities_;
     UmRxEntities rxEntities_;
 
@@ -160,39 +160,39 @@ class LteRlcUm : public cSimpleModule
 
   public:
     /**
-     * lookupTxBuffer() searches for an existing TXBuffer for the given NodeDrbId.
+     * lookupTxBuffer() searches for an existing TXBuffer for the given DrbKey.
      *
-     * @param id NodeDrbId to lookup
+     * @param id DrbKey to lookup
      * @return pointer to the TXBuffer if found, nullptr otherwise
      */
-    virtual UmTxEntity *lookupTxBuffer(NodeDrbId id);
+    virtual UmTxEntity *lookupTxBuffer(DrbKey id);
 
     /**
-     * createTxBuffer() creates a new TXBuffer for the given NodeDrbId and flow info.
+     * createTxBuffer() creates a new TXBuffer for the given DrbKey and flow info.
      *
-     * @param id NodeDrbId for the new buffer
+     * @param id DrbKey for the new buffer
      * @param lteInfo flow-related info
      * @return pointer to the newly created TXBuffer
      */
-    virtual UmTxEntity *createTxBuffer(NodeDrbId id, FlowControlInfo *lteInfo);
+    virtual UmTxEntity *createTxBuffer(DrbKey id, FlowControlInfo *lteInfo);
 
 
     /**
-     * lookupRxBuffer() searches for an existing RXBuffer for the given NodeDrbId.
+     * lookupRxBuffer() searches for an existing RXBuffer for the given DrbKey.
      *
-     * @param id NodeDrbId to lookup
+     * @param id DrbKey to lookup
      * @return pointer to the RXBuffer if found, nullptr otherwise
      */
-    virtual UmRxEntity *lookupRxBuffer(NodeDrbId id);
+    virtual UmRxEntity *lookupRxBuffer(DrbKey id);
 
     /**
-     * createRxBuffer() creates a new RXBuffer for the given NodeDrbId and flow info.
+     * createRxBuffer() creates a new RXBuffer for the given DrbKey and flow info.
      *
-     * @param id NodeDrbId for the new buffer
+     * @param id DrbKey for the new buffer
      * @param lteInfo flow-related info
      * @return pointer to the newly created RXBuffer
      */
-    virtual UmRxEntity *createRxBuffer(NodeDrbId id, FlowControlInfo *lteInfo);
+    virtual UmRxEntity *createRxBuffer(DrbKey id, FlowControlInfo *lteInfo);
 
   protected:
     /**

@@ -26,13 +26,13 @@ Define_Module(LteRlcAm);
 
 using namespace omnetpp;
 
-AmTxQueue *LteRlcAm::lookupTxBuffer(NodeDrbId id)
+AmTxQueue *LteRlcAm::lookupTxBuffer(DrbKey id)
 {
     auto it = txBuffers_.find(id);
     return (it != txBuffers_.end()) ? it->second : nullptr;
 }
 
-AmTxQueue *LteRlcAm::createTxBuffer(NodeDrbId id)
+AmTxQueue *LteRlcAm::createTxBuffer(DrbKey id)
 {
     std::stringstream buf;
     buf << "AmTxQueue Lcid: " << id.getDrbId() << " cid: " << id.asPackedInt();
@@ -45,13 +45,13 @@ AmTxQueue *LteRlcAm::createTxBuffer(NodeDrbId id)
     return txbuf;
 }
 
-AmRxQueue *LteRlcAm::lookupRxBuffer(NodeDrbId id)
+AmRxQueue *LteRlcAm::lookupRxBuffer(DrbKey id)
 {
     auto it = rxBuffers_.find(id);
     return (it != rxBuffers_.end()) ? it->second : nullptr;
 }
 
-AmRxQueue *LteRlcAm::createRxBuffer(NodeDrbId id)
+AmRxQueue *LteRlcAm::createRxBuffer(DrbKey id)
 {
     std::stringstream buf;
     buf << "AmRxQueue Lcid: " << id.getDrbId() << " cid: " << id.asPackedInt();
@@ -80,9 +80,9 @@ void LteRlcAm::sendDefragmented(cPacket *pktAux)
 void LteRlcAm::bufferControlPdu(cPacket *pktAux) {
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
-    NodeDrbId id = ctrlInfoToNodeDrbId(lteInfo.get());
+    DrbKey id = ctrlInfoToNodeDrbId(lteInfo.get());
 
-    // Find TXBuffer for this NodeDrbId
+    // Find TXBuffer for this DrbKey
     AmTxQueue *txbuf = lookupTxBuffer(id);
     if (txbuf == nullptr)
         txbuf = createTxBuffer(id);
@@ -107,9 +107,9 @@ void LteRlcAm::handleUpperMessage(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
-    NodeDrbId id = ctrlInfoToNodeDrbId(lteInfo.get());
+    DrbKey id = ctrlInfoToNodeDrbId(lteInfo.get());
 
-    // Find TXBuffer for this NodeDrbId
+    // Find TXBuffer for this DrbKey
     AmTxQueue *txbuf = lookupTxBuffer(id);
     if (txbuf == nullptr)
         txbuf = createTxBuffer(id);
@@ -136,9 +136,9 @@ void LteRlcAm::routeControlMessage(cPacket *pktAux)
 
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
-    NodeDrbId id = ctrlInfoToNodeDrbId(lteInfo.get());
+    DrbKey id = ctrlInfoToNodeDrbId(lteInfo.get());
 
-    // Find TXBuffer for this NodeDrbId
+    // Find TXBuffer for this DrbKey
     AmTxQueue *txbuf = lookupTxBuffer(id);
     if (txbuf == nullptr)
         txbuf = createTxBuffer(id);
@@ -157,9 +157,9 @@ void LteRlcAm::handleLowerMessage(cPacket *pktAux)
         // process SDU request received from MAC
 
         // get the corresponding Tx buffer
-        NodeDrbId id = ctrlInfoToNodeDrbId(lteInfo.get());
+        DrbKey id = ctrlInfoToNodeDrbId(lteInfo.get());
 
-        // Find TXBuffer for this NodeDrbId
+        // Find TXBuffer for this DrbKey
         AmTxQueue *txbuf = lookupTxBuffer(id);
         if (txbuf == nullptr)
             txbuf = createTxBuffer(id);
@@ -185,8 +185,8 @@ void LteRlcAm::handleLowerMessage(cPacket *pktAux)
         }
 
         // Extract information from fragment
-        NodeDrbId id = ctrlInfoToNodeDrbId(lteInfo.get());
-        // Find RXBuffer for this NodeDrbId
+        DrbKey id = ctrlInfoToNodeDrbId(lteInfo.get());
+        // Find RXBuffer for this DrbKey
         AmRxQueue *rxbuf = lookupRxBuffer(id);
         if (rxbuf == nullptr)
             rxbuf = createRxBuffer(id);

@@ -198,13 +198,13 @@ void Rrc::createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp)
 
     // RLC: only UM works
     MacNodeId nodeIdForRlc = (lteInfo->getDirection() == DL) ? lteInfo->getDestId() : lteInfo->getSourceId();
-    NodeDrbId rlcId = NodeDrbId(nodeIdForRlc, lteInfo->getDrbId());
+    DrbKey rlcId = DrbKey(nodeIdForRlc, lteInfo->getDrbId());
     auto rlcUm = (nodeType==UE && isNrUe(lteInfo->getDestId())) ? nrRlcUmModule.get() : rlcUmModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
     rlcUm->createRxBuffer(rlcId, lteInfo);
 
     // PDCP is not needed on Secondary nodes
     if (withPdcp) {
-        NodeDrbId id = NodeDrbId(lteInfo->getSourceId(), lteInfo->getDrbId());
+        DrbKey id = DrbKey(lteInfo->getSourceId(), lteInfo->getDrbId());
         pdcpModule->createRxEntity(id);
     }
 }
@@ -229,13 +229,13 @@ void Rrc::createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp)
     mac->createOutgoingConnection(cid, desc);
 
     // RLC: only UM works
-    NodeDrbId rlcId = ctrlInfoToNodeDrbId(lteInfo);
+    DrbKey rlcId = ctrlInfoToNodeDrbId(lteInfo);
     auto rlcUm = (nodeType==UE && isNrUe(lteInfo->getSourceId())) ? nrRlcUmModule.get() : rlcUmModule.get();
     rlcUm->createTxBuffer(rlcId, lteInfo);
 
     // PDCP is not needed on Secondary nodes
     if (withPdcp) {
-        NodeDrbId id = NodeDrbId(lteInfo->getDestId(), lteInfo->getDrbId());
+        DrbKey id = DrbKey(lteInfo->getDestId(), lteInfo->getDrbId());
         pdcpModule->createTxEntity(id);
     }
 }

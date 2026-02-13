@@ -42,11 +42,11 @@ class LteRlcAm : public cSimpleModule
      * Data structures
      */
 
-    typedef std::map<NodeDrbId, AmTxQueue *> AmTxBuffers;
-    typedef std::map<NodeDrbId, AmRxQueue *> AmRxBuffers;
+    typedef std::map<DrbKey, AmTxQueue *> AmTxBuffers;
+    typedef std::map<DrbKey, AmRxQueue *> AmRxBuffers;
 
     /**
-     * The buffers map associates each NodeDrbId with
+     * The buffers map associates each DrbKey with
      * a TX/RX Buffer, identified by its ID
      */
 
@@ -81,37 +81,37 @@ class LteRlcAm : public cSimpleModule
     void deleteQueues(MacNodeId nodeId);
 
     /**
-     * lookupTxBuffer() searches for an existing TXBuffer for the given NodeDrbId.
+     * lookupTxBuffer() searches for an existing TXBuffer for the given DrbKey.
      *
-     * @param id NodeDrbId to lookup
+     * @param id DrbKey to lookup
      * @return pointer to the TXBuffer if found, nullptr otherwise
      */
-    virtual AmTxQueue *lookupTxBuffer(NodeDrbId id);
+    virtual AmTxQueue *lookupTxBuffer(DrbKey id);
 
     /**
-     * createTxBuffer() creates a new TXBuffer for the given NodeDrbId.
+     * createTxBuffer() creates a new TXBuffer for the given DrbKey.
      *
-     * @param id NodeDrbId for the new buffer
+     * @param id DrbKey for the new buffer
      * @return pointer to the newly created TXBuffer
      */
-    virtual AmTxQueue *createTxBuffer(NodeDrbId id);
+    virtual AmTxQueue *createTxBuffer(DrbKey id);
 
 
     /**
-     * lookupRxBuffer() searches for an existing RXBuffer for the given NodeDrbId.
+     * lookupRxBuffer() searches for an existing RXBuffer for the given DrbKey.
      *
-     * @param id NodeDrbId to lookup
+     * @param id DrbKey to lookup
      * @return pointer to the RXBuffer if found, nullptr otherwise
      */
-    virtual AmRxQueue *lookupRxBuffer(NodeDrbId id);
+    virtual AmRxQueue *lookupRxBuffer(DrbKey id);
 
     /**
-     * createRxBuffer() creates a new RXBuffer for the given NodeDrbId.
+     * createRxBuffer() creates a new RXBuffer for the given DrbKey.
      *
-     * @param id NodeDrbId for the new buffer
+     * @param id DrbKey for the new buffer
      * @return pointer to the newly created RXBuffer
      */
-    virtual AmRxQueue *createRxBuffer(NodeDrbId id);
+    virtual AmRxQueue *createRxBuffer(DrbKey id);
 
 
     /**

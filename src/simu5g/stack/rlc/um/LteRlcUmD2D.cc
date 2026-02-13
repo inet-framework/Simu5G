@@ -17,7 +17,7 @@ namespace simu5g {
 Define_Module(LteRlcUmD2D);
 using namespace omnetpp;
 
-UmTxEntity *LteRlcUmD2D::createTxBuffer(NodeDrbId id, FlowControlInfo *lteInfo)
+UmTxEntity *LteRlcUmD2D::createTxBuffer(DrbKey id, FlowControlInfo *lteInfo)
 {
     UmTxEntity *txEnt = LteRlcUm::createTxBuffer(id, lteInfo);
 
@@ -50,7 +50,7 @@ void LteRlcUmD2D::handleLowerMessage(cPacket *pktAux)
 
         if (switchPkt->getTxSide()) {
             // get the corresponding Tx buffer & call handler
-            NodeDrbId id = ctrlInfoToNodeDrbId(lteInfo.get());
+            DrbKey id = ctrlInfoToNodeDrbId(lteInfo.get());
             UmTxEntity *txbuf = lookupTxBuffer(id);
             if (txbuf == nullptr)
                 txbuf = createTxBuffer(id, lteInfo.get());
@@ -63,7 +63,7 @@ void LteRlcUmD2D::handleLowerMessage(cPacket *pktAux)
         else { // rx side
             // get the corresponding Rx buffer & call handler
             MacNodeId nodeId = (lteInfo->getDirection() == DL) ? lteInfo->getDestId() : lteInfo->getSourceId();
-            NodeDrbId id = NodeDrbId(nodeId, lteInfo->getDrbId());
+            DrbKey id = DrbKey(nodeId, lteInfo->getDrbId());
             UmRxEntity *rxbuf = lookupRxBuffer(id);
             if (rxbuf == nullptr)
                 rxbuf = createRxBuffer(id, lteInfo.get());

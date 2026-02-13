@@ -119,10 +119,10 @@ class LtePdcpBase : public cSimpleModule
     LteRlcType backgroundRlc_ = UNKNOWN_RLC_TYPE;
 
     /**
-     * The entities map associates each NodeDrbId with a PDCP Entity, identified by its ID
+     * The entities map associates each DrbKey with a PDCP Entity, identified by its ID
      */
-    typedef std::map<NodeDrbId, LteTxPdcpEntity *> PdcpTxEntities;
-    typedef std::map<NodeDrbId, LteRxPdcpEntity *> PdcpRxEntities;
+    typedef std::map<DrbKey, LteTxPdcpEntity *> PdcpTxEntities;
+    typedef std::map<DrbKey, LteRxPdcpEntity *> PdcpRxEntities;
     PdcpTxEntities txEntities_;
     PdcpRxEntities rxEntities_;
 
@@ -140,7 +140,7 @@ class LtePdcpBase : public cSimpleModule
      * @param id Node + DRB ID
      * @return pointer to the existing TX PDCP entity, or nullptr if not found
      */
-    virtual LteTxPdcpEntity *lookupTxEntity(NodeDrbId id);
+    virtual LteTxPdcpEntity *lookupTxEntity(DrbKey id);
 
     /**
      * createTxEntity() creates a new TX PDCP entity for the given node+DRB ID and adds it to the entities map.
@@ -148,7 +148,7 @@ class LtePdcpBase : public cSimpleModule
      * @param id Node + DRB ID
      * @return pointer to the newly created TX PDCP entity
      */
-    virtual LteTxPdcpEntity *createTxEntity(NodeDrbId id);
+    virtual LteTxPdcpEntity *createTxEntity(DrbKey id);
 
     /**
      * lookupRxEntity() searches for an existing RX PDCP entity for the given node+DRB ID.
@@ -156,7 +156,7 @@ class LtePdcpBase : public cSimpleModule
      * @param id Node + DRB ID
      * @return pointer to the existing RX PDCP entity, or nullptr if not found
      */
-    virtual LteRxPdcpEntity *lookupRxEntity(NodeDrbId id);
+    virtual LteRxPdcpEntity *lookupRxEntity(DrbKey id);
 
     /**
      * createRxEntity() creates a new RX PDCP entity for the given node+DRB ID and adds it to the entities map.
@@ -164,7 +164,7 @@ class LtePdcpBase : public cSimpleModule
      * @param id Node + DRB ID
      * @return pointer to the newly created RX PDCP entity
      */
-    virtual LteRxPdcpEntity *createRxEntity(NodeDrbId id);
+    virtual LteRxPdcpEntity *createRxEntity(DrbKey id);
 
   protected:
     /*

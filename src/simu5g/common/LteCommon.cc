@@ -339,11 +339,11 @@ MacCid ctrlInfoToMacCid(const FlowControlInfo *info)
 }
 
 /*
- * Obtain the NodeDrbId from the Control Info
+ * Obtain the DrbKey from the Control Info
  */
-NodeDrbId ctrlInfoToNodeDrbId(const FlowControlInfo *info)
+DrbKey ctrlInfoToNodeDrbId(const FlowControlInfo *info)
 {
-    return NodeDrbId(ctrlInfoToUeId(info), info->getDrbId());
+    return DrbKey(ctrlInfoToUeId(info), info->getDrbId());
 }
 
 /*

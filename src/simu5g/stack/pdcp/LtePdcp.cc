@@ -135,7 +135,7 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
     auto lteInfo = pkt->getTag<FlowControlInfo>();
     verifyControlInfo(lteInfo.get());
 
-    NodeDrbId id = NodeDrbId(lteInfo->getDestId(), lteInfo->getDrbId());
+    DrbKey id = DrbKey(lteInfo->getDestId(), lteInfo->getDrbId());
 
     if (isDualConnectivityEnabled() && lteInfo->getMulticastGroupId() == NODEID_NONE) {
         // Handle DC setup: Assume packet arrives in Master nodeB (LTE), and wants to use Secondary nodeB (NR).
@@ -146,13 +146,13 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
             // use another ID whose technology matches the nodeB
             MacNodeId otherDestId = binder_->getUeNodeId(lteInfo->getDestId(), !isNrUe(lteInfo->getDestId()));
             ASSERT(otherDestId != NODEID_NONE);
-            id = NodeDrbId(otherDestId, lteInfo->getDrbId());
+            id = DrbKey(otherDestId, lteInfo->getDrbId());
         }
 
         // Handle DC setup on UE side: both legs should use the *same* key for entity lookup
         if (getNodeTypeById(nodeId_) == UE && getNodeTypeById(lteInfo->getDestId()) == NODEB)  {
             MacNodeId lteNodeB = binder_->getServingNode(nodeId_);
-            id = NodeDrbId(lteNodeB, lteInfo->getDrbId());
+            id = DrbKey(lteNodeB, lteInfo->getDrbId());
         }
     }
 
@@ -185,7 +185,7 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
     ASSERT(pkt->findTag<PdcpTrackingTag>() == nullptr);
 
     auto lteInfo = pkt->getTag<FlowControlInfo>();
-    NodeDrbId id = NodeDrbId(lteInfo->getSourceId(), lteInfo->getDrbId());
+    DrbKey id = DrbKey(lteInfo->getSourceId(), lteInfo->getDrbId());
 
     if (isDualConnectivityEnabled()) {
         // Handle DC setup: Assume packet arrives at this Master nodeB (LTE) from Secondary (NR) over X2.
@@ -195,13 +195,13 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
             // use another ID whose technology matches the nodeB
             MacNodeId otherSourceId = binder_->getUeNodeId(lteInfo->getSourceId(), !isNrUe(lteInfo->getSourceId()));
             ASSERT(otherSourceId != NODEID_NONE);
-            id = NodeDrbId(otherSourceId, lteInfo->getDrbId());
+            id = DrbKey(otherSourceId, lteInfo->getDrbId());
         }
 
         // Handle DC setup on UE side: both legs should use the *same* key for entity lookup
         if (getNodeTypeById(nodeId_) == UE && getNodeTypeById(lteInfo->getSourceId()) == NODEB)  {
             MacNodeId lteNodeB = binder_->getServingNode(nodeId_);
-            id = NodeDrbId(lteNodeB, lteInfo->getDrbId());
+            id = DrbKey(lteNodeB, lteInfo->getDrbId());
         }
     }
 
@@ -225,7 +225,7 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
             }
 
             if (otherSrcId != NODEID_NONE && otherSrcId != lteInfo->getSourceId()) {
-                id = NodeDrbId(otherSrcId, lteInfo->getDrbId());
+                id = DrbKey(otherSrcId, lteInfo->getDrbId());
 
                 EV << "LtePdcp: UE DC RX - Using alternate base station ID " << otherSrcId
                    << " instead of " << lteInfo->getSourceId()
@@ -355,13 +355,13 @@ void LtePdcpBase::handleMessage(cMessage *msg)
     }
 }
 
-LteTxPdcpEntity *LtePdcpBase::lookupTxEntity(NodeDrbId id)
+LteTxPdcpEntity *LtePdcpBase::lookupTxEntity(DrbKey id)
 {
     auto it = txEntities_.find(id);
     return it != txEntities_.end() ? it->second : nullptr;
 }
 
-LteTxPdcpEntity *LtePdcpBase::createTxEntity(NodeDrbId id)
+LteTxPdcpEntity *LtePdcpBase::createTxEntity(DrbKey id)
 {
     std::stringstream buf;
     buf << "tx-" << id.getNodeId() << "-" << id.getDrbId();
@@ -374,13 +374,13 @@ LteTxPdcpEntity *LtePdcpBase::createTxEntity(NodeDrbId id)
 }
 
 
-LteRxPdcpEntity *LtePdcpBase::lookupRxEntity(NodeDrbId id)
+LteRxPdcpEntity *LtePdcpBase::lookupRxEntity(DrbKey id)
 {
     auto it = rxEntities_.find(id);
     return it != rxEntities_.end() ? it->second : nullptr;
 }
 
-LteRxPdcpEntity *LtePdcpBase::createRxEntity(NodeDrbId id)
+LteRxPdcpEntity *LtePdcpBase::createRxEntity(DrbKey id)
 {
     std::stringstream buf;
     buf << "rx-" << id.getNodeId() << "-" << id.getDrbId();

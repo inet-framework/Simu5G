@@ -120,7 +120,7 @@ public:
  * Semantically equivalent to MacCid but uses DrbId terminology.
  * Can be used as std::map key and provides string representation.
  */
-class NodeDrbId
+class DrbKey
 {
 private:
     MacNodeId nodeId_;
@@ -128,29 +128,29 @@ private:
 
 public:
     // Default constructor
-    NodeDrbId() : nodeId_(static_cast<MacNodeId>(0)), drbId_(0) {}
+    DrbKey() : nodeId_(static_cast<MacNodeId>(0)), drbId_(0) {}
 
     // Constructor
-    NodeDrbId(MacNodeId nodeId, DrbId drbId) : nodeId_(nodeId), drbId_(drbId) {}
+    DrbKey(MacNodeId nodeId, DrbId drbId) : nodeId_(nodeId), drbId_(drbId) {}
 
     // Getters
     MacNodeId getNodeId() const { return nodeId_; }
     DrbId getDrbId() const { return drbId_; }
     unsigned int asPackedInt() const { return (num(nodeId_) << 16) | drbId_; }
 
-    // Check if this is an empty/invalid NodeDrbId (default constructed)
+    // Check if this is an empty/invalid DrbKey (default constructed)
     bool isEmpty() const { return num(nodeId_) == 0 && drbId_ == 0; }
 
     // String representation
-    std::string str() const { return "NodeDrbId(nodeId=" + std::to_string(num(nodeId_)) + ", drbId=" + std::to_string(drbId_) + ")"; }
+    std::string str() const { return "DrbKey(nodeId=" + std::to_string(num(nodeId_)) + ", drbId=" + std::to_string(drbId_) + ")"; }
 
     // Comparison operators for std::map compatibility
-    bool operator<(const NodeDrbId& other) const { return asPackedInt() < other.asPackedInt(); }
-    bool operator==(const NodeDrbId& other) const  { return nodeId_ == other.nodeId_ && drbId_ == other.drbId_; }
-    bool operator!=(const NodeDrbId& other) const { return nodeId_ != other.nodeId_ || drbId_ != other.drbId_; }
+    bool operator<(const DrbKey& other) const { return asPackedInt() < other.asPackedInt(); }
+    bool operator==(const DrbKey& other) const  { return nodeId_ == other.nodeId_ && drbId_ == other.drbId_; }
+    bool operator!=(const DrbKey& other) const { return nodeId_ != other.nodeId_ || drbId_ != other.drbId_; }
 
     // Stream output operator
-    friend std::ostream& operator<<(std::ostream& os, const NodeDrbId& id) { return os << id.str(); }
+    friend std::ostream& operator<<(std::ostream& os, const DrbKey& id) { return os << id.str(); }
 };
 
 }}
@@ -225,8 +225,8 @@ class MacCid {
 };
 
 /// Node + DRB ID Identifier: <MacNodeId, DrbId> for PDCP/RLC layers
-class NodeDrbId {
-    @existingClass; // class NodeDrbId with separate nodeId and drbId fields
+class DrbKey {
+    @existingClass; // class DrbKey with separate nodeId and drbId fields
     @descriptor(false);
     @opaque;
 };

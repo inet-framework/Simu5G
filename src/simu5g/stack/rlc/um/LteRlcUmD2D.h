@@ -38,14 +38,14 @@ class LteRlcUmD2D : public LteRlcUm
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
     /**
-     * createTxBuffer() creates a new TXBuffer for the given NodeDrbId and flow info.
+     * createTxBuffer() creates a new TXBuffer for the given DrbKey and flow info.
      * Overridden to add D2D-specific functionality like peer tracking and holding packets.
      *
-     * @param id NodeDrbId for the new buffer
+     * @param id DrbKey for the new buffer
      * @param lteInfo flow-related info
      * @return pointer to the newly created TXBuffer
      */
-    UmTxEntity *createTxBuffer(NodeDrbId id, FlowControlInfo *lteInfo) override;
+    UmTxEntity *createTxBuffer(DrbKey id, FlowControlInfo *lteInfo) override;
 
     /**
      * UM Mode

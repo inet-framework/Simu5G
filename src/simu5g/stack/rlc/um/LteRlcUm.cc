@@ -30,13 +30,13 @@ simsignal_t LteRlcUm::receivedPacketFromLowerLayerSignal_ = registerSignal("rece
 simsignal_t LteRlcUm::sentPacketToUpperLayerSignal_ = registerSignal("sentPacketToUpperLayer");
 simsignal_t LteRlcUm::sentPacketToLowerLayerSignal_ = registerSignal("sentPacketToLowerLayer");
 
-UmTxEntity *LteRlcUm::lookupTxBuffer(NodeDrbId id)
+UmTxEntity *LteRlcUm::lookupTxBuffer(DrbKey id)
 {
     UmTxEntities::iterator it = txEntities_.find(id);
     return (it != txEntities_.end()) ? it->second : nullptr;
 }
 
-UmTxEntity *LteRlcUm::createTxBuffer(NodeDrbId id, FlowControlInfo *lteInfo)
+UmTxEntity *LteRlcUm::createTxBuffer(DrbKey id, FlowControlInfo *lteInfo)
 {
     if (txEntities_.find(id) != txEntities_.end())
         throw cRuntimeError("RLC-UM connection TX entity for %s already exists", id.str().c_str());
@@ -54,13 +54,13 @@ UmTxEntity *LteRlcUm::createTxBuffer(NodeDrbId id, FlowControlInfo *lteInfo)
 }
 
 
-UmRxEntity *LteRlcUm::lookupRxBuffer(NodeDrbId id)
+UmRxEntity *LteRlcUm::lookupRxBuffer(DrbKey id)
 {
     UmRxEntities::iterator it = rxEntities_.find(id);
     return (it != rxEntities_.end()) ? it->second : nullptr;
 }
 
-UmRxEntity *LteRlcUm::createRxBuffer(NodeDrbId id, FlowControlInfo *lteInfo)
+UmRxEntity *LteRlcUm::createRxBuffer(DrbKey id, FlowControlInfo *lteInfo)
 {
     if (rxEntities_.find(id) != rxEntities_.end())
         throw cRuntimeError("RLC-UM connection RX entity for %s already exists", id.str().c_str());
@@ -111,7 +111,7 @@ void LteRlcUm::handleUpperMessage(cPacket *pktAux)
     auto chunk = pkt->peekAtFront<inet::Chunk>();
     EV << "LteRlcUm::handleUpperMessage - Received packet " << chunk->getClassName() << " from upper layer, size " << pktAux->getByteLength() << "\n";
 
-    NodeDrbId id = ctrlInfoToNodeDrbId(lteInfo.get());
+    DrbKey id = ctrlInfoToNodeDrbId(lteInfo.get());
     UmTxEntity *txbuf = lookupTxBuffer(id);
     if (txbuf == nullptr)
         txbuf = createTxBuffer(id, lteInfo.get());
@@ -164,7 +164,7 @@ void LteRlcUm::handleLowerMessage(cPacket *pktAux)
 
     if (inet::dynamicPtrCast<const LteMacSduRequest>(chunk) != nullptr) {
         // get the corresponding Tx buffer
-        NodeDrbId id = ctrlInfoToNodeDrbId(lteInfo.get());
+        DrbKey id = ctrlInfoToNodeDrbId(lteInfo.get());
         UmTxEntity *txbuf = lookupTxBuffer(id);
         if (txbuf == nullptr)
             txbuf = createTxBuffer(id, lteInfo.get());
@@ -184,7 +184,7 @@ void LteRlcUm::handleLowerMessage(cPacket *pktAux)
 
         // Extract information from fragment
         MacNodeId nodeId = (lteInfo->getDirection() == DL) ? lteInfo->getDestId() : lteInfo->getSourceId();
-        NodeDrbId id = NodeDrbId(nodeId, lteInfo->getDrbId());
+        DrbKey id = DrbKey(nodeId, lteInfo->getDrbId());
         UmRxEntity *rxbuf = lookupRxBuffer(id);
         if (rxbuf == nullptr)
             rxbuf = createRxBuffer(id, lteInfo.get());
