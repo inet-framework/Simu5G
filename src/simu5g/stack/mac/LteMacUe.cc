@@ -247,7 +247,7 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
     // obtain the cid from the packet information
-    MacCid cid = MacCid(lteInfo->getDestId(), lteInfo->getDrbId());
+    MacCid cid = MacCid(lteInfo->getDestId(), drbIdToLcid(lteInfo->getDrbId()));
     ASSERT(connDescOut_.find(cid) != connDescOut_.end());
 
     OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
@@ -545,8 +545,8 @@ void LteMacUe::macPduUnmake(cPacket *cpkt)
         // fill FlowControlInfo from stored descriptors
         auto flowInfo = upPkt->getTag<FlowControlInfo>();
         MacNodeId senderId = userInfo->getSourceId();
-        DrbId drbId = flowInfo->getDrbId();  // DRB ID maps 1:1 to LCID at MAC boundary
-        MacCid cid = MacCid(senderId, drbId);
+        LogicalCid lcid = drbIdToLcid(flowInfo->getDrbId());
+        MacCid cid = MacCid(senderId, lcid);
         ASSERT(connDescIn_.find(cid) != connDescIn_.end());
         upPkt->removeTag<FlowControlInfo>();
         *upPkt->addTag<FlowControlInfo>() = connDescIn_[cid].toFlowControlInfo();

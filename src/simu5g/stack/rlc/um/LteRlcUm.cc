@@ -13,6 +13,7 @@
 #include <inet/common/ProtocolTag_m.h>
 
 #include "simu5g/stack/rlc/um/LteRlcUm.h"
+#include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
@@ -184,7 +185,7 @@ void LteRlcUm::handleLowerMessage(cPacket *pktAux)
 
         // Extract information from fragment
         MacNodeId nodeId = (lteInfo->getDirection() == DL) ? lteInfo->getDestId() : lteInfo->getSourceId();
-        MacCid cid = MacCid(nodeId, lteInfo->getDrbId());
+        MacCid cid = MacCid(nodeId, LteMacBase::drbIdToLcid(lteInfo->getDrbId()));
         UmRxEntity *rxbuf = lookupRxBuffer(cid);
         if (rxbuf == nullptr)
             rxbuf = createRxBuffer(cid, lteInfo.get());

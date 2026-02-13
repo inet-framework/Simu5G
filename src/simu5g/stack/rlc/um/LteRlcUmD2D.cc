@@ -10,6 +10,7 @@
 //
 
 #include "simu5g/stack/rlc/um/LteRlcUmD2D.h"
+#include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/d2dModeSelection/D2DModeSwitchNotification_m.h"
 
 namespace simu5g {
@@ -63,7 +64,7 @@ void LteRlcUmD2D::handleLowerMessage(cPacket *pktAux)
         else { // rx side
             // get the corresponding Rx buffer & call handler
             MacNodeId nodeId = (lteInfo->getDirection() == DL) ? lteInfo->getDestId() : lteInfo->getSourceId();
-            MacCid cid = MacCid(nodeId, lteInfo->getDrbId());
+            MacCid cid = MacCid(nodeId, LteMacBase::drbIdToLcid(lteInfo->getDrbId()));
             UmRxEntity *rxbuf = lookupRxBuffer(cid);
             if (rxbuf == nullptr)
                 rxbuf = createRxBuffer(cid, lteInfo.get());

@@ -191,15 +191,15 @@ void Rrc::createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp)
     // Create MAC incoming connection
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacNodeId senderId = desc.getSourceId();
-    DrbId drbId = desc.getDrbId();
-    MacCid cid = MacCid(senderId, drbId);
+    LogicalCid lcid = LteMacBase::drbIdToLcid(desc.getDrbId());
+    MacCid cid = MacCid(senderId, lcid);
     auto mac = (nodeType==UE && isNrUe(lteInfo->getDestId())) ? nrMacModule.get() : macModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
     mac->createIncomingConnection(cid, desc);
 
     // RLC: only UM works
     //MacCid cid = ctrlInfoToMacCid(lteInfo);
     MacNodeId nodeIdForCid = (lteInfo->getDirection() == DL) ? lteInfo->getDestId() : lteInfo->getSourceId();
-    MacCid cid2 = MacCid(nodeIdForCid, lteInfo->getDrbId());
+    MacCid cid2 = MacCid(nodeIdForCid, LteMacBase::drbIdToLcid(lteInfo->getDrbId()));
     auto rlcUm = (nodeType==UE && isNrUe(lteInfo->getDestId())) ? nrRlcUmModule.get() : rlcUmModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
     rlcUm->createRxBuffer(cid2, lteInfo);
 
@@ -224,13 +224,13 @@ void Rrc::createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp)
     // Create MAC outgoing connection
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacNodeId destId = desc.getDestId();
-    DrbId drbId = desc.getDrbId();
-    MacCid cid = MacCid(destId, drbId);
+    LogicalCid lcid = LteMacBase::drbIdToLcid(desc.getDrbId());
+    MacCid cid = MacCid(destId, lcid);
     auto mac = (nodeType==UE && isNrUe(lteInfo->getSourceId())) ? nrMacModule.get() : macModule.get();
     mac->createOutgoingConnection(cid, desc);
 
     // RLC: only UM works
-    MacCid cid2 = ctrlInfoToMacCid(lteInfo);
+    MacCid cid2 = ctrlInfoToMacCid(lteInfo);  // TODO: ctrlInfoToMacCid should use drbIdToLcid internally
     auto rlcUm = (nodeType==UE && isNrUe(lteInfo->getSourceId())) ? nrRlcUmModule.get() : rlcUmModule.get();
     rlcUm->createTxBuffer(cid2, lteInfo);
 

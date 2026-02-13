@@ -634,8 +634,8 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
         // fill FlowControlInfo from stored descriptors
         auto flowInfo = upPkt->getTag<FlowControlInfo>();
         MacNodeId senderId = userInfo->getSourceId();
-        DrbId drbId = flowInfo->getDrbId();  // DRB ID maps 1:1 to LCID at MAC boundary
-        MacCid cid = MacCid(senderId, drbId);
+        LogicalCid lcid = drbIdToLcid(flowInfo->getDrbId());
+        MacCid cid = MacCid(senderId, lcid);
         ASSERT(connDescIn_.find(cid) != connDescIn_.end());
         upPkt->removeTag<FlowControlInfo>();
         *upPkt->addTag<FlowControlInfo>() = connDescIn_[cid].toFlowControlInfo();
@@ -727,7 +727,7 @@ void LteMacEnb::handleUpperMessage(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTag<FlowControlInfo>();
-    MacCid cid = MacCid(lteInfo->getDestId(), lteInfo->getDrbId());
+    MacCid cid = MacCid(lteInfo->getDestId(), drbIdToLcid(lteInfo->getDrbId()));
 
     bool isLteRlcPduNewData = (pkt->findTag<LteRlcNewDataTag>() != nullptr);
 
