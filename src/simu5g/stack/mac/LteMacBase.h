@@ -226,13 +226,13 @@ class LteMacBase : public cSimpleModule
      * Maps a DRB ID to the corresponding Logical Channel ID.
      * Currently a 1:1 mapping.
      */
-    static LogicalCid drbIdToLcid(DrbId drbId) { return drbId; }
+    LogicalCid drbIdToLcid(DrbId drbId) { return drbId; }
 
     /**
      * Maps a Logical Channel ID to the corresponding DRB ID.
      * Currently a 1:1 mapping.
      */
-    static DrbId lcidToDrbId(LogicalCid lcid) { return lcid; }
+    DrbId lcidToDrbId(LogicalCid lcid) { return lcid; }
 
     /*
      * Getters

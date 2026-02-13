@@ -191,9 +191,9 @@ void Rrc::createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp)
     // Create MAC incoming connection
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacNodeId senderId = desc.getSourceId();
-    LogicalCid lcid = LteMacBase::drbIdToLcid(desc.getDrbId());
-    MacCid cid = MacCid(senderId, lcid);
     auto mac = (nodeType==UE && isNrUe(lteInfo->getDestId())) ? nrMacModule.get() : macModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
+    LogicalCid lcid = mac->drbIdToLcid(desc.getDrbId());
+    MacCid cid = MacCid(senderId, lcid);
     mac->createIncomingConnection(cid, desc);
 
     // RLC: only UM works
@@ -223,9 +223,9 @@ void Rrc::createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp)
     // Create MAC outgoing connection
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacNodeId destId = desc.getDestId();
-    LogicalCid lcid = LteMacBase::drbIdToLcid(desc.getDrbId());
-    MacCid cid = MacCid(destId, lcid);
     auto mac = (nodeType==UE && isNrUe(lteInfo->getSourceId())) ? nrMacModule.get() : macModule.get();
+    LogicalCid lcid = mac->drbIdToLcid(desc.getDrbId());
+    MacCid cid = MacCid(destId, lcid);
     mac->createOutgoingConnection(cid, desc);
 
     // RLC: only UM works
