@@ -56,8 +56,7 @@ simple LtePdcpBase like ILtePdcp
         //#
         //# Data Ports
 
-        inout TM_Sap[];            // Transparent Mode SAP
-        inout UM_Sap[];            // Unacknowledged Mode SAP
-        inout AM_Sap[];            // Acknowledged Mode SAP
+        input rlcIn[];             // from RLC layer (array for dual connectivity)
+        output rlcOut[];           // to RLC layer (array for dual connectivity)
 }
 
