@@ -74,10 +74,10 @@ struct ConnectionKeyHash {
  * - Binding the Local IP Address of this Terminal with
  *   its module id (MacNodeId) by informing these details
  *   to the oracle.
- * - Assign a Logical Connection IDentifier (LCID)
+ * - Assign a Data Radio Bearer IDentifier (DRB ID)
  *   for each connection request (coming from PDCP).
  *
- * The couple < MacNodeId, LogicalCID > constitutes the CID,
+ * The couple < MacNodeId, DRB ID > constitutes the CID,
  * that uniquely identifies a connection in the whole network.
  *
  */
@@ -95,11 +95,11 @@ class LtePdcpBase : public cSimpleModule
     inet::ModuleRefByPar<PacketFlowObserverBase> packetFlowObserver_;
     inet::ModuleRefByPar<PacketFlowObserverBase> NRpacketFlowObserver_;
 
-    // Connection Identifier
-    LogicalCid lcid_ = 1;
+    // DRB ID counter for assigning new DRB IDs
+    DrbId drbId_ = 1;
 
     // Hash Table used for CID <-> Connection mapping
-    std::unordered_map<ConnectionKey, LogicalCid, ConnectionKeyHash> lcidTable_;
+    std::unordered_map<ConnectionKey, DrbId, ConnectionKeyHash> drbIdTable_;
 
     // Identifier for this node
     MacNodeId nodeId_;
@@ -228,13 +228,13 @@ class LtePdcpBase : public cSimpleModule
     virtual MacNodeId getNrNodeId() { return nodeId_; }
 
     /**
-     * lookupOrAssignLcid(): Looks up an existing LCID for the given connection key,
+     * lookupOrAssignDrbId(): Looks up an existing DRB ID for the given connection key,
      * or assigns a new one if not found.
      *
      * @param key Connection key containing source/destination addresses, ToS, and direction
-     * @return LogicalCid for the connection
+     * @return DrbId for the connection
      */
-    LogicalCid lookupOrAssignLcid(const ConnectionKey& key);
+    DrbId lookupOrAssignDrbId(const ConnectionKey& key);
 
     /*
      * Functions to be implemented from derived classes
@@ -264,7 +264,7 @@ class LtePdcpBase : public cSimpleModule
      * - direction
      * - application, traffic
      * - rlcType
-     * - LCID
+     * - DRB ID
      *
      * Returns the (nodeId,LCID) pair that identifies the connection for the packet.
      */

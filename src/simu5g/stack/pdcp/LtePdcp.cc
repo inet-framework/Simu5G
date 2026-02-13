@@ -67,16 +67,16 @@ LteRlcType LtePdcpBase::getRlcType(LteTrafficClass trafficCategory)
     }
 }
 
-LogicalCid LtePdcpBase::lookupOrAssignLcid(const ConnectionKey& key)
+DrbId LtePdcpBase::lookupOrAssignDrbId(const ConnectionKey& key)
 {
-    auto it = lcidTable_.find(key);
-    if (it != lcidTable_.end())
+    auto it = drbIdTable_.find(key);
+    if (it != drbIdTable_.end())
         return it->second;
     else {
-        LogicalCid lcid = lcid_++;
-        lcidTable_[key] = lcid;
-        EV << "Connection not found, new CID created with LCID " << lcid << "\n";
-        return lcid;
+        DrbId drbId = drbId_++;
+        drbIdTable_[key] = drbId;
+        EV << "Connection not found, new CID created with DRB ID " << drbId << "\n";
+        return drbId;
     }
 }
 
@@ -111,10 +111,10 @@ void LtePdcpBase::analyzePacket(inet::Packet *pkt)
 
     // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
     ConnectionKey key{srcAddr, destAddr, typeOfService, 0xFFFF};
-    LogicalCid lcid = lookupOrAssignLcid(key);
+    DrbId drbId = lookupOrAssignDrbId(key);
 
-    // assign LCID and node IDs
-    lteInfo->setDrbId(lcid);
+    // assign DRB ID and node IDs
+    lteInfo->setDrbId(drbId);
     lteInfo->setSourceId(nodeId_);
     lteInfo->setDestId(destId);
 
@@ -336,7 +336,7 @@ void LtePdcpBase::initialize(int stage)
 
         // TODO WATCH_MAP(gatemap_);
         WATCH(nodeId_);
-        WATCH(lcid_);
+        WATCH(drbId_);
     }
 }
 

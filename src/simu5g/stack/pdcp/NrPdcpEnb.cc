@@ -95,10 +95,10 @@ void NrPdcpEnb::analyzePacket(inet::Packet *pkt)
         lteInfo->setDestId(binder_->getNrMacNodeId(destAddr)); // use NR nodeId of the UE
     }
 
-    // assign LCID
+    // assign DRB ID
     ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
-    LogicalCid lcid = lookupOrAssignLcid(key);
-    lteInfo->setDrbId(lcid);
+    DrbId drbId = lookupOrAssignDrbId(key);
+    lteInfo->setDrbId(drbId);
 }
 
 void NrPdcpEnb::fromLowerLayer(cPacket *pktAux)

@@ -52,10 +52,10 @@ void LtePdcpEnbD2D::analyzePacket(inet::Packet *pkt)
     lteInfo->setD2dTxPeerId(NODEID_NONE);
     lteInfo->setD2dRxPeerId(NODEID_NONE);
 
-    // assign LCID
+    // assign DRB ID
     ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
-    LogicalCid lcid = lookupOrAssignLcid(key);
-    lteInfo->setDrbId(lcid);
+    DrbId drbId = lookupOrAssignDrbId(key);
+    lteInfo->setDrbId(drbId);
 
     lteInfo->setSourceId(nodeId_);
 

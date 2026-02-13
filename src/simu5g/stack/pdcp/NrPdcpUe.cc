@@ -124,12 +124,12 @@ void NrPdcpUe::analyzePacket(inet::Packet *pkt)
     else
         lteInfo->setDestId(getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId()));
 
-    // assign LCID
+    // assign DRB ID
     ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
-    LogicalCid lcid = lookupOrAssignLcid(key);
-    lteInfo->setDrbId(lcid);
+    DrbId drbId = lookupOrAssignDrbId(key);
+    lteInfo->setDrbId(drbId);
 
-    EV << "NrPdcpUe : Assigned Lcid: " << lcid << "\n";
+    EV << "NrPdcpUe : Assigned DRB ID: " << drbId << "\n";
     EV << "NrPdcpUe : Assigned Node ID: " << nodeId << "\n";
 
     // get effective next hop dest ID
