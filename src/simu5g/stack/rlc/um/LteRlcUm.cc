@@ -42,7 +42,7 @@ UmTxEntity *LteRlcUm::createTxBuffer(NodeDrbId id, FlowControlInfo *lteInfo)
         throw cRuntimeError("RLC-UM connection TX entity for %s already exists", id.str().c_str());
 
     std::stringstream buf;
-    buf << "UmTxEntity DrbId: " << id.getDrbId() << " id: " << id.asPackedInt();
+    buf << "UmTxEntity Lcid: " << id.getDrbId() << " cid: " << id.asPackedInt();
     UmTxEntity *txEnt = check_and_cast<UmTxEntity *>(txEntityModuleType_->createScheduleInit(buf.str().c_str(), getParentModule()));
     txEntities_[id] = txEnt;
 
@@ -66,7 +66,7 @@ UmRxEntity *LteRlcUm::createRxBuffer(NodeDrbId id, FlowControlInfo *lteInfo)
         throw cRuntimeError("RLC-UM connection RX entity for %s already exists", id.str().c_str());
 
     std::stringstream buf;
-    buf << "UmRxEntity DrbId: " << id.getDrbId() << " id: " << id.asPackedInt();
+    buf << "UmRxEntity Lcid: " << id.getDrbId() << " cid: " << id.asPackedInt();
     UmRxEntity *rxEnt = check_and_cast<UmRxEntity *>(rxEntityModuleType_->createScheduleInit(buf.str().c_str(), getParentModule()));
     rxEntities_[id] = rxEnt;
 

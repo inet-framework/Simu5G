@@ -35,7 +35,7 @@ AmTxQueue *LteRlcAm::lookupTxBuffer(NodeDrbId id)
 AmTxQueue *LteRlcAm::createTxBuffer(NodeDrbId id)
 {
     std::stringstream buf;
-    buf << "AmTxQueue DrbId: " << id.getDrbId() << " id: " << id.asPackedInt();
+    buf << "AmTxQueue Lcid: " << id.getDrbId() << " cid: " << id.asPackedInt();
 
     AmTxQueue *txbuf = check_and_cast<AmTxQueue *>(txEntityModuleType_->createScheduleInit(buf.str().c_str(), getParentModule()));
     txBuffers_[id] = txbuf;
@@ -54,7 +54,7 @@ AmRxQueue *LteRlcAm::lookupRxBuffer(NodeDrbId id)
 AmRxQueue *LteRlcAm::createRxBuffer(NodeDrbId id)
 {
     std::stringstream buf;
-    buf << "AmRxQueue DrbId: " << id.getDrbId() << " id: " << id.asPackedInt();
+    buf << "AmRxQueue Lcid: " << id.getDrbId() << " cid: " << id.asPackedInt();
 
     AmRxQueue *rxbuf = check_and_cast<AmRxQueue *>(rxEntityModuleType_->createScheduleInit(buf.str().c_str(), getParentModule()));
     rxBuffers_[id] = rxbuf;
