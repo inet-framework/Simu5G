@@ -1,0 +1,5 @@
+# Project Rules
+
+- When asked to refactor, first read `.cascade/refactoring.md`
+- When running tests or debugging, read `.cascade/fingerprints.md`
+- For coding style and error handling, read `.cascade/coding_guidelines.md`
