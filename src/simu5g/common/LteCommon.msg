@@ -115,6 +115,44 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const MacCid& cid) { return os << cid.str(); }
 };
 
+/**
+ * Node + DRB ID Identifier class for PDCP/RLC layers.
+ * Semantically equivalent to MacCid but uses DrbId terminology.
+ * Can be used as std::map key and provides string representation.
+ */
+class NodeDrbId
+{
+private:
+    MacNodeId nodeId_;
+    DrbId drbId_;
+
+public:
+    // Default constructor
+    NodeDrbId() : nodeId_(static_cast<MacNodeId>(0)), drbId_(0) {}
+
+    // Constructor
+    NodeDrbId(MacNodeId nodeId, DrbId drbId) : nodeId_(nodeId), drbId_(drbId) {}
+
+    // Getters
+    MacNodeId getNodeId() const { return nodeId_; }
+    DrbId getDrbId() const { return drbId_; }
+    unsigned int asPackedInt() const { return (num(nodeId_) << 16) | drbId_; }
+
+    // Check if this is an empty/invalid NodeDrbId (default constructed)
+    bool isEmpty() const { return num(nodeId_) == 0 && drbId_ == 0; }
+
+    // String representation
+    std::string str() const { return "NodeDrbId(nodeId=" + std::to_string(num(nodeId_)) + ", drbId=" + std::to_string(drbId_) + ")"; }
+
+    // Comparison operators for std::map compatibility
+    bool operator<(const NodeDrbId& other) const { return asPackedInt() < other.asPackedInt(); }
+    bool operator==(const NodeDrbId& other) const  { return nodeId_ == other.nodeId_ && drbId_ == other.drbId_; }
+    bool operator!=(const NodeDrbId& other) const { return nodeId_ != other.nodeId_ || drbId_ != other.drbId_; }
+
+    // Stream output operator
+    friend std::ostream& operator<<(std::ostream& os, const NodeDrbId& id) { return os << id.str(); }
+};
+
 }}
 
 class MacCellId {
@@ -182,6 +220,13 @@ class DrbId {
 /// Connection Identifier: <MacNodeId,LogicalCid>
 class MacCid {
     @existingClass; // class MacCid with separate nodeId and lcid fields
+    @descriptor(false);
+    @opaque;
+};
+
+/// Node + DRB ID Identifier: <MacNodeId, DrbId> for PDCP/RLC layers
+class NodeDrbId {
+    @existingClass; // class NodeDrbId with separate nodeId and drbId fields
     @descriptor(false);
     @opaque;
 };
