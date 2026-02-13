@@ -440,7 +440,7 @@ void NrMacUe::macPduMake(MacCid cid)
 
                     auto macPdu = macPkt->removeAtFront<LteMacPdu>();
 
-                    macPdu->pushSdu(pkt);
+                    macPdu->pushSdu(pkt, destCid.getLcid());
                     macPkt->insertAtFront(macPdu);
                     sduPerCid--;
                 }
