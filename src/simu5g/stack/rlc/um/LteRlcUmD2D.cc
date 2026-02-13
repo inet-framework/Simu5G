@@ -63,7 +63,7 @@ void LteRlcUmD2D::handleLowerMessage(cPacket *pktAux)
         else { // rx side
             // get the corresponding Rx buffer & call handler
             MacNodeId nodeId = (lteInfo->getDirection() == DL) ? lteInfo->getDestId() : lteInfo->getSourceId();
-            MacCid cid = MacCid(nodeId, lteInfo->getLcid());
+            MacCid cid = MacCid(nodeId, lteInfo->getDrbId());
             UmRxEntity *rxbuf = lookupRxBuffer(cid);
             if (rxbuf == nullptr)
                 rxbuf = createRxBuffer(cid, lteInfo.get());

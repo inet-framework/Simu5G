@@ -55,7 +55,7 @@ void LtePdcpEnbD2D::analyzePacket(inet::Packet *pkt)
     // assign LCID
     ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
     LogicalCid lcid = lookupOrAssignLcid(key);
-    lteInfo->setLcid(lcid);
+    lteInfo->setDrbId(lcid);
 
     lteInfo->setSourceId(nodeId_);
 

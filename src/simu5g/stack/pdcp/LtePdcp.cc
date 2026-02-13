@@ -114,7 +114,7 @@ void LtePdcpBase::analyzePacket(inet::Packet *pkt)
     LogicalCid lcid = lookupOrAssignLcid(key);
 
     // assign LCID and node IDs
-    lteInfo->setLcid(lcid);
+    lteInfo->setDrbId(lcid);
     lteInfo->setSourceId(nodeId_);
     lteInfo->setDestId(destId);
 
@@ -135,7 +135,7 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
     auto lteInfo = pkt->getTag<FlowControlInfo>();
     verifyControlInfo(lteInfo.get());
 
-    MacCid cid = MacCid(lteInfo->getDestId(), lteInfo->getLcid());
+    MacCid cid = MacCid(lteInfo->getDestId(), lteInfo->getDrbId());
 
     if (isDualConnectivityEnabled() && lteInfo->getMulticastGroupId() == NODEID_NONE) {
         // Handle DC setup: Assume packet arrives in Master nodeB (LTE), and wants to use Secondary nodeB (NR).
@@ -146,13 +146,13 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
             // use another CID whose technology matches the nodeB
             MacNodeId otherDestId = binder_->getUeNodeId(lteInfo->getDestId(), !isNrUe(lteInfo->getDestId()));
             ASSERT(otherDestId != NODEID_NONE);
-            cid = MacCid(otherDestId, lteInfo->getLcid());
+            cid = MacCid(otherDestId, lteInfo->getDrbId());
         }
 
         // Handle DC setup on UE side: both legs should use the *same* key for entity lookup
         if (getNodeTypeById(nodeId_) == UE && getNodeTypeById(lteInfo->getDestId()) == NODEB)  {
             MacNodeId lteNodeB = binder_->getServingNode(nodeId_);
-            cid = MacCid(lteNodeB, lteInfo->getLcid());
+            cid = MacCid(lteNodeB, lteInfo->getDrbId());
         }
     }
 
@@ -185,7 +185,7 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
     ASSERT(pkt->findTag<PdcpTrackingTag>() == nullptr);
 
     auto lteInfo = pkt->getTag<FlowControlInfo>();
-    MacCid cid = MacCid(lteInfo->getSourceId(), lteInfo->getLcid());
+    MacCid cid = MacCid(lteInfo->getSourceId(), lteInfo->getDrbId());
 
     if (isDualConnectivityEnabled()) {
         // Handle DC setup: Assume packet arrives at this Master nodeB (LTE) from Secondary (NR) over X2.
@@ -195,13 +195,13 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
             // use another CID whose technology matches the nodeB
             MacNodeId otherSourceId = binder_->getUeNodeId(lteInfo->getSourceId(), !isNrUe(lteInfo->getSourceId()));
             ASSERT(otherSourceId != NODEID_NONE);
-            cid = MacCid(otherSourceId, lteInfo->getLcid());
+            cid = MacCid(otherSourceId, lteInfo->getDrbId());
         }
 
         // Handle DC setup on UE side: both legs should use the *same* key for entity lookup
         if (getNodeTypeById(nodeId_) == UE && getNodeTypeById(lteInfo->getSourceId()) == NODEB)  {
             MacNodeId lteNodeB = binder_->getServingNode(nodeId_);
-            cid = MacCid(lteNodeB, lteInfo->getLcid());
+            cid = MacCid(lteNodeB, lteInfo->getDrbId());
         }
     }
 
@@ -225,7 +225,7 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
             }
 
             if (otherSrcId != NODEID_NONE && otherSrcId != lteInfo->getSourceId()) {
-                cid = MacCid(otherSrcId, lteInfo->getLcid());
+                cid = MacCid(otherSrcId, lteInfo->getDrbId());
 
                 EV << "LtePdcp: UE DC RX - Using alternate base station ID " << otherSrcId
                    << " instead of " << lteInfo->getSourceId()

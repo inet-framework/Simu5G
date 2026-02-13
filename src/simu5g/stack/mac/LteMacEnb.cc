@@ -634,7 +634,7 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
         // fill FlowControlInfo from stored descriptors
         auto flowInfo = upPkt->getTag<FlowControlInfo>();
         MacNodeId senderId = userInfo->getSourceId();
-        LogicalCid lcid = flowInfo->getLcid();
+        LogicalCid lcid = flowInfo->getDrbId();
         MacCid cid = MacCid(senderId, lcid);
         ASSERT(connDescIn_.find(cid) != connDescIn_.end());
         upPkt->removeTag<FlowControlInfo>();
@@ -710,7 +710,7 @@ bool LteMacEnb::bufferizePacket(cPacket *cpkt)
         // discard the RLC
         if (packetFlowObserver_ != nullptr) {
             unsigned int rlcSno = check_and_cast<LteRlcUmDataPdu *>(pkt)->getPduSequenceNumber();
-            packetFlowObserver_->discardRlcPdu(lteInfo->getLcid(), rlcSno);
+            packetFlowObserver_->discardRlcPdu(lteInfo->getDrbId(), rlcSno);
         }
 
         delete pkt;
@@ -727,7 +727,7 @@ void LteMacEnb::handleUpperMessage(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTag<FlowControlInfo>();
-    MacCid cid = MacCid(lteInfo->getDestId(), lteInfo->getLcid());
+    MacCid cid = MacCid(lteInfo->getDestId(), lteInfo->getDrbId());
 
     bool isLteRlcPduNewData = (pkt->findTag<LteRlcNewDataTag>() != nullptr);
 

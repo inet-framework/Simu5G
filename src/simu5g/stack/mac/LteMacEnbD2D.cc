@@ -142,7 +142,7 @@ void LteMacEnbD2D::macPduUnmake(cPacket *cpkt)
         // fill FlowControlInfo from stored descriptors
         auto flowInfo = upPkt->getTag<FlowControlInfo>();
         MacNodeId senderId = userInfo->getSourceId();
-        LogicalCid lcid = flowInfo->getLcid();
+        LogicalCid lcid = flowInfo->getDrbId();
         MacCid cid = MacCid(senderId, lcid);
         ASSERT(connDescIn_.find(cid) != connDescIn_.end());
         upPkt->removeTag<FlowControlInfo>();

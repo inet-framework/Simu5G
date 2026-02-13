@@ -114,7 +114,7 @@ void PacketFlowObserverUe::insertPdcpSdu(inet::Packet *pdcpPkt)
 {
     EV << pfmType << "::insertPdcpSdu" << endl;
     auto lteInfo = pdcpPkt->getTagForUpdate<FlowControlInfo>();
-    LogicalCid lcid = lteInfo->getLcid();
+    LogicalCid lcid = lteInfo->getDrbId();
 
     if (connectionMap_.find(lcid) == connectionMap_.end())
         initLcid(lcid, lteInfo->getSourceId());
@@ -432,7 +432,7 @@ void PacketFlowObserverUe::discardMacPdu(const inet::Ptr<const LteMacPdu> macPdu
     for (int i = 0; i < len; ++i) {
         auto rlcPdu = macPdu->getSdu(i);
         auto lteInfo = rlcPdu.getTag<FlowControlInfo>();
-        int lcid = lteInfo->getLcid();
+        int lcid = lteInfo->getDrbId();
 
         auto cit = connectionMap_.find(lcid);
         if (cit == connectionMap_.end()) {

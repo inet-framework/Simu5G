@@ -107,7 +107,7 @@ void PacketFlowObserverEnb::initPdcpStatus(StatusDescriptor *desc, unsigned int 
 void PacketFlowObserverEnb::insertPdcpSdu(inet::Packet *pdcpPkt)
 {
     auto lteInfo = pdcpPkt->getTagForUpdate<FlowControlInfo>();
-    LogicalCid lcid = lteInfo->getLcid();
+    LogicalCid lcid = lteInfo->getDrbId();
 
     /*
      * check here if the LCID relative to this pdcp pdu is
@@ -552,7 +552,7 @@ void PacketFlowObserverEnb::discardMacPdu(const inet::Ptr<const LteMacPdu> macPd
     for (int i = 0; i < len; ++i) {
         auto rlcPdu = macPdu->getSdu(i);
         auto lteInfo = rlcPdu.getTag<FlowControlInfo>();
-        int lcid = lteInfo->getLcid();
+        int lcid = lteInfo->getDrbId();
 
         auto cit = connectionMap_.find(lcid);
         if (cit == connectionMap_.end()) {

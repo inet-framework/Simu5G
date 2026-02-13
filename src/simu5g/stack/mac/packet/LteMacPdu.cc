@@ -40,7 +40,7 @@ void LteMacPdu::forEachChild(cVisitor *v)
 
 void LteMacPdu::pushSdu(Packet *pkt)
 {
-    LogicalCid lcid = pkt->getTag<FlowControlInfo>()->getLcid();
+    LogicalCid lcid = pkt->getTag<FlowControlInfo>()->getDrbId();
     pkt->clearTags();
 
     appendLcid(lcid);
@@ -55,7 +55,7 @@ Packet* LteMacPdu::popSdu()
 {
     Packet *pkt = removeSdu(0);
     LogicalCid lcid = getLcid(0);
-    pkt->addTag<FlowControlInfo>()->setLcid(lcid);
+    pkt->addTag<FlowControlInfo>()->setDrbId(lcid);
 
     eraseSdu(0);
     eraseLcid(0);

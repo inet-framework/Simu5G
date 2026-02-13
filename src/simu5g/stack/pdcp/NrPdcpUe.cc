@@ -127,7 +127,7 @@ void NrPdcpUe::analyzePacket(inet::Packet *pkt)
     // assign LCID
     ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
     LogicalCid lcid = lookupOrAssignLcid(key);
-    lteInfo->setLcid(lcid);
+    lteInfo->setDrbId(lcid);
 
     EV << "NrPdcpUe : Assigned Lcid: " << lcid << "\n";
     EV << "NrPdcpUe : Assigned Node ID: " << nodeId << "\n";

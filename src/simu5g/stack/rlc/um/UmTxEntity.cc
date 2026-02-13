@@ -196,7 +196,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
     if (flowControlInfo_->getDirection() == DL || flowControlInfo_->getDirection() == UL) {
         // add RLC PDU to packetFlowObserver
         if (len != 0 && packetFlowObserver_ != nullptr) {
-            LogicalCid lcid = flowControlInfo_->getLcid();
+            LogicalCid lcid = flowControlInfo_->getDrbId();
 
             /*
              * Burst management.
