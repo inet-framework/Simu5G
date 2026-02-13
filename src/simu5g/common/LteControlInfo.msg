@@ -83,6 +83,15 @@ cplusplus(FlowDescriptor) {{
     }
 }}
 
+struct FeedbackRequest
+{
+    bool request;
+    FeedbackType type;
+    TxMode txMode;
+    bool dasAware;
+    RbAllocationType rbAllocationType;
+};
+
 //
 // @class UserControlInfo
 // @brief contains information flowing from Mac to Phy
