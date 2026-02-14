@@ -73,7 +73,8 @@ DrbId LtePdcpBase::lookupOrAssignDrbId(const ConnectionKey& key)
     if (it != drbIdTable_.end())
         return it->second;
     else {
-        DrbId drbId = drbId_++;
+        DrbId drbId = drbId_;
+        drbId_ = DrbId(num(drbId_) + 1);
         drbIdTable_[key] = drbId;
         EV << "Connection not found, new CID created with DRB ID " << drbId << "\n";
         return drbId;

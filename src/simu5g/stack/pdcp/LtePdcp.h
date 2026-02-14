@@ -96,7 +96,7 @@ class LtePdcpBase : public cSimpleModule
     inet::ModuleRefByPar<PacketFlowObserverBase> NRpacketFlowObserver_;
 
     // DRB ID counter for assigning new DRB IDs
-    DrbId drbId_ = 1;
+    DrbId drbId_ = DrbId(1);
 
     // Hash Table used for CID <-> Connection mapping
     std::unordered_map<ConnectionKey, DrbId, ConnectionKeyHash> drbIdTable_;
