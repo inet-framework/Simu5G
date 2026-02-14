@@ -68,7 +68,7 @@ class FlowControlInfo extends LteControlInfo {
 }
 
 cplusplus (FlowControlInfo::setDrbId) {{
-    ASSERT(num(drbId) <= 63);
+    //ASSERT(num(drbId) >= 1 && num(drbId) <= 32); // NR has 32 DRBs (LTE has 10 DRBs)
 }}
 
 // WIP: Describes logical channels (identified by remote node + LCID) in MAC
