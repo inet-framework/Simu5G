@@ -94,10 +94,10 @@ void LteMaxCi::prepareSchedule()
             int bgUeIndex = *it;
             MacNodeId bgUeId = MacNodeId(BGUE_MIN_ID + bgUeIndex);
 
-            // The cid for a background UE is a 32-bit integer composed as:
-            // - the most significant 16 bits are set to the background UE id (BGUE_MIN_ID+index)
-            // - the least significant 16 bits are set to 0 (lcid=0)
-            MacCid bgCid = MacCid(bgUeId, LogicalCid(0));
+            // The cid for a background UE is composed of:
+            // - the background UE id (BGUE_MIN_ID+index)
+            // - LCID_NONE (background UEs don't have a real logical channel)
+            MacCid bgCid = MacCid(bgUeId, LCID_NONE);
 
             int bytesPerBlock = bgTrafficManager->getBackloggedUeBytesPerBlock(bgUeId, direction_);
 

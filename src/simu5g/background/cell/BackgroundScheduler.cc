@@ -217,8 +217,8 @@ void BackgroundScheduler::updateAllocation(Direction dir)
 
         // the cid for a background UE is composed of:
         // - the background UE id (BGUE_MIN_ID+index)
-        // - lcid=0
-        bgCid = MacCid(bgUeId, LogicalCid(0));
+        // - LCID_NONE (background UEs don't have a real logical channel)
+        bgCid = MacCid(bgUeId, LCID_NONE);
 
         bytesPerBlock = bgTrafficManager_->getBackloggedUeBytesPerBlock(bgUeId, dir);
 
