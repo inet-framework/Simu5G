@@ -110,7 +110,7 @@ void LtePdcpBase::analyzePacket(inet::Packet *pkt)
     MacNodeId destId = getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());
 
     // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
-    ConnectionKey key{srcAddr, destAddr, typeOfService, 0xFFFF};
+    ConnectionKey key{srcAddr, destAddr, typeOfService, UNKNOWN_DIRECTION};
     DrbId drbId = lookupOrAssignDrbId(key);
 
     // assign DRB ID and node IDs
@@ -161,7 +161,7 @@ void LtePdcpBase::fromDataPort(cPacket *pktAux)
     // get the PDCP entity for this DRB ID and process the packet
     EV << "fromDataPort in " << getFullPath() << " event #" << getSimulation()->getEventNumber()
        << ": Processing packet " << pkt->getName() << " src=" << lteInfo->getSourceId() << " dest=" << lteInfo->getDestId()
-       << " multicast=" << lteInfo->getMulticastGroupId() << " direction=" << dirToA((Direction)lteInfo->getDirection())
+       << " multicast=" << lteInfo->getMulticastGroupId() << " direction=" << dirToA(lteInfo->getDirection())
        << " ---> " << id << (entity == nullptr ? " (NEW)" : " (existing)") << std::endl;
 
     if (entity == nullptr) {
@@ -238,7 +238,7 @@ void LtePdcpBase::fromLowerLayer(cPacket *pktAux)
 
     EV << "fromLowerLayer in " << getFullPath() << " event #" << getSimulation()->getEventNumber()
        <<  ": Processing packet " << pkt->getName() << " src=" << lteInfo->getSourceId() << " dest=" << lteInfo->getDestId()
-       << " multicast=" << lteInfo->getMulticastGroupId() << " direction=" << dirToA((Direction)lteInfo->getDirection())
+       << " multicast=" << lteInfo->getMulticastGroupId() << " direction=" << dirToA(lteInfo->getDirection())
        << " ---> " << id << (entity == nullptr ? " (NEW)" : " (existing)") << std::endl;
 
     ASSERT(entity != nullptr);

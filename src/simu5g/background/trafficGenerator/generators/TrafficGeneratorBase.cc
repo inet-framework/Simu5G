@@ -152,7 +152,7 @@ void TrafficGeneratorBase::handleMessage(cMessage *msg)
         }
         else if (!strcmp(msg->getName(), "rtxNotification")) {
             RtxNotification *rtxNotification = check_and_cast<RtxNotification *>(msg);
-            Direction dir = (Direction)rtxNotification->getDirection();
+            Direction dir = rtxNotification->getDirection();
             bufferedBytesRtx_[dir] += rtxNotification->getBytes();
             if (rtxNotification->getBytes() == bufferedBytesRtx_[dir]) {
                 // the UE has become active, signal to the manager
