@@ -24,6 +24,7 @@ module NrNicEnb extends LteNicEnbD2D
     parameters:
         pdcp.typename = default("NrPdcpEnb");
         mac.typename = default("NrMacGnb");
+        amc.typename = default("NrAmc");
         lteChannelModelType = default("NrChannelModel_3GPP38_901");
         @display("bgb=694,443");
         packetFlowObserver.typename = default("NrPacketFlowObserverGnb");

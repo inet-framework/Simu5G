@@ -16,6 +16,7 @@ import simu5g.background.trafficGenerator.BackgroundTrafficGenerator;
 import simu5g.stack.compManager.ILteCompManager;
 import simu5g.stack.dualConnectivityManager.DualConnectivityManager;
 import simu5g.stack.handoverManager.LteHandoverManager;
+import simu5g.stack.mac.amc.ILteAmc;
 import simu5g.x2.LteX2Manager;
 
 
@@ -37,8 +38,16 @@ module LteNicEnb extends LteNicBase
         d2dCapable = default(false);          // DO NOT CHANGE
         bool compEnabled = default(false);
         *.handoverManagerModule = "^.handoverManager";
+        amc.cellInfoModule = default(absPath(".cellInfo"));
 
     submodules:
+        //#
+        //# AMC module
+        //#
+        amc: <default("LteAmc")> like ILteAmc {
+            @display("p=250,307");
+        }
+
         //#
         //# X2 manager
         //#
