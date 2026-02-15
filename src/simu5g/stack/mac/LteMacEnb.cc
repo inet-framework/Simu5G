@@ -26,7 +26,6 @@
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
 #include "simu5g/stack/mac/allocator/LteAllocationModule.h"
 #include "simu5g/stack/mac/amc/LteAmc.h"
-#include "simu5g/stack/mac/amc/NrAmc.h"
 #include "simu5g/stack/mac/amc/UserTxParams.h"
 #include "simu5g/stack/mac/packet/LteRac_m.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
@@ -57,7 +56,6 @@ LteMacEnb::LteMacEnb() :
 
 LteMacEnb::~LteMacEnb()
 {
-    delete amc_;
     delete enbSchedulerDl_;
     delete enbSchedulerUl_;
 
@@ -145,31 +143,8 @@ void LteMacEnb::initialize(int stage)
         binder_->addEnbInfo(info);
     }
     else if (stage == INITSTAGE_SIMU5G_AMC_SETUP) {
-        // Create and initialize AMC module
-        std::string amcType = par("amcType").stdstringValue();
-        int numAntennas = getNumAntennas();
-        if (amcType == "NrAmc")
-            amc_ = new NrAmc(this, binder_, cellInfo_, numAntennas);
-        else if (amcType == "LteAmc")
-            amc_ = new LteAmc(this, binder_, cellInfo_, numAntennas);
-        else
-            throw cRuntimeError("The amcType '%s' not recognized", amcType.c_str());
-
-        std::string modeString = par("pilotMode").stdstringValue();
-
-        // TODO use cEnum::get("simu5g::PilotComputationModes")->lookup(modeString);
-        if (modeString == "AVG_CQI")
-            amc_->setPilotMode(AVG_CQI);
-        else if (modeString == "MAX_CQI")
-            amc_->setPilotMode(MAX_CQI);
-        else if (modeString == "MIN_CQI")
-            amc_->setPilotMode(MIN_CQI);
-        else if (modeString == "MEDIAN_CQI")
-            amc_->setPilotMode(MEDIAN_CQI);
-        else if (modeString == "ROBUST_CQI")
-            amc_->setPilotMode(ROBUST_CQI);
-        else
-            throw cRuntimeError("LteMacEnb::initialize - Unknown Pilot Mode %s \n", modeString.c_str());
+        // Get reference to AMC module (initialized by OMNeT++)
+        amc_.reference(this, "amcModule", true);
     }
     else if (stage == INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION) {
         // Create and initialize MAC Downlink scheduler

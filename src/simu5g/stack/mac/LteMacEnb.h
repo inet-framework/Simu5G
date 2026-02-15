@@ -38,7 +38,7 @@ class LteMacEnb : public LteMacBase
     inet::ModuleRefByPar<CellInfo> cellInfo_;
 
     /// Lte AMC module
-    LteAmc *amc_ = nullptr;
+    inet::ModuleRefByPar<LteAmc> amc_;
 
     /// List of scheduled users (one per carrier) - Downlink
     std::map<GHz, LteMacScheduleList> *scheduleListDl_ = nullptr;
@@ -204,7 +204,7 @@ class LteMacEnb : public LteMacBase
      */
     virtual LteAmc *getAmc()
     {
-        return amc_;
+        return amc_.get();
     }
 
     /**
