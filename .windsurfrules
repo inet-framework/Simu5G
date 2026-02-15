@@ -3,3 +3,18 @@
 - When asked to refactor, first read `.cascade/refactoring.md`
 - When running tests or debugging, read `.cascade/fingerprints.md`
 - For coding style and error handling, read `.cascade/coding_guidelines.md`
+
+# Critical Rules
+
+- **NEVER** make destructive git operations (reset, rebase, force push, etc.)
+  without explicit user consent
+
+- In multi-step refactorings, the .cascade/*.md files for instructions.
+  Then, for **EACH** step:
+
+    0. Consult the .cascade/*.md files for instructions
+    1. Compile in **DEBUG MODE** (`make MODE=debug`)
+    2. Commit the changes
+    3. Run fingerprint tests (`cd tests/fingerprint && ./fingerprints -d`)
+    4. **DO NOT PROCEED** to the next step until all tests pass
+    5. Never update the fingerprint results without explicit user consent
