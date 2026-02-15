@@ -56,4 +56,7 @@ simple LteAmc like ILteAmc
 
         // Reference to the CellInfo module
         string cellInfoModule;
+
+        // Reference to the Binder module
+        string binderModule = default("binder");
 }

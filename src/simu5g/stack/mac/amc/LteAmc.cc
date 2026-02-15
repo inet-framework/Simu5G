@@ -10,6 +10,7 @@
 //
 //
 #include "simu5g/common/LteDefs.h"
+#include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/mac/amc/LteAmc.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 
@@ -171,7 +172,7 @@ void LteAmc::initialize(int stage)
 
     // Get references to other modules
     mac_.reference(this, "macModule", true);
-    binder_ = getBinder();
+    binder_.reference(this, "binderModule", true);
     cellInfo_.reference(this, "cellInfoModule", true);
     numAntennas_ = mac_->getNumAntennas();
 

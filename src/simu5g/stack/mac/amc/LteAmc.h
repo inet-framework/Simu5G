@@ -13,6 +13,7 @@
 #define _LTE_LTEAMC_H_
 
 #include <omnetpp.h>
+#include <inet/common/ModuleRefByPar.h>
 
 #include "simu5g/common/LteDefs.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
@@ -55,9 +56,9 @@ class LteAmc : public cSimpleModule
     void printTxParams(Direction dir, GHz carrierFrequency);
 
   protected:
-    opp_component_ptr<LteMacEnb> mac_;
-    opp_component_ptr<Binder> binder_;
-    opp_component_ptr<CellInfo> cellInfo_;
+    inet::ModuleRefByPar<LteMacEnb> mac_;
+    inet::ModuleRefByPar<Binder> binder_;
+    inet::ModuleRefByPar<CellInfo> cellInfo_;
     AmcPilot *pilot_ = nullptr;
     RbAllocationType allocationType_;
     int numBands_;
