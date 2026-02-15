@@ -13,18 +13,10 @@
 
 namespace simu5g {
 
+Define_Module(NrAmc);
+
 using namespace std;
 using namespace omnetpp;
-
-/********************
-* PUBLIC FUNCTIONS
-********************/
-
-NrAmc::NrAmc(LteMacEnb *mac, Binder *binder, CellInfo *cellInfo, int numAntennas)
-    : LteAmc(mac, binder, cellInfo, numAntennas)
-{
-}
-
 
 unsigned int NrAmc::getSymbolsPerSlot(GHz carrierFrequency, Direction dir)
 {

@@ -38,8 +38,6 @@ class NrAmc : public LteAmc
     NrMcsTable ulNrMcsTable_;
     NrMcsTable d2dNrMcsTable_;
 
-    NrAmc(LteMacEnb *mac, Binder *binder, CellInfo *cellInfo, int numAntennas);
-
     NrMcsElem getMcsElemPerCqi(Cqi cqi, const Direction dir);
 
     unsigned int computeBitsOnNRbs(MacNodeId id, Band b, unsigned int blocks, const Direction dir, GHz carrierFrequency) override;
