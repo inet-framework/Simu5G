@@ -19,6 +19,8 @@
 
 namespace simu5g {
 
+Define_Module(LteAmc);
+
 using namespace omnetpp;
 LteAmc::~LteAmc()
 {
@@ -66,7 +68,7 @@ void LteAmc::printParameters()
 
     EV << "MacNodeId: " << nodeId_ << endl;
     EV << "MacCellId: " << cellId_ << endl;
-    EV << "AmcMode: " << mac_->par("amcMode").stdstringValue() << endl;
+    EV << "AmcMode: " << par("amcMode").stdstringValue() << endl;
     EV << "RbAllocationType: " << allocationType_ << endl;
     EV << "FBHB capacity DL: " << fbhbCapacityDl_ << endl;
     EV << "FBHB capacity UL: " << fbhbCapacityUl_ << endl;
@@ -162,64 +164,36 @@ void LteAmc::printTxParams(Direction dir, GHz carrierFrequency)
 * PUBLIC FUNCTIONS
 ********************/
 
-LteAmc::LteAmc(LteMacEnb *mac, Binder *binder, CellInfo *cellInfo, int numAntennas) : mac_(mac), binder_(binder), cellInfo_(cellInfo), numAntennas_(numAntennas)
+void LteAmc::initialize(int stage)
 {
-    initialize();
+    if (stage != inet::INITSTAGE_LINK_LAYER)
+        return;
+
+    // Get references to other modules
+    mac_.reference(this, "macModule", true);
+    binder_ = getBinder();
+    cellInfo_.reference(this, "cellInfoModule", true);
+    numAntennas_ = mac_->getNumAntennas();
+
+    initializeInternal();
+
+    // Set pilot mode from parameter
+    std::string modeString = par("pilotMode").stdstringValue();
+    if (modeString == "AVG_CQI")
+        setPilotMode(AVG_CQI);
+    else if (modeString == "MAX_CQI")
+        setPilotMode(MAX_CQI);
+    else if (modeString == "MIN_CQI")
+        setPilotMode(MIN_CQI);
+    else if (modeString == "MEDIAN_CQI")
+        setPilotMode(MEDIAN_CQI);
+    else if (modeString == "ROBUST_CQI")
+        setPilotMode(ROBUST_CQI);
+    else
+        throw cRuntimeError("LteAmc::initialize - Unknown Pilot Mode %s", modeString.c_str());
 }
 
-LteAmc& LteAmc::operator=(const LteAmc& other)
-{
-    if (&other == this)
-        return *this;
-
-    mac_ = other.mac_;
-    binder_ = other.binder_;
-    cellInfo_ = other.cellInfo_;
-    pilot_ = getAmcPilot(mac_->par("amcMode"));
-
-    allocationType_ = other.allocationType_;
-    numBands_ = other.numBands_;
-    nodeId_ = other.nodeId_;
-    cellId_ = other.cellId_;
-    dlMcsTable_ = other.dlMcsTable_;
-    ulMcsTable_ = other.ulMcsTable_;
-    d2dMcsTable_ = other.d2dMcsTable_;
-    mcsScaleDl_ = other.mcsScaleDl_;
-    mcsScaleUl_ = other.mcsScaleUl_;
-    mcsScaleD2D_ = other.mcsScaleD2D_;
-    numAntennas_ = other.numAntennas_;
-    remoteSet_ = other.remoteSet_;
-    dlConnectedUe_ = other.dlConnectedUe_;
-    ulConnectedUe_ = other.ulConnectedUe_;
-    d2dConnectedUe_ = other.d2dConnectedUe_;
-    dlNodeIndex_ = other.dlNodeIndex_;
-    ulNodeIndex_ = other.ulNodeIndex_;
-    d2dNodeIndex_ = other.d2dNodeIndex_;
-    dlRevNodeIndex_ = other.dlRevNodeIndex_;
-    ulRevNodeIndex_ = other.ulRevNodeIndex_;
-    d2dRevNodeIndex_ = other.d2dRevNodeIndex_;
-
-    dlTxParams_ = other.dlTxParams_;
-    ulTxParams_ = other.ulTxParams_;
-    d2dTxParams_ = other.d2dTxParams_;
-
-    fType_ = other.fType_;
-
-    dlFeedbackHistory_ = other.dlFeedbackHistory_;
-    ulFeedbackHistory_ = other.ulFeedbackHistory_;
-    d2dFeedbackHistory_ = other.d2dFeedbackHistory_;
-
-    fbhbCapacityDl_ = other.fbhbCapacityDl_;
-    fbhbCapacityUl_ = other.fbhbCapacityUl_;
-    fbhbCapacityD2D_ = other.fbhbCapacityD2D_;
-    lb_ = other.lb_;
-    ub_ = other.ub_;
-    cqiComputationWeight_ = other.cqiComputationWeight_;
-
-    return *this;
-}
-
-void LteAmc::initialize()
+void LteAmc::initializeInternal()
 {
     // Get MacNodeId and MacCellId
     nodeId_ = mac_->getMacNodeId();
@@ -239,15 +213,15 @@ void LteAmc::initialize()
     mcsScaleUl_ = cellInfo_->getMcsScaleUl();
     mcsScaleD2D_ = cellInfo_->getMcsScaleUl();
 
-    // Get AMC parameters from MAC module NED
-    fbhbCapacityDl_ = mac_->par("fbhbCapacityDl");
-    fbhbCapacityUl_ = mac_->par("fbhbCapacityUl");
-    fbhbCapacityD2D_ = mac_->par("fbhbCapacityD2D");
-    cqiComputationWeight_ = mac_->par("cqiWeight");
-    pilot_ = getAmcPilot(mac_->par("amcMode"));
-    allocationType_ = getRbAllocationType(mac_->par("rbAllocationType").stringValue());
-    lb_ = mac_->par("summaryLowerBound");
-    ub_ = mac_->par("summaryUpperBound");
+    // Get AMC parameters from own NED parameters
+    fbhbCapacityDl_ = par("fbhbCapacityDl");
+    fbhbCapacityUl_ = par("fbhbCapacityUl");
+    fbhbCapacityD2D_ = par("fbhbCapacityD2D");
+    cqiComputationWeight_ = par("cqiWeight");
+    pilot_ = getAmcPilot(par("amcMode"));
+    allocationType_ = getRbAllocationType(par("rbAllocationType").stringValue());
+    lb_ = par("summaryLowerBound");
+    ub_ = par("summaryUpperBound");
 
     printParameters();
 

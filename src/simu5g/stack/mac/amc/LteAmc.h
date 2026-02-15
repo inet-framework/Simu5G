@@ -12,6 +12,8 @@
 #ifndef _LTE_LTEAMC_H_
 #define _LTE_LTEAMC_H_
 
+#include <omnetpp.h>
+
 #include "simu5g/common/LteDefs.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
 #include "simu5g/stack/phy/feedback/LteFeedback.h"
@@ -41,7 +43,7 @@ typedef std::map<Remote, std::vector<std::vector<LteSummaryBuffer>>> History_;
  *
  * TODO
  */
-class LteAmc
+class LteAmc : public cSimpleModule
 {
   private:
     AmcPilot *getAmcPilot(const cPar& amcMode);
@@ -100,12 +102,13 @@ class LteAmc
 
     History_ *getHistory(Direction dir, GHz carrierFrequency);
 
+  protected:
+    int numInitStages() const override { return inet::INITSTAGE_LAST; }
+    void initialize(int stage) override;
+    virtual void initializeInternal();
+
   public:
-    LteAmc(LteMacEnb *mac, Binder *binder, CellInfo *cellInfo, int numAntennas);
-    LteAmc(const LteAmc& other) { operator=(other); }
-    LteAmc& operator=(const LteAmc& other);
-    void initialize();
-    virtual ~LteAmc();
+    ~LteAmc() override;
     void setfType(int f)
     {
         fType_ = f;
