@@ -21,6 +21,5 @@ simple NrMacGnb extends LteMacEnbD2D
 {
     parameters:
         @class("NrMacGnb");
-        amcType = default("NrAmc");
 }
 

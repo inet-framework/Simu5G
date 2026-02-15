@@ -30,39 +30,11 @@ simple LteMacEnb extends LteMacBase
 
         //# volatile xml optSolution = default(xmldoc("solution.sol"));
 
-        //#
-        //# AMC Parameters
-        //#
-
-        // AMC Type:  "LteAmc", "NrAmc"
-        string amcType @enum(LteAmc,NrAmc) = default("LteAmc");
-
-        // AMC Mode:  "auto", "piloted", "multi", "das", "D2D"
-        string amcMode @enum(AUTO,D2D) = default("AUTO");
-
-        // resource allocation type ("distributed" or "localized")
-        string rbAllocationType @enum(distributed,localized) = default("localized");
-
-        // summary feedback confidence function lower bound
-        double summaryLowerBound @unit(s) = default(5ms);
-
-        // summary feedback confidence function upper bound
-        double summaryUpperBound @unit(s) = default(20ms);
-
-        // FeedBack Historical Base capacity in DL (number of stored feedback samples per UE)
-        int fbhbCapacityDl = default(5);
-
-        // FeedBack Historical Base capacity in UL (number of stored feedback samples per UE)
-        int fbhbCapacityUl = default(5);
-
-        // FeedBack Historical Base capacity in D2D (number of stored feedback samples per UE)
-        int fbhbCapacityD2D = default(5);
-
-        // wideband CQI generation parameter (0.0 means "use the mean value" )
-        double cqiWeight = default(0.0);
-
         // number of eNodeBs - set to 0 if unknown
         int eNodeBCount = default(0);
+
+        // Reference to the AMC module
+        string amcModule = default("^.amc");
 
         //#
         //# eNb Scheduler Parameters
@@ -73,8 +45,6 @@ simple LteMacEnb extends LteMacBase
 
         // Proportional Fair parameters
         double pfAlpha = default(0.95);
-
-        string pilotMode @enum(IN_CQI,MAX_CQI,AVG_CQI,MEDIAN_CQI,ROBUST_CQI) = default("ROBUST_CQI");
 
         string cellInfoModule;
         string rlcUmModule = default("^.rlc.um");
