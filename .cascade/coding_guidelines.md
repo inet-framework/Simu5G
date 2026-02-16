@@ -21,6 +21,8 @@
 
 - Use `check_and_cast()` instead of `dynamic_cast()`.
 
+- Do not **EVER** add static variables, unless explicitly requested by the user.
+
 - Msg file trick: In msg file generated code, the namespace begins where the
   namespace directive occurs in the MSG file.
 
