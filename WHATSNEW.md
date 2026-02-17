@@ -1,5 +1,121 @@
 # What's New in Simu5G
 
+## v1.4.3 (2026-02-18)
+
+This release represents a major milestone in the complete overhaul of the Simu5G
+codebase to make it architecturally more compliant with the 3GPP
+specifications, modernize the code, and adopt the best practices of the INET
+Framework on which it is based. The goal is to pave the way for a clean
+implementation of new protocol features such as TSN support.
+
+Tested with INET-4.5.4 and OMNeT++ 6.3, updated for INET-4.6.0 compatibility.
+
+Key achievements in this release:
+
+- **More explicit Control Plane modeling**: Simu5G is advertised as a User Plane
+  simulator, but since it was also used to model dynamic scenarios such as
+  handovers, it always contained elements of the Control Plane distributed across
+  various modules. The new direction is to make these elements more explicit and
+  centralized, such as creating dedicated RRC (Radio Resource Control) and
+  Session Management Function (SMF) implementations. It is an explicit non-goal
+  to simulate Control Plane messaging -- its functionality will be implemented
+  with C++ method calls across modules. Thus, Simu5G remains a User Plane
+  simulator, but with the possibility to more faithfully model dynamic
+  scenarios with heavy Control Plane involvement. While this goal is not fully
+  realized in this release, many changes point into that direction.
+
+- **Control info refactoring**: Cleaned up `UserControlInfo` and
+  `FlowControlInfo` by removing 5+ unused fields and splitting out smaller,
+  focused tags. For example, IPv4 addresses, only used between `Ip2Nic` and PDCP,
+  have been factored out into an `IpFlowInd` tag. This improves modularity,
+  reduces coupling between protocol layers, and makes the code easier to
+  maintain and extend.
+
+- **Added vital missing fields to PDCP and MAC headers**: Protocol layers now
+  use proper header fields instead of "tunnelling" information via
+  `UserControlInfo` and `FlowControlInfo` packet tags that would not exist in a
+  real implementation. For example, PDCP sequence numbers are now carried in
+  PDCP headers, and LCIDs are stored in MAC PDU subheaders. This makes the
+  simulation more realistic and packet contents more inspectable in Qtenv.
+
+- **Explicit setup of logical connections instead of on-the-fly discovery**:
+  This is a key architectural change, which also largely motivated the
+  previous items. In previous iterations of Simu5G, data structures associated
+  with logical connections / bearers were created in each protocol layer as they
+  encountered packets that belonged to new connections. Moreover, part of the
+  connection state was carried along by the packets in `FlowControlInfo` tags
+  instead of stored inside the protocol. While this modeling approach still
+  allowed for faithful simulation of the traffic while keeping the
+  implementation simple, it has become a roadblock for implementing complex
+  dynamic scenarios where connections come and go. In this iteration,
+  centralized session and bearer management (SMF-like functionality) was added
+  to the `Binder` module, and RRC modules were added to NICs to carry out local
+  configuration. This brings the architecture closer to the 3GPP control/user
+  plane separation, making it easier to implement features like handovers
+  correctly. This is work in progress: SMF is still part of `Binder` and not a
+  separate module, and connection setup is still triggered by the first packet
+  of the connection hitting PDCP on the way out. However, moving the SMF code
+  into its own module will be trivial, and the single `Binder` method call in
+  PDCP can now be easily replaced with static configuration or with calls from a
+  more detailed Control Plane implementation.
+
+- **Removed incomplete MIMO support**: Removed MIMO-related code and parameters.
+  The existing MIMO code was incomplete (e.g., PMI values were computed but
+  never used). Removing it simplifies the codebase and model parameterization,
+  and avoids confusion about capabilities. MIMO support will be added in a future
+  release, with a different approach.
+
+- **Initialization cleanup**: Reorganized module initialization into well-defined,
+  Simu5G-specific init stages. This eliminates hidden cross-module dependencies,
+  makes the initialization order explicit and verifiable, and prevents subtle bugs
+  caused by modules accessing uninitialized data in other modules.
+
+Further notable changes:
+
+- In UE models, `masterId` and `nrMasterId` were renamed to `servingNodeId` and
+  `nrServingNodeId`. The old names were confusing because "Master" has a
+  specific meaning in Dual Connectivity (Master eNB vs Secondary gNB), unrelated
+  to the UE's serving node.
+
+- In UE models, the `macCellId`, `nrMacCellId` parameters were removed. In
+  practice, the code already used the serving node ID as cell ID.
+
+- `macNodeId` assignment was moved to NED, and now it is based on the new
+  `simu5g_seq()` NED function that generates an integer sequence. This replaces
+  the earlier approach where node IDs were assigned by `Ip2Nic` during
+  initialization, and stored back into the module parameters for other modules to
+  use.
+
+- `LteRlcPduNewData` and `LteRlcSdu` packet chunks were converted to packet
+  tags, as they represent internal metadata rather than actual protocol data.
+
+- In the C++ code, merged the `ENODEB` and `GNODEB` node type enum values into a
+  single `NODEB` value, with a separate `isNr` flag where needed. This change
+  simplified a large number of "if" conditions throughout the codebase.
+
+To port your existing Simu5G simulations to this version, apply the following
+changes to the ini files:
+
+- Change `masterId` to `servingNodeId` (and `nrMasterId` to `nrServingNodeId`),
+  unless it refers to the Master/Secondary distinction in a Dual Connectivity
+  setup.
+
+- Remove `macCellId` and `nrMacCellId` parameter assignments for UE modules.
+
+- Delete ini entries that set the following removed MIMO-related parameters:
+  `numRus`, `ruRange`, `ruStartingAngle`, `ruTxPower`, `antennaCws`,
+  `muMimo`, `pmiWeight`, `lambdaMinTh`, `lambdaMaxTh`, `lambdaRatioTh`,
+  `feedbackGeneratorType`.
+
+- For `initialTxMode`, the following values are no longer valid:
+  `SINGLE_ANTENNA_PORT5`, `OL_SPATIAL_MULTIPLEXING`, `CL_SPATIAL_MULTIPLEXING`,
+  `MULTI_USER`. Remove the parameter assigment to use the default.
+
+There are many more changes that potentially affect existing simulations, and
+projects extending, or built on top of, Simu5G. They cannot all be covered here
+in detail - see the git history for details.
+
+
 ## v1.4.2 (2025-11-27)
 
 This is primarily a bugfix release.
