@@ -43,6 +43,8 @@ class QfiContextManager {
     MacCid getCidForQfi(int qfi) const;
     const std::map<int, QfiContext>& getQfiMap() const;
     const std::map<MacCid, int>& getCidToQfiMap() const;
+
+    void dump(std::ostream& os = std::cout) const;
 };
 
 } // namespace simu5g

@@ -10,11 +10,24 @@
 ///
 
 #include "simu5g/stack/sdap/common/QfiContextManager.h"
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <cassert>
 
 namespace simu5g {
+
+std::ostream& operator<<(std::ostream& os, const QfiContext& ctx) {
+    os << "QfiContext{qfi=" << ctx.qfi
+       << ", drbIndex=" << ctx.drbIndex
+       << ", fiveQi=" << ctx.fiveQi
+       << ", isGbr=" << (ctx.isGbr ? "Yes" : "No")
+       << ", delayBudgetMs=" << ctx.delayBudgetMs
+       << ", packetErrorRate=" << ctx.packetErrorRate
+       << ", priorityLevel=" << ctx.priorityLevel
+       << ", description=\"" << ctx.description << "\"}";
+    return os;
+}
 
 QfiContextManager* QfiContextManager::instance = nullptr;
 
@@ -81,6 +94,23 @@ void QfiContextManager::loadFromFile(const std::string& filename) {
 //        throw cRuntimeError("QfiContextManager: Failed to read file '%s'", filename.c_str());
 
     in.close();
+}
+
+void QfiContextManager::dump(std::ostream& os) const {
+    os << "=== QfiContextManager dump ===" << std::endl;
+    os << "QFI Map (" << qfiMap.size() << " entries):" << std::endl;
+    for (const auto& [qfi, ctx] : qfiMap) {
+        os << "  " << qfi << " -> " << ctx << std::endl;
+    }
+    os << "CID to QFI Map (" << cidToQfi_.size() << " entries):" << std::endl;
+    for (const auto& [cid, qfi] : cidToQfi_) {
+        os << "  CID=" << cid << " -> QFI=" << qfi << std::endl;
+    }
+    os << "QFI to CID Map (" << qfiToCid_.size() << " entries):" << std::endl;
+    for (const auto& [qfi, cid] : qfiToCid_) {
+        os << "  QFI=" << qfi << " -> CID=" << cid << std::endl;
+    }
+    os << "===============================" << std::endl;
 }
 
 } // namespace simu5g
