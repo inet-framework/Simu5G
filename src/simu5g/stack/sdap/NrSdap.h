@@ -45,7 +45,7 @@ namespace simu5g {
 class NrSdap : public cSimpleModule
 {
   protected:
-    QfiContextManager* contextManager = nullptr;
+    inet::ModuleRefByPar<QfiContextManager> qfiContextManager;
     inet::ModuleRefByPar<ReflectiveQosTable> reflectiveQosTable;
     bool isUe = true;  // Node role: true for UE, false for gNB
 

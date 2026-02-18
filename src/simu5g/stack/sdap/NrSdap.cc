@@ -29,12 +29,8 @@ Define_Module(NrSdap);
 
 void NrSdap::initialize()
 {
-    contextManager = QfiContextManager::getInstance();  // TODO FIXME singleton!
-    std::string configFile = par("qfiContextFile").stdstringValue();
-    if (!configFile.empty()) {
-        contextManager->loadFromFile(configFile);
-        EV << "Loaded " << contextManager->getQfiMap().size() << " QFI entries\n";
-    }
+    // Get pointer to QfiContextManager module (mandatory for SDAP)
+    qfiContextManager.reference(this, "qfiContextManagerModule", true);
 
     // Get pointer to reflective QoS table
     reflectiveQosTable.reference(this, "reflectiveQosTableModule", false);
@@ -95,7 +91,7 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
         }
     }
 
-    const QfiContext* ctx = contextManager->getContextByQfi(qfi);
+    const QfiContext* ctx = qfiContextManager->getContextByQfi(qfi);
 
     // Lookup DRB mapping
     int drbIndex = 0;
@@ -176,7 +172,7 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
         EV_INFO << "SDAP RX: No SDAP header expected for DRB " << drbIndex << "\n";
 
         // For DRBs without SDAP header, use default QFI or derive from DRB context
-        const QfiContext* ctx = contextManager->getContextByQfi(drbIndex);
+        const QfiContext* ctx = qfiContextManager->getContextByQfi(drbIndex);
         if (ctx) {
             qfi = ctx->qfi;
             EV_INFO << "SDAP RX: Using QFI " << qfi << " from DRB context\n";
@@ -184,9 +180,9 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
     }
 
     // Validate QFI ↔ DRB consistency
-    const QfiContext* ctx = contextManager->getContextByQfi(qfi);
-    if (ctx && ctx->drbIndex != drbIndex) {
-        EV_WARN << "SDAP RX: DRB/QFI mismatch! Received on DRB=" << drbIndex << ", QFI=" << qfi << " should map to DRB=" << ctx->drbIndex << "\n";
+    const QfiContext* ctxValidate = qfiContextManager->getContextByQfi(qfi);
+    if (ctxValidate && ctxValidate->drbIndex != drbIndex) {
+        EV_WARN << "SDAP RX: DRB/QFI mismatch! Received on DRB=" << drbIndex << ", QFI=" << qfi << " should map to DRB=" << ctxValidate->drbIndex << "\n";
     }
 
     // Add QoS indication tag for upper layers

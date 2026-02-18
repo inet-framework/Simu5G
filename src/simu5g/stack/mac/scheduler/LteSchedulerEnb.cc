@@ -944,8 +944,11 @@ LteScheduler *LteSchedulerEnb::getScheduler(SchedDiscipline discipline)
             return new LteMaxCiComp(binder_);
         case ALLOCATOR_BESTFIT:
             return new LteAllocatorBestFit(binder_);
-        case QOS_PF:
-            return new QoSAwareScheduler(binder_, mac_->par("pfAlpha").doubleValue());
+        case QOS_PF: {
+            auto *scheduler = new QoSAwareScheduler(binder_, mac_->par("pfAlpha").doubleValue());
+            scheduler->setQfiContextManager(mac_->getQfiContextManager());
+            return scheduler;
+        }
 
         default:
             throw cRuntimeError("LteScheduler not recognized");

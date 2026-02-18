@@ -32,9 +32,9 @@ package simu5g.stack.sdap;
 simple NrSdap like INrSdap
 {
     parameters:
-        string qfiContextFile = default("");  // external config file
         int numDrbs = default(1); // number of DRBs
         string nodeRole @enum("UE", "gNB");  // Node role: "UE" or "gNB" - determines reflective QoS behavior
+        string qfiContextManagerModule = default("");  // Path to QfiContextManager module
         string reflectiveQosTableModule = default("");  // UE only: path to ReflectiveQosTable module (empty = disabled)
         bool addSdapHeader = default(true);
         bool useReflectiveQos = default(false); // UE only

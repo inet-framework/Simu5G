@@ -17,6 +17,7 @@ import simu5g.stack.multiplexer.SdapDrbMultiplexer;
 import simu5g.stack.pdcp.NrPdcpEnb;
 import simu5g.stack.rlc.LteRlc;
 import simu5g.stack.sdap.INrSdap;
+import simu5g.stack.sdap.common.IQfiContextManager;
 
 
 //
@@ -30,6 +31,8 @@ module NRNicEnbDrb extends LteNicEnbD2D
         drbSupport = true;
 
         int numDrbs; // this to allow multiple DRBs
+        string qfiContextFile = default("");  // Path to QFI context configuration file
+        mac.qfiContextManagerModule = default("^.qfiContextManager");
         @display("bgb=694,443");
         lteChannelModelType = default("NrChannelModel_3GPP38_901");
 
@@ -38,9 +41,15 @@ module NRNicEnbDrb extends LteNicEnbD2D
 
     submodules:
 
+        qfiContextManager: <default("QfiContextManager")> like IQfiContextManager {
+            qfiContextFile = parent.qfiContextFile;
+            @display("p=100,67;is=s");
+        }
+
         sdap: <default("NrSdap")> like INrSdap {
             numDrbs = parent.numDrbs;
             nodeRole = "gNB";
+            qfiContextManagerModule = "^.qfiContextManager";
             @display("p=245,67");
         }
 

@@ -18,16 +18,6 @@ using namespace omnetpp;
 QoSAwareScheduler::QoSAwareScheduler(Binder* binder, double pfAlpha)
     : LteScheduler(binder), pfAlpha_(pfAlpha)
 {
-    loadContextIfNeeded();
-}
-
-void QoSAwareScheduler::loadContextIfNeeded()
-{
-    if (!contextLoaded_) {
-        qfiContextMgr_ = QfiContextManager::getInstance();  // singleton
-        ASSERT(qfiContextMgr_ != nullptr);
-        contextLoaded_ = true;
-    }
 }
 
 double QoSAwareScheduler::computeQosWeightFromContext(const QfiContext& ctx)
@@ -45,7 +35,6 @@ double QoSAwareScheduler::computeQosWeightFromContext(const QfiContext& ctx)
 
 const QfiContext* QoSAwareScheduler::getQfiContextForCid(MacCid cid)
 {
-    if (!qfiContextMgr_) return nullptr;
     int qfi = qfiContextMgr_->getQfiForCid(cid);
     if (qfi < 0) {
         EV_WARN << "QoSAwareScheduler: No QFI registered for CID " << cid << "\n";
@@ -56,6 +45,10 @@ const QfiContext* QoSAwareScheduler::getQfiContextForCid(MacCid cid)
 
 void QoSAwareScheduler::prepareSchedule()
 {
+    if (!qfiContextMgr_)
+        throw cRuntimeError("QoSAwareScheduler requires QfiContextManager but none was configured. "
+                            "Set mac.qfiContextManagerModule parameter to point to a QfiContextManager module.");
+
     EV << NOW << " QoSAwareScheduler::prepareSchedule" << endl;
 
     grantedBytes_.clear();

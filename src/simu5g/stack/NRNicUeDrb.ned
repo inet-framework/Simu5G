@@ -24,6 +24,7 @@ import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 import simu5g.stack.rlc.LteRlc;
 import simu5g.stack.sdap.NrTxSdapEntity;
 import simu5g.stack.sdap.INrSdap;
+import simu5g.stack.sdap.common.IQfiContextManager;
 import simu5g.stack.sdap.common.IReflectiveQosTable;
 
 //
@@ -52,6 +53,7 @@ module NRNicUeDrb extends LteNicUeD2D
         hasNrSdap = true;
         drbSupport = true;
         bool hasReflectiveQosTable = default(false);  // Enable/disable reflective QoS table
+        string qfiContextFile = default("");  // Path to QFI context configuration file
 
         int numDrbs; // this to allow multiple DRBs
 
@@ -69,9 +71,15 @@ module NRNicUeDrb extends LteNicUeD2D
         phy.otherPhyModule = "^.nrPhy";
 
     submodules:
+        qfiContextManager: <default("QfiContextManager")> like IQfiContextManager {
+            qfiContextFile = parent.qfiContextFile;
+            @display("p=500,66;is=s");
+        }
+
         sdap: <default("NrSdap")> like INrSdap {
             numDrbs = parent.numDrbs;
             nodeRole = "UE";
+            qfiContextManagerModule = "^.qfiContextManager";
             reflectiveQosTableModule = parent.hasReflectiveQosTable ? "^.reflectiveQosTable" : "";
             @display("p=596,66");
         }

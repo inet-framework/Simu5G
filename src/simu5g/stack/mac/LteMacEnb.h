@@ -22,6 +22,8 @@
 
 namespace simu5g {
 
+class QfiContextManager;
+
 using namespace omnetpp;
 
 class MacBsr;
@@ -268,6 +270,9 @@ class LteMacEnb : public LteMacBase
     }
 
     virtual ConflictGraph *getConflictGraph();
+
+    // Get QfiContextManager (may be nullptr if not configured). Override in subclasses.
+    virtual QfiContextManager *getQfiContextManager() { return nullptr; }
 
     /*
      * @author Alessandro Noferi

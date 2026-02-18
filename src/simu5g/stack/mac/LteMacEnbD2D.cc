@@ -33,6 +33,9 @@ void LteMacEnbD2D::initialize(int stage)
 {
     LteMacEnb::initialize(stage);
     if (stage == INITSTAGE_LOCAL) {
+        // Get pointer to QfiContextManager module (optional)
+        qfiContextManager_.reference(this, "qfiContextManagerModule", false);
+
         cModule *rlcUm = inet::getModuleFromPar<cModule>(par("rlcUmModule"), this);
         std::string rlcUmType = rlcUm->getComponentType()->getName();
         if (rlcUmType != "LteRlcUmD2D")
@@ -150,13 +153,14 @@ void LteMacEnbD2D::macPduUnmake(cPacket *cpkt)
         }
 
         EV << "LteMacEnbD2D: Lcid --->"<< (int)lcid << " Cid: " << cid <<endl;
-        QfiContextManager* mgr = QfiContextManager::getInstance();
-        mgr->registerQfiForCid(cid, (int)lcid + 1);
+        if (qfiContextManager_) {
+            qfiContextManager_->registerQfiForCid(cid, (int)lcid + 1);
 
-        for (const auto& [cid, qfi] : mgr->getCidToQfiMap()) {
-            EV << "CID " << cid << " → QFIs: ";
-            EV << qfi << " ";
-            EV << endl;
+            for (const auto& [cid, qfi] : qfiContextManager_->getCidToQfiMap()) {
+                EV << "CID " << cid << " → QFIs: ";
+                EV << qfi << " ";
+                EV << endl;
+            }
         }
 
         sendUpperPackets(upPkt);

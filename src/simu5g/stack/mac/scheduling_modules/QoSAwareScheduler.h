@@ -50,10 +50,8 @@ class QoSAwareScheduler : public LteScheduler
     const double scoreEpsilon_ = 1e-6;
 
     QfiContextManager* qfiContextMgr_ = nullptr;
-    bool contextLoaded_ = false;
 
     // Helpers
-    void loadContextIfNeeded();
     double computeQosWeightFromContext(const QfiContext& ctx);
     const QfiContext* getQfiContextForCid(MacCid cid);
 
@@ -61,6 +59,7 @@ class QoSAwareScheduler : public LteScheduler
     double& pfAlpha() { return pfAlpha_; }
 
     QoSAwareScheduler(Binder* binder, double pfAlpha);
+    void setQfiContextManager(QfiContextManager* mgr) { qfiContextMgr_ = mgr; }
     void prepareSchedule() override;
     void commitSchedule() override;
 };

@@ -15,23 +15,28 @@
 
 #pragma once
 
+#include <omnetpp.h>
 #include <string>
 #include <map>
 #include "QfiContext.h"
 #include "simu5g/common/LteCommon.h"
 
+using namespace omnetpp;
+
 namespace simu5g {
 
-class QfiContextManager {
-  private:
-    std::map<int, QfiContext> qfiMap;            // QFI → QoS context
-    std::map<MacCid, int> cidToQfi_;             // CID → QFI
-    std::map<int, MacCid> qfiToCid_;             // QFI → CID
-    static QfiContextManager* instance;
+class QfiContextManager : public cSimpleModule
+{
+  protected:
+    std::map<int, QfiContext> qfiMap_;           // QFI -> QoS context
+    std::map<MacCid, int> cidToQfi_;             // CID -> QFI
+    std::map<int, MacCid> qfiToCid_;             // QFI -> CID
+
+  protected:
+    virtual void initialize() override;
+    virtual void handleMessage(cMessage *msg) override { throw cRuntimeError("QfiContextManager does not process messages"); }
 
   public:
-    static QfiContextManager* getInstance();
-
     void loadFromFile(const std::string& filename);
 
     // Register a single QFI ↔ CID pair

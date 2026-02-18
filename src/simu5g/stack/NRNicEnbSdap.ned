@@ -13,6 +13,7 @@
 package simu5g.stack;
 
 import simu5g.stack.sdap.INrSdap;
+import simu5g.stack.sdap.common.IQfiContextManager;
 
 //
 // This module extends the Enb NIC to insert SDAP functionality (receiver-side only)
@@ -23,13 +24,21 @@ module NRNicEnbSdap extends NrNicEnb
     parameters:
         hasNrSdap = true;
         int numDrbs = 1;
+        string qfiContextFile = default("");  // Path to QFI context configuration file
+        mac.qfiContextManagerModule = default("^.qfiContextManager");
         @display("bgb=694,443");
 
     submodules:
 
+        qfiContextManager: <default("QfiContextManager")> like IQfiContextManager {
+            qfiContextFile = parent.qfiContextFile;
+            @display("p=100,67;is=s");
+        }
+
         sdap: <default("NrSdap")> like INrSdap {
             numDrbs = parent.numDrbs;
             nodeRole = "gNB";
+            qfiContextManagerModule = "^.qfiContextManager";
             @display("p=245,67");
         }
 
@@ -38,5 +47,4 @@ module NRNicEnbSdap extends NrNicEnb
 
         //# SDAP <-> PDCP
         sdap.stackSdap <--> pdcp.DataPort;
-
 }

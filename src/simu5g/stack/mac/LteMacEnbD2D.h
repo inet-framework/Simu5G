@@ -17,6 +17,8 @@
 #include "simu5g/stack/mac/buffer/harq_d2d/LteHarqBufferMirrorD2D.h"
 #include "simu5g/stack/d2dModeSelection/D2DModeSwitchNotification_m.h"
 #include "simu5g/stack/mac/conflict_graph/ConflictGraph.h"
+#include "simu5g/stack/sdap/common/QfiContextManager.h"
+#include <inet/common/ModuleRefByPar.h>
 
 namespace simu5g {
 
@@ -29,6 +31,8 @@ class ConflictGraph;
 class LteMacEnbD2D : public LteMacEnb
 {
   protected:
+    // QFI Context Manager (optional, for QoS-aware scheduling)
+    inet::ModuleRefByPar<QfiContextManager> qfiContextManager_;
 
     /*
      * Stores the mirrored status of H-ARQ buffers for D2D transmissions.
@@ -148,6 +152,11 @@ class LteMacEnbD2D : public LteMacEnb
     UserTxParams *getPreconfiguredTxParams() {
 
         return preconfiguredTxParams_;
+    }
+
+    // Get QfiContextManager (may be nullptr if not configured)
+    QfiContextManager *getQfiContextManager() override {
+        return qfiContextManager_.getNullable();
     }
 
 };

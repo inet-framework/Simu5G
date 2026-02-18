@@ -29,12 +29,15 @@ std::ostream& operator<<(std::ostream& os, const QfiContext& ctx) {
     return os;
 }
 
-QfiContextManager* QfiContextManager::instance = nullptr;
+Define_Module(QfiContextManager);
 
-QfiContextManager* QfiContextManager::getInstance() {
-    if (!instance)
-        instance = new QfiContextManager();
-    return instance;
+void QfiContextManager::initialize()
+{
+    std::string configFile = par("qfiContextFile").stdstringValue();
+    if (!configFile.empty()) {
+        loadFromFile(configFile);
+        EV << "QfiContextManager: Loaded " << qfiMap_.size() << " QFI entries from " << configFile << endl;
+    }
 }
 
 void QfiContextManager::registerQfiForCid(MacCid cid, int qfi) {
@@ -53,8 +56,8 @@ MacCid QfiContextManager::getCidForQfi(int qfi) const {
 }
 
 const QfiContext* QfiContextManager::getContextByQfi(int qfi) const {
-    auto it = qfiMap.find(qfi);
-    return it != qfiMap.end() ? &it->second : nullptr;
+    auto it = qfiMap_.find(qfi);
+    return it != qfiMap_.end() ? &it->second : nullptr;
 }
 
 const std::map<MacCid, int>& QfiContextManager::getCidToQfiMap() const {
@@ -62,7 +65,7 @@ const std::map<MacCid, int>& QfiContextManager::getCidToQfiMap() const {
 }
 
 const std::map<int, QfiContext>& QfiContextManager::getQfiMap() const {
-    return qfiMap;
+    return qfiMap_;
 }
 
 // Placeholder for file loader
@@ -85,7 +88,7 @@ void QfiContextManager::loadFromFile(const std::string& filename) {
         {
             ctx.isGbr = (gbrStr == "Yes" || gbrStr == "yes");
             std::getline(iss, ctx.description);
-            qfiMap[ctx.qfi] = ctx;
+            qfiMap_[ctx.qfi] = ctx;
         }
     }
 
@@ -95,11 +98,10 @@ void QfiContextManager::loadFromFile(const std::string& filename) {
 
     in.close();
 }
-
 void QfiContextManager::dump(std::ostream& os) const {
     os << "=== QfiContextManager dump ===" << std::endl;
-    os << "QFI Map (" << qfiMap.size() << " entries):" << std::endl;
-    for (const auto& [qfi, ctx] : qfiMap) {
+    os << "QFI Map (" << qfiMap_.size() << " entries):" << std::endl;
+    for (const auto& [qfi, ctx] : qfiMap_) {
         os << "  " << qfi << " -> " << ctx << std::endl;
     }
     os << "CID to QFI Map (" << cidToQfi_.size() << " entries):" << std::endl;
@@ -114,3 +116,4 @@ void QfiContextManager::dump(std::ostream& os) const {
 }
 
 } // namespace simu5g
+
