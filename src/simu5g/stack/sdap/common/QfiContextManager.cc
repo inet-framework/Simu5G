@@ -44,6 +44,7 @@ void QfiContextManager::initialize()
 }
 
 void QfiContextManager::registerQfiForCid(MacCid cid, int qfi) {
+    EV_INFO << "QfiContextManager::registerQfiForCid - registering CID=" << cid << " with QFI=" << qfi << endl;
     cidToQfi_[cid] = qfi;
     qfiToCid_[qfi] = cid;
 }
