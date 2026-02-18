@@ -14,7 +14,7 @@
 #include <sstream>
 #include <cassert>
 
-using namespace simu5g;
+namespace simu5g {
 
 QfiContextManager* QfiContextManager::instance = nullptr;
 
@@ -82,3 +82,5 @@ void QfiContextManager::loadFromFile(const std::string& filename) {
 
     in.close();
 }
+
+} // namespace simu5g

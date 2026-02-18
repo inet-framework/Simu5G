@@ -12,8 +12,9 @@
 #ifndef STACK_SDAP_COMMON_QFICONTEXT_H_
 #define STACK_SDAP_COMMON_QFICONTEXT_H_
 
-#pragma once
 #include <string>
+
+namespace simu5g {
 
 struct QfiContext {
     int qfi;
@@ -26,7 +27,6 @@ struct QfiContext {
     std::string description;
 };
 
-
-
+} // namespace simu5g
 
 #endif /* STACK_SDAP_COMMON_QFICONTEXT_H_ */
