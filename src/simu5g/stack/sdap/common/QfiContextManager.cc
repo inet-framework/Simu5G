@@ -38,6 +38,9 @@ void QfiContextManager::initialize()
         loadFromFile(configFile);
         EV << "QfiContextManager: Loaded " << qfiMap_.size() << " QFI entries from " << configFile << endl;
     }
+    WATCH_MAP(qfiMap_);
+    WATCH_MAP(cidToQfi_);
+    WATCH_MAP(qfiToCid_);
 }
 
 void QfiContextManager::registerQfiForCid(MacCid cid, int qfi) {
