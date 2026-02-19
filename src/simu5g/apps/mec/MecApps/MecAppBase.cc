@@ -30,6 +30,20 @@ MecAppBase::~MecAppBase()
     std::cout << "MecAppBase::~MecAppBase()" << std::endl;
     cancelAndDelete(sendTimer);
 
+    for (auto &entry : sockets_.getMap()) {
+        auto *sock = dynamic_cast<inet::TcpSocket *>(entry.second);
+        if (sock == nullptr)
+            continue;
+        auto *msgStatus = static_cast<HttpMessageStatus *>(sock->getUserData());
+        if (msgStatus == nullptr)
+            continue;
+        while (!msgStatus->httpMessageQueue.isEmpty())
+            delete msgStatus->httpMessageQueue.pop();
+        delete msgStatus->currentMessage;
+        cancelAndDelete(msgStatus->processMsgTimer);
+        delete msgStatus;
+        sock->setUserData(nullptr);
+    }
     sockets_.deleteSockets();
 
     cancelAndDelete(processMessage_);
