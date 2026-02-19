@@ -66,9 +66,9 @@ class DeviceApp : public cSimpleModule, public inet::TcpSocket::ICallback, publi
     int localPort;
 
     inet::L3Address ueAppAddress;
-    int ueAppPort;
+    int ueAppPort = -1;
 
-    bool flag;
+    bool flag = false;
 
     std::string appContextUri;
     std::string mecAppEndPoint;

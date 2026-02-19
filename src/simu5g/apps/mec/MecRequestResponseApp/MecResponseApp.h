@@ -36,31 +36,31 @@ class MecResponseApp : public MecAppBase
     inet::TcpSocket *serviceSocket_ = nullptr;
 
     inet::UdpSocket ueAppSocket_;
-    int localUePort_;
+    int localUePort_ = -1;
 
     HttpBaseMessage *mp1HttpMessage = nullptr;
 
     cMessage *currentRequestfMsg_ = nullptr;
     cMessage *processingTimer_ = nullptr;
-    simtime_t msgArrived_;
-    simtime_t getRequestSent_;
-    simtime_t getRequestArrived_;
-    double processingTime_;
+    simtime_t msgArrived_ = 0;
+    simtime_t getRequestSent_ = 0;
+    simtime_t getRequestArrived_ = 0;
+    double processingTime_ = 0;
 
     inet::B packetSize_;
 
-    int minInstructions_;
-    int maxInstructions_;
+    int minInstructions_ = 0;
+    int maxInstructions_ = 0;
 
     // address+port of the UeApp
     inet::L3Address ueAppAddress;
-    int ueAppPort;
+    int ueAppPort = -1;
 
     // endpoint for contacting the Location Service
     // this is obtained by sending a GET request to the Service Registry as soon as
     // the connection with the latter has been established
     inet::L3Address serviceAddress_;
-    int servicePort_;
+    int servicePort_ = -1;
 
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;

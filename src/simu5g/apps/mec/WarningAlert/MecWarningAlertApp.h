@@ -49,10 +49,10 @@ class MecWarningAlertApp : public MecAppBase
 
     //UDP socket to communicate with the UeApp
     inet::UdpSocket ueSocket;
-    int localUePort;
+    int localUePort = -1;
 
     inet::L3Address ueAppAddress;
-    int ueAppPort;
+    int ueAppPort = -1;
 
     inet::TcpSocket *serviceSocket_ = nullptr;
     inet::TcpSocket *mp1Socket_ = nullptr;
@@ -60,14 +60,14 @@ class MecWarningAlertApp : public MecAppBase
     HttpBaseMessage *mp1HttpMessage = nullptr;
     HttpBaseMessage *serviceHttpMessage = nullptr;
 
-    int size_;
+    int size_ = 0;
     std::string subId;
 
     // circle danger zone
     cOvalFigure *circle = nullptr;
-    double centerPositionX;
-    double centerPositionY;
-    double radius;
+    double centerPositionX = 0.0;
+    double centerPositionY = 0.0;
+    double radius = 0.0;
 
   protected:
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }

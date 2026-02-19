@@ -98,7 +98,7 @@ class VirtualisationInfrastructureManager : public cSimpleModule
     //-------------------------------------
     // OMNeT++-like MEC service management
     // set of MEC Services loaded into the MEC host & platform
-    int numServices;
+    int numServices = 0;
     std::vector<cModule *> meServices;
     int nameCounter = 0;
 

@@ -24,7 +24,7 @@ class MecRequestForegroundApp : public MecAppBase
 {
   protected:
     cMessage *sendFGRequest = nullptr;
-    double lambda;
+    double lambda = 0.0;
 
     inet::TcpSocket *serviceSocket_ = nullptr;
     inet::TcpSocket *mp1Socket_ = nullptr;
