@@ -155,7 +155,12 @@ void MecOrchestrator::startMecApp(UalcmpMessage *msg)
     auto it = mecApplicationDescriptors_.find(appDid);
     if (it == mecApplicationDescriptors_.end()) {
         EV << "MecOrchestrator::startMecApp - Application package with AppDId[" << contAppMsg->getAppDId() << "] not onboarded." << endl;
-        sendCreateAppContextAck(false, contAppMsg->getRequestId());
+        MecOrchestratorMessage *meoMsg = new MecOrchestratorMessage("MecOrchestratorMessage");
+        meoMsg->setType(CREATE_CONTEXT_APP);
+        meoMsg->setRequestId(contAppMsg->getRequestId());
+        meoMsg->setSuccess(false);
+        scheduleAt(simTime() + processingTime, meoMsg);
+        return;
     }
 
     const ApplicationDescriptor& desc = it->second;
