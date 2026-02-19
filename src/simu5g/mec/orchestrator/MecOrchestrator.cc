@@ -246,6 +246,7 @@ void MecOrchestrator::startMecApp(UalcmpMessage *msg)
         newMecApp.mecAppPort = appInfo->endPoint.port;
         newMecApp.mecAppInstanceId = appInfo->instanceId;
         newMecApp.contextId = contextIdCounter;
+        newMecApp.reference = appInfo->reference;
         meAppMap[contextIdCounter] = newMecApp;
 
         MecOrchestratorMessage *msg = new MecOrchestratorMessage("MecOrchestratorMessage");
@@ -254,12 +255,7 @@ void MecOrchestrator::startMecApp(UalcmpMessage *msg)
         msg->setRequestId(contAppMsg->getRequestId());
         msg->setSuccess(true);
 
-         newMecApp.mecAppAddress = appInfo->endPoint.addr;
-         newMecApp.mecAppPort = appInfo->endPoint.port;
-         newMecApp.mecAppInstanceId = appInfo->instanceId;
-         newMecApp.contextId = contextIdCounter;
-         newMecApp.reference = appInfo->reference;
-         meAppMap[contextIdCounter] = newMecApp;
+        contextIdCounter++;
 
         processingTime += instantiationTime;
         scheduleAt(simTime() + processingTime, msg);
