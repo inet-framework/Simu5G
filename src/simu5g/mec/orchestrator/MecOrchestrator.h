@@ -94,7 +94,7 @@ class MecOrchestrator : public cSimpleModule
     std::map<int, MecAppMapEntry> meAppMap;
     std::map<std::string, ApplicationDescriptor> mecApplicationDescriptors_;
 
-    int contextIdCounter;
+    int contextIdCounter = 0;
 
     double onboardingTime;
     double instantiationTime;

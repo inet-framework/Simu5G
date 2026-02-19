@@ -85,10 +85,10 @@ class MecServiceBase : public inet::ApplicationBase, public inet::TcpSocket::ICa
      * the current implementation assumes a M/M/1 system
      */
     bool loadGenerator_ = false;
-    double lambda_; // arrival rate of a BG request from a BG app
-    double beta_; // arrival rate of a BG request from a BG app
+    double lambda_ = 0.0; // arrival rate of a BG request from a BG app
+    double beta_ = 0.0; // arrival rate of a BG request from a BG app
 
-    int numBgApps_; // number of BG apps
+    int numBgApps_ = 0; // number of BG apps
     double rho_ = 0;
     simtime_t lastFGRequestArrived_ = 0;
 

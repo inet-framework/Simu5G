@@ -24,7 +24,7 @@ class MecRequestBackgroundGeneratorApp : public MecAppBase
 {
   protected:
 
-    int numberOfApplications_;    // requests to send in this session
+    int numberOfApplications_ = 0;    // requests to send in this session
     cMessage *burstTimer = nullptr;
     cMessage *burstPeriod = nullptr;
     bool burstFlag;

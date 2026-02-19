@@ -32,10 +32,10 @@ class MecRnisTestApp : public MecAppBase
 {
     //UDP socket to communicate with the UeApp
     inet::UdpSocket ueSocket;
-    int localUePort;
+    int localUePort = -1;
 
     inet::L3Address ueAppAddress;
-    int ueAppPort;
+    int ueAppPort = -1;
 
     inet::TcpSocket *serviceSocket_ = nullptr;
     inet::TcpSocket *mp1Socket_ = nullptr;
