@@ -640,11 +640,13 @@ void UmRxEntity::reassemble(unsigned int index)
     // check whether some PDCP PDUs have not been delivered
     while (pduSno > lastPduReassembled_ + 1) {
         // emit statistic: packet loss
-        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
-            ue->emit(rlcPduPacketLossSignal_[dir_], 1.0);
-        }
-        else {
-            ue->emit(rlcPduPacketLossD2DSignal_, 1.0);
+        if (ue != nullptr) {
+            if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
+                ue->emit(rlcPduPacketLossSignal_[dir_], 1.0);
+            }
+            else {
+                ue->emit(rlcPduPacketLossD2DSignal_, 1.0);
+            }
         }
 
         lastPduReassembled_++;
@@ -654,11 +656,13 @@ void UmRxEntity::reassemble(unsigned int index)
     lastPduReassembled_ = pduSno;
 
     // emit statistic: packet loss
-    if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
-        ue->emit(rlcPduPacketLossSignal_[dir_], 0.0);
-    }
-    else {
-        ue->emit(rlcPduPacketLossD2DSignal_, 0.0);
+    if (ue != nullptr) {
+        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
+            ue->emit(rlcPduPacketLossSignal_[dir_], 0.0);
+        }
+        else {
+            ue->emit(rlcPduPacketLossD2DSignal_, 0.0);
+        }
     }
 
     pktPdu->insertAtFront(pdu);

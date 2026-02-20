@@ -13,6 +13,7 @@
 
 #include "simu5g/stack/pdcp/NrPdcpEnb.h"
 #include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
+#include "simu5g/stack/sdap/common/QfiContextManager.h"
 
 namespace simu5g {
 
@@ -23,8 +24,6 @@ void NrPdcpEnb::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         inet::NetworkInterface *nic = inet::getContainingNicModule(this);
         drbIndex = par("drbIndex");
-        if (drbIndex != -1)
-            lcid_ = drbIndex;  // assign LCID = DRB index directly
         dualConnectivityEnabled_ = nic->par("dualConnectivityEnabled").boolValue();
         if (dualConnectivityEnabled_)
             dualConnectivityManager_.reference(this, "dualConnectivityManagerModule", true);
@@ -33,6 +32,19 @@ void NrPdcpEnb::initialize(int stage)
     if (stage == inet::INITSTAGE_NETWORK_CONFIGURATION){
         Binder* binder = check_and_cast<Binder*>(getModuleByPath("binder"));
         binder->registerPdcpInstance(nodeId_, drbIndex, this);
+
+        // Set LCID from QfiContextManager (local DRB index within the UE's DRB set)
+        if (drbIndex != -1) {
+            QfiContextManager *qfiMgr = check_and_cast<QfiContextManager *>(
+                getModuleByPath(par("qfiContextManagerModule").stringValue()));
+            int lcid = qfiMgr->getLcid(drbIndex);
+            if (lcid >= 0)
+                lcid_ = lcid;
+            else {
+                EV_WARN << "NrPdcpEnb: no LCID found for drbIndex=" << drbIndex << ", falling back to drbIndex\n";
+                lcid_ = drbIndex;
+            }
+        }
     }
 
     LtePdcpEnbD2D::initialize(stage);
@@ -92,8 +104,14 @@ void NrPdcpEnb::analyzePacket(inet::Packet *pkt)
      * RLC layer will create different RLC entities for different LCIDs
      */
 
-    ConnectionKey key{srcAddr, destAddr, lteInfo->getTypeOfService(), lteInfo->getDirection()};
-    LogicalCid lcid = lookupOrAssignLcid(key);
+    // In DRB mode, always use the fixed LCID assigned from QfiContextManager (no per-flow LCID allocation)
+    LogicalCid lcid;
+    if (drbIndex != -1) {
+        lcid = lcid_;
+    } else {
+        ConnectionKey key{srcAddr, destAddr, lteInfo->getTypeOfService(), lteInfo->getDirection()};
+        lcid = lookupOrAssignLcid(key);
+    }
 
     // Dual Connectivity: adjust source and dest IDs for downlink packets in DC scenarios.
     // If this is a master eNB in DC and there's a secondary for this UE which will get this packet via X2 and transmit it via its RAN

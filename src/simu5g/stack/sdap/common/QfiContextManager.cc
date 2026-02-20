@@ -10,112 +10,137 @@
 ///
 
 #include "simu5g/stack/sdap/common/QfiContextManager.h"
+#include <inet/common/ModuleAccess.h>
 #include <iostream>
-#include <fstream>
-#include <sstream>
-#include <cassert>
 
 namespace simu5g {
-
-std::ostream& operator<<(std::ostream& os, const QfiContext& ctx) {
-    os << "QfiContext{qfi=" << ctx.qfi
-       << ", drbIndex=" << ctx.drbIndex
-       << ", fiveQi=" << ctx.fiveQi
-       << ", isGbr=" << (ctx.isGbr ? "Yes" : "No")
-       << ", delayBudgetMs=" << ctx.delayBudgetMs
-       << ", packetErrorRate=" << ctx.packetErrorRate
-       << ", priorityLevel=" << ctx.priorityLevel
-       << ", description=\"" << ctx.description << "\"}";
-    return os;
-}
 
 Define_Module(QfiContextManager);
 
 void QfiContextManager::initialize()
 {
-    std::string configFile = par("qfiContextFile").stdstringValue();
-    if (!configFile.empty()) {
-        loadFromFile(configFile);
-        EV << "QfiContextManager: Loaded " << qfiMap_.size() << " QFI entries from " << configFile << endl;
-    }
-    WATCH_MAP(qfiMap_);
-    WATCH_MAP(cidToQfi_);
-    WATCH_MAP(qfiToCid_);
-}
-
-void QfiContextManager::registerQfiForCid(MacCid cid, int qfi) {
-    EV_INFO << "QfiContextManager::registerQfiForCid - registering CID=" << cid << " with QFI=" << qfi << endl;
-    cidToQfi_[cid] = qfi;
-    qfiToCid_[qfi] = cid;
-}
-
-int QfiContextManager::getQfiForCid(MacCid cid) const {
-    auto it = cidToQfi_.find(cid);
-    return it != cidToQfi_.end() ? it->second : -1;
-}
-
-MacCid QfiContextManager::getCidForQfi(int qfi) const {
-    auto it = qfiToCid_.find(qfi);
-    return it != qfiToCid_.end() ? it->second : MacCid();
-}
-
-const QfiContext* QfiContextManager::getContextByQfi(int qfi) const {
-    auto it = qfiMap_.find(qfi);
-    return it != qfiMap_.end() ? &it->second : nullptr;
-}
-
-const std::map<MacCid, int>& QfiContextManager::getCidToQfiMap() const {
-    return cidToQfi_;
-}
-
-const std::map<int, QfiContext>& QfiContextManager::getQfiMap() const {
-    return qfiMap_;
-}
-
-// Placeholder for file loader
-void QfiContextManager::loadFromFile(const std::string& filename) {
-    std::ifstream in(filename);
-    if (!in.is_open())
-        throw cRuntimeError("QfiContextManager: Failed to open file '%s'", filename.c_str());
-
-    std::string line;
-
-    while (std::getline(in, line)) {
-        if (line.empty() || line[0] == '#') continue;
-        std::istringstream iss(line);
-        QfiContext ctx;
-        std::string gbrStr;
-
-        if (iss >> ctx.qfi >> ctx.drbIndex >> ctx.fiveQi >> gbrStr
-                >> ctx.delayBudgetMs >> ctx.packetErrorRate
-                >> ctx.priorityLevel >> std::ws)
-        {
-            ctx.isGbr = (gbrStr == "Yes" || gbrStr == "yes");
-            std::getline(iss, ctx.description);
-            qfiMap_[ctx.qfi] = ctx;
+    const cValueArray *arr = check_and_cast<const cValueArray *>(par("drbConfig").objectValue());
+    if (arr->size() > 0) {
+        loadFromJson(arr);
+        EV << "QfiContextManager: Loaded " << drbMap_.size() << " DRB entries from drbConfig" << endl;
+        for (const auto& [drb, ctx] : drbMap_) {
+            EV << "  DRB " << drb << ": ueNodeId=" << ctx.ueNodeId
+               << " lcid=" << ctx.lcid << " qfiList=[";
+            for (int i = 0; i < (int)ctx.qfiList.size(); i++) {
+                if (i) EV << ",";
+                EV << ctx.qfiList[i];
+            }
+            EV << "] gbr=" << ctx.gbr << " delay=" << ctx.delayBudgetMs
+               << "ms per=" << ctx.packetErrorRate << " prio=" << ctx.priorityLevel
+               << " desc=\"" << ctx.description << "\"" << endl;
         }
     }
 
-    if (in.bad())
-        throw cRuntimeError("QfiContextManager: Failed to read file '%s'", filename.c_str());
-
-    in.close();
+    WATCH_MAP(drbMap_);
+    WATCH_MAP(ueQfiToDrb_);
+    WATCH_MAP(qfiToDrb_);
 }
-void QfiContextManager::dump(std::ostream& os) const {
-    os << "=== QfiContextManager dump ===" << std::endl;
-    os << "QFI Map (" << qfiMap_.size() << " entries):" << std::endl;
-    for (const auto& [qfi, ctx] : qfiMap_) {
-        os << "  " << qfi << " -> " << ctx << std::endl;
+
+void QfiContextManager::loadFromJson(const cValueArray *arr)
+{
+    // First pass: count per-UE DRBs to derive LCIDs
+    std::map<MacNodeId, int> ueLocalDrbCount;
+
+    for (int i = 0; i < (int)arr->size(); i++) {
+        const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
+
+        DrbContext ctx;
+        ctx.drbIndex = entry->get("drb").intValue();
+
+        // "ue" field: numeric MacNodeId (gNB side); omitted on UE side
+        if (entry->containsKey("ue"))
+            ctx.ueNodeId = MacNodeId(entry->get("ue").intValue());
+        else
+            ctx.ueNodeId = NODEID_NONE; // UE side: "self"
+
+        // qfiList
+        const cValueArray *qfiArr = check_and_cast<const cValueArray *>(entry->get("qfiList").objectValue());
+        for (int j = 0; j < (int)qfiArr->size(); j++)
+            ctx.qfiList.push_back(qfiArr->get(j).intValue());
+
+        // Optional QoS attributes
+        if (entry->containsKey("gbr"))         ctx.gbr            = entry->get("gbr").boolValue();
+        if (entry->containsKey("delayBudget")) ctx.delayBudgetMs  = entry->get("delayBudget").doubleValue();
+        if (entry->containsKey("per"))         ctx.packetErrorRate= entry->get("per").doubleValue();
+        if (entry->containsKey("priority"))    ctx.priorityLevel  = entry->get("priority").intValue();
+        if (entry->containsKey("description")) ctx.description    = entry->get("description").stringValue();
+
+        // Derive LCID = local DRB index within this UE's DRB set
+        ctx.lcid = ueLocalDrbCount[ctx.ueNodeId]++;
+
+        drbMap_[ctx.drbIndex] = ctx;
+
+        // Build derived lookup tables
+        for (int qfi : ctx.qfiList) {
+            if (ctx.ueNodeId != NODEID_NONE)
+                ueQfiToDrb_[{ctx.ueNodeId, qfi}] = ctx.drbIndex;
+            else
+                qfiToDrb_[qfi] = ctx.drbIndex;
+        }
     }
-    os << "CID to QFI Map (" << cidToQfi_.size() << " entries):" << std::endl;
-    for (const auto& [cid, qfi] : cidToQfi_) {
-        os << "  CID=" << cid << " -> QFI=" << qfi << std::endl;
+}
+
+int QfiContextManager::getDrbIndex(MacNodeId ueNodeId, int qfi) const
+{
+    auto it = ueQfiToDrb_.find({ueNodeId, qfi});
+    return it != ueQfiToDrb_.end() ? it->second : -1;
+}
+
+int QfiContextManager::getDrbIndexForQfi(int qfi) const
+{
+    auto it = qfiToDrb_.find(qfi);
+    return it != qfiToDrb_.end() ? it->second : -1;
+}
+
+const DrbContext* QfiContextManager::getDrbContext(int drbIndex) const
+{
+    auto it = drbMap_.find(drbIndex);
+    return it != drbMap_.end() ? &it->second : nullptr;
+}
+
+int QfiContextManager::getLcid(int drbIndex) const
+{
+    const DrbContext *ctx = getDrbContext(drbIndex);
+    return ctx ? ctx->lcid : -1;
+}
+
+int QfiContextManager::getDrbIndexForMacCid(MacNodeId ueNodeId, LogicalCid lcid) const
+{
+    // Try exact (ueNodeId, lcid) match first (gNB side)
+    for (const auto& [drb, ctx] : drbMap_) {
+        if (ctx.ueNodeId == ueNodeId && ctx.lcid == (int)lcid)
+            return drb;
     }
-    os << "QFI to CID Map (" << qfiToCid_.size() << " entries):" << std::endl;
-    for (const auto& [qfi, cid] : qfiToCid_) {
-        os << "  QFI=" << qfi << " -> CID=" << cid << std::endl;
+    // Fallback: try NODEID_NONE entries matching only on lcid (UE side)
+    for (const auto& [drb, ctx] : drbMap_) {
+        if (ctx.ueNodeId == NODEID_NONE && ctx.lcid == (int)lcid)
+            return drb;
     }
-    os << "===============================" << std::endl;
+    return -1;
+}
+
+void QfiContextManager::dump(std::ostream& os) const
+{
+    os << "=== QfiContextManager dump (" << drbMap_.size() << " DRBs) ===" << std::endl;
+    for (const auto& [drb, ctx] : drbMap_) {
+        os << "  DRB " << drb << ": ueNodeId=" << ctx.ueNodeId
+           << " lcid=" << ctx.lcid << " qfiList=[";
+        for (int i = 0; i < (int)ctx.qfiList.size(); i++) {
+            if (i) os << ",";
+            os << ctx.qfiList[i];
+        }
+        os << "] gbr=" << ctx.gbr
+           << " delay=" << ctx.delayBudgetMs << "ms"
+           << " per=" << ctx.packetErrorRate
+           << " prio=" << ctx.priorityLevel
+           << " desc=\"" << ctx.description << "\"" << std::endl;
+    }
+    os << "==============================" << std::endl;
 }
 
 } // namespace simu5g

@@ -15,6 +15,7 @@
 #include "simu5g/stack/pdcp/NrTxPdcpEntity.h"
 #include "simu5g/stack/pdcp/NrRxPdcpEntity.h"
 #include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
+#include "simu5g/stack/sdap/common/QfiContextManager.h"
 
 namespace simu5g {
 
@@ -27,8 +28,6 @@ void NrPdcpUe::initialize(int stage)
         dualConnectivityEnabled_ = nic->par("dualConnectivityEnabled").boolValue();
 
         drbIndex = par("drbIndex");
-        if (drbIndex != -1)
-            lcid_ = drbIndex;  // assign LCID = DRB index directly
 
         // initialize gates
         if (drbIndex == -1) {
@@ -52,6 +51,19 @@ void NrPdcpUe::initialize(int stage)
         nrNodeId_ = MacNodeId(getContainingNode(this)->par("nrMacNodeId").intValue());
         Binder* binder = check_and_cast<Binder*>(getModuleByPath("binder"));
         binder->registerPdcpInstance(nrNodeId_, drbIndex, this);
+
+        // Set LCID from QfiContextManager (local DRB index within this UE's DRB set)
+        if (drbIndex != -1) {
+            QfiContextManager *qfiMgr = check_and_cast<QfiContextManager *>(
+                getModuleByPath(par("qfiContextManagerModule").stringValue()));
+            int lcid = qfiMgr->getLcid(drbIndex);
+            if (lcid >= 0)
+                lcid_ = lcid;
+            else {
+                EV_WARN << "NrPdcpUe: no LCID found for drbIndex=" << drbIndex << ", falling back to drbIndex\n";
+                lcid_ = drbIndex;
+            }
+        }
     }
 
 
@@ -154,8 +166,14 @@ void NrPdcpUe::analyzePacket(inet::Packet *pkt)
      * The RLC layer will create different RLC entities for different LCIDs
      */
 
-    ConnectionKey key{Ipv4Address(lteInfo->getSrcAddr()), destAddr, lteInfo->getTypeOfService(), lteInfo->getDirection()};
-    LogicalCid lcid = lookupOrAssignLcid(key);
+    // In DRB mode, always use the fixed LCID assigned from QfiContextManager (no per-flow LCID allocation)
+    LogicalCid lcid;
+    if (drbIndex != -1) {
+        lcid = lcid_;
+    } else {
+        ConnectionKey key{Ipv4Address(lteInfo->getSrcAddr()), destAddr, lteInfo->getTypeOfService(), lteInfo->getDirection()};
+        lcid = lookupOrAssignLcid(key);
+    }
 
     // assign LCID
     lteInfo->setLcid(lcid);

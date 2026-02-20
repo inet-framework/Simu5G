@@ -153,15 +153,6 @@ void LteMacEnbD2D::macPduUnmake(cPacket *cpkt)
         }
 
         EV << "LteMacEnbD2D: Lcid --->"<< (int)lcid << " Cid: " << cid <<endl;
-        if (qfiContextManager_) {
-            qfiContextManager_->registerQfiForCid(cid, (int)lcid + 1);
-
-            for (const auto& [cid, qfi] : qfiContextManager_->getCidToQfiMap()) {
-                EV << "CID " << cid << " → QFIs: ";
-                EV << qfi << " ";
-                EV << endl;
-            }
-        }
 
         sendUpperPackets(upPkt);
     }

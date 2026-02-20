@@ -15,6 +15,7 @@
 #include <omnetpp.h>
 #include "simu5g/stack/sdap/common/QfiContextManager.h"
 #include "simu5g/stack/sdap/common/ReflectiveQosTable.h"
+#include "simu5g/common/binder/Binder.h"
 #include <inet/common/ModuleRefByPar.h>
 
 using namespace omnetpp;
@@ -47,6 +48,7 @@ class NrSdap : public cSimpleModule
   protected:
     inet::ModuleRefByPar<QfiContextManager> qfiContextManager;
     inet::ModuleRefByPar<ReflectiveQosTable> reflectiveQosTable;
+    inet::ModuleRefByPar<Binder> binder_;
     bool isUe = true;  // Node role: true for UE, false for gNB
 
   protected:
