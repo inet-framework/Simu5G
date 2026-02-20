@@ -92,9 +92,8 @@ void QfiContextManager::loadFromFile(const std::string& filename) {
         }
     }
 
-    //TODO enable this (currently fails!)
-//    if (in.fail())
-//        throw cRuntimeError("QfiContextManager: Failed to read file '%s'", filename.c_str());
+    if (in.bad())
+        throw cRuntimeError("QfiContextManager: Failed to read file '%s'", filename.c_str());
 
     in.close();
 }
