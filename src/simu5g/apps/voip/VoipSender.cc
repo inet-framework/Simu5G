@@ -12,7 +12,6 @@
 #include <cmath>
 #include <inet/common/TimeTag_m.h>
 #include "simu5g/apps/voip/VoipSender.h"
-#include "simu5g/common/QosTag_m.h"
 
 namespace simu5g {
 
@@ -97,6 +96,11 @@ void VoipSender::initTraffic()
         socket.bind(localPort_);
 
         int tos = par("tos");
+        int dscp = par("dscp");
+        if (tos != -1 && dscp != -1)
+            throw cRuntimeError("VoipSender: cannot set both 'tos' and 'dscp' parameters");
+        if (dscp >= 0)
+            tos = dscp << 2;  // DSCP occupies top 6 bits of TOS byte
         if (tos != -1)
             socket.setTos(tos);
 
@@ -167,9 +171,6 @@ void VoipSender::sendVoIPPacket()
     voip->addTag<CreationTimeTag>()->setCreationTime(simTime());
     packet->insertAtBack(voip);
     EV << "VoipSender::sendVoIPPacket - Talkspurt[" << iDtalk_ - 1 << "] - Sending frame[" << iDframe_ << "]\n";
-
-    packet->addTagIfAbsent<simu5g::QosReq>()->setQfi(par("qfi")); //setting qfi tag
-    EV_INFO << "VoIPSender: QFI = " << par("qfi") << "<n";
 
     socket.sendTo(packet, destAddress_, destPort_);
     --nframesTmp_;
