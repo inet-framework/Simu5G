@@ -70,7 +70,7 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     uint8_t qfi = 0;
     bool qfiFromReflectiveQos = false;
 
-    // Extract QFI from QosReq if present
+    // Extract QFI from QosReq tag if present (set by GtpUser from GTP-U header, or by app directly)
     if (pkt->hasTag<QosReq>()) {
         qfi = pkt->getTag<QosReq>()->getQfi();
         EV_INFO << "SDAP TX: QFI = " << (int)qfi << " extracted from QosReq\n";
