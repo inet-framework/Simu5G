@@ -23,17 +23,17 @@ namespace simu5g;
 // the SDAP layer. The tags enable QFI-to-DRB mapping and reverse lookup
 // during transmission and reception.
 //
-// QosReq is typically used when sending packets downwards.
-// QosInd is typically used when receiving packets upwards.
+// QfiReq is typically used when sending packets downwards.
+// QfiInd is typically used when receiving packets upwards.
 //
-class QosTagBase extends inet::TagBase {
+class QfiTagBase extends inet::TagBase {
 	    uint8_t qfi = 0;  // QFI value (range: 0–63), defaults to 0 if not set
 }
 
-class QosReq extends QosTagBase
+class QfiReq extends QfiTagBase
 {
 }
 
-class QosInd extends QosTagBase
+class QfiInd extends QfiTagBase
 {
 }

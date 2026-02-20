@@ -10,7 +10,7 @@
 //
 #include "simu5g/corenetwork/gtp/GtpUser.h"
 #include "simu5g/corenetwork/trafficFlowFilter/TftControlInfo_m.h"
-#include "simu5g/common/QosTag_m.h"
+#include "simu5g/common/QfiTag_m.h"
 #include <iostream>
 #include <inet/networklayer/common/L3AddressResolver.h>
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
@@ -236,7 +236,7 @@ void GtpUser::handleFromUdp(Packet *pkt)
 
     // Restore QFI from GTP-U header so SDAP can use it for QFI-to-DRB mapping
     if (gtpUserMsg->getQfi() > 0)
-        originalPacket->addTagIfAbsent<QosReq>()->setQfi(gtpUserMsg->getQfi());
+        originalPacket->addTagIfAbsent<QfiReq>()->setQfi(gtpUserMsg->getQfi());
     // remove any pending socket indications
     auto sockInd = pkt->removeTagIfPresent<SocketInd>();
 

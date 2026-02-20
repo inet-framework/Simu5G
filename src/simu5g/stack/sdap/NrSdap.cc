@@ -13,7 +13,7 @@
 #include "NrSdap.h"
 
 #include "simu5g/stack/sdap/packet/NrSdapHeader_m.h"
-#include "simu5g/common/QosTag_m.h"
+#include "simu5g/common/QfiTag_m.h"
 #include "simu5g/common/RadioBearerTag_m.h"
 #include "simu5g/common/LteCommon.h"
 #include <inet/common/packet/Packet.h>
@@ -70,10 +70,10 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     uint8_t qfi = 0;
     bool qfiFromReflectiveQos = false;
 
-    // Extract QFI from QosReq tag if present (set by GtpUser from GTP-U header, or by app directly)
-    if (pkt->hasTag<QosReq>()) {
-        qfi = pkt->getTag<QosReq>()->getQfi();
-        EV_INFO << "SDAP TX: QFI = " << (int)qfi << " extracted from QosReq\n";
+    // Extract QFI from QfiReq tag if present (set by GtpUser from GTP-U header, or by app directly)
+    if (pkt->hasTag<QfiReq>()) {
+        qfi = pkt->getTag<QfiReq>()->getQfi();
+        EV_INFO << "SDAP TX: QFI = " << (int)qfi << " extracted from QfiReq\n";
     }
     else {
         // Try reflective QoS lookup if UE and table is available
@@ -84,10 +84,10 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
                 qfiFromReflectiveQos = true;
                 EV_INFO << "SDAP TX: QFI = " << (int)qfi << " derived from reflective QoS\n";
             } else {
-                EV_WARN << "SDAP TX: No QosReq found and no reflective QoS match, defaulting QFI to 0\n";
+                EV_WARN << "SDAP TX: No QfiReq found and no reflective QoS match, defaulting QFI to 0\n";
             }
         } else {
-            EV_WARN << "SDAP TX: QosReq not found, defaulting QFI to 0\n";
+            EV_WARN << "SDAP TX: QfiReq not found, defaulting QFI to 0\n";
         }
     }
 
@@ -186,7 +186,7 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
     }
 
     // Add QoS indication tag for upper layers
-    auto qosIndTag = pkt->addTagIfAbsent<QosInd>();
+    auto qosIndTag = pkt->addTagIfAbsent<QfiInd>();
     qosIndTag->setQfi(qfi);
 
     // Set protocol tag for outgoing frame to IP layer
