@@ -187,5 +187,12 @@ void VoipSender::sendVoIPPacket()
         scheduleAt(simTime() + sampling_time, selfSender_);
 }
 
+void VoipSender::refreshDisplay() const
+{
+    char buf[80];
+    sprintf(buf, "sent: %d | %s #%d", iDframe_, isTalk_ ? "TALK" : "SIL", iDtalk_);
+    getDisplayString().setTagArg("t", 0, buf);
+}
+
 } //namespace
 
