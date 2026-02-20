@@ -31,6 +31,7 @@ simple LteRlcUm like ILteRlcUm
 
         string txEntityModuleType = default("simu5g.stack.rlc.um.UmTxEntity");
         string rxEntityModuleType = default("simu5g.stack.rlc.um.UmRxEntity");
+        bool multiSession = default(true); // if false, only one MacCid per RLC-UM instance (DRB model)
 
         //# Rlc Queue
         int queueSize @unit(B) = default(2MiB);              // RLC TX entity SDU queue size (0: unlimited)

@@ -290,9 +290,12 @@ void LtePdcpBase::initialize(int stage)
         const char *txEntityModuleTypeName = par("txEntityModuleType").stringValue();
         txEntityModuleType_ = cModuleType::get(txEntityModuleTypeName);
 
+        multiSession_ = par("multiSession").boolValue();
+
         // TODO WATCH_MAP(gatemap_);
         WATCH(nodeId_);
         WATCH(lcid_);
+        WATCH(multiSession_);
     }
 }
 
@@ -319,6 +322,10 @@ LteTxPdcpEntity *LtePdcpBase::lookupTxEntity(MacCid cid)
 
 LteTxPdcpEntity *LtePdcpBase::createTxEntity(MacCid cid)
 {
+    if (!multiSession_ && !txEntities_.empty())
+        throw cRuntimeError("LtePdcpBase: multiSession=false but attempt to create second TX entity for CID %s (existing CID: %s)",
+            cid.str().c_str(), txEntities_.begin()->first.str().c_str());
+
     std::stringstream buf;
     buf << "tx-" << cid.getNodeId() << "-" << cid.getLcid();
     LteTxPdcpEntity *txEnt = check_and_cast<LteTxPdcpEntity *>(txEntityModuleType_->createScheduleInit(buf.str().c_str(), this));
@@ -338,6 +345,10 @@ LteRxPdcpEntity *LtePdcpBase::lookupRxEntity(MacCid cid)
 
 LteRxPdcpEntity *LtePdcpBase::createRxEntity(MacCid cid)
 {
+    if (!multiSession_ && !rxEntities_.empty())
+        throw cRuntimeError("LtePdcpBase: multiSession=false but attempt to create second RX entity for CID %s (existing CID: %s)",
+            cid.str().c_str(), rxEntities_.begin()->first.str().c_str());
+
     std::stringstream buf;
     buf << "rx-" << cid.getNodeId() << "-" << cid.getLcid();
     LteRxPdcpEntity *rxEnt = check_and_cast<LteRxPdcpEntity *>(rxEntityModuleType_->createScheduleInit(buf.str().c_str(), this));

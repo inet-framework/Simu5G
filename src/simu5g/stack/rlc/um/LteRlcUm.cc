@@ -37,6 +37,9 @@ UmTxEntity *LteRlcUm::createTxBuffer(MacCid cid, FlowControlInfo *lteInfo)
 {
     if (txEntities_.find(cid) != txEntities_.end())
         throw cRuntimeError("RLC-UM connection TX entity for %s already exists", cid.str().c_str());
+    if (!multiSession_ && !txEntities_.empty())
+        throw cRuntimeError("LteRlcUm: multiSession=false but attempt to create second TX entity for CID %s (existing CID: %s)",
+            cid.str().c_str(), txEntities_.begin()->first.str().c_str());
 
     std::stringstream buf;
     buf << "UmTxEntity Lcid: " << cid.getLcid() << " cid: " << cid.asPackedInt();
@@ -61,6 +64,9 @@ UmRxEntity *LteRlcUm::createRxBuffer(MacCid cid, FlowControlInfo *lteInfo)
 {
     if (rxEntities_.find(cid) != rxEntities_.end())
         throw cRuntimeError("RLC-UM connection RX entity for %s already exists", cid.str().c_str());
+    if (!multiSession_ && !rxEntities_.empty())
+        throw cRuntimeError("LteRlcUm: multiSession=false but attempt to create second RX entity for CID %s (existing CID: %s)",
+            cid.str().c_str(), rxEntities_.begin()->first.str().c_str());
 
     std::stringstream buf;
     buf << "UmRxEntity Lcid: " << cid.getLcid() << " cid: " << cid.asPackedInt();
@@ -229,12 +235,14 @@ void LteRlcUm::initialize(int stage)
         // parameters
         txEntityModuleType_ = cModuleType::get(par("txEntityModuleType").stringValue());
         rxEntityModuleType_ = cModuleType::get(par("rxEntityModuleType").stringValue());
+        multiSession_ = par("multiSession").boolValue();
 
         std::string nodeTypePar = par("nodeType").stdstringValue();
         nodeType = static_cast<RanNodeType>(cEnum::get("simu5g::RanNodeType")->lookup(nodeTypePar.c_str()));
 
         WATCH_MAP(txEntities_);
         WATCH_MAP(rxEntities_);
+        WATCH(multiSession_);
     }
 }
 
