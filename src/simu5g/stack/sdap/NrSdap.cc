@@ -18,6 +18,7 @@
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include <inet/common/packet/Packet.h>
+#include <inet/common/stlutils.h>
 #include <inet/common/ProtocolTag_m.h>
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/transportlayer/tcp_common/TcpHeader.h>
@@ -211,10 +212,7 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
     // Validate QFI ↔ DRB consistency
     const DrbContext* ctxValidate = qfiContextManager->getDrbContext(drbIndex);
     if (ctxValidate) {
-        bool qfiInList = false;
-        for (int q : ctxValidate->qfiList)
-            if (q == qfi) { qfiInList = true; break; }
-        if (!qfiInList)
+        if (!inet::utils::contains(ctxValidate->qfiList, (int)qfi))
             EV_WARN << "SDAP RX: DRB/QFI mismatch! Received on DRB=" << drbIndex << ", QFI=" << qfi << " not in qfiList\n";
     }
 
