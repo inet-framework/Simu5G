@@ -22,6 +22,8 @@ QoSAwareScheduler::QoSAwareScheduler(Binder* binder, double pfAlpha)
 
 double QoSAwareScheduler::computeQosWeightFromContext(const DrbContext& ctx)
 {
+    // NOTE: It would be incorrect to use QFI or 5QI as input here.
+    // Removed code: weight *= (10.0 - ctx.fiveQi + 1);  // Lower 5QI = better
     double weight = 1.0;
     if (ctx.gbr) weight *= 2.0;
     weight *= 10.0 / (ctx.priorityLevel + 1);  // Lower priority level = higher weight
