@@ -22,6 +22,9 @@ namespace simu5g {
 class MacDrbMultiplexer : public cSimpleModule
 {
   protected:
+    // Maps LCID to the RLC gate index (learned from RLC→MAC traffic)
+    std::map<LogicalCid, int> lcidToDrb_;
+
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
 };

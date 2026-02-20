@@ -26,14 +26,30 @@ void MacDrbMultiplexer::handleMessage(cMessage *msg)
     cGate *incomingGate = pkt->getArrivalGate();
 
     if (incomingGate == gate("macIn")) {
+        // MAC → RLC: look up the correct RLC gate index from the learned mapping
         auto lteInfo = pkt->getTag<FlowControlInfo>();
-        int drbIndex = lteInfo->getLcid();  // Assuming LCID == DRB index
-        int numDrbs = gateSize("rlcOut");
-        if (drbIndex < 0 || drbIndex >= numDrbs)
-            throw cRuntimeError("Invalid DRB index %d", drbIndex);
+        LogicalCid lcid = lteInfo->getLcid();
+        auto it = lcidToDrb_.find(lcid);
+        int drbIndex;
+        if (it != lcidToDrb_.end()) {
+            drbIndex = it->second;
+        }
+        else {
+            // Fallback for packets arriving before the mapping is learned
+            // (e.g., DL reception on UE before UL traffic is established)
+            int numDrbs = gateSize("rlcOut");
+            drbIndex = std::min((int)lcid, numDrbs - 1);
+        }
         send(pkt, "rlcOut", drbIndex);
     }
     else {
+        // RLC → MAC: learn the LCID-to-gate mapping from the incoming gate index
+        auto lteInfo = pkt->findTag<FlowControlInfo>();
+        if (lteInfo != nullptr) {
+            LogicalCid lcid = lteInfo->getLcid();
+            int gateIndex = incomingGate->getIndex();
+            lcidToDrb_[lcid] = gateIndex;
+        }
         send(pkt, "macOut");
     }
 }
