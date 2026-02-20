@@ -98,6 +98,9 @@ class LtePdcpBase : public cSimpleModule
     // Connection Identifier
     LogicalCid lcid_ = 1;
 
+    // If false, only one MacCid is allowed per PDCP instance (DRB model)
+    bool multiSession_ = true;
+
     // Hash Table used for CID <-> Connection mapping
     std::unordered_map<ConnectionKey, LogicalCid, ConnectionKeyHash> lcidTable_;
 

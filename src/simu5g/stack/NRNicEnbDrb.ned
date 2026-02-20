@@ -54,6 +54,7 @@ module NRNicEnbDrb extends LteNicEnbD2D
         nrPdcp[numDrbs]: NrPdcpEnb if hasNrSdap {
             @display("p=245,177,r,10");
             drbIndex = index;  // assign DRB ID
+            multiSession = false;
         }
 
 		// RLC Layer
@@ -64,7 +65,7 @@ module NRNicEnbDrb extends LteNicEnbD2D
             *.macModule = "^.^.mac";
             *.packetFlowManagerModule = parent.hasRniSupport ? "^.^.packetFlowManager" : "";
             um.nodeType = parent.nodeType;
-
+            um.multiSession = false;
         }
 
         lMux: MacDrbMultiplexer {

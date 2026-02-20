@@ -32,6 +32,7 @@ simple LtePdcpBase like ILtePdcp
         string backgroundRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
         string rxEntityModuleType = default("simu5g.stack.pdcp.LteRxPdcpEntity");
         string txEntityModuleType = default("simu5g.stack.pdcp.LteTxPdcpEntity");
+        bool multiSession = default(true); // if false, only one MacCid per PDCP instance (DRB model)
 
         //# Statistics
         @signal[receivedPacketFromUpperLayer];

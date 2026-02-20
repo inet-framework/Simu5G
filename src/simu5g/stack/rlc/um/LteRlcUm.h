@@ -65,6 +65,7 @@ class LteRlcUm : public cSimpleModule
     // parameters
     cModuleType *txEntityModuleType_;
     cModuleType *rxEntityModuleType_;
+    bool multiSession_ = true; // if false, only one MacCid per RLC-UM instance (DRB model)
 
     /*
     * Data structures

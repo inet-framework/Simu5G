@@ -85,6 +85,7 @@ module NRNicUeDrb extends LteNicUeD2D
         nrPdcp[numDrbs]: NrPdcpUe if hasNrSdap {
             @display("p=596,175,r,10");
             drbIndex = index;  // assign DRB ID
+            multiSession = false;
         }
 
         // RLC Layer
@@ -95,6 +96,7 @@ module NRNicUeDrb extends LteNicUeD2D
             *.macModule = "^.^.nrMac";
             *.packetFlowManagerModule = parent.hasRniSupport ? "^.^.nrPacketFlowManager" : "";
             um.nodeType = parent.nodeType;
+            um.multiSession = false;
         }
         // MAC Layer
         nrMac: <default("NrMacUe")> like ILteMac {
