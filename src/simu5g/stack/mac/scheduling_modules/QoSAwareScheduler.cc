@@ -20,27 +20,33 @@ QoSAwareScheduler::QoSAwareScheduler(Binder* binder, double pfAlpha)
 {
 }
 
-double QoSAwareScheduler::computeQosWeightFromContext(const QfiContext& ctx)
+double QoSAwareScheduler::computeQosWeightFromContext(const DrbContext& ctx)
 {
+    // NOTE: It would be incorrect to use QFI or 5QI as input here.
+    // Removed code: weight *= (10.0 - ctx.fiveQi + 1);  // Lower 5QI = better
     double weight = 1.0;
-    weight *= (10.0 - ctx.fiveQi + 1);  // Lower 5QI = better
-    if (ctx.isGbr) weight *= 2.0;
-    weight *= 10.0 / (ctx.priorityLevel + 1);  // Lower priority = better
+    if (ctx.gbr) weight *= 2.0;
+    weight *= 10.0 / (ctx.priorityLevel + 1);  // Lower priority level = higher weight
     if (ctx.delayBudgetMs <= 10) weight *= 5.0;
     else if (ctx.delayBudgetMs <= 50) weight *= 3.0;
     else if (ctx.delayBudgetMs <= 100) weight *= 1.5;
-    EV << NOW << "Qfi: "<< ctx.qfi << " 5QI: "<< ctx.fiveQi << " Weight: "<< weight << endl;
+    EV << NOW << " DRB " << ctx.drbIndex << " lcid=" << ctx.lcid << " Weight: " << weight << endl;
     return weight;
 }
 
-const QfiContext* QoSAwareScheduler::getQfiContextForCid(MacCid cid)
+const DrbContext* QoSAwareScheduler::getDrbContextForCid(MacCid cid)
 {
-    int qfi = qfiContextMgr_->getQfiForCid(cid);
-    if (qfi < 0) {
-        EV_WARN << "QoSAwareScheduler: No QFI registered for CID " << cid << "\n";
-        return nullptr;
+    // Look up DRB context by LCID (= local DRB index within the UE's DRB set)
+    int lcid = (int)cid.getLcid();
+    // Search drbMap for a DrbContext whose lcid matches and ueNodeId matches
+    MacNodeId ueNodeId = cid.getNodeId();
+    const auto& drbMap = qfiContextMgr_->getDrbMap();
+    for (const auto& [drb, ctx] : drbMap) {
+        if (ctx.lcid == lcid && (ctx.ueNodeId == ueNodeId || ctx.ueNodeId == NODEID_NONE))
+            return &ctx;
     }
-    return qfiContextMgr_ -> getContextByQfi(qfi);
+    EV_WARN << "QoSAwareScheduler: No DRB context for CID " << cid << "\n";
+    return nullptr;
 }
 
 void QoSAwareScheduler::prepareSchedule()
@@ -94,7 +100,7 @@ void QoSAwareScheduler::prepareSchedule()
             }
         }
 
-        const QfiContext* ctx = getQfiContextForCid(cid);
+        const DrbContext* ctx = getDrbContextForCid(cid);
         double qosWeight = ctx ? computeQosWeightFromContext(*ctx) : 1.0;
 
         EV << NOW << "QoSAwareScheduler::Cid: "<< cid << " QoS Weight: " << qosWeight<< endl;

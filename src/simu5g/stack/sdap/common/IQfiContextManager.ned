@@ -17,5 +17,5 @@ package simu5g.stack.sdap.common;
 moduleinterface IQfiContextManager
 {
     parameters:
-        string qfiContextFile;
+        object drbConfig;
 }

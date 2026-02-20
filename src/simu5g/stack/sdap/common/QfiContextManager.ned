@@ -23,5 +23,5 @@ simple QfiContextManager like IQfiContextManager
     parameters:
         @display("i=block/table2");
         @class(QfiContextManager);
-        string qfiContextFile = default("");  // Path to QFI context configuration file
+        object drbConfig = default([]);  // JSON array of DRB configurations
 }

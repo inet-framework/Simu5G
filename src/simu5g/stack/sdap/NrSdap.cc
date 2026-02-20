@@ -16,7 +16,9 @@
 #include "simu5g/common/QfiTag_m.h"
 #include "simu5g/common/RadioBearerTag_m.h"
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/common/LteControlInfo.h"
 #include <inet/common/packet/Packet.h>
+#include <inet/common/stlutils.h>
 #include <inet/common/ProtocolTag_m.h>
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/transportlayer/tcp_common/TcpHeader.h>
@@ -29,6 +31,8 @@ Define_Module(NrSdap);
 
 void NrSdap::initialize()
 {
+    binder_.reference(this, "binderModule", true);
+
     // Get pointer to QfiContextManager module (mandatory for SDAP)
     qfiContextManager.reference(this, "qfiContextManagerModule", true);
 
@@ -75,31 +79,57 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
         qfi = pkt->getTag<QfiReq>()->getQfi();
         EV_INFO << "SDAP TX: QFI = " << (int)qfi << " extracted from QfiReq\n";
     }
-    else {
-        // Try reflective QoS lookup if UE and table is available
-        if (isUe && reflectiveQosTable != nullptr) {
+    else if (isUe) {
+        // UE UL: derive QFI from DSCP field of the IP header (DSCP = TOS >> 2)
+        // FlowControlInfo.typeOfService is the raw TOS byte set by Ip2Nic::toStackUe()
+        if (pkt->hasTag<FlowControlInfo>()) {
+            uint8_t dscp = (uint8_t)(pkt->getTag<FlowControlInfo>()->getTypeOfService() >> 2);
+            if (dscp > 0) {
+                qfi = dscp;
+                EV_INFO << "SDAP TX: QFI = " << (int)qfi << " derived from DSCP=" << (int)dscp << "\n";
+            }
+        }
+        // If DSCP gave no QFI, try reflective QoS
+        if (qfi == 0 && reflectiveQosTable != nullptr) {
             uint8_t reflectiveQfi = reflectiveQosTable->lookupUplinkQfi(pkt);
             if (reflectiveQfi > 0) {
                 qfi = reflectiveQfi;
                 qfiFromReflectiveQos = true;
                 EV_INFO << "SDAP TX: QFI = " << (int)qfi << " derived from reflective QoS\n";
-            } else {
-                EV_WARN << "SDAP TX: No QfiReq found and no reflective QoS match, defaulting QFI to 0\n";
             }
-        } else {
-            EV_WARN << "SDAP TX: QfiReq not found, defaulting QFI to 0\n";
         }
+        if (qfi == 0)
+            EV_WARN << "SDAP TX: No QFI from DSCP or reflective QoS, defaulting QFI to 0\n";
+    }
+    else {
+        EV_WARN << "SDAP TX: QfiReq not found on gNB path, defaulting QFI to 0\n";
     }
 
-    const QfiContext* ctx = qfiContextManager->getContextByQfi(qfi);
-
-    // Lookup DRB mapping
+    // Lookup DRB index
     int drbIndex = 0;
 
-    if (ctx)
-        drbIndex = ctx->drbIndex;
-    else
-        EV_WARN << "SDAP TX: No mapping for QFI=" << (int)qfi << ", using default DRB 0\n";
+    if (isUe) {
+        // UE side: simple QFI -> drbIndex lookup
+        int idx = qfiContextManager->getDrbIndexForQfi(qfi);
+        if (idx >= 0)
+            drbIndex = idx;
+        else
+            EV_WARN << "SDAP TX: No DRB mapping for QFI=" << (int)qfi << " on UE, using DRB 0\n";
+    } else {
+        // gNB side: need dest UE nodeId + QFI -> drbIndex
+        MacNodeId destUeId = NODEID_NONE;
+        const auto& ipHdr = pkt->peekAtFront<inet::Ipv4Header>();
+        destUeId = binder_->getMacNodeId(ipHdr->getDestAddress());
+        if (destUeId == NODEID_NONE)
+            EV_WARN << "SDAP TX: Cannot resolve dest UE nodeId for " << ipHdr->getDestAddress() << ", using DRB 0\n";
+        else {
+            int idx = qfiContextManager->getDrbIndex(destUeId, qfi);
+            if (idx >= 0)
+                drbIndex = idx;
+            else
+                EV_WARN << "SDAP TX: No DRB mapping for ueNodeId=" << destUeId << " QFI=" << (int)qfi << ", using DRB 0\n";
+        }
+    }
 
     EV_INFO << "SDAP TX: Selected DRB=" << drbIndex << " for QFI=" << (int)qfi << "\n";
 
@@ -171,18 +201,19 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
     else {
         EV_INFO << "SDAP RX: No SDAP header expected for DRB " << drbIndex << "\n";
 
-        // For DRBs without SDAP header, use default QFI or derive from DRB context
-        const QfiContext* ctx = qfiContextManager->getContextByQfi(drbIndex);
-        if (ctx) {
-            qfi = ctx->qfi;
+        // For DRBs without SDAP header, derive QFI from DRB context (use first QFI in the list)
+        const DrbContext* ctx = qfiContextManager->getDrbContext(drbIndex);
+        if (ctx && !ctx->qfiList.empty()) {
+            qfi = ctx->qfiList[0];
             EV_INFO << "SDAP RX: Using QFI " << qfi << " from DRB context\n";
         }
     }
 
     // Validate QFI ↔ DRB consistency
-    const QfiContext* ctxValidate = qfiContextManager->getContextByQfi(qfi);
-    if (ctxValidate && ctxValidate->drbIndex != drbIndex) {
-        EV_WARN << "SDAP RX: DRB/QFI mismatch! Received on DRB=" << drbIndex << ", QFI=" << qfi << " should map to DRB=" << ctxValidate->drbIndex << "\n";
+    const DrbContext* ctxValidate = qfiContextManager->getDrbContext(drbIndex);
+    if (ctxValidate) {
+        if (!inet::utils::contains(ctxValidate->qfiList, (int)qfi))
+            EV_WARN << "SDAP RX: DRB/QFI mismatch! Received on DRB=" << drbIndex << ", QFI=" << qfi << " not in qfiList\n";
     }
 
     // Add QoS indication tag for upper layers

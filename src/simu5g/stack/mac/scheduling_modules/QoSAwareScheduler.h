@@ -52,8 +52,8 @@ class QoSAwareScheduler : public LteScheduler
     QfiContextManager* qfiContextMgr_ = nullptr;
 
     // Helpers
-    double computeQosWeightFromContext(const QfiContext& ctx);
-    const QfiContext* getQfiContextForCid(MacCid cid);
+    double computeQosWeightFromContext(const DrbContext& ctx);
+    const DrbContext* getDrbContextForCid(MacCid cid);
 
   public:
     double& pfAlpha() { return pfAlpha_; }

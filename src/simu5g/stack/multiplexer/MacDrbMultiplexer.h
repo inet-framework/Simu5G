@@ -19,11 +19,16 @@ using namespace omnetpp;
 
 namespace simu5g {
 
+class QfiContextManager;
+
 class MacDrbMultiplexer : public cSimpleModule
 {
   protected:
-    // Maps LCID to the RLC gate index (learned from RLC→MAC traffic)
-    std::map<LogicalCid, int> lcidToDrb_;
+    // Maps MacCid (nodeId+lcid) to the RLC gate index (learned from RLC→MAC traffic)
+    std::map<MacCid, int> macCidToDrb_;
+
+    // Optional: used as fallback when the learned map has no entry (gNB UL-first scenario)
+    QfiContextManager *qfiContextManager_ = nullptr;
 
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

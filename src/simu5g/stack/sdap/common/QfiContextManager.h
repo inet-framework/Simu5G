@@ -13,41 +13,53 @@
 #ifndef STACK_SDAP_COMMON_QFICONTEXTMANAGER_H_
 #define STACK_SDAP_COMMON_QFICONTEXTMANAGER_H_
 
-#pragma once
-
 #include <omnetpp.h>
 #include <string>
 #include <map>
+#include <vector>
 #include "QfiContext.h"
 #include "simu5g/common/LteCommon.h"
 
-using namespace omnetpp;
-
 namespace simu5g {
+
+using namespace omnetpp;
 
 class QfiContextManager : public cSimpleModule
 {
   protected:
-    std::map<int, QfiContext> qfiMap_;           // QFI -> QoS context
-    std::map<MacCid, int> cidToQfi_;             // CID -> QFI
-    std::map<int, MacCid> qfiToCid_;             // QFI -> CID
+    // Primary table: global drbIndex -> DrbContext
+    std::map<int, DrbContext> drbMap_;
+
+    // Derived lookup: (ueNodeId, qfi) -> global drbIndex  [gNB TX path]
+    std::map<std::pair<MacNodeId,int>, int> ueQfiToDrb_;
+
+    // Derived lookup: qfi -> global drbIndex  [UE path, ueNodeId==0]
+    std::map<int, int> qfiToDrb_;
 
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override { throw cRuntimeError("QfiContextManager does not process messages"); }
 
+    void loadFromJson(const cValueArray *arr);
+
   public:
-    void loadFromFile(const std::string& filename);
+    // gNB TX: given dest UE nodeId + QFI -> global drbIndex (-1 if not found)
+    int getDrbIndex(MacNodeId ueNodeId, int qfi) const;
 
-    // Register a single QFI ↔ CID pair
-    void registerQfiForCid(MacCid cid, int qfi);
+    // UE TX: given QFI -> global drbIndex (-1 if not found)
+    int getDrbIndexForQfi(int qfi) const;
 
-    // Accessors
-    const QfiContext* getContextByQfi(int qfi) const;
-    int getQfiForCid(MacCid cid) const;
-    MacCid getCidForQfi(int qfi) const;
-    const std::map<int, QfiContext>& getQfiMap() const;
-    const std::map<MacCid, int>& getCidToQfiMap() const;
+    // Any: given global drbIndex -> DrbContext (nullptr if not found)
+    const DrbContext* getDrbContext(int drbIndex) const;
+
+    // PDCP: given global drbIndex -> LCID (-1 if not found)
+    int getLcid(int drbIndex) const;
+
+    // MacDrbMultiplexer: given (ueNodeId, lcid) -> global drbIndex (-1 if not found)
+    int getDrbIndexForMacCid(MacNodeId ueNodeId, LogicalCid lcid) const;
+
+    // Scheduler: access full DRB map
+    const std::map<int, DrbContext>& getDrbMap() const { return drbMap_; }
 
     void dump(std::ostream& os = std::cout) const;
 };

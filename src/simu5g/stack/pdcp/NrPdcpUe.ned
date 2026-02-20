@@ -23,5 +23,6 @@ simple NrPdcpUe extends LtePdcpUeD2D
         rxEntityModuleType = default("simu5g.stack.pdcp.NrRxPdcpEntity");
         txEntityModuleType = default("simu5g.stack.pdcp.NrTxPdcpEntity");
         int drbIndex = default(-1);
+        string qfiContextManagerModule = default("^.qfiContextManager");
 }
 
