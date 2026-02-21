@@ -37,3 +37,37 @@
 
 - Report if you find code or functionality in a class that obviously does NOT
   belong there.
+
+## OMNeT++ INI Syntax
+
+- **Multi-line values** use indentation-based line continuation. Any line that
+  begins with whitespace is automatically treated as a continuation of the
+  previous line's value — no backslash or other special syntax is needed.
+  The closing bracket/parenthesis must also be indented, otherwise the parser
+  treats it as a new (malformed) `key=value` line.
+
+  ```ini
+  *.gnb.cellularNic.qfiContextManager.drbConfig = [
+      {"drb": 0, "ue": 2049, "qfiList": [1, 2]},
+      {"drb": 1, "ue": 2049, "qfiList": [3, 4]}
+      ]
+  ```
+
+- **`object` NED parameters**: Use bare `[...]` and `{...}` syntax directly
+  in INI — do NOT wrap with `json()`. The `json()` function does not exist
+  in OMNeT++ 6.x.
+
+## Running Simulations
+
+- Use `Cwd` parameter of `run_command` to set the directory — never use `cd`
+  in the command itself.
+- The INI file name is a positional argument (no `-f` flag).
+- Use `-c <ConfigName>` to select the configuration section, `-u Cmdenv` for
+  command-line execution.
+- The `simu5g_dbg` binary is in `$PATH` — do not search for it or specify
+  absolute paths.
+
+  Example:
+  ```
+  simu5g_dbg -u Cmdenv -c VoIP-DL-MultiQfi omnetpp_drb.ini
+  ```
