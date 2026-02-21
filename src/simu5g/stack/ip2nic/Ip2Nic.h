@@ -24,7 +24,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 class LteHandoverManager;
-class LtePdcpBase;
 
 
 /**
@@ -109,8 +108,6 @@ class Ip2Nic : public cSimpleModule
 
     cGate *stackGateOut_ = nullptr;       // gate connecting Ip2Nic module to cellular stack
     cGate *ipGateOut_ = nullptr;          // gate connecting Ip2Nic module to network layer
-
-    LtePdcpBase *pdcp_ = nullptr;         // sibling PDCP module (for calling analyzePacket)
 
     // corresponding entry for our interface
     opp_component_ptr<inet::NetworkInterface> networkIf;
