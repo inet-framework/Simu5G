@@ -27,6 +27,13 @@
   fingerprint tests after each step, and only proceed if ALL fingerprints pass.
   If anything goes wrong, STOP immediately and do NOT push through!
 
+## Git Commits
+
+- **NEVER use `git add -A` or `git commit -a`.** The repo may contain unrelated
+  untracked files that must not be included in commits.
+- To commit, use: `git add -u` (stages only already-tracked changed files),
+  then `git add <file>` for any new files YOU created, then `git commit -m "..."`.
+
 ## File Operations
 - Use `git mv` for file renames to preserve history
 - Update all `#include` statements when renaming files
