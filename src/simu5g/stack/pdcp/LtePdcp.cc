@@ -25,6 +25,7 @@
 
 namespace simu5g {
 
+Define_Module(LtePdcpBase);
 Define_Module(LtePdcpUe);
 Define_Module(LtePdcpEnb);
 

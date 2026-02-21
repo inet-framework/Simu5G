@@ -21,6 +21,7 @@
 #include "simu5g/stack/pdcp/LteTxPdcpEntity.h"
 #include "simu5g/stack/pdcp/LteRxPdcpEntity.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
+#include "simu5g/stack/packetFlowObserver/PacketFlowObserverBase.h"
 
 namespace simu5g {
 
@@ -28,8 +29,6 @@ using namespace omnetpp;
 
 class LteTxPdcpEntity;
 class LteRxPdcpEntity;
-
-class PacketFlowObserverBase;
 
 /**
  * @class LtePdcp

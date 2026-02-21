@@ -20,7 +20,7 @@ package simu5g.stack.pdcp;
 //
 simple LtePdcpEnb extends LtePdcpBase
 {
-    @class("LtePdcpEnb");
+    @class("LtePdcpBase");
     rxEntityModuleType = default("simu5g.stack.pdcp.LteRxPdcpEntity");
     txEntityModuleType = default("simu5g.stack.pdcp.LteTxPdcpEntity");
 }
