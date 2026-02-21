@@ -148,11 +148,11 @@ class LtePdcpBase : public cSimpleModule
     /*
      * Dual Connectivity support
      */
-    virtual bool isDualConnectivityEnabled() { return false; }
+    bool isDualConnectivityEnabled() { return dualConnectivityEnabled_; }
 
-    virtual void forwardDataToTargetNode(inet::Packet *pkt, MacNodeId targetNode) { throw cRuntimeError("Illegal operation forwardDataToTargetNode"); }
+    void forwardDataToTargetNode(inet::Packet *pkt, MacNodeId targetNode);
 
-    virtual void receiveDataFromSourceNode(inet::Packet *pkt, MacNodeId sourceNode) { throw cRuntimeError("Illegal operation receiveDataFromSourceNode"); }
+    void receiveDataFromSourceNode(inet::Packet *pkt, MacNodeId sourceNode);
 
     // D2D mode switch handler (stub — subclasses may override for specific behavior)
     virtual void pdcpHandleD2DModeSwitch(MacNodeId peerId, LteD2DMode newMode);
@@ -201,7 +201,7 @@ class LtePdcpBase : public cSimpleModule
     /**
      * getNrNodeId(): returns the ID of this node
      */
-    virtual MacNodeId getNrNodeId() { return nodeId_; }
+    MacNodeId getNrNodeId() { return nrNodeId_ != NODEID_NONE ? nrNodeId_ : nodeId_; }
 
     /*
      * Upper Layer Handlers

@@ -27,11 +27,6 @@ namespace simu5g {
 class NrPdcpUe : public LtePdcpUeD2D
 {
   protected:
-    /**
-     * getNrNodeId(): returns the ID of this node
-     */
-    MacNodeId getNrNodeId() override { return nrNodeId_; }
-
     // this function overrides the one in the base class because we need to distinguish the nodeId of the sender
     // i.e. whether to use the NR nodeId or the LTE one
     Direction getDirection(MacNodeId srcId, MacNodeId destId)
@@ -40,11 +35,6 @@ class NrPdcpUe : public LtePdcpUeD2D
             return D2D;
         return UL;
     }
-
-    /*
-     * Dual Connectivity support
-     */
-    bool isDualConnectivityEnabled() override { return dualConnectivityEnabled_; }
 
 };
 
