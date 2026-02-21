@@ -20,7 +20,7 @@ package simu5g.stack.pdcp;
 simple NrPdcpEnb extends LtePdcpEnbD2D
 {
     parameters:
-        @class("LtePdcpBase");
+        @class("LtePdcp");
         string dualConnectivityManagerModule = default("^.dualConnectivityManager");
         rxEntityModuleType = default("simu5g.stack.pdcp.NrRxPdcpEntity");
         txEntityModuleType = default("simu5g.stack.pdcp.NrTxPdcpEntity");

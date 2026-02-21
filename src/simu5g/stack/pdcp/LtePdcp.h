@@ -56,7 +56,7 @@ class LteRxPdcpEntity;
  * that uniquely identifies a connection in the whole network.
  *
  */
-class LtePdcpBase : public cSimpleModule
+class LtePdcp : public cSimpleModule
 {
     friend class LteTxPdcpEntity;
     friend class LteRxPdcpEntity;
@@ -160,7 +160,7 @@ class LtePdcpBase : public cSimpleModule
     /**
      * Cleans the connection table
      */
-    ~LtePdcpBase() override;
+    ~LtePdcp() override;
 
     /*
      * Delete TX/RX entities
@@ -252,11 +252,11 @@ class LtePdcpBase : public cSimpleModule
 
 };
 
-class LtePdcpUe : public LtePdcpBase
+class LtePdcpUe : public LtePdcp
 {
 };
 
-class LtePdcpEnb : public LtePdcpBase
+class LtePdcpEnb : public LtePdcp
 {
 };
 

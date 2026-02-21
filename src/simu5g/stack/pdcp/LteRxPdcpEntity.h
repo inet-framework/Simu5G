@@ -18,7 +18,7 @@
 
 namespace simu5g {
 
-class LtePdcpBase;
+class LtePdcp;
 class LtePdcpHeader;
 
 using namespace inet;
@@ -33,7 +33,7 @@ class LteRxPdcpEntity : public cSimpleModule
 {
   protected:
     // reference to the PDCP layer
-    LtePdcpBase *pdcp_ = nullptr;
+    LtePdcp *pdcp_ = nullptr;
 
     // whether headers are compressed
     bool headerCompressionEnabled_;
