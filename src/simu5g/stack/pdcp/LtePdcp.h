@@ -252,14 +252,6 @@ class LtePdcp : public cSimpleModule
 
 };
 
-class LtePdcpUe : public LtePdcp
-{
-};
-
-class LtePdcpEnb : public LtePdcp
-{
-};
-
 } //namespace
 
 #endif

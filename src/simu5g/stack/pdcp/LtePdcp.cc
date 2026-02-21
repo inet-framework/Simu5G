@@ -26,8 +26,6 @@
 namespace simu5g {
 
 Define_Module(LtePdcp);
-Define_Module(LtePdcpUe);
-Define_Module(LtePdcpEnb);
 
 using namespace omnetpp;
 using namespace inet;
