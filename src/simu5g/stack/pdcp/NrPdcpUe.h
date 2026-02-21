@@ -48,9 +48,6 @@ class NrPdcpUe : public LtePdcpUeD2D
      */
     bool isDualConnectivityEnabled() override { return dualConnectivityEnabled_; }
 
-  public:
-
-    void deleteEntities(MacNodeId nodeId) override;
 };
 
 } //namespace
