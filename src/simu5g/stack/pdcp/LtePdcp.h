@@ -259,6 +259,7 @@ class LtePdcpBase : public cSimpleModule
      * Upper Layer Handlers
      */
 
+  public: // temporarily public so Ip2Nic can call it
     /**
      * Analyze the metadata of the higher-layer packet (source and destination
      * IP addresses, for example), and fills in several fields of lteInfo:
@@ -273,6 +274,8 @@ class LtePdcpBase : public cSimpleModule
      * Returns the (nodeId,LCID) pair that identifies the connection for the packet.
      */
     virtual void analyzePacket(inet::Packet *pkt);
+
+  protected:
 
     /**
      * Process data packets from higher layers.
