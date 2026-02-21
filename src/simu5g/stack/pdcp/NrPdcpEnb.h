@@ -38,8 +38,6 @@ class NrPdcpEnb : public LtePdcpEnbD2D
 
     void initialize(int stage) override;
 
-    void handleMessage(cMessage *msg) override;
-
     /*
      * Dual Connectivity support
      */
