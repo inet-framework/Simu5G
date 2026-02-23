@@ -65,7 +65,7 @@ class McsTable
     McsTable();
 
     /// MCS table seek operator
-    McsElem& at(Tbs tbs)
+    const McsElem& at(Tbs tbs) const
     {
         return table[tbs];
     }
