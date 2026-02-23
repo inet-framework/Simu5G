@@ -22,5 +22,6 @@ module NrMacGnb extends LteMacEnbD2D
     parameters:
         @class("NrMacGnb");
         amcType = default("NrAmc");
+        ulSchedulerType = default("NrSchedulerGnbUl");
 }
 
