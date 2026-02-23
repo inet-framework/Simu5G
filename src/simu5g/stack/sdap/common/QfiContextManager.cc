@@ -60,6 +60,15 @@ int QfiContextManager::getDrbIndex(MacNodeId ueNodeId, int qfi) const
     return it != ueQfiToDrb_.end() ? it->second : -1;
 }
 
+int QfiContextManager::getFirstDrbForUe(MacNodeId ueNodeId) const
+{
+    for (const auto& [drb, ctx] : drbMap_) {
+        if (ctx.ueNodeId == ueNodeId)
+            return drb;
+    }
+    return -1;
+}
+
 int QfiContextManager::getDrbIndexForQfi(int qfi) const
 {
     auto it = qfiToDrb_.find(qfi);

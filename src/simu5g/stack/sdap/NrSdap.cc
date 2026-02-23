@@ -132,8 +132,18 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
             int idx = qfiContextManager_.getDrbIndex(destUeId, qfi);
             if (idx >= 0)
                 drbIndex = idx;
-            else
-                EV_WARN << "SDAP TX: No DRB mapping for ueNodeId=" << destUeId << " QFI=" << (int)qfi << ", using DRB 0\n";
+            else {
+                // Fallback: use first DRB configured for this UE
+                int fallback = qfiContextManager_.getFirstDrbForUe(destUeId);
+                if (fallback >= 0) {
+                    drbIndex = fallback;
+                    EV_WARN << "SDAP TX: No DRB mapping for ueNodeId=" << destUeId << " QFI=" << (int)qfi
+                            << ", falling back to first DRB " << drbIndex << " for this UE\n";
+                } else {
+                    EV_WARN << "SDAP TX: No DRB mapping for ueNodeId=" << destUeId << " QFI=" << (int)qfi
+                            << ", no DRBs configured for this UE, using DRB 0\n";
+                }
+            }
         }
     }
 

@@ -44,6 +44,9 @@ class QfiContextManager
     // UE TX: given QFI -> global drbIndex (-1 if not found)
     int getDrbIndexForQfi(int qfi) const;
 
+    // gNB TX fallback: given dest UE nodeId -> first configured drbIndex for that UE (-1 if not found)
+    int getFirstDrbForUe(MacNodeId ueNodeId) const;
+
     // Any: given global drbIndex -> DrbContext (nullptr if not found)
     const DrbContext* getDrbContext(int drbIndex) const;
 
