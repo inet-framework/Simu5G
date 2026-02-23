@@ -38,7 +38,7 @@ class NrAmc : public LteAmc
     NrMcsTable ulNrMcsTable_;
     NrMcsTable d2dNrMcsTable_;
 
-    NrAmc(LteMacEnb *mac, Binder *binder, CellInfo *cellInfo, int numAntennas);
+    NrAmc() {}
 
     NrMcsElem getMcsElemPerCqi(Cqi cqi, const Direction dir);
 
