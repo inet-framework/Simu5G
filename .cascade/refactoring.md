@@ -27,6 +27,34 @@
   fingerprint tests after each step, and only proceed if ALL fingerprints pass.
   If anything goes wrong, STOP immediately and do NOT push through!
 
+## User Input
+
+- I like to discuss technical decisions before they are committed to.
+
+- If unforeseen difficulties arise during refactoring, do NOT go into a lengthy
+  fight to try and "fix" the code. Rather, I prefer to get notified about the
+  difficulties, and work out the solution together. WHY? Because the best course
+  of action is VERY OFTEN to roll back everything, and either try with a
+  different approach, or clean up/refactor bits and pieces in the code
+  indendepdently before attempting the main refactoring again.
+
+- I am NOT always right. I might mistype, be mistaken about details of the code,
+  or misjudge. When in doubt, push back and let's discuss the best way forward.
+
+
+## Templates/ideas for Typical Refactoring Operations
+
+### Moving code into a separate, new submodule
+
+- First, create an empty, do-nothing submodule, and update the fingerprints with
+  that. (Only "tilx" fingerprints may change due to module IDs being shifted,
+  but nothing else.) Then, gradually port the code into the new submodule.
+  E.g. first move just calls; then move just code but let it operate on data of the original submodule; then move relevant data fields.
+
+### Flattening virtual methods
+
+- See flatten-virtual-methods.md
+
 ## Git Commits
 
 - **NEVER use `git add -A` or `git commit -a`.** The repo may contain unrelated

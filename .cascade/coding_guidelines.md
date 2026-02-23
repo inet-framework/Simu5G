@@ -23,14 +23,22 @@
 
 - Do not **EVER** add static variables, unless explicitly requested by the user.
 
-- Msg file trick: In msg file generated code, the namespace begins where the
-  namespace directive occurs in the MSG file.
+## Common Pitfalls:
+
+- Msg files: In msg file generated code, the namespace begins where the
+  namespace directive occurs in the MSG file. It does NOT apply to the whole file.
+
+- If a simple module (which does not extend another) has no `@class`, that does
+  NOT mean that the module will be a dummy that does nothing. The default is to
+  look for a C++ class with the same name as the NED type (moduloo the
+  namespace) -- if it does not exist, that will be an error.
+
 
 ## Compiling
 
 - Use debug builds with `-j`: `make MODE=debug -j12`.
 
-## Open eyes
+## Be Critical
 
 - Bring up criticism without explicit request from the user! The user is INTERESTED
   in what is wrong in the code!
