@@ -19,6 +19,8 @@ namespace simu5g {
 
 using namespace omnetpp;
 
+Define_Module(LteSchedulerEnbDl);
+
 bool LteSchedulerEnbDl::checkEligibility(MacNodeId id, Codeword& cw, GHz carrierFrequency)
 {
     HarqTxBuffers *harqTxBuff = mac_->getHarqTxBuffers(carrierFrequency);
