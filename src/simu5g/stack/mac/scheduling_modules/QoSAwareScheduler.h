@@ -14,7 +14,7 @@
 #define STACK_MAC_SCHEDULING_MODULES_QOSAWARESCHEDULER_H_
 
 #include "simu5g/stack/mac/scheduler/LteScheduler.h"
-#include "simu5g/stack/sdap/common/QfiContextManager.h"
+#include "simu5g/stack/mac/DrbQosEntry.h"
 #include <map>
 #include <queue>
 
@@ -49,17 +49,17 @@ class QoSAwareScheduler : public LteScheduler
     double pfAlpha_;
     const double scoreEpsilon_ = 1e-6;
 
-    QfiContextManager* qfiContextMgr_ = nullptr;
+    const std::map<int, DrbQosEntry> *drbQosMap_ = nullptr;
 
     // Helpers
-    double computeQosWeightFromContext(const DrbContext& ctx);
-    const DrbContext* getDrbContextForCid(MacCid cid);
+    double computeQosWeight(const DrbQosEntry& e);
+    const DrbQosEntry* getDrbQosForCid(MacCid cid);
 
   public:
     double& pfAlpha() { return pfAlpha_; }
 
     QoSAwareScheduler(Binder* binder, double pfAlpha);
-    void setQfiContextManager(QfiContextManager* mgr) { qfiContextMgr_ = mgr; }
+    void setDrbQosMap(const std::map<int, DrbQosEntry> *m) { drbQosMap_ = m; }
     void prepareSchedule() override;
     void commitSchedule() override;
 };

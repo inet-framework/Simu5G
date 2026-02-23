@@ -12,7 +12,6 @@
 #ifndef STACK_SDAP_COMMON_QFICONTEXT_H_
 #define STACK_SDAP_COMMON_QFICONTEXT_H_
 
-#include <string>
 #include <vector>
 #include "simu5g/common/LteCommon.h"
 
@@ -21,14 +20,9 @@ namespace simu5g {
 // Per-DRB configuration entry, built from the drbConfig JSON parameter.
 struct DrbContext {
     int drbIndex = -1;              // global DRB instance index (= nrPdcp[]/nrRlc[] array index)
-    MacNodeId ueNodeId = NODEID_NONE; // NODEID_NONE = "self" (UE side); resolved from "ue" module path on gNB
+    MacNodeId ueNodeId = NODEID_NONE; // NODEID_NONE = "self" (UE side); numeric MacNodeId on gNB
     int lcid = -1;                  // LCID = local DRB index within that UE's DRB set (auto-derived)
     std::vector<int> qfiList;       // QFIs mapped to this DRB
-    bool gbr = false;
-    double delayBudgetMs = 0;
-    double packetErrorRate = 0;
-    int priorityLevel = 0;
-    std::string description;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const DrbContext& ctx) {
@@ -37,10 +31,7 @@ inline std::ostream& operator<<(std::ostream& os, const DrbContext& ctx) {
         if (i) os << ",";
         os << ctx.qfiList[i];
     }
-    os << "] gbr=" << ctx.gbr << " delay=" << ctx.delayBudgetMs
-       << "ms prio=" << ctx.priorityLevel;
-    if (!ctx.description.empty())
-        os << " \"" << ctx.description << "\"";
+    os << "]";
     return os;
 }
 

@@ -15,7 +15,6 @@ simple MacDrbMultiplexer
 {
     parameters:
         @display("i=misc/node_vs");
-        string qfiContextManagerModule = default("^.qfiContextManager");
     gates:
         input rlcIn[];
         output rlcOut[];

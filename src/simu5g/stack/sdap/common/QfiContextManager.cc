@@ -10,36 +10,12 @@
 ///
 
 #include "simu5g/stack/sdap/common/QfiContextManager.h"
-#include <inet/common/ModuleAccess.h>
-#include <iostream>
+#include <omnetpp/cvaluearray.h>
+#include <omnetpp/cvaluemap.h>
+
+using namespace omnetpp;
 
 namespace simu5g {
-
-Define_Module(QfiContextManager);
-
-void QfiContextManager::initialize()
-{
-    const cValueArray *arr = check_and_cast<const cValueArray *>(par("drbConfig").objectValue());
-    if (arr->size() > 0) {
-        loadFromJson(arr);
-        EV << "QfiContextManager: Loaded " << drbMap_.size() << " DRB entries from drbConfig" << endl;
-        for (const auto& [drb, ctx] : drbMap_) {
-            EV << "  DRB " << drb << ": ueNodeId=" << ctx.ueNodeId
-               << " lcid=" << ctx.lcid << " qfiList=[";
-            for (int i = 0; i < (int)ctx.qfiList.size(); i++) {
-                if (i) EV << ",";
-                EV << ctx.qfiList[i];
-            }
-            EV << "] gbr=" << ctx.gbr << " delay=" << ctx.delayBudgetMs
-               << "ms per=" << ctx.packetErrorRate << " prio=" << ctx.priorityLevel
-               << " desc=\"" << ctx.description << "\"" << endl;
-        }
-    }
-
-    WATCH_MAP(drbMap_);
-    WATCH_MAP(ueQfiToDrb_);
-    WATCH_MAP(qfiToDrb_);
-}
 
 void QfiContextManager::loadFromJson(const cValueArray *arr)
 {
@@ -62,13 +38,6 @@ void QfiContextManager::loadFromJson(const cValueArray *arr)
         const cValueArray *qfiArr = check_and_cast<const cValueArray *>(entry->get("qfiList").objectValue());
         for (int j = 0; j < (int)qfiArr->size(); j++)
             ctx.qfiList.push_back(qfiArr->get(j).intValue());
-
-        // Optional QoS attributes
-        if (entry->containsKey("gbr"))         ctx.gbr            = entry->get("gbr").boolValue();
-        if (entry->containsKey("delayBudget")) ctx.delayBudgetMs  = entry->get("delayBudget").doubleValue();
-        if (entry->containsKey("per"))         ctx.packetErrorRate= entry->get("per").doubleValue();
-        if (entry->containsKey("priority"))    ctx.priorityLevel  = entry->get("priority").intValue();
-        if (entry->containsKey("description")) ctx.description    = entry->get("description").stringValue();
 
         // Derive LCID = local DRB index within this UE's DRB set
         ctx.lcid = ueLocalDrbCount[ctx.ueNodeId]++;
@@ -128,17 +97,7 @@ void QfiContextManager::dump(std::ostream& os) const
 {
     os << "=== QfiContextManager dump (" << drbMap_.size() << " DRBs) ===" << std::endl;
     for (const auto& [drb, ctx] : drbMap_) {
-        os << "  DRB " << drb << ": ueNodeId=" << ctx.ueNodeId
-           << " lcid=" << ctx.lcid << " qfiList=[";
-        for (int i = 0; i < (int)ctx.qfiList.size(); i++) {
-            if (i) os << ",";
-            os << ctx.qfiList[i];
-        }
-        os << "] gbr=" << ctx.gbr
-           << " delay=" << ctx.delayBudgetMs << "ms"
-           << " per=" << ctx.packetErrorRate
-           << " prio=" << ctx.priorityLevel
-           << " desc=\"" << ctx.description << "\"" << std::endl;
+        os << "  DRB " << drb << ": " << ctx << std::endl;
     }
     os << "==============================" << std::endl;
 }

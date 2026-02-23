@@ -46,7 +46,7 @@ namespace simu5g {
 class NrSdap : public cSimpleModule
 {
   protected:
-    inet::ModuleRefByPar<QfiContextManager> qfiContextManager;
+    QfiContextManager qfiContextManager_;
     inet::ModuleRefByPar<ReflectiveQosTable> reflectiveQosTable;
     inet::ModuleRefByPar<Binder> binder_;
     bool isUe = true;  // Node role: true for UE, false for gNB
@@ -58,6 +58,10 @@ class NrSdap : public cSimpleModule
     virtual void handleMessage(cMessage *msg) override;
     virtual void handleUpperPacket(inet::Packet *pkt);
     virtual void handleLowerPacket(inet::Packet *pkt);
+
+  public:
+    int getLcid(int drbIndex) { return qfiContextManager_.getLcid(drbIndex); }
+    int getDrbIndexForMacCid(MacNodeId ueNodeId, LogicalCid lcid) { return qfiContextManager_.getDrbIndexForMacCid(ueNodeId, lcid); }
 };
 
 } //namespace

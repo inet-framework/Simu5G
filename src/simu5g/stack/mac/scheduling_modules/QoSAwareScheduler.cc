@@ -20,40 +20,36 @@ QoSAwareScheduler::QoSAwareScheduler(Binder* binder, double pfAlpha)
 {
 }
 
-double QoSAwareScheduler::computeQosWeightFromContext(const DrbContext& ctx)
+double QoSAwareScheduler::computeQosWeight(const DrbQosEntry& e)
 {
-    // NOTE: It would be incorrect to use QFI or 5QI as input here.
-    // Removed code: weight *= (10.0 - ctx.fiveQi + 1);  // Lower 5QI = better
     double weight = 1.0;
-    if (ctx.gbr) weight *= 2.0;
-    weight *= 10.0 / (ctx.priorityLevel + 1);  // Lower priority level = higher weight
-    if (ctx.delayBudgetMs <= 10) weight *= 5.0;
-    else if (ctx.delayBudgetMs <= 50) weight *= 3.0;
-    else if (ctx.delayBudgetMs <= 100) weight *= 1.5;
-    EV << NOW << " DRB " << ctx.drbIndex << " lcid=" << ctx.lcid << " Weight: " << weight << endl;
+    if (e.gbr) weight *= 2.0;
+    weight *= 10.0 / (e.priorityLevel + 1);  // Lower priority level = higher weight
+    if (e.delayBudgetMs <= 10) weight *= 5.0;
+    else if (e.delayBudgetMs <= 50) weight *= 3.0;
+    else if (e.delayBudgetMs <= 100) weight *= 1.5;
+    EV << NOW << " DRB " << e.drbIndex << " lcid=" << e.lcid << " Weight: " << weight << endl;
     return weight;
 }
 
-const DrbContext* QoSAwareScheduler::getDrbContextForCid(MacCid cid)
+const DrbQosEntry* QoSAwareScheduler::getDrbQosForCid(MacCid cid)
 {
-    // Look up DRB context by LCID (= local DRB index within the UE's DRB set)
+    if (!drbQosMap_) return nullptr;
     int lcid = (int)cid.getLcid();
-    // Search drbMap for a DrbContext whose lcid matches and ueNodeId matches
     MacNodeId ueNodeId = cid.getNodeId();
-    const auto& drbMap = qfiContextMgr_->getDrbMap();
-    for (const auto& [drb, ctx] : drbMap) {
-        if (ctx.lcid == lcid && (ctx.ueNodeId == ueNodeId || ctx.ueNodeId == NODEID_NONE))
-            return &ctx;
+    for (const auto& [drb, e] : *drbQosMap_) {
+        if (e.lcid == lcid && (e.ueNodeId == ueNodeId || e.ueNodeId == NODEID_NONE))
+            return &e;
     }
-    EV_WARN << "QoSAwareScheduler: No DRB context for CID " << cid << "\n";
+    EV_WARN << "QoSAwareScheduler: No DRB QoS entry for CID " << cid << "\n";
     return nullptr;
 }
 
 void QoSAwareScheduler::prepareSchedule()
 {
-    if (!qfiContextMgr_)
-        throw cRuntimeError("QoSAwareScheduler requires QfiContextManager but none was configured. "
-                            "Set mac.qfiContextManagerModule parameter to point to a QfiContextManager module.");
+    if (!drbQosMap_)
+        throw cRuntimeError("QoSAwareScheduler requires drbQosConfig but none was configured. "
+                            "Set mac.drbQosConfig parameter.");
 
     EV << NOW << " QoSAwareScheduler::prepareSchedule" << endl;
 
@@ -100,8 +96,8 @@ void QoSAwareScheduler::prepareSchedule()
             }
         }
 
-        const DrbContext* ctx = getDrbContextForCid(cid);
-        double qosWeight = ctx ? computeQosWeightFromContext(*ctx) : 1.0;
+        const DrbQosEntry* qos = getDrbQosForCid(cid);
+        double qosWeight = qos ? computeQosWeight(*qos) : 1.0;
 
         EV << NOW << "QoSAwareScheduler::Cid: "<< cid << " QoS Weight: " << qosWeight<< endl;
         if (!pfRate_.count(cid)) pfRate_[cid] = 0;

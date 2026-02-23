@@ -13,18 +13,17 @@
 #ifndef STACK_SDAP_COMMON_QFICONTEXTMANAGER_H_
 #define STACK_SDAP_COMMON_QFICONTEXTMANAGER_H_
 
-#include <omnetpp.h>
-#include <string>
 #include <map>
 #include <vector>
+#include <iostream>
 #include "QfiContext.h"
 #include "simu5g/common/LteCommon.h"
 
+namespace omnetpp { class cValueArray; }
+
 namespace simu5g {
 
-using namespace omnetpp;
-
-class QfiContextManager : public cSimpleModule
+class QfiContextManager
 {
   protected:
     // Primary table: global drbIndex -> DrbContext
@@ -36,13 +35,9 @@ class QfiContextManager : public cSimpleModule
     // Derived lookup: qfi -> global drbIndex  [UE path, ueNodeId==0]
     std::map<int, int> qfiToDrb_;
 
-  protected:
-    virtual void initialize() override;
-    virtual void handleMessage(cMessage *msg) override { throw cRuntimeError("QfiContextManager does not process messages"); }
-
-    void loadFromJson(const cValueArray *arr);
-
   public:
+    void loadFromJson(const omnetpp::cValueArray *arr);
+
     // gNB TX: given dest UE nodeId + QFI -> global drbIndex (-1 if not found)
     int getDrbIndex(MacNodeId ueNodeId, int qfi) const;
 
@@ -58,7 +53,7 @@ class QfiContextManager : public cSimpleModule
     // MacDrbMultiplexer: given (ueNodeId, lcid) -> global drbIndex (-1 if not found)
     int getDrbIndexForMacCid(MacNodeId ueNodeId, LogicalCid lcid) const;
 
-    // Scheduler: access full DRB map
+    // Access full DRB map
     const std::map<int, DrbContext>& getDrbMap() const { return drbMap_; }
 
     void dump(std::ostream& os = std::cout) const;

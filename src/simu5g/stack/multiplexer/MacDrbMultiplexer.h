@@ -14,12 +14,11 @@
 
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/stack/sdap/NrSdap.h"
 
 using namespace omnetpp;
 
 namespace simu5g {
-
-class QfiContextManager;
 
 class MacDrbMultiplexer : public cSimpleModule
 {
@@ -28,7 +27,7 @@ class MacDrbMultiplexer : public cSimpleModule
     std::map<MacCid, int> macCidToDrb_;
 
     // Optional: used as fallback when the learned map has no entry (gNB UL-first scenario)
-    QfiContextManager *qfiContextManager_ = nullptr;
+    NrSdap *sdap_ = nullptr;
 
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

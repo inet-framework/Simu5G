@@ -34,7 +34,7 @@ moduleinterface INrSdap
     parameters:
         int numDrbs; // number of DRBs
         string nodeRole @enum("UE", "gNB");  // Node role: "UE" or "gNB" - determines reflective QoS behavior
-        string qfiContextManagerModule;  // Path to QfiContextManager module
+        object drbConfig;  // JSON array of DRB configurations: [{drb, ue, qfiList}, ...]
     gates:
         inout DataPort;     // To/from IP
         inout stackSdap;     // To/from PDCP

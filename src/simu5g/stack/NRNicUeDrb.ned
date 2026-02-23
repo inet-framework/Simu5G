@@ -24,7 +24,6 @@ import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 import simu5g.stack.rlc.LteRlc;
 import simu5g.stack.sdap.NrTxSdapEntity;
 import simu5g.stack.sdap.INrSdap;
-import simu5g.stack.sdap.common.IQfiContextManager;
 import simu5g.stack.sdap.common.IReflectiveQosTable;
 
 //
@@ -70,10 +69,6 @@ module NRNicUeDrb extends LteNicUeD2D
         phy.otherPhyModule = "^.nrPhy";
 
     submodules:
-        qfiContextManager: <default("QfiContextManager")> like IQfiContextManager {
-            @display("p=500,66;is=s");
-        }
-
         sdap: <default("NrSdap")> like INrSdap {
             numDrbs = parent.numDrbs;
             nodeRole = "UE";

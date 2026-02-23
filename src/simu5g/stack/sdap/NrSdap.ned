@@ -35,7 +35,7 @@ simple NrSdap like INrSdap
         int numDrbs = default(1); // number of DRBs
         string nodeRole @enum("UE", "gNB");  // Node role: "UE" or "gNB" - determines reflective QoS behavior
         string binderModule = default("binder");
-        string qfiContextManagerModule = default("^.qfiContextManager");  // Path to QfiContextManager module
+        object drbConfig = default([]);  // JSON array of DRB configurations: [{drb, ue, qfiList}, ...]
         string reflectiveQosTableModule = default("");  // UE only: path to ReflectiveQosTable module (empty = disabled)
         bool addSdapHeader = default(true);
         bool useReflectiveQos = default(false); // UE only

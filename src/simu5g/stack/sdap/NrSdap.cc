@@ -33,8 +33,14 @@ void NrSdap::initialize()
 {
     binder_.reference(this, "binderModule", true);
 
-    // Get pointer to QfiContextManager module (mandatory for SDAP)
-    qfiContextManager.reference(this, "qfiContextManagerModule", true);
+    // Load QFI-to-DRB mapping from drbConfig parameter
+    const cValueArray *arr = check_and_cast_nullable<const cValueArray *>(par("drbConfig").objectValue());
+    if (arr && arr->size() > 0) {
+        qfiContextManager_.loadFromJson(arr);
+        EV << "NrSdap: Loaded " << qfiContextManager_.getDrbMap().size() << " DRB entries from drbConfig" << endl;
+        for (const auto& [drb, ctx] : qfiContextManager_.getDrbMap())
+            EV << "  DRB " << drb << ": " << ctx << endl;
+    }
 
     // Get pointer to reflective QoS table
     reflectiveQosTable.reference(this, "reflectiveQosTableModule", false);
@@ -110,7 +116,7 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
 
     if (isUe) {
         // UE side: simple QFI -> drbIndex lookup
-        int idx = qfiContextManager->getDrbIndexForQfi(qfi);
+        int idx = qfiContextManager_.getDrbIndexForQfi(qfi);
         if (idx >= 0)
             drbIndex = idx;
         else
@@ -123,7 +129,7 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
         if (destUeId == NODEID_NONE)
             EV_WARN << "SDAP TX: Cannot resolve dest UE nodeId for " << ipHdr->getDestAddress() << ", using DRB 0\n";
         else {
-            int idx = qfiContextManager->getDrbIndex(destUeId, qfi);
+            int idx = qfiContextManager_.getDrbIndex(destUeId, qfi);
             if (idx >= 0)
                 drbIndex = idx;
             else
@@ -202,7 +208,7 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
         EV_INFO << "SDAP RX: No SDAP header expected for DRB " << drbIndex << "\n";
 
         // For DRBs without SDAP header, derive QFI from DRB context (use first QFI in the list)
-        const DrbContext* ctx = qfiContextManager->getDrbContext(drbIndex);
+        const DrbContext* ctx = qfiContextManager_.getDrbContext(drbIndex);
         if (ctx && !ctx->qfiList.empty()) {
             qfi = ctx->qfiList[0];
             EV_INFO << "SDAP RX: Using QFI " << qfi << " from DRB context\n";
@@ -210,9 +216,9 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
     }
 
     // Validate QFI ↔ DRB consistency
-    const DrbContext* ctxValidate = qfiContextManager->getDrbContext(drbIndex);
+    const DrbContext* ctxValidate = qfiContextManager_.getDrbContext(drbIndex);
     if (ctxValidate) {
-        if (!inet::utils::contains(ctxValidate->qfiList, (int)qfi))
+        if (!contains(ctxValidate->qfiList, (int)qfi))
             EV_WARN << "SDAP RX: DRB/QFI mismatch! Received on DRB=" << drbIndex << ", QFI=" << qfi << " not in qfiList\n";
     }
 

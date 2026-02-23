@@ -11,7 +11,6 @@
 
 #include "MacDrbMultiplexer.h"
 #include "simu5g/common/RadioBearerTag_m.h"
-#include "simu5g/stack/sdap/common/QfiContextManager.h"
 
 namespace simu5g {
 
@@ -19,10 +18,8 @@ Define_Module(MacDrbMultiplexer);
 
 void MacDrbMultiplexer::initialize()
 {
-    // Optional: resolve QfiContextManager for fallback lookup (gNB UL-first scenario)
-    cModule *mod = findModuleByPath(par("qfiContextManagerModule").stringValue());
-    if (mod)
-        qfiContextManager_ = check_and_cast<QfiContextManager *>(mod);
+    // Optional: resolve SDAP for fallback lookup (gNB UL-first scenario)
+    sdap_ = dynamic_cast<NrSdap *>(getModuleByPath("^.sdap"));
 
     WATCH_MAP(macCidToDrb_);
 }
@@ -43,20 +40,20 @@ void MacDrbMultiplexer::handleMessage(cMessage *msg)
         if (it != macCidToDrb_.end()) {
             drbIndex = it->second;
         }
-        else if (qfiContextManager_) {
-            // Fallback: ask QfiContextManager for (ueNodeId, lcid) -> drbIndex
-            drbIndex = qfiContextManager_->getDrbIndexForMacCid(peerId, lteInfo->getLcid());
+        else if (sdap_) {
+            // Fallback: ask SDAP for (ueNodeId, lcid) -> drbIndex
+            drbIndex = sdap_->getDrbIndexForMacCid(peerId, lteInfo->getLcid());
             if (drbIndex >= 0) {
                 macCidToDrb_[cid] = drbIndex;  // cache for next time
-                EV_INFO << "MacDrbMultiplexer: resolved CID=" << cid << " -> drbIndex=" << drbIndex << " via QfiContextManager\n";
+                EV_INFO << "MacDrbMultiplexer: resolved CID=" << cid << " -> drbIndex=" << drbIndex << " via SDAP\n";
             }
             else {
                 drbIndex = 0;
-                EV_WARN << "MacDrbMultiplexer: QfiContextManager has no mapping for CID=" << cid << ", using drbIndex=0\n";
+                EV_WARN << "MacDrbMultiplexer: SDAP has no mapping for CID=" << cid << ", using drbIndex=0\n";
             }
         }
         else {
-            // No QfiContextManager: use lcid directly (works when lcid == local DRB index)
+            // No SDAP: use lcid directly (works when lcid == local DRB index)
             int numDrbs = gateSize("rlcOut");
             drbIndex = std::min((int)lteInfo->getLcid(), numDrbs - 1);
             EV_WARN << "MacDrbMultiplexer: no mapping for CID=" << cid << ", fallback drbIndex=" << drbIndex << "\n";

@@ -15,7 +15,7 @@
 #include "simu5g/stack/pdcp/NrTxPdcpEntity.h"
 #include "simu5g/stack/pdcp/NrRxPdcpEntity.h"
 #include "simu5g/stack/packetFlowManager/PacketFlowManagerBase.h"
-#include "simu5g/stack/sdap/common/QfiContextManager.h"
+#include "simu5g/stack/sdap/NrSdap.h"
 
 namespace simu5g {
 
@@ -52,11 +52,10 @@ void NrPdcpUe::initialize(int stage)
         Binder* binder = check_and_cast<Binder*>(getModuleByPath("binder"));
         binder->registerPdcpInstance(nrNodeId_, drbIndex, this);
 
-        // Set LCID from QfiContextManager (local DRB index within this UE's DRB set)
+        // Set LCID from SDAP (local DRB index within this UE's DRB set)
         if (drbIndex != -1) {
-            QfiContextManager *qfiMgr = check_and_cast<QfiContextManager *>(
-                getModuleByPath(par("qfiContextManagerModule").stringValue()));
-            int lcid = qfiMgr->getLcid(drbIndex);
+            NrSdap *sdap = dynamic_cast<NrSdap *>(getModuleByPath("^.sdap"));
+            int lcid = sdap ? sdap->getLcid(drbIndex) : -1;
             if (lcid >= 0)
                 lcid_ = lcid;
             else {

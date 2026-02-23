@@ -23,7 +23,7 @@ simple LteMacEnbD2D extends LteMacEnb
     parameters:
         @class("LteMacEnbD2D");
 
-        string qfiContextManagerModule = default("");  // Path to QfiContextManager module (optional)
+        object drbQosConfig = default([]);  // DRB QoS config: array of {drb, ue, gbr, delayBudget, per, priority}
         bool usePreconfiguredTxParams = default(false);
         int d2dCqi = default(7);
 

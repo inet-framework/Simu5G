@@ -17,7 +17,6 @@
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferTx.h"
 #include "simu5g/stack/mac/allocator/LteAllocatorUtils.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
-#include "simu5g/stack/sdap/common/QfiContextManager.h"
 
 namespace simu5g {
 

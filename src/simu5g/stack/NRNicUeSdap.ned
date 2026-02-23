@@ -13,7 +13,6 @@
 package simu5g.stack;
 
 import simu5g.stack.sdap.INrSdap;
-import simu5g.stack.sdap.common.IQfiContextManager;
 import simu5g.stack.sdap.common.IReflectiveQosTable;
 
 
@@ -26,20 +25,13 @@ module NRNicUeSdap extends NrNicUe
         hasNrSdap = true;
         bool hasReflectiveQosTable = default(false);  // Enable/disable reflective QoS table
         int numDrbs = 1;
-        string qfiContextFile = default("");  // Path to QFI context configuration file
         @display("bgb=694,443");
 
     submodules:
 
-        qfiContextManager: <default("QfiContextManager")> like IQfiContextManager {
-            qfiContextFile = parent.qfiContextFile;
-            @display("p=100,67;is=s");
-        }
-
         sdap: <default("NrSdap")> like INrSdap {
             numDrbs = parent.numDrbs;
             nodeRole = "UE";
-            qfiContextManagerModule = "^.qfiContextManager";
             reflectiveQosTableModule = parent.hasReflectiveQosTable ? "^.reflectiveQosTable" : "";
             @display("p=245,67");
         }

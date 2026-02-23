@@ -946,7 +946,7 @@ LteScheduler *LteSchedulerEnb::getScheduler(SchedDiscipline discipline)
             return new LteAllocatorBestFit(binder_);
         case QOS_PF: {
             auto *scheduler = new QoSAwareScheduler(binder_, mac_->par("pfAlpha").doubleValue());
-            scheduler->setQfiContextManager(mac_->getQfiContextManager());
+            scheduler->setDrbQosMap(mac_->getDrbQosMap());
             return scheduler;
         }
 

@@ -19,10 +19,9 @@
 #include "simu5g/stack/mac/amc/LteAmc.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/background/trafficGenerator/IBackgroundTrafficManager.h"
+#include "simu5g/stack/mac/DrbQosEntry.h"
 
 namespace simu5g {
-
-class QfiContextManager;
 
 using namespace omnetpp;
 
@@ -271,8 +270,8 @@ class LteMacEnb : public LteMacBase
 
     virtual ConflictGraph *getConflictGraph();
 
-    // Get QfiContextManager (may be nullptr if not configured). Override in subclasses.
-    virtual QfiContextManager *getQfiContextManager() { return nullptr; }
+    // Get DRB QoS map (drb index -> QoS entry). Override in subclasses.
+    virtual const std::map<int, DrbQosEntry> *getDrbQosMap() { return nullptr; }
 
     /*
      * @author Alessandro Noferi
