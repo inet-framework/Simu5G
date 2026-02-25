@@ -17,7 +17,6 @@
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
-#include "simu5g/stack/packetFlowObserver/PacketFlowObserverBase.h"
 
 namespace simu5g {
 
@@ -158,10 +157,6 @@ class LteMacBase : public cSimpleModule
 
     // reference to the phy layer
     opp_component_ptr<LtePhyBase> phy_;
-
-    // @author Alessandro Noferi
-    // reference to the packetFlowObserver
-    inet::ModuleRefByPar<PacketFlowObserverBase> packetFlowObserver_;
 
     // signals for PacketFlowObserver
     static simsignal_t macPduInsertedSignal_;
@@ -386,7 +381,6 @@ class LteMacBase : public cSimpleModule
     virtual void insertMacPdu(const inet::Packet *macPdu);
     virtual void harqAckToFlowObserver(const inet::Packet *macPdu);
     virtual void discardMacPdu(const inet::Packet *macPdu);
-    virtual void discardRlcPdu(inet::IntrusivePtr<const UserControlInfo> lteInfo, unsigned int rlcSno);
 
   protected:
 

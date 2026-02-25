@@ -25,8 +25,6 @@ module LteMacBase like ILteMac
     parameters:
         @display("i=block/mac");
         string binderModule = default("binder");
-        string packetFlowObserverModule = default("^.packetFlowObserver"); // TODO or nrPacketFlowObserver
-
         //# Mac Queues
         int queueSize @unit(B) = default(2MiB);              // MAC Buffers queue size
 
