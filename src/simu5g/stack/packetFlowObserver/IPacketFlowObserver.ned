@@ -14,6 +14,9 @@ package simu5g.stack.packetFlowObserver;
 moduleinterface IPacketFlowObserver
 {
     string macModule;
+    string pdcpModule;
+    string rlcModule;
+    bool isNrObserver;
     string pfmType;
 }
 
