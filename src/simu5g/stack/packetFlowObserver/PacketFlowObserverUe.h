@@ -49,6 +49,7 @@ class PacketFlowObserverUe : public PacketFlowObserverBase
     void initialize(int stage) override;
 
     void initPdcpStatus(StatusDescriptor *desc, unsigned int pdcp, unsigned int sduHeaderSize, simtime_t& arrivalTime);
+    void ensureMacPduMapping(const LteMacPdu *macPdu);
     // return true if a structure for this DRB ID is present
     bool hasDrbId(DrbId drbId) override;
     // initialize a new structure for this DRB ID
@@ -62,9 +63,8 @@ class PacketFlowObserverUe : public PacketFlowObserverBase
     void insertPdcpSdu(inet::Packet *pdcpPkt) override;
     void receivedPdcpSdu(inet::Packet *pdcpPkt) override { /*TODO*/ }
     void insertRlcPdu(DrbId drbId, const LteRlcUmDataPdu *rlcPdu, RlcBurstStatus status) override;
-    void insertMacPdu(const inet::Ptr<const LteMacPdu> macPdu) override;
-    void macPduArrived(const inet::Ptr<const LteMacPdu> macPdu) override;
-    void discardMacPdu(const inet::Ptr<const LteMacPdu> macPdu) override;
+    void macPduArrived(const LteMacPdu *macPdu) override;
+    void discardMacPdu(const LteMacPdu *macPdu) override;
     void discardRlcPdu(DrbId drbId, unsigned int rlcSno, bool fromMac = false) override;
 
     DiscardedPkts getDiscardedPkt();

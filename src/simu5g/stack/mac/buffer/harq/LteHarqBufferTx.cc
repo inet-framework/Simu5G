@@ -131,7 +131,6 @@ void LteHarqBufferTx::insertPdu(unsigned char acid, Codeword cw, Packet *pkt)
                                                                                                   "codeword id: " << (int)cw << " "
                                                                                                                                 "for node with id " << tag->getDestId() << endl;
 
-    macOwner_->insertMacPdu(pkt);
 }
 
 UnitList LteHarqBufferTx::firstAvailable()
