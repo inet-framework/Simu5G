@@ -21,4 +21,5 @@ simple LteRxPdcpEntity
     parameters:
         @dynamic(true);
         @display("i=block/segm");
+        @signal[pdcpSduReceived];
 }
