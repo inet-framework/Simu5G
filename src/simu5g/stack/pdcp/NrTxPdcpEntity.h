@@ -48,7 +48,6 @@ class NrTxPdcpEntity : public LteTxPdcpEntity
 
 
     void initialize(int stage) override;
-    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 };
 
 } //namespace
