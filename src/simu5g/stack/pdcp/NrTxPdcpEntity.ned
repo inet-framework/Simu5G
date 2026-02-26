@@ -22,5 +22,6 @@ simple NrTxPdcpEntity extends LteTxPdcpEntity
         @dynamic(true);
         @class("NrTxPdcpEntity");
         @display("i=block/segm");
+        @signal[pdcpSduSentNr];
 }
 
