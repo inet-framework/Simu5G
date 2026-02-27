@@ -264,7 +264,7 @@ PdcpTxEntityBase *PdcpMux::createTxEntity(DrbKey id)
 {
     std::stringstream buf;
     buf << "tx-" << id.getNodeId() << "-" << id.getDrbId();
-    auto *module = txEntityModuleType_->create(buf.str().c_str(), this);
+    auto *module = txEntityModuleType_->create(buf.str().c_str(), getParentModule());
     module->par("headerCompressedSize") = par("headerCompressedSize");
     module->finalizeParameters();
     module->buildInside();
@@ -289,7 +289,7 @@ PdcpRxEntityBase *PdcpMux::createRxEntity(DrbKey id)
 {
     std::stringstream buf;
     buf << "rx-" << id.getNodeId() << "-" << id.getDrbId();
-    auto *module = rxEntityModuleType_->create(buf.str().c_str(), this);
+    auto *module = rxEntityModuleType_->create(buf.str().c_str(), getParentModule());
     module->par("headerCompressedSize") = par("headerCompressedSize");
     module->finalizeParameters();
     module->buildInside();
@@ -307,7 +307,7 @@ PdcpTxEntityBase *PdcpMux::createBypassTxEntity(DrbKey id)
 {
     std::stringstream buf;
     buf << "bypass-tx-" << id.getNodeId() << "-" << id.getDrbId();
-    auto *module = bypassTxEntityModuleType_->create(buf.str().c_str(), this);
+    auto *module = bypassTxEntityModuleType_->create(buf.str().c_str(), getParentModule());
     module->finalizeParameters();
     module->buildInside();
     module->scheduleStart(simTime());
@@ -324,7 +324,7 @@ PdcpRxEntityBase *PdcpMux::createBypassRxEntity(DrbKey id)
 {
     std::stringstream buf;
     buf << "bypass-rx-" << id.getNodeId() << "-" << id.getDrbId();
-    auto *module = bypassRxEntityModuleType_->create(buf.str().c_str(), this);
+    auto *module = bypassRxEntityModuleType_->create(buf.str().c_str(), getParentModule());
     module->finalizeParameters();
     module->buildInside();
     module->scheduleStart(simTime());
