@@ -43,7 +43,6 @@ void LteRxPdcpEntity::initialize(int stage)
 
 void LteRxPdcpEntity::handlePacketFromLowerLayer(Packet *pkt)
 {
-    take(pkt);
     emit(receivedPacketFromLowerLayerSignal_, pkt);
     EV << NOW << " LteRxPdcpEntity::handlePacketFromLowerLayer - DRB ID[" << drbId_ << "] - processing packet from RLC layer" << endl;
 

@@ -60,7 +60,7 @@ void PdcpMux::fromDataPort(cPacket *pktAux)
         ASSERT(entity != nullptr);
     }
 
-    entity->handlePacketFromUpperLayer(pkt);
+    send(pkt, entity->gate("in")->getPreviousGate());
 }
 
 /*
@@ -97,7 +97,7 @@ void PdcpMux::fromLowerLayer(cPacket *pktAux)
 
     ASSERT(entity != nullptr);
 
-    entity->handlePacketFromLowerLayer(pkt);
+    send(pkt, entity->gate("in")->getPreviousGate());
 }
 
 void PdcpMux::sendToUpperLayer(Packet *pkt)
@@ -240,7 +240,7 @@ void PdcpMux::receiveDataFromSourceNode(inet::Packet *pkt, MacNodeId sourceNode)
         DrbKey id = DrbKey(destId, ctrlInfo->getDrbId());
         PdcpTxEntityBase *entity = lookupTxEntity(id);
         ASSERT(entity != nullptr);
-        entity->handlePacketFromUpperLayer(pkt);
+        send(pkt, entity->gate("in")->getPreviousGate());
     }
     else { // UL
         EV << NOW << " PdcpMux::receiveDataFromSourceNode - Received PDCP PDU from secondary node with id " << sourceNode << endl;
@@ -268,6 +268,12 @@ PdcpTxEntityBase *PdcpMux::createTxEntity(DrbKey id)
     module->par("headerCompressedSize") = par("headerCompressedSize");
     module->finalizeParameters();
     module->buildInside();
+
+    // Wire mux output gate to entity input gate
+    int idx = gateSize("toTxEntity");
+    setGateSize("toTxEntity", idx + 1);
+    gate("toTxEntity", idx)->connectTo(module->gate("in"));
+
     module->scheduleStart(simTime());
     module->callInitialize();
     PdcpTxEntityBase *txEnt = check_and_cast<PdcpTxEntityBase *>(module);
@@ -293,6 +299,12 @@ PdcpRxEntityBase *PdcpMux::createRxEntity(DrbKey id)
     module->par("headerCompressedSize") = par("headerCompressedSize");
     module->finalizeParameters();
     module->buildInside();
+
+    // Wire mux output gate to entity input gate
+    int idx = gateSize("toRxEntity");
+    setGateSize("toRxEntity", idx + 1);
+    gate("toRxEntity", idx)->connectTo(module->gate("in"));
+
     module->scheduleStart(simTime());
     module->callInitialize();
     PdcpRxEntityBase *rxEnt = check_and_cast<PdcpRxEntityBase *>(module);
@@ -310,6 +322,12 @@ PdcpTxEntityBase *PdcpMux::createBypassTxEntity(DrbKey id)
     auto *module = bypassTxEntityModuleType_->create(buf.str().c_str(), getParentModule());
     module->finalizeParameters();
     module->buildInside();
+
+    // Wire mux output gate to entity input gate
+    int idx = gateSize("toTxEntity");
+    setGateSize("toTxEntity", idx + 1);
+    gate("toTxEntity", idx)->connectTo(module->gate("in"));
+
     module->scheduleStart(simTime());
     module->callInitialize();
     PdcpTxEntityBase *txEnt = check_and_cast<PdcpTxEntityBase *>(module);
@@ -327,6 +345,12 @@ PdcpRxEntityBase *PdcpMux::createBypassRxEntity(DrbKey id)
     auto *module = bypassRxEntityModuleType_->create(buf.str().c_str(), getParentModule());
     module->finalizeParameters();
     module->buildInside();
+
+    // Wire mux output gate to entity input gate
+    int idx = gateSize("toRxEntity");
+    setGateSize("toRxEntity", idx + 1);
+    gate("toRxEntity", idx)->connectTo(module->gate("in"));
+
     module->scheduleStart(simTime());
     module->callInitialize();
     PdcpRxEntityBase *rxEnt = check_and_cast<PdcpRxEntityBase *>(module);
