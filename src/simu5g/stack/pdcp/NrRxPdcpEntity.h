@@ -18,8 +18,6 @@
 
 namespace simu5g {
 
-class LtePdcp;
-
 /*
  * Descriptor of the entity status
  * Taken from 3GPP TS 38.323

@@ -18,11 +18,10 @@
 #include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/binder/Binder.h"
-#include "simu5g/stack/pdcp/LtePdcp.h"
+#include "simu5g/stack/pdcp/IPdcpGateway.h"
 
 namespace simu5g {
 
-class LtePdcp;
 class LtePdcpHeader;
 
 using namespace inet;
@@ -46,8 +45,8 @@ class LteTxPdcpEntity : public PdcpTxEntityBase
     static simsignal_t receivedPacketFromUpperLayerSignal_;
     static simsignal_t sentPacketToLowerLayerSignal_;
     static simsignal_t pdcpSduSentSignal_;
-    // reference to the PDCP layer
-    LtePdcp *pdcp_ = nullptr;
+    // reference to the PDCP gateway (for sending packets via output gates)
+    IPdcpGateway *pdcp_ = nullptr;
 
     // Modules references
     inet::ModuleRefByPar<Binder> binder_;

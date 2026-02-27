@@ -17,8 +17,6 @@
 
 namespace simu5g {
 
-class LtePdcp;
-
 /**
  * @class NrTxPdcpEntity
  * @brief Entity for New Radio PDCP Layer
