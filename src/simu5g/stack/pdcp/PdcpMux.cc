@@ -9,7 +9,7 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/pdcp/LtePdcp.h"
+#include "simu5g/stack/pdcp/PdcpMux.h"
 
 #include <inet/networklayer/common/NetworkInterface.h>
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
@@ -24,13 +24,13 @@
 
 namespace simu5g {
 
-Define_Module(LtePdcp);
+Define_Module(PdcpMux);
 
 using namespace omnetpp;
 using namespace inet;
 
 
-LtePdcp::~LtePdcp()
+PdcpMux::~PdcpMux()
 {
 }
 
@@ -38,7 +38,7 @@ LtePdcp::~LtePdcp()
  * Upper Layer handlers
  */
 
-void LtePdcp::fromDataPort(cPacket *pktAux)
+void PdcpMux::fromDataPort(cPacket *pktAux)
 {
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
 
@@ -67,7 +67,7 @@ void LtePdcp::fromDataPort(cPacket *pktAux)
  * Lower layer handlers
  */
 
-void LtePdcp::fromLowerLayer(cPacket *pktAux)
+void PdcpMux::fromLowerLayer(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
 
@@ -100,7 +100,7 @@ void LtePdcp::fromLowerLayer(cPacket *pktAux)
     entity->handlePacketFromLowerLayer(pkt);
 }
 
-void LtePdcp::sendToUpperLayer(Packet *pkt)
+void PdcpMux::sendToUpperLayer(Packet *pkt)
 {
     Enter_Method_Silent("sendToUpperLayer");
     take(pkt);
@@ -110,7 +110,7 @@ void LtePdcp::sendToUpperLayer(Packet *pkt)
     send(pkt, upperLayerOutGate_);
 }
 
-void LtePdcp::sendToRlc(Packet *pkt)
+void PdcpMux::sendToRlc(Packet *pkt)
 {
     Enter_Method_Silent("sendToRlc");
     take(pkt);
@@ -120,7 +120,7 @@ void LtePdcp::sendToRlc(Packet *pkt)
     send(pkt, rlcOutGate_);
 }
 
-void LtePdcp::sendToNrRlc(Packet *pkt)
+void PdcpMux::sendToNrRlc(Packet *pkt)
 {
     Enter_Method_Silent("sendToNrRlc");
     take(pkt);
@@ -130,12 +130,12 @@ void LtePdcp::sendToNrRlc(Packet *pkt)
     send(pkt, nrRlcOutGate_);
 }
 
-void LtePdcp::sendToX2(Packet *pkt)
+void PdcpMux::sendToX2(Packet *pkt)
 {
     Enter_Method_Silent("sendToX2");
     take(pkt);
 
-    EV << NOW << " LtePdcp::sendToX2 - Send PDCP packet via X2" << endl;
+    EV << NOW << " PdcpMux::sendToX2 - Send PDCP packet via X2" << endl;
 
     send(pkt, "dcManagerOut");
 }
@@ -144,7 +144,7 @@ void LtePdcp::sendToX2(Packet *pkt)
  * Main functions
  */
 
-void LtePdcp::initialize(int stage)
+void PdcpMux::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         upperLayerInGate_ = gate("upperLayerIn");
@@ -189,7 +189,7 @@ void LtePdcp::initialize(int stage)
     }
 }
 
-void LtePdcp::handleMessage(cMessage *msg)
+void PdcpMux::handleMessage(cMessage *msg)
 {
     cPacket *pkt = check_and_cast<cPacket *>(msg);
     EV << "LtePdcp : Received packet " << pkt->getName() << " from port "
@@ -197,7 +197,7 @@ void LtePdcp::handleMessage(cMessage *msg)
 
     // NrPdcpEnb: incoming data from DualConnectivityManager via X2
     if (isNR_ && getNodeTypeById(nodeId_) == NODEB && msg->getArrivalGate()->isName("dcManagerIn")) {
-        EV << "LtePdcp::handleMessage - Received packet from DualConnectivityManager" << endl;
+        EV << "PdcpMux::handleMessage - Received packet from DualConnectivityManager" << endl;
         auto datagram = check_and_cast<Packet*>(pkt);
         auto tag = datagram->removeTag<X2SourceNodeInd>();
         MacNodeId sourceNode = tag->getSourceNode();
@@ -210,7 +210,7 @@ void LtePdcp::handleMessage(cMessage *msg)
         auto inet_pkt = check_and_cast<inet::Packet *>(pkt);
         auto chunk = inet_pkt->peekAtFront<Chunk>();
         if (inet::dynamicPtrCast<const D2DModeSwitchNotification>(chunk) != nullptr) {
-            EV << "LtePdcp::handleMessage - Received packet " << pkt->getName() << " from port " << pkt->getArrivalGate()->getName() << endl;
+            EV << "PdcpMux::handleMessage - Received packet " << pkt->getName() << " from port " << pkt->getArrivalGate()->getName() << endl;
             auto switchPkt = inet_pkt->peekAtFront<D2DModeSwitchNotification>();
             pdcpHandleD2DModeSwitch(switchPkt->getPeerId(), switchPkt->getNewMode());
             delete pkt;
@@ -227,7 +227,7 @@ void LtePdcp::handleMessage(cMessage *msg)
     }
 }
 
-void LtePdcp::receiveDataFromSourceNode(inet::Packet *pkt, MacNodeId sourceNode)
+void PdcpMux::receiveDataFromSourceNode(inet::Packet *pkt, MacNodeId sourceNode)
 {
     Enter_Method("receiveDataFromSourceNode");
     take(pkt);
@@ -235,7 +235,7 @@ void LtePdcp::receiveDataFromSourceNode(inet::Packet *pkt, MacNodeId sourceNode)
     auto ctrlInfo = pkt->getTag<FlowControlInfo>();
     if (ctrlInfo->getDirection() == DL) {
         MacNodeId destId = ctrlInfo->getDestId();
-        EV << NOW << " LtePdcp::receiveDataFromSourceNode - Received PDCP PDU from master node with id " << sourceNode << " - destination node[" << destId << "]" << endl;
+        EV << NOW << " PdcpMux::receiveDataFromSourceNode - Received PDCP PDU from master node with id " << sourceNode << " - destination node[" << destId << "]" << endl;
 
         DrbKey id = DrbKey(destId, ctrlInfo->getDrbId());
         PdcpTxEntityBase *entity = lookupTxEntity(id);
@@ -243,24 +243,24 @@ void LtePdcp::receiveDataFromSourceNode(inet::Packet *pkt, MacNodeId sourceNode)
         entity->handlePacketFromUpperLayer(pkt);
     }
     else { // UL
-        EV << NOW << " LtePdcp::receiveDataFromSourceNode - Received PDCP PDU from secondary node with id " << sourceNode << endl;
+        EV << NOW << " PdcpMux::receiveDataFromSourceNode - Received PDCP PDU from secondary node with id " << sourceNode << endl;
         fromLowerLayer(pkt);
     }
 }
 
-void LtePdcp::pdcpHandleD2DModeSwitch(MacNodeId peerId, LteD2DMode newMode)
+void PdcpMux::pdcpHandleD2DModeSwitch(MacNodeId peerId, LteD2DMode newMode)
 {
-    EV << NOW << " LtePdcp::pdcpHandleD2DModeSwitch - peering with UE " << peerId << " set to " << d2dModeToA(newMode) << endl;
+    EV << NOW << " PdcpMux::pdcpHandleD2DModeSwitch - peering with UE " << peerId << " set to " << d2dModeToA(newMode) << endl;
     // add here specific behavior for handling mode switch at the PDCP layer
 }
 
-PdcpTxEntityBase *LtePdcp::lookupTxEntity(DrbKey id)
+PdcpTxEntityBase *PdcpMux::lookupTxEntity(DrbKey id)
 {
     auto it = txEntities_.find(id);
     return it != txEntities_.end() ? it->second : nullptr;
 }
 
-PdcpTxEntityBase *LtePdcp::createTxEntity(DrbKey id)
+PdcpTxEntityBase *PdcpMux::createTxEntity(DrbKey id)
 {
     std::stringstream buf;
     buf << "tx-" << id.getNodeId() << "-" << id.getDrbId();
@@ -273,19 +273,19 @@ PdcpTxEntityBase *LtePdcp::createTxEntity(DrbKey id)
     PdcpTxEntityBase *txEnt = check_and_cast<PdcpTxEntityBase *>(module);
     txEntities_[id] = txEnt;
 
-    EV << "LtePdcp::createTxEntity - Added new TxPdcpEntity for " << id << "\n";
+    EV << "PdcpMux::createTxEntity - Added new TxPdcpEntity for " << id << "\n";
 
     return txEnt;
 }
 
 
-PdcpRxEntityBase *LtePdcp::lookupRxEntity(DrbKey id)
+PdcpRxEntityBase *PdcpMux::lookupRxEntity(DrbKey id)
 {
     auto it = rxEntities_.find(id);
     return it != rxEntities_.end() ? it->second : nullptr;
 }
 
-PdcpRxEntityBase *LtePdcp::createRxEntity(DrbKey id)
+PdcpRxEntityBase *PdcpMux::createRxEntity(DrbKey id)
 {
     std::stringstream buf;
     buf << "rx-" << id.getNodeId() << "-" << id.getDrbId();
@@ -298,12 +298,12 @@ PdcpRxEntityBase *LtePdcp::createRxEntity(DrbKey id)
     PdcpRxEntityBase *rxEnt = check_and_cast<PdcpRxEntityBase *>(module);
     rxEntities_[id] = rxEnt;
 
-    EV << "LtePdcp::createRxEntity - Added new RxPdcpEntity for " << id << "\n";
+    EV << "PdcpMux::createRxEntity - Added new RxPdcpEntity for " << id << "\n";
 
     return rxEnt;
 }
 
-PdcpTxEntityBase *LtePdcp::createBypassTxEntity(DrbKey id)
+PdcpTxEntityBase *PdcpMux::createBypassTxEntity(DrbKey id)
 {
     std::stringstream buf;
     buf << "bypass-tx-" << id.getNodeId() << "-" << id.getDrbId();
@@ -315,12 +315,12 @@ PdcpTxEntityBase *LtePdcp::createBypassTxEntity(DrbKey id)
     PdcpTxEntityBase *txEnt = check_and_cast<PdcpTxEntityBase *>(module);
     txEntities_[id] = txEnt;
 
-    EV << "LtePdcp::createBypassTxEntity - Added new BypassTxPdcpEntity for " << id << "\n";
+    EV << "PdcpMux::createBypassTxEntity - Added new BypassTxPdcpEntity for " << id << "\n";
 
     return txEnt;
 }
 
-PdcpRxEntityBase *LtePdcp::createBypassRxEntity(DrbKey id)
+PdcpRxEntityBase *PdcpMux::createBypassRxEntity(DrbKey id)
 {
     std::stringstream buf;
     buf << "bypass-rx-" << id.getNodeId() << "-" << id.getDrbId();
@@ -332,12 +332,12 @@ PdcpRxEntityBase *LtePdcp::createBypassRxEntity(DrbKey id)
     PdcpRxEntityBase *rxEnt = check_and_cast<PdcpRxEntityBase *>(module);
     rxEntities_[id] = rxEnt;
 
-    EV << "LtePdcp::createBypassRxEntity - Added new BypassRxPdcpEntity for " << id << "\n";
+    EV << "PdcpMux::createBypassRxEntity - Added new BypassRxPdcpEntity for " << id << "\n";
 
     return rxEnt;
 }
 
-void LtePdcp::deleteEntities(MacNodeId nodeId)
+void PdcpMux::deleteEntities(MacNodeId nodeId)
 {
     Enter_Method_Silent();
 
@@ -380,7 +380,7 @@ void LtePdcp::deleteEntities(MacNodeId nodeId)
     }
 }
 
-void LtePdcp::activeUeUL(std::set<MacNodeId> *ueSet)
+void PdcpMux::activeUeUL(std::set<MacNodeId> *ueSet)
 {
     for (const auto& [id, rxEntity] : rxEntities_) {
         MacNodeId nodeId = id.getNodeId();
