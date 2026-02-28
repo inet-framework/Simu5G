@@ -24,6 +24,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
+class RlcUpperMux;
 class UmTxEntity;
 class UmRxEntity;
 
@@ -54,6 +55,8 @@ class LteRlcUm : public cSimpleModule
     RanNodeType nodeType;
     bool hasD2DSupport_ = false;
 
+    RlcUpperMux *upperMux_ = nullptr;
+
     // statistics
     static simsignal_t receivedPacketFromUpperLayerSignal_;
     static simsignal_t receivedPacketFromLowerLayerSignal_;
@@ -63,7 +66,6 @@ class LteRlcUm : public cSimpleModule
     static simsignal_t rlcPacketLossUlSignal_;
 
     // parameters
-    cModuleType *txEntityModuleType_;
     cModuleType *rxEntityModuleType_;
 
     /*
@@ -72,15 +74,10 @@ class LteRlcUm : public cSimpleModule
 
     /**
     * The entities map associates each DrbKey with
-    * a TX/RX Entity , identified by its ID
+    * a RX Entity , identified by its ID
     */
-    typedef std::map<DrbKey, UmTxEntity *> UmTxEntities;
     typedef std::map<DrbKey, UmRxEntity *> UmRxEntities;
-    UmTxEntities txEntities_;
     UmRxEntities rxEntities_;
-
-    // D2D: per-peer TX entity tracking (only used when hasD2DSupport_ is true)
-    std::map<MacNodeId, std::set<UmTxEntity *, simu5g::utils::cModule_LessId>> perPeerTxEntities_;
 
     /**
     * @author Alessandro Noferi
