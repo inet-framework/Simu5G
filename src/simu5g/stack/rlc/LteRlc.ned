@@ -14,7 +14,7 @@ package simu5g.stack.rlc;
 
 import simu5g.stack.rlc.am.LteRlcAm;
 import simu5g.stack.rlc.tm.LteRlcTm;
-import simu5g.stack.rlc.um.ILteRlcUm;
+import simu5g.stack.rlc.um.LteRlcUm;
 
 
 //
@@ -55,7 +55,8 @@ module LteRlc
         }
 
         // UM Module
-        um: <(d2dCapable ? "LteRlcUmD2D" : "LteRlcUm")> like ILteRlcUm {
+        um: LteRlcUm {
+            hasD2DSupport = parent.d2dCapable;
             @display("p=200,100;");
         }
 
