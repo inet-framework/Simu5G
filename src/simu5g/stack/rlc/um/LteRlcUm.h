@@ -25,6 +25,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 class RlcUpperMux;
+class RlcLowerMux;
 class UmTxEntity;
 class UmRxEntity;
 
@@ -56,6 +57,7 @@ class LteRlcUm : public cSimpleModule
     bool hasD2DSupport_ = false;
 
     RlcUpperMux *upperMux_ = nullptr;
+    RlcLowerMux *lowerMux_ = nullptr;
 
     // statistics
     static simsignal_t receivedPacketFromUpperLayerSignal_;
@@ -65,19 +67,7 @@ class LteRlcUm : public cSimpleModule
     static simsignal_t rlcPacketLossDlSignal_;
     static simsignal_t rlcPacketLossUlSignal_;
 
-    // parameters
-    cModuleType *rxEntityModuleType_;
-
-    /*
-    * Data structures
-    */
-
-    /**
-    * The entities map associates each DrbKey with
-    * a RX Entity , identified by its ID
-    */
-    typedef std::map<DrbKey, UmRxEntity *> UmRxEntities;
-    UmRxEntities rxEntities_;
+    // (TX entities are managed by RlcUpperMux, RX entities by RlcLowerMux)
 
     /**
     * @author Alessandro Noferi
