@@ -60,5 +60,6 @@ module LteRlc
         lowerMux.macOut --> macOut;
         lowerMux.toUm --> um.UM_Sap_down$i;
         lowerMux.fromUm <-- um.UM_Sap_down$o;
+        lowerMux.toUpperMux --> upperMux.fromLowerMux;
 }
 
