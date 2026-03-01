@@ -14,10 +14,6 @@
 
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
-#include "simu5g/common/utils/utils.h"
-#include "simu5g/stack/rlc/um/UmTxEntity.h"
-#include "simu5g/stack/rlc/um/UmRxEntity.h"
-#include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 #include "simu5g/mec/utils/MecCommon.h"
 
 namespace simu5g {
@@ -53,9 +49,6 @@ class UmRxEntity;
 class LteRlcUm : public cSimpleModule
 {
   protected:
-    RanNodeType nodeType;
-    bool hasD2DSupport_ = false;
-
     RlcUpperMux *upperMux_ = nullptr;
     RlcLowerMux *lowerMux_ = nullptr;
 
