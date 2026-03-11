@@ -17,56 +17,53 @@
 
 namespace simu5g {
 
-RlcSduRetransmissionBuffer::RlcSduRetransmissionBuffer(uint32_t threshold) : maxRetxThreshold(threshold) {
-
+RlcSduRetransmissionBuffer::RlcSduRetransmissionBuffer(uint32_t threshold)
+    : maxRetxThreshold_(threshold)
+{
 }
 
-RlcSduRetransmissionBuffer::~RlcSduRetransmissionBuffer() {
+RlcSduRetransmissionBuffer::~RlcSduRetransmissionBuffer()
+{
 }
 
 
-bool RlcSduRetransmissionBuffer::addNack(uint32_t sn, bool isWhole, uint32_t start, uint32_t end ) {
+bool RlcSduRetransmissionBuffer::addNack(uint32_t sn, bool isWhole, uint32_t start, uint32_t end)
+{
     RetxTask task{sn, start, end, isWhole};
+    bool alreadyPending = (pendingRetx_.find(task) != pendingRetx_.end());
 
-    // Check if this specific segment is already pending
-    bool alreadyPending = (pendingRetx.find(task) != pendingRetx.end());
+    if (sduRetxCounters_.find(sn) == sduRetxCounters_.end()) {
+        sduRetxCounters_[sn].retxCount = 0;
+    }
+    else if (!alreadyPending && !sduRetxCounters_[sn].incrementedInCurrentStatusPdu) {
+        sduRetxCounters_[sn].retxCount++;
+        sduRetxCounters_[sn].incrementedInCurrentStatusPdu = true;
 
-    if (sduRetxCounters.find(sn) == sduRetxCounters.end()) {
-        // First time this SDU is considered for retransmission
-        sduRetxCounters[sn].retxCount = 0;
-    } else if (!alreadyPending && !sduRetxCounters[sn].incrementedInCurrentStatusPdu) {
-        // Increment RETX_COUNT if not already pending and not already incremented for this PDU
-        sduRetxCounters[sn].retxCount++;
-        sduRetxCounters[sn].incrementedInCurrentStatusPdu = true;
-
-        if (sduRetxCounters[sn].retxCount >= maxRetxThreshold) {
-            std::cout << "[RLC RETX] CRITICAL: Max retransmissions reached for SN=" << sn << std::endl;
+        if (sduRetxCounters_[sn].retxCount >= maxRetxThreshold_) {
+            std::cerr << "[RLC RETX] Max retransmissions reached for SN=" << sn << std::endl;
             return false;
         }
     }
 
-    pendingRetx.insert(task);
+    pendingRetx_.insert(task);
     return true;
 }
-void RlcSduRetransmissionBuffer::clearSdu(uint32_t sn) {
-    sduRetxCounters.erase(sn);
-    for (auto it = pendingRetx.begin(); it != pendingRetx.end(); ) {
-        if (it->sn == sn) it = pendingRetx.erase(it);
-        else ++it;
+void RlcSduRetransmissionBuffer::clearSdu(uint32_t sn)
+{
+    sduRetxCounters_.erase(sn);
+    for (auto it = pendingRetx_.begin(); it != pendingRetx_.end(); ) {
+        if (it->sn == sn)
+            it = pendingRetx_.erase(it);
+        else
+            ++it;
     }
 }
-uint64_t RlcSduRetransmissionBuffer::getRetxPendingBytes() {
+uint64_t RlcSduRetransmissionBuffer::getRetxPendingBytes()
+{
     uint64_t total = 0;
-    for (const auto& task : pendingRetx) {
-
+    for (const auto &task : pendingRetx_)
         total += (task.soEnd - task.soStart + 1);
-
-    }
-
     return total;
 }
 
-
-
-
-} /* namespace simu5g */
+} // namespace simu5g
