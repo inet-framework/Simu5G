@@ -47,6 +47,9 @@ using namespace omnetpp;
 * PUBLIC FUNCTIONS
 *********************/
 
+simsignal_t LteMacEnb::grantedBlocksSignal=registerSignal("grantedBlocks");
+simsignal_t LteMacEnb::bsrSizeSignal=registerSignal("bsrSize");
+
 LteMacEnb::LteMacEnb() :
     LteMacBase()
 {
@@ -96,6 +99,21 @@ void LteMacEnb::deleteQueues(MacNodeId nodeId)
 {
     Enter_Method_Silent();
 
+    for (auto& mit : harqRxBuffers_) {
+        HarqRxBuffers::iterator hit = mit.second.find(nodeId);
+        if (hit != mit.second.end()) {
+            for (unsigned int proc = 0; proc < (unsigned int)harqProcesses_; proc++) {
+                unsigned int numUnits = hit->second->getProcess(proc)->getNumHarqUnits();
+                for (unsigned int i = 0; i < numUnits; i++) {
+                    hit->second->getProcess(proc)->purgeCorruptedPdu(i); // delete contained PDU
+                    hit->second->getProcess(proc)->resetCodeword(i);     // reset unit
+                }
+            }
+        }
+    }
+
+    // notify that this UE is switching during this TTI
+    resetHarq_[nodeId] = NOW;
     LteMacBase::deleteQueues(nodeId);
 
     LteMacBufferMap::iterator bit;
@@ -116,7 +134,35 @@ void LteMacEnb::deleteQueues(MacNodeId nodeId)
     // remove pending RAC requests
     enbSchedulerUl_->removePendingRac(nodeId);
 }
+void LteMacEnb::deleteQueuesRadioLinkFailure(MacNodeId nodeId)
+{
+    Enter_Method_Silent();
+    EV<<NOW<<"LteMacEnb::deleteQueuesRadioLinkFailure( interrupting HARQ processes"<<endl;
+    for (auto& mit : harqRxBuffers_) {
+        HarqRxBuffers::iterator hit = mit.second.find(nodeId);
+        if (hit != mit.second.end()) {
+            for (unsigned int proc = 0; proc < (unsigned int)harqProcesses_; proc++) {
+                unsigned int numUnits = hit->second->getProcess(proc)->getNumHarqUnits();
+                for (unsigned int i = 0; i < numUnits; i++) {
+                    hit->second->getProcess(proc)->purgeCorruptedPdu(i); // delete contained PDU
+                    hit->second->getProcess(proc)->resetCodeword(i);     // reset unit
+                }
+            }
+        }
+    }
 
+    // notify that this UE is switching during this TTI
+    resetHarq_[nodeId] = NOW;
+    deleteQueues(nodeId);
+
+
+
+}
+void LteMacEnb::informRadioLinkFailure(MacNodeId nodeId) {
+    pendingRLFNode=nodeId;
+    radioLinkFailurePending=true;
+
+}
 void LteMacEnb::initialize(int stage)
 {
     LteMacBase::initialize(stage);
@@ -232,7 +278,20 @@ void LteMacEnb::handleMessage(cMessage *msg)
             return;
         }
     }
+    //Now we  clear the queues again, before handling packets from RLC or after handling packets from PHY since a pending packet may have been received in this TTI
+    cGate *incoming = msg->getArrivalGate();
+    if (incoming == upInGate_ && radioLinkFailurePending) {
+        deleteQueuesRadioLinkFailure(pendingRLFNode);
+        radioLinkFailurePending=false;
+    }
+
     LteMacBase::handleMessage(msg);
+
+
+    if (incoming == downInGate_ && radioLinkFailurePending) {
+        deleteQueuesRadioLinkFailure(pendingRLFNode);
+        radioLinkFailurePending=false;
+    }
 }
 
 void LteMacEnb::macSduRequest()
@@ -294,6 +353,7 @@ void LteMacEnb::bufferizeBsr(MacBsr *bsr, MacCid cid)
                << MacCidToNodeId(cid) << " for LCID: " << MacCidToLcid(cid)
                << " Current BSR size: " << bsr->getSize() << "\n";
 
+            emit(bsrSizeSignal,bsr->getSize() );
             // signal backlog to Uplink scheduler
             enbSchedulerUl_->backlog(cid);
         }
@@ -315,7 +375,7 @@ void LteMacEnb::bufferizeBsr(MacBsr *bsr, MacCid cid)
             EV << "LteBsrBuffers : Using old buffer for node: " << MacCidToNodeId(
                     cid) << " for LCID: " << MacCidToLcid(cid)
                << " Current BSR size: " << bsr->getSize() << "\n";
-
+            emit(bsrSizeSignal,bsr->getSize() );
             // signal backlog to Uplink scheduler
             enbSchedulerUl_->backlog(cid);
         }
@@ -327,6 +387,7 @@ void LteMacEnb::bufferizeBsr(MacBsr *bsr, MacCid cid)
             EV << "LteBsrBuffers : Using old buffer for node: " << MacCidToNodeId(
                     cid) << " for LCID: " << MacCidToLcid(cid)
                << " - now empty" << "\n";
+            emit(bsrSizeSignal,0 );
         }
     }
 }
@@ -383,7 +444,7 @@ void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList> *scheduleList)
             if (granted == 0)
                 continue; // Avoiding transmission of 0 grant (0 grant should not be created)
 
-            EV << NOW << " LteMacEnb::sendGrants Node[" << getMacNodeId() << "] - "
+            EV << " LteMacEnb::sendGrants Node[" << getMacNodeId() << "] - "
                << granted << " blocks to grant for user " << nodeId << " on "
                << codewords << " codewords. CW[" << cw << "\\" << otherCw << "] carrier[" << citem.first << "]" << endl;
 
@@ -451,6 +512,7 @@ void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList> *scheduleList)
             if (packetFlowManager_ != nullptr)
                 packetFlowManager_->grantSent(nodeId, grant->getGrantId());
 
+            emit(grantedBlocksSignal,granted);
             // Send grant to PHY layer
             sendLowerPackets(pkt);
         }
@@ -591,7 +653,8 @@ void LteMacEnb::macPduMake(MacCid cid)
             }
             else {
                 // FIXME: possible memory leak
-                LteHarqBufferTx *hb = new LteHarqBufferTx(binder_, ENB_TX_HARQ_PROCESSES,
+                //LteHarqBufferTx *hb = new LteHarqBufferTx(binder_, ENB_TX_HARQ_PROCESSES,
+                LteHarqBufferTx *hb = new LteHarqBufferTx(binder_, harqProcesses_,
                         this, getMacUe(binder_, destId));
                 harqTxBuffers[destId] = hb;
                 txBuf = hb;
@@ -640,7 +703,7 @@ void LteMacEnb::macPduUnmake(cPacket *pktAux)
         take(upPkt);
 
         // TODO: upPkt->info()
-        EV << "LteMacBase: PDU Unmaker extracted SDU" << endl;
+        EV << "LteMacEnb::macPduUnmake: PDU Unmaker extracted SDU" << endl;
         sendUpperPackets(upPkt);
     }
 

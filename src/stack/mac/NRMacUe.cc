@@ -43,7 +43,6 @@ void NRMacUe::handleSelfMessage()
         }
     }
 
-    EV << NOW << "NRMacUe::handleSelfMessage " << nodeId_ << " - HARQ process " << (unsigned int)currentHarq_ << endl;
 
     // no grant available - if user has backlogged data, it will trigger scheduling request
     // no HARQ counter is updated since no transmission is sent.
@@ -111,7 +110,7 @@ void NRMacUe::handleSelfMessage()
             EV << "\t currentHarq_ counter initialized " << endl;
             firstTx = true;
             // the gNb will receive the first PDU in 2 TTI, thus initializing acid to 0
-            currentHarq_ = UE_TX_HARQ_PROCESSES - 2;
+            currentHarq_ = harqProcesses_ - 2;
         }
 
         std::map<double, HarqTxBuffers>::iterator mtit;
@@ -215,7 +214,6 @@ void NRMacUe::handleSelfMessage()
 
     // update current HARQ process id, if needed
     if (requestedSdus_ == 0) {
-        EV << NOW << " NRMacUe::handleSelfMessage - incrementing counter for HARQ processes " << (unsigned int)currentHarq_ << " --> " << (currentHarq_ + 1) % harqProcesses_ << endl;
         currentHarq_ = (currentHarq_ + 1) % harqProcesses_;
     }
 
@@ -392,7 +390,7 @@ void NRMacUe::macPduMake(MacCid cid)
                     continue;
 
                 if (macPduList_.find(carrierFreq) == macPduList_.end()) {
-                    MacPduList newList;
+                    MacPduList newList;;
                     macPduList_[carrierFreq] = newList;
                 }
                 MacPduList::iterator pit = macPduList_[carrierFreq].find(pktId);
@@ -498,17 +496,19 @@ void NRMacUe::macPduMake(MacCid cid)
                 LteHarqBufferTx *hb;
                 // FIXME: hb is never deleted
                 auto info = pit.second->getTag<UserControlInfo>();
-                if (info->getDirection() == UL)
-                    hb = new LteHarqBufferTx(binder_, (unsigned int)ENB_TX_HARQ_PROCESSES, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
-                else // D2D or D2D_MULTI
-                    hb = new LteHarqBufferTxD2D(binder_, (unsigned int)ENB_TX_HARQ_PROCESSES, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
+                if (info->getDirection() == UL) {
+                     hb = new LteHarqBufferTx(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
+                } else {// D2D or D2D_MULTI
+                    hb = new LteHarqBufferTxD2D(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
+                }
+
                 harqTxBuffers[destId] = hb;
                 txBuf = hb;
             }
 
             // search for an empty unit within the first available process
             UnitList txList = (pit.second->getTag<UserControlInfo>()->getDirection() == D2D_MULTI) ? txBuf->getEmptyUnits(currentHarq_) : txBuf->firstAvailable();
-            EV << "NRMacUe::macPduMake - [Used Acid=" << (unsigned int)txList.first << "]" << endl;
+            EV<< "NRMacUe::macPduMake() "<<(unsigned int) currentHarq_<<"- [Used Acid=" << (unsigned int)txList.first << "]" << endl;
 
             //Get a reference of the LteMacPdu from pit pointer (extract Pdu from the MAP)
             auto macPkt = pit.second;
@@ -602,7 +602,7 @@ void NRMacUe::macPduMake(MacCid cid)
 
             macPkt->insertAtFront(header);
 
-            EV << "NRMacUe: pduMaker created PDU: " << macPkt->str() << endl;
+            EV<< "NRMacUe:::pduMaker created PDU: " << macPkt->str() << endl;
 
             // TODO: harq test
             // pdu transmission here (if any)

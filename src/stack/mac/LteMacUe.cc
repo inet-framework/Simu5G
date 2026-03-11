@@ -178,7 +178,21 @@ void LteMacUe::handleMessage(cMessage *msg)
             return;
         }
     }
+    //Now we  clear the queues again, before handling packets from RLC or after handling packets from PHY since a pending packet may have been received in this TTI
+    cGate *incoming = msg->getArrivalGate();
+    if (incoming == upInGate_ && radioLinkFailurePending) {
+
+        deleteQueuesRadioLinkFailure(pendingRLFNode);
+        radioLinkFailurePending=false;
+    }
+
     LteMacBase::handleMessage(msg);
+
+
+    if (incoming == downInGate_ && radioLinkFailurePending ) {
+        deleteQueuesRadioLinkFailure(pendingRLFNode);
+        radioLinkFailurePending=false;
+    }
 }
 
 int LteMacUe::macSduRequest()
@@ -240,6 +254,8 @@ int LteMacUe::macSduRequest()
 
 bool LteMacUe::bufferizePacket(cPacket *pktAux)
 {
+    EV<<"LteMacUe::bufferizePacket( pktAux="<<pktAux<<endl;
+
     auto pkt = check_and_cast<Packet *>(pktAux);
 
     if (pkt->getBitLength() <= 1) { // no data in this packet - should not be buffered
@@ -302,6 +318,18 @@ bool LteMacUe::bufferizePacket(cPacket *pktAux)
         return true;    // notify the activation of the connection
     }
 
+    // Radio Link Failure: when we delete the queues after a RLF, there may be pending RLC segments already
+    //delivered to MAC. For those messages connDesc_[cid] = toStore; is not set and an error occurs below.
+    //We look for the entry here and discard the packet if not found
+
+    auto itc=connDesc_.find(cid);
+    if (itc==connDesc_.end()) {
+        //Not found
+        delete pkt;
+        return false;
+    }
+
+
     // this is a MAC SDU, buffer it in the MAC buffer
 
     LteMacBuffers::iterator it = mbuf_.find(cid);
@@ -311,11 +339,12 @@ bool LteMacUe::bufferizePacket(cPacket *pktAux)
 
         queue->pushBack(pkt);
 
-        mbuf_[cid] = queue;
-
         EV << "LteMacBuffers : Using new buffer on node: " <<
             MacCidToNodeId(cid) << " for Lcid: " << MacCidToLcid(cid) << ", Space left in the Queue: " <<
             queue->getQueueSize() - queue->getByteLength() << "\n";
+        mbuf_[cid] = queue;
+
+
     }
     else {
         // Found
@@ -456,7 +485,7 @@ void LteMacUe::macPduMake(MacCid cid)
             else {
                 // the tx buffer does not exist yet for this mac node id, create one
                 // FIXME: hb is never deleted
-                LteHarqBufferTx *hb = new LteHarqBufferTx(binder_, (unsigned int)ENB_TX_HARQ_PROCESSES, this,
+                LteHarqBufferTx *hb = new LteHarqBufferTx(binder_, (unsigned int)harqProcesses_, this,
                         check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, cellId_)));
                 harqTxBuffers[destId] = hb;
                 txBuf = hb;
@@ -584,7 +613,7 @@ void LteMacUe::macPduUnmake(cPacket *pktAux)
         auto upPkt = macPkt->popSdu();
         take(upPkt);
 
-        EV << "LteMacBase: pduUnmaker extracted SDU" << endl;
+        EV << "LteMacUe::macPduUnmake LteMacBase: pduUnmaker extracted SDU" << endl;
 
         // store descriptor for the incoming connection, if not already stored
         auto lteInfo = upPkt->getTag<FlowControlInfo>();
@@ -610,9 +639,14 @@ void LteMacUe::handleUpperMessage(cPacket *pktAux)
     bool isLteRlcPduNewDataInd = checkIfHeaderType<LteRlcPduNewData>(pkt);
 
     // bufferize packet
-    bufferizePacket(pkt);
+    //bufferizePacket(pkt);
+    // If packet has no data we should not make any PDU?
+    //if (bufferizePacket(pkt)) {
 
-    if (!isLteRlcPduNewDataInd) {
+    bool packetIsBuffered=bufferizePacket(pkt);
+    if(!isLteRlcPduNewDataInd && packetIsBuffered){
+
+        //if (!isLteRlcPduNewDataInd) {
         requestedSdus_--;
         ASSERT(requestedSdus_ >= 0);
         // build a MAC PDU only after all MAC SDUs have been received from RLC
@@ -620,7 +654,7 @@ void LteMacUe::handleUpperMessage(cPacket *pktAux)
             // make PDU and BSR (if necessary)
             macPduMake();
             // update current HARQ process id
-            EV << NOW << " LteMacUe::handleMessage - incrementing counter for HARQ processes " << (unsigned int)currentHarq_ << " --> " << (currentHarq_ + 1) % harqProcesses_ << endl;
+            EV<< " LteMacUe::handleMessage - incrementing counter for HARQ processes " << (unsigned int)currentHarq_ << " --> " << (currentHarq_ + 1) % harqProcesses_ << endl;
             currentHarq_ = (currentHarq_ + 1) % harqProcesses_;
         }
     }
@@ -711,7 +745,7 @@ void LteMacUe::handleSelfMessage()
             EV << "\t currentHarq_ counter initialized " << endl;
             firstTx = true;
             // the eNB will receive the first PDU in 2 TTIs, thus initializing ACID to 0
-            currentHarq_ = UE_TX_HARQ_PROCESSES - 2;
+            currentHarq_ = harqProcesses_ - 2;
         }
 
         EV << NOW << " LteMacUe::handleSelfMessage " << nodeId_ << " entered scheduling" << endl;
@@ -1044,6 +1078,78 @@ void LteMacUe::deleteQueues(MacNodeId nodeId)
     // remove traffic descriptor and lcg entry
     lcgMap_.clear();
     connDesc_.clear();
+}
+void LteMacUe::deleteQueuesRadioLinkFailure(MacNodeId nodeId)  {
+    Enter_Method_Silent();
+
+    for (auto mit = mbuf_.begin(); mit != mbuf_.end(); ) {;
+        while (!mit->second->isEmpty()) {
+            cPacket *pkt = mit->second->popFront();
+            delete pkt;
+        }
+        delete mit->second;        // Delete Queue
+        mit = mbuf_.erase(mit);        // Delete Element
+    }
+    for (auto vit = macBuffers_.begin(); vit != macBuffers_.end(); ) {
+
+        while (!vit->second->isEmpty())
+            vit->second->popFront();
+        delete vit->second;                  // Delete Queue
+        vit = macBuffers_.erase(vit);           // Delete Element
+    }
+
+
+
+
+    // Interrupt H-ARQ processes for SL
+
+    for (auto& mtit : harqTxBuffers_) {
+        HarqTxBuffers::iterator hit = mtit.second.find(nodeId);
+        if (hit != mtit.second.end()) {
+            for (int proc = 0; proc < (unsigned int)harqProcesses_; proc++) {
+                hit->second->forceDropProcess(proc);
+            }
+
+        }
+
+        // Interrupt H-ARQ processes for UL
+        MacNodeId id = getMacCellId();
+        hit = mtit.second.find(id);
+        if (hit != mtit.second.end()) {
+            for (int proc = 0; proc < (unsigned int)harqProcesses_; proc++) {
+                hit->second->forceDropProcess(proc);
+            }
+            resetHarq_[id] = NOW;
+        }
+    }
+
+
+    // delete H-ARQ buffers
+    for (auto& [key, buffer] : harqTxBuffers_) {
+        for (auto hit = buffer.begin(); hit != buffer.end(); ) {
+
+            delete hit->second; // Delete Queue
+            hit = buffer.erase(hit); // Delete Element
+        }
+    }
+
+    for (auto& [key, buffer] : harqRxBuffers_) {
+        for (auto hit2 = buffer.begin(); hit2 != buffer.end(); ) {
+
+            delete hit2->second; // Delete Queue
+            hit2 = buffer.erase(hit2); // Delete Element
+        }
+    }
+
+    // remove traffic descriptor and lcg entry
+    lcgMap_.clear();
+    connDesc_.clear();
+
+}
+void LteMacUe::informRadioLinkFailure(MacNodeId nodeId) {
+    pendingRLFNode=nodeId;
+    radioLinkFailurePending=true;
+
 }
 
 } //namespace

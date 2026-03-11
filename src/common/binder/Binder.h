@@ -38,7 +38,8 @@ class UeStatsCollector;
 
 class Binder : public cSimpleModule
 {
-  private:
+    // changed to protected to facilitate inheritance by Opal
+  protected:
 
     // name of the system (top-level) module
     std::string networkName_;

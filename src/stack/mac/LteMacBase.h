@@ -179,6 +179,9 @@ class LteMacBase : public cSimpleModule
     unsigned int totalHarqErrorRateDlCount_ = 0;
     unsigned int totalHarqErrorRateUlCount_ = 0;
 
+    bool radioLinkFailurePending=false;
+    MacNodeId pendingRLFNode;
+
   public:
 
     /**

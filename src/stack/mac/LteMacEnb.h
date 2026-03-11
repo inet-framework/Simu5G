@@ -34,6 +34,9 @@ class LteHarqProcessRx;
 class LteMacEnb : public LteMacBase
 {
   protected:
+
+    static simsignal_t grantedBlocksSignal;
+    static simsignal_t bsrSizeSignal;
     /// Local CellInfo
     inet::ModuleRefByPar<CellInfo> cellInfo_;
 
@@ -180,6 +183,9 @@ class LteMacEnb : public LteMacBase
      */
     void deleteQueues(MacNodeId nodeId) override;
 
+    // Radio Link Failure. Delete queues and interrupt HARQ processes
+    void deleteQueuesRadioLinkFailure(MacNodeId nodeId);
+    void informRadioLinkFailure(MacNodeId nodeId);
     /**
      * Getter for AMC module.
      */

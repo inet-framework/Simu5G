@@ -227,7 +227,7 @@ class LteRlcAmDataPdu : public LteRlcDataPdu
 
     LteRlcAmDataPdu() : LteRlcDataPdu()
     {
-        rlcPduLength_ = RLC_HEADER_UM;
+        rlcPduLength_ = RLC_HEADER_AM;
         this->setChunkLength(inet::B(rlcPduLength_));
     }
 

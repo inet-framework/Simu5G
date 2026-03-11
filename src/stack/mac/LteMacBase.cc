@@ -123,10 +123,17 @@ void LteMacBase::fromPhy(cPacket *pktAux)
             // where the HARQ buffer was deleted but a feedback was in transit)
             // this case must be taken care of
 
-            if (binder_->hasUeHandoverTriggered(nodeId_) || binder_->hasUeHandoverTriggered(src))
+            if (binder_->hasUeHandoverTriggered(nodeId_) || binder_->hasUeHandoverTriggered(src)) {
                 return;
+            } else {
+            // Radio Link Failure. If a RLF has been notified by the RLC AM module, buffers are deleted to restart
+            //the connection (this is my current approach), so we just let it go
+            //TODO: To improve reliability we should define some mechanism to be sure that is the case
+                return;
+            }
 
-            throw cRuntimeError("Mac::fromPhy(): Received feedback for a non-existing H-ARQ TX buffer");
+
+            //throw cRuntimeError("Mac::fromPhy(): Received feedback for a non-existing H-ARQ TX buffer");
         }
 
         auto hfbpkt = pkt->peekAtFront<LteHarqFeedback>();
@@ -144,7 +151,7 @@ void LteMacBase::fromPhy(cPacket *pktAux)
     }
     else if (userInfo->getFrameType() == DATAPKT) {
         // data packet: insert in proper RX buffer
-        EV << NOW << " Mac::fromPhy: node " << nodeId_ << " Received DATA packet" << endl;
+        EV<< " Mac::fromPhy: node " << nodeId_ << " Received DATA packet" << endl;
 
         auto pduAux = pkt->peekAtFront<LteMacPdu>();
         auto pdu = pkt;
@@ -157,15 +164,16 @@ void LteMacBase::fromPhy(cPacket *pktAux)
 
         HarqRxBuffers::iterator hrit = harqRxBuffers_[carrierFreq].find(src);
         if (hrit != harqRxBuffers_[carrierFreq].end()) {
+            EV<< " Mac::fromPhy: node " << nodeId_ << "Inserted in previous harqRxBuffers_" << endl;
             hrit->second->insertPdu(cw, pdu);
         }
         else {
             // FIXME: possible memory leak
             LteHarqBufferRx *hrb;
             if (userInfo->getDirection() == DL || userInfo->getDirection() == UL)
-                hrb = new LteHarqBufferRx(ENB_RX_HARQ_PROCESSES, this, binder_, src);
+                hrb = new LteHarqBufferRx(harqProcesses_, this, binder_, src);
             else // D2D
-                hrb = new LteHarqBufferRxD2D(ENB_RX_HARQ_PROCESSES, this, binder_, src, (userInfo->getDirection() == D2D_MULTI));
+                hrb = new LteHarqBufferRxD2D(harqProcesses_, this, binder_, src, (userInfo->getDirection() == D2D_MULTI));
 
             harqRxBuffers_[carrierFreq][src] = hrb;
             hrb->insertPdu(cw, pdu);

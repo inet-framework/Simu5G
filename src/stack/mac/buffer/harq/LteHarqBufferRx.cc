@@ -25,6 +25,7 @@ using namespace omnetpp;
 simsignal_t LteHarqBufferRx::macCellThroughputSignal_[2] = { cComponent::registerSignal("macCellThroughputDl"), cComponent::registerSignal("macCellThroughputUl") };
 simsignal_t LteHarqBufferRx::macDelaySignal_[2] = { cComponent::registerSignal("macDelayDl"), cComponent::registerSignal("macDelayUl") };
 simsignal_t LteHarqBufferRx::macThroughputSignal_[2] = { cComponent::registerSignal("macThroughputDl"), cComponent::registerSignal("macThroughputUl") };
+simsignal_t LteHarqBufferRx::macThroughputSampleSignal_[2] = { cComponent::registerSignal("macThroughputSampleDl"), cComponent::registerSignal("macThroughputSampleUl") };
 
 LteHarqBufferRx::LteHarqBufferRx(unsigned int num, LteMacBase *owner, Binder *binder, MacNodeId srcId)
     : binder_(binder), macOwner_(owner), numHarqProcesses_(num), srcId_(srcId), processes_(num, nullptr), isMulticast_(false)
@@ -68,7 +69,7 @@ void LteHarqBufferRx::insertPdu(Codeword cw, inet::Packet *pkt)
     // TODO add codeword to insertPdu
     processes_[acid]->insertPdu(cw, pkt);
     // debug output
-    EV << "H-ARQ RX: new PDU (id " << pdu->getId()
+    EV << ";LteHarqBufferRx::insertPdu()   H-ARQ RX: new PDU (id " << pdu->getId()
        << " ) inserted into process " << (int)acid << endl;
 }
 
@@ -83,7 +84,7 @@ void LteHarqBufferRx::sendFeedback()
                 // debug output:
                 auto uInfo = pkt->getTag<UserControlInfo>();
                 const char *r = hfb->getResult() ? "ACK" : "NACK";
-                EV << "H-ARQ RX: feedback sent to TX process "
+                EV <<NOW<< "; H-ARQ RX: feedback sent to TX process "
                    << (int)hfb->getAcid() << " Codeword  " << (int)cw
                    << " of node with id "
                    << uInfo->getDestId()
@@ -103,7 +104,7 @@ unsigned int LteHarqBufferRx::purgeCorruptedPdus()
     for (unsigned int i = 0; i < numHarqProcesses_; i++) {
         for (Codeword cw = 0; cw < MAX_CODEWORDS; ++cw) {
             if (processes_[i]->getUnitStatus(cw) == RXHARQ_PDU_CORRUPTED) {
-                EV << "LteHarqBufferRx::purgeCorruptedPdus - purged PDU with acid " << i << endl;
+                EV<< "; LteHarqBufferRx::purgeCorruptedPdus - purged PDU with acid " << i << endl;
                 // purge PDU
                 processes_[i]->purgeCorruptedPdu(cw);
                 processes_[i]->resetCodeword(cw);
@@ -120,6 +121,8 @@ std::list<Packet *> LteHarqBufferRx::extractCorrectPdus()
     this->sendFeedback();
     std::list<Packet *> ret;
     unsigned char acid = 0;
+    double interval=(NOW-lastTputSample).dbl();
+
     for (unsigned int i = 0; i < numHarqProcesses_; i++) {
         for (Codeword cw = 0; cw < MAX_CODEWORDS; ++cw) {
             if (processes_[i]->isCorrect(cw)) {
@@ -135,6 +138,7 @@ std::list<Packet *> LteHarqBufferRx::extractCorrectPdus()
                 // Calculate Throughput by sending the number of bits for this packet
                 totalCellRcvdBytes_ += size;
                 totalRcvdBytes_ += size;
+                tSample += size;
                 double den = (NOW - getSimulation()->getWarmupPeriod()).dbl();
 
                 // emit throughput statistics
@@ -150,13 +154,18 @@ std::list<Packet *> LteHarqBufferRx::extractCorrectPdus()
                 ret.push_back(pktTemp);
                 acid = i;
 
-                EV << "LteHarqBufferRx::extractCorrectPdus H-ARQ RX: PDU (id " << ret.back()->getId()
+                EV<< "; LteHarqBufferRx::extractCorrectPdus H-ARQ RX: PDU (id " << ret.back()->getId()
                    << " ) extracted from process " << (int)acid
                    << " to be sent upper" << endl;
             }
         }
     }
 
+    if (interval>=1) {
+        macUe_emit(macThroughputSampleSignal_[dir], (tSample/interval));
+        tSample=0;
+        lastTputSample=NOW;
+    }
     return ret;
 }
 

@@ -63,10 +63,10 @@ class LteMacUe : public LteMacBase
     unsigned int maxRacBackoff_ = 0;
 
     unsigned int raRespTimer_ = 0;
-    unsigned int raRespWinStart_ = 3;
+    unsigned int raRespWinStart_ = 20;
 
     unsigned int bsrRtxTimer_ = 0;
-    unsigned int bsrRtxTimerStart_ = 40;
+    unsigned int bsrRtxTimerStart_ = 320;
 
     // BSR handling
     bool bsrTriggered_ = false;
@@ -193,6 +193,9 @@ class LteMacUe : public LteMacBase
      * @param nodeId Id of the node whose queues are deleted
      */
     void deleteQueues(MacNodeId nodeId) override;
+    // Radio Link Failure. Delete queues and interrupt HARQ processes
+    void deleteQueuesRadioLinkFailure(MacNodeId nodeId) ;
+    void informRadioLinkFailure(MacNodeId nodeId);
 
     // update ID of the serving cell during handover
     virtual void doHandover(MacNodeId targetEnb);

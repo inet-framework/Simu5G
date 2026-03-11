@@ -34,7 +34,7 @@ simple LteMacBase like ILteMac
         bool muMimo = default(true);
 
         //# H-ARQ
-        int harqProcesses = default(8);
+        int harqProcesses = default(5);
         int maxHarqRtx = default(3);
         int harqFbEvaluationTimer = default(4);              // number of slots for sending back HARQ FB
 
@@ -44,6 +44,10 @@ simple LteMacBase like ILteMac
         //#
         //# Statistics recording
         //#
+        @signal[macThroughputSampleDl];
+        @statistic[macThroughputSampleDl](title="Throughput at the MAC layer DL"; unit="Bps"; source="macThroughputSampleDl"; record=mean,vector);
+        @signal[macThroughputSampleUl];
+        @statistic[macThroughputSampleUl](title="Throughput at the MAC layer UL"; unit="Bps"; source="macThroughputSampleUl"; record=mean, vector);
         @signal[macDelayDl];
         @statistic[macDelayDl](title="Delay at the MAC layer UL"; unit="s"; source="macDelayDl"; record=mean,vector);
         @signal[macThroughputDl];

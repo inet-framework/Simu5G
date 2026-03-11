@@ -31,6 +31,8 @@ typedef std::priority_queue<ScoreDesc> ScoreList;
 
 class BackgroundScheduler : public cSimpleModule, public cListener
 {
+protected:
+
     // base station coordinates
     inet::Coord pos_;
 
