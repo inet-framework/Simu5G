@@ -3,128 +3,116 @@
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
-// 
+//
 
 #ifndef __SIMU5G_NRAMTXQUEUE_H_
 #define __SIMU5G_NRAMTXQUEUE_H_
 
 #include <omnetpp.h>
-#include "AmTxQueue.h"
+#include <inet/common/ModuleRefByPar.h>
+#include <inet/common/packet/Packet.h>
 
-#include "stack/mac/LteMacBase.h"
-#include "RlcSduSlidingWindowTransmissionBuffer.h"
-#include "RlcSduRetransmissionBuffer.h"
-#include "stack/rlc/am/packet/LteRlcAmSdu_m.h"
-
-using namespace omnetpp;
+#include "common/LteCommon.h"
+#include "common/LteControlInfo.h"
+#include "stack/rlc/am/buffer/RlcSduSlidingWindowTransmissionBuffer.h"
+#include "stack/rlc/am/buffer/RlcSduRetransmissionBuffer.h"
 
 namespace simu5g {
 
+class LteRlcAm;
+class LteMacBase;
 
-class NrAmTxQueue : public cSimpleModule
+/**
+ * @class NrAmTxQueue
+ * @brief NR RLC AM Transmission Queue (3GPP TS 38.322).
+ *
+ * Manages SDU segmentation, ARQ retransmissions and polling.
+ * Created dynamically by NrRlcAm per logical channel.
+ */
+class NrAmTxQueue : public omnetpp::cSimpleModule
 {
-protected:
-
-    struct SDUInfo {
-        inet::Packet *sdu;
-        int currentOffset;
-        SDUInfo() {
-            sdu = nullptr;
-            currentOffset=0;
-        }
-        ~SDUInfo() {
-            if (sdu) {
-                delete sdu;
-            }
-        }
+  protected:
+    struct SduInfo {
+        inet::Packet *sdu = nullptr;
+        int currentOffset = 0;
+        ~SduInfo() { delete sdu; }
     };
 
-    std::list<SDUInfo*> sduBuffer;
+    // SDU and PDU buffers
+    std::list<SduInfo *> sduBuffer_;
+    RlcSduSlidingWindowTransmissionBuffer *txBuffer_ = nullptr;
+    RlcSduRetransmissionBuffer *rtxBuffer_ = nullptr;
+    std::list<omnetpp::cPacket *> controlBuffer_;
 
+    // Set on Radio Link Failure to stop transmission
+    bool radioLinkFailureDetected_ = false;
 
-    RlcSduSlidingWindowTransmissionBuffer* txBuffer;
-    std::list<omnetpp::cPacket*> controlBuffer;
-    RlcSduRetransmissionBuffer* rtxBuffer;
-
-    //Used to prevent sending messages after a RLF.
-    bool radioLinkFailureDetected;
-
-
-    /*
-     * Reference to the corresponding RLC AM module
-     */
+    // Reference to the parent RLC AM module
     inet::ModuleRefByPar<LteRlcAm> lteRlc_;
 
-    /*
-     * Copy of LTE control info - used for sending down PDUs and control packets.
-     */
-
+    // Flow control info (one per logical channel)
     FlowControlInfo *lteInfo_ = nullptr;
-    /*
-     * Copy of MacCid corresponding to lteInfo_ - used to report buffer status
-     *
-     */
-    MacCid infoCid_;
+    MacCid infoCid_ = 0;
 
-    // TODO: Workaroung. We need the mac to avoid getting stalled and indicate available data
-    LteMacBase *mac ;
+    // MAC reference for buffer status reporting
+    LteMacBase *mac_ = nullptr;
 
-    //Debug
-    std::string name_entity;
+    // Debug identifier
+    std::string nameEntity_;
 
-    //Maximum PDU SN transmitted so far
-    unsigned int sn;
-    unsigned int tx_next_ack;
-    unsigned int AM_window_size;
-    unsigned int pdu_without_poll;
-    unsigned int byte_without_poll;
-    unsigned int pollPDU;
-    unsigned int pollByte;
-    unsigned int poll_sn;
-    unsigned int maxRtxThreshold;
-    bool setPoll;
-    cMessage* t_PollRetransmitTimer;
-    simtime_t t_PollRetransmit;
+    // TX state variables
+    unsigned int sn_ = 0;
+    unsigned int txNextAck_ = 0;
+    unsigned int amWindowSize_ = 0;
 
-    static simsignal_t wastedGrantedBytes;
-    static simsignal_t enqueuedSduSize;
-    static simsignal_t enqueuedSduRate;
-    static simsignal_t requestedPduSize;
-    static simsignal_t txWindowOccupation;
-    static simsignal_t txWindowFull;
-    static simsignal_t retransmissionPdu;
-    simtime_t lastSduSample;
-    unsigned int sduSample;
-    unsigned int receivedSdus;
+    // Polling state
+    unsigned int pduWithoutPoll_ = 0;
+    unsigned int byteWithoutPoll_ = 0;
+    unsigned int pollPdu_ = 0;
+    unsigned int pollByte_ = 0;
+    unsigned int pollSn_ = 0;
+    unsigned int maxRtxThreshold_ = 0;
+    bool pollPending_ = false;
+    omnetpp::cMessage *tPollRetransmitTimer_ = nullptr;
+    omnetpp::simtime_t tPollRetransmit_;
+
+    // Statistics
+    static omnetpp::simsignal_t wastedGrantedBytesSignal_;
+    static omnetpp::simsignal_t enqueuedSduSizeSignal_;
+    static omnetpp::simsignal_t enqueuedSduRateSignal_;
+    static omnetpp::simsignal_t requestedPduSizeSignal_;
+    static omnetpp::simsignal_t txWindowOccupationSignal_;
+    static omnetpp::simsignal_t txWindowFullSignal_;
+    static omnetpp::simsignal_t retransmissionPduSignal_;
+    omnetpp::simtime_t lastSduSample_;
+    unsigned int sduSampleBytes_ = 0;
+    unsigned int receivedSdus_ = 0;
 
     void initialize() override;
     void finish() override;
-    void handleMessage(cMessage *msg) override;
-    virtual bool sendRetransmission(int size);
-    virtual void reportBufferStatus();
-    virtual bool checkPolling();
-    virtual void sendSegment(PendingSegment segment);
-public:
-    virtual ~NrAmTxQueue();
+    void handleMessage(omnetpp::cMessage *msg) override;
 
-    /*
-     * Enqueues an upper layer packet into the transmission buffer
-     * @param sdu the packet to be enqueued
-     */
-    virtual void enque(Packet *sdu) ;
+    bool sendRetransmission(int size);
+    void reportBufferStatus();
+    bool checkPolling();
+    void sendSegment(PendingSegment segment);
 
-    virtual void sendPdus(int size) ;
-    virtual void handleControlPacket(omnetpp::cPacket *pkt) ;
-    virtual void bufferControlPdu(omnetpp::cPacket *pkt) ;
-    virtual unsigned int getPendingDataVolume() const;
+  public:
+    ~NrAmTxQueue() override;
+
+    void enque(inet::Packet *sdu);
+    void sendPdus(int size);
+    void handleControlPacket(omnetpp::cPacket *pkt);
+    void bufferControlPdu(omnetpp::cPacket *pkt);
+    unsigned int getPendingDataVolume() const;
 };
 
 } //namespace

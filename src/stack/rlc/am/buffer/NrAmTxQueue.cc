@@ -14,292 +14,215 @@
 //
 
 #include "NrAmTxQueue.h"
-//#include "stack/rlc/packet/LteRlcDataPdu.h"
+#include "stack/rlc/am/LteRlcAm.h"
 #include "stack/rlc/am/packet/NrRlcAmDataPdu.h"
-#include "stack/mac/buffer/LteMacBuffer.h"
 #include "stack/rlc/am/packet/NrRlcAmStatusPdu_m.h"
+#include "stack/mac/LteMacBase.h"
+#include "stack/mac/buffer/LteMacBuffer.h"
 
 
 namespace simu5g {
 
+using namespace omnetpp;
+using namespace inet;
 
 Define_Module(NrAmTxQueue);
 
-simsignal_t NrAmTxQueue::wastedGrantedBytes=registerSignal("wastedGrantedBytes");
-simsignal_t NrAmTxQueue::enqueuedSduSize=registerSignal("enqueuedSduSize");
-simsignal_t NrAmTxQueue::enqueuedSduRate=registerSignal("enqueuedSduRate");
-simsignal_t NrAmTxQueue::requestedPduSize=registerSignal("requestedPduSize");
-simsignal_t NrAmTxQueue::txWindowOccupation=registerSignal("txWindowOccupation");
-simsignal_t NrAmTxQueue::txWindowFull=registerSignal("txWindowFull");
-simsignal_t NrAmTxQueue::retransmissionPdu=registerSignal("retransmissionPdu");
+simsignal_t NrAmTxQueue::wastedGrantedBytesSignal_ = registerSignal("wastedGrantedBytes");
+simsignal_t NrAmTxQueue::enqueuedSduSizeSignal_ = registerSignal("enqueuedSduSize");
+simsignal_t NrAmTxQueue::enqueuedSduRateSignal_ = registerSignal("enqueuedSduRate");
+simsignal_t NrAmTxQueue::requestedPduSizeSignal_ = registerSignal("requestedPduSize");
+simsignal_t NrAmTxQueue::txWindowOccupationSignal_ = registerSignal("txWindowOccupation");
+simsignal_t NrAmTxQueue::txWindowFullSignal_ = registerSignal("txWindowFull");
+simsignal_t NrAmTxQueue::retransmissionPduSignal_ = registerSignal("retransmissionPdu");
 
 
 
-NrAmTxQueue::~NrAmTxQueue() {
-    cancelAndDelete(t_PollRetransmitTimer);
-    delete txBuffer;
-    delete rtxBuffer;
-    while (!sduBuffer.empty()) {
-        delete sduBuffer.front();
-        sduBuffer.pop_front();
+NrAmTxQueue::~NrAmTxQueue()
+{
+    cancelAndDelete(tPollRetransmitTimer_);
+    delete txBuffer_;
+    delete rtxBuffer_;
+    while (!sduBuffer_.empty()) {
+        delete sduBuffer_.front();
+        sduBuffer_.pop_front();
     }
-    while (!controlBuffer.empty()) {
-        delete controlBuffer.front();
-        controlBuffer.pop_front();
+    while (!controlBuffer_.empty()) {
+        delete controlBuffer_.front();
+        controlBuffer_.pop_front();
     }
 }
-void NrAmTxQueue::initialize() {
-
-    // Reference to corresponding RLC AM module
+void NrAmTxQueue::initialize()
+{
     lteRlc_.reference(this, "amModule", true);
 
-    //TODO: conver to enum
-    AM_window_size=par("AM_Window_Size");
-    //Only two values are allowed by the standard: for 12 or 18 bit SN
-    if (AM_window_size != static_cast<unsigned int>(2048)) {
-        if (AM_window_size!= static_cast<unsigned int>(131072) ) {
-            throw cRuntimeError("NrAmTxQueue::initialize() AM_window_size=%u, but only 2048 or 131072 are valid values ",AM_window_size);
-        }
+    amWindowSize_ = par("AM_Window_Size");
+    if (amWindowSize_ != 2048 && amWindowSize_ != 131072)
+        throw cRuntimeError("NrAmTxQueue::initialize() AM_Window_Size=%u, but only 2048 or 131072 are valid", amWindowSize_);
 
-    }
-    sn=0;
-    radioLinkFailureDetected=false;
-    tx_next_ack=0;
-    pdu_without_poll=0;
-    byte_without_poll=0;
-    pollPDU=par("pollPDU");
-    pollByte=par("pollByte");
-    maxRtxThreshold=par("maxRtxThreshold");
-    poll_sn=0;
-    t_PollRetransmit= par("t_PollRetransmit");
-    t_PollRetransmitTimer=    new cMessage("t_PollRetransmit timer");
-    std::string name="tx-"+std::to_string(lteRlc_->getId());
-    setPoll=false;
+    pollPdu_ = par("pollPDU");
+    pollByte_ = par("pollByte");
+    maxRtxThreshold_ = par("maxRtxThreshold");
+    tPollRetransmit_ = par("t_PollRetransmit");
+    tPollRetransmitTimer_ = new cMessage("t_PollRetransmit timer");
 
-    mac=inet::getConnectedModule<LteMacBase>(getParentModule()->gate("RLC_to_MAC"), 0);
-    if (mac->getNodeType() == ENODEB || mac->getNodeType() == GNODEB) {
+    mac_ = inet::getConnectedModule<LteMacBase>(getParentModule()->gate("RLC_to_MAC"), 0);
+    if (mac_->getNodeType() == ENODEB || mac_->getNodeType() == GNODEB)
+        nameEntity_ = "GNB-" + std::to_string(lteRlc_->getId());
+    else
+        nameEntity_ = "UE-" + std::to_string(lteRlc_->getId());
 
-        name_entity = "GNB- "+std::to_string(lteRlc_->getId());
-    }
-    else {
-
-        name_entity = "UE- "+std::to_string(lteRlc_->getId());
-    }
-    txBuffer = new RlcSduSlidingWindowTransmissionBuffer(AM_window_size, name_entity+"-tx-sliding window :");
-    rtxBuffer = new RlcSduRetransmissionBuffer(maxRtxThreshold);
-    lastSduSample=NOW;
-    sduSample=0;
-    receivedSdus=0;
+    txBuffer_ = new RlcSduSlidingWindowTransmissionBuffer(amWindowSize_, nameEntity_ + "-tx-sliding window:");
+    rtxBuffer_ = new RlcSduRetransmissionBuffer(maxRtxThreshold_);
+    lastSduSample_ = NOW;
 }
 
-void NrAmTxQueue::enque(Packet *sdu) {
-    Enter_Method("NrAmTxQueue::enque()"); // Direct Method Call
-    EV << NOW << " NrAmTxQueue::enque() - inserting new SDU  " << sdu << endl;
-    //EV << NOW << " NrAmTxQueue::enque() - inserting new SDU  " << sdu << endl;
-    // Buffer the SDU
-    //LteRlcAmSdu* sdu = pkt->peekAtFront<LteRlcAmSdu>();
-    SDUInfo* si=new SDUInfo() ;
-    //TODO: check this. I do not think we should keep a common control info. May it be that we receive SDUs with different info or is there an entity per connection?
-    //In fact, there should only be a CID for all packets
-    //TODO: we should take the tag for each sdu when transmitted
+void NrAmTxQueue::enque(Packet *sdu)
+{
+    Enter_Method("NrAmTxQueue::enque()");
+    EV << NOW << " NrAmTxQueue::enque() - inserting new SDU " << sdu << endl;
+
+    // TODO: we keep a single FlowControlInfo per queue; should take tag per SDU when transmitted
     lteInfo_ = sdu->getTag<FlowControlInfo>()->dup();
-    infoCid_=ctrlInfoToMacCid(sdu->getTagForUpdate<FlowControlInfo>());
+    infoCid_ = ctrlInfoToMacCid(sdu->getTagForUpdate<FlowControlInfo>());
 
     take(sdu);
-    si->sdu=sdu;
-    sduBuffer.push_back(si);
-    ++receivedSdus;
-    //sduQueue_.insert(sdu);
-    sduSample +=sdu->getByteLength();
-    lteRlc_->emit(enqueuedSduSize, sdu->getByteLength());
-    if ((NOW-lastSduSample)>=1) {
-        lteRlc_->emit(enqueuedSduRate, sduSample/(NOW-lastSduSample));
-        sduSample=0;
-        lastSduSample=NOW;
+    auto *si = new SduInfo();
+    si->sdu = sdu;
+    sduBuffer_.push_back(si);
+    ++receivedSdus_;
+
+    sduSampleBytes_ += sdu->getByteLength();
+    lteRlc_->emit(enqueuedSduSizeSignal_, sdu->getByteLength());
+    if ((NOW - lastSduSample_) >= 1) {
+        lteRlc_->emit(enqueuedSduRateSignal_, sduSampleBytes_ / (NOW - lastSduSample_));
+        sduSampleBytes_ = 0;
+        lastSduSample_ = NOW;
     }
 
-
     lteRlc_->indicateNewDataToMac(sdu);
-
 }
 
-void NrAmTxQueue::sendPdus(int pduSize) {
+void NrAmTxQueue::sendPdus(int pduSize)
+{
     Enter_Method("NrAmTxQueue::sendPdus()");
+    EV << NOW << " NrAmTxQueue::sendPdus() - PDU with size " << pduSize << " requested from MAC" << endl;
+    lteRlc_->emit(requestedPduSizeSignal_, pduSize);
 
-    EV << NOW << " NrAmTxQueue::sendPdus( - PDU with size " << pduSize << " requested from MAC" << endl;
-    lteRlc_->emit(requestedPduSize,pduSize);
-
-    if (radioLinkFailureDetected) {
-        std::cout<<NOW<<";"<<name_entity  <<";  NrAmTxQueue::sendPdus() RLF detected. Not sending more PDUs until connection is restored"<<endl;
+    if (radioLinkFailureDetected_) {
+        EV << NOW << " " << nameEntity_ << " NrAmTxQueue::sendPdus() RLF detected, stopping" << endl;
         return;
     }
 
+    // TODO: RLC header size depends on SN length (12/18 bit) and segmentation
+    int size = pduSize - RLC_HEADER_AM;
 
-    // TODO: the request from MAC takes into account also the size of the RLC header
-    //Different if using 12 or 18 bit SN; In both cases, it also depends on whether it has a segment or full PDU via SO
-    //But RLC_HEADER_AM is used by the MAC schedulers... At the moment, we keep it this way..
-    int size = pduSize- RLC_HEADER_AM;
-
-    if (size<0) {
-        //TODO: does it ever happen?
-        //The only point of this packet seems to be to decrease requestedSdus_ in the MAC
-
-        // send an empty (1-bit) message to notify the MAC that there is not enough space to send RLC PDU
-        // (TODO: ugly, should be indicated in a better way)
-        // create the RLC PDU
-        auto pkt = new inet::Packet("lteRlcFragment size too small");
+    if (size < 0) {
+        // Grant too small — send empty PDU to notify MAC
+        // TODO: should be indicated in a better way
+        auto pkt = new inet::Packet("lteRlcFragment (empty)");
         auto rlcPdu = inet::makeShared<NrRlcAmDataPdu>();
-
-        std::cout << NOW << " NrAmTxQueue::sendPdus() - cannot send PDU with data, pdulength requested by MAC (" << pduSize << "B) is too small." << std::endl;
-        pkt->setName("lteRlcFragment (empty)");
-        rlcPdu->setChunkLength(inet::b(1)); // send only a bit, minimum size
+        rlcPdu->setChunkLength(inet::b(1));
         pkt->insertAtFront(rlcPdu);
         lteRlc_->sendFragmented(pkt);
         return;
     }
 
-    //Control PDU:  TS 38.322 indicates to prioritize control PDUs
+    // TS 38.322: prioritize control PDUs
+    if (!controlBuffer_.empty()) {
+        auto *pktControl = check_and_cast<inet::Packet *>(controlBuffer_.front());
+        controlBuffer_.pop_front();
 
-    if (!controlBuffer.empty()) {
-        auto pktControl = check_and_cast<inet::Packet *>(controlBuffer.front());
-        controlBuffer.pop_front();
-
-        EV << NOW << " NrAmTxQueue::sendPdus() - sending Control PDU" << pktControl<< " with size " << pktControl->getByteLength() << " bytes to lower layer" << endl;
-        //The PDU is already well formed before introduced in the buffer,so we just send
+        EV << NOW << " NrAmTxQueue::sendPdus() - sending Control PDU " << pktControl
+           << " with size " << pktControl->getByteLength() << " bytes to lower layer" << endl;
         lteRlc_->sendFragmented(pktControl);
 
-        // TODO should we send more PDUs at this point if there is enough room in the requested size. The implementation of the LteMac seems to exclude this,
-        //since it only asks for one PDU and throws an error if more are sent. But then probably part of the grant is wasted. The MAC should ask for more PDUs then
-
-        // TODO this is another workaround, to avoid getting stalled. MAC may have asked a pdu size equal to all the pending
-        // data in its macBuffers, and so think that our queues are empty, but we can only send a STATUS PDU
-        unsigned int pendingData=getPendingDataVolume();
-        if (pendingData>0 ) {
-            // create the RLC PDU
-            if (lteInfo_) {
-                auto pkt = new inet::Packet("lteRlcFragment -Indicate new data");
-                auto rlcPdu = inet::makeShared<NrRlcAmDataPdu>();
-                EV << NOW << " NrAmTxQueue::sendPdus( - Informing MAC of pending "<<pendingData << endl;
-                rlcPdu->setChunkLength(B(pendingData));
-                *(pkt->addTagIfAbsent<FlowControlInfo>()) = *lteInfo_;
-                pkt->insertAtFront(rlcPdu);
-                lteRlc_->indicateNewDataToMac(pkt);
-                delete pkt;
-            }
-            //TODO: what if lteInfo is not set yet? It may happen after a RLF, we receive an on flight PDU from previous entity and our rxqueue sends a control PDU
+        // TODO: MAC only asks for one PDU; remaining grant bytes are wasted
+        // Workaround: if we have more data, notify MAC so it schedules another grant
+        unsigned int pendingData = getPendingDataVolume();
+        if (pendingData > 0 && lteInfo_) {
+            auto pkt = new inet::Packet("lteRlcFragment -Indicate new data");
+            auto rlcPdu = inet::makeShared<NrRlcAmDataPdu>();
+            rlcPdu->setChunkLength(B(pendingData));
+            *(pkt->addTagIfAbsent<FlowControlInfo>()) = *lteInfo_;
+            pkt->insertAtFront(rlcPdu);
+            lteRlc_->indicateNewDataToMac(pkt);
+            delete pkt;
         }
         return;
     }
 
-    //Now retransmissions first. The stored PDU is already formed, so we do not need to substract the header.
-    if (sendRetransmission((size))) {
+    // Retransmissions have priority over new data
+    if (sendRetransmission(size)) {
         reportBufferStatus();
         return;
     }
+
+    // Try pending data in the TX sliding window
     PendingSegment segment;
-    segment.isValid=false;
-    //Now check if we have pending data to send in the txBuffer that fits in the grant
-    if (txBuffer->getTotalPendingBytes()>0) {
-        segment=txBuffer->getSegmentForGrant(size);
+    segment.isValid = false;
+    if (txBuffer_->getTotalPendingBytes() > 0)
+        segment = txBuffer_->getSegmentForGrant(size);
 
-    }
     if (!segment.isValid) {
-        //This may be that we do not have pending data in the transmission buffer or have not found a segment
-        //Now try to detach a new SDU
-        if (sduBuffer.empty()) {
-            EV << NOW << " NrAmTxQueue::sendPdus()  Requested PDU but buffer is empty. sduBuffer.size()= " << sduBuffer.size() << " bytes, size="<<size<< endl;
-
-            lteRlc_->emit(wastedGrantedBytes, size);
-            //delete pkt;
+        // No pending segments — try detaching a new SDU
+        if (sduBuffer_.empty()) {
+            EV << NOW << " NrAmTxQueue::sendPdus() buffer empty, wasting grant" << endl;
+            lteRlc_->emit(wastedGrantedBytesSignal_, size);
             return;
-        } else {
-
-            //Try to detach data from the SDU buffer
-            SDUInfo* si=sduBuffer.front();
-            auto bufferedSdu = check_and_cast<inet::Packet *>(si->sdu);
-            auto rlcSdu = bufferedSdu->peekAtFront<LteRlcSdu>();
-            int sduSequenceNumber = rlcSdu->getSnoMainPacket();
-            int sduLength = rlcSdu->getLengthMainPacket(); // length without the SDU header
-
-            //<< "; length encapsulated packet=" << sduLength << endl;
-
-            if (txBuffer->windowFull()) {
-                lteRlc_->emit(txWindowFull,1);
-
-                //TODO: check if we need to inform the MAC here of our data volume and if
-                return;
-
-            }
-            //Add to transmission buffer
-            txBuffer->addSdu(sduLength, bufferedSdu);
-            //Remove from the sduBuffer
-            sduBuffer.pop_front();
-            //Do not delete yet, it is deleted when ACKed
-            segment =txBuffer->getSegmentForGrant(size);
         }
+
+        SduInfo *si = sduBuffer_.front();
+        auto *bufferedSdu = check_and_cast<inet::Packet *>(si->sdu);
+        auto rlcSdu = bufferedSdu->peekAtFront<LteRlcSdu>();
+        int sduLength = rlcSdu->getLengthMainPacket();
+
+        if (txBuffer_->windowFull()) {
+            lteRlc_->emit(txWindowFullSignal_, 1);
+            return;
+        }
+
+        txBuffer_->addSdu(sduLength, bufferedSdu);
+        sduBuffer_.pop_front();
+        // SDU ownership transferred to txBuffer_; deleted when ACKed
+        segment = txBuffer_->getSegmentForGrant(size);
     }
 
-    //Now try to transmit the SDU or segment
-
     if (!segment.isValid) {
-        EV << NOW << " NrAmTxQueue::sendPdus() Not found any SDU segment fit to transmit. sduBuffer.size()= " << sduBuffer.size() << " bytes, size="<<size<< endl;
-        std::cout<<name_entity  << NOW << " NrAmTxQueue::sendPdus()  Not found any SDU segment fit to transmit. sduBuffer.size()= " << sduBuffer.size() << " bytes, size="<<size<< endl;
-
-        lteRlc_->emit(wastedGrantedBytes, size);
-
+        EV << NOW << " NrAmTxQueue::sendPdus() no segment fits grant" << endl;
+        lteRlc_->emit(wastedGrantedBytesSignal_, size);
         return;
     }
-    //We have found a segment that fits the grant
+
     sendSegment(segment);
-
-    lteRlc_->emit(txWindowOccupation,(txBuffer->getTxNext()-txBuffer->getTxNextAck()));
-    /////
-    //TODO: workaround, check what the MAC thinks there is in the buffers
-
+    lteRlc_->emit(txWindowOccupationSignal_, txBuffer_->getTxNext() - txBuffer_->getTxNextAck());
     reportBufferStatus();
-
-
-
 }
 
-void NrAmTxQueue::sendSegment(PendingSegment segment) {
-    // create the RLC PDU
-
+void NrAmTxQueue::sendSegment(PendingSegment segment)
+{
     auto rlcPdu = inet::makeShared<NrRlcAmDataPdu>();
 
-    // compute SI
-    // the meaning of this field is specified in 3GPP TS 36.322 but is different in TS 38.322, called SI, but we reuse the FramingInfo field
-
-    FramingInfo fi = 0; //00 //full sdu
-    unsigned short int mask;
-    uint32_t segmentSize= segment.end-segment.start;
-    if (segmentSize==segment.totalLength) {
-        //Correctness check
-    } else {
-        if (segment.start==0) {
-            //start segment
-            mask = 1;   // 01
-            fi |= mask;
-        } else if (segment.end==(segment.totalLength-1)) {
-            //end segment
-            mask = 2;   // 10
-            fi |= mask;
-        } else {
-            //middle segment
-            mask =3; //11
-            fi |=mask;
-        }
+    // Compute Segmentation Info (SI) — reuses FramingInfo field
+    uint32_t segmentSize = segment.end - segment.start;
+    FramingInfo fi = 0; // 00 = full SDU
+    if (segmentSize != segment.totalLength) {
+        if (segment.start == 0)
+            fi = 1;  // 01 = first segment
+        else if (segment.end == segment.totalLength - 1)
+            fi = 2;  // 10 = last segment
+        else
+            fi = 3;  // 11 = middle segment
     }
-    //Retrieve SDU
-    auto bufferedSdu = check_and_cast<inet::Packet *>(segment.ptr);
+
+    auto *bufferedSdu = check_and_cast<inet::Packet *>(segment.ptr);
     auto rlcSdu = bufferedSdu->peekAtFront<LteRlcSdu>();
-    int sduLength = rlcSdu->getLengthMainPacket(); // length without the SDU header
+    int sduLength = rlcSdu->getLengthMainPacket();
     unsigned int pduSequenceNumber = segment.sn;
-    //Update max sn if needed
-    sn=std::max(sn,pduSequenceNumber);
+    sn_ = std::max(sn_, pduSequenceNumber);
     int sduSequenceNumber = rlcSdu->getSnoMainPacket();
+
     rlcPdu->pushSdu(bufferedSdu->dup(), segmentSize);
-    //Finish PDU
     rlcPdu->setFramingInfo(fi);
     rlcPdu->setPduSequenceNumber(pduSequenceNumber);
     rlcPdu->setChunkLength(inet::B(RLC_HEADER_AM + segmentSize));
@@ -307,293 +230,226 @@ void NrAmTxQueue::sendSegment(PendingSegment segment) {
     rlcPdu->setLengthMainPacket(sduLength);
     rlcPdu->setStartOffset(segment.start);
     rlcPdu->setEndOffset(segment.end);
-    //Polling
-    ++pdu_without_poll;
-    byte_without_poll += segmentSize;
-    bool poll=checkPolling();
-    rlcPdu->setPollStatus(poll);
-    std::string n_p="NR AM RLC Fragment -" + std::to_string(pduSequenceNumber);
-    auto pkt = new inet::Packet(n_p.c_str());
+
+    // Polling
+    ++pduWithoutPoll_;
+    byteWithoutPoll_ += segmentSize;
+    rlcPdu->setPollStatus(checkPolling());
+
+    std::string name = "NR AM RLC Fragment -" + std::to_string(pduSequenceNumber);
+    auto pkt = new inet::Packet(name.c_str());
     pkt->insertAtFront(rlcPdu);
-    // TODO instead of using a common lteInfo, each packet receives the one carried by the SDU
-    if (lteInfo_) {
+    // TODO: each packet should carry the tag from its own SDU, not the shared lteInfo_
+    if (lteInfo_)
         *(pkt->addTagIfAbsent<FlowControlInfo>()) = *lteInfo_;
-    } else {
-        //TODO: something like this
-        *(pkt->addTagIfAbsent<FlowControlInfo>())=*(rlcSdu->getTag<FlowControlInfo>());
-    }
-
-
 
     lteRlc_->sendFragmented(pkt);
-
-
 }
-bool NrAmTxQueue::checkPolling() {
-    //Polling
-    bool noPendingData= (txBuffer->getTotalPendingBytes()==0 && sduBuffer.empty() && rtxBuffer->getRetxPendingBytes()==0);
+bool NrAmTxQueue::checkPolling()
+{
+    bool noPendingData = (txBuffer_->getTotalPendingBytes() == 0
+            && sduBuffer_.empty() && rtxBuffer_->getRetxPendingBytes() == 0);
 
-    if ( setPoll || (pdu_without_poll>pollPDU) || (byte_without_poll>=pollByte) || noPendingData|| txBuffer->windowFull()) {
-
-        pdu_without_poll=0;
-        byte_without_poll=0;
-        poll_sn=sn;
-
-        rescheduleAfter(t_PollRetransmit,t_PollRetransmitTimer);
-        setPoll=false;
+    if (pollPending_ || pduWithoutPoll_ > pollPdu_ || byteWithoutPoll_ >= pollByte_
+            || noPendingData || txBuffer_->windowFull()) {
+        pduWithoutPoll_ = 0;
+        byteWithoutPoll_ = 0;
+        pollSn_ = sn_;
+        rescheduleAfter(tPollRetransmit_, tPollRetransmitTimer_);
+        pollPending_ = false;
         return true;
-
     }
     return false;
-
-
 }
-void  NrAmTxQueue::reportBufferStatus() {
-
-    auto vbuf= mac->getMacBuffers();
-
+void NrAmTxQueue::reportBufferStatus()
+{
+    auto vbuf = mac_->getMacBuffers();
     unsigned int macOccupancy = vbuf->at(infoCid_)->getQueueOccupancy();
 
-
-    if (macOccupancy==0) {
-        unsigned int pendingData=getPendingDataVolume();
-        if (pendingData>0) {
-
-            //If we do not have a lteInfo we cannot inform the MAC of the pending volume because the CID is taken from this
-            //TODO: change to a more robust approach
-            if (lteInfo_) {
-                // create the RLC PDU to indicate new data
-                auto pktInform = new inet::Packet("lteRlcFragment Inform MAC");
-                auto rlcPduInform = inet::makeShared<NrRlcAmDataPdu>();
-                rlcPduInform->setChunkLength(B(pendingData));
-                //pkt->copyTags(*pktAux);
-                *(pktInform->addTagIfAbsent<FlowControlInfo>()) = *lteInfo_;
-                pktInform->insertAtFront(rlcPduInform);
-                //pkt->setByteLength(sduLength);
-                lteRlc_->indicateNewDataToMac(pktInform);
-                delete pktInform;
-            }
-
+    if (macOccupancy == 0) {
+        unsigned int pendingData = getPendingDataVolume();
+        // TODO: change to a more robust approach — CID comes from lteInfo_
+        if (pendingData > 0 && lteInfo_) {
+            auto pkt = new inet::Packet("lteRlcFragment Inform MAC");
+            auto rlcPdu = inet::makeShared<NrRlcAmDataPdu>();
+            rlcPdu->setChunkLength(B(pendingData));
+            *(pkt->addTagIfAbsent<FlowControlInfo>()) = *lteInfo_;
+            pkt->insertAtFront(rlcPdu);
+            lteRlc_->indicateNewDataToMac(pkt);
+            delete pkt;
         }
-
     }
-
-
 }
 
-bool NrAmTxQueue::sendRetransmission(int size) {
+bool NrAmTxQueue::sendRetransmission(int size)
+{
     RetxTask next;
+    if (!rtxBuffer_->getNextRetxTask(next))
+        return false;
 
-    if (rtxBuffer->getNextRetxTask(next)) {
-        uint32_t rtxSn=next.sn;
-        uint32_t start=next.soStart;
-        uint32_t end=next.soEnd;
+    uint32_t start = next.soStart;
+    uint32_t end = next.soEnd;
 
-        if (next.isWholeSdu) {
-            Packet* ptr=nullptr;
-            uint32_t totalLength=0;
-            bool aux=txBuffer->getSduData(rtxSn, ptr, totalLength);
-            if (aux) {
-                start=0;
-                end=totalLength-1;
-            } else {
-                if (radioLinkFailureDetected){
-                    return false;
-                }
-                std::cout<<"NrAmTxQueue::sendRetransmission whole SDU with sn="<<rtxSn<<" retrieved for retransmission not found"<<endl;
-                throw cRuntimeError("NrAmTxQueue::sendRetransmission whole SDU with sn=%u  retrieved for retransmission not found",rtxSn);
-                return false;
-            }
+    if (next.isWholeSdu) {
+        Packet *ptr = nullptr;
+        uint32_t totalLength = 0;
+        if (txBuffer_->getSduData(next.sn, ptr, totalLength)) {
+            start = 0;
+            end = totalLength - 1;
         }
-
-        PendingSegment segment =txBuffer->getRetransmissionSegment(rtxSn, start , end, size);
-        if (!segment.isValid) {
-            //We have not found the SDU
-            if (radioLinkFailureDetected){
+        else {
+            if (radioLinkFailureDetected_)
                 return false;
-            }
-            throw cRuntimeError("NrAmTxQueue::sendRetransmission A missing SDU with sn=%u has been retrieved for retransmission",rtxSn);
-            return false;
+            throw cRuntimeError("NrAmTxQueue::sendRetransmission whole SDU sn=%u not found", next.sn);
         }
-        if (!segment.ptr) {
-            //Found SDU but points to null
-            if (radioLinkFailureDetected){
-                return false;
-            }
-            throw cRuntimeError("NrAmTxQueue::sendRetransmission A  SDU with sn=%u  retrieved for retransmission points to null",rtxSn);
-            return false;
-        }
-        sendSegment(segment);
-
-
-        rtxBuffer->markRetransmitted(next);
-
-        lteRlc_->emit(retransmissionPdu,1);
-        return true;
     }
-    return false;
 
+    PendingSegment segment = txBuffer_->getRetransmissionSegment(next.sn, start, end, size);
+    if (!segment.isValid) {
+        if (radioLinkFailureDetected_)
+            return false;
+        throw cRuntimeError("NrAmTxQueue::sendRetransmission SDU sn=%u: invalid segment", next.sn);
+    }
+    if (!segment.ptr) {
+        if (radioLinkFailureDetected_)
+            return false;
+        throw cRuntimeError("NrAmTxQueue::sendRetransmission SDU sn=%u: null pointer", next.sn);
+    }
 
-
+    sendSegment(segment);
+    rtxBuffer_->markRetransmitted(next);
+    lteRlc_->emit(retransmissionPduSignal_, 1);
+    return true;
 }
-void NrAmTxQueue::handleControlPacket(omnetpp::cPacket *pkt) {
+void NrAmTxQueue::handleControlPacket(omnetpp::cPacket *pkt)
+{
     Enter_Method("handleControlPacket()");
-
     take(pkt);
 
-    auto pktPdu = check_and_cast<Packet *>(pkt);
+    auto *pktPdu = check_and_cast<Packet *>(pkt);
     auto pdu = pktPdu->peekAtFront<NrRlcAmStatusPdu>();
     StatusPduData data = pdu->getData();
 
-
-    rtxBuffer->beginStatusPduProcessing();
+    rtxBuffer_->beginStatusPduProcessing();
     std::set<uint32_t> nacks;
-    bool restartPoll=false;
-    for (long unsigned int i = 0; i < data.nacks.size(); ++i) {
-        NackInfo info=data.nacks[i];
+    bool restartPoll = false;
 
-        unsigned int j=0;
-        while (j<info.nackRange) {
-            if (txBuffer->isInRtxRange(info.sn+j)) {
-                //Beware: we have implemented NACKs to say if they are segment, but we are storing in the RetxTask if they are whole.. so the boolean is inverted
-                bool isWhole=!info.isSegment;
-
-                bool added= rtxBuffer->addNack(info.sn+j, isWhole, info.soStart, info.soEnd);
+    // Process NACKs
+    for (size_t i = 0; i < data.nacks.size(); ++i) {
+        const NackInfo &info = data.nacks[i];
+        for (unsigned int j = 0; j < info.nackRange; ++j) {
+            uint32_t nackedSn = info.sn + j;
+            if (txBuffer_->isInRtxRange(nackedSn)) {
+                // NackInfo::isSegment is inverted w.r.t. RetxTask::isWholeSdu
+                bool isWhole = !info.isSegment;
+                bool added = rtxBuffer_->addNack(nackedSn, isWhole, info.soStart, info.soEnd);
                 if (!added) {
-                    //TODO: Check this we have reached the maximum number of retransmissions. We should notify Radio Link Failure to the upper layers..
-                    //At the moment just inform and let it delete connections
-                    std::cout<< name_entity <<"[CRITICAL] Calling radio link failure"<<endl;
-                    radioLinkFailureDetected=true;
-                    if (lteInfo_) { //Just in case
+                    // Max retransmissions reached — Radio Link Failure
+                    EV << nameEntity_ << " [CRITICAL] Radio Link Failure" << endl;
+                    radioLinkFailureDetected_ = true;
+                    if (lteInfo_) {
                         lteRlc_->handleRadioLinkFailure(lteInfo_);
-                    } else {
-                        //otherwise, we would need to get the info from the stored SDU
-                        Packet* ptrAux=nullptr;
-                        uint32_t totalLength=0;
-                        bool aux=txBuffer->getSduData(info.sn+j, ptrAux, totalLength);
-                        if (aux) {
-                            lteRlc_->handleRadioLinkFailure(ptrAux->getTag<FlowControlInfo>()->dup());
-                        } //TODO: What if not found? Again the CID should be permanent, not depending on the FlowControlInfo
                     }
-                    //Inform just once
+                    else {
+                        Packet *ptrAux = nullptr;
+                        uint32_t totalLength = 0;
+                        if (txBuffer_->getSduData(nackedSn, ptrAux, totalLength))
+                            lteRlc_->handleRadioLinkFailure(ptrAux->getTag<FlowControlInfo>()->dup());
+                    }
                     delete pkt;
                     return;
-
                 }
             }
-            nacks.insert(info.sn+j);
-            //TS 138 322 5.3.3
-            if ((info.sn+j)==poll_sn) {
-                restartPoll=true;
-            }
-            ++j;
+            nacks.insert(nackedSn);
+            // TS 38.322 5.3.3
+            if (nackedSn == pollSn_)
+                restartPoll = true;
         }
     }
-    //Now process ACK
-    uint32_t next=txBuffer->getTxNextAck();
-    while (next<data.ackSn) {
-        uint32_t totalLength;
-        Packet* sdu=nullptr;
-        auto it=nacks.find(next);
-        uint32_t oldnext=next;
-        if (it==nacks.end()) {
-            if (txBuffer->getSduData(next,sdu, totalLength)) {
-                std::set<uint32_t> acked=txBuffer->handleAck(next, 0, totalLength-1, poll_sn, restartPoll);
-                //Remove from rtxBuffer
-                auto it=acked.begin();
-                while(it!=acked.end()) {
-                    rtxBuffer->clearSdu(*it);
-                    ++it;
-                }
-            } else {
-                //TODO: Now, what happens if we do not have the SDU in the buffer...?
-                //throw cRuntimeError("NrAmTxQueue::handleControlPacket A missing SDU with sn=%u has been ACKed",next);
+
+    // Process ACKs
+    uint32_t next = txBuffer_->getTxNextAck();
+    while (next < data.ackSn) {
+        if (nacks.find(next) == nacks.end()) {
+            uint32_t totalLength;
+            Packet *sdu = nullptr;
+            if (txBuffer_->getSduData(next, sdu, totalLength)) {
+                std::set<uint32_t> acked = txBuffer_->handleAck(next, 0, totalLength - 1, pollSn_, restartPoll);
+                for (uint32_t ackedSn : acked)
+                    rtxBuffer_->clearSdu(ackedSn);
             }
         }
-        //TS 138 322 5.3.3
-        /*
-        if (next==poll_sn) {
-            restartPoll=true;
-        }*/
-
         ++next;
     }
 
+    // TS 38.322 5.3.3
+    if (tPollRetransmitTimer_->isScheduled() && restartPoll)
+        rescheduleAfter(tPollRetransmit_, tPollRetransmitTimer_);
 
-    //TS 138 322 5.3.3
-    if (t_PollRetransmitTimer->isScheduled() && restartPoll) {
-        rescheduleAfter(t_PollRetransmit,t_PollRetransmitTimer);
-    }
-
-    lteRlc_->emit(txWindowOccupation,txBuffer->getCurrentWindowSize());
+    lteRlc_->emit(txWindowOccupationSignal_, txBuffer_->getCurrentWindowSize());
     delete pkt;
-
 }
 
 
-void NrAmTxQueue::bufferControlPdu(omnetpp::cPacket *pkt) {
-    Enter_Method("NrAmTxQueue::bufferControlPdu()"); // Direct Method Call
-    take(pkt); // Take ownership
-    controlBuffer.push_back(pkt);
+void NrAmTxQueue::bufferControlPdu(omnetpp::cPacket *pkt)
+{
+    Enter_Method("NrAmTxQueue::bufferControlPdu()");
+    take(pkt);
+    controlBuffer_.push_back(pkt);
     lteRlc_->indicateNewDataToMac(pkt);
-
 }
 
-void NrAmTxQueue::finish() {
+void NrAmTxQueue::finish()
+{
 }
 
-void NrAmTxQueue::handleMessage(cMessage *msg) {
-    if (msg==t_PollRetransmitTimer) {
-        setPoll=true;
-        bool noPendingData= (txBuffer->getTotalPendingBytes()==0 && sduBuffer.empty() && rtxBuffer->getRetxPendingBytes()==0);
-        if ( noPendingData || txBuffer->windowFull()) {
-            uint32_t hsn=txBuffer->getHighestSNTransmitted();
-            Packet* ptr=nullptr;
-            uint32_t totalLength=0;
-            bool found=txBuffer->getSduData(hsn, ptr, totalLength);
-            bool added=false;
-            if (found) {
-                added= rtxBuffer->addNack(hsn, true, 0, totalLength-1);
-            }
-            //Consider any not ACK PDU for retransmission
-            if (!found || !added) {
-                uint32_t next=txBuffer->getTxNextAck();
-                while (txBuffer->isInRtxRange(next)) {
-                    if (!txBuffer->isFullyAcknowledged(next)) {
-                        bool aux=txBuffer->getSduData(next, ptr, totalLength);
-                        if (aux) {
-                            if(rtxBuffer->addNack(next, true, 0, totalLength-1)) {
+void NrAmTxQueue::handleMessage(cMessage *msg)
+{
+    if (msg == tPollRetransmitTimer_) {
+        pollPending_ = true;
+        bool noPendingData = (txBuffer_->getTotalPendingBytes() == 0
+                && sduBuffer_.empty() && rtxBuffer_->getRetxPendingBytes() == 0);
+
+        if (noPendingData || txBuffer_->windowFull()) {
+            uint32_t hsn = txBuffer_->getHighestSnTransmitted();
+            Packet *ptr = nullptr;
+            uint32_t totalLength = 0;
+            bool found = txBuffer_->getSduData(hsn, ptr, totalLength);
+            bool added = found && rtxBuffer_->addNack(hsn, true, 0, totalLength - 1);
+
+            // Consider any unACKed PDU for retransmission
+            if (!added) {
+                uint32_t next = txBuffer_->getTxNextAck();
+                while (txBuffer_->isInRtxRange(next)) {
+                    if (!txBuffer_->isFullyAcknowledged(next)) {
+                        if (txBuffer_->getSduData(next, ptr, totalLength)) {
+                            if (rtxBuffer_->addNack(next, true, 0, totalLength - 1))
                                 return;
-                            }
                         }
-
                     }
                     ++next;
-
                 }
             }
         }
     }
 }
 
-unsigned int NrAmTxQueue::getPendingDataVolume() const {
-    unsigned int size=0;
-    for (unsigned int i=0;i<sduBuffer.size(); ++i) {
-        SDUInfo* si=sduBuffer.front();
-        auto pktAux = check_and_cast<inet::Packet *>(si->sdu);
-        auto rlcSdu = pktAux->peekAtFront<LteRlcSdu>();
+unsigned int NrAmTxQueue::getPendingDataVolume() const
+{
+    unsigned int size = 0;
+    for (const auto *si : sduBuffer_) {
+        auto *pkt = check_and_cast<inet::Packet *>(si->sdu);
+        auto rlcSdu = pkt->peekAtFront<LteRlcSdu>();
         size += rlcSdu->getLengthMainPacket();
     }
-    size += txBuffer->getTotalPendingBytes();
-    size += rtxBuffer->getRetxPendingBytes();
-    //Control buffer
-    size += (controlBuffer.size()*2);
-    for (unsigned int i=0;i<controlBuffer.size(); ++i) {
-        auto p=check_and_cast<Packet*>(controlBuffer.front())->peekAtFront<NrRlcAmStatusPdu>();
-        size+=p->getChunkLength().get();
+    size += txBuffer_->getTotalPendingBytes();
+    size += rtxBuffer_->getRetxPendingBytes();
+    for (const auto *cpkt : controlBuffer_) {
+        auto *p = check_and_cast<const Packet *>(cpkt);
+        auto statusPdu = p->peekAtFront<NrRlcAmStatusPdu>();
+        size += statusPdu->getChunkLength().get();
     }
     return size;
-
 }
 
 } //namespace
