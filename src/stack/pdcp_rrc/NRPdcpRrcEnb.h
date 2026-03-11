@@ -87,6 +87,7 @@ class NRPdcpRrcEnb : public LtePdcpRrcEnbD2D
 
   public:
     virtual void activeUeUL(std::set<MacNodeId> *ueSet);
+    virtual void handleRadioLinkFailure(Packet* pkt) override;
 
 };
 

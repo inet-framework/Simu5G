@@ -17,7 +17,10 @@
 
 #include "stack/packetFlowManager/PacketFlowManagerBase.h"
 #include "stack/pdcp_rrc/packet/LteRohcPdu_m.h"
-
+#include "stack/rlc/LteRlcDefs_m.h"
+#include "stack/mac/LteMacUe.h"
+#include "stack/mac/LteMacEnb.h"
+#include "stack/rlc/am/LteRlcAm.h"
 namespace simu5g {
 
 Define_Module(LtePdcpRrcUe);
@@ -210,7 +213,12 @@ void LtePdcpRrcBase::fromLowerLayer(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
     emit(receivedPacketFromLowerLayerSignal_, pkt);
-
+       //TODO: at the moment just remove entities
+    auto tag=pkt->findTag<RadioLinkFailure>();
+    if (tag) {
+        handleRadioLinkFailure(pkt);
+        return;
+    }
     auto lteInfo = pkt->getTag<FlowControlInfo>();
 
     MacCid cid = idToMacCid(lteInfo->getSourceId(), lteInfo->getLcid());   // TODO: check if you have to get master node id
@@ -459,6 +467,35 @@ void LtePdcpRrcEnb::deleteEntities(MacNodeId nodeId)
         }
     }
 }
+void LtePdcpRrcEnb::handleRadioLinkFailure(Packet* pkt){
+    std::cout<<simTime()<<"; LtePdcpRrcEnb::handleRadioLinkFailure()"<<endl;
+    // delete macBuffer[nodeId_] at old master
+    auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+    auto ueId = getDestId(lteInfo);
+    LteMacEnb *masterMac = check_and_cast<LteMacEnb *>(getMacByMacNodeId(binder_, nodeId_));
+    masterMac->informRadioLinkFailure(nodeId_);
+    masterMac->deleteQueuesRadioLinkFailure(nodeId_);
+    LteMacUe* mac_=check_and_cast<LteMacUe *>(getMacByMacNodeId(binder_, ueId));
+    // delete queues  at this UE
+    mac_->informRadioLinkFailure(nodeId_);
+    mac_->deleteQueuesRadioLinkFailure(nodeId_);
+
+    LteRlcAm *masterRlcAm = check_and_cast<LteRlcAm*>(getRlcByMacNodeId(binder_,nodeId_, AM));
+    masterRlcAm->deleteQueues(nodeId_);
+    // delete queues for master at this ue
+    LteRlcAm *rlcAm_ = check_and_cast<LteRlcAm*>(getRlcByMacNodeId(binder_,ueId, AM));
+    rlcAm_->deleteQueues(ueId);
+    // Delete PDCP Entities
+    // delete pdcpEntities[nodeId_] at old master
+    // in case of NR dual connectivity, the master can be a secondary node, hence we have to delete PDCP entities residing in the node's master
+
+    LtePdcpRrcUe *uePdcp = check_and_cast<LtePdcpRrcUe *>(getPdcpByMacNodeId(binder_, ueId));
+    uePdcp->deleteEntities(ueId);
+
+    // delete queues for master at this UE
+   deleteEntities(nodeId_);
+   delete pkt;
+}
 
 void LtePdcpRrcUe::deleteEntities(MacNodeId nodeId)
 {
@@ -472,6 +509,72 @@ void LtePdcpRrcUe::deleteEntities(MacNodeId nodeId)
         rxEntity->deleteModule();  // Delete Entity
     }
     rxEntities_.clear(); // Clear all entities after deletion
+}
+void LtePdcpRrcUe::handleRadioLinkFailure(Packet* pkt){
+
+    // delete macBuffer[nodeId_] at old master
+    auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+    auto masterId = getDestId(lteInfo);
+    std::cout<<simTime()<<";LtePdcpRrcUe::handleRadioLinkFailure() nodeId="<<nodeId_<<"masterId="<<masterId<<endl;
+    LteMacEnb *masterMac = check_and_cast<LteMacEnb *>(getMacByMacNodeId(binder_, masterId));
+    std::cout<<"masterMac="<<masterMac<<endl;
+    masterMac->informRadioLinkFailure(nodeId_);
+    masterMac->deleteQueuesRadioLinkFailure(nodeId_);
+    LteMacUe* mac_=check_and_cast<LteMacUe *>(getMacByMacNodeId(binder_, nodeId_));
+    std::cout<<"mac_="<<mac_<<endl;
+    // delete queues for master at this UE
+    mac_->informRadioLinkFailure(masterId);
+    mac_->deleteQueuesRadioLinkFailure(masterId);
+
+    LteRlcAm *masterRlcAm = check_and_cast<LteRlcAm*>(getRlcByMacNodeId(binder_,masterId, AM));
+    masterRlcAm->deleteQueues(nodeId_);
+    // delete queues for master at this ue
+    LteRlcAm *rlcAm_ = check_and_cast<LteRlcAm*>(getRlcByMacNodeId(binder_,nodeId_, AM));
+    rlcAm_->deleteQueues(nodeId_);
+    // Delete PDCP Entities
+    // delete pdcpEntities[nodeId_] at old master
+    // in case of NR dual connectivity, the master can be a secondary node, hence we have to delete PDCP entities residing in the node's master
+
+    LtePdcpRrcEnb *masterPdcp = check_and_cast<LtePdcpRrcEnb *>(getPdcpByMacNodeId(binder_, masterId));
+    masterPdcp->deleteEntities(nodeId_);
+
+    // delete queues for master at this UE
+   deleteEntities(masterId);
+   delete pkt;
+}
+void LtePdcpRrcUe::handleRadioLinkFailure(Packet* pkt, MacNodeId nodeId){
+
+    // delete macBuffer[nodeId_] at old master
+    auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+    auto masterId = getDestId(lteInfo);
+    std::cout<<simTime()<<";LtePdcpRrcUe::handleRadioLinkFailure() nodeId="<<nodeId<<"masterId="<<masterId<<endl;
+    LteMacEnb *masterMac = check_and_cast<LteMacEnb *>(getMacByMacNodeId(binder_, masterId));
+    std::cout<<"Deleting queues from masterMac="<<masterMac<<endl;
+    masterMac->informRadioLinkFailure(nodeId);
+    masterMac->deleteQueuesRadioLinkFailure(nodeId);
+    LteMacUe* mac_=check_and_cast<LteMacUe *>(getMacByMacNodeId(binder_, nodeId));
+    std::cout<<"Deleting queues from UE mac_="<<mac_<<endl;
+    // delete queues for master at this UE
+    mac_->informRadioLinkFailure(masterId);
+    mac_->deleteQueuesRadioLinkFailure(masterId);
+
+    std::cout<<"Deleting AM RLC from GNB"<<std::endl;
+    LteRlcAm *masterRlcAm = check_and_cast<LteRlcAm*>(getRlcByMacNodeId(binder_,masterId, AM));
+    masterRlcAm->deleteQueues(nodeId);
+    // delete queues for master at this ue
+    std::cout<<"Deleting AM RLC from UE"<<std::endl;
+    LteRlcAm *rlcAm_ = check_and_cast<LteRlcAm*>(getRlcByMacNodeId(binder_,nodeId, AM));
+    rlcAm_->deleteQueues(nodeId);
+    // Delete PDCP Entities
+    // delete pdcpEntities[nodeId_] at old master
+    // in case of NR dual connectivity, the master can be a secondary node, hence we have to delete PDCP entities residing in the node's master
+
+    LtePdcpRrcEnb *masterPdcp = check_and_cast<LtePdcpRrcEnb *>(getPdcpByMacNodeId(binder_, masterId));
+    masterPdcp->deleteEntities(nodeId);
+
+    // delete queues for master at this UE
+   deleteEntities(masterId);
+   delete pkt;
 }
 
 void LtePdcpRrcUe::initialize(int stage)

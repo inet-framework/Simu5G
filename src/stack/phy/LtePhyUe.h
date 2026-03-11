@@ -19,6 +19,7 @@
 #include "stack/phy/das/DasFilter.h"
 #include "stack/mac/LteMacUe.h"
 #include "stack/rlc/um/LteRlcUm.h"
+#include "stack/rlc/am/LteRlcAm.h"
 #include "stack/pdcp_rrc/LtePdcpRrc.h"
 #include "stack/phy/feedback/LteDlFeedbackGenerator.h"
 
@@ -109,6 +110,7 @@ class LtePhyUe : public LtePhyBase
 
     opp_component_ptr<LteMacUe> mac_;
     inet::ModuleRefByPar<LteRlcUm> rlcUm_;
+    inet::ModuleRefByPar<LteRlcAm> rlcAm_;
     inet::ModuleRefByPar<LtePdcpRrcBase> pdcp_;
     inet::ModuleRefByPar<IP2Nic> ip2nic_;
     inet::ModuleRefByPar<LteDlFeedbackGenerator> fbGen_;

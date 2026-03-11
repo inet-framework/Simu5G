@@ -66,6 +66,10 @@ void GtpUserX2::handleFromStack(Packet *pkt)
     EV << "GtpUserX2::handleFromStack - Received a LteX2Message with destId[" << destId << "]" << endl;
 
     auto gtpMsg = makeShared<GtpUserMsg>();
+    // add the chunk length since, otherwise,  it seems to create a problem in GtpUserMsgSerializer when the CRC is computed (in emulation for instance)
+    //does anyone else get the length of the GTP message??
+    //should we set the Teid also?
+    gtpMsg->setChunkLength(B(8));
     pkt->insertAtFront(gtpMsg);
     pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&LteProtocol::gtp);
 

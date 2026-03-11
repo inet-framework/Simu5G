@@ -34,8 +34,9 @@ void LteMacEnbD2D::initialize(int stage)
     if (stage == INITSTAGE_LOCAL) {
         cModule *rlcUm = inet::getModuleFromPar<cModule>(par("rlcUmModule"), this);
         std::string rlcUmType = rlcUm->getComponentType()->getName();
-        if (rlcUmType != "LteRlcUmD2D")
-            throw cRuntimeError("LteMacEnbD2D::initialize - '%s' must be 'LteRlcUmD2D' instead of '%s'. Aborting", par("rlcUmModule").stringValue(), rlcUmType.c_str());
+        // removed to allow for NrUm
+        //if (rlcUmType != "LteRlcUmD2D")
+        //  throw cRuntimeError("LteMacEnbD2D::initialize - '%s' must be 'LteRlcUmD2D' instead of '%s'. Aborting", par("rlcUmModule").stringValue(), rlcUmType.c_str());
     }
     else if (stage == INITSTAGE_PHYSICAL_ENVIRONMENT) {
         usePreconfiguredTxParams_ = par("usePreconfiguredTxParams");
@@ -143,7 +144,7 @@ void LteMacEnbD2D::macPduUnmake(cPacket *pktAux)
         auto upPkt = check_and_cast<Packet *>(macPkt->popSdu());
         take(upPkt);
 
-        EV << "LteMacEnbD2D: pduUnmaker extracted SDU" << endl;
+        EV << " LteMacEnbD2D::macPduUnmake: pduUnmaker extracted SDU" << endl;
 
         // store descriptor for the incoming connection, if not already stored
         auto lteInfo = upPkt->getTag<FlowControlInfo>();
@@ -455,7 +456,7 @@ void LteMacEnbD2D::macHandleD2DModeSwitch(cPacket *pktAux)
                     for (auto& mit : harqRxBuffers_) {
                         HarqRxBuffers::iterator hit = mit.second.find(nodeId);
                         if (hit != mit.second.end()) {
-                            for (unsigned int proc = 0; proc < (unsigned int)ENB_RX_HARQ_PROCESSES; proc++) {
+                            for (unsigned int proc = 0; proc < (unsigned int)harqProcesses_; proc++) {
                                 unsigned int numUnits = hit->second->getProcess(proc)->getNumHarqUnits();
                                 for (unsigned int i = 0; i < numUnits; i++) {
                                     hit->second->getProcess(proc)->purgeCorruptedPdu(i); // delete contained PDU
@@ -539,7 +540,7 @@ void LteMacEnbD2D::fromPhy(cPacket *pktAux)
                 return;
 
             // create buffer
-            LteHarqBufferMirrorD2D *hb = new LteHarqBufferMirrorD2D((unsigned int)UE_TX_HARQ_PROCESSES, (unsigned char)par("maxHarqRtx"), this);
+            LteHarqBufferMirrorD2D *hb = new LteHarqBufferMirrorD2D((unsigned int)harqProcesses_, (unsigned char)par("maxHarqRtx"), this);
             harqBuffersMirrorD2D_[carrierFrequency][pair] = hb;
             hb->receiveHarqFeedback(pkt);
         }

@@ -29,6 +29,8 @@ using namespace omnetpp;
 
 class BackgroundCellChannelModel : public cSimpleModule
 {
+    // added protected here to facilitate inheritance by Opal
+protected:
     // carrier frequency for this cell
     double carrierFrequency_;
 

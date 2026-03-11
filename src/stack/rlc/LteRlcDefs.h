@@ -195,6 +195,27 @@ enum RlcUmTimerType
     REORDERING_T = 0
 };
 
+
+/**
+ * @brief Information for a NACK in a STATUS PDU, including optional byte segments and ranges.
+ */
+struct NackInfo {
+    uint32_t sn;
+    uint32_t soStart = 0;
+    uint32_t soEnd = 0;
+    uint32_t nackRange = 1; // Number of consecutive missing SNs
+    bool isSegment = false; // True if it's a specific byte segment NACK
+};
+
+/**
+ * @brief Compiled data for constructing a STATUS PDU.
+ */
+struct StatusPduData {
+    uint32_t ackSn;
+    std::vector<NackInfo> nacks;
+};
+
+
 } //namespace
 
 #endif
