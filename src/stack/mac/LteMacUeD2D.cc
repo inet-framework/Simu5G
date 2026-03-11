@@ -300,8 +300,10 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                 txBuf = hb;
             }
 
-            // search for an empty unit within the current harq process
-            UnitList txList = txBuf->getEmptyUnits(currentHarq_);
+            // search for an empty unit within the first available process
+            // (D2D multicast uses fixed currentHarq_, matching NRMacUe behavior)
+            UnitList txList = (pit.second->getTag<UserControlInfo>()->getDirection() == D2D_MULTI)
+                ? txBuf->getEmptyUnits(currentHarq_) : txBuf->firstAvailable();
             EV << "LteMacUeD2D::macPduMake - [Used Acid=" << (unsigned int)txList.first << "] , [curr=" << (unsigned int)currentHarq_ << "]" << endl;
 
             // Get a reference of the LteMacPdu from pit pointer (extract PDU from the MAP)
