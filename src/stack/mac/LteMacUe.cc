@@ -491,8 +491,8 @@ void LteMacUe::macPduMake(MacCid cid)
                 txBuf = hb;
             }
 
-            // search for an empty unit within the current HARQ process
-            UnitList txList = txBuf->getEmptyUnits(currentHarq_);
+            // search for an empty unit within the first available process
+            UnitList txList = txBuf->firstAvailable();
             EV << "LteMacUe::macPduMake - [Used Acid=" << (unsigned int)txList.first << "] , [curr=" << (unsigned int)currentHarq_ << "]" << endl;
 
             auto macPkt = pit.second;
