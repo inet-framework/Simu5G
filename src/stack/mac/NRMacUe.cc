@@ -111,7 +111,7 @@ void NRMacUe::handleSelfMessage()
             EV << "\t currentHarq_ counter initialized " << endl;
             firstTx = true;
             // the gNb will receive the first PDU in 2 TTI, thus initializing acid to 0
-            currentHarq_ = UE_TX_HARQ_PROCESSES - 2;
+            currentHarq_ = harqProcesses_ - 2;
         }
 
         std::map<double, HarqTxBuffers>::iterator mtit;
@@ -498,10 +498,12 @@ void NRMacUe::macPduMake(MacCid cid)
                 LteHarqBufferTx *hb;
                 // FIXME: hb is never deleted
                 auto info = pit.second->getTag<UserControlInfo>();
-                if (info->getDirection() == UL)
-                    hb = new LteHarqBufferTx(binder_, (unsigned int)ENB_TX_HARQ_PROCESSES, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
-                else // D2D or D2D_MULTI
-                    hb = new LteHarqBufferTxD2D(binder_, (unsigned int)ENB_TX_HARQ_PROCESSES, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
+                if (info->getDirection() == UL) {
+                     hb = new LteHarqBufferTx(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
+                } else {// D2D or D2D_MULTI
+                    hb = new LteHarqBufferTxD2D(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(getMacByMacNodeId(binder_, destId)));
+                }
+
                 harqTxBuffers[destId] = hb;
                 txBuf = hb;
             }
