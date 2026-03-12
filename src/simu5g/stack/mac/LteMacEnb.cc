@@ -316,6 +316,7 @@ void LteMacEnb::bufferizeBsr(MacBsr *bsr, MacCid cid)
            << " for LCID: " << cid.getLcid()
            << " Current BSR size: " << bsr->getSize() << "\n";
 
+        emit(bsrSizeSignal, bsr->getSize());
         // Signal backlog to Uplink scheduler
         enbSchedulerUl_->backlog(cid);
     }
@@ -327,6 +328,7 @@ void LteMacEnb::bufferizeBsr(MacBsr *bsr, MacCid cid)
         EV << "LteBsrBuffers : BSR buffer for node: " << cid.getNodeId()
            << " for LCID: " << cid.getLcid()
            << " - now empty" << "\n";
+        emit(bsrSizeSignal, 0);
     }
 }
 
