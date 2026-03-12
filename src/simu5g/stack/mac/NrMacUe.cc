@@ -392,7 +392,7 @@ void NrMacUe::macPduMake(MacCid cid)
                     continue;
 
                 if (macPduList_.find(carrierFreq) == macPduList_.end()) {
-                    MacPduList newList;
+                    MacPduList newList;;
                     macPduList_[carrierFreq] = newList;
                 }
                 MacPduList::iterator pit = macPduList_[carrierFreq].find(pktId);
@@ -510,7 +510,7 @@ void NrMacUe::macPduMake(MacCid cid)
 
             // search for an empty unit within the first available process
             UnitList txList = (pit.second->getTag<UserControlInfo>()->getDirection() == D2D_MULTI) ? txBuf->getEmptyUnits(currentHarq_) : txBuf->firstAvailable();
-            EV << "NrMacUe::macPduMake - [Used Acid=" << (unsigned int)txList.first << "]" << endl;
+            EV<< "NRMacUe::macPduMake() "<<(unsigned int) currentHarq_<<"- [Used Acid=" << (unsigned int)txList.first << "]" << endl;
 
             //Get a reference of the LteMacPdu from pit pointer (extract Pdu from the MAP)
             auto macPkt = pit.second;
@@ -603,6 +603,7 @@ void NrMacUe::macPduMake(MacCid cid)
                 bsrRtxTimer_ = 0;
 
             macPkt->insertAtFront(header);
+
 
             EV << "NrMacUe: pduMaker created PDU: " << macPkt->str() << endl;
 
