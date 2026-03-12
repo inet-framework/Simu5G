@@ -43,12 +43,12 @@ Define_Module(LteMacEnb);
 
 using namespace omnetpp;
 
-simsignal_t LteMacEnb::grantedBlocksSignal = registerSignal("grantedBlocks");
-simsignal_t LteMacEnb::bsrSizeSignal = registerSignal("bsrSize");
-
 /*********************
 * PUBLIC FUNCTIONS
 *********************/
+
+simsignal_t LteMacEnb::grantedBlocksSignal=registerSignal("grantedBlocks");
+simsignal_t LteMacEnb::bsrSizeSignal=registerSignal("bsrSize");
 
 LteMacEnb::LteMacEnb() :
     LteMacBase()
@@ -99,6 +99,21 @@ void LteMacEnb::deleteQueues(MacNodeId nodeId)
 {
     Enter_Method_Silent();
 
+    for (auto& mit : harqRxBuffers_) {
+        HarqRxBuffers::iterator hit = mit.second.find(nodeId);
+        if (hit != mit.second.end()) {
+            for (unsigned int proc = 0; proc < (unsigned int)harqProcesses_; proc++) {
+                unsigned int numUnits = hit->second->getProcess(proc)->getNumHarqUnits();
+                for (unsigned int i = 0; i < numUnits; i++) {
+                    hit->second->getProcess(proc)->purgeCorruptedPdu(i); // delete contained PDU
+                    hit->second->getProcess(proc)->resetCodeword(i);     // reset unit
+                }
+            }
+        }
+    }
+
+    // notify that this UE is switching during this TTI
+    resetHarq_[nodeId] = NOW;
     LteMacBase::deleteQueues(nodeId);
 
     LteMacBufferMap::iterator bit;
@@ -119,7 +134,6 @@ void LteMacEnb::deleteQueues(MacNodeId nodeId)
     // remove pending RAC requests
     enbSchedulerUl_->removePendingRac(nodeId);
 }
-
 void LteMacEnb::deleteQueuesRadioLinkFailure(MacNodeId nodeId)
 {
     Enter_Method_Silent();
@@ -149,7 +163,6 @@ void LteMacEnb::informRadioLinkFailure(MacNodeId nodeId) {
     radioLinkFailurePending=true;
 
 }
-
 void LteMacEnb::initialize(int stage)
 {
     LteMacBase::initialize(stage);
@@ -431,7 +444,7 @@ void LteMacEnb::sendGrants(std::map<double, LteMacScheduleList> *scheduleList)
             if (granted == 0)
                 continue; // Avoiding transmission of 0 grant (0 grant should not be created)
 
-            EV << NOW << " LteMacEnb::sendGrants Node[" << getMacNodeId() << "] - "
+            EV << " LteMacEnb::sendGrants Node[" << getMacNodeId() << "] - "
                << granted << " blocks to grant for user " << nodeId << " on "
                << codewords << " codewords. CW[" << cw << "\\" << otherCw << "] carrier[" << citem.first << "]" << endl;
 
@@ -689,7 +702,7 @@ void LteMacEnb::macPduUnmake(cPacket *pktAux)
         take(upPkt);
 
         // TODO: upPkt->info()
-        EV << "LteMacBase: PDU Unmaker extracted SDU" << endl;
+        EV << "LteMacEnb::macPduUnmake: PDU Unmaker extracted SDU" << endl;
         sendUpperPackets(upPkt);
     }
 

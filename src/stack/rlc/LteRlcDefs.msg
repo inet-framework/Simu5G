@@ -8,7 +8,6 @@
 // The above files and the present reference are part of the software itself,
 // and cannot be removed from it.
 //
-
 import inet.common.TagBase;
 cplusplus {{
 #include "stack/rlc/LteRlcDefs.h"

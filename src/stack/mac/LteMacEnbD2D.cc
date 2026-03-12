@@ -144,7 +144,7 @@ void LteMacEnbD2D::macPduUnmake(cPacket *pktAux)
         auto upPkt = check_and_cast<Packet *>(macPkt->popSdu());
         take(upPkt);
 
-        EV << "LteMacEnbD2D: pduUnmaker extracted SDU" << endl;
+        EV << " LteMacEnbD2D::macPduUnmake: pduUnmaker extracted SDU" << endl;
 
         // store descriptor for the incoming connection, if not already stored
         auto lteInfo = upPkt->getTag<FlowControlInfo>();

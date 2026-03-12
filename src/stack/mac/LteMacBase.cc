@@ -151,7 +151,7 @@ void LteMacBase::fromPhy(cPacket *pktAux)
     }
     else if (userInfo->getFrameType() == DATAPKT) {
         // data packet: insert in proper RX buffer
-        EV << NOW << " Mac::fromPhy: node " << nodeId_ << " Received DATA packet" << endl;
+        EV<< " Mac::fromPhy: node " << nodeId_ << " Received DATA packet" << endl;
 
         auto pduAux = pkt->peekAtFront<LteMacPdu>();
         auto pdu = pkt;
@@ -164,6 +164,7 @@ void LteMacBase::fromPhy(cPacket *pktAux)
 
         HarqRxBuffers::iterator hrit = harqRxBuffers_[carrierFreq].find(src);
         if (hrit != harqRxBuffers_[carrierFreq].end()) {
+            EV<< " Mac::fromPhy: node " << nodeId_ << "Inserted in previous harqRxBuffers_" << endl;
             hrit->second->insertPdu(cw, pdu);
         }
         else {
