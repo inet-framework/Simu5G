@@ -22,5 +22,6 @@ simple NRMacGnb extends LteMacEnbD2D
     parameters:
         @class("NRMacGnb");
         amcType = default("NRAmc");
+        harqProcesses = default(5);
 }
 

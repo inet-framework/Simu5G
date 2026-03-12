@@ -21,4 +21,5 @@ simple NRMacUe extends LteMacUeD2D
 {
     parameters:
         @class("NRMacUe");
+        harqProcesses = default(5);
 }
