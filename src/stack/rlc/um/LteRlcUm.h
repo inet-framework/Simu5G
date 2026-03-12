@@ -61,7 +61,8 @@ class LteRlcUm : public cSimpleModule
      *
      * @param pkt packet to forward
      */
-    void sendFragmented(cPacket *pkt);
+    // sendFragmented is not implemented in the .cc. It seems not to be used by anyone
+//    void sendFragmented(cPacket *pkt);
 
     /**
      * sendDefragmented() is invoked by the RXBuffer as a direct method

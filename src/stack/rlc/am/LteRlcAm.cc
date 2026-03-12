@@ -23,6 +23,12 @@ Define_Module(LteRlcAm);
 
 using namespace omnetpp;
 
+simsignal_t LteRlcAm::receivedPacketFromUpperLayerSignal_ = registerSignal("receivedPacketFromUpperLayer");
+simsignal_t LteRlcAm::receivedPacketFromLowerLayerSignal_ = registerSignal("receivedPacketFromLowerLayer");
+simsignal_t LteRlcAm::sentPacketToUpperLayerSignal_ = registerSignal("sentPacketToUpperLayer");
+simsignal_t LteRlcAm::sentPacketToLowerLayerSignal_ = registerSignal("sentPacketToLowerLayer");
+simsignal_t LteRlcAm::radioLinkFailureSignal=registerSignal("radioLinkFailure");
+
 AmTxQueue *LteRlcAm::getTxBuffer(MacNodeId nodeId, LogicalCid lcid)
 {
     // Find TXBuffer for this CID
@@ -63,7 +69,7 @@ AmRxQueue *LteRlcAm::getRxBuffer(MacNodeId nodeId, LogicalCid lcid)
         // Not found: create
         std::stringstream buf;
         buf << "AmRxQueue Lcid: " << lcid << " cid: " << cid;
-        cModuleType *moduleType = cModuleType::get("simu5g.stack.rlc.am.AmRxQueue");
+        cModuleType *moduleType = cModuleType::get("simu5g.stack.rlc.am.buffer.AmRxQueue");
         AmRxQueue *rxbuf = check_and_cast<AmRxQueue *>(
                 moduleType->createScheduleInit(buf.str().c_str(),
                         getParentModule()));
@@ -93,6 +99,7 @@ void LteRlcAm::sendDefragmented(cPacket *pktAux)
     EV << NOW << " LteRlcAm : Sending packet " << pkt->getName()
        << " to port AM_Sap_up$o\n";
     send(pkt, upOutGate_);
+    emit(sentPacketToUpperLayerSignal_, pkt);
 }
 
 void LteRlcAm::bufferControlPdu(cPacket *pktAux) {
@@ -113,10 +120,12 @@ void LteRlcAm::sendFragmented(cPacket *pktAux)
        << pkt->getByteLength() << "  to port AM_Sap_down$o\n";
 
     send(pkt, downOutGate_);
+    emit(sentPacketToLowerLayerSignal_, pkt);
 }
 
 void LteRlcAm::handleUpperMessage(cPacket *pktAux)
 {
+    emit(receivedPacketFromUpperLayerSignal_, pktAux);
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
@@ -128,7 +137,7 @@ void LteRlcAm::handleUpperMessage(cPacket *pktAux)
     rlcPkt->setChunkLength(B(RLC_HEADER_AM));
     pkt->insertAtFront(rlcPkt);
     drop(pkt);
-    EV << NOW << " LteRlcAm : handleUpperMessage sending to AM TX Queue" << endl;
+    EV << NOW << " LteRlcAm : handleUpperMessage sending to AM TX Queue sn=" << lteInfo->getSequenceNumber() <<endl;
     // Fragment Packet
     txbuf->enque(pkt);
 }
@@ -140,13 +149,19 @@ void LteRlcAm::routeControlMessage(cPacket *pktAux)
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
     AmTxQueue *txbuf = getTxBuffer(ctrlInfoToUeId(lteInfo), lteInfo->getLcid());
-    txbuf->handleControlPacket(pkt);
+    // change the order of this (before handleControlPackety to avoid segmentation fault, the latter delete the pkt
+
+    //txbuf->handleControlPacket(pkt);
+    //lteInfo = pkt->removeTag<FlowControlInfo>();
     lteInfo = pkt->removeTag<FlowControlInfo>();
+    txbuf->handleControlPacket(pkt);
+
 }
 
 void LteRlcAm::handleLowerMessage(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
+
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
     auto chunk = pkt->peekAtFront<inet::Chunk>();
 
@@ -168,6 +183,7 @@ void LteRlcAm::handleLowerMessage(cPacket *pktAux)
     else {
         // process AM PDU
         auto pdu = pkt->peekAtFront<LteRlcAmPdu>();
+        emit(receivedPacketFromLowerLayerSignal_, pkt);
         if ((pdu->getAmType() == ACK) || (pdu->getAmType() == MRW_ACK)) {
             EV << NOW << " LteRlcAm::handleLowerMessage Received ACK message" << endl;
 
@@ -190,8 +206,13 @@ void LteRlcAm::deleteQueues(MacNodeId nodeId)
 {
     for (auto tit = txBuffers_.begin(); tit != txBuffers_.end(); ) {
         if (MacCidToNodeId(tit->first) == nodeId) {
-            delete tit->second; // Delete Queue
-            tit = txBuffers_.erase(tit); // Delete Element
+            // cannot directly delete the module
+            //delete tit->second; // Delete Queue
+            tit->second->deleteModule(); // Delete Entity
+            txBuffers_.erase(tit++); // Delete Elem
+
+            //delete tit->second; // Delete Queue
+           // tit = txBuffers_.erase(tit); // Delete Element
         }
         else {
             ++tit;
@@ -199,7 +220,9 @@ void LteRlcAm::deleteQueues(MacNodeId nodeId)
     }
     for (auto rit = rxBuffers_.begin(); rit != rxBuffers_.end(); ) {
         if (MacCidToNodeId(rit->first) == nodeId) {
-            delete rit->second; // Delete Queue
+            // cannot directly delete the module
+            rit->second->deleteModule(); // Delete Entity
+            //delete rit->second; // Delete Queue
             rit = rxBuffers_.erase(rit); // Delete Element
         }
         else {
@@ -224,6 +247,7 @@ void LteRlcAm::indicateNewDataToMac(cPacket *pktAux) {
 
     auto newData = new Packet("AM-NewData");
     auto rlcSdu = inet::makeShared<LteRlcSdu>();
+    //TODO: we should here add the AM HEADER, otherwise the MAC always underestimate our buffer
     rlcSdu->setLengthMainPacket(pkt->getByteLength());
 
     newData->insertAtFront(rlcSdu);

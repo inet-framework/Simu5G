@@ -15,6 +15,7 @@ package simu5g.stack.rlc;
 import simu5g.stack.rlc.am.LteRlcAm;
 import simu5g.stack.rlc.tm.LteRlcTm;
 import simu5g.stack.rlc.um.ILteRlcUm;
+import simu5g.stack.rlc.am.ILteRlcAm;
 
 
 //
@@ -55,12 +56,14 @@ module LteRlc
         }
 
         // UM Module
-        um: <(d2dCapable ? "LteRlcUmD2D" : "LteRlcUm")> like ILteRlcUm {
+        //eegee: changed to allow NRlcUm
+        um: <default(d2dCapable ? "LteRlcUmD2D" : "LteRlcUm")> like ILteRlcUm {
             @display("p=200,100;");
         }
 
         // AM Module
-        am: LteRlcAm {
+
+        am: <default("LteRlcAm")> like ILteRlcAm  {
             @display("p=300,100;");
         }
 

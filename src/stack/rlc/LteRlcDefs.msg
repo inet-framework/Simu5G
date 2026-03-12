@@ -9,6 +9,7 @@
 // and cannot be removed from it.
 //
 
+import inet.common.TagBase;
 cplusplus {{
 #include "stack/rlc/LteRlcDefs.h"
 }}
@@ -25,3 +26,5 @@ enum RlcAmTimerType;
 
 struct RlcUmRxWindowDesc { @existingClass; }
 enum RlcUmTimerType;
+struct NackInfo {@existingClass;}
+struct StatusPduData {@existingClass;}
