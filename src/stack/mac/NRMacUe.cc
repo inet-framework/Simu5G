@@ -43,7 +43,6 @@ void NRMacUe::handleSelfMessage()
         }
     }
 
-    EV << NOW << "NRMacUe::handleSelfMessage " << nodeId_ << " - HARQ process " << (unsigned int)currentHarq_ << endl;
 
     // no grant available - if user has backlogged data, it will trigger scheduling request
     // no HARQ counter is updated since no transmission is sent.
@@ -215,7 +214,6 @@ void NRMacUe::handleSelfMessage()
 
     // update current HARQ process id, if needed
     if (requestedSdus_ == 0) {
-        EV << NOW << " NRMacUe::handleSelfMessage - incrementing counter for HARQ processes " << (unsigned int)currentHarq_ << " --> " << (currentHarq_ + 1) % harqProcesses_ << endl;
         currentHarq_ = (currentHarq_ + 1) % harqProcesses_;
     }
 
@@ -392,7 +390,7 @@ void NRMacUe::macPduMake(MacCid cid)
                     continue;
 
                 if (macPduList_.find(carrierFreq) == macPduList_.end()) {
-                    MacPduList newList;
+                    MacPduList newList;;
                     macPduList_[carrierFreq] = newList;
                 }
                 MacPduList::iterator pit = macPduList_[carrierFreq].find(pktId);
@@ -510,7 +508,7 @@ void NRMacUe::macPduMake(MacCid cid)
 
             // search for an empty unit within the first available process
             UnitList txList = (pit.second->getTag<UserControlInfo>()->getDirection() == D2D_MULTI) ? txBuf->getEmptyUnits(currentHarq_) : txBuf->firstAvailable();
-            EV << "NRMacUe::macPduMake - [Used Acid=" << (unsigned int)txList.first << "]" << endl;
+            EV<< "NRMacUe::macPduMake() "<<(unsigned int) currentHarq_<<"- [Used Acid=" << (unsigned int)txList.first << "]" << endl;
 
             //Get a reference of the LteMacPdu from pit pointer (extract Pdu from the MAP)
             auto macPkt = pit.second;
@@ -604,7 +602,7 @@ void NRMacUe::macPduMake(MacCid cid)
 
             macPkt->insertAtFront(header);
 
-            EV << "NRMacUe: pduMaker created PDU: " << macPkt->str() << endl;
+            EV<< "NRMacUe:::pduMaker created PDU: " << macPkt->str() << endl;
 
             // TODO: harq test
             // pdu transmission here (if any)

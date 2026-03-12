@@ -13,7 +13,7 @@
 
 #include "stack/pdcp_rrc/NRPdcpRrcEnb.h"
 #include "stack/packetFlowManager/PacketFlowManagerBase.h"
-
+#include "stack/rlc/LteRlcDefs_m.h"
 namespace simu5g {
 
 Define_Module(NRPdcpRrcEnb);
@@ -106,6 +106,12 @@ void NRPdcpRrcEnb::fromDataPort(cPacket *pktAux)
 void NRPdcpRrcEnb::fromLowerLayer(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
+    //TODO: at the moment just remove entities
+    auto tag=pkt->findTag<RadioLinkFailure>();
+    if (tag) {
+        handleRadioLinkFailure(pkt);
+        return;
+    }
     pkt->trim();
 
     // if dual connectivity is enabled and this is a secondary node,
@@ -242,6 +248,10 @@ void NRPdcpRrcEnb::activeUeUL(std::set<MacNodeId> *ueSet)
         if (!(entity.second->isEmpty()))
             ueSet->insert(nodeId);
     }
+}
+void NRPdcpRrcEnb::handleRadioLinkFailure(Packet* pkt) {
+    LtePdcpRrcEnb::handleRadioLinkFailure( pkt);
+
 }
 
 } //namespace

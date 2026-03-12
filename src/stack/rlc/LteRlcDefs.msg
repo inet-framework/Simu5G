@@ -28,3 +28,6 @@ struct RlcUmRxWindowDesc { @existingClass; }
 enum RlcUmTimerType;
 struct NackInfo {@existingClass;}
 struct StatusPduData {@existingClass;}
+//This should go to common anyway
+class RadioLinkFailure extends inet::TagBase {
+}

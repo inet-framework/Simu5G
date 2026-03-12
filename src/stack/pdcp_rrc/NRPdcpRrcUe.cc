@@ -257,6 +257,10 @@ void NRPdcpRrcUe::sendToLowerLayer(Packet *pkt)
     else
         LtePdcpRrcBase::sendToLowerLayer(pkt);
 }
+void NRPdcpRrcUe::handleRadioLinkFailure(Packet* pkt) {
+    LtePdcpRrcUe::handleRadioLinkFailure(pkt, nrNodeId_);
+
+}
 
 } //namespace
 
