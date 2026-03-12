@@ -203,3 +203,7 @@ struct StatusPduData {
 
 struct NackInfo {@existingClass;}
 struct StatusPduData {@existingClass;}
+
+//This should go to common anyway
+class RadioLinkFailure extends inet::TagBase {
+}

@@ -382,7 +382,7 @@ void NrMacUe::macPduMake(MacCid cid)
                     continue;
 
                 if (macPduList_.find(carrierFreq) == macPduList_.end()) {
-                    MacPduList newList;
+                    MacPduList newList;;
                     macPduList_[carrierFreq] = newList;
                 }
                 MacPduList::iterator pit = macPduList_[carrierFreq].find(pktId);
