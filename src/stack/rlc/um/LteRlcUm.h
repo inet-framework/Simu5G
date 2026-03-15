@@ -61,7 +61,7 @@ class LteRlcUm : public cSimpleModule
      *
      * @param pkt packet to forward
      */
-    // sendFragmented is not implemented in the .cc. It seems not to be used by anyone
+    //eegea: sendFragmented is not implemented in the .cc. It seems not to be used by anyone
 //    void sendFragmented(cPacket *pkt);
 
     /**

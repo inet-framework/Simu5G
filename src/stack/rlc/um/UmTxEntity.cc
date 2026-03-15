@@ -207,6 +207,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
         if (len != 0 && packetFlowManager_ != nullptr) {
             LogicalCid lcid = flowControlInfo_->getLcid();
 
+
             /*
              * Burst management.
              *
@@ -262,7 +263,9 @@ void UmTxEntity::rlcPduMake(int pduLength)
         // tell the RLC UM to resume packets for the new mode
         lteRlc_->resumeDownstreamInPackets(flowControlInfo_->getD2dRxPeerId());
     }
+
 }
+
 
 void UmTxEntity::removeDataFromQueue()
 {

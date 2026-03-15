@@ -3,15 +3,15 @@
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-//
+// 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
-//
+// 
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
-//
+// 
 
 #include "NrUmTxEntity.h"
 #include "NrRlcUmDataPdu.h"
@@ -32,18 +32,21 @@ NrUmTxEntity::~NrUmTxEntity()
 {
     // delete fragmentInfo;
     delete flowControlInfo_;
-    while (sduBuffer.size()>0) {
-        delete sduBuffer.front();
-        sduBuffer.pop();
-    }
+    sduBuffer->clearBuffer();
 }
 void NrUmTxEntity::initialize()
 {
-    sn = 0;
+
 
     notifyEmptyBuffer_ = false;
     holdingDownstreamInPackets_ = false;
-
+    sn_FieldLength=par("sn_FieldLength");
+    if (sn_FieldLength!=static_cast<unsigned int>(12)) {
+        if (sn_FieldLength!=static_cast<unsigned int>(6)) {
+            throw cRuntimeError("NrUmTxEntity::initialize() sn_FieldLength=%u, but only 6 or 12 are valid values ",sn_FieldLength);
+        }
+    }
+    sduBuffer = new RlcUmTransmitterBuffer(static_cast<uint32_t>(sn_FieldLength));
     mac = inet::getConnectedModule<LteMacBase>(getParentModule()->gate("RLC_to_MAC"), 0);
 
     // store the node id of the owner module
@@ -77,17 +80,17 @@ void NrUmTxEntity::initialize()
 bool NrUmTxEntity::enque(inet::Packet *sdu)
 {
     Enter_Method("NrUmTxEntity::enque()"); // Direct Method Call
-
-    SDUInfo* si=new SDUInfo() ;
+    //std::cout<<name_entity << NOW << " NrUmTxEntity::enque() - inserting new SDU  " << sdu << endl;
     take(sdu);
-    si->sdu=sdu;
-    sduBuffer.push(si);
+    sduBuffer->addSdu(sdu->getByteLength(), sdu);
+    return true;
 }
 
 void NrUmTxEntity::rlcPduMake(int pduLength)
 {
     Enter_Method("NrUmTxEntity::rlcPduMake");
     EV << NOW << " NrUmTxEntity::rlcPduMake - PDU with size " << pduLength << " requested from MAC" << endl;
+    //std::cout<<name_entity << NOW << " NrUmTxEntity::rlcPduMake - PDU with size " << pduLength << " requested from MAC" << endl;
     lteRlc_->emit(requestedPDUSizeSignal, pduLength);
     // create the RLC PDU
     auto pkt = new inet::Packet("lteRlcFragment");
@@ -98,7 +101,7 @@ void NrUmTxEntity::rlcPduMake(int pduLength)
 
     int len = 0;
 
-    bool fullSdu = false;
+
     bool startFragment=false;
     bool endFragment = false;
     bool middleFragment=false;
@@ -108,106 +111,42 @@ void NrUmTxEntity::rlcPduMake(int pduLength)
     unsigned int startOffset=0;
     unsigned int endOffset=0;
 
-    if (size<0) {
+    if (size<=0) {
         // send an empty (1-bit) message to notify the MAC that there is not enough space to send RLC PDU
         // (TODO: ugly, should be indicated in a better way)
         EV << NOW << " NrUmTxEntity::sendPdus( - cannot send PDU with data, pdulength requested by MAC (" << pduLength << "B) is too small." << std::endl;
         pkt->setName("lteRlcFragment (empty)");
         rlcPdu->setChunkLength(inet::b(1)); // send only a bit, minimum size
         pkt->insertAtFront(rlcPdu);
+        ////std::cout<<name_entity << NOW << " NrAmTxQueue::sendPdus( - Not enough space send empty PDU" << rlcPdu->getPduSequenceNumber() << " with size " << pkt->getByteLength() << " bytes to lower layer" << endl;
         lteRlc_->sendFragmented(pkt);
         return;
     }
-    if (!sduBuffer.empty() && size > 0) {
-        // detach data from the SDU buffer
-        SDUInfo* si=sduBuffer.front();
-        auto bufferedSdu = check_and_cast<inet::Packet *>(si->sdu);
-        auto rlcSdu = bufferedSdu->peekAtFront<LteRlcSdu>();
-        sduSequenceNumber = rlcSdu->getSnoMainPacket();
-        int sduLength = rlcSdu->getLengthMainPacket(); // length without the SDU header
-        lengthMain= sduLength;
-                //<< "], length[" << sduLength << "]" << endl;
-
-        sduLength -= si->currentOffset;  // length of the current unprocessed segment
-
-
-        EV << NOW << " NrUmTxEntity::sendPdus( - Next data chunk from the queue, sduSno[" << sduSequenceNumber
-                << "], length[" << sduLength << "]" << endl;
-
-
-        if (size >= sduLength) {
-            // add the whole/remaining SDU
-            EV << NOW << " NrUmTxEntity::sendPdus( - Add " << sduLength << " bytes to the new SDU, sduSno[" << sduSequenceNumber << "]" << endl;
-
-
-            if (si->currentOffset==0) {
-                //Added whole SDU
-                fullSdu=true;
-
-            } else {
-                startOffset=si->currentOffset;
-                endOffset=lengthMain;
-                endFragment=true;
-
-            }
-
-            sduBuffer.pop();
-
-
-            size -= sduLength;
-            len=sduLength;
-            rlcPdu->pushSdu(si->sdu->dup(), sduLength);
-            bufferedSdu = nullptr;
-            delete si->sdu;
-            si->sdu=nullptr;
-            delete si;
-
-            EV << NOW << " NrUmTxEntity::sendPdus( - Pop data chunk from the queue, sduSno[" << sduSequenceNumber << "]" << endl;
-
-            lteRlc_->emit(wastedGrantedBytes, size);
-            // now, the first SDU in the buffer is not a fragment
-            //firstIsFragment_ = false;
-
-            // EV << NOW << " NrAmTxQueue::sendPdus( - The new SDU has length " << len << ", left space is " << size << endl;
-        } else {
-            EV << NOW << " NrUmTxEntity::sendPdus( - Add segment of " << size << " bytes to the new SDU, sduSno[" << sduSequenceNumber << "]" << endl;
-
-            // add partial SDU
-            if (si->currentOffset==0) {
-                startFragment=true;
-            } else {
-                middleFragment=true;
-            }
-            startOffset=si->currentOffset;
-
-
-            //auto rlcSduDup = pkt->dup();
-            si->currentOffset=startOffset+ size;
-            endOffset=si->currentOffset;
-            len=size;
-            rlcPdu->pushSdu(si->sdu->dup(), size);
-
-
-
-            // update SDU in the buffer
-            int newLength = sduLength - size;
-
-            EV << NOW << " NrAmTxQueue::sendPdus( - Data chunk in the queue is now " << newLength << " bytes, sduSno[" << sduSequenceNumber << "]" << endl;
-
-
-            size = 0;
-
-
-            //EV << NOW << "NrAmTxQueue::sendPdus( - The new SDU has length " << len << ", left space is " << size << endl;
-        }
-    } else {
-        EV << NOW << " NrUmTxEntity::sendPdus()  Requested PDU but buffer is empty. sduBuffer.size()= " << sduBuffer.size() << " bytes, size="<<size<< endl;
-
+    PendingSegmentUM segment = sduBuffer->getSegmentForGrant(size);
+    if (!segment.isValid) {
+        EV << NOW << " NrUmTxEntity::sendPdus()  Requested PDU but buffer is empty. sduBuffer.hasData()= " << sduBuffer->getTotalPendingBytes() << " bytes, size="<<size<< endl;
+        //std::cout<<name_entity  << NOW << " NrUmTxEntity::sendPdus()  Requested PDU but buffer is empty. sduBuffer.size()= " << sduBuffer.size() << " bytes, size="<<size<< endl;
         lteRlc_->emit(wastedGrantedBytes, size);
         delete pkt;
         return;
+    }
+
+    auto bufferedSdu = check_and_cast<inet::Packet *>(segment.ptr);
+    auto rlcSdu = bufferedSdu->peekAtFront<LteRlcSdu>();
+    sduSequenceNumber = rlcSdu->getSnoMainPacket();
+    int sduLength = rlcSdu->getLengthMainPacket(); // length without the SDU header
+    rlcPdu->pushSdu(bufferedSdu->dup(), sduLength);
+    startOffset=segment.start;
+    endOffset=segment.end;
+    endFragment=segment.isLastSegment;
+    //std::cout<<name_entity<<NOW<<"Sending "<<bufferedSdu<<endl;
+    if (segment.isLastSegment || segment.isFull) {
+        //delete SDU, it has been previously dupped
+        //std::cout<<name_entity<<NOW<<"; Deleting "<<bufferedSdu<<endl;
+        delete bufferedSdu;
 
     }
+
     // compute SI
     // the meaning of this field is specified in 3GPP TS 36.322 but is different in TS 38.322, called SI, but we reuse the FramingInfo field
     FramingInfo fi = 0; //00 //full sdu
@@ -228,19 +167,44 @@ void NrUmTxEntity::rlcPduMake(int pduLength)
 
     }
     //Finish PDU
+    len=segment.end-segment.start +1;
+    //eegea: TODO, the actual length depends on whether the  packet includes a segment and a SO, we should do as below,
+    //but it affects the MAC, which only takes into account RLC_HEADER_UM, so change it when MAC is changed
+    /*
+       //for single SDU, just one byte
+       if (segment.isFull) {
+           len -=1; //We substract one byte because RLC_HEADER_UM is 2, but ETSI TS 132 322 6.2.2.3 says it is only 1 byte
+       } else {
+        if (startOffset>0) {
+           if (sn_FieldLength==12) {
+
+                   //The SO should be present, so we need to add two more bits to the header
+                   len +=2;
+               } else {
+                len +=1;
+
+               }
+           }
+
+
+       }
+     */
     rlcPdu->setChunkLength(inet::B(RLC_HEADER_UM + len));
     rlcPdu->setSnoMainPacket(sduSequenceNumber);
     rlcPdu->setLengthMainPacket(lengthMain);
     rlcPdu->setStartOffset(startOffset);
     rlcPdu->setEndOffset(endOffset);
     rlcPdu->setFramingInfo(fi);
-    //Full SDUs do not need SN but we set it here anyway
-    rlcPdu->setPduSequenceNumber(sn);
-    if ( endFragment) {
-        ++sn;
+    //Full SDUs do not need SN
+    if (!segment.isFull) {
+        rlcPdu->setPduSequenceNumber(segment.sn);
     }
 
+
     *pkt->addTagIfAbsent<FlowControlInfo>() = *flowControlInfo_;
+
+
+
 
     /*
      * @author Alessandro Noferi
@@ -273,10 +237,10 @@ void NrUmTxEntity::rlcPduMake(int pduLength)
             ltePdu->setChunkLength(inet::B(RLC_HEADER_UM + len));
             ltePdu->setFramingInfo(fi);
             //Full SDUs do not need SN but we set it here anyway
-            ltePdu->setPduSequenceNumber(dup->getPduSequenceNumber());
+            //ltePdu->setPduSequenceNumber(dup->getPduSequenceNumber());
             size_t s;
             ltePdu->pushSdu(dup->popSdu(s));
-            if (sduBuffer.empty()) {
+            if (!sduBuffer->hasData()) {
                 if (burstStatus_ == ACTIVE) {
                     EV << NOW << " NrUmTxEntity::burstStatus - ACTIVE -> INACTIVE" << endl;
 
@@ -311,11 +275,12 @@ void NrUmTxEntity::rlcPduMake(int pduLength)
     // send to MAC layer
     pkt->insertAtFront(rlcPdu);
     EV << NOW << " NrUmTxEntity::rlcPduMake - send PDU " << rlcPdu->getPduSequenceNumber() << " with size " << pkt->getByteLength() << " bytes to lower layer" << endl;
+    //std::cout<<name_entity<<NOW << " NrUmTxEntity::rlcPduMake - send PDU[" << rlcPdu->getPduSequenceNumber() <<"]"<<pkt<<" with size " << pkt->getByteLength() << " bytes to lower layer" << endl;
     lteRlc_->emit(sentPDUSizeSignal, pkt->getByteLength());
     lteRlc_->sendToLowerLayer(pkt);
 
     // if incoming connection was halted
-    if (notifyEmptyBuffer_ && sduBuffer.empty()) {
+    if (notifyEmptyBuffer_ && !sduBuffer->hasData()) {
         notifyEmptyBuffer_ = false;
 
         // tell the RLC UM to resume packets for the new mode
@@ -325,24 +290,24 @@ void NrUmTxEntity::rlcPduMake(int pduLength)
     reportBufferStatus(pkt);
 
 }
-
+void NrUmTxEntity::setFlowControlInfo(FlowControlInfo *lteInfo, MacCid cid) {
+    flowControlInfo_ = lteInfo->dup();
+    infoCid_=cid;
+}
 void  NrUmTxEntity::reportBufferStatus(inet::Packet* pkt) {
 
 
-    if (!sduBuffer.empty() ) {
-        unsigned int pendingData=0;
-        SDUInfo* si=sduBuffer.front();
-        auto pktAux = check_and_cast<inet::Packet *>(si->sdu);
-        auto rlcSdu = pktAux->peekAtFront<LteRlcSdu>();
-        pendingData += rlcSdu->getLengthMainPacket();
+    if (sduBuffer->hasData() ) {
+        unsigned int pendingData=sduBuffer->getTotalPendingBytes();
+
 
         auto vbuf= mac->getMacBuffers();
-        //LteMacBuffer buffer=macBuffers[lteInfo_->getLcid()];
-        auto cid=ctrlInfoToMacCid( pkt->getTagForUpdate<FlowControlInfo>());
-        unsigned int macOccupancy = vbuf->at(cid)->getQueueOccupancy();
-        //unsigned int macOccupancy=buffer.getQueueOccupancy();
+
+        unsigned int macOccupancy = vbuf->at(infoCid_)->getQueueOccupancy();
+
 
         if (macOccupancy==0 && pendingData>0) {
+            ////std::cout<<name_entity << NOW << " NrAmTxQueue::sendPdus()  - Informing MAC of pending "<<pendingData << endl;
             // create the RLC PDU
             auto pktInform = new inet::Packet("lteRlcFragment");
             auto rlcPduInform = inet::makeShared<NrRlcUmDataPdu>();
@@ -414,10 +379,11 @@ void NrUmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
             //TODO: clear buffer
             //EV << NOW << " NrUmTxEntity::rlcHandleD2DModeSwitch - clear TX buffer of the RLC entity associated with the old mode" << endl;
             //clearQueue();
+            sduBuffer->clearBuffer();
         }
         else {
-            if (!sduBuffer.empty()) {
-                EV << NOW << " NrUmTxEntity::rlcHandleD2DModeSwitch - check when the TX buffer of the RLC entity associated with the old mode becomes empty - queue length[" << sduBuffer.size() << "]" << endl;
+            if (sduBuffer->hasData()) {
+                EV << NOW << " NrUmTxEntity::rlcHandleD2DModeSwitch - check when the TX buffer of the RLC entity associated with the old mode becomes empty - queue length[" << sduBuffer->getTotalPendingBytes() << "]" << endl;
                 notifyEmptyBuffer_ = true;
             }
             else {
@@ -427,9 +393,10 @@ void NrUmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
     }
     else {
         //TODO:
-        /*
+        //eegea: what is supposed to happen here? isEmptyingTxBuffer always return false, so never enters down there. Only the sn number changes...
+        //Check this
         EV << " NrUmTxEntity::rlcHandleD2DModeSwitch - reset numbering of the RLC TX entity corresponding to the new mode" << endl;
-        sn = 0;
+        sduBuffer->resetTxNext();
 
         if (!clearBuffer) {
             if (lteRlc_->isEmptyingTxBuffer(flowControlInfo_->getD2dRxPeerId())) {
@@ -438,7 +405,7 @@ void NrUmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
                 startHoldingDownstreamInPackets();
             }
         }
-         */
+
     }
 }
 

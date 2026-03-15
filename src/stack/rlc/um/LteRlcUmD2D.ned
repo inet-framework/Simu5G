@@ -46,6 +46,7 @@ simple LteRlcUmD2D extends LteRlcUm
         @signal[rlcPduPacketLossD2D];
         @statistic[rlcPduPacketLossD2D](title="rlc Packet Loss"; unit=""; source="rlcPduPacketLossD2D"; record=mean,vector);
         
+        //eegea: instant thput
         @signal[rlcThroughputSampleDl];
         @statistic[rlcThroughputSampleDl](title="Instant Throughput at the rlc UM D2D layer DL"; unit="Bps"; source="rlcThroughputSampleDl"; record=mean,vector);
         @signal[rlcThroughputSampleUl];

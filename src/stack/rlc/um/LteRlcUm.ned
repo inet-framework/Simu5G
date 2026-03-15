@@ -57,7 +57,8 @@ simple LteRlcUm like ILteRlcUm
         @statistic[rlcCellPacketLossDl](title="rlc Cell Packet Loss"; unit=""; source="rlcCellPacketLossDl"; record=mean);
         @signal[rlcCellPacketLossUl];
         @statistic[rlcCellPacketLossUl](title="rlc Cell Packet Loss"; unit=""; source="rlcCellPacketLossUl"; record=mean);
-
+        
+     //eegea: instant thput
         @signal[rlcThroughputSampleDl];
         @statistic[rlcThroughputSampleDl](title="Instant Throughput at the rlc UM  layer DL"; unit="Bps"; source="rlcThroughputSampleDl"; record=mean,vector);
         @signal[rlcThroughputSampleUl];
@@ -85,6 +86,7 @@ simple LteRlcUm like ILteRlcUm
         @statistic[sentPacketToUpperLayer](source="sentPacketToUpperLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
         @signal[sentPacketToLowerLayer];
         @statistic[sentPacketToLowerLayer](source="sentPacketToLowerLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
+         //eegea:
         @statistic[transmissionRate](source="throughput(sentPacketToLowerLayer)"; record=vector; interpolationmode=linear);
 
     gates:

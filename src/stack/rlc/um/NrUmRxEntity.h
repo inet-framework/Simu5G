@@ -21,6 +21,7 @@
 
 #include "stack/rlc/um/NrRlcUm.h"
 #include "NrRlcUmDataPdu.h"
+#include "RlcUmReceptionBuffer.h"
 
 #include "common/LteControlInfo.h"
 #include "stack/pdcp_rrc/packet/LtePdcpPdu_m.h"
@@ -60,7 +61,11 @@ public:
     // returns if the entity contains RLC pdus
     bool isEmpty() const {
         //The entity only holds PDU with segments
-        return sduMap.empty();
+        if (sduBuffer) {
+            return sduBuffer->isEmpty();
+        } else {
+            return false;
+        }
     }
 
 
@@ -97,6 +102,7 @@ protected:
     static simsignal_t rlcThroughputD2DSignal_;
     static simsignal_t rlcPduThroughputD2DSignal_;
 
+    //eegea: per sample throughput
     static omnetpp::simsignal_t rlcThroughputSampleSignal_[2];
     omnetpp::simtime_t lastTputSample;
     unsigned int tpsample;
@@ -123,21 +129,12 @@ protected:
     std::string name_entity;
     // State variables
 
-    int RX_Next_Highest;
-    int RX_Next_Reassembly;
+    RlcUmReceptionBuffer* sduBuffer=nullptr;
     int UM_Window_Size;
     int Rx_Timer_Trigger;
-    //Map for SDU reassembly
-    std::map<unsigned int, std::vector<std::pair<unsigned int, unsigned int>>> sduMap;
     cMessage* t_ReassemblyTimer;
     simtime_t t_Reassembly;
 
-    // The SDU waiting for the missing portion
-    struct Buffered {
-        inet::Packet *pkt = nullptr;
-        size_t size;
-        unsigned int currentPduSno;   // next PDU sequence number expected
-    } buffered_;
 
     // Sequence number of the last SDU delivered to the upper layer
     unsigned int lastSnoDelivered_ = 0;
@@ -187,13 +184,8 @@ protected:
 
     // deliver a PDCP PDU to the PDCP layer
     void toPdcp(inet::Packet *rlcSdu);
-    bool restartReassemblyTimer();
-    void discard(bool notInWindow);
-    bool completeSdu(unsigned int sduSequenceNumber, unsigned int size, bool removeIfComplete);
-    bool inReassemblyWindow( int sn);
-    void handlePDUInReceivedBuffer(inet::Ptr<NrRlcUmDataPdu> pdu,  int tsn);
-    //Debug
-    void showStateVariables();
+    void handlePDUInReceivedBuffer(inet::Ptr<NrRlcUmDataPdu> pdu,  unsigned int tsn);
+
 
 
 };
