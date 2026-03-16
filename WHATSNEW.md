@@ -1,5 +1,193 @@
 # What's New in Simu5G
 
+## v1.4.4 (2026-03-16)
+
+This release continues the architectural overhaul of Simu5G. Major themes
+include restructuring the NIC internals around per-bearer PDCP and RLC entities,
+extracting handover logic from the PHY layer into RRC, integrating the SDAP
+protocol with QoS-aware scheduling, and further improving type safety throughout
+the codebase.
+
+Tested with INET-4.5.4 and OMNeT++ 6.3.
+
+### Architectural changes
+
+- **Handover logic extracted from PHY into HandoverController**: Handover
+  decision and execution code has been moved from `LtePhyUe` into a new
+  `HandoverController` module, placed under the compound `Rrc` module. This is
+  architecturally more correct, as handover is an RRC function, not PHY. The
+  internal "handover packet" misnomer was corrected to "beacon"
+  (`HANDOVERPKT` → `BEACONPKT`, `createHandoverMessage()` →
+  `createBeaconMessage()`, `broadcastMessageInterval` → `beaconInterval`).
+  Several HandoverController parameters were exposed as NED parameters
+  (`hysteresisFactor`, `handoverDetachmentTime`, `isNr`).
+
+- **Handover-related packet buffering extracted from Ip2Nic**: Handover packet
+  buffering logic was factored out of `Ip2Nic` into separate
+  `HandoverPacketHolderUe` and `HandoverPacketHolderEnb` modules. Node
+  registration was moved to the `Registration` submodule of `Rrc`. X2 tunneled
+  packets are now received via gates instead of C++ method calls.
+
+- **PDCP class hierarchy flattened**: All six PDCP subclasses (`NrPdcpEnb`,
+  `NrPdcpUe`, `LtePdcpEnb`, `LtePdcpEnbD2D`, `LtePdcpUe`, `LtePdcpUeD2D`)
+  were merged into a single `LtePdcp` class, using `isNR` and `hasD2DSupport`
+  boolean NED parameters to select behavior. The empty subclass files were
+  deleted.
+
+- **`analyzePacket()` moved from PDCP to Ip2Nic**: Packet classification
+  (filling `FlowControlInfo` tags) was moved to where it logically belongs --
+  at the IP-to-NIC boundary. The `IpFlowInd` tag was eliminated; IP addresses
+  are now passed as function parameters. RLC type NED parameters
+  (`conversationalRlc`, etc.) were also moved from PDCP to `Ip2Nic`.
+
+- **PDCP refactored into per-bearer entity architecture**: PDCP packet
+  processing was moved into per-bearer `PdcpTxEntity` and `PdcpRxEntity`
+  modules, with `PdcpUpperMux` routing from the upper layer to TX entities,
+  and `DcMux` handling Dual Connectivity X2 forwarding. Bypass TX/RX entities
+  were added for the DC secondary leg. Entities communicate via gates, not C++
+  method calls. An `IPdcpGateway` interface was introduced and later removed
+  once full gate-based decoupling was achieved. `PdcpMux` was split into
+  `PdcpUpperMux` + `PdcpLowerMux` + `DcMux`, and subsequently `PdcpLowerMux`
+  was deleted when direct PDCP↔RLC wiring was introduced.
+
+- **RLC refactored into per-bearer entity architecture**: The RLC class
+  hierarchy was flattened (D2D support merged into `LteRlcUm` base class),
+  and packet processing was moved into `UmTxEntity`/`UmRxEntity` modules.
+  `RlcUpperMux` and `RlcLowerMux` were introduced for routing, then
+  `RlcUpperMux` was deleted once direct PDCP↔RLC wiring made it unnecessary.
+  AM and TM entity support was integrated into the mux architecture.
+  `LteRlcAm` and `LteRlcTm` standalone modules were deleted.
+
+- **PDCP and RLC compound modules dissolved**: The `PdcpLayer` and `LteRlc`
+  compound modules were dissolved -- their submodules (muxes, entity managers)
+  were promoted to NIC level. PDCP and RLC entities are now wired directly
+  (per-bearer gate connections), eliminating intermediate muxes from the data
+  path.
+
+- **RRC restructured as compound module**: The simple `Rrc` module was renamed
+  to `BearerManagement` and wrapped in a compound `Rrc` module that also
+  contains `Registration`, `HandoverController`(s), and `D2DModeController`
+  submodules.
+
+- **BearerManagement owns entity lifecycle**: Creation, deletion, and lookup of
+  PDCP and RLC entities is now centralized in `BearerManagement` (Control
+  Plane). Entity lifecycle methods were removed from the data-plane muxes.
+  `PdcpEntityManager` and `RlcEntityManager` modules were deleted, their
+  remaining responsibilities redistributed to `BearerManagement`, `RlcMux`,
+  and `D2DModeController`.
+
+- **MAC turned into compound module**: MAC is now a compound module with `AMC`
+  and DL/UL `Scheduler` as proper `cSimpleModule` submodules (previously
+  created via `new` in C++). They perform their own staged initialization.
+
+- **TechnologyDecision module added**: The Dual Connectivity technology
+  selection logic (deciding whether to use LTE or NR for a packet) was
+  extracted from `Ip2Nic` into a separate, configurable `TechnologyDecision`
+  module that uses NED expressions.
+
+- **PacketFlowObserver refactored to use OMNeT++ signals**: Direct C++ method
+  calls from PDCP, RLC, and MAC into `PacketFlowObserver` were replaced with
+  OMNeT++ signals, fully decoupling the observer from the protocol modules.
+
+### SDAP and QoS support
+
+- **SDAP protocol layer integrated**: An SDAP (Service Data Adaptation Protocol)
+  implementation was added, providing QFI-to-DRB routing with a JSON-configured
+  `DrbTable`. The SDAP layer is optional in NR NICs (enabled via `hasSdap=true`).
+  Based on code contributed by Mohamed Seliem (University College Cork),
+  substantially reworked.
+
+- **QFI propagation via GTP-U**: QFI is set by the application via DSCP, picked
+  up by the `TrafficFlowFilter`/UPF, carried in the GTP-U protocol header
+  (mirroring the 3GPP PDU Session Container), and extracted by the gNB for
+  SDAP routing. This replaces the previous approach of using QoS tags that were
+  stripped by PPP.
+
+- **QoS-aware proportional fairness scheduler**: A `QoSAwareScheduler` was
+  added, supporting QFI-based scheduling with configurable weight constants
+  and proportional fairness. Enable with
+  `LteMacEnb.schedulingDisciplineDl/Ul = "QOS_PF"`.
+
+- **Non-IP PDU session support**: SDAP was generalized for non-IP PDU session
+  types, with `PduSessionType` enum and `upperProtocol` in DRB configuration.
+
+- **DRB configuration in JSON**: DRB configuration is split between SDAP
+  (`sdap.drbConfig` for QFI-to-DRB routing) and MAC (`mac.drbQosConfig` for
+  QoS scheduler parameters), both using JSON format.
+
+- **Example simulations**: `simulations/nr/standalone/omnetpp_drb.ini` with
+  multi-UE, multi-QFI configurations.
+
+### Type safety improvements
+
+- **Strong typedefs**: `SIMU5G_STRONG_TYPEDEF` macro applied to `MacNodeId`,
+  `DrbId`, `LogicalCid`, and `Qfi`, preventing accidental mixing of ID types.
+
+- **Direction enum**: `LteControlInfo.direction` changed from `unsigned short`
+  to a proper `Direction` enum.
+
+- **C++ types extracted**: Types previously defined in `LteCommon.msg` were
+  moved into a dedicated `LteTypes.h` header.
+
+- **ROHC header**: PDCP header compression now uses a proper ROHC header
+  representation instead of simply truncating the IP header.
+
+### Gate and naming cleanup
+
+- Replaced method-call-based packet passing with gate connections in several
+  places: `HandoverManager`, `DualConnectivityManager`, `Ip2Nic` (X2 path).
+
+- Split several `inout` gates into separate `input` + `output` gates
+  (`Ip2Nic`, `Pdcp`, `LteX2Manager`).
+
+- Gate renames throughout the NIC for clarity and consistency:
+  `MAC_to_RLC`/`RLC_to_MAC` → `upperLayerIn`/`upperLayerOut` and
+  `macIn`/`macOut`; `MAC_to_PHY`/`PHY_to_MAC` → `phyOut`/`phyIn`;
+  `filterGate` → `dnPppg`.
+
+- Submodule renames: `pdcpUpperMux` → `pdcpMux`, `rlcLowerMux` → `rlcMux`,
+  `pppIf` → `dpPpp` (in UPF/PGW).
+
+- Module renames: `DualConnectivityManager` → `DcX2Forwarder`,
+  `LteHandoverManager` → `HandoverX2Forwarder`.
+
+### NIC layout improvements
+
+- Improved NED layout of NIC internals for better visualization in Qtenv:
+  data-path modules arranged vertically, control-plane modules on the left
+  edge, dynamically created PDCP/RLC entities positioned between muxes.
+
+### Bug fixes
+
+- MEC: Fixed uninitialized variables, `MecOrchestrator` contextId counter
+  never being incremented, missing return after failure path causing
+  end-iterator dereference, `MecAppBase` undisposed objects,
+  `MecResponseApp`/`MecRTVideoStreamingReceiver` missing `localUePort`,
+  `RniService` incomplete CamelCase renaming.
+
+- `LteSchedulerEnb`: Fixed multi-UE starvation in multi-DRB scheduling.
+
+- `QoSAwareScheduler`: Fixed QoS lookup failure for UEs beyond the first,
+  integer division in PF score computation, rate units mismatch.
+
+### Other
+
+- `UPF` and `PgwStandard` now derive from `ApplicationLayerNodeBase`.
+
+- `SplitBearersTable` turned into `std::ordered_map`.
+
+- `FlowControlInfo`: `lcid` field renamed to `drbId`.
+
+- Added `tilx` fingerprints (resistant to module renames) to the fingerprint
+  test suite.
+
+- Fingerprint test coverage for MEC simulations improved (longer simulation
+  durations to cover more interesting events).
+
+- D2D mode selection modules moved from `stack/d2dModeSelection/` into the
+  `Rrc` compound module.
+
+
 ## v1.4.3 (2026-02-18)
 
 This release represents a major milestone in the complete overhaul of the Simu5G
