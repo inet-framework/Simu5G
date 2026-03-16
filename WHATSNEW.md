@@ -3,120 +3,128 @@
 ## v1.4.4 (2026-03-16)
 
 This release continues the architectural overhaul of Simu5G. Major themes
-include restructuring the NIC internals around per-bearer PDCP and RLC entities,
-extracting handover logic from the PHY layer into RRC, integrating the SDAP
-protocol with QoS-aware scheduling, and further improving type safety throughout
-the codebase.
+include consolidating Control Plane functions under the RRC module, adding QoS
+support via DRBs and the SDAP protocol, restructuring Ip2Nic and other modules
+for cleaner architecture, and improving type safety throughout the codebase.
 
 Tested with INET-4.5.4 and OMNeT++ 6.3.
 
-### Architectural changes
+### More explicit Control Plane modeling
 
-- **Handover logic extracted from PHY into HandoverController**: Handover
-  decision and execution code has been moved from `LtePhyUe` into a new
-  `HandoverController` module, placed under the compound `Rrc` module. This is
-  architecturally more correct, as handover is an RRC function, not PHY. The
-  internal "handover packet" misnomer was corrected to "beacon"
-  (`HANDOVERPKT` → `BEACONPKT`, `createHandoverMessage()` →
-  `createBeaconMessage()`, `broadcastMessageInterval` → `beaconInterval`).
-  Several HandoverController parameters were exposed as NED parameters
-  (`hysteresisFactor`, `handoverDetachmentTime`, `isNr`).
+Continuing the direction set in v1.4.3, code fragments that implement pieces of
+the 3GPP Control Plane have been identified throughout the codebase and collected
+under the `Rrc` module. `Rrc` is now a compound module with the following
+submodules:
 
-- **Handover-related packet buffering extracted from Ip2Nic**: Handover packet
-  buffering logic was factored out of `Ip2Nic` into separate
-  `HandoverPacketHolderUe` and `HandoverPacketHolderEnb` modules. Node
-  registration was moved to the `Registration` submodule of `Rrc`. X2 tunneled
-  packets are now received via gates instead of C++ method calls.
+- **BearerManagement**: The former simple `Rrc` module, renamed and extended.
+  It now owns the lifecycle (creation, deletion, lookup) of all PDCP and RLC
+  entities, taking over these responsibilities from the former
+  `PdcpEntityManager` and `RlcEntityManager` modules (both deleted).
 
-- **PDCP class hierarchy flattened**: All six PDCP subclasses (`NrPdcpEnb`,
-  `NrPdcpUe`, `LtePdcpEnb`, `LtePdcpEnbD2D`, `LtePdcpUe`, `LtePdcpUeD2D`)
-  were merged into a single `LtePdcp` class, using `isNR` and `hasD2DSupport`
-  boolean NED parameters to select behavior. The empty subclass files were
-  deleted.
+- **Registration**: Node registration and deregistration logic, previously
+  embedded in `Ip2Nic`, was moved here.
 
-- **`analyzePacket()` moved from PDCP to Ip2Nic**: Packet classification
-  (filling `FlowControlInfo` tags) was moved to where it logically belongs --
-  at the IP-to-NIC boundary. The `IpFlowInd` tag was eliminated; IP addresses
-  are now passed as function parameters. RLC type NED parameters
-  (`conversationalRlc`, etc.) were also moved from PDCP to `Ip2Nic`.
+- **HandoverController**: Handover decision and execution logic was extracted
+  from `LtePhyUe` into this new module. This is architecturally more correct,
+  as handover is an RRC function, not PHY. The internal "handover packet"
+  misnomer was corrected to "beacon" (`HANDOVERPKT` → `BEACONPKT`,
+  `broadcastMessageInterval` → `beaconInterval`). Several parameters were
+  exposed as NED parameters (`hysteresisFactor`, `handoverDetachmentTime`,
+  `isNr`).
 
-- **PDCP refactored into per-bearer entity architecture**: PDCP packet
-  processing was moved into per-bearer `PdcpTxEntity` and `PdcpRxEntity`
-  modules, with `PdcpUpperMux` routing from the upper layer to TX entities,
-  and `DcMux` handling Dual Connectivity X2 forwarding. Bypass TX/RX entities
-  were added for the DC secondary leg. Entities communicate via gates, not C++
-  method calls. An `IPdcpGateway` interface was introduced and later removed
-  once full gate-based decoupling was achieved. `PdcpMux` was split into
-  `PdcpUpperMux` + `PdcpLowerMux` + `DcMux`, and subsequently `PdcpLowerMux`
-  was deleted when direct PDCP↔RLC wiring was introduced.
+- **D2DModeController**: D2D mode selection and peer tracking were moved here
+  from `RlcEntityManager` and the former `stack/d2dModeSelection/` directory.
 
-- **RLC refactored into per-bearer entity architecture**: The RLC class
-  hierarchy was flattened (D2D support merged into `LteRlcUm` base class),
-  and packet processing was moved into `UmTxEntity`/`UmRxEntity` modules.
-  `RlcUpperMux` and `RlcLowerMux` were introduced for routing, then
-  `RlcUpperMux` was deleted once direct PDCP↔RLC wiring made it unnecessary.
-  AM and TM entity support was integrated into the mux architecture.
-  `LteRlcAm` and `LteRlcTm` standalone modules were deleted.
+### QoS support: SDAP, DRBs and per-bearer PDCP/RLC entities
 
-- **PDCP and RLC compound modules dissolved**: The `PdcpLayer` and `LteRlc`
-  compound modules were dissolved -- their submodules (muxes, entity managers)
-  were promoted to NIC level. PDCP and RLC entities are now wired directly
-  (per-bearer gate connections), eliminating intermediate muxes from the data
-  path.
+QoS (Quality of Service) support was added through Data Radio Bearers (DRBs)
+and the SDAP (Service Data Adaptation Protocol) layer, which is part of the 5G
+NR protocol stack. The code is based on a contribution by Mohamed Seliem
+(University College Cork); see releases v1.4.1-sdap and v1.4.1-sdap-2 for
+details. In this release, the code was substantially reworked and integrated
+into the main codebase.
 
-- **RRC restructured as compound module**: The simple `Rrc` module was renamed
-  to `BearerManagement` and wrapped in a compound `Rrc` module that also
-  contains `Registration`, `HandoverController`(s), and `D2DModeController`
-  submodules.
+In accordance with the 3GPP architecture, the PDCP and RLC layers were
+transformed so that they purely consist of per-DRB entities, created and
+configured by `BearerManagement` (RRC). Each DRB has dedicated PDCP TX/RX and
+RLC TX/RX entity modules, wired directly to each other via per-bearer gate
+connections.
 
-- **BearerManagement owns entity lifecycle**: Creation, deletion, and lookup of
-  PDCP and RLC entities is now centralized in `BearerManagement` (Control
-  Plane). Entity lifecycle methods were removed from the data-plane muxes.
-  `PdcpEntityManager` and `RlcEntityManager` modules were deleted, their
-  remaining responsibilities redistributed to `BearerManagement`, `RlcMux`,
-  and `D2DModeController`.
+Details:
+
+- **SDAP protocol layer**: An SDAP implementation was added, providing
+  QFI-to-DRB routing with a JSON-configured `DrbTable`. The SDAP layer is
+  optional in NR NICs (enabled via `hasSdap=true`).
+
+- **QFI propagation via GTP-U**: QFI is set by the application via DSCP,
+  picked up by `TrafficFlowFilter`/UPF, carried in the GTP-U protocol header
+  (mirroring the 3GPP PDU Session Container extension header), and extracted
+  by the gNB for SDAP routing.
+
+- **QoS-aware proportional fairness scheduler**: A `QoSAwareScheduler` was
+  added to MAC, supporting QFI-based scheduling with configurable weight
+  constants. Enable with `LteMacEnb.schedulingDisciplineDl/Ul = "QOS_PF"`.
+
+- **DRB configuration in JSON**: DRB configuration is split between SDAP
+  (`sdap.drbConfig` for QFI-to-DRB routing) and MAC (`mac.drbQosConfig` for
+  QoS scheduler parameters), both in JSON format.
+
+- **Non-IP PDU session support**: SDAP was generalized for non-IP PDU session
+  types, with `PduSessionType` enum and `upperProtocol` in DRB configuration.
+
+- **PDCP refactored into per-bearer entities**: PDCP processing was moved into
+  per-bearer `PdcpTxEntity` and `PdcpRxEntity` modules. The six PDCP subclasses
+  were first merged into a single `LtePdcp` class, then the class was split
+  into `PdcpUpperMux` (routing from upper layer to TX entities) and `DcMux`
+  (Dual Connectivity X2 forwarding). Bypass entities were added for the DC
+  secondary leg. Entities communicate via gates, not C++ method calls.
+
+- **RLC refactored into per-bearer entities**: The RLC class hierarchy was
+  flattened (D2D support merged into base class), and processing was moved into
+  per-bearer TX/RX entity modules. `RlcMux` handles MAC↔entity routing. AM and
+  TM entity support was integrated alongside UM entities. The standalone
+  `LteRlcAm`, `LteRlcTm` and `LteRlcUm` modules were deleted.
+
+- **PDCP↔RLC directly wired**: PDCP and RLC entities are connected directly
+  via per-bearer gates, eliminating the former `PdcpLowerMux` and `RlcUpperMux`
+  intermediate modules. The `PdcpLayer` and `LteRlc` compound modules were
+  dissolved — all submodules promoted to NIC level.
+
+- **Example simulations**: `simulations/nr/standalone/omnetpp_drb.ini` with
+  multi-UE, multi-QFI configurations.
+
+### Ip2Nic decomposed, further module architecture improvements
+
+The `Ip2Nic` module, which had accumulated various unrelated responsibilities
+over time, was decomposed. Several code fragments were factored out into
+separate modules:
+
+- **`analyzePacket()` moved to Ip2Nic from PDCP**: Packet classification
+  (filling `FlowControlInfo` tags) was moved to where it logically belongs —
+  at the IP-to-NIC boundary. The `IpFlowInd` tag was eliminated. RLC type NED
+  parameters (`conversationalRlc`, etc.) also moved from PDCP to `Ip2Nic`.
+
+- **HandoverPacketHolderUe/Enb**: Handover packet buffering was factored out
+  of `Ip2Nic` into separate modules. X2 tunneled packets are now received via
+  gates instead of C++ method calls.
+
+- **TechnologyDecision**: Dual Connectivity technology selection logic was
+  extracted into a separate, configurable module that uses NED expressions.
+
+Further module architecture improvements:
 
 - **MAC turned into compound module**: MAC is now a compound module with `AMC`
   and DL/UL `Scheduler` as proper `cSimpleModule` submodules (previously
   created via `new` in C++). They perform their own staged initialization.
 
-- **TechnologyDecision module added**: The Dual Connectivity technology
-  selection logic (deciding whether to use LTE or NR for a packet) was
-  extracted from `Ip2Nic` into a separate, configurable `TechnologyDecision`
-  module that uses NED expressions.
+- **UPF and PgwStandard** now derive from INET's `ApplicationLayerNodeBase`.
 
-- **PacketFlowObserver refactored to use OMNeT++ signals**: Direct C++ method
-  calls from PDCP, RLC, and MAC into `PacketFlowObserver` were replaced with
-  OMNeT++ signals, fully decoupling the observer from the protocol modules.
+- **PacketFlowObserver refactored to use OMNeT++ signals**: Direct C++ calls
+  from PDCP, RLC, and MAC into `PacketFlowObserver` were replaced with
+  OMNeT++ signals, fully decoupling the observer from protocol modules.
 
-### SDAP and QoS support
-
-- **SDAP protocol layer integrated**: An SDAP (Service Data Adaptation Protocol)
-  implementation was added, providing QFI-to-DRB routing with a JSON-configured
-  `DrbTable`. The SDAP layer is optional in NR NICs (enabled via `hasSdap=true`).
-  Based on code contributed by Mohamed Seliem (University College Cork),
-  substantially reworked.
-
-- **QFI propagation via GTP-U**: QFI is set by the application via DSCP, picked
-  up by the `TrafficFlowFilter`/UPF, carried in the GTP-U protocol header
-  (mirroring the 3GPP PDU Session Container), and extracted by the gNB for
-  SDAP routing. This replaces the previous approach of using QoS tags that were
-  stripped by PPP.
-
-- **QoS-aware proportional fairness scheduler**: A `QoSAwareScheduler` was
-  added, supporting QFI-based scheduling with configurable weight constants
-  and proportional fairness. Enable with
-  `LteMacEnb.schedulingDisciplineDl/Ul = "QOS_PF"`.
-
-- **Non-IP PDU session support**: SDAP was generalized for non-IP PDU session
-  types, with `PduSessionType` enum and `upperProtocol` in DRB configuration.
-
-- **DRB configuration in JSON**: DRB configuration is split between SDAP
-  (`sdap.drbConfig` for QFI-to-DRB routing) and MAC (`mac.drbQosConfig` for
-  QoS scheduler parameters), both using JSON format.
-
-- **Example simulations**: `simulations/nr/standalone/omnetpp_drb.ini` with
-  multi-UE, multi-QFI configurations.
+- Replaced method-call-based packet passing with gate connections in several
+  places: `HandoverManager`, `DualConnectivityManager`, `Ip2Nic` (X2 path).
 
 ### Type safety improvements
 
@@ -132,26 +140,21 @@ Tested with INET-4.5.4 and OMNeT++ 6.3.
 - **ROHC header**: PDCP header compression now uses a proper ROHC header
   representation instead of simply truncating the IP header.
 
-### Gate and naming cleanup
+- `FlowControlInfo`: `lcid` field renamed to `drbId`.
 
-- Replaced method-call-based packet passing with gate connections in several
-  places: `HandoverManager`, `DualConnectivityManager`, `Ip2Nic` (X2 path).
-
-- Split several `inout` gates into separate `input` + `output` gates
-  (`Ip2Nic`, `Pdcp`, `LteX2Manager`).
+### Naming and layout cleanup
 
 - Gate renames throughout the NIC for clarity and consistency:
   `MAC_to_RLC`/`RLC_to_MAC` → `upperLayerIn`/`upperLayerOut` and
   `macIn`/`macOut`; `MAC_to_PHY`/`PHY_to_MAC` → `phyOut`/`phyIn`;
-  `filterGate` → `dnPppg`.
+  `filterGate` → `dnPppg`. Several `inout` gates split into separate `input`
+  + `output` gates.
 
 - Submodule renames: `pdcpUpperMux` → `pdcpMux`, `rlcLowerMux` → `rlcMux`,
   `pppIf` → `dpPpp` (in UPF/PGW).
 
 - Module renames: `DualConnectivityManager` → `DcX2Forwarder`,
   `LteHandoverManager` → `HandoverX2Forwarder`.
-
-### NIC layout improvements
 
 - Improved NED layout of NIC internals for better visualization in Qtenv:
   data-path modules arranged vertically, control-plane modules on the left
@@ -172,20 +175,10 @@ Tested with INET-4.5.4 and OMNeT++ 6.3.
 
 ### Other
 
-- `UPF` and `PgwStandard` now derive from `ApplicationLayerNodeBase`.
+- Added `tilx` fingerprints (resistant to module renames) to the fingerprint
+  test suite. Fingerprint test coverage for MEC simulations improved.
 
 - `SplitBearersTable` turned into `std::ordered_map`.
-
-- `FlowControlInfo`: `lcid` field renamed to `drbId`.
-
-- Added `tilx` fingerprints (resistant to module renames) to the fingerprint
-  test suite.
-
-- Fingerprint test coverage for MEC simulations improved (longer simulation
-  durations to cover more interesting events).
-
-- D2D mode selection modules moved from `stack/d2dModeSelection/` into the
-  `Rrc` compound module.
 
 
 ## v1.4.3 (2026-02-18)
