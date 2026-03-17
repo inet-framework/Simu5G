@@ -1,0 +1,2577 @@
+commit 847dcc78b39e2a9b2747a7bf5cc557c6e6f31aa8
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 19 10:27:04 2026 +0100
+
+    Mec: Fix uninitialized variables
+    
+    This fixes long-standing fingerprint failures of certain MEC simulations
+    in DEBUG mode only, and only on the Github CI.
+    
+    Failures:
+        /simulations/nr/mec/singleMecHost/ -f omnetpp.ini -c BgGeneratorApp
+    -r 0  (some fingerprint mismatch: actual
+    '71de-07e0/tplx;805c-2211/tilx;9f79-d044/~tNl', expected:
+    'c01b-bcf5/tplx;f5fc-26c2/tilx;1cf9-34be/~tNl')
+
+commit 8ce1e666eea7da04f3dee71809970eb9881ef754
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 19 14:39:59 2026 +0100
+
+    MecOrchestrator: Fix missing return after failure path that caused end-iterator dereference
+    
+    Uses the delayed self-message pattern consistent with the rest of the
+    function, so the ack goes through handleMessage → sendCreateAppContextAck
+    like all other paths.
+
+commit d4e4d8b6cde546797cb23dda00b6dfe149e937cc
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 19 14:44:05 2026 +0100
+
+    MecOrchestrator: Fix contextIdCounter never being incremented
+    
+    contextIdCounter was never incremented after inserting a new MEC app
+    into meAppMap, causing every app to reuse key 0 and silently overwrite
+    the previous entry. Also removed a duplicate assignment block that
+    preceded the map insertion.
+
+commit 0ddcec5671ed9d0efaa3ad5168b474929a03a7da
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 19 15:34:38 2026 +0100
+
+    MecAppBase: Eliminate undisposed objects
+    
+    The ~MecAppBase() destructor in MecAppBase.cc:28 was calling
+    sockets_.deleteSockets() which deletes the TcpSocket objects
+    but does not clean up the HttpMessageStatus structs attached as
+    userData to each socket.
+    
+    This mirrors the cleanup logic already present in removeSocket(),
+    which was never called during destruction.
+
+commit b918aadb97a61819c2fba7f27f06c93bf2ea6a67
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Jan 27 10:11:53 2026 +0100
+
+    Ip2Nic: Move registration etc into Rrc
+    
+    RRC is responsible for maintaining the configration of the NIC.
+
+commit 3b3b20ce439a182bb0f840b056356de176fc608e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Jan 29 10:50:15 2026 +0100
+
+    Fix misnomer: rename HANDOVERPKT to BEACONPKT
+    
+    It was a clear misnomer, as it does NOT announce or request handover.
+    
+    It is a broadcast message that eNodeBs periodocally send, and UEs
+    utilize it measure signal quality to different eNodeBs, and use it
+    to decide when to handover to a different eNodeB.
+    
+    It has no direct equivalent in actual LTE/5G, but represents/combines
+    multiple signals / protocol elements into a simulation abstraction.
+
+commit 45482d4e9c9403467e5d79ef8b81b7712727c6d1
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Jan 29 10:58:02 2026 +0100
+
+    LtePhy: createHandoverMessage() renamed to createBeaconMessage(), moved from LtePhyBase to LtePhyEnb
+    
+    Also: LtePhyEnb::handleSelfMessage to throw on unknown msg
+
+commit a0e5325d24f1ec8f2041f3709a23fe6c110dc5ab
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Jan 29 12:54:16 2026 +0100
+
+    LtePhyUe: moved BEACONPKT handover-in-progress check into handoverHandler()
+
+commit e69b84b56ce486499cb48089b63ae2e46360dfcc
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Jan 29 13:52:03 2026 +0100
+
+    NrPhyUe: Dual-Connectivity-related handover feasiblity test moved into handoverHandler()
+    
+    To facilitate factoring out handover management from PHY.
+
+commit a03d4d9e4b96121c860fa5cfe3ab4dd1c7492590
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Jan 30 14:14:12 2026 +0100
+
+    LtePhyBase: handoverLatency NED parameter moved to LtePyUe
+    
+    It is unused in eNodeBs.
+
+commit 685f78dd7c88ed8179e608a24d0adcaa6ee4f0b2
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Jan 30 14:37:33 2026 +0100
+
+    simulations: omnetpp.ini files: simpler enableHandover setting
+
+commit c283d484866347fc3886924188a850e00777e46d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Jan 30 15:28:53 2026 +0100
+
+    LtePhyUe: factor out computeReceivedBeaconPacketRssi()
+    
+    In preparation of further changes
+
+commit 26e604b726db742e7b50f37815a4345ad3f3757d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Jan 30 16:15:29 2026 +0100
+
+    LtePhyUe: removed emit(servingCellSignal_) from emitMobilityStats()
+    
+    No point doing-- it is already emitted after each change.
+    emitMobilityStats() is called on every wireless signal received.
+
+commit b12eb83c8d18736dfed7afdf9cee1c72132fd794
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Jan 27 14:29:39 2026 +0100
+
+    LtePhyUe: BEGIN factoring out handover code into separate module HandoverController
+    
+    Handover decision and execution are NOT the functions of the PHY layer!
+    
+    This functionality is part of RRC, rather than PHY.
+    
+    This first step just moves the CODE out of PHY modules into a new
+    module, but leave the DATA in PHY. That is, the new module operates on
+    PHY's variables via `phy` pointers. (For this, the visibility of PHY's
+    fields were all temporarily changed to "public".) This results in
+    IDENTICAL operation compared to previous state -- all simulations work
+    as before. No fingerprint change.
+    
+    Subsequent commits move the DATA into HandoverController too, and clean
+    up the mess.
+
+commit c49f2d0bb88a567b847b2151cc1f97ccb1a6c40a
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Jan 28 12:55:33 2026 +0100
+
+    LtePhyUe: move many fields into HandoverController
+    
+    moved 4 module vars
+    
+    port binder_
+    
+    mac
+    nodeId
+    isNr_
+    masterId_
+    enableHandover, handoverLatency, hysteresis, minRssi
+    
+    doc: Add module documentation for HandoverController
+    
+    Documented HandoverController as a UE-side component that manages
+    handover decisions based on RSSI measurements from the PHY layer.
+    
+    moved dynamic cell association code, too
+    
+    candidateMasterId_, candidateMasterRssi_, currentMasterRssi_
+    hasCollector
+    cellInfo, masterMobility ->  move code into setMasterId()
+    servingCellSignal_
+    hasCollector parameter
+    dynamicCellAssociation
+
+commit e137da2fafdd0a0500107f015bb24668087a736f
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Jan 30 19:22:00 2026 +0100
+
+    LtePhyue: move self-messages to HandoverController -- FINGERPRINT CHANGE!
+    
+    handoverStarter_, handoverTrigger_
+    
+    "tplx" fingerprints changed due to timers being migrated (events are
+    occurring in HandoverController instead of in PHY). Other fingerprints
+    (~tNl - network-level messsages, sz - statistics) were UNCHANGED.
+    
+    Fingerprints updated.
+
+commit e49efeeab604ae820ba328d8bb171637c4e823f8
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Jan 31 09:08:14 2026 +0100
+
+    NrPhyUe: refactoring: remove default args from forceHandover()
+
+commit f0b4ff96d9e226d5495f58c468c4467db3103915
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Jan 30 23:14:27 2026 +0100
+
+    LtePhyUe: remove now-defunct self message handling functions
+    
+    triggerHandover, doHandover, also deleteOldBuffers()
+    
+    Moved finish() into HandoverController (it invokes deleteOldBuffers()).
+
+commit 32e4f5e19141aa23e24680f5cfe23ae74ab85c3d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Jan 31 17:06:30 2026 +0100
+
+    HandoverController: replace phy_->otherPhy with otherHandoverController_ pointer
+    
+    As otherPhy was only used for accessing the other stack's masterId and
+    invoking forcHandover() on its handoverController, both of which can be
+    done better with otherHandoverController_.
+    
+    Like:
+       phy_->otherPhy_->handoverController_->forceHandover(...);
+    became just:
+       otherHandoverController_->forceHandover(...);
+
+commit ccd1a2411f26982ca388b6ada385e9f263b9ab10
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Jan 31 22:10:03 2026 +0100
+
+    LtePhyEnb: variables renamed: bdc -> beacon
+
+commit c1622746b995646d6009f1cf448181b05842d6ce
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Jan 31 21:41:38 2026 +0100
+
+    CellInfo: parameter rename: broadcastMessageInterval -> beaconInterval - FINGERPRINT CHANGE!
+    
+    Breaks fingerprint! likely the parameter name travels in a packet.
+    
+    /simulations/nr/mec/singleMecHost/ -f omnetpp.ini -c BgGeneratorApp -r 0
+    (some fingerprint mismatch: actual '80c5-ffe4/tplx;2b81-2fcb/~tNl',
+    expected: 'a64d-8180/tplx;1cf9-34be/~tNl')
+
+commit 0bb5c31dad87ea778e0212a829f91bf361c2ca2c
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Jan 31 21:45:38 2026 +0100
+
+    LtePhyUe,HandoverController: method rename: handoverHandler() -> beaconReceived()
+
+commit cba290d9a63df7b22847f7f8114456a2b8ae8b8b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Jan 27 14:29:39 2026 +0100
+
+    LtePhyUe,etc: restore original member visibilities (protected)
+    
+    Some methods accessed from HandoverController needed to be moved into
+    the "public" section.
+
+commit 99cd528a0d7b5e357ee9d1241d218ce99a6d10fd
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Feb 1 11:53:27 2026 +0100
+
+    HandoverController: flattened methods
+    
+    The multiple variants of triggerHandover(), doHandover(),
+    deleteOldBuffer() were consolidated into one. Differences between
+    variants translated into "if" statements in merged code.
+
+commit 8c0eb213971b2d58504e155f8f966db165ff3327
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Feb 1 13:10:45 2026 +0100
+
+    HandoverController: added hysteresisFactor NED parameter
+
+commit a62677d84e8c704eff950d258237392450b7dd8b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Feb 1 13:15:20 2026 +0100
+
+    HandoverController: rename: handoverDetachment_ --> handoverDetachmentTime_, add as NED params
+
+commit b4ce2ecd828952ce45070b171fe47673ff72bf34
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 2 07:39:23 2026 +0100
+
+    HandoverController: eliminate 1 dynamic_cast after method variants being merged
+
+commit 46440243b2c6df3d0c70ed5946aab1386ef367af
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 2 07:58:00 2026 +0100
+
+    HandoverController,LtePhy: rename masterId -> servingNodeId
+    
+    "Master" should only be used in the context of DC (Dual Connectivity)
+    scenarios.
+
+commit 6a1dab909d5722ec6ae8d8f9d05abe35c5d05114
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 2 10:26:38 2026 +0100
+
+    LtePhy: remove unused member connectedNodeId_
+
+commit 333b42a254bd88662a0d0bbbbda4c35805401667
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 2 11:05:51 2026 +0100
+
+    LtePhy: remove unused coherenceTime(), carrierFrequency_
+
+commit 59fcc22a1f52f2b0bc819870cfdd2d9b3832a302
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 2 11:25:03 2026 +0100
+
+    HandoverController: simplification in doHandover()
+
+commit 3c9fac173d2c54eb0fa8602a50175470ccf8a363
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 2 11:48:21 2026 +0100
+
+    HandoverController: updateHysteresisTh() -> updateHysteresisThreshold(), and make it do what the name says
+
+commit 0719ab08e120a1c3958c176d0c738e807d497833
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 2 12:02:50 2026 +0100
+
+    HandoverController: clean up public-private - HandoverController declared DONE
+
+commit 8de0aa68af0e9e78d0ec2a9ced7fcfa566e59451
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 2 12:25:16 2026 +0100
+
+    LtePhy: getAmcModule() moved into HandoverController
+    
+    LtePhyUeD2D::finish() was redundant (same code already in
+    HandoverController), removed.
+
+commit bb3a3604f090619703601c657c42c2fd3a67df1a
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 2 14:14:25 2026 +0100
+
+    LtePhy: Remove unused mac_ pointer
+
+commit 36632ec5838c1c15eef36abafd7eb1d3ded7298d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Feb 3 08:30:19 2026 +0100
+
+    HandoverController: added isNr parameter to remove kludge
+
+commit 67bbb2a5af7b83fcd2d9edfdfe02eba212dbe5a9
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Feb 3 12:47:00 2026 +0100
+
+    Ip2Nic: receive data via X2 via gates, not method call (receiveTunneledPacketOnHandover())
+    
+    The introduced extra event changes "tplx" fingerprints of some simulations,
+    but not the "~tNl" or "sz" fingerprints.
+    
+    This change is needed to enable further refactorings.
+
+commit eaf758107383bcd7f6b85116c52ea1cb829bdd14
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Feb 3 13:11:26 2026 +0100
+
+    LteX2Manager: added log statement
+
+commit 1a7d43d8812bd4054a91c6be470a21d2d792cff3
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 9 08:25:53 2026 +0100
+
+    Ip2Nic: node deregistration moved to Rrc
+
+commit 6a3e7df2ff3026028d1693e9834cf23df8148cf4
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 4 20:12:56 2026 +0100
+
+    Ip2Nic: factored out handover-related code into HandoverPacketFilter
+    
+    It is a new module above Ip2Nic.
+    
+    Refactoring steps:
+    1. Rename: Ip2Nic -> HandoverPacketFilter, updated tplx fingerprints
+       that changed due to submodule renaming
+    2. Added back ip2nic submodule below HandoverPacketFilter with dummy
+       implementation that just passes packets. (tplx fingerprint change
+       due extra do-nothing events)
+    3. Moved base station DL "ip2nic" processing logic from HandoverPacketFilter
+       back into Ip2Nic -- fingerprints OK
+    4. Moved UE DL "ip2nic" processing logic from HandoverPacketFilter back
+       into Ip2Nic. NOTE: KLUDGE was required (Ip2Nic needs to copy the
+       up-to-date values of servingNodeId from HandoverPacketFilter, because
+       it is what gets notified about handovers.) -- fingerprints OK
+    5. Cleanup; remove HandoverPacketFilter submodule from the "up" path.
+       Update fingeprints (only tplx changed).
+
+commit cb83d4dfe735d5a946e6c5cb884931ce4194b1e0
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 7 20:59:11 2026 +0100
+
+    HandoverPacketFilter: split into UE and Enb parts
+    
+    As code and data are totally disjoint for the two processing.
+    Essentially it was "two independent modules packaged together".
+
+commit 1ea6d5a9ee39da636cd15b20c7c82efe0697a1ba
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Feb 8 18:00:52 2026 +0100
+
+    HandoverPacketFilter,Ip2Nic: Cleanup
+    
+    redundant includes removed
+    ip2nic init changes - todo explain
+    refactor kludge
+    reorder methods, remove redundant take()
+    ip2nic cleanup
+    cosmetics
+
+commit d834ae9fcf6402b1b7b53e0b4aacd1d62d571c28
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 9 08:56:18 2026 +0100
+
+    HandoverPacketFilterUe: refactor expressions
+
+commit 936450dc2f5803bda414340d1f1ac5aa155111d1
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 9 10:49:07 2026 +0100
+
+    HandoverPacketFilterUe/Enb: rename to HandoverPacketHolderUe/Enb, update fingerprints
+    
+    Only "tplx" fingerprints changed, which is expected due to the "p"
+    (path) ingredient.
+
+commit 303232de792ea5c8ad5c6980d0a9ce5e7dc27831
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 12 21:58:01 2026 +0100
+
+    Ip2Nic, HandoverPacketHolderEnb: added NED docu
+
+commit 5195bd261f665809af6b6f4ae974c08358f6bd41
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 9 13:19:12 2026 +0100
+
+    SplitBearersTable: turned into std::ordered_map
+
+commit 00d21857c56db1a20e3ddb41bcb33d421533c692
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 9 13:27:30 2026 +0100
+
+    HandoverController: forceHandover() remove unused args
+
+commit de5ebb3638c93e13e73b189fc9f71d1fd81caf92
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Feb 10 15:02:30 2026 +0100
+
+    eNodeB: connect gtpUser and trafficFlowFilter to at instead of nl
+    
+    To the "at" dispatcher instead of the "nl" dispatcher
+    
+    No fingerprint change. No change in operations -- packets find their way
+
+commit 5dc1f1bc60eb5e3f0e157530f75e4b5c58ab9494
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Feb 10 22:09:30 2026 +0100
+
+    HandoverManager,DualConnManager: pass packets to/from stack via gates NOT method call
+    
+    HandoverPacketHolderEnb -> LteHandoverManager, forwardDataToTargetEnb()
+    NrPdcpEnb -> DualConnectivityManager, forwardDataToTargetNode()
+    etc.
+    
+    Changes tplx fingerprints due to the introduction of additional events.
+
+commit f3aeebb41574fd16758f21d3cba644e07a158635
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 11 11:21:47 2026 +0100
+
+    test: tplx fingerprints updated (to be expected, because prev commit introduced new events)
+    
+    Failures:
+      /simulations/lte/tutorial/ -f omnetpp.ini -c SingleCell-DL -r 0  (some
+    fingerprint mismatch: actual '0c62-a676/tplx', expected:
+    'b8ac-e567/tplx')
+      /simulations/lte/tutorial/ -f omnetpp.ini -c SingleCell-UL -r 0  (some
+    fingerprint mismatch: actual '48bd-29b9/tplx', expected:
+    '9b84-25ff/tplx')
+      /simulations/nr/dualConnectivity_multicell/ -f omnetpp.ini -c
+    DoubleConnection-CBR-DL -r 0  (some fingerprint mismatch: actual
+    '52d9-986b/tplx', expected: '2059-33d3/tplx')
+      /simulations/nr/dualConnectivity_multicell/ -f omnetpp.ini -c
+    DoubleConnection-CBR-UL -r 0  (some fingerprint mismatch: actual
+    '3ab2-a6ad/tplx', expected: '66e0-ddeb/tplx')
+      /simulations/nr/dualConnectivity_multicell/ -f omnetpp.ini -c
+    SingleConnection-CBR-DL -r 0  (some fingerprint mismatch: actual
+    'af2f-ea60/tplx', expected: 'd1f6-8d2e/tplx')
+      /simulations/nr/dualConnectivity_multicell/ -f omnetpp.ini -c
+    SingleConnection-CBR-UL -r 0  (some fingerprint mismatch: actual
+    'e3e2-1561/tplx', expected: 'c34a-a97c/tplx')
+      /simulations/nr/dualConnectivity_multicell/ -f omnetpp.ini -c
+    SplitBearer-CBR-DL -r 0  (some fingerprint mismatch: actual
+    '08bb-8c88/tplx', expected: 'c8d6-ad8c/tplx')
+      /simulations/nr/dualConnectivity/ -f omnetpp.ini -c
+    DualConn-MasterPlusSecondary-UL -r 0  (some fingerprint mismatch: actual
+    '46ea-41f9/tplx', expected: '7980-c229/tplx')
+      /simulations/nr/dualConnectivity/ -f omnetpp.ini -c
+    DualConn-SplitBearer-DL -r 0  (some fingerprint mismatch: actual
+    'b432-dd97/tplx', expected: '05eb-6211/tplx')
+      /simulations/nr/dualConnectivity/ -f omnetpp.ini -c
+    DualConn-SecondaryOnly-UL -r 0  (some fingerprint mismatch: actual
+    '6d51-101f/tplx', expected: 'c0c9-5724/tplx')
+      /simulations/nr/dualConnectivity/ -f omnetpp.ini -c
+    DualConn-MasterPlusSecondary-DL -r 0  (some fingerprint mismatch: actual
+    '3cb2-ae59/tplx', expected: '66a4-fb6f/tplx')
+      /simulations/nr/dualConnectivity/ -f omnetpp.ini -c
+    DualConn-SecondaryOnly-DL -r 0  (some fingerprint mismatch: actual
+    '894f-006c/tplx', expected: 'a9fc-b520/tplx')
+      /simulations/nr/dualConnectivity/ -f omnetpp.ini -c
+    DualConn-SplitBearer-UL -r 0  (some fingerprint mismatch: actual
+    'ead4-2c8c/tplx', expected: 'e4f7-79ca/tplx')
+      /simulations/nr/test_tdd/ -f omnetpp.ini -c TestTdd -r 0  (some
+    fingerprint mismatch: actual 'bd2d-6025/tplx', expected:
+    'e40d-9cb2/tplx')
+      /simulations/nr/test_numerology/ -f omnetpp.ini -c MultiCell-CBR-DL -r
+    0  (some fingerprint mismatch: actual '0c58-ff16/tplx', expected:
+    'ca55-4bc3/tplx')
+      /simulations/nr/test_numerology/ -f omnetpp.ini -c SingleCell-CBR-DL
+    -r 0  (some fingerprint mismatch: actual '4437-7a0c/tplx', expected:
+    '32a8-ca02/tplx')
+      /simulations/nr/test_numerology/ -f omnetpp.ini -c MultiCell-CBR-UL -r
+    0  (some fingerprint mismatch: actual '711b-b4e0/tplx', expected:
+    '91ab-d85f/tplx')
+      /simulations/nr/test_numerology/ -f omnetpp.ini -c SingleCell-CBR-UL
+    -r 0  (some fingerprint mismatch: actual '73ca-47fb/tplx', expected:
+    '559e-b363/tplx')
+
+commit b89439bb42d0d7d95048f781e26c400d12432937
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 11 10:12:24 2026 +0100
+
+    Ip2Nic,Pdcp: inout gates split to input+output
+
+commit e20f246a3af6e831c0e41be8ccdca5bf1253c072
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 11 14:50:54 2026 +0100
+
+    LteX2Manager: inout gates split to input+output
+
+commit bcdfed85c21922df4a26b35478f06b10bbbc6fd7
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 12 11:47:35 2026 +0100
+
+    Upf,PgwStandard: derive from ApplicationLayerNodeBase, update fingerprints
+    
+    Only "sz" (statistics) fingerprints change, because the "udp" submodule
+    now comes from the base NED type and that changes its position in the
+    submodule tree, causing its statistics to move within the sca file.
+    That is all the difference. The statistics results are the same.
+
+commit 5bbb8e2bfc915a673f0012e4bfbb66227e705597
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 13 09:04:41 2026 +0100
+
+    test/fingerprints: added "tilx" fingerprints (resistant to module renames)
+    
+    +6s execution time on my computer.
+
+commit 09af21e7083d2bd8a15ccaed5a3357d4a18e9aa2
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 12 12:53:11 2026 +0100
+
+    Upf,Pgw,etc: gate rename: filterGate -> dnPppg
+    
+    The "filterGate" is actually a PPP port (hence "pppg") that connects to
+    the Internet, or in general, to the Data Network ("dn") in 3GPP
+    terminology.
+
+commit 3aab936b4c7d3840bd31c2838190a2adb83b5434
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 12 12:54:49 2026 +0100
+
+    Upf,PgwStandard: submodule rename: pppIf -> dpPpp; update fingerprints
+    
+    "dn" = Data Network
+    
+    Only "tplx" fingerprints change, which is expected due to the name change.
+    Especially, "tilx" fingerprints (which use module id instead of name) are
+    unchanged
+
+commit a92d7008a0399539ded8b2ed74b3e75d40b9c1da
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Jan 30 09:02:50 2026 +0100
+
+    .cascade: adding rules
+
+commit 4accff07c73b7301333c6ecb9a2c890c46329981
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 13 13:50:16 2026 +0100
+
+    Pdcp: Move code dispatching packets by RLC modes into RLC, as RlcUpperLayerDispatcher module
+    
+    This new module will replace the dispatch logic currently in PDCP.
+    It dispatches incoming packets from PDCP to the appropriate RLC mode
+    (TM/UM/AM) based on the RlcType field in FlowControlInfo, and forwards
+    packets from RLC modes back to PDCP.
+    
+    Add RlcUpperLayerDispatcher to LteRlc compound module
+    
+    - Add upperLayerIn/upperLayerOut gates to LteRlc
+    - Add dispatcher submodule (RlcUpperLayerDispatcher)
+    - Connect dispatcher to TM/UM/AM modules internally
+    - Remove old TM_Sap/UM_Sap/AM_Sap gates (replaced by dispatcher)
+    
+    Update PDCP and NIC modules to use new RLC gate naming
+    
+    - Replace TM_Sap/UM_Sap/AM_Sap gates with rlcIn[]/rlcOut[] in PDCP
+    - Update ILtePdcp interface accordingly
+    - Update LteNicBase.ned connections to use pdcp.rlcOut/rlcIn and
+    rlc.upperLayerIn/Out
+    - Update NrNicUe.ned connections similarly
+    
+    Update PDCP C++ code to use new rlcIn/rlcOut gates
+    
+    - Replace SAP gate pointers with rlcInGate_/rlcOutGate_ in LtePdcpBase
+    - Remove RLC mode dispatch logic from sendToLowerLayer() - now handled
+    by RlcUpperLayerDispatcher
+    - Update NrPdcpUe to use nrRlcOutGate_ instead of individual SAP gates
+    
+    updated tplx, tilx fingerprints
+
+commit 661e264a37ec44029f7854434a19415422fa4012
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 13 14:21:52 2026 +0100
+
+    Pdcp: Change PDCP-RLC gates from arrays to explicit scalar gates
+    
+    These gates are used in DC setups, for the different "legs" of PDCP.
+    
+    Change rlcIn[]/rlcOut[] to scalar rlcIn/rlcOut.
+    
+    This makes the gate semantics explicit:
+    - rlcIn/rlcOut: LTE RLC connection (always present)
+    - nrRlcIn/nrRlcOut: NR RLC connection (only in NrPdcpUe for Dual
+    Connectivity)
+
+commit 87e25aa2ceaa21b3733843d03d3f495fcf963e8c
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 13 14:45:17 2026 +0100
+
+    Rename RLC-MAC gates from MAC_to_RLC/RLC_to_MAC to macIn/macOut
+    
+    - Update LteRlcMux.ned and LteRlcMux.cc
+    - Update LteRlc.ned gates and internal connections
+    - Update LteNicBase.ned and NrNicUe.ned connections (RLC side only)
+    - Fix UmTxEntity.cc and AmRxQueue.cc gate references
+    
+    Note: MAC module gates retain their original names (MAC_to_RLC/RLC_to_MAC)
+
+commit 46ea1ac8420d7ed8a845545b9261e68c56181ed6
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 13 14:51:40 2026 +0100
+
+    Rename MAC-RLC gates from RLC_to_MAC/MAC_to_RLC to upperLayerIn/upperLayerOut
+    
+    - Update ILteMac.ned and LteMacBase.ned gate definitions
+    - Update LteMacBase.cc gate references and log messages
+    - Update LteNicBase.ned and NrNicUe.ned connections
+
+commit 44440766b9bc84257177a5e76fbcb542351f1f14
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 13 15:02:28 2026 +0100
+
+    Added .windsurfrules to ensure .cascade files are read
+    
+    Based on consultation with Windsurf
+
+commit fbbc48cefbf4ecd0cd07ee9bc3d580d3ac2ff79d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 12:52:41 2026 +0100
+
+    PDCP: flattening analyzePacket(), step1
+
+commit ad4a69e560cc3e3f83afdfff79c1934dfe2c9d3f
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 09:35:10 2026 +0100
+
+    Factor out common prefix from analyzePacket if-ladder branches
+
+commit a9e4816570e18a246065fa4d7553a24d08a704b1
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 10:05:19 2026 +0100
+
+    Add isNR_ and hasD2DSupport_ boolean flags to LtePdcpBase, set in subclass initialize()
+
+commit e1eee2ff6ef5b34b9a3f216d20c2a565ba58a4a0
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 10:08:48 2026 +0100
+
+    Replace dynamic_cast if-ladder with isNR_/hasD2DSupport_/isEnb boolean conditions in analyzePacket
+
+commit 9733a4efee656dd11e4e6b21ca84c5a62eaeca18
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 12:14:54 2026 +0100
+
+    Compress analyzePacket: unify D2D UE blocks via localNodeId, unify ENB D2D peers, common LCID, early return for base
+
+commit 5f9e4fe334e3ff9b4f92d79876f941777f4c3238
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 15:07:46 2026 +0100
+
+    Flatten getNextHopNodeId() into LtePdcpBase using isNR_/hasD2DSupport_ booleans, remove all overrides -REAL
+
+commit b165880c1222985337128f01e1643b578eef5887
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 14:16:37 2026 +0100
+
+    Step 6a: Move analyzePacket() call from PDCP::fromDataPort() to Ip2Nic (Ip2Nic calls pdcp_->analyzePacket())
+
+commit ac85f1b3621dd438809aa91585ee84306202ed4e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 14:21:13 2026 +0100
+
+    Step 6b: Add mirrored flags to Ip2Nic (via dynamic_cast of PDCP), ASSERT they match PDCP's values
+
+commit 9867fae73ec98c4fca26d132ae1dcec6540f58ef
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 14:41:36 2026 +0100
+
+    Step 6c: Copy analyzePacket + all helpers into Ip2Nic, switch to local call (PDCP code now dead)
+
+commit 901a117c6b5c58cbd8a8575a14b4a349dfe354ac
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 14:47:07 2026 +0100
+
+    Step 6d: Remove dead analyzePacket + helpers from PDCP, clean up Ip2Nic (remove pdcp_ pointer, ASSERTs, PDCP includes)
+
+commit d0cf36725c5b95014642871cfaa407df57b27c6b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 14:54:13 2026 +0100
+
+    Step 6e: Move RLC type NED params from LtePdcpBase.ned to Ip2Nic.ned, remove dead RLC members from PDCP
+
+commit 865e06dd93f754b2975e2a5b7349b50292685a1d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 15:04:43 2026 +0100
+
+    expanded .cascade
+
+commit ed537b5dd88f1e76e9b2038925dc2ad35797e64a
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 15:28:54 2026 +0100
+
+    Eliminate IpFlowInd tag step 1: pass srcAddr/destAddr/tos as params to analyzePacket, remove printControlInfo - REAL
+
+commit 74f503a18b3f10b85c96575a019c7be810fb2dab
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 15:24:54 2026 +0100
+
+    Eliminate IpFlowInd tag step 2: stop creating tag, remove ASSERT in AmRxQueue, remove IpFlowInd from .msg
+
+commit 98c65f5d0b69643bfa79a8d0477558e5728231ac
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 15:32:34 2026 +0100
+
+    .cascade update
+
+commit 795deb5032ac87f7ec8c2245430718ec36da54f1
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 20:59:31 2026 +0100
+
+    Flatten PDCP step A1: move dualConnectivityEnabled_, nrNodeId_, nrRlcOutGate_ to LtePdcpBase
+
+commit 309baf8072c4c5bdb77a37b06b815bfb1f5e3d96
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 21:01:01 2026 +0100
+
+    Flatten PDCP step A2: merge NrPdcpEnb::fromLowerLayer into base class
+
+commit 6197293cfcd90d6adeab5707a1025f8c38359e45
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 21:19:35 2026 +0100
+
+    Flatten PDCP step A3: merge NrPdcpUe::sendToLowerLayer into base class
+
+commit 87f7b150807cf7c6e04bdb2040f4076a7f0a30c2
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 21:21:49 2026 +0100
+
+    Flatten PDCP step A4: merge handleMessage (D2D mode switch + DC gate) into base class
+
+commit 28f5af0627b07c18cabde07c4cf198c8f83312c3
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 21:24:56 2026 +0100
+
+    Flatten PDCP step A5: merge deleteEntities into base, move activeUeUL to base, remove dead handleControlInfo
+
+commit 937f028ca62b2251db55665fa8047b0bba2516f6
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 21:26:58 2026 +0100
+
+    Flatten PDCP step A6: merge all subclass initialize() into base class
+
+commit dc68b34f09d3106a5f11950de5f730eaad01a5c8
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 21:32:10 2026 +0100
+
+    Flatten PDCP step A7: move forwardDataToTargetNode/receiveDataFromSourceNode to base, remove isDualConnectivityEnabled/getNrNodeId overrides
+
+commit 3008dadb6af2accebf121d12cbad2bb1e88d097e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 21:43:10 2026 +0100
+
+    Flatten PDCP step A7+B1: remove remaining virtual overrides; add isNR/hasD2DSupport NED params
+
+commit 948750bdd0ed5bc3b9f7903dc1d8e5e952b86d5f
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 22:51:23 2026 +0100
+
+    Flatten PDCP step B2: all @class point to LtePdcpBase; fix external casts/refs (HandoverController, BaseStationStatsCollector, PacketFlowObserverEnb, LteMacUeD2D, Ip2Nic)
+
+commit 4344029c22723c35e28bb5efd3175a56c0bf6ed5
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 22:55:48 2026 +0100
+
+    Flatten PDCP step B3: rename LtePdcpBase -> LtePdcp everywhere (class, NED file, header guards, all references)
+
+commit d71d53bdd2cc0207c248ea66fda27983a174b346
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 21 23:04:20 2026 +0100
+
+    Flatten PDCP step B4: delete empty C++ subclass files, remove Define_Module stubs
+
+commit cf09163e62f4776252d2dc3dc72d12ae18381bbf
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Feb 22 20:34:39 2026 +0100
+
+    lcid -> drbId in FlowControlInfo
+    
+    This is for more compliance with 3GPP terminology. DRB IDs and LCIDs are
+    1:1 (for data traffic), but PDCP and RLC use DRBs, and MAC uses LCID.
+    
+    Squashed commit of the following:
+    
+        In the code, drbId will be mapped to lcid at the upper edge of MAC.
+    
+        Step 1: Add DrbId type alias in LteCommon.msg and fix setDrbId cplusplus block
+    
+        Step 2: Update PDCP layer - rename lcid_ to drbId_, lcidTable_ to drbIdTable_, lookupOrAssignLcid to lookupOrAssignDrbId
+    
+        Step 3: Update RLC layer - rename lcid variable to drbId in UmTxEntity.cc
+    
+        Step 4: Update RRC layer - rename lcid variables to drbId in Rrc.cc
+    
+        Step 5: Update PacketFlowObserver - rename lcid parameters and variables to drbId
+    
+        Step 6: Update MAC interface - use drbId variable names at MAC boundary
+    
+        Step 7: Update remaining files - rename lcid_ to drbId_ in PDCP entities, update log messages
+    
+        Step 8: Add NodeDrbId class for PDCP/RLC layers
+    
+        Step 9: Replace MacCid with NodeDrbId in PDCP layer
+    
+        Step 11: Add explicit drbIdToLcid/lcidToDrbId mapping methods in LteMacBase
+    
+        Step 12: Use drbIdToLcid()/lcidToDrbId() mapping methods wherever drbId <-> lcid assignment occurs
+    
+        Step 13: Refactor pushSdu/popSdu to take/return lcid explicitly
+    
+        Step 14: Replace MacCid with NodeDrbId in RLC layer
+    
+        Step 16: Fix fingerprint mismatch - revert module naming to original format
+    
+        Step 15: Make drbIdToLcid/lcidToDrbId non-static, update RRC calls
+    
+        NodeDrbId renamed to DrbKey
+    
+    Reimplemented the analog changes from topic/drbid-squashed on top of
+    topic/pdcp, which had dramatically restructured the PDCP layer.
+    
+    Strategy: instead of resolving massive rebase conflicts, applied the
+    find/replace renames directly to the topic/pdcp versions of affected files.
+    
+    Changes applied via patch (no conflicts):
+    - LteCommon.msg/h/cc: add DrbId typedef, DrbKey class, ctrlInfoToNodeDrbId()
+    - LteControlInfo.msg: lcid field -> drbId field
+    - MAC layer: drbId variable names at MAC boundary, drbIdToLcid/lcidToDrbId
+    - RLC layer: lcid -> drbId variable names
+    - RRC layer: lcid -> drbId variable names
+    - PacketFlowObserver: LogicalCid->DrbId, hasLcid->hasDrbId, etc.
+    - LteRxPdcpEntity: lcid_ -> drbId_
+    - NrTxPdcpEntity: getLcid() -> getDrbId() in EV logs
+    
+    Changes reimplemented manually (PDCP/Ip2Nic restructured by topic/pdcp):
+    - LtePdcp.h: MacCid->DrbKey, cid->id in entity maps and method signatures
+    - LtePdcp.cc: MacCid->DrbKey, getLcid()->getDrbId(), cid->id throughout
+    - Ip2Nic.h: lcid_->drbId_, lcidTable_->drbIdTable_, LogicalCid->DrbId
+    - Ip2Nic.cc: lookupOrAssignLcid->lookupOrAssignDrbId, setLcid->setDrbId
+
+commit 90792912713321e685d2b7ce7017d4d23c6d8eb7
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 13 22:05:36 2026 +0100
+
+    Refactor: Extract C++ types from LteCommon.msg into LteTypes.h
+    
+    Move MacNodeId, MacCid, DrbKey classes and related typedefs from the
+    cplusplus {{ }} block in LteCommon.msg to a proper header file LteTypes.h.
+    This improves code organization and IDE support.
+    
+    Add inet::GHz include to LteTypes.h, remove redundant cplusplus blocks from LteCommon.msg
+    
+    Replace LteCommon_m.h with LteTypes.h in HandoverController.h
+    
+    Move FeedbackRequest and RemoteUnitPhyData to their respective MSG files
+    
+    - FeedbackRequest moved from LteCommon.msg to LteControlInfo.msg
+    - RemoteUnitPhyData moved from LteCommon.msg to LteAirFrame.msg
+    - Added LteControlInfo import to LteControlInfoTags.msg
+    - Removed unused RemoteUnitPhyDataVector typedef from LteCommon.h
+    
+    LteCommon.msg now only contains @existingClass declarations for types
+    defined in LteTypes.h, plus the GHz MSG class declaration.
+    
+    Remove LteCommon_m.h from LteCommon.h includes
+    
+    Replace MSG import of inet.common.geometry.Geometry with direct C++ include
+    of Geometry_m.h in both LteCommon.msg and LteCommon.h. This allows removing
+    the LteCommon_m.h include from LteCommon.h since it no longer provides any
+    types needed by users of LteCommon.h.
+
+commit 950c9c8468ea6888ed03d340eeb35645a1cda5c6
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 13 22:39:16 2026 +0100
+
+    .cascade
+
+commit 73e9e3749afe36c0747d1326ae5fb0ba73322082
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 13 23:02:30 2026 +0100
+
+    Add SIMU5G_STRONG_TYPEDEF macro for MacNodeId
+
+commit c55173ed5702c4c38b43d5a07a402b8c2d8ea45b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 14 13:10:54 2026 +0100
+
+    Change LteControlInfo.direction from unsigned short to Direction enum
+    
+    - Update ConnectionKey.direction to use Direction enum
+    - Update RtxNotification.direction to use Direction enum
+    - Update TrafficDirectionInd.direction to use Direction enum
+    - Change local variables from short/int to Direction type
+    - Remove redundant (Direction) casts throughout codebase since
+      getDirection() now returns Direction directly
+
+commit 8a488f66bd039bd7c05c6440b433c16572bf55ce
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 14 13:27:04 2026 +0100
+
+    Replace BsrType enum with LogicalCid constants
+    
+    - Remove BsrType enum from LteCommonEnum.msg
+    - Add constexpr LogicalCid constants SHORT_BSR, D2D_SHORT_BSR,
+      D2D_MULTI_SHORT_BSR in LteTypes.h
+    - Update LteMacUeD2D.cc and NrMacUe.cc to use LogicalCid instead of BsrType
+    
+    These values are special LogicalCid values used for Buffer Status Reports,
+    so defining them as LogicalCid constants is more semantically correct.
+
+commit 7ad44c65b4a720d4d72e023f601bf415cc03dbf0
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 14 14:04:32 2026 +0100
+
+    Use DrbId and LogicalCid types in MSG field declarations
+    
+    - FlowControlInfo.drbId: uint16 -> DrbId
+    - UserControlInfo.packetLcid: uint16 -> LogicalCid
+    - LogicalConnectionInd.lcid: uint16 -> LogicalCid
+    
+    This improves type safety and consistency with the existing
+    MacNodeId pattern in MSG files.
+
+commit 6a2dd4705226c7e6ac2831726a5d0972a02eefc9
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 14 14:23:13 2026 +0100
+
+    Apply SIMU5G_STRONG_TYPEDEF macro to LogicalCid and DrbId types
+    
+    - Applied SIMU5G_STRONG_TYPEDEF to LogicalCid and DrbId in LteTypes.h
+    - Updated LteCommon.msg declarations with @existingClass, @primitive, num() conversions
+    - Updated MacCid and DrbKey classes to use num() for strong typedef operations
+    - Fixed all compilation errors from strong typedef enforcement:
+      - Removed explicit = 0 defaults in MSG files (handled by @defaultValue)
+      - Added explicit constructors LogicalCid(0), DrbId(0) where needed
+      - Used num() for integer operations and conversions
+      - Fixed DrbId increment to use DrbId(num(drbId_) + 1)
+      - Updated PacketFlowObserver files for LogicalCid/DrbId conversions
+    - Changed LteMacPdu.msg lcid[] array from int8_t to LogicalCid
+
+commit 269d507be6a7e3be9173492778eae600e276d6a2
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 14 15:03:21 2026 +0100
+
+    ctrlInfoToNodeDrbId -> ctrlInfoToDrbKey
+
+commit fbc95c976ca194954178624a7ddf6f2481d22211
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 14 15:08:02 2026 +0100
+
+    Move ctrlInfoToMacCid to LteMacBase, rename ctrlInfoToNodeDrbId to ctrlInfoToDrbKey
+    
+    - Moved ctrlInfoToMacCid from LteCommon to LteMacBase as member function
+    - The function now uses drbIdToLcid() for proper DrbId->LogicalCid conversion
+    - Renamed ctrlInfoToNodeDrbId to ctrlInfoToDrbKey for clarity
+    - Updated all callers in RLC and RRC layers
+
+commit 421c964fbf3a3e4d7619be059a1a952670606118
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 14 15:54:04 2026 +0100
+
+    Add LCID_NONE and DRBID_NONE constants for invalid/uninitialized values
+    
+    - Added LCID_NONE = LogicalCid(65535) and DRBID_NONE = DrbId(65535)
+    - Updated MacCid and DrbKey default constructors to use these constants
+    - Updated isEmpty() methods to check against these constants
+    - Updated MSG @defaultValue to use LCID_NONE and DRBID_NONE
+    - Kept LogicalCid(0) where 0 is intentionally used (background UE, BSR placeholder)
+
+commit 259bdc7a03f5253a159e88fc727511c8745239c4
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Feb 15 09:37:04 2026 +0100
+
+    updated .windurfrles
+
+commit c851f0070768ba615be7a7b1da2dccc9cd3fec2f
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 16 20:15:49 2026 +0100
+
+    .cascade
+
+commit 3e7969200d33bb8efa405e1badce2d15c3e20a3d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 09:27:45 2026 +0100
+
+    LteRlcUm: add overdue assertion that no entities are created on the fly
+    
+    Creating is done from recently introduced RRC.
+
+commit 59f359cf1f2214de41a0bcbb6b1b07ee0a2f62b2
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 16:29:38 2026 +0100
+
+    Mac: turn into compound module (we want to add submodules into it)
+
+commit 806540ee8266e974ea37237ee84051d3b21ac23b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 16:41:41 2026 +0100
+
+    Add dummy AMC submodule to MAC compound module (NED + inert C++ wrappers)
+
+commit 423667ed3aa0416c8ece1510a11a21dec07172f7
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 17:01:21 2026 +0100
+
+    Update tilx fingerprints after adding AMC submodule to MAC
+
+commit 5413328c85da5595f9f7d8431c21b6e43c6e4c38
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 17:08:05 2026 +0100
+
+    Convert LteAmc/NrAmc to cSimpleModule, MAC uses submodule instead of new/delete
+
+commit ff0b7b4b84b15c84fb0e0ba6ef675751a99ce856
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 17:20:13 2026 +0100
+
+    AMC does its own initialization via initialize(int stage) at INITSTAGE_SIMU5G_BINDER_ACCESS
+
+commit 45627862b7fce9af34b5555bd4930af35bbecfeb
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 17:39:46 2026 +0100
+
+    Add dummy scheduler submodules (DL + UL) to MAC NED structure
+
+commit c1a68a61757fb277077c9a69b536b2512fd1fd02
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 17:43:27 2026 +0100
+
+    Update tilx fingerprints after adding scheduler submodules to MAC
+
+commit c4a207d3c6f776bd0449adbd5d8644e2af103021
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 17:48:06 2026 +0100
+
+    Convert DL+UL schedulers to cSimpleModule, MAC uses submodules instead of new/delete
+
+commit 30ec85e66b2d26accfd730183f8a3318732a4f7e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 17:53:39 2026 +0100
+
+    Schedulers do their own initialization via initialize(int stage) at INITSTAGE_SIMU5G_AMC_SETUP
+
+commit c3c1c20f63d1b53552438f852060433edcf6034b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 18:44:43 2026 +0100
+
+    Add WATCH macros for AMC and scheduler member variables
+
+commit eee873b0fbf12907f39532ce7cf7361d7f5cf5d8
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 19:35:39 2026 +0100
+
+    Add operator<< for McsTable and WATCH macros for MCS tables in AMC
+    
+    Note: currently there is no better solution than this 1-liner; there is no
+    WATCH_ARRAY in omnet++
+
+commit bbb89f58f87b3da446369ffeead0b3377982c02f
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Feb 23 21:08:40 2026 +0100
+
+    .cascade update
+
+commit 4bba93c7eaf6d497708dd9fd78bf0d344e8860bb
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Feb 24 19:44:02 2026 +0100
+
+    Add empty pass-through TechnologyDecision module above Ip2Nic
+
+commit 81b9aad59911eecbea42a0d836c851d87e9e46b7
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Feb 24 19:57:14 2026 +0100
+
+    Update fingerprints for TechnologyDecision pass-through module (tplx+tilx changes)
+
+commit 44b27c7080160ae6c3d027cc0adbb0f3fb616dcf
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Feb 24 19:59:25 2026 +0100
+
+    Move markPacket() call from Ip2Nic to TechnologyDecision
+
+commit 1e977a453a4f1f0dd2a0debd62f184c7873db167
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 25 20:32:27 2026 +0100
+
+    Add ITechnologyDecision interface, make technologyDecision submodule type parametric
+
+commit 24b3a4f25d8b4ff9626998a214df795931f8d2fd
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Feb 24 20:05:38 2026 +0100
+
+    Move markPacket() implementation and data fields from Ip2Nic to TechnologyDecision
+
+commit a4c5be896a7003cf681fde8e6bfca985a163c721
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 25 08:10:14 2026 +0100
+
+    TechnologyDecision: replace markPacket() with expr()-based dcUseNrCondition and ueUseNrCondition
+
+commit c9c29dc5d25e738c5ac629251191679f2491dcc7
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 25 13:18:15 2026 +0100
+
+    PacketFlowObserver signal refactoring: Step 0 - add wrapper structs, signal header, and observer NED params
+
+commit 66596975eff61c23683865b31742a3c5ef93e67d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 25 13:24:19 2026 +0100
+
+    PacketFlowObserver signal refactoring: Step 1 - PDCP signals (pdcpSduSent, pdcpSduSentNr, pdcpSduReceived)
+
+commit 3997455413f335abf115c87ddb8d5b3bfd44e154
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 25 14:04:45 2026 +0100
+
+    PacketFlowObserver signal refactoring: Step 2 - RLC signal (rlcPduCreated)
+
+commit 6cac926cfc72429591945ac0e2e104b32b12e4a7
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 25 14:16:23 2026 +0100
+
+    PacketFlowObserver signal refactoring: Step 3 - MAC signals (macPduInserted, macPduAcked, macPduDiscarded, rlcPduDiscarded, grantSent, ulMacPduArrived)
+
+commit 4a5eaf75a094faa48504080aed4544aae4051fed
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 25 14:22:08 2026 +0100
+
+    PacketFlowObserver signal refactoring: Step 4 - Cleanup (remove packetFlowObserver_ from MAC, dead code, NED params)
+
+commit 30b341f6aa0451eb940b3377f4a4eb31a222f4be
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 25 14:39:49 2026 +0100
+
+    PacketFlowObserver: wrap signal emissions with hasListeners() guards for runtime optimization
+    
+    Very minor saving in rumtime. Likely max 1-2%, if any.
+
+commit c2a56d86114ecc6bf59ccbee636bcea1a1ac38ca
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Feb 25 15:15:22 2026 +0100
+
+    Eliminate macPduInserted signal, pass const LteMacPdu* instead of Packet* for MAC PDU signals
+
+commit c2702dbfae45eb85c6185a843fd4ad3ccf9d56fc
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 26 17:21:09 2026 +0100
+
+    RLC/RRC: unify DrbKey derivation to use remote node convention
+    
+    Add ctrlInfoToTxDrbKey() and ctrlInfoToRxDrbKey() helpers that key by
+    destination (TX) or source (RX) node ID respectively, matching the
+    convention already used by PDCP. Update all RLC UM, RLC AM, and RRC
+    call sites to use the appropriate TX/RX variant instead of the old
+    ctrlInfoToDrbKey() which always keyed by UE ID.
+    
+    On the eNB side, both conventions produce the same key (UE is always
+    the remote). On the UE side, keys now use the remote base station ID
+    instead of the UE's own ID. No behavioral change since keys are only
+    used for internal map lookup.
+    
+    Remove obsolete ctrlInfoToDrbKey() — replaced by ctrlInfoToTxDrbKey/ctrlInfoToRxDrbKey
+
+commit cc3879e9fce894cad2bb8fcb10b317acaf314943
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 26 11:56:13 2026 +0100
+
+    PDCP: move code from main PDCP module into entities
+    
+    Move as much code into entities as possible. This is a squashed commit
+    of the following:
+    
+    * PDCP: move headerCompressedSize param to entity NED files
+    
+    Entities now read headerCompressedSize from their own NED param instead
+    of reaching into pdcp_->par(). The root module sets the param at entity
+    creation time. No behavioral change.
+    
+    * PDCP: give entities their own nodeId_ and binder_ members
+    
+    Entities now initialize nodeId_ and binder_ independently from the same
+    sources as the root module. ASSERTs verify equality with the root
+    module's values. No behavioral change.
+    
+    * PDCP: give NR entities their own dualConnectivityEnabled_ flag
+    
+    NrTxPdcpEntity and NrRxPdcpEntity now initialize
+    dualConnectivityEnabled_ independently from the NIC param. ASSERTs
+    verify equality with the root module's value. No behavioral change.
+    
+    * PDCP: move toDataPort() logic into RxEntity, add sendToUpperLayer()
+    thin wrapper
+    
+    RxEntity now adds the PacketProtocolTag itself before calling the new
+    sendToUpperLayer() method on the root module. sendToUpperLayer() is a
+    thin wrapper that just does send() + signal emission. NrRxPdcpEntity
+    also uses its own dualConnectivityEnabled_ flag instead of
+    pdcp_->isDualConnectivityEnabled(). No behavioral change.
+    
+    * PDCP: move sendToLowerLayer() routing logic into
+    TxEntity::deliverPdcpPdu()
+    
+    Add sendToRlc() and sendToNrRlc() thin wrappers on the root module.
+    LteTxPdcpEntity::deliverPdcpPdu() now calls sendToRlc() directly.
+    NrTxPdcpEntity::deliverPdcpPdu() handles NR UE dual-path routing (NR vs
+    LTE RLC) using its own flags, including nrNodeId_ for source ID
+    rewriting. eNB path also uses entity-local dualConnectivityEnabled_ and
+    binder_. No behavioral change.
+    
+    * PDCP: move forwardDataToTargetNode() X2 tag logic into NrTxPdcpEntity
+    
+    NrTxPdcpEntity now adds the X2TargetReq tag itself and calls the new
+    sendToX2() thin wrapper on the root module. No behavioral change.
+    
+    * PDCP: remove friend declarations and verification ASSERTs
+    
+    Entities now use only public API (sendToUpperLayer, sendToRlc,
+    sendToNrRlc, sendToX2) and their own local members. All friend class
+    declarations removed from LtePdcp. Temporary verification ASSERTs
+    removed. No behavioral change.
+    
+    * PDCP: remove dead toDataPort() and duplicate include
+    
+    toDataPort() is no longer called — entities add PacketProtocolTag
+    themselves
+    and call sendToUpperLayer() directly. Also removed duplicate
+    LtePdcpPdu_m.h include in LteRxPdcpEntity.cc. No behavioral change.
+    
+    * PDCP: move signal emissions from thin wrappers into entities
+    
+    Tx entities now emit sentPacketToLowerLayer, pdcpSduSent, and
+    pdcpSduSentNr signals themselves. Rx entities emit
+    sentPacketToUpperLayer via a new deliverSduToUpperLayer() helper. The
+    thin wrappers on the root module are now pure take+send operations.
+    Added @signal declarations to entity NED files. sendToLowerLayer()
+    retains its own emissions for the DC path.
+    No behavioral change.
+    
+    * PDCP: move receivedPacket signals from root module into entities
+    
+    receivedPacketFromUpperLayer is now emitted by LteTxPdcpEntity in
+    handlePacketFromUpperLayer(). receivedPacketFromLowerLayer is now
+    emitted by LteRxPdcpEntity in handlePacketFromLowerLayer(). Added
+    @signal declarations to entity NED files. Fixed stale comment on thin
+    wrappers. No behavioral change.
+
+commit 69b11923688bb487187b9b37ce272bb328cdb236
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 26 20:38:25 2026 +0100
+
+    PDCP: introduce PdcpTxEntityBase and PdcpRxEntityBase abstract base classes
+    
+    Extract thin abstract base classes for TX and RX PDCP entities:
+    - PdcpTxEntityBase: defines virtual handlePacketFromUpperLayer()
+    - PdcpRxEntityBase: defines virtual handlePacketFromLowerLayer(), isEmpty()
+    
+    LteTxPdcpEntity and LteRxPdcpEntity now inherit from these bases
+    instead of directly from cSimpleModule. Maps in LtePdcp use base
+    pointers. This enables future bypass entity types without inheritance
+    from the full LTE entity classes.
+    
+    Pure refactoring, no behavioral change.
+
+commit 0b7de6d1fd0d5b73140f83393d038820a314596d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 26 20:44:43 2026 +0100
+
+    PDCP: add BypassTxPdcpEntity and BypassRxPdcpEntity for DC secondary
+    
+    Add bypass entity types that inherit from the new base classes:
+    - BypassTxPdcpEntity: forwards PDCP PDUs to RLC without processing
+    - BypassRxPdcpEntity: forwards PDCP PDUs to master via X2 without processing
+    
+    Add bypassTxEntityModuleType / bypassRxEntityModuleType NED params
+    and createBypassTxEntity() / createBypassRxEntity() factory methods
+    to LtePdcp.
+    
+    RRC: create bypass entities on DC secondary (when withPdcp=false).
+    
+    Add missing 'using namespace inet' to Rrc.cc (was previously pulled
+    in transitively via LtePdcp.h -> LteTxPdcpEntity.h).
+
+commit e7e5e001e106f9058d2a525b2cb324ff5a937f8a
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 26 20:56:32 2026 +0100
+
+    PDCP: wire bypass TX entity in receiveDataFromSourceNode DL path
+    
+    On the DC secondary gNB, the DL path in receiveDataFromSourceNode()
+    now looks up the bypass TX entity by DrbKey and calls
+    handlePacketFromUpperLayer() instead of calling sendToLowerLayer()
+    directly. Includes tech-mismatch normalization (UE LTE ID -> NR ID)
+    for correct entity lookup.
+    
+    BypassTxPdcpEntity emits sentPacketToLowerLayer and pdcpSduSent
+    signals to match the behavior of normal TX entities (required for
+    sz fingerprint stability).
+
+commit 0c19045445e6a0c1840c4dc578f43de3734b4724
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 26 21:27:54 2026 +0100
+
+    PDCP: wire bypass RX entity — remove early DC check from fromLowerLayer
+    
+    On the DC secondary gNB, UL packets from RLC are now handled by the
+    bypass RX entity (looked up via normal entity lookup) instead of being
+    intercepted by the early DC check in fromLowerLayer(). The bypass RX
+    entity forwards the packet to the master via X2.
+    
+    The pkt->trim() for NR gNBs is preserved (needed for both master and
+    secondary paths).
+
+commit 0eadfe2248d5d23bc78dce3140c00703e68c5a4e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 08:48:25 2026 +0100
+
+    PDCP: remove dead sendToLowerLayer, forwardDataToTargetNode, and signal members
+    
+    These methods and signals in LtePdcp are no longer called/emitted after
+    bypass entities were wired in steps 4-5. Signal emissions are now done
+    by the TX/RX entities themselves.
+
+commit 84239ba929cf36d1b025e97ef56f25070020412b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 09:04:53 2026 +0100
+
+    PDCP: remove headerCompressedSize from bypass entities and ILtePdcp interface
+    
+    headerCompressedSize is an entity-level concern (used only by
+    LteTxPdcpEntity and LteRxPdcpEntity for ROHC compression). Bypass
+    entities don't need it, and the ILtePdcp interface shouldn't mandate it.
+
+commit b2d1f810a551035f963899d3df9b508174a100f6
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 11:08:00 2026 +0100
+
+    Fix Ip2Nic: use technology-neutral IDs for PDCP dispatch; move DC translation to entities
+
+commit 997866f324e3441ee18469ae043f91dbec0d2729
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 13:41:09 2026 +0100
+
+    Extract IPdcpGateway interface: decouple entities from LtePdcp class
+
+commit 7564dd504f5a2f8982068d1fd31bd08dad893743
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 13:52:24 2026 +0100
+
+    Rename LtePdcp -> PdcpMux: class, files, includes, NED @class directives
+
+commit 4cfa583a75d54cdf1166bc2034e9825bd80c65a9
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 14:01:06 2026 +0100
+
+    Move optional NR/DC gates (nrRlcIn/Out, dcManagerIn/Out) to ILtePdcp interface and base LtePdcp NED
+
+commit 08bcae3c71a17b24180e936ebd875bdc2231ceee
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 14:01:41 2026 +0100
+
+    Add PdcpLayer compound module NED (wraps LtePdcp mux as submodule)
+
+commit 3a6faae71fe0115ff0d6fc0d8598832114b27580
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 15:13:24 2026 +0100
+
+    Switch all NIC NEDs to PdcpLayer compound module, update pdcpModule paths and INI files, fix Binder::getPdcpByNodeId, update fingerprints
+
+commit e6222e2614ea8e81e64c5e32cfaf0d45f975c26b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 15:18:31 2026 +0100
+
+    Delete unused NED types: LtePdcpEnb, LtePdcpEnbD2D, LtePdcpUe, LtePdcpUeD2D, NrPdcpEnb, NrPdcpUe
+
+commit 96608cfa3f9688cb9aa0e5b66e430a38dd7e2a5e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 15:33:54 2026 +0100
+
+    Move entity creation from mux to compound module scope (entities are now siblings of mux inside PdcpLayer)
+
+commit 921d2d6a088d388c2130794840d3a6caff16cf84
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 15:50:25 2026 +0100
+
+    Add in/out gates to entity NEDs, add handleMessage to entity base classes
+
+commit 12aea502c9c3549fafd23a9eba8542856a82a590
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 16:02:11 2026 +0100
+
+    Wire entity input gates: PdcpMux dispatches to entities via gate connections instead of C++ method calls
+
+commit 37858f74fd3f04df0b2f38bd6c0f87676becbdc5
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 16:22:17 2026 +0100
+
+    Wire entity output gates: entities send on out gate with PdcpOutputRoutingTag, PdcpMux collects and routes to appropriate output
+
+commit 4530e5d7b6bd803ca6483dc211591aad2760a413
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 16:27:38 2026 +0100
+
+    Remove IPdcpGateway interface and sendTo* methods: entities are fully decoupled from PdcpMux, communicate only via gates
+
+commit 95c67d98a63b4ad07fdcb5308d48b47a5a1a3662
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 16:41:55 2026 +0100
+
+    Delete IPdcpGateway.h: interface no longer needed
+
+commit 5ed4150f4facbeaf30815ea59673b8a75cbb276a
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 17:48:56 2026 +0100
+
+    Step 12: Split PdcpMux into UpperMux + LowerMux + thin facade
+    
+    Split the monolithic PdcpMux into three specialized modules:
+    
+    - UpperMux: handles upper-layer packet dispatch to TX entities,
+      collects RX entity output and forwards to upper layer.
+      Owns txEntities_ map and TX entity creation/deletion.
+    
+    - LowerMux: handles RLC packet dispatch to RX entities,
+      collects TX entity output and routes to correct RLC gate
+      (LTE RLC, NR RLC, or DC manager) based on PdcpOutputRoutingTag.
+      Handles DC manager input (bypass entity dispatch) and D2D
+      mode switch notifications. Owns rxEntities_ and bypassTxEntities_
+      maps and their creation/deletion.
+    
+    - PdcpMux (facade): thin module that delegates entity management
+      API (create/delete/lookup/activeUeUL) to UpperMux and LowerMux.
+      External callers (Rrc, HandoverController, LteMacEnb) continue
+      to reference PdcpMux via ModuleRefByPar<PdcpMux> unchanged.
+    
+    Cross-module gate wiring: UpperMux wires TX entity output gates to
+    LowerMux.fromTxEntity[]; LowerMux wires RX entity output gates to
+    UpperMux.fromRxEntity[]. Bypass entities are fully owned by LowerMux.
+    
+    LtePdcp.ned stripped to facade (no gates, only isNR/hasD2DSupport
+    params retained for external module compatibility).
+    
+    PdcpLayer.ned updated with upperMux + lowerMux + mux submodules.
+    
+    Fingerprints updated (module hierarchy change affects event scheduling).
+
+commit c56fc9ea9aecddc0a228b72607faa52912d5f556
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Feb 27 22:48:29 2026 +0100
+
+    Step 13: Rename PdcpMux → PdcpEntityManager, mux → entityManager
+    
+    Full rename of the PDCP entity management facade:
+    
+    - C++ class: PdcpMux → PdcpEntityManager
+    - Header: PdcpMux.h → PdcpEntityManager.h
+    - Implementation: PdcpMux.cc → PdcpEntityManager.cc
+    - NED type: LtePdcp → PdcpEntityManager
+    - NED file: LtePdcp.ned → PdcpEntityManager.ned
+    - Submodule instance: mux → entityManager (in PdcpLayer.ned)
+    - Path references: ^.pdcp.mux → ^.pdcp.entityManager (6 NED files)
+    - Binder.cc: getSubmodule("mux") → getSubmodule("entityManager")
+    - All #include, forward declarations, ModuleRefByPar<>, check_and_cast<>
+      updated across 15+ files.
+    
+    No behavioral changes. All 127 fingerprint tests pass unchanged.
+
+commit 0f36ef532c92adfa458e95be6f8d6ee8a53331ff
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 15:33:43 2026 +0100
+
+    RLC flatten step 1: Add hasD2DSupport_ flag and perPeerTxEntities_ to LteRlcUm base class
+    
+    Preparatory step for flattening LteRlcUmD2D into LteRlcUm:
+    - Add bool hasD2DSupport NED param to LteRlcUm.ned (default false)
+    - Add hasD2DSupport_ member and perPeerTxEntities_ map to LteRlcUm.h
+    - Read flag from NED param in LteRlcUm::initialize()
+    - Set hasD2DSupport = true in LteRlcUmD2D.ned
+    
+    No behavioral change. All 127 fingerprint tests pass.
+
+commit 4d19fc323a3173b9a7359421f8375ad7ba8991fb
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 15:39:34 2026 +0100
+
+    RLC flatten step 2: Merge all LteRlcUmD2D overrides into LteRlcUm base class
+    
+    Merge all 5 D2D method overrides into LteRlcUm, guarded by hasD2DSupport_:
+    - createTxBuffer(): add per-peer tracking + holding logic
+    - handleLowerMessage(): handle D2DModeSwitchNotification
+    - deleteQueues(): skip D2D_MULTI connections
+    - resumeDownstreamInPackets(): resume per-peer TX entities
+    - isEmptyingTxBuffer(): check per-peer TX entities
+    
+    LteRlcUmD2D is now an empty subclass (just Define_Module).
+    All methods in LteRlcUm are no longer virtual.
+    
+    No behavioral change. All 127 fingerprint tests pass.
+
+commit 022fe243a650dd1152cc79381e0bc52bac705b69
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 15:48:29 2026 +0100
+
+    RLC flatten step 3: Remove LteRlcUmD2D from NED usage, move D2D signals
+    
+    - LteRlc.ned: always use LteRlcUm with hasD2DSupport = parent.d2dCapable
+      (no longer selects LteRlcUmD2D via ILteRlcUm interface)
+    - Move D2D @signal/@statistic declarations from LteRlcUmD2D.ned to LteRlcUm.ned
+    - Remove LteRlcUmD2D type name assertions from LteMacEnbD2D.cc and LteMacUeD2D.cc
+    - Only 'sz' (statistics) fingerprints changed due to new @statistic declarations
+
+commit 24bf5fd81130acb4ad122582a7b7e5362ed9836b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 15:56:28 2026 +0100
+
+    RLC flatten step 4: Remove TM, AM, dispatcher, mux from LteRlc compound module
+    
+    ONLY tNl FINGERPRINTS PASS
+    
+    Strip LteRlc down to just the UM submodule wired directly to the
+    compound module gates. TM, AM, RlcUpperLayerDispatcher, and LteRlcMux
+    submodules are removed (their implementation files remain unused).
+    
+    All 127 fingerprint tests pass (fingerprints updated -- tplx/tilx/sz
+    all change due to removed submodules in the packet path).
+
+commit 2aa86b07e9e1fa0abab6d2e90123743e4ef7ef7c
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 15:59:04 2026 +0100
+
+    RLC step 5: Add in/out/macIn gates to UmTxEntity and UmRxEntity NED
+    
+    Preparatory step for gate-based messaging:
+    - UmTxEntity: in (SDUs from upper), macIn (requests from lower), out (PDUs to lower)
+    - UmRxEntity: in (PDUs from lower), out (reassembled SDUs to upper)
+    
+    Gates are declared but not yet connected. No behavioral change.
+
+commit dea7d389c840b6d526b7eee675c05e6d6c23ec12
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 20:28:20 2026 +0100
+
+    RLC step 6a: Move PDCP tracking tag + enqueue/hold/drop + new data notification into UmTxEntity::handleSdu()
+    
+    LteRlcUm::handleUpperMessage is now just lookup + delegate.
+    Added LteRlcUm::sendNewDataIndication() for entity->MAC notifications.
+
+commit 6b211c370db944290d9423e8d23d5be4330eb7ea
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 20:36:29 2026 +0100
+
+    RLC step 6b: Move MAC SDU request handling into UmTxEntity::handleMacSduRequest()
+    
+    LteRlcUm::handleLowerMessage SDU request path now just lookup + delegate.
+
+commit 305cc89533eb96b1204505543f1b69f1607e5bdc
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 20:58:59 2026 +0100
+
+    RLC mux step 1: Create empty pass-through RlcUpperMux + RlcLowerMux
+    
+    Wire in LteRlc.ned: PDCP <-> UpperMux <-> LteRlcUm <-> LowerMux <-> MAC.
+    Only tplx+tilx fingerprints changed (expected: extra send hops + module ID shift).
+
+commit 0d08675179b0f1d8656e7e09cee290aa27d11e8d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 21:07:34 2026 +0100
+
+    RLC mux step 2: Move TX entity map + creation to RlcUpperMux
+    
+    UpperMux now owns txEntities_, createTxBuffer, lookupTxBuffer, deleteTxEntities,
+    resumeDownstreamInPackets, isEmptyingTxBuffer, perPeerTxEntities_.
+    Entity creation uses manual gate wiring (toTxEntity[], fromTxEntity[], macToTxEntity[]).
+    LteRlcUm delegates all TX entity operations to UpperMux.
+
+commit b1d0465ecee0815e487118b481b9a67f270426d5
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 21:18:42 2026 +0100
+
+    RLC mux step 3: Move RX entity map + creation to RlcLowerMux
+    
+    LowerMux now owns rxEntities_, createRxBuffer, lookupRxBuffer, deleteRxEntities, activeUeUL.
+    Entity creation uses manual gate wiring (toRxEntity[], fromRxEntity[]).
+    LteRlcUm delegates all RX entity operations to LowerMux.
+    LteRlcUm no longer holds any entity maps or module types.
+
+commit 9c2bb5bc1d6002e2d71112ff32a76b181ba783c2
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 21:29:35 2026 +0100
+
+    RLC mux step 4: TX entity sends via out gate
+    
+    UmTxEntity now sends PDUs and new-data notifications via its out gate
+    instead of calling lteRlc_->sendToLowerLayer/sendNewDataIndication.
+    LowerMux forwards fromTxEntity packets to MAC and emits sentPacketToLowerLayer signal.
+    Protocol tag added in UmTxEntity::rlcPduMake() directly.
+    Only sz fingerprints changed (signal emits from different module).
+
+commit 370cc38d3874847f6180a9538b5683afd3cb226b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 21:36:33 2026 +0100
+
+    RLC mux step 5: RX entity sends via out gate
+    
+    UmRxEntity::toPdcp() now sends reassembled SDUs via its out gate
+    instead of calling rlc_->sendToUpperLayer().
+    UpperMux forwards fromRxEntity packets to upper layer and emits sentPacketToUpperLayer signal.
+    Only sz fingerprints changed (signal emits from different module).
+
+commit 85d944d9c0dc9423ae259bf12f352483e211c6ee
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sat Feb 28 21:46:34 2026 +0100
+
+    RLC mux step 6: UpperMux dispatches upper messages directly to TX entities
+    
+    UpperMux::fromUpperLayer() looks up TX entity by DrbKey and sends SDU
+    via toTxEntity[] gate. UmTxEntity::handleMessage() dispatches gate-based
+    messages to handleSdu() (from in) or handleMacSduRequest() (from macIn).
+    LteRlcUm::handleUpperMessage() is now bypassed for normal SDU flow.
+    receivedPacketFromUpperLayer signal moved to UpperMux.
+
+commit d0fa831d3582e554d4dc3296ff197d3d839d77ba
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 11:16:34 2026 +0100
+
+    RLC mux step 7: LowerMux dispatches lower messages directly to TX/RX entities
+    
+    LowerMux::fromMacLayer() dispatches MAC SDU requests to TX entities via
+    macToTxEntity[] gate, RLC PDUs to RX entities via toRxEntity[] gate, and
+    D2D switch notifications via toUpperMux gate to PDCP. UmRxEntity::handleMessage()
+    extended to handle PDUs arriving on in gate. LteRlcUm::handleLowerMessage() is
+    now bypassed for normal packet flow. receivedPacketFromLowerLayer signal moved
+    to LowerMux.
+
+commit f50e724f3165160486dd4db11ebd7acc968b7974
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 11:27:32 2026 +0100
+
+    RLC mux step 8: Remove dead code from LteRlcUm, clean up mux gates
+    
+    Remove sendToUpperLayer, sendToLowerLayer, sendNewDataIndication,
+    handleUpperMessage, handleLowerMessage, handleMessage from LteRlcUm.
+    Remove 4 signal registrations (moved to muxes) and gate members.
+    Remove toUm/fromUm gates from UpperMux/LowerMux NED and C++.
+    Remove UM_Sap_up/UM_Sap_down gates from LteRlcUm.ned.
+    Remove ILteRlcUm interface constraint (gates no longer present).
+    LteRlcUm is now a thin facade delegating to muxes.
+
+commit 77e68c7dc95b8bb114bf183bf2548403add20578
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 11:36:44 2026 +0100
+
+    RLC mux step 9: Strip LteRlcUm to thin facade
+    
+    Remove dead hasD2DSupport_ and nodeType members (muxes read params directly).
+    Remove unused includes (UmTxEntity.h, UmRxEntity.h, LteRlcPdu_m.h, utils.h,
+    ModuleAccess.h). Add explicit LteRlcPdu_m.h include in UmRxEntity.cc for
+    LteRlcUmDataPdu. Fix double-slash in UmRxEntity.cc include path.
+    LteRlcUm is now a pure facade: initialize + 9 one-line delegation methods.
+
+commit 866fdc9b571ac1e61a7a1177c893a8ce5bcd355d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 12:00:26 2026 +0100
+
+    RLC: Rename LteRlcUm -> RlcEntityManager, move from rlc/um/ to rlc/
+    
+    Rename class, files, NED module. Move files from stack/rlc/um/ to
+    stack/rlc/ alongside the muxes. Update all references:
+    - ModuleRefByPar paths in NED files (^.rlc.um -> ^.rlc.entityManager)
+    - Binder::getRlcByNodeId submodule lookup
+    - LteRlc.ned submodule (um -> entityManager)
+    - LteNicBase.ned, NrNicUe.ned parameter wiring
+    - Entity NED umModule defaults
+    - All #include paths and forward declarations
+    Delete LteRlcUmD2D (.h/.cc/.ned) and ILteRlcUm.ned (unused).
+
+commit a872249ccbd7ad4f1156820719caeaf147c8d52f
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 12:33:47 2026 +0100
+
+    RLC: Extract RlcTxEntityBase and RlcRxEntityBase from UM entities
+    
+    Create minimal base classes with flowControlInfo_ ownership and
+    setFlowControlInfo(). Make UmTxEntity extend RlcTxEntityBase and
+    UmRxEntity extend RlcRxEntityBase. Update mux maps and return types
+    to use base class pointers. D2D-specific methods use dynamic_cast
+    to UmTxEntity/UmRxEntity. Prepares for adding TM entity types.
+
+commit 89c8993af1ce517b03dcac416ab27d8a4fbf043c
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 12:42:21 2026 +0100
+
+    RLC: Add TM entity support to RLC mux architecture
+    
+    Create TmTxEntity (queue + new-data notification + MAC SDU request)
+    and TmRxEntity (pass-through to upper layer) extending the base
+    classes. Add tmTxEntityModuleType/tmRxEntityModuleType params to
+    RlcEntityManager.ned. Muxes pick UM vs TM entity type based on
+    getRlcType() from FlowControlInfo.
+
+commit e0b4a6dd93258910924566401ff55524e331c41b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 12:46:44 2026 +0100
+
+    RLC: Delete old LteRlcTm module, rename entity type params to umTxEntityModuleType/umRxEntityModuleType
+    
+    Remove LteRlcTm (.h/.cc/.ned) — replaced by TmTxEntity/TmRxEntity.
+    Rename txEntityModuleType -> umTxEntityModuleType and
+    rxEntityModuleType -> umRxEntityModuleType in RlcEntityManager.ned
+    for consistency with the new tmTxEntityModuleType/tmRxEntityModuleType.
+
+commit b2eb4181dbbc8d7e5fbc6936e8b2b623852a5855
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 14:53:28 2026 +0100
+
+    RLC: Integrate AM entities into mux architecture, delete LteRlcAm
+    
+    CAVEAT: This currently DOES NOT WORK, because it is not solved how
+    TX will receive ACKs. The DRB needs to be bidirectional for that,
+    and then RX entity could notify TX when an ACK arrives. However, DRBs
+    are currently created as unidirectional. Also, AM code is said to be
+    incomplete.
+    
+    Refactor AmTxQueue: add in/macIn/out gates, extend RlcTxEntityBase,
+    replace lteRlc_->sendFragmented/indicateNewDataToMac with gate sends.
+    
+    Refactor AmRxQueue: add in/out gates, extend RlcRxEntityBase,
+    replace lteRlc_->sendDefragmented with gate send, route control
+    messages (ACK/MRW) to TX entity via UpperMux lookup. Rename internal
+    flowControlInfo_ to ackFlowControlInfo_ to avoid base class clash.
+    
+    Add amTxEntityModuleType/amRxEntityModuleType params to
+    RlcEntityManager.ned. Muxes pick AM entities when getRlcType()==AM.
+    
+    Delete LteRlcAm (.h/.cc/.ned), dead AmTxEntity.ned/AmRxEntity.ned,
+    unused include in Rrc.cc.
+
+commit 9a027e7366138f4dd23191f079a2ef25935bed36
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 20:11:59 2026 +0100
+
+    PDCP: Move establishUnidirectionalDataConnection() call from UpperMux to Ip2Nic
+
+commit bfe5fa6538756a98cd8623a02556c7cefd4918ba
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 21:27:57 2026 +0100
+
+    PDCP: Add empty DcMux submodule to PdcpLayer (preparation for DC routing refactoring)
+
+commit b3fd983aef0469d5195cb4f3d06c471b48ab2559
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 21:40:34 2026 +0100
+
+    PDCP: Wire dcManager gates through DcMux as passthrough in PdcpLayer
+
+commit 2c7aa8c71c656681e0becd032ec62c20f2f947d8
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Sun Mar 1 22:02:16 2026 +0100
+
+    PDCP: Route outgoing X2 traffic through DcMux via dedicated entity gates (dcOut/out->DcMux->dcManagerOut)
+
+commit 8453a8ddc14810844b4281d0e5f11bc170c8648e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 08:47:59 2026 +0100
+
+    PDCP: Move bypass TX entity ownership and incoming X2 dispatch from LowerMux to DcMux
+
+commit cd3a43fc400b1654ce9df1c4790ec3d56c26b245
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 09:04:31 2026 +0100
+
+    PDCP: Eliminate DcMux→LowerMux link: dispatch UL X2 directly to RX entity via sendDirect/dcIn
+
+commit 1da13bc595f37e595e5a05fe45ce0ba2efd33af9
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 09:14:04 2026 +0100
+
+    PDCP: Replace sendDirect with proper gate connection: DcMux.toRxEntity[] -> RxEntity.dcIn
+
+commit 2edf74e7ddf546e4b7a50c9c789f01ae57f590b8
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 12:26:51 2026 +0100
+
+    RRC: Rename Rrc simple module to BearerManagement, wrap in compound Rrc module
+
+commit 9e5c64db8976d86d667dc746645cfde95df888b1
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 12:35:14 2026 +0100
+
+    RRC: Add empty Registration submodule to compound Rrc (tilx-only fingerprint changes)
+
+commit 07b9af16073f1c15ad291d5026a49c62b2de317c
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 12:44:33 2026 +0100
+
+    RRC: Move registration logic from BearerManagement into Registration submodule
+
+commit 7d0ebeb2fd871e3ce7ff4313877a792ee95f3709
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 13:04:13 2026 +0100
+
+    RRC structuring: add ASSERT(isSelfMessage) to HandoverController::handleMessage
+
+commit cec9fcfeb7caa2cbfedd1a189e96a1f5cc79e7dd
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 13:23:18 2026 +0100
+
+    RRC structuring step 5: move HandoverController(s) under compound Rrc as conditional submodules
+
+commit 7bd5e1e446cd7c7cf65f9ba736de42fa2f615026
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 12:47:25 2026 +0100
+
+    .cascade update
+
+commit fb70651cf561c1dc4400df9e84402595c498b883
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 13:44:16 2026 +0100
+
+    RRC: move entity PDCP and RLC entity creation into BearerManagement
+    
+    They were part of the mux and entityManager modules.
+    
+    step 1: extract install* methods from create* in PDCP mux modules (prep for moving creation to BearerManagement)
+    step 2: move PDCP entity creation and type params from mux modules to BearerManagement
+    step 3: move RLC entity creation and type params from mux modules to BearerManagement
+    step 4: route local entity deletion through BearerManagement, remove rlcUm/pdcp refs from HandoverController
+    step 5: route D2D fallback entity creation through BearerManagement, remove create*/cModuleType* from RLC mux modules, remove entity type params from RlcEntityManager
+    step 6: move RLC entity gate wiring from mux install methods into BearerManagement
+    step 7: move PDCP entity gate wiring from mux install methods into BearerManagement
+
+commit e6347a7589d6afc22e14f6ec4f7e5d425cfb0a8a
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 20:25:19 2026 +0100
+
+    PDCP/RLC flattening step 1: decouple UpperMux isNR and BearerManagement headerCompressedSize from PdcpLayer params
+
+commit 4d259be51b2ad160fedc0600f1768b30752b6494
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 20:35:31 2026 +0100
+
+    PDCP/RLC flattening step 2: dissolve PdcpLayer compound - move submodules to NIC level, drop ILtePdcp
+
+commit aa8782792d6549758b9fe2ed7f23e7c9fb358d30
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 21:19:36 2026 +0100
+
+    PDCP/RLC flattening step 3: decouple RLC sibling references via NED parameters
+
+commit bfdb1402afc52ef5318b1cdac62757529d79aab8
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Mon Mar 2 21:25:51 2026 +0100
+
+    PDCP/RLC flattening step 4: dissolve LteRlc compound - move submodules to NIC level
+
+commit 0709e1e99123769d1bc6ad1bcbbc2f0f4f1875da
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 08:46:12 2026 +0100
+
+    PDCP/RLC flattening step 5: rename entity modules to consistent pdcp-/rlc-/nrRlc- naming scheme, add isNR param
+
+commit af7be02dc67a9b024f6a243d6d517763162b477d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 09:39:31 2026 +0100
+
+    PDCP/RLC flattening step 6: delete unused RlcUpperLayerDispatcher
+
+commit ad18426272910afcc331a453f76c1bc59c2ba87e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 09:54:36 2026 +0100
+
+    .cascade
+
+commit e94bb892103084ead49fc04167fe471e5f298d5f
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 10:05:41 2026 +0100
+
+    PDCP/RLC flattening step 7a: add unregister methods to all 5 muxes
+
+commit 724e8d6de3699b5d9fcfd4aba998804c69f207a2
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 10:09:41 2026 +0100
+
+    PDCP/RLC flattening step 7b: move entity lifecycle to BearerManagement - own maps, delete via unregister+deleteModule
+
+commit 59bc276d69a992ece0993aeb96e7798d2251c724
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 10:13:58 2026 +0100
+
+    PDCP/RLC flattening step 7c: HandoverController uses BearerManagement for remote entity deletion
+
+commit e31a7b139091cab482760bc2bfa263887a3f9a91
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 10:20:58 2026 +0100
+
+    PDCP/RLC flattening step 7d: remove old delete methods from muxes and EntityManagers
+
+commit 04134e46505b8b49f308c3395799b7656c85fb1a
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 10:30:23 2026 +0100
+
+    PDCP/RLC flattening step 9+10: wire PDCP<->RLC entities directly, bypass PdcpLowerMux and RlcUpperMux
+
+commit f5c888a8989b6b1666fedad287747a5869499b52
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 14:34:19 2026 +0100
+
+    Fix runtime errors: route RLC TX lookups via BearerManagement, fix DC UE PDCP-to-NR-RLC routing, fix DcMux UL RX entity lookup
+
+commit 8487bb54a072dacb6e1be6affc0d0282b38d63cc
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 14:39:42 2026 +0100
+
+    fingerprints updated
+
+commit 5f4958cc8bcf87da8b8ba91d8fc520ac27530aa3
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 10:35:55 2026 +0100
+
+    PDCP/RLC flattening step 11a: move PDCP entity lookup and activeUeUL to BearerManagement, update DcMux and PdcpEntityManager
+
+commit ed665b87668bc82202b745affec2e77a7b0df58d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 10:43:43 2026 +0100
+
+    PDCP/RLC flattening step 11b: delete PdcpLowerMux module, remove all references and NED connections
+
+commit 5fb5fb3c838c8b808d1ea724f74919971b79d6b3
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 11:09:14 2026 +0100
+
+    PDCP/RLC flattening step 11c: move RLC TX lookup and D2D peer tracking from RlcUpperMux to RlcEntityManager/BearerManagement
+
+commit bd82064abe6d97669d93adc2c8116d3db1a70ecf
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 11:14:50 2026 +0100
+
+    PDCP/RLC flattening step 11d: delete RlcUpperMux module, move D2D peer tracking to RlcEntityManager, remove all references
+
+commit 67ea94b158901f7088fbc26ef8f28c7341625577
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 11:33:49 2026 +0100
+
+    PDCP/RLC flattening step 12a: remove PdcpEntityManager references from all callers, redirect LteMacEnb to BearerManagement
+
+commit 7557f5b04d7a5ba81a41cc13850abd9063518fb4
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 11:38:57 2026 +0100
+
+    PDCP/RLC flattening step 12a: delete PdcpEntityManager module and all NED/code references
+
+commit 5b318269b3195f8b0af9233d3fa7b6066a286b3a
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 11:46:24 2026 +0100
+
+    PDCP/RLC flattening step 12d: remove PdcpOutputRoutingTag - no longer needed with direct PDCP<->RLC wiring
+
+commit 91da0ff75b50a304491d8f8443618b6c63316975
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 12:03:19 2026 +0100
+
+    PDCP/RLC flattening step 12e: remove dead D2D mode switch TODO - PDCP has no D2D switch handler
+
+commit 3472c161b2d2c6de312cd5ced3ff39f129524ad4
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 12:04:52 2026 +0100
+
+    PDCP/RLC flattening step 12f: delete dead compound modules (PdcpLayer, ILtePdcp, LteRlc, LteRlcMux)
+
+commit 5a5a4f156e4a86a10ec7b79adf338cdce6e6a3dd
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 12:46:57 2026 +0100
+
+    Fix: remove remaining par("pdcpModule") references in LteMacUeD2D.cc and LteMacEnb.cc
+
+commit 1cf1216e02ce87b1e532c4dda7f8db4ae3f1df74
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 13:15:46 2026 +0100
+
+    .cascade: fingerprints.md updated
+
+commit 3eff79e7830cccc79f2714bda202dbec1abb0404
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 15:08:45 2026 +0100
+
+    fingerprints updated
+
+commit 56f3e4ec7a66cfcbceafeac5d7517735bf56dd5f
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 15:22:56 2026 +0100
+
+    PDCP/RLC flattening step 13: move pdcpDcMux from LteNicBase to LteNicEnb (UEs have no X2)
+
+commit d83121fb25bc31272239138ec1ac58b9d4f74454
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 16:15:05 2026 +0100
+
+    PDCP/RLC flattening: Cleanup: eliminate pdcpCompound_ and getRlcCompoundModule() legacy indirections
+
+commit 5f14bc5a286e707de7cf62a1027a9c0396df210f
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 16:20:49 2026 +0100
+
+    Rename MAC lower gates: MAC_to_PHY -> phyOut, PHY_to_MAC -> phyIn
+
+commit 6f54e1a25733a0b86916057e178d9b7547101628
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 19:52:18 2026 +0100
+
+    Layouting: added NonlayoutingNetworkInterface
+    
+    The INET standard NetworkInterface forcibly places gateless modules
+    along the left edge of the modul, without the possibility to disable it
+    or to control the details.
+
+commit 12291f1d2a0a166b9a15743e6f2d79686bb7331d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 15:38:52 2026 +0100
+
+    Layouting: move unconnected NIC submodules to left edge in NED layout
+
+commit e2b94b12b7ec13477b9f8627f3d795d7db162ca0
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 20:34:57 2026 +0100
+
+    Layouting: data path modules
+
+commit e60f574e11a7e4b3b2cd5232d5d1781cd616daf4
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 20:42:27 2026 +0100
+
+    Rename: pdcpUpperMux -> pdcpMux, rlcLowerMux -> rlcMux, nrRlcLowerMux -> nrRlcMux
+
+commit 4f360e5bc21da9b32a573cfcab3f007c8c0fcdbb
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 21:07:02 2026 +0100
+
+    Layouting: Set display positions for dynamically created PDCP and RLC entities between the two muxes
+
+commit 59298dcf9fd05bb90262208fc00ea216d96b5a45
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 07:41:58 2026 +0100
+
+    Layouting: use "g" tag to line up modules along right edge
+
+commit 8f5c564437aade32e1fb99971555e2e5d1e3fe45
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Tue Mar 3 21:17:04 2026 +0100
+
+    PDCP/RRC: Change entity icons to block/layer
+
+commit ba9084cb83c219812e007a600d9edf927a4732d1
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 07:50:02 2026 +0100
+
+    RlcEntityManager: remove dead lookupTxBuffer/lookupRxBuffer, unused bearerManagement_ member
+
+commit 75cbed022389cf8700babd471be2258ae6307f6d
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 08:14:18 2026 +0100
+
+    RlcEntityManager: move D2D peer tracking to new D2DModeController module under RRC
+
+commit e183d9a5b5cb906a12b563eba1198180d92c7bb8
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 08:36:45 2026 +0100
+
+    reduce RlcEntityManager step 3: redirect LteMacEnb::activeUeUL to call RlcMux directly
+
+commit 296941069d18bfb3b71b52132ec4892fb6c193ea
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 08:43:41 2026 +0100
+
+    reduce RlcEntityManager step 4: move throughput stats to RlcMux, remove activeUeUL
+
+commit 31e78e30859d537803ee8050b605c474a7ef8390
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 08:52:25 2026 +0100
+
+    reduce RlcEntityManager step 5: add queueSize to UmTxEntity NED, remove lteRlc_ dependency
+
+commit 79882854e3af7abf9a388bba29e770a9bf3a144a
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 09:00:42 2026 +0100
+
+    reduce RlcEntityManager step 6+7: replace RlcEntityManager refs in BearerManagement with direct RlcMux refs
+
+commit 4164318fb34114e622588c4bfa7b0763b9a3a3b3
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 09:09:21 2026 +0100
+
+    reduce RlcEntityManager step 8: move @signal/@statistic decls to RlcMux.ned, update Binder::getRlcByNodeId
+
+commit 7cbf244fc25da9d0bbaf80a53c825a1a4e0053b0
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 09:32:42 2026 +0100
+
+    reduce RlcEntityManager step 9: delete RlcEntityManager module, remove all references
+
+commit 350d96a5b14c60247760f11c475e3f22a13963fa
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 13:25:06 2026 +0100
+
+    BearerManagement: nit: spacing of PDCP/RLC entities adjusted
+
+commit ebf1063320739578ce0bd3e9bdfc25c041e11934
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 11:29:32 2026 +0100
+
+    WHATSNEW.md: Copied entries about specialized "SDAP" branch releases from their branch
+
+commit 1a471418ea1f89c4d43c976c2203c4311fa77d14
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 11:04:58 2026 +0100
+
+    QFI support: VoIP: added dscp parameter, display status above icon (taken from v1.4.1-sdap-2)
+
+commit 8faf712c2ca166c4463d66514acd6372b51b0f13
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 11:07:18 2026 +0100
+
+    QFI support: TrafficFlowFilter: Takes QFI from the DSCP field of the IP packet (simplified matching)
+    
+    Taken from the v1.4.1-sdap-2 release
+
+commit b2b969811da74c9ea94366f4691dcf78d02ccec1
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 11:06:04 2026 +0100
+
+    QFI support: GTP-U: carry QFI in GTP protocol header
+    
+    QFI is now carried through the GTP-U tunnel in the GTP header
+    (mirroring the real 5G PDU Session Container extension header).
+    
+    The gNB will extract QFI from the GTP-U header to restore QoS tags for
+    SDAP routing.
+    
+    Taken from the v1.4.1-sdap-2 release.
+
+commit d311a4a065a726e9fb41f30dfea299aa68ddf061
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 10:01:19 2026 +0100
+
+    SDAP integration: Added SDAP protocol implementation, losely based on code contributed by Mohamed Seliem.
+    
+    Taken from the v1.4.1-sdap-2 release.
+
+commit 3e97968791b7a14b1bd02f874f6233e3ac17490e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 10:25:35 2026 +0100
+
+    SDAP integration: gates renamed, numDrbs parameter removed
+
+commit 51e16c6426d90f92f91043fc460d3a66d877a1ca
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 10:36:16 2026 +0100
+
+    SDAP integration: Add optional SDAP layer to NrNicEnb and NrNicUe using @reconnect wiring
+
+commit fddc972b0f47943cf671504eba962f1379f7b661
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 12:19:26 2026 +0100
+
+    SDAP integration: Ip2Nic hasSdap flag, SDAP sets FlowControlInfo.drbId/rlcType, eliminates RadioBearerReq
+    
+    - Add rlcType field to DrbContext, parsed from drbConfig JSON
+    - Add hasSdap parameter to Ip2Nic; when true, skips traffic classification,
+      RLC type assignment, DRB ID assignment, and connection establishment
+    - SDAP (NrSdap) now sets FlowControlInfo.drbId and rlcType from DRB config,
+      and triggers establishUnidirectionalDataConnection itself
+    - RX path uses FlowControlInfo.drbId instead of RadioBearerInd
+    - RadioBearerReq/RadioBearerInd tags are now dead code
+    - Wire ip2nic.hasSdap = this.hasSdap in NrNicEnb and NrNicUe NEDs
+    - Remove pre-existing unused variable warning in Ip2Nic no-D2D path
+
+commit a807c682a9d7de8cf11c061c8da8864e7e385d4e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 11:07:55 2026 +0100
+
+    PDCP: Add/use ROHC header to properly represent header compression
+    
+    Taken from the v1.4.1-sdap-2 release.
+
+commit 12c18b7126159242a9d288f4e80f12f9247bdce3
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 11:06:50 2026 +0100
+
+    MAC: add QoS scheduler contributed by Mohamed Selien (from v1.4.1-sdap-2)
+    
+    Copied from the v1.4.1-sdap-2 release.
+
+commit db42076dd12e362f1737d3059d937586717633cd
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 11:03:54 2026 +0100
+
+    SDAP integration: added example simulations
+    
+    Taken from the v1.4.1-sdap-2 release.
+
+commit 3a8505a2bb93c42794602b0a00164ec684e7db91
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 12:50:09 2026 +0100
+
+    SDAP integration: Revive omnetpp_drb.ini: use standard SingleCell_Standalone network with hasSdap=true
+    
+    - Switch from non-existent SingleCell_Standalone_Drb to standard
+    SingleCell_Standalone
+    - Enable SDAP via hasSdap=true on gNB and UE NICs (no special node types
+    needed)
+    - Remove numDrbs param (not in current NIC architecture)
+    - Delete dead network NEDs: SingleCell_Standalone_Drb.ned,
+    SingleCell_Standalone_Sdap.ned
+    - All three configs (VoIP-DL, VoIP-DL-MultiQfi, VoIP-UL) run
+    successfully
+
+commit 6c1ac72484b606429721f3f0f9dda0a3a4aee79e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Feb 19 22:20:35 2026 +0100
+
+    LteSchedulerEnb: Fix multi-UE starvation in multi-DRB scheduling
+    
+    In scheduleGrant(), when a node already had a codeword allocated,
+    the "BAD patch" set terminate=true, which aborted the entire
+    scheduling round. This prevented any other node's CIDs from being
+    processed, causing UEs beyond the first to receive zero DL traffic
+    in multi-DRB scenarios (e.g. with QOS_PF on the sdap branch).
+    
+    Change terminate=true to eligible=false so that only the current
+    CID is marked ineligible and popped, while scheduling continues
+    for remaining CIDs belonging to other nodes.
+    
+    At it turns out, while this is a valid bugfix, the problem it fixes was
+    not triggered in Unipisa/Simu5G#294.
+
+commit 2ababda108a3c0787307a130cd677d461bea3ee4
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 20:14:51 2026 +0100
+
+    test: accepted fingerprint results after scheduler fix -- TO BE VERIFIED!
+
+commit 52a53ada52299622caecde81a98010867bcfee56
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 15:45:56 2026 +0100
+
+    QoSAwareScheduler: fix QoS lookup failure for all UEs beyond the first
+    
+    Bug: getDrbQosForCid() failed to find QoS entries for UE 2050 (and any
+    UE beyond the first), causing them to fall back to weight=1.0 (no QoS
+    differentiation). Visible as warnings in the log:
+    
+      QoSAwareScheduler: No DRB QoS entry for CID MacCid(nodeId=2050, lcid=2)
+      QoSAwareScheduler: No DRB QoS entry for CID MacCid(nodeId=2050, lcid=3)
+    
+    Root cause: drbQosMap_ was keyed by a plain DRB index (int), and
+    getDrbQosForCid() matched entries by a per-UE LCID counter stored in
+    DrbQosEntry.lcid. This counter was computed at INI parse time as a
+    local 0-based index per UE, but actual LCIDs assigned at runtime by
+    Ip2Nic are global (monotonically increasing across all UEs). So UE
+    2049 got lcid 0,1 (matching), but UE 2050 got lcid 2,3 (no match).
+    
+    Fix: Key drbQosMap_ by DrbKey(nodeId, drbId) instead of plain int.
+    In getDrbQosForCid(), construct the DrbKey from the CID using
+    mac->lcidToDrbId() for proper LCID-to-DrbId conversion.
+    Remove the now-unnecessary lcid field from DrbQosEntry.
+
+commit 22d22ec794b0b5ea3784b0a6a487e72624f9ce16
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 15:46:13 2026 +0100
+
+    QoSAwareScheduler: fix integer division in PF score computation
+    
+    Bug: In prepareSchedule(), the PF score formula computed
+    availableBytes / availableBlocks where both operands are unsigned int.
+    This truncated the result to an integer before the subsequent float
+    division by pfRate_, losing precision and producing coarser scores
+    than intended.
+    
+    Fix: Cast availableBytes to double before the division.
+
+commit 72ab7bcea0b2be98a81c4d7590529addc5b8e454
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 15:46:34 2026 +0100
+
+    QoSAwareScheduler: fix PF rate units mismatch in commitSchedule
+    
+    Bug: commitSchedule() divided granted bytes by resourceBlocks_ (the
+    number of resource blocks), producing a dimensionless ratio as the
+    short-term rate. But prepareSchedule() divides by pfRate_ in a context
+    where it expects bytes-per-block units. The mismatch made the PF
+    exponential moving average meaningless.
+    
+    Fix: Use granted bytes directly as the short-term throughput in the
+    EWMA update, matching the units used in the score numerator.
+
+commit b5c2fcbe175fa9dd9905e3a67ebc6fc366886cb3
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 15:54:34 2026 +0100
+
+    QoSAwareScheduler: extract weight constants as configurable members
+    
+    Replace hardcoded magic numbers in computeQosWeight() with member
+    variables. No behavioral change (default values match the originals).
+    
+    TODO: initialize these from NED parameters once QoSAwareScheduler
+    becomes a module (currently it is a plain C++ class, not a module).
+
+commit f3033a16df4338d49796d9da45280e4f26f4dc6e
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 16:20:01 2026 +0100
+
+    Add VoIP-DL-MultiQfi-Heavy config for testing PF under contention
+    
+    Heavy traffic variant: 1000B packets at 1ms interval, no silences,
+    synchronized start. Creates sustained contention between nodes to
+    exercise the proportional-fair quota mechanism.
+
+commit 761e1fc5f28868c0daec88fd0ed13d0b8a975960
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 16:11:49 2026 +0100
+
+    QoSAwareScheduler: replace greedy grant loop with proportional fairness
+    
+    Previously, prepareSchedule() granted UINT32_MAX bytes to the top-scored
+    CID, letting the highest-priority node consume all available RBs before
+    other nodes got any. This is strict priority, not proportional fair.
+    
+    New design splits prepareSchedule() into three phases:
+    
+    Phase 1 - Score: compute QoS-weighted PF score and available bytes for
+    each eligible CID (unchanged scoring formula).
+    
+    Phase 2 - Quota: select the best CID per node (since scheduleGrant
+    allows only one grant per node per TTI due to the codeword allocation
+    constraint). Compute each node's proportional share of bandwidth:
+      quota_i = availableBytes_i * (score_i / totalScore)
+    where totalScore is the sum of best-per-node scores only.
+    
+    Phase 3 - Grant: process CIDs in score order, but cap each grant to
+    the node's proportional quota instead of UINT32_MAX. Non-best CIDs
+    of already-granted nodes get eligible=false from scheduleGrant
+    automatically.
+    
+    This ensures that bandwidth is distributed proportionally to the
+    QoS-weighted PF metric across nodes within each TTI, rather than
+    being monopolized by the top-scored node.
+    
+    Testing proportional fairness under contention:
+    
+    Used the VoIP-DL-MultiQfi-Heavy config (1000B packets at 1ms interval,
+    no silences, synchronized start) to create sustained contention between
+    two nodes (2049, 2050) with identical QoS configurations.
+    
+    With the old greedy loop (requestGrant(cid, UINT32_MAX)), the top-scored
+    node would consume all 7250B of available bandwidth each TTI, starving
+    the other node until the next TTI.
+    
+    With the new proportional quota mechanism:
+    
+    $ cd simulations/nr/standalone
+    $ simu5g_dbg -u Cmdenv -c VoIP-DL-MultiQfi-Heavy omnetpp_drb.ini \
+        --sim-time-limit=0.1s --cmdenv-express-mode=false 2>&1 \
+        | grep -E "Quota|Grant cid" | head -20
+    
+    0.003 QoSAwareScheduler::Quota node=2049 cid=MacCid(nodeId=2049, lcid=1) score=3e+07 share=0.5 quota=3625B
+    0.003 QoSAwareScheduler::Quota node=2050 cid=MacCid(nodeId=2050, lcid=3) score=3e+07 share=0.5 quota=3625B
+    0.003 QoSAwareScheduler::Grant cid=MacCid(nodeId=2049, lcid=1) limit=3625 granted=3625B
+    0.003 QoSAwareScheduler::Grant cid=MacCid(nodeId=2050, lcid=3) limit=3625 granted=3625B
+    0.003 QoSAwareScheduler::Grant cid=MacCid(nodeId=2050, lcid=2) limit=4294967295 granted=0B
+    0.004 QoSAwareScheduler::Quota node=2049 cid=MacCid(nodeId=2049, lcid=0) score=1e+07 share=0.5 quota=3625B
+    0.004 QoSAwareScheduler::Quota node=2050 cid=MacCid(nodeId=2050, lcid=2) score=1e+07 share=0.5 quota=3625B
+    0.004 QoSAwareScheduler::Grant cid=MacCid(nodeId=2049, lcid=0) limit=3625 granted=3625B
+    0.004 QoSAwareScheduler::Grant cid=MacCid(nodeId=2050, lcid=2) limit=3625 granted=3625B
+    0.004 QoSAwareScheduler::Grant cid=MacCid(nodeId=2049, lcid=1) limit=4294967295 granted=0B
+    
+    So:
+    
+    - Both nodes get share=0.5, quota=3625B each (50/50 split of 7250B)
+    - Each node's best CID is granted exactly 3625B per TTI
+    - The second CID of each node gets eligible=false (one grant per node
+      per TTI, enforced by scheduleGrant)
+    - The PF EWMA naturally alternates which CID per node is "best" each TTI
+     (the just-served CID's pfRate_ increases, lowering its score next time)
+    
+    All four DRB configs (VoIP-DL, VoIP-DL-MultiQfi, VoIP-DL-MultiQfi-Heavy,
+    VoIP-UL) run to completion without errors.
+
+commit f5907d48ce188b6ba1439432bebf48f98a331296
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 20:27:27 2026 +0100
+
+    D2D mode selection to RRC step 1: move files from stack/d2dModeSelection/ to stack/rrc/, update NED packages and #include paths
+
+commit 9c3d98c4a85156fb9c734550b2a4502405476f5f
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 20:33:29 2026 +0100
+
+    D2D mode selection to RRC step 2: move d2dModeSelection submodule from LteNicEnbD2D into Rrc, update module paths and INI files
+
+commit 904384da6ed22a65d7d345188043d344970879e6
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Wed Mar 4 20:38:37 2026 +0100
+
+    D2D mode selection to RRC step 2: update fingerprints after d2dModeSelection moved into Rrc
+
+commit e42e37f5c3b90871874894b425a697bace960be6
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Mar 5 07:33:16 2026 +0100
+
+    remove omnetpp_sdap.ini
+
+commit 4a8cca3164bdc8a531bd01cb6f459a652b4f2dbe
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Mar 5 20:59:00 2026 +0100
+
+    SDAP: remove d_c from NrSdapHeader
+
+commit 27ef6871bef159c92386e0e1b1f14d795e74ebb9
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Mar 5 21:03:24 2026 +0100
+
+    omnetpp_drb.ini: make rlcType explicit (default is "UM", too)
+
+commit 78769b5d9d3368afbf0a2ee9bcd99e469f1a4681
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Mar 5 21:18:05 2026 +0100
+
+    SDAP: ned comments
+    
+    Signed-off-by: Andras Varga <andras@omnetpp.org>
+
+commit 9c02ef76e38dbfcf3ff53e6c67e54963161593ea
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Mar 5 21:49:50 2026 +0100
+
+    Non-IP PDU sessions step 1: SDAP uses FlowControlInfo.destId instead of peeking Ipv4Header for gNB DRB lookup
+
+commit ee8d769eaf74b374990a3ee69b679c84c8350976
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Thu Mar 5 22:03:55 2026 +0100
+
+    Non-IP PDU sessions step 2: Add PduSessionType enum, pduSessionType and upperProtocol in DrbContext, generalize SDAP for non-IP PDU sessions
+    
+    upperProtocol is normally inferred from pduSessionType, it is only
+    mandatory for pduSessionType="unstructured". Packets in unstructured PDU
+    sessions are treated as plain bytes, but in INET we need to set the
+    Protocol tag on the packet for dispatching to higher layers.
+
+commit 4ce1c83a2e1b864d30f63e19972e41cf40334dad
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Mar 6 08:34:30 2026 +0100
+
+    SDAP: QfiContextManager: clean up, rename to DrbTable
+    
+    - QfiContextManager API cleanup
+    - DrbContext::drbIndex -> drbId (DrbId), remove lcid field
+    - Restructure QfiContextManager with DrbKey primary map, (nodeId,qfi)
+      reverse map, isDefault flag + default DRB accelerators
+    - Rename DrbContext -> DrbConfig
+    - Rename QfiContextManager -> DrbTable, QfiContext.h -> DrbConfig.h
+
+commit 9e7e55e84c20b2ac4d1220b21ef29bf1cda8c36c
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Mar 6 09:45:12 2026 +0100
+
+    SDAP: Eliminate addSdapHeader NED parameter, infer it from DRB properties
+    
+    Only add header if QFI cannot be restored on RX side: if there's more
+    QFIs in that DRB, or QFI uses fallback DRB.
+    
+    Also: Throw on null DRB in RX path instead of silent fallback
+
+commit 333d0bda81d1e5fca9ad3db24003fb01ad019c6a
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Mar 6 10:19:43 2026 +0100
+
+    SDAP refactor: Refactor UE QFI resolution chain, make DSCP fallback opt-in (useDscpAsQfiFallback)
+
+commit 47bde6983061ba786b5ce12d571731404a8c28b1
+Author: Lars Wischhof <wischhof@ieee.org>
+Date:   Mon Mar 2 22:24:00 2026 +0100
+
+    MecResponseApp: Fix missing localUePort
+    
+    In the recent refactoring, the localUePort was removed from the MecBaseApp. Since it is required in the MecResponseApp, this commit adds it there. Note that this problem was not detected by the fingerprint tests, since these run only for 5s but the start time of the MecResponseApp in the test scenario is 5s. A later commit will therefore increase the start time for MecResponseApp and other apps having this issue.
+
+commit ea012945d3b3d16bf65a3363ccc6b0f96a649697
+Author: Lars Wischhof <wischhof@ieee.org>
+Date:   Mon Mar 2 22:26:13 2026 +0100
+
+    MecRTVideoStreamingReceiver: Fix missing localUePort
+    
+    In the recent refactoring, the localUePort was removed from the MecBaseApp. Since it is required in the MecRTVideoStreamingReciever, this commit adds it there. Note that this problem was not detected by the fingerprint tests, since these run only for 5s but the start time of the MecRTVideoStreaming in the test scenario is a random value of up to 90s. A later commit will therefore increase the fingerprint time for MecRTVideoStreamingReceiver and other apps having this issue.
+
+commit c55b96657ff89099643bce0c95d576defde778ef
+Author: Lars Wischhof <wischhof@ieee.org>
+Date:   Mon Mar 2 22:31:28 2026 +0100
+
+    RniService: fix incomplete CamelCase renaming
+    
+    In the recent refactorings, the RNIService was renamed to RniService. However, not all service names were adapted. As a consequence, in the service registry the Service was registered correctly with the name "RniService" but later requested as "RNIService" leading to a situation where the service is not found and not available. This caused a segment violation since the service pointer was not checked for being null. This fix corrects the naming and also adds a check to determine if the service pointer is null.
+
+commit c72e75b7ff2867963c501c30639051b56362fb66
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Mar 6 10:48:00 2026 +0100
+
+    test/fingerprints: increase simulation duration for certain MEC cases to cover interesting events
+    
+    MecResponseApp has a start time at 5s.
+    
+    [Split from previous commit from Larst Wischhof]
+
+commit 743ac26ab4200f564ff963232d44e628cf23b0c7
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Mar 6 12:35:34 2026 +0100
+
+    SDAP: Turn Qfi into strong typedef
+
+commit 6051d74469a8b796ab2de5a7f8e01611d4c3c7de
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Mar 6 13:15:58 2026 +0100
+
+    DualConnectivityManager: renamed to DcX2Forwarder
+
+commit 9b9fa57045ff3c38e522ff32c6d6d266c723633b
+Author: Andras Varga <andras@omnetpp.org>
+Date:   Fri Mar 6 13:45:12 2026 +0100
+
+    LteHandoverManager: renamed to HandoverX2Forwarder

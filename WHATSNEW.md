@@ -18,8 +18,8 @@ submodules:
 
 - **BearerManagement**: The former simple `Rrc` module, renamed and extended.
   It now owns the lifecycle (creation, deletion, lookup) of all PDCP and RLC
-  entities, taking over these responsibilities from the former
-  `PdcpEntityManager` and `RlcEntityManager` modules (both deleted).
+  entities. Previously, entity management was scattered across the monolithic
+  PDCP module and the `LteRlcUm`/`LteRlcAm` modules.
 
 - **Registration**: Node registration and deregistration logic, previously
   embedded in `Ip2Nic`, was moved here.
@@ -32,8 +32,9 @@ submodules:
   exposed as NED parameters (`hysteresisFactor`, `handoverDetachmentTime`,
   `isNr`).
 
-- **D2DModeController**: D2D mode selection and peer tracking were moved here
-  from `RlcEntityManager` and the former `stack/d2dModeSelection/` directory.
+- **D2DModeController**: D2D mode selection was moved here from the former
+  `stack/d2dModeSelection/` directory, and D2D peer tracking from
+  `LteRlcUmD2D`.
 
 ### QoS support: SDAP, DRBs and per-bearer PDCP/RLC entities
 
@@ -72,23 +73,21 @@ Details:
 - **Non-IP PDU session support**: SDAP was generalized for non-IP PDU session
   types, with `PduSessionType` enum and `upperProtocol` in DRB configuration.
 
-- **PDCP refactored into per-bearer entities**: PDCP processing was moved into
-  per-bearer `PdcpTxEntity` and `PdcpRxEntity` modules. The six PDCP subclasses
-  were first merged into a single `LtePdcp` class, then the class was split
-  into `PdcpUpperMux` (routing from upper layer to TX entities) and `DcMux`
-  (Dual Connectivity X2 forwarding). Bypass entities were added for the DC
-  secondary leg. Entities communicate via gates, not C++ method calls.
+- **PDCP refactored into per-bearer entities**: The former monolithic PDCP
+  module (which had six subclass variants for LTE/NR × UE/eNB/D2D) was
+  replaced with per-bearer `PdcpTxEntity` and `PdcpRxEntity` modules, plus
+  `PdcpMux` for upper-layer routing and `DcMux` for Dual Connectivity X2
+  forwarding. Bypass entities handle the DC secondary leg. Entities communicate
+  via OMNeT++ gates, not C++ method calls.
 
-- **RLC refactored into per-bearer entities**: The RLC class hierarchy was
-  flattened (D2D support merged into base class), and processing was moved into
-  per-bearer TX/RX entity modules. `RlcMux` handles MAC↔entity routing. AM and
-  TM entity support was integrated alongside UM entities. The standalone
-  `LteRlcAm`, `LteRlcTm` and `LteRlcUm` modules were deleted.
+- **RLC refactored into per-bearer entities**: The former `LteRlc` compound
+  module (containing `LteRlcUm`/`LteRlcUmD2D`, `LteRlcAm`, `LteRlcTm`) was
+  replaced with per-bearer TX/RX entity modules for all three RLC modes (UM,
+  AM, TM), plus `RlcMux` for MAC↔entity routing.
 
 - **PDCP↔RLC directly wired**: PDCP and RLC entities are connected directly
-  via per-bearer gates, eliminating the former `PdcpLowerMux` and `RlcUpperMux`
-  intermediate modules. The `PdcpLayer` and `LteRlc` compound modules were
-  dissolved — all submodules promoted to NIC level.
+  via per-bearer gates. All submodules now reside directly at NIC level — the
+  former `PdcpLayer` and `LteRlc` compound modules no longer exist.
 
 - **Example simulations**: `simulations/nr/standalone/omnetpp_drb.ini` with
   multi-UE, multi-QFI configurations.
@@ -124,7 +123,7 @@ Further module architecture improvements:
   OMNeT++ signals, fully decoupling the observer from protocol modules.
 
 - Replaced method-call-based packet passing with gate connections in several
-  places: `HandoverManager`, `DualConnectivityManager`, `Ip2Nic` (X2 path).
+  places: `LteHandoverManager`, `DualConnectivityManager`, `Ip2Nic` (X2 path).
 
 ### Type safety improvements
 
