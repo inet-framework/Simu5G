@@ -3,7 +3,8 @@
 //
 // Copyright (C) 2012 Antonio Virdis, Daniele Migliorini, Matteo Maria Andreozzi,
 //   Giovanni Accongiagioco, Generoso Pagano, Vincenzo Pii (SimuLTE)
-// Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
+// Copyright (C) 2013-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
+// Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea (University of Pisa)
 //
 // This file is part of a software released under the license included in file
 // "license.pdf". Please read LICENSE and README files before using it.
