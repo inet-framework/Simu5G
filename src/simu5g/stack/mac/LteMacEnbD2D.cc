@@ -1,6 +1,8 @@
 //
 //                  Simu5G
 //
+// Copyright (C) 2012 Antonio Virdis, Daniele Migliorini, Matteo Maria Andreozzi,
+//   Giovanni Accongiagioco, Generoso Pagano, Vincenzo Pii (SimuLTE)
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 // Editor: Mohamed Seliem (University College Cork)
 //
