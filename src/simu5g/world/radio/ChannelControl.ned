@@ -1,6 +1,9 @@
 //
 //                  Simu5G
 //
+// Copyright (C) 2004 Telecommunication Networks Group (TKN) at
+//              Technische Universitaet Berlin, Germany.
+//              Authors: Andras Varga, Steffen Sroka, Daniel Willkomm
 // Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
 //
 // This file is part of a software released under the license included in file
