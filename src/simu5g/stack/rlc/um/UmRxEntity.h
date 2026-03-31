@@ -42,6 +42,7 @@ class UmRxEntity : public cSimpleModule
 {
   protected:
 
+
     inet::ModuleRefByPar<Binder> binder_;
 
     // reference to eNB for statistic purpose
