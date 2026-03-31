@@ -40,7 +40,7 @@ class LteRlcUmDataPdu;
  */
 class UmRxEntity : public cSimpleModule
 {
-  public:
+public:
     UmRxEntity();
     ~UmRxEntity() override;
 
@@ -62,7 +62,7 @@ class UmRxEntity : public cSimpleModule
     // returns if the entity contains RLC pdus
     bool isEmpty() const { return buffered_.pkt == nullptr && pduBuffer_.size() == 0; }
 
-  protected:
+protected:
 
     /**
      * Initialize watches
@@ -99,7 +99,8 @@ class UmRxEntity : public cSimpleModule
     omnetpp::simtime_t lastTputSample;
     unsigned int tpsample;
 
-  private:
+
+private:
 
     inet::ModuleRefByPar<Binder> binder_;
 
