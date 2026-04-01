@@ -43,6 +43,9 @@ Define_Module(LteMacEnb);
 
 using namespace omnetpp;
 
+simsignal_t LteMacEnb::grantedBlocksSignal = registerSignal("grantedBlocks");
+simsignal_t LteMacEnb::bsrSizeSignal = registerSignal("bsrSize");
+
 /*********************
 * PUBLIC FUNCTIONS
 *********************/
