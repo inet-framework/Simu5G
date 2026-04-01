@@ -177,8 +177,6 @@ cplusplus {{
 #include <vector>
 #include <cstdint>
 
-namespace simu5g {
-
 /**
  * @brief Information for a NACK in a STATUS PDU, including optional byte segments and ranges.
  */
@@ -197,8 +195,6 @@ struct StatusPduData {
     uint32_t ackSn;
     std::vector<NackInfo> nacks;
 };
-
-} // namespace simu5g
 }}
 
 struct NackInfo {@existingClass;}

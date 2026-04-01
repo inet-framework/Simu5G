@@ -299,8 +299,8 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
     //delivered to MAC. For those messages connDesc_[cid] = toStore; is not set and an error occurs below.
     //We look for the entry here and discard the packet if not found
 
-    auto itc=connDesc_.find(cid);
-    if (itc==connDesc_.end()) {
+    auto itc=connDescOut_.find(cid);
+    if (itc==connDescOut_.end()) {
         //Not found
         delete pkt;
         return false;
@@ -1025,20 +1025,21 @@ void LteMacUe::deleteQueues(MacNodeId nodeId)
 void LteMacUe::deleteQueuesRadioLinkFailure(MacNodeId nodeId)  {
     Enter_Method_Silent();
 
-    for (auto mit = mbuf_.begin(); mit != mbuf_.end(); ) {;
-        while (!mit->second->isEmpty()) {
-            cPacket *pkt = mit->second->popFront();
-            delete pkt;
+    for (auto it = connDescOut_.begin(); it != connDescOut_.end(); ) {
+        auto& info = it->second;
+        if (info.queue != nullptr) {
+            while (!info.queue->isEmpty()) {
+                cPacket *pkt = info.queue->popFront();
+                delete pkt;
+            }
+            delete info.queue;
         }
-        delete mit->second;        // Delete Queue
-        mit = mbuf_.erase(mit);        // Delete Element
-    }
-    for (auto vit = macBuffers_.begin(); vit != macBuffers_.end(); ) {
-
-        while (!vit->second->isEmpty())
-            vit->second->popFront();
-        delete vit->second;                  // Delete Queue
-        vit = macBuffers_.erase(vit);           // Delete Element
+        if (info.buffer != nullptr) {
+            while (!info.buffer->isEmpty())
+                info.buffer->popFront();
+            delete info.buffer;
+        }
+        it = connDescOut_.erase(it);
     }
 
 
@@ -1086,7 +1087,7 @@ void LteMacUe::deleteQueuesRadioLinkFailure(MacNodeId nodeId)  {
 
     // remove traffic descriptor and lcg entry
     lcgMap_.clear();
-    connDesc_.clear();
+    connDescOut_.clear();
 
 }
 void LteMacUe::informRadioLinkFailure(MacNodeId nodeId) {

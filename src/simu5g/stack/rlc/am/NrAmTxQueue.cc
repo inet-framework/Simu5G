@@ -205,14 +205,16 @@ void NrAmTxQueue::sendSegment(PendingSegment segment)
 
     // Compute Segmentation Info (SI) — reuses FramingInfo field
     uint32_t segmentSize = segment.end - segment.start;
-    FramingInfo fi = 0; // 00 = full SDU
+    FramingInfo fi; // default: full SDU (both false)
     if (segmentSize != segment.totalLength) {
         if (segment.start == 0)
-            fi = 1;  // 01 = first segment
+            fi.lastIsFragment = true;  // 01 = first segment
         else if (segment.end == segment.totalLength - 1)
-            fi = 2;  // 10 = last segment
-        else
-            fi = 3;  // 11 = middle segment
+            fi.firstIsFragment = true;  // 10 = last segment
+        else {
+            fi.firstIsFragment = true;  // 11 = middle segment
+            fi.lastIsFragment = true;
+        }
     }
 
     auto *bufferedSdu = check_and_cast<inet::Packet *>(segment.ptr);
@@ -263,8 +265,8 @@ bool NrAmTxQueue::checkPolling()
 }
 void NrAmTxQueue::reportBufferStatus()
 {
-    auto vbuf = mac_->getMacBuffers();
-    unsigned int macOccupancy = vbuf->at(infoCid_)->getQueueOccupancy();
+    LteMacBuffer *vbuf = mac_->getMacBuffer(infoCid_);
+    unsigned int macOccupancy = (vbuf != nullptr) ? vbuf->getQueueOccupancy() : 0;
 
     if (macOccupancy == 0) {
         unsigned int pendingData = getPendingDataVolume();

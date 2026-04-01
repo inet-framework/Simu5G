@@ -17,7 +17,7 @@
 #define STACK_RLC_UM_RLCUMRECEPTIONBUFFER_H_
 
 #include <omnetpp.h>
-#include "stack/rlc/am/buffer/RlcSduSlidingWindowReceptionBuffer.h"
+#include "simu5g/stack/rlc/am/RlcSduSlidingWindowReceptionBuffer.h"
 
 namespace simu5g {
 

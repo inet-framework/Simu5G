@@ -60,7 +60,7 @@ class NrAmTxQueue : public omnetpp::cSimpleModule
 
     // Flow control info (one per logical channel)
     FlowControlInfo *lteInfo_ = nullptr;
-    MacCid infoCid_ = 0;
+    MacCid infoCid_;
 
     // MAC reference for buffer status reporting
     LteMacBase *mac_ = nullptr;

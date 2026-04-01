@@ -3,21 +3,21 @@
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
-// 
+//
 
 #include "X2HandoverDataMsgSerializer.h"
-#include "x2/packet/LteX2Message.h"
-#include "x2/packet/LteX2Message_m.h"
+#include "simu5g/x2/packet/LteX2Message.h"
+#include "simu5g/x2/packet/LteX2Message_m.h"
 #include "inet/common/packet/serializer/ChunkSerializerRegistry.h"
-#include "stack/handoverManager/X2HandoverDataMsg.h"
+#include "simu5g/stack/handoverManager/X2HandoverDataMsg.h"
 
 
 // class added to allow proper serialization of handover data

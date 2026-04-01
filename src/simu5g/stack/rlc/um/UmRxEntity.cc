@@ -588,6 +588,9 @@ void UmRxEntity::reassemble(unsigned int index)
                     if (sduLengthPktLeng != sduWholeLength)
                         throw cRuntimeError("UmRxEntity::reassemble(): failed reassembly, the reassembled SDU has size %zu B, while the original SDU had size %d B", sduLengthPktLeng, sduWholeLength);
 
+                    // for burst
+                    ttiBits_ += sduLengthPktLeng;
+
                     toPdcp(pktSdu);
                     pktSdu = nullptr;
 
@@ -601,221 +604,16 @@ void UmRxEntity::reassemble(unsigned int index)
 
                     clearBufferedSdu();
 
-                    // buffer the SDU and wait for the missing portion
+                    // for burst
+                    ttiBits_ += sduLengthPktLeng;
+
                     buffered_.pkt = pktSdu;
-                    pktSdu = nullptr;
                     buffered_.size = sduLengthPktLeng;
                     buffered_.currentPduSno = pduSno;
-
-                    // for burst
-                    ttiBits_ += sduLengthPktLeng;
-                    EV << NOW << " UmRxEntity::reassemble Wait for the missing part..." << endl;
-
-                    break;
-                }
-                case 2: {  // FI=10
-                    // it is the last portion of an SDU, take the awaiting SDU
-                    EV << NOW << " UmRxEntity::reassemble The PDU includes the last part [" << sduLengthPktLeng << " B] of an SDU [sno=" << sduSno << "]" << endl;
-
-                    // check SDU SN
-                    if (buffered_.pkt == nullptr ||
-                            (rlcSdu->getSnoMainPacket() != buffered_.pkt->peekAtFront<LteRlcSdu>()->getSnoMainPacket()) ||
-                            (pduSno != (buffered_.currentPduSno + 1)) ||  // first and only SDU in PDU. PduSno must be last+1, otherwise drop SDU.
-                            ignoreFragment)
-                    {
-                        if (pduSno != buffered_.currentPduSno) {
-                            EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, Pdu sequence numbers are not in sequence" << endl;
-                        }
-                        else {
-                            EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, first part missing" << endl;
-                        }
-                        clearBufferedSdu();
-
-                        //delete rlcSdu;
-                        delete pktSdu;
-                        pktSdu = nullptr;
-                        continue;
-                    }
-
-                    EV << NOW << " UmRxEntity::reassemble The waiting SDU has size " << buffered_.size << " bytes" << endl;
-
-                    unsigned int reassembledLength = buffered_.size + sduLengthPktLeng;
-                    if (reassembledLength < sduWholeLength) {
-                        clearBufferedSdu();
-                        EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, mid part missing" << endl;
-
-                        //delete rlcSdu;
-                        delete pktSdu;
-                        pktSdu = nullptr;
-                        continue;
-                    }
-                    else if (reassembledLength > sduWholeLength) {
-                        throw cRuntimeError("UmRxEntity::reassemble(): failed reassembly, the reassembled SDU has size %d B, while the original SDU had size %d B", reassembledLength, sduWholeLength);
-                    }
-
-                    // for burst
-                    ttiBits_ += sduLengthPktLeng;
-                    toPdcp(pktSdu);
                     pktSdu = nullptr;
 
-                    clearBufferedSdu();
-
-                    break;
-                }
-                case 3: {  // FI=11
-                    // add the length of this SDU to the awaiting SDU and wait for the missing portion
-                    EV << NOW << " UmRxEntity::reassemble The PDU includes the mid part [" << sduLengthPktLeng << " B] of an SDU [sno=" << sduSno << "]" << endl;
-
-                    // check SDU SN
-                    if (buffered_.pkt == nullptr ||
-                            (rlcSdu->getSnoMainPacket() != buffered_.pkt->peekAtFront<LteRlcSdu>()->getSnoMainPacket()) ||
-                            (pduSno != (buffered_.currentPduSno + 1)) ||  // first SDU but NOT only in PDU. PduSno must be last+1, otherwise drop SDU.
-                            ignoreFragment)
-                    {
-                        if (pduSno != buffered_.currentPduSno) {
-                            EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, Pdu sequence numbers are not in sequence" << endl;
-                        }
-                        else {
-                            EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, first part missing" << endl;
-                        }
-                        clearBufferedSdu();
-
-                        delete pktSdu;
-                        pktSdu = nullptr;
-                        continue;
-                    }
-
-                    // buffered_->setByteLength(buffered_->getByteLength() + rlcSdu->getByteLength());
-
-                    // for burst
-                    ttiBits_ += sduLengthPktLeng;
-                    buffered_.size += sduLengthPktLeng;
-                    buffered_.currentPduSno = pduSno;
-                    delete pktSdu;
-                    pktSdu = nullptr;
-
-                    EV << NOW << " UmRxEntity::reassemble The waiting SDU has size " << buffered_.size << " bytes, was " << buffered_.size - sduLengthPktLeng << " bytes" << endl;
                     EV << NOW << " UmRxEntity::reassemble Wait for the missing part..." << endl;
                 }
-                }
-            }
-            else { // [first SDU, i==0] there is more than one SDU in this PDU
-                EV << NOW << " UmRxEntity::reassemble Read the first chunk of the PDU" << endl;
-
-                // read the FI field
-                switch (fi) {
-
-                case 0: case 1: {  // FI=00 or FI=01
-                    // it is a whole SDU, send the SDU to the PDCP
-
-                    EV << NOW << " UmRxEntity::reassemble This is a whole SDU [sno=" << sduSno << "]" << endl;
-                    if (sduLengthPktLeng != sduWholeLength)
-                        throw cRuntimeError("UmRxEntity::reassemble(): failed reassembly, the reassembled SDU has size %zu B, while the original SDU had size %d B", sduLengthPktLeng, sduWholeLength);
-
-                    // for burst
-                    ttiBits_ += sduLengthPktLeng;
-                    toPdcp(pktSdu);
-                    pktSdu = nullptr;
-
-                    clearBufferedSdu();
-
-                    break;
-                }
-                case 2: case 3: {  // FI=10 or FI=11
-                    // it is the last portion of an SDU, take the awaiting SDU and send to the PDCP
-                    EV << NOW << " UmRxEntity::reassemble This is the last part [" << sduLengthPktLeng << " B] of an SDU [sno=" << sduSno << "]" << endl;
-
-                    // check SDU SN
-                    if (buffered_.pkt == nullptr ||
-                            (rlcSdu->getSnoMainPacket() != buffered_.pkt->peekAtFront<LteRlcSdu>()->getSnoMainPacket()) ||
-                            (pduSno != (buffered_.currentPduSno + 1)) ||  // first SDU but NOT only in PDU. PduSno must be last+1, otherwise drop SDU.
-                            ignoreFragment)
-                    {
-                        if (pduSno != (buffered_.currentPduSno + 1)) {
-                            EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, Pdu sequence numbers are not in sequence" << endl;
-                        }
-                        else {
-                            EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, first part missing" << endl;
-                        }
-                        clearBufferedSdu();
-                        EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, first part missing" << endl;
-
-                        delete pktSdu;
-                        pktSdu = nullptr;
-
-                        continue;
-                    }
-
-                    EV << NOW << " UmRxEntity::reassemble The waiting SDU has size " << buffered_.size << " bytes" << endl;
-
-                    unsigned int reassembledLength = buffered_.size + sduLengthPktLeng;
-                    if (reassembledLength < sduWholeLength) {
-                        clearBufferedSdu();
-                        EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, mid part missing" << endl;
-
-                        delete pktSdu;
-
-                        continue;
-                    }
-                    else if (reassembledLength > sduWholeLength) {
-                        throw cRuntimeError("UmRxEntity::reassemble(): failed reassembly, the reassembled SDU has size %d B, while the original SDU had size %d B", reassembledLength, sduWholeLength);
-                    }
-
-                    // for burst
-                    ttiBits_ += sduWholeLength; // remove the discarded SDU size from the throughput
-                    toPdcp(pktSdu);
-                    pktSdu = nullptr;
-
-                    clearBufferedSdu();
-
-                    break;
-                }
-                default: {
-                    throw cRuntimeError("UmRxEntity::reassemble(): FI field was not valid %d ", fi);
-                }
-                }
-            }
-        }
-        else if (i == numSdu - 1) { // last SDU in PDU with at least 2 SDUs
-            // read the FI field
-            switch (fi) {
-            case 0: case 2: {  // FI=00 or FI=10
-                // it is a whole SDU, send the SDU to the PDCP
-                EV << NOW << " UmRxEntity::reassemble This is a whole SDU [sno=" << sduSno << "]" << endl;
-                if (sduLengthPktLeng != sduWholeLength)
-                    throw cRuntimeError("UmRxEntity::reassemble(): failed reassembly, the reassembled SDU has size %zu B, while the original SDU had size %d B", sduLengthPktLeng, sduWholeLength);
-
-                // for burst
-                ttiBits_ += sduLengthPktLeng;
-
-                toPdcp(pktSdu);
-                pktSdu = nullptr;
-
-                clearBufferedSdu();
-
-                break;
-            }
-            case 1: case 3: {  // FI=01 or FI=11
-                // it is the first portion of an SDU, buffer it
-                EV << NOW << " UmRxEntity::reassemble The PDU includes the first part [" << sduLengthPktLeng << " B] of an SDU [sno=" << sduSno << "]" << endl;
-
-                clearBufferedSdu();
-
-                // for burst
-                ttiBits_ += sduLengthPktLeng;
-
-                buffered_.pkt = pktSdu;
-                buffered_.size = sduLengthPktLeng;
-                buffered_.currentPduSno = pduSno;
-                pktSdu = nullptr;
-
-                EV << NOW << " UmRxEntity::reassemble Wait for the missing part..." << endl;
-
-                break;
-            }
-            default: {
-                throw cRuntimeError("UmRxEntity::reassemble(): FI field was not valid %d ", fi);
-            }
             }
         }
         else {

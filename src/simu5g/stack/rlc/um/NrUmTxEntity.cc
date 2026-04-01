@@ -16,9 +16,9 @@
 #include "NrUmTxEntity.h"
 #include "NrRlcUmDataPdu.h"
 
-#include "stack/packetFlowManager/PacketFlowManagerUe.h"
-#include "stack/packetFlowManager/PacketFlowManagerEnb.h"
-#include "stack/mac/buffer/LteMacBuffer.h"
+#include "simu5g/stack/packetFlowManager/PacketFlowManagerUe.h"
+#include "simu5g/stack/packetFlowManager/PacketFlowManagerEnb.h"
+#include "simu5g/stack/mac/buffer/LteMacBuffer.h"
 namespace simu5g {
 using namespace inet;
 
@@ -143,22 +143,15 @@ void NrUmTxEntity::rlcPduMake(int pduLength)
 
     // compute SI
     // the meaning of this field is specified in 3GPP TS 36.322 but is different in TS 38.322, called SI, but we reuse the FramingInfo field
-    FramingInfo fi = 0; //00 //full sdu
-    unsigned short int mask;
-
-
+    FramingInfo fi; // default: full SDU (both false)
 
     if (startFragment) {
-        mask = 1;   // 01
-        fi |= mask;
-
+        fi.lastIsFragment = true;  // 01 = first segment
     } else if (endFragment) {
-        mask = 2;   // 10
-        fi |= mask;
+        fi.firstIsFragment = true;  // 10 = last segment
     } else if (middleFragment) {
-        mask =3; //11
-        fi |=mask;
-
+        fi.firstIsFragment = true;  // 11 = middle segment
+        fi.lastIsFragment = true;
     }
     //Finish PDU
     len=segment.end-segment.start +1;
@@ -294,9 +287,8 @@ void  NrUmTxEntity::reportBufferStatus(inet::Packet* pkt) {
         unsigned int pendingData=sduBuffer->getTotalPendingBytes();
 
 
-        auto vbuf= mac->getMacBuffers();
-
-        unsigned int macOccupancy = vbuf->at(infoCid_)->getQueueOccupancy();
+        LteMacBuffer *vbuf = mac->getMacBuffer(infoCid_);
+        unsigned int macOccupancy = (vbuf != nullptr) ? vbuf->getQueueOccupancy() : 0;
 
 
         if (macOccupancy==0 && pendingData>0) {

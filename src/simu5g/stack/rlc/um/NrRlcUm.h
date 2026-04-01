@@ -3,29 +3,29 @@
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
-// 
+//
 
 #ifndef __SIMU5G_NRRLCUM_H_
 #define __SIMU5G_NRRLCUM_H_
 
 
 #include <omnetpp.h>
-#include "common/LteCommon.h"
-#include "common/LteControlInfo.h"
-#include "stack/rlc/packet/LteRlcSdu_m.h"
-#include "stack/rlc/um/NrUmTxEntity.h"
-#include "stack/rlc/um/NrUmRxEntity.h"
-#include "stack/rlc/packet/LteRlcDataPdu.h"
-#include "stack/mac/LteMacBase.h"
-#include "nodes/mec/utils/MecCommon.h"
+#include "simu5g/common/LteCommon.h"
+#include "simu5g/common/LteControlInfo.h"
+#include "simu5g/stack/rlc/packet/LteRlcSdu_m.h"
+#include "simu5g/stack/rlc/um/NrUmTxEntity.h"
+#include "simu5g/stack/rlc/um/NrUmRxEntity.h"
+#include "simu5g/stack/rlc/packet/LteRlcDataPdu.h"
+#include "simu5g/stack/mac/LteMacBase.h"
+#include "simu5g/mec/utils/MecCommon.h"
 #include "LteRlcUm.h"
 
 
@@ -102,7 +102,7 @@ public:
      *
      * @param pkt packet to be dropped
      */
-    virtual void dropBufferOverflow(cPacket *pkt) override ;
+    virtual void dropBufferOverflow(cPacket *pkt);
 
     virtual void resumeDownstreamInPackets(MacNodeId peerId) override {}
 

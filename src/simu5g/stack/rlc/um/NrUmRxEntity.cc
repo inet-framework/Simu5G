@@ -15,9 +15,9 @@
 
 #include "NrUmRxEntity.h"
 
-#include "stack/rlc/um//NrUmRxEntity.h"
-#include "stack/mac/LteMacBase.h"
-#include "stack/mac/LteMacEnb.h"
+#include "simu5g/stack/rlc/um/NrUmRxEntity.h"
+#include "simu5g/stack/mac/LteMacBase.h"
+#include "simu5g/stack/mac/LteMacEnb.h"
 
 namespace simu5g {
 
@@ -82,7 +82,7 @@ void NrUmRxEntity::enque(cPacket *pktAux)
      }
      */
     //Check if this is a complete SUD
-    if (pdu->getFramingInfo()==0) {
+    if (!pdu->getFramingInfo().firstIsFragment && !pdu->getFramingInfo().lastIsFragment) {
         //Remove header and deliver  to upper layer
         size_t sduLengthPktLeng;
         auto pktSdu = check_and_cast<Packet *>(pdu->popSdu(sduLengthPktLeng));
