@@ -56,6 +56,13 @@ class LteMacEnb : public LteMacBase
 
     /*******************************************************************************************/
 
+    /// Number of RACH preambles for contention-based random access
+    int numPreambles_ = 64;
+
+    /// Pending RAC requests received during this TTI, grouped by preamble index.
+    /// Resolved at the start of handleSelfMessage() to detect collisions.
+    std::map<int, std::vector<inet::Packet *>> pendingRacRequests_;
+
     /// Buffer for the BSRs
     LteMacBufferMap bsrbuf_;
 
@@ -150,9 +157,15 @@ class LteMacEnb : public LteMacBase
     void macHandleFeedbackPkt(cPacket *pkt) override;
 
     /*
-     * Receives and handles RAC requests.
+     * Buffers incoming RAC requests for preamble collision detection.
      */
     void macHandleRac(cPacket *pkt) override;
+
+    /*
+     * Resolves buffered RAC requests: detects preamble collisions and sends
+     * success/failure responses. Called at the start of each TTI.
+     */
+    void resolveRacCollisions();
 
     /*
      * Update UserTxParam stored in every lteMacPdu when an RTX changes this information.

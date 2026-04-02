@@ -79,6 +79,8 @@ simple LteMacEnb extends LteMacBase
 
         string pilotMode @enum(IN_CQI,MAX_CQI,AVG_CQI,MEDIAN_CQI,ROBUST_CQI) = default("ROBUST_CQI");
 
+        int numPreambles = default(64);        // number of RACH preambles available for contention-based random access
+
         string cellInfoModule;
         string rlcUmModule = default("^.rlc.um");
         string pdcpRrcModule = default("^.pdcpRrc");
