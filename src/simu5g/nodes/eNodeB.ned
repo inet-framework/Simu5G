@@ -2,7 +2,7 @@
 //                           Simu5G
 //
 // Copyright (C) 2012-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis et al. (University of Pisa)
-// Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea (University of Pisa)
+// Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea et al. (University of Pisa)
 //
 // This file is part of a software released under the license included in file
 // "license.pdf". This license can be also found at http://www.ltesimulator.com/
