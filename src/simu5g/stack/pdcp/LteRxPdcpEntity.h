@@ -40,7 +40,7 @@ class LteRxPdcpEntity : public cSimpleModule
     bool headerCompressionEnabled_;
 
     // Logical CID for this connection
-    LogicalCid lcid_;
+    LogicalCid lcid_ = 0;  //TODO currently UNFILLED!
 
     // handler for PDCP SDU
     virtual void handlePdcpSdu(Packet *pkt, unsigned int sequenceNumber);
