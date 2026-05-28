@@ -20,6 +20,7 @@ import argparse
 import copy
 import csv
 import glob
+import yaml
 import multiprocessing
 import os
 import re
@@ -74,6 +75,33 @@ fpExtraArgs = {
               "'--**.signalAnimationSpeedChangeTimeMode=\"animationTime\"'"
             }
 }
+
+
+def fingerprintGroupToDict(fingerprintGroup : List[List[str]]) -> dict:
+    """Convert fingerprint group to a dict mapping type -> value (or list of values)."""
+    fp_dict = {}
+    for fp_list in fingerprintGroup:
+        for fp in fp_list:
+            value, fptype = fp.split('/', 1)
+            if fptype in fp_dict:
+                if isinstance(fp_dict[fptype], list):
+                    fp_dict[fptype].append(value)
+                else:
+                    fp_dict[fptype] = [fp_dict[fptype], value]
+            else:
+                fp_dict[fptype] = value
+    return fp_dict
+
+
+def fingerprintDictToGroupStr(fp_dict : dict) -> str:
+    """Convert a YAML fingerprint dict back to CSV-style string (e.g. 'b2da-7a81/tplx;ee93-a680/tilx')."""
+    parts = []
+    for fptype, value in fp_dict.items():
+        if isinstance(value, list):
+            parts.append(' '.join(f"{v}/{fptype}" for v in value))
+        else:
+            parts.append(f"{value}/{fptype}")
+    return ';'.join(parts)
 
 
 def formatFingerprintGroupForCsv(fingerprintGroup : List[List[str]]):
@@ -196,8 +224,35 @@ class FingerprintTestCaseGenerator():
         for line in csvData:
             yield p.sub('',line.decode('utf-8'))
 
-    # parse the CSV into a list of dicts
-    def parseSimulationsTable(self, csvFile):
+    def parseSimulationsTable(self, specFile):
+        if specFile.endswith(('.yaml', '.yml')):
+            return self._parseYaml(specFile)
+        else:
+            return self._parseCsv(specFile)
+
+    # parse a YAML file into a list of dicts
+    def _parseYaml(self, yamlFile):
+        simulations = []
+        with open(yamlFile, 'r') as f:
+            data = yaml.safe_load(f)
+        for i, entry in enumerate(data.get('simulations', [])):
+            expectedResult = entry.get('expected', 'PASS')
+            if expectedResult not in ['PASS', 'FAIL', 'ERROR']:
+                raise Exception(yamlFile + " entry " + str(i) + ": 'expected' must be one of 'PASS', 'FAIL', 'ERROR', got: '" + expectedResult + "'")
+            simulations.append({
+                    'file': yamlFile,
+                    'line': i,
+                    'wd': entry['workingdir'],
+                    'args': entry['args'],
+                    'simtimelimit': entry['simtimelimit'],
+                    'fingerprint': fingerprintDictToGroupStr(entry['fingerprint']),
+                    'expectedResult': expectedResult,
+                    'tags': entry.get('tags', '')
+                    })
+        return simulations
+
+    # parse a CSV file into a list of dicts
+    def _parseCsv(self, csvFile):
         simulations = []
         f = open(csvFile, 'rb')
         csvReader = csv.reader(self.commentRemover(f), delimiter=str(','), quotechar=str('"'), skipinitialspace=True)
@@ -224,30 +279,39 @@ class FingerprintTestCaseGenerator():
         return simulations
 
     def writeUpdatedCSVFiles(self):
-        for csvFile, simulations in self.fileToSimulationsMap.items():
-            updatedContents = self.formatUpdatedSimulationsTable(csvFile, simulations)
+        for specFile, simulations in self.fileToSimulationsMap.items():
+            if specFile.endswith(('.yaml', '.yml')):
+                updatedContents = self._formatUpdatedYaml(simulations)
+            else:
+                updatedContents = self.formatUpdatedSimulationsTable(specFile, simulations)
             if updatedContents:
-                updatedFile = csvFile + ".UPDATED"
+                updatedFile = specFile + ".UPDATED"
                 ff = open(updatedFile, 'w')
                 ff.write(updatedContents)
                 ff.close()
                 print("Check " + updatedFile + " for updated fingerprints")
 
     def writeFailedCSVFiles(self):
-        for csvFile, simulations in self.fileToSimulationsMap.items():
-            failedContents = self.formatFailedSimulationsTable(csvFile, simulations)
+        for specFile, simulations in self.fileToSimulationsMap.items():
+            if specFile.endswith(('.yaml', '.yml')):
+                failedContents = self._formatSubsetYaml(simulations, lambda s: 'computedFingerprint' in s and s['computedFingerprint'] != s.get('expectedFingerprint'))
+            else:
+                failedContents = self.formatFailedSimulationsTable(specFile, simulations)
             if failedContents:
-                failedFile = csvFile + ".FAILED"
+                failedFile = specFile + ".FAILED"
                 ff = open(failedFile, 'w')
                 ff.write(failedContents)
                 ff.close()
                 print("Check " + failedFile + " for failed fingerprints")
 
     def writeErrorCSVFiles(self):
-        for csvFile, simulations in self.fileToSimulationsMap.items():
-            errorContents = self.formatErrorSimulationsTable(csvFile, simulations)
+        for specFile, simulations in self.fileToSimulationsMap.items():
+            if specFile.endswith(('.yaml', '.yml')):
+                errorContents = self._formatSubsetYaml(simulations, lambda s: s.get('exitcode', 0) != 0)
+            else:
+                errorContents = self.formatErrorSimulationsTable(specFile, simulations)
             if errorContents:
-                errorFile = csvFile + ".ERROR"
+                errorFile = specFile + ".ERROR"
                 ff = open(errorFile, 'w')
                 ff.write(errorContents)
                 ff.close()
@@ -329,6 +393,71 @@ class FingerprintTestCaseGenerator():
                 result.append(lines[simulation['line']])
 
         return ''.join(result) if containsErrors else None
+
+    def _simulationToYamlEntry(self, simulation, useComputed=False):
+        """Convert a simulation dict to a YAML-serializable dict."""
+        if useComputed and 'computedFingerprint' in simulation:
+            # Merge computed fingerprint into the original
+            orig_fp = parseFingerprintGroupFromCsv(simulation['fingerprint'])
+            orig_dict = fingerprintGroupToDict(orig_fp)
+            computed_dict = fingerprintGroupToDict(simulation['computedFingerprint'])
+            # Replace values for types that were computed
+            for fptype, value in computed_dict.items():
+                orig_dict[fptype] = value
+            fp_dict = orig_dict
+        else:
+            fp_dict = fingerprintGroupToDict(parseFingerprintGroupFromCsv(simulation['fingerprint']))
+
+        entry = {
+            'workingdir': simulation['wd'],
+            'args': simulation['args'],
+            'simtimelimit': simulation['simtimelimit'],
+            'fingerprint': fp_dict,
+            'expected': simulation['expectedResult'],
+        }
+        if simulation.get('tags', '').strip():
+            entry['tags'] = simulation['tags'].strip()
+        return entry
+
+    def _formatUpdatedYaml(self, simulations):
+        """Format all simulations as YAML, with computed fingerprints where available."""
+        containsComputedFingerprint = any('computedFingerprint' in s for s in simulations)
+        if not containsComputedFingerprint:
+            return None
+        entries = [self._simulationToYamlEntry(s, useComputed=True) for s in simulations]
+        return yaml.dump({'simulations': entries}, default_flow_style=False, sort_keys=False)
+
+    def _formatSubsetYaml(self, simulations, predicate):
+        """Format a subset of simulations (matching predicate) as YAML."""
+        subset = [s for s in simulations if predicate(s)]
+        if not subset:
+            return None
+        entries = [self._simulationToYamlEntry(s, useComputed=True) for s in subset]
+        return yaml.dump({'simulations': entries}, default_flow_style=False, sort_keys=False)
+
+    def _formatAsCsv(self, simulations):
+        """Format simulations list as CSV text."""
+        # Determine column widths for alignment
+        col1 = max(len(s['wd']) for s in simulations) + 1
+        col2 = max(len(s['args']) for s in simulations) + 1
+        col3 = max(len(s['simtimelimit']) for s in simulations) + 1
+        col4 = max(len(s['fingerprint']) for s in simulations)
+        lines = []
+        lines.append("# workingdir," + " " * (col1 - 12) + "args," + " " * (col2 - 5) +
+                     "simtimelimit," + " " * (col3 - 13) + "fingerprint," + " " * (col4 - 12) +
+                     " expected result, tags\n")
+        for s in simulations:
+            line = "%-*s %-*s %-*s %-*s %s," % (
+                col1 + 1, s['wd'] + ',',
+                col2 + 1, s['args'] + ',',
+                col3 + 1, s['simtimelimit'] + ',',
+                col4 + 1, s['fingerprint'] + ',',
+                s['expectedResult']
+            )
+            if s.get('tags', '').strip():
+                line += " " + s['tags']
+            lines.append(line.rstrip() + "\n")
+        return ''.join(lines)
 
 
 class SimulationResult:
@@ -807,7 +936,28 @@ if __name__ == "__main__":
     parser.add_argument('-n', type=int, default=1, help='Split the selected test cases into n sets, and only run one of these sets')
     parser.add_argument('-i', type=int, default=0, help='Which set of test cases to run [0..n-1]')
     parser.add_argument('-l', '--logfile', default = "fingerprinttest.out", metavar='filename', help='name of the logfile')
+    parser.add_argument('--convert', metavar='specfile', help='Convert a spec file between CSV and YAML formats (based on input extension) and exit')
+    parser.add_argument('-o', '--output', metavar='outfile', help='Output file for --convert (default: derived from input extension)')
     args = parser.parse_args()
+
+    if args.convert:
+        generator = FingerprintTestCaseGenerator()
+        inputFile = args.convert
+        simulations = generator.parseSimulationsTable(inputFile)
+        if inputFile.endswith(('.yaml', '.yml')):
+            outputFile = args.output or (os.path.splitext(inputFile)[0] + '.csv')
+            contents = generator._formatAsCsv(simulations)
+        else:
+            outputFile = args.output or (os.path.splitext(inputFile)[0] + '.yaml')
+            entries = [generator._simulationToYamlEntry(s) for s in simulations]
+            contents = yaml.dump({'simulations': entries}, default_flow_style=False, sort_keys=False)
+        if os.path.exists(outputFile):
+            print(f"Error: output file '{outputFile}' already exists. Use -o to specify a different name, or remove it first.")
+            sys.exit(1)
+        with open(outputFile, 'w') as f:
+            f.write(contents)
+        print(f"{inputFile} -> {outputFile} ({len(simulations)} simulations)")
+        sys.exit(0)
 
     logFile = args.logfile
 
@@ -816,7 +966,7 @@ if __name__ == "__main__":
     FILE.close()
 
     if not args.testspecfiles:
-        args.testspecfiles = glob.glob('*.csv')
+        args.testspecfiles = glob.glob('*.csv') + glob.glob('*.yaml') + glob.glob('*.yml')
 
     if args.calculator:
         extraOppRunArgs += " --fingerprintcalculator-class=" + args.calculator
