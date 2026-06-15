@@ -82,6 +82,16 @@ void AmRxQueue::handleMessage(cMessage *msg)
         // Send status report to the AM Tx entity
         sendStatusReport();
 
+        // Autonomously advance the receiver window over the contiguous head of
+        // received PDUs (the cumulative prefix just reported to the TX). This
+        // replaces the MRW handshake. Only advance if a report was actually
+        // sent, so the TX has learned about the PDUs we are sliding past.
+        if (lastSentAck_ == NOW) {
+            int shift = computeWindowShift();
+            if (shift > 0)
+                moveRxWindow(rxWindowDesc_.firstSeqNum_ + shift);
+        }
+
         // Reschedule the timer if there are PDUs in the buffer
         for (unsigned int i = 0; i < rxWindowDesc_.windowSize_; i++) {
             if (pduBuffer_.get(i) != nullptr) {
@@ -187,36 +197,6 @@ void AmRxQueue::enque(Packet *pkt)
         if ((pdu->getAmType() == ACK)) {
             EV << NOW << " AmRxQueue::enque Received ACK message" << endl;
             // Forward ACK to associated transmitting entity
-            routeControlToTxEntity(pkt);
-        }
-        else if ((pdu->getAmType() == MRW)) {
-            EV << NOW << " AmRxQueue::enque MRW command [" <<
-                pdu->getSnoMainPacket()
-               << "] received for sequence number  " << pdu->getLastSn() << endl;
-            // Move the receiver window
-            moveRxWindow(pdu->getLastSn());
-
-            // ACK this message
-            auto pktAux = new Packet("rlcAmPdu (MRW ACK)");
-
-            auto mrw = makeShared<LteRlcAmPdu>();
-            mrw->setAmType(MRW_ACK);
-            mrw->setSnoMainPacket(pdu->getSnoMainPacket());
-            mrw->setSnoFragment(rxWindowDesc_.firstSeqNum_);
-            // TODO: setting AM control byte size
-            mrw->setChunkLength(B(RLC_HEADER_AM));
-            pktAux->insertAtFront(mrw);
-            // Set flow control info
-            *pktAux->addTagIfAbsent<FlowControlInfo>() = *ackFlowControlInfo_;
-            // Buffer control PDU via TX entity for transmission
-            bufferControlViaTxEntity(pktAux);
-            EV << NOW << " AmRxQueue::enque sending MRW_ACK message " << pdu->getSnoMainPacket() << endl;
-
-            delete pkt;
-        }
-        else if ((pdu->getAmType() == MRW_ACK)) {
-            EV << NOW << " MRW ACK routing to TX entity " << endl;
-            // Route message to reverse link TX entity
             routeControlToTxEntity(pkt);
         }
         else {

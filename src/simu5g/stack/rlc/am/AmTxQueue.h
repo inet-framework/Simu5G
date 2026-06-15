@@ -76,11 +76,6 @@ class AmTxQueue : public RlcTxEntityBase
     cArray pduRtxQueue_;
 
     /*
-     * The MRW PDU retransmission buffer.
-     */
-    cArray mrwRtxQueue_;
-
-    /*
      * The buffer for PDUs waiting to be requested from MAC
      */
     inet::cPacketQueue pduBuffer_;
@@ -96,17 +91,11 @@ class AmTxQueue : public RlcTxEntityBase
     // Transmission window descriptor
     RlcWindowDesc txWindowDesc_;
 
-    // Move receive window command descriptor
-    MrwDesc mrwDesc_;
-
     //-------------------------------------------------------------------------
     //                Timers and Timeouts
     //-------------------------------------------------------------------------
     // A multi-timer is kept to manage retransmissions and PDUs discard
     TMultiTimer pduTimer_;
-
-    // A multi-timer is kept to manage MRW control messages
-    TMultiTimer mrwTimer_;
 
     // A Generic timer is used to analyze the buffer status
     TTimer bufferStatusTimer_;
@@ -125,8 +114,6 @@ class AmTxQueue : public RlcTxEntityBase
 
     //-------------------------------------------------------------------------
 
-    // Map of RLC Control PDUs that are waiting for ACK
-    std::map<int, LteRlcAmPdu *> unackedMrw_;
 
   public:
     AmTxQueue();
@@ -198,15 +185,10 @@ class AmTxQueue : public RlcTxEntityBase
      */
     void moveTxWindow(const int seqNum);
 
-    /* Send a MRW control message
-     *
-     * @param seqNum
+    /* Advances the transmitter window over the contiguous head of
+     * acknowledged or discarded PDUs (autonomous, replaces the MRW handshake).
      */
-    void sendMrw(const int seqNum);
-
-    /* Checks if the receiver window has to be shifted
-     */
-    void checkForMrw();
+    void advanceTxWindow();
 
     /* Receive a cumulative ACK from the transmitter ACK entity
      *
@@ -220,15 +202,8 @@ class AmTxQueue : public RlcTxEntityBase
      */
     void recvAck(const int seqNum);
 
-    /* Receive a MRW from the AM Receiver
-     *
-     * @param seqNum
-     */
-    void recvMrwAck(const int seqNum);
-
     /* Timer events handlers */
     void pduTimerHandle(const int sn);
-    void mrwTimerHandle(const int sn);
 
     std::deque<Packet *> *fragmentFrame(Packet *frame, std::deque<int>& windowsIndex, RlcFragDesc rlcFragDesc);
 };

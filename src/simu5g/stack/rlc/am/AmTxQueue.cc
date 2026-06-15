@@ -22,11 +22,10 @@ namespace simu5g {
 Define_Module(AmTxQueue);
 
 AmTxQueue::AmTxQueue() :
-     pduTimer_(this), mrwTimer_(this), bufferStatusTimer_(this)
+     pduTimer_(this), bufferStatusTimer_(this)
 {
     // Initialize timer IDs
     pduTimer_.setTimerId(PDU_T);
-    mrwTimer_.setTimerId(MRW_T);
     bufferStatusTimer_.setTimerId(BUFFER_T);
 }
 
@@ -65,14 +64,6 @@ AmTxQueue::~AmTxQueue()
     for (int i = 0; i < pduRtxQueue_.size(); i++) {
         if (pduRtxQueue_.get(i) != nullptr) {
             auto pktPdu = check_and_cast<Packet *>(pduRtxQueue_.remove(i));
-            delete pktPdu;
-        }
-    }
-
-    // Clear retransmission buffer
-    for (int i = 0; i < mrwRtxQueue_.size(); i++) {
-        if (mrwRtxQueue_.get(i) != nullptr) {
-            auto pktPdu = check_and_cast<Packet *>(mrwRtxQueue_.remove(i));
             delete pktPdu;
         }
     }
@@ -323,16 +314,16 @@ void AmTxQueue::discard(const int seqNum)
             break;
         }
     }
-    // Check if a move receiver window command can be issued.
-    checkForMrw();
+    // Try to advance the transmitter window past the discarded PDUs.
+    advanceTxWindow();
 }
 
-void AmTxQueue::checkForMrw()
+void AmTxQueue::advanceTxWindow()
 {
-    EV << NOW << " AmTxQueue::checkForMrw " << endl;
+    EV << NOW << " AmTxQueue::advanceTxWindow " << endl;
 
-    // If there is a discarded RLC PDU at the beginning of the buffer, try
-    // to move the transmitter window
+    // Advance the transmitter window over the contiguous head of
+    // acknowledged or discarded PDUs (autonomous, replaces the MRW handshake).
     int lastPdu = 0;
     bool toMove = false;
 
@@ -347,11 +338,11 @@ void AmTxQueue::checkForMrw()
     }
 
     if (toMove) {
-        int lastSn = txWindowDesc_.firstSeqNum_ + lastPdu;
+        int newFirstSn = txWindowDesc_.firstSeqNum_ + lastPdu + 1;
 
-        EV << NOW << " AmTxQueue::checkForMrw  detected a shift from " << lastSn << endl;
+        EV << NOW << " AmTxQueue::advanceTxWindow  shifting window to " << newFirstSn << endl;
 
-        sendMrw(lastSn + 1);
+        moveTxWindow(newFirstSn);
     }
 }
 
@@ -450,42 +441,6 @@ void AmTxQueue::moveTxWindow(const int seqNum)
     addPdus();
 }
 
-void AmTxQueue::sendMrw(const int seqNum)
-{
-    EV << NOW << " AmTxQueue::sendMrw sending MRW PDU [" << mrwDesc_.mrwSeqNum_
-       << "] for sequence number " << seqNum << endl;
-
-    // create a new RLC PDU
-    auto pktPdu = new Packet("rlcAmPdu (MRW)");
-    auto pdu = makeShared<LteRlcAmPdu>();
-    // set RLC type descriptor
-    pdu->setAmType(MRW);
-    // set fragmentation info
-    pdu->setTotalFragments(1);
-    pdu->setSnoFragment(mrwDesc_.mrwSeqNum_);
-    pdu->setSnoMainPacket(mrwDesc_.mrwSeqNum_);
-    // set fragment size
-    pdu->setChunkLength(B(fragDesc_.fragUnit_));
-    // prepare MRW control data
-    pdu->setFirstSn(0);
-    pdu->setLastSn(seqNum);
-    // set control info
-    pktPdu->insertAtFront(pdu);
-    *(pktPdu->addTagIfAbsent<FlowControlInfo>()) = *lteInfo_;
-
-    auto pduCopy = pktPdu->dup();
-    // save copy for retransmission
-    mrwRtxQueue_.addAt(mrwDesc_.mrwSeqNum_, pduCopy);
-    // update MRW descriptor
-    mrwDesc_.lastMrw_ = mrwDesc_.mrwSeqNum_;
-    // Start a timer for MRW message
-    mrwTimer_.add(ctrlPduRtxTimeout_, mrwDesc_.mrwSeqNum_);
-    // Increment mrwSn_
-    mrwDesc_.mrwSeqNum_++;
-    // Send the MRW message
-    bufferControlPdu(pktPdu);
-}
-
 void AmTxQueue::bufferControlPdu(cPacket *pkt) {
     bufferPdu(pkt);
 }
@@ -569,16 +524,6 @@ void AmTxQueue::processControlPacket(Packet *pktPdu) {
     short type = pdu->getAmType();
 
     switch (type) {
-        case MRW_ACK:
-            EV << NOW << " AmTxQueue::handleControlPacket , received MRW ACK ["
-               << pdu->getSnoMainPacket() << "]: window new first SN  "
-               << pdu->getSnoFragment() << endl;
-            // move tx window
-            moveTxWindow(pdu->getSnoFragment());
-            // signal ACK reception
-            recvMrwAck(pdu->getSnoMainPacket());
-            break;
-
         case ACK:
             EV << NOW << " AmTxQueue::handleControlPacket , received ACK " << endl;
             recvCumulativeAck(pdu->getLastSn());
@@ -597,6 +542,8 @@ void AmTxQueue::processControlPacket(Packet *pktPdu) {
                 }
             }
 
+            // Autonomously advance the window over the acknowledged head.
+            advanceTxWindow();
             break;
     }
 
@@ -670,28 +617,7 @@ void AmTxQueue::recvCumulativeAck(const int seqNum)
                 received_.at(i) = true;
             }
         }
-        checkForMrw();
     }
-}
-
-void AmTxQueue::recvMrwAck(const int seqNum)
-{
-    EV << NOW << " AmTxQueue::recvMrwAck for MRW command number " << seqNum << endl;
-
-    if (mrwRtxQueue_.get(seqNum) == nullptr) {
-        // The message is related to an MRW which has been discarded by the handle function because it was obsolete.
-        return;
-    }
-
-    // Remove the MRW PDU from the retransmission buffer
-    auto mrwPdu = check_and_cast<Packet *>(mrwRtxQueue_.remove(seqNum));
-
-    // Stop the related timer
-    if (mrwTimer_.busy(seqNum)) {
-        mrwTimer_.remove(seqNum);
-    }
-    // deallocate the MRW PDU
-    delete mrwPdu;
 }
 
 void AmTxQueue::pduTimerHandle(const int sn)
@@ -755,38 +681,6 @@ void AmTxQueue::pduTimerHandle(const int sn)
     }
 }
 
-void AmTxQueue::mrwTimerHandle(const int sn)
-{
-    EV << NOW << " AmTxQueue::mrwTimerHandle MRW_ACK sn: " << sn << endl;
-
-    mrwTimer_.handle(sn);
-
-    if (mrwRtxQueue_.get(sn) == nullptr)
-        throw cRuntimeError("MRW handler: MRW of SN %d not found in MRW message queue", sn);
-
-    // Check if a newer message has been sent
-    if (mrwDesc_.lastMrw_ > sn) {
-        EV << NOW << "AmTxQueue::mrwTimerHandle newer MRW has been sent - no action has to be taken" << endl;
-
-        // A newer message has been sent
-        // Delete the RLC PDU
-        delete (mrwRtxQueue_.remove(sn));
-    }
-    else {
-        EV << NOW << "AmTxQueue::mrwTimerHandle retransmitting MRW" << endl;
-
-        auto pktPdu = check_and_cast<Packet *>(mrwRtxQueue_.remove(sn));
-        auto pdu = pktPdu->peekAtFront<LteRlcAmPdu>();
-        // Retransmit the MRW message
-        Packet *pduCopy = pktPdu->dup();
-        // Enqueue the PDU into the retransmission buffer
-        mrwRtxQueue_.addAt(sn, pduCopy);
-        // Retransmit the MRW control message
-        mrwTimer_.add(ctrlPduRtxTimeout_, sn);
-        bufferPdu(pktPdu);
-    }
-}
-
 void AmTxQueue::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage()) {
@@ -798,8 +692,8 @@ void AmTxQueue::handleMessage(cMessage *msg)
 
         switch (type) {
             case TTSIMPLE:
-                // Check the buffer status and eventually send an MRW command.
-                checkForMrw();
+                // Periodic safety check: advance the window if its head is acked.
+                advanceTxWindow();
                 // signal the timer the event has been handled
                 bufferStatusTimer_.handle();
                 break;
@@ -809,9 +703,6 @@ void AmTxQueue::handleMessage(cMessage *msg)
 
                 if (amType == PDU_T) {
                     pduTimerHandle(tmtmsg->getEvent());
-                }
-                else if (amType == MRW_T) {
-                    mrwTimerHandle(tmtmsg->getEvent());
                 }
                 else
                     throw cRuntimeError("AmTxQueue::handleMessage(): unexpected timer event received");

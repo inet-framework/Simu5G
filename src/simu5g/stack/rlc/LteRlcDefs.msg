@@ -55,10 +55,6 @@ enum LteAmType
     // ****** control packets ********
     // ACK
     ACK     = 1;
-    // Move Receiver Window
-    MRW     = 2;
-    // Move Receiver Window ACK
-    MRW_ACK = 3;
     // BITMAP
     // BITMAP = 4;
 };
@@ -128,21 +124,9 @@ struct RlcWindowDesc
     unsigned int windowSize_ = 0;
 };
 
-//
-// Move Receiver Window command descriptor
-//
-struct MrwDesc
-{
-    //! MRW current Sequence Number
-    unsigned int mrwSeqNum_ = 0;
-    //! Last MRW Sequence Number
-    unsigned int lastMrw_ = 0;
-};
-
 enum RlcAmTimerType
 {
     PDU_T = 0;
-    MRW_T = 1;
     BUFFER_T = 2;
     BUFFERSTATUS_T = 3;
 };
