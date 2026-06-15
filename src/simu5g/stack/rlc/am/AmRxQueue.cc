@@ -532,67 +532,45 @@ void AmRxQueue::sendStatusReport()
         return;
     }
 
-    // Compute cumulative ACK
-    int cumulative = 0;
-    bool hole = !received_.at(0);
-    std::vector<bool> bitmap;
-
+    // Build the STATUS PDU (3GPP TS 36.322 / 38.322 style): ACK_SN is one past
+    // the highest received PDU; every still-missing SN below it is NACKed.
+    int highest = -1;
     for (int i = 0; i < rxWindowDesc_.windowSize_; ++i) {
-        if ((received_.at(i) == true) && !hole) {
-            cumulative++;
-        }
-        else if ((cumulative > 0) || hole) {
-            hole = true;
-            bitmap.push_back(received_.at(i));
+        if (received_.at(i) == true)
+            highest = i;
+    }
+
+    if (highest < 0) {
+        EV << NOW << " AmRxQueue::sendStatusReport : nothing received, no STATUS sent" << endl;
+        return;
+    }
+
+    StatusPduData data;
+    data.ackSn = rxWindowDesc_.firstSeqNum_ + highest + 1;
+    for (int i = 0; i <= highest; ++i) {
+        if (received_.at(i) == false) {
+            NackInfo nack;
+            nack.sn = rxWindowDesc_.firstSeqNum_ + i;
+            data.nacks.push_back(nack);
         }
     }
 
-    // The BitMap :
-    // Starting from the cumulative ACK the next received PDU
-    // are stored.
+    EV << NOW << " AmRxQueue::sendStatusReport : ACK_SN " << data.ackSn
+       << " with " << data.nacks.size() << " NACK(s)" << endl;
 
-    EV << NOW << " AmRxQueue::sendStatusReport : cumulative ACK value "
-       << cumulative << " bitmap length " << bitmap.size() << endl;
-
-    if ((cumulative > 0) || bitmap.size() > 0) {
-        // create a new RLC PDU
-        auto pktPdu = new Packet("rlcAmPdu (Cum. ACK)");
-        auto pdu = makeShared<LteRlcAmPdu>();
-
-        // set RLC type descriptor
-        pdu->setAmType(ACK);
-
-        int lastSn = rxWindowDesc_.firstSeqNum_ + cumulative - 1;
-
-        pdu->setLastSn(lastSn);
-        // set bitmap
-        EV << NOW << " AmRxQueue::sendStatusReport : sending the cumulative ACK for  "
-           << lastSn << endl;
-
-        // Note that, FSN could be out of the receiver windows, in this case
-        // no ACK BITMAP message is sent.
-        if (cumulative < rxWindowDesc_.windowSize_) {
-            pdu->setBitmapVec(bitmap);
-            // Start the BITMAP ACK report at the end of the cumulative ACK
-            int fsn = rxWindowDesc_.firstSeqNum_ + cumulative;
-            // We set the first sequence number of the BITMAP starting
-            // from the end of the cumulative ACK message.
-            pdu->setFirstSn(fsn);
-        }
-        // todo setting byte size
-        pdu->setChunkLength(B(RLC_HEADER_AM));
-        // set flowcontrolinfo
-        *pktPdu->addTagIfAbsent<FlowControlInfo>() = *ackFlowControlInfo_;
-        // sending control PDU
-        pktPdu->insertAtFront(pdu);
-        bufferControlViaTxEntity(pktPdu);
-        lastSentAck_ = NOW;
-    }
-    else {
-        EV << NOW
-           << " AmRxQueue::sendStatusReport : NOT sending the cumulative ACK for  "
-           << cumulative << endl;
-    }
+    // create a new RLC STATUS PDU
+    auto pktPdu = new Packet("rlcAmPdu (STATUS)");
+    auto pdu = makeShared<LteRlcAmPdu>();
+    pdu->setAmType(ACK);
+    pdu->setData(data);
+    // todo setting byte size
+    pdu->setChunkLength(B(RLC_HEADER_AM));
+    // set flowcontrolinfo
+    *pktPdu->addTagIfAbsent<FlowControlInfo>() = *ackFlowControlInfo_;
+    // sending control PDU
+    pktPdu->insertAtFront(pdu);
+    bufferControlViaTxEntity(pktPdu);
+    lastSentAck_ = NOW;
 }
 
 int AmRxQueue::computeWindowShift() const

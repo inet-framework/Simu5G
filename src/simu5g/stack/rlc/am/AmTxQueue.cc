@@ -10,6 +10,8 @@
 // and cannot be removed from it.
 //
 
+#include <set>
+
 #include <inet/common/ProtocolTag_m.h>
 
 #include "simu5g/stack/rlc/am/AmTxQueue.h"
@@ -524,27 +526,26 @@ void AmTxQueue::processControlPacket(Packet *pktPdu) {
     short type = pdu->getAmType();
 
     switch (type) {
-        case ACK:
-            EV << NOW << " AmTxQueue::handleControlPacket , received ACK " << endl;
-            recvCumulativeAck(pdu->getLastSn());
+        case ACK: {
+            const StatusPduData& data = pdu->getData();
+            EV << NOW << " AmTxQueue::handleControlPacket , received STATUS ACK_SN "
+               << data.ackSn << " with " << data.nacks.size() << " NACK(s)" << endl;
 
-            int bSize = pdu->getBitmapArraySize();
+            // Collect the NACKed sequence numbers.
+            std::set<unsigned int> nacked;
+            for (const auto& nack : data.nacks)
+                nacked.insert(nack.sn);
 
-            if (bSize > 0) {
-                EV << NOW
-                   << " AmTxQueue::handleControlPacket , received BITMAP ACK of size "
-                   << bSize << endl;
-
-                for (int i = 0; i < bSize; ++i) {
-                    if (pdu->getBitmap(i)) {
-                        recvAck(pdu->getFirstSn() + i);
-                    }
-                }
+            // Every SN below ACK_SN that is not NACKed has been received.
+            for (int sn = txWindowDesc_.firstSeqNum_; sn < (int)data.ackSn; ++sn) {
+                if (nacked.find(sn) == nacked.end())
+                    recvAck(sn);
             }
 
             // Autonomously advance the window over the acknowledged head.
             advanceTxWindow();
             break;
+        }
     }
 
     ASSERT(pktPdu->getOwner() == this);
