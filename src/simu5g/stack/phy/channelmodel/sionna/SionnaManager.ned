@@ -23,4 +23,9 @@ simple SionnaManager
     parameters:
         @class("SionnaManager");
         string artifactManifest = default("sionna_artifact/manifest.json");
+        // Live-scenario contract values asserted against the manifest at init (CAL-02).
+        // Any mismatch aborts the run with cRuntimeError (no silent fallback).
+        double carrierFrequencyHz;
+        double subcarrierSpacingHz;
+        int numBands;
 }

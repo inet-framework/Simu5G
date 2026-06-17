@@ -33,6 +33,20 @@ using namespace omnetpp;
 //
 class SionnaManager : public cSimpleModule
 {
+  public:
+    // Schema version this build understands. A manifest produced by Plan 01-01
+    // carries schema_version == 1; any other value aborts (CAL-02).
+    static const int EXPECTED_SCHEMA_VERSION = 1;
+
+    // Live-scenario contract values the manifest must match. Kept as a small
+    // value type so the fail-loud assertion is unit-testable without a running
+    // module (the offline tests construct one directly).
+    struct LiveContract {
+        double carrier_frequency_hz = 0.0;
+        double subcarrier_spacing_hz = 0.0;
+        int num_bands = 0;
+    };
+
   protected:
     Manifest manifest_;
     SionnaTable table_;
@@ -44,6 +58,18 @@ class SionnaManager : public cSimpleModule
      * @return the loaded, contract-validated path-gain table.
      */
     const SionnaTable& getTable() const { return table_; }
+
+    /*
+     * Fail-loud assertion of the full manifest contract against the live scenario.
+     * Throws cRuntimeError on the FIRST mismatching field — schema_version, carrier
+     * frequency, subcarrier spacing, band count, identity coord_transform, or an
+     * empty request_hash. No silent fallback to the analytic model (CAL-02, Pitfall 5).
+     * Pure (no module/par access) so it is unit-testable in isolation.
+     *
+     * @param m parsed manifest
+     * @param live live-scenario contract values
+     */
+    static void assertContractMatchesLiveScenario(const Manifest& m, const LiveContract& live);
 };
 
 } //namespace
