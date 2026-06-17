@@ -43,7 +43,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `SionnaManager` asserts the artifact manifest against the live scenario at init and aborts with `cRuntimeError` on any contract-field or `schema_version` mismatch (no silent fallback).
   4. A default `make` build and a normal simulation run produce output byte-for-byte identical to the pre-integration baseline, with no Python / TensorFlow / PyTorch / GPU / HDF5 symbol linked into the default binary.
   5. The emitted HDF5 artifact carries `schema_version`, the `coord_transform` block, the full parameter contract, the request hash, and a present-but-degenerate SINR-bin axis, so v2 interference curves are a purely additive extension.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 01-01-PLAN.md — Offline Sionna precompute tool: SSOT → empty-world PathSolver → path gain → artifact (HDF5 + manifest + LE-binary), Friis round-trip gate (TOOL-01/02/03, ART-01/02, CAL-01)
+- [ ] 01-02-PLAN.md — Build isolation: Simu5G_Sionna .oppfeatures feature + compilable C++/NED skeleton + default-binary symbol-check gate (SEAM-02)
+- [ ] 01-03-PLAN.md — C++ consumer: ManifestReader/SionnaTable load+validate, SionnaManager fail-loud contract assertion, SionnaChannelModel::getAttenuation (MOD-01, CAL-02, ART-01)
+- [ ] 01-04-PLAN.md — End-to-end run: single-link network + ini selection, Friis round-trip closes in-sim, pinned fingerprint baseline (SEAM-01, MOD-01, CAL-01)
 
 ### Phase 2: Full BLER Table & CQI/Feedback Consistency
 **Goal**: The offline tool produces BLER for every CQI/MCS per link via `sionna.sys.PHYAbstraction`, and both the reception path and the CQI-feedback path read that one `SionnaTable`, so the scheduler's chosen MCS and the realized BLER provably agree.
@@ -88,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Thin End-to-End Slice | 0/TBD | Not started | - |
+| 1. Thin End-to-End Slice | 0/4 | Planned | - |
 | 2. Full BLER Table & CQI Consistency | 0/TBD | Not started | - |
 | 3. Correctness Hardening | 0/TBD | Not started | - |
 | 4. Differentiators | 0/TBD | Not started | - |
