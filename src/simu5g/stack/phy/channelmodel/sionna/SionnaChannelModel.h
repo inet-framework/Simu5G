@@ -14,6 +14,7 @@
 #define SIONNACHANNELMODEL_H_
 
 #include "simu5g/stack/phy/channelmodel/NrChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/sionna/SionnaManager.h"
 
 namespace simu5g {
 
@@ -28,6 +29,18 @@ namespace simu5g {
 //
 class SionnaChannelModel : public NrChannelModel
 {
+  protected:
+    // The single artifact-load + contract-assertion point; supplies the path-gain
+    // table this model queries. Resolved from sionnaManagerModule at INITSTAGE_LOCAL.
+    opp_component_ptr<SionnaManager> sionnaManager_;
+
+    /*
+     * Resolve the table link key for a (UE, direction, position). v1 is a single-link
+     * empty-world scenario, so this always returns link index 0; v2 maps the (Tx, Rx)
+     * pair to its precomputed link row.
+     */
+    std::size_t linkKeyFor(MacNodeId nodeId, Direction dir, const inet::Coord& coord) const;
+
   public:
     void initialize(int stage) override;
 
