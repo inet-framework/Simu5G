@@ -1,0 +1,7 @@
+# Pinned offline-tool venv versions (see CLAUDE.md / 01-RESEARCH.md stack table).
+# These live ONLY in the offline Sionna venv and never enter the Simu5G build.
+sionna-rt==2.0.1
+sionna==2.0.1
+numpy==2.4.6
+h5py==3.16.0
+pytest>=7,<8
