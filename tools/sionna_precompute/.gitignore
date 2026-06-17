@@ -1,0 +1,7 @@
+# Generated artifact set (emitted by precompute.py --out). Regenerated from the SSOT;
+# the canonical pinned artifact is committed separately when a scenario is frozen.
+/sionna_artifact/
+# Python bytecode / pytest caches
+__pycache__/
+*.pyc
+.pytest_cache/
