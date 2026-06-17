@@ -1,0 +1,39 @@
+{
+  "antenna": {
+    "num_cols": 1,
+    "num_rows": 1,
+    "pattern": "iso",
+    "polarization": "V"
+  },
+  "carrier_frequency_hz": 3500000000.0,
+  "coord_transform": {
+    "axis_map": "identity",
+    "handedness": "right",
+    "origin": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale": 1.0,
+    "units": "m"
+  },
+  "lib_versions": {
+    "h5py": "3.16.0",
+    "numpy": "2.4.6",
+    "sionna": "2.0.1",
+    "sionna-rt": "2.0.1"
+  },
+  "num_bands": 1,
+  "num_links": 1,
+  "polarization": "V",
+  "request_hash": "486a38943f7505c800ffd4566db602896211a98c0c6e18f72484f7a3144e6c66",
+  "schema_version": 1,
+  "sinr_grid": [
+    0.0
+  ],
+  "subcarrier_representation": "single-subcarrier-band-center",
+  "subcarrier_spacing_hz": 30000.0,
+  "table_dtype": "<f8",
+  "table_path": "path_gain.bin",
+  "tx_power_convention": "eirp_dbm"
+}
