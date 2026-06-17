@@ -9,7 +9,7 @@ Requirements for the initial reusable module. Each maps to a roadmap phase.
 
 ### Seam & Build Isolation
 
-- [ ] **SEAM-01**: User can select the Sionna model opt-in via an ini string
+- [x] **SEAM-01**: User can select the Sionna model opt-in via an ini string
   (`lteChannelModelType` / `nrChannelModelType` = `SionnaChannelModel`), with no NED
   interface change.
 
@@ -129,7 +129,7 @@ Which phases cover which requirements. Filled during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEAM-01 | Phase 1 | Pending |
+| SEAM-01 | Phase 1 | Complete |
 | SEAM-02 | Phase 1 | Complete |
 | TOOL-01 | Phase 1 | Complete |
 | TOOL-02 | Phase 1 | Complete |

@@ -26,7 +26,7 @@ table is designed as a strict subset of v2 (degenerate SINR-bin axis) from day o
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Thin End-to-End Slice (Bring-Up & Empty-World Validation)** - One SSOT → one empty-world link → one HDF5 artifact → one loaded `SionnaChannelModel` run, validated by the Friis round-trip; default build provably Python/HDF5-free.
+- [x] **Phase 1: Thin End-to-End Slice (Bring-Up & Empty-World Validation)** - One SSOT → one empty-world link → one HDF5 artifact → one loaded `SionnaChannelModel` run, validated by the Friis round-trip; default build provably Python/HDF5-free. (completed 2026-06-17)
 - [ ] **Phase 2: Full BLER Table & CQI/Feedback Consistency** - Widen to per-(link,MCS) BLER for all CQIs/MCS; one table drives both reception and CQI feedback, with a self-consistency gate.
 - [ ] **Phase 3: Correctness Hardening (No-Double-Counting, Determinism, Cache, Fingerprints)** - Suppress statistical path-loss terms, prove two-seed bit-identical RSRP, add request-hash cache, pin Sionna fingerprint baselines, and prove the default build is byte-for-byte unchanged.
 - [ ] **Phase 4: Differentiators (Authored Scene, Path-Gain RSRP, Auto-Invoke, Calibration Report)** - Additive site-specific value on the calibrated core: Munich real-map scene, Sionna-derived RSRP, opt-in auto-invocation, and a bounded-difference calibration report.
@@ -59,7 +59,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-04-PLAN.md — End-to-end run: single-link network + ini selection, Friis round-trip closes in-sim, pinned fingerprint baseline (SEAM-01, MOD-01, CAL-01)
+- [x] 01-04-PLAN.md — End-to-end run: single-link network + ini selection, Friis round-trip closes in-sim, pinned fingerprint baseline (SEAM-01, MOD-01, CAL-01)
 
 ### Phase 2: Full BLER Table & CQI/Feedback Consistency
 
@@ -113,7 +113,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Thin End-to-End Slice | 3/4 | In Progress|  |
+| 1. Thin End-to-End Slice | 4/4 | Complete   | 2026-06-17 |
 | 2. Full BLER Table & CQI Consistency | 0/TBD | Not started | - |
 | 3. Correctness Hardening | 0/TBD | Not started | - |
 | 4. Differentiators | 0/TBD | Not started | - |
