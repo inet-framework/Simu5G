@@ -1,0 +1,26 @@
+{
+  "positions": [
+    { "id": "tx", "role": "tx", "xyz_m": [0.0, 0.0, 10.0] },
+    { "id": "rx", "role": "rx", "xyz_m": [100.0, 0.0, 1.5] }
+  ],
+  "antenna": {
+    "num_rows": 1,
+    "num_cols": 1,
+    "pattern": "iso",
+    "polarization": "V"
+  },
+  "carrier_frequency_hz": 3.5e9,
+  "subcarrier_spacing_hz": 30000.0,
+  "numerology": 1,
+  "num_bands": 1,
+  "materials": [],
+  "mcs_set": [0],
+  "tx_power_convention": "eirp_dbm",
+  "coord_transform": {
+    "origin": [0.0, 0.0, 0.0],
+    "axis_map": "identity",
+    "scale": 1.0,
+    "units": "m",
+    "handedness": "right"
+  }
+}
