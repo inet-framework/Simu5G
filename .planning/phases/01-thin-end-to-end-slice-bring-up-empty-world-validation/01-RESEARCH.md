@@ -352,20 +352,23 @@ simple SionnaChannelModel extends NrChannelModel {
 | A5 | OMNeT++/INET Coord is metres, x-east/y-north/z-up, mapping to Sionna scene metres via an identity/offset transform in the empty world. | TOOL-02 | Low — standard INET convention; the Friis residual is the empirical proof of correctness. |
 | A6 | A dedicated `SionnaManager` module (vs. loading inside the model) is the cleaner owner of the global table + assertion. | Architecture | Low — design plan §4.1 already raises this as a choice (Binder vs SionnaManager); either works for one link. Confirm preference with planner/user. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Artifact format final call (HDF5-only-debug vs binary+JSON for C++).**
    - What we know: HDF5/HighFive absent system-wide; CLAUDE.md sanctions both the HDF5 path and the binary+JSON variant.
    - What's unclear: whether the team wants to install HDF5 deliberately to use HighFive.
    - Recommendation: binary+JSON for the C++ reader in Phase 1; keep HDF5 as the canonical/debug artifact written by the tool. Revisit if HDF5 is adopted as a build dep.
+   - **RESOLVED:** binary+JSON for the C++ reader (no HDF5 dependency in the default build); HDF5 stays canonical/debug in the Python tool only. Decision lives in SKELETON.md Architectural Decisions and is implemented by Plan 01-01 (Task 3 writes `manifest.json` + LE-binary `path_gain.bin` + `results.h5`) and consumed by Plan 01-03 (Task 1 `ManifestReader`/`SionnaTable`, no HDF5 C++ dep).
 
 2. **Manager ownership (`SionnaManager` module vs in-model loader).**
    - What we know: one link → trivial either way; for N links one global table is cheaper (design plan §4.1).
    - Recommendation: introduce a thin `SionnaManager` now (forward-compatible with Phase 2/3) but keep it minimal.
+   - **RESOLVED:** a thin `SionnaManager` module owns the table + contract assertion. Decision lives in SKELETON.md and is implemented in Plan 01-02 (skeleton) + Plan 01-03 (contract assertion at `INITSTAGE_LOCAL`).
 
 3. **Subcarrier representation of the per-link gain.**
    - What we know: `cfr` returns per-subcarrier H; v1 collapses to one figure.
    - Recommendation: pin "band-center single subcarrier" or "mean |H|^2 over all RBs" in the manifest and use the identical convention in CAL-01.
+   - **RESOLVED:** single representative subcarrier at band center, pinned as `subcarrier_representation = "single-subcarrier-band-center"` in the manifest (Plan 01-01 Task 3) and matched identically by CAL-01 (Plan 01-01 Tasks 1–2 / `friis_check.py`).
 
 ## Environment Availability
 
