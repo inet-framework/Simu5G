@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: ROADMAP.md and STATE.md written; REQUIREMENTS.md traceability updated
-last_updated: "2026-06-17T18:09:46.135Z"
-last_activity: 2026-06-17 — Roadmap created (vertical MVP, 4 phases, 21/21 v1 requirements mapped)
+last_updated: "2026-06-17T18:50:17.741Z"
+last_activity: 2026-06-17 -- Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 4
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-17)
 
 **Core value:** Simu5G can opt in to site-specific, geometry-derived channel/BLER from Sionna RT without changing the default build or behavior.
-**Current focus:** Phase 1 — Thin End-to-End Slice (Bring-Up & Empty-World Validation)
+**Current focus:** Phase 01 — thin-end-to-end-slice-bring-up-empty-world-validation
 
 ## Current Position
 
-Phase: 1 of 4 (Thin End-to-End Slice)
-Plan: 0 of TBD in current phase
+Phase: 01 (thin-end-to-end-slice-bring-up-empty-world-validation) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-06-17 — Roadmap created (vertical MVP, 4 phases, 21/21 v1 requirements mapped)
+Last activity: 2026-06-17 -- Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 01 P01 | 3 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,7 @@ Recent decisions affecting current work:
 - Roadmap: Vertical MVP framing — each phase is an end-to-end slice; Phase 1 is a thin single-link bring-up validated by the empty-world Friis round-trip.
 - Roadmap: `schema_version` + `coord_transform` contract and fail-loud parameter assertion ship in minimal form inside Phase 1 (foundational; every later slice extends them).
 - Roadmap: v1 noise-limited table designed as a strict subset of v2 via a present-but-degenerate SINR-bin axis from Phase 1.
+- [Phase ?]: Plan 01-01: empty-world Sionna path gain matches Friis within 0.006 dB at 100m/3.5GHz, validating the TOOL-02 coord_transform and dB convention.
 
 ### Pending Todos
 
@@ -83,6 +85,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-17 17:44
+Last session: 2026-06-17T18:49:59.012Z
 Stopped at: ROADMAP.md and STATE.md written; REQUIREMENTS.md traceability updated
 Resume file: None
