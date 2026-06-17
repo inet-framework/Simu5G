@@ -34,12 +34,23 @@ simple BearerManagement
 
         bool dualConnectivityEnabled = default(false);   // set by the NIC; two-leg (split-capable) bearers
 
-        // RLC entity types (compound modules): the UM and AM entities are named after the
-        // wire format they implement, lteRlc* = LTE FI framing (TS 36.322). TM is
-        // transparent, with a single implementation, so it has no such prefix.
+        // RLC entity types (compound modules): lteRlc* = LTE-FI bearers (TS 36.322),
+        // nrRlc* = NR bearers (SI/SO wire format, TS 38.322)
         string rlcTmEntityModuleType = default("simu5g.stack.rlc.RlcTmEntity");
         string lteRlcUmEntityModuleType = default("simu5g.stack.rlc.LteRlcUmEntity");
         string lteRlcAmEntityModuleType = default("simu5g.stack.rlc.LteRlcAmEntity");
+        string nrRlcUmEntityModuleType = default("simu5g.stack.rlc.NrRlcUmEntity");
+        string nrRlcAmEntityModuleType = default("simu5g.stack.rlc.NrRlcAmEntity");
+
+        // RLC entity types for the NR leg (SI/SO byte-offset wire format, TS 38.322).
+        // Default to the Nr* profiles so an NR-leg bearer uses NR RLC; a config may
+        // point these back to the LTE entities above to keep an NR leg on LTE RLC
+        // (e.g. nr/mec, whose RNI PacketFlowObserver still tracks the LTE-FI UM PDU).
+        // TM is transparent and identical for both RATs, so it has no NR override.
+        string nrRlcUmTxEntityModuleType = default("simu5g.stack.rlc.um.NrUmTxEntity");
+        string nrRlcUmRxEntityModuleType = default("simu5g.stack.rlc.um.NrUmRxEntity");
+        string nrRlcAmTxEntityModuleType = default("simu5g.stack.rlc.am.NrAmTxQueue");
+        string nrRlcAmRxEntityModuleType = default("simu5g.stack.rlc.am.NrAmRxQueue");
 
         // Module references for accessing other stack layers
         string binderModule = default("binder");

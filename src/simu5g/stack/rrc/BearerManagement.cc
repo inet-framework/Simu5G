@@ -39,10 +39,12 @@ void BearerManagement::initialize(int stage)
         pdcpRelayEntityModuleType_ = cModuleType::get(par("pdcpRelayEntityModuleType").stringValue());
 
         // Resolve RLC entity types (compound modules packaging the TX and RX sides);
-        // lteRlc* serve LTE-FI bearers
+        // lteRlc* serve LTE-FI bearers, nrRlc* serve NR (SI/SO) bearers
         rlcTmEntityModuleType_ = cModuleType::get(par("rlcTmEntityModuleType").stringValue());
         lteRlcUmEntityModuleType_ = cModuleType::get(par("lteRlcUmEntityModuleType").stringValue());
         lteRlcAmEntityModuleType_ = cModuleType::get(par("lteRlcAmEntityModuleType").stringValue());
+        nrRlcUmEntityModuleType_ = cModuleType::get(par("nrRlcUmEntityModuleType").stringValue());
+        nrRlcAmEntityModuleType_ = cModuleType::get(par("nrRlcAmEntityModuleType").stringValue());
 
         nicModule_ = inet::getContainingNicModule(this);
 
@@ -192,6 +194,11 @@ void BearerManagement::setRlcEntityParams(cModule *entity, bool isNr)
         entity->par("macModule").setStringValue(isNr ? "^.nrMac" : "^.mac");
     if (entity->hasPar("rlcMuxModule"))
         entity->par("rlcMuxModule").setStringValue(isNr ? "^.nrRlcMux" : "^.rlcMux");
+    // The RLC entity's wire format is set by its own soFraming parameter (via the Nr*
+    // NED profile), selected per bearer by the RAT: an NR bearer uses the SO/no-concat
+    // framing of TS 38.322, an LTE bearer the FI/concatenation of TS 36.322. The framing
+    // is a function of the RAT, not an independent knob. (The NR-leg marker proper is
+    // the pdcpMux.isNR parameter, read by UpperMux/Ip2Nic/LteMacEnb, not set here.)
 }
 
 void BearerManagement::setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex)
@@ -229,12 +236,19 @@ cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lte
     // bearer establishment the first-processed direction creates it; the other
     // direction finds it here and just installs (wires) its own side.
     LteRlcType rlcType = static_cast<LteRlcType>(lteInfo->getRlcType());
+    // The entity TYPE (LTE-FI vs NR-SO wire format) must be identical at both ends of
+    // the bearer, so it keys on whether the bearer's UE is an NR UE — a symmetric
+    // property of the source/dest node ids — not on the local-node isNr flag (which is
+    // only ever true at a UE, leaving the gNB on the LTE type and breaking the wire).
+    // For a DC UE this still separates the NR-secondary leg from the LTE-master leg,
+    // since those bearers reference the UE's NR vs LTE node id respectively.
+    bool isNrBearer = isNrUe(lteInfo->getSourceId()) || isNrUe(lteInfo->getDestId());
     cModuleType *moduleType;
     const char *prefix;
     switch (rlcType) {
         case TM: moduleType = rlcTmEntityModuleType_; prefix = "tm"; break;
-        case AM: moduleType = lteRlcAmEntityModuleType_; prefix = "am"; break;
-        default: moduleType = lteRlcUmEntityModuleType_; prefix = "um"; break;
+        case AM: moduleType = isNrBearer ? nrRlcAmEntityModuleType_ : lteRlcAmEntityModuleType_; prefix = "am"; break;
+        default: moduleType = isNrBearer ? nrRlcUmEntityModuleType_ : lteRlcUmEntityModuleType_; prefix = "um"; break;
     }
     std::string name = std::string(isNr ? "nrRlc-" : "rlc-") + prefix + "-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
     auto *module = moduleType->create(name.c_str(), nicModule_);
@@ -245,14 +259,6 @@ cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lte
     module->finalizeParameters();
     module->buildInside();
     setEntityDisplayPosition(module, false, rlcMux, num(id.getDrbId()));
-
-    // The NR-leg marker stays a per-side @mutable write for now (the per-leg entity
-    // selection work retires it).
-    for (const char *side : { "tx", "rx" }) {
-        cModule *e = module->getSubmodule(side);
-        if (e->hasPar("isNR"))
-            e->par("isNR").setBoolValue(isNr);
-    }
 
     module->scheduleStart(simTime());
     module->callInitialize();
@@ -283,9 +289,10 @@ RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *
 
     txEnt->setFlowControlInfo(lteInfo);
 
-    // D2D peer tracking (only for UmTxEntity-derived UM TX entities). NR UM
-    // entities (NrUmTxEntity, derived from RlcTxEntityBase) do not implement D2D
-    // mode switching, so they are skipped here.
+    // D2D peer tracking for UM TX entities. Both the LTE-leg and NR-leg UM
+    // entities are now the unified UmTxEntity (the Nr* profile binds @class(UmTxEntity)),
+    // so the dynamic_cast succeeds for either leg; registration only happens when a
+    // D2D mode controller is present (i.e. in D2D-capable configs).
     if (static_cast<LteRlcType>(lteInfo->getRlcType()) == UM) {
         auto *d2dCtrl = inet::findModuleFromPar<D2DModeController>(par("d2dModeControllerModule"), this);
         if (d2dCtrl) {

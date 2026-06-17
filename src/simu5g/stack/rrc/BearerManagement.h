@@ -48,10 +48,12 @@ class BearerManagement : public cSimpleModule
     cModule *nicModule_ = nullptr;  // containing NIC module (parent of all submodules and entities)
 
     // RLC entity types (compound modules; resolved from NED params):
-    // lteRlc* = LTE bearers (FI wire format, TS 36.322)
+    // lteRlc* = LTE-FI bearers (TS 36.322), nrRlc* = NR bearers (SI/SO, TS 38.322)
     cModuleType *rlcTmEntityModuleType_ = nullptr;
     cModuleType *lteRlcUmEntityModuleType_ = nullptr;
     cModuleType *lteRlcAmEntityModuleType_ = nullptr;
+    cModuleType *nrRlcUmEntityModuleType_ = nullptr;
+    cModuleType *nrRlcAmEntityModuleType_ = nullptr;
 
     inet::ModuleRefByPar<RlcMux> rlcMuxModule;
     inet::ModuleRefByPar<RlcMux> nrRlcMuxModule;
