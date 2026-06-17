@@ -112,13 +112,33 @@ Which phases cover which requirements. Filled during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (to be populated by roadmap) | — | Pending |
+| SEAM-01 | Phase 1 | Pending |
+| SEAM-02 | Phase 1 | Pending |
+| TOOL-01 | Phase 1 | Pending |
+| TOOL-02 | Phase 1 | Pending |
+| TOOL-03 | Phase 1 | Pending |
+| ART-01  | Phase 1 | Pending |
+| ART-02  | Phase 1 | Pending |
+| MOD-01  | Phase 1 | Pending |
+| CAL-01  | Phase 1 | Pending |
+| CAL-02  | Phase 1 | Pending |
+| TOOL-04 | Phase 2 | Pending |
+| MOD-03  | Phase 2 | Pending |
+| FB-01   | Phase 2 | Pending |
+| MOD-02  | Phase 3 | Pending |
+| TOOL-05 | Phase 3 | Pending |
+| REP-01  | Phase 3 | Pending |
+| REP-02  | Phase 3 | Pending |
+| DIF-01  | Phase 4 | Pending |
+| DIF-02  | Phase 4 | Pending |
+| DIF-03  | Phase 4 | Pending |
+| DIF-04  | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 20 total (16 table stakes + 4 differentiators)
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 20 ⚠️
+- v1 requirements: 21 total (17 table stakes + 4 differentiators)
+- Mapped to phases: 21 (Phase 1: 10, Phase 2: 3, Phase 3: 4, Phase 4: 4)
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-17*
-*Last updated: 2026-06-17 after initial definition*
+*Last updated: 2026-06-17 after roadmap creation*
