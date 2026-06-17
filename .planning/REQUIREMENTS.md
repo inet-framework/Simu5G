@@ -13,7 +13,7 @@ Requirements for the initial reusable module. Each maps to a roadmap phase.
   (`lteChannelModelType` / `nrChannelModelType` = `SionnaChannelModel`), with no NED
   interface change.
 
-- [ ] **SEAM-02**: A default Simu5G build and a normal simulation run are byte-for-byte
+- [x] **SEAM-02**: A default Simu5G build and a normal simulation run are byte-for-byte
   unaffected — no Python / TensorFlow / PyTorch / GPU / HDF5 dependency in a normal build.
 
 ### Offline Sionna Precompute Tool
@@ -130,7 +130,7 @@ Which phases cover which requirements. Filled during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SEAM-01 | Phase 1 | Pending |
-| SEAM-02 | Phase 1 | Pending |
+| SEAM-02 | Phase 1 | Complete |
 | TOOL-01 | Phase 1 | Complete |
 | TOOL-02 | Phase 1 | Complete |
 | TOOL-03 | Phase 1 | Complete |

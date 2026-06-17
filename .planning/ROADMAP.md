@@ -51,7 +51,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Wave 1**
 
 - [x] 01-01-PLAN.md — Offline Sionna precompute tool: SSOT → empty-world PathSolver → path gain → artifact (HDF5 + manifest + LE-binary), Friis round-trip gate (TOOL-01/02/03, ART-01/02, CAL-01)
-- [ ] 01-02-PLAN.md — Build isolation: Simu5G_Sionna .oppfeatures feature + compilable C++/NED skeleton + default-binary symbol-check gate (SEAM-02)
+- [x] 01-02-PLAN.md — Build isolation: Simu5G_Sionna .oppfeatures feature + compilable C++/NED skeleton + default-binary symbol-check gate (SEAM-02)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -113,7 +113,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Thin End-to-End Slice | 1/4 | In Progress|  |
+| 1. Thin End-to-End Slice | 2/4 | In Progress|  |
 | 2. Full BLER Table & CQI Consistency | 0/TBD | Not started | - |
 | 3. Correctness Hardening | 0/TBD | Not started | - |
 | 4. Differentiators | 0/TBD | Not started | - |
