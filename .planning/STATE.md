@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: ROADMAP.md and STATE.md written; REQUIREMENTS.md traceability updated
-last_updated: "2026-06-17T18:59:00.071Z"
+last_updated: "2026-06-17T19:13:48.687Z"
 last_activity: 2026-06-17 -- Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 ## Current Position
 
 Phase: 01 (thin-end-to-end-slice-bring-up-empty-world-validation) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-06-17 -- Phase 01 execution started
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 01 P01 | 3 | 3 tasks | 7 files |
 | Phase 01 P02 | 3 | 3 tasks | 11 files |
+| Phase 01 P03 | 8 | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,9 @@ Recent decisions affecting current work:
 - Roadmap: v1 noise-limited table designed as a strict subset of v2 via a present-but-degenerate SINR-bin axis from Phase 1.
 - [Phase ?]: Plan 01-01: empty-world Sionna path gain matches Friis within 0.006 dB at 100m/3.5GHz, validating the TOOL-02 coord_transform and dB convention.
 - [Phase ?]: Plan 01-02: Simu5G_Sionna .oppfeatures feature (extraSourceFolders) is the SEAM-02 build-isolation mechanism keeping the default build unaffected; the sionna C++ skeleton compiles only when the feature is ON.
+- [Phase ?]: 01-03: Reused in-tree nlohmann/json 3.9.1 (MEC httpUtils) for Sionna manifest parsing — no new vendor, zero default-build symbols.
+- [Phase ?]: 01-03: Contract assertion is a pure static method so fail-loud CAL-02 logic is unit-testable without the OMNeT++ kernel.
+- [Phase ?]: 01-03: Added standalone C++ unit harness (tests/sionna/unit) for real RED/GREEN TDD of the Sionna pure utilities.
 
 ### Pending Todos
 
@@ -87,6 +91,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-17T18:58:35.603Z
+Last session: 2026-06-17T19:13:26.788Z
 Stopped at: ROADMAP.md and STATE.md written; REQUIREMENTS.md traceability updated
 Resume file: None

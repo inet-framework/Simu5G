@@ -46,7 +46,7 @@ Requirements for the initial reusable module. Each maps to a roadmap phase.
 
 ### Channel Model (C++ consumer)
 
-- [ ] **MOD-01**: `SionnaChannelModel : LteRealisticChannelModel` retains the inherited
+- [x] **MOD-01**: `SionnaChannelModel : LteRealisticChannelModel` retains the inherited
   `getSINR()` interference + noise aggregation — Simu5G owns the SINR value.
 
 - [ ] **MOD-02**: When the Sionna model is active it fully owns path gain; Simu5G's
@@ -66,7 +66,7 @@ Requirements for the initial reusable module. Each maps to a roadmap phase.
   Sionna path gain against the Friis free-space formula at the same distance within a
   physically justified tolerance (~0.5–1 dB vs. free-space, not vs. the 3GPP formula).
 
-- [ ] **CAL-02**: `SionnaManager` asserts the artifact manifest against the live scenario at
+- [x] **CAL-02**: `SionnaManager` asserts the artifact manifest against the live scenario at
   init and fails loudly (`cRuntimeError`) on any parameter-contract mismatch.
 
 - [ ] **REP-01**: Sionna configurations have their own pinned fingerprint baselines against
@@ -136,9 +136,9 @@ Which phases cover which requirements. Filled during roadmap creation.
 | TOOL-03 | Phase 1 | Complete |
 | ART-01  | Phase 1 | Complete |
 | ART-02  | Phase 1 | Complete |
-| MOD-01  | Phase 1 | Pending |
+| MOD-01  | Phase 1 | Complete |
 | CAL-01  | Phase 1 | Complete |
-| CAL-02  | Phase 1 | Pending |
+| CAL-02  | Phase 1 | Complete |
 | TOOL-04 | Phase 2 | Pending |
 | MOD-03  | Phase 2 | Pending |
 | FB-01   | Phase 2 | Pending |
