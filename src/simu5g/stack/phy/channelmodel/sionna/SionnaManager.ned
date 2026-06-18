@@ -28,4 +28,12 @@ simple SionnaManager
         double carrierFrequencyHz;
         double subcarrierSpacingHz;
         int numBands;
+        // Optional: module path to the live ComponentCarrier submodule whose parameters
+        // the PHY actually uses (e.g. "SionnaSingleLink.carrierAggregation.componentCarrier[0]").
+        // When non-empty, SionnaManager reads carrierFrequency/numerologyIndex/numBands from
+        // that module and cross-checks them against the shadow params above — a hand-copy
+        // divergence aborts the run loud (CR-01 interim hardening).
+        // When empty (default) the cross-check is skipped and existing behaviour is unchanged.
+        // TODO(phase-2): replace shadow params entirely with a direct bind to componentCarrier.
+        string componentCarrierModule = default("");
 }

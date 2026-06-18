@@ -150,6 +150,43 @@ void SionnaManager::initialize(int stage)
         live.num_bands = par("numBands").intValue();
         assertContractMatchesLiveScenario(manifest_, live);
 
+        // 2b) Optional cross-check: if componentCarrierModule is set, read the live
+        // carrier/SCS/numBands values from the actual ComponentCarrier the PHY uses and
+        // assert they match the shadow params above. A hand-copy divergence (e.g.
+        // carrierFrequencyHz = 3.5e9 while the CC is configured to 2.6 GHz) aborts
+        // the run loud here rather than producing a silently mismatched channel (CR-01).
+        // When the param is empty (default) this cross-check is a no-op; existing users
+        // are unaffected. TODO(phase-2): bind the contract directly to componentCarrier.
+        const std::string ccPath = par("componentCarrierModule").stringValue();
+        if (!ccPath.empty()) {
+            cModule *ccMod = getModuleByPath(ccPath.c_str());
+            if (ccMod == nullptr)
+                throw cRuntimeError("SionnaManager: componentCarrierModule '%s' not found",
+                                    ccPath.c_str());
+            // carrierFrequency NED param is in GHz (unit annotation); doubleValue() returns
+            // the value in the declared unit (GHz), so multiply by 1e9 to get Hz.
+            double ccFreqHz = ccMod->par("carrierFrequency").doubleValue() * 1e9;
+            int ccMu = ccMod->par("numerologyIndex").intValue();
+            double ccScsHz = 15000.0 * (1 << ccMu);
+            int ccNumBands = ccMod->par("numBands").intValue();
+
+            if (std::fabs(live.carrier_frequency_hz - ccFreqHz) > 1e-6 * std::fabs(ccFreqHz))
+                throw cRuntimeError("SionnaManager: carrierFrequencyHz (%g Hz) does not match "
+                                    "componentCarrier '%s' carrierFrequency (%g Hz) — "
+                                    "hand-copy divergence detected (CR-01)",
+                                    live.carrier_frequency_hz, ccPath.c_str(), ccFreqHz);
+
+            if (std::fabs(live.subcarrier_spacing_hz - ccScsHz) > 1e-6 * std::fabs(ccScsHz))
+                throw cRuntimeError("SionnaManager: subcarrierSpacingHz (%g Hz) does not match "
+                                    "componentCarrier '%s' numerologyIndex %d -> SCS %g Hz (CR-01)",
+                                    live.subcarrier_spacing_hz, ccPath.c_str(), ccMu, ccScsHz);
+
+            if (live.num_bands != ccNumBands)
+                throw cRuntimeError("SionnaManager: numBands (%d) does not match "
+                                    "componentCarrier '%s' numBands (%d) (CR-01)",
+                                    live.num_bands, ccPath.c_str(), ccNumBands);
+        }
+
         // 3) Assert the table encoding before reading: v1 targets little-endian float64
         //    ("<f8" in NumPy dtype notation). Reject anything else explicitly so a
         //    big-endian or integer-typed artifact fails loud rather than being silently
