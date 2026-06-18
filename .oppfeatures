@@ -20,7 +20,7 @@
   requires = ""
   labels = ""
   nedPackages = "simu5g.stack.phy.channelmodel.sionna"
-  extraSourceFolders = "src/simu5g/stack/phy/channelmodel/sionna"
+  extraSourceFolders = ""
   compileFlags = "-DWITH_SIONNA"
   linkerFlags = ""
  />
