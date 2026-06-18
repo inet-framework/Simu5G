@@ -150,7 +150,16 @@ void SionnaManager::initialize(int stage)
         live.num_bands = par("numBands").intValue();
         assertContractMatchesLiveScenario(manifest_, live);
 
-        // 3) Load the bounds-validated binary path-gain table (resolved next to the
+        // 3) Assert the table encoding before reading: v1 targets little-endian float64
+        //    ("<f8" in NumPy dtype notation). Reject anything else explicitly so a
+        //    big-endian or integer-typed artifact fails loud rather than being silently
+        //    byte-swapped or misinterpreted (IN-04).
+        if (manifest_.table_dtype != "<f8")
+            throw cRuntimeError("Sionna manifest table_dtype '%s' is not supported; "
+                                "expected '<f8' (little-endian float64)",
+                                manifest_.table_dtype.c_str());
+
+        // 4) Load the bounds-validated binary path-gain table (resolved next to the
         //    manifest). No silent fallback anywhere above (CAL-02).
         table_ = SionnaTable::loadBinary(dirOf(manifestPath) + manifest_.table_path,
                                          manifest_.num_links);
