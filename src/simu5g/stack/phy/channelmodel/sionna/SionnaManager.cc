@@ -14,6 +14,7 @@
 
 #include <inet/common/InitStages.h>
 
+#include <cmath>
 #include <string>
 
 #include "simu5g/mec/utils/httpUtils/json.hpp"
@@ -79,11 +80,18 @@ void SionnaManager::assertContractMatchesLiveScenario(const Manifest& m, const L
         throw cRuntimeError("Sionna manifest schema_version %d != expected %d",
                             m.schema_version, EXPECTED_SCHEMA_VERSION);
 
-    if (m.carrier_frequency_hz != live.carrier_frequency_hz)
+    // Use a relative tolerance (1 ppm) for floating-point contract values: the manifest
+    // carries JSON text (e.g. 3.5e9) while the live value comes from NED unit parsing
+    // ("3.5GHz"), and different representations of the same logical value can differ by
+    // a ULP. Exact != is brittle and can abort a legitimately-matching run (WR-04).
+    // num_bands and schema_version stay as exact integer compares.
+    if (std::fabs(m.carrier_frequency_hz - live.carrier_frequency_hz) >
+            1e-6 * std::fabs(live.carrier_frequency_hz))
         throw cRuntimeError("Sionna manifest carrier_frequency_hz mismatch: artifact %g Hz, "
                             "scenario %g Hz", m.carrier_frequency_hz, live.carrier_frequency_hz);
 
-    if (m.subcarrier_spacing_hz != live.subcarrier_spacing_hz)
+    if (std::fabs(m.subcarrier_spacing_hz - live.subcarrier_spacing_hz) >
+            1e-6 * std::fabs(live.subcarrier_spacing_hz))
         throw cRuntimeError("Sionna manifest subcarrier_spacing_hz mismatch: artifact %g Hz, "
                             "scenario %g Hz", m.subcarrier_spacing_hz, live.subcarrier_spacing_hz);
 
@@ -95,8 +103,12 @@ void SionnaManager::assertContractMatchesLiveScenario(const Manifest& m, const L
         throw cRuntimeError("Sionna manifest coord_transform is not the identity transform "
                             "(Phase 1 supports identity only): %s", m.coord_transform.c_str());
 
+    // request_hash is producer-side provenance (identifies the precompute run that
+    // generated the artifact); the C++ consumer does not recompute or verify it for
+    // integrity — it only requires the field to be present and non-empty so a manifest
+    // truncated before the hash line is rejected (WR-03 / IN-05).
     if (m.request_hash.empty())
-        throw cRuntimeError("Sionna manifest request_hash is empty (cache/integrity key required)");
+        throw cRuntimeError("Sionna manifest request_hash is empty (producer provenance field required)");
 }
 
 void SionnaManager::initialize(int stage)
