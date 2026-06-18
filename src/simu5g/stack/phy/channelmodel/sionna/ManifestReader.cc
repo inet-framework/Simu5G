@@ -14,6 +14,7 @@
 
 #include <omnetpp.h>
 
+#include <climits>
 #include <fstream>
 #include <sstream>
 
@@ -47,7 +48,13 @@ int requireInt(const json& j, const char *key)
     // Accept integral JSON numbers only; reject floats/strings/bools (type confusion).
     if (!v.is_number_integer() && !v.is_number_unsigned())
         throw cRuntimeError("Sionna manifest field '%s' is not an integer", key);
-    return v.get<int>();
+    // Range-check before narrowing: get<long long>() is safe for both signed and
+    // unsigned JSON integers, then assert it fits in int (rejects 2^32+1 etc.).
+    long long raw = v.get<long long>();
+    if (raw < (long long)INT_MIN || raw > (long long)INT_MAX)
+        throw cRuntimeError("Sionna manifest field '%s' value %lld is out of int range",
+                            key, raw);
+    return (int)raw;
 }
 
 std::size_t requireSize(const json& j, const char *key)
