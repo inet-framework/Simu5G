@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 2 context gathered
+status: planning
+stopped_at: Plan A pivot — roadmap restructured (channel track Phases 2–4; BLER parked to Phase 5)
 last_updated: "2026-06-18T13:35:09.751Z"
-last_activity: 2026-06-18
+last_activity: 2026-06-18 — Plan A (channel) pivot: PROJECT/REQUIREMENTS/ROADMAP restructured; BLER Phase 2 archived to .planning/parked/
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 1
   total_plans: 4
   completed_plans: 4
-  percent: 25
+  percent: 20
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-17)
 
 **Core value:** Simu5G can opt in to site-specific, geometry-derived channel/BLER from Sionna RT without changing the default build or behavior.
-**Current focus:** Phase 01 — thin-end-to-end-slice-bring-up-empty-world-validation
+**Current focus:** Phase 2 — Channel Source & Format Maturation (Plan A channel track)
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 2 (Channel Source & Format Maturation)
+Plan: Not started — ready to discuss/plan
+Status: Plan A pivot complete; channel track is active, BLER parked to Phase 5
 Last activity: 2026-06-18
 
-Progress: [██████████] 100% (4 of 4 plans executed — phase ready for verification)
+Progress: [██░░░░░░░░] 20% (Phase 1 complete; Phase 2 channel track not started)
 
 ## Performance Metrics
 

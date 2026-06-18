@@ -7,11 +7,17 @@ This roadmap delivers an optional, opt-in `SionnaChannelModel` for Simu5G as a s
 thin, complete bring-up-and-validation slice: a minimal shared scenario (SSOT) drives a minimal
 offline Sionna tool over an empty world with a single link, producing a minimal HDF5 artifact +
 manifest, which a minimal `SionnaChannelModel` loads and runs a single-link simulation against —
-proven correct by the empty-world Friis round-trip check. Each later phase widens the same working
-slice: the full per-(link,MCS) BLER table with CQI/feedback consistency; then correctness hardening
-(no double-counting, two-seed determinism, request-hash cache, pinned fingerprint baselines, and a
-byte-for-byte unchanged default build); then the differentiators that motivate opting in (authored
-real-map Munich scene, path-gain RSRP, optional auto-invocation, calibration report). The artifact's
+proven correct by the empty-world Friis round-trip check.
+
+**Plan A (channel) pivot — 2026-06-18.** After Phase 1, the roadmap prioritizes maturing the
+**channel** track (Plan A) before the BLER track (Plan B): Phase 2 matures the channel source &
+format (dual-source invocation = offline artifact + opt-in external subprocess; a versioned JSON
+exact-float channel table; a pluggable `SionnaManager` source strategy — the seam toward dynamics);
+Phase 3 adds the `CompareChannelModel` validation decorator plus hardening (no-double-counting,
+two-seed determinism, request-hash cache, pinned fingerprints); Phase 4 matures the scene
+(free-space → two-ray → real map), path-gain RSRP, the `interferenceMode`/`granularity` params, and
+the calibration report. The **BLER table with CQI/feedback consistency is parked to Phase 5** and
+resumes after the channel decisions land (it extends the same `SionnaTable`/JSON artifact). The artifact's
 `schema_version` + `coord_transform` contract and the fail-loud parameter assertion are foundational
 and ship in minimal form inside Phase 1 because every later slice extends them; the v1 noise-limited
 table is designed as a strict subset of v2 (degenerate SINR-bin axis) from day one. v2 items
@@ -27,9 +33,10 @@ table is designed as a strict subset of v2 (degenerate SINR-bin axis) from day o
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Thin End-to-End Slice (Bring-Up & Empty-World Validation)** - One SSOT → one empty-world link → one HDF5 artifact → one loaded `SionnaChannelModel` run, validated by the Friis round-trip; default build provably Python/HDF5-free. (completed 2026-06-17)
-- [ ] **Phase 2: Full BLER Table & CQI/Feedback Consistency** - Widen to per-(link,MCS) BLER for all CQIs/MCS; one table drives both reception and CQI feedback, with a self-consistency gate.
-- [ ] **Phase 3: Correctness Hardening (No-Double-Counting, Determinism, Cache, Fingerprints)** - Suppress statistical path-loss terms, prove two-seed bit-identical RSRP, add request-hash cache, pin Sionna fingerprint baselines, and prove the default build is byte-for-byte unchanged.
-- [ ] **Phase 4: Differentiators (Authored Scene, Path-Gain RSRP, Auto-Invoke, Calibration Report)** - Additive site-specific value on the calibrated core: Munich real-map scene, Sionna-derived RSRP, opt-in auto-invocation, and a bounded-difference calibration report.
+- [ ] **Phase 2: Channel Source & Format Maturation** - Dual-source invocation (offline artifact + opt-in external Sionna subprocess) + a versioned JSON exact-float channel table/exchange format + a pluggable `SionnaManager` source strategy (the seam toward dynamics).
+- [ ] **Phase 3: Channel Validation & Hardening** - `CompareChannelModel` decorator (built-in vs Sionna, RNG-neutral per-link deltas), no-double-counting suppression, two-seed determinism, request-hash cache, and pinned Sionna fingerprint baselines.
+- [ ] **Phase 4: Scene & Differentiators** - Flat-ground/two-ray → authored real-map scene, Sionna-derived RSRP, `interferenceMode`/`granularity` params + coupling guard, and a bounded-difference calibration report.
+- [ ] **Phase 5 (PARKED): BLER Table & CQI/Feedback Consistency** - Deferred Plan B track: per-(link,MCS) BLER via `PHYAbstraction`; one table drives reception and CQI feedback with a self-consistency gate. Pre-pivot plans archived in `.planning/parked/`.
 
 ## Phase Details
 
@@ -61,72 +68,76 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] 01-04-PLAN.md — End-to-end run: single-link network + ini selection, Friis round-trip closes in-sim, pinned fingerprint baseline (SEAM-01, MOD-01, CAL-01)
 
-### Phase 2: Full BLER Table & CQI/Feedback Consistency
+### Phase 2: Channel Source & Format Maturation
 
-**Goal**: The offline tool produces BLER for every CQI/MCS per link via `sionna.sys.PHYAbstraction`, and both the reception path and the CQI-feedback path read that one `SionnaTable`, so the scheduler's chosen MCS and the realized BLER provably agree.
+**Goal**: Mature the channel pipeline (Plan A): the C++ side can obtain the channel either by loading a pre-generated offline artifact (default) or via an opt-in external Sionna subprocess; the channel table/exchange is a versioned JSON exact-float format that both Python paths emit identically; and `SionnaManager` owns a pluggable source strategy so static-vs-future-dynamic is a manager concern, not a model change — all while the default build/run stays Python-free.
 **Mode:** mvp
 **Depends on**: Phase 1
-**Requirements**: TOOL-04, MOD-03, FB-01
+**Requirements**: TOOL-06, ART-03, MOD-04
 **Success Criteria** (what must be TRUE):
 
-  1. The artifact holds a BLER value for all CQIs/MCS per link (not just the operating MCS), computed via `sionna.sys.PHYAbstraction` (effective-SINR → shipped 5G-NR LDPC reference tables, EESM) with a pinned `mcs_table_index`.
-  2. Reception decisions use the `SionnaTable` BLER lookup while retaining the `uniform(0,1) ≤ BLER` success draw and the `harqReduction_` HARQ heuristic on top.
-  3. `SionnaFeedbackComputation::getCqi()` selects the highest MCS with BLER ≤ `targetBler_` from the **same** `SionnaTable`, and an init self-consistency check confirms each link's feedback-selected MCS has realized BLER ≤ `targetBler_` on that table.
-  4. A controlled-link test shows scheduler MCS and realized BLER move together (no chronic BLER far above target from table disagreement).
-
-**Plans**: 4 plans
-Plans:
-**Wave 1**
-
-- [ ] 02-01-PLAN.md — Offline per-MCS DL BLER stage via PHYAbstraction (EESM) → bler.bin + extended manifest contract; RED-first pytest (TOOL-04)
-
-**Wave 2** *(blocked on Wave 1)*
-
-- [ ] 02-02-PLAN.md — C++ SionnaTable lookupBler/loadBlerBinary (D-05/D-06) + ManifestReader fields + SionnaManager CAL-02 assert + shared NrAmc cqiToMcsIndex bridge (D-02); RED-first C++ unit (MOD-03, FB-01)
-
-**Wave 3** *(blocked on Wave 2; 02-03 and 02-04 run in parallel, no file overlap)*
-
-- [ ] 02-03-PLAN.md — Reception swap: isReceptionSuccessful sources BLER from lookupBler keyed by scheduler MCS, keeps uniform(0,1) draw + harqReduction_ (MOD-03)
-- [ ] 02-04-PLAN.md — Feedback consistency: SionnaFeedbackComputation::getCqi (highest MCS ≤ targetBler_) + factory wiring + single targetBler_ + D-08 init self-check + fingerprint re-pin (FB-01)
-
-### Phase 3: Correctness Hardening (No-Double-Counting, Determinism, Cache, Fingerprints)
-
-**Goal**: With `SionnaChannelModel` active, Simu5G's statistical path-loss terms are fully suppressed (Sionna owns path gain), per-link RSRP is bit-identical across RNG seeds, the offline tool skips recompute on an unchanged request via a request-hash cache, and Sionna runs reproduce from their own pinned fingerprint baselines — while the default build stays byte-for-byte unaffected.
-**Mode:** mvp
-**Depends on**: Phase 2
-**Requirements**: MOD-02, TOOL-05, REP-01, REP-02
-**Success Criteria** (what must be TRUE):
-
-  1. When the Sionna model is active, statistical shadowing, the random LOS draw, and the 38.901 penetration loss are not applied on top of the Sionna path gain (audited and suppressed at the path-gain source).
-  2. A two-seed determinism test confirms per-link RSRP/path-gain is bit-identical across RNG seeds, proving no statistical term leaks into the static geometry.
-  3. The offline tool caches by a hash of the full request (scene, materials, antennas, positions, carrier, numerology, band count, Tx power, MCS set, RT settings, transform); a rerun with the same request skips Sionna, while changing any physical input invalidates the cache and a non-physical input (timestamp/path) does not.
-  4. Sionna configurations reproduce from their own pinned fingerprint baselines against the committed artifact (never matched to the statistical model's baselines), and reproducibility comes from the pinned artifact rather than a re-run of the GPU precompute.
+  1. `channelSource = artifact | subprocess | auto` works: default loads the cached artifact; `auto` loads cache and spawns the **external** Sionna subprocess on a miss; a missing artifact with spawn disabled fails loudly (`cRuntimeError`); the default binary still links no Python/HDF5 symbols (SEAM-02 holds).
+  2. The channel table/exchange is a **versioned JSON with round-trip-exact float repr** (`%.17g`/hex); the offline tool and the subprocess emit byte-identical format; the C++ side reads it and a re-emit round-trips the path-gain values bit-exact.
+  3. There is **one** `SionnaChannelModel` (thin reader); `SionnaManager` selects a pluggable source strategy (`StaticArtifact | Subprocess`) by parameter, and switching source is config — the model's `getSINR`/`getAttenuation`/`getRSRP` are unchanged.
 
 **Plans**: TBD
 
-### Phase 4: Differentiators (Authored Scene, Path-Gain RSRP, Auto-Invoke, Calibration Report)
+### Phase 3: Channel Validation & Hardening
 
-**Goal**: On top of the validated, calibrated core, a researcher can run a real-map (Munich) scene that demonstrates site-specific propagation Simu5G cannot produce analytically, get Sionna-derived RSRP, optionally let the sim auto-produce a missing artifact, and read a bounded-difference calibration report — all strictly additive, with Python never becoming a default-run dependency.
+**Goal**: Validate the Sionna channel against the built-in analytic model with a live, apples-to-apples per-link decorator, and harden correctness: statistical path-loss terms fully suppressed (Sionna owns path gain), per-link RSRP bit-identical across RNG seeds, the offline tool skips recompute via a request-hash cache, and Sionna runs reproduce from their own pinned fingerprint baselines — while the default build stays byte-for-byte unaffected.
 **Mode:** mvp
-**Depends on**: Phase 3
-**Requirements**: DIF-01, DIF-02, DIF-03, DIF-04
+**Depends on**: Phase 2
+**Requirements**: CAL-03, MOD-02, TOOL-05, REP-01, REP-02
 **Success Criteria** (what must be TRUE):
 
-  1. A researcher runs an authored real-map scene (e.g. the built-in Munich scene) and observes site-specific LOS/NLOS propagation that the analytic model cannot reproduce.
+  1. A `CompareChannelModel : LteChannelModel` decorator runs the built-in model and `SionnaChannelModel` on identical inputs and emits per-link attenuation/RSRP/SINR deltas (bias, RMSE, correlation) as vec/sca; with default `primary` = built-in the deterministic Sionna side draws no RNG and fingerprints are unperturbed.
+  2. When the Sionna model is active, statistical shadowing, the random LOS draw, and the 38.901 penetration loss are not applied on top of the Sionna path gain (audited and suppressed at the path-gain source).
+  3. A two-seed determinism test confirms per-link RSRP/path-gain is bit-identical across RNG seeds, proving no statistical term leaks into the static geometry.
+  4. The offline tool caches by a hash of the full request (scene, materials, antennas, positions, carrier, numerology, band count, Tx power, MCS set, RT settings, transform); a rerun with the same request skips Sionna, while changing any physical input invalidates the cache and a non-physical input (timestamp/path) does not.
+  5. Sionna configurations reproduce from their own pinned fingerprint baselines against the committed artifact (never matched to the statistical model's baselines).
+
+**Plans**: TBD
+
+### Phase 4: Scene & Differentiators
+
+**Goal**: On top of the validated, calibrated core, mature the scene from pure free-space to flat-ground/two-ray and then an authored real-map scene that shows site-specific propagation Simu5G cannot produce analytically; return Sionna-derived RSRP; expose the `interferenceMode`/`granularity` parameters (+coupling guard) as the forward seam toward multi-cell; and produce a bounded-difference calibration report — all strictly additive, Python never a default-run dependency.
+**Mode:** mvp
+**Depends on**: Phase 3
+**Requirements**: DIF-01, DIF-02, MOD-05, DIF-04
+**Success Criteria** (what must be TRUE):
+
+  1. The scene matures from free-space to a flat-ground/two-ray model and then an authored real-map scene (e.g. the built-in Munich scene), showing site-specific LOS/NLOS propagation the analytic model cannot reproduce; the CAL-01 free-space Friis anchor is retained as a separate sanity check.
   2. `getRSRP()` / `getRSRP_D2D()` return the Sionna per-link path gain (path-gain-based RSRP).
-  3. With an opt-in ini flag, the simulation spawns the precompute tool when the artifact is missing; with the flag off, a normal run has no Python dependency.
+  3. `SionnaManager` exposes `interferenceMode` (noise-limited|all-pairs) and `granularity` (per-RB|wideband) with a coupling guard that rejects/warns the inconsistent wideband+all-pairs combo; the default remains noise-limited + per-RB.
   4. A bounded-difference calibration report artifact is produced comparing Sionna vs. Friis vs. 3GPP, with the residual quantified and explained.
 
 **Plans**: TBD
 
+### Phase 5 (PARKED): BLER Table & CQI/Feedback Consistency
+
+**Goal**: The offline tool produces BLER for every CQI/MCS per link via `sionna.sys.PHYAbstraction`, and both the reception path and the CQI-feedback path read that one `SionnaTable`, so the scheduler's chosen MCS and the realized BLER provably agree.
+**Mode:** mvp
+**Depends on**: Phase 2 (the BLER table extends the same `SionnaTable` + JSON artifact, so it resumes after the channel source/format decisions land)
+**Requirements**: TOOL-04, MOD-03, FB-01
+**Status**: **PARKED** (Plan A pivot, 2026-06-18). The pre-pivot research and plans are archived under `.planning/parked/02-full-bler-table-cqi-feedback-consistency/` (CONTEXT, RESEARCH, PATTERNS, VALIDATION + 4 PLANs). Expect a re-plan when resumed, since the channel JSON/source changes affect the shared `SionnaTable`.
+**Success Criteria** (what must be TRUE):
+
+  1. The artifact holds a BLER value for all CQIs/MCS per link, computed via `sionna.sys.PHYAbstraction` (effective-SINR → shipped 5G-NR LDPC reference tables, EESM) with a pinned `mcs_table_index`.
+  2. Reception decisions use the `SionnaTable` BLER lookup while retaining the `uniform(0,1) ≤ BLER` success draw and the `harqReduction_` HARQ heuristic on top.
+  3. `SionnaFeedbackComputation::getCqi()` selects the highest MCS with BLER ≤ `targetBler_` from the **same** `SionnaTable`, with an init self-consistency check.
+  4. A controlled-link test shows scheduler MCS and realized BLER move together.
+
+**Plans**: Parked (archived).
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 → 2 → 3 → 4. Phase 5 (BLER track) is **parked** and resumes after the channel track.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Thin End-to-End Slice | 4/4 | Complete    | 2026-06-18 |
-| 2. Full BLER Table & CQI Consistency | 0/4 | Not started | - |
-| 3. Correctness Hardening | 0/TBD | Not started | - |
-| 4. Differentiators | 0/TBD | Not started | - |
+| 2. Channel Source & Format Maturation | 0/TBD | Not started | - |
+| 3. Channel Validation & Hardening | 0/TBD | Not started | - |
+| 4. Scene & Differentiators | 0/TBD | Not started | - |
+| 5. BLER Table & CQI/Feedback | 0/4 | Parked | - |

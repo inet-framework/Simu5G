@@ -35,8 +35,10 @@ and Sionna is a clean, selectable alternative.
   (interference + noise aggregation retained). v1 is noise-limited → one BLER per (link, MCS).
 - [ ] Precompute-once + **cache keyed by a hash of the full request** (scene, positions,
   materials, antennas, freqs, powers, MCS set); reruns of the same scenario skip Sionna.
-- [ ] Invocation: a **separate offline tool** produces the cached artifact; the simulation
-  just loads it. Optional auto-invocation from the sim onto the same artifact (later).
+- [ ] Invocation: **dual-source** (PA-2) — default loads the offline-produced cached artifact;
+  opt-in `channelSource=subprocess|auto` lets `SionnaManager` spawn an **external** Sionna
+  subprocess (never embedded Python). Source strategy is pluggable in the manager (PA-3); the
+  subprocess is the seam toward quasi-static dynamics (PA-6).
 - [ ] Internal BLER method: **effective-SINR → reference curve** (RT channel → post-eq.
   effective SINR → BLER from reference curves).
 - [ ] **Reference / empty-world calibration mode**: an obstacle-free Sionna world,
@@ -118,6 +120,14 @@ and Sionna is a clean, selectable alternative.
 | Mandatory reference/empty-world calibration mode | Comparability anchor + catches silent parameter/unit mismatch before trusting site-specific results | — Pending |
 | Shared scenario source (positions/antennas/carrier) drives both; assert + fail loudly | "Both systems know the same thing" north-star; silent geometry/param mismatch corrupts everything | — Pending |
 | When Sionna active, it fully owns path gain (no Simu5G shadowing/LOS/penetration on top) | Avoid double-counting deterministic RT gain with random statistics | — Pending |
+| **(PA-1)** Pivot to the **Plan A (channel) track**; the BLER/CQI track (Plan B) is parked to a later phase | Mature the site-specific channel + validation harness first; BLER shares the same `SionnaTable` and benefits from the channel decisions landing first | Decided 2026-06-18 |
+| **(PA-2)** **Dual-source invocation**: default = load offline artifact; opt-in = sim-spawned **external** Sionna subprocess; `channelSource = artifact\|subprocess\|auto` | Keeps both a pre-generated world and a sim-driven path; the subprocess is the seam toward future dynamics. External process (not embedded) → binary links no Python, so SEAM-02 + "no Python in a normal run" hold (default loads artifact, fail-loud if missing) | Decided 2026-06-18 |
+| **(PA-3)** One `SionnaChannelModel` (thin reader) + pluggable **source strategy in `SionnaManager`** (`StaticArtifact\|Subprocess\|(v2)LiveSionna`); no `DynamicSionnaChannelModel` yet | The reception/SINR/RSRP logic is identical static-or-dynamic; only the table's update policy differs → that belongs in the manager. A separate model subclass only if per-call time-dependent math (Doppler) is needed (v2) | Decided 2026-06-18 |
+| **(PA-4)** Channel table/exchange format = **versioned JSON with round-trip-exact float repr** (`%.17g`/hex) | Small channel table + dynamic request/response unify cleanly in one human-readable, diffable format both Python paths emit; exact-float repr removes the precision objection. **Amends** CLAUDE.md's "no JSON for the bulk table" for the (small) channel; bulk BLER stays binary/HDF5 if/when it returns | Decided 2026-06-18 |
+| **(PA-5)** Adopt a **`CompareChannelModel`** decorator (built-in vs Sionna on identical inputs, RNG-neutral, per-link deltas) | A live, in-sim, apples-to-apples per-link validation two separate runs cannot give; default primary = built-in keeps fingerprints unperturbed | Decided 2026-06-18 |
+| **(PA-6)** Future dynamics = **quasi-static, event-driven** regeneration (re-spawn → later long-lived process + IPC); never per-TTI / embedded | Prepares for position changes without violating the no-runtime-Python constraint; per-TTI coupling stays out of scope | Decided 2026-06-18 |
+| **(PA-7)** Introduce `interferenceMode` (noise-limited\|all-pairs) + `granularity` (per-RB\|wideband) params + coupling-guard | Forward design toward multi-cell; default stays noise-limited + per-RB; guard rejects the inconsistent wideband+all-pairs combo | Decided 2026-06-18 |
+| **(PA-8)** Scene path: **free-space now → flat-ground/two-ray later**; CAL-01 free-space anchor kept as a separate sanity check | Two-ray is more realistic pre-buildings but shifts the calibration reference off Friis; stage it deliberately in the scene phase | Decided 2026-06-18 |
 
 ## Evolution
 
@@ -137,4 +147,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-17 after initialization*
+*Last updated: 2026-06-18 — Plan A (channel) pivot: dual-source invocation, JSON channel format, source-strategy architecture, CompareChannelModel; BLER track parked to Phase 5*

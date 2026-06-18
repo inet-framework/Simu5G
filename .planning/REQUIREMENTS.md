@@ -28,12 +28,20 @@ Requirements for the initial reusable module. Each maps to a roadmap phase.
 - [x] **TOOL-03**: The tool runs one batched `PathSolver` over all Tx/Rx pairs and extracts
   per-link path gains (`Paths.cfr` over `subcarrier_frequencies`).
 
-- [ ] **TOOL-04**: The tool computes BLER per (link, MCS) for all CQIs/MCS via
-  `sionna.sys.PHYAbstraction` (effective-SINR → shipped 5G-NR LDPC reference tables, EESM).
+- [ ] **TOOL-04** *(PARKED → Phase 5, BLER track)*: The tool computes BLER per (link, MCS) for
+  all CQIs/MCS via `sionna.sys.PHYAbstraction` (effective-SINR → shipped 5G-NR LDPC reference
+  tables, EESM).
 
 - [ ] **TOOL-05**: The tool precomputes once and caches by a hash of the full request
   (scene, materials, antennas, positions, carrier, numerology, band count, Tx power, MCS set,
   RT settings, transform); a rerun with the same request skips Sionna.
+
+- [ ] **TOOL-06** *(Plan A)*: **Dual-source invocation** — by default the simulation loads the
+  offline-produced cached artifact; an opt-in `channelSource = artifact | subprocess | auto`
+  lets `SionnaManager` spawn an **external** Sionna RT subprocess (`auto` = load cache, spawn
+  on miss). The spawned process is never embedded Python, so the default binary links no
+  Python/HDF5 (SEAM-02 preserved); a missing artifact with spawn disabled fails loudly. Subsumes
+  the former DIF-03 auto-invocation.
 
 ### Artifact
 
@@ -44,6 +52,12 @@ Requirements for the initial reusable module. Each maps to a roadmap phase.
   block, and the request hash; the schema reserves a degenerate SINR-bin axis so v2
   interference curves are an additive extension.
 
+- [ ] **ART-03** *(Plan A)*: The **channel table/exchange format is versioned JSON with
+  round-trip-exact float representation** (`%.17g`/hex) — one human-readable, diffable format
+  that serves both the static cached artifact and the future dynamic request/response protocol,
+  emitted identically by the offline tool and the subprocess. Bulk BLER (if/when the BLER track
+  resumes) stays in a binary/HDF5 dataset; JSON is for the small channel table + manifest only.
+
 ### Channel Model (C++ consumer)
 
 - [x] **MOD-01**: `SionnaChannelModel : LteRealisticChannelModel` retains the inherited
@@ -53,12 +67,24 @@ Requirements for the initial reusable module. Each maps to a roadmap phase.
   statistical shadowing, random LOS draw, and 38.901 penetration loss are suppressed
   (no double-counting).
 
-- [ ] **MOD-03**: BLER comes from a `SionnaTable` lookup, keeping the `uniform(0,1) ≤ BLER`
-  success draw and the `harqReduction_` HARQ heuristic on top.
+- [ ] **MOD-03** *(PARKED → Phase 5, BLER track)*: BLER comes from a `SionnaTable` lookup,
+  keeping the `uniform(0,1) ≤ BLER` success draw and the `harqReduction_` HARQ heuristic on top.
 
-- [ ] **FB-01**: `SionnaFeedbackComputation::getCqi()` selects the highest MCS with
-  BLER ≤ `targetBler_` from the **same** `SionnaTable` (one table, two readers); an init
-  self-consistency check confirms scheduler MCS and realized BLER agree.
+- [ ] **MOD-04** *(Plan A)*: One `SionnaChannelModel` (thin reader of the in-memory table) +
+  a **pluggable source strategy owned by `SionnaManager`** (`StaticArtifact | Subprocess |
+  (v2) LiveSionna`). Static-vs-dynamic differs only in the table's update policy (a manager
+  concern), not in the model's `getSINR`/`getAttenuation`/`getRSRP` methods; no separate
+  `DynamicSionnaChannelModel` until per-call time-dependent math (Doppler/interpolation) is
+  required (v2).
+
+- [ ] **MOD-05** *(Plan A)*: `SionnaManager` exposes `interferenceMode` (noise-limited |
+  all-pairs) and `granularity` (per-RB | wideband) parameters with a **coupling guard** that
+  warns/rejects the inconsistent wideband+all-pairs combination. Default = noise-limited +
+  per-RB (v1 behavior); the parameters are the forward seam toward multi-cell.
+
+- [ ] **FB-01** *(PARKED → Phase 5, BLER track)*: `SionnaFeedbackComputation::getCqi()` selects
+  the highest MCS with BLER ≤ `targetBler_` from the **same** `SionnaTable` (one table, two
+  readers); an init self-consistency check confirms scheduler MCS and realized BLER agree.
 
 ### Validation & Reproducibility
 
@@ -68,6 +94,12 @@ Requirements for the initial reusable module. Each maps to a roadmap phase.
 
 - [x] **CAL-02**: `SionnaManager` asserts the artifact manifest against the live scenario at
   init and fails loudly (`cRuntimeError`) on any parameter-contract mismatch.
+
+- [ ] **CAL-03** *(Plan A)*: A `CompareChannelModel : LteChannelModel` decorator runs the
+  built-in analytic model and `SionnaChannelModel` on **identical inputs** (same positions,
+  Tx power, RB allocation from one scheduling timeline) and emits per-link attenuation/RSRP/SINR
+  deltas (bias, RMSE, correlation) as vec/sca. It is **RNG-neutral**: default `primary` =
+  built-in so the deterministic Sionna side draws no RNG and fingerprints stay unperturbed.
 
 - [ ] **REP-01**: Sionna configurations have their own pinned fingerprint baselines against
   the committed artifact (never matched to the statistical model's baselines).
@@ -83,9 +115,9 @@ Requirements for the initial reusable module. Each maps to a roadmap phase.
 - [ ] **DIF-02**: Path-gain-based RSRP — `getRSRP()` / `getRSRP_D2D()` return Sionna per-link
   path gain.
 
-- [ ] **DIF-03**: Optional auto-invocation — the sim spawns the precompute tool if the
-  artifact is missing, opt-in via a separate ini flag; Python never becomes a default-run
-  dependency.
+- [ ] **DIF-03** *(MERGED → TOOL-06)*: Optional auto-invocation — the sim spawns the precompute
+  tool if the artifact is missing, opt-in via a separate ini flag; Python never becomes a
+  default-run dependency. Now subsumed by the Plan A dual-source invocation (TOOL-06, Phase 2).
 
 - [ ] **DIF-04**: A bounded-difference calibration report artifact (Sionna vs. Friis vs. 3GPP,
   with quantified, explained residual).
@@ -127,6 +159,9 @@ Explicitly excluded for v1. Documented to prevent scope creep.
 
 Which phases cover which requirements. Filled during roadmap creation.
 
+> Restructured 2026-06-18 for the **Plan A (channel) pivot**: the channel track fills Phases 2–4;
+> the BLER track (Plan B) is parked to Phase 5.
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SEAM-01 | Phase 1 | Complete |
@@ -139,24 +174,31 @@ Which phases cover which requirements. Filled during roadmap creation.
 | MOD-01  | Phase 1 | Complete |
 | CAL-01  | Phase 1 | Complete |
 | CAL-02  | Phase 1 | Complete |
-| TOOL-04 | Phase 2 | Pending |
-| MOD-03  | Phase 2 | Pending |
-| FB-01   | Phase 2 | Pending |
+| TOOL-06 | Phase 2 | Pending |
+| ART-03  | Phase 2 | Pending |
+| MOD-04  | Phase 2 | Pending |
+| CAL-03  | Phase 3 | Pending |
 | MOD-02  | Phase 3 | Pending |
 | TOOL-05 | Phase 3 | Pending |
 | REP-01  | Phase 3 | Pending |
 | REP-02  | Phase 3 | Pending |
 | DIF-01  | Phase 4 | Pending |
 | DIF-02  | Phase 4 | Pending |
-| DIF-03  | Phase 4 | Pending |
+| MOD-05  | Phase 4 | Pending |
 | DIF-04  | Phase 4 | Pending |
+| TOOL-04 | Phase 5 | Parked |
+| MOD-03  | Phase 5 | Parked |
+| FB-01   | Phase 5 | Parked |
+| DIF-03  | — | Merged → TOOL-06 |
 
 **Coverage:**
 
-- v1 requirements: 21 total (17 table stakes + 4 differentiators)
-- Mapped to phases: 21 (Phase 1: 10, Phase 2: 3, Phase 3: 4, Phase 4: 4)
+- Requirements: 26 total (21 original v1 + 5 added for the Plan A track: TOOL-06, ART-03, MOD-04,
+  MOD-05, CAL-03).
+- Mapped: Phase 1: 10 (Complete) · Phase 2: 3 · Phase 3: 5 · Phase 4: 4 · Phase 5 (parked BLER): 3
+  · DIF-03 merged into TOOL-06.
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-17*
-*Last updated: 2026-06-17 after roadmap creation*
+*Last updated: 2026-06-18 — Plan A pivot: +TOOL-06/ART-03/MOD-04/MOD-05/CAL-03; BLER (TOOL-04/MOD-03/FB-01) parked to Phase 5; DIF-03 merged into TOOL-06*
