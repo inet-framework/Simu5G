@@ -23,8 +23,7 @@ namespace simu5g {
 // parameter contract + request hash). The bulk numeric path-gain table lives in a
 // separate little-endian binary file referenced by table_path.
 //
-// This is a compilable skeleton; the JSON parsing and validation are filled in by
-// Plan 01-03. No Sionna/HDF5/Python headers are pulled in here.
+// No Sionna/HDF5/Python headers are pulled in here.
 //
 struct Manifest {
     int schema_version = 0;
@@ -34,11 +33,13 @@ struct Manifest {
     std::string table_path;
     std::string table_dtype;
     std::size_t num_links = 0;
-    // coord_transform placeholder: the TOOL-02 coordinate transform between the
-    // OMNeT++ scene frame and the Sionna scene frame (filled in by Plan 01-03).
+    // coord_transform: the TOOL-02 coordinate transform between the OMNeT++ scene frame
+    // and the Sionna scene frame. Phase 1 requires identity; stored as a JSON string so
+    // SionnaManager can assert it against the live scenario.
     std::string coord_transform;
-    // request_hash placeholder: hash of the full request (scene, positions, materials,
-    // antennas, freqs, powers, MCS set) used as the cache key (filled in by Plan 01-03).
+    // request_hash: hash of the full request (scene, positions, materials, antennas,
+    // freqs, powers, MCS set). Producer-side provenance only — not recomputed or
+    // verified for integrity by the C++ consumer (see WR-03 / IN-05).
     std::string request_hash;
 };
 

@@ -28,9 +28,6 @@ using namespace omnetpp;
 // coord transform, request hash, ...) against the live scenario, failing loud on any
 // mismatch. SionnaChannelModel instances acquire the loaded table from this manager.
 //
-// This is a compilable skeleton; the artifact load and fail-loud contract assertions
-// are filled in by Plan 01-03.
-//
 class SionnaManager : public cSimpleModule
 {
   public:

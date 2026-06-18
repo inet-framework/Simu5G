@@ -24,8 +24,7 @@ namespace simu5g {
 // noise-limited: one path gain (dB) per link, indexed by a validated link key. The
 // schema is v2-ready (a degenerate SINR-bin axis collapses to this scalar slice).
 //
-// This is a compilable skeleton; the bounds-validated binary loader and lookup are
-// filled in by Plan 01-03. No Sionna/HDF5/Python headers are pulled in here.
+// No Sionna/HDF5/Python headers are pulled in here.
 //
 class SionnaTable
 {

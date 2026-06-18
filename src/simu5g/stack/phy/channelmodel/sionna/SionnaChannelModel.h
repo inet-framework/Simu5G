@@ -25,8 +25,6 @@ namespace simu5g {
 // edit (SEAM-01). When this model is active it fully owns path gain; the inherited
 // statistical shadowing/LOS/penetration terms are left inert by configuration.
 //
-// This is a compilable skeleton; the real table-lookup body is filled in by Plan 01-03.
-//
 class SionnaChannelModel : public NrChannelModel
 {
   protected:
