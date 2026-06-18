@@ -1,9 +1,10 @@
 ---
 phase: 01-thin-end-to-end-slice-bring-up-empty-world-validation
-verified: 2026-06-17T00:00:00Z
-status: human_needed
-score: 5/5 must-haves verified (all automated truths VERIFIED; 2 items require human confirmation)
+verified: 2026-06-18T00:00:00Z
+status: passed
+score: 5/5 must-haves verified (all automated truths VERIFIED; 2 human items confirmed via UAT 2026-06-18)
 overrides_applied: 0
+human_verification_resolved: "Both human-verification items confirmed PASS in 01-UAT.md (commit 175d690c). Item 1: committed 0.sca (commit ed360465) shows ue[0].cellularNic.nrChannelModel[0] rcvdSinrDl:mean=70.13959 dB / measuredSinrDl:mean=56.42577 dB — tracks the -83.3604 dB Sionna table, not the ~97.5 dB analytic 3GPP attenuation. Item 2: run log shows loud cRuntimeError 'carrier_frequency_hz mismatch: artifact 2.6e+09 Hz, scenario 3.5e+09 Hz' on a corrupted manifest, nonzero exit, no silent fallback."
 human_verification:
   - test: "Confirm the end-to-end single-link simulation ran with SionnaChannelModel active and the in-sim path gain reflects the Sionna table (~-83.3 dB path gain at 100 m), not the analytic formula."
     expected: "rcvdSinrDl or the logged getAttenuation value tracks the offline friis_check.py value within ~1 dB and is NOT the analytic 3GPP path loss."
