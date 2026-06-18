@@ -74,7 +74,20 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `SionnaFeedbackComputation::getCqi()` selects the highest MCS with BLER ≤ `targetBler_` from the **same** `SionnaTable`, and an init self-consistency check confirms each link's feedback-selected MCS has realized BLER ≤ `targetBler_` on that table.
   4. A controlled-link test shows scheduler MCS and realized BLER move together (no chronic BLER far above target from table disagreement).
 
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Offline per-MCS DL BLER stage via PHYAbstraction (EESM) → bler.bin + extended manifest contract; RED-first pytest (TOOL-04)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 02-02-PLAN.md — C++ SionnaTable lookupBler/loadBlerBinary (D-05/D-06) + ManifestReader fields + SionnaManager CAL-02 assert + shared NrAmc cqiToMcsIndex bridge (D-02); RED-first C++ unit (MOD-03, FB-01)
+
+**Wave 3** *(blocked on Wave 2; 02-03 and 02-04 run in parallel, no file overlap)*
+
+- [ ] 02-03-PLAN.md — Reception swap: isReceptionSuccessful sources BLER from lookupBler keyed by scheduler MCS, keeps uniform(0,1) draw + harqReduction_ (MOD-03)
+- [ ] 02-04-PLAN.md — Feedback consistency: SionnaFeedbackComputation::getCqi (highest MCS ≤ targetBler_) + factory wiring + single targetBler_ + D-08 init self-check + fingerprint re-pin (FB-01)
 
 ### Phase 3: Correctness Hardening (No-Double-Counting, Determinism, Cache, Fingerprints)
 
@@ -114,6 +127,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Thin End-to-End Slice | 4/4 | Complete    | 2026-06-18 |
-| 2. Full BLER Table & CQI Consistency | 0/TBD | Not started | - |
+| 2. Full BLER Table & CQI Consistency | 0/4 | Not started | - |
 | 3. Correctness Hardening | 0/TBD | Not started | - |
 | 4. Differentiators | 0/TBD | Not started | - |
