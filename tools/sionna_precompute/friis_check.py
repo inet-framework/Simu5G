@@ -25,7 +25,12 @@ def friis_dB(d, fc):
 
 
 def _primary_link_distance(scenario):
-    """OMNeT++ Euclidean distance for the first tx/rx pair (metres)."""
+    """3D Euclidean distance for the first tx/rx pair (metres).
+
+    Uses all three spatial coordinates (x, y, z) — the same computation as
+    phy_->getCoord().distance(coord) on the Simu5G side. This is NOT the horizontal
+    (2D) distance; height differences are included (WR-07).
+    """
     txs = [p for p in scenario["positions"] if p["role"] == "tx"]
     rxs = [p for p in scenario["positions"] if p["role"] == "rx"]
     tx, rx = txs[0]["xyz_m"], rxs[0]["xyz_m"]

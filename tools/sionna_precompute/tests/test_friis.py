@@ -1,11 +1,16 @@
 """CAL-01: empty-world Sionna path gain must agree with the Friis free-space value.
 
 This is the RED test of the TDD cycle: it imports ``compute_path_gain_dB`` from the
-not-yet-written ``precompute`` module and asserts the Sionna empty-world LOS path gain
-matches the textbook Friis value at the OMNeT++ Euclidean distance within 1.0 dB.
+precompute module and asserts the Sionna empty-world LOS path gain matches the textbook
+Friis value at the OMNeT++ **3D Euclidean distance** within 0.25 dB.
+
+The Tx is at [0, 0, 10] m and the Rx is at [100, 0, 1.5] m, giving a 3D Euclidean
+distance of ~100.36 m (NOT the horizontal 100 m projection). Both this test and
+friis_check.py use the 3D distance — matching phy_->getCoord().distance(coord) on
+the Simu5G side — so the comparison is apples-to-apples (WR-07).
 
 Observed in research (sionna-rt 2.0.1 venv): Sionna -83.36 dB vs Friis -83.32 dB at
-100 m / 3.5 GHz -> residual ~0.04 dB, comfortably inside the gate.
+~100.36 m / 3.5 GHz -> residual ~0.04 dB, well inside the 0.25 dB gate.
 
 The Sionna-dependent test is marked ``requires_venv`` so it can be deselected when the
 active interpreter is not the offline venv, but it MUST run (not skip) under that venv.
@@ -54,25 +59,28 @@ _SCENARIO = {
 
 @pytest.mark.requires_venv
 def test_friis_round_trip():
-    """Sionna empty-world path gain matches Friis within 1.0 dB at the OMNeT++ distance."""
+    """Sionna empty-world path gain matches Friis within 0.25 dB at the OMNeT++ 3D distance."""
     from precompute import compute_path_gain_dB
 
     sionna_dB = compute_path_gain_dB(_SCENARIO)
 
-    # OMNeT++ Euclidean distance between the Tx and Rx positions (matches
-    # phy_->getCoord().distance(coord) on the Simu5G side; ~100.36 m here).
+    # 3D Euclidean distance between Tx [0,0,10] and Rx [100,0,1.5] (metres).
+    # This matches phy_->getCoord().distance(coord) on the Simu5G side (~100.36 m here).
+    # NOTE: use the 3D distance, NOT the horizontal 100 m projection — the height
+    # difference matters and both sides must use the same convention (WR-07).
     tx = _SCENARIO["positions"][0]["xyz_m"]
     rx = _SCENARIO["positions"][1]["xyz_m"]
     d = math.sqrt(sum((a - b) ** 2 for a, b in zip(tx, rx)))
 
     expected = friis_dB(d, _SCENARIO["carrier_frequency_hz"])
-    assert abs(sionna_dB - expected) < 1.0, (
+    assert abs(sionna_dB - expected) < 0.25, (
         f"Sionna {sionna_dB:.4f} dB vs Friis {expected:.4f} dB "
-        f"(residual {abs(sionna_dB - expected):.4f} dB) exceeds 1.0 dB gate"
+        f"(residual {abs(sionna_dB - expected):.4f} dB) exceeds 0.25 dB gate"
     )
 
     # Non-normalized semantics: absolute gain near -83 dB, NOT ~0 dB (which would
-    # indicate normalize=True). Use the horizontal 100 m reference for the band.
+    # indicate normalize=True was used). The 3D Euclidean distance at 3.5 GHz gives
+    # Friis ≈ -83.32 dB; Sionna observed ≈ -83.36 dB.
     assert sionna_dB < -50.0, (
         f"path gain {sionna_dB:.4f} dB looks normalized (near 0); "
         "compute_path_gain_dB must use normalize=False"
