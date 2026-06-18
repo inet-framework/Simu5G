@@ -374,7 +374,9 @@ double blockErrorRate = sionnaTable_->lookupBler({linkId, mcsTableIndex_, mcs, (
 
 **If this table is empty:** it is not — these five need confirmation in discuss/plan before locking.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All three resolved during planning (see 02-02 / 02-04 PLAN.md): OQ1 → single `NrAmc::cqiToMcsIndex`/`mcsIndexToCqi` bridge used by both readers; OQ2 → feedback factory gated on `SionnaManager` presence in `LtePhyEnb::initializeFeedbackComputation`; OQ3 → the channel model's inherited `targetBler_` is the single source for the feedback computation.
 
 1. **CQI↔MCS-index bridge (D-01/D-02 realization).** Reception and the wire carry CQI 1–15; the Sionna table is keyed by MCS index 0–27; Simu5G's `NrMcsElem` stores `(mod,coderate)`, not an index.
    - What we know: `NrAmc::getMcsElemPerCqi(cqi, DL)` (`NrAmc.cc:241`) deterministically maps CQI→(mod,coderate) by searching `NrMcsTable::table[]` (the 256-QAM extended rows). The row index *is* the MCS index.
