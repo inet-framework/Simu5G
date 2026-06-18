@@ -34,6 +34,17 @@ void SionnaChannelModel::initialize(int stage)
         sionnaManager_ = dynamic_cast<SionnaManager *>(mod);
         if (sionnaManager_ == nullptr)
             throw cRuntimeError("SionnaChannelModel: module '%s' is not a SionnaManager", managerPath);
+
+        // v1 invariant: linkKeyFor always returns link index 0, which is only correct
+        // when there is exactly one link in the table. Fail loud if the artifact has
+        // more than one link so a mis-configured multi-cell scenario is caught before
+        // it silently returns link 0's path gain for every interferer (WR-01).
+        // v2 will remove this guard once linkKeyFor maps (Tx, Rx) to the correct row.
+        const std::size_t tableSize = sionnaManager_->getTable().size();
+        if (tableSize != 1)
+            throw cRuntimeError("SionnaChannelModel: artifact table has %lu link(s) but "
+                                "v1 supports exactly 1 (linkKeyFor is hard-wired to index 0); "
+                                "use a single-link artifact or upgrade to v2", (unsigned long)tableSize);
     }
 }
 
