@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Channel Source & Format Maturation** - Dual-source invocation (offline artifact + opt-in external Sionna subprocess) + a versioned JSON exact-float channel table/exchange format + a pluggable `SionnaManager` source strategy (the seam toward dynamics).
 - [ ] **Phase 3: Channel Validation & Hardening** - `CompareChannelModel` decorator (built-in vs Sionna, RNG-neutral per-link deltas), no-double-counting suppression, two-seed determinism, request-hash cache, and pinned Sionna fingerprint baselines.
 - [ ] **Phase 4: Scene & Differentiators** - Flat-ground/two-ray → authored real-map scene, Sionna-derived RSRP, `interferenceMode`/`granularity` params + coupling guard, and a bounded-difference calibration report.
-- [ ] **Phase 5 (PARKED): BLER Table & CQI/Feedback Consistency** - Deferred Plan B track: per-(link,MCS) BLER via `PHYAbstraction`; one table drives reception and CQI feedback with a self-consistency gate. Pre-pivot plans archived in `.planning/parked/`.
+- [ ] **Phase 5: BLER Table & CQI/Feedback Consistency (PARKED)** - Deferred Plan B track: per-(link,MCS) BLER via `PHYAbstraction`; one table drives reception and CQI feedback with a self-consistency gate. Pre-pivot plans archived in `.planning/parked/`.
 
 ## Phase Details
 
@@ -113,7 +113,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Plans**: TBD
 
-### Phase 5 (PARKED): BLER Table & CQI/Feedback Consistency
+### Phase 5: BLER Table & CQI/Feedback Consistency (PARKED)
 
 **Goal**: The offline tool produces BLER for every CQI/MCS per link via `sionna.sys.PHYAbstraction`, and both the reception path and the CQI-feedback path read that one `SionnaTable`, so the scheduler's chosen MCS and the realized BLER provably agree.
 **Mode:** mvp
