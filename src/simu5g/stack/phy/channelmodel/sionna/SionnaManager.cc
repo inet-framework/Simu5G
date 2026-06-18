@@ -40,6 +40,15 @@ std::string dirOf(const std::string& path)
 // Phase 1 accepts ONLY the identity coord_transform (TOOL-02): the OMNeT++ scene
 // frame and the Sionna scene frame must coincide, so the Euclidean distance funnel
 // in getAttenuation is the Friis reference. Any other transform aborts (CAL-02).
+//
+// Strict positive check (WR-05): ALL five fields must be present with the expected
+// types and values. Missing fields, wrong types, wrong values, and out-of-range origins
+// all return false — there is no defaulting to "identity" for absent fields.
+//   axis_map   : string "identity"
+//   scale      : number 1.0
+//   origin     : array of exactly 3 numbers, each 0.0
+//   units      : string "m"
+//   handedness : string "right"
 bool isIdentityTransform(const std::string& coordTransformJson)
 {
     json ct;
@@ -52,21 +61,35 @@ bool isIdentityTransform(const std::string& coordTransformJson)
     if (!ct.is_object())
         return false;
 
+    // axis_map must be present and "identity"
     auto axisIt = ct.find("axis_map");
     if (axisIt == ct.end() || !axisIt->is_string() || axisIt->get<std::string>() != "identity")
         return false;
 
+    // scale must be present and exactly 1.0
     auto scaleIt = ct.find("scale");
-    if (scaleIt != ct.end() && scaleIt->is_number() && scaleIt->get<double>() != 1.0)
+    if (scaleIt == ct.end() || !scaleIt->is_number() || scaleIt->get<double>() != 1.0)
         return false;
 
+    // origin must be present, an array of exactly 3 elements, each the number 0.0
     auto originIt = ct.find("origin");
-    if (originIt != ct.end() && originIt->is_array()) {
-        for (const auto& v : *originIt) {
-            if (!v.is_number() || v.get<double>() != 0.0)
-                return false;
-        }
+    if (originIt == ct.end() || !originIt->is_array() || originIt->size() != 3)
+        return false;
+    for (const auto& v : *originIt) {
+        if (!v.is_number() || v.get<double>() != 0.0)
+            return false;
     }
+
+    // units must be present and "m" (not "km" or anything else)
+    auto unitsIt = ct.find("units");
+    if (unitsIt == ct.end() || !unitsIt->is_string() || unitsIt->get<std::string>() != "m")
+        return false;
+
+    // handedness must be present and "right"
+    auto handIt = ct.find("handedness");
+    if (handIt == ct.end() || !handIt->is_string() || handIt->get<std::string>() != "right")
+        return false;
+
     return true;
 }
 
