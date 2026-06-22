@@ -575,6 +575,12 @@ void UmTxEntity::rlcHandleD2DModeSwitchLte(bool oldConnection, bool clearBuffer)
 
 void UmTxEntity::rlcHandleD2DModeSwitchNr(bool oldConnection, bool clearBuffer)
 {
+    // This is reached by a direct call from RlcMux on a D2D mode switch; clearing the
+    // old-mode buffer below deletes SDUs owned by THIS entity. Switch the execution
+    // context to this entity so those deletes run in the owner's context, otherwise
+    // OMNeT++ flags "deleting an object it doesn't own" (the LTE path avoids this via
+    // cQueue::pop(), which releases ownership to the context before delete).
+    Enter_Method_Silent("rlcHandleD2DModeSwitchNr");
     if (oldConnection) {
         if (getNodeTypeById(ownerNodeId_) == NODEB) {
             EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - nothing to do on the DL leg of an IM flow" << endl;
