@@ -20,6 +20,7 @@
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/carrierAggregation/ComponentCarrier.h"
 #include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/LtePhyUe.h"
 #include "simu5g/mec/utils/httpUtils/json.hpp"
 
 namespace simu5g {
@@ -39,6 +40,15 @@ SionnaManager::PosKey SionnaManager::posKey(const inet::Coord& c)
 {
     // round to millimetres so runtime getCoord() matches the enumerated position
     return { llround(c.x * 1000.0), llround(c.y * 1000.0), llround(c.z * 1000.0) };
+}
+
+void SionnaManager::registerNode(LtePhyBase *phy)
+{
+    if (phy == nullptr || frozen_)
+        return;
+    MacNodeId id = phy->getMacNodeId();
+    bool isUe = (dynamic_cast<LtePhyUe *>(phy) != nullptr);
+    registeredNodes_[id] = { isUe, phy };
 }
 
 bool SionnaManager::resolveNode(const inet::Coord& c, MacNodeId& out) const
@@ -78,8 +88,10 @@ void SionnaManager::initialize(int stage)
         warnOnCouplingGuard();
     }
     else if (stage == inet::INITSTAGE_LAST) {
-        // positions are final and all nodes have registered with the Binder
+        // positions are final and every node has registered: build the final table
+        // and freeze it (no more re-enumeration at runtime)
         ensureTable();
+        frozen_ = true;
     }
 }
 
@@ -94,9 +106,9 @@ void SionnaManager::warnOnCouplingGuard()
 
 void SionnaManager::ensureTable()
 {
-    if (tableReady_)
+    // Once frozen (INITSTAGE_LAST) the table is final - skip all work.
+    if (frozen_)
         return;
-    tableReady_ = true; // set early so a failed build is not retried per lookup
 
     // ---- enumerate carriers -------------------------------------------------
     cModule *caModule = getModuleByPath(carrierAggregationModulePar_.c_str());
@@ -114,26 +126,40 @@ void SionnaManager::ensureTable()
                 carrierAggregationModulePar_.c_str());
 
     // ---- enumerate nodes (id, role, position) ------------------------------
-    // The cached EnbInfo/UeInfo phy pointer is populated lazily, so resolve the
-    // phy (and thus the position) via the Binder, as the interference code does.
+    // Merge two sources, deduped by id:
+    //  - nodes that registered through their own SionnaChannelModel: reliable even
+    //    early in init (their phy/position is valid before the Binder lists are);
+    //  - the Binder lists: cover nodes whose channel model does NOT self-register,
+    //    e.g. the built-in reference model in a CompareChannelModel scenario (their
+    //    phy is resolvable by the final INITSTAGE_LAST build).
     struct NodeRec { MacNodeId id; const char *role; inet::Coord pos; };
-    std::vector<NodeRec> nodes;
-    auto addNode = [&](MacNodeId id, const char *role, LtePhyBase *cached) {
+    std::map<MacNodeId, NodeRec> byId;
+    for (auto& [id, reg] : registeredNodes_)
+        if (reg.phy != nullptr)
+            byId[id] = { id, reg.isUe ? "ue" : "enb", reg.phy->getCoord() };
+
+    auto addBinder = [&](MacNodeId id, const char *role, LtePhyBase *cached) {
+        if (byId.count(id))
+            return;
         LtePhyBase *phy = cached;
         if (phy == nullptr) {
             cModule *mod = binder_->getPhyByNodeId(id);
             phy = mod ? check_and_cast<LtePhyBase *>(mod) : nullptr;
         }
         if (phy != nullptr)
-            nodes.push_back({ id, role, phy->getCoord() });
+            byId[id] = { id, role, phy->getCoord() };
     };
     for (auto *e : binder_->getEnbList())
-        addNode(e->id, "enb", e->phy);
+        addBinder(e->id, "enb", e->phy);
     for (auto *u : binder_->getUeList())
-        addNode(u->id, "ue", u->phy);
+        addBinder(u->id, "ue", u->phy);
+
+    std::vector<NodeRec> nodes;
+    for (auto& [id, rec] : byId)
+        nodes.push_back(rec);
 
     if (nodes.empty())
-        throw cRuntimeError("SionnaManager: no nodes found via Binder; cannot build channel table");
+        return; // nothing enumerable yet; a later call rebuilds
 
     // position -> id index, so a runtime coordinate can be mapped back to a node
     posToId_.clear();
@@ -196,10 +222,20 @@ void SionnaManager::ensureTable()
                     }
     }
 
+    // Nothing to do yet if no links resolved (e.g. UEs have not registered their
+    // phy this early in init); a later call rebuilds once they appear.
+    if (req["links"].empty())
+        return;
+
     // ---- resolve the table: committed file, cache, or generator -------------
     std::string body = req.dump();
     std::string hash = computeHashHex(body);
     req["requestHash"] = hash;
+
+    // The enumerable node set grows during init; only (re)build when it changed.
+    if (hash == lastHash_)
+        return;
+    lastHash_ = hash;
 
     std::string tablePath;
     if (!channelTableFile_.empty()) {
@@ -260,6 +296,8 @@ void SionnaManager::loadTableFromFile(const std::string& path)
 
     json table;
     in >> table;
+
+    table_.clear(); // rebuilds replace the previous table
 
     // trust the artifact's own granularity/interference declaration for lookups
     if (table.contains("granularity"))

@@ -28,6 +28,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 class Binder;
+class LtePhyBase;
 
 //
 // Global owner of the Sionna ray-traced channel table (Plan A). See SionnaManager.ned.
@@ -65,7 +66,11 @@ class SionnaManager : public cSimpleModule
     std::string backend_;
 
     // state
-    bool tableReady_ = false;
+    // During init the enumerable node set grows (nodes register their phy across
+    // stages), so the table is rebuilt whenever the request changes and is frozen
+    // only at INITSTAGE_LAST. lastHash_ avoids regenerating when nothing changed.
+    bool frozen_ = false;
+    std::string lastHash_;
 
     typedef std::pair<MacNodeId, MacNodeId> LinkKey;          // (tx, rx)
     typedef std::map<LinkKey, std::vector<double>> LinkTable; // -> per-band path gain [dB]
@@ -75,6 +80,12 @@ class SionnaManager : public cSimpleModule
     // node positions (rounded) -> MacNodeId, to resolve a coordinate to a node
     typedef std::array<long long, 3> PosKey;
     std::map<PosKey, MacNodeId> posToId_;
+
+    // Nodes that participate in the Sionna channel, registered by their own
+    // SionnaChannelModel (avoids depending on Binder phy-registration timing,
+    // which is incomplete when the channel is first queried during init).
+    struct NodeReg { bool isUe; LtePhyBase *phy; };
+    std::map<MacNodeId, NodeReg> registeredNodes_;
 
     static long long carrierKey(GHz carrier);
     static PosKey posKey(const inet::Coord& c);
@@ -93,6 +104,10 @@ class SionnaManager : public cSimpleModule
 
     Granularity getGranularity() const { return granularity_; }
     InterferenceMode getInterferenceMode() const { return interferenceMode_; }
+
+    // Called by each SionnaChannelModel (from setPhy) to announce a participating
+    // node, so the table covers every node regardless of Binder registration timing.
+    void registerNode(LtePhyBase *phy);
 
     // Returns true if a path gain is available for the ordered (tx, rx) pair on the carrier.
     bool hasPair(MacNodeId tx, MacNodeId rx, GHz carrier);

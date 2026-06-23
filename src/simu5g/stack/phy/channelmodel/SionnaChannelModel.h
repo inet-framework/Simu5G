@@ -43,6 +43,7 @@ class SionnaChannelModel : public LteRealisticChannelModel
 
   public:
     void initialize(int stage) override;
+    void setPhy(LtePhyBase *phy) override;
 
     // --- propagation sourced from the Sionna table ---
     double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord, bool cqiDl) override;

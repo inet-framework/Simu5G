@@ -41,12 +41,21 @@ void SionnaChannelModel::initialize(int stage)
     }
 }
 
+void SionnaChannelModel::setPhy(LtePhyBase *phy)
+{
+    LteChannelModel::setPhy(phy); // sets phy_
+    // announce this node to the manager so the table covers it (the phy/position
+    // is valid here, unlike the Binder lists this early in initialization)
+    if (sionnaManager_)
+        sionnaManager_->registerNode(phy);
+}
+
 double SionnaChannelModel::meanPathGainDb(const inet::Coord& a, const inet::Coord& b)
 {
     const std::vector<double> *pg = sionnaManager_->getPathGainVector(a, b, carrierFrequency_);
     if (pg == nullptr)
         throw cRuntimeError("SionnaChannelModel: no Sionna path gain between (%g,%g,%g) and "
-                "(%g,%g,%g) on carrier %g GHz", a.x, a.y, a.z, b.x, b.y, b.z, carrierFrequencyGHz_);
+                "(%g,%g,%g) on carrier %g GHz (Plan A v1 is static - a node may have moved out of the ray-traced table)", a.x, a.y, a.z, b.x, b.y, b.z, carrierFrequencyGHz_);
     double sum = 0.0;
     for (double g : *pg)
         sum += g;
@@ -60,7 +69,7 @@ std::vector<double> SionnaChannelModel::desiredRecvPowerPerBand(double txPower,
     if (pg == nullptr)
         throw cRuntimeError("SionnaChannelModel: no Sionna path gain between (%g,%g,%g) and "
                 "(%g,%g,%g) on carrier %g GHz", thisPos.x, thisPos.y, thisPos.z,
-                otherPos.x, otherPos.y, otherPos.z, carrierFrequencyGHz_);
+                otherPos.x, otherPos.y, otherPos.z, carrierFrequencyGHz_); // static-scenario assumption
 
     std::vector<double> recv(numBands_, 0.0);
     for (unsigned int i = 0; i < numBands_; i++) {
