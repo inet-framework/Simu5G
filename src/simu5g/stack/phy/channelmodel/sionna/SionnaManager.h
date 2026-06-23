@@ -72,7 +72,13 @@ class SionnaManager : public cSimpleModule
     // carrier frequency [Hz, rounded to long long] -> link table
     std::map<long long, LinkTable> table_;
 
+    // node positions (rounded) -> MacNodeId, to resolve a coordinate to a node
+    typedef std::array<long long, 3> PosKey;
+    std::map<PosKey, MacNodeId> posToId_;
+
     static long long carrierKey(GHz carrier);
+    static PosKey posKey(const inet::Coord& c);
+    bool resolveNode(const inet::Coord& c, MacNodeId& out) const;
 
     // build/load
     void ensureTable();
@@ -94,6 +100,12 @@ class SionnaManager : public cSimpleModule
     // Path gain in dB (Tx port -> Rx port) for the given band. For wideband tables,
     // any band index returns the single wideband value. Throws if the pair is absent.
     double getPathGainDb(MacNodeId tx, MacNodeId rx, GHz carrier, unsigned int band);
+
+    // Per-band path-gain vector [dB] for the link between two coordinates (resolved to
+    // nodes by position). Path gain is reciprocal, so both orderings are tried.
+    // Returns nullptr if either endpoint or the pair is unknown.
+    const std::vector<double> *getPathGainVector(const inet::Coord& a, const inet::Coord& b,
+            GHz carrier);
 };
 
 } //namespace

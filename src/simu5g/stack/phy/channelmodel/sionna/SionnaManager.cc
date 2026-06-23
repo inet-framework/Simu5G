@@ -35,6 +35,21 @@ long long SionnaManager::carrierKey(GHz carrier)
     return llround(Hz(carrier).get());
 }
 
+SionnaManager::PosKey SionnaManager::posKey(const inet::Coord& c)
+{
+    // round to millimetres so runtime getCoord() matches the enumerated position
+    return { llround(c.x * 1000.0), llround(c.y * 1000.0), llround(c.z * 1000.0) };
+}
+
+bool SionnaManager::resolveNode(const inet::Coord& c, MacNodeId& out) const
+{
+    auto it = posToId_.find(posKey(c));
+    if (it == posToId_.end())
+        return false;
+    out = it->second;
+    return true;
+}
+
 void SionnaManager::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
@@ -112,6 +127,11 @@ void SionnaManager::ensureTable()
 
     if (nodes.empty())
         throw cRuntimeError("SionnaManager: no nodes found via Binder; cannot build channel table");
+
+    // position -> id index, so a runtime coordinate can be mapped back to a node
+    posToId_.clear();
+    for (auto& n : nodes)
+        posToId_[posKey(n.pos)] = n.id;
 
     // ---- build the request --------------------------------------------------
     json req;
@@ -290,6 +310,26 @@ double SionnaManager::getPathGainDb(MacNodeId tx, MacNodeId rx, GHz carrier, uns
         throw cRuntimeError("SionnaManager: band %u out of range (have %zu) for link (tx=%hu, rx=%hu)",
                 band, gains.size(), num(tx), num(rx));
     return gains[idx];
+}
+
+const std::vector<double> *SionnaManager::getPathGainVector(const inet::Coord& a,
+        const inet::Coord& b, GHz carrier)
+{
+    ensureTable();
+    MacNodeId idA, idB;
+    if (!resolveNode(a, idA) || !resolveNode(b, idB))
+        return nullptr;
+
+    auto cit = table_.find(carrierKey(carrier));
+    if (cit == table_.end())
+        return nullptr;
+
+    auto lit = cit->second.find({ idA, idB });
+    if (lit == cit->second.end())
+        lit = cit->second.find({ idB, idA }); // path gain is reciprocal
+    if (lit == cit->second.end())
+        return nullptr;
+    return &lit->second;
 }
 
 } //namespace
