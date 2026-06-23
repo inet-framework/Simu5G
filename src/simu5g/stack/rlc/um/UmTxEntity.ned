@@ -19,10 +19,12 @@ package simu5g.stack.rlc.um;
 //  - LTE (soFraming=false, TS 36.322): FI framing + concatenation, SN per PDU.
 //  - NR  (soFraming=true,  TS 38.322): SI + byte-offset (SO) segmentation, SN per SDU.
 // The NR parametrization is provided by the NrUmTxEntity profile. Select via
-// BearerManagement.rlcUmTxEntityModuleType. Note: soFraming is the entity's sole
-// wire-format selector (the dead isNR parameter is gone). The NR-leg marker proper
-// is a separate concept living on the pdcpMux (pdcpMux.isNR, read by
-// UpperMux/Ip2Nic/LteMacEnb), not on this entity.
+// BearerManagement.rlcUmTxEntityModuleType. The framing is a function of the RAT
+// (per the specs above), so soFraming always tracks the bearer's RAT: BearerManagement
+// binds the Nr* profile (soFraming=true) for NR bearers and the LTE entity for LTE
+// bearers. It is a distinct parameter only because it is the selection mechanism, not
+// because a leg may choose its framing freely. The NR-leg marker proper is a separate
+// concept living on the pdcpMux (pdcpMux.isNR, read by UpperMux/Ip2Nic/LteMacEnb).
 //
 simple UmTxEntity like simu5g.stack.rlc.IRlcTxEntity
 {

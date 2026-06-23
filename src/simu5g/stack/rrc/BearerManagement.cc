@@ -194,9 +194,12 @@ void BearerManagement::setRlcEntityParams(cModule *entity, bool isNr)
         entity->par("macModule").setStringValue(isNr ? "^.nrMac" : "^.mac");
     if (entity->hasPar("rlcMuxModule"))
         entity->par("rlcMuxModule").setStringValue(isNr ? "^.nrRlcMux" : "^.rlcMux");
-    // The RLC entity's wire format is selected by its own soFraming parameter (via the
-    // Nr* NED profile); the dead isNR parameter is gone. The NR-leg marker proper lives
-    // on the pdcpMux (pdcpMux.isNR, read by UpperMux/Ip2Nic/LteMacEnb), not here.
+    // The RLC entity's wire format is set by its own soFraming parameter (via the Nr*
+    // NED profile), selected per bearer by the RAT: an NR bearer uses the SO/no-concat
+    // framing of TS 38.322, an LTE bearer the FI/concatenation of TS 36.322. The framing
+    // is a function of the RAT, not an independent knob; soFraming is a separate
+    // parameter only because it is the selection mechanism. (The NR-leg marker proper is
+    // the pdcpMux.isNR parameter, read by UpperMux/Ip2Nic/LteMacEnb, not set here.)
 }
 
 void BearerManagement::setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex)

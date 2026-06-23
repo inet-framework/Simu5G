@@ -788,10 +788,31 @@ void UmRxEntity::enqueNr(Packet *pktPdu)
     // reassembly buffer.
     FramingInfo fi = pdu->getFramingInfo();
     if (fi.toValue() == 0) {
+        // A complete SDU (FI=00) carries no RLC SN (TS 38.322) and bypasses the
+        // reassembly window, so it has no duplicate protection there. Simu5G's MAC
+        // HARQ can re-deliver an already-delivered TB (a retransmission whose ACK was
+        // not yet processed, on a lossy channel), which would deliver the SDU twice.
+        // Discard such duplicates here, mirroring the duplicate-discard that the
+        // segmented path (SN window) and the LTE-FI path (per-PDU SN) already provide.
+        // Keyed by the per-SDU identity (snoMainPacket = PDCP SN), within the
+        // reassembly window; clean channels never produce duplicates, so this is inert.
         size_t sduLength;
         auto pktSdu = check_and_cast<Packet *>(pdu->popSdu(sduLength));
-        ttiBits_ += sduLength;   // UL burst accounting
-        toPdcpNr(pktSdu);
+        unsigned int sno = pdu->getSnoMainPacket();
+        while (!recentCompleteSduQueue_.empty() && NOW - recentCompleteSduQueue_.front().first > t_Reassembly) {
+            recentCompleteSduSet_.erase(recentCompleteSduQueue_.front().second);
+            recentCompleteSduQueue_.pop_front();
+        }
+        if (recentCompleteSduSet_.find(sno) != recentCompleteSduSet_.end()) {
+            EV << NOW << " UmRxEntity::enqueNr - discarding duplicate complete SDU (snoMainPacket " << sno << ")" << endl;
+            delete pktSdu;
+        }
+        else {
+            recentCompleteSduSet_.insert(sno);
+            recentCompleteSduQueue_.emplace_back(NOW, sno);
+            ttiBits_ += sduLength;   // UL burst accounting
+            toPdcpNr(pktSdu);
+        }
     }
     else {
         unsigned int tsn = pdu->getPduSequenceNumber();

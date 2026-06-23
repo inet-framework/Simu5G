@@ -106,6 +106,11 @@ class UmRxEntity : public RlcRxEntityBase
     cMessage *t_ReassemblyTimer = nullptr;
     simtime_t t_Reassembly;
     unsigned long totalRcvdBytesNr_ = 0;
+    // duplicate detection for complete SDUs (which carry no RLC SN); snoMainPacket
+    // values delivered within the last t_Reassembly window, for discarding HARQ-
+    // re-delivered duplicate TBs. See enqueNr().
+    std::set<unsigned int> recentCompleteSduSet_;
+    std::deque<std::pair<simtime_t, unsigned int>> recentCompleteSduQueue_;
     static simsignal_t receivedPacketFromLowerLayerSignal_;
     static simsignal_t sentPacketToUpperLayerSignal_;
 
