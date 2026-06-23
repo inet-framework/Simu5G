@@ -390,12 +390,15 @@ class LteRealisticChannelModel : public LteChannelModel
      */
     void computeLosProbability(double d, MacNodeId nodeId);
 
-    JakesFadingMap *getJakesMap()
+    // virtual so a decorator (CompareChannelModel) can forward these to an inner
+    // model: the cross-model shadowing/fading coupling fetches the peer's map via
+    // dynamic_cast<LteRealisticChannelModel*> + getJakesMap()/getShadowingMap()
+    virtual JakesFadingMap *getJakesMap()
     {
         return &jakesFadingMap_;
     }
 
-    ShadowFadingMap *getShadowingMap()
+    virtual ShadowFadingMap *getShadowingMap()
     {
         return &lastComputedSF_;
     }

@@ -29,7 +29,7 @@ double CompareChannelModel::mean(const std::vector<double>& v)
 
 void CompareChannelModel::initialize(int stage)
 {
-    LteChannelModel::initialize(stage);
+    LteRealisticChannelModel::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
         primaryIsReference_ = (std::string(par("primary").stringValue()) != "candidate");

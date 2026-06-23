@@ -14,7 +14,7 @@
 
 #include <inet/common/ModuleRefByPar.h>
 
-#include "simu5g/stack/phy/channelmodel/LteChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/LteRealisticChannelModel.h"
 
 namespace simu5g {
 
@@ -23,7 +23,7 @@ using namespace omnetpp;
 //
 // Validation decorator over two inner channel models. See CompareChannelModel.ned.
 //
-class CompareChannelModel : public LteChannelModel
+class CompareChannelModel : public LteRealisticChannelModel
 {
   protected:
     inet::ModuleRefByPar<LteChannelModel> reference_;
@@ -61,6 +61,31 @@ class CompareChannelModel : public LteChannelModel
 
     bool isUplinkInterferenceEnabled() override { return primary()->isUplinkInterferenceEnabled(); }
     bool isD2DInterferenceEnabled() override { return primary()->isD2DInterferenceEnabled(); }
+
+    // The built-in model's cross-model shadowing/fading coupling fetches the peer's
+    // map via dynamic_cast<LteRealisticChannelModel*> + these accessors. Forward them
+    // to the reference inner model so a built-in peer and this decorator share one
+    // consistent map (otherwise the eNB writes this module's unused map while the
+    // reference inner uses its own -> divergent shadowing -> wrong/mismatched).
+    ShadowFadingMap *getShadowingMap() override
+    {
+        if (reference_) {
+            auto *r = dynamic_cast<LteRealisticChannelModel *>(reference_.get());
+            if (r != nullptr)
+                return r->getShadowingMap();
+        }
+        return LteRealisticChannelModel::getShadowingMap();
+    }
+
+    JakesFadingMap *getJakesMap() override
+    {
+        if (reference_) {
+            auto *r = dynamic_cast<LteRealisticChannelModel *>(reference_.get());
+            if (r != nullptr)
+                return r->getJakesMap();
+        }
+        return LteRealisticChannelModel::getJakesMap();
+    }
 };
 
 } //namespace

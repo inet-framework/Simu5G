@@ -26,7 +26,7 @@ package simu5g.stack.phy.channelmodel;
 // primary = reference (the default), only the primary's draws happen, so the run
 // behaves exactly like a normal built-in run, with Sionna deltas logged on top.
 //
-simple CompareChannelModel extends LteChannelModel
+simple CompareChannelModel extends LteRealisticChannelModel
 {
     parameters:
         @class("CompareChannelModel");
@@ -39,18 +39,8 @@ simple CompareChannelModel extends LteChannelModel
         // fingerprints stable) or "candidate".
         string primary @enum(reference,candidate) = default("reference");
 
-        // SINR statistics emitted onto the channel model by other modules
-        // (declared here because we extend LteChannelModel, not the realistic model)
-        @signal[rcvdSinrDl];
-        @statistic[rcvdSinrDl](title="SINR measured at packet reception, DL"; unit="dB"; source="rcvdSinrDl"; record=mean,vector);
-        @signal[rcvdSinrUl];
-        @statistic[rcvdSinrUl](title="SINR measured at packet reception, UL"; unit="dB"; source="rcvdSinrUl"; record=mean,vector);
-        @signal[rcvdSinrD2D];
-        @statistic[rcvdSinrD2D](title="SINR measured at packet reception, D2D"; unit="dB"; source="rcvdSinrD2D"; record=mean,vector);
-        @signal[measuredSinrDl];
-        @statistic[measuredSinrDl](title="SINR measured at feedback computation, DL"; unit="dB"; source="measuredSinrDl"; record=mean,vector);
-        @signal[measuredSinrUl];
-        @statistic[measuredSinrUl](title="SINR measured at feedback computation, UL"; unit="dB"; source="measuredSinrUl"; record=mean,vector);
+        // The rcvdSinr*/measuredSinr* statistics (emitted onto this module by other
+        // modules) are inherited from LteRealisticChannelModel.
 
         // per-call deltas (candidate - reference)
         @signal[attenuationDelta];
