@@ -23,12 +23,14 @@ import simu5g.nodes.Upf;
 import simu5g.nodes.MecHost;
 import simu5g.mec.orchestrator.MecOrchestrator;
 import simu5g.mec.ualcmp.Ualcmp;
+import simu5g.stack.phy.channelmodel.ISionnaManager;
 import simu5g.world.radio.LteChannelControl;
 
 
 network RnisTest
 {
     parameters:
+        bool hasSionnaManager = default(false); // opt-in Sionna ray-traced channel (Plan A)
         @display("i=block/network2;bgb=811,507;bgi=background/pisa");
 
         int numUes = default(1);
@@ -49,6 +51,9 @@ network RnisTest
         }
         carrierAggregation: CarrierAggregation {
             @display("p=691,342;is=s");
+        }
+        sionnaManager: <default("SionnaManager")> like ISionnaManager if hasSionnaManager {
+            @display("p=50,341;is=s");
         }
         upf: Upf {
             @display("p=545,250");

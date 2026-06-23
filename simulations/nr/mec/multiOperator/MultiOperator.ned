@@ -25,6 +25,7 @@ import simu5g.nodes.BackgroundCell;
 import simu5g.nodes.MecHost;
 import simu5g.mec.orchestrator.MecOrchestrator;
 import simu5g.mec.ualcmp.Ualcmp;
+import simu5g.stack.phy.channelmodel.ISionnaManager;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -43,6 +44,7 @@ network MultiOperator
         int numUe_B = default(1);
         int numBgCells = default(0);
         bool enableMecOperatorB = default(true);
+        bool hasSionnaManager = default(false); // opt-in Sionna ray-traced channel (Plan A)
         @display("i=block/network2;bgb=1627,801;bgi=background/pisa");
     submodules:
         channelControl: LteChannelControl {
@@ -59,6 +61,9 @@ network MultiOperator
         }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
+        }
+        sionnaManager: <default("SionnaManager")> like ISionnaManager if hasSionnaManager {
+            @display("p=50,341;is=s");
         }
         router: Router {
             @display("p=750,73");

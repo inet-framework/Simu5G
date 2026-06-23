@@ -25,6 +25,7 @@ import simu5g.nodes.BackgroundCell;
 import simu5g.nodes.MecHost;
 import simu5g.mec.orchestrator.MecOrchestrator;
 import simu5g.mec.ualcmp.Ualcmp;
+import simu5g.stack.phy.channelmodel.ISionnaManager;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -36,6 +37,7 @@ network UrbanNetwork
     parameters:
         int numUe = default(1);
         int numBgCells = default(0);
+        bool hasSionnaManager = default(false); // opt-in Sionna ray-traced channel (Plan A)
         @display("i=block/network2;bgb=2000,2000;bgi=intersections");
     submodules:
 
@@ -53,6 +55,9 @@ network UrbanNetwork
         }
         carrierAggregation: CarrierAggregation {
             @display("p=114,337;is=s");
+        }
+        sionnaManager: <default("SionnaManager")> like ISionnaManager if hasSionnaManager {
+            @display("p=50,341;is=s");
         }
 
         //# traffic lights
