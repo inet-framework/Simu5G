@@ -114,9 +114,16 @@ void SionnaManager::ensureTable()
                 carrierAggregationModulePar_.c_str());
 
     // ---- enumerate nodes (id, role, position) ------------------------------
+    // The cached EnbInfo/UeInfo phy pointer is populated lazily, so resolve the
+    // phy (and thus the position) via the Binder, as the interference code does.
     struct NodeRec { MacNodeId id; const char *role; inet::Coord pos; };
     std::vector<NodeRec> nodes;
-    auto addNode = [&](MacNodeId id, const char *role, LtePhyBase *phy) {
+    auto addNode = [&](MacNodeId id, const char *role, LtePhyBase *cached) {
+        LtePhyBase *phy = cached;
+        if (phy == nullptr) {
+            cModule *mod = binder_->getPhyByNodeId(id);
+            phy = mod ? check_and_cast<LtePhyBase *>(mod) : nullptr;
+        }
         if (phy != nullptr)
             nodes.push_back({ id, role, phy->getCoord() });
     };
