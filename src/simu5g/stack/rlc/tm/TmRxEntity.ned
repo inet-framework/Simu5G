@@ -11,7 +11,6 @@ simple TmRxEntity like simu5g.stack.rlc.IRlcRxEntity
     parameters:
         @dynamic(true);
         @display("i=block/layer");
-        bool isNR @mutable = default(false);  // set programmatically by BearerManagement
 
     gates:
         input in;       // PDUs from lower mux (MAC)

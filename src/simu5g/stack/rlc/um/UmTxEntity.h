@@ -29,10 +29,10 @@ using namespace omnetpp;
  * @class UmTxEntity
  * @brief Generic RLC UM transmission entity, parametrized for LTE or NR.
  *
- * One mechanism, two wire-format parametrizations selected by the isNR flag:
- *  - LTE (isNR=false, TS 36.322): FI framing + concatenation of multiple SDUs
+ * One mechanism, two wire-format parametrizations selected by the soFraming flag:
+ *  - LTE (soFraming=false, TS 36.322): FI framing + concatenation of multiple SDUs
  *    per PDU, sequence number per PDU, emits LteRlcUmDataPdu.
- *  - NR  (isNR=true,  TS 38.322): SI + byte-offset (SO) segmentation, one SDU
+ *  - NR  (soFraming=true,  TS 38.322): SI + byte-offset (SO) segmentation, one SDU
  *    segment per PDU, sequence number per SDU, emits NrRlcUmDataPdu.
  *
  * The MAC plumbing, the D2D mode-switch machinery (holding buffer + hold/resume)

@@ -11,7 +11,6 @@ simple TmTxEntity like simu5g.stack.rlc.IRlcTxEntity
     parameters:
         @dynamic(true);
         @display("i=block/layer");
-        bool isNR @mutable = default(false);  // set programmatically by BearerManagement
         int queueSize = default(0);    // max queue length in packets (0: unlimited)
 
         @signal[rlcPacketLossDl];

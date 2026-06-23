@@ -26,7 +26,6 @@ simple UmRxEntity like simu5g.stack.rlc.IRlcRxEntity
         @dynamic(true);
         @display("i=block/layer");
         string binderModule = default("binder");
-        bool isNR @mutable = default(false);              // NR-leg marker (set programmatically by BearerManagement; not the wire format)
         bool soFraming = default(false);                  // wire format: LTE FI/concat (false) vs NR SI/SO (true)
         string macModule = default("^.^.mac");  // set by the enclosing RlcUmEntityBase compound (per leg)
         string rlcMuxModule = default("^.^.rlcMux");  // this bearer's leg mux; set by the RlcUmEntityBase compound

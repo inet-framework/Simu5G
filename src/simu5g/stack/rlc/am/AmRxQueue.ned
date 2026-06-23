@@ -28,7 +28,6 @@ simple AmRxQueue like simu5g.stack.rlc.IRlcAmRxEntity
         @dynamic(true);
         @display("i=block/layer");
         string binderModule = default("binder");
-        bool isNR @mutable = default(false);              // NR-leg marker (set programmatically by BearerManagement; not the wire format)
         bool soFraming = default(false);                  // wire format: LTE frag (false) vs NR SO (true)
         string upperMuxModule = default("^.upperMux");
         string macModule = default("^.^.mac");  // set by the enclosing RlcAmEntityBase compound (per leg)

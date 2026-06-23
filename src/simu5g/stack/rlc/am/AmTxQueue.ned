@@ -26,7 +26,6 @@ simple AmTxQueue like simu5g.stack.rlc.IRlcAmTxEntity
     parameters:
         @dynamic(true);
         @display("i=block/layer");
-        bool isNR @mutable = default(false);              // NR-leg marker (set programmatically by BearerManagement; not the wire format)
         bool soFraming = default(false);                  // wire format: LTE frag (false) vs NR SO (true)
 
         // LTE (fragment / whole-PDU ARQ) parameters
