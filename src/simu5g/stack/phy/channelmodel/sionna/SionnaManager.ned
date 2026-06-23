@@ -11,6 +11,8 @@
 
 package simu5g.stack.phy.channelmodel.sionna;
 
+import simu5g.stack.phy.channelmodel.ISionnaManager;
+
 //
 // SionnaManager
 //
@@ -24,7 +26,7 @@ package simu5g.stack.phy.channelmodel.sionna;
 // subprocess. Per-PHY ~SionnaChannelModel instances are thin lookups into this
 // shared table.
 //
-simple SionnaManager
+simple SionnaManager like ISionnaManager
 {
     parameters:
         @display("i=block/server");
