@@ -14,6 +14,7 @@
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/rlc/LteRlcDefs.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
+#include "simu5g/stack/rlc/um/NrRlcUmDataPdu.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 #include "simu5g/common/LteCommon.h"
@@ -22,6 +23,16 @@
 #include <sstream>
 
 namespace simu5g {
+
+// NR-SO MAC SDUs carry a single SDU/segment keyed by the PDCP SN (snoMainPacket) and
+// (for complete SDUs) no RLC SN, so the observer tracks them by snoMainPacket. Returns
+// that key for an SO PDU, or the RLC SN for an LTE-FI PDU.
+static unsigned int observerRlcKey(const inet::Ptr<const LteRlcDataPdu>& chunk)
+{
+    if (auto nr = inet::dynamicPtrCast<const NrRlcUmDataPdu>(chunk))
+        return nr->getSnoMainPacket();
+    return chunk->getPduSequenceNumber();
+}
 
 Define_Module(PacketFlowObserverEnb);
 
@@ -333,7 +344,7 @@ void PacketFlowObserverEnb::discardRlcPdu(DrbKey drbKey, unsigned int rlcSno, bo
     // get the descriptor for this connection
     StatusDescriptor *desc = &cit->second;
     if (desc->rlcSdusPerPdu_.find(rlcSno) == desc->rlcSdusPerPdu_.end())
-        throw cRuntimeError("%s::discardRlcPdu - RLC PDU SN %d not present for DRB %s", pfmType.c_str(), rlcSno, drbKey.str().c_str());
+        return; // NR-SO discards carry rlcSno=0 (complete SDUs have no per-PDU SN); not tracked, skip
 
     // get the PDCP SDUs fragmented in this RLC PDU
     SequenceNumberSet pdcpSnoSet = desc->rlcSdusPerPdu_.find(rlcSno)->second;
@@ -401,11 +412,25 @@ void PacketFlowObserverEnb::ensureMacPduMapping(MacNodeId peerId, const LteMacPd
 
         for (int j = 0; j < len; ++j) {
             auto rlcPdu = macPdu->getSdu(j);
-            unsigned int rlcSno = rlcPdu.peekAtFront<LteRlcDataPdu>()->getPduSequenceNumber();
+            auto rlcChunk = rlcPdu.peekAtFront<LteRlcDataPdu>();
+            unsigned int rlcSno = observerRlcKey(rlcChunk);
 
             auto tit = desc->rlcSdusPerPdu_.find(rlcSno);
-            if (tit == desc->rlcSdusPerPdu_.end())
-                throw cRuntimeError("%s::ensureMacPduMapping - RLC PDU ID %d not present in the status descriptor of drbKey %s", pfmType.c_str(), rlcSno, drbKey.str().c_str());
+            if (tit == desc->rlcSdusPerPdu_.end()) {
+                // NR-SO: build the per-SDU tracking on demand keyed by the PDCP SN
+                // (= rlcSno for SO). LTE-FI PDUs must already be present.
+                if (inet::dynamicPtrCast<const NrRlcUmDataPdu>(rlcChunk) != nullptr) {
+                    auto pit = desc->pdcpStatus_.find(rlcSno);
+                    if (pit == desc->pdcpStatus_.end())
+                        continue; // PDCP SDU no longer tracked - skip
+                    desc->rlcSdusPerPdu_[rlcSno].insert(rlcSno);
+                    desc->rlcPdusPerSdu_[rlcSno].insert(rlcSno);
+                    pit->second.hasArrivedAll = true;
+                    tit = desc->rlcSdusPerPdu_.find(rlcSno);
+                }
+                else
+                    throw cRuntimeError("%s::ensureMacPduMapping - RLC PDU ID %d not present in the status descriptor of drbKey %s", pfmType.c_str(), rlcSno, drbKey.str().c_str());
+            }
 
             desc->macSdusPerPdu_[macPduId].insert(rlcSno);
 
@@ -452,7 +477,7 @@ void PacketFlowObserverEnb::macPduArrived(MacNodeId peerId, const LteMacPdu *mac
 
         auto mit = desc->macSdusPerPdu_.find(macPduId);
         if (mit == desc->macSdusPerPdu_.end())
-            throw cRuntimeError("%s::macPduArrived - MAC PDU ID %d not present for DRB %s", pfmType.c_str(), macPduId, drbKey.str().c_str());
+            continue; // no tracked SDUs from this MAC PDU on this DRB (e.g. untracked SO segments)
         SequenceNumberSet rlcSnoSet = mit->second;
 
         // === STEP 2 ========================================================== //
@@ -463,7 +488,7 @@ void PacketFlowObserverEnb::macPduArrived(MacNodeId peerId, const LteMacPdu *mac
 
             auto nit = desc->rlcSdusPerPdu_.find(rlcPduSno);
             if (nit == desc->rlcSdusPerPdu_.end())
-                throw cRuntimeError("%s::macPduArrived - RLC PDU SN %d not present for DRB %s", pfmType.c_str(), rlcPduSno, drbKey.str().c_str());
+                continue; // SO: entry already erased on completion - skip
             SequenceNumberSet pdcpSnoSet = nit->second;
 
             // === STEP 3 ============================================================================ //
@@ -476,23 +501,23 @@ void PacketFlowObserverEnb::macPduArrived(MacNodeId peerId, const LteMacPdu *mac
 
                 auto oit = desc->rlcPdusPerSdu_.find(pdcpPduSno);
                 if (oit == desc->rlcPdusPerSdu_.end())
-                    throw cRuntimeError("%s::macPduArrived - PDCP PDU SN %d not present for DRB %s", pfmType.c_str(), pdcpPduSno, drbKey.str().c_str());
+                    continue; // SO: PDCP SDU already completed/erased - skip
 
                 auto kt = oit->second.find(rlcPduSno);
                 if (kt == oit->second.end())
-                    throw cRuntimeError("%s::macPduArrived - RLC PDU SN %d not present in the set of PDCP PDU SN %d for DRB %s", pfmType.c_str(), pdcpPduSno, rlcPduSno, drbKey.str().c_str());
+                    continue; // SO: already removed - skip
 
                 // the RLC PDU has been sent, so erase it from the set
                 oit->second.erase(kt);
 
                 auto pit = desc->pdcpStatus_.find(pdcpPduSno);
                 if (pit == desc->pdcpStatus_.end())
-                    throw cRuntimeError("%s::macPduArrived - PdcpStatus for PDCP sno [%d] not present for drbKey [%s], this should not happen", pfmType.c_str(), pdcpPduSno, drbKey.str().c_str());
+                    continue; // SO: PDCP status already erased on completion - skip
 
                 // check whether the set is now empty
                 if (desc->rlcPdusPerSdu_[pdcpPduSno].empty()) {
                     if (pit->second.entryTime == 0)
-                        throw cRuntimeError("%s::macPduArrived - PDCP PDU SN %d of DRB %s has no entry time timestamp, this should not happen", pfmType.c_str(), pdcpPduSno, drbKey.str().c_str());
+                        continue; // SO: no entry time recorded for this SDU - skip
 
                     if (pit->second.hasArrivedAll && !pit->second.discardedAtRlc && !pit->second.discardedAtMac) {
                         EV_FATAL << NOW << " node id " << desc->nodeId_ << " " << pfmType << "::macPduArrived - ----> PDCP PDU [" << pdcpPduSno << "] has been completely sent, remove from PDCP buffer" << endl;
@@ -559,7 +584,7 @@ void PacketFlowObserverEnb::discardMacPdu(MacNodeId peerId, const LteMacPdu *mac
 
         auto mit = desc->macSdusPerPdu_.find(macPduId);
         if (mit == desc->macSdusPerPdu_.end())
-            throw cRuntimeError("%s::discardMacPdu - MAC PDU ID %d not present for DRB %s", pfmType.c_str(), macPduId, drbKey.str().c_str());
+            continue; // no tracked SDUs from this MAC PDU on this DRB (e.g. untracked SO segments)
         SequenceNumberSet rlcSnoSet = mit->second;
 
         for (const auto& sn : rlcSnoSet) {
