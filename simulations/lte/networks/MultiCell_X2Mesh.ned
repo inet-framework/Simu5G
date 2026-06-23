@@ -22,6 +22,7 @@ import simu5g.nodes.ExtCell;
 import simu5g.nodes.PgwStandard;
 import simu5g.nodes.LteUe;
 import simu5g.nodes.eNodeB;
+import simu5g.stack.phy.channelmodel.ISionnaManager;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -32,6 +33,7 @@ network MultiCell_X2Mesh
         int numUe2 = default(0);
         int numUe3 = default(0);
         int numExtCells = default(0);
+        bool hasSionnaManager = default(false); // opt-in Sionna ray-traced channel (Plan A)
         @display("i=block/network2;bgb=701,558;bgi=background/budapest");
     submodules:
         channelControl: LteChannelControl {
@@ -48,6 +50,9 @@ network MultiCell_X2Mesh
         }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
+        }
+        sionnaManager: <default("SionnaManager")> like ISionnaManager if hasSionnaManager {
+            @display("p=50,341;is=s");
         }
         server: StandardHost {
             @display("p=173,48;is=n;i=device/server");

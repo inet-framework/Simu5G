@@ -126,5 +126,5 @@
 /tutorials/nr/,                          -f omnetpp.ini -c Multiple-UEs -r 0,                    5s,         2d45-968e/tplx;b8bb-15af/~tNl;cacf-68c8/sz, PASS,
 /tutorials/nr/,                          -f omnetpp.ini -c Numerology -r 0,                      5s,         c321-cbb4/tplx;6f78-f509/~tNl;79b4-4abb/sz, PASS,
 /tutorials/nr/,                          -f omnetpp.ini -c Single-UE -r 0,                       5s,         7d85-cf13/tplx;98b8-8987/~tNl;c297-25c6/sz, PASS,
-/simulations/nr/sionna/,                 -f omnetpp.ini -c Sionna -r 0,                          2s,         30ce-3acb/tplx;7012-c093/~tNl;6196-e4fd/sz, PASS,
-/simulations/nr/sionna/,                 -f omnetpp.ini -c SionnaCompare -r 0,                   2s,         328b-8a7d/tplx;cc71-1333/~tNl;bced-372e/sz, PASS,
+/simulations/nr/sionna/,                 -f omnetpp.ini -c Sionna -r 0,                          2s,         55bf-1704/tplx;b62a-c0f4/~tNl;6196-e4fd/sz, PASS,
+/simulations/nr/sionna/,                 -f omnetpp.ini -c SionnaCompare -r 0,                   2s,         4550-17c7/tplx;7305-60b1/~tNl;bced-372e/sz, PASS,
