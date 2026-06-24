@@ -166,7 +166,7 @@ class AmTxQueue : public RlcTxEntityBase
     void sendPdusNr(int size);
     void bufferControlPduNr(cPacket *pkt);
     void handleControlPacketNr(cPacket *pkt);
-    bool sendRetransmission(int size);
+    bool sendRetransmission(int pduSize);
     void reportBufferStatus();
     bool checkPolling();
     void sendSegment(PendingSegment segment);

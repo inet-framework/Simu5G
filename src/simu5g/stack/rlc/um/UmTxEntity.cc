@@ -65,6 +65,16 @@ void UmTxEntity::initialize(int stage)
     }
 }
 
+void UmTxEntity::setFlowControlInfo(FlowControlInfo *info)
+{
+    RlcTxEntityBase::setFlowControlInfo(info);
+    // Record this flow's wire format on the (dup'd) flow info; it rides on every
+    // packet tagged for the MAC, so the scheduler/MAC can multiplex multiple SO
+    // PDUs into one grant (NR keeps one SDU/segment per PDU, no RLC concatenation).
+    if (flowControlInfo_)
+        flowControlInfo_->setSoFraming(soFraming_);
+}
+
 void UmTxEntity::handleMessage(cMessage *msg)
 {
     auto pkt = check_and_cast<inet::Packet *>(msg);
@@ -112,6 +122,10 @@ void UmTxEntity::handleSdu(inet::Packet *pkt)
         // length, so the MAC tracks remaining bytes itself across grant requests.
         auto pktDup = pkt->dup();
         pktDup->addTag<LteRlcNewDataTag>();
+        // This indication creates/updates the MAC outgoing connection; stamp the
+        // flow's wire format on it so the scheduler multiplexes multiple SO PDUs
+        // per grant (NR keeps one SDU/segment per PDU, no RLC concatenation).
+        pktDup->getTagForUpdate<FlowControlInfo>()->setSoFraming(soFraming_);
         EV << "UmTxEntity::handleSdu - Sending new data indication to MAC\n";
         send(pktDup, "out");
     }
@@ -342,8 +356,19 @@ void UmTxEntity::rlcPduMakeNr(int pduLength)
     auto pkt = new inet::Packet("lteRlcFragment");
     auto rlcPdu = inet::makeShared<NrRlcUmDataPdu>();
 
-    // the request from MAC takes into account also the size of the RLC header
-    int size = pduLength - RLC_HEADER_UM;
+    // The MAC request is the PDU budget (header + payload). The header is segment-state
+    // dependent (TS 38.322 6.2.1.3): peek the head SDU to choose it before carving so the
+    // payload fills the budget exactly, and so it matches the header the scheduler reserved
+    // for this same PDU (nrUmHeaderBytes, drain-synced).
+    unsigned int rlcHeader = RLC_HEADER_UM;
+    uint32_t remaining, nextByte;
+    if (sduBuffer->peekHead(remaining, nextByte)) {
+        NrUmSegState st = (nextByte > 0) ? NRUM_CONTINUATION
+                        : (remaining + 1 <= (uint32_t)pduLength) ? NRUM_COMPLETE
+                        : NRUM_FIRST;
+        rlcHeader = nrUmHeaderBytes(st);
+    }
+    int size = pduLength - (int)rlcHeader;
 
     if (size <= 0) {
         // send an empty (1-bit) message: not enough space to carry data
@@ -373,24 +398,33 @@ void UmTxEntity::rlcPduMakeNr(int pduLength)
     rlcPdu->pushSdu(bufferedSdu->dup(), sduLength);
     unsigned int startOffset = segment.start;
     unsigned int endOffset = segment.end;
-    bool endFragment = segment.isLastSegment;
     if (segment.isLastSegment || segment.isFull)
         delete bufferedSdu; // it was previously dup'd into the SDU buffer
 
-    // compute SI (reusing the FramingInfo field; semantics per TS 38.322)
-    FramingInfo fi;  // 00 = full SDU
-    if (endFragment)
-        fi.firstIsFragment = true;  // 10 = last segment
-
+    // A whole SDU carried in a single PDU covers [0, totalLength-1] => complete (SI=00).
+    bool complete = (segment.start == 0 && segment.end == segment.totalLength - 1);
     int len = segment.end - segment.start + 1;
+
+    // FramingInfo encodes the SI field; toValue() = firstIsFragment*2 | lastIsFragment.
+    // TS 38.322 6.2.3.4 SI: 00 complete / 01 first / 10 last / 11 middle.
+    // firstIsFragment <=> the Data field does not start at the SDU's first byte;
+    // lastIsFragment  <=> it does not end at the SDU's last byte.
+    FramingInfo fi;
+    fi.firstIsFragment = (segment.start > 0);
+    fi.lastIsFragment  = (segment.end < segment.totalLength - 1);
+    // A complete SDU carries no SN (TS 38.322 6.2.1.3); segments carry the SDU SN.
+    bool carrySn = !complete;
+    // Carry the true SDU length so the RX detects byte-coverage completion
+    // (TS 38.322 5.2.2.2.3). A complete SDU needs no reassembly.
+    unsigned int lengthMainPacket = complete ? 0 : segment.totalLength;
+
     rlcPdu->setChunkLength(inet::B(RLC_HEADER_UM + len));
     rlcPdu->setSnoMainPacket(sduSequenceNumber);
-    rlcPdu->setLengthMainPacket(0);
+    rlcPdu->setLengthMainPacket(lengthMainPacket);
     rlcPdu->setStartOffset(startOffset);
     rlcPdu->setEndOffset(endOffset);
     rlcPdu->setFramingInfo(fi);
-    // Full SDUs do not need a SN
-    if (!segment.isFull)
+    if (carrySn)
         rlcPdu->setPduSequenceNumber(segment.sn);
 
     if (flowControlInfo_)

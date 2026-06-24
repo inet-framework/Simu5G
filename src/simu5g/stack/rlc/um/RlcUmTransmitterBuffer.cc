@@ -32,6 +32,20 @@ PendingSegmentUM RlcUmTransmitterBuffer::getSegmentForGrant(uint32_t grantSize) 
 
     // 5.2.2.1.1: If it's a segment, it gets TX_Next
     if (currentSdu.getNextSegment(grantSize, seg.start, seg.end)) {
+        // A whole SDU that fits in one PDU (covers [0, totalLength-1] on its first and
+        // only transmission) is a complete SDU. Per TS 38.322 it carries no SN and does
+        // not advance TX_Next (which numbers segmented SDUs only).
+        bool wholeInOnePdu = (seg.start == 0 && seg.end == currentSdu.totalLength - 1);
+        if (wholeInOnePdu) {
+            seg.ptr = currentSdu.sduPointer;
+            seg.totalLength = currentSdu.totalLength;
+            seg.isValid = true;
+            seg.isFull = true;
+            currentSdu.markTransmitted(seg.start, seg.end);
+            txBuffer.pop_front();
+            return seg;
+        }
+
         seg.sn = TX_Next;
         seg.ptr = currentSdu.sduPointer;
         seg.totalLength = currentSdu.totalLength;

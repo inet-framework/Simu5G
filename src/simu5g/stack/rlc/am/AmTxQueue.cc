@@ -814,15 +814,24 @@ void AmTxQueue::sendPdusNr(int pduSize)
         return;
     }
 
-    if (sendRetransmission(size)) {
+    if (sendRetransmission(pduSize)) {
         reportBufferStatus();
         return;
     }
 
+    // Size the header from the front segment's continuation state before the carve, so it
+    // matches what sendSegment will stamp (and what the scheduler reserved). An empty buffer
+    // means a fresh SDU will be pulled below (start 0 -> first/complete, 2B).
+    uint32_t st;
+    unsigned int newHdr = txBuffer_->peekNextSegmentStart(st)
+                        ? nrAmHeaderBytes((st > 0) ? NRUM_CONTINUATION : NRUM_FIRST)
+                        : nrAmHeaderBytes(NRUM_FIRST);
+    int newDataSize = pduSize - (int)newHdr;
+
     PendingSegment segment;
     segment.isValid = false;
     if (txBuffer_->getTotalPendingBytes() > 0)
-        segment = txBuffer_->getSegmentForGrant(size);
+        segment = txBuffer_->getSegmentForGrant(newDataSize);
 
     if (!segment.isValid) {
         if (sduBuffer_.empty()) {
@@ -843,7 +852,7 @@ void AmTxQueue::sendPdusNr(int pduSize)
 
         txBuffer_->addSdu(sduLength, bufferedSdu);
         sduBuffer_.pop_front();
-        segment = txBuffer_->getSegmentForGrant(size);
+        segment = txBuffer_->getSegmentForGrant(newDataSize);
     }
 
     if (!segment.isValid) {
@@ -884,9 +893,13 @@ void AmTxQueue::sendSegment(PendingSegment segment)
     int sduSequenceNumber = pdcpTag->getPdcpSequenceNumber();
 
     rlcPdu->pushSdu(bufferedSdu->dup(), segmentSize);
+    // TS 38.322 6.2.1.4 AM header: a non-first segment (start>0) carries the 16-bit SO (4B);
+    // a complete SDU or first segment carries SI+SN only (2B). The carve budget above
+    // reserved the same size, so the PDU exactly fills its requested grant slot.
+    unsigned int hdr = nrAmHeaderBytes((segment.start > 0) ? NRUM_CONTINUATION : NRUM_FIRST);
     rlcPdu->setFramingInfo(fi);
     rlcPdu->setPduSequenceNumber(pduSequenceNumber);
-    rlcPdu->setChunkLength(inet::B(RLC_HEADER_AM + segmentSize));
+    rlcPdu->setChunkLength(inet::B(hdr + segmentSize));
     rlcPdu->setSnoMainPacket(sduSequenceNumber);
     rlcPdu->setLengthMainPacket(sduLength);
     rlcPdu->setStartOffset(segment.start);
@@ -936,7 +949,7 @@ void AmTxQueue::reportBufferStatus()
     }
 }
 
-bool AmTxQueue::sendRetransmission(int size)
+bool AmTxQueue::sendRetransmission(int pduSize)
 {
     RetxTask next;
     if (!rtxBuffer_->getNextRetxTask(next))
@@ -959,7 +972,12 @@ bool AmTxQueue::sendRetransmission(int size)
         }
     }
 
-    PendingSegment segment = txBuffer_->getRetransmissionSegment(next.sn, start, end, size);
+    // TS 38.322 AM header from the finalized segment start; reserve it before re-carving.
+    int hdr = (int)nrAmHeaderBytes((start > 0) ? NRUM_CONTINUATION : NRUM_FIRST);
+    int budget = pduSize - hdr;
+    if (budget < 0)
+        return false;
+    PendingSegment segment = txBuffer_->getRetransmissionSegment(next.sn, start, end, budget);
     if (!segment.isValid) {
         if (radioLinkFailureDetected_)
             return false;

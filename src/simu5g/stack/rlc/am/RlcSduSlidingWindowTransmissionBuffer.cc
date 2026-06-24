@@ -64,6 +64,22 @@ PendingSegment RlcSduSlidingWindowTransmissionBuffer::getSegmentForGrant(uint32_
     return result;
 }
 
+bool RlcSduSlidingWindowTransmissionBuffer::peekNextSegmentStart(uint32_t &outStart) const
+{
+    // Same SDU selection order as getSegmentForGrant(), but non-consuming: the next new-data
+    // PDU carves the front not-fully-sent SDU in window, starting at its next un-sent byte.
+    for (const auto &[sn, state] : txBuffer_) {
+        if (sn < txNextAck_ || sn >= txNextAck_ + amWindowSize_)
+            continue;
+        uint32_t nextByte = state.getNextByteToTx();
+        if (nextByte < state.totalLength) {
+            outStart = nextByte;
+            return true;
+        }
+    }
+    return false;
+}
+
 std::set<uint32_t> RlcSduSlidingWindowTransmissionBuffer::handleAck(
     uint32_t sn, uint32_t start, uint32_t end, unsigned int pollSn, bool &restartPoll)
 {

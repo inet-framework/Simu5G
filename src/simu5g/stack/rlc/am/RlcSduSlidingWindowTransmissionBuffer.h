@@ -75,6 +75,19 @@ struct SduTxState {
      * @param outEnd Output: ending byte index.
      * @return true if a segment (even partial) was found.
      */
+    // Offset of the first not-yet-transmitted byte (== totalLength if fully sent).
+    uint32_t getNextByteToTx() const {
+        uint32_t nextByteToTx = 0;
+        std::list<TransmitInterval> sorted = transmittedIntervals;
+        sorted.sort();
+        for (const auto &interval : sorted) {
+            if (nextByteToTx < interval.start)
+                break;
+            nextByteToTx = interval.end + 1;
+        }
+        return nextByteToTx;
+    }
+
     bool getNextSegment(uint32_t grantSize, uint32_t &outStart, uint32_t &outEnd) {
         if (grantSize == 0)
             return false;
@@ -166,6 +179,14 @@ class RlcSduSlidingWindowTransmissionBuffer : public omnetpp::cObject
      * @return A PendingSegment containing data for at most one SDU.
      */
     PendingSegment getSegmentForGrant(uint32_t grantSize);
+
+    /**
+     * @brief Peek the start offset of the segment the next getSegmentForGrant() would
+     * carve, without consuming it. Used to size the NR-SO PDU header before the carve
+     * (a non-zero start means a continuation segment that needs the SO field).
+     * @return true and sets outStart if a pending new-data segment exists.
+     */
+    bool peekNextSegmentStart(uint32_t &outStart) const;
 
     /**
      * @brief Process an RLC Status PDU (ACK/NACK).
