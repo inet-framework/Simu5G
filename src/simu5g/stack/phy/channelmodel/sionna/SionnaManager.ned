@@ -16,15 +16,79 @@ import simu5g.stack.phy.channelmodel.ISionnaManager;
 //
 // SionnaManager
 //
-// Global, network-wide owner of the Sionna ray-traced channel table (Plan A).
-// There must be at most one instance per network (like Binder/CarrierAggregation).
+// Global owner of the Sionna ray-traced channel table (Plan A): a single, network-wide
+// module (like ~Binder / ~CarrierAggregation) that holds the per-(link, RB) path gains
+// which every per-PHY ~SionnaChannelModel looks up. At most one instance per network.
 //
-// At the end of initialization (positions final, all nodes registered with the
-// Binder) it enumerates every node and component carrier, builds a request, and
-// obtains the per-(link, RB) path-gain table either by loading a cached/committed
-// JSON artifact or by spawning the ray-tracing generator (sionna_rt.py) as a
-// subprocess. Per-PHY ~SionnaChannelModel instances are thin lookups into this
-// shared table.
+// Enabling it: the standard networks carry an opt-in submodule
+//   sionnaManager: <default("SionnaManager")> like ISionnaManager if hasSionnaManager
+// so set "*.hasSionnaManager = true" and switch the channel model to SionnaChannelModel
+// (or CompareChannelModel). The channel models locate it through their
+// "sionnaManagerModule" parameter (default "sionnaManager"). Worked examples and a
+// shared ini live under simulations/nr/sionna/.
+//
+// At a late init stage (positions final, all participating channel models have
+// self-registered) it enumerates the nodes and component carriers, builds a request,
+// and obtains the table; it rebuilds while the node set is still growing during init
+// and freezes the result at the end of initialization.
+//
+// SCOPE: static scenarios only (v1). A node that moves leaves the position-keyed table
+// and the lookup errors out.
+//
+// =========================== Usage modes ===========================
+//
+// (1) Committed artifact  -- portable & deterministic; needs NEITHER Python NOR Sionna.
+//     Loads a frozen JSON table that was produced once and checked in; no subprocess is
+//     ever spawned and the cache is bypassed. The granularity / interferenceMode recorded
+//     in the file header are authoritative. This is the recommended mode for committed
+//     scenarios and fingerprint tests.
+//        channelTableFile = "channel_table.json"   // path, relative to the run directory
+//
+// (2) Live generation, two-ray backend  -- deterministic, no GPU, stdlib-only Python.
+//     Spawns sionna_rt.py to compute a flat-ground two-ray (direct + ground-reflected)
+//     table at startup, cached under cacheDir by a hash of the request (scene, positions,
+//     materials, carriers, modes); a rerun with the same scenario reuses the cache.
+//     Use it to (re)generate the artifact for mode (1), or for quick static studies.
+//        channelTableFile = ""           // empty -> generate (do not load an artifact)
+//        backend          = "tworay"     // or "auto" (uses sionna if importable, else tworay)
+//        pythonExecutable = "python3"     // stdlib only -> the system python is fine
+//        sionnaScript     = ""           // empty -> $SIMU5G_ROOT/src/.../sionna_rt.py
+//        cacheDir         = "sionna_cache"
+//        forceRegenerate  = false         // true -> ignore an existing cache entry
+//
+// (3) Live generation, real Sionna RT  -- site-specific ray tracing (NVIDIA Sionna RT).
+//     As mode (2) but runs actual ray tracing; requires a Python that can import
+//     sionna.rt (Sionna RT = Mitsuba 3 + Dr.Jit, CPU/LLVM or GPU). Results may vary
+//     slightly across machines (float/GPU), so for stable fingerprints freeze the output
+//     and load it via mode (1).
+//        channelTableFile = ""
+//        backend          = "sionna"
+//        pythonExecutable = "/path/to/venv/bin/python3"   // must import sionna.rt
+//        sceneFile        = "scene.xml"   // optional Mitsuba 3 scene (see "Scene" below)
+//
+// ======================= Cross-cutting settings =======================
+//
+// Granularity (granularity):
+//   "perRb"     -- one path gain per logical band (matches Simu5G's per-band reception).
+//   "wideband"  -- a single value per link.
+//
+// Interference (interferenceMode):
+//   "noiseLimited" -- serving links only; SINR = SNR (no inter-cell interference table).
+//   "allPairs"     -- full Tx->Rx matrix; required for accurate multi-cell interference.
+//   Coupling guard: "wideband" + "allPairs" is inconsistent (a single value cannot carry
+//   RB-selective interference) and the module warns; prefer "perRb" for multi-cell.
+//   (Background/external cells are out of scene scope and are not modelled by Sionna.)
+//
+// Scene (modes 2 and 3):
+//   sceneFile == "" -- flat ground plane: a direct path plus a ground reflection (NOT
+//                      pure free space), set by groundPermittivity / groundConductivity /
+//                      sceneSize / numReflections / polarization.
+//   sceneFile != "" -- a Sionna-native Mitsuba 3 XML scene; node positions must already
+//                      be expressed in THAT scene's coordinate frame (user's
+//                      responsibility in v1). Real geometry integration is future work.
+//
+// Wiring: binderModule / carrierAggregationModule point at the network-level Binder and
+// CarrierAggregation used to enumerate the nodes and carriers.
 //
 simple SionnaManager like ISionnaManager
 {
@@ -58,7 +122,10 @@ simple SionnaManager like ISionnaManager
         bool forceRegenerate = default(false);
 
         // Subprocess generator (used only on a cache miss with no channelTableFile).
+        // "python3" suffices for the tworay backend (stdlib only); for backend="sionna"
+        // set this to a python that can import sionna.rt.
         string pythonExecutable = default("python3");
-        string sionnaScript = default("");   // path to sionna_rt.py; required to spawn
+        // path to sionna_rt.py; empty -> resolved from $SIMU5G_ROOT/src/.../sionna_rt.py.
+        string sionnaScript = default("");
         string backend @enum(auto,sionna,tworay) = default("auto");
 }
