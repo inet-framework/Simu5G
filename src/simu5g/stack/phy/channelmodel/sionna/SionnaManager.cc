@@ -168,7 +168,12 @@ void SionnaManager::ensureTable()
     if (nodes.empty())
         return; // nothing enumerable yet; a later call rebuilds
 
-    // position -> id index, so a runtime coordinate can be mapped back to a node
+    // position -> id index, so a runtime coordinate can be mapped back to a node.
+    // Limitation: two nodes rounded to the same mm position collapse to one entry
+    // (last wins). This is benign for the common case (an NR UE registers under two
+    // stack ids at the same position - both have links in the table), and even two
+    // genuinely distinct co-located nodes have ~identical channels to any third node;
+    // only the (degenerate) direct link between them would be ambiguous.
     posToId_.clear();
     for (auto& n : nodes)
         posToId_[posKey(n.pos)] = n.id;
@@ -287,12 +292,23 @@ void SionnaManager::runGenerator(const std::string& requestPath, const std::stri
         throw cRuntimeError("SionnaManager: no cached/committed channel table and no "
                 "'sionnaScript' set to generate one (request at '%s')", requestPath.c_str());
 
-    std::string cmd = pythonExecutable_ + " " + sionnaScript_ + " "
-            + requestPath + " " + outPath;
+    // POSIX single-quote each argument so spaces/metacharacters in a path can neither
+    // break argument splitting nor be interpreted by the shell (no command injection)
+    auto shq = [](const std::string& s) {
+        std::string r = "'";
+        for (char c : s)
+            r += (c == '\'') ? "'\\''" : std::string(1, c);
+        return r + "'";
+    };
+    std::string cmd = shq(pythonExecutable_) + " " + shq(sionnaScript_) + " "
+            + shq(requestPath) + " " + shq(outPath);
     EV_INFO << "SionnaManager: running generator: " << cmd << "\n";
     int rc = std::system(cmd.c_str());
     if (rc != 0)
         throw cRuntimeError("SionnaManager: generator failed (exit %d): %s", rc, cmd.c_str());
+    if (!fs::exists(outPath))
+        throw cRuntimeError("SionnaManager: generator returned success but produced no "
+                "output file '%s' (cmd: %s)", outPath.c_str(), cmd.c_str());
 }
 
 void SionnaManager::loadTableFromFile(const std::string& path)
@@ -301,29 +317,34 @@ void SionnaManager::loadTableFromFile(const std::string& path)
     if (!in)
         throw cRuntimeError("SionnaManager: cannot open channel table '%s'", path.c_str());
 
-    json table;
-    in >> table;
-
     table_.clear(); // rebuilds replace the previous table
-
-    // trust the artifact's own granularity/interference declaration for lookups
-    if (table.contains("granularity"))
-        granularity_ = (table["granularity"] == "wideband")
-            ? Granularity::WIDEBAND : Granularity::PER_RB;
-    if (table.contains("interferenceMode"))
-        interferenceMode_ = (table["interferenceMode"] == "allPairs")
-            ? InterferenceMode::ALL_PAIRS : InterferenceMode::NOISE_LIMITED;
-
     int nLinks = 0;
-    for (auto& carrier : table.at("carriers")) {
-        long long key = llround(carrier.at("carrierFrequencyHz").get<double>());
-        LinkTable& lt = table_[key];
-        for (auto& link : carrier.at("links")) {
-            MacNodeId tx = static_cast<MacNodeId>(link.at("tx").get<int>());
-            MacNodeId rx = static_cast<MacNodeId>(link.at("rx").get<int>());
-            lt[{ tx, rx }] = link.at("pathGainDb").get<std::vector<double>>();
-            ++nLinks;
+    try {
+        json table;
+        in >> table;
+
+        // trust the artifact's own granularity/interference declaration for lookups
+        if (table.contains("granularity"))
+            granularity_ = (table["granularity"] == "wideband")
+                ? Granularity::WIDEBAND : Granularity::PER_RB;
+        if (table.contains("interferenceMode"))
+            interferenceMode_ = (table["interferenceMode"] == "allPairs")
+                ? InterferenceMode::ALL_PAIRS : InterferenceMode::NOISE_LIMITED;
+
+        for (auto& carrier : table.at("carriers")) {
+            long long key = llround(carrier.at("carrierFrequencyHz").get<double>());
+            LinkTable& lt = table_[key];
+            for (auto& link : carrier.at("links")) {
+                MacNodeId tx = static_cast<MacNodeId>(link.at("tx").get<int>());
+                MacNodeId rx = static_cast<MacNodeId>(link.at("rx").get<int>());
+                lt[{ tx, rx }] = link.at("pathGainDb").get<std::vector<double>>();
+                ++nLinks;
+            }
         }
+    }
+    catch (const json::exception& e) {
+        throw cRuntimeError("SionnaManager: malformed channel table '%s': %s",
+                path.c_str(), e.what());
     }
     EV_INFO << "SionnaManager: loaded " << nLinks << " link(s) across "
             << table_.size() << " carrier(s) from '" << path << "'\n";

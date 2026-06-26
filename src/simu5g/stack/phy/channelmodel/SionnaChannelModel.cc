@@ -35,6 +35,18 @@ void SionnaChannelModel::initialize(int stage)
         cableLoss_ = 0.0;
         shadowing_ = false;
         fading_ = false;
+
+        // Background/external cells are NOT in the ray-traced scene, so their
+        // interference could only come from the analytic model - inconsistent with the
+        // Sionna desired signal, and further distorted by the antenna/cable/angular
+        // terms zeroed above (which the analytic background path needs). Disable them
+        // for v1 (the scene IS the geometry); in-scene multi-cell interference
+        // (computeDownlink/UplinkInterference, sourced from the table) is unaffected.
+        if (enableBackgroundCellInterference_ || enableExtCellInterference_)
+            EV_WARN << "SionnaChannelModel: background/external-cell interference is not "
+                       "supported with the ray-traced channel (Plan A v1) - disabling it.\n";
+        enableBackgroundCellInterference_ = false;
+        enableExtCellInterference_ = false;
     }
     else if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
         sionnaManager_.reference(this, "sionnaManagerModule", true);

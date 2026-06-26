@@ -55,13 +55,16 @@ def band_center_frequencies(carrier):
     fc = float(carrier["carrierFrequencyHz"])
     n = int(carrier["numBands"])
     bw = rb_bandwidth_hz(int(carrier.get("numerology", 0)))
-    # place RB centers symmetrically around fc
-    start = fc - 0.5 * (n - 1) * bw
-    return [start + i * bw for i in range(n)]
+    # RB-center offsets must match the Sionna backend's subcarrier_frequencies(),
+    # i.e. the canonical OFDM/FFT grid (arange(n) - n//2)*bw, so band index i maps
+    # to the same absolute frequency in both backends (matters for even n).
+    return [fc + (i - n // 2) * bw for i in range(n)]
 
 
 def lin_to_db(x):
-    return 10.0 * math.log10(x) if x > 0.0 else -300.0
+    if not math.isfinite(x) or x <= 0.0:
+        return -300.0
+    return 10.0 * math.log10(x)
 
 
 # --------------------------------------------------------------------------- #
@@ -98,8 +101,9 @@ def _two_ray_path_gain_db(tx, rx, freq_hz, eps_r, sigma, polarization,
     lam = C0 / freq_hz
     k = 2.0 * math.pi / lam
 
-    d_los = math.sqrt(d * d + (ht - hr) ** 2)
-    d_ref = math.sqrt(d * d + (ht + hr) ** 2)
+    # floor the path lengths so coincident Tx/Rx (d=0, ht=hr) does not divide by zero
+    d_los = max(math.sqrt(d * d + (ht - hr) ** 2), 1e-3)
+    d_ref = max(math.sqrt(d * d + (ht + hr) ** 2), 1e-3)
 
     # grazing angle of the reflected ray
     sin_theta = (ht + hr) / d_ref
@@ -110,8 +114,10 @@ def _two_ray_path_gain_db(tx, rx, freq_hz, eps_r, sigma, polarization,
     # coherent sum of direct + ground-reflected field (isotropic field ~ 1/d)
     field = (cmath.exp(-1j * k * d_los) / d_los
              + gamma * cmath.exp(-1j * k * d_ref) / d_ref)
-    # free-space constant (lambda / 4 pi)^2, with field normalized to amplitude 1/d
-    power_gain = (lam / (4.0 * math.pi)) ** 2 * (abs(field) ** 2)
+    # free-space constant (lambda / 4 pi)^2, with field normalized to amplitude 1/d.
+    # Clamp to <= 1 (0 dB): passive propagation cannot amplify, and this bounds the
+    # degenerate near-coincident case (only reached for sub-metre separations).
+    power_gain = min((lam / (4.0 * math.pi)) ** 2 * (abs(field) ** 2), 1.0)
 
     return lin_to_db(power_gain) + gain_tx_db + gain_rx_db
 
@@ -315,7 +321,9 @@ def main(argv):
         request = json.load(f)
     table = generate(request)
     with open(argv[2], "w") as f:
-        json.dump(table, f, indent=2)
+        # allow_nan=False: never emit the non-standard Infinity/NaN tokens (which a
+        # strict JSON reader rejects); fail loudly instead if anything slips through.
+        json.dump(table, f, indent=2, allow_nan=False)
         f.write("\n")
     sys.stderr.write("sionna_rt.py: wrote %d carrier(s) using backend '%s'\n"
                      % (len(table["carriers"]), table["backend"]))

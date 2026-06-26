@@ -26,6 +26,11 @@ package simu5g.stack.phy.channelmodel;
 // primary = reference (the default), only the primary's draws happen, so the run
 // behaves exactly like a normal built-in run, with Sionna deltas logged on top.
 //
+// Placement: use it on the UE side (DL validation), as in the SionnaCompare example.
+// Placing it (and its two inner models) at an eNB makes all three register the same
+// carrier on the cell's CellInfo, which CellInfo::registerCarrier rejects as a
+// duplicate. (On a UE, CellInfo is absent, so no carrier is registered.)
+//
 simple CompareChannelModel extends LteRealisticChannelModel
 {
     parameters:
