@@ -83,13 +83,13 @@ void SionnaManager::initialize(int stage)
         forceRegenerate_ = par("forceRegenerate");
         pythonExecutable_ = par("pythonExecutable").stdstringValue();
         sionnaScript_ = par("sionnaScript").stdstringValue();
-        // portable default: resolve the bundled generator from $SIMU5G_ROOT so the
-        // ini need not hard-code a machine-specific path
-        if (sionnaScript_.empty()) {
-            if (const char *root = getenv("SIMU5G_ROOT"))
-                sionnaScript_ = std::string(root)
-                        + "/src/simu5g/stack/phy/channelmodel/sionna/sionna_rt.py";
-        }
+        // portable default: locate the bundled generator via OMNeT++'s resource search,
+        // which includes the folder this module's NED file was loaded from (where
+        // sionna_rt.py lives) - no hard-coded path, no env var, cwd-independent.
+        // (Also searches the cwd, the ini folder and the NED path, so a user can drop a
+        // custom sionna_rt.py next to their scenario.) Empty result -> runGenerator errs.
+        if (sionnaScript_.empty())
+            sionnaScript_ = resolveResourcePath("sionna_rt.py");
         backend_ = par("backend").stdstringValue();
 
         warnOnCouplingGuard();

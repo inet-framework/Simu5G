@@ -52,7 +52,7 @@ import simu5g.stack.phy.channelmodel.ISionnaManager;
 //        channelTableFile = ""           // empty -> generate (do not load an artifact)
 //        backend          = "tworay"     // or "auto" (uses sionna if importable, else tworay)
 //        pythonExecutable = "python3"     // stdlib only -> the system python is fine
-//        sionnaScript     = ""           // empty -> $SIMU5G_ROOT/src/.../sionna_rt.py
+//        sionnaScript     = ""           // empty -> the bundled sionna_rt.py (next to the NED)
 //        cacheDir         = "sionna_cache"
 //        forceRegenerate  = false         // true -> ignore an existing cache entry
 //
@@ -125,7 +125,8 @@ simple SionnaManager like ISionnaManager
         // "python3" suffices for the tworay backend (stdlib only); for backend="sionna"
         // set this to a python that can import sionna.rt.
         string pythonExecutable = default("python3");
-        // path to sionna_rt.py; empty -> resolved from $SIMU5G_ROOT/src/.../sionna_rt.py.
+        // path to sionna_rt.py; empty -> the bundled one, found next to this NED file
+        // (via resolveResourcePath, which also searches the cwd / ini dir / NED path).
         string sionnaScript = default("");
         string backend @enum(auto,sionna,tworay) = default("auto");
 }
