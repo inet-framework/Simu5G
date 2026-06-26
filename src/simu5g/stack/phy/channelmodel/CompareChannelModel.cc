@@ -89,9 +89,13 @@ bool CompareChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlI
 {
     // The simulation drives reception through isReceptionSuccessful (each model
     // computes its own getSINR internally), so this is where we probe both models
-    // on identical inputs and record the deltas. With the built-in model's fading
-    // and shadowing disabled (Plan A §7 large-scale mode) these probes draw no RNG,
-    // so the run stays neutral and only the primary performs the reception draw.
+    // on identical inputs and record the deltas. RNG neutrality (primary=reference):
+    // the candidate (Sionna) draws nothing; the reference's getSINR here draws the
+    // built-in shadowing/jakes state only ONCE per node (first computation), which the
+    // primary's own getSINR inside isReceptionSuccessful then reuses from the cache at
+    // the same NOW - so no extra draws, and the run matches a plain built-in run even
+    // with fading/shadowing ON (Plan A §7 "Full" mode). Only the primary draws for the
+    // reception itself.
     std::vector<double> refSinr = reference_->getSINR(frame, lteInfo);
     std::vector<double> candSinr = candidate_->getSINR(frame, lteInfo);
     emit(sinrDeltaSignal_, mean(candSinr) - mean(refSinr));

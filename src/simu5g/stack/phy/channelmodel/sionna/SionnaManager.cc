@@ -83,6 +83,13 @@ void SionnaManager::initialize(int stage)
         forceRegenerate_ = par("forceRegenerate");
         pythonExecutable_ = par("pythonExecutable").stdstringValue();
         sionnaScript_ = par("sionnaScript").stdstringValue();
+        // portable default: resolve the bundled generator from $SIMU5G_ROOT so the
+        // ini need not hard-code a machine-specific path
+        if (sionnaScript_.empty()) {
+            if (const char *root = getenv("SIMU5G_ROOT"))
+                sionnaScript_ = std::string(root)
+                        + "/src/simu5g/stack/phy/channelmodel/sionna/sionna_rt.py";
+        }
         backend_ = par("backend").stdstringValue();
 
         warnOnCouplingGuard();

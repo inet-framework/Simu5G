@@ -39,18 +39,22 @@ artifact): `simu5g -u Cmdenv -c MyScenario-Sionna omnetpp.ini`
 
 ## B. Any other network: generate a wrapper
 
-OMNeT++ can't inject a submodule from the ini, so for a network without the
-parameter, generate a `<Name>Sionna` wrapper that adds the `sionnaManager`:
+OMNeT++ can't inject a submodule from the ini, so for a network that does NOT
+already have the parameter (i.e. one that is NOT listed in section A above - e.g.
+the cars/emulation networks, or your own), generate a `<Name>Sionna` wrapper that
+adds the `sionnaManager`. (Do NOT run it on a section-A network: the wrapper would
+re-declare the inherited `sionnaManager` and the NED fails to compile.)
 
 ```sh
-python3 sionnaize.py simu5g.simulations.nr.videostreaming_dataset_generator.UrbanNetwork
-# -> generated/UrbanNetworkSionna.ned (git-ignored; regenerate any time)
+python3 sionnaize.py simu5g.simulations.nr.cars.Highway
+# -> generated/HighwaySionna.ned (git-ignored; regenerate any time)
 ```
 
 Then point your config at it: `network =
-simu5g.simulations.nr.sionna.generated.UrbanNetworkSionna` (no `hasSionnaManager`
+simu5g.simulations.nr.sionna.generated.HighwaySionna` (no `hasSionnaManager`
 needed - the wrapper always adds the manager) plus the same `include` and height
-settings as above.
+settings as above. (Highway is a mobility scenario, so pin `StationaryMobility`
+for the static channel - see the scope note at the top.)
 
 ## Notes
 
