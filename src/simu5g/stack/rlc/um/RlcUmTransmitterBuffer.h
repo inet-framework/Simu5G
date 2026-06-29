@@ -68,6 +68,18 @@ struct SduUmTxState {
         return true;
     }
 
+    // Offset of the first not-yet-transmitted byte (0 if nothing sent yet).
+    uint32_t getNextByteToTx() const {
+        uint32_t nextByteToTx = 0;
+        std::list<TransmitInterval> sorted = transmittedIntervals;
+        sorted.sort();
+        for (const auto& interval : sorted) {
+            if (nextByteToTx < interval.start) break;
+            nextByteToTx = interval.end + 1;
+        }
+        return nextByteToTx;
+    }
+
     void markTransmitted(uint32_t start, uint32_t end) {
         transmittedIntervals.push_back({start, end});
         mergeIntervals(transmittedIntervals);
@@ -140,6 +152,17 @@ public:
      * Implements logic from 5.2.2.1.1.
      */
     PendingSegmentUM getSegmentForGrant(uint32_t grantSize);
+
+    // Peek the head SDU without consuming it: untransmitted byte count + the offset of
+    // its next byte (0 => fresh/first piece, >0 => continuation). Lets the caller pick
+    // the RAT/segment-state-dependent header size before carving.
+    bool peekHead(uint32_t& remaining, uint32_t& nextByte) const {
+        if (txBuffer.empty()) return false;
+        const auto& sdu = txBuffer.front();
+        nextByte = sdu.getNextByteToTx();
+        remaining = (sdu.totalLength > nextByte) ? (sdu.totalLength - nextByte) : 0;
+        return true;
+    }
 
     bool hasData() const {
         return !txBuffer.empty();

@@ -227,20 +227,13 @@ inline unsigned int nrUmHeaderBytes(NrUmSegState s, unsigned int snBits)
     return (s == NRUM_CONTINUATION) ? base + 2u : base;     // + SO(16b) on a continuation
 }
 
+
 // AM (TS 38.322 6.2.1.4): an AMD PDU always carries the SN. complete/first = D/C+P+SI(4)+SN,
 // byte-aligned (12-bit SN -> 2B, 18-bit -> 3B); continuation adds the SO(16b) (4B / 5B).
 inline unsigned int nrAmHeaderBytes(NrUmSegState s, unsigned int snBits)
 {
     unsigned int base = (4u + snBits + 7u) / 8u;            // D/C+P+SI(4) + SN, octet-aligned
     return (s == NRUM_CONTINUATION) ? base + 2u : base;     // + SO(16b) on a continuation
-}
-
-// NR-SO AM RLC header size (bytes) by segment state (TS 38.322 6.2.1.4), 12-bit SN: an
-// AMD PDU always carries the SN, so complete and first segment = D/C+P+SI+SN = 2B, and a
-// continuation segment (not the first) adds the 16-bit SO => 4B. (18-bit SN would be 3B/5B.)
-inline unsigned int nrAmHeaderBytes(NrUmSegState s)
-{
-    return (s == NRUM_CONTINUATION) ? 4u : 2u;
 }
 const unsigned int MAC_HEADER = 2;
 const unsigned int MAXGRANT = 4294967295U;

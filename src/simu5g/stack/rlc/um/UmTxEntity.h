@@ -43,6 +43,9 @@ using namespace omnetpp;
  */
 class UmTxEntity : public RlcTxEntityBase
 {
+  public:
+    void setFlowControlInfo(FlowControlInfo *info) override;
+
     // --- wire-format selector (profile-driven; NOT the NIC-leg isNR) ---
     // false = LTE FI/concatenation (TS 36.322); true = NR SI/SO byte-offset (TS 38.322)
     bool soFraming_ = false;

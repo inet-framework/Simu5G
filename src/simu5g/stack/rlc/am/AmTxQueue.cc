@@ -82,6 +82,10 @@ void AmTxQueue::initialize(int stage)
             // The window is 2^(snBits-1), so it must be a power of two.
             if (amWindowSize_ < 1 || (amWindowSize_ & (amWindowSize_ - 1)) != 0)
                 throw cRuntimeError("AmTxQueue::initialize() AM_Window_Size=%u must be a power of two (e.g. 512, 2048, 131072)", amWindowSize_);
+            // SN field length in bits: window = 2^(snBits-1) => snBits = log2(window) + 1.
+            snFieldLength_ = 1;
+            for (unsigned int w = amWindowSize_; w > 1; w >>= 1)
+                ++snFieldLength_;
 
             pollPdu_ = par("pollPDU");
             pollByte_ = par("pollByte");
@@ -824,8 +828,8 @@ void AmTxQueue::sendPdusNr(int pduSize)
     // means a fresh SDU will be pulled below (start 0 -> first/complete, 2B).
     uint32_t st;
     unsigned int newHdr = txBuffer_->peekNextSegmentStart(st)
-                        ? nrAmHeaderBytes((st > 0) ? NRUM_CONTINUATION : NRUM_FIRST)
-                        : nrAmHeaderBytes(NRUM_FIRST);
+                        ? nrAmHeaderBytes((st > 0) ? NRUM_CONTINUATION : NRUM_FIRST, snFieldLength_)
+                        : nrAmHeaderBytes(NRUM_FIRST, snFieldLength_);
     int newDataSize = pduSize - (int)newHdr;
 
     PendingSegment segment;
@@ -896,7 +900,7 @@ void AmTxQueue::sendSegment(PendingSegment segment)
     // TS 38.322 6.2.1.4 AM header: a non-first segment (start>0) carries the 16-bit SO (4B);
     // a complete SDU or first segment carries SI+SN only (2B). The carve budget above
     // reserved the same size, so the PDU exactly fills its requested grant slot.
-    unsigned int hdr = nrAmHeaderBytes((segment.start > 0) ? NRUM_CONTINUATION : NRUM_FIRST);
+    unsigned int hdr = nrAmHeaderBytes((segment.start > 0) ? NRUM_CONTINUATION : NRUM_FIRST, snFieldLength_);
     rlcPdu->setFramingInfo(fi);
     rlcPdu->setPduSequenceNumber(pduSequenceNumber);
     rlcPdu->setChunkLength(inet::B(hdr + segmentSize));
@@ -973,7 +977,7 @@ bool AmTxQueue::sendRetransmission(int pduSize)
     }
 
     // TS 38.322 AM header from the finalized segment start; reserve it before re-carving.
-    int hdr = (int)nrAmHeaderBytes((start > 0) ? NRUM_CONTINUATION : NRUM_FIRST);
+    int hdr = (int)nrAmHeaderBytes((start > 0) ? NRUM_CONTINUATION : NRUM_FIRST, snFieldLength_);
     int budget = pduSize - hdr;
     if (budget < 0)
         return false;
@@ -1081,6 +1085,11 @@ void AmTxQueue::sendNewDataNotificationNr(inet::Packet *pkt)
         t->setOriginalPacketLength(pkt->getByteLength());
         t->setPdcpSequenceNumber(0);
     }
+    // Carry the AM SN field length so the connection (and the scheduler, if this AM flow is
+    // ever SO-multiplexed) reserves the matching octet-aligned header; the SDU's own
+    // FlowControlInfo doesn't have it.
+    if (newData->findTag<FlowControlInfo>())
+        newData->getTagForUpdate<FlowControlInfo>()->setRlcSnFieldLength(snFieldLength_);
     newData->addTag<LteRlcNewDataTag>();
     send(newData, "out");
 }

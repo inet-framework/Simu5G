@@ -47,6 +47,7 @@ class AmTxQueue : public RlcTxEntityBase
 
     // --- wire-format selector (profile-driven; see UmTxEntity) ---
     bool soFraming_ = false;
+    unsigned int snFieldLength_ = 12;  // NR-SO AM SN bits, derived from AM_Window_Size (12 or 18)
 
     // Copy of the flow control info (shared by both modes).
     FlowControlInfo *lteInfo_ = nullptr;

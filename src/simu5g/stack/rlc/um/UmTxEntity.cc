@@ -71,8 +71,10 @@ void UmTxEntity::setFlowControlInfo(FlowControlInfo *info)
     // Record this flow's wire format on the (dup'd) flow info; it rides on every
     // packet tagged for the MAC, so the scheduler/MAC can multiplex multiple SO
     // PDUs into one grant (NR keeps one SDU/segment per PDU, no RLC concatenation).
-    if (flowControlInfo_)
+    if (flowControlInfo_) {
         flowControlInfo_->setSoFraming(soFraming_);
+        flowControlInfo_->setRlcSnFieldLength(sn_FieldLength);
+    }
 }
 
 void UmTxEntity::handleMessage(cMessage *msg)
@@ -126,6 +128,7 @@ void UmTxEntity::handleSdu(inet::Packet *pkt)
         // flow's wire format on it so the scheduler multiplexes multiple SO PDUs
         // per grant (NR keeps one SDU/segment per PDU, no RLC concatenation).
         pktDup->getTagForUpdate<FlowControlInfo>()->setSoFraming(soFraming_);
+        pktDup->getTagForUpdate<FlowControlInfo>()->setRlcSnFieldLength(sn_FieldLength);
         EV << "UmTxEntity::handleSdu - Sending new data indication to MAC\n";
         send(pktDup, "out");
     }
@@ -366,7 +369,7 @@ void UmTxEntity::rlcPduMakeNr(int pduLength)
         NrUmSegState st = (nextByte > 0) ? NRUM_CONTINUATION
                         : (remaining + 1 <= (uint32_t)pduLength) ? NRUM_COMPLETE
                         : NRUM_FIRST;
-        rlcHeader = nrUmHeaderBytes(st);
+        rlcHeader = nrUmHeaderBytes(st, sn_FieldLength);
     }
     int size = pduLength - (int)rlcHeader;
 
