@@ -206,6 +206,15 @@ class LteMacBase : public cSimpleModule
      */
     virtual void deleteQueues(MacNodeId nodeId);
 
+    /**
+     * Tear down all MAC/HARQ/connection state for a node after an RLC-detected
+     * radio link failure (TS 38.322 5.3.2 / TS 36.322 5.2.1: indicate max
+     * retransmissions to upper layers). Marks HARQ reset so any in-flight
+     * feedback for the node is dropped this TTI (isHarqReset()), then calls the
+     * (virtual) deleteQueues(). Driven by BearerManagement::handleRadioLinkFailure.
+     */
+    virtual void deleteQueuesRadioLinkFailure(MacNodeId nodeId);
+
     //* public utility function - drops ownership of an object
     void dropObj(cOwnedObject *obj)
     {

@@ -58,9 +58,48 @@ void BearerManagement::initialize(int stage)
     }
 }
 
+BearerManagement::~BearerManagement()
+{
+    cancelAndDelete(rlfTrigger_);
+}
+
 void BearerManagement::handleMessage(cMessage *msg)
 {
+    if (msg == rlfTrigger_) {
+        // Drain deferred radio-link-failure teardowns at a safe point (a fresh event),
+        // never from inside RLC/PDCP processing.
+        auto pending = pendingRlf_;   // copy: teardown deletes entity modules
+        pendingRlf_.clear();
+        for (const auto &[nodeId, nrStack] : pending)
+            handleRadioLinkFailure(nodeId, nrStack);
+        return;
+    }
     throw cRuntimeError("This module does not process messages");
+}
+
+void BearerManagement::scheduleRadioLinkFailure(MacNodeId nodeId, bool nrStack)
+{
+    Enter_Method_Silent("scheduleRadioLinkFailure()");
+    EV << NOW << " BearerManagement::scheduleRadioLinkFailure - node " << nodeId
+       << (nrStack ? " (NR)" : " (LTE)") << endl;
+    pendingRlf_.insert({nodeId, nrStack});
+    if (!rlfTrigger_)
+        rlfTrigger_ = new cMessage("rlfTrigger");
+    if (!rlfTrigger_->isScheduled())
+        scheduleAt(simTime(), rlfTrigger_);
+}
+
+void BearerManagement::handleRadioLinkFailure(MacNodeId nodeId, bool nrStack)
+{
+    EV << NOW << " BearerManagement::handleRadioLinkFailure - tearing down node " << nodeId
+       << (nrStack ? " (NR)" : " (LTE)") << endl;
+    // MAC/HARQ teardown on the affected stack.
+    LteMacBase *mac = nrStack ? (nrMacModule ? nrMacModule.get() : nullptr) : macModule.get();
+    if (mac)
+        mac->deleteQueuesRadioLinkFailure(nodeId);
+    // RLC entities on the affected stack, then the (stack-agnostic) PDCP entities.
+    deleteLocalRlcQueues(nodeId, nrStack);
+    deleteLocalPdcpEntities(nodeId);
 }
 
 void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp)

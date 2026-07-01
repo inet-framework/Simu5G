@@ -20,6 +20,7 @@
 #include "simu5g/stack/rlc/am/packet/NrRlcAmStatusPdu_m.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
+#include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 
@@ -410,6 +411,16 @@ void NrRlcAmTxEntity::processControlPacket(Packet *pktPdu)
                 if (!added) {
                     EV << nameEntity_ << " [CRITICAL] Radio Link Failure" << endl;
                     radioLinkFailureDetected_ = true;
+                    // Indicate the failure to RRC/BearerManagement (TS 38.322 5.3.2 / TS
+                    // 36.322 5.2.1): it tears down this bearer's MAC/RLC/PDCP state at a
+                    // safe point. Idempotent -- a set + one-shot self-message inside
+                    // BearerManagement absorb repeats before this entity is deleted.
+                    if (lteInfo_) {
+                        bool isNr = isNrUe(lteInfo_->getSourceId()) || isNrUe(lteInfo_->getDestId());
+                        auto *bm = check_and_cast<BearerManagement *>(
+                            inet::getContainingNicModule(this)->getSubmodule("rrc")->getSubmodule("bearerManagement"));
+                        bm->scheduleRadioLinkFailure(lteInfo_->getDestId(), isNr);
+                    }
                     delete pktPdu;
                     return;
                 }

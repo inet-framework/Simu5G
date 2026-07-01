@@ -367,6 +367,17 @@ void LteMacBase::deleteQueues(MacNodeId nodeId)
     // TODO remove traffic descriptor and LCG entry
 }
 
+void LteMacBase::deleteQueuesRadioLinkFailure(MacNodeId nodeId)
+{
+    Enter_Method_Silent();
+    EV << NOW << " LteMacBase::deleteQueuesRadioLinkFailure - RLF teardown for node " << nodeId << endl;
+    // Ignore any in-flight HARQ feedback for this node for the rest of this TTI
+    // (isHarqReset() consults resetHarq_), then tear down all MAC/HARQ/connection
+    // state. deleteQueues() is virtual -> dispatches to the LteMacEnb/LteMacUe override.
+    resetHarq_[nodeId] = NOW;
+    deleteQueues(nodeId);
+}
+
 void LteMacBase::decreaseNumerologyPeriodCounter()
 {
     for (auto& [index, counter] : numerologyPeriodCounter_) {

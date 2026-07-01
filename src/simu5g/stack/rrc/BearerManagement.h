@@ -15,6 +15,8 @@
 #include "simu5g/common/LteDefs.h"
 #include "simu5g/common/LteControlInfo.h"
 #include <inet/common/ModuleRefByPar.h>
+#include <set>
+#include <utility>
 
 using namespace omnetpp;
 
@@ -74,6 +76,12 @@ class BearerManagement : public cSimpleModule
     std::map<DrbKey, cModule *> rlcEntities_;
     std::map<DrbKey, cModule *> nrRlcEntities_;
 
+    // Radio Link Failure: teardown is deferred to a safe execution context via a
+    // self-message, so we never delete entity modules from inside RLC/PDCP processing.
+    cMessage *rlfTrigger_ = nullptr;
+    std::set<std::pair<MacNodeId, bool>> pendingRlf_;  // (peer nodeId, nrStack)
+    void handleRadioLinkFailure(MacNodeId nodeId, bool nrStack);
+
     // NR dual connectivity on this NIC: infrastructure bearers get two legs (see
     // findOrCreatePdcpEntity)
     bool dualConnectivityEnabled_ = false;
@@ -95,6 +103,10 @@ class BearerManagement : public cSimpleModule
     void handleMessage(cMessage *msg) override;
 
   public:
+    ~BearerManagement() override;
+    // Schedule an RLC-detected radio link failure teardown for a peer node, deferred
+    // to a safe execution context. nrStack selects the failing leg (LTE vs NR).
+    void scheduleRadioLinkFailure(MacNodeId nodeId, bool nrStack);
     virtual void createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp=true);
     virtual void createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp=true);
     virtual RlcTxEntityBase *createRlcTxBuffer(DrbKey id, FlowControlInfo *lteInfo);
