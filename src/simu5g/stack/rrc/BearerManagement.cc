@@ -14,6 +14,7 @@
 #include "simu5g/stack/rrc/D2DModeController.h"
 #include "simu5g/stack/rrc/Registration.h"
 #include "simu5g/stack/mac/LteMacBase.h"
+#include "simu5g/stack/ip2nic/Ip2Nic.h"
 #include "simu5g/stack/rlc/RlcMux.h"
 #include "simu5g/stack/rlc/RlcRxEntityBase.h"
 #include "simu5g/stack/rlc/um/RlcUmTxEntityBase.h"
@@ -93,6 +94,11 @@ void BearerManagement::handleRadioLinkFailure(MacNodeId nodeId, bool nrStack)
 {
     EV << NOW << " BearerManagement::handleRadioLinkFailure - tearing down node " << nodeId
        << (nrStack ? " (NR)" : " (LTE)") << endl;
+    // UE Context Release (RRC): stop DL/UL traffic for this peer at Ip2Nic first, so no
+    // packet is pushed at a torn-down bearer (which would otherwise hit UpperMux's
+    // TX-entity assert). Models the core-network path being torn down after RLF.
+    if (auto *ip2nic = dynamic_cast<Ip2Nic *>(nicModule_->getSubmodule("ip2nic")))
+        ip2nic->releaseUe(nodeId);
     // MAC/HARQ teardown on the affected stack.
     LteMacBase *mac = nrStack ? (nrMacModule ? nrMacModule.get() : nullptr) : macModule.get();
     if (mac)

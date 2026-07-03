@@ -90,6 +90,17 @@ void Ip2Nic::handleMessage(cMessage *msg)
     }
 }
 
+void Ip2Nic::releaseUe(MacNodeId ueId)
+{
+    Enter_Method_Silent();
+    EV << NOW << " Ip2Nic::releaseUe - releasing context for node " << ueId
+       << " (dropping its future DL/UL traffic)" << endl;
+    releasedUes_.insert(ueId);
+    // No connection cache to purge here: establishment is existence-driven (the PDCP
+    // TX-entity check in analyzePacket), so after teardown the peer's next packet
+    // re-establishes on its own.
+}
+
 void Ip2Nic::toStackUe(Packet *pkt)
 {
     EV << "Ip2Nic::fromIpUe - message from IP layer: send to stack: " << pkt->str() << std::endl;
@@ -97,6 +108,16 @@ void Ip2Nic::toStackUe(Packet *pkt)
     auto srcAddr = ipHeader->getSrcAddress();
     auto destAddr = ipHeader->getDestAddress();
     short int tos = ipHeader->getTypeOfService();
+
+    // Drop UL packets if this UE released its link to the serving node after RLF.
+    if (!releasedUes_.empty()) {
+        if (releasedUes_.count(binder_->getServingNodeOrSelf(nodeId_)) ||
+            (nrNodeId_ != NODEID_NONE && releasedUes_.count(binder_->getServingNodeOrSelf(nrNodeId_)))) {
+            EV << "Ip2Nic::toStackUe - link released (RLF); dropping UL packet" << endl;
+            delete pkt;
+            return;
+        }
+    }
 
     // TODO: Add support for IPv6 (=> see L3Tools.cc of INET)
 
@@ -147,6 +168,17 @@ void Ip2Nic::toStackBs(Packet *pkt)
     auto srcAddr = ipHeader->getSrcAddress();
     auto destAddr = ipHeader->getDestAddress();
     short int tos = ipHeader->getTypeOfService();
+
+    // Drop DL packets destined to a UE whose context was released after RLF
+    // (UE Context Release: discard rather than push at a torn-down bearer).
+    if (!releasedUes_.empty()) {
+        if (releasedUes_.count(binder_->getMacNodeId(destAddr)) ||
+            releasedUes_.count(binder_->getNrMacNodeId(destAddr))) {
+            EV << "Ip2Nic::toStackBs - UE context released (RLF); dropping DL packet for " << destAddr << endl;
+            delete pkt;
+            return;
+        }
+    }
 
     // TechnologyReq tag (useNR) is already set by TechnologyDecision
 
