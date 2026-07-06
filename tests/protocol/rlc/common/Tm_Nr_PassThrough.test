@@ -1,0 +1,37 @@
+%description:
+TM transparent mode, NR (TS 38.322 5.2.1): identical pass-through contract as LTE (TM adds
+no RLC header and is RAT-independent). Asserted on the gNB downlink and the UE receive.
+
+[EXPLORATORY] As with the LTE case, forcing a UDP data bearer through TM is unusual (TM is
+normally a control-plane channel).
+
+%file: Tm_Nr_PassThrough.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+using namespace rlctest;
+
+Define_ProtocolTest(tm_nr_pass_through)
+{
+    return ProtocolTest("tm_nr_pass_through")
+        .once(on("gnb.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return isTmPassThrough(c); })
+                  .describe("a transparent-mode PDU (no RLC header)").within(2.0))
+        // NR bearer: the UE receives on its NR-leg mux (nrRlcMux), not rlcMux.
+        .once(on("ue[0].cellularNic.nrRlcMux").signal("receivedPacketFromLowerLayer")
+                  .match([](const MatchContext& c){ return isTmPassThrough(c); })
+                  .describe("the transparent-mode PDU received at the UE").within(1.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_nr.ini
+*.tester.testName = "tm_nr_pass_through"
+**.cellularNic.ip2nic.conversationalRlc = "TM"
+
+%contains: stdout
+PROTOCOLTEST tm_nr_pass_through: PASS

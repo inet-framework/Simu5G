@@ -1,0 +1,44 @@
+%description:
+LTE AM polling (TS 36.322 5.2.2): the transmitting AM entity sets the poll bit P in an
+AMD PDU when PDU_WITHOUT_POLL >= pollPDU, BYTE_WITHOUT_POLL >= pollByte, or the buffer
+empties / the window stalls; POLL_SN is recorded and t-PollRetransmit is (re)started.
+
+FAITHFUL ASSERTION: at least one LTE AMD PDU on the wire carries P=1.
+
+[NOT-MODELED] Simu5G's LTE AM data PDU (LteRlcAmPdu) has NO poll/P field at all: LTE AM
+retransmission is driven by a local per-PDU timer and STATUS is emitted on an ad-hoc
+interval, not by spec polling + t-PollRetransmit + t-StatusProhibit
+(RLC-spec-gap-analysis.md #4). The predicate lteAmHasPollBit() is therefore always false,
+the step never matches, and the program FAILs -- reported by opp_test as EXPECTEDFAIL (via
+the expected-failure directive below). If Simu5G later adds an LTE poll field, this becomes
+a real PASS.
+
+%file: Lte_Am_PollBit.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+
+using namespace rlctest;
+
+Define_ProtocolTest(lte_am_poll_bit)
+{
+    return ProtocolTest("lte_am_poll_bit")
+        .once(on("eNB.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return isLteAmData(c) && lteAmHasPollBit(c); })
+                  .describe("an LTE AMD PDU with the poll bit set").within(2.5));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_lte.ini
+*.tester.testName = "lte_am_poll_bit"
+**.cellularNic.ip2nic.conversationalRlc = "AM"
+
+%expected-failure: Simu5G LTE AM has no poll (P) field (RLC-spec-gap-analysis.md #4) -- NOT-MODELED
+
+%contains: stdout
+PROTOCOLTEST lte_am_poll_bit: PASS

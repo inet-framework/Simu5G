@@ -1,0 +1,54 @@
+%description:
+NR UM (TS 38.322 5.2.2 / 6.2.3): when an RLC SDU does not fit the grant, the UM entity
+segments it into byte ranges [startOffset, endOffset] carrying the SDU's SN, and the
+receiver reassembles and delivers the SDU to the upper layer (5.2.2.2.3). This asserts
+(a) a segmented NR UMD PDU on the gNB downlink RLC->MAC boundary, and (b) a reassembled
+SDU delivered up to PDCP at the UE UM RX entity (sentPacketToUpperLayer, emitted on the
+NR path). A large SDU + few resource blocks force segmentation deterministically. [CONFORMS]
+
+%file: Nr_Um_Segmentation.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+
+using namespace rlctest;
+
+Define_ProtocolTest(nr_um_segmentation)
+{
+    return ProtocolTest("nr_um_segmentation")
+        // First segment of an SDU (startOffset == 0, not the whole SDU).
+        .once(on("gnb.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return nrUmIsFirstSegment(c); })
+                  .describe("first NR UMD segment of an SDU").within(2.0))
+        // A later segment of the same SDU carries the same SN (continuation).
+        .once(on("gnb.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return nrUmIsSegment(c); })
+                  .describe("a continuation NR UMD segment").within(1.0))
+        // The receiver reassembles and delivers the SDU up to PDCP. on() matches the
+        // emitter path as a SEGMENT prefix, so the full entity name is needed: the
+        // "-<peerId>-<drbId>" suffix is "-1-1" here (peer gNB id 1, DRB 1).
+        .once(on("ue[0].cellularNic.nrRlc-um-rx-1-1").signal("sentPacketToUpperLayer")
+                  .describe("reassembled SDU delivered to PDCP").within(2.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+# Overrides precede the include (OMNeT++ ini = first match wins). A CBR flow with a
+# large fixed packet size forces segmentation (VoipSender ignores packetSize); CBR* is
+# the "background" traffic category, so pick the mode via backgroundRlc.
+*.ue[*].app[0].typename = "CbrReceiver"
+*.server.app[0].typename = "CbrSender"
+*.server.app[0].destAddress = "ue[0]"
+*.server.app[0].packetSize = 1200B
+*.server.app[0].startTime = 0.05s
+**.cellularNic.ip2nic.backgroundRlc = "UM"
+**.numBands = 6
+*.tester.testName = "nr_um_segmentation"
+include ../../ini/_nr.ini
+
+%contains: stdout
+PROTOCOLTEST nr_um_segmentation: PASS

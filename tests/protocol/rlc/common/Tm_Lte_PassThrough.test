@@ -1,0 +1,39 @@
+%description:
+TM transparent mode, LTE (TS 36.322 5.1.1): the transmitting TM entity submits the SDU to
+lower layers WITHOUT modification and adds no RLC header; the receiver delivers it up
+unchanged. A PDU on the RLC->MAC boundary of a TM bearer therefore carries the upper-layer
+(PDCP) chunk and NO RLC data/AM chunk. Asserted on the eNB downlink and the UE receive.
+
+[EXPLORATORY] TM is normally a control-plane channel (BCCH/CCCH/PCCH); forcing a UDP data
+bearer through TM (ip2nic.conversationalRlc="TM") is unusual but exercises the pass-through
+contract.
+
+%file: Tm_Lte_PassThrough.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+using namespace rlctest;
+
+Define_ProtocolTest(tm_lte_pass_through)
+{
+    return ProtocolTest("tm_lte_pass_through")
+        .once(on("eNB.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return isTmPassThrough(c); })
+                  .describe("a transparent-mode PDU (no RLC header)").within(2.0))
+        .once(on("ue[0].cellularNic.rlcMux").signal("receivedPacketFromLowerLayer")
+                  .match([](const MatchContext& c){ return isTmPassThrough(c); })
+                  .describe("the transparent-mode PDU received at the UE").within(1.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_lte.ini
+*.tester.testName = "tm_lte_pass_through"
+**.cellularNic.ip2nic.conversationalRlc = "TM"
+
+%contains: stdout
+PROTOCOLTEST tm_lte_pass_through: PASS

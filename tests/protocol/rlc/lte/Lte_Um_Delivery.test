@@ -1,0 +1,33 @@
+%description:
+LTE UM in-order delivery (TS 36.322 5.1.2.2): the receiving UM entity reassembles SDUs and
+delivers them to the upper layer. With a small VoIP SDU (one PDU per SDU) each SDU is
+delivered whole to PDCP. Observed at the UE PDCP RX entity (LTE RLC entities do not emit
+boundary signals, so delivery is observed one layer up). [CONFORMS]
+
+%file: Lte_Um_Delivery.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+using namespace rlctest;
+
+Define_ProtocolTest(lte_um_delivery)
+{
+    return ProtocolTest("lte_um_delivery")
+        // Three consecutive SDUs delivered up to PDCP proves reassembly + in-order delivery.
+        .exactlyTimes(3, on("ue[0].cellularNic.pdcp-rx-1-1")
+                  .signal("receivedPacketFromLowerLayer")
+                  .describe("an SDU delivered by RLC-UM to PDCP").within(3.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_lte.ini
+*.tester.testName = "lte_um_delivery"
+**.cellularNic.ip2nic.conversationalRlc = "UM"
+
+%contains: stdout
+PROTOCOLTEST lte_um_delivery: PASS

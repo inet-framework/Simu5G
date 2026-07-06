@@ -1,0 +1,44 @@
+%description:
+LTE UM segmentation (TS 36.322 5.1.2 / 6.2.2.6): when an SDU does not fit the grant, the UM
+entity segments it and marks the Framing Info (FI) field so the receiver knows the first
+and/or last data unit of the PDU is a fragment. A large CBR SDU + few resource blocks force
+segmentation. Observed on the eNB downlink (LTE entities are silent, so the mux is the
+observation point). [CONFORMS]
+
+%file: Lte_Um_Segmentation.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+using namespace rlctest;
+
+Define_ProtocolTest(lte_um_segmentation)
+{
+    return ProtocolTest("lte_um_segmentation")
+        .once(on("eNB.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return lteUmIsSegment(c); })
+                  .describe("a UMD PDU whose FI marks a fragment").within(2.0))
+        // The reassembled SDU is delivered to PDCP at the UE.
+        .once(on("ue[0].cellularNic.pdcp-rx-1-1").signal("receivedPacketFromLowerLayer")
+                  .describe("reassembled SDU delivered to PDCP").within(2.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+# Overrides precede the include (first match wins). CBR = large fixed SDU => segmentation;
+# CBR* is the "background" traffic category.
+*.ue[*].app[0].typename = "CbrReceiver"
+*.server.app[0].typename = "CbrSender"
+*.server.app[0].destAddress = "ue[0]"
+*.server.app[0].packetSize = 1200B
+*.server.app[0].startTime = 0.05s
+**.cellularNic.ip2nic.backgroundRlc = "UM"
+**.numBands = 6
+*.tester.testName = "lte_um_segmentation"
+include ../../ini/_lte.ini
+
+%contains: stdout
+PROTOCOLTEST lte_um_segmentation: PASS

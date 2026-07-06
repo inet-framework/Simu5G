@@ -1,0 +1,36 @@
+%description:
+LTE AM segmentation (TS 36.322 5.1.3 / 6.2.1.4): an SDU too large for a single PDU is split
+into AMD PDUs, the first carrying the first byte of the SDU and the last carrying its last
+byte. In Simu5G, LTE AM uses a fixed fragmentation unit and fragments even a small VoIP SDU,
+so one SDU (same snoMainPacket) yields a first fragment and a last fragment. Observed on the
+eNB downlink. [CONFORMS]
+
+%file: Lte_Am_Segmentation.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+using namespace rlctest;
+
+Define_ProtocolTest(lte_am_segmentation)
+{
+    return ProtocolTest("lte_am_segmentation")
+        .once(on("eNB.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return lteAmIsFirstFrag(c); })
+                  .describe("first fragment of an SDU").within(2.0))
+        .once(on("eNB.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return lteAmIsLastFrag(c); })
+                  .describe("last fragment of an SDU").within(1.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_lte.ini
+*.tester.testName = "lte_am_segmentation"
+**.cellularNic.ip2nic.conversationalRlc = "AM"
+
+%contains: stdout
+PROTOCOLTEST lte_am_segmentation: PASS

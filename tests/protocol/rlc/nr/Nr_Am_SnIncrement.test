@@ -1,0 +1,38 @@
+%description:
+NR AM SN assignment (TS 38.322 5.2.3.1): for each SDU from the upper layer the AM entity
+associates a SN equal to TX_Next and increments TX_Next by one. With small VoIP SDUs (one
+AMD PDU per SDU) the NR AM data PDUs on the gNB downlink carry snoMainPacket 0, 1, 2, ...
+Observed on the gNB downlink (NR AM data PDU = NrRlcAmDataPdu). [CONFORMS]
+
+%file: Nr_Am_SnIncrement.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+using namespace rlctest;
+
+Define_ProtocolTest(nr_am_sn_increment)
+{
+    return ProtocolTest("nr_am_sn_increment")
+        .once(on("gnb.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return nrAmSnIs(c, 0); })
+                  .describe("NR AMD PDU with SN 0").within(2.0))
+        .once(on("gnb.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return nrAmSnIs(c, 1); })
+                  .describe("NR AMD PDU with SN 1").within(1.0))
+        .once(on("gnb.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return nrAmSnIs(c, 2); })
+                  .describe("NR AMD PDU with SN 2").within(1.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_nr.ini
+*.tester.testName = "nr_am_sn_increment"
+**.cellularNic.ip2nic.conversationalRlc = "AM"
+
+%contains: stdout
+PROTOCOLTEST nr_am_sn_increment: PASS

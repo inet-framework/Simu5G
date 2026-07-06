@@ -1,0 +1,40 @@
+%description:
+LTE UM (TS 36.322 5.1.2.1): the transmitting UM entity sets each UMD PDU's SN to VT(US)
+and increments VT(US) by one, so consecutive PDUs on the RLC->MAC boundary carry
+sequence numbers 0, 1, 2, ... Observed on the eNB's rlcMux (downlink), which emits
+sentPacketToLowerLayer for every mode/RAT. [CONFORMS]
+
+%file: Lte_Um_SnIncrement.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+
+using namespace rlctest;
+
+Define_ProtocolTest(lte_um_sn_increment)
+{
+    return ProtocolTest("lte_um_sn_increment")
+        .once(on("eNB.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return lteUmSnIs(c, 0); })
+                  .describe("UMD PDU with SN 0").within(2.0))
+        .once(on("eNB.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return lteUmSnIs(c, 1); })
+                  .describe("UMD PDU with SN 1").within(1.0))
+        .once(on("eNB.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return lteUmSnIs(c, 2); })
+                  .describe("UMD PDU with SN 2").within(1.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_lte.ini
+*.tester.testName = "lte_um_sn_increment"
+# VoIP* => "conversational" category => this knob picks the bearer's RLC mode.
+**.cellularNic.ip2nic.conversationalRlc = "UM"
+
+%contains: stdout
+PROTOCOLTEST lte_um_sn_increment: PASS

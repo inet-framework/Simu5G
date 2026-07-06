@@ -1,0 +1,37 @@
+%description:
+LTE AM SN assignment (TS 36.322 5.1.3.1): the transmitting AM entity sets each AMD PDU's SN
+to VT(S) and increments VT(S) by one. In Simu5G the per-PDU SN is the AMD PDU's snoFragment
+field, so consecutive AMD PDUs on the eNB downlink carry snoFragment 0, 1, 2, ... [CONFORMS]
+
+%file: Lte_Am_SnIncrement.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+using namespace rlctest;
+
+Define_ProtocolTest(lte_am_sn_increment)
+{
+    return ProtocolTest("lte_am_sn_increment")
+        .once(on("eNB.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return lteAmFragSnIs(c, 0); })
+                  .describe("AMD PDU with SN 0").within(2.0))
+        .once(on("eNB.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return lteAmFragSnIs(c, 1); })
+                  .describe("AMD PDU with SN 1").within(1.0))
+        .once(on("eNB.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return lteAmFragSnIs(c, 2); })
+                  .describe("AMD PDU with SN 2").within(1.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_lte.ini
+*.tester.testName = "lte_am_sn_increment"
+**.cellularNic.ip2nic.conversationalRlc = "AM"
+
+%contains: stdout
+PROTOCOLTEST lte_am_sn_increment: PASS

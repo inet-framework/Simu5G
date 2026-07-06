@@ -1,0 +1,60 @@
+%description:
+NR AM max-retransmission -> radio-link-failure indication (TS 38.322 5.3.2): when
+RETX_COUNT reaches maxRetxThreshold the AM entity shall indicate to upper layers that the
+maximum number of retransmissions has been reached (RRC uses this to declare RLF).
+
+FAITHFUL ASSERTION: under sustained loss that trips maxRetxThreshold, an RLF/max-retx
+indication becomes observable to the rest of the stack (here: a "radioLinkFailure" signal
+at the RLC/RRC boundary).
+
+[NOT-MODELED] Simu5G detects the condition but only sets a private bool
+(AmTxQueue::radioLinkFailureDetected_) and calls BearerManagement::scheduleRadioLinkFailure()
+directly; it emits NO signal and sends NO indication PDU (RLC-spec-gap-analysis.md #1). So
+the faithful assertion cannot be satisfied and the program FAILs -> EXPECTEDFAIL. RLF is
+observable in Simu5G only via side effects (the AM entity + PDCP modules getting deleted,
+traffic going silent). This test documents the gap; if an RLF indication signal is added,
+it flips to PASS.
+
+A degraded channel (low power, far UE, high target BLER) is configured so retransmissions
+accumulate toward maxRetxThreshold within the run.
+
+%file: Nr_Am_MaxRetxRlf.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+
+using namespace rlctest;
+
+Define_ProtocolTest(nr_am_maxretx_rlf)
+{
+    return ProtocolTest("nr_am_maxretx_rlf")
+        // Sanity: the DL AM TX (on the gNB) is actually retransmitting.
+        .once(on("gnb.cellularNic").signal("retransmissionPdu").within(2.5)
+                  .describe("at least one AM retransmission occurs"))
+        // Faithful: an RLF / max-retx indication is surfaced. No such signal exists today.
+        .once(on("gnb.cellularNic").signal("radioLinkFailure").within(2.5)
+                  .describe("an RLF indication reaches upper layers"));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_nr.ini
+*.tester.testName = "nr_am_maxretx_rlf"
+**.cellularNic.ip2nic.conversationalRlc = "AM"
+
+# Degraded uplink/downlink so PDUs are lost and retransmissions pile up.
+**.eNodeBTxPower = 5dBm
+**.ueTxPower = 2dBm
+**.targetBler = 0.3
+*.ue[0].mobility.initialX = 950m
+*.ue[0].mobility.initialY = 900m
+*.server.app[0].packetSize = 100B
+
+%expected-failure: Simu5G NR AM does not indicate RLF/max-retx to upper layers (RLC-spec-gap-analysis.md #1) -- NOT-MODELED
+
+%contains: stdout
+PROTOCOLTEST nr_am_maxretx_rlf: PASS

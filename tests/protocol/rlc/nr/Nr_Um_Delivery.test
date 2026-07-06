@@ -1,0 +1,32 @@
+%description:
+NR UM delivery (TS 38.322 5.2.2.2): the receiving UM entity reassembles SDUs and delivers
+them to the upper layer. With a small VoIP SDU (one PDU per SDU, no segmentation), each SDU
+is delivered whole. Observed directly at the NR UM RX entity (NR entities DO emit the
+sentPacketToUpperLayer boundary signal). [CONFORMS]
+
+%file: Nr_Um_Delivery.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+using namespace rlctest;
+
+Define_ProtocolTest(nr_um_delivery)
+{
+    return ProtocolTest("nr_um_delivery")
+        .exactlyTimes(3, on("ue[0].cellularNic.nrRlc-um-rx-1-1")
+                  .signal("sentPacketToUpperLayer")
+                  .describe("an SDU delivered by RLC-UM to PDCP").within(3.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_nr.ini
+*.tester.testName = "nr_um_delivery"
+**.cellularNic.ip2nic.conversationalRlc = "UM"
+
+%contains: stdout
+PROTOCOLTEST nr_um_delivery: PASS

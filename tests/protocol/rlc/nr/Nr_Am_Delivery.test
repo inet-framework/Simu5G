@@ -1,0 +1,31 @@
+%description:
+NR AM in-order delivery (TS 38.322 5.2.3.2): the receiving AM entity reassembles SDUs and
+delivers them to the upper layer. Three consecutive SDUs delivered prove reassembly-and-
+deliver. Observed directly at the NR AM RX entity (sentPacketToUpperLayer). [CONFORMS]
+
+%file: Nr_Am_Delivery.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+using namespace rlctest;
+
+Define_ProtocolTest(nr_am_delivery)
+{
+    return ProtocolTest("nr_am_delivery")
+        .exactlyTimes(3, on("ue[0].cellularNic.nrRlc-am-rx-1-1")
+                  .signal("sentPacketToUpperLayer")
+                  .describe("an SDU delivered by RLC-AM to PDCP").within(3.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_nr.ini
+*.tester.testName = "nr_am_delivery"
+**.cellularNic.ip2nic.conversationalRlc = "AM"
+
+%contains: stdout
+PROTOCOLTEST nr_am_delivery: PASS

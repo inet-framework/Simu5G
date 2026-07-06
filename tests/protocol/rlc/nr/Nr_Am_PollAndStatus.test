@@ -1,0 +1,41 @@
+%description:
+NR AM polling + status reporting (TS 38.322 5.3.3 / 5.3.4). The transmitting AM entity
+sets the poll bit P in an AMD PDU (e.g. when the buffer empties or pollPDU/pollByte is
+reached); the receiving AM entity, upon a polled PDU, triggers a STATUS report. This
+asserts, on the downlink gNB->UE bearer: (a) a gNB AMD PDU with P=1, then (b) a STATUS
+PDU sent back by the UE's AM RX entity (NrRlcAmStatusPdu). [CONFORMS -- note TS 38.322
+5.3.3.2 says PDU_WITHOUT_POLL >= pollPDU; Simu5G uses strictly-greater, polling one PDU
+late (RLC-spec-gap-analysis.md Tier 4). The poll-on-buffer-empty path still fires.]
+
+%file: Nr_Am_PollAndStatus.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+
+using namespace rlctest;
+
+Define_ProtocolTest(nr_am_poll_and_status)
+{
+    return ProtocolTest("nr_am_poll_and_status")
+        // (a) gNB transmits an AMD PDU with the poll bit set.
+        .once(on("gnb.cellularNic.rlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return nrAmPollBitSet(c); })
+                  .describe("NR AMD PDU with poll bit P=1").within(2.0))
+        // (b) the UE's AM RX answers with a STATUS PDU (sent up its NR-leg mux to MAC).
+        .once(on("ue[0].cellularNic.nrRlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return isNrAmStatus(c); })
+                  .describe("NR STATUS PDU from the UE AM RX").within(1.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_nr.ini
+*.tester.testName = "nr_am_poll_and_status"
+**.cellularNic.ip2nic.conversationalRlc = "AM"
+
+%contains: stdout
+PROTOCOLTEST nr_am_poll_and_status: PASS

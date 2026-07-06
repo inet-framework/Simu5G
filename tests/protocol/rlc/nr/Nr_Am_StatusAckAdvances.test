@@ -1,0 +1,39 @@
+%description:
+NR AM status reporting + positive acknowledgement (TS 38.322 5.2.3.1 / 5.3.4): the receiving
+AM entity sends STATUS PDUs carrying ACK_SN; ACK_SN is the SN up to which all SDUs have been
+received, and it advances as delivery proceeds (the transmitter uses it to move TX_Next_Ack
+and free the window). This asserts that successive STATUS PDUs from the UE carry a
+non-decreasing, advancing ACK_SN. Observed on the UE's NR-leg mux (STATUS travels uplink).
+[CONFORMS]
+
+%file: Nr_Am_StatusAckAdvances.cc
+
+#include "ProtocolTest.h"
+#include "Simu5gRlcTestSupport.h"
+
+namespace inet { namespace protocoltest {
+using namespace rlctest;
+
+Define_ProtocolTest(nr_am_status_ack_advances)
+{
+    return ProtocolTest("nr_am_status_ack_advances")
+        // An early STATUS acknowledges the first SDU(s).
+        .once(on("ue[0].cellularNic.nrRlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return nrAmStatusAckSnAtLeast(c, 1); })
+                  .describe("a STATUS PDU with ACK_SN >= 1").within(2.0))
+        // A later STATUS shows ACK_SN has advanced (cumulative acknowledgement).
+        .once(on("ue[0].cellularNic.nrRlcMux").signal("sentPacketToLowerLayer")
+                  .match([](const MatchContext& c){ return nrAmStatusAckSnAtLeast(c, 5); })
+                  .describe("a later STATUS PDU with ACK_SN >= 5").within(3.0));
+}
+
+} } // namespace
+
+%inifile: test.ini
+[General]
+include ../../ini/_nr.ini
+*.tester.testName = "nr_am_status_ack_advances"
+**.cellularNic.ip2nic.conversationalRlc = "AM"
+
+%contains: stdout
+PROTOCOLTEST nr_am_status_ack_advances: PASS
