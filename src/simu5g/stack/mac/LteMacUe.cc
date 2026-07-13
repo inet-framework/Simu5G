@@ -472,17 +472,9 @@ void LteMacUe::macPduMake(MacCid cid)
 
             bool bsrAlreadyMade = false;
             auto macPdu = macPkt->removeAtFront<LteMacPdu>();
-            if (bsrTriggered_) {
-                MacBsr *bsr = new MacBsr();
-
-                bsr->setTimestamp(simTime().dbl());
-                bsr->setSize(size);
-                macPdu->pushCe(bsr);
-
-                bsrTriggered_ = false;
+            if (isBsrPending()) {
+                appendBsr(macPdu, size);
                 bsrAlreadyMade = true;
-
-                EV << "LteMacUe::macPduMake - BSR with size " << size << " created" << endl;
             }
 
             if (bsrAlreadyMade && size > 0)                                              // this prevents the UE from sending an unnecessary RAC request
@@ -515,6 +507,19 @@ LteHarqBufferTx *LteMacUe::createTxHarqBuffer(MacNodeId destId, Direction dir)
         throw cRuntimeError("LteMacUe::createTxHarqBuffer: direction %s not supported", dirToA(dir).c_str());
     return new LteHarqBufferTx(binder_, (unsigned int)harqProcesses_, this,
             check_and_cast<LteMacBase *>(binder_->getMacByNodeId(cellId_)));
+}
+
+void LteMacUe::appendBsr(inet::Ptr<LteMacPdu> macPdu, int size)
+{
+    MacBsr *bsr = new MacBsr();
+
+    bsr->setTimestamp(simTime().dbl());
+    bsr->setSize(size);
+    macPdu->pushCe(bsr);
+
+    bsrTriggered_ = false;
+
+    EV << "LteMacUe::macPduMake - BSR with size " << size << " created" << endl;
 }
 
 void LteMacUe::macPduUnmake(cPacket *cpkt)

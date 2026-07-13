@@ -117,6 +117,13 @@ class LteMacUe : public LteMacBase
     /// The base implementation supports the UL direction only (buffer paired with the serving cell's MAC).
     virtual LteHarqBufferTx *createTxHarqBuffer(MacNodeId destId, Direction dir);
 
+    /// Whether a BSR is waiting to be sent (checked in macPduMake() before appending a BSR control element).
+    virtual bool isBsrPending() const { return bsrTriggered_; }
+
+    /// Appends a BSR control element reporting the given buffer occupancy to the MAC PDU
+    /// and resets the BSR trigger state. Called from macPduMake() when isBsrPending().
+    virtual void appendBsr(inet::Ptr<LteMacPdu> macPdu, int size);
+
     /**
      * macPduUnmake() extracts SDUs from a received MAC
      * PDU and sends them to the upper layer.
