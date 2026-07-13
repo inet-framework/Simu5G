@@ -143,10 +143,14 @@ void HandoverController::handleMessage(cMessage *msg)
     }
     else if (msg->isName("doModeSwitchAtHandover")) {
         // Handover completed: ask the new serving cell's mode selection module whether
-        // D2D connections of this UE can switch (back) to Direct Mode
+        // D2D connections of this UE can switch (back) to Direct Mode. The serving eNB may
+        // not be D2D-capable (no d2dModeSelection submodule), in which case there is nothing to do.
         cModule *rrc = binder_->getRrcByNodeId(servingNodeId_);
-        D2dModeSelectionBase *d2dModeSelection = check_and_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
-        d2dModeSelection->doModeSwitchAtHandover(nodeId_, true);
+        D2dModeSelectionBase *d2dModeSelection = dynamic_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
+        if (d2dModeSelection != nullptr)
+            d2dModeSelection->doModeSwitchAtHandover(nodeId_, true);
+        else
+            EV_WARN << "HandoverController: serving eNB " << servingNodeId_ << " is not D2D-capable - no D2D mode switch at handover completion" << endl;
         delete msg;
     }
     else
@@ -317,10 +321,13 @@ void HandoverController::triggerHandover()
             // Stop active D2D flows (go back to Infrastructure mode)
             // Currently, DM is possible only for UEs served by the same cell
 
-            // Trigger D2D mode switch
+            // Trigger D2D mode switch (the serving eNB may not be D2D-capable, in which case there is nothing to do)
             cModule *rrc = binder_->getRrcByNodeId(servingNodeId_);
-            D2dModeSelectionBase *d2dModeSelection = check_and_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
-            d2dModeSelection->doModeSwitchAtHandover(nodeId_, false);
+            D2dModeSelectionBase *d2dModeSelection = dynamic_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
+            if (d2dModeSelection != nullptr)
+                d2dModeSelection->doModeSwitchAtHandover(nodeId_, false);
+            else
+                EV_WARN << "HandoverController: serving eNB " << servingNodeId_ << " is not D2D-capable - no D2D mode switch before handover" << endl;
         }
     }
 
