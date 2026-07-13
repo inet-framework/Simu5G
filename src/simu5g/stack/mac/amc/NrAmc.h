@@ -33,11 +33,15 @@ class NrAmc : public LteAmc
 
     unsigned int computeCodewordTbs(UserTxParams *info, Codeword cw, Direction dir, unsigned int numRe);
 
+  protected:
+    // NR MCS-table routing seam: the base services DL/UL directly and routes
+    // any other (D2D) direction here. The base rejects it; NrAmcD2D overrides.
+    virtual NrMcsTable *getNrMcsTableForDirection(Direction dir);
+
   public:
 
     NrMcsTable dlNrMcsTable_;    // TODO tables for UL and DL should be different
     NrMcsTable ulNrMcsTable_;
-    NrMcsTable d2dNrMcsTable_;
 
     NrAmc() {}
 

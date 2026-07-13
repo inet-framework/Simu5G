@@ -11,6 +11,7 @@
 //
 
 #include "simu5g/stack/mac/amc/AmcPilotD2D.h"
+#include "simu5g/stack/d2d/mac/ID2dAmc.h"
 
 namespace simu5g {
 
@@ -74,7 +75,7 @@ const UserTxParams& AmcPilotD2D::computeTxParams(MacNodeId id, const Direction d
 
     MacNodeId peerId = NODEID_NONE;  // FIXME this way, the getFeedbackD2D() function will return the first feedback available
 
-    const LteSummaryFeedback& sfb = (dir == UL || dir == DL) ? amc_->getFeedback(id, MACRO, txMode, dir, carrierFrequency) : amc_->getFeedbackD2D(id, MACRO, txMode, peerId, carrierFrequency);
+    const LteSummaryFeedback& sfb = (dir == UL || dir == DL) ? amc_->getFeedback(id, MACRO, txMode, dir, carrierFrequency) : check_and_cast<ID2dAmc *>(amc_)->getFeedbackD2D(id, MACRO, txMode, peerId, carrierFrequency);
 
     sfb.print(NODEID_NONE, id, dir, txMode, "AmcPilotD2D::computeTxParams");
 
