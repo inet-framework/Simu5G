@@ -54,6 +54,7 @@ module NrNicUe extends LteNicUeD2D
         rrc.hasNrHandoverController = true;
         rrc.nrHandoverController.isNr = true;
         rrc.nrHandoverController.otherHandoverControllerModule = "^.handoverController";
+        nrPhy.isNr = true;  // NOTE: the LTE-leg 'phy' submodule is also of type NrPhyUe (see below), but is not part of the NR stack
         nrPhy.channelModelModule = "^.nrChannelModel[0]";
         nrPhy.feedbackGeneratorModule = "^.nrDlFbGen";
         nrPhy.handoverControllerModule = "^.rrc.nrHandoverController";

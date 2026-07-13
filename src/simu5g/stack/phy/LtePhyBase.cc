@@ -41,6 +41,7 @@ void LtePhyBase::initialize(int stage)
         ueTxPower_ = par("ueTxPower");
         eNodeBtxPower_ = par("eNodeBTxPower");
         microTxPower_ = par("microTxPower");
+        isNr_ = par("isNr");
 
         WATCH(numAirFrameReceived_);
         WATCH(numAirFrameNotReceived_);

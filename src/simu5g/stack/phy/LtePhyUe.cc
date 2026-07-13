@@ -15,7 +15,6 @@
 
 #include "../ip2nic/HandoverPacketHolderUe.h"
 #include "simu5g/stack/rrc/HandoverController.h"
-#include "simu5g/stack/phy/NrPhyUe.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/phy/feedback/LteDlFeedbackGenerator.h"
@@ -38,7 +37,6 @@ void LtePhyUe::initialize(int stage)
     LtePhyBase::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
-        isNr_ = false;        // this might be true only if this module is a UeNrPhy
         nodeType_ = UE;
 
         if (!hasListeners(averageCqiDlSignal_))
@@ -51,9 +49,6 @@ void LtePhyUe::initialize(int stage)
 
         handoverController_.reference(this, "handoverControllerModule", true);
         handoverController_->setPhy(this);
-
-        // setting isNr_ was originally done in the NrPhyUe subclass, but it is needed here
-        isNr_ = dynamic_cast<NrPhyUe*>(this) && strcmp(getFullName(), "nrPhy") == 0;
 
         // get local id
         nodeId_ = MacNodeId(hostModule->par(isNr_ ? "nrMacNodeId" : "macNodeId").intValue());

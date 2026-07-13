@@ -32,6 +32,7 @@ simple LtePhyBase like ILtePhy
         double microTxPower @unit(dBm) = default(30dBm);
         string txDirection @enum(ANISOTROPIC,OMNI) = default("OMNI");
         double txAngle @unit(deg) = default(0deg);
+        bool isNr = default(false);  // whether this PHY belongs to an NR (5G) stack; set by the enclosing NIC module
 
         // TODO move to LtePhyUeD2D module
         bool enableMulticastD2DRangeCheck = default(false);
