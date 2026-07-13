@@ -53,7 +53,7 @@ module NrNicUe extends LteNicUeD2D
         rrc.hasNrHandoverController = true;
         rrc.nrHandoverController.isNr = true;
         nrMac.isNr = true;
-        nrPhy.isNr = true;
+        nrPhy.isNr = true;  // NOTE: the LTE-leg 'phy' submodule is also of type NrPhyUe (see below), but is not part of the NR stack
         nrDlFbGen.isNr = true;
         // the NR leg's modules take their MacNodeId from the node's NR id
         rrc.nrHandoverController.macNodeId = parent.nrMacNodeId;

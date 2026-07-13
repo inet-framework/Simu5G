@@ -10,8 +10,6 @@
 // and cannot be removed from it.
 //
 
-#include <inet/networklayer/common/NetworkInterface.h>
-
 #include "simu5g/stack/phy/LtePhyEnb.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/common/LteCommon.h"
@@ -39,8 +37,6 @@ void LtePhyEnb::initialize(int stage)
         // get local id
         nodeId_ = MacNodeId(par("macNodeId").intValue());
         EV << "Local MacNodeId: " << nodeId_ << endl;
-
-        isNr_ = par("isNr");
 
         randomChannelIndex_ = intuniform(1, binder_->phyPisaData.maxChannel2()); // NOTE: moving this to the next stage (where it is used will change random number stream and CHANGE FINGERPRINTS!
 
