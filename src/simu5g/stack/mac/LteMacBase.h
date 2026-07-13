@@ -111,6 +111,7 @@ class LteMacBase : public cSimpleModule
     /// Mac Buffers maximum queue size
     unsigned int queueSize_;
 
+  public:
     /*
      * Outgoing connection information structure
      * Consolidates connection descriptor, real buffer, and virtual buffer
@@ -124,6 +125,7 @@ class LteMacBase : public cSimpleModule
         OutgoingConnectionInfo(const FlowDescriptor& info, LteMacQueue *q, LteMacBuffer *buf) : flowInfo(info), queue(q), buffer(buf) {}
     };
 
+  protected:
     /// Consolidated outgoing connection information (replaces mbuf_, macBuffers_, and connDesc_)
     std::map<MacCid, OutgoingConnectionInfo> connDescOut_;
 
@@ -346,6 +348,18 @@ class LteMacBase : public cSimpleModule
         return &harqRxBuffers_[carrierFrequency];
     }
 
+    // Returns the outgoing connection information map (for iteration)
+    const std::map<MacCid, OutgoingConnectionInfo>& getOutgoingConnectionInfoMap() const
+    {
+        return connDescOut_;
+    }
+
+    // Returns the incoming connection descriptor map (for iteration)
+    const std::map<MacCid, FlowDescriptor>& getIncomingConnectionInfoMap() const
+    {
+        return connDescIn_;
+    }
+
     // Returns number of Harq Processes
     unsigned int harqProcesses() const
     {
@@ -372,7 +386,21 @@ class LteMacBase : public cSimpleModule
         return false;
     }
 
+    // record that HARQ processes for the given node have been aborted during this TTI (e.g., D2D mode switch)
+    void recordHarqReset(MacNodeId srcId)
+    {
+        resetHarq_[srcId] = NOW;
+    }
+
     virtual void unregisterHarqBufferRx(MacNodeId nodeId);
+
+    /**
+     * sendUpperPackets() is used
+     * to send packets to upper layer
+     *
+     * @param pkt Packet to send
+     */
+    virtual void sendUpperPackets(cPacket *pkt);
 
     // visualization
     void refreshDisplay() const override;
@@ -431,14 +459,6 @@ class LteMacBase : public cSimpleModule
      * @param pkt Packet to send
      */
     virtual void sendLowerPackets(cPacket *pkt);
-
-    /**
-     * sendUpperPackets() is used
-     * to send packets to upper layer
-     *
-     * @param pkt Packet to send
-     */
-    virtual void sendUpperPackets(cPacket *pkt);
 
     /*
      * Functions to be redefined by derived classes

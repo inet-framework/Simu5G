@@ -179,7 +179,7 @@ void NrMacUe::handleSelfMessage()
                     emptyScheduleList_ = false;
             }
 
-            if ((bsrTriggered_ || bsrD2DMulticastTriggered_) && emptyScheduleList_) {
+            if ((bsrTriggered_ || d2dUeHelper_.getBsrD2DMulticastTriggered()) && emptyScheduleList_) {
                 // no connection scheduled, but we can use this grant to send a BSR to the eNB
                 macPduMake();
             }
@@ -316,7 +316,7 @@ void NrMacUe::macPduMake(MacCid cid)
             continue;
 
         if (grant != nullptr && grant->getDirection() == UL && emptyScheduleList_) {
-            if (bsrTriggered_ || bsrD2DMulticastTriggered_) {
+            if (bsrTriggered_ || d2dUeHelper_.getBsrD2DMulticastTriggered()) {
                 // Compute BSR size taking into account only DM flows
                 int sizeBsr = 0;
                 for (auto [cid, connInfo] : connDescOut_) {
@@ -326,7 +326,7 @@ void NrMacUe::macPduMake(MacCid cid)
                     // if the bsr was triggered by D2D (D2D_MULTI), only account for D2D (D2D_MULTI) connections
                     if (bsrTriggered_ && connDir != D2D)
                         continue;
-                    if (bsrD2DMulticastTriggered_ && connDir != D2D_MULTI)
+                    if (d2dUeHelper_.getBsrD2DMulticastTriggered() && connDir != D2D_MULTI)
                         continue;
 
                     sizeBsr += buffer->getQueueOccupancy();
@@ -342,9 +342,9 @@ void NrMacUe::macPduMake(MacCid cid)
 
                 if (sizeBsr > 0) {
                     // Call the appropriate function for making a BSR for D2D communication
-                    LogicalCid bsrType = bsrD2DMulticastTriggered_ ? D2D_MULTI_SHORT_BSR : D2D_SHORT_BSR;
-                    bsrD2DMulticastTriggered_ = false;
-                    Packet *macPktBsr = makeBsr(sizeBsr);
+                    LogicalCid bsrType = d2dUeHelper_.getBsrD2DMulticastTriggered() ? D2D_MULTI_SHORT_BSR : D2D_SHORT_BSR;
+                    d2dUeHelper_.setBsrD2DMulticastTriggered(false);
+                    Packet *macPktBsr = d2dUeHelper_.makeBsr(sizeBsr);
                     auto info = macPktBsr->getTagForUpdate<UserControlInfo>();
                     info->setPacketLcid(bsrType);
                     info->setCarrierFrequency(carrierFreq);
@@ -361,7 +361,7 @@ void NrMacUe::macPduMake(MacCid cid)
                     bsrRtxTimer_ = bsrRtxTimerStart_;  // this prevents the UE from sending an unnecessary RAC request
                 }
                 else {
-                    bsrD2DMulticastTriggered_ = false;
+                    d2dUeHelper_.setBsrD2DMulticastTriggered(false);
                     bsrTriggered_ = false;
                     bsrRtxTimer_ = 0;
                 }
@@ -393,7 +393,7 @@ void NrMacUe::macPduMake(MacCid cid)
                 std::pair<MacNodeId, Codeword> pktId = {destId, cw};
                 unsigned int sduPerCid = item.second;
 
-                if (sduPerCid == 0 && !bsrTriggered_ && !bsrD2DMulticastTriggered_)
+                if (sduPerCid == 0 && !bsrTriggered_ && !d2dUeHelper_.getBsrD2DMulticastTriggered())
                     continue;
 
                 if (macPduList_.find(carrierFreq) == macPduList_.end()) {
@@ -419,8 +419,8 @@ void NrMacUe::macPduMake(MacCid cid)
 
                     macPkt->addTagIfAbsent<UserControlInfo>()->setGrantId(schedulingGrant_[carrierFreq]->getGrantId());
 
-                    if (usePreconfiguredTxParams_)
-                        macPkt->addTagIfAbsent<UserControlInfo>()->setUserTxParams(preconfiguredTxParams_->dup());
+                    if (d2dUeHelper_.getUsePreconfiguredTxParams())
+                        macPkt->addTagIfAbsent<UserControlInfo>()->setUserTxParams(d2dUeHelper_.getPreconfiguredTxParams()->dup());
                     else
                         macPkt->addTagIfAbsent<UserControlInfo>()->setUserTxParams(schedulingGrant_[carrierFreq]->getUserTxParams()->dup());
 
@@ -528,13 +528,13 @@ void NrMacUe::macPduMake(MacCid cid)
 
             auto macPdu = macPkt->removeAtFront<LteMacPdu>();
             // Attach BSR to PDU if RAC is won and wasn't already made
-            if ((bsrTriggered_ || bsrD2DMulticastTriggered_) && !bsrAlreadyMade && size > 0) {
+            if ((bsrTriggered_ || d2dUeHelper_.getBsrD2DMulticastTriggered()) && !bsrAlreadyMade && size > 0) {
                 MacBsr *bsr = new MacBsr();
                 bsr->setTimestamp(simTime().dbl());
                 bsr->setSize(size);
                 macPdu->pushCe(bsr);
                 bsrTriggered_ = false;
-                bsrD2DMulticastTriggered_ = false;
+                d2dUeHelper_.setBsrD2DMulticastTriggered(false);
                 bsrAlreadyMade = true;
                 EV << "NrMacUe::macPduMake - BSR created with size " << size << endl;
             }
