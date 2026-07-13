@@ -82,19 +82,23 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
         return;
     }
 
-    // Check if the message is from a different cellular technology.
-    if (lteInfo->isNr() != isNr_) {
-        EV << "Received packet [from NR=" << lteInfo->isNr() << "] from a different radio technology [to NR=" << isNr_ << "]. Delete it." << endl;
-        delete lteInfo;
-        delete frame;
-        return;
-    }
-
     // Update coordinates of this user.
     if (lteInfo->getFrameType() == BEACONPKT) {
         // Check if the message is on another carrier frequency
         if (carrierFreq != primaryChannelModel_->getCarrierFrequency()) {
             EV << "Received beacon packet on a different carrier frequency. Delete it." << endl;
+            delete lteInfo;
+            delete frame;
+            return;
+        }
+
+        // Check if the message is from a different cellular technology.
+        // Note: beacons are the only frames that carry a meaningful isNr flag (it is stamped
+        // solely in LtePhyEnb::createBeaconMessage()), and the only true channel broadcasts
+        // reaching both radios of a dual-PHY UE; non-beacon frames are technology-routed at
+        // the sender. Hence the filter is scoped to beacons, same as in NrPhyUe.
+        if (lteInfo->isNr() != isNr_) {
+            EV << "Received beacon packet [from NR=" << lteInfo->isNr() << "] from a different radio technology [to NR=" << isNr_ << "]. Delete it." << endl;
             delete lteInfo;
             delete frame;
             return;
