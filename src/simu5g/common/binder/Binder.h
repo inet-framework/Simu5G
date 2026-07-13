@@ -122,18 +122,11 @@ class Binder : public cSimpleModule
     std::map<MacNodeId, std::map<MacNodeId, inet::L3Address>> x2PeerAddress_;
 
     /*
-     * D2D Support
-     */
-    // determines if two D2D-capable UEs are communicating in D2D mode or Infrastructure Mode
-    std::map<MacNodeId, std::map<MacNodeId, LteD2DMode>> d2dPeeringMap_;
-
-    /*
      * Multicast support
      */
     // register here the IDs of the multicast group where UEs participate
     typedef std::set<MacNodeId> MulticastGroupIdSet;
     std::map<MacNodeId, MulticastGroupIdSet> nodeGroupMemberships_;
-    std::set<MacNodeId> multicastTransmitterSet_;
 
     /*
      * Multicast destination ID support
@@ -161,7 +154,6 @@ class Binder : public cSimpleModule
 
     // helpers
     virtual bool isValidNodeId(MacNodeId  nodeId) const;
-    virtual LteD2DMode computeD2DCapability(MacNodeId src, MacNodeId dst);
 
   public:
     Binder() {}
@@ -528,26 +520,12 @@ class Binder : public cSimpleModule
     virtual int getX2Port(X2NodeId nodeId);
 
     /*
-     * D2D Support
-     */
-    virtual bool checkD2DCapability(MacNodeId src, MacNodeId dst);
-    virtual bool getD2DCapability(MacNodeId src, MacNodeId dst);
-
-    virtual std::map<MacNodeId, std::map<MacNodeId, LteD2DMode>> *getD2DPeeringMap();
-    virtual LteD2DMode getD2DMode(MacNodeId src, MacNodeId dst);
-    virtual bool isFrequencyReuseEnabled(MacNodeId nodeId);
-
-    /*
      * Multicast Support
      */
     // add the group to the set of multicast group of nodeId
     virtual void joinMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId);
     // check if the node is enrolled in the group
     virtual bool isInMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId);
-    // add one multicast transmitter
-    virtual void addD2DMulticastTransmitter(MacNodeId nodeId);
-    // get multicast transmitters
-    virtual std::set<MacNodeId>& getD2DMulticastTransmitters();
 
     /*
      * Multicast Destination ID Support

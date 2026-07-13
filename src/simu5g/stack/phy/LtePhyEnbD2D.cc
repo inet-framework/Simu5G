@@ -12,6 +12,7 @@
 
 #include "simu5g/stack/phy/LtePhyEnbD2D.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
+#include "simu5g/stack/d2d/binder/D2dBinder.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
@@ -26,8 +27,10 @@ using namespace inet;
 void LtePhyEnbD2D::initialize(int stage)
 {
     LtePhyEnb::initialize(stage);
-    if (stage == inet::INITSTAGE_LOCAL)
+    if (stage == inet::INITSTAGE_LOCAL) {
         enableD2DCqiReporting_ = par("enableD2DCqiReporting");
+        d2dBinder_ = D2dBinder::getInstance(this);
+    }
 }
 
 void LtePhyEnbD2D::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Packet *pktAux)
@@ -89,7 +92,7 @@ void LtePhyEnbD2D::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame,
                 // Compute D2D feedback for all possible peering UEs
                 for (const auto& ueInfo : binder_->getUeList()) {
                     MacNodeId peerId = ueInfo->id;
-                    if (peerId != lteinfo->getSourceId() && binder_->getD2DCapability(lteinfo->getSourceId(), peerId) && binder_->getServingNodeOrSelf(peerId) == nodeId_) {
+                    if (peerId != lteinfo->getSourceId() && d2dBinder_->getD2DCapability(lteinfo->getSourceId(), peerId) && binder_->getServingNodeOrSelf(peerId) == nodeId_) {
                         // The source UE might communicate with this peer using D2D, so compute feedback (only in-cell D2D)
 
                         // Retrieve the position of the peer

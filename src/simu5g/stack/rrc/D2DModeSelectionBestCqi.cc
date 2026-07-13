@@ -32,14 +32,14 @@ void D2DModeSelectionBestCqi::doModeSelection()
     GHz primaryCarrierFrequency = mac_->getCellInfo()->getCarriers().front();
 
     switchList_.clear();
-    for (auto& it : *peeringModeMap_) {
+    for (const auto& it : d2dBinder_->getD2DPeeringModeMap()) {
         MacNodeId srcId = it.first;
 
         // consider only UEs within this cell
         if (binder_->getServingNodeOrSelf(srcId) != mac_->getMacCellId())
             continue;
 
-        for (auto& jt : it.second) {
+        for (const auto& jt : it.second) {
             MacNodeId dstId = jt.first;   // since the D2D CQI is the same for all D2D connections,
                                            // the mode will be the same for all destinations
 
@@ -74,7 +74,7 @@ void D2DModeSelectionBestCqi::doModeSelection()
                 switchList_.push_back(info);
 
                 // update peering map
-                jt.second = newMode;
+                d2dBinder_->setD2DMode(srcId, dstId, newMode);
 
                 EV << NOW << " D2DModeSelectionBestCqi::doModeSelection - Flow: " << srcId << " --> " << dstId << " [" << d2dModeToA(newMode) << "]" << endl;
             }

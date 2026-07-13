@@ -40,8 +40,8 @@ void D2dModeSelectionBase::initialize(int stage)
         scheduleAt(NOW + 0.05, modeSelectionTick_);
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
-        // get the reference to the peering map in the binder
-        peeringModeMap_ = binder_->getD2DPeeringMap();
+        // get the reference to the global D2D state (holds the peering/mode map)
+        d2dBinder_ = D2dBinder::getInstance(this);
     }
 }
 
@@ -76,7 +76,7 @@ void D2dModeSelectionBase::doModeSwitchAtHandover(MacNodeId nodeId, bool handove
         newMode = IM;
 
     switchList_.clear();
-    for (auto& [srcId, peerModes] : *peeringModeMap_) {
+    for (const auto& [srcId, peerModes] : d2dBinder_->getD2DPeeringModeMap()) {
         for (const auto& [dstId, oldMode] : peerModes) {
             if (srcId != nodeId && dstId != nodeId)
                 continue;
@@ -98,7 +98,7 @@ void D2dModeSelectionBase::doModeSwitchAtHandover(MacNodeId nodeId, bool handove
             switchList_.push_back(info);
 
             // update peering map
-            peerModes.at(dstId) = newMode;
+            d2dBinder_->setD2DMode(srcId, dstId, newMode);
 
             EV << NOW << " D2dModeSelectionBase::doModeSwitchAtHandover - Flow: " << srcId << " --> " << dstId << " [" << d2dModeToA(newMode) << "]" << endl;
         }

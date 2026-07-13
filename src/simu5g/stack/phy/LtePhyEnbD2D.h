@@ -19,10 +19,15 @@ namespace simu5g {
 
 using namespace omnetpp;
 
+class D2dBinder;
+
 class LtePhyEnbD2D : public LtePhyEnb
 {
 
     bool enableD2DCqiReporting_;
+
+    // holder of the global D2D state, resolved (find-or-create) at init
+    D2dBinder *d2dBinder_ = nullptr;
 
   protected:
 

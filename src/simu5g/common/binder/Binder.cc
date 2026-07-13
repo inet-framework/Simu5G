@@ -293,9 +293,7 @@ void Binder::initialize(int stage)
         WATCH(lastUplinkTransmission_);
         // WATCH_MAP(x2ListeningPorts_); // Commented out - contains lists that don't have stream operators
         // WATCH_MAP(x2PeerAddress_); // Commented out - contains L3Address that doesn't have stream operator
-        // WATCH_MAP(d2dPeeringMap_); // Commented out - contains nested maps that don't have stream operators
         // WATCH_MAP(multicastGroupMap_); // Commented out - contains sets that don't have stream operators
-        WATCH_SET(multicastTransmitterSet_);
         WATCH_SET(ueHandoverTriggered_);
         // WATCH_MAP(handoverTriggered_); // Commented out - contains pairs that don't have stream operators
     }
@@ -626,87 +624,6 @@ bool Binder::isValidNodeId(MacNodeId  nodeId) const
     return nodeInfoMap_.find(nodeId) != nodeInfoMap_.end();
 }
 
-LteD2DMode Binder::computeD2DCapability(MacNodeId src, MacNodeId dst)
-{
-    LteMacBase *dstMac = getMacFromMacNodeId(dst);
-    if (dstMac->isD2DCapable()) {
-        // set the initial mode
-        if (servingNode_[num(src)] == servingNode_[num(dst)]) {
-            // if served by the same cell, then the mode is selected according to the corresponding parameter
-            LteMacBase *srcMac = getMacFromMacNodeId(src);
-            inet::NetworkInterface *srcNic = getContainingNicModule(srcMac);
-            bool d2dInitialMode = srcNic->hasPar("d2dInitialMode") ? srcNic->par("d2dInitialMode").boolValue() : false;
-            return d2dInitialMode ? DM : IM;
-        }
-        else {
-            // if served by different cells, then the mode can be IM only
-            return IM;
-        }
-    }
-    else {
-        // this is not a D2D-capable flow
-        return NONE;
-    }
-}
-
-bool Binder::checkD2DCapability(MacNodeId src, MacNodeId dst)
-{
-    ASSERT(getNodeTypeById(src) == UE && isValidNodeId(src));
-    ASSERT(getNodeTypeById(dst) == UE && isValidNodeId(dst));
-
-    // if the entry is missing, check if the receiver is D2D capable and update the map
-    if (!containsKey(d2dPeeringMap_, src) || !containsKey(d2dPeeringMap_[src], dst))
-    {
-        LteD2DMode mode = computeD2DCapability(src, dst);
-        if (mode == NONE) {
-            EV << "Binder::checkD2DCapability - UE " << src << " may not transmit to UE " << dst << " using D2D (UE " << dst << " is not D2D capable)" << endl;
-        }
-        else {
-            EV << "Binder::checkD2DCapability - UE " << src << " may transmit to UE " << dst << " using D2D (current mode " << (mode == DM ? "DM)" : "IM)") << endl;
-        }
-        d2dPeeringMap_[src][dst] = mode;
-        return mode != NONE;
-    }
-
-    // if an entry is present, and it is not NONE, this is a D2D-capable flow
-    return d2dPeeringMap_[src][dst] != NONE;
-}
-
-bool Binder::getD2DCapability(MacNodeId src, MacNodeId dst)
-{
-    ASSERT(getNodeTypeById(src) == UE && isValidNodeId(src));
-    ASSERT(getNodeTypeById(dst) == UE && isValidNodeId(dst));
-
-    // return true if the entry exists and it is not NONE, no matter if it is DM or IM
-    return containsKey(d2dPeeringMap_, src) && containsKey(d2dPeeringMap_[src], dst) && d2dPeeringMap_[src][dst] != NONE;
-}
-
-std::map<MacNodeId, std::map<MacNodeId, LteD2DMode>> *Binder::getD2DPeeringMap()
-{
-    return &d2dPeeringMap_;
-}
-
-LteD2DMode Binder::getD2DMode(MacNodeId src, MacNodeId dst)
-{
-    if (!getD2DCapability(src,dst))
-        throw cRuntimeError("Binder::getD2DMode - Node Id not valid. Src %hu Dst %hu", num(src), num(dst));
-
-    return d2dPeeringMap_[src][dst];
-}
-
-bool Binder::isFrequencyReuseEnabled(MacNodeId nodeId)
-{
-    // a d2d-enabled UE can use frequency reuse if it can communicate using DM with all its peers
-    // in fact, the scheduler does not know to which UE it will communicate when it grants some RBs
-    if (!containsKey(d2dPeeringMap_, nodeId) || d2dPeeringMap_[nodeId].empty())
-        return false;
-
-    for (const auto& [_, mode] : d2dPeeringMap_[nodeId])
-        if (mode == IM)
-            return false;
-    return true;
-}
-
 void Binder::joinMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId)
 {
     nodeGroupMemberships_[nodeId].insert(multicastDestId);
@@ -715,16 +632,6 @@ void Binder::joinMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId)
 bool Binder::isInMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId)
 {
     return inet::containsKey(nodeGroupMemberships_, nodeId) && inet::contains(nodeGroupMemberships_[nodeId], multicastDestId);
-}
-
-void Binder::addD2DMulticastTransmitter(MacNodeId nodeId)
-{
-    multicastTransmitterSet_.insert(nodeId);
-}
-
-std::set<MacNodeId>& Binder::getD2DMulticastTransmitters()
-{
-    return multicastTransmitterSet_;
 }
 
 void Binder::updateUeInfoCellId(MacNodeId id, MacCellId newCellId)
