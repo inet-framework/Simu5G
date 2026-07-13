@@ -100,7 +100,7 @@ bool LteScheduler::scheduleRetransmissions()
     // optimization: do not call rtxschedule if no process is ready for rtx for this carrier
     if (eNbScheduler_->direction_ == DL && mac_->getProcessForRtx(carrierFrequency_, DL) == 0)
         skip = true;
-    if (eNbScheduler_->direction_ == UL && mac_->getProcessForRtx(carrierFrequency_, UL) == 0 && mac_->getProcessForRtx(carrierFrequency_, D2D) == 0)
+    if (eNbScheduler_->direction_ == UL && mac_->getPendingRtxOtherThan(carrierFrequency_, DL) == 0)
         skip = true;
 
     if (!skip) {

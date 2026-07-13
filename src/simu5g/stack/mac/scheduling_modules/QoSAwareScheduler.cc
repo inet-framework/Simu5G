@@ -71,11 +71,7 @@ void QoSAwareScheduler::prepareSchedule()
             continue;
         }
 
-        Direction dir = (direction_ == UL)
-                        ? ((cid.getLcid() == D2D_SHORT_BSR) ? D2D
-                          : (cid.getLcid() == D2D_MULTI_SHORT_BSR) ? D2D_MULTI
-                          : UL)
-                        : DL;
+        Direction dir = (direction_ == UL) ? directionFromBsrLcid(cid.getLcid(), UL) : DL;
 
         if (dir != UL && dir != DL) continue;
 

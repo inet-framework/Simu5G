@@ -151,7 +151,7 @@ void LteAllocatorBestFit::prepareSchedule()
         // Set the right direction for nodeId
         Direction dir;
         if (direction_ == UL)
-            dir = (cid.getLcid() == D2D_SHORT_BSR) ? D2D : (cid.getLcid() == D2D_MULTI_SHORT_BSR) ? D2D_MULTI : direction_;
+            dir = directionFromBsrLcid(cid.getLcid(), direction_);
         else
             dir = DL;
 
@@ -220,7 +220,7 @@ void LteAllocatorBestFit::prepareSchedule()
         //Set the right direction for nodeId
         Direction dir;
         if (direction_ == UL)
-            dir = (cid.getLcid() == D2D_SHORT_BSR) ? D2D : (cid.getLcid() == D2D_MULTI_SHORT_BSR) ? D2D_MULTI : direction_;
+            dir = directionFromBsrLcid(cid.getLcid(), direction_);
         else
             dir = DL;
 

@@ -50,6 +50,11 @@ class LteSchedulerEnbUl : public LteSchedulerEnb
      */
     bool checkEligibility(MacNodeId id, Codeword& cw, GHz carrierFrequency) override;
 
+    /// Hook for scheduling additional (non-UL) retransmissions (e.g. D2D mirror HARQ),
+    /// called by rtxschedule() after the UL retransmission handling.
+    /// Returns the number of bytes allocated.
+    virtual unsigned int scheduleAdditionalRetransmissions(GHz carrierFrequency, BandLimitVector *bandLim = nullptr);
+
   public:
 
     //! Updates HARQ descriptor current process pointer (to be called every TTI by main loop).

@@ -221,7 +221,7 @@ void LteMacEnbD2D::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
                << codewords << " codewords. CW[" << cw << "\\" << otherCw << "] carrier[" << carrierFreq << "]" << endl;
 
             // get the direction of the grant, depending on which connection has been scheduled by the eNB
-            Direction dir = (lcid == D2D_MULTI_SHORT_BSR) ? D2D_MULTI : ((lcid == D2D_SHORT_BSR) ? D2D : UL);
+            Direction dir = directionFromBsrLcid(lcid, UL);
 
             // TODO Grant is set aperiodic as default
             // TODO: change to tag instead of header

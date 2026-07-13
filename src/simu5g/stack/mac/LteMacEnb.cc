@@ -915,30 +915,48 @@ void LteMacEnb::handleSelfMessage()
 
 void LteMacEnb::signalProcessForRtx(MacNodeId nodeId, GHz carrierFrequency, Direction dir, bool rtx)
 {
-    std::map<GHz, int> *needRtx = (dir == DL) ? &needRtxDl_ : (dir == UL) ? &needRtxUl_ :
-        (dir == D2D) ? &needRtxD2D_ : throw cRuntimeError("LteMacEnb::signalProcessForRtx - direction %d not valid\n", dir);
-
-    if (needRtx->find(carrierFrequency) == needRtx->end()) {
+    auto it = needRtx_.find(carrierFrequency);
+    if (it == needRtx_.end()) {
         if (!rtx)
             return;
-        needRtx->insert({carrierFrequency, 0});
+        it = needRtx_.insert({carrierFrequency, std::map<Direction, int>()}).first;
     }
 
-    if (!rtx)
-        (*needRtx)[carrierFrequency]--;
+    if (!rtx) {
+        auto dirIt = it->second.find(dir);
+        if (dirIt == it->second.end())
+            return;
+        dirIt->second--;
+    }
     else
-        (*needRtx)[carrierFrequency]++;
+        it->second[dir]++;
 }
 
 int LteMacEnb::getProcessForRtx(GHz carrierFrequency, Direction dir)
 {
-    std::map<GHz, int> *needRtx = (dir == DL) ? &needRtxDl_ : (dir == UL) ? &needRtxUl_ :
-        (dir == D2D) ? &needRtxD2D_ : throw cRuntimeError("LteMacEnb::getProcessForRtx - direction %d not valid\n", dir);
-
-    if (needRtx->find(carrierFrequency) == needRtx->end())
+    auto it = needRtx_.find(carrierFrequency);
+    if (it == needRtx_.end())
         return 0;
 
-    return needRtx->at(carrierFrequency);
+    auto dirIt = it->second.find(dir);
+    if (dirIt == it->second.end())
+        return 0;
+
+    return dirIt->second;
+}
+
+int LteMacEnb::getPendingRtxOtherThan(GHz carrierFrequency, Direction excluded)
+{
+    auto it = needRtx_.find(carrierFrequency);
+    if (it == needRtx_.end())
+        return 0;
+
+    int total = 0;
+    for (const auto& [dir, count] : it->second) {
+        if (dir != excluded)
+            total += count;
+    }
+    return total;
 }
 
 void LteMacEnb::flushHarqBuffers()

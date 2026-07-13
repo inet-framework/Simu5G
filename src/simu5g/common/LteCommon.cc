@@ -151,6 +151,15 @@ const std::string dirToA(Direction dir)
     }
 }
 
+Direction directionFromBsrLcid(LogicalCid lcid, Direction fallback)
+{
+    if (lcid == D2D_SHORT_BSR)
+        return D2D;
+    if (lcid == D2D_MULTI_SHORT_BSR)
+        return D2D_MULTI;
+    return fallback;
+}
+
 const std::string d2dModeToA(LteD2DMode mode)
 {
     switch (mode) {

@@ -107,76 +107,7 @@ bool NrSchedulerGnbUl::rtxschedule(GHz carrierFrequency, BandLimitVector *bandLi
                 }
             }
         }
-        if (mac_->isD2DCapable()) {
-            // --- START Schedule D2D retransmissions --- //
-            Direction dir = D2D;
-            HarqBuffersMirrorD2D *harqBuffersMirrorD2D = check_and_cast<LteMacEnbD2D *>(mac_.get())->getHarqBuffersMirrorD2D(carrierFrequency);
-            if (harqBuffersMirrorD2D != nullptr) {
-                for (auto it_d2d = harqBuffersMirrorD2D->begin(); it_d2d != harqBuffersMirrorD2D->end(); ) {
-                    auto& [d2dPair, currHarq] = *it_d2d;
-                    // get current nodeIDs
-                    MacNodeId senderId = d2dPair.first; // Transmitter
-                    MacNodeId destId = d2dPair.second;  // Receiver
-
-                    if (senderId == NODEID_NONE || !binder_->nodeExists(senderId)) {
-                        // UE has left the simulation - erase queue and continue
-                        harqBuffersMirrorD2D->erase(it_d2d++);
-                        continue;
-                    }
-                    if (destId == NODEID_NONE || !binder_->nodeExists(destId)) {
-                        // UE has left the simulation - erase queue and continue
-                        harqBuffersMirrorD2D->erase(it_d2d++);
-                        continue;
-                    }
-
-                    // Get user transmission parameters
-                    const UserTxParams& txParams = mac_->getAmc()->computeTxParams(senderId, dir, carrierFrequency);// get the user info
-
-                    unsigned int codewords = txParams.getLayers().size();// get the number of available codewords
-                    unsigned int allocatedBytes = 0;
-
-                    // TODO handle the codewords join case (size of(cw0+cw1) < currentTBS && currentLayers ==1)
-
-                    EV << NOW << " NrSchedulerGnbUl::rtxschedule D2D TX UE: " << senderId << " - RX UE: " << destId << endl;
-
-                    // get the number of HARQ processes
-                    unsigned int maxProcesses = currHarq->getProcesses();
-
-                    for (unsigned int process = 0; process < maxProcesses; ++process) {
-                        // for each HARQ process
-                        LteHarqProcessMirrorD2D *currProc = currHarq->getProcess(process);
-
-                        if (allocatedCws_[senderId] == codewords)
-                            break;
-
-                        for (Codeword cw = 0; (cw < MAX_CODEWORDS) && (codewords > 0); ++cw) {
-                            EV << NOW << " NrSchedulerGnbUl::rtxschedule process " << process << endl;
-                            EV << NOW << " NrSchedulerGnbUl::rtxschedule ------- CODEWORD " << cw << endl;
-
-                            // skip processes which are not in RTX status
-                            if (currProc->getUnitStatus(cw) != TXHARQ_PDU_BUFFERED) {
-                                EV << NOW << " NrSchedulerGnbUl::rtxschedule D2D UE: " << senderId << " detected Acid: " << process << " in status " << currProc->getUnitStatus(cw) << endl;
-                                continue;
-                            }
-
-                            // FIXME PERFORMANCE: check for RTX status before calling rtxAcid
-
-                            // perform a retransmission on available codewords for the selected acid
-                            unsigned int rtxBytes = schedulePerAcidRtxD2D(destId, senderId, carrierFrequency, cw, process, bandLim);
-                            if (rtxBytes > 0) {
-                                --codewords;
-                                allocatedBytes += rtxBytes;
-
-                                mac_->signalProcessForRtx(senderId, carrierFrequency, D2D, false);
-                            }
-                        }
-                        EV << NOW << " NrSchedulerGnbUl::rtxschedule - D2D UE: " << senderId << " allocated bytes : " << allocatedBytes << endl;
-                    }
-                    ++it_d2d;
-                }
-            }
-            // --- END Schedule D2D retransmissions --- //
-        }
+        scheduleAdditionalRetransmissions(carrierFrequency, bandLim);
 
         int availableBlocks = allocator_->computeTotalRbs();
 
@@ -189,6 +120,83 @@ bool NrSchedulerGnbUl::rtxschedule(GHz carrierFrequency, BandLimitVector *bandLi
         throw cRuntimeError("Exception in NrSchedulerGnbUl::rtxschedule(): %s", e.what());
     }
     return false;
+}
+
+unsigned int NrSchedulerGnbUl::scheduleAdditionalRetransmissions(GHz carrierFrequency, BandLimitVector *bandLim)
+{
+    unsigned int totalAllocatedBytes = 0;
+    if (mac_->isD2DCapable()) {
+        // --- START Schedule D2D retransmissions --- //
+        Direction dir = D2D;
+        HarqBuffersMirrorD2D *harqBuffersMirrorD2D = check_and_cast<LteMacEnbD2D *>(mac_.get())->getHarqBuffersMirrorD2D(carrierFrequency);
+        if (harqBuffersMirrorD2D != nullptr) {
+            for (auto it_d2d = harqBuffersMirrorD2D->begin(); it_d2d != harqBuffersMirrorD2D->end(); ) {
+                auto& [d2dPair, currHarq] = *it_d2d;
+                // get current nodeIDs
+                MacNodeId senderId = d2dPair.first; // Transmitter
+                MacNodeId destId = d2dPair.second;  // Receiver
+
+                if (senderId == NODEID_NONE || !binder_->nodeExists(senderId)) {
+                    // UE has left the simulation - erase queue and continue
+                    harqBuffersMirrorD2D->erase(it_d2d++);
+                    continue;
+                }
+                if (destId == NODEID_NONE || !binder_->nodeExists(destId)) {
+                    // UE has left the simulation - erase queue and continue
+                    harqBuffersMirrorD2D->erase(it_d2d++);
+                    continue;
+                }
+
+                // Get user transmission parameters
+                const UserTxParams& txParams = mac_->getAmc()->computeTxParams(senderId, dir, carrierFrequency);// get the user info
+
+                unsigned int codewords = txParams.getLayers().size();// get the number of available codewords
+                unsigned int allocatedBytes = 0;
+
+                // TODO handle the codewords join case (size of(cw0+cw1) < currentTBS && currentLayers ==1)
+
+                EV << NOW << " NrSchedulerGnbUl::rtxschedule D2D TX UE: " << senderId << " - RX UE: " << destId << endl;
+
+                // get the number of HARQ processes
+                unsigned int maxProcesses = currHarq->getProcesses();
+
+                for (unsigned int process = 0; process < maxProcesses; ++process) {
+                    // for each HARQ process
+                    LteHarqProcessMirrorD2D *currProc = currHarq->getProcess(process);
+
+                    if (allocatedCws_[senderId] == codewords)
+                        break;
+
+                    for (Codeword cw = 0; (cw < MAX_CODEWORDS) && (codewords > 0); ++cw) {
+                        EV << NOW << " NrSchedulerGnbUl::rtxschedule process " << process << endl;
+                        EV << NOW << " NrSchedulerGnbUl::rtxschedule ------- CODEWORD " << cw << endl;
+
+                        // skip processes which are not in RTX status
+                        if (currProc->getUnitStatus(cw) != TXHARQ_PDU_BUFFERED) {
+                            EV << NOW << " NrSchedulerGnbUl::rtxschedule D2D UE: " << senderId << " detected Acid: " << process << " in status " << currProc->getUnitStatus(cw) << endl;
+                            continue;
+                        }
+
+                        // FIXME PERFORMANCE: check for RTX status before calling rtxAcid
+
+                        // perform a retransmission on available codewords for the selected acid
+                        unsigned int rtxBytes = schedulePerAcidRtxD2D(destId, senderId, carrierFrequency, cw, process, bandLim);
+                        if (rtxBytes > 0) {
+                            --codewords;
+                            allocatedBytes += rtxBytes;
+
+                            mac_->signalProcessForRtx(senderId, carrierFrequency, D2D, false);
+                        }
+                    }
+                    EV << NOW << " NrSchedulerGnbUl::rtxschedule - D2D UE: " << senderId << " allocated bytes : " << allocatedBytes << endl;
+                }
+                totalAllocatedBytes += allocatedBytes;
+                ++it_d2d;
+            }
+        }
+        // --- END Schedule D2D retransmissions --- //
+    }
+    return totalAllocatedBytes;
 }
 
 } //namespace
