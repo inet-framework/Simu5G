@@ -239,7 +239,7 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
     if (channelModel != nullptr)
         snr = channelModel->getSINR(frame, lteinfo);
     else
-        throw cRuntimeError("LtePhyEnbD2D::requestFeedback - channelModel is a null pointer");
+        throw cRuntimeError("LtePhyEnb::requestFeedback - channelModel is a null pointer");
 
     FeedbackRequest req = lteinfo->getFeedbackReq();
     //Feedback computation
@@ -271,7 +271,7 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
             if (channelModel != nullptr)
                 snr = channelModel->getSINR(frame, lteinfo);
             else
-                throw cRuntimeError("LtePhyEnbD2D::requestFeedback - channelModel is a null pointer");
+                throw cRuntimeError("LtePhyEnb::requestFeedback - channelModel is a null pointer");
         }
         else
             header->setLteFeedbackDoubleVectorDl(fb);
