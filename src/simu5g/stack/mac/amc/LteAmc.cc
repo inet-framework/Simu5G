@@ -45,15 +45,14 @@ LteAmc::~LteAmc()
 * PRIVATE FUNCTIONS
 *********************/
 
-AmcPilot *LteAmc::getAmcPilot(const cPar& p)
+AmcPilot *LteAmc::createAmcPilot(const char *amcMode)
 {
-    EV << "Creating Amc pilot " << p.stringValue() << endl;
-    const char *s = p.stringValue();
-    if (strcmp(s, "AUTO") == 0)
+    EV << "Creating Amc pilot " << amcMode << endl;
+    if (strcmp(amcMode, "AUTO") == 0)
         return new AmcPilotAuto(binder_, this);
-    if (strcmp(s, "D2D") == 0)
+    if (strcmp(amcMode, "D2D") == 0)
         return new AmcPilotD2D(binder_, this);
-    throw cRuntimeError("AMC Pilot not recognized");
+    throw cRuntimeError("AMC Pilot '%s' not recognized", amcMode);
 }
 
 MacNodeId LteAmc::getServingNodeOrSelf(MacNodeId dst)
@@ -211,7 +210,7 @@ void LteAmc::initialize(int stage)
     fbhbCapacityUl_ = mac_->par("fbhbCapacityUl");
     fbhbCapacityD2D_ = mac_->par("fbhbCapacityD2D");
     cqiComputationWeight_ = mac_->par("cqiWeight");
-    pilot_ = getAmcPilot(mac_->par("amcMode"));
+    pilot_ = createAmcPilot(mac_->par("amcMode").stringValue());
     allocationType_ = getRbAllocationType(mac_->par("rbAllocationType").stringValue());
     lb_ = mac_->par("summaryLowerBound");
     ub_ = mac_->par("summaryUpperBound");

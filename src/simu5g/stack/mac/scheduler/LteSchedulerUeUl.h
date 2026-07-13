@@ -41,8 +41,8 @@ class LteSchedulerUeUl
     // Scheduled Bytes List
     LteMacScheduleList scheduledBytesList_;
 
-    // Inner Scheduler - defaults to Standard LCG
-    LcgScheduler lcgScheduler_;
+    // Inner Scheduler - created via LteMacUe::createLcgScheduler()
+    LcgScheduler *lcgScheduler_ = nullptr;
 
     // Carrier frequency handled by this scheduler
     GHz carrierFrequency_;
@@ -64,19 +64,8 @@ class LteSchedulerUeUl
      */
     LteSchedulerUeUl(LteMacUe *mac, GHz carrierFrequency);
 
-    /**
-     * Copy constructor and operator=
-     */
-    LteSchedulerUeUl(const LteSchedulerUeUl& other) :
-        mac_(other.mac_),
-        scheduleList_(other.scheduleList_),
-        scheduledBytesList_(other.scheduledBytesList_),
-        lcgScheduler_(other.lcgScheduler_),
-        carrierFrequency_(other.carrierFrequency_)
-    {
-    }
-
-    LteSchedulerUeUl& operator=(const LteSchedulerUeUl& other);
+    LteSchedulerUeUl(const LteSchedulerUeUl& other) = delete;
+    LteSchedulerUeUl& operator=(const LteSchedulerUeUl& other) = delete;
 
     /*
      * Destructor

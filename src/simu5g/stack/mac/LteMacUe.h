@@ -24,6 +24,7 @@ using namespace omnetpp;
 
 class LteSchedulingGrant;
 class LteSchedulerUeUl;
+class LcgScheduler;
 class Binder;
 class LteChannelModel;
 
@@ -165,6 +166,9 @@ class LteMacUe : public LteMacBase
   public:
     LteMacUe();
     ~LteMacUe() override;
+
+    /// Factory for the LCG scheduler used by this UE's uplink scheduler (LteSchedulerUeUl).
+    virtual LcgScheduler *createLcgScheduler();
 
     /*
      * Access scheduling grant
