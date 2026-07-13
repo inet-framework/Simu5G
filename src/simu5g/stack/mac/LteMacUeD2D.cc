@@ -43,7 +43,7 @@ void LteMacUeD2D::initialize(int stage)
             preconfiguredTxParams_ = getPreconfiguredTxParams();
 
             // get the reference to the eNB
-            enb_ = check_and_cast<LteMacEnbD2D *>(binder_->getMacByNodeId(cellId_));
+            enb_ = check_and_cast<ID2dMacEnb *>(binder_->getMacByNodeId(cellId_));
 
             LteAmc *amc = check_and_cast<LteMacEnb *>(binder_->getMacByNodeId(cellId_))->getAmc();
             amc->attachUser(nodeId_, D2D);
@@ -918,7 +918,7 @@ void LteMacUeD2D::doHandover(MacNodeId targetEnb)
         if (preconfiguredTxParams_ != nullptr)
             delete preconfiguredTxParams_;
         preconfiguredTxParams_ = getPreconfiguredTxParams();
-        enb_ = check_and_cast<LteMacEnbD2D *>(binder_->getMacByNodeId(targetEnb));
+        enb_ = check_and_cast<ID2dMacEnb *>(binder_->getMacByNodeId(targetEnb));
     }
     LteMacUe::doHandover(targetEnb);
 }

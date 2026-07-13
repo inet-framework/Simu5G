@@ -22,8 +22,9 @@ using namespace omnetpp;
 void D2dModeSelectionBase::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
-        // get reference to mac layer
+        // get reference to mac layer (must be a D2D-capable eNB MAC)
         mac_.reference(this, "macModule", true);
+        d2dMac_ = check_and_cast<ID2dMacEnb *>(mac_.get());
 
         // get reference to the binder
         binder_.reference(this, "binderModule", true);
@@ -117,7 +118,7 @@ void D2dModeSelectionBase::sendModeSwitchNotifications()
         LteD2DMode oldMode = switchItem.oldMode;
         LteD2DMode newMode = switchItem.newMode;
 
-        mac_->sendModeSwitchNotification(srcId, dstId, oldMode, newMode);
+        d2dMac_->sendModeSwitchNotification(srcId, dstId, oldMode, newMode);
     }
 }
 

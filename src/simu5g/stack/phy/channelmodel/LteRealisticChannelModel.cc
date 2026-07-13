@@ -21,7 +21,7 @@
 #include "simu5g/nodes/ExtCell.h"
 #include "simu5g/background/cell/BackgroundScheduler.h"
 #include "simu5g/stack/phy/LtePhyUe.h"
-#include "simu5g/stack/mac/LteMacEnbD2D.h"
+#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 
 namespace simu5g {
 
@@ -2160,8 +2160,8 @@ bool LteRealisticChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId
 {
     EV << "**** D2D Interference for cellId[" << eNbId << "] node[" << destId << "] ****" << endl;
 
-    // get the reference to the MAC of the eNodeB
-    LteMacEnbD2D *macEnb = check_and_cast<LteMacEnbD2D *>(binder_->getMacFromMacNodeId(eNbId));
+    // get the D2D view of the eNodeB's MAC
+    ID2dMacEnb *macEnb = check_and_cast<ID2dMacEnb *>(binder_->getMacFromMacNodeId(eNbId));
 
     const std::vector<std::vector<UeAllocationInfo>> *ulTransmissionMap;
     const std::vector<UeAllocationInfo> *allocatedUes;

@@ -1039,11 +1039,6 @@ unsigned int LteMacEnb::getDlPrevBandStatus(Band b)
     return i;
 }
 
-ConflictGraph *LteMacEnb::getConflictGraph()
-{
-    return nullptr;
-}
-
 double LteMacEnb::getUtilization(Direction dir)
 {
     if (dir == DL) {

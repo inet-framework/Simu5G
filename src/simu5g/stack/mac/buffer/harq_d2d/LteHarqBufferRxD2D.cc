@@ -16,8 +16,6 @@
 #include "simu5g/stack/mac/packet/LteHarqFeedback_m.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
-#include "simu5g/stack/mac/LteMacUeD2D.h"
-#include "simu5g/stack/mac/LteMacEnbD2D.h"
 
 namespace simu5g {
 

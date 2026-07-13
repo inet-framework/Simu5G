@@ -14,7 +14,8 @@
 #define _LTE_LTEMACUED2D_H_
 
 #include "simu5g/stack/mac/LteMacUe.h"
-#include "simu5g/stack/mac/LteMacEnbD2D.h"
+#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
+#include "simu5g/stack/d2d/mac/ID2dMacUe.h"
 #include "simu5g/stack/mac/buffer/harq_d2d/LteHarqBufferTxD2D.h"
 
 namespace simu5g {
@@ -25,13 +26,13 @@ class LteSchedulingGrant;
 class LteSchedulerUeUl;
 class Binder;
 
-class LteMacUeD2D : public LteMacUe
+class LteMacUeD2D : public LteMacUe, public ID2dMacUe
 {
 
   protected:
 
     // reference to the eNB
-    opp_component_ptr<LteMacEnbD2D> enb_;
+    ID2dMacEnb *enb_ = nullptr;
 
     // flag for empty schedule list (true when no carriers have been scheduled)
     bool emptyScheduleList_;

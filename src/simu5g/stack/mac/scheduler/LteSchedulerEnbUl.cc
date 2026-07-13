@@ -12,7 +12,8 @@
 
 #include "simu5g/stack/mac/scheduler/LteSchedulerEnbUl.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
-#include "simu5g/stack/mac/LteMacEnbD2D.h"
+#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
+#include "simu5g/stack/mac/buffer/harq_d2d/LteHarqBufferMirrorD2D.h"
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
 #include "simu5g/stack/mac/allocator/LteAllocationModule.h"
 #include "simu5g/stack/phy/LtePhyBase.h"
@@ -382,7 +383,7 @@ unsigned int LteSchedulerEnbUl::scheduleAdditionalRetransmissions(GHz carrierFre
     unsigned int totalAllocatedBytes = 0;
     if (mac_->isD2DCapable()) {
         Direction dir = D2D;
-        HarqBuffersMirrorD2D *harqBuffersMirrorD2D = check_and_cast<LteMacEnbD2D *>(mac_.get())->getHarqBuffersMirrorD2D(carrierFrequency);
+        HarqBuffersMirrorD2D *harqBuffersMirrorD2D = check_and_cast<ID2dMacEnb *>(mac_.get())->getHarqBuffersMirrorD2D(carrierFrequency);
         if (harqBuffersMirrorD2D != nullptr) {
             for (auto it_d2d = harqBuffersMirrorD2D->begin(); it_d2d != harqBuffersMirrorD2D->end(); ) {
                 auto& [d2dPair, harqBufferMirror] = *it_d2d;
@@ -713,7 +714,7 @@ unsigned int LteSchedulerEnbUl::schedulePerAcidRtxD2D(MacNodeId destId, MacNodeI
         D2DPair pair(senderId, destId);
 
         // Get the current active HARQ process
-        HarqBuffersMirrorD2D *harqBuffersMirrorD2D = check_and_cast<LteMacEnbD2D *>(mac_.get())->getHarqBuffersMirrorD2D(carrierFrequency);
+        HarqBuffersMirrorD2D *harqBuffersMirrorD2D = check_and_cast<ID2dMacEnb *>(mac_.get())->getHarqBuffersMirrorD2D(carrierFrequency);
         EV << "\t the acid that should be considered is " << (unsigned int)acid << endl;
 
         LteHarqProcessMirrorD2D *currentProcess = harqBuffersMirrorD2D->at(pair)->getProcess(acid);
