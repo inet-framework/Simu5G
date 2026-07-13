@@ -29,27 +29,16 @@ void LtePhyUeD2D::initialize(int stage)
 {
     LtePhyUe::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
-        d2dTxPower_ = par("d2dTxPower");
-        d2dMulticastEnableCaptureEffect_ = par("d2dMulticastCaptureEffect");
+        d2dHelper_.setD2dTxPower(par("d2dTxPower"));
+        d2dHelper_.setMulticastEnableCaptureEffect(par("d2dMulticastCaptureEffect"));
     }
 }
 
 void LtePhyUeD2D::handleSelfMessage(cMessage *msg)
 {
     if (msg->isName("d2dDecodingTimer")) {
-        // Select one frame from the buffer. Implements the capture effect.
-        LteAirFrame *frame = extractAirFrame();
-        UserControlInfo *lteInfo = check_and_cast<UserControlInfo *>(frame->removeControlInfo());
-
-        // Decode the selected frame.
-        decodeAirFrame(frame, lteInfo);
-
-        // Clear buffer.
-        while (!d2dReceivedFrames_.empty()) {
-            LteAirFrame *frame = d2dReceivedFrames_.back();
-            d2dReceivedFrames_.pop_back();
-            delete frame;
-        }
+        // Decode the captured frame (capture effect) and clear the receive buffer.
+        d2dHelper_.decodeStoredFrames();
 
         delete msg;
         d2dDecodingTimer_ = nullptr;
@@ -160,7 +149,7 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
     }
 
     // If the packet is a D2D multicast one, store it and decode it at the end of the TTI.
-    if (d2dMulticastEnableCaptureEffect_ && binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId())) {
+    if (d2dHelper_.getMulticastEnableCaptureEffect() && binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId())) {
         // If not already started, auto-send a message to signal the presence of data to be decoded.
         if (d2dDecodingTimer_ == nullptr) {
             d2dDecodingTimer_ = new cMessage("d2dDecodingTimer");
@@ -170,7 +159,7 @@ void LtePhyUeD2D::handleAirFrame(cMessage *msg)
 
         // Store frame, together with related control info.
         frame->setControlInfo(lteInfo);
-        storeAirFrame(frame);            // Implements the capture effect.
+        d2dHelper_.storeAirFrame(frame);            // Implements the capture effect.
 
         return;                          // Exit the function, decoding will be done later.
     }
@@ -270,7 +259,7 @@ void LtePhyUeD2D::handleUpperMessage(cMessage *msg)
     lteInfo->setCoord(getRadioPosition());
 
     lteInfo->setTxPower(txPower_);
-    lteInfo->setD2dTxPower(d2dTxPower_);
+    lteInfo->setD2dTxPower(d2dHelper_.getD2dTxPower());
     frame->setControlInfo(lteInfo.get()->dup());
 
     EV << "LtePhyUeD2D::handleUpperMessage - " << nodeTypeToA(nodeType_) << " with id " << nodeId_
@@ -282,144 +271,6 @@ void LtePhyUeD2D::handleUpperMessage(cMessage *msg)
         sendMulticast(frame);
     else
         sendUnicast(frame);
-}
-
-void LtePhyUeD2D::storeAirFrame(LteAirFrame *newFrame)
-{
-    // Implements the capture effect
-    // Store the frame received from the nearest transmitter
-    UserControlInfo *newInfo = check_and_cast<UserControlInfo *>(newFrame->getControlInfo());
-    GHz carrierFreq = newInfo->getCarrierFrequency();
-    LteChannelModel *channelModel = getChannelModel(carrierFreq);
-    if (channelModel == nullptr)
-        throw cRuntimeError("LtePhyUeD2D::storeAirFrame - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
-
-    Coord myCoord = getCoord();
-    double distance = 0.0;
-    double rsrpMean = 0.0;
-    std::vector<double> rsrpVector;
-    bool useRsrp = false;
-
-    if (strcmp(par("d2dMulticastCaptureEffectFactor"), "RSRP") == 0) {
-        useRsrp = true;
-
-        double sum = 0.0;
-        unsigned int allocatedRbs = 0;
-        rsrpVector = channelModel->getRSRP_D2D(newFrame, newInfo, nodeId_, myCoord);
-
-        // Get the average RSRP on the RBs allocated for the transmission
-        RbMap rbmap = newInfo->getGrantedBlocks();
-        // For each Remote unit used to transmit the packet
-        for (const auto &[remoteUnit, rbList] : rbmap) {
-            // For each logical band used to transmit the packet
-            for (const auto &[band, allocation] : rbList) {
-                if (allocation == 0) // This Rb is not allocated
-                    continue;
-
-                sum += rsrpVector.at(band);
-                allocatedRbs++;
-            }
-        }
-        if (allocatedRbs > 0)
-            rsrpMean = sum / allocatedRbs;
-        EV << NOW << " LtePhyUeD2D::storeAirFrame - Average RSRP from node " << newInfo->getSourceId() << ": " << rsrpMean << endl;
-    }
-    else { // Distance
-        Coord newSenderCoord = newInfo->getCoord();
-        distance = myCoord.distance(newSenderCoord);
-        EV << NOW << " LtePhyUeD2D::storeAirFrame - Distance from node " << newInfo->getSourceId() << ": " << distance << endl;
-    }
-
-    if (!d2dReceivedFrames_.empty()) {
-        LteAirFrame *prevFrame = d2dReceivedFrames_.front();
-        if (!useRsrp && distance < nearestDistance_) {
-            EV << "[ < nearestDistance: " << nearestDistance_ << "]" << endl;
-
-            // Remove the previous frame
-            d2dReceivedFrames_.pop_back();
-            delete prevFrame;
-
-            nearestDistance_ = distance;
-            d2dReceivedFrames_.push_back(newFrame);
-        }
-        else if (rsrpMean > bestRsrpMean_) {
-            EV << "[ > bestRsrp: " << bestRsrpMean_ << "]" << endl;
-
-            // Remove the previous frame
-            d2dReceivedFrames_.pop_back();
-            delete prevFrame;
-
-            bestRsrpMean_ = rsrpMean;
-            bestRsrpVector_ = rsrpVector;
-            d2dReceivedFrames_.push_back(newFrame);
-        }
-        else {
-            // This frame will not be decoded
-            delete newFrame;
-        }
-    }
-    else {
-        if (!useRsrp) {
-            nearestDistance_ = distance;
-            d2dReceivedFrames_.push_back(newFrame);
-        }
-        else {
-            bestRsrpMean_ = rsrpMean;
-            bestRsrpVector_ = rsrpVector;
-            d2dReceivedFrames_.push_back(newFrame);
-        }
-    }
-}
-
-LteAirFrame *LtePhyUeD2D::extractAirFrame()
-{
-    // Implements the capture effect
-    // The vector is storing the frame received from the strongest/nearest transmitter
-
-    return d2dReceivedFrames_.front();
-}
-
-void LtePhyUeD2D::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo)
-{
-    EV << NOW << " LtePhyUeD2D::decodeAirFrame - Start decoding..." << endl;
-
-    GHz carrierFreq = lteInfo->getCarrierFrequency();
-    LteChannelModel *channelModel = getChannelModel(carrierFreq);
-    if (channelModel == nullptr)
-        throw cRuntimeError("LtePhyUeD2D::decodeAirFrame - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
-
-    // Apply decider to received packet
-    bool result;
-    if (lteInfo->getDirection() == D2D_MULTI)
-        result = channelModel->isReceptionSuccessful_D2D(frame, lteInfo, bestRsrpVector_);
-    else
-        result = channelModel->isReceptionSuccessful(frame, lteInfo);
-
-    // Update statistics
-    if (result)
-        numAirFrameReceived_++;
-    else
-        numAirFrameNotReceived_++;
-
-    EV << "Handled LteAirframe with ID " << frame->getId() << " with result "
-       << (result ? "RECEIVED" : "NOT RECEIVED") << endl;
-
-    auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
-
-    // Note: no need to delete the frame itself - will be deleted later when the buffer of
-    // received frames is cleared
-
-    // Attach the decider result to the packet as control info
-    *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
-    delete lteInfo;
-
-    pkt->addTagIfAbsent<PhyReceptionInd>()->setDeciderResult(result);
-
-    // Send decapsulated message along with result control info to upperGateOut_
-    send(pkt, upperGateOut_);
-
-    if (getEnvir()->isGUI())
-        updateDisplayString();
 }
 
 void LtePhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req)
@@ -448,7 +299,7 @@ void LtePhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVe
     uinfo->setDirection(UL);
     simtime_t signalLength = TTI;
     uinfo->setTxPower(txPower_);
-    uinfo->setD2dTxPower(d2dTxPower_);
+    uinfo->setD2dTxPower(d2dHelper_.getD2dTxPower());
     // Initialize frame fields
 
     frame->setSchedulingPriority(airFramePriority_);
