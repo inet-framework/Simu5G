@@ -74,6 +74,9 @@ class LteMacEnb : public LteMacBase
     std::map<GHz, int> needRtxUl_;
     std::map<GHz, int> needRtxD2D_;
 
+    /// DRB QoS map (DrbKey -> QoS entry), parsed from the drbQosConfig parameter (for QoS-aware scheduling)
+    std::map<DrbKey, DrbQosEntry> drbQosMap_;
+
     /**
      * Reads MAC parameters for eNb and performs initialization.
      */
@@ -281,8 +284,10 @@ class LteMacEnb : public LteMacBase
 
     virtual ConflictGraph *getConflictGraph();
 
-    // Get DRB QoS map (DrbKey -> QoS entry). Override in subclasses.
-    virtual const std::map<DrbKey, DrbQosEntry> *getDrbQosMap() { return nullptr; }
+    // Get DRB QoS map (DrbKey -> QoS entry), parsed from the drbQosConfig parameter
+    const std::map<DrbKey, DrbQosEntry> *getDrbQosMap() {
+        return drbQosMap_.empty() ? nullptr : &drbQosMap_;
+    }
 
     /*
      * @author Alessandro Noferi

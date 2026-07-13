@@ -32,28 +32,7 @@ using namespace inet;
 void LteMacEnbD2D::initialize(int stage)
 {
     LteMacEnb::initialize(stage);
-    if (stage == INITSTAGE_LOCAL) {
-        // Parse DRB QoS configuration (optional, for QoS-aware scheduling)
-        const cValueArray *qosArr = check_and_cast_nullable<const cValueArray *>(par("drbQosConfig").objectValue());
-        if (qosArr && qosArr->size() > 0) {
-            for (int i = 0; i < (int)qosArr->size(); i++) {
-                const cValueMap *obj = check_and_cast<const cValueMap *>(qosArr->get(i).objectValue());
-                DrbQosEntry e;
-                e.drbIndex = obj->get("drb").intValue();
-                if (obj->containsKey("ue"))
-                    e.ueNodeId = MacNodeId(obj->get("ue").intValue());
-                e.gbr = obj->containsKey("gbr") ? obj->get("gbr").boolValue() : false;
-                e.delayBudgetMs = obj->containsKey("delayBudget") ? obj->get("delayBudget").doubleValue() : 0;
-                e.packetErrorRate = obj->containsKey("per") ? obj->get("per").doubleValue() : 0;
-                e.priorityLevel = obj->containsKey("priority") ? obj->get("priority").intValue() : 0;
-                DrbKey key(e.ueNodeId, DrbId(e.drbIndex));
-                drbQosMap_[key] = e;
-                EV << "MAC drbQosConfig: " << key << " " << e << endl;
-            }
-        }
-
-    }
-    else if (stage == INITSTAGE_PHYSICAL_ENVIRONMENT) {
+    if (stage == INITSTAGE_PHYSICAL_ENVIRONMENT) {
         bool usePreconfiguredTxParams = par("usePreconfiguredTxParams");
         Cqi d2dCqi = par("d2dCqi");
         if (usePreconfiguredTxParams)
