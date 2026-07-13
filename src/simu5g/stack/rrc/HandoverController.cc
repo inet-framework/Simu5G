@@ -384,7 +384,8 @@ void HandoverController::doHandover()
     // if currentServingNodeId_ == 0, it means the UE was not attached to any eNodeB, so it only has to perform attachment procedures
     // if candidateServingNodeId_ == 0, it means the UE is detaching from its eNodeB, so it only has to perform detachment procedures
 
-    // D2D-specific: Detach/attach D2D from old/new AMC (before common logic)
+    // D2D-specific: detach/attach the D2D direction on the old/new AMC (before common logic).
+    // This covers NR UEs too, since NrPhyUe is-a LtePhyUeD2D -- do not duplicate it below.
     if (dynamic_cast<LtePhyUeD2D*>(phy_)) {
         if (servingNodeId_ != NODEID_NONE) {
             LteAmc *oldAmc = check_and_cast<LteMacEnb *>(binder_->getMacFromMacNodeId(servingNodeId_))->getAmc();
@@ -406,18 +407,12 @@ void HandoverController::doHandover()
         LteAmc *oldAmc = getAmcModule(servingNodeId_);
         oldAmc->detachUser(nodeId_, UL);
         oldAmc->detachUser(nodeId_, DL);
-        // NR also detaches D2D
-        if (dynamic_cast<NrPhyUe*>(phy_))
-            oldAmc->detachUser(nodeId_, D2D);
     }
 
     if (candidateServingNodeId_ != NODEID_NONE) {
         LteAmc *newAmc = getAmcModule(candidateServingNodeId_);
         newAmc->attachUser(nodeId_, UL);
         newAmc->attachUser(nodeId_, DL);
-        // NR also attaches D2D
-        if (dynamic_cast<NrPhyUe*>(phy_))
-            newAmc->attachUser(nodeId_, D2D);
     }
 
     // Binder calls
