@@ -146,6 +146,8 @@ const std::string dirToA(Direction dir)
             return "D2D";
         case D2D_MULTI:
             return "D2D_MULTI";
+        case SL:
+            return "SL";
         default:
             return "Unrecognized";
     }

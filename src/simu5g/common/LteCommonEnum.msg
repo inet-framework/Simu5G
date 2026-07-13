@@ -16,6 +16,7 @@ namespace simu5g;
 enum Direction
 {
     DL = 0; UL = 1; D2D = 2; D2D_MULTI = 3; UNKNOWN_DIRECTION = 4;
+    SL = 5;  // NR sidelink (PC5); produced only by the optional sidelink package
 };
 
 /// Modulations
