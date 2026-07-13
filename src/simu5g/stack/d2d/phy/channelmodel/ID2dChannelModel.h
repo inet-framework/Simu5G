@@ -1,0 +1,58 @@
+//
+//                  Simu5G
+//
+// Copyright (C) 2012-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis et al. (University of Pisa)
+// Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea et al. (University of Pisa)
+//
+// This file is part of a software released under the license included in file
+// "license.pdf". Please read LICENSE and README files before using it.
+// The above files and the present reference are part of the software itself,
+// and cannot be removed from it.
+//
+
+#ifndef _LTE_ID2DCHANNELMODEL_H_
+#define _LTE_ID2DCHANNELMODEL_H_
+
+#include <vector>
+
+#include <inet/common/geometry/common/Coord.h>
+
+#include "simu5g/common/LteCommon.h"
+
+namespace simu5g {
+
+class LteAirFrame;
+class UserControlInfo;
+
+/*
+ * Interface implemented by every D2D-capable channel model (D2dRealisticChannelModel /
+ * D2dNrChannelModel / D2dNrChannelModel_3GPP38_901, all built from the D2dChannelModel
+ * mixin).
+ *
+ * D2D PHY code talks to the channel model's D2D reception/feedback machinery through
+ * this interface instead of the concrete channel-model class, so that the core
+ * channel models (LteChannelModel and its LTE/NR realistic subclasses) carry no D2D
+ * code. Obtain it with check_and_cast<ID2dChannelModel *>(channelModel): a D2D NIC
+ * always wires a D2D channel model into its channelModel slots.
+ */
+class ID2dChannelModel
+{
+  public:
+    virtual ~ID2dChannelModel() {}
+
+    /// Compute the received useful signal (RSRP) for a D2D transmission, per band.
+    virtual std::vector<double> getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord) = 0;
+
+    /// Compute the D2D SINR towards the given peer, per band (path loss, shadowing, fading and D2D interference).
+    virtual std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId peerUeId, inet::Coord peerUeCoord, MacNodeId enbId = NODEID_NONE) = 0;
+
+    /// Compute the D2D SINR from a precomputed RSRP vector (used for one-to-many D2D reception).
+    virtual std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) = 0;
+
+    /// Decide whether a one-to-many D2D reception succeeds, given the captured RSRP vector.
+    virtual bool isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) = 0;
+};
+
+} //namespace
+
+#endif

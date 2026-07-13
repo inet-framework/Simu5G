@@ -128,40 +128,18 @@ class LteChannelModel : public cSimpleModule
     virtual double getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId) = 0;
 
     /*
-     * Compute the error probability of the transmitted packet according to CQI used, TX mode, and the received power
-     * After that, it generates a random number to check if this packet will be corrupted or not
-     *
-     * @param frame pointer to the packet
-     * @param lteInfo pointer to the user control info
-     * @param rsrpVector the received signal for each RB, if it has already been computed
-     */
-    virtual bool isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) = 0;
-    /*
      * Compute received useful signal for each band for user nodeId according to path loss, shadowing (optional), and multipath fading
      *
      * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
     virtual std::vector<double> getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo) = 0;
-    /*
-     * Compute received useful signal for D2D transmissions
-     */
-    virtual std::vector<double> getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord) = 0;
-    /*
-     * Compute SINR (D2D) for each band for user nodeId according to path loss, shadowing (optional), and multipath fading
-     *
-     * @param frame pointer to the packet
-     * @param lteInfo pointer to the user control info
-     */
-    virtual std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId peerUeId, inet::Coord peerUeCoord, MacNodeId enbId = NODEID_NONE) = 0;
-    virtual std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) = 0;
 
     virtual bool isUplinkInterferenceEnabled() { return false; }
-    virtual bool isD2DInterferenceEnabled() { return false; }
 
     /// Whether transmissions must be recorded in the Binder's UL transmission map
     /// (used by interference computation on the receive path).
-    virtual bool recordsUlTransmissionMap() { return isUplinkInterferenceEnabled() || isD2DInterferenceEnabled(); }
+    virtual bool recordsUlTransmissionMap() { return isUplinkInterferenceEnabled(); }
 };
 
 } //namespace

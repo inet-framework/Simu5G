@@ -80,7 +80,6 @@ class LteRealisticChannelModel : public LteChannelModel
     bool enableExtCellInterference_;
     bool enableDownlinkInterference_;
     bool enableUplinkInterference_;
-    bool enableD2DInterference_;
 
     bool enable_extCell_los_;
 
@@ -194,15 +193,6 @@ class LteRealisticChannelModel : public LteChannelModel
     double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord, bool cqiDl) override;
 
     /*
-     * Compute Attenuation for D2D caused by pathloss and shadowing (optional)
-     *
-     * @param nodeid mac node id of UE
-     * @param dir traffic direction
-     * @param coord position of end point communication (if dir==UL is the position of UE else is the position of eNodeB)
-     */
-    virtual double getAttenuation_D2D(MacNodeId nodeId, Direction dir, inet::Coord coord, MacNodeId node2_Id, inet::Coord coord_2, bool cqiDl);
-
-    /*
      *  Compute angle between two coordinates
      *
      * @param center first coord
@@ -273,30 +263,6 @@ class LteRealisticChannelModel : public LteChannelModel
      *
      */
     double getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId) override;
-
-    /*
-     * Compute Received useful signal for D2D transmissions
-     */
-    std::vector<double> getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord) override;
-
-    /*
-     * Compute sinr (D2D) for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading
-     *
-     * @param frame pointer to the packet
-     * @param lteinfo pointer to the user control info
-     */
-    std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId) override;
-    std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) override;
-
-    /*
-     * Compute the error probability of the transmitted packet according to cqi used, txmode, and the received power
-     * after that it throws a random number in order to check if this packet will be corrupted or not
-     *
-     * @param frame pointer to the packet
-     * @param lteinfo pointer to the user control info
-     * @param rsrpVector the received signal for each RB, if it has already been computed
-     */
-    bool isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteI, const std::vector<double>& rsrpVector) override;
 
     /*
      * Compute the error probability of the transmitted packet according to cqi used, txmode, and the received power
@@ -401,9 +367,14 @@ class LteRealisticChannelModel : public LteChannelModel
     }
 
     bool isUplinkInterferenceEnabled() override { return enableUplinkInterference_; }
-    bool isD2DInterferenceEnabled() override { return enableD2DInterference_; }
 
   protected:
+
+    /*
+     * Computes the per-band SINR used by isReceptionSuccessful(). The D2D channel
+     * model overrides this to route D2D/D2D_MULTI receptions through getSINR_D2D.
+     */
+    virtual std::vector<double> getReceptionSinr(LteAirFrame *frame, UserControlInfo *lteInfo) { return getSINR(frame, lteInfo); }
 
     /*
      * Returns the 2D distance between two coordinates (ignore z-axis)
@@ -446,11 +417,6 @@ class LteRealisticChannelModel : public LteChannelModel
      * Compute interference coming from neighboring cells for the UL direction
      */
     bool computeUplinkInterference(MacNodeId eNbId, MacNodeId senderId, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
-
-    /*
-     * Compute interference coming from neighboring UEs for the D2D/D2D_MULTI direction
-     */
-    bool computeD2DInterference(MacNodeId eNbId, MacNodeId senderId, inet::Coord senderCoord, MacNodeId destId, inet::Coord destCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference, Direction dir);
 
     /*
      * Evaluates total interference from external cells seen from the spot given by coord
