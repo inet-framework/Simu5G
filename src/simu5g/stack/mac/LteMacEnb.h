@@ -69,10 +69,8 @@ class LteMacEnb : public LteMacBase
     /// Lte Mac Scheduler - Uplink
     LteSchedulerEnbUl *enbSchedulerUl_ = nullptr;
 
-    /// Maps to keep track of nodes that need a retransmission to be scheduled
-    std::map<GHz, int> needRtxDl_;
-    std::map<GHz, int> needRtxUl_;
-    std::map<GHz, int> needRtxD2D_;
+    /// Number of HARQ processes needing retransmission, per carrier and direction
+    std::map<GHz, std::map<Direction, int>> needRtx_;
 
     /// DRB QoS map (DrbKey -> QoS entry), parsed from the drbQosConfig parameter (for QoS-aware scheduling)
     std::map<DrbKey, DrbQosEntry> drbQosMap_;
@@ -263,9 +261,12 @@ class LteMacEnb : public LteMacBase
     virtual void signalProcessForRtx(MacNodeId nodeId, GHz carrierFrequency, Direction dir, bool rtx = true);
 
     /*
-     * Get the number of nodes requesting retransmissions for the given carrier.
+     * Get the number of nodes requesting retransmissions for the given carrier and direction.
      */
     virtual int getProcessForRtx(GHz carrierFrequency, Direction dir);
+
+    /// Total number of HARQ processes needing retransmission on this carrier in all directions except 'excluded'
+    virtual int getPendingRtxOtherThan(GHz carrierFrequency, Direction excluded);
 
     void cqiStatistics(MacNodeId id, Direction dir, LteFeedback fb);
 

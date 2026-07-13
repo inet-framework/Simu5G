@@ -381,6 +381,9 @@ typedef std::map<std::string, cMsgPar> ParameterMap;
 *********************/
 
 const std::string dirToA(Direction dir);
+/// Maps a BSR logical channel id to the traffic direction it announces
+/// (reserved D2D BSR LCIDs promote to the D2D directions); returns 'fallback' otherwise.
+Direction directionFromBsrLcid(LogicalCid lcid, Direction fallback);
 const std::string d2dModeToA(LteD2DMode mode);
 const std::string allocationTypeToA(RbAllocationType type);
 const std::string modToA(LteMod mod);

@@ -36,6 +36,9 @@ class NrSchedulerGnbUl : public LteSchedulerEnbUl
      * @return TRUE if OFDM space is exhausted.
      */
     bool rtxschedule(GHz carrierFrequency, BandLimitVector *bandLim = nullptr) override;
+
+  protected:
+    unsigned int scheduleAdditionalRetransmissions(GHz carrierFrequency, BandLimitVector *bandLim = nullptr) override;
 };
 
 } //namespace

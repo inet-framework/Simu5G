@@ -361,65 +361,7 @@ bool LteSchedulerEnbUl::rtxschedule(GHz carrierFrequency, BandLimitVector *bandL
                 ++it;
             }
         }
-        if (mac_->isD2DCapable()) {
-            Direction dir = D2D;
-            HarqBuffersMirrorD2D *harqBuffersMirrorD2D = check_and_cast<LteMacEnbD2D *>(mac_.get())->getHarqBuffersMirrorD2D(carrierFrequency);
-            if (harqBuffersMirrorD2D != nullptr) {
-                for (auto it_d2d = harqBuffersMirrorD2D->begin(); it_d2d != harqBuffersMirrorD2D->end(); ) {
-                    auto& [d2dPair, harqBufferMirror] = *it_d2d;
-                    MacNodeId senderId = d2dPair.first; // Transmitter
-                    MacNodeId destId = d2dPair.second;  // Receiver
-
-                    if (senderId == NODEID_NONE || !binder_->nodeExists(senderId)) {
-                        // UE has left the simulation - erase queue and continue
-                        it_d2d = harqBuffersMirrorD2D->erase(it_d2d);
-                        continue;
-                    }
-                    if (destId == NODEID_NONE || !binder_->nodeExists(destId)) {
-                        // UE has left the simulation - erase queue and continue
-                        it_d2d = harqBuffersMirrorD2D->erase(it_d2d);
-                        continue;
-                    }
-
-                    // get current Harq Process for nodeId
-                    unsigned char currentAcid = harqStatus_[carrierFrequency].at(senderId);
-
-                    // check whether the UE has a H-ARQ process waiting for retransmission. If not, skip UE.
-                    bool skip = true;
-                    unsigned char acid = (currentAcid + 2) % (harqBufferMirror->getProcesses());
-                    LteHarqProcessMirrorD2D *currentProcess = harqBufferMirror->getProcess(acid);
-                    std::vector<TxHarqPduStatus> procStatus = currentProcess->getProcessStatus();
-                    for (const auto& status : procStatus) {
-                        if (status == TXHARQ_PDU_BUFFERED) {
-                            skip = false;
-                            break;
-                        }
-                    }
-                    if (skip) {
-                        ++it_d2d;
-                        continue;
-                    }
-
-                    EV << NOW << " LteSchedulerEnbUl::rtxschedule - D2D UE: " << senderId << " Acid: " << (unsigned int)currentAcid << endl;
-
-                    const UserTxParams& txParams = mac_->getAmc()->computeTxParams(senderId, dir, carrierFrequency);
-                    unsigned int codewords = txParams.getLayers().size();
-                    unsigned int allocatedBytes = 0;
-
-                    for (Codeword cw = 0; (cw < MAX_CODEWORDS) && (codewords > 0); ++cw) {
-                        unsigned int rtxBytes = LteSchedulerEnbUl::schedulePerAcidRtxD2D(destId, senderId, carrierFrequency, cw, acid, bandLim);
-                        if (rtxBytes > 0) {
-                            --codewords;
-                            allocatedBytes += rtxBytes;
-
-                            mac_->signalProcessForRtx(senderId, carrierFrequency, D2D, false);
-                        }
-                    }
-                    EV << NOW << " LteSchedulerEnbUl::rtxschedule - D2D UE: " << senderId << " allocated bytes : " << allocatedBytes << endl;
-                    ++it_d2d;
-                }
-            }
-        }
+        scheduleAdditionalRetransmissions(carrierFrequency, bandLim);
 
         int availableBlocks = allocator_->computeTotalRbs();
 
@@ -433,6 +375,72 @@ bool LteSchedulerEnbUl::rtxschedule(GHz carrierFrequency, BandLimitVector *bandL
         throw cRuntimeError("Exception in LteSchedulerEnbUl::rtxschedule(): %s", e.what());
     }
     return false;
+}
+
+unsigned int LteSchedulerEnbUl::scheduleAdditionalRetransmissions(GHz carrierFrequency, BandLimitVector *bandLim)
+{
+    unsigned int totalAllocatedBytes = 0;
+    if (mac_->isD2DCapable()) {
+        Direction dir = D2D;
+        HarqBuffersMirrorD2D *harqBuffersMirrorD2D = check_and_cast<LteMacEnbD2D *>(mac_.get())->getHarqBuffersMirrorD2D(carrierFrequency);
+        if (harqBuffersMirrorD2D != nullptr) {
+            for (auto it_d2d = harqBuffersMirrorD2D->begin(); it_d2d != harqBuffersMirrorD2D->end(); ) {
+                auto& [d2dPair, harqBufferMirror] = *it_d2d;
+                MacNodeId senderId = d2dPair.first; // Transmitter
+                MacNodeId destId = d2dPair.second;  // Receiver
+
+                if (senderId == NODEID_NONE || !binder_->nodeExists(senderId)) {
+                    // UE has left the simulation - erase queue and continue
+                    it_d2d = harqBuffersMirrorD2D->erase(it_d2d);
+                    continue;
+                }
+                if (destId == NODEID_NONE || !binder_->nodeExists(destId)) {
+                    // UE has left the simulation - erase queue and continue
+                    it_d2d = harqBuffersMirrorD2D->erase(it_d2d);
+                    continue;
+                }
+
+                // get current Harq Process for nodeId
+                unsigned char currentAcid = harqStatus_[carrierFrequency].at(senderId);
+
+                // check whether the UE has a H-ARQ process waiting for retransmission. If not, skip UE.
+                bool skip = true;
+                unsigned char acid = (currentAcid + 2) % (harqBufferMirror->getProcesses());
+                LteHarqProcessMirrorD2D *currentProcess = harqBufferMirror->getProcess(acid);
+                std::vector<TxHarqPduStatus> procStatus = currentProcess->getProcessStatus();
+                for (const auto& status : procStatus) {
+                    if (status == TXHARQ_PDU_BUFFERED) {
+                        skip = false;
+                        break;
+                    }
+                }
+                if (skip) {
+                    ++it_d2d;
+                    continue;
+                }
+
+                EV << NOW << " LteSchedulerEnbUl::rtxschedule - D2D UE: " << senderId << " Acid: " << (unsigned int)currentAcid << endl;
+
+                const UserTxParams& txParams = mac_->getAmc()->computeTxParams(senderId, dir, carrierFrequency);
+                unsigned int codewords = txParams.getLayers().size();
+                unsigned int allocatedBytes = 0;
+
+                for (Codeword cw = 0; (cw < MAX_CODEWORDS) && (codewords > 0); ++cw) {
+                    unsigned int rtxBytes = LteSchedulerEnbUl::schedulePerAcidRtxD2D(destId, senderId, carrierFrequency, cw, acid, bandLim);
+                    if (rtxBytes > 0) {
+                        --codewords;
+                        allocatedBytes += rtxBytes;
+
+                        mac_->signalProcessForRtx(senderId, carrierFrequency, D2D, false);
+                    }
+                }
+                EV << NOW << " LteSchedulerEnbUl::rtxschedule - D2D UE: " << senderId << " allocated bytes : " << allocatedBytes << endl;
+                totalAllocatedBytes += allocatedBytes;
+                ++it_d2d;
+            }
+        }
+    }
+    return totalAllocatedBytes;
 }
 
 bool LteSchedulerEnbUl::rtxscheduleBackground(GHz carrierFrequency, BandLimitVector *bandLim)
