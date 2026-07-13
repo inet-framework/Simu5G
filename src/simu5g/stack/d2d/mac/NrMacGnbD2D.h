@@ -88,11 +88,6 @@ class NrMacGnbD2D : public NrMacGnb, public ID2dMacEnb
 
     void handleMessage(cMessage *msg) override;
 
-    bool isD2DCapable() override
-    {
-        return true;
-    }
-
     bool isReuseD2DEnabled() override
     {
         return d2dEnbHelper_.getReuseD2D();

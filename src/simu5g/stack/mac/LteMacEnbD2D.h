@@ -80,11 +80,6 @@ class LteMacEnbD2D : public LteMacEnb, public ID2dMacEnb
 
     void handleMessage(cMessage *msg) override;
 
-    bool isD2DCapable() override
-    {
-        return true;
-    }
-
     bool isReuseD2DEnabled() override
     {
         return d2dEnbHelper_.getReuseD2D();

@@ -116,6 +116,16 @@ class LcgScheduler
      * scheduled for each connection
      */
     virtual ScheduleList& getScheduledBytesList();
+
+  protected:
+
+    /**
+     * Hook, called once per traffic class during schedule(): returns true if the
+     * current UL grant must be withheld so that it can carry the BSR of an active
+     * D2D connection instead. Default implementation never withholds (no-op);
+     * overridden by LcgSchedulerD2D.
+     */
+    virtual bool checkForPendingD2dBsr(Direction grantDir, LteTrafficClass tc) { return false; }
 };
 
 } //namespace simu5g

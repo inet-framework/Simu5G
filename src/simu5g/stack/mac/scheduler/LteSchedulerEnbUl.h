@@ -108,9 +108,6 @@ class LteSchedulerEnbUl : public LteSchedulerEnb
     unsigned int schedulePerAcidRtx(MacNodeId nodeId, GHz carrierFrequency, Codeword cw, unsigned char acid,
             std::vector<BandLimit> *bandLim = nullptr, Remote antenna = MACRO, bool limitBl = false) override;
 
-    unsigned int schedulePerAcidRtxD2D(MacNodeId destId, MacNodeId senderId, GHz carrierFrequency, Codeword cw, unsigned char acid,
-            std::vector<BandLimit> *bandLim = nullptr, Remote antenna = MACRO, bool limitBl = false);
-
     unsigned int scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequency, Codeword cw, std::vector<BandLimit> *bandLim = nullptr,
             Remote antenna = MACRO, bool limitBl = false) override;
 

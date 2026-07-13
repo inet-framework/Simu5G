@@ -27,6 +27,9 @@ module LteMacEnbD2D extends LteMacEnb
         // use the D2D-capable AMC leaf
         amcType = default("LteAmcD2D");
 
+        // use the D2D-capable uplink scheduler leaf
+        ulSchedulerType = default("LteSchedulerEnbUlD2D");
+
         // FeedBack Historical Base capacity in D2D (number of stored feedback samples per UE)
         int fbhbCapacityD2D = default(5);
 

@@ -63,7 +63,8 @@ class LteMacBase : public cSimpleModule
 {
     friend class LteHarqBufferTx;
     friend class LteHarqBufferRx;
-    friend class LteHarqBufferTxD2D;
+    // LteHarqBufferRxD2D needs the protected sendLowerPackets() (like LteHarqBufferRx);
+    // LteHarqBufferTxD2D touches no protected LteMacBase member, so it is not a friend.
     friend class LteHarqBufferRxD2D;
 
   protected:
@@ -361,11 +362,6 @@ class LteMacBase : public cSimpleModule
     RanNodeType getNodeType()
     {
         return nodeType_;
-    }
-
-    virtual bool isD2DCapable()
-    {
-        return false;
     }
 
     // check whether HARQ processes have been aborted during this TTI

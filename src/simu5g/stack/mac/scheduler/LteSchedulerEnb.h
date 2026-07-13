@@ -47,6 +47,8 @@ class LteSchedulerEnb : public cSimpleModule
     friend class LteMaxCiComp;
     friend class LteAllocatorBestFit;
     friend class QoSAwareScheduler;
+    // shared D2D uplink retransmission helper (see D2dRtxScheduling)
+    friend class D2dRtxScheduling;
 
   protected:
 
@@ -347,18 +349,17 @@ class LteSchedulerEnb : public cSimpleModule
     // store an element in the schedule list
     void storeScListId(GHz carrierFrequency, std::pair<MacCid, Codeword> scList, unsigned int num_blocks);
 
-  private:
-
     /*****************
     * UTILITIES
     *****************/
 
     /**
-     * Returns a particular LteScheduler subclass,
-     * implementing the given discipline.
+     * Returns a particular LteScheduler subclass, implementing the given discipline.
+     * Overridable seam: D2D-only disciplines (e.g. ALLOCATOR_BESTFIT, used by the
+     * frequency-reuse configs) are handled by the D2D uplink scheduler subclasses.
      * @param discipline scheduler discipline
      */
-    LteScheduler *getScheduler(SchedDiscipline discipline);
+    virtual LteScheduler *getScheduler(SchedDiscipline discipline);
 };
 
 } //namespace
