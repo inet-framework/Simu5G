@@ -76,13 +76,19 @@ void HandoverPacketHolderUe::fromIpUe(Packet *datagram)
         ueHoldFromIp_.push_back(datagram);
     }
     else {
-        if (servingNodeId_ == NODEID_NONE && nrServingNodeId_ == NODEID_NONE) { // UE is detached
+        if (!isDeliverable(datagram)) {
             EV << "HandoverPacketHolder::fromIpUe - UE is not attached to any serving node. Delete packet." << endl;
             delete datagram;
         }
         else
             toStackUe(datagram);
     }
+}
+
+bool HandoverPacketHolderUe::isDeliverable(Packet *datagram)
+{
+    // a detached UE has no serving node to deliver the packet to
+    return servingNodeId_ != NODEID_NONE || nrServingNodeId_ != NODEID_NONE;
 }
 
 void HandoverPacketHolderUe::toStackUe(Packet *pkt)

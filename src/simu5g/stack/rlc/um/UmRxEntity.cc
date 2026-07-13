@@ -280,9 +280,12 @@ void UmRxEntity::toPdcp(Packet *pktAux)
 
     if (nodeB_ == nullptr) {
         // retry getting nodeB_, if it failed in initialize() due to cellId=0 in MAC (some race condition?)
+        // (a cell-less MAC -- e.g. the sidelink leg of an out-of-coverage UE -- has no nodeB at all)
         LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
-        nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
-        ASSERT(nodeB_ != nullptr);
+        if (mac->getMacCellId() != NODEID_NONE) {
+            nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
+            ASSERT(nodeB_ != nullptr);
+        }
     }
 
     if (nodeB_ != nullptr) {

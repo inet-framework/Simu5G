@@ -43,4 +43,12 @@ simple BearerManagement
         string nrRlcMuxModule = default("^.^.nrRlcMux");
         string macModule = default("^.^.mac");
         string nrMacModule = default("^.^.nrMac");
+
+        // Sidelink leg (referenced only when the optional SL leg exists)
+        string slRlcMuxModule = default("^.^.slRlcMux");
+        string slMacModule = default("^.^.slMac");
+        string slPdcpTxEntityModuleType = default("simu5g.stack.pdcp.LteTxPdcpEntity");
+        string slPdcpRxEntityModuleType = default("simu5g.stack.pdcp.LteRxPdcpEntity");
+        string slRlcUmTxEntityModuleType = default("simu5g.stack.rlc.um.UmTxEntity");
+        string slRlcUmRxEntityModuleType = default("simu5g.stack.rlc.um.UmRxEntity");
 }

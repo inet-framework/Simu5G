@@ -55,10 +55,20 @@ class BearerManagement : public cSimpleModule
     cModuleType *rlcAmTxEntityModuleType_ = nullptr;
     cModuleType *rlcAmRxEntityModuleType_ = nullptr;
 
+    // Sidelink entity types (resolved lazily, only when the SL leg exists)
+    cModuleType *slPdcpTxEntityModuleType_ = nullptr;
+    cModuleType *slPdcpRxEntityModuleType_ = nullptr;
+    cModuleType *slRlcUmTxEntityModuleType_ = nullptr;
+    cModuleType *slRlcUmRxEntityModuleType_ = nullptr;
+
     inet::ModuleRefByPar<RlcMux> rlcMuxModule;
     inet::ModuleRefByPar<RlcMux> nrRlcMuxModule;
     inet::ModuleRefByPar<LteMacBase> macModule;
     inet::ModuleRefByPar<LteMacBase> nrMacModule;
+
+    // Sidelink leg modules (resolved lazily, only when hasSidelink)
+    RlcMux *slRlcMux_ = nullptr;
+    LteMacBase *slMac_ = nullptr;
 
     // Entity registries (CP owns the lifecycle of all entities)
     std::map<DrbKey, PdcpTxEntityBase *> pdcpTxEntities_;
@@ -69,6 +79,15 @@ class BearerManagement : public cSimpleModule
     std::map<DrbKey, RlcRxEntityBase *> rlcRxEntities_;
     std::map<DrbKey, RlcTxEntityBase *> nrRlcTxEntities_;
     std::map<DrbKey, RlcRxEntityBase *> nrRlcRxEntities_;
+
+    // Sidelink entity registries (keyed by L2Pid per design decision D3; kept
+    // separate from the Uu maps so handover/detach cleanup never touches them)
+    std::map<DrbKey, PdcpTxEntityBase *> slPdcpTxEntities_;
+    std::map<DrbKey, PdcpRxEntityBase *> slPdcpRxEntities_;
+    std::map<DrbKey, RlcTxEntityBase *> slRlcTxEntities_;
+    std::map<DrbKey, RlcRxEntityBase *> slRlcRxEntities_;
+
+    void resolveSlModules();
 
     void setRlcEntityParams(cModule *entity, bool isNr);
     void setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex);
@@ -91,6 +110,11 @@ class BearerManagement : public cSimpleModule
     virtual void deleteLocalPdcpEntities(MacNodeId nodeId);
     virtual void deleteLocalRlcQueues(MacNodeId nodeId, bool nrStack=false);
     void pdcpActiveUeUL(std::set<MacNodeId> *ueSet);
+
+    // Sidelink bearer (SLRB) chains on the SL leg (slMac/slRlcMux); invoked by
+    // SlRrc via the genie fan-out in SlBinder
+    virtual void createSlOutgoingConnection(FlowControlInfo *lteInfo);
+    virtual void createSlIncomingConnection(FlowControlInfo *lteInfo);
 };
 
 } // namespace simu5g

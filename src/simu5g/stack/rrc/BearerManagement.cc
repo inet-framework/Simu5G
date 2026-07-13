@@ -365,6 +365,147 @@ RlcTxEntityBase *BearerManagement::createRlcTxBuffer(DrbKey id, FlowControlInfo 
     return createAndInstallRlcTxBuffer(id, lteInfo, rlcMuxModule.get(), false);
 }
 
+void BearerManagement::resolveSlModules()
+{
+    if (slMac_ != nullptr)
+        return;
+    slRlcMux_ = check_and_cast<RlcMux *>(getModuleByPath(par("slRlcMuxModule").stringValue()));
+    slMac_ = check_and_cast<LteMacBase *>(getModuleByPath(par("slMacModule").stringValue()));
+    slPdcpTxEntityModuleType_ = cModuleType::get(par("slPdcpTxEntityModuleType").stringValue());
+    slPdcpRxEntityModuleType_ = cModuleType::get(par("slPdcpRxEntityModuleType").stringValue());
+    slRlcUmTxEntityModuleType_ = cModuleType::get(par("slRlcUmTxEntityModuleType").stringValue());
+    slRlcUmRxEntityModuleType_ = cModuleType::get(par("slRlcUmRxEntityModuleType").stringValue());
+}
+
+void BearerManagement::createSlOutgoingConnection(FlowControlInfo *lteInfo)
+{
+    Enter_Method_Silent("createSlOutgoingConnection()");
+
+    EV << "BearerManagement::createSlOutgoingConnection - srcId=" << lteInfo->getSourceId()
+       << " destId=" << lteInfo->getDestId() << " drbId=" << lteInfo->getDrbId()
+       << " castType=" << lteInfo->getSlCastType() << endl;
+
+    ASSERT(lteInfo->getDirection() == SL);
+    resolveSlModules();
+
+    if ((LteRlcType)lteInfo->getRlcType() != UM)
+        throw cRuntimeError("BearerManagement::createSlOutgoingConnection - only UM SLRBs are supported in SL-1");
+
+    // MAC outgoing connection on the SL MAC (keyed by destination L2Pid)
+    FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
+    MacCid cid = MacCid(lteInfo->getDestId(), slMac_->drbIdToLcid(lteInfo->getDrbId()));
+    slMac_->createOutgoingConnection(cid, desc);
+
+    // RLC UM TX entity on the SL RLC mux
+    DrbKey rlcId = ctrlInfoToTxDrbKey(lteInfo);
+    std::string rlcName = "slRlc-um-tx-" + std::to_string(num(rlcId.getNodeId())) + "-" + std::to_string(num(rlcId.getDrbId()));
+    cModule *rlcModule = slRlcUmTxEntityModuleType_->create(rlcName.c_str(), nicModule_);
+    if (rlcModule->hasPar("macModule"))
+        rlcModule->par("macModule").setStringValue("^.slMac");
+    rlcModule->finalizeParameters();
+    rlcModule->buildInside();
+    setEntityDisplayPosition(rlcModule, false, slRlcMux_, num(rlcId.getDrbId()));
+
+    int fromIdx = slRlcMux_->gateSize("fromTxEntity");
+    slRlcMux_->setGateSize("fromTxEntity", fromIdx + 1);
+    rlcModule->gate("out")->connectTo(slRlcMux_->gate("fromTxEntity", fromIdx));
+
+    int macIdx = slRlcMux_->gateSize("macToTxEntity");
+    slRlcMux_->setGateSize("macToTxEntity", macIdx + 1);
+    slRlcMux_->gate("macToTxEntity", macIdx)->connectTo(rlcModule->gate("macIn"));
+
+    rlcModule->scheduleStart(simTime());
+    rlcModule->callInitialize();
+
+    RlcTxEntityBase *txEnt = check_and_cast<RlcTxEntityBase *>(rlcModule);
+    txEnt->setFlowControlInfo(lteInfo);
+    slRlcTxEntities_[rlcId] = txEnt;
+
+    // PDCP TX entity, registered in the shared UpperMux under the SL DrbKey
+    auto *pdcpMux = check_and_cast<UpperMux *>(nicModule_->getSubmodule("pdcpMux"));
+    DrbKey id = DrbKey(lteInfo->getDestId(), lteInfo->getDrbId());
+    std::string name = "slPdcp-tx-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
+    auto *module = slPdcpTxEntityModuleType_->create(name.c_str(), nicModule_);
+    module->par("headerCompressedSize") = par("headerCompressedSize");
+    module->finalizeParameters();
+    module->buildInside();
+    setEntityDisplayPosition(module, true, slRlcMux_, num(id.getDrbId()));
+
+    int idx = pdcpMux->gateSize("toTxEntity");
+    pdcpMux->setGateSize("toTxEntity", idx + 1);
+    pdcpMux->gate("toTxEntity", idx)->connectTo(module->gate("in"));
+    module->gate("out")->connectTo(rlcModule->gate("in"));
+
+    module->scheduleStart(simTime());
+    module->callInitialize();
+    auto *txPdcp = check_and_cast<PdcpTxEntityBase *>(module);
+    pdcpMux->registerTxEntity(id, txPdcp);
+    slPdcpTxEntities_[id] = txPdcp;
+}
+
+void BearerManagement::createSlIncomingConnection(FlowControlInfo *lteInfo)
+{
+    Enter_Method_Silent("createSlIncomingConnection()");
+
+    EV << "BearerManagement::createSlIncomingConnection - srcId=" << lteInfo->getSourceId()
+       << " destId=" << lteInfo->getDestId() << " drbId=" << lteInfo->getDrbId()
+       << " castType=" << lteInfo->getSlCastType() << endl;
+
+    ASSERT(lteInfo->getDirection() == SL);
+    resolveSlModules();
+
+    if ((LteRlcType)lteInfo->getRlcType() != UM)
+        throw cRuntimeError("BearerManagement::createSlIncomingConnection - only UM SLRBs are supported in SL-1");
+
+    // MAC incoming connection on the SL MAC (keyed by sender node id)
+    FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
+    MacCid cid = MacCid(lteInfo->getSourceId(), slMac_->drbIdToLcid(lteInfo->getDrbId()));
+    slMac_->createIncomingConnection(cid, desc);
+
+    // RLC UM RX entity on the SL RLC mux (keyed by sender node id)
+    DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
+    std::string rlcName = "slRlc-um-rx-" + std::to_string(num(rlcId.getNodeId())) + "-" + std::to_string(num(rlcId.getDrbId()));
+    cModule *rlcModule = slRlcUmRxEntityModuleType_->create(rlcName.c_str(), nicModule_);
+    if (rlcModule->hasPar("macModule"))
+        rlcModule->par("macModule").setStringValue("^.slMac");
+    rlcModule->finalizeParameters();
+    rlcModule->buildInside();
+    setEntityDisplayPosition(rlcModule, false, slRlcMux_, num(rlcId.getDrbId()));
+
+    int idx = slRlcMux_->gateSize("toRxEntity");
+    slRlcMux_->setGateSize("toRxEntity", idx + 1);
+    slRlcMux_->gate("toRxEntity", idx)->connectTo(rlcModule->gate("in"));
+
+    rlcModule->scheduleStart(simTime());
+    rlcModule->callInitialize();
+
+    RlcRxEntityBase *rxEnt = check_and_cast<RlcRxEntityBase *>(rlcModule);
+    rxEnt->setFlowControlInfo(lteInfo);
+    slRlcMux_->registerRxBuffer(rlcId, rxEnt);
+    slRlcRxEntities_[rlcId] = rxEnt;
+
+    // PDCP RX entity (keyed by sender node id)
+    auto *pdcpMux = check_and_cast<UpperMux *>(nicModule_->getSubmodule("pdcpMux"));
+    DrbKey id = DrbKey(lteInfo->getSourceId(), lteInfo->getDrbId());
+    std::string name = "slPdcp-rx-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
+    auto *module = slPdcpRxEntityModuleType_->create(name.c_str(), nicModule_);
+    module->par("headerCompressedSize") = par("headerCompressedSize");
+    module->finalizeParameters();
+    module->buildInside();
+    setEntityDisplayPosition(module, true, slRlcMux_, num(id.getDrbId()));
+
+    rlcModule->gate("out")->connectTo(module->gate("in"));
+
+    int fromIdx = pdcpMux->gateSize("fromRxEntity");
+    pdcpMux->setGateSize("fromRxEntity", fromIdx + 1);
+    module->gate("out")->connectTo(pdcpMux->gate("fromRxEntity", fromIdx));
+
+    module->scheduleStart(simTime());
+    module->callInitialize();
+    auto *rxPdcp = check_and_cast<PdcpRxEntityBase *>(module);
+    slPdcpRxEntities_[id] = rxPdcp;
+}
+
 RlcRxEntityBase *BearerManagement::createRlcRxBuffer(DrbKey id, FlowControlInfo *lteInfo)
 {
     Enter_Method_Silent("createRlcRxBuffer()");
@@ -477,7 +618,10 @@ RlcTxEntityBase *BearerManagement::lookupRlcTxBuffer(DrbKey id)
     if (it != rlcTxEntities_.end())
         return it->second;
     auto it2 = nrRlcTxEntities_.find(id);
-    return it2 != nrRlcTxEntities_.end() ? it2->second : nullptr;
+    if (it2 != nrRlcTxEntities_.end())
+        return it2->second;
+    auto it3 = slRlcTxEntities_.find(id);
+    return it3 != slRlcTxEntities_.end() ? it3->second : nullptr;
 }
 
 PdcpTxEntityBase *BearerManagement::lookupPdcpTxEntity(DrbKey id)
