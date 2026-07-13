@@ -99,12 +99,6 @@ class LtePhyBase : public ChannelAccess
     /// Reference to CellInfo
     opp_component_ptr<CellInfo> cellInfo_;
 
-    // used in multicast D2D to prevent a send direct towards out-of-range UEs. Range is expressed via multicastD2DRange_
-    bool enableMulticastD2DRangeCheck_ = false;
-
-    // used with the enableMulticastD2DRangeCheck_ parameter
-    double multicastD2DRange_ = NAN;
-
     //Ue  Tx Power
     double ueTxPower_ = NAN;
     // eNodeB Tx Power
@@ -221,13 +215,6 @@ class LtePhyBase : public ChannelAccess
      * Frames are sent with zero transmission delay.
      */
     virtual void sendBroadcast(LteAirFrame *airFrame);
-
-    /**
-     * Sends a frame to the modules registered to the multicast group indicated in the frame
-     *
-     * Frames are sent with zero transmission delay.
-     */
-    virtual void sendMulticast(LteAirFrame *frame);
 
     /**
      * Sends a frame uniquely to the destination specified in carried control info.

@@ -34,9 +34,6 @@ simple LtePhyBase like ILtePhy
         double txAngle @unit(deg) = default(0deg);
         bool isNr = default(false);  // whether this PHY belongs to an NR (5G) stack; set by the enclosing NIC module
 
-        // TODO move to LtePhyUeD2D module
-        bool enableMulticastD2DRangeCheck = default(false);
-        double multicastD2DRange @unit(m) = default(1000m);
         string binderModule = default("binder");
         string channelModelModule = default("^.channelModel[0]"); // or "nrChannelModel[0]"
 

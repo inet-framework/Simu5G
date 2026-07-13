@@ -34,6 +34,14 @@ class LtePhyEnbD2D : public LtePhyEnb
     void initialize(int stage) override;
     void requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, inet::Packet *pkt) override;
     void handleAirFrame(cMessage *msg) override;
+
+    /**
+     * The eNB/gNB is the sole sender of D2D mode-switch notifications. Such
+     * frames get a distinctive name and an elevated (-1) scheduling priority so
+     * they are processed ahead of ordinary air-frames; every other frame follows
+     * the generic ~LtePhyBase transmit path.
+     */
+    void handleUpperMessage(cMessage *msg) override;
 };
 
 } //namespace

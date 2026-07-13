@@ -39,6 +39,8 @@ void NrPhyUeD2D::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         d2dHelper_.setD2dTxPower(par("d2dTxPower"));
         d2dHelper_.setMulticastEnableCaptureEffect(par("d2dMulticastCaptureEffect"));
+        d2dHelper_.setMulticastD2DRangeCheckEnabled(par("enableMulticastD2DRangeCheck"));
+        d2dHelper_.setMulticastD2DRange(par("multicastD2DRange"));
     }
 }
 
@@ -279,6 +281,58 @@ void NrPhyUeD2D::handleUpperMessage(cMessage *msg)
         sendMulticast(frame);
     else
         sendUnicast(frame);
+}
+
+void NrPhyUeD2D::sendMulticast(LteAirFrame *frame)
+{
+    UserControlInfo *ci = check_and_cast<UserControlInfo *>(frame->getControlInfo());
+
+    // get the group Id
+    MacNodeId groupId = ci->getPacketMulticastGroupId();
+    if (groupId == NODEID_NONE)
+        throw cRuntimeError("NrPhyUeD2D::sendMulticast - Error. Group ID %d is not valid.", num(groupId));
+
+    // transfer control info into airframe fields
+    frame->setAdditionalInfo(*ci);
+    delete frame->removeControlInfo();
+
+    // send the frame to nodes belonging to the multicast group only
+    for (auto [destId, nodeInfo] : binder_->getNodeInfoMap()) {
+        // if the node in the list does not use the same LTE/NR technology of this PHY module, skip it
+        if (isNrUe(destId) != isNr_)
+            continue;
+
+        if (destId != nodeId_ && binder_->isInMulticastGroup(destId, groupId)) {
+            EV << NOW << " NrPhyUeD2D::sendMulticast - node " << destId << " is in the multicast group" << endl;
+
+            // get a pointer to receiving module
+            cModule *receiver = nodeInfo.moduleRef;
+            LtePhyBase *recvPhy;
+            double dist;
+
+            if (d2dHelper_.getMulticastD2DRangeCheckEnabled()) {
+                // get the correct PHY layer module
+                recvPhy = (isNrUe(destId)) ? check_and_cast<LtePhyBase *>(receiver->getSubmodule("cellularNic")->getSubmodule("nrPhy"))
+                                  : check_and_cast<LtePhyBase *>(receiver->getSubmodule("cellularNic")->getSubmodule("phy"));
+
+                dist = recvPhy->getCoord().distance(getRadioPosition());
+
+                if (dist > d2dHelper_.getMulticastD2DRange()) {
+                    EV << NOW << " NrPhyUeD2D::sendMulticast - node too far (" << dist << " > " << d2dHelper_.getMulticastD2DRange() << ". skipping transmission" << endl;
+                    continue;
+                }
+            }
+
+            EV << NOW << " NrPhyUeD2D::sendMulticast - sending frame to node " << destId << endl;
+
+            // Create a duplicate frame before sending
+            LteAirFrame *frameToSend = frame->dup();
+            sendDirect(frameToSend, 0, frame->getDuration(), receiver, getReceiverGateIndex(receiver, isNrUe(destId)));
+        }
+    }
+
+    // delete the original frame
+    delete frame;
 }
 
 void NrPhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req)

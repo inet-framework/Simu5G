@@ -46,9 +46,6 @@ void LtePhyBase::initialize(int stage)
 
         WATCH(numAirFrameReceived_);
         WATCH(numAirFrameNotReceived_);
-
-        multicastD2DRange_ = par("multicastD2DRange");
-        enableMulticastD2DRangeCheck_ = par("enableMulticastD2DRangeCheck");
     }
     else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS2) {
         initializeChannelModel();
@@ -116,7 +113,6 @@ void LtePhyBase::handleUpperMessage(cMessage *msg)
         case HARQPKT: name = "harqFeedback"; break;
         case GRANTPKT: name = "harqFeedback-grant"; break;
         case RACPKT: name = "rac"; break;
-        case D2DMODESWITCHPKT: name = "d2dModeSwitch"; break;
         default: name = "airframe"; break;
     }
 
@@ -125,10 +121,7 @@ void LtePhyBase::handleUpperMessage(cMessage *msg)
     frame->encapsulate(check_and_cast<cPacket *>(msg));
 
     // initialize frame fields
-    if (lteInfo->getFrameType() == D2DMODESWITCHPKT)
-        frame->setSchedulingPriority(-1);
-    else
-        frame->setSchedulingPriority(airFramePriority_);
+    frame->setSchedulingPriority(airFramePriority_);
 
     // set transmission duration according to the numerology
     NumerologyIndex numerologyIndex = binder_->getNumerologyIndexFromCarrierFreq(lteInfo->getCarrierFrequency());
@@ -189,58 +182,6 @@ void LtePhyBase::sendBroadcast(LteAirFrame *airFrame)
 
     // delegate the ChannelControl to send the airframe
     sendToChannel(airFrame);
-}
-
-void LtePhyBase::sendMulticast(LteAirFrame *frame)
-{
-    UserControlInfo *ci = check_and_cast<UserControlInfo *>(frame->getControlInfo());
-
-    // get the group Id
-    MacNodeId groupId = ci->getPacketMulticastGroupId();
-    if (groupId == NODEID_NONE)
-        throw cRuntimeError("LtePhyBase::sendMulticast - Error. Group ID %d is not valid.", num(groupId));
-
-    // transfer control info into airframe fields
-    frame->setAdditionalInfo(*ci);
-    delete frame->removeControlInfo();
-
-    // send the frame to nodes belonging to the multicast group only
-    for (auto [destId, nodeInfo] : binder_->getNodeInfoMap()) {
-        // if the node in the list does not use the same LTE/NR technology of this PHY module, skip it
-        if (isNrUe(destId) != isNr_)
-            continue;
-
-        if (destId != nodeId_ && binder_->isInMulticastGroup(destId, groupId)) {
-            EV << NOW << " LtePhyBase::sendMulticast - node " << destId << " is in the multicast group" << endl;
-
-            // get a pointer to receiving module
-            cModule *receiver = nodeInfo.moduleRef;
-            LtePhyBase *recvPhy;
-            double dist;
-
-            if (enableMulticastD2DRangeCheck_) {
-                // get the correct PHY layer module
-                recvPhy = (isNrUe(destId)) ? check_and_cast<LtePhyBase *>(receiver->getSubmodule("cellularNic")->getSubmodule("nrPhy"))
-                                  : check_and_cast<LtePhyBase *>(receiver->getSubmodule("cellularNic")->getSubmodule("phy"));
-
-                dist = recvPhy->getRadioPosition().distance(getRadioPosition());
-
-                if (dist > multicastD2DRange_) {
-                    EV << NOW << " LtePhyBase::sendMulticast - node too far (" << dist << " > " << multicastD2DRange_ << ". skipping transmission" << endl;
-                    continue;
-                }
-            }
-
-            EV << NOW << " LtePhyBase::sendMulticast - sending frame to node " << destId << endl;
-
-            // Create a duplicate frame before sending
-            LteAirFrame *frameToSend = frame->dup();
-            sendDirect(frameToSend, 0, frame->getDuration(), receiver, getReceiverGateIndex(receiver, isNrUe(destId)));
-        }
-    }
-
-    // delete the original frame
-    delete frame;
 }
 
 void LtePhyBase::sendUnicast(LteAirFrame *frame)

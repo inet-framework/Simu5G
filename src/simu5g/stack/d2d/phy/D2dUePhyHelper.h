@@ -13,6 +13,8 @@
 #ifndef _LTE_D2DUEPHYHELPER_H_
 #define _LTE_D2DUEPHYHELPER_H_
 
+#include <cmath>
+
 #include "simu5g/common/LteCommon.h"
 
 namespace simu5g {
@@ -44,6 +46,11 @@ class D2dUePhyHelper
     // D2D Tx power
     double d2dTxPower_ = 0.0;
 
+    // used in multicast D2D to prevent a sendDirect towards out-of-range UEs;
+    // the range is given by multicastD2DRange_
+    bool multicastD2DRangeCheckEnabled_ = false;
+    double multicastD2DRange_ = NAN;
+
     // Capture effect for D2D multicast communications
     bool d2dMulticastEnableCaptureEffect_ = false;
     double nearestDistance_ = 0.0;
@@ -63,6 +70,12 @@ class D2dUePhyHelper
     // D2D Tx power
     double getD2dTxPower() const { return d2dTxPower_; }
     void setD2dTxPower(double v) { d2dTxPower_ = v; }
+
+    // multicast-D2D range check (used by sendMulticast in the owning leaf)
+    bool getMulticastD2DRangeCheckEnabled() const { return multicastD2DRangeCheckEnabled_; }
+    void setMulticastD2DRangeCheckEnabled(bool v) { multicastD2DRangeCheckEnabled_ = v; }
+    double getMulticastD2DRange() const { return multicastD2DRange_; }
+    void setMulticastD2DRange(double v) { multicastD2DRange_ = v; }
 
     // capture-effect enable flag
     bool getMulticastEnableCaptureEffect() const { return d2dMulticastEnableCaptureEffect_; }

@@ -46,6 +46,14 @@ class NrPhyUeD2D : public NrPhyUe
     void handleUpperMessage(cMessage *msg) override;
     void handleSelfMessage(cMessage *msg) override;
 
+    /**
+     * Sends a frame to the UEs registered to the multicast group indicated in
+     * the frame (optionally skipping receivers beyond multicastD2DRange).
+     * Frames are sent with zero transmission delay. NR counterpart of
+     * ~LtePhyUeD2D::sendMulticast.
+     */
+    void sendMulticast(LteAirFrame *frame);
+
   public:
 
     void sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req) override;

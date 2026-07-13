@@ -124,6 +124,41 @@ void LtePhyEnbD2D::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame,
     pktAux->insertAtFront(header);
 }
 
+void LtePhyEnbD2D::handleUpperMessage(cMessage *msg)
+{
+    auto pkt = check_and_cast<inet::Packet *>(msg);
+    if (pkt->getTag<UserControlInfo>()->getFrameType() != D2DMODESWITCHPKT) {
+        // Not a mode-switch notification: use the generic PHY transmit path.
+        LtePhyBase::handleUpperMessage(msg);
+        return;
+    }
+
+    // D2D mode-switch notification (sent only by the eNB/gNB towards its UEs):
+    // give the air-frame a distinctive name and an elevated (-1) scheduling
+    // priority so it is handled ahead of ordinary air-frames that start/end at
+    // the same instant.
+    EV << "LtePhyEnbD2D: D2D mode-switch notification from stack" << endl;
+    auto lteInfo = pkt->removeTag<UserControlInfo>();
+
+    LteAirFrame *frame = new LteAirFrame("d2dModeSwitch");
+    frame->encapsulate(check_and_cast<cPacket *>(msg));
+    frame->setSchedulingPriority(-1);
+
+    // set transmission duration according to the numerology
+    NumerologyIndex numerologyIndex = binder_->getNumerologyIndexFromCarrierFreq(lteInfo->getCarrierFrequency());
+    double slotDuration = binder_->getSlotDurationFromNumerologyIndex(numerologyIndex);
+    frame->setDuration(slotDuration);
+
+    // set current position
+    lteInfo->setCoord(getRadioPosition());
+    lteInfo->setTxPower(txPower_);
+    frame->setControlInfo(lteInfo.get()->dup());
+
+    EV << "LtePhyEnbD2D: " << nodeTypeToA(nodeType_) << " with id " << nodeId_
+       << " sending message to the air channel. Dest=" << lteInfo->getDestId() << endl;
+    sendUnicast(frame);
+}
+
 void LtePhyEnbD2D::handleAirFrame(cMessage *msg)
 {
     LteAirFrame *frame = static_cast<LteAirFrame *>(msg);
