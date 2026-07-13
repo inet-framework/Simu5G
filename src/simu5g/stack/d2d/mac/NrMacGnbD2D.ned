@@ -15,12 +15,38 @@ package simu5g.stack.d2d.mac;
 import simu5g.stack.mac.NrMacGnb;
 
 //
-// NR-gNB MAC with D2D support. Currently a placeholder that adds nothing to
-// ~NrMacGnb; it will host the NR-gNB D2D deltas once ~NrMacGnb is re-parented
-// onto ~LteMacEnb.
+// NR-gNB MAC with D2D support. Extends ~NrMacGnb with the device-to-device (D2D)
+// deltas: it enhances resource allocation procedures to enable direct
+// communication between UEs (network-assisted D2D). It is the NR counterpart of
+// ~LteMacEnbD2D.
 //
 module NrMacGnbD2D extends NrMacGnb
 {
     parameters:
         @class("NrMacGnbD2D");
+
+        bool usePreconfiguredTxParams = default(false);
+        int d2dCqi = default(7);
+
+        // frequency reuse parameters
+        bool reuseD2D = default(false);
+        bool reuseD2DMulti = default(false);
+        double conflictGraphUpdatePeriod @unit(s) = default(1s);
+
+        // CG thresholds can be defined in either dBm or meters
+        // if distances are set to -1.0, then dBm thresholds are used,
+        // otherwise distances have priority on dBm thresholds
+        double conflictGraphThreshold = default(90);                       // dBm
+        double conflictGraphD2DInterferenceRadius @unit(m) = default(-1.0m);         // meters
+        double conflictGraphD2DMultiTxRadius @unit(m) = default(-1.0m);              // meters
+        double conflictGraphD2DMultiInterferenceRadius @unit(m) = default(-1.0m);    // meters
+
+        // handling of D2D mode switch
+        bool msHarqInterrupt = default(true);
+        bool msClearRlcBuffer = default(true);
+
+        @signal[macCellThroughputD2D];
+        @statistic[macCellThroughputD2D](title="Cell Throughput at the MAC layer D2D"; unit="Bps"; source="macCellThroughputD2D"; record=simu5g_rateavg);
+        @signal[macCellPacketLossD2D];
+        @statistic[macCellPacketLossD2D](title="Mac Cell Packet Loss D2D"; unit=""; source="macCellPacketLossD2D"; record=mean);
 }

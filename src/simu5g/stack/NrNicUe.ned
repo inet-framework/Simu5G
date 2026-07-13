@@ -25,10 +25,11 @@ import simu5g.stack.sdap.common.IReflectiveQosTable;
 //
 // Defines a User Equipment (UE) network interface card that
 // supports both LTE and NR (New Radio) technologies. It extends the
-// LteNicUeD2D module by adding additional submodules and parameters to
-// support NR-specific functionalities.
+// LteNicUe module by adding additional submodules and parameters to
+// support NR-specific functionalities. D2D support is added by the
+// ~NrNicUeD2D subtype.
 //
-module NrNicUe extends LteNicUeD2D
+module NrNicUe extends LteNicUe
 {
     parameters:
         bool hasSdap = default(false);

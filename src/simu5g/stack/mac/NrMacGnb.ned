@@ -15,10 +15,10 @@ package simu5g.stack.mac;
 //
 // Provides functionalities for the Medium Access Control (MAC) of the
 // New Radio (NR) protocol stack at the gNodeB (gNB) side. In particular, it extends the
-// ~LteMacEnbD2D module by initializing the NR version of the uplink scheduler and
+// ~LteMacEnb module by initializing the NR version of the uplink scheduler and
 // using, by default, the NR version of the Adaptive Modulation and Coding (AMC) module.
 //
-module NrMacGnb extends LteMacEnbD2D
+module NrMacGnb extends LteMacEnb
 {
     parameters:
         @class("NrMacGnb");

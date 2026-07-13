@@ -10,15 +10,20 @@
 // and cannot be removed from it.
 //
 
-#ifndef _NRMACUED2D_H_
-#define _NRMACUED2D_H_
+#ifndef _NRMACUE_H_
+#define _NRMACUE_H_
 
-#include "simu5g/stack/mac/LteMacUeD2D.h"
+#include "simu5g/stack/mac/LteMacUe.h"
 
 namespace simu5g {
 
-class NrMacUe : public LteMacUeD2D
+class NrMacUe : public LteMacUe
 {
+  protected:
+    // NR scheduling bookkeeping: true when no carrier produced a schedule
+    // (written by the NR-specific UL scheduling loop in handleSelfMessage()).
+    bool emptyScheduleList_;
+
   public:
     NrMacUe();
 

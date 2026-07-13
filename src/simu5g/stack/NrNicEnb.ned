@@ -20,9 +20,10 @@ import simu5g.stack.sdap.INrSdap;
 // within a gNodeB. It implements the data and signaling plane of the NR (New Radio) stack,
 // which encompasses the PDCP, RLC, MAC, and PHY layers. The parameters and submodules
 // facilitate the customization of the gNodeB's behavior, including its support for
-// D2D communication, CoMP (Coordinated MultiPoint), or dual connectivity.
+// CoMP (Coordinated MultiPoint) or dual connectivity. D2D support is added by the
+// ~NrNicEnbD2D subtype.
 //
-module NrNicEnb extends LteNicEnbD2D
+module NrNicEnb extends LteNicEnb
 {
     parameters:
         bool hasSdap = default(false);
