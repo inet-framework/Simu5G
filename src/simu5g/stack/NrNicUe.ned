@@ -33,6 +33,7 @@ module NrNicUe extends LteNicUe
 {
     parameters:
         bool hasSdap = default(false);
+        bool hasSidelink = default(false);  // enables the NR sidelink (PC5) leg
         bool useReflectiveQos = default(false);
         ip2nic.hasSdap = default(this.hasSdap);
         sdap.nodeRole = default("UE");

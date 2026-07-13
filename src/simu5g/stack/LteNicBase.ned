@@ -66,6 +66,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
         output upperLayerOut;
         input radioIn @loose;  // to receive messages sent using sendDirect()
         input nrRadioIn @loose;// for NR support
+        input slRadioIn @loose;// for sidelink (PC5) support
         inout x2[] @loose;     // optional x2 manager
 
     submodules:
