@@ -47,8 +47,8 @@ module LteMacEnb extends LteMacBase
         // AMC Type:  "LteAmc", "NrAmc"
         string amcType @enum(LteAmc,NrAmc) = default("LteAmc");
 
-        // AMC Mode:  "auto", "piloted", "multi", "das", "D2D"
-        string amcMode @enum(AUTO,D2D) = default("AUTO");
+        // AMC pilot mode; supported values depend on the AMC implementation (LteAmc: "AUTO", "D2D")
+        string amcMode = default("AUTO");
 
         // resource allocation type ("distributed" or "localized")
         string rbAllocationType @enum(distributed,localized) = default("localized");

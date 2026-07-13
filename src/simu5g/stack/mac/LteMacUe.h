@@ -24,6 +24,7 @@ using namespace omnetpp;
 
 class LteSchedulingGrant;
 class LteSchedulerUeUl;
+class LcgScheduler;
 class Binder;
 class LteChannelModel;
 
@@ -175,15 +176,18 @@ class LteMacUe : public LteMacBase
     // schedulers so they agree with the single shared RLC TX buffer.
     std::map<MacCid, bool>& getSoContinuationMap() { return soFrontIsContinuation_; }
 
+    /// Factory for the LCG scheduler used by this UE's uplink scheduler (LteSchedulerUeUl).
+    virtual LcgScheduler *createLcgScheduler();
+
     /*
-     * Access scheduling grant
-     */
-    inline const LteSchedulingGrant *getSchedulingGrant(GHz carrierFrequency) const
-    {
-        if (schedulingGrant_.find(carrierFrequency) == schedulingGrant_.end())
-            return nullptr;
-        return schedulingGrant_.at(carrierFrequency).get();
-    }
+ * Access scheduling grant
+ */
+inline const LteSchedulingGrant *getSchedulingGrant(GHz carrierFrequency) const
+{
+    if (schedulingGrant_.find(carrierFrequency) == schedulingGrant_.end())
+        return nullptr;
+    return schedulingGrant_.at(carrierFrequency).get();
+}
 
     /*
      * Access current H-ARQ pointer

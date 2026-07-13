@@ -22,6 +22,7 @@
 #include "simu5g/stack/mac/packet/LteRac_m.h"
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
 #include "simu5g/stack/mac/scheduler/LteSchedulerUeUl.h"
+#include "simu5g/stack/mac/scheduler/LcgScheduler.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
@@ -499,6 +500,11 @@ void LteMacUe::macPduMake(MacCid cid)
             }
         }
     }
+}
+
+LcgScheduler *LteMacUe::createLcgScheduler()
+{
+    return new LcgScheduler(this);
 }
 
 LteHarqBufferTx *LteMacUe::createTxHarqBuffer(MacNodeId destId, Direction dir)

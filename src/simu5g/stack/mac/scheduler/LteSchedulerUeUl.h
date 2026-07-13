@@ -41,8 +41,8 @@ class LteSchedulerUeUl
     // Scheduled Bytes List
     LteMacScheduleList scheduledBytesList_;
 
-    // Inner Scheduler - defaults to Standard LCG
-    LcgScheduler lcgScheduler_;
+    // Inner Scheduler - created via LteMacUe::createLcgScheduler()
+    LcgScheduler *lcgScheduler_ = nullptr;
 
     // Carrier frequency handled by this scheduler
     GHz carrierFrequency_;
@@ -62,26 +62,15 @@ class LteSchedulerUeUl
     /* After scheduling, returns the per-PDU payload sizes planned for an NR-SO
      * connection (one SDU request per entry), or nullptr for LTE-FI connections.
      */
-    const std::vector<unsigned int> *getScheduledSoPduSizes(MacCid cid) { return lcgScheduler_.getScheduledSoPduSizes(cid); }
+    const std::vector<unsigned int> *getScheduledSoPduSizes(MacCid cid) { return lcgScheduler_->getScheduledSoPduSizes(cid); }
 
     /*
      * Constructor
      */
     LteSchedulerUeUl(LteMacUe *mac, GHz carrierFrequency);
 
-    /**
-     * Copy constructor and operator=
-     */
-    LteSchedulerUeUl(const LteSchedulerUeUl& other) :
-        mac_(other.mac_),
-        scheduleList_(other.scheduleList_),
-        scheduledBytesList_(other.scheduledBytesList_),
-        lcgScheduler_(other.lcgScheduler_),
-        carrierFrequency_(other.carrierFrequency_)
-    {
-    }
-
-    LteSchedulerUeUl& operator=(const LteSchedulerUeUl& other);
+    LteSchedulerUeUl(const LteSchedulerUeUl& other) = delete;
+    LteSchedulerUeUl& operator=(const LteSchedulerUeUl& other) = delete;
 
     /*
      * Destructor

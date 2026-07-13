@@ -44,8 +44,11 @@ typedef std::map<Remote, std::vector<std::vector<LteSummaryBuffer>>> History_;
 class LteAmc : public cSimpleModule
 {
   private:
-    virtual AmcPilot *getAmcPilot(const cPar& amcMode);
     virtual MacNodeId getServingNodeOrSelf(MacNodeId dst);
+
+  protected:
+    /// Factory for the AMC pilot selected by the amcMode parameter; supported names depend on the AMC implementation.
+    virtual AmcPilot *createAmcPilot(const char *amcMode);
 
   public:
     void printParameters();
