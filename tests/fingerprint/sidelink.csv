@@ -1,0 +1,4 @@
+# workingdir,                            args,                                             simtimelimit,     fingerprint,                   expected result, tags
+/simulations/nr/sidelink/basic/,         -f omnetpp.ini -c OutOfCoverage -r 0,                   2s,         baf7-75bf/tplx;d85c-4498/tilx;0000-0000/~tNl;6e58-7683/sz, PASS,
+/simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Broadcast -r 0,                       2s,         36b3-d99c/tplx;5de1-2541/tilx;9f22-246c/~tNl;4c9a-5c3b/sz, PASS,
+/simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Broadcast-Tr37885 -r 0,               2s,         36b3-d99c/tplx;5de1-2541/tilx;9f22-246c/~tNl;a913-974c/sz, PASS,
