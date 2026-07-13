@@ -91,6 +91,10 @@ class LteMacUeD2D : public LteMacUe
      */
     void macPduMake(MacCid cid = MacCid()) override;
 
+    /// HARQ buffer factories: add support for the D2D and D2D_MULTI directions
+    LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo) override;
+    LteHarqBufferTx *createTxHarqBuffer(MacNodeId destId, Direction dir) override;
+
   public:
     ~LteMacUeD2D() override;
 

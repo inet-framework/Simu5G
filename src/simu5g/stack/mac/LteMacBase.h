@@ -515,6 +515,10 @@ class LteMacBase : public cSimpleModule
 
     /// Lower Layer Handler
     virtual void fromPhy(cPacket *pkt);
+
+    /// Factory for the RX HARQ buffer created upon first reception from a node.
+    /// The base implementation supports the DL and UL directions only.
+    virtual LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo);
 };
 
 } //namespace

@@ -83,6 +83,9 @@ class LteMacEnbD2D : public LteMacEnb
     /// Lower Layer Handler
     void fromPhy(cPacket *pkt) override;
 
+    /// HARQ RX buffer factory: adds support for the D2D and D2D_MULTI directions
+    LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo) override;
+
   public:
 
 

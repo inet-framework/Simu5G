@@ -14,6 +14,7 @@
 #include "simu5g/stack/mac/LteMacUeD2D.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
+#include "simu5g/stack/mac/buffer/harq_d2d/LteHarqBufferRxD2D.h"
 #include "simu5g/stack/mac/amc/AmcPilotD2D.h"
 #include "simu5g/stack/mac/scheduler/LteSchedulerEnbUl.h"
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
@@ -508,6 +509,14 @@ void LteMacEnbD2D::flushHarqBuffers()
 /*
  * Lower layer handler
  */
+LteHarqBufferRx *LteMacEnbD2D::createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo)
+{
+    Direction dir = (Direction)userInfo->getDirection();
+    if (dir == D2D || dir == D2D_MULTI)
+        return new LteHarqBufferRxD2D(harqProcesses_, this, binder_, src, (dir == D2D_MULTI));
+    return LteMacEnb::createRxHarqBuffer(src, userInfo);
+}
+
 void LteMacEnbD2D::fromPhy(cPacket *pktAux)
 {
     // TODO: harq test (commenting fromPhy: it has only to pass PDUs to the proper RX buffer and

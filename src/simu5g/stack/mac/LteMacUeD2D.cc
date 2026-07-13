@@ -13,6 +13,7 @@
 #include "simu5g/stack/mac/LteMacUeD2D.h"
 
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
+#include "simu5g/stack/mac/buffer/harq_d2d/LteHarqBufferRxD2D.h"
 #include "simu5g/stack/mac/buffer/LteMacQueue.h"
 #include "simu5g/stack/mac/packet/LteRac_m.h"
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
@@ -258,16 +259,8 @@ void LteMacUeD2D::macPduMake(MacCid cid)
             }
             else {
                 // The tx buffer does not exist yet for this mac node id, create one
-                LteHarqBufferTx *hb;
                 // FIXME: hb is never deleted
-                auto info = macPkt->getTag<UserControlInfo>();
-
-                if (info->getDirection() == UL) {
-                    hb = new LteHarqBufferTx(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(binder_->getMacByNodeId(destId)));
-                }
-                else { // D2D or D2D_MULTI
-                    hb = new LteHarqBufferTxD2D(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(binder_->getMacByNodeId(destId)));
-                }
+                LteHarqBufferTx *hb = createTxHarqBuffer(destId, (Direction)macPkt->getTag<UserControlInfo>()->getDirection());
                 harqTxBuffers[destId] = hb;
                 txBuf = hb;
             }
@@ -382,6 +375,23 @@ void LteMacUeD2D::macPduMake(MacCid cid)
             }
         }
     }
+}
+
+LteHarqBufferRx *LteMacUeD2D::createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo)
+{
+    Direction dir = (Direction)userInfo->getDirection();
+    if (dir == D2D || dir == D2D_MULTI)
+        return new LteHarqBufferRxD2D(harqProcesses_, this, binder_, src, (dir == D2D_MULTI));
+    return LteMacUe::createRxHarqBuffer(src, userInfo);
+}
+
+LteHarqBufferTx *LteMacUeD2D::createTxHarqBuffer(MacNodeId destId, Direction dir)
+{
+    // NOTE: unlike the base class, the UL buffer is paired with the MAC of destId, not of the serving cell
+    if (dir == UL)
+        return new LteHarqBufferTx(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(binder_->getMacByNodeId(destId)));
+    else // D2D or D2D_MULTI
+        return new LteHarqBufferTxD2D(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(binder_->getMacByNodeId(destId)));
 }
 
 void LteMacUeD2D::handleMessage(cMessage *msg)

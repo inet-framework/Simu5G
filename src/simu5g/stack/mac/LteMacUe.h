@@ -108,6 +108,10 @@ class LteMacUe : public LteMacBase
      */
     void macPduMake(MacCid cid = MacCid()) override;
 
+    /// Factory for the TX HARQ buffer created upon first transmission towards a node.
+    /// The base implementation supports the UL direction only (buffer paired with the serving cell's MAC).
+    virtual LteHarqBufferTx *createTxHarqBuffer(MacNodeId destId, Direction dir);
+
     /**
      * macPduUnmake() extracts SDUs from a received MAC
      * PDU and sends them to the upper layer.
