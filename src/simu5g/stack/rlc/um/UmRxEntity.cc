@@ -71,14 +71,7 @@ void UmRxEntity::enque(cPacket *pktAux)
     // Get the RLC PDU Transmission sequence number (x)
     unsigned int tsn = pdu->getPduSequenceNumber();
 
-    if (!init_ && isD2DMultiConnection()) {
-        // for D2D multicast connections, the first received PDU must be considered as the first valid PDU
-        rxWindowDesc_.clear(tsn);
-        // setting the window size to 1 allows the entity to deliver immediately out-of-sequence SDU,
-        // since reordering is not applicable for D2D multicast communications
-        rxWindowDesc_.windowSize_ = 1;
-        init_ = true;
-    }
+    onFirstPduEnqueued(tsn);
 
     // get the position in the buffer
     int index = tsn - rxWindowDesc_.firstSno_;
@@ -157,16 +150,7 @@ void UmRxEntity::enque(cPacket *pktAux)
 
     // emit statistics
     cModule *ue = binder_->getRlcByNodeId(ueId, UM);
-    if (ue != nullptr) {
-        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
-            ue->emit(rlcPduThroughputSignal_[dir_], tputSample);
-            ue->emit(rlcPduDelaySignal_[dir_], (NOW - pktPdu->getCreationTime()).dbl());
-        }
-        else { // UE in DM
-            ue->emit(rlcPduThroughputD2DSignal_, tputSample);
-            ue->emit(rlcPduDelayD2DSignal_, (NOW - pktPdu->getCreationTime()).dbl());
-        }
-    }
+    emitPduStats(ue, lteInfo->getDirection(), tputSample, pktPdu->getCreationTime());
 
     EV << NOW << " UmRxEntity::enque - tsn " << tsn << ", the corresponding index after shift in the buffer is " << index << endl;
     EV << NOW << " UmRxEntity::enque - firstSnoReordering " << rxWindowDesc_.firstSnoForReordering_ << endl;
@@ -223,6 +207,32 @@ void UmRxEntity::enque(cPacket *pktAux)
     }
 }
 
+void UmRxEntity::onFirstPduEnqueued(unsigned int pduSno)
+{
+    if (!init_ && isD2DMultiConnection()) {
+        // for D2D multicast connections, the first received PDU must be considered as the first valid PDU
+        rxWindowDesc_.clear(pduSno);
+        // setting the window size to 1 allows the entity to deliver immediately out-of-sequence SDU,
+        // since reordering is not applicable for D2D multicast communications
+        rxWindowDesc_.windowSize_ = 1;
+        init_ = true;
+    }
+}
+
+void UmRxEntity::emitPduStats(cModule *ue, Direction dir, double tputSample, simtime_t creationTime)
+{
+    if (ue != nullptr) {
+        if (dir != D2D && dir != D2D_MULTI) { // UE in IM
+            ue->emit(rlcPduThroughputSignal_[dir_], tputSample);
+            ue->emit(rlcPduDelaySignal_[dir_], (NOW - creationTime).dbl());
+        }
+        else { // UE in DM
+            ue->emit(rlcPduThroughputD2DSignal_, tputSample);
+            ue->emit(rlcPduDelayD2DSignal_, (NOW - creationTime).dbl());
+        }
+    }
+}
+
 void UmRxEntity::moveRxWindow(int pos)
 {
     EV << NOW << " UmRxEntity::moveRxWindow moving forth by " << pos << " locations" << endl;
@@ -276,16 +286,7 @@ void UmRxEntity::toPdcp(Packet *pktAux)
     double cellTputSample = (double)totalCellRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
     double tputSample = (double)totalRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
 
-    if (ue != nullptr) {
-        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
-            ue->emit(rlcThroughputSignal_[dir_], tputSample);
-            ue->emit(rlcDelaySignal_[dir_], (NOW - ts).dbl());
-        }
-        else {
-            ue->emit(rlcThroughputD2DSignal_, tputSample);
-            ue->emit(rlcDelayD2DSignal_, (NOW - ts).dbl());
-        }
-    }
+    emitSduStats(ue, lteInfo->getDirection(), tputSample, ts);
 
     if (nodeB_ == nullptr) {
         // retry getting nodeB_, if it failed in initialize() due to cellId=0 in MAC (some race condition?)
@@ -302,6 +303,33 @@ void UmRxEntity::toPdcp(Packet *pktAux)
     EV << NOW << " UmRxEntity::toPdcp Send packet to upper layer" << endl;
 
     send(pktAux, "out");
+}
+
+void UmRxEntity::emitSduStats(cModule *ue, Direction dir, double tputSample, simtime_t creationTime)
+{
+    if (ue != nullptr) {
+        if (dir != D2D && dir != D2D_MULTI) { // UE in IM
+            ue->emit(rlcThroughputSignal_[dir_], tputSample);
+            ue->emit(rlcDelaySignal_[dir_], (NOW - creationTime).dbl());
+        }
+        else {
+            ue->emit(rlcThroughputD2DSignal_, tputSample);
+            ue->emit(rlcDelayD2DSignal_, (NOW - creationTime).dbl());
+        }
+    }
+}
+
+bool UmRxEntity::consumeReassemblyReset(unsigned int pduSno)
+{
+    if (!resetFlag_)
+        return false;
+
+    // by doing this, the arrived PDU and its first extracted SDU will be considered in order.
+    // For example, when D2D is enabled, this helps to retrieve the synchronization between SNs
+    // at the tx and rx after a mode switch.
+    lastPduReassembled_ = pduSno - 1;
+    resetFlag_ = false;
+    return true;
 }
 
 void UmRxEntity::reassemble(unsigned int index)
@@ -323,11 +351,9 @@ void UmRxEntity::reassemble(unsigned int index)
     // get PDU seq number
     unsigned int pduSno = pdu->getPduSequenceNumber();
 
-    if (resetFlag_) {
-        // by doing this, the arrived PDU will be considered in order. For example, when D2D is enabled,
-        // this helps to retrieve the synchronization between SNs at the tx and rx after a mode switch
-        lastPduReassembled_ = pduSno - 1;
-    }
+    // consume a pending reassembly reset (if any); when consumed, the first
+    // extracted SDU of this PDU must be considered in order (ignoreFragment)
+    bool ignoreFragment = consumeReassemblyReset(pduSno);
 
     // get framing info
     FramingInfo fi = pdu->getFramingInfo();
@@ -347,14 +373,6 @@ void UmRxEntity::reassemble(unsigned int index)
         unsigned int sduWholeLength = pdcpTag->getOriginalPacketLength(); // the length of the whole sdu
 
         if (i == 0) { // first SDU
-            bool ignoreFragment = false;
-            if (resetFlag_) {
-                // by doing this, the first extracted SDU will be considered in order. For example, when D2D is enabled,
-                // this helps to retrieve the synchronization between SNs at the tx and rx after a mode switch
-                resetFlag_ = false;
-                ignoreFragment = true;
-            }
-
             if (i == numSdu - 1) { // [first SDU, i==0] there is only one SDU in this PDU
                 // read the FI field
                 switch (fi.toValue()) {
