@@ -63,7 +63,9 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
             RlcTxEntityBase *txbuf = bearerManagement_->lookupRlcTxBuffer(id);
             if (txbuf == nullptr)
                 txbuf = bearerManagement_->createRlcTxBuffer(id, lteInfo.get());
-            UmTxEntity *umTxbuf = check_and_cast<UmTxEntity *>(txbuf);
+            UmTxEntity *umTxbuf = dynamic_cast<UmTxEntity *>(txbuf);
+            if (umTxbuf == nullptr)
+                throw cRuntimeError("RlcMux::fromMacLayer: D2D mode switch received for a non-UM TX bearer (%s): D2D mode switching supports UM bearers only", txbuf->getClassName());
             umTxbuf->rlcHandleD2DModeSwitch(switchPkt->getOldConnection(), switchPkt->getClearRlcBuffer());
 
             delete pkt;
@@ -73,7 +75,9 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
             RlcRxEntityBase *rxbuf = lookupRxBuffer(id);
             if (rxbuf == nullptr)
                 rxbuf = bearerManagement_->createRlcRxBuffer(id, lteInfo.get());
-            UmRxEntity *umRxbuf = check_and_cast<UmRxEntity *>(rxbuf);
+            UmRxEntity *umRxbuf = dynamic_cast<UmRxEntity *>(rxbuf);
+            if (umRxbuf == nullptr)
+                throw cRuntimeError("RlcMux::fromMacLayer: D2D mode switch received for a non-UM RX bearer (%s): D2D mode switching supports UM bearers only", rxbuf->getClassName());
             umRxbuf->rlcHandleD2DModeSwitch(switchPkt->getOldConnection(), switchPkt->getOldMode(), switchPkt->getClearRlcBuffer());
 
             delete pkt;
