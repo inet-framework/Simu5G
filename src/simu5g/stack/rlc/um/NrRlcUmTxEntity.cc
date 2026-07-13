@@ -77,7 +77,7 @@ void NrRlcUmTxEntity::rlcPduMake(int pduLength)
         EV << NOW << " NrRlcUmTxEntity::rlcPduMake - buffer empty, wasting grant (" << size << "B)" << endl;
         emit(wastedGrantedBytesSignal_, size);
         delete pkt;
-        notifyControllerIfEmptied();
+        onTxBufferEmptied();
         return;
     }
 
@@ -126,18 +126,9 @@ void NrRlcUmTxEntity::rlcPduMake(int pduLength)
     emit(sentPacketToLowerLayerSignal_, pkt);
     sendPduToMac(pkt);
 
-    notifyControllerIfEmptied();
-}
-
-void NrRlcUmTxEntity::notifyControllerIfEmptied()
-{
-    // Once the old-mode entity has drained, release the new-mode entity's holding
-    // buffer via the D2D controller (mode-switch handover of buffered SDUs).
-    if (notifyEmptyBuffer_ && !sduBuffer->hasData()) {
-        notifyEmptyBuffer_ = false;
-        if (d2dModeController_ && flowControlInfo_)
-            d2dModeController_->resumeDownstreamInPackets(flowControlInfo_->getD2dRxPeerId());
-    }
+    // signal the hook that a PDU has been built (used to notify the D2D mode
+    // controller when the TX buffer of the old mode has drained)
+    onTxBufferEmptied();
 }
 
 void NrRlcUmTxEntity::clearQueue()

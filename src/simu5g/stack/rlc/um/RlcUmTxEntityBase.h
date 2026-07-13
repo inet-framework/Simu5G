@@ -86,6 +86,29 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
 
     // Wire format carried on FlowControlInfo (false = LTE FI/concat, true = NR SO).
     virtual bool usesSoFraming() const = 0;
+
+    /*
+     * Hook invoked for an SDU arriving from the upper layer, before it is
+     * enqueued into the TX buffer. Returns true if the SDU was consumed by
+     * the hook (e.g. held in the holding buffer during a D2D mode switch),
+     * in which case the caller must neither enqueue it nor send a new-data
+     * indication to the MAC layer.
+     */
+    virtual bool interceptSdu(inet::Packet *pkt);
+
+    /*
+     * Hook invoked after a PDU has been built, at the point where a TX buffer
+     * that has just drained must be signaled (e.g. to notify the D2D mode
+     * controller to resume holding-buffer packets for the newly selected mode).
+     */
+    virtual void onTxBufferEmptied();
+
+    /*
+     * Whether the TX buffer holds no further SDU data. The buffer itself is
+     * mode-specific (LTE: SDU queue; NR: SO transmission buffer), so the
+     * predicate behind onTxBufferEmptied() is deferred to the subclass.
+     */
+    virtual bool isTxBufferEmpty() const = 0;
     virtual unsigned int snFieldLength() const = 0;
 
   public:

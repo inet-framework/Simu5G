@@ -84,13 +84,9 @@ void RlcUmTxEntityBase::handleSdu(inet::Packet *pkt)
     pdcpTag->setPdcpSequenceNumber(pdcpHeader->getSequenceNumber());
     pdcpTag->setOriginalPacketLength(pkt->getByteLength());
 
-    if (holdingDownstreamInPackets_) {
-        // D2D mode switch in progress on the new-mode entity: hold the SDU and
-        // do not notify the MAC until the old-mode entity has drained.
-        EV << "RlcUmTxEntity::handleSdu - Enqueue packet into the Holding Buffer\n";
-        enqueHoldingPackets(pkt);
+    // give the hook a chance to consume the SDU (e.g. hold it during a D2D mode switch)
+    if (interceptSdu(pkt))
         return;
-    }
 
     bool stored = storeSdu(pkt);
 
@@ -129,6 +125,30 @@ void RlcUmTxEntityBase::handleMacSduRequest(inet::Packet *pkt)
     rlcPduMake(size);
 
     delete pkt;
+}
+
+void RlcUmTxEntityBase::onTxBufferEmptied()
+{
+    // Once the old-mode entity has drained, release the new-mode entity's holding
+    // buffer via the D2D controller (mode-switch handover of buffered SDUs).
+    if (notifyEmptyBuffer_ && isTxBufferEmpty()) {
+        notifyEmptyBuffer_ = false;
+        // tell the D2D mode controller to resume packets for the new mode
+        if (d2dModeController_ && flowControlInfo_)
+            d2dModeController_->resumeDownstreamInPackets(flowControlInfo_->getD2dRxPeerId());
+    }
+}
+
+bool RlcUmTxEntityBase::interceptSdu(inet::Packet *pkt)
+{
+    if (holdingDownstreamInPackets_) {
+        // D2D mode switch in progress on the new-mode entity: hold the SDU and
+        // do not notify the MAC until the old-mode entity has drained.
+        EV << "RlcUmTxEntity::interceptSdu - Enqueue packet into the Holding Buffer\n";
+        enqueHoldingPackets(pkt);
+        return true;
+    }
+    return false;
 }
 
 void RlcUmTxEntityBase::enqueHoldingPackets(cPacket *pkt)

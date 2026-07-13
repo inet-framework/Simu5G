@@ -107,14 +107,7 @@ void LteRlcUmRxEntity::enque(cPacket *pktAux)
     // Get the RLC PDU Transmission sequence number (x)
     unsigned int tsn = pdu->getPduSequenceNumber();
 
-    if (!init_ && isD2DMultiConnection()) {
-        // for D2D multicast connections, the first received PDU must be considered as the first valid PDU
-        rxWindowDesc_.clear(tsn);
-        // setting the window size to 1 allows the entity to deliver immediately out-of-sequence SDU,
-        // since reordering is not applicable for D2D multicast communications
-        rxWindowDesc_.windowSize_ = 1;
-        init_ = true;
-    }
+    onFirstPduEnqueued(tsn);
 
     // get the position in the buffer
     int index = tsn - rxWindowDesc_.firstSno_;
@@ -178,14 +171,7 @@ void LteRlcUmRxEntity::enque(cPacket *pktAux)
     // emit statistics
     double tputSample = (double)totalPduRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
 
-    if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
-        emit(rlcPduThroughputSignal_[dir_], tputSample);
-        emit(rlcPduDelaySignal_[dir_], (NOW - pktPdu->getCreationTime()).dbl());
-    }
-    else { // UE in DM
-        emit(rlcPduThroughputD2DSignal_, tputSample);
-        emit(rlcPduDelayD2DSignal_, (NOW - pktPdu->getCreationTime()).dbl());
-    }
+    emitPduStats(static_cast<Direction>(lteInfo->getDirection()), tputSample, pktPdu->getCreationTime());
 
     EV << NOW << " LteRlcUmRxEntity::enque - tsn " << tsn << ", the corresponding index after shift in the buffer is " << index << endl;
     EV << NOW << " LteRlcUmRxEntity::enque - firstSnoReordering " << rxWindowDesc_.firstSnoForReordering_ << endl;
@@ -234,6 +220,30 @@ void LteRlcUmRxEntity::enque(cPacket *pktAux)
     }
 }
 
+void LteRlcUmRxEntity::onFirstPduEnqueued(unsigned int pduSno)
+{
+    if (!init_ && isD2DMultiConnection()) {
+        // for D2D multicast connections, the first received PDU must be considered as the first valid PDU
+        rxWindowDesc_.clear(pduSno);
+        // setting the window size to 1 allows the entity to deliver immediately out-of-sequence SDU,
+        // since reordering is not applicable for D2D multicast communications
+        rxWindowDesc_.windowSize_ = 1;
+        init_ = true;
+    }
+}
+
+void LteRlcUmRxEntity::emitPduStats(Direction dir, double tputSample, simtime_t creationTime)
+{
+    if (dir != D2D && dir != D2D_MULTI) { // UE in IM
+        emit(rlcPduThroughputSignal_[dir_], tputSample);
+        emit(rlcPduDelaySignal_[dir_], (NOW - creationTime).dbl());
+    }
+    else { // UE in DM
+        emit(rlcPduThroughputD2DSignal_, tputSample);
+        emit(rlcPduDelayD2DSignal_, (NOW - creationTime).dbl());
+    }
+}
+
 void LteRlcUmRxEntity::moveRxWindow(int pos)
 {
     EV << NOW << " LteRlcUmRxEntity::moveRxWindow moving forth by " << pos << " locations" << endl;
@@ -273,19 +283,37 @@ void LteRlcUmRxEntity::toPdcpLte(Packet *pktAux)
     totalRcvdBytes_ += length;
     double tputSample = (double)totalRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
 
-    if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
-        emit(rlcThroughputSignal_[dir_], tputSample);
-        emit(rlcDelaySignal_[dir_], (NOW - ts).dbl());
-    }
-    else {
-        emit(rlcThroughputD2DSignal_, tputSample);
-        emit(rlcDelayD2DSignal_, (NOW - ts).dbl());
-    }
+    emitSduStats(static_cast<Direction>(lteInfo->getDirection()), tputSample, ts);
 
     EV << NOW << " LteRlcUmRxEntity::toPdcp Created PDCP PDU with length " << pktAux->getByteLength() << " bytes" << endl;
     EV << NOW << " LteRlcUmRxEntity::toPdcp Send packet to upper layer" << endl;
 
     send(pktAux, "out");
+}
+
+void LteRlcUmRxEntity::emitSduStats(Direction dir, double tputSample, simtime_t creationTime)
+{
+    if (dir != D2D && dir != D2D_MULTI) { // UE in IM
+        emit(rlcThroughputSignal_[dir_], tputSample);
+        emit(rlcDelaySignal_[dir_], (NOW - creationTime).dbl());
+    }
+    else {
+        emit(rlcThroughputD2DSignal_, tputSample);
+        emit(rlcDelayD2DSignal_, (NOW - creationTime).dbl());
+    }
+}
+
+bool LteRlcUmRxEntity::consumeReassemblyReset(unsigned int pduSno)
+{
+    if (!resetFlag_)
+        return false;
+
+    // by doing this, the arrived PDU and its first extracted SDU will be considered in order.
+    // For example, when D2D is enabled, this helps to retrieve the synchronization between SNs
+    // at the tx and rx after a mode switch.
+    lastPduReassembled_ = pduSno - 1;
+    resetFlag_ = false;
+    return true;
 }
 
 void LteRlcUmRxEntity::reassemble(unsigned int index)
@@ -307,11 +335,9 @@ void LteRlcUmRxEntity::reassemble(unsigned int index)
     // get PDU seq number
     unsigned int pduSno = pdu->getPduSequenceNumber();
 
-    if (resetFlag_) {
-        // by doing this, the arrived PDU will be considered in order. For example, when D2D is enabled,
-        // this helps to retrieve the synchronization between SNs at the tx and rx after a mode switch
-        lastPduReassembled_ = pduSno - 1;
-    }
+    // consume a pending reassembly reset (if any); when consumed, the first
+    // extracted SDU of this PDU must be considered in order (ignoreFragment)
+    bool ignoreFragment = consumeReassemblyReset(pduSno);
 
     // get framing info
     FramingInfo fi = pdu->getFramingInfo();
@@ -331,13 +357,6 @@ void LteRlcUmRxEntity::reassemble(unsigned int index)
         unsigned int sduWholeLength = pdcpTag->getOriginalPacketLength(); // the length of the whole sdu
 
         if (i == 0) { // first SDU
-            bool ignoreFragment = false;
-            if (resetFlag_) {
-                // by doing this, the first extracted SDU will be considered in order.
-                resetFlag_ = false;
-                ignoreFragment = true;
-            }
-
             if (i == numSdu - 1) { // [first SDU, i==0] there is only one SDU in this PDU
                 // read the FI field
                 switch (fi.toValue()) {

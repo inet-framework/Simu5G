@@ -67,6 +67,7 @@ class LteRlcUmTxEntity : public RlcUmTxEntityBase
 
     void clearQueue() override;
     void resumeDownstreamInPackets() override;
+    bool isTxBufferEmpty() const override { return sduQueue_.isEmpty(); }
     void rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer) override;
 
   protected:

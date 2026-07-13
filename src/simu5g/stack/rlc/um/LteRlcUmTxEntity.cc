@@ -207,13 +207,9 @@ void LteRlcUmTxEntity::rlcPduMake(int pduLength)
     EV << NOW << " LteRlcUmTxEntity::rlcPduMake - send PDU " << rlcPdu->getPduSequenceNumber() << " with size " << pkt->getByteLength() << " bytes to lower layer" << endl;
     send(pkt, "out");
 
-    // if incoming connection was halted
-    if (notifyEmptyBuffer_ && sduQueue_.isEmpty()) {
-        notifyEmptyBuffer_ = false;
-        // tell the D2D mode controller to resume packets for the new mode
-        if (d2dModeController_)
-            d2dModeController_->resumeDownstreamInPackets(flowControlInfo_->getD2dRxPeerId());
-    }
+    // signal the hook that a PDU has been built (used to notify the D2D mode
+    // controller when the TX buffer of the old mode has drained)
+    onTxBufferEmptied();
 }
 
 void LteRlcUmTxEntity::removeDataFromQueue()

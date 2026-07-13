@@ -60,6 +60,34 @@ class LteRlcUmRxEntity : public RlcUmRxEntityBase
   protected:
     void initMode(LteMacBase *mac) override;
 
+    /*
+     * Hook invoked when the first PDU of the connection is enqueued, to
+     * initialize the reordering window. The base implementation applies the
+     * D2D_MULTI special case (single-PDU window; the first received PDU is
+     * treated as the first valid one).
+     */
+    virtual void onFirstPduEnqueued(unsigned int pduSno);
+
+    /*
+     * Hook invoked at the start of reassembling a PDU. If a reassembly reset
+     * is pending (e.g. after a D2D mode switch), it is consumed so that the PDU
+     * and its first extracted SDU are treated as in-sequence, and true is
+     * returned; false is returned otherwise.
+     */
+    virtual bool consumeReassemblyReset(unsigned int pduSno);
+
+    /*
+     * Hook that emits the direction-indexed per-PDU statistics (throughput and
+     * delay) at PDU enqueue time.
+     */
+    virtual void emitPduStats(Direction dir, double tputSample, simtime_t creationTime);
+
+    /*
+     * Hook that emits the direction-indexed per-SDU statistics (throughput and
+     * delay) when an SDU is delivered to PDCP.
+     */
+    virtual void emitSduStats(Direction dir, double tputSample, simtime_t creationTime);
+
   private:
     virtual void moveRxWindow(int pos);
     virtual void reassemble(unsigned int index);
