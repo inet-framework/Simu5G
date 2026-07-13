@@ -16,6 +16,7 @@
 #include "simu5g/stack/mac/LteMacUe.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/d2d/mac/ID2dMacUe.h"
+#include "simu5g/stack/d2d/mac/D2dUeMacHelper.h"
 #include "simu5g/stack/mac/buffer/harq_d2d/LteHarqBufferTxD2D.h"
 
 namespace simu5g {
@@ -31,23 +32,15 @@ class LteMacUeD2D : public LteMacUe, public ID2dMacUe
 
   protected:
 
-    // reference to the eNB
-    ID2dMacEnb *enb_ = nullptr;
+    // signal registered here (not in the helper) to keep the global signal
+    // registration order -- and thus the sz fingerprint -- unchanged
+    static simsignal_t rcvdD2DModeSwitchNotificationSignal_;
+
+    // holds the D2D-specific UE-MAC state and logic (shared with the NR variant)
+    D2dUeMacHelper d2dUeHelper_;
 
     // flag for empty schedule list (true when no carriers have been scheduled)
     bool emptyScheduleList_;
-
-    // RAC Handling variables
-    bool racD2DMulticastRequested_ = false;
-    // Multicast D2D BSR handling
-    bool bsrD2DMulticastTriggered_ = false;
-
-    static simsignal_t rcvdD2DModeSwitchNotificationSignal_;
-
-    // if true, use the preconfigured TX params for transmission, else use those signaled by the eNB
-    bool usePreconfiguredTxParams_;
-    UserTxParams *preconfiguredTxParams_ = nullptr;
-    UserTxParams *getPreconfiguredTxParams();  // build and return new user tx params
 
     /**
      * Reads MAC parameters for the UE and performs initialization.
@@ -79,8 +72,6 @@ class LteMacUeD2D : public LteMacUe, public ID2dMacUe
 
     void macHandleD2DModeSwitch(cPacket *pkt);
 
-    virtual Packet *makeBsr(int size);
-
     /**
      * macPduMake() creates MAC PDUs (one for each CID)
      * by extracting SDUs from Real Mac Buffers according
@@ -97,7 +88,7 @@ class LteMacUeD2D : public LteMacUe, public ID2dMacUe
     LteHarqBufferTx *createTxHarqBuffer(MacNodeId destId, Direction dir) override;
 
   public:
-    ~LteMacUeD2D() override;
+    LteMacUeD2D();
 
     bool isD2DCapable() override
     {
@@ -107,7 +98,7 @@ class LteMacUeD2D : public LteMacUe, public ID2dMacUe
     virtual void triggerBsr(MacCid cid)
     {
         if (connDescOut_[cid].flowInfo.getDirection() == D2D_MULTI)
-            bsrD2DMulticastTriggered_ = true;
+            d2dUeHelper_.setBsrD2DMulticastTriggered(true);
         else
             bsrTriggered_ = true;
     }

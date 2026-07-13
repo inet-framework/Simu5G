@@ -196,6 +196,14 @@ class LteMacUe : public LteMacBase
         return bsrTriggered_;
     }
 
+    /*
+     * Cancel a pending buffer status report trigger
+     */
+    void cancelBsr()
+    {
+        bsrTriggered_ = false;
+    }
+
     /* utility functions used by LCP scheduler
      * <cid> and <priority> are returned by reference
      * @return true if at least one backlogged connection exists
