@@ -31,7 +31,7 @@ module NrNicEnbD2D extends NrNicEnb
         // use the D2D-capable NR channel model (matching the NrNicEnb default of
         // NrChannelModel_3GPP38_901 on the gNodeB's channelModel slot)
         lteChannelModelType = default("D2dNrChannelModel_3GPP38_901");
-        rrc.hasD2DModeController = true;
+        rrc.typename = default("RrcD2D");
         rrc.hasD2DModeSelection = true;
         rrc.bearerManagement.rlcUmTxEntityModuleType = default("simu5g.stack.d2d.rlc.UmTxEntityD2D");
         rrc.bearerManagement.rlcUmRxEntityModuleType = default("simu5g.stack.d2d.rlc.UmRxEntityD2D");

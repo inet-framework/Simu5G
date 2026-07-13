@@ -14,15 +14,13 @@
 #include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"
 #include "simu5g/stack/ip2nic/HandoverPacketHolderEnb.h"
 #include "simu5g/stack/phy/LtePhyUe.h"
-#include "simu5g/stack/phy/LtePhyUeD2D.h"
 #include "simu5g/stack/phy/NrPhyUe.h"
-#include "simu5g/stack/d2d/phy/NrPhyUeD2D.h"  // TODO interim core->d2d include; goes away once HandoverControllerD2D exists
-#include "simu5g/stack/rrc/D2dModeSelectionBase.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/phy/feedback/LteDlFeedbackGenerator.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/InitStages.h"
 #include "simu5g/stack/mac/LteMacUe.h"
+#include "simu5g/stack/mac/LteMacEnb.h"
 
 namespace simu5g {
 
@@ -148,53 +146,18 @@ void HandoverController::handleMessage(cMessage *msg)
         throw cRuntimeError("HandoverController::handleMessage: unknown self-message '%s'", msg->getName());
 }
 
+// Handover lifecycle hooks: no-ops in the core controller. The D2D behavior lives
+// in HandoverControllerD2D, which the D2D-capable UE NICs select.
 void HandoverController::onHandoverCompleted()
 {
-    // Handover completed: ask the new serving cell's mode selection module whether
-    // D2D connections of this UE can switch (back) to Direct Mode. The serving eNB may
-    // not be D2D-capable (no d2dModeSelection submodule), in which case there is nothing to do.
-    cModule *enb = binder_->getNodeModule(servingNodeId_);
-    D2dModeSelectionBase *d2dModeSelection = dynamic_cast<D2dModeSelectionBase *>(enb->getSubmodule("cellularNic")->getSubmodule("rrc")->getSubmodule("d2dModeSelection"));
-    if (d2dModeSelection != nullptr)
-        d2dModeSelection->doModeSwitchAtHandover(nodeId_, true);
-    else
-        EV_WARN << "HandoverController: serving eNB " << servingNodeId_ << " is not D2D-capable - no D2D mode switch at handover completion" << endl;
 }
 
 void HandoverController::onHandoverStarting()
 {
-    // D2D-specific: Perform D2D mode switch before handover (both LTE and NR D2D variants)
-    if (dynamic_cast<LtePhyUeD2D*>(phy_) || dynamic_cast<NrPhyUeD2D*>(phy_)) {
-        if (servingNodeId_ != NODEID_NONE) {
-            // Stop active D2D flows (go back to Infrastructure mode)
-            // Currently, DM is possible only for UEs served by the same cell
-
-            // Trigger D2D mode switch (the serving eNB may not be D2D-capable, in which case there is nothing to do)
-            cModule *enb = binder_->getNodeModule(servingNodeId_);
-            D2dModeSelectionBase *d2dModeSelection = dynamic_cast<D2dModeSelectionBase *>(enb->getSubmodule("cellularNic")->getSubmodule("rrc")->getSubmodule("d2dModeSelection"));
-            if (d2dModeSelection != nullptr)
-                d2dModeSelection->doModeSwitchAtHandover(nodeId_, false);
-            else
-                EV_WARN << "HandoverController: serving eNB " << servingNodeId_ << " is not D2D-capable - no D2D mode switch before handover" << endl;
-        }
-    }
 }
 
 void HandoverController::onHandoverExecuting()
 {
-    // D2D-specific: detach/attach the D2D direction on the old/new AMC (before common logic).
-    // Covers both the LTE and NR D2D PHY variants (clean NrPhyUe is no longer a LtePhyUeD2D).
-    if (dynamic_cast<LtePhyUeD2D*>(phy_) || dynamic_cast<NrPhyUeD2D*>(phy_)) {
-        if (servingNodeId_ != NODEID_NONE) {
-            LteAmc *oldAmc = check_and_cast<LteMacEnb *>(binder_->getMacFromMacNodeId(servingNodeId_))->getAmc();
-            oldAmc->detachUser(nodeId_, D2D);
-        }
-
-        if (candidateServingNodeId_ != NODEID_NONE) {
-            LteAmc *newAmc = getAmcModule(candidateServingNodeId_);
-            newAmc->attachUser(nodeId_, D2D);
-        }
-    }
 }
 
 void HandoverController::beaconReceived(LteAirFrame *frame, UserControlInfo *lteInfo)
@@ -454,15 +417,6 @@ void HandoverController::doHandover()
     mac_->doHandover(candidateServingNodeId_);  // do MAC operations for handover
     servingNodeRssi_ = candidateServingNodeRssi_;
     updateHysteresisThreshold(servingNodeRssi_);
-
-    // D2D-capable UEs (LTE or NR variant): Schedule mode switch message
-    if (dynamic_cast<LtePhyUeD2D*>(phy_) || dynamic_cast<NrPhyUeD2D*>(phy_)) {
-        if (servingNodeId_ != NODEID_NONE) {        // send a self-message to schedule the possible mode switch at the end of the TTI (after all UEs have performed the handover)
-            cMessage *msg = new cMessage("doModeSwitchAtHandover");
-            msg->setSchedulingPriority(10);
-            scheduleAt(NOW, msg);
-        }
-    }
 
     // Update DL feedback generator
     fbGen_->handleHandover(servingNodeId_);

@@ -22,7 +22,6 @@ using namespace omnetpp;
 
 class Binder;
 class LtePhyUe;
-class LtePhyUeD2D;
 class NrPhyUe;
 class LteMacUe;
 class LteAmc;
@@ -118,7 +117,8 @@ class HandoverController : public cSimpleModule
     void updateHysteresisThreshold(double rssi);
     LteAmc *getAmcModule(MacNodeId nodeId);
 
-    /// Handover lifecycle notification hooks.
+    /// Handover lifecycle notification hooks. The base implementations are empty;
+    /// HandoverControllerD2D overrides them with the D2D-specific behavior.
     /// Called by triggerHandover() once the handover decision is made, before the handover latency starts.
     virtual void onHandoverStarting();
     /// Called by doHandover() before buffers are deleted and the user is re-attached to the new cell's AMC.

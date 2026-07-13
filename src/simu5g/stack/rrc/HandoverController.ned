@@ -16,7 +16,7 @@ package simu5g.stack.rrc;
 // Receives RSSI measurements from the PHY layer based on broadcast frames,
 // and triggers handover when a better serving cell is detected.
 //
-simple HandoverController
+simple HandoverController like IHandoverController
 {
     parameters:
         @display("i=block/control");
