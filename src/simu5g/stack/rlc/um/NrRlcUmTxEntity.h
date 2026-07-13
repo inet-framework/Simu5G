@@ -28,6 +28,7 @@ using namespace omnetpp;
  */
 class NrRlcUmTxEntity : public RlcUmTxEntityBase
 {
+  protected:
     // The SDU segmentation buffer.
     RlcUmTransmitterBuffer *sduBuffer = nullptr;
 
@@ -45,9 +46,7 @@ class NrRlcUmTxEntity : public RlcUmTxEntityBase
     }
 
     void clearQueue() override;
-    void resumeDownstreamInPackets() override;
     bool isTxBufferEmpty() const override { return !sduBuffer->hasData(); }
-    void rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer) override;
 
   protected:
 
@@ -57,10 +56,6 @@ class NrRlcUmTxEntity : public RlcUmTxEntityBase
     bool usesSoFraming() const override { return true; }
     unsigned int snFieldLength() const override { return sn_FieldLength; }
 
-  private:
-
-    // Once the old-mode entity has drained, release the new-mode entity's holding
-    // buffer via the D2D controller (mode-switch handover of buffered SDUs).
 };
 
 } //namespace

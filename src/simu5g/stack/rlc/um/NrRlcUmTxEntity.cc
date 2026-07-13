@@ -13,7 +13,6 @@
 #include "simu5g/stack/rlc/um/NrRlcUmDataPdu.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
-#include "simu5g/stack/rrc/D2DModeController.h"
 
 namespace simu5g {
 
@@ -135,58 +134,6 @@ void NrRlcUmTxEntity::clearQueue()
 {
     // empty the TX buffer (deletes buffered SDUs); the UM numbering is NOT reset
     sduBuffer->clearBuffer();
-}
-
-void NrRlcUmTxEntity::resumeDownstreamInPackets()
-{
-    EV << NOW << " NrRlcUmTxEntity::resumeDownstreamInPackets - releasing held SDUs to the TX buffer" << endl;
-    holdingDownstreamInPackets_ = false;
-
-    while (!sduHoldingQueue_.isEmpty()) {
-        auto pktRlc = check_and_cast<inet::Packet *>(sduHoldingQueue_.front());
-        sduHoldingQueue_.pop();
-
-        // store the SDU in the TX buffer (ownership transferred)
-        sduBuffer->addSdu(pktRlc->getByteLength(), pktRlc);
-
-        // notify the MAC of new data (dup carries the full SDU length)
-        auto pktRlcdup = pktRlc->dup();
-        pktRlcdup->addTag<LteRlcNewDataTag>();
-        send(pktRlcdup, "out");
-    }
-}
-
-void NrRlcUmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
-{
-    // This is reached by a direct call from RlcMux on a D2D mode switch; clearing the
-    // old-mode buffer below deletes SDUs owned by THIS entity. Switch the execution
-    // context to this entity so those deletes run in the owner's context, otherwise
-    // OMNeT++ flags "deleting an object it doesn't own" (the LTE path avoids this via
-    // cQueue::pop(), which releases ownership to the context before delete).
-    Enter_Method_Silent("rlcHandleD2DModeSwitchNr");
-    if (oldConnection) {
-        if (getNodeTypeById(ownerNodeId_) == NODEB) {
-            EV << NOW << " NrRlcUmTxEntity::rlcHandleD2DModeSwitch - nothing to do on the DL leg of an IM flow" << endl;
-            return;
-        }
-        if (clearBuffer) {
-            EV << NOW << " NrRlcUmTxEntity::rlcHandleD2DModeSwitch - clear old-mode TX buffer" << endl;
-            clearQueue();
-        }
-        else if (sduBuffer->hasData()) {
-            // keep draining; signal the controller once the buffer empties
-            notifyEmptyBuffer_ = true;
-        }
-    }
-    else {
-        // new-mode entity: reset UM numbering
-        sduBuffer->resetTxNext();
-        if (!clearBuffer && d2dModeController_ && flowControlInfo_ &&
-                d2dModeController_->isEmptyingTxBuffer(flowControlInfo_->getD2dRxPeerId())) {
-            // the old-mode entity is still draining: hold incoming SDUs until it finishes
-            startHoldingDownstreamInPackets();
-        }
-    }
 }
 
 } //namespace

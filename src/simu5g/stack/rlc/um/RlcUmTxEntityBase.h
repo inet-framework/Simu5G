@@ -18,7 +18,6 @@
 
 namespace simu5g {
 
-class D2DModeController;
 
 using namespace omnetpp;
 
@@ -26,15 +25,16 @@ using namespace omnetpp;
  * @brief Common shell of the RLC UM transmission entity.
  *
  * Holds the MAC plumbing, the D2D mode-switch machinery (holding buffer +
- * hold/resume) and the new-data notification shared by both RATs. The
- * wire-format specifics -- SDU buffering, PDU build, TX-buffer teardown and
- * the D2D drain -- are deferred to the concrete subclasses:
+ * and the new-data notification shared by both RATs. The wire-format specifics
+ * -- SDU buffering, PDU build and TX-buffer teardown -- are deferred to the
+ * concrete subclasses:
  *  - LteRlcUmTxEntity (TS 36.322): FI framing + concatenation, SN per PDU.
  *  - NrRlcUmTxEntity  (TS 38.322): SI + byte-offset (SO) segmentation, SN per SDU.
  *
- * The D2D hooks are inert when no D2DModeController is present (e.g. NR
- * standalone). Abstract base: not instantiated directly (no NED type, no
- * Define_Module); BearerManagement binds one of the concrete profiles.
+ * The interceptSdu()/onTxBufferEmptied() seams are inert here; the D2D
+ * mode-switch machinery that uses them lives in the d2d package. Abstract base:
+ * not instantiated directly (no NED type, no Define_Module); BearerManagement
+ * binds one of the concrete profiles.
  */
 class RlcUmTxEntityBase : public RlcTxEntityBase
 {
@@ -49,18 +49,6 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
     static simsignal_t sentPduSizeSignal_;          // NR
     static simsignal_t receivedPacketFromUpperLayerSignal_;   // NR
     static simsignal_t sentPacketToLowerLayerSignal_;         // NR
-
-    // D2D mode switch controller (nullptr when D2D is not enabled)
-    D2DModeController *d2dModeController_ = nullptr;
-
-    // If true, the entity checks when the queue becomes empty (D2D).
-    bool notifyEmptyBuffer_ = false;
-
-    // If true, incoming SDUs go to the holding queue (D2D mode switch).
-    bool holdingDownstreamInPackets_ = false;
-
-    // The SDU holding buffer (D2D).
-    inet::cPacketQueue sduHoldingQueue_;
 
     // Node id of the owner module
     MacNodeId ownerNodeId_;
@@ -90,18 +78,19 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
     /*
      * Hook invoked for an SDU arriving from the upper layer, before it is
      * enqueued into the TX buffer. Returns true if the SDU was consumed by
-     * the hook (e.g. held in the holding buffer during a D2D mode switch),
-     * in which case the caller must neither enqueue it nor send a new-data
-     * indication to the MAC layer.
+     * the hook, in which case the caller must neither enqueue it nor send a
+     * new-data indication to the MAC layer. The base never consumes an SDU;
+     * the D2D profile parks it while a mode switch drains the old-mode entity.
      */
-    virtual bool interceptSdu(inet::Packet *pkt);
+    virtual bool interceptSdu(inet::Packet *pkt) { return false; }
 
     /*
      * Hook invoked after a PDU has been built, at the point where a TX buffer
-     * that has just drained must be signaled (e.g. to notify the D2D mode
-     * controller to resume holding-buffer packets for the newly selected mode).
+     * that has just drained must be signaled. Inert in the base; the D2D
+     * profile notifies the mode controller so the peer can resume its
+     * holding-buffer packets for the newly selected mode.
      */
-    virtual void onTxBufferEmptied();
+    virtual void onTxBufferEmptied() {}
 
     /*
      * Whether the TX buffer holds no further SDU data. The buffer itself is
@@ -131,27 +120,6 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
 
     // clear the TX buffer
     virtual void clearQueue() = 0;
-
-    // set holdingDownstreamInPackets_
-    void startHoldingDownstreamInPackets() { holdingDownstreamInPackets_ = true; }
-
-    // return true if the entity is holding incoming SDUs
-    bool isHoldingDownstreamInPackets() { return holdingDownstreamInPackets_; }
-
-    // store the packet in the holding buffer
-    virtual void enqueHoldingPackets(inet::cPacket *pkt);
-
-    // resume sending packets downstream
-    virtual void resumeDownstreamInPackets() = 0;
-
-    // return the value of notifyEmptyBuffer_
-    bool isEmptyingBuffer() { return notifyEmptyBuffer_; }
-
-    // returns true if this entity is for a D2D_MULTI connection
-    bool isD2DMultiConnection() { return flowControlInfo_->getDirection() == D2D_MULTI; }
-
-    // called when a D2D mode switch is triggered
-    virtual void rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer = true) = 0;
 };
 
 } //namespace

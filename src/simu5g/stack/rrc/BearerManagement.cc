@@ -11,14 +11,13 @@
 
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/common/binder/Binder.h"
-#include "simu5g/stack/rrc/D2DModeController.h"
 #include "simu5g/stack/rrc/Registration.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/ip2nic/Ip2Nic.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/rlc/RlcMux.h"
 #include "simu5g/stack/rlc/RlcRxEntityBase.h"
-#include "simu5g/stack/rlc/um/RlcUmTxEntityBase.h"
+#include "simu5g/stack/rlc/RlcTxEntityBase.h"
 #include "simu5g/stack/pdcp/PdcpMux.h"
 #include "simu5g/stack/pdcp/DcMux.h"
 #include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
@@ -405,19 +404,8 @@ RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *
     rlcMux->setGateSize("macToTxEntity", macIdx + 1);
     rlcMux->gate("macToTxEntity", macIdx)->connectTo(module->gate("macIn"));
 
-    txEnt->setFlowControlInfo(lteInfo);
+    txEnt->setFlowControlInfo(lteInfo); // note: a D2D UM TX entity also registers itself with the D2D mode controller here
 
-    // D2D peer tracking for UM TX entities. The LTE-leg (LteRlcUmTxEntity) and
-    // NR-leg (NrRlcUmTxEntity) entities both derive from RlcUmTxEntityBase, so the
-    // dynamic_cast succeeds for either leg; registration only happens when a D2D
-    // mode controller is present (i.e. in D2D-capable configs).
-    if (static_cast<LteRlcType>(lteInfo->getRlcType()) == UM) {
-        auto *d2dCtrl = inet::findModuleFromPar<D2DModeController>(par("d2dModeControllerModule"), this);
-        if (d2dCtrl) {
-            if (auto *umTxEnt = dynamic_cast<RlcUmTxEntityBase *>(txEnt))
-                d2dCtrl->registerD2DPeerTxEntity(MacNodeId(lteInfo->getD2dRxPeerId()), umTxEnt);
-        }
-    }
 
     return txEnt;
 }

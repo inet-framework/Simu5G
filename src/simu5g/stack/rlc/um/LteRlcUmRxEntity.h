@@ -31,6 +31,7 @@ class LteRlcUmDataPdu;
  */
 class LteRlcUmRxEntity : public RlcUmRxEntityBase
 {
+  protected:
     cArray pduBuffer_;
     RlcUmRxWindowDesc rxWindowDesc_;
     TTimer t_reordering_;
@@ -52,7 +53,6 @@ class LteRlcUmRxEntity : public RlcUmRxEntityBase
     ~LteRlcUmRxEntity() override;
 
     void enque(cPacket *pkt) override;
-    void rlcHandleD2DModeSwitch(bool oldConnection, bool oldMode, bool clearBuffer) override;
     bool isEmpty() const override;
 
     void handleMessage(cMessage *msg) override;
@@ -88,7 +88,6 @@ class LteRlcUmRxEntity : public RlcUmRxEntityBase
      */
     virtual void emitSduStats(Direction dir, double tputSample, simtime_t creationTime);
 
-  private:
     virtual void moveRxWindow(int pos);
     virtual void reassemble(unsigned int index);
     virtual void toPdcpLte(inet::Packet *rlcSdu);

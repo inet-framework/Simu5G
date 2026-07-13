@@ -54,14 +54,8 @@ void NrRlcUmRxEntity::initMode(LteMacBase *mac)
 void NrRlcUmRxEntity::emitRxStatistics(bool perPdu, double throughput, simtime_t delay)
 {
     Direction dir = static_cast<Direction>(flowControlInfo_->getDirection());
-    if (dir == D2D || dir == D2D_MULTI) {
-        emit(perPdu ? rlcPduThroughputD2DSignal_ : rlcThroughputD2DSignal_, throughput);
-        emit(perPdu ? rlcPduDelayD2DSignal_ : rlcDelayD2DSignal_, delay.dbl());
-    }
-    else {
-        emit(perPdu ? rlcPduThroughputSignal_[dir] : rlcThroughputSignal_[dir], throughput);
-        emit(perPdu ? rlcPduDelaySignal_[dir] : rlcDelaySignal_[dir], delay.dbl());
-    }
+    emit(perPdu ? rlcPduThroughputSignal_[dir] : rlcThroughputSignal_[dir], throughput);
+    emit(perPdu ? rlcPduDelaySignal_[dir] : rlcDelaySignal_[dir], delay.dbl());
 }
 
 void NrRlcUmRxEntity::handleMessage(cMessage *msg)
@@ -177,28 +171,6 @@ void NrRlcUmRxEntity::toPdcpNr(Packet *pktAux)
     send(pktAux, "out");
 }
 
-void NrRlcUmRxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool oldMode, bool clearBuffer)
-{
-    Enter_Method_Silent("rlcHandleD2DModeSwitch()");
-    if (oldConnection) {
-        if (getNodeTypeById(ownerNodeId_) == UE && oldMode == IM) {
-            EV << NOW << " NrRlcUmRxEntity::rlcHandleD2DModeSwitch - nothing to do on the DL leg of an IM flow" << endl;
-            return;
-        }
-        if (clearBuffer) {
-            // discard any partially-reassembled SDUs of the old mode
-            sduBuffer->clearBuffer();
-            sduBuffer->reset();
-            if (t_ReassemblyTimer->isScheduled())
-                cancelEvent(t_ReassemblyTimer);
-        }
-    }
-    else {
-        // new-mode entity: reset the SN window; the first PDU is forced in-sequence
-        sduBuffer->reset();
-        resetFlag_ = true;
-    }
-}
 
 bool NrRlcUmRxEntity::isEmpty() const
 {

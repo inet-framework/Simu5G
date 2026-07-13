@@ -27,6 +27,7 @@ using namespace omnetpp;
  */
 class LteRlcUmTxEntity : public RlcUmTxEntityBase
 {
+  protected:
     struct FragmentInfo {
         inet::Packet *pkt = nullptr;
         int size = 0;
@@ -66,9 +67,7 @@ class LteRlcUmTxEntity : public RlcUmTxEntityBase
     virtual void removeDataFromQueue();
 
     void clearQueue() override;
-    void resumeDownstreamInPackets() override;
     bool isTxBufferEmpty() const override { return sduQueue_.isEmpty(); }
-    void rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer) override;
 
   protected:
 
@@ -79,8 +78,6 @@ class LteRlcUmTxEntity : public RlcUmTxEntityBase
     // Unused by the LTE FI/concatenation path; kept at the historical default so
     // the FlowControlInfo stamped by the base is byte-identical to the pre-split entity.
     unsigned int snFieldLength() const override { return 12; }
-
-  private:
 
     // enqueue an upper-layer SDU into the TX buffer; false if the queue is full
     virtual bool enque(inet::cPacket *pkt);

@@ -50,8 +50,6 @@ module LteNicBase extends NetworkInterface like ICellularNic
 
         string lteChannelModelType = default("LteRealisticChannelModel");
 
-        bool d2dCapable;            // inherit the value from the parent module
-
         bool dualConnectivityEnabled = default(false);
         int numCarriers = default(1);
 

@@ -44,9 +44,6 @@ class RlcUmRxEntityBase : public RlcRxEntityBase
     // The mux feeding this entity (for UL burst-throughput reporting)
     RlcMux *rlcMux_ = nullptr;
 
-    // After a D2D mode switch, the first PDU on the new-mode entity is forced in-sequence
-    bool resetFlag_ = false;
-
     // UL data-burst accounting (TS 136.314), eNB only
     enum BurstCheck { ENQUE, REORDERING };
     bool isBurst_ = false;
@@ -58,6 +55,8 @@ class RlcUmRxEntityBase : public RlcRxEntityBase
     // Signals. Declared/registered in one translation unit (RlcUmRxEntityBase.cc),
     // in their historical order, so registerSignal() ordering -- and therefore result
     // recording -- is unaffected by the split. Emitted by the concrete subclasses.
+    // The *D2D signals are registered here (and only here) for that ordering, but are
+    // emitted exclusively by the D2D entity profiles in the d2d package.
     static simsignal_t rlcDelaySignal_[2];
     static simsignal_t rlcThroughputSignal_[2];
     static simsignal_t rlcPduDelaySignal_[2];
@@ -84,12 +83,6 @@ class RlcUmRxEntityBase : public RlcRxEntityBase
 
     // Enqueues a lower-layer PDU into the entity for reassembly
     virtual void enque(cPacket *pkt) = 0;
-
-    // returns true if this entity is for a D2D_MULTI connection
-    bool isD2DMultiConnection() { return flowControlInfo_->getDirection() == D2D_MULTI; }
-
-    // called when a D2D mode switch is triggered
-    virtual void rlcHandleD2DModeSwitch(bool oldConnection, bool oldMode, bool clearBuffer = true) = 0;
 
     // returns true if the entity contains no buffered RLC data
     virtual bool isEmpty() const = 0;

@@ -34,6 +34,7 @@ class LteMacBase;
  */
 class NrRlcUmRxEntity : public RlcUmRxEntityBase
 {
+  protected:
     // The SO reassembly buffer.
     RlcUmReceptionBuffer *sduBuffer = nullptr;
     int UM_Window_Size = 2048;
@@ -57,7 +58,6 @@ class NrRlcUmRxEntity : public RlcUmRxEntityBase
     ~NrRlcUmRxEntity() override;
 
     void enque(cPacket *pkt) override;
-    void rlcHandleD2DModeSwitch(bool oldConnection, bool oldMode, bool clearBuffer) override;
     bool isEmpty() const override;
 
     void handleMessage(cMessage *msg) override;
