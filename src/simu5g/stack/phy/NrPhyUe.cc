@@ -117,6 +117,17 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
 
     // This is a DATA packet
 
+    if (servingNodeId_ == NODEID_NONE) {
+        // UE is not (anymore) associated with any eNB/gNB and all harqBuffers are already deleted.
+        // Handing this data packet to the MAC layer will lead to null pointers.
+        // (Mirrors the same guard in LtePhyUeD2D::handleAirFrame; matters for D2D/D2D_MULTI DATA
+        // in-flight during the mid-handover detachment window.)
+        EV << "NrPhyUe: UE " << nodeId_ << " received data packet while not associated with any base station. Drop it." << endl;
+        delete lteInfo;
+        delete frame;
+        return;
+    }
+
     // If the packet is a D2D multicast one, store it and decode it at the end of the TTI
     if (d2dMulticastEnableCaptureEffect_ && binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId())) {
         // If not already started, auto-send a message to signal the presence of data to be decoded
