@@ -37,7 +37,7 @@ class DistanceBasedConflictGraph : public ConflictGraph
     void findEdges(const std::vector<CGVertex>& vertices) override;
 
   public:
-    DistanceBasedConflictGraph(Binder *binder, LteMacEnbD2D *macEnb, bool reuseD2D, bool reuseD2DMulti, double dbmThresh);
+    DistanceBasedConflictGraph(Binder *binder, LteMacEnb *macEnb, bool reuseD2D, bool reuseD2DMulti, double dbmThresh);
 
     // set distance thresholds
     void setThresholds(double d2dInterferenceRadius = -1.0, double d2dMultiTransmissionRadius = -1.0, double d2dMultiInterferenceRadius = -1.0);

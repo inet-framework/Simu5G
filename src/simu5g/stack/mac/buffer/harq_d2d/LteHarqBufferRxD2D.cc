@@ -16,8 +16,6 @@
 #include "simu5g/stack/mac/packet/LteHarqFeedback_m.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
-#include "simu5g/stack/mac/LteMacUeD2D.h"
-#include "simu5g/stack/mac/LteMacEnbD2D.h"
 
 namespace simu5g {
 
@@ -138,7 +136,7 @@ std::list<Packet *> LteHarqBufferRxD2D::extractCorrectPdus()
 
                     // emit throughput statistics
                     if (info->getDirection() == D2D) {
-                        check_and_cast<LteMacEnbD2D *>(nodeB_.get())->emit(macCellThroughputD2D_, cellTputSample);
+                        nodeB_->emit(macCellThroughputD2D_, cellTputSample);
                         macUe_emit(macThroughputD2D_, tputSample);
                     }
                     else {

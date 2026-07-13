@@ -12,6 +12,8 @@
 
 #include "simu5g/stack/mac/buffer/harq_d2d/LteHarqUnitTxD2D.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
+#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
+#include "simu5g/stack/d2d/mac/ID2dMacUe.h"
 
 namespace simu5g {
 
@@ -28,8 +30,9 @@ simsignal_t LteHarqUnitTxD2D::harqErrorRateD2D_4Signal_ = cComponent::registerSi
 LteHarqUnitTxD2D::LteHarqUnitTxD2D(Binder *binder, unsigned char acid, Codeword cw, LteMacBase *macOwner, LteMacBase *dstMac)
     : LteHarqUnitTx(binder, acid, cw, macOwner, dstMac)
 {
-    check_and_cast<LteMacEnbD2D *>(nodeB_.get());
-    check_and_cast<LteMacUeD2D *>(macOwner_.get());
+    // both endpoints must be D2D-capable MACs
+    check_and_cast<ID2dMacEnb *>(nodeB_.get());
+    check_and_cast<ID2dMacUe *>(macOwner_.get());
 }
 
 
@@ -90,26 +93,26 @@ bool LteHarqUnitTxD2D::pduFeedback(HarqAcknowledgment a)
     if (dir == D2D || dir == D2D_MULTI) {
         switch (ntx) {
             case 1:
-                check_and_cast<LteMacUeD2D *>(ue)->emit(harqErrorRateD2D_1Signal_, sample);
+                ue->emit(harqErrorRateD2D_1Signal_, sample);
                 break;
             case 2:
-                check_and_cast<LteMacUeD2D *>(ue)->emit(harqErrorRateD2D_2Signal_, sample);
+                ue->emit(harqErrorRateD2D_2Signal_, sample);
                 break;
             case 3:
-                check_and_cast<LteMacUeD2D *>(ue)->emit(harqErrorRateD2D_3Signal_, sample);
+                ue->emit(harqErrorRateD2D_3Signal_, sample);
                 break;
             case 4:
-                check_and_cast<LteMacUeD2D *>(ue)->emit(harqErrorRateD2D_4Signal_, sample);
+                ue->emit(harqErrorRateD2D_4Signal_, sample);
                 break;
             default:
                 break;
         }
 
-        check_and_cast<LteMacUeD2D *>(ue)->emit(harqErrorRateD2DSignal_, sample);
+        ue->emit(harqErrorRateD2DSignal_, sample);
 
         if (reset || dir == D2D_MULTI) {
-            check_and_cast<LteMacUeD2D *>(ue)->emit(macPacketLossD2DSignal_, sample);
-            check_and_cast<LteMacEnbD2D *>(nodeB_.get())->emit(macCellPacketLossD2DSignal_, sample);
+            ue->emit(macPacketLossD2DSignal_, sample);
+            nodeB_->emit(macCellPacketLossD2DSignal_, sample);
         }
     }
     else {

@@ -13,7 +13,7 @@
 #ifndef CONFLICTGRAPH_H
 #define CONFLICTGRAPH_H
 
-#include "simu5g/stack/mac/LteMacEnbD2D.h"
+#include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
 
 namespace simu5g {
@@ -62,7 +62,7 @@ struct CGVertex
 
 typedef std::map<CGVertex, std::map<CGVertex, bool>> CGMatrix;
 class CellInfo;
-class LteMacEnbD2D;
+class LteMacEnb;
 
 /*! \class ConflictGraph ConflictGraph.h
  *  \brief Define the manager of the conflict graph (CG) for resource allocation purposes.
@@ -80,7 +80,7 @@ class ConflictGraph
     opp_component_ptr<Binder> binder_;
 
     // Reference to the MAC layer
-    opp_component_ptr<LteMacEnbD2D> macEnb_;
+    opp_component_ptr<LteMacEnb> macEnb_;
 
     // Reference to the CellInfo
     opp_component_ptr<CellInfo> cellInfo_;
@@ -100,7 +100,7 @@ class ConflictGraph
 
   public:
 
-    ConflictGraph(Binder *binder, LteMacEnbD2D *macEnb, bool reuseD2D, bool reuseD2DMulti);
+    ConflictGraph(Binder *binder, LteMacEnb *macEnb, bool reuseD2D, bool reuseD2DMulti);
 
     // compute Conflict Graph
     void computeConflictGraph();

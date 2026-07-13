@@ -273,17 +273,6 @@ class LteMacEnb : public LteMacBase
     // Get band occupation for this/previous TTI. Used for interference computation purposes.
     unsigned int getDlBandStatus(Band b);
     unsigned int getDlPrevBandStatus(Band b);
-    virtual bool isReuseD2DEnabled()
-    {
-        return false;
-    }
-
-    virtual bool isReuseD2DMultiEnabled()
-    {
-        return false;
-    }
-
-    virtual ConflictGraph *getConflictGraph();
 
     // Get DRB QoS map (DrbKey -> QoS entry), parsed from the drbQosConfig parameter
     const std::map<DrbKey, DrbQosEntry> *getDrbQosMap() {

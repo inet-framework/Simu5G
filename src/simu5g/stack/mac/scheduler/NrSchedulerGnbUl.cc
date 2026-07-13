@@ -12,6 +12,8 @@
 
 #include "simu5g/stack/mac/scheduler/NrSchedulerGnbUl.h"
 #include "simu5g/stack/mac/NrMacGnb.h"
+#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
+#include "simu5g/stack/mac/buffer/harq_d2d/LteHarqBufferMirrorD2D.h"
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
 #include "simu5g/stack/mac/allocator/LteAllocationModule.h"
 
@@ -128,7 +130,7 @@ unsigned int NrSchedulerGnbUl::scheduleAdditionalRetransmissions(GHz carrierFreq
     if (mac_->isD2DCapable()) {
         // --- START Schedule D2D retransmissions --- //
         Direction dir = D2D;
-        HarqBuffersMirrorD2D *harqBuffersMirrorD2D = check_and_cast<LteMacEnbD2D *>(mac_.get())->getHarqBuffersMirrorD2D(carrierFrequency);
+        HarqBuffersMirrorD2D *harqBuffersMirrorD2D = check_and_cast<ID2dMacEnb *>(mac_.get())->getHarqBuffersMirrorD2D(carrierFrequency);
         if (harqBuffersMirrorD2D != nullptr) {
             for (auto it_d2d = harqBuffersMirrorD2D->begin(); it_d2d != harqBuffersMirrorD2D->end(); ) {
                 auto& [d2dPair, currHarq] = *it_d2d;

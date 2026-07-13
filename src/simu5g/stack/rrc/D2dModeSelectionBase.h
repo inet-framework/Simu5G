@@ -15,7 +15,8 @@
 
 #include <inet/common/ModuleRefByPar.h>
 
-#include "simu5g/stack/mac/LteMacEnbD2D.h"
+#include "simu5g/stack/mac/LteMacEnb.h"
+#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 
 namespace simu5g {
 
@@ -45,7 +46,10 @@ class D2dModeSelectionBase : public cSimpleModule
     std::map<MacNodeId, std::map<MacNodeId, LteD2DMode>> *peeringModeMap_;
 
     // reference to the MAC layer
-    inet::ModuleRefByPar<LteMacEnbD2D> mac_;
+    inet::ModuleRefByPar<LteMacEnb> mac_;
+
+    // D2D view of the same MAC module, resolved at initialization
+    ID2dMacEnb *d2dMac_ = nullptr;
 
     // reference to the binder
     inet::ModuleRefByPar<Binder> binder_;

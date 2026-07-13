@@ -18,17 +18,16 @@
 #include "simu5g/stack/mac/buffer/harq_d2d/LteHarqBufferMirrorD2D.h"
 #include "simu5g/stack/rrc/D2DModeSwitchNotification_m.h"
 #include "simu5g/stack/mac/conflict_graph/ConflictGraph.h"
+#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include <inet/common/ModuleRefByPar.h>
 
 namespace simu5g {
 
 using namespace omnetpp;
 
-typedef std::pair<MacNodeId, MacNodeId> D2DPair;
-typedef std::map<D2DPair, LteHarqBufferMirrorD2D *> HarqBuffersMirrorD2D;
 class ConflictGraph;
 
-class LteMacEnbD2D : public LteMacEnb
+class LteMacEnbD2D : public LteMacEnb, public ID2dMacEnb
 {
   protected:
     /*
@@ -121,6 +120,8 @@ class LteMacEnbD2D : public LteMacEnb
         return conflictGraph_;
     }
 
+    void deleteHarqBuffersMirrorD2D(MacNodeId txPeer, MacNodeId rxPeer) override;
+
     /**
      * deleteQueues() on ENB performs actions
      * from base classes and also deletes mirror buffers
@@ -130,17 +131,15 @@ class LteMacEnbD2D : public LteMacEnb
     void deleteQueues(MacNodeId nodeId) override;
 
     // get the reference to the "mirror" buffers
-    HarqBuffersMirrorD2D *getHarqBuffersMirrorD2D(GHz carrierFrequency);
+    HarqBuffersMirrorD2D *getHarqBuffersMirrorD2D(GHz carrierFrequency) override;
 
-    // delete the "mirror" Harq Buffer for this pair (useful at mode switch)
-    void deleteHarqBuffersMirrorD2D(MacNodeId txPeer, MacNodeId rxPeer);
     // delete the "mirror" Harq Buffer for this node (useful at handover)
     void deleteHarqBuffersMirrorD2D(MacNodeId nodeId);
 
     // send the D2D Mode Switch signal to the transmitter of the given flow
-    void sendModeSwitchNotification(MacNodeId srcId, MacNodeId dst, LteD2DMode oldMode, LteD2DMode newMode);
+    void sendModeSwitchNotification(MacNodeId srcId, MacNodeId dst, LteD2DMode oldMode, LteD2DMode newMode) override;
 
-    bool isMsHarqInterrupt() { return msHarqInterrupt_; }
+    bool isMsHarqInterrupt() override { return msHarqInterrupt_; }
 
 };
 

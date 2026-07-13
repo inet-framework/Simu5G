@@ -14,6 +14,7 @@
 #include "simu5g/stack/mac/scheduler/LteSchedulerEnb.h"
 #include "simu5g/stack/mac/buffer/LteMacBuffer.h"
 #include "simu5g/stack/mac/conflict_graph/ConflictGraph.h"
+#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 
 namespace simu5g {
 
@@ -89,14 +90,17 @@ void LteAllocatorBestFit::prepareSchedule()
 {
     EV << NOW << " LteAllocatorBestFit::schedule " << eNbScheduler_->mac_->getMacNodeId() << endl;
 
+    // this scheduling discipline exists for D2D frequency reuse, so the eNB MAC must be D2D-capable
+    ID2dMacEnb *d2dMac = check_and_cast<ID2dMacEnb *>(mac_.get());
+
     if (conflictGraph_ == nullptr)
-        conflictGraph_ = mac_->getConflictGraph();
+        conflictGraph_ = d2dMac->getConflictGraph();
 
     // Initialize SchedulerAllocation structures
     initAndReset();
 
-    bool reuseD2D = mac_->isReuseD2DEnabled();
-    bool reuseD2DMulti = mac_->isReuseD2DMultiEnabled();
+    bool reuseD2D = d2dMac->isReuseD2DEnabled();
+    bool reuseD2DMulti = d2dMac->isReuseD2DMultiEnabled();
 
     const CGMatrix *cgMatrix = nullptr;
     if (reuseD2D || reuseD2DMulti) {
