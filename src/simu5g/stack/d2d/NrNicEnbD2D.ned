@@ -25,6 +25,7 @@ module NrNicEnbD2D extends NrNicEnb
     parameters:
         mac.typename = default("NrMacGnbD2D");
         phy.typename = default("LtePhyEnbD2D");
+        ip2nic.typename = default("Ip2NicD2D");
         d2dCapable = default(true);   // DO NOT CHANGE
         rrc.hasD2DModeController = true;
         rrc.hasD2DModeSelection = true;

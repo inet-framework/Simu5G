@@ -25,6 +25,7 @@ module LteNicUeD2D extends LteNicUe
         mac.typename = default("LteMacUeD2D");
         phy.typename = default("LtePhyUeD2D");
         packetFlowObserver.typename = default("PacketFlowObserverUe");
+        ip2nic.typename = default("Ip2NicD2D");
 
         d2dCapable = default(true);             // DO NOT CHANGE
         rrc.hasD2DModeController = true;

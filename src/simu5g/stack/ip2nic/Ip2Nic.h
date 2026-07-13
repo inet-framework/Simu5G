@@ -53,7 +53,6 @@ class Ip2Nic : public cSimpleModule
 
     // Flags mirroring PDCP's (to be verified with ASSERTs, then used to replace PDCP dependency)
     bool isNR_ = false;
-    bool hasD2DSupport_ = false;
     LteRlcType conversationalRlc_ = UNKNOWN_RLC_TYPE;
     LteRlcType streamingRlc_ = UNKNOWN_RLC_TYPE;
     LteRlcType interactiveRlc_ = UNKNOWN_RLC_TYPE;
@@ -106,9 +105,11 @@ class Ip2Nic : public cSimpleModule
     virtual void toStackBs(inet::Packet *datagram);
     virtual void toStackUe(inet::Packet *datagram);
 
-    // Packet analysis (moved from PDCP): classifies the packet and fills FlowControlInfo tag
-    void analyzePacket(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
-    MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
+    // Packet analysis (moved from PDCP): classifies the packet and fills FlowControlInfo tag.
+    // Core handles the plain UL/DL path (LTE) and the NR (non-D2D) path; the D2D-aware
+    // overrides live in Ip2NicD2D.
+    virtual void analyzePacket(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
+    virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
     LteTrafficClass getTrafficCategory(cPacket *pkt);
     LteRlcType getRlcType(LteTrafficClass trafficCategory);
     DrbId lookupOrAssignDrbId(const ConnectionKey& key);
