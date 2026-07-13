@@ -451,8 +451,7 @@ void LteMacUe::macPduMake(MacCid cid)
             else {
                 // the tx buffer does not exist yet for this mac node id, create one
                 // FIXME: hb is never deleted
-                LteHarqBufferTx *hb = new LteHarqBufferTx(binder_, (unsigned int)harqProcesses_, this,
-                        check_and_cast<LteMacBase *>(binder_->getMacByNodeId(cellId_)));
+                LteHarqBufferTx *hb = createTxHarqBuffer(destId, UL);
                 harqTxBuffers[destId] = hb;
                 txBuf = hb;
             }
@@ -508,6 +507,14 @@ void LteMacUe::macPduMake(MacCid cid)
             }
         }
     }
+}
+
+LteHarqBufferTx *LteMacUe::createTxHarqBuffer(MacNodeId destId, Direction dir)
+{
+    if (dir != UL)
+        throw cRuntimeError("LteMacUe::createTxHarqBuffer: direction %s not supported", dirToA(dir).c_str());
+    return new LteHarqBufferTx(binder_, (unsigned int)harqProcesses_, this,
+            check_and_cast<LteMacBase *>(binder_->getMacByNodeId(cellId_)));
 }
 
 void LteMacUe::macPduUnmake(cPacket *cpkt)

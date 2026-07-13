@@ -508,13 +508,8 @@ void NrMacUe::macPduMake(MacCid cid)
             }
             else {
                 // The tx buffer does not exist yet for this mac node id, create one
-                LteHarqBufferTx *hb;
                 // FIXME: hb is never deleted
-                auto info = macPkt->getTag<UserControlInfo>();
-                if (info->getDirection() == UL)
-                    hb = new LteHarqBufferTx(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(binder_->getMacByNodeId(destId)));
-                else // D2D or D2D_MULTI
-                    hb = new LteHarqBufferTxD2D(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(binder_->getMacByNodeId(destId)));
+                LteHarqBufferTx *hb = createTxHarqBuffer(destId, (Direction)macPkt->getTag<UserControlInfo>()->getDirection());
                 harqTxBuffers[destId] = hb;
                 txBuf = hb;
             }

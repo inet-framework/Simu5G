@@ -15,7 +15,6 @@
 #include "simu5g/common/cellInfo/CellInfo.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferTx.h"
-#include "simu5g/stack/mac/buffer/harq_d2d/LteHarqBufferRxD2D.h"
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 #include "simu5g/stack/mac/buffer/LteMacQueue.h"
@@ -167,12 +166,7 @@ void LteMacBase::fromPhy(cPacket *pktAux)
         }
         else {
             // FIXME: possible memory leak
-            LteHarqBufferRx *hrb;
-            if (userInfo->getDirection() == DL || userInfo->getDirection() == UL)
-                hrb = new LteHarqBufferRx(harqProcesses_, this, binder_, src);
-            else // D2D
-                hrb = new LteHarqBufferRxD2D(harqProcesses_, this, binder_, src, (userInfo->getDirection() == D2D_MULTI));
-
+            LteHarqBufferRx *hrb = createRxHarqBuffer(src, userInfo.get());
             harqRxBuffers_[carrierFreq][src] = hrb;
             hrb->insertPdu(cw, pdu);
         }
@@ -184,6 +178,14 @@ void LteMacBase::fromPhy(cPacket *pktAux)
     else {
         throw cRuntimeError("Unknown packet type %d", (int)userInfo->getFrameType());
     }
+}
+
+LteHarqBufferRx *LteMacBase::createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo)
+{
+    Direction dir = (Direction)userInfo->getDirection();
+    if (dir != DL && dir != UL)
+        throw cRuntimeError("LteMacBase::createRxHarqBuffer: direction %s not supported", dirToA(dir).c_str());
+    return new LteHarqBufferRx(harqProcesses_, this, binder_, src);
 }
 
 void LteMacBase::createOutgoingConnection(MacCid cid, const FlowDescriptor& connInfo)
