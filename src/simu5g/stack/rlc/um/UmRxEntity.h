@@ -79,13 +79,6 @@ class UmRxEntity : public RlcRxEntityBase
     // Sequence number of the last correctly reassembled PDU
     unsigned int lastPduReassembled_ = 0;
 
-    bool init_ = false;
-
-    // If true, the next PDU and the corresponding SDUs are considered in order
-    // (modify the lastPduReassembled_ counter)
-    // useful for D2D after a mode switch
-    bool resetFlag_ = false;
-
     /**
      *  @author Alessandro Noferi
      * UL throughput variables
@@ -120,7 +113,9 @@ class UmRxEntity : public RlcRxEntityBase
     static simsignal_t rlcThroughputSignal_[2];
     static simsignal_t rlcPduThroughputSignal_[2];
 
-    // statistics for D2D (throughput and delay only)
+    // statistics for D2D (throughput and delay only); registered in UmRxEntity.cc
+    // for global signal-ID order stability (sz fingerprint), emitted only by
+    // UmRxEntityD2D (which accesses them as inherited protected statics)
     static simsignal_t rlcDelayD2DSignal_;
     static simsignal_t rlcPduDelayD2DSignal_;
     static simsignal_t rlcThroughputD2DSignal_;
@@ -136,12 +131,6 @@ class UmRxEntity : public RlcRxEntityBase
      */
     void enque(cPacket *pkt);
 
-    // returns true if this entity is for a D2D_MULTI connection
-    bool isD2DMultiConnection() { return flowControlInfo_->getDirection() == D2D_MULTI; }
-
-    // called when a D2D mode switch is triggered
-    void rlcHandleD2DModeSwitch(bool oldConnection, bool oldMode, bool clearBuffer = true);
-
     // returns if the entity contains RLC pdus
     bool isEmpty() const { return buffered_.pkt == nullptr && pduBuffer_.size() == 0; }
 
@@ -156,9 +145,8 @@ class UmRxEntity : public RlcRxEntityBase
 
     /*
      * Hook invoked when the first PDU of the connection is enqueued, to
-     * initialize the reordering window. The base implementation applies the
-     * D2D_MULTI special case (single-PDU window; the first received PDU is
-     * treated as the first valid one).
+     * initialize the reordering window (e.g. the D2D_MULTI single-PDU window;
+     * the base implementation does nothing).
      */
     virtual void onFirstPduEnqueued(unsigned int pduSno);
 
@@ -182,6 +170,12 @@ class UmRxEntity : public RlcRxEntityBase
      */
     virtual void emitSduStats(cModule *ue, Direction dir, double tputSample, simtime_t creationTime);
 
+    // consider the PDU at position 'index' for reassembly
+    void reassemble(unsigned int index);
+
+    // clear buffered SDU
+    void clearBufferedSdu();
+
   private:
 
     /*
@@ -197,14 +191,8 @@ class UmRxEntity : public RlcRxEntityBase
     // move forward the reordering window
     void moveRxWindow(int pos);
 
-    // consider the PDU at position 'index' for reassembly
-    void reassemble(unsigned int index);
-
     // deliver a PDCP PDU to the PDCP layer
     void toPdcp(inet::Packet *rlcSdu);
-
-    // clear buffered SDU
-    void clearBufferedSdu();
 
 };
 

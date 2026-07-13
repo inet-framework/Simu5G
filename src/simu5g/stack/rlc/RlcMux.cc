@@ -1,9 +1,8 @@
 #include "simu5g/stack/rlc/RlcMux.h"
-#include "simu5g/stack/rlc/um/UmTxEntity.h"
+#include "simu5g/stack/rlc/RlcTxEntityBase.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include <inet/networklayer/common/NetworkInterface.h>
-#include "simu5g/stack/rrc/D2DModeSwitchNotification_m.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 
@@ -21,8 +20,6 @@ void RlcMux::initialize(int stage)
         macOutGate_ = gate("macOut");
 
         bearerManagement_ = check_and_cast<BearerManagement *>(inet::getContainingNicModule(this)->getSubmodule("rrc")->getSubmodule("bearerManagement"));
-
-        hasD2DSupport_ = inet::getContainingNicModule(this)->par("d2dCapable").boolValue();
 
         WATCH_MAP(rxEntities_);
     }
@@ -52,38 +49,6 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
     auto chunk = pkt->peekAtFront<inet::Chunk>();
 
     ASSERT(pkt->findTag<PdcpTrackingTag>() == nullptr);
-
-    // D2D: handle mode switch notification
-    if (hasD2DSupport_ && inet::dynamicPtrCast<const D2DModeSwitchNotification>(chunk) != nullptr) {
-        auto switchPkt = pkt->peekAtFront<D2DModeSwitchNotification>();
-
-        if (switchPkt->getTxSide()) {
-            // get the corresponding Tx buffer & call handler
-            DrbKey id = ctrlInfoToTxDrbKey(lteInfo.get());
-            RlcTxEntityBase *txbuf = bearerManagement_->lookupRlcTxBuffer(id);
-            if (txbuf == nullptr)
-                txbuf = bearerManagement_->createRlcTxBuffer(id, lteInfo.get());
-            UmTxEntity *umTxbuf = dynamic_cast<UmTxEntity *>(txbuf);
-            if (umTxbuf == nullptr)
-                throw cRuntimeError("RlcMux::fromMacLayer: D2D mode switch received for a non-UM TX bearer (%s): D2D mode switching supports UM bearers only", txbuf->getClassName());
-            umTxbuf->rlcHandleD2DModeSwitch(switchPkt->getOldConnection(), switchPkt->getClearRlcBuffer());
-
-            delete pkt;
-        }
-        else { // rx side
-            DrbKey id = ctrlInfoToRxDrbKey(lteInfo.get());
-            RlcRxEntityBase *rxbuf = lookupRxBuffer(id);
-            if (rxbuf == nullptr)
-                rxbuf = bearerManagement_->createRlcRxBuffer(id, lteInfo.get());
-            UmRxEntity *umRxbuf = dynamic_cast<UmRxEntity *>(rxbuf);
-            if (umRxbuf == nullptr)
-                throw cRuntimeError("RlcMux::fromMacLayer: D2D mode switch received for a non-UM RX bearer (%s): D2D mode switching supports UM bearers only", rxbuf->getClassName());
-            umRxbuf->rlcHandleD2DModeSwitch(switchPkt->getOldConnection(), switchPkt->getOldMode(), switchPkt->getClearRlcBuffer());
-
-            delete pkt;
-        }
-        return;
-    }
 
     if (inet::dynamicPtrCast<const LteMacSduRequest>(chunk) != nullptr) {
         // MAC SDU request — dispatch to TX entity via macToTxEntity gate

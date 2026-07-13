@@ -32,8 +32,6 @@ class RlcMux : public cSimpleModule
 
     BearerManagement *bearerManagement_ = nullptr;
 
-    bool hasD2DSupport_ = false;
-
     cGate *macInGate_ = nullptr;
     cGate *macOutGate_ = nullptr;
 

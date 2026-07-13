@@ -28,7 +28,6 @@ module LteNicUe extends LteNicBase
         phy.typename = default("LtePhyUe");
         handoverPacketHolder.typename = default("HandoverPacketHolderUe");
         packetFlowObserver.typename = default("PacketFlowObserverUe");
-        d2dCapable = default(false);          // DO NOT CHANGE
 
         rrc.hasHandoverController = true;
         rrc.handoverController.isNr = false;

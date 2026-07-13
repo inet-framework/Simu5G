@@ -35,7 +35,6 @@ module LteNicEnb extends LteNicBase
         phy.typename = default("LtePhyEnb");
         handoverPacketHolder.typename = default("HandoverPacketHolderEnb");
         packetFlowObserver.typename = default("PacketFlowObserverEnb");
-        d2dCapable = default(false);          // DO NOT CHANGE
         bool compEnabled = default(false);
         *.handoverX2ForwarderModule = "^.handoverX2Forwarder";
 

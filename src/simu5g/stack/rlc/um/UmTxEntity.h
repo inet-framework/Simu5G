@@ -20,8 +20,6 @@
 
 namespace simu5g {
 
-class D2DModeController;
-
 using namespace omnetpp;
 
 /**
@@ -105,31 +103,7 @@ class UmTxEntity : public RlcTxEntityBase
     // clear the TX buffer
     void clearQueue();
 
-    // set holdingDownstreamInPackets_
-    void startHoldingDownstreamInPackets() { holdingDownstreamInPackets_ = true; }
-
-    // return true if the entity is not buffering in the TX queue
-    bool isHoldingDownstreamInPackets();
-
-    // store the packet in the holding buffer
-    void enqueHoldingPackets(inet::cPacket *pkt);
-
-    // resume sending packets downstream
-    void resumeDownstreamInPackets();
-
-    // return the value of notifyEmptyBuffer_
-    bool isEmptyingBuffer() { return notifyEmptyBuffer_; }
-
-    // returns true if this entity is for a D2D_MULTI connection
-    bool isD2DMultiConnection() { return flowControlInfo_->getDirection() == D2D_MULTI; }
-
-    // called when a D2D mode switch is triggered
-    void rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer = true);
-
   protected:
-
-    // D2D mode switch controller (nullptr when D2D is not enabled)
-    D2DModeController *d2dModeController_ = nullptr;
 
     /*
      * @author Alessandro Noferi
@@ -152,21 +126,6 @@ class UmTxEntity : public RlcTxEntityBase
      * Determine whether the first item in the queue is a fragment or a whole SDU
      */
     bool firstIsFragment_ = false;
-
-    /*
-     * If true, the entity checks when the queue becomes empty
-     */
-    bool notifyEmptyBuffer_ = false;
-
-    /*
-     * If true, the entity temporarily stores incoming SDUs in the holding queue (useful at D2D mode switching)
-     */
-    bool holdingDownstreamInPackets_ = false;
-
-    /*
-     * The SDU holding buffer.
-     */
-    inet::cPacketQueue sduHoldingQueue_;
 
     /*
      * The maximum available queue size (in bytes)
@@ -202,10 +161,10 @@ class UmTxEntity : public RlcTxEntityBase
      */
     virtual void onTxBufferEmptied();
 
-  private:
-
     // Node id of the owner module
     MacNodeId ownerNodeId_;
+
+  private:
 
     /// Next PDU sequence number to be assigned
     unsigned int sno_ = 0;

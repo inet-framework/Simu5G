@@ -21,7 +21,6 @@
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 
 #include "simu5g/stack/packetFlowObserver/PacketFlowSignals.h"
-#include "simu5g/stack/rrc/D2DModeController.h"
 
 namespace simu5g {
 
@@ -44,9 +43,6 @@ void UmTxEntity::initialize(int stage)
         ownerNodeId_ = mac->getMacNodeId();
 
         queueSize_ = par("queueSize");
-
-        auto *rrc = getParentModule()->getSubmodule("rrc");
-        d2dModeController_ = dynamic_cast<D2DModeController *>(rrc ? rrc->getSubmodule("d2dModeController") : nullptr);
 
         burstStatus_ = INACTIVE;
     }
@@ -102,12 +98,7 @@ void UmTxEntity::handleSdu(inet::Packet *pkt)
 
 bool UmTxEntity::interceptSdu(inet::Packet *pkt)
 {
-    if (holdingDownstreamInPackets_) {
-        // do not store in the TX buffer and do not signal the MAC layer
-        EV << "UmTxEntity::handleSdu - Enqueue packet into the Holding Buffer\n";
-        enqueHoldingPackets(pkt);
-        return true;
-    }
+    // no interception; subclasses may consume the SDU (e.g. hold it during a D2D mode switch)
     return false;
 }
 
@@ -329,14 +320,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
 
 void UmTxEntity::onTxBufferEmptied()
 {
-    // if incoming connection was halted
-    if (notifyEmptyBuffer_ && sduQueue_.isEmpty()) {
-        notifyEmptyBuffer_ = false;
-
-        // tell the D2D mode controller to resume packets for the new mode
-        if (d2dModeController_)
-            d2dModeController_->resumeDownstreamInPackets(flowControlInfo_->getD2dRxPeerId());
-    }
+    // nothing to do; subclasses may signal a drained TX buffer (e.g. to the D2D mode controller)
 }
 
 void UmTxEntity::dropBufferOverflow(cPacket *pkt)
@@ -374,83 +358,6 @@ void UmTxEntity::clearQueue()
 
     // reset variables except for sequence number
     firstIsFragment_ = false;
-}
-
-bool UmTxEntity::isHoldingDownstreamInPackets()
-{
-    return holdingDownstreamInPackets_;
-}
-
-void UmTxEntity::enqueHoldingPackets(cPacket *pkt)
-{
-    EV << NOW << " UmTxEntity::enqueHoldingPackets - storing new SDU into the holding buffer " << endl;
-    sduHoldingQueue_.insert(pkt);
-}
-
-void UmTxEntity::resumeDownstreamInPackets()
-{
-    EV << NOW << " UmTxEntity::resumeDownstreamInPackets - resume buffering incoming downstream packets of the RLC entity associated with the new mode" << endl;
-
-    holdingDownstreamInPackets_ = false;
-
-    // move all SDUs in the holding buffer to the TX buffer
-    while (!sduHoldingQueue_.isEmpty()) {
-        auto pktRlc = check_and_cast<inet::Packet *>(sduHoldingQueue_.front());
-
-        sduHoldingQueue_.pop();
-
-        // store the SDU in the TX buffer
-        if (enque(pktRlc)) {
-            // create a message to notify the MAC layer that the queue contains new data
-            // make a copy of the RLC SDU
-            auto pktRlcdup = pktRlc->dup();
-            // add tag to indicate new data availability to MAC
-            pktRlcdup->addTag<LteRlcNewDataTag>();
-            // send the new data indication to the MAC
-            send(pktRlcdup, "out");
-        }
-        else {
-            // Queue is full - drop SDU
-            EV << "UmTxEntity::resumeDownstreamInPackets - cannot buffer SDU (queue is full), dropping" << std::endl;
-            dropBufferOverflow(pktRlc);
-        }
-    }
-}
-
-void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
-{
-    if (oldConnection) {
-        if (getNodeTypeById(ownerNodeId_) == NODEB) {
-            EV << NOW << " UmRxEntity::rlcHandleD2DModeSwitch - nothing to do on DL leg of IM flow" << endl;
-            return;
-        }
-
-        if (clearBuffer) {
-            EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - clear TX buffer of the RLC entity associated with the old mode" << endl;
-            clearQueue();
-        }
-        else {
-            if (!sduQueue_.isEmpty()) {
-                EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - check when the TX buffer of the RLC entity associated with the old mode becomes empty - queue length[" << sduQueue_.getLength() << "]" << endl;
-                notifyEmptyBuffer_ = true;
-            }
-            else {
-                EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - TX buffer of the RLC entity associated with the old mode is already empty" << endl;
-            }
-        }
-    }
-    else {
-        EV << " UmTxEntity::rlcHandleD2DModeSwitch - reset numbering of the RLC TX entity corresponding to the new mode" << endl;
-        sno_ = 0;
-
-        if (!clearBuffer) {
-            if (d2dModeController_ && d2dModeController_->isEmptyingTxBuffer(flowControlInfo_->getD2dRxPeerId())) {
-                // stop incoming connections, until
-                EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - halt incoming downstream connections of the RLC entity associated with the new mode" << endl;
-                startHoldingDownstreamInPackets();
-            }
-        }
-    }
 }
 
 } //namespace

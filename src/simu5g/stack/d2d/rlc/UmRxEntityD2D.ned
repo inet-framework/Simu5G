@@ -11,22 +11,19 @@
 //
 
 
-package simu5g.stack;
+package simu5g.stack.d2d.rlc;
 
-import inet.linklayer.contract.IWirelessInterface;
-
+import simu5g.stack.rlc.um.UmRxEntity;
 
 //
-// Interface for the 3GPP Stack.
+// Device-to-Device (D2D) aware version of ~UmRxEntity. D2D_MULTI connections
+// use a single-PDU reordering window initialized on the first received PDU;
+// after a D2D mode switch, sequence numbering is reset and the next PDU is
+// treated as in-sequence; statistics of D2D flows are emitted on the D2D
+// signals. Created by BearerManagement on the D2D-capable NICs.
 //
-moduleinterface ICellularNic extends IWirelessInterface
+simple UmRxEntityD2D extends UmRxEntity
 {
     parameters:
-        @display("i=block/ifcard");
-        string nodeType;
-        @networkInterface;
-    gates:
-        inout x2[] @loose;     // optional x2 manager
-        input nrRadioIn @loose;        // for NR support
+        @class("UmRxEntityD2D");
 }
-

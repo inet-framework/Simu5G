@@ -26,9 +26,11 @@ module LteNicUeD2D extends LteNicUe
         phy.typename = default("LtePhyUeD2D");
         packetFlowObserver.typename = default("PacketFlowObserverUe");
         ip2nic.typename = default("Ip2NicD2D");
+        rlcMux.typename = default("RlcMuxD2D");
 
-        d2dCapable = default(true);             // DO NOT CHANGE
         rrc.hasD2DModeController = true;
+        rrc.bearerManagement.rlcUmTxEntityModuleType = default("simu5g.stack.d2d.rlc.UmTxEntityD2D");
+        rrc.bearerManagement.rlcUmRxEntityModuleType = default("simu5g.stack.d2d.rlc.UmRxEntityD2D");
         bool d2dInitialMode = default(false);
 }
 

@@ -43,6 +43,9 @@ simple RlcMux like IRlcMux
         @statistic[rlcPduThroughputUl](title="Throughput at the rlc layer UL"; unit="Bps"; source="rlcPduThroughputUl"; record=simu5g_rateavg,vector);
 
         //# D2D statistics
+        //# TODO(D2D-out): D2D statistics remain declared here temporarily for
+        //# sz-fingerprint stability; they move to RlcMuxD2D.ned in the dedicated
+        //# core-NED statistics-strip step
         @signal[rlcDelayD2D];
         @statistic[rlcDelayD2D](title="Delay at the rlc layer D2D"; unit="s"; source="rlcDelayD2D"; record=mean,vector);
         @signal[rlcThroughputD2D];

@@ -10,11 +10,10 @@
 //
 
 #include "simu5g/stack/rrc/BearerManagement.h"
-#include "simu5g/stack/rrc/D2DModeController.h"
 #include "simu5g/stack/rrc/Registration.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/rlc/RlcMux.h"
-#include "simu5g/stack/rlc/um/UmTxEntity.h"
+#include "simu5g/stack/rlc/RlcTxEntityBase.h"
 #include "simu5g/stack/pdcp/UpperMux.h"
 #include "simu5g/stack/pdcp/DcMux.h"
 #include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
@@ -315,19 +314,10 @@ RlcTxEntityBase *BearerManagement::createAndInstallRlcTxBuffer(DrbKey id, FlowCo
     module->callInitialize();
 
     RlcTxEntityBase *txEnt = check_and_cast<RlcTxEntityBase *>(module);
-    txEnt->setFlowControlInfo(lteInfo);
+    txEnt->setFlowControlInfo(lteInfo); // note: a UmTxEntityD2D also registers itself with the D2D mode controller here
 
     // Register in CP entity map
     (isNr ? nrRlcTxEntities_ : rlcTxEntities_)[id] = txEnt;
-
-    // D2D peer tracking (only for UM TX entities)
-    if (rlcType == UM) {
-        auto *d2dCtrl = dynamic_cast<D2DModeController *>(nicModule_->getSubmodule("rrc")->getSubmodule("d2dModeController"));
-        if (d2dCtrl) {
-            auto *umTxEnt = check_and_cast<UmTxEntity *>(txEnt);
-            d2dCtrl->registerD2DPeerTxEntity(MacNodeId(lteInfo->getD2dRxPeerId()), umTxEnt);
-        }
-    }
 
     return txEnt;
 }

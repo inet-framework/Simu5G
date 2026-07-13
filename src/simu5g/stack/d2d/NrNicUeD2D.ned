@@ -34,7 +34,12 @@ module NrNicUeD2D extends NrNicUe
         phy.typename = default("NrPhyUeD2D");
         ip2nic.typename = default("Ip2NicD2D");
 
-        d2dCapable = default(true);             // DO NOT CHANGE
+        // both legs previously ran with the NIC-wide D2D support enabled
+        rlcMux.typename = default("RlcMuxD2D");
+        nrRlcMux.typename = default("RlcMuxD2D");
+
         rrc.hasD2DModeController = true;
+        rrc.bearerManagement.rlcUmTxEntityModuleType = default("simu5g.stack.d2d.rlc.UmTxEntityD2D");
+        rrc.bearerManagement.rlcUmRxEntityModuleType = default("simu5g.stack.d2d.rlc.UmRxEntityD2D");
         bool d2dInitialMode = default(false);
 }

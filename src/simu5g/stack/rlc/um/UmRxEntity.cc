@@ -33,6 +33,8 @@ simsignal_t UmRxEntity::rlcPduThroughputSignal_[2] = { cComponent::registerSigna
 simsignal_t UmRxEntity::rlcCellThroughputSignal_[2] = { cComponent::registerSignal("rlcCellThroughputDl"), cComponent::registerSignal("rlcCellThroughputUl") };
 
 // D2D signals - only valid statistics (throughput and delay, no packet loss)
+// registration kept here for global signal-ID order stability (sz fingerprint);
+// emitted only by UmRxEntityD2D
 simsignal_t UmRxEntity::rlcDelayD2DSignal_ = registerSignal("rlcDelayD2D");
 simsignal_t UmRxEntity::rlcThroughputD2DSignal_ = registerSignal("rlcThroughputD2D");
 simsignal_t UmRxEntity::rlcPduDelayD2DSignal_ = registerSignal("rlcPduDelayD2D");
@@ -209,27 +211,15 @@ void UmRxEntity::enque(cPacket *pktAux)
 
 void UmRxEntity::onFirstPduEnqueued(unsigned int pduSno)
 {
-    if (!init_ && isD2DMultiConnection()) {
-        // for D2D multicast connections, the first received PDU must be considered as the first valid PDU
-        rxWindowDesc_.clear(pduSno);
-        // setting the window size to 1 allows the entity to deliver immediately out-of-sequence SDU,
-        // since reordering is not applicable for D2D multicast communications
-        rxWindowDesc_.windowSize_ = 1;
-        init_ = true;
-    }
+    // nothing to do; subclasses may initialize the reordering window
+    // (e.g. the D2D_MULTI single-PDU window)
 }
 
 void UmRxEntity::emitPduStats(cModule *ue, Direction dir, double tputSample, simtime_t creationTime)
 {
     if (ue != nullptr) {
-        if (dir != D2D && dir != D2D_MULTI) { // UE in IM
-            ue->emit(rlcPduThroughputSignal_[dir_], tputSample);
-            ue->emit(rlcPduDelaySignal_[dir_], (NOW - creationTime).dbl());
-        }
-        else { // UE in DM
-            ue->emit(rlcPduThroughputD2DSignal_, tputSample);
-            ue->emit(rlcPduDelayD2DSignal_, (NOW - creationTime).dbl());
-        }
+        ue->emit(rlcPduThroughputSignal_[dir_], tputSample);
+        ue->emit(rlcPduDelaySignal_[dir_], (NOW - creationTime).dbl());
     }
 }
 
@@ -308,28 +298,16 @@ void UmRxEntity::toPdcp(Packet *pktAux)
 void UmRxEntity::emitSduStats(cModule *ue, Direction dir, double tputSample, simtime_t creationTime)
 {
     if (ue != nullptr) {
-        if (dir != D2D && dir != D2D_MULTI) { // UE in IM
-            ue->emit(rlcThroughputSignal_[dir_], tputSample);
-            ue->emit(rlcDelaySignal_[dir_], (NOW - creationTime).dbl());
-        }
-        else {
-            ue->emit(rlcThroughputD2DSignal_, tputSample);
-            ue->emit(rlcDelayD2DSignal_, (NOW - creationTime).dbl());
-        }
+        ue->emit(rlcThroughputSignal_[dir_], tputSample);
+        ue->emit(rlcDelaySignal_[dir_], (NOW - creationTime).dbl());
     }
 }
 
 bool UmRxEntity::consumeReassemblyReset(unsigned int pduSno)
 {
-    if (!resetFlag_)
-        return false;
-
-    // by doing this, the arrived PDU and its first extracted SDU will be considered in order.
-    // For example, when D2D is enabled, this helps to retrieve the synchronization between SNs
-    // at the tx and rx after a mode switch.
-    lastPduReassembled_ = pduSno - 1;
-    resetFlag_ = false;
-    return true;
+    // no reset pending; subclasses may consume a pending reassembly reset
+    // (e.g. after a D2D mode switch)
+    return false;
 }
 
 void UmRxEntity::reassemble(unsigned int index)
@@ -723,48 +701,6 @@ void UmRxEntity::clearBufferedSdu() {
         buffered_.pkt = nullptr;
         buffered_.size = 0;
         buffered_.currentPduSno = 0;
-    }
-}
-
-void UmRxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool oldMode, bool clearBuffer)
-{
-    Enter_Method_Silent("rlcHandleD2DModeSwitch()");
-
-    if (oldConnection) {
-        if (getNodeTypeById(ownerNodeId_) == UE && oldMode == IM) {
-            EV << NOW << " UmRxEntity::rlcHandleD2DModeSwitch - nothing to do on DL leg of IM flow" << endl;
-            return;
-        }
-
-        if (clearBuffer) {
-
-            EV << NOW << " UmRxEntity::rlcHandleD2DModeSwitch - clear RX buffer of the RLC entity associated with the old mode" << endl;
-            for (unsigned int i = 0; i < rxWindowDesc_.windowSize_; i++) {
-                // try to reassemble
-                reassemble(i);
-            }
-
-            // clear the buffer
-            pduBuffer_.clear();
-
-            for (auto && i : received_) {
-                i = false;
-            }
-
-            clearBufferedSdu();
-
-            // stop the timer
-            if (t_reordering_.busy())
-                t_reordering_.stop();
-        }
-    }
-    else {
-        EV << NOW << " UmRxEntity::rlcHandleD2DModeSwitch - handle numbering of the RLC entity associated with the newly selected mode" << endl;
-
-        // reset sequence numbering
-        rxWindowDesc_.clear();
-
-        resetFlag_ = true;
     }
 }
 
