@@ -87,13 +87,11 @@ class LteMacUeD2D : public LteMacUe, public ID2dMacUe
     LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo) override;
     LteHarqBufferTx *createTxHarqBuffer(MacNodeId destId, Direction dir) override;
 
+    /// Factory override: use the D2D-capable LCG scheduler
+    LcgScheduler *createLcgScheduler() override;
+
   public:
     LteMacUeD2D();
-
-    bool isD2DCapable() override
-    {
-        return true;
-    }
 
     virtual void triggerBsr(MacCid cid)
     {

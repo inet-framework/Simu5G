@@ -21,7 +21,6 @@
 #include "simu5g/stack/mac/scheduling_modules/LteMaxCiMultiband.h"
 #include "simu5g/stack/mac/scheduling_modules/LteMaxCiOptMB.h"
 #include "simu5g/stack/mac/scheduling_modules/LteMaxCiComp.h"
-#include "simu5g/stack/mac/scheduling_modules/LteAllocatorBestFit.h"
 #include "simu5g/stack/mac/scheduling_modules/QoSAwareScheduler.h"
 #include "simu5g/stack/mac/buffer/LteMacBuffer.h"
 #include "simu5g/stack/mac/buffer/LteMacQueue.h"
@@ -930,7 +929,11 @@ LteScheduler *LteSchedulerEnb::getScheduler(SchedDiscipline discipline)
         case MAXCI_COMP:
             return new LteMaxCiComp(binder_);
         case ALLOCATOR_BESTFIT:
-            return new LteAllocatorBestFit(binder_);
+            // ALLOCATOR_BESTFIT is a D2D frequency-reuse discipline; only the D2D
+            // uplink scheduler subclasses (LteSchedulerEnbUlD2D/NrSchedulerGnbUlD2D)
+            // construct it. Reaching this in a non-D2D scheduler is a misconfiguration.
+            throw cRuntimeError("ALLOCATOR_BESTFIT requires a D2D-capable uplink scheduler "
+                    "(set ulSchedulerType to LteSchedulerEnbUlD2D/NrSchedulerGnbUlD2D)");
         case QOS_PF: {
             auto *scheduler = new QoSAwareScheduler(binder_, mac_->par("pfAlpha").doubleValue());
             scheduler->setDrbQosMap(mac_->getDrbQosMap());

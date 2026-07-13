@@ -74,27 +74,11 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
         EV << NOW << " LcgScheduler::schedule - Node  " << mac_->getMacNodeId() << ", Starting priority service for traffic class " << i << endl;
 
         // -------------------------------------------------------------------------------------------------- //
-        // FIXME This is a workaround in case a UE has both UL and D2D active connections.
-        //       When an UL grant has been received, check if there is data in the D2D connections' buffer
-        //       and if the bsrTriggered flag is set. If so, do not schedule any UL connection and use the
-        //       grant for sending the BSR related to the D2D connection(s).
-        //       A smarter policy should be implemented
-        if (grantDir == UL && mac_->bsrTriggered()) {
-            // look for an active D2D connection
-            for (it = it_pair.first; it != et; ++it) {
-                // get the Flow descriptor
-                MacCid cid = it->second.first;
-                const FlowDescriptor& connDesc = mac_->getConnDesc(cid);
-                if (connDesc.getDirection() == D2D) {
-                    // get the connection virtual buffer
-                    LteMacBuffer *vQueue = it->second.second;
-                    // get the buffer size
-                    unsigned int queueLength = vQueue->getQueueOccupancy(); // in bytes
-                    if (queueLength != 0)
-                        return scheduleList_;
-                }
-            }
-        }
+        // A D2D-capable UE with both UL and D2D active connections may need to withhold
+        // this UL grant so that it carries the BSR of an active D2D connection instead.
+        // This is handled by the D2D subclass (LcgSchedulerD2D); no-op for non-D2D UEs.
+        if (checkForPendingD2dBsr(grantDir, (LteTrafficClass)i))
+            return scheduleList_;
         // -------------------------------------------------------------------------------------------------- //
 
         //! FIXME Allocation of the same resource to flows with the same priority not implemented

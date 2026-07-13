@@ -92,13 +92,11 @@ class NrMacUeD2D : public NrMacUe, public ID2dMacUe
     LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo) override;
     LteHarqBufferTx *createTxHarqBuffer(MacNodeId destId, Direction dir) override;
 
+    /// Factory override: use the D2D-capable LCG scheduler
+    LcgScheduler *createLcgScheduler() override;
+
   public:
     NrMacUeD2D();
-
-    bool isD2DCapable() override
-    {
-        return true;
-    }
 
     void doHandover(MacNodeId targetEnb) override;
 };

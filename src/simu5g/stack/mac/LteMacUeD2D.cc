@@ -18,6 +18,7 @@
 #include "simu5g/stack/mac/packet/LteRac_m.h"
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
 #include "simu5g/stack/mac/scheduler/LteSchedulerUeUl.h"
+#include "simu5g/stack/d2d/mac/scheduler/LcgSchedulerD2D.h"
 
 namespace simu5g {
 
@@ -306,6 +307,11 @@ LteHarqBufferTx *LteMacUeD2D::createTxHarqBuffer(MacNodeId destId, Direction dir
         return new LteHarqBufferTx(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(binder_->getMacByNodeId(destId)));
     else // D2D or D2D_MULTI
         return new LteHarqBufferTxD2D(binder_, (unsigned int)harqProcesses_, this, check_and_cast<LteMacBase *>(binder_->getMacByNodeId(destId)));
+}
+
+LcgScheduler *LteMacUeD2D::createLcgScheduler()
+{
+    return new LcgSchedulerD2D(this);
 }
 
 void LteMacUeD2D::handleMessage(cMessage *msg)
