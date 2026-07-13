@@ -118,6 +118,14 @@ class HandoverController : public cSimpleModule
     virtual void updateHysteresisThreshold(double rssi);
     virtual LteAmc *getAmcModule(MacNodeId nodeId);
 
+    /// Handover lifecycle notification hooks.
+    /// Called by triggerHandover() once the handover decision is made, before the handover latency starts.
+    virtual void onHandoverStarting();
+    /// Called by doHandover() before buffers are deleted and the user is re-attached to the new cell's AMC.
+    virtual void onHandoverExecuting();
+    /// Called when the (delayed) handover-completion notification fires.
+    virtual void onHandoverCompleted();
+
   public:
     ~HandoverController() override;
 

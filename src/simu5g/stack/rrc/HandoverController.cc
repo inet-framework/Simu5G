@@ -142,19 +142,60 @@ void HandoverController::handleMessage(cMessage *msg)
         handoverTrigger_ = nullptr;
     }
     else if (msg->isName("doModeSwitchAtHandover")) {
-        // Handover completed: ask the new serving cell's mode selection module whether
-        // D2D connections of this UE can switch (back) to Direct Mode. The serving eNB may
-        // not be D2D-capable (no d2dModeSelection submodule), in which case there is nothing to do.
-        cModule *rrc = binder_->getRrcByNodeId(servingNodeId_);
-        D2dModeSelectionBase *d2dModeSelection = dynamic_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
-        if (d2dModeSelection != nullptr)
-            d2dModeSelection->doModeSwitchAtHandover(nodeId_, true);
-        else
-            EV_WARN << "HandoverController: serving eNB " << servingNodeId_ << " is not D2D-capable - no D2D mode switch at handover completion" << endl;
+        onHandoverCompleted();
         delete msg;
     }
     else
         throw cRuntimeError("HandoverController::handleMessage: unknown self-message '%s'", msg->getName());
+}
+
+void HandoverController::onHandoverCompleted()
+{
+    // Handover completed: ask the new serving cell's mode selection module whether
+    // D2D connections of this UE can switch (back) to Direct Mode. The serving eNB may
+    // not be D2D-capable (no d2dModeSelection submodule), in which case there is nothing to do.
+    cModule *rrc = binder_->getRrcByNodeId(servingNodeId_);
+    D2dModeSelectionBase *d2dModeSelection = dynamic_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
+    if (d2dModeSelection != nullptr)
+        d2dModeSelection->doModeSwitchAtHandover(nodeId_, true);
+    else
+        EV_WARN << "HandoverController: serving eNB " << servingNodeId_ << " is not D2D-capable - no D2D mode switch at handover completion" << endl;
+}
+
+void HandoverController::onHandoverStarting()
+{
+    // D2D-specific: Perform D2D mode switch before handover (both D2D and NR variants)
+    if (dynamic_cast<LtePhyUeD2D*>(phy_) || dynamic_cast<NrPhyUe*>(phy_)) {
+        if (servingNodeId_ != NODEID_NONE) {
+            // Stop active D2D flows (go back to Infrastructure mode)
+            // Currently, DM is possible only for UEs served by the same cell
+
+            // Trigger D2D mode switch (the serving eNB may not be D2D-capable, in which case there is nothing to do)
+            cModule *rrc = binder_->getRrcByNodeId(servingNodeId_);
+            D2dModeSelectionBase *d2dModeSelection = dynamic_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
+            if (d2dModeSelection != nullptr)
+                d2dModeSelection->doModeSwitchAtHandover(nodeId_, false);
+            else
+                EV_WARN << "HandoverController: serving eNB " << servingNodeId_ << " is not D2D-capable - no D2D mode switch before handover" << endl;
+        }
+    }
+}
+
+void HandoverController::onHandoverExecuting()
+{
+    // D2D-specific: detach/attach the D2D direction on the old/new AMC (before common logic).
+    // This covers NR UEs too, since NrPhyUe is-a LtePhyUeD2D -- do not duplicate it below.
+    if (dynamic_cast<LtePhyUeD2D*>(phy_)) {
+        if (servingNodeId_ != NODEID_NONE) {
+            LteAmc *oldAmc = check_and_cast<LteMacEnb *>(binder_->getMacFromMacNodeId(servingNodeId_))->getAmc();
+            oldAmc->detachUser(nodeId_, D2D);
+        }
+
+        if (candidateServingNodeId_ != NODEID_NONE) {
+            LteAmc *newAmc = getAmcModule(candidateServingNodeId_);
+            newAmc->attachUser(nodeId_, D2D);
+        }
+    }
 }
 
 void HandoverController::beaconReceived(LteAirFrame *frame, UserControlInfo *lteInfo)
@@ -315,21 +356,7 @@ void HandoverController::triggerHandover()
         }
     }
 
-    // D2D-specific: Perform D2D mode switch before handover (both D2D and NR variants)
-    if (dynamic_cast<LtePhyUeD2D*>(phy_) || dynamic_cast<NrPhyUe*>(phy_)) {
-        if (servingNodeId_ != NODEID_NONE) {
-            // Stop active D2D flows (go back to Infrastructure mode)
-            // Currently, DM is possible only for UEs served by the same cell
-
-            // Trigger D2D mode switch (the serving eNB may not be D2D-capable, in which case there is nothing to do)
-            cModule *rrc = binder_->getRrcByNodeId(servingNodeId_);
-            D2dModeSelectionBase *d2dModeSelection = dynamic_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
-            if (d2dModeSelection != nullptr)
-                d2dModeSelection->doModeSwitchAtHandover(nodeId_, false);
-            else
-                EV_WARN << "HandoverController: serving eNB " << servingNodeId_ << " is not D2D-capable - no D2D mode switch before handover" << endl;
-        }
-    }
+    onHandoverStarting();
 
     // Variant-specific ASSERT
     if (dynamic_cast<NrPhyUe*>(phy_))
@@ -386,19 +413,7 @@ void HandoverController::doHandover()
     // if currentServingNodeId_ == 0, it means the UE was not attached to any eNodeB, so it only has to perform attachment procedures
     // if candidateServingNodeId_ == 0, it means the UE is detaching from its eNodeB, so it only has to perform detachment procedures
 
-    // D2D-specific: detach/attach the D2D direction on the old/new AMC (before common logic).
-    // This covers NR UEs too, since NrPhyUe is-a LtePhyUeD2D -- do not duplicate it below.
-    if (dynamic_cast<LtePhyUeD2D*>(phy_)) {
-        if (servingNodeId_ != NODEID_NONE) {
-            LteAmc *oldAmc = check_and_cast<LteMacEnb *>(binder_->getMacFromMacNodeId(servingNodeId_))->getAmc();
-            oldAmc->detachUser(nodeId_, D2D);
-        }
-
-        if (candidateServingNodeId_ != NODEID_NONE) {
-            LteAmc *newAmc = getAmcModule(candidateServingNodeId_);
-            newAmc->attachUser(nodeId_, D2D);
-        }
-    }
+    onHandoverExecuting();
 
     // Delete old buffers and detach/attach from AMC
     if (servingNodeId_ != NODEID_NONE) {

@@ -273,7 +273,7 @@ void LtePhyUe::handleUpperMessage(cMessage *msg)
     if (channelModel == nullptr)
         throw cRuntimeError("LtePhyUe::handleUpperMessage - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 
-    if (lteInfo->getFrameType() == DATAPKT && (channelModel->isUplinkInterferenceEnabled() || channelModel->isD2DInterferenceEnabled())) {
+    if (lteInfo->getFrameType() == DATAPKT && channelModel->recordsUlTransmissionMap()) {
         // Store the RBs used for data transmission to the binder (for UL interference computation)
         RbMap rbMap = lteInfo->getGrantedBlocks();
         Remote antenna = MACRO;  // TODO fix for multi-antenna

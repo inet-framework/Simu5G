@@ -527,6 +527,9 @@ class LteMacBase : public cSimpleModule
     /// Factory for the RX HARQ buffer created upon first reception from a node.
     /// The base implementation supports the DL and UL directions only.
     virtual LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo);
+
+    /// Records the buffer-overflow statistic for a dropped packet of the given direction.
+    virtual void recordBufferOverflow(Direction dir, double sample);
 };
 
 } //namespace

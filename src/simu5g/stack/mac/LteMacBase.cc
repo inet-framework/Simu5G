@@ -180,6 +180,14 @@ void LteMacBase::fromPhy(cPacket *pktAux)
     }
 }
 
+void LteMacBase::recordBufferOverflow(Direction dir, double sample)
+{
+    simsignal_t signal = (dir == DL) ? macBufferOverflowDlSignal_ :
+                            (dir == UL) ? macBufferOverflowUlSignal_ :
+                            macBufferOverflowD2DSignal_;
+    emit(signal, sample);
+}
+
 LteHarqBufferRx *LteMacBase::createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo)
 {
     Direction dir = (Direction)userInfo->getDirection();
@@ -297,10 +305,7 @@ bool LteMacBase::bufferizePacket(cPacket *cpkt)
     if (dropped) {
         totalOverflowedBytes_ += pkt->getByteLength();
         double sample = (double)totalOverflowedBytes_ / (NOW - getSimulation()->getWarmupPeriod());
-        simsignal_t signal = (lteInfo->getDirection() == DL) ? macBufferOverflowDlSignal_ :
-                                (lteInfo->getDirection() == UL) ? macBufferOverflowUlSignal_ :
-                                macBufferOverflowD2DSignal_;
-        emit(signal, sample);
+        recordBufferOverflow((Direction)lteInfo->getDirection(), sample);
 
         EV << "LteMacBuffers : Dropped packet: queue " << cid << " is full\n";
         delete pkt;
