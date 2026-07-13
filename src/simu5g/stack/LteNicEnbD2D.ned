@@ -32,6 +32,6 @@ module LteNicEnbD2D extends LteNicEnb
 
         // use the D2D-capable channel model
         lteChannelModelType = default("D2dRealisticChannelModel");
-        rrc.hasD2DModeController = true;
+        rrc.typename = default("RrcD2D");
         rrc.hasD2DModeSelection = true;
 }

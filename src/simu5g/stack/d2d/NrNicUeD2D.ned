@@ -46,6 +46,8 @@ module NrNicUeD2D extends NrNicUe
         lteChannelModelType = default("D2dRealisticChannelModel");
         nrChannelModelType = default("D2dNrChannelModel_3GPP38_901");
 
-        rrc.hasD2DModeController = true;
+        rrc.typename = default("RrcD2D");
+        rrc.handoverController.typename = default("HandoverControllerD2D");
+        rrc.nrHandoverController.typename = default("HandoverControllerD2D");
         bool d2dInitialMode = default(false);
 }
