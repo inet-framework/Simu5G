@@ -21,6 +21,7 @@
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
 #include "simu5g/stack/mac/buffer/harq_d2d/LteHarqBufferRxD2D.h"
 #include "simu5g/stack/mac/amc/AmcPilotD2D.h"
+#include "simu5g/stack/d2d/mac/ID2dAmc.h"
 #include "simu5g/stack/mac/scheduler/LteSchedulerEnbUl.h"
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
 #include "simu5g/stack/mac/conflict_graph/DistanceBasedConflictGraph.h"
@@ -86,6 +87,9 @@ void NrMacGnbD2D::macHandleFeedbackPkt(cPacket *pktAux)
 
     // skip if no D2D CQI has been reported
     if (!fbMapD2D.empty()) {
+        // the AMC of a D2D-capable gNB is always a D2D AMC
+        ID2dAmc *d2dAmc = check_and_cast<ID2dAmc *>(amc_);
+
         //get Source Node Id<
         MacNodeId id = fb->getSourceNodeId();
 
@@ -95,7 +99,7 @@ void NrMacGnbD2D::macHandleFeedbackPkt(cPacket *pktAux)
             for (const auto& it : mapIt.second) {
                 for (const auto& jt : it) {
                     if (!jt.isEmptyFeedback()) {
-                        amc_->pushFeedbackD2D(id, jt, peerId, lteInfo->getCarrierFrequency());
+                        d2dAmc->pushFeedbackD2D(id, jt, peerId, lteInfo->getCarrierFrequency());
                     }
                 }
             }

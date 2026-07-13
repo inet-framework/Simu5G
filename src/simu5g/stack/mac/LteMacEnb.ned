@@ -44,8 +44,8 @@ module LteMacEnb extends LteMacBase
         //# AMC Parameters
         //#
 
-        // AMC Type:  "LteAmc", "NrAmc"
-        string amcType @enum(LteAmc,NrAmc) = default("LteAmc");
+        // AMC Type:  "LteAmc", "NrAmc" (the D2D NICs swap in the "LteAmcD2D"/"NrAmcD2D" leaves)
+        string amcType @enum(LteAmc,NrAmc,LteAmcD2D,NrAmcD2D) = default("LteAmc");
 
         // AMC pilot mode; supported values depend on the AMC implementation (LteAmc: "AUTO", "D2D")
         string amcMode = default("AUTO");
@@ -64,9 +64,6 @@ module LteMacEnb extends LteMacBase
 
         // FeedBack Historical Base capacity in UL (number of stored feedback samples per UE)
         int fbhbCapacityUl = default(5);
-
-        // FeedBack Historical Base capacity in D2D (number of stored feedback samples per UE)
-        int fbhbCapacityD2D = default(5);
 
         // wideband CQI generation parameter (0.0 means "use the mean value" )
         double cqiWeight = default(0.0);

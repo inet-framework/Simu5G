@@ -33,8 +33,6 @@ class AmcPilot;
 class CellInfo;
 /// Forward declaration of LteMacEnb class, used by LteAmc.
 class LteMacEnb;
-/// Forward declaration of D2dBinder class, used by LteAmc.
-class D2dBinder;
 
 typedef std::map<Remote, std::vector<std::vector<LteSummaryBuffer>>> History_;
 
@@ -45,12 +43,22 @@ typedef std::map<Remote, std::vector<std::vector<LteSummaryBuffer>>> History_;
  */
 class LteAmc : public cSimpleModule
 {
-  private:
-    virtual MacNodeId getServingNodeOrSelf(MacNodeId dst);
-
   protected:
     /// Factory for the AMC pilot selected by the amcMode parameter; supported names depend on the AMC implementation.
     virtual AmcPilot *createAmcPilot(const char *amcMode);
+
+    // D2D routing seams: the base services DL/UL directly and routes any other
+    // (D2D) direction here. The base implementations reject the direction; the
+    // D2D AMC subclasses override them to service the D2D structures.
+    virtual void printTxParamsForDirection(Direction dir, GHz carrierFrequency);
+    virtual bool existTxParamsForDirection(MacNodeId id, Direction dir, GHz carrierFrequency);
+    virtual const UserTxParams& setTxParamsForDirection(MacNodeId id, Direction dir, UserTxParams& info, GHz carrierFrequency);
+    virtual const UserTxParams& getTxParamsForDirection(MacNodeId id, Direction dir, GHz carrierFrequency);
+    virtual McsTable *getMcsTableForDirection(Direction dir);
+    virtual void rescaleMcsForDirection(double rePerRb, Direction dir);
+    virtual void detachUserForDirection(MacNodeId nodeId, Direction dir);
+    virtual void attachUserForDirection(MacNodeId nodeId, Direction dir);
+    virtual void testUeForDirection(MacNodeId nodeId, Direction dir);
 
   public:
     void printParameters();
@@ -60,8 +68,6 @@ class LteAmc : public cSimpleModule
   protected:
     opp_component_ptr<LteMacEnb> mac_;
     opp_component_ptr<Binder> binder_;
-    // holder of the global D2D state, resolved (find-or-create) on first D2D use
-    D2dBinder *d2dBinder_ = nullptr;
     opp_component_ptr<CellInfo> cellInfo_;
     AmcPilot *pilot_ = nullptr;
     RbAllocationType allocationType_;
@@ -70,37 +76,29 @@ class LteAmc : public cSimpleModule
     MacCellId cellId_;
     McsTable dlMcsTable_;
     McsTable ulMcsTable_;
-    McsTable d2dMcsTable_;
     double mcsScaleDl_;
     double mcsScaleUl_;
-    double mcsScaleD2D_;
     int numAntennas_;
     RemoteSet remoteSet_;
     ConnectedUesMap dlConnectedUe_;
     ConnectedUesMap ulConnectedUe_;
-    ConnectedUesMap d2dConnectedUe_;
     std::map<MacNodeId, unsigned int> dlNodeIndex_;
     std::map<MacNodeId, unsigned int> ulNodeIndex_;
-    std::map<MacNodeId, unsigned int> d2dNodeIndex_;
     std::vector<MacNodeId> dlRevNodeIndex_;
     std::vector<MacNodeId> ulRevNodeIndex_;
-    std::vector<MacNodeId> d2dRevNodeIndex_;
 
     // one tx param per carrier
     std::map<GHz, std::vector<UserTxParams>> dlTxParams_;
     std::map<GHz, std::vector<UserTxParams>> ulTxParams_;
-    std::map<GHz, std::vector<UserTxParams>> d2dTxParams_;
 
     int fType_; //CQI synchronization Debugging
 
     // one History per carrier
     std::map<GHz, History_> dlFeedbackHistory_;
     std::map<GHz, History_> ulFeedbackHistory_;
-    std::map<GHz, std::map<MacNodeId, History_>> d2dFeedbackHistory_;
 
     unsigned int fbhbCapacityDl_;
     unsigned int fbhbCapacityUl_;
-    unsigned int fbhbCapacityD2D_;
     simtime_t lb_;
     simtime_t ub_;
     double cqiComputationWeight_;
@@ -131,9 +129,7 @@ class LteAmc : public cSimpleModule
     virtual void rescaleMcs(double rePerRb, Direction dir = DL);
 
     virtual void pushFeedback(MacNodeId id, Direction dir, LteFeedback fb, GHz carrierFrequency);
-    virtual void pushFeedbackD2D(MacNodeId id, LteFeedback fb, MacNodeId peerId, GHz carrierFrequency);
     virtual const LteSummaryFeedback& getFeedback(MacNodeId id, Remote antenna, TxMode txMode, const Direction dir, GHz carrierFrequency);
-    virtual const LteSummaryFeedback& getFeedbackD2D(MacNodeId id, Remote antenna, TxMode txMode, MacNodeId peerId, GHz carrierFrequency);
 
     const RemoteSet *getAntennaSet()
     {
@@ -190,6 +186,20 @@ class LteAmc : public cSimpleModule
     {
         return cellInfo_;
     }
+
+    Binder *getBinder()
+    {
+        return binder_;
+    }
+
+    MacNodeId getMacNodeId()
+    {
+        return nodeId_;
+    }
+
+    // Resolve the next hop (serving node) for the given destination, or the
+    // destination itself if this cell is its master.
+    MacNodeId getServingNodeOrSelf(MacNodeId dst);
 
     inet::Coord getUePosition(MacNodeId id)
     {

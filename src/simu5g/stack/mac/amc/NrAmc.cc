@@ -240,11 +240,10 @@ NrMcsElem NrAmc::getMcsElemPerCqi(Cqi cqi, const Direction dir)
     NrMcsTable *mcsTable;
     if (dir == DL)
         mcsTable = &dlNrMcsTable_;
-    else if ((dir == UL) || (dir == D2D) || (dir == D2D_MULTI))
+    else if (dir == UL)
         mcsTable = &ulNrMcsTable_;
-    else {
-        throw cRuntimeError("NrAmc::getIMcsPerCqi(): Unrecognized direction");
-    }
+    else
+        mcsTable = getNrMcsTableForDirection(dir);
     CqiElem entry = mcsTable->getCqiElem(cqi);
     LteMod mod = entry.mod_;
     double rate = entry.rate_;
@@ -268,6 +267,11 @@ NrMcsElem NrAmc::getMcsElemPerCqi(Cqi cqi, const Direction dir)
 
     // Return the MCSElem found.
     return ret;
+}
+
+NrMcsTable *NrAmc::getNrMcsTableForDirection(Direction dir)
+{
+    throw cRuntimeError("NrAmc::getIMcsPerCqi(): Unrecognized direction");
 }
 
 } //namespace

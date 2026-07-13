@@ -24,6 +24,12 @@ module LteMacEnbD2D extends LteMacEnb
     parameters:
         @class("LteMacEnbD2D");
 
+        // use the D2D-capable AMC leaf
+        amcType = default("LteAmcD2D");
+
+        // FeedBack Historical Base capacity in D2D (number of stored feedback samples per UE)
+        int fbhbCapacityD2D = default(5);
+
         bool usePreconfiguredTxParams = default(false);
         int d2dCqi = default(7);
 

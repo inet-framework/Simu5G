@@ -25,6 +25,12 @@ module NrMacGnbD2D extends NrMacGnb
     parameters:
         @class("NrMacGnbD2D");
 
+        // use the D2D-capable AMC leaf
+        amcType = default("NrAmcD2D");
+
+        // FeedBack Historical Base capacity in D2D (number of stored feedback samples per UE)
+        int fbhbCapacityD2D = default(5);
+
         bool usePreconfiguredTxParams = default(false);
         int d2dCqi = default(7);
 
