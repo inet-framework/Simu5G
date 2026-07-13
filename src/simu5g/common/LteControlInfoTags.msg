@@ -31,16 +31,6 @@ class NodeIdentificationInd extends inet::TagBase {
 }
 
 //
-// Indication tag containing traffic direction (UL/DL/D2D)  and D2D peer information
-// Usually sent by PDCP to lower layers.
-//
-class TrafficDirectionInd extends inet::TagBase {
-    Direction direction;  // Traffic Direction (UL, DL, D2D)
-    MacNodeId d2dTxPeerId = NODEID_NONE;       // D2D transmitter peer ID
-    MacNodeId d2dRxPeerId = NODEID_NONE;       // D2D receiver peer ID
-}
-
-//
 // Indication tag containing traffic class for QoS handling.
 // Usually sent by PDCP to MAC layer.
 //

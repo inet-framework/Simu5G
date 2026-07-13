@@ -25,7 +25,6 @@ BackgroundCellAmc::BackgroundCellAmc(Binder *binder) : binder_(binder)
     // Scale MCS Tables
     dlMcsTable_.rescale(mcsScaleDl_);
     ulMcsTable_.rescale(mcsScaleUl_);
-    d2dMcsTable_.rescale(mcsScaleD2D_);
 }
 
 void BackgroundCellAmc::calculateMcsScale()
@@ -44,7 +43,7 @@ void BackgroundCellAmc::calculateMcsScale()
     int ulPilotRe = 0;
     int dlPilotRe = 3;
 
-    mcsScaleUl_ = mcsScaleD2D_ = ulRbSubcarriers * (ulRbSymbols - ulSigSymbols) - ulPilotRe;
+    mcsScaleUl_ = ulRbSubcarriers * (ulRbSymbols - ulSigSymbols) - ulPilotRe;
     mcsScaleDl_ = dlRbSubCarriers * (dlRbSymbols - dlSigSymbols) - dlPilotRe;
 }
 
