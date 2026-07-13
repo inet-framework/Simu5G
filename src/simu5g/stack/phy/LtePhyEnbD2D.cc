@@ -13,6 +13,7 @@
 #include "simu5g/stack/phy/LtePhyEnbD2D.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/d2d/binder/D2dBinder.h"
+#include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
@@ -100,7 +101,7 @@ void LtePhyEnbD2D::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame,
 
                         // Get SINR for this link
                         if (channelModel != nullptr)
-                            snr = channelModel->getSINR_D2D(frame, lteinfo, peerId, peerCoord, nodeId_);
+                            snr = check_and_cast<ID2dChannelModel *>(channelModel)->getSINR_D2D(frame, lteinfo, peerId, peerCoord, nodeId_);
                         else
                             throw cRuntimeError("LtePhyEnbD2D::requestFeedback - channelModel is null pointer");
 

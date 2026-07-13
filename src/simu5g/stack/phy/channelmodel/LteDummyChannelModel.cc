@@ -77,26 +77,6 @@ double LteDummyChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord t
     return 10000.0;
 }
 
-std::vector<double> LteDummyChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord)
-{
-    std::vector<double> tmp(numBands_, FAKE_SINR_DB);
-    return tmp;
-}
-
-std::vector<double> LteDummyChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId)
-{
-    std::vector<double> tmp(numBands_, FAKE_SINR_DB);
-    // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
-    return tmp;
-}
-
-std::vector<double> LteDummyChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
-{
-    std::vector<double> tmp(numBands_, FAKE_SINR_DB);
-    // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
-    return tmp;
-}
-
 std::vector<double> LteDummyChannelModel::getSIR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
@@ -114,4 +94,3 @@ bool LteDummyChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControl
 }
 
 } //namespace
-

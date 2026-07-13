@@ -18,6 +18,7 @@
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/phy/LtePhyBase.h"
 #include "simu5g/stack/phy/channelmodel/LteChannelModel.h"
+#include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
 #include "simu5g/stack/phy/packet/LteAirFrame.h"
 
 namespace simu5g {
@@ -45,7 +46,7 @@ void D2dUePhyHelper::storeAirFrame(LteAirFrame *newFrame)
 
         double sum = 0.0;
         unsigned int allocatedRbs = 0;
-        rsrpVector = channelModel->getRSRP_D2D(newFrame, newInfo, phy_->getMacNodeId(), myCoord);
+        rsrpVector = check_and_cast<ID2dChannelModel *>(channelModel)->getRSRP_D2D(newFrame, newInfo, phy_->getMacNodeId(), myCoord);
 
         // Get the average RSRP on the RBs allocated for the transmission
         RbMap rbmap = newInfo->getGrantedBlocks();

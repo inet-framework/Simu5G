@@ -88,8 +88,6 @@ simple LteRealisticChannelModel extends LteChannelModel
         bool downlinkInterference = default(false);
         // if true, enables the interference computation for UL connections -->
         bool uplinkInterference = default(false);
-	// if true, enables the interference computation for D2D connections -->
-        bool d2dInterference = default(true);
 
         bool enableExtCellLos = default(true);
 
@@ -101,6 +99,10 @@ simple LteRealisticChannelModel extends LteChannelModel
         @statistic[rcvdSinrDl](title="SINR measured at packet reception, DL"; unit="dB"; source="rcvdSinrDl"; record=mean,vector);
         @signal[rcvdSinrUl];
         @statistic[rcvdSinrUl](title="SINR measured at packet reception, UL"; unit="dB"; source="rcvdSinrUl"; record=mean,vector);
+        // TODO(D2D-out): the rcvdSinrD2D signal/statistic is D2D-specific but is kept
+        // declared here (inherited by the D2dChannelModel subtypes, which are the only
+        // ones that emit it) to keep result recording byte-identical. A later batch step
+        // relocates it to the D2D channel-model NEDs.
         @signal[rcvdSinrD2D];
         @statistic[rcvdSinrD2D](title="SINR measured at packet reception, D2D"; unit="dB"; source="rcvdSinrD2D"; record=mean,vector);
 

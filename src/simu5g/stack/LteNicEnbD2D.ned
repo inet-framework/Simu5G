@@ -29,6 +29,9 @@ module LteNicEnbD2D extends LteNicEnb
         ip2nic.typename = default("Ip2NicD2D");
         rlcMux.typename = default("RlcMuxD2D");
         rrc.bearerManagement.lteRlcUmEntityModuleType = default("simu5g.stack.d2d.rlc.LteRlcUmEntityD2D");
+
+        // use the D2D-capable channel model
+        lteChannelModelType = default("D2dRealisticChannelModel");
         rrc.hasD2DModeController = true;
         rrc.hasD2DModeSelection = true;
 }

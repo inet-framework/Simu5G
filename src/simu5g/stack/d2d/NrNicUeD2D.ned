@@ -40,6 +40,12 @@ module NrNicUeD2D extends NrNicUe
         rrc.bearerManagement.nrRlcUmEntityModuleType = default("simu5g.stack.d2d.rlc.NrRlcUmEntityD2D");
         nrRlcMux.typename = default("RlcMuxD2D");
 
+        // use the D2D-capable channel models on both legs (matching the
+        // pre-separation defaults: LteRealisticChannelModel on the LTE leg,
+        // NrChannelModel_3GPP38_901 on the NR leg)
+        lteChannelModelType = default("D2dRealisticChannelModel");
+        nrChannelModelType = default("D2dNrChannelModel_3GPP38_901");
+
         rrc.hasD2DModeController = true;
         bool d2dInitialMode = default(false);
 }

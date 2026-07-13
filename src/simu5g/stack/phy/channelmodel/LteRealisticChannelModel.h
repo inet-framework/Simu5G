@@ -80,7 +80,6 @@ class LteRealisticChannelModel : public LteChannelModel
     bool enableExtCellInterference_;
     bool enableDownlinkInterference_;
     bool enableUplinkInterference_;
-    bool enableD2DInterference_;
 
     bool enable_extCell_los_;
 
@@ -177,7 +176,6 @@ class LteRealisticChannelModel : public LteChannelModel
     // Statistics
     static simsignal_t rcvdSinrDlSignal_;
     static simsignal_t rcvdSinrUlSignal_;
-    static simsignal_t rcvdSinrD2DSignal_;
     static simsignal_t measuredSinrDlSignal_;
     static simsignal_t measuredSinrUlSignal_;
 
@@ -203,14 +201,6 @@ class LteRealisticChannelModel : public LteChannelModel
     {
         return getAttenuation(cellularLink(nodeId, dir, coord, cqiDl));
     }
-
-    /*
-     * Build the RadioLink for a UE-to-UE transmission, so that the core
-     * propagation path can evaluate it. Both endpoints being UEs is the whole of
-     * what makes a D2D link different: same antenna gain on both sides, the UE
-     * noise figure, and no sectorial antenna (hence no angular attenuation).
-     */
-    virtual RadioLink d2dLink(MacNodeId srcId, inet::Coord srcCoord, MacNodeId destId, inet::Coord destCoord, bool useUeSideMaps);
 
     /*
      *  Compute angle between two coordinates
@@ -291,20 +281,6 @@ class LteRealisticChannelModel : public LteChannelModel
      *
      */
     double getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId) override;
-
-    /*
-     * Compute Received useful signal for D2D transmissions
-     */
-    std::vector<double> getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord) override;
-
-    /*
-     * Compute sinr (D2D) for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading
-     *
-     * @param frame pointer to the packet
-     * @param lteinfo pointer to the user control info
-     */
-    std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId) override;
-    std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) override;
 
     /*
      * Compute the error probability of the transmitted packet according to cqi used, txmode, and the received power
@@ -410,8 +386,6 @@ class LteRealisticChannelModel : public LteChannelModel
     }
 
     bool isUplinkInterferenceEnabled() override { return enableUplinkInterference_; }
-    bool isD2DInterferenceEnabled() override { return enableD2DInterference_; }
-
     /*
      * Compute the received useful signal (RSRP) per band over a radio link.
      */
@@ -448,8 +422,8 @@ class LteRealisticChannelModel : public LteChannelModel
     /*
      * Fill den[] with the per-band interference-plus-noise denominator, in dBm,
      * for the bands this frame actually uses. Computes the cellular contributions
-     * (multi-cell, background-cell, external-cell), or delegates to the D2D
-     * function below for link types the cellular model does not describe.
+     * (multi-cell, background-cell, external-cell). A subclass substitutes its own
+     * for link types the cellular model does not describe.
      *
      * @param totN linearized thermal noise + noise figure (mW)
      */
@@ -457,12 +431,14 @@ class LteRealisticChannelModel : public LteChannelModel
             RbMap& rbmap, double totN, std::vector<double>& den);
 
     /*
-     * The UE-to-UE counterpart of the above. Separate rather than a branch inside
-     * it, so that moving the D2D code out of this class turns the delegation into
-     * a plain override.
+     * Computes the per-band SINR used by isReceptionSuccessful(). Split out so that
+     * a subclass can route link types the cellular model does not describe -- the
+     * D2D channel model overrides this to send D2D/D2D_MULTI through getSINR_D2D.
+     *
+     * @param rsrpVector the RSRP the caller already holds, when it has one
      */
-    virtual void computeD2DInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
-            RbMap& rbmap, double totN, std::vector<double>& den);
+    virtual std::vector<double> getReceptionSinr(LteAirFrame *frame, UserControlInfo *lteInfo,
+            const std::vector<double>& rsrpVector) { return getSINR(frame, lteInfo); }
 
     /*
      * Returns the 2D distance between two coordinates (ignore z-axis)
@@ -526,11 +502,6 @@ class LteRealisticChannelModel : public LteChannelModel
      * Compute interference coming from neighboring cells for the UL direction
      */
     virtual bool computeUplinkInterference(MacNodeId eNbId, MacNodeId senderId, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
-
-    /*
-     * Compute interference coming from neighboring UEs for the D2D/D2D_MULTI direction
-     */
-    virtual bool computeD2DInterference(MacNodeId eNbId, MacNodeId senderId, inet::Coord senderCoord, MacNodeId destId, inet::Coord destCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference, Direction dir);
 
     /*
      * Evaluates total interference from external cells seen from the spot given by coord

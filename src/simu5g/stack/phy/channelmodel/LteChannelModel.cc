@@ -49,24 +49,6 @@ std::vector<double> LteChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo
     return tmp;
 }
 
-std::vector<double> LteChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord)
-{
-    static const std::vector<double> tmp { 10000.0 };
-    return tmp;
-}
-
-std::vector<double> LteChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId)
-{
-    static const std::vector<double> tmp { 10000.0 };
-    return tmp;
-}
-
-std::vector<double> LteChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
-{
-    static const std::vector<double> tmp { 10000.0 };
-    return tmp;
-}
-
 std::vector<double> LteChannelModel::getSIR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     static const std::vector<double> tmp { 10000.0 };
