@@ -179,6 +179,14 @@ class LtePhyBase : public ChannelAccess
         return txAngle_;
     }
 
+    /**
+     * Delivers a decoded packet to the upper (stack) layer: records the
+     * reception outcome, attaches the decider result and sends the packet
+     * to #upperGateOut_. A D2D-agnostic core operation used, e.g., by the
+     * capture-effect decoding in the D2D UE-PHY helper.
+     */
+    void sendDecodedPacketUp(inet::Packet *pkt, bool receptionSuccessful);
+
   protected:
 
     /**

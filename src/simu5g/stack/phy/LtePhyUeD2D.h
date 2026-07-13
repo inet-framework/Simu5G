@@ -14,6 +14,7 @@
 #define _LTE_AIRPHYUED2D_H_
 
 #include "simu5g/stack/phy/LtePhyUe.h"
+#include "simu5g/stack/d2d/phy/D2dUePhyHelper.h"
 
 namespace simu5g {
 
@@ -23,23 +24,14 @@ class LtePhyUeD2D : public LtePhyUe
 {
   protected:
 
-    // D2D Tx Power
-    double d2dTxPower_;
+    // holds the D2D-specific UE-PHY state and logic (shared with the NR variant):
+    // D2D Tx power and the D2D-multicast capture-effect machinery
+    D2dUePhyHelper d2dHelper_{this};
 
-    /*
-     * Capture Effect for D2D Multicast communications
-     */
-    bool d2dMulticastEnableCaptureEffect_;
-    double nearestDistance_;
-    std::vector<double> bestRsrpVector_;
-    double bestRsrpMean_;
-    std::vector<LteAirFrame *> d2dReceivedFrames_; // airframes received in the current TTI. Only one will be decoded
-    cMessage *d2dDecodingTimer_ = nullptr;    // timer for triggering decoding at the end of the TTI. Started
-    // when the first airframe is received
-    virtual void storeAirFrame(LteAirFrame *newFrame);
-    virtual LteAirFrame *extractAirFrame();
-    virtual void decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo);
-    // ---------------------------------------------------------------- //
+    // timer for triggering decoding at the end of the TTI. Started when the first
+    // airframe is received. The self-message stays in the leaf (the module owns it);
+    // the captured frames it decodes live in d2dHelper_.
+    cMessage *d2dDecodingTimer_ = nullptr;
 
     void initialize(int stage) override;
     void handleAirFrame(cMessage *msg) override;
@@ -52,7 +44,7 @@ class LtePhyUeD2D : public LtePhyUe
     double getTxPwr(Direction dir = UNKNOWN_DIRECTION) override
     {
         if (dir == D2D)
-            return d2dTxPower_;
+            return d2dHelper_.getD2dTxPower();
         return txPower_;
     }
 

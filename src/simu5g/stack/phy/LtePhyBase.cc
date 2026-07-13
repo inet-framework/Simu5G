@@ -12,6 +12,7 @@
 
 #include "simu5g/stack/phy/LtePhyBase.h"
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 
 namespace simu5g {
@@ -84,6 +85,23 @@ void LtePhyBase::handleControlMsg(LteAirFrame *frame,
     *(pkt->addTagIfAbsent<UserControlInfo>()) = *userInfo;
     delete userInfo;
     send(pkt, upperGateOut_);
+}
+
+void LtePhyBase::sendDecodedPacketUp(inet::Packet *pkt, bool receptionSuccessful)
+{
+    // Update statistics
+    if (receptionSuccessful)
+        numAirFrameReceived_++;
+    else
+        numAirFrameNotReceived_++;
+
+    pkt->addTagIfAbsent<PhyReceptionInd>()->setDeciderResult(receptionSuccessful);
+
+    // Send decapsulated message along with result control info to upperGateOut_
+    send(pkt, upperGateOut_);
+
+    if (getEnvir()->isGUI())
+        updateDisplayString();
 }
 
 void LtePhyBase::handleUpperMessage(cMessage *msg)

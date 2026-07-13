@@ -133,7 +133,7 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
     }
 
     // If the packet is a D2D multicast one, store it and decode it at the end of the TTI
-    if (d2dMulticastEnableCaptureEffect_ && binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId())) {
+    if (d2dHelper_.getMulticastEnableCaptureEffect() && binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId())) {
         // If not already started, auto-send a message to signal the presence of data to be decoded
         if (d2dDecodingTimer_ == nullptr) {
             d2dDecodingTimer_ = new cMessage("d2dDecodingTimer");
@@ -143,7 +143,7 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
 
         // Store frame, together with related control info
         frame->setControlInfo(lteInfo);
-        storeAirFrame(frame);            // Implements the capture effect
+        d2dHelper_.storeAirFrame(frame);            // Implements the capture effect
 
         return;                          // Exit the function, decoding will be done later
     }
