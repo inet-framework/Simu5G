@@ -67,6 +67,11 @@ class FlowControlInfo extends LteControlInfo {
 
     unsigned short traffic enum(LteTrafficClass) = 0;       // Lte Traffic Type; analogous to LCG IDs (Logical Channel Group Identifiers) in LTE/NR
     unsigned short rlcType enum(LteRlcType) = 0;            // RLC Traffic Type
+
+    // Sidelink (PC5) fields: inert schema, only ever set by the optional sidelink package
+    uint32_t slSrcL2Id = 0;                              // sidelink source Layer-2 ID (24-bit)
+    uint32_t slDstL2Id = 0;                              // sidelink destination Layer-2 ID (24-bit)
+    unsigned short slCastType = 0;                       // sidelink cast type (SlCastType: broadcast/groupcast/unicast)
 }
 
 cplusplus (FlowControlInfo::setDrbId) {{

@@ -332,6 +332,12 @@ void verifyControlInfo(const FlowControlInfo *info)
             ASSERT(srcType == UE);
             //ASSERT(destType == UE);
             break;
+        case SL:
+            // sidelink: source is a UE; destination is a peer UE (unicast) or an
+            // SL group pseudo node-id (broadcast/groupcast, allocated by SlBinder)
+            ASSERT(srcType == UE);
+            ASSERT(destType == UE || isMulticastDestId(info->getDestId()));
+            break;
         default:
             throw cRuntimeError("Unknown direction %d", info->getDirection());
     }
@@ -368,6 +374,9 @@ DrbKey ctrlInfoToTxDrbKey(const FlowControlInfo *info)
         ASSERT(info->getMulticastGroupId() != NODEID_NONE);
         return DrbKey(info->getMulticastGroupId(), info->getDrbId());
     }
+    // SL: destId carries the destination L2Pid (peer UE id or SL group pseudo id),
+    // so the default keying applies; SlRrc allocates DRB ids uniquely per
+    // (srcL2Id, dstL2Id) pair to keep the 2-field key collision-free (D3)
     return DrbKey(info->getDestId(), info->getDrbId());
 }
 
@@ -426,6 +435,9 @@ MacNodeId ctrlInfoToUeId(const FlowControlInfo *info)
         case D2D_MULTI:
             ASSERT(info->getMulticastGroupId() != NODEID_NONE);
             return info->getMulticastGroupId();
+        case SL:
+            // sidelink: the sending UE identifies the flow (destId may be a group pseudo id)
+            return info->getSourceId();
         default:
             throw cRuntimeError("ctrlInfoToMacCid - unknown direction %d", info->getDirection());
     }
