@@ -23,6 +23,9 @@
 
 namespace simu5g {
 
+class SlRrc;
+class FlowControlInfo;
+
 /**
  * Global sidelink registry (design decisions D4/D9), the sidelink analog of
  * Binder. A single instance exists per network; it is found or dynamically
@@ -81,6 +84,9 @@ class SlBinder : public omnetpp::cSimpleModule
     // SL-capable node registry: node id -> its slPhy module (for TX fan-out)
     std::map<MacNodeId, omnetpp::cModule *> slPhys_;
 
+    // node id -> its SlRrc (for the genie connection-establishment fan-out)
+    std::map<MacNodeId, SlRrc *> slRrcs_;
+
     // SL carrier registry (G8: not in Binder)
     std::map<GHz, SlCarrierInfo> slCarriers_;
 
@@ -116,6 +122,12 @@ class SlBinder : public omnetpp::cSimpleModule
     // --- SL node registry ---
     void registerSlPhy(MacNodeId nodeId, omnetpp::cModule *phyModule);
     const std::map<MacNodeId, omnetpp::cModule *>& getSlPhys() const { return slPhys_; }
+    void registerSlRrc(MacNodeId nodeId, SlRrc *slRrc);
+
+    /// Genie connection establishment (phase SL-1): creates the outgoing SLRB
+    /// chain at the sender and the incoming chain at every group member
+    /// (broadcast/groupcast) or at the peer (unicast), via each node's SlRrc.
+    void establishSlConnection(FlowControlInfo *lteInfo);
 
     // --- SL carrier registry (G8) ---
     void registerSlCarrier(GHz carrierFrequency, unsigned int numerologyIndex, int subchannelSize, int numSubchannels);
