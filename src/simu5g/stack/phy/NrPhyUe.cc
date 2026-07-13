@@ -23,13 +23,6 @@ namespace simu5g {
 
 Define_Module(NrPhyUe);
 
-
-
-void NrPhyUe::initialize(int stage)
-{
-    LtePhyUeD2D::initialize(stage);
-}
-
 // TODO: ***reorganize*** method
 void NrPhyUe::handleAirFrame(cMessage *msg)
 {
@@ -99,7 +92,7 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
      *                     TTI x+0.1: UE changes master
      *                     TTI x+1: packet from UE arrives at the old master
      */
-    if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI && lteInfo->getSourceId() != servingNodeId_) {
+    if (lteInfo->getSourceId() != servingNodeId_) {
         EV << "WARNING: Frame from a UE that is leaving this cell (handover): deleted " << endl;
         EV << "Source MacNodeId: " << lteInfo->getSourceId() << endl;
         EV << "UE MacNodeId: " << nodeId_ << endl;
@@ -108,13 +101,8 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
         return;
     }
 
-    if (binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId())) {
-        // HACK: If this is a multicast connection, change the destId of the airframe so that upper layers can handle it
-        lteInfo->setDestId(nodeId_);
-    }
-
     // Send H-ARQ feedback up
-    if (lteInfo->getFrameType() == HARQPKT || lteInfo->getFrameType() == GRANTPKT || lteInfo->getFrameType() == RACPKT || lteInfo->getFrameType() == D2DMODESWITCHPKT) {
+    if (lteInfo->getFrameType() == HARQPKT || lteInfo->getFrameType() == GRANTPKT || lteInfo->getFrameType() == RACPKT) {
         handleControlMsg(frame, lteInfo);
         return;
     }
@@ -130,22 +118,6 @@ void NrPhyUe::handleAirFrame(cMessage *msg)
         delete lteInfo;
         delete frame;
         return;
-    }
-
-    // If the packet is a D2D multicast one, store it and decode it at the end of the TTI
-    if (d2dHelper_.getMulticastEnableCaptureEffect() && binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId())) {
-        // If not already started, auto-send a message to signal the presence of data to be decoded
-        if (d2dDecodingTimer_ == nullptr) {
-            d2dDecodingTimer_ = new cMessage("d2dDecodingTimer");
-            d2dDecodingTimer_->setSchedulingPriority(10);          // Last thing to be performed in this TTI
-            scheduleAt(NOW, d2dDecodingTimer_);
-        }
-
-        // Store frame, together with related control info
-        frame->setControlInfo(lteInfo);
-        d2dHelper_.storeAirFrame(frame);            // Implements the capture effect
-
-        return;                          // Exit the function, decoding will be done later
     }
 
     if ((lteInfo->getUserTxParams()) != nullptr) {

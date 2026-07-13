@@ -15,14 +15,13 @@
 
 #include <inet/common/ModuleRefByPar.h>
 
-#include "simu5g/stack/phy/LtePhyUeD2D.h"
+#include "simu5g/stack/phy/LtePhyUe.h"
 
 namespace simu5g {
 
-class NrPhyUe : public LtePhyUeD2D
+class NrPhyUe : public LtePhyUe
 {
   protected:
-    void initialize(int stage) override;
     void handleAirFrame(cMessage *msg) override;
 };
 

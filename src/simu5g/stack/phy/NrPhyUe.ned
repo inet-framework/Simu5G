@@ -19,7 +19,7 @@ package simu5g.stack.phy;
 // it is responsible for handling the transmission and reception of frames over the radio,
 // as well as the handover procedures when utilizing the NR technology.
 //
-simple NrPhyUe extends LtePhyUeD2D
+simple NrPhyUe extends LtePhyUe
 {
     parameters:
         @class("NrPhyUe");
