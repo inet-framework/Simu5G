@@ -19,6 +19,7 @@
 #include "simu5g/stack/rrc/D2DModeSwitchNotification_m.h"
 #include "simu5g/stack/mac/conflict_graph/ConflictGraph.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
+#include "simu5g/stack/d2d/mac/D2dEnbMacHelper.h"
 #include <inet/common/ModuleRefByPar.h>
 
 namespace simu5g {
@@ -30,28 +31,8 @@ class ConflictGraph;
 class LteMacEnbD2D : public LteMacEnb, public ID2dMacEnb
 {
   protected:
-    /*
-     * Stores the mirrored status of H-ARQ buffers for D2D transmissions.
-     * The key value of the map is the pair <sender,receiver> of the D2D flow
-     */
-    std::map<GHz, HarqBuffersMirrorD2D> harqBuffersMirrorD2D_;
-
-    // Conflict Graph builder
-    ConflictGraph *conflictGraph_ = nullptr;
-
-    // parameters for conflict graph (needed when frequency reuse is enabled)
-    bool reuseD2D_;
-    bool reuseD2DMulti_;
-
-    simtime_t conflictGraphUpdatePeriod_;
-    double conflictGraphThreshold_;
-
-    // handling of D2D mode switch
-    bool msHarqInterrupt_;   // if true, H-ARQ processes of D2D flows are interrupted at mode switch
-                             // otherwise, they are terminated using the old communication mode
-    bool msClearRlcBuffer_;  // if true, SDUs stored in the RLC buffer of D2D flows are dropped
-
-    virtual void clearBsrBuffers(MacNodeId ueId);
+    // holds the D2D-specific eNB-MAC state and logic (shared with the NR variant)
+    D2dEnbMacHelper d2dEnbHelper_;
 
     /**
      * macPduUnmake() extracts SDUs from a received MAC
@@ -72,8 +53,6 @@ class LteMacEnbD2D : public LteMacEnb, public ID2dMacEnb
      */
     void sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList) override;
 
-    virtual void macHandleD2DModeSwitch(cPacket *pkt);
-
     /**
      * Flush Tx H-ARQ buffers for all users
      */
@@ -87,6 +66,7 @@ class LteMacEnbD2D : public LteMacEnb, public ID2dMacEnb
 
   public:
 
+    LteMacEnbD2D();
 
     /**
      * Reads MAC parameters for ue and performs initialization.
@@ -107,17 +87,17 @@ class LteMacEnbD2D : public LteMacEnb, public ID2dMacEnb
 
     bool isReuseD2DEnabled() override
     {
-        return reuseD2D_;
+        return d2dEnbHelper_.getReuseD2D();
     }
 
     bool isReuseD2DMultiEnabled() override
     {
-        return reuseD2DMulti_;
+        return d2dEnbHelper_.getReuseD2DMulti();
     }
 
     ConflictGraph *getConflictGraph() override
     {
-        return conflictGraph_;
+        return d2dEnbHelper_.getConflictGraph();
     }
 
     void deleteHarqBuffersMirrorD2D(MacNodeId txPeer, MacNodeId rxPeer) override;
@@ -139,7 +119,7 @@ class LteMacEnbD2D : public LteMacEnb, public ID2dMacEnb
     // send the D2D Mode Switch signal to the transmitter of the given flow
     virtual void sendModeSwitchNotification(MacNodeId srcId, MacNodeId dst, LteD2DMode oldMode, LteD2DMode newMode) override;
 
-    bool isMsHarqInterrupt() override { return msHarqInterrupt_; }
+    bool isMsHarqInterrupt() override { return d2dEnbHelper_.getMsHarqInterrupt(); }
 
 };
 

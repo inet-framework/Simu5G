@@ -1123,4 +1123,26 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
     return activeUeSet.size();
 }
 
+void LteMacEnb::clearBsrBuffers(MacNodeId ueId)
+{
+    EV << NOW << "LteMacEnb::clearBsrBuffers - Clear BSR buffers of UE " << ueId << endl;
+
+    // empty all BSR buffers belonging to the UE
+    for (auto& [cid, buf] : bsrbuf_) {
+        // check if this buffer is for this UE
+        if (cid.getNodeId() != ueId)
+            continue;
+
+        EV << NOW << "LteMacEnb::clearBsrBuffers - Clear BSR buffer for cid " << cid << endl;
+
+        // empty its BSR buffer
+        EV << NOW << "LteMacEnb::clearBsrBuffers - Length was " << buf->getQueueOccupancy() << endl;
+
+        while (!buf->isEmpty())
+            buf->popFront();
+
+        EV << NOW << "LteMacEnb::clearBsrBuffers - New length is " << buf->getQueueOccupancy() << endl;
+    }
+}
+
 } //namespace

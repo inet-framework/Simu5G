@@ -30,6 +30,10 @@ using namespace inet;
 
 
 
+LteMacEnbD2D::LteMacEnbD2D() : d2dEnbHelper_(this)
+{
+}
+
 void LteMacEnbD2D::initialize(int stage)
 {
     LteMacEnb::initialize(stage);
@@ -39,27 +43,18 @@ void LteMacEnbD2D::initialize(int stage)
         if (usePreconfiguredTxParams)
             check_and_cast<AmcPilotD2D *>(amc_->getPilot())->setPreconfiguredTxParams(d2dCqi);
 
-        msHarqInterrupt_ = par("msHarqInterrupt").boolValue();
-        msClearRlcBuffer_ = par("msClearRlcBuffer").boolValue();
+        d2dEnbHelper_.setMsHarqInterrupt(par("msHarqInterrupt").boolValue());
+        d2dEnbHelper_.setMsClearRlcBuffer(par("msClearRlcBuffer").boolValue());
     }
     else if (stage == INITSTAGE_LAST) { // be sure that all UEs have been initialized
-        reuseD2D_ = par("reuseD2D");
-        reuseD2DMulti_ = par("reuseD2DMulti");
+        d2dEnbHelper_.setReuseD2D(par("reuseD2D"));
+        d2dEnbHelper_.setReuseD2DMulti(par("reuseD2DMulti"));
 
-        if (reuseD2D_ || reuseD2DMulti_) {
-            conflictGraphUpdatePeriod_ = par("conflictGraphUpdatePeriod");
+        if (d2dEnbHelper_.getReuseD2D() || d2dEnbHelper_.getReuseD2DMulti()) {
+            d2dEnbHelper_.setConflictGraphUpdatePeriod(par("conflictGraphUpdatePeriod"));
 
-            CGType cgType = CG_DISTANCE;  // TODO make this parametric
-            switch (cgType) {
-                case CG_DISTANCE: {
-                    conflictGraph_ = new DistanceBasedConflictGraph(binder_, this, reuseD2D_, reuseD2DMulti_, par("conflictGraphThreshold"));
-                    check_and_cast<DistanceBasedConflictGraph *>(conflictGraph_)->setThresholds(par("conflictGraphD2DInterferenceRadius"), par("conflictGraphD2DMultiTxRadius"), par("conflictGraphD2DMultiInterferenceRadius"));
-                    break;
-                }
-                default: {
-                    throw cRuntimeError("LteMacEnbD2D::initialize - CG type unknown");
-                }
-            }
+            d2dEnbHelper_.createDistanceBasedConflictGraph(binder_, par("conflictGraphThreshold"),
+                    par("conflictGraphD2DInterferenceRadius"), par("conflictGraphD2DMultiTxRadius"), par("conflictGraphD2DMultiInterferenceRadius"));
 
             scheduleAt(NOW + 0.05, new cMessage("updateConflictGraph"));
         }
@@ -71,8 +66,8 @@ void LteMacEnbD2D::initialize(int stage)
         if (usePreconfiguredTxParams)
             check_and_cast<AmcPilotD2D *>(amc_->getPilot())->setPreconfiguredTxParams(d2dCqi);
 
-        msHarqInterrupt_ = par("msHarqInterrupt").boolValue();
-        msClearRlcBuffer_ = par("msClearRlcBuffer").boolValue();
+        d2dEnbHelper_.setMsHarqInterrupt(par("msHarqInterrupt").boolValue());
+        d2dEnbHelper_.setMsClearRlcBuffer(par("msClearRlcBuffer").boolValue());
     }
 }
 
@@ -107,14 +102,14 @@ void LteMacEnbD2D::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage() && msg->isName("D2DModeSwitchNotification")) {
         cPacket *pkt = check_and_cast<cPacket *>(msg);
-        macHandleD2DModeSwitch(pkt);
+        d2dEnbHelper_.macHandleD2DModeSwitch(pkt);
         delete pkt;
     }
     else if (msg->isSelfMessage() && msg->isName("updateConflictGraph")) {
         // compute conflict graph for resource allocation
-        conflictGraph_->computeConflictGraph();
+        d2dEnbHelper_.computeConflictGraph();
 
-        scheduleAt(NOW + conflictGraphUpdatePeriod_, msg);
+        scheduleAt(NOW + d2dEnbHelper_.getConflictGraphUpdatePeriod(), msg);
     }
     else
         LteMacEnb::handleMessage(msg);
@@ -291,33 +286,9 @@ void LteMacEnbD2D::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
     }
 }
 
-void LteMacEnbD2D::clearBsrBuffers(MacNodeId ueId)
-{
-    EV << NOW << "LteMacEnbD2D::clearBsrBuffers - Clear BSR buffers of UE " << ueId << endl;
-
-    // empty all BSR buffers belonging to the UE
-    for (auto& [cid, buf] : bsrbuf_) {
-        // check if this buffer is for this UE
-        if (cid.getNodeId() != ueId)
-            continue;
-
-        EV << NOW << "LteMacEnbD2D::clearBsrBuffers - Clear BSR buffer for cid " << cid << endl;
-
-        // empty its BSR buffer
-        EV << NOW << "LteMacEnbD2D::clearBsrBuffers - Length was " << buf->getQueueOccupancy() << endl;
-
-        while (!buf->isEmpty())
-            buf->popFront();
-
-        EV << NOW << "LteMacEnbD2D::clearBsrBuffers - New length is " << buf->getQueueOccupancy() << endl;
-    }
-}
-
 HarqBuffersMirrorD2D *LteMacEnbD2D::getHarqBuffersMirrorD2D(GHz carrierFrequency)
 {
-    if (harqBuffersMirrorD2D_.find(carrierFrequency) == harqBuffersMirrorD2D_.end())
-        return nullptr;
-    return &harqBuffersMirrorD2D_[carrierFrequency];
+    return d2dEnbHelper_.getHarqBuffersMirrorD2D(carrierFrequency);
 }
 
 void LteMacEnbD2D::deleteQueues(MacNodeId nodeId)
@@ -328,42 +299,12 @@ void LteMacEnbD2D::deleteQueues(MacNodeId nodeId)
 
 void LteMacEnbD2D::deleteHarqBuffersMirrorD2D(MacNodeId nodeId)
 {
-    // delete all "mirror" buffers that have nodeId as sender or receiver
-    for (auto& mit : harqBuffersMirrorD2D_) {
-        for (auto it = mit.second.begin(); it != mit.second.end(); ) {
-            // get current nodeIDs
-            MacNodeId senderId = (it->first).first; // Transmitter
-            MacNodeId destId = (it->first).second;  // Receiver
-
-            if (senderId == nodeId || destId == nodeId) {
-                delete it->second;
-                it = mit.second.erase(it);
-            }
-            else {
-                ++it;
-            }
-        }
-    }
+    d2dEnbHelper_.deleteHarqBuffersMirrorD2D(nodeId);
 }
 
 void LteMacEnbD2D::deleteHarqBuffersMirrorD2D(MacNodeId txPeer, MacNodeId rxPeer)
 {
-    // delete all "mirror" buffers that have nodeId as sender or receiver
-    for (auto& mit : harqBuffersMirrorD2D_) {
-        for (auto it = mit.second.begin(); it != mit.second.end(); ) {
-            // get current nodeIDs
-            MacNodeId senderId = (it->first).first; // Transmitter
-            MacNodeId destId = (it->first).second;  // Receiver
-
-            if (senderId == txPeer && destId == rxPeer) {
-                delete it->second;
-                it = mit.second.erase(it);
-            }
-            else {
-                ++it;
-            }
-        }
-    }
+    d2dEnbHelper_.deleteHarqBuffersMirrorD2D(txPeer, rxPeer);
 }
 
 void LteMacEnbD2D::sendModeSwitchNotification(MacNodeId srcId, MacNodeId dstId, LteD2DMode oldMode, LteD2DMode newMode)
@@ -381,8 +322,8 @@ void LteMacEnbD2D::sendModeSwitchNotification(MacNodeId srcId, MacNodeId dstId, 
     switchPktTx->setPeerId(dstId);
     switchPktTx->setOldMode(oldMode);
     switchPktTx->setNewMode(newMode);
-    switchPktTx->setInterruptHarq(msHarqInterrupt_);
-    switchPktTx->setClearRlcBuffer(msClearRlcBuffer_);
+    switchPktTx->setInterruptHarq(d2dEnbHelper_.getMsHarqInterrupt());
+    switchPktTx->setClearRlcBuffer(d2dEnbHelper_.getMsClearRlcBuffer());
 
     pktTx->addTagIfAbsent<UserControlInfo>()->setSourceId(nodeId_);
     pktTx->addTagIfAbsent<UserControlInfo>()->setDestId(srcId);
@@ -398,8 +339,8 @@ void LteMacEnbD2D::sendModeSwitchNotification(MacNodeId srcId, MacNodeId dstId, 
     switchPktRx->setPeerId(srcId);
     switchPktRx->setOldMode(oldMode);
     switchPktRx->setNewMode(newMode);
-    switchPktRx->setInterruptHarq(msHarqInterrupt_);
-    switchPktRx->setClearRlcBuffer(msClearRlcBuffer_);
+    switchPktRx->setInterruptHarq(d2dEnbHelper_.getMsHarqInterrupt());
+    switchPktRx->setClearRlcBuffer(d2dEnbHelper_.getMsClearRlcBuffer());
 
     pktRx->addTagIfAbsent<UserControlInfo>()->setSourceId(nodeId_);
     pktRx->addTagIfAbsent<UserControlInfo>()->setDestId(dstId);
@@ -413,84 +354,6 @@ void LteMacEnbD2D::sendModeSwitchNotification(MacNodeId srcId, MacNodeId dstId, 
     scheduleAt(NOW + TTI, switchPktRx_local);
 }
 
-void LteMacEnbD2D::macHandleD2DModeSwitch(cPacket *pktAux)
-{
-
-    auto pkt = check_and_cast<inet::Packet *>(pktAux);
-    auto switchPkt = pkt->peekAtFront<D2DModeSwitchNotification>();
-    auto uinfo = pkt->getTag<UserControlInfo>();
-
-    MacNodeId nodeId = uinfo->getDestId();
-    LteD2DMode oldMode = switchPkt->getOldMode();
-
-    if (!switchPkt->getTxSide()) { // address the receiving endpoint of the D2D flow (tx entities at the eNB)
-        // get the outgoing connection corresponding to the DL connection for the RX endpoint of the D2D flow
-        for (auto& [cid, connInfo] : connDescOut_) {
-            if (cid.getNodeId() == nodeId) {
-                EV << NOW << " LteMacEnbD2D::sendModeSwitchNotification - send signal for TX entity to upper layers in the eNB (cid=" << cid << ")" << endl;
-
-                auto pktTx = pkt->dup();
-                pktTx->removeTagIfPresent<UserControlInfo>();
-                auto switchPktTx = pktTx->removeAtFront<D2DModeSwitchNotification>();
-                switchPktTx->setTxSide(true);
-
-                if (oldMode == IM)
-                    switchPktTx->setOldConnection(true);
-                else
-                    switchPktTx->setOldConnection(false);
-                pktTx->insertAtFront(switchPktTx);
-                *(pktTx->addTag<FlowControlInfo>()) = connInfo.flowInfo.toFlowControlInfo();
-                sendUpperPackets(pktTx);
-                break;
-            }
-        }
-    }
-    else { // tx side: address the transmitting endpoint of the D2D flow (rx entities at the eNB)
-        // clear BSR buffers for the UE
-        clearBsrBuffers(nodeId);
-
-        // get the incoming connection corresponding to the UL connection for the TX endpoint of the D2D flow
-        for (auto& [cid, lteInfo] : connDescIn_) {
-            if (cid.getNodeId() == nodeId) {
-                if (msHarqInterrupt_) { // interrupt H-ARQ processes for UL
-                    for (auto& mit : harqRxBuffers_) {
-                        HarqRxBuffers::iterator hit = mit.second.find(nodeId);
-                        if (hit != mit.second.end()) {
-                            for (unsigned int proc = 0; proc < (unsigned int)harqProcesses_; proc++) {
-                                unsigned int numUnits = hit->second->getProcess(proc)->getNumHarqUnits();
-                                for (unsigned int i = 0; i < numUnits; i++) {
-                                    hit->second->getProcess(proc)->purgeCorruptedPdu(i); // delete contained PDU
-                                    hit->second->getProcess(proc)->resetCodeword(i);     // reset unit
-                                }
-                            }
-                        }
-                    }
-
-                    // notify that this UE is switching during this TTI
-                    resetHarq_[nodeId] = NOW;
-                }
-
-                auto pktRx = pkt->dup();
-                pktRx->removeTagIfPresent<UserControlInfo>();
-                auto switchPktRx = pktRx->removeAtFront<D2DModeSwitchNotification>();
-
-                EV << NOW << " LteMacEnbD2D::sendModeSwitchNotification - send signal for RX entity to upper layers in the eNB (cid=" << cid << ")" << endl;
-
-                switchPktRx->setTxSide(false);
-                if (oldMode == IM)
-                    switchPktRx->setOldConnection(true);
-                else
-                    switchPktRx->setOldConnection(false);
-
-                pktRx->insertAtFront(switchPktRx);
-                *(pktRx->addTag<FlowControlInfo>()) = lteInfo.toFlowControlInfo();
-                sendUpperPackets(pktRx);
-                break;
-            }
-        }
-    }
-}
-
 void LteMacEnbD2D::flushHarqBuffers()
 {
     for (auto& mit : harqTxBuffers_) {
@@ -499,7 +362,7 @@ void LteMacEnbD2D::flushHarqBuffers()
     }
 
     // flush mirror buffer
-    for (auto& mirr_mit : harqBuffersMirrorD2D_) {
+    for (auto& mirr_mit : d2dEnbHelper_.getHarqBuffersMirrorD2DMap()) {
         for (auto& mirr_it : mirr_mit.second)
             mirr_it.second->markSelectedAsWaiting();
     }
@@ -536,9 +399,10 @@ void LteMacEnbD2D::fromPhy(cPacket *pktAux)
         MacNodeId d2dSender = mfbpkt->getD2dSenderId();
         MacNodeId d2dReceiver = mfbpkt->getD2dReceiverId();
         D2DPair pair(d2dSender, d2dReceiver);
-        HarqBuffersMirrorD2D::iterator hit = harqBuffersMirrorD2D_[carrierFrequency].find(pair);
+        auto& harqBuffersMirrorD2D = d2dEnbHelper_.getHarqBuffersMirrorD2DMap();
+        HarqBuffersMirrorD2D::iterator hit = harqBuffersMirrorD2D[carrierFrequency].find(pair);
         EV << NOW << "LteMacEnbD2D::fromPhy - node " << nodeId_ << " Received HARQ Feedback pkt (mirrored)" << endl;
-        if (hit == harqBuffersMirrorD2D_[carrierFrequency].end()) {
+        if (hit == harqBuffersMirrorD2D[carrierFrequency].end()) {
             // if feedback arrives, a buffer should exist (unless it is a handover scenario
             // where the HARQ buffer was deleted but feedback was in transit)
             // this case must be taken care of
@@ -547,7 +411,7 @@ void LteMacEnbD2D::fromPhy(cPacket *pktAux)
 
             // create buffer
             LteHarqBufferMirrorD2D *hb = new LteHarqBufferMirrorD2D((unsigned int)harqProcesses_, (unsigned char)par("maxHarqRtx"), this);
-            harqBuffersMirrorD2D_[carrierFrequency][pair] = hb;
+            harqBuffersMirrorD2D[carrierFrequency][pair] = hb;
             hb->receiveHarqFeedback(pkt);
         }
         else {

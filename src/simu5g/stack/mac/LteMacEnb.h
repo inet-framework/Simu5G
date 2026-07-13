@@ -211,6 +211,9 @@ class LteMacEnb : public LteMacBase
         return activeCids;
     }
 
+    /// Empties all BSR virtual buffers belonging to the given UE.
+    void clearBsrBuffers(MacNodeId ueId);
+
     /**
      * deleteQueues() on ENB performs actions
      * from the base class and also deletes the BSR buffer.
