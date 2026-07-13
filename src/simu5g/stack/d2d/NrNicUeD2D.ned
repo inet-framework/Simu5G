@@ -32,6 +32,7 @@ module NrNicUeD2D extends NrNicUe
         // carried the averageCqiD2D statistic)
         mac.typename = default("LteMacUeD2D");
         phy.typename = default("NrPhyUeD2D");
+        ip2nic.typename = default("Ip2NicD2D");
 
         d2dCapable = default(true);             // DO NOT CHANGE
         rrc.hasD2DModeController = true;

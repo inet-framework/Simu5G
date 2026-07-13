@@ -1,0 +1,90 @@
+//
+//                  Simu5G
+//
+// Copyright (C) 2012-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis et al. (University of Pisa)
+// Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea et al. (University of Pisa)
+//
+// This file is part of a software released under the license included in file
+// "license.pdf". Please read LICENSE and README files before using it.
+// The above files and the present reference are part of the software itself,
+// and cannot be removed from it.
+//
+#include <inet/networklayer/ipv4/Ipv4Header_m.h>
+#include "simu5g/stack/d2d/ip2nic/Ip2NicD2D.h"
+#include "simu5g/common/binder/Binder.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
+
+namespace simu5g {
+
+using namespace inet;
+using namespace omnetpp;
+
+Define_Module(Ip2NicD2D);
+
+MacNodeId Ip2NicD2D::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
+{
+    if (nodeType_ == NODEB)
+        return Ip2Nic::getNextHopNodeId(destAddr, useNR, sourceId);  // eNB next-hop is D2D-agnostic
+
+    // D2D-capable UE: check if direct D2D communication is possible
+    MacNodeId destId = binder_->getMacNodeId(destAddr);
+    MacNodeId srcId = isNr_ ? (useNR ? nrNodeId_ : nodeId_) : nodeId_;
+
+    // check whether the destination is inside the LTE network and D2D is active
+    if (destId == NODEID_NONE ||
+        !(binder_->getD2DCapability(srcId, destId) && binder_->getD2DMode(srcId, destId) == DM)) {
+        // packet is destined to the eNB; UE is subject to handovers: master may change
+        return binder_->getServingNodeOrSelf(sourceId);
+    }
+
+    return destId;
+}
+
+void Ip2NicD2D::classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const Ipv4Address& destAddr, MacNodeId localNodeId, bool isEnb)
+{
+    if (isEnb) {
+        // ENB: set D2D peer IDs to none
+        lteInfo->setD2dTxPeerId(NODEID_NONE);
+        lteInfo->setD2dRxPeerId(NODEID_NONE);
+        return;
+    }
+
+    // UE: D2D multicast/unicast handling (unified for NrPdcpUe and LtePdcpUeD2D)
+    if (isNr_)
+        lteInfo->setSourceId(localNodeId);
+
+    if (destAddr.isMulticast()) {
+        binder_->addD2DMulticastTransmitter(localNodeId);
+        lteInfo->setDirection(D2D_MULTI);
+        MacNodeId groupId = binder_->getOrAssignDestIdForMulticastAddress(destAddr);
+        lteInfo->setMulticastGroupId(groupId);
+    }
+    else {
+        MacNodeId destId = binder_->getMacNodeId(destAddr);
+        if (destId != NODEID_NONE) { // the destination is a UE within the LTE network
+            if (binder_->checkD2DCapability(localNodeId, destId)) {
+                // this way, we record the ID of the endpoints even if the connection is currently in IM
+                // this is useful for mode switching
+                lteInfo->setD2dTxPeerId(localNodeId);
+                lteInfo->setD2dRxPeerId(destId);
+            }
+            else {
+                lteInfo->setD2dTxPeerId(NODEID_NONE);
+                lteInfo->setD2dRxPeerId(NODEID_NONE);
+            }
+
+            // set actual flow direction (D2D/UL) based on the current mode (DM/IM) of this peering
+            if (binder_->getD2DCapability(localNodeId, destId) && binder_->getD2DMode(localNodeId, destId) == DM)
+                lteInfo->setDirection(D2D);
+            else
+                lteInfo->setDirection(UL);
+        }
+        else { // the destination is outside the LTE network
+            lteInfo->setDirection(UL);
+            lteInfo->setD2dTxPeerId(NODEID_NONE);
+            lteInfo->setD2dRxPeerId(NODEID_NONE);
+        }
+    }
+}
+
+} //namespace

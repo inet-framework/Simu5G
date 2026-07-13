@@ -50,7 +50,6 @@ void Ip2Nic::initialize(int stage)
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         isNr_ = par("isNr");
-        hasD2DSupport_ = networkIf->par("d2dCapable").boolValue() || isNr_;
 
         hasSdap_ = par("hasSdap").boolValue();
 
@@ -289,24 +288,12 @@ MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacN
         return destId;
     }
     else {
-        // UE variants
-        if (!hasD2DSupport_) {
-            // UE is subject to handovers, master may change
+        // UE variants (no D2D): the packet goes to the serving node; the UE is subject
+        // to handovers, so the master may change. For LTE that node is nodeId_'s master;
+        // for NR it is the master of the (technology-selected) source node passed in.
+        if (!isNr_)
             return binder_->getServingNodeOrSelf(nodeId_);
-        }
-
-        // D2D-capable UE: check if D2D communication is possible
-        MacNodeId destId = binder_->getMacNodeId(destAddr);
-        MacNodeId srcId = isNr_ ? (useNR ? nrNodeId_ : nodeId_) : nodeId_;
-
-        // check whether the destination is inside the LTE network and D2D is active
-        if (destId == NODEID_NONE ||
-            !(binder_->getD2DCapability(srcId, destId) && binder_->getD2DMode(srcId, destId) == DM)) {
-            // packet is destined to the eNB; UE is subject to handovers: master may change
-            return binder_->getServingNodeOrSelf(sourceId);
-        }
-
-        return destId;
+        return binder_->getServingNodeOrSelf(sourceId);
     }
 }
 
@@ -330,83 +317,15 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
     bool isEnb = (dir == DL);
 
-    // --- Base LtePdcpEnb/LtePdcpUe (no D2D support) ---
-    if (!hasD2DSupport_) {
-        EV << "Received packet from data port, src= " << srcAddr << " dest=" << destAddr << " ToS=" << typeOfService << endl;
-
-        lteInfo->setSourceId(nodeId_);   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
-        if (lteInfo->getMulticastGroupId() != NODEID_NONE)  // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
-            lteInfo->setDestId(nodeId_);
-        else
-            lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
-
-        if (!hasSdap_) {
-            // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
-            ConnectionKey key{srcAddr, destAddr, typeOfService, Direction(0xFFFF)};
-            DrbId drbId = lookupOrAssignDrbId(key, lteInfo.get());
-            lteInfo->setDrbId(drbId);
-
-            // Establish the connection unless its PDCP TX entity already exists. The entity
-            // registry is authoritative: entities deleted at handover or D2D mode switch get
-            // re-established by the next packet, even for an already-seen (drbId, destId) pair.
-            if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drbId)))
-                establishConnection(lteInfo.get(), key);
-        }
-        return;
-    }
-
-    // --- D2D-capable subclasses (LtePdcpEnbD2D, LtePdcpUeD2D, NrPdcpEnb, NrPdcpUe) ---
-
-    // For NrPdcpUe, the effective local node ID depends on useNR flag
+    // For NrPdcpUe, the effective local node ID depends on the useNR flag
     MacNodeId localNodeId = (isNr_ && !isEnb) ? (useNR ? nrNodeId_ : nodeId_) : nodeId_;
 
-    // EV log (all D2D subclasses except NrPdcpUe)
     if (isEnb || !isNr_)
         EV << "Received packet from data port, src= " << srcAddr << " dest=" << destAddr << " ToS=" << typeOfService << endl;
 
-    if (isEnb) {
-        // ENB: set D2D peer IDs to none
-        lteInfo->setD2dTxPeerId(NODEID_NONE);
-        lteInfo->setD2dRxPeerId(NODEID_NONE);
-    }
-    else {
-        // UE: D2D multicast/unicast handling (unified for NrPdcpUe and LtePdcpUeD2D)
-        if (isNr_)
-            lteInfo->setSourceId(localNodeId);
-
-        if (destAddr.isMulticast()) {
-            binder_->addD2DMulticastTransmitter(localNodeId);
-            lteInfo->setDirection(D2D_MULTI);
-            MacNodeId groupId = binder_->getOrAssignDestIdForMulticastAddress(destAddr);
-            lteInfo->setMulticastGroupId(groupId);
-        }
-        else {
-            MacNodeId destId = binder_->getMacNodeId(destAddr);
-            if (destId != NODEID_NONE) { // the destination is a UE within the LTE network
-                if (binder_->checkD2DCapability(localNodeId, destId)) {
-                    // this way, we record the ID of the endpoints even if the connection is currently in IM
-                    // this is useful for mode switching
-                    lteInfo->setD2dTxPeerId(localNodeId);
-                    lteInfo->setD2dRxPeerId(destId);
-                }
-                else {
-                    lteInfo->setD2dTxPeerId(NODEID_NONE);
-                    lteInfo->setD2dRxPeerId(NODEID_NONE);
-                }
-
-                // set actual flow direction (D2D/UL) based on the current mode (DM/IM) of this peering
-                if (binder_->getD2DCapability(localNodeId, destId) && binder_->getD2DMode(localNodeId, destId) == DM)
-                    lteInfo->setDirection(D2D);
-                else
-                    lteInfo->setDirection(UL);
-            }
-            else { // the destination is outside the LTE network
-                lteInfo->setDirection(UL);
-                lteInfo->setD2dTxPeerId(NODEID_NONE);
-                lteInfo->setD2dRxPeerId(NODEID_NONE);
-            }
-        }
-    }
+    // D2D-aware subclasses set the multicast group, peer IDs and the actual
+    // flow direction here; no-op otherwise
+    classifyConnection(pkt, lteInfo.get(), destAddr, localNodeId, isEnb);
 
     // --- Source and Dest IDs ---
     if (isNr_) {
@@ -432,13 +351,10 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
         }
     }
     else {
-        // LtePdcpEnbD2D / LtePdcpUeD2D
+        // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
+        // (unlike the UE branch above, which picks nrNodeId_ when useNR)
         lteInfo->setSourceId(nodeId_);
-        if (!isEnb) // LtePdcpUeD2D: dead getNextHopNodeId call (result unused in original code)
-            (void)getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());
-
-        lteInfo->setSourceId(nodeId_);   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
-        if (lteInfo->getMulticastGroupId() != NODEID_NONE)  // destId is meaningless for multicast D2D
+        if (lteInfo->getMulticastGroupId() != NODEID_NONE)  // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
             lteInfo->setDestId(nodeId_);
         else
             lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
@@ -446,24 +362,21 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
 
     // --- DRB ID assignment (skipped when SDAP handles it) ---
     if (!hasSdap_) {
-        ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
+        // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
+        ConnectionKey key{srcAddr, destAddr, typeOfService, connectionKeyDirection(lteInfo.get())};
         DrbId drbId = lookupOrAssignDrbId(key, lteInfo.get());
         lteInfo->setDrbId(drbId);
 
-        // Establish unless the PDCP TX entity already exists (authoritative check, see above)
+        // Establish the connection unless its PDCP TX entity already exists. The entity
+        // registry is authoritative: entities deleted at handover or D2D mode switch get
+        // re-established by the next packet, even for an already-seen (drbId, destId) pair.
         if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drbId)))
             establishConnection(lteInfo.get(), key);
 
-        // Debug logging (UE subclasses only)
-        if (!isEnb) {
-            if (isNr_) {
-                EV << "NrPdcpUe : Assigned DRB ID: " << drbId << "\n";
-                EV << "NrPdcpUe : Assigned Node ID: " << localNodeId << "\n";
-            }
-            else {
-                EV << "LtePdcpUeD2D : Assigned DRB ID: " << drbId << "\n";
-                EV << "LtePdcpUeD2D : Assigned Node ID: " << nodeId_ << "\n";
-            }
+        // Debug logging (UE only)
+        if (!isEnb && isNr_) {
+            EV << "NrPdcpUe : Assigned DRB ID: " << drbId << "\n";
+            EV << "NrPdcpUe : Assigned Node ID: " << localNodeId << "\n";
         }
     }
 }

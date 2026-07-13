@@ -53,7 +53,6 @@ class Ip2Nic : public cSimpleModule
 
     // Flags mirroring PDCP's (to be verified with ASSERTs, then used to replace PDCP dependency)
     bool isNr_ = false;
-    bool hasD2DSupport_ = false;
     LteRlcType conversationalRlc_ = UNKNOWN_RLC_TYPE;
     LteRlcType streamingRlc_ = UNKNOWN_RLC_TYPE;
     LteRlcType interactiveRlc_ = UNKNOWN_RLC_TYPE;
@@ -85,11 +84,16 @@ class Ip2Nic : public cSimpleModule
         }
     };
 
+    // Packet analysis (moved from PDCP): classifies the packet and fills FlowControlInfo tag.
+    // Core handles the plain UL/DL path (LTE) and the NR (non-D2D) path; the D2D-aware
+    // overrides live in Ip2NicD2D.
+    virtual void analyzePacket(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
+
     // DRB ID table: flow (ConnectionKey) -> DRB ID. IDs are allocated by the Binder
-    // (unique per node pair); entries are added locally on allocation, and remotely
-    // via registerDrbMapping() when the peer establishes a duplex bearer whose
-    // reverse leg terminates here.
-    std::unordered_map<ConnectionKey, DrbId, ConnectionKeyHash> drbIdTable_;
+// (unique per node pair); entries are added locally on allocation, and remotely
+// via registerDrbMapping() when the peer establishes a duplex bearer whose
+// reverse leg terminates here.
+std::unordered_map<ConnectionKey, DrbId, ConnectionKeyHash> drbIdTable_;
 
     // UEs whose context this node released after a radio link failure (RLF).
     // While a peer is listed here, its DL (gNB) / UL (UE) packets are dropped at
@@ -115,8 +119,16 @@ class Ip2Nic : public cSimpleModule
     virtual void toStackBs(inet::Packet *datagram);
     virtual void toStackUe(inet::Packet *datagram);
 
-    // Packet analysis (moved from PDCP): classifies the packet and fills FlowControlInfo tag
-    virtual void analyzePacket(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
+    /// classifies the connection of an outgoing packet (called after the
+    /// common preamble of analyzePacket(), before source/destination IDs are
+    /// assigned). No-op in the base; D2D-aware subclasses set the multicast
+    /// group, peer IDs and the actual flow direction here.
+    virtual void classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const inet::Ipv4Address& destAddr, MacNodeId localNodeId, bool isEnb) {}
+
+    /// direction stored in the DRB ConnectionKey. The plain-LTE stack has
+    /// historically used a direction-agnostic key; the NR and D2D stacks key
+    /// by the actual flow direction.
+    virtual Direction connectionKeyDirection(FlowControlInfo *lteInfo) { return isNr_ ? (Direction)lteInfo->getDirection() : Direction(0xFFFF); }
     virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
     virtual LteTrafficClass getTrafficCategory(cPacket *pkt);
     virtual LteRlcType getRlcType(LteTrafficClass trafficCategory);
