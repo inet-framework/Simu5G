@@ -160,7 +160,7 @@ void SlBinder::registerSlCarrier(GHz carrierFrequency, unsigned int numerologyIn
         // all UEs must agree on the geometry of a shared pool
         const SlCarrierInfo& c = it->second;
         if (c.numerologyIndex != numerologyIndex || c.subchannelSize != subchannelSize || c.numSubchannels != numSubchannels)
-            throw cRuntimeError("SlBinder: inconsistent SL carrier registration for %f GHz", carrierFrequency.get() / 1e9);
+            throw cRuntimeError("SlBinder: inconsistent SL carrier registration for %f GHz", carrierFrequency.get());
         return;
     }
     slCarriers_[carrierFrequency] = SlCarrierInfo{carrierFrequency, numerologyIndex, subchannelSize, numSubchannels};

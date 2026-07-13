@@ -120,6 +120,9 @@ module NrNicUe extends LteNicUe
         slPhy: <default("simu5g.stack.sidelink.phy.NrSlPhyUe")> like ILtePhy if hasSidelink {
             @display("p=700,600");
         }
+        slChannelModel: <default("simu5g.stack.sidelink.phy.SlIdealChannelModel")> like ILteChannelModel if hasSidelink {
+            @display("p=80,60,col;g=left");
+        }
 
     connections:
 

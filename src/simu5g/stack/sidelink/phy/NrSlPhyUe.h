@@ -12,6 +12,8 @@
 #ifndef _SIDELINK_NRSLPHYUE_H_
 #define _SIDELINK_NRSLPHYUE_H_
 
+#include <deque>
+
 #include "simu5g/stack/phy/LtePhyBase.h"
 #include "simu5g/stack/sidelink/common/SlCommon.h"
 #include "simu5g/stack/sidelink/mac/SlSlotGrid.h"
@@ -21,6 +23,7 @@ namespace simu5g {
 class SlBinder;
 class SlRrc;
 class SlAirFrame;
+class ISlChannelModel;
 
 /**
  * Sidelink PHY of a UE: PSCCH+PSSCH transmission as SlAirFrame fan-out to all
@@ -39,6 +42,7 @@ class NrSlPhyUe : public LtePhyBase
   protected:
     SlBinder *slBinder_ = nullptr;
     SlRrc *slRrc_ = nullptr;
+    ISlChannelModel *slChannelModel_ = nullptr;
 
     SlSlotGrid slotGrid_;
     GHz carrierFrequency_;
@@ -50,16 +54,31 @@ class NrSlPhyUe : public LtePhyBase
     std::vector<SlAirFrame *> storedFrames_;
     SlotIndex lastTxSlot_ = SLOTINDEX_NONE;  // half-duplex bookkeeping
 
+    // CBR measurement (TS 38.215, WP-D): ring buffer of per-subchannel linear
+    // RX power [mW] of the last cbrWindow_ monitored slots, filled at slot-end
+    // processing; CBR is computed lazily from it (no per-slot ticker)
+    std::deque<std::pair<SlotIndex, std::vector<double>>> rssiHistory_;
+    int cbrWindow_ = 100;
+    double cbrRssiThresholdDbm_ = -94;
+
     // statistics
     unsigned int numFramesHalfDuplexDropped_ = 0;
+    unsigned int numSciLost_ = 0;
+    static simsignal_t slRsrpSignal_;
+    static simsignal_t slSinrSignal_;
+    static simsignal_t slCbrSignal_;
+    static simsignal_t slFrameLossSignal_;
 
     void initialize(int stage) override;
     void handleUpperMessage(cMessage *msg) override;
     void handleAirFrame(cMessage *msg) override;
     void handleSelfMessage(cMessage *msg) override;
 
-    /// slot-end processing: half-duplex check, (ideal) decode, delivery filter
+    /// slot-end processing: half-duplex check, measurements, decode, delivery filter
     void decodeStoredFrames();
+
+    /// record this slot's per-subchannel RX power and emit the current CBR
+    void recordSlotRssi(SlotIndex slot, std::vector<double>&& rssiMw);
 
     /// true if this node is a destination of the frame (own id or group member)
     bool isForUs(const SlAirFrame *frame) const;

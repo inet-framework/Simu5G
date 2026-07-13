@@ -25,7 +25,21 @@ simple NrSlPhyUe extends LtePhyBase
         @display("i=block/wrxtx");
 
         string slRrcModule = default("^.slRrc");
+        string slChannelModelModule = default("^.slChannelModel");
 
         // fan-out pruning: skip receivers farther than this; <=0 disables the check
         double slTxRange @unit(m) = default(-1m);
+
+        // CBR measurement (TS 38.215, abstracted)
+        int cbrWindow = default(100);                            // measurement window [slots]
+        double cbrRssiThreshold @unit(dBm) = default(-94dBm);    // busy-subchannel RSSI threshold
+
+        @signal[slRsrp];
+        @statistic[slRsrp](title="SL-RSRP of received frames"; unit="dBm"; source="slRsrp"; record=mean,vector);
+        @signal[slSinr];
+        @statistic[slSinr](title="SL SINR of received frames"; unit="dB"; source="slSinr"; record=mean,vector);
+        @signal[slCbr];
+        @statistic[slCbr](title="SL channel busy ratio"; source="slCbr"; record=mean,vector);
+        @signal[slFrameLoss];
+        @statistic[slFrameLoss](title="SL frame loss (frames addressed to this node)"; source="slFrameLoss"; record=mean,vector);
 }

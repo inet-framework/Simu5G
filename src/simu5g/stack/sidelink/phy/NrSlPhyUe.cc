@@ -16,6 +16,7 @@
 #include "simu5g/common/InitStages.h"
 #include "simu5g/stack/sidelink/common/SlAirFrame_m.h"
 #include "simu5g/stack/sidelink/common/SlBinder.h"
+#include "simu5g/stack/sidelink/phy/ISlChannelModel.h"
 #include "simu5g/stack/sidelink/rrc/SlRrc.h"
 
 namespace simu5g {
@@ -24,6 +25,11 @@ using namespace inet;
 using namespace omnetpp;
 
 Define_Module(NrSlPhyUe);
+
+simsignal_t NrSlPhyUe::slRsrpSignal_ = registerSignal("slRsrp");
+simsignal_t NrSlPhyUe::slSinrSignal_ = registerSignal("slSinr");
+simsignal_t NrSlPhyUe::slCbrSignal_ = registerSignal("slCbr");
+simsignal_t NrSlPhyUe::slFrameLossSignal_ = registerSignal("slFrameLoss");
 
 NrSlPhyUe::~NrSlPhyUe()
 {
@@ -60,8 +66,15 @@ void NrSlPhyUe::initialize(int stage)
         carrierFrequency_ = GHz(cfg.carrierFrequencyGHz);
 
         slTxRange_ = par("slTxRange").doubleValue();
+        cbrWindow_ = par("cbrWindow");
+        cbrRssiThresholdDbm_ = par("cbrRssiThreshold").doubleValue();
+
+        slChannelModel_ = dynamic_cast<ISlChannelModel *>(getModuleByPath(par("slChannelModelModule").stringValue()));
+        if (slChannelModel_ == nullptr)
+            throw cRuntimeError("NrSlPhyUe: module '%s' does not implement ISlChannelModel", par("slChannelModelModule").stringValue());
 
         WATCH(numFramesHalfDuplexDropped_);
+        WATCH(numSciLost_);
     }
 }
 
@@ -164,10 +177,16 @@ bool NrSlPhyUe::isForUs(const SlAirFrame *frame) const
 
 void NrSlPhyUe::decodeStoredFrames()
 {
+    // all frames in the buffer belong to the slot that just ended
+    SlotIndex slot = storedFrames_.empty() ? SLOTINDEX_NONE : storedFrames_.front()->getInfo().getSlotIndex();
+    int numSubchannels = slRrc_->getPreconfig().numSubchannels;
+    std::vector<double> rssiMw(numSubchannels, 0.0);
+
     for (auto *frame : storedFrames_) {
         const SlAirFrameInfo& info = frame->getInfo();
 
-        // half-duplex (D10): frames of a slot we transmitted in are lost
+        // half-duplex (D10): frames of a slot we transmitted in are lost, and
+        // the slot is not monitored (no measurements, no sensing input)
         if (info.getSlotIndex() == lastTxSlot_) {
             EV << NOW << " NrSlPhyUe::decodeStoredFrames - half-duplex: own TX in slot "
                << info.getSlotIndex() << ", frame from node " << info.getSrcNodeId() << " lost" << endl;
@@ -176,13 +195,41 @@ void NrSlPhyUe::decodeStoredFrames()
             continue;
         }
 
-        // WP-C ideal decode: SCI and PSSCH of every stored frame are received.
-        // (WP-D replaces this with SL-RSRP measurement, the sensing database
-        // update, PSCCH threshold decode and PSSCH BLER.)
+        // measurements (WP-D): reception result from the SL channel model
+        SlReceptionResult rx = slChannelModel_->computeReception(info, getRadioPosition(), nodeId_);
+        emit(slRsrpSignal_, rx.rsrpDbm);
+        emit(slSinrSignal_, rx.sinrDb);
+
+        // accumulate per-subchannel RX power for the CBR (SL-RSSI) measurement
+        double frameMw = pow(10.0, rx.rsrpDbm / 10.0);
+        int last = std::min(info.getFirstSubchannel() + info.getNumSubchannels(), numSubchannels);
+        for (int s = info.getFirstSubchannel(); s < last; s++)
+            rssiMw[s] += frameMw;
+
+        // PSCCH decode (threshold rule, D11): without the SCI nothing is known
+        // about the frame (no sensing update, no PSSCH decode)
+        if (!rx.sciDecoded) {
+            numSciLost_++;
+            numAirFrameNotReceived_++;
+            delete frame;
+            continue;
+        }
+
+        // (WP-E hook: the decoded SCI + RSRP feed the sensing database here)
 
         if (!isForUs(frame)) {
             EV << NOW << " NrSlPhyUe::decodeStoredFrames - frame for dstPid " << info.getDstPid()
                << " is not for us, dropped after SCI processing" << endl;
+            delete frame;
+            continue;
+        }
+
+        // PSSCH decode (BLER curves)
+        emit(slFrameLossSignal_, rx.tbDecoded ? 0.0 : 1.0);
+        if (!rx.tbDecoded) {
+            EV << NOW << " NrSlPhyUe::decodeStoredFrames - TB from node " << info.getSrcNodeId()
+               << " lost (sinr " << rx.sinrDb << " dB)" << endl;
+            numAirFrameNotReceived_++;
             delete frame;
             continue;
         }
@@ -204,8 +251,34 @@ void NrSlPhyUe::decodeStoredFrames()
     }
     storedFrames_.clear();
 
+    if (slot != SLOTINDEX_NONE && slot != lastTxSlot_)
+        recordSlotRssi(slot, std::move(rssiMw));
+
     if (getEnvir()->isGUI())
         updateDisplayString();
+}
+
+void NrSlPhyUe::recordSlotRssi(SlotIndex slot, std::vector<double>&& rssiMw)
+{
+    rssiHistory_.emplace_back(slot, std::move(rssiMw));
+
+    // prune entries older than the CBR window
+    while (!rssiHistory_.empty() && rssiHistory_.front().first <= slot - cbrWindow_)
+        rssiHistory_.pop_front();
+
+    // CBR (TS 38.215, abstracted): fraction of (subchannel, slot) resources in
+    // the last cbrWindow_ slots whose RSSI exceeds the threshold; slots without
+    // any reception count as idle
+    double thresholdMw = pow(10.0, cbrRssiThresholdDbm_ / 10.0);
+    int numSubchannels = slRrc_->getPreconfig().numSubchannels;
+    int busy = 0;
+    for (const auto& [recSlot, rssi] : rssiHistory_)
+        for (double p : rssi)
+            if (p > thresholdMw)
+                busy++;
+
+    double cbr = (double)busy / (cbrWindow_ * numSubchannels);
+    emit(slCbrSignal_, cbr);
 }
 
 } // namespace simu5g
