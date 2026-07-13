@@ -158,6 +158,10 @@ class LteChannelModel : public cSimpleModule
 
     virtual bool isUplinkInterferenceEnabled() { return false; }
     virtual bool isD2DInterferenceEnabled() { return false; }
+
+    /// Whether transmissions must be recorded in the Binder's UL transmission map
+    /// (used by interference computation on the receive path).
+    virtual bool recordsUlTransmissionMap() { return isUplinkInterferenceEnabled() || isD2DInterferenceEnabled(); }
 };
 
 } //namespace
