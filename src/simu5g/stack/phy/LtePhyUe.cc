@@ -286,8 +286,6 @@ void LtePhyUe::handleUpperMessage(cMessage *msg)
             emit(averageCqiUlSignal_, cqi);
             recordCqi(cqi, UL);
         }
-        else if (lteInfo->getDirection() == D2D)
-            emit(averageCqiD2DSignal_, cqi);
     }
 
     LtePhyBase::handleUpperMessage(msg);

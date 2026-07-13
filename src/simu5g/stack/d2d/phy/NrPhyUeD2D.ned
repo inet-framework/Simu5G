@@ -27,6 +27,8 @@ simple NrPhyUeD2D extends NrPhyUe
         double d2dTxPower @unit(dBm) = default(26dBm);
         bool d2dMulticastCaptureEffect = default(true);
         string d2dMulticastCaptureEffectFactor = default("RSRP");  // or distance
+        bool enableMulticastD2DRangeCheck = default(false);
+        double multicastD2DRange @unit(m) = default(1000m);
 
         //# D2D CQI statistic
         @signal[averageCqiD2D];

@@ -35,9 +35,6 @@ simple LtePhyBase like ILtePhy
         string txDirection @enum(ANISOTROPIC,OMNI) = default("OMNI");
         double txAngle @unit(deg) = default(0deg);
 
-        // TODO move to LtePhyUeD2D module
-        bool enableMulticastD2DRangeCheck = default(false);
-        double multicastD2DRange @unit(m) = default(1000m);
         string binderModule = default("binder");
         string channelModelModule = default("^.channelModel[0]"); // or "nrChannelModel[0]"
 
