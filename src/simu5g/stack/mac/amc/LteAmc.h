@@ -33,6 +33,8 @@ class AmcPilot;
 class CellInfo;
 /// Forward declaration of LteMacEnb class, used by LteAmc.
 class LteMacEnb;
+/// Forward declaration of D2dBinder class, used by LteAmc.
+class D2dBinder;
 
 typedef std::map<Remote, std::vector<std::vector<LteSummaryBuffer>>> History_;
 
@@ -58,6 +60,8 @@ class LteAmc : public cSimpleModule
   protected:
     opp_component_ptr<LteMacEnb> mac_;
     opp_component_ptr<Binder> binder_;
+    // holder of the global D2D state, resolved (find-or-create) on first D2D use
+    D2dBinder *d2dBinder_ = nullptr;
     opp_component_ptr<CellInfo> cellInfo_;
     AmcPilot *pilot_ = nullptr;
     RbAllocationType allocationType_;

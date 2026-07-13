@@ -17,6 +17,7 @@
 
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
+#include "simu5g/stack/d2d/binder/D2dBinder.h"
 
 namespace simu5g {
 
@@ -42,8 +43,9 @@ class D2dModeSelectionBase : public cSimpleModule
     SwitchList switchList_;  // a list of pairs of nodeIds, where the first node represents the transmitter
                              // of the flow, whereas the second node represents the receiver
 
-    // for each D2D-capable UE, store the list of possible D2D peers and the corresponding communication mode (IM or DM)
-    std::map<MacNodeId, std::map<MacNodeId, LteD2DMode>> *peeringModeMap_;
+    // holder of the global D2D state (incl. the per-UE peering/mode map),
+    // resolved (find-or-create) at initialization
+    D2dBinder *d2dBinder_ = nullptr;
 
     // reference to the MAC layer
     inet::ModuleRefByPar<LteMacEnb> mac_;

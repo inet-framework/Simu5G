@@ -28,9 +28,15 @@ using namespace omnetpp;
  * Mode). Used by the D2D-capable NICs (LteNicUeD2D, LteNicEnbD2D,
  * NrNicUeD2D, NrNicEnbD2D).
  */
+class D2dBinder;
+
 class Ip2NicD2D : public Ip2Nic
 {
   protected:
+    // holder of the global D2D state, resolved (find-or-create) at init
+    D2dBinder *d2dBinder_ = nullptr;
+
+    void initialize(int stage) override;
     /// D2D classification: multicast group, peer bookkeeping, DM/IM direction
     void classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const inet::Ipv4Address& destAddr, MacNodeId localNodeId, bool isEnb) override;
 

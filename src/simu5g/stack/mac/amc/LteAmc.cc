@@ -14,6 +14,7 @@
 #include "simu5g/common/InitStages.h"
 #include "simu5g/stack/mac/amc/LteAmc.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
+#include "simu5g/stack/d2d/binder/D2dBinder.h"
 
 // NOTE: AMC Pilots header file inclusions must go here
 #include "simu5g/stack/mac/amc/AmcPilotAuto.h"
@@ -463,7 +464,9 @@ const LteSummaryFeedback& LteAmc::getFeedbackD2D(MacNodeId id, Remote antenna, T
             if (histNodeId == NODEID_NONE) // skip fake UE 0
                 continue;
 
-            if (binder_->getD2DCapability(id, histNodeId)) {
+            if (d2dBinder_ == nullptr)
+                d2dBinder_ = D2dBinder::getInstance(binder_);
+            if (d2dBinder_->getD2DCapability(id, histNodeId)) {
                 peerId = histNodeId;
                 break;
             }

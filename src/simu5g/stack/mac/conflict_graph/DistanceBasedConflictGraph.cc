@@ -12,6 +12,7 @@
 
 #include "simu5g/stack/mac/conflict_graph/DistanceBasedConflictGraph.h"
 #include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/d2d/binder/D2dBinder.h"
 
 namespace simu5g {
 
@@ -59,11 +60,9 @@ void DistanceBasedConflictGraph::findVertices(std::vector<CGVertex>& vertices)
 {
     if (reuseD2D_) { // get point-to-point links
         // get the list of point-to-point D2D connections
+        D2dBinder *d2dBinder = D2dBinder::getInstance(binder_);
 
-        typedef std::map<MacNodeId, std::map<MacNodeId, LteD2DMode>> PeeringMap;
-        PeeringMap *peeringMap = binder_->getD2DPeeringMap();
-
-        for (const auto& [sourceNodeId, targetMap] : *peeringMap) {
+        for (const auto& [sourceNodeId, targetMap] : d2dBinder->getD2DPeeringModeMap()) {
             for (const auto& [targetNodeId, mode] : targetMap) {
                 CGVertex v(sourceNodeId, targetNodeId);
                 vertices.push_back(v);
@@ -72,7 +71,8 @@ void DistanceBasedConflictGraph::findVertices(std::vector<CGVertex>& vertices)
     }
 
     if (reuseD2DMulti_) { // get point-to-multipoint transmitters
-        std::set<MacNodeId>& multicastTransmitterSet = binder_->getD2DMulticastTransmitters();
+        D2dBinder *d2dBinder = D2dBinder::getInstance(binder_);
+        std::set<MacNodeId>& multicastTransmitterSet = d2dBinder->getD2DMulticastTransmitters();
         for (const auto& transmitterId : multicastTransmitterSet) {
             CGVertex v(transmitterId, NODEID_NONE);   // create a "fake" link
             vertices.push_back(v);

@@ -11,6 +11,7 @@
 //
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include "simu5g/stack/d2d/ip2nic/Ip2NicD2D.h"
+#include "simu5g/stack/d2d/binder/D2dBinder.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
@@ -20,6 +21,13 @@ using namespace inet;
 using namespace omnetpp;
 
 Define_Module(Ip2NicD2D);
+
+void Ip2NicD2D::initialize(int stage)
+{
+    Ip2Nic::initialize(stage);
+    if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS)
+        d2dBinder_ = D2dBinder::getInstance(this);
+}
 
 MacNodeId Ip2NicD2D::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
 {
@@ -32,7 +40,7 @@ MacNodeId Ip2NicD2D::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, M
 
     // check whether the destination is inside the LTE network and D2D is active
     if (destId == NODEID_NONE ||
-        !(binder_->getD2DCapability(srcId, destId) && binder_->getD2DMode(srcId, destId) == DM)) {
+        !(d2dBinder_->getD2DCapability(srcId, destId) && d2dBinder_->getD2DMode(srcId, destId) == DM)) {
         // packet is destined to the eNB; UE is subject to handovers: master may change
         return binder_->getServingNodeOrSelf(sourceId);
     }
@@ -54,7 +62,7 @@ void Ip2NicD2D::classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, 
         lteInfo->setSourceId(localNodeId);
 
     if (destAddr.isMulticast()) {
-        binder_->addD2DMulticastTransmitter(localNodeId);
+        d2dBinder_->addD2DMulticastTransmitter(localNodeId);
         lteInfo->setDirection(D2D_MULTI);
         MacNodeId groupId = binder_->getOrAssignDestIdForMulticastAddress(destAddr);
         lteInfo->setMulticastGroupId(groupId);
@@ -62,7 +70,7 @@ void Ip2NicD2D::classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, 
     else {
         MacNodeId destId = binder_->getMacNodeId(destAddr);
         if (destId != NODEID_NONE) { // the destination is a UE within the LTE network
-            if (binder_->checkD2DCapability(localNodeId, destId)) {
+            if (d2dBinder_->checkD2DCapability(localNodeId, destId)) {
                 // this way, we record the ID of the endpoints even if the connection is currently in IM
                 // this is useful for mode switching
                 lteInfo->setD2dTxPeerId(localNodeId);
@@ -74,7 +82,7 @@ void Ip2NicD2D::classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, 
             }
 
             // set actual flow direction (D2D/UL) based on the current mode (DM/IM) of this peering
-            if (binder_->getD2DCapability(localNodeId, destId) && binder_->getD2DMode(localNodeId, destId) == DM)
+            if (d2dBinder_->getD2DCapability(localNodeId, destId) && d2dBinder_->getD2DMode(localNodeId, destId) == DM)
                 lteInfo->setDirection(D2D);
             else
                 lteInfo->setDirection(UL);
