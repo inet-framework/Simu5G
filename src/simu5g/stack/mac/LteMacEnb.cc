@@ -754,7 +754,14 @@ bool LteMacEnb::bufferizePacket(cPacket *cpkt)
         totalOverflowedBytes_ += pkt->getByteLength();
 
         double sample = (double)totalOverflowedBytes_ / (NOW - getSimulation()->getWarmupPeriod());
-        simsignal_t signal = (lteInfo->getDirection() == DL) ? macBufferOverflowDlSignal_ : macBufferOverflowUlSignal_; //TODO D2DSignel??
+        // eNB connections carry only DL/UL traffic; the D2D direction occurs solely on UE-side connections
+        simsignal_t signal;
+        if (lteInfo->getDirection() == DL)
+            signal = macBufferOverflowDlSignal_;
+        else if (lteInfo->getDirection() == UL)
+            signal = macBufferOverflowUlSignal_;
+        else
+            throw cRuntimeError("LteMacEnb::bufferizePacket: unexpected direction %d for a buffer-overflow packet (eNB connections are DL/UL only)", (int)lteInfo->getDirection());
         emit(signal, sample);
 
         // discard the RLC
