@@ -296,19 +296,6 @@ void LteAmc::initialize(int stage)
     WATCH_VECTOR(ulRevNodeIndex_);
 }
 
-void LteAmc::rescaleMcs(double rePerRb, Direction dir)
-{
-    if (dir == DL) {
-        dlMcsTable_.rescale(rePerRb);
-    }
-    else if (dir == UL) {
-        ulMcsTable_.rescale(rePerRb);
-    }
-    else {
-        rescaleMcsForDirection(rePerRb, dir);
-    }
-}
-
 /*******************************************
 *    Functions for feedback management    *
 *******************************************/

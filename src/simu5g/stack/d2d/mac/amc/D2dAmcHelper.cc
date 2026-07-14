@@ -17,19 +17,6 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-// Local streaming operator for the WATCH(d2dMcsTable_) registration below
-// (mirrors the file-local operator in LteAmc.cc).
-inline std::ostream& operator<<(std::ostream& os, const McsTable& t)
-{
-    os << "[";
-    for (int i = 0; i < CQI2ITBSSIZE; i++) {
-        if (i > 0) os << ", ";
-        os << "{mod=" << t.at(i).mod_ << " iTbs=" << t.at(i).iTbs_ << " thr=" << t.at(i).threshold_ << "}";
-    }
-    os << "]";
-    return os;
-}
-
 void D2dAmcHelper::initD2D()
 {
     // Get deployed UEs from the binder (the same set the base uses for DL/UL)
@@ -42,9 +29,6 @@ void D2dAmcHelper::initD2D()
     lb_ = amc_->getParentModule()->par("summaryLowerBound");
     ub_ = amc_->getParentModule()->par("summaryUpperBound");
 
-    // Scale D2D MCS Table
-    d2dMcsTable_.rescale(mcsScaleD2D_);
-
     // D2D
     EV << "D2D CONNECTED: " << d2dConnectedUe_.size() << endl;
 
@@ -53,7 +37,6 @@ void D2dAmcHelper::initD2D()
         d2dRevNodeIndex_.push_back(nodeId);
     }
 
-    WATCH(d2dMcsTable_);
     WATCH(mcsScaleD2D_);
     WATCH(fbhbCapacityD2D_);
     WATCH_MAP(d2dConnectedUe_);
@@ -200,7 +183,8 @@ void D2dAmcHelper::printTxParamsD2D(GHz carrierFrequency)
 
 void D2dAmcHelper::rescaleD2D(double rePerRb)
 {
-    d2dMcsTable_.rescale(rePerRb);
+    // D2D has no separate MCS table to rescale (the former write-only d2dMcsTable_
+    // was removed as dead state); kept as the D2D branch of the rescaleMcsForDirection seam.
 }
 
 void D2dAmcHelper::detachUserD2D(MacNodeId nodeId)
