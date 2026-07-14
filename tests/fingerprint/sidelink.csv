@@ -5,3 +5,4 @@
 /simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Mode2-50UE -r 0,                      1s,         7db9-1946/tplx;0466-24ff/tilx;4bf8-d8d2/~tNl;4c0a-3320/sz, PASS,
 /simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Random-50UE -r 0,                     1s,         545d-d733/tplx;653c-a9f7/tilx;c4ac-32bc/~tNl;fdfc-8c9a/sz, PASS,
 /simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Broadcast-Tr37885-BlindRetx -r 0,     2s,         0b01-fc02/tplx;a905-1ed6/tilx;2b07-ea1b/~tNl;24e9-a8f3/sz, PASS,
+/simulations/nr/sidelink/highway/,        -f omnetpp.ini -c Highway-Small -r 0,                   1s,         8c8d-020f/tplx;7556-67f5/tilx;2954-8e76/~tNl;068f-bdca/sz, PASS,

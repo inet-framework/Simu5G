@@ -16,6 +16,7 @@
 #include "simu5g/common/InitStages.h"
 #include "simu5g/stack/sidelink/common/SlAirFrame_m.h"
 #include "simu5g/stack/sidelink/common/SlBinder.h"
+#include "simu5g/stack/sidelink/common/SlStatsCollector.h"
 #include "simu5g/stack/sidelink/mac/NrSlMacUe.h"
 #include "simu5g/stack/sidelink/phy/ISlChannelModel.h"
 #include "simu5g/stack/sidelink/rrc/SlRrc.h"
@@ -77,6 +78,9 @@ void NrSlPhyUe::initialize(int stage)
         // sensing feed target (tolerates a custom SL MAC type: no feed then)
         slMac_ = dynamic_cast<NrSlMacUe *>(getModuleByPath(par("slMacModule").stringValue()));
 
+        // optional network-level PRR/PIR collector (WP-G)
+        statsCollector_ = SlStatsCollector::findInstance();
+
         WATCH(numFramesHalfDuplexDropped_);
         WATCH(numSciLost_);
         WATCH(numDuplicatesSuppressed_);
@@ -122,6 +126,10 @@ void NrSlPhyUe::handleUpperMessage(cMessage *msg)
     // prune records older than a generous sensing horizon (1600 slots > T0)
     SlBinder::SlTxRecord record{nodeId_, info.getFirstSubchannel(), info.getNumSubchannels(), txPower_, getRadioPosition()};
     slBinder_->recordSlTransmission(carrierFrequency_, slot, record, slot - 1600);
+
+    // PRR accounting (WP-G): register the receivers in range once per new TB
+    if (statsCollector_ != nullptr && info.getHarqRv() == 0)
+        statsCollector_->recordTransmission(nodeId_, getRadioPosition());
 
     // fan-out to every registered SL node in range: every SL PHY receives all
     // frames (the SCI must be decodable for sensing); the destination filter
@@ -267,6 +275,10 @@ void NrSlPhyUe::decodeStoredFrames()
             continue;
         }
         harqRx_.markDelivered(info.getSrcNodeId(), info.getHarqProcId(), info.getHarqNdi());
+
+        // PRR/PIR accounting (WP-G): one successful delivery per TB
+        if (statsCollector_ != nullptr)
+            statsCollector_->recordDelivery(info.getSrcNodeId(), nodeId_, info.getSenderCoord(), getRadioPosition());
 
         auto pkt = check_and_cast<Packet *>(frame->decapsulate());
         auto uinfo = pkt->addTagIfAbsent<UserControlInfo>();
