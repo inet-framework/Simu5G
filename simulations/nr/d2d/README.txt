@@ -1,75 +1,81 @@
-Detailed information on the modeling of D2D in SimuLTE/Simu5G can be found in the paper:
-A. Virdis, G. Nardini, G. Stea, "Modeling unicast device-to-device communications with SimuLTE", IWSLS2 2016, Vienna, July 1st, 2016
+One-to-one device-to-device (D2D) communications (NR)
+=====================================================
 
+This example is the 5G NR counterpart of simulations/lte/d2d. Two UEs served by
+the same gNodeB (standalone deployment) exchange traffic either over the
+traditional two-hop infrastructure path (UE -> gNodeB -> UE) or directly over a
+D2D link (UE -> UE), under the control of the gNodeB. D2D in Simu5G is a
+research prototype and is not based on any specific 3GPP specification.
 
-*****************************
-* How to simulate D2D flows *
-*****************************
+Modeling details are described in:
+  A. Virdis, G. Nardini, G. Stea, "Modeling unicast device-to-device
+  communications with SimuLTE", IWSLS2 2016, Vienna, July 1st, 2016.
 
-=== D2D peering association between UEs ===
-By default, D2D-capable UEs still communicate using the traditional cellular mode (e.g. via the gNodeB). 
-You need to enable the setup of a D2D peering-map by enabling the "d2dInitialMode".
+Network
+-------
+All configurations use
+simu5g.simulations.nr.networks.SingleCell_Standalone_D2D: one gNodeB plus
+vectors of transmitter/receiver UEs (ueD2DTx[]/ueD2DRx[]), placed far from the
+gNodeB but close to each other, so that the direct link is much better than the
+cellular one.
 
-*.ue[*].cellularNic.d2dInitialMode = true
+Configurations (omnetpp.ini)
+----------------------------
+- SinglePair-UDP-Infra / SinglePair-TCP-Infra: one UE pair communicating
+  through the gNodeB (infrastructure mode); CBR over UDP, or a TCP bulk
+  transfer.
+- SinglePair-UDP-D2D / SinglePair-TCP-D2D: the same pair communicating over the
+  direct D2D link.
+- MultiplePairs-UDP-{Infra,D2D} / MultiplePairs-TCP-{Infra,D2D}: N pairs
+  (5, 20, 50) instead of one.
+- MultiplePairs-{UDP,TCP}-D2D-wReuse: as above, with frequency reuse among D2D
+  pairs enabled (see below).
+- SinglePair-modeSwitching-UDP / SinglePair-modeSwitching-TCP: one pair moving
+  back and forth so the link quality changes over time; the gNodeB periodically
+  re-selects the best communication mode, causing dynamic switching between D2D
+  and infrastructure mode.
 
+Enabling D2D
+------------
+Unlike the plain NR NICs, this example needs the D2D-capable NIC variants, so
+D2D capability is switched on for the whole network in the [General] section:
 
-=== D2D Transmission Power ===
-It is possible to use different transmission power for UL and D2D transmissions, by setting
-the "d2dTxPower" parameter in the UE.
-E.g.: *.ue[0].cellularNic.phy.ueTxPower = 26   # UL Tx Power (in dB)
-      *.ue[0].cellularNic.phy.d2dTxPower = 20  # D2D Tx Power (in dB)
+    **.ue*[*].hasD2D = true
+    *.gnb.hasD2D = true
 
+This selects the D2D-capable NIC variants (NrNicEnbD2D / NrNicUeD2D). The
+Infra configs then simply leave their flows in infrastructure mode, while the
+D2D configs move them to the direct link with the knobs below:
 
-=== CQI for D2D tranmissions ===
-The CQI used for D2D transmissions can be selected either statically or dynamically.
-In the former case, the CQI is fixed at the beginning of the simulation and it is employed for all
-D2D transmissions. In the latter case, the CQI is computed for every D2D link (according to the
-"d2dPeerAddresses" parameter) and reported to the gNodeB, which uses it for scheduling resources.
-To enable static CQI, you need to set the following parameters:
-    **.usePreconfiguredTxParams = true
-    **.d2dCqi = 7
-To enable CQI reporting, you need to set the following parameter:
-    *.gnb.cellularNic.phy.enableD2DCqiReporting = true
-If you set both flags, static CQIs will be used. In that case, CQI reporting will be useless, so we suggest 
-to disable it in order to save computational time. 
-    
+  **.amcMode = "D2D"
+      Use the D2D AMC pilot, which selects transmission parameters for the
+      direct links. The default, "AUTO", is cellular-only.
 
-=== AmcPilot module for D2D ===
-The AmcPilot is the module that is responsible for selecting transmission parameters given the channel conditions of nodes.
-A new AmcPilot module has been added to select transmission parameter of D2D links. 
-You need to explicitly specify it in the ini file as follows:
-    **.amcMode = "D2D"
-    
-    
-=== Dynamic Mode Switching === 
-The "D2DModeSelection" module, located at the gNodeB, is responsible to periodically select the communication mode for
-each pair of D2D peering UEs, according to the implemented policy. To enable dynamic mode selection:
-    *.gnb.cellularNic.d2dModeSelection = true
-A simple policy that selects the mode having the best channel quality is implemented by the "D2DModeSelectionBestCqi"
-module. The latter is obtained by extending the "D2DModeSelection" module. You can always add your own policy by
-extending the "D2DModeSelection" module. You can select the policy for the current simulation in the ini as follows:
-    *.gnb.cellularNic.d2dModeSelectionType = "D2DModeSelectionBestCqi"
-where you need to indicate the name of your new module.    
-When the gNodeB trigeers a mode switch for a given flow, it sends a notification to the transmitting endpoint of that 
-flow. The message traverses the whole protocol stack up to the PDCP layer. At each layer, it is possible to define 
-specific behavior for the switch handler.
+  *.ueD2D*[*].cellularNic.d2dInitialMode = true
+      Start D2D-capable flows in direct (D2D) mode instead of infrastructure
+      mode.
 
-**************************
-* D2D Simulation folder  *
-**************************
-The "simulations/NR/d2d" folder contains some examples to test D2D communications (omnetpp.ini).
+  CQI for the D2D links, either reported per link or fixed:
+      *.gnb.cellularNic.phy.enableD2DCqiReporting = true   # per-link CQI feedback
+      **.usePreconfiguredTxParams = false                  # or use a fixed CQI...
+      **.d2dCqi = 7                                         # ...this one
+      When usePreconfiguredTxParams is true, the fixed d2dCqi is used and CQI
+      reporting is redundant.
 
-1) One pair of UEs
-    a) "SinglePair-UDP-Infra"
-    b) "SinglePair-UDP-D2D"
-    c) "SinglePair-TCP-Infra"
-    d) "SinglePair-TCP-D2D"
-2) N pairs of UEs
-    a) "MultiplePairs-UDP-Infra"
-    b) "MultiplePairs-UDP-D2D"
-    c) "MultiplePairs-TCP-Infra"
-    d) "MultiplePairs-TCP-D2D"
-3) Dynamic Mode Switching
-    a) "SinglePair-modeSwitching-UDP"
-    b) "SinglePair-modeSwitching-TCP"        
+  Dynamic mode selection (mode-switching configs):
+      *.gnb.cellularNic.rrc.d2dModeSelection.typename = "D2DModeSelectionBestCqi"
+      The D2D-capable gNodeB NIC already enables the periodic mode-selection
+      tick (rrc.hasD2DModeSelection = true); this line plugs in the policy that
+      keeps each flow on whichever mode currently has the better CQI. Extend
+      D2dModeSelectionBase to implement your own policy.
 
+  Frequency reuse (wReuse configs):
+      *.gnb.cellularNic.mac.schedulingDisciplineUl = "ALLOCATOR_BESTFIT"
+      *.gnb.cellularNic.mac.reuseD2D = true
+      *.gnb.cellularNic.mac.conflictGraphUpdatePeriod = 1s
+      *.gnb.cellularNic.mac.conflictGraphThreshold = 90    # dBm
+      Lets mutually non-interfering D2D pairs reuse the same resource blocks,
+      based on a periodically recomputed conflict graph.
+
+  Separate D2D transmit power (optional):
+      *.ueD2D*[*].cellularNic.phy.d2dTxPower = 20dBm       # ueTxPower is used for UL

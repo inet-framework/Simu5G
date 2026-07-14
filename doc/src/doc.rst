@@ -18,6 +18,7 @@ User's Guide
    :maxdepth: 2
 
    users-guide/overview
+   users-guide/d2d
    users-guide/mec
    users-guide/emulation
    users-guide/emulation_openness

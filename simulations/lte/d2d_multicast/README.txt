@@ -1,55 +1,58 @@
-***************
-* What's new? *
-***************
-Support for *** one-to-many *** device-to-device (D2D) communications has been added to SimuLTE.
-Main features are listed below:
-- Registration of UEs to an IP multicast group
-- Broadcast transmission at PHY layer for UEs and filtering (at the receiver's side) based on the multicast group ID
-- Suppression of H-ARQ feedback for 1:M D2D communications 
-- New application (AlertSender/Receiver) for sending/receiving alert messages to UEs belonging to a multicast group 
+One-to-many device-to-device (D2D) communications (LTE)
+=======================================================
 
-This is an experimental version for D2D communications. Any feedback and/or suggestion is highly appreciated.
+This example demonstrates network-assisted one-to-many (multicast) D2D
+communications in an LTE network. A transmitting UE broadcasts periodic alert
+messages directly to a group of nearby UEs, without relaying them through the
+eNodeB. At the PHY layer the transmission is a single broadcast that receivers
+accept or drop based on their IP multicast group membership; HARQ feedback is
+suppressed for the 1:M link. D2D in Simu5G is a research prototype and is not
+based on any specific 3GPP specification. See simulations/lte/d2d for the
+one-to-one case and the underlying D2D mechanism.
 
+Network
+-------
+All configurations use
+simu5g.simulations.lte.networks.SingleCell_D2DMulticast: one eNodeB plus a
+vector of D2D UEs (ueD2D[]); ueD2D[0] is the sender and the rest are receivers.
 
-**************************************************
-* How to simulate one-to-many D2D communications *
-**************************************************
+Applications and multicast group
+--------------------------------
+The sender runs an AlertSender application addressing the multicast group
+(224.0.0.10); the receivers run AlertReceiver. UEs join the multicast group via
+the IPv4 configurator in demo.xml, e.g.:
 
-=== Enable D2D for both UEs and eNB === 
-For further information, see simulations/d2d/README.txt
-E.g.:
-    *.eNodeB.d2dCapable = true
-    *.ueD2D[*].d2dCapable = true
-    **.amcMode = "D2D"
-
-=== Join a multicast group ===
-UEs that need to transmit/receive data to/from a multicast group must join an IP multicast group.
-To do this, configure the "demo.xml" file.
-E.g.:
     <multicast-group hosts="ueD2D[*]" interfaces="cellular" address="224.0.0.10"/>
-    
-=== Sending data to a multicast group ===
-Set the above multicast IP address as destination address of senders' application
-E.g.
-	# One-to-Many traffic between UEs (ueD2D[0] --> ueD2D[1..49])
-	# Transmitter
-	*.ueD2D[0].udpApp[*].typename = "AlertSender"
-	*.ueD2D[0].udpApp[*].localPort = 3088+ancestorIndex(0) 
-	*.ueD2D[0].udpApp[*].startTime = uniform(0s,0.02s)
-	*.ueD2D[0].udpApp[*].destAddress = "224.0.0.10"      # IP address of the multicast group 
-	*.ueD2D[0].udpApp[*].destPort = 1000
-	
-	# Receivers
-	*.ueD2D[1..49].udpApp[*].typename = "AlertReceiver"
-	*.ueD2D[1..49].udpApp[*].localPort = 1000
 
-**************************
-* D2D Simulation folder  *
-**************************
-The "simulations/d2d_multicast" folder contains examples to test 1:M D2D communications (omnetpp.ini).
+Configurations (omnetpp.ini)
+----------------------------
+- D2DMulticast-1to2: one transmitter and two nearby receivers.
+- D2DMulticast-1toM: one transmitter and M receivers (50) randomly deployed in
+  the cell; sweeps the fixed CQI value.
+- checkMulticastRange: receivers dropped at increasing distance from the
+  transmitter to exercise the PHY-level multicast range check.
 
-1) One transmitter and two (close) receivers
-    -) "D2DMulticast-1to2"
-2) One transmitter and M receivers, randomly deployed within the cell
-    -) "D2DMulticast-1toM"
-    
+Enabling D2D
+------------
+D2D capability is a per-node switch:
+
+    *.eNB*.hasD2D = true
+    *.ueD2D*[*].hasD2D = true
+
+selects the D2D-capable NIC variants (LteNicEnbD2D / LteNicUeD2D). The relevant
+knobs are:
+
+  **.amcMode = "D2D"
+      Use the D2D AMC pilot.
+
+  **.usePreconfiguredTxParams = true
+  **.d2dCqi = 7
+      One-to-many transmissions use a fixed CQI only (there is no CQI feedback
+      for a broadcast link), so usePreconfiguredTxParams must be true and d2dCqi
+      selects the modulation/coding.
+
+  PHY-level multicast range check (checkMulticastRange config):
+      **.phy.enableMulticastD2DRangeCheck = true
+      **.phy.multicastD2DRange = 1000m
+      When enabled, the PHY delivers a multicast packet only to receivers within
+      the given range of the transmitter.
