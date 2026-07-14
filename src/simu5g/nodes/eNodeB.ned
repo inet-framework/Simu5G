@@ -70,6 +70,10 @@ module eNodeB
         int macCellId = default(macNodeId);
         double txPower @unit(mw) = default(100mw);
 
+        //# D2D support: selects the D2D-capable NIC variant (see the cellularNic submodule).
+        //# An explicit cellularNic.typename in the ini file still overrides this.
+        bool hasD2D = default(false);
+
         //# Network Layer specs
         bool hasIpv4 = default(true);
         bool hasIpv6 = default(false);
@@ -129,7 +133,7 @@ module eNodeB
         //#
         //# cellularNic modules
         //#
-        cellularNic: <default("LteNicEnb")> like ICellularNic {
+        cellularNic: <default(hasD2D ? "LteNicEnbD2D" : "LteNicEnb")> like ICellularNic {
             parameters:
                 @display("p=433,520");
                 nodeType = parent.nodeType;

@@ -68,6 +68,10 @@ module LteUe
         int servingNodeId = default(0); // the initial serving eNodeB of the UE; 0 if none
         int macNodeId = default(1025+simu5g_seq("LteUe_macNodeId"));
 
+        //# D2D support: selects the D2D-capable NIC variant (see the cellularNic submodule).
+        //# An explicit cellularNic.typename in the ini file still overrides this.
+        bool hasD2D = default(false);
+
         //# Network Layer specs
         bool hasIpv4 = default(true);
         bool hasIpv6 = default(false);
@@ -107,7 +111,7 @@ module LteUe
             parameters:
                 @display("p=503,590,row,150");
         }
-        cellularNic: <default("LteNicUe")> like ICellularNic {
+        cellularNic: <default(hasD2D ? "LteNicUeD2D" : "LteNicUe")> like ICellularNic {
             nodeType = parent.nodeType;
             @display("p=355,589");
         }
