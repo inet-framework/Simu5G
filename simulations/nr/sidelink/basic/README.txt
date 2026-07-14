@@ -57,6 +57,15 @@ Configs:
   its reselection counter; sensing avoids reserved resources, leaving mostly
   cold-start and simultaneous-reselection collisions.
 
-See the sidelink implementation plan for the WP-F/WP-G roadmap (blind HARQ
-retransmissions, PRR/PIR-vs-distance statistics, highway calibration
-scenario).
+- Broadcast-Tr37885-BlindRetx (WP-F): one blind HARQ retransmission per TB
+  (preconfig blindRetx: 1); the copy rides the next occasion of the same
+  grant train, receivers soft-combine (harqReduction convention) and
+  suppress duplicate deliveries by (source, HARQ process, NDI).
+
+  Measured at the PER knee (--dist=600, grantMcs=12, shadowing off, 2s,
+  48 packets): blindRetx 0 -> 16 delivered; blindRetx 1 -> 48 delivered
+  (26 duplicate copies suppressed). App-level counts amplify TB losses via
+  RLC UM reordering, so the retx gain is end-to-end.
+
+See the sidelink implementation plan for the WP-G roadmap (PRR/PIR-vs-
+distance statistics, highway calibration scenario, scalability check).

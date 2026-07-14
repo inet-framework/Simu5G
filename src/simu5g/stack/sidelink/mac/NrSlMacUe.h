@@ -14,6 +14,7 @@
 
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/sidelink/common/SlCommon.h"
+#include "simu5g/stack/sidelink/mac/SlHarqTxEntity.h"
 #include "simu5g/stack/sidelink/mac/SlMode2Selector.h"
 #include "simu5g/stack/sidelink/mac/SlSensingDatabase.h"
 #include "simu5g/stack/sidelink/mac/SlSlotGrid.h"
@@ -74,6 +75,10 @@ class NrSlMacUe : public LteMacBase
     int periodSlots_ = 0;             // resource reservation period [slots]
     int periodMs_ = 0;
     int tbSize_ = 0;                  // transport block size per TX opportunity [B] (MCS/TBS stub)
+
+    // blind-retransmission HARQ (WP-F)
+    SlHarqTxEntity harqTx_;
+    int blindRetx_ = 0;
 
     cMessage *txSlotEvent_ = nullptr;
     int requestedSdus_ = 0;

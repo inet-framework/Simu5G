@@ -57,6 +57,7 @@ void Tr37885ChannelModel::initialize(int stage)
         noiseFigureDb_ = par("noiseFigure").doubleValue();
         pscchSinrThresholdDb_ = par("pscchSinrThreshold").doubleValue();
         cableLossDb_ = par("cableLoss").doubleValue();
+        harqReduction_ = par("harqReduction").doubleValue();
     }
 }
 
@@ -173,7 +174,8 @@ SlReceptionResult Tr37885ChannelModel::computeReception(const SlAirFrameInfo& in
     if (result.sciDecoded) {
         // PSSCH: per-CQI BLER curves; the grant's mcs field is used as the CQI
         // index of the lookup (proper MCS->TBS/CQI mapping arrives with the
-        // real link adaptation)
+        // real link adaptation). The decode decision itself (including blind-
+        // HARQ combining) is drawn by the PHY from tbErrorProb.
         int cqi = std::min(std::max((int)info.getMcs(), 1), 15);
         int snrInt = (int)floor(result.sinrDb);
         double bler;
@@ -185,15 +187,14 @@ SlReceptionResult Tr37885ChannelModel::computeReception(const SlAirFrameInfo& in
             bler = binder_->phyPisaData.getBler(0, cqi, snrInt);
 
         int numPrbs = info.getNumSubchannels() * carrier->subchannelSize;
-        double successProbability = pow(1.0 - bler, numPrbs);
-        result.tbDecoded = (uniform(0.0, 1.0) <= successProbability);
+        result.tbErrorProb = 1.0 - pow(1.0 - bler, numPrbs);
 
         EV << "Tr37885ChannelModel::computeReception - rsrp " << result.rsrpDbm << " dBm, sinr "
            << result.sinrDb << " dB, cqi " << cqi << ", bler " << bler << " over " << numPrbs
-           << " PRBs -> " << (result.tbDecoded ? "TB decoded" : "TB LOST") << endl;
+           << " PRBs -> TB error probability " << result.tbErrorProb << endl;
     }
     else {
-        result.tbDecoded = false;
+        result.tbErrorProb = 1.0;
         EV << "Tr37885ChannelModel::computeReception - sinr " << result.sinrDb
            << " dB below PSCCH threshold -> SCI LOST" << endl;
     }

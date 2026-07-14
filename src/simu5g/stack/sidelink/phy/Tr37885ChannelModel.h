@@ -55,6 +55,7 @@ class Tr37885ChannelModel : public omnetpp::cSimpleModule, public ISlChannelMode
     double noiseFigureDb_ = 9;
     double pscchSinrThresholdDb_ = 0;
     double cableLossDb_ = 0;
+    double harqReduction_ = 0.2;
 
     // persistent per-pair shadowing values [dB], keyed (min nodeId, max nodeId)
     std::map<std::pair<MacNodeId, MacNodeId>, double> shadowingMap_;
@@ -73,6 +74,7 @@ class Tr37885ChannelModel : public omnetpp::cSimpleModule, public ISlChannelMode
 
   public:
     SlReceptionResult computeReception(const SlAirFrameInfo& info, const inet::Coord& rxCoord, MacNodeId rxNodeId) override;
+    double getHarqReduction() const override { return harqReduction_; }
 };
 
 } // namespace simu5g

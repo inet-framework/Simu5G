@@ -79,6 +79,7 @@ void NrSlPhyUe::initialize(int stage)
 
         WATCH(numFramesHalfDuplexDropped_);
         WATCH(numSciLost_);
+        WATCH(numDuplicatesSuppressed_);
     }
 }
 
@@ -110,6 +111,9 @@ void NrSlPhyUe::handleUpperMessage(cMessage *msg)
     info.setNumSubchannels(slTxInfo->getNumSubchannels());
     info.setMcs(slTxInfo->getMcs());
     info.setReservationPeriodMs(slTxInfo->getReservationPeriodMs());
+    info.setHarqProcId(slTxInfo->getHarqProcId());
+    info.setHarqNdi(slTxInfo->getHarqNdi());
+    info.setHarqRv(slTxInfo->getHarqRv());
     info.setTxPower(txPower_);
     info.setSenderCoord(getRadioPosition());
     info.setCarrierFrequency(carrierFrequency_);
@@ -238,15 +242,31 @@ void NrSlPhyUe::decodeStoredFrames()
             continue;
         }
 
-        // PSSCH decode (BLER curves)
-        emit(slFrameLossSignal_, rx.tbDecoded ? 0.0 : 1.0);
-        if (!rx.tbDecoded) {
+        // blind-HARQ bookkeeping (WP-F): count the reception attempt for this
+        // TB; drop copies of already-delivered TBs
+        int attempt = harqRx_.onReception(info.getSrcNodeId(), info.getHarqProcId(), info.getHarqNdi());
+        if (harqRx_.isDelivered(info.getSrcNodeId(), info.getHarqProcId(), info.getHarqNdi())) {
+            EV << NOW << " NrSlPhyUe::decodeStoredFrames - duplicate copy of an already-delivered TB"
+               << " (src " << info.getSrcNodeId() << ", proc " << info.getHarqProcId() << "), suppressed" << endl;
+            numDuplicatesSuppressed_++;
+            delete frame;
+            continue;
+        }
+
+        // PSSCH decode: BLER-curve TB error probability, soft-combined over
+        // the attempts of this TB (the Uu harqReduction convention)
+        double effErrorProb = rx.tbErrorProb * pow(slChannelModel_->getHarqReduction(), attempt - 1);
+        bool tbDecoded = (effErrorProb <= 0) || (effErrorProb < 1 && uniform(0.0, 1.0) >= effErrorProb);
+        emit(slFrameLossSignal_, tbDecoded ? 0.0 : 1.0);
+        if (!tbDecoded) {
             EV << NOW << " NrSlPhyUe::decodeStoredFrames - TB from node " << info.getSrcNodeId()
-               << " lost (sinr " << rx.sinrDb << " dB)" << endl;
+               << " lost (sinr " << rx.sinrDb << " dB, attempt " << attempt
+               << ", eff. error prob " << effErrorProb << ")" << endl;
             numAirFrameNotReceived_++;
             delete frame;
             continue;
         }
+        harqRx_.markDelivered(info.getSrcNodeId(), info.getHarqProcId(), info.getHarqNdi());
 
         auto pkt = check_and_cast<Packet *>(frame->decapsulate());
         auto uinfo = pkt->addTagIfAbsent<UserControlInfo>();

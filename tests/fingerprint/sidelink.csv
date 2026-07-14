@@ -2,5 +2,6 @@
 /simulations/nr/sidelink/basic/,         -f omnetpp.ini -c OutOfCoverage -r 0,                   2s,         baf7-75bf/tplx;d85c-4498/tilx;0000-0000/~tNl;6e58-7683/sz, PASS,
 /simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Broadcast -r 0,                       2s,         36b3-d99c/tplx;5de1-2541/tilx;9f22-246c/~tNl;4c9a-5c3b/sz, PASS,
 /simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Broadcast-Tr37885 -r 0,               2s,         36b3-d99c/tplx;5de1-2541/tilx;9f22-246c/~tNl;a913-974c/sz, PASS,
-/simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Mode2-50UE -r 0,                      1s,         dfea-9e60/tplx;0253-a5ed/tilx;13ab-d5a0/~tNl;8532-e757/sz, PASS,
-/simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Random-50UE -r 0,                     1s,         8307-f9ab/tplx;2967-4b06/tilx;6935-2e9d/~tNl;28e7-50d4/sz, PASS,
+/simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Mode2-50UE -r 0,                      1s,         7db9-1946/tplx;0466-24ff/tilx;4bf8-d8d2/~tNl;4c0a-3320/sz, PASS,
+/simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Random-50UE -r 0,                     1s,         545d-d733/tplx;653c-a9f7/tilx;c4ac-32bc/~tNl;fdfc-8c9a/sz, PASS,
+/simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Broadcast-Tr37885-BlindRetx -r 0,     2s,         0b01-fc02/tplx;a905-1ed6/tilx;2b07-ea1b/~tNl;24e9-a8f3/sz, PASS,

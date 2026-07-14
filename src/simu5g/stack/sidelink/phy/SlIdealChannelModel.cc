@@ -28,7 +28,7 @@ SlReceptionResult SlIdealChannelModel::computeReception(const SlAirFrameInfo& in
     result.rsrpDbm = -50;
     result.sinrDb = 60;
     result.sciDecoded = true;
-    result.tbDecoded = true;
+    result.tbErrorProb = 0;
     return result;
 }
 

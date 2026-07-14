@@ -34,6 +34,9 @@ class SlAirFrameInfo extends cObject
     int numSubchannels = 1;               // width of the used resource
     unsigned int mcs = 0;                 // PSSCH modulation and coding scheme
     int reservationPeriodMs = 0;          // resource reservation period signaled in SCI-1A (0 = none)
+    int harqProcId = 0;                   // SL HARQ process id (SCI-2A)
+    bool harqNdi = false;                 // new-data indicator (SCI-2A)
+    int harqRv = 0;                       // redundancy version: 0 = initial TX, k = k-th blind copy
     double txPower = 0;                   // transmit power [dBm]
     inet::Coord senderCoord;              // sender position at TX time
     inet::GHz carrierFrequency;
@@ -63,4 +66,7 @@ class SlTxInfoTag extends inet::TagBase
     int numSubchannels = 1;
     unsigned int mcs = 0;
     int reservationPeriodMs = 0;
+    int harqProcId = 0;
+    bool harqNdi = false;
+    int harqRv = 0;
 }

@@ -16,6 +16,7 @@
 
 #include "simu5g/stack/phy/LtePhyBase.h"
 #include "simu5g/stack/sidelink/common/SlCommon.h"
+#include "simu5g/stack/sidelink/mac/SlHarqRxEntity.h"
 #include "simu5g/stack/sidelink/mac/SlSlotGrid.h"
 
 namespace simu5g {
@@ -63,9 +64,14 @@ class NrSlPhyUe : public LtePhyBase
     int cbrWindow_ = 100;
     double cbrRssiThresholdDbm_ = -94;
 
+    // blind-retransmission HARQ RX bookkeeping (WP-F): attempt counting for
+    // soft combining + duplicate-delivery suppression
+    SlHarqRxEntity harqRx_;
+
     // statistics
     unsigned int numFramesHalfDuplexDropped_ = 0;
     unsigned int numSciLost_ = 0;
+    unsigned int numDuplicatesSuppressed_ = 0;
     static simsignal_t slRsrpSignal_;
     static simsignal_t slSinrSignal_;
     static simsignal_t slCbrSignal_;

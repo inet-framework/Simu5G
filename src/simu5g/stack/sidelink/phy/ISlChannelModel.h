@@ -22,15 +22,19 @@ class SlAirFrameInfo;
 
 /**
  * Result of receiving one sidelink frame at one receiver (design decision D7).
+ * The PSSCH decode decision itself is made by the PHY: it combines
+ * tbErrorProb with the receiver-side HARQ attempt count (blind
+ * retransmission soft combining, WP-F) before drawing the outcome.
  */
 struct SlReceptionResult
 {
-    double rsrpDbm = 0;     // SL-RSRP: received signal power over the frame's subchannels
-                            // (pathloss+shadowing only, no noise/interference)
-    double sinrDb = 0;      // SINR over the frame's subchannels (interference from the
-                            // SL transmission map + thermal noise)
+    double rsrpDbm = 0;      // SL-RSRP: received signal power over the frame's subchannels
+                             // (pathloss+shadowing only, no noise/interference)
+    double sinrDb = 0;       // SINR over the frame's subchannels (interference from the
+                             // SL transmission map + thermal noise)
     bool sciDecoded = false; // PSCCH decode (threshold rule, D11)
-    bool tbDecoded = false;  // PSSCH decode (BLER curves); meaningless unless sciDecoded
+    double tbErrorProb = 0;  // PSSCH TB error probability before HARQ combining
+                             // (per-CQI BLER over the used PRBs); meaningless unless sciDecoded
 };
 
 /**
@@ -46,6 +50,10 @@ class ISlChannelModel
     /// compute the reception of a frame (described by its modeled SCI content
     /// and TX metadata) at position rxCoord of node rxNodeId
     virtual SlReceptionResult computeReception(const SlAirFrameInfo& info, const inet::Coord& rxCoord, MacNodeId rxNodeId) = 0;
+
+    /// per-extra-attempt error-probability scaling factor of the blind-HARQ
+    /// soft-combining model (the Uu error model's harqReduction convention)
+    virtual double getHarqReduction() const { return 0.2; }
 };
 
 } // namespace simu5g

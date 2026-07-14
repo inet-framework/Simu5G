@@ -74,6 +74,7 @@ void NrSlMacUe::initialize(int stage)
         periodSlots_ = slotGrid_.slotsPerMs(periodMs_);
         if (periodSlots_ <= 0)
             throw cRuntimeError("NrSlMacUe: reservation period is shorter than one slot");
+        blindRetx_ = cfg.blindRetx;
 
         // sensing database + selector (used by mode2; random uses the selector
         // with an always-empty database)
@@ -167,6 +168,43 @@ void NrSlMacUe::handleTxSlot()
     EV << NOW << " NrSlMacUe::handleTxSlot - TX opportunity at slot " << slot << endl;
 
     ASSERT(requestedSdus_ == 0);
+
+    // pending blind HARQ copies take the TX opportunity before new data
+    // (WP-F; SL-1 simplification: retransmissions ride the same selected
+    // resource train, i.e. the next period slots of the grant)
+    SlHarqTxEntity::Retx retx;
+    if (harqTx_.getNextRetx(retx)) {
+        auto slInfo = retx.pdu->getTagForUpdate<SlTxInfoTag>();
+        slInfo->setFirstSubchannel(grant_.firstSubchannel);   // current grant resources
+        slInfo->setNumSubchannels(grant_.numSubchannels);
+        slInfo->setHarqProcId(retx.procId);
+        slInfo->setHarqNdi(retx.ndi);
+        slInfo->setHarqRv(retx.rv);
+
+        EV << NOW << " NrSlMacUe::handleTxSlot - blind retransmission of HARQ proc " << retx.procId
+           << " (rv " << retx.rv << ")" << endl;
+        sendLowerPackets(retx.pdu);
+
+        if (allocationMode_ == MODE2)
+            sensingDb_.recordUnmonitoredSlot(slot);
+        if (allocationMode_ != STATIC && grant_.reselectionCounter > 0 && --grant_.reselectionCounter == 0) {
+            if (random_.uniform01() < probResourceKeep_)
+                grant_.reselectionCounter = selector_->drawReselectionCounter(periodMs_);
+            else
+                grantActive_ = false;
+        }
+
+        // new data (and further copies) wait for the next occasion
+        for (auto& [cid, connInfo] : connDescOut_) {
+            if (!connInfo.buffer->isEmpty()) {
+                ensureTxScheduled();
+                break;
+            }
+        }
+        if (harqTx_.hasPendingRetx())
+            ensureTxScheduled();
+        return;
+    }
 
     for (auto& [cid, connInfo] : connDescOut_) {
         if (connInfo.buffer->isEmpty())
@@ -330,19 +368,32 @@ void NrSlMacUe::macPduMake(MacCid cid)
             macPkt->insertAtFront(macPdu);
         }
 
+        // register the TB with the blind-retx HARQ entity (WP-F); the stored
+        // copy's stale HARQ/grant tag fields are re-stamped at retx time
+        bool ndi;
+        int procId = harqTx_.startTb(macPkt, blindRetx_, ndi);
+        slInfo = macPkt->getTagForUpdate<SlTxInfoTag>();
+        slInfo->setHarqProcId(procId);
+        slInfo->setHarqNdi(ndi);
+        slInfo->setHarqRv(0);
+
         EV << NOW << " NrSlMacUe::macPduMake - sending SL MAC PDU (" << macPkt->getByteLength()
-           << "B) to slot " << slot << ", dstPid " << destCid.getNodeId() << endl;
+           << "B) to slot " << slot << ", dstPid " << destCid.getNodeId()
+           << ", HARQ proc " << procId << " (+" << blindRetx_ << " blind copies)" << endl;
 
         sendLowerPackets(macPkt);
     }
 
-    // keep transmitting on the grant train while backlog remains
-    for (auto& [destCid, connInfo] : connDescOut_) {
-        if (!connInfo.buffer->isEmpty()) {
-            ensureTxScheduled();
-            break;
+    // keep transmitting on the grant train while backlog or blind copies remain
+    if (harqTx_.hasPendingRetx())
+        ensureTxScheduled();
+    else
+        for (auto& [destCid, connInfo] : connDescOut_) {
+            if (!connInfo.buffer->isEmpty()) {
+                ensureTxScheduled();
+                break;
+            }
         }
-    }
 }
 
 void NrSlMacUe::onSciDecoded(const SlSensingEntry& entry)
