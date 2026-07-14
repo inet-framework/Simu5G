@@ -66,7 +66,10 @@ network SidelinkHighway
         slStatsCollector: SlStatsCollector {
             @display("p=50,275;is=s");
         }
+        // note: deliberately no "p=" tag with a layout: the position comes from
+        // CircleMobility, and a row/matrix layout suffix would keep displacing
+        // the vector elements by their index even after mobility sets x,y
         ue[numUes]: NrUe {
-            @display("p=300,200,row,100");
+            @display("i=misc/car2;is=s");
         }
 }

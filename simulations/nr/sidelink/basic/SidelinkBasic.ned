@@ -44,7 +44,9 @@ network SidelinkBasic
         carrierAggregation: CarrierAggregation {
             @display("p=50,225;is=s");
         }
+        // note: deliberately no "p=" tag with a layout: positions come from the
+        // mobility modules, and a row/matrix layout suffix would keep displacing
+        // the vector elements by their index even after mobility sets x,y
         ue[numUes]: NrUe {
-            @display("p=300,200,row,100");
         }
 }
