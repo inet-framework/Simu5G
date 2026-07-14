@@ -23,4 +23,14 @@ simple NrRlcUmRxEntityD2D extends NrRlcUmRxEntity
 {
     parameters:
         @class("NrRlcUmRxEntityD2D");
+
+        //# D2D statistics, emitted only by this D2D profile
+        @signal[rlcDelayD2D];
+        @statistic[rlcDelayD2D](title="Delay at the rlc layer D2D"; unit="s"; source="rlcDelayD2D"; record=mean);
+        @signal[rlcThroughputD2D];
+        @statistic[rlcThroughputD2D](title="Throughput at the rlc layer D2D"; unit="Bps"; source="rlcThroughputD2D"; record=simu5g_rateavg);
+        @signal[rlcPduDelayD2D];
+        @statistic[rlcPduDelayD2D](title="PDU delay at the rlc layer D2D"; unit="s"; source="rlcPduDelayD2D"; record=mean);
+        @signal[rlcPduThroughputD2D];
+        @statistic[rlcPduThroughputD2D](title="PDU throughput at the rlc layer D2D"; unit="Bps"; source="rlcPduThroughputD2D"; record=simu5g_rateavg);
 }

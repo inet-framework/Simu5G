@@ -51,14 +51,6 @@ simple LteRlcUmRxEntity like simu5g.stack.rlc.IRlcRxEntity
         @statistic[rlcPduDelayUl](title="PDU delay at the rlc layer UL"; unit="s"; source="rlcPduDelayUl"; record=mean);
         @signal[rlcPduThroughputUl];
         @statistic[rlcPduThroughputUl](title="PDU throughput at the rlc layer UL"; unit="Bps"; source="rlcPduThroughputUl"; record=simu5g_rateavg);
-        @signal[rlcDelayD2D];
-        @statistic[rlcDelayD2D](title="Delay at the rlc layer D2D"; unit="s"; source="rlcDelayD2D"; record=mean);
-        @signal[rlcThroughputD2D];
-        @statistic[rlcThroughputD2D](title="Throughput at the rlc layer D2D"; unit="Bps"; source="rlcThroughputD2D"; record=simu5g_rateavg);
-        @signal[rlcPduDelayD2D];
-        @statistic[rlcPduDelayD2D](title="PDU delay at the rlc layer D2D"; unit="s"; source="rlcPduDelayD2D"; record=mean);
-        @signal[rlcPduThroughputD2D];
-        @statistic[rlcPduThroughputD2D](title="PDU throughput at the rlc layer D2D"; unit="Bps"; source="rlcPduThroughputD2D"; record=simu5g_rateavg);
 
     gates:
         input in;       // PDUs from MAC, via the RlcMux

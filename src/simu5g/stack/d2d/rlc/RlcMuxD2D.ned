@@ -17,12 +17,23 @@ import simu5g.stack.rlc.RlcMux;
 //
 // Device-to-Device (D2D) aware version of ~RlcMux. It additionally handles
 // D2D mode switch notifications arriving from the MAC layer, dispatching them
-// to the TX or RX UM entity of the affected bearer. The D2D statistics are
-// currently declared on ~RlcMux (see the note there); this module inherits
-// them. Selected by the D2D-capable NICs.
+// to the TX or RX UM entity of the affected bearer, and declares the D2D
+// statistics (emitted by the D2D UM entities). Selected by the D2D-capable
+// NICs.
 //
 simple RlcMuxD2D extends RlcMux
 {
     parameters:
         @class("RlcMuxD2D");
+
+        //# D2D statistics (emitted by ~UmRxEntityD2D on this module)
+        @signal[rlcDelayD2D];
+        @statistic[rlcDelayD2D](title="Delay at the rlc layer D2D"; unit="s"; source="rlcDelayD2D"; record=mean,vector);
+        @signal[rlcThroughputD2D];
+        @statistic[rlcThroughputD2D](title="Throughput at the rlc layer D2D"; unit="Bps"; source="rlcThroughputD2D"; record=simu5g_rateavg,vector);
+
+        @signal[rlcPduDelayD2D];
+        @statistic[rlcPduDelayD2D](title="Delay at the rlc layer D2D"; unit="s"; source="rlcPduDelayD2D"; record=mean,vector);
+        @signal[rlcPduThroughputD2D];
+        @statistic[rlcPduThroughputD2D](title="Throughput at the rlc layer D2D"; unit="Bps"; source="rlcPduThroughputD2D"; record=simu5g_rateavg,vector);
 }

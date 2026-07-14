@@ -26,4 +26,8 @@ simple D2dNrChannelModel extends NrChannelModel
 
         // if true, enables the interference computation for D2D connections
         bool d2dInterference = default(true);
+
+        // statistics
+        @signal[rcvdSinrD2D];
+        @statistic[rcvdSinrD2D](title="SINR measured at packet reception, D2D"; unit="dB"; source="rcvdSinrD2D"; record=mean,vector);
 }
