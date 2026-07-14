@@ -17,7 +17,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-bool LcgSchedulerD2D::checkForPendingD2dBsr(Direction grantDir, LteTrafficClass tc)
+bool LcgSchedulerD2D::checkForPendingAdditionalBsr(Direction grantDir, LteTrafficClass tc)
 {
     // FIXME This is a workaround in case a UE has both UL and D2D active connections.
     //       When an UL grant has been received, check if there is data in the D2D connections' buffer

@@ -77,7 +77,7 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
         // A D2D-capable UE with both UL and D2D active connections may need to withhold
         // this UL grant so that it carries the BSR of an active D2D connection instead.
         // This is handled by the D2D subclass (LcgSchedulerD2D); no-op for non-D2D UEs.
-        if (checkForPendingD2dBsr(grantDir, (LteTrafficClass)i))
+        if (checkForPendingAdditionalBsr(grantDir, (LteTrafficClass)i))
             return scheduleList_;
         // -------------------------------------------------------------------------------------------------- //
 
