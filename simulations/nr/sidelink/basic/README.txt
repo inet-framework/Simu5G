@@ -40,6 +40,23 @@ Configs:
       --'*.ue[*].cellularNic.slChannelModel.shadowing'=false \
       --'*.ue[*].cellularNic.slMac.grantMcs'=12 omnetpp.ini; done
 
-See the sidelink implementation plan for the WP-E..WP-G roadmap (mode-2
-sensing-based resource selection, blind HARQ, PRR/PIR statistics, highway
-calibration scenario).
+- Mode2-50UE / Random-50UE (milestone M3, WP-E): 50 UEs broadcasting
+  CAM-style 300B alerts at 10 Hz on one deliberately tight pool (1
+  subchannel, 200 slot-resources per 100ms period, ~25% occupancy) over the
+  TR 37.885 channel. Mode2-50UE uses the TS 38.321 5.22 sensing-based
+  selection (the default); Random-50UE picks uniformly from the same
+  selection window without sensing - the standard baseline.
+
+  Measured sensing gain (5s, seed 0, ~122500 possible receptions):
+
+                     received   PRR     SCI lost  TB lost  half-duplex lost
+     Mode2-50UE      120322     ~98.2%  2757      1598     128
+     Random-50UE     95176      ~77.7%  15369     9736     678
+
+  With SPS, a random pick that collides keeps colliding for the lifetime of
+  its reselection counter; sensing avoids reserved resources, leaving mostly
+  cold-start and simultaneous-reselection collisions.
+
+See the sidelink implementation plan for the WP-F/WP-G roadmap (blind HARQ
+retransmissions, PRR/PIR-vs-distance statistics, highway calibration
+scenario).
