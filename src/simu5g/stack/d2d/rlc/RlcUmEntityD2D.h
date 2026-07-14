@@ -16,7 +16,7 @@
 #include <inet/common/ModuleRefByPar.h>
 
 #include "simu5g/stack/d2d/rlc/ID2dRlcUmTxEntity.h"
-#include "simu5g/stack/rrc/D2DModeController.h"
+#include "simu5g/stack/d2d/rrc/D2DModeController.h"
 #include "simu5g/stack/rlc/um/LteRlcUmTxEntity.h"
 #include "simu5g/stack/rlc/um/NrRlcUmTxEntity.h"
 #include "simu5g/stack/rlc/um/LteRlcUmRxEntity.h"

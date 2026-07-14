@@ -1,7 +1,7 @@
 //
 //                  Simu5G
 //
-// Copyright (C) 2019-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis et al. (University of Pisa)
+// Copyright (C) 2012-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis et al. (University of Pisa)
 // Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea et al. (University of Pisa)
 //
 // This file is part of a software released under the license included in file
@@ -10,32 +10,24 @@
 // and cannot be removed from it.
 //
 
-// NOTE: this class mirrors ~LtePhyUeD2D on top of the NR base ~NrPhyUe. The D2D
-// deltas cloned from LtePhyUeD2D (initialize, handleSelfMessage,
-// handleUpperMessage, sendFeedback, getTxPwr) are kept in sync with the sibling
-// implementation in LtePhyUeD2D.cc; handleAirFrame() is the NR version that
-// previously lived directly in NrPhyUe.
-
 #include <assert.h>
-#include "simu5g/stack/d2d/phy/NrPhyUeD2D.h"
+#include "simu5g/stack/d2d/phy/LtePhyUeD2D.h"
 
-#include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"
 #include "simu5g/stack/rrc/HandoverController.h"
-#include "simu5g/stack/phy/feedback/LteDlFeedbackGenerator.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/d2d/rrc/D2dModeSelectionBase.h"
-#include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
-Define_Module(NrPhyUeD2D);
-
+Define_Module(LtePhyUeD2D);
 using namespace inet;
 
-void NrPhyUeD2D::initialize(int stage)
+
+
+void LtePhyUeD2D::initialize(int stage)
 {
-    NrPhyUe::initialize(stage);
+    LtePhyUe::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         d2dHelper_.setD2dTxPower(par("d2dTxPower"));
         d2dHelper_.setMulticastEnableCaptureEffect(par("d2dMulticastCaptureEffect"));
@@ -44,7 +36,7 @@ void NrPhyUeD2D::initialize(int stage)
     }
 }
 
-void NrPhyUeD2D::handleSelfMessage(cMessage *msg)
+void LtePhyUeD2D::handleSelfMessage(cMessage *msg)
 {
     if (msg->isName("d2dDecodingTimer")) {
         // Decode the captured frame (capture effect) and clear the receive buffer.
@@ -54,20 +46,20 @@ void NrPhyUeD2D::handleSelfMessage(cMessage *msg)
         d2dDecodingTimer_ = nullptr;
     }
     else
-        NrPhyUe::handleSelfMessage(msg);
+        LtePhyUe::handleSelfMessage(msg);
 }
 
 // TODO: ***reorganize*** method
-void NrPhyUeD2D::handleAirFrame(cMessage *msg)
+void LtePhyUeD2D::handleAirFrame(cMessage *msg)
 {
     LteAirFrame *frame = static_cast<LteAirFrame *>(msg);
     UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
 
-    EV << "NrPhyUe: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
+    EV << "LtePhyUeD2D: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
 
     MacNodeId sourceId = lteInfo->getSourceId();
     if (!binder_->nodeExists(sourceId)) {
-        // The source has left the simulation
+        EV << "Source has left the simulation." << endl;
         delete msg;
         return;
     }
@@ -81,7 +73,7 @@ void NrPhyUeD2D::handleAirFrame(cMessage *msg)
         return;
     }
 
-    //Update coordinates of this user
+    // Update coordinates of this user.
     if (lteInfo->getFrameType() == BEACONPKT) {
         // Check if the message is on another carrier frequency
         if (carrierFreq != primaryChannelModel_->getCarrierFrequency()) {
@@ -95,7 +87,7 @@ void NrPhyUeD2D::handleAirFrame(cMessage *msg)
         // Note: beacons are the only frames that carry a meaningful isNr flag (it is stamped
         // solely in LtePhyEnb::createBeaconMessage()), and the only true channel broadcasts
         // reaching both radios of a dual-PHY UE; non-beacon frames are technology-routed at
-        // the sender. Hence the filter is scoped to beacons, same as in LtePhyUeD2D.
+        // the sender. Hence the filter is scoped to beacons, same as in NrPhyUe.
         if (lteInfo->isNr() != isNr_) {
             EV << "Received beacon packet [from NR=" << lteInfo->isNr() << "] from a different radio technology [to NR=" << isNr_ << "]. Delete it." << endl;
             delete lteInfo;
@@ -107,7 +99,7 @@ void NrPhyUeD2D::handleAirFrame(cMessage *msg)
         return;
     }
 
-    // Check if the frame is for us ( MacNodeId matches or - if this is a multicast communication - enrolled in multicast group)
+    // Check if the frame is for us (MacNodeId matches or - if this is a multicast communication - enrolled in multicast group).
     if (lteInfo->getDestId() != nodeId_ && !(binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId()))) {
         EV << "ERROR: Frame is not for us. Delete it." << endl;
         EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
@@ -119,15 +111,15 @@ void NrPhyUeD2D::handleAirFrame(cMessage *msg)
     }
 
     /*
-     * This could happen if the UE associates with a new master while a packet from the
+     * This could happen if the ue associates with a new master while a packet from the
      * old master is in-flight: the packet is in the air
-     * while the UE changes master.
+     * while the ue changes master.
      * Event timing:      TTI x: packet scheduled and sent by the UE (tx time = 1ms)
-     *                     TTI x+0.1: UE changes master
+     *                     TTI x+0.1: ue changes master
      *                     TTI x+1: packet from UE arrives at the old master
      */
     if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI && lteInfo->getSourceId() != servingNodeId_) {
-        EV << "WARNING: Frame from a UE that is leaving this cell (handover): deleted " << endl;
+        EV << "WARNING: frame from a UE that is leaving this cell (handover): deleted " << endl;
         EV << "Source MacNodeId: " << lteInfo->getSourceId() << endl;
         EV << "UE MacNodeId: " << nodeId_ << endl;
         delete lteInfo;
@@ -136,43 +128,42 @@ void NrPhyUeD2D::handleAirFrame(cMessage *msg)
     }
 
     if (binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId())) {
-        // HACK: If this is a multicast connection, change the destId of the airframe so that upper layers can handle it
+        // HACK: if this is a multicast connection, change the destId of the airframe so that upper layers can handle it.
         lteInfo->setDestId(nodeId_);
     }
 
-    // Send H-ARQ feedback up
+    // Send H-ARQ feedback and other control messages up.
     if (lteInfo->getFrameType() == HARQPKT || lteInfo->getFrameType() == GRANTPKT || lteInfo->getFrameType() == RACPKT || lteInfo->getFrameType() == D2DMODESWITCHPKT) {
+        EV << "Received control message (H-ARQ feedback / GRANT / RAC / D2D mode switch)." << endl;
         handleControlMsg(frame, lteInfo);
         return;
     }
 
-    // This is a DATA packet
+    // This is a DATA packet.
 
     if (servingNodeId_ == NODEID_NONE) {
         // UE is not (anymore) associated with any eNB/gNB and all harqBuffers are already deleted.
         // Handing this data packet to the MAC layer will lead to null pointers.
-        // (Mirrors the same guard in LtePhyUeD2D::handleAirFrame; matters for D2D/D2D_MULTI DATA
-        // in-flight during the mid-handover detachment window.)
-        EV << "NrPhyUe: UE " << nodeId_ << " received data packet while not associated with any base station. Drop it." << endl;
+        EV << "LtePhyUeD2D: UE " << nodeId_ << " received data packet while not associated with any base station. (masterId " << servingNodeId_ << "). Drop it." << endl;
         delete lteInfo;
         delete frame;
         return;
     }
 
-    // If the packet is a D2D multicast one, store it and decode it at the end of the TTI
+    // If the packet is a D2D multicast one, store it and decode it at the end of the TTI.
     if (d2dHelper_.getMulticastEnableCaptureEffect() && binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId())) {
-        // If not already started, auto-send a message to signal the presence of data to be decoded
+        // If not already started, auto-send a message to signal the presence of data to be decoded.
         if (d2dDecodingTimer_ == nullptr) {
             d2dDecodingTimer_ = new cMessage("d2dDecodingTimer");
-            d2dDecodingTimer_->setSchedulingPriority(10);          // Last thing to be performed in this TTI
+            d2dDecodingTimer_->setSchedulingPriority(10);          // Last thing to be performed in this TTI.
             scheduleAt(NOW, d2dDecodingTimer_);
         }
 
-        // Store frame, together with related control info
+        // Store frame, together with related control info.
         frame->setControlInfo(lteInfo);
-        d2dHelper_.storeAirFrame(frame);            // Implements the capture effect
+        d2dHelper_.storeAirFrame(frame);            // Implements the capture effect.
 
-        return;                          // Exit the function, decoding will be done later
+        return;                          // Exit the function, decoding will be done later.
     }
 
     if ((lteInfo->getUserTxParams()) != nullptr) {
@@ -186,9 +177,10 @@ void NrPhyUeD2D::handleAirFrame(cMessage *msg)
         }
     }
 
+    // Apply decider to received packet.
     bool result = channelModel->isReceptionSuccessful(frame, lteInfo);
 
-    // Update statistics
+    // Update statistics.
     if (result)
         numAirFrameReceived_++;
     else
@@ -199,23 +191,23 @@ void NrPhyUeD2D::handleAirFrame(cMessage *msg)
 
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
 
-    // Here frame has to be destroyed since it is no more useful
+    // Here frame has to be destroyed since it is no more useful.
     delete frame;
 
-    // Attach the decider result to the packet as control info
+    // Attach the decider result to the packet as control info.
     *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
     delete lteInfo;
 
     pkt->addTagIfAbsent<PhyReceptionInd>()->setDeciderResult(result);
 
-    // Send decapsulated message along with result control info to upperGateOut_
+    // Send decapsulated message along with result control info to upperGateOut_.
     send(pkt, upperGateOut_);
 
     if (getEnvir()->isGUI())
         updateDisplayString();
 }
 
-void NrPhyUeD2D::handleUpperMessage(cMessage *msg)
+void LtePhyUeD2D::handleUpperMessage(cMessage *msg)
 {
     auto pkt = check_and_cast<inet::Packet *>(msg);
     auto lteInfo = pkt->removeTag<UserControlInfo>();
@@ -223,7 +215,7 @@ void NrPhyUeD2D::handleUpperMessage(cMessage *msg)
     GHz carrierFreq = lteInfo->getCarrierFrequency();
     LteChannelModel *channelModel = getChannelModel(carrierFreq);
     if (channelModel == nullptr)
-        throw cRuntimeError("NrPhyUeD2D::handleUpperMessage - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
+        throw cRuntimeError("LtePhyUeD2D::handleUpperMessage - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 
     if (lteInfo->getFrameType() == DATAPKT && channelModel->recordsUlTransmissionMap()) {
         // Store the RBs used for data transmission to the binder (for UL interference computation).
@@ -243,7 +235,7 @@ void NrPhyUeD2D::handleUpperMessage(cMessage *msg)
             emit(averageCqiD2DSignal_, cqi);
     }
 
-    EV << NOW << " NrPhyUeD2D::handleUpperMessage - message from stack" << endl;
+    EV << NOW << " LtePhyUeD2D::handleUpperMessage - message from stack" << endl;
     LteAirFrame *frame = nullptr;
 
     if (lteInfo->getFrameType() == HARQPKT || lteInfo->getFrameType() == GRANTPKT || lteInfo->getFrameType() == RACPKT) {
@@ -272,7 +264,7 @@ void NrPhyUeD2D::handleUpperMessage(cMessage *msg)
     lteInfo->setD2dTxPower(d2dHelper_.getD2dTxPower());
     frame->setControlInfo(lteInfo.get()->dup());
 
-    EV << "NrPhyUeD2D::handleUpperMessage - " << nodeTypeToA(nodeType_) << " with id " << nodeId_
+    EV << "LtePhyUeD2D::handleUpperMessage - " << nodeTypeToA(nodeType_) << " with id " << nodeId_
        << " sending message to the air channel. Dest=" << lteInfo->getDestId() << endl;
 
     // If this is a multicast/broadcast connection, send the frame to all neighbors in the hearing range.
@@ -283,14 +275,14 @@ void NrPhyUeD2D::handleUpperMessage(cMessage *msg)
         sendUnicast(frame);
 }
 
-void NrPhyUeD2D::sendMulticast(LteAirFrame *frame)
+void LtePhyUeD2D::sendMulticast(LteAirFrame *frame)
 {
     UserControlInfo *ci = check_and_cast<UserControlInfo *>(frame->getControlInfo());
 
     // get the group Id
     MacNodeId groupId = ci->getPacketMulticastGroupId();
     if (groupId == NODEID_NONE)
-        throw cRuntimeError("NrPhyUeD2D::sendMulticast - Error. Group ID %d is not valid.", num(groupId));
+        throw cRuntimeError("LtePhyUeD2D::sendMulticast - Error. Group ID %d is not valid.", num(groupId));
 
     // transfer control info into airframe fields
     frame->setAdditionalInfo(*ci);
@@ -303,7 +295,7 @@ void NrPhyUeD2D::sendMulticast(LteAirFrame *frame)
             continue;
 
         if (destId != nodeId_ && binder_->isInMulticastGroup(destId, groupId)) {
-            EV << NOW << " NrPhyUeD2D::sendMulticast - node " << destId << " is in the multicast group" << endl;
+            EV << NOW << " LtePhyUeD2D::sendMulticast - node " << destId << " is in the multicast group" << endl;
 
             // get a pointer to receiving module
             cModule *receiver = nodeInfo.moduleRef;
@@ -318,12 +310,12 @@ void NrPhyUeD2D::sendMulticast(LteAirFrame *frame)
                 dist = recvPhy->getCoord().distance(getRadioPosition());
 
                 if (dist > d2dHelper_.getMulticastD2DRange()) {
-                    EV << NOW << " NrPhyUeD2D::sendMulticast - node too far (" << dist << " > " << d2dHelper_.getMulticastD2DRange() << ". skipping transmission" << endl;
+                    EV << NOW << " LtePhyUeD2D::sendMulticast - node too far (" << dist << " > " << d2dHelper_.getMulticastD2DRange() << ". skipping transmission" << endl;
                     continue;
                 }
             }
 
-            EV << NOW << " NrPhyUeD2D::sendMulticast - sending frame to node " << destId << endl;
+            EV << NOW << " LtePhyUeD2D::sendMulticast - sending frame to node " << destId << endl;
 
             // Create a duplicate frame before sending
             LteAirFrame *frameToSend = frame->dup();
@@ -335,10 +327,10 @@ void NrPhyUeD2D::sendMulticast(LteAirFrame *frame)
     delete frame;
 }
 
-void NrPhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req)
+void LtePhyUeD2D::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req)
 {
     Enter_Method("SendFeedback");
-    EV << "NrPhyUeD2D: feedback from Feedback Generator" << endl;
+    EV << "LtePhyUeD2D: feedback from Feedback Generator" << endl;
 
     // Create a feedback packet
     auto fbPkt = makeShared<LteFeedbackPkt>();

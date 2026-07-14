@@ -12,8 +12,6 @@
 package simu5g.stack.d2d.rrc;
 
 import simu5g.stack.rrc.Rrc;
-import simu5g.stack.rrc.D2DModeController;
-import simu5g.stack.rrc.ID2DModeSelection;
 
 //
 // D2D-capable variant of the ~Rrc layer. It adds the D2D mode controller
@@ -27,7 +25,7 @@ module RrcD2D extends Rrc
         bool hasD2DModeSelection = default(false);
 
     submodules:
-        d2dModeController: D2DModeController {
+        d2dModeController: <default("D2DModeController")> like ID2DModeController {
             @display("p=400,80");
         }
         d2dModeSelection: <default("D2dModeSelectionBase")> like ID2DModeSelection if hasD2DModeSelection {

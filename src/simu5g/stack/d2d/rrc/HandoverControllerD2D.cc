@@ -11,9 +11,9 @@
 
 #include "simu5g/stack/d2d/rrc/HandoverControllerD2D.h"
 
-#include "simu5g/stack/phy/LtePhyUeD2D.h"
+#include "simu5g/stack/d2d/phy/LtePhyUeD2D.h"
 #include "simu5g/stack/d2d/phy/NrPhyUeD2D.h"
-#include "simu5g/stack/rrc/D2dModeSelectionBase.h"
+#include "simu5g/stack/d2d/rrc/D2dModeSelectionBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/mac/LteMacUe.h"
 #include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"

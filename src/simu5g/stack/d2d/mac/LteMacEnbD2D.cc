@@ -1,8 +1,8 @@
 //
 //                  Simu5G
 //
-// Copyright (C) 2019-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis et al. (University of Pisa)
-// Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea et al. (University of Pisa)
+// Authors: Giovanni Nardini, Giovanni Stea, Antonio Virdis (University of Pisa)
+// Editor: Mohamed Seliem (University College Cork)
 //
 // This file is part of a software released under the license included in file
 // "license.pdf". Please read LICENSE and README files before using it.
@@ -10,12 +10,7 @@
 // and cannot be removed from it.
 //
 
-// NOTE: this class is the NR counterpart of ~LteMacEnbD2D and its sibling
-// implementation. The D2D state and heavy logic live in the shared
-// D2dEnbMacHelper, so what remains here is thin dispatch/glue duplicated from
-// LteMacEnbD2D.cc. Keep the two in sync.
-
-#include "simu5g/stack/d2d/mac/NrMacGnbD2D.h"
+#include "simu5g/stack/d2d/mac/LteMacEnbD2D.h"
 #include "simu5g/stack/d2d/mac/LteMacUeD2D.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
@@ -29,20 +24,20 @@
 
 namespace simu5g {
 
-Define_Module(NrMacGnbD2D);
+Define_Module(LteMacEnbD2D);
 
 using namespace omnetpp;
 using namespace inet;
 
 
 
-NrMacGnbD2D::NrMacGnbD2D() : d2dEnbHelper_(this)
+LteMacEnbD2D::LteMacEnbD2D() : d2dEnbHelper_(this)
 {
 }
 
-void NrMacGnbD2D::initialize(int stage)
+void LteMacEnbD2D::initialize(int stage)
 {
-    NrMacGnb::initialize(stage);
+    LteMacEnb::initialize(stage);
     if (stage == INITSTAGE_PHYSICAL_ENVIRONMENT) {
         bool usePreconfiguredTxParams = par("usePreconfiguredTxParams");
         Cqi d2dCqi = par("d2dCqi");
@@ -77,7 +72,7 @@ void NrMacGnbD2D::initialize(int stage)
     }
 }
 
-void NrMacGnbD2D::macHandleFeedbackPkt(cPacket *pktAux)
+void LteMacEnbD2D::macHandleFeedbackPkt(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto fb = pkt->peekAtFront<LteFeedbackPkt>();
@@ -87,10 +82,9 @@ void NrMacGnbD2D::macHandleFeedbackPkt(cPacket *pktAux)
 
     // skip if no D2D CQI has been reported
     if (!fbMapD2D.empty()) {
-        // the AMC of a D2D-capable gNB is always a D2D AMC
+        // the AMC of a D2D-capable eNB is always a D2D AMC
         ID2dAmc *d2dAmc = check_and_cast<ID2dAmc *>(amc_);
 
-        //get Source Node Id<
         MacNodeId id = fb->getSourceNodeId();
 
         // extract feedback for D2D links
@@ -105,10 +99,10 @@ void NrMacGnbD2D::macHandleFeedbackPkt(cPacket *pktAux)
             }
         }
     }
-    NrMacGnb::macHandleFeedbackPkt(pkt);
+    LteMacEnb::macHandleFeedbackPkt(pkt);
 }
 
-void NrMacGnbD2D::handleMessage(cMessage *msg)
+void LteMacEnbD2D::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage() && msg->isName("D2DModeSwitchNotification")) {
         cPacket *pkt = check_and_cast<cPacket *>(msg);
@@ -122,16 +116,16 @@ void NrMacGnbD2D::handleMessage(cMessage *msg)
         scheduleAt(NOW + d2dEnbHelper_.getConflictGraphUpdatePeriod(), msg);
     }
     else
-        NrMacGnb::handleMessage(msg);
+        LteMacEnb::handleMessage(msg);
 }
 
-void NrMacGnbD2D::handleSelfMessage()
+void LteMacEnbD2D::handleSelfMessage()
 {
     // Call the eNodeB main loop
-    NrMacGnb::handleSelfMessage();
+    LteMacEnb::handleSelfMessage();
 }
 
-void NrMacGnbD2D::macPduUnmake(cPacket *cpkt)
+void LteMacEnbD2D::macPduUnmake(cPacket *cpkt)
 {
     auto pkt = check_and_cast<Packet *>(cpkt);
     auto macPdu = pkt->removeAtFront<LteMacPdu>();
@@ -150,14 +144,14 @@ void NrMacGnbD2D::macPduUnmake(cPacket *cpkt)
         auto upPkt = macPdu->popSdu(lcid);
         take(upPkt);
 
-        EV << "NrMacGnbD2D: pduUnmaker extracted SDU" << endl;
+        EV << "LteMacEnbD2D: pduUnmaker extracted SDU" << endl;
 
         MacNodeId senderId = userInfo->getSourceId();
         MacCid cid = MacCid(senderId, lcid);
         ASSERT(connDescIn_.find(cid) != connDescIn_.end());
         *upPkt->addTag<FlowControlInfo>() = connDescIn_[cid].toFlowControlInfo();
 
-        EV << "NrMacGnbD2D: Lcid --->"<< (int)lcid << " Cid: " << cid <<endl;
+        EV << "LteMacEnbD2D: Lcid --->"<< (int)lcid << " Cid: " << cid <<endl;
 
         sendUpperPackets(upPkt);
     }
@@ -179,9 +173,9 @@ void NrMacGnbD2D::macPduUnmake(cPacket *cpkt)
     delete pkt;
 }
 
-void NrMacGnbD2D::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
+void LteMacEnbD2D::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
 {
-    EV << NOW << "NrMacGnbD2D::sendGrants " << endl;
+    EV << NOW << "LteMacEnbD2D::sendGrants " << endl;
 
     for (auto& [carrierFreq, carrierScheduleList] : *scheduleList) {
         while (!carrierScheduleList.empty()) {
@@ -221,7 +215,7 @@ void NrMacGnbD2D::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
             if (granted == 0)
                 continue; // avoiding transmission of 0 grant (0 grant should not be created)
 
-            EV << NOW << " NrMacGnbD2D::sendGrants Node[" << getMacNodeId() << "] - "
+            EV << NOW << " LteMacEnbD2D::sendGrants Node[" << getMacNodeId() << "] - "
                << granted << " blocks to grant for user " << nodeId << " on "
                << codewords << " codewords. CW[" << cw << "\\" << otherCw << "] carrier[" << carrierFreq << "]" << endl;
 
@@ -269,7 +263,7 @@ void NrMacGnbD2D::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
                 }
 
                 grant->setGrantedCwBytes(cw, grantedBytes);
-                EV << NOW << " NrMacGnbD2D::sendGrants - granting " << grantedBytes << " on cw " << cw << endl;
+                EV << NOW << " LteMacEnbD2D::sendGrants - granting " << grantedBytes << " on cw " << cw << endl;
             }
             RbMap map;
 
@@ -296,32 +290,32 @@ void NrMacGnbD2D::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
     }
 }
 
-HarqBuffersMirrorD2D *NrMacGnbD2D::getHarqBuffersMirrorD2D(GHz carrierFrequency)
+HarqBuffersMirrorD2D *LteMacEnbD2D::getHarqBuffersMirrorD2D(GHz carrierFrequency)
 {
     return d2dEnbHelper_.getHarqBuffersMirrorD2D(carrierFrequency);
 }
 
-void NrMacGnbD2D::deleteQueues(MacNodeId nodeId)
+void LteMacEnbD2D::deleteQueues(MacNodeId nodeId)
 {
-    NrMacGnb::deleteQueues(nodeId);
+    LteMacEnb::deleteQueues(nodeId);
     deleteHarqBuffersMirrorD2D(nodeId);
 }
 
-void NrMacGnbD2D::deleteHarqBuffersMirrorD2D(MacNodeId nodeId)
+void LteMacEnbD2D::deleteHarqBuffersMirrorD2D(MacNodeId nodeId)
 {
     d2dEnbHelper_.deleteHarqBuffersMirrorD2D(nodeId);
 }
 
-void NrMacGnbD2D::deleteHarqBuffersMirrorD2D(MacNodeId txPeer, MacNodeId rxPeer)
+void LteMacEnbD2D::deleteHarqBuffersMirrorD2D(MacNodeId txPeer, MacNodeId rxPeer)
 {
     d2dEnbHelper_.deleteHarqBuffersMirrorD2D(txPeer, rxPeer);
 }
 
-void NrMacGnbD2D::sendModeSwitchNotification(MacNodeId srcId, MacNodeId dstId, LteD2DMode oldMode, LteD2DMode newMode)
+void LteMacEnbD2D::sendModeSwitchNotification(MacNodeId srcId, MacNodeId dstId, LteD2DMode oldMode, LteD2DMode newMode)
 {
     Enter_Method_Silent("sendModeSwitchNotification");
 
-    EV << NOW << " NrMacGnbD2D::sendModeSwitchNotification - " << srcId << " --> " << dstId << " going from " << d2dModeToA(oldMode) << " to " << d2dModeToA(newMode) << endl;
+    EV << NOW << " LteMacEnbD2D::sendModeSwitchNotification - " << srcId << " --> " << dstId << " going from " << d2dModeToA(oldMode) << " to " << d2dModeToA(newMode) << endl;
 
     // send switch notification to both the tx and rx side of the flow
 
@@ -364,7 +358,7 @@ void NrMacGnbD2D::sendModeSwitchNotification(MacNodeId srcId, MacNodeId dstId, L
     scheduleAt(NOW + TTI, switchPktRx_local);
 }
 
-void NrMacGnbD2D::flushHarqBuffers()
+void LteMacEnbD2D::flushHarqBuffers()
 {
     for (auto& mit : harqTxBuffers_) {
         for (auto& it : mit.second)
@@ -381,18 +375,16 @@ void NrMacGnbD2D::flushHarqBuffers()
 /*
  * Lower layer handler
  */
-LteHarqBufferRx *NrMacGnbD2D::createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo)
+LteHarqBufferRx *LteMacEnbD2D::createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo)
 {
     Direction dir = (Direction)userInfo->getDirection();
     if (dir == D2D || dir == D2D_MULTI)
         return new LteHarqBufferRxD2D(harqProcesses_, this, binder_, src, (dir == D2D_MULTI));
-    return NrMacGnb::createRxHarqBuffer(src, userInfo);
+    return LteMacEnb::createRxHarqBuffer(src, userInfo);
 }
 
-void NrMacGnbD2D::fromPhy(cPacket *pktAux)
+void LteMacEnbD2D::fromPhy(cPacket *pktAux)
 {
-    // TODO: harq test (commenting fromPhy: it has only to pass PDUs to the proper RX buffer and
-    // to manage H-ARQ feedback)
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
     auto userInfo = pkt->getTag<UserControlInfo>();
     if (userInfo->getFrameType() == HARQPKT) {
@@ -413,7 +405,7 @@ void NrMacGnbD2D::fromPhy(cPacket *pktAux)
         D2DPair pair(d2dSender, d2dReceiver);
         auto& harqBuffersMirrorD2D = d2dEnbHelper_.getHarqBuffersMirrorD2DMap();
         HarqBuffersMirrorD2D::iterator hit = harqBuffersMirrorD2D[carrierFrequency].find(pair);
-        EV << NOW << "NrMacGnbD2D::fromPhy - node " << nodeId_ << " Received HARQ Feedback pkt (mirrored)" << endl;
+        EV << NOW << "LteMacEnbD2D::fromPhy - node " << nodeId_ << " Received HARQ Feedback pkt (mirrored)" << endl;
         if (hit == harqBuffersMirrorD2D[carrierFrequency].end()) {
             // if feedback arrives, a buffer should exist (unless it is a handover scenario
             // where the HARQ buffer was deleted but feedback was in transit)
