@@ -42,23 +42,6 @@ simple RlcMux like IRlcMux
         @signal[rlcPduThroughputUl];
         @statistic[rlcPduThroughputUl](title="Throughput at the rlc layer UL"; unit="Bps"; source="rlcPduThroughputUl"; record=simu5g_rateavg,vector);
 
-        //# D2D statistics
-        //# TODO(D2D-out): D2D statistics remain declared here temporarily for
-        //# sz-fingerprint stability; they move to RlcMuxD2D.ned in the dedicated
-        //# core-NED statistics-strip step
-        @signal[rlcDelayD2D];
-        @statistic[rlcDelayD2D](title="Delay at the rlc layer D2D"; unit="s"; source="rlcDelayD2D"; record=mean,vector);
-        @signal[rlcThroughputD2D];
-        @statistic[rlcThroughputD2D](title="Throughput at the rlc layer D2D"; unit="Bps"; source="rlcThroughputD2D"; record=simu5g_rateavg,vector);
-
-        @signal[rlcCellThroughputD2D];
-        @statistic[rlcCellThroughputD2D](title="Cell Throughput at the rlc layer D2D"; unit="Bps"; source="rlcCellThroughputD2D"; record=simu5g_rateavg,vector);
-
-        @signal[rlcPduDelayD2D];
-        @statistic[rlcPduDelayD2D](title="Delay at the rlc layer D2D"; unit="s"; source="rlcPduDelayD2D"; record=mean,vector);
-        @signal[rlcPduThroughputD2D];
-        @statistic[rlcPduThroughputD2D](title="Throughput at the rlc layer D2D"; unit="Bps"; source="rlcPduThroughputD2D"; record=simu5g_rateavg,vector);
-
     gates:
         input macIn;
         output macOut;

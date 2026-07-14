@@ -43,6 +43,8 @@ module LteMacUeD2D extends LteMacUe
         @statistic[macDelayD2D](title="Delay at the MAC layer D2D"; unit="s"; source="macDelayD2D"; record=mean,vector);
         @signal[macThroughputD2D];
         @statistic[macThroughputD2D](title="Throughput at the MAC layer D2D"; unit="Bps"; source="macThroughputD2D"; record=simu5g_rateavg);
+        @signal[macBufferOverFlowD2D];
+        @statistic[macBufferOverFlowD2D](title="Mac buffer overflow as function of time"; unit="Byte/s"; source="macBufferOverFlowD2D"; record=mean);
 
         @signal[rcvdD2DModeSwitchNotification];
         @statistic[rcvdD2DModeSwitchNotification](title="Reception of mode switch notification (tx side)"; unit=""; source="rcvdD2DModeSwitchNotification"; record=count,vector);
