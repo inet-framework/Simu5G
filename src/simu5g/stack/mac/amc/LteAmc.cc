@@ -17,7 +17,6 @@
 
 // NOTE: AMC Pilots header file inclusions must go here
 #include "simu5g/stack/mac/amc/AmcPilotAuto.h"
-#include "simu5g/stack/d2d/mac/amc/AmcPilotD2D.h"
 
 using namespace omnetpp;
 
@@ -50,8 +49,6 @@ AmcPilot *LteAmc::createAmcPilot(const char *amcMode)
     EV << "Creating Amc pilot " << amcMode << endl;
     if (strcmp(amcMode, "AUTO") == 0)
         return new AmcPilotAuto(binder_, this);
-    if (strcmp(amcMode, "D2D") == 0)
-        return new AmcPilotD2D(binder_, this);
     throw cRuntimeError("AMC Pilot '%s' not recognized", amcMode);
 }
 

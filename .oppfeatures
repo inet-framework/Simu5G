@@ -1,10 +1,22 @@
 <features cppSourceRoots="src" definesFile="src/simu5g/common/features.h">
  <feature
+  id="Simu5G_D2D"
+  name="Simu5G D2D"
+  description = "Device-to-device (D2D) communication support in the LTE/NR stack (early research prototype of Sidelink)"
+  initiallyEnabled = "true"
+  requires = ""
+  labels = ""
+  nedPackages = "simu5g.stack.d2d"
+  extraSourceFolders = ""
+  compileFlags = ""
+  linkerFlags = ""
+ />
+ <feature
   id="Simu5G_Cars"
   name="Simu5G Cars"
-  description = "5G-enabled vehicular networks"
+  description = "5G-enabled vehicular networks (requires Veins)"
   initiallyEnabled = "false"
-  requires = ""
+  requires = "Simu5G_D2D"
   labels = ""
   nedPackages = "simu5g.simulations.lte.cars
                  simu5g.simulations.nr.cars"

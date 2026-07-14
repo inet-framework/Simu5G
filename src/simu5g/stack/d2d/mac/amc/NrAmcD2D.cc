@@ -10,7 +10,10 @@
 // and cannot be removed from it.
 //
 
+#include <cstring>
+
 #include "simu5g/stack/d2d/mac/amc/NrAmcD2D.h"
+#include "simu5g/stack/d2d/mac/amc/AmcPilotD2D.h"
 #include "simu5g/common/InitStages.h"
 
 namespace simu5g {
@@ -24,6 +27,15 @@ void NrAmcD2D::initialize(int stage)
     NrAmc::initialize(stage);
     if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS)
         d2dHelper_.initD2D();
+}
+
+AmcPilot *NrAmcD2D::createAmcPilot(const char *amcMode)
+{
+    if (strcmp(amcMode, "D2D") == 0) {
+        EV << "Creating Amc pilot " << amcMode << endl;
+        return new AmcPilotD2D(binder_, this);
+    }
+    return NrAmc::createAmcPilot(amcMode);
 }
 
 void NrAmcD2D::printTxParamsForDirection(Direction dir, GHz carrierFrequency)
