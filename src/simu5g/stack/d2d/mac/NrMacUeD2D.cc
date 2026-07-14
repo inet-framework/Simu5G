@@ -20,8 +20,6 @@
 
 #include "simu5g/stack/d2d/mac/NrMacUeD2D.h"
 
-#include <inet/common/TimeTag_m.h>
-
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/mac/amc/LteAmc.h"
 #include "simu5g/stack/mac/buffer/LteMacBuffer.h"
@@ -117,9 +115,10 @@ void NrMacUeD2D::macPduMake(MacCid cid)
                     info->setUserTxParams(grant->getUserTxParams()->dup());
 
                     // Add the created BSR to the PDU List
-                    LteChannelModel *channelModel = phy_->getChannelModel();
+                    // select channel model for the given carrier frequency
+                    LteChannelModel *channelModel = phy_->getChannelModel(carrierFreq);
                     if (channelModel == nullptr)
-                        throw cRuntimeError("NrMacUe::macPduMake - channel model is a null pointer");
+                        throw cRuntimeError("NrMacUeD2D::macPduMake - channel model is a null pointer");
                     macPduList_[channelModel->getCarrierFrequency()][{getMacCellId(), 0}] = macPktBsr;
                     bsrAlreadyMade = true;
                     EV << "NrMacUe::macPduMake - BSR D2D created with size " << sizeBsr << " created" << endl;
@@ -176,7 +175,6 @@ void NrMacUeD2D::macPduMake(MacCid cid)
                     header->setHeaderLength(MAC_HEADER);
                     macPkt->insertAtFront(header);
 
-                    macPkt->addTagIfAbsent<CreationTimeTag>()->setCreationTime(NOW);
                     macPkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
                     macPkt->addTagIfAbsent<UserControlInfo>()->setDestId(destId);
                     macPkt->addTagIfAbsent<UserControlInfo>()->setDirection(dir);

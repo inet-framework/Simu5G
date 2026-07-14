@@ -16,6 +16,7 @@
 #include "simu5g/stack/d2d/rrc/D2dModeSelectionBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/mac/LteMacUe.h"
+#include "simu5g/stack/d2d/mac/ID2dAmc.h"
 #include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"
 #include "simu5g/stack/phy/feedback/LteDlFeedbackGenerator.h"
 #include "simu5g/common/binder/Binder.h"
@@ -52,12 +53,20 @@ void HandoverControllerD2D::onHandoverExecuting()
     if (dynamic_cast<LtePhyUeD2D*>(phy_) || dynamic_cast<NrPhyUeD2D*>(phy_)) {
         if (servingNodeId_ != NODEID_NONE) {
             LteAmc *oldAmc = check_and_cast<LteMacEnb *>(binder_->getMacFromMacNodeId(servingNodeId_))->getAmc();
-            oldAmc->detachUser(nodeId_, D2D);
+            // The old serving eNB may not be D2D-capable (its AMC would throw on a D2D direction); skip if so.
+            if (dynamic_cast<ID2dAmc *>(oldAmc) != nullptr)
+                oldAmc->detachUser(nodeId_, D2D);
+            else
+                EV_WARN << "HandoverControllerD2D: serving eNB " << servingNodeId_ << " is not D2D-capable - skipping D2D AMC detach" << endl;
         }
 
         if (candidateServingNodeId_ != NODEID_NONE) {
             LteAmc *newAmc = getAmcModule(candidateServingNodeId_);
-            newAmc->attachUser(nodeId_, D2D);
+            // The new serving eNB may not be D2D-capable (its AMC would throw on a D2D direction); skip if so.
+            if (dynamic_cast<ID2dAmc *>(newAmc) != nullptr)
+                newAmc->attachUser(nodeId_, D2D);
+            else
+                EV_WARN << "HandoverControllerD2D: candidate serving eNB " << candidateServingNodeId_ << " is not D2D-capable - skipping D2D AMC attach" << endl;
         }
 
         // Schedule the post-handover D2D mode re-selection. In the pre-split core this was

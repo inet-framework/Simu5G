@@ -37,7 +37,6 @@ class D2dAmcHelper
     LteAmc *amc_;
 
     // D2D-specific state (moved out of core LteAmc)
-    McsTable d2dMcsTable_;
     double mcsScaleD2D_ = 0;
     ConnectedUesMap d2dConnectedUe_;
     std::map<MacNodeId, unsigned int> d2dNodeIndex_;

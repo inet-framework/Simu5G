@@ -28,8 +28,6 @@ namespace simu5g {
 class NrAmcD2D : public NrAmc, public ID2dAmc
 {
   protected:
-    NrMcsTable d2dNrMcsTable_;
-
     // holds the D2D-specific AMC state and logic (shared with the LTE variant)
     D2dAmcHelper d2dHelper_;
 

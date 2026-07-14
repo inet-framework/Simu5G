@@ -125,9 +125,6 @@ class LteAmc : public cSimpleModule
         return fType_;
     }
 
-    // CodeRate MCS rescaling
-    virtual void rescaleMcs(double rePerRb, Direction dir = DL);
-
     virtual void pushFeedback(MacNodeId id, Direction dir, LteFeedback fb, GHz carrierFrequency);
     virtual const LteSummaryFeedback& getFeedback(MacNodeId id, Remote antenna, TxMode txMode, const Direction dir, GHz carrierFrequency);
 

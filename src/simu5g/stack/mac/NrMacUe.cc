@@ -12,8 +12,6 @@
 
 #include "simu5g/stack/mac/NrMacUe.h"
 
-#include <inet/common/TimeTag_m.h>
-
 #include "simu5g/stack/mac/buffer/LteMacBuffer.h"
 #include "simu5g/stack/mac/buffer/LteMacQueue.h"
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
@@ -369,7 +367,6 @@ void NrMacUe::macPduMake(MacCid cid)
                     header->setHeaderLength(MAC_HEADER);
                     macPkt->insertAtFront(header);
 
-                    macPkt->addTagIfAbsent<CreationTimeTag>()->setCreationTime(NOW);
                     macPkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
                     macPkt->addTagIfAbsent<UserControlInfo>()->setDestId(destId);
                     macPkt->addTagIfAbsent<UserControlInfo>()->setDirection(dir);
