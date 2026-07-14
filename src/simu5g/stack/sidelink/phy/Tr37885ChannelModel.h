@@ -35,12 +35,13 @@ namespace simu5g {
  * feedback, Uu scenarios) sidelink does not use. Fast fading is not modeled
  * in SL-1.
  *
- * Pathloss constants transcribed from TR 37.885 §6.2.1 (V2V, fc in GHz,
- * d in m):
+ * Pathloss constants per TR 37.885 §6.2.1 Table 6.2.1-1 (V2V, fc in GHz,
+ * d in m; verified against the ns-3 ThreeGppV2v implementation):
  *   highway LOS/NLOSv:  PL = 32.4  + 20.0*log10(d) + 20.0*log10(fc), sigma 3 dB
  *   urban LOS:          PL = 38.77 + 16.7*log10(d) + 18.2*log10(fc), sigma 3 dB
  *   urban NLOS:         PL = 36.85 + 30.0*log10(d) + 18.9*log10(fc), sigma 4 dB
- *   NLOSv extra loss:   A ~ N(max(0, 15*log10(d) - 41), 4.5^2) dB, drawn per frame
+ *   NLOSv extra loss:   A ~ N(5 + max(0, 15*log10(d) - 41), 4^2) dB per frame
+ *                       (blocker-higher-than-one-antenna case)
  */
 class Tr37885ChannelModel : public omnetpp::cSimpleModule, public ISlChannelModel
 {

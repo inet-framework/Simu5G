@@ -106,9 +106,13 @@ double Tr37885ChannelModel::computeAttenuationDb(MacNodeId txId, MacNodeId rxId,
     double attenuation = computePathLossDb(d, fcGHz) + getShadowing(txId, rxId, d) + cableLossDb_;
 
     if (losState_ == NLOSV) {
-        // vehicle blockage extra loss, drawn per frame (blockers move)
-        double mu = std::max(0.0, 15.0 * log10(std::max(d, 1.0)) - 41.0);
-        attenuation += std::max(0.0, normal(mu, 4.5));
+        // vehicle blockage extra loss, drawn per frame (blockers move).
+        // TR 37.885 Table 6.2.1-1 case "blocker higher than one antenna"
+        // (the typical car-antenna case): mu = 5 + max(0, 15log10(d) - 41),
+        // sigma = 4; the both-antennas-below-blocker case (9 / 4.5) and the
+        // per-blocker height mix are not modeled.
+        double mu = 5.0 + std::max(0.0, 15.0 * log10(std::max(d, 1.0)) - 41.0);
+        attenuation += std::max(0.0, normal(mu, 4.0));
     }
 
     return attenuation;
