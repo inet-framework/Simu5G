@@ -31,7 +31,7 @@ class LcgSchedulerD2D : public LcgScheduler
     LcgSchedulerD2D(LteMacUe *mac) : LcgScheduler(mac) {}
 
   protected:
-    bool checkForPendingD2dBsr(Direction grantDir, LteTrafficClass tc) override;
+    bool checkForPendingAdditionalBsr(Direction grantDir, LteTrafficClass tc) override;
 };
 
 } //namespace

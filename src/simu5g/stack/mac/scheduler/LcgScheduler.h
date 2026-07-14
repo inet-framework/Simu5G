@@ -125,7 +125,7 @@ class LcgScheduler
      * D2D connection instead. Default implementation never withholds (no-op);
      * overridden by LcgSchedulerD2D.
      */
-    virtual bool checkForPendingD2dBsr(Direction grantDir, LteTrafficClass tc) { return false; }
+    virtual bool checkForPendingAdditionalBsr(Direction grantDir, LteTrafficClass tc) { return false; }
 };
 
 } //namespace simu5g
