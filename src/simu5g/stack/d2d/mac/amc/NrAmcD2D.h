@@ -33,6 +33,9 @@ class NrAmcD2D : public NrAmc, public ID2dAmc
 
     void initialize(int stage) override;
 
+    // the "D2D" amcMode selects the D2D AMC pilot; other modes fall back to NrAmc
+    AmcPilot *createAmcPilot(const char *amcMode) override;
+
     // D2D branch of the base routing seams
     void printTxParamsForDirection(Direction dir, GHz carrierFrequency) override;
     bool existTxParamsForDirection(MacNodeId id, Direction dir, GHz carrierFrequency) override;
