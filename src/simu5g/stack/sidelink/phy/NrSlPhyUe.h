@@ -24,6 +24,7 @@ class SlBinder;
 class SlRrc;
 class SlAirFrame;
 class ISlChannelModel;
+class NrSlMacUe;
 
 /**
  * Sidelink PHY of a UE: PSCCH+PSSCH transmission as SlAirFrame fan-out to all
@@ -43,6 +44,7 @@ class NrSlPhyUe : public LtePhyBase
     SlBinder *slBinder_ = nullptr;
     SlRrc *slRrc_ = nullptr;
     ISlChannelModel *slChannelModel_ = nullptr;
+    NrSlMacUe *slMac_ = nullptr;   // sensing feed; null when a custom SL MAC is swapped in
 
     SlSlotGrid slotGrid_;
     GHz carrierFrequency_;

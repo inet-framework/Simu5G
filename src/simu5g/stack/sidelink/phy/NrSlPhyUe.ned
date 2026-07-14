@@ -26,6 +26,7 @@ simple NrSlPhyUe extends LtePhyBase
 
         string slRrcModule = default("^.slRrc");
         string slChannelModelModule = default("^.slChannelModel");
+        string slMacModule = default("^.slMac");
 
         // fan-out pruning: skip receivers farther than this; <=0 disables the check
         double slTxRange @unit(m) = default(-1m);

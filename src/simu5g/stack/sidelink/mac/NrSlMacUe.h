@@ -14,6 +14,8 @@
 
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/sidelink/common/SlCommon.h"
+#include "simu5g/stack/sidelink/mac/SlMode2Selector.h"
+#include "simu5g/stack/sidelink/mac/SlSensingDatabase.h"
 #include "simu5g/stack/sidelink/mac/SlSlotGrid.h"
 
 namespace simu5g {
@@ -28,24 +30,50 @@ class SlBinder;
  * created; TX-slot self-events are scheduled at absolute slot times only
  * while there is backlogged data and an active grant.
  *
- * Phase SL-1 / WP-C scope: a static preconfigured periodic grant (slot offset
- * + subchannels from NED parameters); the mode-2 sensing-based selector
- * replaces it in WP-E. No HARQ (WP-F), one codeword, one SL carrier.
+ * Resource allocation modes (resourceAllocationMode parameter):
+ *  - "mode2":  TS 38.321 §5.22 sensing-based selection (SlMode2Selector fed
+ *              by the SlSensingDatabase), SPS with reselection counter and
+ *              probResourceKeep
+ *  - "random": uniform random selection over the same window, no sensing --
+ *              the community-standard baseline for sensing-gain comparisons
+ *  - "static": fixed preconfigured periodic grant per UE (the WP-C pipe;
+ *              slot offset + subchannels from NED parameters)
+ *
+ * No HARQ (WP-F), one codeword, one SL carrier, single-slot resources.
  */
 class NrSlMacUe : public LteMacBase
 {
   protected:
+    /// ISlRandom adapter over the module RNG
+    class ModuleRandom : public ISlRandom {
+        cSimpleModule *module_;
+      public:
+        explicit ModuleRandom(cSimpleModule *module) : module_(module) {}
+        double uniform01() override { return module_->uniform(0, 1); }
+        int intuniform(int a, int b) override { return module_->intuniform(a, b); }
+    };
+
+    enum AllocationMode { STATIC, RANDOM, MODE2 };
+
     SlRrc *slRrc_ = nullptr;
     SlBinder *slBinder_ = nullptr;
 
     SlSlotGrid slotGrid_;
     GHz carrierFrequency_;
 
-    // static grant (WP-C): replaced by SlMode2Selector in WP-E
+    AllocationMode allocationMode_ = MODE2;
+    ModuleRandom random_{this};
+    SlSensingDatabase sensingDb_;
+    SlMode2Selector *selector_ = nullptr;
+    double probResourceKeep_ = 0;
+
     SlGrant grant_;
     bool grantActive_ = false;
-    int staticGrantSlotOffset_ = 0;
-    int tbSize_ = 0;              // transport block size per TX opportunity [B] (WP-C stub for MCS/TBS)
+    int staticGrantSlotOffset_ = 0;   // static mode only
+    int grantNumSubchannels_ = 1;     // L_subCH of selected resources
+    int periodSlots_ = 0;             // resource reservation period [slots]
+    int periodMs_ = 0;
+    int tbSize_ = 0;                  // transport block size per TX opportunity [B] (MCS/TBS stub)
 
     cMessage *txSlotEvent_ = nullptr;
     int requestedSdus_ = 0;
@@ -61,8 +89,12 @@ class NrSlMacUe : public LteMacBase
     void macPduUnmake(cPacket *pkt) override;
     void updateUserTxParam(cPacket *pkt) override {}
 
-    /// activate the static grant and/or make sure a TX-slot event is scheduled
+    /// activate a grant (per the allocation mode) and/or make sure a TX-slot
+    /// event is scheduled
     void ensureTxScheduled();
+
+    /// (re)select the grant resources per the allocation mode
+    void selectGrant();
 
     /// TX-slot event: request one RLC PDU per backlogged SL connection
     void handleTxSlot();
@@ -72,6 +104,9 @@ class NrSlMacUe : public LteMacBase
 
   public:
     ~NrSlMacUe() override;
+
+    /// sensing input from slPhy: a decoded SCI with its measured SL-RSRP
+    virtual void onSciDecoded(const SlSensingEntry& entry);
 };
 
 } // namespace simu5g

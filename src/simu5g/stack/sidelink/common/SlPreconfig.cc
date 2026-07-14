@@ -33,6 +33,8 @@ void SlPreconfig::loadFromJson(const cValueMap *map)
         slotBitmap = map->get("slotBitmap").stdstringValue();
 
     // mode-2 selection parameters
+    if (map->containsKey("t0"))
+        t0Ms = (int)map->get("t0").doubleValueInUnit("ms");
     if (map->containsKey("t1"))
         t1 = (int)map->get("t1").intValue();
     if (map->containsKey("t2"))

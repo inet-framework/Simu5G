@@ -16,6 +16,7 @@
 #include "simu5g/common/InitStages.h"
 #include "simu5g/stack/sidelink/common/SlAirFrame_m.h"
 #include "simu5g/stack/sidelink/common/SlBinder.h"
+#include "simu5g/stack/sidelink/mac/NrSlMacUe.h"
 #include "simu5g/stack/sidelink/phy/ISlChannelModel.h"
 #include "simu5g/stack/sidelink/rrc/SlRrc.h"
 
@@ -72,6 +73,9 @@ void NrSlPhyUe::initialize(int stage)
         slChannelModel_ = dynamic_cast<ISlChannelModel *>(getModuleByPath(par("slChannelModelModule").stringValue()));
         if (slChannelModel_ == nullptr)
             throw cRuntimeError("NrSlPhyUe: module '%s' does not implement ISlChannelModel", par("slChannelModelModule").stringValue());
+
+        // sensing feed target (tolerates a custom SL MAC type: no feed then)
+        slMac_ = dynamic_cast<NrSlMacUe *>(getModuleByPath(par("slMacModule").stringValue()));
 
         WATCH(numFramesHalfDuplexDropped_);
         WATCH(numSciLost_);
@@ -215,7 +219,17 @@ void NrSlPhyUe::decodeStoredFrames()
             continue;
         }
 
-        // (WP-E hook: the decoded SCI + RSRP feed the sensing database here)
+        // sensing (WP-E): every decoded SCI feeds the MAC's sensing database
+        if (slMac_ != nullptr) {
+            SlSensingEntry entry;
+            entry.slot = info.getSlotIndex();
+            entry.firstSubchannel = info.getFirstSubchannel();
+            entry.numSubchannels = info.getNumSubchannels();
+            entry.rsrpDbm = rx.rsrpDbm;
+            entry.reservationPeriodSlots = slotGrid_.slotsPerMs(info.getReservationPeriodMs());
+            entry.srcNodeId = info.getSrcNodeId();
+            slMac_->onSciDecoded(entry);
+        }
 
         if (!isForUs(frame)) {
             EV << NOW << " NrSlPhyUe::decodeStoredFrames - frame for dstPid " << info.getDstPid()

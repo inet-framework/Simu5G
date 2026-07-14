@@ -35,6 +35,7 @@ Define_Module(NrSlMacUe);
 NrSlMacUe::~NrSlMacUe()
 {
     cancelAndDelete(txSlotEvent_);
+    delete selector_;
 }
 
 void NrSlMacUe::initialize(int stage)
@@ -54,8 +55,37 @@ void NrSlMacUe::initialize(int stage)
         slotGrid_ = SlSlotGrid(cfg.getSlotDuration());
         carrierFrequency_ = GHz(cfg.carrierFrequencyGHz);
 
+        std::string mode = par("resourceAllocationMode").stdstringValue();
+        if (mode == "static")
+            allocationMode_ = STATIC;
+        else if (mode == "random")
+            allocationMode_ = RANDOM;
+        else if (mode == "mode2")
+            allocationMode_ = MODE2;
+        else
+            throw cRuntimeError("NrSlMacUe: unknown resourceAllocationMode '%s' (expected mode2/random/static)", mode.c_str());
+
         staticGrantSlotOffset_ = par("staticGrantSlotOffset");
+        grantNumSubchannels_ = par("grantNumSubchannels");
+        probResourceKeep_ = par("probResourceKeep");
         tbSize_ = par("tbSize");
+
+        periodMs_ = cfg.reservationPeriodsMs.empty() ? 100 : cfg.reservationPeriodsMs.front();
+        periodSlots_ = slotGrid_.slotsPerMs(periodMs_);
+        if (periodSlots_ <= 0)
+            throw cRuntimeError("NrSlMacUe: reservation period is shorter than one slot");
+
+        // sensing database + selector (used by mode2; random uses the selector
+        // with an always-empty database)
+        sensingDb_ = SlSensingDatabase(slotGrid_.slotsPerMs(cfg.t0Ms));
+        SlMode2Selector::PoolConfig pool;
+        pool.numSubchannels = cfg.numSubchannels;
+        pool.t1 = cfg.t1;
+        pool.t2 = cfg.t2;
+        pool.rsrpThresholdDbm = cfg.rsrpThresholdDbm;
+        for (int p : cfg.reservationPeriodsMs)
+            pool.allowedPeriodsSlots.push_back(slotGrid_.slotsPerMs(p));
+        selector_ = new SlMode2Selector(pool, &random_);
 
         txSlotEvent_ = new cMessage("slTxSlot");
     }
@@ -77,25 +107,50 @@ void NrSlMacUe::handleSelfMessage()
     throw cRuntimeError("NrSlMacUe::handleSelfMessage - unreachable: no ttiTick_ exists in the SL MAC");
 }
 
-void NrSlMacUe::ensureTxScheduled()
+void NrSlMacUe::selectGrant()
 {
-    if (!grantActive_) {
-        // WP-C static grant: fixed periodic resources from the preconfiguration
-        const SlPreconfig& cfg = slRrc_->getPreconfig();
-        grant_.periodSlots = slotGrid_.slotsPerMs(cfg.reservationPeriodsMs.empty() ? 100 : cfg.reservationPeriodsMs.front());
-        if (grant_.periodSlots <= 0)
-            throw cRuntimeError("NrSlMacUe: reservation period is shorter than one slot");
+    grant_.periodSlots = periodSlots_;
+    grant_.mcs = par("grantMcs");
+    grant_.blindRetx = 0;
+
+    if (allocationMode_ == STATIC) {
+        // WP-C static grant: fixed periodic resources from NED parameters
         grant_.firstSlot = staticGrantSlotOffset_;
         grant_.firstSubchannel = par("staticGrantFirstSubchannel");
-        grant_.numSubchannels = par("staticGrantNumSubchannels");
-        grant_.mcs = par("staticGrantMcs");
-        grant_.reselectionCounter = 0;  // static grant, never reselected
-        grant_.blindRetx = 0;
-        grantActive_ = true;
-        EV << NOW << " NrSlMacUe::ensureTxScheduled - static grant activated: offset=" << grant_.firstSlot
+        grant_.numSubchannels = grantNumSubchannels_;
+        grant_.reselectionCounter = 0;  // never reselected
+        EV << NOW << " NrSlMacUe::selectGrant - static grant: offset=" << grant_.firstSlot
            << " period=" << grant_.periodSlots << " slots, subchannels [" << grant_.firstSubchannel
            << ".." << grant_.firstSubchannel + grant_.numSubchannels - 1 << "]" << endl;
     }
+    else {
+        // mode 2 (TS 38.321 §5.22): sensing-based selection; the random
+        // baseline uses the same selector with an empty sensing database
+        SlotIndex now = slotGrid_.slotIndexAt(NOW);
+        static const SlSensingDatabase emptyDb(0);
+        const SlSensingDatabase& db = (allocationMode_ == MODE2) ? sensingDb_ : emptyDb;
+
+        SlMode2Selector::Selection sel = selector_->select(now, grantNumSubchannels_, periodSlots_, periodMs_, db);
+        grant_.firstSlot = sel.slot;
+        grant_.firstSubchannel = sel.firstSubchannel;
+        grant_.numSubchannels = grantNumSubchannels_;
+        grant_.reselectionCounter = sel.reselectionCounter;
+
+        EV << NOW << " NrSlMacUe::selectGrant - " << (allocationMode_ == MODE2 ? "mode-2" : "random")
+           << " selection: slot " << grant_.firstSlot << ", subchannels [" << grant_.firstSubchannel
+           << ".." << grant_.firstSubchannel + grant_.numSubchannels - 1 << "], period "
+           << grant_.periodSlots << " slots, RC=" << grant_.reselectionCounter
+           << " (candidates " << sel.numCandidates << ", survivors " << sel.numSurvivors
+           << ", final threshold " << sel.finalThresholdDbm << " dBm)" << endl;
+    }
+
+    grantActive_ = true;
+}
+
+void NrSlMacUe::ensureTxScheduled()
+{
+    if (!grantActive_)
+        selectGrant();
 
     if (!txSlotEvent_->isScheduled()) {
         SlotIndex now = slotGrid_.slotIndexAt(NOW);
@@ -108,7 +163,8 @@ void NrSlMacUe::ensureTxScheduled()
 
 void NrSlMacUe::handleTxSlot()
 {
-    EV << NOW << " NrSlMacUe::handleTxSlot - TX opportunity at slot " << slotGrid_.slotIndexAt(NOW) << endl;
+    SlotIndex slot = slotGrid_.slotIndexAt(NOW);
+    EV << NOW << " NrSlMacUe::handleTxSlot - TX opportunity at slot " << slot << endl;
 
     ASSERT(requestedSdus_ == 0);
 
@@ -138,6 +194,32 @@ void NrSlMacUe::handleTxSlot()
     }
 
     // if nothing was requested, the event goes dormant; new data re-arms it
+    if (requestedSdus_ == 0)
+        return;
+
+    if (allocationMode_ == MODE2) {
+        // half-duplex: this slot cannot be sensed (conservative exclusion input)
+        sensingDb_.recordUnmonitoredSlot(slot);
+    }
+
+    if (allocationMode_ != STATIC && grant_.reselectionCounter > 0) {
+        // SPS bookkeeping (TS 38.321 §5.22.1.1): the counter decrements per
+        // transmission; on expiry the resource is kept with probResourceKeep
+        // (fresh counter) or released for reselection
+        if (--grant_.reselectionCounter == 0) {
+            if (random_.uniform01() < probResourceKeep_) {
+                grant_.reselectionCounter = selector_->drawReselectionCounter(periodMs_);
+                EV << NOW << " NrSlMacUe::handleTxSlot - counter expired, resource KEPT (probResourceKeep), new RC="
+                   << grant_.reselectionCounter << endl;
+            }
+            else {
+                EV << NOW << " NrSlMacUe::handleTxSlot - counter expired, resource RELEASED for reselection" << endl;
+                grantActive_ = false;
+                // the pending TX of this slot still uses the old resources;
+                // macPduMake() re-arms via ensureTxScheduled() -> reselection
+            }
+        }
+    }
 }
 
 void NrSlMacUe::drainVirtualBuffer(LteMacBuffer *buffer, int64_t bytes)
@@ -209,7 +291,6 @@ bool NrSlMacUe::bufferizePacket(cPacket *cpkt)
 
 void NrSlMacUe::macPduMake(MacCid cid)
 {
-    const SlPreconfig& cfg = slRrc_->getPreconfig();
     SlotIndex slot = slotGrid_.slotIndexAt(NOW);
 
     for (auto& [destCid, connInfo] : connDescOut_) {
@@ -236,7 +317,7 @@ void NrSlMacUe::macPduMake(MacCid cid)
         slInfo->setFirstSubchannel(grant_.firstSubchannel);
         slInfo->setNumSubchannels(grant_.numSubchannels);
         slInfo->setMcs(grant_.mcs);
-        slInfo->setReservationPeriodMs(cfg.reservationPeriodsMs.empty() ? 0 : cfg.reservationPeriodsMs.front());
+        slInfo->setReservationPeriodMs(periodMs_);
 
         macPkt->setTimestamp(NOW);
 
@@ -262,6 +343,13 @@ void NrSlMacUe::macPduMake(MacCid cid)
             break;
         }
     }
+}
+
+void NrSlMacUe::onSciDecoded(const SlSensingEntry& entry)
+{
+    Enter_Method_Silent("onSciDecoded()");
+    if (allocationMode_ == MODE2)
+        sensingDb_.recordSci(entry);
 }
 
 void NrSlMacUe::fromPhy(cPacket *pktAux)

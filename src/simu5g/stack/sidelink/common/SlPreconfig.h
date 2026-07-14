@@ -52,6 +52,7 @@ class SlPreconfig
     std::string slotBitmap = "all";        // pool slot bitmap; "all" = every slot belongs to the pool
 
     // --- mode-2 selection parameters (consumed from WP-E on) ---
+    int t0Ms = 1000;                       // sensing window length [ms] (TS 38.214: 1000 or 100)
     int t1 = 2;                            // selection window start offset [slots]
     int t2 = 20;                           // selection window end offset [slots]
     double rsrpThresholdDbm = -128;        // initial exclusion threshold

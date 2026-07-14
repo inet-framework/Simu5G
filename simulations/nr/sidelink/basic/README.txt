@@ -24,7 +24,7 @@ Configs:
   from the SL transmission map, PSCCH threshold decode, PSSCH BLER decode)
   with SL-RSRP/SINR/CBR/frame-loss statistics.
 
-  PER-vs-distance validation sweep (shadowing off, staticGrantMcs=12 i.e.
+  PER-vs-distance validation sweep (shadowing off, grantMcs=12 i.e.
   CQI 12 for the BLER lookup, 26 dBm, 10-PRB subchannel, mu=1):
 
      dist [m]   50   400  500  600  700  800  900  1400
@@ -33,12 +33,12 @@ Configs:
   Loss onset ~600 m matches the expected SINR = 77.6 - 20log10(d) dB
   (~22 dB at 600 m) against the per-CQI-12 BLER curve with the framework's
   per-PRB success-probability convention ((1-BLER)^numPRBs, as on Uu).
-  At the default staticGrantMcs=6 the range is correspondingly longer.
+  At the default grantMcs=6 the range is correspondingly longer.
   Sweep command:
     for d in ...; do simu5g -u Cmdenv -c Broadcast-Tr37885 \
       --'*.ue[1].mobility.initialX'=$((290+d))m \
       --'*.ue[*].cellularNic.slChannelModel.shadowing'=false \
-      --'*.ue[*].cellularNic.slMac.staticGrantMcs'=12 omnetpp.ini; done
+      --'*.ue[*].cellularNic.slMac.grantMcs'=12 omnetpp.ini; done
 
 See the sidelink implementation plan for the WP-E..WP-G roadmap (mode-2
 sensing-based resource selection, blind HARQ, PRR/PIR statistics, highway
