@@ -38,14 +38,14 @@ network SidelinkHighway
 
         // the road: asphalt body, white edge lines, dashed lane separators
         // and the center divider, all arcs of the mobility circle
-        @figure[road](type=arc; bounds=-3000,150,8000,8000; startAngle=72; endAngle=108; lineColor=#4a4a4a; lineWidth=26; zoomLineWidth=true);
-        @figure[edgeS](type=arc; bounds=-2988,162,7976,7976; startAngle=72; endAngle=108; lineColor=white; lineWidth=0.7; zoomLineWidth=true);
-        @figure[laneS1](type=arc; bounds=-2992,158,7984,7984; startAngle=72; endAngle=108; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
-        @figure[laneS2](type=arc; bounds=-2996,154,7992,7992; startAngle=72; endAngle=108; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
-        @figure[center](type=arc; bounds=-3000,150,8000,8000; startAngle=72; endAngle=108; lineColor=#e8c860; lineWidth=1; zoomLineWidth=true);
-        @figure[laneN1](type=arc; bounds=-3004,146,8008,8008; startAngle=72; endAngle=108; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
-        @figure[laneN2](type=arc; bounds=-3008,142,8016,8016; startAngle=72; endAngle=108; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
-        @figure[edgeN](type=arc; bounds=-3012,138,8024,8024; startAngle=72; endAngle=108; lineColor=white; lineWidth=0.7; zoomLineWidth=true);
+        @figure[road](type=arc; bounds=-3000,150,8000,8000; startAngle=72; endAngle=108; zIndex=-1; lineColor=#4a4a4a; lineWidth=26; zoomLineWidth=true);
+        @figure[edgeS](type=arc; bounds=-2988,162,7976,7976; startAngle=72; endAngle=108; zIndex=-1; lineColor=white; lineWidth=0.7; zoomLineWidth=true);
+        @figure[laneS1](type=arc; bounds=-2992,158,7984,7984; startAngle=72; endAngle=108; zIndex=-1; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
+        @figure[laneS2](type=arc; bounds=-2996,154,7992,7992; startAngle=72; endAngle=108; zIndex=-1; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
+        @figure[center](type=arc; bounds=-3000,150,8000,8000; startAngle=72; endAngle=108; zIndex=-1; lineColor=#e8c860; lineWidth=1; zoomLineWidth=true);
+        @figure[laneN1](type=arc; bounds=-3004,146,8008,8008; startAngle=72; endAngle=108; zIndex=-1; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
+        @figure[laneN2](type=arc; bounds=-3008,142,8016,8016; startAngle=72; endAngle=108; zIndex=-1; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
+        @figure[edgeN](type=arc; bounds=-3012,138,8024,8024; startAngle=72; endAngle=108; zIndex=-1; lineColor=white; lineWidth=0.7; zoomLineWidth=true);
 
     submodules:
         channelControl: LteChannelControl {
