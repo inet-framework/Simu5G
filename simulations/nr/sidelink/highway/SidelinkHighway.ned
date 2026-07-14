@@ -24,11 +24,28 @@ import simu5g.world.radio.LteChannelControl;
 // out-of-coverage sidelink UEs broadcasting CAM-style periodic messages;
 // the slStatsCollector submodule records PRR/PIR per distance bin.
 //
+// The highway is a gently curved arc of a circle of radius 4000 m centered
+// at (1000, 4150): vehicles drive on it with ~CircleMobility (lane l uses
+// radius 3990+4l; the inner and outer three lanes carry the two
+// directions), and the road drawing below uses arcs of the same circle.
+// A vehicle at mobility angle theta sits at figure angle 90deg-(theta-270deg).
+//
 network SidelinkHighway
 {
     parameters:
         int numUes = default(170);
-        @display("i=block/network2;bgb=600,400");
+        @display("i=block/network2;bgb=2300,400,#b8d4a8");
+
+        // the road: asphalt body, white edge lines, dashed lane separators
+        // and the center divider, all arcs of the mobility circle
+        @figure[road](type=arc; bounds=-3000,150,8000,8000; startAngle=72; endAngle=108; lineColor=#4a4a4a; lineWidth=26; zoomLineWidth=true);
+        @figure[edgeS](type=arc; bounds=-2988,162,7976,7976; startAngle=72; endAngle=108; lineColor=white; lineWidth=0.7; zoomLineWidth=true);
+        @figure[laneS1](type=arc; bounds=-2992,158,7984,7984; startAngle=72; endAngle=108; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
+        @figure[laneS2](type=arc; bounds=-2996,154,7992,7992; startAngle=72; endAngle=108; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
+        @figure[center](type=arc; bounds=-3000,150,8000,8000; startAngle=72; endAngle=108; lineColor=#e8c860; lineWidth=1; zoomLineWidth=true);
+        @figure[laneN1](type=arc; bounds=-3004,146,8008,8008; startAngle=72; endAngle=108; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
+        @figure[laneN2](type=arc; bounds=-3008,142,8016,8016; startAngle=72; endAngle=108; lineColor=white; lineStyle=dashed; lineWidth=0.5; zoomLineWidth=true);
+        @figure[edgeN](type=arc; bounds=-3012,138,8024,8024; startAngle=72; endAngle=108; lineColor=white; lineWidth=0.7; zoomLineWidth=true);
 
     submodules:
         channelControl: LteChannelControl {

@@ -30,13 +30,22 @@ Configs:
 
 PRR-vs-distance results (Highway config, 10s, seed 0, release build):
 
-    d [m]    0-20  60-80  100-120  200-220  300-320  400-420  480-500
-    PRR      0.993 0.985  0.986    0.977    0.968    0.969    0.967
+    d [m]    0-20  100-120  200-220  300-320  400-420  480-500
+    PRR      0.993 0.986    0.983    0.978    0.975    0.972
 
-  PRR decreases monotonically from 0.993 to ~0.967 over 0..500 m
-  (total 0.977); PIR stays at ~100.5-101.5 ms, i.e. at the CAM period, as
+  PRR decreases monotonically from 0.993 to ~0.972 over 0..500 m
+  (total 0.981); PIR stays at ~100.7-102.3 ms, i.e. at the CAM period, as
   expected for near-unity PRR. Losses are dominated by resource collisions
   and half-duplex, not by the channel (LOS SINR is high throughout 500 m).
+
+  Ready-made analysis charts live in highway.anf (open in the IDE, or
+  export with:
+    opp_charttool imageexport -p inet-4.5.4=$INET_ROOT simu5G=$SIMU5G_ROOT \
+        -f png -d doc/media highway.anf
+  ): PRR/PIR vs distance, per-UE CBR over time, and the SL SINR
+  distribution. Sequence charts of the PC5 message flows are rendered from
+  recorded eventlogs by doc/make-sequence-charts.py. See doc/showcase.md
+  for a guided tour.
 
   Compared to published 5G-LENA NR-V2X mode-2 highway results (which are
   typically ~0.85-0.95 at 300-500 m for comparable densities), this curve
