@@ -12,7 +12,7 @@
 
 #include "simu5g/stack/d2d/rlc/UmTxEntityD2D.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
-#include "simu5g/stack/rrc/D2DModeController.h"
+#include "simu5g/stack/d2d/rrc/D2DModeController.h"
 
 namespace simu5g {
 

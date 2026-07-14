@@ -1,0 +1,78 @@
+//
+//                  Simu5G
+//
+// Copyright (C) 2012-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis et al. (University of Pisa)
+// Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea et al. (University of Pisa)
+//
+// This file is part of a software released under the license included in file
+// "license.pdf". Please read LICENSE and README files before using it.
+// The above files and the present reference are part of the software itself,
+// and cannot be removed from it.
+//
+
+#ifndef _LTE_LTERXPDCPENTITY_H_
+#define _LTE_LTERXPDCPENTITY_H_
+
+#include "simu5g/common/LteCommon.h"
+#include "simu5g/common/LteControlInfo.h"
+#include "simu5g/stack/pdcp/LtePdcp.h"
+
+namespace simu5g {
+
+class LtePdcp;
+class LtePdcpHeader;
+
+using namespace inet;
+
+/**
+ * @class LteRxPdcpEntity
+ * @brief Entity for PDCP Layer
+ *
+ * This is the PDCP RX entity of the LTE Stack.
+ */
+class LteRxPdcpEntity : public cSimpleModule
+{
+  protected:
+    // reference to the PDCP layer
+    LtePdcp *pdcp_ = nullptr;
+
+    // whether headers are compressed
+    bool headerCompressionEnabled_;
+
+<<<<<<< HEAD
+=======
+    // DRB ID for this connection
+    DrbId drbId_;
+
+>>>>>>> c075ca57 (lcid -> drbId in FlowControlInfo)
+    // handler for PDCP SDU
+    virtual void handlePdcpSdu(Packet *pkt, unsigned int sequenceNumber);
+
+    virtual void decompressHeader(inet::Packet *pkt);
+
+    bool isCompressionEnabled() { return headerCompressionEnabled_; }
+
+  public:
+
+
+    void initialize(int stage) override;
+    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
+
+    // obtain the IP datagram from the PDCP PDU
+    void handlePacketFromLowerLayer(Packet *pkt);
+
+    /*
+     * @author Alessandro Noferi
+     *
+     * This method is used with NrRxPdcpEntity that has
+     * an SDU buffer. In particular, it is used when the
+     * RNI service requests the number of active users
+     * in UL, that also counts buffered UL data in PDCP.
+     */
+    virtual bool isEmpty() const { return true; }
+};
+
+} //namespace
+
+#endif
+

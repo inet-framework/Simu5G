@@ -1,7 +1,7 @@
 //
 //                  Simu5G
 //
-// Copyright (C) 2019-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis et al. (University of Pisa)
+// Copyright (C) 2012-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis et al. (University of Pisa)
 // Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea et al. (University of Pisa)
 //
 // This file is part of a software released under the license included in file
@@ -10,10 +10,10 @@
 // and cannot be removed from it.
 //
 
-#ifndef _NRMACGNBD2D_H_
-#define _NRMACGNBD2D_H_
+#ifndef _LTE_LTEMACENBD2D_H_
+#define _LTE_LTEMACENBD2D_H_
 
-#include "simu5g/stack/mac/NrMacGnb.h"
+#include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/mac/buffer/LteMacBuffer.h"
 #include "simu5g/stack/d2d/mac/harq/LteHarqBufferMirrorD2D.h"
 #include "simu5g/stack/d2d/rrc/D2DModeSwitchNotification_m.h"
@@ -28,18 +28,10 @@ using namespace omnetpp;
 
 class ConflictGraph;
 
-/**
- * NR-gNB MAC with D2D support.
- *
- * This is the NR counterpart of ~LteMacEnbD2D, and its sibling implementation:
- * the D2D-specific state and heavy logic already live in the shared
- * D2dEnbMacHelper, so the two leaves only duplicate the thin dispatch/glue
- * overrides. Keep the two in sync.
- */
-class NrMacGnbD2D : public NrMacGnb, public ID2dMacEnb
+class LteMacEnbD2D : public LteMacEnb, public ID2dMacEnb
 {
   protected:
-    // holds the D2D-specific eNB-MAC state and logic (shared with the LTE variant)
+    // holds the D2D-specific eNB-MAC state and logic (shared with the NR variant)
     D2dEnbMacHelper d2dEnbHelper_;
 
     /**
@@ -74,7 +66,7 @@ class NrMacGnbD2D : public NrMacGnb, public ID2dMacEnb
 
   public:
 
-    NrMacGnbD2D();
+    LteMacEnbD2D();
 
     /**
      * Reads MAC parameters for ue and performs initialization.

@@ -17,7 +17,7 @@
 
 // NOTE: AMC Pilots header file inclusions must go here
 #include "simu5g/stack/mac/amc/AmcPilotAuto.h"
-#include "simu5g/stack/mac/amc/AmcPilotD2D.h"
+#include "simu5g/stack/d2d/mac/amc/AmcPilotD2D.h"
 
 using namespace omnetpp;
 

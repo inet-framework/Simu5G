@@ -22,7 +22,7 @@
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferTx.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
-#include "simu5g/stack/rrc/D2DModeSwitchNotification_m.h"
+#include "simu5g/stack/d2d/rrc/D2DModeSwitchNotification_m.h"
 
 namespace simu5g {
 

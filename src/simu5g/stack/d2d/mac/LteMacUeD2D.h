@@ -1,7 +1,7 @@
 //
 //                  Simu5G
 //
-// Copyright (C) 2019-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis et al. (University of Pisa)
+// Copyright (C) 2012-2021 Giovanni Nardini, Giovanni Stea, Antonio Virdis et al. (University of Pisa)
 // Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea et al. (University of Pisa)
 //
 // This file is part of a software released under the license included in file
@@ -10,13 +10,10 @@
 // and cannot be removed from it.
 //
 
-// NOTE: the header guard intentionally differs from the class name because
-// NrMacUe.h (included below) already claims _NRMACUE_H_ (and historically
-// _NRMACUED2D_H_).
-#ifndef _D2D_NRMACUED2D_H_
-#define _D2D_NRMACUED2D_H_
+#ifndef _LTE_LTEMACUED2D_H_
+#define _LTE_LTEMACUED2D_H_
 
-#include "simu5g/stack/mac/NrMacUe.h"
+#include "simu5g/stack/mac/LteMacUe.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/d2d/mac/ID2dMacUe.h"
 #include "simu5g/stack/d2d/mac/D2dUeMacHelper.h"
@@ -26,27 +23,24 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-/**
- * NR-UE MAC with D2D support.
- *
- * Mirrors ~LteMacUeD2D on top of the NR (numerology-aware) ~NrMacUe base:
- * the D2D-specific state and logic live in the shared D2dUeMacHelper, while
- * the numerology-aware handleSelfMessage()/macPduMake() carry the D2D deltas
- * that used to live directly in NrMacUe.
- */
-class NrMacUeD2D : public NrMacUe, public ID2dMacUe
+class LteSchedulingGrant;
+class LteSchedulerUeUl;
+class Binder;
+
+class LteMacUeD2D : public LteMacUe, public ID2dMacUe
 {
 
   protected:
 
-    // holds the D2D-specific UE-MAC state and logic (shared with the LTE variant).
-    // NOTE: the mode-switch-notification signal ID passed to the helper is interned
-    // at RUNTIME in the constructor (not via a static registerSignal() in this TU):
-    // the name is already registered by LteMacUeD2D.cc's static at its original
-    // position, and a static in a new translation unit would perturb the global
-    // signal registration order -- and thus the sz fingerprint -- link-order
-    // dependently.
+    // signal registered here (not in the helper) to keep the global signal
+    // registration order -- and thus the sz fingerprint -- unchanged
+    static simsignal_t rcvdD2DModeSwitchNotificationSignal_;
+
+    // holds the D2D-specific UE-MAC state and logic (shared with the NR variant)
     D2dUeMacHelper d2dUeHelper_;
+
+    // flag for empty schedule list (true when no carriers have been scheduled)
+    bool emptyScheduleList_;
 
     /**
      * Reads MAC parameters for the UE and performs initialization.
@@ -97,7 +91,15 @@ class NrMacUeD2D : public NrMacUe, public ID2dMacUe
     LcgScheduler *createLcgScheduler() override;
 
   public:
-    NrMacUeD2D();
+    LteMacUeD2D();
+
+    virtual void triggerBsr(MacCid cid)
+    {
+        if (connDescOut_[cid].flowInfo.getDirection() == D2D_MULTI)
+            d2dUeHelper_.setBsrD2DMulticastTriggered(true);
+        else
+            bsrTriggered_ = true;
+    }
 
     void doHandover(MacNodeId targetEnb) override;
 };

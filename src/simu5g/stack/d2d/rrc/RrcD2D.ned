@@ -12,8 +12,6 @@
 package simu5g.stack.d2d.rrc;
 
 import simu5g.stack.rrc.Rrc;
-import simu5g.stack.rrc.D2DModeController;
-import simu5g.stack.rrc.ID2DModeSelection;
 
 //
 // D2D-capable variant of the ~Rrc layer. It adds the D2D mode controller

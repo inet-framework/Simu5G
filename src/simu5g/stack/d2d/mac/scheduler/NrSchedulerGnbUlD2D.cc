@@ -14,8 +14,8 @@
 #include "simu5g/common/InitStages.h"
 #include "simu5g/stack/mac/NrMacGnb.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
-#include "simu5g/stack/mac/buffer/harq_d2d/LteHarqBufferMirrorD2D.h"
-#include "simu5g/stack/mac/scheduling_modules/LteAllocatorBestFit.h"
+#include "simu5g/stack/d2d/mac/harq/LteHarqBufferMirrorD2D.h"
+#include "simu5g/stack/d2d/mac/scheduler/LteAllocatorBestFit.h"
 
 namespace simu5g {
 

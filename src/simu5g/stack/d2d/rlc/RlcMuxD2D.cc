@@ -14,7 +14,7 @@
 #include "simu5g/stack/d2d/rlc/UmTxEntityD2D.h"
 #include "simu5g/stack/d2d/rlc/UmRxEntityD2D.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
-#include "simu5g/stack/rrc/D2DModeSwitchNotification_m.h"
+#include "simu5g/stack/d2d/rrc/D2DModeSwitchNotification_m.h"
 
 namespace simu5g {
 
