@@ -223,12 +223,15 @@ void LteMacEnb::macSduRequest()
 
             // send the request message to the upper layer
             auto pkt = new Packet("LteMacSduRequest");
-            auto macSduRequest = makeShared<LteMacSduRequest>();
+            auto macSduRequest = makeShared<LteMacSduRequest>(); //TODO this should be a tag on a Message, not a packet
             macSduRequest->setUeId(destId);
             macSduRequest->setChunkLength(b(1)); // TODO: should be 0
             macSduRequest->setUeId(destId);
             macSduRequest->setLcid(destCid.getLcid());
-            macSduRequest->setSduSize(allocatedBytes - MAC_HEADER);    // do not consider MAC header size
+            // discount MAC header size from grant; clamp to zero if grant is smaller than MAC header
+            //TODO maybe simply skip sending if grant<=MAC_HEADER (i.e. no room for SDU)
+            unsigned int sduSize = (allocatedBytes > MAC_HEADER) ? (allocatedBytes - MAC_HEADER) : 0;
+            macSduRequest->setSduSize(sduSize);
             pkt->insertAtFront(macSduRequest);
             if (queueSize_ != 0 && queueSize_ < macSduRequest->getSduSize()) {
                 throw cRuntimeError("LteMacEnb::macSduRequest: configured queueSize too low - requested SDU will not fit in queue!"
