@@ -14,6 +14,7 @@
 #include <inet/common/InitStages.h>
 
 #include "simu5g/stack/sidelink/common/SlAirFrame_m.h"
+#include "simu5g/stack/sidelink/mac/SlMcsTable.h"
 
 namespace simu5g {
 
@@ -176,11 +177,12 @@ SlReceptionResult Tr37885ChannelModel::computeReception(const SlAirFrameInfo& in
     result.sciDecoded = (result.sinrDb >= pscchSinrThresholdDb_);
 
     if (result.sciDecoded) {
-        // PSSCH: per-CQI BLER curves; the grant's mcs field is used as the CQI
-        // index of the lookup (proper MCS->TBS/CQI mapping arrives with the
-        // real link adaptation). The decode decision itself (including blind-
-        // HARQ combining) is drawn by the PHY from tbErrorProb.
-        int cqi = std::min(std::max((int)info.getMcs(), 1), 15);
+        // PSSCH: per-CQI BLER curves, indexed by the coarse CQI equivalent of
+        // the grant's MCS (SlMcsTable, D15 -- documented approximation until
+        // SL-specific BLER curves exist). The decode decision itself
+        // (including blind-HARQ combining) is drawn by the PHY from
+        // tbErrorProb.
+        int cqi = std::min(std::max((int)SlMcsTable::cqi(info.getMcs()), 1), 15);
         int snrInt = (int)floor(result.sinrDb);
         double bler;
         if (snrInt < binder_->phyPisaData.minSnr())

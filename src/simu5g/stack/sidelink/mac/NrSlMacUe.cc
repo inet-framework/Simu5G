@@ -23,6 +23,7 @@
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/sidelink/common/SlAirFrame_m.h"
 #include "simu5g/stack/sidelink/common/SlBinder.h"
+#include "simu5g/stack/sidelink/mac/SlMcsTable.h"
 #include "simu5g/stack/sidelink/rrc/SlRrc.h"
 
 namespace simu5g {
@@ -69,6 +70,9 @@ void NrSlMacUe::initialize(int stage)
         grantNumSubchannels_ = par("grantNumSubchannels");
         probResourceKeep_ = par("probResourceKeep");
         tbSize_ = par("tbSize");
+        computeTbSize_ = (tbSize_ < 0);
+        subchannelSize_ = cfg.subchannelSize;
+        overheadSymbols_ = par("overheadSymbols");
 
         periodMs_ = cfg.reservationPeriodsMs.empty() ? 100 : cfg.reservationPeriodsMs.front();
         periodSlots_ = slotGrid_.slotsPerMs(periodMs_);
@@ -113,6 +117,14 @@ void NrSlMacUe::selectGrant()
     grant_.periodSlots = periodSlots_;
     grant_.mcs = par("grantMcs");
     grant_.blindRetx = 0;
+
+    if (computeTbSize_) {
+        // real link adaptation (D15): TBS follows the grant MCS and width
+        int numPrbs = grantNumSubchannels_ * subchannelSize_;
+        tbSize_ = SlMcsTable::tbsBytes(grant_.mcs, numPrbs, overheadSymbols_);
+        EV << NOW << " NrSlMacUe::selectGrant - TBS " << tbSize_ << "B for MCS " << grant_.mcs
+           << " over " << numPrbs << " PRBs (" << overheadSymbols_ << " overhead symbols)" << endl;
+    }
 
     if (allocationMode_ == STATIC) {
         // WP-C static grant: fixed periodic resources from NED parameters

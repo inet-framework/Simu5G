@@ -32,8 +32,12 @@ module NrSlMacUe extends LteMacBase
 
         // --- selected-grant shape (all modes) ---
         int grantNumSubchannels = default(1);         // L_subCH of selected resources
-        int grantMcs = default(6);                    // PSSCH MCS (used as the CQI index of the BLER lookup)
-        int tbSize @unit(B) = default(1000B);         // bytes deliverable per TX opportunity (MCS/TBS stub)
+        int grantMcs = default(6);                    // PSSCH MCS index (TS 38.214 MCS table 1, 0..28)
+        int tbSize @unit(B) = default(-1B);           // bytes deliverable per TX opportunity;
+                                                      // -1B = compute from grantMcs via SlMcsTable (D15);
+                                                      // explicit values bypass the TBS math (regression escape hatch)
+        int overheadSymbols = default(5);             // per-slot symbols lost to AGC + guard + PSCCH + DMRS
+                                                      // in the TBS computation (RE/PRB = 12 x (14 - overheadSymbols))
 
         // --- mode2 only ---
         double probResourceKeep = default(0);         // P_keep on reselection-counter expiry [0..0.8]

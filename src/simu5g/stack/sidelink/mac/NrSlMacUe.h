@@ -74,7 +74,10 @@ class NrSlMacUe : public LteMacBase
     int grantNumSubchannels_ = 1;     // L_subCH of selected resources
     int periodSlots_ = 0;             // resource reservation period [slots]
     int periodMs_ = 0;
-    int tbSize_ = 0;                  // transport block size per TX opportunity [B] (MCS/TBS stub)
+    int tbSize_ = 0;                  // transport block size per TX opportunity [B]
+    bool computeTbSize_ = false;      // true = derive tbSize_ from the grant MCS via SlMcsTable (D15)
+    int subchannelSize_ = 0;          // PRBs per subchannel (from the preconfig)
+    int overheadSymbols_ = 0;         // non-data symbols per slot for the TBS math
 
     // blind-retransmission HARQ (WP-F)
     SlHarqTxEntity harqTx_;

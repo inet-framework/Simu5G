@@ -24,16 +24,20 @@ Configs:
   from the SL transmission map, PSCCH threshold decode, PSSCH BLER decode)
   with SL-RSRP/SINR/CBR/frame-loss statistics.
 
-  PER-vs-distance validation sweep (shadowing off, grantMcs=12 i.e.
-  CQI 12 for the BLER lookup, 26 dBm, 10-PRB subchannel, mu=1):
+  PER-vs-distance validation sweep (shadowing off, grantMcs=12, 26 dBm,
+  10-PRB subchannel, mu=1). Since SL-2's real link adaptation (SlMcsTable,
+  D15), MCS 12 means 16QAM R=434/1024 -> TBS 233B and a coarse CQI-7
+  equivalent for the BLER lookup (SL-1 used the MCS index directly as the
+  CQI, i.e. a far less robust CQI-12 curve, with a 1000B TBS stub):
 
-     dist [m]   50   400  500  600  700  800  900  1400
-     received   95   95   95   58   6    3    1    0     (of 96)
+     dist [m]   50   1600  2000  2400  2800  3200  3600
+     received   95   95    72    51    10    2     0     (of 96)
 
-  Loss onset ~600 m matches the expected SINR = 77.6 - 20log10(d) dB
-  (~22 dB at 600 m) against the per-CQI-12 BLER curve with the framework's
+  Loss onset ~2000 m matches the expected SINR = 77.6 - 20log10(d) dB
+  (~11.6 dB at 2000 m) against the per-CQI-7 BLER curve with the framework's
   per-PRB success-probability convention ((1-BLER)^numPRBs, as on Uu).
-  At the default grantMcs=6 the range is correspondingly longer.
+  At the default grantMcs=6 (QPSK, CQI-5 equivalent, TBS 123B) the range is
+  correspondingly longer.
   Sweep command:
     for d in ...; do simu5g -u Cmdenv -c Broadcast-Tr37885 \
       --'*.ue[1].mobility.initialX'=$((290+d))m \
@@ -47,11 +51,14 @@ Configs:
   selection (the default); Random-50UE picks uniformly from the same
   selection window without sensing - the standard baseline.
 
-  Measured sensing gain (5s, seed 0, ~122500 possible receptions):
+  Since SL-2's real link adaptation (SlMcsTable, D15) the configs pin
+  grantMcs = 16 (TBS 349B on the 10-PRB subchannel) so a whole CAM still
+  fits one TB and the pool occupancy stays ~25%. Measured sensing gain
+  (5s, seed 0, 122549 possible receptions):
 
-                     received   PRR     SCI lost  TB lost  half-duplex lost
-     Mode2-50UE      120322     ~98.2%  2757      1598     128
-     Random-50UE     95176      ~77.7%  15369     9736     678
+                     received   PRR
+     Mode2-50UE      117560     ~95.9%
+     Random-50UE     84252      ~68.7%
 
   With SPS, a random pick that collides keeps colliding for the lifetime of
   its reselection counter; sensing avoids reserved resources, leaving mostly
@@ -62,10 +69,12 @@ Configs:
   grant train, receivers soft-combine (harqReduction convention) and
   suppress duplicate deliveries by (source, HARQ process, NDI).
 
-  Measured at the PER knee (--dist=600, grantMcs=12, shadowing off, 2s,
-  48 packets): blindRetx 0 -> 16 delivered; blindRetx 1 -> 48 delivered
-  (26 duplicate copies suppressed). App-level counts amplify TB losses via
-  RLC UM reordering, so the retx gain is end-to-end.
+  Measured deep in the PER knee (initialX=3090m i.e. 2800 m, grantMcs=12,
+  shadowing off, 2s): blindRetx 0 -> 10 of 96 delivered; blindRetx 1 -> 27
+  delivered of the 48 transmittable (the copy halves the grant-train
+  capacity), a ~2.7x PRR gain from soft combining at equal resource use per
+  packet. App-level counts amplify TB losses via RLC UM reordering, so the
+  retx gain is end-to-end.
 
 See the sidelink implementation plan for the WP-G roadmap (PRR/PIR-vs-
 distance statistics, highway calibration scenario, scalability check).
