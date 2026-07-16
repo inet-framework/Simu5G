@@ -51,4 +51,9 @@ simple BearerManagement
         string slPdcpRxEntityModuleType = default("simu5g.stack.pdcp.LteRxPdcpEntity");
         string slRlcUmTxEntityModuleType = default("simu5g.stack.rlc.um.UmTxEntity");
         string slRlcUmRxEntityModuleType = default("simu5g.stack.rlc.um.UmRxEntity");
+        // AM SLRB entity types (SL-2 D18/7.2 Option A): the LTE AM entities
+        // for now; the defaults swap to the NR AM entities when the per-RAT
+        // RLC re-split lands (the G12/G12b SL branches must be ported along)
+        string slRlcAmTxEntityModuleType = default("simu5g.stack.rlc.am.AmTxQueue");
+        string slRlcAmRxEntityModuleType = default("simu5g.stack.rlc.am.AmRxQueue");
 }

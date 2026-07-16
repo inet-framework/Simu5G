@@ -86,5 +86,15 @@ Configs:
   (symmetric establishment, D18). Mode-2 selection over the TR 37.885
   channel; 95/95 packets delivered app-to-app in each direction at 20 m.
 
+- Unicast-AM (milestone M5, WP-H / SL-2): the same unicast pair on an
+  acknowledged-mode SLRB (unicastSlrbDefaults rlcType "AM"; SL-AM rides the
+  LTE AM entities per plan 7.2 Option A). The receiver's RLC generates
+  STATUS/MRW control PDUs which are buffered into its co-located reverse TX
+  entity and get their own mode-2 grants through the receiver's SL MAC like
+  any data - this is what the symmetric link establishment (D18) exists
+  for. 19/19 packets delivered app-to-app each way (CBR 40B / 100ms; the
+  rate fits the LTE AM entities' 30B fragmentation across 20ms occasions
+  until the WP-J LCP lands).
+
 See the sidelink implementation plan for the WP-G roadmap (PRR/PIR-vs-
 distance statistics, highway calibration scenario, scalability check).

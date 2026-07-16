@@ -375,6 +375,8 @@ void BearerManagement::resolveSlModules()
     slPdcpRxEntityModuleType_ = cModuleType::get(par("slPdcpRxEntityModuleType").stringValue());
     slRlcUmTxEntityModuleType_ = cModuleType::get(par("slRlcUmTxEntityModuleType").stringValue());
     slRlcUmRxEntityModuleType_ = cModuleType::get(par("slRlcUmRxEntityModuleType").stringValue());
+    slRlcAmTxEntityModuleType_ = cModuleType::get(par("slRlcAmTxEntityModuleType").stringValue());
+    slRlcAmRxEntityModuleType_ = cModuleType::get(par("slRlcAmRxEntityModuleType").stringValue());
 }
 
 void BearerManagement::createSlOutgoingConnection(FlowControlInfo *lteInfo)
@@ -388,18 +390,23 @@ void BearerManagement::createSlOutgoingConnection(FlowControlInfo *lteInfo)
     ASSERT(lteInfo->getDirection() == SL);
     resolveSlModules();
 
-    if ((LteRlcType)lteInfo->getRlcType() != UM)
-        throw cRuntimeError("BearerManagement::createSlOutgoingConnection - only UM SLRBs are supported in SL-1");
+    cModuleType *rlcModuleType;
+    const char *rlcPrefix;
+    switch ((LteRlcType)lteInfo->getRlcType()) {
+        case UM: rlcModuleType = slRlcUmTxEntityModuleType_; rlcPrefix = "um-tx"; break;
+        case AM: rlcModuleType = slRlcAmTxEntityModuleType_; rlcPrefix = "am-tx"; break;
+        default: throw cRuntimeError("BearerManagement::createSlOutgoingConnection - TM SLRBs arrive with the OTA PC5-RRC (WP-L)");
+    }
 
     // MAC outgoing connection on the SL MAC (keyed by destination L2Pid)
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacCid cid = MacCid(lteInfo->getDestId(), slMac_->drbIdToLcid(lteInfo->getDrbId()));
     slMac_->createOutgoingConnection(cid, desc);
 
-    // RLC UM TX entity on the SL RLC mux
+    // RLC TX entity on the SL RLC mux
     DrbKey rlcId = ctrlInfoToTxDrbKey(lteInfo);
-    std::string rlcName = "slRlc-um-tx-" + std::to_string(num(rlcId.getNodeId())) + "-" + std::to_string(num(rlcId.getDrbId()));
-    cModule *rlcModule = slRlcUmTxEntityModuleType_->create(rlcName.c_str(), nicModule_);
+    std::string rlcName = std::string("slRlc-") + rlcPrefix + "-" + std::to_string(num(rlcId.getNodeId())) + "-" + std::to_string(num(rlcId.getDrbId()));
+    cModule *rlcModule = rlcModuleType->create(rlcName.c_str(), nicModule_);
     if (rlcModule->hasPar("macModule"))
         rlcModule->par("macModule").setStringValue("^.slMac");
     rlcModule->finalizeParameters();
@@ -454,18 +461,23 @@ void BearerManagement::createSlIncomingConnection(FlowControlInfo *lteInfo)
     ASSERT(lteInfo->getDirection() == SL);
     resolveSlModules();
 
-    if ((LteRlcType)lteInfo->getRlcType() != UM)
-        throw cRuntimeError("BearerManagement::createSlIncomingConnection - only UM SLRBs are supported in SL-1");
+    cModuleType *rlcModuleType;
+    const char *rlcPrefix;
+    switch ((LteRlcType)lteInfo->getRlcType()) {
+        case UM: rlcModuleType = slRlcUmRxEntityModuleType_; rlcPrefix = "um-rx"; break;
+        case AM: rlcModuleType = slRlcAmRxEntityModuleType_; rlcPrefix = "am-rx"; break;
+        default: throw cRuntimeError("BearerManagement::createSlIncomingConnection - TM SLRBs arrive with the OTA PC5-RRC (WP-L)");
+    }
 
     // MAC incoming connection on the SL MAC (keyed by sender node id)
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacCid cid = MacCid(lteInfo->getSourceId(), slMac_->drbIdToLcid(lteInfo->getDrbId()));
     slMac_->createIncomingConnection(cid, desc);
 
-    // RLC UM RX entity on the SL RLC mux (keyed by sender node id)
+    // RLC RX entity on the SL RLC mux (keyed by sender node id)
     DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
-    std::string rlcName = "slRlc-um-rx-" + std::to_string(num(rlcId.getNodeId())) + "-" + std::to_string(num(rlcId.getDrbId()));
-    cModule *rlcModule = slRlcUmRxEntityModuleType_->create(rlcName.c_str(), nicModule_);
+    std::string rlcName = std::string("slRlc-") + rlcPrefix + "-" + std::to_string(num(rlcId.getNodeId())) + "-" + std::to_string(num(rlcId.getDrbId()));
+    cModule *rlcModule = rlcModuleType->create(rlcName.c_str(), nicModule_);
     if (rlcModule->hasPar("macModule"))
         rlcModule->par("macModule").setStringValue("^.slMac");
     rlcModule->finalizeParameters();

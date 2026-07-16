@@ -515,6 +515,16 @@ void AmTxQueue::sendNewDataNotification(inet::Packet *pkt)
 {
     auto newData = new inet::Packet("AM-NewData");
     newData->copyTags(*pkt);
+    if (newData->findTag<PdcpTrackingTag>() == nullptr) {
+        // RLC-generated control PDU (STATUS/MRW), not a PDCP SDU: announce
+        // its actual size so the MAC's virtual buffer sizes its SDU request
+        // to fit it (without this, the MAC would either throw on the missing
+        // tag or under-request, leaving the control PDU stuck at the head of
+        // the queue; SL-2 WP-H)
+        auto tag = newData->addTag<PdcpTrackingTag>();
+        tag->setPdcpSequenceNumber(0);
+        tag->setOriginalPacketLength(pkt->getByteLength());
+    }
     newData->addTag<LteRlcNewDataTag>();
     send(newData, "out");
 }

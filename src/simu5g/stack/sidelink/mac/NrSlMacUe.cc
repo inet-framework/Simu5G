@@ -303,29 +303,40 @@ void NrSlMacUe::handleUpperMessage(cPacket *pktAux)
 bool NrSlMacUe::bufferizePacket(cPacket *cpkt)
 {
     auto pkt = check_and_cast<Packet *>(cpkt);
+    pkt->setTimestamp();
+
+    // NOTE: the new-data check must precede the empty-reply check: AM
+    // entities announce new data with an empty tag-carrier packet
+    // ("AM-NewData"), unlike UM's dup-of-the-PDU convention
+    if (pkt->findTag<LteRlcNewDataTag>()) {
+        auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
+        MacCid cid = MacCid(lteInfo->getDestId(), drbIdToLcid(lteInfo->getDrbId()));
+        ASSERT(connDescOut_.find(cid) != connDescOut_.end());
+        OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
+
+        // notification of new data in the RLC buffer: track it in the
+        // virtual buffer. RLC-generated control PDUs (AM STATUS/MRW) carry
+        // no PdcpTrackingTag; announce them at the AM header size.
+        pkt->removeTag<LteRlcNewDataTag>();
+        auto pdcpTag = pkt->findTag<PdcpTrackingTag>();
+        int64_t announced = (pdcpTag != nullptr) ? pdcpTag->getOriginalPacketLength()
+                                                 : std::max((int64_t)pkt->getByteLength(), (int64_t)RLC_HEADER_AM);
+        PacketInfo vpkt(announced, pkt->getTimestamp());
+        connInfo.buffer->pushBack(vpkt);
+        delete pkt;
+        return true;
+    }
 
     if (pkt->getBitLength() <= 1) { // empty "no data" reply from RLC
         delete pkt;
         return false;
     }
 
-    pkt->setTimestamp();
-
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
     MacCid cid = MacCid(lteInfo->getDestId(), drbIdToLcid(lteInfo->getDrbId()));
     ASSERT(connDescOut_.find(cid) != connDescOut_.end());
 
     OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
-
-    if (pkt->findTag<LteRlcNewDataTag>()) {
-        // notification of new data in the RLC buffer: track it in the virtual buffer
-        pkt->removeTag<LteRlcNewDataTag>();
-        auto pdcpTag = pkt->getTag<PdcpTrackingTag>();
-        PacketInfo vpkt(pdcpTag->getOriginalPacketLength(), pkt->getTimestamp());
-        connInfo.buffer->pushBack(vpkt);
-        delete pkt;
-        return true;
-    }
 
     // a real RLC PDU: queue it for the PDU maker
     if (!connInfo.queue->pushBack(pkt)) {

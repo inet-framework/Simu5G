@@ -171,10 +171,12 @@ void AmRxQueue::discard(const int sn)
         if (ue != nullptr)
             ue->emit(rlcPacketLossSignal_[dir_], 1.0);
 
-        // NODEB
-        cModule *nodeb = binder_->getRlcByNodeId((dir == DL ? srcId : dstId), UM);
-        if (nodeb != nullptr)
-            nodeb->emit(rlcCellPacketLossSignal_[dir_], 1.0);
+        // NODEB (sidelink has no cell side, SL-2 G13)
+        if (dir != SL) {
+            cModule *nodeb = binder_->getRlcByNodeId((dir == DL ? srcId : dstId), UM);
+            if (nodeb != nullptr)
+                nodeb->emit(rlcCellPacketLossSignal_[dir_], 1.0);
+        }
     }
 }
 
@@ -246,7 +248,16 @@ void AmRxQueue::enque(Packet *pkt)
         ackFlowControlInfo_->setDestId(orig->getSourceId());
 
         // Set up other fields
-        ackFlowControlInfo_->setDirection((orig->getDirection() == DL) ? UL : DL);
+        if (orig->getDirection() == SL) {
+            // sidelink AM (SL-2 G12): the reverse bearer is SL as well; the
+            // src/dst swap above is all the keying needs (D3: TX keys by the
+            // peer), and the swapped L2 IDs keep the reverse MAC/PHY path
+            // addressed at the original sender
+            ackFlowControlInfo_->setSlSrcL2Id(orig->getSlDstL2Id());
+            ackFlowControlInfo_->setSlDstL2Id(orig->getSlSrcL2Id());
+        }
+        else
+            ackFlowControlInfo_->setDirection((orig->getDirection() == DL) ? UL : DL);
     }
 
     // Get the RLC PDU Transmission sequence number
@@ -369,6 +380,11 @@ void AmRxQueue::passUp(const int index)
 
     if (dir == DL) {
         nodeb = binder_->getRlcByNodeId(srcId, UM);
+        ue = binder_->getRlcByNodeId(dstId, UM);
+    }
+    else if (dir == SL) {
+        // sidelink AM (SL-2 G13): both endpoints are UEs, there is no cell --
+        // attribute the UE-side statistics to the receiver, skip the cell side
         ue = binder_->getRlcByNodeId(dstId, UM);
     }
     else { // dir == one of UL, D2D, D2D_MULTI
@@ -721,7 +737,12 @@ AmRxQueue::~AmRxQueue()
 void AmRxQueue::routeControlToTxEntity(Packet *pkt)
 {
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
-    DrbKey id = ctrlInfoToTxDrbKey(lteInfo.get());
+    // Sidelink AM (SL-2 G12): at the data sender, an incoming control PDU
+    // carries the RX descriptor's sender-perspective tag (src = the peer),
+    // and the co-located reverse TX entity is keyed by the peer (D3/D18) --
+    // i.e. by the tag's *source*. Uu keeps its historical keying.
+    DrbKey id = (lteInfo->getDirection() == SL) ? ctrlInfoToRxDrbKey(lteInfo.get())
+                                                : ctrlInfoToTxDrbKey(lteInfo.get());
 
     auto *txEntity = bearerManagement_->lookupRlcTxBuffer(id);
     if (txEntity == nullptr)

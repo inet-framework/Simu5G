@@ -60,6 +60,8 @@ class BearerManagement : public cSimpleModule
     cModuleType *slPdcpRxEntityModuleType_ = nullptr;
     cModuleType *slRlcUmTxEntityModuleType_ = nullptr;
     cModuleType *slRlcUmRxEntityModuleType_ = nullptr;
+    cModuleType *slRlcAmTxEntityModuleType_ = nullptr;
+    cModuleType *slRlcAmRxEntityModuleType_ = nullptr;
 
     inet::ModuleRefByPar<RlcMux> rlcMuxModule;
     inet::ModuleRefByPar<RlcMux> nrRlcMuxModule;

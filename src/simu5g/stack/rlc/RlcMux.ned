@@ -32,6 +32,13 @@ simple RlcMux like IRlcMux
         @signal[rlcCellThroughputDl];
         @statistic[rlcCellThroughputDl](title="Cell Throughput at the rlc layer DL"; unit="Bps"; source="rlcCellThroughputDl"; record=simu5g_rateavg);
 
+        //# emitted (unrecorded) by the AM entities' statistics attribution;
+        //# declared so debug-mode signal checking accepts them
+        @signal[rlcPacketLossDl];
+        @signal[rlcPacketLossUl];
+        @signal[rlcCellPacketLossDl];
+        @signal[rlcCellPacketLossUl];
+
         //# PDU-level statistics
         @signal[rlcPduDelayDl];
         @statistic[rlcPduDelayDl](title="Delay at the rlc layer UL"; unit="s"; source="rlcPduDelayDl"; record=mean,vector);
