@@ -18,6 +18,17 @@ using namespace omnetpp;
 
 namespace simu5g {
 
+SlPreconfig::SlPreconfig()
+{
+    // built-in unicast SLRB template (D17): a single default UM bearer per link
+    SlrbConfigEntry def;
+    def.castType = SL_UNICAST;
+    def.rlcType = UM;
+    def.pfi = 1;
+    def.isDefault = true;
+    unicastSlrbDefaults.push_back(def);
+}
+
 void SlPreconfig::loadFromJson(const cValueMap *map)
 {
     // pool geometry
@@ -63,12 +74,30 @@ void SlPreconfig::loadFromJson(const cValueMap *map)
             if (entry->containsKey("castType"))
                 e.castType = aToSlCastType(entry->get("castType").stdstringValue());
             e.drbId = DrbId(entry->get("drb").intValue());
-            if (entry->containsKey("rlcType"))
-                e.rlcType = aToRlcType(entry->get("rlcType").stdstringValue());
-            if (entry->containsKey("destAddress"))
-                e.destAddress = entry->get("destAddress").stdstringValue();
+            if (num(e.drbId) >= SL_UNICAST_DRB_BASE)
+                throw cRuntimeError("SlPreconfig: slrbConfig DRB id %hu is in the dynamic unicast range "
+                                    "(static entries must use ids below %hu, see D17)", num(e.drbId), SL_UNICAST_DRB_BASE);
+            loadSlrbEntryShape(entry, e);
             slrbConfig.push_back(e);
         }
+    }
+
+    // unicastSlrbDefaults array (D17): per-link SLRB templates, one per PFI
+    if (map->containsKey("unicastSlrbDefaults")) {
+        unicastSlrbDefaults.clear();
+        const cValueArray *arr = check_and_cast<const cValueArray *>(map->get("unicastSlrbDefaults").objectValue());
+        for (int i = 0; i < (int)arr->size(); i++) {
+            const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
+            if (entry->containsKey("dstL2Id") || entry->containsKey("drb"))
+                throw cRuntimeError("SlPreconfig: unicastSlrbDefaults entries are per-link templates -- "
+                                    "they carry no dstL2Id/drb (DRB ids are allocated at link establishment, D17)");
+            SlrbConfigEntry e;
+            e.castType = SL_UNICAST;
+            loadSlrbEntryShape(entry, e);
+            unicastSlrbDefaults.push_back(e);
+        }
+        if (unicastSlrbDefaults.empty())
+            throw cRuntimeError("SlPreconfig: unicastSlrbDefaults must not be empty (omit the key for the built-in default)");
     }
 
     // validation
@@ -78,6 +107,22 @@ void SlPreconfig::loadFromJson(const cValueMap *map)
         throw cRuntimeError("SlPreconfig: invalid subchannel geometry (%d x %d)", subchannelSize, numSubchannels);
     if (t1 < 0 || t2 <= t1)
         throw cRuntimeError("SlPreconfig: invalid selection window [%d,%d]", t1, t2);
+}
+
+void SlPreconfig::loadSlrbEntryShape(const cValueMap *entry, SlrbConfigEntry& e)
+{
+    if (entry->containsKey("rlcType"))
+        e.rlcType = aToRlcType(entry->get("rlcType").stdstringValue());
+    if (entry->containsKey("destAddress"))
+        e.destAddress = entry->get("destAddress").stdstringValue();
+    if (entry->containsKey("pfi"))
+        e.pfi = (int)entry->get("pfi").intValue();
+    if (entry->containsKey("pqi"))
+        e.pqi = (int)entry->get("pqi").intValue();
+    if (entry->containsKey("isDefault"))
+        e.isDefault = entry->get("isDefault").boolValue();
+    if (entry->containsKey("mcr"))
+        e.mcrMeters = entry->get("mcr").doubleValueInUnit("m");
 }
 
 const SlrbConfigEntry *SlPreconfig::findSlrbForDstL2Id(SlL2Id dstL2Id) const

@@ -22,9 +22,14 @@ namespace omnetpp { class cValueMap; }
 namespace simu5g {
 
 /**
- * One entry of the slrbConfig array (design decision D12): the static SLRB
- * configuration used until PC5-RRC negotiation exists (SL-2). Format mirrors
- * SDAP's drbConfig/DrbTable JSON precedent.
+ * One entry of the slrbConfig / unicastSlrbDefaults arrays (design decisions
+ * D12/D17, entry shape extended per G17). Format mirrors SDAP's
+ * drbConfig/DrbTable JSON precedent.
+ *
+ * slrbConfig entries (static broadcast/groupcast SLRBs) carry an explicit
+ * dstL2Id and drb; unicastSlrbDefaults entries are per-link templates -- their
+ * DRB ids are allocated dynamically at link establishment (D17), so they
+ * carry no dstL2Id/drb.
  */
 struct SlrbConfigEntry
 {
@@ -33,6 +38,10 @@ struct SlrbConfigEntry
     DrbId drbId = DRBID_NONE;
     LteRlcType rlcType = UM;
     std::string destAddress;    // optional: IPv4 multicast address mapped to dstL2Id
+    int pfi = 0;                // PC5 QoS flow identifier served by this SLRB (SL-SDAP, WP-J)
+    int pqi = 0;                // PC5 5QI of the flow (priority mapping, WP-J)
+    bool isDefault = false;     // catches packets with no matching PFI (WP-J)
+    double mcrMeters = 0;       // groupcast option-1 minimum communication range (WP-I; 0 = none)
 };
 
 /**
@@ -63,7 +72,19 @@ class SlPreconfig
     // --- static SLRB configuration (D12) ---
     std::vector<SlrbConfigEntry> slrbConfig;
 
+    // --- per-link SLRB templates for PC5 unicast (D17): one entry per PFI;
+    //     DRB ids are allocated at link establishment. Default: one UM SLRB.
+    std::vector<SlrbConfigEntry> unicastSlrbDefaults;
+
+    SlPreconfig();
+
     void loadFromJson(const omnetpp::cValueMap *map);
+
+  private:
+    /// parse the shared (G17) entry-shape fields of an SLRB config entry
+    static void loadSlrbEntryShape(const omnetpp::cValueMap *entry, SlrbConfigEntry& e);
+
+  public:
 
     /// slot duration on this pool's numerology grid
     omnetpp::simtime_t getSlotDuration() const { return omnetpp::SimTime(1, omnetpp::SIMTIME_MS) / (1 << numerologyIndex); }

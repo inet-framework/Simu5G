@@ -55,6 +55,16 @@ constexpr SlotIndex SLOTINDEX_NONE = -1;
 /// upward from MULTICAST_DEST_MIN_ID (32768).
 constexpr unsigned short SL_GROUP_PID_MAX = 65535;
 
+/// DRB-id partitioning of the sidelink bearer space (D17/D23): static
+/// slrbConfig entries must stay below SL_UNICAST_DRB_BASE; per-link unicast
+/// SLRBs are allocated dynamically from [SL_UNICAST_DRB_BASE, SL_SRB_DRB_ID);
+/// SL_SRB_DRB_ID is the reserved TM SL-SRB of a unicast link (PC5-RRC).
+/// Keeping the ranges disjoint preserves the D3 keying invariant: at a
+/// receiver, broadcast RX chains and unicast RX chains from the same sender
+/// are both keyed DrbKey(senderId, drb) and must never collide.
+constexpr unsigned short SL_UNICAST_DRB_BASE = 32;
+constexpr unsigned short SL_SRB_DRB_ID = 63;
+
 /**
  * Mode-2 sidelink grant (design decision D8): the outcome of resource
  * (re)selection, owned by the SL MAC. It is UE-internal state and is never
