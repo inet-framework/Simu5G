@@ -17,6 +17,7 @@
 #include <inet/common/ModuleAccess.h>
 #include <omnetpp/cvaluemap.h>
 
+#include "simu5g/common/LteControlInfo.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 
 namespace simu5g {
@@ -90,6 +91,129 @@ void SlRrc::createSlIncomingConnection(FlowControlInfo *lteInfo)
 {
     Enter_Method_Silent("createSlIncomingConnection()");
     bearerManagement_->createSlIncomingConnection(lteInfo);
+}
+
+const SlrbConfigEntry& SlUnicastLink::findSlrbForPfi(int pfi) const
+{
+    const SlrbConfigEntry *def = nullptr;
+    for (const auto& e : slrbs) {
+        if (e.pfi == pfi)
+            return e;
+        if (e.isDefault)
+            def = &e;
+    }
+    if (def == nullptr)
+        def = &slrbs.front();  // no default marked: first entry catches all
+    return *def;
+}
+
+const SlUnicastLink *SlRrc::findLink(MacNodeId peerId) const
+{
+    auto it = links_.find(peerId);
+    return (it != links_.end()) ? &it->second : nullptr;
+}
+
+const SlUnicastLink& SlRrc::establishLink(MacNodeId peerId)
+{
+    Enter_Method_Silent("establishLink()");
+
+    auto it = links_.find(peerId);
+    if (it != links_.end())
+        return it->second;
+
+    ASSERT(peerId != nodeId_);
+    SlL2Id peerL2Id = slBinder_->getL2IdForNodeId(peerId);
+    if (peerL2Id == SL_L2ID_NONE)
+        throw cRuntimeError("SlRrc: cannot establish PC5 link to node %hu: not a registered SL UE", num(peerId));
+
+    // allocate the per-link SLRBs from the unicastSlrbDefaults templates
+    // (D17): DRB ids from the dynamic range, fresh per link -- the D3 keying
+    // is per (src, dst) pair, so ids may repeat across links but must be
+    // unique within one
+    SlUnicastLink link;
+    link.peerId = peerId;
+    unsigned short drb = SL_UNICAST_DRB_BASE;
+    for (const auto& tmpl : preconfig_.unicastSlrbDefaults) {
+        SlrbConfigEntry e = tmpl;
+        e.castType = SL_UNICAST;
+        e.dstL2Id = peerL2Id;
+        if (drb >= SL_SRB_DRB_ID)
+            throw cRuntimeError("SlRrc: too many unicastSlrbDefaults entries (link DRB ids exhausted at %hu)", drb);
+        e.drbId = DrbId(drb++);
+        link.slrbs.push_back(e);
+    }
+
+    EV << "SlRrc::establishLink - node " << nodeId_ << ": PC5 unicast link to peer " << peerId
+       << " (" << link.slrbs.size() << " SLRB(s), DRB ids " << SL_UNICAST_DRB_BASE
+       << ".." << (drb - 1) << "), genie handshake" << endl;
+
+    const SlUnicastLink& stored = links_.emplace(peerId, std::move(link)).first->second;
+    createLinkBearers(stored);
+
+    // genie handshake: the peer adopts the same SLRB list and creates its
+    // own symmetric chains (D18)
+    SlRrc *peerRrc = slBinder_->getSlRrc(peerId);
+    if (peerRrc == nullptr)
+        throw cRuntimeError("SlRrc: no SlRrc registered for peer node %hu", num(peerId));
+    peerRrc->onLinkRequest(nodeId_, stored.slrbs);
+
+    return stored;
+}
+
+void SlRrc::onLinkRequest(MacNodeId initiatorId, const std::vector<SlrbConfigEntry>& slrbs)
+{
+    Enter_Method_Silent("onLinkRequest()");
+
+    if (links_.count(initiatorId))
+        throw cRuntimeError("SlRrc: node %hu received a link request from %hu but already has that link",
+                num(nodeId_), num(initiatorId));
+
+    SlL2Id initiatorL2Id = slBinder_->getL2IdForNodeId(initiatorId);
+    ASSERT(initiatorL2Id != SL_L2ID_NONE);
+
+    // adopt the initiator's SLRB list; from this side, the peer is the initiator
+    SlUnicastLink link;
+    link.peerId = initiatorId;
+    link.slrbs = slrbs;
+    for (auto& e : link.slrbs)
+        e.dstL2Id = initiatorL2Id;
+
+    EV << "SlRrc::onLinkRequest - node " << nodeId_ << ": accepted PC5 unicast link from " << initiatorId << endl;
+
+    const SlUnicastLink& stored = links_.emplace(initiatorId, std::move(link)).first->second;
+    createLinkBearers(stored);
+}
+
+void SlRrc::createLinkBearers(const SlUnicastLink& link)
+{
+    for (const auto& e : link.slrbs) {
+        // outgoing chain toward the peer: PDCP-TX -> RLC-TX -> MAC outgoing
+        FlowControlInfo out;
+        out.setDirection(SL);
+        out.setSourceId(nodeId_);
+        out.setDestId(link.peerId);
+        out.setSlSrcL2Id(srcL2Id_);
+        out.setSlDstL2Id(e.dstL2Id);
+        out.setSlCastType(SL_UNICAST);
+        out.setDrbId(e.drbId);
+        out.setRlcType(e.rlcType);
+        out.setTraffic(BACKGROUND);
+        bearerManagement_->createSlOutgoingConnection(&out);
+
+        // incoming chain from the peer (sender-perspective info, like the
+        // broadcast fan-out): MAC incoming -> RLC-RX -> PDCP-RX
+        FlowControlInfo in;
+        in.setDirection(SL);
+        in.setSourceId(link.peerId);
+        in.setDestId(nodeId_);
+        in.setSlSrcL2Id(e.dstL2Id);
+        in.setSlDstL2Id(srcL2Id_);
+        in.setSlCastType(SL_UNICAST);
+        in.setDrbId(e.drbId);
+        in.setRlcType(e.rlcType);
+        in.setTraffic(BACKGROUND);
+        bearerManagement_->createSlIncomingConnection(&in);
+    }
 }
 
 } // namespace simu5g

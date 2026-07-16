@@ -21,4 +21,8 @@ simple SlHandoverPacketHolderUe extends HandoverPacketHolderUe
 {
     parameters:
         @class(SlHandoverPacketHolderUe);
+
+        // recognize unicast packets to SL-capable peers as PC5-destined
+        // (D16); must match SlIp2Nic.pc5UnicastEnabled of the same NIC
+        bool pc5UnicastEnabled = default(true);
 }

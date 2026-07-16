@@ -76,5 +76,15 @@ Configs:
   packet. App-level counts amplify TB losses via RLC UM reordering, so the
   retx gain is end-to-end.
 
+- Unicast-UM (milestone M5, WP-H / SL-2): PC5 unicast between the two
+  out-of-coverage UEs with bidirectional CBR traffic (40B / 20ms each way)
+  and NO broadcast SLRB configured. The first packet toward the peer is
+  classified by the D16 static rule (unicast destination address resolves
+  to an SL-capable peer -> PC5) and triggers the genie PC5-RRC link
+  establishment (D17): one UM SLRB per direction from unicastSlrbDefaults
+  (DRB id 32, allocated dynamically), full TX+RX chains at BOTH endpoints
+  (symmetric establishment, D18). Mode-2 selection over the TR 37.885
+  channel; 95/95 packets delivered app-to-app in each direction at 20 m.
+
 See the sidelink implementation plan for the WP-G roadmap (PRR/PIR-vs-
 distance statistics, highway calibration scenario, scalability check).

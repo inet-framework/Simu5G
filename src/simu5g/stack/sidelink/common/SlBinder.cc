@@ -12,6 +12,7 @@
 #include "simu5g/stack/sidelink/common/SlBinder.h"
 
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/sidelink/rrc/SlRrc.h"
 
 namespace simu5g {
@@ -113,6 +114,16 @@ SlL2Id SlBinder::getDstL2IdForMulticastAddress(inet::Ipv4Address addr) const
     return it != multicastAddrToDstL2Id_.end() ? it->second : SL_L2ID_NONE;
 }
 
+MacNodeId SlBinder::getPc5UnicastPeer(Binder *binder, inet::Ipv4Address destAddr, MacNodeId selfNrNodeId) const
+{
+    if (destAddr.isMulticast())
+        return NODEID_NONE;
+    MacNodeId peerId = binder->getNrMacNodeId(destAddr);
+    if (peerId == NODEID_NONE || peerId == selfNrNodeId || !nodeIdToL2Id_.count(peerId))
+        return NODEID_NONE;
+    return peerId;
+}
+
 void SlBinder::registerSlPhy(MacNodeId nodeId, cModule *phyModule)
 {
     slPhys_[nodeId] = phyModule;
@@ -121,6 +132,12 @@ void SlBinder::registerSlPhy(MacNodeId nodeId, cModule *phyModule)
 void SlBinder::registerSlRrc(MacNodeId nodeId, SlRrc *slRrc)
 {
     slRrcs_[nodeId] = slRrc;
+}
+
+SlRrc *SlBinder::getSlRrc(MacNodeId nodeId) const
+{
+    auto it = slRrcs_.find(nodeId);
+    return it != slRrcs_.end() ? it->second : nullptr;
 }
 
 void SlBinder::establishSlConnection(FlowControlInfo *lteInfo)
@@ -133,23 +150,17 @@ void SlBinder::establishSlConnection(FlowControlInfo *lteInfo)
         throw cRuntimeError("SlBinder: no SlRrc registered for sender node %hu", num(senderId));
     senderRrc->second->createSlOutgoingConnection(lteInfo);
 
-    if ((SlCastType)lteInfo->getSlCastType() == SL_UNICAST) {
-        MacNodeId peerId = lteInfo->getDestId();
-        auto peerRrc = slRrcs_.find(peerId);
-        if (peerRrc == slRrcs_.end())
-            throw cRuntimeError("SlBinder: no SlRrc registered for peer node %hu", num(peerId));
-        peerRrc->second->createSlIncomingConnection(lteInfo);
-    }
-    else {
-        // broadcast/groupcast: fan out to every group member except the sender
-        for (MacNodeId member : getGroupMembers((SlL2Id)lteInfo->getSlDstL2Id())) {
-            if (member == senderId)
-                continue;
-            auto memberRrc = slRrcs_.find(member);
-            if (memberRrc == slRrcs_.end())
-                throw cRuntimeError("SlBinder: no SlRrc registered for group member node %hu", num(member));
-            memberRrc->second->createSlIncomingConnection(lteInfo);
-        }
+    if ((SlCastType)lteInfo->getSlCastType() == SL_UNICAST)
+        throw cRuntimeError("SlBinder: unicast SLRBs are established symmetrically via SlRrc::establishLink (D17/D18)");
+
+    // broadcast/groupcast: fan out to every group member except the sender
+    for (MacNodeId member : getGroupMembers((SlL2Id)lteInfo->getSlDstL2Id())) {
+        if (member == senderId)
+            continue;
+        auto memberRrc = slRrcs_.find(member);
+        if (memberRrc == slRrcs_.end())
+            throw cRuntimeError("SlBinder: no SlRrc registered for group member node %hu", num(member));
+        memberRrc->second->createSlIncomingConnection(lteInfo);
     }
 }
 

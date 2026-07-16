@@ -21,11 +21,31 @@ class BearerManagement;
 class FlowControlInfo;
 
 /**
- * Per-UE sidelink control plane ("genie" PC5-RRC, phase SL-1): owns the
- * sidelink preconfiguration (pool + static SLRB config), registers the UE's
- * L2 IDs / group memberships / multicast address mappings with SlBinder at
- * init, and creates SLRB entity chains via BearerManagement when SlBinder
- * fans out a connection establishment. Control plane by C++ calls only.
+ * State of one PC5 unicast link (design decision D17). The registry entry is
+ * symmetric: both endpoints hold the same DRB ids for the link's SLRBs; each
+ * side's entries carry the *other* side's L2 ID as dstL2Id. The only state
+ * in SL-2 is ESTABLISHED (no RLF/keepalive; release only by explicit call),
+ * so no state field exists yet.
+ */
+struct SlUnicastLink
+{
+    MacNodeId peerId = NODEID_NONE;
+    std::vector<SlrbConfigEntry> slrbs;   // per-link SLRBs with allocated DRB ids (castType UNICAST)
+
+    /// the SLRB serving a given PFI, or the default entry (WP-J resolution)
+    const SlrbConfigEntry& findSlrbForPfi(int pfi) const;
+};
+
+/**
+ * Per-UE sidelink control plane ("genie" PC5-RRC): owns the sidelink
+ * preconfiguration (pool + static SLRB config), registers the UE's L2 IDs /
+ * group memberships / multicast address mappings with SlBinder at init, and
+ * creates SLRB entity chains via BearerManagement when SlBinder fans out a
+ * connection establishment. From SL-2 on it also keeps the PC5 unicast link
+ * registry (D17): per-peer links with dynamically allocated per-link SLRBs,
+ * established symmetrically (D18) -- the genie handshake runs via SlBinder as
+ * direct C++ calls; the over-the-air handshake (D23, WP-L) will drive the
+ * same registry with real packets.
  */
 class SlRrc : public omnetpp::cSimpleModule
 {
@@ -37,9 +57,15 @@ class SlRrc : public omnetpp::cSimpleModule
     MacNodeId nodeId_ = NODEID_NONE;   // NR node id of the owning UE
     SlL2Id srcL2Id_ = SL_L2ID_NONE;    // this UE's source Layer-2 ID
 
+    // PC5 unicast link registry (D17), keyed by the peer's node id
+    std::map<MacNodeId, SlUnicastLink> links_;
+
     void initialize(int stage) override;
     int numInitStages() const override;
     void handleMessage(omnetpp::cMessage *msg) override;
+
+    /// create this endpoint's TX and RX chains for every SLRB of the link (D18)
+    void createLinkBearers(const SlUnicastLink& link);
 
   public:
     const SlPreconfig& getPreconfig() const { return preconfig_; }
@@ -49,6 +75,23 @@ class SlRrc : public omnetpp::cSimpleModule
     // SLRB entity chain creation (invoked via SlBinder's genie fan-out)
     void createSlOutgoingConnection(FlowControlInfo *lteInfo);
     void createSlIncomingConnection(FlowControlInfo *lteInfo);
+
+    // --- PC5 unicast link registry (D17/D18) ---
+
+    /// Establish (or return the existing) unicast link to a peer: allocates
+    /// the per-link SLRBs from unicastSlrbDefaults, creates the full TX+RX
+    /// chains at BOTH endpoints (symmetric establishment, D18 -- required for
+    /// AM: the data-receiver's STATUS PDUs need a co-located reverse TX chain
+    /// with its own MAC connection), and registers the link at both ends.
+    /// Genie mode: synchronous, triggered by the first classified packet.
+    const SlUnicastLink& establishLink(MacNodeId peerId);
+
+    /// Peer-side link setup (called by the initiator's SlRrc under genie):
+    /// adopt the initiator's SLRB list and create this side's chains.
+    void onLinkRequest(MacNodeId initiatorId, const std::vector<SlrbConfigEntry>& slrbs);
+
+    /// the link to a peer, or nullptr
+    const SlUnicastLink *findLink(MacNodeId peerId) const;
 };
 
 } // namespace simu5g

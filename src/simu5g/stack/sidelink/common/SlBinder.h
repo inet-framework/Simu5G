@@ -23,6 +23,7 @@
 
 namespace simu5g {
 
+class Binder;
 class SlRrc;
 class FlowControlInfo;
 
@@ -119,14 +120,23 @@ class SlBinder : public omnetpp::cSimpleModule
     void registerMulticastAddress(inet::Ipv4Address addr, SlL2Id dstL2Id);
     SlL2Id getDstL2IdForMulticastAddress(inet::Ipv4Address addr) const; // SL_L2ID_NONE if unknown
 
+    /// The D16 static PC5-unicast classification rule, shared by the
+    /// ip2nic-side modules (SlIp2Nic, SlTechnologyDecision,
+    /// SlHandoverPacketHolderUe): true iff destAddr resolves via Binder to a
+    /// registered SL-capable UE other than this node. Returns the peer's
+    /// node id, or NODEID_NONE.
+    MacNodeId getPc5UnicastPeer(Binder *binder, inet::Ipv4Address destAddr, MacNodeId selfNrNodeId) const;
+
     // --- SL node registry ---
     void registerSlPhy(MacNodeId nodeId, omnetpp::cModule *phyModule);
     const std::map<MacNodeId, omnetpp::cModule *>& getSlPhys() const { return slPhys_; }
     void registerSlRrc(MacNodeId nodeId, SlRrc *slRrc);
+    SlRrc *getSlRrc(MacNodeId nodeId) const;  // nullptr if unknown
 
-    /// Genie connection establishment (phase SL-1): creates the outgoing SLRB
-    /// chain at the sender and the incoming chain at every group member
-    /// (broadcast/groupcast) or at the peer (unicast), via each node's SlRrc.
+    /// Genie connection establishment for broadcast/groupcast: creates the
+    /// outgoing SLRB chain at the sender and the incoming chain at every
+    /// group member, via each node's SlRrc. Unicast links are established
+    /// symmetrically through SlRrc::establishLink (D17/D18) instead.
     void establishSlConnection(FlowControlInfo *lteInfo);
 
     // --- SL carrier registry (G8) ---

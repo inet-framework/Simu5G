@@ -22,12 +22,15 @@ class SlBinder;
  * Technology decision for sidelink-capable UEs (fixes gap G1): packets whose
  * destination is a registered PC5 destination bypass the "not attached to any
  * serving node" drop and are handed down tagged for the NR (SL) leg; all
- * other traffic gets the base behavior.
+ * other traffic gets the base behavior. From SL-2 on the same bypass applies
+ * to unicast destinations that are SL-capable peers (the D16 static rule,
+ * mirroring SlIp2Nic's classification).
  */
 class SlTechnologyDecision : public TechnologyDecision
 {
   protected:
     SlBinder *slBinder_ = nullptr;
+    bool pc5UnicastEnabled_ = false;
 
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;

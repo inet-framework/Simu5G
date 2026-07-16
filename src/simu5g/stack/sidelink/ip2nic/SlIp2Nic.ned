@@ -23,4 +23,8 @@ simple SlIp2Nic extends Ip2Nic
     parameters:
         @class(SlIp2Nic);
         string slRrcModule = default("^.slRrc");
+
+        // classify unicast packets to SL-capable peers as PC5 unicast (D16):
+        // a static path-selection rule; the Uu/PC5 policy hook is SL-3
+        bool pc5UnicastEnabled = default(true);
 }

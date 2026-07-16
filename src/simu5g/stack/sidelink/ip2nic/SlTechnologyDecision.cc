@@ -27,6 +27,7 @@ void SlTechnologyDecision::initialize(int stage)
     TechnologyDecision::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         slBinder_ = SlBinder::getInstance();
+        pc5UnicastEnabled_ = par("pc5UnicastEnabled");
         EV << "SlTechnologyDecision::initialize - PC5 classification active" << endl;
     }
 }
@@ -35,10 +36,15 @@ void SlTechnologyDecision::handleMessage(cMessage *msg)
 {
     auto pkt = check_and_cast<inet::Packet *>(msg);
     auto ipHeader = pkt->peekAtFront<inet::Ipv4Header>();
+    inet::Ipv4Address destAddr = ipHeader->getDestAddress();
 
-    // PC5-destined packet? (destination registered as an SL multicast address)
-    if (slBinder_->getDstL2IdForMulticastAddress(ipHeader->getDestAddress()) != SL_L2ID_NONE) {
-        EV << "SlTechnologyDecision: PC5-destined packet (dest=" << ipHeader->getDestAddress()
+    // PC5-destined packet? (destination registered as an SL multicast
+    // address, or -- from SL-2 on, D16 -- an SL-capable unicast peer)
+    bool isPc5 = (slBinder_->getDstL2IdForMulticastAddress(destAddr) != SL_L2ID_NONE);
+    if (!isPc5 && pc5UnicastEnabled_)
+        isPc5 = (slBinder_->getPc5UnicastPeer(binder_.get(), destAddr, nrNodeId_) != NODEID_NONE);
+    if (isPc5) {
+        EV << "SlTechnologyDecision: PC5-destined packet (dest=" << destAddr
            << "), bypassing the serving-node check" << endl;
         pkt->addTagIfAbsent<TechnologyReq>()->setUseNR(true);
         send(pkt, lowerLayerOut_);

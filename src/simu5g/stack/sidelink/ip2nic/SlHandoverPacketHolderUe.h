@@ -20,12 +20,15 @@ class SlBinder;
 
 /**
  * Handover packet holder for sidelink-capable UEs: PC5-destined packets are
- * deliverable without any serving node (they never traverse Uu).
+ * deliverable without any serving node (they never traverse Uu). From SL-2
+ * on the same applies to unicast destinations that are SL-capable peers
+ * (the D16 static rule).
  */
 class SlHandoverPacketHolderUe : public HandoverPacketHolderUe
 {
   protected:
     SlBinder *slBinder_ = nullptr;
+    bool pc5UnicastEnabled_ = false;
 
     void initialize(int stage) override;
     bool isDeliverable(inet::Packet *datagram) override;
