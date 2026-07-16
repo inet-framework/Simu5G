@@ -17,8 +17,11 @@
 // with a nonzero exit code.
 //
 
+#include <cmath>
+
 #include <omnetpp.h>
 
+#include "simu5g/stack/sidelink/mac/SlMcsTable.h"
 #include "simu5g/stack/sidelink/mac/SlMode2Selector.h"
 #include "simu5g/stack/sidelink/mac/SlSensingDatabase.h"
 #include "simu5g/stack/sidelink/mac/SlSlotGrid.h"
@@ -68,6 +71,7 @@ class SlAlgorithmTest : public cSimpleModule
         testUnmonitoredExclusion();
         testDegeneratePoolFallback();
         testReselectionCounter();
+        testMcsTable();
 
         std::cout << "SlAlgorithmTest: ALL " << numChecks_ << " CHECKS PASSED" << std::endl;
     }
@@ -227,6 +231,47 @@ class SlAlgorithmTest : public cSimpleModule
             inBounds = inBounds && c >= 25 && c <= 75;
         }
         check(inBounds, "counter: 200 LCG draws stay within [25,75] for period 20ms");
+    }
+
+    void testMcsTable()
+    {
+        // table entries (TS 38.214 5.1.3.1-1 spot checks)
+        check(SlMcsTable::entry(0).qm == 2 && SlMcsTable::entry(0).codeRateX1024 == 120.0,
+              "mcs: entry 0 is QPSK 120/1024");
+        check(SlMcsTable::entry(10).qm == 4 && SlMcsTable::entry(10).codeRateX1024 == 340.0,
+              "mcs: entry 10 is 16QAM 340/1024");
+        check(SlMcsTable::entry(28).qm == 6 && SlMcsTable::entry(28).codeRateX1024 == 948.0,
+              "mcs: entry 28 is 64QAM 948/1024");
+
+        // TBS, hand-computed per TS 38.214 5.1.3.2 with 9 data symbols
+        // (overheadSymbols=5): RE/PRB = 108
+        // mcs 0, 1 PRB: nInfo = 108*2*(120/1024) = 25.31 -> N'info = 24 -> 24 bits
+        check(SlMcsTable::tbsBits(0, 1, 5) == 24, "mcs: TBS(mcs0, 1 PRB) = 24 bits");
+        // mcs 6, 10 PRB: nInfo = 1080*2*(449/1024) = 947.1 -> n=3, N'info=944
+        //  -> next table value 984 bits
+        check(SlMcsTable::tbsBits(6, 10, 5) == 984, "mcs: TBS(mcs6, 10 PRB) = 984 bits");
+        check(SlMcsTable::tbsBytes(6, 10, 5) == 123, "mcs: TBS(mcs6, 10 PRB) = 123 bytes");
+        // mcs 15, 20 PRB: nInfo = 2160*4*(616/1024) = 5197.5 -> n=7,
+        //  N'info = 128*round(5173/128) = 5120; R>1/4, N'info<8424
+        //  -> TBS = 8*ceil(5144/8)-24 = 5120 bits
+        check(SlMcsTable::tbsBits(15, 20, 5) == 5120, "mcs: TBS(mcs15, 20 PRB) = 5120 bits");
+        // mcs 28, 50 PRB: nInfo = 5400*6*(948/1024) = 29995.3 -> n=9,
+        //  N'info = 512*round(29971/512) = 30208; C = ceil(30232/8424) = 4
+        //  -> TBS = 32*ceil(30232/32)-24 = 30216 bits (real-valued C, not the
+        //  integer-division shortcut)
+        check(SlMcsTable::tbsBits(28, 50, 5) == 30216, "mcs: TBS(mcs28, 50 PRB) = 30216 bits");
+        // RE/PRB is capped at 156: zero overhead would give 168
+        check(SlMcsTable::tbsBits(0, 1, 0) == SlMcsTable::computeTbsFromNinfo(
+                  std::floor(156 * 2 * (120.0 / 1024.0)), 120.0 / 1024.0),
+              "mcs: RE/PRB capped at 156");
+        check(SlMcsTable::computeTbsFromNinfo(0, 0.5) == 0, "mcs: nInfo=0 -> TBS 0");
+
+        // CQI map: largest CQI of 7.2.3-1 with efficiency <= the MCS's
+        check(SlMcsTable::cqi(0) == 2, "mcs: cqi(0) = 2");
+        check(SlMcsTable::cqi(9) == 6 && SlMcsTable::cqi(10) == 6, "mcs: cqi(9) = cqi(10) = 6");
+        check(SlMcsTable::cqi(11) == 7, "mcs: cqi(11) = 7");
+        check(SlMcsTable::cqi(17) == 9, "mcs: cqi(17) = 9 (64QAM 438 below CQI10's efficiency)");
+        check(SlMcsTable::cqi(28) == 15, "mcs: cqi(28) = 15");
     }
 };
 
