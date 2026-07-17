@@ -48,6 +48,21 @@ struct SlrbConfigEntry
 };
 
 /**
+ * One level of the CBR-based congestion control table (design decision D22,
+ * TS 38.214 8.1.6-style, abstracted): the level applies while the measured
+ * CBR is <= cbrUpper (levels sorted ascending; the last level should have
+ * cbrUpper 1.0).
+ */
+struct SlCbrLevel
+{
+    double cbrUpper = 1.0;          // level applies while CBR <= cbrUpper
+    unsigned int maxMcs = 28;       // MCS cap at (re)selection
+    int maxNumSubchannels = 1000;   // L_subCH cap at (re)selection
+    double maxTxPowerDbm = 1000;    // TX power cap, applied at slPhy
+    double crLimit = 1.0;           // own channel-occupancy-ratio limit (TX occasions defer above it)
+};
+
+/**
  * Sidelink preconfiguration (TS 38.331 SL-PreconfigurationNR analog, heavily
  * abstracted): resource pool geometry, mode-2 selection parameters and the
  * static SLRB configuration. Parsed from a JSON-style NED object parameter;
@@ -89,6 +104,12 @@ class SlPreconfig
 
     /// LCP priority of a PQI: preconfig override, or the standard subset
     int getPqiPriority(int pqi) const;
+
+    // --- CBR congestion control levels (D22, WP-K); empty = off ---
+    std::vector<SlCbrLevel> cbrConfig;
+
+    /// the level applying to a measured CBR (nullptr when the table is empty)
+    const SlCbrLevel *findCbrLevel(double cbr) const;
 
     SlPreconfig();
 

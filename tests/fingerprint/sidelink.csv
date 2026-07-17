@@ -12,3 +12,4 @@
 /simulations/nr/sidelink/highway/,        -f omnetpp.ini -c Highway-Platoon -r 0,                 1s,         0071-237b/tplx;3c61-fdd9/tilx;2303-8de2/~tNl;fd9a-bb10/sz, PASS,
 /simulations/nr/sidelink/highway/,        -f omnetpp.ini -c Highway-Platoon-AckNack -r 0,         1s,         7039-953a/tplx;dbd7-2df1/tilx;8137-7ac9/~tNl;eaa7-acb8/sz, PASS,
 /simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Unicast-QoS -r 0,                     2s,         5594-63ce/tplx;04ac-367f/tilx;82bd-c8e3/~tNl;c60d-703d/sz, PASS,
+/simulations/nr/sidelink/highway/,        -f omnetpp.ini -c Highway-Congested -r 0,               1s,         1767-cbf4/tplx;6fe4-deb0/tilx;e1b2-f843/~tNl;4f80-ef96/sz, PASS,

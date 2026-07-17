@@ -14,6 +14,7 @@
 
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/sidelink/common/SlCommon.h"
+#include "simu5g/stack/sidelink/mac/SlCrTracker.h"
 #include "simu5g/stack/sidelink/mac/SlHarqTxEntity.h"
 #include "simu5g/stack/sidelink/mac/SlMode2Selector.h"
 #include "simu5g/stack/sidelink/mac/SlSensingDatabase.h"
@@ -89,6 +90,13 @@ class NrSlMacUe : public LteMacBase
     unsigned int numFeedbackRetx_ = 0;
     unsigned int numDtx_ = 0;
 
+    // CBR-based congestion control (WP-K, D22; active when the preconfig
+    // has a cbrConfig table)
+    double lastCbr_ = 0;              // latest CBR pushed by slPhy
+    SlCrTracker crTracker_;
+    int crWindowSlots_ = 1000;
+    unsigned int numCrDeferred_ = 0;  // TX occasions skipped over the CR limit
+
     cMessage *txSlotEvent_ = nullptr;
     int requestedSdus_ = 0;
 
@@ -125,6 +133,9 @@ class NrSlMacUe : public LteMacBase
     /// PSFCH input from slPhy: a decoded ACK/NACK for one of our HARQ
     /// processes (D24; acted upon once the feedback-driven TX entity lands)
     virtual void onPsfchDecoded(MacNodeId fbSender, int harqProcId, bool ack);
+
+    /// CBR input from slPhy (D22): latest channel busy ratio measurement
+    virtual void onCbrUpdated(double cbr);
 };
 
 } // namespace simu5g

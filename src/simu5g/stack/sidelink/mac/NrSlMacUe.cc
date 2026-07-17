@@ -89,6 +89,7 @@ void NrSlMacUe::initialize(int stage)
         dtxAsAck_ = (par("psfchDtxPolicy").stdstringValue() == "ack");
         WATCH(numFeedbackRetx_);
         WATCH(numDtx_);
+        WATCH(numCrDeferred_);
 
         // sensing database + selector (used by mode2; random uses the selector
         // with an always-empty database)
@@ -128,9 +129,21 @@ void NrSlMacUe::selectGrant()
     grant_.mcs = par("grantMcs");
     grant_.blindRetx = 0;
 
+    // congestion control (D22): the current CBR level caps MCS and L_subCH
+    // at (re)selection
+    int numSubchannels = grantNumSubchannels_;
+    const SlCbrLevel *level = slRrc_->getPreconfig().findCbrLevel(lastCbr_);
+    if (level != nullptr) {
+        if (grant_.mcs > level->maxMcs || numSubchannels > level->maxNumSubchannels)
+            EV << NOW << " NrSlMacUe::selectGrant - CBR " << lastCbr_ << " caps the grant to MCS "
+               << level->maxMcs << ", " << level->maxNumSubchannels << " subchannel(s)" << endl;
+        grant_.mcs = std::min(grant_.mcs, level->maxMcs);
+        numSubchannels = std::min(numSubchannels, level->maxNumSubchannels);
+    }
+
     if (computeTbSize_) {
         // real link adaptation (D15): TBS follows the grant MCS and width
-        int numPrbs = grantNumSubchannels_ * subchannelSize_;
+        int numPrbs = numSubchannels * subchannelSize_;
         tbSize_ = SlMcsTable::tbsBytes(grant_.mcs, numPrbs, overheadSymbols_);
         EV << NOW << " NrSlMacUe::selectGrant - TBS " << tbSize_ << "B for MCS " << grant_.mcs
            << " over " << numPrbs << " PRBs (" << overheadSymbols_ << " overhead symbols)" << endl;
@@ -140,7 +153,7 @@ void NrSlMacUe::selectGrant()
         // WP-C static grant: fixed periodic resources from NED parameters
         grant_.firstSlot = staticGrantSlotOffset_;
         grant_.firstSubchannel = par("staticGrantFirstSubchannel");
-        grant_.numSubchannels = grantNumSubchannels_;
+        grant_.numSubchannels = numSubchannels;
         grant_.reselectionCounter = 0;  // never reselected
         EV << NOW << " NrSlMacUe::selectGrant - static grant: offset=" << grant_.firstSlot
            << " period=" << grant_.periodSlots << " slots, subchannels [" << grant_.firstSubchannel
@@ -153,10 +166,10 @@ void NrSlMacUe::selectGrant()
         static const SlSensingDatabase emptyDb(0);
         const SlSensingDatabase& db = (allocationMode_ == MODE2) ? sensingDb_ : emptyDb;
 
-        SlMode2Selector::Selection sel = selector_->select(now, grantNumSubchannels_, periodSlots_, periodMs_, db);
+        SlMode2Selector::Selection sel = selector_->select(now, numSubchannels, periodSlots_, periodMs_, db);
         grant_.firstSlot = sel.slot;
         grant_.firstSubchannel = sel.firstSubchannel;
-        grant_.numSubchannels = grantNumSubchannels_;
+        grant_.numSubchannels = numSubchannels;
         grant_.reselectionCounter = sel.reselectionCounter;
 
         EV << NOW << " NrSlMacUe::selectGrant - " << (allocationMode_ == MODE2 ? "mode-2" : "random")
@@ -196,6 +209,21 @@ void NrSlMacUe::handleTxSlot()
     if (psfchPeriod_ > 0)
         numDtx_ += harqTx_.processDeadlines(slot, dtxAsAck_, harqMaxRtx_);
 
+    // congestion control (D22): over the CBR level's CR limit, this TX
+    // occasion is skipped entirely (retransmissions included); the occasion
+    // train stays armed so transmission resumes when the window drains
+    const SlCbrLevel *crLevel = slRrc_->getPreconfig().findCbrLevel(lastCbr_);
+    if (crLevel != nullptr) {
+        double cr = crTracker_.cr(slot, crWindowSlots_, slRrc_->getPreconfig().numSubchannels);
+        if (cr > crLevel->crLimit) {
+            EV << NOW << " NrSlMacUe::handleTxSlot - CR " << cr << " above the limit "
+               << crLevel->crLimit << " (CBR " << lastCbr_ << "), occasion deferred" << endl;
+            numCrDeferred_++;
+            ensureTxScheduled();
+            return;
+        }
+    }
+
     // pending HARQ copies (blind or NACK'd) take the TX opportunity before
     // new data (SL-1 simplification: retransmissions ride the same selected
     // resource train, i.e. the next period slots of the grant)
@@ -211,6 +239,7 @@ void NrSlMacUe::handleTxSlot()
         EV << NOW << " NrSlMacUe::handleTxSlot - " << (retx.feedbackMode ? "feedback-driven" : "blind")
            << " retransmission of HARQ proc " << retx.procId << " (rv " << retx.rv << ")" << endl;
         sendLowerPackets(retx.pdu);
+        crTracker_.recordTx(slot, grant_.numSubchannels);
 
         if (retx.feedbackMode) {
             // the copy is acknowledged again: re-arm the feedback wait
@@ -505,6 +534,7 @@ void NrSlMacUe::macPduMake(MacCid cid)
            << ", HARQ proc " << procId << harqNote << endl;
 
         sendLowerPackets(macPkt);
+        crTracker_.recordTx(slot, grant_.numSubchannels);
     }
 
     // keep transmitting on the grant train while backlog, pending copies or
@@ -525,6 +555,12 @@ void NrSlMacUe::onSciDecoded(const SlSensingEntry& entry)
     Enter_Method_Silent("onSciDecoded()");
     if (allocationMode_ == MODE2)
         sensingDb_.recordSci(entry);
+}
+
+void NrSlMacUe::onCbrUpdated(double cbr)
+{
+    Enter_Method_Silent("onCbrUpdated()");
+    lastCbr_ = cbr;
 }
 
 void NrSlMacUe::onPsfchDecoded(MacNodeId fbSender, int harqProcId, bool ack)

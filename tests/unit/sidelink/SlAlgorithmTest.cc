@@ -21,7 +21,9 @@
 
 #include <omnetpp.h>
 
+#include "simu5g/stack/sidelink/common/SlPreconfig.h"
 #include "simu5g/stack/sidelink/common/SlPsfch.h"
+#include "simu5g/stack/sidelink/mac/SlCrTracker.h"
 #include "simu5g/stack/sidelink/mac/SlMcsTable.h"
 #include "simu5g/stack/sidelink/mac/SlMode2Selector.h"
 #include "simu5g/stack/sidelink/mac/SlSensingDatabase.h"
@@ -74,6 +76,7 @@ class SlAlgorithmTest : public cSimpleModule
         testReselectionCounter();
         testMcsTable();
         testPsfchMath();
+        testCbrLevelsAndCr();
 
         std::cout << "SlAlgorithmTest: ALL " << numChecks_ << " CHECKS PASSED" << std::endl;
     }
@@ -300,6 +303,31 @@ class SlAlgorithmTest : public cSimpleModule
         // groupcast option 2: distinct members -> distinct resources (within the modulus)
         check(slPsfchResourceIndex(20, 2, 5, 1, 8) == (20 * 5 + 2 + 1) % 8,
               "psfch: member index shifts the resource");
+    }
+
+    void testCbrLevelsAndCr()
+    {
+        // CBR level lookup: ascending cbrUpper thresholds, sticky top level
+        SlPreconfig cfg;
+        check(cfg.findCbrLevel(0.5) == nullptr, "cbr: empty table -> no level");
+        SlCbrLevel l1; l1.cbrUpper = 0.3; l1.maxMcs = 16; l1.crLimit = 0.02;
+        SlCbrLevel l2; l2.cbrUpper = 0.65; l2.maxMcs = 12; l2.crLimit = 0.01;
+        SlCbrLevel l3; l3.cbrUpper = 1.0; l3.maxMcs = 9; l3.crLimit = 0.005;
+        cfg.cbrConfig = { l1, l2, l3 };
+        check(cfg.findCbrLevel(0.0)->maxMcs == 16, "cbr: CBR 0 -> first level");
+        check(cfg.findCbrLevel(0.3)->maxMcs == 16, "cbr: boundary is inclusive");
+        check(cfg.findCbrLevel(0.31)->maxMcs == 12, "cbr: mid level");
+        check(cfg.findCbrLevel(0.9)->crLimit == 0.005, "cbr: top level");
+
+        // CR window: subchannel-slots over (now - window, now]
+        SlCrTracker cr;
+        check(cr.cr(100, 1000, 5) == 0.0, "cr: empty tracker -> 0");
+        cr.recordTx(100, 2);
+        cr.recordTx(150, 1);
+        check(cr.cr(150, 1000, 5) == 3.0 / 5000, "cr: 3 subchannel-slots in the window");
+        // the slot exactly window-edge old falls out
+        check(cr.cr(1100, 1000, 5) == 1.0 / 5000, "cr: slot 100 pruned at now=1100 (edge exclusive)");
+        check(cr.cr(1150, 1000, 5) == 0.0, "cr: all pruned once the window passes");
     }
 };
 

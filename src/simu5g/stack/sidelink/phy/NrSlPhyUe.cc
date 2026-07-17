@@ -127,13 +127,14 @@ void NrSlPhyUe::handleUpperMessage(cMessage *msg)
     info.setHarqProcId(slTxInfo->getHarqProcId());
     info.setHarqNdi(slTxInfo->getHarqNdi());
     info.setHarqRv(slTxInfo->getHarqRv());
-    info.setTxPower(txPower_);
+    double txPower = cappedTxPower();  // congestion control (D22) may cap it
+    info.setTxPower(txPower);
     info.setSenderCoord(getRadioPosition());
     info.setCarrierFrequency(carrierFrequency_);
 
     // record the transmission for interference computation / sensing (D9);
     // prune records older than a generous sensing horizon (1600 slots > T0)
-    SlBinder::SlTxRecord record{nodeId_, info.getFirstSubchannel(), info.getNumSubchannels(), txPower_, getRadioPosition()};
+    SlBinder::SlTxRecord record{nodeId_, info.getFirstSubchannel(), info.getNumSubchannels(), txPower, getRadioPosition()};
     slBinder_->recordSlTransmission(carrierFrequency_, slot, record, slot - 1600);
 
     // PRR accounting (WP-G): register the receivers in range once per new TB
@@ -374,6 +375,17 @@ void NrSlPhyUe::recordSlotRssi(SlotIndex slot, std::vector<double>&& rssiMw)
 
     double cbr = (double)busy / (cbrWindow_ * numSubchannels);
     emit(slCbrSignal_, cbr);
+
+    // congestion control (D22): the MAC adapts its grants to the latest CBR
+    lastCbr_ = cbr;
+    if (slMac_ != nullptr)
+        slMac_->onCbrUpdated(cbr);
+}
+
+double NrSlPhyUe::cappedTxPower() const
+{
+    const SlCbrLevel *level = slRrc_->getPreconfig().findCbrLevel(lastCbr_);
+    return (level != nullptr) ? std::min(txPower_, level->maxTxPowerDbm) : txPower_;
 }
 
 bool NrSlPhyUe::getFeedbackConfig(const SlAirFrameInfo& info, SlPsfchMode& mode, double& mcrMeters, int& memberIndex) const
@@ -453,7 +465,8 @@ void NrSlPhyUe::transmitPendingPsfch()
 
         // record on the reserved PSFCH band: co-resource feedbacks interfere,
         // the data band is never overlapped
-        SlBinder::SlTxRecord record{nodeId_, SL_PSFCH_BAND_BASE + fb.resourceIndex, 1, txPower_, getRadioPosition()};
+        double txPower = cappedTxPower();  // congestion control (D22) may cap it
+        SlBinder::SlTxRecord record{nodeId_, SL_PSFCH_BAND_BASE + fb.resourceIndex, 1, txPower, getRadioPosition()};
         slBinder_->recordSlTransmission(carrierFrequency_, slot, record, slot - 1600);
 
         auto *frame = new SlPsfchFrame("slPsfchFrame");
@@ -467,7 +480,7 @@ void NrSlPhyUe::transmitPendingPsfch()
         frame->setCastType(fb.castType);
         frame->setSlotIndex(slot);
         frame->setResourceIndex(fb.resourceIndex);
-        frame->setTxPower(txPower_);
+        frame->setTxPower(txPower);
         frame->setSenderCoord(getRadioPosition());
 
         EV << NOW << " NrSlPhyUe::transmitPendingPsfch - " << (fb.ack ? "ACK" : "NACK")

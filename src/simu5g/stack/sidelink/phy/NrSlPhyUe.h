@@ -68,6 +68,10 @@ class NrSlPhyUe : public LtePhyBase
     std::deque<std::pair<SlotIndex, std::vector<double>>> rssiHistory_;
     int cbrWindow_ = 100;
     double cbrRssiThresholdDbm_ = -94;
+    double lastCbr_ = 0;   // latest measurement, also pushed to the MAC (D22)
+
+    /// congestion control (D22): the current CBR level's TX power cap
+    double cappedTxPower() const;
 
     // blind-retransmission HARQ RX bookkeeping (WP-F): attempt counting for
     // soft combining + duplicate-delivery suppression

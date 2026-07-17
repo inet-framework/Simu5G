@@ -86,6 +86,28 @@ void SlPreconfig::loadFromJson(const cValueMap *map)
         }
     }
 
+    // CBR congestion control table (D22)
+    if (map->containsKey("cbrConfig")) {
+        cbrConfig.clear();
+        const cValueArray *arr = check_and_cast<const cValueArray *>(map->get("cbrConfig").objectValue());
+        for (int i = 0; i < (int)arr->size(); i++) {
+            const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
+            SlCbrLevel level;
+            level.cbrUpper = entry->get("cbrUpper").doubleValue();
+            if (entry->containsKey("maxMcs"))
+                level.maxMcs = (unsigned int)entry->get("maxMcs").intValue();
+            if (entry->containsKey("maxNumSubchannels"))
+                level.maxNumSubchannels = (int)entry->get("maxNumSubchannels").intValue();
+            if (entry->containsKey("maxTxPower"))
+                level.maxTxPowerDbm = entry->get("maxTxPower").doubleValueInUnit("dBm");
+            if (entry->containsKey("crLimit"))
+                level.crLimit = entry->get("crLimit").doubleValue();
+            if (!cbrConfig.empty() && level.cbrUpper <= cbrConfig.back().cbrUpper)
+                throw cRuntimeError("SlPreconfig: cbrConfig levels must have ascending cbrUpper");
+            cbrConfig.push_back(level);
+        }
+    }
+
     // PQI priority overrides (WP-J)
     if (map->containsKey("pqiPriorityOverrides")) {
         pqiPriorityOverrides.clear();
@@ -151,6 +173,15 @@ void SlPreconfig::loadSlrbEntryShape(const cValueMap *entry, SlrbConfigEntry& e)
         e.mcrMeters = entry->get("mcr").doubleValueInUnit("m");
     if (entry->containsKey("psfchMode"))
         e.psfchMode = aToSlPsfchMode(entry->get("psfchMode").stdstringValue());
+}
+
+const SlCbrLevel *SlPreconfig::findCbrLevel(double cbr) const
+{
+    for (const auto& level : cbrConfig)
+        if (cbr <= level.cbrUpper)
+            return &level;
+    // above the last level's cbrUpper: the strictest level keeps applying
+    return cbrConfig.empty() ? nullptr : &cbrConfig.back();
 }
 
 int SlPreconfig::getPqiPriority(int pqi) const

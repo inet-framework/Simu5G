@@ -84,6 +84,16 @@ a groupcast SLRB while the other 35 vehicles keep broadcasting CAMs
   the TB early once all 4 ACKs arrive and retransmits on any NACK or on
   DTX (per psfchDtxPolicy).
 
+Highway-Congested / Highway-Congested-Control (WP-K / SL-2, D22):
+CBR-based congestion control on a deliberately congested variant (80
+vehicles, 20 Hz CAMs, single-subchannel pool, 50 ms reservation period).
+The cbrConfig levels cap TX power and the own channel-occupancy ratio;
+above the CR limit a UE skips TX occasions (slCrDeferred). Measured
+(5s, seed 0): mean CBR 0.516 with control vs 0.604 without; PRR at
+0-20 m improves 0.969 -> 0.992 (the standardized trade: deferrals and
+power caps sacrifice long-range delivery - total PRR 0.622 vs 0.671 -
+for near-range reliability and lower channel load).
+
 Retransmission-efficiency exit gate (M6), measured on the unicast pair at
 the PER knee (basic/, grantMcs=12, 2400 m, shadowing off, 2s): blind
 retx=1 delivers 93/95 using 380 TB transmissions; PSFCH feedback delivers
