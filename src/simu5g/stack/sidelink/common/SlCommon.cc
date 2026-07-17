@@ -31,4 +31,22 @@ SlCastType aToSlCastType(const std::string& s)
     throw cRuntimeError("Unknown sidelink cast type: '%s' (expected broadcast/groupcast/unicast)", s.c_str());
 }
 
+const std::string slPsfchModeToA(SlPsfchMode m)
+{
+    switch (m) {
+        case SL_PSFCH_OFF: return "off";
+        case SL_PSFCH_NACK_ONLY: return "nackOnly";
+        case SL_PSFCH_ACK_NACK: return "ackNack";
+        default: return "unknown";
+    }
+}
+
+SlPsfchMode aToSlPsfchMode(const std::string& s)
+{
+    if (s == "off") return SL_PSFCH_OFF;
+    if (s == "nackOnly") return SL_PSFCH_NACK_ONLY;
+    if (s == "ackNack") return SL_PSFCH_ACK_NACK;
+    throw cRuntimeError("Unknown PSFCH mode: '%s' (expected off/nackOnly/ackNack)", s.c_str());
+}
+
 } // namespace simu5g

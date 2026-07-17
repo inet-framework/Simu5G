@@ -44,6 +44,19 @@ enum SlCastType {
 const std::string slCastTypeToA(SlCastType c);
 SlCastType aToSlCastType(const std::string& s);
 
+/// PSFCH HARQ feedback mode of an SLRB (design decision D19/D24). Unicast
+/// SLRBs use ACK/NACK implicitly whenever the pool has PSFCH configured;
+/// groupcast SLRBs pick option 1 (distance-gated NACK-only, needs mcr) or
+/// option 2 (per-member ACK/NACK) explicitly; broadcast stays on blind retx.
+enum SlPsfchMode {
+    SL_PSFCH_OFF = 0,
+    SL_PSFCH_NACK_ONLY = 1,   // groupcast option 1
+    SL_PSFCH_ACK_NACK = 2,    // groupcast option 2 / unicast
+};
+
+const std::string slPsfchModeToA(SlPsfchMode m);
+SlPsfchMode aToSlPsfchMode(const std::string& s);
+
 /// Absolute slot index on the numerology grid of the SL carrier
 /// (slot 0 starts at simtime 0; slot duration = 1ms / 2^numerologyIndex)
 typedef int64_t SlotIndex;

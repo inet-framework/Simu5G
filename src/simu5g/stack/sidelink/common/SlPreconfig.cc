@@ -62,6 +62,10 @@ void SlPreconfig::loadFromJson(const cValueMap *map)
         blindRetx = (int)map->get("blindRetx").intValue();
     if (map->containsKey("psfchPeriod"))
         psfchPeriod = (int)map->get("psfchPeriod").intValue();
+    if (map->containsKey("psfchMinGap"))
+        psfchMinGap = (int)map->get("psfchMinGap").intValue();
+    if (map->containsKey("psfchResources"))
+        psfchResources = (int)map->get("psfchResources").intValue();
 
     // slrbConfig array (D12)
     if (map->containsKey("slrbConfig")) {
@@ -107,6 +111,18 @@ void SlPreconfig::loadFromJson(const cValueMap *map)
         throw cRuntimeError("SlPreconfig: invalid subchannel geometry (%d x %d)", subchannelSize, numSubchannels);
     if (t1 < 0 || t2 <= t1)
         throw cRuntimeError("SlPreconfig: invalid selection window [%d,%d]", t1, t2);
+    if (psfchPeriod != 0 && psfchPeriod != 1 && psfchPeriod != 2 && psfchPeriod != 4)
+        throw cRuntimeError("SlPreconfig: psfchPeriod %d not in {0,1,2,4}", psfchPeriod);
+    if (psfchMinGap < 0 || psfchResources <= 0)
+        throw cRuntimeError("SlPreconfig: invalid PSFCH parameters (minGap %d, resources %d)", psfchMinGap, psfchResources);
+    for (const auto& e : slrbConfig) {
+        if (e.psfchMode != SL_PSFCH_OFF && e.castType != SL_GROUPCAST)
+            throw cRuntimeError("SlPreconfig: psfchMode is a groupcast option (unicast SLRBs use ACK/NACK implicitly when the pool has PSFCH)");
+        if (e.psfchMode == SL_PSFCH_NACK_ONLY && e.mcrMeters <= 0)
+            throw cRuntimeError("SlPreconfig: groupcast option 1 (nackOnly) needs a positive mcr on the SLRB");
+        if (e.psfchMode != SL_PSFCH_OFF && psfchPeriod == 0)
+            throw cRuntimeError("SlPreconfig: an SLRB requests PSFCH feedback but the pool has psfchPeriod 0");
+    }
 }
 
 void SlPreconfig::loadSlrbEntryShape(const cValueMap *entry, SlrbConfigEntry& e)
@@ -123,6 +139,8 @@ void SlPreconfig::loadSlrbEntryShape(const cValueMap *entry, SlrbConfigEntry& e)
         e.isDefault = entry->get("isDefault").boolValue();
     if (entry->containsKey("mcr"))
         e.mcrMeters = entry->get("mcr").doubleValueInUnit("m");
+    if (entry->containsKey("psfchMode"))
+        e.psfchMode = aToSlPsfchMode(entry->get("psfchMode").stdstringValue());
 }
 
 const SlrbConfigEntry *SlPreconfig::findSlrbForDstL2Id(SlL2Id dstL2Id) const

@@ -21,6 +21,7 @@
 
 #include <omnetpp.h>
 
+#include "simu5g/stack/sidelink/common/SlPsfch.h"
 #include "simu5g/stack/sidelink/mac/SlMcsTable.h"
 #include "simu5g/stack/sidelink/mac/SlMode2Selector.h"
 #include "simu5g/stack/sidelink/mac/SlSensingDatabase.h"
@@ -72,6 +73,7 @@ class SlAlgorithmTest : public cSimpleModule
         testDegeneratePoolFallback();
         testReselectionCounter();
         testMcsTable();
+        testPsfchMath();
 
         std::cout << "SlAlgorithmTest: ALL " << numChecks_ << " CHECKS PASSED" << std::endl;
     }
@@ -272,6 +274,32 @@ class SlAlgorithmTest : public cSimpleModule
         check(SlMcsTable::cqi(11) == 7, "mcs: cqi(11) = 7");
         check(SlMcsTable::cqi(17) == 9, "mcs: cqi(17) = 9 (64QAM 438 below CQI10's efficiency)");
         check(SlMcsTable::cqi(28) == 15, "mcs: cqi(28) = 15");
+    }
+
+    void testPsfchMath()
+    {
+        // feedback slot: first slot >= pssch + gap with slot % period == 0
+        check(slPsfchFeedbackSlot(10, 4, 2) == 12, "psfch: slot 10, period 4, gap 2 -> 12");
+        check(slPsfchFeedbackSlot(11, 4, 2) == 16, "psfch: slot 11, period 4, gap 2 -> 16 (13 rounds up)");
+        check(slPsfchFeedbackSlot(12, 4, 2) == 16, "psfch: slot 12, period 4, gap 2 -> 16 (14 rounds up)");
+        check(slPsfchFeedbackSlot(14, 4, 2) == 16, "psfch: slot 14, period 4, gap 2 -> 16 (exact)");
+        check(slPsfchFeedbackSlot(10, 1, 2) == 12, "psfch: period 1 -> every slot is a PSFCH slot");
+        check(slPsfchFeedbackSlot(9, 2, 2) == 12, "psfch: slot 9, period 2, gap 2 -> 12");
+        check(slPsfchFeedbackSlot(10, 2, 0) == 10, "psfch: gap 0, aligned slot acks itself");
+        check(slPsfchFeedbackSlot(10, 4, 2) - 10 >= 2
+              && slPsfchFeedbackSlot(11, 4, 2) - 11 >= 2, "psfch: gap is always respected");
+
+        // resource index: derived from the acknowledged PSSCH's (slot, subchannel)
+        check(slPsfchResourceIndex(10, 3, 5, 0, 8) == (10 * 5 + 3) % 8, "psfch: resource index formula");
+        // two PSSCHs in the same slot on different subchannels -> different resources
+        check(slPsfchResourceIndex(10, 0, 5, 0, 8) != slPsfchResourceIndex(10, 1, 5, 0, 8),
+              "psfch: co-slot PSSCHs on different subchannels get different resources");
+        // deliberate collision: indices wrap modulo psfchResources
+        check(slPsfchResourceIndex(10, 0, 5, 0, 8) == slPsfchResourceIndex(10, 0, 5, 8, 8),
+              "psfch: member offset wraps modulo the resource count (collision case)");
+        // groupcast option 2: distinct members -> distinct resources (within the modulus)
+        check(slPsfchResourceIndex(20, 2, 5, 1, 8) == (20 * 5 + 2 + 1) % 8,
+              "psfch: member index shifts the resource");
     }
 };
 

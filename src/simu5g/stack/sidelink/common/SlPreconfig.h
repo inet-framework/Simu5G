@@ -42,6 +42,8 @@ struct SlrbConfigEntry
     int pqi = 0;                // PC5 5QI of the flow (priority mapping, WP-J)
     bool isDefault = false;     // catches packets with no matching PFI (WP-J)
     double mcrMeters = 0;       // groupcast option-1 minimum communication range (WP-I; 0 = none)
+    SlPsfchMode psfchMode = SL_PSFCH_OFF;  // groupcast HARQ feedback option (WP-I); unicast
+                                           // SLRBs use ACK/NACK implicitly when the pool has PSFCH
 };
 
 /**
@@ -67,7 +69,11 @@ class SlPreconfig
     double rsrpThresholdDbm = -128;        // initial exclusion threshold
     std::vector<int> reservationPeriodsMs = { 100 };  // allowed resource reservation periods
     int blindRetx = 0;                     // blind retransmissions per TB (WP-F)
-    int psfchPeriod = 0;                   // 0 = no PSFCH (SL-1); placeholder for SL-2
+
+    // --- PSFCH (D19; consumed from SL-2 WP-I on) ---
+    int psfchPeriod = 0;                   // PSFCH slots are those with slot % period == 0; 0 = no PSFCH
+    int psfchMinGap = 2;                   // min PSSCH-to-PSFCH gap [slots] (TS 38.213 MinTimeGapPSFCH analog)
+    int psfchResources = 8;                // feedback resource indices per PSFCH slot (collision abstraction)
 
     // --- static SLRB configuration (D12) ---
     std::vector<SlrbConfigEntry> slrbConfig;
