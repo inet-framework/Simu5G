@@ -426,6 +426,15 @@ void NrSlMacUe::onSciDecoded(const SlSensingEntry& entry)
         sensingDb_.recordSci(entry);
 }
 
+void NrSlMacUe::onPsfchDecoded(MacNodeId fbSender, int harqProcId, bool ack)
+{
+    Enter_Method_Silent("onPsfchDecoded()");
+    EV << NOW << " NrSlMacUe::onPsfchDecoded - " << (ack ? "ACK" : "NACK") << " from node "
+       << fbSender << " for HARQ proc " << harqProcId << endl;
+    // D24 feedback-driven retransmission lands with the TX-entity feedback
+    // mode (next step); until then decoded feedback is only logged
+}
+
 void NrSlMacUe::fromPhy(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);

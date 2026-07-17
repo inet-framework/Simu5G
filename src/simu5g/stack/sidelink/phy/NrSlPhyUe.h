@@ -13,6 +13,7 @@
 #define _SIDELINK_NRSLPHYUE_H_
 
 #include <deque>
+#include <map>
 
 #include "simu5g/stack/phy/LtePhyBase.h"
 #include "simu5g/stack/sidelink/common/SlCommon.h"
@@ -24,6 +25,8 @@ namespace simu5g {
 class SlBinder;
 class SlRrc;
 class SlAirFrame;
+class SlAirFrameInfo;
+class SlPsfchFrame;
 class ISlChannelModel;
 class NrSlMacUe;
 class SlStatsCollector;
@@ -70,10 +73,26 @@ class NrSlPhyUe : public LtePhyBase
     // soft combining + duplicate-delivery suppression
     SlHarqRxEntity harqRx_;
 
+    // PSFCH (D19): feedback pending transmission, keyed by its PSFCH slot;
+    // psfchTxTimer_ fires at the start of the earliest pending slot
+    struct PendingPsfch {
+        MacNodeId targetPid = NODEID_NONE;
+        int harqProcId = 0;
+        bool ack = false;
+        unsigned short castType = 0;
+        int resourceIndex = 0;
+    };
+    std::map<SlotIndex, std::vector<PendingPsfch>> pendingPsfch_;
+    cMessage *psfchTxTimer_ = nullptr;
+    std::vector<SlPsfchFrame *> storedPsfchFrames_;
+
     // statistics
     unsigned int numFramesHalfDuplexDropped_ = 0;
     unsigned int numSciLost_ = 0;
     unsigned int numDuplicatesSuppressed_ = 0;
+    unsigned int numPsfchSent_ = 0;
+    unsigned int numPsfchLost_ = 0;
+    unsigned int numPsfchDecoded_ = 0;
     static simsignal_t slRsrpSignal_;
     static simsignal_t slSinrSignal_;
     static simsignal_t slCbrSignal_;
@@ -92,6 +111,23 @@ class NrSlPhyUe : public LtePhyBase
 
     /// true if this node is a destination of the frame (own id or group member)
     bool isForUs(const SlAirFrame *frame) const;
+
+    // --- PSFCH (D19) ---
+
+    /// whether a received transmission wants HARQ feedback from this node,
+    /// and with which semantics (mode/mcr from the SLRB config for
+    /// groupcast; unicast is implicitly ACK/NACK when the pool has PSFCH)
+    bool getFeedbackConfig(const SlAirFrameInfo& info, SlPsfchMode& mode, double& mcrMeters, int& memberIndex) const;
+
+    /// queue an ACK/NACK for transmission in the PSSCH's PSFCH slot
+    void schedulePsfchFeedback(const SlAirFrameInfo& info, bool ack, int memberIndex);
+
+    /// psfchTxTimer_ fired: transmit all feedback pending for this slot
+    void transmitPendingPsfch();
+
+    /// slot-end decode of received PSFCH frames (threshold rule on the
+    /// PSFCH band, half-duplex applies); decoded feedback goes to the SL MAC
+    void decodeStoredPsfchFrames();
 
   public:
     ~NrSlPhyUe() override;

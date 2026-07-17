@@ -78,6 +78,13 @@ constexpr unsigned short SL_GROUP_PID_MAX = 65535;
 constexpr unsigned short SL_UNICAST_DRB_BASE = 32;
 constexpr unsigned short SL_SRB_DRB_ID = 63;
 
+/// Reserved "PSFCH band" of the SL transmission map (D19): PSFCH
+/// transmissions are recorded at subchannel SL_PSFCH_BAND_BASE +
+/// resourceIndex with width 1, so the existing overlap-based interference
+/// math makes co-resource feedbacks interfere while never overlapping the
+/// data subchannels.
+constexpr int SL_PSFCH_BAND_BASE = 0x10000;
+
 /**
  * Mode-2 sidelink grant (design decision D8): the outcome of resource
  * (re)selection, owned by the SL MAC. It is UE-internal state and is never

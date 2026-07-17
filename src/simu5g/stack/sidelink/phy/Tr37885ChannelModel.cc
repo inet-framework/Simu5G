@@ -57,6 +57,7 @@ void Tr37885ChannelModel::initialize(int stage)
         shadowing_ = par("shadowing");
         noiseFigureDb_ = par("noiseFigure").doubleValue();
         pscchSinrThresholdDb_ = par("pscchSinrThreshold").doubleValue();
+        psfchSinrThresholdDb_ = par("psfchSinrThreshold").doubleValue();
         cableLossDb_ = par("cableLoss").doubleValue();
         harqReduction_ = par("harqReduction").doubleValue();
     }

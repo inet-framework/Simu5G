@@ -53,6 +53,26 @@ packet SlAirFrame extends AirFrame
 }
 
 //
+// A PSFCH HARQ feedback transmission (design decision D19): one ACK/NACK for
+// one (data sender, HARQ process), sent by the data receiver in the PSFCH
+// slot derived from the acknowledged PSSCH (see SlPsfch.h). Occupies one
+// abstract PSFCH resource index; recorded in the SlBinder transmission map
+// on the reserved PSFCH band so co-resource feedbacks interfere.
+//
+packet SlPsfchFrame extends AirFrame
+{
+    MacNodeId fbSenderPid = NODEID_NONE;  // the data receiver sending this feedback
+    MacNodeId targetPid = NODEID_NONE;    // the data sender being acknowledged
+    int harqProcId = 0;                   // acknowledged SL HARQ process at the target
+    bool ack = false;                     // true = ACK, false = NACK
+    unsigned short castType = 0;          // SlCastType of the acknowledged transmission
+    int64_t slotIndex = -1;               // absolute slot index of this PSFCH transmission
+    int resourceIndex = 0;                // PSFCH resource within the slot (collision abstraction)
+    double txPower = 0;                   // transmit power [dBm]
+    inet::Coord senderCoord;              // feedback sender position at TX time
+}
+
+//
 // Tag attached by the SL MAC to the MAC PDU handed to slPhy, carrying the
 // grant/SCI parameters of this transmission (the packet also carries a
 // UserControlInfo tag with source/dest/direction/carrier as usual).

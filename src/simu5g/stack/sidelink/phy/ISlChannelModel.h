@@ -54,6 +54,11 @@ class ISlChannelModel
     /// per-extra-attempt error-probability scaling factor of the blind-HARQ
     /// soft-combining model (the Uu error model's harqReduction convention)
     virtual double getHarqReduction() const { return 0.2; }
+
+    /// PSFCH decode operating point (D19): a feedback is decoded iff its
+    /// SINR on the PSFCH band reaches this threshold. The default accepts
+    /// everything (ideal model).
+    virtual double getPsfchSinrThresholdDb() const { return -1e9; }
 };
 
 } // namespace simu5g

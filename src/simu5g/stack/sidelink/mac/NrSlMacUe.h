@@ -115,6 +115,10 @@ class NrSlMacUe : public LteMacBase
 
     /// sensing input from slPhy: a decoded SCI with its measured SL-RSRP
     virtual void onSciDecoded(const SlSensingEntry& entry);
+
+    /// PSFCH input from slPhy: a decoded ACK/NACK for one of our HARQ
+    /// processes (D24; acted upon once the feedback-driven TX entity lands)
+    virtual void onPsfchDecoded(MacNodeId fbSender, int harqProcId, bool ack);
 };
 
 } // namespace simu5g

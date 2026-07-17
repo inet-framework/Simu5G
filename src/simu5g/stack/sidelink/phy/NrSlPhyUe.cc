@@ -16,6 +16,7 @@
 #include "simu5g/common/InitStages.h"
 #include "simu5g/stack/sidelink/common/SlAirFrame_m.h"
 #include "simu5g/stack/sidelink/common/SlBinder.h"
+#include "simu5g/stack/sidelink/common/SlPsfch.h"
 #include "simu5g/stack/sidelink/common/SlStatsCollector.h"
 #include "simu5g/stack/sidelink/mac/NrSlMacUe.h"
 #include "simu5g/stack/sidelink/phy/ISlChannelModel.h"
@@ -36,7 +37,10 @@ simsignal_t NrSlPhyUe::slFrameLossSignal_ = registerSignal("slFrameLoss");
 NrSlPhyUe::~NrSlPhyUe()
 {
     cancelAndDelete(decodeTimer_);
+    cancelAndDelete(psfchTxTimer_);
     for (auto *frame : storedFrames_)
+        delete frame;
+    for (auto *frame : storedPsfchFrames_)
         delete frame;
 }
 
@@ -81,9 +85,14 @@ void NrSlPhyUe::initialize(int stage)
         // optional network-level PRR/PIR collector (WP-G)
         statsCollector_ = SlStatsCollector::findInstance();
 
+        psfchTxTimer_ = new cMessage("slPsfchTx");
+
         WATCH(numFramesHalfDuplexDropped_);
         WATCH(numSciLost_);
         WATCH(numDuplicatesSuppressed_);
+        WATCH(numPsfchSent_);
+        WATCH(numPsfchLost_);
+        WATCH(numPsfchDecoded_);
     }
 }
 
@@ -161,12 +170,18 @@ void NrSlPhyUe::handleUpperMessage(cMessage *msg)
 
 void NrSlPhyUe::handleAirFrame(cMessage *msg)
 {
-    auto *frame = check_and_cast<SlAirFrame *>(msg);
-
-    EV << NOW << " NrSlPhyUe::handleAirFrame - stored SL frame from node "
-       << frame->getInfo().getSrcNodeId() << " (slot " << frame->getInfo().getSlotIndex() << ")" << endl;
-
-    storedFrames_.push_back(frame);
+    if (auto *psfch = dynamic_cast<SlPsfchFrame *>(msg)) {
+        EV << NOW << " NrSlPhyUe::handleAirFrame - stored PSFCH frame from node "
+           << psfch->getFbSenderPid() << " (slot " << psfch->getSlotIndex()
+           << ", resource " << psfch->getResourceIndex() << ")" << endl;
+        storedPsfchFrames_.push_back(psfch);
+    }
+    else {
+        auto *frame = check_and_cast<SlAirFrame *>(msg);
+        EV << NOW << " NrSlPhyUe::handleAirFrame - stored SL frame from node "
+           << frame->getInfo().getSrcNodeId() << " (slot " << frame->getInfo().getSlotIndex() << ")" << endl;
+        storedFrames_.push_back(frame);
+    }
 
     if (decodeTimer_ == nullptr) {
         decodeTimer_ = new cMessage("slDecodeTimer");
@@ -178,8 +193,13 @@ void NrSlPhyUe::handleAirFrame(cMessage *msg)
 
 void NrSlPhyUe::handleSelfMessage(cMessage *msg)
 {
+    if (msg == psfchTxTimer_) {
+        transmitPendingPsfch();
+        return;
+    }
     ASSERT(msg == decodeTimer_);
     decodeStoredFrames();
+    decodeStoredPsfchFrames();
 }
 
 bool NrSlPhyUe::isForUs(const SlAirFrame *frame) const
@@ -250,6 +270,12 @@ void NrSlPhyUe::decodeStoredFrames()
             continue;
         }
 
+        // PSFCH (D19): does this transmission want HARQ feedback from us?
+        SlPsfchMode fbMode = SL_PSFCH_OFF;
+        double fbMcr = 0;
+        int fbMemberIndex = 0;
+        bool fbWanted = getFeedbackConfig(info, fbMode, fbMcr, fbMemberIndex);
+
         // blind-HARQ bookkeeping (WP-F): count the reception attempt for this
         // TB; drop copies of already-delivered TBs
         int attempt = harqRx_.onReception(info.getSrcNodeId(), info.getHarqProcId(), info.getHarqNdi());
@@ -257,6 +283,10 @@ void NrSlPhyUe::decodeStoredFrames()
             EV << NOW << " NrSlPhyUe::decodeStoredFrames - duplicate copy of an already-delivered TB"
                << " (src " << info.getSrcNodeId() << ", proc " << info.getHarqProcId() << "), suppressed" << endl;
             numDuplicatesSuppressed_++;
+            // a retransmission of a TB we already have means our ACK was
+            // lost: re-ACK it (NACK-only mode stays silent = success)
+            if (fbWanted && fbMode == SL_PSFCH_ACK_NACK)
+                schedulePsfchFeedback(info, true, fbMemberIndex);
             delete frame;
             continue;
         }
@@ -266,6 +296,25 @@ void NrSlPhyUe::decodeStoredFrames()
         double effErrorProb = rx.tbErrorProb * pow(slChannelModel_->getHarqReduction(), attempt - 1);
         bool tbDecoded = (effErrorProb <= 0) || (effErrorProb < 1 && uniform(0.0, 1.0) >= effErrorProb);
         emit(slFrameLossSignal_, tbDecoded ? 0.0 : 1.0);
+
+        if (fbWanted) {
+            if (fbMode == SL_PSFCH_ACK_NACK) {
+                // unicast / groupcast option 2: ACK or NACK per TB
+                schedulePsfchFeedback(info, tbDecoded, fbMemberIndex);
+            }
+            else if (fbMode == SL_PSFCH_NACK_ONLY && !tbDecoded) {
+                // groupcast option 1: NACK only, and only within the SLRB's
+                // minimum communication range of the sender (TS 38.213-style
+                // TX-RX distance gate on the SCI's sender position)
+                double distance = getRadioPosition().distance(info.getSenderCoord());
+                if (distance < fbMcr)
+                    schedulePsfchFeedback(info, false, 0);
+                else
+                    EV << NOW << " NrSlPhyUe::decodeStoredFrames - TB lost but beyond MCR ("
+                       << distance << " m >= " << fbMcr << " m), no NACK" << endl;
+            }
+        }
+
         if (!tbDecoded) {
             EV << NOW << " NrSlPhyUe::decodeStoredFrames - TB from node " << info.getSrcNodeId()
                << " lost (sinr " << rx.sinrDb << " dB, attempt " << attempt
@@ -325,6 +374,176 @@ void NrSlPhyUe::recordSlotRssi(SlotIndex slot, std::vector<double>&& rssiMw)
 
     double cbr = (double)busy / (cbrWindow_ * numSubchannels);
     emit(slCbrSignal_, cbr);
+}
+
+bool NrSlPhyUe::getFeedbackConfig(const SlAirFrameInfo& info, SlPsfchMode& mode, double& mcrMeters, int& memberIndex) const
+{
+    const SlPreconfig& cfg = slRrc_->getPreconfig();
+    if (cfg.psfchPeriod <= 0)
+        return false;
+
+    switch ((SlCastType)info.getCastType()) {
+        case SL_UNICAST:
+            // unicast always uses ACK/NACK when the pool has PSFCH (D19)
+            mode = SL_PSFCH_ACK_NACK;
+            mcrMeters = 0;
+            memberIndex = 0;
+            return true;
+
+        case SL_GROUPCAST: {
+            const SlrbConfigEntry *slrb = cfg.findSlrbForDstL2Id((SlL2Id)info.getDstL2Id());
+            if (slrb == nullptr || slrb->psfchMode == SL_PSFCH_OFF)
+                return false;
+            mode = slrb->psfchMode;
+            mcrMeters = slrb->mcrMeters;
+            // option 2: this member's feedback resource offset = its rank in
+            // the (ordered) group member set -- deterministic at TX and RX
+            memberIndex = 0;
+            for (MacNodeId member : slBinder_->getGroupMembers((SlL2Id)info.getDstL2Id())) {
+                if (member == nodeId_)
+                    break;
+                memberIndex++;
+            }
+            return true;
+        }
+
+        default:
+            return false;  // broadcast stays on blind retransmissions
+    }
+}
+
+void NrSlPhyUe::schedulePsfchFeedback(const SlAirFrameInfo& info, bool ack, int memberIndex)
+{
+    const SlPreconfig& cfg = slRrc_->getPreconfig();
+    SlotIndex fbSlot = slPsfchFeedbackSlot(info.getSlotIndex(), cfg.psfchPeriod, cfg.psfchMinGap);
+    int resourceIndex = slPsfchResourceIndex(info.getSlotIndex(), info.getFirstSubchannel(),
+            cfg.numSubchannels, memberIndex, cfg.psfchResources);
+
+    EV << NOW << " NrSlPhyUe::schedulePsfchFeedback - " << (ack ? "ACK" : "NACK") << " for node "
+       << info.getSrcNodeId() << " proc " << info.getHarqProcId() << " in PSFCH slot " << fbSlot
+       << ", resource " << resourceIndex << endl;
+
+    pendingPsfch_[fbSlot].push_back(PendingPsfch{info.getSrcNodeId(), info.getHarqProcId(), ack,
+                                                 info.getCastType(), resourceIndex});
+
+    simtime_t earliest = slotGrid_.slotStart(pendingPsfch_.begin()->first);
+    ASSERT(earliest > NOW);  // decode runs at slot end; fbSlot >= psschSlot + psfchMinGap (>= 1)
+    if (!psfchTxTimer_->isScheduled())
+        scheduleAt(earliest, psfchTxTimer_);
+    else if (psfchTxTimer_->getArrivalTime() > earliest) {
+        cancelEvent(psfchTxTimer_);
+        scheduleAt(earliest, psfchTxTimer_);
+    }
+}
+
+void NrSlPhyUe::transmitPendingPsfch()
+{
+    SlotIndex slot = slotGrid_.slotIndexAt(NOW);
+    auto it = pendingPsfch_.begin();
+    ASSERT(it != pendingPsfch_.end() && it->first == slot);
+
+    // half-duplex: a UE transmitting PSFCH cannot receive in this slot
+    // (neither data nor other feedback -- the Rel-16 pain point)
+    lastTxSlot_ = slot;
+
+    for (const PendingPsfch& fb : it->second) {
+        auto phyIt = slBinder_->getSlPhys().find(fb.targetPid);
+        if (phyIt == slBinder_->getSlPhys().end())
+            continue;  // target gone
+
+        // record on the reserved PSFCH band: co-resource feedbacks interfere,
+        // the data band is never overlapped
+        SlBinder::SlTxRecord record{nodeId_, SL_PSFCH_BAND_BASE + fb.resourceIndex, 1, txPower_, getRadioPosition()};
+        slBinder_->recordSlTransmission(carrierFrequency_, slot, record, slot - 1600);
+
+        auto *frame = new SlPsfchFrame("slPsfchFrame");
+        frame->setSchedulingPriority(airFramePriority_);
+        frame->setDuration(slotGrid_.getSlotDuration().dbl());
+        frame->setCarrierFrequency(carrierFrequency_);
+        frame->setFbSenderPid(nodeId_);
+        frame->setTargetPid(fb.targetPid);
+        frame->setHarqProcId(fb.harqProcId);
+        frame->setAck(fb.ack);
+        frame->setCastType(fb.castType);
+        frame->setSlotIndex(slot);
+        frame->setResourceIndex(fb.resourceIndex);
+        frame->setTxPower(txPower_);
+        frame->setSenderCoord(getRadioPosition());
+
+        EV << NOW << " NrSlPhyUe::transmitPendingPsfch - " << (fb.ack ? "ACK" : "NACK")
+           << " to node " << fb.targetPid << " (proc " << fb.harqProcId
+           << ", resource " << fb.resourceIndex << ")" << endl;
+
+        if (slTxRange_ > 0) {
+            auto *recvPhy = check_and_cast<NrSlPhyUe *>(phyIt->second);
+            if (recvPhy->getRadioPosition().distance(getRadioPosition()) > slTxRange_) {
+                delete frame;
+                numPsfchSent_++;
+                continue;
+            }
+        }
+
+        // the feedback is addressed: direct delivery to the target only
+        // (interference for other feedbacks comes from the tx map, not the frame)
+        cModule *receiverNode = getContainingNode(phyIt->second);
+        int gateId = receiverNode->findGate("slRadioIn");
+        if (gateId < 0)
+            throw cRuntimeError("NrSlPhyUe: receiver \"%s\" has no slRadioIn gate", receiverNode->getFullPath().c_str());
+        sendDirect(frame, 0, frame->getDuration(), receiverNode, gateId);
+        numPsfchSent_++;
+    }
+    pendingPsfch_.erase(it);
+    lastActive_ = NOW;
+
+    if (!pendingPsfch_.empty())
+        scheduleAt(slotGrid_.slotStart(pendingPsfch_.begin()->first), psfchTxTimer_);
+}
+
+void NrSlPhyUe::decodeStoredPsfchFrames()
+{
+    for (auto *frame : storedPsfchFrames_) {
+        ASSERT(frame->getTargetPid() == nodeId_);
+
+        // half-duplex: own TX in the PSFCH slot loses the feedback (DTX at
+        // the HARQ TX entity, handled by its deadline policy)
+        if (frame->getSlotIndex() == lastTxSlot_) {
+            EV << NOW << " NrSlPhyUe::decodeStoredPsfchFrames - half-duplex: own TX in slot "
+               << frame->getSlotIndex() << ", PSFCH from node " << frame->getFbSenderPid() << " lost" << endl;
+            numPsfchLost_++;
+            delete frame;
+            continue;
+        }
+
+        // threshold decode on the PSFCH band (interference = co-resource
+        // feedback transmissions from the tx map)
+        SlAirFrameInfo query;
+        query.setSrcNodeId(frame->getFbSenderPid());
+        query.setSlotIndex(frame->getSlotIndex());
+        query.setFirstSubchannel(SL_PSFCH_BAND_BASE + frame->getResourceIndex());
+        query.setNumSubchannels(1);
+        query.setTxPower(frame->getTxPower());
+        query.setSenderCoord(frame->getSenderCoord());
+        query.setCarrierFrequency(frame->getCarrierFrequency());
+        SlReceptionResult rx = slChannelModel_->computeReception(query, getRadioPosition(), nodeId_);
+
+        if (rx.sinrDb < slChannelModel_->getPsfchSinrThresholdDb()) {
+            EV << NOW << " NrSlPhyUe::decodeStoredPsfchFrames - PSFCH from node " << frame->getFbSenderPid()
+               << " lost (sinr " << rx.sinrDb << " dB, resource " << frame->getResourceIndex() << ")" << endl;
+            numPsfchLost_++;
+            delete frame;
+            continue;
+        }
+
+        numPsfchDecoded_++;
+        EV << NOW << " NrSlPhyUe::decodeStoredPsfchFrames - " << (frame->getAck() ? "ACK" : "NACK")
+           << " from node " << frame->getFbSenderPid() << " for proc " << frame->getHarqProcId() << endl;
+
+        if (slMac_ != nullptr)
+            slMac_->onPsfchDecoded(frame->getFbSenderPid(), frame->getHarqProcId(), frame->getAck());
+
+        delete frame;
+    }
+    storedPsfchFrames_.clear();
 }
 
 } // namespace simu5g

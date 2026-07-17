@@ -34,6 +34,7 @@ simple Tr37885ChannelModel like ILteChannelModel
 
         // PSCCH (SCI) decode operating point (design decision D11)
         double pscchSinrThreshold @unit(dB) = default(0dB);
+        double psfchSinrThreshold @unit(dB) = default(0dB);  // PSFCH decode operating point (D19)
 
         // blind-HARQ soft-combining model: TB error probability is multiplied
         // by this factor per additional received copy (Uu error-model convention)

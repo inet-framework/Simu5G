@@ -55,6 +55,7 @@ class Tr37885ChannelModel : public omnetpp::cSimpleModule, public ISlChannelMode
     bool shadowing_ = true;
     double noiseFigureDb_ = 9;
     double pscchSinrThresholdDb_ = 0;
+    double psfchSinrThresholdDb_ = 0;
     double cableLossDb_ = 0;
     double harqReduction_ = 0.2;
 
@@ -76,6 +77,7 @@ class Tr37885ChannelModel : public omnetpp::cSimpleModule, public ISlChannelMode
   public:
     SlReceptionResult computeReception(const SlAirFrameInfo& info, const inet::Coord& rxCoord, MacNodeId rxNodeId) override;
     double getHarqReduction() const override { return harqReduction_; }
+    double getPsfchSinrThresholdDb() const override { return psfchSinrThresholdDb_; }
 };
 
 } // namespace simu5g
