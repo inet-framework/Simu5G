@@ -56,4 +56,5 @@ simple BearerManagement
         // RLC re-split lands (the G12/G12b SL branches must be ported along)
         string slRlcAmTxEntityModuleType = default("simu5g.stack.rlc.am.AmTxQueue");
         string slRlcAmRxEntityModuleType = default("simu5g.stack.rlc.am.AmRxQueue");
+        string slSdapEntityModuleType = default("simu5g.stack.sidelink.sdap.SlSdapEntity");
 }

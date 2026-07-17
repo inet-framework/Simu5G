@@ -49,4 +49,24 @@ SlPsfchMode aToSlPsfchMode(const std::string& s)
     throw cRuntimeError("Unknown PSFCH mode: '%s' (expected off/nackOnly/ackNack)", s.c_str());
 }
 
+int slPqiToPriority(int pqi)
+{
+    // abstracted subset of TS 23.287 table 5.4.4-1 (standardized PQIs)
+    switch (pqi) {
+        case 21: return 1;   // GBR, platooning high (delay budget 20 ms)
+        case 22: return 2;   // GBR, sensor sharing
+        case 23: return 3;   // GBR, video between vehicles
+        case 1: return 3;    // non-GBR, safety broadcast (CAM/DENM class)
+        case 2: return 4;
+        case 3: return 3;
+        case 55: return 3;   // delay-critical GBR
+        case 56: return 6;
+        case 57: return 5;
+        case 58: return 4;
+        case 59: return 6;
+        case 90: return 25;  // non-GBR best effort
+        default: return SL_PQI_PRIORITY_DEFAULT;
+    }
+}
+
 } // namespace simu5g

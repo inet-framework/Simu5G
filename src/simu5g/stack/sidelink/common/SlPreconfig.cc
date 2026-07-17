@@ -86,6 +86,16 @@ void SlPreconfig::loadFromJson(const cValueMap *map)
         }
     }
 
+    // PQI priority overrides (WP-J)
+    if (map->containsKey("pqiPriorityOverrides")) {
+        pqiPriorityOverrides.clear();
+        const cValueArray *arr = check_and_cast<const cValueArray *>(map->get("pqiPriorityOverrides").objectValue());
+        for (int i = 0; i < (int)arr->size(); i++) {
+            const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
+            pqiPriorityOverrides[(int)entry->get("pqi").intValue()] = (int)entry->get("priority").intValue();
+        }
+    }
+
     // unicastSlrbDefaults array (D17): per-link SLRB templates, one per PFI
     if (map->containsKey("unicastSlrbDefaults")) {
         unicastSlrbDefaults.clear();
@@ -141,6 +151,12 @@ void SlPreconfig::loadSlrbEntryShape(const cValueMap *entry, SlrbConfigEntry& e)
         e.mcrMeters = entry->get("mcr").doubleValueInUnit("m");
     if (entry->containsKey("psfchMode"))
         e.psfchMode = aToSlPsfchMode(entry->get("psfchMode").stdstringValue());
+}
+
+int SlPreconfig::getPqiPriority(int pqi) const
+{
+    auto it = pqiPriorityOverrides.find(pqi);
+    return it != pqiPriorityOverrides.end() ? it->second : slPqiToPriority(pqi);
 }
 
 const SlrbConfigEntry *SlPreconfig::findSlrbForDstL2Id(SlL2Id dstL2Id) const

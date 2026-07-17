@@ -377,6 +377,35 @@ void BearerManagement::resolveSlModules()
     slRlcUmRxEntityModuleType_ = cModuleType::get(par("slRlcUmRxEntityModuleType").stringValue());
     slRlcAmTxEntityModuleType_ = cModuleType::get(par("slRlcAmTxEntityModuleType").stringValue());
     slRlcAmRxEntityModuleType_ = cModuleType::get(par("slRlcAmRxEntityModuleType").stringValue());
+    slSdapEntityModuleType_ = cModuleType::get(par("slSdapEntityModuleType").stringValue());
+}
+
+int BearerManagement::createSlSdapEntity(bool tx, uint32_t peerKey, cModule *slIp2Nic)
+{
+    Enter_Method_Silent("createSlSdapEntity()");
+    resolveSlModules();
+
+    const char *outVec = tx ? "sdapTxOut" : "sdapRxOut";
+    const char *inVec = tx ? "sdapTxIn" : "sdapRxIn";
+
+    std::string name = std::string("slSdap-") + (tx ? "tx-" : "rx-") + std::to_string(peerKey);
+    cModule *module = slSdapEntityModuleType_->create(name.c_str(), nicModule_);
+    module->par("role").setStringValue(tx ? "tx" : "rx");
+    module->par("peerKey").setIntValue((intval_t)peerKey);
+    module->finalizeParameters();
+    module->buildInside();
+
+    int idx = slIp2Nic->gateSize(outVec);
+    slIp2Nic->setGateSize(outVec, idx + 1);
+    slIp2Nic->setGateSize(inVec, idx + 1);
+    slIp2Nic->gate(outVec, idx)->connectTo(module->gate("in"));
+    module->gate("out")->connectTo(slIp2Nic->gate(inVec, idx));
+
+    module->scheduleStart(simTime());
+    module->callInitialize();
+
+    EV << "BearerManagement::createSlSdapEntity - created " << name << " (gate index " << idx << ")" << endl;
+    return idx;
 }
 
 void BearerManagement::createSlOutgoingConnection(FlowControlInfo *lteInfo)

@@ -57,6 +57,13 @@ enum SlPsfchMode {
 const std::string slPsfchModeToA(SlPsfchMode m);
 SlPsfchMode aToSlPsfchMode(const std::string& s);
 
+/// Default priority of a PC5 5QI (abstracted subset of TS 23.287 table
+/// 5.4.4-1; lower value = higher priority). Unknown PQIs (including 0) get
+/// the lowest priority; per-simulation overrides live in the preconfig
+/// (SlPreconfig::getPqiPriority).
+int slPqiToPriority(int pqi);
+constexpr int SL_PQI_PRIORITY_DEFAULT = 100;
+
 /// Absolute slot index on the numerology grid of the SL carrier
 /// (slot 0 starts at simtime 0; slot duration = 1ms / 2^numerologyIndex)
 typedef int64_t SlotIndex;

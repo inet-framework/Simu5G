@@ -62,6 +62,7 @@ class BearerManagement : public cSimpleModule
     cModuleType *slRlcUmRxEntityModuleType_ = nullptr;
     cModuleType *slRlcAmTxEntityModuleType_ = nullptr;
     cModuleType *slRlcAmRxEntityModuleType_ = nullptr;
+    cModuleType *slSdapEntityModuleType_ = nullptr;
 
     inet::ModuleRefByPar<RlcMux> rlcMuxModule;
     inet::ModuleRefByPar<RlcMux> nrRlcMuxModule;
@@ -117,6 +118,11 @@ class BearerManagement : public cSimpleModule
     // SlRrc via the genie fan-out in SlBinder
     virtual void createSlOutgoingConnection(FlowControlInfo *lteInfo);
     virtual void createSlIncomingConnection(FlowControlInfo *lteInfo);
+
+    /// D20: create a per-peer SL-SDAP entity wired as a side chain off the
+    /// given SlIp2Nic module (gate vectors sdapTxOut/In or sdapRxOut/In);
+    /// returns the SlIp2Nic-side gate index of the new pair
+    virtual int createSlSdapEntity(bool tx, uint32_t peerKey, cModule *slIp2Nic);
 };
 
 } // namespace simu5g

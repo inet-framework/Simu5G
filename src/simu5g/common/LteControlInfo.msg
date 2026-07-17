@@ -72,6 +72,7 @@ class FlowControlInfo extends LteControlInfo {
     uint32_t slSrcL2Id = 0;                              // sidelink source Layer-2 ID (24-bit)
     uint32_t slDstL2Id = 0;                              // sidelink destination Layer-2 ID (24-bit)
     unsigned short slCastType = 0;                       // sidelink cast type (SlCastType: broadcast/groupcast/unicast)
+    unsigned short slPqi = 0;                            // PC5 5QI of the flow (stamped by SL-SDAP, consumed by the SL LCP)
 }
 
 cplusplus (FlowControlInfo::setDrbId) {{

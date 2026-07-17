@@ -12,6 +12,7 @@
 #ifndef _SIDELINK_SLPRECONFIG_H_
 #define _SIDELINK_SLPRECONFIG_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -81,6 +82,13 @@ class SlPreconfig
     // --- per-link SLRB templates for PC5 unicast (D17): one entry per PFI;
     //     DRB ids are allocated at link establishment. Default: one UM SLRB.
     std::vector<SlrbConfigEntry> unicastSlrbDefaults;
+
+    // --- PQI priority overrides (WP-J; on top of the hardcoded TS 23.287
+    //     subset, see slPqiToPriority) ---
+    std::map<int, int> pqiPriorityOverrides;
+
+    /// LCP priority of a PQI: preconfig override, or the standard subset
+    int getPqiPriority(int pqi) const;
 
     SlPreconfig();
 
