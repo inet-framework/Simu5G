@@ -106,5 +106,15 @@ Configs:
   blindRetx=1 (93/95 at 380 TB transmissions vs 256) shows ~33% fewer
   transmissions at the same delivery - the M6 exit gate.
 
+- Unicast-QoS (milestone M7, WP-J / SL-2): two PC5 QoS flows to one
+  destination over one unicast link. DSCP resolves the PFI (tos >> 2);
+  the per-destination SL-SDAP entity (D20) maps PFI 1 -> a PQI-21 SLRB
+  (LCP priority 1) and PFI 2 -> a PQI-90 SLRB (priority 25); the
+  PQI-aware LCP (D21) fills the single 123B TB per 20 ms occasion in
+  strict priority order across the destination's backlogged SLRBs.
+  Measured (2s, seed 0): the PQI-21 flow keeps a 3.0 ms mean delay while
+  the best-effort flow queues at ~310 ms under the deliberately tight
+  pool - strict priority visible end-to-end in per-flow delay.
+
 See the sidelink implementation plan for the WP-G roadmap (PRR/PIR-vs-
 distance statistics, highway calibration scenario, scalability check).

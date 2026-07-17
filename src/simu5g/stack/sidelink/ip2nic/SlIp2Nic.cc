@@ -118,6 +118,7 @@ void SlIp2Nic::analyzePacket(Packet *pkt, Ipv4Address srcAddr, Ipv4Address destA
     lteInfo->setSlCastType(slrb->castType);
     lteInfo->setDrbId(slrb->drbId);
     lteInfo->setRlcType(slrb->rlcType);
+    lteInfo->setSlPqi(slrb->pqi);
     lteInfo->setTraffic(BACKGROUND);
 
     // genie establishment of the SLRB chains at the sender and all receivers
@@ -151,6 +152,7 @@ void SlIp2Nic::analyzeUnicastPc5Packet(Packet *pkt, MacNodeId peerId)
     lteInfo->setSlCastType(SL_UNICAST);
     lteInfo->setDrbId(slrb.drbId);
     lteInfo->setRlcType(slrb.rlcType);
+    lteInfo->setSlPqi(slrb.pqi);
     lteInfo->setTraffic(BACKGROUND);
 }
 

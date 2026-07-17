@@ -33,7 +33,7 @@ simple SlIp2Nic extends Ip2Nic
         // per-destination SlSdapEntity modules (PFI -> SLRB mapping) wired
         // as a side chain on the gates below; off = SL-1 behavior (every
         // packet rides the destination's first/default SLRB)
-        bool hasSlSdap = default(false);
+        bool hasSlSdap = default(true);
         // PFI resolution fallback: QfiReq tag, else DSCP (tos >> 2), else 0
         bool useDscpAsPfiFallback = default(true);
 

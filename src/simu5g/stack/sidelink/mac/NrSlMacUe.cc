@@ -11,6 +11,9 @@
 
 #include "simu5g/stack/sidelink/mac/NrSlMacUe.h"
 
+#include <algorithm>
+#include <limits>
+
 #include <inet/common/ModuleAccess.h>
 
 #include "simu5g/stack/mac/buffer/LteMacBuffer.h"
@@ -236,29 +239,58 @@ void NrSlMacUe::handleTxSlot()
         return;
     }
 
+    // Sidelink LCP (D21): one TB per occasion. Pick the destination owning
+    // the highest-priority backlogged connection (lower PQI priority value =
+    // more urgent; ties broken by destination id), then fill the TB across
+    // that destination's backlogged connections in priority order with
+    // SDU requests sized to the remaining TB space. Other destinations
+    // compete for whole occasions. PBR/bucket machinery is out of scope.
+    const SlPreconfig& cfg = slRrc_->getPreconfig();
+    MacNodeId bestDest = NODEID_NONE;
+    int bestPrio = std::numeric_limits<int>::max();
     for (auto& [cid, connInfo] : connDescOut_) {
         if (connInfo.buffer->isEmpty())
             continue;
+        int prio = cfg.getPqiPriority(connInfo.flowInfo.getSlPqi());
+        if (prio < bestPrio || (prio == bestPrio && cid.getNodeId() < bestDest)) {
+            bestPrio = prio;
+            bestDest = cid.getNodeId();
+        }
+    }
 
-        // request one RLC PDU sized to the transport block (single-SDU-per-PDU
-        // WP-C simplification; grant filling/LCP comes with the real scheduler)
-        int64_t backlog = connInfo.buffer->getQueueOccupancy();
-        unsigned int sduSize = (unsigned int)std::min((int64_t)tbSize_ - (int64_t)MAC_HEADER, backlog + RLC_HEADER_UM);
+    if (bestDest != NODEID_NONE) {
+        // the selected destination's backlogged connections, by priority
+        std::vector<std::pair<int, MacCid>> order;
+        for (auto& [cid, connInfo] : connDescOut_)
+            if (cid.getNodeId() == bestDest && !connInfo.buffer->isEmpty())
+                order.emplace_back(cfg.getPqiPriority(connInfo.flowInfo.getSlPqi()), cid);
+        std::sort(order.begin(), order.end());
 
-        EV << NOW << " NrSlMacUe::handleTxSlot - requesting SDU of " << sduSize << "B for connection " << cid << endl;
+        int64_t remaining = (int64_t)tbSize_ - (int64_t)MAC_HEADER;
+        for (const auto& [prio, cid] : order) {
+            if (remaining <= (int64_t)RLC_HEADER_UM)
+                break;
+            OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
+            int64_t backlog = connInfo.buffer->getQueueOccupancy();
+            unsigned int sduSize = (unsigned int)std::min(remaining, backlog + RLC_HEADER_UM);
 
-        auto pkt = new Packet("LteMacSduRequest");
-        auto macSduRequest = makeShared<LteMacSduRequest>();
-        macSduRequest->setChunkLength(b(1));
-        macSduRequest->setUeId(cid.getNodeId());
-        macSduRequest->setLcid(cid.getLcid());
-        macSduRequest->setSduSize(sduSize);
-        pkt->insertAtFront(macSduRequest);
-        *(pkt->addTag<FlowControlInfo>()) = connInfo.flowInfo.toFlowControlInfo();
-        sendUpperPackets(pkt);
+            EV << NOW << " NrSlMacUe::handleTxSlot - requesting SDU of " << sduSize
+               << "B for connection " << cid << " (priority " << prio << ")" << endl;
 
-        drainVirtualBuffer(connInfo.buffer, sduSize - RLC_HEADER_UM);
-        requestedSdus_++;
+            auto pkt = new Packet("LteMacSduRequest");
+            auto macSduRequest = makeShared<LteMacSduRequest>();
+            macSduRequest->setChunkLength(b(1));
+            macSduRequest->setUeId(cid.getNodeId());
+            macSduRequest->setLcid(cid.getLcid());
+            macSduRequest->setSduSize(sduSize);
+            pkt->insertAtFront(macSduRequest);
+            *(pkt->addTag<FlowControlInfo>()) = connInfo.flowInfo.toFlowControlInfo();
+            sendUpperPackets(pkt);
+
+            drainVirtualBuffer(connInfo.buffer, sduSize - RLC_HEADER_UM);
+            remaining -= sduSize;
+            requestedSdus_++;
+        }
     }
 
     // if nothing was requested, the event goes dormant; new data re-arms it
@@ -376,9 +408,16 @@ void NrSlMacUe::macPduMake(MacCid cid)
 {
     SlotIndex slot = slotGrid_.slotIndexAt(NOW);
 
-    for (auto& [destCid, connInfo] : connDescOut_) {
-        if (connInfo.queue->isEmpty())
-            continue;
+    // one MAC PDU (TB) per destination, containing the SDUs of ALL of that
+    // destination's connections pulled this occasion (D21 grant filling;
+    // the container and macPduUnmake handle per-SDU LCIDs)
+    std::map<MacNodeId, std::vector<MacCid>> byDest;
+    for (auto& [destCid, connInfo] : connDescOut_)
+        if (!connInfo.queue->isEmpty())
+            byDest[destCid.getNodeId()].push_back(destCid);
+
+    for (auto& [destId, cids] : byDest) {
+        OutgoingConnectionInfo& firstConn = connDescOut_.at(cids.front());
 
         auto macPkt = new Packet("SlMacPdu");
         auto header = makeShared<LteMacPdu>();
@@ -387,12 +426,13 @@ void NrSlMacUe::macPduMake(MacCid cid)
 
         auto uinfo = macPkt->addTagIfAbsent<UserControlInfo>();
         uinfo->setSourceId(nodeId_);
-        uinfo->setDestId(destCid.getNodeId());
+        uinfo->setDestId(destId);
         uinfo->setDirection(SL);
         uinfo->setFrameType(DATAPKT);
         uinfo->setCarrierFrequency(carrierFrequency_);
 
-        const FlowDescriptor& flowInfo = connInfo.flowInfo;
+        // per-destination fields are shared across the destination's SLRBs
+        const FlowDescriptor& flowInfo = firstConn.flowInfo;
         auto slInfo = macPkt->addTagIfAbsent<SlTxInfoTag>();
         slInfo->setSrcL2Id(flowInfo.getSlSrcL2Id());
         slInfo->setDstL2Id(flowInfo.getSlDstL2Id());
@@ -404,13 +444,16 @@ void NrSlMacUe::macPduMake(MacCid cid)
 
         macPkt->setTimestamp(NOW);
 
-        while (!connInfo.queue->isEmpty()) {
-            auto pkt = check_and_cast<Packet *>(connInfo.queue->popFront());
-            drop(pkt);
-            pkt->removeTagIfPresent<PdcpTrackingTag>();
-            auto macPdu = macPkt->removeAtFront<LteMacPdu>();
-            macPdu->pushSdu(pkt, destCid.getLcid());
-            macPkt->insertAtFront(macPdu);
+        for (const MacCid& destCid : cids) {
+            OutgoingConnectionInfo& connInfo = connDescOut_.at(destCid);
+            while (!connInfo.queue->isEmpty()) {
+                auto pkt = check_and_cast<Packet *>(connInfo.queue->popFront());
+                drop(pkt);
+                pkt->removeTagIfPresent<PdcpTrackingTag>();
+                auto macPdu = macPkt->removeAtFront<LteMacPdu>();
+                macPdu->pushSdu(pkt, destCid.getLcid());
+                macPkt->insertAtFront(macPdu);
+            }
         }
 
         // register the TB with the HARQ entity: PSFCH feedback mode for
@@ -446,7 +489,7 @@ void NrSlMacUe::macPduMake(MacCid cid)
         int procId;
         if (feedback) {
             SlotIndex deadline = slPsfchFeedbackSlot(slot, psfchPeriod_, psfchMinGap_) + 1;
-            procId = harqTx_.startTbWithFeedback(macPkt, destCid.getNodeId(), deadline, nackOnly, expectedAcks, ndi);
+            procId = harqTx_.startTbWithFeedback(macPkt, destId, deadline, nackOnly, expectedAcks, ndi);
         }
         else
             procId = harqTx_.startTb(macPkt, blindRetx_, ndi);
@@ -458,8 +501,8 @@ void NrSlMacUe::macPduMake(MacCid cid)
         std::string harqNote = feedback ? (nackOnly ? " (awaiting PSFCH, NACK-only)" : " (awaiting PSFCH)")
                                         : (" (+" + std::to_string(blindRetx_) + " blind copies)");
         EV << NOW << " NrSlMacUe::macPduMake - sending SL MAC PDU (" << macPkt->getByteLength()
-           << "B) to slot " << slot << ", dstPid " << destCid.getNodeId() << ", HARQ proc " << procId
-           << harqNote << endl;
+           << "B, " << cids.size() << " connection(s)) to slot " << slot << ", dstPid " << destId
+           << ", HARQ proc " << procId << harqNote << endl;
 
         sendLowerPackets(macPkt);
     }

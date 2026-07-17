@@ -197,6 +197,7 @@ void SlRrc::createLinkBearers(const SlUnicastLink& link)
         out.setSlCastType(SL_UNICAST);
         out.setDrbId(e.drbId);
         out.setRlcType(e.rlcType);
+        out.setSlPqi(e.pqi);
         out.setTraffic(BACKGROUND);
         bearerManagement_->createSlOutgoingConnection(&out);
 
@@ -211,6 +212,7 @@ void SlRrc::createLinkBearers(const SlUnicastLink& link)
         in.setSlCastType(SL_UNICAST);
         in.setDrbId(e.drbId);
         in.setRlcType(e.rlcType);
+        in.setSlPqi(e.pqi);
         in.setTraffic(BACKGROUND);
         bearerManagement_->createSlIncomingConnection(&in);
     }
