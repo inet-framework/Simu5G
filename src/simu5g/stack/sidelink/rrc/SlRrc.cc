@@ -18,7 +18,10 @@
 #include <omnetpp/cvaluemap.h>
 
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
+#include "simu5g/stack/sidelink/ip2nic/SlIp2Nic.h"
+#include "simu5g/stack/sidelink/rrc/SlPc5Rrc_m.h"
 
 namespace simu5g {
 
@@ -53,6 +56,7 @@ void SlRrc::initialize(int stage)
         srcL2Id_ = (l2IdPar >= 0) ? (SlL2Id)l2IdPar : (SlL2Id)num(nodeId_);
 
         bearerManagement_ = check_and_cast<BearerManagement *>(getModuleByPath(par("bearerManagementModule").stringValue()));
+        overTheAir_ = (par("pc5RrcMode").stdstringValue() == "overTheAir");
 
         // registrations with the global SL registry
         slBinder_ = SlBinder::getInstance();
@@ -78,7 +82,11 @@ void SlRrc::initialize(int stage)
 
 void SlRrc::handleMessage(cMessage *msg)
 {
-    throw cRuntimeError("This module does not process messages");
+    if (msg->getArrivalGate() != nullptr && msg->getArrivalGate()->isName("srbIn")) {
+        handlePc5RrcMessage(check_and_cast<inet::Packet *>(msg));
+        return;
+    }
+    throw cRuntimeError("SlRrc: unexpected message '%s'", msg->getName());
 }
 
 void SlRrc::createSlOutgoingConnection(FlowControlInfo *lteInfo)
@@ -113,19 +121,8 @@ const SlUnicastLink *SlRrc::findLink(MacNodeId peerId) const
     return (it != links_.end()) ? &it->second : nullptr;
 }
 
-const SlUnicastLink& SlRrc::establishLink(MacNodeId peerId)
+SlUnicastLink SlRrc::allocateLink(MacNodeId peerId, SlL2Id peerL2Id)
 {
-    Enter_Method_Silent("establishLink()");
-
-    auto it = links_.find(peerId);
-    if (it != links_.end())
-        return it->second;
-
-    ASSERT(peerId != nodeId_);
-    SlL2Id peerL2Id = slBinder_->getL2IdForNodeId(peerId);
-    if (peerL2Id == SL_L2ID_NONE)
-        throw cRuntimeError("SlRrc: cannot establish PC5 link to node %hu: not a registered SL UE", num(peerId));
-
     // allocate the per-link SLRBs from the unicastSlrbDefaults templates
     // (D17): DRB ids from the dynamic range, fresh per link -- the D3 keying
     // is per (src, dst) pair, so ids may repeat across links but must be
@@ -142,22 +139,227 @@ const SlUnicastLink& SlRrc::establishLink(MacNodeId peerId)
         e.drbId = DrbId(drb++);
         link.slrbs.push_back(e);
     }
+    return link;
+}
+
+const SlUnicastLink& SlRrc::establishLink(MacNodeId peerId)
+{
+    Enter_Method_Silent("establishLink()");
+
+    auto it = links_.find(peerId);
+    if (it != links_.end())
+        return it->second;
+
+    ASSERT(peerId != nodeId_);
+    SlL2Id peerL2Id = slBinder_->getL2IdForNodeId(peerId);
+    if (peerL2Id == SL_L2ID_NONE)
+        throw cRuntimeError("SlRrc: cannot establish PC5 link to node %hu: not a registered SL UE", num(peerId));
+
+    SlUnicastLink link = allocateLink(peerId, peerL2Id);
+
+    if (!overTheAir_) {
+        EV << "SlRrc::establishLink - node " << nodeId_ << ": PC5 unicast link to peer " << peerId
+           << " (" << link.slrbs.size() << " SLRB(s)), genie handshake" << endl;
+
+        const SlUnicastLink& stored = links_.emplace(peerId, std::move(link)).first->second;
+        createLinkBearers(stored);
+
+        // genie handshake: the peer adopts the same SLRB list and creates
+        // its own symmetric chains (D18)
+        SlRrc *peerRrc = slBinder_->getSlRrc(peerId);
+        if (peerRrc == nullptr)
+            throw cRuntimeError("SlRrc: no SlRrc registered for peer node %hu", num(peerId));
+        peerRrc->onLinkRequest(nodeId_, stored.slrbs);
+        return stored;
+    }
+
+    // over-the-air handshake (D23): the link parks in ESTABLISHING and the
+    // proposed SLRBs travel as a real PC5-RRC message over the TM SL-SRB;
+    // data chains come up when the response arrives
+    link.state = SlUnicastLink::ESTABLISHING;
+    const SlUnicastLink& stored = links_.emplace(peerId, std::move(link)).first->second;
 
     EV << "SlRrc::establishLink - node " << nodeId_ << ": PC5 unicast link to peer " << peerId
-       << " (" << link.slrbs.size() << " SLRB(s), DRB ids " << SL_UNICAST_DRB_BASE
-       << ".." << (drb - 1) << "), genie handshake" << endl;
+       << " ESTABLISHING (over-the-air handshake, " << stored.slrbs.size() << " SLRB(s) proposed)" << endl;
 
-    const SlUnicastLink& stored = links_.emplace(peerId, std::move(link)).first->second;
-    createLinkBearers(stored);
+    auto request = inet::makeShared<SlLinkEstablishRequest>();
+    request->setInitiatorId(nodeId_);
+    request->setResponderId(peerId);
+    int n = (int)stored.slrbs.size();
+    request->setDrbIdsArraySize(n);
+    request->setRlcTypesArraySize(n);
+    request->setPfisArraySize(n);
+    request->setPqisArraySize(n);
+    request->setIsDefaultsArraySize(n);
+    for (int i = 0; i < n; i++) {
+        const SlrbConfigEntry& e = stored.slrbs[i];
+        request->setDrbIds(i, num(e.drbId));
+        request->setRlcTypes(i, e.rlcType);
+        request->setPfis(i, e.pfi);
+        request->setPqis(i, e.pqi);
+        request->setIsDefaults(i, e.isDefault);
+    }
+    request->setChunkLength(inet::B(16 + 6 * n));
+    sendPc5RrcMessage(peerId, request, "SlLinkEstablishRequest");
 
-    // genie handshake: the peer adopts the same SLRB list and creates its
-    // own symmetric chains (D18)
+    return stored;
+}
+
+int SlRrc::ensureSrb(MacNodeId peerId)
+{
+    auto it = srbGates_.find(peerId);
+    if (it != srbGates_.end())
+        return it->second;
+
+    // the SRB chains bootstrap via the genie mechanism at BOTH endpoints
+    // (documented simplification: SRB0-3 as one pre-provisioned TM bearer);
+    // only the DRB establishment handshake itself is over the air
+    SlL2Id peerL2Id = slBinder_->getL2IdForNodeId(peerId);
+    ASSERT(peerL2Id != SL_L2ID_NONE);
+
+    FlowControlInfo out;
+    out.setDirection(SL);
+    out.setSourceId(nodeId_);
+    out.setDestId(peerId);
+    out.setSlSrcL2Id(srcL2Id_);
+    out.setSlDstL2Id(peerL2Id);
+    out.setSlCastType(SL_UNICAST);
+    out.setDrbId(DrbId(SL_SRB_DRB_ID));
+    out.setRlcType(TM);
+    out.setTraffic(BACKGROUND);
+
+    FlowControlInfo in;
+    in.setDirection(SL);
+    in.setSourceId(peerId);
+    in.setDestId(nodeId_);
+    in.setSlSrcL2Id(peerL2Id);
+    in.setSlDstL2Id(srcL2Id_);
+    in.setSlCastType(SL_UNICAST);
+    in.setDrbId(DrbId(SL_SRB_DRB_ID));
+    in.setRlcType(TM);
+    in.setTraffic(BACKGROUND);
+
+    int idx = bearerManagement_->createSlSrbConnection(&out, &in, this);
+    srbGates_[peerId] = idx;
+
+    // mirror at the peer so it can receive (and answer on) the SRB
     SlRrc *peerRrc = slBinder_->getSlRrc(peerId);
     if (peerRrc == nullptr)
         throw cRuntimeError("SlRrc: no SlRrc registered for peer node %hu", num(peerId));
-    peerRrc->onLinkRequest(nodeId_, stored.slrbs);
+    peerRrc->ensureSrb(nodeId_);
 
-    return stored;
+    return idx;
+}
+
+void SlRrc::sendPc5RrcMessage(MacNodeId peerId, const inet::Ptr<inet::Chunk>& msg, const char *name)
+{
+    Enter_Method_Silent("sendPc5RrcMessage()");
+    int gateIdx = ensureSrb(peerId);
+
+    auto pkt = new inet::Packet(name);
+    pkt->insertAtFront(msg);
+
+    // minimal PDCP header for the TM entity's tracking contract (PC5-RRC
+    // skips real PDCP; SRB integrity/security are out of SL-2 scope)
+    auto pdcpHeader = inet::makeShared<LtePdcpHeader>();
+    pdcpHeader->setSequenceNumber(pdcpSn_++);
+    pkt->insertAtFront(pdcpHeader);
+
+    auto lteInfo = pkt->addTag<FlowControlInfo>();
+    lteInfo->setDirection(SL);
+    lteInfo->setSourceId(nodeId_);
+    lteInfo->setDestId(peerId);
+    lteInfo->setSlSrcL2Id(srcL2Id_);
+    lteInfo->setSlDstL2Id(slBinder_->getL2IdForNodeId(peerId));
+    lteInfo->setSlCastType(SL_UNICAST);
+    lteInfo->setDrbId(DrbId(SL_SRB_DRB_ID));
+    lteInfo->setRlcType(TM);
+    lteInfo->setTraffic(BACKGROUND);
+
+    EV << "SlRrc::sendPc5RrcMessage - node " << nodeId_ << ": " << name << " -> peer " << peerId
+       << " over the SL-SRB" << endl;
+    send(pkt, "srbOut", gateIdx);
+}
+
+void SlRrc::handlePc5RrcMessage(inet::Packet *pkt)
+{
+    pkt->popAtFront<LtePdcpHeader>();
+    auto chunk = pkt->peekAtFront<SlPc5RrcMessage>();
+
+    if (auto request = inet::dynamicPtrCast<const SlLinkEstablishRequest>(chunk)) {
+        MacNodeId initiatorId = request->getInitiatorId();
+        EV << "SlRrc::handlePc5RrcMessage - node " << nodeId_ << ": SlLinkEstablishRequest from "
+           << initiatorId << " (" << request->getDrbIdsArraySize() << " SLRB(s))" << endl;
+
+        if (!links_.count(initiatorId)) {
+            // adopt the proposed SLRBs; from this side, the peer is the initiator
+            SlL2Id initiatorL2Id = slBinder_->getL2IdForNodeId(initiatorId);
+            SlUnicastLink link;
+            link.peerId = initiatorId;
+            link.state = SlUnicastLink::ESTABLISHED;
+            for (int i = 0; i < (int)request->getDrbIdsArraySize(); i++) {
+                SlrbConfigEntry e;
+                e.castType = SL_UNICAST;
+                e.dstL2Id = initiatorL2Id;
+                e.drbId = DrbId(request->getDrbIds(i));
+                e.rlcType = (LteRlcType)request->getRlcTypes(i);
+                e.pfi = request->getPfis(i);
+                e.pqi = request->getPqis(i);
+                e.isDefault = request->isDefaults(i);
+                link.slrbs.push_back(e);
+            }
+            const SlUnicastLink& stored = links_.emplace(initiatorId, std::move(link)).first->second;
+            createLinkBearers(stored);
+        }
+
+        auto response = inet::makeShared<SlLinkEstablishResponse>();
+        response->setInitiatorId(initiatorId);
+        response->setResponderId(nodeId_);
+        sendPc5RrcMessage(initiatorId, response, "SlLinkEstablishResponse");
+    }
+    else if (auto response = inet::dynamicPtrCast<const SlLinkEstablishResponse>(chunk)) {
+        MacNodeId responderId = response->getResponderId();
+        EV << "SlRrc::handlePc5RrcMessage - node " << nodeId_ << ": SlLinkEstablishResponse from "
+           << responderId << endl;
+
+        auto it = links_.find(responderId);
+        if (it != links_.end() && it->second.state == SlUnicastLink::ESTABLISHING) {
+            it->second.state = SlUnicastLink::ESTABLISHED;
+            createLinkBearers(it->second);
+            flushHeldPackets(responderId);
+        }
+    }
+    else if (inet::dynamicPtrCast<const SlLinkRelease>(chunk)) {
+        // no automatic trigger in SL-2 (no RLF/keepalive); accepted for
+        // completeness of the message set
+        EV << "SlRrc::handlePc5RrcMessage - node " << nodeId_ << ": SlLinkRelease (ignored)" << endl;
+    }
+    else
+        throw cRuntimeError("SlRrc: unknown PC5-RRC message '%s'", pkt->getName());
+
+    delete pkt;
+}
+
+void SlRrc::holdPacket(MacNodeId peerId, inet::Packet *pkt)
+{
+    Enter_Method_Silent("holdPacket()");
+    take(pkt);
+    heldPackets_[peerId].push_back(pkt);
+    EV << "SlRrc::holdPacket - node " << nodeId_ << ": holding packet for peer " << peerId
+       << " until the link is ESTABLISHED (" << heldPackets_[peerId].size() << " held)" << endl;
+}
+
+void SlRrc::flushHeldPackets(MacNodeId peerId)
+{
+    auto it = heldPackets_.find(peerId);
+    if (it == heldPackets_.end())
+        return;
+    auto *slIp2Nic = check_and_cast<SlIp2Nic *>(getModuleByPath(par("ip2nicModule").stringValue()));
+    EV << "SlRrc::flushHeldPackets - node " << nodeId_ << ": resuming " << it->second.size()
+       << " held packet(s) for peer " << peerId << endl;
+    for (auto *pkt : it->second)
+        slIp2Nic->resumeHeldPacket(pkt);
+    heldPackets_.erase(it);
 }
 
 void SlRrc::onLinkRequest(MacNodeId initiatorId, const std::vector<SlrbConfigEntry>& slrbs)

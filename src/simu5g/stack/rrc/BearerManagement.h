@@ -63,6 +63,8 @@ class BearerManagement : public cSimpleModule
     cModuleType *slRlcAmTxEntityModuleType_ = nullptr;
     cModuleType *slRlcAmRxEntityModuleType_ = nullptr;
     cModuleType *slSdapEntityModuleType_ = nullptr;
+    cModuleType *slRlcTmTxEntityModuleType_ = nullptr;
+    cModuleType *slRlcTmRxEntityModuleType_ = nullptr;
 
     inet::ModuleRefByPar<RlcMux> rlcMuxModule;
     inet::ModuleRefByPar<RlcMux> nrRlcMuxModule;
@@ -123,6 +125,14 @@ class BearerManagement : public cSimpleModule
     /// given SlIp2Nic module (gate vectors sdapTxOut/In or sdapRxOut/In);
     /// returns the SlIp2Nic-side gate index of the new pair
     virtual int createSlSdapEntity(bool tx, uint32_t peerKey, cModule *slIp2Nic);
+
+    /// D23: create the reserved TM SL-SRB (DRB 63) toward a peer -- MAC
+    /// connections both ways plus TM TX/RX entities wired directly to the
+    /// SlRrc module's srbOut[]/srbIn[] gates (PC5-RRC skips PDCP; the
+    /// control messages carry a minimal PDCP header for the TM contract).
+    /// outInfo/inInfo carry this side's TX and (sender-perspective) RX flow
+    /// infos; returns the SlRrc-side gate index of the new pair.
+    virtual int createSlSrbConnection(FlowControlInfo *outInfo, FlowControlInfo *inInfo, cModule *slRrcModule);
 };
 
 } // namespace simu5g

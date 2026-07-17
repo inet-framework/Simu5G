@@ -116,5 +116,19 @@ Configs:
   the best-effort flow queues at ~310 ms under the deliberately tight
   pool - strict priority visible end-to-end in per-flow delay.
 
+- Unicast-OTA (milestone M8, WP-L / SL-2): the unicast pair with the
+  over-the-air PC5-RRC handshake (D23) instead of the genie. The first
+  CBR packet parks the link in ESTABLISHING and is held by SlRrc; the
+  proposed SLRBs travel as a real SlLinkEstablishRequest over the
+  reserved TM SL-SRB (DRB 63; the SRB itself bootstraps via the genie
+  mechanism - documented simplification of the pre-provisioned SRB0-3),
+  the peer adopts them and answers, and the held packet resumes.
+  Measured (2s, seed 0): the first packet arrives with a ~24 ms
+  establishment transient (vs ~4 ms steady state); delivery converges
+  with genie (94-95/95, the difference being one end-of-run boundary
+  packet), while per-packet steady-state delay shifts by a constant
+  grant-train phase offset (the handshake traffic perturbs the mode-2
+  resource selection - inherent, since SPS keeps the selected train).
+
 See the sidelink implementation plan for the WP-G roadmap (PRR/PIR-vs-
 distance statistics, highway calibration scenario, scalability check).

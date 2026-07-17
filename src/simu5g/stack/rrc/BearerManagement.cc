@@ -378,6 +378,75 @@ void BearerManagement::resolveSlModules()
     slRlcAmTxEntityModuleType_ = cModuleType::get(par("slRlcAmTxEntityModuleType").stringValue());
     slRlcAmRxEntityModuleType_ = cModuleType::get(par("slRlcAmRxEntityModuleType").stringValue());
     slSdapEntityModuleType_ = cModuleType::get(par("slSdapEntityModuleType").stringValue());
+    slRlcTmTxEntityModuleType_ = cModuleType::get(par("slRlcTmTxEntityModuleType").stringValue());
+    slRlcTmRxEntityModuleType_ = cModuleType::get(par("slRlcTmRxEntityModuleType").stringValue());
+}
+
+int BearerManagement::createSlSrbConnection(FlowControlInfo *outInfo, FlowControlInfo *inInfo, cModule *slRrcModule)
+{
+    Enter_Method_Silent("createSlSrbConnection()");
+    resolveSlModules();
+
+    ASSERT(outInfo->getDirection() == SL && inInfo->getDirection() == SL);
+    MacNodeId peerId = outInfo->getDestId();
+
+    EV << "BearerManagement::createSlSrbConnection - TM SL-SRB (drb " << num(outInfo->getDrbId())
+       << ") toward peer " << peerId << endl;
+
+    // MAC connections both ways (the SRB is bidirectional by construction)
+    FlowDescriptor outDesc = FlowDescriptor::fromFlowControlInfo(*outInfo);
+    slMac_->createOutgoingConnection(MacCid(peerId, slMac_->drbIdToLcid(outInfo->getDrbId())), outDesc);
+    FlowDescriptor inDesc = FlowDescriptor::fromFlowControlInfo(*inInfo);
+    slMac_->createIncomingConnection(MacCid(peerId, slMac_->drbIdToLcid(inInfo->getDrbId())), inDesc);
+
+    // the SlRrc-side gate pair of this SRB
+    int rrcIdx = slRrcModule->gateSize("srbOut");
+    slRrcModule->setGateSize("srbOut", rrcIdx + 1);
+    slRrcModule->setGateSize("srbIn", rrcIdx + 1);
+
+    // TM TX entity: SlRrc.srbOut -> tmTx.in; mux <-> tmTx as usual
+    DrbKey txId = ctrlInfoToTxDrbKey(outInfo);
+    std::string txName = "slRlc-tm-tx-" + std::to_string(num(txId.getNodeId())) + "-" + std::to_string(num(txId.getDrbId()));
+    cModule *txModule = slRlcTmTxEntityModuleType_->create(txName.c_str(), nicModule_);
+    txModule->finalizeParameters();
+    txModule->buildInside();
+    setEntityDisplayPosition(txModule, false, slRlcMux_, num(txId.getDrbId()));
+
+    slRrcModule->gate("srbOut", rrcIdx)->connectTo(txModule->gate("in"));
+    int fromIdx = slRlcMux_->gateSize("fromTxEntity");
+    slRlcMux_->setGateSize("fromTxEntity", fromIdx + 1);
+    txModule->gate("out")->connectTo(slRlcMux_->gate("fromTxEntity", fromIdx));
+    int macIdx = slRlcMux_->gateSize("macToTxEntity");
+    slRlcMux_->setGateSize("macToTxEntity", macIdx + 1);
+    slRlcMux_->gate("macToTxEntity", macIdx)->connectTo(txModule->gate("macIn"));
+
+    txModule->scheduleStart(simTime());
+    txModule->callInitialize();
+    RlcTxEntityBase *txEnt = check_and_cast<RlcTxEntityBase *>(txModule);
+    txEnt->setFlowControlInfo(outInfo);
+    slRlcTxEntities_[txId] = txEnt;
+
+    // TM RX entity: mux -> tmRx.in; tmRx.out -> SlRrc.srbIn
+    DrbKey rxId = ctrlInfoToRxDrbKey(inInfo);
+    std::string rxName = "slRlc-tm-rx-" + std::to_string(num(rxId.getNodeId())) + "-" + std::to_string(num(rxId.getDrbId()));
+    cModule *rxModule = slRlcTmRxEntityModuleType_->create(rxName.c_str(), nicModule_);
+    rxModule->finalizeParameters();
+    rxModule->buildInside();
+    setEntityDisplayPosition(rxModule, false, slRlcMux_, num(rxId.getDrbId()));
+
+    int toIdx = slRlcMux_->gateSize("toRxEntity");
+    slRlcMux_->setGateSize("toRxEntity", toIdx + 1);
+    slRlcMux_->gate("toRxEntity", toIdx)->connectTo(rxModule->gate("in"));
+    rxModule->gate("out")->connectTo(slRrcModule->gate("srbIn", rrcIdx));
+
+    rxModule->scheduleStart(simTime());
+    rxModule->callInitialize();
+    RlcRxEntityBase *rxEnt = check_and_cast<RlcRxEntityBase *>(rxModule);
+    rxEnt->setFlowControlInfo(inInfo);
+    slRlcMux_->registerRxBuffer(rxId, rxEnt);
+    slRlcRxEntities_[rxId] = rxEnt;
+
+    return rrcIdx;
 }
 
 int BearerManagement::createSlSdapEntity(bool tx, uint32_t peerKey, cModule *slIp2Nic)

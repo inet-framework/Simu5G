@@ -12,6 +12,8 @@
 #ifndef _SIDELINK_SLRRC_H_
 #define _SIDELINK_SLRRC_H_
 
+#include <inet/common/packet/Packet.h>
+
 #include "simu5g/stack/sidelink/common/SlBinder.h"
 #include "simu5g/stack/sidelink/common/SlPreconfig.h"
 
@@ -23,13 +25,17 @@ class FlowControlInfo;
 /**
  * State of one PC5 unicast link (design decision D17). The registry entry is
  * symmetric: both endpoints hold the same DRB ids for the link's SLRBs; each
- * side's entries carry the *other* side's L2 ID as dstL2Id. The only state
- * in SL-2 is ESTABLISHED (no RLF/keepalive; release only by explicit call),
- * so no state field exists yet.
+ * side's entries carry the *other* side's L2 ID as dstL2Id. Under the genie
+ * handshake a link is born ESTABLISHED; the over-the-air mode (D23) parks it
+ * in ESTABLISHING until the PC5-RRC response arrives (no RLF/keepalive;
+ * release only by explicit call).
  */
 struct SlUnicastLink
 {
+    enum State { ESTABLISHING, ESTABLISHED };
+
     MacNodeId peerId = NODEID_NONE;
+    State state = ESTABLISHED;
     std::vector<SlrbConfigEntry> slrbs;   // per-link SLRBs with allocated DRB ids (castType UNICAST)
 
     /// the SLRB serving a given PFI, or the default entry (WP-J resolution)
@@ -60,12 +66,30 @@ class SlRrc : public omnetpp::cSimpleModule
     // PC5 unicast link registry (D17), keyed by the peer's node id
     std::map<MacNodeId, SlUnicastLink> links_;
 
+    // over-the-air PC5-RRC (D23)
+    bool overTheAir_ = false;
+    std::map<MacNodeId, int> srbGates_;       // peer -> srbOut[]/srbIn[] gate index
+    std::map<MacNodeId, std::vector<inet::Packet *>> heldPackets_;  // per ESTABLISHING link
+    unsigned int pdcpSn_ = 0;                 // PDCP SN counter of the control messages
+
     void initialize(int stage) override;
     int numInitStages() const override;
     void handleMessage(omnetpp::cMessage *msg) override;
 
     /// create this endpoint's TX and RX chains for every SLRB of the link (D18)
     void createLinkBearers(const SlUnicastLink& link);
+
+    /// allocate the per-link SLRBs from the unicastSlrbDefaults templates
+    SlUnicastLink allocateLink(MacNodeId peerId, SlL2Id peerL2Id);
+
+    /// the reserved TM SL-SRB toward a peer (created on first use, D23)
+    int ensureSrb(MacNodeId peerId);
+
+    /// wrap and send a PC5-RRC message over the peer's SL-SRB
+    void sendPc5RrcMessage(MacNodeId peerId, const inet::Ptr<inet::Chunk>& msg, const char *name);
+
+    void handlePc5RrcMessage(inet::Packet *pkt);
+    void flushHeldPackets(MacNodeId peerId);
 
   public:
     const SlPreconfig& getPreconfig() const { return preconfig_; }
@@ -92,6 +116,10 @@ class SlRrc : public omnetpp::cSimpleModule
 
     /// the link to a peer, or nullptr
     const SlUnicastLink *findLink(MacNodeId peerId) const;
+
+    /// hold a data packet while its link is ESTABLISHING (D23); ownership
+    /// transfers here, the packet resumes through SlIp2Nic once the link is up
+    void holdPacket(MacNodeId peerId, inet::Packet *pkt);
 };
 
 } // namespace simu5g

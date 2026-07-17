@@ -57,4 +57,7 @@ simple BearerManagement
         string slRlcAmTxEntityModuleType = default("simu5g.stack.rlc.am.AmTxQueue");
         string slRlcAmRxEntityModuleType = default("simu5g.stack.rlc.am.AmRxQueue");
         string slSdapEntityModuleType = default("simu5g.stack.sidelink.sdap.SlSdapEntity");
+        // TM entities of the reserved SL-SRB (D23, over-the-air PC5-RRC)
+        string slRlcTmTxEntityModuleType = default("simu5g.stack.rlc.tm.TmTxEntity");
+        string slRlcTmRxEntityModuleType = default("simu5g.stack.rlc.tm.TmRxEntity");
 }

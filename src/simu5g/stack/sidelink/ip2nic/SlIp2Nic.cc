@@ -66,7 +66,10 @@ void SlIp2Nic::toStackUe(Packet *pkt)
 {
     EV << "SlIp2Nic::toStackUe - message from IP layer: send to stack: " << pkt->str() << std::endl;
     auto ipHeader = pkt->peekAtFront<Ipv4Header>();
+    packetHeld_ = false;
     analyzePacket(pkt, ipHeader->getSrcAddress(), ipHeader->getDestAddress(), ipHeader->getTypeOfService());
+    if (packetHeld_)
+        return;  // ownership transferred to SlRrc until the link is up (D23)
 
     // classified SL packets take the SDAP side chain (D20): the entity maps
     // the resolved PFI to the serving SLRB and returns the packet
@@ -131,10 +134,16 @@ void SlIp2Nic::analyzePacket(Packet *pkt, Ipv4Address srcAddr, Ipv4Address destA
 
 void SlIp2Nic::analyzeUnicastPc5Packet(Packet *pkt, MacNodeId peerId)
 {
-    // establish (or fetch) the PC5 unicast link; genie: synchronous, so the
-    // triggering packet needs no holding. All link SLRBs come up with the
-    // link, so the SDAP mapping (D20) never establishes anything later.
+    // establish (or fetch) the PC5 unicast link: synchronous under genie;
+    // over the air (D23) the link parks in ESTABLISHING and the packet is
+    // held by SlRrc until the handshake completes. All link SLRBs come up
+    // with the link, so the SDAP mapping (D20) never establishes anything.
     const SlUnicastLink& link = slRrc_->establishLink(peerId);
+    if (link.state != SlUnicastLink::ESTABLISHED) {
+        slRrc_->holdPacket(peerId, pkt);
+        packetHeld_ = true;
+        return;
+    }
 
     // without SL-SDAP every packet rides the link's default SLRB; with it,
     // the drb/rlcType stamped here are provisional until the PFI mapping
@@ -205,6 +214,16 @@ void SlIp2Nic::onSdapRxReturn(Packet *pkt)
     pkt->removeTagIfPresent<SocketInd>();
     removeAllSimu5GTags(pkt);
     toIpUe(pkt);
+}
+
+void SlIp2Nic::resumeHeldPacket(Packet *pkt)
+{
+    Enter_Method_Silent("resumeHeldPacket()");
+    take(pkt);
+    // the stale classification of the held packet is re-done from scratch:
+    // the link is ESTABLISHED now, so the packet takes the normal path
+    pkt->removeTagIfPresent<FlowControlInfo>();
+    toStackUe(pkt);
 }
 
 } // namespace simu5g

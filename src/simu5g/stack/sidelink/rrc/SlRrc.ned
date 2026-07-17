@@ -14,10 +14,12 @@ package simu5g.stack.sidelink.rrc;
 import simu5g.stack.rrc.IRrc;
 
 //
-// Per-UE sidelink control plane ("genie" PC5-RRC, phase SL-1): owns the
-// sidelink preconfiguration and creates SLRB entity chains via
-// ~BearerManagement. Control plane by C++ calls only; over-the-air SL-SRBs
-// are a later fidelity upgrade (SL-2).
+// Per-UE sidelink control plane: owns the sidelink preconfiguration and
+// creates SLRB entity chains via ~BearerManagement. Broadcast/groupcast
+// establishment stays genie (C++ calls); PC5 unicast links are established
+// either by the genie handshake (default) or over the air (D23, WP-L):
+// real PC5-RRC messages on a reserved TM SL-SRB (DRB 63), with the first
+// data packet held until the link is ESTABLISHED.
 //
 simple SlRrc like IRrc
 {
@@ -36,5 +38,18 @@ simple SlRrc like IRrc
         // this UE's 24-bit source Layer-2 ID; -1 = derive from the NR node id
         int srcL2Id = default(-1);
 
+        // PC5 unicast link establishment: "genie" = synchronous C++ handshake;
+        // "overTheAir" = real PC5-RRC messages over the TM SL-SRB (D23) --
+        // establishment latency becomes observable, the triggering packet is
+        // held until the link is up. The SRB chains themselves bootstrap via
+        // the genie mechanism (documented simplification: SRB0-3 as a single
+        // pre-provisioned control bearer).
+        string pc5RrcMode @enum(genie,overTheAir) = default("genie");
+
         string bearerManagementModule = default("^.rrc.bearerManagement");
+        string ip2nicModule = default("^.ip2nic");
+
+    gates:
+        input srbIn[];     // PC5-RRC messages from the per-peer TM SL-SRB RX chains
+        output srbOut[];   // PC5-RRC messages to the per-peer TM SL-SRB TX chains
 }

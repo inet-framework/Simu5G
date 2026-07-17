@@ -43,6 +43,7 @@ class SlIp2Nic : public Ip2Nic
     bool pc5UnicastEnabled_ = false;
     bool hasSlSdap_ = false;
     bool useDscpAsPfiFallback_ = false;
+    bool packetHeld_ = false;   // set when analyzePacket handed the packet to SlRrc (D23 holding)
 
     // peer key -> SlIp2Nic-side gate index of the entity's side chain (D20)
     std::map<uint32_t, int> sdapTxGates_;
@@ -76,6 +77,11 @@ class SlIp2Nic : public Ip2Nic
     /// RX packet returned from its entity: continue the base stackIn
     /// processing (tag strip, hand to IP)
     virtual void onSdapRxReturn(inet::Packet *pkt);
+
+  public:
+    /// re-enter a packet that was held during over-the-air link
+    /// establishment (D23); called by SlRrc once the link is ESTABLISHED
+    virtual void resumeHeldPacket(inet::Packet *pkt);
 };
 
 } // namespace simu5g
