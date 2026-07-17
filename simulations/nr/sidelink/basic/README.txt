@@ -96,5 +96,15 @@ Configs:
   rate fits the LTE AM entities' 30B fragmentation across 20ms occasions
   until the WP-J LCP lands).
 
+- Unicast-UM-Psfch (milestone M6, WP-I / SL-2): the unicast pair at the
+  PER knee (grantMcs=12, 2400 m, shadowing off) with PSFCH-based HARQ
+  feedback (psfchPeriod 4). Lost TBs are NACKed by the receiver in the
+  PSSCH's PSFCH slot and retransmitted on the next grant occasion (up to
+  harqMaxRtx); missing feedback resolves per psfchDtxPolicy. Measured
+  (2s, seed 0): 51-59/95 delivered without feedback vs 92-93/95 with it,
+  via 66 NACK-driven retransmissions; the equal-PRR comparison against
+  blindRetx=1 (93/95 at 380 TB transmissions vs 256) shows ~33% fewer
+  transmissions at the same delivery - the M6 exit gate.
+
 See the sidelink implementation plan for the WP-G roadmap (PRR/PIR-vs-
 distance statistics, highway calibration scenario, scalability check).

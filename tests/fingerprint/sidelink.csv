@@ -9,3 +9,5 @@
 /simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Unicast-AM -r 0,                      2s,         5f76-7b6c/tplx;fe87-bc29/tilx;64aa-cd3e/~tNl;3de2-afe7/sz, PASS,
 /simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Unicast-UM-Psfch -r 0,                2s,         b1b8-3d63/tplx;73c6-31db/tilx;8b55-bf95/~tNl;16d2-92dc/sz, PASS,
 /simulations/nr/sidelink/highway/,        -f omnetpp.ini -c Highway-Small -r 0,                   1s,         27ae-a793/tplx;7b47-f7c9/tilx;d475-7421/~tNl;4b65-e2d9/sz, PASS,
+/simulations/nr/sidelink/highway/,        -f omnetpp.ini -c Highway-Platoon -r 0,                 1s,         bdcd-05f5/tplx;7caa-e825/tilx;ee63-47c2/~tNl;3f29-a58b/sz, PASS,
+/simulations/nr/sidelink/highway/,        -f omnetpp.ini -c Highway-Platoon-AckNack -r 0,         1s,         441c-82ac/tplx;6776-e57e/tilx;9776-f257/~tNl;d17b-28d8/sz, PASS,

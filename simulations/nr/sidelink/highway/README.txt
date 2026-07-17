@@ -28,15 +28,19 @@ Configs:
 
 - Highway-300: a 300-UE, 2s variant to check scalability.
 
-PRR-vs-distance results (Highway config, 10s, seed 0, release build):
+PRR-vs-distance results (Highway config, 10s, seed 0, release build;
+remeasured under SL-2's real link adaptation, grantMcs=16 / D15):
 
     d [m]    0-20  100-120  200-220  300-320  400-420  480-500
-    PRR      0.993 0.986    0.983    0.978    0.975    0.972
+    PRR      0.989 0.974    0.966    0.959    0.961    0.958
 
-  PRR decreases monotonically from 0.993 to ~0.972 over 0..500 m
-  (total 0.981); PIR stays at ~100.7-102.3 ms, i.e. at the CAM period, as
-  expected for near-unity PRR. Losses are dominated by resource collisions
-  and half-duplex, not by the channel (LOS SINR is high throughout 500 m).
+  PRR decreases from 0.989 to ~0.958 over 0..500 m (total 0.969); PIR
+  stays at ~101.2-102.7 ms, i.e. at the CAM period, as expected for
+  near-unity PRR. Losses are dominated by resource collisions and
+  half-duplex, not by the channel (LOS SINR is high throughout 500 m).
+  The curve sits ~1-2 points below the SL-1 measurement: the BLER lookup
+  now uses the coarse CQI-9 equivalent of MCS 16 instead of the SL-1
+  stub's CQI-6 interpretation of the default MCS.
 
   Ready-made analysis charts live in highway.anf (open in the IDE, or
   export with:
@@ -57,3 +61,31 @@ PRR-vs-distance results (Highway config, 10s, seed 0, release build):
 Scalability (Highway-300, 2s, release): ~72 s wall clock, ~1.0 GB RSS;
 with slPhy.slTxRange = 1000m fan-out pruning ~61 s / 0.93 GB. Total PRR
 drops to ~0.917 at this density (30% pool occupancy).
+
+Highway-Platoon / Highway-Platoon-AckNack (milestone M6, WP-I / SL-2):
+groupcast with PSFCH HARQ feedback. ue[0..4] form a platoon in lane 0 at
+~60 m spacing; the leader groupcasts 300B platoon messages at 10 Hz over
+a groupcast SLRB while the other 35 vehicles keep broadcasting CAMs
+(blind mode) on the same PSFCH-enabled pool (psfchPeriod 4).
+
+- Highway-Platoon: option 1 (psfchMode "nackOnly", mcr 150m). Only
+  members within the MCR NACK a lost TB (ue[1] at 60 m, ue[2] at 120 m;
+  ue[3]/ue[4] at 180/240 m stay silent); silence at the feedback deadline
+  means success. Verified with a lowered leader TX power: in-MCR NACKs
+  trigger retransmissions on the next occasion, the beyond-MCR loss is
+  correctly ignored. Note a documented abstraction: option-1 NACKs share
+  one PSFCH resource (as in Rel-16), but this model treats co-resource
+  feedback as mutual interference rather than the energy-detection
+  superposition real option 1 exploits - simultaneous same-distance NACKs
+  can annihilate; the nearer NACK usually survives.
+
+- Highway-Platoon-AckNack: option 2 (psfchMode "ackNack"): every member
+  answers on its own member-rank-derived PSFCH resource; the leader frees
+  the TB early once all 4 ACKs arrive and retransmits on any NACK or on
+  DTX (per psfchDtxPolicy).
+
+Retransmission-efficiency exit gate (M6), measured on the unicast pair at
+the PER knee (basic/, grantMcs=12, 2400 m, shadowing off, 2s): blind
+retx=1 delivers 93/95 using 380 TB transmissions; PSFCH feedback delivers
+92-93/95 using 256 (190 initial + 66 NACK-driven) - equal PRR at ~33%
+fewer transmissions.
