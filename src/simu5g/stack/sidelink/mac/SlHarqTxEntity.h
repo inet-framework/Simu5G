@@ -19,16 +19,24 @@
 namespace simu5g {
 
 /**
- * Sidelink TX HARQ entity (design decision D2, WP-F): 16 processes, blind
- * retransmissions only (SL-1; PSFCH-based feedback arrives with SL-2).
- * Written fresh rather than reusing the feedback-driven Uu HARQ buffers
- * (gap G5): a blind-retx process has no state machine, only a copy of the
- * TB and a remaining-copies counter.
+ * Sidelink TX HARQ entity (design decisions D2/D24): 16 processes, written
+ * fresh rather than reusing the Uu HARQ buffers (gap G5). Two per-TB modes:
  *
- * SL-1 simplification (per the plan): the retransmission copies go out on
- * the grant's reserved future resources (the next period slots of the same
- * selected resource train); the spec's up-to-32-resource chains within one
- * period are not modeled.
+ *  - blind (WP-F, SL-1): a fixed number of copies follows the initial TX on
+ *    the grant train; no state machine, only the stored TB and a counter.
+ *    Used by broadcast and by any destination without PSFCH.
+ *
+ *  - feedback-driven (WP-I, D24): the transmitted TB parks awaiting PSFCH;
+ *    NACK queues a retransmission copy (served by the existing
+ *    retx-before-new-data occasion logic), ACK frees the process, and
+ *    feedback missing past the deadline (DTX -- e.g. half-duplex loss of the
+ *    PSFCH slot) is resolved by the caller's policy (treat as NACK, up to
+ *    maxRtx, or as ACK). Groupcast option 1 TBs are NACK-only: silence at
+ *    the deadline always means success; option 2 TBs count per-member ACKs
+ *    (all expected ACKs received frees the process early).
+ *
+ * SL-1 simplification kept: retransmission copies ride the same selected
+ * resource train (the grant's next period slots).
  */
 class SlHarqTxEntity
 {
@@ -39,33 +47,78 @@ class SlHarqTxEntity
         inet::Packet *pdu = nullptr;   // copy to transmit (caller takes ownership)
         int procId = 0;
         bool ndi = false;
-        int rv = 0;                    // 1 for the first blind copy, 2 for the second, ...
+        int rv = 0;                    // 1 for the first retransmission, 2 for the second, ...
+        bool feedbackMode = false;     // caller must re-arm the feedback deadline after TX
     };
 
   private:
     struct TxProcess {
-        inet::Packet *pdu = nullptr;   // stored TB for pending blind copies
-        int remainingRetx = 0;
+        inet::Packet *pdu = nullptr;   // stored TB for pending copies / awaited feedback
+        int remainingRetx = 0;         // blind mode: copies still to send
         int txCount = 0;               // transmissions done so far (1 after the initial TX)
         bool ndi = false;
+
+        // feedback mode (D24)
+        bool feedbackMode = false;
+        bool awaitingFeedback = false;
+        SlotIndex feedbackDeadline = SLOTINDEX_NONE;
+        MacNodeId dstPid = NODEID_NONE;
+        bool nackOnly = false;         // groupcast option 1: DTX at deadline = success
+        int expectedAcks = 0;          // 1 unicast; group size - 1 for option 2
+        int ackCount = 0;
+        bool nackSeen = false;
+        bool retxQueued = false;       // a NACK'd copy waits for a TX occasion
+
+        bool busy() const { return remainingRetx > 0 || awaitingFeedback || retxQueued; }
     };
 
     TxProcess processes_[NUM_PROCESSES];
     int nextProcess_ = 0;
+    unsigned int numGivenUp_ = 0;      // TBs dropped at maxRtx or by process overwrite
+
+    /// release the process (drops the stored TB); keeps ndi
+    void freeProcess(TxProcess& p);
+
+    /// NACK-equivalent event: queue a copy, or give the TB up at maxRtx
+    void nackProcess(TxProcess& p, int maxRtx);
 
   public:
     ~SlHarqTxEntity();
 
-    /// register a new TB about to be transmitted; stores a copy if blind
-    /// retransmissions are configured. Returns the assigned process id and
-    /// sets ndi (toggled per new TB on the process).
+    /// register a new blind-mode TB about to be transmitted; stores a copy
+    /// if blind retransmissions are configured. Returns the assigned process
+    /// id and sets ndi (toggled per new TB on the process).
     int startTb(const inet::Packet *pdu, int numBlindRetx, bool& ndi);
+
+    /// register a new feedback-mode TB about to be transmitted (D24): the
+    /// process parks awaiting PSFCH until feedbackDeadline (an absolute slot
+    /// index). Prefers a free process; overwrites (gives up) the round-robin
+    /// slot if all 16 are busy.
+    int startTbWithFeedback(const inet::Packet *pdu, MacNodeId dstPid, SlotIndex feedbackDeadline,
+            bool nackOnly, int expectedAcks, bool& ndi);
+
+    /// decoded PSFCH input for one of our processes; ignores stale feedback
+    void onFeedback(int procId, MacNodeId fbSender, bool ack, int maxRtx);
+
+    /// sweep feedback deadlines at a TX occasion; DTX resolves per dtxAsAck
+    /// (nack-only TBs always resolve to success). Returns the number of
+    /// DTX events.
+    int processDeadlines(SlotIndex currentSlot, bool dtxAsAck, int maxRtx);
+
+    /// re-arm the feedback wait after transmitting a feedback-mode copy
+    void rearmFeedback(int procId, SlotIndex feedbackDeadline);
 
     bool hasPendingRetx() const;
 
-    /// pop the next blind copy to transmit (nullptr if none); the caller
-    /// owns the returned packet
+    /// any feedback-mode process still awaiting PSFCH (the caller must keep
+    /// TX occasions scheduled so deadlines are checked)
+    bool hasAwaitingFeedback() const;
+
+    /// pop the next copy to transmit (blind or NACK'd); the caller owns the
+    /// returned packet
     bool getNextRetx(Retx& out);
+
+    unsigned int getNumGivenUp() const { return numGivenUp_; }
 };
 
 } // namespace simu5g

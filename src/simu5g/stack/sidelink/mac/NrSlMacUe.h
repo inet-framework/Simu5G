@@ -79,9 +79,15 @@ class NrSlMacUe : public LteMacBase
     int subchannelSize_ = 0;          // PRBs per subchannel (from the preconfig)
     int overheadSymbols_ = 0;         // non-data symbols per slot for the TBS math
 
-    // blind-retransmission HARQ (WP-F)
+    // HARQ TX entity: blind copies (WP-F) and PSFCH feedback mode (WP-I, D24)
     SlHarqTxEntity harqTx_;
     int blindRetx_ = 0;
+    int psfchPeriod_ = 0;             // pool PSFCH configuration (0 = feedback off)
+    int psfchMinGap_ = 0;
+    int harqMaxRtx_ = 3;              // retransmission budget per feedback-mode TB
+    bool dtxAsAck_ = false;           // missing feedback at the deadline: false = treat as NACK
+    unsigned int numFeedbackRetx_ = 0;
+    unsigned int numDtx_ = 0;
 
     cMessage *txSlotEvent_ = nullptr;
     int requestedSdus_ = 0;

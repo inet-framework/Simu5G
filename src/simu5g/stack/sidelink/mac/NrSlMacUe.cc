@@ -23,6 +23,7 @@
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/sidelink/common/SlAirFrame_m.h"
 #include "simu5g/stack/sidelink/common/SlBinder.h"
+#include "simu5g/stack/sidelink/common/SlPsfch.h"
 #include "simu5g/stack/sidelink/mac/SlMcsTable.h"
 #include "simu5g/stack/sidelink/rrc/SlRrc.h"
 
@@ -79,6 +80,12 @@ void NrSlMacUe::initialize(int stage)
         if (periodSlots_ <= 0)
             throw cRuntimeError("NrSlMacUe: reservation period is shorter than one slot");
         blindRetx_ = cfg.blindRetx;
+        psfchPeriod_ = cfg.psfchPeriod;
+        psfchMinGap_ = cfg.psfchMinGap;
+        harqMaxRtx_ = par("harqMaxRtx");
+        dtxAsAck_ = (par("psfchDtxPolicy").stdstringValue() == "ack");
+        WATCH(numFeedbackRetx_);
+        WATCH(numDtx_);
 
         // sensing database + selector (used by mode2; random uses the selector
         // with an always-empty database)
@@ -181,8 +188,13 @@ void NrSlMacUe::handleTxSlot()
 
     ASSERT(requestedSdus_ == 0);
 
-    // pending blind HARQ copies take the TX opportunity before new data
-    // (WP-F; SL-1 simplification: retransmissions ride the same selected
+    // feedback-mode deadline sweep (D24): missing PSFCH past the deadline
+    // resolves per the DTX policy (may queue retransmissions served below)
+    if (psfchPeriod_ > 0)
+        numDtx_ += harqTx_.processDeadlines(slot, dtxAsAck_, harqMaxRtx_);
+
+    // pending HARQ copies (blind or NACK'd) take the TX opportunity before
+    // new data (SL-1 simplification: retransmissions ride the same selected
     // resource train, i.e. the next period slots of the grant)
     SlHarqTxEntity::Retx retx;
     if (harqTx_.getNextRetx(retx)) {
@@ -193,9 +205,15 @@ void NrSlMacUe::handleTxSlot()
         slInfo->setHarqNdi(retx.ndi);
         slInfo->setHarqRv(retx.rv);
 
-        EV << NOW << " NrSlMacUe::handleTxSlot - blind retransmission of HARQ proc " << retx.procId
-           << " (rv " << retx.rv << ")" << endl;
+        EV << NOW << " NrSlMacUe::handleTxSlot - " << (retx.feedbackMode ? "feedback-driven" : "blind")
+           << " retransmission of HARQ proc " << retx.procId << " (rv " << retx.rv << ")" << endl;
         sendLowerPackets(retx.pdu);
+
+        if (retx.feedbackMode) {
+            // the copy is acknowledged again: re-arm the feedback wait
+            harqTx_.rearmFeedback(retx.procId, slPsfchFeedbackSlot(slot, psfchPeriod_, psfchMinGap_) + 1);
+            numFeedbackRetx_++;
+        }
 
         if (allocationMode_ == MODE2)
             sensingDb_.recordUnmonitoredSlot(slot);
@@ -213,7 +231,7 @@ void NrSlMacUe::handleTxSlot()
                 break;
             }
         }
-        if (harqTx_.hasPendingRetx())
+        if (harqTx_.hasPendingRetx() || harqTx_.hasAwaitingFeedback())
             ensureTxScheduled();
         return;
     }
@@ -244,8 +262,12 @@ void NrSlMacUe::handleTxSlot()
     }
 
     // if nothing was requested, the event goes dormant; new data re-arms it
-    if (requestedSdus_ == 0)
+    // (feedback-mode processes keep occasions alive so deadlines are swept)
+    if (requestedSdus_ == 0) {
+        if (harqTx_.hasAwaitingFeedback())
+            ensureTxScheduled();
         return;
+    }
 
     if (allocationMode_ == MODE2) {
         // half-duplex: this slot cannot be sensed (conservative exclusion input)
@@ -391,24 +413,60 @@ void NrSlMacUe::macPduMake(MacCid cid)
             macPkt->insertAtFront(macPdu);
         }
 
-        // register the TB with the blind-retx HARQ entity (WP-F); the stored
-        // copy's stale HARQ/grant tag fields are re-stamped at retx time
+        // register the TB with the HARQ entity: PSFCH feedback mode for
+        // destinations with feedback configured (D24), blind copies
+        // otherwise (WP-F). The stored copy's stale HARQ/grant tag fields
+        // are re-stamped at retx time.
+        bool feedback = false, nackOnly = false;
+        int expectedAcks = 0;
+        if (psfchPeriod_ > 0) {
+            switch ((SlCastType)flowInfo.getSlCastType()) {
+                case SL_UNICAST:
+                    feedback = true;
+                    expectedAcks = 1;
+                    break;
+                case SL_GROUPCAST: {
+                    const SlrbConfigEntry *slrb = slRrc_->getPreconfig().findSlrbForDstL2Id(flowInfo.getSlDstL2Id());
+                    if (slrb != nullptr && slrb->psfchMode == SL_PSFCH_NACK_ONLY) {
+                        feedback = true;
+                        nackOnly = true;
+                    }
+                    else if (slrb != nullptr && slrb->psfchMode == SL_PSFCH_ACK_NACK) {
+                        feedback = true;
+                        expectedAcks = (int)slBinder_->getGroupMembers(flowInfo.getSlDstL2Id()).size() - 1;
+                    }
+                    break;
+                }
+                default:
+                    break;  // broadcast stays blind
+            }
+        }
+
         bool ndi;
-        int procId = harqTx_.startTb(macPkt, blindRetx_, ndi);
+        int procId;
+        if (feedback) {
+            SlotIndex deadline = slPsfchFeedbackSlot(slot, psfchPeriod_, psfchMinGap_) + 1;
+            procId = harqTx_.startTbWithFeedback(macPkt, destCid.getNodeId(), deadline, nackOnly, expectedAcks, ndi);
+        }
+        else
+            procId = harqTx_.startTb(macPkt, blindRetx_, ndi);
         slInfo = macPkt->getTagForUpdate<SlTxInfoTag>();
         slInfo->setHarqProcId(procId);
         slInfo->setHarqNdi(ndi);
         slInfo->setHarqRv(0);
 
+        std::string harqNote = feedback ? (nackOnly ? " (awaiting PSFCH, NACK-only)" : " (awaiting PSFCH)")
+                                        : (" (+" + std::to_string(blindRetx_) + " blind copies)");
         EV << NOW << " NrSlMacUe::macPduMake - sending SL MAC PDU (" << macPkt->getByteLength()
-           << "B) to slot " << slot << ", dstPid " << destCid.getNodeId()
-           << ", HARQ proc " << procId << " (+" << blindRetx_ << " blind copies)" << endl;
+           << "B) to slot " << slot << ", dstPid " << destCid.getNodeId() << ", HARQ proc " << procId
+           << harqNote << endl;
 
         sendLowerPackets(macPkt);
     }
 
-    // keep transmitting on the grant train while backlog or blind copies remain
-    if (harqTx_.hasPendingRetx())
+    // keep transmitting on the grant train while backlog, pending copies or
+    // awaited feedback remain
+    if (harqTx_.hasPendingRetx() || harqTx_.hasAwaitingFeedback())
         ensureTxScheduled();
     else
         for (auto& [destCid, connInfo] : connDescOut_) {
@@ -431,8 +489,9 @@ void NrSlMacUe::onPsfchDecoded(MacNodeId fbSender, int harqProcId, bool ack)
     Enter_Method_Silent("onPsfchDecoded()");
     EV << NOW << " NrSlMacUe::onPsfchDecoded - " << (ack ? "ACK" : "NACK") << " from node "
        << fbSender << " for HARQ proc " << harqProcId << endl;
-    // D24 feedback-driven retransmission lands with the TX-entity feedback
-    // mode (next step); until then decoded feedback is only logged
+    harqTx_.onFeedback(harqProcId, fbSender, ack, harqMaxRtx_);
+    if (harqTx_.hasPendingRetx())
+        ensureTxScheduled();
 }
 
 void NrSlMacUe::fromPhy(cPacket *pktAux)

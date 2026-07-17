@@ -42,6 +42,12 @@ module NrSlMacUe extends LteMacBase
         // --- mode2 only ---
         double probResourceKeep = default(0);         // P_keep on reselection-counter expiry [0..0.8]
 
+        // --- PSFCH feedback mode (D24; active when the pool has psfchPeriod > 0) ---
+        int harqMaxRtx = default(3);                  // max retransmissions per feedback-mode TB
+        string psfchDtxPolicy @enum(nack,ack) = default("nack");  // missing feedback at the deadline:
+                                                      // "nack" = retransmit (half-duplex PSFCH loss is common),
+                                                      // "ack" = assume success
+
         // --- static mode only ---
         int staticGrantSlotOffset = default(0);       // absolute slot offset of this UE's grant train
         int staticGrantFirstSubchannel = default(0);
