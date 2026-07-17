@@ -33,13 +33,23 @@ so the Qtenv view shows vehicles moving along a plausible curved highway.
 | Behavior | Demonstrated by | Verified by |
 |---|---|---|
 | Out-of-coverage PC5 (cell-less UEs) | every config here | `OutOfCoverage` fingerprint row; WP-A audit |
-| Mode-2 sensing-based selection, 20% rule, SPS | `Highway*` configs | 29 deterministic unit tests (`tests/unit/sidelink/runtest`); sensing-gain A/B: PRR **98.2%** (mode 2) vs **77.7%** (random) in `basic/Mode2-50UE` vs `Random-50UE` |
-| TR 37.885 pathloss + BLER decoding | SINR distribution below | constants verified against the spec (ns-3 cross-check); PER-vs-distance sweep in `basic/README.txt` (knee at ~600 m @ CQI 12) |
+| Mode-2 sensing-based selection, 20% rule, SPS | `Highway*` configs | 65 deterministic unit tests (`tests/unit/sidelink/runtest`); sensing-gain A/B: PRR **95.9%** (mode 2) vs **68.7%** (random) in `basic/Mode2-50UE` vs `Random-50UE` |
+| MCS→TBS/CQI link adaptation (SL-2, D15) | all configs (`tbSize` computed) | `SlMcsTable` unit tests against hand-computed TS 38.214 cases |
+| TR 37.885 pathloss + BLER decoding | SINR distribution below | constants verified against the spec (ns-3 cross-check); PER-vs-distance sweep in `basic/README.txt` (knee at ~2400 m @ MCS 12 / CQI-7 lookup) |
 | CAM broadcast fan-out | sequence chart below | app-level delivery counts; `Highway-Small` fingerprint row |
-| Blind HARQ retransmission + soft combining + dedup | sequence chart below | 16/48 → 48/48 delivered at the PER knee (`basic/Broadcast-Tr37885-BlindRetx`) |
-| CBR measurement (TS 38.215) | CBR chart below | value matches the analytic occupancy (170 tx / 1000 subchannel-slots ≈ 0.17) |
-| PRR / PIR per distance bin (TR 37.885 §6.1.5) | PRR/PIR chart below | `SlStatsCollector` scalars; monotone PRR curve |
+| Blind HARQ retransmission + soft combining + dedup | sequence chart below | 10/96 → 27 delivered deep in the PER knee (`basic/Broadcast-Tr37885-BlindRetx`) |
+| PC5 unicast links, UM + AM SLRBs (SL-2) | `basic/Unicast-UM`, `basic/Unicast-AM` | 95/95 resp. 19/19 delivered both ways; AM STATUS PDUs get mode-2 grants at the receiver |
+| PSFCH HARQ feedback (SL-2, unicast) | `basic/Unicast-UM-Psfch` | equal PRR at ~33% fewer TB transmissions than blind retx (256 vs 380 at the knee) |
+| Groupcast options 1 & 2 (SL-2) | `Highway-Platoon`, `Highway-Platoon-AckNack` | MCR-gated NACKs verified (beyond-MCR silence); per-member ACK resources |
+| SL QoS: SL-SDAP + PQI-aware LCP (SL-2) | `basic/Unicast-QoS` | strict priority in per-flow delay: 3.0 ms (PQI 21) vs ~310 ms (best effort) under a tight pool |
+| CBR measurement + congestion control (TS 38.215/38.214, SL-2) | CBR chart below; `Highway-Congested` | measured CBR matches analytic occupancy; with control: CBR 0.60→0.52, short-range PRR 0.97→0.99 vs the uncontrolled run |
+| Over-the-air PC5-RRC handshake (SL-2) | `basic/Unicast-OTA` | ~24 ms first-packet establishment transient; steady state converges with the genie |
 | Scalability | `Highway-300` config | 300 vehicles: ~72 s wall / ~1 GB RSS per 2 s simulated (release); ~16% faster with `slTxRange=1000m` pruning |
+
+> Note: the exported chart images under `doc/media` and the numbers in the
+> chart prose below still show the SL-1 measurements; re-run the
+> `opp_charttool imageexport` command after regenerating results to refresh
+> them (the SL-2 link adaptation shifted PRR by 1-2 points, see README).
 
 ## Analysis charts (highway.anf)
 

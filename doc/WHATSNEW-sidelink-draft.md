@@ -74,20 +74,69 @@ research prototype (`simu5g.stack.d2d`), which remains a separate feature.
   under `tests/unit/sidelink`; regression rows in
   `tests/fingerprint/sidelink.csv`.
 
-#### Scope and limitations (SL-1)
+### Phase SL-2: unicast, PSFCH feedback, QoS and congestion control
 
-This is a first phase, intentionally scoped to broadcast-only out-of-coverage
-operation:
+The second phase upgrades the broadcast-only SL-1 into a usable Rel-16
+subset:
 
-- Only broadcast PC5 traffic is supported; unicast/groupcast PC5-RRC,
-  PSFCH-based HARQ feedback, SL-SDAP/QoS handling, and CBR-based congestion
-  control are planned for a follow-up phase ("SL-2").
+- **Link adaptation.** A self-contained `SlMcsTable` (TS 38.214 §5.1.3
+  abstraction) replaces the SL-1 stubs: the transport block size is
+  computed from the grant's MCS (table 1) and width (`tbSize = -1B`
+  default; explicit values remain as an escape hatch), and the BLER
+  lookup uses a coarse rule-derived CQI equivalent of the MCS.
+
+- **PC5 unicast links.** Unicast packets to SL-capable peers are
+  classified onto the sidelink by a static rule (`pc5UnicastEnabled`);
+  the first packet triggers PC5-RRC link establishment with per-link
+  SLRBs from the `unicastSlrbDefaults` templates (UM or AM — AM STATUS
+  PDUs get their own mode-2 grants at the receiver through the
+  symmetric per-link chains). The handshake is a synchronous "genie" by
+  default; `pc5RrcMode = "overTheAir"` runs it as real
+  `SlLinkEstablishRequest`/`Response` messages over a reserved TM SL-SRB
+  (DRB 63), with the triggering packet held until the link is up and the
+  establishment latency observable.
+
+- **PSFCH HARQ feedback.** Pool-configured PSFCH slots
+  (`psfchPeriod` ∈ {1,2,4}) carry per-TB ACK/NACK: unicast always,
+  groupcast per SLRB — option 1 (distance-gated NACK-only, `mcr`) or
+  option 2 (per-member ACK/NACK on member-derived resource indices).
+  The TX HARQ entity parks TBs awaiting feedback, retransmits on NACK
+  (up to `harqMaxRtx`), and resolves missing feedback (DTX, e.g. from
+  half-duplex loss of the PSFCH slot) per `psfchDtxPolicy`. Feedback
+  matches blind retransmission delivery at ~33% fewer transmissions in
+  the knee benchmark. PSFCH transmissions occupy abstract per-slot
+  resource indices; co-resource feedbacks interfere (documented
+  simplification — no PRB mapping or code multiplexing).
+
+- **SL QoS ("SL-SDAP") and LCP.** Per-destination `SlSdapEntity` modules
+  map PC5 QoS flows to SLRBs (PFI from a `QfiReq` tag, DSCP fallback, or
+  default; entries in `slrbConfig`/`unicastSlrbDefaults` carry
+  `pfi`/`pqi`/`isDefault`). The sidelink MAC fills one TB per TX occasion
+  across the destination's backlogged SLRBs in PQI-priority order
+  (TS 23.287 priority subset + `pqiPriorityOverrides`).
+
+- **CBR-based congestion control.** A `cbrConfig` level table (TS 38.214
+  §8.1.6-style) caps MCS, subchannels and TX power per measured-CBR
+  range and enforces a channel-occupancy-ratio limit by skipping TX
+  occasions.
+
+- **Examples.** `basic/`: unicast UM/AM pairs, PSFCH-at-the-knee, a
+  two-flow QoS priority demo, and the over-the-air handshake;
+  `highway/`: a 5-vehicle platoon with groupcast options 1 and 2, and a
+  congested variant demonstrating CBR-driven adaptation (CBR 0.60→0.52,
+  short-range PRR 0.97→0.99 vs an uncontrolled run).
+
+#### Scope and limitations (after SL-2)
+
 - Mode 1 (gNB-scheduled sidelink resources) is not yet supported; only
   Mode 2 (UE-autonomous), `random`, and `static` allocation are available.
+- Uu/PC5 path selection is a static rule ("PC5 whenever the peer is
+  SL-capable"); a policy hook is planned for SL-3.
 - Resources are single-slot; there is no multi-slot/multi-resource grant
-  chaining.
-- MCS is used directly as the CQI index for the BLER lookup, and the
-  transmit-opportunity size (`tbSize`) is a plain byte-count parameter —
-  there is no MCS-to-TBS link-adaptation model yet.
-- Synchronization is ideal; Rel-16 resource re-evaluation/pre-emption and
-  Rel-17 inter-UE coordination are not modeled.
+  chaining, re-evaluation/pre-emption, or Rel-17 inter-UE coordination.
+- Unicast links have no RLF/keepalive and no PC5-S security; the SL-SRB
+  is a single pre-provisioned TM bearer (SRB0-3 collapsed).
+- PSFCH BLER curves are not SL-specific (the coarse MCS→CQI map feeds
+  the Uu curves); option-1 NACKs interfere instead of superposing.
+- Synchronization is ideal; there is no sidelink DRX and no in-band
+  emission model.
