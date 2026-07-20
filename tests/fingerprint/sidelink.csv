@@ -23,3 +23,4 @@
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c Mode1-CG1 -r 0,                       2s,         eff6-396c/tplx;2e75-78c0/tilx;57f0-90c8/~tNl;4378-1df1/sz, PASS,
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c Mode1-CG1-DynamicBaseline -r 0,       2s,         3bd1-a98d/tplx;478e-0dff/tilx;480a-0441/~tNl;7f34-383a/sz, PASS,
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c Mode1-CG2 -r 0,                       5s,         b264-d37f/tplx;42df-1c26/tilx;b4de-202e/~tNl;f1df-b79f/sz, PASS,
+/simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c Mode1Mode2-SharedPool -r 0,           2s,         d54a-2142/tplx;dc6a-4007/tilx;5c6c-36fe/~tNl;adc0-df6f/sz, PASS,
