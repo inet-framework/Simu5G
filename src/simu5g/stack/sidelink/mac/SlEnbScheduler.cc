@@ -12,6 +12,7 @@
 #include "simu5g/stack/sidelink/mac/SlEnbScheduler.h"
 
 #include <algorithm>
+#include <numeric>
 
 #include "simu5g/stack/sidelink/mac/SlMcsTable.h"
 
@@ -30,8 +31,31 @@ int SlEnbScheduler::widthForBytes(int bytes) const
     return cfg_.numSubchannels;
 }
 
+uint64_t SlEnbScheduler::cgMaskAt(SlotIndex slot) const
+{
+    uint64_t m = 0;
+    for (const auto& cg : cgs_)
+        if (slot >= cg.offsetSlot && (slot - cg.offsetSlot) % cg.periodSlots == 0)
+            m |= cg.mask;
+    return m;
+}
+
+bool SlEnbScheduler::cgTrainCollides(SlotIndex offset, int periodSlots, uint64_t m) const
+{
+    for (const auto& cg : cgs_) {
+        if ((cg.mask & m) == 0)
+            continue;
+        SlotIndex diff = offset >= cg.offsetSlot ? offset - cg.offsetSlot : cg.offsetSlot - offset;
+        if (diff % std::gcd((SlotIndex)periodSlots, (SlotIndex)cg.periodSlots) == 0)
+            return true;
+    }
+    return false;
+}
+
 bool SlEnbScheduler::isFree(SlotIndex slot, uint64_t m) const
 {
+    if ((cgMaskAt(slot) & m) != 0)
+        return false;
     auto it = grid_.find(slot);
     return it == grid_.end() || (it->second & m) == 0;
 }
@@ -84,6 +108,51 @@ SlEnbScheduler::GrantSpec SlEnbScheduler::onSlBsr(MacNodeId ueId, int reportedBy
 
     // horizon exhausted: no grant (the UE's BSR machinery retries)
     return spec;
+}
+
+SlEnbScheduler::GrantSpec SlEnbScheduler::reserveConfiguredGrant(MacNodeId ueId, int periodSlots, int tbBytes, SlotIndex nowSlot)
+{
+    GrantSpec spec;
+    if (periodSlots <= 0 || tbBytes <= 0)
+        return spec;
+
+    int width = widthForBytes(tbBytes);
+    SlotIndex earliest = nowSlot + cfg_.ueProcessingSlots;
+
+    // first fit over one period of phase offsets and all subchannel offsets:
+    // the whole standing train must be free of every existing CG train (gcd
+    // test) and of every current dynamic commitment
+    for (SlotIndex offset = earliest; offset < earliest + periodSlots; offset++) {
+        for (int f = 0; f + width <= cfg_.numSubchannels; f++) {
+            uint64_t m = mask(f, width);
+            if (cgTrainCollides(offset, periodSlots, m))
+                continue;
+
+            bool clashesDynamic = false;
+            for (const auto& [slot, committed] : grid_) {
+                if (slot >= offset && (committed & m) != 0 && (slot - offset) % periodSlots == 0) {
+                    clashesDynamic = true;
+                    break;
+                }
+            }
+            if (clashesDynamic)
+                continue;
+
+            cgs_.push_back({ ueId, offset, periodSlots, m });
+
+            spec.firstSlot = offset;
+            spec.periodSlots = periodSlots;
+            spec.numOccasions = 0;  // unbounded standing train
+            spec.occasionGapSlots = 0;
+            spec.firstSubchannel = f;
+            spec.numSubchannels = width;
+            spec.mcs = cfg_.mcs;
+            spec.tbBytes = (int)SlMcsTable::tbsBytes(cfg_.mcs, width * cfg_.subchannelSize, cfg_.overheadSymbols);
+            return spec;
+        }
+    }
+
+    return spec;  // no non-colliding standing train exists
 }
 
 } // namespace simu5g

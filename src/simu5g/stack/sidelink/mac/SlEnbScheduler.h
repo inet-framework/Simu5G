@@ -58,6 +58,7 @@ class SlEnbScheduler
     struct GrantSpec
     {
         SlotIndex firstSlot = SLOTINDEX_NONE;
+        int periodSlots = 0;            // CG: standing period (0 = dynamic)
         int numOccasions = 0;
         int occasionGapSlots = 0;
         int firstSubchannel = 0;
@@ -68,11 +69,36 @@ class SlEnbScheduler
         bool isValid() const { return firstSlot != SLOTINDEX_NONE; }
     };
 
+    /// a standing configured-grant reservation (D30, WP-P): the periodic
+    /// train {offsetSlot + k*periodSlots} on a fixed subchannel range,
+    /// reserved while configured (type 2 stays reserved even while dormant -
+    /// documented simplification vs. the spec's release)
+    struct CgReservation
+    {
+        MacNodeId ueId;
+        SlotIndex offsetSlot = 0;
+        int periodSlots = 1;
+        uint64_t mask = 0;
+    };
+
   private:
     Config cfg_;
 
     // future dynamic commitments: slot -> bitmask of committed subchannels
     std::map<SlotIndex, uint64_t> grid_;
+
+    // standing CG reservations, never pruned
+    std::vector<CgReservation> cgs_;
+
+    /// subchannel-mask of all CG trains that own the given slot
+    uint64_t cgMaskAt(SlotIndex slot) const;
+
+    /// would the periodic train {offset + k*period} (k >= 0) ever collide
+    /// with an existing CG train on an overlapping subchannel range?
+    /// Two arithmetic progressions {a + i*p}, {b + j*q} intersect (over all
+    /// i,j >= 0 beyond the later start) iff (b - a) mod gcd(p, q) == 0 -
+    /// exact, and equivalent to a hyper-period scan
+    bool cgTrainCollides(SlotIndex offset, int periodSlots, uint64_t m) const;
 
     /// smallest subchannel count whose TBS covers the target (clamped to full width)
     int widthForBytes(int bytes) const;
@@ -99,8 +125,20 @@ class SlEnbScheduler
      */
     GrantSpec onSlBsr(MacNodeId ueId, int reportedBytes, SlotIndex nowSlot);
 
+    /**
+     * Reserve a standing configured-grant train (D30): period periodSlots,
+     * TB geometry sized for tbBytes, first occasion within one period of
+     * nowSlot + ueProcessingSlots. The train is free of all existing CG
+     * trains (gcd intersection test) and all current dynamic commitments;
+     * subsequent dynamic allocations avoid it. Invalid spec = pool full.
+     */
+    GrantSpec reserveConfiguredGrant(MacNodeId ueId, int periodSlots, int tbBytes, SlotIndex nowSlot);
+
     /// number of future slots currently carrying commitments (introspection/tests)
     size_t committedSlotCount() const { return grid_.size(); }
+
+    /// number of standing CG reservations (introspection/tests)
+    size_t cgCount() const { return cgs_.size(); }
 };
 
 } // namespace simu5g

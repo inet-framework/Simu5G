@@ -18,6 +18,7 @@
 //
 
 #include <cmath>
+#include <numeric>
 
 #include <omnetpp.h>
 
@@ -141,6 +142,85 @@ class SlAlgorithmTest : public cSimpleModule
             if (s3.onSlBsr(MacNodeId(1025 + i), 50, 5000).isValid())
                 served++;
         check(served > 0 && served < 8, "enbSched: saturated pool refuses past the horizon");
+
+        testConfiguredGrants();
+    }
+
+    void testConfiguredGrants()
+    {
+        SlEnbScheduler::Config cfg;  // 5 subchannels x 10 PRB, mcs 6, proc 3
+        int tbs1 = (int)SlMcsTable::tbsBytes(6, 10, 5);
+
+        // CG shape: standing periodic train, first occasion within one period
+        SlEnbScheduler s(cfg);
+        auto cg1 = s.reserveConfiguredGrant(MacNodeId(1025), 40, 100, 0);
+        check(cg1.isValid() && cg1.periodSlots == 40 && cg1.numOccasions == 0,
+              "cg: standing train reserved (period 40)");
+        check(cg1.firstSlot >= cfg.ueProcessingSlots && cg1.firstSlot < cfg.ueProcessingSlots + 40,
+              "cg: phase within one period after processing time");
+        check(cg1.numSubchannels == 1 && cg1.tbBytes == tbs1, "cg: TB geometry from tbBytes");
+
+        // CG x CG (gcd test): same width, same phase would collide; the
+        // allocator must pick a different phase or subchannel
+        auto cg2 = s.reserveConfiguredGrant(MacNodeId(1026), 40, 100, 0);
+        check(cg2.isValid(), "cg: second train reserved");
+        bool disjoint = cg2.firstSubchannel != cg1.firstSubchannel ||
+                        (cg2.firstSlot - cg1.firstSlot) % std::gcd((int64_t)40, (int64_t)40) != 0;
+        check(disjoint, "cg: no CG x CG double-booking (gcd intersection)");
+
+        // incommensurate periods: gcd(40, 60) = 20 - phases equal mod 20
+        // collide even though the periods differ
+        auto cg3 = s.reserveConfiguredGrant(MacNodeId(1027), 60, 100, 0);
+        check(cg3.isValid(), "cg: mixed-period train reserved");
+        bool clash13 = (cg3.firstSubchannel == cg1.firstSubchannel) &&
+                       ((cg3.firstSlot >= cg1.firstSlot ? cg3.firstSlot - cg1.firstSlot : cg1.firstSlot - cg3.firstSlot)
+                        % std::gcd((int64_t)60, (int64_t)40) == 0);
+        bool clash23 = (cg3.firstSubchannel == cg2.firstSubchannel) &&
+                       ((cg3.firstSlot >= cg2.firstSlot ? cg3.firstSlot - cg2.firstSlot : cg2.firstSlot - cg3.firstSlot)
+                        % std::gcd((int64_t)60, (int64_t)40) == 0);
+        check(!clash13 && !clash23, "cg: mixed-period trains avoid gcd-collisions");
+        check(s.cgCount() == 3, "cg: three standing reservations");
+
+        // dynamic x CG: dynamic allocations never land on a CG occasion
+        for (int i = 0; i < 20; i++) {
+            auto d = s.onSlBsr(MacNodeId(1030 + i), 5 * tbs1, (SlotIndex)i * 3);  // full width requests
+            if (!d.isValid())
+                continue;
+            for (int k = 0; k < d.numOccasions; k++) {
+                SlotIndex slot = d.firstSlot + (SlotIndex)k * d.occasionGapSlots;
+                for (auto cg : { cg1, cg2, cg3 }) {
+                    bool cgSlot = slot >= cg.firstSlot && (slot - cg.firstSlot) % cg.periodSlots == 0;
+                    bool overlap = d.firstSubchannel < cg.firstSubchannel + cg.numSubchannels &&
+                                   cg.firstSubchannel < d.firstSubchannel + d.numSubchannels;
+                    if (cgSlot && overlap)
+                        check(false, "cg: dynamic allocation landed on a CG occasion");
+                }
+            }
+        }
+        check(true, "cg: 20 full-width dynamic grants avoided all CG trains");
+
+        // CG x dynamic: a new CG avoids existing dynamic commitments
+        SlEnbScheduler s2(cfg);
+        auto dyn = s2.onSlBsr(MacNodeId(1025), 5 * tbs1, 100);  // full width at slots ~103..111
+        check(dyn.isValid() && dyn.numSubchannels == 5, "cg: full-width dynamic train placed");
+        auto cgAfter = s2.reserveConfiguredGrant(MacNodeId(1026), 8, 100, 100);
+        check(cgAfter.isValid(), "cg: train reserved beside dynamic commitments");
+        bool hitsDyn = false;
+        for (int k = 0; k < dyn.numOccasions; k++) {
+            SlotIndex slot = dyn.firstSlot + (SlotIndex)k * dyn.occasionGapSlots;
+            if (slot >= cgAfter.firstSlot && (slot - cgAfter.firstSlot) % cgAfter.periodSlots == 0)
+                hitsDyn = true;  // same slot: needs disjoint subchannels
+        }
+        check(!hitsDyn || cgAfter.firstSubchannel >= dyn.firstSubchannel + dyn.numSubchannels ||
+              dyn.firstSubchannel >= cgAfter.firstSubchannel + cgAfter.numSubchannels,
+              "cg: standing train avoids dynamic commitments");
+
+        // saturation: a 1-subchannel pool fits only one every-slot train
+        SlEnbScheduler::Config tiny = cfg;
+        tiny.numSubchannels = 1;
+        SlEnbScheduler s4(tiny);
+        check(s4.reserveConfiguredGrant(MacNodeId(1025), 1, 50, 0).isValid(), "cg: every-slot train fits an empty pool");
+        check(!s4.reserveConfiguredGrant(MacNodeId(1026), 4, 50, 0).isValid(), "cg: full pool refuses further trains");
     }
 
     void testGrantOccasionTrains()
