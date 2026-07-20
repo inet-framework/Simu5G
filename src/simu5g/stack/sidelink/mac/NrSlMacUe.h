@@ -121,6 +121,14 @@ class NrSlMacUe : public LteMacBase
     /// TX-slot event: request one RLC PDU per backlogged SL connection
     void handleTxSlot();
 
+    /// the SCI resource-reservation value [ms] to stamp on a TX in `slot`
+    /// (finite mode-1 trains advertise the occasion gap, 0 on the last, D30)
+    int reservationPeriodMsAt(SlotIndex slot) const;
+
+    /// finite-train bookkeeping (D30): on a finite grant's last occasion the
+    /// grant is spent - called at the end of every consumed TX occasion
+    void retireOccasionIfLast(SlotIndex slot);
+
     /// remove up to `bytes` bytes of announced data from a virtual buffer
     static void drainVirtualBuffer(LteMacBuffer *buffer, int64_t bytes);
 

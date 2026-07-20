@@ -135,6 +135,8 @@ void NrSlMacUe::selectGrant()
     grant_.periodSlots = periodSlots_;
     grant_.mcs = par("grantMcs");
     grant_.blindRetx = 0;
+    grant_.numOccasions = 0;       // self-selected grants are unbounded trains
+    grant_.occasionGapSlots = 0;   // (finite trains are mode-1-issued, D30)
 
     // congestion control (D22): the current CBR level caps MCS and L_subCH
     // at (re)selection
@@ -197,11 +199,31 @@ void NrSlMacUe::ensureTxScheduled()
 
     if (!txSlotEvent_->isScheduled()) {
         SlotIndex now = slotGrid_.slotIndexAt(NOW);
-        SlotIndex next = slotGrid_.nextOccasionAfter(now, grant_.firstSlot, grant_.periodSlots);
+        SlotIndex next = grant_.nextOccasionAfter(now);
+        if (next == SLOTINDEX_NONE) {
+            // finite train exhausted (D30): the grant is spent; leftover
+            // backlog re-raises mode1BsrPending() -> next BSR/grant cycle
+            grantActive_ = false;
+            EV << NOW << " NrSlMacUe::ensureTxScheduled - finite grant train exhausted" << endl;
+            return;
+        }
         scheduleAt(slotGrid_.slotStart(next), txSlotEvent_);
         EV << NOW << " NrSlMacUe::ensureTxScheduled - next TX opportunity at slot " << next
            << " (t=" << slotGrid_.slotStart(next) << ")" << endl;
     }
+}
+
+int NrSlMacUe::reservationPeriodMsAt(SlotIndex slot) const
+{
+    // the SCI's resource reservation field: mode-2 sensers project the
+    // transmitter's future occasions from it. Unbounded trains advertise the
+    // reservation period; a finite mode-1 train advertises its occasion gap
+    // on non-final occasions and 0 on the last (G26 mitigation)
+    if (grant_.numOccasions <= 0)
+        return periodMs_;
+    if (grant_.isLastOccasion(slot))
+        return 0;
+    return (int)(slotGrid_.getSlotDuration().dbl() * 1000.0 * grant_.occasionGapSlots + 0.5);
 }
 
 void NrSlMacUe::handleTxSlot()
@@ -242,6 +264,7 @@ void NrSlMacUe::handleTxSlot()
         slInfo->setHarqProcId(retx.procId);
         slInfo->setHarqNdi(retx.ndi);
         slInfo->setHarqRv(retx.rv);
+        slInfo->setReservationPeriodMs(reservationPeriodMsAt(slot));
 
         EV << NOW << " NrSlMacUe::handleTxSlot - " << (retx.feedbackMode ? "feedback-driven" : "blind")
            << " retransmission of HARQ proc " << retx.procId << " (rv " << retx.rv << ")" << endl;
@@ -262,6 +285,8 @@ void NrSlMacUe::handleTxSlot()
             else
                 grantActive_ = false;
         }
+
+        retireOccasionIfLast(slot);
 
         // new data (and further copies) wait for the next occasion
         for (auto& [cid, connInfo] : connDescOut_) {
@@ -359,6 +384,18 @@ void NrSlMacUe::handleTxSlot()
                 // macPduMake() re-arms via ensureTxScheduled() -> reselection
             }
         }
+    }
+
+    retireOccasionIfLast(slot);
+}
+
+void NrSlMacUe::retireOccasionIfLast(SlotIndex slot)
+{
+    if (grant_.numOccasions > 0 && grant_.isLastOccasion(slot)) {
+        grantActive_ = false;
+        EV << NOW << " NrSlMacUe::retireOccasionIfLast - last occasion of the finite grant train consumed" << endl;
+        // the pending TX of this slot still uses the spent grant's resources;
+        // leftover backlog re-raises mode1BsrPending() -> next BSR/grant cycle
     }
 }
 
@@ -476,7 +513,7 @@ void NrSlMacUe::macPduMake(MacCid cid)
         slInfo->setFirstSubchannel(grant_.firstSubchannel);
         slInfo->setNumSubchannels(grant_.numSubchannels);
         slInfo->setMcs(grant_.mcs);
-        slInfo->setReservationPeriodMs(periodMs_);
+        slInfo->setReservationPeriodMs(reservationPeriodMsAt(slot));
 
         macPkt->setTimestamp(NOW);
 

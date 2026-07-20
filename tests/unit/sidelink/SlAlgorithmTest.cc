@@ -77,8 +77,42 @@ class SlAlgorithmTest : public cSimpleModule
         testMcsTable();
         testPsfchMath();
         testCbrLevelsAndCr();
+        testGrantOccasionTrains();
 
         std::cout << "SlAlgorithmTest: ALL " << numChecks_ << " CHECKS PASSED" << std::endl;
+    }
+
+    void testGrantOccasionTrains()
+    {
+        // unbounded periodic train (numOccasions = 0): pre-SL-3 semantics
+        SlGrant g;
+        g.firstSlot = 10;
+        g.periodSlots = 4;
+        check(g.nextOccasionAfter(3) == 10, "grant: unbounded train starts at firstSlot");
+        check(g.nextOccasionAfter(10) == 14, "grant: occasion at 'now' skipped (strictly after)");
+        check(g.nextOccasionAfter(21) == 22, "grant: mid-train arithmetic");
+        check(!g.isLastOccasion(10) && !g.isLastOccasion(1000), "grant: unbounded train has no last occasion");
+
+        // finite mode-1 train (D30): occasions at firstSlot + k*gap, k < numOccasions
+        SlGrant m;
+        m.firstSlot = 100;
+        m.numOccasions = 3;
+        m.occasionGapSlots = 8;
+        check(m.nextOccasionAfter(50) == 100, "grant: finite train first occasion");
+        check(m.nextOccasionAfter(100) == 108, "grant: finite train second occasion");
+        check(m.nextOccasionAfter(109) == 116, "grant: finite train third occasion");
+        check(m.nextOccasionAfter(116) == SLOTINDEX_NONE, "grant: finite train exhausted after the last occasion");
+        check(!m.isLastOccasion(100) && !m.isLastOccasion(108), "grant: non-final occasions are not last");
+        check(m.isLastOccasion(116), "grant: final occasion detected");
+        check(!m.isLastOccasion(117), "grant: non-occasion slot is not last");
+
+        // single-occasion dynamic grant
+        SlGrant s;
+        s.firstSlot = 42;
+        s.numOccasions = 1;
+        check(s.nextOccasionAfter(0) == 42, "grant: single-occasion train");
+        check(s.isLastOccasion(42), "grant: single occasion is the last");
+        check(s.nextOccasionAfter(42) == SLOTINDEX_NONE, "grant: single-occasion train exhausted");
     }
 
     void testSlotGrid()
