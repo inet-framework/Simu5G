@@ -116,6 +116,13 @@ void NrSlMacUe::initialize(int stage)
         for (int p : cfg.reservationPeriodsMs)
             pool.allowedPeriodsSlots.push_back(slotGrid_.slotsPerMs(p));
         selector_ = new SlMode2Selector(pool, &random_);
+
+        cgInactivityOccasions_ = par("cgInactivityOccasions");
+
+        // a type-1 configured grant (D30) is active from initialization;
+        // activation had to wait for this stage's pool-geometry init
+        if (cgConfigured_ && cgType_ == 1)
+            activateCg();
     }
 }
 
@@ -235,8 +242,12 @@ int NrSlMacUe::reservationPeriodMsAt(SlotIndex slot) const
     // transmitter's future occasions from it. Unbounded trains advertise the
     // reservation period; a finite mode-1 train advertises its occasion gap
     // on non-final occasions and 0 on the last (G26 mitigation)
-    if (grant_.numOccasions <= 0)
-        return periodMs_;
+    if (grant_.numOccasions <= 0) {
+        // unbounded trains advertise their own period: for mode-2/static
+        // grants this equals the pool reservation period (periodMs_), for a
+        // configured grant (WP-P) it is the CG's period
+        return (int)(slotGrid_.getSlotDuration().dbl() * 1000.0 * grant_.periodSlots + 0.5);
+    }
     if (grant_.isLastOccasion(slot))
         return 0;
     return (int)(slotGrid_.getSlotDuration().dbl() * 1000.0 * grant_.occasionGapSlots + 0.5);
@@ -376,9 +387,30 @@ void NrSlMacUe::handleTxSlot()
     // if nothing was requested, the event goes dormant; new data re-arms it
     // (feedback-mode processes keep occasions alive so deadlines are swept)
     if (requestedSdus_ == 0) {
+        if (cgActive_ && cgType_ == 2) {
+            // type-2 inactivity release (D30): the train stays armed so empty
+            // occasions are observed; after cgInactivityOccasions of them the
+            // CG goes dormant (the gNB keeps the reservation standing and
+            // re-activates on the next SL-BSR cycle)
+            if (++cgIdleOccasions_ >= cgInactivityOccasions_) {
+                EV << NOW << " NrSlMacUe::handleTxSlot - type-2 CG released after "
+                   << cgIdleOccasions_ << " empty occasions" << endl;
+                cgActive_ = false;
+                grantActive_ = false;
+            }
+            else {
+                ensureTxScheduled();
+            }
+        }
         if (harqTx_.hasAwaitingFeedback())
             ensureTxScheduled();
         return;
+    }
+
+    if (cgActive_) {
+        cgIdleOccasions_ = 0;  // data on the CG train resets the release counter
+        if (cgType_ == 2)
+            ensureTxScheduled();  // keep occasions firing so post-burst idles are observed
     }
 
     if (allocationMode_ == MODE2) {
@@ -706,7 +738,25 @@ void NrSlMacUe::onMode1Grant(const SlSchedulingGrant *slGrant)
     if (allocationMode_ != MODE1)
         throw cRuntimeError("NrSlMacUe::onMode1Grant - received an SL grant but resourceAllocationMode is not \"mode1\"");
 
-    // CG type-2 activation/release (cgAction) lands in WP-P
+    // CG type-2 activation/release DCIs (D30, WP-P)
+    if (slGrant->getCgAction() == SL_CG_ACTIVATE) {
+        if (!cgConfigured_ || cgType_ != 2)
+            throw cRuntimeError("NrSlMacUe::onMode1Grant - cgAction=activate but no type-2 CG is configured");
+        EV << NOW << " NrSlMacUe::onMode1Grant - type-2 CG activated by DCI" << endl;
+        if (mode1CycleStart_ >= SIMTIME_ZERO) {
+            emit(slMode1GrantLatencySignal_, NOW - mode1CycleStart_);
+            mode1CycleStart_ = -1;
+        }
+        activateCg();
+        return;
+    }
+    if (slGrant->getCgAction() == SL_CG_RELEASE) {
+        EV << NOW << " NrSlMacUe::onMode1Grant - CG released by DCI" << endl;
+        cgActive_ = false;
+        grantActive_ = false;
+        return;
+    }
+
     SlotIndex now = slotGrid_.slotIndexAt(NOW);
     if (slGrant->getSlFirstSlot() <= now)
         throw cRuntimeError("NrSlMacUe::onMode1Grant - grant's first occasion (slot %ld) is not in the future "
@@ -737,6 +787,49 @@ void NrSlMacUe::onMode1Grant(const SlSchedulingGrant *slGrant)
         emit(slMode1GrantLatencySignal_, NOW - mode1CycleStart_);
         mode1CycleStart_ = -1;
     }
+
+    ensureTxScheduled();
+}
+
+void NrSlMacUe::onConfiguredGrant(const SlEnbScheduler::GrantSpec& spec, int type)
+{
+    Enter_Method_Silent("onConfiguredGrant()");
+
+    if (allocationMode_ != MODE1)
+        throw cRuntimeError("NrSlMacUe::onConfiguredGrant - a configured grant requires resourceAllocationMode=\"mode1\"");
+    ASSERT(spec.isValid() && spec.periodSlots > 0);
+
+    // store only: pool-geometry-dependent activation (TB size, slot grid)
+    // waits for this MAC's pool-init stage (type 1) or the activate DCI
+    // (type 2) - this call arrives at SlRrc's pool-resolution stage
+    cgGrant_.firstSlot = spec.firstSlot;
+    cgGrant_.periodSlots = spec.periodSlots;
+    cgGrant_.numOccasions = 0;          // unbounded standing train
+    cgGrant_.occasionGapSlots = 0;
+    cgGrant_.firstSubchannel = spec.firstSubchannel;
+    cgGrant_.numSubchannels = spec.numSubchannels;
+    cgGrant_.mcs = spec.mcs;
+    cgGrant_.reselectionCounter = 0;    // the proven STATIC shape (seam 11)
+    cgType_ = type;
+    cgConfigured_ = true;
+
+    EV << "NrSlMacUe::onConfiguredGrant - type " << type << " CG stored: offset slot "
+       << cgGrant_.firstSlot << ", period " << cgGrant_.periodSlots << " slots, subchannels ["
+       << cgGrant_.firstSubchannel << ".." << cgGrant_.firstSubchannel + cgGrant_.numSubchannels - 1
+       << "], MCS " << cgGrant_.mcs << endl;
+}
+
+void NrSlMacUe::activateCg()
+{
+    ASSERT(cgConfigured_);
+    grant_ = cgGrant_;
+    grant_.blindRetx = blindRetx_;
+    grantActive_ = true;
+    cgActive_ = true;
+    cgIdleOccasions_ = 0;
+
+    if (computeTbSize_)
+        tbSize_ = SlMcsTable::tbsBytes(grant_.mcs, grant_.numSubchannels * subchannelSize_, overheadSymbols_);
 
     ensureTxScheduled();
 }

@@ -63,6 +63,12 @@ module NrSlMacUe extends LteMacBase
                                                       // "ack" = assume success
 
         // --- static mode only ---
+        // type-2 configured grant (D30, SL-3 WP-P): consecutive empty
+        // occasions after which the UE stops using the CG (models the DCI
+        // release without a reverse channel; the gNB re-activates on the
+        // next SL-BSR cycle)
+        int cgInactivityOccasions = default(5);
+
         int staticGrantSlotOffset = default(0);       // absolute slot offset of this UE's grant train
         int staticGrantFirstSubchannel = default(0);
 }

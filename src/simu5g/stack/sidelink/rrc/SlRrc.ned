@@ -49,6 +49,17 @@ simple SlRrc like IRrc
 
         string binderModule = default("binder");
 
+        // Configured-grant request (D30, SL-3 WP-P; requires
+        // poolSource="servingCell" and an attached UE). Empty = none.
+        // Example: { type: 1, periodMs: 100, tbBytes: 330 }
+        //  - type 1: RRC-provisioned, active from initialization
+        //  - type 2: reserved at the cell but dormant; activated by a
+        //    cgAction=activate DCI on the first SL-BSR cycle, self-released
+        //    after slMac.cgInactivityOccasions empty occasions
+        object configuredGrant = default({});
+
+        string slMacModule = default("^.slMac");
+
         // PC5 unicast link establishment: "genie" = synchronous C++ handshake;
         // "overTheAir" = real PC5-RRC messages over the TM SL-SRB (D23) --
         // establishment latency becomes observable, the triggering packet is

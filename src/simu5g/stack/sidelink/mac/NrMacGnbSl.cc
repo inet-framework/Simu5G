@@ -73,11 +73,18 @@ void NrMacGnbSl::sendSlGrant(MacNodeId ueId, const SlEnbScheduler::GrantSpec& sp
     grant->setDirection(SL);
     grant->setChunkLength(b(1));  // the NrMacGnb grant-size convention (G23)
     grant->setSlFirstSlot(spec.firstSlot);
+    grant->setSlPeriodSlots(spec.periodSlots);
     grant->setNumOccasions(spec.numOccasions);
     grant->setOccasionGapSlots(spec.occasionGapSlots);
     grant->setSlFirstSubchannel(spec.firstSubchannel);
     grant->setSlNumSubchannels(spec.numSubchannels);
     grant->setSlMcs(spec.mcs);
+    if (spec.cgIndex >= 0) {
+        // a CG spec from the registry: this DCI activates the standing train
+        // the UE already stores (D30 type 2)
+        grant->setCgIndex(spec.cgIndex);
+        grant->setCgAction(SL_CG_ACTIVATE);
+    }
     pkt->insertAtFront(grant);
 
     auto uinfo = pkt->addTagIfAbsent<UserControlInfo>();

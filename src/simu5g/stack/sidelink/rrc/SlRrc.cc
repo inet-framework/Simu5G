@@ -23,6 +23,7 @@
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/sidelink/ip2nic/SlIp2Nic.h"
+#include "simu5g/stack/sidelink/mac/NrSlMacUe.h"
 #include "simu5g/stack/sidelink/rrc/SlGnbRrc.h"
 #include "simu5g/stack/sidelink/rrc/SlPc5Rrc_m.h"
 
@@ -131,11 +132,35 @@ void SlRrc::resolvePool()
             EV << "SlRrc::resolvePool - node " << nodeId_ << ": pool provisioned from serving cell "
                << servingCell << " (carrier " << preconfig_.carrierFrequencyGHz << " GHz, mu="
                << preconfig_.numerologyIndex << ", " << preconfig_.numSubchannels << " subchannels)" << endl;
+
+            // configured-grant request (D30, WP-P): reserve the standing
+            // train at the cell and hand it to the SL MAC (type 1 activates
+            // immediately at the MAC's pool-init stage; type 2 stays dormant
+            // until a cgAction=activate DCI)
+            auto *cgCfg = check_and_cast<cValueMap *>(par("configuredGrant").objectValue());
+            if (cgCfg->containsKey("type")) {
+                int type = (int)cgCfg->get("type").intValue();
+                int periodMs = (int)cgCfg->get("periodMs").intValue();
+                int tbBytes = (int)cgCfg->get("tbBytes").intValue();
+
+                SlEnbScheduler::GrantSpec spec = slGnbRrc->reserveConfiguredGrant(nodeId_, type, periodMs, tbBytes);
+
+                auto *slMac = dynamic_cast<NrSlMacUe *>(getModuleByPath(par("slMacModule").stringValue()));
+                if (slMac == nullptr)
+                    throw cRuntimeError("SlRrc: configuredGrant needs an NrSlMacUe at '%s'",
+                            par("slMacModule").stringValue());
+                slMac->onConfiguredGrant(spec, type);
+            }
         }
         else {
+            if (check_and_cast<cValueMap *>(par("configuredGrant").objectValue())->containsKey("type"))
+                throw cRuntimeError("SlRrc: a configured grant needs a serving cell (the UE is not attached)");
             EV << "SlRrc::resolvePool - node " << nodeId_ << ": not attached, falling back to the "
                << "local preconfig pool (out-of-coverage preconfiguration)" << endl;
         }
+    }
+    else if (check_and_cast<cValueMap *>(par("configuredGrant").objectValue())->containsKey("type")) {
+        throw cRuntimeError("SlRrc: a configured grant requires poolSource=\"servingCell\"");
     }
 
     slBinder_->registerSlCarrier(GHz(preconfig_.carrierFrequencyGHz), preconfig_.numerologyIndex,

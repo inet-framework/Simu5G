@@ -80,6 +80,16 @@ void SlGnbRrc::registerSlUe(MacNodeId ueId)
 SlEnbScheduler::GrantSpec SlGnbRrc::onSlBsr(MacNodeId ueId, int reportedBytes)
 {
     Enter_Method_Silent("onSlBsr()");
+
+    // a UE holding a type-2 CG gets its standing train activated instead of
+    // a dynamic grant (D30) - the resources are already reserved
+    auto cgIt = cgRegistry_.find(ueId);
+    if (cgIt != cgRegistry_.end() && cgIt->second.type == 2) {
+        EV << simTime() << " SlGnbRrc::onSlBsr - UE " << ueId << " reported " << reportedBytes
+           << "B and holds a type-2 CG -> activate" << endl;
+        return cgIt->second.spec;  // cgIndex >= 0 marks it a CG activation
+    }
+
     SlotIndex now = slotGrid_.slotIndexAt(simTime());
     SlEnbScheduler::GrantSpec spec = slEnbScheduler_->onSlBsr(ueId, reportedBytes, now);
     if (spec.isValid())
@@ -91,6 +101,36 @@ SlEnbScheduler::GrantSpec SlGnbRrc::onSlBsr(MacNodeId ueId, int reportedBytes)
     else
         EV << simTime() << " SlGnbRrc::onSlBsr - UE " << ueId << " reported " << reportedBytes
            << "B -> no free resources within the horizon (UE will retry)" << endl;
+    return spec;
+}
+
+SlEnbScheduler::GrantSpec SlGnbRrc::reserveConfiguredGrant(MacNodeId ueId, int type, int periodMs, int tbBytes)
+{
+    Enter_Method_Silent("reserveConfiguredGrant()");
+
+    if (type != 1 && type != 2)
+        throw cRuntimeError("SlGnbRrc: configured grant type must be 1 or 2 (got %d)", type);
+    if (cgRegistry_.count(ueId))
+        throw cRuntimeError("SlGnbRrc: UE %hu already holds a configured grant (one CG per UE in SL-3)", num(ueId));
+
+    int periodSlots = slotGrid_.slotsPerMs(periodMs);
+    if (periodSlots <= 0)
+        throw cRuntimeError("SlGnbRrc: configured grant period (%d ms) is shorter than one slot", periodMs);
+
+    SlotIndex now = slotGrid_.slotIndexAt(simTime());
+    SlEnbScheduler::GrantSpec spec = slEnbScheduler_->reserveConfiguredGrant(ueId, periodSlots, tbBytes, now);
+    if (!spec.isValid())
+        throw cRuntimeError("SlGnbRrc: no non-colliding standing train for UE %hu's configured grant "
+                            "(period %d ms, %d B) - the pool is full", num(ueId), periodMs, tbBytes);
+
+    spec.cgIndex = 0;  // one CG per UE in SL-3
+    cgRegistry_[ueId] = CgInfo{ type, spec };
+
+    EV << simTime() << " SlGnbRrc::reserveConfiguredGrant - UE " << ueId << ": type " << type
+       << ", offset slot " << spec.firstSlot << ", period " << spec.periodSlots
+       << " slots, subchannels [" << spec.firstSubchannel << ".."
+       << spec.firstSubchannel + spec.numSubchannels - 1 << "], TBS " << spec.tbBytes << "B" << endl;
+
     return spec;
 }
 

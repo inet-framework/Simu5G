@@ -17,6 +17,7 @@
 #include "simu5g/stack/sidelink/mac/SlCrTracker.h"
 #include "simu5g/stack/sidelink/mac/SlHarqTxEntity.h"
 #include "simu5g/stack/sidelink/mac/SlMode2Selector.h"
+#include "simu5g/stack/sidelink/mac/SlEnbScheduler.h"
 #include "simu5g/stack/sidelink/mac/SlSensingDatabase.h"
 #include "simu5g/stack/sidelink/mac/SlSlotGrid.h"
 
@@ -107,6 +108,21 @@ class NrSlMacUe : public LteMacBase
     simtime_t mode1CycleStart_ = -1;
     static omnetpp::simsignal_t slMode1GrantLatencySignal_;
 
+    // configured grant (D30, WP-P): the standing train handed over by SlRrc
+    // at pool-resolution time. Type 1 activates at this MAC's pool-init
+    // stage; type 2 stays dormant until a cgAction=activate DCI and
+    // self-releases after cgInactivityOccasions consecutive empty occasions
+    // (models the DCI release without a reverse channel)
+    SlGrant cgGrant_;
+    bool cgConfigured_ = false;
+    bool cgActive_ = false;
+    int cgType_ = 0;
+    int cgInactivityOccasions_ = 5;
+    int cgIdleOccasions_ = 0;
+
+    /// arm the stored CG train as the active grant
+    void activateCg();
+
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;
     void handleSelfMessage() override;
@@ -171,9 +187,14 @@ class NrSlMacUe : public LteMacBase
 
     /// a DCI 3_0-equivalent arrived over the Uu (routed here by
     /// NrMacUeSl::macHandleGrant, D28): populate the grant and arm the
-    /// occasion train; the whole SL-1/SL-2 HARQ/PSFCH/LCP machinery hangs
-    /// off the train unchanged (D30)
+    /// occasion train (or activate/release the stored CG per cgAction);
+    /// the whole SL-1/SL-2 HARQ/PSFCH/LCP machinery hangs off the train
+    /// unchanged (D30)
     virtual void onMode1Grant(const SlSchedulingGrant *slGrant);
+
+    /// SlRrc hands over the cell-reserved configured grant (D30, WP-P);
+    /// called at pool-resolution init time, before this MAC's pool init
+    virtual void onConfiguredGrant(const SlEnbScheduler::GrantSpec& spec, int type);
 };
 
 } // namespace simu5g

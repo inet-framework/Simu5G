@@ -65,6 +65,7 @@ class SlEnbScheduler
         int numSubchannels = 0;
         unsigned int mcs = 0;
         int tbBytes = 0;
+        int cgIndex = -1;               // >= 0: this spec is a CG (set by SlGnbRrc)
 
         bool isValid() const { return firstSlot != SLOTINDEX_NONE; }
     };

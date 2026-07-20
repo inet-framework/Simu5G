@@ -52,6 +52,14 @@ class SlGnbRrc : public omnetpp::cSimpleModule
     // extended in WP-O/WP-P)
     std::set<MacNodeId> slUes_;
 
+    // configured-grant registry (D30, WP-P): one CG per UE in SL-3
+    struct CgInfo
+    {
+        int type = 1;                       // 1 = active from configuration; 2 = DCI-activated
+        SlEnbScheduler::GrantSpec spec;     // the standing reservation
+    };
+    std::map<MacNodeId, CgInfo> cgRegistry_;
+
     // the mode-1 allocator (D29) and the SL pool's slot grid
     std::unique_ptr<SlEnbScheduler> slEnbScheduler_;
     SlSlotGrid slotGrid_;
@@ -68,9 +76,14 @@ class SlGnbRrc : public omnetpp::cSimpleModule
     void registerSlUe(MacNodeId ueId);
     const std::set<MacNodeId>& getSlUes() const { return slUes_; }
 
-    /// an SL-BSR arrived at the gNB MAC (D26/D29): run the allocator and
-    /// return the grant spec for NrMacGnbSl to send (invalid = no resources)
+    /// an SL-BSR arrived at the gNB MAC (D26/D29): a UE holding a type-2 CG
+    /// gets its CG back (cgIndex >= 0, to be sent as cgAction=activate);
+    /// otherwise run the dynamic allocator (invalid = no resources)
     SlEnbScheduler::GrantSpec onSlBsr(MacNodeId ueId, int reportedBytes);
+
+    /// a UE's SlRrc requests a configured grant at pool-resolution time
+    /// (D25/D30): reserve the standing train and register it
+    SlEnbScheduler::GrantSpec reserveConfiguredGrant(MacNodeId ueId, int type, int periodMs, int tbBytes);
 };
 
 } // namespace simu5g
