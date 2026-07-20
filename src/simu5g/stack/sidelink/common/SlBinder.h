@@ -25,6 +25,7 @@ namespace simu5g {
 
 class Binder;
 class SlRrc;
+class SlGnbRrc;
 class FlowControlInfo;
 
 /**
@@ -88,6 +89,9 @@ class SlBinder : public omnetpp::cSimpleModule
     // node id -> its SlRrc (for the genie connection-establishment fan-out)
     std::map<MacNodeId, SlRrc *> slRrcs_;
 
+    // cell id -> its SlGnbRrc (D25: serving-cell pool provisioning, SL-3)
+    std::map<MacNodeId, SlGnbRrc *> slGnbRrcs_;
+
     // SL carrier registry (G8: not in Binder)
     std::map<GHz, SlCarrierInfo> slCarriers_;
 
@@ -132,6 +136,8 @@ class SlBinder : public omnetpp::cSimpleModule
     const std::map<MacNodeId, omnetpp::cModule *>& getSlPhys() const { return slPhys_; }
     void registerSlRrc(MacNodeId nodeId, SlRrc *slRrc);
     SlRrc *getSlRrc(MacNodeId nodeId) const;  // nullptr if unknown
+    void registerSlGnbRrc(MacNodeId cellId, SlGnbRrc *slGnbRrc);
+    SlGnbRrc *getSlGnbRrc(MacNodeId cellId) const;  // nullptr if unknown
 
     /// Genie connection establishment for broadcast/groupcast: creates the
     /// outgoing SLRB chain at the sender and the incoming chain at every

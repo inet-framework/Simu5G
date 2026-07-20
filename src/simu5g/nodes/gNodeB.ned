@@ -29,5 +29,11 @@ module gNodeB extends eNodeB
         collector.typename = default("GNodeBStatsCollector");
         gateway = default("upf"); // change this path if the gateway node is inside a compound module
         nodeType = "GNODEB";        // DO NOT CHANGE
-        cellularNic.typename = default(hasD2D ? "NrNicEnbD2D" : "NrNicEnb");
+
+        //# gNB-side sidelink support (SL-3): selects the SL-aware NIC variant
+        //# (cell pool owner + Mode-1 scheduling). A combined D2D+SL gNB is not
+        //# supported (hasD2D takes precedence; SlGnbRrc rejects it at init).
+        //# An explicit cellularNic.typename in the ini file still overrides this.
+        bool hasSidelink = default(false);
+        cellularNic.typename = default(hasD2D ? "NrNicEnbD2D" : (hasSidelink ? "simu5g.stack.sidelink.NrNicEnbSl" : "NrNicEnb"));
 }
