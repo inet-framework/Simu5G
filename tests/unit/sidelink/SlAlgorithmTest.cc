@@ -24,6 +24,7 @@
 #include "simu5g/stack/sidelink/common/SlPreconfig.h"
 #include "simu5g/stack/sidelink/common/SlPsfch.h"
 #include "simu5g/stack/sidelink/mac/SlCrTracker.h"
+#include "simu5g/stack/sidelink/mac/SlEnbScheduler.h"
 #include "simu5g/stack/sidelink/mac/SlMcsTable.h"
 #include "simu5g/stack/sidelink/mac/SlMode2Selector.h"
 #include "simu5g/stack/sidelink/mac/SlSensingDatabase.h"
@@ -78,8 +79,68 @@ class SlAlgorithmTest : public cSimpleModule
         testPsfchMath();
         testCbrLevelsAndCr();
         testGrantOccasionTrains();
+        testEnbScheduler();
 
         std::cout << "SlAlgorithmTest: ALL " << numChecks_ << " CHECKS PASSED" << std::endl;
+    }
+
+    void testEnbScheduler()
+    {
+        SlEnbScheduler::Config cfg;  // 5 subchannels x 10 PRB, mcs 6, oh 5, proc 3, 3 occasions gap 4
+        int tbs1 = (int)SlMcsTable::tbsBytes(6, 10, 5);   // 123 B (verified in testMcsTable)
+        int tbs2 = (int)SlMcsTable::tbsBytes(6, 20, 5);
+        int tbsFull = (int)SlMcsTable::tbsBytes(6, 50, 5);
+
+        // TB geometry: smallest width whose TBS covers min(reported, full-width TB)
+        SlEnbScheduler s1(cfg);
+        SlEnbScheduler::GrantSpec g1 = s1.onSlBsr(MacNodeId(1025), 100, 1000);
+        check(g1.isValid() && g1.numSubchannels == 1 && g1.tbBytes == tbs1,
+              "enbSched: 100 B fits one subchannel");
+        SlEnbScheduler::GrantSpec g2 = s1.onSlBsr(MacNodeId(1026), tbs1 + 1, 1000);
+        check(g2.isValid() && g2.numSubchannels == 2 && g2.tbBytes == tbs2,
+              "enbSched: tbs1+1 B needs two subchannels");
+        SlEnbScheduler::GrantSpec g3 = s1.onSlBsr(MacNodeId(1027), 100000, 1000);
+        check(g3.isValid() && g3.numSubchannels == 5 && g3.tbBytes == tbsFull,
+              "enbSched: huge backlog capped at one full-width TB");
+        check(s1.onSlBsr(MacNodeId(1028), 0, 1000).isValid() == false, "enbSched: zero backlog -> no grant");
+
+        // timing: first occasion >= now + ueProcessingSlots; spacing = occasionGapSlots
+        check(g1.firstSlot >= 1000 + cfg.ueProcessingSlots, "enbSched: UE processing time respected");
+        check(g1.numOccasions == 3 && g1.occasionGapSlots == 4, "enbSched: dynamic train shape from config");
+
+        // no double-booking (dynamic x dynamic): same-slot trains must not overlap
+        SlEnbScheduler s2(cfg);
+        SlEnbScheduler::GrantSpec a = s2.onSlBsr(MacNodeId(1025), 3 * tbs1, 2000);  // width 3
+        SlEnbScheduler::GrantSpec b = s2.onSlBsr(MacNodeId(1026), 3 * tbs1, 2000);  // width 3 does not fit beside a
+        check(a.isValid() && b.isValid(), "enbSched: both requests served");
+        bool overlap = (a.firstSlot == b.firstSlot) &&
+                       (a.firstSubchannel < b.firstSubchannel + b.numSubchannels) &&
+                       (b.firstSubchannel < a.firstSubchannel + a.numSubchannels);
+        check(!overlap, "enbSched: no double-booking of the same slot");
+        check(b.firstSlot != a.firstSlot || b.firstSubchannel != a.firstSubchannel,
+              "enbSched: second train allocated elsewhere");
+        SlEnbScheduler::GrantSpec c = s2.onSlBsr(MacNodeId(1027), 100, 2000);  // width 1 fits beside a width-3 train
+        check(c.isValid() && (c.firstSlot == a.firstSlot ? c.firstSubchannel >= a.numSubchannels : true),
+              "enbSched: narrow train packs into remaining subchannels");
+
+        // grid pruning: commitments strictly before nowSlot are dropped lazily
+        size_t before = s2.committedSlotCount();
+        check(before > 0, "enbSched: grid holds commitments");
+        s2.onSlBsr(MacNodeId(1028), 100, 100000);
+        check(s2.committedSlotCount() < before + cfg.numOccasions,
+              "enbSched: old commitments pruned on the next allocation");
+
+        // horizon exhaustion: a saturated single-subchannel pool eventually refuses
+        SlEnbScheduler::Config tiny = cfg;
+        tiny.numSubchannels = 1;
+        tiny.occasionGapSlots = 1;
+        tiny.schedulingHorizonSlots = 8;
+        SlEnbScheduler s3(tiny);
+        int served = 0;
+        for (int i = 0; i < 8; i++)
+            if (s3.onSlBsr(MacNodeId(1025 + i), 50, 5000).isValid())
+                served++;
+        check(served > 0 && served < 8, "enbSched: saturated pool refuses past the horizon");
     }
 
     void testGrantOccasionTrains()
