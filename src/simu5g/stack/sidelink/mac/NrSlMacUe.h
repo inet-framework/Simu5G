@@ -23,6 +23,7 @@
 namespace simu5g {
 
 class SlRrc;
+class SlSchedulingGrant;
 class SlBinder;
 
 /**
@@ -55,7 +56,7 @@ class NrSlMacUe : public LteMacBase
         int intuniform(int a, int b) override { return module_->intuniform(a, b); }
     };
 
-    enum AllocationMode { STATIC, RANDOM, MODE2 };
+    enum AllocationMode { STATIC, RANDOM, MODE2, MODE1 };
 
     SlRrc *slRrc_ = nullptr;
     SlBinder *slBinder_ = nullptr;
@@ -99,6 +100,12 @@ class NrSlMacUe : public LteMacBase
 
     cMessage *txSlotEvent_ = nullptr;
     int requestedSdus_ = 0;
+
+    // mode 1 (D26/D30, SL-3): grant-cycle latency anchor - set by the Uu MAC
+    // (NrMacUeSl) when the RAC of a new request cycle is sent, cleared and
+    // measured when the grant arrives at onMode1Grant()
+    simtime_t mode1CycleStart_ = -1;
+    static omnetpp::simsignal_t slMode1GrantLatencySignal_;
 
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;
@@ -144,6 +151,29 @@ class NrSlMacUe : public LteMacBase
 
     /// CBR input from slPhy (D22): latest channel busy ratio measurement
     virtual void onCbrUpdated(double cbr);
+
+    // --- mode 1 (gNB-scheduled, D26/D30, SL-3): queried/driven by the Uu
+    //     MAC subclass NrMacUeSl via direct C++ calls (the onSciDecoded
+    //     pattern); the Uu side of the request loop lives there (G19) ---
+
+    /// true iff this MAC runs mode 1, has unserved backlog and no
+    /// active/pending grant - the single source of truth of the SL-BSR
+    /// trigger chain (state-based: lost edges self-heal per checkRAC tick)
+    virtual bool mode1BsrPending() const;
+
+    /// aggregate SL backlog [B] for the SL-BSR: virtual-buffer occupancy
+    /// plus RLC header per backlogged connection (the D2D summation, D26)
+    virtual int mode1BsrBytes() const;
+
+    /// latency-stat anchor: the Uu MAC reports that a request cycle started
+    /// (RAC sent for the SL-BSR); no-op if a cycle is already running
+    virtual void onMode1RequestStarted();
+
+    /// a DCI 3_0-equivalent arrived over the Uu (routed here by
+    /// NrMacUeSl::macHandleGrant, D28): populate the grant and arm the
+    /// occasion train; the whole SL-1/SL-2 HARQ/PSFCH/LCP machinery hangs
+    /// off the train unchanged (D30)
+    virtual void onMode1Grant(const SlSchedulingGrant *slGrant);
 };
 
 } // namespace simu5g

@@ -178,8 +178,10 @@ void NrMacUe::handleSelfMessage()
                     emptyScheduleList_ = false;
             }
 
-            if (bsrTriggered_ && emptyScheduleList_) {
+            if (isBsrPending() && emptyScheduleList_) {
                 // no connection scheduled, but we can use this grant to send a BSR to the eNB
+                // (isBsrPending() == bsrTriggered_ in this class; the sidelink
+                // subclass NrMacUeSl widens it with the SL-BSR trigger, D26)
                 macPduMake();
             }
             else {

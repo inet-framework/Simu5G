@@ -81,8 +81,9 @@ module NrNicUe extends LteNicUe
         nrRlcMux: <default("RlcMux")> like IRlcMux {
             @display("p=570,430;is=s");
         }
-        // MAC Layer
-        nrMac: <default("NrMacUe")> like ILteMac {
+        // MAC Layer (SL-aware variant when the sidelink leg is present:
+        // carries the mode-1 RAC/SL-BSR/grant plumbing, quiescent otherwise)
+        nrMac: <default(hasSidelink ? "simu5g.stack.sidelink.mac.NrMacUeSl" : "NrMacUe")> like ILteMac {
             @display("p=570,510");
         }
         // PHY Layer
