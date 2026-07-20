@@ -87,6 +87,33 @@ Mode1-CG2 (milestone M11)
   D21 virtual-buffer approximation, exposed by bursty traffic on
   releasable grants (with tbBytes 330 the run delivers 27/28).
 
+Mode1Mode2-SharedPool / Mode1Mode2-SharedPool-Random (D34)
+  One deliberate shared-pool config: ue[0]'s mode-1 CG train (100 ms,
+  subchannel 0) + three 20 ms mode-2 CAM senders on a deliberately tight
+  single-subchannel pool, TR 37.885 channel. Demonstrates the one-way
+  G26 coupling and its measured limits (5 s, seed 0):
+  - mode-2 vs mode-2: sensing works perfectly (0 collisions; the random
+    variant's 0 is seed luck - expected phase-alignments/run ~ 0.4).
+  - mode-2 vs the CG train: the train is only protected while one of
+    its occasions falls inside the 10 ms selection window (~10% of
+    selections). In this seed one reselection landed on the CG phase
+    (RC=61, outliving the run): its 20 ms train hit every 5th own
+    occasion = all remaining CG occasions. Receiver outcomes decompose
+    cleanly: the aligned sender missed 5 CG packets by HALF-DUPLEX, one
+    receiver lost 5 to INTERFERENCE (SINR -2.7 dB), the other received
+    all 49 by CAPTURE (+12.6 dB persistent per-pair shadowing margin).
+  - KNOWN LIMITATION (found by this config, logged in the SL-3 plan):
+    SlMode2Selector::computeExclusion projects sensed reservations only
+    into the T2 selection window - TS 38.214 8.1.4 step 6's exclusion
+    of candidates whose OWN future repetitions (j < C_resel) collide
+    with a projected reservation is not implemented, so reservations
+    longer than the selection window (like a 100 ms CG train against
+    20 ms selectors) are under-protected. Fixing it changes mode-2
+    selection everywhere (a fingerprint re-anchor), so it is documented
+    here and deferred for a consented fix.
+  - The gNB stays blind to mode-2 reservations by design (G26): CG
+    placement never adapts to mode-2 traffic.
+
 InCoverage-Handover (WP-M / G25 audit)
   2 gNBs, an SL-broadcasting UE forced through a handover (serving
   cell 1 -> 2 at t=3.05 s, 60 mps linear mobility) with a trailing PC5
