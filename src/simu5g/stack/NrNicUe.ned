@@ -86,8 +86,10 @@ module NrNicUe extends LteNicUe
         nrMac: <default(hasSidelink ? "simu5g.stack.sidelink.mac.NrMacUeSl" : "NrMacUe")> like ILteMac {
             @display("p=570,510");
         }
-        // PHY Layer
-        nrPhy: <default("NrPhyUe")> like ILtePhy {
+        // PHY Layer (SL-aware variant when the sidelink leg is present:
+        // carries the D32 half-duplex arbiter's Uu side, quiescent unless
+        // sharedUuSlRadio is enabled)
+        nrPhy: <default(hasSidelink ? "simu5g.stack.sidelink.phy.NrPhyUeSl" : "NrPhyUe")> like ILtePhy {
             @display("p=570,600");
         }
         // NR Channel Model

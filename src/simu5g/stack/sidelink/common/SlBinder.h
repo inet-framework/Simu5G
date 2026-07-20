@@ -20,6 +20,7 @@
 #include <inet/networklayer/contract/ipv4/Ipv4Address.h>
 
 #include "simu5g/stack/sidelink/common/SlCommon.h"
+#include "simu5g/stack/sidelink/common/SlUeRadioState.h"
 
 namespace simu5g {
 
@@ -92,6 +93,10 @@ class SlBinder : public omnetpp::cSimpleModule
     // cell id -> its SlGnbRrc (D25: serving-cell pool provisioning, SL-3)
     std::map<MacNodeId, SlGnbRrc *> slGnbRrcs_;
 
+    // node id -> shared Uu/SL radio state (D32 half-duplex arbiter, SL-3);
+    // owned by the registry (created by SlRrc, deleted with the binder)
+    std::map<MacNodeId, SlUeRadioState *> ueRadioStates_;
+
     // SL carrier registry (G8: not in Binder)
     std::map<GHz, SlCarrierInfo> slCarriers_;
 
@@ -102,6 +107,12 @@ class SlBinder : public omnetpp::cSimpleModule
     void handleMessage(omnetpp::cMessage *msg) override;
 
   public:
+    ~SlBinder() override
+    {
+        for (auto& [nodeId, state] : ueRadioStates_)
+            delete state;
+    }
+
     /// Find or dynamically create the singleton instance under the network module
     static SlBinder *getInstance();
 
@@ -138,6 +149,8 @@ class SlBinder : public omnetpp::cSimpleModule
     SlRrc *getSlRrc(MacNodeId nodeId) const;  // nullptr if unknown
     void registerSlGnbRrc(MacNodeId cellId, SlGnbRrc *slGnbRrc);
     SlGnbRrc *getSlGnbRrc(MacNodeId cellId) const;  // nullptr if unknown
+    void registerUeRadioState(MacNodeId nodeId, SlUeRadioState *state);  // takes ownership
+    SlUeRadioState *getUeRadioState(MacNodeId nodeId) const;  // nullptr if unknown
 
     /// Genie connection establishment for broadcast/groupcast: creates the
     /// outgoing SLRB chain at the sender and the incoming chain at every

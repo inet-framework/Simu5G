@@ -151,6 +151,18 @@ SlGnbRrc *SlBinder::getSlGnbRrc(MacNodeId cellId) const
     return it != slGnbRrcs_.end() ? it->second : nullptr;
 }
 
+void SlBinder::registerUeRadioState(MacNodeId nodeId, SlUeRadioState *state)
+{
+    ASSERT(ueRadioStates_.count(nodeId) == 0);
+    ueRadioStates_[nodeId] = state;
+}
+
+SlUeRadioState *SlBinder::getUeRadioState(MacNodeId nodeId) const
+{
+    auto it = ueRadioStates_.find(nodeId);
+    return it != ueRadioStates_.end() ? it->second : nullptr;
+}
+
 void SlBinder::establishSlConnection(FlowControlInfo *lteInfo)
 {
     MacNodeId senderId = lteInfo->getSourceId();

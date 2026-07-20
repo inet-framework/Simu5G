@@ -66,6 +66,10 @@ void SlRrc::initialize(int stage)
         slBinder_ = SlBinder::getInstance();
         slBinder_->registerUeL2Id(srcL2Id_, nodeId_);
         slBinder_->registerSlRrc(nodeId_, this);
+
+        // D32 (SL-3): the shared Uu/SL radio-state object consulted by both
+        // PHY legs when the half-duplex arbiter (sharedUuSlRadio) is on
+        slBinder_->registerUeRadioState(nodeId_, new SlUeRadioState());
         for (const auto& e : preconfig_.slrbConfig) {
             if (e.castType == SL_BROADCAST || e.castType == SL_GROUPCAST) {
                 slBinder_->getOrAssignGroupL2Pid(e.dstL2Id);

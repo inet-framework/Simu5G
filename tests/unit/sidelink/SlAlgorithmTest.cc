@@ -25,6 +25,8 @@
 #include "simu5g/stack/sidelink/common/SlPreconfig.h"
 #include "simu5g/stack/sidelink/common/SlPsfch.h"
 #include "simu5g/stack/sidelink/mac/SlCrTracker.h"
+#include "simu5g/stack/sidelink/common/SlUeRadioState.h"
+#include "simu5g/stack/sidelink/ip2nic/SlPathPolicy.h"
 #include "simu5g/stack/sidelink/mac/SlEnbScheduler.h"
 #include "simu5g/stack/sidelink/mac/SlMcsTable.h"
 #include "simu5g/stack/sidelink/mac/SlMode2Selector.h"
@@ -81,6 +83,8 @@ class SlAlgorithmTest : public cSimpleModule
         testCbrLevelsAndCr();
         testGrantOccasionTrains();
         testEnbScheduler();
+        testUeRadioState();
+        testPathPolicy();
 
         std::cout << "SlAlgorithmTest: ALL " << numChecks_ << " CHECKS PASSED" << std::endl;
     }
@@ -221,6 +225,80 @@ class SlAlgorithmTest : public cSimpleModule
         SlEnbScheduler s4(tiny);
         check(s4.reserveConfiguredGrant(MacNodeId(1025), 1, 50, 0).isValid(), "cg: every-slot train fits an empty pool");
         check(!s4.reserveConfiguredGrant(MacNodeId(1026), 4, 50, 0).isValid(), "cg: full pool refuses further trains");
+    }
+
+    void testUeRadioState()
+    {
+        using RS = SlUeRadioState;
+        RS rs;
+
+        // no records: nothing overlaps
+        check(!rs.overlapsTx(RS::UU, SimTime(0), SimTime(1, SIMTIME_MS)), "radioState: empty -> no overlap");
+
+        // a Uu TX blocks overlapping SL-queried intervals, per-leg filtered
+        rs.recordTx(RS::UU, SimTime(10, SIMTIME_MS), SimTime(11, SIMTIME_MS));
+        check(rs.overlapsTx(RS::UU, SimTime(10500, SIMTIME_US), SimTime(11, SIMTIME_MS)), "radioState: overlap detected");
+        check(!rs.overlapsTx(RS::SL, SimTime(10500, SIMTIME_US), SimTime(11, SIMTIME_MS)), "radioState: leg filter");
+
+        // touching endpoints are NOT overlaps (back-to-back slots are legal)
+        check(!rs.overlapsTx(RS::UU, SimTime(11, SIMTIME_MS), SimTime(115, SIMTIME_MS) / 10), "radioState: adjacent slot not blocked");
+        check(!rs.overlapsTx(RS::UU, SimTime(9, SIMTIME_MS), SimTime(10, SIMTIME_MS)), "radioState: preceding slot not blocked");
+
+        // TX-TX conflicts: recording an SL TX overlapping the Uu one counts
+        bool conflict = rs.recordTx(RS::SL, SimTime(10200, SIMTIME_US), SimTime(10700, SIMTIME_US));
+        check(conflict && rs.getTxConflicts() == 1, "radioState: TX-TX conflict counted");
+        bool noConflict = rs.recordTx(RS::SL, SimTime(12, SIMTIME_MS), SimTime(125, SIMTIME_MS) / 10);
+        check(!noConflict && rs.getTxConflicts() == 1, "radioState: disjoint TX is no conflict");
+
+        // lazy pruning: records far older than the horizon are dropped on insert
+        size_t before = rs.recordedCount();
+        rs.recordTx(RS::UU, SimTime(1000, SIMTIME_MS), SimTime(1001, SIMTIME_MS));
+        check(rs.recordedCount() < before + 1, "radioState: old records pruned on insert");
+        check(rs.overlapsTx(RS::UU, SimTime(10005, SIMTIME_US) * 100, SimTime(10015, SIMTIME_US) * 100),
+              "radioState: fresh record queryable");
+    }
+
+    void testPathPolicy()
+    {
+        using P = SlPathPolicy;
+        P::Policy p;
+        check(P::parse("pc5IfPeer", p) && p == P::PC5_IF_PEER, "pathPolicy: parse pc5IfPeer");
+        check(P::parse("uuIfServed", p) && p == P::UU_IF_SERVED, "pathPolicy: parse uuIfServed");
+        check(P::parse("pc5Only", p) && p == P::PC5_ONLY, "pathPolicy: parse pc5Only");
+        check(P::parse("condition", p) && p == P::CONDITION, "pathPolicy: parse condition");
+        check(!P::parse("bogus", p), "pathPolicy: unknown name rejected");
+
+        // pc5IfPeer (the D16 default): capability decides, attachment ignored
+        for (bool served : { false, true }) {
+            check(P::decideUnicast(P::PC5_IF_PEER, true, served, false) == P::PATH_PC5,
+                  "pathPolicy: pc5IfPeer routes SL peers over PC5");
+            check(P::decideUnicast(P::PC5_IF_PEER, false, served, false) == P::PATH_UU,
+                  "pathPolicy: pc5IfPeer routes non-peers over Uu");
+        }
+
+        // uuIfServed: attachment wins for capable peers
+        check(P::decideUnicast(P::UU_IF_SERVED, true, true, false) == P::PATH_UU,
+              "pathPolicy: uuIfServed prefers Uu while attached");
+        check(P::decideUnicast(P::UU_IF_SERVED, true, false, false) == P::PATH_PC5,
+              "pathPolicy: uuIfServed falls back to PC5 when detached");
+        check(P::decideUnicast(P::UU_IF_SERVED, false, false, false) == P::PATH_UU,
+              "pathPolicy: uuIfServed routes non-peers over Uu even detached");
+
+        // pc5Only: no Uu fallback exists
+        for (bool served : { false, true }) {
+            check(P::decideUnicast(P::PC5_ONLY, true, served, false) == P::PATH_PC5,
+                  "pathPolicy: pc5Only routes SL peers over PC5");
+            check(P::decideUnicast(P::PC5_ONLY, false, served, false) == P::PATH_DENY,
+                  "pathPolicy: pc5Only denies non-peer traffic");
+        }
+
+        // condition: the expression decides for capable peers only
+        check(P::decideUnicast(P::CONDITION, true, true, true) == P::PATH_PC5,
+              "pathPolicy: condition true -> PC5");
+        check(P::decideUnicast(P::CONDITION, true, true, false) == P::PATH_UU,
+              "pathPolicy: condition false -> Uu");
+        check(P::decideUnicast(P::CONDITION, false, false, true) == P::PATH_UU,
+              "pathPolicy: condition never routes non-peers over PC5");
     }
 
     void testGrantOccasionTrains()
