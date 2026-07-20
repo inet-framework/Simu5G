@@ -85,6 +85,7 @@ class SlAlgorithmTest : public cSimpleModule
         testEnbScheduler();
         testUeRadioState();
         testPathPolicy();
+        testStep6CandidateRepetitions();
 
         std::cout << "SlAlgorithmTest: ALL " << numChecks_ << " CHECKS PASSED" << std::endl;
     }
@@ -299,6 +300,55 @@ class SlAlgorithmTest : public cSimpleModule
               "pathPolicy: condition false -> Uu");
         check(P::decideUnicast(P::CONDITION, false, false, true) == P::PATH_UU,
               "pathPolicy: condition never routes non-peers over PC5");
+    }
+
+    void testStep6CandidateRepetitions()
+    {
+        // TS 38.214 §8.1.4 step 6: a reservation whose period exceeds the
+        // selection window span must still exclude candidates whose OWN
+        // future repetitions collide with it. Pool: 1 subchannel, window
+        // [now+2, now+20] (19 candidates); own period 40 slots (20 ms at
+        // numerology 1); sensed reservation: period 200 slots (100 ms, the
+        // mode-1 CG train shape) last heard at slot 850.
+        SlMode2Selector::PoolConfig pool;
+        pool.numSubchannels = 1;
+        pool.t1 = 2;
+        pool.t2 = 20;
+        pool.rsrpThresholdDbm = -128;
+        FixedRandom rng;
+        SlMode2Selector selector(pool, &rng);
+
+        SlSensingDatabase db(2000);
+        db.recordSci(SlSensingEntry{850, 0, 1, -90, 200, MacNodeId(2049), 0});
+
+        // from now=1000 the reservation's occurrences (1050, 1250, ...) are
+        // all beyond the window - the pre-fix selector excluded nothing.
+        // With step 6, candidate slot 1010 (= 1050 - 1*40 = 1250 - 6*40 ...)
+        // is excluded: its own 40-slot train would hit every occurrence.
+        auto sel = selector.select(1000, 1, 40, 20, db);
+        check(sel.numCandidates == 19, "step6: M_total = 19");
+        check(sel.numSurvivors == 18, "step6: the CG-aligned candidate is excluded");
+        // the excluded slot is 1010: pick 8 (0-based over survivors
+        // 1002..1009,1011) lands on 1011, skipping 1010
+        rng.fixed = 8;
+        sel = selector.select(1000, 1, 40, 20, db);
+        check(sel.slot == 1011, "step6: picks skip the protected CG phase");
+
+        // a same-period reservation (both 40 slots) is caught identically
+        // with and without step 6 (the shifts land on the same congruence
+        // class): entry at 970 -> occurrence 1010 in-window, 1 exclusion
+        SlSensingDatabase db2(2000);
+        db2.recordSci(SlSensingEntry{970, 0, 1, -90, 40, MacNodeId(2050), 0});
+        rng.fixed = 0;
+        sel = selector.select(1000, 1, 40, 20, db2);
+        check(sel.numSurvivors == 18, "step6: homogeneous periods unchanged (one congruence class)");
+
+        // an own one-shot selection (ownPeriod 0 disables the j-loop): only
+        // the in-window occurrence excludes
+        SlSensingDatabase db3(2000);
+        db3.recordSci(SlSensingEntry{850, 0, 1, -90, 200, MacNodeId(2049), 0});
+        sel = selector.select(1000, 1, 0, 20, db3);
+        check(sel.numSurvivors == 19, "step6: no own train -> no repetition shifts");
     }
 
     void testGrantOccasionTrains()

@@ -23,7 +23,7 @@
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c Mode1-CG1 -r 0,                       2s,         eff6-396c/tplx;2e75-78c0/tilx;57f0-90c8/~tNl;4378-1df1/sz, PASS,
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c Mode1-CG1-DynamicBaseline -r 0,       2s,         3bd1-a98d/tplx;478e-0dff/tilx;480a-0441/~tNl;7f34-383a/sz, PASS,
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c Mode1-CG2 -r 0,                       5s,         b264-d37f/tplx;42df-1c26/tilx;b4de-202e/~tNl;f1df-b79f/sz, PASS,
-/simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c Mode1Mode2-SharedPool -r 0,           2s,         d54a-2142/tplx;dc6a-4007/tilx;5c6c-36fe/~tNl;adc0-df6f/sz, PASS,
+/simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c Mode1Mode2-SharedPool -r 0,           2s,         605c-a66a/tplx;bdc3-bb29/tilx;d604-c0ec/~tNl;598e-5066/sz, PASS,
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c SharedRadio -r 0,                     2s,         2c52-48d7/tplx;3c31-8d66/tilx;363b-4844/~tNl;ae95-bd29/sz, PASS,
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c PathPolicy-UuFallback -r 0,           2s,         b53e-0a85/tplx;d13c-df22/tilx;8220-0b98/~tNl;0627-247c/sz, PASS,
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c PathPolicy-Pc5Fallback -r 0,          2s,         c584-a9d7/tplx;8a6a-5023/tilx;07be-5cb1/~tNl;7663-a798/sz, PASS,

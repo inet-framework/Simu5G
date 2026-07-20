@@ -91,26 +91,26 @@ Mode1Mode2-SharedPool / Mode1Mode2-SharedPool-Random (D34)
   One deliberate shared-pool config: ue[0]'s mode-1 CG train (100 ms,
   subchannel 0) + three 20 ms mode-2 CAM senders on a deliberately tight
   single-subchannel pool, TR 37.885 channel. Demonstrates the one-way
-  G26 coupling and its measured limits (5 s, seed 0):
-  - mode-2 vs mode-2: sensing works perfectly (0 collisions; the random
-    variant's 0 is seed luck - expected phase-alignments/run ~ 0.4).
-  - mode-2 vs the CG train: the train is only protected while one of
-    its occasions falls inside the 10 ms selection window (~10% of
-    selections). In this seed one reselection landed on the CG phase
-    (RC=61, outliving the run): its 20 ms train hit every 5th own
-    occasion = all remaining CG occasions. Receiver outcomes decompose
-    cleanly: the aligned sender missed 5 CG packets by HALF-DUPLEX, one
-    receiver lost 5 to INTERFERENCE (SINR -2.7 dB), the other received
-    all 49 by CAPTURE (+12.6 dB persistent per-pair shadowing margin).
-  - KNOWN LIMITATION (found by this config, logged in the SL-3 plan):
-    SlMode2Selector::computeExclusion projects sensed reservations only
-    into the T2 selection window - TS 38.214 8.1.4 step 6's exclusion
-    of candidates whose OWN future repetitions (j < C_resel) collide
-    with a projected reservation is not implemented, so reservations
-    longer than the selection window (like a 100 ms CG train against
-    20 ms selectors) are under-protected. Fixing it changes mode-2
-    selection everywhere (a fingerprint re-anchor), so it is documented
-    here and deferred for a consented fix.
+  G26 coupling (5 s, seed 0):
+  - sensing (Mode1Mode2-SharedPool): fully lossless - CG train 49/49 at
+    every receiver, mode-2 traffic 735/735. The mode-2 UEs decode the
+    CG train's SCIs (reservation stamped with the CG period) and the
+    TS 38.214 8.1.4 step-6 exclusion keeps every candidate whose own
+    20 ms SPS train would collide with a projected CG occasion out of
+    the selection - even though the 100 ms occasions themselves almost
+    never fall inside the 10 ms selection window.
+  - random (the control): no sensing, so a reselection can land on the
+    CG phase and stay there for a whole reselection counter (collisions
+    are persistent by construction); at this density the per-selection
+    alignment probability is ~1/40, so single runs may show zero or
+    several collision episodes (seed 0 happens to be clean).
+  - History: this config originally EXPOSED the missing step-6
+    candidate-repetition exclusion (sensing then lost 5 CG packets to a
+    persistent phase-aligned reselection, decomposing into half-duplex,
+    interference at -2.7 dB, and a +12.6 dB capture at the third
+    receiver); the selector fix re-anchored this row - the only row
+    affected, since homogeneous-period pools exclude the same slots
+    with and without step 6.
   - The gNB stays blind to mode-2 reservations by design (G26): CG
     placement never adapts to mode-2 traffic.
 

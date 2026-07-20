@@ -199,10 +199,11 @@ subset:
   network-uniform - handover does not re-provision, and the allocation
   mode is static per run (no coverage-driven mode switching).
 - The gNB is blind to mode-2 reservations in a shared pool (one-way
-  coupling); mode-2 UEs project mode-1 trains from their SCIs, but
-  reservations longer than the T2 selection window are under-protected
-  (the TS 38.214 §8.1.4 step-6 candidate-repetition exclusion is not
-  implemented — see the shared-pool example README).
+  coupling); mode-2 UEs project mode-1 trains from their SCIs and the
+  TS 38.214 §8.1.4 step-6 candidate-repetition exclusion keeps their
+  SPS trains off projected reservations of any period (the sensed
+  reservation's future occurrences are projected without the spec's
+  q ≤ Q bound — a conservative superset).
 - The gNB sidelink MCS is configured, not adapted (no SL CSI feedback);
   there is no SR modeling (the preamble RAC is the request channel) and
   no exact DCI/MAC-CE bit formats.

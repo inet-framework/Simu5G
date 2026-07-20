@@ -17,7 +17,8 @@
 
 namespace simu5g {
 
-std::vector<char> SlMode2Selector::computeExclusion(SlotIndex now, int lSubch, const SlSensingDatabase& db, double thresholdDbm, int& numExcluded) const
+std::vector<char> SlMode2Selector::computeExclusion(SlotIndex now, int lSubch, int ownPeriodSlots, int cResel,
+        const SlSensingDatabase& db, double thresholdDbm, int& numExcluded) const
 {
     const int windowSlots = pool_.t2 - pool_.t1 + 1;
     const int positions = pool_.numSubchannels - lSubch + 1;
@@ -37,12 +38,42 @@ std::vector<char> SlMode2Selector::computeExclusion(SlotIndex now, int lSubch, c
             excluded[(slot - windowStart) * positions + p] = 1;
     };
 
+    // TS 38.214 §8.1.4 step 6: a candidate y is excluded when any of the
+    // candidate's OWN future repetitions y + j*ownPeriodSlots (j < cResel,
+    // the maximum possible length of the SPS train that would be anchored
+    // at y) overlaps a projected occurrence of a reservation - not only
+    // the occurrence that falls inside the selection window itself (j = 0).
+    // Without the j > 0 shifts, a reservation whose period exceeds the
+    // selection window span (e.g. a 100 ms mode-1 CG train sensed by a
+    // 20 ms selector with a 10 ms window) is invisible to ~90% of the
+    // selections and cannot protect itself.
+    // Projections walk every future occurrence (q unbounded) - a
+    // conservative superset of the spec's q <= Q bound, kept from the
+    // pre-fix behavior.
+    auto excludeAgainstOccurrence = [&](SlotIndex s, int resFirst, int resNum) {
+        excludeOverlapping(s, resFirst, resNum);  // j = 0
+        if (ownPeriodSlots <= 0)
+            return;
+        SlotIndex jFirst = s > windowEnd ? (s - windowEnd + ownPeriodSlots - 1) / ownPeriodSlots : 1;
+        for (SlotIndex j = jFirst; j < cResel; j++) {
+            SlotIndex y = s - j * ownPeriodSlots;
+            if (y < windowStart)
+                break;
+            excludeOverlapping(y, resFirst, resNum);
+        }
+    };
+
+    // the farthest own-repetition slot that can anchor at an in-window
+    // candidate: projections beyond this can no longer shift back into
+    // the window
+    const SlotIndex horizon = windowEnd + (ownPeriodSlots > 0 ? (SlotIndex)(cResel - 1) * ownPeriodSlots : 0);
+
     // exclusion step 1: projected reservations of sensed SCIs above threshold
     for (const auto& e : db.getEntries()) {
         if (e.rsrpDbm < thresholdDbm || e.reservationPeriodSlots <= 0)
             continue;
-        for (SlotIndex s = e.slot + e.reservationPeriodSlots; s <= windowEnd; s += e.reservationPeriodSlots)
-            excludeOverlapping(s, e.firstSubchannel, e.numSubchannels);
+        for (SlotIndex s = e.slot + e.reservationPeriodSlots; s <= horizon; s += e.reservationPeriodSlots)
+            excludeAgainstOccurrence(s, e.firstSubchannel, e.numSubchannels);
     }
 
     // exclusion step 2 (conservative): whole slots that could carry a
@@ -51,8 +82,8 @@ std::vector<char> SlMode2Selector::computeExclusion(SlotIndex now, int lSubch, c
         for (int periodSlots : pool_.allowedPeriodsSlots) {
             if (periodSlots <= 0)
                 continue;
-            for (SlotIndex s = m + periodSlots; s <= windowEnd; s += periodSlots)
-                excludeOverlapping(s, 0, pool_.numSubchannels);
+            for (SlotIndex s = m + periodSlots; s <= horizon; s += periodSlots)
+                excludeAgainstOccurrence(s, 0, pool_.numSubchannels);
         }
     }
 
@@ -76,13 +107,18 @@ SlMode2Selector::Selection SlMode2Selector::select(SlotIndex now, int lSubch, in
     Selection result;
     result.numCandidates = windowSlots * positions;
 
+    // the maximum possible length of the SPS train anchored at the picked
+    // candidate: the upper bound of the reselection counter draw (step-6
+    // own-repetition horizon)
+    const int cResel = maxReselectionCounter(periodMs);
+
     // the 20% rule: raise the threshold by 3 dB until at least 20% of the
     // candidates survive the exclusion
     double threshold = pool_.rsrpThresholdDbm;
     int numExcluded = 0;
     std::vector<char> excluded;
     while (true) {
-        excluded = computeExclusion(now, lSubch, db, threshold, numExcluded);
+        excluded = computeExclusion(now, lSubch, periodSlots, cResel, db, threshold, numExcluded);
         int survivors = result.numCandidates - numExcluded;
         if (survivors * 5 >= result.numCandidates)  // survivors >= 20% of M_total
             break;
@@ -121,7 +157,6 @@ SlMode2Selector::Selection SlMode2Selector::select(SlotIndex now, int lSubch, in
     }
 
     assert(result.slot != SLOTINDEX_NONE);
-    (void)periodSlots;
     result.reselectionCounter = drawReselectionCounter(periodMs);
     return result;
 }
@@ -132,6 +167,12 @@ int SlMode2Selector::drawReselectionCounter(int periodMs)
     // Q = ceil(100/period) below
     int q = (periodMs >= 100) ? 1 : (int)std::ceil(100.0 / std::max(periodMs, 1));
     return random_->intuniform(5 * q, 15 * q);
+}
+
+int SlMode2Selector::maxReselectionCounter(int periodMs)
+{
+    int q = (periodMs >= 100) ? 1 : (int)std::ceil(100.0 / std::max(periodMs, 1));
+    return 15 * q;
 }
 
 } // namespace simu5g

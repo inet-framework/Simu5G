@@ -84,7 +84,8 @@ class SlMode2Selector
 
     /// run both exclusion steps at the given threshold; returns the exclusion
     /// bitmap over the candidate grid (slot-major)
-    std::vector<char> computeExclusion(SlotIndex now, int lSubch, const SlSensingDatabase& db, double thresholdDbm, int& numExcluded) const;
+    std::vector<char> computeExclusion(SlotIndex now, int lSubch, int ownPeriodSlots, int cResel,
+            const SlSensingDatabase& db, double thresholdDbm, int& numExcluded) const;
 
   public:
     SlMode2Selector(const PoolConfig& pool, ISlRandom *random) : pool_(pool), random_(random) {}
@@ -97,6 +98,10 @@ class SlMode2Selector
 
     /// draw a fresh reselection counter (also used by probResourceKeep)
     int drawReselectionCounter(int periodMs);
+
+    /// upper bound of the drawReselectionCounter draw for a period: the
+    /// longest SPS train a selection can anchor (the step-6 j horizon)
+    static int maxReselectionCounter(int periodMs);
 };
 
 } // namespace simu5g
