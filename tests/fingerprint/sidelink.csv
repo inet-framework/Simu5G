@@ -18,3 +18,5 @@
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c InCoverage-Mode2 -r 0,                2s,         a173-a221/tplx;2ffe-b406/tilx;18c4-7133/~tNl;0807-6881/sz, PASS,
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c InCoverage-Mode2-Mixed -r 0,          2s,         18d3-b746/tplx;a3da-daa6/tilx;d00d-f802/~tNl;605e-baf1/sz, PASS,
 /simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c InCoverage-Handover -r 0,             5s,         9980-b4a9/tplx;43a1-99d3/tilx;bd1e-5c37/~tNl;56ab-d192/sz, PASS,
+/simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c Mode1-Dynamic -r 0,                   2s,         5ff7-da1e/tplx;26f3-f1bb/tilx;e958-a4ac/~tNl;07aa-be78/sz, PASS,
+/simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c Mode2-Sporadic -r 0,                  2s,         2aea-7486/tplx;01c2-d243/tilx;cd23-3b8b/~tNl;a04d-c536/sz, PASS,
