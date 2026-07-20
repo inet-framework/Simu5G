@@ -101,10 +101,12 @@ Configs:
   feedback (psfchPeriod 4). Lost TBs are NACKed by the receiver in the
   PSSCH's PSFCH slot and retransmitted on the next grant occasion (up to
   harqMaxRtx); missing feedback resolves per psfchDtxPolicy. Measured
-  (2s, seed 0): 51-59/95 delivered without feedback vs 92-93/95 with it,
-  via 66 NACK-driven retransmissions; the equal-PRR comparison against
-  blindRetx=1 (93/95 at 380 TB transmissions vs 256) shows ~33% fewer
-  transmissions at the same delivery - the M6 exit gate.
+  (2s, seed 0, after the exact-drain LCP fix): 95/95 delivered both ways
+  via 66 NACK-driven retransmissions on 195 TB transmissions total (129
+  initial - queued packets now share TBs - plus the 66 retx); without
+  feedback roughly half the packets are lost at this PER. Against
+  blindRetx=1 (93/95 at 380 TB transmissions) that is full delivery at
+  ~49% fewer transmissions - the M6 exit gate, now stronger.
 
 - Unicast-QoS (milestone M7, WP-J / SL-2): two PC5 QoS flows to one
   destination over one unicast link. DSCP resolves the PFI (tos >> 2);
@@ -112,9 +114,10 @@ Configs:
   (LCP priority 1) and PFI 2 -> a PQI-90 SLRB (priority 25); the
   PQI-aware LCP (D21) fills the single 123B TB per 20 ms occasion in
   strict priority order across the destination's backlogged SLRBs.
-  Measured (2s, seed 0): the PQI-21 flow keeps a 3.0 ms mean delay while
-  the best-effort flow queues at ~310 ms under the deliberately tight
-  pool - strict priority visible end-to-end in per-flow delay.
+  Measured (2s, seed 0, after the exact-drain LCP fix): the PQI-21 flow
+  keeps a 4.1 ms mean delay while the best-effort flow queues at ~318 ms
+  under the deliberately tight pool - strict priority visible end-to-end
+  in per-flow delay.
 
 - Unicast-OTA (milestone M8, WP-L / SL-2): the unicast pair with the
   over-the-air PC5-RRC handshake (D23) instead of the genie. The first
@@ -123,9 +126,10 @@ Configs:
   reserved TM SL-SRB (DRB 63; the SRB itself bootstraps via the genie
   mechanism - documented simplification of the pre-provisioned SRB0-3),
   the peer adopts them and answers, and the held packet resumes.
-  Measured (2s, seed 0): the first packet arrives with a ~24 ms
-  establishment transient (vs ~4 ms steady state); delivery converges
-  with genie (94-95/95, the difference being one end-of-run boundary
+  Measured (2s, seed 0, after the exact-drain LCP fix): the first packet
+  arrives with a ~23 ms establishment transient (vs ~3.4 ms steady
+  state); delivery is complete both ways (95/95, previously one
+  end-of-run boundary
   packet), while per-packet steady-state delay shifts by a constant
   grant-train phase offset (the handshake traffic perturbs the mode-2
   resource selection - inherent, since SPS keeps the selected train).

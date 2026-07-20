@@ -452,8 +452,19 @@ void NrSlMacUe::retireOccasionIfLast(SlotIndex slot)
 
 void NrSlMacUe::drainVirtualBuffer(LteMacBuffer *buffer, int64_t bytes)
 {
+    // exact draining: a request that spans an announced-packet boundary
+    // consumes only part of the boundary packet, so its remainder stays
+    // announced and the next TX occasion pulls the RLC-side tail. (The
+    // pre-fix whole-entry pops left the virtual buffer empty one fragment
+    // ahead of RLC; when the flow then idled, the boundary packet's tail
+    // stranded in RLC unsent - found by the SL-3 CG2 burst example.)
     while (bytes > 0 && !buffer->isEmpty()) {
         PacketInfo vpkt = buffer->popFront();
+        if ((int64_t)vpkt.first > bytes) {
+            vpkt.first -= bytes;
+            buffer->pushFront(vpkt);
+            return;
+        }
         bytes -= vpkt.first;
     }
 }

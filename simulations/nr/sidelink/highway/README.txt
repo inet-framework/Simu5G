@@ -89,13 +89,23 @@ CBR-based congestion control on a deliberately congested variant (80
 vehicles, 20 Hz CAMs, single-subchannel pool, 50 ms reservation period).
 The cbrConfig levels cap TX power and the own channel-occupancy ratio;
 above the CR limit a UE skips TX occasions (slCrDeferred). Measured
-(5s, seed 0): mean CBR 0.516 with control vs 0.604 without; PRR at
-0-20 m improves 0.969 -> 0.992 (the standardized trade: deferrals and
-power caps sacrifice long-range delivery - total PRR 0.622 vs 0.671 -
-for near-range reliability and lower channel load).
+(5s, seed 0, after the exact-drain LCP fix): mean CBR 0.509 with
+control vs 0.610 without - the intended channel-load reduction. At
+full offered load the delivery trade is now visibly one-sided: PRR at
+0-20 m is 0.970 with control vs 0.979 without, total PRR 0.578 vs
+0.702 - at this density the CR-limit deferrals queue whole CAMs and
+cost delivery at every range. (The pre-fix figures showed a near-range
+PRR *improvement*, but that was partly an artifact: deferral-induced
+backlog was silently shed by the virtual-buffer accounting bug -
+stranded packets were never transmitted and never entered the PRR
+denominator, flattering the controlled variant. The honest conclusion:
+this cbrConfig's CR limit is too aggressive for 20 Hz CAMs on a
+single-subchannel pool; congestion control here buys channel headroom
+and lower interference to OTHER services, not own-fleet PRR.)
 
 Retransmission-efficiency exit gate (M6), measured on the unicast pair at
-the PER knee (basic/, grantMcs=12, 2400 m, shadowing off, 2s): blind
-retx=1 delivers 93/95 using 380 TB transmissions; PSFCH feedback delivers
-92-93/95 using 256 (190 initial + 66 NACK-driven) - equal PRR at ~33%
+the PER knee (basic/, grantMcs=12, 2400 m, shadowing off, 2s, after the
+exact-drain LCP fix): blind retx=1 delivers 93/95 using 380 TB
+transmissions; PSFCH feedback delivers 95/95 using 195 (129 initial -
+queued packets share TBs - + 66 NACK-driven) - full delivery at ~49%
 fewer transmissions.

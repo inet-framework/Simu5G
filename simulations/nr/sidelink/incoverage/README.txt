@@ -80,12 +80,13 @@ Mode1-CG2 (milestone M11)
   re-activates. EV log (t): activate 0.059, release 1.90, re-activate
   3.009, release 4.80; 28/28 delivered.
 
-  Note on CG TB sizing: size tbBytes so whole packets fit the TB
-  (here 700 B for two 300 B CAMs +headers). A TB request that spans an
-  announced-packet boundary can strand the boundary packet's tail in
-  RLC if the flow then goes idle - a pre-existing limitation of the
-  D21 virtual-buffer approximation, exposed by bursty traffic on
-  releasable grants (with tbBytes 330 the run delivers 27/28).
+  Note: this config deliberately uses a one-CAM TB (tbBytes 330), so
+  requests DO span announced-packet boundaries when two CAMs queue up.
+  It originally exposed a virtual-buffer accounting limitation (the
+  drain popped whole announced packets, leaving the buffer empty one
+  fragment ahead of RLC, stranding the boundary packet's tail when the
+  flow idled - 27/28 delivered); since the exact-draining fix the
+  boundary remainder stays announced and the run delivers 28/28.
 
 Mode1Mode2-SharedPool / Mode1Mode2-SharedPool-Random (D34)
   One deliberate shared-pool config: ue[0]'s mode-1 CG train (100 ms,
