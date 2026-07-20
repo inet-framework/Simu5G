@@ -57,6 +57,27 @@ void NrSlPhyUe::initialize(int stage)
         return;
     }
 
+    if (stage == inet::INITSTAGE_LAST) {
+        // G8 audit (SL-3 WP-M): the SL leg must never enter Binder's Uu
+        // carrier registry - a registerCarrierUe() with the SL carrier would
+        // silently change the Uu MAC's ttiPeriod_, which is derived from
+        // binder->getUeMaxNumerologyIndex(nodeId). All SL carrier geometry
+        // lives in SlBinder (registerSlCarrier) instead.
+        bool inUuRegistry = false;
+        try {
+            const UeSet& ueSet = binder_->getCarrierUeSet(carrierFrequency_);
+            inUuRegistry = ueSet.find(nodeId_) != ueSet.end();
+        }
+        catch (cRuntimeError&) {
+            // SL carrier frequency not present in the Uu registry at all: OK
+        }
+        if (inUuRegistry)
+            throw cRuntimeError("NrSlPhyUe: G8 violation - the SL carrier (%f GHz) is registered "
+                                "in the Uu carrier registry for node %hu; this changes the Uu MAC's "
+                                "slot timing. The SL pool must not be a Uu component carrier.",
+                    carrierFrequency_.get(), num(nodeId_));
+    }
+
     LtePhyBase::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
@@ -177,11 +198,20 @@ void NrSlPhyUe::handleAirFrame(cMessage *msg)
            << ", resource " << psfch->getResourceIndex() << ")" << endl;
         storedPsfchFrames_.push_back(psfch);
     }
-    else {
-        auto *frame = check_and_cast<SlAirFrame *>(msg);
+    else if (auto *frame = dynamic_cast<SlAirFrame *>(msg)) {
         EV << NOW << " NrSlPhyUe::handleAirFrame - stored SL frame from node "
            << frame->getInfo().getSrcNodeId() << " (slot " << frame->getInfo().getSlotIndex() << ")" << endl;
         storedFrames_.push_back(frame);
+    }
+    else {
+        // a Uu channel-control broadcast (the gNB's handover beacon) leaking
+        // onto the SL radio gate: the SL PHY is registered in the channel
+        // control like every radio, but the SL leg is not a Uu receiver -
+        // the beacon is measured by the Uu PHY legs, not here
+        EV << NOW << " NrSlPhyUe::handleAirFrame - ignoring non-SL airframe '"
+           << msg->getName() << "' (Uu broadcast)" << endl;
+        delete msg;
+        return;
     }
 
     if (decodeTimer_ == nullptr) {
