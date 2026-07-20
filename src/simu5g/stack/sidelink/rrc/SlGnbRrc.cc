@@ -43,6 +43,19 @@ void SlGnbRrc::initialize(int stage)
                                     "('%s' is UE-local and belongs in the UE's preconfig)", key);
 
         poolConfig_.loadFromJson(cfg);
+        slotGrid_ = SlSlotGrid(poolConfig_.getSlotDuration());
+
+        // the mode-1 allocator (D29) over this cell's pool
+        SlEnbScheduler::Config schedCfg;
+        schedCfg.numSubchannels = poolConfig_.numSubchannels;
+        schedCfg.subchannelSize = poolConfig_.subchannelSize;
+        schedCfg.mcs = par("grantMcs");
+        schedCfg.overheadSymbols = par("overheadSymbols");
+        schedCfg.ueProcessingSlots = par("ueProcessingSlots");
+        schedCfg.numOccasions = par("grantNumOccasions");
+        schedCfg.occasionGapSlots = par("occasionGapSlots");
+        schedCfg.schedulingHorizonSlots = par("schedulingHorizonSlots");
+        slEnbScheduler_ = std::make_unique<SlEnbScheduler>(schedCfg);
 
         SlBinder::getInstance()->registerSlGnbRrc(cellId_, this);
 
@@ -62,6 +75,23 @@ void SlGnbRrc::registerSlUe(MacNodeId ueId)
 {
     Enter_Method_Silent("registerSlUe()");
     slUes_.insert(ueId);
+}
+
+SlEnbScheduler::GrantSpec SlGnbRrc::onSlBsr(MacNodeId ueId, int reportedBytes)
+{
+    Enter_Method_Silent("onSlBsr()");
+    SlotIndex now = slotGrid_.slotIndexAt(simTime());
+    SlEnbScheduler::GrantSpec spec = slEnbScheduler_->onSlBsr(ueId, reportedBytes, now);
+    if (spec.isValid())
+        EV << simTime() << " SlGnbRrc::onSlBsr - UE " << ueId << " reported " << reportedBytes
+           << "B -> grant: first slot " << spec.firstSlot << ", " << spec.numOccasions
+           << " occasion(s) every " << spec.occasionGapSlots << " slots, subchannels ["
+           << spec.firstSubchannel << ".." << spec.firstSubchannel + spec.numSubchannels - 1
+           << "], MCS " << spec.mcs << ", TBS " << spec.tbBytes << "B" << endl;
+    else
+        EV << simTime() << " SlGnbRrc::onSlBsr - UE " << ueId << " reported " << reportedBytes
+           << "B -> no free resources within the horizon (UE will retry)" << endl;
+    return spec;
 }
 
 } // namespace simu5g

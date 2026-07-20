@@ -22,6 +22,10 @@ import simu5g.stack.sidelink.rrc.SlGnbRrc;
 //
 module NrNicEnbSl extends NrNicEnb
 {
+    parameters:
+        //# the SL-BSR-aware, grant-issuing MAC variant (D27)
+        mac.typename = default("simu5g.stack.sidelink.mac.NrMacGnbSl");
+
     submodules:
         //# gNB-side sidelink control plane: cell pool owner + SL-UE registry
         slGnbRrc: SlGnbRrc {

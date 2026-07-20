@@ -16,8 +16,12 @@
 
 #include <omnetpp.h>
 
+#include <memory>
+
 #include "simu5g/stack/sidelink/common/SlCommon.h"
 #include "simu5g/stack/sidelink/common/SlPreconfig.h"
+#include "simu5g/stack/sidelink/mac/SlEnbScheduler.h"
+#include "simu5g/stack/sidelink/mac/SlSlotGrid.h"
 
 namespace simu5g {
 
@@ -48,6 +52,10 @@ class SlGnbRrc : public omnetpp::cSimpleModule
     // extended in WP-O/WP-P)
     std::set<MacNodeId> slUes_;
 
+    // the mode-1 allocator (D29) and the SL pool's slot grid
+    std::unique_ptr<SlEnbScheduler> slEnbScheduler_;
+    SlSlotGrid slotGrid_;
+
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(omnetpp::cMessage *msg) override;
@@ -59,6 +67,10 @@ class SlGnbRrc : public omnetpp::cSimpleModule
     /// called by an attached UE's SlRrc at pool-resolution time (D25)
     void registerSlUe(MacNodeId ueId);
     const std::set<MacNodeId>& getSlUes() const { return slUes_; }
+
+    /// an SL-BSR arrived at the gNB MAC (D26/D29): run the allocator and
+    /// return the grant spec for NrMacGnbSl to send (invalid = no resources)
+    SlEnbScheduler::GrantSpec onSlBsr(MacNodeId ueId, int reportedBytes);
 };
 
 } // namespace simu5g

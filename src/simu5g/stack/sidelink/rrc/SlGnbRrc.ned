@@ -38,4 +38,30 @@ simple SlGnbRrc
         //     t1: 2, t2: 20, rsrpThresholdDbm: -128,
         //     reservationPeriodsMs: [20] }
         object slPoolConfig = default({});
+
+        // --- mode-1 dynamic-grant allocation (D28/D29/D30) ---
+
+        // PSSCH MCS carried in every grant (no SL CSI loop is modeled - the
+        // gNB MCS is configured, the UE obeys it)
+        int grantMcs = default(6);
+
+        // per-slot symbols lost to AGC + guard + PSCCH + DMRS in the TBS
+        // math; must match the UEs' slMac.overheadSymbols
+        int overheadSymbols = default(5);
+
+        // minimum gap between grant issue and its first occasion [SL slots]
+        // (models the UE's DCI decode + PSSCH preparation time)
+        int ueProcessingSlots = default(3);
+
+        // occasions per dynamic grant: 1 initial + preallocated blind-retx
+        // occasions (DCI 3_0 allows up to 2 additional resources)
+        int grantNumOccasions = default(3);
+
+        // spacing of a dynamic grant's occasions [SL slots]. For PSFCH-driven
+        // retransmissions to be usable the gap must exceed the pool's PSFCH
+        // feedback delay (psfchPeriod + psfchMinGap); not enforced.
+        int occasionGapSlots = default(4);
+
+        // give up allocating when no free train exists within this window
+        int schedulingHorizonSlots = default(256);
 }
