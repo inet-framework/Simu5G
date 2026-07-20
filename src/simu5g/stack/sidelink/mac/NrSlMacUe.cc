@@ -11,6 +11,8 @@
 
 #include "simu5g/stack/sidelink/mac/NrSlMacUe.h"
 
+#include "simu5g/common/InitStages.h"
+
 #include <algorithm>
 #include <limits>
 
@@ -56,10 +58,6 @@ void NrSlMacUe::initialize(int stage)
         slRrc_ = check_and_cast<SlRrc *>(getModuleByPath(par("slRrcModule").stringValue()));
         slBinder_ = SlBinder::getInstance();
 
-        const SlPreconfig& cfg = slRrc_->getPreconfig();
-        slotGrid_ = SlSlotGrid(cfg.getSlotDuration());
-        carrierFrequency_ = GHz(cfg.carrierFrequencyGHz);
-
         std::string mode = par("resourceAllocationMode").stdstringValue();
         if (mode == "static")
             allocationMode_ = STATIC;
@@ -75,8 +73,24 @@ void NrSlMacUe::initialize(int stage)
         probResourceKeep_ = par("probResourceKeep");
         tbSize_ = par("tbSize");
         computeTbSize_ = (tbSize_ < 0);
-        subchannelSize_ = cfg.subchannelSize;
         overheadSymbols_ = par("overheadSymbols");
+
+        harqMaxRtx_ = par("harqMaxRtx");
+        dtxAsAck_ = (par("psfchDtxPolicy").stdstringValue() == "ack");
+        WATCH(numFeedbackRetx_);
+        WATCH(numDtx_);
+        WATCH(numCrDeferred_);
+
+        txSlotEvent_ = new cMessage("slTxSlot");
+    }
+    else if (stage == INITSTAGE_SIMU5G_TTI_SETUP) {
+        // pool-geometry-dependent setup: runs strictly after SlRrc's pool
+        // resolution at INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION (D25/G18) -
+        // with poolSource="servingCell" the pool section only settles there
+        const SlPreconfig& cfg = slRrc_->getPreconfig();
+        slotGrid_ = SlSlotGrid(cfg.getSlotDuration());
+        carrierFrequency_ = GHz(cfg.carrierFrequencyGHz);
+        subchannelSize_ = cfg.subchannelSize;
 
         periodMs_ = cfg.reservationPeriodsMs.empty() ? 100 : cfg.reservationPeriodsMs.front();
         periodSlots_ = slotGrid_.slotsPerMs(periodMs_);
@@ -85,11 +99,6 @@ void NrSlMacUe::initialize(int stage)
         blindRetx_ = cfg.blindRetx;
         psfchPeriod_ = cfg.psfchPeriod;
         psfchMinGap_ = cfg.psfchMinGap;
-        harqMaxRtx_ = par("harqMaxRtx");
-        dtxAsAck_ = (par("psfchDtxPolicy").stdstringValue() == "ack");
-        WATCH(numFeedbackRetx_);
-        WATCH(numDtx_);
-        WATCH(numCrDeferred_);
 
         // sensing database + selector (used by mode2; random uses the selector
         // with an always-empty database)
@@ -102,8 +111,6 @@ void NrSlMacUe::initialize(int stage)
         for (int p : cfg.reservationPeriodsMs)
             pool.allowedPeriodsSlots.push_back(slotGrid_.slotsPerMs(p));
         selector_ = new SlMode2Selector(pool, &random_);
-
-        txSlotEvent_ = new cMessage("slTxSlot");
     }
 }
 

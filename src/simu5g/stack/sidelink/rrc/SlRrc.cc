@@ -17,10 +17,13 @@
 #include <inet/common/ModuleAccess.h>
 #include <omnetpp/cvaluemap.h>
 
+#include "simu5g/common/InitStages.h"
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/sidelink/ip2nic/SlIp2Nic.h"
+#include "simu5g/stack/sidelink/rrc/SlGnbRrc.h"
 #include "simu5g/stack/sidelink/rrc/SlPc5Rrc_m.h"
 
 namespace simu5g {
@@ -71,13 +74,72 @@ void SlRrc::initialize(int stage)
             if (!e.destAddress.empty())
                 slBinder_->registerMulticastAddress(inet::Ipv4Address(e.destAddress.c_str()), e.dstL2Id);
         }
-        slBinder_->registerSlCarrier(GHz(preconfig_.carrierFrequencyGHz), preconfig_.numerologyIndex,
-                preconfig_.subchannelSize, preconfig_.numSubchannels);
+
+        // D25 (SL-3): pool resolution (and the SL carrier registration) moved
+        // to resolvePool() at INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION - the
+        // serving cell is only final after the HandoverController's
+        // INITSTAGE_SIMU5G_PHYSICAL_LAYER attach (G18)
+        poolFromServingCell_ = (par("poolSource").stdstringValue() == "servingCell");
+        binder_.reference(this, "binderModule", true);
 
         EV << "SlRrc::initialize - node " << nodeId_ << ", srcL2Id " << srcL2Id_
-           << ", carrier " << preconfig_.carrierFrequencyGHz << " GHz (mu=" << preconfig_.numerologyIndex
-           << "), " << preconfig_.slrbConfig.size() << " SLRB(s) configured" << endl;
+           << ", " << preconfig_.slrbConfig.size() << " SLRB(s) configured, poolSource "
+           << par("poolSource").stringValue() << endl;
     }
+    else if (stage == INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION) {
+        resolvePool();
+    }
+}
+
+void SlRrc::resolvePool()
+{
+    // D25 ("genie SIB12"): with poolSource="servingCell", an attached UE
+    // copies the serving cell's pool section over the local preconfig's; a
+    // detached UE falls back to the local preconfig (models the spec's
+    // out-of-coverage preconfiguration, so mixed-coverage scenarios work
+    // with one config). Only the pool section is cell-provided - SLRB/QoS/
+    // unicast sections stay UE-local (SIB12 carries pools, not app bearers).
+    // Consumers (NrSlMacUe, NrSlPhyUe) cache pool geometry at
+    // INITSTAGE_SIMU5G_TTI_SETUP, strictly after this stage.
+    if (poolFromServingCell_) {
+        MacNodeId servingCell = binder_->getServingNode(nodeId_);
+        if (servingCell != NODEID_NONE) {
+            SlGnbRrc *slGnbRrc = slBinder_->getSlGnbRrc(servingCell);
+            if (slGnbRrc == nullptr)
+                throw cRuntimeError("SlRrc: poolSource=\"servingCell\" but serving cell %hu has no "
+                                    "sidelink support (set hasSidelink=true on the gNodeB and configure "
+                                    "its slGnbRrc.slPoolConfig)", num(servingCell));
+
+            const SlPreconfig& cell = slGnbRrc->getPoolConfig();
+            preconfig_.carrierFrequencyGHz = cell.carrierFrequencyGHz;
+            preconfig_.numerologyIndex = cell.numerologyIndex;
+            preconfig_.subchannelSize = cell.subchannelSize;
+            preconfig_.numSubchannels = cell.numSubchannels;
+            preconfig_.slotBitmap = cell.slotBitmap;
+            preconfig_.t0Ms = cell.t0Ms;
+            preconfig_.t1 = cell.t1;
+            preconfig_.t2 = cell.t2;
+            preconfig_.rsrpThresholdDbm = cell.rsrpThresholdDbm;
+            preconfig_.reservationPeriodsMs = cell.reservationPeriodsMs;
+            preconfig_.blindRetx = cell.blindRetx;
+            preconfig_.psfchPeriod = cell.psfchPeriod;
+            preconfig_.psfchMinGap = cell.psfchMinGap;
+            preconfig_.psfchResources = cell.psfchResources;
+
+            slGnbRrc->registerSlUe(nodeId_);
+
+            EV << "SlRrc::resolvePool - node " << nodeId_ << ": pool provisioned from serving cell "
+               << servingCell << " (carrier " << preconfig_.carrierFrequencyGHz << " GHz, mu="
+               << preconfig_.numerologyIndex << ", " << preconfig_.numSubchannels << " subchannels)" << endl;
+        }
+        else {
+            EV << "SlRrc::resolvePool - node " << nodeId_ << ": not attached, falling back to the "
+               << "local preconfig pool (out-of-coverage preconfiguration)" << endl;
+        }
+    }
+
+    slBinder_->registerSlCarrier(GHz(preconfig_.carrierFrequencyGHz), preconfig_.numerologyIndex,
+            preconfig_.subchannelSize, preconfig_.numSubchannels);
 }
 
 void SlRrc::handleMessage(cMessage *msg)

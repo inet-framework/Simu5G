@@ -88,10 +88,6 @@ void NrSlPhyUe::initialize(int stage)
         slRrc_ = check_and_cast<SlRrc *>(getModuleByPath(par("slRrcModule").stringValue()));
         slBinder_ = SlBinder::getInstance();
 
-        const SlPreconfig& cfg = slRrc_->getPreconfig();
-        slotGrid_ = SlSlotGrid(cfg.getSlotDuration());
-        carrierFrequency_ = GHz(cfg.carrierFrequencyGHz);
-
         slTxRange_ = par("slTxRange").doubleValue();
         cbrWindow_ = par("cbrWindow");
         cbrRssiThresholdDbm_ = par("cbrRssiThreshold").doubleValue();
@@ -114,6 +110,13 @@ void NrSlPhyUe::initialize(int stage)
         WATCH(numPsfchSent_);
         WATCH(numPsfchLost_);
         WATCH(numPsfchDecoded_);
+    }
+    else if (stage == INITSTAGE_SIMU5G_TTI_SETUP) {
+        // pool-geometry-dependent setup: runs strictly after SlRrc's pool
+        // resolution at INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION (D25/G18)
+        const SlPreconfig& cfg = slRrc_->getPreconfig();
+        slotGrid_ = SlSlotGrid(cfg.getSlotDuration());
+        carrierFrequency_ = GHz(cfg.carrierFrequencyGHz);
     }
 }
 
