@@ -1,0 +1,41 @@
+In-coverage sidelink examples (SL-3)
+====================================
+
+The first configurations that combine a Uu attachment with the sidelink
+(PC5) leg on the same UEs, and the serving-cell pool provisioning
+("SIB12-equivalent", genie) added in SL-3 WP-N.
+
+Configurations
+--------------
+
+InCoverage-Mode2-Preconfig (WP-M spike)
+  1 gNB + 4 attached NrUes with hasSidelink=true, concurrent Uu VoIP
+  DL/UL and mode-2 sensing-based SL broadcast on separate carriers
+  (Uu 2 GHz component carrier, SL 5.9 GHz preconfig pool).
+  Observed: VoIP DL MOS 4.4 / 0 frame loss, UL delivered; 95/95 alerts
+  at all three PC5 receivers, mean delay ~6.9 ms.
+
+InCoverage-Mode2 (milestone M9)
+  Same scenario, but the pool is provisioned from the serving cell:
+  the gNB has hasSidelink=true and carries the pool in
+  slGnbRrc.slPoolConfig; the UEs use poolSource="servingCell". The
+  UE-side preconfig's pool section is deliberately WRONG (2.4 GHz,
+  1 subchannel, 100 ms period) to prove provisioning is effective:
+  - with poolSource="servingCell": 95/95 alerts, ~6.9 ms delay, and
+    the event-order fingerprint (tplx) is identical to
+    InCoverage-Mode2-Preconfig;
+  - negative control (poolSource="preconfig", i.e. the wrong pool
+    actually used): 24/95 alerts, ~783 ms delay.
+
+InCoverage-Mode2-Mixed
+  As InCoverage-Mode2, but ue[3] is detached (out of coverage) and
+  falls back to its local preconfig, which carries the true pool.
+  Attached and detached UEs interoperate on the same pool: ue[3]
+  receives 95/95 alerts like the attached receivers.
+
+InCoverage-Handover (WP-M / G25 audit)
+  2 gNBs, an SL-broadcasting UE forced through a handover (serving
+  cell 1 -> 2 at t=3.05 s, 60 mps linear mobility) with a trailing PC5
+  peer, Uu VoIP DL running across the handover. Observed: SL bearers,
+  sensing state and SL traffic survive the handover teardown untouched
+  (243/243 alerts, zero loss), Uu VoIP frame loss 0.

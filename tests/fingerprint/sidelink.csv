@@ -14,3 +14,7 @@
 /simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Unicast-QoS -r 0,                     2s,         5594-63ce/tplx;04ac-367f/tilx;82bd-c8e3/~tNl;c60d-703d/sz, PASS,
 /simulations/nr/sidelink/highway/,        -f omnetpp.ini -c Highway-Congested -r 0,               1s,         1767-cbf4/tplx;6fe4-deb0/tilx;e1b2-f843/~tNl;4f80-ef96/sz, PASS,
 /simulations/nr/sidelink/basic/,         -f omnetpp.ini -c Unicast-OTA -r 0,                     2s,         7263-2b66/tplx;3521-9a90/tilx;ff4b-c93d/~tNl;734b-b730/sz, PASS,
+/simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c InCoverage-Mode2-Preconfig -r 0,      2s,         a173-a221/tplx;56b8-c83b/tilx;18c4-7133/~tNl;0807-6881/sz, PASS,
+/simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c InCoverage-Mode2 -r 0,                2s,         a173-a221/tplx;2ffe-b406/tilx;18c4-7133/~tNl;0807-6881/sz, PASS,
+/simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c InCoverage-Mode2-Mixed -r 0,          2s,         18d3-b746/tplx;a3da-daa6/tilx;d00d-f802/~tNl;605e-baf1/sz, PASS,
+/simulations/nr/sidelink/incoverage/,    -f omnetpp.ini -c InCoverage-Handover -r 0,             5s,         9980-b4a9/tplx;43a1-99d3/tilx;bd1e-5c37/~tNl;56ab-d192/sz, PASS,
