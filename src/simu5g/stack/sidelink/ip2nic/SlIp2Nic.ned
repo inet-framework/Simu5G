@@ -25,9 +25,23 @@ simple SlIp2Nic extends Ip2Nic
         string slRrcModule = default("^.slRrc");
         string bearerManagementModule = default("^.rrc.bearerManagement");
 
-        // classify unicast packets to SL-capable peers as PC5 unicast (D16):
-        // a static path-selection rule; the Uu/PC5 policy hook is SL-3
+        // classify unicast packets to SL-capable peers as PC5 unicast (D16);
+        // false disables PC5 unicast entirely (multicast SLRBs unaffected)
         bool pc5UnicastEnabled = default(true);
+
+        // Uu/PC5 path-selection policy for unicast traffic (D33, SL-3) -
+        // THE single decision shared by all three classification seams
+        // (this module, SlTechnologyDecision, SlHandoverPacketHolderUe):
+        //  - "pc5IfPeer": PC5 iff the peer is SL-capable (the D16 rule;
+        //    default - byte-identical to SL-2 behavior)
+        //  - "uuIfServed": prefer the Uu while attached, PC5 otherwise
+        //  - "pc5Only": SL peers via PC5, anything else denied (a PC5-only
+        //    device; drops happen at SlTechnologyDecision)
+        //  - "condition": the pc5Condition expr() decides (variables: tos,
+        //    served, peerSlCapable)
+        // Groupcast/broadcast stays PC5 unconditionally under every policy.
+        string pathSelectionPolicy @enum(pc5IfPeer,uuIfServed,pc5Only,condition) = default("pc5IfPeer");
+        object pc5Condition = default(expr(true));
 
         // SL-SDAP function (D20, WP-J): route classified SL packets through
         // per-destination SlSdapEntity modules (PFI -> SLRB mapping) wired

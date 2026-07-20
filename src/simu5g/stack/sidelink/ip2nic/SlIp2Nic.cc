@@ -35,7 +35,61 @@ void SlIp2Nic::initialize(int stage)
         pc5UnicastEnabled_ = par("pc5UnicastEnabled");
         hasSlSdap_ = par("hasSlSdap");
         useDscpAsPfiFallback_ = par("useDscpAsPfiFallback");
+
+        // Uu/PC5 path-selection policy (D33)
+        const char *policyName = par("pathSelectionPolicy");
+        if (!SlPathPolicy::parse(policyName, pathPolicy_))
+            throw cRuntimeError("SlIp2Nic: unknown pathSelectionPolicy '%s' "
+                                "(expected pc5IfPeer/uuIfServed/pc5Only/condition)", policyName);
+        if (pathPolicy_ == SlPathPolicy::CONDITION) {
+            cObject *obj = par("pc5Condition").objectValue();
+            auto *exprObj = dynamic_cast<cOwnedDynamicExpression *>(obj);
+            if (exprObj == nullptr)
+                throw cRuntimeError("SlIp2Nic: pathSelectionPolicy=\"condition\" needs an expr() in pc5Condition");
+            pc5ConditionExpr_ = exprObj->dup();
+            pc5ConditionExpr_->setResolver(new PathPolicyResolver(this));
+        }
     }
+}
+
+SlIp2Nic::~SlIp2Nic()
+{
+    delete pc5ConditionExpr_;
+}
+
+cValue SlIp2Nic::PathPolicyResolver::readVariable(cExpression::Context *context, const char *name)
+{
+    if (!strcmp(name, "tos")) return (intval_t)module_->pathVars_.tos;
+    if (!strcmp(name, "served")) return module_->pathVars_.served;
+    if (!strcmp(name, "peerSlCapable")) return module_->pathVars_.peerSlCapable;
+    throw cRuntimeError("SlIp2Nic: unknown variable '%s' in the pc5Condition expression "
+                        "(available: tos, served, peerSlCapable)", name);
+}
+
+SlPathPolicy::Decision SlIp2Nic::decidePath(Ipv4Address destAddr, int tos, MacNodeId *outPeerId)
+{
+    // groupcast/broadcast destinations have no Uu equivalent: PC5 under
+    // every policy (D33)
+    if (slBinder_->getDstL2IdForMulticastAddress(destAddr) != SL_L2ID_NONE)
+        return SlPathPolicy::PATH_PC5;
+
+    if (!pc5UnicastEnabled_)
+        return SlPathPolicy::PATH_UU;
+
+    MacNodeId peerId = slBinder_->getPc5UnicastPeer(binder_.get(), destAddr, nrNodeId_);
+    bool peerSlCapable = (peerId != NODEID_NONE);
+    bool served = (binder_->getServingNode(nrNodeId_) != NODEID_NONE);
+
+    bool conditionResult = false;
+    if (pathPolicy_ == SlPathPolicy::CONDITION && peerSlCapable) {
+        pathVars_ = { tos, served, peerSlCapable };
+        conditionResult = pc5ConditionExpr_->evaluate().boolValue();
+    }
+
+    SlPathPolicy::Decision d = SlPathPolicy::decideUnicast(pathPolicy_, peerSlCapable, served, conditionResult);
+    if (d == SlPathPolicy::PATH_PC5 && outPeerId != nullptr)
+        *outPeerId = peerId;
+    return d;
 }
 
 void SlIp2Nic::handleMessage(cMessage *msg)
@@ -90,18 +144,25 @@ void SlIp2Nic::analyzePacket(Packet *pkt, Ipv4Address srcAddr, Ipv4Address destA
 {
     SlL2Id dstL2Id = slBinder_->getDstL2IdForMulticastAddress(destAddr);
     if (dstL2Id == SL_L2ID_NONE) {
-        // PC5 unicast classification (D16): a unicast destination that is a
-        // registered SL-capable UE goes over the sidelink (static rule; the
-        // Uu/PC5 path-selection policy hook is SL-3)
-        if (pc5UnicastEnabled_) {
-            MacNodeId peerId = slBinder_->getPc5UnicastPeer(binder_.get(), destAddr, nrNodeId_);
-            if (peerId != NODEID_NONE) {
+        // PC5 unicast classification via the shared path policy (D33/G27;
+        // the pc5IfPeer default reproduces the SL-2 D16 static rule)
+        MacNodeId peerId = NODEID_NONE;
+        switch (decidePath(destAddr, typeOfService, &peerId)) {
+            case SlPathPolicy::PATH_PC5:
                 analyzeUnicastPc5Packet(pkt, peerId);
                 return;
-            }
+            case SlPathPolicy::PATH_DENY:
+                // pc5Only: no Uu fallback exists (normally already dropped
+                // at SlTechnologyDecision; defensive here)
+                EV_WARN << "SlIp2Nic::analyzePacket - dropping unicast to " << destAddr
+                        << ": pathSelectionPolicy denies the Uu path" << endl;
+                delete pkt;
+                return;
+            case SlPathPolicy::PATH_UU:
+                Ip2Nic::analyzePacket(pkt, srcAddr, destAddr, typeOfService);
+                return;
         }
-        Ip2Nic::analyzePacket(pkt, srcAddr, destAddr, typeOfService);
-        return;
+        return;  // unreachable: the switch covers every Decision
     }
 
     EV << "SlIp2Nic::analyzePacket - PC5 packet, dest=" << destAddr << " -> dstL2Id=" << dstL2Id << endl;
