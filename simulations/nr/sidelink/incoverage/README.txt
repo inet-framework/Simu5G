@@ -55,6 +55,38 @@ Mode2-Sporadic
   window wait; mode 1's value is determinism under load (no selection
   collisions), mode 2's is gNB-independence.
 
+Mode1-CG1 (milestone M11)
+  A type-1 configured grant: ue[0] sends 300 B CAMs at 10 Hz over a
+  standing 100 ms train reserved at the gNB (slRrc.configuredGrant),
+  active from initialization. Observed: 49/49 delivered; app delay a
+  constant 52 ms (the phase wait to the next CG occasion - the
+  allocator picks the earliest free phase, not a traffic-aligned one);
+  ZERO Uu signaling after init.
+
+Mode1-CG1-DynamicBaseline
+  The same CAM traffic on dynamic grants: 49/49 delivered at 10 ms
+  (the 9 ms request ladder), but every packet costs a full Uu cycle
+  (RAC + BSR-grant + SL-BSR + DCI = 4 Uu control messages per packet).
+  The honest trade: dynamic = lower latency at this load but per-packet
+  signaling; CG = zero signaling and guaranteed capacity, delay set by
+  the train phase.
+
+Mode1-CG2 (milestone M11)
+  A type-2 configured grant with on/off traffic (two 1.4 s bursts,
+  1.6 s silence). The CG train is reserved but dormant; the first
+  burst's backlog runs one RAC/SL-BSR cycle and receives a
+  cgAction=activate DCI (not a dynamic grant); after each burst the UE
+  self-releases (5 empty occasions = 500 ms); the second burst
+  re-activates. EV log (t): activate 0.059, release 1.90, re-activate
+  3.009, release 4.80; 28/28 delivered.
+
+  Note on CG TB sizing: size tbBytes so whole packets fit the TB
+  (here 700 B for two 300 B CAMs +headers). A TB request that spans an
+  announced-packet boundary can strand the boundary packet's tail in
+  RLC if the flow then goes idle - a pre-existing limitation of the
+  D21 virtual-buffer approximation, exposed by bursty traffic on
+  releasable grants (with tbBytes 330 the run delivers 27/28).
+
 InCoverage-Handover (WP-M / G25 audit)
   2 gNBs, an SL-broadcasting UE forced through a handover (serving
   cell 1 -> 2 at t=3.05 s, 60 mps linear mobility) with a trailing PC5
