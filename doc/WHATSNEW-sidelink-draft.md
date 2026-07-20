@@ -126,12 +126,91 @@ subset:
   congested variant demonstrating CBR-driven adaptation (CBR 0.60→0.52,
   short-range PRR 0.97→0.99 vs an uncontrolled run).
 
-#### Scope and limitations (after SL-2)
+### SL-3: In-coverage operation and gNB-scheduled sidelink ("Mode 1")
 
-- Mode 1 (gNB-scheduled sidelink resources) is not yet supported; only
-  Mode 2 (UE-autonomous), `random`, and `static` allocation are available.
-- Uu/PC5 path selection is a static rule ("PC5 whenever the peer is
-  SL-capable"); a policy hook is planned for SL-3.
+- **In-coverage operation.** A UE can now be Uu-attached and run the
+  sidelink leg at the same time (`hasSidelink` on an attached `NrUe`);
+  sidelink bearers, sensing state and traffic survive Uu handovers.
+  The gNB side gains a sidelink control plane (`SlGnbRrc`, selected by
+  `gNodeB.hasSidelink`): it owns the cell's SL resource pool
+  (`slPoolConfig`) and the registry of sidelink UEs.
+
+- **Serving-cell pool provisioning ("SIB12-equivalent", genie).** With
+  `slRrc.poolSource = "servingCell"`, an attached UE copies the serving
+  cell's pool section (carrier, numerology, subchannel geometry, mode-2
+  parameters, PSFCH fields) instead of its local preconfig; a detached
+  UE falls back to the preconfig, so mixed-coverage scenarios run from
+  one configuration. SLRB/QoS/unicast sections always stay UE-local.
+  No over-the-air system information is modeled.
+
+- **Mode-1 dynamic grants.** `resourceAllocationMode = "mode1"`: the UE
+  never self-selects; SL backlog triggers the standard preamble RAC on
+  the Uu, a won RAC arms an SL-BSR (a BSR-only PDU with
+  `packetLcid = SL_SHORT_BSR`, the D2D pattern), the gNB's free-standing
+  allocator (`SlEnbScheduler` — the SL pool is not a Uu component
+  carrier) answers with a DCI 3_0-equivalent `SlSchedulingGrant` over
+  the stock Uu grant path: a finite occasion train (1 initial + up to 2
+  preallocated retransmission occasions) sized from the reported
+  backlog via the MCS table. Concurrent requesters get non-overlapping
+  resources; the grant-cycle latency is recorded
+  (`slMode1GrantLatency`, a deterministic 9 ms in the examples, still
+  9 ms median with 50 requesting UEs at 0.5% preamble collision rate).
+
+- **Configured grants type 1 and 2.** `slRrc.configuredGrant =
+  { type, periodMs, tbBytes }` reserves a standing periodic train at
+  the cell (collision-checked against all other CG trains and dynamic
+  commitments): type 1 is active from initialization (zero per-packet
+  signaling; CAM delay = the train phase), type 2 stays dormant until
+  the first SL-BSR cycle activates it with a `cgAction=activate` DCI
+  and self-releases after `cgInactivityOccasions` empty occasions.
+
+- **Uu/PC5 path-selection policy.** `pathSelectionPolicy` on the
+  SL-aware ip2nic replaces the static SL-2 rule: `pc5IfPeer` (default,
+  unchanged behavior), `uuIfServed` (prefer the Uu while attached — the
+  classic mode-switching baseline), `pc5Only`, or `condition` (an
+  `expr()` over `tos`/`served`/`peerSlCapable`). One shared decision
+  serves all three classification points (packet holder, technology
+  decision, ip2nic), so they cannot disagree per packet.
+
+- **Uu/SL half-duplex arbiter (opt-in).** `sharedUuSlRadio = true` on
+  both PHY legs models the single-radio constraint: SL slots overlapped
+  by any Uu transmission (data, RAC, BSR, CQI feedback) are lost and
+  count as unmonitored for sensing; Uu data frames overlapping an SL
+  transmission are lost; Uu control stays lossless; simultaneous
+  transmissions are counted (`slUuTxConflicts`) but not suppressed.
+  In the example, routine CQI feedback alone costs an in-coverage V2X
+  UE over half of its sidelink reception - the Rel-16 pain point made
+  visible.
+
+- **Examples** (`simulations/nr/sidelink/incoverage/`, all measured in
+  its README): in-coverage coexistence and handover survival,
+  provably-effective cell provisioning, the full mode-1 EV ladder,
+  dynamic-vs-CG trade-off tables, the type-2 CG lifecycle, a
+  mode-1/mode-2 shared-pool coexistence study, the half-duplex arbiter
+  on/off comparison, path-policy fallbacks, and a 50-UE mode-1 scale
+  check.
+
+#### Scope and limitations (after SL-3)
+
+- Mode-1 HARQ has no PUCCH reporting loop: dynamic-grant
+  retransmissions ride preallocated occasions (up to 2), configured
+  grants use the standard SL HARQ machinery.
+- Pool provisioning is genie (no over-the-air SIB12); pools are assumed
+  network-uniform - handover does not re-provision, and the allocation
+  mode is static per run (no coverage-driven mode switching).
+- The gNB is blind to mode-2 reservations in a shared pool (one-way
+  coupling); mode-2 UEs project mode-1 trains from their SCIs, but
+  reservations longer than the T2 selection window are under-protected
+  (the TS 38.214 §8.1.4 step-6 candidate-repetition exclusion is not
+  implemented — see the shared-pool example README).
+- The gNB sidelink MCS is configured, not adapted (no SL CSI feedback);
+  there is no SR modeling (the preamble RAC is the request channel) and
+  no exact DCI/MAC-CE bit formats.
+- Half-duplex TX-TX conflicts are counted but not resolved (a TX-defer
+  policy belongs with future sync modeling); the arbiter's slot-interval
+  abstraction keeps Uu control frames lossless.
+- Uu/PC5 path selection has no quality-aware policy (CBR/RSRP inputs) —
+  the `condition` expression covers static custom rules only.
 - Resources are single-slot; there is no multi-slot/multi-resource grant
   chaining, re-evaluation/pre-emption, or Rel-17 inter-UE coordination.
 - Unicast links have no RLF/keepalive and no PC5-S security; the SL-SRB

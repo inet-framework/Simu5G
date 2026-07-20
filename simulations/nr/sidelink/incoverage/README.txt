@@ -135,6 +135,29 @@ SharedRadio / SharedRadio-Off (milestone M12, D32)
   in-coverage V2X UE loses a large share of its sidelink reception to
   routine Uu signaling, invisibly to the Uu side.
 
+PathPolicy-UuFallback / PathPolicy-Pc5Fallback (milestone M13, D33)
+  The Uu/PC5 path-selection policy: unicast CBR between two SL-capable
+  UEs under pathSelectionPolicy="uuIfServed". Attached
+  (PathPolicy-UuFallback): the flow goes over the Uu through the gNB
+  and core - delay 20.1 ms. Detached (PathPolicy-Pc5Fallback,
+  identical apps): the policy falls back to PC5 mode-2 - delay 2.4 ms.
+  Same throughput, zero loss on both paths; all three classification
+  seams (packet holder, technology decision, ip2nic) consult the same
+  SlIp2Nic decision (G27). The default pc5IfPeer policy reproduces the
+  SL-2 behavior byte-identically.
+
+Mode1-50UE (WP-R scale check, G28)
+  50 attached mode-1 UEs, all with sporadic broadcast alerts on dynamic
+  grants (~500 request ladders/s through one gNB). Observed (2 s,
+  seed 0): RAC preamble collision rate 0.48% (4 of 839 attempts; 64
+  preambles are ample), grant-cycle latency a deterministic 9 ms for
+  46 of 50 UEs with a worst case of 38 ms (collision -> backoff ->
+  retry), ~97.5% alert delivery (the missing share is sender-side
+  half-duplex among 50 concurrent trains), 2 s of simulation in under 4 s
+  of wall time. Conclusion: no parameter tuning needed at this scale;
+  for dense periodic fleets configured grants remain the recommended
+  answer (zero request-channel load).
+
 InCoverage-Handover (WP-M / G25 audit)
   2 gNBs, an SL-broadcasting UE forced through a handover (serving
   cell 1 -> 2 at t=3.05 s, 60 mps linear mobility) with a trailing PC5
