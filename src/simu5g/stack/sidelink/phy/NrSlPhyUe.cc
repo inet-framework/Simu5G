@@ -33,6 +33,8 @@ simsignal_t NrSlPhyUe::slRsrpSignal_ = registerSignal("slRsrp");
 simsignal_t NrSlPhyUe::slSinrSignal_ = registerSignal("slSinr");
 simsignal_t NrSlPhyUe::slCbrSignal_ = registerSignal("slCbr");
 simsignal_t NrSlPhyUe::slFrameLossSignal_ = registerSignal("slFrameLoss");
+simsignal_t NrSlPhyUe::slHalfDuplexUuDropsSignal_ = registerSignal("slHalfDuplexUuDrops");
+simsignal_t NrSlPhyUe::slUuTxConflictsSignal_ = registerSignal("slUuTxConflicts");
 
 NrSlPhyUe::~NrSlPhyUe()
 {
@@ -91,6 +93,7 @@ void NrSlPhyUe::initialize(int stage)
         slTxRange_ = par("slTxRange").doubleValue();
         cbrWindow_ = par("cbrWindow");
         cbrRssiThresholdDbm_ = par("cbrRssiThreshold").doubleValue();
+        sharedUuSlRadio_ = par("sharedUuSlRadio");
 
         slChannelModel_ = dynamic_cast<ISlChannelModel *>(getModuleByPath(par("slChannelModelModule").stringValue()));
         if (slChannelModel_ == nullptr)
@@ -111,6 +114,13 @@ void NrSlPhyUe::initialize(int stage)
         WATCH(numPsfchLost_);
         WATCH(numPsfchDecoded_);
     }
+    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS && sharedUuSlRadio_) {
+        // D32: the shared radio state (created by SlRrc at INITSTAGE_LOCAL)
+        radioState_ = slBinder_->getUeRadioState(nodeId_);
+        if (radioState_ == nullptr)
+            throw cRuntimeError("NrSlPhyUe: sharedUuSlRadio=true but node %hu has no radio state", num(nodeId_));
+        WATCH(numSlHalfDuplexUuDrops_);
+    }
     else if (stage == INITSTAGE_SIMU5G_TTI_SETUP) {
         // pool-geometry-dependent setup: runs strictly after SlRrc's pool
         // resolution at INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION (D25/G18)
@@ -118,6 +128,23 @@ void NrSlPhyUe::initialize(int stage)
         slotGrid_ = SlSlotGrid(cfg.getSlotDuration());
         carrierFrequency_ = GHz(cfg.carrierFrequencyGHz);
     }
+}
+
+void NrSlPhyUe::recordSlTx(SlotIndex slot)
+{
+    if (!sharedUuSlRadio_)
+        return;
+    bool conflict = radioState_->recordTx(SlUeRadioState::SL, slotGrid_.slotStart(slot), slotGrid_.slotStart(slot + 1));
+    if (conflict) {
+        emit(slUuTxConflictsSignal_, 1L);
+        EV << NOW << " NrSlPhyUe::recordSlTx - SL TX overlaps a Uu TX (counted, not suppressed, D32)" << endl;
+    }
+}
+
+bool NrSlPhyUe::uuTxOverlapsSlot(SlotIndex slot) const
+{
+    return sharedUuSlRadio_ &&
+           radioState_->overlapsTx(SlUeRadioState::UU, slotGrid_.slotStart(slot), slotGrid_.slotStart(slot + 1));
 }
 
 void NrSlPhyUe::handleUpperMessage(cMessage *msg)
@@ -130,6 +157,7 @@ void NrSlPhyUe::handleUpperMessage(cMessage *msg)
 
     SlotIndex slot = slotGrid_.slotIndexAt(NOW);
     lastTxSlot_ = slot;  // half-duplex: this node cannot receive in this slot
+    recordSlTx(slot);    // D32: visible to the Uu leg when the arbiter is on
 
     auto *frame = new SlAirFrame("slAirFrame");
     frame->setSchedulingPriority(airFramePriority_);
@@ -252,6 +280,13 @@ void NrSlPhyUe::decodeStoredFrames()
     int numSubchannels = slRrc_->getPreconfig().numSubchannels;
     std::vector<double> rssiMw(numSubchannels, 0.0);
 
+    // D32 half-duplex arbiter: a Uu transmission overlapping this SL slot
+    // blots out the whole slot - frames are lost and the slot counts as
+    // unmonitored for sensing, exactly like an own-TX slot
+    bool uuBlocked = (slot != SLOTINDEX_NONE) && uuTxOverlapsSlot(slot);
+    if (uuBlocked && slMac_ != nullptr)
+        slMac_->onSlotUnmonitored(slot);
+
     for (auto *frame : storedFrames_) {
         const SlAirFrameInfo& info = frame->getInfo();
 
@@ -261,6 +296,16 @@ void NrSlPhyUe::decodeStoredFrames()
             EV << NOW << " NrSlPhyUe::decodeStoredFrames - half-duplex: own TX in slot "
                << info.getSlotIndex() << ", frame from node " << info.getSrcNodeId() << " lost" << endl;
             numFramesHalfDuplexDropped_++;
+            delete frame;
+            continue;
+        }
+
+        if (uuBlocked) {
+            EV << NOW << " NrSlPhyUe::decodeStoredFrames - half-duplex: the Uu leg transmitted "
+               << "during slot " << info.getSlotIndex() << ", frame from node "
+               << info.getSrcNodeId() << " lost (D32)" << endl;
+            numSlHalfDuplexUuDrops_++;
+            emit(slHalfDuplexUuDropsSignal_, 1L);
             delete frame;
             continue;
         }
@@ -380,7 +425,7 @@ void NrSlPhyUe::decodeStoredFrames()
     }
     storedFrames_.clear();
 
-    if (slot != SLOTINDEX_NONE && slot != lastTxSlot_)
+    if (slot != SLOTINDEX_NONE && slot != lastTxSlot_ && !uuBlocked)
         recordSlotRssi(slot, std::move(rssiMw));
 
     if (getEnvir()->isGUI())
@@ -490,6 +535,7 @@ void NrSlPhyUe::transmitPendingPsfch()
     // half-duplex: a UE transmitting PSFCH cannot receive in this slot
     // (neither data nor other feedback -- the Rel-16 pain point)
     lastTxSlot_ = slot;
+    recordSlTx(slot);    // D32: visible to the Uu leg when the arbiter is on
 
     for (const PendingPsfch& fb : it->second) {
         auto phyIt = slBinder_->getSlPhys().find(fb.targetPid);
@@ -556,6 +602,19 @@ void NrSlPhyUe::decodeStoredPsfchFrames()
             EV << NOW << " NrSlPhyUe::decodeStoredPsfchFrames - half-duplex: own TX in slot "
                << frame->getSlotIndex() << ", PSFCH from node " << frame->getFbSenderPid() << " lost" << endl;
             numPsfchLost_++;
+            delete frame;
+            continue;
+        }
+
+        // D32: a Uu transmission overlapping the PSFCH slot loses the
+        // feedback the same way (DTX at the HARQ TX entity)
+        if (uuTxOverlapsSlot(frame->getSlotIndex())) {
+            EV << NOW << " NrSlPhyUe::decodeStoredPsfchFrames - half-duplex: the Uu leg transmitted "
+               << "during slot " << frame->getSlotIndex() << ", PSFCH from node "
+               << frame->getFbSenderPid() << " lost (D32)" << endl;
+            numPsfchLost_++;
+            numSlHalfDuplexUuDrops_++;
+            emit(slHalfDuplexUuDropsSignal_, 1L);
             delete frame;
             continue;
         }

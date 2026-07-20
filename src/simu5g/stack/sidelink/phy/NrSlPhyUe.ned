@@ -35,6 +35,14 @@ simple NrSlPhyUe extends LtePhyBase
         int cbrWindow = default(100);                            // measurement window [slots]
         double cbrRssiThreshold @unit(dBm) = default(-94dBm);    // busy-subchannel RSSI threshold
 
+        // Uu/SL half-duplex arbiter (D32, SL-3): model the single-radio
+        // constraint - SL slots overlapped by a Uu transmission are lost
+        // (and count as unmonitored for sensing), and this leg's TXs are
+        // recorded for the Uu side (NrPhyUeSl). Both PHY legs of the UE
+        // must agree on this setting. Default false = the pre-SL-3
+        // independent-legs behavior.
+        bool sharedUuSlRadio = default(false);
+
         @signal[slRsrp];
         @statistic[slRsrp](title="SL-RSRP of received frames"; unit="dBm"; source="slRsrp"; record=mean,vector);
         @signal[slSinr];
@@ -43,4 +51,11 @@ simple NrSlPhyUe extends LtePhyBase
         @statistic[slCbr](title="SL channel busy ratio"; source="slCbr"; record=mean,vector);
         @signal[slFrameLoss];
         @statistic[slFrameLoss](title="SL frame loss (frames addressed to this node)"; source="slFrameLoss"; record=mean,vector);
+
+        // D32 arbiter statistics: recorders opt-in ('?') so arbiter-off
+        // runs stay result-identical; enable with result-recording-modes=all
+        @signal[slHalfDuplexUuDrops](type=long);
+        @statistic[slHalfDuplexUuDrops](title="SL frames lost to Uu TX (half-duplex)"; record=count?,vector?);
+        @signal[slUuTxConflicts](type=long);
+        @statistic[slUuTxConflicts](title="simultaneous SL+Uu TX conflicts (counted, not suppressed)"; record=count?,vector?);
 }

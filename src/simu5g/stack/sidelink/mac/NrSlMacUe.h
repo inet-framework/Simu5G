@@ -168,6 +168,10 @@ class NrSlMacUe : public LteMacBase
     /// CBR input from slPhy (D22): latest channel busy ratio measurement
     virtual void onCbrUpdated(double cbr);
 
+    /// D32: slPhy reports a slot lost to a Uu transmission (half-duplex
+    /// arbiter) - a conservative-exclusion sensing input like an own-TX slot
+    virtual void onSlotUnmonitored(SlotIndex slot);
+
     // --- mode 1 (gNB-scheduled, D26/D30, SL-3): queried/driven by the Uu
     //     MAC subclass NrMacUeSl via direct C++ calls (the onSciDecoded
     //     pattern); the Uu side of the request loop lives there (G19) ---

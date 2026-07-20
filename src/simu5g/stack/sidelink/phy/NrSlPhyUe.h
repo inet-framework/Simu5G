@@ -17,6 +17,7 @@
 
 #include "simu5g/stack/phy/LtePhyBase.h"
 #include "simu5g/stack/sidelink/common/SlCommon.h"
+#include "simu5g/stack/sidelink/common/SlUeRadioState.h"
 #include "simu5g/stack/sidelink/mac/SlHarqRxEntity.h"
 #include "simu5g/stack/sidelink/mac/SlSlotGrid.h"
 
@@ -92,6 +93,20 @@ class NrSlPhyUe : public LtePhyBase
 
     // statistics
     unsigned int numFramesHalfDuplexDropped_ = 0;
+
+    // Uu/SL half-duplex arbiter (D32, SL-3; opt-in via sharedUuSlRadio):
+    // SL TX intervals are recorded in the UE's shared radio state, and SL
+    // reception in a slot overlapped by a Uu transmission is lost (the
+    // slot also counts as unmonitored for sensing, like an own-TX slot)
+    bool sharedUuSlRadio_ = false;
+    SlUeRadioState *radioState_ = nullptr;
+    unsigned int numSlHalfDuplexUuDrops_ = 0;
+
+    /// record this slot's SL transmission in the shared radio state
+    void recordSlTx(SlotIndex slot);
+
+    /// was any Uu transmission overlapping the given SL slot?
+    bool uuTxOverlapsSlot(SlotIndex slot) const;
     unsigned int numSciLost_ = 0;
     unsigned int numDuplicatesSuppressed_ = 0;
     unsigned int numPsfchSent_ = 0;
@@ -101,6 +116,8 @@ class NrSlPhyUe : public LtePhyBase
     static simsignal_t slSinrSignal_;
     static simsignal_t slCbrSignal_;
     static simsignal_t slFrameLossSignal_;
+    static simsignal_t slHalfDuplexUuDropsSignal_;
+    static simsignal_t slUuTxConflictsSignal_;
 
     void initialize(int stage) override;
     void handleUpperMessage(cMessage *msg) override;

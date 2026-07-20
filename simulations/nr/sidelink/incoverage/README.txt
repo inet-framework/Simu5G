@@ -114,6 +114,27 @@ Mode1Mode2-SharedPool / Mode1Mode2-SharedPool-Random (D34)
   - The gNB stays blind to mode-2 reservations by design (G26): CG
     placement never adapts to mode-2 traffic.
 
+SharedRadio / SharedRadio-Off (milestone M12, D32)
+  The opt-in Uu/SL half-duplex arbiter: ue[0] runs concurrent Uu VoIP
+  UL+DL and its 100 ms CG CAM train; every UE sends periodic CQI
+  feedback on the Uu. Observed (5 s, seed 0):
+  - arbiter OFF (independent legs, pre-SL-3): 49/49 CG alerts at every
+    receiver, VoIP loss 0 - the physically impossible baseline.
+  - arbiter ON: CG PRR drops to 22/49 per receiver. Direct cause: the
+    receivers' own periodic CQI feedback transmissions align with every
+    ~3rd CG occasion (16 slHalfDuplexUuDrops each; the slots also count
+    as unmonitored for sensing); the losses then induce ~11 secondary
+    suppressions via the known SL-1 HARQ NDI ambiguity (after a lost
+    TB, the next new TB on that process is indistinguishable from a
+    retransmission). The Uu direction is untouched (VoIP frame loss 0
+    both ways: Uu control is lossless by model, and no DL data frame
+    happened to overlap the sparse 0.5 ms SL TXs); the CG sender logs
+    27 slUuTxConflicts (own CG TXs during its Uu UL/feedback TXs -
+    counted, not suppressed, D32).
+  This makes the Rel-16 half-duplex pain point visible: a single-radio
+  in-coverage V2X UE loses a large share of its sidelink reception to
+  routine Uu signaling, invisibly to the Uu side.
+
 InCoverage-Handover (WP-M / G25 audit)
   2 gNBs, an SL-broadcasting UE forced through a handover (serving
   cell 1 -> 2 at t=3.05 s, 60 mps linear mobility) with a trailing PC5

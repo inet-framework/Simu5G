@@ -724,6 +724,13 @@ int NrSlMacUe::mode1BsrBytes() const
     return size;
 }
 
+void NrSlMacUe::onSlotUnmonitored(SlotIndex slot)
+{
+    Enter_Method_Silent("onSlotUnmonitored()");
+    if (allocationMode_ == MODE2)
+        sensingDb_.recordUnmonitoredSlot(slot);
+}
+
 void NrSlMacUe::onMode1RequestStarted()
 {
     Enter_Method_Silent("onMode1RequestStarted()");
