@@ -71,17 +71,16 @@ void LtePhyEnb::initialize(int stage)
         }
 
         beaconInterval_ = cellInfo_->par("beaconInterval");
-        bool enableHandover = par("enableHandover");
+        if (beaconInterval_ <= 0)
+            throw cRuntimeError("cellInfo.beaconInterval must be positive (got %gs); beacons are "
+                    "switched off with enableBeacons=false, not with a zero interval", beaconInterval_);
         bool enableBeacons = par("enableBeacons");
-        bool beaconsWillFlow = enableBeacons && beaconInterval_ != 0;
         // Handover feasibility assessment (and radio link monitoring) in the UEs is driven by
         // these beacons, so handover cannot silently work without them.
-        if (enableHandover && !beaconsWillFlow)
-            throw cRuntimeError("enableHandover=true requires the eNB to broadcast beacons, but "
-                    "they are disabled (enableBeacons=%s, cellInfo.beaconInterval=%gs); set "
-                    "enableBeacons=true and beaconInterval>0, or set enableHandover=false",
-                    enableBeacons ? "true" : "false", beaconInterval_);
-        if (beaconsWillFlow) {
+        if (par("enableHandover").boolValue() && !enableBeacons)
+            throw cRuntimeError("enableHandover=true requires enableBeacons=true: handover "
+                    "feasibility assessment in the UEs is driven by the eNB's periodic beacons");
+        if (enableBeacons) {
             beaconStarter_ = new cMessage("beaconStarter");
             scheduleAt(NOW, beaconStarter_);
         }
