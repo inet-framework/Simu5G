@@ -11,7 +11,7 @@
 package simu5g.stack.ip2nic;
 
 //
-// TODO
+// Manages packet buffering/tunnelling during handover
 //
 moduleinterface IHandoverPacketHolder
 {
