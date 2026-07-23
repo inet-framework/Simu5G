@@ -24,8 +24,17 @@ simple LtePhyEnb extends LtePhyBase
     parameters:
         @class("LtePhyEnb");
 
-        // Enables broadcasting beacons which are used for handover feasibility assessment in UEs
+        // Marks this eNB as a handover target: its beacons are used by UEs for handover
+        // feasibility assessment. Requires enableBeacons (beacons are the input to that
+        // assessment); the module errors out at initialization if beacons are disabled.
         bool enableHandover = default(false);
+
+        // Enables broadcasting periodic beacons (at cellInfo.beaconInterval). Beacons are the
+        // measurement signal UEs use both for handover feasibility assessment and for radio
+        // link monitoring (RLF detection), so they are decoupled from enableHandover to allow
+        // radio link monitoring without handover. Defaults to enableHandover for backward
+        // compatibility. Broadcasting also requires cellInfo.beaconInterval > 0.
+        bool enableBeacons = default(enableHandover);
 
         double targetBler = default(0.001);
 }
