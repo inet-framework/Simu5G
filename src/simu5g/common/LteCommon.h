@@ -203,8 +203,37 @@ const Rank NORANK = 1;
 const Tbs CQI2ITBSSIZE = 29;
 const unsigned int PDCP_HEADER_UM = 1;
 const unsigned int PDCP_HEADER_AM = 2;
-const unsigned int RLC_HEADER_UM = 2; // TODO
-const unsigned int RLC_HEADER_AM = 2; // TODO
+// Flat RLC header sizes used by the LTE TS 36.322 UM/AM path (and by the LTE AM STATUS
+// PDU, see AmRxQueue::sendStatusReportLte). These are fixed approximations: the LTE
+// header/STATUS size does not vary with the SN field length, the segmentation state, or
+// the NACK count. The NR TS 38.322 SO path instead sizes each PDU exactly via
+// nrUmHeaderBytes()/nrAmHeaderBytes() below; making LTE AM equally faithful is future work.
+const unsigned int RLC_HEADER_UM = 2;
+const unsigned int RLC_HEADER_AM = 2;
+
+// NR-SO RLC header size (bytes) by segment state, so the TX and the scheduler agree on the
+// exact per-PDU header. snBits is the SN field length carried by this flow (UM 6/12, AM
+// 12/18 per TS 38.322); the byte size is computed by octet-aligning the fixed fields + SN
+// and adding the 16-bit SO on a non-first (continuation) segment.
+enum NrUmSegState { NRUM_COMPLETE = 0, NRUM_FIRST = 1, NRUM_CONTINUATION = 2 };
+
+// UM (TS 38.322 6.2.1.3): complete SDU = SI+R = 1B (no SN/SO); first segment = SI(2)+SN,
+// byte-aligned (6-bit SN -> 1B, 12-bit -> 2B); continuation = that + SO(16b) (3B / 4B).
+inline unsigned int nrUmHeaderBytes(NrUmSegState s, unsigned int snBits)
+{
+    if (s == NRUM_COMPLETE)
+        return 1u;                          // SI + R, no SN
+    unsigned int base = (2u + snBits + 7u) / 8u;            // SI(2) + SN, octet-aligned
+    return (s == NRUM_CONTINUATION) ? base + 2u : base;     // + SO(16b) on a continuation
+}
+
+// AM (TS 38.322 6.2.1.4): an AMD PDU always carries the SN. complete/first = D/C+P+SI(4)+SN,
+// byte-aligned (12-bit SN -> 2B, 18-bit -> 3B); continuation adds the SO(16b) (4B / 5B).
+inline unsigned int nrAmHeaderBytes(NrUmSegState s, unsigned int snBits)
+{
+    unsigned int base = (4u + snBits + 7u) / 8u;            // D/C+P+SI(4) + SN, octet-aligned
+    return (s == NRUM_CONTINUATION) ? base + 2u : base;     // + SO(16b) on a continuation
+}
 const unsigned int MAC_HEADER = 2;
 const unsigned int MAXGRANT = 4294967295U;
 

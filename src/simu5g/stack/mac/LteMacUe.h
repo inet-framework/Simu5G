@@ -36,6 +36,11 @@ class LteMacUe : public LteMacBase
     // one per carrier
     std::map<GHz, LteSchedulerUeUl *> lcgScheduler_;
 
+    // NR-SO: per-cid continuation state of each SO connection's front SDU, SHARED across
+    // the per-carrier UL schedulers (they all drain the same RLC TX buffer), so a carrier
+    // sees segmentation done by another carrier and reserves the matching header.
+    std::map<MacCid, bool> soFrontIsContinuation_;
+
     // configured grant - one for each codeword
     std::map<GHz, inet::IntrusivePtr<const LteSchedulingGrant>> schedulingGrant_;
 
@@ -154,6 +159,10 @@ class LteMacUe : public LteMacBase
   public:
     LteMacUe();
     ~LteMacUe() override;
+
+    // NR-SO: per-cid front-SDU continuation state, shared across the per-carrier UL
+    // schedulers so they agree with the single shared RLC TX buffer.
+    std::map<MacCid, bool>& getSoContinuationMap() { return soFrontIsContinuation_; }
 
     /*
      * Access scheduling grant

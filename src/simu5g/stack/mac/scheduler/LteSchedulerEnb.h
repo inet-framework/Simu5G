@@ -92,6 +92,15 @@ class LteSchedulerEnb : public cSimpleModule
     // Schedule list. One per carrier
     std::map<GHz, LteMacScheduleList> scheduleList_;
 
+    // For NR-SO (no RLC concatenation) DL connections: the per-PDU payload sizes that
+    // fill the grant, so the gNB MAC issues one SDU request per planned PDU and the MAC
+    // PDU multiplexes them. Empty/absent for LTE-FI connections (one concatenated PDU).
+    std::map<MacCid, std::vector<unsigned int>> scheduledSoPduSizes_;
+
+    // NR-SO: per-DL-connection flag for whether the front SDU is a continuation, so the
+    // scheduler reserves the same segment-state header the RLC TX emits.
+    std::map<MacCid, bool> soFrontIsContinuation_;
+
     // Codeword list
     LteMacAllocatedCws allocatedCws_;
 
@@ -146,6 +155,15 @@ class LteSchedulerEnb : public cSimpleModule
      * @param list
      */
     virtual std::map<GHz, LteMacScheduleList> *schedule();
+
+    /* After scheduling, returns the planned per-PDU payload sizes for an NR-SO DL
+     * connection (one SDU request per entry), or nullptr for LTE-FI connections.
+     */
+    virtual const std::vector<unsigned int> *getScheduledSoPduSizes(MacCid cid) const
+    {
+        auto it = scheduledSoPduSizes_.find(cid);
+        return it != scheduledSoPduSizes_.end() ? &it->second : nullptr;
+    }
 
     /**
      * Adds an entry (if not already in) to scheduling list.

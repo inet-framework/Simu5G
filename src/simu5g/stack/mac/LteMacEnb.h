@@ -45,6 +45,10 @@ class LteMacEnb : public LteMacBase
     /// List of scheduled users (one per carrier) - Downlink
     std::map<GHz, LteMacScheduleList> *scheduleListDl_ = nullptr;
 
+    // For NR-SO DL cids: number of RLC PDUs requested this TTI (>1 = multiplexed into
+    // one MAC PDU). The MAC PDU is built only once all of them have arrived from RLC.
+    std::map<MacCid, unsigned int> soExpectedSdus_;
+
     int eNodeBCount;
 
     /// Reference to the background traffic manager

@@ -221,19 +221,31 @@ int LteMacUe::macSduRequest()
 
                 EV << NOW << " LteMacUe::macSduRequest - cid[" << destCid << "] - sdu size[" << bit->second << "B] - " << allocatedBytes[cw] << " bytes left on codeword " << cw << endl;
 
-                // send the request message to the upper layer
-                // TODO: Replace by tag
-                auto pkt = new Packet("LteMacSduRequest");
-                auto macSduRequest = makeShared<LteMacSduRequest>();
-                macSduRequest->setChunkLength(b(1)); // TODO: should be 0
-                macSduRequest->setUeId(destId);
-                macSduRequest->setLcid(destCid.getLcid());
-                macSduRequest->setSduSize(bit->second);
-                pkt->insertAtFront(macSduRequest);
-                *(pkt->addTag<FlowControlInfo>()) = connDescOut_[destCid].flowInfo.toFlowControlInfo();
-                sendUpperPackets(pkt);
+                // NR-SO connections fill the grant with several one-SDU/segment PDUs;
+                // issue one request per planned PDU so the MAC PDU multiplexes them.
+                // LTE-FI fills the grant with a single concatenated PDU (one request).
+                const std::vector<unsigned int> *soSizes = lcgScheduler_[carrierFreq]->getScheduledSoPduSizes(destCid);
+                std::vector<unsigned int> reqSizes;
+                if (soSizes != nullptr && !soSizes->empty())
+                    reqSizes = *soSizes;
+                else
+                    reqSizes.push_back(bit->second);
 
-                numRequestedSdus++;
+                for (unsigned int reqSize : reqSizes) {
+                    // send the request message to the upper layer
+                    // TODO: Replace by tag
+                    auto pkt = new Packet("LteMacSduRequest");
+                    auto macSduRequest = makeShared<LteMacSduRequest>();
+                    macSduRequest->setChunkLength(b(1)); // TODO: should be 0
+                    macSduRequest->setUeId(destId);
+                    macSduRequest->setLcid(destCid.getLcid());
+                    macSduRequest->setSduSize(reqSize);
+                    pkt->insertAtFront(macSduRequest);
+                    *(pkt->addTag<FlowControlInfo>()) = connDescOut_[destCid].flowInfo.toFlowControlInfo();
+                    sendUpperPackets(pkt);
+
+                    numRequestedSdus++;
+                }
             }
         }
     }
@@ -246,20 +258,35 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
 {
     auto pkt = check_and_cast<Packet *>(cpkt);
 
-    if (pkt->getBitLength() <= 1) { // no data in this packet - should not be buffered
-        delete pkt;
-        return false;
-    }
-
     pkt->setTimestamp();           // add timestamp with current time to packet
 
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
     // obtain the cid from the packet information
     MacCid cid = MacCid(lteInfo->getDestId(), drbIdToLcid(lteInfo->getDrbId()));
-    ASSERT(connDescOut_.find(cid) != connDescOut_.end());
+
+    bool isNewDataInd = pkt->findTag<LteRlcNewDataTag>() != nullptr;
+
+    // For RLC-AM, status reports need an outgoing connection in the reverse
+    // direction; create it on demand. A non-notification packet with no
+    // connection is a stale segment and is discarded.
+    if (connDescOut_.find(cid) == connDescOut_.end()) {
+        if (!isNewDataInd) {
+            delete pkt;
+            return false;
+        }
+        FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
+        createOutgoingConnection(cid, desc);
+    }
 
     OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
+    // The bearer-setup FlowDescriptor predates the RLC entity, so it lacks the wire
+    // format. The new-data indication carries the authoritative soFraming flag; keep
+    // the connection in sync so the scheduler can multiplex SO PDUs per grant.
+    if (isNewDataInd) {
+        connInfo.flowInfo.setSoFraming(lteInfo->getSoFraming());
+        connInfo.flowInfo.setRlcSnFieldLength(lteInfo->getRlcSnFieldLength());
+    }
     LteMacQueue *queue = connInfo.queue;
     LteMacBuffer *vqueue = connInfo.buffer;
 
@@ -277,6 +304,11 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
         return true;    // notify the activation of the connection
     }
 
+    if (pkt->getBitLength() <= 1) { // no data in this packet - should not be buffered
+        delete pkt;
+        return false;
+    }
+
     // this is a MAC SDU, buffer it in the MAC buffer
     bool dropped = !queue->pushBack(pkt);
 
@@ -292,7 +324,7 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
 
         // discard the RLC
         if (hasListeners(rlcPduDiscardedSignal_)) {
-            unsigned int rlcSno = check_and_cast<LteRlcUmDataPdu *>(pkt)->getPduSequenceNumber();
+            unsigned int rlcSno = pkt->peekAtFront<LteRlcDataPdu>()->getPduSequenceNumber();
             RlcDiscardSignalInfo discardInfo(lteInfo->getDrbId(), rlcSno);
             emit(rlcPduDiscardedSignal_, &discardInfo);
         }
@@ -555,6 +587,18 @@ void LteMacUe::macPduUnmake(cPacket *cpkt)
 
         MacNodeId senderId = userInfo->getSourceId();
         MacCid cid = MacCid(senderId, lcid);
+
+        // For RLC-AM, status reports arrive in the reverse direction and may not
+        // have an incoming connection. Create one from the stored outgoing connection.
+        if (connDescIn_.find(cid) == connDescIn_.end()) {
+            if (connDescOut_.find(cid) != connDescOut_.end()) {
+                FlowDescriptor desc = connDescOut_.at(cid).flowInfo;
+                desc.setSourceId(senderId);
+                desc.setDestId(getMacNodeId());
+                desc.setDirection(DL);
+                createIncomingConnection(cid, desc);
+            }
+        }
         ASSERT(connDescIn_.find(cid) != connDescIn_.end());
         *upPkt->addTag<FlowControlInfo>() = connDescIn_[cid].toFlowControlInfo();
 

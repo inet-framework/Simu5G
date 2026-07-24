@@ -31,6 +31,7 @@ LcgScheduler& LcgScheduler::operator=(const LcgScheduler& other)
     ueScheduler_ = other.ueScheduler_;
     scheduleList_ = other.scheduleList_;
     scheduledBytesList_ = other.scheduledBytesList_;
+    scheduledSoPduSizes_ = other.scheduledSoPduSizes_;
     statusMap_ = other.statusMap_;
 
     return *this;
@@ -46,6 +47,9 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
     // Clean up old schedule decisions.
     // For each cid, this map will store the amount of sent data (in bytes, useful for macSduRequest).
     scheduledBytesList_.clear();
+
+    // Clean up the NR-SO per-PDU plan (one entry per planned PDU for SO connections).
+    scheduledSoPduSizes_.clear();
 
     // Clean up scheduling support status map
     statusMap_.clear();
@@ -204,8 +208,75 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                 //    ( sdu->size() <= availableBytes) && ( sdu->size() <= desc->parameters_.bucket_)
                 // Best Effort service:
                 //    ( sdu->size() <= availableBytes) && (!priorityService_)
-
-                if ((toServe <= availableBytes) /*&& ( !priorityService || ( sduSize <= 0) ) // TODO desc->parameters_.bucket_*/) {
+                if (connDesc.getSoFraming()) {
+                    // NR-SO: the RLC emits one SDU/segment per PDU (no concatenation),
+                    // so fill the grant by multiplexing several PDUs into it. Record
+                    // each PDU's payload size; the MAC issues one SDU request per entry.
+                    // Continuation state is shared across this UE's per-carrier schedulers
+                    // (they all drain the same RLC TX buffer), so a carrier reserves the
+                    // header matching segmentation another carrier already did this TTI.
+                    std::map<MacCid, bool>& soFrontIsContinuation = mac_->getSoContinuationMap();
+                    std::vector<unsigned int>& pduSizes = scheduledSoPduSizes_[cid];
+                    int budget = (int)availableBytes;
+                    while (!vQueue->isEmpty()) {
+                        int macHdr = (firstSdu ? MAC_HEADER : 0);
+                        // RLC header for this PDU: the exact segment-state header the RLC TX
+                        // will emit, so the carve and drain match byte-for-byte (sized for the
+                        // flow's SN field length). Only the front SDU can be a continuation.
+                        // UM: complete=1B (no SN) if the whole remaining SDU fits, else
+                        // first/continuation per nrUmHeaderBytes. AM always carries the SN
+                        // (nrAmHeaderBytes). TS 38.322 6.2.1.3/6.2.1.4.
+                        unsigned int snBits = connDesc.getRlcSnFieldLength();
+                        unsigned int rlcHdr;
+                        if (connDesc.getRlcType() == AM) {
+                            rlcHdr = nrAmHeaderBytes(soFrontIsContinuation[cid] ? NRUM_CONTINUATION : NRUM_FIRST, snBits);
+                        }
+                        else {
+                            int remaining = vQueue->front().first;
+                            NrUmSegState st = soFrontIsContinuation[cid] ? NRUM_CONTINUATION
+                                            : (remaining + 1 <= budget - macHdr) ? NRUM_COMPLETE
+                                            : NRUM_FIRST;
+                            rlcHdr = nrUmHeaderBytes(st, snBits);
+                        }
+                        int hdr = (int)rlcHdr + macHdr;
+                        if (budget <= hdr)
+                            break; // no room for another PDU (header + at least 1 payload byte)
+                        int room = budget - hdr;
+                        PacketInfo info = vQueue->popFront();
+                        unsigned int payload;
+                        bool segmented = false;
+                        if ((int)info.first <= room) {
+                            payload = info.first; // whole (remaining) SDU fits in this PDU
+                            soFrontIsContinuation[cid] = false; // SDU fully sent
+                        }
+                        else {
+                            payload = (unsigned int)room; // segment; remainder stays queued
+                            info.first -= room;
+                            vQueue->pushFront(info);
+                            segmented = true;
+                            soFrontIsContinuation[cid] = true; // remainder is a continuation
+                        }
+                        // The MAC request size includes the RLC header (rlcPduMakeNr
+                        // subtracts it before segmenting), so add it back here so the
+                        // RLC carves exactly this payload.
+                        pduSizes.push_back(payload + rlcHdr);
+                        int pduBytes = hdr + (int)payload;
+                        budget -= pduBytes;
+                        elem->sentData_ += pduBytes;
+                        elem->sentSdus_++;
+                        firstSdu = false;
+                        if (segmented)
+                            break; // grant exhausted by the segment
+                    }
+                    elem->occupancy_ = vQueue->getQueueOccupancy();
+                    availableBytes = budget > 0 ? (unsigned int)budget : 0;
+                    toServe = 0;
+                    if (vQueue->isEmpty())
+                        soFrontIsContinuation[cid] = false; // buffer drained; next SDU is fresh
+                    if (pduSizes.empty())
+                        scheduledSoPduSizes_.erase(cid);
+                }
+                else if ((toServe <= availableBytes) /*&& ( !priorityService || ( sduSize <= 0) ) // TODO desc->parameters_.bucket_*/) {
                     // remove SDU from virtual buffer
                     vQueue->popFront();
 
@@ -339,6 +410,12 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
 ScheduleList& LcgScheduler::getScheduledBytesList()
 {
     return scheduledBytesList_;
+}
+
+const std::vector<unsigned int> *LcgScheduler::getScheduledSoPduSizes(MacCid cid) const
+{
+    auto it = scheduledSoPduSizes_.find(cid);
+    return it != scheduledSoPduSizes_.end() ? &it->second : nullptr;
 }
 
 } //namespace simu5g

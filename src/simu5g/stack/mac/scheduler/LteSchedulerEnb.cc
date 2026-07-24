@@ -97,6 +97,7 @@ std::map<GHz, LteMacScheduleList> *LteSchedulerEnb::schedule()
     // clearing structures for new scheduling
     for (auto & [key, value] : scheduleList_)
         value.clear();
+    scheduledSoPduSizes_.clear();
     allocatedCws_.clear();
 
     // clean the allocator
@@ -400,30 +401,88 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
             // continue allocating (if there are available bands)
         }// Closes loop on bands
 
-        if (cwAllocatedBytes > 0)
-            vQueueItemCounter++;                                    // increase counter of served SDU
-
         // === update virtual buffer === //
 
-        unsigned int consumedBytes = (cwAllocatedBytes == 0) ? 0 : cwAllocatedBytes - (MAC_HEADER + RLC_HEADER_UM);  // TODO RLC may be either UM or AM
-
-        // number of bytes to be consumed from the virtual buffer
-        while (!conn->isEmpty() && consumedBytes > 0) {
-
-            unsigned int vPktSize = conn->front().first;
-            if (vPktSize <= consumedBytes) {
-                // serve the entire vPkt, remove pkt info
-                conn->popFront();
-                consumedBytes -= vPktSize;
-                EV << "LteSchedulerEnb::grant - the first SDU/BSR is served entirely, remove it from the virtual buffer, remaining bytes to serve[" << consumedBytes << "]" << endl;
+        // NR-SO DL connections emit one SDU/segment per RLC PDU (no concatenation), so
+        // the grant is filled by multiplexing several PDUs into it: count each as a PDU
+        // (vQueueItemCounter feeds the DL schedule-list SDU count) and record per-PDU
+        // payload sizes for the MAC to request. LTE-FI keeps the single-concatenated-PDU
+        // path below. (UL is handled by LcgScheduler.)
+        bool soFraming = (dir == DL) && cwAllocatedBytes > 0 && mac_->getConnDesc(cid).getSoFraming();
+        if (soFraming) {
+            std::vector<unsigned int>& pduSizes = scheduledSoPduSizes_[cid];
+            int budget = (int)cwAllocatedBytes - MAC_HEADER;  // one MAC header for the TB
+            while (!conn->isEmpty()) {
+                unsigned int vPktSize = conn->front().first;
+                // RLC header for this PDU: the exact segment-state header the RLC TX will
+                // emit, so the carve and drain match byte-for-byte (sized for the flow's SN
+                // field length). UM: complete=1B (no SN) if the whole SDU fits, else
+                // first/continuation per nrUmHeaderBytes. AM always carries the SN. TS 38.322.
+                unsigned int snBits = mac_->getConnDesc(cid).getRlcSnFieldLength();
+                unsigned int rlcHdr;
+                if (mac_->getConnDesc(cid).getRlcType() == AM) {
+                    rlcHdr = nrAmHeaderBytes(soFrontIsContinuation_[cid] ? NRUM_CONTINUATION : NRUM_FIRST, snBits);
+                }
+                else {
+                    NrUmSegState st = soFrontIsContinuation_[cid] ? NRUM_CONTINUATION
+                                    : ((int)vPktSize + 1 <= budget) ? NRUM_COMPLETE
+                                    : NRUM_FIRST;
+                    rlcHdr = nrUmHeaderBytes(st, snBits);
+                }
+                if (budget <= (int)rlcHdr)
+                    break;
+                int room = budget - (int)rlcHdr;
+                unsigned int payload;
+                bool segmented = false;
+                if ((int)vPktSize <= room) {
+                    conn->popFront();
+                    payload = vPktSize;
+                    soFrontIsContinuation_[cid] = false;
+                }
+                else {
+                    PacketInfo newPktInfo = conn->popFront();
+                    newPktInfo.first = vPktSize - (unsigned int)room;
+                    conn->pushFront(newPktInfo);
+                    payload = (unsigned int)room;
+                    segmented = true;
+                    soFrontIsContinuation_[cid] = true;
+                }
+                // request size includes the RLC header (rlcPduMakeNr subtracts it back)
+                pduSizes.push_back(payload + rlcHdr);
+                budget -= (int)rlcHdr + (int)payload;
+                vQueueItemCounter++;
+                if (segmented)
+                    break;  // grant exhausted by the segment
             }
-            else {
-                // serve partial vPkt, update pkt info
-                PacketInfo newPktInfo = conn->popFront();
-                newPktInfo.first = newPktInfo.first - consumedBytes;
-                conn->pushFront(newPktInfo);
-                consumedBytes = 0;
-                EV << "LteSchedulerEnb::grant - the first SDU/BSR is partially served, update its size [" << newPktInfo.first << "]" << endl;
+            if (conn->isEmpty())
+                soFrontIsContinuation_[cid] = false;  // buffer drained; next SDU is fresh
+            if (pduSizes.empty())
+                scheduledSoPduSizes_.erase(cid);
+        }
+        else {
+            if (cwAllocatedBytes > 0)
+                vQueueItemCounter++;                                    // increase counter of served SDU
+
+            unsigned int consumedBytes = (cwAllocatedBytes == 0) ? 0 : cwAllocatedBytes - (MAC_HEADER + RLC_HEADER_UM);  // TODO RLC may be either UM or AM
+
+            // number of bytes to be consumed from the virtual buffer
+            while (!conn->isEmpty() && consumedBytes > 0) {
+
+                unsigned int vPktSize = conn->front().first;
+                if (vPktSize <= consumedBytes) {
+                    // serve the entire vPkt, remove pkt info
+                    conn->popFront();
+                    consumedBytes -= vPktSize;
+                    EV << "LteSchedulerEnb::grant - the first SDU/BSR is served entirely, remove it from the virtual buffer, remaining bytes to serve[" << consumedBytes << "]" << endl;
+                }
+                else {
+                    // serve partial vPkt, update pkt info
+                    PacketInfo newPktInfo = conn->popFront();
+                    newPktInfo.first = newPktInfo.first - consumedBytes;
+                    conn->pushFront(newPktInfo);
+                    consumedBytes = 0;
+                    EV << "LteSchedulerEnb::grant - the first SDU/BSR is partially served, update its size [" << newPktInfo.first << "]" << endl;
+                }
             }
         }
 

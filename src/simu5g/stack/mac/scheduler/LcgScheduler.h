@@ -78,6 +78,11 @@ class LcgScheduler
     // scheduled bytes list
     ScheduleList scheduledBytesList_;
 
+    // For NR-SO (no RLC concatenation) connections: the per-PDU payload sizes that
+    // fill the grant, so the MAC issues one SDU request per planned PDU and the MAC
+    // PDU multiplexes them. Empty/absent for LTE-FI connections (one concatenated PDU).
+    std::map<MacCid, std::vector<unsigned int>> scheduledSoPduSizes_;
+
     /// Cid List
     typedef std::list<MacCid> CidList;
 
@@ -116,6 +121,11 @@ class LcgScheduler
      * scheduled for each connection
      */
     virtual ScheduleList& getScheduledBytesList();
+
+    /* After scheduling, returns the planned per-PDU payload sizes for an NR-SO
+     * connection (one SDU request per entry), or nullptr for LTE-FI connections.
+     */
+    virtual const std::vector<unsigned int> *getScheduledSoPduSizes(MacCid cid) const;
 };
 
 } //namespace simu5g

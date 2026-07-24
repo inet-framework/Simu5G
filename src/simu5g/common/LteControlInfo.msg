@@ -67,6 +67,8 @@ class FlowControlInfo extends LteControlInfo {
 
     unsigned short traffic enum(LteTrafficClass) = 0;       // Lte Traffic Type; analogous to LCG IDs (Logical Channel Group Identifiers) in LTE/NR
     unsigned short rlcType enum(LteRlcType) = 0;            // RLC Traffic Type
+    bool soFraming = false;                                 // RLC wire format of this flow: false=LTE FI/concatenation, true=NR SI/SO (one SDU/segment per PDU -> MAC multiplexes several PDUs per grant)
+    unsigned short rlcSnFieldLength = 12;                   // NR-SO RLC SN field length in bits (UM 6/12, AM 12/18), so the scheduler reserves the same octet-aligned header the RLC TX emits
 }
 
 cplusplus (FlowControlInfo::setDrbId) {{

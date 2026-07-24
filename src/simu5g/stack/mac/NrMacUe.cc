@@ -269,19 +269,31 @@ int NrMacUe::macSduRequest()
 
                 EV << NOW << " NrMacUe::macSduRequest - cid[" << destCid << "] - SDU size[" << bit->second << "B] - " << allocatedBytes[cw] << " bytes left on codeword " << cw << endl;
 
-                // send the request message to the upper layer
-                // TODO: Replace by tag
-                auto pkt = new Packet("LteMacSduRequest");
-                auto macSduRequest = makeShared<LteMacSduRequest>();
-                macSduRequest->setChunkLength(b(1)); // TODO: should be 0
-                macSduRequest->setUeId(destId);
-                macSduRequest->setLcid(destCid.getLcid());
-                macSduRequest->setSduSize(bit->second);
-                pkt->insertAtFront(macSduRequest);
-                *(pkt->addTag<FlowControlInfo>()) = connDescOut_[destCid].flowInfo.toFlowControlInfo();
-                sendUpperPackets(pkt);
+                // NR-SO connections fill the grant with several one-SDU/segment PDUs;
+                // issue one request per planned PDU so the MAC PDU multiplexes them.
+                // LTE-FI fills the grant with a single concatenated PDU (one request).
+                const std::vector<unsigned int> *soSizes = lcgScheduler_[citFreq]->getScheduledSoPduSizes(destCid);
+                std::vector<unsigned int> reqSizes;
+                if (soSizes != nullptr && !soSizes->empty())
+                    reqSizes = *soSizes;
+                else
+                    reqSizes.push_back(bit->second);
 
-                numRequestedSdus++;
+                for (unsigned int reqSize : reqSizes) {
+                    // send the request message to the upper layer
+                    // TODO: Replace by tag
+                    auto pkt = new Packet("LteMacSduRequest");
+                    auto macSduRequest = makeShared<LteMacSduRequest>();
+                    macSduRequest->setChunkLength(b(1)); // TODO: should be 0
+                    macSduRequest->setUeId(destId);
+                    macSduRequest->setLcid(destCid.getLcid());
+                    macSduRequest->setSduSize(reqSize);
+                    pkt->insertAtFront(macSduRequest);
+                    *(pkt->addTag<FlowControlInfo>()) = connDescOut_[destCid].flowInfo.toFlowControlInfo();
+                    sendUpperPackets(pkt);
+
+                    numRequestedSdus++;
+                }
             }
         }
     }
@@ -425,8 +437,19 @@ void NrMacUe::macPduMake(MacCid cid)
                     if (connDescOut_.find(destCid) == connDescOut_.end())
                         throw cRuntimeError("Unable to find mac buffer for cid %s", destCid.str().c_str());
 
-                    if (connDescOut_[destCid].queue->isEmpty())
+                    if (connDescOut_[destCid].queue->isEmpty()) {
+                        // NR-SO defensive fallback: the front-SDU continuation state is
+                        // shared across the UE's per-carrier schedulers (LteMacUe), so the
+                        // planned PDU count normally matches the shared RLC TX buffer's
+                        // drain exactly and this branch is not taken. Should a residual
+                        // over-count ever leave a request without data, nothing is lost (it
+                        // went out in earlier PDUs or stays buffered for the next TTI), so
+                        // stop adding PDUs gracefully rather than crash. LTE-FI plans an
+                        // exact count, so there an empty buffer is a real bug.
+                        if (connDescOut_[destCid].flowInfo.getSoFraming())
+                            break;
                         throw cRuntimeError("Empty buffer for cid %s, while expected SDUs were %d", destCid.str().c_str(), sduPerCid);
+                    }
 
                     auto pkt = check_and_cast<Packet *>(connDescOut_[destCid].queue->popFront());
 

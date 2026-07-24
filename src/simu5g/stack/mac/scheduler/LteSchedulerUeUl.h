@@ -59,6 +59,11 @@ class LteSchedulerUeUl
      */
     LteMacScheduleList *getScheduledBytesList();
 
+    /* After scheduling, returns the per-PDU payload sizes planned for an NR-SO
+     * connection (one SDU request per entry), or nullptr for LTE-FI connections.
+     */
+    const std::vector<unsigned int> *getScheduledSoPduSizes(MacCid cid) { return lcgScheduler_.getScheduledSoPduSizes(cid); }
+
     /*
      * Constructor
      */
