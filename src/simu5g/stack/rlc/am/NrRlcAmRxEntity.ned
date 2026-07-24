@@ -16,20 +16,21 @@
 package simu5g.stack.rlc.am;
 
 //
-// NR profile of the generic AM RX entity (TS 38.322): same C++ class (RlcAmRxEntity)
-// as the LTE entity, parametrized with soFraming=true and the NR window/timers.
-// Select via BearerManagement.rlcAmRxEntityModuleType. The NR SO-reassembly
-// statistics are declared here so they are recorded only for NR-selected entities
-// (LTE entities keep their original scalar set).
+// NR (TS 38.322) receiving side of the Acknowledged Mode (AM) of the RLC
+// layer: SO byte-coverage reassembly with a per-SDU SN window, t-Reassembly +
+// t-StatusProhibit timers. Shares the common RlcAmRxEntityBase shell with the
+// LTE profile ~LteRlcAmRxEntity. Bound by default to
+// BearerManagement.nrRlcAmEntityModuleType. The NR SO-reassembly statistics
+// are declared here so they are recorded only for NR-selected entities.
 //
-simple NrRlcAmRxEntity extends RlcAmRxEntity
+simple NrRlcAmRxEntity like simu5g.stack.rlc.IRlcAmRxEntity
 {
     parameters:
-        @class(RlcAmRxEntity);
-        soFraming = default(true);            // select the NR SO byte-offset wire format
-        AM_Window_Size = default(2048);       // 2048 (12-bit SN) or 131072 (18-bit SN)
-        t_Reassembly = default(80ms);
-        t_StatusProhibit = default(100ms);
+        @dynamic(true);
+        @display("i=block/layer");
+        int AM_Window_Size = default(2048);       // 2048 (12-bit SN) or 131072 (18-bit SN)
+        double t_Reassembly @unit(s) = default(80ms);
+        double t_StatusProhibit @unit(s) = default(100ms);
 
         @signal[receivedPacketFromLowerLayer];
         @statistic[receivedPacketFromLowerLayer](source="receivedPacketFromLowerLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
@@ -41,4 +42,10 @@ simple NrRlcAmRxEntity extends RlcAmRxEntity
         @statistic[rlcCellThroughputDl](title="Cell Throughput at the RLC layer DL"; unit="Bps"; source="rlcCellThroughputDl"; record=simu5g_rateavg);
         @signal[rlcCellThroughputUl];
         @statistic[rlcCellThroughputUl](title="Cell Throughput at the RLC layer UL"; unit="Bps"; source="rlcCellThroughputUl"; record=simu5g_rateavg);
+
+    gates:
+        input in;       // PDUs from lower mux (MAC)
+        output out;       // reassembled SDUs to upper mux (PDCP)
+        output feedbackOut;   // received STATUS PDUs -> co-located TX side (ARQ)
+        output statusOut; // own STATUS reports -> co-located TX side (transmission)
 }

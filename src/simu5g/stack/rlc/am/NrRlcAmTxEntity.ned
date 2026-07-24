@@ -16,18 +16,23 @@
 package simu5g.stack.rlc.am;
 
 //
-// NR profile of the generic AM TX entity (TS 38.322): same C++ class (RlcAmTxEntity)
-// as the LTE entity, parametrized with soFraming=true and the NR window. Select via
-// BearerManagement.rlcAmTxEntityModuleType. The NR SO-segmentation statistics are
-// declared here so they are recorded only for NR-selected entities (LTE entities keep
-// their original scalar set).
+// NR (TS 38.322) transmission side of the Acknowledged Mode (AM) of the RLC
+// layer: byte-offset (SO) segmentation with re-segmentation on retransmission,
+// pollByte/pollPDU-driven status polling. Shares the common RlcAmTxEntityBase
+// shell with the LTE profile ~LteRlcAmTxEntity. Bound by default to
+// BearerManagement.nrRlcAmEntityModuleType. The NR SO-segmentation
+// statistics are declared here so they are recorded only for NR entities.
 //
-simple NrRlcAmTxEntity extends RlcAmTxEntity
+simple NrRlcAmTxEntity like simu5g.stack.rlc.IRlcAmTxEntity
 {
     parameters:
-        @class(RlcAmTxEntity);
-        soFraming = default(true);            // select the NR SO byte-offset wire format
-        AM_Window_Size = default(2048);       // 2048 (12-bit SN) or 131072 (18-bit SN)
+        @dynamic(true);
+        @display("i=block/layer");
+        int AM_Window_Size = default(2048);       // 2048 (12-bit SN) or 131072 (18-bit SN)
+        int pollByte @unit(B) = default(125kB);
+        int pollPDU = default(64);
+        int maxRtxThreshold = default(4);
+        double t_PollRetransmit @unit(s) = default(80ms);
 
         @signal[receivedPacketFromUpperLayer];
         @statistic[receivedPacketFromUpperLayer](source="receivedPacketFromUpperLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
@@ -47,4 +52,11 @@ simple NrRlcAmTxEntity extends RlcAmTxEntity
         @statistic[txWindowFull](title="TX window full events"; source="txWindowFull"; record=count);
         @signal[retransmissionPdu];
         @statistic[retransmissionPdu](title="Retransmitted PDUs"; source="retransmissionPdu"; record=count);
+
+    gates:
+        input in;       // SDUs from upper mux (PDCP)
+        input macIn;    // SDU requests from lower mux (MAC)
+        output out;     // PDUs and new-data notifications to lower mux (MAC)
+        input feedbackIn;   // STATUS PDUs received from the peer, from the co-located RX side (to ARQ)
+        input statusIn; // locally generated STATUS reports, from the co-located RX side (to transmit)
 }

@@ -14,34 +14,23 @@
 package simu5g.stack.rlc.am;
 
 //
-// Generic transmit side of RLC AM, parametrized for LTE or NR via soFraming
-// (one C++ class, RlcAmTxEntity):
-//  - LTE (soFraming=false, TS 36.322): fixed-unit fragmentation, whole-PDU ARQ retx.
-//  - NR  (soFraming=true,  TS 38.322): SO byte-offset segmentation + re-segment, polling.
-// The NR parametrization is provided by the NrRlcAmTxEntity profile. Select via
-// BearerManagement.rlcAmTxEntityModuleType.
+// LTE (TS 36.322) transmission side of the Acknowledged Mode (AM) of the RLC
+// layer: fixed-unit fragmentation of SDUs, whole-PDU ARQ retransmission driven
+// by a per-PDU timer. Shares the common RlcAmTxEntityBase shell (signal set,
+// flow-control-info bookkeeping) with the NR profile ~NrRlcAmTxEntity. Bound
+// by default to BearerManagement.rlcAmTxEntityModuleType.
 //
-simple RlcAmTxEntity like simu5g.stack.rlc.IRlcAmTxEntity
+simple LteRlcAmTxEntity like simu5g.stack.rlc.IRlcAmTxEntity
 {
     parameters:
         @dynamic(true);
         @display("i=block/layer");
-        bool soFraming = default(false);                  // wire format: LTE frag (false) vs NR SO (true)
-
-        // LTE (fragment / whole-PDU ARQ) parameters
         int fragmentSize @unit(B) = default(30B);         // Size of fragments
         int maxRtx = default(3);
         double pduRtxTimeout @unit(s) = default(2.0s);
         double ctrlPduRtxTimeout @unit(s) = default(2.0s);
         double bufferStatusTimeout @unit(s) = default(2.0s);
         int txWindowSize = default(200);
-
-        // NR (SO segmentation + polling) parameters
-        int AM_Window_Size = default(512);                // 512 (10-bit) / 2048 (12-bit) / 131072 (18-bit)
-        int pollByte @unit(B) = default(125kB);
-        int pollPDU = default(64);
-        int maxRtxThreshold = default(4);
-        double t_PollRetransmit @unit(s) = default(80ms);
 
     gates:
         input in;       // SDUs from upper mux (PDCP)

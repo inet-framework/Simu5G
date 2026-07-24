@@ -10,19 +10,19 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-class RlcUmTxEntity;
+class RlcUmTxEntityBase;
 
 class D2DModeController : public cSimpleModule
 {
   protected:
-    typedef std::map<MacNodeId, std::set<RlcUmTxEntity *>> PerPeerTxEntities;
+    typedef std::map<MacNodeId, std::set<RlcUmTxEntityBase *>> PerPeerTxEntities;
     PerPeerTxEntities perPeerTxEntities_;
 
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
   public:
-    void registerD2DPeerTxEntity(MacNodeId peerId, RlcUmTxEntity *umTxEnt);
+    void registerD2DPeerTxEntity(MacNodeId peerId, RlcUmTxEntityBase *umTxEnt);
     void resumeDownstreamInPackets(MacNodeId peerId);
     bool isEmptyingTxBuffer(MacNodeId peerId);
 };

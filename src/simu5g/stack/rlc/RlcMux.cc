@@ -1,7 +1,7 @@
 #include "simu5g/stack/rlc/RlcMux.h"
 #include "simu5g/stack/rlc/RlcRxEntityBase.h"
-#include "simu5g/stack/rlc/um/RlcUmRxEntity.h"
-#include "simu5g/stack/rlc/um/RlcUmTxEntity.h"
+#include "simu5g/stack/rlc/um/RlcUmTxEntityBase.h"
+#include "simu5g/stack/rlc/um/RlcUmRxEntityBase.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include <inet/networklayer/common/NetworkInterface.h>
@@ -65,7 +65,7 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
             RlcTxEntityBase *txbuf = bearerManagement_->lookupRlcTxBuffer(id);
             if (txbuf == nullptr)
                 txbuf = bearerManagement_->createRlcTxBuffer(id, lteInfo.get());
-            RlcUmTxEntity *umTxbuf = check_and_cast<RlcUmTxEntity *>(txbuf);
+            RlcUmTxEntityBase *umTxbuf = check_and_cast<RlcUmTxEntityBase *>(txbuf);
             umTxbuf->rlcHandleD2DModeSwitch(switchPkt->getOldConnection(), switchPkt->getClearRlcBuffer());
 
             delete pkt;
@@ -76,7 +76,7 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
             RlcRxEntityBase *rxbuf = it != rxGateIndices_.end()
                     ? check_and_cast<RlcRxEntityBase *>(gate("toRxEntity", it->second)->getPathEndGate()->getOwnerModule())
                     : bearerManagement_->createRlcRxBuffer(id, lteInfo.get());
-            RlcUmRxEntity *umRxbuf = check_and_cast<RlcUmRxEntity *>(rxbuf);
+            RlcUmRxEntityBase *umRxbuf = check_and_cast<RlcUmRxEntityBase *>(rxbuf);
             umRxbuf->rlcHandleD2DModeSwitch(switchPkt->getOldConnection(), switchPkt->getOldMode(), switchPkt->getClearRlcBuffer());
 
             delete pkt;
@@ -124,7 +124,7 @@ void RlcMux::activeUeUL(std::set<MacNodeId> *ueSet)
     for (const auto& [id, gateIndex] : rxGateIndices_) {
         MacNodeId nodeId = id.getNodeId();
         // path end crosses the RlcEntity compound boundary, so the owner is its rx submodule
-        RlcUmRxEntity *umEnt = dynamic_cast<RlcUmRxEntity *>(gate("toRxEntity", gateIndex)->getPathEndGate()->getOwnerModule());
+        RlcUmRxEntityBase *umEnt = dynamic_cast<RlcUmRxEntityBase *>(gate("toRxEntity", gateIndex)->getPathEndGate()->getOwnerModule());
         if (umEnt != nullptr && (ueSet->find(nodeId) == ueSet->end()) && !umEnt->isEmpty())
             ueSet->insert(nodeId);
     }

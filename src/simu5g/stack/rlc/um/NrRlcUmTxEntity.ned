@@ -16,18 +16,20 @@
 package simu5g.stack.rlc.um;
 
 //
-// NR profile of the generic UM TX entity (TS 38.322): same C++ class
-// (RlcUmTxEntity) as the LTE entity, parametrized with isNR=true and the NR SN
-// field length. Select via BearerManagement.rlcUmTxEntityModuleType. The NR
-// SO-segmentation statistics are declared here so they are recorded only for
-// NR-selected entities (LTE entities keep their original scalar set).
+// NR (TS 38.322) transmission side of the Unacknowledged Mode (UM) of the RLC
+// layer: SI + byte-offset (SO) segmentation, one SDU segment per PDU, one sequence
+// number per SDU. Shares the common RlcUmTxEntityBase shell (MAC plumbing, D2D
+// mode-switch machinery) with the LTE profile ~LteRlcUmTxEntity. Instantiated as the tx side of the
+// NrRlc*Entity compound (BearerManagement.nrRlcUmEntityModuleType). The NR SO-segmentation statistics
+// are declared here so they are recorded only for NR entities.
 //
-simple NrRlcUmTxEntity extends RlcUmTxEntity
+simple NrRlcUmTxEntity like simu5g.stack.rlc.IRlcTxEntity
 {
     parameters:
-        @class(RlcUmTxEntity);
-        soFraming = default(true);      // select the NR SI/SO byte-offset wire format
-        sn_FieldLength = default(12);   // UM SN field length in bits: 6 or 12
+        @dynamic(true);
+        @display("i=block/layer");
+        string macModule = default("^.^.mac");  // set by the enclosing RlcUmEntityBase compound (per leg)
+        int sn_FieldLength = default(12);   // UM SN field length in bits: 6 or 12
 
         @signal[wastedGrantedBytes];
         @statistic[wastedGrantedBytes](title="Wasted granted bytes"; unit="B"; source="wastedGrantedBytes"; record=sum);
@@ -35,4 +37,9 @@ simple NrRlcUmTxEntity extends RlcUmTxEntity
         @statistic[requestedPDUSize](title="Requested PDU size"; unit="B"; source="requestedPDUSize"; record=vector);
         @signal[sentPDUSize];
         @statistic[sentPDUSize](title="Sent PDU size"; unit="B"; source="sentPDUSize"; record=vector);
+
+    gates:
+        input in;       // SDUs from upper mux (PDCP)
+        input macIn;    // SDU requests from lower mux (MAC)
+        output out;     // PDUs and new-data notifications to lower mux (MAC)
 }
