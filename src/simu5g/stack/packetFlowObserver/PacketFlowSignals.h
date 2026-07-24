@@ -23,29 +23,30 @@ class LteMacPdu;
 
 /**
  * Signal value struct for RLC PDU creation events (rlcPduCreated signal).
- * Carries the DRB ID, a pointer to the RLC PDU, and the burst status.
+ * Carries the bearer key (peer node + DRB ID -- DRB IDs are only unique per
+ * peer, not per node), a pointer to the RLC PDU, and the burst status.
  */
 struct RlcPduSignalInfo : public omnetpp::cObject
 {
-    DrbId drbId;
+    DrbKey drbKey;
     const LteRlcUmDataPdu *rlcPdu;
     RlcBurstStatus burstStatus;
 
-    RlcPduSignalInfo(DrbId drbId, const LteRlcUmDataPdu *rlcPdu, RlcBurstStatus burstStatus)
-        : drbId(drbId), rlcPdu(rlcPdu), burstStatus(burstStatus) {}
+    RlcPduSignalInfo(DrbKey drbKey, const LteRlcUmDataPdu *rlcPdu, RlcBurstStatus burstStatus)
+        : drbKey(drbKey), rlcPdu(rlcPdu), burstStatus(burstStatus) {}
 };
 
 /**
  * Signal value struct for RLC PDU discard events (rlcPduDiscarded signal).
- * Carries the DRB ID and the RLC sequence number.
+ * Carries the bearer key (peer node + DRB ID) and the RLC sequence number.
  */
 struct RlcDiscardSignalInfo : public omnetpp::cObject
 {
-    DrbId drbId;
+    DrbKey drbKey;
     unsigned int rlcSno;
 
-    RlcDiscardSignalInfo(DrbId drbId, unsigned int rlcSno)
-        : drbId(drbId), rlcSno(rlcSno) {}
+    RlcDiscardSignalInfo(DrbKey drbKey, unsigned int rlcSno)
+        : drbKey(drbKey), rlcSno(rlcSno) {}
 };
 
 /**
@@ -68,9 +69,12 @@ struct GrantSignalInfo : public omnetpp::cObject
  */
 struct MacPduSignalInfo : public omnetpp::cObject
 {
+    MacNodeId peerId;   // this direction's destination node; MAC-PDU SDUs carry no
+                        // tags (LteMacPdu::pushSdu clears them), so the peer that
+                        // scopes the LCID->DRB mapping must ride with the signal
     const LteMacPdu *macPdu;
 
-    MacPduSignalInfo(const LteMacPdu *macPdu) : macPdu(macPdu) {}
+    MacPduSignalInfo(MacNodeId peerId, const LteMacPdu *macPdu) : peerId(peerId), macPdu(macPdu) {}
 };
 
 } //namespace

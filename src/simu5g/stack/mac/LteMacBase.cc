@@ -449,7 +449,7 @@ void LteMacBase::harqAckToFlowObserver(const inet::Packet *macPdu)
         Direction dir = lteInfo->getDirection();
         if (dir == DL || dir == UL) {
             auto pdu = macPdu->peekAtFront<LteMacPdu>();
-            MacPduSignalInfo info(pdu.get());
+            MacPduSignalInfo info(lteInfo->getDestId(), pdu.get());
             emit(macPduAckedSignal_, &info);
         }
     }
@@ -462,7 +462,7 @@ void LteMacBase::discardMacPdu(const inet::Packet *macPdu)
         Direction dir = lteInfo->getDirection();
         if (dir == DL || dir == UL) {
             auto pdu = macPdu->peekAtFront<LteMacPdu>();
-            MacPduSignalInfo info(pdu.get());
+            MacPduSignalInfo info(lteInfo->getDestId(), pdu.get());
             emit(macPduDiscardedSignal_, &info);
         }
     }

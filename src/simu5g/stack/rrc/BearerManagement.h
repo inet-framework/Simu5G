@@ -30,6 +30,7 @@ class DcMux;
 class PdcpTxEntityBase;
 class PdcpRxEntityBase;
 class Registration;
+class Binder;
 
 /**
  * @brief RRC Bearer Management — creates and tears down PDCP, RLC and MAC
@@ -59,6 +60,7 @@ class BearerManagement : public cSimpleModule
     inet::ModuleRefByPar<RlcMux> nrRlcMuxModule;
     inet::ModuleRefByPar<LteMacBase> macModule;
     inet::ModuleRefByPar<LteMacBase> nrMacModule;
+    inet::ModuleRefByPar<Binder> binderModule;   // for DC master/secondary topology lookups
 
     // Entity registries (CP owns the lifecycle of all entities)
     std::map<DrbKey, PdcpTxEntityBase *> pdcpTxEntities_;

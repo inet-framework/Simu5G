@@ -259,7 +259,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
     if (flowControlInfo_->getDirection() == DL || flowControlInfo_->getDirection() == UL) {
         // notify packetFlowObserver via signal
         if (len != 0 && hasListeners(rlcPduCreatedSignal_)) {
-            DrbId drbId = flowControlInfo_->getDrbId();
+            DrbKey drbKey = ctrlInfoToTxDrbKey(flowControlInfo_);
 
             /*
              * Burst management.
@@ -278,14 +278,14 @@ void UmTxEntity::rlcPduMake(int pduLength)
                 if (burstStatus_ == ACTIVE) {
                     EV << NOW << " UmTxEntity::burstStatus - ACTIVE -> INACTIVE" << endl;
 
-                    RlcPduSignalInfo info(drbId, rlcPdu.get(), STOP);
+                    RlcPduSignalInfo info(drbKey, rlcPdu.get(), STOP);
                     emit(rlcPduCreatedSignal_, &info);
                     burstStatus_ = INACTIVE;
                 }
                 else {
                     EV << NOW << " UmTxEntity::burstStatus - " << burstStatus_ << endl;
 
-                    RlcPduSignalInfo info(drbId, rlcPdu.get(), burstStatus_);
+                    RlcPduSignalInfo info(drbKey, rlcPdu.get(), burstStatus_);
                     emit(rlcPduCreatedSignal_, &info);
                 }
             }
@@ -294,14 +294,14 @@ void UmTxEntity::rlcPduMake(int pduLength)
                     burstStatus_ = ACTIVE;
                     EV << NOW << " UmTxEntity::burstStatus - INACTIVE -> ACTIVE" << endl;
                     //start a new burst
-                    RlcPduSignalInfo info(drbId, rlcPdu.get(), START);
+                    RlcPduSignalInfo info(drbKey, rlcPdu.get(), START);
                     emit(rlcPduCreatedSignal_, &info);
                 }
                 else {
                     EV << NOW << " UmTxEntity::burstStatus - burstStatus: " << burstStatus_ << endl;
 
                     // burst is still active
-                    RlcPduSignalInfo info(drbId, rlcPdu.get(), burstStatus_);
+                    RlcPduSignalInfo info(drbKey, rlcPdu.get(), burstStatus_);
                     emit(rlcPduCreatedSignal_, &info);
                 }
             }

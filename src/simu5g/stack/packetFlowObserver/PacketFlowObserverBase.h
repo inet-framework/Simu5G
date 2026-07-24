@@ -79,16 +79,18 @@ class PacketFlowObserverBase : public cSimpleModule, public cListener
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;
 
-    // Return true if a data structure for this DRB ID is present
-    virtual bool hasDrbId(DrbId drbId) = 0;
+    // Return true if a data structure for this bearer is present.
+    // Bearers are keyed by (peer node, DRB ID): DRB IDs are only unique per
+    // peer pair, so a bare DRB ID does not identify a bearer at a node.
+    virtual bool hasDrbId(DrbKey drbKey) = 0;
 
-    // Initialize a new data structure for this DRB ID. Abstract since in eNodeB case,
+    // Initialize a new data structure for this bearer. Abstract since in eNodeB case,
     // it initializes different structures with respect to the UE
-    virtual void initDrbId(DrbId drbId, MacNodeId nodeId) = 0;
+    virtual void initDrbId(DrbKey drbKey, MacNodeId nodeId) = 0;
 
-    // Reset the data structure for this DRB ID. Abstract since in eNodeB case,
+    // Reset the data structure for this bearer. Abstract since in eNodeB case,
     // it clears different structures with respect to the UE
-    virtual void clearDrbId(DrbId drbId) = 0;
+    virtual void clearDrbId(DrbKey drbKey) = 0;
 
     // Reset data structures for all connections
     virtual void clearAllDrbIds() = 0;
@@ -112,14 +114,14 @@ class PacketFlowObserverBase : public cSimpleModule, public cListener
      * It records the mapping between the RLC PDU and its contained PDCP SDUs in the tracking
      * data structures, along with burst status information for throughput measurement.
      */
-    virtual void insertRlcPdu(DrbId drbId, const LteRlcUmDataPdu *rlcPdu, RlcBurstStatus status) = 0;
+    virtual void insertRlcPdu(DrbKey drbKey, const LteRlcUmDataPdu *rlcPdu, RlcBurstStatus status) = 0;
 
     /**
      * This method is called when a downlink MAC PDU is successfully acknowledged by the UE.
      * It processes the acknowledgment to determine if complete PDCP SDUs have been delivered,
      * calculates packet delays, and updates statistics for downlink transmission.
      */
-    virtual void macPduArrived(const LteMacPdu *macPdu) = 0;
+    virtual void macPduArrived(MacNodeId peerId, const LteMacPdu *macPdu) = 0;
 
     /**
      * This method is called when an uplink MAC PDU is received from a UE at the eNodeB.
@@ -133,14 +135,14 @@ class PacketFlowObserverBase : public cSimpleModule, public cListener
      * reached. The PDCP, RLC sequence numbers referred to the MAC PDU are cleared from the
      * data structures.
      */
-    virtual void discardMacPdu(const LteMacPdu *macPdu) = 0;
+    virtual void discardMacPdu(MacNodeId peerId, const LteMacPdu *macPdu) = 0;
 
     /**
      * This method is used to keep track of all discarded RLC PDUs. If all RLC PDUs
      * that compose a PDCP SDU have been discarded, the discarded counters are updated.
      * The fromMac parameter is used when this method is called by discardMacPdu.
      */
-    virtual void discardRlcPdu(DrbId drbId, unsigned int rlcSno, bool fromMac = false) = 0;
+    virtual void discardRlcPdu(DrbKey drbKey, unsigned int rlcSno, bool fromMac = false) = 0;
 
     /**
      * This method is called when an uplink grant is sent to a UE.

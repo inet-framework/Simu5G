@@ -39,6 +39,7 @@ simple BearerManagement
         string rlcAmRxEntityModuleType = default("simu5g.stack.rlc.am.AmRxQueue");
 
         // Module references for accessing other stack layers
+        string binderModule = default("binder");
         string rlcMuxModule = default("^.^.rlcMux");
         string nrRlcMuxModule = default("^.^.nrRlcMux");
         string macModule = default("^.^.mac");

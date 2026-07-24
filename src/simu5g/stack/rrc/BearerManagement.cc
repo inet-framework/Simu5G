@@ -10,6 +10,7 @@
 //
 
 #include "simu5g/stack/rrc/BearerManagement.h"
+#include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/rrc/D2DModeController.h"
 #include "simu5g/stack/rrc/Registration.h"
 #include "simu5g/stack/mac/LteMacBase.h"
@@ -48,6 +49,7 @@ void BearerManagement::initialize(int stage)
 
         nicModule_ = inet::getContainingNicModule(this);
 
+        binderModule.reference(this, "binderModule", true);
         rlcMuxModule.reference(this, "rlcMuxModule", true);
         nrRlcMuxModule.reference(this, "nrRlcMuxModule", false);
         macModule.reference(this, "macModule", true);
@@ -182,17 +184,23 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
         // DC UE NR leg: check if a master (LTE-leg) PDCP TX entity exists for the same DRB.
         // If so, wire its nrOut gate to the NR RLC TX entity instead of creating a new PDCP entity.
         bool wiredToMaster = false;
-        if (registration_->getNodeType()==UE && isNrUe(lteInfo->getSourceId())) {
-            for (auto& [key, masterEntity] : pdcpTxEntities_) {
-                if (key.getDrbId() == id.getDrbId()) {
-                    auto *masterModule = check_and_cast<cModule *>(masterEntity);
+        if (registration_->getNodeType()==UE && isNrUe(lteInfo->getSourceId())
+                && getNodeTypeById(lteInfo->getDestId()) == NODEB) {
+            // DC secondary (NR) leg: the master (LTE) leg's PDCP TX entity of the SAME
+            // bearer is keyed by (master nodeB, same DRB id) -- look it up precisely.
+            // Matching on the bare DRB id would also match unrelated bearers of this UE
+            // (e.g. a D2D bearer), since DRB ids are only unique per peer, not per node.
+            MacNodeId masterNodeId = binderModule->getMasterNodeOrSelf(lteInfo->getDestId());
+            if (masterNodeId != lteInfo->getDestId()) {  // dest is a DC secondary node
+                auto masterIt = pdcpTxEntities_.find(DrbKey(masterNodeId, id.getDrbId()));
+                if (masterIt != pdcpTxEntities_.end()) {
+                    auto *masterModule = check_and_cast<cModule *>(masterIt->second);
                     if (masterModule->hasGate("nrOut")) {
                         auto nrRlcIt = nrRlcTxEntities_.find(rlcId);
                         ASSERT(nrRlcIt != nrRlcTxEntities_.end());
                         masterModule->gate("nrOut")->connectTo(nrRlcIt->second->gate("in"));
                         wiredToMaster = true;
                     }
-                    break;
                 }
             }
         }

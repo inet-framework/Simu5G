@@ -83,8 +83,8 @@ class PacketFlowObserverEnb : public PacketFlowObserverBase
         //std::vector<unsigned int> macPduPerProcess_;               // for each HARQ process, stores the included MAC PDU
     };
 
-    typedef  std::map<DrbId, StatusDescriptor> ConnectionMap;
-    ConnectionMap connectionMap_; // DRB ID to the corresponding StatusDescriptor
+    typedef  std::map<DrbKey, StatusDescriptor> ConnectionMap;
+    ConnectionMap connectionMap_; // bearer (peer node + DRB ID) to the corresponding StatusDescriptor
 
     std::map<MacNodeId, Delay> ULPktDelay_;
     std::map<MacNodeId, std::vector<Grant>> ulGrants_;
@@ -112,7 +112,7 @@ class PacketFlowObserverEnb : public PacketFlowObserverBase
      * @bool ack PDCP acknowledgment flag
      */
     void removePdcpBurstRLC(StatusDescriptor *desc, unsigned int rlcSno, bool ack);
-    void ensureMacPduMapping(const LteMacPdu *macPdu);
+    void ensureMacPduMapping(MacNodeId peerId, const LteMacPdu *macPdu);
 
     /*
      * This method creates a pdcpStatus structure when a PDCP SDU arrives at the PDCP layer.
@@ -120,22 +120,22 @@ class PacketFlowObserverEnb : public PacketFlowObserverBase
     void initPdcpStatus(StatusDescriptor *desc, unsigned int pdcp, unsigned int sduHeaderSize, simtime_t arrivalTime);
 
     // return true if a structure for this DRB ID is present
-    bool hasDrbId(DrbId drbId) override;
+    bool hasDrbId(DrbKey drbKey) override;
     // initialize a new structure for this DRB ID
-    void initDrbId(DrbId drbId, MacNodeId nodeId) override;
+    void initDrbId(DrbKey drbKey, MacNodeId nodeId) override;
     // reset the structure for this DRB ID
-    void clearDrbId(DrbId drbId) override;
+    void clearDrbId(DrbKey drbKey) override;
     // reset structures for all connections
     void clearAllDrbIds() override;
 
   public:
     void insertPdcpSdu(inet::Packet *pdcpPkt) override;
     void receivedPdcpSdu(inet::Packet *pdcpPkt) override;
-    void insertRlcPdu(DrbId drbId, const LteRlcUmDataPdu *rlcPdu, RlcBurstStatus status) override;
-    void macPduArrived(const LteMacPdu *macPdu) override;
+    void insertRlcPdu(DrbKey drbKey, const LteRlcUmDataPdu *rlcPdu, RlcBurstStatus status) override;
+    void macPduArrived(MacNodeId peerId, const LteMacPdu *macPdu) override;
     void ulMacPduArrived(MacNodeId nodeId, unsigned int grantId) override;
-    void discardMacPdu(const LteMacPdu *macPdu) override;
-    void discardRlcPdu(DrbId drbId, unsigned int rlcSno, bool fromMac = false) override;
+    void discardMacPdu(MacNodeId peerId, const LteMacPdu *macPdu) override;
+    void discardRlcPdu(DrbKey drbKey, unsigned int rlcSno, bool fromMac = false) override;
     void grantSent(MacNodeId nodeId, unsigned int grantId) override;
 
     /**

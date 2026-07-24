@@ -76,19 +76,19 @@ void PacketFlowObserverBase::receiveSignal(cComponent *source, simsignal_t signa
     }
     else if (signalID == rlcPduCreatedSignal) {
         auto info = check_and_cast<RlcPduSignalInfo *>(obj);
-        insertRlcPdu(info->drbId, info->rlcPdu, info->burstStatus);
+        insertRlcPdu(info->drbKey, info->rlcPdu, info->burstStatus);
     }
     else if (signalID == macPduAckedSignal) {
         auto info = check_and_cast<MacPduSignalInfo *>(obj);
-        macPduArrived(info->macPdu);
+        macPduArrived(info->peerId, info->macPdu);
     }
     else if (signalID == macPduDiscardedSignal) {
         auto info = check_and_cast<MacPduSignalInfo *>(obj);
-        discardMacPdu(info->macPdu);
+        discardMacPdu(info->peerId, info->macPdu);
     }
     else if (signalID == rlcPduDiscardedSignal) {
         auto info = check_and_cast<RlcDiscardSignalInfo *>(obj);
-        discardRlcPdu(info->drbId, info->rlcSno);
+        discardRlcPdu(info->drbKey, info->rlcSno);
     }
     else if (signalID == grantSentSignal) {
         auto info = check_and_cast<GrantSignalInfo *>(obj);

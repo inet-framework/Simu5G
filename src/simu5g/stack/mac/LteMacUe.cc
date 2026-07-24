@@ -325,7 +325,7 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
         // discard the RLC
         if (hasListeners(rlcPduDiscardedSignal_)) {
             unsigned int rlcSno = pkt->peekAtFront<LteRlcDataPdu>()->getPduSequenceNumber();
-            RlcDiscardSignalInfo discardInfo(lteInfo->getDrbId(), rlcSno);
+            RlcDiscardSignalInfo discardInfo(ctrlInfoToTxDrbKey(lteInfo.get()), rlcSno);
             emit(rlcPduDiscardedSignal_, &discardInfo);
         }
 
