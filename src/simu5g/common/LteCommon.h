@@ -204,7 +204,7 @@ const Tbs CQI2ITBSSIZE = 29;
 const unsigned int PDCP_HEADER_UM = 1;
 const unsigned int PDCP_HEADER_AM = 2;
 // Flat RLC header sizes used by the LTE TS 36.322 UM/AM path (and by the LTE AM STATUS
-// PDU, see AmRxQueue::sendStatusReportLte). These are fixed approximations: the LTE
+// PDU, see RlcAmRxEntity::sendStatusReportLte). These are fixed approximations: the LTE
 // header/STATUS size does not vary with the SN field length, the segmentation state, or
 // the NACK count. The NR TS 38.322 SO path instead sizes each PDU exactly via
 // nrUmHeaderBytes()/nrAmHeaderBytes() below; making LTE AM equally faithful is future work.

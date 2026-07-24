@@ -39,7 +39,7 @@ void PacketFlowObserverBase::initialize(int stage)
         pdcpModule->subscribe(pdcpSduSentSignal, this);
         pdcpModule->subscribe(pdcpSduReceivedSignal, this);
 
-        // Subscribe to RLC signal (on compound RLC module, catches dynamic UmTxEntity children)
+        // Subscribe to RLC signal (on compound RLC module, catches dynamically-created RLC TX entity children)
         cModule *rlcModule = getModuleFromPar<cModule>(par("rlcModule"), this);
         simsignal_t rlcPduCreatedSignal = registerSignal("rlcPduCreated");
         rlcModule->subscribe(rlcPduCreatedSignal, this);

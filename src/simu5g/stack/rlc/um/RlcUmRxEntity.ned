@@ -20,7 +20,7 @@ package simu5g.stack.rlc.um;
 // Control (MAC) layer and, when possible, performs reassembly and in-sequence
 // delivery of packets to the Packet Data Convergence Protocol (PDCP) layer.
 //
-simple UmRxEntity like simu5g.stack.rlc.IRlcRxEntity
+simple RlcUmRxEntity like simu5g.stack.rlc.IRlcRxEntity
 {
     parameters:
         @dynamic(true);

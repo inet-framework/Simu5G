@@ -20,6 +20,6 @@ package simu5g.stack.rlc;
 module LteRlcAmEntity extends RlcAmEntityBase
 {
     parameters:
-        tx.typename = default("simu5g.stack.rlc.am.AmTxQueue");
-        rx.typename = default("simu5g.stack.rlc.am.AmRxQueue");
+        tx.typename = default("simu5g.stack.rlc.am.RlcAmTxEntity");
+        rx.typename = default("simu5g.stack.rlc.am.RlcAmRxEntity");
 }

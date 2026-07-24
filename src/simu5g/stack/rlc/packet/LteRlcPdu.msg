@@ -77,7 +77,7 @@ void LteRlcDataPdu::pushSdu(inet::Packet *pkt)
 void LteRlcDataPdu::pushSdu(inet::Packet *pkt, int size)
 {
     // Clear tags to make sure they are not "tunnelled" over to the receiver node and "accidentally"
-    // used there -- with the exception of PdcpTrackingTag, as RLC-UM (UmRxEntity.cc) still refers to it.
+    // used there -- with the exception of PdcpTrackingTag, as the RLC-UM RX entities (LteRlcUmRxEntity/NrRlcUmRxEntity) still refer to it.
     auto pdcpTag = pkt->removeTagIfPresent<PdcpTrackingTag>();
     pkt->clearTags();
     if (pdcpTag != nullptr)

@@ -15,13 +15,13 @@ package simu5g.stack.rlc.am;
 
 //
 // Generic transmit side of RLC AM, parametrized for LTE or NR via soFraming
-// (one C++ class, AmTxQueue):
+// (one C++ class, RlcAmTxEntity):
 //  - LTE (soFraming=false, TS 36.322): fixed-unit fragmentation, whole-PDU ARQ retx.
 //  - NR  (soFraming=true,  TS 38.322): SO byte-offset segmentation + re-segment, polling.
-// The NR parametrization is provided by the NrAmTxQueue profile. Select via
+// The NR parametrization is provided by the NrRlcAmTxEntity profile. Select via
 // BearerManagement.rlcAmTxEntityModuleType.
 //
-simple AmTxQueue like simu5g.stack.rlc.IRlcAmTxEntity
+simple RlcAmTxEntity like simu5g.stack.rlc.IRlcAmTxEntity
 {
     parameters:
         @dynamic(true);

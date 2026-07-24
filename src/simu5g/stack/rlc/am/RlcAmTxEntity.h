@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_AMTXBUFFER_H_
-#define _LTE_AMTXBUFFER_H_
+#ifndef _SIMU5G_RLCAMTXENTITY_H_
+#define _SIMU5G_RLCAMTXENTITY_H_
 
 #include <list>
 
@@ -41,11 +41,11 @@ using namespace inet;
  * The MAC plumbing and the ACK_SN+NACK STATUS format are shared; the ARQ engine
  * dispatches on the mode.
  */
-class AmTxQueue : public RlcTxEntityBase
+class RlcAmTxEntity : public RlcTxEntityBase
 {
   protected:
 
-    // --- wire-format selector (profile-driven; see UmTxEntity) ---
+    // --- wire-format selector (profile-driven; see RlcUmTxEntity) ---
     bool soFraming_ = false;
     unsigned int snFieldLength_ = 12;  // NR-SO AM SN bits, derived from AM_Window_Size (12 or 18)
 
@@ -108,8 +108,8 @@ class AmTxQueue : public RlcTxEntityBase
     unsigned int receivedSdus_ = 0;
 
   public:
-    AmTxQueue();
-    ~AmTxQueue() override;
+    RlcAmTxEntity();
+    ~RlcAmTxEntity() override;
 
     // Enqueue an upper-layer SDU into the transmission buffer
     void enque(Packet *sdu);

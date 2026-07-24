@@ -47,10 +47,10 @@ simple BearerManagement
         // point these back to the LTE entities above to keep an NR leg on LTE RLC
         // (e.g. nr/mec, whose RNI PacketFlowObserver still tracks the LTE-FI UM PDU).
         // TM is transparent and identical for both RATs, so it has no NR override.
-        string nrRlcUmTxEntityModuleType = default("simu5g.stack.rlc.um.NrUmTxEntity");
-        string nrRlcUmRxEntityModuleType = default("simu5g.stack.rlc.um.NrUmRxEntity");
-        string nrRlcAmTxEntityModuleType = default("simu5g.stack.rlc.am.NrAmTxQueue");
-        string nrRlcAmRxEntityModuleType = default("simu5g.stack.rlc.am.NrAmRxQueue");
+        string nrRlcUmTxEntityModuleType = default("simu5g.stack.rlc.um.NrRlcUmTxEntity");
+        string nrRlcUmRxEntityModuleType = default("simu5g.stack.rlc.um.NrRlcUmRxEntity");
+        string nrRlcAmTxEntityModuleType = default("simu5g.stack.rlc.am.NrRlcAmTxEntity");
+        string nrRlcAmRxEntityModuleType = default("simu5g.stack.rlc.am.NrRlcAmRxEntity");
 
         // Module references for accessing other stack layers
         string binderModule = default("binder");

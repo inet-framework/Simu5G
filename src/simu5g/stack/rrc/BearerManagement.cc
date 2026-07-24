@@ -16,7 +16,7 @@
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/rlc/RlcMux.h"
 #include "simu5g/stack/rlc/RlcRxEntityBase.h"
-#include "simu5g/stack/rlc/um/UmTxEntity.h"
+#include "simu5g/stack/rlc/um/RlcUmTxEntity.h"
 #include "simu5g/stack/pdcp/UpperMux.h"
 #include "simu5g/stack/pdcp/DcMux.h"
 #include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
@@ -291,13 +291,13 @@ RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *
     txEnt->setFlowControlInfo(lteInfo);
 
     // D2D peer tracking for UM TX entities. Both the LTE-leg and NR-leg UM
-    // entities are now the unified UmTxEntity (the Nr* profile binds @class(UmTxEntity)),
+    // entities are now the unified RlcUmTxEntity (the Nr* profile binds @class(RlcUmTxEntity)),
     // so the dynamic_cast succeeds for either leg; registration only happens when a
     // D2D mode controller is present (i.e. in D2D-capable configs).
     if (static_cast<LteRlcType>(lteInfo->getRlcType()) == UM) {
         auto *d2dCtrl = inet::findModuleFromPar<D2DModeController>(par("d2dModeControllerModule"), this);
         if (d2dCtrl) {
-            if (auto *umTxEnt = dynamic_cast<UmTxEntity *>(txEnt))
+            if (auto *umTxEnt = dynamic_cast<RlcUmTxEntity *>(txEnt))
                 d2dCtrl->registerD2DPeerTxEntity(MacNodeId(lteInfo->getD2dRxPeerId()), umTxEnt);
         }
     }

@@ -20,6 +20,6 @@ package simu5g.stack.rlc;
 module NrRlcUmEntity extends RlcUmEntityBase
 {
     parameters:
-        txEntityType = default("simu5g.stack.rlc.um.NrUmTxEntity");
-        rxEntityType = default("simu5g.stack.rlc.um.NrUmRxEntity");
+        txEntityType = default("simu5g.stack.rlc.um.NrRlcUmTxEntity");
+        rxEntityType = default("simu5g.stack.rlc.um.NrRlcUmRxEntity");
 }

@@ -15,10 +15,10 @@ package simu5g.stack.rlc.um;
 
 //
 // Generic transmission side of the Unacknowledged Mode (UM) of the RLC layer,
-// parametrized for LTE or NR via the soFraming flag (one C++ class, UmTxEntity):
+// parametrized for LTE or NR via the soFraming flag (one C++ class, RlcUmTxEntity):
 //  - LTE (soFraming=false, TS 36.322): FI framing + concatenation, SN per PDU.
 //  - NR  (soFraming=true,  TS 38.322): SI + byte-offset (SO) segmentation, SN per SDU.
-// The NR parametrization is provided by the NrUmTxEntity profile. Select via
+// The NR parametrization is provided by the NrRlcUmTxEntity profile. Select via
 // BearerManagement.rlcUmTxEntityModuleType. The framing is a function of the RAT
 // (per the specs above), so soFraming always tracks the bearer's RAT: BearerManagement
 // binds the Nr* profile (soFraming=true) for NR bearers and the LTE entity for LTE
@@ -26,7 +26,7 @@ package simu5g.stack.rlc.um;
 // because a leg may choose its framing freely. The NR-leg marker proper is a separate
 // concept living on the pdcpMux (pdcpMux.isNR, read by UpperMux/Ip2Nic/LteMacEnb).
 //
-simple UmTxEntity like simu5g.stack.rlc.IRlcTxEntity
+simple RlcUmTxEntity like simu5g.stack.rlc.IRlcTxEntity
 {
     parameters:
         @dynamic(true);

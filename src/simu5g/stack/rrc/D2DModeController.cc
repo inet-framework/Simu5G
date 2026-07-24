@@ -1,5 +1,5 @@
 #include "simu5g/stack/rrc/D2DModeController.h"
-#include "simu5g/stack/rlc/um/UmTxEntity.h"
+#include "simu5g/stack/rlc/um/RlcUmTxEntity.h"
 
 namespace simu5g {
 
@@ -9,7 +9,7 @@ void D2DModeController::initialize(int stage)
 {
 }
 
-void D2DModeController::registerD2DPeerTxEntity(MacNodeId peerId, UmTxEntity *umTxEnt)
+void D2DModeController::registerD2DPeerTxEntity(MacNodeId peerId, RlcUmTxEntity *umTxEnt)
 {
     if (peerId != NODEID_NONE)
         perPeerTxEntities_[peerId].insert(umTxEnt);

@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_AMRXBUFFER_H_
-#define _LTE_AMRXBUFFER_H_
+#ifndef _SIMU5G_RLCAMRXENTITY_H_
+#define _SIMU5G_RLCAMRXENTITY_H_
 
 #include <set>
 
@@ -42,11 +42,11 @@ class RlcMux;
  * The control-PDU routing to the local AM TX entity is shared in spirit (mode-specific
  * DrbKey derivation: LTE keys by dest, NR by source + creates on demand).
  */
-class AmRxQueue : public RlcRxEntityBase
+class RlcAmRxEntity : public RlcRxEntityBase
 {
   protected:
 
-    // --- wire-format selector (profile-driven; see UmTxEntity) ---
+    // --- wire-format selector (profile-driven; see RlcUmTxEntity) ---
     bool soFraming_ = false;
 
     // --- shared ---
@@ -94,8 +94,8 @@ class AmRxQueue : public RlcRxEntityBase
     static omnetpp::simsignal_t rxWindowOccupationSignal_;
 
   public:
-    AmRxQueue();
-    ~AmRxQueue() override;
+    RlcAmRxEntity();
+    ~RlcAmRxEntity() override;
 
     void enque(inet::Packet *pdu);
     void handleMessage(cMessage *msg) override;

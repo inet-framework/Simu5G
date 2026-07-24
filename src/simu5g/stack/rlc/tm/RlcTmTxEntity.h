@@ -1,5 +1,5 @@
-#ifndef _TM_TX_ENTITY_H_
-#define _TM_TX_ENTITY_H_
+#ifndef _SIMU5G_RLCTMTXENTITY_H_
+#define _SIMU5G_RLCTMTXENTITY_H_
 
 #include <inet/common/packet/Packet.h>
 
@@ -8,13 +8,13 @@
 namespace simu5g {
 
 /**
- * @class TmTxEntity
+ * @class RlcTmTxEntity
  * @brief Transmission entity for Transparent Mode (TM).
  *
  * Buffers SDUs from the upper layer without segmentation.
  * Sends queued PDUs to MAC upon request.
  */
-class TmTxEntity : public RlcTxEntityBase
+class RlcTmTxEntity : public RlcTxEntityBase
 {
   protected:
     inet::cPacketQueue queuedPdus_;

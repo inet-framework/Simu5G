@@ -16,16 +16,16 @@
 package simu5g.stack.rlc.am;
 
 //
-// NR profile of the generic AM TX entity (TS 38.322): same C++ class (AmTxQueue)
+// NR profile of the generic AM TX entity (TS 38.322): same C++ class (RlcAmTxEntity)
 // as the LTE entity, parametrized with soFraming=true and the NR window. Select via
 // BearerManagement.rlcAmTxEntityModuleType. The NR SO-segmentation statistics are
 // declared here so they are recorded only for NR-selected entities (LTE entities keep
 // their original scalar set).
 //
-simple NrAmTxQueue extends AmTxQueue
+simple NrRlcAmTxEntity extends RlcAmTxEntity
 {
     parameters:
-        @class(AmTxQueue);
+        @class(RlcAmTxEntity);
         soFraming = default(true);            // select the NR SO byte-offset wire format
         AM_Window_Size = default(2048);       // 2048 (12-bit SN) or 131072 (18-bit SN)
 

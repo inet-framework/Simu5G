@@ -13,27 +13,30 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-package simu5g.stack.rlc.um;
+package simu5g.stack.rlc.am;
 
 //
-// NR profile of the generic UM RX entity (TS 38.322): same C++ class (UmRxEntity)
-// as the LTE entity, parametrized with soFraming=true and the NR reassembly window.
-// Select via BearerManagement.rlcUmRxEntityModuleType. The NR SO-reassembly
+// NR profile of the generic AM RX entity (TS 38.322): same C++ class (RlcAmRxEntity)
+// as the LTE entity, parametrized with soFraming=true and the NR window/timers.
+// Select via BearerManagement.rlcAmRxEntityModuleType. The NR SO-reassembly
 // statistics are declared here so they are recorded only for NR-selected entities
 // (LTE entities keep their original scalar set).
 //
-simple NrUmRxEntity extends UmRxEntity
+simple NrRlcAmRxEntity extends RlcAmRxEntity
 {
     parameters:
-        @class(UmRxEntity);
-        soFraming = default(true);              // select the NR SI/SO byte-offset wire format
-        UM_Window_Size = default(2048);         // 2048 (12-bit SN) or 32 (6-bit SN)
+        @class(RlcAmRxEntity);
+        soFraming = default(true);            // select the NR SO byte-offset wire format
+        AM_Window_Size = default(2048);       // 2048 (12-bit SN) or 131072 (18-bit SN)
         t_Reassembly = default(80ms);
+        t_StatusProhibit = default(100ms);
 
         @signal[receivedPacketFromLowerLayer];
         @statistic[receivedPacketFromLowerLayer](source="receivedPacketFromLowerLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
         @signal[sentPacketToUpperLayer];
         @statistic[sentPacketToUpperLayer](source="sentPacketToUpperLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
+        @signal[rxWindowOccupation];
+        @statistic[rxWindowOccupation](title="RX window occupation"; source="rxWindowOccupation"; record=mean,vector);
         @signal[rlcCellThroughputDl];
         @statistic[rlcCellThroughputDl](title="Cell Throughput at the RLC layer DL"; unit="Bps"; source="rlcCellThroughputDl"; record=simu5g_rateavg);
         @signal[rlcCellThroughputUl];

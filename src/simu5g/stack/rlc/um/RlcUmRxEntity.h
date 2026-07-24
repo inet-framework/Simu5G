@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_UMRXENTITY_H_
-#define _LTE_UMRXENTITY_H_
+#ifndef _SIMU5G_RLCUMRXENTITY_H_
+#define _SIMU5G_RLCUMRXENTITY_H_
 
 #include <inet/common/ModuleRefByPar.h>
 
@@ -34,7 +34,7 @@ class RlcMux;
 class LteRlcUmDataPdu;
 
 /**
- * @class UmRxEntity
+ * @class RlcUmRxEntity
  * @brief Generic RLC UM receiving entity, parametrized for LTE or NR.
  *
  * One mechanism, two wire-format parametrizations selected by the soFraming flag:
@@ -46,11 +46,11 @@ class LteRlcUmDataPdu;
  * The MAC-mux plumbing, the D2D mode-switch hooks and the UL burst-throughput
  * accounting are shared; only the buffering/reassembly/timer logic differs per mode.
  */
-class UmRxEntity : public RlcRxEntityBase
+class RlcUmRxEntity : public RlcRxEntityBase
 {
   protected:
 
-    // --- wire-format selector (profile-driven; see UmTxEntity) ---
+    // --- wire-format selector (profile-driven; see RlcUmTxEntity) ---
     bool soFraming_ = false;
 
     // --- shared ---
@@ -115,8 +115,8 @@ class UmRxEntity : public RlcRxEntityBase
     static simsignal_t sentPacketToUpperLayerSignal_;
 
   public:
-    UmRxEntity();
-    ~UmRxEntity() override;
+    RlcUmRxEntity();
+    ~RlcUmRxEntity() override;
 
     // Enqueues a lower-layer PDU into the entity for reassembly
     void enque(cPacket *pkt);

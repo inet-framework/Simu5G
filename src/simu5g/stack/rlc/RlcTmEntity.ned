@@ -29,10 +29,10 @@ module RlcTmEntity
         output lowerOut;  // PDUs and new-data notifications to RlcMux/MAC
         input macIn;      // MAC SDU requests via RlcMux
     submodules:
-        tx: <default("simu5g.stack.rlc.tm.TmTxEntity")> like IRlcTxEntity {
+        tx: <default("simu5g.stack.rlc.tm.RlcTmTxEntity")> like IRlcTxEntity {
             @display("p=50,50");
         }
-        rx: <default("simu5g.stack.rlc.tm.TmRxEntity")> like IRlcRxEntity {
+        rx: <default("simu5g.stack.rlc.tm.RlcTmRxEntity")> like IRlcRxEntity {
             @display("p=150,50");
         }
     connections:

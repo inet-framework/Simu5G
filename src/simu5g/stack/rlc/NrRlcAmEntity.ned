@@ -20,6 +20,6 @@ package simu5g.stack.rlc;
 module NrRlcAmEntity extends RlcAmEntityBase
 {
     parameters:
-        txEntityType = default("simu5g.stack.rlc.am.NrAmTxQueue");
-        rxEntityType = default("simu5g.stack.rlc.am.NrAmRxQueue");
+        txEntityType = default("simu5g.stack.rlc.am.NrRlcAmTxEntity");
+        rxEntityType = default("simu5g.stack.rlc.am.NrRlcAmRxEntity");
 }

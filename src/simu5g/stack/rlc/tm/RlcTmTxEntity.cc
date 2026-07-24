@@ -1,6 +1,6 @@
 #include <inet/common/ProtocolTag_m.h>
 
-#include "simu5g/stack/rlc/tm/TmTxEntity.h"
+#include "simu5g/stack/rlc/tm/RlcTmTxEntity.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
@@ -8,22 +8,22 @@
 
 namespace simu5g {
 
-Define_Module(TmTxEntity);
+Define_Module(RlcTmTxEntity);
 
 using namespace omnetpp;
 using namespace inet;
 
-simsignal_t TmTxEntity::rlcPacketLossDlSignal_ = registerSignal("rlcPacketLossDl");
-simsignal_t TmTxEntity::rlcPacketLossUlSignal_ = registerSignal("rlcPacketLossUl");
+simsignal_t RlcTmTxEntity::rlcPacketLossDlSignal_ = registerSignal("rlcPacketLossDl");
+simsignal_t RlcTmTxEntity::rlcPacketLossUlSignal_ = registerSignal("rlcPacketLossUl");
 
-void TmTxEntity::initialize(int stage)
+void RlcTmTxEntity::initialize(int stage)
 {
     if (stage == INITSTAGE_LOCAL) {
         queueSize_ = par("queueSize");
     }
 }
 
-void TmTxEntity::handleMessage(cMessage *msg)
+void RlcTmTxEntity::handleMessage(cMessage *msg)
 {
     cGate *incoming = msg->getArrivalGate();
     if (incoming->isName("in")) {
@@ -33,17 +33,17 @@ void TmTxEntity::handleMessage(cMessage *msg)
         handleMacSduRequest(check_and_cast<Packet *>(msg));
     }
     else {
-        throw cRuntimeError("TmTxEntity: unexpected message from gate %s", incoming->getFullName());
+        throw cRuntimeError("RlcTmTxEntity: unexpected message from gate %s", incoming->getFullName());
     }
 }
 
-void TmTxEntity::handleSdu(Packet *pkt)
+void RlcTmTxEntity::handleSdu(Packet *pkt)
 {
     auto lteInfo = pkt->getTag<FlowControlInfo>();
 
     // check if space is available or queue size is unlimited (queueSize_ == 0)
     if (queuedPdus_.getLength() >= queueSize_ && queueSize_ != 0) {
-        EV << "TmTxEntity : Dropping packet " << pkt->getName() << " (queue full)\n";
+        EV << "RlcTmTxEntity : Dropping packet " << pkt->getName() << " (queue full)\n";
 
         simsignal_t signal = (lteInfo->getDirection() == DL) ? rlcPacketLossDlSignal_ : rlcPacketLossUlSignal_;
         emit(signal, 1.0);
@@ -73,19 +73,19 @@ void TmTxEntity::handleSdu(Packet *pkt)
     auto pktDup = pkt->dup();
     pktDup->addTag<LteRlcNewDataTag>();
 
-    EV << "TmTxEntity::handleSdu - Sending new data indication\n";
+    EV << "RlcTmTxEntity::handleSdu - Sending new data indication\n";
     send(pktDup, "out");
 }
 
-void TmTxEntity::handleMacSduRequest(Packet *pkt)
+void RlcTmTxEntity::handleMacSduRequest(Packet *pkt)
 {
     if (queuedPdus_.getLength() > 0) {
         auto rlcPduPkt = queuedPdus_.pop();
-        EV << "TmTxEntity::handleMacSduRequest - sending packet " << rlcPduPkt->getName() << "\n";
+        EV << "RlcTmTxEntity::handleMacSduRequest - sending packet " << rlcPduPkt->getName() << "\n";
         send(rlcPduPkt, "out");
     }
     else {
-        EV << "TmTxEntity::handleMacSduRequest - no PDUs buffered, nothing to send\n";
+        EV << "RlcTmTxEntity::handleMacSduRequest - no PDUs buffered, nothing to send\n";
     }
     delete pkt;
 }

@@ -6,7 +6,7 @@ package simu5g.stack.rlc.tm;
 // Simply forwards received PDUs to the upper layer without
 // reassembly or reordering.
 //
-simple TmRxEntity like simu5g.stack.rlc.IRlcRxEntity
+simple RlcTmRxEntity like simu5g.stack.rlc.IRlcRxEntity
 {
     parameters:
         @dynamic(true);

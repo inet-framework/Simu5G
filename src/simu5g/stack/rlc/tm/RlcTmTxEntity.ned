@@ -6,7 +6,7 @@ package simu5g.stack.rlc.tm;
 // Buffers SDUs from the upper layer and, upon receiving a MAC SDU request,
 // sends the next queued PDU without segmentation or concatenation.
 //
-simple TmTxEntity like simu5g.stack.rlc.IRlcTxEntity
+simple RlcTmTxEntity like simu5g.stack.rlc.IRlcTxEntity
 {
     parameters:
         @dynamic(true);

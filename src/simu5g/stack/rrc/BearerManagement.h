@@ -24,7 +24,7 @@ class LteMacBase;
 class RlcMux;
 class RlcTxEntityBase;
 class RlcRxEntityBase;
-class UmTxEntity;
+class RlcUmTxEntity;
 class UpperMux;
 class DcMux;
 class PdcpTxEntityBase;

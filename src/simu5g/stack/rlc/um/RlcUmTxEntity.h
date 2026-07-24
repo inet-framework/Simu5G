@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_UMTXENTITY_H_
-#define _LTE_UMTXENTITY_H_
+#ifndef _SIMU5G_RLCUMTXENTITY_H_
+#define _SIMU5G_RLCUMTXENTITY_H_
 
 #include "simu5g/common/LteDefs.h"
 #include "simu5g/stack/rlc/RlcTxEntityBase.h"
@@ -26,7 +26,7 @@ class D2DModeController;
 using namespace omnetpp;
 
 /**
- * @class UmTxEntity
+ * @class RlcUmTxEntity
  * @brief Generic RLC UM transmission entity, parametrized for LTE or NR.
  *
  * One mechanism, two wire-format parametrizations selected by the soFraming flag:
@@ -41,7 +41,7 @@ using namespace omnetpp;
  * (e.g. NR standalone). Select the parametrization via the NED profile bound to
  * BearerManagement.rlcUmTxEntityModuleType.
  */
-class UmTxEntity : public RlcTxEntityBase
+class RlcUmTxEntity : public RlcTxEntityBase
 {
   public:
     void setFlowControlInfo(FlowControlInfo *info) override;
@@ -67,7 +67,7 @@ class UmTxEntity : public RlcTxEntityBase
 
   public:
 
-    ~UmTxEntity() override
+    ~RlcUmTxEntity() override
     {
         delete fragmentInfo;
         if (sduBuffer) {

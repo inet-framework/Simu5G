@@ -1,5 +1,5 @@
-#ifndef _TM_RX_ENTITY_H_
-#define _TM_RX_ENTITY_H_
+#ifndef _SIMU5G_RLCTMRXENTITY_H_
+#define _SIMU5G_RLCTMRXENTITY_H_
 
 #include <inet/common/packet/Packet.h>
 
@@ -8,13 +8,13 @@
 namespace simu5g {
 
 /**
- * @class TmRxEntity
+ * @class RlcTmRxEntity
  * @brief Receiver entity for Transparent Mode (TM).
  *
  * Simply forwards received PDUs to the upper layer without
  * reassembly or reordering.
  */
-class TmRxEntity : public RlcRxEntityBase
+class RlcTmRxEntity : public RlcRxEntityBase
 {
   protected:
     void initialize(int stage) override;
