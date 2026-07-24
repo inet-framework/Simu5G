@@ -189,7 +189,7 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     // registry is authoritative: entities deleted at handover or D2D mode switch get
     // re-established by the next packet, even for an already-seen (drbId, destId) pair.
     if (pdcpMux_->lookupTxEntity(DrbKey(lteInfo->getDestId(), drb->drbId)) == nullptr)
-        binder_->establishUnidirectionalDataConnection(lteInfo.get());
+        binder_->establishDataConnection(lteInfo.get());
 
     // Set protocol tag for outgoing frame to PDCP layer
     pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&LteProtocol::sdap);

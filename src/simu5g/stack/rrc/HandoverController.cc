@@ -512,7 +512,7 @@ void HandoverController::deleteOldBuffers(MacNodeId servingNodeId)
     // delete PDCP entities for serving node at this UE
     bearerManagement_->deleteLocalPdcpEntities(servingNodeId);
 
-    // Flow establishment (Binder::establishUnidirectionalDataConnection) provisions NR-leg
+    // Flow establishment (Binder::establishDataConnection) provisions NR-leg
     // entities for this UE at the serving node's DC secondary regardless of whether the UE's
     // NR leg is attached to it. If the NR leg is attached, its own (forced) detachment cleans
     // them up; if it is detached now, remove them together with the master-side state --

@@ -73,6 +73,16 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
 
     ASSERT(lteInfo->getDestId() == registration_->getLteNodeId() || lteInfo->getDestId() == registration_->getNrNodeId() || lteInfo->getMulticastGroupId() != NODEID_NONE);
 
+    // Idempotence guard: with duplex bearer establishment this half may already
+    // exist (e.g. re-establishment after a partial teardown); skip instead of
+    // crashing on duplicate MAC/RLC/PDCP creation.
+    DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
+    bool isNr = (registration_->getNodeType()==UE && isNrUe(lteInfo->getDestId())); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
+    if ((isNr ? nrRlcRxEntities_ : rlcRxEntities_).count(rlcId)) {
+        EV << "BearerManagement::createIncomingConnection - entities for " << rlcId.str() << " already exist, skipping\n";
+        return;
+    }
+
     // Create MAC incoming connection
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacNodeId senderId = desc.getSourceId();
@@ -82,8 +92,6 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     mac->createIncomingConnection(cid, desc);
 
     // RLC entity creation
-    DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
-    bool isNr = (registration_->getNodeType()==UE && isNrUe(lteInfo->getDestId())); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
     createAndInstallRlcRxBuffer(rlcId, lteInfo, rlcMux, isNr);
 
@@ -160,6 +168,16 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
 
     ASSERT(lteInfo->getSourceId() == registration_->getLteNodeId() || lteInfo->getSourceId() == registration_->getNrNodeId());
 
+    // Idempotence guard: with duplex bearer establishment this half may already
+    // exist (e.g. re-establishment after a partial teardown); skip instead of
+    // crashing on duplicate MAC/RLC/PDCP creation.
+    DrbKey rlcId = ctrlInfoToTxDrbKey(lteInfo);
+    bool isNr = (registration_->getNodeType()==UE && isNrUe(lteInfo->getSourceId()));
+    if ((isNr ? nrRlcTxEntities_ : rlcTxEntities_).count(rlcId)) {
+        EV << "BearerManagement::createOutgoingConnection - entities for " << rlcId.str() << " already exist, skipping\n";
+        return;
+    }
+
     // Create MAC outgoing connection
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacNodeId destId = desc.getDestId();
@@ -169,8 +187,6 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
     mac->createOutgoingConnection(cid, desc);
 
     // RLC entity creation
-    DrbKey rlcId = ctrlInfoToTxDrbKey(lteInfo);
-    bool isNr = (registration_->getNodeType()==UE && isNrUe(lteInfo->getSourceId()));
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
     createAndInstallRlcTxBuffer(rlcId, lteInfo, rlcMux, isNr);
 

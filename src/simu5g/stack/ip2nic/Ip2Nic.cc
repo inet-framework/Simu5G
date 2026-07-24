@@ -186,16 +186,44 @@ LteRlcType Ip2Nic::getRlcType(LteTrafficClass trafficCategory)
     }
 }
 
-DrbId Ip2Nic::lookupOrAssignDrbId(const ConnectionKey& key)
+DrbId Ip2Nic::lookupOrAssignDrbId(const ConnectionKey& key, const FlowControlInfo *lteInfo)
 {
     auto it = drbIdTable_.find(key);
     if (it != drbIdTable_.end())
         return it->second;
     else {
-        DrbId drbId = DrbId(drbId_++);
+        // Allocate via the Binder: DRB IDs are unique per node pair, so the two ends
+        // of a link cannot mint colliding IDs. For multicast, the "pair" is
+        // (sender, multicast group): there is no single peer node.
+        MacNodeId peerId = (lteInfo->getMulticastGroupId() != NODEID_NONE)
+                ? lteInfo->getMulticastGroupId() : lteInfo->getDestId();
+        DrbId drbId = binder_->assignDrbId(lteInfo->getSourceId(), peerId);
         drbIdTable_[key] = drbId;
-        EV << "Connection not found, new DRB ID created: " << drbId << "\n";
+        EV << "Connection not found, new DRB ID assigned: " << drbId << "\n";
         return drbId;
+    }
+}
+
+void Ip2Nic::registerDrbMapping(const ConnectionKey& key, DrbId drbId)
+{
+    Enter_Method_Silent("registerDrbMapping()");
+    drbIdTable_.emplace(key, drbId);  // no-op if the flow is already bound
+}
+
+void Ip2Nic::establishConnection(FlowControlInfo *lteInfo, const ConnectionKey& key)
+{
+    binder_->establishDataConnection(lteInfo);
+
+    // Bind the mirrored flow (swapped addresses, reversed direction) to the same DRB
+    // at the peer, so its own traffic on the reverse leg reuses this duplex bearer.
+    // Multicast bearers are unidirectional: nothing to bind.
+    if (lteInfo->getMulticastGroupId() == NODEID_NONE) {
+        Direction revDir = (key.direction == UL) ? DL :
+                           (key.direction == DL) ? UL : key.direction; // D2D and the wildcard map to themselves
+        ConnectionKey mirrorKey{key.dstAddr, key.srcAddr, key.typeOfService, revDir};
+        auto *peerIp2Nic = check_and_cast_nullable<Ip2Nic *>(binder_->getIp2NicByNodeId(lteInfo->getDestId()));
+        if (peerIp2Nic != nullptr)
+            peerIp2Nic->registerDrbMapping(mirrorKey, DrbId(lteInfo->getDrbId()));
     }
 }
 
@@ -281,14 +309,14 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
         if (!hasSdap_) {
             // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
             ConnectionKey key{srcAddr, destAddr, typeOfService, Direction(0xFFFF)};
-            DrbId drbId = lookupOrAssignDrbId(key);
+            DrbId drbId = lookupOrAssignDrbId(key, lteInfo.get());
             lteInfo->setDrbId(drbId);
 
             // Establish the connection unless its PDCP TX entity already exists. The entity
             // registry is authoritative: entities deleted at handover or D2D mode switch get
             // re-established by the next packet, even for an already-seen (drbId, destId) pair.
             if (pdcpMux_->lookupTxEntity(DrbKey(lteInfo->getDestId(), drbId)) == nullptr)
-                binder_->establishUnidirectionalDataConnection(lteInfo.get());
+                establishConnection(lteInfo.get(), key);
         }
         return;
     }
@@ -385,12 +413,12 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     // --- DRB ID assignment (skipped when SDAP handles it) ---
     if (!hasSdap_) {
         ConnectionKey key{srcAddr, destAddr, typeOfService, lteInfo->getDirection()};
-        DrbId drbId = lookupOrAssignDrbId(key);
+        DrbId drbId = lookupOrAssignDrbId(key, lteInfo.get());
         lteInfo->setDrbId(drbId);
 
         // Establish unless the PDCP TX entity already exists (authoritative check, see above)
         if (pdcpMux_->lookupTxEntity(DrbKey(lteInfo->getDestId(), drbId)) == nullptr)
-            binder_->establishUnidirectionalDataConnection(lteInfo.get());
+            establishConnection(lteInfo.get(), key);
 
         // Debug logging (UE subclasses only)
         if (!isEnb) {

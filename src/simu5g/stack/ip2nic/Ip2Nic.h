@@ -85,8 +85,10 @@ class Ip2Nic : public cSimpleModule
         }
     };
 
-    // DRB ID counter and table (for DRB ID assignment)
-    unsigned short drbId_ = 1;
+    // DRB ID table: flow (ConnectionKey) -> DRB ID. IDs are allocated by the Binder
+    // (unique per node pair); entries are added locally on allocation, and remotely
+    // via registerDrbMapping() when the peer establishes a duplex bearer whose
+    // reverse leg terminates here.
     std::unordered_map<ConnectionKey, DrbId, ConnectionKeyHash> drbIdTable_;
 
     cGate *stackGateOut_ = nullptr;       // gate connecting Ip2Nic module to cellular stack
@@ -111,7 +113,16 @@ class Ip2Nic : public cSimpleModule
     MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
     LteTrafficClass getTrafficCategory(cPacket *pkt);
     LteRlcType getRlcType(LteTrafficClass trafficCategory);
-    DrbId lookupOrAssignDrbId(const ConnectionKey& key);
+    DrbId lookupOrAssignDrbId(const ConnectionKey& key, const FlowControlInfo *lteInfo);
+
+    // Establish the (duplex) bearer for the flow via the Binder, then register the
+    // mirrored flow->DRB mapping at the peer's Ip2Nic so reverse application traffic
+    // resolves to this bearer's reverse leg instead of allocating a new DRB.
+    void establishConnection(FlowControlInfo *lteInfo, const ConnectionKey& key);
+
+    // Called by a peer's Ip2Nic: bind an incoming flow key to the DRB of a bearer
+    // established from the remote side (no-op if the key is already bound).
+    void registerDrbMapping(const ConnectionKey& key, DrbId drbId);
 
   public:
     ~Ip2Nic() override;
