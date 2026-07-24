@@ -49,12 +49,9 @@ class BearerManagement : public cSimpleModule
     cModule *nicModule_ = nullptr;  // containing NIC module (parent of all submodules and entities)
 
     // RLC entity types (resolved from NED params)
-    cModuleType *rlcUmTxEntityModuleType_ = nullptr;
-    cModuleType *rlcUmRxEntityModuleType_ = nullptr;
-    cModuleType *rlcTmTxEntityModuleType_ = nullptr;
-    cModuleType *rlcTmRxEntityModuleType_ = nullptr;
-    cModuleType *rlcAmTxEntityModuleType_ = nullptr;
-    cModuleType *rlcAmRxEntityModuleType_ = nullptr;
+    cModuleType *rlcTmEntityModuleType_ = nullptr;
+    cModuleType *rlcUmEntityModuleType_ = nullptr;
+    cModuleType *rlcAmEntityModuleType_ = nullptr;
 
     inet::ModuleRefByPar<RlcMux> rlcMuxModule;
     inet::ModuleRefByPar<RlcMux> nrRlcMuxModule;
@@ -67,15 +64,17 @@ class BearerManagement : public cSimpleModule
     std::map<DrbKey, PdcpRxEntityBase *> pdcpRxEntities_;
     std::map<DrbKey, PdcpTxEntityBase *> pdcpBypassTxEntities_;
     std::map<DrbKey, PdcpRxEntityBase *> pdcpBypassRxEntities_;
-    std::map<DrbKey, RlcTxEntityBase *> rlcTxEntities_;
-    std::map<DrbKey, RlcRxEntityBase *> rlcRxEntities_;
-    std::map<DrbKey, RlcTxEntityBase *> nrRlcTxEntities_;
-    std::map<DrbKey, RlcRxEntityBase *> nrRlcRxEntities_;
+    // One RLC entity module (compound: TX+RX sides, see RlcTm/Um/AmEntity) per
+    // bearer, keyed by (peer node, DRB id); one map per leg (LTE / NR)
+    std::map<DrbKey, cModule *> rlcEntities_;
+    std::map<DrbKey, cModule *> nrRlcEntities_;
 
     void setRlcEntityParams(cModule *entity, bool isNr);
     void setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex);
-    RlcTxEntityBase *createAndInstallRlcTxBuffer(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    RlcRxEntityBase *createAndInstallRlcRxBuffer(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    cModule *lookupRlcEntityModule(DrbKey id, bool isNr);
+    cModule *findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    RlcTxEntityBase *installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    RlcRxEntityBase *installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
 
   protected:
     void initialize(int stage) override;

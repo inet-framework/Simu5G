@@ -11,6 +11,7 @@
 //
 
 #include <inet/common/ProtocolTag_m.h>
+#include <inet/networklayer/common/NetworkInterface.h>
 
 #include "simu5g/stack/rlc/um/UmTxEntity.h"
 #include "simu5g/stack/mac/LteMacBase.h"
@@ -45,7 +46,7 @@ void UmTxEntity::initialize(int stage)
 
         queueSize_ = par("queueSize");
 
-        auto *rrc = getParentModule()->getSubmodule("rrc");
+        auto *rrc = inet::getContainingNicModule(this)->getSubmodule("rrc");
         d2dModeController_ = dynamic_cast<D2DModeController *>(rrc ? rrc->getSubmodule("d2dModeController") : nullptr);
 
         burstStatus_ = INACTIVE;

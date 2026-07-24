@@ -87,7 +87,7 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
         RlcTxEntityBase *txbuf = bearerManagement_->lookupRlcTxBuffer(id);
         ASSERT(txbuf != nullptr);
 
-        send(pkt, txbuf->gate("macIn")->getPreviousGate());
+        send(pkt, txbuf->gate("macIn")->getPathStartGate());  // path start = our macToTxEntity gate (crosses the RlcEntity compound boundary)
     }
     else {
         // RLC PDU — dispatch to RX entity via toRxEntity gate
@@ -98,7 +98,7 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
         ASSERT(rxbuf != nullptr);
 
         EV << "RlcMux::fromMacLayer - Enqueue packet " << pkt->getName() << " into RX entity\n";
-        send(pkt, rxbuf->gate("in")->getPreviousGate());
+        send(pkt, rxbuf->gate("in")->getPathStartGate());  // path start = our toRxEntity gate (crosses the RlcEntity compound boundary)
     }
 }
 

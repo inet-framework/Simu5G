@@ -6,12 +6,12 @@ package simu5g.stack.rlc.tm;
 // Buffers SDUs from the upper layer and, upon receiving a MAC SDU request,
 // sends the next queued PDU without segmentation or concatenation.
 //
-simple TmTxEntity
+simple TmTxEntity like simu5g.stack.rlc.IRlcTxEntity
 {
     parameters:
         @dynamic(true);
         @display("i=block/layer");
-        bool isNR = default(false);
+        bool isNR @mutable = default(false);  // set programmatically by BearerManagement
         int queueSize = default(0);    // max queue length in packets (0: unlimited)
 
         @signal[rlcPacketLossDl];

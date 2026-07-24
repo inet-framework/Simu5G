@@ -16,12 +16,12 @@ package simu5g.stack.rlc.am;
 //
 // Transmit Buffer of RLC AM
 //
-simple AmTxQueue
+simple AmTxQueue like simu5g.stack.rlc.IRlcAmTxEntity
 {
     parameters:
         @dynamic(true);
         @display("i=block/layer");
-        bool isNR = default(false);
+        bool isNR @mutable = default(false);  // set programmatically by BearerManagement
         int fragmentSize @unit(B) = default(30B);        // Size of fragments
         int maxRtx = default(3);
         double pduRtxTimeout @unit(s) = default(2.0s);
@@ -33,5 +33,7 @@ simple AmTxQueue
         input in;       // SDUs from upper mux (PDCP)
         input macIn;    // SDU requests from lower mux (MAC)
         output out;     // PDUs and new-data notifications to lower mux (MAC)
+        input ctrlIn;   // STATUS PDUs received from the peer, from the co-located RX side (to ARQ)
+        input statusIn; // locally generated STATUS reports, from the co-located RX side (to transmit)
 }
 

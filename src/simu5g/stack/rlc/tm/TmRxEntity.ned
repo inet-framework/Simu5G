@@ -6,12 +6,12 @@ package simu5g.stack.rlc.tm;
 // Simply forwards received PDUs to the upper layer without
 // reassembly or reordering.
 //
-simple TmRxEntity
+simple TmRxEntity like simu5g.stack.rlc.IRlcRxEntity
 {
     parameters:
         @dynamic(true);
         @display("i=block/layer");
-        bool isNR = default(false);
+        bool isNR @mutable = default(false);  // set programmatically by BearerManagement
 
     gates:
         input in;       // PDUs from lower mux (MAC)

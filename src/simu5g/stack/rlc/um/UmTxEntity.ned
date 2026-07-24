@@ -21,13 +21,13 @@ package simu5g.stack.rlc.um;
 // from the Medium Access Control (MAC) layer, it sends down an RLC Protocol Data Unit
 // (PDU) of the appropriate size (which may involve segmentation and/or concatenation).
 //
-simple UmTxEntity
+simple UmTxEntity like simu5g.stack.rlc.IRlcTxEntity
 {
     parameters:
         @dynamic(true);
         @display("i=block/layer");
-        bool isNR = default(false);
-        string macModule = default("^.^.mac");
+        bool isNR @mutable = default(false);  // set programmatically by BearerManagement
+        string macModule @mutable = default("^.^.mac");  // set programmatically by BearerManagement
         int queueSize @unit(B) = default(2MiB);          // RLC TX entity SDU queue size (0: unlimited)
         int fragmentSize @unit(B) = default(30B);        // Size of fragments
         @signal[rlcPduCreated];

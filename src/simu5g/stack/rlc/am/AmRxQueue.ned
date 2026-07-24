@@ -16,23 +16,25 @@ package simu5g.stack.rlc.am;
 //
 // Receive Buffer of RLC AM
 //
-simple AmRxQueue
+simple AmRxQueue like simu5g.stack.rlc.IRlcAmRxEntity
 {
     parameters:
         @dynamic(true);
         @display("i=block/layer");
         string binderModule = default("binder");
-        bool isNR = default(false);
+        bool isNR @mutable = default(false);  // set programmatically by BearerManagement
         string upperMuxModule = default("^.upperMux");
-        string macModule = default("^.^.mac");
+        string macModule @mutable = default("^.^.mac");  // set programmatically by BearerManagement
         int rxWindowSize = default(200);
         double ackReportInterval @unit(s) = 0.10s;
         double statusReportInterval @unit(s) = 0.20s;
         double timeout @unit(s) = default(1s);            // Timeout for RX Buffer
 
     gates:
-        input in;       // PDUs from lower mux (MAC)
-        output out;     // reassembled SDUs to upper mux (PDCP)
+        input in;        // PDUs from lower mux (MAC)
+        output out;      // reassembled SDUs to upper mux (PDCP)
+        output ctrlOut;   // received STATUS PDUs -> co-located TX side (ARQ)
+        output statusOut; // own STATUS reports -> co-located TX side (transmission)
 }
 
 //

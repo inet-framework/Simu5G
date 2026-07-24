@@ -720,28 +720,16 @@ AmRxQueue::~AmRxQueue()
 
 void AmRxQueue::routeControlToTxEntity(Packet *pkt)
 {
-    auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
-    DrbKey id = ctrlInfoToTxDrbKey(lteInfo.get());
-
-    auto *txEntity = bearerManagement_->lookupRlcTxBuffer(id);
-    if (txEntity == nullptr)
-        throw cRuntimeError("AmRxQueue::routeControlToTxEntity: TX entity for %s not found", id.str().c_str());
-
-    auto *amTx = check_and_cast<AmTxQueue *>(txEntity);
-    amTx->handleControlPacket(pkt);
+    // Received STATUS PDU: hand it to the co-located TX side of this AM entity
+    // (ctrlOut is connected to tx.ctrlIn inside the RlcAmEntity compound)
+    send(pkt, "ctrlOut");
 }
 
 void AmRxQueue::bufferControlViaTxEntity(Packet *pkt)
 {
-    auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
-    DrbKey id = ctrlInfoToTxDrbKey(lteInfo.get());
-
-    auto *txEntity = bearerManagement_->lookupRlcTxBuffer(id);
-    if (txEntity == nullptr)
-        throw cRuntimeError("AmRxQueue::bufferControlViaTxEntity: TX entity for %s not found", id.str().c_str());
-
-    auto *amTx = check_and_cast<AmTxQueue *>(txEntity);
-    amTx->bufferControlPdu(pkt);
+    // Locally generated STATUS report: hand it to the co-located TX side for
+    // transmission on this bearer's logical channel (statusOut -> tx.statusIn)
+    send(pkt, "statusOut");
 }
 
 } //namespace

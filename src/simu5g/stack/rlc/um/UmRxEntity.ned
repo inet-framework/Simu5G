@@ -20,14 +20,14 @@ package simu5g.stack.rlc.um;
 // Control (MAC) layer and, when possible, performs reassembly and in-sequence
 // delivery of packets to the Packet Data Convergence Protocol (PDCP) layer.
 //
-simple UmRxEntity
+simple UmRxEntity like simu5g.stack.rlc.IRlcRxEntity
 {
     parameters:
         @dynamic(true);
         @display("i=block/layer");
         string binderModule = default("binder");
-        bool isNR = default(false);
-        string macModule = default("^.^.mac");
+        bool isNR @mutable = default(false);  // set programmatically by BearerManagement
+        string macModule @mutable = default("^.^.mac");  // set programmatically by BearerManagement
         double timeout @unit(s) = default(1s);            // Timeout for RX Buffer
         int rxWindowSize = default(16);
 

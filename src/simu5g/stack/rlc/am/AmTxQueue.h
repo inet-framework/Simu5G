@@ -186,6 +186,10 @@ class AmTxQueue : public RlcTxEntityBase
      */
     void bufferPdu(cPacket *pdu);
 
+    // gate-delivery variants (no Enter_Method/take: packet already owned via handleMessage)
+    void bufferPduInternal(inet::Packet *pdu);
+    void processControlPacket(inet::Packet *pdu);
+
     void sendNewDataNotification(inet::Packet *pkt);
 
     /* Move the transmitter window based upon the reception of an ACK control message

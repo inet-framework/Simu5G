@@ -494,9 +494,11 @@ void AmTxQueue::bufferPdu(cPacket *pktAux)
 {
     Enter_Method("bufferPdu()"); // Direct Method Call (from RX entity cross-module)
     take(pktAux); // Take ownership
+    bufferPduInternal(check_and_cast<inet::Packet *>(pktAux));
+}
 
-    auto pkt = check_and_cast<inet::Packet *>(pktAux);
-
+void AmTxQueue::bufferPduInternal(inet::Packet *pkt)
+{
     EV << NOW << " AmTxQueue : Enqueuing " << pkt->getName() << " of size "
        << pkt->getByteLength() << " for sending\n";
 
@@ -556,10 +558,11 @@ void AmTxQueue::sendPdus(int size) {
 
 void AmTxQueue::handleControlPacket(cPacket *pkt) {
     Enter_Method("handleControlPacket()");
-
     take(pkt);
+    processControlPacket(check_and_cast<Packet *>(pkt));
+}
 
-    auto pktPdu = check_and_cast<Packet *>(pkt);
+void AmTxQueue::processControlPacket(Packet *pktPdu) {
     auto pdu = pktPdu->peekAtFront<LteRlcAmPdu>();
 
     // get RLC type descriptor
@@ -597,8 +600,8 @@ void AmTxQueue::handleControlPacket(cPacket *pkt) {
             break;
     }
 
-    ASSERT(pkt->getOwner() == this);
-    delete pkt;
+    ASSERT(pktPdu->getOwner() == this);
+    delete pktPdu;
 }
 
 void AmTxQueue::recvAck(const int seqNum)
@@ -839,6 +842,15 @@ void AmTxQueue::handleMessage(cMessage *msg)
             unsigned int size = macSduRequest->getSduSize();
             sendPdus(size);
             delete pkt;
+        }
+        else if (incoming->isName("ctrlIn")) {
+            // STATUS PDU received from the peer, handed over by the co-located RX side
+            processControlPacket(check_and_cast<Packet *>(msg));
+        }
+        else if (incoming->isName("statusIn")) {
+            // locally generated STATUS report from the co-located RX side; queue it
+            // for transmission on this bearer's logical channel
+            bufferPduInternal(check_and_cast<Packet *>(msg));
         }
         else {
             throw cRuntimeError("AmTxQueue: unexpected message from gate %s", incoming->getFullName());
