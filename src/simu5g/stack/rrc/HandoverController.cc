@@ -18,6 +18,7 @@
 #include "simu5g/stack/phy/NrPhyUe.h"
 #include "simu5g/stack/rrc/D2dModeSelectionBase.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
+#include "simu5g/stack/rrc/RadioLinkMonitor.h"
 #include "simu5g/stack/phy/feedback/LteDlFeedbackGenerator.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/InitStages.h"
@@ -46,6 +47,7 @@ void HandoverController::initialize(int stage)
         handoverPacketHolder_.reference(this, "handoverPacketHolderModule", true);
         fbGen_.reference(this, "feedbackGeneratorModule", true);
         otherHandoverController_.reference(this, "otherHandoverControllerModule", false);
+        radioLinkMonitor_.reference(this, "radioLinkMonitorModule", true);
 
         isNr_ = par("isNr");
         cModule *hostModule = inet::getContainingNode(this);
@@ -156,13 +158,29 @@ void HandoverController::beaconReceived(LteAirFrame *frame, UserControlInfo *lte
     Enter_Method("beaconReceived");
     take(frame);
 
+    bool handoverInProgress = handoverTrigger_ != nullptr && handoverTrigger_->isScheduled();
+    double rssi = 0;
+    bool rssiComputed = false;
+
+    // Measure serving-cell beacons for RadioLinkMonitor (RLF detection). Runs regardless
+    // of enableHandover_ -- RLF detection must work without handover -- but not while a
+    // handover is in progress (the serving cell is about to change).
+    if (radioLinkMonitor_->isEnabled() && !handoverInProgress && lteInfo->getSourceId() == servingNodeId_) {
+        lteInfo->setDestId(nodeId_);
+        frame->setControlInfo(lteInfo);
+        rssi = phy_->computeReceivedBeaconPacketRssi(frame, lteInfo);
+        rssiComputed = true;
+        frame->removeControlInfo();  // detach again: paths below delete frame and lteInfo separately
+        radioLinkMonitor_->servingCellBeaconReceived(servingNodeId_, rssi);
+    }
+
     if (!enableHandover_) {
         delete frame;
         delete lteInfo;
         return;
     }
 
-    if (handoverTrigger_ != nullptr && handoverTrigger_->isScheduled()) {
+    if (handoverInProgress) {
         EV << "Handover already in progress, ignoring beacon packet." << endl;
         delete lteInfo;
         delete frame;
@@ -188,7 +206,8 @@ void HandoverController::beaconReceived(LteAirFrame *frame, UserControlInfo *lte
     lteInfo->setDestId(nodeId_);
     frame->setControlInfo(lteInfo);
 
-    double rssi = phy_->computeReceivedBeaconPacketRssi(frame, lteInfo);
+    if (!rssiComputed)  // serving-cell beacons under RLM already computed it above
+        rssi = phy_->computeReceivedBeaconPacketRssi(frame, lteInfo);
     EV << "UE " << nodeId_ << " broadcast frame from " << lteInfo->getSourceId() << " with RSSI: " << rssi << " at " << simTime() << endl;
 
     if (lteInfo->getSourceId() != servingNodeId_ && rssi < minRssi_) {

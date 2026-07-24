@@ -16,6 +16,10 @@ package simu5g.stack.rrc;
 // Receives RSSI measurements from the PHY layer based on broadcast frames,
 // and triggers handover when a better serving cell is detected.
 //
+// It also measures each serving-cell beacon on behalf of ~RadioLinkMonitor
+// (radio link failure detection) and feeds the RSSI to it; the measurement is
+// made even when handover itself is disabled.
+//
 simple HandoverController
 {
     parameters:
@@ -49,6 +53,7 @@ simple HandoverController
         string handoverPacketHolderModule = default("^.^.handoverPacketHolder");
         string feedbackGeneratorModule = default("^.^.dlFbGen"); // TODO or "^.^.nrDlFbGen"
         string otherHandoverControllerModule = default("");
+        string radioLinkMonitorModule = default("^.radioLinkMonitor");
 
         bool hasCollector = default(false); // true when node has a collector module (ueCollector/nrUeCollector) for this PHY module
 

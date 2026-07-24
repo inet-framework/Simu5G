@@ -31,6 +31,7 @@ class UserControlInfo;
 class BearerManagement;
 class HandoverPacketHolderUe;
 class LteDlFeedbackGenerator;
+class RadioLinkMonitor;
 
 class HandoverController : public cSimpleModule
 {
@@ -105,6 +106,7 @@ class HandoverController : public cSimpleModule
     inet::ModuleRefByPar<HandoverPacketHolderUe> handoverPacketHolder_;
     inet::ModuleRefByPar<LteDlFeedbackGenerator> fbGen_;
     inet::ModuleRefByPar<HandoverController> otherHandoverController_;
+    inet::ModuleRefByPar<RadioLinkMonitor> radioLinkMonitor_;
 
   protected:
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }

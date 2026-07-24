@@ -19,6 +19,7 @@ package simu5g.stack.rrc;
 //   - bearerManagement: sets up and tears down data radio bearers
 //   - d2dModeSelection: periodically selects IM/DM mode for D2D flows (eNB/gNB only)
 //   - handoverController: manages handover decisions and procedures (UE only)
+//   - radioLinkMonitor: radio link monitoring / RLF detection (UE only)
 //
 module Rrc like IRrc
 {
@@ -53,6 +54,15 @@ module Rrc like IRrc
             @display("p=550,80");
         }
         nrHandoverController: HandoverController if hasNrHandoverController {
+            radioLinkMonitorModule = "^.nrRadioLinkMonitor";
             @display("p=700,80");
+        }
+        radioLinkMonitor: RadioLinkMonitor if hasHandoverController {
+            isNr = false;
+            @display("p=550,160");
+        }
+        nrRadioLinkMonitor: RadioLinkMonitor if hasNrHandoverController {
+            isNr = true;
+            @display("p=700,160");
         }
 }
