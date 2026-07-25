@@ -22,7 +22,7 @@ void RlcMux::initialize(int stage)
         macInGate_ = gate("macIn");
         macOutGate_ = gate("macOut");
 
-        bearerManagement_ = check_and_cast<BearerManagement *>(inet::getContainingNicModule(this)->getSubmodule("rrc")->getSubmodule("bearerManagement"));
+        bearerManagement_ = inet::getModuleFromPar<BearerManagement>(par("bearerManagementModule"), this);
 
         hasD2DSupport_ = inet::getContainingNicModule(this)->par("d2dCapable").boolValue();
 

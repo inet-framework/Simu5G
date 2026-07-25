@@ -40,9 +40,8 @@ void RlcUmTxEntityBase::initialize(int stage)
 
         initMode();
 
-        // D2D mode-switch controller is optional (absent on non-D2D stacks).
-        auto *rrc = inet::getContainingNicModule(this)->getSubmodule("rrc");
-        d2dModeController_ = dynamic_cast<D2DModeController *>(rrc ? rrc->getSubmodule("d2dModeController") : nullptr);
+        // D2D mode-switch controller is optional (absent on non-D2D stacks) -> findModuleFromPar.
+        d2dModeController_ = findModuleFromPar<D2DModeController>(par("d2dModeControllerModule"), this);
     }
 }
 

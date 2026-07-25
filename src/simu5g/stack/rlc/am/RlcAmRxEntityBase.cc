@@ -14,7 +14,6 @@
 #include <inet/networklayer/common/NetworkInterface.h>
 
 #include "simu5g/stack/rlc/am/RlcAmRxEntityBase.h"
-#include "simu5g/stack/rrc/BearerManagement.h"
 
 namespace simu5g {
 
@@ -38,9 +37,6 @@ simsignal_t RlcAmRxEntityBase::rxWindowOccupationSignal_ = registerSignal("rxWin
 void RlcAmRxEntityBase::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
-        bearerManagement_ = check_and_cast<BearerManagement *>(
-                inet::getContainingNicModule(this)->getSubmodule("rrc")->getSubmodule("bearerManagement"));
-
         initMode();
     }
 }

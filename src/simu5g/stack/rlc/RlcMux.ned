@@ -11,6 +11,7 @@ simple RlcMux
     parameters:
         @class("RlcMux");
         @display("p=100,200;i=block/dispatch");
+        string bearerManagementModule = default("^.rrc.bearerManagement");
 
         @signal[receivedPacketFromLowerLayer];
         @statistic[receivedPacketFromLowerLayer](source="receivedPacketFromLowerLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);

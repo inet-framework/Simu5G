@@ -29,6 +29,7 @@ simple NrRlcUmTxEntity like simu5g.stack.rlc.IRlcTxEntity
         @dynamic(true);
         @display("i=block/layer");
         string macModule = default("^.^.mac");  // set by the enclosing RlcUmEntityBase compound (per leg)
+        string d2dModeControllerModule = default("^.^.rrc.d2dModeController");  // optional (D2D-capable stacks)
         int sn_FieldLength = default(12);   // UM SN field length in bits: 6 or 12
 
         @signal[wastedGrantedBytes];

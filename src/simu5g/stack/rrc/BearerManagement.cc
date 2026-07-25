@@ -153,7 +153,7 @@ void BearerManagement::releaseLink(MacNodeId peerId)
     EV << NOW << " BearerManagement::releaseLink - releasing link to " << peerId << endl;
     // UE Context Release: stop traffic at Ip2Nic first, so no packet is pushed at a torn-down
     // bearer (which would otherwise hit UpperMux's TX-entity assert).
-    if (auto *ip2nic = dynamic_cast<Ip2Nic *>(nicModule_->getSubmodule("ip2nic"))) {
+    if (auto *ip2nic = inet::findModuleFromPar<Ip2Nic>(par("ip2nicModule"), this)) {
         ip2nic->releaseUe(peerId);
         // RRC re-establishment (TS 38.331 5.3.7): start the cell-(re)selection timer T311. When it
         // fires a suitable cell is assumed selected and the RRCReestablishmentRequest->Complete

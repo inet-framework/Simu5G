@@ -26,6 +26,7 @@ simple LteRlcUmTxEntity like simu5g.stack.rlc.IRlcTxEntity
         @dynamic(true);
         @display("i=block/layer");
         string macModule = default("^.^.mac");  // set by the enclosing RlcUmEntityBase compound (per leg)
+        string d2dModeControllerModule = default("^.^.rrc.d2dModeController");  // optional (D2D-capable stacks)
         int queueSize @unit(B) = default(2MiB);          // RLC TX entity SDU queue size (0: unlimited)
         @signal[rlcPduCreated];
 

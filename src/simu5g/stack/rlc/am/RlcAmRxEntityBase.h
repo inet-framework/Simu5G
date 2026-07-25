@@ -22,13 +22,12 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-class BearerManagement;
 
 /**
  * @class RlcAmRxEntityBase
  * @brief Common shell of the RLC AM receiving entity.
  *
- * Holds the signal set, the BearerManagement lookup used for control-PDU
+ * Holds the signal set and the state used for control-PDU
  * routing to the local AM TX entity, and the STATUS-PDU flow-control-info /
  * throughput bookkeeping shared by both RATs. The reassembly / window /
  * timer logic is deferred to the concrete subclasses:
@@ -62,7 +61,6 @@ class RlcAmRxEntityBase : public RlcRxEntityBase
     static simsignal_t sentPacketToUpperLayerSignal_;
     static simsignal_t rxWindowOccupationSignal_;
 
-    BearerManagement *bearerManagement_ = nullptr;
 
     // The reversed flow info used to stamp outgoing STATUS PDUs, built from the
     // first received data PDU's flow info.
