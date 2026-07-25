@@ -142,8 +142,8 @@ void HandoverController::handleMessage(cMessage *msg)
     else if (msg->isName("doModeSwitchAtHandover")) {
         // Handover completed: ask the new serving cell's mode selection module whether
         // D2D connections of this UE can switch (back) to Direct Mode
-        cModule *enb = binder_->getNodeModule(servingNodeId_);
-        D2dModeSelectionBase *d2dModeSelection = check_and_cast<D2dModeSelectionBase *>(enb->getSubmodule("cellularNic")->getSubmodule("rrc")->getSubmodule("d2dModeSelection"));
+        cModule *rrc = binder_->getRrcByNodeId(servingNodeId_);
+        D2dModeSelectionBase *d2dModeSelection = check_and_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
         d2dModeSelection->doModeSwitchAtHandover(nodeId_, true);
         delete msg;
     }
@@ -316,8 +316,8 @@ void HandoverController::triggerHandover()
             // Currently, DM is possible only for UEs served by the same cell
 
             // Trigger D2D mode switch
-            cModule *enb = binder_->getNodeModule(servingNodeId_);
-            D2dModeSelectionBase *d2dModeSelection = check_and_cast<D2dModeSelectionBase *>(enb->getSubmodule("cellularNic")->getSubmodule("rrc")->getSubmodule("d2dModeSelection"));
+            cModule *rrc = binder_->getRrcByNodeId(servingNodeId_);
+            D2dModeSelectionBase *d2dModeSelection = check_and_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
             d2dModeSelection->doModeSwitchAtHandover(nodeId_, false);
         }
     }
@@ -355,7 +355,7 @@ void HandoverController::triggerHandover()
 
     // Inform the eNB's HandoverPacketHolder module to forward data to the target eNB
     if (servingNodeId_ != NODEID_NONE && candidateServingNodeId_ != NODEID_NONE) {
-        HandoverPacketHolderEnb *enbIp2nic = check_and_cast<HandoverPacketHolderEnb *>(binder_->getNodeModule(servingNodeId_)->getSubmodule("cellularNic")->getSubmodule("handoverPacketHolder"));
+        HandoverPacketHolderEnb *enbIp2nic = check_and_cast<HandoverPacketHolderEnb *>(binder_->getHandoverPacketHolderByNodeId(servingNodeId_));
         enbIp2nic->triggerHandoverSource(nodeId_, candidateServingNodeId_);
     }
 
@@ -461,7 +461,7 @@ void HandoverController::doHandover()
 
     // Inform the eNB's HandoverPacketHolder module to forward data to the target eNB
     if (oldServingNodeId != NODEID_NONE && candidateServingNodeId_ != NODEID_NONE) {
-        HandoverPacketHolderEnb *enbIp2nic = check_and_cast<HandoverPacketHolderEnb *>(binder_->getNodeModule(servingNodeId_)->getSubmodule("cellularNic")->getSubmodule("handoverPacketHolder"));
+        HandoverPacketHolderEnb *enbIp2nic = check_and_cast<HandoverPacketHolderEnb *>(binder_->getHandoverPacketHolderByNodeId(servingNodeId_));
         enbIp2nic->signalHandoverCompleteTarget(nodeId_, oldServingNodeId);
     }
 }

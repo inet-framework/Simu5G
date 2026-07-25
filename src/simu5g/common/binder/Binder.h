@@ -610,6 +610,7 @@ class Binder : public cSimpleModule
     virtual cModule *getRlcByNodeId(MacNodeId nodeId, LteRlcType rlcType);
     virtual cModule *getRrcByNodeId(MacNodeId nodeId);
     virtual cModule *getIp2NicByNodeId(MacNodeId nodeId);
+    virtual cModule *getHandoverPacketHolderByNodeId(MacNodeId nodeId);
 
     // SMF-like Session Management Functions
     //
