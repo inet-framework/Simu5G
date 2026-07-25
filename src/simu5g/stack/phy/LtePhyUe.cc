@@ -52,8 +52,7 @@ void LtePhyUe::initialize(int stage)
         handoverController_.reference(this, "handoverControllerModule", true);
         handoverController_->setPhy(this);
 
-        // setting isNr_ was originally done in the NrPhyUe subclass, but it is needed here
-        isNr_ = dynamic_cast<NrPhyUe*>(this) && strcmp(getFullName(), "nrPhy") == 0;
+        isNr_ = par("isNr").boolValue();
 
         // get local id
         nodeId_ = MacNodeId(hostModule->par(isNr_ ? "nrMacNodeId" : "macNodeId").intValue());

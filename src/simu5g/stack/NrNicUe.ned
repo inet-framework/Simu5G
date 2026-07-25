@@ -53,6 +53,9 @@ module NrNicUe extends LteNicUeD2D
 
         rrc.hasNrHandoverController = true;
         rrc.nrHandoverController.isNr = true;
+        nrMac.isNr = true;
+        nrPhy.isNr = true;
+        nrDlFbGen.isNr = true;
         rrc.nrHandoverController.otherHandoverControllerModule = "^.handoverController";
         nrPhy.channelModelModule = "^.nrChannelModel[0]";
         nrPhy.feedbackGeneratorModule = "^.nrDlFbGen";

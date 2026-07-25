@@ -25,6 +25,7 @@ module LteMacUe extends LteMacBase
 {
     parameters:
         @class("LteMacUe");
+        bool isNr = default(false);            // true for the NR leg (set by NrNicUe on the nrMac submodule)
         string collectorModule = default("");
 
         int numPreambles = default(64);        // number of RACH preambles available for contention-based random access

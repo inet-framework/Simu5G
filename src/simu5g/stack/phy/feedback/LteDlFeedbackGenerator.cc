@@ -44,7 +44,7 @@ void LteDlFeedbackGenerator::initialize(int stage)
         currentTxMode_ = aToTxMode(par("initialTxMode"));
 
         cModule *networkNode = getContainingNode(this);
-        bool isNr = strcmp(getFullName(), "nrDlFbGen") == 0;
+        bool isNr = par("isNr").boolValue();
         nodeId_ = MacNodeId(networkNode->par(isNr ? "nrMacNodeId" : "macNodeId").intValue()); //TODO or
 
         // Initialize timers

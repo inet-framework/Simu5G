@@ -25,6 +25,7 @@ simple LtePhyUe extends LtePhyBase
 {
     parameters:
         @class("LtePhyUe");
+        bool isNr = default(false);            // true for the NR leg (set by NrNicUe on the nrPhy submodule)
 
         string handoverControllerModule = default("^.rrc.handoverController");
 

@@ -22,6 +22,7 @@ simple LteDlFeedbackGenerator
 {
     parameters:
         @display("i=block/cogwheel");
+        bool isNr = default(false);            // true for the NR leg (set by NrNicUe on the nrDlFbGen submodule)
 
         // can be ALLBANDS, PREFERRED, WIDEBAND
         string feedbackType @enum(ALLBANDS,PREFERRED,WIDEBAND) = default("ALLBANDS");
