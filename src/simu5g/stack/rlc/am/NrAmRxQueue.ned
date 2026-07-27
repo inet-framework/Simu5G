@@ -16,17 +16,20 @@
 package simu5g.stack.rlc.am;
 
 //
-// NR RLC AM RX entity (TS 38.322). Plugs into the RLC mux architecture as the
-// AM RX entity (select via BearerManagement.rlcAmRxEntityModuleType). Inherits
-// the gates (in/out) from AmRxQueue.
+// NR profile of the generic AM RX entity (TS 38.322): same C++ class (AmRxQueue)
+// as the LTE entity, parametrized with soFraming=true and the NR window/timers.
+// Select via BearerManagement.rlcAmRxEntityModuleType. The NR SO-reassembly
+// statistics are declared here so they are recorded only for NR-selected entities
+// (LTE entities keep their original scalar set).
 //
 simple NrAmRxQueue extends AmRxQueue
 {
     parameters:
-        @class(NrAmRxQueue);
-        int AM_Window_Size = default(2048);   // 2048 (12-bit SN) or 131072 (18-bit SN)
-        double t_Reassembly @unit(s) = default(80ms);
-        double t_StatusProhibit @unit(s) = default(100ms);
+        @class(AmRxQueue);
+        soFraming = default(true);            // select the NR SO byte-offset wire format
+        AM_Window_Size = default(2048);       // 2048 (12-bit SN) or 131072 (18-bit SN)
+        t_Reassembly = default(80ms);
+        t_StatusProhibit = default(100ms);
 
         @signal[receivedPacketFromLowerLayer];
         @statistic[receivedPacketFromLowerLayer](source="receivedPacketFromLowerLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);

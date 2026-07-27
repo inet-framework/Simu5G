@@ -16,19 +16,18 @@
 package simu5g.stack.rlc.am;
 
 //
-// NR RLC AM TX entity (TS 38.322). Plugs into the RLC mux architecture as the
-// AM TX entity (select via BearerManagement.rlcAmTxEntityModuleType). Inherits
-// the gates (in/macIn/out) from AmTxQueue.
+// NR profile of the generic AM TX entity (TS 38.322): same C++ class (AmTxQueue)
+// as the LTE entity, parametrized with soFraming=true and the NR window. Select via
+// BearerManagement.rlcAmTxEntityModuleType. The NR SO-segmentation statistics are
+// declared here so they are recorded only for NR-selected entities (LTE entities keep
+// their original scalar set).
 //
 simple NrAmTxQueue extends AmTxQueue
 {
     parameters:
-        @class(NrAmTxQueue);
-        int AM_Window_Size = default(2048);   // 2048 (12-bit SN) or 131072 (18-bit SN)
-        int pollByte @unit(B) = default(125kB);
-        int pollPDU = default(64);
-        int maxRtxThreshold = default(4);
-        double t_PollRetransmit @unit(s) = default(80ms);
+        @class(AmTxQueue);
+        soFraming = default(true);            // select the NR SO byte-offset wire format
+        AM_Window_Size = default(2048);       // 2048 (12-bit SN) or 131072 (18-bit SN)
 
         @signal[receivedPacketFromUpperLayer];
         @statistic[receivedPacketFromUpperLayer](source="receivedPacketFromUpperLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);

@@ -15,6 +15,8 @@
 #include <inet/common/ProtocolTag_m.h>
 
 #include "simu5g/stack/rlc/am/AmTxQueue.h"
+#include "simu5g/stack/rlc/am/packet/NrRlcAmDataPdu.h"
+#include "simu5g/stack/rlc/am/packet/NrRlcAmStatusPdu_m.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
@@ -23,68 +25,252 @@ namespace simu5g {
 
 Define_Module(AmTxQueue);
 
+simsignal_t AmTxQueue::wastedGrantedBytesSignal_ = registerSignal("wastedGrantedBytes");
+simsignal_t AmTxQueue::enqueuedSduSizeSignal_ = registerSignal("enqueuedSduSize");
+simsignal_t AmTxQueue::enqueuedSduRateSignal_ = registerSignal("enqueuedSduRate");
+simsignal_t AmTxQueue::requestedPduSizeSignal_ = registerSignal("requestedPduSize");
+simsignal_t AmTxQueue::txWindowOccupationSignal_ = registerSignal("txWindowOccupation");
+simsignal_t AmTxQueue::txWindowFullSignal_ = registerSignal("txWindowFull");
+simsignal_t AmTxQueue::retransmissionPduSignal_ = registerSignal("retransmissionPdu");
+simsignal_t AmTxQueue::receivedPacketFromUpperLayerSignal_ = registerSignal("receivedPacketFromUpperLayer");
+simsignal_t AmTxQueue::sentPacketToLowerLayerSignal_ = registerSignal("sentPacketToLowerLayer");
+
 AmTxQueue::AmTxQueue() :
      pduTimer_(this), bufferStatusTimer_(this)
 {
-    // Initialize timer IDs
     pduTimer_.setTimerId(PDU_T);
     bufferStatusTimer_.setTimerId(BUFFER_T);
+}
+
+AmTxQueue::~AmTxQueue()
+{
+    // LTE buffers (empty in NR mode)
+    while (!pduBuffer_.isEmpty())
+        delete check_and_cast<Packet *>(pduBuffer_.pop());
+    while (!sduQueue_.isEmpty())
+        delete check_and_cast<Packet *>(sduQueue_.pop());
+    for (int i = 0; i < pduRtxQueue_.size(); i++) {
+        if (pduRtxQueue_.get(i) != nullptr)
+            delete check_and_cast<Packet *>(pduRtxQueue_.remove(i));
+    }
+    delete currentSdu_;
+
+    // NR buffers (null/empty in LTE mode)
+    if (tPollRetransmitTimer_)
+        cancelAndDelete(tPollRetransmitTimer_);
+    delete txBuffer_;
+    delete rtxBuffer_;
+    while (!sduBuffer_.empty()) {
+        delete sduBuffer_.front();
+        sduBuffer_.pop_front();
+    }
+    while (!controlBuffer_.empty()) {
+        delete controlBuffer_.front();
+        controlBuffer_.pop_front();
+    }
+
+    delete lteInfo_;
 }
 
 void AmTxQueue::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
-        // Initialize all parameters from NED.
-        maxRtx_ = par("maxRtx");
-        fragDesc_.fragUnit_ = par("fragmentSize");
-        pduRtxTimeout_ = par("pduRtxTimeout");
-        ctrlPduRtxTimeout_ = par("ctrlPduRtxTimeout");
-        bufferStatusTimeout_ = par("bufferStatusTimeout");
-        txWindowDesc_.windowSize_ = par("txWindowSize");
-        // Resize status vectors
-        received_.resize(txWindowDesc_.windowSize_, false);
-        discarded_.resize(txWindowDesc_.windowSize_ + 1, false);
+        soFraming_ = par("soFraming");
 
-    }
-}
+        if (soFraming_) {
+            amWindowSize_ = par("AM_Window_Size");
+            // The window is 2^(snBits-1), so it must be a power of two.
+            if (amWindowSize_ < 1 || (amWindowSize_ & (amWindowSize_ - 1)) != 0)
+                throw cRuntimeError("AmTxQueue::initialize() AM_Window_Size=%u must be a power of two (e.g. 512, 2048, 131072)", amWindowSize_);
 
-AmTxQueue::~AmTxQueue()
-{
-    // Clear buffered PDUs
-    while (!pduBuffer_.isEmpty()) {
-        auto pktPdu = check_and_cast<Packet *>(pduBuffer_.pop());
-        delete pktPdu;
-    }
+            pollPdu_ = par("pollPDU");
+            pollByte_ = par("pollByte");
+            maxRtxThreshold_ = par("maxRtxThreshold");
+            tPollRetransmit_ = par("t_PollRetransmit");
+            tPollRetransmitTimer_ = new cMessage("t_PollRetransmit timer");
 
-    // Clear buffered SDUs
-    while (!sduQueue_.isEmpty()) {
-        auto pktSdu = check_and_cast<Packet *>(sduQueue_.pop());
-        delete pktSdu;
-    }
-
-    // Clear buffered PDU fragments
-    for (int i = 0; i < pduRtxQueue_.size(); i++) {
-        if (pduRtxQueue_.get(i) != nullptr) {
-            auto pktPdu = check_and_cast<Packet *>(pduRtxQueue_.remove(i));
-            delete pktPdu;
+            nameEntity_ = getFullPath();
+            txBuffer_ = new RlcSduSlidingWindowTransmissionBuffer(amWindowSize_, nameEntity_ + "-tx-sliding window:");
+            rtxBuffer_ = new RlcSduRetransmissionBuffer(maxRtxThreshold_);
+            lastSduSample_ = NOW;
+        }
+        else {
+            maxRtx_ = par("maxRtx");
+            fragDesc_.fragUnit_ = par("fragmentSize");
+            pduRtxTimeout_ = par("pduRtxTimeout");
+            ctrlPduRtxTimeout_ = par("ctrlPduRtxTimeout");
+            bufferStatusTimeout_ = par("bufferStatusTimeout");
+            txWindowDesc_.windowSize_ = par("txWindowSize");
+            received_.resize(txWindowDesc_.windowSize_, false);
+            discarded_.resize(txWindowDesc_.windowSize_ + 1, false);
         }
     }
-
-    delete lteInfo_;
-    delete currentSdu_;
 }
 
-void AmTxQueue::enque(Packet *pkt)
+void AmTxQueue::finish()
+{
+}
+
+void AmTxQueue::handleMessage(cMessage *msg)
+{
+    if (soFraming_) {
+        // --- NR ---
+        if (msg->isSelfMessage()) {
+            if (msg == tPollRetransmitTimer_) {
+                pollPending_ = true;
+                bool noPendingData = (txBuffer_->getTotalPendingBytes() == 0
+                        && sduBuffer_.empty() && rtxBuffer_->getRetxPendingBytes() == 0);
+
+                if (noPendingData || txBuffer_->windowFull()) {
+                    uint32_t hsn = txBuffer_->getHighestSnTransmitted();
+                    Packet *ptr = nullptr;
+                    uint32_t totalLength = 0;
+                    bool found = txBuffer_->getSduData(hsn, ptr, totalLength);
+                    bool added = found && rtxBuffer_->addNack(hsn, true, 0, totalLength - 1);
+
+                    if (!added) {
+                        uint32_t next = txBuffer_->getTxNextAck();
+                        while (txBuffer_->isInRtxRange(next)) {
+                            if (!txBuffer_->isFullyAcknowledged(next)) {
+                                if (txBuffer_->getSduData(next, ptr, totalLength)) {
+                                    if (rtxBuffer_->addNack(next, true, 0, totalLength - 1))
+                                        return;
+                                }
+                            }
+                            ++next;
+                        }
+                    }
+                }
+            }
+            return;
+        }
+
+        cGate *incoming = msg->getArrivalGate();
+        if (incoming->isName("in")) {
+            auto pkt = check_and_cast<Packet *>(msg);
+            emit(receivedPacketFromUpperLayerSignal_, pkt);
+
+            auto pdcpHeader = pkt->peekAtFront<LtePdcpHeader>();
+            unsigned int sequenceNumber = pdcpHeader->getSequenceNumber();
+            auto pdcpTag = pkt->addTagIfAbsent<PdcpTrackingTag>();
+            pdcpTag->setPdcpSequenceNumber(sequenceNumber);
+            pdcpTag->setOriginalPacketLength(pkt->getByteLength());
+
+            enqueNr(pkt);
+        }
+        else if (incoming->isName("macIn")) {
+            auto pkt = check_and_cast<Packet *>(msg);
+            auto macSduRequest = pkt->peekAtFront<LteMacSduRequest>();
+            sendPdusNr(macSduRequest->getSduSize());
+            delete pkt;
+        }
+        else if (incoming->isName("feedbackIn")) {
+            // STATUS PDU received from the peer, handed over by the co-located RX side
+            processControlPacketNr(check_and_cast<Packet *>(msg));
+        }
+        else if (incoming->isName("statusIn")) {
+            // locally generated STATUS report from the co-located RX side
+            bufferControlPduNrInternal(check_and_cast<Packet *>(msg));
+        }
+        else {
+            throw cRuntimeError("AmTxQueue: unexpected message from gate %s", incoming->getFullName());
+        }
+        return;
+    }
+
+    // --- LTE ---
+    if (msg->isSelfMessage()) {
+        TTimerMsg *tmsg = check_and_cast<TTimerMsg *>(msg);
+        RlcAmTimerType amType = static_cast<RlcAmTimerType>(tmsg->getTimerId());
+        TTimerType type = static_cast<TTimerType>(tmsg->getType());
+
+        switch (type) {
+            case TTSIMPLE:
+                // Periodic safety check: advance the window if its head is acked.
+                advanceTxWindow();
+                bufferStatusTimer_.handle();
+                break;
+            case TTMULTI:
+                TMultiTimerMsg *tmtmsg = check_and_cast<TMultiTimerMsg *>(tmsg);
+                if (amType == PDU_T)
+                    pduTimerHandle(tmtmsg->getEvent());
+                else
+                    throw cRuntimeError("AmTxQueue::handleMessage(): unexpected timer event received");
+                break;
+        }
+        delete tmsg;
+    }
+    else {
+        cGate *incoming = msg->getArrivalGate();
+        if (incoming->isName("in")) {
+            auto pkt = check_and_cast<Packet *>(msg);
+
+            auto pdcpHeader = pkt->peekAtFront<LtePdcpHeader>();
+            unsigned int sequenceNumber = pdcpHeader->getSequenceNumber();
+            auto pdcpTag = pkt->addTag<PdcpTrackingTag>();
+            pdcpTag->setPdcpSequenceNumber(sequenceNumber);
+            pdcpTag->setOriginalPacketLength(pkt->getByteLength());
+
+            enqueLte(pkt);
+        }
+        else if (incoming->isName("macIn")) {
+            auto pkt = check_and_cast<Packet *>(msg);
+            auto macSduRequest = pkt->peekAtFront<LteMacSduRequest>();
+            unsigned int size = macSduRequest->getSduSize();
+            sendPdusLte(size);
+            delete pkt;
+        }
+        else if (incoming->isName("feedbackIn")) {
+            // STATUS PDU received from the peer, handed over by the co-located RX side
+            processControlPacketLte(check_and_cast<Packet *>(msg));
+        }
+        else if (incoming->isName("statusIn")) {
+            // locally generated STATUS report from the co-located RX side; queue it
+            // for transmission on this bearer's logical channel
+            bufferPduInternal(check_and_cast<Packet *>(msg));
+        }
+        else {
+            throw cRuntimeError("AmTxQueue: unexpected message from gate %s", incoming->getFullName());
+        }
+    }
+}
+
+// ===================== dispatchers =====================
+
+void AmTxQueue::enque(Packet *sdu)
+{
+    if (soFraming_) enqueNr(sdu);
+    else enqueLte(sdu);
+}
+
+void AmTxQueue::sendPdus(int size)
+{
+    if (soFraming_) sendPdusNr(size);
+    else sendPdusLte(size);
+}
+
+void AmTxQueue::handleControlPacket(cPacket *pkt)
+{
+    if (soFraming_) handleControlPacketNr(pkt);
+    else handleControlPacketLte(pkt);
+}
+
+void AmTxQueue::bufferControlPdu(cPacket *pkt)
+{
+    if (soFraming_) bufferControlPduNr(pkt);
+    else bufferControlPduLte(pkt);
+}
+
+// ===================== LTE (fragment/whole-PDU ARQ) implementation =====================
+
+void AmTxQueue::enqueLte(Packet *pkt)
 {
     EV << NOW << " AmTxQueue::enque - inserting new SDU  " << endl;
 
     sduQueue_.insert(pkt);
 
-    // Check if there are waiting SDUs
     if (currentSdu_ == nullptr) {
-        // Add AM-PDU to the transmission buffer
         if (txWindowDesc_.seqNum_ - txWindowDesc_.firstSeqNum_ < txWindowDesc_.windowSize_) {
-            // RLC AM PDUs can be added to the buffer
             addPdus();
         }
     }
@@ -92,7 +278,6 @@ void AmTxQueue::enque(Packet *pkt)
 
 std::deque<Packet *> *AmTxQueue::fragmentFrame(Packet *frame, std::deque<int>& windowsIndex, RlcFragDesc rlcFragDesc)
 {
-
     EV_DEBUG << "Fragmenting " << *frame << " into " << rlcFragDesc.totalFragments_ << " fragments.\n";
     B offset = B(0);
     std::deque<Packet *> *fragments = new std::deque<Packet *>();
@@ -104,15 +289,11 @@ std::deque<Packet *> *AmTxQueue::fragmentFrame(Packet *frame, std::deque<int>& w
     for (size_t i = 0; i < rlcFragDesc.totalFragments_; i++) {
         std::string name = std::string(frame->getName()) + "-frag" + std::to_string(i);
         auto fragment = new Packet(name.c_str());
-        // Length is equal to fragmentation unit except for the last fragment
         B length = (i == rlcFragDesc.totalFragments_ - 1) ? B(frame->getTotalLength()) - offset : fragUnit;
         fragment->insertAtBack(frame->peekDataAt(offset, length));
         offset += length;
-        // fragment->insertAtFront(frameHeader);
         auto pdu = makeShared<LteRlcAmPdu>();
-        // Set RLC type descriptor
         pdu->setAmType(DATA);
-        // Set fragmentation info
         pdu->setTotalFragments(rlcFragDesc.totalFragments_);
         pdu->setSnoFragment(tmp.seqNum_);
         pdu->setFirstSn(rlcFragDesc.firstSn_);
@@ -121,7 +302,6 @@ std::deque<Packet *> *AmTxQueue::fragmentFrame(Packet *frame, std::deque<int>& w
         pdu->setTxNumber(0);
         fragment->insertAtFront(pdu);
         EV_TRACE << "Created " << *fragment << " fragment.\n";
-        // Prepare list of tx window indices
         int txWindowIndex = tmp.seqNum_ - tmp.firstSeqNum_;
         if (txWindowIndex >= 200)
             throw cRuntimeError("Illegal index");
@@ -139,21 +319,16 @@ void AmTxQueue::addPdus()
 {
     Enter_Method("addPdus()");
 
-    // Add PDUs to the AM transmission buffer until the transmission
-    // window is full or until the SDU buffer is empty
     unsigned int addedPdus = 0;
 
     while ((txWindowDesc_.seqNum_ - txWindowDesc_.firstSeqNum_) < txWindowDesc_.windowSize_) {
         if (currentSdu_ == nullptr && sduQueue_.isEmpty() && (fragmentList_ == nullptr || fragmentList_->size() == 0)) {
-            // No data to send
             EV << NOW << " AmTxQueue::addPdus - No data to send " << endl;
             break;
         }
 
-        // Check if we can start to fragment a new SDU
         if (currentSdu_ == nullptr) {
             EV << NOW << " AmTxQueue::addPdus - No pending SDU has been found" << endl;
-            // Get the first available SDU (buffer has already been checked to be non-empty)
             auto pkt = check_and_cast<Packet *>(sduQueue_.pop());
 
             int nrFragments = ceil((double)pkt->getByteLength() / (double)fragDesc_.fragUnit_);
@@ -164,7 +339,6 @@ void AmTxQueue::addPdus()
                 currentSdu_ = pkt;
                 fragmentList_ = fragmentFrame(pkt->dup(), txWindowIndexList_, fragDesc_);
 
-                // Starting Fragmentation
                 EV << NOW << " AmTxQueue::addPdus current SDU size "
                    << currentSdu_->getByteLength() << " will be fragmented in "
                    << fragDesc_.totalFragments_ << " PDUs, each  of size "
@@ -175,13 +349,9 @@ void AmTxQueue::addPdus()
 
                 lteInfo_ = currentSdu_->getTag<FlowControlInfo>()->dup();
             }
-            else {
-                // EV << NOW << " AmTxQueue::addPdus   cannot fragment new SDU since fragments do not fit - tx window is full" << std::endl;
-            }
         }
 
         if (fragmentList_ == nullptr) {
-            // Nothing more to do
             break;
         }
 
@@ -198,9 +368,7 @@ void AmTxQueue::addPdus()
             throw cRuntimeError("PDU sequence numbers must be checked");
 
         if (pduRtxQueue_.get(txWindowIndex) == nullptr) {
-            // Store a copy of the current PDU
             auto pduCopy = pdu->dup();
-            //pduCopy->setControlInfo(lteInfo->dup());
             pduRtxQueue_.addAt(txWindowIndex, pduCopy);
 
             if (txWindowIndex >= 200)
@@ -216,10 +384,8 @@ void AmTxQueue::addPdus()
             delete pdu;
             throw cRuntimeError("AmTxQueue::addPdus(): trying to add a PDU to a busy position [%d]", txWindowIndex);
         }
-        // Start the PDU timer
         pduTimer_.add(pduRtxTimeout_, txWindowDesc_.seqNum_);
 
-        // Update number of added PDUs for the current SDU and check if all fragments have been transmitted
         if (fragDesc_.addFragment() || (fragmentList_ && fragmentList_->empty())) {
             delete fragmentList_;
             fragmentList_ = nullptr;
@@ -228,16 +394,13 @@ void AmTxQueue::addPdus()
             delete currentSdu_;
             currentSdu_ = nullptr;
         }
-        // Update Sequence Number
         txWindowDesc_.seqNum_++;
         addedPdus++;
 
-        // Activate buffer checking timer
         if (bufferStatusTimer_.busy() == false) {
             bufferStatusTimer_.start(bufferStatusTimeout_);
         }
 
-        // Buffer (and send down) the PDU
         bufferPdu(pdu);
     }
     ASSERT(fragmentList_ == nullptr);
@@ -263,7 +426,6 @@ void AmTxQueue::discard(const int seqNum)
               " sequence number" << seqNum << " , window first sequence is " << txWindowDesc_.firstSeqNum_ << endl;
     }
     else {
-        // Mark current PDU for discard
         discarded_.at(txWindowIndex) = true;
     }
 
@@ -273,30 +435,25 @@ void AmTxQueue::discard(const int seqNum)
     if (pduTimer_.busy(seqNum))
         pduTimer_.remove(seqNum);
 
-    // Check forward in the buffer if there are other PDUs related to the same SDU
     for (int i = (txWindowIndex + 1);
          i < (txWindowDesc_.seqNum_ - txWindowDesc_.firstSeqNum_); ++i)
     {
         if (pduRtxQueue_.get(i) != nullptr) {
             auto nextPdu = check_and_cast<Packet *>(pduRtxQueue_.get(i))->peekAtFront<LteRlcAmPdu>();
             if (pdu->getSnoMainPacket() == nextPdu->getSnoMainPacket()) {
-                // Mark the PDU to be discarded
                 if (!discarded_.at(i)) {
                     discarded_.at(i) = true;
-                    // Stop the timer
                     if (pduTimer_.busy(i + txWindowDesc_.firstSeqNum_))
                         pduTimer_.remove(i + txWindowDesc_.firstSeqNum_);
                 }
             }
             else {
-                // PDU belonging to different SDUs found. Stopping forward search
                 break;
             }
         }
         else
-            break; // Last PDU in buffer found, stopping forward search
+            break;
     }
-    // Check backward in the buffer if there are other PDUs related to the same SDU
     for (int i = txWindowIndex - 1; i >= 0; i--) {
         if (pduRtxQueue_.get(i) == nullptr)
             throw cRuntimeError("AmTxBuffer::discard(): trying to get access to missing PDU %d", i);
@@ -305,10 +462,8 @@ void AmTxQueue::discard(const int seqNum)
 
         if (pdu->getSnoMainPacket() == nextPdu->getSnoMainPacket()) {
             if (!discarded_.at(i)) {
-                // Mark the PDU to be discarded
                 discarded_.at(i) = true;
             }
-            // Stop the timer
             if (pduTimer_.busy(i + txWindowDesc_.firstSeqNum_))
                 pduTimer_.remove(i + txWindowDesc_.firstSeqNum_);
         }
@@ -316,7 +471,6 @@ void AmTxQueue::discard(const int seqNum)
             break;
         }
     }
-    // Try to advance the transmitter window past the discarded PDUs.
     advanceTxWindow();
 }
 
@@ -324,8 +478,6 @@ void AmTxQueue::advanceTxWindow()
 {
     EV << NOW << " AmTxQueue::advanceTxWindow " << endl;
 
-    // Advance the transmitter window over the contiguous head of
-    // acknowledged or discarded PDUs (autonomous, replaces the MRW handshake).
     int lastPdu = 0;
     bool toMove = false;
 
@@ -341,9 +493,7 @@ void AmTxQueue::advanceTxWindow()
 
     if (toMove) {
         int newFirstSn = txWindowDesc_.firstSeqNum_ + lastPdu + 1;
-
         EV << NOW << " AmTxQueue::advanceTxWindow  shifting window to " << newFirstSn << endl;
-
         moveTxWindow(newFirstSn);
     }
 }
@@ -352,31 +502,19 @@ void AmTxQueue::moveTxWindow(const int seqNum)
 {
     int pos = seqNum - txWindowDesc_.firstSeqNum_;
 
-    // ignore the shift; it is ineffective.
     if (pos <= 0)
         return;
-
-    // Shift the tx window; pos is the location after the last PDU to be removed (pointing to the new firstSeqNum_).
 
     EV << NOW << " AmTxQueue::moveTxWindow sequence number " << seqNum
        << " corresponding index " << pos << endl;
 
-    // Delete both discarded and received RLC PDUs
     for (int i = 0; i < pos; ++i) {
         if (pduRtxQueue_.get(i) != nullptr) {
-            EV << NOW << " AmTxQueue::moveTxWindow deleting PDU ["
-               << i + txWindowDesc_.firstSeqNum_
-               << "] corresponding index " << i << endl;
-
             auto pdu = check_and_cast<Packet *>(pduRtxQueue_.remove(i));
             delete pdu;
 
-            // Stop the rtx timer event
             if (pduTimer_.busy(i + txWindowDesc_.firstSeqNum_)) {
                 pduTimer_.remove(i + txWindowDesc_.firstSeqNum_);
-                EV << NOW << " AmTxQueue::moveTxWindow canceling PDU timer ["
-                   << i + txWindowDesc_.firstSeqNum_
-                   << "] corresponding index " << i << endl;
             }
             received_.at(i) = false;
             discarded_.at(i) = false;
@@ -389,43 +527,21 @@ void AmTxQueue::moveTxWindow(const int seqNum)
         if (pduRtxQueue_.get(i) != nullptr) {
             auto pdu = check_and_cast<Packet *>(pduRtxQueue_.remove(i));
             pduRtxQueue_.addAt(i - pos, pdu);
-
-            EV << NOW << " AmTxQueue::moveTxWindow  PDU ["
-               << i + txWindowDesc_.firstSeqNum_
-               << "] corresponding index " << i
-               << " being moved at position " << i - pos << endl;
         }
         else {
             throw cRuntimeError("AmTxQueue::moveTxWindow(): encountered empty PDU at location %d, shift position %d", i, pos);
         }
-
-        EV << NOW << " AmTxQueue::moveTxWindow  PDU ["
-           << i + txWindowDesc_.firstSeqNum_
-           << "] corresponding new index " << i - pos
-           << " marked as received [" << (received_.at(i - pos))
-           << "] , discarded [" << (discarded_.at(i - pos)) << "]" << endl;
 
         received_.at(i - pos) = received_.at(i);
         discarded_.at(i - pos) = discarded_.at(i);
 
         received_.at(i) = false;
         discarded_.at(i) = false;
-
-        EV << NOW << " AmTxQueue::moveTxWindow  location [" << i
-           << "] corresponding new PDU "
-           << i + pos + txWindowDesc_.firstSeqNum_
-           << " marked as received [" << (received_.at(i))
-           << "] , discarded [" << (discarded_.at(i)) << "]" << endl;
     }
 
-    // cleanup
     for (int i = (txWindowDesc_.seqNum_ - txWindowDesc_.firstSeqNum_); i < txWindowDesc_.windowSize_; ++i) {
         if (pduRtxQueue_.get(i) != nullptr)
             throw cRuntimeError("AmTxQueue::moveTxWindow(): encountered busy PDU at location %d, shift position %d", i, pos);
-
-        EV << NOW << " AmTxQueue::moveTxWindow  empty location [" << i
-           << "] marked as received [" << (received_.at(i))
-           << "] , discarded [" << (discarded_.at(i)) << "]" << endl;
 
         received_.at(i) = false;
         discarded_.at(i) = false;
@@ -435,22 +551,20 @@ void AmTxQueue::moveTxWindow(const int seqNum)
 
     EV << NOW << " AmTxQueue::moveTxWindow completed. First sequence number "
        << txWindowDesc_.firstSeqNum_ << " current sequence number "
-       << txWindowDesc_.seqNum_ << " cleaned up locations from "
-       << txWindowDesc_.seqNum_ - txWindowDesc_.firstSeqNum_ << " to "
-       << txWindowDesc_.windowSize_ - 1 << endl;
+       << txWindowDesc_.seqNum_ << endl;
 
-    // Try to add more PDUs to the buffer
     addPdus();
 }
 
-void AmTxQueue::bufferControlPdu(cPacket *pkt) {
+void AmTxQueue::bufferControlPduLte(cPacket *pkt)
+{
     bufferPdu(pkt);
 }
 
 void AmTxQueue::bufferPdu(cPacket *pktAux)
 {
     Enter_Method("bufferPdu()"); // Direct Method Call (from RX entity cross-module)
-    take(pktAux); // Take ownership
+    take(pktAux);
     bufferPduInternal(check_and_cast<inet::Packet *>(pktAux));
 }
 
@@ -459,18 +573,16 @@ void AmTxQueue::bufferPduInternal(inet::Packet *pkt)
     EV << NOW << " AmTxQueue : Enqueuing " << pkt->getName() << " of size "
        << pkt->getByteLength() << " for sending\n";
 
-    // notify MAC that new data is available
     bool needToTriggerMac = pduBuffer_.isEmpty();
 
-    // pdu is not sent directly but queued - will be sent upon mac request
     pduBuffer_.insert(pkt);
 
     if (needToTriggerMac) {
-        sendNewDataNotification(pkt);
+        sendNewDataNotificationLte(pkt);
     }
 }
 
-void AmTxQueue::sendNewDataNotification(inet::Packet *pkt)
+void AmTxQueue::sendNewDataNotificationLte(inet::Packet *pkt)
 {
     auto newData = new inet::Packet("AM-NewData");
     newData->copyTags(*pkt);
@@ -478,30 +590,25 @@ void AmTxQueue::sendNewDataNotification(inet::Packet *pkt)
     send(newData, "out");
 }
 
-void AmTxQueue::sendPdus(int size) {
+void AmTxQueue::sendPdusLte(int size)
+{
     auto pkt = pduBuffer_.front();
     if (pkt->getByteLength() <= size) {
-        // next PDU does fit - pop it
         pkt = pduBuffer_.pop();
-
         EV << "AmTxQueue::sendPdus sending a PDU of size "
-           << pkt->getByteLength() << " (total requested: " << size
-           << ")" << std::endl;
+           << pkt->getByteLength() << " (total requested: " << size << ")" << std::endl;
     }
     else {
-        // throw cRuntimeError("AmTxQueue::sendPdus cannot return current head of line PDU - size too small.");
-        EV << NOW
-           << " AmTxQueue::sendPdus: Cannot send PDU - PDU is larger than requested size (size == "
+        EV << NOW << " AmTxQueue::sendPdus: Cannot send PDU - PDU is larger than requested size (size == "
            << size << endl;
 
-        // send an empty (1-bit) message to notify the MAC that there is not enough space to send RLC PDU
         auto pktCopy = check_and_cast<Packet *>(pkt->dup());
         pktCopy->setName("lteRlcFragment (empty)");
         auto rlcPdu = pktCopy->removeAtFront<LteRlcAmPdu>();
         rlcPdu->markMutableIfExclusivelyOwned();
-        rlcPdu->setChunkLength(inet::b(1)); // send only a bit, minimum size
+        rlcPdu->setChunkLength(inet::b(1));
         pktCopy->insertAtFront(rlcPdu);
-        pkt = pktCopy; // send modified copy; the original packet will be sent when it fits
+        pkt = pktCopy;
     }
 
     auto inetPkt = check_and_cast<inet::Packet *>(pkt);
@@ -509,20 +616,21 @@ void AmTxQueue::sendPdus(int size) {
     send(inetPkt, "out");
 
     if (!pduBuffer_.isEmpty()) {
-        sendNewDataNotification(check_and_cast<inet::Packet *>(pduBuffer_.front()));
+        sendNewDataNotificationLte(check_and_cast<inet::Packet *>(pduBuffer_.front()));
     }
 }
 
-void AmTxQueue::handleControlPacket(cPacket *pkt) {
+void AmTxQueue::handleControlPacketLte(cPacket *pkt)
+{
     Enter_Method("handleControlPacket()");
     take(pkt);
-    processControlPacket(check_and_cast<Packet *>(pkt));
+    processControlPacketLte(check_and_cast<Packet *>(pkt));
 }
 
-void AmTxQueue::processControlPacket(Packet *pktPdu) {
+void AmTxQueue::processControlPacketLte(Packet *pktPdu)
+{
     auto pdu = pktPdu->peekAtFront<LteRlcAmPdu>();
 
-    // get RLC type descriptor
     short type = pdu->getAmType();
 
     switch (type) {
@@ -531,18 +639,15 @@ void AmTxQueue::processControlPacket(Packet *pktPdu) {
             EV << NOW << " AmTxQueue::handleControlPacket , received STATUS ACK_SN "
                << data.ackSn << " with " << data.nacks.size() << " NACK(s)" << endl;
 
-            // Collect the NACKed sequence numbers.
             std::set<unsigned int> nacked;
             for (const auto& nack : data.nacks)
                 nacked.insert(nack.sn);
 
-            // Every SN below ACK_SN that is not NACKed has been received.
             for (int sn = txWindowDesc_.firstSeqNum_; sn < (int)data.ackSn; ++sn) {
                 if (nacked.find(sn) == nacked.end())
                     recvAck(sn);
             }
 
-            // Autonomously advance the window over the acknowledged head.
             advanceTxWindow();
             break;
         }
@@ -561,11 +666,6 @@ void AmTxQueue::recvAck(const int seqNum)
        << "] index [" << index << "] " << endl;
 
     if (index < 0) {
-        EV << NOW
-           << " AmTxBuffer::recvAck ACK already received - ignoring: index "
-           << index << " first sequence number"
-           << txWindowDesc_.firstSeqNum_ << endl;
-
         return;
     }
 
@@ -573,12 +673,8 @@ void AmTxQueue::recvAck(const int seqNum)
         throw cRuntimeError("AmTxBuffer::recvAck(): ACK greater than window size %d", txWindowDesc_.windowSize_);
 
     if (!(received_.at(index))) {
-        EV << NOW << " AmTxBuffer::recvAck canceling timer for PDU "
-           << (index + txWindowDesc_.firstSeqNum_) << " index " << index << endl;
-        // Stop the timer
         if (pduTimer_.busy(index + txWindowDesc_.firstSeqNum_))
             pduTimer_.remove(index + txWindowDesc_.firstSeqNum_);
-        // Received status variable is set to true after the
         received_.at(index) = true;
         ASSERT(pduRtxQueue_.get(index) != nullptr);
     }
@@ -586,35 +682,17 @@ void AmTxQueue::recvAck(const int seqNum)
 
 void AmTxQueue::recvCumulativeAck(const int seqNum)
 {
-    // Mark the AM PDUs as received and shift the window
     if ((seqNum < txWindowDesc_.firstSeqNum_) || (seqNum < 0)) {
-        // Ignore the cumulative ACK; it is out of the transmitter window (the MRW command has not yet been received by the AM rx entity)
         return;
     }
     else if ((unsigned int)seqNum > (txWindowDesc_.firstSeqNum_ + txWindowDesc_.windowSize_)) {
         throw cRuntimeError("AmTxQueue::recvCumulativeAck(): SN %d exceeds window size %d", seqNum, txWindowDesc_.windowSize_);
     }
     else {
-        // The ACK is inside the window
-
         for (int i = 0; i <= (seqNum - txWindowDesc_.firstSeqNum_); ++i) {
-            EV << NOW
-               << " AmTxBuffer::recvCumulativeAck ACK received for sequence number "
-               << (i + txWindowDesc_.firstSeqNum_)
-               << " first sequence n. [" << txWindowDesc_.firstSeqNum_
-               << "] "
-               "index [" << i << "] " << endl;
-
-            // the ACK could have already been received
             if (!(received_.at(i))) {
-                // canceling timer for PDU
-                EV << NOW
-                   << " AmTxBuffer::recvCumulativeAck canceling timer for PDU "
-                   << (i + txWindowDesc_.firstSeqNum_) << " index " << i << endl;
-                // Stop the timer
                 if (pduTimer_.busy(i + txWindowDesc_.firstSeqNum_))
                     pduTimer_.remove(i + txWindowDesc_.firstSeqNum_);
-                // Received status variable is set to true after the
                 received_.at(i) = true;
             }
         }
@@ -624,32 +702,22 @@ void AmTxQueue::recvCumulativeAck(const int seqNum)
 void AmTxQueue::pduTimerHandle(const int sn)
 {
     Enter_Method("pduTimerHandle");
-    // A timer has elapsed for the RLC PDU.
-    // This function checks if the PDU has been correctly received.
-    // If not, the handler checks if another transmission is possible, and
-    // in this case, the PDU is placed in the retransmission buffer.
-    // If no more attempts can be made, the PDU is dropped.
 
     int index = sn - txWindowDesc_.firstSeqNum_;
 
     EV << NOW << " AmTxQueue::pduTimerHandle - sequence number " << sn << endl;
 
-    // signal event handling to timer
     pduTimer_.handle(sn);
 
-    // Some debug checks
     if ((index < 0) || (index >= txWindowDesc_.windowSize_))
         throw cRuntimeError("AmTxQueue::pduTimerHandle(): The PDU [%d] for which the timer elapsed is out of the window: index [%d]", sn, index);
 
     if (pduRtxQueue_.get(index) == nullptr)
         throw cRuntimeError("AmTxQueue::pduTimerHandle(): PDU %d not found", index);
 
-    // Check if the PDU has been correctly received; if so, the
-    // timer should have been previously stopped.
     if (received_.at(index) == true)
         throw cRuntimeError(" AmTxQueue::pduTimerHandle(): The PDU %d [index %d] has already been received", sn, index);
 
-    // Get the PDU information
     auto pduPkt = check_and_cast<Packet *>(pduRtxQueue_.get(index));
     auto pdu = pduPkt->peekAtFront<LteRlcAmPdu>();
 
@@ -657,97 +725,364 @@ void AmTxQueue::pduTimerHandle(const int sn)
 
     if (nextTxNumber > maxRtx_) {
         EV << NOW << " AmTxQueue::pduTimerHandle maximum transmissions reached; discard the PDU" << endl;
-        // The maximum number of transmissions for this PDU has been
-        // reached. Discard the PDU and all the PDUs related to the
-        // same RLC SDU.
         discard(sn);
     }
     else {
         EV << NOW << " AmTxQueue::pduTimerHandle starting new transmission" << endl;
-        // extract PDU from buffer
         auto pduPkt = check_and_cast<Packet *>(pduRtxQueue_.remove(index));
         auto pduUpd = pduPkt->removeAtFront<LteRlcAmPdu>();
         pduUpd->markMutableIfExclusivelyOwned();
 
-        // A new transmission can be started
         pduUpd->setTxNumber(nextTxNumber);
-        // The RLC PDU is added to the retransmission buffer
         pduPkt->insertAtFront(pduUpd);
-        // add copy of the PDU to the rtx queue
         pduRtxQueue_.add(pduPkt->dup());
-        // Reschedule the timer
         pduTimer_.add(pduRtxTimeout_, sn);
-        // send down the PDU
         bufferPdu(pduPkt);
     }
 }
 
-void AmTxQueue::handleMessage(cMessage *msg)
+// ===================== NR (SO segmentation + polling) implementation =====================
+
+void AmTxQueue::enqueNr(Packet *sdu)
 {
-    if (msg->isSelfMessage()) {
-        // message received from a timer
-        TTimerMsg *tmsg = check_and_cast<TTimerMsg *>(msg);
-        // check timer id
-        RlcAmTimerType amType = static_cast<RlcAmTimerType>(tmsg->getTimerId());
-        TTimerType type = static_cast<TTimerType>(tmsg->getType());
+    Enter_Method("AmTxQueue::enqueNr()");
+    EV << NOW << " AmTxQueue::enque() - inserting new SDU " << sdu << endl;
 
-        switch (type) {
-            case TTSIMPLE:
-                // Periodic safety check: advance the window if its head is acked.
-                advanceTxWindow();
-                // signal the timer the event has been handled
-                bufferStatusTimer_.handle();
-                break;
-            case TTMULTI:
+    delete lteInfo_;
+    lteInfo_ = sdu->getTag<FlowControlInfo>()->dup();
 
-                TMultiTimerMsg *tmtmsg = check_and_cast<TMultiTimerMsg *>(tmsg);
+    take(sdu);
+    auto *si = new SduInfo();
+    si->sdu = sdu;
+    sduBuffer_.push_back(si);
+    ++receivedSdus_;
 
-                if (amType == PDU_T) {
-                    pduTimerHandle(tmtmsg->getEvent());
-                }
-                else
-                    throw cRuntimeError("AmTxQueue::handleMessage(): unexpected timer event received");
-                break;
-        }
-        // delete timer event message.
-        delete tmsg;
+    sduSampleBytes_ += sdu->getByteLength();
+    emit(enqueuedSduSizeSignal_, sdu->getByteLength());
+    if ((NOW - lastSduSample_) >= 1) {
+        emit(enqueuedSduRateSignal_, sduSampleBytes_ / (NOW - lastSduSample_));
+        sduSampleBytes_ = 0;
+        lastSduSample_ = NOW;
     }
-    else {
-        cGate *incoming = msg->getArrivalGate();
-        if (incoming->isName("in")) {
-            // SDU from upper mux
-            auto pkt = check_and_cast<Packet *>(msg);
 
-            // Add PDCP tracking information
-            auto pdcpHeader = pkt->peekAtFront<LtePdcpHeader>();
-            unsigned int sequenceNumber = pdcpHeader->getSequenceNumber();
-            auto pdcpTag = pkt->addTag<PdcpTrackingTag>();
-            pdcpTag->setPdcpSequenceNumber(sequenceNumber);
-            pdcpTag->setOriginalPacketLength(pkt->getByteLength());
+    sendNewDataNotificationNr(sdu);
+}
 
-            enque(pkt);
-        }
-        else if (incoming->isName("macIn")) {
-            // MAC SDU request
-            auto pkt = check_and_cast<Packet *>(msg);
-            auto macSduRequest = pkt->peekAtFront<LteMacSduRequest>();
-            unsigned int size = macSduRequest->getSduSize();
-            sendPdus(size);
+void AmTxQueue::sendPdusNr(int pduSize)
+{
+    Enter_Method("AmTxQueue::sendPdusNr()");
+    EV << NOW << " AmTxQueue::sendPdus() - PDU with size " << pduSize << " requested from MAC" << endl;
+    emit(requestedPduSizeSignal_, pduSize);
+
+    if (radioLinkFailureDetected_) {
+        EV << NOW << " " << nameEntity_ << " AmTxQueue::sendPdus() RLF detected, stopping" << endl;
+        return;
+    }
+
+    int size = pduSize - RLC_HEADER_AM;
+
+    if (size < 0) {
+        auto pkt = new inet::Packet("lteRlcFragment (empty)");
+        auto rlcPdu = inet::makeShared<NrRlcAmDataPdu>();
+        rlcPdu->setChunkLength(inet::b(1));
+        pkt->insertAtFront(rlcPdu);
+        if (lteInfo_)
+            *(pkt->addTagIfAbsent<FlowControlInfo>()) = *lteInfo_;
+        sendPduToMac(pkt);
+        return;
+    }
+
+    // TS 38.322: prioritize control PDUs
+    if (!controlBuffer_.empty()) {
+        auto *pktControl = check_and_cast<inet::Packet *>(controlBuffer_.front());
+        controlBuffer_.pop_front();
+
+        EV << NOW << " AmTxQueue::sendPdus() - sending Control PDU " << pktControl
+           << " with size " << pktControl->getByteLength() << " bytes to lower layer" << endl;
+        sendPduToMac(pktControl);
+
+        unsigned int pendingData = getPendingDataVolume();
+        if (pendingData > 0 && lteInfo_) {
+            auto pkt = new inet::Packet("lteRlcFragment -Indicate new data");
+            auto rlcPdu = inet::makeShared<NrRlcAmDataPdu>();
+            rlcPdu->setChunkLength(B(pendingData));
+            *(pkt->addTagIfAbsent<FlowControlInfo>()) = *lteInfo_;
+            pkt->insertAtFront(rlcPdu);
+            sendNewDataNotificationNr(pkt);
             delete pkt;
         }
-        else if (incoming->isName("feedbackIn")) {
-            // STATUS PDU received from the peer, handed over by the co-located RX side
-            processControlPacket(check_and_cast<Packet *>(msg));
+        return;
+    }
+
+    if (sendRetransmission(size)) {
+        reportBufferStatus();
+        return;
+    }
+
+    PendingSegment segment;
+    segment.isValid = false;
+    if (txBuffer_->getTotalPendingBytes() > 0)
+        segment = txBuffer_->getSegmentForGrant(size);
+
+    if (!segment.isValid) {
+        if (sduBuffer_.empty()) {
+            EV << NOW << " AmTxQueue::sendPdus() buffer empty, wasting grant" << endl;
+            emit(wastedGrantedBytesSignal_, size);
+            return;
         }
-        else if (incoming->isName("statusIn")) {
-            // locally generated STATUS report from the co-located RX side; queue it
-            // for transmission on this bearer's logical channel
-            bufferPduInternal(check_and_cast<Packet *>(msg));
+
+        SduInfo *si = sduBuffer_.front();
+        auto *bufferedSdu = check_and_cast<inet::Packet *>(si->sdu);
+        auto pdcpTag = bufferedSdu->getTag<PdcpTrackingTag>();
+        int sduLength = pdcpTag->getOriginalPacketLength();
+
+        if (txBuffer_->windowFull()) {
+            emit(txWindowFullSignal_, 1);
+            return;
+        }
+
+        txBuffer_->addSdu(sduLength, bufferedSdu);
+        sduBuffer_.pop_front();
+        segment = txBuffer_->getSegmentForGrant(size);
+    }
+
+    if (!segment.isValid) {
+        EV << NOW << " AmTxQueue::sendPdus() no segment fits grant" << endl;
+        emit(wastedGrantedBytesSignal_, size);
+        return;
+    }
+
+    sendSegment(segment);
+    emit(txWindowOccupationSignal_, txBuffer_->getTxNext() - txBuffer_->getTxNextAck());
+    reportBufferStatus();
+}
+
+void AmTxQueue::sendSegment(PendingSegment segment)
+{
+    auto rlcPdu = inet::makeShared<NrRlcAmDataPdu>();
+
+    uint32_t segmentSize = segment.end - segment.start;
+    FramingInfo fi;  // 00 = full SDU
+    if (segmentSize != segment.totalLength) {
+        if (segment.start == 0) {
+            fi.lastIsFragment = true;  // 01 = first segment
+        }
+        else if (segment.end == segment.totalLength - 1) {
+            fi.firstIsFragment = true;  // 10 = last segment
         }
         else {
-            throw cRuntimeError("AmTxQueue: unexpected message from gate %s", incoming->getFullName());
+            fi.firstIsFragment = true;
+            fi.lastIsFragment = true;  // 11 = middle segment
         }
     }
+
+    auto *bufferedSdu = check_and_cast<inet::Packet *>(segment.ptr);
+    auto pdcpTag = bufferedSdu->getTag<PdcpTrackingTag>();
+    int sduLength = pdcpTag->getOriginalPacketLength();
+    unsigned int pduSequenceNumber = segment.sn;
+    sn_ = std::max(sn_, pduSequenceNumber);
+    int sduSequenceNumber = pdcpTag->getPdcpSequenceNumber();
+
+    rlcPdu->pushSdu(bufferedSdu->dup(), segmentSize);
+    rlcPdu->setFramingInfo(fi);
+    rlcPdu->setPduSequenceNumber(pduSequenceNumber);
+    rlcPdu->setChunkLength(inet::B(RLC_HEADER_AM + segmentSize));
+    rlcPdu->setSnoMainPacket(sduSequenceNumber);
+    rlcPdu->setLengthMainPacket(sduLength);
+    rlcPdu->setStartOffset(segment.start);
+    rlcPdu->setEndOffset(segment.end);
+
+    ++pduWithoutPoll_;
+    byteWithoutPoll_ += segmentSize;
+    rlcPdu->setPollStatus(checkPolling());
+
+    std::string name = "NR AM RLC Fragment -" + std::to_string(pduSequenceNumber);
+    auto pkt = new inet::Packet(name.c_str());
+    pkt->insertAtFront(rlcPdu);
+    if (lteInfo_)
+        *(pkt->addTagIfAbsent<FlowControlInfo>()) = *lteInfo_;
+
+    sendPduToMac(pkt);
+}
+
+bool AmTxQueue::checkPolling()
+{
+    bool noPendingData = (txBuffer_->getTotalPendingBytes() == 0
+            && sduBuffer_.empty() && rtxBuffer_->getRetxPendingBytes() == 0);
+
+    if (pollPending_ || pduWithoutPoll_ > pollPdu_ || byteWithoutPoll_ >= pollByte_
+            || noPendingData || txBuffer_->windowFull()) {
+        pduWithoutPoll_ = 0;
+        byteWithoutPoll_ = 0;
+        pollSn_ = sn_;
+        rescheduleAfter(tPollRetransmit_, tPollRetransmitTimer_);
+        pollPending_ = false;
+        return true;
+    }
+    return false;
+}
+
+void AmTxQueue::reportBufferStatus()
+{
+    unsigned int pendingData = getPendingDataVolume();
+    if (pendingData > 0 && lteInfo_) {
+        auto pkt = new inet::Packet("lteRlcFragment Inform MAC");
+        auto rlcPdu = inet::makeShared<NrRlcAmDataPdu>();
+        rlcPdu->setChunkLength(B(pendingData));
+        *(pkt->addTagIfAbsent<FlowControlInfo>()) = *lteInfo_;
+        pkt->insertAtFront(rlcPdu);
+        sendNewDataNotificationNr(pkt);
+        delete pkt;
+    }
+}
+
+bool AmTxQueue::sendRetransmission(int size)
+{
+    RetxTask next;
+    if (!rtxBuffer_->getNextRetxTask(next))
+        return false;
+
+    uint32_t start = next.soStart;
+    uint32_t end = next.soEnd;
+
+    if (next.isWholeSdu) {
+        Packet *ptr = nullptr;
+        uint32_t totalLength = 0;
+        if (txBuffer_->getSduData(next.sn, ptr, totalLength)) {
+            start = 0;
+            end = totalLength - 1;
+        }
+        else {
+            if (radioLinkFailureDetected_)
+                return false;
+            throw cRuntimeError("AmTxQueue::sendRetransmission whole SDU sn=%u not found", next.sn);
+        }
+    }
+
+    PendingSegment segment = txBuffer_->getRetransmissionSegment(next.sn, start, end, size);
+    if (!segment.isValid) {
+        if (radioLinkFailureDetected_)
+            return false;
+        throw cRuntimeError("AmTxQueue::sendRetransmission SDU sn=%u: invalid segment", next.sn);
+    }
+    if (!segment.ptr) {
+        if (radioLinkFailureDetected_)
+            return false;
+        throw cRuntimeError("AmTxQueue::sendRetransmission SDU sn=%u: null pointer", next.sn);
+    }
+
+    sendSegment(segment);
+    rtxBuffer_->markRetransmitted(next);
+    emit(retransmissionPduSignal_, 1);
+    return true;
+}
+
+void AmTxQueue::handleControlPacketNr(cPacket *pkt)
+{
+    Enter_Method("handleControlPacket()");
+    take(pkt);
+    processControlPacketNr(check_and_cast<Packet *>(pkt));
+}
+
+void AmTxQueue::processControlPacketNr(Packet *pktPdu)
+{
+    auto pdu = pktPdu->peekAtFront<NrRlcAmStatusPdu>();
+    StatusPduData data = pdu->getData();
+
+    rtxBuffer_->beginStatusPduProcessing();
+    std::set<uint32_t> nacks;
+    bool restartPoll = false;
+
+    for (size_t i = 0; i < data.nacks.size(); ++i) {
+        const NackInfo &info = data.nacks[i];
+        for (unsigned int j = 0; j < info.nackRange; ++j) {
+            uint32_t nackedSn = info.sn + j;
+            if (txBuffer_->isInRtxRange(nackedSn)) {
+                bool isWhole = !info.isSegment;
+                bool added = rtxBuffer_->addNack(nackedSn, isWhole, info.soStart, info.soEnd);
+                if (!added) {
+                    EV << nameEntity_ << " [CRITICAL] Radio Link Failure" << endl;
+                    radioLinkFailureDetected_ = true;
+                    delete pktPdu;
+                    return;
+                }
+            }
+            nacks.insert(nackedSn);
+            if (nackedSn == pollSn_)
+                restartPoll = true;
+        }
+    }
+
+    uint32_t next = txBuffer_->getTxNextAck();
+    while (next < data.ackSn) {
+        if (nacks.find(next) == nacks.end()) {
+            uint32_t totalLength;
+            Packet *sdu = nullptr;
+            if (txBuffer_->getSduData(next, sdu, totalLength)) {
+                std::set<uint32_t> acked = txBuffer_->handleAck(next, 0, totalLength - 1, pollSn_, restartPoll);
+                for (uint32_t ackedSn : acked)
+                    rtxBuffer_->clearSdu(ackedSn);
+            }
+        }
+        ++next;
+    }
+
+    if (tPollRetransmitTimer_->isScheduled() && restartPoll)
+        rescheduleAfter(tPollRetransmit_, tPollRetransmitTimer_);
+
+    emit(txWindowOccupationSignal_, txBuffer_->getCurrentWindowSize());
+    delete pktPdu;
+}
+
+void AmTxQueue::bufferControlPduNr(cPacket *pkt)
+{
+    Enter_Method("AmTxQueue::bufferControlPdu()");
+    take(pkt);
+    bufferControlPduNrInternal(check_and_cast<inet::Packet *>(pkt));
+}
+
+void AmTxQueue::bufferControlPduNrInternal(inet::Packet *pkt)
+{
+    controlBuffer_.push_back(pkt);
+    sendNewDataNotificationNr(pkt);
+}
+
+void AmTxQueue::sendPduToMac(inet::Packet *pkt)
+{
+    pkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&LteProtocol::rlc);
+    emit(sentPacketToLowerLayerSignal_, pkt);
+    send(pkt, "out");
+}
+
+void AmTxQueue::sendNewDataNotificationNr(inet::Packet *pkt)
+{
+    auto newData = new inet::Packet("AM-NewData");
+    newData->copyTags(*pkt);
+    if (!newData->findTag<PdcpTrackingTag>()) {
+        auto t = newData->addTag<PdcpTrackingTag>();
+        t->setOriginalPacketLength(pkt->getByteLength());
+        t->setPdcpSequenceNumber(0);
+    }
+    newData->addTag<LteRlcNewDataTag>();
+    send(newData, "out");
+}
+
+unsigned int AmTxQueue::getPendingDataVolume() const
+{
+    unsigned int size = 0;
+    for (const auto *si : sduBuffer_) {
+        auto *pkt = check_and_cast<inet::Packet *>(si->sdu);
+        auto pdcpTag = pkt->getTag<PdcpTrackingTag>();
+        size += pdcpTag->getOriginalPacketLength();
+    }
+    size += txBuffer_->getTotalPendingBytes();
+    size += rtxBuffer_->getRetxPendingBytes();
+    for (const auto *cpkt : controlBuffer_) {
+        auto *p = check_and_cast<const Packet *>(cpkt);
+        auto statusPdu = p->peekAtFront<NrRlcAmStatusPdu>();
+        size += statusPdu->getChunkLength().get();
+    }
+    return size;
 }
 
 } //namespace
