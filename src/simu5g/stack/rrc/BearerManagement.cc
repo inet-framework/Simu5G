@@ -20,7 +20,6 @@
 #include "simu5g/stack/pdcp/DcMux.h"
 #include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
 #include "simu5g/stack/pdcp/PdcpRxEntityBase.h"
-#include "simu5g/stack/pdcp/NrTxPdcpEntity.h"
 #include "simu5g/common/InitStages.h"
 
 namespace simu5g {
@@ -51,6 +50,8 @@ void BearerManagement::initialize(int stage)
         nrRlcMuxModule.reference(this, "nrRlcMuxModule", false);
         macModule.reference(this, "macModule", true);
         nrMacModule.reference(this, "nrMacModule", false);
+
+        dualConnectivityEnabled_ = par("dualConnectivityEnabled");
     }
 }
 
@@ -97,7 +98,7 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     // stays a flat module.
     if (withPdcp) {
         DrbKey id = DrbKey(lteInfo->getSourceId(), lteInfo->getDrbId());
-        installPdcpRxSide(id, rlcMux, isNr);
+        installPdcpRxSide(id, lteInfo, rlcMux, isNr);
     }
     else {
         // DC secondary node: create bypass RX entity (forwards UL to master via X2)
@@ -320,119 +321,147 @@ RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, FlowControlInfo *
     return rxEnt;
 }
 
-cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, RlcMux *rlcMux)
+cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux)
 {
     auto it = pdcpEntities_.find(id);
     if (it != pdcpEntities_.end())
         return it->second;
 
-    // Create the per-bearer PDCP entity module (compound: TX + RX sides). With duplex bearer
-    // establishment the first-processed direction creates it; the other finds it here and just
-    // installs (wires) its own side.
+    // Number of legs of this bearer. Two-leg (split-capable) bearers: at a DC UE, every
+    // infrastructure bearer (local LTE + local NR stack legs); at a DC master, every UE bearer
+    // (local leg + remote leg via X2 to the secondary). Everything else -- non-DC nodes, D2D
+    // and multicast bearers, secondaries (bypass only) -- is single-leg.
+    bool isEnb = (registration_->getNodeType() == NODEB);
+    int numLegs = 1;
+    if (dualConnectivityEnabled_ && lteInfo->getMulticastGroupId() == NODEID_NONE) {
+        if (!isEnb && getNodeTypeById(id.getNodeId()) == NODEB)
+            numLegs = 2;
+        else if (isEnb && binderModule->getSecondaryNode(registration_->getLteNodeId()) != NODEID_NONE)
+            numLegs = 2;
+    }
+
+    // Create the per-bearer PDCP entity module (compound: TX + RX sides and, on a multi-leg
+    // bearer, the leg splitter/joiner). With duplex bearer establishment the first-processed
+    // direction creates it; later calls find it here and just wire their own leg/side.
     std::string name = "pdcp-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
     auto *module = pdcpEntityModuleType_->create(name.c_str(), nicModule_);
     module->par("headerCompressedSize") = par("headerCompressedSize");
-    // TX/RX entity profiles are set independently (an EN-DC master mixes NrTx with LteRx)
-    module->par("txEntityType") = par("pdcpTxEntityModuleType").stringValue();
-    module->par("rxEntityType") = par("pdcpRxEntityModuleType").stringValue();
+    module->par("numLegs") = numLegs;
+    if (numLegs == 2) {
+        // leg descriptors: leg 0 = local LTE; leg 1 = the UE's local NR stack, or the master's
+        // remote leg via X2 (selects the splitter's per-leg id mapping)
+        auto *legs = new cValueArray();
+        auto *leg0 = new cValueMap();
+        leg0->set("rat", "lte");
+        legs->add(leg0);
+        auto *leg1 = new cValueMap();
+        leg1->set("rat", isEnb ? "x2" : "nr");
+        legs->add(leg1);
+        module->par("legs").setObjectValue(legs);
+    }
     module->finalizeParameters();
     module->buildInside();
     setEntityDisplayPosition(module, true, rlcMux, num(id.getDrbId()));
     module->scheduleStart(simTime());
     module->callInitialize();
 
+    // DC master: wire the remote (X2) leg to the DcMux right away -- unlike the UE's NR leg,
+    // it has no establishment call of its own (the secondary's entities are bypass-only)
+    if (isEnb && numLegs == 2) {
+        auto *pdcpDcMux = inet::getModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this);
+        int dcIdx = pdcpDcMux->gateSize("fromEntity");
+        pdcpDcMux->setGateSize("fromEntity", dcIdx + 1);
+        module->gate("legOut", 1)->connectTo(pdcpDcMux->gate("fromEntity", dcIdx));
+        int rxIdx = pdcpDcMux->gateSize("toRxEntity");
+        pdcpDcMux->setGateSize("toRxEntity", rxIdx + 1);
+        pdcpDcMux->gate("toRxEntity", rxIdx)->connectTo(module->gate("legIn", 1));
+    }
+
     pdcpEntities_[id] = module;
     return module;
+}
+
+// Leg selection for the install functions: at a DC UE, the NR-leg establishment (NR peer ids)
+// attaches leg 1 of the bearer's compound, which is keyed by the MASTER node -- the bearer is
+// ONE entity whose legs split/rejoin below PDCP. The master-keyed lookup must be precise
+// (master node + same DRB id): matching the bare DRB id would also match unrelated bearers of
+// this UE, since DRB ids are only unique per peer. Everything else is leg 0 of its own compound.
+static int selectPdcpLeg(bool isUe, bool isNr, bool dualConnectivityEnabled, Binder *binder,
+                         MacNodeId peerId, DrbKey& compoundId /*inout*/)
+{
+    if (isUe && isNr && dualConnectivityEnabled && getNodeTypeById(peerId) == NODEB) {
+        MacNodeId masterNodeId = binder->getMasterNodeOrSelf(peerId);
+        if (masterNodeId != peerId) {  // the peer is a DC secondary node
+            compoundId = DrbKey(masterNodeId, compoundId.getDrbId());
+            return 1;
+        }
+    }
+    return 0;
 }
 
 void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
 {
     auto *pdcpMux = inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this);
-    auto *pdcpDcMux = inet::findModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this); // nullptr on UEs (no X2)
     // The PDCP entity is keyed by dest (id); the RLC entity it wires to is keyed by
     // ctrlInfoToTxDrbKey, which for multicast is the group id -- not the same as id.
     DrbKey rlcId = ctrlInfoToTxDrbKey(lteInfo);
 
-    // DC UE NR leg: reuse the master (LTE-leg) PDCP entity's nrOut gate instead of creating a
-    // new PDCP entity. The master leg's entity of the SAME bearer is keyed by (master nodeB,
-    // same DRB id) -- look it up precisely (matching the bare DRB id would also match unrelated
-    // bearers of this UE, since DRB ids are only unique per peer).
-    if (registration_->getNodeType()==UE && isNrUe(lteInfo->getSourceId())
-            && getNodeTypeById(lteInfo->getDestId()) == NODEB) {
-        MacNodeId masterNodeId = binderModule->getMasterNodeOrSelf(lteInfo->getDestId());
-        if (masterNodeId != lteInfo->getDestId()) {  // dest is a DC secondary node
-            auto masterIt = pdcpEntities_.find(DrbKey(masterNodeId, id.getDrbId()));
-            if (masterIt != pdcpEntities_.end()) {
-                cModule *nrRlcEnt = lookupRlcEntityModule(rlcId, true);
-                ASSERT(nrRlcEnt != nullptr);
-                masterIt->second->gate("nrOut")->connectTo(nrRlcEnt->gate("upperIn"));
-                return;  // wired to the master entity; no PDCP TX entity for the NR leg
-            }
-        }
-    }
+    DrbKey compoundId = id;
+    int legIdx = selectPdcpLeg(registration_->getNodeType() == UE, isNr, dualConnectivityEnabled_,
+                               binderModule.get(), lteInfo->getDestId(), compoundId);
 
-    cModule *pdcpEnt = findOrCreatePdcpEntity(id, rlcMux);
-    if (pdcpEnt->gate("lowerOut")->isConnectedOutside()) {
-        EV << "BearerManagement::installPdcpTxSide - TX side of " << id.str() << " already installed\n";
+    cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, lteInfo, rlcMux);
+    if (pdcpEnt->gate("legOut", legIdx)->isConnectedOutside()) {
+        EV << "BearerManagement::installPdcpTxSide - TX side of " << compoundId.str() << " leg " << legIdx << " already installed\n";
         return;
     }
 
-    // Wire UpperMux → compound upperIn (→ tx.in)
-    int idx = pdcpMux->gateSize("toTxEntity");
-    pdcpMux->setGateSize("toTxEntity", idx + 1);
-    pdcpMux->gate("toTxEntity", idx)->connectTo(pdcpEnt->gate("upperIn"));
-
-    // Wire compound lowerOut (← tx.out) → RLC entity upperIn (direct per-DRB connection)
+    // Wire compound legOut[legIdx] (← tx/splitter) → RLC entity upperIn (direct per-DRB connection)
     cModule *rlcEnt = lookupRlcEntityModule(rlcId, isNr);
     ASSERT(rlcEnt != nullptr);
-    pdcpEnt->gate("lowerOut")->connectTo(rlcEnt->gate("upperIn"));
+    pdcpEnt->gate("legOut", legIdx)->connectTo(rlcEnt->gate("upperIn"));
 
-    // Wire compound dcOut (← tx.dcOut) → DcMux, for an NR-typed TX on nodes with a DcMux (eNB).
-    // The uniform compound/LteTx always has a dcOut gate now, so discriminate on the TX entity
-    // type (only NrTxPdcpEntity actually drives dcOut) -- the faithful successor to the old
-    // per-entity hasGate("dcOut") check.
-    if (pdcpDcMux && dynamic_cast<NrTxPdcpEntity *>(pdcpEnt->getSubmodule("tx")) != nullptr) {
-        int dcIdx = pdcpDcMux->gateSize("fromEntity");
-        pdcpDcMux->setGateSize("fromEntity", dcIdx + 1);
-        pdcpEnt->gate("dcOut")->connectTo(pdcpDcMux->gate("fromEntity", dcIdx));
+    if (legIdx == 0) {
+        // Wire UpperMux → compound upperIn (→ tx.in) and register the TX side
+        int idx = pdcpMux->gateSize("toTxEntity");
+        pdcpMux->setGateSize("toTxEntity", idx + 1);
+        pdcpMux->gate("toTxEntity", idx)->connectTo(pdcpEnt->gate("upperIn"));
+
+        auto *txEnt = check_and_cast<PdcpTxEntityBase *>(pdcpEnt->getSubmodule("tx"));
+        pdcpMux->registerTxEntity(compoundId, txEnt);
+        pdcpTxEntities_[compoundId] = txEnt;
     }
-
-    auto *txEnt = check_and_cast<PdcpTxEntityBase *>(pdcpEnt->getSubmodule("tx"));
-    pdcpMux->registerTxEntity(id, txEnt);
-    pdcpTxEntities_[id] = txEnt;
 }
 
-void BearerManagement::installPdcpRxSide(DrbKey id, RlcMux *rlcMux, bool isNr)
+void BearerManagement::installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
 {
     auto *pdcpMux = inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this);
-    auto *pdcpDcMux = inet::findModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this); // nullptr on UEs (no X2)
+    DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
 
-    cModule *pdcpEnt = findOrCreatePdcpEntity(id, rlcMux);
-    if (pdcpEnt->gate("lowerIn")->isConnectedOutside()) {
-        EV << "BearerManagement::installPdcpRxSide - RX side of " << id.str() << " already installed\n";
+    DrbKey compoundId = id;
+    int legIdx = selectPdcpLeg(registration_->getNodeType() == UE, isNr, dualConnectivityEnabled_,
+                               binderModule.get(), lteInfo->getSourceId(), compoundId);
+
+    cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, lteInfo, rlcMux);
+    if (pdcpEnt->gate("legIn", legIdx)->isConnectedOutside()) {
+        EV << "BearerManagement::installPdcpRxSide - RX side of " << compoundId.str() << " leg " << legIdx << " already installed\n";
         return;
     }
 
-    // Wire RLC entity upperOut → compound lowerIn (→ rx.in) (direct per-DRB connection)
-    cModule *rlcEnt = lookupRlcEntityModule(id, isNr);
+    // Wire RLC entity upperOut → compound legIn[legIdx] (→ rx/joiner) (direct per-DRB connection)
+    cModule *rlcEnt = lookupRlcEntityModule(rlcId, isNr);
     ASSERT(rlcEnt != nullptr);
-    rlcEnt->gate("upperOut")->connectTo(pdcpEnt->gate("lowerIn"));
+    rlcEnt->gate("upperOut")->connectTo(pdcpEnt->gate("legIn", legIdx));
 
-    // Wire compound upperOut (← rx.out) → UpperMux fromRxEntity
-    int fromIdx = pdcpMux->gateSize("fromRxEntity");
-    pdcpMux->setGateSize("fromRxEntity", fromIdx + 1);
-    pdcpEnt->gate("upperOut")->connectTo(pdcpMux->gate("fromRxEntity", fromIdx));
+    if (legIdx == 0) {
+        // Wire compound upperOut (← rx.out) → UpperMux fromRxEntity and register the RX side
+        int fromIdx = pdcpMux->gateSize("fromRxEntity");
+        pdcpMux->setGateSize("fromRxEntity", fromIdx + 1);
+        pdcpEnt->gate("upperOut")->connectTo(pdcpMux->gate("fromRxEntity", fromIdx));
 
-    // Wire DcMux → compound dcIn (→ rx.dcIn) for UL X2 dispatch (nodes with a DcMux, i.e. eNB).
-    // Both LTE and NR RX entities have dcIn, so this follows only the DcMux presence, as before.
-    if (pdcpDcMux) {
-        int dcIdx = pdcpDcMux->gateSize("toRxEntity");
-        pdcpDcMux->setGateSize("toRxEntity", dcIdx + 1);
-        pdcpDcMux->gate("toRxEntity", dcIdx)->connectTo(pdcpEnt->gate("dcIn"));
+        auto *rxEnt = check_and_cast<PdcpRxEntityBase *>(pdcpEnt->getSubmodule("rx"));
+        pdcpRxEntities_[compoundId] = rxEnt;
     }
-
-    auto *rxEnt = check_and_cast<PdcpRxEntityBase *>(pdcpEnt->getSubmodule("rx"));
-    pdcpRxEntities_[id] = rxEnt;
 }
 
 RlcTxEntityBase *BearerManagement::createRlcTxBuffer(DrbKey id, FlowControlInfo *lteInfo)
@@ -534,6 +563,12 @@ PdcpRxEntityBase *BearerManagement::lookupPdcpRxEntity(DrbKey id)
         return it->second;
     auto it2 = pdcpBypassRxEntities_.find(id);
     return it2 != pdcpBypassRxEntities_.end() ? it2->second : nullptr;
+}
+
+cModule *BearerManagement::lookupPdcpEntityModule(DrbKey id)
+{
+    auto it = pdcpEntities_.find(id);
+    return it != pdcpEntities_.end() ? it->second : nullptr;
 }
 
 RlcTxEntityBase *BearerManagement::lookupRlcTxBuffer(DrbKey id)

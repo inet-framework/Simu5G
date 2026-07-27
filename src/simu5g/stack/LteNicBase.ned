@@ -58,6 +58,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
         string address @mutable = default("auto");
         *.interfaceTableModule = default(absPath(this.interfaceTableModule));
         *.routingTableModule = default(absPath(this.routingTableModule));
+        **.dualConnectivityEnabled = default(this.dualConnectivityEnabled);
 
     gates:
         //#

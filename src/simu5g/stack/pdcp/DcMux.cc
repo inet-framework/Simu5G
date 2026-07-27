@@ -63,14 +63,14 @@ void DcMux::handleMessage(cMessage *msg)
             if (isNrUe(sourceId))
                 sourceId = binder_->getUeNodeId(sourceId, false);
             DrbKey id = DrbKey(sourceId, lteInfo->getDrbId());
-            PdcpRxEntityBase *entity = bearerManagement_->lookupPdcpRxEntity(id);
-            ASSERT(entity != nullptr);
+            cModule *pdcpEnt = bearerManagement_->lookupPdcpEntityModule(id);
+            ASSERT(pdcpEnt != nullptr);
 
             EV << NOW << " DcMux::handleMessage - Received UL PDCP PDU from secondary node " << sourceNode
-               << " for " << id << " - dispatching to RX entity" << endl;
-            // path start = our toRxEntity gate (crosses the PdcpEntity compound boundary,
-            // whose dcIn gate routes on to the rx submodule's dcIn gate)
-            send(pkt, entity->gate("dcIn")->getPathStartGate());
+               << " for " << id << " - dispatching to the PDCP entity's remote leg" << endl;
+            // the remote (X2) leg is leg 1 of the master's PDCP entity compound; path start =
+            // our toRxEntity gate (crosses the compound boundary into its joiner)
+            send(pkt, pdcpEnt->gate("legIn", 1)->getPathStartGate());
         }
     }
     else if (incoming->isName("fromEntity")) {

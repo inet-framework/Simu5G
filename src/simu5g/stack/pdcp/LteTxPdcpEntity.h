@@ -54,6 +54,9 @@ class LteTxPdcpEntity : public PdcpTxEntityBase
     // Header size after ROHC (RObust Header Compression)
     inet::B headerCompressedSize_;
 
+    // false on a multi-leg bearer: the compound's splitter emits the per-leg statistics
+    bool emitPerSduSignals_ = true;
+
     // next sequence number to be assigned
     unsigned int sno_ = 0;
 

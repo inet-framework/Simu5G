@@ -14,42 +14,33 @@
 #define _NRTXPDCPENTITY_H_
 
 #include "simu5g/stack/pdcp/LteTxPdcpEntity.h"
-#include "simu5g/stack/dcX2Forwarder/DcX2Forwarder.h"
 
 namespace simu5g {
 
 /**
  * @class NrTxPdcpEntity
- * @brief Entity for New Radio PDCP Layer
+ * @brief NR flavor of the transmitting PDCP entity.
  *
- * This is the PDCP entity of LTE/NR Stack.
- *
- * PDCP entity performs the following tasks:
- * - maintain numbering of one logical connection
- *
+ * Adds the NR per-SDU statistics (pdcpSduSentNr) and the NR-leg source id of a
+ * single-leg NR bearer at a UE. On a multi-leg bearer the enclosing compound's
+ * splitter handles leg dispatch, id mapping and per-leg statistics instead
+ * (see PdcpEntity.ned), and this entity just forwards.
  */
 class NrTxPdcpEntity : public LteTxPdcpEntity
 {
     static simsignal_t pdcpSduSentNrSignal_;
 
   protected:
-
-    // Dual Connectivity support
-    bool dualConnectivityEnabled_ = false;
-
-    // NR node ID (for UEs with dual connectivity)
+    // NR node ID (of NR-capable UEs)
     MacNodeId nrNodeId_ = NODEID_NONE;
 
-    // deliver the PDCP PDU to the lower layer or to the X2
+    // deliver the PDCP PDU to the lower layer
     void deliverPdcpPdu(Packet *pkt) override;
 
   public:
-
-
     void initialize(int stage) override;
 };
 
 } //namespace
 
 #endif
-

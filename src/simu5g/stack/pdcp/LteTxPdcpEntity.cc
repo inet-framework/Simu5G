@@ -46,6 +46,8 @@ void LteTxPdcpEntity::initialize(int stage) {
         headerCompressedSize_ = B(par("headerCompressedSize"));
         if (headerCompressedSize_ != LTE_PDCP_HEADER_COMPRESSION_DISABLED && headerCompressedSize_ < MIN_COMPRESSED_HEADER_SIZE)
             throw cRuntimeError("Size of compressed header must not be less than %" PRId64 "B.", MIN_COMPRESSED_HEADER_SIZE.get());
+
+        emitPerSduSignals_ = par("emitPerSduSignals");
     }
 }
 
@@ -151,11 +153,13 @@ void LteTxPdcpEntity::compressHeader(Packet *pkt)
 
 void LteTxPdcpEntity::deliverPdcpPdu(Packet *pdcpPkt)
 {
-    auto lteInfo = pdcpPkt->getTag<FlowControlInfo>();
-    if (hasListeners(pdcpSduSentSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D) {
-        emit(pdcpSduSentSignal_, pdcpPkt);
+    if (emitPerSduSignals_) {
+        auto lteInfo = pdcpPkt->getTag<FlowControlInfo>();
+        if (hasListeners(pdcpSduSentSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D) {
+            emit(pdcpSduSentSignal_, pdcpPkt);
+        }
+        emit(sentPacketToLowerLayerSignal_, pdcpPkt);
     }
-    emit(sentPacketToLowerLayerSignal_, pdcpPkt);
     send(pdcpPkt, "out");
 }
 

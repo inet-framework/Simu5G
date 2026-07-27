@@ -14,8 +14,11 @@ package simu5g.stack.pdcp;
 
 //
 // Handles the operations related to the NR PDCP (Packet Data Convergence Protocol)
-// layer at the transmitting side of a specific connection. It extends the ~LteTxPdcpEntity module.
-// Additionally, this module manages the creation process by adding support for Dual Connectivity functionality.
+// layer at the transmitting side of a specific connection. It extends the
+// ~LteTxPdcpEntity module with the NR flavor of the per-SDU statistics
+// (pdcpSduSentNr) and the NR-leg id mapping of a single-leg NR bearer. On a
+// multi-leg bearer, leg dispatch, id mapping and per-leg statistics are handled
+// by the enclosing compound's splitter instead (see ~PdcpEntity).
 //
 simple NrTxPdcpEntity extends LteTxPdcpEntity
 {
@@ -24,6 +27,5 @@ simple NrTxPdcpEntity extends LteTxPdcpEntity
         @class("NrTxPdcpEntity");
         @display("i=block/layer");
         @signal[pdcpSduSentNr];
-        // dcOut/nrOut gates inherited from LteTxPdcpEntity (see ITxPdcpEntity)
 }
 

@@ -13,17 +13,16 @@ package simu5g.stack.pdcp;
 
 //
 // Module interface for the transmitting side of a PDCP entity. Concrete types
-// (LteTxPdcpEntity, NrTxPdcpEntity) implement it so the PdcpEntity/NrPdcpEntity
-// compound can instantiate them via a typename parameter. The dual-connectivity
-// gates (dcOut, nrOut) are @loose: LTE implementations declare but never use them.
+// (LteTxPdcpEntity, NrTxPdcpEntity) implement it so the PdcpEntity compound
+// can instantiate them via a typename parameter. The TX entity is leg-agnostic
+// (SN assignment, header compression); leg dispatch is the enclosing
+// compound's concern (see ~PdcpEntity).
 //
 moduleinterface ITxPdcpEntity
 {
     parameters:
         @display("i=block/layer");
     gates:
-        input in;             // SDUs from the upper mux (IP/PDCP dispatcher)
-        output out;           // PDUs to the RLC entity
-        output dcOut @loose;  // to DcMux (NR dual connectivity, X2)
-        output nrOut @loose;  // to the NR-leg RLC (NR DC split bearer)
+        input in;    // SDUs from the upper mux (IP/PDCP dispatcher)
+        output out;  // PDCP PDUs downward (leg dispatch is the compound's concern)
 }

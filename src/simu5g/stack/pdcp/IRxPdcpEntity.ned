@@ -13,16 +13,16 @@ package simu5g.stack.pdcp;
 
 //
 // Module interface for the receiving side of a PDCP entity. Concrete types
-// (LteRxPdcpEntity, NrRxPdcpEntity) implement it so the PdcpEntity/NrPdcpEntity
-// compound can instantiate them via a typename parameter. The dual-connectivity
-// gate (dcIn) is @loose: it is wired only on nodes that have a DcMux (X2).
+// (LteRxPdcpEntity, NrRxPdcpEntity) implement it so the PdcpEntity compound
+// can instantiate them via a typename parameter. The RX entity is leg-agnostic;
+// on a multi-leg bearer the compound's joiner merges all legs into its single
+// input, and its reorder window restores SN order (see ~PdcpEntity).
 //
 moduleinterface IRxPdcpEntity
 {
     parameters:
         @display("i=block/layer");
     gates:
-        input in;            // PDUs from the RLC entity
-        input dcIn @loose;   // from DcMux (NR dual connectivity, X2)
-        output out;          // reassembled SDUs to the upper mux
+        input in;    // PDCP PDUs from the RLC leg(s) (merged by the compound)
+        output out;  // reassembled SDUs to the upper mux
 }

@@ -27,12 +27,11 @@ simple LteTxPdcpEntity like ITxPdcpEntity
         @signal[sentPacketToLowerLayer];
         @signal[pdcpSduSent];
         string binderModule = default("binder");
+        bool emitPerSduSignals = default(true);              // cleared by a multi-leg PdcpEntity: its splitter emits the per-leg statistics
         int headerCompressedSize @unit(B) = default(-1B);    // Header compressed size (bytes) ( -1B = compression disabled
 
     gates:
         input in;
         output out;
-        output dcOut @loose;  // NR dual connectivity (unused on LTE); see ITxPdcpEntity
-        output nrOut @loose;  // NR dual connectivity (unused on LTE); see ITxPdcpEntity
 }
 

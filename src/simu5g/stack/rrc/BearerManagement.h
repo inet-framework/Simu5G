@@ -72,15 +72,19 @@ class BearerManagement : public cSimpleModule
     std::map<DrbKey, cModule *> rlcEntities_;
     std::map<DrbKey, cModule *> nrRlcEntities_;
 
+    // NR dual connectivity on this NIC: infrastructure bearers get two legs (see
+    // findOrCreatePdcpEntity)
+    bool dualConnectivityEnabled_ = false;
+
     void setRlcEntityParams(cModule *entity, bool isNr);
     void setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex);
     cModule *lookupRlcEntityModule(DrbKey id, bool isNr);
     cModule *findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
     RlcTxEntityBase *installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
     RlcRxEntityBase *installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    cModule *findOrCreatePdcpEntity(DrbKey id, RlcMux *rlcMux);
+    cModule *findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux);
     void installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    void installPdcpRxSide(DrbKey id, RlcMux *rlcMux, bool isNr);
+    void installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
 
   protected:
     void initialize(int stage) override;
@@ -95,6 +99,7 @@ class BearerManagement : public cSimpleModule
     RlcTxEntityBase *lookupRlcTxBuffer(DrbKey id);
     PdcpTxEntityBase *lookupPdcpTxEntity(DrbKey id);
     PdcpRxEntityBase *lookupPdcpRxEntity(DrbKey id);
+    cModule *lookupPdcpEntityModule(DrbKey id);   // the per-bearer PdcpEntity compound (DcMux leg dispatch)
     virtual void deleteLocalPdcpEntities(MacNodeId nodeId);
     virtual void deleteLocalRlcQueues(MacNodeId nodeId, bool nrStack=false);
     void pdcpActiveUeUL(std::set<MacNodeId> *ueSet);

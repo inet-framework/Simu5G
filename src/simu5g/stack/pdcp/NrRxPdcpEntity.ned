@@ -25,6 +25,7 @@ simple NrRxPdcpEntity extends LteRxPdcpEntity
         @dynamic(true);
         @class("NrRxPdcpEntity");
         @display("i=block/layer");
+        bool reorderingEnabled = default(false);   // set by a multi-leg PdcpEntity: reorder the SN stream merged from several legs
         bool outOfOrderDelivery = default(false);
         double timeout @unit(s) = default(0.1s);   // Timeout for RX Buffer
         int rxWindowSize = default(4096);

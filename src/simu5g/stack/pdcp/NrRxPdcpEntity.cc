@@ -26,15 +26,13 @@ void NrRxPdcpEntity::initialize(int stage)
     LteRxPdcpEntity::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
+        reorderingEnabled_ = par("reorderingEnabled").boolValue();
         outOfOrderDelivery_ = par("outOfOrderDelivery").boolValue();
         rxWindowDesc_.windowSize_ = par("rxWindowSize");
         timeout_ = par("timeout").doubleValue();
 
         received_.resize(rxWindowDesc_.windowSize_, false);
         t_reordering_.setTimerId(REORDERING_T);
-
-        inet::NetworkInterface *nic = inet::getContainingNicModule(this);
-        dualConnectivityEnabled_ = nic->par("dualConnectivityEnabled").boolValue();
     }
 }
 
@@ -46,7 +44,7 @@ void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
 
     EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - processing PDCP SDU with SN[" << rcvdSno << "]" << endl;
 
-    if (!dualConnectivityEnabled_ || outOfOrderDelivery_) { // deliver packet to upper layer
+    if (!reorderingEnabled_ || outOfOrderDelivery_) { // deliver packet to upper layer
         EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - Deliver SDU SN[" << rcvdSno << "] to upper layer" << endl;
         pdcpSdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
         deliverSduToUpperLayer(pdcpSdu);

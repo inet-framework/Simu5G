@@ -29,8 +29,7 @@ module NrNicEnb extends LteNicEnbD2D
         ip2nic.hasSdap = default(this.hasSdap);
         sdap.nodeRole = default("gNB");
         pdcpMux.isNR = default(true);
-        rrc.bearerManagement.pdcpRxEntityModuleType = default("simu5g.stack.pdcp.NrRxPdcpEntity");
-        rrc.bearerManagement.pdcpTxEntityModuleType = default("simu5g.stack.pdcp.NrTxPdcpEntity");
+        rrc.bearerManagement.pdcpEntityModuleType = default("simu5g.stack.pdcp.NrPdcpEntity");
         mac.typename = default("NrMacGnb");
         lteChannelModelType = default("NrChannelModel_3GPP38_901");
         packetFlowObserver.typename = default("NrPacketFlowObserverGnb");

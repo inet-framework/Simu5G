@@ -66,8 +66,8 @@ class NrRxPdcpEntity : public LteRxPdcpEntity
 {
   protected:
 
-    // Dual Connectivity support
-    bool dualConnectivityEnabled_ = false;
+    // true on a multi-leg bearer: reorder the SN stream merged from several legs
+    bool reorderingEnabled_ = false;
 
     // if true, deliver packets to the upper layer without reordering
     // NOTE: reordering can apply for Split Bearers only
