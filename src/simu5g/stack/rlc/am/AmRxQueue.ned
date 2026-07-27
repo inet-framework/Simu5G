@@ -24,7 +24,7 @@ simple AmRxQueue like simu5g.stack.rlc.IRlcAmRxEntity
         string binderModule = default("binder");
         bool isNR @mutable = default(false);  // set programmatically by BearerManagement
         string upperMuxModule = default("^.upperMux");
-        string macModule @mutable = default("^.^.mac");  // set programmatically by BearerManagement
+        string macModule = default("^.^.mac");  // set by the enclosing RlcAmEntity compound (per leg)
         int rxWindowSize = default(200);
         double ackReportInterval @unit(s) = 0.10s;
         double statusReportInterval @unit(s) = 0.20s;

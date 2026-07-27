@@ -30,6 +30,8 @@ module RlcAmEntity
     parameters:
         @dynamic(true);
         @display("i=block/wheelbarrow");
+        string macModule = default("^.mac");   // this bearer leg's MAC; set per leg by BearerManagement
+        *.macModule = default(absPath(this.macModule));
         string txEntityType = default("simu5g.stack.rlc.am.AmTxQueue");
         string rxEntityType = default("simu5g.stack.rlc.am.AmRxQueue");
     gates:

@@ -181,10 +181,15 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
 
 void BearerManagement::setRlcEntityParams(cModule *entity, bool isNr)
 {
-    if (entity->hasPar("macModule"))  // entities sit inside the compound: NIC is two levels up
-        entity->par("macModule").setStringValue(isNr ? "^.^.nrMac" : "^.^.mac");
-    if (entity->hasPar("isNR"))
-        entity->par("isNR").setBoolValue(isNr);
+    // 'entity' is the RlcTm/Um/AmEntity COMPOUND; these paths are relative to it (^ = the NIC).
+    // The compound NED absPath()-resolves them and passes them to its tx/rx submodules (see
+    // '*.macModule = default(absPath(this.macModule))'). hasPar() guards because not every
+    // compound/leg declares both (TM has neither; AM has no rlcMux). Per leg: a UE's NR leg uses
+    // nrMac/nrRlcMux; everything else (incl. a gNB's NR bearers, which have no nrMac) uses mac/rlcMux.
+    if (entity->hasPar("macModule"))
+        entity->par("macModule").setStringValue(isNr ? "^.nrMac" : "^.mac");
+    if (entity->hasPar("rlcMuxModule"))
+        entity->par("rlcMuxModule").setStringValue(isNr ? "^.nrRlcMux" : "^.rlcMux");
 }
 
 void BearerManagement::setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex)
@@ -231,13 +236,21 @@ cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lte
     }
     std::string name = std::string(isNr ? "nrRlc-" : "rlc-") + prefix + "-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
     auto *module = moduleType->create(name.c_str(), nicModule_);
+    // Set the leg's MAC/RLC-mux paths on the COMPOUND before finalize; its NED passes them down
+    // to the tx/rx submodules (see '*.macModule = this.macModule' in RlcUmEntity/RlcAmEntity), so
+    // the submodule params carry the right value at build time -- no post-build @mutable write.
+    setRlcEntityParams(module, isNr);
     module->finalizeParameters();
     module->buildInside();
     setEntityDisplayPosition(module, false, rlcMux, num(id.getDrbId()));
 
-    // Parametrize both sides (params remain settable until the entities initialize)
-    setRlcEntityParams(module->getSubmodule("tx"), isNr);
-    setRlcEntityParams(module->getSubmodule("rx"), isNr);
+    // The NR-leg marker stays a per-side @mutable write for now (the per-leg entity
+    // selection work retires it).
+    for (const char *side : { "tx", "rx" }) {
+        cModule *e = module->getSubmodule(side);
+        if (e->hasPar("isNR"))
+            e->par("isNR").setBoolValue(isNr);
+    }
 
     module->scheduleStart(simTime());
     module->callInitialize();

@@ -22,6 +22,10 @@ module RlcUmEntity
     parameters:
         @dynamic(true);
         @display("i=block/wheelbarrow");
+        string macModule = default("^.mac");        // this bearer leg's MAC; set per leg by BearerManagement
+        string rlcMuxModule = default("^.rlcMux");   // this bearer leg's RLC mux
+        *.macModule = default(absPath(this.macModule));
+        *.rlcMuxModule = default(absPath(this.rlcMuxModule));
         string txEntityType = default("simu5g.stack.rlc.um.UmTxEntity");
         string rxEntityType = default("simu5g.stack.rlc.um.UmRxEntity");
     gates:

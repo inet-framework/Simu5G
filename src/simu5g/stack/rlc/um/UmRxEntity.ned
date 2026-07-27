@@ -27,7 +27,7 @@ simple UmRxEntity like simu5g.stack.rlc.IRlcRxEntity
         @display("i=block/layer");
         string binderModule = default("binder");
         bool isNR @mutable = default(false);  // set programmatically by BearerManagement
-        string macModule @mutable = default("^.^.mac");  // set programmatically by BearerManagement
+        string macModule = default("^.^.mac");  // set by the enclosing RlcUmEntity compound (per leg)
         double timeout @unit(s) = default(1s);            // Timeout for RX Buffer
         int rxWindowSize = default(16);
 
