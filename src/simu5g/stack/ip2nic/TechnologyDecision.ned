@@ -18,6 +18,7 @@ simple TechnologyDecision like ITechnologyDecision
         @display("i=block/fork");
         string nodeType;
         string binderModule = default("binder");
+        string handoverPacketHolderModule = default("^.handoverPacketHolder");
 
         // DC case: both LTE and NR stacks available, dual connectivity enabled.
         object dcUseNrCondition = default(expr(

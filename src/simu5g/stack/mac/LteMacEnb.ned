@@ -34,6 +34,11 @@ module LteMacEnb extends LteMacBase
     parameters:
         @class("LteMacEnb");
 
+        // Module references for accessing other stack layers
+        string rlcMuxModule = default("^.rlcMux");
+        string pdcpMuxModule = default("^.pdcpMux");
+        string bearerManagementModule = default("^.rrc.bearerManagement");
+
         //# volatile xml optSolution = default(xmldoc("solution.sol"));
 
         //#

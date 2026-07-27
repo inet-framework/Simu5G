@@ -37,6 +37,10 @@ simple BearerManagement
 
         // Module references for accessing other stack layers
         string binderModule = default("binder");
+        string registrationModule = default("^.registration");
+        string pdcpMuxModule = default("^.^.pdcpMux");
+        string pdcpDcMuxModule = default("^.^.pdcpDcMux");
+        string d2dModeControllerModule = default("^.d2dModeController");
         string rlcMuxModule = default("^.^.rlcMux");
         string nrRlcMuxModule = default("^.^.nrRlcMux");
         string macModule = default("^.^.mac");

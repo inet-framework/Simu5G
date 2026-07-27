@@ -42,7 +42,7 @@ void HandoverController::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
         mac_.reference(this, "macModule", true);
-        bearerManagement_ = check_and_cast<BearerManagement *>(getParentModule()->getSubmodule("bearerManagement"));
+        bearerManagement_ = inet::getModuleFromPar<BearerManagement>(par("bearerManagementModule"), this);
         handoverPacketHolder_.reference(this, "handoverPacketHolderModule", true);
         fbGen_.reference(this, "feedbackGeneratorModule", true);
         otherHandoverController_.reference(this, "otherHandoverControllerModule", false);

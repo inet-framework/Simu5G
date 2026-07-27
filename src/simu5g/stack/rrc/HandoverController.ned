@@ -45,6 +45,7 @@ simple HandoverController
 
         string binderModule = default("binder");
         string macModule = default("^.^.mac");
+        string bearerManagementModule = default("^.bearerManagement");
         string handoverPacketHolderModule = default("^.^.handoverPacketHolder");
         string feedbackGeneratorModule = default("^.^.dlFbGen"); // TODO or "^.^.nrDlFbGen"
         string otherHandoverControllerModule = default("");

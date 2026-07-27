@@ -31,7 +31,7 @@ Define_Module(BearerManagement);
 void BearerManagement::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
-        registration_ = check_and_cast<Registration *>(getParentModule()->getSubmodule("registration"));
+        registration_ = inet::getModuleFromPar<Registration>(par("registrationModule"), this);
 
         // Resolve PDCP entity types
         pdcpTxEntityModuleType_ = cModuleType::get(par("pdcpTxEntityModuleType").stringValue());
@@ -94,8 +94,8 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     installRlcRxSide(rlcId, lteInfo, rlcMux, isNr);
 
     // PDCP entity creation
-    auto *pdcpMux = check_and_cast<UpperMux *>(nicModule_->getSubmodule("pdcpMux"));
-    auto *pdcpDcMux = dynamic_cast<DcMux *>(nicModule_->getSubmodule("pdcpDcMux")); // nullptr on UEs (no X2)
+    auto *pdcpMux = inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this);
+    auto *pdcpDcMux = inet::findModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this); // nullptr on UEs (no X2)
 
     if (withPdcp) {
         DrbKey id = DrbKey(lteInfo->getSourceId(), lteInfo->getDrbId());
@@ -190,8 +190,8 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
     installRlcTxSide(rlcId, lteInfo, rlcMux, isNr);
 
     // PDCP entity creation
-    auto *pdcpMux = check_and_cast<UpperMux *>(nicModule_->getSubmodule("pdcpMux"));
-    auto *pdcpDcMux = dynamic_cast<DcMux *>(nicModule_->getSubmodule("pdcpDcMux")); // nullptr on UEs (no X2)
+    auto *pdcpMux = inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this);
+    auto *pdcpDcMux = inet::findModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this); // nullptr on UEs (no X2)
 
     if (withPdcp) {
         DrbKey id = DrbKey(lteInfo->getDestId(), lteInfo->getDrbId());
@@ -290,7 +290,7 @@ void BearerManagement::setRlcEntityParams(cModule *entity, bool isNr)
 
 void BearerManagement::setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex)
 {
-    auto *pdcpMux = nicModule_->getSubmodule("pdcpMux");
+    auto *pdcpMux = inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this);
     if (!pdcpMux || !rlcMux)
         return;
 
@@ -371,7 +371,7 @@ RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *
 
     // D2D peer tracking (only for UM TX entities)
     if (static_cast<LteRlcType>(lteInfo->getRlcType()) == UM) {
-        auto *d2dCtrl = dynamic_cast<D2DModeController *>(nicModule_->getSubmodule("rrc")->getSubmodule("d2dModeController"));
+        auto *d2dCtrl = inet::findModuleFromPar<D2DModeController>(par("d2dModeControllerModule"), this);
         if (d2dCtrl) {
             auto *umTxEnt = check_and_cast<UmTxEntity *>(txEnt);
             d2dCtrl->registerD2DPeerTxEntity(MacNodeId(lteInfo->getD2dRxPeerId()), umTxEnt);
@@ -420,8 +420,8 @@ void BearerManagement::deleteLocalPdcpEntities(MacNodeId nodeId)
 {
     Enter_Method_Silent("deleteLocalPdcpEntities()");
 
-    auto *pdcpMux = check_and_cast<UpperMux *>(nicModule_->getSubmodule("pdcpMux"));
-    auto *pdcpDcMux = dynamic_cast<DcMux *>(nicModule_->getSubmodule("pdcpDcMux")); // nullptr on UEs (no X2)
+    auto *pdcpMux = inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this);
+    auto *pdcpDcMux = inet::findModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this); // nullptr on UEs (no X2)
 
     bool isEnb = (registration_->getNodeType() == NODEB);
 

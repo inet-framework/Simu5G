@@ -108,7 +108,7 @@ void TechnologyDecision::handleMessage(cMessage *msg)
         //    after: ueLteStack=true, ueNrStack=true, servingNodeId=1, nrServingNodeId=2, typeOfService=10 --> useNr = true
         //    before: ueLteStack=true, ueNrStack=true,servingNodeId=1, nrServingNodeId=0, typeOfService=10 --> useNr = false
         //
-        auto handoverPacketHolder = check_and_cast<HandoverPacketHolderUe*>(getParentModule()->getSubmodule("handoverPacketHolder"));
+        auto handoverPacketHolder = inet::getModuleFromPar<HandoverPacketHolderUe>(par("handoverPacketHolderModule"), this);
         MacNodeId servingNodeId = handoverPacketHolder->getServingNodeId();
         MacNodeId nrServingNodeId = handoverPacketHolder->getNrServingNodeId();
         bool hasLteServing = (servingNodeId != NODEID_NONE);

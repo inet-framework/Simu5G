@@ -37,6 +37,7 @@
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/rlc/RlcMux.h"
+#include "simu5g/stack/pdcp/UpperMux.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include <inet/networklayer/common/NetworkInterface.h>
 
@@ -1061,7 +1062,7 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
         }
 
         // check for active UEs in RLC
-        auto *rlcMux = dynamic_cast<RlcMux *>(inet::getContainingNicModule(this)->getSubmodule("rlcMux"));
+        auto *rlcMux = inet::findModuleFromPar<RlcMux>(par("rlcMuxModule"), this);
         if (rlcMux != nullptr) {
             std::set<MacNodeId> activeRlcUe;
             rlcMux->activeUeUL(&activeRlcUe);
@@ -1075,9 +1076,8 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
          * the PDCP layer can also have SDUs buffered.
          */
 
-        cModule *nic = inet::getContainingNicModule(this);
-        if (nic->getSubmodule("pdcpMux")->par("isNR").boolValue()) {
-            auto *bm = check_and_cast<BearerManagement *>(nic->getSubmodule("rrc")->getSubmodule("bearerManagement"));
+        if (inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this)->par("isNR").boolValue()) {
+            auto *bm = inet::getModuleFromPar<BearerManagement>(par("bearerManagementModule"), this);
             std::set<MacNodeId> activePdcpUe;
             bm->pdcpActiveUeUL(&activePdcpUe);
             for (auto ue: activePdcpUe) {

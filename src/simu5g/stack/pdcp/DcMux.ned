@@ -20,6 +20,7 @@ simple DcMux
     parameters:
         @display("i=block/dispatch");
         string binderModule = default("binder");
+        string bearerManagementModule = default("^.rrc.bearerManagement");
     gates:
         input dcManagerIn @loose;
         output dcManagerOut @loose;

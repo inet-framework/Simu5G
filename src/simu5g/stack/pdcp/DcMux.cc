@@ -28,7 +28,7 @@ void DcMux::initialize(int stage)
         binder_.reference(this, "binderModule", true);
         nodeId_ = MacNodeId(inet::getContainingNode(this)->par("macNodeId").intValue());
 
-        bearerManagement_ = check_and_cast<BearerManagement *>(inet::getContainingNicModule(this)->getSubmodule("rrc")->getSubmodule("bearerManagement"));
+        bearerManagement_ = inet::getModuleFromPar<BearerManagement>(par("bearerManagementModule"), this);
 
         dcManagerInGate_ = gate("dcManagerIn");
     }

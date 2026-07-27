@@ -54,8 +54,7 @@ void Ip2Nic::initialize(int stage)
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         // Initialize flags from PDCP submodule's NED parameters
-        cModule *pdcpMux = networkIf->getSubmodule("pdcpMux");
-        isNR_ = pdcpMux->par("isNR").boolValue();
+        isNR_ = pdcpMux_->par("isNR").boolValue();
         hasD2DSupport_ = networkIf->par("d2dCapable").boolValue() || isNR_;
 
         hasSdap_ = par("hasSdap").boolValue();
