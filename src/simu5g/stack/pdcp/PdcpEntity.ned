@@ -52,7 +52,7 @@ module PdcpEntity
         tx.out --> { @display("m=s"); } --> lowerOut;
         lowerIn --> { @display("m=s"); } --> rx.in;
         rx.out --> { @display("m=n"); } --> upperOut;
-        tx.dcOut --> dcOut;
-        dcIn --> rx.dcIn;
+        tx.dcOut --> { @display("m=e"); } --> dcOut;
+        dcIn --> { @display("m=e"); } --> rx.dcIn;
         tx.nrOut --> nrOut;
 }
