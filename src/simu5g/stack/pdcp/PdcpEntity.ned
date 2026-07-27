@@ -29,7 +29,7 @@ package simu5g.stack.pdcp;
 //   [ {rat: "lte"}, {rat: "nr"} ]    <- UE: local LTE + local NR stack
 //   [ {rat: "lte"}, {rat: "x2"} ]    <- DC master: local + remote via X2
 // set by BearerManagement on creation; the "rat" field selects the splitter's
-// per-leg id mapping (see ~PdcpLegSplitter).
+// per-leg id mapping (see ~ExprBasedPdcpLegSplitter).
 //
 // Variants are subclasses overriding the entity typenames (e.g. ~NrPdcpEntity;
 // a mixed entity can override just tx.typename or rx.typename from the
@@ -60,7 +60,7 @@ module PdcpEntity
         rx: <default("simu5g.stack.pdcp.LteRxPdcpEntity")> like IRxPdcpEntity {
             @display("p=150,50");
         }
-        splitter: <default("simu5g.stack.pdcp.PdcpLegSplitter")> like IPdcpLegSplitter if numLegs > 1 {
+        splitter: <default("simu5g.stack.pdcp.ExprBasedPdcpLegSplitter")> like IPdcpLegSplitter if numLegs > 1 {
             @display("p=50,130");
         }
         joiner: <default("simu5g.stack.pdcp.PdcpLegJoiner")> like IPdcpLegJoiner if numLegs > 1 {

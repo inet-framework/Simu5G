@@ -9,7 +9,7 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/pdcp/PdcpLegSplitter.h"
+#include "simu5g/stack/pdcp/ExprBasedPdcpLegSplitter.h"
 
 #include <inet/common/packet/Packet.h>
 #include "simu5g/common/LteControlInfo.h"
@@ -19,13 +19,36 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-Define_Module(PdcpLegSplitter);
+Define_Module(ExprBasedPdcpLegSplitter);
 
-simsignal_t PdcpLegSplitter::sentPacketToLowerLayerSignal_ = registerSignal("sentPacketToLowerLayer");
-simsignal_t PdcpLegSplitter::pdcpSduSentSignal_ = registerSignal("pdcpSduSent");
-simsignal_t PdcpLegSplitter::pdcpSduSentNrSignal_ = registerSignal("pdcpSduSentNr");
+simsignal_t ExprBasedPdcpLegSplitter::sentPacketToLowerLayerSignal_ = registerSignal("sentPacketToLowerLayer");
+simsignal_t ExprBasedPdcpLegSplitter::pdcpSduSentSignal_ = registerSignal("pdcpSduSent");
+simsignal_t ExprBasedPdcpLegSplitter::pdcpSduSentNrSignal_ = registerSignal("pdcpSduSentNr");
 
-void PdcpLegSplitter::initialize(int stage)
+ExprBasedPdcpLegSplitter::~ExprBasedPdcpLegSplitter()
+{
+    delete legSelectionRule_;
+}
+
+cValue ExprBasedPdcpLegSplitter::LegResolver::readVariable(cExpression::Context *context, const char *name)
+{
+    if (!strcmp(name, "useNR")) return module_->currentUseNR_;
+    if (!strcmp(name, "numLegs")) return (intval_t)module_->numLegs_;
+    throw cRuntimeError("ExprBasedPdcpLegSplitter: unknown variable '%s' in legSelectionRule expression", name);
+}
+
+static cDynamicExpression *getExpressionFromPar(cPar& par, cDynamicExpression::IResolver *resolver)
+{
+    cObject *obj = par.objectValue();
+    auto *exprObj = dynamic_cast<cOwnedDynamicExpression *>(obj);
+    if (!exprObj)
+        throw cRuntimeError("Parameter '%s' must be an expr() expression", par.getFullPath().c_str());
+    auto *expr = exprObj->dup();
+    expr->setResolver(resolver);
+    return expr;
+}
+
+void ExprBasedPdcpLegSplitter::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
@@ -33,9 +56,11 @@ void PdcpLegSplitter::initialize(int stage)
         numLegs_ = par("numLegs");
         auto *legs = check_and_cast<cValueArray *>(par("legs").objectValue());
         if (legs->size() != numLegs_)
-            throw cRuntimeError("PdcpLegSplitter: legs descriptor has %d entries, expected numLegs=%d", legs->size(), numLegs_);
+            throw cRuntimeError("ExprBasedPdcpLegSplitter: legs descriptor has %d entries, expected numLegs=%d", legs->size(), numLegs_);
         for (int i = 0; i < numLegs_; i++)
             legRats_.push_back(check_and_cast<cValueMap *>(legs->get(i).objectValue())->get("rat").stdstringValue());
+
+        legSelectionRule_ = getExpressionFromPar(par("legSelectionRule"), new LegResolver(this));
 
         cModule *node = inet::getContainingNode(this);
         nodeId_ = MacNodeId(node->par("macNodeId").intValue());
@@ -44,17 +69,17 @@ void PdcpLegSplitter::initialize(int stage)
     }
 }
 
-void PdcpLegSplitter::handleMessage(cMessage *msg)
+void ExprBasedPdcpLegSplitter::handleMessage(cMessage *msg)
 {
     auto pkt = check_and_cast<inet::Packet *>(msg);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
-    // Leg choice: follow the TechnologyReq steering tag (see NED comment; the
-    // legSelectionRule policy hook replaces this in a later phase)
-    bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
-    int leg = useNR ? 1 : 0;
-    if (leg >= numLegs_ || !gate("out", leg)->isConnected()) {
-        EV_WARN << NOW << " PdcpLegSplitter - leg " << leg << " is not available (torn down?); falling back to leg 0" << endl;
+    // Evaluate the leg selection rule. The default rule follows the TechnologyReq tag --
+    // the per-packet leg choice is the technology decision, owned by TechnologyDecision.
+    currentUseNR_ = pkt->getTag<TechnologyReq>()->getUseNR();
+    int leg = legSelectionRule_->intValue();
+    if (leg < 0 || leg >= numLegs_ || !gate("out", leg)->isConnected()) {
+        EV_WARN << NOW << " ExprBasedPdcpLegSplitter - leg " << leg << " is not available (torn down?); falling back to leg 0" << endl;
         leg = 0;
     }
 
@@ -63,7 +88,7 @@ void PdcpLegSplitter::handleMessage(cMessage *msg)
     if (rat == "nr") {
         // UE's local NR stack: translate to the NR-leg ids for the NR RLC (the serving node
         // is looked up per packet, so handover is honored)
-        EV << NOW << " PdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to NR RLC" << endl;
+        EV << NOW << " ExprBasedPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to NR RLC" << endl;
         lteInfo->setSourceId(nrNodeId_);
         lteInfo->setDestId(binder_->getServingNodeOrSelf(nrNodeId_));
         if (hasListeners(pdcpSduSentNrSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D)
@@ -73,7 +98,7 @@ void PdcpLegSplitter::handleMessage(cMessage *msg)
     else if (rat == "x2") {
         // DC master's remote leg: rewrite to the secondary gNB / NR UE ids and address the
         // X2 tunnel; the PDU leaves via the DcMux
-        EV << NOW << " PdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - the destination is under the control of a secondary node" << endl;
+        EV << NOW << " ExprBasedPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - the destination is under the control of a secondary node" << endl;
         MacNodeId secondaryNodeId = binder_->getSecondaryNode(nodeId_);
         ASSERT(secondaryNodeId != NODEID_NONE);
         ASSERT(secondaryNodeId != nodeId_);
@@ -84,7 +109,7 @@ void PdcpLegSplitter::handleMessage(cMessage *msg)
         pkt->addTagIfAbsent<X2TargetReq>()->setTargetNode(secondaryNodeId);
     }
     else { // "lte": local leg, ids already correct
-        EV << NOW << " PdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to LTE RLC" << endl;
+        EV << NOW << " ExprBasedPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to LTE RLC" << endl;
         if (hasListeners(pdcpSduSentSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D)
             emit(pdcpSduSentSignal_, pkt);
         emit(sentPacketToLowerLayerSignal_, pkt);

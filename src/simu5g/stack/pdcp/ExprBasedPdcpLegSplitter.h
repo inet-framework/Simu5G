@@ -9,8 +9,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _PDCP_LEG_SPLITTER_H_
-#define _PDCP_LEG_SPLITTER_H_
+#ifndef _EXPR_BASED_PDCP_LEG_SPLITTER_H_
+#define _EXPR_BASED_PDCP_LEG_SPLITTER_H_
 
 #include <inet/common/ModuleRefByPar.h>
 #include "simu5g/common/LteCommon.h"
@@ -19,15 +19,24 @@
 namespace simu5g {
 
 /**
- * @class PdcpLegSplitter
- * @brief TX-side leg dispatcher of a multi-leg PdcpEntity compound.
+ * @class ExprBasedPdcpLegSplitter
+ * @brief Expression-driven TX-side leg dispatcher of a multi-leg PdcpEntity compound.
  *
- * Picks the RLC leg for each PDCP PDU and applies the leg's id mapping
- * (see PdcpLegSplitter.ned for the full description).
+ * Evaluates the legSelectionRule expression per PDU for the leg index and
+ * applies the leg's id mapping (see ExprBasedPdcpLegSplitter.ned).
  */
-class PdcpLegSplitter : public omnetpp::cSimpleModule
+class ExprBasedPdcpLegSplitter : public omnetpp::cSimpleModule
 {
   protected:
+    // Provides the variable bindings for the legSelectionRule expression
+    class LegResolver : public cDynamicExpression::IResolver {
+        ExprBasedPdcpLegSplitter *module_;
+      public:
+        LegResolver(ExprBasedPdcpLegSplitter *module) : module_(module) {}
+        IResolver *dup() const override { return new LegResolver(module_); }
+        cValue readVariable(cExpression::Context *context, const char *name) override;
+    };
+
     static omnetpp::simsignal_t sentPacketToLowerLayerSignal_;
     static omnetpp::simsignal_t pdcpSduSentSignal_;
     static omnetpp::simsignal_t pdcpSduSentNrSignal_;
@@ -40,9 +49,18 @@ class PdcpLegSplitter : public omnetpp::cSimpleModule
     MacNodeId nodeId_ = NODEID_NONE;     // this node's (LTE/base) id
     MacNodeId nrNodeId_ = NODEID_NONE;   // this UE's NR-leg id (UEs only)
 
+    // Leg selection rule (from the NED parameter)
+    cDynamicExpression *legSelectionRule_ = nullptr;
+
+    // Current evaluation context (set before each evaluation)
+    bool currentUseNR_ = false;
+
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(omnetpp::cMessage *msg) override;
+
+  public:
+    ~ExprBasedPdcpLegSplitter() override;
 };
 
 } // namespace simu5g
