@@ -27,7 +27,7 @@ package simu5g.stack.pdcp;
 //
 // Leg 0 is the local LTE leg; leg 1 is the UE's local NR stack, or a DC
 // master's remote leg via X2 -- the splitter selects the per-leg id mapping
-// accordingly (see ~ExprBasedPdcpLegSplitter).
+// accordingly (see ~DcPdcpLegSplitter).
 //
 // Variants are subclasses overriding the entity typenames (e.g. ~NrPdcpEntity;
 // a mixed entity can override just tx.typename or rx.typename from the
@@ -56,7 +56,7 @@ module PdcpEntity
         rx: <default("simu5g.stack.pdcp.LteRxPdcpEntity")> like IRxPdcpEntity {
             @display("p=150,50");
         }
-        splitter: <default("simu5g.stack.pdcp.ExprBasedPdcpLegSplitter")> like IPdcpLegSplitter if numLegs > 1 {
+        splitter: <default("simu5g.stack.pdcp.DcPdcpLegSplitter")> like IPdcpLegSplitter if numLegs > 1 {
             @display("p=50,130;is=s");
         }
         joiner: <default("simu5g.stack.pdcp.PdcpLegJoiner")> like IPdcpLegJoiner if numLegs > 1 {

@@ -9,8 +9,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _EXPR_BASED_PDCP_LEG_SPLITTER_H_
-#define _EXPR_BASED_PDCP_LEG_SPLITTER_H_
+#ifndef _DC_PDCP_LEG_SPLITTER_H_
+#define _DC_PDCP_LEG_SPLITTER_H_
 
 #include <inet/common/ModuleRefByPar.h>
 #include "simu5g/common/LteCommon.h"
@@ -19,20 +19,20 @@
 namespace simu5g {
 
 /**
- * @class ExprBasedPdcpLegSplitter
+ * @class DcPdcpLegSplitter
  * @brief Expression-driven TX-side leg dispatcher of a multi-leg PdcpEntity compound.
  *
  * Evaluates the legSelectionRule expression per PDU for the leg index and
- * applies the leg's id mapping (see ExprBasedPdcpLegSplitter.ned).
+ * applies the leg's id mapping (see DcPdcpLegSplitter.ned).
  */
-class ExprBasedPdcpLegSplitter : public omnetpp::cSimpleModule
+class DcPdcpLegSplitter : public omnetpp::cSimpleModule
 {
   protected:
     // Provides the variable bindings for the legSelectionRule expression
     class LegResolver : public cDynamicExpression::IResolver {
-        ExprBasedPdcpLegSplitter *module_;
+        DcPdcpLegSplitter *module_;
       public:
-        LegResolver(ExprBasedPdcpLegSplitter *module) : module_(module) {}
+        LegResolver(DcPdcpLegSplitter *module) : module_(module) {}
         IResolver *dup() const override { return new LegResolver(module_); }
         cValue readVariable(cExpression::Context *context, const char *name) override;
     };
@@ -60,7 +60,7 @@ class ExprBasedPdcpLegSplitter : public omnetpp::cSimpleModule
     void handleMessage(omnetpp::cMessage *msg) override;
 
   public:
-    ~ExprBasedPdcpLegSplitter() override;
+    ~DcPdcpLegSplitter() override;
 };
 
 } // namespace simu5g

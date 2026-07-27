@@ -12,9 +12,10 @@
 package simu5g.stack.pdcp;
 
 //
-// Expression-driven TX-side leg dispatcher of a multi-leg PDCP entity (see
-// ~PdcpEntity): evaluates the legSelectionRule expression for each PDCP PDU to
-// obtain the leg index, then applies that leg's id mapping on the way out:
+// TX-side leg dispatcher for a dual-connectivity split bearer (two legs). For
+// each PDCP PDU it obtains the leg index from the legSelectionRule expression
+// (default: follow the TechnologyReq tag), then applies that leg's DC-specific
+// id mapping on the way out:
 //  - leg 0 (local LTE leg): ids already correct; emits pdcpSduSent.
 //  - leg 1 on a UE (the local NR stack): rewrites the flow's source/destination
 //    to the UE's NR-leg node ids (serving node looked up per packet, so
@@ -30,7 +31,7 @@ package simu5g.stack.pdcp;
 // If the selected leg is torn down (gate unconnected), the PDU falls back to
 // leg 0 with a warning -- steering avoids dead legs on its own.
 //
-simple ExprBasedPdcpLegSplitter like IPdcpLegSplitter
+simple DcPdcpLegSplitter like IPdcpLegSplitter
 {
     parameters:
         int numLegs;                                             // number of legs (set by the enclosing PdcpEntity)
