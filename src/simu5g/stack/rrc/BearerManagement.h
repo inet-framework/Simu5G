@@ -61,7 +61,7 @@ class BearerManagement : public cSimpleModule
     inet::ModuleRefByPar<RlcMux> nrRlcMuxModule;
     inet::ModuleRefByPar<LteMacBase> macModule;
     inet::ModuleRefByPar<LteMacBase> nrMacModule;
-    inet::ModuleRefByPar<Binder> binderModule;   // for DC master/secondary topology lookups
+    inet::ModuleRefByPar<Binder> binderModule;   // DC master/secondary topology lookups; peer BearerManagement on RLF
 
     // Entity registries (CP owns the lifecycle of all entities)
     // One PDCP entity module (compound: TX+RX, see PdcpEntityBase) per bearer, keyed by (peer
@@ -81,6 +81,15 @@ class BearerManagement : public cSimpleModule
     cMessage *rlfTrigger_ = nullptr;
     std::set<std::pair<MacNodeId, bool>> pendingRlf_;  // (peer nodeId, nrStack)
     void handleRadioLinkFailure(MacNodeId nodeId, bool nrStack);
+
+    // RRC re-establishment (TS 38.331 5.3.7), modeled by its timers. On RLF the peer's link
+    // is released (Ip2Nic drops its traffic); T311 (cell selection) then T301 (request ->
+    // complete) run, after which the peer is un-released (Ip2Nic::resumeUe) and its bearer
+    // re-establishes on demand. t311_ = 0 => release-to-IDLE (no reconnect attempt).
+    simtime_t t311_;
+    simtime_t t301_;
+    std::map<cMessage *, MacNodeId> t311Timers_;   // pending cell-selection timers -> peer
+    std::map<cMessage *, MacNodeId> t301Timers_;   // pending request->complete timers -> peer
 
     // NR dual connectivity on this NIC: infrastructure bearers get two legs (see
     // findOrCreatePdcpEntity)
@@ -107,6 +116,9 @@ class BearerManagement : public cSimpleModule
     // Schedule an RLC-detected radio link failure teardown for a peer node, deferred
     // to a safe execution context. nrStack selects the failing leg (LTE vs NR).
     void scheduleRadioLinkFailure(MacNodeId nodeId, bool nrStack);
+    // Release + tear down the link to a peer (both legs, MAC/RLC/PDCP + Ip2Nic drop). Public
+    // so the failing node can drive the symmetric teardown on the peer via the binder.
+    void releaseLink(MacNodeId peerId);
     virtual void createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp=true);
     virtual void createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp=true);
     virtual RlcTxEntityBase *createRlcTxBuffer(DrbKey id, FlowControlInfo *lteInfo);

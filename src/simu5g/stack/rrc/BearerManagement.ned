@@ -20,6 +20,16 @@ simple BearerManagement
     parameters:
         @display("i=block/control");
         @class(BearerManagement);
+        string binderModule = default("binder");   // to reach a peer's BearerManagement on RLF
+
+        // RRC re-establishment after a radio link failure (TS 38.331 5.3.7). On RLF the peer's
+        // link is released (Ip2Nic drops its traffic); t311 = cell-(re)selection timer, and when
+        // it expires a suitable cell is assumed selected (single-cell), the RRCReestablishmentRequest
+        // is sent and t301 (request -> complete) runs; on its expiry the peer is un-released and its
+        // bearer re-establishes on demand. t311 = 0s disables re-establishment (release-to-IDLE).
+        // PDU-level RRC signaling is abstracted by these timers, as for handover.
+        double t311 @unit(s) = default(0s);     // RRC re-establishment cell-selection timer (0 => release-to-IDLE)
+        double t301 @unit(s) = default(0.1s);   // RRC re-establishment (request -> complete) timer
 
         // PDCP entity parameters
         int headerCompressedSize @unit(B) = default(-1B);
@@ -46,8 +56,8 @@ simple BearerManagement
         // TM is transparent and identical for both RATs, so it has no NR override.
 
         // Module references for accessing other stack layers
-        string binderModule = default("binder");
         string registrationModule = default("^.registration");
+        string ip2nicModule = default("^.^.ip2nic");
         string pdcpMuxModule = default("^.^.pdcpMux");
         string pdcpDcMuxModule = default("^.^.pdcpDcMux");
         string d2dModeControllerModule = default("^.d2dModeController");

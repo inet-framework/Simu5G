@@ -126,14 +126,13 @@ void LteMacBase::fromPhy(cPacket *pktAux)
         HarqTxBuffers::iterator htit = harqTxBuffers_[carrierFreq].find(src);
         EV << NOW << " Mac::fromPhy: node " << nodeId_ << " Received HARQ Feedback pkt" << endl;
         if (htit == harqTxBuffers_[carrierFreq].end()) {
-            // if a feedback arrives, a TX buffer must exist (unless it is a handover scenario
-            // where the HARQ buffer was deleted but a feedback was in transit)
-            // this case must be taken care of
-
-            if (binder_->hasUeHandoverTriggered(nodeId_) || binder_->hasUeHandoverTriggered(src))
-                return;
-
-            throw cRuntimeError("Mac::fromPhy(): Received feedback for a non-existing H-ARQ TX buffer");
+            // A feedback for a non-existing HARQ TX buffer is a stale in-flight feedback whose
+            // buffer was torn down -- on handover, or after a radio-link-failure teardown /
+            // re-establishment. It cannot be processed (the buffer is gone), so drop it
+            // gracefully rather than aborting the simulation.
+            EV << NOW << " Mac::fromPhy: node " << nodeId_ << " - stale HARQ feedback for src "
+               << src << " with no TX buffer (torn down); dropping" << endl;
+            return;
         }
 
         auto hfbpkt = pkt->peekAtFront<LteHarqFeedback>();

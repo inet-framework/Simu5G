@@ -15,6 +15,7 @@
 #include "simu5g/stack/rrc/Registration.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/ip2nic/Ip2Nic.h"
+#include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/rlc/RlcMux.h"
 #include "simu5g/stack/rlc/RlcRxEntityBase.h"
 #include "simu5g/stack/rlc/um/RlcUmTxEntityBase.h"
@@ -55,6 +56,9 @@ void BearerManagement::initialize(int stage)
         macModule.reference(this, "macModule", true);
         nrMacModule.reference(this, "nrMacModule", false);
 
+        t311_ = par("t311");
+        t301_ = par("t301");
+
         dualConnectivityEnabled_ = par("dualConnectivityEnabled");
     }
 }
@@ -62,6 +66,10 @@ void BearerManagement::initialize(int stage)
 BearerManagement::~BearerManagement()
 {
     cancelAndDelete(rlfTrigger_);
+    for (auto& [msg, peerId] : t311Timers_)
+        cancelAndDelete(msg);
+    for (auto& [msg, peerId] : t301Timers_)
+        cancelAndDelete(msg);
 }
 
 void BearerManagement::handleMessage(cMessage *msg)
@@ -73,6 +81,35 @@ void BearerManagement::handleMessage(cMessage *msg)
         pendingRlf_.clear();
         for (const auto &[nodeId, nrStack] : pending)
             handleRadioLinkFailure(nodeId, nrStack);
+        return;
+    }
+    // RRC re-establishment (TS 38.331 5.3.7), two phases; see releaseLink().
+    auto t1 = t311Timers_.find(msg);
+    if (t1 != t311Timers_.end()) {
+        // T311 expiry: a suitable cell is assumed selected (single-cell). Send the
+        // RRCReestablishmentRequest and start T301 (request -> complete).
+        MacNodeId peerId = t1->second;
+        t311Timers_.erase(t1);
+        EV << NOW << " BearerManagement - RRC re-establishment: T311 done for node " << peerId
+           << ", suitable cell selected; RRCReestablishmentRequest sent, T301 started ("
+           << t301_ << "s)" << endl;
+        cMessage *t301 = new cMessage("rrcT301");
+        t301Timers_[t301] = peerId;
+        scheduleAfter(t301_, t301);
+        delete msg;
+        return;
+    }
+    auto t3 = t301Timers_.find(msg);
+    if (t3 != t301Timers_.end()) {
+        // T301 expiry: RRCReestablishmentComplete -- un-release the peer so its bearer
+        // re-establishes on demand and DL/UL traffic resumes.
+        MacNodeId peerId = t3->second;
+        t301Timers_.erase(t3);
+        if (auto *ip2nic = inet::findModuleFromPar<Ip2Nic>(par("ip2nicModule"), this))
+            ip2nic->resumeUe(peerId);
+        EV << NOW << " BearerManagement - RRC re-establishment complete for node " << peerId
+           << "; bearer re-establishes on demand, traffic resumes" << endl;
+        delete msg;
         return;
     }
     throw cRuntimeError("This module does not process messages");
@@ -92,20 +129,55 @@ void BearerManagement::scheduleRadioLinkFailure(MacNodeId nodeId, bool nrStack)
 
 void BearerManagement::handleRadioLinkFailure(MacNodeId nodeId, bool nrStack)
 {
-    EV << NOW << " BearerManagement::handleRadioLinkFailure - tearing down node " << nodeId
+    EV << NOW << " BearerManagement::handleRadioLinkFailure - RLF for node " << nodeId
        << (nrStack ? " (NR)" : " (LTE)") << endl;
-    // UE Context Release (RRC): stop DL/UL traffic for this peer at Ip2Nic first, so no
-    // packet is pushed at a torn-down bearer (which would otherwise hit UpperMux's
-    // TX-entity assert). Models the core-network path being torn down after RLF.
-    if (auto *ip2nic = dynamic_cast<Ip2Nic *>(nicModule_->getSubmodule("ip2nic")))
-        ip2nic->releaseUe(nodeId);
-    // MAC/HARQ teardown on the affected stack.
-    LteMacBase *mac = nrStack ? (nrMacModule ? nrMacModule.get() : nullptr) : macModule.get();
-    if (mac)
-        mac->deleteQueuesRadioLinkFailure(nodeId);
-    // RLC entities on the affected stack, then the (stack-agnostic) PDCP entities.
-    deleteLocalRlcQueues(nodeId, nrStack);
-    deleteLocalPdcpEntities(nodeId);
+    // Release + tear down the link on BOTH ends, so if RRC re-establishment is enabled the
+    // bearer rebuilds fresh, SN-consistent entities on both sides. Reaching the peer via the
+    // binder mirrors handover's cross-node HandoverController::deleteOldBuffers.
+    releaseLink(nodeId);
+    // Address the peer's symmetric teardown with OUR node id on the failing leg: the peer keys
+    // its entities (PDCP/RLC/MAC) for this link by that id (the source/dest id it saw on the
+    // bearer). Using getLteNodeId() unconditionally sent NODEID_NONE from a standalone NR gNB
+    // (whose id lives in nrNodeId), so the peer's keyed PDCP deletion missed pdcp-rx-<gnb>-<drb>
+    // and a later re-establishment collided with the leftover entity.
+    MacNodeId myId = nrStack ? registration_->getNrNodeId() : registration_->getLteNodeId();
+    if (cModule *peerRrc = binderModule->getRrcByNodeId(nodeId)) {
+        if (auto *peerBm = dynamic_cast<BearerManagement *>(peerRrc->getSubmodule("bearerManagement")))
+            peerBm->releaseLink(myId);
+    }
+}
+
+void BearerManagement::releaseLink(MacNodeId peerId)
+{
+    Enter_Method_Silent("releaseLink()");
+    EV << NOW << " BearerManagement::releaseLink - releasing link to " << peerId << endl;
+    // UE Context Release: stop traffic at Ip2Nic first, so no packet is pushed at a torn-down
+    // bearer (which would otherwise hit UpperMux's TX-entity assert).
+    if (auto *ip2nic = dynamic_cast<Ip2Nic *>(nicModule_->getSubmodule("ip2nic"))) {
+        ip2nic->releaseUe(peerId);
+        // RRC re-establishment (TS 38.331 5.3.7): start the cell-(re)selection timer T311. When it
+        // fires a suitable cell is assumed selected and the RRCReestablishmentRequest->Complete
+        // (T301) exchange runs, after which the peer is un-released and its bearer re-establishes
+        // on demand. t311_ = 0 disables re-establishment (the peer stays released -> RRC_IDLE).
+        if (t311_ > SIMTIME_ZERO) {
+            cMessage *t311 = new cMessage("rrcT311");
+            t311Timers_[t311] = peerId;
+            scheduleAfter(t311_, t311);
+            EV << NOW << " BearerManagement::releaseLink - RRC re-establishment: T311 (cell selection) started for node "
+               << peerId << " (" << t311_ << "s)" << endl;
+        }
+    }
+    // Tear down BOTH legs' MAC/HARQ + RLC (leg-agnostic: a bearer may live on the LTE-FI or
+    // NR-SO leg, and on a gNB every entity is on the base leg regardless of the UE being NR),
+    // then the shared PDCP entities. On a UE these delete all local entities (not nodeId-
+    // filtered on the UE side), which is what RLF -- a link-level event -- requires.
+    if (macModule)
+        macModule->deleteQueuesRadioLinkFailure(peerId);
+    if (nrMacModule)
+        nrMacModule->deleteQueuesRadioLinkFailure(peerId);
+    deleteLocalRlcQueues(peerId, /*nrStack=*/false);
+    deleteLocalRlcQueues(peerId, /*nrStack=*/true);
+    deleteLocalPdcpEntities(peerId);
 }
 
 void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp)

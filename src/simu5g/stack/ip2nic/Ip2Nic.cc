@@ -23,10 +23,6 @@ using namespace omnetpp;
 
 Define_Module(Ip2Nic);
 
-Ip2Nic::~Ip2Nic()
-{
-}
-
 void Ip2Nic::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
@@ -99,6 +95,14 @@ void Ip2Nic::releaseUe(MacNodeId ueId)
     // No connection cache to purge here: establishment is existence-driven (the PDCP
     // TX-entity check in analyzePacket), so after teardown the peer's next packet
     // re-establishes on its own.
+}
+
+void Ip2Nic::resumeUe(MacNodeId ueId)
+{
+    Enter_Method_Silent();
+    EV << NOW << " Ip2Nic::resumeUe - resuming traffic for node " << ueId
+       << " (RRC re-establishment complete)" << endl;
+    releasedUes_.erase(ueId);
 }
 
 void Ip2Nic::toStackUe(Packet *pkt)

@@ -94,7 +94,8 @@ class Ip2Nic : public cSimpleModule
     // UEs whose context this node released after a radio link failure (RLF).
     // While a peer is listed here, its DL (gNB) / UL (UE) packets are dropped at
     // Ip2Nic -- modeling RRC UE Context Release: the bearer is gone, so incoming
-    // data is discarded rather than pushed at a torn-down entity.
+    // data is discarded rather than pushed at a torn-down entity. RRC (BearerManagement)
+    // owns the release/re-establishment lifecycle and toggles this set via releaseUe()/resumeUe().
     std::set<MacNodeId> releasedUes_;
 
     cGate *stackGateOut_ = nullptr;       // gate connecting Ip2Nic module to cellular stack
@@ -131,12 +132,16 @@ class Ip2Nic : public cSimpleModule
     void registerDrbMapping(const ConnectionKey& key, DrbId drbId);
 
   public:
-    ~Ip2Nic() override;
+    // Radio link failure handling is data-plane only here: BearerManagement (RRC) drives
+    // the release/re-establishment lifecycle and gates this node's packet dropping via
+    // the two calls below.
 
-    // Release a peer's context after a radio link failure: drop its future DL/UL
-    // packets and forget its established connections (so it re-establishes cleanly
-    // if it ever re-attaches). Called by BearerManagement::handleRadioLinkFailure.
+    // Start dropping a peer's future DL/UL packets (UE Context Release). Its bearer
+    // re-establishes on demand once resumeUe() is called.
     void releaseUe(MacNodeId ueId);
+
+    // Stop dropping the peer's packets (RRC re-establishment complete); traffic resumes.
+    void resumeUe(MacNodeId ueId);
 };
 
 } //namespace
