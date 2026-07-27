@@ -26,10 +26,10 @@ simple BearerManagement
 
         // PDCP entity types: the full PDCP entity is a compound (PdcpEntity, TX+RX sides plus
         // the leg split/join stage of a multi-leg bearer); variants are its subclasses (e.g.
-        // NrPdcpEntity). The DC-secondary bypass entities stay flat.
+        // NrPdcpEntity). At a DC secondary a bearer's PDCP lives at the master, so the secondary
+        // installs an PdcpRelayEntity (tunnels PDUs to/from the master) in its place.
         string pdcpEntityModuleType = default("simu5g.stack.pdcp.PdcpEntity");
-        string pdcpBypassRxEntityModuleType = default("simu5g.stack.pdcp.BypassRxPdcpEntity");
-        string pdcpBypassTxEntityModuleType = default("simu5g.stack.pdcp.BypassTxPdcpEntity");
+        string pdcpRelayEntityModuleType = default("simu5g.stack.pdcp.PdcpRelayEntity");
 
         bool dualConnectivityEnabled = default(false);   // set by the NIC; two-leg (split-capable) bearers
 

@@ -12,18 +12,20 @@
 package simu5g.stack.pdcp;
 
 //
-// Bypass RX PDCP entity for Dual Connectivity secondary nodes.
-// Receives PDCP PDUs from RLC (UL from UE) and forwards them
-// directly to the master node via X2 without any PDCP processing.
+// Downlink half of a DC-secondary PDCP relay (see ~PdcpRelayEntity): receives an
+// already-processed PDCP PDU that the master forwarded over X2 and passes it
+// straight to the local RLC, doing no PDCP processing of its own.
 //
-simple BypassRxPdcpEntity
+simple PdcpDownlinkRelay
 {
     parameters:
         @dynamic(true);
         @display("i=block/layer");
+        @signal[sentPacketToLowerLayer];
+        @signal[pdcpSduSent];
         string binderModule = default("binder");
 
     gates:
-        input in;
-        output out;
+        input in;    // from the DcMux (DL PDU tunneled from the master)
+        output out;  // to the local RLC entity
 }

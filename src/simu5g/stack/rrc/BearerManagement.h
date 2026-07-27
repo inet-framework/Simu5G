@@ -42,10 +42,9 @@ class BearerManagement : public cSimpleModule
     Registration *registration_ = nullptr;
 
     // PDCP entity types (resolved from NED params): the full PDCP entity is a compound
-    // (PdcpEntity/NrPdcpEntity, TX+RX); the DC-secondary bypass entities are flat.
+    // (PdcpEntity/NrPdcpEntity, TX+RX); at a DC secondary an PdcpRelayEntity stands in for it.
     cModuleType *pdcpEntityModuleType_ = nullptr;
-    cModuleType *pdcpBypassRxEntityModuleType_ = nullptr;
-    cModuleType *pdcpBypassTxEntityModuleType_ = nullptr;
+    cModuleType *pdcpRelayEntityModuleType_ = nullptr;
     cModule *nicModule_ = nullptr;  // containing NIC module (parent of all submodules and entities)
 
     // RLC entity types (resolved from NED params)
@@ -65,8 +64,8 @@ class BearerManagement : public cSimpleModule
     std::map<DrbKey, cModule *> pdcpEntities_;
     std::map<DrbKey, PdcpTxEntityBase *> pdcpTxEntities_;
     std::map<DrbKey, PdcpRxEntityBase *> pdcpRxEntities_;
-    std::map<DrbKey, PdcpTxEntityBase *> pdcpBypassTxEntities_;
-    std::map<DrbKey, PdcpRxEntityBase *> pdcpBypassRxEntities_;
+    // One PdcpRelayEntity compound per DC-secondary bearer (both directions), keyed by (UE, DRB id)
+    std::map<DrbKey, cModule *> pdcpRelayEntities_;
     // One RLC entity module (compound: TX+RX sides, see RlcTm/Um/AmEntity) per
     // bearer, keyed by (peer node, DRB id); one map per leg (LTE / NR)
     std::map<DrbKey, cModule *> rlcEntities_;
@@ -85,6 +84,7 @@ class BearerManagement : public cSimpleModule
     cModule *findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux);
     void installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
     void installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    cModule *findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux);
 
   protected:
     void initialize(int stage) override;
@@ -98,8 +98,8 @@ class BearerManagement : public cSimpleModule
     virtual RlcRxEntityBase *createRlcRxBuffer(DrbKey id, FlowControlInfo *lteInfo);
     RlcTxEntityBase *lookupRlcTxBuffer(DrbKey id);
     PdcpTxEntityBase *lookupPdcpTxEntity(DrbKey id);
-    PdcpRxEntityBase *lookupPdcpRxEntity(DrbKey id);
-    cModule *lookupPdcpEntityModule(DrbKey id);   // the per-bearer PdcpEntity compound (DcMux leg dispatch)
+    cModule *lookupPdcpEntityModule(DrbKey id);    // the per-bearer PdcpEntity compound (DcMux leg dispatch)
+    cModule *lookupPdcpRelayEntityModule(DrbKey id); // the per-bearer PdcpRelayEntity compound (DcMux DL dispatch)
     virtual void deleteLocalPdcpEntities(MacNodeId nodeId);
     virtual void deleteLocalRlcQueues(MacNodeId nodeId, bool nrStack=false);
     void pdcpActiveUeUL(std::set<MacNodeId> *ueSet);

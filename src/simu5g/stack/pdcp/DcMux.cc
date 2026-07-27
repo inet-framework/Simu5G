@@ -10,7 +10,6 @@
 //
 
 #include "simu5g/stack/pdcp/DcMux.h"
-#include "simu5g/stack/pdcp/PdcpRxEntityBase.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
@@ -45,15 +44,16 @@ void DcMux::handleMessage(cMessage *msg)
 
         auto ctrlInfo = pkt->getTag<FlowControlInfo>();
         if (ctrlInfo->getDirection() == DL) {
-            // DL: master sent data for a UE — dispatch to bypass TX entity
+            // DL: master sent data for a UE — dispatch to this bearer's X2 relay
             MacNodeId destId = ctrlInfo->getDestId();
             DrbKey id = DrbKey(destId, ctrlInfo->getDrbId());
-            PdcpTxEntityBase *entity = lookupBypassTxEntity(id);
-            ASSERT(entity != nullptr);
+            cModule *relay = bearerManagement_->lookupPdcpRelayEntityModule(id);
+            ASSERT(relay != nullptr);
 
             EV << NOW << " DcMux::handleMessage - Received DL PDCP PDU from master node " << sourceNode
-               << " for UE " << destId << " - dispatching to bypass TX entity" << endl;
-            send(pkt, entity->gate("in")->getPreviousGate());
+               << " for UE " << destId << " - dispatching to the X2 relay entity" << endl;
+            // path start = our toRelayEntity gate (crosses the compound boundary into its DL relay)
+            send(pkt, relay->gate("x2In")->getPathStartGate());
         }
         else {
             // UL: secondary forwarded UL data — dispatch directly to RX entity
@@ -80,25 +80,6 @@ void DcMux::handleMessage(cMessage *msg)
     else {
         throw cRuntimeError("DcMux: unexpected message from gate %s", incoming->getFullName());
     }
-}
-
-PdcpTxEntityBase *DcMux::lookupBypassTxEntity(DrbKey id)
-{
-    auto it = bypassTxEntities_.find(id);
-    return it != bypassTxEntities_.end() ? it->second : nullptr;
-}
-
-void DcMux::registerBypassTxEntity(DrbKey id, PdcpTxEntityBase *txEnt)
-{
-    if (bypassTxEntities_.find(id) != bypassTxEntities_.end())
-        throw cRuntimeError("PDCP bypass TX entity for %s already exists", id.str().c_str());
-    bypassTxEntities_[id] = txEnt;
-    EV << "DcMux::registerBypassTxEntity - Registered BypassTxPdcpEntity for " << id << "\n";
-}
-
-void DcMux::unregisterBypassTxEntity(DrbKey id)
-{
-    bypassTxEntities_.erase(id);
 }
 
 } // namespace simu5g

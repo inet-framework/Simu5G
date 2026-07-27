@@ -9,8 +9,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _BYPASS_RX_PDCP_ENTITY_H_
-#define _BYPASS_RX_PDCP_ENTITY_H_
+#ifndef _PDCP_UPLINK_RELAY_H_
+#define _PDCP_UPLINK_RELAY_H_
 
 #include <inet/common/ModuleRefByPar.h>
 
@@ -21,14 +21,14 @@
 namespace simu5g {
 
 /**
- * @class BypassRxPdcpEntity
- * @brief Bypass RX PDCP entity for DC secondary nodes.
+ * @class PdcpUplinkRelay
+ * @brief Uplink half of a DC-secondary PDCP relay (see PdcpRelayEntity).
  *
- * Receives PDCP PDUs from RLC (UL from UE) and forwards them
+ * Receives PDCP PDUs from RLC (UL from the UE) and forwards them
  * directly to the master node via X2 without any PDCP processing
  * (no decompression, no PDCP header removal, no reordering).
  */
-class BypassRxPdcpEntity : public PdcpRxEntityBase
+class PdcpUplinkRelay : public PdcpRxEntityBase
 {
   protected:
     inet::ModuleRefByPar<Binder> binder_;

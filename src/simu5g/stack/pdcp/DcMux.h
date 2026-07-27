@@ -12,12 +12,10 @@
 #ifndef _PDCP_DC_MUX_H_
 #define _PDCP_DC_MUX_H_
 
-#include <map>
 #include <omnetpp.h>
 #include <inet/common/ModuleRefByPar.h>
 
 #include "simu5g/common/LteCommon.h"
-#include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
 
 namespace simu5g {
 
@@ -35,14 +33,6 @@ class DcMux : public cSimpleModule
     BearerManagement *bearerManagement_ = nullptr;
 
     cGate *dcManagerInGate_ = nullptr;
-
-    typedef std::map<DrbKey, PdcpTxEntityBase *> PdcpBypassTxEntities;
-    PdcpBypassTxEntities bypassTxEntities_;
-
-  public:
-    PdcpTxEntityBase *lookupBypassTxEntity(DrbKey id);
-    void registerBypassTxEntity(DrbKey id, PdcpTxEntityBase *txEnt);
-    void unregisterBypassTxEntity(DrbKey id);
 
   protected:
     void initialize(int stage) override;

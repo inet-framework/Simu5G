@@ -35,8 +35,7 @@ void BearerManagement::initialize(int stage)
 
         // Resolve PDCP entity types
         pdcpEntityModuleType_ = cModuleType::get(par("pdcpEntityModuleType").stringValue());
-        pdcpBypassTxEntityModuleType_ = cModuleType::get(par("pdcpBypassTxEntityModuleType").stringValue());
-        pdcpBypassRxEntityModuleType_ = cModuleType::get(par("pdcpBypassRxEntityModuleType").stringValue());
+        pdcpRelayEntityModuleType_ = cModuleType::get(par("pdcpRelayEntityModuleType").stringValue());
 
         // Resolve RLC entity types (compound modules packaging the TX and RX sides)
         rlcTmEntityModuleType_ = cModuleType::get(par("rlcTmEntityModuleType").stringValue());
@@ -94,37 +93,29 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
     installRlcRxSide(rlcId, lteInfo, rlcMux, isNr);
 
-    // PDCP entity creation (compound: TX+RX, see PdcpEntity). The DC-secondary bypass RX
-    // stays a flat module.
+    // PDCP entity creation (compound: TX+RX, see PdcpEntity). At a DC secondary the bearer's
+    // PDCP lives at the master, so an PdcpRelayEntity stands in (UL half wired here).
     if (withPdcp) {
         DrbKey id = DrbKey(lteInfo->getSourceId(), lteInfo->getDrbId());
         installPdcpRxSide(id, lteInfo, rlcMux, isNr);
     }
     else {
-        // DC secondary node: create bypass RX entity (forwards UL to master via X2)
+        // DC secondary node: forward the UL PDU from RLC to the master over X2 unprocessed
+        // (PdcpRelayEntity's UL half, see PdcpRelayEntity).
         auto *pdcpDcMux = inet::findModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this);
-        ASSERT(pdcpDcMux != nullptr); // bypass entities are eNB-only
+        ASSERT(pdcpDcMux != nullptr); // relay entities are eNB-only
         DrbKey id = DrbKey(lteInfo->getSourceId(), lteInfo->getDrbId());
-        std::string name = "pdcp-bypass-rx-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
-        auto *module = pdcpBypassRxEntityModuleType_->create(name.c_str(), nicModule_);
-        module->finalizeParameters();
-        module->buildInside();
-        setEntityDisplayPosition(module, true, rlcMux, num(id.getDrbId()));
+        cModule *relay = findOrCreatePdcpRelayEntity(id, rlcMux);
 
-        // Wire RLC entity upperOut → bypass PDCP RX in (direct per-DRB connection)
+        // Wire RLC entity upperOut → relay legIn[0] (direct per-DRB connection)
         cModule *rlcEnt2 = lookupRlcEntityModule(rlcId, isNr);
         ASSERT(rlcEnt2 != nullptr);
-        rlcEnt2->gate("upperOut")->connectTo(module->gate("in"));
+        rlcEnt2->gate("upperOut")->connectTo(relay->gate("legIn", 0));
 
-        // Wire entity out gate → DcMux (bypass RX sends to X2 via DcMux)
+        // Wire relay x2Out → DcMux (UL PDU tunneled to the master)
         int fromIdx = pdcpDcMux->gateSize("fromEntity");
         pdcpDcMux->setGateSize("fromEntity", fromIdx + 1);
-        module->gate("out")->connectTo(pdcpDcMux->gate("fromEntity", fromIdx));
-
-        module->scheduleStart(simTime());
-        module->callInitialize();
-        auto *rxEnt = check_and_cast<PdcpRxEntityBase *>(module);
-        pdcpBypassRxEntities_[id] = rxEnt;
+        relay->gate("x2Out")->connectTo(pdcpDcMux->gate("fromEntity", fromIdx));
     }
 }
 
@@ -162,38 +153,29 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
     installRlcTxSide(rlcId, lteInfo, rlcMux, isNr);
 
-    // PDCP entity creation (compound: TX+RX, see PdcpEntity). The DC-secondary bypass TX
-    // stays a flat module.
+    // PDCP entity creation (compound: TX+RX, see PdcpEntity). At a DC secondary the bearer's
+    // PDCP lives at the master, so an PdcpRelayEntity stands in (DL half wired here).
     if (withPdcp) {
         DrbKey id = DrbKey(lteInfo->getDestId(), lteInfo->getDrbId());
         installPdcpTxSide(id, lteInfo, rlcMux, isNr);
     }
     else {
-        // DC secondary node: create bypass TX entity (forwards DL from master to RLC)
+        // DC secondary node: the DL PDU arrives already PDCP-processed from the master over X2;
+        // forward it straight to RLC (PdcpRelayEntity's DL half, see PdcpRelayEntity).
         auto *pdcpDcMux = inet::findModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this);
-        ASSERT(pdcpDcMux != nullptr); // bypass entities are eNB-only
+        ASSERT(pdcpDcMux != nullptr); // relay entities are eNB-only
         DrbKey id = DrbKey(lteInfo->getDestId(), lteInfo->getDrbId());
-        std::string name = "pdcp-bypass-tx-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
-        auto *module = pdcpBypassTxEntityModuleType_->create(name.c_str(), nicModule_);
-        module->finalizeParameters();
-        module->buildInside();
-        setEntityDisplayPosition(module, true, rlcMux, num(id.getDrbId()));
+        cModule *relay = findOrCreatePdcpRelayEntity(id, rlcMux);
 
-        // Wire DcMux → entity in gate (DcMux dispatches incoming DL X2)
-        int idx = pdcpDcMux->gateSize("toBypassTxEntity");
-        pdcpDcMux->setGateSize("toBypassTxEntity", idx + 1);
-        pdcpDcMux->gate("toBypassTxEntity", idx)->connectTo(module->gate("in"));
+        // Wire DcMux → relay x2In (DcMux dispatches the incoming DL X2 PDU)
+        int idx = pdcpDcMux->gateSize("toRelayEntity");
+        pdcpDcMux->setGateSize("toRelayEntity", idx + 1);
+        pdcpDcMux->gate("toRelayEntity", idx)->connectTo(relay->gate("x2In"));
 
-        // Wire bypass TX out → RLC entity upperIn (direct per-DRB connection)
+        // Wire relay legOut[0] → RLC entity upperIn (direct per-DRB connection)
         cModule *rlcEnt2 = lookupRlcEntityModule(rlcId, isNr);
         ASSERT(rlcEnt2 != nullptr);
-        module->gate("out")->connectTo(rlcEnt2->gate("upperIn"));
-
-        module->scheduleStart(simTime());
-        module->callInitialize();
-        auto *txEnt = check_and_cast<PdcpTxEntityBase *>(module);
-        pdcpDcMux->registerBypassTxEntity(id, txEnt);
-        pdcpBypassTxEntities_[id] = txEnt;
+        relay->gate("legOut", 0)->connectTo(rlcEnt2->gate("upperIn"));
     }
 }
 
@@ -330,7 +312,7 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lt
     // Number of legs of this bearer. Two-leg (split-capable) bearers: at a DC UE, every
     // infrastructure bearer (local LTE + local NR stack legs); at a DC master, every UE bearer
     // (local leg + remote leg via X2 to the secondary). Everything else -- non-DC nodes, D2D
-    // and multicast bearers, secondaries (bypass only) -- is single-leg.
+    // and multicast bearers, secondaries (X2 relay only) -- is single-leg.
     bool isEnb = (registration_->getNodeType() == NODEB);
     int numLegs = 1;
     if (dualConnectivityEnabled_ && lteInfo->getMulticastGroupId() == NODEID_NONE) {
@@ -354,7 +336,7 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lt
     module->callInitialize();
 
     // DC master: wire the remote (X2) leg to the DcMux right away -- unlike the UE's NR leg,
-    // it has no establishment call of its own (the secondary's entities are bypass-only)
+    // it has no establishment call of its own (the secondary side is an X2 relay only)
     if (isEnb && numLegs == 2) {
         auto *pdcpDcMux = inet::getModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this);
         int dcIdx = pdcpDcMux->gateSize("fromEntity");
@@ -366,6 +348,27 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lt
     }
 
     pdcpEntities_[id] = module;
+    return module;
+}
+
+// At a DC secondary, the stand-in for a bearer's (master-resident) PDCP entity: one PdcpRelayEntity
+// compound per bearer, holding both the DL and the UL relay. The first-processed direction creates
+// it; the other finds it here and wires its own half (see createOutgoing/IncomingConnection).
+cModule *BearerManagement::findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux)
+{
+    auto it = pdcpRelayEntities_.find(id);
+    if (it != pdcpRelayEntities_.end())
+        return it->second;
+
+    std::string name = "pdcp-relay-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
+    auto *module = pdcpRelayEntityModuleType_->create(name.c_str(), nicModule_);
+    module->finalizeParameters();
+    module->buildInside();
+    setEntityDisplayPosition(module, true, rlcMux, num(id.getDrbId()));
+    module->scheduleStart(simTime());
+    module->callInitialize();
+
+    pdcpRelayEntities_[id] = module;
     return module;
 }
 
@@ -496,21 +499,13 @@ void BearerManagement::deleteLocalPdcpEntities(MacNodeId nodeId)
         } else ++it;
     }
 
-    // Delete bypass TX entities (eNB-only)
-    ASSERT(pdcpBypassTxEntities_.empty() || pdcpDcMux != nullptr);
-    for (auto it = pdcpBypassTxEntities_.begin(); it != pdcpBypassTxEntities_.end(); ) {
-        if (!keyed || it->first.getNodeId() == nodeId) {
-            pdcpDcMux->unregisterBypassTxEntity(it->first);
-            it->second->deleteModule();
-            it = pdcpBypassTxEntities_.erase(it);
-        } else ++it;
-    }
-
-    // Delete bypass RX entities
-    for (auto it = pdcpBypassRxEntities_.begin(); it != pdcpBypassRxEntities_.end(); ) {
+    // Delete the X2 relay compounds (each deletes its DL and UL relay submodule). DC-secondary
+    // only, so the DcMux must exist wherever a relay does.
+    ASSERT(pdcpRelayEntities_.empty() || pdcpDcMux != nullptr);
+    for (auto it = pdcpRelayEntities_.begin(); it != pdcpRelayEntities_.end(); ) {
         if (!keyed || it->first.getNodeId() == nodeId) {
             it->second->deleteModule();
-            it = pdcpBypassRxEntities_.erase(it);
+            it = pdcpRelayEntities_.erase(it);
         } else ++it;
     }
 }
@@ -544,19 +539,16 @@ void BearerManagement::deleteLocalRlcQueues(MacNodeId nodeId, bool nrStack)
     }
 }
 
-PdcpRxEntityBase *BearerManagement::lookupPdcpRxEntity(DrbKey id)
-{
-    auto it = pdcpRxEntities_.find(id);
-    if (it != pdcpRxEntities_.end())
-        return it->second;
-    auto it2 = pdcpBypassRxEntities_.find(id);
-    return it2 != pdcpBypassRxEntities_.end() ? it2->second : nullptr;
-}
-
 cModule *BearerManagement::lookupPdcpEntityModule(DrbKey id)
 {
     auto it = pdcpEntities_.find(id);
     return it != pdcpEntities_.end() ? it->second : nullptr;
+}
+
+cModule *BearerManagement::lookupPdcpRelayEntityModule(DrbKey id)
+{
+    auto it = pdcpRelayEntities_.find(id);
+    return it != pdcpRelayEntities_.end() ? it->second : nullptr;
 }
 
 RlcTxEntityBase *BearerManagement::lookupRlcTxBuffer(DrbKey id)

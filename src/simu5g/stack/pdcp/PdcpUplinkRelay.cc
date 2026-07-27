@@ -9,14 +9,14 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/pdcp/BypassRxPdcpEntity.h"
+#include "simu5g/stack/pdcp/PdcpUplinkRelay.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
-Define_Module(BypassRxPdcpEntity);
+Define_Module(PdcpUplinkRelay);
 
-void BypassRxPdcpEntity::initialize(int stage)
+void PdcpUplinkRelay::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
@@ -24,14 +24,14 @@ void BypassRxPdcpEntity::initialize(int stage)
     }
 }
 
-void BypassRxPdcpEntity::handlePacketFromLowerLayer(inet::Packet *pkt)
+void PdcpUplinkRelay::handlePacketFromLowerLayer(inet::Packet *pkt)
 {
     // DC bypass: forward PDCP PDU to the master node via X2
     // without any PDCP processing (no header removal, no decompression).
     pkt->trim();
 
     MacNodeId masterId = binder_->getMasterNodeOrSelf(nodeId_);
-    EV << NOW << " BypassRxPdcpEntity::handlePacketFromLowerLayer - forwarding packet " << pkt->getName()
+    EV << NOW << " PdcpUplinkRelay::handlePacketFromLowerLayer - forwarding packet " << pkt->getName()
        << " to master node " << masterId << " via X2 (DC bypass)" << endl;
 
     // Translate sourceId from NR UE ID to LTE UE ID so the master's

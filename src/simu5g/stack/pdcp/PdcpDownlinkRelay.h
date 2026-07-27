@@ -9,22 +9,22 @@
 // and cannot be removed from it.
 //
 
-#ifndef _BYPASS_TX_PDCP_ENTITY_H_
-#define _BYPASS_TX_PDCP_ENTITY_H_
+#ifndef _PDCP_DOWNLINK_RELAY_H_
+#define _PDCP_DOWNLINK_RELAY_H_
 
 #include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
 
 namespace simu5g {
 
 /**
- * @class BypassTxPdcpEntity
- * @brief Bypass TX PDCP entity for DC secondary nodes.
+ * @class PdcpDownlinkRelay
+ * @brief Downlink half of a DC-secondary PDCP relay (see PdcpRelayEntity).
  *
- * Receives already-processed PDCP PDUs (from master via X2) and forwards
+ * Receives already-processed PDCP PDUs (from the master via X2) and forwards
  * them directly to RLC without any PDCP processing (no compression,
  * no PDCP header, no sequence numbering).
  */
-class BypassTxPdcpEntity : public PdcpTxEntityBase
+class PdcpDownlinkRelay : public PdcpTxEntityBase
 {
     static omnetpp::simsignal_t sentPacketToLowerLayerSignal_;
     static omnetpp::simsignal_t pdcpSduSentSignal_;
