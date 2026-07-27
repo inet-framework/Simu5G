@@ -1,5 +1,161 @@
 # What's New in Simu5G
 
+## v1.5.1 (2026-07-28)
+
+This release continues the architectural overhaul of Simu5G, focusing on the
+PDCP and RLC layers: per-bearer protocol entities are now packaged into
+compound modules, DRBs are established as bidirectional (duplex) bearers, and
+the Dual Connectivity split-bearer data path was restructured.
+
+Tested with INET-4.5.4 and OMNeT++ 6.3, compatible with INET-4.6.0 and OMNeT++
+6.1 through 6.4.
+
+### Per-bearer PDCP and RLC compound entity modules
+
+v1.5.0 transformed the PDCP and RLC layers into dynamically created per-bearer
+TX/RX entity modules. This release packages the two sides of each bearer into
+one compound module per bearer, following the 3GPP model of one PDCP/RLC
+entity per bearer (for RLC AM explicitly with a transmitting and a receiving
+side):
+
+- **RLC**: Each bearer's TX and RX entities now live in an `RlcTmEntity`,
+  `RlcUmEntity` or `RlcAmEntity` compound module. In AM, the internal control
+  paths are now explicit gate connections between the RX and TX submodules,
+  replacing C++ registry-lookup calls between the two simple modules:
+  `feedbackOut` -> `feedbackIn` carries the STATUS PDUs received from the peer
+  into the TX side's ARQ, and `statusOut` -> `statusIn` hands the locally
+  generated status reports to the TX side for transmission.
+
+- **PDCP**: Each bearer's TX and RX entities now live in a `PdcpEntity`
+  compound module. Variants are subclasses overriding the entity typenames
+  (`NrPdcpEntity`); a mixed entity (e.g. an EN-DC master eNB, which runs an NR
+  TX side with an LTE RX side) overrides just `tx.typename` or `rx.typename`.
+
+- **PdcpRelayEntity**: At a Dual Connectivity secondary node, which only
+  tunnels already-processed PDUs between the master (over X2) and its own RLC,
+  the two per-bearer bypass modules were packaged into a `PdcpRelayEntity`
+  compound module, which stands in place of the bearer's PDCP entity;
+  `BypassTxPdcpEntity`/`BypassRxPdcpEntity` were renamed to
+  `PdcpDownlinkRelay`/`PdcpUplinkRelay`.
+
+- New module interfaces (`ITxPdcpEntity`, `IRxPdcpEntity`, `IRlcTxEntity`,
+  `IRlcRxEntity`, `IRlcAmTxEntity`, `IRlcAmRxEntity`) make the entity
+  implementations replaceable: every compound binds its two sides with the
+  standard `tx.typename`/`rx.typename` submodule typename assignment, which a
+  configuration or a subclass of the compound can override. The ten per-side
+  entity-type parameters of `BearerManagement` were consolidated into five
+  per-compound ones (`pdcpEntityModuleType`, `pdcpRelayEntityModuleType`,
+  `rlcTm/Um/AmEntityModuleType`).
+
+### DRBs established as duplex (bidirectional) bearers
+
+Per TS 38.331, a DRB is bidirectional; Simu5G so far established each
+direction as an independent unidirectional bearer with its own
+locally-assigned DRB id. RLC AM fundamentally needs the reverse path of the
+same bearer for its STATUS PDUs, which the old model could only provide via
+on-demand reverse entities created from inside packet processing. Now:
+
+- `Binder::establishDataConnection()` (renamed from
+  `establishUnidirectionalDataConnection()`) creates both directions of a
+  unicast bearer at once; multicast bearers remain unidirectional.
+
+- DRB ids are allocated by the `Binder` with a counter per node pair, so the
+  two ends of a bearer see the same DRB id, and DRB ids are peer-scoped
+  (per-UE identities, as in the spec) rather than node-unique.
+
+- Reverse application traffic resolves to the reverse leg of the existing
+  bearer instead of allocating a second bearer.
+
+This may change results in simulations where request and response flows
+between the same node pair previously used two separate bearers: they now
+share one duplex bearer, which changes logical channel ids and can change
+scheduling order under contention.
+
+### Dual Connectivity split-bearer data path restructured
+
+A DC split bearer is one PDCP entity -- one sequence number space -- whose
+PDUs are steered per-packet across two RLC legs. The `PdcpEntity` compound now
+reflects this: its lower boundary is a `legOut[]`/`legIn[]` gate vector. A
+plain bearer has one leg, and the TX/RX entities connect straight to it; a
+split bearer routes the TX side through a `DcPdcpLegSplitter` (per-PDU leg
+dispatch, per-leg DC id mapping and statistics) and merges both legs through a
+`PdcpLegJoiner` into the single RX entity, whose one reordering window
+restores sequence order across the legs. The per-packet leg steering policy
+itself remains in `TechnologyDecision`; the splitter only executes it.
+
+### MAC prepared for NR RLC framing
+
+The MAC and the schedulers can now accommodate an RLC that emits one SDU or
+segment per PDU without concatenation (the NR model of TS 38.322), in addition
+to LTE's single concatenated PDU per grant: for such flows, the schedulers
+plan one PDU per SDU/segment to fill the grant, the MAC issues one SDU request
+per planned PDU and multiplexes them into the MAC PDU, and exact per-PDU RLC
+header sizes are computed (octet-aligned, per SN length and segment state).
+This is inert by default (`soFraming=false` keeps the LTE path) and is
+groundwork for an upcoming standards-compliant NR RLC implementation.
+
+### Beacon emission control at the eNB/gNB
+
+- Beacon broadcasting was decoupled from `enableHandover`: the new
+  `enableBeacons` parameter (default: `enableHandover`) controls it, so that
+  radio link monitoring can later work without handover enabled.
+  `enableHandover=true` now requires beacons to actually flow.
+
+- A non-positive `beaconInterval` is now an initialization error instead of
+  silently disabling beacons; beacons are switched off with
+  `enableBeacons=false`.
+
+### Module architecture improvements
+
+- **isNr as parameter**: `LteMacUe`, `LtePhyUe` and `LteDlFeedbackGenerator`
+  no longer determine whether they are the NR leg of the UE by string-matching
+  their own module name ("nrMac", "nrPhy", "nrDlFbGen"); they now have a
+  `bool isNr` parameter, set by `NrNicUe`.
+
+- **Parametrized module references**: Hardcoded `getSubmodule()` walks inside
+  the NIC were replaced with NED module-path parameters (11 new parameters
+  across `BearerManagement`, `HandoverController`, `DcMux`, `LteMacEnb` and
+  `TechnologyDecision`), and foreign-node lookups now go through `Binder`
+  helper methods.
+
+- **IHandoverPacketHolder**: The `hoManagerOut` gate was added to the module
+  interface, so that custom holder implementations can be substituted
+  (contributed by Mohamed Seliem).
+
+### Bug fixes
+
+- **Crash on interleaved Dual Connectivity leg handovers**: Fixed a
+  long-standing crash (also present in v1.4.3..v1.4.5) triggered when the LTE
+  leg of an NR UE hands over while its NR leg is detached: per-UE state
+  provisioned at the old master's secondary gNB was left orphaned, and
+  re-establishment collided with the leftovers when the UE later returned.
+  Handover cleanup now also covers the old serving node's secondary. In
+  addition, PDCP entity teardown at NR UEs is now keyed by peer node, so an
+  NR-leg detach no longer deletes the LTE leg's entities as well.
+
+- **MAC**: `macSduRequest()` no longer underflows when the scheduler allocates
+  a grant smaller than the MAC header, which surfaced as a misleading
+  "configured queueSize too low" error with many DRBs under `QOS_PF`
+  contention (contributed by Mohamed Seliem).
+
+- **NrPhyUe**: D2D DATA frames arriving while the UE is detached during
+  handover are now dropped, as `LtePhyUeD2D` already did, instead of crashing
+  on already-deleted HARQ buffers.
+
+- **HandoverController**: Removed a redundant second detach/attach of the D2D
+  direction on the AMC during NR UE handover.
+
+- **LtePhyEnb**: Corrected copy-pasted class names in `requestFeedback()`
+  error messages.
+
+### Other
+
+- **Fingerprint tests**: The simulation-time intervals of configurations
+  involving events like handover or D2D mode switching were extended so that
+  the fingerprint window actually covers those events, and fingerprints were
+  re-recorded for the architectural changes above.
+
+
 ## v1.5.0 (2026-07-13)
 
 This release continues the architectural overhaul of Simu5G. Major themes
