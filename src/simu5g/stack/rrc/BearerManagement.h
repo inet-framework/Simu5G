@@ -41,9 +41,9 @@ class BearerManagement : public cSimpleModule
   private:
     Registration *registration_ = nullptr;
 
-    // PDCP entity types (resolved from NED params)
-    cModuleType *pdcpRxEntityModuleType_ = nullptr;
-    cModuleType *pdcpTxEntityModuleType_ = nullptr;
+    // PDCP entity types (resolved from NED params): the full PDCP entity is a compound
+    // (PdcpEntity/NrPdcpEntity, TX+RX); the DC-secondary bypass entities are flat.
+    cModuleType *pdcpEntityModuleType_ = nullptr;
     cModuleType *pdcpBypassRxEntityModuleType_ = nullptr;
     cModuleType *pdcpBypassTxEntityModuleType_ = nullptr;
     cModule *nicModule_ = nullptr;  // containing NIC module (parent of all submodules and entities)
@@ -60,6 +60,9 @@ class BearerManagement : public cSimpleModule
     inet::ModuleRefByPar<Binder> binderModule;   // for DC master/secondary topology lookups
 
     // Entity registries (CP owns the lifecycle of all entities)
+    // One PDCP entity module (compound: TX+RX, see PdcpEntity) per bearer, keyed by (peer
+    // node, DRB id); the tx/rx submodule pointers below index into it for per-side lookups.
+    std::map<DrbKey, cModule *> pdcpEntities_;
     std::map<DrbKey, PdcpTxEntityBase *> pdcpTxEntities_;
     std::map<DrbKey, PdcpRxEntityBase *> pdcpRxEntities_;
     std::map<DrbKey, PdcpTxEntityBase *> pdcpBypassTxEntities_;
@@ -75,6 +78,9 @@ class BearerManagement : public cSimpleModule
     cModule *findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
     RlcTxEntityBase *installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
     RlcRxEntityBase *installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    cModule *findOrCreatePdcpEntity(DrbKey id, RlcMux *rlcMux);
+    void installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    void installPdcpRxSide(DrbKey id, RlcMux *rlcMux, bool isNr);
 
   protected:
     void initialize(int stage) override;

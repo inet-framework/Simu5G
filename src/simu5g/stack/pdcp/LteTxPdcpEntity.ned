@@ -18,7 +18,7 @@ package simu5g.stack.pdcp;
 // sequencing, header compression, and metadata association for PDCP PDUs before they are passed
 // down to the RLC layer.
 //
-simple LteTxPdcpEntity
+simple LteTxPdcpEntity like ITxPdcpEntity
 {
     parameters:
         @dynamic(true);
@@ -32,5 +32,7 @@ simple LteTxPdcpEntity
     gates:
         input in;
         output out;
+        output dcOut @loose;  // NR dual connectivity (unused on LTE); see ITxPdcpEntity
+        output nrOut @loose;  // NR dual connectivity (unused on LTE); see ITxPdcpEntity
 }
 

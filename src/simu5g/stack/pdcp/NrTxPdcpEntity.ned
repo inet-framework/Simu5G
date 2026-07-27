@@ -24,8 +24,6 @@ simple NrTxPdcpEntity extends LteTxPdcpEntity
         @class("NrTxPdcpEntity");
         @display("i=block/layer");
         @signal[pdcpSduSentNr];
-    gates:
-        output dcOut @loose;
-        output nrOut @loose;
+        // dcOut/nrOut gates inherited from LteTxPdcpEntity (see ITxPdcpEntity)
 }
 

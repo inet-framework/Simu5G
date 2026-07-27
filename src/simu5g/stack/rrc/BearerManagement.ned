@@ -24,9 +24,12 @@ simple BearerManagement
         // PDCP entity parameters
         int headerCompressedSize @unit(B) = default(-1B);
 
-        // PDCP entity types
-        string pdcpRxEntityModuleType = default("simu5g.stack.pdcp.LteRxPdcpEntity");
+        // PDCP entity types: the full PDCP entity is a compound (PdcpEntity, TX+RX sides). The
+        // TX and RX profiles are set independently (an EN-DC master mixes NrTx with LteRx). The
+        // DC-secondary bypass entities stay flat.
+        string pdcpEntityModuleType = default("simu5g.stack.pdcp.PdcpEntity");
         string pdcpTxEntityModuleType = default("simu5g.stack.pdcp.LteTxPdcpEntity");
+        string pdcpRxEntityModuleType = default("simu5g.stack.pdcp.LteRxPdcpEntity");
         string pdcpBypassRxEntityModuleType = default("simu5g.stack.pdcp.BypassRxPdcpEntity");
         string pdcpBypassTxEntityModuleType = default("simu5g.stack.pdcp.BypassTxPdcpEntity");
 

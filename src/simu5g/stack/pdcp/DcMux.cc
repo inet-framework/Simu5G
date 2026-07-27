@@ -68,7 +68,9 @@ void DcMux::handleMessage(cMessage *msg)
 
             EV << NOW << " DcMux::handleMessage - Received UL PDCP PDU from secondary node " << sourceNode
                << " for " << id << " - dispatching to RX entity" << endl;
-            send(pkt, entity->gate("dcIn")->getPreviousGate());
+            // path start = our toRxEntity gate (crosses the PdcpEntity compound boundary,
+            // whose dcIn gate routes on to the rx submodule's dcIn gate)
+            send(pkt, entity->gate("dcIn")->getPathStartGate());
         }
     }
     else if (incoming->isName("fromEntity")) {

@@ -17,7 +17,7 @@ package simu5g.stack.pdcp;
 // layer at the receiving side of a specific connection. It processes incoming PDCP PDUs from the
 // RLC layer, performing header decompression before forwarding them to the upper layer protocols.
 //
-simple LteRxPdcpEntity
+simple LteRxPdcpEntity like IRxPdcpEntity
 {
     parameters:
         @dynamic(true);

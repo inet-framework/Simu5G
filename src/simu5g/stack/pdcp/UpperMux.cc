@@ -58,7 +58,9 @@ void UpperMux::fromDataPort(cPacket *pktAux)
         throw cRuntimeError("UpperMux::fromDataPort: no PDCP TX entity for %s -- the connection "
                             "should have been established by Ip2Nic or SDAP", id.str().c_str());
 
-    send(pkt, entity->gate("in")->getPreviousGate());
+    // path start = our toTxEntity gate (crosses the PdcpEntity compound boundary, whose
+    // upperIn gate routes on to the tx submodule's in gate)
+    send(pkt, entity->gate("in")->getPathStartGate());
 }
 
 PdcpTxEntityBase *UpperMux::lookupTxEntity(DrbKey id)
