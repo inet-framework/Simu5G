@@ -13,9 +13,12 @@
 #include <inet/networklayer/common/NetworkInterface.h>
 #include "simu5g/stack/rlc/um/UmRxEntity.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
-#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
+#include "simu5g/stack/rlc/RlcMux.h"
+#include "simu5g/common/LteCommon.h"
+#include "simu5g/mec/utils/MecCommon.h"
 
 namespace simu5g {
 
@@ -26,18 +29,20 @@ using namespace inet;
 unsigned int UmRxEntity::totalCellPduRcvdBytes_ = 0;
 unsigned int UmRxEntity::totalCellRcvdBytes_ = 0;
 
-// RLC-UM signals - only valid statistics (throughput and delay, no packet loss)
+// LTE statistics (throughput and delay; emitted on the per-UE/eNB RLC module)
 simsignal_t UmRxEntity::rlcDelaySignal_[2] = { cComponent::registerSignal("rlcDelayDl"), cComponent::registerSignal("rlcDelayUl") };
 simsignal_t UmRxEntity::rlcThroughputSignal_[2] = { cComponent::registerSignal("rlcThroughputDl"), cComponent::registerSignal("rlcThroughputUl") };
 simsignal_t UmRxEntity::rlcPduDelaySignal_[2] = { cComponent::registerSignal("rlcPduDelayDl"), cComponent::registerSignal("rlcPduDelayUl") };
 simsignal_t UmRxEntity::rlcPduThroughputSignal_[2] = { cComponent::registerSignal("rlcPduThroughputDl"), cComponent::registerSignal("rlcPduThroughputUl") };
 simsignal_t UmRxEntity::rlcCellThroughputSignal_[2] = { cComponent::registerSignal("rlcCellThroughputDl"), cComponent::registerSignal("rlcCellThroughputUl") };
-
-// D2D signals - only valid statistics (throughput and delay, no packet loss)
 simsignal_t UmRxEntity::rlcDelayD2DSignal_ = registerSignal("rlcDelayD2D");
 simsignal_t UmRxEntity::rlcThroughputD2DSignal_ = registerSignal("rlcThroughputD2D");
 simsignal_t UmRxEntity::rlcPduDelayD2DSignal_ = registerSignal("rlcPduDelayD2D");
 simsignal_t UmRxEntity::rlcPduThroughputD2DSignal_ = registerSignal("rlcPduThroughputD2D");
+
+// NR statistics (emitted on this entity; declared only by the NrUmRxEntity profile)
+simsignal_t UmRxEntity::receivedPacketFromLowerLayerSignal_ = registerSignal("receivedPacketFromLowerLayer");
+simsignal_t UmRxEntity::sentPacketToUpperLayerSignal_ = registerSignal("sentPacketToUpperLayer");
 
 UmRxEntity::UmRxEntity() :
     t_reordering_(this)
@@ -45,20 +50,143 @@ UmRxEntity::UmRxEntity() :
     t_reordering_.setTimerId(REORDERING_T);
     buffered_.pkt = nullptr;
     buffered_.size = 0;
-
-    // @author Alessandro Noferi
-//    ttiT2_ = 0;
-//    ttiT1_ = 0;
-//    lastTTI_ = 0;
 }
 
 UmRxEntity::~UmRxEntity()
 {
     Enter_Method("~UmRxEntity");
     delete buffered_.pkt;
+    if (t_ReassemblyTimer)
+        cancelAndDelete(t_ReassemblyTimer);
+    if (sduBuffer) {
+        sduBuffer->clearBuffer();
+        delete sduBuffer;
+    }
 }
 
-void UmRxEntity::enque(cPacket *pktAux)
+/*
+ * Main functions
+ */
+
+void UmRxEntity::initialize(int stage)
+{
+    if (stage == inet::INITSTAGE_LOCAL) {
+        soFraming_ = par("soFraming");
+
+        LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
+        ownerNodeId_ = mac->getMacNodeId();
+
+        if (soFraming_) {
+            UM_Window_Size = par("UM_Window_Size");
+            // Window = 2^(snBits-1). 3GPP UM SN lengths: LTE 5/10 bits (window 16/512),
+            // NR 6/12 bits (window 32/2048).
+            int snBits;
+            switch (UM_Window_Size) {
+                case 16:   snBits = 5;  break;
+                case 32:   snBits = 6;  break;
+                case 512:  snBits = 10; break;
+                case 2048: snBits = 12; break;
+                default:
+                    throw cRuntimeError("UmRxEntity::initialize() UM_Window_Size=%d, but only 16, 32, 512 or 2048 are valid", UM_Window_Size);
+            }
+            sduBuffer = new RlcUmReceptionBuffer(snBits);
+            t_ReassemblyTimer = new cMessage("UM Reassembly timer");
+            t_Reassembly = par("t_Reassembly");
+            // The mux feeding our "in" gate (for UL burst-throughput reporting).
+            rlcMux_ = getModuleFromPar<RlcMux>(par("rlcMuxModule"), this);
+        }
+        else {
+            timeout_ = par("timeout").doubleValue();
+            rxWindowDesc_.clear();
+            rxWindowDesc_.windowSize_ = par("rxWindowSize");
+            received_.resize(rxWindowDesc_.windowSize_);
+            rlcMux_ = getModuleFromPar<RlcMux>(par("rlcMuxModule"), this);
+            dir_ = mac->getNodeType() == NODEB ? UL : DL;
+            WATCH(timeout_);
+        }
+    }
+    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
+        if (!soFraming_) {
+            binder_.reference(this, "binderModule", true);
+            LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
+            nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
+            // ASSERT(nodeB_ != nullptr); -- see commit message why this is commented out
+        }
+    }
+}
+
+void UmRxEntity::handleMessage(cMessage *msg)
+{
+    if (soFraming_) {
+        if (msg == t_ReassemblyTimer) {
+            sduBuffer->onTimerExpiry();
+            if (sduBuffer->startTimer())
+                scheduleAfter(t_Reassembly, t_ReassemblyTimer);
+            return;
+        }
+        auto pkt = check_and_cast<Packet *>(msg);
+        if (pkt->getArrivalGate() && pkt->getArrivalGate()->isName("in")) {
+            emit(receivedPacketFromLowerLayerSignal_, pkt);
+            enqueNr(pkt);
+        }
+        else {
+            throw cRuntimeError("UmRxEntity: unexpected message %s", msg->getFullName());
+        }
+        return;
+    }
+
+    // LTE mode
+    if (msg->isSelfMessage()) {
+        t_reordering_.handle();
+
+        EV << NOW << " UmRxEntity::handleMessage : t_reordering timer has expired " << endl;
+
+        unsigned int old = rxWindowDesc_.firstSnoForReordering_;
+
+        // move to the first missing SN
+        while (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_) == true
+               || rxWindowDesc_.firstSnoForReordering_ < rxWindowDesc_.reorderingSno_)
+        {
+            rxWindowDesc_.firstSnoForReordering_++;
+            if (rxWindowDesc_.firstSnoForReordering_ == rxWindowDesc_.highestReceivedSno_) // end of the window
+                break;
+        }
+
+        int index = old - rxWindowDesc_.firstSno_;
+        for (unsigned int i = index; i < rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_; i++) {
+            // try to reassemble
+            reassemble(i);
+        }
+
+        if (rxWindowDesc_.highestReceivedSno_ > rxWindowDesc_.firstSnoForReordering_) {
+            rxWindowDesc_.reorderingSno_ = rxWindowDesc_.highestReceivedSno_;
+            t_reordering_.start(timeout_);
+        }
+
+        delete msg;
+    }
+    else if (msg->getArrivalGate() && msg->getArrivalGate()->isName("in")) {
+        // RLC PDU from LowerMux — enqueue for reassembly
+        auto pkt = check_and_cast<inet::Packet *>(msg);
+        EV << "UmRxEntity::handleMessage - Enqueue packet " << pkt->getName() << " from LowerMux\n";
+        enqueLte(pkt);
+    }
+    else {
+        throw cRuntimeError("UmRxEntity: unexpected message %s", msg->getFullName());
+    }
+}
+
+void UmRxEntity::enque(cPacket *pkt)
+{
+    if (soFraming_)
+        enqueNr(check_and_cast<inet::Packet *>(pkt));
+    else
+        enqueLte(pkt);
+}
+
+// ===================== LTE (FI/concatenation) implementation =====================
+
+void UmRxEntity::enqueLte(cPacket *pktAux)
 {
     Enter_Method("enque()");
     take(pktAux);
@@ -89,14 +217,7 @@ void UmRxEntity::enque(cPacket *pktAux)
     // x was already received
     if (tsn >= rxWindowDesc_.firstSnoForReordering_ && tsn < rxWindowDesc_.highestReceivedSno_ && received_.at(index) == true) {
         EV << NOW << " UmRxEntity::enque the received PDU has index " << index << " which points to an already busy location. Discard the PDU" << endl;
-
-        // TODO
-        // Check if the received PDU points
-        // to the same data structure as the PDU
-        // stored in the buffer
-
         delete pktPdu;
-
         return;
     }
 
@@ -212,13 +333,6 @@ void UmRxEntity::enque(cPacket *pktAux)
         }
     }
 
-    /* @author Alessandro Noferi
-     *
-     * At the end of each enque, the state of the buffer is checked.
-     * A burst end does not mean that actually a burst has occurred,
-     * it has occurred if t1 - t2 > TTI
-     */
-
     if (flowControlInfo_->getDirection() == UL) { //only eNodeB checks the burst
         handleBurst(ENQUE);
     }
@@ -250,11 +364,9 @@ void UmRxEntity::moveRxWindow(int pos)
     EV << NOW << " UmRxEntity::moveRxWindow first sequence number updated to " << rxWindowDesc_.firstSno_ << endl;
 }
 
-//void UmRxEntity::toPdcp(LteRlcSdu* rlcSdu)
-void UmRxEntity::toPdcp(Packet *pktAux)
+void UmRxEntity::toPdcpLte(Packet *pktAux)
 {
-    // Remove leftover tag added on the TX side. It should have been already removed
-    // in the TX-side MAC, but its cumbersome to implement -- so do it here for now.
+    // Remove leftover tag added on the TX side.
     pktAux->removeTagIfPresent<PdcpTrackingTag>();
 
     auto lteInfo = pktAux->getTag<FlowControlInfo>();
@@ -269,7 +381,6 @@ void UmRxEntity::toPdcp(Packet *pktAux)
         ueId = lteInfo->getSourceId();
 
     cModule *ue = binder_->getRlcByNodeId(ueId, UM);
-
 
     // emit statistics (throughput and delay only - no packet loss)
     totalCellRcvdBytes_ += length;
@@ -350,8 +461,7 @@ void UmRxEntity::reassemble(unsigned int index)
         if (i == 0) { // first SDU
             bool ignoreFragment = false;
             if (resetFlag_) {
-                // by doing this, the first extracted SDU will be considered in order. For example, when D2D is enabled,
-                // this helps to retrieve the synchronization between SNs at the tx and rx after a mode switch
+                // by doing this, the first extracted SDU will be considered in order.
                 resetFlag_ = false;
                 ignoreFragment = true;
             }
@@ -364,7 +474,7 @@ void UmRxEntity::reassemble(unsigned int index)
                         if (sduLengthPktLeng != sduWholeLength)
                             throw cRuntimeError("UmRxEntity::reassemble(): failed reassembly, the reassembled SDU has size %zu B, while the original SDU had size %d B", sduLengthPktLeng, sduWholeLength);
 
-                        toPdcp(pktSdu);
+                        toPdcpLte(pktSdu);
                         pktSdu = nullptr;
 
                         clearBufferedSdu();
@@ -395,7 +505,7 @@ void UmRxEntity::reassemble(unsigned int index)
                         // check SDU SN
                         if (buffered_.pkt == nullptr ||
                             (pdcpTag->getPdcpSequenceNumber() != buffered_.pkt->getTag<PdcpTrackingTag>()->getPdcpSequenceNumber()) ||
-                            (pduSno != (buffered_.currentPduSno + 1)) ||  // first and only SDU in PDU. PduSno must be last+1, otherwise drop SDU.
+                            (pduSno != (buffered_.currentPduSno + 1)) ||
                             ignoreFragment)
                         {
                             if (pduSno != buffered_.currentPduSno) {
@@ -406,7 +516,6 @@ void UmRxEntity::reassemble(unsigned int index)
                             }
                             clearBufferedSdu();
 
-                            //delete rlcSdu;
                             delete pktSdu;
                             pktSdu = nullptr;
                             continue;
@@ -419,7 +528,6 @@ void UmRxEntity::reassemble(unsigned int index)
                             clearBufferedSdu();
                             EV << NOW << " UmRxEntity::reassemble The SDU cannot be reassembled, mid part missing" << endl;
 
-                            //delete rlcSdu;
                             delete pktSdu;
                             pktSdu = nullptr;
                             continue;
@@ -430,7 +538,7 @@ void UmRxEntity::reassemble(unsigned int index)
 
                         // for burst
                         ttiBits_ += sduLengthPktLeng;
-                        toPdcp(pktSdu);
+                        toPdcpLte(pktSdu);
                         pktSdu = nullptr;
 
                         clearBufferedSdu();
@@ -444,7 +552,7 @@ void UmRxEntity::reassemble(unsigned int index)
                         // check SDU SN
                         if (buffered_.pkt == nullptr ||
                             (pdcpTag->getPdcpSequenceNumber() != buffered_.pkt->getTag<PdcpTrackingTag>()->getPdcpSequenceNumber()) ||
-                            (pduSno != (buffered_.currentPduSno + 1)) ||  // first SDU but NOT only in PDU. PduSno must be last+1, otherwise drop SDU.
+                            (pduSno != (buffered_.currentPduSno + 1)) ||
                             ignoreFragment)
                         {
                             if (pduSno != buffered_.currentPduSno) {
@@ -459,8 +567,6 @@ void UmRxEntity::reassemble(unsigned int index)
                             pktSdu = nullptr;
                             continue;
                         }
-
-                        // buffered_->setByteLength(buffered_->getByteLength() + rlcSdu->getByteLength());
 
                         // for burst
                         ttiBits_ += sduLengthPktLeng;
@@ -486,14 +592,13 @@ void UmRxEntity::reassemble(unsigned int index)
                 if (!fi.firstIsFragment) {
                     {  // FI=00 or FI=01
                         // it is a whole SDU, send the SDU to the PDCP
-
                         EV << NOW << " UmRxEntity::reassemble This is a whole SDU [sno=" << sduSno << "]" << endl;
                         if (sduLengthPktLeng != sduWholeLength)
                             throw cRuntimeError("UmRxEntity::reassemble(): failed reassembly, the reassembled SDU has size %zu B, while the original SDU had size %d B", sduLengthPktLeng, sduWholeLength);
 
                         // for burst
                         ttiBits_ += sduLengthPktLeng;
-                        toPdcp(pktSdu);
+                        toPdcpLte(pktSdu);
                         pktSdu = nullptr;
 
                         clearBufferedSdu();
@@ -507,7 +612,7 @@ void UmRxEntity::reassemble(unsigned int index)
                         // check SDU SN
                         if (buffered_.pkt == nullptr ||
                             (pdcpTag->getPdcpSequenceNumber() != buffered_.pkt->getTag<PdcpTrackingTag>()->getPdcpSequenceNumber()) ||
-                            (pduSno != (buffered_.currentPduSno + 1)) ||  // first SDU but NOT only in PDU. PduSno must be last+1, otherwise drop SDU.
+                            (pduSno != (buffered_.currentPduSno + 1)) ||
                             ignoreFragment)
                         {
                             if (pduSno != (buffered_.currentPduSno + 1)) {
@@ -542,7 +647,7 @@ void UmRxEntity::reassemble(unsigned int index)
 
                         // for burst
                         ttiBits_ += sduWholeLength; // remove the discarded SDU size from the throughput
-                        toPdcp(pktSdu);
+                        toPdcpLte(pktSdu);
                         pktSdu = nullptr;
 
                         clearBufferedSdu();
@@ -562,7 +667,7 @@ void UmRxEntity::reassemble(unsigned int index)
                     // for burst
                     ttiBits_ += sduLengthPktLeng;
 
-                    toPdcp(pktSdu);
+                    toPdcpLte(pktSdu);
                     pktSdu = nullptr;
 
                     clearBufferedSdu();
@@ -595,7 +700,7 @@ void UmRxEntity::reassemble(unsigned int index)
 
             // for burst
             ttiBits_ += sduLengthPktLeng;
-            toPdcp(pktSdu);
+            toPdcpLte(pktSdu);
             pktSdu = nullptr;
 
             clearBufferedSdu();
@@ -611,9 +716,6 @@ void UmRxEntity::reassemble(unsigned int index)
     received_.at(index) = false;
     EV << NOW << " UmRxEntity::reassemble Removed PDU from position " << index << endl;
 
-    // RLC-UM reassembly complete - no statistics emission needed here
-    // RLC PDU processing is successful at this point
-
     // update the last PDU reassembled to the current PDU sequence number
     lastPduReassembled_ = pduSno;
 
@@ -622,83 +724,8 @@ void UmRxEntity::reassemble(unsigned int index)
     delete pktPdu;
 }
 
-/*
- * Main Functions
- */
-
-void UmRxEntity::initialize(int stage)
+void UmRxEntity::clearBufferedSdu()
 {
-    if (stage == inet::INITSTAGE_LOCAL) {
-        timeout_ = par("timeout").doubleValue();
-        rxWindowDesc_.clear();
-        rxWindowDesc_.windowSize_ = par("rxWindowSize");
-        received_.resize(rxWindowDesc_.windowSize_);
-
-
-        rlcMux_ = check_and_cast<RlcMux *>(inet::getContainingNicModule(this)->getSubmodule("rlcMux"));
-
-        //statistics
-
-        LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
-
-        dir_ = mac->getNodeType() == NODEB ? UL : DL;
-
-        // store the node id of the owner module (useful for statistics)
-        ownerNodeId_ = mac->getMacNodeId();
-
-        WATCH(timeout_);
-    }
-    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
-        binder_.reference(this, "binderModule", true);
-        LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this); // duplicate, see above
-        nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
-        // ASSERT(nodeB_ != nullptr); -- see commit message why this is commented out
-    }
-}
-
-void UmRxEntity::handleMessage(cMessage *msg)
-{
-    if (msg->isSelfMessage()) {
-        t_reordering_.handle();
-
-        EV << NOW << " UmRxEntity::handleMessage : t_reordering timer has expired " << endl;
-
-        unsigned int old = rxWindowDesc_.firstSnoForReordering_;
-
-        // move to the first missing SN
-        while (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_) == true
-               || rxWindowDesc_.firstSnoForReordering_ < rxWindowDesc_.reorderingSno_)
-        {
-            rxWindowDesc_.firstSnoForReordering_++;
-            if (rxWindowDesc_.firstSnoForReordering_ == rxWindowDesc_.highestReceivedSno_) // end of the window
-                break;
-        }
-
-        int index = old - rxWindowDesc_.firstSno_;
-        for (unsigned int i = index; i < rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_; i++) {
-            // try to reassemble
-            reassemble(i);
-        }
-
-        if (rxWindowDesc_.highestReceivedSno_ > rxWindowDesc_.firstSnoForReordering_) {
-            rxWindowDesc_.reorderingSno_ = rxWindowDesc_.highestReceivedSno_;
-            t_reordering_.start(timeout_);
-        }
-
-        delete msg;
-    }
-    else if (msg->getArrivalGate() && msg->getArrivalGate()->isName("in")) {
-        // RLC PDU from LowerMux — enqueue for reassembly
-        auto pkt = check_and_cast<inet::Packet *>(msg);
-        EV << "UmRxEntity::handleMessage - Enqueue packet " << pkt->getName() << " from LowerMux\n";
-        enque(pkt);
-    }
-    else {
-        throw cRuntimeError("UmRxEntity: unexpected message %s", msg->getFullName());
-    }
-}
-
-void UmRxEntity::clearBufferedSdu() {
     if (buffered_.pkt != nullptr) {
         // for burst
         ttiBits_ -= buffered_.size; // remove the discarded SDU size from the throughput
@@ -709,10 +736,8 @@ void UmRxEntity::clearBufferedSdu() {
     }
 }
 
-void UmRxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool oldMode, bool clearBuffer)
+void UmRxEntity::rlcHandleD2DModeSwitchLte(bool oldConnection, bool oldMode, bool clearBuffer)
 {
-    Enter_Method_Silent("rlcHandleD2DModeSwitch()");
-
     if (oldConnection) {
         if (getNodeTypeById(ownerNodeId_) == UE && oldMode == IM) {
             EV << NOW << " UmRxEntity::rlcHandleD2DModeSwitch - nothing to do on DL leg of IM flow" << endl;
@@ -751,71 +776,152 @@ void UmRxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool oldMode, bool c
     }
 }
 
+// ===================== NR (SO byte-offset) implementation =====================
+
+void UmRxEntity::enqueNr(Packet *pktPdu)
+{
+    EV << NOW << " UmRxEntity::enque - buffering new PDU" << endl;
+
+    auto pdu = pktPdu->removeAtFront<NrRlcUmDataPdu>();
+
+    // A full SDU (FI=00) can be delivered immediately; a segment goes to the
+    // reassembly buffer.
+    FramingInfo fi = pdu->getFramingInfo();
+    if (fi.toValue() == 0) {
+        size_t sduLength;
+        auto pktSdu = check_and_cast<Packet *>(pdu->popSdu(sduLength));
+        ttiBits_ += sduLength;   // UL burst accounting
+        toPdcpNr(pktSdu);
+    }
+    else {
+        unsigned int tsn = pdu->getPduSequenceNumber();
+        ttiBits_ += (pdu->getEndOffset() - pdu->getStartOffset() + 1);   // UL burst accounting
+        handlePDUInReceivedBuffer(pdu, tsn);
+    }
+
+    pktPdu->insertAtFront(pdu);
+    delete pktPdu;
+
+    // UL data-burst throughput accounting is done only at the eNB on the UL leg
+    if (flowControlInfo_ && flowControlInfo_->getDirection() == UL)
+        handleBurst(ENQUE);
+}
+
+void UmRxEntity::handlePDUInReceivedBuffer(inet::Ptr<NrRlcUmDataPdu> pdu, unsigned int tsn)
+{
+    size_t totalLength = pdu->getLengthMainPacket();
+    auto sdu = check_and_cast<Packet *>(pdu->popSdu(totalLength));
+
+    bool complete = sduBuffer->handleSegment(tsn, totalLength, pdu->getStartOffset(), pdu->getEndOffset(), sdu);
+    if (complete) // otherwise the SDU is buffered or was discarded
+        toPdcpNr(sdu);
+
+    if (t_ReassemblyTimer->isScheduled()) {
+        if (sduBuffer->stopTimer(true))
+            cancelEvent(t_ReassemblyTimer);
+    }
+
+    // not else: the timer may have been cancelled just above
+    if (!t_ReassemblyTimer->isScheduled()) {
+        if (sduBuffer->startTimer())
+            scheduleAfter(t_Reassembly, t_ReassemblyTimer);
+    }
+}
+
+void UmRxEntity::toPdcpNr(Packet *pktAux)
+{
+    // Set the receive-side flow info for PDCP routing and drop the TX-internal tag.
+    *pktAux->addTagIfAbsent<FlowControlInfo>() = *flowControlInfo_;
+    pktAux->removeTagIfPresent<PdcpTrackingTag>();
+
+    Direction dir = static_cast<Direction>(flowControlInfo_->getDirection());
+
+    // Cell throughput at the RLC layer (emitted on this entity)
+    totalRcvdBytesNr_ += pktAux->getByteLength();
+    double tput = (double)totalRcvdBytesNr_ / (NOW - getSimulation()->getWarmupPeriod());
+    emit(rlcCellThroughputSignal_[dir == UL ? 1 : 0], tput);
+
+    emit(sentPacketToUpperLayerSignal_, pktAux);
+
+    EV << NOW << " UmRxEntity::toPdcp - deliver SDU of " << pktAux->getByteLength() << " bytes to upper layer" << endl;
+    send(pktAux, "out");
+}
+
+void UmRxEntity::rlcHandleD2DModeSwitchNr(bool oldConnection, bool oldMode, bool clearBuffer)
+{
+    if (oldConnection) {
+        if (getNodeTypeById(ownerNodeId_) == UE && oldMode == IM) {
+            EV << NOW << " UmRxEntity::rlcHandleD2DModeSwitch - nothing to do on the DL leg of an IM flow" << endl;
+            return;
+        }
+        if (clearBuffer) {
+            // discard any partially-reassembled SDUs of the old mode
+            sduBuffer->clearBuffer();
+            sduBuffer->reset();
+            if (t_ReassemblyTimer->isScheduled())
+                cancelEvent(t_ReassemblyTimer);
+        }
+    }
+    else {
+        // new-mode entity: reset the SN window; the first PDU is forced in-sequence
+        sduBuffer->reset();
+        resetFlag_ = true;
+    }
+}
+
+// ===================== shared =====================
+
+void UmRxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool oldMode, bool clearBuffer)
+{
+    Enter_Method_Silent("rlcHandleD2DModeSwitch()");
+    if (soFraming_)
+        rlcHandleD2DModeSwitchNr(oldConnection, oldMode, clearBuffer);
+    else
+        rlcHandleD2DModeSwitchLte(oldConnection, oldMode, clearBuffer);
+}
+
+bool UmRxEntity::isEmpty() const
+{
+    if (soFraming_)
+        return sduBuffer == nullptr || sduBuffer->isEmpty();
+    return buffered_.pkt == nullptr && pduBuffer_.size() == 0;
+}
+
 void UmRxEntity::handleBurst(BurstCheck event)
 {
-    /* burst management
-     * According to ETSI TS 128 552 v15.00.0 and
-     * ETSI 136 314 v15.1.0
-     * check buffer size:
-     *   - if 0:
-     *      if(burst = true) //it is ended
-     *           consider only total bytes, last_t1 and t2 ( a burst occurred only if t1-t2> TTI
-     *           clear variables
-     *           reset isBurst
-     *      if burst = false nothing happens
-     *          clear temp var
-     *  - if 1:
-     *      if burst = true //burst is still running
-     *          update total var with temp value
-     *      if burst = false // new burst activated
-     *          burst = 1
-     *          update total var with temp var
-     */
-    EV_FATAL << "UmRxEntity::handleBurst - size: " << pduBuffer_.size() + ((buffered_.pkt == nullptr) ? 0 : 1) << endl;
-
+    // UL data-burst throughput (TS 136.314): track contiguous reception while the
+    // RX buffer is continuously non-empty; report the burst on its end.
     simtime_t t1 = simTime();
+    bool bufferEmpty = soFraming_
+        ? (sduBuffer == nullptr || sduBuffer->isEmpty())
+        : (pduBuffer_.size() + (buffered_.pkt == nullptr ? 0 : 1) == 0);
 
-    if (pduBuffer_.size() + (buffered_.pkt == nullptr ? 0 : 1) == 0) { // last TTI emptied the burst
-        if (isBurst_) { // burst ends
-            // send stats
-            // if the transmission requires two TTIs and I do not count
-            // the second last, in the simulator t1 - t2 is 0.
-
-            if ((t1_ - t2_) > TTI) {
+    if (bufferEmpty) {
+        if (isBurst_) {
+            if ((t1_ - t2_) > TTI && rlcMux_ && flowControlInfo_) {
                 Throughput throughput = { totalBits_, (t1_ - t2_) };
                 rlcMux_->addUeThroughput(flowControlInfo_->getSourceId(), throughput);
-
-                EV_FATAL << "BURST ENDED - size : " << totalBits_ << endl;
-                EV_FATAL << "throughput: size " << totalBits_ << " time " << (t1_ - t2_) << endl;
             }
             totalBits_ = 0;
             t2_ = 0;
             t1_ = 0;
-
             isBurst_ = false;
-        }
-        else {
-            EV_FATAL << "NO BURST - size : " << totalBits_ << endl;
         }
     }
     else {
         if (isBurst_) {
-            if (event == ENQUE) { // handleBurst called at the end of the TTI
+            if (event == ENQUE) {
                 totalBits_ += ttiBits_;
                 t1_ = t1;
-                EV_FATAL << "BURST CONTINUES - size : " << totalBits_ << endl;
             }
         }
         else {
             isBurst_ = true;
             totalBits_ = ttiBits_;
             t2_ = t1;
-            t1_ = t1; // it will be updated
-            EV_FATAL << "BURST STARTED - size : " << totalBits_ << endl;
+            t1_ = t1;
         }
     }
-
-    // reset temporary (per TTI) variables
     ttiBits_ = 0;
 }
 

@@ -16,6 +16,7 @@
 #include "simu5g/common/LteDefs.h"
 #include "simu5g/stack/rlc/RlcTxEntityBase.h"
 #include "simu5g/stack/rlc/LteRlcDefs.h"
+#include "simu5g/stack/rlc/um/RlcUmTransmitterBuffer.h"
 #include "simu5g/mec/utils/MecCommon.h"
 
 namespace simu5g {
@@ -26,42 +27,50 @@ using namespace omnetpp;
 
 /**
  * @class UmTxEntity
- * @brief Transmission entity for UM
+ * @brief Generic RLC UM transmission entity, parametrized for LTE or NR.
  *
- * This module is used to segment and/or concatenate RLC SDUs
- * in UM mode at RLC layer of the LTE stack. It operates in
- * the following way:
+ * One mechanism, two wire-format parametrizations selected by the isNR flag:
+ *  - LTE (isNR=false, TS 36.322): FI framing + concatenation of multiple SDUs
+ *    per PDU, sequence number per PDU, emits LteRlcUmDataPdu.
+ *  - NR  (isNR=true,  TS 38.322): SI + byte-offset (SO) segmentation, one SDU
+ *    segment per PDU, sequence number per SDU, emits NrRlcUmDataPdu.
  *
- * - When an RLC SDU is received from the upper layer:
- *    a) the RLC SDU is buffered;
- *    b) the arrival of new data is notified to the lower layer.
- *
- * - When the lower layer requests an RLC PDU, this module invokes
- *   the rlcPduMake() function that builds a new SDU by segmenting
- *   and/or concatenating original SDUs stored in the buffer.
- *   Additional information is added to the SDU in order to allow
- *   the receiving RLC entity to rebuild the original SDUs.
- *
- * - The newly created SDU is encapsulated into an RLC PDU and sent
- *   to the lower layer.
- *
- * The size of PDUs is signaled by the lower layer.
+ * The MAC plumbing, the D2D mode-switch machinery (holding buffer + hold/resume)
+ * and the new-data notification are shared; only the buffering and PDU build
+ * differ per mode. The D2D hooks are inert when no D2DModeController is present
+ * (e.g. NR standalone). Select the parametrization via the NED profile bound to
+ * BearerManagement.rlcUmTxEntityModuleType.
  */
 class UmTxEntity : public RlcTxEntityBase
 {
+    // --- wire-format selector (profile-driven; NOT the NIC-leg isNR) ---
+    // false = LTE FI/concatenation (TS 36.322); true = NR SI/SO byte-offset (TS 38.322)
+    bool soFraming_ = false;
+
+    // --- LTE (FI/concatenation) state ---
     static simsignal_t rlcPduCreatedSignal_;
     struct FragmentInfo {
         inet::Packet *pkt = nullptr;
         int size = 0;
     };
-
     FragmentInfo *fragmentInfo = nullptr;
+
+    // --- NR (SO segmentation) state ---
+    RlcUmTransmitterBuffer *sduBuffer = nullptr;
+    unsigned int sn_FieldLength = 12;
+    static simsignal_t wastedGrantedBytes;
+    static simsignal_t requestedPDUSizeSignal;
+    static simsignal_t sentPDUSizeSignal;
 
   public:
 
     ~UmTxEntity() override
     {
         delete fragmentInfo;
+        if (sduBuffer) {
+            sduBuffer->clearBuffer();
+            delete sduBuffer;
+        }
     }
 
     /**
@@ -72,9 +81,7 @@ class UmTxEntity : public RlcTxEntityBase
     void handleSdu(inet::Packet *pkt);
 
     /*
-     * Enqueues an upper layer packet into the SDU buffer
-     * @param pkt the packet to be enqueued
-     *
+     * Enqueues an upper layer packet into the SDU buffer (LTE mode)
      * @return TRUE if the packet was enqueued in the SDU buffer
      */
     bool enque(cPacket *pkt);
@@ -86,20 +93,17 @@ class UmTxEntity : public RlcTxEntityBase
     void handleMacSduRequest(inet::Packet *pkt);
 
     /**
-     * rlcPduMake() creates a PDU having the specified size
-     * and sends it to the lower layer
-     *
-     * @param size of a PDU
+     * rlcPduMake() creates a PDU of the specified size and sends it to MAC.
      */
     void rlcPduMake(int pduSize);
 
-    // force the sequence number to assume the sno passed as an argument
+    // force the sequence number (LTE mode)
     void setNextSequenceNumber(unsigned int nextSno) { sno_ = nextSno; }
 
-    // drop fragments if the queue is full.
+    // drop fragments if the queue is full (LTE mode)
     void dropBufferOverflow(cPacket *pkt);
 
-    // remove the last SDU from the queue
+    // remove the last SDU from the queue (LTE mode)
     void removeDataFromQueue();
 
     // clear the TX buffer
@@ -108,7 +112,7 @@ class UmTxEntity : public RlcTxEntityBase
     // set holdingDownstreamInPackets_
     void startHoldingDownstreamInPackets() { holdingDownstreamInPackets_ = true; }
 
-    // return true if the entity is not buffering in the TX queue
+    // return true if the entity is holding incoming SDUs
     bool isHoldingDownstreamInPackets();
 
     // store the packet in the holding buffer
@@ -133,56 +137,32 @@ class UmTxEntity : public RlcTxEntityBase
 
     /*
      * @author Alessandro Noferi
-     *
-     * reference to packetFlowObserver in order to be able
-     * to count discarded packets and packet delay
-     *
-     * Be sure to control every time if it is null, this module
-     * is not mandatory for a correct network simulation.
-     * It is useful, e.g., for RNI service within MEC
+     * reference to packetFlowObserver in order to count discarded packets and
+     * packet delay (LTE mode burst tracking; null-safe via hasListeners()).
      */
     RlcBurstStatus burstStatus_;
 
-    /*
-     * The SDU enqueue buffer.
-     */
+    // The SDU enqueue buffer (LTE mode).
     inet::cPacketQueue sduQueue_;
 
-    /*
-     * Determine whether the first item in the queue is a fragment or a whole SDU
-     */
+    // Whether the first item in the LTE queue is a fragment or a whole SDU.
     bool firstIsFragment_ = false;
 
-    /*
-     * If true, the entity checks when the queue becomes empty
-     */
+    // If true, the entity checks when the queue becomes empty (D2D).
     bool notifyEmptyBuffer_ = false;
 
-    /*
-     * If true, the entity temporarily stores incoming SDUs in the holding queue (useful at D2D mode switching)
-     */
+    // If true, incoming SDUs go to the holding queue (D2D mode switch).
     bool holdingDownstreamInPackets_ = false;
 
-    /*
-     * The SDU holding buffer.
-     */
+    // The SDU holding buffer (D2D).
     inet::cPacketQueue sduHoldingQueue_;
 
-    /*
-     * The maximum available queue size (in bytes)
-     * (amount of data in sduQueue_ must not exceed this value)
-     */
+    // The maximum available queue size, in bytes (LTE mode).
     unsigned int queueSize_;
 
-    /*
-     * The currently stored amount of data in the SDU queue (in bytes)
-     */
+    // The currently stored amount of data in the LTE SDU queue, in bytes.
     unsigned int queueLength_ = 0;
 
-    /**
-     * Initialize fragmentSize and
-     * watches
-     */
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;
 
@@ -191,8 +171,22 @@ class UmTxEntity : public RlcTxEntityBase
     // Node id of the owner module
     MacNodeId ownerNodeId_;
 
-    /// Next PDU sequence number to be assigned
+    /// Next PDU sequence number to be assigned (LTE mode)
     unsigned int sno_ = 0;
+
+    // --- mode-specific implementations (behaviour-preserving) ---
+    void rlcPduMakeLte(int pduSize);
+    void rlcPduMakeNr(int pduSize);
+    void clearQueueLte();
+    void clearQueueNr();
+    void resumeDownstreamInPacketsLte();
+    void resumeDownstreamInPacketsNr();
+    void rlcHandleD2DModeSwitchLte(bool oldConnection, bool clearBuffer);
+    void rlcHandleD2DModeSwitchNr(bool oldConnection, bool clearBuffer);
+
+    // NR helpers
+    void sendPduToMac(inet::Packet *pkt);
+    void notifyControllerIfEmptied();
 };
 
 } //namespace

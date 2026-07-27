@@ -16,16 +16,19 @@
 package simu5g.stack.rlc.um;
 
 //
-// NR RLC UM RX entity (TS 38.322). Plugs into the RLC mux architecture as the
-// UM RX entity (select via BearerManagement.rlcUmRxEntityModuleType). Inherits
-// the gates (in/out) from UmRxEntity.
+// NR profile of the generic UM RX entity (TS 38.322): same C++ class (UmRxEntity)
+// as the LTE entity, parametrized with soFraming=true and the NR reassembly window.
+// Select via BearerManagement.rlcUmRxEntityModuleType. The NR SO-reassembly
+// statistics are declared here so they are recorded only for NR-selected entities
+// (LTE entities keep their original scalar set).
 //
 simple NrUmRxEntity extends UmRxEntity
 {
     parameters:
-        @class(NrUmRxEntity);
-        int UM_Window_Size = default(2048);     // 2048 (12-bit SN) or 32 (6-bit SN)
-        double t_Reassembly @unit(s) = default(80ms);
+        @class(UmRxEntity);
+        soFraming = default(true);              // select the NR SI/SO byte-offset wire format
+        UM_Window_Size = default(2048);         // 2048 (12-bit SN) or 32 (6-bit SN)
+        t_Reassembly = default(80ms);
 
         @signal[receivedPacketFromLowerLayer];
         @statistic[receivedPacketFromLowerLayer](source="receivedPacketFromLowerLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);

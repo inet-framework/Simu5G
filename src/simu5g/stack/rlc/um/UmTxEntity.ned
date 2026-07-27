@@ -14,22 +14,26 @@
 package simu5g.stack.rlc.um;
 
 //
-// Implements the transmission side functionalities of the Unacknowledged
-// Mode (UM) of the Radio Link Control (RLC) layer for a specific connection.
-// It stores packets coming from the Packet Data Convergence Protocol (PDCP) layer
-// in a transmission buffer and, upon receiving a notification of a transmission opportunity
-// from the Medium Access Control (MAC) layer, it sends down an RLC Protocol Data Unit
-// (PDU) of the appropriate size (which may involve segmentation and/or concatenation).
+// Generic transmission side of the Unacknowledged Mode (UM) of the RLC layer,
+// parametrized for LTE or NR via the soFraming flag (one C++ class, UmTxEntity):
+//  - LTE (soFraming=false, TS 36.322): FI framing + concatenation, SN per PDU.
+//  - NR  (soFraming=true,  TS 38.322): SI + byte-offset (SO) segmentation, SN per SDU.
+// The NR parametrization is provided by the NrUmTxEntity profile. Select via
+// BearerManagement.rlcUmTxEntityModuleType. Note: soFraming is the wire-format
+// selector and is independent of isNR (which BearerManagement sets to mark the
+// NR leg, and which does NOT change the wire format).
 //
 simple UmTxEntity like simu5g.stack.rlc.IRlcTxEntity
 {
     parameters:
         @dynamic(true);
         @display("i=block/layer");
-        bool isNR @mutable = default(false);  // set programmatically by BearerManagement
+        bool isNR @mutable = default(false);             // NR-leg marker (set programmatically by BearerManagement; not the wire format)
+        bool soFraming = default(false);                 // wire format: LTE FI/concat (false) vs NR SI/SO (true)
         string macModule = default("^.^.mac");  // set by the enclosing RlcUmEntityBase compound (per leg)
-        int queueSize @unit(B) = default(2MiB);          // RLC TX entity SDU queue size (0: unlimited)
-        int fragmentSize @unit(B) = default(30B);        // Size of fragments
+        int queueSize @unit(B) = default(2MiB);          // RLC TX entity SDU queue size (LTE mode; 0: unlimited)
+        int fragmentSize @unit(B) = default(30B);        // accepted for config-compat
+        int sn_FieldLength = default(10);                // UM SN field length in bits (NR mode): LTE 5/10, NR 6/12
         @signal[rlcPduCreated];
 
     gates:
@@ -37,4 +41,3 @@ simple UmTxEntity like simu5g.stack.rlc.IRlcTxEntity
         input macIn;    // SDU requests from lower mux (MAC)
         output out;     // PDUs and new-data notifications to lower mux (MAC)
 }
-

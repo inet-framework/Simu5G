@@ -16,15 +16,18 @@
 package simu5g.stack.rlc.um;
 
 //
-// NR RLC UM TX entity (TS 38.322). Plugs into the RLC mux architecture as the
-// UM TX entity (select via BearerManagement.rlcUmTxEntityModuleType). Inherits
-// the gates (in/macIn/out) from UmTxEntity.
+// NR profile of the generic UM TX entity (TS 38.322): same C++ class
+// (UmTxEntity) as the LTE entity, parametrized with isNR=true and the NR SN
+// field length. Select via BearerManagement.rlcUmTxEntityModuleType. The NR
+// SO-segmentation statistics are declared here so they are recorded only for
+// NR-selected entities (LTE entities keep their original scalar set).
 //
 simple NrUmTxEntity extends UmTxEntity
 {
     parameters:
-        @class(NrUmTxEntity);
-        int sn_FieldLength = default(12);   // UM SN field length in bits: 6 or 12
+        @class(UmTxEntity);
+        soFraming = default(true);      // select the NR SI/SO byte-offset wire format
+        sn_FieldLength = default(12);   // UM SN field length in bits: 6 or 12
 
         @signal[wastedGrantedBytes];
         @statistic[wastedGrantedBytes](title="Wasted granted bytes"; unit="B"; source="wastedGrantedBytes"; record=sum);

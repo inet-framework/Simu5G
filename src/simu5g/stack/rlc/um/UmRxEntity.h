@@ -22,6 +22,8 @@
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include "simu5g/stack/rlc/LteRlcDefs.h"
+#include "simu5g/stack/rlc/um/NrRlcUmDataPdu.h"
+#include "simu5g/stack/rlc/um/RlcUmReceptionBuffer.h"
 
 namespace simu5g {
 
@@ -33,107 +35,85 @@ class LteRlcUmDataPdu;
 
 /**
  * @class UmRxEntity
- * @brief Receiver entity for UM
+ * @brief Generic RLC UM receiving entity, parametrized for LTE or NR.
  *
- * This module is used to buffer RLC PDUs and to reassemble
- * RLC SDUs in UM mode at RLC layer of the LTE stack.
+ * One mechanism, two wire-format parametrizations selected by the soFraming flag:
+ *  - LTE (soFraming=false, TS 36.322): FI-walk reassembly across concatenated PDUs,
+ *    PDU-SN reordering window, t-Reordering.
+ *  - NR  (soFraming=true,  TS 38.322): SI + byte-offset (SO) reassembly, SDU-SN
+ *    reassembly window, t-Reassembly.
  *
- * It implements the procedures described in 3GPP TS 36.322
+ * The MAC-mux plumbing, the D2D mode-switch hooks and the UL burst-throughput
+ * accounting are shared; only the buffering/reassembly/timer logic differs per mode.
  */
 class UmRxEntity : public RlcRxEntityBase
 {
   protected:
 
-    inet::ModuleRefByPar<Binder> binder_;
+    // --- wire-format selector (profile-driven; see UmTxEntity) ---
+    bool soFraming_ = false;
 
-    // reference to eNB for statistic purpose
-    opp_component_ptr<cModule> nodeB_;
-
+    // --- shared ---
     // Node id of the owner module
     MacNodeId ownerNodeId_;
-
+    // The mux feeding this entity (for UL burst-throughput reporting)
     RlcMux *rlcMux_ = nullptr;
+    // After a D2D mode switch, the first PDU on the new-mode entity is forced in-sequence
+    bool resetFlag_ = false;
 
-    // The PDU enqueue buffer.
+    // UL data-burst accounting (TS 136.314), eNB only
+    enum BurstCheck { ENQUE, REORDERING };
+    bool isBurst_ = false;
+    unsigned int totalBits_ = 0;
+    unsigned int ttiBits_ = 0;
+    simtime_t t1_ = 0;
+    simtime_t t2_ = 0;
+
+    static simsignal_t rlcCellThroughputSignal_[2];
+
+    // --- LTE (FI/concatenation) state ---
+    inet::ModuleRefByPar<Binder> binder_;
+    opp_component_ptr<cModule> nodeB_;
     cArray pduBuffer_;
-
-    // State variables
     RlcUmRxWindowDesc rxWindowDesc_;
-
-    // Timer to manage reordering of the PDUs
     TTimer t_reordering_;
-
-    // Timeout for above timer
     double timeout_;
-
-    // For each PDU a received status variable is kept.
     std::vector<bool> received_;
-
-    // The SDU waiting for the missing portion
     struct Buffered {
         inet::Packet *pkt = nullptr;
         size_t size = 0;
-        unsigned int currentPduSno = 0;   // next PDU sequence number expected
+        unsigned int currentPduSno = 0;
     } buffered_;
-
-    // Sequence number of the last correctly reassembled PDU
     unsigned int lastPduReassembled_ = 0;
-
     bool init_ = false;
-
-    // If true, the next PDU and the corresponding SDUs are considered in order
-    // (modify the lastPduReassembled_ counter)
-    // useful for D2D after a mode switch
-    bool resetFlag_ = false;
-
-    /**
-     *  @author Alessandro Noferi
-     * UL throughput variables
-     * From TS 136 314
-     * UL data burst is the collective data received while the eNB
-     * estimate of the UE buffer size is continuously above zero by
-     * excluding transmission of the last piece of data.
-     */
-
-    enum BurstCheck
-    {
-        ENQUE, REORDERING
-    };
-
-    bool isBurst_ = false; // a burst has started last TTI
-    unsigned int totalBits_ = 0; // total bytes during the burst
-    unsigned int ttiBits_ = 0; // bytes during this TTI
-    simtime_t t2_ = 0; // point in time the burst begins
-    simtime_t t1_ = 0; // point in time last packet sent during burst
-
-    //Statistics - RLC-UM only tracks throughput and delay (no packet loss based on PDCP sequence numbers)
     static unsigned int totalCellPduRcvdBytes_;
     static unsigned int totalCellRcvdBytes_;
     unsigned int totalPduRcvdBytes_ = 0;
     unsigned int totalRcvdBytes_ = 0;
     Direction dir_ = UNKNOWN_DIRECTION;
-
-    // Valid statistics for RLC-UM (throughput and delay)
     static simsignal_t rlcDelaySignal_[2];
     static simsignal_t rlcPduDelaySignal_[2];
-    static simsignal_t rlcCellThroughputSignal_[2];
     static simsignal_t rlcThroughputSignal_[2];
     static simsignal_t rlcPduThroughputSignal_[2];
-
-    // statistics for D2D (throughput and delay only)
     static simsignal_t rlcDelayD2DSignal_;
     static simsignal_t rlcPduDelayD2DSignal_;
     static simsignal_t rlcThroughputD2DSignal_;
     static simsignal_t rlcPduThroughputD2DSignal_;
 
+    // --- NR (SO byte-offset) state ---
+    RlcUmReceptionBuffer *sduBuffer = nullptr;
+    int UM_Window_Size = 2048;
+    cMessage *t_ReassemblyTimer = nullptr;
+    simtime_t t_Reassembly;
+    unsigned long totalRcvdBytesNr_ = 0;
+    static simsignal_t receivedPacketFromLowerLayerSignal_;
+    static simsignal_t sentPacketToUpperLayerSignal_;
+
   public:
     UmRxEntity();
     ~UmRxEntity() override;
 
-    /*
-     * Enqueues a lower layer packet into the PDU buffer
-     * @param pdu the packet to be enqueued
-     */
+    // Enqueues a lower-layer PDU into the entity for reassembly
     void enque(cPacket *pkt);
 
     // returns true if this entity is for a D2D_MULTI connection
@@ -143,39 +123,29 @@ class UmRxEntity : public RlcRxEntityBase
     void rlcHandleD2DModeSwitch(bool oldConnection, bool oldMode, bool clearBuffer = true);
 
     // returns if the entity contains RLC pdus
-    bool isEmpty() const { return buffered_.pkt == nullptr && pduBuffer_.size() == 0; }
+    bool isEmpty() const;
 
-
-    /**
-     * Initialize watches
-     */
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;
 
   private:
 
-    /*
-     * This method is used to manage a burst and calculate the UL throughput of a UE
-     * It is called at the end of each TTI period and at the end of a t_reordering
-     * period. Only the eNB needs to manage the buffer, since only it has to
-     * calculate UL throughput.
-     *
-     * @param event specifies when it is called, i.e. after TTI or after timer reordering
-     */
+    // UL throughput burst accounting (shared accumulator; per-mode buffer-empty check)
     void handleBurst(BurstCheck event);
 
-    // move forward the reordering window
+    // --- LTE (FI/concatenation) implementation ---
+    void enqueLte(cPacket *pktPdu);
     void moveRxWindow(int pos);
-
-    // consider the PDU at position 'index' for reassembly
     void reassemble(unsigned int index);
-
-    // deliver a PDCP PDU to the PDCP layer
-    void toPdcp(inet::Packet *rlcSdu);
-
-    // clear buffered SDU
+    void toPdcpLte(inet::Packet *rlcSdu);
     void clearBufferedSdu();
+    void rlcHandleD2DModeSwitchLte(bool oldConnection, bool oldMode, bool clearBuffer);
 
+    // --- NR (SO byte-offset) implementation ---
+    void enqueNr(inet::Packet *pkt);
+    void handlePDUInReceivedBuffer(inet::Ptr<NrRlcUmDataPdu> pdu, unsigned int tsn);
+    void toPdcpNr(inet::Packet *rlcSdu);
+    void rlcHandleD2DModeSwitchNr(bool oldConnection, bool oldMode, bool clearBuffer);
 };
 
 } //namespace

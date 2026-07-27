@@ -14,6 +14,7 @@
 #include <inet/networklayer/common/NetworkInterface.h>
 
 #include "simu5g/stack/rlc/um/UmTxEntity.h"
+#include "simu5g/stack/rlc/um/NrRlcUmDataPdu.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
@@ -29,6 +30,9 @@ namespace simu5g {
 Define_Module(UmTxEntity);
 
 simsignal_t UmTxEntity::rlcPduCreatedSignal_ = registerSignal("rlcPduCreated");
+simsignal_t UmTxEntity::wastedGrantedBytes = registerSignal("wastedGrantedBytes");
+simsignal_t UmTxEntity::requestedPDUSizeSignal = registerSignal("requestedPDUSize");
+simsignal_t UmTxEntity::sentPDUSizeSignal = registerSignal("sentPDUSize");
 
 using namespace inet;
 
@@ -39,29 +43,37 @@ using namespace inet;
 void UmTxEntity::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
-        LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
+        soFraming_ = par("soFraming");
 
-        // store the node id of the owner module
+        LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
         ownerNodeId_ = mac->getMacNodeId();
 
-        queueSize_ = par("queueSize");
+        if (soFraming_) {
+            sn_FieldLength = par("sn_FieldLength");
+            // 3GPP UM SN field lengths: LTE (TS 36.322) 5 or 10 bits, NR (TS 38.322) 6 or 12 bits.
+            if (sn_FieldLength != 5 && sn_FieldLength != 6 && sn_FieldLength != 10 && sn_FieldLength != 12)
+                throw cRuntimeError("UmTxEntity::initialize() sn_FieldLength=%u, but only 5, 6, 10 or 12 are valid", sn_FieldLength);
+            sduBuffer = new RlcUmTransmitterBuffer(static_cast<uint32_t>(sn_FieldLength));
+        }
+        else {
+            queueSize_ = par("queueSize");
+            burstStatus_ = INACTIVE;
+        }
 
         auto *rrc = inet::getContainingNicModule(this)->getSubmodule("rrc");
         d2dModeController_ = dynamic_cast<D2DModeController *>(rrc ? rrc->getSubmodule("d2dModeController") : nullptr);
-
-        burstStatus_ = INACTIVE;
     }
 }
 
 void UmTxEntity::handleMessage(cMessage *msg)
 {
-    cPacket *pkt = check_and_cast<cPacket *>(msg);
+    auto pkt = check_and_cast<inet::Packet *>(msg);
     cGate *incoming = pkt->getArrivalGate();
     if (incoming->isName("in")) {
-        handleSdu(check_and_cast<inet::Packet *>(pkt));
+        handleSdu(pkt);
     }
     else if (incoming->isName("macIn")) {
-        handleMacSduRequest(check_and_cast<inet::Packet *>(pkt));
+        handleMacSduRequest(pkt);
     }
     else {
         throw cRuntimeError("UmTxEntity: unexpected message from gate %s", incoming->getFullName());
@@ -72,41 +84,46 @@ void UmTxEntity::handleSdu(inet::Packet *pkt)
 {
     EV << NOW << " UmTxEntity::handleSdu - Received SDU from upper layer, size " << pkt->getByteLength() << "\n";
 
-    // Extract sequence number from PDCP header
+    // Add PDCP tracking information (SN + original length), read back in rlcPduMake().
     auto pdcpHeader = pkt->peekAtFront<LtePdcpHeader>();
-    unsigned int sequenceNumber = pdcpHeader->getSequenceNumber();
-
-    // Add PDCP tracking information
     auto pdcpTag = pkt->addTag<PdcpTrackingTag>();
-    pdcpTag->setPdcpSequenceNumber(sequenceNumber);
+    pdcpTag->setPdcpSequenceNumber(pdcpHeader->getSequenceNumber());
     pdcpTag->setOriginalPacketLength(pkt->getByteLength());
 
     if (holdingDownstreamInPackets_) {
-        // do not store in the TX buffer and do not signal the MAC layer
+        // D2D mode switch in progress on the new-mode entity: hold the SDU and
+        // do not notify the MAC until the old-mode entity has drained.
         EV << "UmTxEntity::handleSdu - Enqueue packet into the Holding Buffer\n";
         enqueHoldingPackets(pkt);
+        return;
+    }
+
+    bool stored;
+    if (soFraming_) {
+        sduBuffer->addSdu(pkt->getByteLength(), pkt);
+        stored = true;
     }
     else {
-        if (enque(pkt)) {
-            EV << "UmTxEntity::handleSdu - Enqueue packet into the Tx Buffer\n";
+        stored = enque(pkt);
+    }
 
-            // create a message to notify the MAC layer that the queue contains new data
-            auto pktDup = pkt->dup();
-            pktDup->addTag<LteRlcNewDataTag>();
-
-            EV << "UmTxEntity::handleSdu - Sending new data indication to MAC\n";
-            send(pktDup, "out");
-        }
-        else {
-            // Queue is full - drop SDU
-            dropBufferOverflow(pkt);
-        }
+    if (stored) {
+        // Notify the MAC that the queue has new data. The dup carries the full SDU
+        // length, so the MAC tracks remaining bytes itself across grant requests.
+        auto pktDup = pkt->dup();
+        pktDup->addTag<LteRlcNewDataTag>();
+        EV << "UmTxEntity::handleSdu - Sending new data indication to MAC\n";
+        send(pktDup, "out");
+    }
+    else {
+        // Queue is full - drop SDU (LTE mode only; NR buffer is unbounded)
+        dropBufferOverflow(pkt);
     }
 }
 
 void UmTxEntity::handleMacSduRequest(inet::Packet *pkt)
 {
-    // Enter_Method + take needed for context switch when called via gate from LowerMux
+    // Enter_Method + take needed for context switch when called via gate from the lower mux
     Enter_Method("handleMacSduRequest()");
     if (pkt->getOwner() != this)
         take(pkt);
@@ -129,7 +146,6 @@ bool UmTxEntity::enque(cPacket *pkt)
         // Buffer the SDU in the TX buffer
         sduQueue_.insert(pkt);
         queueLength_ += pkt->getByteLength();
-        // Packet was successfully enqueued
         return true;
     }
     else {
@@ -138,7 +154,15 @@ bool UmTxEntity::enque(cPacket *pkt)
     }
 }
 
-void UmTxEntity::rlcPduMake(int pduLength)
+void UmTxEntity::rlcPduMake(int pduSize)
+{
+    if (soFraming_)
+        rlcPduMakeNr(pduSize);
+    else
+        rlcPduMakeLte(pduSize);
+}
+
+void UmTxEntity::rlcPduMakeLte(int pduLength)
 {
     EV << NOW << " UmTxEntity::rlcPduMake - PDU with size " << pduLength << " requested from MAC" << endl;
 
@@ -198,7 +222,6 @@ void UmTxEntity::rlcPduMake(int pduLength)
             EV << NOW << " UmTxEntity::rlcPduMake - Add " << pduLength << " bytes to the new SDU, sduSno[" << sduSequenceNumber << "]" << endl;
 
             // add partial SDU
-
             len += pduLength;
 
             auto rlcSduDup = pkt->dup();
@@ -231,15 +254,13 @@ void UmTxEntity::rlcPduMake(int pduLength)
     }
 
     if (len == 0) {
-        // send an empty (1-bit) message to notify the MAC that there is not enough space to send RLC PDU
-        // (TODO: ugly, should be indicated in a better way)
+        // send an empty (1-bit) message to notify the MAC that there is not enough space
         EV << NOW << " UmTxEntity::rlcPduMake - cannot send PDU with data, pdulength requested by MAC (" << pduLength << "B) is too small." << std::endl;
         pkt->setName("lteRlcFragment (empty)");
         rlcPdu->setChunkLength(inet::b(1)); // send only a bit, minimum size
     }
     else {
-        // compute FI
-        // the meaning of this field is specified in 3GPP TS 36.322
+        // compute FI (3GPP TS 36.322)
         FramingInfo fi;
         fi.firstIsFragment = startFrag;   // 10
         fi.lastIsFragment = endFrag;      // 01
@@ -253,28 +274,16 @@ void UmTxEntity::rlcPduMake(int pduLength)
 
     /*
      * @author Alessandro Noferi
-     *
-     * Notify the packetFlowObserver about the new RLC PDU
-     * only in UL or DL cases
+     * Notify the packetFlowObserver about the new RLC PDU only in UL or DL cases
      */
     if (flowControlInfo_->getDirection() == DL || flowControlInfo_->getDirection() == UL) {
-        // notify packetFlowObserver via signal
         if (len != 0 && hasListeners(rlcPduCreatedSignal_)) {
             DrbKey drbKey = ctrlInfoToTxDrbKey(flowControlInfo_);
 
             /*
-             * Burst management.
-             *
-             * If the buffer is empty, the burst, if ACTIVE,
-             * now is finished. Tell the flow manager to STOP
-             * keep track of burst RLCs (not the timer). Set burst as INACTIVE
-             *
-             * if the buffer is NOT empty,
-             *      if burst is already ACTIVE, do not start the timer T2
-             *      if burst is INACTIVE, START the timer T2 and set it as ACTIVE
-             * Tell the flow manager to keep track of burst RLCs
+             * Burst management. If the buffer is empty, an ACTIVE burst is now
+             * finished (STOP). If not empty, START a burst when INACTIVE.
              */
-
             if (sduQueue_.isEmpty()) {
                 if (burstStatus_ == ACTIVE) {
                     EV << NOW << " UmTxEntity::burstStatus - ACTIVE -> INACTIVE" << endl;
@@ -318,9 +327,96 @@ void UmTxEntity::rlcPduMake(int pduLength)
     // if incoming connection was halted
     if (notifyEmptyBuffer_ && sduQueue_.isEmpty()) {
         notifyEmptyBuffer_ = false;
-
         // tell the D2D mode controller to resume packets for the new mode
         if (d2dModeController_)
+            d2dModeController_->resumeDownstreamInPackets(flowControlInfo_->getD2dRxPeerId());
+    }
+}
+
+void UmTxEntity::rlcPduMakeNr(int pduLength)
+{
+    Enter_Method("UmTxEntity::rlcPduMakeNr");
+    EV << NOW << " UmTxEntity::rlcPduMake - PDU with size " << pduLength << " requested from MAC" << endl;
+    emit(requestedPDUSizeSignal, pduLength);
+
+    auto pkt = new inet::Packet("lteRlcFragment");
+    auto rlcPdu = inet::makeShared<NrRlcUmDataPdu>();
+
+    // the request from MAC takes into account also the size of the RLC header
+    int size = pduLength - RLC_HEADER_UM;
+
+    if (size <= 0) {
+        // send an empty (1-bit) message: not enough space to carry data
+        EV << NOW << " UmTxEntity::rlcPduMake - grant too small (" << pduLength << "B)" << endl;
+        pkt->setName("lteRlcFragment (empty)");
+        rlcPdu->setChunkLength(inet::b(1));
+        if (flowControlInfo_)
+            *(pkt->addTagIfAbsent<FlowControlInfo>()) = *flowControlInfo_;
+        pkt->insertAtFront(rlcPdu);
+        sendPduToMac(pkt);
+        return;
+    }
+
+    PendingSegmentUM segment = sduBuffer->getSegmentForGrant(size);
+    if (!segment.isValid) {
+        EV << NOW << " UmTxEntity::rlcPduMake - buffer empty, wasting grant (" << size << "B)" << endl;
+        emit(wastedGrantedBytes, size);
+        delete pkt;
+        notifyControllerIfEmptied();
+        return;
+    }
+
+    auto bufferedSdu = check_and_cast<inet::Packet *>(segment.ptr);
+    auto pdcpTag = bufferedSdu->getTag<PdcpTrackingTag>();
+    unsigned int sduSequenceNumber = pdcpTag->getPdcpSequenceNumber();
+    int sduLength = pdcpTag->getOriginalPacketLength();
+    rlcPdu->pushSdu(bufferedSdu->dup(), sduLength);
+    unsigned int startOffset = segment.start;
+    unsigned int endOffset = segment.end;
+    bool endFragment = segment.isLastSegment;
+    if (segment.isLastSegment || segment.isFull)
+        delete bufferedSdu; // it was previously dup'd into the SDU buffer
+
+    // compute SI (reusing the FramingInfo field; semantics per TS 38.322)
+    FramingInfo fi;  // 00 = full SDU
+    if (endFragment)
+        fi.firstIsFragment = true;  // 10 = last segment
+
+    int len = segment.end - segment.start + 1;
+    rlcPdu->setChunkLength(inet::B(RLC_HEADER_UM + len));
+    rlcPdu->setSnoMainPacket(sduSequenceNumber);
+    rlcPdu->setLengthMainPacket(0);
+    rlcPdu->setStartOffset(startOffset);
+    rlcPdu->setEndOffset(endOffset);
+    rlcPdu->setFramingInfo(fi);
+    // Full SDUs do not need a SN
+    if (!segment.isFull)
+        rlcPdu->setPduSequenceNumber(segment.sn);
+
+    if (flowControlInfo_)
+        *pkt->addTagIfAbsent<FlowControlInfo>() = *flowControlInfo_;
+
+    pkt->insertAtFront(rlcPdu);
+    EV << NOW << " UmTxEntity::rlcPduMake - send PDU size " << pkt->getByteLength() << " to lower layer" << endl;
+    emit(sentPDUSizeSignal, pkt->getByteLength());
+    sendPduToMac(pkt);
+
+    notifyControllerIfEmptied();
+}
+
+void UmTxEntity::sendPduToMac(inet::Packet *pkt)
+{
+    pkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&LteProtocol::rlc);
+    send(pkt, "out");
+}
+
+void UmTxEntity::notifyControllerIfEmptied()
+{
+    // Once the old-mode entity has drained, release the new-mode entity's holding
+    // buffer via the D2D controller (mode-switch handover of buffered SDUs).
+    if (notifyEmptyBuffer_ && !sduBuffer->hasData()) {
+        notifyEmptyBuffer_ = false;
+        if (d2dModeController_ && flowControlInfo_)
             d2dModeController_->resumeDownstreamInPackets(flowControlInfo_->getD2dRxPeerId());
     }
 }
@@ -334,11 +430,7 @@ void UmTxEntity::dropBufferOverflow(cPacket *pkt)
 void UmTxEntity::removeDataFromQueue()
 {
     EV << NOW << " UmTxEntity::removeDataFromQueue - removed SDU " << endl;
-
-    // get the last packet...
     cPacket *pkt = sduQueue_.back();
-
-    // ...and remove it
     cPacket *retPkt = sduQueue_.remove(pkt);
     queueLength_ -= retPkt->getByteLength();
     ASSERT(queueLength_ >= 0);
@@ -346,6 +438,14 @@ void UmTxEntity::removeDataFromQueue()
 }
 
 void UmTxEntity::clearQueue()
+{
+    if (soFraming_)
+        clearQueueNr();
+    else
+        clearQueueLte();
+}
+
+void UmTxEntity::clearQueueLte()
 {
     // empty buffer
     while (!sduQueue_.isEmpty())
@@ -362,6 +462,12 @@ void UmTxEntity::clearQueue()
     firstIsFragment_ = false;
 }
 
+void UmTxEntity::clearQueueNr()
+{
+    // empty the TX buffer (deletes buffered SDUs); the UM numbering is NOT reset
+    sduBuffer->clearBuffer();
+}
+
 bool UmTxEntity::isHoldingDownstreamInPackets()
 {
     return holdingDownstreamInPackets_;
@@ -375,6 +481,14 @@ void UmTxEntity::enqueHoldingPackets(cPacket *pkt)
 
 void UmTxEntity::resumeDownstreamInPackets()
 {
+    if (soFraming_)
+        resumeDownstreamInPacketsNr();
+    else
+        resumeDownstreamInPacketsLte();
+}
+
+void UmTxEntity::resumeDownstreamInPacketsLte()
+{
     EV << NOW << " UmTxEntity::resumeDownstreamInPackets - resume buffering incoming downstream packets of the RLC entity associated with the new mode" << endl;
 
     holdingDownstreamInPackets_ = false;
@@ -382,32 +496,53 @@ void UmTxEntity::resumeDownstreamInPackets()
     // move all SDUs in the holding buffer to the TX buffer
     while (!sduHoldingQueue_.isEmpty()) {
         auto pktRlc = check_and_cast<inet::Packet *>(sduHoldingQueue_.front());
-
         sduHoldingQueue_.pop();
 
         // store the SDU in the TX buffer
         if (enque(pktRlc)) {
-            // create a message to notify the MAC layer that the queue contains new data
-            // make a copy of the RLC SDU
             auto pktRlcdup = pktRlc->dup();
-            // add tag to indicate new data availability to MAC
             pktRlcdup->addTag<LteRlcNewDataTag>();
-            // send the new data indication to the MAC
             send(pktRlcdup, "out");
         }
         else {
-            // Queue is full - drop SDU
             EV << "UmTxEntity::resumeDownstreamInPackets - cannot buffer SDU (queue is full), dropping" << std::endl;
             dropBufferOverflow(pktRlc);
         }
     }
 }
 
+void UmTxEntity::resumeDownstreamInPacketsNr()
+{
+    EV << NOW << " UmTxEntity::resumeDownstreamInPackets - releasing held SDUs to the TX buffer" << endl;
+    holdingDownstreamInPackets_ = false;
+
+    while (!sduHoldingQueue_.isEmpty()) {
+        auto pktRlc = check_and_cast<inet::Packet *>(sduHoldingQueue_.front());
+        sduHoldingQueue_.pop();
+
+        // store the SDU in the TX buffer (ownership transferred)
+        sduBuffer->addSdu(pktRlc->getByteLength(), pktRlc);
+
+        // notify the MAC of new data (dup carries the full SDU length)
+        auto pktRlcdup = pktRlc->dup();
+        pktRlcdup->addTag<LteRlcNewDataTag>();
+        send(pktRlcdup, "out");
+    }
+}
+
 void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
+{
+    if (soFraming_)
+        rlcHandleD2DModeSwitchNr(oldConnection, clearBuffer);
+    else
+        rlcHandleD2DModeSwitchLte(oldConnection, clearBuffer);
+}
+
+void UmTxEntity::rlcHandleD2DModeSwitchLte(bool oldConnection, bool clearBuffer)
 {
     if (oldConnection) {
         if (getNodeTypeById(ownerNodeId_) == NODEB) {
-            EV << NOW << " UmRxEntity::rlcHandleD2DModeSwitch - nothing to do on DL leg of IM flow" << endl;
+            EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - nothing to do on DL leg of IM flow" << endl;
             return;
         }
 
@@ -417,11 +552,11 @@ void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
         }
         else {
             if (!sduQueue_.isEmpty()) {
-                EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - check when the TX buffer of the RLC entity associated with the old mode becomes empty - queue length[" << sduQueue_.getLength() << "]" << endl;
+                EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - check when the TX buffer of the old mode becomes empty - queue length[" << sduQueue_.getLength() << "]" << endl;
                 notifyEmptyBuffer_ = true;
             }
             else {
-                EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - TX buffer of the RLC entity associated with the old mode is already empty" << endl;
+                EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - TX buffer of the old mode is already empty" << endl;
             }
         }
     }
@@ -431,10 +566,36 @@ void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
 
         if (!clearBuffer) {
             if (d2dModeController_ && d2dModeController_->isEmptyingTxBuffer(flowControlInfo_->getD2dRxPeerId())) {
-                // stop incoming connections, until
-                EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - halt incoming downstream connections of the RLC entity associated with the new mode" << endl;
+                EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - halt incoming downstream connections of the new mode" << endl;
                 startHoldingDownstreamInPackets();
             }
+        }
+    }
+}
+
+void UmTxEntity::rlcHandleD2DModeSwitchNr(bool oldConnection, bool clearBuffer)
+{
+    if (oldConnection) {
+        if (getNodeTypeById(ownerNodeId_) == NODEB) {
+            EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - nothing to do on the DL leg of an IM flow" << endl;
+            return;
+        }
+        if (clearBuffer) {
+            EV << NOW << " UmTxEntity::rlcHandleD2DModeSwitch - clear old-mode TX buffer" << endl;
+            clearQueue();
+        }
+        else if (sduBuffer->hasData()) {
+            // keep draining; signal the controller once the buffer empties
+            notifyEmptyBuffer_ = true;
+        }
+    }
+    else {
+        // new-mode entity: reset UM numbering
+        sduBuffer->resetTxNext();
+        if (!clearBuffer && d2dModeController_ && flowControlInfo_ &&
+                d2dModeController_->isEmptyingTxBuffer(flowControlInfo_->getD2dRxPeerId())) {
+            // the old-mode entity is still draining: hold incoming SDUs until it finishes
+            startHoldingDownstreamInPackets();
         }
     }
 }

@@ -26,10 +26,14 @@ simple UmRxEntity like simu5g.stack.rlc.IRlcRxEntity
         @dynamic(true);
         @display("i=block/layer");
         string binderModule = default("binder");
-        bool isNR @mutable = default(false);  // set programmatically by BearerManagement
+        bool isNR @mutable = default(false);              // NR-leg marker (set programmatically by BearerManagement; not the wire format)
+        bool soFraming = default(false);                  // wire format: LTE FI/concat (false) vs NR SI/SO (true)
         string macModule = default("^.^.mac");  // set by the enclosing RlcUmEntityBase compound (per leg)
-        double timeout @unit(s) = default(1s);            // Timeout for RX Buffer
-        int rxWindowSize = default(16);
+        string rlcMuxModule = default("^.^.rlcMux");  // this bearer's leg mux; set by the RlcUmEntityBase compound
+        double timeout @unit(s) = default(1s);            // Timeout for RX Buffer (LTE mode)
+        int rxWindowSize = default(16);                   // PDU reorder window (LTE mode)
+        int UM_Window_Size = default(512);                // SDU reassembly window (NR mode): 16/32/512/2048
+        double t_Reassembly @unit(s) = default(80ms);     // reassembly timer (NR mode)
 
     gates:
         input in;       // PDUs from lower mux (MAC)
