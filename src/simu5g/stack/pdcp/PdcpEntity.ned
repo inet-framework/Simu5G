@@ -25,11 +25,9 @@ package simu5g.stack.pdcp;
 // local RLC entity (UE legs, gNB local leg) or to the DcMux/X2 path (a DC
 // master's remote leg).
 //
-// The legs parameter holds one descriptor per leg, e.g.
-//   [ {rat: "lte"}, {rat: "nr"} ]    <- UE: local LTE + local NR stack
-//   [ {rat: "lte"}, {rat: "x2"} ]    <- DC master: local + remote via X2
-// set by BearerManagement on creation; the "rat" field selects the splitter's
-// per-leg id mapping (see ~ExprBasedPdcpLegSplitter).
+// Leg 0 is the local LTE leg; leg 1 is the UE's local NR stack, or a DC
+// master's remote leg via X2 -- the splitter selects the per-leg id mapping
+// accordingly (see ~ExprBasedPdcpLegSplitter).
 //
 // Variants are subclasses overriding the entity typenames (e.g. ~NrPdcpEntity;
 // a mixed entity can override just tx.typename or rx.typename from the
@@ -42,10 +40,8 @@ module PdcpEntity
         @display("i=block/wheelbarrow");
         int numLegs = default(1);                  // number of RLC legs of this bearer
         int headerCompressedSize @unit(B) = default(-1B);
-        object legs = default([]);                 // per-leg descriptors (see module comment)
         *.headerCompressedSize = default(this.headerCompressedSize);
         *.numLegs = this.numLegs;
-        *.legs = dup(this.legs);
         *.emitPerSduSignals = this.numLegs == 1;   // on a multi-leg bearer, the splitter emits the per-leg statistics
         *.reorderingEnabled = this.numLegs > 1;    // reorder the SN stream merged from several legs
     gates:
@@ -61,17 +57,19 @@ module PdcpEntity
             @display("p=150,50");
         }
         splitter: <default("simu5g.stack.pdcp.ExprBasedPdcpLegSplitter")> like IPdcpLegSplitter if numLegs > 1 {
-            @display("p=50,130");
+            @display("p=50,130;is=s");
         }
         joiner: <default("simu5g.stack.pdcp.PdcpLegJoiner")> like IPdcpLegJoiner if numLegs > 1 {
-            @display("p=150,130");
+            @display("p=150,130;is=s");
         }
     connections:
         upperIn --> { @display("m=n"); } --> tx.in;
         rx.out --> { @display("m=n"); } --> upperOut;
+
         // single-leg bearer: entities connect straight to the leg
         tx.out --> { @display("m=s"); } --> legOut[0] if numLegs == 1;
         legIn[0] --> { @display("m=s"); } --> rx.in if numLegs == 1;
+
         // multi-leg bearer: fan-out / fan-in stages
         tx.out --> splitter.in if numLegs > 1;
         joiner.out --> rx.in if numLegs > 1;

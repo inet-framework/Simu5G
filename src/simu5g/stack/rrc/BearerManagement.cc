@@ -347,18 +347,6 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lt
     auto *module = pdcpEntityModuleType_->create(name.c_str(), nicModule_);
     module->par("headerCompressedSize") = par("headerCompressedSize");
     module->par("numLegs") = numLegs;
-    if (numLegs == 2) {
-        // leg descriptors: leg 0 = local LTE; leg 1 = the UE's local NR stack, or the master's
-        // remote leg via X2 (selects the splitter's per-leg id mapping)
-        auto *legs = new cValueArray();
-        auto *leg0 = new cValueMap();
-        leg0->set("rat", "lte");
-        legs->add(leg0);
-        auto *leg1 = new cValueMap();
-        leg1->set("rat", isEnb ? "x2" : "nr");
-        legs->add(leg1);
-        module->par("legs").setObjectValue(legs);
-    }
     module->finalizeParameters();
     module->buildInside();
     setEntityDisplayPosition(module, true, rlcMux, num(id.getDrbId()));

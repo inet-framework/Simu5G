@@ -20,8 +20,6 @@ package simu5g.stack.pdcp;
 simple PdcpLegJoiner like IPdcpLegJoiner
 {
     parameters:
-        int numLegs;               // number of legs (set by the enclosing PdcpEntity)
-        object legs = default([]); // per-leg descriptors (reserved for per-leg RX stats)
         @display("i=block/join");
     gates:
         input in[];                // per-leg input (sized by the enclosing PdcpEntity's connections)

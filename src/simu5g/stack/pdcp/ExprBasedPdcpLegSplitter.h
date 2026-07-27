@@ -44,7 +44,7 @@ class ExprBasedPdcpLegSplitter : public omnetpp::cSimpleModule
     inet::ModuleRefByPar<Binder> binder_;
 
     int numLegs_ = 1;
-    std::vector<std::string> legRats_;   // per-leg "rat" field from the legs descriptor
+    bool isUe_ = false;                  // selects leg 1's id mapping: UE's NR stack vs a master's X2 leg
 
     MacNodeId nodeId_ = NODEID_NONE;     // this node's (LTE/base) id
     MacNodeId nrNodeId_ = NODEID_NONE;   // this UE's NR-leg id (UEs only)

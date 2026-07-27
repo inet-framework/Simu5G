@@ -14,15 +14,13 @@ package simu5g.stack.pdcp;
 //
 // Expression-driven TX-side leg dispatcher of a multi-leg PDCP entity (see
 // ~PdcpEntity): evaluates the legSelectionRule expression for each PDCP PDU to
-// obtain the leg index, then applies that leg's id mapping on the way out. The
-// leg descriptors (legs parameter, provided by the enclosing PdcpEntity)
-// determine the per-leg adaptation, keyed by their "rat" field:
-//  - "lte": local leg, ids already correct; emits pdcpSduSent.
-//  - "nr": the UE's local NR stack; rewrites the flow's source/destination to
-//    the UE's NR-leg node ids (serving node looked up per packet, so handover
-//    is honored); emits pdcpSduSentNr.
-//  - "x2": a DC master's remote leg; rewrites the ids to (secondary gNB, NR UE)
-//    and adds the X2 addressing tag; the PDU leaves via the DcMux.
+// obtain the leg index, then applies that leg's id mapping on the way out:
+//  - leg 0 (local LTE leg): ids already correct; emits pdcpSduSent.
+//  - leg 1 on a UE (the local NR stack): rewrites the flow's source/destination
+//    to the UE's NR-leg node ids (serving node looked up per packet, so
+//    handover is honored); emits pdcpSduSentNr.
+//  - leg 1 on a DC master (remote leg): rewrites the ids to (secondary gNB,
+//    NR UE) and adds the X2 addressing tag; the PDU leaves via the DcMux.
 //
 // The default rule follows the TechnologyReq tag computed by the
 // ~TechnologyDecision module -- the home of technology steering policy -- so by
@@ -36,7 +34,6 @@ simple ExprBasedPdcpLegSplitter like IPdcpLegSplitter
 {
     parameters:
         int numLegs;                                             // number of legs (set by the enclosing PdcpEntity)
-        object legs = default([]);                               // per-leg descriptors (see module comment)
         object legSelectionRule = default(expr(useNR ? 1 : 0));  // per-packet leg index (see module comment)
         string binderModule = default("binder");
         @display("i=block/dispatch");

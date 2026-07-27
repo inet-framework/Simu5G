@@ -54,11 +54,6 @@ void ExprBasedPdcpLegSplitter::initialize(int stage)
         binder_.reference(this, "binderModule", true);
 
         numLegs_ = par("numLegs");
-        auto *legs = check_and_cast<cValueArray *>(par("legs").objectValue());
-        if (legs->size() != numLegs_)
-            throw cRuntimeError("ExprBasedPdcpLegSplitter: legs descriptor has %d entries, expected numLegs=%d", legs->size(), numLegs_);
-        for (int i = 0; i < numLegs_; i++)
-            legRats_.push_back(check_and_cast<cValueMap *>(legs->get(i).objectValue())->get("rat").stdstringValue());
 
         legSelectionRule_ = getExpressionFromPar(par("legSelectionRule"), new LegResolver(this));
 
@@ -66,6 +61,7 @@ void ExprBasedPdcpLegSplitter::initialize(int stage)
         nodeId_ = MacNodeId(node->par("macNodeId").intValue());
         if (node->hasPar("nrMacNodeId"))
             nrNodeId_ = MacNodeId(node->par("nrMacNodeId").intValue());
+        isUe_ = (getNodeTypeById(nodeId_) == UE);
     }
 }
 
@@ -83,9 +79,17 @@ void ExprBasedPdcpLegSplitter::handleMessage(cMessage *msg)
         leg = 0;
     }
 
-    // Per-leg id adaptation + leg-flavored statistics (moved from NrTxPdcpEntity::deliverPdcpPdu)
-    const std::string& rat = legRats_[leg];
-    if (rat == "nr") {
+    // Per-leg id adaptation + leg-flavored statistics (moved from NrTxPdcpEntity::deliverPdcpPdu).
+    // Leg 0 is the local LTE leg; leg 1 is the UE's local NR stack, or a DC master's remote
+    // leg via X2.
+    if (leg == 0) {
+        // local LTE leg: ids already correct
+        EV << NOW << " ExprBasedPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to LTE RLC" << endl;
+        if (hasListeners(pdcpSduSentSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D)
+            emit(pdcpSduSentSignal_, pkt);
+        emit(sentPacketToLowerLayerSignal_, pkt);
+    }
+    else if (isUe_) {
         // UE's local NR stack: translate to the NR-leg ids for the NR RLC (the serving node
         // is looked up per packet, so handover is honored)
         EV << NOW << " ExprBasedPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to NR RLC" << endl;
@@ -95,7 +99,7 @@ void ExprBasedPdcpLegSplitter::handleMessage(cMessage *msg)
             emit(pdcpSduSentNrSignal_, pkt);
         emit(sentPacketToLowerLayerSignal_, pkt);
     }
-    else if (rat == "x2") {
+    else {
         // DC master's remote leg: rewrite to the secondary gNB / NR UE ids and address the
         // X2 tunnel; the PDU leaves via the DcMux
         EV << NOW << " ExprBasedPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - the destination is under the control of a secondary node" << endl;
@@ -107,12 +111,6 @@ void ExprBasedPdcpLegSplitter::handleMessage(cMessage *msg)
         lteInfo->setSourceId(secondaryNodeId);
         lteInfo->setDestId(nrDestId);
         pkt->addTagIfAbsent<X2TargetReq>()->setTargetNode(secondaryNodeId);
-    }
-    else { // "lte": local leg, ids already correct
-        EV << NOW << " ExprBasedPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to LTE RLC" << endl;
-        if (hasListeners(pdcpSduSentSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D)
-            emit(pdcpSduSentSignal_, pkt);
-        emit(sentPacketToLowerLayerSignal_, pkt);
     }
 
     send(pkt, "out", leg);
