@@ -38,9 +38,9 @@ module RlcUmEntity
             @display("p=150,50");
         }
     connections:
-        upperIn --> tx.in;
-        macIn --> tx.macIn;
-        tx.out --> lowerOut;
-        lowerIn --> rx.in;
-        rx.out --> upperOut;
+        upperIn --> { @display("m=n"); } --> tx.in;
+        macIn --> { @display("m=s"); } --> tx.macIn;
+        tx.out --> { @display("m=s"); } --> lowerOut;
+        lowerIn --> { @display("m=s"); } --> rx.in;
+        rx.out --> { @display("m=n"); } --> upperOut;
 }
