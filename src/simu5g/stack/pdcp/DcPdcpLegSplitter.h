@@ -20,23 +20,14 @@ namespace simu5g {
 
 /**
  * @class DcPdcpLegSplitter
- * @brief Expression-driven TX-side leg dispatcher of a multi-leg PdcpEntity compound.
+ * @brief TX-side leg dispatcher for a dual-connectivity split bearer.
  *
- * Evaluates the legSelectionRule expression per PDU for the leg index and
- * applies the leg's id mapping (see DcPdcpLegSplitter.ned).
+ * Steers each PDU to a leg per the TechnologyReq tag and applies the leg's
+ * DC-specific id mapping (see DcPdcpLegSplitter.ned).
  */
 class DcPdcpLegSplitter : public omnetpp::cSimpleModule
 {
   protected:
-    // Provides the variable bindings for the legSelectionRule expression
-    class LegResolver : public cDynamicExpression::IResolver {
-        DcPdcpLegSplitter *module_;
-      public:
-        LegResolver(DcPdcpLegSplitter *module) : module_(module) {}
-        IResolver *dup() const override { return new LegResolver(module_); }
-        cValue readVariable(cExpression::Context *context, const char *name) override;
-    };
-
     static omnetpp::simsignal_t sentPacketToLowerLayerSignal_;
     static omnetpp::simsignal_t pdcpSduSentSignal_;
     static omnetpp::simsignal_t pdcpSduSentNrSignal_;
@@ -49,18 +40,9 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
     MacNodeId nodeId_ = NODEID_NONE;     // this node's (LTE/base) id
     MacNodeId nrNodeId_ = NODEID_NONE;   // this UE's NR-leg id (UEs only)
 
-    // Leg selection rule (from the NED parameter)
-    cDynamicExpression *legSelectionRule_ = nullptr;
-
-    // Current evaluation context (set before each evaluation)
-    bool currentUseNR_ = false;
-
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(omnetpp::cMessage *msg) override;
-
-  public:
-    ~DcPdcpLegSplitter() override;
 };
 
 } // namespace simu5g

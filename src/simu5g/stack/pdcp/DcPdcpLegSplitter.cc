@@ -25,37 +25,12 @@ simsignal_t DcPdcpLegSplitter::sentPacketToLowerLayerSignal_ = registerSignal("s
 simsignal_t DcPdcpLegSplitter::pdcpSduSentSignal_ = registerSignal("pdcpSduSent");
 simsignal_t DcPdcpLegSplitter::pdcpSduSentNrSignal_ = registerSignal("pdcpSduSentNr");
 
-DcPdcpLegSplitter::~DcPdcpLegSplitter()
-{
-    delete legSelectionRule_;
-}
-
-cValue DcPdcpLegSplitter::LegResolver::readVariable(cExpression::Context *context, const char *name)
-{
-    if (!strcmp(name, "useNR")) return module_->currentUseNR_;
-    if (!strcmp(name, "numLegs")) return (intval_t)module_->numLegs_;
-    throw cRuntimeError("DcPdcpLegSplitter: unknown variable '%s' in legSelectionRule expression", name);
-}
-
-static cDynamicExpression *getExpressionFromPar(cPar& par, cDynamicExpression::IResolver *resolver)
-{
-    cObject *obj = par.objectValue();
-    auto *exprObj = dynamic_cast<cOwnedDynamicExpression *>(obj);
-    if (!exprObj)
-        throw cRuntimeError("Parameter '%s' must be an expr() expression", par.getFullPath().c_str());
-    auto *expr = exprObj->dup();
-    expr->setResolver(resolver);
-    return expr;
-}
-
 void DcPdcpLegSplitter::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
 
         numLegs_ = par("numLegs");
-
-        legSelectionRule_ = getExpressionFromPar(par("legSelectionRule"), new LegResolver(this));
 
         cModule *node = inet::getContainingNode(this);
         nodeId_ = MacNodeId(node->par("macNodeId").intValue());
@@ -70,11 +45,10 @@ void DcPdcpLegSplitter::handleMessage(cMessage *msg)
     auto pkt = check_and_cast<inet::Packet *>(msg);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
-    // Evaluate the leg selection rule. The default rule follows the TechnologyReq tag --
-    // the per-packet leg choice is the technology decision, owned by TechnologyDecision.
-    currentUseNR_ = pkt->getTag<TechnologyReq>()->getUseNR();
-    int leg = legSelectionRule_->intValue();
-    if (leg < 0 || leg >= numLegs_ || !gate("out", leg)->isConnected()) {
+    // Leg choice: follow the TechnologyReq tag -- the per-packet leg decision is the
+    // technology decision, owned by TechnologyDecision; this module only executes it.
+    int leg = pkt->getTag<TechnologyReq>()->getUseNR() ? 1 : 0;
+    if (leg >= numLegs_ || !gate("out", leg)->isConnected()) {
         EV_WARN << NOW << " DcPdcpLegSplitter - leg " << leg << " is not available (torn down?); falling back to leg 0" << endl;
         leg = 0;
     }

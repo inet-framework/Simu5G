@@ -12,10 +12,11 @@
 package simu5g.stack.pdcp;
 
 //
-// TX-side leg dispatcher for a dual-connectivity split bearer (two legs). For
-// each PDCP PDU it obtains the leg index from the legSelectionRule expression
-// (default: follow the TechnologyReq tag), then applies that leg's DC-specific
-// id mapping on the way out:
+// TX-side leg dispatcher for a dual-connectivity split bearer (two legs). Each
+// PDCP PDU is steered per its TechnologyReq tag (leg 1 when useNR, else leg 0) --
+// the per-packet leg decision is the technology decision, owned by the
+// ~TechnologyDecision module, so this module makes no steering decision of its
+// own. It then applies that leg's DC-specific id mapping on the way out:
 //  - leg 0 (local LTE leg): ids already correct; emits pdcpSduSent.
 //  - leg 1 on a UE (the local NR stack): rewrites the flow's source/destination
 //    to the UE's NR-leg node ids (serving node looked up per packet, so
@@ -23,19 +24,13 @@ package simu5g.stack.pdcp;
 //  - leg 1 on a DC master (remote leg): rewrites the ids to (secondary gNB,
 //    NR UE) and adds the X2 addressing tag; the PDU leaves via the DcMux.
 //
-// The default rule follows the TechnologyReq tag computed by the
-// ~TechnologyDecision module -- the home of technology steering policy -- so by
-// default this module makes no steering decision of its own. Expression
-// variables: useNR (bool, the packet's TechnologyReq tag), numLegs (int).
-//
 // If the selected leg is torn down (gate unconnected), the PDU falls back to
 // leg 0 with a warning -- steering avoids dead legs on its own.
 //
 simple DcPdcpLegSplitter like IPdcpLegSplitter
 {
     parameters:
-        int numLegs;                                             // number of legs (set by the enclosing PdcpEntity)
-        object legSelectionRule = default(expr(useNR ? 1 : 0));  // per-packet leg index (see module comment)
+        int numLegs;                        // number of legs (set by the enclosing PdcpEntity)
         string binderModule = default("binder");
         @display("i=block/dispatch");
         @signal[sentPacketToLowerLayer];
