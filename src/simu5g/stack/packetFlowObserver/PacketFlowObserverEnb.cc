@@ -401,7 +401,7 @@ void PacketFlowObserverEnb::ensureMacPduMapping(MacNodeId peerId, const LteMacPd
 
         for (int j = 0; j < len; ++j) {
             auto rlcPdu = macPdu->getSdu(j);
-            unsigned int rlcSno = rlcPdu.peekAtFront<LteRlcUmDataPdu>()->getPduSequenceNumber();
+            unsigned int rlcSno = rlcPdu.peekAtFront<LteRlcDataPdu>()->getPduSequenceNumber();
 
             auto tit = desc->rlcSdusPerPdu_.find(rlcSno);
             if (tit == desc->rlcSdusPerPdu_.end())

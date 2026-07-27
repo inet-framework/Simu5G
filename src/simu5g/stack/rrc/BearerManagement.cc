@@ -283,12 +283,14 @@ RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *
 
     txEnt->setFlowControlInfo(lteInfo);
 
-    // D2D peer tracking (only for UM TX entities)
+    // D2D peer tracking (only for UmTxEntity-derived UM TX entities). NR UM
+    // entities (NrUmTxEntity, derived from RlcTxEntityBase) do not implement D2D
+    // mode switching, so they are skipped here.
     if (static_cast<LteRlcType>(lteInfo->getRlcType()) == UM) {
         auto *d2dCtrl = inet::findModuleFromPar<D2DModeController>(par("d2dModeControllerModule"), this);
         if (d2dCtrl) {
-            auto *umTxEnt = check_and_cast<UmTxEntity *>(txEnt);
-            d2dCtrl->registerD2DPeerTxEntity(MacNodeId(lteInfo->getD2dRxPeerId()), umTxEnt);
+            if (auto *umTxEnt = dynamic_cast<UmTxEntity *>(txEnt))
+                d2dCtrl->registerD2DPeerTxEntity(MacNodeId(lteInfo->getD2dRxPeerId()), umTxEnt);
         }
     }
 

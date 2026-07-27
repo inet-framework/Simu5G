@@ -269,7 +269,7 @@ void PacketFlowObserverUe::ensureMacPduMapping(MacNodeId peerId, const LteMacPdu
         if (desc->macSdusPerPdu_.find(macPduId) != desc->macSdusPerPdu_.end())
             continue; // already mapped
 
-        auto macSdu = macPdu->getSdu(i).peekAtFront<LteRlcUmDataPdu>();
+        auto macSdu = macPdu->getSdu(i).peekAtFront<LteRlcDataPdu>();
         unsigned int rlcSno = macSdu->getPduSequenceNumber();
 
         auto tit = desc->rlcSdusPerPdu_.find(rlcSno);
@@ -327,7 +327,7 @@ void PacketFlowObserverUe::macPduArrived(MacNodeId peerId, const LteMacPdu *macP
             throw cRuntimeError("%s::macPduArrived - MAC PDU ID %d not present for DRB %s", pfmType.c_str(), macPduId, drbKey.str().c_str());
         SequenceNumberSet rlcSnoSet = mit->second;
 
-        auto macSdu = rlcPdu.peekAtFront<LteRlcUmDataPdu>();
+        auto macSdu = rlcPdu.peekAtFront<LteRlcDataPdu>();
         unsigned int rlcSno = macSdu->getPduSequenceNumber();
 
         if (rlcSnoSet.find(rlcSno) == rlcSnoSet.end())
@@ -440,7 +440,7 @@ void PacketFlowObserverUe::discardMacPdu(MacNodeId peerId, const LteMacPdu *macP
             throw cRuntimeError("%s::discardMacPdu - MAC PDU ID %d not present for DRB %s", pfmType.c_str(), macPduId, drbKey.str().c_str());
         SequenceNumberSet rlcSnoSet = mit->second;
 
-        auto macSdu = rlcPdu.peekAtFront<LteRlcUmDataPdu>();
+        auto macSdu = rlcPdu.peekAtFront<LteRlcDataPdu>();
         unsigned int rlcSno = macSdu->getPduSequenceNumber();
 
         if (rlcSnoSet.find(rlcSno) == rlcSnoSet.end())
