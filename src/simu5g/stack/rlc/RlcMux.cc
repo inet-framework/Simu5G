@@ -98,7 +98,7 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
 
         DrbKey id = ctrlInfoToRxDrbKey(lteInfo.get());
         auto it = rxGateIndices_.find(id);
-        ASSERT(it != rxGateIndices_.end());
+        ASSERT(it != rxGateIndices_.end());  // bearers are established duplex: both sides exist
 
         EV << "RlcMux::fromMacLayer - Enqueue packet " << pkt->getName() << " into RX entity\n";
         send(pkt, "toRxEntity", it->second);
