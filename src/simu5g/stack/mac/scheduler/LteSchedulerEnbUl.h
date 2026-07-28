@@ -74,7 +74,6 @@ class LteSchedulerEnbUl : public LteSchedulerEnb
      * Schedule retransmissions for background UEs
      * @return TRUE if OFDM space is exhausted.
      */
-    bool rtxscheduleBackground(GHz carrierFrequency, BandLimitVector *bandLim = nullptr) override;
 
     /**
      * signals RAC request to the scheduler (called by e/gNb)
@@ -103,8 +102,6 @@ class LteSchedulerEnbUl : public LteSchedulerEnb
     unsigned int schedulePerAcidRtx(MacNodeId nodeId, GHz carrierFrequency, Codeword cw, unsigned char acid,
             std::vector<BandLimit> *bandLim = nullptr, Remote antenna = MACRO, bool limitBl = false) override;
 
-    unsigned int scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequency, Codeword cw, std::vector<BandLimit> *bandLim = nullptr,
-            Remote antenna = MACRO, bool limitBl = false) override;
 
     virtual void removePendingRac(MacNodeId nodeId);
 };

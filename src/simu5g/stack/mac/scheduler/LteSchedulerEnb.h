@@ -242,8 +242,10 @@ class LteSchedulerEnb : public cSimpleModule
     virtual unsigned int schedulePerAcidRtx(MacNodeId nodeId, GHz carrierFrequency, Codeword cw, unsigned char acid,
             std::vector<BandLimit> *bandLim = nullptr, Remote antenna = MACRO, bool limitBl = false) = 0;
 
+    /// Shared UL/DL implementation; the UL-interference bookkeeping inside is
+    /// active only for the uplink scheduler (direction_ == UL).
     virtual unsigned int scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequency, Codeword cw, std::vector<BandLimit> *bandLim = nullptr,
-            Remote antenna = MACRO, bool limitBl = false) = 0;
+            Remote antenna = MACRO, bool limitBl = false);
 
     /**
      * Schedules capacity for a given connection without effectively performing the operation on the
@@ -310,7 +312,7 @@ class LteSchedulerEnb : public cSimpleModule
      * Schedule retransmissions for background UEs
      * @return TRUE if OFDM space is exhausted.
      */
-    virtual bool rtxscheduleBackground(GHz carrierFrequency, BandLimitVector *bandLim = nullptr) = 0;
+    virtual bool rtxscheduleBackground(GHz carrierFrequency, BandLimitVector *bandLim = nullptr);
 
     /*
      * OFDMA frame management
