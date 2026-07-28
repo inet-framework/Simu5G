@@ -216,11 +216,9 @@ void NrRlcAmRxEntity::passUpNr(int seqNum)
     ci->setRlcType(AM);
     sdu->removeTagIfPresent<PdcpTrackingTag>();
 
+    // This bearer's delay and throughput of the reassembled SDU
     totalRcvdBytes_ += sdu->getByteLength();
     double tput = (double)totalRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
-    emit(rlcCellThroughputSignal_[dir == DL ? 0 : 1], tput);
-
-    // Per-user delay and throughput of the reassembled SDU, on the UE's mux.
     emitRxStatistics(false, tput, NOW - sdu->getCreationTime());
 
     // How far the reordering window is stretched: the span between the next SDU

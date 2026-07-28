@@ -13,11 +13,9 @@
 #ifndef _SIMU5G_LTERLCUMRXENTITY_H_
 #define _SIMU5G_LTERLCUMRXENTITY_H_
 
-#include <inet/common/ModuleRefByPar.h>
 
 #include "simu5g/stack/rlc/um/RlcUmRxEntityBase.h"
 #include "simu5g/common/timer/TTimer.h"
-#include "simu5g/common/binder/Binder.h"
 
 namespace simu5g {
 
@@ -35,8 +33,6 @@ class LteRlcUmDataPdu;
  */
 class LteRlcUmRxEntity : public RlcUmRxEntityBase
 {
-    inet::ModuleRefByPar<Binder> binder_;
-    opp_component_ptr<cModule> nodeBRlcMux_;
     cArray pduBuffer_;
     RlcUmRxWindowDesc rxWindowDesc_;
     TTimer t_reordering_;
@@ -49,8 +45,6 @@ class LteRlcUmRxEntity : public RlcUmRxEntityBase
     } buffered_;
     unsigned int lastPduReassembled_ = 0;
     bool init_ = false;
-    static unsigned int totalCellPduRcvdBytes_;
-    static unsigned int totalCellRcvdBytes_;
     unsigned int totalPduRcvdBytes_ = 0;
     unsigned int totalRcvdBytes_ = 0;
     Direction dir_ = UNKNOWN_DIRECTION;
@@ -67,7 +61,6 @@ class LteRlcUmRxEntity : public RlcUmRxEntityBase
 
   protected:
     void initMode(LteMacBase *mac) override;
-    void initBinderStage() override;
 
   private:
     void moveRxWindow(int pos);

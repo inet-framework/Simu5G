@@ -25,8 +25,6 @@ Define_Module(LteRlcUmRxEntity);
 
 using namespace inet;
 
-unsigned int LteRlcUmRxEntity::totalCellPduRcvdBytes_ = 0;
-unsigned int LteRlcUmRxEntity::totalCellRcvdBytes_ = 0;
 
 LteRlcUmRxEntity::LteRlcUmRxEntity() :
     t_reordering_(this)
@@ -51,14 +49,6 @@ void LteRlcUmRxEntity::initMode(LteMacBase *mac)
     rlcMux_ = getModuleFromPar<RlcMux>(par("rlcMuxModule"), this);
     dir_ = mac->getNodeType() == NODEB ? UL : DL;
     WATCH(timeout_);
-}
-
-void LteRlcUmRxEntity::initBinderStage()
-{
-    binder_.reference(this, "binderModule", true);
-    LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
-    nodeBRlcMux_ = binder_->getRlcMuxByNodeId(mac->getMacCellId());
-    // ASSERT(nodeBRlcMux_ != nullptr); -- see commit message why this is commented out
 }
 
 void LteRlcUmRxEntity::handleMessage(cMessage *msg)
@@ -282,9 +272,7 @@ void LteRlcUmRxEntity::toPdcpLte(Packet *pktAux)
     simtime_t ts = pktAux->getCreationTime();
 
     // emit statistics (throughput and delay only - no packet loss)
-    totalCellRcvdBytes_ += length;
     totalRcvdBytes_ += length;
-    double cellTputSample = (double)totalCellRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
     double tputSample = (double)totalRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
 
     if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
@@ -294,17 +282,6 @@ void LteRlcUmRxEntity::toPdcpLte(Packet *pktAux)
     else {
         emit(rlcThroughputD2DSignal_, tputSample);
         emit(rlcDelayD2DSignal_, (NOW - ts).dbl());
-    }
-
-    if (nodeBRlcMux_ == nullptr) {
-        // retry getting nodeBRlcMux_, if it failed in initialize() due to cellId=0 in MAC (some race condition?)
-        LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
-        nodeBRlcMux_ = binder_->getRlcMuxByNodeId(mac->getMacCellId());
-        ASSERT(nodeBRlcMux_ != nullptr);
-    }
-
-    if (nodeBRlcMux_ != nullptr) {
-        nodeBRlcMux_->emit(rlcCellThroughputSignal_[dir_], cellTputSample);
     }
 
     EV << NOW << " LteRlcUmRxEntity::toPdcp Created PDCP PDU with length " << pktAux->getByteLength() << " bytes" << endl;

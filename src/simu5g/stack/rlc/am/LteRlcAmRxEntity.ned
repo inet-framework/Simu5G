@@ -25,7 +25,6 @@ simple LteRlcAmRxEntity like simu5g.stack.rlc.IRlcAmRxEntity
     parameters:
         @dynamic(true);
         @display("i=block/layer");
-        string binderModule = default("binder");
         string macModule = default("^.^.mac");  // set by the enclosing RlcAmEntityBase compound (per leg)
         int rxWindowSize = default(200);
         double ackReportInterval @unit(s) = 0.10s;

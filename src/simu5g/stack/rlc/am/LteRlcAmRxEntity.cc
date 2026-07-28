@@ -26,7 +26,6 @@ Define_Module(LteRlcAmRxEntity);
 
 using namespace inet;
 
-unsigned int LteRlcAmRxEntity::totalCellRcvdBytes_ = 0;
 
 LteRlcAmRxEntity::LteRlcAmRxEntity() :
     timer_(this)
@@ -53,7 +52,6 @@ void LteRlcAmRxEntity::initMode()
 
     discarded_.resize(rxWindowDesc_.windowSize_);
     received_.resize(rxWindowDesc_.windowSize_);
-    binder_.reference(this, "binderModule", true);
 
     LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
     dir_ = mac->getNodeType() == NODEB ? UL : DL;
@@ -131,7 +129,6 @@ void LteRlcAmRxEntity::discard(const int sn)
     int discarded = 0;
 
     Direction dir = UNKNOWN_DIRECTION;
-    MacNodeId dstId = NODEID_NONE, srcId = NODEID_NONE;
 
     for (int i = 0; i <= index; ++i) {
         discarded_.at(i) = true;
@@ -141,8 +138,6 @@ void LteRlcAmRxEntity::discard(const int sn)
             auto pdu = pkt->peekAtFront<LteRlcAmPdu>();
             auto ci = pdu->getTag<FlowControlInfo>();
             dir = ci->getDirection();
-            dstId = ci->getDestId();
-            srcId = ci->getSourceId();
             auto it = std::find(pendingPduBuffer_.begin(), pendingPduBuffer_.end(), pkt);
             if (it != pendingPduBuffer_.end())
                 pendingPduBuffer_.erase(it);
@@ -156,13 +151,8 @@ void LteRlcAmRxEntity::discard(const int sn)
 
     EV << NOW << " LteRlcAmRxEntity::discard , discarded " << discarded << " PDUs " << endl;
 
-    if (dir != UNKNOWN_DIRECTION) {
+    if (dir != UNKNOWN_DIRECTION)
         emit(rlcPacketLossSignal_[dir_], 1.0);
-
-        cModule *nodeBRlcMux = binder_->getRlcMuxByNodeId((dir == DL ? srcId : dstId));
-        if (nodeBRlcMux != nullptr)
-            nodeBRlcMux->emit(rlcCellPacketLossSignal_[dir_], 1.0);
-    }
 }
 
 void LteRlcAmRxEntity::enque(Packet *pkt)
@@ -285,24 +275,11 @@ void LteRlcAmRxEntity::passUpLte(const int index)
 
     pkt->trim();
 
-    auto ci = pkt->getTag<FlowControlInfo>();
-
-    Direction dir = ci->getDirection();
-    MacNodeId dstId = ci->getDestId();
-    MacNodeId srcId = ci->getSourceId();
     double delay = (NOW - pkt->getCreationTime()).dbl();
 
-    cModule *nodeBRlcMux = binder_->getRlcMuxByNodeId((dir == DL) ? srcId : dstId);
-
     totalRcvdBytes_ += pkt->getByteLength();
-    totalCellRcvdBytes_ += pkt->getByteLength();
     double tputSample = (double)totalRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
-    double cellTputSample = (double)totalCellRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
 
-    if (nodeBRlcMux != nullptr) {
-        nodeBRlcMux->emit(rlcCellThroughputSignal_[dir_], cellTputSample);
-        nodeBRlcMux->emit(rlcCellPacketLossSignal_[dir_], 0.0);
-    }
     emit(rlcThroughputSignal_[dir_], tputSample);
     emit(rlcDelaySignal_[dir_], delay);
     emit(rlcPacketLossSignal_[dir_], 0.0);

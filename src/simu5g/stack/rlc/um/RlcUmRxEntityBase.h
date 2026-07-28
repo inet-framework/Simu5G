@@ -59,13 +59,11 @@ class RlcUmRxEntityBase : public RlcRxEntityBase
 
     // Signals. Declared/registered in one translation unit (RlcUmRxEntityBase.cc),
     // in their historical order, so registerSignal() ordering -- and therefore result
-    // recording -- is unaffected by the split. Emitted by the concrete subclasses;
-    // rlcCellThroughputSignal_ is shared (LTE emits it on the cell RLC, NR on itself).
+    // recording -- is unaffected by the split. Emitted by the concrete subclasses.
     static simsignal_t rlcDelaySignal_[2];
     static simsignal_t rlcThroughputSignal_[2];
     static simsignal_t rlcPduDelaySignal_[2];
     static simsignal_t rlcPduThroughputSignal_[2];
-    static simsignal_t rlcCellThroughputSignal_[2];
     static simsignal_t rlcDelayD2DSignal_;
     static simsignal_t rlcThroughputD2DSignal_;
     static simsignal_t rlcPduDelayD2DSignal_;
@@ -83,8 +81,6 @@ class RlcUmRxEntityBase : public RlcRxEntityBase
 
     // Mode-specific INITSTAGE_LOCAL init (buffers, timers, window, rlcMux_ lookup).
     virtual void initMode(LteMacBase *mac) = 0;
-    // Mode-specific INITSTAGE_SIMU5G_BINDER_ACCESS init (LTE binder/nodeB lookup).
-    virtual void initBinderStage() {}
 
   public:
 

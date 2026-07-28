@@ -15,7 +15,6 @@
 
 #include <deque>
 
-#include <inet/common/ModuleRefByPar.h>
 #include <inet/common/packet/Packet.h>
 
 #include "simu5g/common/LteControlInfo.h"
@@ -28,7 +27,6 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-class Binder;
 
 /**
  * @class LteRlcAmRxEntity
@@ -39,7 +37,6 @@ class Binder;
  */
 class LteRlcAmRxEntity : public RlcAmRxEntityBase
 {
-    inet::ModuleRefByPar<Binder> binder_;
     RlcWindowDesc rxWindowDesc_;
     simtime_t ackReportInterval_;
     simtime_t statusReportInterval_;
@@ -50,7 +47,6 @@ class LteRlcAmRxEntity : public RlcAmRxEntityBase
     std::vector<bool> received_;
     std::vector<bool> discarded_;
     Direction dir_ = UNKNOWN_DIRECTION;
-    static unsigned int totalCellRcvdBytes_;
 
   public:
     LteRlcAmRxEntity();

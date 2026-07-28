@@ -26,7 +26,6 @@ simsignal_t RlcUmRxEntityBase::rlcDelaySignal_[2] = { cComponent::registerSignal
 simsignal_t RlcUmRxEntityBase::rlcThroughputSignal_[2] = { cComponent::registerSignal("rlcThroughputDl"), cComponent::registerSignal("rlcThroughputUl") };
 simsignal_t RlcUmRxEntityBase::rlcPduDelaySignal_[2] = { cComponent::registerSignal("rlcPduDelayDl"), cComponent::registerSignal("rlcPduDelayUl") };
 simsignal_t RlcUmRxEntityBase::rlcPduThroughputSignal_[2] = { cComponent::registerSignal("rlcPduThroughputDl"), cComponent::registerSignal("rlcPduThroughputUl") };
-simsignal_t RlcUmRxEntityBase::rlcCellThroughputSignal_[2] = { cComponent::registerSignal("rlcCellThroughputDl"), cComponent::registerSignal("rlcCellThroughputUl") };
 simsignal_t RlcUmRxEntityBase::rlcDelayD2DSignal_ = registerSignal("rlcDelayD2D");
 simsignal_t RlcUmRxEntityBase::rlcThroughputD2DSignal_ = registerSignal("rlcThroughputD2D");
 simsignal_t RlcUmRxEntityBase::rlcPduDelayD2DSignal_ = registerSignal("rlcPduDelayD2D");
@@ -40,9 +39,6 @@ void RlcUmRxEntityBase::initialize(int stage)
         LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
         ownerNodeId_ = mac->getMacNodeId();
         initMode(mac);
-    }
-    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
-        initBinderStage();
     }
 }
 

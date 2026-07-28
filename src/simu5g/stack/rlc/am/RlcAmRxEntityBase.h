@@ -47,16 +47,13 @@ class RlcAmRxEntityBase : public RlcRxEntityBase
     // Signals emitted by the concrete subclasses. Declared/registered in one
     // translation unit (RlcAmRxEntityBase.cc), in their historical order, so
     // registerSignal() ordering -- and therefore result recording -- is
-    // unaffected by the split. rlcCellThroughputSignal_ is genuinely shared
-    // (both LTE and NR emit it); the rest are single-RAT.
-    static simsignal_t rlcCellPacketLossSignal_[2];
+    // unaffected by the split.
     static simsignal_t rlcPacketLossSignal_[2];
     static simsignal_t rlcPduPacketLossSignal_[2];
     static simsignal_t rlcDelaySignal_[2];
     static simsignal_t rlcThroughputSignal_[2];
     static simsignal_t rlcPduDelaySignal_[2];
     static simsignal_t rlcPduThroughputSignal_[2];
-    static simsignal_t rlcCellThroughputSignal_[2];
     static simsignal_t receivedPacketFromLowerLayerSignal_;
     static simsignal_t sentPacketToUpperLayerSignal_;
     static simsignal_t rxWindowOccupationSignal_;
@@ -67,8 +64,7 @@ class RlcAmRxEntityBase : public RlcRxEntityBase
     FlowControlInfo *ackFlowControlInfo_ = nullptr;
     simtime_t lastSentAck_ = 0;
 
-    // Cell-level (per-entity, despite the name) throughput accounting, common to
-    // both passUp implementations.
+    // Per-bearer throughput accounting, common to both passUp implementations.
     unsigned int totalRcvdBytes_ = 0;
 
     void initialize(int stage) override;

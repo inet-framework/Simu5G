@@ -37,10 +37,6 @@ simple NrRlcUmRxEntity like simu5g.stack.rlc.IRlcRxEntity
         @statistic[receivedPacketFromLowerLayer](source="receivedPacketFromLowerLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
         @signal[sentPacketToUpperLayer];
         @statistic[sentPacketToUpperLayer](source="sentPacketToUpperLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
-        @signal[rlcCellThroughputDl];
-        @statistic[rlcCellThroughputDl](title="Cell Throughput at the RLC layer DL"; unit="Bps"; source="rlcCellThroughputDl"; record=simu5g_rateavg);
-        @signal[rlcCellThroughputUl];
-        @statistic[rlcCellThroughputUl](title="Cell Throughput at the RLC layer UL"; unit="Bps"; source="rlcCellThroughputUl"; record=simu5g_rateavg);
 
 
         //# Per-bearer statistics. A bearer serves one peer, so these are already

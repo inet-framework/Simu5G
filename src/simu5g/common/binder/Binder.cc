@@ -904,17 +904,6 @@ cModule *Binder::getMacByNodeId(MacNodeId nodeId)
     return module->getSubmodule("cellularNic")->getSubmodule("mac");
 }
 
-cModule *Binder::getRlcMuxByNodeId(MacNodeId nodeId)
-{
-    cModule *module = getNodeModule(nodeId);
-    if (module == nullptr) {
-        return nullptr;
-    }
-    if (isNrUe(nodeId))
-        return module->getSubmodule("cellularNic")->getSubmodule("nrRlcMux");
-    return module->getSubmodule("cellularNic")->getSubmodule("rlcMux");
-}
-
 MacNodeId Binder::getOrAssignDestIdForMulticastAddress(inet::Ipv4Address multicastAddr)
 {
     if (inet::containsKey(multicastAddrToDestId_, multicastAddr))

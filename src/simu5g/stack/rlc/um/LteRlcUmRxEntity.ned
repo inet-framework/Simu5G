@@ -27,7 +27,6 @@ simple LteRlcUmRxEntity like simu5g.stack.rlc.IRlcRxEntity
     parameters:
         @dynamic(true);
         @display("i=block/layer");
-        string binderModule = default("binder");
         string macModule = default("^.^.mac");  // set by the enclosing RlcUmEntityBase compound (per leg)
         string rlcMuxModule = default("^.^.rlcMux");  // this bearer's leg mux; set by the RlcUmEntityBase compound
         double timeout @unit(s) = default(1s);            // Timeout for RX Buffer

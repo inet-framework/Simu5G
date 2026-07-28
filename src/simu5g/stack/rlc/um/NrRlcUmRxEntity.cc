@@ -167,14 +167,9 @@ void NrRlcUmRxEntity::toPdcpNr(Packet *pktAux)
     *pktAux->addTagIfAbsent<FlowControlInfo>() = *flowControlInfo_;
     pktAux->removeTagIfPresent<PdcpTrackingTag>();
 
-    Direction dir = static_cast<Direction>(flowControlInfo_->getDirection());
-
-    // Cell throughput at the RLC layer (emitted on this entity)
+    // This bearer's delay and throughput of the reassembled SDU
     totalRcvdBytesNr_ += pktAux->getByteLength();
     double tput = (double)totalRcvdBytesNr_ / (NOW - getSimulation()->getWarmupPeriod());
-    emit(rlcCellThroughputSignal_[dir == UL ? 1 : 0], tput);
-
-    // Per-user delay and throughput of the reassembled SDU, on the UE's mux.
     emitRxStatistics(false, tput, NOW - pktAux->getCreationTime());
 
     emit(sentPacketToUpperLayerSignal_, pktAux);
