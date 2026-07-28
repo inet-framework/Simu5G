@@ -249,23 +249,9 @@ unsigned int LteSchedulerEnbDl::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequ
             return 0;
 
         BandLimitVector tempBandLim;
-        std::string bands_msg = "BAND_LIMIT_SPECIFIED";
         if (bandLim == nullptr) {
             // Create a vector of band limit using all bands
-            // FIXME: bandLim is never deleted
-
-            unsigned int numBands = mac_->getCellInfo()->getNumBands();
-            // for each band of the band vector provided
-            for (unsigned int i = 0; i < numBands; i++) {
-                BandLimit elem;
-                // copy the band
-                elem.band_ = Band(i);
-                EV << "Putting band " << i << endl;
-                for (unsigned int j = 0; j < MAX_CODEWORDS; j++) {
-                    elem.limit_[j] = -2;
-                }
-                tempBandLim.push_back(elem);
-            }
+            makeUniformBandLimits(tempBandLim, mac_->getCellInfo()->getNumBands(), -2);
             bandLim = &tempBandLim;
         }
 

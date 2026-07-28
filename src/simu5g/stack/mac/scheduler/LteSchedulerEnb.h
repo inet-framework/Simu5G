@@ -341,6 +341,26 @@ class LteSchedulerEnb : public cSimpleModule
      * @return available space in bytes
      */
     virtual unsigned int availableBytes(const MacNodeId id, const Remote antenna, Band b, Codeword cw, Direction dir, GHz carrierFrequency, int limit = -1);
+
+    /// Applies the user's allowed-band restriction to a band-limit vector:
+    /// builds a fresh vector in 'storage' when bandLim is null (limit -1 for
+    /// allowed bands, -2 otherwise), or masks the provided vector in place
+    /// (already-excluded (-2) entries stay excluded). Returns the effective
+    /// vector. Shared by the RAC and rtx allocation paths.
+    BandLimitVector *applyAllowedBandLimits(MacNodeId nodeId, Direction dir, GHz carrierFrequency, BandLimitVector *bandLim, BandLimitVector& storage);
+
+    /// Fills 'storage' with one BandLimit per band, all codeword limits set
+    /// to 'limit'. Shared by the background RAC / rtx paths.
+    static void makeUniformBandLimits(BandLimitVector& storage, unsigned int numBands, int limit);
+
+    /// Serves 'bytes' bytes of a retransmission for nodeId on the given
+    /// codeword across the (prepared) band-limit vector, records the
+    /// allocation (allocator blocks, schedule list entry keyed by bsrLcid,
+    /// allocated-codeword count) and returns the number of served bytes.
+    /// 'served' reports whether the request fit the available bands (the
+    /// allocation is recorded only when it did). Shared by the UL and D2D
+    /// per-ACID rtx paths.
+    unsigned int allocateRtxBytes(MacNodeId nodeId, Direction dir, LogicalCid bsrLcid, unsigned int bytes, GHz carrierFrequency, Codeword cw, unsigned char acid, BandLimitVector *bandLim, Remote antenna, bool& served);
     /**
      * Returns the available space for a given (background) user, antenna, logical band, and codeword, in bytes.
      *

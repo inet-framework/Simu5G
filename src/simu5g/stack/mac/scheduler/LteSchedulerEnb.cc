@@ -998,4 +998,152 @@ void LteSchedulerEnb::removeActiveConnections(MacNodeId nodeId)
     }
 }
 
+BandLimitVector *LteSchedulerEnb::applyAllowedBandLimits(MacNodeId nodeId, Direction dir, GHz carrierFrequency, BandLimitVector *bandLim, BandLimitVector& storage)
+{
+    const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, dir, carrierFrequency);    // get the user info
+    const std::set<Band>& allowedBands = txParams.readBands();
+    unsigned int numBands = mac_->getCellInfo()->getNumBands();
+    if (bandLim == nullptr) {
+        // create a vector of band limits using all bands
+        for (unsigned int i = 0; i < numBands; i++) {
+            BandLimit elem;
+            // copy the band
+            elem.band_ = Band(i);
+            EV << "Putting band " << i << endl;
+            for (unsigned int j = 0; j < MAX_CODEWORDS; j++)
+                elem.limit_[j] = (allowedBands.find(elem.band_) != allowedBands.end()) ? -1 : -2;
+            storage.push_back(elem);
+        }
+        return &storage;
+    }
+    // mask the provided vector in place; already-excluded entries stay excluded
+    for (unsigned int i = 0; i < numBands; i++) {
+        BandLimit& elem = bandLim->at(i);
+        for (unsigned int j = 0; j < MAX_CODEWORDS; j++) {
+            if (elem.limit_[j] == -2)
+                continue;
+            elem.limit_[j] = (allowedBands.find(elem.band_) != allowedBands.end()) ? -1 : -2;
+        }
+    }
+    return bandLim;
+}
+
+void LteSchedulerEnb::makeUniformBandLimits(BandLimitVector& storage, unsigned int numBands, int limit)
+{
+    for (unsigned int i = 0; i < numBands; i++) {
+        BandLimit elem;
+        // copy the band
+        elem.band_ = Band(i);
+        for (unsigned int j = 0; j < MAX_CODEWORDS; j++)
+            elem.limit_[j] = limit;
+        storage.push_back(elem);
+    }
+}
+
+unsigned int LteSchedulerEnb::allocateRtxBytes(MacNodeId nodeId, Direction dir, LogicalCid bsrLcid, unsigned int bytes, GHz carrierFrequency, Codeword cw, unsigned char acid, BandLimitVector *bandLim, Remote antenna, bool& served)
+{
+    served = false;
+
+    Codeword allocatedCw = 0;
+    // search for already allocated codeword
+    // create "mirror" scList ID for other codeword than current
+    std::pair<MacCid, Codeword> scListMirrorId = std::pair<MacCid, Codeword>(MacCid(nodeId, bsrLcid), MAX_CODEWORDS - cw - 1);
+    if (scheduleList_.find(carrierFrequency) != scheduleList_.end()) {
+        if (scheduleList_[carrierFrequency].find(scListMirrorId) != scheduleList_[carrierFrequency].end()) {
+            allocatedCw = MAX_CODEWORDS - cw - 1;
+        }
+    }
+    // bytes to serve
+    unsigned int toServe = bytes;
+    // blocks to allocate for each band
+    std::vector<unsigned int> assignedBlocks;
+    // bytes which blocks from the preceding vector are supposed to satisfy
+    std::vector<unsigned int> assignedBytes;
+
+    // end loop signal [same as bytes>0, but more secure]
+    bool finish = false;
+    // for each band
+    unsigned int size = bandLim->size();
+    for (unsigned int i = 0; (i < size) && (!finish); ++i) {
+        // save the band and the relative limit
+        Band b = bandLim->at(i).band_;
+        int limit = bandLim->at(i).limit_.at(cw);
+
+        // TODO add support for multi CW
+        unsigned int bandAvailableBytes = availableBytes(nodeId, antenna, b, cw, dir, carrierFrequency);
+
+        // use the provided limit as cap for available bytes, if it is not set to unlimited
+        if (limit >= 0)
+            bandAvailableBytes = limit < (int)bandAvailableBytes ? limit : bandAvailableBytes;
+
+        EV << NOW << " LteSchedulerEnb::allocateRtxBytes BAND " << b << endl;
+        EV << NOW << " LteSchedulerEnb::allocateRtxBytes total bytes:" << bytes << " still to serve: " << toServe << " bytes" << endl;
+        EV << NOW << " LteSchedulerEnb::allocateRtxBytes Available: " << bandAvailableBytes << " bytes" << endl;
+
+        unsigned int servedBytes = 0;
+        // there's no room on current band for serving the entire request
+        if (bandAvailableBytes < toServe) {
+            // record the amount of served bytes
+            servedBytes = bandAvailableBytes;
+            // the request can be fully satisfied
+        }
+        else {
+            // record the amount of served bytes
+            servedBytes = toServe;
+            // signal end loop - all data have been serviced
+            finish = true;
+        }
+        unsigned int servedBlocks = (servedBytes == 0) ? 0 : 1;
+        // update the bytes counter
+        toServe -= servedBytes;
+        // update the structures
+        assignedBlocks.push_back(servedBlocks);
+        assignedBytes.push_back(servedBytes);
+    }
+
+    if (toServe > 0) {
+        // process couldn't be served - no sufficient space on available bands
+        EV << NOW << " LteSchedulerEnb::allocateRtxBytes Unavailable space for serving node " << nodeId << " ,HARQ Process " << (unsigned int)acid << " on codeword " << cw << endl;
+        return 0;
+    }
+    else {
+        // record the allocation
+        unsigned int size = assignedBlocks.size();
+        unsigned int cwAllocatedBlocks = 0;
+
+        // create scList id for current node/codeword
+        std::pair<MacCid, Codeword> scListId = std::pair<MacCid, Codeword>(MacCid(nodeId, bsrLcid), cw);
+
+        for (unsigned int i = 0; i < size; ++i) {
+            // For each LB for which blocks have been allocated
+            Band b = bandLim->at(i).band_;
+
+            cwAllocatedBlocks += assignedBlocks.at(i);
+            EV << "\t Cw->" << allocatedCw << "/" << MAX_CODEWORDS << endl;
+            //! handle multi-codeword allocation
+            if (allocatedCw != MAX_CODEWORDS) {
+                EV << NOW << " LteSchedulerEnb::allocateRtxBytes - adding " << assignedBlocks.at(i) << " to band " << i << endl;
+                allocator_->addBlocks(antenna, b, nodeId, assignedBlocks.at(i), assignedBytes.at(i));
+            }
+            //! TODO check if ok bandLim->at.limit_.at(cw) = assignedBytes.at(i);
+        }
+
+        // signal a retransmission
+        // schedule list contains number of granted blocks
+        scheduleList_[carrierFrequency][scListId] = cwAllocatedBlocks;
+        // mark codeword as used
+        if (allocatedCws_.find(nodeId) != allocatedCws_.end()) {
+            allocatedCws_.at(nodeId)++;
+        }
+        else {
+            allocatedCws_[nodeId] = 1;
+        }
+
+        EV << NOW << " LteSchedulerEnb::allocateRtxBytes HARQ Process " << (unsigned int)acid << " : " << bytes << " bytes served! " << endl;
+
+        served = true;
+        return bytes;
+    }
+}
+
 } //namespace

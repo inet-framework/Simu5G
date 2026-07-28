@@ -83,49 +83,13 @@ bool LteSchedulerEnbUl::racschedule(GHz carrierFrequency, BandLimitVector *bandL
         for (const auto& [nodeId, _] : racStatus) {
             EV << NOW << " LteSchedulerEnbUl::racschedule handling RAC for node " << nodeId << endl;
 
-            const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, UL, carrierFrequency);    // get the user info
-            const std::set<Band>& allowedBands = txParams.readBands();
+            // apply the allowed-band restriction for this user
+            // (NOTE: tempBandLim is deliberately loop-local, matching the
+            // historical code, which carried a "FIXME: bandLim is never
+            // deleted" at this spot -- although tempBandLim is a stack local
+            // and bandLim only ever points at it or at a caller-owned vector)
             BandLimitVector tempBandLim;
-            std::string bands_msg = "BAND_LIMIT_SPECIFIED";
-            if (bandLim == nullptr) {
-                // Create a vector of band limit using all bands
-                // FIXME: bandLim is never deleted
-
-                // for each band of the band vector provided
-                for (unsigned int i = 0; i < numBands; i++) {
-                    BandLimit elem;
-                    // copy the band
-                    elem.band_ = Band(i);
-                    EV << "Putting band " << i << endl;
-                    for (unsigned int j = 0; j < MAX_CODEWORDS; j++) {
-                        if (allowedBands.find(elem.band_) != allowedBands.end()) {
-                            elem.limit_[j] = -1;
-                        }
-                        else {
-                            elem.limit_[j] = -2;
-                        }
-                    }
-                    tempBandLim.push_back(elem);
-                }
-                bandLim = &tempBandLim;
-            }
-            else {
-                // for each band of the band vector provided
-                for (unsigned int i = 0; i < numBands; i++) {
-                    BandLimit& elem = bandLim->at(i);
-                    for (unsigned int j = 0; j < MAX_CODEWORDS; j++) {
-                        if (elem.limit_[j] == -2)
-                            continue;
-
-                        if (allowedBands.find(elem.band_) != allowedBands.end()) {
-                            elem.limit_[j] = -1;
-                        }
-                        else {
-                            elem.limit_[j] = -2;
-                        }
-                    }
-                }
-            }
+            bandLim = applyAllowedBandLimits(nodeId, UL, carrierFrequency, bandLim, tempBandLim);
 
             // FIXME default behavior
             // try to allocate one block to selected UE on at least one logical band of MACRO antenna, first codeword
@@ -244,20 +208,9 @@ void LteSchedulerEnbUl::racscheduleBackground(unsigned int& racAllocatedBlocks, 
         EV << NOW << " LteSchedulerEnbUl::racscheduleBackground handling RAC for node " << bgUeId << endl;
 
         BandLimitVector tempBandLim;
-        std::string bands_msg = "BAND_LIMIT_SPECIFIED";
         if (bandLim == nullptr) {
             // Create a vector of band limit using all bands
-
-            // for each band of the band vector provided
-            for (unsigned int i = 0; i < numBands; i++) {
-                BandLimit elem;
-                // copy the band
-                elem.band_ = Band(i);
-                for (unsigned int j = 0; j < MAX_CODEWORDS; j++) {
-                    elem.limit_[j] = -1;
-                }
-                tempBandLim.push_back(elem);
-            }
+            makeUniformBandLimits(tempBandLim, numBands, -1);
             bandLim = &tempBandLim;
         }
 
@@ -428,51 +381,9 @@ unsigned int LteSchedulerEnbUl::schedulePerAcidRtx(MacNodeId nodeId, GHz carrier
         std::vector<BandLimit> *bandLim, Remote antenna, bool limitBl)
 {
     try {
-        const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency);    // get the user info
-        const std::set<Band>& allowedBands = txParams.readBands();
+        // apply the allowed-band restriction for this user
         BandLimitVector tempBandLim;
-        std::string bands_msg = "BAND_LIMIT_SPECIFIED";
-        if (bandLim == nullptr) {
-            // Create a vector of band limits using all bands
-            // FIXME: bandLim is never deleted
-
-            unsigned int numBands = mac_->getCellInfo()->getNumBands();
-            // for each band of the band vector provided
-            for (unsigned int i = 0; i < numBands; i++) {
-                BandLimit elem;
-                // copy the band
-                elem.band_ = Band(i);
-                EV << "Putting band " << i << endl;
-                for (unsigned int j = 0; j < MAX_CODEWORDS; j++) {
-                    if (allowedBands.find(elem.band_) != allowedBands.end()) {
-                        elem.limit_[j] = -1;
-                    }
-                    else {
-                        elem.limit_[j] = -2;
-                    }
-                }
-                tempBandLim.push_back(elem);
-            }
-            bandLim = &tempBandLim;
-        }
-        else {
-            unsigned int numBands = mac_->getCellInfo()->getNumBands();
-            // for each band of the band vector provided
-            for (unsigned int i = 0; i < numBands; i++) {
-                BandLimit& elem = bandLim->at(i);
-                for (unsigned int j = 0; j < MAX_CODEWORDS; j++) {
-                    if (elem.limit_[j] == -2)
-                        continue;
-
-                    if (allowedBands.find(elem.band_) != allowedBands.end()) {
-                        elem.limit_[j] = -1;
-                    }
-                    else {
-                        elem.limit_[j] = -2;
-                    }
-                }
-            }
-        }
+        bandLim = applyAllowedBandLimits(nodeId, direction_, carrierFrequency, bandLim, tempBandLim);
 
         EV << NOW << "LteSchedulerEnbUl::rtxAcid - Node[" << mac_->getMacNodeId() << ", User[" << nodeId << ", Codeword[ " << cw << "], ACID[" << (unsigned int)acid << "] " << endl;
 
@@ -484,109 +395,9 @@ unsigned int LteSchedulerEnbUl::schedulePerAcidRtx(MacNodeId nodeId, GHz carrier
             return 0;
         }
 
-        Codeword allocatedCw = 0;
-        // search for already allocated codeword
-        // create "mirror" scList ID for other codeword than current
-        std::pair<MacCid, Codeword> scListMirrorId = std::pair<MacCid, Codeword>(MacCid(nodeId, SHORT_BSR), MAX_CODEWORDS - cw - 1);
-        if (scheduleList_.find(carrierFrequency) != scheduleList_.end()) {
-            if (scheduleList_[carrierFrequency].find(scListMirrorId) != scheduleList_[carrierFrequency].end()) {
-                allocatedCw = MAX_CODEWORDS - cw - 1;
-            }
-        }
-        // get current process buffered PDU byte length
-        unsigned int bytes = currentProcess->getByteLength(cw);
-        // bytes to serve
-        unsigned int toServe = bytes;
-        // blocks to allocate for each band
-        std::vector<unsigned int> assignedBlocks;
-        // bytes which blocks from the preceding vector are supposed to satisfy
-        std::vector<unsigned int> assignedBytes;
-
-        // end loop signal [same as bytes>0, but more secure]
-        bool finish = false;
-        // for each band
-        unsigned int size = bandLim->size();
-        for (unsigned int i = 0; (i < size) && (!finish); ++i) {
-            // save the band and the relative limit
-            Band b = bandLim->at(i).band_;
-            int limit = bandLim->at(i).limit_.at(cw);
-
-            // TODO add support for multi CW
-//                    ((allocatedCw == MAX_CODEWORDS) ? availableBytes(nodeId,antenna, b, cw) : mac_->getAmc()->blocks2bytes(nodeId, b, cw, allocator_->getBlocks(antenna,b,nodeId) , direction_));    // available space
-            unsigned int bandAvailableBytes = availableBytes(nodeId, antenna, b, cw, direction_, carrierFrequency);
-
-            // use the provided limit as cap for available bytes, if it is not set to unlimited
-            if (limit >= 0)
-                bandAvailableBytes = limit < (int)bandAvailableBytes ? limit : bandAvailableBytes;
-
-            EV << NOW << " LteSchedulerEnbUl::rtxAcid BAND " << b << endl;
-            EV << NOW << " LteSchedulerEnbUl::rtxAcid total bytes:" << bytes << " still to serve: " << toServe << " bytes" << endl;
-            EV << NOW << " LteSchedulerEnbUl::rtxAcid Available: " << bandAvailableBytes << " bytes" << endl;
-
-            unsigned int servedBytes = 0;
-            // there's no room on current band for serving the entire request
-            if (bandAvailableBytes < toServe) {
-                // record the amount of served bytes
-                servedBytes = bandAvailableBytes;
-                // the request can be fully satisfied
-            }
-            else {
-                // record the amount of served bytes
-                servedBytes = toServe;
-                // signal end loop - all data have been serviced
-                finish = true;
-            }
-            unsigned int servedBlocks = (servedBytes == 0) ? 0 : 1;
-            // update the bytes counter
-            toServe -= servedBytes;
-            // update the structures
-            assignedBlocks.push_back(servedBlocks);
-            assignedBytes.push_back(servedBytes);
-        }
-
-        if (toServe > 0) {
-            // process couldn't be served - no sufficient space on available bands
-            EV << NOW << " LteSchedulerEnbUl::rtxAcid Unavailable space for serving node " << nodeId << " ,HARQ Process " << (unsigned int)acid << " on codeword " << cw << endl;
-            return 0;
-        }
-        else {
-            // record the allocation
-            unsigned int size = assignedBlocks.size();
-            unsigned int cwAllocatedBlocks = 0;
-
-            // create scList id for current node/codeword
-            std::pair<MacCid, Codeword> scListId = std::pair<MacCid, Codeword>(MacCid(nodeId, SHORT_BSR), cw);
-
-            for (unsigned int i = 0; i < size; ++i) {
-                // For each LB for which blocks have been allocated
-                Band b = bandLim->at(i).band_;
-
-                cwAllocatedBlocks += assignedBlocks.at(i);
-                EV << "\t Cw->" << allocatedCw << "/" << MAX_CODEWORDS << endl;
-                //! handle multi-codeword allocation
-                if (allocatedCw != MAX_CODEWORDS) {
-                    EV << NOW << " LteSchedulerEnbUl::rtxAcid - adding " << assignedBlocks.at(i) << " to band " << i << endl;
-                    allocator_->addBlocks(antenna, b, nodeId, assignedBlocks.at(i), assignedBytes.at(i));
-                }
-                //! TODO check if ok bandLim->at.limit_.at(cw) = assignedBytes.at(i);
-            }
-
-            // signal a retransmission
-            // schedule list contains number of granted blocks
-
-            scheduleList_[carrierFrequency][scListId] = cwAllocatedBlocks;
-            // mark codeword as used
-            if (allocatedCws_.find(nodeId) != allocatedCws_.end()) {
-                allocatedCws_.at(nodeId)++;
-            }
-            else {
-                allocatedCws_[nodeId] = 1;
-            }
-
-            EV << NOW << " LteSchedulerEnbUl::rtxAcid HARQ Process " << (unsigned int)acid << " : " << bytes << " bytes served! " << endl;
-
-            return bytes;
-        }
+        // serve the buffered PDU across the allowed bands and record the allocation
+        bool served;
+        return allocateRtxBytes(nodeId, direction_, SHORT_BSR, currentProcess->getByteLength(cw), carrierFrequency, cw, acid, bandLim, antenna, served);
     }
     catch (std::exception& e) {
         throw cRuntimeError("Exception in LteSchedulerEnbUl::rtxAcid(): %s", e.what());
@@ -610,20 +421,7 @@ unsigned int LteSchedulerEnbUl::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequ
         BandLimitVector tempBandLim;
         if (bandLim == nullptr) {
             // Create a vector of band limit using all bands
-            // FIXME: bandLim is never deleted
-
-            unsigned int numBands = mac_->getCellInfo()->getNumBands();
-            // for each band of the band vector provided
-            for (unsigned int i = 0; i < numBands; i++) {
-                BandLimit elem;
-                // copy the band
-                elem.band_ = Band(i);
-                EV << "Putting band " << i << endl;
-                for (unsigned int j = 0; j < MAX_CODEWORDS; j++) {
-                    elem.limit_[j] = -2;
-                }
-                tempBandLim.push_back(elem);
-            }
+            makeUniformBandLimits(tempBandLim, mac_->getCellInfo()->getNumBands(), -2);
             bandLim = &tempBandLim;
         }
 
