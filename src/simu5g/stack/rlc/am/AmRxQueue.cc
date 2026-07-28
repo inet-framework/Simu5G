@@ -721,8 +721,8 @@ AmRxQueue::~AmRxQueue()
 void AmRxQueue::routeControlToTxEntity(Packet *pkt)
 {
     // Received STATUS PDU: hand it to the co-located TX side of this AM entity
-    // (ctrlOut is connected to tx.ctrlIn inside the RlcAmEntity compound)
-    send(pkt, "ctrlOut");
+    // (feedbackOut is connected to tx.feedbackIn inside the RlcAmEntity compound)
+    send(pkt, "feedbackOut");
 }
 
 void AmRxQueue::bufferControlViaTxEntity(Packet *pkt)

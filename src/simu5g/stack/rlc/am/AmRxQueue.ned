@@ -33,7 +33,7 @@ simple AmRxQueue like simu5g.stack.rlc.IRlcAmRxEntity
     gates:
         input in;        // PDUs from lower mux (MAC)
         output out;      // reassembled SDUs to upper mux (PDCP)
-        output ctrlOut;   // received STATUS PDUs -> co-located TX side (ARQ)
+        output feedbackOut;   // received STATUS PDUs -> co-located TX side (ARQ)
         output statusOut; // own STATUS reports -> co-located TX side (transmission)
 }
 

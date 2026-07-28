@@ -843,7 +843,7 @@ void AmTxQueue::handleMessage(cMessage *msg)
             sendPdus(size);
             delete pkt;
         }
-        else if (incoming->isName("ctrlIn")) {
+        else if (incoming->isName("feedbackIn")) {
             // STATUS PDU received from the peer, handed over by the co-located RX side
             processControlPacket(check_and_cast<Packet *>(msg));
         }

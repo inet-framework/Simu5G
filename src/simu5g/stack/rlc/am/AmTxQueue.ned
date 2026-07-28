@@ -33,7 +33,7 @@ simple AmTxQueue like simu5g.stack.rlc.IRlcAmTxEntity
         input in;       // SDUs from upper mux (PDCP)
         input macIn;    // SDU requests from lower mux (MAC)
         output out;     // PDUs and new-data notifications to lower mux (MAC)
-        input ctrlIn;   // STATUS PDUs received from the peer, from the co-located RX side (to ARQ)
+        input feedbackIn;   // STATUS PDUs received from the peer, from the co-located RX side (to ARQ)
         input statusIn; // locally generated STATUS reports, from the co-located RX side (to transmit)
 }
 

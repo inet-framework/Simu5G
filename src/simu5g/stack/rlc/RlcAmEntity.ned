@@ -19,7 +19,7 @@ package simu5g.stack.rlc;
 //
 // The receiving side hands control PDUs to the co-located transmitting side
 // over two internal connections:
-//  - ctrl: STATUS PDUs received from the peer, consumed by the TX side's ARQ
+//  - feedback: STATUS PDUs received from the peer, consumed by the TX side's ARQ
 //    (acknowledgements for data this entity transmitted);
 //  - status: locally generated STATUS reports, which the TX side transmits to
 //    the peer on this bearer's logical channel (data and control PDUs share
@@ -51,6 +51,6 @@ module RlcAmEntity
         tx.out --> { @display("m=s"); } --> lowerOut;
         lowerIn --> { @display("m=s"); } --> rx.in;
         rx.out --> { @display("m=n"); } --> upperOut;
-        rx.ctrlOut --> tx.ctrlIn;      // received STATUS PDUs -> TX-side ARQ
+        rx.feedbackOut --> tx.feedbackIn;      // received STATUS PDUs -> TX-side ARQ
         rx.statusOut --> tx.statusIn;  // own STATUS reports -> TX for transmission
 }
