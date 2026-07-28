@@ -25,7 +25,6 @@ using namespace omnetpp;
 
 simsignal_t LteHarqBufferRxD2D::macThroughputD2D_ = cComponent::registerSignal("macThroughputD2D");
 simsignal_t LteHarqBufferRxD2D::macDelayD2D_ = cComponent::registerSignal("macDelayD2D");
-simsignal_t LteHarqBufferRxD2D::macCellThroughputD2D_ = cComponent::registerSignal("macCellThroughputD2D");
 
 LteHarqBufferRxD2D::LteHarqBufferRxD2D(unsigned int num, LteMacBase *owner, Binder *binder, MacNodeId srcId, bool isMulticast)
     : LteHarqBufferRx(binder, owner, num, srcId)
@@ -37,16 +36,8 @@ LteHarqBufferRxD2D::LteHarqBufferRxD2D(unsigned int num, LteMacBase *owner, Bind
         processes_[i] = new LteHarqProcessRxD2D(i, macOwner_, binder);
     }
 
-    // Signals initialization: these are used to gather statistics
-
-    if (macOwner_->getNodeType() == NODEB) {
-        nodeB_ = macOwner_;
-        dir = UL;
-    }
-    else { // this is a UE
-        nodeB_ = binder->getMacByNodeId(macOwner_->getMacCellId());
-        dir = DL;
-    }
+    // direction the received data travels in, used to pick the DL/UL statistics
+    dir = (macOwner_->getNodeType() == NODEB) ? UL : DL;
 }
 
 void LteHarqBufferRxD2D::insertPdu(Codeword cw, Packet *pkt)
@@ -128,23 +119,16 @@ std::list<Packet *> LteHarqBufferRxD2D::extractCorrectPdus()
 
                 // Calculate Throughput by sending the number of bits for this packet
                 totalRcvdBytes_ += size;
-                totalCellRcvdBytes_ += size;
 
                 double den = (NOW - getSimulation()->getWarmupPeriod()).dbl();
 
+                // emit throughput statistics
                 if (den > 0) {
                     double tputSample = (double)totalRcvdBytes_ / den;
-                    double cellTputSample = (double)totalCellRcvdBytes_ / den;
-
-                    // emit throughput statistics
-                    if (info->getDirection() == D2D) {
-                        check_and_cast<LteMacEnbD2D *>(nodeB_.get())->emit(macCellThroughputD2D_, cellTputSample);
+                    if (info->getDirection() == D2D)
                         macUe_emit(macThroughputD2D_, tputSample);
-                    }
-                    else {
-                        nodeB_->emit(macCellThroughputSignal_[dir], cellTputSample); // TODO `info->getDirection()` and `dir` maybe differs
+                    else
                         macUe_emit(macThroughputSignal_[dir], tputSample); // TODO `info->getDirection()` and `dir` maybe differs
-                    }
                 }
 
                 ret.push_back(temp);

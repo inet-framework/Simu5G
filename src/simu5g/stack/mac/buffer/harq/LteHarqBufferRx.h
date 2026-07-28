@@ -55,16 +55,13 @@ class LteHarqBufferRx
     bool isMulticast_;
 
     // Statistics
-    static unsigned int totalCellRcvdBytes_;
     unsigned int totalRcvdBytes_ = 0;
     Direction dir = UNKNOWN_DIRECTION;
 
-    static simsignal_t macCellThroughputSignal_[2];
     static simsignal_t macDelaySignal_[2];
     static simsignal_t macThroughputSignal_[2];
 
     // reference to the eNB module
-    opp_component_ptr<cModule> nodeB_;
 
   private:
     // LteMacBase* of the UE for which this buffer has been created (whose ID is srcId_).

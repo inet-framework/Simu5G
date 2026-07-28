@@ -38,7 +38,6 @@ class LteHarqBufferRxD2D : public LteHarqBufferRx
 
     // D2D Statistics
     static inet::simsignal_t macDelayD2D_;
-    static inet::simsignal_t macCellThroughputD2D_;
     static inet::simsignal_t macThroughputD2D_;
 
     /**

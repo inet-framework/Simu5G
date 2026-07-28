@@ -19,12 +19,10 @@
 
 namespace simu5g {
 
-unsigned int LteHarqBufferRx::totalCellRcvdBytes_ = 0;
 
 using namespace omnetpp;
 using namespace inet;
 
-simsignal_t LteHarqBufferRx::macCellThroughputSignal_[2] = { cComponent::registerSignal("macCellThroughputDl"), cComponent::registerSignal("macCellThroughputUl") };
 simsignal_t LteHarqBufferRx::macDelaySignal_[2] = { cComponent::registerSignal("macDelayDl"), cComponent::registerSignal("macDelayUl") };
 simsignal_t LteHarqBufferRx::macThroughputSignal_[2] = { cComponent::registerSignal("macThroughputDl"), cComponent::registerSignal("macThroughputUl") };
 
@@ -37,15 +35,8 @@ LteHarqBufferRx::LteHarqBufferRx(unsigned int num, LteMacBase *owner, Binder *bi
         processes_[i] = new LteHarqProcessRx(i, macOwner_, binder);
     }
 
-    // Signals initialization: these are used to gather statistics
-    if (macOwner_->getNodeType() == NODEB) {
-        nodeB_ = macOwner_;
-        dir = UL;
-    }
-    else { // this is a UE
-        nodeB_ = binder->getMacByNodeId(macUe_->getMacCellId());
-        dir = DL;
-    }
+    // direction the received data travels in, used to pick the DL/UL statistics
+    dir = (macOwner_->getNodeType() == NODEB) ? UL : DL;
 }
 
 LteHarqBufferRx::LteHarqBufferRx(Binder *binder, LteMacBase *owner, unsigned int num, MacNodeId srcId)
@@ -135,18 +126,12 @@ std::list<Packet *> LteHarqBufferRx::extractCorrectPdus()
                 macUe_emit(macDelaySignal_[dir], (NOW - pktTemp->getCreationTime()).dbl());
 
                 // Calculate Throughput by sending the number of bits for this packet
-                totalCellRcvdBytes_ += size;
                 totalRcvdBytes_ += size;
                 double den = (NOW - getSimulation()->getWarmupPeriod()).dbl();
 
                 // emit throughput statistics
-                if (den > 0) {
-                    double tputSample = (double)totalRcvdBytes_ / den;
-                    double cellTputSample = (double)totalCellRcvdBytes_ / den;
-
-                    nodeB_->emit(macCellThroughputSignal_[dir], cellTputSample);
-                    macUe_emit(macThroughputSignal_[dir], tputSample);
-                }
+                if (den > 0)
+                    macUe_emit(macThroughputSignal_[dir], (double)totalRcvdBytes_ / den);
 
                 macOwner_->dropObj(pktTemp);
                 ret.push_back(pktTemp);
