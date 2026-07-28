@@ -1,5 +1,335 @@
 # What's New in Simu5G
 
+## v1.6.0 (2026-07-31)
+
+This release adds a standards-compliant NR RLC to Simu5G. RLC Unacknowledged
+Mode and Acknowledged Mode per TS 38.322 contributed by Esteban Egea Lopez have
+been integrated into the mainline and are now the default on NR bearers. The RLC
+entity modules were restructured into shared bases with LTE and NR concrete
+implementations. The previously incomplete LTE RLC AM was reimplemented per TS
+36.322 on the same architecture. Radio link failure detection with RRC
+re-establishment was added. This release, like all releases since v1.3.1,
+was developed by Andras Varga and the OMNeT++ core team.
+
+Tested with INET-4.5.4 and OMNeT++ 6.3, compatible with INET-4.6.0 and OMNeT++
+6.1 through 6.4.
+
+### NR RLC (TS 38.322)
+
+Simu5G's RLC layer so far implemented only the LTE wire format (TS 36.322: FI
+framing with concatenation, one sequence number per PDU), and NR bearers used
+it as well. This release adds a faithful NR RLC:
+
+- **Unacknowledged Mode**: `NrRlcUmTxEntity`/`NrRlcUmRxEntity` perform SI +
+  byte-offset (SO) segmentation without concatenation -- one SDU or SDU
+  segment per PDU, one sequence number per SDU, `NrRlcUmDataPdu` on the wire.
+  Reassembly is byte-coverage based (`RlcUmReceptionBuffer`) over an SDU-SN
+  window with `t-Reassembly`. The SN field length is selectable (6 or 12 bits).
+
+- **Acknowledged Mode**: `NrRlcAmTxEntity`/`NrRlcAmRxEntity` perform SO
+  segmentation with re-segmentation on retransmission (via
+  `RlcRetransmissionBuffer`), `pollByte`/`pollPDU`-driven status polling
+  with `t-PollRetransmit`, and reassembly with `t-Reassembly` and
+  `t-StatusProhibit`, using the `NrRlcAmDataPdu`/`NrRlcAmStatusPdu` formats
+  over a 12- or 18-bit sequence number window.
+
+- **NR bearers use the NR RLC by default**: `BearerManagement` gained the
+  `nrRlcUmEntityModuleType` and `nrRlcAmEntityModuleType` parameters (default:
+  the new `NrRlcUmEntity`/`NrRlcAmEntity` compound modules), and selects them
+  for every bearer that has an NR node at either end; LTE bearers keep the
+  `lteRlc*` ones. RLC framing is a function of the RAT rather than a free
+  choice, so there is no LTE/NR mix; TM, being transparent, is identical for
+  both RATs and has no NR variant.
+
+This changes results in every NR simulation: the NR wire format has different
+per-PDU header sizes and a different segmentation/reassembly discipline than
+LTE FI framing, so packet timing, delay and throughput shift. (The MAC and
+scheduler groundwork for it -- one PDU per SDU or segment, several RLC PDUs
+multiplexed into one grant, exact octet-aligned header sizing -- shipped in
+v1.5.1 and is only now actually exercised.) A configuration that needs the
+previous behavior can point `nrRlcUmEntityModuleType` and
+`nrRlcAmEntityModuleType` back at the `LteRlcUmEntity`/`LteRlcAmEntity`
+compounds.
+
+The NR RLC UM and AM implementations were contributed by Esteban Egea Lopez
+(Universidad Politécnica de Cartagena). The code was originally published as
+the "Simu5G-1.3.1 RLC-AM" special release and rebased onto several Simu5G
+versions since; adapting it to the current RLC architecture was done by Attila
+Török (OpenSim Ltd).
+
+### RLC entity modules restructured
+
+The RLC entity module and class names were made consistent with their
+surroundings (`RlcMux`, `RlcTxEntityBase`, ...), the AM "Queue" names were
+normalized to "Entity", and each mode's two variants were factored into a
+shared base with LTE and NR concrete subclasses (`RlcUmTxEntityBase` with
+`LteRlcUmTxEntity`/`NrRlcUmTxEntity`, and likewise for the other three). The
+common shell -- MAC plumbing, D2D mode-switch machinery, UL burst-throughput
+accounting -- lives in the base; only buffering, PDU build, reassembly, window
+and timer logic is mode-specific. The renames:
+
+      UmTxEntity  ->  LteRlcUmTxEntity      TmTxEntity  ->  RlcTmTxEntity
+      UmRxEntity  ->  LteRlcUmRxEntity      TmRxEntity  ->  RlcTmRxEntity
+      AmTxQueue   ->  LteRlcAmTxEntity
+      AmRxQueue   ->  LteRlcAmRxEntity
+
+Configurations that name these NED types explicitly need to be updated. The
+`NrRlcUmEntity` and `NrRlcAmEntity` compounds are subclasses of
+`RlcUmEntityBase` and `RlcAmEntityBase` that bind their two sides to the NR
+concrete entities with `tx.typename`/`rx.typename`.
+
+### LTE RLC AM reimplemented per TS 36.322
+
+Simu5G's original LTE RLC AM was derived from UMTS RLC (TS 25.322), it was
+incomplete, and no simulation configuration used it. What it implemented was not
+TS 36.322 compliant: the wire format was per-SDU fragmentation with a sequence
+number per fragment (no concatenation, no FI/LI, no poll bit), retransmission
+was driven by per-PDU timeouts that resent without any NACK, a PDU exhausting
+its retransmissions was silently discarded with no radio link failure
+indication, and status reporting was periodic rather than event-driven.
+
+It has been reimplemented from scratch on the architecture of the NR AM
+entity, whose TS 38.322 ARQ skeleton TS 36.322 shares; only the framing is
+LTE-specific:
+
+- One AMD PDU per MAC grant, built by concatenating queued SDUs and SDU
+  fragments (FI framing, on the same PDU model the LTE UM entity uses). The
+  built PDU, retained in the 512-entry (10-bit SN) transmission window, is the
+  unit of ARQ.
+- NACK-driven retransmission with the `ACK_SN` + NACK-list STATUS PDU (the
+  same `StatusPduData` structure the NR AM uses, including SOstart/SOend byte
+  ranges), re-segmenting a retained PDU into AMD PDU segments when the grant
+  is smaller than the PDU.
+- `pollPDU`/`pollByte`/`t-PollRetransmit` polling, `t-Reordering` and
+  `t-StatusProhibit` at the receiver, and radio link failure at
+  `maxRtxThreshold` retransmissions, wired to the same
+  `BearerManagement` teardown and RRC re-establishment as the NR AM.
+
+Since no configuration could use the old LTE AM, this does not affect existing
+simulation results.
+
+### Selecting RLC AM
+
+Acknowledged Mode is now usable on both RATs, but nothing selects it by default:
+every bearer stays in the mode it had before, so existing simulations are
+unaffected. Two mechanisms choose the mode of a bearer, depending on whether
+SDAP is in the stack.
+
+Without SDAP, `Ip2Nic` classifies each packet into a traffic class by packet name
+(`VoIP*` -> conversational, `gaming*` -> interactive, `VoDPacket*` -> streaming,
+anything else -> background) and maps the class to an RLC mode with its
+`conversationalRlc`, `streamingRlc`, `interactiveRlc` and `backgroundRlc`
+parameters. They accept `"TM"`, `"UM"` and `"AM"`, and all four default to
+`"UM"` (which is the pre-v1.6.0 behavior, kept for backward compatibility).
+
+With SDAP in the stack (`hasSdap = true` on the NR NIC), `Ip2Nic` skips traffic
+classification entirely and the mode becomes a property of the DRB: every entry
+of `NrSdap.drbConfig` takes an optional `rlcType` field, again one of `"AM"`,
+`"UM"` and `"TM"`, and again defaulting to `"UM"`. For example:
+
+      *.gnb.cellularNic.hasSdap = true
+      *.gnb.cellularNic.sdap.drbConfig = [
+          {"drb": 0, "ue": 2049, "qfiList": [1, 2], "rlcType": "UM"},
+          {"drb": 1, "ue": 2049, "qfiList": [3, 4], "rlcType": "AM"}]
+
+Either way, both ends of a bearer must be configured with the same mode: each
+node builds its own RLC entity from its own configuration, so a mismatch leaves
+an AM entity facing a UM one. With `Ip2Nic`, this can be ensured by using `**.`
+wildcards; with SDAP, the UE's `drbConfig` entry for a DRB and the gNB's entry
+for the same DRB have to agree on `rlcType`.
+
+Which entity type then implements the mode follows from the RAT, as described
+above: an AM bearer with an NR node at either end runs the `NrRlcAmEntity`
+compound, an LTE one `LteRlcAmEntity`. TM is available on both, and is the same
+entity for both.
+
+### RLC validation scenarios
+
+The new `simulations/nr/rlc` and `simulations/lte/rlc` directories hold
+protocol-validation scenarios for the two RLC implementations: a single UE
+over `LteDummyChannelModel` -- which replaces propagation modelling with a
+configurable per-direction packet error rate, so with independent HARQ
+attempts the residual loss RLC sees is exactly `perDl^(maxHarqRtx+1)` -- with
+deterministic CBR traffic and the loss process on its own RNG. The scenarios
+sweep the error rate (`AM-Lossy`, with `UM-Lossy` as the no-ARQ contrast),
+force segmentation and re-segmentation on retransmission (`AM-Segmentation`),
+concatenation on LTE (`AM-Concatenation`), a transmission-window stall that
+must recover (`AM-WindowStall`), and a scripted mid-run coverage loss that
+must end in a radio link failure (`AM-RLF`) or in RRC re-establishment with
+the flow resuming (`AM-RLF-Reestablish`). Three scenarios cover the common
+usage patterns beyond a lossy downlink: `AM-Lossy-UL` (both RATs) runs the
+flow uplink, through the UE MAC's strict grant accounting; `TCP-AM` carries a
+TCP transfer over the lossy bearer, its acknowledgement stream putting data
+through the reverse direction of the same bearer; and
+`lte/test_handover VoIP-AM-Handover` runs bidirectional VoIP over AM with the
+UEs moving through handovers.
+
+Measured on both RATs: every AM configuration delivers every offered SDU at
+every loss rate in the sweep, uplink and downlink -- the AM guarantee --
+while UM loses the predicted residual fraction, and the per-attempt HARQ
+error rate matches the configured error rate throughout. TCP makes steady
+progress over a downlink losing half its transmission attempts, and the
+handover scenario completes with zero application-level frame loss and no
+entities left behind at the old cell.
+
+Defects found in the NR AM implementation found using these scenarios
+were fixed.
+
+### Radio link failure and RRC re-establishment
+
+The RLC AM transmitters declare a radio link failure when a PDU exceeds
+`maxRtxThreshold` retransmissions (TS 38.322 5.3.2 / TS 36.322 5.2.1). This
+is now wired to a full teardown of the link:
+
+- `BearerManagement::scheduleRadioLinkFailure()` defers the teardown to a safe
+  execution context (so that entity modules are never deleted from inside
+  packet processing), then releases the link at both ends -- reaching the
+  peer's `BearerManagement` through the `Binder` -- deleting the bearer's MAC
+  (`deleteQueuesRadioLinkFailure()`, which also drops the node's in-flight HARQ
+  feedback), RLC and PDCP state.
+
+- `Ip2Nic` gained `releaseUe()`/`resumeUe()`, and drops a released peer's DL
+  and UL packets for as long as its context is released, modeling the RRC UE
+  Context Release. Without this, the application kept pushing packets at
+  torn-down entities, which crashed; handover does not have this problem only
+  because it redirects the traffic to a new cell.
+
+- RRC re-establishment (TS 38.331 5.3.7) is modeled by its timers, the way
+  handover signaling already is: `BearerManagement.t311` (cell selection) and
+  `t301` (request to complete). When `t301` expires, the peer is un-released
+  and its bearer re-establishes on demand. The default `t311 = 0s` disables
+  re-establishment, that is, a radio link failure releases the UE to idle.
+
+This is inert in simulations that do not use RLC AM, as only the AM entities
+detect radio link failures.
+
+### RLC statistics recorded on the bearer entities
+
+The per-bearer RLC statistics -- `rlcDelay*`, `rlcThroughput*`, `rlcPduDelay*`,
+`rlcPduThroughput*`, `rlcPacketLoss*` and their D2D variants -- are now recorded
+on the RLC entity module of the bearer that produced them, instead of on an
+`RlcMux`. **Configurations and analysis files that refer to these results by
+module path need to be updated**, for example from
+
+      SingleCell.ue[0].cellularNic.nrRlcMux.rlcDelayDl:mean
+
+to the bearer entity that measured it, such as
+
+      SingleCell.ue[0].cellularNic.nrRlc-um-1-1.rx.rlcDelayDl:mean
+
+The old arrangement dates from when RLC was a single module per network
+interface, with the per-connection entities being plain C++ objects inside it:
+there was no per-bearer module to record on, so a receiving entity reached the
+*other* node's mux through the `Binder` and emitted the sample there -- an
+uplink measurement taken at the gNB was recorded as a result of the UE. Since
+v1.5.0 the entities are modules in their own right, one per peer and radio
+bearer, so each sample is now recorded where it is produced. Results for one UE
+across its bearers are obtained by aggregating over its entity modules in the
+analysis tool.
+
+The cell-level statistics (`rlcCellThroughput*`, `rlcCellPacketLoss*`) were
+**removed** rather than moved. The cell throughput was computed from a C++
+`static` byte counter -- one counter for the entire simulation, not one per
+cell -- so in any scenario with more than one cell, every serving node reported
+approximately the network-wide total as its own cell throughput. (In
+`lte/multicell`, both eNBs report the global figure; the true per-cell values
+are about half of what was recorded.) The statistic was correct only in
+single-cell scenarios, where it equals the sum of the per-bearer
+`rlcThroughput*` results, which is how it can be obtained now.
+
+The MAC layer's `macCellThroughput*` statistics (including the D2D variant,
+which shared the same counter and thus mixed D2D and cellular bytes) had the
+identical defect and were removed for the same reason; the per-UE
+`macThroughput*` results remain. `macCellPacketLoss*`, which is computed
+per-cell correctly, is kept.
+
+Two side effects are worth noting. `rlcPacketLoss*` was emitted onto a module
+that did not declare it, so it was never recorded at all; it now is. And
+per-bearer results that used to be merged into one mux are visible separately
+per bearer, which is what makes the two legs of a Dual Connectivity split
+bearer individually measurable.
+
+### PDCP mux renamed and refactored
+
+`UpperMux` was renamed to `PdcpMux`: the old name said where the module sits
+relative to the PDCP entities rather than which layer it belongs to, and did not
+match its RLC counterpart `RlcMux` (the submodule was already named `pdcpMux`).
+Like `RlcMux` in v1.5.2, it now maps DRBs to `toTxEntity` gate indices instead
+of TX entity pointers, so dispatch is plain multiplexing.
+
+Both muxes became replaceable submodules, with the new `IPdcpMux` and `IRlcMux`
+module interfaces. Replaceability is partial: `BearerManagement` creates and
+wires the per-bearer gates and registers the routing tables through the C++
+classes, so an implementation has to subclass `PdcpMux` or `RlcMux`; what the
+interface buys is type selection from NED and ini.
+
+The NR-leg flag moved off `PdcpMux`, which never read it, onto its only reader,
+`Ip2Nic`: **`cellularNic.pdcpMux.isNR` is now `cellularNic.ip2nic.isNr`**,
+spelled like the same flag on `LteMacUe`, `LtePhyUe` and `HandoverController`.
+Configurations that set it need to be updated. `BaseStationStatsCollector` also
+lost its `pdcpModule` parameter, which was unread and pointed at a module the
+v1.5.0 PDCP flattening deleted.
+
+### Other
+
+- **RLC statistics on NR bearers**: the NR RLC entities did not emit the
+  per-bearer delay and throughput statistics that their LTE counterparts do, so
+  those results were empty in NR simulations from the moment the NR RLC became
+  the default on NR bearers. They are emitted now. `NrRlcAmRxEntity` also emits
+  `rxWindowOccupation`, which was declared but never emitted; the NR UM
+  transmitter's `requestedPDUSize`/`sentPDUSize` statistics were renamed to
+  `requestedPduSize`/`sentPduSize`, and it gained the
+  `receivedPacketFromUpperLayer`/`sentPacketToLowerLayer` counters.
+
+- **LteDummyChannelModel made usable**: the class had no NED type (so it could
+  not be instantiated) and hardcoded error rates. It now has one, with `per` /
+  `perDl` / `perUl` / `perD2D` and `harqReduction` parameters -- the
+  per-direction rates volatile, so a coverage loss can be scripted as a
+  function of time -- turning it into a controlled loss source for protocol
+  validation: with `harqReduction = 1` the residual loss RLC sees is exactly
+  `per^(maxHarqRtx+1)`. It also reports SINR/RSRP on every band; the
+  single-element vector it used to return broke the AMC.
+
+- **MEC RNI**: `PacketFlowObserver` now also tracks NR SO PDUs, which carry no
+  per-PDU RLC sequence number, by keying the per-SDU tracking on the PDCP
+  sequence number instead. The reported delay is exact for the common
+  unsegmented case; an SDU segmented across several MAC PDUs is accounted as
+  delivered on the acknowledgement of its first segment.
+
+- **D2D**: D2D bearers run on the NR RLC as well; draining of the mode-switch
+  holding buffer now takes place in the owning entity's context.
+
+- **Module references**: the RLC-to-RRC and RRC-to-Ip2Nic lookups became NED
+  module-path parameters (`RlcMux.bearerManagementModule`,
+  `BearerManagement.ip2nicModule`), continuing the `ModuleRefByPar` conversion.
+
+- **Simulations**: `nr/standalone` gained the `VoIP-DL-AM`, `VoIP-DL-AM-Lossy`,
+  `VoIP-UL-AM`, `VoIP-DL-UM-NR` and `VoIP-UL-UM-NR` configurations, and
+  `lte/demo` the `VoIP-AM` configuration, exercising the AM and the NR RLC
+  paths.
+
+- **Fingerprint tests**: the five new configurations above were added to the
+  suite, together with the RLC validation scenarios of `simulations/nr/rlc`
+  and `simulations/lte/rlc` and the `VoIP-AM-Handover` configuration of
+  `lte/test_handover` (157 configurations in total), and the rows were
+  re-recorded for the NR RLC default and the statistics changes.
+
+- **Documentation**: the RLC entity documentation comments were retargeted at
+  the compound modules that actually bind them -- several still referred to
+  per-side `rlcUm{Tx,Rx}EntityModuleType` parameters, which v1.5.1 replaced
+  with selection on the per-bearer compound -- and the `RlcUmEntityBase` /
+  `RlcAmEntityBase` comments now name both of their concrete subclasses.
+
+- **Source housekeeping**: file headers were brought in line -- the contributed
+  NR RLC sources now carry the standard Simu5G header naming their author
+  instead of an LGPL blurb, files that had no header got one, and new files
+  that had inherited the header of the file they were derived from now name
+  their actual author. The redundant `@class` line was dropped from the C++
+  class comments, and `IRlcAmEntities.ned` was split into `IRlcAmTxEntity.ned`
+  and `IRlcAmRxEntity.ned`, one interface per file. The interfaces themselves,
+  and all type names, are unchanged.
+
+
 ## v1.5.2 (2026-07-30)
 
 This release corrects the names of the per-bearer PDCP and RLC entity modules
