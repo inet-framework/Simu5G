@@ -50,6 +50,33 @@ void NrRlcUmRxEntity::initMode(LteMacBase *mac)
     t_Reassembly = par("t_Reassembly");
     // The mux feeding our "in" gate (for UL burst-throughput reporting).
     rlcMux_ = getModuleFromPar<RlcMux>(par("rlcMuxModule"), this);
+    binder_.reference(this, "binderModule", true);
+}
+
+cModule *NrRlcUmRxEntity::getUeRlcMux() const
+{
+    // On the downlink (and for D2D) this entity sits at the UE, so the flow's UE is the
+    // owner; on the uplink it sits at the eNB/gNB, and the UE is the sender.
+    Direction dir = static_cast<Direction>(flowControlInfo_->getDirection());
+    MacNodeId ueId = (dir == UL) ? flowControlInfo_->getSourceId() : ownerNodeId_;
+    return binder_->getRlcByNodeId(ueId, UM);
+}
+
+void NrRlcUmRxEntity::emitRxStatistics(bool perPdu, double throughput, simtime_t delay) const
+{
+    cModule *ue = getUeRlcMux();
+    if (ue == nullptr)
+        return;
+
+    Direction dir = static_cast<Direction>(flowControlInfo_->getDirection());
+    if (dir == D2D || dir == D2D_MULTI) {
+        ue->emit(perPdu ? rlcPduThroughputD2DSignal_ : rlcThroughputD2DSignal_, throughput);
+        ue->emit(perPdu ? rlcPduDelayD2DSignal_ : rlcDelayD2DSignal_, delay.dbl());
+    }
+    else {
+        ue->emit(perPdu ? rlcPduThroughputSignal_[dir] : rlcThroughputSignal_[dir], throughput);
+        ue->emit(perPdu ? rlcPduDelaySignal_[dir] : rlcDelaySignal_[dir], delay.dbl());
+    }
 }
 
 void NrRlcUmRxEntity::handleMessage(cMessage *msg)
@@ -75,6 +102,11 @@ void NrRlcUmRxEntity::enque(cPacket *pktAux)
     auto pktPdu = check_and_cast<Packet *>(pktAux);
 
     EV << NOW << " NrRlcUmRxEntity::enque - buffering new PDU" << endl;
+
+    // Per-PDU delay and throughput, as seen on the air interface (before reassembly).
+    totalPduRcvdBytes_ += pktPdu->getByteLength();
+    emitRxStatistics(true, (double)totalPduRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod()),
+            NOW - pktPdu->getCreationTime());
 
     auto pdu = pktPdu->removeAtFront<NrRlcUmDataPdu>();
 
@@ -155,6 +187,9 @@ void NrRlcUmRxEntity::toPdcpNr(Packet *pktAux)
     totalRcvdBytesNr_ += pktAux->getByteLength();
     double tput = (double)totalRcvdBytesNr_ / (NOW - getSimulation()->getWarmupPeriod());
     emit(rlcCellThroughputSignal_[dir == UL ? 1 : 0], tput);
+
+    // Per-user delay and throughput of the reassembled SDU, on the UE's mux.
+    emitRxStatistics(false, tput, NOW - pktAux->getCreationTime());
 
     emit(sentPacketToUpperLayerSignal_, pktAux);
 

@@ -48,6 +48,30 @@ void NrRlcAmRxEntity::initMode()
     tReassembly_ = par("t_Reassembly");
     tStatusProhibitTimer_ = new cMessage("t_StatusProhibitTimer");
     tStatusProhibit_ = par("t_StatusProhibit");
+    binder_.reference(this, "binderModule", true);
+}
+
+void NrRlcAmRxEntity::emitRxStatistics(bool perPdu, double throughput, simtime_t delay)
+{
+    if (ackFlowControlInfo_ == nullptr)
+        return;
+
+    // ackFlowControlInfo_ is the reversed flow info (it stamps the STATUS PDUs going
+    // back), so its destination is the peer that sent us the data and its source is
+    // this node. The data flowed in the opposite direction.
+    Direction dir = (ackFlowControlInfo_->getDirection() == DL) ? UL : DL;
+    MacNodeId ueId = (dir == UL) ? ackFlowControlInfo_->getDestId() : ackFlowControlInfo_->getSourceId();
+
+    cModule *ue = binder_->getRlcByNodeId(ueId, UM);
+    if (ue == nullptr)
+        return;
+
+    ue->emit(perPdu ? rlcPduThroughputSignal_[dir] : rlcThroughputSignal_[dir], throughput);
+    ue->emit(perPdu ? rlcPduDelaySignal_[dir] : rlcDelaySignal_[dir], delay.dbl());
+    // The packet-loss counterpart is deliberately not emitted here: rlcPacketLoss* is
+    // declared as a statistic only on RlcTmTxEntity, not on the RlcMux these are
+    // recorded on, so it would go nowhere. The LTE AM entity emits it anyway, equally
+    // unrecorded. Fixing that means deciding which module should carry the statistic.
 }
 
 void NrRlcAmRxEntity::handleMessage(cMessage *msg)
@@ -96,6 +120,13 @@ void NrRlcAmRxEntity::enque(Packet *pkt)
         ackFlowControlInfo_->setDestId(orig->getSourceId());
         ackFlowControlInfo_->setDirection((orig->getDirection() == DL) ? UL : DL);
     }
+
+    // Per-PDU delay and throughput, as seen on the air interface (before reassembly).
+    // Counted here, before the in-window test, so that duplicates and out-of-window
+    // arrivals -- which the air interface carried all the same -- are included.
+    totalPduRcvdBytes_ += pkt->getByteLength();
+    emitRxStatistics(true, (double)totalPduRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod()),
+            NOW - pkt->getCreationTime());
 
     unsigned int sn = pdu->getPduSequenceNumber();
 
@@ -193,6 +224,14 @@ void NrRlcAmRxEntity::passUpNr(int seqNum)
     totalRcvdBytes_ += sdu->getByteLength();
     double tput = (double)totalRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
     emit(rlcCellThroughputSignal_[dir == DL ? 0 : 1], tput);
+
+    // Per-user delay and throughput of the reassembled SDU, on the UE's mux.
+    emitRxStatistics(false, tput, NOW - sdu->getCreationTime());
+
+    // How far the reordering window is stretched: the span between the next SDU
+    // awaited in sequence and the highest one received, i.e. how much is being held
+    // back waiting for a gap to be filled. The TX side reports the mirror quantity.
+    emit(rxWindowOccupationSignal_, (long)(rxBuffer_->getRxNextHighest() - rxBuffer_->getRxNext()));
 
     emit(sentPacketToUpperLayerSignal_, sdu);
     send(sdu, "out");

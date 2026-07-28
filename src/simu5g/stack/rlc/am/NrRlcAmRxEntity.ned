@@ -28,6 +28,7 @@ simple NrRlcAmRxEntity like simu5g.stack.rlc.IRlcAmRxEntity
     parameters:
         @dynamic(true);
         @display("i=block/layer");
+        string binderModule = default("binder");
         int AM_Window_Size = default(2048);       // 2048 (12-bit SN) or 131072 (18-bit SN)
         double t_Reassembly @unit(s) = default(80ms);
         double t_StatusProhibit @unit(s) = default(100ms);
