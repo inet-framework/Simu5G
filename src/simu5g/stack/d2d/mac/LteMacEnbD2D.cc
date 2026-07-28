@@ -119,12 +119,6 @@ void LteMacEnbD2D::handleMessage(cMessage *msg)
         LteMacEnb::handleMessage(msg);
 }
 
-void LteMacEnbD2D::handleSelfMessage()
-{
-    // Call the eNodeB main loop
-    LteMacEnb::handleSelfMessage();
-}
-
 void LteMacEnbD2D::macPduUnmake(cPacket *cpkt)
 {
     auto pkt = check_and_cast<Packet *>(cpkt);

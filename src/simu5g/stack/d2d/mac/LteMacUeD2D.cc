@@ -252,7 +252,6 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                // has to be sent even if there is no data in the user's queues. In a few words, a BSR is always
                // triggered and has to be sent when there are enough resources
 
-               // TODO implement differentiated BSR attach
 
             auto macPdu = macPkt->removeAtFront<LteMacPdu>();
             // Attach BSR to PDU if RAC is won and wasn't already made

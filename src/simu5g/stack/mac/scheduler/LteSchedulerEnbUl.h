@@ -29,9 +29,6 @@ class LteSchedulerEnbUl : public LteSchedulerEnb
     typedef std::map<MacNodeId, unsigned char> HarqStatus;
     typedef std::map<MacNodeId, bool> RacStatus;
 
-    /// Minimum scheduling unit, represents the MAC SDU size
-    unsigned int scheduleUnit_;
-    //---------------------------------------------
 
     //! Uplink Synchronous H-ARQ process counter - keeps track of currently active process on connected UEs.
     std::map<GHz, HarqStatus> harqStatus_;

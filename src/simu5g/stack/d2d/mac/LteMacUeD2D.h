@@ -93,14 +93,6 @@ class LteMacUeD2D : public LteMacUe, public ID2dMacUe
   public:
     LteMacUeD2D();
 
-    virtual void triggerBsr(MacCid cid)
-    {
-        if (connDescOut_[cid].flowInfo.getDirection() == D2D_MULTI)
-            d2dUeHelper_.setBsrD2DMulticastTriggered(true);
-        else
-            bsrTriggered_ = true;
-    }
-
     void doHandover(MacNodeId targetEnb) override;
 };
 

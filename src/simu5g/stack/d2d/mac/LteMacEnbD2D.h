@@ -73,10 +73,6 @@ class LteMacEnbD2D : public LteMacEnb, public ID2dMacEnb
      */
     void initialize(int stage) override;
 
-    /**
-     * Main loop
-     */
-    void handleSelfMessage() override;
 
     void handleMessage(cMessage *msg) override;
 

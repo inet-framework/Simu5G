@@ -42,24 +42,8 @@ class NrMacGnbD2D : public NrMacGnb, public ID2dMacEnb
     // holds the D2D-specific eNB-MAC state and logic (shared with the LTE variant)
     D2dEnbMacHelper d2dEnbHelper_;
 
-    /**
-     * macPduUnmake() extracts SDUs from a received MAC
-     * PDU and sends them to the upper layer.
-     *
-     * On ENB it also extracts the BSR Control Element
-     * and stores it in the BSR buffer (for the cid from
-     * which the packet was received)
-     *
-     * @param pkt container packet
-     */
-    void macPduUnmake(cPacket *pkt) override;
 
     void macHandleFeedbackPkt(cPacket *pkt) override;
-    /**
-     * creates scheduling grants (one for each nodeId) according to the Schedule List.
-     * It sends them to the lower layer
-     */
-    void sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList) override;
 
     /**
      * Flush Tx H-ARQ buffers for all users
@@ -81,10 +65,6 @@ class NrMacGnbD2D : public NrMacGnb, public ID2dMacEnb
      */
     void initialize(int stage) override;
 
-    /**
-     * Main loop
-     */
-    void handleSelfMessage() override;
 
     void handleMessage(cMessage *msg) override;
 

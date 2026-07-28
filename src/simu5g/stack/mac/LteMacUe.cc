@@ -469,7 +469,6 @@ void LteMacUe::macPduMake(MacCid cid)
             // has to be sent even if there is no data in the user's queues. In few words, a BSR is always
             // triggered and has to be sent when there are enough resources
 
-            // TODO implement differentiated BSR attach
 
             bool bsrAlreadyMade = false;
             auto macPdu = macPkt->removeAtFront<LteMacPdu>();
@@ -515,6 +514,16 @@ LteHarqBufferTx *LteMacUe::createTxHarqBuffer(MacNodeId destId, Direction dir)
             check_and_cast<LteMacBase *>(binder_->getMacByNodeId(cellId_)));
 }
 
+// TODO: implement differentiated BSR attach (TS 36.321 / TS 38.321 5.4.5).
+// This always emits one fixed-size BSR and never looks at how much of the grant is
+// left, so there is no long-vs-short/truncated selection, no "grant too small, BSR
+// suppressed" accounting and no wasted-grant statistic. The NR and D2D UE MACs build
+// the control element inline in their own macPduMake() and share the gap.
+// A sketch of the intended branching (long/short/truncated by remaining available
+// bytes, plus the suppressed and wasted-byte statistics) survives upstream as the
+// commented-out block in v1.5.1:src/simu5g/stack/mac/LteMacUe.cc. It is written
+// against the old LteSchedulerUeUl::schedule and the pre-INET-packet-API data model,
+// so none of it compiles today: a record of the decision structure, not reusable code.
 void LteMacUe::appendBsr(inet::Ptr<LteMacPdu> macPdu, int size)
 {
     MacBsr *bsr = new MacBsr();
