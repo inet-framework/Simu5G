@@ -113,6 +113,21 @@ void NrRlcAmTxEntity::handleMessage(cMessage *msg)
                 }
             }
 
+            // Tell MAC there is something to send, whether the poll queued a
+            // retransmission just now or an earlier one is still waiting. Buffer status is
+            // otherwise only reported from sendPdus(), that is, in response to a grant --
+            // so once the upper layer goes idle, a pending retransmission would never be
+            // scheduled, no acknowledgement would ever come back, and the transmitter
+            // would sit on its unacknowledged SDUs for the rest of the run.
+            reportBufferStatus();
+
+            // Keep the poll cycle alive while anything is still unacknowledged. The timer
+            // is otherwise only re-armed by checkPolling(), that is, only when a PDU is
+            // actually handed to MAC; if the retransmission queued above is not granted --
+            // or the poll expiry had nothing to queue -- the timer would never fire again
+            // and the entity would sit on its unacknowledged SDUs forever.
+            if (!radioLinkFailureDetected_ && txBuffer_->getTxNext() != txBuffer_->getTxNextAck())
+                rescheduleAfter(tPollRetransmit_, tPollRetransmitTimer_);
         }
         return;
     }
