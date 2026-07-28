@@ -33,16 +33,15 @@ bool RlcSduRetransmissionBuffer::addNack(uint32_t sn, bool isWhole, uint32_t sta
     bool alreadyPending = (pendingRetx_.find(task) != pendingRetx_.end());
 
     if (sduRetxCounters_.find(sn) == sduRetxCounters_.end()) {
+        // Considered for retransmission for the first time: RETX_COUNT starts at zero.
         sduRetxCounters_[sn].retxCount = 0;
     }
-    else if (!alreadyPending && !sduRetxCounters_[sn].incrementedInCurrentStatusPdu) {
+    else if (!alreadyPending && !sduRetxCounters_[sn].incrementedInCurrentRound) {
         sduRetxCounters_[sn].retxCount++;
-        sduRetxCounters_[sn].incrementedInCurrentStatusPdu = true;
+        sduRetxCounters_[sn].incrementedInCurrentRound = true;
 
-        if (sduRetxCounters_[sn].retxCount >= maxRetxThreshold_) {
-            std::cerr << "[RLC RETX] Max retransmissions reached for SN=" << sn << std::endl;
+        if (sduRetxCounters_[sn].retxCount >= maxRetxThreshold_)
             return false;
-        }
     }
 
     pendingRetx_.insert(task);

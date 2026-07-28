@@ -34,7 +34,9 @@ module RlcAmEntityBase
         @dynamic(true);
         @display("i=block/wheelbarrow");
         string macModule = default("^.mac");   // this bearer leg's MAC; set per leg by BearerManagement
+        string bearerManagementModule = default("^.rrc.bearerManagement");   // notified of radio link failures
         *.macModule = default(absPath(this.macModule));
+        *.bearerManagementModule = default(absPath(this.bearerManagementModule));
     gates:
         input upperIn;    // SDUs from PDCP
         output upperOut;  // reassembled SDUs to PDCP

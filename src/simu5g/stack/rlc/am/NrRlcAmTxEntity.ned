@@ -33,6 +33,7 @@ simple NrRlcAmTxEntity like simu5g.stack.rlc.IRlcAmTxEntity
         int pollPDU = default(64);
         int maxRtxThreshold = default(4);
         double t_PollRetransmit @unit(s) = default(80ms);
+        string bearerManagementModule;   // notified when maxRtxThreshold is reached; set by the enclosing entity
 
         @signal[receivedPacketFromUpperLayer];
         @statistic[receivedPacketFromUpperLayer](source="receivedPacketFromUpperLayer"; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);

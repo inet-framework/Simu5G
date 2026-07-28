@@ -45,13 +45,26 @@ class RlcSduRetransmissionBuffer
     RlcSduRetransmissionBuffer(uint32_t threshold);
     ~RlcSduRetransmissionBuffer();
 
-    /** @brief Reset per-Status-PDU increment flags before processing a new STATUS PDU. */
-    void beginStatusPduProcessing() {
+    /**
+     * @brief Start a new retransmission round.
+     *
+     * RETX_COUNT is incremented at most once per SDU per round (TS 38.322 5.3.2). A
+     * round is opened by an arriving STATUS PDU, whose NACKs may name the same SDU
+     * several times, and also by a t-PollRetransmit expiry, which likewise triggers a
+     * retransmission. Both callers must open a round, otherwise the per-round flags
+     * stay set and the counter stops advancing.
+     */
+    void beginRetxRound() {
         for (auto &[sn, state] : sduRetxCounters_)
-            state.incrementedInCurrentStatusPdu = false;
+            state.incrementedInCurrentRound = false;
     }
 
-    /** @brief Add a NACKed SDU or segment to the retransmission pool. */
+    /**
+     * @brief Add a NACKed SDU or segment to the retransmission pool.
+     *
+     * Returns false if this SDU has reached maxRetxThreshold retransmissions, in
+     * which case it is not added and the caller must declare a radio link failure.
+     */
     bool addNack(uint32_t sn, bool isWhole, uint32_t start, uint32_t end);
 
     /** @brief Returns the next task to be retransmitted. */
@@ -74,7 +87,7 @@ class RlcSduRetransmissionBuffer
   protected:
     struct RetxState {
         uint32_t retxCount = 0;
-        bool incrementedInCurrentStatusPdu = false;
+        bool incrementedInCurrentRound = false;
     };
 
     std::map<uint32_t, RetxState> sduRetxCounters_;

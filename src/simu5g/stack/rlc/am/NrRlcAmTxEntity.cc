@@ -78,25 +78,41 @@ void NrRlcAmTxEntity::handleMessage(cMessage *msg)
                     && sduBuffer_.empty() && rtxBuffer_->getRetxPendingBytes() == 0);
 
             if (noPendingData || txBuffer_->windowFull()) {
+                // TS 38.322 5.3.3: the poll went unanswered, so consider an outstanding
+                // SDU for retransmission. That is a retransmission like any other, so it
+                // opens a new round and advances RETX_COUNT -- which is what lets a link
+                // that has gone silent altogether reach maxRtxThreshold and fail, rather
+                // than stall here forever.
+                rtxBuffer_->beginRetxRound();
+
                 uint32_t hsn = txBuffer_->getHighestSnTransmitted();
                 Packet *ptr = nullptr;
                 uint32_t totalLength = 0;
-                bool found = txBuffer_->getSduData(hsn, ptr, totalLength);
-                bool added = found && rtxBuffer_->addNack(hsn, true, 0, totalLength - 1);
-
-                if (!added) {
+                if (txBuffer_->getSduData(hsn, ptr, totalLength)) {
+                    if (!rtxBuffer_->addNack(hsn, true, 0, totalLength - 1)) {
+                        declareRadioLinkFailure();
+                        return;
+                    }
+                }
+                else {
+                    // The highest SN transmitted is gone (already acknowledged); fall back
+                    // to the oldest SDU still awaiting acknowledgement.
                     uint32_t next = txBuffer_->getTxNextAck();
                     while (txBuffer_->isInRtxRange(next)) {
-                        if (!txBuffer_->isFullyAcknowledged(next)) {
-                            if (txBuffer_->getSduData(next, ptr, totalLength)) {
-                                if (rtxBuffer_->addNack(next, true, 0, totalLength - 1))
-                                    return;
+                        if (!txBuffer_->isFullyAcknowledged(next)
+                                && txBuffer_->getSduData(next, ptr, totalLength))
+                        {
+                            if (!rtxBuffer_->addNack(next, true, 0, totalLength - 1)) {
+                                declareRadioLinkFailure();
+                                return;
                             }
+                            break;
                         }
                         ++next;
                     }
                 }
             }
+
         }
         return;
     }
@@ -339,6 +355,24 @@ void NrRlcAmTxEntity::reportBufferStatus()
     }
 }
 
+void NrRlcAmTxEntity::declareRadioLinkFailure()
+{
+    if (radioLinkFailureDetected_)
+        return;
+
+    EV << nameEntity_ << " - radio link failure: an SDU reached maxRtxThreshold ("
+       << maxRtxThreshold_ << ") retransmissions" << endl;
+    radioLinkFailureDetected_ = true;
+
+    // Indicate the failure to RRC/BearerManagement (TS 38.322 5.3.2 / TS 36.322
+    // 5.2.1): it tears down this bearer's MAC/RLC/PDCP state at a safe point.
+    if (lteInfo_) {
+        bool isNr = isNrUe(lteInfo_->getSourceId()) || isNrUe(lteInfo_->getDestId());
+        auto *bm = inet::getModuleFromPar<BearerManagement>(par("bearerManagementModule"), this);
+        bm->scheduleRadioLinkFailure(lteInfo_->getDestId(), isNr);
+    }
+}
+
 bool NrRlcAmTxEntity::sendRetransmission(int pduSize)
 {
     RetxTask next;
@@ -397,7 +431,7 @@ void NrRlcAmTxEntity::processControlPacket(Packet *pktPdu)
     auto pdu = pktPdu->peekAtFront<NrRlcAmStatusPdu>();
     StatusPduData data = pdu->getData();
 
-    rtxBuffer_->beginStatusPduProcessing();
+    rtxBuffer_->beginRetxRound();
     std::set<uint32_t> nacks;
     bool restartPoll = false;
 
@@ -407,20 +441,8 @@ void NrRlcAmTxEntity::processControlPacket(Packet *pktPdu)
             uint32_t nackedSn = info.sn + j;
             if (txBuffer_->isInRtxRange(nackedSn)) {
                 bool isWhole = !info.isSegment;
-                bool added = rtxBuffer_->addNack(nackedSn, isWhole, info.soStart, info.soEnd);
-                if (!added) {
-                    EV << nameEntity_ << " [CRITICAL] Radio Link Failure" << endl;
-                    radioLinkFailureDetected_ = true;
-                    // Indicate the failure to RRC/BearerManagement (TS 38.322 5.3.2 / TS
-                    // 36.322 5.2.1): it tears down this bearer's MAC/RLC/PDCP state at a
-                    // safe point. Idempotent -- a set + one-shot self-message inside
-                    // BearerManagement absorb repeats before this entity is deleted.
-                    if (lteInfo_) {
-                        bool isNr = isNrUe(lteInfo_->getSourceId()) || isNrUe(lteInfo_->getDestId());
-                        auto *bm = check_and_cast<BearerManagement *>(
-                            inet::getContainingNicModule(this)->getSubmodule("rrc")->getSubmodule("bearerManagement"));
-                        bm->scheduleRadioLinkFailure(lteInfo_->getDestId(), isNr);
-                    }
+                if (!rtxBuffer_->addNack(nackedSn, isWhole, info.soStart, info.soEnd)) {
+                    declareRadioLinkFailure();
                     delete pktPdu;
                     return;
                 }

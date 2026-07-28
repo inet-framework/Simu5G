@@ -86,6 +86,14 @@ class NrRlcAmTxEntity : public RlcAmTxEntityBase
 
   private:
 
+    /**
+     * Declare a radio link failure towards RRC (TS 38.322 5.3.2): this entity's SDU
+     * has reached maxRtxThreshold retransmissions. BearerManagement tears down the
+     * bearer's MAC/RLC/PDCP state at a safe point; repeat calls are absorbed there,
+     * so this may be called from any path that hits the threshold.
+     */
+    void declareRadioLinkFailure();
+
     bool sendRetransmission(int pduSize);
     void reportBufferStatus();
     bool checkPolling();
