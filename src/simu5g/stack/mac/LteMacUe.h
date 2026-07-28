@@ -134,6 +134,11 @@ class LteMacUe : public LteMacBase
     /// the synchronous current process; the NR MAC picks the first available one.
     virtual UnitList reserveTxHarqUnits(LteHarqBufferTx *txBuf);
 
+    /// end-of-main-loop purge of corrupted PDUs from the RX H-ARQ buffers
+    /// (default: none; the D2D MAC purges its DL buffer only, so that mirror
+    /// buffers for D2D communication stay intact)
+    virtual void purgeRxHarqBuffers() {}
+
     // scheduling bookkeeping: true when no carrier produced a schedule.
     // Written by the UL scheduling loops of the NR and D2D main loops
     // (deliberately not initialized, matching the historical per-class copies).

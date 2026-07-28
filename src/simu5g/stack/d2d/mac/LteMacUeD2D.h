@@ -22,9 +22,9 @@ using namespace omnetpp;
 
 /**
  * D2D-capable LTE UE MAC: the D2dUeMacBase mixin layered over the core LTE UE
- * MAC. All the shared D2D logic lives in the mixin (see D2dUeMacBase.h); this
- * leaf keeps only the LTE-specific main loop (synchronous H-ARQ scan with the
- * D2D direction filter and the DL corrupted-PDU purge).
+ * MAC. All the shared D2D logic lives in the mixin (see D2dUeMacBase.h); the
+ * main loop is inherited from LteMacUe, with the D2D deltas flowing through
+ * the isBsrPending() (mixin) and purgeRxHarqBuffers() seams.
  */
 class LteMacUeD2D : public D2dUeMacBase<LteMacUe>
 {
@@ -34,10 +34,9 @@ class LteMacUeD2D : public D2dUeMacBase<LteMacUe>
     // unchanged
     static simsignal_t rcvdD2DModeSwitchNotificationSignal_;
 
-    /**
-     * Main loop
-     */
-    void handleSelfMessage() override;
+    /// purge corrupted PDUs of the DL buffer only, keeping the D2D mirror
+    /// buffers intact
+    void purgeRxHarqBuffers() override;
 
   public:
     LteMacUeD2D();
