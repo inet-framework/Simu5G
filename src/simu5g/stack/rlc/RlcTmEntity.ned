@@ -22,8 +22,6 @@ module RlcTmEntity
     parameters:
         @dynamic(true);
         @display("i=block/wheelbarrow");
-        string txEntityType = default("simu5g.stack.rlc.tm.TmTxEntity");
-        string rxEntityType = default("simu5g.stack.rlc.tm.TmRxEntity");
     gates:
         input upperIn;    // SDUs from PDCP
         output upperOut;  // reassembled SDUs to PDCP
@@ -31,10 +29,10 @@ module RlcTmEntity
         output lowerOut;  // PDUs and new-data notifications to RlcMux/MAC
         input macIn;      // MAC SDU requests via RlcMux
     submodules:
-        tx: <txEntityType> like IRlcTxEntity {
+        tx: <default("simu5g.stack.rlc.tm.TmTxEntity")> like IRlcTxEntity {
             @display("p=50,50");
         }
-        rx: <rxEntityType> like IRlcRxEntity {
+        rx: <default("simu5g.stack.rlc.tm.TmRxEntity")> like IRlcRxEntity {
             @display("p=150,50");
         }
     connections:

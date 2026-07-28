@@ -32,8 +32,6 @@ module RlcAmEntity
         @display("i=block/wheelbarrow");
         string macModule = default("^.mac");   // this bearer leg's MAC; set per leg by BearerManagement
         *.macModule = default(absPath(this.macModule));
-        string txEntityType = default("simu5g.stack.rlc.am.AmTxQueue");
-        string rxEntityType = default("simu5g.stack.rlc.am.AmRxQueue");
     gates:
         input upperIn;    // SDUs from PDCP
         output upperOut;  // reassembled SDUs to PDCP
@@ -41,10 +39,10 @@ module RlcAmEntity
         output lowerOut;  // PDUs and new-data notifications to RlcMux/MAC
         input macIn;      // MAC SDU requests via RlcMux
     submodules:
-        tx: <txEntityType> like IRlcAmTxEntity {
+        tx: <default("simu5g.stack.rlc.am.AmTxQueue")> like IRlcAmTxEntity {
             @display("p=50,50");
         }
-        rx: <rxEntityType> like IRlcAmRxEntity {
+        rx: <default("simu5g.stack.rlc.am.AmRxQueue")> like IRlcAmRxEntity {
             @display("p=150,50");
         }
     connections:
