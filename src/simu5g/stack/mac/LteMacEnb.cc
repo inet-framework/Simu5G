@@ -341,109 +341,98 @@ void LteMacEnb::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
             LteMacScheduleList::iterator it, ot;
             it = carrierScheduleList.begin();
 
-            Codeword cw = 0, otherCw = 0;
-            MacCid cid = MacCid();
-            MacNodeId nodeId = NODEID_NONE;
+            Codeword cw = it->first.second;
+            Codeword otherCw = MAX_CODEWORDS - cw;
+            MacCid cid = it->first.first;
+            LogicalCid lcid = cid.getLcid();
+            MacNodeId nodeId = cid.getNodeId();
+            unsigned int granted = it->second;
             unsigned int codewords = 0;
-            unsigned int granted = 0;
-            if (it != carrierScheduleList.end()) {
-                cw = it->first.second;
-                otherCw = MAX_CODEWORDS - cw;
 
-                cid = it->first.first;
-                nodeId = cid.getNodeId();
-
-                granted = it->second;
-
-                // Removing the visited element from scheduleList.
-                carrierScheduleList.erase(it);
-            }
-            else
-                throw cRuntimeError("LteMacEnb::sendGrants - schedule list is empty.");
+            // removing visited element from scheduleList.
+            carrierScheduleList.erase(it);
 
             if (granted > 0) {
-                // Increment the number of allocated Cw
+                // increment number of allocated Cw
                 ++codewords;
             }
             else {
-                // Active cw becomes the "other one"
+                // active cw becomes the "other one"
                 cw = otherCw;
             }
 
             std::pair<MacCid, Codeword> otherPair(MacCid(nodeId, LogicalCid(0)), otherCw);
 
             if ((ot = (carrierScheduleList.find(otherPair))) != (carrierScheduleList.end())) {
-                // Increment the number of allocated Cw
+                // increment number of allocated Cw
                 ++codewords;
 
-                // Removing the visited element from scheduleList.
+                // removing visited element from scheduleList.
                 carrierScheduleList.erase(ot);
             }
 
             if (granted == 0)
-                continue; // Avoiding transmission of 0 grant (0 grant should not be created)
+                continue; // avoiding transmission of 0 grant (0 grant should not be created)
 
             EV << NOW << " LteMacEnb::sendGrants Node[" << getMacNodeId() << "] - "
                << granted << " blocks to grant for user " << nodeId << " on "
                << codewords << " codewords. CW[" << cw << "\\" << otherCw << "] carrier[" << carrierFreq << "]" << endl;
 
-            // TODO: change to tag instead of chunk
-            // TODO: Grant is set as aperiodic by default
-            auto pkt = new Packet("LteGrant");
+            // get the direction of the grant, depending on which connection has been scheduled by the eNB
+            Direction dir = grantDirection(lcid);
 
+            // TODO Grant is set aperiodic as default
+            // TODO: change to tag instead of header
+            auto pkt = new Packet("LteGrant");
             auto grant = makeShared<LteSchedulingGrant>();
-            grant->setDirection(UL);
+            grant->setDirection(dir);
             grant->setCodewords(codewords);
 
-            // Set total granted blocks
+            // set total granted blocks
             grant->setTotalGrantedBlocks(granted);
+            grant->setChunkLength(grantChunkLength());
 
             pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
             pkt->addTagIfAbsent<UserControlInfo>()->setDestId(nodeId);
             pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(GRANTPKT);
             pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(carrierFreq);
 
-            // Get and set the user's UserTxParams
-            const UserTxParams& ui = getAmc()->computeTxParams(nodeId, UL, carrierFreq);
+            const UserTxParams& ui = getAmc()->computeTxParams(nodeId, dir, carrierFreq);
             UserTxParams *txPara = new UserTxParams(ui);
+            // FIXME: possible memory leak
             grant->setUserTxParams(txPara);
 
-            // Acquiring remote antennas set from user info
+            // acquiring remote antennas set from user info
             const std::set<Remote>& antennas = ui.readAntennaSet();
 
-            // Get bands for this carrier
+            // get bands for this carrier
             const unsigned int firstBand = cellInfo_->getCarrierStartingBand(carrierFreq);
             const unsigned int lastBand = cellInfo_->getCarrierLastBand(carrierFreq);
 
-            // HANDLE MULTICW
+            //  HANDLE MULTICW
             for ( ; cw < codewords; ++cw) {
                 unsigned int grantedBytes = 0;
 
                 for (Band b = firstBand; b <= lastBand; ++b) {
                     unsigned int bandAllocatedBlocks = 0;
-
                     for (const auto& antenna : antennas) {
                         bandAllocatedBlocks += enbSchedulerUl_->readPerUeAllocatedBlocks(nodeId, antenna, b);
                     }
-
-                    grantedBytes += amc_->computeBytesOnNRbs(nodeId, b, cw,
-                            bandAllocatedBlocks, UL, carrierFreq);
+                    grantedBytes += amc_->computeBytesOnNRbs(nodeId, b, cw, bandAllocatedBlocks, dir, carrierFreq);
                 }
 
                 grant->setGrantedCwBytes(cw, grantedBytes);
                 EV << NOW << " LteMacEnb::sendGrants - granting " << grantedBytes << " on cw " << cw << endl;
             }
-
             RbMap map;
 
             enbSchedulerUl_->readRbOccupation(nodeId, carrierFreq, map);
 
             grant->setGrantedBlocks(map);
-            pkt->insertAtFront(grant);
 
             /*
              * @author Alessandro Noferi
-             * Notify the pfm about the successful arrival of a TB from a UE.
+             * Notify the packet flow manager about the successful arrival of a TB from a UE.
              * From ETSI TS 138314 V16.0.0 (2020-07)
              *   tSched: the point in time when the UL MAC SDU i is scheduled as
              *   per the scheduling grant provided
@@ -453,7 +442,8 @@ void LteMacEnb::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
                 emit(grantSentSignal_, &grantInfo);
             }
 
-            // Send grant to PHY layer
+            // send grant to PHY layer
+            pkt->insertAtFront(grant);
             sendLowerPackets(pkt);
         }
     }
@@ -667,7 +657,7 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
     auto macPdu = pkt->removeAtFront<LteMacPdu>();
     auto userInfo = pkt->getTag<UserControlInfo>();
 
-    // Notify the pfm about the successful arrival of a TB from a UE.
+    // Notify the packet flow manager about the successful arrival of a TB from a UE.
     // From ETSI TS 138314 V16.0.0 (2020-07)
     if (hasListeners(ulMacPduArrivedSignal_)) {
         GrantSignalInfo ulInfo(userInfo->getSourceId(), userInfo->getGrantId());
@@ -677,8 +667,10 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
     while (macPdu->hasSdu()) {
         // Extract and send SDU
         LogicalCid lcid;
-        Packet *upPkt = macPdu->popSdu(lcid);
+        auto upPkt = macPdu->popSdu(lcid);
         take(upPkt);
+
+        EV << "LteMacEnb: pduUnmaker extracted SDU" << endl;
 
         MacNodeId senderId = userInfo->getSourceId();
         MacCid cid = MacCid(senderId, lcid);
@@ -697,16 +689,19 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
         ASSERT(connDescIn_.find(cid) != connDescIn_.end());
         *upPkt->addTag<FlowControlInfo>() = connDescIn_[cid].toFlowControlInfo();
 
-        EV << "LteMacBase: PDU Unmaker extracted SDU" << endl;
+        EV << "LteMacEnb: Lcid --->" << (int)lcid << " Cid: " << cid << endl;
+
         sendUpperPackets(upPkt);
     }
 
     while (macPdu->hasCe()) {
         // Extract CE
-        // TODO: see if BSR for CID or LCID
         MacBsr *bsr = check_and_cast<MacBsr *>(macPdu->popCe());
         auto lteInfo = pkt->getTag<UserControlInfo>();
-        MacCid cid = MacCid(lteInfo->getSourceId(), LogicalCid(0));
+        // BSR buffer key: the historical fork variants key by the packet LCID
+        // (see bsrCeCid()). bufferizeBsr() copies size and timestamp and never
+        // retains the CE, so it is deleted here on every path.
+        MacCid cid = bsrCeCid(lteInfo.get());
         bufferizeBsr(bsr, cid);
         delete bsr;
     }

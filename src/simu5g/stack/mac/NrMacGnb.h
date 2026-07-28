@@ -24,27 +24,18 @@ class NrMacGnb : public LteMacEnb
     NrMacGnb();
 
   protected:
-    /**
-     * macPduUnmake() extracts SDUs from a received MAC PDU and sends them to
-     * the upper layer; it also extracts BSR control elements into the BSR buffer.
-     *
-     * NOTE: this override preserves the pre-separation NR gNB behavior, which
-     * followed the LteMacEnbD2D fork rather than LteMacEnb (BSR keyed by the
-     * packet LCID instead of LogicalCid(0)). Defect logged; the LteMacEnb /
-     * LteMacEnbD2D fork is to be reconciled explicitly later.
-     */
-    void macPduUnmake(cPacket *pkt) override;
+    // The pre-separation NR gNB followed the historical LteMacEnbD2D "fork"
+    // of sendGrants()/macPduUnmake() rather than plain LteMacEnb. Those
+    // methods now live once in LteMacEnb; the fork's behavior is preserved
+    // through the three seams below (grant direction derived from the BSR
+    // LCID, 1-bit grant header, BSR buffer keyed by the packet LCID so UL and
+    // D2D BSRs from one UE stay separate).
 
-    /**
-     * Creates scheduling grants (one for each nodeId) according to the
-     * schedule list and sends them to the lower layer.
-     *
-     * NOTE: this override preserves the pre-separation NR gNB behavior, which
-     * followed the LteMacEnbD2D fork rather than LteMacEnb (grant chunk length
-     * set to b(1) instead of the 1-byte message default; grant direction from
-     * the BSR LCID). Defect logged; to be reconciled explicitly later.
-     */
-    void sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList) override;
+    Direction grantDirection(LogicalCid lcid) const override { return directionFromBsrLcid(lcid, UL); }
+
+    inet::b grantChunkLength() const override { return inet::b(1); }
+
+    MacCid bsrCeCid(const UserControlInfo *lteInfo) const override { return MacCid(lteInfo->getSourceId(), lteInfo->getPacketLcid()); }
 };
 
 } //namespace

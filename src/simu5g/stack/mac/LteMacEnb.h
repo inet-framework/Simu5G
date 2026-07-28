@@ -96,6 +96,25 @@ class LteMacEnb : public LteMacBase
      */
     virtual void sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList);
 
+    /// direction of the grant created by sendGrants() for a scheduled
+    /// connection (default: UL; the NR/D2D MACs derive it from the
+    /// connection's logical CID)
+    virtual Direction grantDirection(LogicalCid lcid) const { return UL; }
+
+    /// length of the grant header prepended to the grant packet
+    /// (default: the historical 1-byte length from the .msg file; the NR/D2D
+    /// MACs use 1 bit)
+    virtual inet::b grantChunkLength() const { return inet::B(1); }
+
+    /// BSR buffer key for a received BSR control element (default: the
+    /// historical direction-agnostic LogicalCid(0); the NR/D2D MACs key by
+    /// the packet LCID so UL and D2D BSRs from one UE stay separate).
+    /// For a non-D2D UE the packet LCID is always SHORT_BSR, so the two
+    /// variants differ only once D2D is in play; and because a MacCid can be
+    /// decomposed again, the LCID can be recovered from the key to tell a UL
+    /// connection from a D2D one.
+    virtual MacCid bsrCeCid(const UserControlInfo *lteInfo) const { return MacCid(lteInfo->getSourceId(), LogicalCid(0)); }
+
     /**
      * macPduMake() creates MAC PDUs (one for each CID)
      * by extracting SDUs from Real Mac Buffers according
