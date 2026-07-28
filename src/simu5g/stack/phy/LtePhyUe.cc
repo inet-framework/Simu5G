@@ -156,15 +156,15 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
     LteAirFrame *frame = static_cast<LteAirFrame *>(msg);
     UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
 
-    EV << "LtePhy: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
+    EV << "LtePhyUe: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
 
-    if (!binder_->nodeExists(lteInfo->getSourceId())) {
-        // source has left the simulation
+    MacNodeId sourceId = lteInfo->getSourceId();
+    if (!binder_->nodeExists(sourceId)) {
+        // The source has left the simulation
         delete msg;
         return;
     }
 
-    // check if the air frame was sent on a correct carrier frequency
     GHz carrierFreq = lteInfo->getCarrierFrequency();
     LteChannelModel *channelModel = getChannelModel(carrierFreq);
     if (channelModel == nullptr) {
@@ -174,11 +174,23 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
         return;
     }
 
-    //Update coordinates of this user
+    // Update coordinates of this user
     if (lteInfo->getFrameType() == BEACONPKT) {
         // Check if the message is on another carrier frequency
         if (carrierFreq != primaryChannelModel_->getCarrierFrequency()) {
-            EV << "Received beacon packet on a different carrier frequency than the primary cell. Delete it." << endl;
+            EV << "Received beacon packet on a different carrier frequency. Delete it." << endl;
+            delete lteInfo;
+            delete frame;
+            return;
+        }
+
+        // Check if the message is from a different cellular technology.
+        // Note: beacons are the only frames that carry a meaningful isNr flag (it is stamped
+        // solely in LtePhyEnb::createBeaconMessage()), and the only true channel broadcasts
+        // reaching both radios of a dual-PHY UE; non-beacon frames are technology-routed at
+        // the sender. Hence the filter is scoped to beacons.
+        if (lteInfo->isNr() != isNr_) {
+            EV << "Received beacon packet [from NR=" << lteInfo->isNr() << "] from a different radio technology [to NR=" << isNr_ << "]. Delete it." << endl;
             delete lteInfo;
             delete frame;
             return;
@@ -188,8 +200,8 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
         return;
     }
 
-    // Check if the frame is for us ( MacNodeId matches )
-    if (lteInfo->getDestId() != nodeId_) {
+    // Check if the frame is for us ( MacNodeId matches or - if this is a multicast communication - enrolled in multicast group)
+    if (lteInfo->getDestId() != nodeId_ && !(binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId()))) {
         EV << "ERROR: Frame is not for us. Delete it." << endl;
         EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
         EV << "Frame MacNodeId: " << lteInfo->getDestId() << endl;
@@ -200,37 +212,61 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
     }
 
     /*
-     * This could happen if the ue associates with a new master while the old one
-     * already scheduled a packet for him: the packet is in the air while the ue changes master.
-     * Event timing:      TTI x: packet scheduled and sent for UE (tx time = 1ms)
-     *                     TTI x+0.1: ue changes master
-     *                     TTI x+1: packet from old master arrives at ue
+     * This could happen if the UE associates with a new master while a packet from the
+     * old master is in-flight: the packet is in the air
+     * while the UE changes master.
+     * Event timing:      TTI x: packet scheduled and sent for the UE (tx time = 1ms)
+     *                     TTI x+0.1: UE changes master
+     *                     TTI x+1: packet from the old master arrives at the UE
      */
-    if (lteInfo->getSourceId() != servingNodeId_) {
-        EV << "WARNING: frame from an old master during handover: deleted " << endl;
+    if (isStaleFrame(lteInfo)) {
+        EV << "WARNING: Frame from an old master during handover: deleted " << endl;
         EV << "Source MacNodeId: " << lteInfo->getSourceId() << endl;
         EV << "Master MacNodeId: " << servingNodeId_ << endl;
+        delete lteInfo;
         delete frame;
         return;
     }
 
-    // send H-ARQ feedback up
-    if (lteInfo->getFrameType() == HARQPKT || lteInfo->getFrameType() == GRANTPKT || lteInfo->getFrameType() == RACPKT) {
+    // D2D-aware subclasses rewrite the multicast destination here
+    frameAccepted(lteInfo);
+
+    // Send H-ARQ feedback and other control messages up
+    if (isControlFrameType((LtePhyFrameType)lteInfo->getFrameType())) {
         handleControlMsg(frame, lteInfo);
         return;
     }
+
+    // This is a DATA packet
+
+    if (servingNodeId_ == NODEID_NONE) {
+        // UE is not (anymore) associated with any eNB/gNB and all harqBuffers are already deleted.
+        // Handing this data packet to the MAC layer will lead to null pointers.
+        // (Matters for D2D/D2D_MULTI DATA in-flight during the mid-handover detachment window.)
+        EV << "LtePhyUe: UE " << nodeId_ << " received data packet while not associated with any base station. Drop it." << endl;
+        delete lteInfo;
+        delete frame;
+        return;
+    }
+
+    // D2D-aware subclasses store multicast frames for end-of-TTI decoding (capture effect)
+    if (interceptIncomingFrame(frame, lteInfo))
+        return;
+
     if ((lteInfo->getUserTxParams()) != nullptr) {
         int cw = lteInfo->getCw();
         if (lteInfo->getUserTxParams()->readCqiVector().size() == 1)
             cw = 0;
         double cqi = lteInfo->getUserTxParams()->readCqiVector()[cw];
-        emit(averageCqiDlSignal_, cqi);
-        recordCqi(cqi, DL);
+        if (lteInfo->getDirection() == DL) {
+            emit(averageCqiDlSignal_, cqi);
+            recordCqi(cqi, DL);
+        }
     }
-    // apply decider to received packet (DAS removed - single antenna only)
+
     bool result = channelModel->isReceptionSuccessful(frame, lteInfo);
 
-    // update statistics
+    // Update statistics
     if (result)
         numAirFrameReceived_++;
     else
@@ -241,16 +277,16 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
 
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
 
-    // here frame has to be destroyed since it is no longer useful
+    // Here frame has to be destroyed since it is no more useful
     delete frame;
 
-    // attach the decider result to the packet as control info
+    // Attach the decider result to the packet as control info
     *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
     delete lteInfo;
 
     pkt->addTagIfAbsent<PhyReceptionInd>()->setDeciderResult(result);
 
-    // send decapsulated message along with result control info to upperGateOut_
+    // Send decapsulated message along with result control info to upperGateOut_
     send(pkt, upperGateOut_);
 
     if (getEnvir()->isGUI())
@@ -318,7 +354,7 @@ void LtePhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVecto
     auto fbPkt = makeShared<LteFeedbackPkt>();
     //Set the feedback
     fbPkt->setLteFeedbackDoubleVectorDl(fbDl);
-    fbPkt->setLteFeedbackDoubleVectorDl(fbUl);
+    fbPkt->setLteFeedbackDoubleVectorUl(fbUl);
     fbPkt->setSourceNodeId(nodeId_);
 
     auto pkt = new Packet("feedback_pkt");
@@ -335,6 +371,7 @@ void LtePhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVecto
     uinfo->setDirection(UL);
     simtime_t signalLength = TTI;
     uinfo->setTxPower(txPower_);
+    stampExtraTxControlInfo(uinfo);
     // initialize frame fields
 
     frame->setSchedulingPriority(airFramePriority_);

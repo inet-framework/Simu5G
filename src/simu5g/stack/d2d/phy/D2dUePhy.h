@@ -58,8 +58,49 @@ class D2dUePhy : public Base
     cMessage *d2dDecodingTimer_ = nullptr;
 
     void initialize(int stage) override;
-    void handleAirFrame(cMessage *msg) override;
     void handleSelfMessage(cMessage *msg) override;
+
+    // ---- incoming-frame seams (replace the historical handleAirFrame copy) ----
+
+    /// D2D/D2D_MULTI frames legitimately arrive from peers, not the serving cell
+    bool isStaleFrame(const UserControlInfo *lteInfo) override
+    {
+        return lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI
+               && lteInfo->getSourceId() != this->servingNodeId_;
+    }
+
+    /// HACK: if this is a multicast connection, change the destId of the
+    /// airframe so that upper layers can handle it
+    void frameAccepted(UserControlInfo *lteInfo) override
+    {
+        if (this->binder_->isInMulticastGroup(this->nodeId_, lteInfo->getPacketMulticastGroupId()))
+            lteInfo->setDestId(this->nodeId_);
+    }
+
+    /// D2D mode-switch notifications are control frames too
+    bool isControlFrameType(LtePhyFrameType type) override
+    {
+        return type == D2DMODESWITCHPKT || Base::isControlFrameType(type);
+    }
+
+    /// D2D-multicast capture effect: store the frame and decode it at the end of the TTI
+    bool interceptIncomingFrame(LteAirFrame *frame, UserControlInfo *lteInfo) override
+    {
+        if (!(d2dHelper_.getMulticastEnableCaptureEffect() && this->binder_->isInMulticastGroup(this->nodeId_, lteInfo->getPacketMulticastGroupId())))
+            return false;
+
+        // If not already started, auto-send a message to signal the presence of data to be decoded
+        if (d2dDecodingTimer_ == nullptr) {
+            d2dDecodingTimer_ = new cMessage("d2dDecodingTimer");
+            d2dDecodingTimer_->setSchedulingPriority(10);          // last thing to be performed in this TTI
+            this->scheduleAt(NOW, d2dDecodingTimer_);
+        }
+
+        // Store frame, together with related control info
+        frame->setControlInfo(lteInfo);
+        d2dHelper_.storeAirFrame(frame);            // implements the capture effect
+        return true;
+    }
 
     // ---- outgoing-frame seams (replace the historical handleUpperMessage copy) ----
 
@@ -108,8 +149,6 @@ class D2dUePhy : public Base
     void sendMulticast(LteAirFrame *frame);
 
   public:
-    void sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req) override;
-
     double getTxPwr(Direction dir = UNKNOWN_DIRECTION) override
     {
         if (dir == D2D)
@@ -142,165 +181,6 @@ void D2dUePhy<Base>::handleSelfMessage(cMessage *msg)
     }
     else
         Base::handleSelfMessage(msg);
-}
-
-// TODO: ***reorganize*** method
-template<class Base>
-void D2dUePhy<Base>::handleAirFrame(cMessage *msg)
-{
-    LteAirFrame *frame = static_cast<LteAirFrame *>(msg);
-    UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
-
-    EV << "D2dUePhy: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
-
-    MacNodeId sourceId = lteInfo->getSourceId();
-    if (!this->binder_->nodeExists(sourceId)) {
-        EV << "Source has left the simulation." << endl;
-        delete msg;
-        return;
-    }
-
-    GHz carrierFreq = lteInfo->getCarrierFrequency();
-    LteChannelModel *channelModel = this->getChannelModel(carrierFreq);
-    if (channelModel == nullptr) {
-        EV << "Received packet on carrier frequency not supported by this node. Delete it." << endl;
-        delete lteInfo;
-        delete frame;
-        return;
-    }
-
-    // Update coordinates of this user.
-    if (lteInfo->getFrameType() == BEACONPKT) {
-        // Check if the message is on another carrier frequency
-        if (carrierFreq != this->primaryChannelModel_->getCarrierFrequency()) {
-            EV << "Received beacon packet on a different carrier frequency. Delete it." << endl;
-            delete lteInfo;
-            delete frame;
-            return;
-        }
-
-        // Check if the message is from a different cellular technology.
-        // Note: beacons are the only frames that carry a meaningful isNr flag (it is stamped
-        // solely in LtePhyEnb::createBeaconMessage()), and the only true channel broadcasts
-        // reaching both radios of a dual-PHY UE; non-beacon frames are technology-routed at
-        // the sender.
-        if (lteInfo->isNr() != this->isNr_) {
-            EV << "Received beacon packet [from NR=" << lteInfo->isNr() << "] from a different radio technology [to NR=" << this->isNr_ << "]. Delete it." << endl;
-            delete lteInfo;
-            delete frame;
-            return;
-        }
-
-        this->handoverController_->beaconReceived(frame, lteInfo);
-        return;
-    }
-
-    // Check if the frame is for us (MacNodeId matches or - if this is a multicast communication - enrolled in multicast group).
-    if (lteInfo->getDestId() != this->nodeId_ && !(this->binder_->isInMulticastGroup(this->nodeId_, lteInfo->getPacketMulticastGroupId()))) {
-        EV << "ERROR: Frame is not for us. Delete it." << endl;
-        EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
-        EV << "Frame MacNodeId: " << lteInfo->getDestId() << endl;
-        EV << "Local MacNodeId: " << this->nodeId_ << endl;
-        delete lteInfo;
-        delete frame;
-        return;
-    }
-
-    /*
-     * This could happen if the ue associates with a new master while a packet from the
-     * old master is in-flight: the packet is in the air
-     * while the ue changes master.
-     * Event timing:      TTI x: packet scheduled and sent by the UE (tx time = 1ms)
-     *                     TTI x+0.1: ue changes master
-     *                     TTI x+1: packet from UE arrives at the old master
-     */
-    if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI && lteInfo->getSourceId() != this->servingNodeId_) {
-        EV << "WARNING: frame from a UE that is leaving this cell (handover): deleted " << endl;
-        EV << "Source MacNodeId: " << lteInfo->getSourceId() << endl;
-        EV << "UE MacNodeId: " << this->nodeId_ << endl;
-        delete lteInfo;
-        delete frame;
-        return;
-    }
-
-    if (this->binder_->isInMulticastGroup(this->nodeId_, lteInfo->getPacketMulticastGroupId())) {
-        // HACK: if this is a multicast connection, change the destId of the airframe so that upper layers can handle it.
-        lteInfo->setDestId(this->nodeId_);
-    }
-
-    // Send H-ARQ feedback and other control messages up.
-    if (lteInfo->getFrameType() == HARQPKT || lteInfo->getFrameType() == GRANTPKT || lteInfo->getFrameType() == RACPKT || lteInfo->getFrameType() == D2DMODESWITCHPKT) {
-        EV << "Received control message (H-ARQ feedback / GRANT / RAC / D2D mode switch)." << endl;
-        this->handleControlMsg(frame, lteInfo);
-        return;
-    }
-
-    // This is a DATA packet.
-
-    if (this->servingNodeId_ == NODEID_NONE) {
-        // UE is not (anymore) associated with any eNB/gNB and all harqBuffers are already deleted.
-        // Handing this data packet to the MAC layer will lead to null pointers.
-        EV << "D2dUePhy: UE " << this->nodeId_ << " received data packet while not associated with any base station. (masterId " << this->servingNodeId_ << "). Drop it." << endl;
-        delete lteInfo;
-        delete frame;
-        return;
-    }
-
-    // If the packet is a D2D multicast one, store it and decode it at the end of the TTI.
-    if (d2dHelper_.getMulticastEnableCaptureEffect() && this->binder_->isInMulticastGroup(this->nodeId_, lteInfo->getPacketMulticastGroupId())) {
-        // If not already started, auto-send a message to signal the presence of data to be decoded.
-        if (d2dDecodingTimer_ == nullptr) {
-            d2dDecodingTimer_ = new cMessage("d2dDecodingTimer");
-            d2dDecodingTimer_->setSchedulingPriority(10);          // Last thing to be performed in this TTI.
-            this->scheduleAt(NOW, d2dDecodingTimer_);
-        }
-
-        // Store frame, together with related control info.
-        frame->setControlInfo(lteInfo);
-        d2dHelper_.storeAirFrame(frame);            // Implements the capture effect.
-
-        return;                          // Exit the function, decoding will be done later.
-    }
-
-    if ((lteInfo->getUserTxParams()) != nullptr) {
-        int cw = lteInfo->getCw();
-        if (lteInfo->getUserTxParams()->readCqiVector().size() == 1)
-            cw = 0;
-        double cqi = lteInfo->getUserTxParams()->readCqiVector()[cw];
-        if (lteInfo->getDirection() == DL) {
-            this->emit(this->averageCqiDlSignal_, cqi);
-            this->recordCqi(cqi, DL);
-        }
-    }
-
-    // Apply decider to received packet.
-    bool result = channelModel->isReceptionSuccessful(frame, lteInfo);
-
-    // Update statistics.
-    if (result)
-        this->numAirFrameReceived_++;
-    else
-        this->numAirFrameNotReceived_++;
-
-    EV << "Handled LteAirframe with ID " << frame->getId() << " with result "
-       << (result ? "RECEIVED" : "NOT RECEIVED") << endl;
-
-    auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
-
-    // Here frame has to be destroyed since it is no more useful.
-    delete frame;
-
-    // Attach the decider result to the packet as control info.
-    *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
-    delete lteInfo;
-
-    pkt->addTagIfAbsent<PhyReceptionInd>()->setDeciderResult(result);
-
-    // Send decapsulated message along with result control info to upperGateOut_.
-    this->send(pkt, this->upperGateOut_);
-
-    if (getEnvir()->isGUI())
-        this->updateDisplayString();
 }
 
 template<class Base>
@@ -354,60 +234,6 @@ void D2dUePhy<Base>::sendMulticast(LteAirFrame *frame)
 
     // delete the original frame
     delete frame;
-}
-
-template<class Base>
-void D2dUePhy<Base>::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req)
-{
-    Enter_Method("SendFeedback");
-    EV << "D2dUePhy: feedback from Feedback Generator" << endl;
-
-    // Create a feedback packet
-    auto fbPkt = inet::makeShared<LteFeedbackPkt>();
-    // Set the feedback
-    fbPkt->setLteFeedbackDoubleVectorDl(fbDl);
-    fbPkt->setLteFeedbackDoubleVectorUl(fbUl);
-    fbPkt->setSourceNodeId(this->nodeId_);
-
-    auto pkt = new inet::Packet("feedback_pkt");
-    pkt->insertAtFront(fbPkt);
-
-    UserControlInfo *uinfo = new UserControlInfo();
-    uinfo->setSourceId(this->nodeId_);
-    uinfo->setDestId(this->servingNodeId_);
-    uinfo->setFrameType(FEEDBACKPKT);
-    // Create LteAirFrame and encapsulate a feedback packet
-    LteAirFrame *frame = new LteAirFrame("feedback_pkt");
-    frame->encapsulate(check_and_cast<cPacket *>(pkt));
-    uinfo->setFeedbackReq(req);
-    uinfo->setDirection(UL);
-    simtime_t signalLength = TTI;
-    uinfo->setTxPower(this->txPower_);
-    uinfo->setD2dTxPower(d2dHelper_.getD2dTxPower());
-    // Initialize frame fields
-
-    frame->setSchedulingPriority(this->airFramePriority_);
-    frame->setDuration(signalLength);
-
-    uinfo->setCoord(this->getRadioPosition());
-
-    this->lastFeedback_ = NOW;
-
-    // Send one feedback packet for each carrier
-    for (auto& cm : this->channelModel_) {
-        GHz carrierFrequency = cm.first;
-        LteAirFrame *carrierFrame = frame->dup();
-        UserControlInfo *carrierInfo = uinfo->dup();
-        carrierInfo->setCarrierFrequency(carrierFrequency);
-        carrierFrame->setControlInfo(carrierInfo);
-
-        EV << "D2dUePhy: " << nodeTypeToA(this->nodeType_) << " with id "
-           << this->nodeId_ << " sending feedback to the air channel for carrier " << carrierFrequency << endl;
-        this->sendUnicast(carrierFrame);
-    }
-
-    delete frame;
-    delete uinfo;
 }
 
 } //namespace

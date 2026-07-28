@@ -50,6 +50,19 @@ class LtePhyUe : public LtePhyBase
     void initialize(int stage) override;
     void handleSelfMessage(cMessage *msg) override;
     void handleAirFrame(cMessage *msg) override;
+
+    /// stale-source test on the receive path
+    /// (default: any frame not sent by the serving cell)
+    virtual bool isStaleFrame(const UserControlInfo *lteInfo) { return lteInfo->getSourceId() != servingNodeId_; }
+
+    /// called once an incoming frame has passed the acceptance checks (default: nothing)
+    virtual void frameAccepted(UserControlInfo *lteInfo) {}
+
+    /// frame types handed to handleControlMsg() on the receive path
+    virtual bool isControlFrameType(LtePhyFrameType type) { return type == HARQPKT || type == GRANTPKT || type == RACPKT; }
+
+    /// gives subclasses a chance to consume an incoming data frame before decoding (default: no)
+    virtual bool interceptIncomingFrame(LteAirFrame *frame, UserControlInfo *lteInfo) { return false; }
     void finish() override;
     void finish(cComponent *component, simsignal_t signalID) override { cIListener::finish(component, signalID); }
 

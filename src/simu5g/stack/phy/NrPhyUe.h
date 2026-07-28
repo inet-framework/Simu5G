@@ -19,10 +19,14 @@
 
 namespace simu5g {
 
+/**
+ * NR UE PHY. Behaviorally identical to LtePhyUe (the receive path was unified
+ * into the base); the class is kept as the NR-leg discriminator -- the
+ * dynamic_cast<NrPhyUe *> in HandoverController tells the two PHY legs of a
+ * dual-stack UE apart.
+ */
 class NrPhyUe : public LtePhyUe
 {
-  protected:
-    void handleAirFrame(cMessage *msg) override;
 };
 
 } //namespace
