@@ -84,9 +84,12 @@ void RlcUmTxEntityBase::handleSdu(inet::Packet *pkt)
     if (interceptSdu(pkt))
         return;
 
-    bool stored = storeSdu(pkt);
+    bufferSduAndNotifyMac(pkt);
+}
 
-    if (stored) {
+void RlcUmTxEntityBase::bufferSduAndNotifyMac(inet::Packet *pkt)
+{
+    if (storeSdu(pkt)) {
         // Notify the MAC that the queue has new data. The dup carries the full SDU
         // length, so the MAC tracks remaining bytes itself across grant requests.
         auto pktDup = pkt->dup();
@@ -96,7 +99,7 @@ void RlcUmTxEntityBase::handleSdu(inet::Packet *pkt)
         // per grant (NR keeps one SDU/segment per PDU, no RLC concatenation).
         pktDup->getTagForUpdate<FlowControlInfo>()->setSoFraming(usesSoFraming());
         pktDup->getTagForUpdate<FlowControlInfo>()->setRlcSnFieldLength(snFieldLength());
-        EV << "RlcUmTxEntity::handleSdu - Sending new data indication to MAC\n";
+        EV << "RlcUmTxEntity::bufferSduAndNotifyMac - Sending new data indication to MAC\n";
         send(pktDup, "out");
     }
     else {

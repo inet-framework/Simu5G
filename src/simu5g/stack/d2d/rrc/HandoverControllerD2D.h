@@ -28,6 +28,13 @@ class HandoverControllerD2D : public HandoverController
 {
   protected:
     /// Switch active D2D flows back to Infrastructure mode before the handover.
+    /// consumes the post-handover D2D mode re-selection trigger this
+    /// controller schedules; everything else goes to the base dispatcher
+    void handleMessage(cMessage *msg) override;
+
+    /// common D2D mode-switch request towards a cell's mode-selection module
+    void requestModeSwitchAtServingCell(MacNodeId enbId, bool handoverCompleted);
+
     void onHandoverStarting() override;
     /// Detach/attach the D2D AMC direction on the old/new cell, and schedule the
     /// post-handover D2D mode re-selection.

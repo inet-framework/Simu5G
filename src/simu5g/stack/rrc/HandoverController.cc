@@ -140,10 +140,6 @@ void HandoverController::handleMessage(cMessage *msg)
         delete msg;
         handoverTrigger_ = nullptr;
     }
-    else if (msg->isName("doModeSwitchAtHandover")) {
-        onHandoverCompleted();
-        delete msg;
-    }
     else
         throw cRuntimeError("HandoverController::handleMessage: unknown self-message '%s'", msg->getName());
 }

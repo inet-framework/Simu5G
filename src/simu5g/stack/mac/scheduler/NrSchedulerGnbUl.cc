@@ -54,7 +54,13 @@ bool NrSchedulerGnbUl::rtxschedule(GHz carrierFrequency, BandLimitVector *bandLi
         // retrieving reference to HARQ entities
         HarqRxBuffers *harqQueues = mac_->getHarqRxBuffers(carrierFrequency);
         if (harqQueues != nullptr) {
-            for (auto [nodeId, currHarq] : *harqQueues) {
+            // NOTE: iterator-based loop -- the stale-UE branch erases from the
+            // very map being iterated (erasing through a range-for copy of the
+            // element is iterator-invalidation UB)
+            for (auto it = harqQueues->begin(); it != harqQueues->end(); ) {
+                MacNodeId nodeId = it->first;
+                LteHarqBufferRx *currHarq = it->second;
+                ++it;
                 if (nodeId == NODEID_NONE || !binder_->nodeExists(nodeId)) {
                     // UE has left the simulation - erase queue and continue
                     harqRxBuffers_->at(carrierFrequency).erase(nodeId);

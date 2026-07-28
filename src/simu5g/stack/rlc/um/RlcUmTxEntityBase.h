@@ -110,6 +110,13 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
     virtual void handleSdu(inet::Packet *pkt);
 
     /**
+     * Buffer an SDU into the TX buffer and send the new-data indication to the
+     * MAC, dropping the SDU on overflow. Shared by handleSdu() and by the D2D
+     * profile when it drains its holding queue.
+     */
+    void bufferSduAndNotifyMac(inet::Packet *pkt);
+
+    /**
      * handleMacSduRequest() handles a MAC SDU request packet: extracts the
      * requested size and calls rlcPduMake().
      */

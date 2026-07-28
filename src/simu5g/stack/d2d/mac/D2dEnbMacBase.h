@@ -128,16 +128,10 @@ template<class Base>
 void D2dEnbMacBase<Base>::initialize(int stage)
 {
     Base::initialize(stage);
-    if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT) {
-        bool usePreconfiguredTxParams = this->par("usePreconfiguredTxParams");
-        Cqi d2dCqi = this->par("d2dCqi");
-        if (usePreconfiguredTxParams)
-            check_and_cast<AmcPilotD2D *>(this->amc_->getPilot())->setPreconfiguredTxParams(d2dCqi);
-
-        d2dEnbHelper_.setMsHarqInterrupt(this->par("msHarqInterrupt").boolValue());
-        d2dEnbHelper_.setMsClearRlcBuffer(this->par("msClearRlcBuffer").boolValue());
-    }
-    else if (stage == inet::INITSTAGE_LAST) { // be sure that all UEs have been initialized
+    // (the AMC pilot/mode-switch parameter setup historically also ran at
+    // INITSTAGE_PHYSICAL_ENVIRONMENT -- an identical, idempotent copy of the
+    // INITSTAGE_SIMU5G_AMC_SETUP block below; the early copy is gone)
+    if (stage == inet::INITSTAGE_LAST) { // be sure that all UEs have been initialized
         d2dEnbHelper_.setReuseD2D(this->par("reuseD2D"));
         d2dEnbHelper_.setReuseD2DMulti(this->par("reuseD2DMulti"));
 

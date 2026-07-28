@@ -27,6 +27,30 @@ using namespace omnetpp;
 
 Define_Module(HandoverControllerD2D);
 
+void HandoverControllerD2D::handleMessage(cMessage *msg)
+{
+    // the post-handover D2D mode re-selection trigger is scheduled (and thus
+    // consumed) only by this D2D controller
+    if (msg->isSelfMessage() && msg->isName("doModeSwitchAtHandover")) {
+        onHandoverCompleted();
+        delete msg;
+        return;
+    }
+    HandoverController::handleMessage(msg);
+}
+
+void HandoverControllerD2D::requestModeSwitchAtServingCell(MacNodeId enbId, bool handoverCompleted)
+{
+    // ask the cell's mode-selection module to switch the D2D connections of this
+    // UE; the eNB may not be D2D-capable, in which case there is nothing to do
+    cModule *rrc = binder_->getRrcByNodeId(enbId);
+    D2dModeSelectionBase *d2dModeSelection = dynamic_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
+    if (d2dModeSelection != nullptr)
+        d2dModeSelection->doModeSwitchAtHandover(nodeId_, handoverCompleted);
+    else
+        EV_WARN << "HandoverControllerD2D: eNB " << enbId << " is not D2D-capable - no D2D mode switch" << endl;
+}
+
 void HandoverControllerD2D::onHandoverStarting()
 {
     // D2D-specific: Perform D2D mode switch before handover (both LTE and NR D2D variants)
@@ -35,13 +59,8 @@ void HandoverControllerD2D::onHandoverStarting()
             // Stop active D2D flows (go back to Infrastructure mode)
             // Currently, DM is possible only for UEs served by the same cell
 
-            // Trigger D2D mode switch (the serving eNB may not be D2D-capable, in which case there is nothing to do)
-            cModule *rrc = binder_->getRrcByNodeId(servingNodeId_);
-            D2dModeSelectionBase *d2dModeSelection = dynamic_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
-            if (d2dModeSelection != nullptr)
-                d2dModeSelection->doModeSwitchAtHandover(nodeId_, false);
-            else
-                EV_WARN << "HandoverControllerD2D: serving eNB " << servingNodeId_ << " is not D2D-capable - no D2D mode switch before handover" << endl;
+            // Trigger D2D mode switch
+            requestModeSwitchAtServingCell(servingNodeId_, false);
         }
     }
 }
@@ -86,14 +105,8 @@ void HandoverControllerD2D::onHandoverExecuting()
 void HandoverControllerD2D::onHandoverCompleted()
 {
     // Handover completed: ask the new serving cell's mode selection module whether
-    // D2D connections of this UE can switch (back) to Direct Mode. The serving eNB may
-    // not be D2D-capable (no d2dModeSelection submodule), in which case there is nothing to do.
-    cModule *rrc = binder_->getRrcByNodeId(servingNodeId_);
-    D2dModeSelectionBase *d2dModeSelection = dynamic_cast<D2dModeSelectionBase *>(rrc->getSubmodule("d2dModeSelection"));
-    if (d2dModeSelection != nullptr)
-        d2dModeSelection->doModeSwitchAtHandover(nodeId_, true);
-    else
-        EV_WARN << "HandoverControllerD2D: serving eNB " << servingNodeId_ << " is not D2D-capable - no D2D mode switch at handover completion" << endl;
+    // D2D connections of this UE can switch (back) to Direct Mode.
+    requestModeSwitchAtServingCell(servingNodeId_, true);
 }
 
 } //namespace

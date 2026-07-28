@@ -130,15 +130,8 @@ class RlcUmTxEntityD2D : public Base, public ID2dRlcUmTxEntity
             auto pktRlc = check_and_cast<inet::Packet *>(sduHoldingQueue_.front());
             sduHoldingQueue_.pop();
 
-            if (this->storeSdu(pktRlc)) {
-                auto pktRlcdup = pktRlc->dup();
-                pktRlcdup->addTag<LteRlcNewDataTag>();
-                this->send(pktRlcdup, "out");
-            }
-            else {
-                EV << "RlcUmTxEntityD2D::resumeDownstreamInPackets - cannot buffer SDU (queue is full), dropping" << endl;
-                this->dropBufferOverflow(pktRlc);
-            }
+            // store the SDU in the TX buffer and notify the MAC (drop on overflow)
+            this->bufferSduAndNotifyMac(pktRlc);
         }
     }
 
