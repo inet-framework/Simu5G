@@ -17,9 +17,7 @@
 #include <string>
 
 #include <inet/common/packet/Packet.h>
-#include <inet/common/ModuleRefByPar.h>
 
-#include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/rlc/am/RlcAmRxEntityBase.h"
 #include "simu5g/stack/rlc/am/RlcSduSlidingWindowReceptionBuffer.h"
 
@@ -49,15 +47,10 @@ class NrRlcAmRxEntity : public RlcAmRxEntityBase
     unsigned int amWindowSize_ = 0;
     bool statusReportPending_ = false;
 
-    // The per-user RLC statistics (delay, throughput, packet loss) are recorded on the
-    // RlcMux of the UE the flow belongs to, and the cell-level ones on that of the
-    // serving node, rather than on this entity, so that they aggregate over the node's
-    // bearers; the Binder resolves those modules.
-    inet::ModuleRefByPar<Binder> binder_;
     unsigned int totalPduRcvdBytes_ = 0;
 
-    // Emit the per-user delay and throughput statistics for a received PDU or a
-    // delivered SDU, on the UE's RlcMux.
+    // Emit this bearer's delay, throughput and packet-loss statistics for a received
+    // PDU or a delivered SDU.
     void emitRxStatistics(bool perPdu, double throughput, simtime_t delay);
 
   public:

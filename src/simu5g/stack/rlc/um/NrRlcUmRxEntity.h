@@ -16,9 +16,6 @@
 #include <set>
 #include <deque>
 
-#include <inet/common/ModuleRefByPar.h>
-
-#include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/rlc/um/RlcUmRxEntityBase.h"
 #include "simu5g/stack/rlc/um/NrRlcUmDataPdu.h"
 #include "simu5g/stack/rlc/um/RlcUmReceptionBuffer.h"
@@ -52,18 +49,11 @@ class NrRlcUmRxEntity : public RlcUmRxEntityBase
     std::set<unsigned int> recentCompleteSduSet_;
     std::deque<std::pair<simtime_t, unsigned int>> recentCompleteSduQueue_;
 
-    // The per-user RLC statistics (delay, throughput) are recorded on the RlcMux of
-    // the UE the flow belongs to, not on this entity, so that they aggregate over the
-    // UE's bearers; the Binder resolves that module.
-    inet::ModuleRefByPar<Binder> binder_;
     unsigned int totalPduRcvdBytes_ = 0;
 
-    // The RlcMux of the UE this flow belongs to, or nullptr if it cannot be resolved.
-    cModule *getUeRlcMux() const;
-
-    // Emit the per-user delay and throughput statistics for a received PDU or a
-    // delivered SDU, on the UE's RlcMux, in the D2D or the infrastructure variant.
-    void emitRxStatistics(bool perPdu, double throughput, simtime_t delay) const;
+    // Emit this bearer's delay and throughput statistics for a received PDU or a
+    // delivered SDU, in the D2D or the infrastructure variant.
+    void emitRxStatistics(bool perPdu, double throughput, simtime_t delay);
 
   public:
     ~NrRlcUmRxEntity() override;

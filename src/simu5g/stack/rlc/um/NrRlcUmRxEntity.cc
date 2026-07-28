@@ -50,32 +50,18 @@ void NrRlcUmRxEntity::initMode(LteMacBase *mac)
     t_Reassembly = par("t_Reassembly");
     // The mux feeding our "in" gate (for UL burst-throughput reporting).
     rlcMux_ = getModuleFromPar<RlcMux>(par("rlcMuxModule"), this);
-    binder_.reference(this, "binderModule", true);
 }
 
-cModule *NrRlcUmRxEntity::getUeRlcMux() const
+void NrRlcUmRxEntity::emitRxStatistics(bool perPdu, double throughput, simtime_t delay)
 {
-    // On the downlink (and for D2D) this entity sits at the UE, so the flow's UE is the
-    // owner; on the uplink it sits at the eNB/gNB, and the UE is the sender.
-    Direction dir = static_cast<Direction>(flowControlInfo_->getDirection());
-    MacNodeId ueId = (dir == UL) ? flowControlInfo_->getSourceId() : ownerNodeId_;
-    return binder_->getRlcByNodeId(ueId);
-}
-
-void NrRlcUmRxEntity::emitRxStatistics(bool perPdu, double throughput, simtime_t delay) const
-{
-    cModule *ue = getUeRlcMux();
-    if (ue == nullptr)
-        return;
-
     Direction dir = static_cast<Direction>(flowControlInfo_->getDirection());
     if (dir == D2D || dir == D2D_MULTI) {
-        ue->emit(perPdu ? rlcPduThroughputD2DSignal_ : rlcThroughputD2DSignal_, throughput);
-        ue->emit(perPdu ? rlcPduDelayD2DSignal_ : rlcDelayD2DSignal_, delay.dbl());
+        emit(perPdu ? rlcPduThroughputD2DSignal_ : rlcThroughputD2DSignal_, throughput);
+        emit(perPdu ? rlcPduDelayD2DSignal_ : rlcDelayD2DSignal_, delay.dbl());
     }
     else {
-        ue->emit(perPdu ? rlcPduThroughputSignal_[dir] : rlcThroughputSignal_[dir], throughput);
-        ue->emit(perPdu ? rlcPduDelaySignal_[dir] : rlcDelaySignal_[dir], delay.dbl());
+        emit(perPdu ? rlcPduThroughputSignal_[dir] : rlcThroughputSignal_[dir], throughput);
+        emit(perPdu ? rlcPduDelaySignal_[dir] : rlcDelaySignal_[dir], delay.dbl());
     }
 }
 

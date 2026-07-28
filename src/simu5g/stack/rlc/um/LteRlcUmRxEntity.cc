@@ -186,25 +186,16 @@ void LteRlcUmRxEntity::enque(cPacket *pktAux)
     received_.at(index) = true;
 
     // emit statistics
-    MacNodeId ueId;
-    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)                                                                                                                    // This module is at a UE
-        ueId = ownerNodeId_;
-    else           // UL. This module is at the eNB: get the node id of the sender
-        ueId = lteInfo->getSourceId();
-
     double tputSample = (double)totalPduRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
 
     // emit statistics
-    cModule *ue = binder_->getRlcByNodeId(ueId);
-    if (ue != nullptr) {
-        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
-            ue->emit(rlcPduThroughputSignal_[dir_], tputSample);
-            ue->emit(rlcPduDelaySignal_[dir_], (NOW - pktPdu->getCreationTime()).dbl());
-        }
-        else { // UE in DM
-            ue->emit(rlcPduThroughputD2DSignal_, tputSample);
-            ue->emit(rlcPduDelayD2DSignal_, (NOW - pktPdu->getCreationTime()).dbl());
-        }
+    if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
+        emit(rlcPduThroughputSignal_[dir_], tputSample);
+        emit(rlcPduDelaySignal_[dir_], (NOW - pktPdu->getCreationTime()).dbl());
+    }
+    else { // UE in DM
+        emit(rlcPduThroughputD2DSignal_, tputSample);
+        emit(rlcPduDelayD2DSignal_, (NOW - pktPdu->getCreationTime()).dbl());
     }
 
     EV << NOW << " LteRlcUmRxEntity::enque - tsn " << tsn << ", the corresponding index after shift in the buffer is " << index << endl;
@@ -290,30 +281,19 @@ void LteRlcUmRxEntity::toPdcpLte(Packet *pktAux)
     unsigned int length = pktAux->getByteLength();
     simtime_t ts = pktAux->getCreationTime();
 
-    // create a PDCP PDU and send it to the upper layer
-    MacNodeId ueId;
-    if (lteInfo->getDirection() == DL || lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)
-        ueId = ownerNodeId_;
-    else           // UL. This module is at the eNB: get the node id of the sender
-        ueId = lteInfo->getSourceId();
-
-    cModule *ue = binder_->getRlcByNodeId(ueId);
-
     // emit statistics (throughput and delay only - no packet loss)
     totalCellRcvdBytes_ += length;
     totalRcvdBytes_ += length;
     double cellTputSample = (double)totalCellRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
     double tputSample = (double)totalRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
 
-    if (ue != nullptr) {
-        if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
-            ue->emit(rlcThroughputSignal_[dir_], tputSample);
-            ue->emit(rlcDelaySignal_[dir_], (NOW - ts).dbl());
-        }
-        else {
-            ue->emit(rlcThroughputD2DSignal_, tputSample);
-            ue->emit(rlcDelayD2DSignal_, (NOW - ts).dbl());
-        }
+    if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
+        emit(rlcThroughputSignal_[dir_], tputSample);
+        emit(rlcDelaySignal_[dir_], (NOW - ts).dbl());
+    }
+    else {
+        emit(rlcThroughputD2DSignal_, tputSample);
+        emit(rlcDelayD2DSignal_, (NOW - ts).dbl());
     }
 
     if (nodeB_ == nullptr) {

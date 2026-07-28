@@ -48,7 +48,6 @@ void NrRlcAmRxEntity::initMode()
     tReassembly_ = par("t_Reassembly");
     tStatusProhibitTimer_ = new cMessage("t_StatusProhibitTimer");
     tStatusProhibit_ = par("t_StatusProhibit");
-    binder_.reference(this, "binderModule", true);
 }
 
 void NrRlcAmRxEntity::emitRxStatistics(bool perPdu, double throughput, simtime_t delay)
@@ -57,21 +56,17 @@ void NrRlcAmRxEntity::emitRxStatistics(bool perPdu, double throughput, simtime_t
         return;
 
     // ackFlowControlInfo_ is the reversed flow info (it stamps the STATUS PDUs going
-    // back), so its destination is the peer that sent us the data and its source is
-    // this node. The data flowed in the opposite direction.
+    // back), so the data flowed in the opposite direction to the one it names.
     Direction dir = (ackFlowControlInfo_->getDirection() == DL) ? UL : DL;
-    MacNodeId ueId = (dir == UL) ? ackFlowControlInfo_->getDestId() : ackFlowControlInfo_->getSourceId();
 
-    cModule *ue = binder_->getRlcByNodeId(ueId);
-    if (ue == nullptr)
-        return;
-
-    ue->emit(perPdu ? rlcPduThroughputSignal_[dir] : rlcThroughputSignal_[dir], throughput);
-    ue->emit(perPdu ? rlcPduDelaySignal_[dir] : rlcDelaySignal_[dir], delay.dbl());
-    // The packet-loss counterpart is deliberately not emitted here: rlcPacketLoss* is
-    // declared as a statistic only on RlcTmTxEntity, not on the RlcMux these are
-    // recorded on, so it would go nowhere. The LTE AM entity emits it anyway, equally
-    // unrecorded. Fixing that means deciding which module should carry the statistic.
+    emit(perPdu ? rlcPduThroughputSignal_[dir] : rlcThroughputSignal_[dir], throughput);
+    emit(perPdu ? rlcPduDelaySignal_[dir] : rlcDelaySignal_[dir], delay.dbl());
+    if (!perPdu) {
+        // AM repairs everything it is given, so nothing is ever lost to the upper
+        // layer. Reporting the zero makes that a measured result rather than an
+        // absent one.
+        emit(rlcPacketLossSignal_[dir], 0.0);
+    }
 }
 
 void NrRlcAmRxEntity::handleMessage(cMessage *msg)

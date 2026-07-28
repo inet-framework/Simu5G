@@ -31,6 +31,22 @@ simple LteRlcAmRxEntity like simu5g.stack.rlc.IRlcAmRxEntity
         double ackReportInterval @unit(s) = 0.10s;
         double statusReportInterval @unit(s) = 0.20s;
 
+
+        //# Per-bearer statistics. A bearer serves one peer, so these are already
+        //# per-UE; aggregate over a UE's bearers in the analysis tool.
+        @signal[rlcDelayDl];
+        @statistic[rlcDelayDl](title="Delay at the rlc layer DL"; unit="s"; source="rlcDelayDl"; record=mean);
+        @signal[rlcThroughputDl];
+        @statistic[rlcThroughputDl](title="Throughput at the rlc layer DL"; unit="Bps"; source="rlcThroughputDl"; record=simu5g_rateavg);
+        @signal[rlcDelayUl];
+        @statistic[rlcDelayUl](title="Delay at the rlc layer UL"; unit="s"; source="rlcDelayUl"; record=mean);
+        @signal[rlcThroughputUl];
+        @statistic[rlcThroughputUl](title="Throughput at the rlc layer UL"; unit="Bps"; source="rlcThroughputUl"; record=simu5g_rateavg);
+        @signal[rlcPacketLossDl];
+        @statistic[rlcPacketLossDl](title="Packet loss at the rlc layer DL"; unit=""; source="rlcPacketLossDl"; record=mean);
+        @signal[rlcPacketLossUl];
+        @statistic[rlcPacketLossUl](title="Packet loss at the rlc layer UL"; unit=""; source="rlcPacketLossUl"; record=mean);
+
     gates:
         input in;         // PDUs from lower mux (MAC)
         output out;       // reassembled SDUs to upper mux (PDCP)

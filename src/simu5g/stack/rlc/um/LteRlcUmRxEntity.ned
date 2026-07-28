@@ -33,6 +33,34 @@ simple LteRlcUmRxEntity like simu5g.stack.rlc.IRlcRxEntity
         double timeout @unit(s) = default(1s);            // Timeout for RX Buffer
         int rxWindowSize = default(16);                   // PDU reorder window
 
+
+        //# Per-bearer statistics. A bearer serves one peer, so these are already
+        //# per-UE; aggregate over a UE's bearers in the analysis tool.
+        @signal[rlcDelayDl];
+        @statistic[rlcDelayDl](title="Delay at the rlc layer DL"; unit="s"; source="rlcDelayDl"; record=mean);
+        @signal[rlcThroughputDl];
+        @statistic[rlcThroughputDl](title="Throughput at the rlc layer DL"; unit="Bps"; source="rlcThroughputDl"; record=simu5g_rateavg);
+        @signal[rlcDelayUl];
+        @statistic[rlcDelayUl](title="Delay at the rlc layer UL"; unit="s"; source="rlcDelayUl"; record=mean);
+        @signal[rlcThroughputUl];
+        @statistic[rlcThroughputUl](title="Throughput at the rlc layer UL"; unit="Bps"; source="rlcThroughputUl"; record=simu5g_rateavg);
+        @signal[rlcPduDelayDl];
+        @statistic[rlcPduDelayDl](title="PDU delay at the rlc layer DL"; unit="s"; source="rlcPduDelayDl"; record=mean);
+        @signal[rlcPduThroughputDl];
+        @statistic[rlcPduThroughputDl](title="PDU throughput at the rlc layer DL"; unit="Bps"; source="rlcPduThroughputDl"; record=simu5g_rateavg);
+        @signal[rlcPduDelayUl];
+        @statistic[rlcPduDelayUl](title="PDU delay at the rlc layer UL"; unit="s"; source="rlcPduDelayUl"; record=mean);
+        @signal[rlcPduThroughputUl];
+        @statistic[rlcPduThroughputUl](title="PDU throughput at the rlc layer UL"; unit="Bps"; source="rlcPduThroughputUl"; record=simu5g_rateavg);
+        @signal[rlcDelayD2D];
+        @statistic[rlcDelayD2D](title="Delay at the rlc layer D2D"; unit="s"; source="rlcDelayD2D"; record=mean);
+        @signal[rlcThroughputD2D];
+        @statistic[rlcThroughputD2D](title="Throughput at the rlc layer D2D"; unit="Bps"; source="rlcThroughputD2D"; record=simu5g_rateavg);
+        @signal[rlcPduDelayD2D];
+        @statistic[rlcPduDelayD2D](title="PDU delay at the rlc layer D2D"; unit="s"; source="rlcPduDelayD2D"; record=mean);
+        @signal[rlcPduThroughputD2D];
+        @statistic[rlcPduThroughputD2D](title="PDU throughput at the rlc layer D2D"; unit="Bps"; source="rlcPduThroughputD2D"; record=simu5g_rateavg);
+
     gates:
         input in;       // PDUs from lower mux (MAC)
         output out;     // reassembled SDUs to upper mux (PDCP)

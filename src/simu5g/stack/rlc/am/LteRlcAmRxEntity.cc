@@ -157,9 +157,7 @@ void LteRlcAmRxEntity::discard(const int sn)
     EV << NOW << " LteRlcAmRxEntity::discard , discarded " << discarded << " PDUs " << endl;
 
     if (dir != UNKNOWN_DIRECTION) {
-        cModule *ue = binder_->getRlcByNodeId((dir == DL ? dstId : srcId));
-        if (ue != nullptr)
-            ue->emit(rlcPacketLossSignal_[dir_], 1.0);
+        emit(rlcPacketLossSignal_[dir_], 1.0);
 
         cModule *nodeb = binder_->getRlcByNodeId((dir == DL ? srcId : dstId));
         if (nodeb != nullptr)
@@ -292,18 +290,9 @@ void LteRlcAmRxEntity::passUpLte(const int index)
     Direction dir = ci->getDirection();
     MacNodeId dstId = ci->getDestId();
     MacNodeId srcId = ci->getSourceId();
-    cModule *nodeb = nullptr;
-    cModule *ue = nullptr;
     double delay = (NOW - pkt->getCreationTime()).dbl();
 
-    if (dir == DL) {
-        nodeb = binder_->getRlcByNodeId(srcId);
-        ue = binder_->getRlcByNodeId(dstId);
-    }
-    else {
-        nodeb = binder_->getRlcByNodeId(dstId);
-        ue = binder_->getRlcByNodeId(srcId);
-    }
+    cModule *nodeb = binder_->getRlcByNodeId((dir == DL) ? srcId : dstId);
 
     totalRcvdBytes_ += pkt->getByteLength();
     totalCellRcvdBytes_ += pkt->getByteLength();
@@ -314,11 +303,9 @@ void LteRlcAmRxEntity::passUpLte(const int index)
         nodeb->emit(rlcCellThroughputSignal_[dir_], cellTputSample);
         nodeb->emit(rlcCellPacketLossSignal_[dir_], 0.0);
     }
-    if (ue != nullptr) {
-        ue->emit(rlcThroughputSignal_[dir_], tputSample);
-        ue->emit(rlcDelaySignal_[dir_], delay);
-        ue->emit(rlcPacketLossSignal_[dir_], 0.0);
-    }
+    emit(rlcThroughputSignal_[dir_], tputSample);
+    emit(rlcDelaySignal_[dir_], delay);
+    emit(rlcPacketLossSignal_[dir_], 0.0);
 
     pkt->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&LteProtocol::pdcp);
     send(pkt, "out");
