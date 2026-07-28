@@ -14,46 +14,19 @@
 #define _NRAMCD2D_H_
 
 #include "simu5g/stack/mac/amc/NrAmc.h"
-#include "simu5g/stack/d2d/mac/ID2dAmc.h"
-#include "simu5g/stack/d2d/mac/amc/D2dAmcHelper.h"
+#include "simu5g/stack/d2d/mac/amc/AmcD2D.h"
 
 namespace simu5g {
 
 /**
- * NR AMC with device-to-device (D2D) support. NR counterpart of ~LteAmcD2D:
- * it reuses the shared D2dAmcHelper for the D2D feedback / tx-param machinery
- * and only adds the thin dispatch overrides plus the NR-specific D2D MCS-table
- * routing. Keep in sync with LteAmcD2D.
+ * NR AMC with device-to-device (D2D) support: the AmcD2D mixin layered over
+ * the clean NrAmc. All the shared D2D logic lives in the mixin (see AmcD2D.h);
+ * the only NR-specific addition is the D2D branch of the NR MCS table seam.
  */
-class NrAmcD2D : public NrAmc, public ID2dAmc
+class NrAmcD2D : public AmcD2D<NrAmc>
 {
   protected:
-    // holds the D2D-specific AMC state and logic (shared with the LTE variant)
-    D2dAmcHelper d2dHelper_;
-
-    void initialize(int stage) override;
-
-    // the "D2D" amcMode selects the D2D AMC pilot; other modes fall back to NrAmc
-    AmcPilot *createAmcPilot(const char *amcMode) override;
-
-    // D2D branch of the base routing seams
-    void printTxParamsForDirection(Direction dir, GHz carrierFrequency) override;
-    bool existTxParamsForDirection(MacNodeId id, Direction dir, GHz carrierFrequency) override;
-    const UserTxParams& setTxParamsForDirection(MacNodeId id, Direction dir, UserTxParams& info, GHz carrierFrequency) override;
-    const UserTxParams& getTxParamsForDirection(MacNodeId id, Direction dir, GHz carrierFrequency) override;
-    McsTable *getMcsTableForDirection(Direction dir) override;
     NrMcsTable *getNrMcsTableForDirection(Direction dir) override;
-    void rescaleMcsForDirection(double rePerRb, Direction dir) override;
-    void detachUserForDirection(MacNodeId nodeId, Direction dir) override;
-    void attachUserForDirection(MacNodeId nodeId, Direction dir) override;
-    void testUeForDirection(MacNodeId nodeId, Direction dir) override;
-
-  public:
-    NrAmcD2D() : d2dHelper_(this) {}
-
-    // ID2dAmc
-    void pushFeedbackD2D(MacNodeId id, LteFeedback fb, MacNodeId peerId, GHz carrierFrequency) override;
-    const LteSummaryFeedback& getFeedbackD2D(MacNodeId id, Remote antenna, TxMode txMode, MacNodeId peerId, GHz carrierFrequency) override;
 };
 
 } //namespace
