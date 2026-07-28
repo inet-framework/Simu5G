@@ -536,7 +536,18 @@ unsigned int NrRlcAmTxEntity::getPendingDataVolume() const
         size += pdcpTag->getOriginalPacketLength();
     }
     size += txBuffer_->getTotalPendingBytes();
-    size += rtxBuffer_->getRetxPendingBytes();
+
+    // A PDU awaiting retransmission is already formed, so it counts towards the data
+    // volume with its header, unlike an SDU that has not been put into a PDU yet
+    // (TS 38.322 5.5). It also has to: the scheduler sizes the RLC header from its own
+    // view of how the flow is being segmented, which knows nothing about ARQ, so it
+    // assumes a first segment. Reporting only the payload of an interior segment then
+    // yields a grant too small to hold that segment's larger continuation header, and
+    // the retransmission can never be sent at all.
+    for (const auto& task : rtxBuffer_->getPendingRetx()) {
+        size += task.soEnd - task.soStart + 1;
+        size += nrAmHeaderBytes(task.soStart > 0 ? NRUM_CONTINUATION : NRUM_FIRST, snFieldLength_);
+    }
     for (const auto *cpkt : controlBuffer_) {
         auto *p = check_and_cast<const Packet *>(cpkt);
         auto statusPdu = p->peekAtFront<NrRlcAmStatusPdu>();

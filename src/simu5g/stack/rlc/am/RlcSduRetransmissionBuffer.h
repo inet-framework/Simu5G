@@ -75,8 +75,11 @@ class RlcSduRetransmissionBuffer
         return true;
     }
 
-    /** @brief Returns the total pending bytes for retransmissions. */
+    /** @brief Returns the total pending payload bytes for retransmissions. */
     uint64_t getRetxPendingBytes();
+
+    /** @brief The segments and whole SDUs currently awaiting retransmission. */
+    const std::set<RetxTask>& getPendingRetx() const { return pendingRetx_; }
 
     /** @brief Remove a task once retransmission is submitted to lower layer. */
     void markRetransmitted(const RetxTask &task) { pendingRetx_.erase(task); }
