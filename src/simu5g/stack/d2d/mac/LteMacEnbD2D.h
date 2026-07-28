@@ -14,26 +14,27 @@
 #define _LTE_LTEMACENBD2D_H_
 
 #include "simu5g/stack/mac/LteMacEnb.h"
-#include "simu5g/stack/mac/buffer/LteMacBuffer.h"
-#include "simu5g/stack/d2d/mac/harq/LteHarqBufferMirrorD2D.h"
-#include "simu5g/stack/d2d/rrc/D2DModeSwitchNotification_m.h"
-#include "simu5g/stack/d2d/mac/conflictgraph/ConflictGraph.h"
-#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
-#include "simu5g/stack/d2d/mac/D2dEnbMacHelper.h"
-#include <inet/common/ModuleRefByPar.h>
+#include "simu5g/stack/d2d/mac/D2dEnbMacBase.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
 
-class ConflictGraph;
-
-class LteMacEnbD2D : public LteMacEnb, public ID2dMacEnb
+/**
+ * D2D-capable eNB MAC: the D2dEnbMacBase mixin layered over the core LTE MAC.
+ * All the D2D logic lives in the mixin (see D2dEnbMacBase.h).
+ *
+ * The two overrides below are NOT D2D-specific: they are the historical
+ * "fork" variants of sendGrants/macPduUnmake that the D2D (and NR) MACs
+ * follow, while LteMacEnb keeps the plain-LTE originals (grant chunk length
+ * 1 bit vs 1 byte, BSR CE keyed by the packet LCID vs LogicalCid(0)). They
+ * are byte-identical to NrMacGnb's copies; reconciling all of them onto
+ * hook-parameterized LteMacEnb bodies is a separate, fingerprint-affecting
+ * step.
+ */
+class LteMacEnbD2D : public D2dEnbMacBase<LteMacEnb>
 {
   protected:
-    // holds the D2D-specific eNB-MAC state and logic (shared with the NR variant)
-    D2dEnbMacHelper d2dEnbHelper_;
-
     /**
      * macPduUnmake() extracts SDUs from a received MAC
      * PDU and sends them to the upper layer.
@@ -46,75 +47,13 @@ class LteMacEnbD2D : public LteMacEnb, public ID2dMacEnb
      */
     void macPduUnmake(cPacket *pkt) override;
 
-    void macHandleFeedbackPkt(cPacket *pkt) override;
     /**
      * creates scheduling grants (one for each nodeId) according to the Schedule List.
      * It sends them to the lower layer
      */
     void sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList) override;
-
-    /**
-     * Flush Tx H-ARQ buffers for all users
-     */
-    void flushHarqBuffers() override;
-
-    /// Lower Layer Handler
-    void fromPhy(cPacket *pkt) override;
-
-    /// HARQ RX buffer factory: adds support for the D2D and D2D_MULTI directions
-    LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo) override;
-
-  public:
-
-    LteMacEnbD2D();
-
-    /**
-     * Reads MAC parameters for ue and performs initialization.
-     */
-    void initialize(int stage) override;
-
-
-    void handleMessage(cMessage *msg) override;
-
-    bool isReuseD2DEnabled() override
-    {
-        return d2dEnbHelper_.getReuseD2D();
-    }
-
-    bool isReuseD2DMultiEnabled() override
-    {
-        return d2dEnbHelper_.getReuseD2DMulti();
-    }
-
-    ConflictGraph *getConflictGraph() override
-    {
-        return d2dEnbHelper_.getConflictGraph();
-    }
-
-    void deleteHarqBuffersMirrorD2D(MacNodeId txPeer, MacNodeId rxPeer) override;
-
-    /**
-     * deleteQueues() on ENB performs actions
-     * from base classes and also deletes mirror buffers
-     *
-     * @param nodeId id of node performing handover
-     */
-    void deleteQueues(MacNodeId nodeId) override;
-
-    // get the reference to the "mirror" buffers
-    HarqBuffersMirrorD2D *getHarqBuffersMirrorD2D(GHz carrierFrequency) override;
-
-    // delete the "mirror" Harq Buffer for this node (useful at handover)
-    virtual void deleteHarqBuffersMirrorD2D(MacNodeId nodeId);
-
-    // send the D2D Mode Switch signal to the transmitter of the given flow
-    virtual void sendModeSwitchNotification(MacNodeId srcId, MacNodeId dst, LteD2DMode oldMode, LteD2DMode newMode) override;
-
-    bool isMsHarqInterrupt() override { return d2dEnbHelper_.getMsHarqInterrupt(); }
-
 };
 
 } //namespace
 
 #endif
-

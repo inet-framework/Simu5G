@@ -14,6 +14,7 @@
 
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
 #include "simu5g/stack/d2d/mac/harq/LteHarqBufferRxD2D.h"
+#include "simu5g/stack/mac/buffer/LteMacBuffer.h"
 #include "simu5g/stack/mac/buffer/LteMacQueue.h"
 #include "simu5g/stack/mac/packet/LteRac_m.h"
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
