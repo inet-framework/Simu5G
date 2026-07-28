@@ -194,6 +194,10 @@ int LteMacUe::macSduRequest()
     std::vector<unsigned int> allocatedBytes;
 
     for (auto& grant : schedulingGrant_) {
+        // skip if this is not the turn of this carrier
+        if (!isCarrierActive(grant.first))
+            continue;
+
         if (grant.second == nullptr)
             continue;
 
@@ -203,6 +207,10 @@ int LteMacUe::macSduRequest()
 
     // Ask for a MAC sdu for each scheduled user on each codeword
     for (auto& [carrierFreq, scheduleList] : scheduleList_) {
+        // skip if this is not the turn of this carrier
+        if (!isCarrierActive(carrierFreq))
+            continue;
+
         LteMacScheduleList::const_iterator it;
         for (const auto& it : *scheduleList) {
             MacCid destCid = it.first.first;
@@ -252,6 +260,12 @@ int LteMacUe::macSduRequest()
 
     EV << "------ END LteMacUe::macSduRequest ------\n";
     return numRequestedSdus;
+}
+
+UnitList LteMacUe::reserveTxHarqUnits(LteHarqBufferTx *txBuf)
+{
+    // synchronous H-ARQ: use the empty units of the current process
+    return txBuf->getEmptyUnits(currentHarq_);
 }
 
 bool LteMacUe::bufferizePacket(cPacket *cpkt)
@@ -458,7 +472,7 @@ void LteMacUe::macPduMake(MacCid cid)
             }
 
             // search for an empty unit within the current HARQ process
-            UnitList txList = txBuf->getEmptyUnits(currentHarq_);
+            UnitList txList = reserveTxHarqUnits(txBuf);
             EV << "LteMacUe::macPduMake - [Used Acid=" << (unsigned int)txList.first << "] , [curr=" << (unsigned int)currentHarq_ << "]" << endl;
 
             auto macPkt = pit.second;

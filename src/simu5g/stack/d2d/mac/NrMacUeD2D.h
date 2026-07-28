@@ -13,92 +13,30 @@
 // NOTE: the header guard intentionally differs from the class name because
 // NrMacUe.h (included below) already claims _NRMACUE_H_ (and historically
 // _NRMACUED2D_H_).
-#ifndef _D2D_NRMACUED2D_H_
-#define _D2D_NRMACUED2D_H_
+#ifndef _NRMACUED2D_H_
+#define _NRMACUED2D_H_
 
 #include "simu5g/stack/mac/NrMacUe.h"
-#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
-#include "simu5g/stack/d2d/mac/ID2dMacUe.h"
-#include "simu5g/stack/d2d/mac/D2dUeMacHelper.h"
-#include "simu5g/stack/d2d/mac/harq/LteHarqBufferTxD2D.h"
+#include "simu5g/stack/d2d/mac/D2dUeMacBase.h"
 
 namespace simu5g {
 
-using namespace omnetpp;
-
 /**
- * NR-UE MAC with D2D support.
+ * D2D-capable NR UE MAC: the D2dUeMacBase mixin layered over the clean NR UE
+ * MAC. All the D2D logic lives in the mixin (see D2dUeMacBase.h); the NR main
+ * loop is inherited from NrMacUe (its only D2D delta flows through the
+ * isBsrPending() override in the mixin).
  *
- * Mirrors ~LteMacUeD2D on top of the NR (numerology-aware) ~NrMacUe base:
- * the D2D-specific state and logic live in the shared D2dUeMacHelper, while
- * the numerology-aware handleSelfMessage()/macPduMake() carry the D2D deltas
- * that used to live directly in NrMacUe.
+ * NOTE: the mode-switch signal name is interned at RUNTIME in the constructor
+ * (not via a static registerSignal() in this TU): the name is already
+ * registered by LteMacUeD2D.cc's static at its original position, and a static
+ * in a new translation unit would perturb the global signal registration
+ * order -- and thus the sz fingerprint -- link-order dependently.
  */
-class NrMacUeD2D : public NrMacUe, public ID2dMacUe
+class NrMacUeD2D : public D2dUeMacBase<NrMacUe>
 {
-
-  protected:
-
-    // holds the D2D-specific UE-MAC state and logic (shared with the LTE variant).
-    // NOTE: the mode-switch-notification signal ID passed to the helper is interned
-    // at RUNTIME in the constructor (not via a static registerSignal() in this TU):
-    // the name is already registered by LteMacUeD2D.cc's static at its original
-    // position, and a static in a new translation unit would perturb the global
-    // signal registration order -- and thus the sz fingerprint -- link-order
-    // dependently.
-    D2dUeMacHelper d2dUeHelper_;
-
-    /**
-     * Reads MAC parameters for the UE and performs initialization.
-     */
-    void initialize(int stage) override;
-
-    /**
-     * Analyze gate of incoming packet
-     * and call proper handler
-     */
-    void handleMessage(cMessage *msg) override;
-
-    /// D2D delta for the base main loop (NrMacUe::handleSelfMessage):
-    /// a pending D2D multicast BSR also warrants a BSR-only MAC PDU.
-    bool isBsrPending() const override { return bsrTriggered_ || d2dUeHelper_.getBsrD2DMulticastTriggered(); }
-
-    void macHandleGrant(cPacket *pkt) override;
-
-    /*
-     * Checks RAC status
-     */
-    void checkRAC() override;
-
-    /*
-     * Receives and handles RAC responses
-     */
-    void macHandleRac(cPacket *pkt) override;
-
-    void macHandleD2DModeSwitch(cPacket *pkt);
-
-    /**
-     * macPduMake() creates MAC PDUs (one for each CID)
-     * by extracting SDUs from Real Mac Buffers according
-     * to the Schedule List.
-     * It sends them to H-ARQ (at the moment lower layer)
-     *
-     * On UE it also adds a BSR control element to the MAC PDU
-     * containing the size of its buffer (for that CID)
-     */
-    void macPduMake(MacCid cid = MacCid()) override;
-
-    /// HARQ buffer factories: add support for the D2D and D2D_MULTI directions
-    LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo) override;
-    LteHarqBufferTx *createTxHarqBuffer(MacNodeId destId, Direction dir) override;
-
-    /// Factory override: use the D2D-capable LCG scheduler
-    LcgScheduler *createLcgScheduler() override;
-
   public:
     NrMacUeD2D();
-
-    void doHandover(MacNodeId targetEnb) override;
 };
 
 } //namespace

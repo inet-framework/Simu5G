@@ -225,80 +225,10 @@ void NrMacUe::handleSelfMessage()
     EV << "--- END UE MAIN LOOP ---" << endl;
 }
 
-int NrMacUe::macSduRequest()
+UnitList NrMacUe::reserveTxHarqUnits(LteHarqBufferTx *txBuf)
 {
-    EV << "----- START NrMacUe::macSduRequest -----\n";
-    int numRequestedSdus = 0;
-
-    // get the number of granted bytes for each codeword
-    std::vector<unsigned int> allocatedBytes;
-
-    for (auto& [carrierFreq, grant] : schedulingGrant_) {
-        // skip if this is not the turn of this carrier
-        if (getNumerologyPeriodCounter(binder_->getNumerologyIndexFromCarrierFreq((carrierFreq))) > 0)
-            continue;
-
-        if (grant == nullptr)
-            continue;
-
-        for (int cw = 0; cw < grant->getGrantedCwBytesArraySize(); cw++)
-            allocatedBytes.push_back(grant->getGrantedCwBytes(cw));
-    }
-
-    // Ask for a MAC SDU for each scheduled user on each codeword
-    for (auto [citFreq, citList] : scheduleList_) {
-        // skip if this is not the turn of this carrier
-        if (getNumerologyPeriodCounter(binder_->getNumerologyIndexFromCarrierFreq((citFreq))) > 0)
-            continue;
-
-        for (auto& item : *citList) {
-            MacCid destCid = item.first.first;
-            Codeword cw = item.first.second;
-            MacNodeId destId = destCid.getNodeId();
-
-            std::pair<MacCid, Codeword> key(destCid, cw);
-            LteMacScheduleList *scheduledBytesList = lcgScheduler_[citFreq]->getScheduledBytesList();
-            auto bit = scheduledBytesList->find(key);
-
-            // consume bytes on this codeword
-            if (bit == scheduledBytesList->end())
-                throw cRuntimeError("NrMacUe::macSduRequest - cannot find entry in scheduledBytesList");
-            else {
-                allocatedBytes[cw] -= bit->second;
-
-                EV << NOW << " NrMacUe::macSduRequest - cid[" << destCid << "] - SDU size[" << bit->second << "B] - " << allocatedBytes[cw] << " bytes left on codeword " << cw << endl;
-
-                // NR-SO connections fill the grant with several one-SDU/segment PDUs;
-                // issue one request per planned PDU so the MAC PDU multiplexes them.
-                // LTE-FI fills the grant with a single concatenated PDU (one request).
-                const std::vector<unsigned int> *soSizes = lcgScheduler_[citFreq]->getScheduledSoPduSizes(destCid);
-                std::vector<unsigned int> reqSizes;
-                if (soSizes != nullptr && !soSizes->empty())
-                    reqSizes = *soSizes;
-                else
-                    reqSizes.push_back(bit->second);
-
-                for (unsigned int reqSize : reqSizes) {
-                    // send the request message to the upper layer
-                    // TODO: Replace by tag
-                    auto pkt = new Packet("LteMacSduRequest");
-                    auto macSduRequest = makeShared<LteMacSduRequest>();
-                    macSduRequest->setChunkLength(b(1)); // TODO: should be 0
-                    macSduRequest->setUeId(destId);
-                    macSduRequest->setLcid(destCid.getLcid());
-                    macSduRequest->setSduSize(reqSize);
-                    pkt->insertAtFront(macSduRequest);
-                    *(pkt->addTag<FlowControlInfo>()) = connDescOut_[destCid].flowInfo.toFlowControlInfo();
-                    sendUpperPackets(pkt);
-
-                    numRequestedSdus++;
-                }
-            }
-        }
-    }
-
-    EV << "------ END NrMacUe::macSduRequest ------\n";
-    return numRequestedSdus;
+    // asynchronous H-ARQ: search for an empty unit within the first available process
+    return txBuf->firstAvailable();
 }
 
 void NrMacUe::macPduMake(MacCid cid)
@@ -468,7 +398,7 @@ void NrMacUe::macPduMake(MacCid cid)
             }
 
             // search for an empty unit within the first available process
-            UnitList txList = txBuf->firstAvailable();
+            UnitList txList = reserveTxHarqUnits(txBuf);
             EV << "NrMacUe::macPduMake - [Used Acid=" << (unsigned int)txList.first << "]" << endl;
 
             // BSR related operations

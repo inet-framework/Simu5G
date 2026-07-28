@@ -11,6 +11,8 @@
 //
 
 #include "simu5g/stack/d2d/mac/harq/LteHarqUnitTxD2D.h"
+
+#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/d2d/mac/ID2dMacUe.h"

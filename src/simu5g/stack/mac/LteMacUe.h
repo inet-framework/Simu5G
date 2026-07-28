@@ -125,6 +125,20 @@ class LteMacUe : public LteMacBase
     /// and resets the BSR trigger state. Called from macPduMake() when isBsrPending().
     virtual void appendBsr(inet::Ptr<LteMacPdu> macPdu, int size);
 
+    /// Whether it is this carrier's turn in the current TTI. The LTE MAC serves
+    /// every carrier every TTI; the NR MAC overrides this with the numerology
+    /// period check.
+    virtual bool isCarrierActive(GHz carrierFrequency) { return true; }
+
+    /// H-ARQ TX unit reservation policy used by macPduMake(): the LTE MAC uses
+    /// the synchronous current process; the NR MAC picks the first available one.
+    virtual UnitList reserveTxHarqUnits(LteHarqBufferTx *txBuf);
+
+    // scheduling bookkeeping: true when no carrier produced a schedule.
+    // Written by the UL scheduling loops of the NR and D2D main loops
+    // (deliberately not initialized, matching the historical per-class copies).
+    bool emptyScheduleList_;
+
     /**
      * macPduUnmake() extracts SDUs from a received MAC
      * PDU and sends them to the upper layer.

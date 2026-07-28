@@ -19,11 +19,6 @@ namespace simu5g {
 
 class NrMacUe : public LteMacUe
 {
-  protected:
-    // NR scheduling bookkeeping: true when no carrier produced a schedule
-    // (written by the NR-specific UL scheduling loop in handleSelfMessage()).
-    bool emptyScheduleList_;
-
   public:
     NrMacUe();
 
@@ -33,12 +28,14 @@ class NrMacUe : public LteMacUe
      */
     void handleSelfMessage() override;
 
-    /**
-     * macSduRequest() sends a message to the RLC layer
-     * requesting MAC SDUs (one for each CID),
-     * according to the Schedule List.
-     */
-    int macSduRequest() override;
+    /// NR carriers are served on their own numerology period
+    bool isCarrierActive(GHz carrierFrequency) override
+    {
+        return getNumerologyPeriodCounter(binder_->getNumerologyIndexFromCarrierFreq(carrierFrequency)) == 0;
+    }
+
+    /// asynchronous H-ARQ: pick an empty unit within the first available process
+    UnitList reserveTxHarqUnits(LteHarqBufferTx *txBuf) override;
 
     /**
      * macPduMake() creates MAC PDUs (one for each CID)
