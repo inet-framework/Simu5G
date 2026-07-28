@@ -108,7 +108,7 @@
 /simulations/nr/standalone/,             -f omnetpp.ini -c VoIP-UL -r 0,                         5s,         2947-ab39/tplx;dc02-7e84/tilx;5026-ad91/~tNl;20e4-b318/sz, PASS,
 /simulations/nr/standalone/,             -f omnetpp.ini -c VoIP-DL-AM -r 0,              5s,         94fb-e864/tplx;0a27-f875/tilx;4cf6-54cc/~tNl;6d4c-46d8/sz, PASS,
 /simulations/nr/standalone/,             -f omnetpp.ini -c VoIP-DL-AM-Lossy -r 0,        5s,         1683-f714/tplx;5d6e-2b1e/tilx;ac58-d02f/~tNl;3ca9-cd1b/sz, PASS,
-/simulations/nr/standalone/,             -f omnetpp.ini -c VoIP-UL-AM -r 0,              5s,         8487-1af6/tplx;a185-f634/tilx;5ea4-8baf/~tNl;acc3-8625/sz, PASS,
+/simulations/nr/standalone/,             -f omnetpp.ini -c VoIP-UL-AM -r 0,              5s,         bbdc-c671/tplx;a10a-d453/tilx;5398-fa4d/~tNl;03d3-a6a6/sz, PASS,
 /simulations/nr/standalone/,             -f omnetpp.ini -c VoIP-DL-UM-NR -r 0,           5s,         9568-7dbb/tplx;eab1-5adf/tilx;c361-0414/~tNl;af05-b7f5/sz, PASS,
 /simulations/nr/standalone/,             -f omnetpp.ini -c VoIP-UL-UM-NR -r 0,           5s,         2947-ab39/tplx;dc02-7e84/tilx;5026-ad91/~tNl;20e4-b318/sz, PASS,
 /simulations/nr/standalone_drb/,         -f omnetpp.ini -c Standalone -r 0,                      5s,         94db-347e/tplx;9b53-00d3/tilx;43e8-e082/~tNl;9602-77e5/sz, PASS,
