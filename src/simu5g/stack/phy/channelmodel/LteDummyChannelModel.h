@@ -23,8 +23,18 @@ using namespace omnetpp;
 class LteDummyChannelModel : public LteChannelModel
 {
   private:
-    double per_;
-    double harqReduction_;
+    // volatile, so that the error rate can be made a function of simulation time --
+    // which is how a coverage loss is scripted
+    cPar *perDl_ = nullptr;
+    cPar *perUl_ = nullptr;
+    cPar *perD2D_ = nullptr;
+    double harqReduction_ = 0;
+
+    /**
+     * Error probability of the txNumber-th transmission attempt of a frame sent in
+     * the given direction.
+     */
+    double getErrorProbability(Direction dir, unsigned char txNumber) const;
 
   public:
     void initialize(int stage) override;

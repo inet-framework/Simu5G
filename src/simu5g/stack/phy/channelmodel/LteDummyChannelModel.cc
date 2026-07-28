@@ -18,19 +18,42 @@ using namespace omnetpp;
 
 Define_Module(LteDummyChannelModel);
 
+// Reported on every band, in place of a computed value. Large enough that the AMC
+// always picks the highest CQI, so the transport block size never varies with the
+// channel and the only source of loss is the configured error rate.
+static const double FAKE_SINR_DB = 10000;
+
 void LteDummyChannelModel::initialize(int stage)
 {
     LteChannelModel::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
-        per_ = 0.1;
-        harqReduction_ = 0.3;
+        perDl_ = &par("perDl");
+        perUl_ = &par("perUl");
+        perD2D_ = &par("perD2D");
+        harqReduction_ = par("harqReduction");
     }
+}
+
+double LteDummyChannelModel::getErrorProbability(Direction dir, unsigned char txNumber) const
+{
+    if (txNumber == 0)
+        throw cRuntimeError("LteDummyChannelModel::getErrorProbability(): transmission number must be at least 1");
+
+    cPar *per;
+    switch (dir) {
+        case DL: per = perDl_; break;
+        case UL: per = perUl_; break;
+        case D2D:
+        case D2D_MULTI: per = perD2D_; break;
+        default:
+            throw cRuntimeError("LteDummyChannelModel::getErrorProbability(): unexpected direction %d", (int)dir);
+    }
+    return per->doubleValue() * pow(harqReduction_, txNumber - 1);
 }
 
 std::vector<double> LteDummyChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
-    std::vector<double> tmp;
-    tmp.push_back(10000);
+    std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SINR is needed by DAS (to decide which antenna set is used by the terminal)
     // and handover function to decide if the terminal should trigger the handover
     return tmp;
@@ -38,8 +61,7 @@ std::vector<double> LteDummyChannelModel::getSINR(LteAirFrame *frame, UserContro
 
 std::vector<double> LteDummyChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
-    std::vector<double> tmp;
-    tmp.push_back(10000);
+    std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake RSRP is needed by DAS (to decide which antenna set is used by the terminal)
     // and handover function to decide if the terminal should trigger the handover
     return tmp;
@@ -47,8 +69,7 @@ std::vector<double> LteDummyChannelModel::getRSRP(LteAirFrame *frame, UserContro
 
 std::vector<double> LteDummyChannelModel::getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
-    std::vector<double> tmp;
-    tmp.push_back(10000);
+    std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SINR is needed by DAS (to decide which antenna set is used by the terminal)
     // and handover function to decide if the terminal should trigger the handover
     return tmp;
@@ -61,15 +82,13 @@ double LteDummyChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord t
 
 std::vector<double> LteDummyChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord)
 {
-    std::vector<double> tmp;
-    tmp.push_back(10000);
+    std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     return tmp;
 }
 
 std::vector<double> LteDummyChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId)
 {
-    std::vector<double> tmp;
-    tmp.push_back(10000);
+    std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SINR is needed by DAS (to decide which antenna set is used by the terminal)
     // and handover function to decide if the terminal should trigger the handover
     return tmp;
@@ -77,8 +96,7 @@ std::vector<double> LteDummyChannelModel::getSINR_D2D(LteAirFrame *frame, UserCo
 
 std::vector<double> LteDummyChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
 {
-    std::vector<double> tmp;
-    tmp.push_back(10000);
+    std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SINR is needed by DAS (to decide which antenna set is used by the terminal)
     // and handover function to decide if the terminal should trigger the handover
     return tmp;
@@ -86,8 +104,7 @@ std::vector<double> LteDummyChannelModel::getSINR_D2D(LteAirFrame *frame, UserCo
 
 std::vector<double> LteDummyChannelModel::getSIR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
-    std::vector<double> tmp;
-    tmp.push_back(10000);
+    std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SIR is needed by DAS (to decide which antenna set is used by the terminal)
     // and handover function to decide if the terminal should trigger the handover
     return tmp;
@@ -95,54 +112,20 @@ std::vector<double> LteDummyChannelModel::getSIR(LteAirFrame *frame, UserControl
 
 bool LteDummyChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
-    // Number of RTX
-    unsigned char nTx = lteInfo->getTxNumber();
-    // Consistency check
-    if (nTx == 0)
-        throw cRuntimeError("Number of tx should not be 0");
-
-    // compute packet error rate according to number of retransmissions
-    // and the HARQ reduction parameter
-    double totalPer = per_ * pow(harqReduction_, nTx - 1);
-    // Throw random variable
-    double er = uniform(0.0, 1.0);
-
-    if (er <= totalPer) {
-        EV << "This is NOT your lucky day (" << er << " < " << totalPer
-           << ") -> do not receive." << endl;
-        // Signal too weak, we can't receive it
-        return false;
-    }
-    // Signal is strong enough, receive this Signal
-    EV << "This is your lucky day (" << er << " > " << totalPer
-       << ") -> Receive AirFrame." << endl;
-    return true;
+    double per = getErrorProbability(lteInfo->getDirection(), lteInfo->getTxNumber());
+    bool success = uniform(0.0, 1.0) > per;
+    EV << "LteDummyChannelModel::isReceptionSuccessful - transmission " << (int)lteInfo->getTxNumber()
+       << ", error probability " << per << " -> " << (success ? "received" : "lost") << endl;
+    return success;
 }
 
 bool LteDummyChannelModel::isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
-    // Number of RTX
-    unsigned char nTx = lteInfo->getTxNumber();
-    // Consistency check
-    if (nTx == 0)
-        throw cRuntimeError("Number of tx should not be 0");
-
-    // compute packet error rate according to number of retransmissions
-    // and the HARQ reduction parameter
-    double totalPer = per_ * pow(harqReduction_, nTx - 1);
-    // Throw random variable
-    double er = uniform(0.0, 1.0);
-
-    if (er <= totalPer) {
-        EV << "This is NOT your lucky day (" << er << " < " << totalPer
-           << ") -> do not receive." << endl;
-        // Signal too weak, we can't receive it
-        return false;
-    }
-    // Signal is strong enough, receive this Signal
-    EV << "This is your lucky day (" << er << " > " << totalPer
-       << ") -> Receive AirFrame." << endl;
-    return true;
+    double per = getErrorProbability(lteInfo->getDirection(), lteInfo->getTxNumber());
+    bool success = uniform(0.0, 1.0) > per;
+    EV << "LteDummyChannelModel::isReceptionSuccessful_D2D - transmission " << (int)lteInfo->getTxNumber()
+       << ", error probability " << per << " -> " << (success ? "received" : "lost") << endl;
+    return success;
 }
 
 } //namespace
