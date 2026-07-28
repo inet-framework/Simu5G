@@ -159,9 +159,9 @@ void LteRlcAmRxEntity::discard(const int sn)
     if (dir != UNKNOWN_DIRECTION) {
         emit(rlcPacketLossSignal_[dir_], 1.0);
 
-        cModule *nodeb = binder_->getRlcByNodeId((dir == DL ? srcId : dstId));
-        if (nodeb != nullptr)
-            nodeb->emit(rlcCellPacketLossSignal_[dir_], 1.0);
+        cModule *nodeBRlcMux = binder_->getRlcMuxByNodeId((dir == DL ? srcId : dstId));
+        if (nodeBRlcMux != nullptr)
+            nodeBRlcMux->emit(rlcCellPacketLossSignal_[dir_], 1.0);
     }
 }
 
@@ -292,16 +292,16 @@ void LteRlcAmRxEntity::passUpLte(const int index)
     MacNodeId srcId = ci->getSourceId();
     double delay = (NOW - pkt->getCreationTime()).dbl();
 
-    cModule *nodeb = binder_->getRlcByNodeId((dir == DL) ? srcId : dstId);
+    cModule *nodeBRlcMux = binder_->getRlcMuxByNodeId((dir == DL) ? srcId : dstId);
 
     totalRcvdBytes_ += pkt->getByteLength();
     totalCellRcvdBytes_ += pkt->getByteLength();
     double tputSample = (double)totalRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
     double cellTputSample = (double)totalCellRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
 
-    if (nodeb != nullptr) {
-        nodeb->emit(rlcCellThroughputSignal_[dir_], cellTputSample);
-        nodeb->emit(rlcCellPacketLossSignal_[dir_], 0.0);
+    if (nodeBRlcMux != nullptr) {
+        nodeBRlcMux->emit(rlcCellThroughputSignal_[dir_], cellTputSample);
+        nodeBRlcMux->emit(rlcCellPacketLossSignal_[dir_], 0.0);
     }
     emit(rlcThroughputSignal_[dir_], tputSample);
     emit(rlcDelaySignal_[dir_], delay);

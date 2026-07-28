@@ -57,8 +57,8 @@ void LteRlcUmRxEntity::initBinderStage()
 {
     binder_.reference(this, "binderModule", true);
     LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
-    nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId());
-    // ASSERT(nodeB_ != nullptr); -- see commit message why this is commented out
+    nodeBRlcMux_ = binder_->getRlcMuxByNodeId(mac->getMacCellId());
+    // ASSERT(nodeBRlcMux_ != nullptr); -- see commit message why this is commented out
 }
 
 void LteRlcUmRxEntity::handleMessage(cMessage *msg)
@@ -296,15 +296,15 @@ void LteRlcUmRxEntity::toPdcpLte(Packet *pktAux)
         emit(rlcDelayD2DSignal_, (NOW - ts).dbl());
     }
 
-    if (nodeB_ == nullptr) {
-        // retry getting nodeB_, if it failed in initialize() due to cellId=0 in MAC (some race condition?)
+    if (nodeBRlcMux_ == nullptr) {
+        // retry getting nodeBRlcMux_, if it failed in initialize() due to cellId=0 in MAC (some race condition?)
         LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
-        nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId());
-        ASSERT(nodeB_ != nullptr);
+        nodeBRlcMux_ = binder_->getRlcMuxByNodeId(mac->getMacCellId());
+        ASSERT(nodeBRlcMux_ != nullptr);
     }
 
-    if (nodeB_ != nullptr) {
-        nodeB_->emit(rlcCellThroughputSignal_[dir_], cellTputSample);
+    if (nodeBRlcMux_ != nullptr) {
+        nodeBRlcMux_->emit(rlcCellThroughputSignal_[dir_], cellTputSample);
     }
 
     EV << NOW << " LteRlcUmRxEntity::toPdcp Created PDCP PDU with length " << pktAux->getByteLength() << " bytes" << endl;

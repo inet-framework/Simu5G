@@ -36,7 +36,7 @@ class LteRlcUmDataPdu;
 class LteRlcUmRxEntity : public RlcUmRxEntityBase
 {
     inet::ModuleRefByPar<Binder> binder_;
-    opp_component_ptr<cModule> nodeB_;
+    opp_component_ptr<cModule> nodeBRlcMux_;
     cArray pduBuffer_;
     RlcUmRxWindowDesc rxWindowDesc_;
     TTimer t_reordering_;

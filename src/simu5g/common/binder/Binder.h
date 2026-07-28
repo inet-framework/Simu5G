@@ -607,7 +607,7 @@ class Binder : public cSimpleModule
     virtual CellInfo *getCellInfoByNodeId(MacNodeId nodeId);
     virtual cModule *getPhyByNodeId(MacNodeId nodeId);
     virtual cModule *getMacByNodeId(MacNodeId nodeId);
-    virtual cModule *getRlcByNodeId(MacNodeId nodeId);
+    virtual cModule *getRlcMuxByNodeId(MacNodeId nodeId);
     virtual cModule *getRrcByNodeId(MacNodeId nodeId);
     virtual cModule *getIp2NicByNodeId(MacNodeId nodeId);
     virtual cModule *getHandoverPacketHolderByNodeId(MacNodeId nodeId);
