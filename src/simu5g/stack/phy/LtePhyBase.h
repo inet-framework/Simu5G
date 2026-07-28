@@ -241,6 +241,18 @@ class LtePhyBase : public ChannelAccess
      */
     virtual void handleUpperMessage(cMessage *msg);
 
+    /// name of the air frame created for an outgoing upper-layer packet
+    virtual const char *airFrameNameFor(const UserControlInfo *info);
+
+    /// scheduling priority of the air frame created for an outgoing upper-layer packet
+    virtual short airFramePriorityFor(const UserControlInfo *info) { return airFramePriority_; }
+
+    /// stamps additional per-technology fields on the outgoing control info (called after the Tx power)
+    virtual void stampExtraTxControlInfo(UserControlInfo *info) {}
+
+    /// hands the prepared air frame to the channel (default: unicast to the destination)
+    virtual void transmitFrame(LteAirFrame *frame, const UserControlInfo *info);
+
     /**
      * Processes messages received from the wireless channel.
      *

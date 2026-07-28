@@ -21,27 +21,40 @@ using namespace omnetpp;
 
 class D2dBinder;
 
+/**
+ * D2D-capable eNB PHY. The generic receive/transmit/feedback paths live in
+ * LtePhyEnb/LtePhyBase; this class only fills their seams:
+ * - appendExtraFeedback(): per-peer D2D CQI reporting (if enabled)
+ * - airFrameNameFor()/airFramePriorityFor(): the eNB/gNB is the sole sender
+ *   of D2D mode-switch notifications; such frames get a distinctive name and
+ *   an elevated (-1) scheduling priority so they are processed ahead of
+ *   ordinary air-frames starting/ending at the same instant.
+ */
 class LtePhyEnbD2D : public LtePhyEnb
 {
-
     bool enableD2DCqiReporting_;
 
     // holder of the global D2D state, resolved (find-or-create) at init
     D2dBinder *d2dBinder_ = nullptr;
 
   protected:
-
     void initialize(int stage) override;
-    void requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, inet::Packet *pkt) override;
-    void handleAirFrame(cMessage *msg) override;
 
-    /**
-     * The eNB/gNB is the sole sender of D2D mode-switch notifications. Such
-     * frames get a distinctive name and an elevated (-1) scheduling priority so
-     * they are processed ahead of ordinary air-frames; every other frame follows
-     * the generic ~LtePhyBase transmit path.
-     */
-    void handleUpperMessage(cMessage *msg) override;
+    void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, LteChannelModel *channelModel) override;
+
+    const char *airFrameNameFor(const UserControlInfo *info) override
+    {
+        if (info->getFrameType() == D2DMODESWITCHPKT)
+            return "d2dModeSwitch";
+        return LtePhyEnb::airFrameNameFor(info);
+    }
+
+    short airFramePriorityFor(const UserControlInfo *info) override
+    {
+        if (info->getFrameType() == D2DMODESWITCHPKT)
+            return -1;
+        return LtePhyEnb::airFramePriorityFor(info);
+    }
 };
 
 } //namespace

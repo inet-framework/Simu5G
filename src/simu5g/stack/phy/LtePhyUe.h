@@ -55,6 +55,13 @@ class LtePhyUe : public LtePhyBase
 
     void handleUpperMessage(cMessage *msg) override;
 
+    /// checks an outgoing upper-layer packet before transmission
+    /// (default: it must target the serving cell)
+    virtual void validateOutgoingFrame(const UserControlInfo *info);
+
+    /// CQI accounting for outgoing data packets in directions other than UL
+    virtual void recordExtraTxCqi(double cqi, const UserControlInfo *info) {}
+
     void emitMobilityStats() override;
 
   public:

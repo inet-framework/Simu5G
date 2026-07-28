@@ -59,8 +59,45 @@ class D2dUePhy : public Base
 
     void initialize(int stage) override;
     void handleAirFrame(cMessage *msg) override;
-    void handleUpperMessage(cMessage *msg) override;
     void handleSelfMessage(cMessage *msg) override;
+
+    // ---- outgoing-frame seams (replace the historical handleUpperMessage copy) ----
+
+    /// the D2D UE PHY performs no serving-cell check on outgoing frames
+    /// (D2D/D2D_MULTI frames legitimately target peers)
+    void validateOutgoingFrame(const UserControlInfo *info) override {}
+
+    /// D2D CQI accounting for outgoing data packets
+    void recordExtraTxCqi(double cqi, const UserControlInfo *info) override
+    {
+        if (info->getDirection() == D2D || info->getDirection() == D2D_MULTI)
+            this->emit(this->averageCqiD2DSignal_, cqi);
+    }
+
+    /// keep the historical D2D frame naming (all control frames named "harqFeedback-grant")
+    const char *airFrameNameFor(const UserControlInfo *info) override
+    {
+        switch (info->getFrameType()) {
+            case HARQPKT:
+            case GRANTPKT:
+            case RACPKT: return "harqFeedback-grant";
+            default: return "airframe";
+        }
+    }
+
+    void stampExtraTxControlInfo(UserControlInfo *info) override
+    {
+        info->setD2dTxPower(d2dHelper_.getD2dTxPower());
+    }
+
+    /// one-to-many D2D transmissions go out via sendDirect to all group members
+    void transmitFrame(LteAirFrame *frame, const UserControlInfo *info) override
+    {
+        if (info->getDirection() == D2D_MULTI)
+            sendMulticast(frame);
+        else
+            this->sendUnicast(frame);
+    }
 
     /**
      * Sends a frame to the UEs registered to the multicast group indicated in
@@ -264,75 +301,6 @@ void D2dUePhy<Base>::handleAirFrame(cMessage *msg)
 
     if (getEnvir()->isGUI())
         this->updateDisplayString();
-}
-
-template<class Base>
-void D2dUePhy<Base>::handleUpperMessage(cMessage *msg)
-{
-    auto pkt = check_and_cast<inet::Packet *>(msg);
-    auto lteInfo = pkt->removeTag<UserControlInfo>();
-
-    GHz carrierFreq = lteInfo->getCarrierFrequency();
-    LteChannelModel *channelModel = this->getChannelModel(carrierFreq);
-    if (channelModel == nullptr)
-        throw cRuntimeError("D2dUePhy::handleUpperMessage - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
-
-    if (lteInfo->getFrameType() == DATAPKT && channelModel->recordsUlTransmissionMap()) {
-        // Store the RBs used for data transmission to the binder (for UL interference computation).
-        RbMap rbMap = lteInfo->getGrantedBlocks();
-        Remote antenna = MACRO;  // TODO fix for multi-antenna.
-        Direction dir = lteInfo->getDirection();
-        this->binder_->storeUlTransmissionMap(channelModel->getCarrierFrequency(), antenna, rbMap, this->nodeId_, this->servingNodeId_, this, dir);
-    }
-
-    if (lteInfo->getFrameType() == DATAPKT && lteInfo->getUserTxParams() != nullptr) {
-        double cqi = lteInfo->getUserTxParams()->readCqiVector()[lteInfo->getCw()];
-        if (lteInfo->getDirection() == UL) {
-            this->emit(this->averageCqiUlSignal_, cqi);
-            this->recordCqi(cqi, UL);
-        }
-        else if (lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI)
-            this->emit(this->averageCqiD2DSignal_, cqi);
-    }
-
-    EV << NOW << " D2dUePhy::handleUpperMessage - message from stack" << endl;
-    LteAirFrame *frame = nullptr;
-
-    if (lteInfo->getFrameType() == HARQPKT || lteInfo->getFrameType() == GRANTPKT || lteInfo->getFrameType() == RACPKT) {
-        frame = new LteAirFrame("harqFeedback-grant");
-    }
-    else {
-        // Create LteAirFrame and encapsulate the received packet.
-        frame = new LteAirFrame("airframe");
-    }
-
-    frame->encapsulate(check_and_cast<cPacket *>(msg));
-
-    // Initialize frame fields.
-
-    frame->setSchedulingPriority(this->airFramePriority_);
-
-    // Set transmission duration according to the numerology.
-    NumerologyIndex numerologyIndex = this->binder_->getNumerologyIndexFromCarrierFreq((lteInfo->getCarrierFrequency()));
-    double slotDuration = this->binder_->getSlotDurationFromNumerologyIndex(numerologyIndex);
-    frame->setDuration(slotDuration);
-
-    // Set current position.
-    lteInfo->setCoord(this->getRadioPosition());
-
-    lteInfo->setTxPower(this->txPower_);
-    lteInfo->setD2dTxPower(d2dHelper_.getD2dTxPower());
-    frame->setControlInfo(lteInfo.get()->dup());
-
-    EV << "D2dUePhy::handleUpperMessage - " << nodeTypeToA(this->nodeType_) << " with id " << this->nodeId_
-       << " sending message to the air channel. Dest=" << lteInfo->getDestId() << endl;
-
-    // If this is a multicast/broadcast connection, send the frame to all neighbors in the hearing range.
-    // Otherwise, send unicast to the destination.
-    if (lteInfo->getDirection() == D2D_MULTI)
-        sendMulticast(frame);
-    else
-        this->sendUnicast(frame);
 }
 
 template<class Base>

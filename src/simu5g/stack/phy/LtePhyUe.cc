@@ -257,16 +257,21 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
         updateDisplayString();
 }
 
+void LtePhyUe::validateOutgoingFrame(const UserControlInfo *info)
+{
+    MacNodeId dest = info->getDestId();
+    if (dest != servingNodeId_) {
+        // UE is not sending to its master!!
+        throw cRuntimeError("LtePhyUe::validateOutgoingFrame  Ue preparing to send message to %hu instead of its master (%hu)", num(dest), num(servingNodeId_));
+    }
+}
+
 void LtePhyUe::handleUpperMessage(cMessage *msg)
 {
     auto pkt = check_and_cast<inet::Packet *>(msg);
     auto lteInfo = pkt->getTag<UserControlInfo>();
 
-    MacNodeId dest = lteInfo->getDestId();
-    if (dest != servingNodeId_) {
-        // UE is not sending to its master!!
-        throw cRuntimeError("LtePhyUe::handleUpperMessage  Ue preparing to send message to %hu instead of its master (%hu)", num(dest), num(servingNodeId_));
-    }
+    validateOutgoingFrame(lteInfo.get());
 
     GHz carrierFreq = lteInfo->getCarrierFrequency();
     LteChannelModel *channelModel = getChannelModel(carrierFreq);
@@ -277,7 +282,8 @@ void LtePhyUe::handleUpperMessage(cMessage *msg)
         // Store the RBs used for data transmission to the binder (for UL interference computation)
         RbMap rbMap = lteInfo->getGrantedBlocks();
         Remote antenna = MACRO;  // TODO fix for multi-antenna
-        binder_->storeUlTransmissionMap(channelModel->getCarrierFrequency(), antenna, rbMap, nodeId_, servingNodeId_, this, UL);
+        // note: the direction is always UL here for a plain UE (enforced by validateOutgoingFrame() above)
+        binder_->storeUlTransmissionMap(channelModel->getCarrierFrequency(), antenna, rbMap, nodeId_, servingNodeId_, this, (Direction)lteInfo->getDirection());
     }
 
     if (lteInfo->getFrameType() == DATAPKT && lteInfo->getUserTxParams() != nullptr) {
@@ -286,6 +292,8 @@ void LtePhyUe::handleUpperMessage(cMessage *msg)
             emit(averageCqiUlSignal_, cqi);
             recordCqi(cqi, UL);
         }
+        else
+            recordExtraTxCqi(cqi, lteInfo.get());
     }
 
     LtePhyBase::handleUpperMessage(msg);

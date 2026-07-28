@@ -108,20 +108,12 @@ void LtePhyBase::handleUpperMessage(cMessage *msg)
     auto pkt = check_and_cast<inet::Packet *>(msg);
     auto lteInfo = pkt->removeTag<UserControlInfo>();
 
-    const char *name;
-    switch (lteInfo->getFrameType()) {
-        case HARQPKT: name = "harqFeedback"; break;
-        case GRANTPKT: name = "harqFeedback-grant"; break;
-        case RACPKT: name = "rac"; break;
-        default: name = "airframe"; break;
-    }
-
-    LteAirFrame *frame = new LteAirFrame(name);
+    LteAirFrame *frame = new LteAirFrame(airFrameNameFor(lteInfo.get()));
 
     frame->encapsulate(check_and_cast<cPacket *>(msg));
 
     // initialize frame fields
-    frame->setSchedulingPriority(airFramePriority_);
+    frame->setSchedulingPriority(airFramePriorityFor(lteInfo.get()));
 
     // set transmission duration according to the numerology
     NumerologyIndex numerologyIndex = binder_->getNumerologyIndexFromCarrierFreq(lteInfo->getCarrierFrequency());
@@ -131,10 +123,26 @@ void LtePhyBase::handleUpperMessage(cMessage *msg)
     // set current position
     lteInfo->setCoord(getRadioPosition());
     lteInfo->setTxPower(txPower_);
+    stampExtraTxControlInfo(lteInfo.get());
     frame->setControlInfo(lteInfo.get()->dup());
 
     EV << "LtePhy: " << nodeTypeToA(nodeType_) << " with id " << nodeId_
        << " sending message to the air channel. Dest=" << lteInfo->getDestId() << endl;
+    transmitFrame(frame, lteInfo.get());
+}
+
+const char *LtePhyBase::airFrameNameFor(const UserControlInfo *info)
+{
+    switch (info->getFrameType()) {
+        case HARQPKT: return "harqFeedback";
+        case GRANTPKT: return "harqFeedback-grant";
+        case RACPKT: return "rac";
+        default: return "airframe";
+    }
+}
+
+void LtePhyBase::transmitFrame(LteAirFrame *frame, const UserControlInfo *info)
+{
     sendUnicast(frame);
 }
 

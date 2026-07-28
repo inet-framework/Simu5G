@@ -169,6 +169,28 @@ void LtePhyEnb::handleAirFrame(cMessage *msg)
         return;
     }
 
+    // Check if the frame is for us (the destination MacNodeId matches; for a
+    // multicast frame, we must be enrolled in its multicast group)
+    if (lteInfo->getDestId() != nodeId_) {
+        EV << "ERROR: Frame is not for us. Delete it." << endl;
+        EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
+        EV << "Frame MacNodeId: " << lteInfo->getDestId() << endl;
+        EV << "Local MacNodeId: " << nodeId_ << endl;
+        delete lteInfo;
+        delete frame;
+        return;
+    }
+
+    if (lteInfo->getPacketMulticastGroupId() != NODEID_NONE && !(binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId()))) {
+        EV << "Frame is for a multicast group, but we do not belong to that group. Delete the frame." << endl;
+        EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
+        EV << "Frame MacNodeId: " << lteInfo->getDestId() << endl;
+        EV << "Local MacNodeId: " << nodeId_ << endl;
+        delete lteInfo;
+        delete frame;
+        return;
+    }
+
     /*
      * This could happen if the ue associates with a new master while it has
      * already scheduled a packet for the old master: the packet is in the air
@@ -281,6 +303,9 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
         else
             header->setLteFeedbackDoubleVectorDl(fb);
     }
+
+    // additional per-link feedback (none in the base implementation)
+    appendExtraFeedback(header, lteinfo, frame, channelModel);
     EV << "LtePhyEnb::requestFeedback : Pisa Feedback Generated for nodeId: "
        << nodeId_ << " Feedback size: " << fb.size()
        << " Carrier: " << lteinfo->getCarrierFrequency() << endl;
