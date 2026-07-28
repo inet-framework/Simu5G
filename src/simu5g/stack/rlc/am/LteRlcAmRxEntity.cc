@@ -157,11 +157,11 @@ void LteRlcAmRxEntity::discard(const int sn)
     EV << NOW << " LteRlcAmRxEntity::discard , discarded " << discarded << " PDUs " << endl;
 
     if (dir != UNKNOWN_DIRECTION) {
-        cModule *ue = binder_->getRlcByNodeId((dir == DL ? dstId : srcId), UM);
+        cModule *ue = binder_->getRlcByNodeId((dir == DL ? dstId : srcId));
         if (ue != nullptr)
             ue->emit(rlcPacketLossSignal_[dir_], 1.0);
 
-        cModule *nodeb = binder_->getRlcByNodeId((dir == DL ? srcId : dstId), UM);
+        cModule *nodeb = binder_->getRlcByNodeId((dir == DL ? srcId : dstId));
         if (nodeb != nullptr)
             nodeb->emit(rlcCellPacketLossSignal_[dir_], 1.0);
     }
@@ -297,12 +297,12 @@ void LteRlcAmRxEntity::passUpLte(const int index)
     double delay = (NOW - pkt->getCreationTime()).dbl();
 
     if (dir == DL) {
-        nodeb = binder_->getRlcByNodeId(srcId, UM);
-        ue = binder_->getRlcByNodeId(dstId, UM);
+        nodeb = binder_->getRlcByNodeId(srcId);
+        ue = binder_->getRlcByNodeId(dstId);
     }
     else {
-        nodeb = binder_->getRlcByNodeId(dstId, UM);
-        ue = binder_->getRlcByNodeId(srcId, UM);
+        nodeb = binder_->getRlcByNodeId(dstId);
+        ue = binder_->getRlcByNodeId(srcId);
     }
 
     totalRcvdBytes_ += pkt->getByteLength();

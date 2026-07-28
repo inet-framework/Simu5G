@@ -904,7 +904,7 @@ cModule *Binder::getMacByNodeId(MacNodeId nodeId)
     return module->getSubmodule("cellularNic")->getSubmodule("mac");
 }
 
-cModule *Binder::getRlcByNodeId(MacNodeId nodeId, LteRlcType rlcType)
+cModule *Binder::getRlcByNodeId(MacNodeId nodeId)
 {
     cModule *module = getNodeModule(nodeId);
     if (module == nullptr) {

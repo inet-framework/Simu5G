@@ -57,7 +57,7 @@ void LteRlcUmRxEntity::initBinderStage()
 {
     binder_.reference(this, "binderModule", true);
     LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
-    nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
+    nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId());
     // ASSERT(nodeB_ != nullptr); -- see commit message why this is commented out
 }
 
@@ -195,7 +195,7 @@ void LteRlcUmRxEntity::enque(cPacket *pktAux)
     double tputSample = (double)totalPduRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
 
     // emit statistics
-    cModule *ue = binder_->getRlcByNodeId(ueId, UM);
+    cModule *ue = binder_->getRlcByNodeId(ueId);
     if (ue != nullptr) {
         if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
             ue->emit(rlcPduThroughputSignal_[dir_], tputSample);
@@ -297,7 +297,7 @@ void LteRlcUmRxEntity::toPdcpLte(Packet *pktAux)
     else           // UL. This module is at the eNB: get the node id of the sender
         ueId = lteInfo->getSourceId();
 
-    cModule *ue = binder_->getRlcByNodeId(ueId, UM);
+    cModule *ue = binder_->getRlcByNodeId(ueId);
 
     // emit statistics (throughput and delay only - no packet loss)
     totalCellRcvdBytes_ += length;
@@ -319,7 +319,7 @@ void LteRlcUmRxEntity::toPdcpLte(Packet *pktAux)
     if (nodeB_ == nullptr) {
         // retry getting nodeB_, if it failed in initialize() due to cellId=0 in MAC (some race condition?)
         LteMacBase *mac = getModuleFromPar<LteMacBase>(par("macModule"), this);
-        nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId(), UM);
+        nodeB_ = binder_->getRlcByNodeId(mac->getMacCellId());
         ASSERT(nodeB_ != nullptr);
     }
 

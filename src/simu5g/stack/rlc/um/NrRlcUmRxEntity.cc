@@ -59,7 +59,7 @@ cModule *NrRlcUmRxEntity::getUeRlcMux() const
     // owner; on the uplink it sits at the eNB/gNB, and the UE is the sender.
     Direction dir = static_cast<Direction>(flowControlInfo_->getDirection());
     MacNodeId ueId = (dir == UL) ? flowControlInfo_->getSourceId() : ownerNodeId_;
-    return binder_->getRlcByNodeId(ueId, UM);
+    return binder_->getRlcByNodeId(ueId);
 }
 
 void NrRlcUmRxEntity::emitRxStatistics(bool perPdu, double throughput, simtime_t delay) const

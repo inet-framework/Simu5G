@@ -62,7 +62,7 @@ void NrRlcAmRxEntity::emitRxStatistics(bool perPdu, double throughput, simtime_t
     Direction dir = (ackFlowControlInfo_->getDirection() == DL) ? UL : DL;
     MacNodeId ueId = (dir == UL) ? ackFlowControlInfo_->getDestId() : ackFlowControlInfo_->getSourceId();
 
-    cModule *ue = binder_->getRlcByNodeId(ueId, UM);
+    cModule *ue = binder_->getRlcByNodeId(ueId);
     if (ue == nullptr)
         return;
 
