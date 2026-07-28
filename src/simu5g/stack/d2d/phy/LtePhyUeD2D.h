@@ -14,51 +14,18 @@
 #define _LTE_AIRPHYUED2D_H_
 
 #include "simu5g/stack/phy/LtePhyUe.h"
-#include "simu5g/stack/d2d/phy/D2dUePhyHelper.h"
+#include "simu5g/stack/d2d/phy/D2dUePhy.h"
 
 namespace simu5g {
 
-using namespace omnetpp;
-
-class LtePhyUeD2D : public LtePhyUe
+/**
+ * D2D-capable LTE UE PHY: the D2dUePhy mixin layered over the core LTE UE PHY.
+ * All the D2D logic lives in the mixin (see D2dUePhy.h).
+ */
+class LtePhyUeD2D : public D2dUePhy<LtePhyUe>
 {
-  protected:
-
-    // holds the D2D-specific UE-PHY state and logic (shared with the NR variant):
-    // D2D Tx power and the D2D-multicast capture-effect machinery
-    D2dUePhyHelper d2dHelper_{this};
-
-    // timer for triggering decoding at the end of the TTI. Started when the first
-    // airframe is received. The self-message stays in the leaf (the module owns it);
-    // the captured frames it decodes live in d2dHelper_.
-    cMessage *d2dDecodingTimer_ = nullptr;
-
-    void initialize(int stage) override;
-    void handleAirFrame(cMessage *msg) override;
-    void handleUpperMessage(cMessage *msg) override;
-    void handleSelfMessage(cMessage *msg) override;
-
-    /**
-     * Sends a frame to the UEs registered to the multicast group indicated in
-     * the frame (optionally skipping receivers beyond multicastD2DRange).
-     * Frames are sent with zero transmission delay. D2D-specific: only the
-     * D2D UE PHY originates one-to-many D2D transmissions.
-     */
-    void sendMulticast(LteAirFrame *frame);
-
-  public:
-
-    void sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req) override;
-    double getTxPwr(Direction dir = UNKNOWN_DIRECTION) override
-    {
-        if (dir == D2D)
-            return d2dHelper_.getD2dTxPower();
-        return txPower_;
-    }
-
 };
 
 } //namespace
 
 #endif /* _LTE_AIRPHYUED2D_H_ */
-
