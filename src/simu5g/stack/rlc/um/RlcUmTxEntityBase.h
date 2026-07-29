@@ -49,6 +49,8 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
     static simsignal_t wastedGrantedBytesSignal_;   // NR
     static simsignal_t requestedPduSizeSignal_;     // NR
     static simsignal_t sentPduSizeSignal_;          // NR
+    static simsignal_t receivedPacketFromUpperLayerSignal_;   // NR
+    static simsignal_t sentPacketToLowerLayerSignal_;         // NR
 
     // D2D mode switch controller (nullptr when D2D is not enabled)
     D2DModeController *d2dModeController_ = nullptr;

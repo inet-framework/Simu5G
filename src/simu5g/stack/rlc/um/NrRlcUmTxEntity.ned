@@ -34,10 +34,14 @@ simple NrRlcUmTxEntity like simu5g.stack.rlc.IRlcTxEntity
 
         @signal[wastedGrantedBytes];
         @statistic[wastedGrantedBytes](title="Wasted granted bytes"; unit="B"; source="wastedGrantedBytes"; record=sum);
-        @signal[requestedPDUSize];
-        @statistic[requestedPDUSize](title="Requested PDU size"; unit="B"; source="requestedPDUSize"; record=vector);
-        @signal[sentPDUSize];
-        @statistic[sentPDUSize](title="Sent PDU size"; unit="B"; source="sentPDUSize"; record=vector);
+        @signal[requestedPduSize];
+        @statistic[requestedPduSize](title="Requested PDU size"; unit="B"; source="requestedPduSize"; record=vector);
+        @signal[sentPduSize];
+        @statistic[sentPduSize](title="Sent PDU size"; unit="B"; source="sentPduSize"; record=vector);
+        @signal[receivedPacketFromUpperLayer];
+        @statistic[receivedPacketFromUpperLayer](source="receivedPacketFromUpperLayer"; record=count,"sum(packetBytes)"; interpolationmode=none);
+        @signal[sentPacketToLowerLayer];
+        @statistic[sentPacketToLowerLayer](source="sentPacketToLowerLayer"; record=count,"sum(packetBytes)"; interpolationmode=none);
 
     gates:
         input in;       // SDUs from upper mux (PDCP)

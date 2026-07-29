@@ -33,6 +33,7 @@ void NrRlcUmTxEntity::initMode()
 
 bool NrRlcUmTxEntity::storeSdu(inet::Packet *pkt)
 {
+    emit(receivedPacketFromUpperLayerSignal_, pkt);
     sduBuffer->addSdu(pkt->getByteLength(), pkt);
     return true;
 }
@@ -123,6 +124,7 @@ void NrRlcUmTxEntity::rlcPduMake(int pduLength)
     pkt->insertAtFront(rlcPdu);
     EV << NOW << " NrRlcUmTxEntity::rlcPduMake - send PDU size " << pkt->getByteLength() << " to lower layer" << endl;
     emit(sentPduSizeSignal_, pkt->getByteLength());
+    emit(sentPacketToLowerLayerSignal_, pkt);
     sendPduToMac(pkt);
 
     notifyControllerIfEmptied();

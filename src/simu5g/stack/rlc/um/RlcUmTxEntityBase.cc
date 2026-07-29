@@ -29,8 +29,10 @@ using namespace inet;
 // independent of the LTE/NR concrete .cc files.
 simsignal_t RlcUmTxEntityBase::rlcPduCreatedSignal_ = registerSignal("rlcPduCreated");
 simsignal_t RlcUmTxEntityBase::wastedGrantedBytesSignal_ = registerSignal("wastedGrantedBytes");
-simsignal_t RlcUmTxEntityBase::requestedPduSizeSignal_ = registerSignal("requestedPDUSize");
-simsignal_t RlcUmTxEntityBase::sentPduSizeSignal_ = registerSignal("sentPDUSize");
+simsignal_t RlcUmTxEntityBase::requestedPduSizeSignal_ = registerSignal("requestedPduSize");
+simsignal_t RlcUmTxEntityBase::sentPduSizeSignal_ = registerSignal("sentPduSize");
+simsignal_t RlcUmTxEntityBase::receivedPacketFromUpperLayerSignal_ = registerSignal("receivedPacketFromUpperLayer");
+simsignal_t RlcUmTxEntityBase::sentPacketToLowerLayerSignal_ = registerSignal("sentPacketToLowerLayer");
 
 void RlcUmTxEntityBase::initialize(int stage)
 {
