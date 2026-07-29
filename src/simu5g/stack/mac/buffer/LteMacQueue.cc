@@ -20,7 +20,7 @@ using namespace omnetpp;
 using namespace inet;
 
 LteMacQueue::LteMacQueue(int queueSize) :
-    cPacketQueue("LteMacQueue"), lastUnenqueueableMainSno(UINT_MAX), queueSize_(queueSize)
+    cPacketQueue("LteMacQueue"), queueSize_(queueSize)
 {
 }
 
@@ -89,37 +89,15 @@ int64_t LteMacQueue::getQueueSize() const
 
 bool LteMacQueue::isEnqueueablePacket(Packet *pkt) {
 
-    auto chunk = pkt->peekAtFront<Chunk>();
-    auto pdu = dynamicPtrCast<const LteRlcAmPdu>(chunk);
-
     if (queueSize_ == 0) {
         // unlimited queue size -- nothing to check for
         return true;
     }
-    /* Check:
-     *
-     * For AM: We need to check if all fragments will fit in the queue
-     * For UM: The new UM implementation introduced in commit 9ab9b71c5358a70278e2fbd51bf33a9d1d81cb86
-     *         by G. Nardini only sends SDUs upon MAC SDU request. All SDUs are
-     *         accepted as long as the MAC queue size is not exceeded.
-     * For TM: No fragments are to be checked, anyway.
-     */
-    if (pdu != nullptr) { // for AM we need to check if all fragments will fit
-        if (pdu->getTotalFragments() > 1) {
-            int remainingFrags = (pdu->getLastSn() - pdu->getSnoFragment() + 1);
-            bool allFragsWillFit = (remainingFrags * pkt->getByteLength()) + getByteLength() < queueSize_;
-            bool enqueable = (pdu->getSnoMainPacket() != lastUnenqueueableMainSno) && allFragsWillFit;
-            if (allFragsWillFit && !enqueable) {
-                EV_DEBUG << "PDU would fit but discarded fragments before - rejecting fragment: " << pdu->getSnoMainPacket() << ":" << pdu->getSnoFragment() << std::endl;
-            }
-            if (!enqueable) {
-                lastUnenqueueableMainSno = pdu->getSnoMainPacket();
-            }
-            return enqueable;
-        }
-    }
 
-    // no fragments or unknown type -- can always be enqueued if there is enough space in the queue
+    // Every RLC mode sends PDUs only upon a MAC SDU request, sized to the grant,
+    // so a packet is enqueueable whenever it fits. (The old LTE AM entity
+    // pre-built fixed-size fragments and needed an all-fragments-will-fit check
+    // here; that design is gone.)
     return pkt->getByteLength() + getByteLength() < queueSize_;
 }
 

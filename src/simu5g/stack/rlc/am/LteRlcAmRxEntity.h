@@ -13,63 +13,63 @@
 #ifndef _SIMU5G_LTERLCAMRXENTITY_H_
 #define _SIMU5G_LTERLCAMRXENTITY_H_
 
-#include <deque>
-
 #include <inet/common/packet/Packet.h>
 
-#include "simu5g/common/LteControlInfo.h"
-#include "simu5g/common/timer/TTimer.h"
-#include "simu5g/stack/rlc/LteRlcDefs.h"
 #include "simu5g/stack/rlc/am/RlcAmRxEntityBase.h"
-#include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
+#include "simu5g/stack/rlc/am/RlcSduSlidingWindowReceptionBuffer.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
 
-
 /**
  * @class LteRlcAmRxEntity
  * @brief LTE (TS 36.322) RLC AM receiving entity.
  *
- * SN-contiguity defragmentation, PDU-SN reordering window, consumes
- * LteRlcAmPdu, emits an ACK_SN+NACK STATUS PDU.
+ * PDU-SN receiving window with per-PDU byte-interval coverage (for AMD PDU
+ * segments), t-Reordering + t-StatusProhibit, ACK_SN + NACK-list STATUS
+ * reports, and in-order FI-walk reassembly of the concatenated SDU stream.
+ *
+ * The window/status machinery deliberately mirrors NrRlcAmRxEntity (TS 38.322,
+ * where the analogous timer is t-Reassembly): the two specs share it, only the
+ * framing differs -- keep the two implementations in sync. Unlike NR (one SDU
+ * per PDU, delivered as each completes), the FI walk needs the PDU stream in
+ * sequence, since an SDU may span adjacent PDUs; delivery is therefore strictly
+ * in SN order.
  */
 class LteRlcAmRxEntity : public RlcAmRxEntityBase
 {
-    RlcWindowDesc rxWindowDesc_;
-    simtime_t ackReportInterval_;
-    simtime_t statusReportInterval_;
-    int firstSdu_ = 0;
-    TTimer timer_;
-    cArray pduBuffer_;
-    std::deque<inet::Packet *> pendingPduBuffer_;
-    std::vector<bool> received_;
-    std::vector<bool> discarded_;
-    Direction dir_ = UNKNOWN_DIRECTION;
+    // The receiving window; the unit the SN denotes is the AMD PDU
+    // (TS 36.322), not the SDU as in the NR entity.
+    RlcSduSlidingWindowReceptionBuffer *rxBuffer_ = nullptr;
+    unsigned int amWindowSize_ = 512;    // TS 36.322: 512 (10-bit SN space)
+    omnetpp::cMessage *tReorderingTimer_ = nullptr;
+    omnetpp::simtime_t tReordering_;
+    omnetpp::cMessage *tStatusProhibitTimer_ = nullptr;
+    omnetpp::simtime_t tStatusProhibit_;
+    unsigned int rxNextStatusTrigger_ = 0;
+    bool statusReportPending_ = false;
+
+    // An SDU cut across a PDU boundary: the whole-SDU dup carried by the last
+    // fragment seen, and how many of its bytes have arrived so far.
+    struct PendingSdu {
+        inet::Packet *pkt = nullptr;
+        size_t accumulated = 0;
+    } pendingSdu_;
 
   public:
-    LteRlcAmRxEntity();
     ~LteRlcAmRxEntity() override;
 
-    void enque(inet::Packet *pdu) override;
+    void enque(inet::Packet *pkt) override;
     void handleMessage(cMessage *msg) override;
 
   protected:
-
     void initMode() override;
 
   private:
-
-    void passUpLte(const int index);
-    void checkCompleteSdu(const int index);
-    void sendStatusReportLte();
-    int computeWindowShift() const;
-    void moveRxWindow(const int seqNum);
-    void discard(const int sn);
-    inet::Packet *defragmentFrames(std::deque<inet::Packet *>& fragmentFrames);
-    void routeControlToTxEntityLte(inet::Packet *pkt);
-    void bufferControlViaTxEntityLte(inet::Packet *pkt);
+    void passUpPdu(uint32_t sn);
+    void deliverSdu(inet::Packet *sdu);
+    void sendStatusReport();
 };
 
 } //namespace

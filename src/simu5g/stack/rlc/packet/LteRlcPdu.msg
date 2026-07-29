@@ -110,28 +110,35 @@ class LteRlcUmDataPdu extends LteRlcDataPdu
 };
 
 //
-// Lte RLC AM Pdu.
+// LTE RLC AM data PDU: an AMD PDU or, when rf is set, an AMD PDU segment
+// (3GPP TS 36.322 6.2.1.4 / 6.2.1.5).
 //
-class LteRlcAmPdu extends inet::FieldsChunk
+// Concatenation is modeled exactly as in the UM data PDU (the inherited SDU
+// list with per-SDU sizes plus the FI bits); an AMD PDU additionally carries
+// the poll bit, and its sequence number (10-bit on the wire; unbounded in the
+// model, as everywhere else) is the unit of ARQ.
+//
+// An AMD PDU segment -- a re-segmented retransmission built to fit a smaller
+// grant -- carries the byte range [soStart, soEnd] of the original PDU's data
+// field. As elsewhere in the model, the segment packet carries the original
+// PDU's whole SDU list, and only chunkLength reflects the bytes on the air.
+//
+class LteRlcAmDataPdu extends LteRlcDataPdu
 {
-    chunkLength = inet::B(1);
-    unsigned int totalFragments;    // Total number of fragments
-    unsigned int snoFragment;        // Sequence number of this fragment
-    unsigned int snoMainPacket;        // ID of packet (sequence number)
-
-    unsigned short amType enum(LteAmType);
-    unsigned short txNumber;
-    int firstSn;
-    int lastSn;
-    // STATUS PDU payload (amType == ACK): ACK_SN + list of NACKed SNs (3GPP TS 36.322 / 38.322 style)
-    StatusPduData data;
+    chunkLength = inet::B(RLC_HEADER_AM);
+    bool pollStatus = false;    // P bit (TS 36.322 5.2.2)
+    bool rf = false;            // resegmentation flag: this is an AMD PDU segment
+    unsigned int soStart = 0;   // segment offset of the first data byte carried
+    unsigned int soEnd = 0;     // segment offset of the last data byte carried
+    bool lsf = false;           // last segment flag
 }
 
-cplusplus(LteRlcAmPdu) {{
-  public:
-    // sequence check functions
-    virtual bool isWhole() const { return firstSn == lastSn; }
-    virtual bool isFirst() const { return firstSn == snoFragment; }
-    virtual bool isMiddle() const { return !isFirst() && !isLast(); }
-    virtual bool isLast() const { return lastSn == snoFragment; }
-}}
+//
+// LTE RLC AM STATUS PDU (TS 36.322 6.2.1.6): ACK_SN plus a NACK list, with
+// byte ranges (SOstart/SOend) for partially received PDUs.
+//
+class LteRlcAmStatusPdu extends inet::FieldsChunk
+{
+    chunkLength = inet::B(2);
+    StatusPduData data;
+}

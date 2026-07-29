@@ -141,7 +141,6 @@ class LteMacQueue : public cPacketQueue
      *
      */
     bool isEnqueueablePacket(inet::Packet *pkt);
-    unsigned int lastUnenqueueableMainSno; //<seq. number of
 
   private:
     /// Size of queue
