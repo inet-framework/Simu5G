@@ -27,7 +27,6 @@ class LtePdcpHeader;
 using namespace inet;
 
 /**
- * @class LtePdcpRxEntity
  * @brief Entity for PDCP Layer
  *
  * This is the PDCP RX entity of the LTE Stack.

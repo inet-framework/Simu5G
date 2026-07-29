@@ -15,7 +15,6 @@ using namespace omnetpp;
 
 
 /**
- * @class UpperMux
  * @brief Upper-layer PDCP packet dispatcher.
  *
  * Dispatches upper-layer packets to the correct TX entity by DrbKey,

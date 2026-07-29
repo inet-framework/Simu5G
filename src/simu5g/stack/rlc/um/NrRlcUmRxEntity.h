@@ -27,7 +27,6 @@ using namespace omnetpp;
 class LteMacBase;
 
 /**
- * @class NrRlcUmRxEntity
  * @brief NR (TS 38.322) RLC UM receiving entity.
  *
  * SI + byte-offset (SO) reassembly with a per-SDU SN window and a t-Reassembly

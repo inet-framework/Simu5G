@@ -21,7 +21,6 @@
 namespace simu5g {
 
 /**
- * @class PdcpUplinkRelay
  * @brief Uplink half of a DC-secondary PDCP relay (see PdcpRelayEntity).
  *
  * Receives PDCP PDUs from RLC (UL from the UE) and forwards them

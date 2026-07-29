@@ -20,8 +20,6 @@
 namespace simu5g {
 
 /**
- * @class X2DualConnectivityDataMsg
- *
  * Class derived from LteX2Message
  * It defines the message that encapsulates PDCP PDUs to be exchanged between Dual Connectivity managers.
  */

@@ -18,7 +18,6 @@
 namespace simu5g {
 
 /**
- * @class AmcPilotD2D
  * @brief AMC pilot for D2D communication
  */
 class AmcPilotD2D : public AmcPilot

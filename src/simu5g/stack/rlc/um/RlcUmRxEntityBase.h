@@ -25,7 +25,6 @@ class LteMacBase;
 class RlcMux;
 
 /**
- * @class RlcUmRxEntityBase
  * @brief Common shell of the RLC UM receiving entity.
  *
  * Holds the MAC-mux plumbing, the D2D mode-switch entry point and the UL

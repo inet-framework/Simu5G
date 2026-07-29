@@ -18,7 +18,6 @@
 namespace simu5g {
 
 /**
- * @class AmcPilotAuto
  * @brief AMC auto pilot
  *
  * Provides a simple online assignment of transmission mode.

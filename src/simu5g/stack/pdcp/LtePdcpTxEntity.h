@@ -30,7 +30,6 @@ using namespace inet;
 #define LTE_PDCP_HEADER_COMPRESSION_DISABLED    B(-1)
 
 /**
- * @class LtePdcpTxEntity
  * @brief Entity for PDCP Layer
  *
  * This is the PDCP entity of the LTE Stack.

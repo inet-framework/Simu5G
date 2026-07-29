@@ -19,8 +19,6 @@
 namespace simu5g {
 
 /**
- * @class X2HandoverControlMsg
- *
  * Class derived from LteX2Message
  * It defines the messages exchanged between Handover managers
  */

@@ -28,7 +28,6 @@ using namespace omnetpp;
 using namespace inet;
 
 /**
- * @class LteRlcAmTxEntity
  * @brief LTE (TS 36.322) RLC AM transmission entity.
  *
  * Builds one AMD PDU per MAC grant by concatenating queued SDUs and SDU

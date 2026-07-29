@@ -8,7 +8,6 @@
 namespace simu5g {
 
 /**
- * @class RlcTmRxEntity
  * @brief Receiver entity for Transparent Mode (TM).
  *
  * Simply forwards received PDUs to the upper layer without

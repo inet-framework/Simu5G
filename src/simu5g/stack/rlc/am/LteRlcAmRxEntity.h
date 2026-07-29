@@ -23,7 +23,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- * @class LteRlcAmRxEntity
  * @brief LTE (TS 36.322) RLC AM receiving entity.
  *
  * PDU-SN receiving window with per-PDU byte-interval coverage (for AMD PDU

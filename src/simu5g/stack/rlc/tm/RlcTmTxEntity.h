@@ -8,7 +8,6 @@
 namespace simu5g {
 
 /**
- * @class RlcTmTxEntity
  * @brief Transmission entity for Transparent Mode (TM).
  *
  * Buffers SDUs from the upper layer without segmentation.

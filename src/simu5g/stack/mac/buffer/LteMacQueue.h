@@ -23,7 +23,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- * @class LteMacQueue
  * @brief Queue for MAC SDU packets
  *
  * The Queue registers the following information:

@@ -30,7 +30,6 @@ using namespace omnetpp;
 class LtePhyUe;
 
 /**
- * @class LteDlFeedbackGenerator
  * @brief Lte Downlink Feedback Generator
  *
  */

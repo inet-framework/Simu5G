@@ -28,7 +28,6 @@ using namespace omnetpp;
 class RlcMux;
 
 /**
- * @class NrRlcAmRxEntity
  * @brief NR (TS 38.322) RLC AM receiving entity.
  *
  * SO byte-coverage reassembly with a per-SDU SN window, t-Reassembly +

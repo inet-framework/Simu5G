@@ -20,7 +20,6 @@ namespace inet { class Packet; }
 namespace simu5g {
 
 /**
- * @class PdcpRxEntityBase
  * @brief Abstract base class for all RX PDCP entities.
  *
  * Defines the interface that the PDCP module uses to hand packets

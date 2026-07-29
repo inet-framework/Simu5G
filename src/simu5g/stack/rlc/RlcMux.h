@@ -16,7 +16,6 @@ using namespace omnetpp;
 class BearerManagement;
 
 /**
- * @class RlcMux
  * @brief Lower-layer RLC packet dispatcher.
  *
  * Owns the RX routing table, which maps each DRB to the index of the

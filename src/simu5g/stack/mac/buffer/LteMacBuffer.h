@@ -22,7 +22,6 @@ using namespace omnetpp;
 class LteMacQueue;
 
 /**
- * @class LteMacBuffer
  * @brief  Buffers for MAC packets
  */
 class LteMacBuffer

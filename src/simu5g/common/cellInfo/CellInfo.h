@@ -24,7 +24,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- * @class CellInfo
  * @brief There is one CellInfo module for each eNB (thus one for each cell). Keeps cross-layer information about the cell
  */
 class CellInfo : public cSimpleModule

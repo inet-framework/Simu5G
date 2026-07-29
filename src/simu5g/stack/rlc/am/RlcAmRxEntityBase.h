@@ -24,7 +24,6 @@ using namespace omnetpp;
 
 
 /**
- * @class RlcAmRxEntityBase
  * @brief Common shell of the RLC AM receiving entity.
  *
  * Holds the signal set and the state used for control-PDU

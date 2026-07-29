@@ -9,7 +9,6 @@
 namespace simu5g {
 
 /**
- * @class RlcRxEntityBase
  * @brief Abstract base class for all RLC RX entities (UM, TM, AM).
  *
  * Defines the minimal interface that the RlcMux uses to manage

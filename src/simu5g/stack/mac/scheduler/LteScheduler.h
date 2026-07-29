@@ -56,7 +56,6 @@ struct SortedDesc
 };
 
 /**
- * @class LteScheduler
  */
 class LteScheduler
 {

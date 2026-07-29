@@ -21,7 +21,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- * @class LteRlcUmTxEntity
  * @brief LTE (TS 36.322) RLC UM transmission entity.
  *
  * FI framing + concatenation of multiple SDUs per PDU, one sequence number per

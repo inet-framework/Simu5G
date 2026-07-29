@@ -56,7 +56,6 @@ enum PdcpRxTimerType
 };
 
 /**
- * @class NRPdcpEntity
  * @brief Entity for New Radio PDCP Layer
  *
  * This is the PDCP entity of LTE/NR Stack.

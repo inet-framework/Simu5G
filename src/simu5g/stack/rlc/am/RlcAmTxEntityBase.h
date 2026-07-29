@@ -23,7 +23,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- * @class RlcAmTxEntityBase
  * @brief Common shell of the RLC AM transmission entity.
  *
  * Holds the signal set and the flow-control-info bookkeeping shared by both

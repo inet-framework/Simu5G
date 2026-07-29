@@ -24,7 +24,6 @@ namespace simu5g {
 class LteAmc;
 
 /**
- * @class AmcPilot
  * @brief Abstract AMC Pilot class
  *
  * This is the base class for all AMC pilots.

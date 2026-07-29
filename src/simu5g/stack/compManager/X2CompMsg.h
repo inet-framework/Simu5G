@@ -20,8 +20,6 @@
 namespace simu5g {
 
 /**
- * @class X2CompMsg
- *
  * Class derived from LteX2Message
  * It defines the message exchanged between CoMP managers
  */

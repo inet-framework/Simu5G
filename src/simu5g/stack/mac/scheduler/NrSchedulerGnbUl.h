@@ -18,8 +18,6 @@
 namespace simu5g {
 
 /**
- * @class NrSchedulerGnbUl
- *
  * NR gNB uplink scheduler.
  */
 class NrSchedulerGnbUl : public LteSchedulerEnbUl

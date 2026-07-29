@@ -34,7 +34,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- * @class LtePhy
  * @brief Physical layer of Lte Nic.
  *
  * This class implements the physical layer of the Lte Nic.

@@ -50,7 +50,6 @@ typedef std::pair<LteTrafficClass, CidBufferPair> LcgPair;
 typedef std::multimap<LteTrafficClass, CidBufferPair> LcgMap;
 
 /**
- * @class LteMacBase
  * @brief MAC Layer
  *
  * This is the MAC layer of LTE Stack:

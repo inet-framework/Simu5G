@@ -35,7 +35,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- *
  * This class implements the general structure of an MEC Service. It holds all the TCP connections
  * with the e.g. MEC Applications and manages its lifecycle. It manages Request-Reply and Subscribe-Notify schemes.
  * Every request is inserted in the queue and executed in FIFO order. Also, subscription events are queued in a separate queue and

@@ -21,7 +21,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- * @class NrRlcUmTxEntity
  * @brief NR (TS 38.322) RLC UM transmission entity.
  *
  * SI + byte-offset (SO) segmentation, one SDU segment per PDU, one sequence

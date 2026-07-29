@@ -17,7 +17,6 @@
 namespace simu5g {
 
 /**
- * @class PdcpDownlinkRelay
  * @brief Downlink half of a DC-secondary PDCP relay (see PdcpRelayEntity).
  *
  * Receives already-processed PDCP PDUs (from the master via X2) and forwards

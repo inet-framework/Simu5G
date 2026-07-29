@@ -18,7 +18,6 @@
 namespace simu5g {
 
 /**
- * @class NrPdcpTxEntity
  * @brief NR flavor of the transmitting PDCP entity.
  *
  * Adds the NR per-SDU statistics (pdcpSduSentNr) and the NR-leg source id of a

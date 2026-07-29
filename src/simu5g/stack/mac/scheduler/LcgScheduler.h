@@ -24,7 +24,6 @@ using namespace omnetpp;
 class LteSchedulerUeUl;
 class LteMacPdu;
 /**
- * @class LcgScheduler
  */
 typedef std::map<MacCid, unsigned int> ScheduleList;
 

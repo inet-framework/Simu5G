@@ -29,7 +29,6 @@ using namespace omnetpp;
 using namespace inet;
 
 /**
- * @class NrRlcAmTxEntity
  * @brief NR (TS 38.322) RLC AM transmission entity.
  *
  * Byte-offset (SO) segmentation with re-segmentation on retransmission via a

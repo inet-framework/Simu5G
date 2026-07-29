@@ -24,7 +24,6 @@ class D2DModeController;
 using namespace omnetpp;
 
 /**
- * @class RlcUmTxEntityBase
  * @brief Common shell of the RLC UM transmission entity.
  *
  * Holds the MAC plumbing, the D2D mode-switch machinery (holding buffer +

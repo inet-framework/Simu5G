@@ -19,7 +19,6 @@
 namespace simu5g {
 
 /**
- * @class DcPdcpLegSplitter
  * @brief TX-side leg dispatcher for a dual-connectivity split bearer.
  *
  * Steers each PDU to a leg per the TechnologyReq tag and applies the leg's

@@ -18,8 +18,6 @@
 namespace simu5g {
 
 /**
- * @class LteSchedulerEnbUl
- *
  * LTE eNB uplink scheduler.
  */
 class LteSchedulerEnbUl : public LteSchedulerEnb

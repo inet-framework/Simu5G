@@ -25,7 +25,6 @@ class LteMacBase;
 class LteRlcUmDataPdu;
 
 /**
- * @class LteRlcUmRxEntity
  * @brief LTE (TS 36.322) RLC UM receiving entity.
  *
  * FI-walk reassembly across concatenated PDUs, PDU-SN reordering window with a

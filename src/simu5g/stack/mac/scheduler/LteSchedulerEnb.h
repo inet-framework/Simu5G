@@ -28,8 +28,6 @@ class LteAllocationModule;
 class LteMacEnb;
 
 /**
- * @class LteSchedulerEnb
- *
  */
 class LteSchedulerEnb : public cSimpleModule
 {
