@@ -64,6 +64,21 @@ class RlcAmTxEntityBase : public RlcTxEntityBase
     // concrete subclasses.
     FlowControlInfo *lteInfo_ = nullptr;
 
+    // Radio-link-failure state (TS 36.322 5.2.1 / TS 38.322 5.3.2): set once a unit
+    // of this entity's ARQ (an SDU for NR, an AMD PDU for LTE) reaches
+    // maxRtxThreshold_ retransmissions. Initialized by the concrete subclasses from
+    // their maxRtxThreshold parameter.
+    bool radioLinkFailureDetected_ = false;
+    unsigned int maxRtxThreshold_ = 0;
+
+    /**
+     * Declare a radio link failure towards RRC: this entity's ARQ unit has reached
+     * maxRtxThreshold_ retransmissions. BearerManagement tears down the bearer's
+     * MAC/RLC/PDCP state at a safe point; repeat calls are absorbed there, so this
+     * may be called from any path that hits the threshold.
+     */
+    void declareRadioLinkFailure();
+
     ~RlcAmTxEntityBase() override { delete lteInfo_; }
 
   public:

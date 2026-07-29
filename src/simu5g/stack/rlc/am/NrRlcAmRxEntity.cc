@@ -50,25 +50,6 @@ void NrRlcAmRxEntity::initMode()
     tStatusProhibit_ = par("t_StatusProhibit");
 }
 
-void NrRlcAmRxEntity::emitRxStatistics(bool perPdu, double throughput, simtime_t delay)
-{
-    if (ackFlowControlInfo_ == nullptr)
-        return;
-
-    // ackFlowControlInfo_ is the reversed flow info (it stamps the STATUS PDUs going
-    // back), so the data flowed in the opposite direction to the one it names.
-    Direction dir = (ackFlowControlInfo_->getDirection() == DL) ? UL : DL;
-
-    emit(perPdu ? rlcPduThroughputSignal_[dir] : rlcThroughputSignal_[dir], throughput);
-    emit(perPdu ? rlcPduDelaySignal_[dir] : rlcDelaySignal_[dir], delay.dbl());
-    if (!perPdu) {
-        // AM repairs everything it is given, so nothing is ever lost to the upper
-        // layer. Reporting the zero makes that a measured result rather than an
-        // absent one.
-        emit(rlcPacketLossSignal_[dir], 0.0);
-    }
-}
-
 void NrRlcAmRxEntity::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage()) {

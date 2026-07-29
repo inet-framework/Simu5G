@@ -47,12 +47,6 @@ class NrRlcAmRxEntity : public RlcAmRxEntityBase
     unsigned int amWindowSize_ = 0;
     bool statusReportPending_ = false;
 
-    unsigned int totalPduRcvdBytes_ = 0;
-
-    // Emit this bearer's delay, throughput and packet-loss statistics for a received
-    // PDU or a delivered SDU.
-    void emitRxStatistics(bool perPdu, double throughput, simtime_t delay);
-
   public:
     ~NrRlcAmRxEntity() override;
 

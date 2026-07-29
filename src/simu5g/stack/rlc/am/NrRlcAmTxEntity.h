@@ -48,7 +48,6 @@ class NrRlcAmTxEntity : public RlcAmTxEntityBase
     RlcSduSlidingWindowTransmissionBuffer *txBuffer_ = nullptr;
     RlcRetransmissionBuffer *rtxBuffer_ = nullptr;
     std::list<omnetpp::cPacket *> controlBuffer_;
-    bool radioLinkFailureDetected_ = false;
     std::string nameEntity_;
     unsigned int sn_ = 0;
     unsigned int txNextAck_ = 0;
@@ -58,7 +57,6 @@ class NrRlcAmTxEntity : public RlcAmTxEntityBase
     unsigned int pollPdu_ = 0;
     unsigned int pollByte_ = 0;
     unsigned int pollSn_ = 0;
-    unsigned int maxRtxThreshold_ = 0;
     bool pollPending_ = false;
     omnetpp::cMessage *tPollRetransmitTimer_ = nullptr;
     omnetpp::simtime_t tPollRetransmit_;
@@ -85,14 +83,6 @@ class NrRlcAmTxEntity : public RlcAmTxEntityBase
     void handleMessage(cMessage *msg) override;
 
   private:
-
-    /**
-     * Declare a radio link failure towards RRC (TS 38.322 5.3.2): this entity's SDU
-     * has reached maxRtxThreshold retransmissions. BearerManagement tears down the
-     * bearer's MAC/RLC/PDCP state at a safe point; repeat calls are absorbed there,
-     * so this may be called from any path that hits the threshold.
-     */
-    void declareRadioLinkFailure();
 
     bool sendRetransmission(int pduSize);
     void reportBufferStatus();

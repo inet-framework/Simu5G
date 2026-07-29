@@ -66,6 +66,14 @@ class RlcAmRxEntityBase : public RlcRxEntityBase
 
     // Per-bearer throughput accounting, common to both passUp implementations.
     unsigned int totalRcvdBytes_ = 0;
+    unsigned int totalPduRcvdBytes_ = 0;
+
+    /**
+     * Emit this bearer's delay and throughput statistics for a received PDU
+     * (perPdu = true, before reassembly) or a delivered SDU (perPdu = false), the
+     * latter together with the always-zero AM packet-loss sample.
+     */
+    void emitRxStatistics(bool perPdu, double throughput, omnetpp::simtime_t delay);
 
     void initialize(int stage) override;
 

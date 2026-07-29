@@ -20,7 +20,6 @@
 #include "simu5g/stack/rlc/am/packet/NrRlcAmStatusPdu_m.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
-#include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 
@@ -367,24 +366,6 @@ void NrRlcAmTxEntity::reportBufferStatus()
         pkt->insertAtFront(rlcPdu);
         sendNewDataNotificationNr(pkt);
         delete pkt;
-    }
-}
-
-void NrRlcAmTxEntity::declareRadioLinkFailure()
-{
-    if (radioLinkFailureDetected_)
-        return;
-
-    EV << nameEntity_ << " - radio link failure: an SDU reached maxRtxThreshold ("
-       << maxRtxThreshold_ << ") retransmissions" << endl;
-    radioLinkFailureDetected_ = true;
-
-    // Indicate the failure to RRC/BearerManagement (TS 38.322 5.3.2 / TS 36.322
-    // 5.2.1): it tears down this bearer's MAC/RLC/PDCP state at a safe point.
-    if (lteInfo_) {
-        bool isNr = isNrUe(lteInfo_->getSourceId()) || isNrUe(lteInfo_->getDestId());
-        auto *bm = inet::getModuleFromPar<BearerManagement>(par("bearerManagementModule"), this);
-        bm->scheduleRadioLinkFailure(lteInfo_->getDestId(), isNr);
     }
 }
 
