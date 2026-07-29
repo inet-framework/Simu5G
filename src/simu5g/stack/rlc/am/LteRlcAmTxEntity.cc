@@ -293,8 +293,10 @@ bool LteRlcAmTxEntity::sendRetransmission(int pduSize)
 
     auto it = txWindow_.find(next.sn);
     if (it == txWindow_.end()) {
-        if (radioLinkFailureDetected_)
-            return false;
+        // Unreachable after a radio link failure: sendPdus() gates on the RLF flag
+        // before calling here, and the flag only changes in other events. A miss
+        // therefore means the retransmission buffer references an SN the TX window
+        // no longer holds -- a bookkeeping bug worth failing fast on.
         throw cRuntimeError("LteRlcAmTxEntity::sendRetransmission PDU sn=%u not in the TX window", next.sn);
     }
     uint32_t payloadLength = it->second.payloadLength;

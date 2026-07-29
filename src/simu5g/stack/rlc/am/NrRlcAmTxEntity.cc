@@ -386,8 +386,10 @@ bool NrRlcAmTxEntity::sendRetransmission(int pduSize)
             end = totalLength - 1;
         }
         else {
-            if (radioLinkFailureDetected_)
-                return false;
+            // Unreachable after a radio link failure: sendPdus() gates on the RLF flag
+            // before calling here, and the flag only changes in other events. A miss
+            // therefore means the retransmission buffer references an SN the TX window
+            // no longer holds -- a bookkeeping bug worth failing fast on.
             throw cRuntimeError("NrRlcAmTxEntity::sendRetransmission whole SDU sn=%u not found", next.sn);
         }
     }
@@ -398,16 +400,10 @@ bool NrRlcAmTxEntity::sendRetransmission(int pduSize)
     if (budget < 0)
         return false;
     PendingSegment segment = txBuffer_->getRetransmissionSegment(next.sn, start, end, budget);
-    if (!segment.isValid) {
-        if (radioLinkFailureDetected_)
-            return false;
+    if (!segment.isValid)
         throw cRuntimeError("NrRlcAmTxEntity::sendRetransmission SDU sn=%u: invalid segment", next.sn);
-    }
-    if (!segment.ptr) {
-        if (radioLinkFailureDetected_)
-            return false;
+    if (!segment.ptr)
         throw cRuntimeError("NrRlcAmTxEntity::sendRetransmission SDU sn=%u: null pointer", next.sn);
-    }
 
     sendSegment(segment);
     rtxBuffer_->markRetransmitted(next);
