@@ -152,3 +152,7 @@
 /simulations/lte/rlc/,                   -f omnetpp.ini -c AM-RLF-Reestablish -r 0,              14s,        b1b1-f6cf/tplx;56f8-5c6c/tilx;42b4-42d1/~tNl;3f2a-6276/sz, PASS,
 /simulations/lte/rlc/,                   -f omnetpp.ini -c UM-Lossy -r 2,                        5s,         fc44-7f23/tplx;0ff8-26d2/tilx;b264-c369/~tNl;2207-e110/sz, PASS,
 /simulations/lte/demo/,                  -f omnetpp.ini -c VoIP-AM -r 0,                         5s,         1fd0-2e3c/tplx;7120-883b/tilx;725f-0e6b/~tNl;7588-49c8/sz, PASS,
+/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Lossy-UL -r 0,                     5s,         b02b-40bd/tplx;174f-c345/tilx;a991-4834/~tNl;5b92-db84/sz, PASS,
+/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Lossy-UL -r 0,                     5s,         ae82-5e47/tplx;40fd-bfcc/tilx;ae43-f707/~tNl;c5dc-aa6d/sz, PASS,
+/simulations/lte/rlc/,                   -f omnetpp.ini -c TCP-AM -r 0,                          5s,         49f0-3881/tplx;12a8-b2d2/tilx;52b9-2f22/~tNl;4c91-54fc/sz, PASS,
+/simulations/lte/test_handover/,         -f omnetpp.ini -c VoIP-AM-Handover -r 0,               15s,         b26c-3d63/tplx;74f8-10e9/tilx;cb6d-d91b/~tNl;590b-fbca/sz, PASS,
