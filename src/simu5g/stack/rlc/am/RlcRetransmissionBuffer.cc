@@ -13,43 +13,43 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#include "RlcSduRetransmissionBuffer.h"
+#include "RlcRetransmissionBuffer.h"
 
 namespace simu5g {
 
-RlcSduRetransmissionBuffer::RlcSduRetransmissionBuffer(uint32_t threshold)
+RlcRetransmissionBuffer::RlcRetransmissionBuffer(uint32_t threshold)
     : maxRetxThreshold_(threshold)
 {
 }
 
-RlcSduRetransmissionBuffer::~RlcSduRetransmissionBuffer()
+RlcRetransmissionBuffer::~RlcRetransmissionBuffer()
 {
 }
 
 
-bool RlcSduRetransmissionBuffer::addNack(uint32_t sn, bool isWhole, uint32_t start, uint32_t end)
+bool RlcRetransmissionBuffer::addNack(uint32_t sn, bool isWhole, uint32_t start, uint32_t end)
 {
     RetxTask task{sn, start, end, isWhole};
     bool alreadyPending = (pendingRetx_.find(task) != pendingRetx_.end());
 
-    if (sduRetxCounters_.find(sn) == sduRetxCounters_.end()) {
+    if (retxCounters_.find(sn) == retxCounters_.end()) {
         // Considered for retransmission for the first time: RETX_COUNT starts at zero.
-        sduRetxCounters_[sn].retxCount = 0;
+        retxCounters_[sn].retxCount = 0;
     }
-    else if (!alreadyPending && !sduRetxCounters_[sn].incrementedInCurrentRound) {
-        sduRetxCounters_[sn].retxCount++;
-        sduRetxCounters_[sn].incrementedInCurrentRound = true;
+    else if (!alreadyPending && !retxCounters_[sn].incrementedInCurrentRound) {
+        retxCounters_[sn].retxCount++;
+        retxCounters_[sn].incrementedInCurrentRound = true;
 
-        if (sduRetxCounters_[sn].retxCount >= maxRetxThreshold_)
+        if (retxCounters_[sn].retxCount >= maxRetxThreshold_)
             return false;
     }
 
     pendingRetx_.insert(task);
     return true;
 }
-void RlcSduRetransmissionBuffer::clearSdu(uint32_t sn)
+void RlcRetransmissionBuffer::clearSn(uint32_t sn)
 {
-    sduRetxCounters_.erase(sn);
+    retxCounters_.erase(sn);
     for (auto it = pendingRetx_.begin(); it != pendingRetx_.end(); ) {
         if (it->sn == sn)
             it = pendingRetx_.erase(it);
@@ -57,7 +57,7 @@ void RlcSduRetransmissionBuffer::clearSdu(uint32_t sn)
             ++it;
     }
 }
-uint64_t RlcSduRetransmissionBuffer::getRetxPendingBytes()
+uint64_t RlcRetransmissionBuffer::getRetxPendingBytes()
 {
     uint64_t total = 0;
     for (const auto &task : pendingRetx_)

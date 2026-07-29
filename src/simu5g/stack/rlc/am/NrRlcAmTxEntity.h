@@ -20,7 +20,7 @@
 
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/stack/rlc/am/RlcAmTxEntityBase.h"
-#include "simu5g/stack/rlc/am/RlcSduRetransmissionBuffer.h"
+#include "simu5g/stack/rlc/am/RlcRetransmissionBuffer.h"
 #include "simu5g/stack/rlc/am/RlcSduSlidingWindowTransmissionBuffer.h"
 
 namespace simu5g {
@@ -46,7 +46,7 @@ class NrRlcAmTxEntity : public RlcAmTxEntityBase
     };
     std::list<SduInfo *> sduBuffer_;
     RlcSduSlidingWindowTransmissionBuffer *txBuffer_ = nullptr;
-    RlcSduRetransmissionBuffer *rtxBuffer_ = nullptr;
+    RlcRetransmissionBuffer *rtxBuffer_ = nullptr;
     std::list<omnetpp::cPacket *> controlBuffer_;
     bool radioLinkFailureDetected_ = false;
     std::string nameEntity_;

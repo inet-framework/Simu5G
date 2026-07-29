@@ -64,7 +64,7 @@ void NrRlcAmTxEntity::initialize(int stage)
 
         nameEntity_ = getFullPath();
         txBuffer_ = new RlcSduSlidingWindowTransmissionBuffer(amWindowSize_, nameEntity_ + "-tx-sliding window:");
-        rtxBuffer_ = new RlcSduRetransmissionBuffer(maxRtxThreshold_);
+        rtxBuffer_ = new RlcRetransmissionBuffer(maxRtxThreshold_);
         lastSduSample_ = NOW;
     }
 }
@@ -397,7 +397,7 @@ bool NrRlcAmTxEntity::sendRetransmission(int pduSize)
     uint32_t start = next.soStart;
     uint32_t end = next.soEnd;
 
-    if (next.isWholeSdu) {
+    if (next.isWholeUnit) {
         Packet *ptr = nullptr;
         uint32_t totalLength = 0;
         if (txBuffer_->getSduData(next.sn, ptr, totalLength)) {
@@ -476,7 +476,7 @@ void NrRlcAmTxEntity::processControlPacket(Packet *pktPdu)
             if (txBuffer_->getSduData(next, sdu, totalLength)) {
                 std::set<uint32_t> acked = txBuffer_->handleAck(next, 0, totalLength - 1, pollSn_, restartPoll);
                 for (uint32_t ackedSn : acked)
-                    rtxBuffer_->clearSdu(ackedSn);
+                    rtxBuffer_->clearSn(ackedSn);
             }
         }
         ++next;
