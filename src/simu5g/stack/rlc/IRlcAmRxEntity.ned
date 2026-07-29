@@ -12,18 +12,6 @@
 package simu5g.stack.rlc;
 
 //
-// Transmitting side of an RLC AM entity: extends the generic TX interface
-// with the gates over which the co-located receiving side hands it control
-// PDUs (see RlcAmEntityBase).
-//
-moduleinterface IRlcAmTxEntity extends IRlcTxEntity
-{
-    gates:
-        input feedbackIn;    // STATUS PDUs received from the peer (to ARQ)
-        input statusIn;  // locally generated STATUS reports (to transmit)
-}
-
-//
 // Receiving side of an RLC AM entity: extends the generic RX interface with
 // the gates over which it hands control PDUs to the co-located transmitting
 // side (see RlcAmEntityBase).
