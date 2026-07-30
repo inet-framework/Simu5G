@@ -19,7 +19,6 @@ NrRlcAmDataPdu::NrRlcAmDataPdu() : LteRlcDataPdu() {
 }
 
 NrRlcAmDataPdu::~NrRlcAmDataPdu() {
-    // TODO Auto-generated destructor stub
 }
 
 } /* namespace simu5g */

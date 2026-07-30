@@ -83,7 +83,6 @@ bool RlcUmReceptionBuffer::handleSegment(uint32_t sn, uint32_t totalLen, uint32_
         discardOutsideWindow();
 
         if (!isWithinWindow(RX_Next_Reassembly)) {
-            // TODO: we may be leaking sdu pointers here
             setNextReassemblyToFirstInWindow();
         }
     }

@@ -48,7 +48,6 @@ class NrRlcAmTxEntity : public RlcAmTxEntityBase
     std::list<omnetpp::cPacket *> controlBuffer_;
     std::string nameEntity_;
     unsigned int sn_ = 0;
-    unsigned int txNextAck_ = 0;
     unsigned int amWindowSize_ = 0;
     unsigned int pduWithoutPoll_ = 0;
     unsigned int byteWithoutPoll_ = 0;
