@@ -10,7 +10,7 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/pdcp/LteRxPdcpEntity.h"
+#include "simu5g/stack/pdcp/LtePdcpRxEntity.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include <inet/common/ProtocolTag_m.h>
@@ -24,14 +24,14 @@
 
 namespace simu5g {
 
-Define_Module(LteRxPdcpEntity);
+Define_Module(LtePdcpRxEntity);
 
-simsignal_t LteRxPdcpEntity::receivedPacketFromLowerLayerSignal_ = registerSignal("receivedPacketFromLowerLayer");
-simsignal_t LteRxPdcpEntity::pdcpSduReceivedSignal_ = registerSignal("pdcpSduReceived");
-simsignal_t LteRxPdcpEntity::sentPacketToUpperLayerSignal_ = registerSignal("sentPacketToUpperLayer");
+simsignal_t LtePdcpRxEntity::receivedPacketFromLowerLayerSignal_ = registerSignal("receivedPacketFromLowerLayer");
+simsignal_t LtePdcpRxEntity::pdcpSduReceivedSignal_ = registerSignal("pdcpSduReceived");
+simsignal_t LtePdcpRxEntity::sentPacketToUpperLayerSignal_ = registerSignal("sentPacketToUpperLayer");
 
 
-void LteRxPdcpEntity::initialize(int stage)
+void LtePdcpRxEntity::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
@@ -41,10 +41,10 @@ void LteRxPdcpEntity::initialize(int stage)
     }
 }
 
-void LteRxPdcpEntity::handlePacketFromLowerLayer(Packet *pkt)
+void LtePdcpRxEntity::handlePacketFromLowerLayer(Packet *pkt)
 {
     emit(receivedPacketFromLowerLayerSignal_, pkt);
-    EV << NOW << " LteRxPdcpEntity::handlePacketFromLowerLayer - DRB ID[" << drbId_ << "] - processing packet from RLC layer" << endl;
+    EV << NOW << " LtePdcpRxEntity::handlePacketFromLowerLayer - DRB ID[" << drbId_ << "] - processing packet from RLC layer" << endl;
 
     // Extract sequence number from PDCP header before popping it
     auto pdcpHeader = pkt->peekAtFront<LtePdcpHeader>();
@@ -66,24 +66,24 @@ void LteRxPdcpEntity::handlePacketFromLowerLayer(Packet *pkt)
     handlePdcpSdu(pkt, sequenceNumber);
 }
 
-void LteRxPdcpEntity::handlePdcpSdu(Packet *pkt, unsigned int sequenceNumber)
+void LtePdcpRxEntity::handlePdcpSdu(Packet *pkt, unsigned int sequenceNumber)
 {
-    Enter_Method("LteRxPdcpEntity::handlePdcpSdu");
+    Enter_Method("LtePdcpRxEntity::handlePdcpSdu");
 
-    EV << NOW << " LteRxPdcpEntity::handlePdcpSdu - processing PDCP SDU with SN[" << sequenceNumber << "]" << endl;
+    EV << NOW << " LtePdcpRxEntity::handlePdcpSdu - processing PDCP SDU with SN[" << sequenceNumber << "]" << endl;
 
     // deliver to IP layer
     pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
     deliverSduToUpperLayer(pkt);
 }
 
-void LteRxPdcpEntity::deliverSduToUpperLayer(Packet *pkt)
+void LtePdcpRxEntity::deliverSduToUpperLayer(Packet *pkt)
 {
     emit(sentPacketToUpperLayerSignal_, pkt);
     send(pkt, "out");
 }
 
-void LteRxPdcpEntity::decompressHeader(Packet *pkt)
+void LtePdcpRxEntity::decompressHeader(Packet *pkt)
 {
     if (isCompressionEnabled()) {
         pkt->trim();

@@ -10,24 +10,24 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/pdcp/NrTxPdcpEntity.h"
+#include "simu5g/stack/pdcp/NrPdcpTxEntity.h"
 
 namespace simu5g {
 
-Define_Module(NrTxPdcpEntity);
+Define_Module(NrPdcpTxEntity);
 
-simsignal_t NrTxPdcpEntity::pdcpSduSentNrSignal_ = registerSignal("pdcpSduSentNr");
+simsignal_t NrPdcpTxEntity::pdcpSduSentNrSignal_ = registerSignal("pdcpSduSentNr");
 
-void NrTxPdcpEntity::initialize(int stage)
+void NrPdcpTxEntity::initialize(int stage)
 {
-    LteTxPdcpEntity::initialize(stage);
+    LtePdcpTxEntity::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         if (getNodeTypeById(nodeId_) == UE)
             nrNodeId_ = MacNodeId(getContainingNode(this)->par("nrMacNodeId").intValue());
     }
 }
 
-void NrTxPdcpEntity::deliverPdcpPdu(Packet *pkt)
+void NrPdcpTxEntity::deliverPdcpPdu(Packet *pkt)
 {
     if (!emitPerSduSignals_) {
         // multi-leg bearer: the compound's splitter does leg dispatch, id mapping and statistics
@@ -38,7 +38,7 @@ void NrTxPdcpEntity::deliverPdcpPdu(Packet *pkt)
     if (getNodeTypeById(nodeId_) == UE) {
         // single-leg NR bearer of an NR UE: NR-leg source id + NR-flavored statistics
         auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
-        EV << NOW << " NrTxPdcpEntity::deliverPdcpPdu - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to NR RLC" << endl;
+        EV << NOW << " NrPdcpTxEntity::deliverPdcpPdu - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to NR RLC" << endl;
         lteInfo->setSourceId(nrNodeId_);
         if (hasListeners(pdcpSduSentNrSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D) {
             emit(pdcpSduSentNrSignal_, pkt);
@@ -47,7 +47,7 @@ void NrTxPdcpEntity::deliverPdcpPdu(Packet *pkt)
         send(pkt, "out");
     }
     else { // gNB: same as the base entity
-        LteTxPdcpEntity::deliverPdcpPdu(pkt);
+        LtePdcpTxEntity::deliverPdcpPdu(pkt);
     }
 }
 

@@ -30,7 +30,7 @@ package simu5g.stack.pdcp;
 simple DcPdcpLegSplitter like IPdcpLegSplitter
 {
     parameters:
-        int numLegs;                        // number of legs (set by the enclosing PdcpEntity)
+        int numLegs;                        // number of legs (set by the enclosing PdcpEntityBase)
         string binderModule = default("binder");
         @display("i=block/dispatch");
         @signal[sentPacketToLowerLayer];
@@ -38,5 +38,5 @@ simple DcPdcpLegSplitter like IPdcpLegSplitter
         @signal[pdcpSduSentNr];
     gates:
         input in;               // PDUs from the TX entity
-        output out[];           // to leg k (sized by the enclosing PdcpEntity's connections)
+        output out[];           // to leg k (sized by the enclosing PdcpEntityBase's connections)
 }

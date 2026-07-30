@@ -12,10 +12,10 @@
 package simu5g.stack.pdcp;
 
 //
-// PDCP entity of one data radio bearer: packages the transmitting and the
-// receiving side of TS 36.323 / 38.323, plus the leg split/join stage of a
-// multi-leg bearer (e.g. an NR dual connectivity split bearer). Created
-// dynamically by BearerManagement, one per (peer, DRB) pair.
+// Base type of the PDCP entity of one data radio bearer: packages the
+// transmitting and the receiving side of TS 36.323 / 38.323, plus the leg
+// split/join stage of a multi-leg bearer (e.g. an NR dual connectivity split
+// bearer). Created dynamically by BearerManagement, one per (peer, DRB) pair.
 //
 // The lower boundary is a vector of legs. A plain bearer has one leg, and the
 // TX/RX entities connect straight to it; a multi-leg bearer routes the TX side
@@ -29,11 +29,12 @@ package simu5g.stack.pdcp;
 // master's remote leg via X2 -- the splitter selects the per-leg id mapping
 // accordingly (see ~DcPdcpLegSplitter).
 //
-// Variants are subclasses overriding the entity typenames (e.g. ~NrPdcpEntity;
-// a mixed entity can override just tx.typename or rx.typename from the
-// configuration).
+// This base type binds no TX/RX entity types; the concrete subclasses do
+// (~LtePdcpEntity, ~NrPdcpEntity), so it is not instantiable on its own. A
+// mixed entity (e.g. an EN-DC master eNB running an NR TX side with an LTE RX
+// side) overrides just tx.typename or rx.typename from the configuration.
 //
-module PdcpEntity
+module PdcpEntityBase
 {
     parameters:
         @dynamic(true);
@@ -50,10 +51,10 @@ module PdcpEntity
         output legOut[numLegs];   // PDUs to leg k (RLC entity, or DcMux/X2)
         input legIn[numLegs];     // PDUs from leg k
     submodules:
-        tx: <default("simu5g.stack.pdcp.LteTxPdcpEntity")> like ITxPdcpEntity {
+        tx: <> like IPdcpTxEntity {
             @display("p=50,50");
         }
-        rx: <default("simu5g.stack.pdcp.LteRxPdcpEntity")> like IRxPdcpEntity {
+        rx: <> like IPdcpRxEntity {
             @display("p=150,50");
         }
         splitter: <default("simu5g.stack.pdcp.DcPdcpLegSplitter")> like IPdcpLegSplitter if numLegs > 1 {

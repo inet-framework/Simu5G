@@ -12,12 +12,15 @@
 package simu5g.stack.rlc;
 
 //
-// RLC UM entity of one data radio bearer: packages the transmitting and the
-// receiving side (TS 36.322 / 38.322 model an entity per bearer). Created
-// dynamically by BearerManagement, one per (peer, DRB) pair; a bearer with
-// traffic in one direction only simply leaves the other side idle.
+// Base type of the RLC UM entity of one data radio bearer: packages the
+// transmitting and the receiving side (TS 36.322 / 38.322 model an entity per
+// bearer). Created dynamically by BearerManagement, one per (peer, DRB) pair;
+// a bearer with traffic in one direction only simply leaves the other side idle.
 //
-module RlcUmEntity
+// This base type binds no TX/RX entity types; the concrete subclasses do
+// (~LteRlcUmEntity), so it is not instantiable on its own.
+//
+module RlcUmEntityBase
 {
     parameters:
         @dynamic(true);
@@ -33,10 +36,10 @@ module RlcUmEntity
         output lowerOut;  // PDUs and new-data notifications to RlcMux/MAC
         input macIn;      // MAC SDU requests via RlcMux
     submodules:
-        tx: <default("simu5g.stack.rlc.um.UmTxEntity")> like IRlcTxEntity {
+        tx: <> like IRlcTxEntity {
             @display("p=50,50");
         }
-        rx: <default("simu5g.stack.rlc.um.UmRxEntity")> like IRlcRxEntity {
+        rx: <> like IRlcRxEntity {
             @display("p=150,50");
         }
     connections:

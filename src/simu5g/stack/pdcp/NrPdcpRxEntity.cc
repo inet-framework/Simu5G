@@ -10,20 +10,20 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/pdcp/NrRxPdcpEntity.h"
+#include "simu5g/stack/pdcp/NrPdcpRxEntity.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include <inet/common/ProtocolTag_m.h>
 #include <inet/networklayer/common/NetworkInterface.h>
 
 namespace simu5g {
 
-Define_Module(NrRxPdcpEntity);
+Define_Module(NrPdcpRxEntity);
 
 
 
-void NrRxPdcpEntity::initialize(int stage)
+void NrPdcpRxEntity::initialize(int stage)
 {
-    LteRxPdcpEntity::initialize(stage);
+    LtePdcpRxEntity::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
         reorderingEnabled_ = par("reorderingEnabled").boolValue();
@@ -36,16 +36,16 @@ void NrRxPdcpEntity::initialize(int stage)
     }
 }
 
-void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
+void NrPdcpRxEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
 {
-    Enter_Method("NrRxPdcpEntity::handlePdcpSdu");
+    Enter_Method("NrPdcpRxEntity::handlePdcpSdu");
 
     unsigned int rcvdSno = sequenceNumber;
 
-    EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - processing PDCP SDU with SN[" << rcvdSno << "]" << endl;
+    EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - processing PDCP SDU with SN[" << rcvdSno << "]" << endl;
 
     if (!reorderingEnabled_ || outOfOrderDelivery_) { // deliver packet to upper layer
-        EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - Deliver SDU SN[" << rcvdSno << "] to upper layer" << endl;
+        EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - Deliver SDU SN[" << rcvdSno << "] to upper layer" << endl;
         pdcpSdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
         deliverSduToUpperLayer(pdcpSdu);
         return;
@@ -54,7 +54,7 @@ void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
 
     // check if already considered for reordering
     if (rcvdSno < rxWindowDesc_.rxDeliv_) {
-        EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - the SN[" << rcvdSno << "] <  was already considered for reordering. Discard the SDU" << endl;
+        EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - the SN[" << rcvdSno << "] <  was already considered for reordering. Discard the SDU" << endl;
         delete pdcpSdu;
         return;
     }
@@ -62,14 +62,14 @@ void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
     // get the position in the buffer
     int index = rcvdSno - rxWindowDesc_.rxDeliv_;
     if (index >= rxWindowDesc_.windowSize_) {
-        EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - the SN[" << rcvdSno << "] <  is too large with respect to the window size. Advance the window and deliver out-of-sequence SDUs" << endl;
+        EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - the SN[" << rcvdSno << "] <  is too large with respect to the window size. Advance the window and deliver out-of-sequence SDUs" << endl;
         delete pdcpSdu;
         return;
     }
 
     // check if already received
     if (received_.at(index)) {
-        EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - the SN[" << rcvdSno << "] <  has already been received. Discard the SDU" << endl;
+        EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - the SN[" << rcvdSno << "] <  has already been received. Discard the SDU" << endl;
         delete pdcpSdu;
         return;
     }
@@ -80,7 +80,7 @@ void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
 
     if (rcvdSno == rxWindowDesc_.rxDeliv_) {
         // this SDU is the next one to be delivered
-        EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - Deliver SDU SN[" << rcvdSno << "] to upper layer" << endl;
+        EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - Deliver SDU SN[" << rcvdSno << "] to upper layer" << endl;
         pdcpSdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
         deliverSduToUpperLayer(pdcpSdu);
 
@@ -92,7 +92,7 @@ void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
             auto *sdu = check_and_cast<Packet *>(sduBuffer_.remove(pos));
             received_.at(pos) = false;
 
-            EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - Deliver SDU buffered at index[" << pos << "] to upper layer" << endl;
+            EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - Deliver SDU buffered at index[" << pos << "] to upper layer" << endl;
             sdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
             deliverSduToUpperLayer(sdu);
 
@@ -101,7 +101,7 @@ void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
         }
 
         // shift window by 'i' positions
-        EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - shifting window by " << pos << " positions" << endl;
+        EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - shifting window by " << pos << " positions" << endl;
         for (unsigned int i = pos; i < rxWindowDesc_.rxNext_ - rxWindowDesc_.rxDeliv_; ++i) {
             if (sduBuffer_.get(i) != nullptr)
                 sduBuffer_.addAt(i - pos, sduBuffer_.remove(i));
@@ -112,7 +112,7 @@ void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
     else {
         // else, buffer SDU
 
-        EV << NOW << " NrRxPdcpEntity::handlePdcpSdu - SDU SN[" << rcvdSno << "] received out of sequence. Buffer at index[" << index << "]" << endl;
+        EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - SDU SN[" << rcvdSno << "] received out of sequence. Buffer at index[" << index << "]" << endl;
 
         sduBuffer_.addAt(index, pdcpSdu);
         received_.at(index) = true;
@@ -134,7 +134,7 @@ void NrRxPdcpEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
     }
 }
 
-void NrRxPdcpEntity::handleMessage(cMessage *msg)
+void NrPdcpRxEntity::handleMessage(cMessage *msg)
 {
     if (!msg->isSelfMessage()) {
         // Packet from gate — delegate to base class handler
@@ -144,7 +144,7 @@ void NrRxPdcpEntity::handleMessage(cMessage *msg)
     if (msg->isName("timer")) {
         t_reordering_.handle();
 
-        EV << NOW << " NrRxPdcpEntity::handleMessage : t_reordering timer has expired " << endl;
+        EV << NOW << " NrPdcpRxEntity::handleMessage : t_reordering timer has expired " << endl;
 
         unsigned int old = rxWindowDesc_.rxDeliv_;
 
@@ -152,7 +152,7 @@ void NrRxPdcpEntity::handleMessage(cMessage *msg)
         while (rxWindowDesc_.rxDeliv_ < rxWindowDesc_.rxReord_) {
             int pos = rxWindowDesc_.rxDeliv_ - old;
             if (received_.at(pos) == true) {
-                EV << NOW << " NrRxPdcpEntity::handleMessage - Deliver SDU buffered at index[" << pos << "] to upper layer" << endl;
+                EV << NOW << " NrPdcpRxEntity::handleMessage - Deliver SDU buffered at index[" << pos << "] to upper layer" << endl;
                 auto *sdu = check_and_cast<Packet *>(sduBuffer_.remove(pos));
                 sdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
                 deliverSduToUpperLayer(sdu);
@@ -161,7 +161,7 @@ void NrRxPdcpEntity::handleMessage(cMessage *msg)
         }
 
         while (received_.at(rxWindowDesc_.rxDeliv_ - old) == true) {
-            EV << NOW << " NrRxPdcpEntity::handleMessage - Deliver SDU buffered at index[" << (rxWindowDesc_.rxDeliv_ - old) << "] to upper layer" << endl;
+            EV << NOW << " NrPdcpRxEntity::handleMessage - Deliver SDU buffered at index[" << (rxWindowDesc_.rxDeliv_ - old) << "] to upper layer" << endl;
             auto *sdu = check_and_cast<Packet *>(sduBuffer_.remove(rxWindowDesc_.rxDeliv_ - old));
             sdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
             deliverSduToUpperLayer(sdu);
@@ -173,7 +173,7 @@ void NrRxPdcpEntity::handleMessage(cMessage *msg)
 
         // shift window by 'i' positions
         int offset = rxWindowDesc_.rxDeliv_ - old;
-        EV << NOW << " NrRxPdcpEntity::handleMessage - shifting window by " << offset << " positions" << endl;
+        EV << NOW << " NrPdcpRxEntity::handleMessage - shifting window by " << offset << " positions" << endl;
         for (unsigned int i = offset; i < rxWindowDesc_.windowSize_; ++i) {
             if (sduBuffer_.get(i) != nullptr)
                 sduBuffer_.addAt(i - offset, sduBuffer_.remove(i));

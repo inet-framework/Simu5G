@@ -53,7 +53,7 @@ void DcPdcpLegSplitter::handleMessage(cMessage *msg)
         leg = 0;
     }
 
-    // Per-leg id adaptation + leg-flavored statistics (moved from NrTxPdcpEntity::deliverPdcpPdu).
+    // Per-leg id adaptation + leg-flavored statistics (moved from NrPdcpTxEntity::deliverPdcpPdu).
     // Leg 0 is the local LTE leg; leg 1 is the UE's local NR stack, or a DC master's remote
     // leg via X2.
     if (leg == 0) {

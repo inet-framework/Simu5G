@@ -10,10 +10,10 @@
 // and cannot be removed from it.
 //
 
-#ifndef _NRRXPDCPENTITY_H_
-#define _NRRXPDCPENTITY_H_
+#ifndef _NRPDCPRXENTITY_H_
+#define _NRPDCPRXENTITY_H_
 
-#include "simu5g/stack/pdcp/LteRxPdcpEntity.h"
+#include "simu5g/stack/pdcp/LtePdcpRxEntity.h"
 #include "simu5g/stack/dcX2Forwarder/DcX2Forwarder.h"
 #include "simu5g/common/timer/TTimer.h"
 
@@ -62,7 +62,7 @@ enum PdcpRxTimerType
  * This is the PDCP entity of LTE/NR Stack.
  *
  */
-class NrRxPdcpEntity : public LteRxPdcpEntity
+class NrPdcpRxEntity : public LtePdcpRxEntity
 {
   protected:
 

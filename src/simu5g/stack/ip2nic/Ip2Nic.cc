@@ -377,7 +377,7 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     if (isNR_) {
         // For PDCP entity dispatch, always use technology-neutral (LTE/master-leg) IDs.
         // The TechnologyReq::useNR flag carries the LTE-vs-NR routing decision separately;
-        // NrTxPdcpEntity reads it in deliverPdcpPdu() to decide local RLC vs X2 forwarding.
+        // NrPdcpTxEntity reads it in deliverPdcpPdu() to decide local RLC vs X2 forwarding.
         if (isEnb) {
             lteInfo->setSourceId(nodeId_);
             if (lteInfo->getMulticastGroupId() != NODEID_NONE)

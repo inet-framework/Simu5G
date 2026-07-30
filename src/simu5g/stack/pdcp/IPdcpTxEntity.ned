@@ -13,12 +13,12 @@ package simu5g.stack.pdcp;
 
 //
 // Module interface for the transmitting side of a PDCP entity. Concrete types
-// (LteTxPdcpEntity, NrTxPdcpEntity) implement it so the PdcpEntity compound
+// (LtePdcpTxEntity, NrPdcpTxEntity) implement it so the PdcpEntityBase compound
 // can instantiate them via a typename parameter. The TX entity is leg-agnostic
 // (SN assignment, header compression); leg dispatch is the enclosing
-// compound's concern (see ~PdcpEntity).
+// compound's concern (see ~PdcpEntityBase).
 //
-moduleinterface ITxPdcpEntity
+moduleinterface IPdcpTxEntity
 {
     parameters:
         @display("i=block/layer");

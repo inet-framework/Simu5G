@@ -10,23 +10,23 @@
 // and cannot be removed from it.
 //
 
-#ifndef _NRTXPDCPENTITY_H_
-#define _NRTXPDCPENTITY_H_
+#ifndef _NRPDCPTXENTITY_H_
+#define _NRPDCPTXENTITY_H_
 
-#include "simu5g/stack/pdcp/LteTxPdcpEntity.h"
+#include "simu5g/stack/pdcp/LtePdcpTxEntity.h"
 
 namespace simu5g {
 
 /**
- * @class NrTxPdcpEntity
+ * @class NrPdcpTxEntity
  * @brief NR flavor of the transmitting PDCP entity.
  *
  * Adds the NR per-SDU statistics (pdcpSduSentNr) and the NR-leg source id of a
  * single-leg NR bearer at a UE. On a multi-leg bearer the enclosing compound's
  * splitter handles leg dispatch, id mapping and per-leg statistics instead
- * (see PdcpEntity.ned), and this entity just forwards.
+ * (see PdcpEntityBase.ned), and this entity just forwards.
  */
-class NrTxPdcpEntity : public LteTxPdcpEntity
+class NrPdcpTxEntity : public LtePdcpTxEntity
 {
     static simsignal_t pdcpSduSentNrSignal_;
 

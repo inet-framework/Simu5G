@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_LTERXPDCPENTITY_H_
-#define _LTE_LTERXPDCPENTITY_H_
+#ifndef _LTE_LTEPDCPRXENTITY_H_
+#define _LTE_LTEPDCPRXENTITY_H_
 
 #include <inet/common/ModuleRefByPar.h>
 
@@ -27,12 +27,12 @@ class LtePdcpHeader;
 using namespace inet;
 
 /**
- * @class LteRxPdcpEntity
+ * @class LtePdcpRxEntity
  * @brief Entity for PDCP Layer
  *
  * This is the PDCP RX entity of the LTE Stack.
  */
-class LteRxPdcpEntity : public PdcpRxEntityBase
+class LtePdcpRxEntity : public PdcpRxEntityBase
 {
     static simsignal_t receivedPacketFromLowerLayerSignal_;
     static simsignal_t pdcpSduReceivedSignal_;
@@ -71,7 +71,7 @@ class LteRxPdcpEntity : public PdcpRxEntityBase
     /*
      * @author Alessandro Noferi
      *
-     * This method is used with NrRxPdcpEntity that has
+     * This method is used with NrPdcpRxEntity that has
      * an SDU buffer. In particular, it is used when the
      * RNI service requests the number of active users
      * in UL, that also counts buffered UL data in PDCP.

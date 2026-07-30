@@ -27,7 +27,7 @@ simple UmTxEntity like simu5g.stack.rlc.IRlcTxEntity
         @dynamic(true);
         @display("i=block/layer");
         bool isNR @mutable = default(false);  // set programmatically by BearerManagement
-        string macModule = default("^.^.mac");  // set by the enclosing RlcUmEntity compound (per leg)
+        string macModule = default("^.^.mac");  // set by the enclosing RlcUmEntityBase compound (per leg)
         int queueSize @unit(B) = default(2MiB);          // RLC TX entity SDU queue size (0: unlimited)
         int fragmentSize @unit(B) = default(30B);        // Size of fragments
         @signal[rlcPduCreated];

@@ -17,9 +17,9 @@ package simu5g.stack.pdcp;
 // master; the secondary only tunnels the already-processed PDUs between the
 // master (over X2, via the DcMux) and its own RLC, doing no PDCP processing of
 // its own. Created dynamically by BearerManagement, one per (UE, DRB) pair, in
-// place of a ~PdcpEntity.
+// place of a ~PdcpEntityBase.
 //
-// The RLC-side boundary mirrors ~PdcpEntity's (legOut/legIn), so the RLC entity
+// The RLC-side boundary mirrors ~PdcpEntityBase's (legOut/legIn), so the RLC entity
 // is wired the same way regardless of what sits above it. The two directions are
 // independent halves: ~PdcpDownlinkRelay carries DL (master -> RLC),
 // ~PdcpUplinkRelay carries UL (RLC -> master).
@@ -30,7 +30,7 @@ module PdcpRelayEntity
         @dynamic(true);
         @display("i=block/wheelbarrow");
     gates:
-        output legOut[1];   // DL PDU to the local RLC entity (shared RLC boundary, cf. PdcpEntity)
+        output legOut[1];   // DL PDU to the local RLC entity (shared RLC boundary, cf. PdcpEntityBase)
         input legIn[1];     // UL PDU from the local RLC entity
         input x2In;         // DL PDU tunneled from the master (via the DcMux)
         output x2Out;       // UL PDU to be tunneled to the master (via the DcMux)

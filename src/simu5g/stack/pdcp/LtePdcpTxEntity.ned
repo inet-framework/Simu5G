@@ -18,7 +18,7 @@ package simu5g.stack.pdcp;
 // sequencing, header compression, and metadata association for PDCP PDUs before they are passed
 // down to the RLC layer.
 //
-simple LteTxPdcpEntity like ITxPdcpEntity
+simple LtePdcpTxEntity like IPdcpTxEntity
 {
     parameters:
         @dynamic(true);
@@ -27,7 +27,7 @@ simple LteTxPdcpEntity like ITxPdcpEntity
         @signal[sentPacketToLowerLayer];
         @signal[pdcpSduSent];
         string binderModule = default("binder");
-        bool emitPerSduSignals = default(true);              // cleared by a multi-leg PdcpEntity: its splitter emits the per-leg statistics
+        bool emitPerSduSignals = default(true);              // cleared by a multi-leg PdcpEntityBase: its splitter emits the per-leg statistics
         int headerCompressedSize @unit(B) = default(-1B);    // Header compressed size (bytes) ( -1B = compression disabled
 
     gates:

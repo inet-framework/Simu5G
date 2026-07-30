@@ -18,7 +18,7 @@ namespace simu5g {
 
 /**
  * @class PdcpLegJoiner
- * @brief RX-side leg merger of a multi-leg PdcpEntity compound.
+ * @brief RX-side leg merger of a multi-leg PdcpEntityBase compound.
  *
  * Relays all legs' PDU streams into the single RX entity; the RX entity's
  * reorder window restores SN order across legs.

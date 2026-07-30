@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_LTETXPDCPENTITY_H_
-#define _LTE_LTETXPDCPENTITY_H_
+#ifndef _LTE_LTEPDCPTXENTITY_H_
+#define _LTE_LTEPDCPTXENTITY_H_
 
 #include <inet/common/ModuleRefByPar.h>
 
@@ -30,7 +30,7 @@ using namespace inet;
 #define LTE_PDCP_HEADER_COMPRESSION_DISABLED    B(-1)
 
 /**
- * @class LteTxPdcpEntity
+ * @class LtePdcpTxEntity
  * @brief Entity for PDCP Layer
  *
  * This is the PDCP entity of the LTE Stack.
@@ -39,7 +39,7 @@ using namespace inet;
  * - maintain numbering of one logical connection
  *
  */
-class LteTxPdcpEntity : public PdcpTxEntityBase
+class LtePdcpTxEntity : public PdcpTxEntityBase
 {
   protected:
     static simsignal_t receivedPacketFromUpperLayerSignal_;

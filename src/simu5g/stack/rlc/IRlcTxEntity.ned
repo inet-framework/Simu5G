@@ -14,7 +14,7 @@ package simu5g.stack.rlc;
 //
 // Module interface for the transmitting side of an RLC entity (TM/UM/AM).
 // Concrete entity types (e.g. TmTxEntity, UmTxEntity, AmTxQueue) implement
-// this interface so that RlcTmEntity/RlcUmEntity/RlcAmEntity compound
+// this interface so that RlcTmEntity/RlcUmEntityBase/RlcAmEntityBase compound
 // modules can instantiate them via a typename parameter. Implementations
 // may declare additional gates (e.g. the AM control gates).
 //

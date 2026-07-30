@@ -37,10 +37,11 @@ void BearerManagement::initialize(int stage)
         pdcpEntityModuleType_ = cModuleType::get(par("pdcpEntityModuleType").stringValue());
         pdcpRelayEntityModuleType_ = cModuleType::get(par("pdcpRelayEntityModuleType").stringValue());
 
-        // Resolve RLC entity types (compound modules packaging the TX and RX sides)
+        // Resolve RLC entity types (compound modules packaging the TX and RX sides);
+        // lteRlc* serve LTE-FI bearers
         rlcTmEntityModuleType_ = cModuleType::get(par("rlcTmEntityModuleType").stringValue());
-        rlcUmEntityModuleType_ = cModuleType::get(par("rlcUmEntityModuleType").stringValue());
-        rlcAmEntityModuleType_ = cModuleType::get(par("rlcAmEntityModuleType").stringValue());
+        lteRlcUmEntityModuleType_ = cModuleType::get(par("lteRlcUmEntityModuleType").stringValue());
+        lteRlcAmEntityModuleType_ = cModuleType::get(par("lteRlcAmEntityModuleType").stringValue());
 
         nicModule_ = inet::getContainingNicModule(this);
 
@@ -93,7 +94,7 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
     installRlcRxSide(rlcId, lteInfo, rlcMux, isNr);
 
-    // PDCP entity creation (compound: TX+RX, see PdcpEntity). At a DC secondary the bearer's
+    // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
     // PDCP lives at the master, so an PdcpRelayEntity stands in (UL half wired here).
     if (withPdcp) {
         DrbKey id = DrbKey(lteInfo->getSourceId(), lteInfo->getDrbId());
@@ -153,7 +154,7 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
     installRlcTxSide(rlcId, lteInfo, rlcMux, isNr);
 
-    // PDCP entity creation (compound: TX+RX, see PdcpEntity). At a DC secondary the bearer's
+    // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
     // PDCP lives at the master, so an PdcpRelayEntity stands in (DL half wired here).
     if (withPdcp) {
         DrbKey id = DrbKey(lteInfo->getDestId(), lteInfo->getDrbId());
@@ -231,13 +232,13 @@ cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lte
     const char *prefix;
     switch (rlcType) {
         case TM: moduleType = rlcTmEntityModuleType_; prefix = "tm"; break;
-        case AM: moduleType = rlcAmEntityModuleType_; prefix = "am"; break;
-        default: moduleType = rlcUmEntityModuleType_; prefix = "um"; break;
+        case AM: moduleType = lteRlcAmEntityModuleType_; prefix = "am"; break;
+        default: moduleType = lteRlcUmEntityModuleType_; prefix = "um"; break;
     }
     std::string name = std::string(isNr ? "nrRlc-" : "rlc-") + prefix + "-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
     auto *module = moduleType->create(name.c_str(), nicModule_);
     // Set the leg's MAC/RLC-mux paths on the COMPOUND before finalize; its NED passes them down
-    // to the tx/rx submodules (see '*.macModule = this.macModule' in RlcUmEntity/RlcAmEntity), so
+    // to the tx/rx submodules (see '*.macModule = this.macModule' in RlcUmEntityBase/RlcAmEntityBase), so
     // the submodule params carry the right value at build time -- no post-build @mutable write.
     setRlcEntityParams(module, isNr);
     module->finalizeParameters();

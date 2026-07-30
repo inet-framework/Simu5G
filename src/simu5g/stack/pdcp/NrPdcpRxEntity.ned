@@ -10,22 +10,23 @@
 // and cannot be removed from it.
 //
 
+
 package simu5g.stack.pdcp;
 
 //
 // Handles the operations related to the NR PDCP (Packet Data Convergence Protocol)
-// layer at the transmitting side of a specific connection. It extends the
-// ~LteTxPdcpEntity module with the NR flavor of the per-SDU statistics
-// (pdcpSduSentNr) and the NR-leg id mapping of a single-leg NR bearer. On a
-// multi-leg bearer, leg dispatch, id mapping and per-leg statistics are handled
-// by the enclosing compound's splitter instead (see ~PdcpEntity).
+// layer on the receiving side of a specific connection. It extends the ~LtePdcpRxEntity module.
+// Facilitates the creation of support for Dual Connectivity functionality. In
+// particular, it manages the reordering of out-of-sequence PDCP PDUs in Dual Connectivity deployments.
 //
-simple NrTxPdcpEntity extends LteTxPdcpEntity
+simple NrPdcpRxEntity extends LtePdcpRxEntity
 {
     parameters:
         @dynamic(true);
-        @class("NrTxPdcpEntity");
+        @class("NrPdcpRxEntity");
         @display("i=block/layer");
-        @signal[pdcpSduSentNr];
+        bool reorderingEnabled = default(false);   // set by a multi-leg PdcpEntityBase: reorder the SN stream merged from several legs
+        bool outOfOrderDelivery = default(false);
+        double timeout @unit(s) = default(0.1s);   // Timeout for RX Buffer
+        int rxWindowSize = default(4096);
 }
-

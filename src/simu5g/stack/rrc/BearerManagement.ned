@@ -24,19 +24,22 @@ simple BearerManagement
         // PDCP entity parameters
         int headerCompressedSize @unit(B) = default(-1B);
 
-        // PDCP entity types: the full PDCP entity is a compound (PdcpEntity, TX+RX sides plus
-        // the leg split/join stage of a multi-leg bearer); variants are its subclasses (e.g.
-        // NrPdcpEntity). At a DC secondary a bearer's PDCP lives at the master, so the secondary
-        // installs an PdcpRelayEntity (tunnels PDUs to/from the master) in its place.
-        string pdcpEntityModuleType = default("simu5g.stack.pdcp.PdcpEntity");
+        // PDCP entity types: the full PDCP entity is a compound (PdcpEntityBase, TX+RX sides plus
+        // the leg split/join stage of a multi-leg bearer); the instantiable types are its
+        // subclasses (LtePdcpEntity, NrPdcpEntity). At a DC secondary a bearer's PDCP lives at
+        // the master, so the secondary installs an PdcpRelayEntity (tunnels PDUs to/from the
+        // master) in its place.
+        string pdcpEntityModuleType = default("simu5g.stack.pdcp.LtePdcpEntity");
         string pdcpRelayEntityModuleType = default("simu5g.stack.pdcp.PdcpRelayEntity");
 
         bool dualConnectivityEnabled = default(false);   // set by the NIC; two-leg (split-capable) bearers
 
-        // RLC entity types
+        // RLC entity types (compound modules): the UM and AM entities are named after the
+        // wire format they implement, lteRlc* = LTE FI framing (TS 36.322). TM is
+        // transparent, with a single implementation, so it has no such prefix.
         string rlcTmEntityModuleType = default("simu5g.stack.rlc.RlcTmEntity");
-        string rlcUmEntityModuleType = default("simu5g.stack.rlc.RlcUmEntity");
-        string rlcAmEntityModuleType = default("simu5g.stack.rlc.RlcAmEntity");
+        string lteRlcUmEntityModuleType = default("simu5g.stack.rlc.LteRlcUmEntity");
+        string lteRlcAmEntityModuleType = default("simu5g.stack.rlc.LteRlcAmEntity");
 
         // Module references for accessing other stack layers
         string binderModule = default("binder");

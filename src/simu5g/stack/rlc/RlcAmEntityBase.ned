@@ -12,10 +12,13 @@
 package simu5g.stack.rlc;
 
 //
-// RLC AM entity of one data radio bearer: packages the transmitting and the
-// receiving side into the single bidirectional entity of TS 36.322 / 38.322
-// section 4.2.1. Created dynamically by BearerManagement, one per (peer, DRB)
-// pair.
+// Base type of the RLC AM entity of one data radio bearer: packages the
+// transmitting and the receiving side into the single bidirectional entity of
+// TS 36.322 / 38.322 section 4.2.1. Created dynamically by BearerManagement,
+// one per (peer, DRB) pair.
+//
+// This base type binds no TX/RX entity types; the concrete subclasses do
+// (~LteRlcAmEntity), so it is not instantiable on its own.
 //
 // The receiving side hands control PDUs to the co-located transmitting side
 // over two internal connections:
@@ -25,7 +28,7 @@ package simu5g.stack.rlc;
 //    the peer on this bearer's logical channel (data and control PDUs share
 //    the logical channel in AM).
 //
-module RlcAmEntity
+module RlcAmEntityBase
 {
     parameters:
         @dynamic(true);
@@ -39,10 +42,10 @@ module RlcAmEntity
         output lowerOut;  // PDUs and new-data notifications to RlcMux/MAC
         input macIn;      // MAC SDU requests via RlcMux
     submodules:
-        tx: <default("simu5g.stack.rlc.am.AmTxQueue")> like IRlcAmTxEntity {
+        tx: <> like IRlcAmTxEntity {
             @display("p=50,50");
         }
-        rx: <default("simu5g.stack.rlc.am.AmRxQueue")> like IRlcAmRxEntity {
+        rx: <> like IRlcAmRxEntity {
             @display("p=150,50");
         }
     connections:

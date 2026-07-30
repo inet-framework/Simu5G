@@ -13,8 +13,8 @@ package simu5g.stack.pdcp;
 
 //
 // Module interface for the TX-side leg dispatcher of a multi-leg PDCP entity
-// (see ~PdcpEntity): implementations pick the RLC leg for each PDCP PDU and
-// apply that leg's id mapping. Instantiated by the PdcpEntity compound via a
+// (see ~PdcpEntityBase): implementations pick the RLC leg for each PDCP PDU and
+// apply that leg's id mapping. Instantiated by the PdcpEntityBase compound via a
 // typename parameter when the bearer has more than one leg.
 //
 moduleinterface IPdcpLegSplitter

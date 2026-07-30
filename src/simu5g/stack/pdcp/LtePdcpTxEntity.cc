@@ -10,7 +10,7 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/pdcp/LteTxPdcpEntity.h"
+#include "simu5g/stack/pdcp/LtePdcpTxEntity.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
@@ -32,13 +32,13 @@
 
 namespace simu5g {
 
-Define_Module(LteTxPdcpEntity);
+Define_Module(LtePdcpTxEntity);
 
-simsignal_t LteTxPdcpEntity::receivedPacketFromUpperLayerSignal_ = registerSignal("receivedPacketFromUpperLayer");
-simsignal_t LteTxPdcpEntity::sentPacketToLowerLayerSignal_ = registerSignal("sentPacketToLowerLayer");
-simsignal_t LteTxPdcpEntity::pdcpSduSentSignal_ = registerSignal("pdcpSduSent");
+simsignal_t LtePdcpTxEntity::receivedPacketFromUpperLayerSignal_ = registerSignal("receivedPacketFromUpperLayer");
+simsignal_t LtePdcpTxEntity::sentPacketToLowerLayerSignal_ = registerSignal("sentPacketToLowerLayer");
+simsignal_t LtePdcpTxEntity::pdcpSduSentSignal_ = registerSignal("pdcpSduSent");
 
-void LteTxPdcpEntity::initialize(int stage) {
+void LtePdcpTxEntity::initialize(int stage) {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
         nodeId_ = MacNodeId(getContainingNode(this)->par("macNodeId").intValue());
@@ -51,12 +51,12 @@ void LteTxPdcpEntity::initialize(int stage) {
     }
 }
 
-void LteTxPdcpEntity::handlePacketFromUpperLayer(Packet *pkt)
+void LtePdcpTxEntity::handlePacketFromUpperLayer(Packet *pkt)
 {
     emit(receivedPacketFromUpperLayerSignal_, pkt);
 
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
-    EV << NOW << " LteTxPdcpEntity::handlePacketFromUpperLayer - processing packet " << pkt->getName() << " from IP layer" << endl;
+    EV << NOW << " LtePdcpTxEntity::handlePacketFromUpperLayer - processing packet " << pkt->getName() << " from IP layer" << endl;
 
     // perform PDCP operations
     compressHeader(pkt); // header compression
@@ -84,15 +84,15 @@ void LteTxPdcpEntity::handlePacketFromUpperLayer(Packet *pkt)
     pkt->insertAtFront(pdcpHeader);
     pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&LteProtocol::pdcp);
 
-    EV << "LteTxPdcpEntity::handlePacketFromUpperLayer: Packet trafficClass="
+    EV << "LtePdcpTxEntity::handlePacketFromUpperLayer: Packet trafficClass="
        << lteTrafficClassToA((LteTrafficClass)lteInfo->getTraffic())
        << " size=" << pkt->getByteLength() << "B\n";
 
-    EV << NOW << " LteTxPdcpEntity::handlePacketFromUpperLayer: sending PDCP PDU to the RLC layer" << endl;
+    EV << NOW << " LtePdcpTxEntity::handlePacketFromUpperLayer: sending PDCP PDU to the RLC layer" << endl;
     deliverPdcpPdu(pkt);
 }
 
-void LteTxPdcpEntity::compressHeader(Packet *pkt)
+void LtePdcpTxEntity::compressHeader(Packet *pkt)
 {
     if (isCompressionEnabled()) {
         // Check PacketProtocolTag to determine packet type
@@ -151,7 +151,7 @@ void LteTxPdcpEntity::compressHeader(Packet *pkt)
 }
 
 
-void LteTxPdcpEntity::deliverPdcpPdu(Packet *pdcpPkt)
+void LtePdcpTxEntity::deliverPdcpPdu(Packet *pdcpPkt)
 {
     if (emitPerSduSignals_) {
         auto lteInfo = pdcpPkt->getTag<FlowControlInfo>();

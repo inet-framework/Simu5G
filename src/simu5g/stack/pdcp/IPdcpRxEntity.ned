@@ -13,12 +13,12 @@ package simu5g.stack.pdcp;
 
 //
 // Module interface for the receiving side of a PDCP entity. Concrete types
-// (LteRxPdcpEntity, NrRxPdcpEntity) implement it so the PdcpEntity compound
+// (LtePdcpRxEntity, NrPdcpRxEntity) implement it so the PdcpEntityBase compound
 // can instantiate them via a typename parameter. The RX entity is leg-agnostic;
 // on a multi-leg bearer the compound's joiner merges all legs into its single
-// input, and its reorder window restores SN order (see ~PdcpEntity).
+// input, and its reorder window restores SN order (see ~PdcpEntityBase).
 //
-moduleinterface IRxPdcpEntity
+moduleinterface IPdcpRxEntity
 {
     parameters:
         @display("i=block/layer");

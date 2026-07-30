@@ -42,15 +42,16 @@ class BearerManagement : public cSimpleModule
     Registration *registration_ = nullptr;
 
     // PDCP entity types (resolved from NED params): the full PDCP entity is a compound
-    // (PdcpEntity/NrPdcpEntity, TX+RX); at a DC secondary an PdcpRelayEntity stands in for it.
+    // (LtePdcpEntity/NrPdcpEntity, TX+RX); at a DC secondary an PdcpRelayEntity stands in for it.
     cModuleType *pdcpEntityModuleType_ = nullptr;
     cModuleType *pdcpRelayEntityModuleType_ = nullptr;
     cModule *nicModule_ = nullptr;  // containing NIC module (parent of all submodules and entities)
 
-    // RLC entity types (resolved from NED params)
+    // RLC entity types (compound modules; resolved from NED params):
+    // lteRlc* = LTE bearers (FI wire format, TS 36.322)
     cModuleType *rlcTmEntityModuleType_ = nullptr;
-    cModuleType *rlcUmEntityModuleType_ = nullptr;
-    cModuleType *rlcAmEntityModuleType_ = nullptr;
+    cModuleType *lteRlcUmEntityModuleType_ = nullptr;
+    cModuleType *lteRlcAmEntityModuleType_ = nullptr;
 
     inet::ModuleRefByPar<RlcMux> rlcMuxModule;
     inet::ModuleRefByPar<RlcMux> nrRlcMuxModule;
@@ -59,7 +60,7 @@ class BearerManagement : public cSimpleModule
     inet::ModuleRefByPar<Binder> binderModule;   // for DC master/secondary topology lookups
 
     // Entity registries (CP owns the lifecycle of all entities)
-    // One PDCP entity module (compound: TX+RX, see PdcpEntity) per bearer, keyed by (peer
+    // One PDCP entity module (compound: TX+RX, see PdcpEntityBase) per bearer, keyed by (peer
     // node, DRB id); the tx/rx submodule pointers below index into it for per-side lookups.
     std::map<DrbKey, cModule *> pdcpEntities_;
     std::map<DrbKey, PdcpTxEntityBase *> pdcpTxEntities_;
@@ -98,7 +99,7 @@ class BearerManagement : public cSimpleModule
     virtual RlcRxEntityBase *createRlcRxBuffer(DrbKey id, FlowControlInfo *lteInfo);
     RlcTxEntityBase *lookupRlcTxBuffer(DrbKey id);
     PdcpTxEntityBase *lookupPdcpTxEntity(DrbKey id);
-    cModule *lookupPdcpEntityModule(DrbKey id);    // the per-bearer PdcpEntity compound (DcMux leg dispatch)
+    cModule *lookupPdcpEntityModule(DrbKey id);    // the per-bearer PdcpEntityBase compound (DcMux leg dispatch)
     cModule *lookupPdcpRelayEntityModule(DrbKey id); // the per-bearer PdcpRelayEntity compound (DcMux DL dispatch)
     virtual void deleteLocalPdcpEntities(MacNodeId nodeId);
     virtual void deleteLocalRlcQueues(MacNodeId nodeId, bool nrStack=false);

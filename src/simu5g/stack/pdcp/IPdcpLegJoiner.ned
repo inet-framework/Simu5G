@@ -13,9 +13,9 @@ package simu5g.stack.pdcp;
 
 //
 // Module interface for the RX-side leg merger of a multi-leg PDCP entity
-// (see ~PdcpEntity): implementations merge the PDU streams of all legs into
+// (see ~PdcpEntityBase): implementations merge the PDU streams of all legs into
 // the single RX entity, whose reorder window restores SN order across legs.
-// Instantiated by the PdcpEntity compound via a typename parameter when the
+// Instantiated by the PdcpEntityBase compound via a typename parameter when the
 // bearer has more than one leg.
 //
 moduleinterface IPdcpLegJoiner
