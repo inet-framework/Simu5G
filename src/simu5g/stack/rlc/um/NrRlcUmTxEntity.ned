@@ -19,8 +19,8 @@ package simu5g.stack.rlc.um;
 // NR (TS 38.322) transmission side of the Unacknowledged Mode (UM) of the RLC
 // layer: SI + byte-offset (SO) segmentation, one SDU segment per PDU, one sequence
 // number per SDU. Shares the common RlcUmTxEntityBase shell (MAC plumbing, D2D
-// mode-switch machinery) with the LTE profile ~LteRlcUmTxEntity. Instantiated as the tx side of the
-// NrRlc*Entity compound (BearerManagement.nrRlcUmEntityModuleType). The NR SO-segmentation statistics
+// mode-switch machinery) with the LTE profile ~LteRlcUmTxEntity. Bound by
+// default inside the ~NrRlcUmEntity compound. The NR SO-segmentation statistics
 // are declared here so they are recorded only for NR entities.
 //
 simple NrRlcUmTxEntity like simu5g.stack.rlc.IRlcTxEntity

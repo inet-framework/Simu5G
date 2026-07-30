@@ -12,8 +12,8 @@
 package simu5g.stack.rlc;
 
 //
-// RLC AM entity of an NR data radio bearer: the RlcAmEntityBase compound with its
-// TX/RX sides defaulted to the NR (SI/SO wire format, TS 38.322) entity
+// RLC AM entity of an NR data radio bearer: the ~RlcAmEntityBase compound with
+// its TX/RX sides bound to the NR (SI/SO wire format, TS 38.322) entity
 // profiles. Selected by BearerManagement for NR bearers via its
 // nrRlcAmEntityModuleType parameter.
 //

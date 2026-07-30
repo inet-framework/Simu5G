@@ -18,7 +18,7 @@ package simu5g.stack.rlc;
 // a bearer with traffic in one direction only simply leaves the other side idle.
 //
 // This base type binds no TX/RX entity types; the concrete subclasses do
-// (~LteRlcUmEntity), so it is not instantiable on its own.
+// (~LteRlcUmEntity, ~NrRlcUmEntity), so it is not instantiable on its own.
 //
 module RlcUmEntityBase
 {

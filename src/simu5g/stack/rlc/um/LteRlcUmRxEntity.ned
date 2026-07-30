@@ -18,9 +18,9 @@ package simu5g.stack.rlc.um;
 // layer: FI-walk reassembly across concatenated PDUs with a PDU-SN reordering
 // window and a t-Reordering timer. Shares the common RlcUmRxEntityBase shell
 // (MAC-mux plumbing, D2D hooks, UL burst-throughput accounting) with the NR
-// profile ~NrRlcUmRxEntity. Bound by default to
-// BearerManagement.rlcUmRxEntityModuleType. Its throughput/delay statistics are
-// emitted on the sibling rlcMux module (see ~RlcMux).
+// profile ~NrRlcUmRxEntity. Bound by default inside the ~LteRlcUmEntity
+// compound. Its throughput/delay statistics are emitted on the sibling rlcMux
+// module (see ~RlcMux).
 //
 simple LteRlcUmRxEntity like simu5g.stack.rlc.IRlcRxEntity
 {

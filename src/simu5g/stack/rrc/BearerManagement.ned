@@ -52,8 +52,8 @@ simple BearerManagement
         string nrRlcUmEntityModuleType = default("simu5g.stack.rlc.NrRlcUmEntity");
         string nrRlcAmEntityModuleType = default("simu5g.stack.rlc.NrRlcAmEntity");
         // An NR-leg bearer uses the nrRlc* compound (NR SI/SO wire format); a config may
-        // point these back to the rlc* compounds above to keep an NR leg on LTE RLC.
-        // TM is transparent and identical for both RATs, so it has no NR override.
+        // point these back to the lteRlc* compounds above to keep an NR leg on LTE RLC.
+        // TM is transparent and identical for both RATs, so it has no LTE/NR split.
 
         // Module references for accessing other stack layers
         string registrationModule = default("^.registration");

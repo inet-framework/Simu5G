@@ -18,7 +18,7 @@ package simu5g.stack.rlc;
 // one per (peer, DRB) pair.
 //
 // This base type binds no TX/RX entity types; the concrete subclasses do
-// (~LteRlcAmEntity), so it is not instantiable on its own.
+// (~LteRlcAmEntity, ~NrRlcAmEntity), so it is not instantiable on its own.
 //
 // The receiving side hands control PDUs to the co-located transmitting side
 // over two internal connections:

@@ -19,9 +19,9 @@ package simu5g.stack.rlc.am;
 // NR (TS 38.322) transmission side of the Acknowledged Mode (AM) of the RLC
 // layer: byte-offset (SO) segmentation with re-segmentation on retransmission,
 // pollByte/pollPDU-driven status polling. Shares the common RlcAmTxEntityBase
-// shell with the LTE profile ~LteRlcAmTxEntity. Bound by default to
-// BearerManagement.nrRlcAmEntityModuleType. The NR SO-segmentation
-// statistics are declared here so they are recorded only for NR entities.
+// shell with the LTE profile ~LteRlcAmTxEntity. Bound by default inside the
+// ~NrRlcAmEntity compound. The NR SO-segmentation statistics are declared here
+// so they are recorded only for NR entities.
 //
 simple NrRlcAmTxEntity like simu5g.stack.rlc.IRlcAmTxEntity
 {

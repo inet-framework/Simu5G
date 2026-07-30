@@ -14,8 +14,8 @@ package simu5g.stack.rlc;
 //
 // RLC AM entity of an LTE data radio bearer: the ~RlcAmEntityBase compound with
 // its TX/RX sides bound to the LTE (FI wire format, TS 36.322) entity profiles.
-// Selected by BearerManagement via its lteRlcAmEntityModuleType parameter,
-// which defaults to this type.
+// Selected by BearerManagement for LTE bearers via its lteRlcAmEntityModuleType
+// parameter, which defaults to this type.
 //
 module LteRlcAmEntity extends RlcAmEntityBase
 {

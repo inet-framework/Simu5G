@@ -19,9 +19,9 @@ package simu5g.stack.rlc.am;
 // NR (TS 38.322) receiving side of the Acknowledged Mode (AM) of the RLC
 // layer: SO byte-coverage reassembly with a per-SDU SN window, t-Reassembly +
 // t-StatusProhibit timers. Shares the common RlcAmRxEntityBase shell with the
-// LTE profile ~LteRlcAmRxEntity. Bound by default to
-// BearerManagement.nrRlcAmEntityModuleType. The NR SO-reassembly statistics
-// are declared here so they are recorded only for NR-selected entities.
+// LTE profile ~LteRlcAmRxEntity. Bound by default inside the ~NrRlcAmEntity
+// compound. The NR SO-reassembly statistics are declared here so they are
+// recorded only for NR-selected entities.
 //
 simple NrRlcAmRxEntity like simu5g.stack.rlc.IRlcAmRxEntity
 {

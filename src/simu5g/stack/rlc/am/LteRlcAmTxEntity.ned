@@ -21,7 +21,7 @@ package simu5g.stack.rlc.am;
 // t-PollRetransmit, and radio link failure at maxRtxThreshold retransmissions.
 // Shares the common RlcAmTxEntityBase shell with the NR profile
 // ~NrRlcAmTxEntity, whose ARQ skeleton it deliberately mirrors. Bound by
-// default inside the ~RlcAmEntity compound.
+// default inside the ~LteRlcAmEntity compound.
 //
 simple LteRlcAmTxEntity like simu5g.stack.rlc.IRlcAmTxEntity
 {

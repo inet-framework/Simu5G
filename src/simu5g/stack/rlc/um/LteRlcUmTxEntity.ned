@@ -18,7 +18,7 @@ package simu5g.stack.rlc.um;
 // layer: FI framing + concatenation of multiple SDUs per PDU, one sequence number
 // per PDU. Shares the common RlcUmTxEntityBase shell (MAC plumbing, D2D
 // mode-switch machinery) with the NR profile ~NrRlcUmTxEntity. Bound by default
-// to BearerManagement.rlcUmTxEntityModuleType.
+// inside the ~LteRlcUmEntity compound.
 //
 simple LteRlcUmTxEntity like simu5g.stack.rlc.IRlcTxEntity
 {

@@ -19,9 +19,9 @@ package simu5g.stack.rlc.um;
 // NR (TS 38.322) receiving side of the Unacknowledged Mode (UM) of the RLC
 // layer: SI + byte-offset (SO) reassembly with a per-SDU SN window and a
 // t-Reassembly timer. Shares the common RlcUmRxEntityBase shell with the LTE
-// profile ~LteRlcUmRxEntity. Bound by default to
-// BearerManagement.nrRlcUmEntityModuleType. The NR SO-reassembly statistics are
-// declared here so they are recorded only for NR entities.
+// profile ~LteRlcUmRxEntity. Bound by default inside the ~NrRlcUmEntity
+// compound. The NR SO-reassembly statistics are declared here so they are
+// recorded only for NR entities.
 //
 simple NrRlcUmRxEntity like simu5g.stack.rlc.IRlcRxEntity
 {
