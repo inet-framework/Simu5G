@@ -1,5 +1,61 @@
 # What's New in Simu5G
 
+## v1.5.2 (2026-07-30)
+
+This release corrects the names of the per-bearer PDCP and RLC entity modules
+that v1.5.0 and v1.5.1 introduced, before more code comes to depend on them. It
+changes names only: no behavior changes, and no simulation results change. It
+also refactors RlcMux.
+
+Tested with INET-4.5.4 and OMNeT++ 6.3, compatible with INET-4.6.0 and OMNeT++
+6.1 through 6.4.
+
+### PDCP and RLC entity module names made consistent
+
+The PDCP entity modules and their module interfaces were renamed so that the
+TX/RX role follows the layer name, as it does in RLC and in their own C++ base
+classes (`PdcpTxEntityBase`, `PdcpRxEntityBase`):
+
+      LteTxPdcpEntity  ->  LtePdcpTxEntity      ITxPdcpEntity  ->  IPdcpTxEntity
+      LteRxPdcpEntity  ->  LtePdcpRxEntity      IRxPdcpEntity  ->  IPdcpRxEntity
+      NrTxPdcpEntity   ->  NrPdcpTxEntity
+      NrRxPdcpEntity   ->  NrPdcpRxEntity
+
+The per-bearer compound modules were restructured so that an explicit LTE
+concrete type stands beside the NR one, instead of the base type doubling as the
+LTE type. `PdcpEntity`, `RlcUmEntity` and `RlcAmEntity` became `PdcpEntityBase`,
+`RlcUmEntityBase` and `RlcAmEntityBase`, which bind no entity types and are
+therefore not instantiable on their own; the instantiable types are their
+subclasses, which bind their two sides with `tx.typename`/`rx.typename`:
+
+      PdcpEntity   ->  PdcpEntityBase   + new LtePdcpEntity
+      RlcUmEntity  ->  RlcUmEntityBase  + new LteRlcUmEntity
+      RlcAmEntity  ->  RlcAmEntityBase  + new LteRlcAmEntity
+
+`NrPdcpEntity` is now a subclass of `PdcpEntityBase`. A mixed entity (e.g. an
+EN-DC master eNB, which runs an NR TX side with an LTE RX side) still overrides
+just `tx.typename` or `rx.typename`.
+
+`BearerManagement`'s parameters that select the RLC entity types were renamed so
+that the LTE ones are marked as explicitly as their coming NR counterparts:
+`rlcUmEntityModuleType` -> `lteRlcUmEntityModuleType` and
+`rlcAmEntityModuleType` -> `lteRlcAmEntityModuleType`. Its
+`pdcpEntityModuleType` parameter keeps its name -- it is a single per-node
+selector, and it holds an NR type at every gNB -- and now defaults to
+`LtePdcpEntity`. `RlcTmEntity` and `rlcTmEntityModuleType` are unchanged: TM is
+transparent and identical for both RATs, so it has a single entity type.
+
+Configurations that name any of these NED types explicitly need to be updated.
+
+### RlcMux refactoring
+
+`RlcMux` now maps DRBs to gate indices, not RX entity pointers. Its internal
+table now holds the index of the `toRxEntity` gate serving each DRB instead of a
+pointer to the RX entity, so PDU dispatch is plain multiplexing: `send()` on the
+gate index, with no entity involved. It used to make a round trip -- look up the
+entity, then ask it for its gate and walk back to our own gate.
+
+
 ## v1.5.1 (2026-07-28)
 
 This release continues the architectural overhaul of Simu5G, focusing on the
