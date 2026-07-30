@@ -8,8 +8,6 @@
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/mec/utils/MecCommon.h"
-#include "simu5g/stack/rlc/RlcRxEntityBase.h"
-#include "simu5g/stack/rlc/um/UmRxEntity.h"
 
 namespace simu5g {
 
@@ -21,8 +19,9 @@ class BearerManagement;
  * @class RlcMux
  * @brief Lower-layer RLC packet dispatcher.
  *
- * Owns the RX entity map. Creates RX entities with gate wiring
- * to itself (in gate) and to the UpperMux (out gate).
+ * Owns the RX routing table, which maps each DRB to the index of the
+ * toRxEntity gate that serves it. BearerManagement wires the gate and
+ * registers the index here.
  */
 class RlcMux : public cSimpleModule
 {
@@ -37,16 +36,14 @@ class RlcMux : public cSimpleModule
     cGate *macInGate_ = nullptr;
     cGate *macOutGate_ = nullptr;
 
-    typedef std::map<DrbKey, RlcRxEntityBase *> RxEntities;
-    RxEntities rxEntities_;
+    std::map<DrbKey, int> rxGateIndices_;  // DRB -> index of the toRxEntity gate serving it
 
     typedef std::map<MacNodeId, Throughput> ULThroughputPerUE;
     ULThroughputPerUE ulThroughput_;
 
   public:
-    RlcRxEntityBase *lookupRxBuffer(DrbKey id);
-    void registerRxBuffer(DrbKey id, RlcRxEntityBase *rxEnt);
-    void unregisterRxBuffer(DrbKey id);
+    void registerRxEntity(DrbKey id, int gateIndex);
+    void unregisterRxEntity(DrbKey id);
     void activeUeUL(std::set<MacNodeId> *ueSet);
 
     void addUeThroughput(MacNodeId nodeId, Throughput throughput);

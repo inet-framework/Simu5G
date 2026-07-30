@@ -15,6 +15,7 @@
 #include "simu5g/stack/rrc/Registration.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/rlc/RlcMux.h"
+#include "simu5g/stack/rlc/RlcRxEntityBase.h"
 #include "simu5g/stack/rlc/um/UmTxEntity.h"
 #include "simu5g/stack/pdcp/UpperMux.h"
 #include "simu5g/stack/pdcp/DcMux.h"
@@ -312,7 +313,7 @@ RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, FlowControlInfo *
     rxEnt->setFlowControlInfo(lteInfo);
 
     // Register in mux routing table
-    rlcMux->registerRxBuffer(id, rxEnt);
+    rlcMux->registerRxEntity(id, idx);
 
     return rxEnt;
 }
@@ -546,7 +547,7 @@ void BearerManagement::deleteLocalRlcQueues(MacNodeId nodeId, bool nrStack)
     // Delete the per-bearer RLC entity modules (each deletes its TX and RX side)
     for (auto it = entities.begin(); it != entities.end(); ) {
         if (isEnb ? it->first.getNodeId() == nodeId : true) {
-            rlcMux->unregisterRxBuffer(it->first);  // no-op if the RX side was never installed
+            rlcMux->unregisterRxEntity(it->first);  // no-op if the RX side was never installed
             it->second->deleteModule();
             it = entities.erase(it);
         } else ++it;

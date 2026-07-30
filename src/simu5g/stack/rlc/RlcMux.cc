@@ -1,4 +1,6 @@
 #include "simu5g/stack/rlc/RlcMux.h"
+#include "simu5g/stack/rlc/RlcRxEntityBase.h"
+#include "simu5g/stack/rlc/um/UmRxEntity.h"
 #include "simu5g/stack/rlc/um/UmTxEntity.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
@@ -24,7 +26,7 @@ void RlcMux::initialize(int stage)
 
         hasD2DSupport_ = inet::getContainingNicModule(this)->par("d2dCapable").boolValue();
 
-        WATCH_MAP(rxEntities_);
+        WATCH_MAP(rxGateIndices_);
     }
 }
 
@@ -70,9 +72,10 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
         }
         else { // rx side
             DrbKey id = ctrlInfoToRxDrbKey(lteInfo.get());
-            RlcRxEntityBase *rxbuf = lookupRxBuffer(id);
-            if (rxbuf == nullptr)
-                rxbuf = bearerManagement_->createRlcRxBuffer(id, lteInfo.get());
+            auto it = rxGateIndices_.find(id);
+            RlcRxEntityBase *rxbuf = it != rxGateIndices_.end()
+                    ? check_and_cast<RlcRxEntityBase *>(gate("toRxEntity", it->second)->getPathEndGate()->getOwnerModule())
+                    : bearerManagement_->createRlcRxBuffer(id, lteInfo.get());
             UmRxEntity *umRxbuf = check_and_cast<UmRxEntity *>(rxbuf);
             umRxbuf->rlcHandleD2DModeSwitch(switchPkt->getOldConnection(), switchPkt->getOldMode(), switchPkt->getClearRlcBuffer());
 
@@ -94,38 +97,34 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
         emit(receivedPacketFromLowerLayerSignal_, pkt);
 
         DrbKey id = ctrlInfoToRxDrbKey(lteInfo.get());
-        RlcRxEntityBase *rxbuf = lookupRxBuffer(id);
-        ASSERT(rxbuf != nullptr);
+        auto it = rxGateIndices_.find(id);
+        ASSERT(it != rxGateIndices_.end());
 
         EV << "RlcMux::fromMacLayer - Enqueue packet " << pkt->getName() << " into RX entity\n";
-        send(pkt, rxbuf->gate("in")->getPathStartGate());  // path start = our toRxEntity gate (crosses the RlcEntity compound boundary)
+        send(pkt, "toRxEntity", it->second);
     }
 }
 
-RlcRxEntityBase *RlcMux::lookupRxBuffer(DrbKey id)
+void RlcMux::registerRxEntity(DrbKey id, int gateIndex)
 {
-    auto it = rxEntities_.find(id);
-    return (it != rxEntities_.end()) ? it->second : nullptr;
+    if (rxGateIndices_.find(id) != rxGateIndices_.end())
+        throw cRuntimeError("RLC RX entity for %s already registered", id.str().c_str());
+    ASSERT(gate("toRxEntity", gateIndex)->isConnectedOutside());
+    rxGateIndices_[id] = gateIndex;
+    EV << "RlcMux::registerRxEntity - Registered RX entity for " << id << " on toRxEntity gate " << gateIndex << "\n";
 }
 
-void RlcMux::registerRxBuffer(DrbKey id, RlcRxEntityBase *rxEnt)
+void RlcMux::unregisterRxEntity(DrbKey id)
 {
-    if (rxEntities_.find(id) != rxEntities_.end())
-        throw cRuntimeError("RLC RX entity for %s already exists", id.str().c_str());
-    rxEntities_[id] = rxEnt;
-    EV << "RlcMux::registerRxBuffer - Registered RX entity: " << rxEnt->getId() << " for " << id << "\n";
-}
-
-void RlcMux::unregisterRxBuffer(DrbKey id)
-{
-    rxEntities_.erase(id);
+    rxGateIndices_.erase(id);
 }
 
 void RlcMux::activeUeUL(std::set<MacNodeId> *ueSet)
 {
-    for (const auto& [id, entity] : rxEntities_) {
+    for (const auto& [id, gateIndex] : rxGateIndices_) {
         MacNodeId nodeId = id.getNodeId();
-        UmRxEntity *umEnt = dynamic_cast<UmRxEntity *>(entity);
+        // path end crosses the RlcEntity compound boundary, so the owner is its rx submodule
+        UmRxEntity *umEnt = dynamic_cast<UmRxEntity *>(gate("toRxEntity", gateIndex)->getPathEndGate()->getOwnerModule());
         if (umEnt != nullptr && (ueSet->find(nodeId) == ueSet->end()) && !umEnt->isEmpty())
             ueSet->insert(nodeId);
     }
