@@ -445,24 +445,30 @@ RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, FlowControlInfo *
     return rxEnt;
 }
 
+int BearerManagement::getNumLegs(DrbKey id, FlowControlInfo *lteInfo)
+{
+    // Number of legs of this bearer. Two-leg (split-capable) bearers: at a DC UE, every
+    // infrastructure bearer (local LTE + local NR stack legs); at a DC master, every UE bearer
+    // (local leg + remote leg via X2 to the secondary). Everything else -- non-DC nodes, D2D
+    // and multicast bearers, secondaries (X2 relay only) -- is single-leg.
+    bool isEnb = (registration_->getNodeType() == NODEB);
+    if (dualConnectivityEnabled_ && lteInfo->getMulticastGroupId() == NODEID_NONE) {
+        if (!isEnb && getNodeTypeById(id.getNodeId()) == NODEB)
+            return 2;
+        else if (isEnb && binderModule->getSecondaryNode(registration_->getLteNodeId()) != NODEID_NONE)
+            return 2;
+    }
+    return 1;
+}
+
 cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux)
 {
     auto it = pdcpEntities_.find(id);
     if (it != pdcpEntities_.end())
         return it->second;
 
-    // Number of legs of this bearer. Two-leg (split-capable) bearers: at a DC UE, every
-    // infrastructure bearer (local LTE + local NR stack legs); at a DC master, every UE bearer
-    // (local leg + remote leg via X2 to the secondary). Everything else -- non-DC nodes, D2D
-    // and multicast bearers, secondaries (X2 relay only) -- is single-leg.
     bool isEnb = (registration_->getNodeType() == NODEB);
-    int numLegs = 1;
-    if (dualConnectivityEnabled_ && lteInfo->getMulticastGroupId() == NODEID_NONE) {
-        if (!isEnb && getNodeTypeById(id.getNodeId()) == NODEB)
-            numLegs = 2;
-        else if (isEnb && binderModule->getSecondaryNode(registration_->getLteNodeId()) != NODEID_NONE)
-            numLegs = 2;
-    }
+    int numLegs = getNumLegs(id, lteInfo);
 
     // Create the per-bearer PDCP entity module (compound: TX + RX sides and, on a multi-leg
     // bearer, the leg splitter/joiner). With duplex bearer establishment the first-processed
@@ -519,11 +525,11 @@ cModule *BearerManagement::findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux
 // ONE entity whose legs split/rejoin below PDCP. The master-keyed lookup must be precise
 // (master node + same DRB id): matching the bare DRB id would also match unrelated bearers of
 // this UE, since DRB ids are only unique per peer. Everything else is leg 0 of its own compound.
-static int selectPdcpLeg(bool isUe, bool isNr, bool dualConnectivityEnabled, Binder *binder,
-                         MacNodeId peerId, DrbKey& compoundId /*inout*/)
+int BearerManagement::selectPdcpLeg(bool isNr, MacNodeId peerId, DrbKey& compoundId /*inout*/)
 {
-    if (isUe && isNr && dualConnectivityEnabled && getNodeTypeById(peerId) == NODEB) {
-        MacNodeId masterNodeId = binder->getMasterNodeOrSelf(peerId);
+    bool isUe = (registration_->getNodeType() == UE);
+    if (isUe && isNr && dualConnectivityEnabled_ && getNodeTypeById(peerId) == NODEB) {
+        MacNodeId masterNodeId = binderModule->getMasterNodeOrSelf(peerId);
         if (masterNodeId != peerId) {  // the peer is a DC secondary node
             compoundId = DrbKey(masterNodeId, compoundId.getDrbId());
             return 1;
@@ -540,8 +546,7 @@ void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
     DrbKey rlcId = ctrlInfoToTxDrbKey(lteInfo);
 
     DrbKey compoundId = id;
-    int legIdx = selectPdcpLeg(registration_->getNodeType() == UE, isNr, dualConnectivityEnabled_,
-                               binderModule.get(), lteInfo->getDestId(), compoundId);
+    int legIdx = selectPdcpLeg(isNr, lteInfo->getDestId(), compoundId);
 
     cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, lteInfo, rlcMux);
     if (pdcpEnt->gate("legOut", legIdx)->isConnectedOutside()) {
@@ -572,8 +577,7 @@ void BearerManagement::installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
     DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
 
     DrbKey compoundId = id;
-    int legIdx = selectPdcpLeg(registration_->getNodeType() == UE, isNr, dualConnectivityEnabled_,
-                               binderModule.get(), lteInfo->getSourceId(), compoundId);
+    int legIdx = selectPdcpLeg(isNr, lteInfo->getSourceId(), compoundId);
 
     cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, lteInfo, rlcMux);
     if (pdcpEnt->gate("legIn", legIdx)->isConnectedOutside()) {

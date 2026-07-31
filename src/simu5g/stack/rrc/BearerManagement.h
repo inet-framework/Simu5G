@@ -40,7 +40,7 @@ class Binder;
  */
 class BearerManagement : public cSimpleModule
 {
-  private:
+  protected:
     Registration *registration_ = nullptr;
 
     // PDCP entity types (resolved from NED params): the full PDCP entity is a compound
@@ -98,13 +98,19 @@ class BearerManagement : public cSimpleModule
     void setRlcEntityParams(cModule *entity, bool isNr);
     void setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex);
     cModule *lookupRlcEntityModule(DrbKey id, bool isNr);
-    cModule *findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    RlcTxEntityBase *installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    RlcRxEntityBase *installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    cModule *findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux);
-    void installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    void installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    cModule *findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux);
+    virtual cModule *findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    virtual RlcTxEntityBase *installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    virtual RlcRxEntityBase *installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    virtual cModule *findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux);
+    virtual void installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    virtual void installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    virtual cModule *findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux);
+
+    // The layout of a bearer over the node's stack legs. getNumLegs() gives the number of legs
+    // the bearer's PDCP entity is built with, selectPdcpLeg() the leg an establishment call
+    // attaches to (and, for a leg of a bearer anchored elsewhere, the anchor bearer's key).
+    virtual int getNumLegs(DrbKey id, FlowControlInfo *lteInfo);
+    virtual int selectPdcpLeg(bool isNr, MacNodeId peerId, DrbKey& compoundId /*inout*/);
 
   protected:
     void initialize(int stage) override;
