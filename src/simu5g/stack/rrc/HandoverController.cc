@@ -88,14 +88,17 @@ void HandoverController::initialize(int stage)
         if (dynamicCellAssociation) {
             phy_->findCandidateEnb(candidateServingNodeId_, candidateServingNodeRssi_);
 
-            // binder calls
-            // if dynamicCellAssociation selected a different cell
-            if (candidateServingNodeId_ != NODEID_NONE && candidateServingNodeId_ != servingNodeId_) {
-                binder_->unregisterServingNode(servingNodeId_, nodeId_);
-                binder_->registerServingNode(candidateServingNodeId_, nodeId_);
+            // Keep the configured serving cell if no candidate was found, otherwise the UE
+            // would be left detached while the binder still records the configured cell.
+            if (candidateServingNodeId_ != NODEID_NONE) {
+                // binder calls, if dynamicCellAssociation selected a different cell
+                if (candidateServingNodeId_ != servingNodeId_) {
+                    binder_->unregisterServingNode(servingNodeId_, nodeId_);
+                    binder_->registerServingNode(candidateServingNodeId_, nodeId_);
+                }
+                servingNodeId_ = candidateServingNodeId_;
+                servingNodeRssi_ = candidateServingNodeRssi_;
             }
-            servingNodeId_ = candidateServingNodeId_;
-            servingNodeRssi_ = candidateServingNodeRssi_;
         }
 
         EV << "LtePhyUe::initialize - Attaching to eNodeB " << servingNodeId_ << endl;
