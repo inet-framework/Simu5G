@@ -19,7 +19,7 @@
 #include "simu5g/stack/rlc/RlcMux.h"
 #include "simu5g/stack/rlc/RlcRxEntityBase.h"
 #include "simu5g/stack/rlc/um/RlcUmTxEntityBase.h"
-#include "simu5g/stack/pdcp/UpperMux.h"
+#include "simu5g/stack/pdcp/PdcpMux.h"
 #include "simu5g/stack/pdcp/DcMux.h"
 #include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
 #include "simu5g/stack/pdcp/PdcpRxEntityBase.h"
@@ -152,7 +152,7 @@ void BearerManagement::releaseLink(MacNodeId peerId)
     Enter_Method_Silent("releaseLink()");
     EV << NOW << " BearerManagement::releaseLink - releasing link to " << peerId << endl;
     // UE Context Release: stop traffic at Ip2Nic first, so no packet is pushed at a torn-down
-    // bearer (which would otherwise hit UpperMux's TX-entity assert).
+    // bearer (which would otherwise hit PdcpMux's TX-entity assert).
     if (auto *ip2nic = inet::findModuleFromPar<Ip2Nic>(par("ip2nicModule"), this)) {
         ip2nic->releaseUe(peerId);
         // RRC re-establishment (TS 38.331 5.3.7): start the cell-(re)selection timer T311. When it
@@ -316,12 +316,12 @@ void BearerManagement::setRlcEntityParams(cModule *entity, bool isNr)
     // framing of TS 38.322, an LTE bearer the FI/concatenation of TS 36.322. The framing
     // is a function of the RAT, not an independent knob; soFraming is a separate
     // parameter only because it is the selection mechanism. (The NR-leg marker proper is
-    // the pdcpMux.isNR parameter, read by UpperMux/Ip2Nic/LteMacEnb, not set here.)
+    // the pdcpMux.isNR parameter, read by PdcpMux/Ip2Nic/LteMacEnb, not set here.)
 }
 
 void BearerManagement::setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex)
 {
-    auto *pdcpMux = inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this);
+    auto *pdcpMux = inet::getModuleFromPar<PdcpMux>(par("pdcpMuxModule"), this);
     if (!pdcpMux || !rlcMux)
         return;
 
@@ -395,12 +395,12 @@ RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *
         return txEnt;
     }
 
-    // Wire entity lowerOut gate → LowerMux fromTxEntity
+    // Wire entity lowerOut gate → RlcMux fromTxEntity
     int fromIdx = rlcMux->gateSize("fromTxEntity");
     rlcMux->setGateSize("fromTxEntity", fromIdx + 1);
     module->gate("lowerOut")->connectTo(rlcMux->gate("fromTxEntity", fromIdx));
 
-    // Wire LowerMux macToTxEntity → entity macIn gate
+    // Wire RlcMux macToTxEntity → entity macIn gate
     int macIdx = rlcMux->gateSize("macToTxEntity");
     rlcMux->setGateSize("macToTxEntity", macIdx + 1);
     rlcMux->gate("macToTxEntity", macIdx)->connectTo(module->gate("macIn"));
@@ -432,7 +432,7 @@ RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, FlowControlInfo *
         return rxEnt;
     }
 
-    // Wire LowerMux → entity lowerIn gate
+    // Wire RlcMux → entity lowerIn gate
     int idx = rlcMux->gateSize("toRxEntity");
     rlcMux->setGateSize("toRxEntity", idx + 1);
     rlcMux->gate("toRxEntity", idx)->connectTo(module->gate("lowerIn"));
@@ -534,7 +534,7 @@ static int selectPdcpLeg(bool isUe, bool isNr, bool dualConnectivityEnabled, Bin
 
 void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
 {
-    auto *pdcpMux = inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this);
+    auto *pdcpMux = inet::getModuleFromPar<PdcpMux>(par("pdcpMuxModule"), this);
     // The PDCP entity is keyed by dest (id); the RLC entity it wires to is keyed by
     // ctrlInfoToTxDrbKey, which for multicast is the group id -- not the same as id.
     DrbKey rlcId = ctrlInfoToTxDrbKey(lteInfo);
@@ -555,7 +555,7 @@ void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
     pdcpEnt->gate("legOut", legIdx)->connectTo(rlcEnt->gate("upperIn"));
 
     if (legIdx == 0) {
-        // Wire UpperMux → compound upperIn (→ tx.in) and register the TX side
+        // Wire PdcpMux → compound upperIn (→ tx.in) and register the TX side
         int idx = pdcpMux->gateSize("toTxEntity");
         pdcpMux->setGateSize("toTxEntity", idx + 1);
         pdcpMux->gate("toTxEntity", idx)->connectTo(pdcpEnt->gate("upperIn"));
@@ -568,7 +568,7 @@ void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
 
 void BearerManagement::installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
 {
-    auto *pdcpMux = inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this);
+    auto *pdcpMux = inet::getModuleFromPar<PdcpMux>(par("pdcpMuxModule"), this);
     DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
 
     DrbKey compoundId = id;
@@ -587,7 +587,7 @@ void BearerManagement::installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
     rlcEnt->gate("upperOut")->connectTo(pdcpEnt->gate("legIn", legIdx));
 
     if (legIdx == 0) {
-        // Wire compound upperOut (← rx.out) → UpperMux fromRxEntity and register the RX side
+        // Wire compound upperOut (← rx.out) → PdcpMux fromRxEntity and register the RX side
         int fromIdx = pdcpMux->gateSize("fromRxEntity");
         pdcpMux->setGateSize("fromRxEntity", fromIdx + 1);
         pdcpEnt->gate("upperOut")->connectTo(pdcpMux->gate("fromRxEntity", fromIdx));
@@ -613,7 +613,7 @@ void BearerManagement::deleteLocalPdcpEntities(MacNodeId nodeId)
 {
     Enter_Method_Silent("deleteLocalPdcpEntities()");
 
-    auto *pdcpMux = inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this);
+    auto *pdcpMux = inet::getModuleFromPar<PdcpMux>(par("pdcpMuxModule"), this);
     auto *pdcpDcMux = inet::findModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this); // nullptr on UEs (no X2)
 
     bool isEnb = (registration_->getNodeType() == NODEB);
@@ -627,7 +627,7 @@ void BearerManagement::deleteLocalPdcpEntities(MacNodeId nodeId)
     bool keyed = isEnb || registration_->getNrNodeId() != NODEID_NONE;
 
     // Delete full PDCP entity compounds (each deletes its TX and RX side). Unregister the TX
-    // from the UpperMux routing table where one was installed -- a DC NR leg reuses the master's
+    // from the PdcpMux routing table where one was installed -- a DC NR leg reuses the master's
     // TX via nrOut, so its compound carries only an (idle) TX submodule, never registered.
     for (auto it = pdcpEntities_.begin(); it != pdcpEntities_.end(); ) {
         if (!keyed || it->first.getNodeId() == nodeId) {

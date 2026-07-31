@@ -19,10 +19,10 @@ package simu5g.stack.pdcp;
 // entities are established by Ip2Nic/SDAP and registered by BearerManagement.
 // Collects processed SDUs from RX entities and sends them to the upper layer.
 //
-simple UpperMux
+simple PdcpMux
 {
     parameters:
-        @class("UpperMux");
+        @class("PdcpMux");
         @display("i=block/dispatch");
         bool isNR = default(false);
     gates:

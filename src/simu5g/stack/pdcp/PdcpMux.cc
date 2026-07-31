@@ -9,18 +9,18 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/pdcp/UpperMux.h"
+#include "simu5g/stack/pdcp/PdcpMux.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
-Define_Module(UpperMux);
+Define_Module(PdcpMux);
 
 using namespace omnetpp;
 using namespace inet;
 
-void UpperMux::initialize(int stage)
+void PdcpMux::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         upperLayerInGate_ = gate("upperLayerIn");
@@ -30,7 +30,7 @@ void UpperMux::initialize(int stage)
     }
 }
 
-void UpperMux::handleMessage(cMessage *msg)
+void PdcpMux::handleMessage(cMessage *msg)
 {
     cPacket *pkt = check_and_cast<cPacket *>(msg);
     cGate *incoming = pkt->getArrivalGate();
@@ -43,11 +43,11 @@ void UpperMux::handleMessage(cMessage *msg)
         send(pkt, upperLayerOutGate_);
     }
     else {
-        throw cRuntimeError("UpperMux: unexpected message from gate %s", incoming->getFullName());
+        throw cRuntimeError("PdcpMux: unexpected message from gate %s", incoming->getFullName());
     }
 }
 
-void UpperMux::fromDataPort(cPacket *pktAux)
+void PdcpMux::fromDataPort(cPacket *pktAux)
 {
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
 
@@ -66,7 +66,7 @@ void UpperMux::fromDataPort(cPacket *pktAux)
     // builds, so fail with a real throw. Ip2Nic/SDAP establish the connection for every
     // packet whose TX entity does not exist yet, so a miss here is a dispatch bug.
     if (entity == nullptr)
-        throw cRuntimeError("UpperMux::fromDataPort: no PDCP TX entity for %s -- the connection "
+        throw cRuntimeError("PdcpMux::fromDataPort: no PDCP TX entity for %s -- the connection "
                             "should have been established by Ip2Nic or SDAP", id.str().c_str());
 
     // path start = our toTxEntity gate (crosses the PdcpEntityBase compound boundary, whose
@@ -74,21 +74,21 @@ void UpperMux::fromDataPort(cPacket *pktAux)
     send(pkt, entity->gate("in")->getPathStartGate());
 }
 
-PdcpTxEntityBase *UpperMux::lookupTxEntity(DrbKey id)
+PdcpTxEntityBase *PdcpMux::lookupTxEntity(DrbKey id)
 {
     auto it = txEntities_.find(id);
     return it != txEntities_.end() ? it->second : nullptr;
 }
 
-void UpperMux::registerTxEntity(DrbKey id, PdcpTxEntityBase *txEnt)
+void PdcpMux::registerTxEntity(DrbKey id, PdcpTxEntityBase *txEnt)
 {
     if (txEntities_.find(id) != txEntities_.end())
         throw cRuntimeError("PDCP TX entity for %s already exists", id.str().c_str());
     txEntities_[id] = txEnt;
-    EV << "UpperMux::registerTxEntity - Registered TxPdcpEntity for " << id << "\n";
+    EV << "PdcpMux::registerTxEntity - Registered TxPdcpEntity for " << id << "\n";
 }
 
-void UpperMux::unregisterTxEntity(DrbKey id)
+void PdcpMux::unregisterTxEntity(DrbKey id)
 {
     txEntities_.erase(id);
 }

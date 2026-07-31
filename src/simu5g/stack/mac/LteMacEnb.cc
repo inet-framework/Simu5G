@@ -37,7 +37,7 @@
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/rlc/RlcMux.h"
-#include "simu5g/stack/pdcp/UpperMux.h"
+#include "simu5g/stack/pdcp/PdcpMux.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include <inet/networklayer/common/NetworkInterface.h>
 
@@ -1076,7 +1076,7 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
          * the PDCP layer can also have SDUs buffered.
          */
 
-        if (inet::getModuleFromPar<UpperMux>(par("pdcpMuxModule"), this)->par("isNR").boolValue()) {
+        if (inet::getModuleFromPar<PdcpMux>(par("pdcpMuxModule"), this)->par("isNR").boolValue()) {
             auto *bm = inet::getModuleFromPar<BearerManagement>(par("bearerManagementModule"), this);
             std::set<MacNodeId> activePdcpUe;
             bm->pdcpActiveUeUL(&activePdcpUe);

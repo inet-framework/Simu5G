@@ -20,7 +20,7 @@
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/binder/Binder.h"
-#include "simu5g/stack/pdcp/UpperMux.h"
+#include "simu5g/stack/pdcp/PdcpMux.h"
 
 namespace simu5g {
 
@@ -41,7 +41,7 @@ class Ip2Nic : public cSimpleModule
     inet::ModuleRefByPar<Binder> binder_;
 
     // reference to the local PDCP dispatcher, the authoritative registry of PDCP TX entities
-    inet::ModuleRefByPar<UpperMux> pdcpMux_;
+    inet::ModuleRefByPar<PdcpMux> pdcpMux_;
 
     // LTE MAC node id of this node
     MacNodeId nodeId_ = NODEID_NONE;

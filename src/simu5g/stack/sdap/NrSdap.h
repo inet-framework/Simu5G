@@ -17,7 +17,7 @@
 #include "simu5g/stack/sdap/common/DrbTable.h"
 #include "simu5g/stack/sdap/common/ReflectiveQosTable.h"
 #include "simu5g/common/binder/Binder.h"
-#include "simu5g/stack/pdcp/UpperMux.h"
+#include "simu5g/stack/pdcp/PdcpMux.h"
 #include <inet/common/ModuleRefByPar.h>
 
 using namespace omnetpp;
@@ -50,7 +50,7 @@ class NrSdap : public cSimpleModule
     inet::ModuleRefByPar<Binder> binder_;
 
     // reference to the local PDCP dispatcher, the authoritative registry of PDCP TX entities
-    inet::ModuleRefByPar<UpperMux> pdcpMux_;
+    inet::ModuleRefByPar<PdcpMux> pdcpMux_;
 
     bool isUe = true;  // Node role: true for UE, false for gNB
 

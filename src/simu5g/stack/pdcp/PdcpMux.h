@@ -9,8 +9,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _UPPER_MUX_H_
-#define _UPPER_MUX_H_
+#ifndef _PDCP_MUX_H_
+#define _PDCP_MUX_H_
 
 #include <map>
 #include <set>
@@ -31,7 +31,7 @@ using namespace omnetpp;
  * Dispatches upper-layer packets to the correct TX entity by DrbKey,
  * and collects RX entity output to forward to the upper layer.
  */
-class UpperMux : public cSimpleModule
+class PdcpMux : public cSimpleModule
 {
   protected:
     bool isNR_ = false;

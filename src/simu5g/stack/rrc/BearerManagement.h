@@ -27,7 +27,7 @@ class RlcMux;
 class RlcTxEntityBase;
 class RlcRxEntityBase;
 class RlcUmTxEntityBase;
-class UpperMux;
+class PdcpMux;
 class DcMux;
 class PdcpTxEntityBase;
 class PdcpRxEntityBase;

@@ -83,9 +83,9 @@ void LteRlcUmRxEntity::handleMessage(cMessage *msg)
         delete msg;
     }
     else if (msg->getArrivalGate() && msg->getArrivalGate()->isName("in")) {
-        // RLC PDU from LowerMux — enqueue for reassembly
+        // RLC PDU from RlcMux — enqueue for reassembly
         auto pkt = check_and_cast<inet::Packet *>(msg);
-        EV << "LteRlcUmRxEntity::handleMessage - Enqueue packet " << pkt->getName() << " from LowerMux\n";
+        EV << "LteRlcUmRxEntity::handleMessage - Enqueue packet " << pkt->getName() << " from RlcMux\n";
         enque(pkt);
     }
     else {

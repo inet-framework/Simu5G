@@ -22,7 +22,7 @@ namespace simu5g {
 /**
  * @brief Abstract base class for all RLC TX entities (UM, TM, AM).
  *
- * Defines the minimal interface that the RlcUpperMux uses to manage
+ * Defines the minimal interface that the RlcMux uses to manage
  * TX entities regardless of their RLC mode.
  */
 class RlcTxEntityBase : public omnetpp::cSimpleModule

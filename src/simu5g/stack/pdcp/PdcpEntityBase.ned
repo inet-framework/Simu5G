@@ -46,8 +46,8 @@ module PdcpEntityBase
         *.emitPerSduSignals = this.numLegs == 1;   // on a multi-leg bearer, the splitter emits the per-leg statistics
         *.reorderingEnabled = this.numLegs > 1;    // reorder the SN stream merged from several legs
     gates:
-        input upperIn;            // SDUs from IP (via UpperMux)
-        output upperOut;          // reassembled SDUs to IP (via UpperMux)
+        input upperIn;            // SDUs from IP (via PdcpMux)
+        output upperOut;          // reassembled SDUs to IP (via PdcpMux)
         output legOut[numLegs];   // PDUs to leg k (RLC entity, or DcMux/X2)
         input legIn[numLegs];     // PDUs from leg k
     submodules:
