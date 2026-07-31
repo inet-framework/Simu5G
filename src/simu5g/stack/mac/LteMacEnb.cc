@@ -123,7 +123,7 @@ void LteMacEnb::initialize(int stage)
 {
     LteMacBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
-        nodeId_ = MacNodeId(networkNode_->par("macNodeId").intValue());
+        nodeId_ = MacNodeId(par("macNodeId").intValue());
 
         // display node ID above module icon
         getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", num(nodeId_)).c_str());

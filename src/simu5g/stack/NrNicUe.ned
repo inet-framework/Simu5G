@@ -55,6 +55,11 @@ module NrNicUe extends LteNicUeD2D
         nrMac.isNr = true;
         nrPhy.isNr = true;
         nrDlFbGen.isNr = true;
+        // the NR leg's modules take their MacNodeId from the node's NR id
+        rrc.nrHandoverController.macNodeId = parent.nrMacNodeId;
+        nrMac.macNodeId = parent.nrMacNodeId;
+        nrPhy.macNodeId = parent.nrMacNodeId;
+        nrDlFbGen.macNodeId = parent.nrMacNodeId;
         rrc.nrHandoverController.otherHandoverControllerModule = "^.handoverController";
         nrPhy.channelModelModule = "^.nrChannelModel[0]";
         nrPhy.feedbackGeneratorModule = "^.nrDlFbGen";

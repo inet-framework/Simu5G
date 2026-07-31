@@ -28,6 +28,7 @@ simple LtePhyBase like ILtePhy
     parameters:
         @display("i=block/wrxtx");
         bool isNr = default(false);   // true for the NR leg (set by NrNicUe/NrNicEnb on their PHY submodule)
+        int macNodeId;                // MacNodeId of the stack leg this PHY belongs to (set by the NIC)
         double ueTxPower @unit(dBm) = default(26dBm);
         double eNodeBTxPower @unit(dBm) = default(46dBm);
         double microTxPower @unit(dBm) = default(30dBm);

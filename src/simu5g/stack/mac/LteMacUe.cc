@@ -58,8 +58,7 @@ void LteMacUe::initialize(int stage)
 {
     LteMacBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
-        bool isNr = par("isNr").boolValue();
-        nodeId_ = MacNodeId(networkNode_->par(isNr ? "nrMacNodeId" : "macNodeId").intValue());
+        nodeId_ = MacNodeId(par("macNodeId").intValue());
 
         numPreambles_ = par("numPreambles");
         maxRacTryouts_ = par("maxRacAttempts");

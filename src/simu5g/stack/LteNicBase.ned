@@ -56,6 +56,9 @@ module LteNicBase extends NetworkInterface like ICellularNic
         int numCarriers = default(1);
 
         string address @mutable = default("auto");
+        // the LTE leg's modules take their MacNodeId from the node
+        phy.macNodeId = parent.macNodeId;
+        mac.macNodeId = parent.macNodeId;
         *.interfaceTableModule = default(absPath(this.interfaceTableModule));
         *.routingTableModule = default(absPath(this.routingTableModule));
         **.dualConnectivityEnabled = default(this.dualConnectivityEnabled);

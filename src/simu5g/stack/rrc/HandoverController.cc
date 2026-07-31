@@ -48,8 +48,7 @@ void HandoverController::initialize(int stage)
         otherHandoverController_.reference(this, "otherHandoverControllerModule", false);
 
         isNr_ = par("isNr");
-        cModule *hostModule = inet::getContainingNode(this);
-        nodeId_ = MacNodeId(hostModule->par(isNr_ ? "nrMacNodeId" : "macNodeId").intValue());
+        nodeId_ = MacNodeId(par("macNodeId").intValue());
 
         enableHandover_ = par("enableHandover");
         handoverDetachmentTime_ = par("handoverDetachmentTime").doubleValue();

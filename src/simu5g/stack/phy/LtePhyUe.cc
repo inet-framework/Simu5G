@@ -55,7 +55,7 @@ void LtePhyUe::initialize(int stage)
         isNr_ = par("isNr").boolValue();
 
         // get local id
-        nodeId_ = MacNodeId(hostModule->par(isNr_ ? "nrMacNodeId" : "macNodeId").intValue());
+        nodeId_ = MacNodeId(par("macNodeId").intValue());
         EV << "Local MacNodeId: " << nodeId_ << endl;
     }
     else if (stage == INITSTAGE_SIMU5G_CELLINFO_CHANNELUPDATE) { //TODO being fwd, eliminate stage

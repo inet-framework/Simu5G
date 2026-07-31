@@ -25,6 +25,7 @@ module LteMacBase like ILteMac
 {
     parameters:
         @display("i=block/mac");
+        int macNodeId;               // MacNodeId of the stack leg this MAC belongs to (set by the NIC)
         string binderModule = default("binder");
         //# Mac Queues
         int queueSize @unit(B) = default(2MiB);              // MAC Buffers queue size

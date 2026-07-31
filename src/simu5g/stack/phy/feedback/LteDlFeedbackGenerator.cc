@@ -43,9 +43,7 @@ void LteDlFeedbackGenerator::initialize(int stage)
         usePeriodic_ = par("usePeriodic");
         currentTxMode_ = aToTxMode(par("initialTxMode"));
 
-        cModule *networkNode = getContainingNode(this);
-        bool isNr = par("isNr").boolValue();
-        nodeId_ = MacNodeId(networkNode->par(isNr ? "nrMacNodeId" : "macNodeId").intValue()); //TODO or
+        nodeId_ = MacNodeId(par("macNodeId").intValue());
 
         // Initialize timers
         tPeriodicSensing_ = new TTimer(this);

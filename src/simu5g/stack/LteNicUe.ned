@@ -32,6 +32,8 @@ module LteNicUe extends LteNicBase
 
         rrc.hasHandoverController = true;
         rrc.handoverController.isNr = false;
+        rrc.handoverController.macNodeId = parent.macNodeId;
+        dlFbGen.macNodeId = parent.macNodeId;
 
     submodules:
         // Feedback generator submodule

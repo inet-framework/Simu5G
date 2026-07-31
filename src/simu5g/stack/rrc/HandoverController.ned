@@ -30,6 +30,9 @@ simple HandoverController like IHandoverController
         // whether this instance is associated with the the NR or the LTE stack
         bool isNr;
 
+        // MacNodeId of the stack leg this controller belongs to (set by the NIC)
+        int macNodeId;
+
         // handover duration
         double handoverLatency @unit(s) = default(50ms);
         double handoverDetachmentTime @unit(s) = default(handoverLatency > 0s ? handoverLatency/2 : 25ms);
