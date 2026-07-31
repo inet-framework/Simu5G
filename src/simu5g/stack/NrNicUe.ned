@@ -18,7 +18,7 @@ import simu5g.stack.packetFlowObserver.IPacketFlowObserver;
 import simu5g.stack.phy.ILtePhy;
 import simu5g.stack.phy.channelmodel.ILteChannelModel;
 import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
-import simu5g.stack.rlc.RlcMux;
+import simu5g.stack.rlc.IRlcMux;
 import simu5g.stack.sdap.INrSdap;
 import simu5g.stack.sdap.common.IReflectiveQosTable;
 
@@ -71,7 +71,7 @@ module NrNicUe extends LteNicUeD2D
             @display("p=80,60,col;g=left");
         }
         // NR RLC submodules (flattened from former LteRlc compound)
-        nrRlcMux: RlcMux {
+        nrRlcMux: <default("RlcMux")> like IRlcMux {
             @display("p=570,430;is=s");
         }
         // MAC Layer

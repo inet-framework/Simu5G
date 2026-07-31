@@ -17,7 +17,7 @@ package simu5g.stack.rlc;
 // Dispatches MAC packets to the correct RX entity or TX entity,
 // and collects TX entity output to route to the MAC layer.
 //
-simple RlcMux
+simple RlcMux like IRlcMux
 {
     parameters:
         @class("RlcMux");

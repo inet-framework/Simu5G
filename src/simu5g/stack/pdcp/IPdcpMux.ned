@@ -12,19 +12,18 @@
 package simu5g.stack.pdcp;
 
 //
-// Upper-layer PDCP packet dispatcher.
+// Module interface for the upper-layer PDCP packet dispatcher of a cellular NIC
+// (see ~PdcpMux for the default implementation). Implementations dispatch SDUs
+// coming from Ip2Nic/SDAP to the PDCP TX entity serving their DRB, and pass the
+// output of the RX entities back up. The per-bearer gates are created and wired
+// at runtime by ~BearerManagement, which also registers the TX routing table;
+// implementations must therefore subclass the PdcpMux C++ class.
 //
-// Receives IP datagrams from the upper layer, looks up the appropriate TX PDCP
-// entity by DrbKey, and dispatches the packet to it. Purely a dispatcher: TX
-// entities are established by Ip2Nic/SDAP and registered by BearerManagement.
-// Collects processed SDUs from RX entities and sends them to the upper layer.
-//
-simple PdcpMux like IPdcpMux
+moduleinterface IPdcpMux
 {
     parameters:
-        @class("PdcpMux");
+        bool isNR;
         @display("i=block/dispatch");
-        bool isNR = default(false);
     gates:
         input upperLayerIn;
         output upperLayerOut;
