@@ -167,14 +167,14 @@ class RlcSduSlidingWindowTransmissionBuffer : public omnetpp::cObject
      * @brief Add a new SDU from the upper layer.
      * Assigns SN = txNext_ and increments txNext_.
      */
-    uint32_t addSdu(uint32_t length, inet::Packet *sduPtr);
+    virtual uint32_t addSdu(uint32_t length, inet::Packet *sduPtr);
 
     /**
      * @brief Extract a single segment (or complete SDU) for the next transmission.
      * @param grantSize Total bytes available in the MAC PDU.
      * @return A PendingSegment containing data for at most one SDU.
      */
-    PendingSegment getSegmentForGrant(uint32_t grantSize);
+    virtual PendingSegment getSegmentForGrant(uint32_t grantSize);
 
     /**
      * @brief Peek the start offset of the segment the next getSegmentForGrant() would
@@ -182,7 +182,7 @@ class RlcSduSlidingWindowTransmissionBuffer : public omnetpp::cObject
      * (a non-zero start means a continuation segment that needs the SO field).
      * @return true and sets outStart if a pending new-data segment exists.
      */
-    bool peekNextSegmentStart(uint32_t &outStart) const;
+    virtual bool peekNextSegmentStart(uint32_t &outStart) const;
 
     /**
      * @brief Process an RLC Status PDU (ACK/NACK).
@@ -202,16 +202,16 @@ class RlcSduSlidingWindowTransmissionBuffer : public omnetpp::cObject
                                             uint32_t end, uint32_t grantSize);
 
     /** @brief Total bytes not yet transmitted. */
-    int getTotalPendingBytes() const;
+    virtual int getTotalPendingBytes() const;
 
     bool hasUnacknowledgedData() const { return txNext_ > txNextAck_; }
     bool windowFull() const { return txNext_ >= txNextAck_ + amWindowSize_; }
 
-    bool isInRtxRange(uint32_t sn) const {
+    virtual bool isInRtxRange(uint32_t sn) const {
         return hasTransmitted_ && sn >= txNextAck_ && sn <= highestSnTransmitted_;
     }
 
-    bool getSduData(uint32_t sn, inet::Packet *&outPtr, uint32_t &outTotalLen) {
+    virtual bool getSduData(uint32_t sn, inet::Packet *&outPtr, uint32_t &outTotalLen) {
         auto it = txBuffer_.find(sn);
         if (it == txBuffer_.end())
             return false;
@@ -220,7 +220,7 @@ class RlcSduSlidingWindowTransmissionBuffer : public omnetpp::cObject
         return true;
     }
 
-    bool isFullyAcknowledged(uint32_t sn) {
+    virtual bool isFullyAcknowledged(uint32_t sn) {
         auto it = txBuffer_.find(sn);
         if (it == txBuffer_.end())
             return false;

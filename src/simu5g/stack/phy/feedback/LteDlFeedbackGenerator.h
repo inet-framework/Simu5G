@@ -82,14 +82,14 @@ class LteDlFeedbackGenerator : public cSimpleModule
   private:
 
     // initialize cell information
-    void initCellInfo();
+    virtual void initCellInfo();
 
     /**
      * DUMMY: should be provided by PHY
      */
-    void sendFeedback(LteFeedbackDoubleVector fb, FbPeriodicity per);
+    virtual void sendFeedback(LteFeedbackDoubleVector fb, FbPeriodicity per);
 
-    LteFeedbackComputation *getFeedbackComputationFromName(std::string name, ParameterMap& params);
+    virtual LteFeedbackComputation *getFeedbackComputationFromName(std::string name, ParameterMap& params);
 
   protected:
 
@@ -109,7 +109,7 @@ class LteDlFeedbackGenerator : public cSimpleModule
     /**
      * Channel sensing
      */
-    void sensing(FbPeriodicity per);
+    virtual void sensing(FbPeriodicity per);
 
   public:
 
@@ -123,20 +123,20 @@ class LteDlFeedbackGenerator : public cSimpleModule
      * to the Downlink Feedback Generator.
      * Called by PHY.
      */
-    void aperiodicRequest();
+    virtual void aperiodicRequest();
 
     /**
      * Function used to set the current Tx Mode.
      * Called by PHY.
      * @param newTxMode new transmission mode
      */
-    void setTxMode(TxMode newTxMode);
+    virtual void setTxMode(TxMode newTxMode);
 
     /*
      * Perform handover-related operations
      * Update cell id and the reference to the cellInfo
      */
-    void handleHandover(MacCellId newEnbId);
+    virtual void handleHandover(MacCellId newEnbId);
 };
 
 } //namespace

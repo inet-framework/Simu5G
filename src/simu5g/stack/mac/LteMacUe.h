@@ -194,8 +194,8 @@ class LteMacUe : public LteMacBase
      * <cid> and <priority> are returned by reference
      * @return true if at least one backlogged connection exists
      */
-    bool getHighestBackloggedFlow(MacCid& cid, unsigned int& priority);
-    bool getLowestBackloggedFlow(MacCid& cid, unsigned int& priority);
+    virtual bool getHighestBackloggedFlow(MacCid& cid, unsigned int& priority);
+    virtual bool getLowestBackloggedFlow(MacCid& cid, unsigned int& priority);
 
     /**
      * deleteQueues() must be called on handover

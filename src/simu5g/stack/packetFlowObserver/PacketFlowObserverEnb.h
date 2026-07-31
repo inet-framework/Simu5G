@@ -110,13 +110,13 @@ class PacketFlowObserverEnb : public PacketFlowObserverBase
      * @param rlcSno RLC sequence number
      * @bool ack PDCP acknowledgment flag
      */
-    void removePdcpBurstRLC(StatusDescriptor *desc, unsigned int rlcSno, bool ack);
-    void ensureMacPduMapping(MacNodeId peerId, const LteMacPdu *macPdu);
+    virtual void removePdcpBurstRLC(StatusDescriptor *desc, unsigned int rlcSno, bool ack);
+    virtual void ensureMacPduMapping(MacNodeId peerId, const LteMacPdu *macPdu);
 
     /*
      * This method creates a pdcpStatus structure when a PDCP SDU arrives at the PDCP layer.
      */
-    void initPdcpStatus(StatusDescriptor *desc, unsigned int pdcp, unsigned int sduHeaderSize, simtime_t arrivalTime);
+    virtual void initPdcpStatus(StatusDescriptor *desc, unsigned int pdcp, unsigned int sduHeaderSize, simtime_t arrivalTime);
 
     // return true if a structure for this DRB ID is present
     bool hasDrbId(DrbKey drbKey) override;

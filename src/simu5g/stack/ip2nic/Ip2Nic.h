@@ -116,20 +116,20 @@ class Ip2Nic : public cSimpleModule
     virtual void toStackUe(inet::Packet *datagram);
 
     // Packet analysis (moved from PDCP): classifies the packet and fills FlowControlInfo tag
-    void analyzePacket(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
-    MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
-    LteTrafficClass getTrafficCategory(cPacket *pkt);
-    LteRlcType getRlcType(LteTrafficClass trafficCategory);
-    DrbId lookupOrAssignDrbId(const ConnectionKey& key, const FlowControlInfo *lteInfo);
+    virtual void analyzePacket(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
+    virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
+    virtual LteTrafficClass getTrafficCategory(cPacket *pkt);
+    virtual LteRlcType getRlcType(LteTrafficClass trafficCategory);
+    virtual DrbId lookupOrAssignDrbId(const ConnectionKey& key, const FlowControlInfo *lteInfo);
 
     // Establish the (duplex) bearer for the flow via the Binder, then register the
     // mirrored flow->DRB mapping at the peer's Ip2Nic so reverse application traffic
     // resolves to this bearer's reverse leg instead of allocating a new DRB.
-    void establishConnection(FlowControlInfo *lteInfo, const ConnectionKey& key);
+    virtual void establishConnection(FlowControlInfo *lteInfo, const ConnectionKey& key);
 
     // Called by a peer's Ip2Nic: bind an incoming flow key to the DRB of a bearer
     // established from the remote side (no-op if the key is already bound).
-    void registerDrbMapping(const ConnectionKey& key, DrbId drbId);
+    virtual void registerDrbMapping(const ConnectionKey& key, DrbId drbId);
 
   public:
     // Radio link failure handling is data-plane only here: BearerManagement (RRC) drives
@@ -138,10 +138,10 @@ class Ip2Nic : public cSimpleModule
 
     // Start dropping a peer's future DL/UL packets (UE Context Release). Its bearer
     // re-establishes on demand once resumeUe() is called.
-    void releaseUe(MacNodeId ueId);
+    virtual void releaseUe(MacNodeId ueId);
 
     // Stop dropping the peer's packets (RRC re-establishment complete); traffic resumes.
-    void resumeUe(MacNodeId ueId);
+    virtual void resumeUe(MacNodeId ueId);
 };
 
 } //namespace

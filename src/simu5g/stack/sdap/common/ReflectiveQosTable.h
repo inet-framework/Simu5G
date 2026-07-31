@@ -109,24 +109,24 @@ class ReflectiveQosTable : public cSimpleModule
     virtual ~ReflectiveQosTable();
 
     // Core reflective QoS functionality
-    void handleDownlinkFlow(inet::Packet *pkt, Qfi qfi);
-    Qfi lookupUplinkQfi(inet::Packet *pkt);
+    virtual void handleDownlinkFlow(inet::Packet *pkt, Qfi qfi);
+    virtual Qfi lookupUplinkQfi(inet::Packet *pkt);
 
     // Flow management
-    void cleanupExpiredFlows();
+    virtual void cleanupExpiredFlows();
     size_t getActiveFlowCount() const { return reflectiveFlows_.size(); }
-    void clearAllFlows();
+    virtual void clearAllFlows();
 
     // Debug and monitoring
-    void printFlows() const;
+    virtual void printFlows() const;
 
   private:
     // Helper methods
-    FlowKey extractFlowKey(inet::Packet *pkt) const;
+    virtual FlowKey extractFlowKey(inet::Packet *pkt) const;
 
     // Timer management
-    void scheduleCleanupTimer();
-    void cancelCleanupTimer();
+    virtual void scheduleCleanupTimer();
+    virtual void cancelCleanupTimer();
 };
 
 } // namespace simu5g

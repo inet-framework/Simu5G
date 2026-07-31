@@ -62,8 +62,8 @@ class QoSAwareScheduler : public LteScheduler
     double delayLooseMultiplier_ = 1.5;
 
     // Helpers
-    double computeQosWeight(const DrbQosEntry& e);
-    const DrbQosEntry* getDrbQosForCid(MacCid cid);
+    virtual double computeQosWeight(const DrbQosEntry& e);
+    virtual const DrbQosEntry* getDrbQosForCid(MacCid cid);
 
   public:
     double& pfAlpha() { return pfAlpha_; }

@@ -57,12 +57,12 @@ class HandoverPacketHolderEnb : public cSimpleModule
 
   public:
     ~HandoverPacketHolderEnb() override;
-    void triggerHandoverSource(MacNodeId ueId, MacNodeId targetEnb);
-    void triggerHandoverTarget(MacNodeId ueId, MacNodeId sourceEnb);
-    void sendTunneledPacketOnHandover(inet::Packet *datagram, MacNodeId targetEnb);
-    void receiveTunneledPacketOnHandover(inet::Packet *datagram);
-    void signalHandoverCompleteSource(MacNodeId ueId, MacNodeId targetEnb);
-    void signalHandoverCompleteTarget(MacNodeId ueId, MacNodeId sourceEnb);
+    virtual void triggerHandoverSource(MacNodeId ueId, MacNodeId targetEnb);
+    virtual void triggerHandoverTarget(MacNodeId ueId, MacNodeId sourceEnb);
+    virtual void sendTunneledPacketOnHandover(inet::Packet *datagram, MacNodeId targetEnb);
+    virtual void receiveTunneledPacketOnHandover(inet::Packet *datagram);
+    virtual void signalHandoverCompleteSource(MacNodeId ueId, MacNodeId targetEnb);
+    virtual void signalHandoverCompleteTarget(MacNodeId ueId, MacNodeId sourceEnb);
 };
 
 } //namespace

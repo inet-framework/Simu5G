@@ -133,22 +133,22 @@ class LteScheduler
      * Initializes the carrier frequency for this LteScheduler.
      * @param carrierFrequency carrier frequency
      */
-    void setCarrierFrequency(GHz carrierFrequency);
+    virtual void setCarrierFrequency(GHz carrierFrequency);
 
     /*
      * Initializes band limit for this scheduler
      */
-    void initializeBandLimit();
+    virtual void initializeBandLimit();
 
     /*
      * Set the period counter
      */
-    void initializeSchedulerPeriodCounter(NumerologyIndex maxNumerologyIndex);
+    virtual void initializeSchedulerPeriodCounter(NumerologyIndex maxNumerologyIndex);
 
     /*
      * Handle the period counter
      */
-    unsigned int decreaseSchedulerPeriodCounter();
+    virtual unsigned int decreaseSchedulerPeriodCounter();
 
     /**
      * Returns the carrier frequency for this LteScheduler.
@@ -213,7 +213,7 @@ class LteScheduler
      * Prepare the set of active connections on this carrier
      * Used by scheduling modules
      */
-    void buildCarrierActiveConnectionSet();
+    virtual void buildCarrierActiveConnectionSet();
 
 };
 

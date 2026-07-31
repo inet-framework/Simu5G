@@ -71,7 +71,7 @@ class RlcAmRxEntityBase : public RlcRxEntityBase
      * (perPdu = true, before reassembly) or a delivered SDU (perPdu = false), the
      * latter together with the always-zero AM packet-loss sample.
      */
-    void emitRxStatistics(bool perPdu, double throughput, omnetpp::simtime_t delay);
+    virtual void emitRxStatistics(bool perPdu, double throughput, omnetpp::simtime_t delay);
 
     void initialize(int stage) override;
 

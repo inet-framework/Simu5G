@@ -131,7 +131,7 @@ class LteMacEnb : public LteMacBase
      * @param bsr bsr to store
      * @param cid connection id for this bsr
      */
-    void bufferizeBsr(MacBsr *bsr, MacCid cid);
+    virtual void bufferizeBsr(MacBsr *bsr, MacCid cid);
 
     /**
      * createBsrBuffer() creates a new BSR buffer for the given CID
@@ -139,7 +139,7 @@ class LteMacEnb : public LteMacBase
      * @param cid connection id for this bsr
      * @return pointer to the newly created LteMacBuffer
      */
-    LteMacBuffer *createBsrBuffer(MacCid cid);
+    virtual LteMacBuffer *createBsrBuffer(MacCid cid);
 
     /**
      * bufferizePacket() is called every time a packet is
@@ -174,7 +174,7 @@ class LteMacEnb : public LteMacBase
      * Resolves buffered RAC requests: detects preamble collisions and sends
      * success/failure responses. Called at the start of each TTI.
      */
-    void resolveRacCollisions();
+    virtual void resolveRacCollisions();
 
     /*
      * Update UserTxParam stored in every lteMacPdu when an RTX changes this information.

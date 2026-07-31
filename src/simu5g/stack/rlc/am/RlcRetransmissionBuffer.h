@@ -41,7 +41,7 @@ class RlcRetransmissionBuffer
 {
   public:
     RlcRetransmissionBuffer(uint32_t threshold);
-    ~RlcRetransmissionBuffer();
+    virtual ~RlcRetransmissionBuffer();
 
     /**
      * @brief Start a new retransmission round.
@@ -53,7 +53,7 @@ class RlcRetransmissionBuffer
      * retransmission. Both callers must open a round, otherwise the per-round flags
      * stay set and the counter stops advancing.
      */
-    void beginRetxRound() {
+    virtual void beginRetxRound() {
         for (auto &[sn, state] : retxCounters_)
             state.incrementedInCurrentRound = false;
     }
@@ -64,10 +64,10 @@ class RlcRetransmissionBuffer
      * Returns false if this unit has reached maxRetxThreshold retransmissions, in
      * which case it is not added and the caller must declare a radio link failure.
      */
-    bool addNack(uint32_t sn, bool isWhole, uint32_t start, uint32_t end);
+    virtual bool addNack(uint32_t sn, bool isWhole, uint32_t start, uint32_t end);
 
     /** @brief Returns the next task to be retransmitted. */
-    bool getNextRetxTask(RetxTask &outTask) {
+    virtual bool getNextRetxTask(RetxTask &outTask) {
         if (pendingRetx_.empty())
             return false;
         outTask = *pendingRetx_.begin();
@@ -75,7 +75,7 @@ class RlcRetransmissionBuffer
     }
 
     /** @brief Returns the total pending payload bytes for retransmissions. */
-    uint64_t getRetxPendingBytes();
+    virtual uint64_t getRetxPendingBytes();
 
     /** @brief The segments and whole SDUs currently awaiting retransmission. */
     const std::set<RetxTask>& getPendingRetx() const { return pendingRetx_; }
@@ -84,7 +84,7 @@ class RlcRetransmissionBuffer
     void markRetransmitted(const RetxTask &task) { pendingRetx_.erase(task); }
 
     /** @brief Clear retx state for a sequence number (e.g., when finally ACKed). */
-    void clearSn(uint32_t sn);
+    virtual void clearSn(uint32_t sn);
 
   protected:
     struct RetxState {

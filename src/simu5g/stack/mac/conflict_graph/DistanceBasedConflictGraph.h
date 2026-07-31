@@ -30,7 +30,7 @@ class DistanceBasedConflictGraph : public ConflictGraph
     double d2dMultiInterferenceRadius_ = -1.0;
 
     // utility function to convert a distance to dBm according to the channel model
-    double getDbmFromDistance(double distance);
+    virtual double getDbmFromDistance(double distance);
 
     // overridden functions
     void findVertices(std::vector<CGVertex>& vertices) override;
@@ -40,7 +40,7 @@ class DistanceBasedConflictGraph : public ConflictGraph
     DistanceBasedConflictGraph(Binder *binder, LteMacEnbD2D *macEnb, bool reuseD2D, bool reuseD2DMulti, double dbmThresh);
 
     // set distance thresholds
-    void setThresholds(double d2dInterferenceRadius = -1.0, double d2dMultiTransmissionRadius = -1.0, double d2dMultiInterferenceRadius = -1.0);
+    virtual void setThresholds(double d2dInterferenceRadius = -1.0, double d2dMultiTransmissionRadius = -1.0, double d2dMultiInterferenceRadius = -1.0);
 };
 
 } //namespace

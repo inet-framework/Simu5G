@@ -188,7 +188,7 @@ class LteMacBase : public cSimpleModule
   protected:
 
     unsigned int getNumerologyPeriodCounter(NumerologyIndex index) { return numerologyPeriodCounter_[index].current; }
-    void decreaseNumerologyPeriodCounter();
+    virtual void decreaseNumerologyPeriodCounter();
 
   public:
 
@@ -249,7 +249,7 @@ class LteMacBase : public cSimpleModule
      * Extracts a MacCid from FlowControlInfo.
      * Converts DrbId (from PDCP/RLC) to LogicalCid (MAC layer).
      */
-    MacCid ctrlInfoToMacCid(const FlowControlInfo *info) {
+    virtual MacCid ctrlInfoToMacCid(const FlowControlInfo *info) {
         return MacCid(ctrlInfoToUeId(info), drbIdToLcid(info->getDrbId()));
     }
 
@@ -372,13 +372,13 @@ class LteMacBase : public cSimpleModule
         return false;
     }
 
-    void unregisterHarqBufferRx(MacNodeId nodeId);
+    virtual void unregisterHarqBufferRx(MacNodeId nodeId);
 
     // visualization
     void refreshDisplay() const override;
 
-    void recordHarqErrorRate(unsigned int sample, Direction dir);
-    double getHarqErrorRate(Direction dir);
+    virtual void recordHarqErrorRate(unsigned int sample, Direction dir);
+    virtual double getHarqErrorRate(Direction dir);
 
     /*
      * @author Alessandro Noferi
@@ -430,7 +430,7 @@ class LteMacBase : public cSimpleModule
      *
      * @param pkt Packet to send
      */
-    void sendLowerPackets(cPacket *pkt);
+    virtual void sendLowerPackets(cPacket *pkt);
 
     /**
      * sendUpperPackets() is used
@@ -438,7 +438,7 @@ class LteMacBase : public cSimpleModule
      *
      * @param pkt Packet to send
      */
-    void sendUpperPackets(cPacket *pkt);
+    virtual void sendUpperPackets(cPacket *pkt);
 
     /*
      * Functions to be redefined by derived classes
@@ -519,7 +519,7 @@ class LteMacBase : public cSimpleModule
     virtual void updateUserTxParam(cPacket *pkt) = 0;
 
     /// Upper Layer Handler
-    void fromRlc(cPacket *pkt);
+    virtual void fromRlc(cPacket *pkt);
 
     /// Lower Layer Handler
     virtual void fromPhy(cPacket *pkt);

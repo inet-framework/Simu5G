@@ -60,7 +60,7 @@ class NrRlcUmTxEntity : public RlcUmTxEntityBase
 
     // Once the old-mode entity has drained, release the new-mode entity's holding
     // buffer via the D2D controller (mode-switch handover of buffered SDUs).
-    void notifyControllerIfEmptied();
+    virtual void notifyControllerIfEmptied();
 };
 
 } //namespace

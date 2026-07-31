@@ -55,7 +55,7 @@ class LteMacEnbD2D : public LteMacEnb
                              // otherwise, they are terminated using the old communication mode
     bool msClearRlcBuffer_;  // if true, SDUs stored in the RLC buffer of D2D flows are dropped
 
-    void clearBsrBuffers(MacNodeId ueId);
+    virtual void clearBsrBuffers(MacNodeId ueId);
 
     /**
      * macPduUnmake() extracts SDUs from a received MAC
@@ -76,7 +76,7 @@ class LteMacEnbD2D : public LteMacEnb
      */
     void sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList) override;
 
-    void macHandleD2DModeSwitch(cPacket *pkt);
+    virtual void macHandleD2DModeSwitch(cPacket *pkt);
 
     /**
      * Flush Tx H-ARQ buffers for all users
@@ -133,12 +133,12 @@ class LteMacEnbD2D : public LteMacEnb
     HarqBuffersMirrorD2D *getHarqBuffersMirrorD2D(GHz carrierFrequency);
 
     // delete the "mirror" Harq Buffer for this pair (useful at mode switch)
-    void deleteHarqBuffersMirrorD2D(MacNodeId txPeer, MacNodeId rxPeer);
+    virtual void deleteHarqBuffersMirrorD2D(MacNodeId txPeer, MacNodeId rxPeer);
     // delete the "mirror" Harq Buffer for this node (useful at handover)
-    void deleteHarqBuffersMirrorD2D(MacNodeId nodeId);
+    virtual void deleteHarqBuffersMirrorD2D(MacNodeId nodeId);
 
     // send the D2D Mode Switch signal to the transmitter of the given flow
-    void sendModeSwitchNotification(MacNodeId srcId, MacNodeId dst, LteD2DMode oldMode, LteD2DMode newMode);
+    virtual void sendModeSwitchNotification(MacNodeId srcId, MacNodeId dst, LteD2DMode oldMode, LteD2DMode newMode);
 
     bool isMsHarqInterrupt() { return msHarqInterrupt_; }
 

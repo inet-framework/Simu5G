@@ -27,7 +27,7 @@ class LteMaxCiComp : public virtual LteScheduler
 
     // get the band limit for the given user
     // return false if ALL bands are usable
-    bool getBandLimit(std::vector<BandLimit> *bandLimit, MacNodeId ueId);
+    virtual bool getBandLimit(std::vector<BandLimit> *bandLimit, MacNodeId ueId);
 
   public:
     LteMaxCiComp(Binder *binder) : LteScheduler(binder) {}

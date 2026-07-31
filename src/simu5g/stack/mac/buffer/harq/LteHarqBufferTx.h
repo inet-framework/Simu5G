@@ -66,7 +66,7 @@ class LteHarqBufferTx : noncopyable
     /*
      * Get a reference to the selected process
      */
-    LteHarqProcessTx *getSelectedProcess();
+    virtual LteHarqProcessTx *getSelectedProcess();
 
     /**
      * Finds the H-ARQ process which contains the PDU that is not
@@ -81,7 +81,7 @@ class LteHarqBufferTx : noncopyable
      *
      * @return list of unit ids to be retransmitted
      */
-    UnitList firstReadyForRtx();
+    virtual UnitList firstReadyForRtx();
 
     /**
      * Returns the identifier of the H-ARQ process containing the unit with
@@ -89,7 +89,7 @@ class LteHarqBufferTx : noncopyable
      * @param unitId
      * @return PDU length in bytes
      */
-    int64_t pduLength(unsigned char acid, Codeword cw);
+    virtual int64_t pduLength(unsigned char acid, Codeword cw);
 
     /**
      * Takes a list of ids of the units that must retransmit and the number
@@ -108,7 +108,7 @@ class LteHarqBufferTx : noncopyable
      * @param unitIds list of ids of the units that must retransmit.
      * @param availableTbs number of available TBs for the user.
      */
-    void markSelected(UnitList unitIds, unsigned char availableTbs);
+    virtual void markSelected(UnitList unitIds, unsigned char availableTbs);
 
     /**
      * Inserts a PDU in the unit with specified id.
@@ -117,7 +117,7 @@ class LteHarqBufferTx : noncopyable
      * @param unitId id of the destination unit
      * @param pdu PDU to be inserted
      */
-    void insertPdu(unsigned char acid, Codeword cw, Packet *pdu);
+    virtual void insertPdu(unsigned char acid, Codeword cw, Packet *pdu);
 
     /**
      * Returns a pair with H-ARQ process id and a list of its empty units to be used for transmission.
@@ -127,12 +127,12 @@ class LteHarqBufferTx : noncopyable
      *
      * @return  a list of acid and their units  to be used for transmission
      */
-    UnitList firstAvailable();
+    virtual UnitList firstAvailable();
 
     /*
      * Returns a pair with the specified H-ARQ process id and a list of its empty units to be used for transmission.
      */
-    UnitList getEmptyUnits(unsigned char acid);
+    virtual UnitList getEmptyUnits(unsigned char acid);
 
     /**
      * Manages H-ARQ feedback sent to a certain H-ARQ unit and checks if
@@ -140,18 +140,18 @@ class LteHarqBufferTx : noncopyable
      *
      * @param fbpkt received feedback packet
      */
-    void receiveHarqFeedback(Packet *fbpkt);
+    virtual void receiveHarqFeedback(Packet *fbpkt);
 
     /**
      * Sends all PDUs contained in units of selected process down
      */
-    void sendSelectedDown();
+    virtual void sendSelectedDown();
 
     /**
      * Drops all of the PDUs of the units belonging to the process.
      * @param acid the H-ARQ process
      */
-    void dropProcess(unsigned char acid);
+    virtual void dropProcess(unsigned char acid);
 
     /**
      * Sends simulated HARQNACK to all units of the process which contains
@@ -167,23 +167,23 @@ class LteHarqBufferTx : noncopyable
      * @param acid the H-ARQ process
      * @param cw the codeword to be NACKed
      */
-    void selfNack(unsigned char acid, Codeword cw);
+    virtual void selfNack(unsigned char acid, Codeword cw);
 
     /**
      * Drops a whole process; as usual, unitId or acid can be passed.
      *
      * @param unitId unit id.
      */
-    void forceDropProcess(unsigned char acid);
+    virtual void forceDropProcess(unsigned char acid);
 
     /**
      * Drops a single unit.
      *
      * @param unitId unit id.
      */
-    void forceDropUnit(unsigned char acid, Codeword cw);
+    virtual void forceDropUnit(unsigned char acid, Codeword cw);
 
-    BufferStatus getBufferStatus();
+    virtual BufferStatus getBufferStatus();
 
     std::vector<LteHarqProcessTx *> *getHarqProcesses() { return &processes_; }
     unsigned int getNumProcesses() { return numProc_; }
@@ -196,7 +196,7 @@ class LteHarqBufferTx : noncopyable
      * @return true if the TxHarqPduStatus of all units of all processes is not TXHARQ_PDU_EMPTY
      */
 
-    bool isHarqBufferActive() const;
+    virtual bool isHarqBufferActive() const;
 
     virtual ~LteHarqBufferTx();
 

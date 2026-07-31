@@ -80,7 +80,7 @@ class BearerManagement : public cSimpleModule
     // self-message, so we never delete entity modules from inside RLC/PDCP processing.
     cMessage *rlfTrigger_ = nullptr;
     std::set<std::pair<MacNodeId, bool>> pendingRlf_;  // (peer nodeId, nrStack)
-    void handleRadioLinkFailure(MacNodeId nodeId, bool nrStack);
+    virtual void handleRadioLinkFailure(MacNodeId nodeId, bool nrStack);
 
     // RRC re-establishment (TS 38.331 5.3.7), modeled by its timers. On RLF the peer's link
     // is released (Ip2Nic drops its traffic); T311 (cell selection) then T301 (request ->
@@ -95,9 +95,9 @@ class BearerManagement : public cSimpleModule
     // findOrCreatePdcpEntity)
     bool dualConnectivityEnabled_ = false;
 
-    void setRlcEntityParams(cModule *entity, bool isNr);
-    void setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex);
-    cModule *lookupRlcEntityModule(DrbKey id, bool isNr);
+    virtual void setRlcEntityParams(cModule *entity, bool isNr);
+    virtual void setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex);
+    virtual cModule *lookupRlcEntityModule(DrbKey id, bool isNr);
     virtual cModule *findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
     virtual RlcTxEntityBase *installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
     virtual RlcRxEntityBase *installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
@@ -121,21 +121,21 @@ class BearerManagement : public cSimpleModule
     ~BearerManagement() override;
     // Schedule an RLC-detected radio link failure teardown for a peer node, deferred
     // to a safe execution context. nrStack selects the failing leg (LTE vs NR).
-    void scheduleRadioLinkFailure(MacNodeId nodeId, bool nrStack);
+    virtual void scheduleRadioLinkFailure(MacNodeId nodeId, bool nrStack);
     // Release + tear down the link to a peer (both legs, MAC/RLC/PDCP + Ip2Nic drop). Public
     // so the failing node can drive the symmetric teardown on the peer via the binder.
-    void releaseLink(MacNodeId peerId);
+    virtual void releaseLink(MacNodeId peerId);
     virtual void createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp=true);
     virtual void createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp=true);
     virtual RlcTxEntityBase *createRlcTxBuffer(DrbKey id, FlowControlInfo *lteInfo);
     virtual RlcRxEntityBase *createRlcRxBuffer(DrbKey id, FlowControlInfo *lteInfo);
-    RlcTxEntityBase *lookupRlcTxBuffer(DrbKey id);
-    PdcpTxEntityBase *lookupPdcpTxEntity(DrbKey id);
-    cModule *lookupPdcpEntityModule(DrbKey id);    // the per-bearer PdcpEntityBase compound (DcMux leg dispatch)
-    cModule *lookupPdcpRelayEntityModule(DrbKey id); // the per-bearer PdcpRelayEntity compound (DcMux DL dispatch)
+    virtual RlcTxEntityBase *lookupRlcTxBuffer(DrbKey id);
+    virtual PdcpTxEntityBase *lookupPdcpTxEntity(DrbKey id);
+    virtual cModule *lookupPdcpEntityModule(DrbKey id);    // the per-bearer PdcpEntityBase compound (DcMux leg dispatch)
+    virtual cModule *lookupPdcpRelayEntityModule(DrbKey id); // the per-bearer PdcpRelayEntity compound (DcMux DL dispatch)
     virtual void deleteLocalPdcpEntities(MacNodeId nodeId);
     virtual void deleteLocalRlcQueues(MacNodeId nodeId, bool nrStack=false);
-    void pdcpActiveUeUL(std::set<MacNodeId> *ueSet);
+    virtual void pdcpActiveUeUL(std::set<MacNodeId> *ueSet);
 };
 
 } // namespace simu5g

@@ -73,7 +73,7 @@ class RlcAmTxEntityBase : public RlcTxEntityBase
      * MAC/RLC/PDCP state at a safe point; repeat calls are absorbed there, so this
      * may be called from any path that hits the threshold.
      */
-    void declareRadioLinkFailure();
+    virtual void declareRadioLinkFailure();
 
     ~RlcAmTxEntityBase() override { delete lteInfo_; }
 

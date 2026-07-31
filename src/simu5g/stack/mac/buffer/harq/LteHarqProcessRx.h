@@ -141,7 +141,7 @@ class LteHarqProcessRx
     /**
      * Purges a corrupted PDU that has been received on codeword <cw>
      */
-    void purgeCorruptedPdu(Codeword cw);
+    virtual void purgeCorruptedPdu(Codeword cw);
 
     /**
      * Resets the status of a codeword containing a corrupted PDU
@@ -168,7 +168,7 @@ class LteHarqProcessRx
      *
      * @return empty units ids list.
      */
-    CwList emptyUnitsIds();
+    virtual CwList emptyUnitsIds();
 
     /**
      * @author Alessandro Noferi
@@ -178,7 +178,7 @@ class LteHarqProcessRx
      * @return true if at least one unit status is not RXHARQ_PDU_EMPTY
      */
 
-    bool isHarqProcessActive();
+    virtual bool isHarqProcessActive();
 
     virtual ~LteHarqProcessRx();
 };

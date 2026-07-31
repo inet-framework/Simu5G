@@ -93,7 +93,7 @@ class ConflictGraph
     bool reuseD2DMulti_;
 
     // reset Conflict Graph
-    void clearConflictGraph();
+    virtual void clearConflictGraph();
 
     virtual void findVertices(std::vector<CGVertex>& vertices) = 0;
     virtual void findEdges(const std::vector<CGVertex>& vertices) = 0;
@@ -102,11 +102,13 @@ class ConflictGraph
 
     ConflictGraph(Binder *binder, LteMacEnbD2D *macEnb, bool reuseD2D, bool reuseD2DMulti);
 
+    virtual ~ConflictGraph() {}
+
     // compute Conflict Graph
-    void computeConflictGraph();
+    virtual void computeConflictGraph();
 
     // print Conflict Graph - for debug
-    void printConflictGraph();
+    virtual void printConflictGraph();
 
     const CGMatrix *getConflictMatrix() const { return &conflictGraph_; }
 };

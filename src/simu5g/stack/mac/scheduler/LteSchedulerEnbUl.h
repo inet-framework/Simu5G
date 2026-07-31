@@ -107,7 +107,7 @@ class LteSchedulerEnbUl : public LteSchedulerEnb
     unsigned int scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequency, Codeword cw, std::vector<BandLimit> *bandLim = nullptr,
             Remote antenna = MACRO, bool limitBl = false) override;
 
-    void removePendingRac(MacNodeId nodeId);
+    virtual void removePendingRac(MacNodeId nodeId);
 };
 
 } //namespace

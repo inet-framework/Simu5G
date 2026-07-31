@@ -73,7 +73,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    double computeUrbanMacro(double threeDimDistance, double twoDimDistance, bool los);
+    double computeUrbanMacro(double threeDimDistance, double twoDimDistance, bool los) override;
 
     /*
      * UMi path loss model (taken from TR 38.901)
@@ -81,7 +81,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    double computeUrbanMicro(double threeDimDistance, double twoDimDistance, bool los);
+    double computeUrbanMicro(double threeDimDistance, double twoDimDistance, bool los) override;
 
     /*
      * UMa path loss model (taken from TR 38.901)
@@ -89,7 +89,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    double computeRuralMacro(double threeDimDistance, double twoDimDistance, bool los);
+    double computeRuralMacro(double threeDimDistance, double twoDimDistance, bool los) override;
 
     /*
      * InH path loss model (taken from TR 38.901)
@@ -97,7 +97,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    double computeIndoor(double threeDimDistance, double twoDimDistance, bool los);
+    double computeIndoor(double threeDimDistance, double twoDimDistance, bool los) override;
 
     /*
      * Compute std deviation of shadowing according to scenario and visibility
@@ -105,7 +105,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param sqrDistance distance between UE and gNodeB
      * @param nodeId mac node id of UE
      */
-    double getStdDev(bool dist, MacNodeId nodeId);
+    double getStdDev(bool dist, MacNodeId nodeId) override;
 
     /*
      * Compute shadowing

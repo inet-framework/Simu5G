@@ -73,7 +73,7 @@ class LteSchedulerEnbDl : public LteSchedulerEnb
     unsigned int scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequency, Codeword cw, std::vector<BandLimit> *bandLim = nullptr,
             Remote antenna = MACRO, bool limitBl = false) override;
 
-    bool getBandLimit(std::vector<BandLimit> *bandLimit, MacNodeId ueId);
+    virtual bool getBandLimit(std::vector<BandLimit> *bandLimit, MacNodeId ueId);
 
 };
 

@@ -46,7 +46,7 @@ class AmcPilotD2D : public AmcPilot
      */
     const UserTxParams& computeTxParams(MacNodeId id, const Direction dir, GHz carrierFrequency) override;
 
-    void setPreconfiguredTxParams(Cqi cqi);
+    virtual void setPreconfiguredTxParams(Cqi cqi);
 
     // TODO reimplement these functions
     std::vector<Cqi> getMultiBandCqi(MacNodeId id, const Direction dir, GHz carrierFrequency) override { std::vector<Cqi> result; return result; }

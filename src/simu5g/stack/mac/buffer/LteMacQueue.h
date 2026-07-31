@@ -64,7 +64,7 @@ class LteMacQueue : public cPacketQueue
      * @return false if queue is full,
      *            true on successful insertion
      */
-    bool pushBack(cPacket *pkt);
+    virtual bool pushBack(cPacket *pkt);
 
     /**
      * pushFront() inserts a new packet in the front
@@ -74,7 +74,7 @@ class LteMacQueue : public cPacketQueue
      * @return false if queue is full,
      *            true on successful insertion
      */
-    bool pushFront(cPacket *pkt);
+    virtual bool pushFront(cPacket *pkt);
 
     /**
      * popFront() extracts a packet from the
@@ -83,7 +83,7 @@ class LteMacQueue : public cPacketQueue
      * @return nullptr if queue is empty,
      *            pkt on successful operation
      */
-    cPacket *popFront();
+    virtual cPacket *popFront();
 
     /**
      * popBack() extracts a packet from the
@@ -92,7 +92,7 @@ class LteMacQueue : public cPacketQueue
      * @return nullptr if queue is empty,
      *            pkt on successful operation
      */
-    cPacket *popBack();
+    virtual cPacket *popBack();
 
     /**
      * getQueueOccupancy() returns the occupancy
@@ -100,7 +100,7 @@ class LteMacQueue : public cPacketQueue
      *
      * @return queue occupancy
      */
-    int64_t getQueueOccupancy() const;
+    virtual int64_t getQueueOccupancy() const;
 
     /**
      * getQueueSize() returns the maximum
@@ -124,7 +124,7 @@ class LteMacQueue : public cPacketQueue
      *
      * @return Hol Timestamp (0 if queue is empty)
      */
-    simtime_t getHolTimestamp() const;
+    virtual simtime_t getHolTimestamp() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const LteMacQueue *queue);
 
@@ -133,7 +133,7 @@ class LteMacQueue : public cPacketQueue
      * Check if it makes sense to enqueue this packet, i.e. whether it fits
      * in the remaining queue space (unlimited queue if queueSize_ == 0).
      */
-    bool isEnqueueablePacket(inet::Packet *pkt);
+    virtual bool isEnqueueablePacket(inet::Packet *pkt);
 
   private:
     /// Size of queue

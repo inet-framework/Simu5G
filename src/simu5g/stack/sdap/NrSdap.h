@@ -55,9 +55,9 @@ class NrSdap : public cSimpleModule
     bool isUe = true;  // Node role: true for UE, false for gNB
 
   protected:
-    bool requiresSdapHeader(const DrbConfig *drb);
-    bool shouldEnableReflectiveQos(Qfi qfi);
-    const inet::Protocol *getUpperProtocol(const DrbConfig *ctx);
+    virtual bool requiresSdapHeader(const DrbConfig *drb);
+    virtual bool shouldEnableReflectiveQos(Qfi qfi);
+    virtual const inet::Protocol *getUpperProtocol(const DrbConfig *ctx);
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
     virtual void handleUpperPacket(inet::Packet *pkt);

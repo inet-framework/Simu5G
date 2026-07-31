@@ -265,18 +265,18 @@ class LtePhyBase : public ChannelAccess
 
     virtual void handleControlMsg(LteAirFrame *frame, UserControlInfo *userInfo);
 
-    void initializeChannelModel();
+    virtual void initializeChannelModel();
 
     /**
      * Utility.
      * Shows current statistics above the icon.
      */
-    void updateDisplayString();
+    virtual void updateDisplayString();
 
     /**
      * Determine radio gate index of the receiving node
      */
-    int getReceiverGateIndex(const cModule *, bool isNr) const;
+    virtual int getReceiverGateIndex(const cModule *, bool isNr) const;
 
   public:
     /*

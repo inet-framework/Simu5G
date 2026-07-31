@@ -52,13 +52,13 @@ class RlcMux : public cSimpleModule
     ULThroughputPerUE ulThroughput_;
 
   public:
-    void registerRxEntity(DrbKey id, int gateIndex);
-    void unregisterRxEntity(DrbKey id);
-    void activeUeUL(std::set<MacNodeId> *ueSet);
+    virtual void registerRxEntity(DrbKey id, int gateIndex);
+    virtual void unregisterRxEntity(DrbKey id);
+    virtual void activeUeUL(std::set<MacNodeId> *ueSet);
 
-    void addUeThroughput(MacNodeId nodeId, Throughput throughput);
-    double getUeThroughput(MacNodeId nodeId);
-    void resetThroughputStats(MacNodeId nodeId);
+    virtual void addUeThroughput(MacNodeId nodeId, Throughput throughput);
+    virtual double getUeThroughput(MacNodeId nodeId);
+    virtual void resetThroughputStats(MacNodeId nodeId);
 
   protected:
     void initialize(int stage) override;

@@ -38,7 +38,7 @@ class DcX2Forwarder : public cSimpleModule
     cGate *x2ManagerInGate_ = nullptr;
     cGate *x2ManagerOutGate_ = nullptr;
 
-    void handleX2Message(cMessage *msg);
+    virtual void handleX2Message(cMessage *msg);
 
   protected:
 
@@ -47,10 +47,10 @@ class DcX2Forwarder : public cSimpleModule
     void handleMessage(cMessage *msg) override;
 
     // send a PDCP PDU to the X2 Manager
-    void forwardDataToTargetNode(inet::Packet *pkt, MacNodeId targetNode);
+    virtual void forwardDataToTargetNode(inet::Packet *pkt, MacNodeId targetNode);
 
     // receive PDCP PDU from X2 Manager and send it to the PDCP layer
-    void receiveDataFromSourceNode(inet::Packet *pkt, MacNodeId sourceNode);
+    virtual void receiveDataFromSourceNode(inet::Packet *pkt, MacNodeId sourceNode);
 };
 
 } //namespace

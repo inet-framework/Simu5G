@@ -38,7 +38,7 @@ public:
      * @brief Check if SN falls within the reassembly window.
      * Standard: (RX_Next_Highest – UM_Window_Size) <= SN < RX_Next_Highest
      */
-    bool isWithinWindow(uint32_t sn) const {
+    virtual bool isWithinWindow(uint32_t sn) const {
         uint32_t lowerBound = (RX_Next_Highest + snModulus - UM_Window_Size) % snModulus;
 
         if (lowerBound < RX_Next_Highest) {
@@ -51,12 +51,12 @@ public:
         }
     }
 
-    bool isEmpty() const {
+    virtual bool isEmpty() const {
         return sduBuffer.empty();
     }
 
 
-    void reset() {
+    virtual void reset() {
         RX_Next_Reassembly = 0;
         RX_Next_Highest = 0;
         RX_Timer_Trigger = 0;
@@ -65,18 +65,18 @@ public:
      * @brief Processes an incoming UMD PDU segment.
      * returns true is the SDU is complete
      */
-    bool handleSegment(uint32_t sn, uint32_t totalLen, uint32_t start, uint32_t end, inet::Packet* ptr);
+    virtual bool handleSegment(uint32_t sn, uint32_t totalLen, uint32_t start, uint32_t end, inet::Packet* ptr);
 
-    void onTimerExpiry();
+    virtual void onTimerExpiry();
 
 
-    bool isSnLessThan(uint32_t sn1, uint32_t sn2) const {
+    virtual bool isSnLessThan(uint32_t sn1, uint32_t sn2) const {
         // Modular comparison logic
         uint32_t diff = (sn2 + snModulus - sn1) % snModulus;
         return (diff > 0 && diff < UM_Window_Size);
     }
 
-    void updateNextReassembly() {
+    virtual void updateNextReassembly() {
         // Advance past consecutive fully-reassembled (already delivered) SDUs, erasing
         // their now-empty bookkeeping entries as we go. Without the erase the map keeps
         // every delivered SN forever; once it spans the whole SN space this loop would
@@ -89,21 +89,21 @@ public:
         }
     }
 
-    void setNextReassemblyToFirstInWindow() {
+    virtual void setNextReassemblyToFirstInWindow() {
         uint32_t lowerBound = (RX_Next_Highest + snModulus - UM_Window_Size) % snModulus;
         RX_Next_Reassembly = lowerBound;
 
         updateNextReassembly();
     }
 
-    void discardOutsideWindow();
+    virtual void discardOutsideWindow();
 
-    bool stopTimer(bool isTimerRunning );
-    bool startTimer() ;
+    virtual bool stopTimer(bool isTimerRunning );
+    virtual bool startTimer() ;
     /**
      * @brief Clears the reception buffer and deletes all stored packet pointers.
      */
-    void clearBuffer() {
+    virtual void clearBuffer() {
         for (auto& pair : sduBuffer) {
             if (pair.second.sduPointer) {
                 delete pair.second.sduPointer;

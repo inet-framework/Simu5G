@@ -52,12 +52,12 @@ class LteSchedulerUeUl
     /* Performs the standard LCG scheduling algorithm
      * @returns reference to scheduling list
      */
-    LteMacScheduleList *schedule();
+    virtual LteMacScheduleList *schedule();
 
     /* After the scheduling, returns the amount of bytes
      * scheduled for each connection
      */
-    LteMacScheduleList *getScheduledBytesList();
+    virtual LteMacScheduleList *getScheduledBytesList();
 
     /* After scheduling, returns the per-PDU payload sizes planned for an NR-SO
      * connection (one SDU request per entry), or nullptr for LTE-FI connections.
@@ -86,7 +86,7 @@ class LteSchedulerUeUl
     /*
      * Destructor
      */
-    ~LteSchedulerUeUl();
+    virtual ~LteSchedulerUeUl();
 };
 
 } //namespace

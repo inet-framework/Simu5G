@@ -34,7 +34,7 @@ class LteDummyChannelModel : public LteChannelModel
      * Error probability of the txNumber-th transmission attempt of a frame sent in
      * the given direction.
      */
-    double getErrorProbability(Direction dir, unsigned char txNumber) const;
+    virtual double getErrorProbability(Direction dir, unsigned char txNumber) const;
 
   public:
     void initialize(int stage) override;

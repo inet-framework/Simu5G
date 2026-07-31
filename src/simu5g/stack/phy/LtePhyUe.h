@@ -69,11 +69,11 @@ class LtePhyUe : public LtePhyBase
     virtual void findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi);
 
     // called on handover
-    void changeServingNode(MacNodeId masterId);
+    virtual void changeServingNode(MacNodeId masterId);
 
-    void recordCqi(unsigned int sample, Direction dir);
-    double getAverageCqi(Direction dir);
-    double getVarianceCqi(Direction dir);
+    virtual void recordCqi(unsigned int sample, Direction dir);
+    virtual double getAverageCqi(Direction dir);
+    virtual double getVarianceCqi(Direction dir);
 };
 
 } //namespace

@@ -37,13 +37,13 @@ class LtePhyEnb : public LtePhyBase
 
     void handleSelfMessage(cMessage *msg) override;
     void handleAirFrame(cMessage *msg) override;
-    bool handleControlPkt(UserControlInfo *lteinfo, LteAirFrame *frame);
-    void handleFeedbackPkt(UserControlInfo *lteinfo, LteAirFrame *frame);
+    virtual bool handleControlPkt(UserControlInfo *lteinfo, LteAirFrame *frame);
+    virtual void handleFeedbackPkt(UserControlInfo *lteinfo, LteAirFrame *frame);
     virtual void requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, inet::Packet *pkt);
     // Feedback computation for PisaPhy
-    LteFeedbackComputation *getFeedbackComputationFromName(std::string name, ParameterMap& params);
-    void initializeFeedbackComputation();
-    LteAirFrame *createBeaconMessage();
+    virtual LteFeedbackComputation *getFeedbackComputationFromName(std::string name, ParameterMap& params);
+    virtual void initializeFeedbackComputation();
+    virtual LteAirFrame *createBeaconMessage();
 
     virtual void emitDistanceFromMaster() {}
 

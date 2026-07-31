@@ -48,8 +48,8 @@ class PacketFlowObserverUe : public PacketFlowObserverBase
   protected:
     void initialize(int stage) override;
 
-    void initPdcpStatus(StatusDescriptor *desc, unsigned int pdcp, unsigned int sduHeaderSize, simtime_t& arrivalTime);
-    void ensureMacPduMapping(MacNodeId peerId, const LteMacPdu *macPdu);
+    virtual void initPdcpStatus(StatusDescriptor *desc, unsigned int pdcp, unsigned int sduHeaderSize, simtime_t& arrivalTime);
+    virtual void ensureMacPduMapping(MacNodeId peerId, const LteMacPdu *macPdu);
     // return true if a structure for this DRB ID is present
     bool hasDrbId(DrbKey drbKey) override;
     // initialize a new structure for this DRB ID
@@ -67,9 +67,9 @@ class PacketFlowObserverUe : public PacketFlowObserverBase
     void discardMacPdu(MacNodeId peerId, const LteMacPdu *macPdu) override;
     void discardRlcPdu(DrbKey drbKey, unsigned int rlcSno, bool fromMac = false) override;
 
-    DiscardedPkts getDiscardedPkt();
-    double getDelayStats();
-    void resetDelayCounter();
+    virtual DiscardedPkts getDiscardedPkt();
+    virtual double getDelayStats();
+    virtual void resetDelayCounter();
     virtual void clearStats();
 };
 

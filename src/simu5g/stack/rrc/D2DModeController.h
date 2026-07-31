@@ -22,9 +22,9 @@ class D2DModeController : public cSimpleModule
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
   public:
-    void registerD2DPeerTxEntity(MacNodeId peerId, RlcUmTxEntityBase *umTxEnt);
-    void resumeDownstreamInPackets(MacNodeId peerId);
-    bool isEmptyingTxBuffer(MacNodeId peerId);
+    virtual void registerD2DPeerTxEntity(MacNodeId peerId, RlcUmTxEntityBase *umTxEnt);
+    virtual void resumeDownstreamInPackets(MacNodeId peerId);
+    virtual bool isEmptyingTxBuffer(MacNodeId peerId);
 };
 
 } // namespace simu5g

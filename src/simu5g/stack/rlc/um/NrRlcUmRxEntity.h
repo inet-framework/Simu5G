@@ -51,7 +51,7 @@ class NrRlcUmRxEntity : public RlcUmRxEntityBase
 
     // Emit this bearer's delay and throughput statistics for a received PDU or a
     // delivered SDU, in the D2D or the infrastructure variant.
-    void emitRxStatistics(bool perPdu, double throughput, simtime_t delay);
+    virtual void emitRxStatistics(bool perPdu, double throughput, simtime_t delay);
 
   public:
     ~NrRlcUmRxEntity() override;
@@ -66,8 +66,8 @@ class NrRlcUmRxEntity : public RlcUmRxEntityBase
     void initMode(LteMacBase *mac) override;
 
   private:
-    void handlePDUInReceivedBuffer(inet::Ptr<NrRlcUmDataPdu> pdu, unsigned int tsn);
-    void toPdcpNr(inet::Packet *rlcSdu);
+    virtual void handlePDUInReceivedBuffer(inet::Ptr<NrRlcUmDataPdu> pdu, unsigned int tsn);
+    virtual void toPdcpNr(inet::Packet *rlcSdu);
 };
 
 } //namespace

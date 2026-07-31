@@ -95,7 +95,7 @@ class LteHarqBufferRx
      *
      * @return number of purged corrupted PDUs or zero if none
      */
-    unsigned int purgeCorruptedPdus();
+    virtual unsigned int purgeCorruptedPdus();
 
     /*
      * Returns pointer to <acid> process.
@@ -112,19 +112,19 @@ class LteHarqBufferRx
     }
 
     // @return whole buffer status {RXHARQ_PDU_EMPTY, RXHARQ_PDU_EVALUATING, RXHARQ_PDU_CORRECT, RXHARQ_PDU_CORRUPTED }
-    RxBufferStatus getBufferStatus();
+    virtual RxBufferStatus getBufferStatus();
 
     /**
      * Returns a pair with H-ARQ process ID and a list of its empty {RXHARQ_PDU_EMPTY} units to be used for reception of new H-ARQ sub-bursts.
      *
      * @return a list of acid and their units to be used for reception
      */
-    UnitList firstAvailable();
+    virtual UnitList firstAvailable();
 
     /*
      * Returns a pair with the specified H-ARQ process ID and a list of its empty units to be used for reception.
      */
-    UnitList getEmptyUnits(unsigned char acid);
+    virtual UnitList getEmptyUnits(unsigned char acid);
 
     /*
      * returns true if the corresponding flow is a multicast one
@@ -146,7 +146,7 @@ class LteHarqBufferRx
      * @return true if the RxHarqPduStatus of all units of all processes is not RXHARQ_PDU_EMPTY
      */
 
-    bool isHarqBufferActive() const;
+    virtual bool isHarqBufferActive() const;
 
     virtual ~LteHarqBufferRx();
 
@@ -174,7 +174,7 @@ class LteHarqBufferRx
      * initialize it. macUe_ being a private member forces one to use the macUe_emit
      * function to emit statistics (hence, checking against nullptr)
      */
-    void initMacUe() {
+    virtual void initMacUe() {
         if (macOwner_->getNodeType() == NODEB)
             macUe_ = check_and_cast<LteMacBase *>(binder_->getMacByNodeId(srcId_));
         else

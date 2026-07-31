@@ -76,11 +76,11 @@ class LteCompManagerBase : public cSimpleModule
 
   protected:
     static CompNodeType parseNodeType(const char *nodeType);
-    void runClientOperations();
-    void runCoordinatorOperations();
-    void handleX2Message(inet::Packet *pkt);
-    void sendClientRequest(X2CompRequestIE *requestIe);
-    void sendCoordinatorReply(X2NodeId clientId, X2CompReplyIE *replyIe);
+    virtual void runClientOperations();
+    virtual void runCoordinatorOperations();
+    virtual void handleX2Message(inet::Packet *pkt);
+    virtual void sendClientRequest(X2CompRequestIE *requestIe);
+    virtual void sendCoordinatorReply(X2NodeId clientId, X2CompReplyIE *replyIe);
 
     virtual void provisionalSchedule() = 0;  // run the provisional scheduling algorithm (client side)
     virtual void doCoordination() = 0;       // run the coordination algorithm (coordinator side)
@@ -91,7 +91,7 @@ class LteCompManagerBase : public cSimpleModule
     virtual X2CompReplyIE *buildCoordinatorReply(X2NodeId clientId) = 0;
     virtual void handleCoordinatorReply(inet::IntrusivePtr<X2CompMsg> compMsg) = 0;
 
-    void setUsableBands(UsableBands& usableBands);
+    virtual void setUsableBands(UsableBands& usableBands);
 
   public:
     void initialize(int stage) override;

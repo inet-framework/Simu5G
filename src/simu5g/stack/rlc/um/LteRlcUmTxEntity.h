@@ -63,7 +63,7 @@ class LteRlcUmTxEntity : public RlcUmTxEntityBase
     void setNextSequenceNumber(unsigned int nextSno) { sno_ = nextSno; }
 
     // remove the last SDU from the queue
-    void removeDataFromQueue();
+    virtual void removeDataFromQueue();
 
     void clearQueue() override;
     void resumeDownstreamInPackets() override;
@@ -82,7 +82,7 @@ class LteRlcUmTxEntity : public RlcUmTxEntityBase
   private:
 
     // enqueue an upper-layer SDU into the TX buffer; false if the queue is full
-    bool enque(inet::cPacket *pkt);
+    virtual bool enque(inet::cPacket *pkt);
 };
 
 } //namespace

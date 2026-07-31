@@ -41,8 +41,8 @@ class PdcpMux : public cSimpleModule
 
   public:
     bool hasTxEntity(DrbKey id) const { return txGateIndices_.find(id) != txGateIndices_.end(); }
-    void registerTxEntity(DrbKey id, int gateIndex);
-    void unregisterTxEntity(DrbKey id);
+    virtual void registerTxEntity(DrbKey id, int gateIndex);
+    virtual void unregisterTxEntity(DrbKey id);
 
   protected:
     void initialize(int stage) override;

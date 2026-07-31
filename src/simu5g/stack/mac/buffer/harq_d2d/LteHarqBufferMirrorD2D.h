@@ -48,17 +48,19 @@ class LteHarqBufferMirrorD2D
      */
     LteHarqBufferMirrorD2D(unsigned int numProc, unsigned char maxHarqRtx, LteMacEnb *macOwner);
 
+    virtual ~LteHarqBufferMirrorD2D() {}
+
     /**
      * Manages H-ARQ feedback sent to a certain H-ARQ unit and checks if
      * the corresponding process becomes empty.
      *
      * @param fbpkt received feedback packet
      */
-    void receiveHarqFeedback(inet::Packet *pkt);
+    virtual void receiveHarqFeedback(inet::Packet *pkt);
 
     LteHarqProcessMirrorD2D *getProcess(int proc) { return processes_[proc]; }
     unsigned int getProcesses() { return numProc_; }
-    void markSelectedAsWaiting();
+    virtual void markSelectedAsWaiting();
 
 };
 

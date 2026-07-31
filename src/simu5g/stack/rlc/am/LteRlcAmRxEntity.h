@@ -65,9 +65,9 @@ class LteRlcAmRxEntity : public RlcAmRxEntityBase
     void initMode() override;
 
   private:
-    void passUpPdu(uint32_t sn);
-    void deliverSdu(inet::Packet *sdu);
-    void sendStatusReport();
+    virtual void passUpPdu(uint32_t sn);
+    virtual void deliverSdu(inet::Packet *sdu);
+    virtual void sendStatusReport();
 };
 
 } //namespace

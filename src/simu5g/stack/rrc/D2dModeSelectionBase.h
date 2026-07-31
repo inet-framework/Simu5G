@@ -62,7 +62,7 @@ class D2dModeSelectionBase : public cSimpleModule
 
     // for each pair of UEs in the switch list, send the notification to do the
     // switch to the transmitter UE
-    void sendModeSwitchNotifications();
+    virtual void sendModeSwitchNotifications();
 
   public:
 

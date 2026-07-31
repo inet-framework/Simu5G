@@ -134,7 +134,7 @@ class LteAllocationModule
     AllocatedRbsPerUeMap allocatedRbsUe_;
 
   private:
-    void ensureNodeInitialized(const MacNodeId nodeId);
+    virtual void ensureNodeInitialized(const MacNodeId nodeId);
 
     /************************************************************
     *   From Logical Bands to UE
@@ -184,20 +184,20 @@ class LteAllocationModule
     virtual ~LteAllocationModule() {}
 
     // init Allocation Module structure
-    void init(const unsigned int resourceBlocks, const unsigned int bands);
+    virtual void init(const unsigned int resourceBlocks, const unsigned int bands);
 
     // reset Allocation Module structure
-    void reset(const unsigned int resourceBlocks, const unsigned int bands);
+    virtual void reset(const unsigned int resourceBlocks, const unsigned int bands);
 
     // ************** Resource Blocks Allocation Status **************
     // Returns the amount of available blocks in the whole system
-    unsigned int computeTotalRbs();
+    virtual unsigned int computeTotalRbs();
 
     // returns the amount of free blocks for the given band in the given plane
-    unsigned int availableBlocks(const MacNodeId nodeId, const Plane plane, const Band band);
+    virtual unsigned int availableBlocks(const MacNodeId nodeId, const Plane plane, const Band band);
 
     // returns the amount of free blocks for the given band and for the given antenna
-    unsigned int availableBlocks(const MacNodeId nodeId, const Remote antenna, const Band band);
+    virtual unsigned int availableBlocks(const MacNodeId nodeId, const Remote antenna, const Band band);
     // ***************************************************************
 
     // ************** Resource Blocks Allocation Methods **************
@@ -206,10 +206,10 @@ class LteAllocationModule
             const unsigned int bytes);
 
     // tries to satisfy the resource block request in the first available antenna
-    bool addBlocks(const Band band, const MacNodeId nodeId, const unsigned int blocks, const unsigned int bytes);
+    virtual bool addBlocks(const Band band, const MacNodeId nodeId, const unsigned int blocks, const unsigned int bytes);
 
     // remove resource Blocks previously allocated in a band by a UE
-    unsigned int removeBlocks(const Remote antenna, const Band band, const MacNodeId nodeId);
+    virtual unsigned int removeBlocks(const Remote antenna, const Band band, const MacNodeId nodeId);
     // ****************************************************************
 
     // --- Get (Parameters) --------------------------------------------------------------------
@@ -232,8 +232,8 @@ class LteAllocationModule
     /*
      * Returns the amount of blocks allocated in a Band
      */
-    unsigned int getAllocatedBlocks(Plane plane, const Remote antenna, const Band band);
-    unsigned int getInterferingBlocks(Plane plane, const Remote antenna, const Band band);
+    virtual unsigned int getAllocatedBlocks(Plane plane, const Remote antenna, const Band band);
+    virtual unsigned int getInterferingBlocks(Plane plane, const Remote antenna, const Band band);
 
     unsigned int getBytes(const Remote antenna, const Band band, const MacNodeId nodeId)
     {
@@ -253,7 +253,7 @@ class LteAllocationModule
         return allocatedRbsMatrix_[plane][antenna];
     }
 
-    unsigned int rbOccupation(const MacNodeId nodeId, RbMap& rbMap);
+    virtual unsigned int rbOccupation(const MacNodeId nodeId, RbMap& rbMap);
 
     // --------- Map Iteration Methods --------->
     AllocatedRbsPerUeMap::const_iterator getAllocatedBlocksUeBegin()

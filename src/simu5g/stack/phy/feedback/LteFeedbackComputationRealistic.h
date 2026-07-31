@@ -31,13 +31,13 @@ class LteFeedbackComputationRealistic : public LteFeedbackComputation
 
   protected:
     // Rank computation
-    unsigned int computeRank(MacNodeId id);
+    virtual unsigned int computeRank(MacNodeId id);
     // Generate base feedback for all types of feedback (all bands, preferred, wideband)
     void generateBaseFeedback(int numBands, int numPreferredBands, LteFeedback& fb, FeedbackType fbType, int cw,
             RbAllocationType rbAllocationType, TxMode txmode, std::vector<double> snr);
     // Get CQI from BLER Curves
-    Cqi getCqi(TxMode txmode, double snr);
-    double meanSnr(std::vector<double> snr);
+    virtual Cqi getCqi(TxMode txmode, double snr);
+    virtual double meanSnr(std::vector<double> snr);
 
   public:
     LteFeedbackComputationRealistic(Binder *binder, double targetBler, unsigned int numBands);

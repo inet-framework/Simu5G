@@ -40,7 +40,7 @@ class LteCompManagerProportional : public LteCompManagerBase
     std::vector<unsigned int> offset_;
 
     // utility function: convert a vector of double to a vector of integer, preserving the sum of the elements
-    std::vector<unsigned int> roundVector(std::vector<double>& vec, int sum);
+    virtual std::vector<unsigned int> roundVector(std::vector<double>& vec, int sum);
 
     void provisionalSchedule() override;  // run the provisional scheduling algorithm (client side)
     void doCoordination() override;       // run the coordination algorithm (coordinator side)
@@ -51,7 +51,7 @@ class LteCompManagerProportional : public LteCompManagerBase
     X2CompProportionalReplyIE *buildCoordinatorReply(X2NodeId clientId) override;
     void handleCoordinatorReply(inet::Ptr<X2CompMsg> compMsg) override;
 
-    UsableBands parseAllowedBlocksMap(std::vector<CompRbStatus>& allowedBlocksMap);
+    virtual UsableBands parseAllowedBlocksMap(std::vector<CompRbStatus>& allowedBlocksMap);
 
   public:
 

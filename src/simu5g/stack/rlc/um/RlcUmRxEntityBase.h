@@ -73,7 +73,7 @@ class RlcUmRxEntityBase : public RlcRxEntityBase
 
     // UL throughput burst accounting (shared accumulator; per-mode buffer-empty check
     // via isEmpty()).
-    void handleBurst(BurstCheck event);
+    virtual void handleBurst(BurstCheck event);
 
     // --- mode-specific hooks, implemented by the concrete subclasses ---
 

@@ -112,11 +112,11 @@ class HandoverController : public cSimpleModule
     void finish() override;
     void handleMessage(cMessage *msg) override;
 
-    void triggerHandover();
-    void doHandover();
-    void deleteOldBuffers(MacNodeId servingNodeId);
-    void updateHysteresisThreshold(double rssi);
-    LteAmc *getAmcModule(MacNodeId nodeId);
+    virtual void triggerHandover();
+    virtual void doHandover();
+    virtual void deleteOldBuffers(MacNodeId servingNodeId);
+    virtual void updateHysteresisThreshold(double rssi);
+    virtual LteAmc *getAmcModule(MacNodeId nodeId);
 
   public:
     ~HandoverController() override;
@@ -128,15 +128,15 @@ class HandoverController : public cSimpleModule
     MacNodeId getServingNodeId() const { return servingNodeId_; }
 
     /**
-     * Called from PHY on receiption of a beacon signal
+     * Called from PHY on reception of a beacon signal
      */
-    void beaconReceived(LteAirFrame *frame, UserControlInfo *lteInfo);
+    virtual void beaconReceived(LteAirFrame *frame, UserControlInfo *lteInfo);
 
     /**
      * Used in a DC setup. Called by a HandoverController to force the
      * other one to do the handover.
      */
-    void forceHandover();
+    virtual void forceHandover();
 };
 
 } //namespace

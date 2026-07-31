@@ -35,16 +35,16 @@ class LteMaxCiOptMB : public virtual LteScheduler
     UsableBandList usableBands_;
 
     // read the CQIs and queue information for each user and build an optimization problem
-    void generateProblem();
+    virtual void generateProblem();
 
     // call the interactive solver
-    void launchProblem();
+    virtual void launchProblem();
 
     // parse the solution
-    void readSolution();
+    virtual void readSolution();
 
     // apply the scheduling decision in the allocator (occupies the Resource blocks)
-    void applyScheduling();
+    virtual void applyScheduling();
 
   public:
     LteMaxCiOptMB(Binder *binder);

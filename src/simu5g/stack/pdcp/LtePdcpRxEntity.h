@@ -53,7 +53,7 @@ class LtePdcpRxEntity : public PdcpRxEntityBase
     // handler for PDCP SDU
     virtual void handlePdcpSdu(Packet *pkt, unsigned int sequenceNumber);
 
-    void deliverSduToUpperLayer(inet::Packet *pkt);
+    virtual void deliverSduToUpperLayer(inet::Packet *pkt);
 
     virtual void decompressHeader(inet::Packet *pkt);
 

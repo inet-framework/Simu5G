@@ -36,9 +36,9 @@ class LtePhyUeD2D : public LtePhyUe
     std::vector<LteAirFrame *> d2dReceivedFrames_; // airframes received in the current TTI. Only one will be decoded
     cMessage *d2dDecodingTimer_ = nullptr;    // timer for triggering decoding at the end of the TTI. Started
     // when the first airframe is received
-    void storeAirFrame(LteAirFrame *newFrame);
-    LteAirFrame *extractAirFrame();
-    void decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo);
+    virtual void storeAirFrame(LteAirFrame *newFrame);
+    virtual LteAirFrame *extractAirFrame();
+    virtual void decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo);
     // ---------------------------------------------------------------- //
 
     void initialize(int stage) override;

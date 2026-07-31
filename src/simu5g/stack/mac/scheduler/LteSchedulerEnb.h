@@ -146,7 +146,7 @@ class LteSchedulerEnb : public cSimpleModule
     /*
      * Initialize counters for schedulers
      */
-    void initializeSchedulerPeriodCounter(NumerologyIndex maxNumerologyIndex);
+    virtual void initializeSchedulerPeriodCounter(NumerologyIndex maxNumerologyIndex);
 
     /**
      * Schedule data. Returns one schedule list per carrier
@@ -168,7 +168,7 @@ class LteSchedulerEnb : public cSimpleModule
      * The function calls the LteScheduler notify().
      * @param cid connection identifier
      */
-    void backlog(MacCid cid);
+    virtual void backlog(MacCid cid);
 
     /**
      * Get/Set current available Resource Blocks.
@@ -198,33 +198,33 @@ class LteSchedulerEnb : public cSimpleModule
      * Returns the number of blocks allocated by the UE on the given antenna
      * into the logical band provided.
      */
-    unsigned int readPerUeAllocatedBlocks(const MacNodeId nodeId, const Remote antenna, const Band b);
+    virtual unsigned int readPerUeAllocatedBlocks(const MacNodeId nodeId, const Remote antenna, const Band b);
 
     /*
      * Returns the amount of blocks allocated on a logical band
      */
-    unsigned int readPerBandAllocatedBlocks(Plane plane, const Remote antenna, const Band band);
+    virtual unsigned int readPerBandAllocatedBlocks(Plane plane, const Remote antenna, const Band band);
 
     /*
      * Returns the amount of blocks allocated on a logical band
      */
-    unsigned int getInterferingBlocks(Plane plane, const Remote antenna, const Band band);
+    virtual unsigned int getInterferingBlocks(Plane plane, const Remote antenna, const Band band);
 
     /**
      * Returns the number of available blocks for the UE on the given antenna
      * in the logical band provided.
      */
-    unsigned int readAvailableRbs(const MacNodeId id, const Remote antenna, const Band b);
+    virtual unsigned int readAvailableRbs(const MacNodeId id, const Remote antenna, const Band b);
 
     /**
      * Returns the number of available blocks.
      */
-    unsigned int readTotalAvailableRbs();
+    virtual unsigned int readTotalAvailableRbs();
 
     /**
      * Resource Block IDs computation function.
      */
-    unsigned int readRbOccupation(const MacNodeId id, GHz carrierFrequency, RbMap& rbMap);
+    virtual unsigned int readRbOccupation(const MacNodeId id, GHz carrierFrequency, RbMap& rbMap);
 
     /**
      * Schedules retransmission for the Harq Process of the given UE on a set of logical bands.
@@ -269,9 +269,9 @@ class LteSchedulerEnb : public cSimpleModule
     /*
      * Getter for active connection set
      */
-    ActiveSet *readActiveConnections();
+    virtual ActiveSet *readActiveConnections();
 
-    void removeActiveConnections(MacNodeId nodeId);
+    virtual void removeActiveConnections(MacNodeId nodeId);
 
   protected:
 
@@ -317,17 +317,17 @@ class LteSchedulerEnb : public cSimpleModule
     /**
      * Records assigned resource blocks statistics.
      */
-    void resourceBlockStatistics(bool sleep = false);
+    virtual void resourceBlockStatistics(bool sleep = false);
 
     /**
      * Initializes the blocks-related structures allocation
      */
-    void initializeAllocator();
+    virtual void initializeAllocator();
 
     /**
      * Resets the blocks-related structures allocation
      */
-    void resetAllocator();
+    virtual void resetAllocator();
 
     /**
      * Returns the available space for a given user, antenna, logical band, and codeword, in bytes.
@@ -338,7 +338,7 @@ class LteSchedulerEnb : public cSimpleModule
      * @param cw codeword
      * @return available space in bytes
      */
-    unsigned int availableBytes(const MacNodeId id, const Remote antenna, Band b, Codeword cw, Direction dir, GHz carrierFrequency, int limit = -1);
+    virtual unsigned int availableBytes(const MacNodeId id, const Remote antenna, Band b, Codeword cw, Direction dir, GHz carrierFrequency, int limit = -1);
     /**
      * Returns the available space for a given (background) user, antenna, logical band, and codeword, in bytes.
      *
@@ -348,7 +348,7 @@ class LteSchedulerEnb : public cSimpleModule
      * @param cw codeword
      * @return available space in bytes
      */
-    unsigned int availableBytesBackgroundUe(const MacNodeId id, const Remote antenna, Band b, Direction dir, GHz carrierFrequency, int limit = -1);
+    virtual unsigned int availableBytesBackgroundUe(const MacNodeId id, const Remote antenna, Band b, Direction dir, GHz carrierFrequency, int limit = -1);
 
     unsigned int allocatedCws(MacNodeId nodeId)
     {
@@ -356,12 +356,12 @@ class LteSchedulerEnb : public cSimpleModule
     }
 
     // Get the bands already allocated
-    std::set<Band> getOccupiedBands();
+    virtual std::set<Band> getOccupiedBands();
 
-    void storeAllocationEnb(std::vector<std::vector<AllocatedRbsPerBandMapA>> allocatedRbsPerBand, std::set<Band> *untouchableBands = nullptr);
+    virtual void storeAllocationEnb(std::vector<std::vector<AllocatedRbsPerBandMapA>> allocatedRbsPerBand, std::set<Band> *untouchableBands = nullptr);
 
     // store an element in the schedule list
-    void storeScListId(GHz carrierFrequency, std::pair<MacCid, Codeword> scList, unsigned int num_blocks);
+    virtual void storeScListId(GHz carrierFrequency, std::pair<MacCid, Codeword> scList, unsigned int num_blocks);
 
   private:
 
@@ -374,7 +374,7 @@ class LteSchedulerEnb : public cSimpleModule
      * implementing the given discipline.
      * @param discipline scheduler discipline
      */
-    LteScheduler *getScheduler(SchedDiscipline discipline);
+    virtual LteScheduler *getScheduler(SchedDiscipline discipline);
 };
 
 } //namespace

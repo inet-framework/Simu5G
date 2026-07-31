@@ -58,10 +58,10 @@ class LteAllocatorBestFit : public virtual LteScheduler
     std::map<Band, AllocationType_Set> bandStatusMap_;
 
     // returns the next "hole" in the subframe where the UEs can be eventually allocated
-    void checkHole(Candidate& candidate, Band holeIndex, unsigned int holeLen, unsigned int req);
+    virtual void checkHole(Candidate& candidate, Band holeIndex, unsigned int holeLen, unsigned int req);
 
     // returns true if the two nodes cannot transmit on the same block
-    bool checkConflict(const CGMatrix *cgMatrix, MacNodeId nodeIdA, MacNodeId nodeIdB);
+    virtual bool checkConflict(const CGMatrix *cgMatrix, MacNodeId nodeIdA, MacNodeId nodeIdB);
 
   public:
 
@@ -74,10 +74,10 @@ class LteAllocatorBestFit : public virtual LteScheduler
     // *****************************************************************************************
 
     // Initialize the allocation structures of the Scheduler
-    void initAndReset();
+    virtual void initAndReset();
 
     // Set the specified bands to exclusive
-    void setAllocationType(std::vector<Band> bandVect, AllocationUeType type, MacNodeId nodeId);
+    virtual void setAllocationType(std::vector<Band> bandVect, AllocationUeType type, MacNodeId nodeId);
 };
 
 } //namespace

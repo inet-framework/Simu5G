@@ -57,10 +57,10 @@ class NrRlcAmRxEntity : public RlcAmRxEntityBase
 
   private:
 
-    void passUpNr(int seqNum);
-    void sendStatusReportNr();
-    void routeControlToTxEntityNr(inet::Packet *pkt);
-    void bufferControlViaTxEntityNr(inet::Packet *pkt);
+    virtual void passUpNr(int seqNum);
+    virtual void sendStatusReportNr();
+    virtual void routeControlToTxEntityNr(inet::Packet *pkt);
+    virtual void bufferControlViaTxEntityNr(inet::Packet *pkt);
 };
 
 } //namespace

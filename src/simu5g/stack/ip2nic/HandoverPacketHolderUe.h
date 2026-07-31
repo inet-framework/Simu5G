@@ -51,13 +51,13 @@ class HandoverPacketHolderUe : public cSimpleModule
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
 
-    void fromIpUe(inet::Packet *datagram);
+    virtual void fromIpUe(inet::Packet *datagram);
     virtual void toStackUe(inet::Packet *datagram);
 
   public:
     ~HandoverPacketHolderUe() override;
-    void triggerHandoverUe(MacNodeId newMasterId, bool isNr = false);
-    void signalHandoverCompleteUe(bool isNr = false);
+    virtual void triggerHandoverUe(MacNodeId newMasterId, bool isNr = false);
+    virtual void signalHandoverCompleteUe(bool isNr = false);
 
     MacNodeId getServingNodeId() const { return servingNodeId_; }
     MacNodeId getNrServingNodeId() const { return nrServingNodeId_; }

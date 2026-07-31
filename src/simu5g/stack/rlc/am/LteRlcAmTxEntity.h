@@ -93,15 +93,15 @@ class LteRlcAmTxEntity : public RlcAmTxEntityBase
     void handleMessage(cMessage *msg) override;
 
   private:
-    void processControlPacket(inet::Packet *pkt);
-    void bufferControlPduInternal(inet::Packet *pkt);
-    bool sendRetransmission(int pduSize);
-    void buildAndSendPdu(int pduSize);
-    bool checkPolling(uint32_t sn);
-    void sendEmptyPdu();
-    void sendPduToMac(inet::Packet *pkt);
-    void sendNewDataNotification(inet::Packet *pkt);
-    void reportBufferStatus();
+    virtual void processControlPacket(inet::Packet *pkt);
+    virtual void bufferControlPduInternal(inet::Packet *pkt);
+    virtual bool sendRetransmission(int pduSize);
+    virtual void buildAndSendPdu(int pduSize);
+    virtual bool checkPolling(uint32_t sn);
+    virtual void sendEmptyPdu();
+    virtual void sendPduToMac(inet::Packet *pkt);
+    virtual void sendNewDataNotification(inet::Packet *pkt);
+    virtual void reportBufferStatus();
 
     bool windowFull() const { return txNext_ - txNextAck_ >= amWindowSize_; }
 };

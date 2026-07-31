@@ -70,8 +70,8 @@ class NrRlcAmTxEntity : public RlcAmTxEntityBase
     void handleControlPacket(cPacket *pkt) override;
 
     // gate-delivery variants (no Enter_Method/take: packet already owned via handleMessage)
-    void processControlPacket(inet::Packet *pkt);
-    void bufferControlPduInternal(inet::Packet *pkt);
+    virtual void processControlPacket(inet::Packet *pkt);
+    virtual void bufferControlPduInternal(inet::Packet *pkt);
     unsigned int getPendingDataVolume() const override;
 
   protected:
@@ -81,12 +81,12 @@ class NrRlcAmTxEntity : public RlcAmTxEntityBase
 
   private:
 
-    bool sendRetransmission(int pduSize);
-    void reportBufferStatus();
-    bool checkPolling();
-    void sendSegment(PendingSegment segment);
-    void sendPduToMac(inet::Packet *pkt);
-    void sendNewDataNotificationNr(inet::Packet *pkt);
+    virtual bool sendRetransmission(int pduSize);
+    virtual void reportBufferStatus();
+    virtual bool checkPolling();
+    virtual void sendSegment(PendingSegment segment);
+    virtual void sendPduToMac(inet::Packet *pkt);
+    virtual void sendNewDataNotificationNr(inet::Packet *pkt);
 };
 
 } //namespace

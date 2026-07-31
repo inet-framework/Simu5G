@@ -73,8 +73,8 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
     void setFlowControlInfo(FlowControlInfo *info) override;
 
     // Common helpers shared by the concrete subclasses.
-    void dropBufferOverflow(inet::cPacket *pkt);
-    void sendPduToMac(inet::Packet *pkt);
+    virtual void dropBufferOverflow(inet::cPacket *pkt);
+    virtual void sendPduToMac(inet::Packet *pkt);
 
     // --- mode-specific hooks, implemented by the concrete subclasses ---
 
@@ -95,13 +95,13 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
      * It adds the PDCP tracking tag, then enqueues/holds/drops the packet
      * and sends a new-data indication to MAC on successful enqueue.
      */
-    void handleSdu(inet::Packet *pkt);
+    virtual void handleSdu(inet::Packet *pkt);
 
     /**
      * handleMacSduRequest() handles a MAC SDU request packet: extracts the
      * requested size and calls rlcPduMake().
      */
-    void handleMacSduRequest(inet::Packet *pkt);
+    virtual void handleMacSduRequest(inet::Packet *pkt);
 
     // rlcPduMake() creates a PDU of the specified size and sends it to MAC.
     virtual void rlcPduMake(int pduSize) = 0;
@@ -116,7 +116,7 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
     bool isHoldingDownstreamInPackets() { return holdingDownstreamInPackets_; }
 
     // store the packet in the holding buffer
-    void enqueHoldingPackets(inet::cPacket *pkt);
+    virtual void enqueHoldingPackets(inet::cPacket *pkt);
 
     // resume sending packets downstream
     virtual void resumeDownstreamInPackets() = 0;

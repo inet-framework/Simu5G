@@ -52,20 +52,20 @@ class HandoverX2Forwarder : public cSimpleModule
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
 
-    void handleX2Message(cPacket *pkt);
+    virtual void handleX2Message(cPacket *pkt);
 
     // receive handover command on X2 from the source eNB
-    void receiveHandoverCommand(MacNodeId ueId, MacNodeId enb, bool startHo);
+    virtual void receiveHandoverCommand(MacNodeId ueId, MacNodeId enb, bool startHo);
 
     // send an IP datagram to the X2 Manager (called internally via gate)
-    void forwardDataToTargetEnb(inet::Packet *datagram, MacNodeId targetEnb);
+    virtual void forwardDataToTargetEnb(inet::Packet *datagram, MacNodeId targetEnb);
 
     // receive data from X2 message and send it to the HandoverPacketHolder
-    void receiveDataFromSourceEnb(inet::Packet *datagram, MacNodeId sourceEnb);
+    virtual void receiveDataFromSourceEnb(inet::Packet *datagram, MacNodeId sourceEnb);
 
   public:
     // send handover command on X2 to the eNB
-    void sendHandoverCommand(MacNodeId ueId, MacNodeId enb, bool startHo);
+    virtual void sendHandoverCommand(MacNodeId ueId, MacNodeId enb, bool startHo);
 
 };
 

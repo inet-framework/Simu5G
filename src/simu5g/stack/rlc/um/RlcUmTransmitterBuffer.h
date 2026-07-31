@@ -138,7 +138,7 @@ public:
      * Note: In UM, we don't necessarily associate the SN immediately
      * because SN is associated when submitting to lower layer.
      */
-    void addSdu(uint32_t length, Packet* sduPtr) {
+    virtual void addSdu(uint32_t length, Packet* sduPtr) {
         // In UM, we buffer the SDU and assign SN when it's picked for transmission
         txBuffer.emplace_back(0, length, sduPtr);
     }
@@ -147,12 +147,12 @@ public:
      * @brief Forms a UMD PDU segment based on the MAC grant.
      * Implements logic from 5.2.2.1.1.
      */
-    PendingSegmentUM getSegmentForGrant(uint32_t grantSize);
+    virtual PendingSegmentUM getSegmentForGrant(uint32_t grantSize);
 
     // Peek the head SDU without consuming it: untransmitted byte count + the offset of
     // its next byte (0 => fresh/first piece, >0 => continuation). Lets the caller pick
     // the RAT/segment-state-dependent header size before carving.
-    bool peekHead(uint32_t& remaining, uint32_t& nextByte) const {
+    virtual bool peekHead(uint32_t& remaining, uint32_t& nextByte) const {
         if (txBuffer.empty()) return false;
         const auto& sdu = txBuffer.front();
         nextByte = sdu.getNextByteToTx();
@@ -160,14 +160,14 @@ public:
         return true;
     }
 
-    bool hasData() const {
+    virtual bool hasData() const {
         return !txBuffer.empty();
     }
      /**
      * @brief Calculates the total number of bytes pending for transmission across all SDUs in the buffer.
      * This is useful for reporting Buffer Status Reports (BSR) to the MAC layer.
      */
-    uint64_t getTotalPendingBytes() const {
+    virtual uint64_t getTotalPendingBytes() const {
         uint64_t total = 0;
         for (const auto& sdu : txBuffer) {
             total += sdu.getPendingBytes();
@@ -178,7 +178,7 @@ public:
     /**
      * @brief Clears the buffer, deleting all stored SDUs to prevent memory leaks.
      */
-    void clearBuffer() {
+    virtual void clearBuffer() {
         for (auto& sdu : txBuffer) {
             if (sdu.sduPointer) {
                 delete sdu.sduPointer;

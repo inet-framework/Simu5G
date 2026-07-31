@@ -36,8 +36,8 @@ class RlcTmTxEntity : public RlcTxEntityBase
     void initialize(int stage) override;
     void handleMessage(omnetpp::cMessage *msg) override;
 
-    void handleSdu(inet::Packet *pkt);
-    void handleMacSduRequest(inet::Packet *pkt);
+    virtual void handleSdu(inet::Packet *pkt);
+    virtual void handleMacSduRequest(inet::Packet *pkt);
 };
 
 } // namespace simu5g

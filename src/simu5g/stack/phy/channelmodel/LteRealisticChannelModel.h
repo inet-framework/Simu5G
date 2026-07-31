@@ -208,7 +208,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param center first coord
      * @param point second coord
      */
-    double computeAngle(Coord center, Coord point);
+    virtual double computeAngle(Coord center, Coord point);
 
     /*
      *  Compute vertical angle between two coordinates
@@ -218,7 +218,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param point second coord
      * @return angle
      */
-    double computeVerticalAngle(Coord center, Coord point);
+    virtual double computeVerticalAngle(Coord center, Coord point);
 
     /*
      *  Compute Attenuation caused by transmission direction
@@ -321,7 +321,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param distance between UE and eNodeB
      * @param los line-of-sight flag
      */
-    double computeIndoor(double distance, bool los);
+    virtual double computeIndoor(double distance, bool los);
 
     /*
      * Compute attenuation for Urban Micro cell
@@ -329,7 +329,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param distance between UE and eNodeB
      * @param los line-of-sight flag
      */
-    double computeUrbanMicro(double distance, bool los);
+    virtual double computeUrbanMicro(double distance, bool los);
 
     /*
      * Compute attenuation for Urban Macro cell
@@ -337,7 +337,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param distance between UE and eNodeB
      * @param los line-of-sight flag
      */
-    double computeUrbanMacro(double distance, bool los);
+    virtual double computeUrbanMacro(double distance, bool los);
 
     /*
      * Compute attenuation for Sub Urban Macro cell
@@ -345,7 +345,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param distance between UE and eNodeB
      * @param los line-of-sight flag
      */
-    double computeSubUrbanMacro(double distance, double& dbp, bool los);
+    virtual double computeSubUrbanMacro(double distance, double& dbp, bool los);
 
     /*
      * Compute attenuation for Rural Macro cell
@@ -353,7 +353,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param distance between UE and eNodeB
      * @param los line-of-sight flag
      */
-    double computeRuralMacro(double distance, double& dbp, bool los);
+    virtual double computeRuralMacro(double distance, double& dbp, bool los);
 
     /*
      * Compute std deviation of shadowing according to scenario and visibility
@@ -361,7 +361,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param distance between UE and eNodeB
      * @param nodeid mac node id of UE
      */
-    double getStdDev(bool dist, MacNodeId nodeId);
+    virtual double getStdDev(bool dist, MacNodeId nodeId);
 
     /*
      * Compute Rayleigh fading
@@ -369,7 +369,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param i index in the trace file
      * @param nodeid mac node id of UE
      */
-    double rayleighFading(MacNodeId id, unsigned int band);
+    virtual double rayleighFading(MacNodeId id, unsigned int band);
 
     /*
      * Compute Jakes fading
@@ -380,7 +380,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param cqiDl if true, the jakesMap in the UE side should be used
      * @param isBgUe if true, this is called for a background UE
      */
-    double jakesFading(MacNodeId nodeId, double speed, unsigned int band, bool cqiDl, bool isBgUe = false);
+    virtual double jakesFading(MacNodeId nodeId, double speed, unsigned int band, bool cqiDl, bool isBgUe = false);
 
     /*
      * Compute LOS probability
@@ -408,49 +408,49 @@ class LteRealisticChannelModel : public LteChannelModel
     /*
      * Returns the 2D distance between two coordinates (ignore z-axis)
      */
-    double getTwoDimDistance(inet::Coord a, inet::Coord b);
+    virtual double getTwoDimDistance(inet::Coord a, inet::Coord b);
 
     /*
      * Compute speed (m/s) for a given node
      * @param nodeid mac node id of UE
      * @return the speed in m/s
      */
-    double computeSpeed(const MacNodeId nodeId, const inet::Coord coord);
+    virtual double computeSpeed(const MacNodeId nodeId, const inet::Coord coord);
 
     /*
      * Compute the euclidean distance between the current position and the
      * last position used to calculate the LOS probability
      */
-    double computeCorrelationDistance(const MacNodeId nodeId, const inet::Coord coord);
+    virtual double computeCorrelationDistance(const MacNodeId nodeId, const inet::Coord coord);
 
     /*
      * Update base point if distance to previous value is greater than the
      * correlationDistance_
      */
-    void updateCorrelationDistance(const MacNodeId nodeId, const inet::Coord coord);
+    virtual void updateCorrelationDistance(const MacNodeId nodeId, const inet::Coord coord);
 
     /*
      * Updates position for a given node
      * @param nodeid mac node id of UE
      */
-    void updatePositionHistory(const MacNodeId nodeId, const inet::Coord coord);
+    virtual void updatePositionHistory(const MacNodeId nodeId, const inet::Coord coord);
 
     /*
      * Compute total interference due to eNB coexistence for the DL direction
      * @param eNbId id of the considered eNb
      * @param isCqi if we are computing a CQI
      */
-    bool computeDownlinkInterference(MacNodeId eNbId, MacNodeId ueId, inet::Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
+    virtual bool computeDownlinkInterference(MacNodeId eNbId, MacNodeId ueId, inet::Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
 
     /*
      * Compute interference coming from neighboring cells for the UL direction
      */
-    bool computeUplinkInterference(MacNodeId eNbId, MacNodeId senderId, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
+    virtual bool computeUplinkInterference(MacNodeId eNbId, MacNodeId senderId, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
 
     /*
      * Compute interference coming from neighboring UEs for the D2D/D2D_MULTI direction
      */
-    bool computeD2DInterference(MacNodeId eNbId, MacNodeId senderId, inet::Coord senderCoord, MacNodeId destId, inet::Coord destCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference, Direction dir);
+    virtual bool computeD2DInterference(MacNodeId eNbId, MacNodeId senderId, inet::Coord senderCoord, MacNodeId destId, inet::Coord destCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference, Direction dir);
 
     /*
      * Evaluates total interference from external cells seen from the spot given by coord
@@ -468,19 +468,19 @@ class LteRealisticChannelModel : public LteChannelModel
      * Compute attenuation due to path loss and shadowing
      * @return attenuation expressed in dBm
      */
-    double computeExtCellPathLoss(double dist, MacNodeId nodeId);
+    virtual double computeExtCellPathLoss(double dist, MacNodeId nodeId);
 
     /*
      * Obtain the jakes map for the specified UE
      * @param id mac id of the user
      */
-    JakesFadingMap *obtainUeJakesMap(MacNodeId id);
+    virtual JakesFadingMap *obtainUeJakesMap(MacNodeId id);
 
     /*
      * Obtain the shadowing map for the specified UE
      * @param id mac id of the user
      */
-    ShadowFadingMap *obtainShadowingMap(MacNodeId id);
+    virtual ShadowFadingMap *obtainShadowingMap(MacNodeId id);
 };
 
 } //namespace

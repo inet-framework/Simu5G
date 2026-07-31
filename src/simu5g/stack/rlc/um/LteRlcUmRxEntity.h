@@ -61,10 +61,10 @@ class LteRlcUmRxEntity : public RlcUmRxEntityBase
     void initMode(LteMacBase *mac) override;
 
   private:
-    void moveRxWindow(int pos);
-    void reassemble(unsigned int index);
-    void toPdcpLte(inet::Packet *rlcSdu);
-    void clearBufferedSdu();
+    virtual void moveRxWindow(int pos);
+    virtual void reassemble(unsigned int index);
+    virtual void toPdcpLte(inet::Packet *rlcSdu);
+    virtual void clearBufferedSdu();
 };
 
 } //namespace

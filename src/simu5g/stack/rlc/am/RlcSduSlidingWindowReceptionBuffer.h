@@ -117,33 +117,33 @@ class RlcSduSlidingWindowReceptionBuffer : public omnetpp::cObject
                                         inet::Packet *sduDataPtr);
 
     /** @brief Retrieve the assembled SDU pointer and remove it from the buffer. */
-    inet::Packet *consumeSdu(uint32_t sn);
+    virtual inet::Packet *consumeSdu(uint32_t sn);
 
     /** @brief Check if SN has missing byte segments before the last received byte. */
-    bool hasMissingByteSegmentBeforeLast(uint32_t sn);
+    virtual bool hasMissingByteSegmentBeforeLast(uint32_t sn);
 
     /** @brief Handle reassembly timer expiry per TS 38.322 5.2.3.2.4. */
-    void handleReassemblyTimerExpiry(uint32_t rxNextStatusTrigger);
+    virtual void handleReassemblyTimerExpiry(uint32_t rxNextStatusTrigger);
 
     /** @brief Generate data for a STATUS PDU. */
-    StatusPduData generateStatusPduData();
+    virtual StatusPduData generateStatusPduData();
 
     /** @brief Advance rxHighestStatus_ past completed SDUs. */
-    void updateRxHighestStatus();
+    virtual void updateRxHighestStatus();
 
     /** @brief Advance rxNext_ past completed SDUs (window slide). */
-    void updateRxNext();
+    virtual void updateRxNext();
 
-    bool isReady(uint32_t sn) const {
+    virtual bool isReady(uint32_t sn) const {
         auto it = sduBuffer_.find(sn);
         return it != sduBuffer_.end() && it->second.isComplete;
     }
 
-    bool inWindow(uint32_t sn) const {
+    virtual bool inWindow(uint32_t sn) const {
         return sn >= rxNext_ && sn < rxNext_ + amWindowSize_;
     }
 
-    bool aboveWindow(uint32_t sn) const {
+    virtual bool aboveWindow(uint32_t sn) const {
         return sn >= rxNext_ + amWindowSize_;
     }
 

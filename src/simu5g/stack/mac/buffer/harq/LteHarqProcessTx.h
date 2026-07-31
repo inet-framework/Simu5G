@@ -86,15 +86,15 @@ class LteHarqProcessTx : noncopyable
      * @param pdu PDU to be inserted
      * @param unitId id of destination unit
      */
-    void insertPdu(inet::Packet *pdu, Codeword cw);
+    virtual void insertPdu(inet::Packet *pdu, Codeword cw);
 
-    void markSelected(Codeword cw);
+    virtual void markSelected(Codeword cw);
 
     virtual inet::Packet *extractPdu(Codeword cw);
 
-    bool pduFeedback(HarqAcknowledgment fb, Codeword cw);
+    virtual bool pduFeedback(HarqAcknowledgment fb, Codeword cw);
 
-    bool selfNack(Codeword cw);
+    virtual bool selfNack(Codeword cw);
 
     /**
      *
@@ -125,21 +125,21 @@ class LteHarqProcessTx : noncopyable
      *
      * @return list of unit IDs which are ready for RTX
      */
-    CwList readyUnitsIds();
+    virtual CwList readyUnitsIds();
 
     /**
      * Returns a list of IDs of empty units inside this process.
      *
      * @return empty units IDs list.
      */
-    CwList emptyUnitsIds();
+    virtual CwList emptyUnitsIds();
 
     /**
      * Returns a list of IDs of selected units.
      *
      * @return selected units IDs list.
      */
-    CwList selectedUnitsIds();
+    virtual CwList selectedUnitsIds();
 
     /**
      * Tells if the process is empty: all of its units are in EMPTY state.
@@ -162,9 +162,9 @@ class LteHarqProcessTx : noncopyable
      */
     long getPduId(Codeword cw);
 
-    void forceDropProcess();
+    virtual void forceDropProcess();
 
-    bool forceDropUnit(Codeword cw);
+    virtual bool forceDropUnit(Codeword cw);
 
     unsigned int getNumHarqUnits()
     {
@@ -173,7 +173,7 @@ class LteHarqProcessTx : noncopyable
 
     TxHarqPduStatus getUnitStatus(Codeword cw);
 
-    void dropPdu(Codeword cw);
+    virtual void dropPdu(Codeword cw);
     bool isUnitEmpty(Codeword cw);
     bool isUnitReady(Codeword cw);
     unsigned char getTransmissions(Codeword cw);
@@ -190,7 +190,7 @@ class LteHarqProcessTx : noncopyable
      * @return true if at least one unit status is not TXHARQ_PDU_EMPTY
      */
 
-    bool isHarqProcessActive();
+    virtual bool isHarqProcessActive();
 
     virtual ~LteHarqProcessTx();
 };

@@ -44,8 +44,8 @@ typedef std::map<Remote, std::vector<std::vector<LteSummaryBuffer>>> History_;
 class LteAmc : public cSimpleModule
 {
   private:
-    AmcPilot *getAmcPilot(const cPar& amcMode);
-    MacNodeId getServingNodeOrSelf(MacNodeId dst);
+    virtual AmcPilot *getAmcPilot(const cPar& amcMode);
+    virtual MacNodeId getServingNodeOrSelf(MacNodeId dst);
 
   public:
     void printParameters();
@@ -121,12 +121,12 @@ class LteAmc : public cSimpleModule
     }
 
     // CodeRate MCS rescaling
-    void rescaleMcs(double rePerRb, Direction dir = DL);
+    virtual void rescaleMcs(double rePerRb, Direction dir = DL);
 
-    void pushFeedback(MacNodeId id, Direction dir, LteFeedback fb, GHz carrierFrequency);
-    void pushFeedbackD2D(MacNodeId id, LteFeedback fb, MacNodeId peerId, GHz carrierFrequency);
-    const LteSummaryFeedback& getFeedback(MacNodeId id, Remote antenna, TxMode txMode, const Direction dir, GHz carrierFrequency);
-    const LteSummaryFeedback& getFeedbackD2D(MacNodeId id, Remote antenna, TxMode txMode, MacNodeId peerId, GHz carrierFrequency);
+    virtual void pushFeedback(MacNodeId id, Direction dir, LteFeedback fb, GHz carrierFrequency);
+    virtual void pushFeedbackD2D(MacNodeId id, LteFeedback fb, MacNodeId peerId, GHz carrierFrequency);
+    virtual const LteSummaryFeedback& getFeedback(MacNodeId id, Remote antenna, TxMode txMode, const Direction dir, GHz carrierFrequency);
+    virtual const LteSummaryFeedback& getFeedbackD2D(MacNodeId id, Remote antenna, TxMode txMode, MacNodeId peerId, GHz carrierFrequency);
 
     const RemoteSet *getAntennaSet()
     {
@@ -134,9 +134,9 @@ class LteAmc : public cSimpleModule
     }
 
     bool existTxParams(MacNodeId id, const Direction dir, GHz carrierFrequency);
-    const UserTxParams& getTxParams(MacNodeId id, const Direction dir, GHz carrierFrequency);
-    const UserTxParams& setTxParams(MacNodeId id, const Direction dir, UserTxParams& info, GHz carrierFrequency);
-    const UserTxParams& computeTxParams(MacNodeId id, const Direction dir, GHz carrierFrequency);
+    virtual const UserTxParams& getTxParams(MacNodeId id, const Direction dir, GHz carrierFrequency);
+    virtual const UserTxParams& setTxParams(MacNodeId id, const Direction dir, UserTxParams& info, GHz carrierFrequency);
+    virtual const UserTxParams& computeTxParams(MacNodeId id, const Direction dir, GHz carrierFrequency);
     virtual unsigned int computeBitsOnNRbs(MacNodeId id, Band b, unsigned int blocks, const Direction dir, GHz carrierFrequency);
     virtual unsigned int computeBitsOnNRbs(MacNodeId id, Band b, Codeword cw, unsigned int blocks, const Direction dir, GHz carrierFrequency);
     virtual unsigned int computeBytesOnNRbs(MacNodeId id, Band b, unsigned int blocks, const Direction dir, GHz carrierFrequency);
@@ -151,28 +151,28 @@ class LteAmc : public cSimpleModule
     UsableBands *getPilotUsableBands(MacNodeId id);
 
     // utilities - do not involve pilot invocation
-    unsigned int getItbsPerCqi(Cqi cqi, const Direction dir);
+    virtual unsigned int getItbsPerCqi(Cqi cqi, const Direction dir);
 
     /*
      * Access the correct itbs2tbs conversion table given cqi and layer number
      */
-    const unsigned int *readTbsVect(Cqi cqi, unsigned int layers, Direction dir);
+    virtual const unsigned int *readTbsVect(Cqi cqi, unsigned int layers, Direction dir);
 
     /*
      * given <cqi> and <layers> returns bytes allocable in <blocks>
      */
-    unsigned int blockGain(Cqi cqi, unsigned int layers, unsigned int blocks, Direction dir);
+    virtual unsigned int blockGain(Cqi cqi, unsigned int layers, unsigned int blocks, Direction dir);
 
     /*
      * given <cqi> and <layers> returns blocks capable of carrying  <bytes>
      */
-    unsigned int bytesGain(Cqi cqi, unsigned int layers, unsigned int bytes, Direction dir);
+    virtual unsigned int bytesGain(Cqi cqi, unsigned int layers, unsigned int bytes, Direction dir);
 
     // ---------------------------
     void writeCqiWeight(double weight);
-    Cqi readWbCqi(const CqiVector& cqi);
-    void detachUser(MacNodeId nodeId, Direction dir);
-    void attachUser(MacNodeId nodeId, Direction dir);
+    virtual Cqi readWbCqi(const CqiVector& cqi);
+    virtual void detachUser(MacNodeId nodeId, Direction dir);
+    virtual void attachUser(MacNodeId nodeId, Direction dir);
     void testUe(MacNodeId nodeId, Direction dir);
     AmcPilot *getPilot() const
     {
@@ -189,7 +189,7 @@ class LteAmc : public cSimpleModule
         return cellInfo_->getUePosition(id);
     }
 
-    std::vector<Cqi> readMultiBandCqi(MacNodeId id, const Direction dir, GHz carrierFrequency);
+    virtual std::vector<Cqi> readMultiBandCqi(MacNodeId id, const Direction dir, GHz carrierFrequency);
 
     int getSystemNumBands() { return numBands_; }
 

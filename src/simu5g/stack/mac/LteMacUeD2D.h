@@ -46,7 +46,7 @@ class LteMacUeD2D : public LteMacUe
     // if true, use the preconfigured TX params for transmission, else use those signaled by the eNB
     bool usePreconfiguredTxParams_;
     UserTxParams *preconfiguredTxParams_ = nullptr;
-    UserTxParams *getPreconfiguredTxParams();  // build and return new user tx params
+    virtual UserTxParams *getPreconfiguredTxParams();  // build and return new user tx params
 
     /**
      * Reads MAC parameters for the UE and performs initialization.
@@ -76,7 +76,7 @@ class LteMacUeD2D : public LteMacUe
      */
     void macHandleRac(cPacket *pkt) override;
 
-    void macHandleD2DModeSwitch(cPacket *pkt);
+    virtual void macHandleD2DModeSwitch(cPacket *pkt);
 
     virtual Packet *makeBsr(int size);
 
