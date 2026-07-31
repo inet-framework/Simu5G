@@ -559,9 +559,9 @@ void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
         int idx = pdcpMux->gateSize("toTxEntity");
         pdcpMux->setGateSize("toTxEntity", idx + 1);
         pdcpMux->gate("toTxEntity", idx)->connectTo(pdcpEnt->gate("upperIn"));
+        pdcpMux->registerTxEntity(compoundId, idx);
 
         auto *txEnt = check_and_cast<PdcpTxEntityBase *>(pdcpEnt->getSubmodule("tx"));
-        pdcpMux->registerTxEntity(compoundId, txEnt);
         pdcpTxEntities_[compoundId] = txEnt;
     }
 }

@@ -27,6 +27,8 @@ void PdcpMux::initialize(int stage)
         upperLayerOutGate_ = gate("upperLayerOut");
 
         isNR_ = par("isNR").boolValue();
+
+        WATCH_MAP(txGateIndices_);
     }
 }
 
@@ -55,42 +57,35 @@ void PdcpMux::fromDataPort(cPacket *pktAux)
     verifyControlInfo(lteInfo.get());
 
     DrbKey id = DrbKey(lteInfo->getDestId(), lteInfo->getDrbId());
-    PdcpTxEntityBase *entity = lookupTxEntity(id);
+    auto it = txGateIndices_.find(id);
 
     EV << "fromDataPort in " << getFullPath() << " event #" << getSimulation()->getEventNumber()
        << ": Processing packet " << pkt->getName() << " src=" << lteInfo->getSourceId() << " dest=" << lteInfo->getDestId()
        << " multicast=" << lteInfo->getMulticastGroupId() << " direction=" << dirToA((Direction)lteInfo->getDirection())
        << " ---> " << id << std::endl;
 
-    // A missing entity must never be dereferenced -- ASSERT is compiled out in release
+    // A missing entity must never be silently dropped -- ASSERT is compiled out in release
     // builds, so fail with a real throw. Ip2Nic/SDAP establish the connection for every
     // packet whose TX entity does not exist yet, so a miss here is a dispatch bug.
-    if (entity == nullptr)
+    if (it == txGateIndices_.end())
         throw cRuntimeError("PdcpMux::fromDataPort: no PDCP TX entity for %s -- the connection "
                             "should have been established by Ip2Nic or SDAP", id.str().c_str());
 
-    // path start = our toTxEntity gate (crosses the PdcpEntityBase compound boundary, whose
-    // upperIn gate routes on to the tx submodule's in gate)
-    send(pkt, entity->gate("in")->getPathStartGate());
+    send(pkt, "toTxEntity", it->second);
 }
 
-PdcpTxEntityBase *PdcpMux::lookupTxEntity(DrbKey id)
+void PdcpMux::registerTxEntity(DrbKey id, int gateIndex)
 {
-    auto it = txEntities_.find(id);
-    return it != txEntities_.end() ? it->second : nullptr;
-}
-
-void PdcpMux::registerTxEntity(DrbKey id, PdcpTxEntityBase *txEnt)
-{
-    if (txEntities_.find(id) != txEntities_.end())
-        throw cRuntimeError("PDCP TX entity for %s already exists", id.str().c_str());
-    txEntities_[id] = txEnt;
-    EV << "PdcpMux::registerTxEntity - Registered TxPdcpEntity for " << id << "\n";
+    if (txGateIndices_.find(id) != txGateIndices_.end())
+        throw cRuntimeError("PDCP TX entity for %s already registered", id.str().c_str());
+    ASSERT(gate("toTxEntity", gateIndex)->isConnectedOutside());
+    txGateIndices_[id] = gateIndex;
+    EV << "PdcpMux::registerTxEntity - Registered TX entity for " << id << " on toTxEntity gate " << gateIndex << "\n";
 }
 
 void PdcpMux::unregisterTxEntity(DrbKey id)
 {
-    txEntities_.erase(id);
+    txGateIndices_.erase(id);
 }
 
 } // namespace simu5g

@@ -188,7 +188,7 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     // Establish the connection unless its PDCP TX entity already exists. The entity
     // registry is authoritative: entities deleted at handover or D2D mode switch get
     // re-established by the next packet, even for an already-seen (drbId, destId) pair.
-    if (pdcpMux_->lookupTxEntity(DrbKey(lteInfo->getDestId(), drb->drbId)) == nullptr)
+    if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drb->drbId)))
         binder_->establishDataConnection(lteInfo.get());
 
     // Set protocol tag for outgoing frame to PDCP layer

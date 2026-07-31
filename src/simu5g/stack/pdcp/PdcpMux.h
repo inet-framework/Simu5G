@@ -17,8 +17,6 @@
 
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
-#include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
-#include "simu5g/stack/pdcp/PdcpRxEntityBase.h"
 
 namespace simu5g {
 
@@ -28,8 +26,10 @@ using namespace omnetpp;
 /**
  * @brief Upper-layer PDCP packet dispatcher.
  *
- * Dispatches upper-layer packets to the correct TX entity by DrbKey,
- * and collects RX entity output to forward to the upper layer.
+ * Owns the TX routing table, which maps each DRB to the index of the
+ * toTxEntity gate that serves it. BearerManagement wires the gate and
+ * registers the index here. Also collects RX entity output to forward
+ * to the upper layer.
  */
 class PdcpMux : public cSimpleModule
 {
@@ -39,12 +39,11 @@ class PdcpMux : public cSimpleModule
     cGate *upperLayerInGate_ = nullptr;
     cGate *upperLayerOutGate_ = nullptr;
 
-    typedef std::map<DrbKey, PdcpTxEntityBase *> PdcpTxEntities;
-    PdcpTxEntities txEntities_;
+    std::map<DrbKey, int> txGateIndices_;  // DRB -> index of the toTxEntity gate serving it
 
   public:
-    PdcpTxEntityBase *lookupTxEntity(DrbKey id);
-    void registerTxEntity(DrbKey id, PdcpTxEntityBase *txEnt);
+    bool hasTxEntity(DrbKey id) const { return txGateIndices_.find(id) != txGateIndices_.end(); }
+    void registerTxEntity(DrbKey id, int gateIndex);
     void unregisterTxEntity(DrbKey id);
 
   protected:

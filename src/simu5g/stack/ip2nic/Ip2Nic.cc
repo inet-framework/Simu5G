@@ -350,7 +350,7 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
             // Establish the connection unless its PDCP TX entity already exists. The entity
             // registry is authoritative: entities deleted at handover or D2D mode switch get
             // re-established by the next packet, even for an already-seen (drbId, destId) pair.
-            if (pdcpMux_->lookupTxEntity(DrbKey(lteInfo->getDestId(), drbId)) == nullptr)
+            if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drbId)))
                 establishConnection(lteInfo.get(), key);
         }
         return;
@@ -452,7 +452,7 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
         lteInfo->setDrbId(drbId);
 
         // Establish unless the PDCP TX entity already exists (authoritative check, see above)
-        if (pdcpMux_->lookupTxEntity(DrbKey(lteInfo->getDestId(), drbId)) == nullptr)
+        if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drbId)))
             establishConnection(lteInfo.get(), key);
 
         // Debug logging (UE subclasses only)
