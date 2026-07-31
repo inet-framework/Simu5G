@@ -37,7 +37,6 @@
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/rlc/RlcMux.h"
-#include "simu5g/stack/pdcp/PdcpMux.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include <inet/networklayer/common/NetworkInterface.h>
 
@@ -1071,18 +1070,14 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
             }
         }
 
-        /*
-         * If the PDCP layer is NrPdcp and isDualConnectivityEnabled,
-         * the PDCP layer can also have SDUs buffered.
-         */
-
-        if (inet::getModuleFromPar<PdcpMux>(par("pdcpMuxModule"), this)->par("isNR").boolValue()) {
-            auto *bm = inet::getModuleFromPar<BearerManagement>(par("bearerManagementModule"), this);
-            std::set<MacNodeId> activePdcpUe;
-            bm->pdcpActiveUeUL(&activePdcpUe);
-            for (auto ue: activePdcpUe) {
-                activeUeSet.insert(ue); // active users in RLC
-            }
+        // With a split bearer the PDCP layer can hold SDUs too, in the reordering
+        // buffer of its NR entities. Only those report non-empty (LtePdcpRxEntity
+        // never buffers), so this needs no NR guard of its own.
+        auto *bm = inet::getModuleFromPar<BearerManagement>(par("bearerManagementModule"), this);
+        std::set<MacNodeId> activePdcpUe;
+        bm->pdcpActiveUeUL(&activePdcpUe);
+        for (auto ue : activePdcpUe) {
+            activeUeSet.insert(ue); // active users in PDCP
         }
     }
     else {
