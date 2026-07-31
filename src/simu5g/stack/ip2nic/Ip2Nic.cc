@@ -49,9 +49,8 @@ void Ip2Nic::initialize(int stage)
         }
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
-        // Initialize flags from PDCP submodule's NED parameters
-        isNR_ = pdcpMux_->par("isNR").boolValue();
-        hasD2DSupport_ = networkIf->par("d2dCapable").boolValue() || isNR_;
+        isNr_ = par("isNr");
+        hasD2DSupport_ = networkIf->par("d2dCapable").boolValue() || isNr_;
 
         hasSdap_ = par("hasSdap").boolValue();
 
@@ -269,7 +268,7 @@ MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacN
     if (isEnb) {
         // ENB variants
         MacNodeId destId;
-        if (isNR_ && (!dualConnectivityEnabled_ || useNR))
+        if (isNr_ && (!dualConnectivityEnabled_ || useNR))
             destId = binder_->getNrMacNodeId(destAddr);
         else
             destId = binder_->getMacNodeId(destAddr);
@@ -298,7 +297,7 @@ MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacN
 
         // D2D-capable UE: check if D2D communication is possible
         MacNodeId destId = binder_->getMacNodeId(destAddr);
-        MacNodeId srcId = isNR_ ? (useNR ? nrNodeId_ : nodeId_) : nodeId_;
+        MacNodeId srcId = isNr_ ? (useNR ? nrNodeId_ : nodeId_) : nodeId_;
 
         // check whether the destination is inside the LTE network and D2D is active
         if (destId == NODEID_NONE ||
@@ -359,10 +358,10 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     // --- D2D-capable subclasses (LtePdcpEnbD2D, LtePdcpUeD2D, NrPdcpEnb, NrPdcpUe) ---
 
     // For NrPdcpUe, the effective local node ID depends on useNR flag
-    MacNodeId localNodeId = (isNR_ && !isEnb) ? (useNR ? nrNodeId_ : nodeId_) : nodeId_;
+    MacNodeId localNodeId = (isNr_ && !isEnb) ? (useNR ? nrNodeId_ : nodeId_) : nodeId_;
 
     // EV log (all D2D subclasses except NrPdcpUe)
-    if (isEnb || !isNR_)
+    if (isEnb || !isNr_)
         EV << "Received packet from data port, src= " << srcAddr << " dest=" << destAddr << " ToS=" << typeOfService << endl;
 
     if (isEnb) {
@@ -372,7 +371,7 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     }
     else {
         // UE: D2D multicast/unicast handling (unified for NrPdcpUe and LtePdcpUeD2D)
-        if (isNR_)
+        if (isNr_)
             lteInfo->setSourceId(localNodeId);
 
         if (destAddr.isMulticast()) {
@@ -410,7 +409,7 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     }
 
     // --- Source and Dest IDs ---
-    if (isNR_) {
+    if (isNr_) {
         // For PDCP entity dispatch, always use technology-neutral (LTE/master-leg) IDs.
         // The TechnologyReq::useNR flag carries the LTE-vs-NR routing decision separately;
         // NrPdcpTxEntity reads it in deliverPdcpPdu() to decide local RLC vs X2 forwarding.
@@ -457,7 +456,7 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
 
         // Debug logging (UE subclasses only)
         if (!isEnb) {
-            if (isNR_) {
+            if (isNr_) {
                 EV << "NrPdcpUe : Assigned DRB ID: " << drbId << "\n";
                 EV << "NrPdcpUe : Assigned Node ID: " << localNodeId << "\n";
             }

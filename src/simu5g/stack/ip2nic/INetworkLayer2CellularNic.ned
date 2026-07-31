@@ -21,6 +21,7 @@ moduleinterface INetworkLayer2CellularNic
 {
     parameters:
         string nodeType;
+        bool isNr;
         @display("i=block/layer");
     gates:
         // connection to network layer.

@@ -25,7 +25,6 @@ simple PdcpMux like IPdcpMux
     parameters:
         @class("PdcpMux");
         @display("i=block/dispatch");
-        bool isNR = default(false);   // marks this stack as the NR one; not used here, read by Ip2Nic and LteMacEnb
     gates:
         input upperLayerIn;
         output upperLayerOut;

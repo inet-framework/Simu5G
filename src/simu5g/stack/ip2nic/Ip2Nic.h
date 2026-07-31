@@ -52,7 +52,7 @@ class Ip2Nic : public cSimpleModule
     bool dualConnectivityEnabled_;
 
     // Flags mirroring PDCP's (to be verified with ASSERTs, then used to replace PDCP dependency)
-    bool isNR_ = false;
+    bool isNr_ = false;
     bool hasD2DSupport_ = false;
     LteRlcType conversationalRlc_ = UNKNOWN_RLC_TYPE;
     LteRlcType streamingRlc_ = UNKNOWN_RLC_TYPE;

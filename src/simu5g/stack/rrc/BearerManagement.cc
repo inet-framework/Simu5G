@@ -316,7 +316,7 @@ void BearerManagement::setRlcEntityParams(cModule *entity, bool isNr)
     // framing of TS 38.322, an LTE bearer the FI/concatenation of TS 36.322. The framing
     // is a function of the RAT, not an independent knob; soFraming is a separate
     // parameter only because it is the selection mechanism. (The NR-leg marker proper is
-    // the pdcpMux.isNR parameter, read by PdcpMux/Ip2Nic/LteMacEnb, not set here.)
+    // the ip2nic.isNr parameter, not set here.)
 }
 
 void BearerManagement::setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex)

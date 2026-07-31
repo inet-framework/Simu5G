@@ -22,7 +22,6 @@ package simu5g.stack.pdcp;
 moduleinterface IPdcpMux
 {
     parameters:
-        bool isNR;
         @display("i=block/dispatch");
     gates:
         input upperLayerIn;

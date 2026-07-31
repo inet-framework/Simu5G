@@ -24,6 +24,7 @@ simple Ip2Nic like INetworkLayer2CellularNic
         string nodeType;
         string binderModule = default("binder");
         string pdcpMuxModule = default("^.pdcpMux");
+        bool isNr = default(false);   // true for the NR leg (set by NrNicUe/NrNicEnb, or in the ini for a DC master eNB)
         string conversationalRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
         string streamingRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
         string interactiveRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");

@@ -43,7 +43,7 @@ module NrNicUe extends LteNicUeD2D
 
         int numNrCarriers = default(1);
 
-        pdcpMux.isNR = default(true);
+        ip2nic.isNr = default(true);
         rrc.bearerManagement.pdcpEntityModuleType = default("simu5g.stack.pdcp.NrPdcpEntity");
         phy.typename = default("NrPhyUe");	        // TODO fix this
         											// LtePhy is of type NrPhyUe so that it is
