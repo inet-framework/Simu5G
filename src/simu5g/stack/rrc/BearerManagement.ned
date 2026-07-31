@@ -15,7 +15,7 @@ package simu5g.stack.rrc;
 // RRC Bearer Management — creates and tears down PDCP, RLC and MAC
 // entities for data radio bearers.
 //
-simple BearerManagement
+simple BearerManagement like IBearerManagement
 {
     parameters:
         @display("i=block/control");

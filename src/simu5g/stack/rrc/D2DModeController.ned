@@ -7,7 +7,7 @@ package simu5g.stack.rrc;
 // modes, this module coordinates the draining of the old-mode RLC TX
 // entity's queue before allowing the new-mode entity to start transmitting.
 //
-simple D2DModeController
+simple D2DModeController like ID2DModeController
 {
     parameters:
         @class("D2DModeController");

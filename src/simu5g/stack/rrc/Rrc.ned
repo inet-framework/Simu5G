@@ -37,22 +37,22 @@ module Rrc like IRrc
         *.routingTableModule = default(absPath(this.routingTableModule));
 
     submodules:
-        registration: Registration {
+        registration: <default("Registration")> like IRegistration {
             @display("p=100,80");
         }
-        bearerManagement: BearerManagement {
+        bearerManagement: <default("BearerManagement")> like IBearerManagement {
             @display("p=250,80");
         }
-        d2dModeController: D2DModeController if hasD2DModeController {
+        d2dModeController: <default("D2DModeController")> like ID2DModeController if hasD2DModeController {
             @display("p=400,80");
         }
         d2dModeSelection: <default("D2dModeSelectionBase")> like ID2DModeSelection if hasD2DModeSelection {
             @display("p=400,160");
         }
-        handoverController: HandoverController if hasHandoverController {
+        handoverController: <default("HandoverController")> like IHandoverController if hasHandoverController {
             @display("p=550,80");
         }
-        nrHandoverController: HandoverController if hasNrHandoverController {
+        nrHandoverController: <default("HandoverController")> like IHandoverController if hasNrHandoverController {
             @display("p=700,80");
         }
 }

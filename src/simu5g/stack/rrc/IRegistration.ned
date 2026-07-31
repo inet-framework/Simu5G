@@ -12,17 +12,12 @@
 package simu5g.stack.rrc;
 
 //
-// RRC Registration — registers the node with the Binder, sets up
-// the network interface, and joins multicast groups.
+// Interface for the registration component of the ~IRrc layer: registers the
+// node (and its stack legs) with the ~Binder, sets up the network interface,
+// and joins multicast groups.
 //
-simple Registration like IRegistration
+moduleinterface IRegistration
 {
     parameters:
         @display("i=block/control");
-        @class(Registration);
-
-        string interfaceTableModule;
-        string interfaceName = default("cellular");
-        string routingTableModule;
-        string binderModule = default("binder");
 }

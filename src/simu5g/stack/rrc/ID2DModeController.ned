@@ -12,17 +12,12 @@
 package simu5g.stack.rrc;
 
 //
-// RRC Registration — registers the node with the Binder, sets up
-// the network interface, and joins multicast groups.
+// Interface for the D2D mode controller of the ~IRrc layer: performs the
+// D2D mode switch of a peering, draining and re-routing the affected RLC
+// transmission buffers.
 //
-simple Registration like IRegistration
+moduleinterface ID2DModeController
 {
     parameters:
         @display("i=block/control");
-        @class(Registration);
-
-        string interfaceTableModule;
-        string interfaceName = default("cellular");
-        string routingTableModule;
-        string binderModule = default("binder");
 }
