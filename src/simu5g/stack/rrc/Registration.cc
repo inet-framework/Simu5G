@@ -84,7 +84,6 @@ void Registration::initialize(int stage)
     }
     else if (stage == inet::INITSTAGE_STATIC_ROUTING) {
         if (nodeType == UE) {
-            // TODO: shift to routing stage
             // if the UE has been created dynamically, we need to manually add a default route having our cellular interface as output interface
             // otherwise we are not able to reach devices outside the cellular network
             if (NOW > 0) {

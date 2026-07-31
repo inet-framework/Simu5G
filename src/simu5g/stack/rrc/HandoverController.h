@@ -141,4 +141,4 @@ class HandoverController : public cSimpleModule
 
 } //namespace
 
-#endif /* _LTE_HANDOVERCOORDINATOR_H_ */
+#endif /* _LTE_HANDOVERCONTROLLER_H_ */

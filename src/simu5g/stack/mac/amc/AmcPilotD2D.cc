@@ -128,8 +128,6 @@ const UserTxParams& AmcPilotD2D::computeTxParams(MacNodeId id, const Direction d
     EV << NOW << " AmcPilot" << getName() << "::computeTxParams NEW values assigned! - CQI =" << chosenCqi << "\n";
     info.print("AmcPilotD2D::computeTxParams");
 
-    //return amc_->setTxParams(id, dir, info,user_type); OLD solution
-    // Debug
     const UserTxParams& info2 = amc_->setTxParams(id, dir, info, carrierFrequency);
 
     return info2;

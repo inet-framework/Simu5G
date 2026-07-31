@@ -25,12 +25,6 @@ ConflictGraph::ConflictGraph(Binder *binder, LteMacEnbD2D *macEnb, bool reuseD2D
 {
 }
 
-/*!
- * \fn ~ConflictGraph()
- * \memberof ConflictGraph
- * \brief class destructor
- */
-
 // reset Conflict Graph
 void ConflictGraph::clearConflictGraph()
 {

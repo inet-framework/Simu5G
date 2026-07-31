@@ -55,8 +55,6 @@ enum LteAmType
     // ****** control packets ********
     // ACK
     ACK     = 1;
-    // BITMAP
-    // BITMAP = 4;
 };
 
 //

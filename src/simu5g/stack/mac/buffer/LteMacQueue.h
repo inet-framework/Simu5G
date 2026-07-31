@@ -130,14 +130,8 @@ class LteMacQueue : public cPacketQueue
 
   protected:
     /**
-     * Check if it makes sense to enqueue this packet.
-     *
-     * The check is based on the following assumptions:
-     * 1) unfragmented PDUs can always be enqueued
-     * 2) PDU fragments should be enqueued if
-     *    a) no previous fragment of the same PDU was discarded before
-     *    b) we have enough space in the queue to hold all remaining fragments of the same packet
-     *
+     * Check if it makes sense to enqueue this packet, i.e. whether it fits
+     * in the remaining queue space (unlimited queue if queueSize_ == 0).
      */
     bool isEnqueueablePacket(inet::Packet *pkt);
 

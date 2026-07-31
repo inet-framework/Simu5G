@@ -178,7 +178,6 @@ void LteRlcUmRxEntity::enque(cPacket *pktAux)
     // emit statistics
     double tputSample = (double)totalPduRcvdBytes_ / (NOW - getSimulation()->getWarmupPeriod());
 
-    // emit statistics
     if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI) { // UE in IM
         emit(rlcPduThroughputSignal_[dir_], tputSample);
         emit(rlcPduDelaySignal_[dir_], (NOW - pktPdu->getCreationTime()).dbl());
@@ -191,13 +190,12 @@ void LteRlcUmRxEntity::enque(cPacket *pktAux)
     EV << NOW << " LteRlcUmRxEntity::enque - tsn " << tsn << ", the corresponding index after shift in the buffer is " << index << endl;
     EV << NOW << " LteRlcUmRxEntity::enque - firstSnoReordering " << rxWindowDesc_.firstSnoForReordering_ << endl;
 
-    index = rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_; //
+    index = rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_;
 
-    // D
     if (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_) == true) {
         unsigned int old = rxWindowDesc_.firstSnoForReordering_;
 
-        index = rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_; //
+        index = rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_;
 
         // move to the first missing SN
         while (received_.at(rxWindowDesc_.firstSnoForReordering_ - rxWindowDesc_.firstSno_) == true) {

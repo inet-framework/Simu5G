@@ -25,7 +25,7 @@ class HandoverX2Forwarder;
 /**
  *
  */
-//TODO rename to HandoverPacketHolderEnb, write docu
+//TODO write docu
 class HandoverPacketHolderEnb : public cSimpleModule
 {
   protected:

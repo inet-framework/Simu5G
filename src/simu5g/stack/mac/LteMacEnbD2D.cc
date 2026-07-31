@@ -106,7 +106,6 @@ void LteMacEnbD2D::macHandleFeedbackPkt(cPacket *pktAux)
 
     // skip if no D2D CQI has been reported
     if (!fbMapD2D.empty()) {
-        //get Source Node Id<
         MacNodeId id = fb->getSourceNodeId();
 
         // extract feedback for D2D links
@@ -531,8 +530,6 @@ void LteMacEnbD2D::flushHarqBuffers()
  */
 void LteMacEnbD2D::fromPhy(cPacket *pktAux)
 {
-    // TODO: harq test (commenting fromPhy: it has only to pass PDUs to the proper RX buffer and
-    // to manage H-ARQ feedback)
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
     auto userInfo = pkt->getTag<UserControlInfo>();
     if (userInfo->getFrameType() == HARQPKT) {

@@ -77,8 +77,6 @@ void LteCompManagerProportional::doCoordination()
     std::vector<double> reservation;
     for (const auto& [nodeId, req] : reqBlocksMap_) {
 
-        // requests from the current node
-
         // compute the number of blocks to reserve
         double percentage;
         if (requestsSum == 0)

@@ -36,7 +36,6 @@ void LteMaxCiMultiband::prepareSchedule()
     unsigned int totAvailableBlocks = 0;
     unsigned int totAvailableBytes_MB = 0;
 
-    // UsableBands * usableBands;
     if (debug)
         cout << NOW << " LteMaxCiMultiband::prepareSchedule - Total Active Connections:" << activeConnectionTempSet_.size() << endl;
     for (MacCid cid : carrierActiveConnectionSet_) {

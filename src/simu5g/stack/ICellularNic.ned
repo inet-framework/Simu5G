@@ -24,7 +24,6 @@ moduleinterface ICellularNic extends IWirelessInterface
     parameters:
         @display("i=block/ifcard");
         string nodeType;
-        //bool d2dCapable;            // inherit the value from the parent module
         @networkInterface;
     gates:
         inout x2[] @loose;     // optional x2 manager

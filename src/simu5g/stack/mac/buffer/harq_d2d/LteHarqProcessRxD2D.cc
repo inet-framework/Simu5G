@@ -48,7 +48,6 @@ Packet *LteHarqProcessRxD2D::createFeedback(Codeword cw)
         fb->setCw(cw);
         fb->setResult(result_.at(cw));
         fb->setFbMacPduId(pdu->getMacPduId());
-        //fb->setByteLength(0);
         fb->setChunkLength(b(1));
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(pduInfo->getDestId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(pduInfo->getSourceId());

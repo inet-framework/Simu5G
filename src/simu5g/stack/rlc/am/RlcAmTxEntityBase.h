@@ -41,12 +41,10 @@ class RlcAmTxEntityBase : public RlcTxEntityBase
 {
   protected:
 
-    // Signals emitted by the concrete subclasses (currently NR-only; the LTE
-    // profile does not emit any of these -- see LteCommon.h / the NR NED
-    // profile for the statistics that are actually recorded). Their static
-    // definitions live in RlcAmTxEntityBase.cc (a single translation unit) so
-    // registerSignal() ordering -- and therefore result recording -- stays
-    // stable across the split.
+    // Signals emitted by the concrete subclasses (both LTE and NR). Their
+    // static definitions live in RlcAmTxEntityBase.cc (a single translation
+    // unit) so registerSignal() ordering -- and therefore result recording --
+    // stays stable across the split.
     static simsignal_t wastedGrantedBytesSignal_;
     static simsignal_t enqueuedSduSizeSignal_;
     static simsignal_t enqueuedSduRateSignal_;

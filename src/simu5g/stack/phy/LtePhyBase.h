@@ -80,8 +80,6 @@ class LtePhyBase : public ChannelAccess
     /** The id of the radioIn gate to receive LteAirFrames */
     int radioInGate_ = -1;
 
-    /** Pointer to the World Utility, to obtain some global information*/
-    //BaseWorldUtility* world_;
     /** Statistics */
     unsigned int numAirFrameReceived_ = 0;    /// number of LteAirFrame correctly received
     unsigned int numAirFrameNotReceived_ = 0; /// number of LteAirFrame not received
@@ -184,14 +182,11 @@ class LtePhyBase : public ChannelAccess
   protected:
 
     /**
-     * Performs initialization operations to prepare gates' IDs, analog models,
-     * the decider and statistics.
+     * Performs initialization operations to prepare gates' IDs and statistics.
      *
-     * In stage 0 gets gates' IDs and a pointer to the world module.
-     * It also gets the CRNTI from the RRC layer and initializes statistics
-     * to be watched.
-     * In stage 1 parses the xml file to fill the #analogModel list and
-     * assign the #lteDecider_ pointer.
+     * In the local stage gets gates' IDs, TX power parameters and initializes
+     * statistics to be watched.
+     * In the Simu5G registrations stage initializes the channel model(s).
      *
      * @param stage initialization stage
      */
@@ -257,30 +252,10 @@ class LtePhyBase : public ChannelAccess
      * Called by the handleMessage() method
      * when a message from #radioInGate_ is received.
      *
-     * TODO Needs Work
-     *
-     * #####################################################################
-     * This function handles the Airframe by performing the following steps:
-     * - If airframe is a broadcast/feedback packet and host is
-     *   a UE attached to eNB or eNB, calls the appropriate
-     *   function of the DAS filter
-     * - If airframe is received by a UE attached to a Relay
-     *   it leaves the received signal unchanged
-     * - If airframe is received by eNodeB it performs a loop over
-     *   the remote set written inside the control info and for each
-     *   Remote changes the destination (current move variable) with
-     *   the remote one before calling filterSignal().
-     * - If airframe is received by UE attached to eNB it performs a loop over
-     *   the remote set written inside the control info and for each
-     *   Remote changes the source (written inside the signal) with
-     *   the remote one before calling filterSignal().
-     * At the end only one packet is delivered to the upper layer
-     * #####################################################################
-     *
-     * The analogModels prepared during the initialization phase are
-     * applied to the Signal object carried with the received LteAirFrame.
-     * Then the decider processes the frame which is sent out to #upperGateOut_
-     * gate along with the decider's result (attached as control info).
+     * The channel model prepared during the initialization phase determines
+     * whether reception is successful, and the frame's inner packet is then
+     * sent out to #upperGateOut_ gate along with the result (attached as
+     * control info). Concrete behavior is implemented by subclasses.
      *
      * @param msg LteAirFrame received from the air channel
      */

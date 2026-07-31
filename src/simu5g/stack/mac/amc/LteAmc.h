@@ -128,9 +128,6 @@ class LteAmc : public cSimpleModule
     const LteSummaryFeedback& getFeedback(MacNodeId id, Remote antenna, TxMode txMode, const Direction dir, GHz carrierFrequency);
     const LteSummaryFeedback& getFeedbackD2D(MacNodeId id, Remote antenna, TxMode txMode, MacNodeId peerId, GHz carrierFrequency);
 
-    //used when it is necessary to know if the requested feedback exists or not
-    // LteSummaryFeedback getFeedback(MacNodeId id, Remote antenna, TxMode txMode, const Direction dir,bool& valid);
-
     const RemoteSet *getAntennaSet()
     {
         return &remoteSet_;

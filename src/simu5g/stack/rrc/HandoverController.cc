@@ -418,7 +418,6 @@ void HandoverController::doHandover()
     binder_->updateUeInfoCellId(nodeId_, candidateServingNodeId_);
 
     // Move collector (if configured)
-    // @author Alessandro Noferi
     if (hasCollector) {
         binder_->moveUeCollector(nodeId_, servingNodeId_, candidateServingNodeId_);
     }
@@ -487,7 +486,7 @@ void HandoverController::deleteOldBuffers(MacNodeId servingNodeId)
     // delete queues for serving node at this UE
     mac_->deleteQueues(servingNodeId);
 
-    // Delete RLC UM Buffers
+    // Delete RLC entities
 
     // delete RLC entities for nodeId_ at old serving node
     BearerManagement *servingBm = check_and_cast<BearerManagement *>(binder_->getRrcByNodeId(servingNodeId)->getSubmodule("bearerManagement"));

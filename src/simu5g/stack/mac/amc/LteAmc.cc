@@ -162,13 +162,9 @@ void LteAmc::printTxParams(Direction dir, GHz carrierFrequency)
         throw cRuntimeError("LteAmc::printTxParams(): Unrecognized direction");
     }
 
-    // Cqi testCqi=0;
     for (int index = 0; index < userInfo->size(); index++) {
         EV << "Ue index: " << index << ", MacNodeId: " << (*revIndex)[index] << endl;
 
-        // Print only non-empty user transmission parameters
-        // testCqi = userInfo->at(index).readCqiVector().at(0);
-        //if(testCqi!=0)
         userInfo->at(index).print("info");
     }
 }
@@ -265,11 +261,6 @@ void LteAmc::initialize(int stage)
         d2dNodeIndex_[nodeId] = d2dRevNodeIndex_.size();
         d2dRevNodeIndex_.push_back(nodeId);
     }
-
-    //printFbhb(DL);
-    //printFbhb(UL);
-    //printTxParams(DL);
-    //printTxParams(UL);
 
     // Set pilot mode
     std::string modeString = mac_->par("pilotMode").stdstringValue();

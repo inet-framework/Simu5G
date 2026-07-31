@@ -359,10 +359,6 @@ double LteRealisticChannelModel::computeAngle(Coord center, Coord point) {
         // quadrant I
         angle = arcoSen;
 
-        //          "] - relativePos[" << relx << "," << rely <<
-    //          "] - siny[" << rely/dist << "] - senx[" << relx/dist <<
-    //          "]" << endl;
-
     return angle;
 }
 
@@ -1157,7 +1153,6 @@ double LteRealisticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coo
 
 std::vector<double> LteRealisticChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, Coord destCoord)
 {
-    // AttenuationVector::iterator it;
     // Get Tx power
     double recvPower = lteInfo_1->getD2dTxPower(); // dBm
 
@@ -1268,7 +1263,6 @@ std::vector<double> LteRealisticChannelModel::getRSRP_D2D(LteAirFrame *frame, Us
 
 std::vector<double> LteRealisticChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId)
 {
-    // AttenuationVector::iterator it;
     // Get Tx power
     double recvPower = lteInfo->getD2dTxPower(); // dBm
 
@@ -1548,7 +1542,6 @@ std::vector<double> LteRealisticChannelModel::getSINR_D2D(LteAirFrame *frame, Us
 std::vector<double> LteRealisticChannelModel::getSIR(LteAirFrame *frame,
         UserControlInfo *lteInfo)
 {
-    // AttenuationVector::iterator it;
     // get tx power
     double recvPower = lteInfo->getTxPower();
 
@@ -1715,9 +1708,6 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
     // get number of codewords
     int size = lteInfo->getUserTxParams()->readCqiVector().size();
 
-    // get position associated with the packet
-    // Coord coord = lteInfo->getCoord();
-
     // if total number of codewords is equal to 1 the cw index should be only 0
     if (size == 1)
         cw = 0;
@@ -1859,9 +1849,6 @@ bool LteRealisticChannelModel::isReceptionSuccessful_D2D(LteAirFrame *frame, Use
     // get number of codewords
     int size = lteInfo->getUserTxParams()->readCqiVector().size();
 
-    // get position associated with the packet
-    // Coord coord = lteInfo->getCoord();
-
     // if total number of codewords is equal to 1 the cw index should be only 0
     if (size == 1)
         cw = 0;
@@ -1904,7 +1891,6 @@ bool LteRealisticChannelModel::isReceptionSuccessful_D2D(LteAirFrame *frame, Use
             snrV = getSINR_D2D(frame, lteInfo, peerUeMacNodeId, peerCoord, enbId, rsrpVector);
         }
     }
-    // ROSSALI-------END------------------------------------------------
     else snrV = getSINR(frame, lteInfo);                                           // Take SINR
 
     // Get the resource Block id used to transmit this packet

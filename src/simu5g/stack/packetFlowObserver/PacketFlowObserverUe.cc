@@ -211,7 +211,6 @@ void PacketFlowObserverUe::discardRlcPdu(DrbKey drbKey, unsigned int rlcSno, boo
 {
     ConnectionMap::iterator cit = connectionMap_.find(drbKey);
     if (cit == connectionMap_.end()) {
-        // this may occur after a handover, when data structures are cleared
         throw cRuntimeError("%s::discardRlcPdu - DRB %s not present. It must be initialized before", pfmType.c_str(), drbKey.str().c_str());
         return;
     }
@@ -330,7 +329,6 @@ void PacketFlowObserverUe::macPduArrived(MacNodeId peerId, const LteMacPdu *macP
 
         ConnectionMap::iterator cit = connectionMap_.find(drbKey);
         if (cit == connectionMap_.end()) {
-            // this may occur after a handover, when data structures are cleared
             throw cRuntimeError("%s::macPduArrived - DRB %s not present. It must be initialized before", pfmType.c_str(), drbKey.str().c_str());
         }
 
@@ -441,7 +439,6 @@ void PacketFlowObserverUe::discardMacPdu(MacNodeId peerId, const LteMacPdu *macP
 
         auto cit = connectionMap_.find(drbKey);
         if (cit == connectionMap_.end()) {
-            // this may occur after a handover, when data structures are cleared
             throw cRuntimeError("%s::discardMacPdu - DRB %s not present. It must be initialized before", pfmType.c_str(), drbKey.str().c_str());
             return;
         }

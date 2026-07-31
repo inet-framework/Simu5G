@@ -60,7 +60,7 @@ class HandoverX2Forwarder : public cSimpleModule
     // send an IP datagram to the X2 Manager (called internally via gate)
     void forwardDataToTargetEnb(inet::Packet *datagram, MacNodeId targetEnb);
 
-    // receive data from X2 message and send it to the X2 Manager
+    // receive data from X2 message and send it to the HandoverPacketHolder
     void receiveDataFromSourceEnb(inet::Packet *datagram, MacNodeId sourceEnb);
 
   public:

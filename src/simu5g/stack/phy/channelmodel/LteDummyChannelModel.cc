@@ -54,24 +54,21 @@ double LteDummyChannelModel::getErrorProbability(Direction dir, unsigned char tx
 std::vector<double> LteDummyChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
-    // fake SINR is needed by DAS (to decide which antenna set is used by the terminal)
-    // and handover function to decide if the terminal should trigger the handover
+    // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
 std::vector<double> LteDummyChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
-    // fake RSRP is needed by DAS (to decide which antenna set is used by the terminal)
-    // and handover function to decide if the terminal should trigger the handover
+    // fake RSRP is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
 std::vector<double> LteDummyChannelModel::getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
-    // fake SINR is needed by DAS (to decide which antenna set is used by the terminal)
-    // and handover function to decide if the terminal should trigger the handover
+    // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
@@ -89,24 +86,21 @@ std::vector<double> LteDummyChannelModel::getRSRP_D2D(LteAirFrame *frame, UserCo
 std::vector<double> LteDummyChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
-    // fake SINR is needed by DAS (to decide which antenna set is used by the terminal)
-    // and handover function to decide if the terminal should trigger the handover
+    // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
 std::vector<double> LteDummyChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
-    // fake SINR is needed by DAS (to decide which antenna set is used by the terminal)
-    // and handover function to decide if the terminal should trigger the handover
+    // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
 std::vector<double> LteDummyChannelModel::getSIR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
-    // fake SIR is needed by DAS (to decide which antenna set is used by the terminal)
-    // and handover function to decide if the terminal should trigger the handover
+    // fake SIR is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 

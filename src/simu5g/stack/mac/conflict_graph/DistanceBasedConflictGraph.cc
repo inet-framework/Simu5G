@@ -25,7 +25,6 @@ using namespace omnetpp;
  */
 DistanceBasedConflictGraph::DistanceBasedConflictGraph(Binder *binder, LteMacEnbD2D *macEnb, bool reuseD2D, bool reuseD2DMulti, double dbmThresh)
     : ConflictGraph(binder, macEnb, reuseD2D, reuseD2DMulti),
-    // uninitialized values
     d2dDbmThreshold_(dbmThresh), d2dMultiTxDbmThreshold_(dbmThresh), d2dMultiInterfDbmThreshold_(dbmThresh)
 {
 

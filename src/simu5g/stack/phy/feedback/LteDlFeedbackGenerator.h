@@ -44,7 +44,6 @@ class LteDlFeedbackGenerator : public cSimpleModule
 
     FeedbackType fbType_;               /// feedback type (ALLBANDS, PREFERRED, WIDEBAND)
     RbAllocationType rbAllocationType_; /// resource allocation type
-    // LteFeedbackComputation* lteFeedbackComputation_; // Object used to compute the feedback
     /**
      * NOTE: fbPeriod_ MUST be greater than fbDelay_,
      * otherwise we have overlapping transmissions
@@ -71,7 +70,6 @@ class LteDlFeedbackGenerator : public cSimpleModule
     TTimer *tAperiodicTx_ = nullptr;
 
     // Feedback Maps
-    //typedef std::map<Remote,LteFeedback> FeedbackMap_;
     LteFeedbackDoubleVector periodicFeedback;
     LteFeedbackDoubleVector aperiodicFeedback;
 

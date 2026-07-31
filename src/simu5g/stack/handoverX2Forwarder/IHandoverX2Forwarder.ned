@@ -15,7 +15,7 @@ package simu5g.stack.handoverX2Forwarder;
 import simu5g.x2.IX2User;
 
 //
-// Interface for the Handover X2 Forwarder. This module extends the ~X2User module interface
+// Interface for the Handover X2 Forwarder. This module extends the ~IX2User module interface
 // to define the basic contract that any Handover X2 Forwarder must adhere to.
 //
 moduleinterface IHandoverX2Forwarder extends IX2User

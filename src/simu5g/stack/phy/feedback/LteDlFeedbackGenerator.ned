@@ -42,10 +42,6 @@ simple LteDlFeedbackGenerator
         // initial txMode (see LteCommon.h)
         string initialTxMode @enum(SINGLE_ANTENNA_PORT0,TRANSMIT_DIVERSITY) = default("SINGLE_ANTENNA_PORT0");
 
-        // Feedback Computation (warning: this should be compatible with
-        // the analogue model and Decider.
-        // xml feedbackComputation;
-
         string binderModule = default("binder");
         string phyModule = default("^.phy");
 }

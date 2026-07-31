@@ -57,11 +57,6 @@ class LteAllocatorBestFit : public virtual LteScheduler
     // Map that specifies which bands can (non-exclusive bands-D2D) or cannot (exclusive bands-CELL) be shared
     std::map<Band, AllocationType_Set> bandStatusMap_;
 
-    /**
-     * Enumerator specified for the return of mutualExclusiveAllocation() function.
-     * @see mutualExclusiveAllocation()
-     */
-
     // returns the next "hole" in the subframe where the UEs can be eventually allocated
     void checkHole(Candidate& candidate, Band holeIndex, unsigned int holeLen, unsigned int req);
 

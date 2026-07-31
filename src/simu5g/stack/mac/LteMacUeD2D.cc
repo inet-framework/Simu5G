@@ -46,8 +46,6 @@ void LteMacUeD2D::initialize(int stage)
 
             LteAmc *amc = check_and_cast<LteMacEnb *>(binder_->getMacByNodeId(cellId_))->getAmc();
             amc->attachUser(nodeId_, D2D);
-
-// TODO remove it. UeCollector connection made in LteMacUe Initialize
         }
     }
 }
@@ -174,7 +172,6 @@ void LteMacUeD2D::macPduMake(MacCid cid)
                     // Create a PDU
                     macPkt = new Packet("LteMacPdu");
                     auto header = makeShared<LteMacPdu>();
-                    //macPkt = new LteMacPdu("LteMacPdu");
                     header->setHeaderLength(MAC_HEADER);
                     macPkt->insertAtFront(header);
                     macPkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
@@ -612,7 +609,6 @@ void LteMacUeD2D::handleSelfMessage()
                     git.second = nullptr;
                     // if necessary, a RAC request will be sent to obtain a grant
                     checkRac = true;
-                    //return;
                 }
                 else if (--periodCounter_[carrierFreq] > 0) {
                     skip = true;
@@ -885,7 +881,6 @@ void LteMacUeD2D::macHandleD2DModeSwitch(cPacket *pktAux)
                 auto pktDup = pkt->dup();
                 auto switchPkt_dup = pktDup->removeAtFront<D2DModeSwitchNotification>();
                 switchPkt_dup->setOldConnection(false);
-                // switchPkt_dup->setSchedulingPriority(1);        // always after the old mode
                 pktDup->insertAtFront(switchPkt_dup);
                 *(pktDup->addTagIfAbsent<FlowControlInfo>()) = connInfo;
                 sendUpperPackets(pktDup);

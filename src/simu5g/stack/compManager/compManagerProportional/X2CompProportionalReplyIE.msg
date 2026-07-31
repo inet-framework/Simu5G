@@ -32,7 +32,6 @@ class X2CompProportionalReplyIE extends X2CompReplyIE
     length = sizeof(uint32_t);    // Required to store the length of the map
     type = COMP_PROP_REPLY_IE;
     CompRbStatus allowedBlocksMap[];
-    //std::vector<CompRbStatus> allowedBlocksMap_;
 }
 
 cplusplus(X2CompProportionalReplyIE) {{

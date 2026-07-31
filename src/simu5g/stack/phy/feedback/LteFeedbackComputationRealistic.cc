@@ -10,7 +10,6 @@
 // and cannot be removed from it.
 //
 
-//#include <math.h>
 #include <cmath>
 #include "simu5g/stack/phy/feedback/LteFeedbackComputationRealistic.h"
 #include "simu5g/common/blerCurves/PhyPisaData.h"

@@ -15,7 +15,7 @@ package simu5g.stack.dcX2Forwarder;
 import simu5g.x2.IX2User;
 
 //
-// Interface for the DC X2 Forwarder. This module extends the ~X2User module interface
+// Interface for the DC X2 Forwarder. This module extends the ~IX2User module interface
 // to define the basic contract that any DC X2 Forwarder must adhere to.
 //
 moduleinterface IDcX2Forwarder extends IX2User

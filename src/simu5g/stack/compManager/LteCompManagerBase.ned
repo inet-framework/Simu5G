@@ -13,32 +13,9 @@
 package simu5g.stack.compManager;
 
 //
- // Serves as the base class for Coordinated Multi-Point (CoMP) manager modules in LTE networks.
- // It provides essential functionalities and parameters needed to manage CoMP operations.
- // To implement a specific CoMP algorithm, extend this class and override its pure virtual methods.
- //
-// ALTERNATIVE:
-//
-// LteCompManagerBase: Base class for CoMP manager modules. This module serves as the
-// foundational component for developing and integrating different CoMP algorithms
-// within the simu5g framework. Extend this module and override its virtual methods
-// to implement specific CoMP algorithms.
-//
-// Parameters:
-// - compNodeType: Specifies the type of CoMP node (client, client and coordinator, or coordinator only).
-// - coordinatorId: The identifier for the coordinator node.
-// - clientList: A space-separated list of client node identifiers.
-// - coordinationPeriod: The time interval between two coordination instances.
-//
-// Gates:
-// - x2ManagerIn: Input gate for connections to the X2 Manager.
-// - x2ManagerOut: Output gate for connections to the X2 Manager.
-//
-// Signals:
-// - compReservedBlocks: Signal to track the number of reserved blocks for CoMP operations.
-//
-// Statistics:
-// - compReservedBlocks: Statistics related to CoMP reserved blocks, recorded as mean and vector.
+// Serves as the base class for Coordinated Multi-Point (CoMP) manager modules in LTE networks.
+// It provides essential functionalities and parameters needed to manage CoMP operations.
+// To implement a specific CoMP algorithm, extend this class and override its pure virtual methods.
 //
 simple LteCompManagerBase like ILteCompManager
 {
@@ -47,9 +24,9 @@ simple LteCompManagerBase like ILteCompManager
         @class("LteCompManagerBase");
 
         string compNodeType @enum(COMP_CLIENT,COMP_CLIENT_COORDINATOR,COMP_COORDINATOR) = default("COMP_CLIENT");
-        int coordinatorId;							           // id of the coordinator node
-        object clientList = default([]);                       // list of ids of client nodes
-        double coordinationPeriod @unit(s) = default(0.001s);
+        int coordinatorId;  // ID of the coordinator node
+        object clientList = default([]);   // Space-separated list of client node identifiers
+        double coordinationPeriod @unit(s) = default(0.001s);  // The time interval between two coordination events
         string binderModule = default("binder");
 
         @signal[compReservedBlocks];

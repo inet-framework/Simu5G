@@ -170,8 +170,8 @@ class LteHarqBufferRx
     }
 
     /**
-     * macSource_ is a private member, so derived classes need this member function to
-     * initialize it. macSource_ being a private member forces one to use the macSource_emit
+     * macUe_ is a private member, so derived classes need this member function to
+     * initialize it. macUe_ being a private member forces one to use the macUe_emit
      * function to emit statistics (hence, checking against nullptr)
      */
     void initMacUe() {

@@ -82,8 +82,6 @@ void PacketFlowObserverEnb::clearDrbId(DrbKey drbKey)
         connectionMap_[drbKey].burstStatus_.clear();
         connectionMap_[drbKey].burstId_ = 0;
         connectionMap_[drbKey].burstState_ = false;
-
-        //connectionMap_[drbKey].macPduPerProcess_[i] = 0;
     }
 
     EV_FATAL << NOW << " node id " << connectionMap_[drbKey].nodeId_ << " " << pfmType << "::clearDrbId - cleared data structures for drbKey " << drbKey << endl;
@@ -335,8 +333,6 @@ void PacketFlowObserverEnb::discardRlcPdu(DrbKey drbKey, unsigned int rlcSno, bo
 {
     auto cit = connectionMap_.find(drbKey);
     if (cit == connectionMap_.end()) {
-        // this may occur after a handover, when data structures are cleared
-        // EV_FATAL << NOW << " node id "<< desc->nodeId_<< " " << pfmType << "::discardRlcPdu - DRB ID " << drbKey << " not present." << endl;
         throw cRuntimeError("%s::discardRlcPdu - DRB %s not present. It must be initialized before", pfmType.c_str(), drbKey.str().c_str());
         return;
     }
@@ -646,7 +642,6 @@ double PacketFlowObserverEnb::getDiscardedPktPerUe(MacNodeId id)
     if (it == pktDiscardCounterPerUe_.end()) {
         // maybe it is possible? think about it
         // yes, if I do not discard anything
-        //throw cRuntimeError("%s::getTotalDiscardedPckPerUe - nodeId [%hu] not present",pfmType.c_str(),  id);
         return 0;
     }
     return ((double)it->second.discarded * 1000000) / it->second.total;

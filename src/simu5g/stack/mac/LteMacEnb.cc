@@ -209,7 +209,6 @@ void LteMacEnb::macSduRequest()
 
         for (const auto& item : scheduleList) { // loop on CIDs
             MacCid destCid = item.first.first;
-            // Codeword cw = item.first.second;
             MacNodeId destId = destCid.getNodeId();
 
             // for each band, count the number of bytes allocated for this UE (should be by CID)
@@ -929,10 +928,8 @@ void LteMacEnb::macHandleFeedbackPkt(cPacket *pktAux)
     auto pkt = check_and_cast<Packet *>(pktAux);
     auto fbPk = pkt->peekAtFront<LteFeedbackPkt>();
 
-    //LteFeedbackPkt* fb = check_and_cast<LteFeedbackPkt*>(pkt);
     LteFeedbackDoubleVector fbMapDl = fbPk->getLteFeedbackDoubleVectorDl();
     LteFeedbackDoubleVector fbMapUl = fbPk->getLteFeedbackDoubleVectorUl();
-    //get Source Node Id<
     MacNodeId srcNodeId = fbPk->getSourceNodeId();
 
     auto lteInfo = pkt->getTag<UserControlInfo>();
