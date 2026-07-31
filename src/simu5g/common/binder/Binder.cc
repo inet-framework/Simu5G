@@ -240,7 +240,8 @@ void Binder::unregisterServingNode(MacNodeId enbId, MacNodeId ueId)
 MacNodeId Binder::getServingNode(MacNodeId ueId)
 {
     ASSERT(getNodeTypeById(ueId) == UE);
-    return servingNode_[num(ueId)]; // overindexing extends vector with zeroes, which is fine
+    // A UE that has not registered a serving node yet has no slot in the vector.
+    return num(ueId) < servingNode_.size() ? servingNode_[num(ueId)] : NODEID_NONE;
 }
 
 void Binder::registerMasterNode(MacNodeId masterId, MacNodeId slaveId)
@@ -631,7 +632,7 @@ LteD2DMode Binder::computeD2DCapability(MacNodeId src, MacNodeId dst)
     LteMacBase *dstMac = getMacFromMacNodeId(dst);
     if (dstMac->isD2DCapable()) {
         // set the initial mode
-        if (servingNode_[num(src)] == servingNode_[num(dst)]) {
+        if (getServingNode(src) == getServingNode(dst)) {
             // if served by the same cell, then the mode is selected according to the corresponding parameter
             LteMacBase *srcMac = getMacFromMacNodeId(src);
             inet::NetworkInterface *srcNic = getContainingNicModule(srcMac);
