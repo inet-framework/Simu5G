@@ -101,7 +101,7 @@ void HandoverController::initialize(int stage)
             }
         }
 
-        EV << "LtePhyUe::initialize - Attaching to eNodeB " << servingNodeId_ << endl;
+        EV << "HandoverController::initialize - Attaching to serving node " << servingNodeId_ << endl;
 
         phy_->changeServingNode(servingNodeId_);
         emit(servingCellSignal_, (long)servingNodeId_);
@@ -278,7 +278,7 @@ void HandoverController::triggerHandover()
                         else                                                   // The other "stack" is attaching to an eNodeB
                             delta += handoverAttachmentTime_;
 
-                        EV << NOW << " NrPhyUe::triggerHandover - Wait for the handover completion for the other stack. Delay this handover." << endl;
+                        EV << NOW << " HandoverController::triggerHandover - Wait for the handover completion for the other stack. Delay this handover." << endl;
 
                         // Need to wait for the other stack to complete handover
                         scheduleAt(simTime() + delta, handoverStarter_);
@@ -287,7 +287,7 @@ void HandoverController::triggerHandover()
                     else {
                         // Cancel this handover
                         binder_->removeHandoverTriggered(nodeId_);
-                        EV << NOW << " NrPhyUe::triggerHandover - UE " << nodeId_ << " is canceling its handover to eNB " << candidateServingNodeId_ << " since the master is performing handover" << endl;
+                        EV << NOW << " HandoverController::triggerHandover - UE " << nodeId_ << " is canceling its handover to eNB " << candidateServingNodeId_ << " since the master is performing handover" << endl;
                         return;
                     }
                 }
@@ -298,7 +298,7 @@ void HandoverController::triggerHandover()
             // Check if there are secondary nodes connected
             MacNodeId otherMasterId = binder_->getMasterNodeOrSelf(otherHandoverController_->getServingNodeId());
             if (otherMasterId == servingNodeId_) {
-                EV << NOW << " NrPhyUe::triggerHandover - Forcing detachment from " << otherHandoverController_->getServingNodeId() << " which was a secondary node to " << servingNodeId_ << ". Delay this handover." << endl;
+                EV << NOW << " HandoverController::triggerHandover - Forcing detachment from " << otherHandoverController_->getServingNodeId() << " which was a secondary node to " << servingNodeId_ << ". Delay this handover." << endl;
 
                 // Need to wait for the other stack to complete detachment
                 scheduleAt(simTime() + handoverDetachmentTime_ + handoverDelta_, handoverStarter_);
@@ -340,11 +340,11 @@ void HandoverController::triggerHandover()
 
     // Status messages
     if (candidateServingNodeRssi_ == 0)
-        EV << NOW << (dynamic_cast<NrPhyUe*>(phy_) ? " NrPhyUe" : " LtePhyUe") << "::triggerHandover - UE " << nodeId_ << " lost its connection to eNB " << servingNodeId_ << ". Now detaching... " << endl;
+        EV << NOW << " HandoverController::triggerHandover - UE " << nodeId_ << " lost its connection to eNB " << servingNodeId_ << ". Now detaching... " << endl;
     else if (servingNodeId_ == NODEID_NONE)
-        EV << NOW << (dynamic_cast<NrPhyUe*>(phy_) ? " NrPhyUe" : " LtePhyUe") << "::triggerHandover - UE " << nodeId_ << " is starting attachment procedure to eNB " << candidateServingNodeId_ << "... " << endl;
+        EV << NOW << " HandoverController::triggerHandover - UE " << nodeId_ << " is starting attachment procedure to eNB " << candidateServingNodeId_ << "... " << endl;
     else
-        EV << NOW << (dynamic_cast<NrPhyUe*>(phy_) ? " NrPhyUe" : " LtePhyUe") << "::triggerHandover - UE " << nodeId_ << " is starting handover to eNB " << candidateServingNodeId_ << "... " << endl;
+        EV << NOW << " HandoverController::triggerHandover - UE " << nodeId_ << " is starting handover to eNB " << candidateServingNodeId_ << "... " << endl;
 
     // Add UE handover trigger
     binder_->addUeHandoverTriggered(nodeId_);
