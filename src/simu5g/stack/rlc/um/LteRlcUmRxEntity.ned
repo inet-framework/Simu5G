@@ -61,6 +61,6 @@ simple LteRlcUmRxEntity like simu5g.stack.rlc.IRlcRxEntity
         @statistic[rlcPduThroughputD2D](title="PDU throughput at the rlc layer D2D"; unit="Bps"; source="rlcPduThroughputD2D"; record=simu5g_rateavg);
 
     gates:
-        input in;       // PDUs from lower mux (MAC)
-        output out;     // reassembled SDUs to upper mux (PDCP)
+        input in;       // PDUs from MAC, via the RlcMux
+        output out;     // reassembled SDUs to the PDCP layer (direct per-DRB connection, not via a mux)
 }

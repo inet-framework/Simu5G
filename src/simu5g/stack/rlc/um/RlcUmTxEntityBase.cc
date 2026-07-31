@@ -115,7 +115,7 @@ void RlcUmTxEntityBase::handleSdu(inet::Packet *pkt)
 
 void RlcUmTxEntityBase::handleMacSduRequest(inet::Packet *pkt)
 {
-    // Enter_Method + take needed for context switch when called via gate from the lower mux
+    // Enter_Method + take needed for context switch when called via gate from the RlcMux
     Enter_Method("handleMacSduRequest()");
     if (pkt->getOwner() != this)
         take(pkt);

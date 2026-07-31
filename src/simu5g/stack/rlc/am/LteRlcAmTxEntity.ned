@@ -54,9 +54,9 @@ simple LteRlcAmTxEntity like simu5g.stack.rlc.IRlcAmTxEntity
         @statistic[retransmissionPdu](title="Retransmitted PDUs"; source="retransmissionPdu"; record=count);
 
     gates:
-        input in;       // SDUs from upper mux (PDCP)
-        input macIn;    // SDU requests from lower mux (MAC)
-        output out;     // PDUs and new-data notifications to lower mux (MAC)
+        input in;       // SDUs from the PDCP layer (direct per-DRB connection, not via a mux)
+        input macIn;    // MAC SDU requests, via the RlcMux
+        output out;     // PDUs and new-data notifications to MAC, via the RlcMux
         input feedbackIn;   // STATUS PDUs received from the peer, from the co-located RX side (to ARQ)
         input statusIn; // locally generated STATUS reports, from the co-located RX side (to transmit)
 }

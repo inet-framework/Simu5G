@@ -24,6 +24,6 @@ simple RlcTmRxEntity like simu5g.stack.rlc.IRlcRxEntity
         @display("i=block/layer");
 
     gates:
-        input in;       // PDUs from lower mux (MAC)
-        output out;     // SDUs to upper mux (PDCP)
+        input in;       // PDUs from MAC, via the RlcMux
+        output out;     // SDUs to the PDCP layer (direct per-DRB connection, not via a mux)
 }

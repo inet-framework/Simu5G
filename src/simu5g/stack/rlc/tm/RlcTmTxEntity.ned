@@ -30,7 +30,7 @@ simple RlcTmTxEntity like simu5g.stack.rlc.IRlcTxEntity
         @statistic[rlcPacketLossUl](title="rlc Packet Loss UL"; unit=""; source="rlcPacketLossUl"; record=mean,sum,vector);
 
     gates:
-        input in;       // SDUs from upper mux (PDCP)
-        input macIn;    // SDU requests from lower mux (MAC)
-        output out;     // PDUs and new-data notifications to lower mux (MAC)
+        input in;       // SDUs from the PDCP layer (direct per-DRB connection, not via a mux)
+        input macIn;    // MAC SDU requests, via the RlcMux
+        output out;     // PDUs and new-data notifications to MAC, via the RlcMux
 }

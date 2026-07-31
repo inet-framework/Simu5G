@@ -60,8 +60,8 @@ simple NrRlcAmRxEntity like simu5g.stack.rlc.IRlcAmRxEntity
         @statistic[rlcPacketLossUl](title="Packet loss at the rlc layer UL"; unit=""; source="rlcPacketLossUl"; record=mean);
 
     gates:
-        input in;       // PDUs from lower mux (MAC)
-        output out;       // reassembled SDUs to upper mux (PDCP)
+        input in;       // PDUs from MAC, via the RlcMux
+        output out;       // reassembled SDUs to the PDCP layer (direct per-DRB connection, not via a mux)
         output feedbackOut;   // received STATUS PDUs -> co-located TX side (ARQ)
         output statusOut; // own STATUS reports -> co-located TX side (transmission)
 }

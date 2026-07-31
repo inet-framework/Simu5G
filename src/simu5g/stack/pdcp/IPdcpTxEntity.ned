@@ -23,6 +23,6 @@ moduleinterface IPdcpTxEntity
     parameters:
         @display("i=block/layer");
     gates:
-        input in;    // SDUs from the upper mux (IP/PDCP dispatcher)
+        input in;    // SDUs from the PdcpMux
         output out;  // PDCP PDUs downward (leg dispatch is the compound's concern)
 }
