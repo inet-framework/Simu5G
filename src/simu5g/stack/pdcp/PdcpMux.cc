@@ -26,8 +26,6 @@ void PdcpMux::initialize(int stage)
         upperLayerInGate_ = gate("upperLayerIn");
         upperLayerOutGate_ = gate("upperLayerOut");
 
-        isNR_ = par("isNR").boolValue();
-
         WATCH_MAP(txGateIndices_);
     }
 }

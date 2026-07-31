@@ -34,8 +34,6 @@ using namespace omnetpp;
 class PdcpMux : public cSimpleModule
 {
   protected:
-    bool isNR_ = false;
-
     cGate *upperLayerInGate_ = nullptr;
     cGate *upperLayerOutGate_ = nullptr;
 

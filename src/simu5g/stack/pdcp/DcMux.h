@@ -24,6 +24,13 @@ using namespace omnetpp;
 class Binder;
 class BearerManagement;
 
+/**
+ * @brief Dual Connectivity mux.
+ *
+ * Routes split-bearer PDCP PDUs between the local PDCP entities and the
+ * DcX2Forwarder. Keeps no routing table: each PDU's destination module is
+ * looked up in BearerManagement by DrbKey as it arrives.
+ */
 class DcMux : public cSimpleModule
 {
   protected:

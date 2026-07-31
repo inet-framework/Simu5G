@@ -12,8 +12,8 @@
 package simu5g.stack.pdcp;
 
 //
-// Dual Connectivity Mux: handles X2/DC routing between PDCP entities
-// and the DcX2Forwarder.
+// Dual Connectivity mux: routes split-bearer PDCP PDUs between the local PDCP
+// entities and the ~DcX2Forwarder, which tunnels them to the peer eNB/gNB over X2.
 //
 simple DcMux
 {
