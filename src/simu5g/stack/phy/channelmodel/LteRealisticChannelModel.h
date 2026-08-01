@@ -475,7 +475,6 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param id mac id of the user
      */
     JakesFadingMap *obtainUeJakesMap(MacNodeId id);
-    JakesFadingMap *obtainUeJakesMap_bgUe(MacNodeId id);
 
     /*
      * Obtain the shadowing map for the specified UE

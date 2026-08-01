@@ -268,8 +268,6 @@ class LteMacEnb : public LteMacBase
      */
     virtual int getProcessForRtx(GHz carrierFrequency, Direction dir);
 
-    void cqiStatistics(MacNodeId id, Direction dir, LteFeedback fb);
-
     // Get band occupation for this/previous TTI. Used for interference computation purposes.
     unsigned int getDlBandStatus(Band b);
     unsigned int getDlPrevBandStatus(Band b);
