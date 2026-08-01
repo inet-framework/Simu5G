@@ -1,10 +1,10 @@
 package simu5g.stack.ip2nic;
 
 //
-// Module interface for technology decision modules that select between
-// LTE and NR technology for outgoing packets.
+// Module interface for leg selection modules that choose the stack leg
+// (e.g. LTE or NR) for outgoing packets.
 //
-moduleinterface ITechnologyDecision
+moduleinterface ILegSelection
 {
     parameters:
         @display("i=block/fork");

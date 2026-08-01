@@ -21,7 +21,7 @@ namespace simu5g {
 /**
  * @brief TX-side leg dispatcher for a dual-connectivity split bearer.
  *
- * Steers each PDU to a leg per the TechnologyReq tag and applies the leg's
+ * Steers each PDU to a leg per the LegReq tag and applies the leg's
  * DC-specific id mapping (see DcPdcpLegSplitter.ned).
  */
 class DcPdcpLegSplitter : public omnetpp::cSimpleModule

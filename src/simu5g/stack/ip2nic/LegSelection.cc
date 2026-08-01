@@ -1,6 +1,6 @@
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/networklayer/common/NetworkInterface.h>
-#include "simu5g/stack/ip2nic/TechnologyDecision.h"
+#include "simu5g/stack/ip2nic/LegSelection.h"
 #include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
@@ -8,12 +8,12 @@ namespace simu5g {
 
 using namespace inet;
 
-Define_Module(TechnologyDecision);
+Define_Module(LegSelection);
 
-TechnologyDecision::~TechnologyDecision()
+LegSelection::~LegSelection()
 {
-    delete dcExpression_;
-    delete useNrExpression_;
+    delete dcLegPolicy_;
+    delete legPolicy_;
 }
 
 static cDynamicExpression *getExpressionFromPar(cPar& par, cDynamicExpression::IResolver *resolver)
@@ -27,7 +27,7 @@ static cDynamicExpression *getExpressionFromPar(cPar& par, cDynamicExpression::I
     return expr;
 }
 
-void TechnologyDecision::initialize(int stage)
+void LegSelection::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         lowerLayerOut_ = gate("lowerLayerOut");
@@ -51,12 +51,12 @@ void TechnologyDecision::initialize(int stage)
         }
 
         // Set up the policy expressions
-        dcExpression_ = getExpressionFromPar(par("dcUseNrCondition"), new PolicyResolver(this));
-        useNrExpression_ = getExpressionFromPar(par("useNrCondition"), new PolicyResolver(this));
+        dcLegPolicy_ = getExpressionFromPar(par("dcLegPolicy"), new PolicyResolver(this));
+        legPolicy_ = getExpressionFromPar(par("legPolicy"), new PolicyResolver(this));
     }
 }
 
-void TechnologyDecision::handleMessage(cMessage *msg)
+void LegSelection::handleMessage(cMessage *msg)
 {
     auto pkt = check_and_cast<inet::Packet *>(msg);
 
@@ -74,7 +74,7 @@ void TechnologyDecision::handleMessage(cMessage *msg)
         currentPacketOrdinal_ = splitBearersTable_[key]++;
     };
 
-    bool useNr;
+    int leg;
 
     if (nodeType_ == NODEB) {
         MacNodeId ueId = binder_->getMacNodeId(destAddr);
@@ -83,21 +83,21 @@ void TechnologyDecision::handleMessage(cMessage *msg)
         bool ueNrStack = (binder_->getServingNodeOrSelf(nrUeId) != NODEID_NONE);
 
         if (!ueLteStack && !ueNrStack) {
-            EV << "TechnologyDecision: UE is not attached to any serving node. Delete packet." << endl;
+            EV << "LegSelection: UE is not attached to any serving node. Delete packet." << endl;
             delete pkt;
             return;
         }
         else if (!ueNrStack)
-            useNr = false;
+            leg = LEG_LTE;
         else if (!ueLteStack)
-            useNr = true;
+            leg = LEG_NR;
         else if (dualConnectivityEnabled_) {
             computePacketOrdinal();
-            useNr = dcExpression_->boolValue();
+            leg = dcLegPolicy_->intValue();
         }
         else {
             computePacketOrdinal();
-            useNr = useNrExpression_->boolValue();
+            leg = legPolicy_->intValue();
         }
     }
     else { // UE
@@ -105,8 +105,8 @@ void TechnologyDecision::handleMessage(cMessage *msg)
         // to prevent a runtime error in one of the simulations:
         //
         //    test_numerology, multicell_CBR_UL, ue[9], t=0.001909132428, event #475 (HandoverPacketHolder), #476 (Ip2Nic)
-        //    after: ueLteStack=true, ueNrStack=true, servingNodeId=1, nrServingNodeId=2, typeOfService=10 --> useNr = true
-        //    before: ueLteStack=true, ueNrStack=true,servingNodeId=1, nrServingNodeId=0, typeOfService=10 --> useNr = false
+        //    after: ueLteStack=true, ueNrStack=true, servingNodeId=1, nrServingNodeId=2, typeOfService=10 --> leg = 1
+        //    before: ueLteStack=true, ueNrStack=true,servingNodeId=1, nrServingNodeId=0, typeOfService=10 --> leg = 0
         //
         auto handoverPacketHolder = inet::getModuleFromPar<HandoverPacketHolderUe>(par("handoverPacketHolderModule"), this);
         MacNodeId servingNodeId = handoverPacketHolder->getServingNodeId();
@@ -115,33 +115,33 @@ void TechnologyDecision::handleMessage(cMessage *msg)
         bool hasNrServing = (nrServingNodeId != NODEID_NONE);
 
         if (!hasLteServing && !hasNrServing) {
-            EV << "TechnologyDecision: UE is not attached to any serving node. Delete packet." << endl;
+            EV << "LegSelection: UE is not attached to any serving node. Delete packet." << endl;
             delete pkt;
             return;
         }
         else if (!hasNrServing)
-            useNr = false;
+            leg = LEG_LTE;
         else if (!hasLteServing)
-            useNr = true;
+            leg = LEG_NR;
         else if (dualConnectivityEnabled_) {
             computePacketOrdinal();
-            useNr = dcExpression_->boolValue();
+            leg = dcLegPolicy_->intValue();
         }
         else {
             computePacketOrdinal();
-            useNr = useNrExpression_->boolValue();
+            leg = legPolicy_->intValue();
         }
     }
 
-    pkt->addTagIfAbsent<TechnologyReq>()->setUseNR(useNr);
+    pkt->addTagIfAbsent<LegReq>()->setLeg(leg);
     send(pkt, lowerLayerOut_);
 }
 
-cValue TechnologyDecision::PolicyResolver::readVariable(cExpression::Context *context, const char *name)
+cValue LegSelection::PolicyResolver::readVariable(cExpression::Context *context, const char *name)
 {
     if (!strcmp(name, "typeOfService")) return (intval_t)module_->currentTypeOfService_;
     if (!strcmp(name, "packetOrdinal")) return (intval_t)module_->currentPacketOrdinal_;
-    throw cRuntimeError("TechnologyDecision: unknown variable '%s' in policy expression", name);
+    throw cRuntimeError("LegSelection: unknown variable '%s' in policy expression", name);
 }
 
 } //namespace

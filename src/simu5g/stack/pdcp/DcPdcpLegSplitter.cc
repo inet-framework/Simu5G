@@ -45,9 +45,9 @@ void DcPdcpLegSplitter::handleMessage(cMessage *msg)
     auto pkt = check_and_cast<inet::Packet *>(msg);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
-    // Leg choice: follow the TechnologyReq tag -- the per-packet leg decision is the
-    // technology decision, owned by TechnologyDecision; this module only executes it.
-    int leg = pkt->getTag<TechnologyReq>()->getUseNR() ? 1 : 0;
+    // Leg choice: follow the LegReq tag -- the per-packet leg decision is owned by
+    // LegSelection; this module only executes it.
+    int leg = pkt->getTag<LegReq>()->getLeg();
     if (leg >= numLegs_ || !gate("out", leg)->isConnected()) {
         EV_WARN << NOW << " DcPdcpLegSplitter - leg " << leg << " is not available (torn down?); falling back to leg 0" << endl;
         leg = 0;

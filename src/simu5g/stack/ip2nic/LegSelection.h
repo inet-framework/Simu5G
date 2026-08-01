@@ -1,5 +1,5 @@
-#ifndef __TECHNOLOGYDECISION_H_
-#define __TECHNOLOGYDECISION_H_
+#ifndef __LEGSELECTION_H_
+#define __LEGSELECTION_H_
 
 #include <omnetpp.h>
 #include <unordered_map>
@@ -12,7 +12,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-class TechnologyDecision : public cSimpleModule
+class LegSelection : public cSimpleModule
 {
   protected:
     // Represents a flow using source address, destination address, and type of service.
@@ -32,9 +32,9 @@ class TechnologyDecision : public cSimpleModule
 
     // Custom resolver that provides variable bindings for the policy expressions
     class PolicyResolver : public cDynamicExpression::IResolver {
-        TechnologyDecision *module_;
+        LegSelection *module_;
       public:
-        PolicyResolver(TechnologyDecision *module) : module_(module) {}
+        PolicyResolver(LegSelection *module) : module_(module) {}
         IResolver *dup() const override { return new PolicyResolver(module_); }
         cValue readVariable(cExpression::Context *context, const char *name) override;
     };
@@ -58,8 +58,8 @@ class TechnologyDecision : public cSimpleModule
     std::unordered_map<FlowKey, int, FlowKeyHash> splitBearersTable_;
 
     // Policy expressions (from NED parameters)
-    cDynamicExpression *dcExpression_ = nullptr;
-    cDynamicExpression *useNrExpression_ = nullptr;
+    cDynamicExpression *dcLegPolicy_ = nullptr;
+    cDynamicExpression *legPolicy_ = nullptr;
 
     // Current evaluation context (set before each evaluate() call)
     int currentTypeOfService_ = 0;
@@ -70,7 +70,7 @@ class TechnologyDecision : public cSimpleModule
     void handleMessage(cMessage *msg) override;
 
   public:
-    ~TechnologyDecision() override;
+    ~LegSelection() override;
 };
 
 } //namespace

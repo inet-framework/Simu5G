@@ -124,7 +124,7 @@ void Ip2Nic::toStackUe(Packet *pkt)
 
     // TODO: Add support for IPv6 (=> see L3Tools.cc of INET)
 
-    // TechnologyReq tag (useNR) is already set by TechnologyDecision
+    // LegReq tag is already set by LegSelection
 
     // Classify the packet and fill FlowControlInfo tag
     analyzePacket(pkt, srcAddr, destAddr, tos);
@@ -183,7 +183,7 @@ void Ip2Nic::toStackBs(Packet *pkt)
         }
     }
 
-    // TechnologyReq tag (useNR) is already set by TechnologyDecision
+    // LegReq tag is already set by LegSelection
 
     // Classify the packet and fill FlowControlInfo tag
     analyzePacket(pkt, srcAddr, destAddr, tos);
@@ -327,7 +327,7 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     Direction dir = (nodeType_ == UE) ? UL : DL;
     lteInfo->setDirection(dir);
 
-    bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
+    bool useNR = pkt->getTag<LegReq>()->getLeg() == LEG_NR;
     bool isEnb = (dir == DL);
 
     // --- Base LtePdcpEnb/LtePdcpUe (no D2D support) ---
@@ -411,8 +411,8 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     // --- Source and Dest IDs ---
     if (isNr_) {
         // For PDCP entity dispatch, always use technology-neutral (LTE/master-leg) IDs.
-        // The TechnologyReq::useNR flag carries the LTE-vs-NR routing decision separately;
-        // NrPdcpTxEntity reads it in deliverPdcpPdu() to decide local RLC vs X2 forwarding.
+        // The LegReq tag carries the leg decision separately; DcPdcpLegSplitter executes
+        // it when it steers the PDU to local RLC vs X2 forwarding.
         if (isEnb) {
             lteInfo->setSourceId(nodeId_);
             if (lteInfo->getMulticastGroupId() != NODEID_NONE)

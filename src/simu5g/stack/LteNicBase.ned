@@ -15,8 +15,8 @@ package simu5g.stack;
 
 import inet.networklayer.common.NetworkInterface;
 import simu5g.stack.ip2nic.IHandoverPacketHolder;
+import simu5g.stack.ip2nic.ILegSelection;
 import simu5g.stack.ip2nic.INetworkLayer2CellularNic;
-import simu5g.stack.ip2nic.ITechnologyDecision;
 import simu5g.stack.mac.ILteMac;
 import simu5g.stack.packetFlowObserver.IPacketFlowObserver;
 import simu5g.stack.pdcp.IPdcpMux;
@@ -79,8 +79,8 @@ module LteNicBase extends NetworkInterface like ICellularNic
         handoverPacketHolder: <> like IHandoverPacketHolder {
             @display("p=440,50;is=s");
         }
-        // technology selection for outgoing packets
-        technologyDecision: <default("TechnologyDecision")> like ITechnologyDecision {
+        // leg selection for outgoing packets
+        legSelection: <default("LegSelection")> like ILegSelection {
             nodeType = parent.nodeType;
             @display("p=440,120;is=s");
         }
@@ -122,8 +122,8 @@ module LteNicBase extends NetworkInterface like ICellularNic
         }
 
     connections allowunconnected:
-        handoverPacketHolder.stackOut --> technologyDecision.upperLayerIn;
-        technologyDecision.lowerLayerOut --> ip2nic.upperLayerIn;
+        handoverPacketHolder.stackOut --> legSelection.upperLayerIn;
+        legSelection.lowerLayerOut --> ip2nic.upperLayerIn;
         ip2nic.stackOut --> pdcpMux.upperLayerIn;
         ip2nic.stackIn <-- pdcpMux.upperLayerOut;
 

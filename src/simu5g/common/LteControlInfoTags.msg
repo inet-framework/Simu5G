@@ -80,12 +80,12 @@ class RlcConfigurationInd extends RlcConfigurationTagBase {
 }
 
 //
-// Request tag that specifies whether to use NR or LTE.
+// Request tag that specifies the stack leg the packet should be sent on.
 //
-// Usually sent by Ip2Nic to PDCP.
+// Set by LegSelection; read by Ip2Nic and the PDCP leg splitter.
 //
-class TechnologyReq extends inet::TagBase {
-    bool useNR = false;                 // Use NR (5G) instead of LTE
+class LegReq extends inet::TagBase {
+    int leg = 0;                        // Leg index (0 = LTE, 1 = NR on a stock NIC)
 }
 
 //
