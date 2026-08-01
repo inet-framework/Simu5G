@@ -274,9 +274,10 @@ class LtePhyBase : public ChannelAccess
     virtual void updateDisplayString();
 
     /**
-     * Determine radio gate index of the receiving node
+     * Determine the radio gate index on the receiving node that serves the
+     * destination's stack leg.
      */
-    virtual int getReceiverGateIndex(const cModule *, bool isNr) const;
+    virtual int getReceiverGateIndex(const cModule *receiver, MacNodeId dest) const;
 
   public:
     /*

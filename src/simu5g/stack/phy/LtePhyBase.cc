@@ -216,7 +216,7 @@ void LtePhyBase::sendMulticast(LteAirFrame *frame)
 
             // Create a duplicate frame before sending
             LteAirFrame *frameToSend = frame->dup();
-            sendDirect(frameToSend, 0, frame->getDuration(), receiver, getReceiverGateIndex(receiver, isNrUe(destId)));
+            sendDirect(frameToSend, 0, frame->getDuration(), receiver, getReceiverGateIndex(receiver, destId));
         }
     }
 
@@ -244,12 +244,12 @@ void LtePhyBase::sendUnicast(LteAirFrame *frame)
         delete userControlInfo;
     }
 
-    sendDirect(frame, 0, frame->getDuration(), receiver, getReceiverGateIndex(receiver, isNrUe(dest)));
+    sendDirect(frame, 0, frame->getDuration(), receiver, getReceiverGateIndex(receiver, dest));
 }
 
-int LtePhyBase::getReceiverGateIndex(const cModule *receiver, bool isNr) const
+int LtePhyBase::getReceiverGateIndex(const cModule *receiver, MacNodeId dest) const
 {
-    int gate = (isNr) ? receiver->findGate("nrRadioIn") : receiver->findGate("radioIn");
+    int gate = isNrUe(dest) ? receiver->findGate("nrRadioIn") : receiver->findGate("radioIn");
     if (gate < 0) {
         gate = receiver->findGate("lteRadioIn");
         if (gate < 0) {
