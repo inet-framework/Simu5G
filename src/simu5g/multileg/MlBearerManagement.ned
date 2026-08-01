@@ -20,4 +20,8 @@ simple MlBearerManagement extends BearerManagement
         string nrRlcMux2Module = default("^.^.nrRlcMux2");
         string nrMac3Module = default("");
         string nrRlcMux3Module = default("");
+
+        // FRER: the stack legs every bearer is replicated over, e.g. "1 2 3"
+        // (empty = no replication, one bearer per leg as in Scenario A)
+        string frerLegs = default("");
 }

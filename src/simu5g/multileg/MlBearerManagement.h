@@ -32,14 +32,33 @@ class MlBearerManagement : public BearerManagement
     void initialize(int stage) override;
 
     MlBinder *getMlBinder() { return omnetpp::check_and_cast<MlBinder *>(binderModule.get()); }
-    MlRegistration *getMlRegistration() { return omnetpp::check_and_cast<MlRegistration *>(registration_); }
+    // nullptr at a node without extra legs (e.g. a gNB, which keeps stock Registration)
+    MlRegistration *getMlRegistration() { return dynamic_cast<MlRegistration *>(registration_); }
+    bool isUe() { return registration_->getNodeType() == UE; }
+
+    // FRER: replicate every bearer over these stack legs (empty = plain multi-leg mode)
+    std::vector<int> frerLegs_;
 
     int legOfLocalId(MacNodeId localNodeId) override;
     MacNodeId getLocalIdOfLeg(int leg) override;
+    bool isLocalNodeId(MacNodeId nodeId) override;
     int legOfBearer(FlowControlInfo *lteInfo) override;
     RlcMux *getRlcMux(int leg) override;
     LteMacBase *getMac(int leg) override;
     void setRlcEntityParams(omnetpp::cModule *entity, int leg) override;
+
+    // FRER bearer layout: one PDCP entity with one leg per replica, anchored at
+    // the first FRER leg's key.
+    int getNumLegs(DrbKey id, FlowControlInfo *lteInfo) override;
+    int selectPdcpLeg(int leg, MacNodeId peerId, DrbKey& compoundId /*inout*/) override;
+
+    // The peer's node id on the given leg (the same gNB for a UE's legs).
+    virtual MacNodeId getPeerIdOnLeg(MacNodeId peerId, int leg);
+
+  public:
+    // The stack legs every bearer of this node is replicated over (empty = none).
+    // MlBinder reads this to establish each replica at both endpoints.
+    virtual const std::vector<int>& getFrerLegs() const { return frerLegs_; }
 };
 
 } // namespace simu5g

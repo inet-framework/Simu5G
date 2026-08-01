@@ -50,6 +50,19 @@ class MlBinder : public Binder
     // the leg it serves.
     virtual MacNodeId getUeIdServedBy(inet::Ipv4Address address, MacNodeId bsId);
 
+    // Given any leg id of a peer node, the same node's id on the given leg
+    // (NODEID_NONE if the node has no such leg). Used by the replicating
+    // splitter to address each replica to its leg.
+    virtual MacNodeId getPeerLegId(MacNodeId anyLegId, int leg);
+
+    // FRER: establish the bearer once per replica leg, so BOTH endpoints get that
+    // leg's entities. (Fanning out on one endpoint only would leave the peer without
+    // a receiver for the other replicas.)
+    void establishDataConnection(FlowControlInfo *lteInfo) override;
+
+    // The stack legs the given UE replicates its bearers over (empty if none).
+    virtual std::vector<int> getFrerLegsOf(MacNodeId ueId);
+
     // Extra-leg ids go to their own map; everything else follows the stock binning.
     void setMacNodeId(inet::Ipv4Address address, MacNodeId nodeId) override;
 

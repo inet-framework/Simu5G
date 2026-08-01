@@ -16,9 +16,13 @@ module MlRrc extends Rrc
 {
     parameters:
         bool hasNrHandoverController2 = default(false);
+        bool hasNrHandoverController3 = default(false);
 
     submodules:
         nrHandoverController2: <default("HandoverController")> like IHandoverController if hasNrHandoverController2 {
             @display("p=850,80");
+        }
+        nrHandoverController3: <default("HandoverController")> like IHandoverController if hasNrHandoverController3 {
+            @display("p=1000,80");
         }
 }

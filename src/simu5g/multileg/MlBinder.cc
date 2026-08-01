@@ -6,6 +6,7 @@
 //
 
 #include "simu5g/multileg/MlBinder.h"
+#include "simu5g/multileg/MlBearerManagement.h"
 
 namespace simu5g {
 
@@ -36,6 +37,55 @@ MacNodeId MlBinder::getUeIdServedBy(inet::Ipv4Address address, MacNodeId bsId)
             return it->second;
     }
     return NODEID_NONE;
+}
+
+std::vector<int> MlBinder::getFrerLegsOf(MacNodeId ueId)
+{
+    if (ueId == NODEID_NONE || getNodeTypeById(ueId) != UE)
+        return {};
+    cModule *rrc = getRrcByNodeId(ueId);
+    auto *bm = rrc ? dynamic_cast<MlBearerManagement *>(rrc->getSubmodule("bearerManagement")) : nullptr;
+    return bm ? bm->getFrerLegs() : std::vector<int>();
+}
+
+void MlBinder::establishDataConnection(FlowControlInfo *info)
+{
+    MacNodeId srcId = info->getSourceId();
+    MacNodeId destId = info->getDestId();
+    bool isMulticast = info->getMulticastGroupId() != NODEID_NONE;
+
+    bool ueIsSource = (getNodeTypeById(srcId) == UE);
+    MacNodeId ueId = ueIsSource ? srcId : (!isMulticast && getNodeTypeById(destId) == UE ? destId : NODEID_NONE);
+
+    std::vector<int> frerLegs = getFrerLegsOf(ueId);
+    if (frerLegs.empty()) {
+        Binder::establishDataConnection(info);
+        return;
+    }
+
+    // one bearer per replica leg, at both endpoints
+    for (int leg : frerLegs) {
+        MacNodeId ueLegId = getPeerLegId(ueId, leg);
+        if (ueLegId == NODEID_NONE)
+            continue;
+        FlowControlInfo legInfo = *info;
+        if (ueIsSource)
+            legInfo.setSourceId(ueLegId);
+        else
+            legInfo.setDestId(ueLegId);
+        createConnection(&legInfo, true);
+    }
+}
+
+MacNodeId MlBinder::getPeerLegId(MacNodeId anyLegId, int leg)
+{
+    cModule *node = getNodeModule(anyLegId);
+    if (node == nullptr)
+        return NODEID_NONE;
+    if (leg == LEG_LTE)
+        return node->hasPar("macNodeId") ? MacNodeId(node->par("macNodeId").intValue()) : NODEID_NONE;
+    std::string parName = (leg == LEG_NR) ? "nrMacNodeId" : "nrMacNodeId" + std::to_string(leg);
+    return node->hasPar(parName.c_str()) ? MacNodeId(node->par(parName.c_str()).intValue()) : NODEID_NONE;
 }
 
 void MlBinder::setMacNodeId(inet::Ipv4Address address, MacNodeId nodeId)
