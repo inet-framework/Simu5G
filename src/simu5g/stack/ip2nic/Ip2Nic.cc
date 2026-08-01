@@ -261,14 +261,19 @@ void Ip2Nic::establishConnection(FlowControlInfo *lteInfo, const ConnectionKey& 
     }
 }
 
-MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
+MacNodeId Ip2Nic::getLocalIdOfLeg(int leg) const
+{
+    return leg == LEG_NR ? nrNodeId_ : nodeId_;
+}
+
+MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, int leg, MacNodeId sourceId)
 {
     bool isEnb = (nodeType_ == NODEB);
 
     if (isEnb) {
         // ENB variants
         MacNodeId destId;
-        if (isNr_ && (!dualConnectivityEnabled_ || useNR))
+        if (isNr_ && (!dualConnectivityEnabled_ || leg == LEG_NR))
             destId = binder_->getNrMacNodeId(destAddr);
         else
             destId = binder_->getMacNodeId(destAddr);
@@ -297,7 +302,7 @@ MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacN
 
         // D2D-capable UE: check if D2D communication is possible
         MacNodeId destId = binder_->getMacNodeId(destAddr);
-        MacNodeId srcId = isNr_ ? (useNR ? nrNodeId_ : nodeId_) : nodeId_;
+        MacNodeId srcId = isNr_ ? getLocalIdOfLeg(leg) : nodeId_;
 
         // check whether the destination is inside the LTE network and D2D is active
         if (destId == NODEID_NONE ||
@@ -327,7 +332,7 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     Direction dir = (nodeType_ == UE) ? UL : DL;
     lteInfo->setDirection(dir);
 
-    bool useNR = pkt->getTag<LegReq>()->getLeg() == LEG_NR;
+    int leg = pkt->getTag<LegReq>()->getLeg();
     bool isEnb = (dir == DL);
 
     // --- Base LtePdcpEnb/LtePdcpUe (no D2D support) ---
@@ -338,7 +343,7 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
         if (lteInfo->getMulticastGroupId() != NODEID_NONE)  // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
             lteInfo->setDestId(nodeId_);
         else
-            lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
+            lteInfo->setDestId(getNextHopNodeId(destAddr, LEG_LTE, lteInfo->getSourceId()));
 
         if (!hasSdap_) {
             // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
@@ -357,8 +362,8 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
 
     // --- D2D-capable subclasses (LtePdcpEnbD2D, LtePdcpUeD2D, NrPdcpEnb, NrPdcpUe) ---
 
-    // For NrPdcpUe, the effective local node ID depends on useNR flag
-    MacNodeId localNodeId = (isNr_ && !isEnb) ? (useNR ? nrNodeId_ : nodeId_) : nodeId_;
+    // At an NR UE, the effective local node ID is the selected leg's
+    MacNodeId localNodeId = (isNr_ && !isEnb) ? getLocalIdOfLeg(leg) : nodeId_;
 
     // EV log (all D2D subclasses except NrPdcpUe)
     if (isEnb || !isNr_)
@@ -418,30 +423,30 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
             if (lteInfo->getMulticastGroupId() != NODEID_NONE)
                 lteInfo->setDestId(nodeId_);
             else
-                lteInfo->setDestId(getNextHopNodeId(destAddr, !dualConnectivityEnabled_ && useNR, nodeId_));
+                lteInfo->setDestId(getNextHopNodeId(destAddr, dualConnectivityEnabled_ ? LEG_LTE : leg, nodeId_));
         }
         else {
             // UE: use LTE UE ID when DC is enabled (both legs share one PDCP entity),
-            // NR UE ID when non-DC NR (entity was created with NR IDs)
-            MacNodeId ueSourceId = (dualConnectivityEnabled_ ? nodeId_ : (useNR ? nrNodeId_ : nodeId_));
+            // the leg's own UE ID when non-DC (entity was created with that leg's IDs)
+            MacNodeId ueSourceId = (dualConnectivityEnabled_ ? nodeId_ : getLocalIdOfLeg(leg));
             lteInfo->setSourceId(ueSourceId);
             if (lteInfo->getMulticastGroupId() != NODEID_NONE)
                 lteInfo->setDestId(nodeId_);
             else
-                lteInfo->setDestId(getNextHopNodeId(destAddr, !dualConnectivityEnabled_ && useNR, ueSourceId));
+                lteInfo->setDestId(getNextHopNodeId(destAddr, dualConnectivityEnabled_ ? LEG_LTE : leg, ueSourceId));
         }
     }
     else {
         // LtePdcpEnbD2D / LtePdcpUeD2D
         lteInfo->setSourceId(nodeId_);
         if (!isEnb) // LtePdcpUeD2D: dead getNextHopNodeId call (result unused in original code)
-            (void)getNextHopNodeId(destAddr, useNR, lteInfo->getSourceId());
+            (void)getNextHopNodeId(destAddr, leg, lteInfo->getSourceId());
 
         lteInfo->setSourceId(nodeId_);   // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
         if (lteInfo->getMulticastGroupId() != NODEID_NONE)  // destId is meaningless for multicast D2D
             lteInfo->setDestId(nodeId_);
         else
-            lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
+            lteInfo->setDestId(getNextHopNodeId(destAddr, LEG_LTE, lteInfo->getSourceId()));
     }
 
     // --- DRB ID assignment (skipped when SDAP handles it) ---

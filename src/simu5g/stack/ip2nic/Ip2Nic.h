@@ -117,7 +117,11 @@ class Ip2Nic : public cSimpleModule
 
     // Packet analysis (moved from PDCP): classifies the packet and fills FlowControlInfo tag
     virtual void analyzePacket(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
-    virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
+    // This node's own MacNodeId on the given stack leg. This module knows the two legs
+    // every LTE/NR NIC has; a NIC composition that adds further legs overrides this.
+    virtual MacNodeId getLocalIdOfLeg(int leg) const;
+    // The MacNodeId the packet should be addressed to when sent on the given leg
+    virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, int leg, MacNodeId sourceId);
     virtual LteTrafficClass getTrafficCategory(cPacket *pkt);
     virtual LteRlcType getRlcType(LteTrafficClass trafficCategory);
     virtual DrbId lookupOrAssignDrbId(const ConnectionKey& key, const FlowControlInfo *lteInfo);
