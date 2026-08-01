@@ -189,7 +189,7 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
         << " direction=" << dirToA(lteInfo->getDirection())
         << " withPdcp=" << (withPdcp ? "yes" : "no") << endl;
 
-    ASSERT(lteInfo->getDestId() == registration_->getLteNodeId() || lteInfo->getDestId() == registration_->getNrNodeId() || lteInfo->getMulticastGroupId() != NODEID_NONE);
+    ASSERT(isLocalNodeId(lteInfo->getDestId()) || lteInfo->getMulticastGroupId() != NODEID_NONE);
 
     // Idempotence guard: with duplex bearer establishment this half may already
     // exist (e.g. re-establishment after a partial teardown); skip instead of
@@ -249,7 +249,7 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
         << " direction=" << dirToA(lteInfo->getDirection())
         << " withPdcp=" << (withPdcp ? "yes" : "no") << endl;
 
-    ASSERT(lteInfo->getSourceId() == registration_->getLteNodeId() || lteInfo->getSourceId() == registration_->getNrNodeId());
+    ASSERT(isLocalNodeId(lteInfo->getSourceId()));
 
     // Idempotence guard: with duplex bearer establishment this half may already
     // exist (e.g. re-establishment after a partial teardown); skip instead of
@@ -345,6 +345,11 @@ int BearerManagement::legOfLocalId(MacNodeId localNodeId)
 MacNodeId BearerManagement::getLocalIdOfLeg(int leg)
 {
     return leg == LEG_NR ? registration_->getNrNodeId() : registration_->getLteNodeId();
+}
+
+bool BearerManagement::isLocalNodeId(MacNodeId nodeId)
+{
+    return nodeId == registration_->getLteNodeId() || nodeId == registration_->getNrNodeId();
 }
 
 int BearerManagement::legOfBearer(FlowControlInfo *lteInfo)

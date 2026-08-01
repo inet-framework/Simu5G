@@ -135,6 +135,8 @@ class BearerManagement : public cSimpleModule
     virtual int selectLeg(FlowControlInfo *lteInfo, bool incoming);
     virtual RlcMux *getRlcMux(int leg);
     virtual LteMacBase *getMac(int leg);
+    // Whether the id is this node's own on one of its legs.
+    virtual bool isLocalNodeId(MacNodeId nodeId);
 
     // Schedule an RLC-detected radio link failure teardown for a peer node, deferred
     // to a safe execution context. leg selects the failing leg.
