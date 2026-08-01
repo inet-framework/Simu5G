@@ -26,7 +26,7 @@ namespace simu5g {
  */
 class Registration : public cSimpleModule
 {
-  private:
+  protected:
     MacNodeId lteNodeId = NODEID_NONE;
     MacNodeId nrNodeId = NODEID_NONE;
     RanNodeType nodeType = UNKNOWN_NODE_TYPE;
@@ -42,14 +42,20 @@ class Registration : public cSimpleModule
     void handleMessage(cMessage *msg) override;
     void finish() override;
 
+    // The node's legs, one registration step each: registerNodes() announces their
+    // MacNodeIds to the binder, registerServingNodes() their initial serving cells. A node
+    // with further legs registers them by extending these.
+    virtual void registerNodes();
+    virtual void registerServingNodes();
+
     virtual void registerInterface();
     virtual void registerMulticastGroups();
 
   public:
-    RanNodeType getNodeType() const { return nodeType; }
-    MacNodeId getLteNodeId() const { return lteNodeId; }
-    MacNodeId getNrNodeId() const { return nrNodeId; }
-    bool isDualTechnology() const { return lteNodeId != NODEID_NONE && nrNodeId != NODEID_NONE; }
+    virtual RanNodeType getNodeType() const { return nodeType; }
+    virtual MacNodeId getLteNodeId() const { return lteNodeId; }
+    virtual MacNodeId getNrNodeId() const { return nrNodeId; }
+    virtual bool isDualTechnology() const { return lteNodeId != NODEID_NONE && nrNodeId != NODEID_NONE; }
 };
 
 } // namespace simu5g

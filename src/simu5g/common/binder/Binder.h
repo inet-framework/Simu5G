@@ -45,7 +45,7 @@ struct NodeInfo {
  */
 class Binder : public cSimpleModule
 {
-  private:
+  protected:
 
     // name of the system (top-level) module
     std::string networkName_;
@@ -625,7 +625,7 @@ class Binder : public cSimpleModule
     // For multicast flows, pass the multicast group ID as the second node.
     virtual DrbId assignDrbId(MacNodeId a, MacNodeId b);
 
-  private:
+  protected:
     // per-node-pair DRB ID counters for assignDrbId()
     std::map<std::pair<MacNodeId, MacNodeId>, unsigned short> drbIdCounters_;
 

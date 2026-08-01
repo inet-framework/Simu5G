@@ -42,45 +42,11 @@ void Registration::initialize(int stage)
         }
     }
     else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS) {
-        if (nodeType == NODEB) {
-            cModule *bs = inet::getContainingNode(this);
-            bool isNr = nrNodeId != NODEID_NONE;
-            MacNodeId nodeId = isNr ? nrNodeId : lteNodeId;
-            binder->registerNode(nodeId, bs, NODEB, isNr);
-
-            // display node ID above node icon
-            bs->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", nodeId).c_str());
-        }
-        else if (nodeType == UE) {
-            cModule *ue = inet::getContainingNode(this);
-            binder->registerNode(lteNodeId, ue, UE, false);
-            ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", lteNodeId).c_str());
-
-            if (nrNodeId != NODEID_NONE) {
-                binder->registerNode(nrNodeId, ue, UE, true);
-                ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d/%d", lteNodeId, nrNodeId).c_str());
-            }
-        }
-
+        registerNodes();
         registerInterface();
     }
     else if (stage == INITSTAGE_SIMU5G_NODE_RELATIONSHIPS) {
-        if (nodeType == NODEB) {
-            cModule *bs = inet::getContainingNode(this);
-            bool isNr = nrNodeId != NODEID_NONE;
-            MacNodeId nodeId = isNr ? nrNodeId : lteNodeId;
-            MacNodeId masterId = MacNodeId(bs->par("masterId").intValue());
-            binder->registerMasterNode(masterId, nodeId);  // note: even if masterId == NODEID_NONE!
-        }
-        if (nodeType == UE) {
-            cModule *ue = inet::getContainingNode(this);
-            MacNodeId servingNodeId = MacNodeId(ue->par("servingNodeId").intValue());
-            binder->registerServingNode(servingNodeId, lteNodeId);
-            if (nrNodeId != NODEID_NONE) {
-                MacNodeId nrServingNodeId = MacNodeId(ue->par("nrServingNodeId").intValue());
-                binder->registerServingNode(nrServingNodeId, nrNodeId);
-            }
-        }
+        registerServingNodes();
     }
     else if (stage == inet::INITSTAGE_STATIC_ROUTING) {
         if (nodeType == UE) {
@@ -120,6 +86,49 @@ void Registration::finish()
             binder->unregisterNode(lteNodeId);
         if (nrNodeId != NODEID_NONE)
             binder->unregisterNode(nrNodeId);
+    }
+}
+
+void Registration::registerNodes()
+{
+    if (nodeType == NODEB) {
+        cModule *bs = inet::getContainingNode(this);
+        bool isNr = nrNodeId != NODEID_NONE;
+        MacNodeId nodeId = isNr ? nrNodeId : lteNodeId;
+        binder->registerNode(nodeId, bs, NODEB, isNr);
+
+        // display node ID above node icon
+        bs->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", nodeId).c_str());
+    }
+    else if (nodeType == UE) {
+        cModule *ue = inet::getContainingNode(this);
+        binder->registerNode(lteNodeId, ue, UE, false);
+        ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d", lteNodeId).c_str());
+
+        if (nrNodeId != NODEID_NONE) {
+            binder->registerNode(nrNodeId, ue, UE, true);
+            ue->getDisplayString().setTagArg("t", 0, opp_stringf("nodeId=%d/%d", lteNodeId, nrNodeId).c_str());
+        }
+    }
+}
+
+void Registration::registerServingNodes()
+{
+    if (nodeType == NODEB) {
+        cModule *bs = inet::getContainingNode(this);
+        bool isNr = nrNodeId != NODEID_NONE;
+        MacNodeId nodeId = isNr ? nrNodeId : lteNodeId;
+        MacNodeId masterId = MacNodeId(bs->par("masterId").intValue());
+        binder->registerMasterNode(masterId, nodeId);  // note: even if masterId == NODEID_NONE!
+    }
+    if (nodeType == UE) {
+        cModule *ue = inet::getContainingNode(this);
+        MacNodeId servingNodeId = MacNodeId(ue->par("servingNodeId").intValue());
+        binder->registerServingNode(servingNodeId, lteNodeId);
+        if (nrNodeId != NODEID_NONE) {
+            MacNodeId nrServingNodeId = MacNodeId(ue->par("nrServingNodeId").intValue());
+            binder->registerServingNode(nrServingNodeId, nrNodeId);
+        }
     }
 }
 
