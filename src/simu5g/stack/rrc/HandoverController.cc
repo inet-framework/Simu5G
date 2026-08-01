@@ -492,10 +492,10 @@ void HandoverController::deleteOldBuffers(MacNodeId servingNodeId)
 
     // delete RLC entities for nodeId_ at old serving node
     BearerManagement *servingBm = check_and_cast<BearerManagement *>(binder_->getRrcByNodeId(servingNodeId)->getSubmodule("bearerManagement"));
-    servingBm->deleteLocalRlcQueues(nodeId_, isNr_);
+    servingBm->deleteLocalRlcQueues(nodeId_, bearerManagement_->legOfLocalId(nodeId_));
 
     // delete RLC entities for serving node at this UE
-    bearerManagement_->deleteLocalRlcQueues(nodeId_, isNr_);
+    bearerManagement_->deleteLocalRlcQueues(nodeId_, bearerManagement_->legOfLocalId(nodeId_));
 
     // Delete PDCP Entities
     // delete pdcpEntities[nodeId_] at old serving node

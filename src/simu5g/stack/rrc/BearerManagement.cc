@@ -79,8 +79,8 @@ void BearerManagement::handleMessage(cMessage *msg)
         // never from inside RLC/PDCP processing.
         auto pending = pendingRlf_;   // copy: teardown deletes entity modules
         pendingRlf_.clear();
-        for (const auto &[nodeId, nrStack] : pending)
-            handleRadioLinkFailure(nodeId, nrStack);
+        for (const auto &[nodeId, leg] : pending)
+            handleRadioLinkFailure(nodeId, leg);
         return;
     }
     // RRC re-establishment (TS 38.331 5.3.7), two phases; see releaseLink().
@@ -115,22 +115,22 @@ void BearerManagement::handleMessage(cMessage *msg)
     throw cRuntimeError("This module does not process messages");
 }
 
-void BearerManagement::scheduleRadioLinkFailure(MacNodeId nodeId, bool nrStack)
+void BearerManagement::scheduleRadioLinkFailure(MacNodeId nodeId, int leg)
 {
     Enter_Method_Silent("scheduleRadioLinkFailure()");
     EV << NOW << " BearerManagement::scheduleRadioLinkFailure - node " << nodeId
-       << (nrStack ? " (NR)" : " (LTE)") << endl;
-    pendingRlf_.insert({nodeId, nrStack});
+       << " (leg " << leg << ")" << endl;
+    pendingRlf_.insert({nodeId, leg});
     if (!rlfTrigger_)
         rlfTrigger_ = new cMessage("rlfTrigger");
     if (!rlfTrigger_->isScheduled())
         scheduleAt(simTime(), rlfTrigger_);
 }
 
-void BearerManagement::handleRadioLinkFailure(MacNodeId nodeId, bool nrStack)
+void BearerManagement::handleRadioLinkFailure(MacNodeId nodeId, int leg)
 {
     EV << NOW << " BearerManagement::handleRadioLinkFailure - RLF for node " << nodeId
-       << (nrStack ? " (NR)" : " (LTE)") << endl;
+       << " (leg " << leg << ")" << endl;
     // Release + tear down the link on BOTH ends, so if RRC re-establishment is enabled the
     // bearer rebuilds fresh, SN-consistent entities on both sides. Reaching the peer via the
     // binder mirrors handover's cross-node HandoverController::deleteOldBuffers.
@@ -140,7 +140,7 @@ void BearerManagement::handleRadioLinkFailure(MacNodeId nodeId, bool nrStack)
     // bearer). Using getLteNodeId() unconditionally sent NODEID_NONE from a standalone NR gNB
     // (whose id lives in nrNodeId), so the peer's keyed PDCP deletion missed pdcp-rx-<gnb>-<drb>
     // and a later re-establishment collided with the leftover entity.
-    MacNodeId myId = nrStack ? registration_->getNrNodeId() : registration_->getLteNodeId();
+    MacNodeId myId = getLocalIdOfLeg(leg);
     if (cModule *peerRrc = binderModule->getRrcByNodeId(nodeId)) {
         if (auto *peerBm = dynamic_cast<BearerManagement *>(peerRrc->getSubmodule("bearerManagement")))
             peerBm->releaseLink(myId);
@@ -175,8 +175,8 @@ void BearerManagement::releaseLink(MacNodeId peerId)
         macModule->deleteQueuesRadioLinkFailure(peerId);
     if (nrMacModule)
         nrMacModule->deleteQueuesRadioLinkFailure(peerId);
-    deleteLocalRlcQueues(peerId, /*nrStack=*/false);
-    deleteLocalRlcQueues(peerId, /*nrStack=*/true);
+    deleteLocalRlcQueues(peerId, LEG_LTE);
+    deleteLocalRlcQueues(peerId, LEG_NR);
     deleteLocalPdcpEntities(peerId);
 }
 
@@ -195,8 +195,8 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     // exist (e.g. re-establishment after a partial teardown); skip instead of
     // crashing on duplicate MAC/RLC/PDCP creation.
     DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
-    bool isNr = (registration_->getNodeType()==UE && isNrUe(lteInfo->getDestId())); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
-    cModule *existingRlcEnt = lookupRlcEntityModule(rlcId, isNr);
+    int leg = selectLeg(lteInfo, /*incoming=*/true);
+    cModule *existingRlcEnt = lookupRlcEntityModule(rlcId, leg);
     if (existingRlcEnt != nullptr && existingRlcEnt->gate("lowerIn")->isConnectedOutside()) {
         EV << "BearerManagement::createIncomingConnection - entities for " << rlcId.str() << " already exist, skipping\n";
         return;
@@ -205,20 +205,20 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     // Create MAC incoming connection
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacNodeId senderId = desc.getSourceId();
-    auto mac = (registration_->getNodeType()==UE && isNrUe(lteInfo->getDestId())) ? nrMacModule.get() : macModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
+    auto mac = getMac(leg);
     LogicalCid lcid = mac->drbIdToLcid(desc.getDrbId());
     MacCid cid = MacCid(senderId, lcid);
     mac->createIncomingConnection(cid, desc);
 
     // RLC entity creation
-    auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
-    installRlcRxSide(rlcId, lteInfo, rlcMux, isNr);
+    auto *rlcMux = getRlcMux(leg);
+    installRlcRxSide(rlcId, lteInfo, rlcMux, leg);
 
     // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
     // PDCP lives at the master, so an PdcpRelayEntity stands in (UL half wired here).
     if (withPdcp) {
         DrbKey id = DrbKey(lteInfo->getSourceId(), lteInfo->getDrbId());
-        installPdcpRxSide(id, lteInfo, rlcMux, isNr);
+        installPdcpRxSide(id, lteInfo, rlcMux, leg);
     }
     else {
         // DC secondary node: forward the UL PDU from RLC to the master over X2 unprocessed
@@ -229,7 +229,7 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
         cModule *relay = findOrCreatePdcpRelayEntity(id, rlcMux);
 
         // Wire RLC entity upperOut → relay legIn[0] (direct per-DRB connection)
-        cModule *rlcEnt2 = lookupRlcEntityModule(rlcId, isNr);
+        cModule *rlcEnt2 = lookupRlcEntityModule(rlcId, leg);
         ASSERT(rlcEnt2 != nullptr);
         rlcEnt2->gate("upperOut")->connectTo(relay->gate("legIn", 0));
 
@@ -255,8 +255,8 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
     // exist (e.g. re-establishment after a partial teardown); skip instead of
     // crashing on duplicate MAC/RLC/PDCP creation.
     DrbKey rlcId = ctrlInfoToTxDrbKey(lteInfo);
-    bool isNr = (registration_->getNodeType()==UE && isNrUe(lteInfo->getSourceId()));
-    cModule *existingRlcEnt = lookupRlcEntityModule(rlcId, isNr);
+    int leg = selectLeg(lteInfo, /*incoming=*/false);
+    cModule *existingRlcEnt = lookupRlcEntityModule(rlcId, leg);
     if (existingRlcEnt != nullptr && existingRlcEnt->gate("lowerOut")->isConnectedOutside()) {
         EV << "BearerManagement::createOutgoingConnection - entities for " << rlcId.str() << " already exist, skipping\n";
         return;
@@ -265,20 +265,20 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
     // Create MAC outgoing connection
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacNodeId destId = desc.getDestId();
-    auto mac = (registration_->getNodeType()==UE && isNrUe(lteInfo->getSourceId())) ? nrMacModule.get() : macModule.get();
+    auto mac = getMac(leg);
     LogicalCid lcid = mac->drbIdToLcid(desc.getDrbId());
     MacCid cid = MacCid(destId, lcid);
     mac->createOutgoingConnection(cid, desc);
 
     // RLC entity creation
-    auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
-    installRlcTxSide(rlcId, lteInfo, rlcMux, isNr);
+    auto *rlcMux = getRlcMux(leg);
+    installRlcTxSide(rlcId, lteInfo, rlcMux, leg);
 
     // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
     // PDCP lives at the master, so an PdcpRelayEntity stands in (DL half wired here).
     if (withPdcp) {
         DrbKey id = DrbKey(lteInfo->getDestId(), lteInfo->getDrbId());
-        installPdcpTxSide(id, lteInfo, rlcMux, isNr);
+        installPdcpTxSide(id, lteInfo, rlcMux, leg);
     }
     else {
         // DC secondary node: the DL PDU arrives already PDCP-processed from the master over X2;
@@ -294,14 +294,15 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
         pdcpDcMux->gate("toRelayEntity", idx)->connectTo(relay->gate("x2In"));
 
         // Wire relay legOut[0] → RLC entity upperIn (direct per-DRB connection)
-        cModule *rlcEnt2 = lookupRlcEntityModule(rlcId, isNr);
+        cModule *rlcEnt2 = lookupRlcEntityModule(rlcId, leg);
         ASSERT(rlcEnt2 != nullptr);
         relay->gate("legOut", 0)->connectTo(rlcEnt2->gate("upperIn"));
     }
 }
 
-void BearerManagement::setRlcEntityParams(cModule *entity, bool isNr)
+void BearerManagement::setRlcEntityParams(cModule *entity, int leg)
 {
+    bool isNr = (leg == LEG_NR);
     // 'entity' is the RlcTm/Um/AmEntity COMPOUND; these paths are relative to it (^ = the NIC).
     // The compound NED absPath()-resolves them and passes them to its tx/rx submodules (see
     // '*.macModule = default(absPath(this.macModule))'). hasPar() guards because not every
@@ -336,16 +337,58 @@ void BearerManagement::setEntityDisplayPosition(cModule *entity, bool isPdcpEnti
     entity->getDisplayString().setTagArg("p", 1, y);
 }
 
-cModule *BearerManagement::lookupRlcEntityModule(DrbKey id, bool isNr)
+int BearerManagement::legOfLocalId(MacNodeId localNodeId)
 {
-    auto& entities = isNr ? nrRlcEntities_ : rlcEntities_;
+    return isNrUe(localNodeId) ? LEG_NR : LEG_LTE;
+}
+
+MacNodeId BearerManagement::getLocalIdOfLeg(int leg)
+{
+    return leg == LEG_NR ? registration_->getNrNodeId() : registration_->getLteNodeId();
+}
+
+int BearerManagement::legOfBearer(FlowControlInfo *lteInfo)
+{
+    // Keyed on the bearer's node ids, which are symmetric: both ends agree on the leg even
+    // though only a UE holds the leg's modules.
+    return (isNrUe(lteInfo->getSourceId()) || isNrUe(lteInfo->getDestId())) ? LEG_NR : LEG_LTE;
+}
+
+int BearerManagement::selectLeg(FlowControlInfo *lteInfo, bool incoming)
+{
+    // Only a UE has more than one leg to choose from; at a NodeB every bearer is installed
+    // on the default leg, whatever its RAT.
+    //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
+    if (registration_->getNodeType() != UE)
+        return LEG_LTE;
+    return legOfLocalId(incoming ? lteInfo->getDestId() : lteInfo->getSourceId());
+}
+
+RlcMux *BearerManagement::getRlcMux(int leg)
+{
+    return leg == LEG_NR ? (nrRlcMuxModule ? nrRlcMuxModule.get() : nullptr) : rlcMuxModule.get();
+}
+
+LteMacBase *BearerManagement::getMac(int leg)
+{
+    return leg == LEG_NR ? nrMacModule.get() : macModule.get();
+}
+
+std::string BearerManagement::getRlcEntityNamePrefix(int leg)
+{
+    return leg == LEG_LTE ? "rlc-" : leg == LEG_NR ? "nrRlc-" : "leg" + std::to_string(leg) + "Rlc-";
+}
+
+cModule *BearerManagement::lookupRlcEntityModule(DrbKey id, int leg)
+{
+    auto& entities = rlcEntities_[leg];
     auto it = entities.find(id);
     return it != entities.end() ? it->second : nullptr;
 }
 
-cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
+cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, int leg)
 {
-    auto& entities = isNr ? nrRlcEntities_ : rlcEntities_;
+    auto& entities = rlcEntities_[leg];
     auto it = entities.find(id);
     if (it != entities.end())
         return it->second;
@@ -368,12 +411,12 @@ cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lte
         case AM: moduleType = isNrBearer ? nrRlcAmEntityModuleType_ : lteRlcAmEntityModuleType_; prefix = "am"; break;
         default: moduleType = isNrBearer ? nrRlcUmEntityModuleType_ : lteRlcUmEntityModuleType_; prefix = "um"; break;
     }
-    std::string name = std::string(isNr ? "nrRlc-" : "rlc-") + prefix + "-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
+    std::string name = getRlcEntityNamePrefix(leg) + prefix + "-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
     auto *module = moduleType->create(name.c_str(), nicModule_);
     // Set the leg's MAC/RLC-mux paths on the COMPOUND before finalize; its NED passes them down
     // to the tx/rx submodules (see '*.macModule = this.macModule' in RlcUmEntityBase/RlcAmEntityBase), so
     // the submodule params carry the right value at build time -- no post-build @mutable write.
-    setRlcEntityParams(module, isNr);
+    setRlcEntityParams(module, leg);
     module->finalizeParameters();
     module->buildInside();
     setEntityDisplayPosition(module, false, rlcMux, num(id.getDrbId()));
@@ -385,9 +428,9 @@ cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lte
     return module;
 }
 
-RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
+RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, int leg)
 {
-    cModule *module = findOrCreateRlcEntity(id, lteInfo, rlcMux, isNr);
+    cModule *module = findOrCreateRlcEntity(id, lteInfo, rlcMux, leg);
     auto *txEnt = check_and_cast<RlcTxEntityBase *>(module->getSubmodule("tx"));
 
     if (module->gate("lowerOut")->isConnectedOutside()) {
@@ -422,9 +465,9 @@ RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *
     return txEnt;
 }
 
-RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
+RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, int leg)
 {
-    cModule *module = findOrCreateRlcEntity(id, lteInfo, rlcMux, isNr);
+    cModule *module = findOrCreateRlcEntity(id, lteInfo, rlcMux, leg);
     auto *rxEnt = check_and_cast<RlcRxEntityBase *>(module->getSubmodule("rx"));
 
     if (module->gate("lowerIn")->isConnectedOutside()) {
@@ -525,10 +568,10 @@ cModule *BearerManagement::findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux
 // ONE entity whose legs split/rejoin below PDCP. The master-keyed lookup must be precise
 // (master node + same DRB id): matching the bare DRB id would also match unrelated bearers of
 // this UE, since DRB ids are only unique per peer. Everything else is leg 0 of its own compound.
-int BearerManagement::selectPdcpLeg(bool isNr, MacNodeId peerId, DrbKey& compoundId /*inout*/)
+int BearerManagement::selectPdcpLeg(int leg, MacNodeId peerId, DrbKey& compoundId /*inout*/)
 {
     bool isUe = (registration_->getNodeType() == UE);
-    if (isUe && isNr && dualConnectivityEnabled_ && getNodeTypeById(peerId) == NODEB) {
+    if (isUe && leg == LEG_NR && dualConnectivityEnabled_ && getNodeTypeById(peerId) == NODEB) {
         MacNodeId masterNodeId = binderModule->getMasterNodeOrSelf(peerId);
         if (masterNodeId != peerId) {  // the peer is a DC secondary node
             compoundId = DrbKey(masterNodeId, compoundId.getDrbId());
@@ -538,7 +581,7 @@ int BearerManagement::selectPdcpLeg(bool isNr, MacNodeId peerId, DrbKey& compoun
     return 0;
 }
 
-void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
+void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, int leg)
 {
     auto *pdcpMux = inet::getModuleFromPar<PdcpMux>(par("pdcpMuxModule"), this);
     // The PDCP entity is keyed by dest (id); the RLC entity it wires to is keyed by
@@ -546,7 +589,7 @@ void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
     DrbKey rlcId = ctrlInfoToTxDrbKey(lteInfo);
 
     DrbKey compoundId = id;
-    int legIdx = selectPdcpLeg(isNr, lteInfo->getDestId(), compoundId);
+    int legIdx = selectPdcpLeg(leg, lteInfo->getDestId(), compoundId);
 
     cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, lteInfo, rlcMux);
     if (pdcpEnt->gate("legOut", legIdx)->isConnectedOutside()) {
@@ -555,7 +598,7 @@ void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
     }
 
     // Wire compound legOut[legIdx] (← tx/splitter) → RLC entity upperIn (direct per-DRB connection)
-    cModule *rlcEnt = lookupRlcEntityModule(rlcId, isNr);
+    cModule *rlcEnt = lookupRlcEntityModule(rlcId, leg);
     ASSERT(rlcEnt != nullptr);
     pdcpEnt->gate("legOut", legIdx)->connectTo(rlcEnt->gate("upperIn"));
 
@@ -571,13 +614,13 @@ void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
     }
 }
 
-void BearerManagement::installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
+void BearerManagement::installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, int leg)
 {
     auto *pdcpMux = inet::getModuleFromPar<PdcpMux>(par("pdcpMuxModule"), this);
     DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
 
     DrbKey compoundId = id;
-    int legIdx = selectPdcpLeg(isNr, lteInfo->getSourceId(), compoundId);
+    int legIdx = selectPdcpLeg(leg, lteInfo->getSourceId(), compoundId);
 
     cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, lteInfo, rlcMux);
     if (pdcpEnt->gate("legIn", legIdx)->isConnectedOutside()) {
@@ -586,7 +629,7 @@ void BearerManagement::installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
     }
 
     // Wire RLC entity upperOut → compound legIn[legIdx] (→ rx/joiner) (direct per-DRB connection)
-    cModule *rlcEnt = lookupRlcEntityModule(rlcId, isNr);
+    cModule *rlcEnt = lookupRlcEntityModule(rlcId, leg);
     ASSERT(rlcEnt != nullptr);
     rlcEnt->gate("upperOut")->connectTo(pdcpEnt->gate("legIn", legIdx));
 
@@ -656,22 +699,22 @@ void BearerManagement::deleteLocalPdcpEntities(MacNodeId nodeId)
     }
 }
 
-void BearerManagement::deleteLocalRlcQueues(MacNodeId nodeId, bool nrStack)
+void BearerManagement::deleteLocalRlcQueues(MacNodeId nodeId, int leg)
 {
     Enter_Method_Silent("deleteLocalRlcQueues()");
 
     bool isEnb = (registration_->getNodeType() == NODEB);
 
     // At a NODEB, entities are always stored in the default (LTE) maps regardless of which
-    // leg the caller serves: createIncoming/OutgoingConnection() computes isNr as
-    // (nodeType==UE && ...), which is always false here, and gNB NICs have no nrRlcMux.
-    // Honoring the caller's nrStack flag would make this a silent no-op, leaking the UE's
-    // entities and crashing on re-establishment after a later handover.
+    // leg the caller serves: selectLeg() returns the default leg at a NodeB whatever the
+    // bearer's RAT, and gNB NICs have no nrRlcMux. Honoring the caller's leg would make this
+    // a silent no-op, leaking the UE's entities and crashing on re-establishment after a
+    // later handover.
     if (isEnb)
-        nrStack = false;
+        leg = LEG_LTE;
 
-    auto &entities = nrStack ? nrRlcEntities_ : rlcEntities_;
-    RlcMux *rlcMux = nrStack ? (nrRlcMuxModule ? nrRlcMuxModule.get() : nullptr) : rlcMuxModule.get();
+    auto &entities = rlcEntities_[leg];
+    RlcMux *rlcMux = getRlcMux(leg);
     if (!rlcMux)
         return;
 
@@ -699,12 +742,12 @@ cModule *BearerManagement::lookupPdcpRelayEntityModule(DrbKey id)
 
 RlcTxEntityBase *BearerManagement::lookupRlcTxBuffer(DrbKey id)
 {
-    // Search both legs. Only an INSTALLED (mux-wired) TX side counts: with the
+    // Search every leg. Only an INSTALLED (mux-wired) TX side counts: with the
     // compound entity, the RX-side install may have created the module while the
     // TX side is not set up yet -- callers create it via createRlcTxBuffer then.
-    for (auto *entities : { &rlcEntities_, &nrRlcEntities_ }) {
-        auto it = entities->find(id);
-        if (it != entities->end() && it->second->gate("lowerOut")->isConnectedOutside())
+    for (auto& [leg, entities] : rlcEntities_) {
+        auto it = entities.find(id);
+        if (it != entities.end() && it->second->gate("lowerOut")->isConnectedOutside())
             return check_and_cast<RlcTxEntityBase *>(it->second->getSubmodule("tx"));
     }
     return nullptr;

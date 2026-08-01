@@ -40,9 +40,8 @@ void RlcAmTxEntityBase::declareRadioLinkFailure()
     // Indicate the failure to RRC/BearerManagement (TS 38.322 5.3.2 / TS 36.322
     // 5.2.1): it tears down this bearer's MAC/RLC/PDCP state at a safe point.
     if (lteInfo_) {
-        bool isNr = isNrUe(lteInfo_->getSourceId()) || isNrUe(lteInfo_->getDestId());
         auto *bm = inet::getModuleFromPar<BearerManagement>(par("bearerManagementModule"), this);
-        bm->scheduleRadioLinkFailure(lteInfo_->getDestId(), isNr);
+        bm->scheduleRadioLinkFailure(lteInfo_->getDestId(), bm->legOfBearer(lteInfo_));
     }
 }
 
