@@ -40,13 +40,6 @@ class Binder;
  */
 class BearerManagement : public cSimpleModule
 {
-  public:
-    // The stack legs of this NIC, as small dense indices. This module knows the two legs
-    // every LTE/NR NIC has; a NIC composition that adds further legs numbers them upward
-    // and overrides the leg lookups below to place them.
-    static const int LEG_LTE = 0;
-    static const int LEG_NR = 1;
-
   protected:
     Registration *registration_ = nullptr;
 

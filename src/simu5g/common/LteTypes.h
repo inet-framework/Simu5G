@@ -61,6 +61,12 @@ constexpr unsigned short BGUE_MIN_ID  = 4097;
 constexpr unsigned short UE_MAX_ID    = 32767;
 constexpr unsigned short MULTICAST_DEST_MIN_ID = 32768;
 
+/// Stack leg indices. A node's radio stacks ("legs") are numbered as small dense
+/// indices; the stock two-leg layout puts the LTE stack on leg 0 and the NR stack
+/// on leg 1. A NIC composition that adds further legs numbers them upward.
+constexpr int LEG_LTE = 0;
+constexpr int LEG_NR = 1;
+
 
 /// Cell node ID. It is numerically equal to eNodeB MAC node ID.
 typedef MacNodeId MacCellId;
