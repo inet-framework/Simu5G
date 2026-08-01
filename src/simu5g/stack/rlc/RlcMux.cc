@@ -73,7 +73,7 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
         if (switchPkt->getTxSide()) {
             // get the corresponding Tx buffer & call handler
             DrbKey id = ctrlInfoToTxDrbKey(lteInfo.get());
-            RlcTxEntityBase *txbuf = bearerManagement_->lookupRlcTxBuffer(id);
+            RlcTxEntityBase *txbuf = lookupTxEntity(id);
             if (txbuf == nullptr)
                 txbuf = bearerManagement_->createRlcTxBuffer(id, lteInfo.get());
             RlcUmTxEntityBase *umTxbuf = check_and_cast<RlcUmTxEntityBase *>(txbuf);
@@ -96,12 +96,12 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
     }
 
     if (inet::dynamicPtrCast<const LteMacSduRequest>(chunk) != nullptr) {
-        // MAC SDU request — dispatch to TX entity via macToTxEntity gate
+        // MAC SDU request — dispatch to this leg's TX entity via macToTxEntity gate
         DrbKey id = ctrlInfoToTxDrbKey(lteInfo.get());
-        RlcTxEntityBase *txbuf = bearerManagement_->lookupRlcTxBuffer(id);
-        ASSERT(txbuf != nullptr);
+        auto it = txGateIndices_.find(id);
+        ASSERT(it != txGateIndices_.end());  // the MAC only requests from an installed bearer
 
-        send(pkt, txbuf->gate("macIn")->getPathStartGate());  // path start = our macToTxEntity gate (crosses the RlcEntity compound boundary)
+        send(pkt, "macToTxEntity", it->second);
     }
     else {
         // RLC PDU — dispatch to RX entity via toRxEntity gate
@@ -123,6 +123,28 @@ void RlcMux::registerRxEntity(DrbKey id, int gateIndex)
     ASSERT(gate("toRxEntity", gateIndex)->isConnectedOutside());
     rxGateIndices_[id] = gateIndex;
     EV << "RlcMux::registerRxEntity - Registered RX entity for " << id << " on toRxEntity gate " << gateIndex << "\n";
+}
+
+void RlcMux::registerTxEntity(DrbKey id, int gateIndex)
+{
+    if (txGateIndices_.find(id) != txGateIndices_.end())
+        throw cRuntimeError("RLC TX entity for %s already registered", id.str().c_str());
+    ASSERT(gate("macToTxEntity", gateIndex)->isConnectedOutside());
+    txGateIndices_[id] = gateIndex;
+    EV << "RlcMux::registerTxEntity - Registered TX entity for " << id << " on macToTxEntity gate " << gateIndex << "\n";
+}
+
+void RlcMux::unregisterTxEntity(DrbKey id)
+{
+    txGateIndices_.erase(id);
+}
+
+RlcTxEntityBase *RlcMux::lookupTxEntity(DrbKey id)
+{
+    auto it = txGateIndices_.find(id);
+    if (it == txGateIndices_.end())
+        return nullptr;
+    return check_and_cast<RlcTxEntityBase *>(gate("macToTxEntity", it->second)->getPathEndGate()->getOwnerModule());
 }
 
 void RlcMux::unregisterRxEntity(DrbKey id)

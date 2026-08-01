@@ -148,7 +148,7 @@ class BearerManagement : public cSimpleModule
     virtual void createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp=true);
     virtual RlcTxEntityBase *createRlcTxBuffer(DrbKey id, FlowControlInfo *lteInfo);
     virtual RlcRxEntityBase *createRlcRxBuffer(DrbKey id, FlowControlInfo *lteInfo);
-    virtual RlcTxEntityBase *lookupRlcTxBuffer(DrbKey id);
+    virtual RlcTxEntityBase *lookupRlcTxBuffer(DrbKey id, int leg=LEG_LTE);
     virtual PdcpTxEntityBase *lookupPdcpTxEntity(DrbKey id);
     virtual cModule *lookupPdcpEntityModule(DrbKey id);    // the per-bearer PdcpEntityBase compound (DcMux leg dispatch)
     virtual cModule *lookupPdcpRelayEntityModule(DrbKey id); // the per-bearer PdcpRelayEntity compound (DcMux DL dispatch)

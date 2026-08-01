@@ -25,13 +25,16 @@ namespace simu5g {
 using namespace omnetpp;
 
 class BearerManagement;
+class RlcTxEntityBase;
 
 /**
  * @brief Lower-layer RLC packet dispatcher.
  *
- * Owns the RX routing table, which maps each DRB to the index of the
- * toRxEntity gate that serves it. BearerManagement wires the gate and
- * registers the index here.
+ * Owns this leg's routing tables, which map each DRB to the index of the
+ * toRxEntity / macToTxEntity gate that serves it. BearerManagement wires the
+ * gates and registers the indices here. The tables are per leg (one mux per
+ * leg), so bearers that run on several legs under one DRB key -- replicated
+ * bearers -- still reach the entity belonging to THIS leg.
  */
 class RlcMux : public cSimpleModule
 {
@@ -47,6 +50,7 @@ class RlcMux : public cSimpleModule
     cGate *macOutGate_ = nullptr;
 
     std::map<DrbKey, int> rxGateIndices_;  // DRB -> index of the toRxEntity gate serving it
+    std::map<DrbKey, int> txGateIndices_;  // DRB -> index of the macToTxEntity gate serving it
 
     typedef std::map<MacNodeId, Throughput> ULThroughputPerUE;
     ULThroughputPerUE ulThroughput_;
@@ -54,6 +58,10 @@ class RlcMux : public cSimpleModule
   public:
     virtual void registerRxEntity(DrbKey id, int gateIndex);
     virtual void unregisterRxEntity(DrbKey id);
+    virtual void registerTxEntity(DrbKey id, int gateIndex);
+    virtual void unregisterTxEntity(DrbKey id);
+    // The TX entity of this leg serving the DRB, or nullptr if none is installed here.
+    virtual RlcTxEntityBase *lookupTxEntity(DrbKey id);
     virtual void activeUeUL(std::set<MacNodeId> *ueSet);
 
     virtual void addUeThroughput(MacNodeId nodeId, Throughput throughput);

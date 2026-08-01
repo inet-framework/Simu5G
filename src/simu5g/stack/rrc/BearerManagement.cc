@@ -448,10 +448,12 @@ RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *
     rlcMux->setGateSize("fromTxEntity", fromIdx + 1);
     module->gate("lowerOut")->connectTo(rlcMux->gate("fromTxEntity", fromIdx));
 
-    // Wire RlcMux macToTxEntity → entity macIn gate
+    // Wire RlcMux macToTxEntity → entity macIn gate, and register it as this leg's
+    // TX side of the DRB (the mux dispatches MAC SDU requests through this table)
     int macIdx = rlcMux->gateSize("macToTxEntity");
     rlcMux->setGateSize("macToTxEntity", macIdx + 1);
     rlcMux->gate("macToTxEntity", macIdx)->connectTo(module->gate("macIn"));
+    rlcMux->registerTxEntity(id, macIdx);
 
     txEnt->setFlowControlInfo(lteInfo);
 
@@ -727,6 +729,7 @@ void BearerManagement::deleteLocalRlcQueues(MacNodeId nodeId, int leg)
     for (auto it = entities.begin(); it != entities.end(); ) {
         if (isEnb ? it->first.getNodeId() == nodeId : true) {
             rlcMux->unregisterRxEntity(it->first);  // no-op if the RX side was never installed
+            rlcMux->unregisterTxEntity(it->first);  // ditto for the TX side
             it->second->deleteModule();
             it = entities.erase(it);
         } else ++it;
@@ -745,16 +748,19 @@ cModule *BearerManagement::lookupPdcpRelayEntityModule(DrbKey id)
     return it != pdcpRelayEntities_.end() ? it->second : nullptr;
 }
 
-RlcTxEntityBase *BearerManagement::lookupRlcTxBuffer(DrbKey id)
+RlcTxEntityBase *BearerManagement::lookupRlcTxBuffer(DrbKey id, int leg)
 {
-    // Search every leg. Only an INSTALLED (mux-wired) TX side counts: with the
-    // compound entity, the RX-side install may have created the module while the
-    // TX side is not set up yet -- callers create it via createRlcTxBuffer then.
-    for (auto& [leg, entities] : rlcEntities_) {
-        auto it = entities.find(id);
-        if (it != entities.end() && it->second->gate("lowerOut")->isConnectedOutside())
-            return check_and_cast<RlcTxEntityBase *>(it->second->getSubmodule("tx"));
-    }
+    // Only an INSTALLED (mux-wired) TX side counts: with the compound entity, the
+    // RX-side install may have created the module while the TX side is not set up
+    // yet -- callers create it via createRlcTxBuffer then. A DRB key can name a
+    // bearer on several legs (a replicated bearer), so the leg is part of the
+    // lookup; RlcMux::lookupTxEntity() answers the same question for one leg.
+    auto legIt = rlcEntities_.find(leg);
+    if (legIt == rlcEntities_.end())
+        return nullptr;
+    auto it = legIt->second.find(id);
+    if (it != legIt->second.end() && it->second->gate("lowerOut")->isConnectedOutside())
+        return check_and_cast<RlcTxEntityBase *>(it->second->getSubmodule("tx"));
     return nullptr;
 }
 
