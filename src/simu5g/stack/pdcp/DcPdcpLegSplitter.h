@@ -13,7 +13,7 @@
 #define _DC_PDCP_LEG_SPLITTER_H_
 
 #include <inet/common/ModuleRefByPar.h>
-#include "simu5g/common/LteCommon.h"
+#include "simu5g/stack/pdcp/PdcpLegSplitter.h"
 #include "simu5g/common/binder/Binder.h"
 
 namespace simu5g {
@@ -21,10 +21,10 @@ namespace simu5g {
 /**
  * @brief TX-side leg dispatcher for a dual-connectivity split bearer.
  *
- * Steers each PDU to a leg per the LegReq tag and applies the leg's
- * DC-specific id mapping (see DcPdcpLegSplitter.ned).
+ * Adds the stock LTE/NR pair's id mapping and statistics to the generic
+ * PdcpLegSplitter mechanism (see DcPdcpLegSplitter.ned).
  */
-class DcPdcpLegSplitter : public omnetpp::cSimpleModule
+class DcPdcpLegSplitter : public PdcpLegSplitter
 {
   protected:
     static omnetpp::simsignal_t sentPacketToLowerLayerSignal_;
@@ -33,15 +33,13 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
 
     inet::ModuleRefByPar<Binder> binder_;
 
-    int numLegs_ = 1;
     bool isUe_ = false;                  // selects leg 1's id mapping: UE's NR stack vs a master's X2 leg
 
     MacNodeId nodeId_ = NODEID_NONE;     // this node's (LTE/base) id
     MacNodeId nrNodeId_ = NODEID_NONE;   // this UE's NR-leg id (UEs only)
 
     void initialize(int stage) override;
-    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
-    void handleMessage(omnetpp::cMessage *msg) override;
+    void processForLeg(inet::Packet *pkt, int leg) override;
 };
 
 } // namespace simu5g

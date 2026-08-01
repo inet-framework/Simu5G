@@ -27,10 +27,10 @@ simsignal_t DcPdcpLegSplitter::pdcpSduSentNrSignal_ = registerSignal("pdcpSduSen
 
 void DcPdcpLegSplitter::initialize(int stage)
 {
+    PdcpLegSplitter::initialize(stage);
+
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
-
-        numLegs_ = par("numLegs");
 
         cModule *node = inet::getContainingNode(this);
         nodeId_ = MacNodeId(node->par("macNodeId").intValue());
@@ -40,18 +40,9 @@ void DcPdcpLegSplitter::initialize(int stage)
     }
 }
 
-void DcPdcpLegSplitter::handleMessage(cMessage *msg)
+void DcPdcpLegSplitter::processForLeg(inet::Packet *pkt, int leg)
 {
-    auto pkt = check_and_cast<inet::Packet *>(msg);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
-
-    // Leg choice: follow the LegReq tag -- the per-packet leg decision is owned by
-    // the legSelection submodule; this module only executes it.
-    int leg = pkt->getTag<LegReq>()->getLeg();
-    if (leg >= numLegs_ || !gate("out", leg)->isConnected()) {
-        EV_WARN << NOW << " DcPdcpLegSplitter - leg " << leg << " is not available (torn down?); falling back to leg 0" << endl;
-        leg = 0;
-    }
 
     // Per-leg id adaptation + leg-flavored statistics (moved from NrPdcpTxEntity::deliverPdcpPdu).
     // Leg 0 is the local LTE leg; leg 1 is the UE's local NR stack, or a DC master's remote
@@ -86,8 +77,6 @@ void DcPdcpLegSplitter::handleMessage(cMessage *msg)
         lteInfo->setDestId(nrDestId);
         pkt->addTagIfAbsent<X2TargetReq>()->setTargetNode(secondaryNodeId);
     }
-
-    send(pkt, "out", leg);
 }
 
 } // namespace simu5g
