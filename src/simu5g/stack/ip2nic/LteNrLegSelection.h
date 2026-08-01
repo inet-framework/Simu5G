@@ -1,5 +1,5 @@
-#ifndef __LEGSELECTION_H_
-#define __LEGSELECTION_H_
+#ifndef __LTENRLEGSELECTION_H_
+#define __LTENRLEGSELECTION_H_
 
 #include <omnetpp.h>
 #include <unordered_map>
@@ -12,7 +12,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-class LegSelection : public cSimpleModule
+class LteNrLegSelection : public cSimpleModule
 {
   protected:
     // Represents a flow using source address, destination address, and type of service.
@@ -32,9 +32,9 @@ class LegSelection : public cSimpleModule
 
     // Custom resolver that provides variable bindings for the policy expressions
     class PolicyResolver : public cDynamicExpression::IResolver {
-        LegSelection *module_;
+        LteNrLegSelection *module_;
       public:
-        PolicyResolver(LegSelection *module) : module_(module) {}
+        PolicyResolver(LteNrLegSelection *module) : module_(module) {}
         IResolver *dup() const override { return new PolicyResolver(module_); }
         cValue readVariable(cExpression::Context *context, const char *name) override;
     };
@@ -70,7 +70,7 @@ class LegSelection : public cSimpleModule
     void handleMessage(cMessage *msg) override;
 
   public:
-    ~LegSelection() override;
+    ~LteNrLegSelection() override;
 };
 
 } //namespace

@@ -1,6 +1,6 @@
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/networklayer/common/NetworkInterface.h>
-#include "simu5g/stack/ip2nic/LegSelection.h"
+#include "simu5g/stack/ip2nic/LteNrLegSelection.h"
 #include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
@@ -8,9 +8,9 @@ namespace simu5g {
 
 using namespace inet;
 
-Define_Module(LegSelection);
+Define_Module(LteNrLegSelection);
 
-LegSelection::~LegSelection()
+LteNrLegSelection::~LteNrLegSelection()
 {
     delete dcLegPolicy_;
     delete legPolicy_;
@@ -27,7 +27,7 @@ static cDynamicExpression *getExpressionFromPar(cPar& par, cDynamicExpression::I
     return expr;
 }
 
-void LegSelection::initialize(int stage)
+void LteNrLegSelection::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         lowerLayerOut_ = gate("lowerLayerOut");
@@ -56,7 +56,7 @@ void LegSelection::initialize(int stage)
     }
 }
 
-void LegSelection::handleMessage(cMessage *msg)
+void LteNrLegSelection::handleMessage(cMessage *msg)
 {
     auto pkt = check_and_cast<inet::Packet *>(msg);
 
@@ -83,7 +83,7 @@ void LegSelection::handleMessage(cMessage *msg)
         bool ueNrStack = (binder_->getServingNodeOrSelf(nrUeId) != NODEID_NONE);
 
         if (!ueLteStack && !ueNrStack) {
-            EV << "LegSelection: UE is not attached to any serving node. Delete packet." << endl;
+            EV << "LteNrLegSelection: UE is not attached to any serving node. Delete packet." << endl;
             delete pkt;
             return;
         }
@@ -115,7 +115,7 @@ void LegSelection::handleMessage(cMessage *msg)
         bool hasNrServing = (nrServingNodeId != NODEID_NONE);
 
         if (!hasLteServing && !hasNrServing) {
-            EV << "LegSelection: UE is not attached to any serving node. Delete packet." << endl;
+            EV << "LteNrLegSelection: UE is not attached to any serving node. Delete packet." << endl;
             delete pkt;
             return;
         }
@@ -137,11 +137,11 @@ void LegSelection::handleMessage(cMessage *msg)
     send(pkt, lowerLayerOut_);
 }
 
-cValue LegSelection::PolicyResolver::readVariable(cExpression::Context *context, const char *name)
+cValue LteNrLegSelection::PolicyResolver::readVariable(cExpression::Context *context, const char *name)
 {
     if (!strcmp(name, "typeOfService")) return (intval_t)module_->currentTypeOfService_;
     if (!strcmp(name, "packetOrdinal")) return (intval_t)module_->currentPacketOrdinal_;
-    throw cRuntimeError("LegSelection: unknown variable '%s' in policy expression", name);
+    throw cRuntimeError("LteNrLegSelection: unknown variable '%s' in policy expression", name);
 }
 
 } //namespace

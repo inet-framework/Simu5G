@@ -80,7 +80,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
             @display("p=440,50;is=s");
         }
         // leg selection for outgoing packets
-        legSelection: <default("LegSelection")> like ILegSelection {
+        legSelection: <default("LteNrLegSelection")> like ILegSelection {
             nodeType = parent.nodeType;
             @display("p=440,120;is=s");
         }

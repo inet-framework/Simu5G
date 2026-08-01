@@ -82,7 +82,8 @@ class RlcConfigurationInd extends RlcConfigurationTagBase {
 //
 // Request tag that specifies the stack leg the packet should be sent on.
 //
-// Set by LegSelection; read by Ip2Nic and the PDCP leg splitter.
+// Set by the leg selection module (ILegSelection submodule of the NIC);
+// read by Ip2Nic and the PDCP leg splitter.
 //
 class LegReq extends inet::TagBase {
     int leg = 0;                        // Leg index (0 = LTE, 1 = NR on a stock NIC)

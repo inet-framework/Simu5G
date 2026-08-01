@@ -46,7 +46,7 @@ void DcPdcpLegSplitter::handleMessage(cMessage *msg)
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
     // Leg choice: follow the LegReq tag -- the per-packet leg decision is owned by
-    // LegSelection; this module only executes it.
+    // the legSelection submodule; this module only executes it.
     int leg = pkt->getTag<LegReq>()->getLeg();
     if (leg >= numLegs_ || !gate("out", leg)->isConnected()) {
         EV_WARN << NOW << " DcPdcpLegSplitter - leg " << leg << " is not available (torn down?); falling back to leg 0" << endl;

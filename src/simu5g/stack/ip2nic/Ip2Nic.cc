@@ -124,7 +124,7 @@ void Ip2Nic::toStackUe(Packet *pkt)
 
     // TODO: Add support for IPv6 (=> see L3Tools.cc of INET)
 
-    // LegReq tag is already set by LegSelection
+    // LegReq tag is already set by the legSelection submodule
 
     // Classify the packet and fill FlowControlInfo tag
     analyzePacket(pkt, srcAddr, destAddr, tos);
@@ -183,7 +183,7 @@ void Ip2Nic::toStackBs(Packet *pkt)
         }
     }
 
-    // LegReq tag is already set by LegSelection
+    // LegReq tag is already set by the legSelection submodule
 
     // Classify the packet and fill FlowControlInfo tag
     analyzePacket(pkt, srcAddr, destAddr, tos);

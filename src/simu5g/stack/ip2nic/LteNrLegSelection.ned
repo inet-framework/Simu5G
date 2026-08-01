@@ -1,9 +1,9 @@
 package simu5g.stack.ip2nic;
 
 //
-// Selects the stack leg (0 = LTE, 1 = NR) for outgoing packets, and attaches
-// the choice to the packet as a LegReq tag. Sits above ~Ip2Nic in the
-// outgoing packet path.
+// Leg selection for the stock LTE/NR leg pair (0 = LTE, 1 = NR): selects the
+// stack leg for outgoing packets and attaches the choice to the packet as a
+// LegReq tag. Sits above ~Ip2Nic in the outgoing packet path.
 //
 // When both legs are available, the choice is made by evaluating a
 // configurable expression. Two expressions are provided:
@@ -13,7 +13,7 @@ package simu5g.stack.ip2nic;
 // Available variables: typeOfService (int), packetOrdinal (int per-flow counter).
 // Return: the leg index.
 //
-simple LegSelection like ILegSelection
+simple LteNrLegSelection like ILegSelection
 {
     parameters:
         @display("i=block/fork");

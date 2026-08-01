@@ -14,7 +14,7 @@ package simu5g.stack.pdcp;
 //
 // TX-side leg dispatcher for a dual-connectivity split bearer (two legs). Each
 // PDCP PDU is steered per its LegReq tag -- the per-packet leg decision is
-// owned by the ~LegSelection module, so this module makes no steering decision
+// owned by the ~ILegSelection module, so this module makes no steering decision
 // of its own. It then applies that leg's DC-specific id mapping on the way out:
 //  - leg 0 (local LTE leg): ids already correct; emits pdcpSduSent.
 //  - leg 1 on a UE (the local NR stack): rewrites the flow's source/destination
