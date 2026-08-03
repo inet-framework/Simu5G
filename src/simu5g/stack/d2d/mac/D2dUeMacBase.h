@@ -95,7 +95,7 @@ class D2dUeMacBase : public Base, public ID2dMacUe
      */
     void macHandleRac(cPacket *pkt) override;
 
-    void macHandleD2DModeSwitch(cPacket *pkt);
+    virtual void macHandleD2DModeSwitch(cPacket *pkt);
 
     /**
      * macPduMake() creates MAC PDUs (one for each CID)
