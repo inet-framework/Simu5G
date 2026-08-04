@@ -139,10 +139,17 @@ class LteMacUe : public LteMacBase
     /// buffers for D2D communication stay intact)
     virtual void purgeRxHarqBuffers() {}
 
-    // scheduling bookkeeping: true when no carrier produced a schedule.
-    // Written by the UL scheduling loops of the NR and D2D main loops
-    // (deliberately not initialized, matching the historical per-class copies).
-    bool emptyScheduleList_;
+    // Scheduling bookkeeping: true when no carrier produced a schedule this TTI.
+    // Written at the top of the UL scheduling block in every UE main loop (LTE, NR
+    // and D2D) and read only downstream of that write: directly below it, and from
+    // macPduMake(), whose only two call sites are that same block and the
+    // all-SDUs-arrived path, which is reachable only via the macSduRequest() in it.
+    // The initial value is therefore inert -- verified by running the full suite
+    // with it set to true, which reproduced every fingerprint. It is initialized
+    // anyway: reading an indeterminate bool is UB the moment that dominance is
+    // broken, and false keeps a UE that ever got there on the normal SDU-request
+    // path instead of emitting a spurious BSR.
+    bool emptyScheduleList_ = false;
 
     /**
      * macPduUnmake() extracts SDUs from a received MAC
