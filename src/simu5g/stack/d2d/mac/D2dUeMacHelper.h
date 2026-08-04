@@ -49,19 +49,16 @@ class D2dUeMacHelper
     bool usePreconfiguredTxParams_ = false;
     UserTxParams *preconfiguredTxParams_ = nullptr;
 
-    // signal for the mode-switch-notification statistic; registered by the owning
-    // MAC class (in its own translation unit!) and passed in, so that the global
-    // signal registration order -- and with it the result recording order that the
-    // 'sz' fingerprint ingredient hashes -- stays exactly as it was before the
-    // helper extraction
-    simsignal_t rcvdD2DModeSwitchNotificationSignal_;
+    // signal for the mode-switch-notification statistic; interned at runtime (see the
+    // "Signals" note in D2dUeMacBase.h)
+    simsignal_t rcvdD2DModeSwitchNotificationSignal_ = SIMSIGNAL_NULL;
 
     // build and return new preconfigured user tx params (caller takes ownership)
     UserTxParams *buildPreconfiguredTxParams(Binder *binder);
 
   public:
-    D2dUeMacHelper(LteMacUe *mac, simsignal_t rcvdD2DModeSwitchNotificationSignal)
-        : mac_(mac), rcvdD2DModeSwitchNotificationSignal_(rcvdD2DModeSwitchNotificationSignal) {}
+    explicit D2dUeMacHelper(LteMacUe *mac)
+        : mac_(mac), rcvdD2DModeSwitchNotificationSignal_(cComponent::registerSignal("rcvdD2DModeSwitchNotification")) {}
     ~D2dUeMacHelper();
 
     // serving eNB's D2D MAC view

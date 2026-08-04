@@ -21,12 +21,13 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-simsignal_t LteHarqBufferRxD2D::macThroughputD2D_ = cComponent::registerSignal("macThroughputD2D");
-simsignal_t LteHarqBufferRxD2D::macDelayD2D_ = cComponent::registerSignal("macDelayD2D");
-
 LteHarqBufferRxD2D::LteHarqBufferRxD2D(unsigned int num, LteMacBase *owner, Binder *binder, MacNodeId srcId, bool isMulticast)
     : LteHarqBufferRx(binder, owner, num, srcId)
 {
+    // interned at runtime -- see the "Signals" note in D2dUeMacBase.h
+    macThroughputD2D_ = cComponent::registerSignal("macThroughputD2D");
+    macDelayD2D_ = cComponent::registerSignal("macDelayD2D");
+
     initMacUe();
     isMulticast_ = isMulticast;
 

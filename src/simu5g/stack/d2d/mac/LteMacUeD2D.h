@@ -29,17 +29,9 @@ using namespace omnetpp;
 class LteMacUeD2D : public D2dUeMacBase<LteMacUe>
 {
   protected:
-    // signal registered here (not in the mixin or the helper) to keep the
-    // global signal registration order -- and thus the sz fingerprint --
-    // unchanged
-    static simsignal_t rcvdD2DModeSwitchNotificationSignal_;
-
     /// purge corrupted PDUs of the DL buffer only, keeping the D2D mirror
     /// buffers intact
     void purgeRxHarqBuffers() override;
-
-  public:
-    LteMacUeD2D();
 };
 
 } //namespace

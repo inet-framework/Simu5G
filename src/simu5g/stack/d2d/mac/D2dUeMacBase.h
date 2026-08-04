@@ -54,19 +54,35 @@ using namespace omnetpp;
  * reserveTxHarqUnits() (synchronous vs. asynchronous H-ARQ), preserving each
  * variant's historical behavior exactly.
  *
- * The mode-switch-notification signal id is supplied by the leaf constructor:
- * LteMacUeD2D passes its static member (registered at load time at its
- * historical position in the global signal registration order -- an sz
- * fingerprint ingredient); NrMacUeD2D interns the same name at runtime.
- * There is deliberately NO static registerSignal() in this header or in any
- * new translation unit.
+ * Signals: every D2D signal id in this package is obtained by interning the name
+ * at RUNTIME -- from a module's initialize(), or from a helper's constructor --
+ * never by a static registerSignal() initializer. Static registration happens at
+ * load time in link order, so a static in any D2D translation unit would insert
+ * D2D names into the middle of the core's signal-id sequence, shifting the order
+ * in which results are recorded and with it the 'sz' fingerprint ingredient, in a
+ * way that depends on the link line. Interning at runtime keeps every core signal
+ * id identical whether or not the D2D package is linked in, which is what makes
+ * the feature-off build genuinely equivalent to the core alone.
  */
 template<class Base>
 class D2dUeMacBase : public Base, public ID2dMacUe
 {
   protected:
     // holds the D2D-specific UE-MAC state and logic
-    D2dUeMacHelper d2dUeHelper_;
+    D2dUeMacHelper d2dUeHelper_{this};
+
+    // buffer-overflow statistic for the D2D directions; the core MAC owns only the
+    // DL/UL ones. Interned in initialize() -- see the "Signals" note above.
+    simsignal_t macBufferOverflowD2DSignal_ = SIMSIGNAL_NULL;
+
+    /// The D2D directions are serviced here; everything else defers to the core MAC.
+    void recordBufferOverflow(Direction dir, double sample) override
+    {
+        if (dir == D2D || dir == D2D_MULTI)
+            this->emit(macBufferOverflowD2DSignal_, sample);
+        else
+            Base::recordBufferOverflow(dir, sample);
+    }
 
     /**
      * Reads MAC parameters for the UE and performs initialization.
@@ -116,11 +132,6 @@ class D2dUeMacBase : public Base, public ID2dMacUe
     LcgScheduler *createLcgScheduler() override;
 
   public:
-    explicit D2dUeMacBase(simsignal_t rcvdD2DModeSwitchNotificationSignal)
-        : d2dUeHelper_(this, rcvdD2DModeSwitchNotificationSignal)
-    {
-    }
-
     void doHandover(MacNodeId targetEnb) override;
 };
 
@@ -128,6 +139,9 @@ template<class Base>
 void D2dUeMacBase<Base>::initialize(int stage)
 {
     Base::initialize(stage);
+    if (stage == inet::INITSTAGE_LOCAL)
+        macBufferOverflowD2DSignal_ = cComponent::registerSignal("macBufferOverFlowD2D");
+
     if (stage == INITSTAGE_SIMU5G_AMC_ATTACHUSER) {
         // get parameters
         d2dUeHelper_.setUsePreconfiguredTxParams(this->par("usePreconfiguredTxParams"));

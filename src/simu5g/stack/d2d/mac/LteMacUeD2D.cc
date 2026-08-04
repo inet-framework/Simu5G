@@ -23,14 +23,6 @@ Define_Module(LteMacUeD2D);
 
 using namespace inet;
 
-// NOTE: registered HERE (not in the mixin or the helper) to keep the global
-// signal registration order -- and thus the sz fingerprint -- unchanged.
-simsignal_t LteMacUeD2D::rcvdD2DModeSwitchNotificationSignal_ = registerSignal("rcvdD2DModeSwitchNotification");
-
-LteMacUeD2D::LteMacUeD2D() : D2dUeMacBase<LteMacUe>(rcvdD2DModeSwitchNotificationSignal_)
-{
-}
-
 void LteMacUeD2D::purgeRxHarqBuffers()
 {
     unsigned int purged = 0;

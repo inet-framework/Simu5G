@@ -57,6 +57,11 @@ class D2dUePhy : public Base
     // the captured frames it decodes live in d2dHelper_.
     cMessage *d2dDecodingTimer_ = nullptr;
 
+    // Interned in initialize() rather than registered by a static initializer, so that
+    // linking the D2D package in cannot shift the signal ids the core assigns. See the
+    // "Signals" note in D2dUeMacBase.h.
+    simsignal_t averageCqiD2DSignal_ = SIMSIGNAL_NULL;
+
     void initialize(int stage) override;
     void handleSelfMessage(cMessage *msg) override;
 
@@ -112,7 +117,7 @@ class D2dUePhy : public Base
     void recordExtraTxCqi(double cqi, const UserControlInfo *info) override
     {
         if (info->getDirection() == D2D || info->getDirection() == D2D_MULTI)
-            this->emit(this->averageCqiD2DSignal_, cqi);
+            this->emit(averageCqiD2DSignal_, cqi);
     }
 
     /// keep the historical D2D frame naming (all control frames named "harqFeedback-grant")
@@ -162,6 +167,7 @@ void D2dUePhy<Base>::initialize(int stage)
 {
     Base::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
+        averageCqiD2DSignal_ = cComponent::registerSignal("averageCqiD2D");
         d2dHelper_.setD2dTxPower(this->par("d2dTxPower"));
         d2dHelper_.setMulticastEnableCaptureEffect(this->par("d2dMulticastCaptureEffect"));
         d2dHelper_.setMulticastD2DRangeCheckEnabled(this->par("enableMulticastD2DRangeCheck"));

@@ -211,6 +211,25 @@ class RlcUmRxEntityD2D : public Base, public ID2dRlcUmRxEntity
     // returns true if this entity serves a D2D_MULTI connection
     bool isD2DMultiConnection() { return this->flowControlInfo_->getDirection() == D2D_MULTI; }
 
+    // Interned in initialize() rather than registered by a static initializer, so that
+    // linking the D2D package in cannot shift the signal ids the core assigns. See the
+    // "Signals" note in D2dUeMacBase.h.
+    simsignal_t rlcDelayD2DSignal_ = SIMSIGNAL_NULL;
+    simsignal_t rlcThroughputD2DSignal_ = SIMSIGNAL_NULL;
+    simsignal_t rlcPduDelayD2DSignal_ = SIMSIGNAL_NULL;
+    simsignal_t rlcPduThroughputD2DSignal_ = SIMSIGNAL_NULL;
+
+    void initialize(int stage) override
+    {
+        Base::initialize(stage);
+        if (stage == inet::INITSTAGE_LOCAL) {
+            rlcDelayD2DSignal_ = cComponent::registerSignal("rlcDelayD2D");
+            rlcThroughputD2DSignal_ = cComponent::registerSignal("rlcThroughputD2D");
+            rlcPduDelayD2DSignal_ = cComponent::registerSignal("rlcPduDelayD2D");
+            rlcPduThroughputD2DSignal_ = cComponent::registerSignal("rlcPduThroughputD2D");
+        }
+    }
+
     /**
      * Discard whatever the old mode left in the RX buffer (delivering what can
      * still be reassembled) and stop the reassembly/reordering timer.

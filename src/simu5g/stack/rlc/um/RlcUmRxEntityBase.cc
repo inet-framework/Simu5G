@@ -25,10 +25,6 @@ simsignal_t RlcUmRxEntityBase::rlcDelaySignal_[2] = { cComponent::registerSignal
 simsignal_t RlcUmRxEntityBase::rlcThroughputSignal_[2] = { cComponent::registerSignal("rlcThroughputDl"), cComponent::registerSignal("rlcThroughputUl") };
 simsignal_t RlcUmRxEntityBase::rlcPduDelaySignal_[2] = { cComponent::registerSignal("rlcPduDelayDl"), cComponent::registerSignal("rlcPduDelayUl") };
 simsignal_t RlcUmRxEntityBase::rlcPduThroughputSignal_[2] = { cComponent::registerSignal("rlcPduThroughputDl"), cComponent::registerSignal("rlcPduThroughputUl") };
-simsignal_t RlcUmRxEntityBase::rlcDelayD2DSignal_ = registerSignal("rlcDelayD2D");
-simsignal_t RlcUmRxEntityBase::rlcThroughputD2DSignal_ = registerSignal("rlcThroughputD2D");
-simsignal_t RlcUmRxEntityBase::rlcPduDelayD2DSignal_ = registerSignal("rlcPduDelayD2D");
-simsignal_t RlcUmRxEntityBase::rlcPduThroughputD2DSignal_ = registerSignal("rlcPduThroughputD2D");
 simsignal_t RlcUmRxEntityBase::receivedPacketFromLowerLayerSignal_ = registerSignal("receivedPacketFromLowerLayer");
 simsignal_t RlcUmRxEntityBase::sentPacketToUpperLayerSignal_ = registerSignal("sentPacketToUpperLayer");
 

@@ -55,16 +55,10 @@ class RlcUmRxEntityBase : public RlcRxEntityBase
     // Signals. Declared/registered in one translation unit (RlcUmRxEntityBase.cc),
     // in their historical order, so registerSignal() ordering -- and therefore result
     // recording -- is unaffected by the split. Emitted by the concrete subclasses.
-    // The *D2D signals are registered here (and only here) for that ordering, but are
-    // emitted exclusively by the D2D entity profiles in the d2d package.
     static simsignal_t rlcDelaySignal_[2];
     static simsignal_t rlcThroughputSignal_[2];
     static simsignal_t rlcPduDelaySignal_[2];
     static simsignal_t rlcPduThroughputSignal_[2];
-    static simsignal_t rlcDelayD2DSignal_;
-    static simsignal_t rlcThroughputD2DSignal_;
-    static simsignal_t rlcPduDelayD2DSignal_;
-    static simsignal_t rlcPduThroughputD2DSignal_;
     static simsignal_t receivedPacketFromLowerLayerSignal_;
     static simsignal_t sentPacketToUpperLayerSignal_;
 

@@ -16,10 +16,4 @@ namespace simu5g {
 
 Define_Module(NrMacUeD2D);
 
-// the signal name is interned at runtime here -- see the header for why there
-// is deliberately NO static registerSignal() in this translation unit
-NrMacUeD2D::NrMacUeD2D() : D2dUeMacBase<NrMacUe>(cComponent::registerSignal("rcvdD2DModeSwitchNotification"))
-{
-}
-
 } //namespace

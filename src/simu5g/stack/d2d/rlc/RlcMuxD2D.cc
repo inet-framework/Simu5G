@@ -21,9 +21,8 @@ namespace simu5g {
 
 Define_Module(RlcMuxD2D);
 
-// NOTE: no static registerSignal() calls in this translation unit -- all
-// signals used by this module are registered in RlcMux.cc (global signal-ID
-// order stability, sz fingerprint).
+// This module emits no D2D-specific signals of its own; the ones it forwards are
+// owned by RlcMux. See the "Signals" note in D2dUeMacBase.h for the package rule.
 
 void RlcMuxD2D::fromMacLayer(cPacket *pktAux)
 {

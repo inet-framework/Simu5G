@@ -22,11 +22,8 @@ Define_Module(NrRlcUmTxEntityD2D);
 Define_Module(LteRlcUmRxEntityD2D);
 Define_Module(NrRlcUmRxEntityD2D);
 
-// NOTE: deliberately NO static registerSignal() calls in this translation unit.
-// The D2D statistic signals emitted below are registered in the core RLC UM RX
-// translation unit (RlcUmRxEntityBase.cc), in their historical order, and are
-// inherited here as protected statics -- moving the registration would shift the
-// global signal-ID order and with it the sz fingerprints.
+// The D2D statistic signals emitted below are owned by RlcUmRxEntityD2D<Base> and
+// interned at runtime in its initialize() -- see the "Signals" note in D2dUeMacBase.h.
 
 using namespace inet;
 

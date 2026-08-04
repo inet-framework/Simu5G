@@ -37,8 +37,8 @@ class LteHarqBufferRxD2D : public LteHarqBufferRx
   protected:
 
     // D2D Statistics
-    static inet::simsignal_t macDelayD2D_;
-    static inet::simsignal_t macThroughputD2D_;
+    inet::simsignal_t macDelayD2D_ = SIMSIGNAL_NULL;
+    inet::simsignal_t macThroughputD2D_ = SIMSIGNAL_NULL;
 
     /**
      * Checks for all processes if the PDU has been evaluated and sends

@@ -46,10 +46,9 @@ using namespace omnetpp;
  *                  fork overrides, see LteMacEnbD2D.h)
  *   NrMacGnbD2D  = D2dEnbMacBase<NrMacGnb>
  *
- * No signals are registered here: the mode-switch statistics are declared on
- * the D2D NED modules, and the mixin introduces no static registerSignal()
- * (which would perturb the global signal-registration order and hence the sz
- * fingerprints).
+ * No signals are owned here: the mode-switch statistics are declared on the D2D
+ * NED modules and emitted by the UE-side mixin. See the "Signals" note in
+ * D2dUeMacBase.h for the package-wide registration rule.
  */
 template<class Base>
 class D2dEnbMacBase : public Base, public ID2dMacEnb

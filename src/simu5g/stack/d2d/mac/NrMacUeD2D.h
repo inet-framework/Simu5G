@@ -26,17 +26,9 @@ namespace simu5g {
  * MAC. All the D2D logic lives in the mixin (see D2dUeMacBase.h); the NR main
  * loop is inherited from NrMacUe (its only D2D delta flows through the
  * isBsrPending() override in the mixin).
- *
- * NOTE: the mode-switch signal name is interned at RUNTIME in the constructor
- * (not via a static registerSignal() in this TU): the name is already
- * registered by LteMacUeD2D.cc's static at its original position, and a static
- * in a new translation unit would perturb the global signal registration
- * order -- and thus the sz fingerprint -- link-order dependently.
  */
 class NrMacUeD2D : public D2dUeMacBase<NrMacUe>
 {
-  public:
-    NrMacUeD2D();
 };
 
 } //namespace

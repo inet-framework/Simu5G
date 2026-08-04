@@ -38,7 +38,6 @@ simsignal_t LteMacBase::ulMacPduArrivedSignal_ = registerSignal("ulMacPduArrived
 // register signals
 simsignal_t LteMacBase::macBufferOverflowDlSignal_ = registerSignal("macBufferOverFlowDl");
 simsignal_t LteMacBase::macBufferOverflowUlSignal_ = registerSignal("macBufferOverFlowUl");
-simsignal_t LteMacBase::macBufferOverflowD2DSignal_ = registerSignal("macBufferOverFlowD2D");
 simsignal_t LteMacBase::receivedPacketFromUpperLayerSignal_ = registerSignal("receivedPacketFromUpperLayer");
 simsignal_t LteMacBase::receivedPacketFromLowerLayerSignal_ = registerSignal("receivedPacketFromLowerLayer");
 simsignal_t LteMacBase::sentPacketToUpperLayerSignal_ = registerSignal("sentPacketToUpperLayer");
@@ -182,10 +181,15 @@ void LteMacBase::fromPhy(cPacket *pktAux)
 
 void LteMacBase::recordBufferOverflow(Direction dir, double sample)
 {
-    simsignal_t signal = (dir == DL) ? macBufferOverflowDlSignal_ :
-                            (dir == UL) ? macBufferOverflowUlSignal_ :
-                            macBufferOverflowD2DSignal_;
-    emit(signal, sample);
+    // The core MAC knows only the infrastructure directions; D2D directions are
+    // serviced by the D2D MAC subclasses, which override this.
+    if (dir == DL)
+        emit(macBufferOverflowDlSignal_, sample);
+    else if (dir == UL)
+        emit(macBufferOverflowUlSignal_, sample);
+    else
+        throw cRuntimeError("LteMacBase::recordBufferOverflow: direction %s not supported "
+                "by the core MAC", dirToA(dir).c_str());
 }
 
 LteHarqBufferRx *LteMacBase::createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo)
