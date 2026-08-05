@@ -194,7 +194,17 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     // exist (e.g. re-establishment after a partial teardown); skip instead of
     // crashing on duplicate MAC/RLC/PDCP creation.
     DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
-    bool isNr = (registration_->getNodeType()==UE && isNrUe(lteInfo->getDestId())); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
+
+    // Which of this node's legs does the bearer belong to? For a unicast bearer the
+    // destination *is* this node, so its id answers that. A multicast bearer has no single
+    // destination -- getDestId() then names some other node -- but it is transmitted on the
+    // sender's leg and delivered only to peers on the matching leg (D2dUePhy::sendMulticast
+    // skips receivers whose isNrUe() disagrees with the transmitting PHY's isNr_), so there
+    // the sender's id selects the leg. This mirrors createOutgoingConnection(), which uses
+    // getSourceId() because there the sender is this node.
+    MacNodeId legNodeId = (lteInfo->getMulticastGroupId() != NODEID_NONE)
+            ? lteInfo->getSourceId() : lteInfo->getDestId();
+    bool isNr = (registration_->getNodeType() == UE && isNrUe(legNodeId));
     cModule *existingRlcEnt = lookupRlcEntityModule(rlcId, isNr);
     if (existingRlcEnt != nullptr && existingRlcEnt->gate("lowerIn")->isConnectedOutside()) {
         EV << "BearerManagement::createIncomingConnection - entities for " << rlcId.str() << " already exist, skipping\n";
@@ -204,7 +214,7 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     // Create MAC incoming connection
     FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
     MacNodeId senderId = desc.getSourceId();
-    auto mac = (registration_->getNodeType()==UE && isNrUe(lteInfo->getDestId())) ? nrMacModule.get() : macModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
+    auto mac = isNr ? nrMacModule.get() : macModule.get();
     LogicalCid lcid = mac->drbIdToLcid(desc.getDrbId());
     MacCid cid = MacCid(senderId, lcid);
     mac->createIncomingConnection(cid, desc);
