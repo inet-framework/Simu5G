@@ -112,7 +112,17 @@ class HandoverController : public cSimpleModule
 
     virtual void triggerHandover();
     virtual void doHandover();
-    virtual void deleteOldBuffers(MacNodeId servingNodeId);
+    /**
+     * Tear down the bearer state this UE shares with @p servingNodeId, at both ends.
+     *
+     * @param localNodeIsBeingDeleted  true when the whole UE module tree is being deleted
+     *        mid-simulation (see finish()). The local RLC/PDCP entity modules are then left
+     *        alone: they are submodules of the NIC that is about to be destroyed anyway, and
+     *        deleting them here would mutate the submodule list that OMNeT++'s callFinish()
+     *        is enumerating, which aborts the run with "SubmoduleIterator: Submodule
+     *        insertion/deletion detected". The peer-side and global state still has to go.
+     */
+    virtual void deleteOldBuffers(MacNodeId servingNodeId, bool localNodeIsBeingDeleted = false);
     virtual void updateHysteresisThreshold(double rssi);
     virtual LteAmc *getAmcModule(MacNodeId nodeId);
 
@@ -128,6 +138,11 @@ class HandoverController : public cSimpleModule
     virtual void onHandoverExecuting();
     /// Called when the (delayed) handover-completion notification fires.
     virtual void onHandoverCompleted();
+    /// Called by finish() when the UE's module tree is being deleted mid-simulation, after
+    /// the serving cell's AMC has been detached from the UL and DL directions. It is the
+    /// departure counterpart of onHandoverExecuting(): whatever that hook detaches on leaving
+    /// the old cell has to be detached here too, since the UE is leaving for good.
+    virtual void onNodeLeaving();
 
   public:
     ~HandoverController() override;

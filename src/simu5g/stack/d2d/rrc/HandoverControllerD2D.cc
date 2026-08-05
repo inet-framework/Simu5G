@@ -101,6 +101,23 @@ void HandoverControllerD2D::onHandoverExecuting()
     }
 }
 
+void HandoverControllerD2D::onNodeLeaving()
+{
+    // A D2D-capable UE also attached itself to the D2D direction (see LteMacUeD2D::initialize),
+    // and onHandoverExecuting() detaches it from the old cell on every handover. Departure has
+    // to do the same, or the AMC keeps the departed id in its D2D structures and later trips
+    // getD2DCapability()'s "is a registered UE" assert when getFeedbackD2D() walks
+    // d2dFeedbackHistory_.
+    if (dynamic_cast<PhyUeD2D*>(phy_)) {
+        LteAmc *amc = getAmcModule(servingNodeId_);
+        // The serving eNB may not be D2D-capable (its AMC would throw on a D2D direction); skip if so.
+        if (dynamic_cast<ID2dAmc *>(amc) != nullptr)
+            amc->detachUser(nodeId_, D2D);
+        else
+            EV_WARN << "HandoverControllerD2D: serving eNB " << servingNodeId_ << " is not D2D-capable - skipping D2D AMC detach" << endl;
+    }
+}
+
 void HandoverControllerD2D::onHandoverCompleted()
 {
     // Handover completed: ask the new serving cell's mode selection module whether
