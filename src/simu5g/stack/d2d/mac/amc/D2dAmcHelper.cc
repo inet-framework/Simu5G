@@ -97,6 +97,13 @@ const LteSummaryFeedback& D2dAmcHelper::getFeedbackD2D(MacNodeId id, Remote ante
             if (histNodeId == NODEID_NONE) // skip fake UE 0
                 continue;
 
+            // Skip peers that have left the simulation. purgeDepartedNode() drops them at
+            // unregistration, but pushFeedbackD2D() re-creates the key for any feedback that
+            // still names them, so the map cannot be assumed clean here -- and
+            // getD2DCapability() asserts that its arguments are registered UEs.
+            if (!amc_->getBinder()->nodeExists(histNodeId))
+                continue;
+
             if (d2dBinder_ == nullptr)
                 d2dBinder_ = D2dBinder::getInstance(amc_->getBinder());
             if (d2dBinder_->getD2DCapability(id, histNodeId)) {
@@ -185,6 +192,17 @@ void D2dAmcHelper::rescaleD2D(double rePerRb)
 {
     // D2D has no separate MCS table to rescale (the former write-only d2dMcsTable_
     // was removed as dead state); kept as the D2D branch of the rescaleMcsForDirection seam.
+}
+
+void D2dAmcHelper::purgeDepartedNode(MacNodeId nodeId)
+{
+    // Drop the node as a *peer* key of the D2D feedback history, on every carrier. This is
+    // the only structure a never-attached node can appear in, and it is keyed by node id, so
+    // erasing is safe. The index-keyed structures (d2dNodeIndex_ and the vectors it indexes)
+    // are deliberately left alone: erasing an entry from the middle would shift every other
+    // node's index. Those are the attached-user structures, which detachUserD2D() maintains.
+    for (auto& [carrierFrequency, carrierHistory] : d2dFeedbackHistory_)
+        carrierHistory.erase(nodeId);
 }
 
 void D2dAmcHelper::detachUserD2D(MacNodeId nodeId)
