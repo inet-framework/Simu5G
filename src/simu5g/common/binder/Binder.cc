@@ -33,6 +33,8 @@ using namespace inet;
 
 Define_Module(Binder);
 
+simsignal_t Binder::nodeUnregisteredSignal_ = cComponent::registerSignal("nodeUnregistered");
+
 void Binder::registerCarrier(GHz carrierFrequency, unsigned int carrierNumBands, unsigned int numerologyIndex, bool useTdd, unsigned int tddNumSymbolsDl, unsigned int tddNumSymbolsUl)
 {
     CarrierInfoMap::iterator it = componentCarriers_.find(carrierFrequency);
@@ -203,6 +205,36 @@ void Binder::unregisterNode(MacNodeId id)
     if (nodeInfoMap_.erase(id) != 1) {
         throw cRuntimeError("Cannot unregister node - node id %d - not found", num(id));
     }
+
+    // Drop the UE from the UE list too. It is iterated by code that then queries the node
+    // by id -- e.g. PhyEnbD2D::requestFeedback()'s D2D feedback loop, which called
+    // D2dBinder::getD2DCapability() on the departed id and tripped its "is a valid UE"
+    // assert -- and its 'ue'/'phy' members point at modules that are being deleted. The
+    // Binder owns these objects (see ~Binder), so free it here.
+    for (auto it = ueList_.begin(); it != ueList_.end(); ) {
+        if ((*it)->id == id) {
+            delete *it;
+            it = ueList_.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    // Everything else this Binder keys by node id. A node that leaves mid-simulation (Veins
+    // removing an arrived vehicle) used to be erased from only some of these, so later lookups
+    // and iterations still found it and then asserted that it is a valid, registered UE.
+    for (auto it = ipAddressToNrMacNodeId_.begin(); it != ipAddressToNrMacNodeId_.end(); ) {
+        if (it->second == id)
+            it = ipAddressToNrMacNodeId_.erase(it);
+        else
+            ++it;
+    }
+
+    nodeGroupMemberships_.erase(id);
+    ueNumerologyIndex_.erase(id);
+    ueHandoverTriggered_.erase(id);
+    handoverTriggered_.erase(id);
     // remove 'id' from ulTransmissionMap_ if currently scheduled
     for (auto& carrier : ulTransmissionMap_) { // all carrier frequency
         for (auto& bands : carrier.second) { // all RB's for current and last TTI (vector<vector<vector<UeAllocationInfo>>>)
@@ -218,6 +250,13 @@ void Binder::unregisterNode(MacNodeId id)
             }
         }
     }
+
+    // Tell the rest of the model, so that state this Binder does not own can be purged too.
+    // Everything keyed by node id has the same problem: a departed id that stays behind is
+    // later handed back to a lookup that asserts it is a registered node. The optional D2D
+    // layer is one such holder (D2dBinder, and the D2D AMCs) and must not be referenced from
+    // here, hence the signal rather than a direct call.
+    emit(nodeUnregisteredSignal_, (long)num(id));
 }
 
 void Binder::registerServingNode(MacNodeId enbId, MacNodeId ueId)

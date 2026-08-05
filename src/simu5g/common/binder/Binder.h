@@ -236,6 +236,14 @@ class Binder : public cSimpleModule
     virtual void registerNode(MacNodeId nodeId, cModule *nodeModule, RanNodeType type, bool isNr = false);
 
     /**
+     * Emitted (with the node id as a long) at the end of unregisterNode(), for holders of
+     * per-node state that this Binder does not own -- notably the optional D2D layer, which
+     * the core must not reference directly. Carries no statistic; it exists only as a
+     * notification.
+     */
+    static simsignal_t nodeUnregisteredSignal_;
+
+    /**
      * Un-registers a node from the global Binder module.
      */
     virtual void unregisterNode(MacNodeId id);

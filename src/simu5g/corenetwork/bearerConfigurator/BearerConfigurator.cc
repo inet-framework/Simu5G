@@ -44,6 +44,7 @@ void BearerConfigurator::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
+        binder_->subscribe(Binder::nodeUnregisteredSignal_, this);
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         // After INITSTAGE_SIMU5G_NODE_RELATIONSHIPS, so the UEs' serving nodes are known,
@@ -906,6 +907,20 @@ const DrbDesc *BearerConfigurator::findBearerDefinition(const FlowId& flow)
         }
     }
     return nullptr;
+}
+
+void BearerConfigurator::receiveSignal(cComponent *source, simsignal_t signalID, long nodeId, cObject *details)
+{
+    ASSERT(signalID == Binder::nodeUnregisteredSignal_);
+    MacNodeId id = MacNodeId(nodeId);
+
+    // the pools are keyed by node pair, so the departed id sits in every pair it took part in
+    for (auto it = drbIdsInUse_.begin(); it != drbIdsInUse_.end(); ) {
+        if (it->first.first == id || it->first.second == id)
+            it = drbIdsInUse_.erase(it);
+        else
+            ++it;
+    }
 }
 
 void BearerConfigurator::createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)

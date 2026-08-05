@@ -35,7 +35,7 @@ using namespace omnetpp;
  * decides which data radio bearers exist and when they are set up. See the NED
  * file for details.
  */
-class BearerConfigurator : public cSimpleModule
+class BearerConfigurator : public cSimpleModule, public cListener
 {
   public:
     ~BearerConfigurator() override;
@@ -114,6 +114,13 @@ class BearerConfigurator : public cSimpleModule
     virtual void parseDrbDefinitions(const char *paramName, bool onDemand,
             const std::map<cModule *, std::vector<MacNodeId>>& ueNodeIds, const std::string& networkPrefix,
             std::map<cModule *, std::map<DrbId, DrbDesc>>& drbsOfUe);
+
+    /**
+     * Binder::nodeUnregisteredSignal_: forget the DRB identity pools of a node that has
+     * left the simulation. drbIdsInUse_ is keyed by node pair, so a departed id survives
+     * inside every pair it took part in and would keep those identities reserved.
+     */
+    void receiveSignal(cComponent *source, simsignal_t signalID, long nodeId, cObject *details) override;
 
     virtual bool isDualConnectivityRequired(const FlowId& flow);
     virtual void createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp);
