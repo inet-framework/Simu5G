@@ -113,7 +113,7 @@ void HandoverController::finish()
         // do this only if this PHY layer is connected to a serving base station
         if (servingNodeId_ != NODEID_NONE) {
             // clear buffers
-            deleteOldBuffers(servingNodeId_);
+            deleteOldBuffers(servingNodeId_, /*localNodeIsBeingDeleted=*/true);
 
             // amc calls
             LteAmc *amc = getAmcModule(servingNodeId_);
@@ -121,6 +121,8 @@ void HandoverController::finish()
                 amc->detachUser(nodeId_, UL);
                 amc->detachUser(nodeId_, DL);
             }
+
+            onNodeLeaving();
 
             // binder call
             binder_->unregisterServingNode(servingNodeId_, nodeId_);
@@ -154,6 +156,10 @@ void HandoverController::onHandoverStarting()
 }
 
 void HandoverController::onHandoverExecuting()
+{
+}
+
+void HandoverController::onNodeLeaving()
 {
 }
 
@@ -452,7 +458,7 @@ void HandoverController::forceHandover()
     scheduleAt(NOW, handoverStarter_);
 }
 
-void HandoverController::deleteOldBuffers(MacNodeId servingNodeId)
+void HandoverController::deleteOldBuffers(MacNodeId servingNodeId, bool localNodeIsBeingDeleted)
 {
     // Delete MAC Buffers
 
@@ -469,8 +475,12 @@ void HandoverController::deleteOldBuffers(MacNodeId servingNodeId)
     BearerManagement *servingBm = check_and_cast<BearerManagement *>(binder_->getRrcByNodeId(servingNodeId)->getSubmodule("bearerManagement"));
     servingBm->deleteLocalRlcQueues(nodeId_, isNr_);
 
-    // delete RLC entities for serving node at this UE
-    bearerManagement_->deleteLocalRlcQueues(nodeId_, isNr_);
+    // delete RLC entities for serving node at this UE. Keyed by the serving node, matching
+    // both the comment and the deleteLocalPdcpEntities(servingNodeId) call below; passing
+    // nodeId_ (this UE's own id) used to work only because the UE side ignored the argument
+    // and deleted every entity.
+    if (!localNodeIsBeingDeleted)
+        bearerManagement_->deleteLocalRlcQueues(servingNodeId, isNr_);
 
     // Delete PDCP Entities
     // delete pdcpEntities[nodeId_] at old serving node
@@ -486,7 +496,8 @@ void HandoverController::deleteOldBuffers(MacNodeId servingNodeId)
         servingBm->deleteLocalPdcpEntities(nodeId_);
 
     // delete PDCP entities for serving node at this UE
-    bearerManagement_->deleteLocalPdcpEntities(servingNodeId);
+    if (!localNodeIsBeingDeleted)
+        bearerManagement_->deleteLocalPdcpEntities(servingNodeId);
 
     // Flow establishment (BearerConfigurator::establishDataConnection) provisions NR-leg
     // entities for this UE at the serving node's DC secondary regardless of whether the UE's
@@ -497,7 +508,7 @@ void HandoverController::deleteOldBuffers(MacNodeId servingNodeId)
     if (otherHandoverController_ != nullptr && otherHandoverController_->getServingNodeId() == NODEID_NONE) {
         MacNodeId secondaryNodeId = binder_->getSecondaryNode(servingNodeId);
         if (secondaryNodeId != NODEID_NONE)
-            otherHandoverController_->deleteOldBuffers(secondaryNodeId);
+            otherHandoverController_->deleteOldBuffers(secondaryNodeId, localNodeIsBeingDeleted);
     }
 }
 

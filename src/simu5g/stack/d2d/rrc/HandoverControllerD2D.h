@@ -41,6 +41,8 @@ class HandoverControllerD2D : public HandoverController
     void onHandoverExecuting() override;
     /// Ask the new serving cell's mode selection whether D2D flows can go (back) to Direct Mode.
     void onHandoverCompleted() override;
+    /// Detach the D2D AMC direction on the serving cell when the UE leaves the simulation.
+    void onNodeLeaving() override;
 };
 
 } //namespace

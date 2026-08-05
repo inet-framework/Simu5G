@@ -979,9 +979,17 @@ void BearerManagement::deleteLocalRlcQueues(MacNodeId nodeId, bool nrStack)
     if (!rlcMux)
         return;
 
+    // Same keying rule as deleteLocalPdcpEntities(), and for the same reason: an RLC entity
+    // and the PDCP entity that feeds it are created together and wired together (the PDCP
+    // compound's legOut is connected to the RLC entity's upperIn), so they have to be deleted
+    // together. Wiping every RLC entity here while PDCP deletion is keyed by peer left the
+    // other peers' PDCP TX forwarding into a disconnected legOut, which the next packet from
+    // the application hit ("Gate 'legOut[0]' ... is not connected on the outside").
+    bool keyed = isEnb || registration_->getNrNodeId() != NODEID_NONE;
+
     // Delete the per-bearer RLC entity modules (each deletes its TX and RX side)
     for (auto it = entities.begin(); it != entities.end(); ) {
-        if (isEnb ? it->first.getNodeId() == nodeId : true) {
+        if (!keyed || it->first.getNodeId() == nodeId) {
             rlcMux->unregisterRxEntity(it->first);  // no-op if the RX side was never installed
             rlcMux->unregisterTxEntity(it->first);  // likewise for the TX side
             it->second->deleteModule();
