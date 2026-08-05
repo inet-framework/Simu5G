@@ -27,6 +27,7 @@ void Registration::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder.reference(this, "binderModule", true);
+        bearerConfigurator.reference(this, "bearerConfiguratorModule", true);
 
         cModule *containingNode = inet::getContainingNode(this);
         MacNodeId nodeId = MacNodeId(containingNode->par("macNodeId").intValue());
@@ -159,8 +160,11 @@ void Registration::registerMulticastGroups()
         MacNodeId multicastDestId = binder->getOrAssignDestIdForMulticastAddress(addr);
         // register in the LTE and also the NR stack, if any
         binder->joinMulticastGroup(lteNodeId, multicastDestId);
-        if (nrNodeId != NODEID_NONE)
+        bearerConfigurator->multicastGroupJoined(lteNodeId, multicastDestId);
+        if (nrNodeId != NODEID_NONE) {
             binder->joinMulticastGroup(nrNodeId, multicastDestId);
+            bearerConfigurator->multicastGroupJoined(nrNodeId, multicastDestId);
+        }
     }
 }
 

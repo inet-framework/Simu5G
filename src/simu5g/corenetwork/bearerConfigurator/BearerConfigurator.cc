@@ -958,6 +958,11 @@ void BearerConfigurator::createConnection(const FlowId& flow, const BearerReques
         createIncomingConnectionOnNode(sourceId, revFlow, revReq, sourceWithPdcp);
     }
     else {
+        // Remember the flow so that nodes joining this group later still get an RX leg; the
+        // loop below can only reach the members that already exist. See multicastGroupJoined().
+        if (multicastFlows_.find(groupId) == multicastFlows_.end())
+            multicastFlows_[groupId] = { flow, req, withPdcp };
+
         // Multicast bearers stay unidirectional: TX at the sender, RX at the members
         for (auto& [nodeId,_] : binder_->getNodeInfoMap())  //TODO use lte ones if LTE in DC setup, and NR ones if NR in DC setup
             if (nodeId != sourceId && binder_->isInMulticastGroup(nodeId, groupId))
@@ -965,6 +970,16 @@ void BearerConfigurator::createConnection(const FlowId& flow, const BearerReques
     }
 }
 
+
+void BearerConfigurator::multicastGroupJoined(MacNodeId nodeId, MacNodeId groupId)
+{
+    Enter_Method("multicastGroupJoined(%hu, %hu)", (unsigned short)nodeId, (unsigned short)groupId);
+
+    auto it = multicastFlows_.find(groupId);
+    if (it != multicastFlows_.end() && nodeId != it->second.flow.sourceId)
+        createIncomingConnectionOnNode(nodeId, it->second.flow, it->second.req,
+                getNodeTypeById(nodeId) == UE || it->second.withPdcp);
+}
 
 void BearerConfigurator::createIncomingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp)
 {

@@ -25,4 +25,5 @@ simple Registration like IRegistration
         string interfaceName = default("cellular");
         string routingTableModule;
         string binderModule = default("binder");
+        string bearerConfiguratorModule = default("bearerConfigurator");   // to tell the core network about a multicast group join
 }

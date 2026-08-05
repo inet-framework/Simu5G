@@ -69,6 +69,21 @@ class BearerConfigurator : public cSimpleModule, public cListener
     };
     std::vector<AuthoredBearer> authoredBearers_;
 
+    /*
+     * The flow that established each multicast bearer, kept so that a node joining the group
+     * later can still be given its RX leg (see multicastGroupJoined()). createConnection()
+     * provisions the members that exist when the sender starts, which is all of them only if
+     * the node population is static; with nodes created during the simulation the joiner
+     * would otherwise receive PDUs for a connection its stack knows nothing about.
+     * Keyed by multicast group id; the first sender to establish the bearer wins.
+     */
+    struct MulticastFlow {
+        FlowId flow;
+        BearerRequest req;
+        bool withPdcp = false;
+    };
+    std::map<MacNodeId, MulticastFlow> multicastFlows_;
+
 
   protected:
     void initialize(int stage) override;
@@ -128,6 +143,15 @@ class BearerConfigurator : public cSimpleModule, public cListener
     virtual void createOutgoingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp);
 
   public:
+    // A node has joined a multicast group (RRC registration tells us). If a sender has
+    // already established that group's bearer, the node missed the RX-leg provisioning
+    // createConnection() did over the membership as it stood then; give it one now, or
+    // its MAC will receive PDUs for a connection it has no descriptor for and assert in
+    // macPduUnmake(). Nodes that join before the bearer exists are covered by
+    // createConnection() itself; createIncomingConnection() de-duplicates, so a node
+    // reached by both paths is harmless.
+    virtual void multicastGroupJoined(MacNodeId nodeId, MacNodeId groupId);
+
     // Establish a duplex data radio bearer for the flow described by lteInfo:
     // entities for BOTH directions are created at both endpoints at once (DRBs are
     // bidirectional per TS 38.331; RLC-AM in particular needs the reverse path for
