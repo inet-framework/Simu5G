@@ -71,6 +71,17 @@ class D2dAmcHelper
     // D2D MCS rescaling
     void rescaleD2D(double rePerRb);
 
+    /**
+     * Forget a node that has left the simulation.
+     *
+     * Unlike detachUserD2D(), this must work for a node that was never attached to *this*
+     * AMC: a UE served by another cell still shows up here as a D2D feedback peer, so its id
+     * outlives it in d2dFeedbackHistory_ and any later walk of that map hands the id to
+     * D2dBinder::getD2DCapability(), which asserts that it is a registered UE. Driven by the
+     * Binder's node-unregistered notification, which reaches every D2D AMC in the network.
+     */
+    void purgeDepartedNode(MacNodeId nodeId);
+
     // handover support
     void detachUserD2D(MacNodeId nodeId);
     void attachUserD2D(MacNodeId nodeId);

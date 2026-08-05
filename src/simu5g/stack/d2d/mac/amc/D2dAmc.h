@@ -38,7 +38,7 @@ namespace simu5g {
  *               override, see NrAmcD2D.h)
  */
 template<class Base>
-class D2dAmc : public Base, public ID2dAmc
+class D2dAmc : public Base, public ID2dAmc, public cListener
 {
   protected:
     // holds the D2D-specific AMC state and logic
@@ -47,8 +47,19 @@ class D2dAmc : public Base, public ID2dAmc
     void initialize(int stage) override
     {
         Base::initialize(stage);
-        if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS)
+        if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
             d2dHelper_.initD2D();
+            // A departing UE outlives itself in the AMCs of cells it never attached to, as a
+            // D2D feedback peer, which detachUser() at its own serving cell cannot reach. The
+            // Binder's notification reaches every D2D AMC in the network, so it does.
+            this->getBinder()->subscribe(Binder::nodeUnregisteredSignal_, this);
+        }
+    }
+
+    void receiveSignal(cComponent *source, simsignal_t signalID, long nodeId, cObject *details) override
+    {
+        ASSERT(signalID == Binder::nodeUnregisteredSignal_);
+        d2dHelper_.purgeDepartedNode(MacNodeId(nodeId));
     }
 
     // the "D2D" amcMode selects the D2D AMC pilot; other modes fall back to the base
