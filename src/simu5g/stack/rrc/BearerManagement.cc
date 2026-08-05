@@ -344,7 +344,16 @@ void BearerManagement::createIncomingConnection(const FlowId& flow, const Bearer
     // exist (e.g. re-establishment after a partial teardown); skip instead of
     // crashing on duplicate MAC/RLC/PDCP creation.
     DrbKey rlcId = flow.rxDrbKey();
-    bool isNr = (registration_->getNodeType()==UE && isNrUe(flow.destId)); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
+
+    // Which of this node's legs does the bearer belong to? For a unicast bearer the
+    // destination *is* this node, so its id answers that. A multicast bearer has no single
+    // destination -- destId then names some other node -- but it is transmitted on the
+    // sender's leg and delivered only to peers on the matching leg (D2dUePhy::sendMulticast
+    // skips receivers whose isNrUe() disagrees with the transmitting PHY's isNr_), so there
+    // the sender's id selects the leg. This mirrors createOutgoingConnection(), which uses
+    // sourceId because there the sender is this node.
+    MacNodeId legNodeId = (flow.multicastGroupId != NODEID_NONE) ? flow.sourceId : flow.destId;
+    bool isNr = (registration_->getNodeType() == UE && isNrUe(legNodeId));
     cModule *existingRlcEnt = lookupRlcEntityModule(rlcId, isNr);
     if (existingRlcEnt != nullptr && existingRlcEnt->gate("lowerIn")->isConnectedOutside()) {
         EV << "BearerManagement::createIncomingConnection - entities for " << rlcId.str() << " already exist, skipping\n";
@@ -361,7 +370,7 @@ void BearerManagement::createIncomingConnection(const FlowId& flow, const Bearer
     const DrbDesc& drb = materializeDrb(flow, req, flow.sourceId, rlcId, isNr);
 
     MacNodeId senderId = flow.sourceId;
-    auto mac = (registration_->getNodeType()==UE && isNrUe(flow.destId)) ? nrMacModule.get() : macModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
+    auto mac = isNr ? nrMacModule.get() : macModule.get();
     LogicalCid lcid = mac->drbIdToLcid(flow.drbId);
     MacCid cid = MacCid(senderId, lcid);
     mac->configureLogicalChannel(cid, LogicalChannelConfig{drb.rlcMode, drb.soFraming, drb.snFieldLength, drb.lcg});
