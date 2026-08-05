@@ -675,6 +675,17 @@ bool Binder::isValidNodeId(MacNodeId  nodeId) const
 void Binder::joinMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId)
 {
     nodeGroupMemberships_[nodeId].insert(multicastDestId);
+
+    // If a sender has already established this multicast bearer, this node missed the RX-leg
+    // provisioning that createConnection() did over the membership as it stood then. Give it
+    // one now, or its MAC will receive PDUs for a connection it has no descriptor for and
+    // assert in macPduUnmake(). Nodes that join before the bearer exists are covered by
+    // createConnection() itself; createIncomingConnection() de-duplicates, so a node reached
+    // by both paths is harmless.
+    auto it = multicastFlows_.find(multicastDestId);
+    if (it != multicastFlows_.end() && nodeId != it->second.info->getSourceId())
+        createIncomingConnectionOnNode(nodeId, it->second.info,
+                getNodeTypeById(nodeId) == UE || it->second.withPdcp);
 }
 
 bool Binder::isInMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId)
@@ -1038,6 +1049,11 @@ void Binder::createConnection(FlowControlInfo *lteInfo, bool withPdcp)
         createIncomingConnectionOnNode(sourceId, &revInfo, sourceWithPdcp);
     }
     else {
+        // Remember the flow so that nodes joining this group later still get an RX leg; the
+        // loop below can only reach the members that already exist. See joinMulticastGroup().
+        if (multicastFlows_.find(groupId) == multicastFlows_.end())
+            multicastFlows_[groupId] = { new FlowControlInfo(*lteInfo), withPdcp };
+
         // Multicast bearers stay unidirectional: TX at the sender, RX at the members
         for (auto& [nodeId,_] : getNodeInfoMap())  //TODO use lte ones if LTE in DC setup, and NR ones if NR in DC setup
             if (nodeId != sourceId && isInMulticastGroup(nodeId, groupId))

@@ -129,6 +129,20 @@ class Binder : public cSimpleModule
     std::map<MacNodeId, MulticastGroupIdSet> nodeGroupMemberships_;
 
     /*
+     * The flow that established each multicast bearer, kept so that a node joining the group
+     * later can still be given its RX leg (see joinMulticastGroup). createConnection()
+     * provisions the members that exist when the sender starts, which is all of them only if
+     * the node population is static; with nodes created during the simulation the joiner
+     * would otherwise receive PDUs for a connection its stack knows nothing about.
+     * Keyed by multicast group id; the first sender to establish the bearer wins.
+     */
+    struct MulticastFlow {
+        FlowControlInfo *info = nullptr;   // owned
+        bool withPdcp = false;
+    };
+    std::map<MacNodeId, MulticastFlow> multicastFlows_;
+
+    /*
      * Multicast destination ID support
      */
     // Counter for allocating new multicast destination IDs
@@ -173,6 +187,9 @@ class Binder : public cSimpleModule
 
         for (auto ue : ueList_)
             delete ue;
+
+        for (auto& [groupId, flow] : multicastFlows_)
+            delete flow.info;
     }
 
     virtual std::string& getNetworkName()
