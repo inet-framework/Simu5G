@@ -29,5 +29,9 @@ simple Binder
         int blerShift = default(0);
         double maxDataRatePerRb @unit("Mbps") = default(1.16Mbps);
         bool printTrafficGeneratorConfig = default(false);
+        // Notification (not a statistic): carries the id of a node that has just been
+        // unregistered, so that holders of per-node state outside this module -- notably the
+        // optional D2D layer, which the core must not reference -- can purge it.
+        @signal[nodeUnregistered](type=long);
         @display("i=block/cogwheel");
 }

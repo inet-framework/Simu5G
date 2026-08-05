@@ -41,7 +41,21 @@ D2dBinder *D2dBinder::getInstance(cModule *contextModule)
 void D2dBinder::initialize()
 {
     binder_.reference(this, "binderModule", true);
+    binder_->subscribe(Binder::nodeUnregisteredSignal_, this);
     WATCH_SET(multicastTransmitterSet_);
+}
+
+void D2dBinder::receiveSignal(cComponent *source, simsignal_t signalID, long nodeId, cObject *details)
+{
+    ASSERT(signalID == Binder::nodeUnregisteredSignal_);
+    MacNodeId id = MacNodeId(nodeId);
+
+    // as the subject of an entry, and as the peer inside every other UE's map
+    d2dPeeringMap_.erase(id);
+    for (auto& [peer, peerMap] : d2dPeeringMap_)
+        peerMap.erase(id);
+
+    multicastTransmitterSet_.erase(id);
 }
 
 LteD2DMode D2dBinder::computeD2DCapability(MacNodeId src, MacNodeId dst)

@@ -37,11 +37,13 @@ using namespace omnetpp;
  * getInstance()), so that non-D2D networks pay nothing and existing network NED
  * files need no explicit 'd2dBinder' submodule.
  *
- * This module has no events, no signals and no statistics: it is a passive
- * state container. That keeps it inert with respect to simulation fingerprints
- * even though it is created on the fly.
+ * This module has no events, no emitted signals and no statistics: it is a
+ * passive state container. That keeps it inert with respect to simulation
+ * fingerprints even though it is created on the fly. It does listen to the
+ * Binder's node-unregistered notification, to drop the state of nodes that
+ * leave mid-simulation.
  */
-class D2dBinder : public cSimpleModule
+class D2dBinder : public cSimpleModule, public cListener
 {
   private:
     // reference to the core Binder, used for node and serving-cell lookups
@@ -59,6 +61,14 @@ class D2dBinder : public cSimpleModule
 
     // compute the initial D2D mode for the given transmitter/receiver UE pair
     virtual LteD2DMode computeD2DCapability(MacNodeId src, MacNodeId dst);
+
+    /**
+     * Binder::nodeUnregisteredSignal_: forget the node that has just left the simulation.
+     * Both maps are keyed by node id, and the peering map holds the id inside every other
+     * UE's map as well; a departed id left behind is later handed to getD2DCapability(),
+     * which asserts that both of its arguments are registered UEs.
+     */
+    void receiveSignal(cComponent *source, simsignal_t signalID, long nodeId, cObject *details) override;
 
   public:
     /**
