@@ -467,136 +467,29 @@ std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserCo
 {
     RadioLink link = linkFor(lteInfo);
 
-    // get tx power
-    double recvPower = lteInfo->getTxPower(); // dBm
+    EV << "------------ GET SINR ----------------" << endl;
+
+    // The desired signal: path loss, shadowing and fading. Everything below adds
+    // noise and interference on top of it.
+    std::vector<double> snrVector = getRSRP(link, lteInfo->getTxPower());
 
     // Get the Resource Blocks used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();
 
     // The interference model is cellular-topology-aware (it asks "which cell?"),
-    // so recover the UE/BS roles from the link. The propagation math below does not
+    // so recover the UE/BS roles from the link. The propagation math above does not
     // need them.
     Direction dir = link.dir;
     MacNodeId ueId = link.txIsBaseStation ? link.rxId : link.txId;
     MacNodeId eNbId = link.txIsBaseStation ? link.txId : link.rxId;
     Coord ueCoord = link.txIsBaseStation ? link.rxCoord : link.txCoord;
     Coord enbCoord = link.txIsBaseStation ? link.txCoord : link.rxCoord;
-
-    double antennaGainTx = link.txAntennaGain;
-    double antennaGainRx = link.rxAntennaGain;
     double noiseFigure = link.noiseFigure;
-    bool cqiDl = link.useUeSideMaps;
+
+    // Only for the trailing updatePositionHistory() below, which is kept verbatim.
+    // getRSRP() -> getAttenuation() has already recorded this node's position for
+    // the current TTI, so that call is a no-op; preserved rather than removed.
     Coord coord = lteInfo->getCoord();
-
-    // Speed must be read BEFORE getAttenuation() appends to positionHistory_ -- see getRSRP().
-    double speed = computeSpeed(link.stateKey, link.stateCoord);
-
-    EV << "------------ GET SINR ----------------" << endl;
-
-    CellInfo *eNbCell = binder_->getCellInfoByNodeId(eNbId);
-    const char *eNbTypeString = eNbCell ? (eNbCell->getEnbType() == MACRO_ENB ? "MACRO" : "MICRO") : "NULL";
-
-    EV << "LteRealisticChannelModel::getSINR - srcId=" << lteInfo->getSourceId()
-       << " - destId=" << lteInfo->getDestId()
-       << " - DIR=" << ((dir == DL) ? "DL" : "UL")
-       << " - frameType=" << ((lteInfo->getFrameType() == FEEDBACKPKT) ? "feedback" : "other")
-       << endl
-       << eNbTypeString << " - txPwr " << lteInfo->getTxPower()
-       << " - ueCoord[" << ueCoord << "] - enbCoord[" << enbCoord << "] - ueId[" << ueId << "] - enbId[" << eNbId << "]" <<
-        endl;
-    //=================== END PARAMETERS SETUP =======================
-
-    //=============== PATH LOSS + SHADOWING + FADING =================
-    EV << "\t using parameters - noiseFigure=" << noiseFigure << " - antennaGainTx=" << antennaGainTx << " - antennaGainRx=" << antennaGainRx <<
-        " - txPwr=" << lteInfo->getTxPower() << " - for ueId=" << ueId << endl;
-
-    // attenuation for the desired signal
-    double attenuation = getAttenuation(link); // dB
-
-    // compute attenuation (PATHLOSS + SHADOWING)
-    recvPower -= attenuation; // (dBm-dB)=dBm
-
-    // add antenna gain
-    recvPower += antennaGainTx; // (dBm+dB)=dBm
-    recvPower += antennaGainRx; // (dBm+dB)=dBm
-
-    // sub cable loss
-    recvPower -= cableLoss_; // (dBm-dB)=dBm
-
-    //=============== ANGULAR ATTENUATION =================
-    // Only a base station has a sectorial antenna; a UE-to-UE link never gets here.
-    if (link.txIsBaseStation) {
-        // get tx angle
-        cModule *eNbModule = binder_->getNodeModule(link.txId);
-        LtePhyBase *ltePhy = eNbModule ?
-            check_and_cast<LtePhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
-            nullptr;
-
-        if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
-            // get tx angle
-            double txAngle = ltePhy->getTxAngle();
-
-            // compute the angle between the receiver position and the reference axis,
-            // considering the transmitting BS as center
-            double ueAngle = computeAngle(link.txCoord, link.rxCoord);
-
-            // compute the reception angle
-            double recvAngle = fabs(txAngle - ueAngle);
-
-            if (recvAngle > 180)
-                recvAngle = 360 - recvAngle;
-
-            double verticalAngle = computeVerticalAngle(link.txCoord, link.rxCoord);
-
-            // compute attenuation due to sectorial tx
-            double angularAtt = computeAngularAttenuation(recvAngle, verticalAngle);
-
-            recvPower -= angularAtt;
-        }
-        // else, antenna is omni-directional
-    }
-    //=============== END ANGULAR ATTENUATION =================
-
-    std::vector<double> snrVector;
-    snrVector.resize(numBands_, 0.0);
-
-    // compute and add interference due to fading
-    // Apply fading for each band
-    // if the phy layer is localized we can assume that for each logical band we have different fading attenuation
-    // if the phy layer is distributed the number of logical bands should be set to 1
-    double fadingAttenuation = 0;
-
-    // for each logical band
-    // FIXME compute fading only for used RBs
-    for (unsigned int i = 0; i < numBands_; i++) {
-        fadingAttenuation = 0;
-        // if fading is enabled
-        if (fading_) {
-            // Applying fading
-            if (fadingType_ == RAYLEIGH)
-                fadingAttenuation = rayleighFading(ueId, i);
-
-            else if (fadingType_ == JAKES)
-                fadingAttenuation = jakesFading(ueId, speed, i, cqiDl);
-        }
-        // add fading contribution to the received power
-        double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
-
-        EV << " LteRealisticChannelModel::getSINR node " << ueId
-           << ((lteInfo->getFrameType() == FEEDBACKPKT) ?
-            " FEEDBACK PACKET " : " NORMAL PACKET ")
-           << " band " << i << " recvPower " << recvPower
-           << " direction " << dirToA(dir) << " antenna gain tx "
-           << antennaGainTx << " antenna gain rx " << antennaGainRx
-           << " noise figure " << noiseFigure
-           << " cable loss   " << cableLoss_
-           << " attenuation (pathloss + shadowing) " << attenuation
-           << " speed " << speed << " thermal noise " << thermalNoise_
-           << " fading attenuation " << fadingAttenuation << endl;
-
-        snrVector[i] = finalRecvPower;
-    }
-    //============ END PATH LOSS + SHADOWING + FADING ===============
 
     /*
      * The SINR will be calculated as follows
