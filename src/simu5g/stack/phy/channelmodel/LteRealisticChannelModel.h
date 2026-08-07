@@ -492,6 +492,27 @@ class LteRealisticChannelModel : public LteChannelModel
     virtual void updatePositionHistory(const MacNodeId nodeId, const inet::Coord coord);
 
     /*
+     * One interfering transmitter, normalized across the two kinds the UL
+     * transmission map can hold: a real UE (with a PHY) and a background UE
+     * (with a traffic generator).
+     */
+    struct InterfererInfo
+    {
+        MacNodeId nodeId;
+        MacCellId cellId;
+        Direction dir;
+        double txPwr;
+        inet::Coord coord;
+    };
+
+    /*
+     * Unpack a UeAllocationInfo into the properties every interference
+     * computation needs. Shared by the uplink and D2D interference loops, which
+     * otherwise differ in their exclusion rules and antenna-gain terms.
+     */
+    static InterfererInfo describeInterferer(const UeAllocationInfo& allocation);
+
+    /*
      * Compute total interference due to eNB coexistence for the DL direction
      * @param eNbId id of the considered eNb
      * @param isCqi if we are computing a CQI

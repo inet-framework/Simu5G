@@ -2143,6 +2143,26 @@ bool LteRealisticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacN
     return true;
 }
 
+LteRealisticChannelModel::InterfererInfo LteRealisticChannelModel::describeInterferer(const UeAllocationInfo& allocation)
+{
+    InterfererInfo info;
+    info.nodeId = allocation.nodeId;
+    info.cellId = allocation.cellId;
+    info.dir = allocation.dir;
+
+    if (allocation.phy != nullptr) {
+        LtePhyUe *uePhy = check_and_cast<LtePhyUe *>(allocation.phy);
+        info.txPwr = uePhy->getTxPwr(info.dir);
+        info.coord = uePhy->getCoord();
+    }
+    else { // this is a backgroundUe
+        TrafficGeneratorBase *trafficGen = check_and_cast<TrafficGeneratorBase *>(allocation.trafficGen);
+        info.txPwr = trafficGen->getTxPwr();
+        info.coord = trafficGen->getCoord();
+    }
+    return info;
+}
+
 bool LteRealisticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNodeId senderId, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference)
 {
     EV << "**** Uplink Interference for cellId[" << eNbId << "] node[" << senderId << "] ****" << endl;
@@ -2158,23 +2178,12 @@ bool LteRealisticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNod
                 allocatedUes = &(ulTransmissionMap->at(i));
 
                 for (auto& ue_it : *allocatedUes) {
-                    MacNodeId ueId = ue_it.nodeId;
-                    MacCellId cellId = ue_it.cellId;
-                    Direction dir = ue_it.dir;
-                    double txPwr;
-                    inet::Coord ueCoord;
-                    LtePhyUe *uePhy = nullptr;
-                    TrafficGeneratorBase *trafficGen = nullptr;
-                    if (ue_it.phy != nullptr) {
-                        uePhy = check_and_cast<LtePhyUe *>(ue_it.phy);
-                        txPwr = uePhy->getTxPwr(dir);
-                        ueCoord = uePhy->getCoord();
-                    }
-                    else { // this is a backgroundUe
-                        trafficGen = check_and_cast<TrafficGeneratorBase *>(ue_it.trafficGen);
-                        txPwr = trafficGen->getTxPwr();
-                        ueCoord = trafficGen->getCoord();
-                    }
+                    const InterfererInfo interferer = describeInterferer(ue_it);
+                    const MacNodeId ueId = interferer.nodeId;
+                    const MacCellId cellId = interferer.cellId;
+                    const Direction dir = interferer.dir;
+                    const double txPwr = interferer.txPwr;
+                    const inet::Coord ueCoord = interferer.coord;
 
                     // no self-interference
                     if (ueId == senderId)
@@ -2210,23 +2219,12 @@ bool LteRealisticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNod
                 allocatedUes = &(ulTransmissionMap->at(i));
 
                 for (auto& ue_it : *allocatedUes) {
-                    MacNodeId ueId = ue_it.nodeId;
-                    MacCellId cellId = ue_it.cellId;
-                    Direction dir = ue_it.dir;
-                    double txPwr;
-                    inet::Coord ueCoord;
-                    LtePhyUe *uePhy = nullptr;
-                    TrafficGeneratorBase *trafficGen = nullptr;
-                    if (ue_it.phy != nullptr) {
-                        uePhy = check_and_cast<LtePhyUe *>(ue_it.phy);
-                        txPwr = uePhy->getTxPwr(dir);
-                        ueCoord = uePhy->getCoord();
-                    }
-                    else { // this is a backgroundUe
-                        trafficGen = check_and_cast<TrafficGeneratorBase *>(ue_it.trafficGen);
-                        txPwr = trafficGen->getTxPwr();
-                        ueCoord = trafficGen->getCoord();
-                    }
+                    const InterfererInfo interferer = describeInterferer(ue_it);
+                    const MacNodeId ueId = interferer.nodeId;
+                    const MacCellId cellId = interferer.cellId;
+                    const Direction dir = interferer.dir;
+                    const double txPwr = interferer.txPwr;
+                    const inet::Coord ueCoord = interferer.coord;
 
                     // no self-interference
                     if (ueId == senderId)
@@ -2279,23 +2277,12 @@ bool LteRealisticChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId
             allocatedUes = &(ulTransmissionMap->at(i));
 
             for (auto& ue_it : *allocatedUes) {
-                MacNodeId ueId = ue_it.nodeId;
-                MacCellId cellId = ue_it.cellId;
-                Direction dir = ue_it.dir;
-                double txPwr;
-                inet::Coord ueCoord;
-                LtePhyUe *uePhy = nullptr;
-                TrafficGeneratorBase *trafficGen = nullptr;
-                if (ue_it.phy != nullptr) {
-                    uePhy = check_and_cast<LtePhyUe *>(ue_it.phy);
-                    txPwr = uePhy->getTxPwr(dir);
-                    ueCoord = uePhy->getCoord();
-                }
-                else { // this is a backgroundUe
-                    trafficGen = check_and_cast<TrafficGeneratorBase *>(ue_it.trafficGen);
-                    txPwr = trafficGen->getTxPwr();
-                    ueCoord = trafficGen->getCoord();
-                }
+                const InterfererInfo interferer = describeInterferer(ue_it);
+                const MacNodeId ueId = interferer.nodeId;
+                const MacCellId cellId = interferer.cellId;
+                const Direction dir = interferer.dir;
+                const double txPwr = interferer.txPwr;
+                const inet::Coord ueCoord = interferer.coord;
 
                 // no self-interference
                 if (ueId == senderId || ueId == destId)
