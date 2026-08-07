@@ -29,6 +29,56 @@ class LteAirFrame;
 class LtePhyBase;
 class Binder;
 
+/**
+ * A radio link between two arbitrary endpoints, and the parameters the channel
+ * model needs to evaluate it.
+ *
+ * The channel model used to be phrased as "a link between me (phy_->getCoord())
+ * and one remote endpoint", with Direction selecting -- all at once -- which
+ * endpoint was mobile, which antenna gains applied, which noise figure applied,
+ * and which fading/shadowing map to use. A UE-to-UE link fits neither of those
+ * two shapes, which is why the D2D channel model had to re-implement the whole
+ * propagation path rather than reuse it.
+ *
+ * Here those four things are data. `dir` survives only as a tag: it selects the
+ * statistic to emit and dispatches the (genuinely cellular-topology-aware)
+ * interference computation, but it no longer derives any of the link geometry
+ * or the link budget.
+ */
+struct RadioLink
+{
+    // ---- geometry ----
+    MacNodeId txId = NODEID_NONE;
+    MacNodeId rxId = NODEID_NONE;
+    inet::Coord txCoord;
+    inet::Coord rxCoord;
+
+    // ---- per-node channel state ----
+    // stateKey indexes losMap_ / lastComputedSF_ / jakesFadingMap_ /
+    // positionHistory_ / lastCorrelationPoint_. The owning instance is derived:
+    // with useUeSideMaps the maps are fetched from the UE's own channel model
+    // via obtainShadowingMap() / obtainUeJakesMap(), otherwise they are this
+    // module's own.
+    //
+    // NOTE: this ought to be a *link* key, not a node key. Every link type
+    // currently sets it to a single node id, so all of a node's links share one
+    // slot -- harmless for cellular (one link per UE per instance) but wrong for
+    // D2D, where a UE has many peers. Fixing that changes every stored fading
+    // and shadowing realization, so it is deliberately not done here.
+    MacNodeId stateKey = NODEID_NONE;
+    inet::Coord stateCoord;      // position feeding computeSpeed + correlation distance
+    bool useUeSideMaps = false;  // the former 'cqiDl' flag
+
+    // ---- link budget ----
+    double txAntennaGain = 0.0;
+    double rxAntennaGain = 0.0;
+    double noiseFigure = 0.0;
+    bool txIsBaseStation = false;   // gates angular attenuation
+
+    // ---- tag, not a switch ----
+    Direction dir = UNKNOWN_DIRECTION;
+};
+
 class LteChannelModel : public cSimpleModule
 {
   protected:
@@ -85,13 +135,11 @@ class LteChannelModel : public cSimpleModule
     virtual bool isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo) = 0;
 
     /*
-     * Compute Attenuation caused by path loss and shadowing (optional)
+     * Compute attenuation (path loss + optional shadowing) over a radio link.
      *
-     * @param nodeId MAC node ID of UE
-     * @param dir traffic direction
-     * @param move position of end-point communication (if dir==UL is the position of UE else is the position of eNodeB)
+     * @param link the two endpoints and the channel-state key to evaluate against
      */
-    virtual double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord, bool cqiDl) = 0;
+    virtual double getAttenuation(const RadioLink& link) = 0;
     /*
      * Compute the path-loss attenuation according to the selected scenario
      *

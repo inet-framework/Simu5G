@@ -30,7 +30,8 @@ class NrChannelModel : public LteRealisticChannelModel
      * @param dir traffic direction
      * @param coord position of end point communication (if dir==UL it is the position of UE else it is the position of gNodeB)
      */
-    double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord, bool cqiDl) override;
+    double getAttenuation(const RadioLink& link) override;
+    using LteRealisticChannelModel::getAttenuation; // keep the cellular convenience overload visible
 
     /*
      *  Compute attenuation caused by transmission direction

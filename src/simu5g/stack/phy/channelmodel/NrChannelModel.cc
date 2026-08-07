@@ -25,46 +25,41 @@ void NrChannelModel::initialize(int stage)
     LteRealisticChannelModel::initialize(stage);
 }
 
-double NrChannelModel::getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord, bool cqiDl)
+double NrChannelModel::getAttenuation(const RadioLink& link)
 {
+    // NOTE: 'movement' is never assigned, so the LOS-recomputation guard below is
+    // always false and LOS is computed exactly once per node for the whole run.
+    // That is a pre-existing defect (tracked as D6); it is preserved verbatim here
+    // so that generalizing the link geometry stays behavior-preserving. Do not
+    // "fix" it as a side effect of a refactor -- it moves every NR fingerprint.
     double movement = .0;
-    double speed = .0;
 
-    // COMPUTE 3D and 2D DISTANCE between UE and eNodeB
-    double threeDimDistance = phy_->getCoord().distance(coord);
-    double twoDimDistance = getTwoDimDistance(phy_->getCoord(), coord);
+    // COMPUTE 3D and 2D DISTANCE between the two endpoints
+    double threeDimDistance = link.txCoord.distance(link.rxCoord);
+    double twoDimDistance = getTwoDimDistance(link.txCoord, link.rxCoord);
 
-    if (dir == DL) // sender is UE
-        speed = computeSpeed(nodeId, phy_->getCoord());
-    else
-        speed = computeSpeed(nodeId, coord);
+    double speed = computeSpeed(link.stateKey, link.stateCoord);
 
     // If the traveled distance is greater than the correlation distance, the UE could have changed its state and
     // its visibility from the eNodeB, hence it is correct to recompute the LOS probability.
     if (movement > correlationDistance_
-        || losMap_.find(nodeId) == losMap_.end())
+        || losMap_.find(link.stateKey) == losMap_.end())
     {
-        computeLosProbability(twoDimDistance, nodeId);
+        computeLosProbability(twoDimDistance, link.stateKey);
     }
 
     // compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = losMap_[nodeId];
+    bool los = losMap_[link.stateKey];
     double attenuation = computePathLoss(threeDimDistance, twoDimDistance, los);
 
     // Applying shadowing only if it is enabled by configuration
     // log-normal shadowing (not available for background UEs)
-    if (num(nodeId) < BGUE_MIN_ID && shadowing_)
-        attenuation += computeShadowing(twoDimDistance, nodeId, speed, cqiDl);
+    if (num(link.stateKey) < BGUE_MIN_ID && shadowing_)
+        attenuation += computeShadowing(twoDimDistance, link.stateKey, speed, link.useUeSideMaps);
 
-    // update current user position
-
-    // if sender is an eNodeB
-    if (dir == DL)
-        // store the position of user
-        updatePositionHistory(nodeId, phy_->getCoord());
-    else
-        // sender is a UE
-        updatePositionHistory(nodeId, coord);
+    // update the tracked node's current position
+    // (note: unlike the base class, this does not re-anchor lastCorrelationPoint_ -- part of D6)
+    updatePositionHistory(link.stateKey, link.stateCoord);
 
     EV << "NrChannelModel::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNb is " << attenuation << endl;
 

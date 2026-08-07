@@ -96,56 +96,131 @@ void LteRealisticChannelModel::initialize(int stage)
     }
 }
 
-double LteRealisticChannelModel::getAttenuation(MacNodeId nodeId, Direction dir,
-        Coord coord, bool cqiDl)
+RadioLink LteRealisticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Coord coord, bool cqiDl)
 {
-    double speed = .0;
-    double correlationDist = .0;
+    // The local module is one endpoint and 'coord' the other; 'dir' says which
+    // of the two is the UE. The UE is the node whose channel state we track.
+    RadioLink link;
+    link.dir = dir;
+    link.stateKey = ueId;
+    link.useUeSideMaps = cqiDl;
 
-    //COMPUTE DISTANCE between UE and eNodeB
-    double sqrDistance = phy_->getCoord().distance(coord);
+    if (dir == DL) { // the local module is the UE, 'coord' is the BS
+        link.txIsBaseStation = true;
+        link.txCoord = coord;
+        link.rxCoord = phy_->getCoord();
+        link.stateCoord = phy_->getCoord();
+        link.rxId = ueId;
+    }
+    else { // the local module is the BS, 'coord' is the UE
+        link.txIsBaseStation = false;
+        link.txCoord = coord;
+        link.rxCoord = phy_->getCoord();
+        link.stateCoord = coord;
+        link.txId = ueId;
+    }
+    return link;
+}
 
-    if (dir == DL) { // sender is UE
-        speed = computeSpeed(nodeId, phy_->getCoord());
-        correlationDist = computeCorrelationDistance(nodeId, phy_->getCoord());
+RadioLink LteRealisticChannelModel::linkFor(UserControlInfo *lteInfo)
+{
+    RadioLink link;
+    link.dir = lteInfo->getDirection();
+
+    // The object associated with the packet: the eNodeB if the direction is DL,
+    // the UE if it is UL.
+    Coord coord = lteInfo->getCoord();
+
+    MacNodeId ueId, eNbId;
+    Coord ueCoord, enbCoord;
+
+    /*
+     * If the direction is DL and this is not a feedback packet, this function has been
+     * called by isReceptionSuccessful() in the UE: downlink error computation.
+     */
+    if (link.dir == DL && (lteInfo->getFrameType() != FEEDBACKPKT)) {
+        ueId = lteInfo->getDestId();
+        eNbId = lteInfo->getSourceId();
+        ueCoord = phy_->getCoord();
+        enbCoord = coord;
+        link.useUeSideMaps = false;
     }
-    else {
-        speed = computeSpeed(nodeId, coord);
-        correlationDist = computeCorrelationDistance(nodeId, coord);
+    /*
+     * If the direction is UL, or the packet is a feedback packet, this function is called
+     * by the feedback computation module located in the eNodeB, which computes the feedback
+     * received from the UE. Hence the UE macNodeId comes from the sourceId of the lteInfo.
+     */
+    else { // UL/DL CQI & UL error computation
+        ueId = lteInfo->getSourceId();
+        eNbId = lteInfo->getDestId();
+        ueCoord = coord;
+        enbCoord = phy_->getCoord();
+        // for a DL CQI we need the maps stored on the UE side
+        link.useUeSideMaps = (link.dir == DL);
     }
+
+    if (link.dir == DL) {
+        link.noiseFigure = ueNoiseFigure_;    // dB
+        link.txAntennaGain = antennaGainEnB_; // dB
+        link.rxAntennaGain = antennaGainUe_;  // dB
+        link.txIsBaseStation = true;
+        link.txId = eNbId;
+        link.rxId = ueId;
+        link.txCoord = enbCoord;
+        link.rxCoord = ueCoord;
+    }
+    else { // if( dir == UL )
+        // TODO check if antennaGainEnB should be added in UL direction too
+        link.txAntennaGain = antennaGainUe_;
+        link.rxAntennaGain = antennaGainEnB_;
+        link.noiseFigure = bsNoiseFigure_;
+        link.txIsBaseStation = false;
+        link.txId = ueId;
+        link.rxId = eNbId;
+        link.txCoord = ueCoord;
+        link.rxCoord = enbCoord;
+    }
+
+    // The UE owns the channel state, and it is always the UE's position that feeds
+    // the speed and correlation-distance computation -- which is why the old code's
+    // "pass UL for a FEEDBACKPKT" special case is not needed here: it only existed
+    // to make getAttenuation() pick 'coord' rather than phy_->getCoord().
+    link.stateKey = ueId;
+    link.stateCoord = ueCoord;
+
+    return link;
+}
+
+double LteRealisticChannelModel::getAttenuation(const RadioLink& link)
+{
+    //COMPUTE DISTANCE between the two endpoints
+    double sqrDistance = link.txCoord.distance(link.rxCoord);
+
+    double speed = computeSpeed(link.stateKey, link.stateCoord);
+    double correlationDist = computeCorrelationDistance(link.stateKey, link.stateCoord);
 
     // If Euclidean distance since last LOS probability computation is greater than
     // correlation distance the UE could have changed its state and
     // its visibility from eNodeB, hence it is correct to recompute the LOS probability
     if (correlationDist > correlationDistance_
-        || losMap_.find(nodeId) == losMap_.end())
+        || losMap_.find(link.stateKey) == losMap_.end())
     {
-        computeLosProbability(sqrDistance, nodeId);
+        computeLosProbability(sqrDistance, link.stateKey);
     }
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = losMap_[nodeId];
+    bool los = losMap_[link.stateKey];
     double dbp = 0;
     double attenuation = computePathLoss(sqrDistance, dbp, los);
 
     //    Applying shadowing only if it is enabled by configuration
     //    log-normal shadowing (not available for background UEs)
-    if (num(nodeId) < BGUE_MIN_ID && shadowing_)
-        attenuation += computeShadowing(sqrDistance, nodeId, speed, cqiDl);
+    if (num(link.stateKey) < BGUE_MIN_ID && shadowing_)
+        attenuation += computeShadowing(sqrDistance, link.stateKey, speed, link.useUeSideMaps);
 
-    // update current user position
-
-    //if sender is an eNodeB
-    if (dir == DL) {
-        //store the position of user
-        updatePositionHistory(nodeId, phy_->getCoord());
-        updateCorrelationDistance(nodeId, phy_->getCoord());
-    }
-    else {
-        //sender is an UE
-        updatePositionHistory(nodeId, coord);
-        updateCorrelationDistance(nodeId, coord);
-    }
+    // update the tracked node's current position
+    updatePositionHistory(link.stateKey, link.stateCoord);
+    updateCorrelationDistance(link.stateKey, link.stateCoord);
 
     EV << "LteRealisticChannelModel::getAttenuation - computed attenuation at distance " << sqrDistance << " for eNB is " << attenuation << endl;
 
@@ -390,97 +465,33 @@ double LteRealisticChannelModel::computeAngularAttenuation(double hAngle, double
 
 std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
+    RadioLink link = linkFor(lteInfo);
+
     // get tx power
     double recvPower = lteInfo->getTxPower(); // dBm
 
     // Get the Resource Blocks used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();
 
-    // get move object associated with the packet
-    // this object is referred to eNodeB if direction is DL or UE if direction is UL
+    // The interference model is cellular-topology-aware (it asks "which cell?"),
+    // so recover the UE/BS roles from the link. The propagation math below does not
+    // need them.
+    Direction dir = link.dir;
+    MacNodeId ueId = link.txIsBaseStation ? link.rxId : link.txId;
+    MacNodeId eNbId = link.txIsBaseStation ? link.txId : link.rxId;
+    Coord ueCoord = link.txIsBaseStation ? link.rxCoord : link.txCoord;
+    Coord enbCoord = link.txIsBaseStation ? link.txCoord : link.rxCoord;
+
+    double antennaGainTx = link.txAntennaGain;
+    double antennaGainRx = link.rxAntennaGain;
+    double noiseFigure = link.noiseFigure;
+    bool cqiDl = link.useUeSideMaps;
     Coord coord = lteInfo->getCoord();
 
-    // position of eNb and UE
-    Coord ueCoord;
-    Coord enbCoord;
-
-    double antennaGainTx = 0.0;
-    double antennaGainRx = 0.0;
-    double noiseFigure = 0.0;
-    double speed = 0.0;
-
-    // true if we are computing a CQI for the DL direction
-    bool cqiDl = false;
-
-    MacNodeId ueId = NODEID_NONE;
-    MacNodeId eNbId = NODEID_NONE;
-
-    Direction dir = lteInfo->getDirection();
+    // Speed must be read BEFORE getAttenuation() appends to positionHistory_ -- see getRSRP().
+    double speed = computeSpeed(link.stateKey, link.stateCoord);
 
     EV << "------------ GET SINR ----------------" << endl;
-    //===================== PARAMETERS SETUP ============================
-    /*
-     * if direction is DL and this is not a feedback packet,
-     * this function has been called by LteRealisticChannelModel::error() in the UE
-     *
-     *         Downlink error computation
-     */
-    if (dir == DL && (lteInfo->getFrameType() != FEEDBACKPKT)) {
-        // set noise figure
-        noiseFigure = ueNoiseFigure_; // dB
-        // set antenna gain figure
-        antennaGainTx = antennaGainEnB_; // dB
-        antennaGainRx = antennaGainUe_;  // dB
-
-        // get MacId for UE and eNb
-        ueId = lteInfo->getDestId();
-        eNbId = lteInfo->getSourceId();
-
-        // get position of UE and eNb
-        ueCoord = phy_->getCoord();
-        enbCoord = lteInfo->getCoord();
-
-        speed = computeSpeed(ueId, phy_->getCoord());
-    }
-    /*
-     * If direction is UL OR
-     * if the packet is a feedback packet
-     * it means that this function is called by the feedback computation module
-     *
-     * located in the eNodeB that computes the feedback received by the UE
-     * Hence the UE macNodeId can be taken from the sourceId of the lteInfo
-     * and the speed of the UE is contained in the Move object associated with the lteInfo
-     */
-    else { // UL/DL CQI & UL error computation
-        // get MacId for UE and eNb
-        ueId = lteInfo->getSourceId();
-        eNbId = lteInfo->getDestId();
-
-        if (dir == DL) {
-            // set noise figure
-            noiseFigure = ueNoiseFigure_; // dB
-            // set antenna gain figure
-            antennaGainTx = antennaGainEnB_; // dB
-            antennaGainRx = antennaGainUe_;  // dB
-
-            // use the jakes map on the UE side
-            cqiDl = true;
-        }
-        else { // if( dir == UL )
-            // TODO check if antennaGainEnB should be added in UL direction too
-            antennaGainTx = antennaGainUe_;
-            antennaGainRx = antennaGainEnB_;
-            noiseFigure = bsNoiseFigure_;
-
-            // use the jakes map on the eNb side
-            cqiDl = false;
-        }
-        speed = computeSpeed(ueId, coord);
-
-        // get position of UE and eNb
-        ueCoord = coord;
-        enbCoord = phy_->getCoord();
-    }
 
     CellInfo *eNbCell = binder_->getCellInfoByNodeId(eNbId);
     const char *eNbTypeString = eNbCell ? (eNbCell->getEnbType() == MACRO_ENB ? "MACRO" : "MICRO") : "NULL";
@@ -500,11 +511,7 @@ std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserCo
         " - txPwr=" << lteInfo->getTxPower() << " - for ueId=" << ueId << endl;
 
     // attenuation for the desired signal
-    double attenuation;
-    if ((lteInfo->getFrameType() == FEEDBACKPKT))
-        attenuation = getAttenuation(ueId, UL, coord, cqiDl); // dB
-    else
-        attenuation = getAttenuation(ueId, dir, coord, cqiDl); // dB
+    double attenuation = getAttenuation(link); // dB
 
     // compute attenuation (PATHLOSS + SHADOWING)
     recvPower -= attenuation; // (dBm-dB)=dBm
@@ -517,9 +524,10 @@ std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserCo
     recvPower -= cableLoss_; // (dBm-dB)=dBm
 
     //=============== ANGULAR ATTENUATION =================
-    if (dir == DL) {
+    // Only a base station has a sectorial antenna; a UE-to-UE link never gets here.
+    if (link.txIsBaseStation) {
         // get tx angle
-        cModule *eNbModule = binder_->getNodeModule(eNbId);
+        cModule *eNbModule = binder_->getNodeModule(link.txId);
         LtePhyBase *ltePhy = eNbModule ?
             check_and_cast<LtePhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
             nullptr;
@@ -528,16 +536,17 @@ std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserCo
             // get tx angle
             double txAngle = ltePhy->getTxAngle();
 
-            // compute the angle between uePosition and reference axis, considering the eNb as center
-            double ueAngle = computeAngle(enbCoord, ueCoord);
+            // compute the angle between the receiver position and the reference axis,
+            // considering the transmitting BS as center
+            double ueAngle = computeAngle(link.txCoord, link.rxCoord);
 
-            // compute the reception angle between ue and eNb
+            // compute the reception angle
             double recvAngle = fabs(txAngle - ueAngle);
 
             if (recvAngle > 180)
                 recvAngle = 360 - recvAngle;
 
-            double verticalAngle = computeVerticalAngle(enbCoord, ueCoord);
+            double verticalAngle = computeVerticalAngle(link.txCoord, link.rxCoord);
 
             // compute attenuation due to sectorial tx
             double angularAtt = computeAngularAttenuation(recvAngle, verticalAngle);
@@ -685,136 +694,46 @@ std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserCo
 
 std::vector<double> LteRealisticChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
-    // get tx power
-    double recvPower = lteInfo->getTxPower(); // dBm
+    return getRSRP(linkFor(lteInfo), lteInfo->getTxPower());
+}
 
-    // Get the Resource Blocks used to transmit this packet
-    RbMap rbmap = lteInfo->getGrantedBlocks();
+std::vector<double> LteRealisticChannelModel::getRSRP(const RadioLink& link, double txPower)
+{
+    double recvPower = txPower; // dBm
 
-    // get move object associated with the packet
-    // this object is referred to eNodeB if the direction is DL or UE if the direction is UL
-    Coord coord = lteInfo->getCoord();
-
-    // position of eNb and UE
-    Coord ueCoord;
-    Coord enbCoord;
-
-    double antennaGainTx = 0.0;
-    double antennaGainRx = 0.0;
-    double noiseFigure = 0.0;
-    double speed = 0.0;
-
-    // true if we are computing a CQI for the DL direction
-    bool cqiDl = false;
-
-    MacNodeId ueId = NODEID_NONE;
-    MacNodeId eNbId = NODEID_NONE;
-
-    Direction dir = lteInfo->getDirection();
-
-    EV << "------------ GET SINR ----------------" << endl;
-    // ===================== PARAMETERS SETUP ============================
-    /*
-     * if direction is DL and this is not a feedback packet,
-     * this function has been called by LteRealisticChannelModel::error() in the UE
-     *
-     *         Downlink error computation
-     */
-    if (dir == DL && (lteInfo->getFrameType() != FEEDBACKPKT)) {
-        // set noise Figure
-        noiseFigure = ueNoiseFigure_; // dB
-        // set antenna gain Figure
-        antennaGainTx = antennaGainEnB_; // dB
-        antennaGainRx = antennaGainUe_;  // dB
-
-        // get MacId for UE and eNB
-        ueId = lteInfo->getDestId();
-        eNbId = lteInfo->getSourceId();
-
-        // get position of UE and eNB
-        ueCoord = phy_->getCoord();
-        enbCoord = lteInfo->getCoord();
-
-        speed = computeSpeed(ueId, phy_->getCoord());
-    }
-    /*
-     * If direction is UL OR
-     * if the packet is a feedback packet
-     * it means that this function is called by the feedback computation module
-     *
-     * located in the eNodeB that computes the feedback received by the UE
-     * Hence the UE macNodeId can be taken from the sourceId of the lteInfo
-     * and the speed of the UE is contained in the Move object associated with the lteInfo
-     */
-    else { // UL/DL CQI & UL error computation
-        // get MacId for UE and eNB
-        ueId = lteInfo->getSourceId();
-        eNbId = lteInfo->getDestId();
-
-        if (dir == DL) {
-            // set noise Figure
-            noiseFigure = ueNoiseFigure_; // dB
-            // set antenna gain Figure
-            antennaGainTx = antennaGainEnB_; // dB
-            antennaGainRx = antennaGainUe_;  // dB
-
-            // use the jakes map on the UE side
-            cqiDl = true;
-        }
-        else { // if( dir == UL )
-            // TODO check if antennaGainEnB should be added in UL direction too
-            antennaGainTx = antennaGainUe_;
-            antennaGainRx = antennaGainEnB_;
-            noiseFigure = bsNoiseFigure_;
-
-            // use the jakes map on the eNB side
-            cqiDl = false;
-        }
-        speed = computeSpeed(ueId, coord);
-
-        // get position of UE and eNB
-        ueCoord = coord;
-        enbCoord = phy_->getCoord();
-    }
-
-    CellInfo *eNbCell = binder_->getCellInfoByNodeId(eNbId);
-    const char *eNbTypeString = eNbCell ? (eNbCell->getEnbType() == MACRO_ENB ? "MACRO" : "MICRO") : "NULL";
-
-    EV << "LteRealisticChannelModel::getRSRP - srcId=" << lteInfo->getSourceId()
-       << " - destId=" << lteInfo->getDestId()
-       << " - DIR=" << ((dir == DL) ? "DL" : "UL")
-       << " - frameType=" << ((lteInfo->getFrameType() == FEEDBACKPKT) ? "feedback" : "other")
-       << endl
-       << eNbTypeString << " - txPwr " << lteInfo->getTxPower()
-       << " - ueCoord[" << ueCoord << "] - enbCoord[" << enbCoord << "] - ueId[" << ueId << "] - enbId[" << eNbId << "]" <<
-        endl;
-    // =================== END PARAMETERS SETUP =======================
+    EV << "LteRealisticChannelModel::getRSRP - txId=" << link.txId
+       << " - rxId=" << link.rxId
+       << " - DIR=" << dirToA(link.dir)
+       << " - txPwr " << txPower
+       << " - txCoord[" << link.txCoord << "] - rxCoord[" << link.rxCoord << "]" << endl;
 
     // =============== PATH LOSS + SHADOWING + FADING =================
-    EV << "\t using parameters - noiseFigure=" << noiseFigure << " - antennaGainTx=" << antennaGainTx << " - antennaGainRx=" << antennaGainRx <<
-        " - txPwr=" << lteInfo->getTxPower() << " - for ueId=" << ueId << endl;
+    EV << "\t using parameters - noiseFigure=" << link.noiseFigure
+       << " - antennaGainTx=" << link.txAntennaGain << " - antennaGainRx=" << link.rxAntennaGain
+       << " - txPwr=" << txPower << " - for nodeId=" << link.stateKey << endl;
+
+    // Speed must be read BEFORE getAttenuation(), which appends to positionHistory_:
+    // computeSpeed() derives from that history, so evaluating it afterwards would
+    // yield a different value and hence different fading. Load-bearing ordering.
+    double speed = computeSpeed(link.stateKey, link.stateCoord);
 
     // attenuation for the desired signal
-    double attenuation;
-    if ((lteInfo->getFrameType() == FEEDBACKPKT))
-        attenuation = getAttenuation(ueId, UL, coord, cqiDl); // dB
-    else
-        attenuation = getAttenuation(ueId, dir, coord, cqiDl); // dB
+    double attenuation = getAttenuation(link); // dB
 
     // compute attenuation (PATHLOSS + SHADOWING)
     recvPower -= attenuation; // (dBm-dB)=dBm
 
     // add antenna gain
-    recvPower += antennaGainTx; // (dBm+dB)=dBm
-    recvPower += antennaGainRx; // (dBm+dB)=dBm
+    recvPower += link.txAntennaGain; // (dBm+dB)=dBm
+    recvPower += link.rxAntennaGain; // (dBm+dB)=dBm
 
     // sub cable loss
     recvPower -= cableLoss_; // (dBm-dB)=dBm
 
     // =============== ANGULAR ATTENUATION =================
-    if (dir == DL) {
-        // get tx angle
-        cModule *eNbModule = binder_->getNodeModule(eNbId);
+    // Only a base station has a sectorial antenna; a UE-to-UE link never gets here.
+    if (link.txIsBaseStation) {
+        cModule *eNbModule = binder_->getNodeModule(link.txId);
         LtePhyBase *ltePhy = eNbModule ?
             check_and_cast<LtePhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
             nullptr;
@@ -823,16 +742,17 @@ std::vector<double> LteRealisticChannelModel::getRSRP(LteAirFrame *frame, UserCo
             // get tx angle
             double txAngle = ltePhy->getTxAngle();
 
-            // compute the angle between uePosition and reference axis, considering the eNB as center
-            double ueAngle = computeAngle(enbCoord, ueCoord);
+            // compute the angle between the receiver position and the reference axis,
+            // considering the transmitting BS as center
+            double ueAngle = computeAngle(link.txCoord, link.rxCoord);
 
-            // compute the reception angle between ue and eNB
+            // compute the reception angle
             double recvAngle = fabs(txAngle - ueAngle);
 
             if (recvAngle > 180)
                 recvAngle = 360 - recvAngle;
 
-            double verticalAngle = computeVerticalAngle(enbCoord, ueCoord);
+            double verticalAngle = computeVerticalAngle(link.txCoord, link.rxCoord);
 
             // compute attenuation due to sectorial tx
             double angularAtt = computeAngularAttenuation(recvAngle, verticalAngle);
@@ -860,21 +780,19 @@ std::vector<double> LteRealisticChannelModel::getRSRP(LteAirFrame *frame, UserCo
         if (fading_) {
             // Applying fading
             if (fadingType_ == RAYLEIGH)
-                fadingAttenuation = rayleighFading(ueId, i);
+                fadingAttenuation = rayleighFading(link.stateKey, i);
 
             else if (fadingType_ == JAKES)
-                fadingAttenuation = jakesFading(ueId, speed, i, cqiDl);
+                fadingAttenuation = jakesFading(link.stateKey, speed, i, link.useUeSideMaps);
         }
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
 
-        EV << " LteRealisticChannelModel::getRSRP node " << ueId
-           << ((lteInfo->getFrameType() == FEEDBACKPKT) ?
-            " FEEDBACK PACKET " : " NORMAL PACKET ")
+        EV << " LteRealisticChannelModel::getRSRP node " << link.stateKey
            << " band " << i << " recvPower " << recvPower
-           << " direction " << dirToA(dir) << " antenna gain tx "
-           << antennaGainTx << " antenna gain rx " << antennaGainRx
-           << " noise figure " << noiseFigure
+           << " direction " << dirToA(link.dir) << " antenna gain tx "
+           << link.txAntennaGain << " antenna gain rx " << link.rxAntennaGain
+           << " noise figure " << link.noiseFigure
            << " cable loss   " << cableLoss_
            << " attenuation (pathloss + shadowing) " << attenuation
            << " speed " << speed << " thermal noise " << thermalNoise_

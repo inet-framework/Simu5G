@@ -185,13 +185,24 @@ class LteRealisticChannelModel : public LteChannelModel
     void initialize(int stage) override;
 
     /*
-     * Compute Attenuation caused by pathloss and shadowing (optional)
+     * Compute attenuation (path loss + optional shadowing) over a radio link.
+     */
+    double getAttenuation(const RadioLink& link) override;
+
+    /*
+     * Convenience overload for the cellular callers that still think in
+     * (UE, direction, remote coordinate) terms -- the interference helpers and
+     * the background-UE path. Builds a cellular link and forwards, so the
+     * subclass override of getAttenuation(const RadioLink&) still applies.
      *
-     * @param nodeid mac node id of UE
+     * @param nodeId mac node id of UE
      * @param dir traffic direction
      * @param coord position of end point communication (if dir==UL is the position of UE else is the position of eNodeB)
      */
-    double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord, bool cqiDl) override;
+    double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord, bool cqiDl)
+    {
+        return getAttenuation(cellularLink(nodeId, dir, coord, cqiDl));
+    }
 
     /*
      * Compute Attenuation for D2D caused by pathloss and shadowing (optional)
@@ -403,7 +414,26 @@ class LteRealisticChannelModel : public LteChannelModel
     bool isUplinkInterferenceEnabled() override { return enableUplinkInterference_; }
     bool isD2DInterferenceEnabled() override { return enableD2DInterference_; }
 
+    /*
+     * Compute the received useful signal (RSRP) per band over a radio link.
+     */
+    virtual std::vector<double> getRSRP(const RadioLink& link, double txPower);
+
   protected:
+
+    /*
+     * Build the RadioLink described by a frame's control info (DL, UL, and the
+     * feedback variants). The D2D path builds its links separately -- its API
+     * takes the peer endpoint explicitly rather than deriving it.
+     */
+    virtual RadioLink linkFor(UserControlInfo *lteInfo);
+
+    /*
+     * Build the RadioLink for a UE<->serving-BS link expressed the old way: the
+     * local module is one endpoint, 'coord' the other, and 'dir' says which of
+     * the two is the UE.
+     */
+    RadioLink cellularLink(MacNodeId ueId, Direction dir, inet::Coord coord, bool cqiDl);
 
     /*
      * Returns the 2D distance between two coordinates (ignore z-axis)

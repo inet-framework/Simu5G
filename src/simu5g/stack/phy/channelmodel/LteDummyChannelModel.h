@@ -57,7 +57,7 @@ class LteDummyChannelModel : public LteChannelModel
     /*
      * Compute attenuation caused by path loss and shadowing (optional)
      */
-    double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord, bool cqiDl) override
+    double getAttenuation(const RadioLink& link) override
     {
         return 0;
     }
