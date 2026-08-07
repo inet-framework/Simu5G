@@ -258,6 +258,12 @@ double LteRealisticChannelModel::getAttenuation_D2D(MacNodeId nodeId, Direction 
 
     // update current user position
     updatePositionHistory(nodeId, coord);
+    // Re-anchor the point the correlation distance is measured from. Without this,
+    // computeCorrelationDistance() keeps measuring from the position first seen, so
+    // once the node has moved past correlationDistance_ the LOS-recomputation guard
+    // above stays open and computeLosProbability() runs on every subsequent call.
+    // The core getAttenuation() has always done this; the D2D copy never did.
+    updateCorrelationDistance(nodeId, coord);
 
     EV << "LteRealisticChannelModel::getAttenuation - computed attenuation at distance " << sqrDistance << " for UE2 is " << attenuation << endl;
 
