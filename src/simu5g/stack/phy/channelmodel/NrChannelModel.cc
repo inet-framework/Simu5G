@@ -27,22 +27,16 @@ void NrChannelModel::initialize(int stage)
 
 double NrChannelModel::getAttenuation(const RadioLink& link)
 {
-    // NOTE: 'movement' is never assigned, so the LOS-recomputation guard below is
-    // always false and LOS is computed exactly once per node for the whole run.
-    // That is a pre-existing defect (tracked as D6); it is preserved verbatim here
-    // so that generalizing the link geometry stays behavior-preserving. Do not
-    // "fix" it as a side effect of a refactor -- it moves every NR fingerprint.
-    double movement = .0;
-
     // COMPUTE 3D and 2D DISTANCE between the two endpoints
     double threeDimDistance = link.txCoord.distance(link.rxCoord);
     double twoDimDistance = getTwoDimDistance(link.txCoord, link.rxCoord);
 
     double speed = computeSpeed(link.stateKey, link.stateCoord);
+    double correlationDist = computeCorrelationDistance(link.stateKey, link.stateCoord);
 
     // If the traveled distance is greater than the correlation distance, the UE could have changed its state and
     // its visibility from the eNodeB, hence it is correct to recompute the LOS probability.
-    if (movement > correlationDistance_
+    if (correlationDist > correlationDistance_
         || losMap_.find(link.stateKey) == losMap_.end())
     {
         computeLosProbability(twoDimDistance, link.stateKey);
@@ -57,9 +51,10 @@ double NrChannelModel::getAttenuation(const RadioLink& link)
     if (num(link.stateKey) < BGUE_MIN_ID && shadowing_)
         attenuation += computeShadowing(twoDimDistance, link.stateKey, speed, link.useUeSideMaps);
 
-    // update the tracked node's current position
-    // (note: unlike the base class, this does not re-anchor lastCorrelationPoint_ -- part of D6)
+    // update the tracked node's current position, and re-anchor the point the
+    // correlation distance is measured from
     updatePositionHistory(link.stateKey, link.stateCoord);
+    updateCorrelationDistance(link.stateKey, link.stateCoord);
 
     EV << "NrChannelModel::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNb is " << attenuation << endl;
 
