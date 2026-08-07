@@ -137,8 +137,11 @@ class LteChannelModel : public cSimpleModule
      *
      * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
+     * @param rsrpVector the per-band received power captured for this frame, when the
+     *        caller already has it (the D2D one-to-many capture-effect path). Empty
+     *        otherwise; models that do not need it ignore it.
      */
-    virtual bool isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo) = 0;
+    virtual bool isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector = {}) = 0;
 
     /*
      * Compute attenuation (path loss + optional shadowing) over a radio link.
@@ -181,15 +184,6 @@ class LteChannelModel : public cSimpleModule
      */
     virtual double getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId) = 0;
 
-    /*
-     * Compute the error probability of the transmitted packet according to CQI used, TX mode, and the received power
-     * After that, it generates a random number to check if this packet will be corrupted or not
-     *
-     * @param frame pointer to the packet
-     * @param lteInfo pointer to the user control info
-     * @param rsrpVector the received signal for each RB, if it has already been computed
-     */
-    virtual bool isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) = 0;
     /*
      * Compute received useful signal for each band for user nodeId according to path loss, shadowing (optional), and multipath fading
      *

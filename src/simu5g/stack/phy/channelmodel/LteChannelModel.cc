@@ -73,10 +73,5 @@ std::vector<double> LteChannelModel::getSIR(LteAirFrame *frame, UserControlInfo 
     return tmp;
 }
 
-bool LteChannelModel::isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
-{
-    return true;
-}
-
 } //namespace
 

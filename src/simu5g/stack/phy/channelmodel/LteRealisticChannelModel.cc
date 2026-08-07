@@ -1217,7 +1217,7 @@ double LteRealisticChannelModel::jakesFading(MacNodeId nodeId, double speed,
     return linearToDb(re_h * re_h + im_h * im_h);
 }
 
-bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo)
+bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     EV << "LteRealisticChannelModel::error" << endl;
 
@@ -1254,11 +1254,15 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
 
     // Take sinr
     std::vector<double> snrV;
-    if (lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI) {
+    if (dir == D2D || dir == D2D_MULTI) {
         MacNodeId destId = lteInfo->getDestId();
         Coord destCoord = phy_->getCoord();
         MacNodeId enbId = binder_->getServingNodeOrSelf(lteInfo->getSourceId());
-        snrV = getSINR_D2D(frame, lteInfo, destId, destCoord, enbId);
+        if (dir == D2D_MULTI)
+            // the one-to-many path has already captured the winning RSRP; reuse it
+            snrV = getSINR_D2D(frame, lteInfo, destId, destCoord, enbId, rsrpVector);
+        else
+            snrV = getSINR_D2D(frame, lteInfo, destId, destCoord, enbId);
     }
     else {
         snrV = getSINR(frame, lteInfo);
@@ -1346,146 +1350,6 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
     // Signal is strong enough, receive this Signal
     EV << "This is your lucky day (" << randomSample << " > " << effectiveErrorRateWithHarq
        << ") -> Receive AirFrame." << endl;
-
-    return true;
-}
-
-bool LteRealisticChannelModel::isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
-{
-    EV << "LteRealisticChannelModel::error_D2D" << endl;
-
-    // get codeword
-    unsigned char cw = lteInfo->getCw();
-    // get number of codewords
-    int size = lteInfo->getUserTxParams()->readCqiVector().size();
-
-    // if total number of codewords is equal to 1 the cw index should be only 0
-    if (size == 1)
-        cw = 0;
-
-    // Get CQI used to transmit this cw
-    Cqi cqi = lteInfo->getUserTxParams()->readCqiVector()[cw];
-    EV << "LteRealisticChannelModel:: CQI: " << cqi << endl;
-
-    MacNodeId id;
-    Direction dir = lteInfo->getDirection();
-
-    // Get MacNodeId of UE
-    if (dir == DL)
-        id = lteInfo->getDestId();
-    else // UL or D2D
-        id = lteInfo->getSourceId();
-
-    EV << NOW << "LteRealisticChannelModel::FROM: " << id << endl;
-    // Get Number of RTX
-    unsigned char nTx = lteInfo->getTxNumber();
-
-    // consistency check
-    if (nTx == 0)
-        throw cRuntimeError("Transmissions counter should not be 0");
-
-    // Get txmode
-    TxMode txmode = (TxMode)lteInfo->getTxMode();
-
-    // SINR vector(one SINR value for each band)
-    std::vector<double> snrV;
-    if (lteInfo->getDirection() == D2D || lteInfo->getDirection() == D2D_MULTI) {
-        MacNodeId peerUeMacNodeId = lteInfo->getDestId();
-        Coord peerCoord = phy_->getCoord();
-        MacNodeId enbId = MacNodeId(1); // TODO get an appropriate way to get EnbId
-
-        if (lteInfo->getDirection() == D2D) {
-            snrV = getSINR_D2D(frame, lteInfo, peerUeMacNodeId, peerCoord, enbId);
-        }
-        else { // D2D_MULTI
-            snrV = getSINR_D2D(frame, lteInfo, peerUeMacNodeId, peerCoord, enbId, rsrpVector);
-        }
-    }
-    else snrV = getSINR(frame, lteInfo);                                           // Take SINR
-
-    // Get the resource Block id used to transmit this packet
-    RbMap rbmap = lteInfo->getGrantedBlocks();
-
-    // Get txmode
-    unsigned int itxmode = txModeToIndex[txmode];
-
-    double bler = 0;
-    std::vector<double> totalbler;
-    double finalSuccess = 1;
-
-    // for statistical purposes
-    double sumSnr = 0.0;
-    int usedRBs = 0;
-
-    // for each Remote unit used to transmit the packet
-    for (const auto& [remoteUnitId, resourceBlocks] : rbmap) {
-        // for each logical band used to transmit the packet
-        for (const auto& [band, allocation] : resourceBlocks) {
-            // this Rb is not allocated
-            if (allocation == 0) continue;
-
-            // Get the Bler
-            if (cqi == 0)
-                return false; // CQI 0 means channel below usable quality (e.g. after handover) — loss
-            if (cqi > 15)
-                throw cRuntimeError("A packet has been transmitted with a cqi greater than 15 cqi:%d txmode:%d dir:%d rb:%d cw:%d rtx:%d", cqi, lteInfo->getTxMode(), dir, band, cw, nTx);
-
-            // for statistical purposes
-            sumSnr += snrV[band];
-            usedRBs++;
-
-            int snr = snrV[band];// XXX because band is a Band (=unsigned short)
-            // Use the same usable-SINR floor as the core reception path. This copy
-            // used a hardcoded 1 dB, making D2D one-to-many roughly 15 dB stricter
-            // than D2D unicast, which reaches the core decision directly.
-            if (snr < binder_->phyPisaData.minSnr())
-                return false;
-            else if (snr > binder_->phyPisaData.maxSnr())
-                bler = 0;
-            else
-                bler = binder_->phyPisaData.getBler(itxmode, cqi, snr);
-
-            EV << "\t bler computation: [itxMode=" << itxmode << "] - [cqi=" << cqi
-               << "] - [snr=" << snr << "]" << endl;
-
-            double success = 1 - bler;
-            // compute the success probability according to the number of RB used
-            double successPacket = pow(success, (double)allocation);
-
-            // compute the success probability according to the number of LB used
-            finalSuccess *= successPacket;
-
-            EV << " LteRealisticChannelModel::error direction " << dirToA(dir)
-               << " node " << id << " remote unit " << dasToA(remoteUnitId)
-               << " Band " << band << " SNR " << snr << " CQI " << cqi
-               << " BLER " << bler << " success probability " << successPacket
-               << " total success probability " << finalSuccess << endl;
-        }
-    }
-    // Compute total error probability
-    double per = 1 - finalSuccess;
-    // Harq Reduction
-    double totalPer = per * pow(harqReduction_, nTx - 1);
-
-    double er = uniform(0.0, 1.0);
-
-    EV << " LteRealisticChannelModel::error direction " << dirToA(dir)
-       << " node " << id << " total ERROR probability  " << per
-       << " per with H-ARQ error reduction " << totalPer
-       << " - CQI[" << cqi << "]- random error extracted[" << er << "]" << endl;
-
-    // emit SINR statistic
-    if (collectSinrStatistics_ && usedRBs > 0)
-        emit(rcvdSinrD2DSignal_, sumSnr / usedRBs);
-
-    if (er <= totalPer) {
-        EV << "This is NOT your lucky day (" << er << " < " << totalPer << ") -> do not receive." << endl;
-
-        // Signal too weak, we can't receive it
-        return false;
-    }
-    // Signal is strong enough, receive this Signal
-    EV << "This is your lucky day (" << er << " > " << totalPer << ") -> Receive AirFrame." << endl;
 
     return true;
 }

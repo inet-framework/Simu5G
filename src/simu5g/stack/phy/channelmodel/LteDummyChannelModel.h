@@ -45,7 +45,7 @@ class LteDummyChannelModel : public LteChannelModel
      * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
-    bool isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo) override;
+    bool isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) override;
     /*
      * Compute the path-loss attenuation according to the selected scenario
      */
@@ -95,15 +95,6 @@ class LteDummyChannelModel : public LteChannelModel
      *
      */
     double getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId) override;
-    /*
-     * Compute the error probability of the transmitted packet according to CQI used, tx mode, and the received power
-     * after that it throws a random number in order to check if this packet will be corrupted or not
-     *
-     * @param frame pointer to the packet
-     * @param lteInfo pointer to the user control info
-     * @param rsrpVector the received signal for each RB, if it has already been computed
-     */
-    bool isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) override;
     /*
      * Compute received useful signal for D2D transmissions
      */

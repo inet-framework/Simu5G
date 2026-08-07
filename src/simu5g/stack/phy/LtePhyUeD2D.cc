@@ -384,12 +384,10 @@ void LtePhyUeD2D::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo)
     if (channelModel == nullptr)
         throw cRuntimeError("LtePhyUeD2D::decodeAirFrame - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 
-    // Apply decider to received packet
-    bool result;
-    if (lteInfo->getDirection() == D2D_MULTI)
-        result = channelModel->isReceptionSuccessful_D2D(frame, lteInfo, bestRsrpVector_);
-    else
-        result = channelModel->isReceptionSuccessful(frame, lteInfo);
+    // Apply decider to received packet. D2D and D2D_MULTI no longer need their own
+    // entry point: the core reception decision handles every direction, and
+    // bestRsrpVector_ carries the capture-effect RSRP for the one-to-many case.
+    bool result = channelModel->isReceptionSuccessful(frame, lteInfo, bestRsrpVector_);
 
     // Update statistics
     if (result)

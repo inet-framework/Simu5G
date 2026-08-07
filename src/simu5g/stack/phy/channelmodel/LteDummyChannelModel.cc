@@ -104,20 +104,11 @@ std::vector<double> LteDummyChannelModel::getSIR(LteAirFrame *frame, UserControl
     return tmp;
 }
 
-bool LteDummyChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo)
+bool LteDummyChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     double per = getErrorProbability(lteInfo->getDirection(), lteInfo->getTxNumber());
     bool success = uniform(0.0, 1.0) > per;
     EV << "LteDummyChannelModel::isReceptionSuccessful - transmission " << (int)lteInfo->getTxNumber()
-       << ", error probability " << per << " -> " << (success ? "received" : "lost") << endl;
-    return success;
-}
-
-bool LteDummyChannelModel::isReceptionSuccessful_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
-{
-    double per = getErrorProbability(lteInfo->getDirection(), lteInfo->getTxNumber());
-    bool success = uniform(0.0, 1.0) > per;
-    EV << "LteDummyChannelModel::isReceptionSuccessful_D2D - transmission " << (int)lteInfo->getTxNumber()
        << ", error probability " << per << " -> " << (success ? "received" : "lost") << endl;
     return success;
 }
