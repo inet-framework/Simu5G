@@ -75,6 +75,12 @@ struct RadioLink
     double noiseFigure = 0.0;
     bool txIsBaseStation = false;   // gates angular attenuation
 
+    // The cell this link belongs to. Only the interference computation needs it --
+    // that model is genuinely cellular-topology-aware, since it asks which cell an
+    // interferer is in. For a cellular link it is the base-station endpoint; for a
+    // UE-to-UE link it is the transmitter's serving cell.
+    MacNodeId cellId = NODEID_NONE;
+
     // ---- tag, not a switch ----
     Direction dir = UNKNOWN_DIRECTION;
 };

@@ -263,6 +263,14 @@ class LteRealisticChannelModel : public LteChannelModel
     std::vector<double> getSINR(LteAirFrame *frame, UserControlInfo *lteInfo) override;
 
     /*
+     * Add noise and interference to an already-computed per-band received-power
+     * vector. Split out so that a caller which already holds the RSRP (the D2D
+     * one-to-many capture-effect path) shares this implementation instead of
+     * repeating it.
+     */
+    virtual std::vector<double> getSINR(const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);
+
+    /*
      * Compute received useful signal for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading
      *
      * @param frame pointer to the packet
@@ -433,6 +441,25 @@ class LteRealisticChannelModel : public LteChannelModel
      * the two is the UE.
      */
     RadioLink cellularLink(MacNodeId ueId, Direction dir, inet::Coord coord, bool cqiDl);
+
+    /*
+     * Fill den[] with the per-band interference-plus-noise denominator, in dBm,
+     * for the bands this frame actually uses. Computes the cellular contributions
+     * (multi-cell, background-cell, external-cell), or delegates to the D2D
+     * function below for link types the cellular model does not describe.
+     *
+     * @param totN linearized thermal noise + noise figure (mW)
+     */
+    virtual void computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
+            RbMap& rbmap, double totN, std::vector<double>& den);
+
+    /*
+     * The UE-to-UE counterpart of the above. Separate rather than a branch inside
+     * it, so that moving the D2D code out of this class turns the delegation into
+     * a plain override.
+     */
+    virtual void computeD2DInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
+            RbMap& rbmap, double totN, std::vector<double>& den);
 
     /*
      * Returns the 2D distance between two coordinates (ignore z-axis)

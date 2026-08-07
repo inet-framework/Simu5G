@@ -188,6 +188,9 @@ RadioLink LteRealisticChannelModel::linkFor(UserControlInfo *lteInfo)
     link.stateKey = ueId;
     link.stateCoord = ueCoord;
 
+    // the cell this link belongs to, for the interference computation
+    link.cellId = eNbId;
+
     return link;
 }
 
@@ -459,27 +462,15 @@ std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserCo
 
     EV << "------------ GET SINR ----------------" << endl;
 
-    // The desired signal: path loss, shadowing and fading. Everything below adds
+    // The desired signal: path loss, shadowing and fading. getSINR() below adds
     // noise and interference on top of it.
-    std::vector<double> snrVector = getRSRP(link, lteInfo->getTxPower());
+    return getSINR(link, lteInfo, getRSRP(link, lteInfo->getTxPower()));
+}
 
+std::vector<double> LteRealisticChannelModel::getSINR(const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector)
+{
     // Get the Resource Blocks used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();
-
-    // The interference model is cellular-topology-aware (it asks "which cell?"),
-    // so recover the UE/BS roles from the link. The propagation math above does not
-    // need them.
-    Direction dir = link.dir;
-    MacNodeId ueId = link.txIsBaseStation ? link.rxId : link.txId;
-    MacNodeId eNbId = link.txIsBaseStation ? link.txId : link.rxId;
-    Coord ueCoord = link.txIsBaseStation ? link.rxCoord : link.txCoord;
-    Coord enbCoord = link.txIsBaseStation ? link.txCoord : link.rxCoord;
-    double noiseFigure = link.noiseFigure;
-
-    // Only for the trailing updatePositionHistory() below, which is kept verbatim.
-    // getRSRP() -> getAttenuation() has already recorded this node's position for
-    // the current TTI, so that call is a no-op; preserved rather than removed.
-    Coord coord = lteInfo->getCoord();
 
     /*
      * The SINR will be calculated as follows
@@ -489,8 +480,75 @@ std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserCo
      *           N  +  I
      *
      * Ndb = thermalNoise_ + noiseFigure (measured in decibels)
-     * I = extCellInterference + multiCellInterference
      */
+
+    // compute and linearize total noise
+    double totN = dBmToLinear(thermalNoise_ + link.noiseFigure);
+
+    // per-band interference-plus-noise denominator, in dBm
+    std::vector<double> den(numBands_, 0.0);
+    computeInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
+
+    double sumSnr = 0.0;
+    int usedRBs = 0;
+    for (unsigned int i = 0; i < numBands_; i++) {
+        // if we are decoding a data transmission and this RB has not been used, skip it
+        // TODO fix for multi-antenna case
+        if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
+            continue;
+
+        // compute final SINR. Subtraction in dB is equivalent to linear division
+        snrVector[i] -= den[i];
+
+        sumSnr += snrVector[i];
+        ++usedRBs;
+    }
+
+    MacNodeId ueId = link.txIsBaseStation ? link.rxId : link.txId;
+
+    // emit SINR statistic. Only DL and UL have a measured-SINR signal; other link
+    // types must not be reported as one of them.
+    if (collectSinrStatistics_ && (lteInfo->getFrameType() == FEEDBACKPKT) && usedRBs > 0
+        && (link.dir == DL || link.dir == UL))
+    {
+        // we are on the BS, so we need to retrieve the channel model of the sender
+        // XXX I know, there might be a faster way...
+        LteChannelModel *ueChannelModel = check_and_cast<LtePhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(lteInfo->getCarrierFrequency());
+
+        if (link.dir == DL) // we are on the UE
+            ueChannelModel->emit(measuredSinrDlSignal_, sumSnr / usedRBs);
+        else
+            ueChannelModel->emit(measuredSinrUlSignal_, sumSnr / usedRBs);
+    }
+
+    // if sender is an eNodeB
+    if (link.dir == DL)
+        // store the position of user
+        updatePositionHistory(ueId, phy_->getCoord());
+    // sender is a UE
+    else
+        updatePositionHistory(ueId, lteInfo->getCoord());
+    return snrVector;
+}
+
+void LteRealisticChannelModel::computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
+        RbMap& rbmap, double totN, std::vector<double>& den)
+{
+    // A UE-to-UE link is not described by the cellular interference model at all;
+    // it has its own. Once the D2D code moves out of this class this branch becomes
+    // an override of this function.
+    if (link.dir == D2D || link.dir == D2D_MULTI) {
+        computeD2DInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
+        return;
+    }
+
+    // The interference model is cellular-topology-aware (it asks "which cell?"),
+    // so recover the UE/BS roles from the link. The propagation math does not need them.
+    Direction dir = link.dir;
+    MacNodeId ueId = link.txIsBaseStation ? link.rxId : link.txId;
+    MacNodeId eNbId = link.cellId;
+    Coord ueCoord = link.txIsBaseStation ? link.rxCoord : link.txCoord;
+    Coord enbCoord = link.txIsBaseStation ? link.txCoord : link.rxCoord;
 
     //============ MULTI CELL INTERFERENCE COMPUTATION =================
     // vector containing the sum of multi-cell interference for each band
@@ -523,56 +581,19 @@ std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserCo
         computeExtCellInterference(eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
 
-    //===================== SINR COMPUTATION ========================
-    // compute and linearize total noise
-    double totN = dBmToLinear(thermalNoise_ + noiseFigure);
-
-    // denominator expressed in dBm as (N+extCell+bgCell+multiCell)
-    double den;
     EV << "LteRealisticChannelModel::getSINR - distance from my eNb=" << enbCoord.distance(ueCoord) << " - DIR=" << ((dir == DL) ? "DL" : "UL") << endl;
 
-    double sumSnr = 0.0;
-    int usedRBs = 0;
-    // add interference for each band
     for (unsigned int i = 0; i < numBands_; i++) {
-        // if we are decoding a data transmission and this RB has not been used, skip it
-        // TODO fix for multi-antenna case
+        // the caller skips these bands too; leave their denominator untouched
         if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
             continue;
 
-        //               (      mW              +          mW            +  mW  +        mW            )
-        den = linearToDBm(bgCellInterference[i] + extCellInterference[i] + totN + multiCellInterference[i]);
+        //                  (      mW              +          mW            +  mW  +        mW            )
+        den[i] = linearToDBm(bgCellInterference[i] + extCellInterference[i] + totN + multiCellInterference[i]);
 
-        EV << "\t bgCell[" << bgCellInterference[i] << "] - ext[" << extCellInterference[i] << "] - multi[" << multiCellInterference[i] << "] - recvPwr["
-           << dBmToLinear(snrVector[i]) << "] - sinr[" << snrVector[i] - den << "]\n";
-
-        // compute final SINR
-        snrVector[i] -= den;
-
-        sumSnr += snrVector[i];
-        ++usedRBs;
+        EV << "\t bgCell[" << bgCellInterference[i] << "] - ext[" << extCellInterference[i] << "] - multi[" << multiCellInterference[i]
+           << "] - den[" << den[i] << "]\n";
     }
-
-    // emit SINR statistic
-    if (collectSinrStatistics_ && (lteInfo->getFrameType() == FEEDBACKPKT) && usedRBs > 0) {
-        // we are on the BS, so we need to retrieve the channel model of the sender
-        // XXX I know, there might be a faster way...
-        LteChannelModel *ueChannelModel = check_and_cast<LtePhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(lteInfo->getCarrierFrequency());
-
-        if (dir == DL) // we are on the UE
-            ueChannelModel->emit(measuredSinrDlSignal_, sumSnr / usedRBs);
-        else
-            ueChannelModel->emit(measuredSinrUlSignal_, sumSnr / usedRBs);
-    }
-
-    // if sender is an eNodeB
-    if (dir == DL)
-        // store the position of user
-        updatePositionHistory(ueId, phy_->getCoord());
-    // sender is a UE
-    else
-        updatePositionHistory(ueId, coord);
-    return snrVector;
 }
 
 std::vector<double> LteRealisticChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
@@ -974,36 +995,18 @@ std::vector<double> LteRealisticChannelModel::getSINR_D2D(LteAirFrame *frame, Us
 
 std::vector<double> LteRealisticChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
 {
-    std::vector<double> snrVector = rsrpVector;
-
-    MacNodeId sourceId = lteInfo_1->getSourceId();
-    Coord sourceCoord = lteInfo_1->getCoord();
-
-    // Get allocated RBs
-    RbMap rbmap = lteInfo_1->getGrantedBlocks();
-
-    // Get the direction
-    Direction dir = D2D;
-
-    double noiseFigure = 0.0;
-    double extCellInterference = 0.0;
-
-    // In D2D case the noise figure is the ueNoiseFigure_
-    noiseFigure = ueNoiseFigure_;
-
     EV << "------------ GET SINR D2D----------------" << endl;
 
-    /*
-     * The SINR will be calculated as follows
-     *
-     *              Pwr
-     * SINR = ---------
-     *           N  +  I
-     *
-     * N = thermalNoise_ + noiseFigure (measured in dBm)
-     * I = extCellInterference + inCellInterference (measured in mW)
-     */
-    //============ IN CELL D2D INTERFERENCE COMPUTATION =================
+    // The desired signal is already known; the core adds noise and interference,
+    // asking computeInterferencePlusNoise() below for the D2D denominator.
+    RadioLink link = d2dLink(lteInfo_1->getSourceId(), lteInfo_1->getCoord(), destId, destCoord, true);
+    link.cellId = enbId;
+    return getSINR(link, lteInfo_1, rsrpVector);
+}
+
+void LteRealisticChannelModel::computeD2DInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
+        RbMap& rbmap, double totN, std::vector<double>& den)
+{
     /*
      * In calculating a D2D CQI, the interference from other D2D UEs discriminates between calculating a CQI
      * in the direction D2D_Tx--->D2D_Rx or D2D_Tx<---D2D_Rx (This happens due to the different positions of the
@@ -1018,54 +1021,29 @@ std::vector<double> LteRealisticChannelModel::getSINR_D2D(LteAirFrame *frame, Us
     // prepare data structure
     d2dInterference.resize(numBands_, 0);
     if (enableD2DInterference_) {
-        computeD2DInterference(enbId, sourceId, sourceCoord, destId, destCoord, (lteInfo_1->getFrameType() == FEEDBACKPKT), lteInfo_1->getCarrierFrequency(), rbmap, &d2dInterference, dir);
+        computeD2DInterference(link.cellId, link.txId, link.txCoord, link.rxId, link.rxCoord,
+                (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &d2dInterference, link.dir);
     }
 
-    //===================== SINR COMPUTATION ========================
-    if (enableD2DInterference_) {
-        // compute and linearize total noise
-        double totN = dBmToLinear(thermalNoise_ + noiseFigure);
+    EV << "LteRealisticChannelModel::computeD2DInterferencePlusNoise - distance from my Peer = "
+       << link.rxCoord.distance(link.txCoord) << " - DIR=" << dirToA(link.dir) << endl;
 
-        // denominator expressed in dBm as (N+extCell+inCell)
-        double den;
-        EV << "LteRealisticChannelModel::getSINR - distance from my Peer = " << destCoord.distance(sourceCoord) << " - DIR=" << dirToA(dir) << endl;
+    for (unsigned int i = 0; i < numBands_; i++) {
+        // the caller skips these bands too; leave their denominator untouched
+        if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
+            continue;
 
-        // Add interference for each band
-        for (unsigned int i = 0; i < numBands_; i++) {
-            // if we are decoding a data transmission and this RB has not been used, skip it
-            // TODO fix for multi-antenna case
-            if (lteInfo_1->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
-                continue;
-
-            //               (      mW            +  mW  +        mW            )
-            den = linearToDBm(extCellInterference + totN + d2dInterference[i]);
-
-            EV << "\t ext[" << extCellInterference << "] - in[" << d2dInterference[i] << "] - recvPwr["
-               << dBmToLinear(snrVector[i]) << "] - sinr[" << snrVector[i] - den << "]\n";
-
-            // compute final SINR. Subtraction in dB is equivalent to linear division
-            snrVector[i] -= den;
+        if (enableD2DInterference_) {
+            den[i] = linearToDBm(totN + d2dInterference[i]);
+            EV << "\t in[" << d2dInterference[i] << "] - den[" << den[i] << "]\n";
+        }
+        else {
+            // No interference to add, so the denominator is plain noise. Kept as a
+            // direct sum rather than dBm->linear->dBm, which is what this branch has
+            // always done and is not bit-identical to the round trip.
+            den[i] = link.noiseFigure + thermalNoise_;
         }
     }
-    // compute snr with no D2D interference
-    else {
-        for (unsigned int i = 0; i < numBands_; i++) {
-            // if we are decoding a data transmission and this RB has not been used, skip it
-            // TODO fix for multi-antenna case
-            if (lteInfo_1->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
-                continue;
-
-            // compute final SINR
-            snrVector[i] -= (noiseFigure + thermalNoise_);
-
-            EV << "LteRealisticChannelModel::getSINR_D2D - distance from my Peer = " << destCoord.distance(sourceCoord) << " - DIR=" << dirToA(dir) << " - snr[" << snrVector[i] << "]\n";
-        }
-    }
-
-    // sender is a UE
-    updatePositionHistory(sourceId, sourceCoord);
-
-    return snrVector;
 }
 
 std::vector<double> LteRealisticChannelModel::getSIR(LteAirFrame *frame,
