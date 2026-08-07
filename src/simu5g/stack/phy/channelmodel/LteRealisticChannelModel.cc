@@ -1001,6 +1001,19 @@ std::vector<double> LteRealisticChannelModel::getSINR_D2D(LteAirFrame *frame, Us
     // asking computeInterferencePlusNoise() below for the D2D denominator.
     RadioLink link = d2dLink(lteInfo_1->getSourceId(), lteInfo_1->getCoord(), destId, destCoord, true);
     link.cellId = enbId;
+
+    // The caller is expected to supply one RSRP value per band. The one-to-many
+    // capture-effect path only fills bestRsrpVector_ when the capture factor is
+    // "RSRP"; with "Distance" it stays empty, and indexing it below would be out
+    // of bounds. Fall back to computing the desired signal here rather than
+    // reading past the end.
+    if (rsrpVector.size() < numBands_) {
+        if (!rsrpVector.empty())
+            throw cRuntimeError("LteRealisticChannelModel::getSINR_D2D - RSRP vector has %zu entries, expected %u",
+                    rsrpVector.size(), numBands_);
+        return getSINR(link, lteInfo_1, getRSRP(link, lteInfo_1->getD2dTxPower()));
+    }
+
     return getSINR(link, lteInfo_1, rsrpVector);
 }
 
