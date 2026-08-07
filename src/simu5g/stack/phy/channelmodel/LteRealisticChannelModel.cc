@@ -1332,16 +1332,8 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
        << " - CQI[" << cqi << "]- random error extracted[" << randomSample << "]" << endl;
 
     // emit SINR statistic
-    if (collectSinrStatistics_ && usedRBs > 0) {
-        if (dir == DL) // we are on the UE
-            emit(rcvdSinrDlSignal_, sumSnr / usedRBs);
-        else {
-            // we are on the BS, so we need to retrieve the channel model of the sender
-            // XXX I know, there might be a faster way...
-            LteChannelModel *ueChannelModel = check_and_cast<LtePhyUe *>(binder_->getPhyByNodeId(id))->getChannelModel(lteInfo->getCarrierFrequency());
-            ueChannelModel->emit(rcvdSinrUlSignal_, sumSnr / usedRBs);
-        }
-    }
+    if (collectSinrStatistics_ && usedRBs > 0)
+        emitRcvdSinr(dir, id, lteInfo->getCarrierFrequency(), sumSnr / usedRBs);
 
     bool receptionFailed = (randomSample <= effectiveErrorRateWithHarq);
     if (receptionFailed) {
@@ -1493,6 +1485,27 @@ bool LteRealisticChannelModel::isReceptionSuccessful_D2D(LteAirFrame *frame, Use
     EV << "This is your lucky day (" << er << " > " << totalPer << ") -> Receive AirFrame." << endl;
 
     return true;
+}
+
+void LteRealisticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)
+{
+    if (dir == D2D || dir == D2D_MULTI) {
+        // A D2D reception is not an uplink reception. Attribute it to the receiver --
+        // this module -- which is also what the one-to-many path already does, rather
+        // than to the sender's channel model the way the UL branch below does.
+        emit(rcvdSinrD2DSignal_, sinr);
+        return;
+    }
+
+    if (dir == DL) { // we are on the UE
+        emit(rcvdSinrDlSignal_, sinr);
+        return;
+    }
+
+    // we are on the BS, so we need to retrieve the channel model of the sender
+    // XXX I know, there might be a faster way...
+    LteChannelModel *ueChannelModel = check_and_cast<LtePhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(carrierFrequency);
+    ueChannelModel->emit(rcvdSinrUlSignal_, sinr);
 }
 
 void LteRealisticChannelModel::computeLosProbability(double d,

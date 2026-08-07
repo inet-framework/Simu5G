@@ -443,6 +443,18 @@ class LteRealisticChannelModel : public LteChannelModel
     RadioLink cellularLink(MacNodeId ueId, Direction dir, inet::Coord coord, bool cqiDl);
 
     /*
+     * Emit the received-SINR statistic for a decoded frame. Routes D2D/D2D_MULTI
+     * receptions to rcvdSinrD2D instead of letting them fall into the uplink
+     * statistic, which is where the DL/else split used to put them.
+     *
+     * @param dir direction of the reception
+     * @param ueId the UE end of the link (the sender, for an uplink reception)
+     * @param carrierFrequency carrier the frame arrived on
+     * @param sinr mean SINR over the resource blocks actually used
+     */
+    virtual void emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr);
+
+    /*
      * Fill den[] with the per-band interference-plus-noise denominator, in dBm,
      * for the bands this frame actually uses. Computes the cellular contributions
      * (multi-cell, background-cell, external-cell), or delegates to the D2D
