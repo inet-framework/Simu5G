@@ -1435,7 +1435,10 @@ bool LteRealisticChannelModel::isReceptionSuccessful_D2D(LteAirFrame *frame, Use
             usedRBs++;
 
             int snr = snrV[band];// XXX because band is a Band (=unsigned short)
-            if (snr < 1)                           // XXX it was < 0
+            // Use the same usable-SINR floor as the core reception path. This copy
+            // used a hardcoded 1 dB, making D2D one-to-many roughly 15 dB stricter
+            // than D2D unicast, which reaches the core decision directly.
+            if (snr < binder_->phyPisaData.minSnr())
                 return false;
             else if (snr > binder_->phyPisaData.maxSnr())
                 bler = 0;
