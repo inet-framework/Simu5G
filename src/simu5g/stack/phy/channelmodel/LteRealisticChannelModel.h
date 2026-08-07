@@ -205,13 +205,12 @@ class LteRealisticChannelModel : public LteChannelModel
     }
 
     /*
-     * Compute Attenuation for D2D caused by pathloss and shadowing (optional)
-     *
-     * @param nodeid mac node id of UE
-     * @param dir traffic direction
-     * @param coord position of end point communication (if dir==UL is the position of UE else is the position of eNodeB)
+     * Build the RadioLink for a UE-to-UE transmission, so that the core
+     * propagation path can evaluate it. Both endpoints being UEs is the whole of
+     * what makes a D2D link different: same antenna gain on both sides, the UE
+     * noise figure, and no sectorial antenna (hence no angular attenuation).
      */
-    virtual double getAttenuation_D2D(MacNodeId nodeId, Direction dir, inet::Coord coord, MacNodeId node2_Id, inet::Coord coord_2, bool cqiDl);
+    virtual RadioLink d2dLink(MacNodeId srcId, inet::Coord srcCoord, MacNodeId destId, inet::Coord destCoord, bool useUeSideMaps);
 
     /*
      *  Compute angle between two coordinates

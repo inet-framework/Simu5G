@@ -227,47 +227,31 @@ double LteRealisticChannelModel::getAttenuation(const RadioLink& link)
     return attenuation;
 }
 
-double LteRealisticChannelModel::getAttenuation_D2D(MacNodeId nodeId, Direction dir, Coord coord, MacNodeId node2_Id, Coord coord_2, bool cqiDl)
+RadioLink LteRealisticChannelModel::d2dLink(MacNodeId srcId, Coord srcCoord, MacNodeId destId, Coord destCoord, bool useUeSideMaps)
 {
-    double speed = .0;
-    double correlationDist = .0;
+    RadioLink link;
+    link.dir = D2D;
 
-    //COMPUTE DISTANCE between UE1 and UE2
-    double sqrDistance = coord.distance(coord_2);
-    speed = computeSpeed(nodeId, coord);
-    correlationDist = computeCorrelationDistance(nodeId, coord);
+    link.txId = srcId;
+    link.rxId = destId;
+    link.txCoord = srcCoord;
+    link.rxCoord = destCoord;
 
-    // If Euclidean distance since last LOS probability computation is greater than
-    // correlation distance the UE could have changed its state and
-    // its visibility from eNodeB, hence it is correct to recompute the LOS probability
-    if (correlationDist > correlationDistance_
-        || losMap_.find(nodeId) == losMap_.end())
-    {
-        computeLosProbability(sqrDistance, nodeId);
-    }
+    // Both endpoints are UEs.
+    link.txAntennaGain = link.rxAntennaGain = antennaGainUe_;
+    link.noiseFigure = ueNoiseFigure_;
+    link.txIsBaseStation = false; // omnidirectional: no angular attenuation
 
-    //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = losMap_[nodeId];
-    double dbp = 0;
-    double attenuation = computePathLoss(sqrDistance, dbp, los);
+    // The channel state is keyed on the transmitter, which is what this code has
+    // always done. See the note on RadioLink::stateKey: it ought to be a link key,
+    // not a node key, so that a UE's several D2D peers do not share one slot --
+    // deliberately left unchanged here, as fixing it moves every stored fading and
+    // shadowing realization.
+    link.stateKey = srcId;
+    link.stateCoord = srcCoord;
+    link.useUeSideMaps = useUeSideMaps;
 
-    //    Applying shadowing only if it is enabled by configuration
-    //    log-normal shadowing (not available for background UEs)
-    if (num(nodeId) < BGUE_MIN_ID && shadowing_)
-        attenuation += computeShadowing(sqrDistance, nodeId, speed, cqiDl);
-
-    // update current user position
-    updatePositionHistory(nodeId, coord);
-    // Re-anchor the point the correlation distance is measured from. Without this,
-    // computeCorrelationDistance() keeps measuring from the position first seen, so
-    // once the node has moved past correlationDistance_ the LOS-recomputation guard
-    // above stays open and computeLosProbability() runs on every subsequent call.
-    // The core getAttenuation() has always done this; the D2D copy never did.
-    updateCorrelationDistance(nodeId, coord);
-
-    EV << "LteRealisticChannelModel::getAttenuation - computed attenuation at distance " << sqrDistance << " for UE2 is " << attenuation << endl;
-
-    return attenuation;
+    return link;
 }
 
 double LteRealisticChannelModel::computeShadowing(double sqrDistance, MacNodeId nodeId, double speed, bool cqiDl)
@@ -970,112 +954,14 @@ double LteRealisticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coo
 
 std::vector<double> LteRealisticChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, Coord destCoord)
 {
-    // Get Tx power
-    double recvPower = lteInfo_1->getD2dTxPower(); // dBm
-
-    // Coordinate of the Sender of the Feedback packet
-    Coord sourceCoord = lteInfo_1->getCoord();
-
-    double antennaGainTx = 0.0;
-    double antennaGainRx = 0.0;
-    double noiseFigure = 0.0;
-    double speed = 0.0;
-    // Get MacId for UE and his peer
-    MacNodeId sourceId = lteInfo_1->getSourceId();
-    std::vector<double> rsrpVector;
-
-    // True if we use the jakes map in the UE side (D2D is like DL for the receivers)
-    bool cqiDl = false;
-    // Get the direction
-    Direction dir = lteInfo_1->getDirection();
-    dir = D2D; //todo[stsc]: dir is overridden? why?
-
     EV << "------------ GET RSRP D2D----------------" << endl;
 
-    //===================== PARAMETERS SETUP ============================
+    // D2D is like DL for the receivers, so the UE-side fading/shadowing maps apply.
+    RadioLink link = d2dLink(lteInfo_1->getSourceId(), lteInfo_1->getCoord(), destId, destCoord, true);
 
-    // D2D CQI or D2D error computation
-
-    if (dir == UL || dir == DL) {
-        //consistency check
-        throw cRuntimeError("Direction should neither be UL nor DL");
-    }
-    else {
-        antennaGainTx = antennaGainRx = antennaGainUe_;
-        //In D2D case the noise figure is the ueNoiseFigure_
-        noiseFigure = ueNoiseFigure_;
-        // use the jakes map in the UE side
-        cqiDl = true;
-    }
-    // Compute speed
-    speed = computeSpeed(sourceId, sourceCoord);
-
-    EV << "LteRealisticChannelModel::getRSRP_D2D - srcId=" << sourceId
-       << " - destId=" << destId
-       << " - DIR=" << dirToA(dir)
-       << " - frameType=" << ((lteInfo_1->getFrameType() == FEEDBACKPKT) ? "feedback" : "other")
-       << endl
-       << " - txPwr " << recvPower
-       << " - ue1_Coord[" << sourceCoord << "] - ue2_Coord[" << destCoord << "] - ue1_Id[" << sourceId << "] - ue2_Id[" << destId << "]" <<
-        endl;
-    //=================== END PARAMETERS SETUP =======================
-
-    //=============== PATH LOSS + SHADOWING + FADING =================
-    EV << "\t using parameters - noiseFigure=" << noiseFigure << " - antennaGainTx=" << antennaGainTx << " - antennaGainRx=" << antennaGainRx <<
-        " - txPwr=" << recvPower << " - for ueId=" << sourceId << endl;
-
-    // attenuation for the desired signal
-    double attenuation = getAttenuation_D2D(sourceId, dir, sourceCoord, destId, destCoord, cqiDl); // dB
-
-    //compute attenuation (PATHLOSS + SHADOWING)
-    recvPower -= attenuation; // (dBm-dB)=dBm
-
-    //add antenna gain
-    recvPower += antennaGainTx; // (dBm+dB)=dBm
-    recvPower += antennaGainRx; // (dBm+dB)=dBm
-
-    //sub cable loss
-    recvPower -= cableLoss_; // (dBm-dB)=dBm
-
-    // compute and add interference due to fading
-    // Apply fading for each band
-    // if the phy layer is localized we can assume that for each logical band we have different fading attenuation
-    // if the phy layer is distributed the number of logical band should be set to 1
-    double fadingAttenuation = 0;
-    //for each logical band
-    for (unsigned int i = 0; i < numBands_; i++) {
-        fadingAttenuation = 0;
-        //if fading is enabled
-        if (fading_) {
-            //Applying fading
-            if (fadingType_ == RAYLEIGH)
-                fadingAttenuation = rayleighFading(sourceId, i);
-
-            else if (fadingType_ == JAKES) {
-                fadingAttenuation = jakesFading(sourceId, speed, i, cqiDl);
-            }
-        }
-        // add fading contribution to the received power
-        double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
-
-        EV << " LteRealisticChannelModel::getRSRP_D2D node " << sourceId
-           << ((lteInfo_1->getFrameType() == FEEDBACKPKT) ?
-            " FEEDBACK PACKET " : " NORMAL PACKET ")
-           << " band " << i << " recvPower " << recvPower
-           << " direction " << dirToA(dir) << " antenna gain tx "
-           << antennaGainTx << " antenna gain rx " << antennaGainRx
-           << " noise figure " << noiseFigure
-           << " cable loss   " << cableLoss_
-           << " attenuation (pathloss + shadowing) " << attenuation
-           << " speed " << speed << " thermal noise " << thermalNoise_
-           << " fading attenuation " << fadingAttenuation << endl;
-
-        // Store the calculated receive power
-        rsrpVector.push_back(finalRecvPower);
-    }
-    //============ END PATH LOSS + SHADOWING + FADING ===============
-
-    return rsrpVector;
+    // Note the D2D-specific transmit power: a D2D transmission does not use the
+    // power the UE would use towards the base station.
+    return getRSRP(link, lteInfo_1->getD2dTxPower());
 }
 
 std::vector<double> LteRealisticChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId)
@@ -2451,7 +2337,8 @@ bool LteRealisticChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId
 
                 // get tx power and attenuation from this UE
                 double rxPwr = txPwr - cableLoss_ + 2 * antennaGainUe_;
-                double att = getAttenuation_D2D(ueId, D2D, ueCoord, destId, destCoord, false);
+                // interferer -> our receiver; the eNB-side maps are used for interferers
+                double att = getAttenuation(d2dLink(ueId, ueCoord, destId, destCoord, false));
                 (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
 
                 EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;
