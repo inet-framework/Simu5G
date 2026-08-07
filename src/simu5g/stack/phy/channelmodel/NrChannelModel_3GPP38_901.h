@@ -48,7 +48,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param d distance between UE and gNodeB
      * @param nodeId mac node id of UE
      */
-    void computeLosProbability(double d, MacNodeId nodeId);
+    void computeLosProbability(double d, const LinkKey& key);
 
     /*
      * Compute the building penetration loss for indoor UE
@@ -105,7 +105,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param sqrDistance distance between UE and gNodeB
      * @param nodeId mac node id of UE
      */
-    double getStdDev(bool dist, MacNodeId nodeId) override;
+    double getStdDev(bool dist, const LinkKey& key) override;
 
     /*
      * Compute shadowing
@@ -114,7 +114,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param nodeId mac node id of UE
      * @param speed speed of UE
      */
-    double computeShadowing(double sqrDistance, MacNodeId nodeId, double speed, bool cqiDl) override;
+    double computeShadowing(double sqrDistance, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl) override;
 
 };
 

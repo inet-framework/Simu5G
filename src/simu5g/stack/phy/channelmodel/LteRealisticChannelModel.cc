@@ -102,7 +102,10 @@ RadioLink LteRealisticChannelModel::cellularLink(MacNodeId ueId, Direction dir, 
     // of the two is the UE. The UE is the node whose channel state we track.
     RadioLink link;
     link.dir = dir;
-    link.stateKey = ueId;
+    // A cellular link: the degenerate key {ueId, ueId} reproduces the historical
+    // node-keyed behavior exactly, since a UE has one such link per instance.
+    link.stateKey = LinkKey(ueId);
+    link.stateNodeId = ueId;
     link.useUeSideMaps = cqiDl;
 
     if (dir == DL) { // the local module is the UE, 'coord' is the BS
@@ -185,7 +188,8 @@ RadioLink LteRealisticChannelModel::linkFor(UserControlInfo *lteInfo)
     // the speed and correlation-distance computation -- which is why the old code's
     // "pass UL for a FEEDBACKPKT" special case is not needed here: it only existed
     // to make getAttenuation() pick 'coord' rather than phy_->getCoord().
-    link.stateKey = ueId;
+    link.stateKey = LinkKey(ueId);
+    link.stateNodeId = ueId;
     link.stateCoord = ueCoord;
 
     // the cell this link belongs to, for the interference computation
@@ -199,7 +203,7 @@ double LteRealisticChannelModel::getAttenuation(const RadioLink& link)
     //COMPUTE DISTANCE between the two endpoints
     double sqrDistance = link.txCoord.distance(link.rxCoord);
 
-    double speed = computeSpeed(link.stateKey, link.stateCoord);
+    double speed = computeSpeed(link.stateNodeId, link.stateCoord);
     double correlationDist = computeCorrelationDistance(link.stateKey, link.stateCoord);
 
     // If Euclidean distance since last LOS probability computation is greater than
@@ -218,11 +222,11 @@ double LteRealisticChannelModel::getAttenuation(const RadioLink& link)
 
     //    Applying shadowing only if it is enabled by configuration
     //    log-normal shadowing (not available for background UEs)
-    if (num(link.stateKey) < BGUE_MIN_ID && shadowing_)
-        attenuation += computeShadowing(sqrDistance, link.stateKey, speed, link.useUeSideMaps);
+    if (num(link.stateNodeId) < BGUE_MIN_ID && shadowing_)
+        attenuation += computeShadowing(sqrDistance, link.stateKey, link.stateNodeId, speed, link.useUeSideMaps);
 
     // update the tracked node's current position
-    updatePositionHistory(link.stateKey, link.stateCoord);
+    updatePositionHistory(link.stateNodeId, link.stateCoord);
     updateCorrelationDistance(link.stateKey, link.stateCoord);
 
     EV << "LteRealisticChannelModel::getAttenuation - computed attenuation at distance " << sqrDistance << " for eNB is " << attenuation << endl;
@@ -245,24 +249,27 @@ RadioLink LteRealisticChannelModel::d2dLink(MacNodeId srcId, Coord srcCoord, Mac
     link.noiseFigure = ueNoiseFigure_;
     link.txIsBaseStation = false; // omnidirectional: no angular attenuation
 
-    // The channel state is keyed on the transmitter, which is what this code has
-    // always done. See the note on RadioLink::stateKey: it ought to be a link key,
-    // not a node key, so that a UE's several D2D peers do not share one slot --
-    // deliberately left unchanged here, as fixing it moves every stored fading and
-    // shadowing realization.
-    link.stateKey = srcId;
+    // The channel state is keyed on the *link*, so a UE's several D2D peers each
+    // get their own LOS state, shadowing realization and fading process, instead
+    // of sharing the transmitter's single slot (and colliding with the
+    // transmitter's own cellular state).
+    //
+    // The owning node stays the transmitter: it is that UE's channel model that
+    // holds the maps, and it is that UE's motion that defines the speed.
+    link.stateKey = LinkKey(srcId, destId);
+    link.stateNodeId = srcId;
     link.stateCoord = srcCoord;
     link.useUeSideMaps = useUeSideMaps;
 
     return link;
 }
 
-double LteRealisticChannelModel::computeShadowing(double sqrDistance, MacNodeId nodeId, double speed, bool cqiDl)
+double LteRealisticChannelModel::computeShadowing(double sqrDistance, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl)
 {
     ShadowFadingMap *actualShadowingMap;
 
     if (cqiDl) // if we are computing a DL CQI we need the Shadowing Map stored on the UE side
-        actualShadowingMap = obtainShadowingMap(nodeId);
+        actualShadowingMap = obtainShadowingMap(ownerId);
     else
         actualShadowingMap = &lastComputedSF_;
 
@@ -273,7 +280,7 @@ double LteRealisticChannelModel::computeShadowing(double sqrDistance, MacNodeId 
     double dbp = 0.0;
     //Get std deviation according to LOS/NLOS and selected scenario
 
-    double stdDev = getStdDev(sqrDistance < dbp, nodeId);
+    double stdDev = getStdDev(sqrDistance < dbp, key);
     double time = 0;
     double space = 0;
     double att;
@@ -284,23 +291,23 @@ double LteRealisticChannelModel::computeShadowing(double sqrDistance, MacNodeId 
     // the Move object associated with the UE is move variable
 
     // if shadowing for current user has never been computed
-    if (actualShadowingMap->find(nodeId) == actualShadowingMap->end()) {
+    if (actualShadowingMap->find(key) == actualShadowingMap->end()) {
         //Get the log-normal shadowing with std deviation stdDev
         att = normal(mean, stdDev);
 
         //store the shadowing attenuation for this user and the temporal mark
         std::pair<simtime_t, double> tmp(NOW, att);
-        (*actualShadowingMap)[nodeId] = tmp;
+        (*actualShadowingMap)[key] = tmp;
 
         //If the shadowing attenuation has been computed at least one time for this user
         // and the distance traveled by the UE is greater than correlation distance
     }
-    else if ((NOW - actualShadowingMap->at(nodeId).first).dbl() * speed
+    else if ((NOW - actualShadowingMap->at(key).first).dbl() * speed
              > correlationDistance_)
     {
 
         //get the temporal mark of the last computed shadowing attenuation
-        time = (NOW - actualShadowingMap->at(nodeId).first).dbl();
+        time = (NOW - actualShadowingMap->at(key).first).dbl();
 
         //compute the traveled distance
         space = time * speed;
@@ -309,19 +316,19 @@ double LteRealisticChannelModel::computeShadowing(double sqrDistance, MacNodeId 
         double a = exp(-0.5 * (space / correlationDistance_));
 
         //Get last shadowing attenuation computed
-        double old = actualShadowingMap->at(nodeId).second;
+        double old = actualShadowingMap->at(key).second;
 
         //Compute shadowing with an EAW (Exponential Average Window) (step 2)
         att = a * old + sqrt(1 - pow(a, 2)) * normal(mean, stdDev);
 
         // Store the new computed shadowing
         std::pair<simtime_t, double> tmp(NOW, att);
-        (*actualShadowingMap)[nodeId] = tmp;
+        (*actualShadowingMap)[key] = tmp;
 
         // if the distance traveled by the UE is smaller than correlation distance shadowing attenuation remains the same
     }
     else {
-        att = actualShadowingMap->at(nodeId).second;
+        att = actualShadowingMap->at(key).second;
     }
 
     return att;
@@ -344,7 +351,7 @@ void LteRealisticChannelModel::updatePositionHistory(const MacNodeId nodeId,
         positionHistory_[nodeId].pop();
 }
 
-void LteRealisticChannelModel::updateCorrelationDistance(const MacNodeId nodeId, const inet::Coord coord) {
+void LteRealisticChannelModel::updateCorrelationDistance(const LinkKey& nodeId, const inet::Coord coord) {
 
     if (lastCorrelationPoint_.find(nodeId) == lastCorrelationPoint_.end()) {
         // no lastCorrelationPoint set current point.
@@ -358,7 +365,7 @@ void LteRealisticChannelModel::updateCorrelationDistance(const MacNodeId nodeId,
     }
 }
 
-double LteRealisticChannelModel::computeCorrelationDistance(const MacNodeId nodeId, const inet::Coord coord) {
+double LteRealisticChannelModel::computeCorrelationDistance(const LinkKey& nodeId, const inet::Coord coord) {
     double dist = 0.0;
 
     if (lastCorrelationPoint_.find(nodeId) == lastCorrelationPoint_.end()) {
@@ -619,7 +626,7 @@ std::vector<double> LteRealisticChannelModel::getRSRP(const RadioLink& link, dou
     // Speed must be read BEFORE getAttenuation(), which appends to positionHistory_:
     // computeSpeed() derives from that history, so evaluating it afterwards would
     // yield a different value and hence different fading. Load-bearing ordering.
-    double speed = computeSpeed(link.stateKey, link.stateCoord);
+    double speed = computeSpeed(link.stateNodeId, link.stateCoord);
 
     // attenuation for the desired signal
     double attenuation = getAttenuation(link); // dB
@@ -684,10 +691,10 @@ std::vector<double> LteRealisticChannelModel::getRSRP(const RadioLink& link, dou
         if (fading_) {
             // Applying fading
             if (fadingType_ == RAYLEIGH)
-                fadingAttenuation = rayleighFading(link.stateKey, i);
+                fadingAttenuation = rayleighFading(link.stateNodeId, i);
 
             else if (fadingType_ == JAKES)
-                fadingAttenuation = jakesFading(link.stateKey, speed, i, link.useUeSideMaps);
+                fadingAttenuation = jakesFading(link.stateKey, link.stateNodeId, speed, i, link.useUeSideMaps);
         }
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
@@ -825,7 +832,7 @@ std::vector<double> LteRealisticChannelModel::getSINR_bgUe(LteAirFrame *frame, U
                 fadingAttenuation = rayleighFading(bgUeId, i);
 
             else if (fadingType_ == JAKES)
-                fadingAttenuation = jakesFading(bgUeId, speed, i, cqiDl, true);
+                fadingAttenuation = jakesFading(LinkKey(bgUeId), bgUeId, speed, i, cqiDl, true);
         }
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
@@ -1104,7 +1111,7 @@ std::vector<double> LteRealisticChannelModel::getSIR(LteAirFrame *frame,
                 fadingAttenuation = rayleighFading(id, i);
             }
             else if (fadingType_ == JAKES) {
-                fadingAttenuation = jakesFading(id, speed, i, dir);
+                fadingAttenuation = jakesFading(LinkKey(id), id, speed, i, dir);
             }
         }
         // add fading contribution to the final SINR
@@ -1132,7 +1139,7 @@ double LteRealisticChannelModel::rayleighFading(MacNodeId id,
     return linearToDb(temp1);
 }
 
-double LteRealisticChannelModel::jakesFading(MacNodeId nodeId, double speed,
+double LteRealisticChannelModel::jakesFading(const LinkKey& key, MacNodeId ownerId, double speed,
         unsigned int band, bool cqiDl, bool isBgUe)
 {
     /**
@@ -1149,15 +1156,15 @@ double LteRealisticChannelModel::jakesFading(MacNodeId nodeId, double speed,
     JakesFadingMap *actualJakesMap;
 
     if (cqiDl) // if we are computing a DL CQI we need the Jakes Map stored on the UE side
-        actualJakesMap = (!isBgUe) ? obtainUeJakesMap(nodeId) : &jakesFadingMapBgUe_;
+        actualJakesMap = (!isBgUe) ? obtainUeJakesMap(ownerId) : &jakesFadingMapBgUe_;
     else
         actualJakesMap = &jakesFadingMap_;
 
     // if this is the first time that we compute fading for current user
-    if (actualJakesMap->find(nodeId) == actualJakesMap->end()) {
+    if (actualJakesMap->find(key) == actualJakesMap->end()) {
         // clear the map
         // FIXME: possible memory leak
-        (*actualJakesMap)[nodeId].clear();
+        (*actualJakesMap)[key].clear();
 
         // for each band we are going to create a Jakes fading
         for (unsigned int j = 0; j < numBands_; j++) {
@@ -1175,7 +1182,7 @@ double LteRealisticChannelModel::jakesFading(MacNodeId nodeId, double speed,
                 temp.delaySpread.push_back(exponential(delayRMS_));
             }
             // store the Jakes fading for this user
-            (*actualJakesMap)[nodeId].push_back(temp);
+            (*actualJakesMap)[key].push_back(temp);
         }
     }
     // convert carrier frequency from GHz to Hz
@@ -1187,7 +1194,7 @@ double LteRealisticChannelModel::jakesFading(MacNodeId nodeId, double speed,
     double re_h = 0;
     double im_h = 0;
 
-    const JakesFadingData& actualJakesData = actualJakesMap->at(nodeId).at(band);
+    const JakesFadingData& actualJakesData = actualJakesMap->at(key).at(band);
 
     // Compute Doppler shift.
     double doppler_shift = (speed * f) / SPEED_OF_LIGHT;
@@ -1376,7 +1383,7 @@ void LteRealisticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz c
 }
 
 void LteRealisticChannelModel::computeLosProbability(double d,
-        MacNodeId nodeId)
+        const LinkKey& nodeId)
 {
     double p = 0;
     if (!dynamicLos_) {
@@ -1631,7 +1638,7 @@ double LteRealisticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
     return a.distance(b);
 }
 
-double LteRealisticChannelModel::getStdDev(bool dist, MacNodeId nodeId)
+double LteRealisticChannelModel::getStdDev(bool dist, const LinkKey& nodeId)
 {
     switch (scenario_) {
         case URBAN_MICROCELL:
@@ -1687,7 +1694,7 @@ bool LteRealisticChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNo
            << dist << "\t";
 
         // compute attenuation according to some path loss model
-        att = computeExtCellPathLoss(dist, nodeId);
+        att = computeExtCellPathLoss(dist, LinkKey(nodeId));
 
         //=============== ANGULAR ATTENUATION =================
         if (extCell->getTxDirection() == OMNI) {
@@ -1769,7 +1776,7 @@ bool LteRealisticChannelModel::computeBackgroundCellInterference(MacNodeId nodeI
                << dist << "\t";
 
             // compute attenuation according to some path loss model
-            att = computeExtCellPathLoss(dist, nodeId);
+            att = computeExtCellPathLoss(dist, LinkKey(nodeId));
 
             txPwr = bgScheduler->getTxPower();
 
@@ -1861,7 +1868,7 @@ bool LteRealisticChannelModel::computeBackgroundCellInterference(MacNodeId nodeI
                        << dist << "\t";
 
                     // compute attenuation according to some path loss model
-                    att = computeExtCellPathLoss(dist, nodeId);
+                    att = computeExtCellPathLoss(dist, LinkKey(nodeId));
 
                     recvPwrDBm = txPwr - att - angularAtt - cableLoss_ + antennaGainEnB_ + antennaGainBgUe;
                     recvPwr = dBmToLinear(recvPwrDBm);
@@ -1875,7 +1882,7 @@ bool LteRealisticChannelModel::computeBackgroundCellInterference(MacNodeId nodeI
     return true;
 }
 
-double LteRealisticChannelModel::computeExtCellPathLoss(double dist, MacNodeId nodeId)
+double LteRealisticChannelModel::computeExtCellPathLoss(double dist, const LinkKey& nodeId)
 {
 
     //compute attenuation based on selected scenario and based on LOS or NLOS

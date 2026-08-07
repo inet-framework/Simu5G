@@ -31,7 +31,7 @@ double NrChannelModel::getAttenuation(const RadioLink& link)
     double threeDimDistance = link.txCoord.distance(link.rxCoord);
     double twoDimDistance = getTwoDimDistance(link.txCoord, link.rxCoord);
 
-    double speed = computeSpeed(link.stateKey, link.stateCoord);
+    double speed = computeSpeed(link.stateNodeId, link.stateCoord);
     double correlationDist = computeCorrelationDistance(link.stateKey, link.stateCoord);
 
     // If the traveled distance is greater than the correlation distance, the UE could have changed its state and
@@ -48,12 +48,12 @@ double NrChannelModel::getAttenuation(const RadioLink& link)
 
     // Applying shadowing only if it is enabled by configuration
     // log-normal shadowing (not available for background UEs)
-    if (num(link.stateKey) < BGUE_MIN_ID && shadowing_)
-        attenuation += computeShadowing(twoDimDistance, link.stateKey, speed, link.useUeSideMaps);
+    if (num(link.stateNodeId) < BGUE_MIN_ID && shadowing_)
+        attenuation += computeShadowing(twoDimDistance, link.stateKey, link.stateNodeId, speed, link.useUeSideMaps);
 
     // update the tracked node's current position, and re-anchor the point the
     // correlation distance is measured from
-    updatePositionHistory(link.stateKey, link.stateCoord);
+    updatePositionHistory(link.stateNodeId, link.stateCoord);
     updateCorrelationDistance(link.stateKey, link.stateCoord);
 
     EV << "NrChannelModel::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNb is " << attenuation << endl;
@@ -81,7 +81,7 @@ double NrChannelModel::computeAngularAttenuation(double hAngle, double vAngle) {
     return (angularAtt < angularAttMin) ? angularAtt : angularAttMin;
 }
 
-void NrChannelModel::computeLosProbability(double d, MacNodeId nodeId)
+void NrChannelModel::computeLosProbability(double d, const LinkKey& nodeId)
 {
     double p = 0;
     if (!dynamicLos_) {
@@ -404,8 +404,11 @@ double NrChannelModel::computeExtCellPathLoss(double threeDimDistance, double tw
 {
     computeSpeed(nodeId, phy_->getCoord());
 
+    // External-cell interferers are cellular links: degenerate key, as before.
+    const LinkKey key(nodeId);
+
     // Compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = losMap_[nodeId];
+    bool los = losMap_[key];
 
     if (!enable_extCell_los_)
         los = false;
@@ -418,7 +421,7 @@ double NrChannelModel::computeExtCellPathLoss(double threeDimDistance, double tw
     if (shadowing_) {
         double att;
 
-        att = lastComputedSF_.at(nodeId).second;
+        att = lastComputedSF_.at(key).second;
         EV << "(" << att << ")";
         attenuation += att;
     }

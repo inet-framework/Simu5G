@@ -46,7 +46,7 @@ class NrChannelModel : public LteRealisticChannelModel
      * @param d distance between UE and gNodeB
      * @param nodeId MAC node ID of UE
      */
-    void computeLosProbability(double d, MacNodeId nodeId);
+    void computeLosProbability(double d, const LinkKey& key);
 
     /*
      * Compute the path-loss attenuation according to the selected scenario

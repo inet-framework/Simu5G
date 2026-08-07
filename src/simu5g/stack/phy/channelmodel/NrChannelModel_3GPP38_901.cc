@@ -23,7 +23,7 @@ void NrChannelModel_3GPP38_901::initialize(int stage)
         useBuildingPenetrationHighLossModel_ = par("useBuildingPenetrationHighLossModel").boolValue();
 }
 
-void NrChannelModel_3GPP38_901::computeLosProbability(double d, MacNodeId nodeId)
+void NrChannelModel_3GPP38_901::computeLosProbability(double d, const LinkKey& nodeId)
 {
     double p = 0;
     if (!dynamicLos_) {
@@ -295,7 +295,7 @@ double NrChannelModel_3GPP38_901::computeIndoor(double threeDimDistance, double 
     return pLoss;
 }
 
-double NrChannelModel_3GPP38_901::getStdDev(bool dist, MacNodeId nodeId)
+double NrChannelModel_3GPP38_901::getStdDev(bool dist, const LinkKey& nodeId)
 {
     switch (scenario_) {
         case URBAN_MICROCELL:
@@ -328,12 +328,12 @@ double NrChannelModel_3GPP38_901::getStdDev(bool dist, MacNodeId nodeId)
     return 0.0;
 }
 
-double NrChannelModel_3GPP38_901::computeShadowing(double sqrDistance, MacNodeId nodeId, double speed, bool cqiDl)
+double NrChannelModel_3GPP38_901::computeShadowing(double sqrDistance, const LinkKey& nodeId, MacNodeId ownerId, double speed, bool cqiDl)
 {
     ShadowFadingMap *actualShadowingMap;
 
     if (cqiDl) // If we are computing a DL CQI we need the Shadowing Map stored on the UE side
-        actualShadowingMap = obtainShadowingMap(nodeId);
+        actualShadowingMap = obtainShadowingMap(ownerId);
     else
         actualShadowingMap = &lastComputedSF_;
 

@@ -89,17 +89,17 @@ class LteRealisticChannelModel : public LteChannelModel
     // Last position of current user
     std::map<MacNodeId, std::queue<Position>> positionHistory_;
 
-    // Last position of current user at which probability of LOS was computed.
-    std::map<MacNodeId, Position> lastCorrelationPoint_;
+    // Per link: the position at which the LOS probability was last computed.
+    std::map<LinkKey, Position> lastCorrelationPoint_;
 
     // Scenario
     DeploymentScenario scenario_;
 
-    // Map that stores for each user if is in Line of Sight or not with eNodeB
-    std::map<MacNodeId, bool> losMap_;
+    // Per link: whether it is in Line of Sight
+    std::map<LinkKey, bool> losMap_;
 
     // Stores the last computed shadowing for each user
-    typedef std::map<MacNodeId, std::pair<inet::simtime_t, double>> ShadowFadingMap;
+    typedef std::map<LinkKey, std::pair<inet::simtime_t, double>> ShadowFadingMap;
     ShadowFadingMap lastComputedSF_;
 
     // Correlation distance used in shadowing computation and
@@ -149,13 +149,13 @@ class LteRealisticChannelModel : public LteChannelModel
     };
 
     // For each node and for each band we store information about Jakes fading
-    std::map<MacNodeId, std::vector<JakesFadingData>> jakesFadingMap_;
+    std::map<LinkKey, std::vector<JakesFadingData>> jakesFadingMap_;
 
     // For each node and for each band we store information about Jakes fading
-    std::map<MacNodeId, std::vector<JakesFadingData>> jakesFadingMapBgUe_;
+    std::map<LinkKey, std::vector<JakesFadingData>> jakesFadingMapBgUe_;
 
     typedef std::vector<JakesFadingData> JakesFadingVector;
-    typedef std::map<MacNodeId, JakesFadingVector> JakesFadingMap;
+    typedef std::map<LinkKey, JakesFadingVector> JakesFadingMap;
 
     enum FadingType
     {
@@ -244,7 +244,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param nodeid mac node id of UE
      * @param speed speed of UE
      */
-    virtual double computeShadowing(double sqrDistance, MacNodeId nodeId, double speed, bool cqiDl);
+    virtual double computeShadowing(double sqrDistance, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl);
 
     /*
      * Compute sir for each band for user nodeId according to multipath fading
@@ -370,7 +370,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param distance between UE and eNodeB
      * @param nodeid mac node id of UE
      */
-    virtual double getStdDev(bool dist, MacNodeId nodeId);
+    virtual double getStdDev(bool dist, const LinkKey& key);
 
     /*
      * Compute Rayleigh fading
@@ -389,7 +389,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param cqiDl if true, the jakesMap in the UE side should be used
      * @param isBgUe if true, this is called for a background UE
      */
-    virtual double jakesFading(MacNodeId nodeId, double speed, unsigned int band, bool cqiDl, bool isBgUe = false);
+    virtual double jakesFading(const LinkKey& key, MacNodeId ownerId, double speed, unsigned int band, bool cqiDl, bool isBgUe = false);
 
     /*
      * Compute LOS probability
@@ -397,7 +397,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param d between UE and eNodeB
      * @param nodeid mac node id of UE
      */
-    void computeLosProbability(double d, MacNodeId nodeId);
+    void computeLosProbability(double d, const LinkKey& key);
 
     JakesFadingMap *getJakesMap()
     {
@@ -480,13 +480,13 @@ class LteRealisticChannelModel : public LteChannelModel
      * Compute the euclidean distance between the current position and the
      * last position used to calculate the LOS probability
      */
-    virtual double computeCorrelationDistance(const MacNodeId nodeId, const inet::Coord coord);
+    virtual double computeCorrelationDistance(const LinkKey& key, const inet::Coord coord);
 
     /*
      * Update base point if distance to previous value is greater than the
      * correlationDistance_
      */
-    virtual void updateCorrelationDistance(const MacNodeId nodeId, const inet::Coord coord);
+    virtual void updateCorrelationDistance(const LinkKey& key, const inet::Coord coord);
 
     /*
      * Updates position for a given node
@@ -548,7 +548,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * Compute attenuation due to path loss and shadowing
      * @return attenuation expressed in dBm
      */
-    virtual double computeExtCellPathLoss(double dist, MacNodeId nodeId);
+    virtual double computeExtCellPathLoss(double dist, const LinkKey& key);
 
     /*
      * Obtain the jakes map for the specified UE
