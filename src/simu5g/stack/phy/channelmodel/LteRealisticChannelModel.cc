@@ -1028,21 +1028,19 @@ void LteRealisticChannelModel::computeD2DInterferencePlusNoise(const RadioLink& 
     EV << "LteRealisticChannelModel::computeD2DInterferencePlusNoise - distance from my Peer = "
        << link.rxCoord.distance(link.txCoord) << " - DIR=" << dirToA(link.dir) << endl;
 
+    // One loop for both cases: with interference disabled d2dInterference is all
+    // zeros, so this degenerates to the noise-only denominator. (The two used to be
+    // written out separately, the disabled branch summing noise directly instead of
+    // going through dBm -> linear -> dBm. That round trip is not bit-identical, so
+    // the collapse is observable -- but only where d2dInterference is false, which
+    // no shipped configuration sets.)
     for (unsigned int i = 0; i < numBands_; i++) {
         // the caller skips these bands too; leave their denominator untouched
         if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
             continue;
 
-        if (enableD2DInterference_) {
-            den[i] = linearToDBm(totN + d2dInterference[i]);
-            EV << "\t in[" << d2dInterference[i] << "] - den[" << den[i] << "]\n";
-        }
-        else {
-            // No interference to add, so the denominator is plain noise. Kept as a
-            // direct sum rather than dBm->linear->dBm, which is what this branch has
-            // always done and is not bit-identical to the round trip.
-            den[i] = link.noiseFigure + thermalNoise_;
-        }
+        den[i] = linearToDBm(totN + d2dInterference[i]);
+        EV << "\t in[" << d2dInterference[i] << "] - den[" << den[i] << "]\n";
     }
 }
 
