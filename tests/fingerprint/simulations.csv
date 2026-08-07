@@ -156,3 +156,5 @@
 /simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Lossy-UL -r 0,                     5s,         ae82-5e47/tplx;40fd-bfcc/tilx;ae43-f707/~tNl;c5dc-aa6d/sz, PASS,
 /simulations/lte/rlc/,                   -f omnetpp.ini -c TCP-AM -r 0,                          5s,         49f0-3881/tplx;12a8-b2d2/tilx;52b9-2f22/~tNl;4c91-54fc/sz, PASS,
 /simulations/lte/test_handover/,         -f omnetpp.ini -c VoIP-AM-Handover -r 0,               15s,         b26c-3d63/tplx;74f8-10e9/tilx;cb6d-d91b/~tNl;590b-fbca/sz, PASS,
+/simulations/nr/d2d/,                    -f omnetpp.ini -c ChannelModel-DynamicLos -r 0,         20s,        5d3c-d650/tplx;2b24-3c65/tilx;cc67-0fd2/~tNl;bf48-4dfe/sz, PASS,
+/simulations/nr/d2d/,                    -f omnetpp.ini -c ChannelModel-IndoorD2D -r 0,           5s,        ad90-bc85/tplx;a322-83aa/tilx;8d0f-6a54/~tNl;3051-a745/sz, PASS,
