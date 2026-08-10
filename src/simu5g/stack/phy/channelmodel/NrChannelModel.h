@@ -89,7 +89,7 @@ class NrChannelModel : public LteRealisticChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    virtual double computeIndoor(double threeDimDistance, double twoDimDistance, bool los);
+    virtual double computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los);
 
     /*
      * 3D-UMi path loss model (taken from TR 36.873)
@@ -97,7 +97,7 @@ class NrChannelModel : public LteRealisticChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    virtual double computeUrbanMicro(double threeDimDistance, double twoDimDistance, bool los);
+    virtual double computeUrbanMicro3D(double threeDimDistance, double twoDimDistance, bool los);
 
     /*
      * 3D-UMa path loss model (taken from TR 36.873)
@@ -105,7 +105,7 @@ class NrChannelModel : public LteRealisticChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    virtual double computeUrbanMacro(double threeDimDistance, double twoDimDistance, bool los);
+    virtual double computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los);
 
     /*
      * 3D-RMa path loss model (taken from TR 36.873)
@@ -113,7 +113,7 @@ class NrChannelModel : public LteRealisticChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    virtual double computeRuralMacro(double threeDimDistance, double twoDimDistance, bool los);
+    virtual double computeRuralMacro3D(double threeDimDistance, double twoDimDistance, bool los);
 
     /*
      * Evaluates total interference from external cells seen from the spot given by coord
@@ -125,7 +125,7 @@ class NrChannelModel : public LteRealisticChannelModel
      * Compute attenuation due to path loss and shadowing
      * @return attenuation expressed in dBm
      */
-    virtual double computeExtCellPathLoss(double threeDimDistance, double twoDimDistance, MacNodeId nodeId);
+    virtual double computeExtCellPathLoss3D(double threeDimDistance, double twoDimDistance, MacNodeId nodeId);
 };
 
 } //namespace

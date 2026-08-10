@@ -126,16 +126,16 @@ double NrChannelModel::computePathLoss(double threeDimDistance, double twoDimDis
     double pathLoss = 0;
     switch (scenario_) {
         case INDOOR_HOTSPOT:
-            pathLoss = computeIndoor(threeDimDistance, twoDimDistance, los);
+            pathLoss = computeIndoor3D(threeDimDistance, twoDimDistance, los);
             break;
         case URBAN_MICROCELL:
-            pathLoss = computeUrbanMicro(threeDimDistance, twoDimDistance, los);
+            pathLoss = computeUrbanMicro3D(threeDimDistance, twoDimDistance, los);
             break;
         case URBAN_MACROCELL:
-            pathLoss = computeUrbanMacro(threeDimDistance, twoDimDistance, los);
+            pathLoss = computeUrbanMacro3D(threeDimDistance, twoDimDistance, los);
             break;
         case RURAL_MACROCELL:
-            pathLoss = computeRuralMacro(threeDimDistance, twoDimDistance, los);
+            pathLoss = computeRuralMacro3D(threeDimDistance, twoDimDistance, los);
             break;
         default:
             return LteRealisticChannelModel::computePathLoss(twoDimDistance, 0.0, los);
@@ -143,7 +143,7 @@ double NrChannelModel::computePathLoss(double threeDimDistance, double twoDimDis
     return pathLoss;
 }
 
-double NrChannelModel::computeIndoor(double threeDimDistance, double twoDimDistance, bool los)
+double NrChannelModel::computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los)
 {
     double a, b;
     if (los) {
@@ -161,7 +161,7 @@ double NrChannelModel::computeIndoor(double threeDimDistance, double twoDimDista
     return a * log10(threeDimDistance) + b + 20 * log10CarrierFrequencyGHz_;
 }
 
-double NrChannelModel::computeUrbanMicro(double threeDimDistance, double twoDimDistance, bool los)
+double NrChannelModel::computeUrbanMicro3D(double threeDimDistance, double twoDimDistance, bool los)
 {
     if (twoDimDistance < 10)
         twoDimDistance = 10;
@@ -202,7 +202,7 @@ double NrChannelModel::computeUrbanMicro(double threeDimDistance, double twoDimD
     return (pLoss_los > pLoss_nlos) ? pLoss_los : pLoss_nlos;
 }
 
-double NrChannelModel::computeUrbanMacro(double threeDimDistance, double twoDimDistance, bool los)
+double NrChannelModel::computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los)
 {
     if (twoDimDistance < 10)
         twoDimDistance = 10;
@@ -273,7 +273,7 @@ double NrChannelModel::computeUrbanMacro(double threeDimDistance, double twoDimD
     return (pLoss_los > pLoss_nlos) ? pLoss_los + penetrationLoss : pLoss_nlos + penetrationLoss;
 }
 
-double NrChannelModel::computeRuralMacro(double threeDimDistance, double twoDimDistance, bool los)
+double NrChannelModel::computeRuralMacro3D(double threeDimDistance, double twoDimDistance, bool los)
 {
     if (twoDimDistance < 10)
         twoDimDistance = 10;
@@ -349,7 +349,7 @@ bool NrChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeI
            << threeDimDist << "\t";
 
         // compute attenuation according to some path loss model
-        att = computeExtCellPathLoss(threeDimDist, twoDimDist, nodeId);
+        att = computeExtCellPathLoss3D(threeDimDist, twoDimDist, nodeId);
 
         //=============== ANGULAR ATTENUATION =================
         if (extCell->getTxDirection() == OMNI) {
@@ -400,7 +400,7 @@ bool NrChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeI
     return true;
 }
 
-double NrChannelModel::computeExtCellPathLoss(double threeDimDistance, double twoDimDistance, MacNodeId nodeId)
+double NrChannelModel::computeExtCellPathLoss3D(double threeDimDistance, double twoDimDistance, MacNodeId nodeId)
 {
     computeSpeed(nodeId, phy_->getCoord());
 

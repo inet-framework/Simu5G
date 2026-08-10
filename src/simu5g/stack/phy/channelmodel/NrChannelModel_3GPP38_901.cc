@@ -100,16 +100,16 @@ double NrChannelModel_3GPP38_901::computePathLoss(double threeDimDistance, doubl
     double pathLoss = 0;
     switch (scenario_) {
         case INDOOR_HOTSPOT:
-            pathLoss = computeIndoor(threeDimDistance, twoDimDistance, los);
+            pathLoss = computeIndoor3D(threeDimDistance, twoDimDistance, los);
             break;
         case URBAN_MICROCELL:
-            pathLoss = computeUrbanMicro(threeDimDistance, twoDimDistance, los);
+            pathLoss = computeUrbanMicro3D(threeDimDistance, twoDimDistance, los);
             break;
         case URBAN_MACROCELL:
-            pathLoss = computeUrbanMacro(threeDimDistance, twoDimDistance, los);
+            pathLoss = computeUrbanMacro3D(threeDimDistance, twoDimDistance, los);
             break;
         case RURAL_MACROCELL:
-            pathLoss = computeRuralMacro(threeDimDistance, twoDimDistance, los);
+            pathLoss = computeRuralMacro3D(threeDimDistance, twoDimDistance, los);
             break;
         default:
             return NrChannelModel::computePathLoss(threeDimDistance, twoDimDistance, los);
@@ -117,7 +117,7 @@ double NrChannelModel_3GPP38_901::computePathLoss(double threeDimDistance, doubl
     return pathLoss;
 }
 
-double NrChannelModel_3GPP38_901::computeUrbanMacro(double threeDimDistance, double twoDimDistance, bool los)
+double NrChannelModel_3GPP38_901::computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los)
 {
     if (twoDimDistance < 10)
         twoDimDistance = 10;
@@ -173,7 +173,7 @@ double NrChannelModel_3GPP38_901::computeUrbanMacro(double threeDimDistance, dou
     return pLoss;
 }
 
-double NrChannelModel_3GPP38_901::computeUrbanMicro(double threeDimDistance, double twoDimDistance, bool los)
+double NrChannelModel_3GPP38_901::computeUrbanMicro3D(double threeDimDistance, double twoDimDistance, bool los)
 {
     if (twoDimDistance < 10)
         twoDimDistance = 10;
@@ -213,7 +213,7 @@ double NrChannelModel_3GPP38_901::computeUrbanMicro(double threeDimDistance, dou
     return pLoss;
 }
 
-double NrChannelModel_3GPP38_901::computeRuralMacro(double threeDimDistance, double twoDimDistance, bool los)
+double NrChannelModel_3GPP38_901::computeRuralMacro3D(double threeDimDistance, double twoDimDistance, bool los)
 {
     if (twoDimDistance < 10)
         twoDimDistance = 10;
@@ -265,7 +265,7 @@ double NrChannelModel_3GPP38_901::computeRuralMacro(double threeDimDistance, dou
     return pLoss;
 }
 
-double NrChannelModel_3GPP38_901::computeIndoor(double threeDimDistance, double twoDimDistance, bool los)
+double NrChannelModel_3GPP38_901::computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los)
 {
     if (threeDimDistance < 1)
         threeDimDistance = 1;
