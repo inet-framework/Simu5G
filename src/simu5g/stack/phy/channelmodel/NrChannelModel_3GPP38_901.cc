@@ -86,9 +86,9 @@ double NrChannelModel_3GPP38_901::computePenetrationLoss(double threeDimDistance
         double Lconcrete = 5 + 4 * carrierFrequencyGHz_;
 
         if (useBuildingPenetrationHighLossModel_)
-            pLoss_tw = 5 - 10 * log10(0.7 * pow(10, (-Lglass / 10)) + 0.3 * pow(10, (-Lconcrete / 10))) + normal(0.0, 4.4);
+            pLoss_tw = 5 - 10 * log10(0.7 * pow(10, (-LiirGlass / 10)) + 0.3 * pow(10, (-Lconcrete / 10))) + normal(0.0, 6.5);
         else
-            pLoss_tw = 5 - 10 * log10(0.3 * pow(10, (-LiirGlass / 10)) + 0.7 * pow(10, (-Lconcrete / 10))) + normal(0.0, 6.5);
+            pLoss_tw = 5 - 10 * log10(0.3 * pow(10, (-Lglass / 10)) + 0.7 * pow(10, (-Lconcrete / 10))) + normal(0.0, 4.4);
     }
     penetrationLoss = pLoss_tw + pLoss_in;
     return penetrationLoss;
