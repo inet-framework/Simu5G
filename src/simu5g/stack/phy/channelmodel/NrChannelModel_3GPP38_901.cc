@@ -135,7 +135,7 @@ double NrChannelModel_3GPP38_901::computeUrbanMacro(double threeDimDistance, dou
 
     // Compute break-point distance
     double hEnvir = 0.0;
-    double G_2d = (twoDimDistance < 18.0) ? 0 : (5.0 / 4.0) * pow(twoDimDistance / 100.0, 3) * exp(twoDimDistance / 150);
+    double G_2d = (twoDimDistance < 18.0) ? 0 : (5.0 / 4.0) * pow(twoDimDistance / 100.0, 3) * exp(-twoDimDistance / 150);
     double C = (hUe_ < 13.0) ? 0 : pow(((hUe_ - 13.0) / 10.0), 1.5) * G_2d;
     double prob = 1.0 / (1.0 + C);
     if (uniform(0.0, 1.0) < prob)
@@ -146,7 +146,7 @@ double NrChannelModel_3GPP38_901::computeUrbanMacro(double threeDimDistance, dou
         for (double h = 12; h < bound; h += 3)
             hVec.push_back(h);
         hVec.push_back(bound);
-        hEnvir = hVec[intuniform(0, hVec.size())];
+        hEnvir = hVec.at(intuniform(0, hVec.size() - 1));
     }
     double hNodeB = hNodeB_ - hEnvir;
     double hUe = hUe_ - hEnvir;
