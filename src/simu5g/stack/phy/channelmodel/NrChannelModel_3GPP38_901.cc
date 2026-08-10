@@ -112,7 +112,7 @@ double NrChannelModel_3GPP38_901::computePathLoss(double threeDimDistance, doubl
             pathLoss = computeRuralMacro(threeDimDistance, twoDimDistance, los);
             break;
         default:
-            return NrChannelModel::computePathLoss(twoDimDistance, 0.0, los);
+            return NrChannelModel::computePathLoss(threeDimDistance, twoDimDistance, los);
     }
     return pathLoss;
 }
