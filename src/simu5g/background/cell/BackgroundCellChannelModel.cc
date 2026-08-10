@@ -560,9 +560,12 @@ double BackgroundCellChannelModel::computeRuralMacro(double d, double& dbp, bool
 double BackgroundCellChannelModel::computeShadowing(double sqrDistance, MacNodeId nodeId, double speed)
 {
     double mean = 0;
-    double dbp = 0.0;
-    //Get std deviation according to los/nlos and selected scenario
 
+    // Breakpoint distance of the RMa/SMa path loss; getStdDev() selects the
+    // pre-/post-breakpoint sigma for the LOS branch of those scenarios.
+    double dbp = 4 * (hNodeB_ - 1) * (hUe_ - 1) * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+
+    // Get std deviation according to los/nlos and selected scenario
     double stdDev = getStdDev(sqrDistance < dbp, nodeId);
     double time = 0;
     double space = 0;

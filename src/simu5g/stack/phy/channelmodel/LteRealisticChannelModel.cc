@@ -245,9 +245,12 @@ double LteRealisticChannelModel::computeShadowing(double sqrDistance, const Link
         throw cRuntimeError("LteRealisticChannelModel::computeShadowing - actualShadowingMap not found (nullptr)");
 
     double mean = 0;
-    double dbp = 0.0;
-    //Get std deviation according to LOS/NLOS and selected scenario
 
+    // Breakpoint distance of the RMa/SMa path loss; getStdDev() selects the
+    // pre-/post-breakpoint sigma for the LOS branch of those scenarios.
+    double dbp = 4 * (hNodeB_ - 1) * (hUe_ - 1) * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+
+    // Get std deviation according to LOS/NLOS and selected scenario
     double stdDev = getStdDev(sqrDistance < dbp, key);
     double time = 0;
     double space = 0;
