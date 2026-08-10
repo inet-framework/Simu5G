@@ -1155,7 +1155,13 @@ Further refactoring:
   type safety. This also helped identifying a bug in certain channel models
   (LteRealisticChannelModel, BackgroundCellChannelModel) where a double
   representing GHz instead of Hz was used in computing path loss, resulting
-  in underestimated path loss values.
+  in underestimated path loss values. [Correction from a later release: the
+  "bug" was not one, and the change was reverted. The affected terms,
+  20log10(40 pi d fc/3) in the RMa/SMa LOS path loss, take fc in GHz: they
+  are the free-space term 20log10(4 pi d f/c) with the unit conversion
+  folded into the constants, so evaluating them in Hz overstated the LOS
+  path loss by 180 dB. The formulas were unreachable from the example
+  simulations at the time, so no published result was affected.]
 
 - Binder received several WATCHes for increased transparency in Qtenv, and
   an overhaul of a subset of its API and internal data structures.
