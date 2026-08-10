@@ -17,6 +17,32 @@
 
 namespace simu5g {
 
+/**
+ * Replaces the propagation formulas of LteRealisticChannelModel with the 3D ones
+ * of TR 36.873, and inherits the rest of the PHY link model from it unchanged --
+ * fading, interference, SINR assembly and the reception decision all still come
+ * from the base class.
+ *
+ * - 3GPP TR 36.873, "Study on 3D channel model for LTE", v12.7.0, December 2017
+ *
+ * "3D" is what these formulas add: path loss is evaluated over the 3D distance
+ * between the endpoints while the LOS probability and the validity limits remain
+ * functions of the 2D distance, so the base-station and UE heights (nodebHeight,
+ * ueHeight) now enter the result. The antenna pattern gains a vertical component
+ * alongside the horizontal one.
+ *
+ * Scenario coverage is partial, and what is missing falls through to the base
+ * class rather than being an error:
+ * - path loss: Indoor Hotspot, Urban Microcell, Urban Macrocell and Rural
+ *   Macrocell are computed here; Suburban Macrocell falls through.
+ * - LOS probability: Urban Microcell, Urban Macrocell and Rural Macrocell are
+ *   computed here; Indoor Hotspot and Suburban Macrocell fall through, so an
+ *   indoor deployment draws LOS from the base class's TR 36.814 formula and its
+ *   path loss from TR 36.873.
+ *
+ * The name records the deployment this model is the default for (the gNodeB and
+ * NR UE NICs), not a property of TR 36.873, which is itself an LTE study item.
+ */
 class NrChannelModel : public LteRealisticChannelModel
 {
 

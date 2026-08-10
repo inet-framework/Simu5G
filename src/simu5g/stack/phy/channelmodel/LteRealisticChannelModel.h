@@ -23,25 +23,40 @@ using namespace omnetpp;
 class Binder;
 
 /**
- * This channel model implements path loss, LOS probability, and shadowing for LTE systems
- * according to the following 3GPP specifications:
+ * The full PHY link model: everything between a transmitted air frame and the
+ * decision on whether it was received.
+ *
+ * This is the class every concrete channel model is built on, and it is far more
+ * than propagation. It covers:
+ * - path loss per deployment scenario, LOS/NLOS state, and log-normal shadowing;
+ * - multipath fading, Jakes or Rayleigh;
+ * - the antenna pattern attenuation and the link budget (antenna gains, cable
+ *   loss, noise figures, thermal noise);
+ * - interference from other cells -- downlink, uplink, external cells and
+ *   background cells;
+ * - the assembly of all of the above into a per-band SINR, and the mapping of
+ *   that SINR onto a block error probability (with HARQ reduction) that decides
+ *   reception;
+ * - the per-node mobility state the correlated quantities need: position
+ *   history, speed, and the point at which shadowing and LOS were last drawn;
+ * - the SINR statistics.
+ *
+ * The propagation formulas proper -- getAttenuation, computePathLoss and the
+ * per-scenario computeXxx, computeLosProbability, computeShadowing, getStdDev --
+ * are about a fifth of the implementation, and are the only part the subclasses
+ * replace. All the rest is inherited unchanged by every one of them.
+ *
+ * The formulas here are the 2D, LTE-era ones:
  * - 3GPP TR 36.814, "Further advancements for E-UTRA physical layer aspects", v9.2.0, March 2017
- * - 3GPP TR 36.873, "Study on 3D channel model for LTE", v12.7.0, December 2017
  * - 3GPP TS 36.211, "LTE; Physical channels and modulation", v13.2.0, June 2016
  *
- * The model supports various LTE deployment scenarios including:
- * - Indoor Hotspot (InH)
- * - Urban Microcell (UMi)
- * - Urban Macrocell (UMa)
- * - Rural Macrocell (RMa)
- * - Suburban Macrocell (SMa)
+ * supporting the Indoor Hotspot (InH), Urban Microcell (UMi), Urban Macrocell
+ * (UMa), Rural Macrocell (RMa) and Suburban Macrocell (SMa) deployment
+ * scenarios. NrChannelModel and NrChannelModel_3GPP38_901 replace them with the
+ * formulas of TR 36.873 and TR 38.901 respectively.
  *
- * Key features:
- * - Standards-compliant path loss models with proper frequency handling
- * - LOS/NLOS probability computation based on 3GPP models
- * - Jakes and Rayleigh fading models
- * - Multi-cell interference computation
- * - D2D communication support
+ * D2D links are not evaluated here. The D2dChannelModel mixin layers them on top
+ * of this class or of either of its subclasses.
  */
 class LteRealisticChannelModel : public LteChannelModel
 {

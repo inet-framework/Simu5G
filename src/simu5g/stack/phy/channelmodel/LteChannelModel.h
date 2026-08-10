@@ -121,6 +121,25 @@ struct RadioLink
     Direction dir = UNKNOWN_DIRECTION;
 };
 
+/**
+ * Abstract base for the channel models a PHY layer can be equipped with.
+ *
+ * Despite the name, this is not a propagation model: it is the interface to the
+ * entire PHY link model. A channel model is asked for received power (getRSRP),
+ * for per-band SINR (getSINR, getSIR, getSINR_bgUe), and for the reception
+ * decision itself (isReceptionSuccessful), so it owns propagation, fading,
+ * interference and the SINR-to-error mapping alike. Path loss (getAttenuation,
+ * computePathLoss) is one ingredient among those, not the subject of the class.
+ *
+ * The "Lte" in the name says nothing about the radio access technology. The
+ * concrete models differ in which 3GPP propagation study they implement, not in
+ * whether they serve an LTE or an NR carrier, and any of them can be plugged
+ * into any NIC through the ILteChannelModel interface -- the gNodeB NIC selects
+ * NrChannelModel_3GPP38_901 into the slot its parameter still calls
+ * lteChannelModelType. Everything technology-dependent -- carrier frequency,
+ * bandwidth, numerology -- is read from the ComponentCarrier module rather than
+ * encoded in the class.
+ */
 class LteChannelModel : public cSimpleModule
 {
   protected:
