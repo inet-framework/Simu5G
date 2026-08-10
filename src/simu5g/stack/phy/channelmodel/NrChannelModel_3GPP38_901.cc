@@ -323,7 +323,9 @@ double NrChannelModel_3GPP38_901::getStdDev(bool dist, const LinkKey& nodeId)
             else
                 return 8.;
         default:
-            throw cRuntimeError("Wrong path-loss scenario value %d", scenario_);
+            // scenarios TR 38.901 does not cover fall back to the base class,
+            // like computePathLoss() and computeLosProbability() do
+            return NrChannelModel::getStdDev(dist, nodeId);
     }
     return 0.0;
 }
