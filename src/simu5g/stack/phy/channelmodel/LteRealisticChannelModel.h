@@ -373,7 +373,7 @@ class LteRealisticChannelModel : public LteChannelModel
      * @param d between UE and eNodeB
      * @param nodeid mac node id of UE
      */
-    void computeLosProbability(double d, const LinkKey& key);
+    virtual void computeLosProbability(double d, const LinkKey& key);
 
     JakesFadingMap *getJakesMap()
     {

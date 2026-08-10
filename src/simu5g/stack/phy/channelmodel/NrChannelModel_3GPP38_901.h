@@ -48,7 +48,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param d distance between UE and gNodeB
      * @param nodeId mac node id of UE
      */
-    void computeLosProbability(double d, const LinkKey& key);
+    void computeLosProbability(double d, const LinkKey& key) override;
 
     /*
      * Compute the building penetration loss for indoor UE
