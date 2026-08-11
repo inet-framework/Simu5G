@@ -231,18 +231,13 @@ UnitList NrMacUe::reserveTxHarqUnits(LteHarqBufferTx *txBuf)
     return txBuf->firstAvailable();
 }
 
-void NrMacUe::macPduMake(MacCid cid)
+bool NrMacUe::buildStandaloneBsr()
 {
-    int64_t size = 0;
-
-    macPduList_.clear();
-
-    bool bsrAlreadyMade = false;
     // UE received an UL grant, but no connection was scheduled (BSR opportunity).
     // This is the non-D2D residue of the D2D BSR block that used to live here.
     for (auto& [carrierFreq, grant] : schedulingGrant_) {
         // skip if this is not the turn of this carrier
-        if (getNumerologyPeriodCounter(binder_->getNumerologyIndexFromCarrierFreq((carrierFreq))) > 0)
+        if (!isCarrierActive(carrierFreq))
             continue;
 
         if (grant != nullptr && grant->getDirection() == UL && emptyScheduleList_) {
@@ -253,197 +248,31 @@ void NrMacUe::macPduMake(MacCid cid)
                 bsrTriggered_ = false;
                 bsrRtxTimer_ = 0;
             }
-            break;
+            // the first carrier whose grant matched decides, whether or not a BSR was built
+            return false;
         }
     }
+    return false;
+}
 
-    if (!bsrAlreadyMade) {
-        // In a D2D communication if BSR was created above this part isn't executed
-        // Build a MAC PDU for each scheduled user on each codeword
-        for (auto [carrierFreq, schList] : scheduleList_) {
-            // skip if this is not the turn of this carrier
-            if (getNumerologyPeriodCounter(binder_->getNumerologyIndexFromCarrierFreq((carrierFreq))) > 0)
-                continue;
+Packet *NrMacUe::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId destId)
+{
+    auto macPkt = new Packet("LteMacPdu");
+    auto header = makeShared<LteMacPdu>();
+    header->setHeaderLength(MAC_HEADER);
+    macPkt->insertAtFront(header);
 
-            LteMacScheduleList::const_iterator it;
-            for (auto& item : *schList) {
-                Packet *macPkt;
+    // the direction is the flow's (UL, or D2D on a D2D-capable subclass), not a constant
+    auto info = macPkt->addTagIfAbsent<UserControlInfo>();
+    info->setSourceId(getMacNodeId());
+    info->setDestId(destId);
+    info->setDirection(connDescOut_.at(destCid).flowInfo.getDirection());
+    info->setPacketLcid(SHORT_BSR);
+    info->setCarrierFrequency(carrierFreq);
+    info->setGrantId(schedulingGrant_[carrierFreq]->getGrantId());
+    info->setUserTxParams(schedulingGrant_[carrierFreq]->getUserTxParams()->dup());
 
-                MacCid destCid = item.first.first;
-                Codeword cw = item.first.second;
-
-                // get the direction (UL/D2D/D2D_MULTI) and the corresponding destination ID
-                const FlowDescriptor& connInfo = connDescOut_.at(destCid).flowInfo;
-                MacNodeId destId = connInfo.getDestId();
-                Direction dir = connInfo.getDirection();
-
-                std::pair<MacNodeId, Codeword> pktId = {destId, cw};
-                unsigned int sduPerCid = item.second;
-
-                if (sduPerCid == 0 && !bsrTriggered_)
-                    continue;
-
-                if (macPduList_.find(carrierFreq) == macPduList_.end()) {
-                    MacPduList newList;
-                    macPduList_[carrierFreq] = newList;
-                }
-                MacPduList::iterator pit = macPduList_[carrierFreq].find(pktId);
-
-                // No packets for this user on this codeword
-                if (pit == macPduList_[carrierFreq].end()) {
-                    // Create a PDU
-                    macPkt = new Packet("LteMacPdu");
-                    auto header = makeShared<LteMacPdu>();
-                    header->setHeaderLength(MAC_HEADER);
-                    macPkt->insertAtFront(header);
-
-                    macPkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
-                    macPkt->addTagIfAbsent<UserControlInfo>()->setDestId(destId);
-                    macPkt->addTagIfAbsent<UserControlInfo>()->setDirection(dir);
-                    macPkt->addTagIfAbsent<UserControlInfo>()->setPacketLcid(SHORT_BSR);
-                    macPkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(carrierFreq);
-
-                    macPkt->addTagIfAbsent<UserControlInfo>()->setGrantId(schedulingGrant_[carrierFreq]->getGrantId());
-
-                    macPkt->addTagIfAbsent<UserControlInfo>()->setUserTxParams(schedulingGrant_[carrierFreq]->getUserTxParams()->dup());
-
-                    macPduList_[carrierFreq][pktId] = macPkt;
-                }
-                else {
-                    // Never goes here because of the macPduList_.clear() at the beginning
-                    macPkt = pit->second;
-                }
-
-                while (sduPerCid > 0) {
-                    // Add SDU to PDU
-                    // Find Mac Pkt
-                    if (connDescOut_.find(destCid) == connDescOut_.end())
-                        throw cRuntimeError("Unable to find mac buffer for cid %s", destCid.str().c_str());
-
-                    if (connDescOut_[destCid].queue->isEmpty()) {
-                        // NR-SO defensive fallback: the front-SDU continuation state is
-                        // shared across the UE's per-carrier schedulers (LteMacUe), so the
-                        // planned PDU count normally matches the shared RLC TX buffer's
-                        // drain exactly and this branch is not taken. Should a residual
-                        // over-count ever leave a request without data, nothing is lost (it
-                        // went out in earlier PDUs or stays buffered for the next TTI), so
-                        // stop adding PDUs gracefully rather than crash. LTE-FI plans an
-                        // exact count, so there an empty buffer is a real bug.
-                        if (connDescOut_[destCid].flowInfo.getSoFraming())
-                            break;
-                        throw cRuntimeError("Empty buffer for cid %s, while expected SDUs were %d", destCid.str().c_str(), sduPerCid);
-                    }
-
-                    auto pkt = check_and_cast<Packet *>(connDescOut_[destCid].queue->popFront());
-
-                    // multicast support
-                    // this trick gets the group ID from the MAC SDU and sets it in the MAC PDU
-                    auto flowInfo = pkt->getTag<FlowControlInfo>();
-                    MacNodeId groupId = flowInfo->getMulticastGroupId();
-                    if (groupId != NODEID_NONE) // for unicast, group id is -1
-                        macPkt->getTagForUpdate<UserControlInfo>()->setPacketMulticastGroupId(groupId);
-
-                    drop(pkt);
-
-                    auto macPdu = macPkt->removeAtFront<LteMacPdu>();
-
-                    macPdu->pushSdu(pkt, destCid.getLcid());
-                    macPkt->insertAtFront(macPdu);
-                    sduPerCid--;
-                }
-
-                // consider virtual buffers to compute BSR size
-                size += connDescOut_[destCid].buffer->getQueueOccupancy();
-
-                if (size > 0) {
-                    // take into account the RLC header size
-                    if (connDescOut_[destCid].flowInfo.getRlcType() == UM)
-                        size += RLC_HEADER_UM;
-                    else if (connDescOut_[destCid].flowInfo.getRlcType() == AM)
-                        size += RLC_HEADER_AM;
-                }
-            }
-        }
-    }
-
-    // Put MAC PDUs in H-ARQ buffers
-    for (auto& [carrierFreq, macPduMap] : macPduList_) {
-        // skip if this is not the turn of this carrier
-        if (getNumerologyPeriodCounter(binder_->getNumerologyIndexFromCarrierFreq((carrierFreq))) > 0)
-            continue;
-
-        if (harqTxBuffers_.find(carrierFreq) == harqTxBuffers_.end()) {
-            HarqTxBuffers newHarqTxBuffers;
-            harqTxBuffers_[carrierFreq] = newHarqTxBuffers;
-        }
-        HarqTxBuffers& harqTxBuffers = harqTxBuffers_[carrierFreq];
-
-        for (auto& [pktId, macPkt] : macPduMap) {
-            MacNodeId destId = pktId.first;
-            Codeword cw = pktId.second;
-            // Check if the HarqTx buffer already exists for the destId
-            // Get a reference for the destId TXBuffer
-            LteHarqBufferTx *txBuf;
-            HarqTxBuffers::iterator hit = harqTxBuffers.find(destId);
-            if (hit != harqTxBuffers.end()) {
-                // The tx buffer already exists
-                txBuf = hit->second;
-            }
-            else {
-                // The tx buffer does not exist yet for this mac node id, create one
-                // FIXME: hb is never deleted
-                LteHarqBufferTx *hb = createTxHarqBuffer(destId, (Direction)macPkt->getTag<UserControlInfo>()->getDirection());
-                harqTxBuffers[destId] = hb;
-                txBuf = hb;
-            }
-
-            // search for an empty unit within the first available process
-            UnitList txList = reserveTxHarqUnits(txBuf);
-            EV << "NrMacUe::macPduMake - [Used Acid=" << (unsigned int)txList.first << "]" << endl;
-
-            // BSR related operations
-
-               // according to the TS 36.321 v8.7.0, when there are uplink resources assigned to the UE, a BSR
-               // has to be sent even if there is no data in the user's queues. In few words, a BSR is always
-               // triggered and has to be sent when there are enough resources
-
-
-            auto macPdu = macPkt->removeAtFront<LteMacPdu>();
-            // Attach BSR to PDU if RAC is won and wasn't already made
-            if (bsrTriggered_ && !bsrAlreadyMade && size > 0) {
-                MacBsr *bsr = new MacBsr();
-                bsr->setTimestamp(simTime().dbl());
-                bsr->setSize(size);
-                macPdu->pushCe(bsr);
-                bsrTriggered_ = false;
-                bsrAlreadyMade = true;
-                EV << "NrMacUe::macPduMake - BSR created with size " << size << endl;
-            }
-
-            if (bsrAlreadyMade && size > 0) { // this prevents the UE from sending an unnecessary RAC request
-                bsrRtxTimer_ = bsrRtxTimerStart_;
-            }
-            else
-                bsrRtxTimer_ = 0;
-
-            macPkt->insertAtFront(macPdu);
-
-            EV << "NrMacUe: pduMaker created PDU: " << macPkt->str() << endl;
-
-            // TODO: harq test
-            // pdu transmission here (if any)
-            // txAcid has HARQ_NONE for non-fillable codeword, acid otherwise
-            if (txList.second.empty()) {
-                EV << "NrMacUe() : no available process for this MAC pdu in TxHarqBuffer" << endl;
-                delete macPkt;
-            }
-            else {
-                //Insert PDU in the Harq Tx Buffer
-                //txList.first is the acid
-                txBuf->insertPdu(txList.first, cw, macPkt);
-            }
-        }
-    }
+    return macPkt;
 }
 
 } //namespace

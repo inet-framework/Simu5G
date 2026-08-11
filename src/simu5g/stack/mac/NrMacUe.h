@@ -46,7 +46,17 @@ class NrMacUe : public LteMacUe
      * On UE it also adds a BSR control element to the MAC PDU
      * containing the size of its buffer (for that CID)
      */
-    void macPduMake(MacCid cid = MacCid()) override;
+    /// The NR UE has no D2D flows, so it never builds a standalone BSR PDU here --
+    /// but it does consume the trigger. See the body.
+    bool buildStandaloneBsr() override;
+
+    /// NR bearers are peer-addressed: the destination comes from the flow, not the cell.
+    MacNodeId pduDestId(MacCid destCid) override { return connDescOut_.at(destCid).flowInfo.getDestId(); }
+
+    /// An entry with no SDUs is only worth a PDU if it can carry a pending BSR.
+    bool shouldSkipScheduleEntry(unsigned int sduPerCid) const override { return sduPerCid == 0 && !isBsrPending(); }
+
+    inet::Packet *createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId destId) override;
 };
 
 } //namespace
