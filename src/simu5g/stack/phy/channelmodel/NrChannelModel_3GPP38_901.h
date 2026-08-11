@@ -73,7 +73,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    double computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los) override;
+    virtual double computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los);
 
     /*
      * UMi path loss model (taken from TR 38.901)
@@ -81,7 +81,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    double computeUrbanMicro3D(double threeDimDistance, double twoDimDistance, bool los) override;
+    virtual double computeUrbanMicro3D(double threeDimDistance, double twoDimDistance, bool los);
 
     /*
      * UMa path loss model (taken from TR 38.901)
@@ -89,7 +89,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    double computeRuralMacro3D(double threeDimDistance, double twoDimDistance, bool los) override;
+    virtual double computeRuralMacro3D(double threeDimDistance, double twoDimDistance, bool los);
 
     /*
      * InH path loss model (taken from TR 38.901)
@@ -97,7 +97,7 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param threeDimDistance distance between UE and gNodeB
      * @param los line-of-sight flag
      */
-    double computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los) override;
+    virtual double computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los);
 
     /*
      * Compute std deviation of shadowing according to scenario and visibility
