@@ -22,6 +22,7 @@
 #include "simu5g/stack/mac/packet/LteRac_m.h"
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
+#include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/d2d/mac/ID2dMacUe.h"
 #include "simu5g/stack/d2d/mac/D2dUeMacHelper.h"
@@ -318,6 +319,14 @@ void D2dUeMacBase<Base>::macPduMake(MacCid cid)
                         throw cRuntimeError("Empty buffer for cid %s, while expected SDUs were %d", destCid.str().c_str(), sduPerCid);
 
                     auto pkt = check_and_cast<inet::Packet *>(this->connDescOut_[destCid].queue->popFront());
+
+                    // Remove PdcpTrackingTag as it's no longer needed below MAC layer,
+                    // as LteMacUe::macPduMake does. Without this, pushSdu() re-attaches
+                    // the tag onto the embedded SDU and it travels to the peer.
+                    // TODO It won't succeed if tag is on a packet *inside* an lteRlcFragment,
+                    // but removing those would be very complicated. Tag will be removed anyway
+                    // on the receiver side.
+                    pkt->template removeTagIfPresent<PdcpTrackingTag>();
 
                     // multicast support
                     // this trick gets the group ID from the MAC SDU and sets it in the MAC PDU
