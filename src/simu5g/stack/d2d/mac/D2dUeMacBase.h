@@ -99,6 +99,20 @@ class D2dUeMacBase : public Base, public ID2dMacUe
     /// warrants a BSR-only MAC PDU.
     bool isBsrPending() const override { return this->bsrTriggered_ || d2dUeHelper_.getBsrD2DMulticastTriggered(); }
 
+    /// Extends the base by also clearing the D2D-multicast trigger, so that one
+    /// appended BSR consumes whichever of the two triggers was pending.
+    void appendBsr(inet::Ptr<LteMacPdu> macPdu, int size) override
+    {
+        Base::appendBsr(macPdu, size);
+        d2dUeHelper_.setBsrD2DMulticastTriggered(false);
+    }
+
+    /// A UE in D2D mode that is granted UL resources with nothing scheduled answers
+    /// with a standalone BSR-only PDU covering just its D2D (or D2D multicast) flows.
+    /// Returns true if such a PDU was built and placed in macPduList_, in which case
+    /// macPduMake() skips the SDU loop entirely.
+    virtual bool buildStandaloneBsr();
+
     void macHandleGrant(cPacket *pkt) override;
 
     /*
@@ -159,13 +173,8 @@ void D2dUeMacBase<Base>::initialize(int stage)
 }
 
 template<class Base>
-void D2dUeMacBase<Base>::macPduMake(MacCid cid)
+bool D2dUeMacBase<Base>::buildStandaloneBsr()
 {
-    int64_t size = 0;
-
-    this->macPduList_.clear();
-
-    bool bsrAlreadyMade = false;
     // UE is in D2D mode but it received an UL grant (for BSR)
     for (auto& [carrierFreq, grant] : this->schedulingGrant_) {
         // skip if this is not the turn of this carrier
@@ -212,10 +221,10 @@ void D2dUeMacBase<Base>::macPduMake(MacCid cid)
                     if (channelModel == nullptr)
                         throw cRuntimeError("D2dUeMacBase::macPduMake - channel model is a null pointer");
                     this->macPduList_[channelModel->getCarrierFrequency()][{this->getMacCellId(), 0}] = macPktBsr;
-                    bsrAlreadyMade = true;
-                    EV << "D2dUeMacBase::macPduMake - BSR D2D created with size " << sizeBsr << " bytes created" << endl;
+                    EV << "D2dUeMacBase::buildStandaloneBsr - BSR D2D created with size " << sizeBsr << " bytes created" << endl;
 
                     this->bsrRtxTimer_ = this->bsrRtxTimerStart_;  // this prevents the UE from sending an unnecessary RAC request
+                    return true;
                 }
                 else {
                     d2dUeHelper_.setBsrD2DMulticastTriggered(false);
@@ -223,9 +232,22 @@ void D2dUeMacBase<Base>::macPduMake(MacCid cid)
                     this->bsrRtxTimer_ = 0;
                 }
             }
-            break;
+            // the first carrier whose grant matched decides; the historical loop
+            // broke out here whether or not a BSR was actually built
+            return false;
         }
     }
+    return false;
+}
+
+template<class Base>
+void D2dUeMacBase<Base>::macPduMake(MacCid cid)
+{
+    int64_t size = 0;
+
+    this->macPduList_.clear();
+
+    bool bsrAlreadyMade = buildStandaloneBsr();
 
     if (!bsrAlreadyMade) {
         // In a D2D communication if BSR was created above this part isn't executed
@@ -373,15 +395,9 @@ void D2dUeMacBase<Base>::macPduMake(MacCid cid)
 
             auto macPdu = macPkt->template removeAtFront<LteMacPdu>();
             // Attach BSR to PDU if RAC is won and wasn't already made
-            if ((this->bsrTriggered_ || d2dUeHelper_.getBsrD2DMulticastTriggered()) && !bsrAlreadyMade && size > 0) {
-                MacBsr *bsr = new MacBsr();
-                bsr->setTimestamp(simTime().dbl());
-                bsr->setSize(size);
-                macPdu->pushCe(bsr);
-                this->bsrTriggered_ = false;
-                d2dUeHelper_.setBsrD2DMulticastTriggered(false);
+            if (this->isBsrPending() && !bsrAlreadyMade && size > 0) {
+                this->appendBsr(macPdu, size);
                 bsrAlreadyMade = true;
-                EV << "D2dUeMacBase::macPduMake - BSR created with size " << size << endl;
             }
 
             if (bsrAlreadyMade && size > 0) { // this prevents the UE from sending an unnecessary RAC request
