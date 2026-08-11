@@ -102,9 +102,13 @@ class LteMacEnb : public LteMacBase
     /// which is why a non-D2D cell cannot tell the difference.
     virtual Direction grantDirection(LogicalCid lcid) const { return directionFromBsrLcid(lcid, UL); }
 
-    /// length of the grant header prepended to the grant packet
-    /// (default: the historical 1-byte length from the .msg file; the NR/D2D
-    /// MACs use 1 bit)
+    /// Length of the grant header prepended to the grant packet: one byte, the
+    /// .msg file's own default.
+    /// NB neither this nor the 1 bit the NR/D2D MACs used to set is a modelled
+    /// DCI: a real UL grant travels in DCI format 0 / 0_0 on PDCCH and runs to
+    /// several bytes depending on bandwidth. Simu5G does not model PDCCH resource
+    /// usage either, so this is a placeholder that keeps the grant octet-aligned,
+    /// not a spec value. Sizing it properly belongs with control-channel realism.
     virtual inet::b grantChunkLength() const { return inet::B(1); }
 
     /// BSR buffer key for a received BSR control element: keyed by the packet LCID,
