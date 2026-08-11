@@ -429,6 +429,17 @@ void LteMacUe::macPduMake(MacCid cid)
             }
             // consider virtual buffers to compute BSR size
             size += connDescOut_.at(destCid).buffer->getQueueOccupancy();
+
+            if (size > 0) {
+                // take into account the RLC header size: those are real bytes the
+                // grant has to cover, so reporting the bare queue occupancy asks for
+                // systematically undersized grants (NrMacUe and the D2D MAC have
+                // always accounted for them)
+                if (getLogicalChannelConfig(destCid).rlcMode == UM)
+                    size += RLC_HEADER_UM;
+                else if (getLogicalChannelConfig(destCid).rlcMode == AM)
+                    size += RLC_HEADER_AM;
+            }
         }
     }
 
