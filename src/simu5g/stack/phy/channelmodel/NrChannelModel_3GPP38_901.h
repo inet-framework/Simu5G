@@ -60,16 +60,6 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      */
     double computePathLoss(double threeDimDistance, double twoDimDistance, bool los) override;
 
-    /*
-     * Compute shadowing
-     *
-     * @param d3D 3D distance between UE and gNodeB
-     * @param d2D 2D distance between UE and gNodeB
-     * @param nodeId mac node id of UE
-     * @param speed speed of UE
-     */
-    double computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl) override;
-
   protected:
 
     /*
