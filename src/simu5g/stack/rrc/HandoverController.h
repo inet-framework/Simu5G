@@ -22,7 +22,6 @@ using namespace omnetpp;
 
 class Binder;
 class LtePhyUe;
-class NrPhyUe;
 class LteMacUe;
 class LteAmc;
 class LteAirFrame;
@@ -116,6 +115,10 @@ class HandoverController : public cSimpleModule
     virtual void deleteOldBuffers(MacNodeId servingNodeId);
     virtual void updateHysteresisThreshold(double rssi);
     virtual LteAmc *getAmcModule(MacNodeId nodeId);
+
+    /// True if this UE is a dual-stack one, i.e. it has a second stack ("leg") whose
+    /// handover controller this one must coordinate with in DC scenarios.
+    bool hasOtherLeg() const { return otherHandoverController_ != nullptr; }
 
     /// Handover lifecycle notification hooks. The base implementations are empty;
     /// HandoverControllerD2D overrides them with the D2D-specific behavior.

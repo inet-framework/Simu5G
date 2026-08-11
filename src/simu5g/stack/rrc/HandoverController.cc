@@ -14,7 +14,6 @@
 #include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"
 #include "simu5g/stack/ip2nic/HandoverPacketHolderEnb.h"
 #include "simu5g/stack/phy/LtePhyUe.h"
-#include "simu5g/stack/phy/NrPhyUe.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/phy/feedback/LteDlFeedbackGenerator.h"
 #include "simu5g/common/binder/Binder.h"
@@ -176,8 +175,8 @@ void HandoverController::beaconReceived(LteAirFrame *frame, UserControlInfo *lte
         return;
     }
 
-    // Check if the eNodeB is a DC Secondary node
-    if (dynamic_cast<NrPhyUe*>(phy_)) {
+    // Dual-stack UE: check if the beacon comes from a DC Secondary node
+    if (hasOtherLeg()) {
         MacNodeId sourceId = lteInfo->getSourceId();
         MacNodeId masterNodeId = binder_->getMasterNodeOrSelf(sourceId);
         if (masterNodeId != sourceId) {
@@ -263,11 +262,12 @@ void HandoverController::beaconReceived(LteAirFrame *frame, UserControlInfo *lte
 
 void HandoverController::triggerHandover()
 {
-    if (dynamic_cast<NrPhyUe*>(phy_) == nullptr)
+    // NR legs exist only on dual-stack UEs
+    if (!hasOtherLeg())
         ASSERT(!isNr_);
 
-    // NR-specific: Check for dual connectivity scenarios with early returns
-    if (dynamic_cast<NrPhyUe*>(phy_)) {
+    // Dual-stack UE: check for dual connectivity scenarios with early returns
+    if (hasOtherLeg()) {
         MacNodeId masterNode = binder_->getMasterNodeOrSelf(candidateServingNodeId_);
         if (masterNode != candidateServingNodeId_) { // The candidate is a secondary node
             if (otherHandoverController_->getServingNodeId() == masterNode) {
@@ -318,8 +318,8 @@ void HandoverController::triggerHandover()
 
     onHandoverStarting();
 
-    // Variant-specific ASSERT
-    if (dynamic_cast<NrPhyUe*>(phy_))
+    // On a dual-stack UE either leg can legitimately be detached; a single-stack UE is always attached
+    if (hasOtherLeg())
         ASSERT(servingNodeId_ == NODEID_NONE || servingNodeId_ != candidateServingNodeId_);  // "we can be unattached, but never hand over to ourselves"
     else
         ASSERT(servingNodeId_ != candidateServingNodeId_);
@@ -345,8 +345,9 @@ void HandoverController::triggerHandover()
     // Inform the UE's HandoverPacketHolder module to start holding downstream packets
     handoverPacketHolder_->triggerHandoverUe(candidateServingNodeId_, isNr_);
 
-    // LTE-specific: remove handover trigger immediately after adding
-    if (!dynamic_cast<NrPhyUe*>(phy_))
+    // Single-stack UE: no other leg reads the handoverTriggered record, so remove it right away.
+    // (Dual-stack UEs keep it until doHandover(), so the other leg can see the handover in progress.)
+    if (!hasOtherLeg())
         binder_->removeHandoverTriggered(nodeId_);
 
     // Inform the eNB's HandoverPacketHolder module to forward data to the target eNB
@@ -426,8 +427,9 @@ void HandoverController::doHandover()
     // Remove UE handover triggered
     binder_->removeUeHandoverTriggered(nodeId_);
 
-    // NR-specific: Also remove handover triggered
-    if (dynamic_cast<NrPhyUe*>(phy_))
+    // Dual-stack UE: the handoverTriggered record was kept alive for the other leg's
+    // benefit (see triggerHandover()); remove it now that the handover has completed
+    if (hasOtherLeg())
         binder_->removeHandoverTriggered(nodeId_);
 
     // Inform the UE's HandoverPacketHolder module to forward held packets
