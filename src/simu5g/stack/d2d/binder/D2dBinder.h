@@ -87,12 +87,6 @@ class D2dBinder : public cSimpleModule
     virtual LteD2DMode getD2DMode(MacNodeId src, MacNodeId dst);
 
     /**
-     * Returns whether nodeId can exploit frequency reuse, i.e. all of its D2D
-     * peers are in Direct Mode.
-     */
-    virtual bool isFrequencyReuseEnabled(MacNodeId nodeId);
-
-    /**
      * Read-only access to the whole peering map, for the mode-selection and
      * conflict-graph modules to iterate over.
      */
