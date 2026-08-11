@@ -21,6 +21,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 class Binder;
+class PathLossModel;
 
 /**
  * The full PHY link model: everything between a transmitted air frame and the
@@ -41,10 +42,13 @@ class Binder;
  *   history, speed, and the point at which shadowing and LOS were last drawn;
  * - the SINR statistics.
  *
- * The propagation formulas proper -- getAttenuation, computePathLoss and the
- * per-scenario computeXxx, computeLosProbability, computeShadowing, getStdDev --
- * are about a fifth of the implementation, and are the only part the subclasses
- * replace. All the rest is inherited unchanged by every one of them.
+ * The propagation formulas proper live in a PathLossModel strategy (pathLoss_)
+ * that this class owns and delegates to from computePathLoss, computeLosProbability
+ * and computeShadowing. NrChannelModel and NrChannelModel_3GPP38_901 still
+ * override those three plus getStdDev and computeAngularAttenuation with their
+ * own formula bodies, rather than going through a strategy of their own. All
+ * the rest -- fading, interference, SINR assembly, the reception decision --
+ * is inherited unchanged by every one of them.
  *
  * The formulas here are the 2D, LTE-era ones:
  * - 3GPP TR 36.814, "Further advancements for E-UTRA physical layer aspects", v9.2.0, March 2017
@@ -108,6 +112,14 @@ class LteRealisticChannelModel : public LteChannelModel
 
     // Scenario
     DeploymentScenario scenario_;
+
+    // Formulas of the selected 3GPP propagation study; owned, created in initialize()
+    PathLossModel *pathLoss_ = nullptr;
+
+    // The ext-cell and background-cell interference paths evaluate their path
+    // loss with the TR 36.814 formulas regardless of which propagation study
+    // the model uses for its own links (see computeExtCellPathLoss); owned
+    PathLossModel *extCellPathLoss_ = nullptr;
 
     // Per link: whether it is in Line of Sight
     std::map<LinkKey, bool> losMap_;
@@ -195,6 +207,8 @@ class LteRealisticChannelModel : public LteChannelModel
     static simsignal_t measuredSinrUlSignal_;
 
   public:
+    ~LteRealisticChannelModel() override;
+
     void initialize(int stage) override;
 
     /*
@@ -316,49 +330,11 @@ class LteRealisticChannelModel : public LteChannelModel
     double computePathLoss(double distance, double dbp, bool los) override;
 
     /*
-     * Compute attenuation for indoor scenario
+     * Compute std deviation of shadowing according to scenario and visibility.
+     * Kept for NrChannelModel_3GPP38_901, whose getStdDev() falls back to this
+     * one for scenarios TR 38.901 does not cover.
      *
-     * @param distance between UE and eNodeB
-     * @param los line-of-sight flag
-     */
-    virtual double computeIndoor(double distance, bool los);
-
-    /*
-     * Compute attenuation for Urban Micro cell
-     *
-     * @param distance between UE and eNodeB
-     * @param los line-of-sight flag
-     */
-    virtual double computeUrbanMicro(double distance, bool los);
-
-    /*
-     * Compute attenuation for Urban Macro cell
-     *
-     * @param distance between UE and eNodeB
-     * @param los line-of-sight flag
-     */
-    virtual double computeUrbanMacro(double distance, bool los);
-
-    /*
-     * Compute attenuation for Sub Urban Macro cell
-     *
-     * @param distance between UE and eNodeB
-     * @param los line-of-sight flag
-     */
-    virtual double computeSubUrbanMacro(double distance, double& dbp, bool los);
-
-    /*
-     * Compute attenuation for Rural Macro cell
-     *
-     * @param distance between UE and eNodeB
-     * @param los line-of-sight flag
-     */
-    virtual double computeRuralMacro(double distance, double& dbp, bool los);
-
-    /*
-     * Compute std deviation of shadowing according to scenario and visibility
-     *
-     * @param distance between UE and eNodeB
+     * @param dist whether the link's distance is below the scenario's breakpoint
      * @param nodeid mac node id of UE
      */
     virtual double getStdDev(bool dist, const LinkKey& key);
@@ -407,6 +383,13 @@ class LteRealisticChannelModel : public LteChannelModel
     virtual std::vector<double> getRSRP(const RadioLink& link, double txPower);
 
   protected:
+
+    /*
+     * Create the strategy object supplying the propagation formulas
+     * (pathLoss_). Subclasses select a different 3GPP study by overriding
+     * this to return a different concrete PathLossModel.
+     */
+    virtual PathLossModel *createPathLossModel();
 
     /*
      * Build the RadioLink described by a frame's control info (DL, UL, and the
