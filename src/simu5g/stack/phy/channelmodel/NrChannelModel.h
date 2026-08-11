@@ -27,14 +27,17 @@ namespace simu5g {
  *
  * The formulas themselves live in a Tr36873PathLossModel strategy, selected by
  * overriding createPathLossModel(); computePathLoss, computeLosProbability and
- * computeAngularAttenuation are thin delegations to it. getAttenuation is
- * inherited unchanged from LteRealisticChannelModel, which computes both the
- * 3D and 2D distance between the endpoints and passes both down: path loss is
- * evaluated over the 3D distance while the LOS probability and the validity
- * limits remain functions of the 2D distance, so the base-station and UE
- * heights (nodebHeight, ueHeight) enter the result through both, and the
- * antenna pattern gains a vertical component alongside the horizontal one.
- * The external-cell interference methods also still carry their own bodies.
+ * computeAngularAttenuation are thin delegations to it. getAttenuation and the
+ * external-cell interference methods are inherited unchanged from
+ * LteRealisticChannelModel, which computes both the 3D and 2D distance
+ * between the endpoints and passes both down: path loss is evaluated over the
+ * 3D distance while the LOS probability and the validity limits remain
+ * functions of the 2D distance, so the base-station and UE heights
+ * (nodebHeight, ueHeight) enter the result through both, and the antenna
+ * pattern gains a vertical component alongside the horizontal one. The
+ * external-cell interference path always uses the TR 36.814 formulas, via
+ * the base class's pinned extCellPathLoss_, regardless of the study this
+ * class's own links use.
  *
  * The name records the deployment this model is the default for (the gNodeB and
  * NR UE NICs), not a property of TR 36.873, which is itself an LTE study item.
@@ -62,18 +65,6 @@ class NrChannelModel : public LteRealisticChannelModel
      * @param los line-of-sight flag
      */
     double computePathLoss(double threeDimDistance, double twoDimDistance, bool los) override;
-
-    /*
-     * Evaluates total interference from external cells seen from the spot given by coord
-     * @return total interference expressed in dBm
-     */
-    bool computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeId, inet::Coord coord, bool isCqi, GHz carrierFrequency, std::vector<double> *interference) override;
-
-    /*
-     * Compute attenuation due to path loss and shadowing
-     * @return attenuation expressed in dBm
-     */
-    virtual double computeExtCellPathLoss3D(double threeDimDistance, double twoDimDistance, MacNodeId nodeId);
 
   protected:
 
