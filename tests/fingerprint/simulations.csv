@@ -13,7 +13,7 @@
 /simulations/channelmodel/,              -f omnetpp.ini -c SMa-36873 -r 0,               20s,        baed-4756/tplx;3537-2b6b/tilx;3589-962e/~tNl;bd46-d9ad/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c InH-36814 -r 0,               20s,        44b3-b553/tplx;bf94-ab41/tilx;dc23-077c/~tNl;3345-5257/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c UMi-36814 -r 0,               20s,        4940-dd37/tplx;ce6b-d396/tilx;3545-ffe6/~tNl;8d77-54a2/sz, PASS,
-/simulations/channelmodel/,              -f omnetpp.ini -c UMa-36814 -r 0,               20s,        01af-f490/tplx;3103-336d/tilx;e32d-f7a6/~tNl;3a9b-3a0f/sz, PASS,
+/simulations/channelmodel/,              -f omnetpp.ini -c UMa-36814 -r 0,               20s,        8fd2-ab65/tplx;14cf-656f/tilx;1d3b-2d39/~tNl;2bc7-98a3/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c RMa-36814 -r 0,               20s,        f7d4-e626/tplx;e6af-b523/tilx;2e99-4bad/~tNl;576b-5d86/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c SMa-36814 -r 0,               20s,        baed-4756/tplx;3537-2b6b/tilx;3589-962e/~tNl;f551-ea31/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c FixedLos-38901 -r 0,          20s,        3eb3-149c/tplx;8fda-b31a/tilx;29f8-f47f/~tNl;fe2e-fdf3/sz, PASS,

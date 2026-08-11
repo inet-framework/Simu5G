@@ -65,8 +65,9 @@ double Tr36814PathLossModel::computeLosProbability(double d3D, double d2D)
                 + exp(-1 * d / 36);
             break;
         case URBAN_MACROCELL:
-            p = (((18 / d) > 1) ? 1 : 18 / d) * (1 - exp(-1 * d / 36))
-                + exp(-1 * d / 36);
+            // same form as UMi, decaying over 63 m rather than 36 m
+            p = (((18 / d) > 1) ? 1 : 18 / d) * (1 - exp(-1 * d / 63))
+                + exp(-1 * d / 63);
             break;
         case RURAL_MACROCELL:
             if (d <= 10)
