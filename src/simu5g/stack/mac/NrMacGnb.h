@@ -23,13 +23,11 @@ class NrMacGnb : public LteMacEnb
 
     NrMacGnb();
 
-  protected:
     // The pre-separation NR gNB followed the historical LteMacEnbD2D "fork" of
-    // sendGrants()/macPduUnmake() rather than plain LteMacEnb. Those methods now
-    // live once in LteMacEnb; of the three seams that preserved the fork, the
-    // grant direction and the BSR buffer key have become the base's own behavior,
-    // leaving only the grant header length below -- now the base's value too.
-    inet::b grantChunkLength() const override { return inet::B(1); }
+    // sendGrants()/macPduUnmake() rather than plain LteMacEnb, and carried three
+    // seams to preserve it: the grant direction, the grant header length and the
+    // BSR buffer key. All three are now the base's own behavior, so this class
+    // overrides nothing -- see LteMacEnb::grantDirection/grantChunkLength/bsrCeCid.
 };
 
 } //namespace
