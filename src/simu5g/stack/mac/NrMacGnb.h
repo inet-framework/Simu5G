@@ -24,18 +24,12 @@ class NrMacGnb : public LteMacEnb
     NrMacGnb();
 
   protected:
-    // The pre-separation NR gNB followed the historical LteMacEnbD2D "fork"
-    // of sendGrants()/macPduUnmake() rather than plain LteMacEnb. Those
-    // methods now live once in LteMacEnb; the fork's behavior is preserved
-    // through the three seams below (grant direction derived from the BSR
-    // LCID, 1-bit grant header, BSR buffer keyed by the packet LCID so UL and
-    // D2D BSRs from one UE stay separate).
-
-    Direction grantDirection(LogicalCid lcid) const override { return directionFromBsrLcid(lcid, UL); }
-
+    // The pre-separation NR gNB followed the historical LteMacEnbD2D "fork" of
+    // sendGrants()/macPduUnmake() rather than plain LteMacEnb. Those methods now
+    // live once in LteMacEnb; of the three seams that preserved the fork, the
+    // grant direction and the BSR buffer key have become the base's own behavior,
+    // leaving only the 1-bit grant header below.
     inet::b grantChunkLength() const override { return inet::b(1); }
-
-    MacCid bsrCeCid(const UserControlInfo *lteInfo) const override { return MacCid(lteInfo->getSourceId(), lteInfo->getPacketLcid()); }
 };
 
 } //namespace

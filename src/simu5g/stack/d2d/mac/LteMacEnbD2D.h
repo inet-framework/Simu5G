@@ -24,20 +24,14 @@ using namespace omnetpp;
  * D2D-capable eNB MAC: the D2dEnbMacBase mixin layered over the core LTE MAC.
  * All the D2D logic lives in the mixin (see D2dEnbMacBase.h).
  *
- * The three seam overrides below are NOT D2D-specific: they select the
- * historical "fork" variants of sendGrants()/macPduUnmake() that the D2D
- * (and NR) MACs follow, while plain LteMacEnb keeps the original defaults
- * (grant direction from the BSR LCID vs. plain UL, 1-bit vs. 1-byte grant
- * header, BSR buffer keyed by the packet LCID vs. LogicalCid(0)).
+ * The seam override below is NOT D2D-specific: it selects the historical
+ * "fork" grant header length that the D2D (and NR) MACs use, while plain
+ * LteMacEnb keeps the .msg file's one-byte default.
  */
 class LteMacEnbD2D : public D2dEnbMacBase<LteMacEnb>
 {
   protected:
-    Direction grantDirection(LogicalCid lcid) const override { return directionFromBsrLcid(lcid, UL); }
-
     inet::b grantChunkLength() const override { return inet::b(1); }
-
-    MacCid bsrCeCid(const UserControlInfo *lteInfo) const override { return MacCid(lteInfo->getSourceId(), lteInfo->getPacketLcid()); }
 };
 
 } //namespace

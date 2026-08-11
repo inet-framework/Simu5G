@@ -374,6 +374,11 @@ Packet *LteMacUe::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId dest
      */
     info->setGrantId(schedulingGrant_[carrierFreq]->getGrantId());
     info->setCarrierFrequency(carrierFreq);
+    // Declare which kind of BSR this PDU may carry. Left unset, the field keeps its
+    // LCID_NONE default (65535), which is not a BsrType at all -- and the eNB keys
+    // its BSR virtual buffers by it (see LteMacEnb::bsrCeCid). NrMacUe and the D2D
+    // MAC have always stamped it; this is the LTE UE catching up.
+    info->setPacketLcid(SHORT_BSR);
 
     macPkt->setTimestamp(NOW);
     return macPkt;
