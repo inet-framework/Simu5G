@@ -200,9 +200,9 @@ double Tr36873PathLossModel::computeUrbanMacro3D(double threeDimDistance, double
 
     // compute break-point distance
     double hEnvir = 0.0;
-    double C = (hUe_ < 13.0) ? 0 : pow(((hUe_ - 13.0) / 10.0), 1.5);
+    double C = (hUe_ <= 13.0) ? 0 : pow(((hUe_ - 13.0) / 10.0), 1.5);
     double prob = 1.0 / (1.0 + C);
-    if (prob < owner_->uniform(0.0, 1.0))
+    if (owner_->uniform(0.0, 1.0) < prob)
         hEnvir = 1.0;
     else {
         double bound = hUe_ - 1.5;
