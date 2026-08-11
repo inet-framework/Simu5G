@@ -80,11 +80,10 @@ double Tr36873PathLossModel::computeLosProbability(double d3D, double d2D)
 
 double Tr36873PathLossModel::getShadowingStdDev(double d3D, double d2D, bool losState)
 {
-    // Breakpoint distance of the RMa/SMa path loss, same formula as
-    // TR 36.814; the LOS branch of those scenarios uses different sigma
-    // values below and above it. Unlike TR 36.814, the comparison uses the
-    // 2D distance (Q1).
-    double dbp = 4 * (hNodeB_ - 1) * (hUe_ - 1) * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+    // Breakpoint distance of the RMa/SMa path loss, the only scenarios whose
+    // LOS branch uses different sigma values below and above it. Unlike
+    // TR 36.814, the comparison uses the 2D distance (Q1).
+    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
     return selectStdDev(d2D < dbp, losState);
 }
 
