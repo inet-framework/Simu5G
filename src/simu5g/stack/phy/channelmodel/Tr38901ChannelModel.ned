@@ -14,13 +14,18 @@ package simu5g.stack.phy.channelmodel;
 
 
 //
-// ~RealisticChannelModel preset with the propagation formulas of
+// ~StochasticChannelModel preset with the propagation formulas of
 // 3GPP TR 38.901, "Study on channel model for frequencies from 0.5 to 100 GHz",
 // v16.1.0, December 2019. It differs from its base type only in the
-// pathLossType default; there is no C++ class behind the name. It is the
-// default channel model of the gNodeB NIC and of the NR side of the NR UE NIC.
+// pathLossType default; there is no C++ class of its own behind the name. Note
+// that the study supplies the path loss, LOS probability, shadowing and angular
+// attenuation only; the rest of the link model is the same for every
+// propagation study.
 //
-simple NrChannelModel_3GPP38_901 extends NrChannelModel
+// This is the default channel model of the gNodeB NIC and of the NR side of the
+// NR UE NIC.
+//
+simple Tr38901ChannelModel extends StochasticChannelModel
 {
     parameters:
         pathLossType = default("Tr38901");

@@ -13,19 +13,34 @@
 package simu5g.stack.phy.channelmodel;
 
 //
-// Implements the functions for a model representing the 2D channel in the LTE
-// specification 3GPP TR 36.803. It includes the computation of:
-// - path loss (both line-of-sight and non-line-of-sight),
-// - fading (Jakes or Rayleigh model),
-// - log-normal shadowing,
-// - inter-cell interference.
-// These effects are utilized to compute the Signal to Interference-plus-Noise Ratio (SINR).
+// The full PHY link model: everything between a transmitted air frame and the
+// decision on whether it was received. The channel impairments are modeled
+// statistically -- drawn from the distributions of a 3GPP propagation study,
+// rather than computed from the geometry of an actual environment -- which is
+// what sets this model apart from ~IdealChannelModel, where there are no
+// impairments at all, only a configured packet error rate.
 //
+// It covers:
+// - path loss per deployment scenario, LOS/NLOS state and log-normal shadowing,
+//   with the formulas of the 3GPP propagation study selected by ~pathLossType~
+//   (TR 36.814, TR 36.873 or TR 38.901);
+// - multipath fading, Jakes or Rayleigh;
+// - the antenna pattern attenuation and the link budget (antenna gains, cable
+//   loss, noise figures, thermal noise);
+// - interference from other cells: downlink, uplink, external cells and
+//   background cells;
+// - the assembly of all of the above into a per-band SINR, and the mapping of
+//   that SINR onto a block error probability that decides reception.
 //
-simple RealisticChannelModel extends ChannelModelBase
+// Only the path loss, LOS probability, shadowing and angular attenuation come
+// from the selected propagation study; everything else is the same whichever
+// study is selected. The ~Tr36873ChannelModel and ~Tr38901ChannelModel presets
+// differ from this type only in their pathLossType default.
+//
+simple StochasticChannelModel extends ChannelModelBase
 {
     parameters:
-        @class("RealisticChannelModel");
+        @class("StochasticChannelModel");
 
         string pathLossType @enum("Tr36814","Tr36873","Tr38901") = default("Tr36814"); // which 3GPP propagation study supplies the path loss formulas
 

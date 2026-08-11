@@ -29,7 +29,7 @@ class UserControlInfo;
  *
  * D2D PHY code talks to the channel model's D2D reception/feedback machinery through
  * this interface instead of the concrete channel-model class, so that the core
- * channel model (RealisticChannelModel) carries no D2D code. Obtain it with
+ * channel model (StochasticChannelModel) carries no D2D code. Obtain it with
  * check_and_cast<ID2dChannelModel *>(channelModel): a D2D NIC always wires a D2D
  * channel model into its channelModel slots.
  */

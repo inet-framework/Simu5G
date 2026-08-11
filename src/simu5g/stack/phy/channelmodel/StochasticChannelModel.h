@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef STACK_PHY_CHANNELMODEL_REALISTICCHANNELMODEL_H_
-#define STACK_PHY_CHANNELMODEL_REALISTICCHANNELMODEL_H_
+#ifndef STACK_PHY_CHANNELMODEL_STOCHASTICCHANNELMODEL_H_
+#define STACK_PHY_CHANNELMODEL_STOCHASTICCHANNELMODEL_H_
 
 #include "simu5g/common/LteDefs.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
@@ -27,8 +27,11 @@ class PathLossModel;
  * The full PHY link model: everything between a transmitted air frame and the
  * decision on whether it was received.
  *
- * This is the class every concrete channel model is built on, and it is far more
- * than propagation. It covers:
+ * The impairments are modeled statistically -- drawn from the distributions of a
+ * 3GPP propagation study, rather than computed from the geometry of an actual
+ * environment -- which is what the name refers to, and what sets this model apart
+ * from IdealChannelModel, its impairment-free sibling. It is far more than
+ * propagation, and covers:
  * - path loss per deployment scenario, LOS/NLOS state, and log-normal shadowing;
  * - multipath fading, Jakes or Rayleigh;
  * - the antenna pattern attenuation and the link budget (antenna gains, cable
@@ -47,7 +50,7 @@ class PathLossModel;
  * computeShadowing and computeAngularAttenuation. Which 3GPP propagation study
  * the strategy implements is chosen by the pathLossType parameter ("Tr36814",
  * "Tr36873" or "Tr38901"); createPathLossModel() instantiates the matching
- * strategy class. NrChannelModel and NrChannelModel_3GPP38_901 are NED-level
+ * strategy class. Tr36873ChannelModel and Tr38901ChannelModel are NED-level
  * presets of this class (no C++ class of their own) that only override the
  * pathLossType default, to Tr36873 and Tr38901 respectively. All the rest --
  * fading, interference, SINR assembly, the reception decision -- is shared
@@ -67,7 +70,7 @@ class PathLossModel;
  * D2D links are not evaluated here. The D2dChannelModel subclass layers them on
  * top of this class.
  */
-class RealisticChannelModel : public ChannelModelBase
+class StochasticChannelModel : public ChannelModelBase
 {
   protected:
 
@@ -212,7 +215,7 @@ class RealisticChannelModel : public ChannelModelBase
     static simsignal_t measuredSinrUlSignal_;
 
   public:
-    ~RealisticChannelModel() override;
+    ~StochasticChannelModel() override;
 
     void initialize(int stage) override;
 
@@ -530,5 +533,5 @@ class RealisticChannelModel : public ChannelModelBase
 
 } //namespace
 
-#endif /* STACK_PHY_CHANNELMODEL_REALISTICCHANNELMODEL_H_ */
+#endif /* STACK_PHY_CHANNELMODEL_STOCHASTICCHANNELMODEL_H_ */
 

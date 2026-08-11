@@ -14,7 +14,7 @@
 #include "simu5g/background/cell/BackgroundScheduler.h"
 #include "simu5g/stack/phy/LtePhyBase.h"
 #include "simu5g/stack/phy/LtePhyUe.h"
-#include "simu5g/stack/phy/channelmodel/RealisticChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/StochasticChannelModel.h"
 #include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
 
 namespace simu5g {
@@ -638,7 +638,7 @@ bool BackgroundCellChannelModel::computeDownlinkInterference(MacNodeId bgUeId, i
 
         Coord bsPos = enb->phy->getCoord();
 
-        RealisticChannelModel *interfChanModel = dynamic_cast<RealisticChannelModel *>(enb->phy->getChannelModel(carrierFrequency));
+        StochasticChannelModel *interfChanModel = dynamic_cast<StochasticChannelModel *>(enb->phy->getChannelModel(carrierFrequency));
 
         // if the interfering BS does not use the selected carrier frequency, skip it
         if (interfChanModel == nullptr) {

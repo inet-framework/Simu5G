@@ -26,7 +26,7 @@ Define_Module(D2dChannelModel);
 
 void D2dChannelModel::initialize(int stage)
 {
-    RealisticChannelModel::initialize(stage);
+    StochasticChannelModel::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         rcvdSinrD2DSignal_ = cComponent::registerSignal("rcvdSinrD2D");
         enableD2DInterference_ = par("d2dInterference");
@@ -111,7 +111,7 @@ void D2dChannelModel::computeInterferencePlusNoise(const RadioLink& link, UserCo
         RbMap& rbmap, double totN, std::vector<double>& den)
 {
     if (link.dir != D2D && link.dir != D2D_MULTI) {
-        RealisticChannelModel::computeInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
+        StochasticChannelModel::computeInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
         return;
     }
 
@@ -167,7 +167,7 @@ std::vector<double> D2dChannelModel::getReceptionSinr(LteAirFrame *frame, UserCo
             return getSINR_D2D(frame, lteInfo, destId, destCoord, enbId, rsrpVector);
         return getSINR_D2D(frame, lteInfo, destId, destCoord, enbId);
     }
-    return RealisticChannelModel::getReceptionSinr(frame, lteInfo, rsrpVector);
+    return StochasticChannelModel::getReceptionSinr(frame, lteInfo, rsrpVector);
 }
 
 void D2dChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)
@@ -179,7 +179,7 @@ void D2dChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFre
         emit(rcvdSinrD2DSignal_, sinr);
         return;
     }
-    RealisticChannelModel::emitRcvdSinr(dir, ueId, carrierFrequency, sinr);
+    StochasticChannelModel::emitRcvdSinr(dir, ueId, carrierFrequency, sinr);
 }
 
 bool D2dChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId senderId, Coord senderCoord, MacNodeId destId, Coord destCoord, bool isCqi, GHz carrierFrequency,
@@ -202,7 +202,7 @@ bool D2dChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId senderId
             allocatedUes = &(ulTransmissionMap->at(i));
 
             for (auto& ue_it : *allocatedUes) {
-                const auto interferer = RealisticChannelModel::describeInterferer(ue_it);
+                const auto interferer = StochasticChannelModel::describeInterferer(ue_it);
                 const MacNodeId ueId = interferer.nodeId;
                 const MacCellId cellId = interferer.cellId;
                 const Direction dir = interferer.dir;
@@ -221,7 +221,7 @@ bool D2dChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId senderId
                 if (cellId == eNbId && (!macEnb->isReuseD2DEnabled() && !macEnb->isReuseD2DMultiEnabled()))
                     continue;
 
-                EV << NOW << " RealisticChannelModel::computeD2DInterference - Interference from UE: " << ueId << "(dir " << dirToA(dir) << ") on band[" << i << "]" << endl;
+                EV << NOW << " D2dChannelModel::computeD2DInterference - Interference from UE: " << ueId << "(dir " << dirToA(dir) << ") on band[" << i << "]" << endl;
 
                 // get tx power and attenuation from this UE
                 double rxPwr = txPwr - cableLoss_ + 2 * antennaGainUe_;
@@ -235,7 +235,7 @@ bool D2dChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId senderId
     }
 
     // Debug Output
-    EV << NOW << " RealisticChannelModel::computeD2DInterference - Final Band Interference Status: " << endl;
+    EV << NOW << " D2dChannelModel::computeD2DInterference - Final Band Interference Status: " << endl;
     for (unsigned int i = 0; i < numBands_; i++)
         EV << "\t band " << i << " int[" << (*interference)[i] << "]" << endl;
 

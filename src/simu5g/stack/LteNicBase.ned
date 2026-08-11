@@ -48,7 +48,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
         double processingDelayIn @unit(s) = default(0s);   // additional processing delay for incoming ip packets
         double processingDelayOut @unit(s) = default(0s);   // additional processing delay for outgoing ip packets
 
-        string channelModelType = default("RealisticChannelModel");
+        string channelModelType = default("StochasticChannelModel");
 
         bool dualConnectivityEnabled = default(false);
         int numCarriers = default(1);

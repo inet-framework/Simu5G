@@ -14,7 +14,7 @@
 #define STACK_D2D_PHY_CHANNELMODEL_D2DCHANNELMODEL_H_
 
 #include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
-#include "simu5g/stack/phy/channelmodel/RealisticChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/StochasticChannelModel.h"
 
 namespace simu5g {
 
@@ -22,14 +22,14 @@ using namespace inet;
 using namespace omnetpp;
 
 /**
- * Channel model for D2D-capable NICs: RealisticChannelModel (whose
+ * Channel model for D2D-capable NICs: StochasticChannelModel (whose
  * pathLossType parameter selects the propagation study -- TR 36.814, 36.873
  * or 38.901) plus the ~800 lines of D2D channel math (attenuation, RSRP/SINR,
  * interference and reception decision) layered on top of it.
  *
  * The rcvdSinrD2D signal is owned and interned here, not in the core channel model.
  */
-class D2dChannelModel : public RealisticChannelModel, public ID2dChannelModel
+class D2dChannelModel : public StochasticChannelModel, public ID2dChannelModel
 {
   protected:
     // enable/disable the interference computation for D2D connections
