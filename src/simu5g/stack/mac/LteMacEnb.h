@@ -96,24 +96,23 @@ class LteMacEnb : public LteMacBase
      */
     virtual void sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList);
 
-    /// direction of the grant created by sendGrants() for a scheduled
-    /// connection (default: UL; the NR/D2D MACs derive it from the
-    /// connection's logical CID)
-    virtual Direction grantDirection(LogicalCid lcid) const { return UL; }
+    /// direction of the grant created by sendGrants() for a scheduled connection:
+    /// derived from the BSR's logical CID, so that a grant answering a D2D BSR is
+    /// issued for the D2D direction. Absent the D2D BSR LCIDs this is always UL,
+    /// which is why a non-D2D cell cannot tell the difference.
+    virtual Direction grantDirection(LogicalCid lcid) const { return directionFromBsrLcid(lcid, UL); }
 
     /// length of the grant header prepended to the grant packet
     /// (default: the historical 1-byte length from the .msg file; the NR/D2D
     /// MACs use 1 bit)
     virtual inet::b grantChunkLength() const { return inet::B(1); }
 
-    /// BSR buffer key for a received BSR control element (default: the
-    /// historical direction-agnostic LogicalCid(0); the NR/D2D MACs key by
-    /// the packet LCID so UL and D2D BSRs from one UE stay separate).
-    /// For a non-D2D UE the packet LCID is always SHORT_BSR, so the two
-    /// variants differ only once D2D is in play; and because a MacCid can be
-    /// decomposed again, the LCID can be recovered from the key to tell a UL
-    /// connection from a D2D one.
-    virtual MacCid bsrCeCid(const UserControlInfo *lteInfo) const { return MacCid(lteInfo->getSourceId(), LogicalCid(0)); }
+    /// BSR buffer key for a received BSR control element: keyed by the packet LCID,
+    /// which is what bsrbuf_ documents its key's lcid to be (a BsrType), so UL and
+    /// D2D BSRs from one UE stay separate and the LCID can be recovered from the
+    /// key. For a non-D2D UE the packet LCID is always SHORT_BSR, which is
+    /// LogicalCid(0) -- the same key the direction-agnostic variant produced.
+    virtual MacCid bsrCeCid(const UserControlInfo *lteInfo) const { return MacCid(lteInfo->getSourceId(), lteInfo->getPacketLcid()); }
 
     /**
      * macPduMake() creates MAC PDUs (one for each CID)
