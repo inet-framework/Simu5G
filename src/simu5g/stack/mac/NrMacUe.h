@@ -35,7 +35,7 @@ class NrMacUe : public LteMacUe
     }
 
     /// asynchronous H-ARQ: pick an empty unit within the first available process
-    UnitList reserveTxHarqUnits(LteHarqBufferTx *txBuf) override;
+    UnitList reserveTxHarqUnits(LteHarqBufferTx *txBuf, Direction dir) override;
 
     /**
      * macPduMake() creates MAC PDUs (one for each CID)
