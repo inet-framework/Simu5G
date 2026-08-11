@@ -18,61 +18,19 @@
 namespace simu5g {
 
 /**
- * Replaces the propagation formulas of LteRealisticChannelModel with the ones
- * of TR 36.873, and inherits the rest of the PHY link model from it unchanged --
- * fading, interference, SINR assembly and the reception decision all still come
- * from the base class.
- *
- * - 3GPP TR 36.873, "Study on 3D channel model for LTE", v12.7.0, December 2017
- *
- * The formulas themselves live in a Tr36873PathLossModel strategy, selected by
- * overriding createPathLossModel(); computePathLoss, computeLosProbability and
- * computeAngularAttenuation are thin delegations to it. getAttenuation and the
- * external-cell interference methods are inherited unchanged from
- * LteRealisticChannelModel, which computes both the 3D and 2D distance
- * between the endpoints and passes both down: path loss is evaluated over the
- * 3D distance while the LOS probability and the validity limits remain
- * functions of the 2D distance, so the base-station and UE heights
- * (nodebHeight, ueHeight) enter the result through both, and the antenna
- * pattern gains a vertical component alongside the horizontal one. The
- * external-cell interference path always uses the TR 36.814 formulas, via
- * the base class's pinned extCellPathLoss_, regardless of the study this
- * class's own links use.
+ * Near-empty subclass of LteRealisticChannelModel that overrides nothing in
+ * C++: its NED type exists only to give the gNodeB and NR UE NICs' default
+ * channel model a pathLossType default of "Tr36873" (see NrChannelModel.ned)
+ * instead of the base class's own default of "Tr36814". Every behavior --
+ * the propagation formulas, fading, interference, SINR assembly, the
+ * reception decision -- comes from LteRealisticChannelModel, selected via
+ * the pathLossType parameter.
  *
  * The name records the deployment this model is the default for (the gNodeB and
  * NR UE NICs), not a property of TR 36.873, which is itself an LTE study item.
  */
 class NrChannelModel : public LteRealisticChannelModel
 {
-
-  public:
-    void initialize(int stage) override;
-
-    /*
-     * Compute LOS probability (taken from TR 36.873)
-     *
-     * @param d3D 3D distance between UE and gNodeB
-     * @param d2D 2D distance between UE and gNodeB
-     * @param nodeId MAC node ID of UE
-     */
-    void computeLosProbability(double d3D, double d2D, const LinkKey& key) override;
-
-    /*
-     * Compute the path-loss attenuation according to the selected scenario
-     *
-     * @param threeDimDistance distance between UE and gNodeB (3D)
-     * @param twoDimDistance distance between UE and gNodeB (2D)
-     * @param los line-of-sight flag
-     */
-    double computePathLoss(double threeDimDistance, double twoDimDistance, bool los) override;
-
-  protected:
-
-    /*
-     * Create the strategy object supplying the propagation formulas: the
-     * TR 36.873 ones.
-     */
-    PathLossModel *createPathLossModel() override;
 };
 
 } //namespace

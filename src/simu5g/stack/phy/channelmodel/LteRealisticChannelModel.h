@@ -44,21 +44,26 @@ class PathLossModel;
  *
  * The propagation formulas proper live in a PathLossModel strategy (pathLoss_)
  * that this class owns and delegates to from computePathLoss, computeLosProbability,
- * computeShadowing and computeAngularAttenuation. NrChannelModel and
- * NrChannelModel_3GPP38_901 still override computePathLoss, computeLosProbability
- * and (38.901 only) computeShadowing with their own formula bodies, rather than
- * going through a strategy of their own. All the rest -- fading, interference,
- * SINR assembly, the reception decision -- is inherited unchanged by every one
- * of them.
+ * computeShadowing and computeAngularAttenuation. Which 3GPP propagation study
+ * the strategy implements is chosen by the pathLossType parameter ("Tr36814",
+ * "Tr36873" or "Tr38901"); createPathLossModel() instantiates the matching
+ * strategy class. NrChannelModel and NrChannelModel_3GPP38_901 are near-empty
+ * subclasses that override nothing: they exist only to give the NR NICs'
+ * default channel model a different pathLossType default (Tr36873 and
+ * Tr38901 respectively) than the base class's own default (Tr36814). All the
+ * rest -- fading, interference, SINR assembly, the reception decision -- is
+ * shared by every pathLossType.
  *
- * The formulas here are the 2D, LTE-era ones:
+ * Supported propagation studies:
  * - 3GPP TR 36.814, "Further advancements for E-UTRA physical layer aspects", v9.2.0, March 2017
+ * - 3GPP TR 36.873, "Study on 3D channel model for LTE", v12.7.0, December 2017
+ * - 3GPP TR 38.901, "Study on channel model for frequencies from 0.5 to 100 GHz", v16.1.0, December 2019
  * - 3GPP TS 36.211, "LTE; Physical channels and modulation", v13.2.0, June 2016
  *
- * supporting the Indoor Hotspot (InH), Urban Microcell (UMi), Urban Macrocell
+ * covering the Indoor Hotspot (InH), Urban Microcell (UMi), Urban Macrocell
  * (UMa), Rural Macrocell (RMa) and Suburban Macrocell (SMa) deployment
- * scenarios. NrChannelModel and NrChannelModel_3GPP38_901 replace them with the
- * formulas of TR 36.873 and TR 38.901 respectively.
+ * scenarios (not every study covers every scenario; see the PathLossModel
+ * subclasses).
  *
  * D2D links are not evaluated here. The D2dChannelModel mixin layers them on top
  * of this class or of either of its subclasses.
@@ -332,16 +337,6 @@ class LteRealisticChannelModel : public LteChannelModel
     double computePathLoss(double distance, double dbp, bool los) override;
 
     /*
-     * Compute std deviation of shadowing according to scenario and visibility.
-     * Kept for NrChannelModel_3GPP38_901, whose getStdDev() falls back to this
-     * one for scenarios TR 38.901 does not cover.
-     *
-     * @param dist whether the link's distance is below the scenario's breakpoint
-     * @param nodeid mac node id of UE
-     */
-    virtual double getStdDev(bool dist, const LinkKey& key);
-
-    /*
      * Compute Rayleigh fading
      *
      * @param i index in the trace file
@@ -389,8 +384,7 @@ class LteRealisticChannelModel : public LteChannelModel
 
     /*
      * Create the strategy object supplying the propagation formulas
-     * (pathLoss_). Subclasses select a different 3GPP study by overriding
-     * this to return a different concrete PathLossModel.
+     * (pathLoss_), chosen by the pathLossType parameter.
      */
     virtual PathLossModel *createPathLossModel();
 

@@ -27,6 +27,8 @@ simple LteRealisticChannelModel extends LteChannelModel
     parameters:
         @class("LteRealisticChannelModel");
 
+        string pathLossType @enum("Tr36814","Tr36873","Tr38901") = default("Tr36814"); // which 3GPP propagation study supplies the path loss formulas
+
         // Enable/disable shadowing
         bool shadowing = default(true);
 
@@ -39,6 +41,8 @@ simple LteRealisticChannelModel extends LteChannelModel
         double buildingHeight @unit(m) = default(20m);
         // determines if the UE is inside a building
         bool insideBuilding = default(false);
+        // enable the high-loss building penetration model (table 7.4.3-2 in TR 38.901); only used with pathLossType="Tr38901"
+        bool useBuildingPenetrationHighLossModel = default(false);
 
         double streetWidth @unit(m) = default(20m);
         double ueHeight @unit(m) = default(1.5m);

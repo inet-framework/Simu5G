@@ -23,6 +23,8 @@
 #include "simu5g/stack/phy/LtePhyUe.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
 
 namespace simu5g {
 
@@ -44,7 +46,20 @@ LteRealisticChannelModel::~LteRealisticChannelModel()
 
 PathLossModel *LteRealisticChannelModel::createPathLossModel()
 {
-    return new Tr36814PathLossModel();
+    std::string pathLossType = par("pathLossType").stringValue();
+    if (pathLossType == "Tr36814")
+        return new Tr36814PathLossModel();
+    else if (pathLossType == "Tr36873")
+        return new Tr36873PathLossModel();
+    else if (pathLossType == "Tr38901") {
+        auto *model = new Tr38901PathLossModel();
+        if (inside_building_)
+            useBuildingPenetrationHighLossModel_ = par("useBuildingPenetrationHighLossModel").boolValue();
+        model->setUseBuildingPenetrationHighLossModel(useBuildingPenetrationHighLossModel_);
+        return model;
+    }
+    else
+        throw cRuntimeError("Unrecognized value in 'pathLossType' parameter: \"%s\"", pathLossType.c_str());
 }
 
 void LteRealisticChannelModel::initialize(int stage)
@@ -1267,36 +1282,6 @@ double LteRealisticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
     a.z = 0.0;
     b.z = 0.0;
     return a.distance(b);
-}
-
-double LteRealisticChannelModel::getStdDev(bool dist, const LinkKey& nodeId)
-{
-    switch (scenario_) {
-        case URBAN_MICROCELL:
-        case INDOOR_HOTSPOT:
-            if (losMap_[nodeId])
-                return 3.;
-            else
-                return 4.;
-        case URBAN_MACROCELL:
-            if (losMap_[nodeId])
-                return 4.;
-            else
-                return 6.;
-        case RURAL_MACROCELL:
-        case SUBURBAN_MACROCELL:
-            if (losMap_[nodeId]) {
-                if (dist)
-                    return 4.;
-                else
-                    return 6.;
-            }
-            else
-                return 8.;
-        default:
-            throw cRuntimeError("Wrong path-loss scenario value %d", scenario_);
-    }
-    return 0.0;
 }
 
 bool LteRealisticChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeId, Coord coord, bool isCqi, GHz carrierFrequency,

@@ -22,5 +22,6 @@ simple NrChannelModel extends LteRealisticChannelModel
 {
     parameters:
         @class("NrChannelModel");
+        pathLossType = default("Tr36873");
 }
 
