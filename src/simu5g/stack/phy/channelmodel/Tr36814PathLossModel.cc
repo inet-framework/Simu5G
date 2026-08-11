@@ -91,7 +91,7 @@ double Tr36814PathLossModel::getShadowingStdDev(double d3D, double d2D, bool los
 {
     // Breakpoint distance of the RMa/SMa path loss, the only scenarios whose
     // LOS branch uses different sigma values below and above it.
-    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
     return selectStdDev(d3D < dbp, losState);
 }
 
@@ -167,7 +167,7 @@ double Tr36814PathLossModel::computeUrbanMicro(double d, bool los)
         d = 10;
 
     double dbp = 4 * (hNodeB_ - 1) * (hUe_ - 1)
-        * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+        * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
     if (los) {
         // LOS situation
         if (d > 5000) {
@@ -200,7 +200,7 @@ double Tr36814PathLossModel::computeUrbanMacro(double d, bool los)
         d = 10;
 
     double dbp = 4 * (hNodeB_ - 1) * (hUe_ - 1)
-        * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+        * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
     if (los) {
         if (d > 5000) {
             if (tolerateMaxDistViolation_)
@@ -238,7 +238,7 @@ double Tr36814PathLossModel::computeSubUrbanMacro(double d, double& dbp, bool lo
         d = 10;
 
     dbp = 2 * M_PI * hNodeB_ * hUe_
-        * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+        * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
     if (los) {
         if (d > 5000) {
             if (tolerateMaxDistViolation_)
@@ -281,7 +281,7 @@ double Tr36814PathLossModel::computeRuralMacro(double d, double& dbp, bool los)
         d = 10;
 
     dbp = 2 * M_PI * hNodeB_ * hUe_
-        * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+        * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
     if (los) {
         // LOS situation
         if (d > 10000) {

@@ -49,6 +49,16 @@ class PathLossModel
     double log10CarrierFrequencyGHz_ = 0;
     bool tolerateMaxDistViolation_ = false;
 
+    /*
+     * Propagation velocity in free space, as the breakpoint-distance notes of
+     * all three reports define it. This is the rounded 3.0e8 m/s they write,
+     * not the exact speed of light: the breakpoint distance appears in the
+     * beyond-breakpoint path-loss formulas themselves and not only in the
+     * branch condition, so the two choices differ by about 0.005 dB on every
+     * LOS link past a breakpoint.
+     */
+    static constexpr double PROPAGATION_VELOCITY = 3.0e8;
+
   public:
     virtual ~PathLossModel() {}
 

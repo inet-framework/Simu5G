@@ -85,7 +85,7 @@ double Tr38901PathLossModel::getShadowingStdDev(double d3D, double d2D, bool los
     // the LOS branch of that scenario uses different sigma values below and
     // above it. The comparison uses the 2D distance (Q1), like the base
     // classes' shadowing breakpoint.
-    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
     bool belowBreakpoint = d2D < dbp;
 
     switch (scenario_) {
@@ -185,7 +185,7 @@ double Tr38901PathLossModel::computeUrbanMacro3D(double threeDimDistance, double
     }
     double hNodeB = hNodeB_ - hEnvir;
     double hUe = hUe_ - hEnvir;
-    double dbp = 4 * hNodeB * hUe * (carrierFrequencyHz_  / SPEED_OF_LIGHT);
+    double dbp = 4 * hNodeB * hUe * (carrierFrequencyHz_  / PROPAGATION_VELOCITY);
 
     // Compute LOS path loss
     double pLoss_los = 0.0;
@@ -225,7 +225,7 @@ double Tr38901PathLossModel::computeUrbanMicro3D(double threeDimDistance, double
     double hEnvir = 1.0;
     double hNodeB = hNodeB_ - hEnvir;
     double hUe = hUe_ - hEnvir;
-    double dbp = 4 * hNodeB * hUe * (carrierFrequencyHz_  / SPEED_OF_LIGHT);
+    double dbp = 4 * hNodeB * hUe * (carrierFrequencyHz_  / PROPAGATION_VELOCITY);
 
     // Compute LOS path loss
     double pLoss_los = 0.0;
@@ -268,7 +268,7 @@ double Tr38901PathLossModel::computeRuralMacro3D(double threeDimDistance, double
     }
 
     // Compute break-point distance
-    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_  / SPEED_OF_LIGHT);
+    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_  / PROPAGATION_VELOCITY);
 
     double h = 5.0; // Average building height
     double A = 0.03 * pow(h, 1.72);

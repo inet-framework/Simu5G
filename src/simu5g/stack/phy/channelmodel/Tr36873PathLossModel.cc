@@ -83,7 +83,7 @@ double Tr36873PathLossModel::getShadowingStdDev(double d3D, double d2D, bool los
     // Breakpoint distance of the RMa/SMa path loss, the only scenarios whose
     // LOS branch uses different sigma values below and above it. Unlike
     // TR 36.814, the comparison uses the 2D distance (Q1).
-    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
     return selectStdDev(d2D < dbp, losState);
 }
 
@@ -140,7 +140,7 @@ double Tr36873PathLossModel::computeUrbanMicro3D(double threeDimDistance, double
     // compute break-point distance
     double hNodeB = hNodeB_ - 1.0;
     double hUe = hUe_ - 1.0;
-    double dbp = 4 * hNodeB * hUe * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+    double dbp = 4 * hNodeB * hUe * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
 
     double pLoss_los = 0.0;
     if (twoDimDistance < dbp)
@@ -208,7 +208,7 @@ double Tr36873PathLossModel::computeUrbanMacro3D(double threeDimDistance, double
     double hNodeB = hNodeB_ - hEnvir;
     double hUe = hUe_ - hEnvir;
 
-    double dbp = 4 * hNodeB * hUe * (carrierFrequencyHz_  / SPEED_OF_LIGHT);
+    double dbp = 4 * hNodeB * hUe * (carrierFrequencyHz_  / PROPAGATION_VELOCITY);
 
     double pLoss_los = 0.0;
     if (twoDimDistance < dbp)
@@ -243,7 +243,7 @@ double Tr36873PathLossModel::computeRuralMacro3D(double threeDimDistance, double
                 throw cRuntimeError("Error: rural macrocell path loss model is valid for d < 10000 m");
         }
 
-        double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+        double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
 
         double a1 = (0.03 * pow(hBuilding_, 1.72));
         double b1 = 0.044 * pow(hBuilding_, 1.72);
