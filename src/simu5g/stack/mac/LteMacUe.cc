@@ -262,7 +262,7 @@ int LteMacUe::macSduRequest()
     return numRequestedSdus;
 }
 
-UnitList LteMacUe::reserveTxHarqUnits(LteHarqBufferTx *txBuf)
+UnitList LteMacUe::reserveTxHarqUnits(LteHarqBufferTx *txBuf, Direction dir)
 {
     // synchronous H-ARQ: use the empty units of the current process
     return txBuf->getEmptyUnits(currentHarq_);
@@ -491,6 +491,11 @@ void LteMacUe::macPduMake(MacCid cid)
             MacNodeId destId = pit.first.first;
             Codeword cw = pit.first.second;
 
+            // The direction is read back off the PDU rather than assumed UL: at an LTE
+            // UE createUlMacPdu() stamped UL there, so this is the same value, and the
+            // D2D leg needs the real one for both the buffer and the H-ARQ policy.
+            Direction dir = (Direction)pit.second->getTag<UserControlInfo>()->getDirection();
+
             // Check if the HarqTx buffer already exists for the destId
             // Get a reference for the destId TXBuffer
             LteHarqBufferTx *txBuf;
@@ -500,18 +505,15 @@ void LteMacUe::macPduMake(MacCid cid)
                 txBuf = hit->second;
             }
             else {
-                // the tx buffer does not exist yet for this mac node id, create one.
-                // The direction is read back off the PDU rather than assumed UL: at an
-                // LTE UE createUlMacPdu() stamped UL there, so this is the same value.
+                // the tx buffer does not exist yet for this mac node id, create one
                 // FIXME: hb is never deleted
-                Direction dir = (Direction)pit.second->getTag<UserControlInfo>()->getDirection();
                 LteHarqBufferTx *hb = createTxHarqBuffer(destId, dir);
                 harqTxBuffers[destId] = hb;
                 txBuf = hb;
             }
 
             // search for an empty unit within the current HARQ process
-            UnitList txList = reserveTxHarqUnits(txBuf);
+            UnitList txList = reserveTxHarqUnits(txBuf, dir);
             EV << "LteMacUe::macPduMake - [Used Acid=" << (unsigned int)txList.first << "] , [curr=" << (unsigned int)currentHarq_ << "]" << endl;
 
             auto macPkt = pit.second;

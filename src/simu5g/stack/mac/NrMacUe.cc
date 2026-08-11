@@ -225,7 +225,7 @@ void NrMacUe::handleSelfMessage()
     EV << "--- END UE MAIN LOOP ---" << endl;
 }
 
-UnitList NrMacUe::reserveTxHarqUnits(LteHarqBufferTx *txBuf)
+UnitList NrMacUe::reserveTxHarqUnits(LteHarqBufferTx *txBuf, Direction dir)
 {
     // asynchronous H-ARQ: search for an empty unit within the first available process
     return txBuf->firstAvailable();

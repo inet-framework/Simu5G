@@ -152,7 +152,7 @@ class LteMacUe : public LteMacBase
 
     /// H-ARQ TX unit reservation policy used by macPduMake(): the LTE MAC uses
     /// the synchronous current process; the NR MAC picks the first available one.
-    virtual UnitList reserveTxHarqUnits(LteHarqBufferTx *txBuf);
+    virtual UnitList reserveTxHarqUnits(LteHarqBufferTx *txBuf, Direction dir);
 
     /// end-of-main-loop purge of corrupted PDUs from the RX H-ARQ buffers
     /// (default: none; the D2D MAC purges its DL buffer only, so that mirror
