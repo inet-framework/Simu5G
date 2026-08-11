@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef STACK_D2D_MAC_AMC_AMCD2D_H_
-#define STACK_D2D_MAC_AMC_AMCD2D_H_
+#ifndef STACK_D2D_MAC_AMC_D2DAMC_H_
+#define STACK_D2D_MAC_AMC_D2DAMC_H_
 
 #include <cstring>
 
@@ -33,12 +33,12 @@ namespace simu5g {
  * and the ID2dAmc surface to delegate to it.
  *
  * The concrete Define_Module'd AMCs are:
- *   LteAmcD2D = AmcD2D<LteAmc>
- *   NrAmcD2D  = AmcD2D<NrAmc> (+ the NR-specific getNrMcsTableForDirection
+ *   LteAmcD2D = D2dAmc<LteAmc>
+ *   NrAmcD2D  = D2dAmc<NrAmc> (+ the NR-specific getNrMcsTableForDirection
  *               override, see NrAmcD2D.h)
  */
 template<class Base>
-class AmcD2D : public Base, public ID2dAmc
+class D2dAmc : public Base, public ID2dAmc
 {
   protected:
     // holds the D2D-specific AMC state and logic
@@ -131,7 +131,7 @@ class AmcD2D : public Base, public ID2dAmc
     }
 
   public:
-    AmcD2D() : d2dHelper_(this) {}
+    D2dAmc() : d2dHelper_(this) {}
 
     // ID2dAmc
     void pushFeedbackD2D(MacNodeId id, LteFeedback fb, MacNodeId peerId, GHz carrierFrequency) override
