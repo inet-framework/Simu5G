@@ -76,6 +76,11 @@ class LteMacBase : public cSimpleModule
     friend class LteHarqBufferRx;
     // LteHarqBufferRxD2D needs the protected sendLowerPackets() (like LteHarqBufferRx);
     // LteHarqBufferTxD2D touches no protected LteMacBase member, so it is not a friend.
+    // This is one of the three places the core names a class from the D2D package (the
+    // other two are in LteSchedulerEnb.h, documented there). A name only: no include,
+    // no NED import, no type lookup, so the core still builds with Simu5G_D2D disabled.
+    // Dropping it would mean making sendLowerPackets() public, which would equally
+    // dissolve LteHarqBufferRx's grant -- a core decision, not a D2D one.
     friend class LteHarqBufferRxD2D;
 
   protected:

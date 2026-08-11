@@ -35,7 +35,12 @@ class LteSchedulerEnb : public cSimpleModule
     * Friend classes
     ******************/
 
-    // Lte Scheduler Modules access grants
+    // Scheduling disciplines reach the orchestrator's protected state (mac_, the
+    // allocator bookkeeping, the band-limit and retransmission helpers) through their
+    // eNbScheduler_ back-pointer. Friendship is NOT inherited, so deriving from
+    // LteScheduler does not carry its grant: every discipline needs its own line here.
+    // That is why this list grows with each added discipline, and why an entry cannot
+    // be dropped without promoting the members it uses to public.
     friend class LteScheduler;
     friend class LteDrr;
     friend class LtePf;
@@ -43,9 +48,20 @@ class LteSchedulerEnb : public cSimpleModule
     friend class LteMaxCiMultiband;
     friend class LteMaxCiOptMB;
     friend class LteMaxCiComp;
-    friend class LteAllocatorBestFit;
     friend class QoSAwareScheduler;
-    // shared D2D uplink retransmission helper (see D2dRtxScheduling)
+
+    // The two D2D entries below are the only places the core NAMES a class from the
+    // D2D package. This is a name only -- no include, no NED import, no type lookup --
+    // so the build dependency stays one-way and the core still compiles with the
+    // Simu5G_D2D feature disabled.
+    //
+    // LteAllocatorBestFit is a LteScheduler subclass like the disciplines above, and
+    // needs the same kind of access: mac_, allocatedCws(), getOccupiedBands(),
+    // storeAllocationEnb(), storeScListId().
+    friend class LteAllocatorBestFit;
+    // D2dRtxScheduling is not a discipline but a standalone helper shared by the D2D
+    // uplink schedulers; it holds an LteSchedulerEnb* and touches exactly three
+    // protected members: mac_, applyAllowedBandLimits() and allocateRtxBytes().
     friend class D2dRtxScheduling;
 
   protected:
