@@ -16,6 +16,7 @@
 #include "simu5g/stack/d2d/binder/D2dBinder.h"
 #include "simu5g/stack/d2d/mac/ID2dMacUe.h"
 #include "simu5g/stack/mac/LteMacBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 
 namespace simu5g {
 
@@ -104,6 +105,17 @@ LteD2DMode D2dBinder::getD2DMode(MacNodeId src, MacNodeId dst)
         throw cRuntimeError("D2dBinder::getD2DMode - Node Id not valid. Src %hu Dst %hu", num(src), num(dst));
 
     return d2dPeeringMap_[src][dst];
+}
+
+void D2dBinder::registerD2dPhy(MacNodeId nodeId, PhyBase *phy)
+{
+    d2dPhys_[nodeId] = phy;
+}
+
+PhyBase *D2dBinder::getD2dPhy(MacNodeId nodeId)
+{
+    auto it = d2dPhys_.find(nodeId);
+    return it == d2dPhys_.end() ? nullptr : it->second.get();
 }
 
 void D2dBinder::setD2DMode(MacNodeId src, MacNodeId dst, LteD2DMode mode)
