@@ -1,0 +1,148 @@
+%description:
+
+Path loss of Tr36814PathLossModel, checked against 3GPP TR 36.814 v9.2.0,
+Table B.1.2.1-1, for the InH, UMi, UMa, SMa and RMa deployment scenarios.
+
+All TR 36.814 formulas are functions of a single distance, so the same
+distance is passed as both arguments below. The breakpoint distance uses the
+c = 3.0e8 m/s the specification prescribes.
+
+Each case names the formula of pathloss_reference.py it is to be graded
+against; the formulas themselves are quoted there.
+
+%includes:
+#include "PathLossTestUtil.h"
+#include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+CaseRecorder probe(this, 1e-6);
+Tr36814PathLossModel m;
+ScenarioParams p;
+
+// --- InH, fc = 2 GHz --------------------------------------------------
+p = ScenarioParams();
+p.scenario = INDOOR_HOTSPOT;
+p.hNodeB = 6;
+p.carrierFrequencyGHz = 2.0;
+
+probe.pathLoss("t814_inh", m, p, 10, true);
+probe.pathLoss("t814_inh", m, p, 50, true);
+probe.pathLoss("t814_inh", m, p, 100, true);
+probe.pathLoss("t814_inh", m, p, 10, false);
+probe.pathLoss("t814_inh", m, p, 50, false);
+probe.pathLoss("t814_inh", m, p, 100, false);
+
+// The d2D argument is ignored: same 3D distance, different 2D distance.
+p.apply(m, this);
+probe.record("t814_inh", p, { { "d", 50 }, { "los", 1 } }, m.computePathLoss(50, 7, true));
+
+// Distances far outside the validity range of the scenario are rejected.
+probe.expectRejected("InH LOS d=1 rejected",    [&]() { m.computePathLoss(1, 1, true); });
+probe.expectRejected("InH LOS d=300 rejected",  [&]() { m.computePathLoss(300, 300, true); });
+probe.expectRejected("InH NLOS d=1 rejected",   [&]() { m.computePathLoss(1, 1, false); });
+probe.expectRejected("InH NLOS d=300 rejected", [&]() { m.computePathLoss(300, 300, false); });
+
+// --- UMi, hBS = 10 m, hUT = 1.5 m, fc = 2 GHz -------------------------
+// d'BP = 4 (hBS-1)(hUT-1) fc/c = 120.000 m.
+p = ScenarioParams();
+p.scenario = URBAN_MICROCELL;
+p.hNodeB = 10;
+p.hUe = 1.5;
+p.carrierFrequencyGHz = 2.0;
+
+probe.pathLoss("t814_umi_los",  m, p, 20, true);      // below d'BP
+probe.pathLoss("t814_umi_los",  m, p, 100, true);     // below d'BP
+probe.pathLoss("t814_umi_los",  m, p, 1000, true);    // above d'BP
+probe.pathLoss("t814_umi_nlos", m, p, 20, false);
+probe.pathLoss("t814_umi_nlos", m, p, 100, false);
+probe.pathLoss("t814_umi_nlos", m, p, 1000, false);
+
+// Below 10 m the distance is clamped to 10 m.
+p.apply(m, this);
+probe.record("t814_umi_los", p, { { "d", 10 } }, m.computePathLoss(5, 5, true));
+
+probe.expectRejected("UMi LOS d=6000 rejected",  [&]() { m.computePathLoss(6000, 6000, true); });
+probe.expectRejected("UMi NLOS d=6000 rejected", [&]() { m.computePathLoss(6000, 6000, false); });
+
+// --- UMa, hBS = 25 m, hUT = 1.5 m, fc = 2 GHz, W = 20 m, h = 20 m -----
+// d'BP = 4 (hBS-1)(hUT-1) fc/c = 320.000 m.
+p = ScenarioParams();
+p.scenario = URBAN_MACROCELL;
+p.hNodeB = 25;
+p.hUe = 1.5;
+p.hBuilding = 20;
+p.wStreet = 20;
+p.carrierFrequencyGHz = 2.0;
+
+probe.pathLoss("t814_uma_los",    m, p, 20, true);      // below d'BP
+probe.pathLoss("t814_uma_los",    m, p, 100, true);     // below d'BP
+probe.pathLoss("t814_uma_los",    m, p, 1000, true);    // above d'BP
+probe.pathLoss("t814_macro_nlos", m, p, 100, false);
+probe.pathLoss("t814_macro_nlos", m, p, 1000, false);
+
+probe.expectRejected("UMa LOS d=6000 rejected",  [&]() { m.computePathLoss(6000, 6000, true); });
+probe.expectRejected("UMa NLOS d=6000 rejected", [&]() { m.computePathLoss(6000, 6000, false); });
+
+// With tolerateMaxDistViolation the model reports a fixed 1000 dB instead, a
+// Simu5G convention with no formula behind it.
+p.tolerateMaxDistViolation = true;
+p.apply(m, this);
+probe.expectValue("UMa LOS d=6000 tolerated",  m.computePathLoss(6000, 6000, true),  1000.0);
+probe.expectValue("UMa NLOS d=6000 tolerated", m.computePathLoss(6000, 6000, false), 1000.0);
+
+// --- SMa, hBS = 35 m, hUT = 1.5 m, fc = 2 GHz, W = 20 m, h = 10 m -----
+// dBP = 2 pi hBS hUT fc/c = 2199.115 m.
+p = ScenarioParams();
+p.scenario = SUBURBAN_MACROCELL;
+p.hNodeB = 35;
+p.hUe = 1.5;
+p.hBuilding = 10;
+p.wStreet = 20;
+p.carrierFrequencyGHz = 2.0;
+
+probe.pathLoss("t814_rma_sma_los", m, p, 100, true);     // below dBP
+probe.pathLoss("t814_rma_sma_los", m, p, 500, true);     // below dBP
+probe.pathLoss("t814_rma_sma_los", m, p, 3000, true);    // above dBP
+probe.pathLoss("t814_macro_nlos",  m, p, 500, false);
+probe.pathLoss("t814_macro_nlos",  m, p, 3000, false);
+
+probe.expectRejected("SMa NLOS d=6000 rejected", [&]() { m.computePathLoss(6000, 6000, false); });
+
+// --- RMa, hBS = 35 m, hUT = 1.5 m, fc = 0.8 GHz, W = 20 m, h = 5 m ----
+// dBP = 2 pi hBS hUT fc/c = 879.646 m.
+p = ScenarioParams();
+p.scenario = RURAL_MACROCELL;
+p.hNodeB = 35;
+p.hUe = 1.5;
+p.hBuilding = 5;
+p.wStreet = 20;
+p.carrierFrequencyGHz = 0.8;
+
+probe.pathLoss("t814_rma_sma_los", m, p, 100, true);     // below dBP
+probe.pathLoss("t814_rma_sma_los", m, p, 500, true);     // below dBP
+probe.pathLoss("t814_rma_sma_los", m, p, 3000, true);    // above dBP
+probe.pathLoss("t814_macro_nlos",  m, p, 500, false);
+probe.pathLoss("t814_macro_nlos",  m, p, 3000, false);
+
+probe.expectRejected("RMa LOS d=11000 rejected", [&]() { m.computePathLoss(11000, 11000, true); });
+probe.expectRejected("RMa NLOS d=6000 rejected", [&]() { m.computePathLoss(6000, 6000, false); });
+
+probe.summary();
+
+%postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt
+
+%contains: verdict.txt
+graded=29 failures=0
+
+%contains: stdout
+modelchecks=13 modelfailures=0
+
+%not-contains: verdict.txt
+FAILED
+
+%not-contains: stdout
+FAILED

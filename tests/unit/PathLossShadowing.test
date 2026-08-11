@@ -1,0 +1,141 @@
+%description:
+
+Shadowing standard deviation of the three path-loss models, checked against
+the sigma_SF column of 3GPP TR 36.814 v9.2.0 Table B.1.2.1-1,
+TR 36.873 v12.7.0 Table 7.3-6 and TR 38.901 v16.1.0 Table 7.4.1-1.
+
+Most entries are constants selected by scenario and LOS state. The RMa and
+SMa LOS entries are the exception: sigma_SF is 4 dB up to the breakpoint
+distance of the corresponding path-loss formula and 6 dB beyond it.
+
+Each model computes that breakpoint with the same formula its own RMa/SMa path
+loss uses, so the two agree on which side of it a link falls.
+
+Each case names the formula of pathloss_reference.py it is to be graded
+against; the formulas themselves are quoted there.
+
+%includes:
+#include "PathLossTestUtil.h"
+#include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+CaseRecorder probe(this, 0.0);
+ScenarioParams p;
+
+// =================== TR 36.814 ========================================
+Tr36814PathLossModel m814;
+
+p = ScenarioParams();
+p.scenario = INDOOR_HOTSPOT;
+probe.shadowingStdDev("t814_sigma_inh", m814, p, 50, true);
+probe.shadowingStdDev("t814_sigma_inh", m814, p, 50, false);
+
+p.scenario = URBAN_MICROCELL;
+probe.shadowingStdDev("t814_sigma_umi", m814, p, 100, true);
+probe.shadowingStdDev("t814_sigma_umi", m814, p, 100, false);
+
+p.scenario = URBAN_MACROCELL;
+probe.shadowingStdDev("t814_sigma_uma", m814, p, 100, true);
+probe.shadowingStdDev("t814_sigma_uma", m814, p, 100, false);
+
+// RMa: sigma is 4 dB below and 6 dB above the LOS breakpoint distance
+// dBP = 2 pi hBS hUT fc/c = 879.646 m for the parameters below; NLOS is 8 dB
+// at any distance.
+p = ScenarioParams();
+p.scenario = RURAL_MACROCELL;
+p.hNodeB = 35;
+p.hUe = 1.5;
+p.carrierFrequencyGHz = 0.8;
+probe.shadowingStdDev("t814_sigma_rma", m814, p, 100, true);    // below dBP
+probe.shadowingStdDev("t814_sigma_rma", m814, p, 3000, true);   // above dBP
+probe.shadowingStdDev("t814_sigma_rma", m814, p, 100, false);
+probe.shadowingStdDev("t814_sigma_rma", m814, p, 500, true);    // below dBP
+probe.shadowingStdDev("t814_sigma_rma", m814, p, 3000, false);
+
+// SMa: dBP = 2199.115 m for the parameters below.
+p.scenario = SUBURBAN_MACROCELL;
+p.carrierFrequencyGHz = 2.0;
+probe.shadowingStdDev("t814_sigma_sma", m814, p, 100, true);    // below dBP
+probe.shadowingStdDev("t814_sigma_sma", m814, p, 5000, true);   // above dBP
+probe.shadowingStdDev("t814_sigma_sma", m814, p, 500, true);    // below dBP
+probe.shadowingStdDev("t814_sigma_sma", m814, p, 2000, true);   // below dBP
+probe.shadowingStdDev("t814_sigma_sma", m814, p, 100, false);
+
+// =================== TR 36.873 ========================================
+Tr36873PathLossModel m873;
+
+p = ScenarioParams();
+p.scenario = URBAN_MICROCELL;
+probe.shadowingStdDev("t873_sigma_umi", m873, p, 100.4, 100, true);
+probe.shadowingStdDev("t873_sigma_umi", m873, p, 100.4, 100, false);
+
+p.scenario = URBAN_MACROCELL;
+probe.shadowingStdDev("t873_sigma_uma", m873, p, 102.7, 100, true);
+probe.shadowingStdDev("t873_sigma_uma", m873, p, 102.7, 100, false);
+
+p = ScenarioParams();
+p.scenario = RURAL_MACROCELL;
+p.hNodeB = 35;
+p.hUe = 1.5;
+p.carrierFrequencyGHz = 0.8;
+probe.shadowingStdDev("t873_sigma_rma", m873, p, 105.6, 100, true);     // below dBP
+probe.shadowingStdDev("t873_sigma_rma", m873, p, 305.6, 300, true);     // below dBP
+probe.shadowingStdDev("t873_sigma_rma", m873, p, 501.1, 500, true);     // below dBP
+probe.shadowingStdDev("t873_sigma_rma", m873, p, 800.7, 800, true);     // below dBP
+probe.shadowingStdDev("t873_sigma_rma", m873, p, 3000.2, 3000, true);   // above dBP
+probe.shadowingStdDev("t873_sigma_rma", m873, p, 3000.2, 3000, false);
+
+// =================== TR 38.901 ========================================
+Tr38901PathLossModel m901;
+
+p = ScenarioParams();
+p.scenario = INDOOR_HOTSPOT;
+probe.shadowingStdDev("t901_sigma_inh", m901, p, 30, true);
+probe.shadowingStdDev("t901_sigma_inh", m901, p, 30, false);
+
+p.scenario = URBAN_MICROCELL;
+probe.shadowingStdDev("t901_sigma_umi", m901, p, 100.4, 100, true);
+probe.shadowingStdDev("t901_sigma_umi", m901, p, 100.4, 100, false);
+
+p.scenario = URBAN_MACROCELL;
+probe.shadowingStdDev("t901_sigma_uma", m901, p, 102.7, 100, true);
+probe.shadowingStdDev("t901_sigma_uma", m901, p, 102.7, 100, false);
+
+// TR 38.901 computes the RMa breakpoint as dBP = 2 pi hBS hUT fc/c,
+// which is 879.646 m for the parameters below.
+p = ScenarioParams();
+p.scenario = RURAL_MACROCELL;
+p.hNodeB = 35;
+p.hUe = 1.5;
+p.carrierFrequencyGHz = 0.8;
+probe.shadowingStdDev("t901_sigma_rma", m901, p, 105.6, 100, true);     // below dBP
+probe.shadowingStdDev("t901_sigma_rma", m901, p, 501.1, 500, true);     // below dBP
+probe.shadowingStdDev("t901_sigma_rma", m901, p, 3000.2, 3000, true);   // above dBP
+probe.shadowingStdDev("t901_sigma_rma", m901, p, 105.6, 100, false);
+probe.shadowingStdDev("t901_sigma_rma", m901, p, 3000.2, 3000, false);
+
+// Scenarios TR 38.901 does not cover fall through to the shared sigma table.
+p = ScenarioParams();
+p.scenario = SUBURBAN_MACROCELL;
+p.hNodeB = 35;
+p.hUe = 1.5;
+p.carrierFrequencyGHz = 2.0;
+p.apply(m901, this);
+probe.record("t814_sigma_sma", p, { {"d", 500}, {"los", 0} }, m901.getShadowingStdDev(501.1, 500, false));
+
+%postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt
+
+%contains: verdict.txt
+graded=38 failures=0
+
+%not-contains: verdict.txt
+FAILED
+
+%not-contains: stdout
+FAILED

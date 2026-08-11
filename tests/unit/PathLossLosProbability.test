@@ -1,0 +1,160 @@
+%description:
+
+LOS probability of the three path-loss models, checked against
+3GPP TR 36.814 v9.2.0 Table B.1.2.1-2, TR 36.873 v12.7.0 Table 7.2-2 and
+TR 38.901 v16.1.0 Table 7.4.2-1.
+
+TR 36.814 evaluates the LOS probability over the 3D distance, TR 36.873 and
+TR 38.901 over the 2D distance, so the two distances are passed independently
+below.
+
+Each case names the formula of pathloss_reference.py it is to be graded
+against; the formulas themselves are quoted there.
+
+%includes:
+#include "PathLossTestUtil.h"
+#include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+CaseRecorder probe(this, 1e-8);
+ScenarioParams p;
+
+// =================== TR 36.814 ========================================
+Tr36814PathLossModel m814;
+
+// --- InH ---------------------------------------------------------------
+p = ScenarioParams();
+p.scenario = INDOOR_HOTSPOT;
+
+probe.losProbability("t814_p_los_inh", m814, p, 5);
+probe.losProbability("t814_p_los_inh", m814, p, 17);
+probe.losProbability("t814_p_los_inh", m814, p, 18);
+probe.losProbability("t814_p_los_inh", m814, p, 25);
+probe.losProbability("t814_p_los_inh", m814, p, 36);
+probe.losProbability("t814_p_los_inh", m814, p, 37);
+probe.losProbability("t814_p_los_inh", m814, p, 100);
+
+// --- UMi and UMa ---------------------------------------------------------
+p = ScenarioParams();
+p.scenario = URBAN_MICROCELL;
+
+probe.losProbability("t814_p_los_umi", m814, p, 10);
+probe.losProbability("t814_p_los_umi", m814, p, 18);
+probe.losProbability("t814_p_los_umi", m814, p, 50);
+probe.losProbability("t814_p_los_umi", m814, p, 200);
+
+p.scenario = URBAN_MACROCELL;
+
+probe.losProbability("t814_p_los_uma", m814, p, 10);
+probe.losProbability("t814_p_los_uma", m814, p, 18);
+probe.losProbability("t814_p_los_uma", m814, p, 50);
+probe.losProbability("t814_p_los_uma", m814, p, 200);
+
+// The 2D distance is ignored: same 3D distance, different 2D distance.
+p.apply(m814, this);
+probe.record("t814_p_los_uma", p, { {"d", 50} }, m814.computeLosProbability(50, 7));
+
+// --- RMa and SMa ---------------------------------------------------------
+p = ScenarioParams();
+p.scenario = RURAL_MACROCELL;
+
+probe.losProbability("t814_p_los_rma", m814, p, 5);
+probe.losProbability("t814_p_los_rma", m814, p, 10);
+probe.losProbability("t814_p_los_rma", m814, p, 100);
+probe.losProbability("t814_p_los_rma", m814, p, 500);
+
+p.scenario = SUBURBAN_MACROCELL;
+
+probe.losProbability("t814_p_los_sma", m814, p, 5);
+probe.losProbability("t814_p_los_sma", m814, p, 10);
+probe.losProbability("t814_p_los_sma", m814, p, 100);
+probe.losProbability("t814_p_los_sma", m814, p, 500);
+
+// =================== TR 36.873 ========================================
+Tr36873PathLossModel m873;
+
+// --- 3D-UMi ------------------------------------------------------------
+p = ScenarioParams();
+p.scenario = URBAN_MICROCELL;
+
+probe.losProbability("t873_p_los_umi", m873, p, 10.1, 10);
+probe.losProbability("t873_p_los_umi", m873, p, 18.1, 18);
+probe.losProbability("t873_p_los_umi", m873, p, 50.1, 50);
+probe.losProbability("t873_p_los_umi", m873, p, 200.1, 200);
+
+// --- 3D-UMa ------------------------------------------------------------
+p.scenario = URBAN_MACROCELL;
+p.hUe = 1.5;
+
+probe.losProbability("t873_p_los_uma", m873, p, 18.1, 18);
+probe.losProbability("t873_p_los_uma", m873, p, 50.1, 50);
+probe.losProbability("t873_p_los_uma", m873, p, 200.1, 200);
+
+p.hUe = 18;
+
+probe.losProbability("t873_p_los_uma", m873, p, 50.1, 50);
+probe.losProbability("t873_p_los_uma", m873, p, 200.1, 200);
+
+// --- RMa ---------------------------------------------------------------
+p = ScenarioParams();
+p.scenario = RURAL_MACROCELL;
+
+probe.losProbability("t873_p_los_rma", m873, p, 5.1, 5);
+probe.losProbability("t873_p_los_rma", m873, p, 10.1, 10);
+probe.losProbability("t873_p_los_rma", m873, p, 100.1, 100);
+probe.losProbability("t873_p_los_rma", m873, p, 1000.1, 1000);
+
+// --- Scenarios TR 36.873 does not cover fall through to TR 36.814 -------
+// InH is evaluated by the TR 36.814 formula, fed the 3D distance.
+p.scenario = INDOOR_HOTSPOT;
+p.apply(m873, this);
+probe.record("t814_p_los_inh", p, { {"d", 25} }, m873.computeLosProbability(25, 20));
+
+// =================== TR 38.901 ========================================
+Tr38901PathLossModel m901;
+
+// UMi, UMa and RMa are unchanged from TR 36.873.
+p = ScenarioParams();
+p.scenario = URBAN_MICROCELL;
+probe.losProbability("t901_p_los_umi", m901, p, 50.1, 50);
+
+p.scenario = URBAN_MACROCELL;
+p.hUe = 1.5;
+probe.losProbability("t901_p_los_uma", m901, p, 50.1, 50);
+
+p.hUe = 18;
+probe.losProbability("t901_p_los_uma", m901, p, 200.1, 200);
+
+p = ScenarioParams();
+p.scenario = RURAL_MACROCELL;
+probe.losProbability("t901_p_los_rma", m901, p, 1000.1, 1000);
+
+// --- InH (Indoor - Open office) ----------------------------------------
+// The two branches do not quite meet: the first ends at exp(-44/70.8) =
+// 0.5372 and the second starts at 0.54, a step the report leaves in.
+p.scenario = INDOOR_HOTSPOT;
+
+probe.losProbability("t901_p_los_inh", m901, p, 3.1, 3);
+probe.losProbability("t901_p_los_inh", m901, p, 5.1, 5);
+probe.losProbability("t901_p_los_inh", m901, p, 20.1, 20);
+probe.losProbability("t901_p_los_inh", m901, p, 49.1, 49);
+probe.losProbability("t901_p_los_inh", m901, p, 50.1, 50);
+probe.losProbability("t901_p_los_inh", m901, p, 100.1, 100);
+probe.losProbability("t901_p_los_inh", m901, p, 200.1, 200);
+
+%postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt
+
+%contains: verdict.txt
+graded=49 failures=0
+
+%not-contains: verdict.txt
+FAILED
+
+%not-contains: stdout
+FAILED

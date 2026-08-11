@@ -33,11 +33,60 @@ lib/ holds header-only helpers shared by several tests; it is on the include
 path of every test, but it is not a compiled library and must stay
 header-only.
 
-The expected values of the path-loss tests are not recorded from the model:
-pathloss_reference.py transcribes the 3GPP formulas independently and prints
-every value the tests use, grouped by test file. Run it to re-derive them, or
-to work out the value of a new case; the formula belongs in a comment next to
-the check it justifies.
+Expected values of the path-loss tests
+--------------------------------------
+
+They are not recorded from the model, and they are not written down at all.
+Each of those tests reports every data point it checks as a record on its
+standard output, naming the formula of pathloss_reference.py -- an independent
+transcription of the 3GPP formulas -- that says what the model ought to have
+returned:
+
+    #CASE ref=t901_umi_los scenario=URBAN_MICROCELL hBS=10 hUT=1.5 h=20 W=20
+          fc=3.5 d3D=21.5 d2D=20 los=1 actual=71.26256854523322 tol=1e-06
+
+A %postrun-command then grades the run and writes a line per case, and a
+"graded=N failures=M" summary, to verdict.txt, which the test matches on:
+
+    ./pathloss_reference.py --grade work/Tr38901PathLoss/test.out
+
+So a data point is defined once, by the call in the .test file that produces
+it, and there is nothing to keep in sync. The script is given the inputs of a
+case and never its output, which is what keeps it an independent statement of
+what the specification requires.
+
+Writing a case
+--------------
+
+Add the call, name the formula to grade it against, and bump the graded= count
+in the %contains section:
+
+    probe.pathLoss("t901_umi_los", m, p, 21.5, 20, true);
+
+To work out what a new case should produce, just run it: the failure line
+prints what the specification says it should have been.
+
+The grader evaluates the named formula at those of the reported parameters
+that the formula declares. A quantity a report fixes rather than reads -- the
+average building height of the TR 38.901 rural scenario, say -- is a constant
+inside the transcribed formula and not a parameter of it, so what the test
+sets hBuilding to never reaches it. Conversely a parameter the formula
+declares and the record does not report is a graded failure, so a renamed
+parameter cannot silently go ungraded.
+
+Where the formula has to be evaluated at arguments other than the ones the
+model was called with -- a case that checks an argument is clamped, or one
+whose result is a difference of two calls -- the test calls record() and
+states those arguments explicitly, with a comment saying why.
+
+Checks that have no reference value, because the specification gives no
+formula for them, are decided in the test instead: expectRejected() for a
+distance outside the validity range, expectValue() for a convention of the
+model such as the 1000 dB tolerated-violation sentinel. Those are counted
+separately, in the modelchecks= line on stdout.
+
+When the model and the script disagree, the script is right until the
+specification says otherwise. Do not adjust it to make a test pass.
 
 Expected failures
 -----------------
