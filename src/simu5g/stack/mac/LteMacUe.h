@@ -121,6 +121,26 @@ class LteMacUe : public LteMacBase
     /// Whether a BSR is waiting to be sent (checked in macPduMake() before appending a BSR control element).
     virtual bool isBsrPending() const { return bsrTriggered_; }
 
+    // ---- macPduMake() seams ----
+    // macPduMake() is shared by every UE MAC (LTE, NR and the D2D mixin); the
+    // points where those differ are the virtuals below. Each default is the plain
+    // LTE UE's behavior.
+
+    /// Builds a standalone BSR-only PDU when a grant arrives with an empty schedule
+    /// list, and returns whether it did; if so, macPduMake() skips the SDU loop.
+    /// The plain LTE UE never builds one.
+    virtual bool buildStandaloneBsr() { return false; }
+
+    /// The destination of an UL MAC PDU carrying this connection. Needed before the
+    /// PDU exists, since it keys macPduList_. At an LTE UE it is always the cell.
+    virtual MacNodeId pduDestId(MacCid destCid) { return getMacCellId(); }
+
+    /// Whether a schedule-list entry that carries no SDUs should be skipped.
+    virtual bool shouldSkipScheduleEntry(unsigned int sduPerCid) const { return false; }
+
+    /// Creates an UL MAC PDU and fills in its control info.
+    virtual inet::Packet *createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId destId);
+
     /// Appends a BSR control element reporting the given buffer occupancy to the MAC PDU
     /// and resets the BSR trigger state. Called from macPduMake() when isBsrPending().
     virtual void appendBsr(inet::Ptr<LteMacPdu> macPdu, int size);
