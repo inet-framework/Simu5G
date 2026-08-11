@@ -32,7 +32,7 @@ module LteNicUeD2D extends LteNicUe
         rrc.bearerManagement.lteRlcUmEntityModuleType = default("simu5g.stack.d2d.rlc.LteRlcUmEntityD2D");
 
         // use the D2D-capable channel model
-        lteChannelModelType = default("D2dChannelModel");
+        channelModelType = default("D2dChannelModel");
 
         rrc.typename = default("RrcD2D");
         rrc.handoverController.typename = default("HandoverControllerD2D");

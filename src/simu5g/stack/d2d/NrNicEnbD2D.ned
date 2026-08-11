@@ -32,7 +32,7 @@ module NrNicEnbD2D extends NrNicEnb
 
         // use the D2D-capable channel model (matching the NrNicEnb default of
         // TR 38.901 on the gNodeB's channelModel slot)
-        lteChannelModelType = default("D2dChannelModel");
+        channelModelType = default("D2dChannelModel");
         channelModel[*].pathLossType = default("Tr38901");
         rrc.typename = default("RrcD2D");
         rrc.hasD2DModeSelection = true;

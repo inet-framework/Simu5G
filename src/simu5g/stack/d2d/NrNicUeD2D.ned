@@ -42,7 +42,7 @@ module NrNicUeD2D extends NrNicUe
 
         // use the D2D-capable channel model on both legs (matching the
         // pre-separation defaults: TR 36.814 on the LTE leg, TR 38.901 on the NR leg)
-        lteChannelModelType = default("D2dChannelModel");
+        channelModelType = default("D2dChannelModel");
         nrChannelModelType = default("D2dChannelModel");
         nrChannelModel[*].pathLossType = default("Tr38901");
 
