@@ -88,9 +88,9 @@ double Tr36814PathLossModel::computeLosProbability(double d3D, double d2D)
 
 double Tr36814PathLossModel::getShadowingStdDev(double d3D, double d2D, bool losState)
 {
-    // Breakpoint distance of the RMa/SMa path loss; the LOS branch of those
-    // scenarios uses different sigma values below and above it.
-    double dbp = 4 * (hNodeB_ - 1) * (hUe_ - 1) * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
+    // Breakpoint distance of the RMa/SMa path loss, the only scenarios whose
+    // LOS branch uses different sigma values below and above it.
+    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
     return selectStdDev(d3D < dbp, losState);
 }
 
@@ -236,7 +236,7 @@ double Tr36814PathLossModel::computeSubUrbanMacro(double d, double& dbp, bool lo
     if (d < 10)
         d = 10;
 
-    dbp = 4 * (hNodeB_ - 1) * (hUe_ - 1)
+    dbp = 2 * M_PI * hNodeB_ * hUe_
         * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
     if (los) {
         if (d > 5000) {
@@ -248,7 +248,7 @@ double Tr36814PathLossModel::computeSubUrbanMacro(double d, double& dbp, bool lo
         double a1 = (0.03 * pow(hBuilding_, 1.72));
         double b1 = 0.044 * pow(hBuilding_, 1.72);
         double a = (a1 < 10) ? a1 : 10;
-        double b = (b1 < 14.72) ? b1 : 14.72;
+        double b = (b1 < 14.77) ? b1 : 14.77;
         if (d < dbp) {
             double first = 20 * log10((40 * M_PI * d * carrierFrequencyGHz_) / 3);
             double second = a * log10(d);
@@ -279,7 +279,7 @@ double Tr36814PathLossModel::computeRuralMacro(double d, double& dbp, bool los)
     if (d < 10)
         d = 10;
 
-    dbp = 4 * (hNodeB_ - 1) * (hUe_ - 1)
+    dbp = 2 * M_PI * hNodeB_ * hUe_
         * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
     if (los) {
         // LOS situation
@@ -293,7 +293,7 @@ double Tr36814PathLossModel::computeRuralMacro(double d, double& dbp, bool los)
         double a1 = (0.03 * pow(hBuilding_, 1.72));
         double b1 = 0.044 * pow(hBuilding_, 1.72);
         double a = (a1 < 10) ? a1 : 10;
-        double b = (b1 < 14.72) ? b1 : 14.72;
+        double b = (b1 < 14.77) ? b1 : 14.77;
         if (d < dbp)
             return 20 * log10((40 * M_PI * d * carrierFrequencyGHz_) / 3)
                    + a * log10(d) - b + 0.002 * log10(hBuilding_) * d;
