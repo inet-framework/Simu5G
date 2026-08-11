@@ -106,19 +106,6 @@ LteD2DMode D2dBinder::getD2DMode(MacNodeId src, MacNodeId dst)
     return d2dPeeringMap_[src][dst];
 }
 
-bool D2dBinder::isFrequencyReuseEnabled(MacNodeId nodeId)
-{
-    // a d2d-enabled UE can use frequency reuse if it can communicate using DM with all its peers
-    // in fact, the scheduler does not know to which UE it will communicate when it grants some RBs
-    if (!containsKey(d2dPeeringMap_, nodeId) || d2dPeeringMap_[nodeId].empty())
-        return false;
-
-    for (const auto& [_, mode] : d2dPeeringMap_[nodeId])
-        if (mode == IM)
-            return false;
-    return true;
-}
-
 void D2dBinder::setD2DMode(MacNodeId src, MacNodeId dst, LteD2DMode mode)
 {
     d2dPeeringMap_[src][dst] = mode;
