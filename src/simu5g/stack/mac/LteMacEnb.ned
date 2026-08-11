@@ -75,6 +75,10 @@ module LteMacEnb extends LteMacBase
         //# eNb Scheduler Parameters
         //#
         // Scheduling discipline. See LteCommon.h for discipline meaning.
+        // ALLOCATOR_BESTFIT is the D2D frequency-reuse allocator: it is only
+        // constructible by the D2D uplink schedulers, so selecting it requires
+        // ulSchedulerType = LteSchedulerEnbUlD2D or NrSchedulerGnbUlD2D (and hence
+        // the Simu5G_D2D feature). Any other scheduler raises an error at setup.
         string schedulingDisciplineDl @enum(DRR,PF,MAXCI,MAXCI_MB,MAXCI_OPT_MB,MAXCI_COMP,ALLOCATOR_BESTFIT,QOS_PF) = default("MAXCI");
         string schedulingDisciplineUl @enum(DRR,PF,MAXCI,MAXCI_MB,MAXCI_OPT_MB,MAXCI_COMP,ALLOCATOR_BESTFIT,QOS_PF) = default("MAXCI");
 
