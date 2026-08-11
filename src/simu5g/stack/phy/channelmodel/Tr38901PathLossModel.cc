@@ -70,7 +70,7 @@ double Tr38901PathLossModel::computeLosProbability(double d3D, double d2D)
             else if (d <= 49.0)
                 p = exp(-1 * (d - 5.0) / 70.8);
             else
-                p = exp(-1 * (d - 49.0) / 211.7);
+                p = 0.54 * exp(-1 * (d - 49.0) / 211.7);
             break;
         default:
             return Tr36873PathLossModel::computeLosProbability(d3D, d2D);
