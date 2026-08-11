@@ -91,8 +91,11 @@ double Tr36814PathLossModel::getShadowingStdDev(double d3D, double d2D, bool los
     // Breakpoint distance of the RMa/SMa path loss; the LOS branch of those
     // scenarios uses different sigma values below and above it.
     double dbp = 4 * (hNodeB_ - 1) * (hUe_ - 1) * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
-    bool belowBreakpoint = d3D < dbp;
+    return selectStdDev(d3D < dbp, losState);
+}
 
+double Tr36814PathLossModel::selectStdDev(bool belowBreakpoint, bool losState)
+{
     switch (scenario_) {
         case URBAN_MICROCELL:
         case INDOOR_HOTSPOT:

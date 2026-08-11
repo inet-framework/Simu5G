@@ -51,14 +51,6 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
     void computeLosProbability(double d, const LinkKey& key) override;
 
     /*
-     * Compute the building penetration loss for indoor UE
-     * See section 7.4.3 of TR 38.901
-     *
-     * @param threeDimDistance distance between UE and gNodeB (3D)
-     */
-    virtual double computePenetrationLoss(double threeDimDistance);
-
-    /*
      * Compute the path-loss attenuation according to the selected scenario
      *
      * @param threeDimDistance distance between UE and gNodeB (3D)
@@ -66,46 +58,6 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      * @param los line-of-sight flag
      */
     double computePathLoss(double threeDimDistance, double twoDimDistance, bool los) override;
-
-    /*
-     * UMa path loss model (taken from TR 38.901)
-     *
-     * @param threeDimDistance distance between UE and gNodeB
-     * @param los line-of-sight flag
-     */
-    virtual double computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los);
-
-    /*
-     * UMi path loss model (taken from TR 38.901)
-     *
-     * @param threeDimDistance distance between UE and gNodeB
-     * @param los line-of-sight flag
-     */
-    virtual double computeUrbanMicro3D(double threeDimDistance, double twoDimDistance, bool los);
-
-    /*
-     * UMa path loss model (taken from TR 38.901)
-     *
-     * @param threeDimDistance distance between UE and gNodeB
-     * @param los line-of-sight flag
-     */
-    virtual double computeRuralMacro3D(double threeDimDistance, double twoDimDistance, bool los);
-
-    /*
-     * InH path loss model (taken from TR 38.901)
-     *
-     * @param threeDimDistance distance between UE and gNodeB
-     * @param los line-of-sight flag
-     */
-    virtual double computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los);
-
-    /*
-     * Compute std deviation of shadowing according to scenario and visibility
-     *
-     * @param sqrDistance distance between UE and gNodeB
-     * @param nodeId mac node id of UE
-     */
-    double getStdDev(bool dist, const LinkKey& key) override;
 
     /*
      * Compute shadowing
@@ -116,6 +68,13 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
      */
     double computeShadowing(double sqrDistance, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl) override;
 
+  protected:
+
+    /*
+     * Create the strategy object supplying the propagation formulas: the
+     * TR 38.901 ones.
+     */
+    PathLossModel *createPathLossModel() override;
 };
 
 } //namespace

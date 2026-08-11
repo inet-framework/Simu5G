@@ -34,6 +34,16 @@ class Tr36814PathLossModel : public PathLossModel
     double computeLosProbability(double d3D, double d2D) override;
     double getShadowingStdDev(double d3D, double d2D, bool losState) override;
 
+  protected:
+    /*
+     * Select the shadowing sigma for the current scenario given whether the
+     * link is below the scenario's breakpoint distance and its LOS state.
+     * getShadowingStdDev() computes the breakpoint comparison itself and
+     * calls this; Tr38901PathLossModel reuses it for the scenarios TR 38.901
+     * does not cover, after computing its own (differently-defined) breakpoint.
+     */
+    double selectStdDev(bool belowBreakpoint, bool losState);
+
   private:
     double computeIndoor(double d, bool los);
     double computeUrbanMicro(double d, bool los);
