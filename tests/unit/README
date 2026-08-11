@@ -1,0 +1,50 @@
+This folder contains unit tests for Simu5G classes that can be exercised
+without a running simulation.
+
+Each *.test file is an opp_test test case: its %activity section becomes the
+body of a cSimpleModule::activity() in a one-module network, so the code has a
+cComponent to draw random numbers from and can call into libsimu5g directly.
+
+Running the tests
+-----------------
+
+    ./runtest                # all tests, against the release library
+    ./runtest Foo.test ...   # selected tests
+    MODE=debug ./runtest     # against the debug library
+
+or, from the project root,
+
+    make unittests
+    make MODE=debug unittests
+
+Both the Simu5G and the INET shared library must be built in the requested
+mode, and SIMU5G_ROOT and INET_ROOT must be set (source the setenv script of
+both projects). Generated sources, the test executable and the captured
+output of each run end up in ./work, which is not under version control.
+
+Writing tests
+-------------
+
+Every test is compiled into one shared executable, so anything a test defines
+at file scope must either be inline or live inside the test's own %global
+section, which opp_test places in a per-test C++ namespace.
+
+lib/ holds header-only helpers shared by several tests; it is on the include
+path of every test, but it is not a compiled library and must stay
+header-only.
+
+The expected values of the path-loss tests are not recorded from the model:
+pathloss_reference.py transcribes the 3GPP formulas independently and prints
+every value the tests use, grouped by test file. Run it to re-derive them, or
+to work out the value of a new case; the formula belongs in a comment next to
+the check it justifies.
+
+Expected failures
+-----------------
+
+A few tests carry an %expected-failure directive. Those record a defect that
+has been identified but not yet fixed: they assert what the model ought to
+produce, and are reported as EXPECTEDFAIL rather than FAIL until it does. The
+%description of each explains the deviation. When one is fixed, drop the
+%expected-failure line and fold the checks back into the main test file it
+was split out of.
