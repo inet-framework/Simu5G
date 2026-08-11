@@ -72,13 +72,13 @@ double Tr36814PathLossModel::computeLosProbability(double d3D, double d2D)
             if (d <= 10)
                 p = 1;
             else
-                p = exp(-1 * (d - 10) / 200);
+                p = exp(-1 * (d - 10) / 1000);
             break;
         case SUBURBAN_MACROCELL:
             if (d <= 10)
                 p = 1;
             else
-                p = exp(-1 * (d - 10) / 1000);
+                p = exp(-1 * (d - 10) / 200);
             break;
         default:
             throw cRuntimeError("Wrong path-loss scenario value %d", scenario_);
