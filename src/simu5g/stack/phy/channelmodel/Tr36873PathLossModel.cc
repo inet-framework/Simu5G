@@ -181,20 +181,12 @@ double Tr36873PathLossModel::computeUrbanMacro3D(double threeDimDistance, double
             throw cRuntimeError("Error: LOS urban macrocell path loss model is valid for d<5000 m");
     }
 
-    // compute penetration loss
+    // O2I penetration loss of clause 7.2.3: a flat 20 dB through the external
+    // wall plus 0.5 dB per metre of the distance inside, at every frequency.
     double penetrationLoss = 0.0;
     if (inside_building_) {
         double inside_distance = (inside_distance_ < threeDimDistance) ? inside_distance_ : threeDimDistance;
-        double pLoss_in = 0.5 * inside_distance;
-        double pLoss_tw = 0.0;
-        if (carrierFrequencyGHz_ <= 6.0)
-            pLoss_tw = 20.0;
-        else {
-            double Lglass = 2 + 0.2 * carrierFrequencyGHz_;
-            double Lconcrete = 5 + 4 * carrierFrequencyGHz_;
-            pLoss_tw = 5 - 10 * log10(0.3 * pow(10, (-Lglass / 10)) + 0.7 * pow(10, (-Lconcrete / 10))) + owner_->normal(0.0, 4.4);
-        }
-        penetrationLoss = pLoss_tw + pLoss_in;
+        penetrationLoss = 20.0 + 0.5 * inside_distance;
     }
 
     // compute break-point distance
