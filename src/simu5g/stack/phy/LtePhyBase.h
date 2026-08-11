@@ -26,7 +26,7 @@
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/stack/phy/packet/LteAirFrame.h"
 #include "simu5g/stack/mac/amc/LteAmc.h"
-#include "simu5g/stack/phy/channelmodel/LteChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 #include "simu5g/stack/phy/feedback/LteFeedbackComputationRealistic.h"
 
 namespace simu5g {
@@ -49,7 +49,7 @@ using namespace omnetpp;
  * LteStack with LteDeciderControlInfo attached.
  */
 
-class LteChannelModel;
+class ChannelModelBase;
 
 class LtePhyBase : public ChannelAccess
 {
@@ -70,8 +70,8 @@ class LtePhyBase : public ChannelAccess
      */
     static short airFramePriority_;
     /** channel models to use.*/
-    std::map<GHz, opp_component_ptr<LteChannelModel>> channelModel_;
-    inet::ModuleRefByPar<LteChannelModel> primaryChannelModel_;
+    std::map<GHz, opp_component_ptr<ChannelModelBase>> channelModel_;
+    inet::ModuleRefByPar<ChannelModelBase> primaryChannelModel_;
 
     /** The id of the in-data gate from the Stack */
     int upperGateIn_ = -1;
@@ -127,17 +127,17 @@ class LtePhyBase : public ChannelAccess
 
   public:
 
-    const LteChannelModel *getPrimaryChannelModel()
+    const ChannelModelBase *getPrimaryChannelModel()
     {
         return primaryChannelModel_;
     }
 
-    const std::map<GHz, opp_component_ptr<LteChannelModel>>& getChannelModels()
+    const std::map<GHz, opp_component_ptr<ChannelModelBase>>& getChannelModels()
     {
         return channelModel_;
     }
 
-    LteChannelModel *getChannelModel(GHz carrierFreq = GHz(0.0))
+    ChannelModelBase *getChannelModel(GHz carrierFreq = GHz(0.0))
     {
         if (channelModel_.empty())
             return nullptr;

@@ -10,12 +10,12 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/phy/channelmodel/LteChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 
 namespace simu5g {
 
 
-void LteChannelModel::initialize(int stage)
+void ChannelModelBase::initialize(int stage)
 {
     if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
         binder_.reference(this, "binderModule", true);
@@ -37,19 +37,19 @@ void LteChannelModel::initialize(int stage)
     }
 }
 
-std::vector<double> LteChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> ChannelModelBase::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     static const std::vector<double> tmp { 10000.0 };
     return tmp;
 }
 
-std::vector<double> LteChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> ChannelModelBase::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     static const std::vector<double> tmp { 10000.0 };
     return tmp;
 }
 
-std::vector<double> LteChannelModel::getSIR(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> ChannelModelBase::getSIR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     static const std::vector<double> tmp { 10000.0 };
     return tmp;

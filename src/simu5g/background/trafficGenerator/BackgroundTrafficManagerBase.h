@@ -28,7 +28,7 @@ using namespace omnetpp;
 
 class TrafficGeneratorBase;
 class LteMacEnb;
-class LteChannelModel;
+class ChannelModelBase;
 
 //
 // BackgroundTrafficManagerBase

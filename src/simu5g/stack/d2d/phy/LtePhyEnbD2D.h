@@ -40,7 +40,7 @@ class LtePhyEnbD2D : public LtePhyEnb
   protected:
     void initialize(int stage) override;
 
-    void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, LteChannelModel *channelModel) override;
+    void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, ChannelModelBase *channelModel) override;
 
     const char *airFrameNameFor(const UserControlInfo *info) override
     {

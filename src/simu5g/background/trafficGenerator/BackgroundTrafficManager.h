@@ -28,7 +28,7 @@ using namespace omnetpp;
 
 class TrafficGeneratorBase;
 class LteMacEnb;
-class LteChannelModel;
+class ChannelModelBase;
 
 //
 // BackgroundTrafficManager
@@ -43,7 +43,7 @@ class BackgroundTrafficManager : public BackgroundTrafficManagerBase
     inet::ModuleRefByPar<LtePhyEnb> phy_;
 
     // reference to the channel model for the given carrier
-    LteChannelModel *channelModel_ = nullptr;
+    ChannelModelBase *channelModel_ = nullptr;
 
   protected:
     void initialize(int stage) override;

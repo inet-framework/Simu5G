@@ -19,7 +19,7 @@ package simu5g.stack.phy.channelmodel;
 // account channel effects such as propagation loss, fading/shadowing, and inter-cell
 // interference.
 //
-moduleinterface ILteChannelModel
+moduleinterface IChannelModel
 {
     @display("i=block/classifier2");
 }

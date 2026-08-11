@@ -10,7 +10,7 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/phy/channelmodel/LteRealisticChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/RealisticChannelModel.h"
 
 #include <fstream>
 #include "simu5g/common/cellInfo/CellInfo.h"
@@ -30,21 +30,21 @@ namespace simu5g {
 
 using namespace inet;
 using namespace omnetpp;
-Define_Module(LteRealisticChannelModel);
+Define_Module(RealisticChannelModel);
 
-simsignal_t LteRealisticChannelModel::rcvdSinrDlSignal_ = registerSignal("rcvdSinrDl");
-simsignal_t LteRealisticChannelModel::rcvdSinrUlSignal_ = registerSignal("rcvdSinrUl");
+simsignal_t RealisticChannelModel::rcvdSinrDlSignal_ = registerSignal("rcvdSinrDl");
+simsignal_t RealisticChannelModel::rcvdSinrUlSignal_ = registerSignal("rcvdSinrUl");
 
-simsignal_t LteRealisticChannelModel::measuredSinrDlSignal_ = registerSignal("measuredSinrDl");
-simsignal_t LteRealisticChannelModel::measuredSinrUlSignal_ = registerSignal("measuredSinrUl");
+simsignal_t RealisticChannelModel::measuredSinrDlSignal_ = registerSignal("measuredSinrDl");
+simsignal_t RealisticChannelModel::measuredSinrUlSignal_ = registerSignal("measuredSinrUl");
 
-LteRealisticChannelModel::~LteRealisticChannelModel()
+RealisticChannelModel::~RealisticChannelModel()
 {
     delete pathLoss_;
     delete extCellPathLoss_;
 }
 
-PathLossModel *LteRealisticChannelModel::createPathLossModel()
+PathLossModel *RealisticChannelModel::createPathLossModel()
 {
     std::string pathLossType = par("pathLossType").stringValue();
     if (pathLossType == "Tr36814")
@@ -62,9 +62,9 @@ PathLossModel *LteRealisticChannelModel::createPathLossModel()
         throw cRuntimeError("Unrecognized value in 'pathLossType' parameter: \"%s\"", pathLossType.c_str());
 }
 
-void LteRealisticChannelModel::initialize(int stage)
+void RealisticChannelModel::initialize(int stage)
 {
-    LteChannelModel::initialize(stage);
+    ChannelModelBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         scenario_ = aToDeploymentScenario(par("scenario").stringValue());
         hNodeB_ = par("nodebHeight");
@@ -117,7 +117,7 @@ void LteRealisticChannelModel::initialize(int stage)
     }
     else if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
         // carrierFrequencyHz_/GHz_/log10CarrierFrequencyGHz_ have just been set
-        // by LteChannelModel::initialize() above, in this same stage
+        // by ChannelModelBase::initialize() above, in this same stage
         pathLoss_ = createPathLossModel();
         pathLoss_->initialize(this, scenario_, hNodeB_, hUe_, hBuilding_, wStreet_,
                 inside_building_, inside_distance_,
@@ -131,7 +131,7 @@ void LteRealisticChannelModel::initialize(int stage)
     }
 }
 
-RadioLink LteRealisticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Coord coord, bool cqiDl)
+RadioLink RealisticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Coord coord, bool cqiDl)
 {
     // The local module is one endpoint and 'coord' the other; 'dir' says which
     // of the two is the UE. The UE is the node whose channel state we track.
@@ -160,7 +160,7 @@ RadioLink LteRealisticChannelModel::cellularLink(MacNodeId ueId, Direction dir, 
     return link;
 }
 
-RadioLink LteRealisticChannelModel::linkFor(UserControlInfo *lteInfo)
+RadioLink RealisticChannelModel::linkFor(UserControlInfo *lteInfo)
 {
     RadioLink link;
     link.dir = lteInfo->getDirection();
@@ -233,7 +233,7 @@ RadioLink LteRealisticChannelModel::linkFor(UserControlInfo *lteInfo)
     return link;
 }
 
-double LteRealisticChannelModel::getAttenuation(const RadioLink& link)
+double RealisticChannelModel::getAttenuation(const RadioLink& link)
 {
     // COMPUTE 3D and 2D DISTANCE between the two endpoints
     double threeDimDistance = link.txCoord.distance(link.rxCoord);
@@ -264,12 +264,12 @@ double LteRealisticChannelModel::getAttenuation(const RadioLink& link)
     updatePositionHistory(link.stateNodeId, link.stateCoord);
     updateCorrelationDistance(link.stateKey, link.stateCoord);
 
-    EV << "LteRealisticChannelModel::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNB is " << attenuation << endl;
+    EV << "RealisticChannelModel::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNB is " << attenuation << endl;
 
     return attenuation;
 }
 
-double LteRealisticChannelModel::computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl)
+double RealisticChannelModel::computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl)
 {
     ShadowFadingMap *actualShadowingMap;
 
@@ -279,7 +279,7 @@ double LteRealisticChannelModel::computeShadowing(double d3D, double d2D, const 
         actualShadowingMap = &lastComputedSF_;
 
     if (actualShadowingMap == nullptr)
-        throw cRuntimeError("LteRealisticChannelModel::computeShadowing - actualShadowingMap not found (nullptr)");
+        throw cRuntimeError("RealisticChannelModel::computeShadowing - actualShadowingMap not found (nullptr)");
 
     double mean = 0;
 
@@ -338,7 +338,7 @@ double LteRealisticChannelModel::computeShadowing(double d3D, double d2D, const 
     return att;
 }
 
-void LteRealisticChannelModel::updatePositionHistory(const MacNodeId nodeId,
+void RealisticChannelModel::updatePositionHistory(const MacNodeId nodeId,
         const Coord coord)
 {
     if (positionHistory_.find(nodeId) != positionHistory_.end()) {
@@ -355,7 +355,7 @@ void LteRealisticChannelModel::updatePositionHistory(const MacNodeId nodeId,
         positionHistory_[nodeId].pop();
 }
 
-void LteRealisticChannelModel::updateCorrelationDistance(const LinkKey& nodeId, const inet::Coord coord) {
+void RealisticChannelModel::updateCorrelationDistance(const LinkKey& nodeId, const inet::Coord coord) {
 
     if (lastCorrelationPoint_.find(nodeId) == lastCorrelationPoint_.end()) {
         // no lastCorrelationPoint set current point.
@@ -369,7 +369,7 @@ void LteRealisticChannelModel::updateCorrelationDistance(const LinkKey& nodeId, 
     }
 }
 
-double LteRealisticChannelModel::computeCorrelationDistance(const LinkKey& nodeId, const inet::Coord coord) {
+double RealisticChannelModel::computeCorrelationDistance(const LinkKey& nodeId, const inet::Coord coord) {
     double dist = 0.0;
 
     if (lastCorrelationPoint_.find(nodeId) == lastCorrelationPoint_.end()) {
@@ -382,7 +382,7 @@ double LteRealisticChannelModel::computeCorrelationDistance(const LinkKey& nodeI
     return dist;
 }
 
-double LteRealisticChannelModel::computeSpeed(const MacNodeId nodeId,
+double RealisticChannelModel::computeSpeed(const MacNodeId nodeId,
         const Coord coord)
 {
     double speed = 0.0;
@@ -414,7 +414,7 @@ double LteRealisticChannelModel::computeSpeed(const MacNodeId nodeId,
     return speed;
 }
 
-double LteRealisticChannelModel::computeAngle(Coord center, Coord point) {
+double RealisticChannelModel::computeAngle(Coord center, Coord point) {
     double relx, rely, arcoSen, angle, dist;
 
     // compute distance between points
@@ -441,7 +441,7 @@ double LteRealisticChannelModel::computeAngle(Coord center, Coord point) {
     return angle;
 }
 
-double LteRealisticChannelModel::computeVerticalAngle(Coord center, Coord point)
+double RealisticChannelModel::computeVerticalAngle(Coord center, Coord point)
 {
     double threeDimDistance = center.distance(point);
     double twoDimDistance = getTwoDimDistance(center, point);
@@ -449,11 +449,11 @@ double LteRealisticChannelModel::computeVerticalAngle(Coord center, Coord point)
     return 90 + arccos;
 }
 
-double LteRealisticChannelModel::computeAngularAttenuation(double hAngle, double vAngle) {
+double RealisticChannelModel::computeAngularAttenuation(double hAngle, double vAngle) {
     return pathLoss_->computeAngularAttenuation(hAngle, vAngle);
 }
 
-std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> RealisticChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     RadioLink link = linkFor(lteInfo);
 
@@ -464,7 +464,7 @@ std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserCo
     return getSINR(link, lteInfo, getRSRP(link, lteInfo->getTxPower()));
 }
 
-std::vector<double> LteRealisticChannelModel::getSINR(const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector)
+std::vector<double> RealisticChannelModel::getSINR(const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector)
 {
     // Get the Resource Blocks used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();
@@ -510,7 +510,7 @@ std::vector<double> LteRealisticChannelModel::getSINR(const RadioLink& link, Use
     {
         // we are on the BS, so we need to retrieve the channel model of the sender
         // XXX I know, there might be a faster way...
-        LteChannelModel *ueChannelModel = check_and_cast<LtePhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(lteInfo->getCarrierFrequency());
+        ChannelModelBase *ueChannelModel = check_and_cast<LtePhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(lteInfo->getCarrierFrequency());
 
         if (link.dir == DL) // we are on the UE
             ueChannelModel->emit(measuredSinrDlSignal_, sumSnr / usedRBs);
@@ -528,7 +528,7 @@ std::vector<double> LteRealisticChannelModel::getSINR(const RadioLink& link, Use
     return snrVector;
 }
 
-void LteRealisticChannelModel::computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
+void RealisticChannelModel::computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
         RbMap& rbmap, double totN, std::vector<double>& den)
 {
     // The interference model is cellular-topology-aware (it asks "which cell?"),
@@ -570,7 +570,7 @@ void LteRealisticChannelModel::computeInterferencePlusNoise(const RadioLink& lin
         computeExtCellInterference(eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
 
-    EV << "LteRealisticChannelModel::getSINR - distance from my eNb=" << enbCoord.distance(ueCoord) << " - DIR=" << ((dir == DL) ? "DL" : "UL") << endl;
+    EV << "RealisticChannelModel::getSINR - distance from my eNb=" << enbCoord.distance(ueCoord) << " - DIR=" << ((dir == DL) ? "DL" : "UL") << endl;
 
     for (unsigned int i = 0; i < numBands_; i++) {
         // the caller skips these bands too; leave their denominator untouched
@@ -585,16 +585,16 @@ void LteRealisticChannelModel::computeInterferencePlusNoise(const RadioLink& lin
     }
 }
 
-std::vector<double> LteRealisticChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> RealisticChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     return getRSRP(linkFor(lteInfo), lteInfo->getTxPower());
 }
 
-std::vector<double> LteRealisticChannelModel::getRSRP(const RadioLink& link, double txPower)
+std::vector<double> RealisticChannelModel::getRSRP(const RadioLink& link, double txPower)
 {
     double recvPower = txPower; // dBm
 
-    EV << "LteRealisticChannelModel::getRSRP - txId=" << link.txId
+    EV << "RealisticChannelModel::getRSRP - txId=" << link.txId
        << " - rxId=" << link.rxId
        << " - DIR=" << dirToA(link.dir)
        << " - txPwr " << txPower
@@ -681,7 +681,7 @@ std::vector<double> LteRealisticChannelModel::getRSRP(const RadioLink& link, dou
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
 
-        EV << " LteRealisticChannelModel::getRSRP node " << link.stateKey
+        EV << " RealisticChannelModel::getRSRP node " << link.stateKey
            << " band " << i << " recvPower " << recvPower
            << " direction " << dirToA(link.dir) << " antenna gain tx "
            << link.txAntennaGain << " antenna gain rx " << link.rxAntennaGain
@@ -698,7 +698,7 @@ std::vector<double> LteRealisticChannelModel::getRSRP(const RadioLink& link, dou
     return rsrpVector;
 }
 
-std::vector<double> LteRealisticChannelModel::getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> RealisticChannelModel::getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     //get tx power
     double recvPower = lteInfo->getTxPower(); // dBm
@@ -748,7 +748,7 @@ std::vector<double> LteRealisticChannelModel::getSINR_bgUe(LteAirFrame *frame, U
     CellInfo *eNbCell = binder_->getCellInfoByNodeId(eNbId);
     const char *eNbTypeString = eNbCell ? (eNbCell->getEnbType() == MACRO_ENB ? "MACRO" : "MICRO") : "NULL";
 
-    EV << "LteRealisticChannelModel::getSINR_bgUe - DIR=" << ((dir == DL) ? "DL" : "UL")
+    EV << "RealisticChannelModel::getSINR_bgUe - DIR=" << ((dir == DL) ? "DL" : "UL")
        << " " << eNbTypeString << " - txPwr " << lteInfo->getTxPower()
        << " - ueCoord[" << ueCoord << "] - enbCoord[" << enbCoord << "] - enbId[" << eNbId << "]" <<
         endl;
@@ -891,12 +891,12 @@ std::vector<double> LteRealisticChannelModel::getSINR_bgUe(LteAirFrame *frame, U
     return snrVector;
 }
 
-double LteRealisticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId)
+double RealisticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId)
 {
     double antennaGainTx = 0.0;
     double antennaGainRx = 0.0;
 
-    EV << NOW << " LteRealisticChannelModel::getReceivedPower_bgUe" << endl;
+    EV << NOW << " RealisticChannelModel::getReceivedPower_bgUe" << endl;
 
     //===================== PARAMETERS SETUP ============================
     if (dir == DL) {
@@ -908,7 +908,7 @@ double LteRealisticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coo
         antennaGainRx = antennaGainEnB_;
     }
 
-    EV << "LteRealisticChannelModel::getReceivedPower_bgUe - DIR=" << ((dir == DL) ? "DL" : "UL")
+    EV << "RealisticChannelModel::getReceivedPower_bgUe - DIR=" << ((dir == DL) ? "DL" : "UL")
        << " - txPwr " << txPower << " - txPos[" << txPos << "] - rxPos[" << rxPos << "] " << endl;
     //=================== END PARAMETERS SETUP =======================
 
@@ -962,7 +962,7 @@ double LteRealisticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coo
     return recvPower;
 }
 
-std::vector<double> LteRealisticChannelModel::getSIR(LteAirFrame *frame,
+std::vector<double> RealisticChannelModel::getSIR(LteAirFrame *frame,
         UserControlInfo *lteInfo)
 {
     // get tx power
@@ -1028,7 +1028,7 @@ std::vector<double> LteRealisticChannelModel::getSIR(LteAirFrame *frame,
     return snrVector;
 }
 
-double LteRealisticChannelModel::rayleighFading(MacNodeId id,
+double RealisticChannelModel::rayleighFading(MacNodeId id,
         unsigned int band)
 {
     // get rayleigh variable from trace file
@@ -1037,7 +1037,7 @@ double LteRealisticChannelModel::rayleighFading(MacNodeId id,
     return linearToDb(temp1);
 }
 
-double LteRealisticChannelModel::jakesFading(const LinkKey& key, MacNodeId ownerId, double speed,
+double RealisticChannelModel::jakesFading(const LinkKey& key, MacNodeId ownerId, double speed,
         unsigned int band, bool cqiDl, bool isBgUe)
 {
     /**
@@ -1122,9 +1122,9 @@ double LteRealisticChannelModel::jakesFading(const LinkKey& key, MacNodeId owner
     return linearToDb(re_h * re_h + im_h * im_h);
 }
 
-bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+bool RealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
-    EV << "LteRealisticChannelModel::error" << endl;
+    EV << "RealisticChannelModel::error" << endl;
 
     // get codeword
     unsigned char cw = lteInfo->getCw();
@@ -1210,7 +1210,7 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
             // compute the success probability according to the number of LB used
             cumulativeSuccessProbability *= allocationSuccessProbability;
 
-            EV << " LteRealisticChannelModel::error direction " << dirToA(dir)
+            EV << " RealisticChannelModel::error direction " << dirToA(dir)
                << " node " << id << " remote unit " << dasToA(remoteUnit)
                << " Band " << band << " SNR " << snr << " CQI " << cqi
                << " BLER " << blockErrorRate << " success probability " << allocationSuccessProbability
@@ -1224,7 +1224,7 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
 
     double randomSample = uniform(0.0, 1.0);
 
-    EV << " LteRealisticChannelModel::error direction " << dirToA(dir)
+    EV << " RealisticChannelModel::error direction " << dirToA(dir)
        << " node " << id << " total ERROR probability  " << packetErrorRate
        << " per with H-ARQ error reduction " << effectiveErrorRateWithHarq
        << " - CQI[" << cqi << "]- random error extracted[" << randomSample << "]" << endl;
@@ -1248,7 +1248,7 @@ bool LteRealisticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserCon
     return true;
 }
 
-void LteRealisticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)
+void RealisticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)
 {
     if (dir == DL) { // we are on the UE
         emit(rcvdSinrDlSignal_, sinr);
@@ -1257,11 +1257,11 @@ void LteRealisticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz c
 
     // we are on the BS, so we need to retrieve the channel model of the sender
     // XXX I know, there might be a faster way...
-    LteChannelModel *ueChannelModel = check_and_cast<LtePhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(carrierFrequency);
+    ChannelModelBase *ueChannelModel = check_and_cast<LtePhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(carrierFrequency);
     ueChannelModel->emit(rcvdSinrUlSignal_, sinr);
 }
 
-void LteRealisticChannelModel::computeLosProbability(double d3D, double d2D,
+void RealisticChannelModel::computeLosProbability(double d3D, double d2D,
         const LinkKey& nodeId)
 {
     if (!dynamicLos_) {
@@ -1272,19 +1272,19 @@ void LteRealisticChannelModel::computeLosProbability(double d3D, double d2D,
     losMap_[nodeId] = (uniform(0.0, 1.0) <= p);
 }
 
-double LteRealisticChannelModel::computePathLoss(double distance, double dbp, bool los)
+double RealisticChannelModel::computePathLoss(double distance, double dbp, bool los)
 {
     return pathLoss_->computePathLoss(distance, dbp, los);
 }
 
-double LteRealisticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
+double RealisticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
 {
     a.z = 0.0;
     b.z = 0.0;
     return a.distance(b);
 }
 
-bool LteRealisticChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeId, Coord coord, bool isCqi, GHz carrierFrequency,
+bool RealisticChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeId, Coord coord, bool isCqi, GHz carrierFrequency,
         std::vector<double> *interference)
 {
     EV << "**** Ext Cell Interference **** " << endl;
@@ -1361,7 +1361,7 @@ bool LteRealisticChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNo
     return true;
 }
 
-bool LteRealisticChannelModel::computeBackgroundCellInterference(MacNodeId nodeId, inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, Direction dir,
+bool RealisticChannelModel::computeBackgroundCellInterference(MacNodeId nodeId, inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, Direction dir,
         std::vector<double> *interference)
 {
     EV << "**** Background Cell Interference **** " << endl;
@@ -1498,7 +1498,7 @@ bool LteRealisticChannelModel::computeBackgroundCellInterference(MacNodeId nodeI
     return true;
 }
 
-double LteRealisticChannelModel::computeExtCellPathLoss(double dist, const LinkKey& nodeId)
+double RealisticChannelModel::computeExtCellPathLoss(double dist, const LinkKey& nodeId)
 {
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
@@ -1513,7 +1513,7 @@ double LteRealisticChannelModel::computeExtCellPathLoss(double dist, const LinkK
     return attenuation;
 }
 
-LteRealisticChannelModel::JakesFadingMap *LteRealisticChannelModel::obtainUeJakesMap(MacNodeId id)
+RealisticChannelModel::JakesFadingMap *RealisticChannelModel::obtainUeJakesMap(MacNodeId id)
 {
     // obtain a reference to UE phy
     LtePhyBase *phy = nullptr;
@@ -1530,16 +1530,16 @@ LteRealisticChannelModel::JakesFadingMap *LteRealisticChannelModel::obtainUeJake
 
     // get the associated channel and get a reference to its Jakes Map
     JakesFadingMap *j;
-    LteRealisticChannelModel *re = dynamic_cast<LteRealisticChannelModel *>(phy->getChannelModel(carrierFrequency_));
+    RealisticChannelModel *re = dynamic_cast<RealisticChannelModel *>(phy->getChannelModel(carrierFrequency_));
     if (re == nullptr)
-        throw cRuntimeError("LteRealisticChannelModel::obtainUeJakesMap - channel model is a null pointer");
+        throw cRuntimeError("RealisticChannelModel::obtainUeJakesMap - channel model is a null pointer");
     else
         j = re->getJakesMap();
 
     return j;
 }
 
-LteRealisticChannelModel::ShadowFadingMap *LteRealisticChannelModel::obtainShadowingMap(MacNodeId id)
+RealisticChannelModel::ShadowFadingMap *RealisticChannelModel::obtainShadowingMap(MacNodeId id)
 {
     // obtain a reference to UE phy
     LtePhyBase *phy = nullptr;
@@ -1555,12 +1555,12 @@ LteRealisticChannelModel::ShadowFadingMap *LteRealisticChannelModel::obtainShado
         return nullptr;
 
     // get the associated channel and get a reference to its shadowing Map
-    LteRealisticChannelModel *re = dynamic_cast<LteRealisticChannelModel *>(phy->getChannelModel(carrierFrequency_));
+    RealisticChannelModel *re = dynamic_cast<RealisticChannelModel *>(phy->getChannelModel(carrierFrequency_));
     ShadowFadingMap *j = re->getShadowingMap();
     return j;
 }
 
-bool LteRealisticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNodeId ueId, Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap,
+bool RealisticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNodeId ueId, Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap,
         std::vector<double> *interference)
 {
     EV << "**** Downlink Interference ****" << endl;
@@ -1591,7 +1591,7 @@ bool LteRealisticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacN
             enbInfo->init = true;
         }
 
-        LteRealisticChannelModel *interfChanModel = dynamic_cast<LteRealisticChannelModel *>(enbInfo->phy->getChannelModel(carrierFrequency));
+        RealisticChannelModel *interfChanModel = dynamic_cast<RealisticChannelModel *>(enbInfo->phy->getChannelModel(carrierFrequency));
 
         // if the eNB does not use the selected carrier frequency, skip it
         if (interfChanModel == nullptr)
@@ -1660,7 +1660,7 @@ bool LteRealisticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacN
     return true;
 }
 
-LteRealisticChannelModel::InterfererInfo LteRealisticChannelModel::describeInterferer(const UeAllocationInfo& allocation)
+RealisticChannelModel::InterfererInfo RealisticChannelModel::describeInterferer(const UeAllocationInfo& allocation)
 {
     InterfererInfo info;
     info.nodeId = allocation.nodeId;
@@ -1680,7 +1680,7 @@ LteRealisticChannelModel::InterfererInfo LteRealisticChannelModel::describeInter
     return info;
 }
 
-bool LteRealisticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNodeId senderId, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference)
+bool RealisticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNodeId senderId, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference)
 {
     EV << "**** Uplink Interference for cellId[" << eNbId << "] node[" << senderId << "] ****" << endl;
 
@@ -1710,7 +1710,7 @@ bool LteRealisticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNod
                     if (cellId == eNbId)
                         continue;
 
-                    EV << NOW << " LteRealisticChannelModel::computeUplinkInterference - Interference from UE: " << ueId << "(dir " << dirToA(dir) << ") on band[" << i << "]" << endl;
+                    EV << NOW << " RealisticChannelModel::computeUplinkInterference - Interference from UE: " << ueId << "(dir " << dirToA(dir) << ") on band[" << i << "]" << endl;
 
                     // get rx power and attenuation from this UE
                     double rxPwr = txPwr - cableLoss_ + antennaGainUe_ + antennaGainEnB_;
@@ -1751,7 +1751,7 @@ bool LteRealisticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNod
                     if (cellId == eNbId)
                         continue;
 
-                    EV << NOW << " LteRealisticChannelModel::computeUplinkInterference - Interference from UE: " << ueId << "(dir " << dirToA(dir) << ") on band[" << i << "]" << endl;
+                    EV << NOW << " RealisticChannelModel::computeUplinkInterference - Interference from UE: " << ueId << "(dir " << dirToA(dir) << ") on band[" << i << "]" << endl;
 
                     // get tx power and attenuation from this UE
                     double rxPwr = txPwr - cableLoss_ + antennaGainUe_ + antennaGainEnB_;
@@ -1765,7 +1765,7 @@ bool LteRealisticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNod
     }
 
     // Debug Output
-    EV << NOW << " LteRealisticChannelModel::computeUplinkInterference - Final Band Interference Status: " << endl;
+    EV << NOW << " RealisticChannelModel::computeUplinkInterference - Final Band Interference Status: " << endl;
     for (unsigned int i = 0; i < numBands_; i++)
         EV << "\t band " << i << " int[" << (*interference)[i] << "]" << endl;
 

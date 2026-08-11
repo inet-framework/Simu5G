@@ -737,7 +737,7 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
 
         if (direction_ == UL) {
             // If uplink interference is enabled, mark the occupation in the uplink transmission map (for uplink interference computation purposes)
-            LteChannelModel *channelModel = mac_->getPhy()->getChannelModel(carrierFrequency);
+            ChannelModelBase *channelModel = mac_->getPhy()->getChannelModel(carrierFrequency);
             if (channelModel->isUplinkInterferenceEnabled())
                 binder_->storeUlTransmissionMap(carrierFrequency, antenna, allocatedRbMap, bgUeId, mac_->getMacCellId(), bgTrafficManager->getTrafficGenerator(bgUeId), UL);
         }
@@ -1303,7 +1303,7 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
             // uplink scheduler only: if uplink interference is enabled, mark the
             // occupation in the ul transmission map (for ul interference computation purposes)
             if (direction_ == UL) {
-                LteChannelModel *channelModel = mac_->getPhy()->getChannelModel(carrierFrequency);
+                ChannelModelBase *channelModel = mac_->getPhy()->getChannelModel(carrierFrequency);
                 if (channelModel->isUplinkInterferenceEnabled())
                     binder_->storeUlTransmissionMap(carrierFrequency, antenna, allocatedRbMap, bgUeId, mac_->getMacCellId(), bgTrafficManager->getTrafficGenerator(bgUeId), UL);
             }

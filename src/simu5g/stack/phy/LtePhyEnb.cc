@@ -161,7 +161,7 @@ void LtePhyEnb::handleAirFrame(cMessage *msg)
 
     // check if the air frame was sent on a correct carrier frequency
     GHz carrierFreq = lteInfo->getCarrierFrequency();
-    LteChannelModel *channelModel = getChannelModel(carrierFreq);
+    ChannelModelBase *channelModel = getChannelModel(carrierFreq);
     if (channelModel == nullptr) {
         EV << "Received packet on carrier frequency not supported by this node. Delete it." << endl;
         delete lteInfo;
@@ -252,7 +252,7 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
     LteFeedbackDoubleVector fb;
 
     // select the correct channel model according to the carrier frequency
-    LteChannelModel *channelModel = getChannelModel(lteinfo->getCarrierFrequency());
+    ChannelModelBase *channelModel = getChannelModel(lteinfo->getCarrierFrequency());
 
     //get UE Position
     Coord sendersPos = lteinfo->getCoord();

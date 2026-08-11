@@ -16,7 +16,7 @@ package simu5g.stack;
 import simu5g.stack.mac.ILteMac;
 import simu5g.stack.packetFlowObserver.IPacketFlowObserver;
 import simu5g.stack.phy.ILtePhy;
-import simu5g.stack.phy.channelmodel.ILteChannelModel;
+import simu5g.stack.phy.channelmodel.IChannelModel;
 import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 import simu5g.stack.rlc.IRlcMux;
 import simu5g.stack.sdap.INrSdap;
@@ -89,7 +89,7 @@ module NrNicUe extends LteNicUe
             @display("p=570,600");
         }
         // NR Channel Model
-        nrChannelModel[numNrCarriers]: <nrChannelModelType> like ILteChannelModel {
+        nrChannelModel[numNrCarriers]: <nrChannelModelType> like IChannelModel {
             @display("p=80,60,col;g=left");
         }
 

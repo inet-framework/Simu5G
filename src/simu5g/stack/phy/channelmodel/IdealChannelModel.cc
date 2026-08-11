@@ -10,22 +10,22 @@
 // and cannot be removed from it.
 //
 
-#include "LteDummyChannelModel.h"
+#include "IdealChannelModel.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
 
-Define_Module(LteDummyChannelModel);
+Define_Module(IdealChannelModel);
 
 // Reported on every band, in place of a computed value. Large enough that the AMC
 // always picks the highest CQI, so the transport block size never varies with the
 // channel and the only source of loss is the configured error rate.
 static const double FAKE_SINR_DB = 10000;
 
-void LteDummyChannelModel::initialize(int stage)
+void IdealChannelModel::initialize(int stage)
 {
-    LteChannelModel::initialize(stage);
+    ChannelModelBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         perDl_ = &par("perDl");
         perUl_ = &par("perUl");
@@ -34,10 +34,10 @@ void LteDummyChannelModel::initialize(int stage)
     }
 }
 
-double LteDummyChannelModel::getErrorProbability(Direction dir, unsigned char txNumber) const
+double IdealChannelModel::getErrorProbability(Direction dir, unsigned char txNumber) const
 {
     if (txNumber == 0)
-        throw cRuntimeError("LteDummyChannelModel::getErrorProbability(): transmission number must be at least 1");
+        throw cRuntimeError("IdealChannelModel::getErrorProbability(): transmission number must be at least 1");
 
     cPar *per;
     switch (dir) {
@@ -46,49 +46,49 @@ double LteDummyChannelModel::getErrorProbability(Direction dir, unsigned char tx
         case D2D:
         case D2D_MULTI: per = perD2D_; break;
         default:
-            throw cRuntimeError("LteDummyChannelModel::getErrorProbability(): unexpected direction %d", (int)dir);
+            throw cRuntimeError("IdealChannelModel::getErrorProbability(): unexpected direction %d", (int)dir);
     }
     return per->doubleValue() * pow(harqReduction_, txNumber - 1);
 }
 
-std::vector<double> LteDummyChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> IdealChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
-std::vector<double> LteDummyChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> IdealChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake RSRP is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
-std::vector<double> LteDummyChannelModel::getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> IdealChannelModel::getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
-double LteDummyChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId)
+double IdealChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId)
 {
     return 10000.0;
 }
 
-std::vector<double> LteDummyChannelModel::getSIR(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> IdealChannelModel::getSIR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SIR is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
-bool LteDummyChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+bool IdealChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     double per = getErrorProbability(lteInfo->getDirection(), lteInfo->getTxNumber());
     bool success = uniform(0.0, 1.0) > per;
-    EV << "LteDummyChannelModel::isReceptionSuccessful - transmission " << (int)lteInfo->getTxNumber()
+    EV << "IdealChannelModel::isReceptionSuccessful - transmission " << (int)lteInfo->getTxNumber()
        << ", error probability " << per << " -> " << (success ? "received" : "lost") << endl;
     return success;
 }

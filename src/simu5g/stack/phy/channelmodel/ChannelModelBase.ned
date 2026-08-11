@@ -18,11 +18,11 @@ package simu5g.stack.phy.channelmodel;
 // Component Carrier (CC) and its associated parameters related to the channel
 // model itself.
 //
-simple LteChannelModel like ILteChannelModel
+simple ChannelModelBase like IChannelModel
 {
     parameters:
         @display("i=block/classifier2");
-        @class("LteChannelModel");
+        @class("ChannelModelBase");
 
         string binderModule = default("binder");
         string cellInfoModule = default("^.^.cellInfo");  // optional

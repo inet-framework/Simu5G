@@ -21,7 +21,7 @@
 #include "simu5g/background/trafficGenerator/generators/TrafficGeneratorBase.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
-#include "simu5g/stack/phy/channelmodel/LteRealisticChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/RealisticChannelModel.h"
 
 namespace simu5g {
 
@@ -29,14 +29,14 @@ using namespace inet;
 using namespace omnetpp;
 
 /**
- * Channel model for D2D-capable NICs: LteRealisticChannelModel (whose
+ * Channel model for D2D-capable NICs: RealisticChannelModel (whose
  * pathLossType parameter selects the propagation study -- TR 36.814, 36.873
  * or 38.901) plus the ~800 lines of D2D channel math (attenuation, RSRP/SINR,
  * interference and reception decision) layered on top of it.
  *
  * The rcvdSinrD2D signal is owned and interned here, not in the core channel model.
  */
-class D2dChannelModel : public LteRealisticChannelModel, public ID2dChannelModel
+class D2dChannelModel : public RealisticChannelModel, public ID2dChannelModel
 {
   protected:
     // enable/disable the interference computation for D2D connections
@@ -86,7 +86,7 @@ class D2dChannelModel : public LteRealisticChannelModel, public ID2dChannelModel
 
 inline void D2dChannelModel::initialize(int stage)
 {
-    LteRealisticChannelModel::initialize(stage);
+    RealisticChannelModel::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         rcvdSinrD2DSignal_ = cComponent::registerSignal("rcvdSinrD2D");
         enableD2DInterference_ = this->par("d2dInterference");
@@ -171,7 +171,7 @@ inline void D2dChannelModel::computeInterferencePlusNoise(const RadioLink& link,
         RbMap& rbmap, double totN, std::vector<double>& den)
 {
     if (link.dir != D2D && link.dir != D2D_MULTI) {
-        LteRealisticChannelModel::computeInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
+        RealisticChannelModel::computeInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
         return;
     }
 
@@ -227,7 +227,7 @@ inline std::vector<double> D2dChannelModel::getReceptionSinr(LteAirFrame *frame,
             return getSINR_D2D(frame, lteInfo, destId, destCoord, enbId, rsrpVector);
         return getSINR_D2D(frame, lteInfo, destId, destCoord, enbId);
     }
-    return LteRealisticChannelModel::getReceptionSinr(frame, lteInfo, rsrpVector);
+    return RealisticChannelModel::getReceptionSinr(frame, lteInfo, rsrpVector);
 }
 
 inline void D2dChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)
@@ -239,7 +239,7 @@ inline void D2dChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz car
         this->emit(rcvdSinrD2DSignal_, sinr);
         return;
     }
-    LteRealisticChannelModel::emitRcvdSinr(dir, ueId, carrierFrequency, sinr);
+    RealisticChannelModel::emitRcvdSinr(dir, ueId, carrierFrequency, sinr);
 }
 
 inline bool D2dChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId senderId, Coord senderCoord, MacNodeId destId, Coord destCoord, bool isCqi, GHz carrierFrequency,
@@ -262,7 +262,7 @@ inline bool D2dChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId s
             allocatedUes = &(ulTransmissionMap->at(i));
 
             for (auto& ue_it : *allocatedUes) {
-                const auto interferer = LteRealisticChannelModel::describeInterferer(ue_it);
+                const auto interferer = RealisticChannelModel::describeInterferer(ue_it);
                 const MacNodeId ueId = interferer.nodeId;
                 const MacCellId cellId = interferer.cellId;
                 const Direction dir = interferer.dir;
@@ -281,7 +281,7 @@ inline bool D2dChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId s
                 if (cellId == eNbId && (!macEnb->isReuseD2DEnabled() && !macEnb->isReuseD2DMultiEnabled()))
                     continue;
 
-                EV << NOW << " LteRealisticChannelModel::computeD2DInterference - Interference from UE: " << ueId << "(dir " << dirToA(dir) << ") on band[" << i << "]" << endl;
+                EV << NOW << " RealisticChannelModel::computeD2DInterference - Interference from UE: " << ueId << "(dir " << dirToA(dir) << ") on band[" << i << "]" << endl;
 
                 // get tx power and attenuation from this UE
                 double rxPwr = txPwr - this->cableLoss_ + 2 * this->antennaGainUe_;
@@ -295,7 +295,7 @@ inline bool D2dChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId s
     }
 
     // Debug Output
-    EV << NOW << " LteRealisticChannelModel::computeD2DInterference - Final Band Interference Status: " << endl;
+    EV << NOW << " RealisticChannelModel::computeD2DInterference - Final Band Interference Status: " << endl;
     for (unsigned int i = 0; i < this->numBands_; i++)
         EV << "\t band " << i << " int[" << (*interference)[i] << "]" << endl;
 

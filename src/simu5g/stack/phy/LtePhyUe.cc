@@ -84,7 +84,7 @@ void LtePhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCand
         Coord cellPos = cellPhy->getCoord();
         // check whether the BS supports the carrier frequency used by the UE
         GHz ueCarrierFrequency = primaryChannelModel_->getCarrierFrequency();
-        LteChannelModel *cellChannelModel = cellPhy->getChannelModel(ueCarrierFrequency);
+        ChannelModelBase *cellChannelModel = cellPhy->getChannelModel(ueCarrierFrequency);
         if (cellChannelModel == nullptr)
             continue;
 
@@ -166,7 +166,7 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
     }
 
     GHz carrierFreq = lteInfo->getCarrierFrequency();
-    LteChannelModel *channelModel = getChannelModel(carrierFreq);
+    ChannelModelBase *channelModel = getChannelModel(carrierFreq);
     if (channelModel == nullptr) {
         EV << "Received packet on carrier frequency not supported by this node. Delete it." << endl;
         delete lteInfo;
@@ -310,7 +310,7 @@ void LtePhyUe::handleUpperMessage(cMessage *msg)
     validateOutgoingFrame(lteInfo.get());
 
     GHz carrierFreq = lteInfo->getCarrierFrequency();
-    LteChannelModel *channelModel = getChannelModel(carrierFreq);
+    ChannelModelBase *channelModel = getChannelModel(carrierFreq);
     if (channelModel == nullptr)
         throw cRuntimeError("LtePhyUe::handleUpperMessage - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 

@@ -23,7 +23,7 @@ import simu5g.stack.pdcp.IPdcpMux;
 import simu5g.stack.phy.ILtePhy;
 import simu5g.stack.rlc.IRlcMux;
 import simu5g.stack.rrc.IRrc;
-import simu5g.stack.phy.channelmodel.ILteChannelModel;
+import simu5g.stack.phy.channelmodel.IChannelModel;
 
 
 //
@@ -48,7 +48,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
         double processingDelayIn @unit(s) = default(0s);   // additional processing delay for incoming ip packets
         double processingDelayOut @unit(s) = default(0s);   // additional processing delay for outgoing ip packets
 
-        string lteChannelModelType = default("LteRealisticChannelModel");
+        string lteChannelModelType = default("RealisticChannelModel");
 
         bool dualConnectivityEnabled = default(false);
         int numCarriers = default(1);
@@ -108,7 +108,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
             @display("p=310,600");
         }
 
-        channelModel[numCarriers]: <lteChannelModelType> like ILteChannelModel {
+        channelModel[numCarriers]: <lteChannelModelType> like IChannelModel {
             @display("p=80,60,col;g=left");
         }
 

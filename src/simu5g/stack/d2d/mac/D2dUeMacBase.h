@@ -21,7 +21,7 @@
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 #include "simu5g/stack/mac/packet/LteRac_m.h"
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
-#include "simu5g/stack/phy/channelmodel/LteChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/d2d/mac/ID2dMacUe.h"
 #include "simu5g/stack/d2d/mac/D2dUeMacHelper.h"
@@ -208,7 +208,7 @@ void D2dUeMacBase<Base>::macPduMake(MacCid cid)
 
                     // Add the created BSR to the PDU List
                     // select channel model for the given carrier frequency
-                    LteChannelModel *channelModel = this->phy_->getChannelModel(carrierFreq);
+                    ChannelModelBase *channelModel = this->phy_->getChannelModel(carrierFreq);
                     if (channelModel == nullptr)
                         throw cRuntimeError("D2dUeMacBase::macPduMake - channel model is a null pointer");
                     this->macPduList_[channelModel->getCarrierFrequency()][{this->getMacCellId(), 0}] = macPktBsr;

@@ -52,7 +52,7 @@ class CellInfo;
 class LteMacEnb;
 class LteMacBase;
 class LtePhyBase;
-class LteRealisticChannelModel;
+class RealisticChannelModel;
 class LteControlInfo;
 class FlowControlInfo;
 class ExtCell;
@@ -318,7 +318,7 @@ struct EnbInfo
     MacNodeId id;
     LtePhyBase *phy = nullptr;
     LteMacEnb *mac = nullptr;
-    LteRealisticChannelModel *realChan = nullptr;
+    RealisticChannelModel *realChan = nullptr;
     opp_component_ptr<cModule> eNodeB;
     int x2;
     std::string str() const;
@@ -330,7 +330,7 @@ struct UeInfo
     double txPwr;
     MacNodeId id;
     MacNodeId cellId;
-    LteRealisticChannelModel *realChan = nullptr;
+    RealisticChannelModel *realChan = nullptr;
     opp_component_ptr<cModule> ue;
     LtePhyBase *phy = nullptr;
     std::string str() const;

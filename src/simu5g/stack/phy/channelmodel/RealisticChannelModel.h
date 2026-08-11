@@ -10,11 +10,11 @@
 // and cannot be removed from it.
 //
 
-#ifndef STACK_PHY_CHANNELMODEL_LTEREALISTICCHANNELMODEL_H_
-#define STACK_PHY_CHANNELMODEL_LTEREALISTICCHANNELMODEL_H_
+#ifndef STACK_PHY_CHANNELMODEL_REALISTICCHANNELMODEL_H_
+#define STACK_PHY_CHANNELMODEL_REALISTICCHANNELMODEL_H_
 
 #include "simu5g/common/LteDefs.h"
-#include "simu5g/stack/phy/channelmodel/LteChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 
 namespace simu5g {
 
@@ -67,7 +67,7 @@ class PathLossModel;
  * D2D links are not evaluated here. The D2dChannelModel subclass layers them on
  * top of this class.
  */
-class LteRealisticChannelModel : public LteChannelModel
+class RealisticChannelModel : public ChannelModelBase
 {
   protected:
 
@@ -212,7 +212,7 @@ class LteRealisticChannelModel : public LteChannelModel
     static simsignal_t measuredSinrUlSignal_;
 
   public:
-    ~LteRealisticChannelModel() override;
+    ~RealisticChannelModel() override;
 
     void initialize(int stage) override;
 
@@ -530,5 +530,5 @@ class LteRealisticChannelModel : public LteChannelModel
 
 } //namespace
 
-#endif /* STACK_PHY_CHANNELMODEL_LTEREALISTICCHANNELMODEL_H_ */
+#endif /* STACK_PHY_CHANNELMODEL_REALISTICCHANNELMODEL_H_ */
 

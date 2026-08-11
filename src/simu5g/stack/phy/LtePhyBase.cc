@@ -158,7 +158,7 @@ void LtePhyBase::initializeChannelModel()
 
     int numChannelModels = primaryChannelModel_->getVectorSize();
     for (int index = 1; index < numChannelModels; index++) {
-        LteChannelModel *chanModel = check_and_cast<LteChannelModel *>(primaryChannelModel_->getParentModule()->getSubmodule(primaryChannelModel_->getName(), index));
+        ChannelModelBase *chanModel = check_and_cast<ChannelModelBase *>(primaryChannelModel_->getParentModule()->getSubmodule(primaryChannelModel_->getName(), index));
         chanModel->setPhy(this);
         GHz carrierFreq = chanModel->getCarrierFrequency();
         unsigned int numerologyIndex = chanModel->getNumerologyIndex();

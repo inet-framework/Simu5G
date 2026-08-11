@@ -17,7 +17,7 @@
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/phy/LtePhyBase.h"
-#include "simu5g/stack/phy/channelmodel/LteChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 #include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
 #include "simu5g/stack/phy/packet/LteAirFrame.h"
 
@@ -31,7 +31,7 @@ void D2dUePhyHelper::storeAirFrame(LteAirFrame *newFrame)
     // Store the frame received from the nearest transmitter
     UserControlInfo *newInfo = check_and_cast<UserControlInfo *>(newFrame->getControlInfo());
     GHz carrierFreq = newInfo->getCarrierFrequency();
-    LteChannelModel *channelModel = phy_->getChannelModel(carrierFreq);
+    ChannelModelBase *channelModel = phy_->getChannelModel(carrierFreq);
     if (channelModel == nullptr)
         throw cRuntimeError("D2dUePhyHelper::storeAirFrame - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 
@@ -125,7 +125,7 @@ void D2dUePhyHelper::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo
     EV << NOW << " D2dUePhyHelper::decodeAirFrame - Start decoding..." << endl;
 
     GHz carrierFreq = lteInfo->getCarrierFrequency();
-    LteChannelModel *channelModel = phy_->getChannelModel(carrierFreq);
+    ChannelModelBase *channelModel = phy_->getChannelModel(carrierFreq);
     if (channelModel == nullptr)
         throw cRuntimeError("D2dUePhyHelper::decodeAirFrame - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 

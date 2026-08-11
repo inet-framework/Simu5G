@@ -41,10 +41,10 @@ package simu5g.stack.phy.channelmodel;
 //
 // This model is intended for protocol validation, not for performance studies.
 //
-simple LteDummyChannelModel extends LteChannelModel like ILteChannelModel
+simple IdealChannelModel extends ChannelModelBase like IChannelModel
 {
     parameters:
-        @class("LteDummyChannelModel");
+        @class("IdealChannelModel");
 
         // Error probability of the first transmission attempt; the per-direction
         // parameters below default to it

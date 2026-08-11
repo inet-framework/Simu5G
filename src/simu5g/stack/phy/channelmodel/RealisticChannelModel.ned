@@ -22,10 +22,10 @@ package simu5g.stack.phy.channelmodel;
 // These effects are utilized to compute the Signal to Interference-plus-Noise Ratio (SINR).
 //
 //
-simple LteRealisticChannelModel extends LteChannelModel
+simple RealisticChannelModel extends ChannelModelBase
 {
     parameters:
-        @class("LteRealisticChannelModel");
+        @class("RealisticChannelModel");
 
         string pathLossType @enum("Tr36814","Tr36873","Tr38901") = default("Tr36814"); // which 3GPP propagation study supplies the path loss formulas
 

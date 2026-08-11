@@ -14,15 +14,15 @@ package simu5g.stack.phy.channelmodel;
 
 
 //
-// ~LteRealisticChannelModel preset with the propagation formulas of
+// ~RealisticChannelModel preset with the propagation formulas of
 // 3GPP TR 36.873, "Study on 3D channel model for LTE", v12.7.0, December 2017.
 // It differs from its base type only in the pathLossType default; there is no
 // C++ class behind the name.
 //
-simple NrChannelModel extends LteRealisticChannelModel
+simple NrChannelModel extends RealisticChannelModel
 {
     parameters:
-        @class("LteRealisticChannelModel");
+        @class("RealisticChannelModel");
         pathLossType = default("Tr36873");
 }
 

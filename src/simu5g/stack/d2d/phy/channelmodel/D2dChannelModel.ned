@@ -12,16 +12,16 @@
 
 package simu5g.stack.d2d.phy.channelmodel;
 
-import simu5g.stack.phy.channelmodel.LteRealisticChannelModel;
+import simu5g.stack.phy.channelmodel.RealisticChannelModel;
 
 //
-// D2D-capable channel model: ~LteRealisticChannelModel plus the device-to-device
+// D2D-capable channel model: ~RealisticChannelModel plus the device-to-device
 // channel math (RSRP/SINR, D2D interference, D2D reception decision). It is the
 // channel model of the D2D NICs on all propagation studies; the pathLossType
-// parameter (inherited from ~LteRealisticChannelModel) selects TR 36.814, 36.873
+// parameter (inherited from ~RealisticChannelModel) selects TR 36.814, 36.873
 // or 38.901.
 //
-simple D2dChannelModel extends LteRealisticChannelModel
+simple D2dChannelModel extends RealisticChannelModel
 {
     parameters:
         @class("D2dChannelModel");

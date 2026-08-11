@@ -10,17 +10,17 @@
 // and cannot be removed from it.
 //
 
-#ifndef STACK_PHY_CHANNELMODEL_LTEDUMMYCHANNELMODEL_H_
-#define STACK_PHY_CHANNELMODEL_LTEDUMMYCHANNELMODEL_H_
+#ifndef STACK_PHY_CHANNELMODEL_IDEALCHANNELMODEL_H_
+#define STACK_PHY_CHANNELMODEL_IDEALCHANNELMODEL_H_
 
 #include "simu5g/common/LteControlInfo.h"
-#include "simu5g/stack/phy/channelmodel/LteChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
 
-class LteDummyChannelModel : public LteChannelModel
+class IdealChannelModel : public ChannelModelBase
 {
   private:
     // volatile, so that the error rate can be made a function of simulation time --
@@ -99,5 +99,5 @@ class LteDummyChannelModel : public LteChannelModel
 
 } //namespace
 
-#endif /* STACK_PHY_CHANNELMODEL_LTEDUMMYCHANNELMODEL_H_ */
+#endif /* STACK_PHY_CHANNELMODEL_IDEALCHANNELMODEL_H_ */
 

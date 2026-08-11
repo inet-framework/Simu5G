@@ -45,7 +45,7 @@ class LtePhyEnb : public LtePhyBase
     /// appends additional per-link feedback to the feedback packet (default:
     /// none); called after the UL and DL vectors have been stored, with the
     /// control info still in its end-of-loop (DL) state
-    virtual void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, LteChannelModel *channelModel) {}
+    virtual void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, ChannelModelBase *channelModel) {}
     // Feedback computation for PisaPhy
     virtual LteFeedbackComputation *getFeedbackComputationFromName(std::string name, ParameterMap& params);
     virtual void initializeFeedbackComputation();

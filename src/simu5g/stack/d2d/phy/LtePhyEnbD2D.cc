@@ -31,7 +31,7 @@ void LtePhyEnbD2D::initialize(int stage)
     }
 }
 
-void LtePhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, LteChannelModel *channelModel)
+void LtePhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, ChannelModelBase *channelModel)
 {
     if (!enableD2DCqiReporting_)
         return;

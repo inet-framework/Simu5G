@@ -45,7 +45,7 @@ double DistanceBasedConflictGraph::getDbmFromDistance(double distance)
     double pLoss = 0;
 
     // get the reference to the channel model of the eNB
-    LteChannelModel *channelModel = macEnb_->getPhy()->getChannelModel();
+    ChannelModelBase *channelModel = macEnb_->getPhy()->getChannelModel();
 
     // obtain path loss in dBm
     if (channelModel == nullptr)
