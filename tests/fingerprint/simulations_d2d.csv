@@ -7,7 +7,7 @@
 /simulations/lte/d2d_multihop/,          -f omnetpp.ini -c MultihopD2D-rangeCheckTrickle -r 0,   3s,         bd0c-a2f1/tplx;0ad6-a66b/tilx;a805-6205/~tNl;3907-7e76/sz, PASS,
 /simulations/lte/d2d_multihop/,          -f omnetpp.ini -c MultihopD2D-Trickle -r 0,             3s,         1080-2670/tplx;7eb2-7af9/tilx;6112-3097/~tNl;606f-be87/sz, PASS,
 /simulations/lte/d2d/,                   -f omnetpp.ini -c MultiplePairs-TCP-D2D -r 0,           5s,         063e-ca49/tplx;8652-149e/tilx;74f9-58f0/~tNl;1362-ebae/sz, PASS,
-/simulations/lte/d2d/,                   -f omnetpp.ini -c MultiplePairs-TCP-D2D-wReuse -r 0,    5s,         0799-f2e2/tplx;0195-22b4/tilx;1c77-7140/~tNl;7dbc-13b8/sz, PASS,
+/simulations/lte/d2d/,                   -f omnetpp.ini -c MultiplePairs-TCP-D2D-wReuse -r 0,    5s,         8e5b-0bd8/tplx;79a3-46cd/tilx;dfdc-c01a/~tNl;93e3-8b7c/sz, PASS,
 /simulations/lte/d2d/,                   -f omnetpp.ini -c MultiplePairs-TCP-Infra -r 0,         5s,         eb9c-7725/tplx;20c0-f71c/tilx;a976-3174/~tNl;1632-8f62/sz, PASS,
 /simulations/lte/d2d/,                   -f omnetpp.ini -c MultiplePairs-UDP-D2D -r 0,           5s,         3f79-7984/tplx;eb1d-e89b/tilx;d039-df25/~tNl;9d65-3273/sz, PASS,
 /simulations/lte/d2d/,                   -f omnetpp.ini -c MultiplePairs-UDP-D2D-wReuse -r 0,    5s,         3be4-da8f/tplx;b93a-4351/tilx;726b-dd48/~tNl;7149-11bd/sz, PASS,
