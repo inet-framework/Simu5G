@@ -128,6 +128,8 @@ double Tr38901PathLossModel::computePenetrationLoss(double threeDimDistance)
     double pLoss_in = 0.5 * inside_distance;
     double pLoss_tw = 0.0;
     if (carrierFrequencyGHz_ <= 6.0)
+        // single-frequency model of table 7.4.3-3, kept for backwards
+        // compatibility with TR 36.873; its sigma_P is 0
         pLoss_tw = 20.0;
     else {
         double Lglass = 2 + 0.2 * carrierFrequencyGHz_;
