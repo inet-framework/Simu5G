@@ -47,12 +47,11 @@ class PathLossModel;
  * computeShadowing and computeAngularAttenuation. Which 3GPP propagation study
  * the strategy implements is chosen by the pathLossType parameter ("Tr36814",
  * "Tr36873" or "Tr38901"); createPathLossModel() instantiates the matching
- * strategy class. NrChannelModel and NrChannelModel_3GPP38_901 are near-empty
- * subclasses that override nothing: they exist only to give the NR NICs'
- * default channel model a different pathLossType default (Tr36873 and
- * Tr38901 respectively) than the base class's own default (Tr36814). All the
- * rest -- fading, interference, SINR assembly, the reception decision -- is
- * shared by every pathLossType.
+ * strategy class. NrChannelModel and NrChannelModel_3GPP38_901 are NED-level
+ * presets of this class (no C++ class of their own) that only override the
+ * pathLossType default, to Tr36873 and Tr38901 respectively. All the rest --
+ * fading, interference, SINR assembly, the reception decision -- is shared
+ * by every pathLossType.
  *
  * Supported propagation studies:
  * - 3GPP TR 36.814, "Further advancements for E-UTRA physical layer aspects", v9.2.0, March 2017

@@ -13,17 +13,15 @@
 package simu5g.stack.phy.channelmodel;
 
 
-// NrChannelModel_3GPP38_901
 //
-// This channel model implements path loss, LOS probability, and shadowing according to
-// the following specifications:
-//     3GPP TR 38.901, "Study on channel model for frequencies from 0.5 to 100 GHz", v16.1.0, December 2019
-//
-// TODO: Implement Urban Macro only
+// ~LteRealisticChannelModel preset with the propagation formulas of
+// 3GPP TR 38.901, "Study on channel model for frequencies from 0.5 to 100 GHz",
+// v16.1.0, December 2019. It differs from its base type only in the
+// pathLossType default; there is no C++ class behind the name. It is the
+// default channel model of the gNodeB NIC and of the NR side of the NR UE NIC.
 //
 simple NrChannelModel_3GPP38_901 extends NrChannelModel
 {
     parameters:
-        @class("NrChannelModel_3GPP38_901");
         pathLossType = default("Tr38901");
 }

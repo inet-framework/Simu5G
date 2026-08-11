@@ -132,10 +132,11 @@ struct RadioLink
  * computePathLoss) is one ingredient among those, not the subject of the class.
  *
  * The "Lte" in the name says nothing about the radio access technology. The
- * concrete models differ in which 3GPP propagation study they implement, not in
- * whether they serve an LTE or an NR carrier, and any of them can be plugged
- * into any NIC through the ILteChannelModel interface -- the gNodeB NIC selects
- * NrChannelModel_3GPP38_901 into the slot its parameter still calls
+ * concrete models differ in which 3GPP propagation study supplies their
+ * formulas (the pathLossType parameter), not in whether they serve an LTE or
+ * an NR carrier, and any of them can be plugged into any NIC through the
+ * ILteChannelModel interface -- the gNodeB NIC selects the
+ * NrChannelModel_3GPP38_901 preset into the slot its parameter still calls
  * lteChannelModelType. Everything technology-dependent -- carrier frequency,
  * bandwidth, numerology -- is read from the ComponentCarrier module rather than
  * encoded in the class.
