@@ -26,23 +26,17 @@ using namespace omnetpp;
 /**
  * CRTP mixin that adds D2D support to a UE PHY.
  *
- * The core UE PHYs (LtePhyUe and its NR subclass NrPhyUe) carry no D2D code;
- * this mixin layers the D2D UE-PHY logic (D2D Tx power, D2D CQI accounting,
- * one-to-many D2D transmission, the D2D-multicast capture effect) on top of
- * either of them, so the LTE and NR D2D PHYs share one implementation. The
+ * The core UE PHY (LtePhyUe) carries no D2D code; this mixin layers the D2D
+ * UE-PHY logic (D2D Tx power, D2D CQI accounting, one-to-many D2D
+ * transmission, the D2D-multicast capture effect) on top of it. The
  * capture-effect machinery lives in D2dUePhyHelper; the mixin holds the
- * module-side glue the two leaf classes used to duplicate. It has native
- * protected access to the Base internals it needs.
+ * module-side glue. It has native protected access to the Base internals it
+ * needs.
  *
- * The concrete Define_Module'd PHYs are:
- *   LtePhyUeD2D = D2dUePhy<LtePhyUe>
- *   NrPhyUeD2D  = D2dUePhy<NrPhyUe>
- * (NrPhyUeD2D must remain an is-a NrPhyUe: the dynamic_cast<NrPhyUe *> in
- * HandoverController is the dual-stack discriminator.)
+ * The concrete Define_Module'd PHY is LtePhyUeD2D = D2dUePhy<LtePhyUe>.
  *
- * Note: handleAirFrame() fully replaces the Base implementation (both leaves
- * carried the same, NR-shaped body); the other overrides extend Base behavior
- * and chain up to it.
+ * Note: handleAirFrame() fully replaces the Base implementation; the other
+ * overrides extend Base behavior and chain up to it.
  */
 template<class Base>
 class D2dUePhy : public Base

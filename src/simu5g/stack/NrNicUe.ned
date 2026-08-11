@@ -46,15 +46,11 @@ module NrNicUe extends LteNicUe
 
         ip2nic.isNr = default(true);
         rrc.bearerManagement.pdcpEntityModuleType = default("simu5g.stack.pdcp.NrPdcpEntity");
-        phy.typename = default("NrPhyUe");	        // TODO fix this
-        											// LtePhy is of type NrPhyUe so that it is
-        											// be aware of the existing of the second
-        											// PHY layer (needed at handover)
 
         rrc.hasNrHandoverController = true;
         rrc.nrHandoverController.isNr = true;
         nrMac.isNr = true;
-        nrPhy.isNr = true;  // NOTE: the LTE-leg 'phy' submodule is also of type NrPhyUe (see below), but is not part of the NR stack
+        nrPhy.isNr = true;
         nrDlFbGen.isNr = true;
         // the NR leg's modules take their MacNodeId from the node's NR id
         rrc.nrHandoverController.macNodeId = parent.nrMacNodeId;
@@ -85,7 +81,7 @@ module NrNicUe extends LteNicUe
             @display("p=570,510");
         }
         // PHY Layer
-        nrPhy: <default("NrPhyUe")> like ILtePhy {
+        nrPhy: <default("LtePhyUe")> like ILtePhy {
             @display("p=570,600");
         }
         // NR Channel Model
