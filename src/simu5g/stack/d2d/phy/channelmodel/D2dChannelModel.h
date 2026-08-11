@@ -29,24 +29,14 @@ using namespace inet;
 using namespace omnetpp;
 
 /**
- * CRTP mixin that adds D2D support to a core channel model.
- *
- * The core channel models (LteRealisticChannelModel and its NR subclasses) carry
- * no D2D code; this mixin layers the ~800 lines of D2D channel math (attenuation,
- * RSRP/SINR, interference and reception decision) on top of any of them, composing
- * cleanly with the NrChannelModel / NrChannelModel_3GPP38_901 inheritance chain
- * without a diamond. It has native protected access to the Base internals it needs.
- *
- * The concrete Define_Module'd channel models are:
- *   D2dRealisticChannelModel       = D2dChannelModel<LteRealisticChannelModel>
- *   D2dNrChannelModel              = D2dChannelModel<NrChannelModel>
- *   D2dNrChannelModel_3GPP38_901   = D2dChannelModel<NrChannelModel_3GPP38_901>
- * (see D2dChannelModel.cc).
+ * Channel model for D2D-capable NICs: LteRealisticChannelModel (whose
+ * pathLossType parameter selects the propagation study -- TR 36.814, 36.873
+ * or 38.901) plus the ~800 lines of D2D channel math (attenuation, RSRP/SINR,
+ * interference and reception decision) layered on top of it.
  *
  * The rcvdSinrD2D signal is owned and interned here, not in the core channel model.
  */
-template<class Base>
-class D2dChannelModel : public Base, public ID2dChannelModel
+class D2dChannelModel : public LteRealisticChannelModel, public ID2dChannelModel
 {
   protected:
     // enable/disable the interference computation for D2D connections
@@ -94,18 +84,16 @@ class D2dChannelModel : public Base, public ID2dChannelModel
     bool recordsUlTransmissionMap() override { return this->isUplinkInterferenceEnabled() || enableD2DInterference_; }
 };
 
-template<class Base>
-void D2dChannelModel<Base>::initialize(int stage)
+inline void D2dChannelModel::initialize(int stage)
 {
-    Base::initialize(stage);
+    LteRealisticChannelModel::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         rcvdSinrD2DSignal_ = cComponent::registerSignal("rcvdSinrD2D");
         enableD2DInterference_ = this->par("d2dInterference");
     }
 }
 
-template<class Base>
-RadioLink D2dChannelModel<Base>::d2dLink(MacNodeId srcId, Coord srcCoord, MacNodeId destId, Coord destCoord, bool useUeSideMaps)
+inline RadioLink D2dChannelModel::d2dLink(MacNodeId srcId, Coord srcCoord, MacNodeId destId, Coord destCoord, bool useUeSideMaps)
 {
     RadioLink link;
     link.dir = D2D;
@@ -135,8 +123,7 @@ RadioLink D2dChannelModel<Base>::d2dLink(MacNodeId srcId, Coord srcCoord, MacNod
     return link;
 }
 
-template<class Base>
-std::vector<double> D2dChannelModel<Base>::getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, Coord destCoord)
+inline std::vector<double> D2dChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, Coord destCoord)
 {
     EV << "------------ GET RSRP D2D----------------" << endl;
 
@@ -148,8 +135,7 @@ std::vector<double> D2dChannelModel<Base>::getRSRP_D2D(LteAirFrame *frame, UserC
     return this->getRSRP(link, lteInfo_1->getD2dTxPower());
 }
 
-template<class Base>
-std::vector<double> D2dChannelModel<Base>::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId)
+inline std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId)
 {
     // desired-signal RSRP (pathloss + shadowing + fading), then noise and
     // interference on top: exactly the two halves this body used to inline
@@ -157,8 +143,7 @@ std::vector<double> D2dChannelModel<Base>::getSINR_D2D(LteAirFrame *frame, UserC
     return getSINR_D2D(frame, lteInfo, destId, destCoord, enbId, rsrpVector);
 }
 
-template<class Base>
-std::vector<double> D2dChannelModel<Base>::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
+inline std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
 {
     EV << "------------ GET SINR D2D----------------" << endl;
 
@@ -182,12 +167,11 @@ std::vector<double> D2dChannelModel<Base>::getSINR_D2D(LteAirFrame *frame, UserC
     return this->getSINR(link, lteInfo_1, rsrpVector);
 }
 
-template<class Base>
-void D2dChannelModel<Base>::computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
+inline void D2dChannelModel::computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
         RbMap& rbmap, double totN, std::vector<double>& den)
 {
     if (link.dir != D2D && link.dir != D2D_MULTI) {
-        Base::computeInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
+        LteRealisticChannelModel::computeInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
         return;
     }
 
@@ -228,8 +212,7 @@ void D2dChannelModel<Base>::computeInterferencePlusNoise(const RadioLink& link, 
     }
 }
 
-template<class Base>
-std::vector<double> D2dChannelModel<Base>::getReceptionSinr(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+inline std::vector<double> D2dChannelModel::getReceptionSinr(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     Direction dir = lteInfo->getDirection();
     if (dir == D2D || dir == D2D_MULTI) {
@@ -244,11 +227,10 @@ std::vector<double> D2dChannelModel<Base>::getReceptionSinr(LteAirFrame *frame, 
             return getSINR_D2D(frame, lteInfo, destId, destCoord, enbId, rsrpVector);
         return getSINR_D2D(frame, lteInfo, destId, destCoord, enbId);
     }
-    return Base::getReceptionSinr(frame, lteInfo, rsrpVector);
+    return LteRealisticChannelModel::getReceptionSinr(frame, lteInfo, rsrpVector);
 }
 
-template<class Base>
-void D2dChannelModel<Base>::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)
+inline void D2dChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)
 {
     if (dir == D2D || dir == D2D_MULTI) {
         // A D2D reception is not an uplink reception. Attribute it to the receiver --
@@ -257,11 +239,10 @@ void D2dChannelModel<Base>::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carr
         this->emit(rcvdSinrD2DSignal_, sinr);
         return;
     }
-    Base::emitRcvdSinr(dir, ueId, carrierFrequency, sinr);
+    LteRealisticChannelModel::emitRcvdSinr(dir, ueId, carrierFrequency, sinr);
 }
 
-template<class Base>
-bool D2dChannelModel<Base>::computeD2DInterference(MacNodeId eNbId, MacNodeId senderId, Coord senderCoord, MacNodeId destId, Coord destCoord, bool isCqi, GHz carrierFrequency,
+inline bool D2dChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId senderId, Coord senderCoord, MacNodeId destId, Coord destCoord, bool isCqi, GHz carrierFrequency,
         std::vector<double> *interference, Direction dir)
 {
     EV << "**** D2D Interference for cellId[" << eNbId << "] node[" << destId << "] ****" << endl;
@@ -281,7 +262,7 @@ bool D2dChannelModel<Base>::computeD2DInterference(MacNodeId eNbId, MacNodeId se
             allocatedUes = &(ulTransmissionMap->at(i));
 
             for (auto& ue_it : *allocatedUes) {
-                const auto interferer = Base::describeInterferer(ue_it);
+                const auto interferer = LteRealisticChannelModel::describeInterferer(ue_it);
                 const MacNodeId ueId = interferer.nodeId;
                 const MacCellId cellId = interferer.cellId;
                 const Direction dir = interferer.dir;

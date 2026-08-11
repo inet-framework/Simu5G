@@ -15,14 +15,16 @@ package simu5g.stack.d2d.phy.channelmodel;
 import simu5g.stack.phy.channelmodel.LteRealisticChannelModel;
 
 //
-// D2D-capable LTE realistic channel model: ~LteRealisticChannelModel plus the
-// device-to-device channel math (RSRP/SINR, D2D interference, D2D reception
-// decision). It is the default LTE channel model of the D2D NICs.
+// D2D-capable channel model: ~LteRealisticChannelModel plus the device-to-device
+// channel math (RSRP/SINR, D2D interference, D2D reception decision). It is the
+// channel model of the D2D NICs on all propagation studies; the pathLossType
+// parameter (inherited from ~LteRealisticChannelModel) selects TR 36.814, 36.873
+// or 38.901.
 //
-simple D2dRealisticChannelModel extends LteRealisticChannelModel
+simple D2dChannelModel extends LteRealisticChannelModel
 {
     parameters:
-        @class("D2dRealisticChannelModel");
+        @class("D2dChannelModel");
 
         // if true, enables the interference computation for D2D connections
         bool d2dInterference = default(true);

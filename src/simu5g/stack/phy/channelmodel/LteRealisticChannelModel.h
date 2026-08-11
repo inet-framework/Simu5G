@@ -65,8 +65,8 @@ class PathLossModel;
  * scenarios (not every study covers every scenario; see the PathLossModel
  * subclasses).
  *
- * D2D links are not evaluated here. The D2dChannelModel mixin layers them on top
- * of this class or of either of its subclasses.
+ * D2D links are not evaluated here. The D2dChannelModel subclass layers them on
+ * top of this class.
  */
 class LteRealisticChannelModel : public LteChannelModel
 {
