@@ -88,6 +88,26 @@ double Tr36873PathLossModel::getShadowingStdDev(double d3D, double d2D, bool los
     return selectStdDev(d2D < dbp, losState);
 }
 
+double Tr36873PathLossModel::computeAngularAttenuation(double hAngle, double vAngle) {
+
+    // --- compute horizontal pattern attenuation --- //
+    double angularAttMin = 30;
+
+    // compute attenuation due to horizontal angular position
+    double hAngularAtt = 12 * pow(hAngle / 65.0, 2);
+    if (hAngularAtt > angularAttMin)
+        hAngularAtt = angularAttMin;
+
+    // --- compute vertical pattern attenuation --- //
+    double vTilt = 90;
+    double vAngularAtt = 12 * pow((vAngle - vTilt) / 65.0, 2);
+    if (vAngularAtt > angularAttMin)
+        vAngularAtt = angularAttMin;
+
+    double angularAtt = hAngularAtt + vAngularAtt;
+    return (angularAtt < angularAttMin) ? angularAtt : angularAttMin;
+}
+
 double Tr36873PathLossModel::computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los)
 {
     double a, b;

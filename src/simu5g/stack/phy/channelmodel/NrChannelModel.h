@@ -26,16 +26,15 @@ namespace simu5g {
  * - 3GPP TR 36.873, "Study on 3D channel model for LTE", v12.7.0, December 2017
  *
  * The formulas themselves live in a Tr36873PathLossModel strategy, selected by
- * overriding createPathLossModel(); computePathLoss and computeLosProbability
- * are thin delegations to it. getAttenuation is inherited unchanged from
- * LteRealisticChannelModel, which computes both the 3D and 2D distance
- * between the endpoints and passes both down: path loss is evaluated over the
- * 3D distance while the LOS probability and the validity limits remain
- * functions of the 2D distance, so the base-station and UE heights
- * (nodebHeight, ueHeight) enter the result through both. computeAngularAttenuation
- * still carries its own body here, adding a vertical component alongside the
- * horizontal one. The external-cell interference methods also still carry
- * their own bodies.
+ * overriding createPathLossModel(); computePathLoss, computeLosProbability and
+ * computeAngularAttenuation are thin delegations to it. getAttenuation is
+ * inherited unchanged from LteRealisticChannelModel, which computes both the
+ * 3D and 2D distance between the endpoints and passes both down: path loss is
+ * evaluated over the 3D distance while the LOS probability and the validity
+ * limits remain functions of the 2D distance, so the base-station and UE
+ * heights (nodebHeight, ueHeight) enter the result through both, and the
+ * antenna pattern gains a vertical component alongside the horizontal one.
+ * The external-cell interference methods also still carry their own bodies.
  *
  * The name records the deployment this model is the default for (the gNodeB and
  * NR UE NICs), not a property of TR 36.873, which is itself an LTE study item.
@@ -45,13 +44,6 @@ class NrChannelModel : public LteRealisticChannelModel
 
   public:
     void initialize(int stage) override;
-
-    /*
-     *  Compute attenuation caused by transmission direction
-     *
-     * @param angle angle
-     */
-    double computeAngularAttenuation(double hAngle, double vAngle) override;
 
     /*
      * Compute LOS probability (taken from TR 36.873)

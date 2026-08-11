@@ -33,6 +33,7 @@ class Tr36814PathLossModel : public PathLossModel
     double computePathLoss(double d3D, double d2D, bool los) override;
     double computeLosProbability(double d3D, double d2D) override;
     double getShadowingStdDev(double d3D, double d2D, bool losState) override;
+    double computeAngularAttenuation(double hAngle, double vAngle) override;
 
   protected:
     /*

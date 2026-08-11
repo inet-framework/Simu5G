@@ -28,26 +28,6 @@ PathLossModel *NrChannelModel::createPathLossModel()
     return new Tr36873PathLossModel();
 }
 
-double NrChannelModel::computeAngularAttenuation(double hAngle, double vAngle) {
-
-    // --- compute horizontal pattern attenuation --- //
-    double angularAttMin = 30;
-
-    // compute attenuation due to horizontal angular position
-    double hAngularAtt = 12 * pow(hAngle / 65.0, 2);
-    if (hAngularAtt > angularAttMin)
-        hAngularAtt = angularAttMin;
-
-    // --- compute vertical pattern attenuation --- //
-    double vTilt = 90;
-    double vAngularAtt = 12 * pow((vAngle - vTilt) / 65.0, 2);
-    if (vAngularAtt > angularAttMin)
-        vAngularAtt = angularAttMin;
-
-    double angularAtt = hAngularAtt + vAngularAtt;
-    return (angularAtt < angularAttMin) ? angularAtt : angularAttMin;
-}
-
 void NrChannelModel::computeLosProbability(double d3D, double d2D, const LinkKey& nodeId)
 {
     if (!dynamicLos_) {

@@ -33,6 +33,10 @@ namespace simu5g {
  * fall through to the TR 36.814 formulas this class extends. The shadowing
  * sigma table is shared with TR 36.814 too (getShadowingStdDev() only
  * overrides which distance the breakpoint comparison uses).
+ *
+ * computeAngularAttenuation() adds a vertical antenna-pattern component
+ * alongside the horizontal one TR 36.814 alone has; Tr38901PathLossModel
+ * inherits it unchanged.
  */
 class Tr36873PathLossModel : public Tr36814PathLossModel
 {
@@ -40,6 +44,7 @@ class Tr36873PathLossModel : public Tr36814PathLossModel
     double computePathLoss(double d3D, double d2D, bool los) override;
     double computeLosProbability(double d3D, double d2D) override;
     double getShadowingStdDev(double d3D, double d2D, bool losState) override;
+    double computeAngularAttenuation(double hAngle, double vAngle) override;
 
   private:
     double computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los);

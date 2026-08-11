@@ -435,21 +435,7 @@ double LteRealisticChannelModel::computeVerticalAngle(Coord center, Coord point)
 }
 
 double LteRealisticChannelModel::computeAngularAttenuation(double hAngle, double vAngle) {
-
-    // in this implementation, vertical angle is not considered
-
-    double angularAtt;
-    double angularAttMin = 25;
-    // compute attenuation due to angular position
-    // see TR 36.814 V9.0.0 for more details
-    angularAtt = 12 * pow(hAngle / 70.0, 2);
-
-    //  EV << "\t angularAtt[" << angularAtt << "]" << endl;
-    // max value for angular attenuation is 25 dB
-    if (angularAtt > angularAttMin)
-        angularAtt = angularAttMin;
-
-    return angularAtt;
+    return pathLoss_->computeAngularAttenuation(hAngle, vAngle);
 }
 
 std::vector<double> LteRealisticChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)

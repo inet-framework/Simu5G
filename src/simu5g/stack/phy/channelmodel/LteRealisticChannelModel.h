@@ -43,12 +43,13 @@ class PathLossModel;
  * - the SINR statistics.
  *
  * The propagation formulas proper live in a PathLossModel strategy (pathLoss_)
- * that this class owns and delegates to from computePathLoss, computeLosProbability
- * and computeShadowing. NrChannelModel and NrChannelModel_3GPP38_901 still
- * override those three plus getStdDev and computeAngularAttenuation with their
- * own formula bodies, rather than going through a strategy of their own. All
- * the rest -- fading, interference, SINR assembly, the reception decision --
- * is inherited unchanged by every one of them.
+ * that this class owns and delegates to from computePathLoss, computeLosProbability,
+ * computeShadowing and computeAngularAttenuation. NrChannelModel and
+ * NrChannelModel_3GPP38_901 still override computePathLoss, computeLosProbability
+ * and (38.901 only) computeShadowing with their own formula bodies, rather than
+ * going through a strategy of their own. All the rest -- fading, interference,
+ * SINR assembly, the reception decision -- is inherited unchanged by every one
+ * of them.
  *
  * The formulas here are the 2D, LTE-era ones:
  * - 3GPP TR 36.814, "Further advancements for E-UTRA physical layer aspects", v9.2.0, March 2017

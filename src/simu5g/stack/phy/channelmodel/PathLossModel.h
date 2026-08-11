@@ -82,6 +82,12 @@ class PathLossModel
      * to the selected scenario and the LOS state of the link.
      */
     virtual double getShadowingStdDev(double d3D, double d2D, bool losState) = 0;
+
+    /*
+     * Compute the attenuation caused by the antenna pattern for a given
+     * reception direction.
+     */
+    virtual double computeAngularAttenuation(double hAngle, double vAngle) = 0;
 };
 
 } //namespace
