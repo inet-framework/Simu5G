@@ -346,6 +346,69 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
     return true;
 }
 
+bool LteMacUe::buildStandaloneBsr()
+{
+    // handleSelfMessage() calls macPduMake() when a grant arrives with nothing
+    // scheduled, precisely so the grant can carry a buffer status report. The SDU
+    // loop has no schedule entry to hang a PDU on, so unless one is built here
+    // that report is never produced and the grant is wasted.
+    for (auto& [carrierFreq, grant] : schedulingGrant_) {
+        // skip if this is not the turn of this carrier
+        if (!isCarrierActive(carrierFreq))
+            continue;
+
+        if (grant == nullptr || grant->getDirection() != UL || !emptyScheduleList_)
+            continue;
+
+        // the first carrier whose grant matches decides
+        if (!isBsrPending())
+            return false;
+
+        // report what is still queued across this UE's uplink flows, including the
+        // RLC header bytes the grant would have to cover
+        int64_t size = 0;
+        for (auto& [cid, connInfo] : connDescOut_) {
+            if (connInfo.flowInfo.getDirection() != UL)
+                continue;
+            size += connInfo.buffer->getQueueOccupancy();
+            if (size > 0) {
+                if (getLogicalChannelConfig(cid).rlcMode == UM)
+                    size += RLC_HEADER_UM;
+                else if (getLogicalChannelConfig(cid).rlcMode == AM)
+                    size += RLC_HEADER_AM;
+            }
+        }
+
+        // Reported whatever the size: a zero report is the defined way to tell the
+        // scheduler the buffers are empty (TS 36.321 / TS 38.321 5.4.5), and the
+        // specs cancel a BSR on inclusion in a PDU, never because it would be zero.
+        auto macPkt = new Packet("LteMacPdu");
+        auto header = makeShared<LteMacPdu>();
+        header->setHeaderLength(MAC_HEADER);
+
+        MacBsr *bsr = new MacBsr();
+        bsr->setTimestamp(simTime().dbl());
+        bsr->setSize(size);
+        header->pushCe(bsr);
+        macPkt->insertAtFront(header);
+
+        auto info = macPkt->addTagIfAbsent<UserControlInfo>();
+        info->setSourceId(getMacNodeId());
+        info->setDestId(getMacCellId());
+        info->setDirection(UL);
+        info->setPacketLcid(SHORT_BSR);
+        info->setCarrierFrequency(carrierFreq);
+        info->setUserTxParams(grant->getUserTxParams()->dup());
+        macPkt->setTimestamp(NOW);
+
+        cancelBsr();
+        macPduList_[carrierFreq][{getMacCellId(), 0}] = macPkt;
+        EV << "LteMacUe::buildStandaloneBsr - BSR-only PDU created, size " << size << endl;
+        return true;
+    }
+    return false;
+}
+
 Packet *LteMacUe::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId destId)
 {
     auto macPkt = new Packet("LteMacPdu");

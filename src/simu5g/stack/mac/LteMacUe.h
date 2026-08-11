@@ -128,8 +128,8 @@ class LteMacUe : public LteMacBase
 
     /// Builds a standalone BSR-only PDU when a grant arrives with an empty schedule
     /// list, and returns whether it did; if so, macPduMake() skips the SDU loop.
-    /// The plain LTE UE never builds one.
-    virtual bool buildStandaloneBsr() { return false; }
+    /// This is what handleSelfMessage() calls macPduMake() for in that situation.
+    virtual bool buildStandaloneBsr();
 
     /// The destination of an UL MAC PDU carrying this connection. Needed before the
     /// PDU exists, since it keys macPduList_. At an LTE UE it is always the cell.

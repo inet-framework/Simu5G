@@ -46,10 +46,6 @@ class NrMacUe : public LteMacUe
      * On UE it also adds a BSR control element to the MAC PDU
      * containing the size of its buffer (for that CID)
      */
-    /// The NR UE has no D2D flows, so it never builds a standalone BSR PDU here --
-    /// but it does consume the trigger. See the body.
-    bool buildStandaloneBsr() override;
-
     /// NR bearers are peer-addressed: the destination comes from the flow, not the cell.
     MacNodeId pduDestId(MacCid destCid) override { return connDescOut_.at(destCid).flowInfo.getDestId(); }
 
