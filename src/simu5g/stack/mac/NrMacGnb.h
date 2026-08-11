@@ -28,8 +28,8 @@ class NrMacGnb : public LteMacEnb
     // sendGrants()/macPduUnmake() rather than plain LteMacEnb. Those methods now
     // live once in LteMacEnb; of the three seams that preserved the fork, the
     // grant direction and the BSR buffer key have become the base's own behavior,
-    // leaving only the 1-bit grant header below.
-    inet::b grantChunkLength() const override { return inet::b(1); }
+    // leaving only the grant header length below -- now the base's value too.
+    inet::b grantChunkLength() const override { return inet::B(1); }
 };
 
 } //namespace
