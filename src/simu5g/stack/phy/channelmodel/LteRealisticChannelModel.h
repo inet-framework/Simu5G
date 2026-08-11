@@ -259,11 +259,12 @@ class LteRealisticChannelModel : public LteChannelModel
     /*
      * Compute shadowing
      *
-     * @param distance between UE and eNodeB
+     * @param d3D 3D distance between UE and eNodeB
+     * @param d2D 2D distance between UE and eNodeB
      * @param nodeid mac node id of UE
      * @param speed speed of UE
      */
-    virtual double computeShadowing(double sqrDistance, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl);
+    virtual double computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl);
 
     /*
      * Compute sir for each band for user nodeId according to multipath fading
@@ -361,10 +362,11 @@ class LteRealisticChannelModel : public LteChannelModel
     /*
      * Compute LOS probability
      *
-     * @param d between UE and eNodeB
+     * @param d3D 3D distance between UE and eNodeB
+     * @param d2D 2D distance between UE and eNodeB
      * @param nodeid mac node id of UE
      */
-    virtual void computeLosProbability(double d, const LinkKey& key);
+    virtual void computeLosProbability(double d3D, double d2D, const LinkKey& key);
 
     JakesFadingMap *getJakesMap()
     {

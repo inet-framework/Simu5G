@@ -83,9 +83,10 @@ double Tr38901PathLossModel::getShadowingStdDev(double d3D, double d2D, bool los
     // Breakpoint distance of the RMa path loss (Q3: TR 38.901 uses
     // 2*pi*hNodeB*hUe*fc/c, not the base classes' 4*(hNodeB-1)*(hUe-1)*fc/c);
     // the LOS branch of that scenario uses different sigma values below and
-    // above it.
+    // above it. The comparison uses the 2D distance (Q1), like the base
+    // classes' shadowing breakpoint.
     double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / SPEED_OF_LIGHT);
-    bool belowBreakpoint = d3D < dbp;
+    bool belowBreakpoint = d2D < dbp;
 
     switch (scenario_) {
         case URBAN_MICROCELL:

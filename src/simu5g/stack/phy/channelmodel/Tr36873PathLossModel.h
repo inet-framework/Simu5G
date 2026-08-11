@@ -30,13 +30,16 @@ namespace simu5g {
  *
  * Scenario coverage is partial: Suburban Macrocell path loss and Indoor
  * Hotspot / Suburban Macrocell LOS probability are not covered here and
- * fall through to the TR 36.814 formulas this class extends.
+ * fall through to the TR 36.814 formulas this class extends. The shadowing
+ * sigma table is shared with TR 36.814 too (getShadowingStdDev() only
+ * overrides which distance the breakpoint comparison uses).
  */
 class Tr36873PathLossModel : public Tr36814PathLossModel
 {
   public:
     double computePathLoss(double d3D, double d2D, bool los) override;
     double computeLosProbability(double d3D, double d2D) override;
+    double getShadowingStdDev(double d3D, double d2D, bool losState) override;
 
   private:
     double computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los);

@@ -220,8 +220,9 @@ RadioLink LteRealisticChannelModel::linkFor(UserControlInfo *lteInfo)
 
 double LteRealisticChannelModel::getAttenuation(const RadioLink& link)
 {
-    //COMPUTE DISTANCE between the two endpoints
-    double sqrDistance = link.txCoord.distance(link.rxCoord);
+    // COMPUTE 3D and 2D DISTANCE between the two endpoints
+    double threeDimDistance = link.txCoord.distance(link.rxCoord);
+    double twoDimDistance = getTwoDimDistance(link.txCoord, link.rxCoord);
 
     double speed = computeSpeed(link.stateNodeId, link.stateCoord);
     double correlationDist = computeCorrelationDistance(link.stateKey, link.stateCoord);
@@ -232,29 +233,28 @@ double LteRealisticChannelModel::getAttenuation(const RadioLink& link)
     if (correlationDist > correlationDistance_
         || losMap_.find(link.stateKey) == losMap_.end())
     {
-        computeLosProbability(sqrDistance, link.stateKey);
+        computeLosProbability(threeDimDistance, twoDimDistance, link.stateKey);
     }
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
     bool los = losMap_[link.stateKey];
-    double dbp = 0;
-    double attenuation = computePathLoss(sqrDistance, dbp, los);
+    double attenuation = computePathLoss(threeDimDistance, twoDimDistance, los);
 
     //    Applying shadowing only if it is enabled by configuration
     //    log-normal shadowing (not available for background UEs)
     if (num(link.stateNodeId) < BGUE_MIN_ID && shadowing_)
-        attenuation += computeShadowing(sqrDistance, link.stateKey, link.stateNodeId, speed, link.useUeSideMaps);
+        attenuation += computeShadowing(threeDimDistance, twoDimDistance, link.stateKey, link.stateNodeId, speed, link.useUeSideMaps);
 
     // update the tracked node's current position
     updatePositionHistory(link.stateNodeId, link.stateCoord);
     updateCorrelationDistance(link.stateKey, link.stateCoord);
 
-    EV << "LteRealisticChannelModel::getAttenuation - computed attenuation at distance " << sqrDistance << " for eNB is " << attenuation << endl;
+    EV << "LteRealisticChannelModel::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNB is " << attenuation << endl;
 
     return attenuation;
 }
 
-double LteRealisticChannelModel::computeShadowing(double sqrDistance, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl)
+double LteRealisticChannelModel::computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl)
 {
     ShadowFadingMap *actualShadowingMap;
 
@@ -269,7 +269,7 @@ double LteRealisticChannelModel::computeShadowing(double sqrDistance, const Link
     double mean = 0;
 
     // Get std deviation according to LOS/NLOS and selected scenario
-    double stdDev = pathLoss_->getShadowingStdDev(sqrDistance, sqrDistance, losMap_[key]);
+    double stdDev = pathLoss_->getShadowingStdDev(d3D, d2D, losMap_[key]);
     double time = 0;
     double space = 0;
     double att;
@@ -1260,20 +1260,20 @@ void LteRealisticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz c
     ueChannelModel->emit(rcvdSinrUlSignal_, sinr);
 }
 
-void LteRealisticChannelModel::computeLosProbability(double d,
+void LteRealisticChannelModel::computeLosProbability(double d3D, double d2D,
         const LinkKey& nodeId)
 {
     if (!dynamicLos_) {
         losMap_[nodeId] = fixedLos_;
         return;
     }
-    double p = pathLoss_->computeLosProbability(d, d);
+    double p = pathLoss_->computeLosProbability(d3D, d2D);
     losMap_[nodeId] = (uniform(0.0, 1.0) <= p);
 }
 
 double LteRealisticChannelModel::computePathLoss(double distance, double dbp, bool los)
 {
-    return pathLoss_->computePathLoss(distance, distance, los);
+    return pathLoss_->computePathLoss(distance, dbp, los);
 }
 
 double LteRealisticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)

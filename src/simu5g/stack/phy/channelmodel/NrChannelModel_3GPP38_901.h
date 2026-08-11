@@ -45,10 +45,11 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
     /*
      * Compute LOS probability (taken from TR 38.901)
      *
-     * @param d distance between UE and gNodeB
+     * @param d3D 3D distance between UE and gNodeB
+     * @param d2D 2D distance between UE and gNodeB
      * @param nodeId mac node id of UE
      */
-    void computeLosProbability(double d, const LinkKey& key) override;
+    void computeLosProbability(double d3D, double d2D, const LinkKey& key) override;
 
     /*
      * Compute the path-loss attenuation according to the selected scenario
@@ -62,11 +63,12 @@ class NrChannelModel_3GPP38_901 : public NrChannelModel
     /*
      * Compute shadowing
      *
-     * @param sqrDistance distance between UE and gNodeB
+     * @param d3D 3D distance between UE and gNodeB
+     * @param d2D 2D distance between UE and gNodeB
      * @param nodeId mac node id of UE
      * @param speed speed of UE
      */
-    double computeShadowing(double sqrDistance, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl) override;
+    double computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl) override;
 
   protected:
 

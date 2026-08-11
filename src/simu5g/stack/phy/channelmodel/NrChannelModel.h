@@ -27,14 +27,15 @@ namespace simu5g {
  *
  * The formulas themselves live in a Tr36873PathLossModel strategy, selected by
  * overriding createPathLossModel(); computePathLoss and computeLosProbability
- * are thin delegations to it. getAttenuation and computeAngularAttenuation
- * still carry their own bodies here -- "3D" is what they add: path loss is
- * evaluated over the 3D distance between the endpoints while the LOS
- * probability and the validity limits remain functions of the 2D distance, so
- * the base-station and UE heights (nodebHeight, ueHeight) enter the result,
- * and the antenna pattern gains a vertical component alongside the horizontal
- * one. The external-cell interference methods also still carry their own
- * bodies.
+ * are thin delegations to it. getAttenuation is inherited unchanged from
+ * LteRealisticChannelModel, which computes both the 3D and 2D distance
+ * between the endpoints and passes both down: path loss is evaluated over the
+ * 3D distance while the LOS probability and the validity limits remain
+ * functions of the 2D distance, so the base-station and UE heights
+ * (nodebHeight, ueHeight) enter the result through both. computeAngularAttenuation
+ * still carries its own body here, adding a vertical component alongside the
+ * horizontal one. The external-cell interference methods also still carry
+ * their own bodies.
  *
  * The name records the deployment this model is the default for (the gNodeB and
  * NR UE NICs), not a property of TR 36.873, which is itself an LTE study item.
@@ -46,16 +47,6 @@ class NrChannelModel : public LteRealisticChannelModel
     void initialize(int stage) override;
 
     /*
-     * Compute attenuation caused by path loss and shadowing (optional)
-     *
-     * @param nodeId MAC node ID of UE
-     * @param dir traffic direction
-     * @param coord position of end point communication (if dir==UL it is the position of UE else it is the position of gNodeB)
-     */
-    double getAttenuation(const RadioLink& link) override;
-    using LteRealisticChannelModel::getAttenuation; // keep the cellular convenience overload visible
-
-    /*
      *  Compute attenuation caused by transmission direction
      *
      * @param angle angle
@@ -65,10 +56,11 @@ class NrChannelModel : public LteRealisticChannelModel
     /*
      * Compute LOS probability (taken from TR 36.873)
      *
-     * @param d distance between UE and gNodeB
+     * @param d3D 3D distance between UE and gNodeB
+     * @param d2D 2D distance between UE and gNodeB
      * @param nodeId MAC node ID of UE
      */
-    void computeLosProbability(double d, const LinkKey& key) override;
+    void computeLosProbability(double d3D, double d2D, const LinkKey& key) override;
 
     /*
      * Compute the path-loss attenuation according to the selected scenario

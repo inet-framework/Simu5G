@@ -28,42 +28,6 @@ PathLossModel *NrChannelModel::createPathLossModel()
     return new Tr36873PathLossModel();
 }
 
-double NrChannelModel::getAttenuation(const RadioLink& link)
-{
-    // COMPUTE 3D and 2D DISTANCE between the two endpoints
-    double threeDimDistance = link.txCoord.distance(link.rxCoord);
-    double twoDimDistance = getTwoDimDistance(link.txCoord, link.rxCoord);
-
-    double speed = computeSpeed(link.stateNodeId, link.stateCoord);
-    double correlationDist = computeCorrelationDistance(link.stateKey, link.stateCoord);
-
-    // If the traveled distance is greater than the correlation distance, the UE could have changed its state and
-    // its visibility from the eNodeB, hence it is correct to recompute the LOS probability.
-    if (correlationDist > correlationDistance_
-        || losMap_.find(link.stateKey) == losMap_.end())
-    {
-        computeLosProbability(twoDimDistance, link.stateKey);
-    }
-
-    // compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = losMap_[link.stateKey];
-    double attenuation = computePathLoss(threeDimDistance, twoDimDistance, los);
-
-    // Applying shadowing only if it is enabled by configuration
-    // log-normal shadowing (not available for background UEs)
-    if (num(link.stateNodeId) < BGUE_MIN_ID && shadowing_)
-        attenuation += computeShadowing(twoDimDistance, link.stateKey, link.stateNodeId, speed, link.useUeSideMaps);
-
-    // update the tracked node's current position, and re-anchor the point the
-    // correlation distance is measured from
-    updatePositionHistory(link.stateNodeId, link.stateCoord);
-    updateCorrelationDistance(link.stateKey, link.stateCoord);
-
-    EV << "NrChannelModel::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNb is " << attenuation << endl;
-
-    return attenuation;
-}
-
 double NrChannelModel::computeAngularAttenuation(double hAngle, double vAngle) {
 
     // --- compute horizontal pattern attenuation --- //
@@ -84,13 +48,13 @@ double NrChannelModel::computeAngularAttenuation(double hAngle, double vAngle) {
     return (angularAtt < angularAttMin) ? angularAtt : angularAttMin;
 }
 
-void NrChannelModel::computeLosProbability(double d, const LinkKey& nodeId)
+void NrChannelModel::computeLosProbability(double d3D, double d2D, const LinkKey& nodeId)
 {
     if (!dynamicLos_) {
         losMap_[nodeId] = fixedLos_;
         return;
     }
-    double p = pathLoss_->computeLosProbability(d, d);
+    double p = pathLoss_->computeLosProbability(d3D, d2D);
     losMap_[nodeId] = (uniform(0.0, 1.0) <= p);
 }
 

@@ -33,13 +33,13 @@ PathLossModel *NrChannelModel_3GPP38_901::createPathLossModel()
     return new Tr38901PathLossModel();
 }
 
-void NrChannelModel_3GPP38_901::computeLosProbability(double d, const LinkKey& nodeId)
+void NrChannelModel_3GPP38_901::computeLosProbability(double d3D, double d2D, const LinkKey& nodeId)
 {
     if (!dynamicLos_) {
         losMap_[nodeId] = fixedLos_;
         return;
     }
-    double p = pathLoss_->computeLosProbability(d, d);
+    double p = pathLoss_->computeLosProbability(d3D, d2D);
     losMap_[nodeId] = (uniform(0.0, 1.0) <= p);
 }
 
@@ -48,7 +48,7 @@ double NrChannelModel_3GPP38_901::computePathLoss(double threeDimDistance, doubl
     return pathLoss_->computePathLoss(threeDimDistance, twoDimDistance, los);
 }
 
-double NrChannelModel_3GPP38_901::computeShadowing(double sqrDistance, const LinkKey& nodeId, MacNodeId ownerId, double speed, bool cqiDl)
+double NrChannelModel_3GPP38_901::computeShadowing(double d3D, double d2D, const LinkKey& nodeId, MacNodeId ownerId, double speed, bool cqiDl)
 {
     ShadowFadingMap *actualShadowingMap;
 
@@ -63,7 +63,7 @@ double NrChannelModel_3GPP38_901::computeShadowing(double sqrDistance, const Lin
     double mean = 0;
 
     // Get std deviation according to los/nlos and selected scenario
-    double stdDev = pathLoss_->getShadowingStdDev(sqrDistance, sqrDistance, losMap_[nodeId]);
+    double stdDev = pathLoss_->getShadowingStdDev(d3D, d2D, losMap_[nodeId]);
     double time = 0;
     double space = 0;
     double att;
