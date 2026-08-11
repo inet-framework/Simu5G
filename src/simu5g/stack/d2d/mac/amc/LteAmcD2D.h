@@ -14,15 +14,15 @@
 #define _LTE_LTEAMCD2D_H_
 
 #include "simu5g/stack/mac/amc/LteAmc.h"
-#include "simu5g/stack/d2d/mac/amc/AmcD2D.h"
+#include "simu5g/stack/d2d/mac/amc/D2dAmc.h"
 
 namespace simu5g {
 
 /**
- * LTE AMC with device-to-device (D2D) support: the AmcD2D mixin layered over
- * the clean LteAmc. All the D2D logic lives in the mixin (see AmcD2D.h).
+ * LTE AMC with device-to-device (D2D) support: the D2dAmc mixin layered over
+ * the clean LteAmc. All the D2D logic lives in the mixin (see D2dAmc.h).
  */
-class LteAmcD2D : public AmcD2D<LteAmc>
+class LteAmcD2D : public D2dAmc<LteAmc>
 {
 };
 
