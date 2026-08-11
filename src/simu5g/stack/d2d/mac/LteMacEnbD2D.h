@@ -24,14 +24,13 @@ using namespace omnetpp;
  * D2D-capable eNB MAC: the D2dEnbMacBase mixin layered over the core LTE MAC.
  * All the D2D logic lives in the mixin (see D2dEnbMacBase.h).
  *
- * The seam override below is NOT D2D-specific: it selects the historical
- * "fork" grant header length that the D2D (and NR) MACs use, while plain
- * LteMacEnb keeps the .msg file's one-byte default.
+ * The seam override below is NOT D2D-specific: it sizes the scheduling grant
+ * header, and now returns the same one byte as plain LteMacEnb.
  */
 class LteMacEnbD2D : public D2dEnbMacBase<LteMacEnb>
 {
   protected:
-    inet::b grantChunkLength() const override { return inet::b(1); }
+    inet::b grantChunkLength() const override { return inet::B(1); }
 };
 
 } //namespace
