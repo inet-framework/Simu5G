@@ -231,30 +231,6 @@ UnitList NrMacUe::reserveTxHarqUnits(LteHarqBufferTx *txBuf, Direction dir)
     return txBuf->firstAvailable();
 }
 
-bool NrMacUe::buildStandaloneBsr()
-{
-    // UE received an UL grant, but no connection was scheduled (BSR opportunity).
-    // This is the non-D2D residue of the D2D BSR block that used to live here.
-    for (auto& [carrierFreq, grant] : schedulingGrant_) {
-        // skip if this is not the turn of this carrier
-        if (!isCarrierActive(carrierFreq))
-            continue;
-
-        if (grant != nullptr && grant->getDirection() == UL && emptyScheduleList_) {
-            if (bsrTriggered_) {
-                // Without D2D flows a BSR-only PDU is never built here: the old code
-                // computed sizeBsr==0 over UL flows and just cleared the trigger.
-                // Preserved bug-compatibly; flagged for explicit review later.
-                bsrTriggered_ = false;
-                bsrRtxTimer_ = 0;
-            }
-            // the first carrier whose grant matched decides, whether or not a BSR was built
-            return false;
-        }
-    }
-    return false;
-}
-
 Packet *NrMacUe::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId destId)
 {
     auto macPkt = new Packet("LteMacPdu");
