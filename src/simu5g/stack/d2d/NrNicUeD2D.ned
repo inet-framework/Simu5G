@@ -25,12 +25,12 @@ module NrNicUeD2D extends NrNicUe
     parameters:
         // NR stack: use the D2D-capable MAC/PHY leaves
         nrMac.typename = default("NrMacUeD2D");
-        nrPhy.typename = default("LtePhyUeD2D");
+        nrPhy.typename = default("PhyUeD2D");
 
         // LTE leg: also runs the D2D-capable MAC/PHY leaves (the PHY carries
         // the averageCqiD2D statistic)
         mac.typename = default("LteMacUeD2D");
-        phy.typename = default("LtePhyUeD2D");
+        phy.typename = default("PhyUeD2D");
         ip2nic.typename = default("Ip2NicD2D");
 
         // both legs previously ran with the NIC-wide D2D support enabled

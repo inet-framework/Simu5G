@@ -32,7 +32,7 @@ module LteNicEnb extends LteNicBase
 {
     parameters:
         mac.typename = default("LteMacEnb");
-        phy.typename = default("LtePhyEnb");
+        phy.typename = default("PhyEnb");
         handoverPacketHolder.typename = default("HandoverPacketHolderEnb");
         packetFlowObserver.typename = default("PacketFlowObserverEnb");
         bool compEnabled = default(false);

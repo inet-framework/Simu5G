@@ -14,15 +14,15 @@
 package simu5g.stack.phy;
 
 //
-// Extends the ~LtePhyBase module by providing the specific PHY functions
+// Extends the ~PhyBase module by providing the specific PHY functions
 // on the eNodeB side. It is responsible for checking if a frame received on the air interface
 // originates from a User Equipment (UE) connected to the eNB itself, and it provides the
 // functions necessary to compute the Channel Status Information (CSI) for the UEs connected to it.
 //
-simple LtePhyEnb extends LtePhyBase
+simple PhyEnb extends PhyBase
 {
     parameters:
-        @class("LtePhyEnb");
+        @class("PhyEnb");
 
         // Marks this eNB as a handover target: its beacons are used by UEs for handover
         // feasibility assessment. Requires enableBeacons=true (the default when handover is

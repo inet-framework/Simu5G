@@ -11,7 +11,7 @@
 
 #include "simu5g/stack/d2d/rrc/HandoverControllerD2D.h"
 
-#include "simu5g/stack/d2d/phy/LtePhyUeD2D.h"
+#include "simu5g/stack/d2d/phy/PhyUeD2D.h"
 #include "simu5g/stack/d2d/rrc/D2dModeSelectionBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/mac/LteMacUe.h"
@@ -53,7 +53,7 @@ void HandoverControllerD2D::requestModeSwitchAtServingCell(MacNodeId enbId, bool
 void HandoverControllerD2D::onHandoverStarting()
 {
     // D2D-specific: Perform D2D mode switch before handover (only if the PHY is D2D-capable)
-    if (dynamic_cast<LtePhyUeD2D*>(phy_)) {
+    if (dynamic_cast<PhyUeD2D*>(phy_)) {
         if (servingNodeId_ != NODEID_NONE) {
             // Stop active D2D flows (go back to Infrastructure mode)
             // Currently, DM is possible only for UEs served by the same cell
@@ -68,7 +68,7 @@ void HandoverControllerD2D::onHandoverExecuting()
 {
     // D2D-specific: detach/attach the D2D direction on the old/new AMC (before common
     // logic), only if the PHY is D2D-capable
-    if (dynamic_cast<LtePhyUeD2D*>(phy_)) {
+    if (dynamic_cast<PhyUeD2D*>(phy_)) {
         if (servingNodeId_ != NODEID_NONE) {
             LteAmc *oldAmc = check_and_cast<LteMacEnb *>(binder_->getMacFromMacNodeId(servingNodeId_))->getAmc();
             // The old serving eNB may not be D2D-capable (its AMC would throw on a D2D direction); skip if so.

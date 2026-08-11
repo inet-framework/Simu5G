@@ -10,7 +10,7 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
@@ -19,14 +19,14 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-short LtePhyBase::airFramePriority_ = 10;
+short PhyBase::airFramePriority_ = 10;
 
 //Statistics
-simsignal_t LtePhyBase::averageCqiDlSignal_ = registerSignal("averageCqiDl");
-simsignal_t LtePhyBase::averageCqiUlSignal_ = registerSignal("averageCqiUl");
+simsignal_t PhyBase::averageCqiDlSignal_ = registerSignal("averageCqiDl");
+simsignal_t PhyBase::averageCqiUlSignal_ = registerSignal("averageCqiUl");
 
 
-void LtePhyBase::initialize(int stage)
+void PhyBase::initialize(int stage)
 {
     ChannelAccess::initialize(stage);
 
@@ -51,9 +51,9 @@ void LtePhyBase::initialize(int stage)
     }
 }
 
-void LtePhyBase::handleMessage(cMessage *msg)
+void PhyBase::handleMessage(cMessage *msg)
 {
-    EV << "LtePhyBase::handleMessage - new message received" << endl;
+    EV << "PhyBase::handleMessage - new message received" << endl;
 
     if (msg->isSelfMessage()) {
         handleSelfMessage(msg);
@@ -73,7 +73,7 @@ void LtePhyBase::handleMessage(cMessage *msg)
     }
 }
 
-void LtePhyBase::handleControlMsg(LteAirFrame *frame,
+void PhyBase::handleControlMsg(LteAirFrame *frame,
         UserControlInfo *userInfo)
 {
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
@@ -83,7 +83,7 @@ void LtePhyBase::handleControlMsg(LteAirFrame *frame,
     send(pkt, upperGateOut_);
 }
 
-void LtePhyBase::sendDecodedPacketUp(inet::Packet *pkt, bool receptionSuccessful)
+void PhyBase::sendDecodedPacketUp(inet::Packet *pkt, bool receptionSuccessful)
 {
     // Update statistics
     if (receptionSuccessful)
@@ -100,9 +100,9 @@ void LtePhyBase::sendDecodedPacketUp(inet::Packet *pkt, bool receptionSuccessful
         updateDisplayString();
 }
 
-void LtePhyBase::handleUpperMessage(cMessage *msg)
+void PhyBase::handleUpperMessage(cMessage *msg)
 {
-    EV << "LtePhy: message from stack" << endl;
+    EV << "Phy: message from stack" << endl;
 
     auto pkt = check_and_cast<inet::Packet *>(msg);
     auto lteInfo = pkt->removeTag<UserControlInfo>();
@@ -125,12 +125,12 @@ void LtePhyBase::handleUpperMessage(cMessage *msg)
     stampExtraTxControlInfo(lteInfo.get());
     frame->setControlInfo(lteInfo.get()->dup());
 
-    EV << "LtePhy: " << nodeTypeToA(nodeType_) << " with id " << nodeId_
+    EV << "Phy: " << nodeTypeToA(nodeType_) << " with id " << nodeId_
        << " sending message to the air channel. Dest=" << lteInfo->getDestId() << endl;
     transmitFrame(frame, lteInfo.get());
 }
 
-const char *LtePhyBase::airFrameNameFor(const UserControlInfo *info)
+const char *PhyBase::airFrameNameFor(const UserControlInfo *info)
 {
     switch (info->getFrameType()) {
         case HARQPKT: return "harqFeedback";
@@ -140,12 +140,12 @@ const char *LtePhyBase::airFrameNameFor(const UserControlInfo *info)
     }
 }
 
-void LtePhyBase::transmitFrame(LteAirFrame *frame, const UserControlInfo *info)
+void PhyBase::transmitFrame(LteAirFrame *frame, const UserControlInfo *info)
 {
     sendUnicast(frame);
 }
 
-void LtePhyBase::initializeChannelModel()
+void PhyBase::initializeChannelModel()
 {
     primaryChannelModel_.reference(this, "channelModelModule", true);
     primaryChannelModel_->setPhy(this);
@@ -168,7 +168,7 @@ void LtePhyBase::initializeChannelModel()
     }
 }
 
-void LtePhyBase::updateDisplayString()
+void PhyBase::updateDisplayString()
 {
     char buf[80] = "";
     if (numAirFrameReceived_ > 0)
@@ -178,7 +178,7 @@ void LtePhyBase::updateDisplayString()
     getDisplayString().setTagArg("t", 0, buf);
 }
 
-void LtePhyBase::sendBroadcast(LteAirFrame *airFrame)
+void PhyBase::sendBroadcast(LteAirFrame *airFrame)
 {
     // Remove control info to allow parsim packing
     if (airFrame->getControlInfo() != nullptr) {
@@ -191,7 +191,7 @@ void LtePhyBase::sendBroadcast(LteAirFrame *airFrame)
     sendToChannel(airFrame);
 }
 
-void LtePhyBase::sendUnicast(LteAirFrame *frame)
+void PhyBase::sendUnicast(LteAirFrame *frame)
 {
     UserControlInfo *ci = check_and_cast<UserControlInfo *>(
             frame->getControlInfo());
@@ -214,7 +214,7 @@ void LtePhyBase::sendUnicast(LteAirFrame *frame)
     sendDirect(frame, 0, frame->getDuration(), receiver, getReceiverGateIndex(receiver, dest));
 }
 
-int LtePhyBase::getReceiverGateIndex(const cModule *receiver, MacNodeId dest) const
+int PhyBase::getReceiverGateIndex(const cModule *receiver, MacNodeId dest) const
 {
     int gate = isNrUe(dest) ? receiver->findGate("nrRadioIn") : receiver->findGate("radioIn");
     if (gate < 0) {

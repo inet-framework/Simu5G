@@ -12,7 +12,7 @@
 
 #include "simu5g/apps/d2dMultihop/eventGenerator/EventGenerator.h"
 #include "simu5g/common/LteCommon.h"
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 
 namespace simu5g {
 
@@ -63,7 +63,7 @@ void EventGenerator::notifyEvent()
     if (!singleEventSource_) {
         // select a second originator, close to the first one
 
-        LtePhyBase *uePhy = lteNodePhy_[MacNodeId(r + UE_MIN_ID)];
+        PhyBase *uePhy = lteNodePhy_[MacNodeId(r + UE_MIN_ID)];
         inet::Coord uePos = uePhy->getCoord();
 
         // get references to all UEs in the cell
@@ -73,7 +73,7 @@ void EventGenerator::notifyEvent()
         std::vector<MacNodeId> tmp;
         for (MacNodeId nodeId : lteNodeIdSet_) {
             if (MacNodeId(UE_MIN_ID + r) != nodeId) {
-                LtePhyBase *phy = lteNodePhy_[nodeId];
+                PhyBase *phy = lteNodePhy_[nodeId];
                 inet::Coord pos = phy->getCoord();
                 double d = uePos.distance(pos);
                 if (d < 20.0)
@@ -110,7 +110,7 @@ void EventGenerator::computeTargetNodeSet(std::set<MacNodeId>& targetSet, MacNod
         // they are useful later to retrieve UE positions
         std::map<MacNodeId, inet::Coord> uePos;
         for (MacNodeId nodeId : lteNodeIdSet_) {
-            LtePhyBase *uePhy = lteNodePhy_[nodeId];
+            PhyBase *uePhy = lteNodePhy_[nodeId];
             uePos[nodeId] = uePhy->getCoord();
         }
 
@@ -131,7 +131,7 @@ void EventGenerator::registerNode(MultihopD2D *app, MacNodeId lteNodeId)
 {
     appVector_.push_back(app);
     lteNodeIdSet_.insert(lteNodeId);
-    lteNodePhy_[lteNodeId] = check_and_cast<LtePhyBase *>((binder_->getNodeModule(lteNodeId))->getSubmodule("cellularNic")->getSubmodule("phy"));
+    lteNodePhy_[lteNodeId] = check_and_cast<PhyBase *>((binder_->getNodeModule(lteNodeId))->getSubmodule("cellularNic")->getSubmodule("phy"));
 }
 
 void EventGenerator::unregisterNode(MultihopD2D *app, MacNodeId lteNodeId)

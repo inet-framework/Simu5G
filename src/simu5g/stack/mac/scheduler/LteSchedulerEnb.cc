@@ -24,7 +24,7 @@
 #include "simu5g/stack/mac/scheduling_modules/QoSAwareScheduler.h"
 #include "simu5g/stack/mac/buffer/LteMacBuffer.h"
 #include "simu5g/stack/mac/buffer/LteMacQueue.h"
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 
 namespace simu5g {
 

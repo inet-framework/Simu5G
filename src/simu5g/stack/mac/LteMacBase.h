@@ -158,7 +158,7 @@ class LteMacBase : public cSimpleModule
     std::map<MacNodeId, simtime_t> resetHarq_;
 
     // reference to the phy layer
-    opp_component_ptr<LtePhyBase> phy_;
+    opp_component_ptr<PhyBase> phy_;
 
     // signals for PacketFlowObserver
     static simsignal_t macPduAckedSignal_;
@@ -264,7 +264,7 @@ class LteMacBase : public cSimpleModule
         return ttiPeriod_;
     }
 
-    LtePhyBase *getPhy()
+    PhyBase *getPhy()
     {
         return phy_;
     }

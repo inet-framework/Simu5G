@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_AIRPHYBASE_H_
-#define _LTE_AIRPHYBASE_H_
+#ifndef _PHYBASE_H_
+#define _PHYBASE_H_
 
 #include <map>
 #include <vector>
@@ -51,7 +51,7 @@ using namespace omnetpp;
 
 class ChannelModelBase;
 
-class LtePhyBase : public ChannelAccess
+class PhyBase : public ChannelAccess
 {
 
   protected:
@@ -302,4 +302,4 @@ class LtePhyBase : public ChannelAccess
 
 } //namespace
 
-#endif /* _LTE_AIRPHYBASE_H_ */
+#endif /* _PHYBASE_H_ */

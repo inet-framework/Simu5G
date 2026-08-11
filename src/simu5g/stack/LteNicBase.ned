@@ -20,7 +20,7 @@ import simu5g.stack.ip2nic.ITechnologyDecision;
 import simu5g.stack.mac.ILteMac;
 import simu5g.stack.packetFlowObserver.IPacketFlowObserver;
 import simu5g.stack.pdcp.IPdcpMux;
-import simu5g.stack.phy.ILtePhy;
+import simu5g.stack.phy.IPhy;
 import simu5g.stack.rlc.IRlcMux;
 import simu5g.stack.rrc.IRrc;
 import simu5g.stack.phy.channelmodel.IChannelModel;
@@ -103,8 +103,8 @@ module LteNicBase extends NetworkInterface like ICellularNic
         mac: <> like ILteMac {
             @display("p=310,510");
         }
-        // LtePhy submodule
-        phy: <> like ILtePhy {
+        // PHY submodule
+        phy: <> like IPhy {
             @display("p=310,600");
         }
 

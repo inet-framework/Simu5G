@@ -17,7 +17,7 @@
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/mac/amc/UserTxParams.h"
-#include "simu5g/stack/phy/LtePhyUe.h"
+#include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/phy/packet/LteAirFrame.h"
 
 namespace simu5g {

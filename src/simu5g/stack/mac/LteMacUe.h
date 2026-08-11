@@ -14,7 +14,7 @@
 #define _LTE_LTEMACUE_H_
 
 #include "simu5g/stack/mac/LteMacBase.h"
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferTx.h"
 #include "simu5g/stack/phy/feedback/LteFeedback.h"
 

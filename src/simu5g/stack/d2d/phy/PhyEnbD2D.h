@@ -10,10 +10,10 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_AIRPHYENBD2D_H_
-#define _LTE_AIRPHYENBD2D_H_
+#ifndef _PHYENBD2D_H_
+#define _PHYENBD2D_H_
 
-#include "simu5g/stack/phy/LtePhyEnb.h"
+#include "simu5g/stack/phy/PhyEnb.h"
 
 namespace simu5g {
 
@@ -23,14 +23,14 @@ class D2dBinder;
 
 /**
  * D2D-capable eNB PHY. The generic receive/transmit/feedback paths live in
- * LtePhyEnb/LtePhyBase; this class only fills their seams:
+ * PhyEnb/PhyBase; this class only fills their seams:
  * - appendExtraFeedback(): per-peer D2D CQI reporting (if enabled)
  * - airFrameNameFor()/airFramePriorityFor(): the eNB/gNB is the sole sender
  *   of D2D mode-switch notifications; such frames get a distinctive name and
  *   an elevated (-1) scheduling priority so they are processed ahead of
  *   ordinary air-frames starting/ending at the same instant.
  */
-class LtePhyEnbD2D : public LtePhyEnb
+class PhyEnbD2D : public PhyEnb
 {
     bool enableD2DCqiReporting_;
 
@@ -46,17 +46,17 @@ class LtePhyEnbD2D : public LtePhyEnb
     {
         if (info->getFrameType() == D2DMODESWITCHPKT)
             return "d2dModeSwitch";
-        return LtePhyEnb::airFrameNameFor(info);
+        return PhyEnb::airFrameNameFor(info);
     }
 
     short airFramePriorityFor(const UserControlInfo *info) override
     {
         if (info->getFrameType() == D2DMODESWITCHPKT)
             return -1;
-        return LtePhyEnb::airFramePriorityFor(info);
+        return PhyEnb::airFramePriorityFor(info);
     }
 };
 
 } //namespace
 
-#endif /* _LTE_AIRPHYENBD2D_H_ */
+#endif /* _PHYENBD2D_H_ */

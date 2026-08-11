@@ -25,7 +25,7 @@ module LteNicUe extends LteNicBase
 {
     parameters:
         mac.typename = default("LteMacUe");
-        phy.typename = default("LtePhyUe");
+        phy.typename = default("PhyUe");
         handoverPacketHolder.typename = default("HandoverPacketHolderUe");
         packetFlowObserver.typename = default("PacketFlowObserverUe");
 

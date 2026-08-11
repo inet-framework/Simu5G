@@ -51,7 +51,7 @@ class Binder;
 class CellInfo;
 class LteMacEnb;
 class LteMacBase;
-class LtePhyBase;
+class PhyBase;
 class StochasticChannelModel;
 class LteControlInfo;
 class FlowControlInfo;
@@ -316,7 +316,7 @@ struct EnbInfo
     TxDirectionType txDirection;
     double txAngle;
     MacNodeId id;
-    LtePhyBase *phy = nullptr;
+    PhyBase *phy = nullptr;
     LteMacEnb *mac = nullptr;
     StochasticChannelModel *realChan = nullptr;
     opp_component_ptr<cModule> eNodeB;
@@ -332,7 +332,7 @@ struct UeInfo
     MacNodeId cellId;
     StochasticChannelModel *realChan = nullptr;
     opp_component_ptr<cModule> ue;
-    LtePhyBase *phy = nullptr;
+    PhyBase *phy = nullptr;
     std::string str() const;
 };
 
@@ -354,7 +354,7 @@ struct BgTrafficManagerInfo
 struct UeAllocationInfo {
     MacNodeId nodeId;
     MacCellId cellId;
-    LtePhyBase *phy = nullptr;
+    PhyBase *phy = nullptr;
     TrafficGeneratorBase *trafficGen = nullptr;
     Direction dir;
 };

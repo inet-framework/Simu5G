@@ -20,7 +20,7 @@
 #include "simu5g/common/LteDefs.h"
 #include "simu5g/apps/d2dMultihop/MultihopD2D.h"
 #include "simu5g/common/binder/Binder.h"
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 
 namespace simu5g {
 
@@ -45,7 +45,7 @@ class EventGenerator : public cSimpleModule
 
     // store references to the PHY modules
     // (to speed up position retrieval)
-    std::map<MacNodeId, opp_component_ptr<LtePhyBase>> lteNodePhy_;
+    std::map<MacNodeId, opp_component_ptr<PhyBase>> lteNodePhy_;
 
     // notify a node to start an event dissemination
     void notifyEvent();

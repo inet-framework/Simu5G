@@ -11,7 +11,7 @@
 //
 
 #include "simu5g/stack/d2d/mac/conflictgraph/DistanceBasedConflictGraph.h"
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/d2d/binder/D2dBinder.h"
 
 namespace simu5g {

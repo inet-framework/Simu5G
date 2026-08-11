@@ -20,7 +20,7 @@
 #include "simu5g/background/trafficGenerator/BackgroundTrafficManagerBase.h"
 #include "simu5g/background/trafficGenerator/generators/TrafficGeneratorBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
-#include "simu5g/stack/phy/LtePhyEnb.h"
+#include "simu5g/stack/phy/PhyEnb.h"
 
 namespace simu5g {
 
@@ -40,7 +40,7 @@ class BackgroundTrafficManager : public BackgroundTrafficManagerBase
     inet::ModuleRefByPar<LteMacEnb> mac_;
 
     // reference to phy module
-    inet::ModuleRefByPar<LtePhyEnb> phy_;
+    inet::ModuleRefByPar<PhyEnb> phy_;
 
     // reference to the channel model for the given carrier
     ChannelModelBase *channelModel_ = nullptr;

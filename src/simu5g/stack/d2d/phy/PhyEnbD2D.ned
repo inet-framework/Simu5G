@@ -13,16 +13,16 @@
 
 package simu5g.stack.d2d.phy;
 
-import simu5g.stack.phy.LtePhyEnb;
+import simu5g.stack.phy.PhyEnb;
 
 //
-// Extends the LTE PHY functionalities on the eNodeB side to support device-to-device (D2D)
+// Extends the PHY functionalities on the eNodeB side to support device-to-device (D2D)
 // communications. Specifically, it enables the computation of Channel Status Information (CSI) related
 // to the D2D link between two UEs, which still needs to be stored at the eNodeB for scheduling purposes.
 //
-simple LtePhyEnbD2D extends LtePhyEnb
+simple PhyEnbD2D extends PhyEnb
 {
     parameters:
-        @class("LtePhyEnbD2D");
+        @class("PhyEnbD2D");
         bool enableD2DCqiReporting = default(true);
 }

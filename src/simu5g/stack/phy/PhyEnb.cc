@@ -10,28 +10,28 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/phy/LtePhyEnb.h"
+#include "simu5g/stack/phy/PhyEnb.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
-Define_Module(LtePhyEnb);
+Define_Module(PhyEnb);
 
 using namespace omnetpp;
 using namespace inet;
 
 
-LtePhyEnb::~LtePhyEnb()
+PhyEnb::~PhyEnb()
 {
     cancelAndDelete(beaconStarter_);
     delete lteFeedbackComputation_;
 }
 
-void LtePhyEnb::initialize(int stage)
+void PhyEnb::initialize(int stage)
 {
-    LtePhyBase::initialize(stage);
+    PhyBase::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
         // get local id
@@ -83,7 +83,7 @@ void LtePhyEnb::initialize(int stage)
     }
 }
 
-void LtePhyEnb::handleSelfMessage(cMessage *msg)
+void PhyEnb::handleSelfMessage(cMessage *msg)
 {
     if (msg->isName("beaconStarter")) {
         LteAirFrame *frame = createBeaconMessage();
@@ -95,7 +95,7 @@ void LtePhyEnb::handleSelfMessage(cMessage *msg)
     }
 }
 
-LteAirFrame *LtePhyEnb::createBeaconMessage()
+LteAirFrame *PhyEnb::createBeaconMessage()
 {
     // broadcast airframe
     LteAirFrame *beaconAirFrame = new LteAirFrame("beaconMessage");
@@ -114,7 +114,7 @@ LteAirFrame *LtePhyEnb::createBeaconMessage()
 }
 
 
-bool LtePhyEnb::handleControlPkt(UserControlInfo *lteinfo, LteAirFrame *frame)
+bool PhyEnb::handleControlPkt(UserControlInfo *lteinfo, LteAirFrame *frame)
 {
     EV << "Received control packet " << endl;
     MacNodeId senderMacNodeId = lteinfo->getSourceId();
@@ -144,16 +144,16 @@ bool LtePhyEnb::handleControlPkt(UserControlInfo *lteinfo, LteAirFrame *frame)
     return false;
 }
 
-void LtePhyEnb::handleAirFrame(cMessage *msg)
+void PhyEnb::handleAirFrame(cMessage *msg)
 {
     LteAirFrame *frame = static_cast<LteAirFrame *>(msg);
     UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
 
-    EV << "LtePhy: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
+    EV << "Phy: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
 
     // handle broadcast packet sent by another eNB
     if (lteInfo->getFrameType() == BEACONPKT) {
-        EV << "LtePhyEnb::handleAirFrame - received beacon packet from another eNodeB. Ignore it." << endl;
+        EV << "PhyEnb::handleAirFrame - received beacon packet from another eNodeB. Ignore it." << endl;
         delete lteInfo;
         delete frame;
         return;
@@ -246,9 +246,9 @@ void LtePhyEnb::handleAirFrame(cMessage *msg)
         updateDisplayString();
 }
 
-void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Packet *pktAux)
+void PhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Packet *pktAux)
 {
-    EV << NOW << " LtePhyEnb::requestFeedback " << endl;
+    EV << NOW << " PhyEnb::requestFeedback " << endl;
     LteFeedbackDoubleVector fb;
 
     // select the correct channel model according to the carrier frequency
@@ -266,7 +266,7 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
     if (channelModel != nullptr)
         snr = channelModel->getSINR(frame, lteinfo);
     else
-        throw cRuntimeError("LtePhyEnb::requestFeedback - channelModel is a null pointer");
+        throw cRuntimeError("PhyEnb::requestFeedback - channelModel is a null pointer");
 
     FeedbackRequest req = lteinfo->getFeedbackReq();
     //Feedback computation
@@ -298,7 +298,7 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
             if (channelModel != nullptr)
                 snr = channelModel->getSINR(frame, lteinfo);
             else
-                throw cRuntimeError("LtePhyEnb::requestFeedback - channelModel is a null pointer");
+                throw cRuntimeError("PhyEnb::requestFeedback - channelModel is a null pointer");
         }
         else
             header->setLteFeedbackDoubleVectorDl(fb);
@@ -306,14 +306,14 @@ void LtePhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Pa
 
     // additional per-link feedback (none in the base implementation)
     appendExtraFeedback(header, lteinfo, frame, channelModel);
-    EV << "LtePhyEnb::requestFeedback : Pisa Feedback Generated for nodeId: "
+    EV << "PhyEnb::requestFeedback : Pisa Feedback Generated for nodeId: "
        << nodeId_ << " Feedback size: " << fb.size()
        << " Carrier: " << lteinfo->getCarrierFrequency() << endl;
 
     pktAux->insertAtFront(header);
 }
 
-void LtePhyEnb::handleFeedbackPkt(UserControlInfo *lteinfo,
+void PhyEnb::handleFeedbackPkt(UserControlInfo *lteinfo,
         LteAirFrame *frame)
 {
     EV << "Handled Feedback Packet with ID " << frame->getId() << endl;
@@ -362,7 +362,7 @@ void LtePhyEnb::handleFeedbackPkt(UserControlInfo *lteinfo,
 }
 
 // TODO adjust default value
-LteFeedbackComputation *LtePhyEnb::getFeedbackComputationFromName(std::string name, ParameterMap& params)
+LteFeedbackComputation *PhyEnb::getFeedbackComputationFromName(std::string name, ParameterMap& params)
 {
     ParameterMap::iterator it;
     if (name == "REAL") {
@@ -382,7 +382,7 @@ LteFeedbackComputation *LtePhyEnb::getFeedbackComputationFromName(std::string na
         return nullptr;
 }
 
-void LtePhyEnb::initializeFeedbackComputation()
+void PhyEnb::initializeFeedbackComputation()
 {
     const char *name = "REAL";
 

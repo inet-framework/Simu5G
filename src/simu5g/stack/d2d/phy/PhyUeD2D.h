@@ -10,10 +10,10 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_AIRPHYUED2D_H_
-#define _LTE_AIRPHYUED2D_H_
+#ifndef _PHYUED2D_H_
+#define _PHYUED2D_H_
 
-#include "simu5g/stack/phy/LtePhyUe.h"
+#include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/d2d/phy/D2dUePhy.h"
 
 namespace simu5g {
@@ -22,10 +22,10 @@ namespace simu5g {
  * D2D-capable LTE UE PHY: the D2dUePhy mixin layered over the core LTE UE PHY.
  * All the D2D logic lives in the mixin (see D2dUePhy.h).
  */
-class LtePhyUeD2D : public D2dUePhy<LtePhyUe>
+class PhyUeD2D : public D2dUePhy<PhyUe>
 {
 };
 
 } //namespace
 
-#endif /* _LTE_AIRPHYUED2D_H_ */
+#endif /* _PHYUED2D_H_ */

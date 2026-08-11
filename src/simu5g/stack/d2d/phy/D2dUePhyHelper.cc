@@ -16,7 +16,7 @@
 
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 #include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
 #include "simu5g/stack/phy/packet/LteAirFrame.h"

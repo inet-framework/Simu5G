@@ -20,7 +20,7 @@
 #include "simu5g/corenetwork/statsCollector/BaseStationStatsCollector.h"
 #include "simu5g/corenetwork/statsCollector/UeStatsCollector.h"
 #include "simu5g/stack/mac/LteMacUe.h"
-#include "simu5g/stack/phy/LtePhyUe.h"
+#include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/rrc/Registration.h"
@@ -331,7 +331,7 @@ void Binder::finish()
             double harqErrorRateUl = macUe->getHarqErrorRate(UL);
 
             // get average CQI
-            LtePhyUe *phyUe = check_and_cast<LtePhyUe *>(info->phy);
+            PhyUe *phyUe = check_and_cast<PhyUe *>(info->phy);
             double cqiDl = phyUe->getAverageCqi(DL);
             double cqiUl = phyUe->getAverageCqi(UL);
             double cqiVarianceDl = phyUe->getVarianceCqi(DL);
@@ -503,7 +503,7 @@ void Binder::initAndResetUlTransmissionInfo()
     lastUpdateUplinkTransmissionInfo_ = NOW;
 }
 
-void Binder::storeUlTransmissionMap(GHz carrierFreq, Remote antenna, RbMap& rbMap, MacNodeId nodeId, MacCellId cellId, LtePhyBase *phy, Direction dir)
+void Binder::storeUlTransmissionMap(GHz carrierFreq, Remote antenna, RbMap& rbMap, MacNodeId nodeId, MacCellId cellId, PhyBase *phy, Direction dir)
 {
     UeAllocationInfo info;
     info.nodeId = nodeId;

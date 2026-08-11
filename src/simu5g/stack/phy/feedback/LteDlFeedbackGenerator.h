@@ -21,13 +21,13 @@
 #include "simu5g/common/timer/TTimer.h"
 #include "simu5g/common/timer/TTimerMsg_m.h"
 #include "simu5g/stack/phy/feedback/LteFeedbackComputation.h"
-#include "simu5g/stack/phy/LtePhyUe.h"
+#include "simu5g/stack/phy/PhyUe.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
 
-class LtePhyUe;
+class PhyUe;
 
 /**
  * @brief Lte Downlink Feedback Generator
@@ -58,7 +58,7 @@ class LteDlFeedbackGenerator : public cSimpleModule
 
     opp_component_ptr<CellInfo> cellInfo_; /// reference to cellInfo
     inet::ModuleRefByPar<Binder> binder_;
-    inet::ModuleRefByPar<LtePhyUe> phy_;
+    inet::ModuleRefByPar<PhyUe> phy_;
 
     // cellInfo parameters
     int numPreferredBands_;           /// number of preferred bands to use (meaningful only in PREFERRED mode)

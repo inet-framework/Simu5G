@@ -11,7 +11,7 @@
 //
 
 #include <assert.h>
-#include "simu5g/stack/phy/LtePhyUe.h"
+#include "simu5g/stack/phy/PhyUe.h"
 
 #include "../ip2nic/HandoverPacketHolderUe.h"
 #include "simu5g/stack/rrc/HandoverController.h"
@@ -22,19 +22,19 @@
 
 namespace simu5g {
 
-Define_Module(LtePhyUe);
+Define_Module(PhyUe);
 
 using namespace inet;
 
-simsignal_t LtePhyUe::distanceSignal_ = registerSignal("distance");
+simsignal_t PhyUe::distanceSignal_ = registerSignal("distance");
 
-LtePhyUe::~LtePhyUe()
+PhyUe::~PhyUe()
 {
 }
 
-void LtePhyUe::initialize(int stage)
+void PhyUe::initialize(int stage)
 {
-    LtePhyBase::initialize(stage);
+    PhyBase::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
         nodeType_ = UE;
@@ -63,7 +63,7 @@ void LtePhyUe::initialize(int stage)
     }
 }
 
-void LtePhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi)
+void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi)
 {
     // this is a fictitious frame that needs to compute the SINR
     LteAirFrame *frame = new LteAirFrame("cellSelectionFrame");
@@ -78,7 +78,7 @@ void LtePhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCand
             continue;
 
         MacNodeId cellId = enbInfo->id;
-        LtePhyBase *cellPhy = check_and_cast<LtePhyBase*>(
+        PhyBase *cellPhy = check_and_cast<PhyBase*>(
                 enbInfo->eNodeB->getSubmodule("cellularNic")->getSubmodule("phy"));
         double cellTxPower = cellPhy->getTxPwr();
         Coord cellPos = cellPhy->getCoord();
@@ -100,7 +100,7 @@ void LtePhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCand
         for (auto value : rssiV)
             rssi += value;
         rssi /= rssiV.size(); // compute the mean over all RBs
-        EV << "LtePhyUe::findCandicateEnb - RSSI from cell " << cellId << ": " << rssi << " dB (current candidate cell " << outCandidateMasterId << ": " << outCandidateMasterRssi << " dB)" << endl;
+        EV << "PhyUe::findCandicateEnb - RSSI from cell " << cellId << ": " << rssi << " dB (current candidate cell " << outCandidateMasterId << ": " << outCandidateMasterRssi << " dB)" << endl;
         if (outCandidateMasterId == NODEID_NONE || rssi > outCandidateMasterRssi) {
             outCandidateMasterId = cellId;
             outCandidateMasterRssi = rssi;
@@ -110,12 +110,12 @@ void LtePhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCand
     delete frame;
 }
 
-void LtePhyUe::handleSelfMessage(cMessage *msg)
+void PhyUe::handleSelfMessage(cMessage *msg)
 {
     // no local timers
 }
 
-void LtePhyUe::changeServingNode(MacNodeId servingNodeId)
+void PhyUe::changeServingNode(MacNodeId servingNodeId)
 {
     MacNodeId oldServingNode = servingNodeId_;
     servingNodeId_ = servingNodeId;
@@ -140,7 +140,7 @@ void LtePhyUe::changeServingNode(MacNodeId servingNodeId)
 
 }
 
-double LtePhyUe::computeReceivedBeaconPacketRssi(LteAirFrame *frame, UserControlInfo *lteInfo)
+double PhyUe::computeReceivedBeaconPacketRssi(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> rssiV = primaryChannelModel_->getSINR(frame, lteInfo);
     double rssi = 0;
@@ -151,12 +151,12 @@ double LtePhyUe::computeReceivedBeaconPacketRssi(LteAirFrame *frame, UserControl
 }
 
 // TODO: ***reorganize*** method
-void LtePhyUe::handleAirFrame(cMessage *msg)
+void PhyUe::handleAirFrame(cMessage *msg)
 {
     LteAirFrame *frame = static_cast<LteAirFrame *>(msg);
     UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
 
-    EV << "LtePhyUe: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
+    EV << "PhyUe: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
 
     MacNodeId sourceId = lteInfo->getSourceId();
     if (!binder_->nodeExists(sourceId)) {
@@ -186,7 +186,7 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
 
         // Check if the message is from a different cellular technology.
         // Note: beacons are the only frames that carry a meaningful isNr flag (it is stamped
-        // solely in LtePhyEnb::createBeaconMessage()), and the only true channel broadcasts
+        // solely in PhyEnb::createBeaconMessage()), and the only true channel broadcasts
         // reaching both radios of a dual-PHY UE; non-beacon frames are technology-routed at
         // the sender. Hence the filter is scoped to beacons.
         if (lteInfo->isNr() != isNr_) {
@@ -243,7 +243,7 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
         // UE is not (anymore) associated with any eNB/gNB and all harqBuffers are already deleted.
         // Handing this data packet to the MAC layer will lead to null pointers.
         // (Matters for D2D/D2D_MULTI DATA in-flight during the mid-handover detachment window.)
-        EV << "LtePhyUe: UE " << nodeId_ << " received data packet while not associated with any base station. Drop it." << endl;
+        EV << "PhyUe: UE " << nodeId_ << " received data packet while not associated with any base station. Drop it." << endl;
         delete lteInfo;
         delete frame;
         return;
@@ -293,16 +293,16 @@ void LtePhyUe::handleAirFrame(cMessage *msg)
         updateDisplayString();
 }
 
-void LtePhyUe::validateOutgoingFrame(const UserControlInfo *info)
+void PhyUe::validateOutgoingFrame(const UserControlInfo *info)
 {
     MacNodeId dest = info->getDestId();
     if (dest != servingNodeId_) {
         // UE is not sending to its master!!
-        throw cRuntimeError("LtePhyUe::validateOutgoingFrame  Ue preparing to send message to %hu instead of its master (%hu)", num(dest), num(servingNodeId_));
+        throw cRuntimeError("PhyUe::validateOutgoingFrame  Ue preparing to send message to %hu instead of its master (%hu)", num(dest), num(servingNodeId_));
     }
 }
 
-void LtePhyUe::handleUpperMessage(cMessage *msg)
+void PhyUe::handleUpperMessage(cMessage *msg)
 {
     auto pkt = check_and_cast<inet::Packet *>(msg);
     auto lteInfo = pkt->getTag<UserControlInfo>();
@@ -312,7 +312,7 @@ void LtePhyUe::handleUpperMessage(cMessage *msg)
     GHz carrierFreq = lteInfo->getCarrierFrequency();
     ChannelModelBase *channelModel = getChannelModel(carrierFreq);
     if (channelModel == nullptr)
-        throw cRuntimeError("LtePhyUe::handleUpperMessage - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
+        throw cRuntimeError("PhyUe::handleUpperMessage - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 
     if (lteInfo->getFrameType() == DATAPKT && channelModel->recordsUlTransmissionMap()) {
         // Store the RBs used for data transmission to the binder (for UL interference computation)
@@ -332,10 +332,10 @@ void LtePhyUe::handleUpperMessage(cMessage *msg)
             recordExtraTxCqi(cqi, lteInfo.get());
     }
 
-    LtePhyBase::handleUpperMessage(msg);
+    PhyBase::handleUpperMessage(msg);
 }
 
-void LtePhyUe::emitMobilityStats()
+void PhyUe::emitMobilityStats()
 {
     if (servingNodeMobility_) {
         // emit distance from current serving cell
@@ -345,10 +345,10 @@ void LtePhyUe::emitMobilityStats()
     }
 }
 
-void LtePhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req)
+void PhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req)
 {
     Enter_Method("SendFeedback");
-    EV << "LtePhyUe: feedback from Feedback Generator" << endl;
+    EV << "PhyUe: feedback from Feedback Generator" << endl;
 
     //Create a feedback packet
     auto fbPkt = makeShared<LteFeedbackPkt>();
@@ -390,7 +390,7 @@ void LtePhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVecto
         carrierInfo->setCarrierFrequency(carrierFrequency);
         carrierFrame->setControlInfo(carrierInfo);
 
-        EV << "LtePhy: " << nodeTypeToA(nodeType_) << " with id "
+        EV << "Phy: " << nodeTypeToA(nodeType_) << " with id "
            << nodeId_ << " sending feedback to the air channel for carrier " << carrierFrequency << endl;
         sendUnicast(carrierFrame);
     }
@@ -399,7 +399,7 @@ void LtePhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVecto
     delete uinfo;
 }
 
-void LtePhyUe::recordCqi(unsigned int sample, Direction dir)
+void PhyUe::recordCqi(unsigned int sample, Direction dir)
 {
     if (dir == DL) {
         cqiDlSamples_.push_back(sample);
@@ -413,7 +413,7 @@ void LtePhyUe::recordCqi(unsigned int sample, Direction dir)
     }
 }
 
-double LtePhyUe::getAverageCqi(Direction dir)
+double PhyUe::getAverageCqi(Direction dir)
 {
     if (dir == DL) {
         if (cqiDlCount_ == 0)
@@ -428,7 +428,7 @@ double LtePhyUe::getAverageCqi(Direction dir)
     throw cRuntimeError("Direction %d is not handled.", dir);
 }
 
-double LtePhyUe::getVarianceCqi(Direction dir)
+double PhyUe::getVarianceCqi(Direction dir)
 {
     double avgCqi = getAverageCqi(dir);
     double err, sum = 0;
@@ -450,7 +450,7 @@ double LtePhyUe::getVarianceCqi(Direction dir)
     throw cRuntimeError("Direction %d is not handled.", dir);
 }
 
-void LtePhyUe::finish()
+void PhyUe::finish()
 {
     if (getSimulation()->getSimulationStage() != CTX_FINISH) {
         // do this only during the deletion of the module during the simulation, and

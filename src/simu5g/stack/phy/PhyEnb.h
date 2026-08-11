@@ -10,10 +10,10 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_AIRPHYENB_H_
-#define _LTE_AIRPHYENB_H_
+#ifndef _PHYENB_H_
+#define _PHYENB_H_
 
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 
 namespace simu5g {
@@ -22,7 +22,7 @@ using namespace omnetpp;
 
 class LteFeedbackPkt;
 
-class LtePhyEnb : public LtePhyBase
+class PhyEnb : public PhyBase
 {
 
   protected:
@@ -54,10 +54,10 @@ class LtePhyEnb : public LtePhyBase
     virtual void emitDistanceFromMaster() {}
 
   public:
-    ~LtePhyEnb() override;
+    ~PhyEnb() override;
 
 };
 
 } //namespace
 
-#endif /* _LTE_AIRPHYENB_H_ */
+#endif /* _PHYENB_H_ */

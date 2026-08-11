@@ -13,7 +13,7 @@
 
 #include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"
 #include "simu5g/stack/ip2nic/HandoverPacketHolderEnb.h"
-#include "simu5g/stack/phy/LtePhyUe.h"
+#include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/phy/feedback/LteDlFeedbackGenerator.h"
 #include "simu5g/common/binder/Binder.h"

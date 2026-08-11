@@ -10,12 +10,12 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_AIRPHYUE_H_
-#define _LTE_AIRPHYUE_H_
+#ifndef _PHYUE_H_
+#define _PHYUE_H_
 
 #include <inet/mobility/contract/IMobility.h>
 
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/mac/LteMacUe.h"
 #include "simu5g/stack/rrc/HandoverController.h"
 
@@ -23,7 +23,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-class LtePhyUe : public LtePhyBase
+class PhyUe : public PhyBase
 {
   protected:
     /** Serving node MacNodeId */
@@ -78,7 +78,7 @@ class LtePhyUe : public LtePhyBase
     void emitMobilityStats() override;
 
   public:
-    ~LtePhyUe() override;
+    ~PhyUe() override;
     /**
      * Send feedback, called by feedback generator in DL
      */
@@ -98,4 +98,4 @@ class LtePhyUe : public LtePhyBase
 
 } //namespace
 
-#endif /* _LTE_AIRPHYUE_H_ */
+#endif /* _PHYUE_H_ */

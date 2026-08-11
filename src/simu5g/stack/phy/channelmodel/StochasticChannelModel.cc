@@ -20,7 +20,7 @@
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/nodes/ExtCell.h"
 #include "simu5g/background/cell/BackgroundScheduler.h"
-#include "simu5g/stack/phy/LtePhyUe.h"
+#include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
 #include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
@@ -510,7 +510,7 @@ std::vector<double> StochasticChannelModel::getSINR(const RadioLink& link, UserC
     {
         // we are on the BS, so we need to retrieve the channel model of the sender
         // XXX I know, there might be a faster way...
-        ChannelModelBase *ueChannelModel = check_and_cast<LtePhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(lteInfo->getCarrierFrequency());
+        ChannelModelBase *ueChannelModel = check_and_cast<PhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(lteInfo->getCarrierFrequency());
 
         if (link.dir == DL) // we are on the UE
             ueChannelModel->emit(measuredSinrDlSignal_, sumSnr / usedRBs);
@@ -627,8 +627,8 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
     // Only a base station has a sectorial antenna; a UE-to-UE link never gets here.
     if (link.txIsBaseStation) {
         cModule *eNbModule = binder_->getNodeModule(link.txId);
-        LtePhyBase *ltePhy = eNbModule ?
-            check_and_cast<LtePhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
+        PhyBase *ltePhy = eNbModule ?
+            check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
             nullptr;
 
         if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
@@ -774,8 +774,8 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(LteAirFrame *frame, Use
     if (dir == DL) {
         //get tx angle
         cModule *eNbModule = binder_->getNodeModule(eNbId);
-        LtePhyBase *ltePhy = eNbModule ?
-            check_and_cast<LtePhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
+        PhyBase *ltePhy = eNbModule ?
+            check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
             nullptr;
 
         if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
@@ -933,7 +933,7 @@ double StochasticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord
     if (dir == DL) {
         //get tx angle
         cModule *bsModule = binder_->getNodeModule(bsId);
-        LtePhyBase *phy = bsModule ? check_and_cast<LtePhyBase *>(bsModule->getSubmodule("cellularNic")->getSubmodule("phy")) : nullptr;
+        PhyBase *phy = bsModule ? check_and_cast<PhyBase *>(bsModule->getSubmodule("cellularNic")->getSubmodule("phy")) : nullptr;
 
         if (phy && phy->getTxDirection() == ANISOTROPIC) {
             // get tx angle
@@ -1257,7 +1257,7 @@ void StochasticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz car
 
     // we are on the BS, so we need to retrieve the channel model of the sender
     // XXX I know, there might be a faster way...
-    ChannelModelBase *ueChannelModel = check_and_cast<LtePhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(carrierFrequency);
+    ChannelModelBase *ueChannelModel = check_and_cast<PhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(carrierFrequency);
     ueChannelModel->emit(rcvdSinrUlSignal_, sinr);
 }
 
@@ -1516,7 +1516,7 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
 StochasticChannelModel::JakesFadingMap *StochasticChannelModel::obtainUeJakesMap(MacNodeId id)
 {
     // obtain a reference to UE phy
-    LtePhyBase *phy = nullptr;
+    PhyBase *phy = nullptr;
 
     for (const auto& ueInfo : binder_->getUeList()) {
         if (ueInfo->id == id) {
@@ -1542,7 +1542,7 @@ StochasticChannelModel::JakesFadingMap *StochasticChannelModel::obtainUeJakesMap
 StochasticChannelModel::ShadowFadingMap *StochasticChannelModel::obtainShadowingMap(MacNodeId id)
 {
     // obtain a reference to UE phy
-    LtePhyBase *phy = nullptr;
+    PhyBase *phy = nullptr;
 
     for (const auto& ueInfo : binder_->getUeList()) {
         if (ueInfo->id == id) {
@@ -1575,7 +1575,7 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
         // initialize eNB data structures
         if (!enbInfo->init) {
             // obtain a reference to eNB phy and obtain tx power
-            enbInfo->phy = check_and_cast<LtePhyBase *>(binder_->getPhyByNodeId(id));
+            enbInfo->phy = check_and_cast<PhyBase *>(binder_->getPhyByNodeId(id));
 
             enbInfo->txPwr = enbInfo->phy->getTxPwr();//dBm
 
@@ -1668,7 +1668,7 @@ StochasticChannelModel::InterfererInfo StochasticChannelModel::describeInterfere
     info.dir = allocation.dir;
 
     if (allocation.phy != nullptr) {
-        LtePhyUe *uePhy = check_and_cast<LtePhyUe *>(allocation.phy);
+        PhyUe *uePhy = check_and_cast<PhyUe *>(allocation.phy);
         info.txPwr = uePhy->getTxPwr(info.dir);
         info.coord = uePhy->getCoord();
     }

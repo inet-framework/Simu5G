@@ -14,9 +14,8 @@
 package simu5g.stack.phy;
 
 //
-// Interface for the Physical (PHY) layer of the LTE stack.
+// Interface for the Physical (PHY) layer of the LTE/NR protocol stack.
 //
-// The LtePhy module interface provides the definition for the PHY layer in the LTE protocol stack.
 // The PHY layer sends and receives MAC Protocol Data Units (SDUs) from the Medium Access Control (MAC)
 // layer and transmits and receives frames over the radio medium. The PHY layer is responsible for handling
 // the transmission and reception of radio frames, including measuring the Signal to
@@ -31,7 +30,7 @@ package simu5g.stack.phy;
 // Information (CSI) for User Equipments (UEs) in both uplink and downlink directions.
 // Handover management is also the responsibility of the PHY layer.
 //
-moduleinterface ILtePhy
+moduleinterface IPhy
 {
     parameters:
         @display("i=block/wrxtx");

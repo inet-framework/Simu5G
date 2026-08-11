@@ -21,7 +21,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 class Binder;
-class LtePhyUe;
+class PhyUe;
 class LteMacUe;
 class LteAmc;
 class LteAirFrame;
@@ -33,7 +33,7 @@ class LteDlFeedbackGenerator;
 class HandoverController : public cSimpleModule
 {
   protected:
-    LtePhyUe *phy_;
+    PhyUe *phy_;
 
     MacNodeId nodeId_ = NODEID_NONE;
     bool isNr_ = false;
@@ -132,8 +132,8 @@ class HandoverController : public cSimpleModule
   public:
     ~HandoverController() override;
 
-    void setPhy(LtePhyUe *phy) {phy_ = phy;}
-    LtePhyUe *getPhy() const {return phy_;}
+    void setPhy(PhyUe *phy) {phy_ = phy;}
+    PhyUe *getPhy() const {return phy_;}
 
     MacNodeId getNodeId() const { return nodeId_; }
     MacNodeId getServingNodeId() const { return servingNodeId_; }

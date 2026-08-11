@@ -22,7 +22,7 @@
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 #include "simu5g/stack/mac/buffer/LteMacBuffer.h"
 #include <assert.h>
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/packetFlowObserver/PacketFlowSignals.h"
 
 namespace simu5g {
@@ -419,7 +419,7 @@ void LteMacBase::initialize(int stage)
         binder_.reference(this, "binderModule", true);
 
         // get the reference to the PHY layer
-        phy_ = check_and_cast<LtePhyBase *>(downOutGate_->getPathEndGate()->getOwnerModule());
+        phy_ = check_and_cast<PhyBase *>(downOutGate_->getPathEndGate()->getOwnerModule());
 
         // Set the MAC MIB
 

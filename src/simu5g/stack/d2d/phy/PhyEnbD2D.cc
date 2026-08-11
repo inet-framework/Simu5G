@@ -10,28 +10,28 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/d2d/phy/LtePhyEnbD2D.h"
+#include "simu5g/stack/d2d/phy/PhyEnbD2D.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/d2d/binder/D2dBinder.h"
 #include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
 
 namespace simu5g {
 
-Define_Module(LtePhyEnbD2D);
+Define_Module(PhyEnbD2D);
 
 using namespace omnetpp;
 using namespace inet;
 
-void LtePhyEnbD2D::initialize(int stage)
+void PhyEnbD2D::initialize(int stage)
 {
-    LtePhyEnb::initialize(stage);
+    PhyEnb::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         enableD2DCqiReporting_ = par("enableD2DCqiReporting");
         d2dBinder_ = D2dBinder::getInstance(this);
     }
 }
 
-void LtePhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, ChannelModelBase *channelModel)
+void PhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, ChannelModelBase *channelModel)
 {
     if (!enableD2DCqiReporting_)
         return;

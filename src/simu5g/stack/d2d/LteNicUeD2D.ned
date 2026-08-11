@@ -25,7 +25,7 @@ module LteNicUeD2D extends LteNicUe
 {
     parameters:
         mac.typename = default("LteMacUeD2D");
-        phy.typename = default("LtePhyUeD2D");
+        phy.typename = default("PhyUeD2D");
         packetFlowObserver.typename = default("PacketFlowObserverUe");
         ip2nic.typename = default("Ip2NicD2D");
         rlcMux.typename = default("RlcMuxD2D");

@@ -24,7 +24,7 @@ module NrNicEnbD2D extends NrNicEnb
 {
     parameters:
         mac.typename = default("NrMacGnbD2D");
-        phy.typename = default("LtePhyEnbD2D");
+        phy.typename = default("PhyEnbD2D");
         ip2nic.typename = default("Ip2NicD2D");
         rlcMux.typename = default("RlcMuxD2D");
         rrc.bearerManagement.lteRlcUmEntityModuleType = default("simu5g.stack.d2d.rlc.LteRlcUmEntityD2D");

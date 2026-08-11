@@ -20,7 +20,7 @@
 #include "simu5g/background/trafficGenerator/IBackgroundTrafficManager.h"
 #include "simu5g/background/trafficGenerator/generators/TrafficGeneratorBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
-#include "simu5g/stack/phy/LtePhyEnb.h"
+#include "simu5g/stack/phy/PhyEnb.h"
 
 namespace simu5g {
 

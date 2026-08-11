@@ -12,8 +12,8 @@
 
 #include "simu5g/background/cell/BackgroundCellChannelModel.h"
 #include "simu5g/background/cell/BackgroundScheduler.h"
-#include "simu5g/stack/phy/LtePhyBase.h"
-#include "simu5g/stack/phy/LtePhyUe.h"
+#include "simu5g/stack/phy/PhyBase.h"
+#include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/phy/channelmodel/StochasticChannelModel.h"
 #include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
 
@@ -620,7 +620,7 @@ bool BackgroundCellChannelModel::computeDownlinkInterference(MacNodeId bgUeId, i
         // initialize eNb data structures
         if (!enb->init) {
             // obtain a reference to enb phy and obtain tx power
-            enb->phy = check_and_cast<LtePhyBase *>(binder_->getPhyByNodeId(id));
+            enb->phy = check_and_cast<PhyBase *>(binder_->getPhyByNodeId(id));
 
             enb->txPwr = enb->phy->getTxPwr();//dBm
 
@@ -705,10 +705,10 @@ bool BackgroundCellChannelModel::computeUplinkInterference(MacNodeId bgUeId, ine
                 Direction dir = ueInfo.dir;
                 double txPwr;
                 inet::Coord ueCoord;
-                LtePhyUe *uePhy = nullptr;
+                PhyUe *uePhy = nullptr;
                 TrafficGeneratorBase *trafficGen = nullptr;
                 if (ueInfo.phy != nullptr) {
-                    uePhy = check_and_cast<LtePhyUe *>(ueInfo.phy);
+                    uePhy = check_and_cast<PhyUe *>(ueInfo.phy);
                     txPwr = uePhy->getTxPwr(dir);
                     ueCoord = uePhy->getCoord();
                 }

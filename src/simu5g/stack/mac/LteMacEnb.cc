@@ -30,7 +30,7 @@
 #include "simu5g/stack/mac/amc/UserTxParams.h"
 #include "simu5g/stack/mac/packet/LteRac_m.h"
 #include "simu5g/stack/mac/packet/LteMacSduRequest.h"
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 #include "simu5g/stack/rlc/packet/LteRlcPdu_m.h"
 #include "simu5g/stack/packetFlowObserver/PacketFlowSignals.h"

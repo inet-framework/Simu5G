@@ -26,7 +26,7 @@ module LteNicEnbD2D extends LteNicEnb
 {
     parameters:
         mac.typename = default("LteMacEnbD2D");
-        phy.typename = default("LtePhyEnbD2D");
+        phy.typename = default("PhyEnbD2D");
         packetFlowObserver.typename = default("PacketFlowObserverEnb");
         ip2nic.typename = default("Ip2NicD2D");
         rlcMux.typename = default("RlcMuxD2D");

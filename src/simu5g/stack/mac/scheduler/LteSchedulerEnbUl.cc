@@ -14,7 +14,7 @@
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
 #include "simu5g/stack/mac/allocator/LteAllocationModule.h"
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 
 namespace simu5g {
 

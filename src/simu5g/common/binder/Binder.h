@@ -510,7 +510,7 @@ class Binder : public cSimpleModule
      */
     virtual simtime_t getLastUpdateUlTransmissionInfo();
     virtual void initAndResetUlTransmissionInfo();
-    virtual void storeUlTransmissionMap(GHz carrierFreq, Remote antenna, RbMap& rbMap, MacNodeId nodeId, MacCellId cellId, LtePhyBase *phy, Direction dir);
+    virtual void storeUlTransmissionMap(GHz carrierFreq, Remote antenna, RbMap& rbMap, MacNodeId nodeId, MacCellId cellId, PhyBase *phy, Direction dir);
     virtual void storeUlTransmissionMap(GHz carrierFreq, Remote antenna, RbMap& rbMap, MacNodeId nodeId, MacCellId cellId, TrafficGeneratorBase *trafficGen, Direction dir);  // overloaded function for bgUes
     virtual const std::vector<std::vector<UeAllocationInfo>> *getUlTransmissionMap(GHz carrierFreq, UlTransmissionMapTTI t);
     /*

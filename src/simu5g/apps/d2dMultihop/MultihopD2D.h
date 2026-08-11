@@ -24,7 +24,7 @@
 #include "simu5g/apps/d2dMultihop/statistics/MultihopD2DStatistics.h"
 #include "simu5g/apps/d2dMultihop/eventGenerator/EventGenerator.h"
 #include "simu5g/stack/mac/LteMacBase.h"
-#include "simu5g/stack/phy/LtePhyBase.h"
+#include "simu5g/stack/phy/PhyBase.h"
 
 namespace simu5g {
 
@@ -71,7 +71,7 @@ class MultihopD2D : public cSimpleModule, public inet::UdpSocket::ICallback
     cMessage *selfSender_ = nullptr;
 
     ModuleRefByPar<EventGenerator> eventGen_;          // reference to the eventGenerator
-    ModuleRefByPar<LtePhyBase> ltePhy_;                // reference to the LtePhy
+    ModuleRefByPar<PhyBase> ltePhy_;                // reference to the PHY module
     MacNodeId lteNodeId_;               // LTE Node Id
     MacNodeId lteCellId_;               // LTE Cell Id
 

@@ -13,7 +13,7 @@
 #ifndef STACK_D2D_PHY_D2DUEPHY_H_
 #define STACK_D2D_PHY_D2DUEPHY_H_
 
-#include "simu5g/stack/phy/LtePhyUe.h"
+#include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/rrc/HandoverController.h"
 #include "simu5g/stack/d2d/phy/D2dUePhyHelper.h"
@@ -26,14 +26,14 @@ using namespace omnetpp;
 /**
  * CRTP mixin that adds D2D support to a UE PHY.
  *
- * The core UE PHY (LtePhyUe) carries no D2D code; this mixin layers the D2D
+ * The core UE PHY (PhyUe) carries no D2D code; this mixin layers the D2D
  * UE-PHY logic (D2D Tx power, D2D CQI accounting, one-to-many D2D
  * transmission, the D2D-multicast capture effect) on top of it. The
  * capture-effect machinery lives in D2dUePhyHelper; the mixin holds the
  * module-side glue. It has native protected access to the Base internals it
  * needs.
  *
- * The concrete Define_Module'd PHY is LtePhyUeD2D = D2dUePhy<LtePhyUe>.
+ * The concrete Define_Module'd PHY is PhyUeD2D = D2dUePhy<PhyUe>.
  *
  * Note: handleAirFrame() fully replaces the Base implementation; the other
  * overrides extend Base behavior and chain up to it.
@@ -208,13 +208,13 @@ void D2dUePhy<Base>::sendMulticast(LteAirFrame *frame)
 
             // get a pointer to receiving module
             cModule *receiver = nodeInfo.moduleRef;
-            LtePhyBase *recvPhy;
+            PhyBase *recvPhy;
             double dist;
 
             if (d2dHelper_.getMulticastD2DRangeCheckEnabled()) {
                 // get the correct PHY layer module
-                recvPhy = (isNrUe(destId)) ? check_and_cast<LtePhyBase *>(receiver->getSubmodule("cellularNic")->getSubmodule("nrPhy"))
-                                  : check_and_cast<LtePhyBase *>(receiver->getSubmodule("cellularNic")->getSubmodule("phy"));
+                recvPhy = (isNrUe(destId)) ? check_and_cast<PhyBase *>(receiver->getSubmodule("cellularNic")->getSubmodule("nrPhy"))
+                                  : check_and_cast<PhyBase *>(receiver->getSubmodule("cellularNic")->getSubmodule("phy"));
 
                 dist = recvPhy->getCoord().distance(this->getRadioPosition());
 

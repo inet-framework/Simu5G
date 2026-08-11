@@ -21,7 +21,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-class LtePhyBase;
+class PhyBase;
 class LteAirFrame;
 class UserControlInfo;
 
@@ -29,8 +29,8 @@ class UserControlInfo;
  * Plain helper that holds the D2D-specific PHY state and logic shared by every
  * D2D-capable UE PHY (LTE and NR variants): the D2D Tx power and the capture-
  * effect machinery for D2D multicast reception. It is owned by value by the PHY
- * module and only uses the public API of LtePhyBase, so that a PHY module that
- * does NOT derive from LtePhyUeD2D can reuse it.
+ * module and only uses the public API of PhyBase, so that a PHY module that
+ * does NOT derive from PhyUeD2D can reuse it.
  *
  * Note: the decoding self-message (d2dDecodingTimer) belongs to the owning
  * module and therefore stays in the leaf; the leaf schedules it and, when it
@@ -41,7 +41,7 @@ class D2dUePhyHelper
 {
   protected:
     // the PHY module owning this helper
-    LtePhyBase *phy_;
+    PhyBase *phy_;
 
     // D2D Tx power
     double d2dTxPower_ = 0.0;
@@ -65,7 +65,7 @@ class D2dUePhyHelper
     void decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo);
 
   public:
-    D2dUePhyHelper(LtePhyBase *phy) : phy_(phy) {}
+    D2dUePhyHelper(PhyBase *phy) : phy_(phy) {}
 
     // D2D Tx power
     double getD2dTxPower() const { return d2dTxPower_; }

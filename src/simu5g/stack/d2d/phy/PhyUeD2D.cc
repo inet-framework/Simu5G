@@ -10,10 +10,10 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/d2d/phy/LtePhyUeD2D.h"
+#include "simu5g/stack/d2d/phy/PhyUeD2D.h"
 
 namespace simu5g {
 
-Define_Module(LtePhyUeD2D);
+Define_Module(PhyUeD2D);
 
 } //namespace

@@ -15,7 +15,7 @@ package simu5g.stack;
 
 import simu5g.stack.mac.ILteMac;
 import simu5g.stack.packetFlowObserver.IPacketFlowObserver;
-import simu5g.stack.phy.ILtePhy;
+import simu5g.stack.phy.IPhy;
 import simu5g.stack.phy.channelmodel.IChannelModel;
 import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 import simu5g.stack.rlc.IRlcMux;
@@ -81,7 +81,7 @@ module NrNicUe extends LteNicUe
             @display("p=570,510");
         }
         // PHY Layer
-        nrPhy: <default("LtePhyUe")> like ILtePhy {
+        nrPhy: <default("PhyUe")> like IPhy {
             @display("p=570,600");
         }
         // NR Channel Model
