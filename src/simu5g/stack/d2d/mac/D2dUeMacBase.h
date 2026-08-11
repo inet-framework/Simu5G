@@ -403,8 +403,12 @@ void D2dUeMacBase<Base>::macPduMake(MacCid cid)
                // triggered and has to be sent when there are enough resources
 
             auto macPdu = macPkt->template removeAtFront<LteMacPdu>();
-            // Attach BSR to PDU if RAC is won and wasn't already made
-            if (this->isBsrPending() && !bsrAlreadyMade && size > 0) {
+            // A triggered BSR is reported whatever the remaining size: a zero report is
+            // the defined way (TS 36.321 / TS 38.321 5.4.5, buffer-size index 0) to tell
+            // the scheduler the buffers drained into this very PDU. The specs cancel a
+            // BSR only once it has been included in a PDU, or when the grant cannot fit
+            // the CE -- never because the buffer is empty.
+            if (this->isBsrPending() && !bsrAlreadyMade) {
                 this->appendBsr(macPdu, size);
                 bsrAlreadyMade = true;
             }
