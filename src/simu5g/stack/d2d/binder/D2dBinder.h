@@ -25,6 +25,8 @@ namespace simu5g {
 
 using namespace omnetpp;
 
+class PhyBase;
+
 /**
  * Global holder of the D2D-specific network state, split out of the core Binder.
  *
@@ -53,6 +55,9 @@ class D2dBinder : public cSimpleModule
     // set of D2D one-to-many (multicast) transmitters
     std::set<MacNodeId> multicastTransmitterSet_;
 
+    // D2D-capable UE PHYs by node id, registered at init (see registerD2dPhy)
+    std::map<MacNodeId, opp_component_ptr<PhyBase>> d2dPhys_;
+
   protected:
     void initialize() override;
     void handleMessage(cMessage *msg) override {}
@@ -67,6 +72,19 @@ class D2dBinder : public cSimpleModule
      * first use (find-or-create).
      */
     static D2dBinder *getInstance(cModule *contextModule);
+
+    /**
+     * Registers a D2D-capable UE PHY under its node id. Called by the PHY at
+     * INITSTAGE_SIMU5G_BINDER_ACCESS, so that the one-to-many transmit path can
+     * resolve a peer PHY by id instead of walking submodule names.
+     */
+    virtual void registerD2dPhy(MacNodeId nodeId, PhyBase *phy);
+
+    /**
+     * Returns the registered D2D UE PHY of the given node, or nullptr if that
+     * node has no D2D-capable PHY.
+     */
+    virtual PhyBase *getD2dPhy(MacNodeId nodeId);
 
     /**
      * If the src->dst peering is not yet known, computes and records it; returns

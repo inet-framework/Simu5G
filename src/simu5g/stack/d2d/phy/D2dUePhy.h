@@ -17,6 +17,7 @@
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/rrc/HandoverController.h"
 #include "simu5g/stack/d2d/phy/D2dUePhyHelper.h"
+#include "simu5g/stack/d2d/binder/D2dBinder.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
@@ -55,6 +56,10 @@ class D2dUePhy : public Base
     // linking the D2D package in cannot shift the signal ids the core assigns. See the
     // "Signals" note in D2dUeMacBase.h.
     simsignal_t averageCqiD2DSignal_ = SIMSIGNAL_NULL;
+
+    // the global D2D directory; this PHY registers itself in it so that peers can
+    // resolve it by node id on the one-to-many transmit path
+    D2dBinder *d2dBinder_ = nullptr;
 
     void initialize(int stage) override;
     void handleSelfMessage(cMessage *msg) override;
@@ -167,6 +172,15 @@ void D2dUePhy<Base>::initialize(int stage)
         d2dHelper_.setMulticastD2DRangeCheckEnabled(this->par("enableMulticastD2DRangeCheck"));
         d2dHelper_.setMulticastD2DRange(this->par("multicastD2DRange"));
     }
+    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
+        // Publish this PHY under its node id, so that a peer's one-to-many transmit
+        // path can reach it without knowing the NIC's submodule names. Deliberately
+        // not INITSTAGE_LOCAL: the D2dBinder is created on first use, and the eNB D2D
+        // PHY already creates it at INITSTAGE_LOCAL, so asking for it here cannot move
+        // its creation point (and with it the dynamic component-id ordering).
+        d2dBinder_ = D2dBinder::getInstance(this);
+        d2dBinder_->registerD2dPhy(this->nodeId_, this);
+    }
 }
 
 template<class Base>
@@ -208,15 +222,16 @@ void D2dUePhy<Base>::sendMulticast(LteAirFrame *frame)
 
             // get a pointer to receiving module
             cModule *receiver = nodeInfo.moduleRef;
-            PhyBase *recvPhy;
-            double dist;
 
             if (d2dHelper_.getMulticastD2DRangeCheckEnabled()) {
-                // get the correct PHY layer module
-                recvPhy = (isNrUe(destId)) ? check_and_cast<PhyBase *>(receiver->getSubmodule("cellularNic")->getSubmodule("nrPhy"))
-                                  : check_and_cast<PhyBase *>(receiver->getSubmodule("cellularNic")->getSubmodule("phy"));
+                // the peer's PHY registered itself under its node id at init; the
+                // technology already matches, since the loop skipped the other leg above
+                PhyBase *recvPhy = d2dBinder_->getD2dPhy(destId);
+                if (recvPhy == nullptr)
+                    throw cRuntimeError("D2dUePhy::sendMulticast - node %d is in multicast group %d but has no registered D2D PHY",
+                            num(destId), num(groupId));
 
-                dist = recvPhy->getCoord().distance(this->getRadioPosition());
+                double dist = recvPhy->getCoord().distance(this->getRadioPosition());
 
                 if (dist > d2dHelper_.getMulticastD2DRange()) {
                     EV << NOW << " D2dUePhy::sendMulticast - node too far (" << dist << " > " << d2dHelper_.getMulticastD2DRange() << ". skipping transmission" << endl;
