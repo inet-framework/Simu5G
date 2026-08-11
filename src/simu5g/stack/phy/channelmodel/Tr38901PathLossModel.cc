@@ -123,26 +123,33 @@ double Tr38901PathLossModel::getShadowingStdDev(double d3D, double d2D, bool los
 
 double Tr38901PathLossModel::computePenetrationLoss(double threeDimDistance)
 {
-    double penetrationLoss = 0.0;
     double inside_distance = (inside_distance_ < threeDimDistance) ? inside_distance_ : threeDimDistance;
     double pLoss_in = 0.5 * inside_distance;
+
+    // Which through-wall model applies is a function of the scenario. Table
+    // 7.4.3-3 -- a flat 20 dB whose sigma_P is 0, kept for backwards
+    // compatibility with TR 36.873 -- is offered for UMa and UMi
+    // single-frequency simulations below 6 GHz. TR 38.901 defines no O2I loss
+    // for the indoor-office scenario at all, so it follows the urban ones for
+    // want of anything to derive.
+    bool singleFrequencyModel = carrierFrequencyGHz_ <= 6.0
+        && (scenario_ == URBAN_MACROCELL || scenario_ == URBAN_MICROCELL
+            || scenario_ == INDOOR_HOTSPOT);
+    if (singleFrequencyModel)
+        return 20.0 + pLoss_in;
+
+    // Otherwise table 7.4.3-2, whose high-loss variant is not offered for RMa.
+    double Lconcrete = 5 + 4 * carrierFrequencyGHz_;
     double pLoss_tw = 0.0;
-    if (carrierFrequencyGHz_ <= 6.0)
-        // single-frequency model of table 7.4.3-3, kept for backwards
-        // compatibility with TR 36.873; its sigma_P is 0
-        pLoss_tw = 20.0;
+    if (useBuildingPenetrationHighLossModel_ && scenario_ != RURAL_MACROCELL) {
+        double LiirGlass = 23 + 0.3 * carrierFrequencyGHz_;
+        pLoss_tw = 5 - 10 * log10(0.7 * pow(10, (-LiirGlass / 10)) + 0.3 * pow(10, (-Lconcrete / 10))) + owner_->normal(0.0, 6.5);
+    }
     else {
         double Lglass = 2 + 0.2 * carrierFrequencyGHz_;
-        double LiirGlass = 23 + 0.3 * carrierFrequencyGHz_;
-        double Lconcrete = 5 + 4 * carrierFrequencyGHz_;
-
-        if (useBuildingPenetrationHighLossModel_)
-            pLoss_tw = 5 - 10 * log10(0.7 * pow(10, (-LiirGlass / 10)) + 0.3 * pow(10, (-Lconcrete / 10))) + owner_->normal(0.0, 6.5);
-        else
-            pLoss_tw = 5 - 10 * log10(0.3 * pow(10, (-Lglass / 10)) + 0.7 * pow(10, (-Lconcrete / 10))) + owner_->normal(0.0, 4.4);
+        pLoss_tw = 5 - 10 * log10(0.3 * pow(10, (-Lglass / 10)) + 0.7 * pow(10, (-Lconcrete / 10))) + owner_->normal(0.0, 4.4);
     }
-    penetrationLoss = pLoss_tw + pLoss_in;
-    return penetrationLoss;
+    return pLoss_tw + pLoss_in;
 }
 
 double Tr38901PathLossModel::computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los)
