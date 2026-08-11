@@ -22,9 +22,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-// attenuation value to be returned if max. distance of a scenario has been violated
-// and tolerating the maximum distance violation is enabled
-#define ATT_MAXDISTVIOLATED    1000
+class Tr36814PathLossModel;
 
 /**
  * This channel model implements path loss, LOS probability, and shadowing for background cells
@@ -160,6 +158,13 @@ class BackgroundCellChannelModel : public cSimpleModule
 
     //if dynamicLos is false this boolean is initialized to true if all users will be in LOS or false otherwise
     bool fixedLos_;
+
+    // TR 36.814 path-loss, LOS-probability and shadowing-sigma formulas;
+    // owned, created in initialize(). The main channel model's ext-cell path
+    // is permanently pinned to the same study (see its extCellPathLoss_),
+    // so background cells and ext cells evaluate identical formulas.
+    Tr36814PathLossModel *pathLoss_ = nullptr;
+
     /*
      * Compute Attenuation caused by pathloss and shadowing (optional)
      */
@@ -171,49 +176,6 @@ class BackgroundCellChannelModel : public cSimpleModule
      * @param los line-of-sight flag
      */
     virtual double computePathLoss(double distance, double dbp, bool los);
-    /*
-     * Compute attenuation for indoor scenario
-     *
-     * @param distance between UE and eNodeB
-     * @param los line-of-sight flag
-     */
-    double computeIndoor(double distance, bool los);
-    /*
-     * Compute attenuation for Urban Micro cell
-     *
-     * @param distance between UE and eNodeB
-     * @param los line-of-sight flag
-     */
-    double computeUrbanMicro(double distance, bool los);
-    /*
-     * Compute attenuation for Urban Macro cell
-     *
-     * @param distance between UE and eNodeB
-     * @param los line-of-sight flag
-     */
-    double computeUrbanMacro(double distance, bool los);
-    /*
-     * Compute attenuation for Sub Urban Macro cell
-     *
-     * @param distance between UE and eNodeB
-     * @param los line-of-sight flag
-     */
-    double computeSubUrbanMacro(double distance, double& dbp, bool los);
-    /*
-     * Compute attenuation for rural macro cell
-     *
-     * @param distance between UE and eNodeB
-     * @param los line-of-sight flag
-     */
-    double computeRuralMacro(double distance, double& dbp, bool los);
-
-    /*
-     * compute std deviation of shadowing according to scenario and visibility
-     *
-     * @param distance between UE and eNodeB
-     * @param nodeid mac node id of UE
-     */
-    double getStdDev(bool dist, MacNodeId nodeId);
     /*
      * Compute Rayleigh fading
      *
@@ -284,6 +246,7 @@ class BackgroundCellChannelModel : public cSimpleModule
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
   public:
+    ~BackgroundCellChannelModel() override;
 
     // set carrier frequency
     void setCarrierFrequency(GHz carrierFrequency) {
