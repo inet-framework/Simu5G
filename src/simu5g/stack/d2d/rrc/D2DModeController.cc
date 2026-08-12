@@ -19,6 +19,17 @@ void D2DModeController::registerD2DPeerTxEntity(MacNodeId peerId, ID2dRlcUmTxEnt
         umTxEnt->startHoldingDownstreamInPackets();
 }
 
+void D2DModeController::unregisterD2DPeerTxEntity(MacNodeId peerId, ID2dRlcUmTxEntity *umTxEnt)
+{
+    auto it = perPeerTxEntities_.find(peerId);
+    if (it == perPeerTxEntities_.end())
+        return;
+
+    it->second.erase(umTxEnt);
+    if (it->second.empty())
+        perPeerTxEntities_.erase(it);
+}
+
 void D2DModeController::resumeDownstreamInPackets(MacNodeId peerId)
 {
     if (peerId == NODEID_NONE || (perPeerTxEntities_.find(peerId) == perPeerTxEntities_.end()))

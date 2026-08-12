@@ -23,6 +23,12 @@ class D2DModeController : public cSimpleModule
 
   public:
     virtual void registerD2DPeerTxEntity(MacNodeId peerId, ID2dRlcUmTxEntity *umTxEnt);
+    /**
+     * Counterpart of registerD2DPeerTxEntity(). This map holds raw pointers to entity
+     * *modules*, which BearerManagement::deleteLocalRlcQueues() deletes on handover and on
+     * bearer teardown, so every registered entity has to withdraw itself before it goes.
+     */
+    virtual void unregisterD2DPeerTxEntity(MacNodeId peerId, ID2dRlcUmTxEntity *umTxEnt);
     virtual void resumeDownstreamInPackets(MacNodeId peerId);
     virtual bool isEmptyingTxBuffer(MacNodeId peerId);
 };
