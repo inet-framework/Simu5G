@@ -56,6 +56,10 @@ class RlcUmTxEntityD2D : public Base, public ID2dRlcUmTxEntity
     // D2D mode-switch controller of this NIC (absent on non-D2D stacks)
     inet::ModuleRefByPar<D2DModeController> d2dModeController_;
 
+    // peer this entity is currently registered under at the controller, so that it can
+    // withdraw itself under exactly the key it was filed under (see ~RlcUmTxEntityD2D)
+    MacNodeId registeredPeerId_ = NODEID_NONE;
+
     // if true, the entity watches for its TX buffer becoming empty
     bool notifyEmptyBuffer_ = false;
 
@@ -79,8 +83,26 @@ class RlcUmTxEntityD2D : public Base, public ID2dRlcUmTxEntity
         // D2D peer tracking: register with the mode controller now that the peer id
         // is known, so mode switches can coordinate holding/draining of the buffers
         // (this used to be done by BearerManagement for every UM entity).
-        if (d2dModeController_)
-            d2dModeController_->registerD2DPeerTxEntity(MacNodeId(this->flowControlInfo_->getD2dRxPeerId()), this);
+        if (d2dModeController_) {
+            unregisterFromD2DModeController();  // no-op unless the flow is being re-set
+            registeredPeerId_ = MacNodeId(this->flowControlInfo_->getD2dRxPeerId());
+            d2dModeController_->registerD2DPeerTxEntity(registeredPeerId_, this);
+        }
+    }
+
+    /**
+     * Withdraw from the controller's per-peer registry. That registry holds raw pointers to
+     * these entity modules, and BearerManagement::deleteLocalRlcQueues() deletes them on
+     * handover and on bearer teardown, so an entity that goes away without withdrawing
+     * leaves a dangling pointer behind -- which the next registration for the same peer then
+     * calls isEmptyingBuffer() on. The ModuleRefByPar is null once the controller itself is
+     * gone, which is the case when the whole NIC is being torn down.
+     */
+    void unregisterFromD2DModeController()
+    {
+        if (d2dModeController_ && registeredPeerId_ != NODEID_NONE)
+            d2dModeController_->unregisterD2DPeerTxEntity(registeredPeerId_, this);
+        registeredPeerId_ = NODEID_NONE;
     }
 
     // park the SDU while the old-mode entity is still draining
@@ -113,6 +135,8 @@ class RlcUmTxEntityD2D : public Base, public ID2dRlcUmTxEntity
     virtual void resetTxNumbering() = 0;
 
   public:
+    ~RlcUmTxEntityD2D() override { unregisterFromD2DModeController(); }
+
     void startHoldingDownstreamInPackets() override { holdingDownstreamInPackets_ = true; }
 
     bool isHoldingDownstreamInPackets() override { return holdingDownstreamInPackets_; }
