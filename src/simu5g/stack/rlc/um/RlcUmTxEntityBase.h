@@ -72,9 +72,6 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
     // Buffer an incoming SDU; returns false on overflow (LTE bounded queue).
     virtual bool storeSdu(inet::Packet *pkt) = 0;
 
-    // Wire format carried on FlowControlInfo (false = LTE FI/concat, true = NR SO).
-    virtual bool usesSoFraming() const = 0;
-
     /*
      * Hook invoked for an SDU arriving from the upper layer, before it is
      * enqueued into the TX buffer. Returns true if the SDU was consumed by
@@ -98,7 +95,6 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
      * predicate behind onTxBufferEmptied() is deferred to the subclass.
      */
     virtual bool isTxBufferEmpty() const = 0;
-    virtual unsigned int snFieldLength() const = 0;
 
   public:
 

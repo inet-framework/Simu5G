@@ -50,6 +50,7 @@ void BearerManagement::initialize(int stage)
         nicModule_ = inet::getContainingNicModule(this);
 
         binderModule.reference(this, "binderModule", true);
+        drbTableModule.reference(this, "drbTableModule", true);
         rlcMuxModule.reference(this, "rlcMuxModule", true);
         nrRlcMuxModule.reference(this, "nrRlcMuxModule", false);
         macModule.reference(this, "macModule", true);
@@ -213,6 +214,8 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
     installRlcRxSide(rlcId, lteInfo, rlcMux, isNr);
 
+    materializeDrb(lteInfo, lteInfo->getSourceId(), rlcId, isNr);
+
     // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
     // PDCP lives at the master, so an PdcpRelayEntity stands in (UL half wired here).
     if (withPdcp) {
@@ -272,6 +275,8 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
     // RLC entity creation
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
     installRlcTxSide(rlcId, lteInfo, rlcMux, isNr);
+
+    materializeDrb(lteInfo, lteInfo->getDestId(), rlcId, isNr);
 
     // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
     // PDCP lives at the master, so an PdcpRelayEntity stands in (DL half wired here).
@@ -433,6 +438,30 @@ RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, FlowControlInfo *
     return rxEnt;
 }
 
+// Records the configuration of the bearer being established, keyed by the peer node and
+// the DRB id, so that the two directions of the duplex establishment fill in the same
+// descriptor. At a DC UE the NR leg is established against the secondary node and so gets
+// a descriptor of its own; joining the legs of a split bearer into one descriptor is what
+// the legs table will do.
+void BearerManagement::materializeDrb(FlowControlInfo *lteInfo, MacNodeId peerId, DrbKey rlcId, bool isNr)
+{
+    DrbDesc& drb = drbTableModule->getOrCreateDrb(DrbKey(peerId, lteInfo->getDrbId()));
+    drb.lcid = LogicalCid(num(lteInfo->getDrbId()));   // the 1:1 mapping of LteMacBase::drbIdToLcid
+    drb.lcg = (LteTrafficClass)lteInfo->getTraffic();
+    drb.rlcType = (LteRlcType)lteInfo->getRlcType();
+
+    // The wire format and the SN field length are properties of the RLC entity serving the
+    // bearer (its mode, its RAT profile and its own parameters); read them off the entity
+    // that has just been built, so that the recorded header is the one it emits.
+    cModule *rlcEnt = lookupRlcEntityModule(rlcId, isNr);
+    ASSERT(rlcEnt != nullptr);   // the RLC entity is installed before this is called
+    auto *txEnt = check_and_cast<RlcTxEntityBase *>(rlcEnt->getSubmodule("tx"));
+    drb.soFraming = txEnt->usesSoFraming();
+    drb.snFieldLength = txEnt->snFieldLength();
+
+    EV << "BearerManagement::materializeDrb - " << drb << endl;
+}
+
 int BearerManagement::getNumLegs(DrbKey id, FlowControlInfo *lteInfo)
 {
     // Number of legs of this bearer. Two-leg (split-capable) bearers: at a DC UE, every
@@ -592,13 +621,17 @@ void BearerManagement::installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
 RlcTxEntityBase *BearerManagement::createRlcTxBuffer(DrbKey id, FlowControlInfo *lteInfo)
 {
     Enter_Method_Silent("createRlcTxBuffer()");
-    return installRlcTxSide(id, lteInfo, rlcMuxModule.get(), false);
+    RlcTxEntityBase *txEnt = installRlcTxSide(id, lteInfo, rlcMuxModule.get(), false);
+    materializeDrb(lteInfo, lteInfo->getDestId(), id, false);
+    return txEnt;
 }
 
 RlcRxEntityBase *BearerManagement::createRlcRxBuffer(DrbKey id, FlowControlInfo *lteInfo)
 {
     Enter_Method_Silent("createRlcRxBuffer()");
-    return installRlcRxSide(id, lteInfo, rlcMuxModule.get(), false);
+    RlcRxEntityBase *rxEnt = installRlcRxSide(id, lteInfo, rlcMuxModule.get(), false);
+    materializeDrb(lteInfo, lteInfo->getSourceId(), id, false);
+    return rxEnt;
 }
 
 void BearerManagement::deleteLocalPdcpEntities(MacNodeId nodeId)
@@ -617,6 +650,14 @@ void BearerManagement::deleteLocalPdcpEntities(MacNodeId nodeId)
     // not delete the other leg's entities, otherwise that leg's RLC RX entities are left
     // forwarding to a dangling gate, and later re-establishment collides with its leftovers.
     bool keyed = isEnb || registration_->getNrNodeId() != NODEID_NONE;
+
+    // The bearer's configuration lives exactly as long as its PDCP entity: a bearer is
+    // established on demand, so a stale descriptor would be picked up by the next
+    // establishment instead of being rebuilt from the new link's parameters.
+    if (keyed)
+        drbTableModule->removeDrbsOfPeer(nodeId);
+    else
+        drbTableModule->removeAllDrbs();
 
     // Delete full PDCP entity compounds (each deletes its TX and RX side). Unregister the TX
     // from the PdcpMux routing table where one was installed -- a DC NR leg reuses the master's

@@ -9,7 +9,7 @@
 // and cannot be removed from it.
 ///
 
-#include "simu5g/stack/sdap/common/DrbTable.h"
+#include "simu5g/stack/sdap/common/SdapDrbTable.h"
 #include <set>
 #include <omnetpp/cvaluearray.h>
 #include <omnetpp/cvaluemap.h>
@@ -18,19 +18,20 @@ using namespace omnetpp;
 
 namespace simu5g {
 
-void DrbTable::loadFromJson(const cValueArray *arr)
+void SdapDrbTable::loadFromJson(const cValueArray *arr)
 {
     for (int i = 0; i < (int)arr->size(); i++) {
         const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
 
-        DrbConfig ctx;
-        ctx.drbId = DrbId(entry->get("drb").intValue());
+        DrbDesc ctx;
+        DrbId drbId = DrbId(entry->get("drb").intValue());
 
         // "ue" field: numeric MacNodeId (gNB side); omitted on UE side
-        if (entry->containsKey("ue"))
-            ctx.ueNodeId = MacNodeId(entry->get("ue").intValue());
-        else
-            ctx.ueNodeId = NODEID_NONE; // UE side: "self"
+        MacNodeId ueNodeId = entry->containsKey("ue")
+                ? MacNodeId(entry->get("ue").intValue())
+                : NODEID_NONE;   // UE side: "self"
+        ctx.key = DrbKey(ueNodeId, drbId);
+        ctx.lcid = LogicalCid(num(drbId));
 
         // isDefault (optional; if not set, first DRB per nodeId becomes default)
         if (entry->containsKey("isDefault"))
@@ -53,8 +54,7 @@ void DrbTable::loadFromJson(const cValueArray *arr)
         if (entry->containsKey("upperProtocol"))
             ctx.upperProtocol = entry->get("upperProtocol").stdstringValue();
 
-        DrbKey key(ctx.ueNodeId, ctx.drbId);
-        drbMap_[key] = ctx;
+        drbMap_[ctx.key] = ctx;
     }
 
     // Build derived lookup tables (pointers into drbMap_, stable after insertion)
@@ -62,53 +62,54 @@ void DrbTable::loadFromJson(const cValueArray *arr)
     std::set<MacNodeId> nodesWithExplicitDefault;
     for (auto& [key, ctx] : drbMap_) {
         if (ctx.isDefault)
-            nodesWithExplicitDefault.insert(ctx.ueNodeId);
+            nodesWithExplicitDefault.insert(ctx.getPeerId());
     }
 
     std::set<MacNodeId> nodesWithAutoDefault;
     for (auto& [key, ctx] : drbMap_) {
+        MacNodeId ueNodeId = ctx.getPeerId();
         // Auto-assign default if no explicit isDefault was set for this nodeId
-        if (!nodesWithExplicitDefault.count(ctx.ueNodeId) &&
-            !nodesWithAutoDefault.count(ctx.ueNodeId)) {
+        if (!nodesWithExplicitDefault.count(ueNodeId) &&
+            !nodesWithAutoDefault.count(ueNodeId)) {
             ctx.isDefault = true;
-            nodesWithAutoDefault.insert(ctx.ueNodeId);
+            nodesWithAutoDefault.insert(ueNodeId);
         }
 
-        // Build reverse lookup: (nodeId, qfi) -> DrbConfig*
-        const DrbConfig *ptr = &ctx;
+        // Build reverse lookup: (nodeId, qfi) -> DrbDesc*
+        const DrbDesc *ptr = &ctx;
         for (Qfi qfi : ctx.qfiList)
-            qfiToDrb_[{ctx.ueNodeId, qfi}] = ptr;
+            qfiToDrb_[{ueNodeId, qfi}] = ptr;
 
         // Build default DRB map
         if (ctx.isDefault) {
-            defaultDrb_[ctx.ueNodeId] = ptr;
-            if (ctx.ueNodeId == NODEID_NONE)
+            defaultDrb_[ueNodeId] = ptr;
+            if (ueNodeId == NODEID_NONE)
                 ueDefaultDrb_ = ptr;
         }
     }
 }
 
-const DrbConfig* DrbTable::getDrb(DrbKey key) const
+const DrbDesc *SdapDrbTable::getDrb(DrbKey key) const
 {
     auto it = drbMap_.find(key);
     return it != drbMap_.end() ? &it->second : nullptr;
 }
 
-const DrbConfig* DrbTable::getDrbForQfi(MacNodeId nodeId, Qfi qfi) const
+const DrbDesc *SdapDrbTable::getDrbForQfi(MacNodeId nodeId, Qfi qfi) const
 {
     auto it = qfiToDrb_.find({nodeId, qfi});
     return it != qfiToDrb_.end() ? it->second : nullptr;
 }
 
-const DrbConfig* DrbTable::getDefaultDrb(MacNodeId nodeId) const
+const DrbDesc *SdapDrbTable::getDefaultDrb(MacNodeId nodeId) const
 {
     auto it = defaultDrb_.find(nodeId);
     return it != defaultDrb_.end() ? it->second : nullptr;
 }
 
-void DrbTable::dump(std::ostream& os) const
+void SdapDrbTable::dump(std::ostream& os) const
 {
-    os << "=== DrbTable dump (" << drbMap_.size() << " DRBs) ===" << std::endl;
+    os << "=== SdapDrbTable dump (" << drbMap_.size() << " DRBs) ===" << std::endl;
     for (const auto& [key, ctx] : drbMap_) {
         os << "  " << key << ": " << ctx << std::endl;
     }
@@ -116,4 +117,3 @@ void DrbTable::dump(std::ostream& os) const
 }
 
 } // namespace simu5g
-

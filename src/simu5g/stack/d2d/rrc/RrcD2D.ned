@@ -26,9 +26,9 @@ module RrcD2D extends Rrc
 
     submodules:
         d2dModeController: <default("D2DModeController")> like ID2DModeController {
-            @display("p=400,80");
+            @display("p=850,80");
         }
         d2dModeSelection: <default("D2dModeSelectionBase")> like ID2DModeSelection if hasD2DModeSelection {
-            @display("p=400,160");
+            @display("p=850,160");
         }
 }

@@ -57,6 +57,7 @@ simple BearerManagement like IBearerManagement
 
         // Module references for accessing other stack layers
         string registrationModule = default("^.registration");
+        string drbTableModule = default("^.drbTable");
         string ip2nicModule = default("^.^.ip2nic");
         string pdcpMuxModule = default("^.^.pdcpMux");
         string pdcpDcMuxModule = default("^.^.pdcpDcMux");

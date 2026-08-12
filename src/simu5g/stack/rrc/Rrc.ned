@@ -16,6 +16,7 @@ package simu5g.stack.rrc;
 //
 // Contains functional submodules corresponding to RRC procedures:
 //   - registration: registers the node with the Binder, sets up the interface
+//   - drbTable: the configuration of the node's data radio bearers
 //   - bearerManagement: sets up and tears down data radio bearers
 //   - handoverController: manages handover decisions and procedures (UE only)
 //
@@ -40,8 +41,11 @@ module Rrc like IRrc
         registration: <default("Registration")> like IRegistration {
             @display("p=100,80");
         }
-        bearerManagement: <default("BearerManagement")> like IBearerManagement {
+        drbTable: <default("DrbTable")> like IDrbTable {
             @display("p=250,80");
+        }
+        bearerManagement: <default("BearerManagement")> like IBearerManagement {
+            @display("p=400,80");
         }
         handoverController: <default("HandoverController")> like IHandoverController if hasHandoverController {
             @display("p=550,80");

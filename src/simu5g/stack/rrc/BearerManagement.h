@@ -14,6 +14,7 @@
 
 #include "simu5g/common/LteDefs.h"
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/stack/rrc/DrbTable.h"
 #include <inet/common/ModuleRefByPar.h>
 #include <set>
 #include <utility>
@@ -62,6 +63,7 @@ class BearerManagement : public cSimpleModule
     inet::ModuleRefByPar<LteMacBase> macModule;
     inet::ModuleRefByPar<LteMacBase> nrMacModule;
     inet::ModuleRefByPar<Binder> binderModule;   // DC master/secondary topology lookups; peer BearerManagement on RLF
+    inet::ModuleRefByPar<DrbTable> drbTableModule;   // the bearer configuration this module authors
 
     // Entity registries (CP owns the lifecycle of all entities)
     // One PDCP entity module (compound: TX+RX, see PdcpEntityBase) per bearer, keyed by (peer
@@ -111,6 +113,12 @@ class BearerManagement : public cSimpleModule
     // attaches to (and, for a leg of a bearer anchored elsewhere, the anchor bearer's key).
     virtual int getNumLegs(DrbKey id, FlowControlInfo *lteInfo);
     virtual int selectPdcpLeg(bool isNr, MacNodeId peerId, DrbKey& compoundId /*inout*/);
+
+    // Records the configuration of the bearer this establishment call sets up, from
+    // exactly the derivations the entities are built from. Runs after the RLC entity
+    // exists: the wire format and the SN field length are properties of the entity that
+    // implements the bearer, and are read off it.
+    virtual void materializeDrb(FlowControlInfo *lteInfo, MacNodeId peerId, DrbKey rlcId, bool isNr);
 
   protected:
     void initialize(int stage) override;

@@ -14,7 +14,7 @@
 
 #include <omnetpp.h>
 #include <set>
-#include "simu5g/stack/sdap/common/DrbTable.h"
+#include "simu5g/stack/sdap/common/SdapDrbTable.h"
 #include "simu5g/stack/sdap/common/ReflectiveQosTable.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/pdcp/PdcpMux.h"
@@ -45,7 +45,7 @@ namespace simu5g {
 class NrSdap : public cSimpleModule
 {
   protected:
-    DrbTable drbTable_;
+    SdapDrbTable drbTable_;
     inet::ModuleRefByPar<ReflectiveQosTable> reflectiveQosTable;
     inet::ModuleRefByPar<Binder> binder_;
 
@@ -55,9 +55,9 @@ class NrSdap : public cSimpleModule
     bool isUe = true;  // Node role: true for UE, false for gNB
 
   protected:
-    virtual bool requiresSdapHeader(const DrbConfig *drb);
+    virtual bool requiresSdapHeader(const DrbDesc *drb);
     virtual bool shouldEnableReflectiveQos(Qfi qfi);
-    virtual const inet::Protocol *getUpperProtocol(const DrbConfig *ctx);
+    virtual const inet::Protocol *getUpperProtocol(const DrbDesc *ctx);
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
     virtual void handleUpperPacket(inet::Packet *pkt);

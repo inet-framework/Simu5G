@@ -50,7 +50,7 @@ void NrSdap::initialize()
         throw cRuntimeError("Only UE may use a reflective QoS table");
 }
 
-bool NrSdap::requiresSdapHeader(const DrbConfig *drb)
+bool NrSdap::requiresSdapHeader(const DrbDesc *drb)
 {
     // SDAP header is needed when the QFI cannot be unambiguously determined
     // from the DRB alone on the RX side:
@@ -65,7 +65,7 @@ bool NrSdap::shouldEnableReflectiveQos(Qfi qfi)
     return par("useReflectiveQos").boolValue(); // for now -- should come from RRC config
 }
 
-const inet::Protocol *NrSdap::getUpperProtocol(const DrbConfig *ctx)
+const inet::Protocol *NrSdap::getUpperProtocol(const DrbDesc *ctx)
 {
     // If an explicit upperProtocol is configured on this DRB, use it
     if (ctx && !ctx->upperProtocol.empty()) {
@@ -140,17 +140,17 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
             EV_WARN << "SDAP TX: destId not set in FlowControlInfo\n";
     }
 
-    const DrbConfig *drb = drbTable_.getDrbForQfi(nodeId, qfi);
+    const DrbDesc *drb = drbTable_.getDrbForQfi(nodeId, qfi);
     if (!drb) {
         drb = drbTable_.getDefaultDrb(nodeId);
         if (drb)
             EV_WARN << "SDAP TX: No DRB mapping for nodeId=" << nodeId << " QFI=" << qfi
-                    << ", falling back to default DRB " << drb->drbId << "\n";
+                    << ", falling back to default DRB " << drb->getDrbId() << "\n";
     }
     if (!drb)
         throw cRuntimeError("SDAP TX: No DRB available for nodeId=%d", (int)num(nodeId));
 
-    EV_INFO << "SDAP TX: Selected DRB=" << drb->drbId << " for QFI=" << qfi << "\n";
+    EV_INFO << "SDAP TX: Selected DRB=" << drb->getDrbId() << " for QFI=" << qfi << "\n";
 
     // Check if SDAP header is required for this DRB
     if (requiresSdapHeader(drb)) {
@@ -167,24 +167,24 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
                 << ", reflectiveQoS = " << (enableReflectiveQos ? "true" : "false") << "\n";
     }
     else {
-        EV_INFO << "SDAP TX: No SDAP header required for DRB " << drb->drbId << "\n";
+        EV_INFO << "SDAP TX: No SDAP header required for DRB " << drb->getDrbId() << "\n";
     }
 
     // Set DRB ID and RLC type on FlowControlInfo for PDCP/RLC entity creation and routing
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
-    lteInfo->setDrbId(drb->drbId);
+    lteInfo->setDrbId(drb->getDrbId());
     lteInfo->setRlcType(drb->rlcType);
 
     // Establish the connection unless its PDCP TX entity already exists. The entity
     // registry is authoritative: entities deleted at handover or D2D mode switch get
     // re-established by the next packet, even for an already-seen (drbId, destId) pair.
-    if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drb->drbId)))
+    if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drb->getDrbId())))
         binder_->establishDataConnection(lteInfo.get());
 
     // Set protocol tag for outgoing frame to PDCP layer
     pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&LteProtocol::sdap);
 
-    EV_INFO << "SDAP TX: Forwarding to DRB " << drb->drbId << "\n";
+    EV_INFO << "SDAP TX: Forwarding to DRB " << drb->getDrbId() << "\n";
     send(pkt, "pdcpOut");
 }
 
@@ -193,7 +193,7 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
     auto lteInfo = pkt->findTag<FlowControlInfo>();
     DrbId drbId = lteInfo ? lteInfo->getDrbId() : DRBID_NONE;
     MacNodeId ueId = (!isUe && lteInfo) ? lteInfo->getSourceId() : NODEID_NONE;
-    const DrbConfig *drb = (drbId != DRBID_NONE) ? drbTable_.getDrb(DrbKey(ueId, drbId)) : nullptr;
+    const DrbDesc *drb = (drbId != DRBID_NONE) ? drbTable_.getDrb(DrbKey(ueId, drbId)) : nullptr;
     if (!drb)
         throw cRuntimeError("SDAP RX: Unknown DRB %d (ueId=%d) -- missing drbConfig entry?",
                             (int)num(drbId), (int)num(ueId));

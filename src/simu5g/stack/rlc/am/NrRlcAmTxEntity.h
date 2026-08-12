@@ -73,6 +73,7 @@ class NrRlcAmTxEntity : public RlcAmTxEntityBase
     virtual void processControlPacket(inet::Packet *pkt);
     virtual void bufferControlPduInternal(inet::Packet *pkt);
     unsigned int getPendingDataVolume() const override;
+    unsigned int snFieldLength() const override { return snFieldLength_; }
 
   protected:
 
