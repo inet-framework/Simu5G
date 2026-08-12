@@ -921,6 +921,19 @@ void BearerConfigurator::receiveSignal(cComponent *source, simsignal_t signalID,
         else
             ++it;
     }
+
+    // The remembered multicast flows are keyed by group but owned by their sender: drop the
+    // ones this node established, or multicastGroupJoined() would keep handing later joiners
+    // an RX leg keyed to a sender that no longer transmits -- and, since the RX descriptor's
+    // MacCid carries that sender's id, the PDUs of whichever node took over the group would
+    // then arrive on a connection the joiner has no descriptor for. A replacement sender's
+    // createConnection() stores a fresh flow, so the group keeps working.
+    for (auto it = multicastFlows_.begin(); it != multicastFlows_.end(); ) {
+        if (it->first.second == id)
+            it = multicastFlows_.erase(it);
+        else
+            ++it;
+    }
 }
 
 void BearerConfigurator::createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)
@@ -960,8 +973,9 @@ void BearerConfigurator::createConnection(const FlowId& flow, const BearerReques
     else {
         // Remember the flow so that nodes joining this group later still get an RX leg; the
         // loop below can only reach the members that already exist. See multicastGroupJoined().
-        if (multicastFlows_.find(groupId) == multicastFlows_.end())
-            multicastFlows_[groupId] = { flow, req, withPdcp };
+        auto flowKey = std::make_pair(groupId, sourceId);
+        if (multicastFlows_.find(flowKey) == multicastFlows_.end())
+            multicastFlows_[flowKey] = { flow, req, withPdcp };
 
         // Multicast bearers stay unidirectional: TX at the sender, RX at the members
         for (auto& [nodeId,_] : binder_->getNodeInfoMap())  //TODO use lte ones if LTE in DC setup, and NR ones if NR in DC setup
@@ -975,10 +989,13 @@ void BearerConfigurator::multicastGroupJoined(MacNodeId nodeId, MacNodeId groupI
 {
     Enter_Method("multicastGroupJoined(%hu, %hu)", (unsigned short)nodeId, (unsigned short)groupId);
 
-    auto it = multicastFlows_.find(groupId);
-    if (it != multicastFlows_.end() && nodeId != it->second.flow.sourceId)
-        createIncomingConnectionOnNode(nodeId, it->second.flow, it->second.req,
-                getNodeTypeById(nodeId) == UE || it->second.withPdcp);
+    for (auto& [key, mf] : multicastFlows_) {
+        auto& [flowGroupId, senderId] = key;
+        if (flowGroupId != groupId || senderId == nodeId)
+            continue;
+        createIncomingConnectionOnNode(nodeId, mf.flow, mf.req,
+                getNodeTypeById(nodeId) == UE || mf.withPdcp);
+    }
 }
 
 void BearerConfigurator::createIncomingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp)

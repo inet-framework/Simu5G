@@ -75,14 +75,19 @@ class BearerConfigurator : public cSimpleModule, public cListener
      * provisions the members that exist when the sender starts, which is all of them only if
      * the node population is static; with nodes created during the simulation the joiner
      * would otherwise receive PDUs for a connection its stack knows nothing about.
-     * Keyed by multicast group id; the first sender to establish the bearer wins.
+     *
+     * Keyed by (multicast group id, sender id): the RX side of a bearer is keyed by its
+     * sender (see FlowId::rxDrbKey, and MacCid(senderId, lcid) in
+     * BearerManagement::createIncomingConnection), so a group served by several senders --
+     * at once, or one after another as vehicles come and go -- needs one remembered flow per
+     * sender. Each entry is dropped when its sender leaves, see receiveSignal().
      */
     struct MulticastFlow {
         FlowId flow;
         BearerRequest req;
         bool withPdcp = false;
     };
-    std::map<MacNodeId, MulticastFlow> multicastFlows_;
+    std::map<std::pair<MacNodeId, MacNodeId>, MulticastFlow> multicastFlows_;
 
 
   protected:
