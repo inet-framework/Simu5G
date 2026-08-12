@@ -222,6 +222,22 @@ void Binder::unregisterNode(MacNodeId id)
     }
 
     nodeGroupMemberships_.erase(id);
+
+    // The remembered multicast flows are keyed by group but owned by their sender: drop the
+    // ones this node established, or joinMulticastGroup() would keep handing later joiners an
+    // RX leg keyed to a sender that no longer transmits -- and, since the RX descriptor's
+    // MacCid carries that sender's id, the PDUs of whichever node took over the group would
+    // then arrive on a connection the joiner has no descriptor for. A replacement sender's
+    // createConnection() stores a fresh flow, so the group keeps working.
+    for (auto it = multicastFlows_.begin(); it != multicastFlows_.end(); ) {
+        if (it->first.second == id) {
+            delete it->second.info;
+            it = multicastFlows_.erase(it);
+        }
+        else
+            ++it;
+    }
+
     ueNumerologyIndex_.erase(id);
     ueHandoverTriggered_.erase(id);
     handoverTriggered_.erase(id);
@@ -682,10 +698,13 @@ void Binder::joinMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId)
     // assert in macPduUnmake(). Nodes that join before the bearer exists are covered by
     // createConnection() itself; createIncomingConnection() de-duplicates, so a node reached
     // by both paths is harmless.
-    auto it = multicastFlows_.find(multicastDestId);
-    if (it != multicastFlows_.end() && nodeId != it->second.info->getSourceId())
-        createIncomingConnectionOnNode(nodeId, it->second.info,
-                getNodeTypeById(nodeId) == UE || it->second.withPdcp);
+    for (auto& [key, flow] : multicastFlows_) {
+        auto& [flowGroupId, senderId] = key;
+        if (flowGroupId != multicastDestId || senderId == nodeId)
+            continue;
+        createIncomingConnectionOnNode(nodeId, flow.info,
+                getNodeTypeById(nodeId) == UE || flow.withPdcp);
+    }
 }
 
 bool Binder::isInMulticastGroup(MacNodeId nodeId, MacNodeId multicastDestId)
@@ -1051,8 +1070,9 @@ void Binder::createConnection(FlowControlInfo *lteInfo, bool withPdcp)
     else {
         // Remember the flow so that nodes joining this group later still get an RX leg; the
         // loop below can only reach the members that already exist. See joinMulticastGroup().
-        if (multicastFlows_.find(groupId) == multicastFlows_.end())
-            multicastFlows_[groupId] = { new FlowControlInfo(*lteInfo), withPdcp };
+        auto flowKey = std::make_pair(groupId, sourceId);
+        if (multicastFlows_.find(flowKey) == multicastFlows_.end())
+            multicastFlows_[flowKey] = { new FlowControlInfo(*lteInfo), withPdcp };
 
         // Multicast bearers stay unidirectional: TX at the sender, RX at the members
         for (auto& [nodeId,_] : getNodeInfoMap())  //TODO use lte ones if LTE in DC setup, and NR ones if NR in DC setup
