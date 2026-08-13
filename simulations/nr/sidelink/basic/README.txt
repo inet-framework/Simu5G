@@ -57,12 +57,19 @@ Configs:
   (5s, seed 0, 122549 possible receptions):
 
                      received   PRR
-     Mode2-50UE      117631     ~96.0%
+     Mode2-50UE      116285     ~94.9%
      Random-50UE     95317      ~77.8%
 
   With SPS, a random pick that collides keeps colliding for the lifetime of
   its reselection counter; sensing avoids reserved resources, leaving mostly
   cold-start and simultaneous-reselection collisions.
+
+  (The mode-2 figure moved down ~1 point when the step-6 exclusion started
+  reaching the occurrences of reservations sensed more than one selection
+  window ago - see the SL-3 step-6 work. A stricter exclusion shrinks the
+  surviving candidate set, and in this deliberately loaded pool that makes
+  simultaneous reselections collide slightly more often. The random control
+  is unaffected: it selects from an empty sensing database.)
 
 - Broadcast-Tr37885-BlindRetx (WP-F): one blind HARQ retransmission per TB
   (preconfig blindRetx: 1); the copy rides the next occasion of the same
