@@ -38,14 +38,8 @@ class RlcTxEntityBase : public omnetpp::cSimpleModule
     virtual void setFlowControlInfo(FlowControlInfo *info);
     FlowControlInfo *getFlowControlInfo() { return flowControlInfo_; }
 
-    // The RLC configuration of the bearer this entity serves, as RRC records it in the
-    // bearer's descriptor (see DrbTable).
-    //
-    // soFraming selects the wire format: LTE FI with concatenation (TS 36.322), or NR
-    // SI/SO with one SDU/segment per PDU, which lets the MAC multiplex several PDUs into
-    // one grant (TS 38.322). That multiplexing path is implemented for UM only, so the NR
-    // AM entity keeps the base FI answer here even though its own PDUs carry SO headers.
-    virtual bool usesSoFraming() const { return false; }
+    // sn-FieldLength (TS 38.331 RLC-BearerConfig), in bits: the RLC entity's own source
+    // of truth, read by RRC into the bearer's descriptor (see DrbTable) at establishment.
     virtual unsigned int snFieldLength() const { return 12; }
 
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }

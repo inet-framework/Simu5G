@@ -43,18 +43,6 @@ void RlcUmTxEntityBase::initialize(int stage)
     }
 }
 
-void RlcUmTxEntityBase::setFlowControlInfo(FlowControlInfo *info)
-{
-    RlcTxEntityBase::setFlowControlInfo(info);
-    // Record this flow's wire format on the (dup'd) flow info; it rides on every
-    // packet tagged for the MAC, so the scheduler/MAC can multiplex multiple SO
-    // PDUs into one grant (NR keeps one SDU/segment per PDU, no RLC concatenation).
-    if (flowControlInfo_) {
-        flowControlInfo_->setSoFraming(usesSoFraming());
-        flowControlInfo_->setRlcSnFieldLength(snFieldLength());
-    }
-}
-
 void RlcUmTxEntityBase::handleMessage(cMessage *msg)
 {
     auto pkt = check_and_cast<inet::Packet *>(msg);
@@ -94,11 +82,6 @@ void RlcUmTxEntityBase::bufferSduAndNotifyMac(inet::Packet *pkt)
         // length, so the MAC tracks remaining bytes itself across grant requests.
         auto pktDup = pkt->dup();
         pktDup->addTag<LteRlcNewDataTag>();
-        // This indication creates/updates the MAC outgoing connection; stamp the
-        // flow's wire format on it so the scheduler multiplexes multiple SO PDUs
-        // per grant (NR keeps one SDU/segment per PDU, no RLC concatenation).
-        pktDup->getTagForUpdate<FlowControlInfo>()->setSoFraming(usesSoFraming());
-        pktDup->getTagForUpdate<FlowControlInfo>()->setRlcSnFieldLength(snFieldLength());
         EV << "RlcUmTxEntity::bufferSduAndNotifyMac - Sending new data indication to MAC\n";
         send(pktDup, "out");
     }

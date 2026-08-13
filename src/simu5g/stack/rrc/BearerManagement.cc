@@ -317,12 +317,11 @@ void BearerManagement::setRlcEntityParams(cModule *entity, bool isNr)
         entity->par("macModule").setStringValue(isNr ? "^.nrMac" : "^.mac");
     if (entity->hasPar("rlcMuxModule"))
         entity->par("rlcMuxModule").setStringValue(isNr ? "^.nrRlcMux" : "^.rlcMux");
-    // The RLC entity's wire format is set by its own soFraming parameter (via the Nr*
-    // NED profile), selected per bearer by the RAT: an NR bearer uses the SO/no-concat
-    // framing of TS 38.322, an LTE bearer the FI/concatenation of TS 36.322. The framing
-    // is a function of the RAT, not an independent knob; soFraming is a separate
-    // parameter only because it is the selection mechanism. (The NR-leg marker proper is
-    // the ip2nic.isNr parameter, not set here.)
+    // The RLC entity's wire format is not a parameter: it is inherent to the entity
+    // class selected per bearer in findOrCreateRlcEntity() (NR-SO vs LTE-FI, by the same
+    // RAT predicate as here), and RRC records the choice in the bearer's descriptor
+    // (DrbDesc::soFraming, see materializeDrb()). (The NR-leg marker proper is the
+    // ip2nic.isNr parameter, not set here.)
 }
 
 void BearerManagement::setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex)
@@ -452,21 +451,20 @@ const DrbDesc& BearerManagement::materializeDrb(FlowControlInfo *lteInfo, MacNod
     drb.lcg = (LteTrafficClass)lteInfo->getTraffic();
     drb.rlcType = (LteRlcType)lteInfo->getRlcType();
 
-    // The wire format and the SN field length are properties of the RLC entity serving the
-    // bearer (its mode, its RAT profile and its own parameters); read them off the entity
-    // that has just been built, so that the recorded header is the one it emits.
+    // soFraming is RRC's own decision: the RAT+mode predicate that also selects the
+    // entity type (NR UM gets the SO/no-concat framing of TS 38.322; everything else --
+    // LTE, and NR AM, whose MAC-side SO multiplexing MAC does not implement -- gets the
+    // FI/concatenation framing of TS 36.322).
+    bool isNrBearer = isNrUe(lteInfo->getSourceId()) || isNrUe(lteInfo->getDestId());
+    drb.soFraming = (drb.rlcType == UM) && isNrBearer;
+
+    // The SN field length, in contrast, is transcribed off the RLC entity serving the
+    // bearer: its source of truth is the entity's own parameters (NrRlcUmTxEntity's
+    // sn_FieldLength, NR-AM's AM_Window_Size derivation), not a bearer-level decision.
     cModule *rlcEnt = lookupRlcEntityModule(rlcId, isNr);
     ASSERT(rlcEnt != nullptr);   // the RLC entity is installed before this is called
     auto *txEnt = check_and_cast<RlcTxEntityBase *>(rlcEnt->getSubmodule("tx"));
-    drb.soFraming = txEnt->usesSoFraming();
     drb.snFieldLength = txEnt->snFieldLength();
-
-    // Decision B: soFraming is RRC's own decision (the RAT+mode predicate that also
-    // selects the entity type), not merely a transcription off the entity -- assert it
-    // agrees with the transcription above on every establishment across the suite; a
-    // later step drops the transcription and keeps only the decision.
-    bool isNrBearer = isNrUe(lteInfo->getSourceId()) || isNrUe(lteInfo->getDestId());
-    ASSERT(txEnt->usesSoFraming() == ((drb.rlcType == UM) && isNrBearer));
 
     EV << "BearerManagement::materializeDrb - " << drb << endl;
     return drb;

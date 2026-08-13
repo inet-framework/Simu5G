@@ -74,9 +74,7 @@ class LteRlcUmTxEntity : public RlcUmTxEntityBase
     void initMode() override;
     bool storeSdu(inet::Packet *pkt) override;
     void rlcPduMake(int pduSize) override;
-    bool usesSoFraming() const override { return false; }
-    // Unused by the LTE FI/concatenation path; kept at the historical default so
-    // the FlowControlInfo stamped by the base is byte-identical to the pre-split entity.
+    // Unused by the LTE FI/concatenation path; kept at the base's own default.
     unsigned int snFieldLength() const override { return 12; }
 
     // enqueue an upper-layer SDU into the TX buffer; false if the queue is full

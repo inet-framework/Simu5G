@@ -294,15 +294,6 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
     }
 
     OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
-    // The bearer-setup FlowDescriptor predates the RLC entity, so it lacks the wire
-    // format. The new-data indication carries the authoritative soFraming flag; keep
-    // the connection in sync so the scheduler can multiplex SO PDUs per grant.
-    if (isNewDataInd) {
-        ASSERT(getLogicalChannelConfig(cid).soFraming == lteInfo->getSoFraming());
-        ASSERT(getLogicalChannelConfig(cid).snFieldLength == lteInfo->getRlcSnFieldLength());
-        connInfo.flowInfo.setSoFraming(lteInfo->getSoFraming());
-        connInfo.flowInfo.setRlcSnFieldLength(lteInfo->getRlcSnFieldLength());
-    }
     LteMacQueue *queue = connInfo.queue;
     LteMacBuffer *vqueue = connInfo.buffer;
 

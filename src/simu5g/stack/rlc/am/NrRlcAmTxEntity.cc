@@ -494,11 +494,6 @@ void NrRlcAmTxEntity::sendNewDataNotificationNr(inet::Packet *pkt)
         t->setOriginalPacketLength(pkt->getByteLength());
         t->setPdcpSequenceNumber(0);
     }
-    // Carry the AM SN field length so the connection (and the scheduler, if this AM flow is
-    // ever SO-multiplexed) reserves the matching octet-aligned header; the SDU's own
-    // FlowControlInfo doesn't have it.
-    if (newData->findTag<FlowControlInfo>())
-        newData->getTagForUpdate<FlowControlInfo>()->setRlcSnFieldLength(snFieldLength_);
     newData->addTag<LteRlcNewDataTag>();
     send(newData, "out");
 }

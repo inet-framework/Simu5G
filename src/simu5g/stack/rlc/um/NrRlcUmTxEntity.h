@@ -53,7 +53,6 @@ class NrRlcUmTxEntity : public RlcUmTxEntityBase
     void initMode() override;
     bool storeSdu(inet::Packet *pkt) override;
     void rlcPduMake(int pduSize) override;
-    bool usesSoFraming() const override { return true; }
     unsigned int snFieldLength() const override { return sn_FieldLength; }
 
 };

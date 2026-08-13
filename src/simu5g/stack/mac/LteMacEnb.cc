@@ -736,13 +736,6 @@ bool LteMacEnb::bufferizePacket(cPacket *cpkt)
 
     // this packet is used to signal the arrival of new data in the RLC buffers
     if (pkt->findTag<LteRlcNewDataTag>()) {
-        // The bearer-setup connDesc predates the RLC entity and lacks the wire format;
-        // the indication carries the authoritative soFraming flag (stamped by the RLC
-        // TX), so keep the connection in sync for the DL scheduler's SO multiplexing.
-        ASSERT(getLogicalChannelConfig(cid).soFraming == lteInfo->getSoFraming());
-        ASSERT(getLogicalChannelConfig(cid).snFieldLength == lteInfo->getRlcSnFieldLength());
-        connInfo.flowInfo.setSoFraming(lteInfo->getSoFraming());
-        connInfo.flowInfo.setRlcSnFieldLength(lteInfo->getRlcSnFieldLength());
         // update the virtual buffer for this connection
         // build the virtual packet corresponding to this incoming packet
         // remove the tag since it's just a notification

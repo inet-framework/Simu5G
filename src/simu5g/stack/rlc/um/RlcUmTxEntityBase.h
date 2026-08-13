@@ -56,10 +56,6 @@ class RlcUmTxEntityBase : public RlcTxEntityBase
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;
 
-    // Stamp this flow's wire format onto its FlowControlInfo so the MAC/scheduler
-    // can multiplex several SO PDUs into one grant (NR keeps one SDU/segment per PDU).
-    void setFlowControlInfo(FlowControlInfo *info) override;
-
     // Common helpers shared by the concrete subclasses.
     virtual void dropBufferOverflow(inet::cPacket *pkt);
     virtual void sendPduToMac(inet::Packet *pkt);
