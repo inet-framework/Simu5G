@@ -97,6 +97,23 @@ class BearerManagement : public cSimpleModule
     // findOrCreatePdcpEntity)
     bool dualConnectivityEnabled_ = false;
 
+    // QoS-class -> RLC-mode mapping, applied by qosClassToRlcType() when a bearer request's
+    // rlcType is left unresolved (UNKNOWN_RLC_TYPE).
+    LteRlcType conversationalRlc_ = UNKNOWN_RLC_TYPE;
+    LteRlcType streamingRlc_ = UNKNOWN_RLC_TYPE;
+    LteRlcType interactiveRlc_ = UNKNOWN_RLC_TYPE;
+    LteRlcType backgroundRlc_ = UNKNOWN_RLC_TYPE;
+
+    // Maps a traffic class to its configured RLC mode (conversational/streaming/
+    // interactive/backgroundRlc NED params).
+    virtual LteRlcType qosClassToRlcType(LteTrafficClass qosClass);
+
+    // Resolves req.rlcType from req.qosClass via qosClassToRlcType() when the requester left
+    // it as UNKNOWN_RLC_TYPE (meaning "RRC decides"); returns req unchanged otherwise. Called
+    // once at the top of each establishment entry point, before any use of rlcType (entity
+    // type selection, materializeDrb).
+    virtual BearerRequest resolveBearerRequest(const BearerRequest& req);
+
     virtual void setRlcEntityParams(cModule *entity, bool isNr);
     virtual void setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex);
     virtual cModule *lookupRlcEntityModule(DrbKey id, bool isNr);

@@ -51,12 +51,8 @@ class Ip2Nic : public cSimpleModule
     // Enable for dual connectivity
     bool dualConnectivityEnabled_;
 
-    // Flags mirroring PDCP's (to be verified with ASSERTs, then used to replace PDCP dependency)
+    // Flag mirroring PDCP's (to be verified with ASSERTs, then used to replace PDCP dependency)
     bool isNr_ = false;
-    LteRlcType conversationalRlc_ = UNKNOWN_RLC_TYPE;
-    LteRlcType streamingRlc_ = UNKNOWN_RLC_TYPE;
-    LteRlcType interactiveRlc_ = UNKNOWN_RLC_TYPE;
-    LteRlcType backgroundRlc_ = UNKNOWN_RLC_TYPE;
     bool hasSdap_ = false;
 
     // Key for identifying connections (for DRB ID assignment)
@@ -131,7 +127,6 @@ std::unordered_map<ConnectionKey, DrbId, ConnectionKeyHash> drbIdTable_;
     virtual Direction connectionKeyDirection(FlowControlInfo *lteInfo) { return isNr_ ? (Direction)lteInfo->getDirection() : Direction(0xFFFF); }
     virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
     virtual LteTrafficClass getTrafficCategory(cPacket *pkt);
-    virtual LteRlcType getRlcType(LteTrafficClass trafficCategory);
     virtual DrbId lookupOrAssignDrbId(const ConnectionKey& key, const FlowControlInfo *lteInfo);
 
     // Establish the (duplex) bearer for the flow via the Binder, then register the

@@ -25,10 +25,6 @@ simple Ip2Nic like INetworkLayer2CellularNic
         string binderModule = default("binder");
         string pdcpMuxModule = default("^.pdcpMux");
         bool isNr = default(false);   // true for the NR leg (set by NrNicUe/NrNicEnb, or in the ini for a DC master eNB)
-        string conversationalRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
-        string streamingRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
-        string interactiveRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
-        string backgroundRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
         bool hasSdap = default(false);  // when true, SDAP handles DRB/RLC assignment; Ip2Nic skips traffic classification
         @display("i=block/layer");
     gates:

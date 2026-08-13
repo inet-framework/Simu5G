@@ -52,11 +52,6 @@ void Ip2Nic::initialize(int stage)
         isNr_ = par("isNr");
 
         hasSdap_ = par("hasSdap").boolValue();
-
-        conversationalRlc_ = aToRlcType(par("conversationalRlc"));
-        interactiveRlc_ = aToRlcType(par("interactiveRlc"));
-        streamingRlc_ = aToRlcType(par("streamingRlc"));
-        backgroundRlc_ = aToRlcType(par("backgroundRlc"));
     }
 }
 
@@ -203,22 +198,6 @@ LteTrafficClass Ip2Nic::getTrafficCategory(cPacket *pkt)
         return BACKGROUND;
 }
 
-LteRlcType Ip2Nic::getRlcType(LteTrafficClass trafficCategory)
-{
-    switch (trafficCategory) {
-        case CONVERSATIONAL:
-            return conversationalRlc_;
-        case INTERACTIVE:
-            return interactiveRlc_;
-        case STREAMING:
-            return streamingRlc_;
-        case BACKGROUND:
-            return backgroundRlc_;
-        default:
-            return backgroundRlc_;  // fallback
-    }
-}
-
 DrbId Ip2Nic::lookupOrAssignDrbId(const ConnectionKey& key, const FlowControlInfo *lteInfo)
 {
     auto it = drbIdTable_.find(key);
@@ -302,13 +281,12 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     // --- Common preamble ---
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
 
-    // Traffic category, RLC type (skipped when SDAP handles DRB/RLC assignment): feeds the
+    // Traffic category (skipped when SDAP handles DRB/RLC assignment): feeds the
     // BearerRequest built below for bearer establishment, hence the function-level scope.
+    // The RLC mode is not this module's decision (see BearerRequest::rlcType).
     LteTrafficClass trafficCategory = CONVERSATIONAL;
-    LteRlcType rlcType = UM;
     if (!hasSdap_) {
         trafficCategory = getTrafficCategory(pkt);
-        rlcType = getRlcType(trafficCategory);
     }
 
     // direction of transmitted packets depends on node type
@@ -372,7 +350,7 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
         // registry is authoritative: entities deleted at handover or D2D mode switch get
         // re-established by the next packet, even for an already-seen (drbId, destId) pair.
         if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drbId)))
-            establishConnection(lteInfo->toFlowId(), BearerRequest{trafficCategory, rlcType}, key);
+            establishConnection(lteInfo->toFlowId(), BearerRequest{trafficCategory, UNKNOWN_RLC_TYPE}, key);
 
         // Debug logging (UE only)
         if (!isEnb && isNr_) {

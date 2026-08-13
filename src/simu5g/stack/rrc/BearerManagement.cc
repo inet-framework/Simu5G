@@ -81,6 +81,11 @@ void BearerManagement::initialize(int stage)
         t301_ = par("t301");
 
         dualConnectivityEnabled_ = par("dualConnectivityEnabled");
+
+        conversationalRlc_ = aToRlcType(par("conversationalRlc"));
+        streamingRlc_ = aToRlcType(par("streamingRlc"));
+        interactiveRlc_ = aToRlcType(par("interactiveRlc"));
+        backgroundRlc_ = aToRlcType(par("backgroundRlc"));
     }
 }
 
@@ -201,9 +206,33 @@ void BearerManagement::releaseLink(MacNodeId peerId)
     deleteLocalPdcpEntities(peerId);
 }
 
-void BearerManagement::createIncomingConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)
+LteRlcType BearerManagement::qosClassToRlcType(LteTrafficClass qosClass)
+{
+    switch (qosClass) {
+        case CONVERSATIONAL: return conversationalRlc_;
+        case INTERACTIVE: return interactiveRlc_;
+        case STREAMING: return streamingRlc_;
+        case BACKGROUND: return backgroundRlc_;
+        default: return backgroundRlc_;  // fallback
+    }
+}
+
+BearerRequest BearerManagement::resolveBearerRequest(const BearerRequest& req)
+{
+    if (req.rlcType != UNKNOWN_RLC_TYPE)
+        return req;
+    BearerRequest resolved = req;
+    resolved.rlcType = qosClassToRlcType(req.qosClass);
+    return resolved;
+}
+
+void BearerManagement::createIncomingConnection(const FlowId& flow, const BearerRequest& reqIn, bool withPdcp)
 {
     Enter_Method_Silent("createIncomingConnection()");
+
+    // Resolve rlcType == UNKNOWN_RLC_TYPE ("RRC decides") before any use: entity type
+    // selection (findOrCreateRlcEntity) and materializeDrb must see only resolved values.
+    const BearerRequest req = resolveBearerRequest(reqIn);
 
     EV << "BearerManagement::createIncomingConnection - " << " srcId=" << flow.sourceId << " destId=" << flow.destId
         << " groupId=" << flow.multicastGroupId << " drbId=" << flow.drbId
@@ -268,9 +297,13 @@ void BearerManagement::createIncomingConnection(const FlowId& flow, const Bearer
     }
 }
 
-void BearerManagement::createOutgoingConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)
+void BearerManagement::createOutgoingConnection(const FlowId& flow, const BearerRequest& reqIn, bool withPdcp)
 {
     Enter_Method_Silent("createOutgoingConnection()");
+
+    // Resolve rlcType == UNKNOWN_RLC_TYPE ("RRC decides") before any use: entity type
+    // selection (findOrCreateRlcEntity) and materializeDrb must see only resolved values.
+    const BearerRequest req = resolveBearerRequest(reqIn);
 
     EV << "BearerManagement::createOutgoingConnection - " << " srcId=" << flow.sourceId << " destId=" << flow.destId
         << " groupId=" << flow.multicastGroupId << " drbId=" << flow.drbId
@@ -657,9 +690,10 @@ void BearerManagement::installPdcpRxSide(DrbKey id, const FlowId& flow, LteRlcTy
     }
 }
 
-RlcTxEntityBase *BearerManagement::createRlcTxBuffer(DrbKey id, const FlowId& flow, const BearerRequest& req)
+RlcTxEntityBase *BearerManagement::createRlcTxBuffer(DrbKey id, const FlowId& flow, const BearerRequest& reqIn)
 {
     Enter_Method_Silent("createRlcTxBuffer()");
+    const BearerRequest req = resolveBearerRequest(reqIn);
     RlcTxEntityBase *txEnt = installRlcTxSide(id, flow, req, rlcMuxModule.get(), false);
     const DrbDesc& drb = materializeDrb(flow, req, flow.destId, id, false);
     LteMacBase *mac = macModule.get();
@@ -668,9 +702,10 @@ RlcTxEntityBase *BearerManagement::createRlcTxBuffer(DrbKey id, const FlowId& fl
     return txEnt;
 }
 
-RlcRxEntityBase *BearerManagement::createRlcRxBuffer(DrbKey id, const FlowId& flow, const BearerRequest& req)
+RlcRxEntityBase *BearerManagement::createRlcRxBuffer(DrbKey id, const FlowId& flow, const BearerRequest& reqIn)
 {
     Enter_Method_Silent("createRlcRxBuffer()");
+    const BearerRequest req = resolveBearerRequest(reqIn);
     RlcRxEntityBase *rxEnt = installRlcRxSide(id, flow, req, rlcMuxModule.get(), false);
     const DrbDesc& drb = materializeDrb(flow, req, flow.sourceId, id, false);
     LteMacBase *mac = macModule.get();

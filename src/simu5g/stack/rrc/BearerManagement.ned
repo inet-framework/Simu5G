@@ -55,6 +55,14 @@ simple BearerManagement like IBearerManagement
         // point these back to the lteRlc* compounds above to keep an NR leg on LTE RLC.
         // TM is transparent and identical for both RATs, so it has no LTE/NR split.
 
+        // QoS-class -> RLC-mode mapping, applied when a bearer-establishment request leaves
+        // rlcType unresolved (UNKNOWN_RLC_TYPE): the requester (e.g. Ip2Nic) decided only the
+        // traffic class, and RRC decides the RLC mode from it.
+        string conversationalRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
+        string streamingRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
+        string interactiveRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
+        string backgroundRlc @enum(TM,UM,AM,UNKNOWN_RLC_TYPE) = default("UM");
+
         // Module references for accessing other stack layers
         string registrationModule = default("^.registration");
         string drbTableModule = default("^.drbTable");
