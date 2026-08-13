@@ -48,6 +48,15 @@ void LtePdcpTxEntity::initialize(int stage) {
             throw cRuntimeError("Size of compressed header must not be less than %" PRId64 "B.", MIN_COMPRESSED_HEADER_SIZE.get());
 
         emitPerSduSignals_ = par("emitPerSduSignals");
+
+        rlcType_ = aToRlcType(par("rlcType").stringValue());
+        switch (rlcType_) {
+            case UM: pdcpHeaderLength_ = PDCP_HEADER_UM; break;
+            case AM: pdcpHeaderLength_ = PDCP_HEADER_AM; break;
+            case TM: pdcpHeaderLength_ = 0; break;
+            default:
+                throw cRuntimeError("LtePdcpTxEntity::initialize(): invalid rlcType param '%s'", par("rlcType").stringValue());
+        }
     }
 }
 
@@ -65,28 +74,15 @@ void LtePdcpTxEntity::handlePacketFromUpperLayer(Packet *pkt)
     auto pdcpHeader = makeShared<LtePdcpHeader>();
     pdcpHeader->setSequenceNumber(sno_++); // set sequence number in PDCP header
 
-    unsigned int headerLength;
-    switch (lteInfo->getRlcType()) {
-        case UM:
-            headerLength = PDCP_HEADER_UM;
-            break;
-        case AM:
-            headerLength = PDCP_HEADER_AM;
-            break;
-        case TM:
-            headerLength = 0;
-            break;
-        default:
-            throw cRuntimeError("LtePdcp::handlePacketFromUpperLayer(): invalid RlcType %d", lteInfo->getRlcType());
-    }
-    pdcpHeader->setChunkLength(B(headerLength));
+    // The header size is resolved from this entity's own pushed "rlcType" param (see
+    // initialize()); the tag's rlcType field is redundant with it until it is dropped.
+    ASSERT((LteRlcType)lteInfo->getRlcType() == rlcType_);
+    pdcpHeader->setChunkLength(B(pdcpHeaderLength_));
     pkt->trim();
     pkt->insertAtFront(pdcpHeader);
     pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&LteProtocol::pdcp);
 
-    EV << "LtePdcpTxEntity::handlePacketFromUpperLayer: Packet trafficClass="
-       << lteTrafficClassToA((LteTrafficClass)lteInfo->getTraffic())
-       << " size=" << pkt->getByteLength() << "B\n";
+    EV << "LtePdcpTxEntity::handlePacketFromUpperLayer: Packet size=" << pkt->getByteLength() << "B\n";
 
     EV << NOW << " LtePdcpTxEntity::handlePacketFromUpperLayer: sending PDCP PDU to the RLC layer" << endl;
     deliverPdcpPdu(pkt);

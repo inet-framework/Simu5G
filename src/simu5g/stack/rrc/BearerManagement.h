@@ -103,9 +103,9 @@ class BearerManagement : public cSimpleModule
     virtual cModule *findOrCreateRlcEntity(DrbKey id, LteRlcType rlcType, const FlowId& flow, RlcMux *rlcMux, bool isNr);
     virtual RlcTxEntityBase *installRlcTxSide(DrbKey id, const FlowId& flow, const BearerRequest& req, RlcMux *rlcMux, bool isNr);
     virtual RlcRxEntityBase *installRlcRxSide(DrbKey id, const FlowId& flow, const BearerRequest& req, RlcMux *rlcMux, bool isNr);
-    virtual cModule *findOrCreatePdcpEntity(DrbKey id, const FlowId& flow, RlcMux *rlcMux);
-    virtual void installPdcpTxSide(DrbKey id, const FlowId& flow, RlcMux *rlcMux, bool isNr);
-    virtual void installPdcpRxSide(DrbKey id, const FlowId& flow, RlcMux *rlcMux, bool isNr);
+    virtual cModule *findOrCreatePdcpEntity(DrbKey id, const FlowId& flow, LteRlcType rlcType, RlcMux *rlcMux);
+    virtual void installPdcpTxSide(DrbKey id, const FlowId& flow, LteRlcType rlcType, RlcMux *rlcMux, bool isNr);
+    virtual void installPdcpRxSide(DrbKey id, const FlowId& flow, LteRlcType rlcType, RlcMux *rlcMux, bool isNr);
     virtual cModule *findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux);
 
     // The layout of a bearer over the node's stack legs. getNumLegs() gives the number of legs

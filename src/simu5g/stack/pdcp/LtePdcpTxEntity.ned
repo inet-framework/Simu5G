@@ -29,6 +29,7 @@ simple LtePdcpTxEntity like IPdcpTxEntity
         string binderModule = default("binder");
         bool emitPerSduSignals = default(true);              // cleared by a multi-leg PdcpEntityBase: its splitter emits the per-leg statistics
         int headerCompressedSize @unit(B) = default(-1B);    // Header compressed size (bytes) ( -1B = compression disabled
+        string rlcType @enum(TM,UM,AM) = default("UM");      // RLC mode of this bearer, pushed by RRC; determines the PDCP header size
 
     gates:
         input in;
