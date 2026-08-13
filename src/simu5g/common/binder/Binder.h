@@ -607,6 +607,11 @@ class Binder : public cSimpleModule
     // per-node-pair DRB ID counters for assignDrbId()
     std::map<std::pair<MacNodeId, MacNodeId>, unsigned short> drbIdCounters_;
 
+    // Establish the bearers described by the staticBearers parameter (see NED
+    // documentation), in the last initialization stage. Each entry goes through
+    // establishDataConnection(), exactly like packet-triggered establishment.
+    virtual void establishStaticBearers();
+
     virtual bool isDualConnectivityRequired(const FlowId& flow);
     virtual void createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp);
     virtual void createIncomingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp);

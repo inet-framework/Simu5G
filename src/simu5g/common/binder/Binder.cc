@@ -298,6 +298,9 @@ void Binder::initialize(int stage)
         WATCH_SET(ueHandoverTriggered_);
         // WATCH_MAP(handoverTriggered_); // Commented out - contains pairs that don't have stream operators
     }
+    else if (stage == inet::INITSTAGE_LAST) {
+        establishStaticBearers();
+    }
 }
 
 void Binder::finish()
@@ -899,6 +902,95 @@ DrbId Binder::assignDrbId(MacNodeId a, MacNodeId b)
 {
     auto pair = std::minmax(a, b);
     return DrbId(++drbIdCounters_[{pair.first, pair.second}]);
+}
+
+void Binder::establishStaticBearers()
+{
+    auto *entries = check_and_cast<cValueArray *>(par("staticBearers").objectValue());
+    for (int i = 0; i < (int)entries->size(); i++) {
+        const cValueMap *entry = check_and_cast<const cValueMap *>(entries->get(i).objectValue());
+
+        // resolve the UE module to its registered node id(s) -- one per stack
+        const char *uePath = entry->get("ue").stringValue();
+        cModule *ueModule = getSimulation()->getSystemModule()->findModuleByPath(uePath);
+        if (ueModule == nullptr)
+            throw cRuntimeError("staticBearers: no module at path '%s'", uePath);
+        MacNodeId lteUeId = NODEID_NONE, nrUeId = NODEID_NONE;
+        for (const auto& [nodeId, info] : nodeInfoMap_)
+            if (info.moduleRef == ueModule) {
+                if (getNodeTypeById(nodeId) != UE)
+                    throw cRuntimeError("staticBearers: module '%s' is not a UE", uePath);
+                (num(nodeId) >= NR_UE_MIN_ID ? nrUeId : lteUeId) = nodeId;
+            }
+        if (lteUeId == NODEID_NONE && nrUeId == NODEID_NONE)
+            throw cRuntimeError("staticBearers: module '%s' is not a registered UE", uePath);
+
+        // select the UE's stack: the explicit technology field, or the same default
+        // that packet-triggered establishment uses (see Ip2Nic::analyzePacket): the
+        // technology-neutral LTE id when the serving nodes form a DC setup (so that
+        // establishDataConnection() splits the bearer into legs), the NR id otherwise
+        MacNodeId ueId;
+        if (entry->containsKey("technology")) {
+            std::string tech = entry->get("technology").stdstringValue();
+            if (tech != "LTE" && tech != "NR")
+                throw cRuntimeError("staticBearers: invalid technology '%s' for UE '%s', must be \"LTE\" or \"NR\"", tech.c_str(), uePath);
+            ueId = (tech == "NR") ? nrUeId : lteUeId;
+            if (ueId == NODEID_NONE)
+                throw cRuntimeError("staticBearers: UE '%s' has no %s stack", uePath, tech.c_str());
+        }
+        else {
+            bool lteAttached = lteUeId != NODEID_NONE && getServingNode(lteUeId) != NODEID_NONE;
+            bool nrAttached = nrUeId != NODEID_NONE && getServingNode(nrUeId) != NODEID_NONE;
+            if (!lteAttached && !nrAttached)
+                throw cRuntimeError("staticBearers: UE '%s' is not attached to any cell", uePath);
+            MacNodeId lteNodeB = lteAttached ? getServingNode(lteUeId) : NODEID_NONE;
+            bool dcSetup = lteNodeB != NODEID_NONE &&
+                    (getSecondaryNode(lteNodeB) != NODEID_NONE || getMasterNodeOrSelf(lteNodeB) != lteNodeB);
+            ueId = (lteAttached && nrAttached && dcSetup) ? lteUeId :
+                   nrAttached ? nrUeId : lteUeId;
+        }
+
+        MacNodeId servingNodeId = getServingNode(ueId);
+        if (servingNodeId == NODEID_NONE)
+            throw cRuntimeError("staticBearers: UE '%s' (nodeId=%hu) is not attached to a cell", uePath, num(ueId));
+
+        // DRB id: explicit (also reserve it in the node pair's counter, so on-demand
+        // establishment cannot mint the same id later), or the next free one
+        DrbId drbId;
+        if (entry->containsKey("drb")) {
+            drbId = DrbId(entry->get("drb").intValue());
+            auto pair = std::minmax(ueId, servingNodeId);
+            unsigned short& counter = drbIdCounters_[{pair.first, pair.second}];
+            counter = std::max(counter, (unsigned short)num(drbId));
+        }
+        else
+            drbId = assignDrbId(ueId, servingNodeId);
+
+        LteTrafficClass qosClass = CONVERSATIONAL;
+        if (entry->containsKey("qosClass")) {
+            std::string qosClassStr = entry->get("qosClass").stdstringValue();
+            qosClass = aToLteTrafficClass(qosClassStr);
+            if (qosClass == UNKNOWN_TRAFFIC_TYPE)
+                throw cRuntimeError("staticBearers: invalid qosClass '%s' for UE '%s'", qosClassStr.c_str(), uePath);
+        }
+        LteRlcType rlcType = UNKNOWN_RLC_TYPE;  // = RRC decides from qosClass
+        if (entry->containsKey("rlcType")) {
+            std::string rlcTypeStr = entry->get("rlcType").stdstringValue();
+            rlcType = aToRlcType(rlcTypeStr);
+            if (rlcType == UNKNOWN_RLC_TYPE)
+                throw cRuntimeError("staticBearers: invalid rlcType '%s' for UE '%s'", rlcTypeStr.c_str(), uePath);
+        }
+
+        FlowId flow;
+        flow.sourceId = ueId;
+        flow.destId = servingNodeId;
+        flow.direction = UL;
+        flow.drbId = drbId;
+
+        EV << "Binder::establishStaticBearers - establishing DRB " << drbId << " for UE '" << uePath
+           << "' (nodeId=" << ueId << ") towards serving node " << servingNodeId << endl;
+        establishDataConnection(flow, BearerRequest{qosClass, rlcType});
+    }
 }
 
 void Binder::establishDataConnection(const FlowId& flow, const BearerRequest& req)
