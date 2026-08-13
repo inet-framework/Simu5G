@@ -17,12 +17,14 @@
 #include "simu5g/stack/sidelink/mac/SlCrTracker.h"
 #include "simu5g/stack/sidelink/mac/SlHarqTxEntity.h"
 #include "simu5g/stack/sidelink/mac/SlMode2Selector.h"
+#include "simu5g/stack/sidelink/mac/SlEnbScheduler.h"
 #include "simu5g/stack/sidelink/mac/SlSensingDatabase.h"
 #include "simu5g/stack/sidelink/mac/SlSlotGrid.h"
 
 namespace simu5g {
 
 class SlRrc;
+class SlSchedulingGrant;
 class SlBinder;
 
 /**
@@ -55,7 +57,7 @@ class NrSlMacUe : public LteMacBase
         int intuniform(int a, int b) override { return module_->intuniform(a, b); }
     };
 
-    enum AllocationMode { STATIC, RANDOM, MODE2 };
+    enum AllocationMode { STATIC, RANDOM, MODE2, MODE1 };
 
     SlRrc *slRrc_ = nullptr;
     SlBinder *slBinder_ = nullptr;
@@ -105,6 +107,27 @@ class NrSlMacUe : public LteMacBase
     std::map<MacCid, bool> soFrontIsContinuation_;
     int requestedSdus_ = 0;
 
+    // mode 1 (D26/D30, SL-3): grant-cycle latency anchor - set by the Uu MAC
+    // (NrMacUeSl) when the RAC of a new request cycle is sent, cleared and
+    // measured when the grant arrives at onMode1Grant()
+    simtime_t mode1CycleStart_ = -1;
+    static omnetpp::simsignal_t slMode1GrantLatencySignal_;
+
+    // configured grant (D30, WP-P): the standing train handed over by SlRrc
+    // at pool-resolution time. Type 1 activates at this MAC's pool-init
+    // stage; type 2 stays dormant until a cgAction=activate DCI and
+    // self-releases after cgInactivityOccasions consecutive empty occasions
+    // (models the DCI release without a reverse channel)
+    SlGrant cgGrant_;
+    bool cgConfigured_ = false;
+    bool cgActive_ = false;
+    int cgType_ = 0;
+    int cgInactivityOccasions_ = 5;
+    int cgIdleOccasions_ = 0;
+
+    /// arm the stored CG train as the active grant
+    void activateCg();
+
     void initialize(int stage) override;
     void handleMessage(cMessage *msg) override;
     void handleSelfMessage() override;
@@ -126,6 +149,14 @@ class NrSlMacUe : public LteMacBase
     /// TX-slot event: request one RLC PDU per backlogged SL connection
     void handleTxSlot();
 
+    /// the SCI resource-reservation value [ms] to stamp on a TX in `slot`
+    /// (finite mode-1 trains advertise the occasion gap, 0 on the last, D30)
+    int reservationPeriodMsAt(SlotIndex slot) const;
+
+    /// finite-train bookkeeping (D30): on a finite grant's last occasion the
+    /// grant is spent - called at the end of every consumed TX occasion
+    void retireOccasionIfLast(SlotIndex slot);
+
     /// remove up to `bytes` bytes of announced data from a virtual buffer
     static void drainVirtualBuffer(LteMacBuffer *buffer, int64_t bytes);
 
@@ -141,6 +172,38 @@ class NrSlMacUe : public LteMacBase
 
     /// CBR input from slPhy (D22): latest channel busy ratio measurement
     virtual void onCbrUpdated(double cbr);
+
+    /// D32: slPhy reports a slot lost to a Uu transmission (half-duplex
+    /// arbiter) - a conservative-exclusion sensing input like an own-TX slot
+    virtual void onSlotUnmonitored(SlotIndex slot);
+
+    // --- mode 1 (gNB-scheduled, D26/D30, SL-3): queried/driven by the Uu
+    //     MAC subclass NrMacUeSl via direct C++ calls (the onSciDecoded
+    //     pattern); the Uu side of the request loop lives there (G19) ---
+
+    /// true iff this MAC runs mode 1, has unserved backlog and no
+    /// active/pending grant - the single source of truth of the SL-BSR
+    /// trigger chain (state-based: lost edges self-heal per checkRAC tick)
+    virtual bool mode1BsrPending() const;
+
+    /// aggregate SL backlog [B] for the SL-BSR: virtual-buffer occupancy
+    /// plus RLC header per backlogged connection (the D2D summation, D26)
+    virtual int mode1BsrBytes() const;
+
+    /// latency-stat anchor: the Uu MAC reports that a request cycle started
+    /// (RAC sent for the SL-BSR); no-op if a cycle is already running
+    virtual void onMode1RequestStarted();
+
+    /// a DCI 3_0-equivalent arrived over the Uu (routed here by
+    /// NrMacUeSl::macHandleGrant, D28): populate the grant and arm the
+    /// occasion train (or activate/release the stored CG per cgAction);
+    /// the whole SL-1/SL-2 HARQ/PSFCH/LCP machinery hangs off the train
+    /// unchanged (D30)
+    virtual void onMode1Grant(const SlSchedulingGrant *slGrant);
+
+    /// SlRrc hands over the cell-reserved configured grant (D30, WP-P);
+    /// called at pool-resolution init time, before this MAC's pool init
+    virtual void onConfiguredGrant(const SlEnbScheduler::GrantSpec& spec, int type);
 };
 
 } // namespace simu5g

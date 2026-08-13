@@ -12,6 +12,7 @@
 #ifndef _SIDELINK_SLRRC_H_
 #define _SIDELINK_SLRRC_H_
 
+#include <inet/common/ModuleRefByPar.h>
 #include <inet/common/packet/Packet.h>
 
 #include "simu5g/stack/sidelink/common/SlBinder.h"
@@ -63,6 +64,10 @@ class SlRrc : public omnetpp::cSimpleModule
     MacNodeId nodeId_ = NODEID_NONE;   // NR node id of the owning UE
     SlL2Id srcL2Id_ = SL_L2ID_NONE;    // this UE's source Layer-2 ID
 
+    // D25 (SL-3): pool provisioning from the serving cell ("SIB12-equivalent")
+    bool poolFromServingCell_ = false;
+    inet::ModuleRefByPar<Binder> binder_;  // for getServingNode() at pool resolution
+
     // PC5 unicast link registry (D17), keyed by the peer's node id
     std::map<MacNodeId, SlUnicastLink> links_;
 
@@ -75,6 +80,10 @@ class SlRrc : public omnetpp::cSimpleModule
     void initialize(int stage) override;
     int numInitStages() const override;
     void handleMessage(omnetpp::cMessage *msg) override;
+
+    /// D25/G18: resolve the resource pool (serving cell or local preconfig)
+    /// and register the SL carrier; runs at the pool-resolution init stage
+    void resolvePool();
 
     /// create this endpoint's TX and RX chains for every SLRB of the link (D18)
     void createLinkBearers(const SlUnicastLink& link);

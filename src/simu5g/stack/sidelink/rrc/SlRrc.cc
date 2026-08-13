@@ -17,10 +17,14 @@
 #include <inet/common/ModuleAccess.h>
 #include <omnetpp/cvaluemap.h>
 
+#include "simu5g/common/InitStages.h"
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/sidelink/ip2nic/SlIp2Nic.h"
+#include "simu5g/stack/sidelink/mac/NrSlMacUe.h"
+#include "simu5g/stack/sidelink/rrc/SlGnbRrc.h"
 #include "simu5g/stack/sidelink/rrc/SlPc5Rrc_m.h"
 
 namespace simu5g {
@@ -62,6 +66,10 @@ void SlRrc::initialize(int stage)
         slBinder_ = SlBinder::getInstance();
         slBinder_->registerUeL2Id(srcL2Id_, nodeId_);
         slBinder_->registerSlRrc(nodeId_, this);
+
+        // D32 (SL-3): the shared Uu/SL radio-state object consulted by both
+        // PHY legs when the half-duplex arbiter (sharedUuSlRadio) is on
+        slBinder_->registerUeRadioState(nodeId_, new SlUeRadioState());
         for (const auto& e : preconfig_.slrbConfig) {
             if (e.castType == SL_BROADCAST || e.castType == SL_GROUPCAST) {
                 slBinder_->getOrAssignGroupL2Pid(e.dstL2Id);
@@ -71,13 +79,96 @@ void SlRrc::initialize(int stage)
             if (!e.destAddress.empty())
                 slBinder_->registerMulticastAddress(inet::Ipv4Address(e.destAddress.c_str()), e.dstL2Id);
         }
-        slBinder_->registerSlCarrier(GHz(preconfig_.carrierFrequencyGHz), preconfig_.numerologyIndex,
-                preconfig_.subchannelSize, preconfig_.numSubchannels);
+
+        // D25 (SL-3): pool resolution (and the SL carrier registration) moved
+        // to resolvePool() at INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION - the
+        // serving cell is only final after the HandoverController's
+        // INITSTAGE_SIMU5G_PHYSICAL_LAYER attach (G18)
+        poolFromServingCell_ = (par("poolSource").stdstringValue() == "servingCell");
+        binder_.reference(this, "binderModule", true);
 
         EV << "SlRrc::initialize - node " << nodeId_ << ", srcL2Id " << srcL2Id_
-           << ", carrier " << preconfig_.carrierFrequencyGHz << " GHz (mu=" << preconfig_.numerologyIndex
-           << "), " << preconfig_.slrbConfig.size() << " SLRB(s) configured" << endl;
+           << ", " << preconfig_.slrbConfig.size() << " SLRB(s) configured, poolSource "
+           << par("poolSource").stringValue() << endl;
     }
+    else if (stage == INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION) {
+        resolvePool();
+    }
+}
+
+void SlRrc::resolvePool()
+{
+    // D25 ("genie SIB12"): with poolSource="servingCell", an attached UE
+    // copies the serving cell's pool section over the local preconfig's; a
+    // detached UE falls back to the local preconfig (models the spec's
+    // out-of-coverage preconfiguration, so mixed-coverage scenarios work
+    // with one config). Only the pool section is cell-provided - SLRB/QoS/
+    // unicast sections stay UE-local (SIB12 carries pools, not app bearers).
+    // Consumers (NrSlMacUe, NrSlPhyUe) cache pool geometry at
+    // INITSTAGE_SIMU5G_TTI_SETUP, strictly after this stage.
+    if (poolFromServingCell_) {
+        MacNodeId servingCell = binder_->getServingNode(nodeId_);
+        if (servingCell != NODEID_NONE) {
+            SlGnbRrc *slGnbRrc = slBinder_->getSlGnbRrc(servingCell);
+            if (slGnbRrc == nullptr)
+                throw cRuntimeError("SlRrc: poolSource=\"servingCell\" but serving cell %hu has no "
+                                    "sidelink support (set hasSidelink=true on the gNodeB and configure "
+                                    "its slGnbRrc.slPoolConfig)", num(servingCell));
+
+            const SlPreconfig& cell = slGnbRrc->getPoolConfig();
+            preconfig_.carrierFrequencyGHz = cell.carrierFrequencyGHz;
+            preconfig_.numerologyIndex = cell.numerologyIndex;
+            preconfig_.subchannelSize = cell.subchannelSize;
+            preconfig_.numSubchannels = cell.numSubchannels;
+            preconfig_.slotBitmap = cell.slotBitmap;
+            preconfig_.t0Ms = cell.t0Ms;
+            preconfig_.t1 = cell.t1;
+            preconfig_.t2 = cell.t2;
+            preconfig_.rsrpThresholdDbm = cell.rsrpThresholdDbm;
+            preconfig_.reservationPeriodsMs = cell.reservationPeriodsMs;
+            preconfig_.blindRetx = cell.blindRetx;
+            preconfig_.psfchPeriod = cell.psfchPeriod;
+            preconfig_.psfchMinGap = cell.psfchMinGap;
+            preconfig_.psfchResources = cell.psfchResources;
+
+            slGnbRrc->registerSlUe(nodeId_);
+
+            EV << "SlRrc::resolvePool - node " << nodeId_ << ": pool provisioned from serving cell "
+               << servingCell << " (carrier " << preconfig_.carrierFrequencyGHz << " GHz, mu="
+               << preconfig_.numerologyIndex << ", " << preconfig_.numSubchannels << " subchannels)" << endl;
+
+            // configured-grant request (D30, WP-P): reserve the standing
+            // train at the cell and hand it to the SL MAC (type 1 activates
+            // immediately at the MAC's pool-init stage; type 2 stays dormant
+            // until a cgAction=activate DCI)
+            auto *cgCfg = check_and_cast<cValueMap *>(par("configuredGrant").objectValue());
+            if (cgCfg->containsKey("type")) {
+                int type = (int)cgCfg->get("type").intValue();
+                int periodMs = (int)cgCfg->get("periodMs").intValue();
+                int tbBytes = (int)cgCfg->get("tbBytes").intValue();
+
+                SlEnbScheduler::GrantSpec spec = slGnbRrc->reserveConfiguredGrant(nodeId_, type, periodMs, tbBytes);
+
+                auto *slMac = dynamic_cast<NrSlMacUe *>(getModuleByPath(par("slMacModule").stringValue()));
+                if (slMac == nullptr)
+                    throw cRuntimeError("SlRrc: configuredGrant needs an NrSlMacUe at '%s'",
+                            par("slMacModule").stringValue());
+                slMac->onConfiguredGrant(spec, type);
+            }
+        }
+        else {
+            if (check_and_cast<cValueMap *>(par("configuredGrant").objectValue())->containsKey("type"))
+                throw cRuntimeError("SlRrc: a configured grant needs a serving cell (the UE is not attached)");
+            EV << "SlRrc::resolvePool - node " << nodeId_ << ": not attached, falling back to the "
+               << "local preconfig pool (out-of-coverage preconfiguration)" << endl;
+        }
+    }
+    else if (check_and_cast<cValueMap *>(par("configuredGrant").objectValue())->containsKey("type")) {
+        throw cRuntimeError("SlRrc: a configured grant requires poolSource=\"servingCell\"");
+    }
+
+    slBinder_->registerSlCarrier(GHz(preconfig_.carrierFrequencyGHz), preconfig_.numerologyIndex,
+            preconfig_.subchannelSize, preconfig_.numSubchannels);
 }
 
 void SlRrc::handleMessage(cMessage *msg)

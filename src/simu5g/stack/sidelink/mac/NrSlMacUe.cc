@@ -11,6 +11,8 @@
 
 #include "simu5g/stack/sidelink/mac/NrSlMacUe.h"
 
+#include "simu5g/common/InitStages.h"
+
 #include <algorithm>
 #include <limits>
 
@@ -28,6 +30,7 @@
 #include "simu5g/stack/sidelink/common/SlBinder.h"
 #include "simu5g/stack/sidelink/common/SlPsfch.h"
 #include "simu5g/stack/sidelink/mac/SlMcsTable.h"
+#include "simu5g/stack/sidelink/mac/SlSchedulingGrant_m.h"
 #include "simu5g/stack/sidelink/rrc/SlRrc.h"
 
 namespace simu5g {
@@ -36,6 +39,8 @@ using namespace inet;
 using namespace omnetpp;
 
 Define_Module(NrSlMacUe);
+
+simsignal_t NrSlMacUe::slMode1GrantLatencySignal_ = registerSignal("slMode1GrantLatency");
 
 NrSlMacUe::~NrSlMacUe()
 {
@@ -57,10 +62,6 @@ void NrSlMacUe::initialize(int stage)
         slRrc_ = check_and_cast<SlRrc *>(getModuleByPath(par("slRrcModule").stringValue()));
         slBinder_ = SlBinder::getInstance();
 
-        const SlPreconfig& cfg = slRrc_->getPreconfig();
-        slotGrid_ = SlSlotGrid(cfg.getSlotDuration());
-        carrierFrequency_ = GHz(cfg.carrierFrequencyGHz);
-
         std::string mode = par("resourceAllocationMode").stdstringValue();
         if (mode == "static")
             allocationMode_ = STATIC;
@@ -68,16 +69,39 @@ void NrSlMacUe::initialize(int stage)
             allocationMode_ = RANDOM;
         else if (mode == "mode2")
             allocationMode_ = MODE2;
+        else if (mode == "mode1")
+            allocationMode_ = MODE1;
         else
-            throw cRuntimeError("NrSlMacUe: unknown resourceAllocationMode '%s' (expected mode2/random/static)", mode.c_str());
+            throw cRuntimeError("NrSlMacUe: unknown resourceAllocationMode '%s' (expected mode2/random/static/mode1)", mode.c_str());
 
         staticGrantSlotOffset_ = par("staticGrantSlotOffset");
         grantNumSubchannels_ = par("grantNumSubchannels");
         probResourceKeep_ = par("probResourceKeep");
         tbSize_ = par("tbSize");
         computeTbSize_ = (tbSize_ < 0);
-        subchannelSize_ = cfg.subchannelSize;
         overheadSymbols_ = par("overheadSymbols");
+
+        harqMaxRtx_ = par("harqMaxRtx");
+        dtxAsAck_ = (par("psfchDtxPolicy").stdstringValue() == "ack");
+        WATCH(numFeedbackRetx_);
+        WATCH(numDtx_);
+        WATCH(numCrDeferred_);
+
+        txSlotEvent_ = new cMessage("slTxSlot");
+        // Fires after the SDU requests of one TX occasion have been answered.
+        // Scheduling priority 1 puts it behind the RLC replies, which are sent
+        // at the same simulation time with the default priority 0.
+        assembleTbEvent_ = new cMessage("slAssembleTb");
+        assembleTbEvent_->setSchedulingPriority(1);
+    }
+    else if (stage == INITSTAGE_SIMU5G_TTI_SETUP) {
+        // pool-geometry-dependent setup: runs strictly after SlRrc's pool
+        // resolution at INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION (D25/G18) -
+        // with poolSource="servingCell" the pool section only settles there
+        const SlPreconfig& cfg = slRrc_->getPreconfig();
+        slotGrid_ = SlSlotGrid(cfg.getSlotDuration());
+        carrierFrequency_ = GHz(cfg.carrierFrequencyGHz);
+        subchannelSize_ = cfg.subchannelSize;
 
         periodMs_ = cfg.reservationPeriodsMs.empty() ? 100 : cfg.reservationPeriodsMs.front();
         periodSlots_ = slotGrid_.slotsPerMs(periodMs_);
@@ -86,11 +110,6 @@ void NrSlMacUe::initialize(int stage)
         blindRetx_ = cfg.blindRetx;
         psfchPeriod_ = cfg.psfchPeriod;
         psfchMinGap_ = cfg.psfchMinGap;
-        harqMaxRtx_ = par("harqMaxRtx");
-        dtxAsAck_ = (par("psfchDtxPolicy").stdstringValue() == "ack");
-        WATCH(numFeedbackRetx_);
-        WATCH(numDtx_);
-        WATCH(numCrDeferred_);
 
         // sensing database + selector (used by mode2; random uses the selector
         // with an always-empty database)
@@ -106,12 +125,12 @@ void NrSlMacUe::initialize(int stage)
             pool.allowedPeriodsSlots.push_back(slotGrid_.slotsPerMs(p));
         selector_ = new SlMode2Selector(pool, &random_);
 
-        txSlotEvent_ = new cMessage("slTxSlot");
-        // Fires after the SDU requests of one TX occasion have been answered.
-        // Scheduling priority 1 puts it behind the RLC replies, which are sent
-        // at the same simulation time with the default priority 0.
-        assembleTbEvent_ = new cMessage("slAssembleTb");
-        assembleTbEvent_->setSchedulingPriority(1);
+        cgInactivityOccasions_ = par("cgInactivityOccasions");
+
+        // a type-1 configured grant (D30) is active from initialization;
+        // activation had to wait for this stage's pool-geometry init
+        if (cgConfigured_ && cgType_ == 1)
+            activateCg();
     }
 }
 
@@ -144,9 +163,15 @@ void NrSlMacUe::handleSelfMessage()
 
 void NrSlMacUe::selectGrant()
 {
+    // in mode 1 the gNB owns resource selection (D30): grants only arrive
+    // via onMode1Grant(), self-selection must be unreachable
+    ASSERT(allocationMode_ != MODE1);
+
     grant_.periodSlots = periodSlots_;
     grant_.mcs = par("grantMcs");
     grant_.blindRetx = 0;
+    grant_.numOccasions = 0;       // self-selected grants are unbounded trains
+    grant_.occasionGapSlots = 0;   // (finite trains are mode-1-issued, D30)
 
     // congestion control (D22): the current CBR level caps MCS and L_subCH
     // at (re)selection
@@ -204,16 +229,47 @@ void NrSlMacUe::selectGrant()
 
 void NrSlMacUe::ensureTxScheduled()
 {
-    if (!grantActive_)
+    if (!grantActive_) {
+        if (allocationMode_ == MODE1) {
+            // no self-selection in mode 1 (D30): with no active grant nothing
+            // is armed - the backlog raises mode1BsrPending() and the Uu MAC's
+            // RAC/BSR chain requests a grant from the gNB
+            return;
+        }
         selectGrant();
+    }
 
     if (!txSlotEvent_->isScheduled()) {
         SlotIndex now = slotGrid_.slotIndexAt(NOW);
-        SlotIndex next = slotGrid_.nextOccasionAfter(now, grant_.firstSlot, grant_.periodSlots);
+        SlotIndex next = grant_.nextOccasionAfter(now);
+        if (next == SLOTINDEX_NONE) {
+            // finite train exhausted (D30): the grant is spent; leftover
+            // backlog re-raises mode1BsrPending() -> next BSR/grant cycle
+            grantActive_ = false;
+            EV << NOW << " NrSlMacUe::ensureTxScheduled - finite grant train exhausted" << endl;
+            return;
+        }
         scheduleAt(slotGrid_.slotStart(next), txSlotEvent_);
         EV << NOW << " NrSlMacUe::ensureTxScheduled - next TX opportunity at slot " << next
            << " (t=" << slotGrid_.slotStart(next) << ")" << endl;
     }
+}
+
+int NrSlMacUe::reservationPeriodMsAt(SlotIndex slot) const
+{
+    // the SCI's resource reservation field: mode-2 sensers project the
+    // transmitter's future occasions from it. Unbounded trains advertise the
+    // reservation period; a finite mode-1 train advertises its occasion gap
+    // on non-final occasions and 0 on the last (G26 mitigation)
+    if (grant_.numOccasions <= 0) {
+        // unbounded trains advertise their own period: for mode-2/static
+        // grants this equals the pool reservation period (periodMs_), for a
+        // configured grant (WP-P) it is the CG's period
+        return (int)(slotGrid_.getSlotDuration().dbl() * 1000.0 * grant_.periodSlots + 0.5);
+    }
+    if (grant_.isLastOccasion(slot))
+        return 0;
+    return (int)(slotGrid_.getSlotDuration().dbl() * 1000.0 * grant_.occasionGapSlots + 0.5);
 }
 
 void NrSlMacUe::handleTxSlot()
@@ -232,8 +288,11 @@ void NrSlMacUe::handleTxSlot()
 
     // congestion control (D22): over the CBR level's CR limit, this TX
     // occasion is skipped entirely (retransmissions included); the occasion
-    // train stays armed so transmission resumes when the window drains
-    const SlCbrLevel *crLevel = slRrc_->getPreconfig().findCbrLevel(lastCbr_);
+    // train stays armed so transmission resumes when the window drains.
+    // Bypassed in mode 1 (D31): the gNB owns the resources, the grant is
+    // authoritative - CR tracking and the slCbr statistic stay active for
+    // observability, and the per-level txPower cap still applies at slPhy
+    const SlCbrLevel *crLevel = (allocationMode_ == MODE1) ? nullptr : slRrc_->getPreconfig().findCbrLevel(lastCbr_);
     if (crLevel != nullptr) {
         double cr = crTracker_.cr(slot, crWindowSlots_, slRrc_->getPreconfig().numSubchannels);
         if (cr > crLevel->crLimit) {
@@ -256,6 +315,7 @@ void NrSlMacUe::handleTxSlot()
         slInfo->setHarqProcId(retx.procId);
         slInfo->setHarqNdi(retx.ndi);
         slInfo->setHarqRv(retx.rv);
+        slInfo->setReservationPeriodMs(reservationPeriodMsAt(slot));
 
         EV << NOW << " NrSlMacUe::handleTxSlot - " << (retx.feedbackMode ? "feedback-driven" : "blind")
            << " retransmission of HARQ proc " << retx.procId << " (rv " << retx.rv << ")" << endl;
@@ -276,6 +336,8 @@ void NrSlMacUe::handleTxSlot()
             else
                 grantActive_ = false;
         }
+
+        retireOccasionIfLast(slot);
 
         // new data (and further copies) wait for the next occasion
         for (auto& [cid, connInfo] : connDescOut_) {
@@ -371,9 +433,30 @@ void NrSlMacUe::handleTxSlot()
     // if nothing was requested, the event goes dormant; new data re-arms it
     // (feedback-mode processes keep occasions alive so deadlines are swept)
     if (requestedSdus_ == 0) {
+        if (cgActive_ && cgType_ == 2) {
+            // type-2 inactivity release (D30): the train stays armed so empty
+            // occasions are observed; after cgInactivityOccasions of them the
+            // CG goes dormant (the gNB keeps the reservation standing and
+            // re-activates on the next SL-BSR cycle)
+            if (++cgIdleOccasions_ >= cgInactivityOccasions_) {
+                EV << NOW << " NrSlMacUe::handleTxSlot - type-2 CG released after "
+                   << cgIdleOccasions_ << " empty occasions" << endl;
+                cgActive_ = false;
+                grantActive_ = false;
+            }
+            else {
+                ensureTxScheduled();
+            }
+        }
         if (harqTx_.hasAwaitingFeedback())
             ensureTxScheduled();
         return;
+    }
+
+    if (cgActive_) {
+        cgIdleOccasions_ = 0;  // data on the CG train resets the release counter
+        if (cgType_ == 2)
+            ensureTxScheduled();  // keep occasions firing so post-burst idles are observed
     }
 
     // Assemble the TB once the replies have had their turn. An RLC entity may
@@ -406,6 +489,18 @@ void NrSlMacUe::handleTxSlot()
             }
         }
     }
+
+    retireOccasionIfLast(slot);
+}
+
+void NrSlMacUe::retireOccasionIfLast(SlotIndex slot)
+{
+    if (grant_.numOccasions > 0 && grant_.isLastOccasion(slot)) {
+        grantActive_ = false;
+        EV << NOW << " NrSlMacUe::retireOccasionIfLast - last occasion of the finite grant train consumed" << endl;
+        // the pending TX of this slot still uses the spent grant's resources;
+        // leftover backlog re-raises mode1BsrPending() -> next BSR/grant cycle
+    }
 }
 
 void NrSlMacUe::drainVirtualBuffer(LteMacBuffer *buffer, int64_t bytes)
@@ -416,16 +511,17 @@ void NrSlMacUe::drainVirtualBuffer(LteMacBuffer *buffer, int64_t bytes)
     // whole entries instead leaves the virtual buffer empty one fragment
     // ahead of RLC, and the boundary packet's tail strands unsent -- which
     // NR-SO framing makes the common case, since the RLC segments every
-    // request that cannot hold a whole SDU.
+    // request that cannot hold a whole SDU. (First found on the SL-3 CG2
+    // burst example, where an idling flow stranded its boundary packet.)
     while (bytes > 0 && !buffer->isEmpty()) {
-        PacketInfo vpkt = buffer->popFront();
-        if ((int64_t)vpkt.first > bytes) {
-            vpkt.first -= bytes;
-            buffer->pushFront(vpkt);
-            return;
-        }
-        bytes -= vpkt.first;
+    PacketInfo vpkt = buffer->popFront();
+    if ((int64_t)vpkt.first > bytes) {
+        vpkt.first -= bytes;
+        buffer->pushFront(vpkt);
+        return;
     }
+    bytes -= vpkt.first;
+}
 }
 
 void NrSlMacUe::handleUpperMessage(cPacket *pktAux)
@@ -538,7 +634,7 @@ void NrSlMacUe::macPduMake(MacCid cid)
         slInfo->setFirstSubchannel(grant_.firstSubchannel);
         slInfo->setNumSubchannels(grant_.numSubchannels);
         slInfo->setMcs(grant_.mcs);
-        slInfo->setReservationPeriodMs(periodMs_);
+        slInfo->setReservationPeriodMs(reservationPeriodMsAt(slot));
 
         macPkt->setTimestamp(NOW);
 
@@ -676,6 +772,143 @@ void NrSlMacUe::macPduUnmake(cPacket *cpkt)
 
     pkt->insertAtFront(macPdu);
     delete pkt;
+}
+
+bool NrSlMacUe::mode1BsrPending() const
+{
+    return allocationMode_ == MODE1 && !grantActive_ && mode1BsrBytes() > 0;
+}
+
+int NrSlMacUe::mode1BsrBytes() const
+{
+    // aggregate per-UE byte count (D26): the gNB grants resources to the UE,
+    // the UE's own LCP picks destinations - no per-destination breakdown
+    int size = 0;
+    for (const auto& [cid, connInfo] : connDescOut_) {
+        int64_t backlog = connInfo.buffer->getQueueOccupancy();
+        if (backlog <= 0)
+            continue;
+        size += (int)backlog;
+        size += (connInfo.flowInfo.getRlcType() == AM) ? RLC_HEADER_AM : RLC_HEADER_UM;
+    }
+    return size;
+}
+
+void NrSlMacUe::onSlotUnmonitored(SlotIndex slot)
+{
+    Enter_Method_Silent("onSlotUnmonitored()");
+    if (allocationMode_ == MODE2)
+        sensingDb_.recordUnmonitoredSlot(slot);
+}
+
+void NrSlMacUe::onMode1RequestStarted()
+{
+    Enter_Method_Silent("onMode1RequestStarted()");
+    if (mode1CycleStart_ < SIMTIME_ZERO)
+        mode1CycleStart_ = NOW;
+}
+
+void NrSlMacUe::onMode1Grant(const SlSchedulingGrant *slGrant)
+{
+    Enter_Method("onMode1Grant()");
+
+    if (allocationMode_ != MODE1)
+        throw cRuntimeError("NrSlMacUe::onMode1Grant - received an SL grant but resourceAllocationMode is not \"mode1\"");
+
+    // CG type-2 activation/release DCIs (D30, WP-P)
+    if (slGrant->getCgAction() == SL_CG_ACTIVATE) {
+        if (!cgConfigured_ || cgType_ != 2)
+            throw cRuntimeError("NrSlMacUe::onMode1Grant - cgAction=activate but no type-2 CG is configured");
+        EV << NOW << " NrSlMacUe::onMode1Grant - type-2 CG activated by DCI" << endl;
+        if (mode1CycleStart_ >= SIMTIME_ZERO) {
+            emit(slMode1GrantLatencySignal_, NOW - mode1CycleStart_);
+            mode1CycleStart_ = -1;
+        }
+        activateCg();
+        return;
+    }
+    if (slGrant->getCgAction() == SL_CG_RELEASE) {
+        EV << NOW << " NrSlMacUe::onMode1Grant - CG released by DCI" << endl;
+        cgActive_ = false;
+        grantActive_ = false;
+        return;
+    }
+
+    SlotIndex now = slotGrid_.slotIndexAt(NOW);
+    if (slGrant->getSlFirstSlot() <= now)
+        throw cRuntimeError("NrSlMacUe::onMode1Grant - grant's first occasion (slot %ld) is not in the future "
+                            "(now %ld): the gNB must respect ueProcessingSlots (D28)",
+                (long)slGrant->getSlFirstSlot(), (long)now);
+
+    grant_.firstSlot = slGrant->getSlFirstSlot();
+    grant_.periodSlots = slGrant->getSlPeriodSlots();
+    grant_.numOccasions = slGrant->getNumOccasions();
+    grant_.occasionGapSlots = slGrant->getOccasionGapSlots();
+    grant_.firstSubchannel = slGrant->getSlFirstSubchannel();
+    grant_.numSubchannels = slGrant->getSlNumSubchannels();
+    grant_.mcs = slGrant->getSlMcs();      // the UE obeys the granted MCS (D29)
+    grant_.reselectionCounter = 0;         // never self-reselected
+    grant_.blindRetx = blindRetx_;
+    grantActive_ = true;
+
+    if (computeTbSize_)
+        tbSize_ = SlMcsTable::tbsBytes(grant_.mcs, grant_.numSubchannels * subchannelSize_, overheadSymbols_);
+
+    EV << NOW << " NrSlMacUe::onMode1Grant - grant: first slot " << grant_.firstSlot
+       << ", " << grant_.numOccasions << " occasion(s) every " << grant_.occasionGapSlots
+       << " slots, subchannels [" << grant_.firstSubchannel << ".."
+       << grant_.firstSubchannel + grant_.numSubchannels - 1 << "], MCS " << grant_.mcs
+       << ", TBS " << tbSize_ << "B" << endl;
+
+    if (mode1CycleStart_ >= SIMTIME_ZERO) {
+        emit(slMode1GrantLatencySignal_, NOW - mode1CycleStart_);
+        mode1CycleStart_ = -1;
+    }
+
+    ensureTxScheduled();
+}
+
+void NrSlMacUe::onConfiguredGrant(const SlEnbScheduler::GrantSpec& spec, int type)
+{
+    Enter_Method_Silent("onConfiguredGrant()");
+
+    if (allocationMode_ != MODE1)
+        throw cRuntimeError("NrSlMacUe::onConfiguredGrant - a configured grant requires resourceAllocationMode=\"mode1\"");
+    ASSERT(spec.isValid() && spec.periodSlots > 0);
+
+    // store only: pool-geometry-dependent activation (TB size, slot grid)
+    // waits for this MAC's pool-init stage (type 1) or the activate DCI
+    // (type 2) - this call arrives at SlRrc's pool-resolution stage
+    cgGrant_.firstSlot = spec.firstSlot;
+    cgGrant_.periodSlots = spec.periodSlots;
+    cgGrant_.numOccasions = 0;          // unbounded standing train
+    cgGrant_.occasionGapSlots = 0;
+    cgGrant_.firstSubchannel = spec.firstSubchannel;
+    cgGrant_.numSubchannels = spec.numSubchannels;
+    cgGrant_.mcs = spec.mcs;
+    cgGrant_.reselectionCounter = 0;    // the proven STATIC shape (seam 11)
+    cgType_ = type;
+    cgConfigured_ = true;
+
+    EV << "NrSlMacUe::onConfiguredGrant - type " << type << " CG stored: offset slot "
+       << cgGrant_.firstSlot << ", period " << cgGrant_.periodSlots << " slots, subchannels ["
+       << cgGrant_.firstSubchannel << ".." << cgGrant_.firstSubchannel + cgGrant_.numSubchannels - 1
+       << "], MCS " << cgGrant_.mcs << endl;
+}
+
+void NrSlMacUe::activateCg()
+{
+    ASSERT(cgConfigured_);
+    grant_ = cgGrant_;
+    grant_.blindRetx = blindRetx_;
+    grantActive_ = true;
+    cgActive_ = true;
+    cgIdleOccasions_ = 0;
+
+    if (computeTbSize_)
+        tbSize_ = SlMcsTable::tbsBytes(grant_.mcs, grant_.numSubchannels * subchannelSize_, overheadSymbols_);
+
+    ensureTxScheduled();
 }
 
 } // namespace simu5g

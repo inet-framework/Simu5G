@@ -38,6 +38,28 @@ simple SlRrc like IRrc
         // this UE's 24-bit source Layer-2 ID; -1 = derive from the NR node id
         int srcL2Id = default(-1);
 
+        // Where the resource pool comes from (D25, SL-3): "preconfig" = the
+        // pool section of the local preconfig parameter (out-of-coverage
+        // operation, the pre-SL-3 behavior); "servingCell" = an attached UE
+        // copies the serving cell's pool ("SIB12-equivalent", genie - the
+        // gNodeB needs hasSidelink=true and a configured slGnbRrc.slPoolConfig),
+        // a detached UE falls back to the local preconfig. Only the pool
+        // section is ever cell-provided; SLRB/QoS/unicast sections stay local.
+        string poolSource @enum(preconfig,servingCell) = default("preconfig");
+
+        string binderModule = default("binder");
+
+        // Configured-grant request (D30, SL-3 WP-P; requires
+        // poolSource="servingCell" and an attached UE). Empty = none.
+        // Example: { type: 1, periodMs: 100, tbBytes: 330 }
+        //  - type 1: RRC-provisioned, active from initialization
+        //  - type 2: reserved at the cell but dormant; activated by a
+        //    cgAction=activate DCI on the first SL-BSR cycle, self-released
+        //    after slMac.cgInactivityOccasions empty occasions
+        object configuredGrant = default({});
+
+        string slMacModule = default("^.slMac");
+
         // PC5 unicast link establishment: "genie" = synchronous C++ handshake;
         // "overTheAir" = real PC5-RRC messages over the TM SL-SRB (D23) --
         // establishment latency becomes observable, the triggering packet is
