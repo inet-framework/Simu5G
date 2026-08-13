@@ -117,8 +117,9 @@ class BearerManagement : public cSimpleModule
     // Records the configuration of the bearer this establishment call sets up, from
     // exactly the derivations the entities are built from. Runs after the RLC entity
     // exists: the wire format and the SN field length are properties of the entity that
-    // implements the bearer, and are read off it.
-    virtual void materializeDrb(FlowControlInfo *lteInfo, MacNodeId peerId, DrbKey rlcId, bool isNr);
+    // implements the bearer, and are read off it. Returns the descriptor so callers can
+    // push it into MAC without a re-lookup.
+    virtual const DrbDesc& materializeDrb(FlowControlInfo *lteInfo, MacNodeId peerId, DrbKey rlcId, bool isNr);
 
   protected:
     void initialize(int stage) override;

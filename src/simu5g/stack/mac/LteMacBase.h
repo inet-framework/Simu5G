@@ -49,6 +49,18 @@ typedef std::pair<MacCid, LteMacBuffer *> CidBufferPair;
 typedef std::pair<LteTrafficClass, CidBufferPair> LcgPair;
 typedef std::multimap<LteTrafficClass, CidBufferPair> LcgMap;
 
+// The RLC/logical-channel configuration of one logical channel, as the configuring
+// entity (RRC) pushes it at bearer establishment via configureLogicalChannel().
+// Mirrors the info MAC gets from RLC-BearerConfig / mac-LogicalChannelConfig in
+// TS 38.331. One record per channel (MacCid = remote node + LCID), shared by the
+// outgoing and incoming direction.
+struct LogicalChannelConfig {
+    LteRlcType rlcType = UM;            // rlc-Config: TM, UM or AM
+    bool soFraming = false;             // wire format: false = LTE FI/concatenation (TS 36.322), true = NR SI/SO (TS 38.322)
+    unsigned int snFieldLength = 12;    // sn-FieldLength, in bits
+    LteTrafficClass lcg = CONVERSATIONAL;   // logicalChannelGroup
+};
+
 /**
  * @brief MAC Layer
  *
@@ -142,6 +154,10 @@ class LteMacBase : public cSimpleModule
      * a connection is stored at the first MAC SDU delivered to the RLC
      */
     std::map<MacCid, FlowDescriptor> connDescIn_;
+
+    /// Per-channel RLC/logical-channel configuration pushed by the configuring entity
+    /// (RRC) at bearer establishment; shared by the outgoing and incoming direction.
+    std::map<MacCid, LogicalChannelConfig> lcConfig_;
 
     /* LCG to CID and buffers map - used for supporting LCG - based scheduler operations
      * TODO: delete/update entries on handover
@@ -490,6 +506,20 @@ class LteMacBase : public cSimpleModule
      * if it doesn't already exist
      */
     virtual void createIncomingConnection(MacCid cid, const FlowDescriptor& connInfo);
+
+    /**
+     * configureLogicalChannel() records the RLC/logical-channel configuration of a
+     * channel (MacCid = remote node + LCID), as pushed by the configuring entity (RRC)
+     * at bearer establishment. Upsert: re-establishment re-pushes the same values.
+     */
+    virtual void configureLogicalChannel(MacCid cid, const LogicalChannelConfig& cfg);
+
+    /**
+     * getLogicalChannelConfig() returns the configuration pushed for a channel.
+     *
+     * @throw cRuntimeError if the channel has no configuration (a push path was missed)
+     */
+    const LogicalChannelConfig& getLogicalChannelConfig(MacCid cid) const;
 
   protected:
     /**

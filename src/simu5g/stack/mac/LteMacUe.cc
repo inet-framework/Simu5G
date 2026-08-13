@@ -298,6 +298,8 @@ bool LteMacUe::bufferizePacket(cPacket *cpkt)
     // format. The new-data indication carries the authoritative soFraming flag; keep
     // the connection in sync so the scheduler can multiplex SO PDUs per grant.
     if (isNewDataInd) {
+        ASSERT(getLogicalChannelConfig(cid).soFraming == lteInfo->getSoFraming());
+        ASSERT(getLogicalChannelConfig(cid).snFieldLength == lteInfo->getRlcSnFieldLength());
         connInfo.flowInfo.setSoFraming(lteInfo->getSoFraming());
         connInfo.flowInfo.setRlcSnFieldLength(lteInfo->getRlcSnFieldLength());
     }
@@ -1017,6 +1019,10 @@ void LteMacUe::deleteQueues(MacNodeId nodeId)
     // delete incoming connection descriptors
     for (auto it = connDescIn_.begin(); it != connDescIn_.end(); )
         it = connDescIn_.erase(it);
+
+    // delete logical channel configuration (a UE has a single peer, so this is a
+    // wholesale wipe like the connDescIn_ loop above)
+    lcConfig_.clear();
 
     // delete H-ARQ buffers
     for (auto& [key, buffer] : harqTxBuffers_) {

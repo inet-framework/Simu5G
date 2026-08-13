@@ -283,6 +283,25 @@ void LteMacBase::createIncomingConnection(MacCid cid, const FlowDescriptor& conn
     connDescIn_[cid] = connInfo;
 }
 
+void LteMacBase::configureLogicalChannel(MacCid cid, const LogicalChannelConfig& cfg)
+{
+    Enter_Method("configureLogicalChannel(%s)", cid.str().c_str());
+    EV << "LteMacBase::configureLogicalChannel - CID: " << cid
+       << " rlcType: " << rlcTypeToA(cfg.rlcType)
+       << " soFraming: " << cfg.soFraming
+       << " snFieldLength: " << cfg.snFieldLength << endl;
+
+    lcConfig_[cid] = cfg;
+}
+
+const LogicalChannelConfig& LteMacBase::getLogicalChannelConfig(MacCid cid) const
+{
+    auto it = lcConfig_.find(cid);
+    if (it == lcConfig_.end())
+        throw cRuntimeError("LteMacBase: No logical channel configuration for %s", cid.str().c_str());
+    return it->second;
+}
+
 // note: this method is never called, as it is overridden (in the same way!) in both LteMacEnb and LteMacUe
 bool LteMacBase::bufferizePacket(cPacket *cpkt)
 {
@@ -343,6 +362,17 @@ void LteMacBase::deleteQueues(MacNodeId nodeId)
     for (auto it = connDescIn_.begin(); it != connDescIn_.end(); ) {
         if (it->first.getNodeId() == nodeId) {
             it = connDescIn_.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    // delete logical channel configuration for the departing node (shared by both
+    // directions, so this alone covers connDescOut_ and connDescIn_ above)
+    for (auto it = lcConfig_.begin(); it != lcConfig_.end(); ) {
+        if (it->first.getNodeId() == nodeId) {
+            it = lcConfig_.erase(it);
         }
         else {
             ++it;

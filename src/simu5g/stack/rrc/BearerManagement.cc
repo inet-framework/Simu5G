@@ -214,7 +214,8 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
     installRlcRxSide(rlcId, lteInfo, rlcMux, isNr);
 
-    materializeDrb(lteInfo, lteInfo->getSourceId(), rlcId, isNr);
+    const DrbDesc& drb = materializeDrb(lteInfo, lteInfo->getSourceId(), rlcId, isNr);
+    mac->configureLogicalChannel(cid, LogicalChannelConfig{drb.rlcType, drb.soFraming, drb.snFieldLength, drb.lcg});
 
     // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
     // PDCP lives at the master, so an PdcpRelayEntity stands in (UL half wired here).
@@ -276,7 +277,8 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
     installRlcTxSide(rlcId, lteInfo, rlcMux, isNr);
 
-    materializeDrb(lteInfo, lteInfo->getDestId(), rlcId, isNr);
+    const DrbDesc& drb = materializeDrb(lteInfo, lteInfo->getDestId(), rlcId, isNr);
+    mac->configureLogicalChannel(cid, LogicalChannelConfig{drb.rlcType, drb.soFraming, drb.snFieldLength, drb.lcg});
 
     // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
     // PDCP lives at the master, so an PdcpRelayEntity stands in (DL half wired here).
@@ -443,7 +445,7 @@ RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, FlowControlInfo *
 // descriptor. At a DC UE the NR leg is established against the secondary node and so gets
 // a descriptor of its own; joining the legs of a split bearer into one descriptor is what
 // the legs table will do.
-void BearerManagement::materializeDrb(FlowControlInfo *lteInfo, MacNodeId peerId, DrbKey rlcId, bool isNr)
+const DrbDesc& BearerManagement::materializeDrb(FlowControlInfo *lteInfo, MacNodeId peerId, DrbKey rlcId, bool isNr)
 {
     DrbDesc& drb = drbTableModule->getOrCreateDrb(DrbKey(peerId, lteInfo->getDrbId()));
     drb.lcid = LogicalCid(num(lteInfo->getDrbId()));   // the 1:1 mapping of LteMacBase::drbIdToLcid
@@ -459,7 +461,15 @@ void BearerManagement::materializeDrb(FlowControlInfo *lteInfo, MacNodeId peerId
     drb.soFraming = txEnt->usesSoFraming();
     drb.snFieldLength = txEnt->snFieldLength();
 
+    // Decision B: soFraming is RRC's own decision (the RAT+mode predicate that also
+    // selects the entity type), not merely a transcription off the entity -- assert it
+    // agrees with the transcription above on every establishment across the suite; a
+    // later step drops the transcription and keeps only the decision.
+    bool isNrBearer = isNrUe(lteInfo->getSourceId()) || isNrUe(lteInfo->getDestId());
+    ASSERT(txEnt->usesSoFraming() == ((drb.rlcType == UM) && isNrBearer));
+
     EV << "BearerManagement::materializeDrb - " << drb << endl;
+    return drb;
 }
 
 int BearerManagement::getNumLegs(DrbKey id, FlowControlInfo *lteInfo)
@@ -622,7 +632,10 @@ RlcTxEntityBase *BearerManagement::createRlcTxBuffer(DrbKey id, FlowControlInfo 
 {
     Enter_Method_Silent("createRlcTxBuffer()");
     RlcTxEntityBase *txEnt = installRlcTxSide(id, lteInfo, rlcMuxModule.get(), false);
-    materializeDrb(lteInfo, lteInfo->getDestId(), id, false);
+    const DrbDesc& drb = materializeDrb(lteInfo, lteInfo->getDestId(), id, false);
+    LteMacBase *mac = macModule.get();
+    MacCid cid = MacCid(lteInfo->getDestId(), mac->drbIdToLcid(lteInfo->getDrbId()));
+    mac->configureLogicalChannel(cid, LogicalChannelConfig{drb.rlcType, drb.soFraming, drb.snFieldLength, drb.lcg});
     return txEnt;
 }
 
@@ -630,7 +643,10 @@ RlcRxEntityBase *BearerManagement::createRlcRxBuffer(DrbKey id, FlowControlInfo 
 {
     Enter_Method_Silent("createRlcRxBuffer()");
     RlcRxEntityBase *rxEnt = installRlcRxSide(id, lteInfo, rlcMuxModule.get(), false);
-    materializeDrb(lteInfo, lteInfo->getSourceId(), id, false);
+    const DrbDesc& drb = materializeDrb(lteInfo, lteInfo->getSourceId(), id, false);
+    LteMacBase *mac = macModule.get();
+    MacCid cid = MacCid(lteInfo->getSourceId(), mac->drbIdToLcid(lteInfo->getDrbId()));
+    mac->configureLogicalChannel(cid, LogicalChannelConfig{drb.rlcType, drb.soFraming, drb.snFieldLength, drb.lcg});
     return rxEnt;
 }
 

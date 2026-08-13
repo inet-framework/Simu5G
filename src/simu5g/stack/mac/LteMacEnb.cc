@@ -739,6 +739,8 @@ bool LteMacEnb::bufferizePacket(cPacket *cpkt)
         // The bearer-setup connDesc predates the RLC entity and lacks the wire format;
         // the indication carries the authoritative soFraming flag (stamped by the RLC
         // TX), so keep the connection in sync for the DL scheduler's SO multiplexing.
+        ASSERT(getLogicalChannelConfig(cid).soFraming == lteInfo->getSoFraming());
+        ASSERT(getLogicalChannelConfig(cid).snFieldLength == lteInfo->getRlcSnFieldLength());
         connInfo.flowInfo.setSoFraming(lteInfo->getSoFraming());
         connInfo.flowInfo.setRlcSnFieldLength(lteInfo->getRlcSnFieldLength());
         // update the virtual buffer for this connection
