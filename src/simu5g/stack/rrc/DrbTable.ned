@@ -27,7 +27,9 @@ package simu5g.stack.rrc;
 //  - drb (int): DRB identifier (= nrPdcp[]/nrRlc[] array index)
 //  - ue (int, optional): UE MacNodeId (gNB only; omit on UE side)
 //  - qfiList (int[]): QFI values mapped to this DRB
-//  - rlcType (string, optional): RLC mode ("AM", "UM", "TM"); default: "UM"
+//  - rlcType (string, optional): RLC mode ("AM", "UM", "TM"); omitted = RRC decides
+//    from the traffic class (see the conversationalRlc/... parameters of
+//    ~BearerManagement)
 //  - pduSessionType (string, optional): "IPv4", "IPv6", "Ethernet", "Unstructured";
 //    default: "IPv4"
 //  - upperProtocol (string, optional): INET protocol name for upper layer dispatch

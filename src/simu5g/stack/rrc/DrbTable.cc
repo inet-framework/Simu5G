@@ -57,9 +57,10 @@ void DrbTable::loadConfig(const cValueArray *arr)
         for (int j = 0; j < (int)qfiArr->size(); j++)
             drb.qfiList.push_back(Qfi(qfiArr->get(j).intValue()));
 
-        // rlcType (optional, default UM)
-        if (entry->containsKey("rlcType"))
-            drb.rlcType = aToRlcType(entry->get("rlcType").stdstringValue());
+        // rlcType (optional; omitted = "RRC decides from qosClass", as for staticBearers)
+        drb.rlcType = entry->containsKey("rlcType")
+                ? aToRlcType(entry->get("rlcType").stdstringValue())
+                : UNKNOWN_RLC_TYPE;
 
         // pduSessionType (optional, default IPv4)
         if (entry->containsKey("pduSessionType"))

@@ -110,11 +110,16 @@ class BearerManagement : public cSimpleModule
     // interactive/backgroundRlc NED params).
     virtual LteRlcType qosClassToRlcType(LteTrafficClass qosClass);
 
-    // Resolves req.rlcType from req.qosClass via qosClassToRlcType() when the requester left
-    // it as UNKNOWN_RLC_TYPE (meaning "RRC decides"); returns req unchanged otherwise. Called
-    // once at the top of each establishment entry point, before any use of rlcType (entity
-    // type selection, materializeDrb).
-    virtual BearerRequest resolveBearerRequest(const BearerRequest& req);
+    // The authored configuration entry for the bearer of an infrastructure unicast flow
+    // (from the drbTable's drbConfig parameter), or nullptr. peerId is the flow's remote
+    // end; on the UE side entries are keyed by NODEID_NONE instead.
+    virtual const DrbDesc *lookupConfiguredDrb(const FlowId& flow, MacNodeId peerId);
+
+    // Resolves req.rlcType before any use of it (entity type selection, materializeDrb),
+    // called once at the top of each establishment entry point. The authored configuration
+    // wins (a conflicting explicit request throws); an rlcType still left as
+    // UNKNOWN_RLC_TYPE ("RRC decides") falls back to qosClassToRlcType().
+    virtual BearerRequest resolveBearerRequest(const BearerRequest& req, const FlowId& flow, MacNodeId peerId);
 
     virtual void setRlcEntityParams(cModule *entity, bool isNr);
     virtual void setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex);
