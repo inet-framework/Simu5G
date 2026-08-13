@@ -13,6 +13,7 @@
 #define _SIDELINK_SLIP2NIC_H_
 
 #include "simu5g/stack/ip2nic/Ip2Nic.h"
+#include "simu5g/stack/sidelink/ip2nic/SlPathPolicy.h"
 
 namespace simu5g {
 
@@ -43,6 +44,22 @@ class SlIp2Nic : public Ip2Nic
     bool pc5UnicastEnabled_ = false;
     bool hasSlSdap_ = false;
     bool useDscpAsPfiFallback_ = false;
+
+    // Uu/PC5 path-selection policy (D33, SL-3): the single decision object
+    // shared by all three classification seams (G27)
+    SlPathPolicy::Policy pathPolicy_ = SlPathPolicy::PC5_IF_PEER;
+    omnetpp::cDynamicExpression *pc5ConditionExpr_ = nullptr;
+
+    // per-decision variable bindings for the pc5Condition expr()
+    struct PathVars { int tos = 0; bool served = false; bool peerSlCapable = false; } pathVars_;
+    class PathPolicyResolver : public omnetpp::cDynamicExpression::IResolver
+    {
+        SlIp2Nic *module_;
+      public:
+        PathPolicyResolver(SlIp2Nic *module) : module_(module) {}
+        IResolver *dup() const override { return new PathPolicyResolver(module_); }
+        omnetpp::cValue readVariable(omnetpp::cExpression::Context *context, const char *name) override;
+    };
     bool packetHeld_ = false;   // set when analyzePacket handed the packet to SlRrc (D23 holding)
 
     // peer key -> SlIp2Nic-side gate index of the entity's side chain (D20)
@@ -82,6 +99,16 @@ class SlIp2Nic : public Ip2Nic
     /// re-enter a packet that was held during over-the-air link
     /// establishment (D23); called by SlRrc once the link is ESTABLISHED
     virtual void resumeHeldPacket(inet::Packet *pkt);
+
+    ~SlIp2Nic() override;
+
+    /// The single shared path decision (D33/G27), called by this module,
+    /// SlTechnologyDecision and SlHandoverPacketHolderUe alike: PC5
+    /// multicast destinations are PATH_PC5 under every policy; unicast is
+    /// decided by the configured policy. Depends only on (packet fields,
+    /// registry state), so all three seams agree per packet. outPeerId
+    /// (optional) receives the SL peer for PATH_PC5 unicast decisions.
+    virtual SlPathPolicy::Decision decidePath(inet::Ipv4Address destAddr, int tos, MacNodeId *outPeerId = nullptr);
 };
 
 } // namespace simu5g

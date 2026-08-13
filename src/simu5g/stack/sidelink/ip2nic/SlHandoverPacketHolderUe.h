@@ -17,6 +17,7 @@
 namespace simu5g {
 
 class SlBinder;
+class SlIp2Nic;
 
 /**
  * Handover packet holder for sidelink-capable UEs: PC5-destined packets are
@@ -28,6 +29,7 @@ class SlHandoverPacketHolderUe : public HandoverPacketHolderUe
 {
   protected:
     SlBinder *slBinder_ = nullptr;
+    SlIp2Nic *slIp2Nic_ = nullptr;   // the shared path-decision owner (D33/G27)
     bool pc5UnicastEnabled_ = false;
 
     void initialize(int stage) override;

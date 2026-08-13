@@ -14,6 +14,7 @@
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 
 #include "simu5g/stack/sidelink/common/SlBinder.h"
+#include "simu5g/stack/sidelink/ip2nic/SlIp2Nic.h"
 
 namespace simu5g {
 
@@ -27,6 +28,8 @@ void SlHandoverPacketHolderUe::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         slBinder_ = SlBinder::getInstance();
         pc5UnicastEnabled_ = par("pc5UnicastEnabled");
+        // G27: the path decision is SlIp2Nic's - one shared function (D33)
+        slIp2Nic_ = check_and_cast<SlIp2Nic *>(getModuleByPath(par("slIp2NicModule").stringValue()));
     }
 }
 
@@ -34,12 +37,19 @@ bool SlHandoverPacketHolderUe::isDeliverable(Packet *datagram)
 {
     auto ipHeader = datagram->peekAtFront<Ipv4Header>();
     inet::Ipv4Address destAddr = ipHeader->getDestAddress();
-    bool isPc5 = (slBinder_->getDstL2IdForMulticastAddress(destAddr) != SL_L2ID_NONE);
-    if (!isPc5 && pc5UnicastEnabled_)
-        isPc5 = (slBinder_->getPc5UnicastPeer(binder_.get(), destAddr, nrNodeId_) != NODEID_NONE);
-    if (isPc5) {
-        EV << "SlHandoverPacketHolderUe: PC5-destined packet is deliverable without a serving node" << endl;
-        return true;
+
+    // G27: same shared decision as SlTechnologyDecision/SlIp2Nic (D33).
+    // PATH_DENY packets are passed through as "deliverable" so they reach
+    // the single drop point at SlTechnologyDecision instead of being held
+    // forever here.
+    switch (slIp2Nic_->decidePath(destAddr, ipHeader->getTypeOfService())) {
+        case SlPathPolicy::PATH_PC5:
+            EV << "SlHandoverPacketHolderUe: PC5-destined packet is deliverable without a serving node" << endl;
+            return true;
+        case SlPathPolicy::PATH_DENY:
+            return true;
+        case SlPathPolicy::PATH_UU:
+            break;
     }
     return HandoverPacketHolderUe::isDeliverable(datagram);
 }
