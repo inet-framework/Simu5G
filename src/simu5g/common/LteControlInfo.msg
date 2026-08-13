@@ -69,6 +69,12 @@ class FlowControlInfo extends LteControlInfo {
     unsigned short rlcType enum(LteRlcType) = 0;            // RLC Traffic Type
     bool soFraming = false;                                 // RLC wire format of this flow: false=LTE FI/concatenation, true=NR SI/SO (one SDU/segment per PDU -> MAC multiplexes several PDUs per grant)
     unsigned short rlcSnFieldLength = 12;                   // NR-SO RLC SN field length in bits (UM 6/12, AM 12/18), so the scheduler reserves the same octet-aligned header the RLC TX emits
+
+    // Sidelink (PC5) fields: inert schema, only ever set by the optional sidelink package
+    uint32_t slSrcL2Id = 0;                              // sidelink source Layer-2 ID (24-bit)
+    uint32_t slDstL2Id = 0;                              // sidelink destination Layer-2 ID (24-bit)
+    unsigned short slCastType = 0;                       // sidelink cast type (SlCastType: broadcast/groupcast/unicast)
+    unsigned short slPqi = 0;                            // PC5 5QI of the flow (stamped by SL-SDAP, consumed by the SL LCP)
 }
 
 cplusplus (FlowControlInfo::setDrbId) {{
