@@ -125,18 +125,8 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
                 EV_INFO << "SDAP TX: QFI = " << qfi << " derived from reflective QoS\n";
             }
         }
-        // Optional non-standard fallback: derive QFI from DSCP field of the IP header
-        if (qfi == QFI_NONE && par("useDscpAsQfiFallback").boolValue()) {
-            if (pkt->hasTag<FlowControlInfo>()) {
-                uint8_t tos = (uint8_t)pkt->getTag<FlowControlInfo>()->getTypeOfService();
-                if (tos > 0) {
-                    qfi = Qfi(tos >> 2);
-                    EV_INFO << "SDAP TX: QFI = " << qfi << " derived from DSCP (fallback)\n";
-                }
-            }
-        }
         if (qfi == QFI_NONE)
-            EV_WARN << "SDAP TX: No QFI from reflective QoS or DSCP, using QFI=0 (default DRB)\n";
+            EV_WARN << "SDAP TX: No QFI from reflective QoS, using QFI=0 (default DRB)\n";
     }
     else {
         throw cRuntimeError("SDAP TX: QfiReq tag missing on gNB DL path -- GtpUser should always set it");
