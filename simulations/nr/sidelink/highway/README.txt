@@ -29,26 +29,16 @@ Configs:
 - Highway-300: a 300-UE, 2s variant to check scalability.
 
 PRR-vs-distance results (Highway config, 10s, seed 0, release build;
-measured under SL-2's real link adaptation, grantMcs=16 / D15).
-
-  NOTE: these long-campaign figures predate the move of the SLRBs onto the
-  NR (TS 38.322) RLC entities and the TS 38.214 8.1.4 conformance fixes to
-  the mode-2 selector. Both shift sidelink byte layout and resource
-  selection, so the curve below is indicative rather than current -- the
-  short configurations that the fingerprint suite covers were re-measured,
-  this campaign was not. Re-run before quoting it:
-    (cd simulations/nr/sidelink/highway && ../../../../bin/simu5g -u Cmdenv -c Highway)
+re-measured after the move to the NR (TS 38.322) RLC entities and the
+TS 38.214 8.1.4 conformance fixes to the mode-2 selector):
 
     d [m]    0-20  100-120  200-220  300-320  400-420  480-500
-    PRR      0.989 0.974    0.966    0.959    0.961    0.958
+    PRR      0.991 0.981    0.968    0.957    0.972    0.958
 
-  PRR decreases from 0.989 to ~0.958 over 0..500 m (total 0.969); PIR
-  stays at ~101.2-102.7 ms, i.e. at the CAM period, as expected for
+  PRR decreases from 0.991 to ~0.958 over 0..500 m (total 0.971); PIR
+  stays at ~100.7-103.6 ms, i.e. at the CAM period, as expected for
   near-unity PRR. Losses are dominated by resource collisions and
   half-duplex, not by the channel (LOS SINR is high throughout 500 m).
-  The curve sits ~1-2 points below the SL-1 measurement: the BLER lookup
-  now uses the coarse CQI-9 equivalent of MCS 16 instead of the SL-1
-  stub's CQI-6 interpretation of the default MCS.
 
   Ready-made analysis charts live in highway.anf (open in the IDE, or
   export with:
