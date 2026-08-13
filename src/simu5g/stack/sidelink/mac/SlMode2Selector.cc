@@ -32,75 +32,118 @@ int SlMode2Selector::tProc1Slots(int numerology)
     return table[std::min(std::max(numerology, 0), 3)];
 }
 
+namespace {
+
+/// Q of TS 38.321 5.22.1.1: the reselection-counter interval is [5Q, 15Q].
+int counterScale(int periodMs)
+{
+    return (periodMs >= 100) ? 1 : (int)std::ceil(100.0 / std::max(20, periodMs));
+}
+
+} // namespace
+
+int SlMode2Selector::maxReselectionCounter(int periodMs)
+{
+    return 15 * counterScale(periodMs);
+}
+
+int SlMode2Selector::drawReselectionCounter(int periodMs)
+{
+    // TS 38.321 §5.22.1.1: [5, 15] for a reservation interval of 100 ms or
+    // more; otherwise [5*Q, 15*Q] with Q = ceil(100 / max(20, P_rsvp_TX)).
+    // The max(20, ...) floor caps Q at 5 -- without it, sub-20 ms periods draw
+    // counters that keep a resource far longer than the spec intends.
+    int q = counterScale(periodMs);
+    return random_->intuniform(5 * q, 15 * q);
+}
+
+/**
+ * The heart of step 6c, shared by steps 5 and 6.
+ *
+ * A candidate at slot y is unusable when the resource it anchors, or ANY of
+ * the C_resel-1 repetitions that follow it at the transmitter's own
+ * reservation period, overlaps an occurrence of a sensed reservation. So an
+ * occurrence at slot s excludes not only the candidate at s (the j = 0 case)
+ * but also the candidates at s - j*P_TX for j = 1..C_resel-1.
+ *
+ * Skipping the j > 0 shifts is not a small approximation: a reservation whose
+ * period exceeds the selection window -- a 100 ms mode-1 configured-grant
+ * train sensed by a 20 ms mode-2 selector with a 10-slot window, say -- has an
+ * occurrence inside the window only about a tenth of the time, so it would be
+ * invisible to most selections and could not protect itself at all.
+ */
+void SlMode2Selector::excludeOccurrence(std::vector<char>& excluded, SlotIndex windowStart, SlotIndex windowEnd,
+        int lSubch, SlotIndex slot, int resFirst, int resNum, int txPeriodSlots, int cResel) const
+{
+    const int positions = pool_.numSubchannels - lSubch + 1;
+    const int lo = std::max(0, resFirst - lSubch + 1);
+    const int hi = std::min(positions - 1, resFirst + resNum - 1);
+
+    auto excludeAt = [&](SlotIndex y) {
+        if (y < windowStart || y > windowEnd)
+            return;
+        char *row = &excluded[(y - windowStart) * positions];
+        for (int p = lo; p <= hi; p++)
+            row[p] = 1;
+    };
+
+    excludeAt(slot);                       // j = 0
+    if (txPeriodSlots <= 0)
+        return;                            // one-shot selection: no train to protect
+    // Start at the first j whose back-shift can still land inside the window.
+    SlotIndex jFirst = (slot > windowEnd) ? (slot - windowEnd + txPeriodSlots - 1) / txPeriodSlots : 1;
+    for (SlotIndex j = jFirst; j < cResel; j++) {
+        SlotIndex y = slot - j * txPeriodSlots;
+        if (y < windowStart)
+            break;
+        excludeAt(y);
+    }
+}
+
 std::vector<char> SlMode2Selector::excludeUnmonitored(SlotIndex windowStart, SlotIndex windowEnd, int lSubch,
-        const SlSensingDatabase& db) const
+        const SlSensingDatabase& db, int txPeriodSlots, int cResel) const
 {
     const int windowSlots = (int)(windowEnd - windowStart) + 1;
     const int positions = pool_.numSubchannels - lSubch + 1;
     std::vector<char> excluded(windowSlots * positions, 0);
 
+    const SlotIndex horizon = windowEnd + (txPeriodSlots > 0 ? (SlotIndex)(cResel - 1) * txPeriodSlots : 0);
+
     // TS 38.214 §8.1.4 step 5: for a slot the UE did not monitor, assume an SCI
     // was received there reserving ALL subchannels of the pool, at every period
-    // the pool allows -- so every candidate in a projected slot is excluded.
+    // the pool allows, and apply the step-6 condition to it.
     for (SlotIndex m : db.getUnmonitoredSlots()) {
         for (int periodSlots : pool_.allowedPeriodsSlots) {
             if (periodSlots <= 0)
                 continue;
-            for (SlotIndex s = m + periodSlots; s <= windowEnd; s += periodSlots) {
-                if (s < windowStart)
-                    continue;
-                char *row = &excluded[(s - windowStart) * positions];
-                std::fill(row, row + positions, 1);
-            }
+            for (SlotIndex s = m + periodSlots; s <= horizon; s += periodSlots)
+                excludeOccurrence(excluded, windowStart, windowEnd, lSubch, s, 0, pool_.numSubchannels,
+                        txPeriodSlots, cResel);
         }
     }
     return excluded;
 }
 
-std::vector<char> SlMode2Selector::excludeSensed(SlotIndex now, SlotIndex windowStart, SlotIndex windowEnd, int lSubch,
+std::vector<char> SlMode2Selector::excludeSensed(SlotIndex windowStart, SlotIndex windowEnd, int lSubch,
         const SlSensingDatabase& db, double thresholdDbm, int txPeriodSlots, int cResel) const
 {
     const int windowSlots = (int)(windowEnd - windowStart) + 1;
     const int positions = pool_.numSubchannels - lSubch + 1;
     std::vector<char> excluded(windowSlots * positions, 0);
 
-    // T_scal, the selection window length, bounds how far a sensed reservation
-    // is projected: Q = ceil(T_scal / P_rsvp_RX) occasions (TS 38.214 §8.1.4 6c).
-    const int tScalSlots = windowSlots;
+    // Every occurrence that can still shift back onto an in-window candidate.
+    // This walks each reservation's occurrences without the spec's q <= Q cap:
+    // a conservative superset, and the cap is stated for the selection window
+    // alone, which the own-repetition horizon extends past.
+    const SlotIndex horizon = windowEnd + (txPeriodSlots > 0 ? (SlotIndex)(cResel - 1) * txPeriodSlots : 0);
 
     for (const auto& e : db.getEntries()) {
         if (e.rsrpDbm < thresholdDbm || e.reservationPeriodSlots <= 0)
             continue;
-
-        const int q = std::max(1, (e.reservationPeriodSlots < tScalSlots)
-                                  ? (int)std::ceil((double)tScalSlots / e.reservationPeriodSlots) : 1);
-
-        for (int i = 1; i <= q; i++) {
-            const SlotIndex reserved = e.slot + (SlotIndex)i * e.reservationPeriodSlots;
-            if (reserved < windowStart - (SlotIndex)cResel * txPeriodSlots || reserved > windowEnd)
-                continue;
-
-            // The candidate itself and each of its cResel-1 repetitions at the
-            // transmitter's own reservation period must avoid this reservation:
-            // a candidate at slot y collides if y + j*P'_rsvp_TX == reserved for
-            // some j in [0, cResel-1], i.e. y == reserved - j*P'_rsvp_TX.
-            for (int j = 0; j < std::max(cResel, 1); j++) {
-                const SlotIndex candidateSlot = reserved - (SlotIndex)j * txPeriodSlots;
-                if (candidateSlot < windowStart || candidateSlot > windowEnd)
-                    continue;
-                // exclude candidates [first, first+lSubch-1] overlapping the
-                // reserved subchannels [firstSubchannel, +numSubchannels-1]
-                const int lo = std::max(0, e.firstSubchannel - lSubch + 1);
-                const int hi = std::min(positions - 1, e.firstSubchannel + e.numSubchannels - 1);
-                char *row = &excluded[(candidateSlot - windowStart) * positions];
-                for (int p = lo; p <= hi; p++)
-                    row[p] = 1;
-                if (txPeriodSlots <= 0)
-                    break;   // no repetition train to walk
-            }
-        }
+        for (SlotIndex s = e.slot + e.reservationPeriodSlots; s <= horizon; s += e.reservationPeriodSlots)
+            excludeOccurrence(excluded, windowStart, windowEnd, lSubch, s, e.firstSubchannel, e.numSubchannels,
+                    txPeriodSlots, cResel);
     }
-    (void)now;
     return excluded;
 }
 
@@ -125,14 +168,21 @@ SlMode2Selector::Selection SlMode2Selector::select(SlotIndex now, int lSubch, in
     Selection result;
     result.numCandidates = windowSlots * positions;
 
-    // The counter is drawn before the exclusion because step 6 has to know how
-    // many repetitions of the selected resource the transmitter will make.
+    // C_resel for the exclusion horizon: the longest SPS train a selection can
+    // anchor. Deliberately the upper bound of the counter draw rather than the
+    // drawn value, so the exclusion is a function of the sensing state alone
+    // and does not depend on when the counter happens to be drawn.
+    const int cResel = maxReselectionCounter(periodMs);
+
+    // Drawn here rather than after the pick purely to keep the RNG draw order
+    // of the mode-2 branch: the exclusion above uses maxReselectionCounter and
+    // does not depend on this value.
     result.reselectionCounter = drawReselectionCounter(periodMs);
 
     const int minSurvivors = (int)std::ceil(pool_.txPercentage * result.numCandidates);
 
     // Step 5, run once: it does not depend on the RSRP threshold.
-    const std::vector<char> unmonitored = excludeUnmonitored(windowStart, windowEnd, lSubch, db);
+    const std::vector<char> unmonitored = excludeUnmonitored(windowStart, windowEnd, lSubch, db, periodSlots, cResel);
     int numUnmonitored = 0;
     for (char e : unmonitored)
         numUnmonitored += e;
@@ -147,8 +197,8 @@ SlMode2Selector::Selection SlMode2Selector::select(SlotIndex now, int lSubch, in
     while (true) {
         // Step 4: S_A starts as every candidate; steps 5 and 6 carve it down.
         excluded = keepStep5 ? unmonitored : std::vector<char>(result.numCandidates, 0);
-        const std::vector<char> sensed = excludeSensed(now, windowStart, windowEnd, lSubch, db,
-                threshold, periodSlots, result.reselectionCounter);
+        const std::vector<char> sensed = excludeSensed(windowStart, windowEnd, lSubch, db,
+                threshold, periodSlots, cResel);
         numExcluded = 0;
         for (size_t i = 0; i < excluded.size(); i++) {
             excluded[i] = excluded[i] || sensed[i];
@@ -193,16 +243,6 @@ SlMode2Selector::Selection SlMode2Selector::select(SlotIndex now, int lSubch, in
 
     assert(result.slot != SLOTINDEX_NONE);
     return result;
-}
-
-int SlMode2Selector::drawReselectionCounter(int periodMs)
-{
-    // TS 38.321 §5.22.1.1: [5, 15] for a reservation interval of 100 ms or
-    // more; otherwise [5*Q, 15*Q] with Q = ceil(100 / max(20, P_rsvp_TX)).
-    // The max(20, ...) floor caps Q at 5 -- without it, sub-20 ms periods draw
-    // counters that keep a resource far longer than the spec intends.
-    int q = (periodMs >= 100) ? 1 : (int)std::ceil(100.0 / std::max(20, periodMs));
-    return random_->intuniform(5 * q, 15 * q);
 }
 
 } // namespace simu5g

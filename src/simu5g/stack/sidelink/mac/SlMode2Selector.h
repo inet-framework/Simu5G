@@ -102,12 +102,19 @@ class SlMode2Selector
     PoolConfig pool_;
     ISlRandom *random_;
 
+    /// Apply the step-6 condition to one occurrence of a reservation: exclude
+    /// the candidate it lands on, and every candidate whose own repetition
+    /// train would later land on it.
+    void excludeOccurrence(std::vector<char>& excluded, SlotIndex windowStart, SlotIndex windowEnd,
+            int lSubch, SlotIndex slot, int resFirst, int resNum, int txPeriodSlots, int cResel) const;
+
     /// Step 5: candidates a hypothetical SCI in an unmonitored slot could hit.
-    std::vector<char> excludeUnmonitored(SlotIndex windowStart, SlotIndex windowEnd, int lSubch, const SlSensingDatabase& db) const;
+    std::vector<char> excludeUnmonitored(SlotIndex windowStart, SlotIndex windowEnd, int lSubch,
+            const SlSensingDatabase& db, int txPeriodSlots, int cResel) const;
 
     /// Step 6: candidates colliding with a sensed reservation above the
     /// threshold, counting the transmitter's own cResel repetitions.
-    std::vector<char> excludeSensed(SlotIndex now, SlotIndex windowStart, SlotIndex windowEnd, int lSubch,
+    std::vector<char> excludeSensed(SlotIndex windowStart, SlotIndex windowEnd, int lSubch,
             const SlSensingDatabase& db, double thresholdDbm, int txPeriodSlots, int cResel) const;
 
   public:
@@ -121,6 +128,11 @@ class SlMode2Selector
 
     /// draw a fresh reselection counter (also used by probResourceKeep)
     int drawReselectionCounter(int periodMs);
+
+    /// upper bound of the drawReselectionCounter draw for a period: the
+    /// longest SPS train a selection can anchor, and therefore the horizon
+    /// over which step 6 has to protect a candidate's own repetitions
+    static int maxReselectionCounter(int periodMs);
 };
 
 } // namespace simu5g
