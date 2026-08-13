@@ -1,0 +1,25 @@
+#!/bin/sh
+# Build and run the sidelink algorithm unit tests (design decision D13).
+# Requires the Simu5G environment (source setenv in omnetpp, inet and Simu5G)
+# and a built libsimu5g of the selected mode.
+#
+# Usage: ./runtest [MODE]     (MODE = debug [default] or release)
+
+cd $(dirname $0) || exit 1
+
+MODE=${1:-debug}
+
+if [ -z "$SIMU5G_ROOT" ] || [ -z "$INET_ROOT" ]; then
+    echo "runtest: SIMU5G_ROOT/INET_ROOT not set -- source the setenv scripts first" >&2
+    exit 1
+fi
+
+opp_makemake -f -u Cmdenv -o sl_unit_tests \
+    -I"$SIMU5G_ROOT/src" -I"$INET_ROOT/src" \
+    -L"$SIMU5G_ROOT/src" '-lsimu5g$(D)' > /dev/null || exit 1
+
+make MODE=$MODE -j >/dev/null || exit 1
+
+if [ "$MODE" = "debug" ]; then EXE=./sl_unit_tests_dbg; else EXE=./sl_unit_tests; fi
+
+$EXE -u Cmdenv -n . omnetpp.ini
