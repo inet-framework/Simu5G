@@ -57,8 +57,8 @@ Configs:
   (5s, seed 0, 122549 possible receptions):
 
                      received   PRR
-     Mode2-50UE      117560     ~95.9%
-     Random-50UE     84252      ~68.7%
+     Mode2-50UE      117631     ~96.0%
+     Random-50UE     95317      ~77.8%
 
   With SPS, a random pick that collides keeps colliding for the lifetime of
   its reselection counter; sensing avoids reserved resources, leaving mostly
@@ -70,10 +70,9 @@ Configs:
   suppress duplicate deliveries by (source, HARQ process, NDI).
 
   Measured deep in the PER knee (initialX=3090m i.e. 2800 m, grantMcs=12,
-  shadowing off, 2s): blindRetx 0 -> 10 of 96 delivered; blindRetx 1 -> 27
-  delivered of the 48 transmittable (the copy halves the grant-train
-  capacity), a ~2.7x PRR gain from soft combining at equal resource use per
-  packet. App-level counts amplify TB losses via RLC UM reordering, so the
+  shadowing off, 2s): 48/48 of the transmittable packets are delivered with
+  one blind copy (the copy halves the grant-train capacity), against 16/48
+  without. App-level counts amplify TB losses via RLC UM reordering, so the
   retx gain is end-to-end.
 
 - Unicast-UM (milestone M5, WP-H / SL-2): PC5 unicast between the two
@@ -87,24 +86,22 @@ Configs:
   channel; 95/95 packets delivered app-to-app in each direction at 20 m.
 
 - Unicast-AM (milestone M5, WP-H / SL-2): the same unicast pair on an
-  acknowledged-mode SLRB (unicastSlrbDefaults rlcType "AM"; SL-AM rides the
-  LTE AM entities per plan 7.2 Option A). The receiver's RLC generates
-  STATUS/MRW control PDUs which are buffered into its co-located reverse TX
-  entity and get their own mode-2 grants through the receiver's SL MAC like
-  any data - this is what the symmetric link establishment (D18) exists
-  for. 19/19 packets delivered app-to-app each way (CBR 40B / 100ms; the
-  rate fits the LTE AM entities' 30B fragmentation across 20ms occasions
-  until the WP-J LCP lands).
+  acknowledged-mode SLRB (unicastSlrbDefaults rlcType "AM"), on the NR AM
+  entities of TS 38.322. The receiver's RLC generates STATUS PDUs which its
+  co-located TX side transmits on the same logical channel, taking their own
+  mode-2 grants through the receiver's SL MAC like any data - this is what
+  the symmetric link establishment (D18) exists for. 19/19 packets delivered
+  app-to-app each way (CBR 40B / 100ms).
 
 - Unicast-UM-Psfch (milestone M6, WP-I / SL-2): the unicast pair at the
   PER knee (grantMcs=12, 2400 m, shadowing off) with PSFCH-based HARQ
   feedback (psfchPeriod 4). Lost TBs are NACKed by the receiver in the
   PSSCH's PSFCH slot and retransmitted on the next grant occasion (up to
   harqMaxRtx); missing feedback resolves per psfchDtxPolicy. Measured
-  (2s, seed 0): 51-59/95 delivered without feedback vs 92-93/95 with it,
-  via 66 NACK-driven retransmissions; the equal-PRR comparison against
-  blindRetx=1 (93/95 at 380 TB transmissions vs 256) shows ~33% fewer
-  transmissions at the same delivery - the M6 exit gate.
+  (2s, seed 0): 95/95 delivered in each direction, on 95-96 transport-block
+  transmissions per UE - i.e. the NACK-driven retransmissions cost far less
+  channel time than blind copies would at the same delivery, which is the
+  M6 exit gate.
 
 - Unicast-QoS (milestone M7, WP-J / SL-2): two PC5 QoS flows to one
   destination over one unicast link. DSCP resolves the PFI (tos >> 2);
@@ -112,9 +109,11 @@ Configs:
   (LCP priority 1) and PFI 2 -> a PQI-90 SLRB (priority 25); the
   PQI-aware LCP (D21) fills the single 123B TB per 20 ms occasion in
   strict priority order across the destination's backlogged SLRBs.
-  Measured (2s, seed 0): the PQI-21 flow keeps a 3.0 ms mean delay while
-  the best-effort flow queues at ~310 ms under the deliberately tight
-  pool - strict priority visible end-to-end in per-flow delay.
+  Measured (2s, seed 0): the PQI-21 flow keeps a 6.9 ms mean delay while
+  the best-effort flow queues at ~338 ms under the deliberately tight
+  pool - strict priority visible end-to-end in per-flow delay. 168 of the
+  190 offered packets arrive within the run; the remainder is the
+  best-effort flow's backlog, still queued at finishTime by design.
 
 - Unicast-OTA (milestone M8, WP-L / SL-2): the unicast pair with the
   over-the-air PC5-RRC handshake (D23) instead of the genie. The first
@@ -123,10 +122,10 @@ Configs:
   reserved TM SL-SRB (DRB 63; the SRB itself bootstraps via the genie
   mechanism - documented simplification of the pre-provisioned SRB0-3),
   the peer adopts them and answers, and the held packet resumes.
-  Measured (2s, seed 0): the first packet arrives with a ~24 ms
-  establishment transient (vs ~4 ms steady state); delivery converges
-  with genie (94-95/95, the difference being one end-of-run boundary
-  packet), while per-packet steady-state delay shifts by a constant
+  Measured (2s, seed 0): the first packet arrives with an establishment
+  transient of a few tens of milliseconds (vs a few ms steady state);
+  delivery matches genie (95/95 both ways), while per-packet
+  steady-state delay shifts by a constant
   grant-train phase offset (the handshake traffic perturbs the mode-2
   resource selection - inherent, since SPS keeps the selected train).
 

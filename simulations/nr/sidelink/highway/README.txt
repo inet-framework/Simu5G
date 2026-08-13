@@ -29,7 +29,15 @@ Configs:
 - Highway-300: a 300-UE, 2s variant to check scalability.
 
 PRR-vs-distance results (Highway config, 10s, seed 0, release build;
-remeasured under SL-2's real link adaptation, grantMcs=16 / D15):
+measured under SL-2's real link adaptation, grantMcs=16 / D15).
+
+  NOTE: these long-campaign figures predate the move of the SLRBs onto the
+  NR (TS 38.322) RLC entities and the TS 38.214 8.1.4 conformance fixes to
+  the mode-2 selector. Both shift sidelink byte layout and resource
+  selection, so the curve below is indicative rather than current -- the
+  short configurations that the fingerprint suite covers were re-measured,
+  this campaign was not. Re-run before quoting it:
+    (cd simulations/nr/sidelink/highway && ../../../../bin/simu5g -u Cmdenv -c Highway)
 
     d [m]    0-20  100-120  200-220  300-320  400-420  480-500
     PRR      0.989 0.974    0.966    0.959    0.961    0.958
@@ -89,13 +97,14 @@ CBR-based congestion control on a deliberately congested variant (80
 vehicles, 20 Hz CAMs, single-subchannel pool, 50 ms reservation period).
 The cbrConfig levels cap TX power and the own channel-occupancy ratio;
 above the CR limit a UE skips TX occasions (slCrDeferred). Measured
-(5s, seed 0): mean CBR 0.516 with control vs 0.604 without; PRR at
+(5s, seed 0; same caveat as the campaign above -- not re-measured after
+the NR-SO port): mean CBR 0.516 with control vs 0.604 without; PRR at
 0-20 m improves 0.969 -> 0.992 (the standardized trade: deferrals and
 power caps sacrifice long-range delivery - total PRR 0.622 vs 0.671 -
 for near-range reliability and lower channel load).
 
 Retransmission-efficiency exit gate (M6), measured on the unicast pair at
-the PER knee (basic/, grantMcs=12, 2400 m, shadowing off, 2s): blind
-retx=1 delivers 93/95 using 380 TB transmissions; PSFCH feedback delivers
-92-93/95 using 256 (190 initial + 66 NACK-driven) - equal PRR at ~33%
-fewer transmissions.
+the PER knee (basic/, grantMcs=12, 2400 m, shadowing off, 2s): PSFCH
+feedback delivers 95/95 in each direction on 95-96 transport-block
+transmissions per UE, i.e. NACK-driven retransmissions reach full delivery
+at a fraction of the channel time a blind copy per TB would cost.
