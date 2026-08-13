@@ -360,6 +360,43 @@ const std::string planeToA(Plane p)
 /*
  * Obtain the DrbKey for TX context (key by destination, i.e. remote receiver)
  */
+DrbKey FlowId::txDrbKey() const
+{
+    if (direction == D2D_MULTI) {
+        ASSERT(multicastGroupId != NODEID_NONE);
+        return DrbKey(multicastGroupId, drbId);
+    }
+    return DrbKey(destId, drbId);
+}
+
+/*
+ * Obtain the DrbKey for RX context (key by source, i.e. remote sender)
+ */
+DrbKey FlowId::rxDrbKey() const
+{
+    return DrbKey(sourceId, drbId);
+}
+
+// Build the FlowId of the reverse leg of a duplex bearer: same DRB, endpoints and D2D
+// peer roles swapped, direction reversed (UL<->DL; a D2D flow's reverse is D2D between
+// the same pair).
+FlowId FlowId::reversed() const
+{
+    ASSERT(direction != D2D_MULTI); // multicast bearers stay unidirectional
+
+    FlowId rev = *this;
+    rev.sourceId = destId;
+    rev.destId = sourceId;
+    rev.direction = (direction == UL) ? DL :
+                    (direction == DL) ? UL : direction;
+    rev.d2dTxPeerId = d2dRxPeerId;
+    rev.d2dRxPeerId = d2dTxPeerId;
+    return rev;
+}
+
+/*
+ * Obtain the DrbKey for TX context (key by destination, i.e. remote receiver)
+ */
 DrbKey ctrlInfoToTxDrbKey(const FlowControlInfo *info)
 {
     if (info->getDirection() == D2D_MULTI) {

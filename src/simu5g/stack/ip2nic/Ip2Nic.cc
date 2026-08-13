@@ -243,20 +243,20 @@ void Ip2Nic::registerDrbMapping(const ConnectionKey& key, DrbId drbId)
     drbIdTable_.emplace(key, drbId);  // no-op if the flow is already bound
 }
 
-void Ip2Nic::establishConnection(FlowControlInfo *lteInfo, const ConnectionKey& key)
+void Ip2Nic::establishConnection(const FlowId& flow, const BearerRequest& req, const ConnectionKey& key)
 {
-    binder_->establishDataConnection(lteInfo);
+    binder_->establishDataConnection(flow, req);
 
     // Bind the mirrored flow (swapped addresses, reversed direction) to the same DRB
     // at the peer, so its own traffic on the reverse leg reuses this duplex bearer.
     // Multicast bearers are unidirectional: nothing to bind.
-    if (lteInfo->getMulticastGroupId() == NODEID_NONE) {
+    if (flow.multicastGroupId == NODEID_NONE) {
         Direction revDir = (key.direction == UL) ? DL :
                            (key.direction == DL) ? UL : key.direction; // D2D and the wildcard map to themselves
         ConnectionKey mirrorKey{key.dstAddr, key.srcAddr, key.typeOfService, revDir};
-        auto *peerIp2Nic = check_and_cast_nullable<Ip2Nic *>(binder_->getIp2NicByNodeId(lteInfo->getDestId()));
+        auto *peerIp2Nic = check_and_cast_nullable<Ip2Nic *>(binder_->getIp2NicByNodeId(flow.destId));
         if (peerIp2Nic != nullptr)
-            peerIp2Nic->registerDrbMapping(mirrorKey, DrbId(lteInfo->getDrbId()));
+            peerIp2Nic->registerDrbMapping(mirrorKey, DrbId(flow.drbId));
     }
 }
 
@@ -302,10 +302,13 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     // --- Common preamble ---
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
 
-    // Traffic category, RLC type (skipped when SDAP handles DRB/RLC assignment)
+    // Traffic category, RLC type (skipped when SDAP handles DRB/RLC assignment); also feeds
+    // the BearerRequest built below for bearer establishment, hence the function-level scope.
+    LteTrafficClass trafficCategory = CONVERSATIONAL;
+    LteRlcType rlcType = UM;
     if (!hasSdap_) {
-        LteTrafficClass trafficCategory = getTrafficCategory(pkt);
-        LteRlcType rlcType = getRlcType(trafficCategory);
+        trafficCategory = getTrafficCategory(pkt);
+        rlcType = getRlcType(trafficCategory);
         lteInfo->setTraffic(trafficCategory);
         lteInfo->setRlcType(rlcType);
     }
@@ -371,7 +374,7 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
         // registry is authoritative: entities deleted at handover or D2D mode switch get
         // re-established by the next packet, even for an already-seen (drbId, destId) pair.
         if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drbId)))
-            establishConnection(lteInfo.get(), key);
+            establishConnection(lteInfo->toFlowId(), BearerRequest{trafficCategory, rlcType}, key);
 
         // Debug logging (UE only)
         if (!isEnb && isNr_) {

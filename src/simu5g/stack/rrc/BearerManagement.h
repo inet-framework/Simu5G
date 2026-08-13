@@ -100,18 +100,18 @@ class BearerManagement : public cSimpleModule
     virtual void setRlcEntityParams(cModule *entity, bool isNr);
     virtual void setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex);
     virtual cModule *lookupRlcEntityModule(DrbKey id, bool isNr);
-    virtual cModule *findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    virtual RlcTxEntityBase *installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    virtual RlcRxEntityBase *installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    virtual cModule *findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux);
-    virtual void installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    virtual void installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    virtual cModule *findOrCreateRlcEntity(DrbKey id, LteRlcType rlcType, const FlowId& flow, RlcMux *rlcMux, bool isNr);
+    virtual RlcTxEntityBase *installRlcTxSide(DrbKey id, const FlowId& flow, const BearerRequest& req, RlcMux *rlcMux, bool isNr);
+    virtual RlcRxEntityBase *installRlcRxSide(DrbKey id, const FlowId& flow, const BearerRequest& req, RlcMux *rlcMux, bool isNr);
+    virtual cModule *findOrCreatePdcpEntity(DrbKey id, const FlowId& flow, RlcMux *rlcMux);
+    virtual void installPdcpTxSide(DrbKey id, const FlowId& flow, RlcMux *rlcMux, bool isNr);
+    virtual void installPdcpRxSide(DrbKey id, const FlowId& flow, RlcMux *rlcMux, bool isNr);
     virtual cModule *findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux);
 
     // The layout of a bearer over the node's stack legs. getNumLegs() gives the number of legs
     // the bearer's PDCP entity is built with, selectPdcpLeg() the leg an establishment call
     // attaches to (and, for a leg of a bearer anchored elsewhere, the anchor bearer's key).
-    virtual int getNumLegs(DrbKey id, FlowControlInfo *lteInfo);
+    virtual int getNumLegs(DrbKey id, const FlowId& flow);
     virtual int selectPdcpLeg(bool isNr, MacNodeId peerId, DrbKey& compoundId /*inout*/);
 
     // Records the configuration of the bearer this establishment call sets up, from
@@ -119,7 +119,7 @@ class BearerManagement : public cSimpleModule
     // exists: the wire format and the SN field length are properties of the entity that
     // implements the bearer, and are read off it. Returns the descriptor so callers can
     // push it into MAC without a re-lookup.
-    virtual const DrbDesc& materializeDrb(FlowControlInfo *lteInfo, MacNodeId peerId, DrbKey rlcId, bool isNr);
+    virtual const DrbDesc& materializeDrb(const FlowId& flow, const BearerRequest& req, MacNodeId peerId, DrbKey rlcId, bool isNr);
 
   protected:
     void initialize(int stage) override;
@@ -134,10 +134,10 @@ class BearerManagement : public cSimpleModule
     // Release + tear down the link to a peer (both legs, MAC/RLC/PDCP + Ip2Nic drop). Public
     // so the failing node can drive the symmetric teardown on the peer via the binder.
     virtual void releaseLink(MacNodeId peerId);
-    virtual void createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp=true);
-    virtual void createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp=true);
-    virtual RlcTxEntityBase *createRlcTxBuffer(DrbKey id, FlowControlInfo *lteInfo);
-    virtual RlcRxEntityBase *createRlcRxBuffer(DrbKey id, FlowControlInfo *lteInfo);
+    virtual void createIncomingConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp=true);
+    virtual void createOutgoingConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp=true);
+    virtual RlcTxEntityBase *createRlcTxBuffer(DrbKey id, const FlowId& flow, const BearerRequest& req);
+    virtual RlcRxEntityBase *createRlcRxBuffer(DrbKey id, const FlowId& flow, const BearerRequest& req);
     virtual RlcTxEntityBase *lookupRlcTxBuffer(DrbKey id);
     virtual PdcpTxEntityBase *lookupPdcpTxEntity(DrbKey id);
     virtual cModule *lookupPdcpEntityModule(DrbKey id);    // the per-bearer PdcpEntityBase compound (DcMux leg dispatch)

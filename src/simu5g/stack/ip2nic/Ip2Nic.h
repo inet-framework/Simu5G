@@ -137,7 +137,7 @@ std::unordered_map<ConnectionKey, DrbId, ConnectionKeyHash> drbIdTable_;
     // Establish the (duplex) bearer for the flow via the Binder, then register the
     // mirrored flow->DRB mapping at the peer's Ip2Nic so reverse application traffic
     // resolves to this bearer's reverse leg instead of allocating a new DRB.
-    virtual void establishConnection(FlowControlInfo *lteInfo, const ConnectionKey& key);
+    virtual void establishConnection(const FlowId& flow, const BearerRequest& req, const ConnectionKey& key);
 
     // Called by a peer's Ip2Nic: bind an incoming flow key to the DRB of a bearer
     // established from the remote side (no-op if the key is already bound).

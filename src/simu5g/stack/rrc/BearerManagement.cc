@@ -30,6 +30,17 @@ using namespace inet;
 
 Define_Module(BearerManagement);
 
+// Build the FlowDescriptor a bearer-establishment call pushes into MAC and stores as the
+// RLC entity's FlowControlInfo prototype: identity from flow, configuration from req.
+// Value-identical to the FlowControlInfo tag these callers used to pass directly.
+static FlowDescriptor makeFlowDescriptor(const FlowId& flow, const BearerRequest& req)
+{
+    FlowControlInfo info = FlowControlInfo::fromFlowId(flow);
+    info.setTraffic(req.qosClass);
+    info.setRlcType(req.rlcType);
+    return FlowDescriptor::fromFlowControlInfo(info);
+}
+
 void BearerManagement::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
@@ -180,22 +191,22 @@ void BearerManagement::releaseLink(MacNodeId peerId)
     deleteLocalPdcpEntities(peerId);
 }
 
-void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool withPdcp)
+void BearerManagement::createIncomingConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)
 {
     Enter_Method_Silent("createIncomingConnection()");
 
-    EV << "BearerManagement::createIncomingConnection - " << " srcId=" << lteInfo->getSourceId() << " destId=" << lteInfo->getDestId()
-        << " groupId=" << lteInfo->getMulticastGroupId() << " drbId=" << lteInfo->getDrbId()
-        << " direction=" << dirToA(lteInfo->getDirection())
+    EV << "BearerManagement::createIncomingConnection - " << " srcId=" << flow.sourceId << " destId=" << flow.destId
+        << " groupId=" << flow.multicastGroupId << " drbId=" << flow.drbId
+        << " direction=" << dirToA(flow.direction)
         << " withPdcp=" << (withPdcp ? "yes" : "no") << endl;
 
-    ASSERT(lteInfo->getDestId() == registration_->getLteNodeId() || lteInfo->getDestId() == registration_->getNrNodeId() || lteInfo->getMulticastGroupId() != NODEID_NONE);
+    ASSERT(flow.destId == registration_->getLteNodeId() || flow.destId == registration_->getNrNodeId() || flow.multicastGroupId != NODEID_NONE);
 
     // Idempotence guard: with duplex bearer establishment this half may already
     // exist (e.g. re-establishment after a partial teardown); skip instead of
     // crashing on duplicate MAC/RLC/PDCP creation.
-    DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
-    bool isNr = (registration_->getNodeType()==UE && isNrUe(lteInfo->getDestId())); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
+    DrbKey rlcId = flow.rxDrbKey();
+    bool isNr = (registration_->getNodeType()==UE && isNrUe(flow.destId)); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
     cModule *existingRlcEnt = lookupRlcEntityModule(rlcId, isNr);
     if (existingRlcEnt != nullptr && existingRlcEnt->gate("lowerIn")->isConnectedOutside()) {
         EV << "BearerManagement::createIncomingConnection - entities for " << rlcId.str() << " already exist, skipping\n";
@@ -203,32 +214,32 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     }
 
     // Create MAC incoming connection
-    FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
-    MacNodeId senderId = desc.getSourceId();
-    auto mac = (registration_->getNodeType()==UE && isNrUe(lteInfo->getDestId())) ? nrMacModule.get() : macModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
-    LogicalCid lcid = mac->drbIdToLcid(desc.getDrbId());
+    FlowDescriptor desc = makeFlowDescriptor(flow, req);
+    MacNodeId senderId = flow.sourceId;
+    auto mac = (registration_->getNodeType()==UE && isNrUe(flow.destId)) ? nrMacModule.get() : macModule.get(); //TODO FIXME! DOES NOT WORK FOR MULTICAST!!!!!
+    LogicalCid lcid = mac->drbIdToLcid(flow.drbId);
     MacCid cid = MacCid(senderId, lcid);
     mac->createIncomingConnection(cid, desc);
 
     // RLC entity creation
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
-    installRlcRxSide(rlcId, lteInfo, rlcMux, isNr);
+    installRlcRxSide(rlcId, flow, req, rlcMux, isNr);
 
-    const DrbDesc& drb = materializeDrb(lteInfo, lteInfo->getSourceId(), rlcId, isNr);
+    const DrbDesc& drb = materializeDrb(flow, req, flow.sourceId, rlcId, isNr);
     mac->configureLogicalChannel(cid, LogicalChannelConfig{drb.rlcType, drb.soFraming, drb.snFieldLength, drb.lcg});
 
     // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
     // PDCP lives at the master, so an PdcpRelayEntity stands in (UL half wired here).
     if (withPdcp) {
-        DrbKey id = DrbKey(lteInfo->getSourceId(), lteInfo->getDrbId());
-        installPdcpRxSide(id, lteInfo, rlcMux, isNr);
+        DrbKey id = DrbKey(flow.sourceId, flow.drbId);
+        installPdcpRxSide(id, flow, rlcMux, isNr);
     }
     else {
         // DC secondary node: forward the UL PDU from RLC to the master over X2 unprocessed
         // (PdcpRelayEntity's UL half, see PdcpRelayEntity).
         auto *pdcpDcMux = inet::findModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this);
         ASSERT(pdcpDcMux != nullptr); // relay entities are eNB-only
-        DrbKey id = DrbKey(lteInfo->getSourceId(), lteInfo->getDrbId());
+        DrbKey id = DrbKey(flow.sourceId, flow.drbId);
         cModule *relay = findOrCreatePdcpRelayEntity(id, rlcMux);
 
         // Wire RLC entity upperOut → relay legIn[0] (direct per-DRB connection)
@@ -243,22 +254,22 @@ void BearerManagement::createIncomingConnection(FlowControlInfo *lteInfo, bool w
     }
 }
 
-void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool withPdcp)
+void BearerManagement::createOutgoingConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)
 {
     Enter_Method_Silent("createOutgoingConnection()");
 
-    EV << "BearerManagement::createOutgoingConnection - " << " srcId=" << lteInfo->getSourceId() << " destId=" << lteInfo->getDestId()
-        << " groupId=" << lteInfo->getMulticastGroupId() << " drbId=" << lteInfo->getDrbId()
-        << " direction=" << dirToA(lteInfo->getDirection())
+    EV << "BearerManagement::createOutgoingConnection - " << " srcId=" << flow.sourceId << " destId=" << flow.destId
+        << " groupId=" << flow.multicastGroupId << " drbId=" << flow.drbId
+        << " direction=" << dirToA(flow.direction)
         << " withPdcp=" << (withPdcp ? "yes" : "no") << endl;
 
-    ASSERT(lteInfo->getSourceId() == registration_->getLteNodeId() || lteInfo->getSourceId() == registration_->getNrNodeId());
+    ASSERT(flow.sourceId == registration_->getLteNodeId() || flow.sourceId == registration_->getNrNodeId());
 
     // Idempotence guard: with duplex bearer establishment this half may already
     // exist (e.g. re-establishment after a partial teardown); skip instead of
     // crashing on duplicate MAC/RLC/PDCP creation.
-    DrbKey rlcId = ctrlInfoToTxDrbKey(lteInfo);
-    bool isNr = (registration_->getNodeType()==UE && isNrUe(lteInfo->getSourceId()));
+    DrbKey rlcId = flow.txDrbKey();
+    bool isNr = (registration_->getNodeType()==UE && isNrUe(flow.sourceId));
     cModule *existingRlcEnt = lookupRlcEntityModule(rlcId, isNr);
     if (existingRlcEnt != nullptr && existingRlcEnt->gate("lowerOut")->isConnectedOutside()) {
         EV << "BearerManagement::createOutgoingConnection - entities for " << rlcId.str() << " already exist, skipping\n";
@@ -266,32 +277,32 @@ void BearerManagement::createOutgoingConnection(FlowControlInfo *lteInfo, bool w
     }
 
     // Create MAC outgoing connection
-    FlowDescriptor desc = FlowDescriptor::fromFlowControlInfo(*lteInfo);
-    MacNodeId destId = desc.getDestId();
-    auto mac = (registration_->getNodeType()==UE && isNrUe(lteInfo->getSourceId())) ? nrMacModule.get() : macModule.get();
-    LogicalCid lcid = mac->drbIdToLcid(desc.getDrbId());
+    FlowDescriptor desc = makeFlowDescriptor(flow, req);
+    MacNodeId destId = flow.destId;
+    auto mac = (registration_->getNodeType()==UE && isNrUe(flow.sourceId)) ? nrMacModule.get() : macModule.get();
+    LogicalCid lcid = mac->drbIdToLcid(flow.drbId);
     MacCid cid = MacCid(destId, lcid);
     mac->createOutgoingConnection(cid, desc);
 
     // RLC entity creation
     auto *rlcMux = isNr ? nrRlcMuxModule.get() : rlcMuxModule.get();
-    installRlcTxSide(rlcId, lteInfo, rlcMux, isNr);
+    installRlcTxSide(rlcId, flow, req, rlcMux, isNr);
 
-    const DrbDesc& drb = materializeDrb(lteInfo, lteInfo->getDestId(), rlcId, isNr);
+    const DrbDesc& drb = materializeDrb(flow, req, flow.destId, rlcId, isNr);
     mac->configureLogicalChannel(cid, LogicalChannelConfig{drb.rlcType, drb.soFraming, drb.snFieldLength, drb.lcg});
 
     // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
     // PDCP lives at the master, so an PdcpRelayEntity stands in (DL half wired here).
     if (withPdcp) {
-        DrbKey id = DrbKey(lteInfo->getDestId(), lteInfo->getDrbId());
-        installPdcpTxSide(id, lteInfo, rlcMux, isNr);
+        DrbKey id = DrbKey(flow.destId, flow.drbId);
+        installPdcpTxSide(id, flow, rlcMux, isNr);
     }
     else {
         // DC secondary node: the DL PDU arrives already PDCP-processed from the master over X2;
         // forward it straight to RLC (PdcpRelayEntity's DL half, see PdcpRelayEntity).
         auto *pdcpDcMux = inet::findModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this);
         ASSERT(pdcpDcMux != nullptr); // relay entities are eNB-only
-        DrbKey id = DrbKey(lteInfo->getDestId(), lteInfo->getDrbId());
+        DrbKey id = DrbKey(flow.destId, flow.drbId);
         cModule *relay = findOrCreatePdcpRelayEntity(id, rlcMux);
 
         // Wire DcMux → relay x2In (DcMux dispatches the incoming DL X2 PDU)
@@ -348,7 +359,7 @@ cModule *BearerManagement::lookupRlcEntityModule(DrbKey id, bool isNr)
     return it != entities.end() ? it->second : nullptr;
 }
 
-cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
+cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, LteRlcType rlcType, const FlowId& flow, RlcMux *rlcMux, bool isNr)
 {
     auto& entities = isNr ? nrRlcEntities_ : rlcEntities_;
     auto it = entities.find(id);
@@ -358,14 +369,13 @@ cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lte
     // Create the per-bearer RLC entity module (compound: TX + RX sides). With duplex
     // bearer establishment the first-processed direction creates it; the other
     // direction finds it here and just installs (wires) its own side.
-    LteRlcType rlcType = static_cast<LteRlcType>(lteInfo->getRlcType());
     // The entity TYPE (LTE-FI vs NR-SO wire format) must be identical at both ends of
     // the bearer, so it keys on whether the bearer's UE is an NR UE — a symmetric
     // property of the source/dest node ids — not on the local-node isNr flag (which is
     // only ever true at a UE, leaving the gNB on the LTE type and breaking the wire).
     // For a DC UE this still separates the NR-secondary leg from the LTE-master leg,
     // since those bearers reference the UE's NR vs LTE node id respectively.
-    bool isNrBearer = isNrUe(lteInfo->getSourceId()) || isNrUe(lteInfo->getDestId());
+    bool isNrBearer = isNrUe(flow.sourceId) || isNrUe(flow.destId);
     cModuleType *moduleType;
     const char *prefix;
     switch (rlcType) {
@@ -390,9 +400,9 @@ cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lte
     return module;
 }
 
-RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
+RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, const FlowId& flow, const BearerRequest& req, RlcMux *rlcMux, bool isNr)
 {
-    cModule *module = findOrCreateRlcEntity(id, lteInfo, rlcMux, isNr);
+    cModule *module = findOrCreateRlcEntity(id, req.rlcType, flow, rlcMux, isNr);
     auto *txEnt = check_and_cast<RlcTxEntityBase *>(module->getSubmodule("tx"));
 
     if (module->gate("lowerOut")->isConnectedOutside()) {
@@ -410,15 +420,16 @@ RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, FlowControlInfo *
     rlcMux->setGateSize("macToTxEntity", macIdx + 1);
     rlcMux->gate("macToTxEntity", macIdx)->connectTo(module->gate("macIn"));
 
-    txEnt->setFlowControlInfo(lteInfo); // note: a D2D UM TX entity also registers itself with the D2D mode controller here
+    FlowDescriptor proto = makeFlowDescriptor(flow, req);
+    txEnt->setFlowControlInfo(&proto); // note: a D2D UM TX entity also registers itself with the D2D mode controller here
 
 
     return txEnt;
 }
 
-RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
+RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, const FlowId& flow, const BearerRequest& req, RlcMux *rlcMux, bool isNr)
 {
-    cModule *module = findOrCreateRlcEntity(id, lteInfo, rlcMux, isNr);
+    cModule *module = findOrCreateRlcEntity(id, req.rlcType, flow, rlcMux, isNr);
     auto *rxEnt = check_and_cast<RlcRxEntityBase *>(module->getSubmodule("rx"));
 
     if (module->gate("lowerIn")->isConnectedOutside()) {
@@ -431,7 +442,8 @@ RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, FlowControlInfo *
     rlcMux->setGateSize("toRxEntity", idx + 1);
     rlcMux->gate("toRxEntity", idx)->connectTo(module->gate("lowerIn"));
 
-    rxEnt->setFlowControlInfo(lteInfo);
+    FlowDescriptor proto = makeFlowDescriptor(flow, req);
+    rxEnt->setFlowControlInfo(&proto);
 
     // Register in mux routing table
     rlcMux->registerRxEntity(id, idx);
@@ -444,18 +456,18 @@ RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, FlowControlInfo *
 // descriptor. At a DC UE the NR leg is established against the secondary node and so gets
 // a descriptor of its own; joining the legs of a split bearer into one descriptor is what
 // the legs table will do.
-const DrbDesc& BearerManagement::materializeDrb(FlowControlInfo *lteInfo, MacNodeId peerId, DrbKey rlcId, bool isNr)
+const DrbDesc& BearerManagement::materializeDrb(const FlowId& flow, const BearerRequest& req, MacNodeId peerId, DrbKey rlcId, bool isNr)
 {
-    DrbDesc& drb = drbTableModule->getOrCreateDrb(DrbKey(peerId, lteInfo->getDrbId()));
-    drb.lcid = LogicalCid(num(lteInfo->getDrbId()));   // the 1:1 mapping of LteMacBase::drbIdToLcid
-    drb.lcg = (LteTrafficClass)lteInfo->getTraffic();
-    drb.rlcType = (LteRlcType)lteInfo->getRlcType();
+    DrbDesc& drb = drbTableModule->getOrCreateDrb(DrbKey(peerId, flow.drbId));
+    drb.lcid = LogicalCid(num(flow.drbId));   // the 1:1 mapping of LteMacBase::drbIdToLcid
+    drb.lcg = req.qosClass;
+    drb.rlcType = req.rlcType;
 
     // soFraming is RRC's own decision: the RAT+mode predicate that also selects the
     // entity type (NR UM gets the SO/no-concat framing of TS 38.322; everything else --
     // LTE, and NR AM, whose MAC-side SO multiplexing MAC does not implement -- gets the
     // FI/concatenation framing of TS 36.322).
-    bool isNrBearer = isNrUe(lteInfo->getSourceId()) || isNrUe(lteInfo->getDestId());
+    bool isNrBearer = isNrUe(flow.sourceId) || isNrUe(flow.destId);
     drb.soFraming = (drb.rlcType == UM) && isNrBearer;
 
     // The SN field length, in contrast, is transcribed off the RLC entity serving the
@@ -470,14 +482,14 @@ const DrbDesc& BearerManagement::materializeDrb(FlowControlInfo *lteInfo, MacNod
     return drb;
 }
 
-int BearerManagement::getNumLegs(DrbKey id, FlowControlInfo *lteInfo)
+int BearerManagement::getNumLegs(DrbKey id, const FlowId& flow)
 {
     // Number of legs of this bearer. Two-leg (split-capable) bearers: at a DC UE, every
     // infrastructure bearer (local LTE + local NR stack legs); at a DC master, every UE bearer
     // (local leg + remote leg via X2 to the secondary). Everything else -- non-DC nodes, D2D
     // and multicast bearers, secondaries (X2 relay only) -- is single-leg.
     bool isEnb = (registration_->getNodeType() == NODEB);
-    if (dualConnectivityEnabled_ && lteInfo->getMulticastGroupId() == NODEID_NONE) {
+    if (dualConnectivityEnabled_ && flow.multicastGroupId == NODEID_NONE) {
         if (!isEnb && getNodeTypeById(id.getNodeId()) == NODEB)
             return 2;
         else if (isEnb && binderModule->getSecondaryNode(registration_->getLteNodeId()) != NODEID_NONE)
@@ -486,14 +498,14 @@ int BearerManagement::getNumLegs(DrbKey id, FlowControlInfo *lteInfo)
     return 1;
 }
 
-cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux)
+cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, const FlowId& flow, RlcMux *rlcMux)
 {
     auto it = pdcpEntities_.find(id);
     if (it != pdcpEntities_.end())
         return it->second;
 
     bool isEnb = (registration_->getNodeType() == NODEB);
-    int numLegs = getNumLegs(id, lteInfo);
+    int numLegs = getNumLegs(id, flow);
 
     // Create the per-bearer PDCP entity module (compound: TX + RX sides and, on a multi-leg
     // bearer, the leg splitter/joiner). With duplex bearer establishment the first-processed
@@ -563,17 +575,17 @@ int BearerManagement::selectPdcpLeg(bool isNr, MacNodeId peerId, DrbKey& compoun
     return 0;
 }
 
-void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
+void BearerManagement::installPdcpTxSide(DrbKey id, const FlowId& flow, RlcMux *rlcMux, bool isNr)
 {
     auto *pdcpMux = inet::getModuleFromPar<PdcpMux>(par("pdcpMuxModule"), this);
     // The PDCP entity is keyed by dest (id); the RLC entity it wires to is keyed by
-    // ctrlInfoToTxDrbKey, which for multicast is the group id -- not the same as id.
-    DrbKey rlcId = ctrlInfoToTxDrbKey(lteInfo);
+    // flow.txDrbKey(), which for multicast is the group id -- not the same as id.
+    DrbKey rlcId = flow.txDrbKey();
 
     DrbKey compoundId = id;
-    int legIdx = selectPdcpLeg(isNr, lteInfo->getDestId(), compoundId);
+    int legIdx = selectPdcpLeg(isNr, flow.destId, compoundId);
 
-    cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, lteInfo, rlcMux);
+    cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, flow, rlcMux);
     if (pdcpEnt->gate("legOut", legIdx)->isConnectedOutside()) {
         EV << "BearerManagement::installPdcpTxSide - TX side of " << compoundId.str() << " leg " << legIdx << " already installed\n";
         return;
@@ -596,15 +608,15 @@ void BearerManagement::installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
     }
 }
 
-void BearerManagement::installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr)
+void BearerManagement::installPdcpRxSide(DrbKey id, const FlowId& flow, RlcMux *rlcMux, bool isNr)
 {
     auto *pdcpMux = inet::getModuleFromPar<PdcpMux>(par("pdcpMuxModule"), this);
-    DrbKey rlcId = ctrlInfoToRxDrbKey(lteInfo);
+    DrbKey rlcId = flow.rxDrbKey();
 
     DrbKey compoundId = id;
-    int legIdx = selectPdcpLeg(isNr, lteInfo->getSourceId(), compoundId);
+    int legIdx = selectPdcpLeg(isNr, flow.sourceId, compoundId);
 
-    cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, lteInfo, rlcMux);
+    cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, flow, rlcMux);
     if (pdcpEnt->gate("legIn", legIdx)->isConnectedOutside()) {
         EV << "BearerManagement::installPdcpRxSide - RX side of " << compoundId.str() << " leg " << legIdx << " already installed\n";
         return;
@@ -626,24 +638,24 @@ void BearerManagement::installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, Rl
     }
 }
 
-RlcTxEntityBase *BearerManagement::createRlcTxBuffer(DrbKey id, FlowControlInfo *lteInfo)
+RlcTxEntityBase *BearerManagement::createRlcTxBuffer(DrbKey id, const FlowId& flow, const BearerRequest& req)
 {
     Enter_Method_Silent("createRlcTxBuffer()");
-    RlcTxEntityBase *txEnt = installRlcTxSide(id, lteInfo, rlcMuxModule.get(), false);
-    const DrbDesc& drb = materializeDrb(lteInfo, lteInfo->getDestId(), id, false);
+    RlcTxEntityBase *txEnt = installRlcTxSide(id, flow, req, rlcMuxModule.get(), false);
+    const DrbDesc& drb = materializeDrb(flow, req, flow.destId, id, false);
     LteMacBase *mac = macModule.get();
-    MacCid cid = MacCid(lteInfo->getDestId(), mac->drbIdToLcid(lteInfo->getDrbId()));
+    MacCid cid = MacCid(flow.destId, mac->drbIdToLcid(flow.drbId));
     mac->configureLogicalChannel(cid, LogicalChannelConfig{drb.rlcType, drb.soFraming, drb.snFieldLength, drb.lcg});
     return txEnt;
 }
 
-RlcRxEntityBase *BearerManagement::createRlcRxBuffer(DrbKey id, FlowControlInfo *lteInfo)
+RlcRxEntityBase *BearerManagement::createRlcRxBuffer(DrbKey id, const FlowId& flow, const BearerRequest& req)
 {
     Enter_Method_Silent("createRlcRxBuffer()");
-    RlcRxEntityBase *rxEnt = installRlcRxSide(id, lteInfo, rlcMuxModule.get(), false);
-    const DrbDesc& drb = materializeDrb(lteInfo, lteInfo->getSourceId(), id, false);
+    RlcRxEntityBase *rxEnt = installRlcRxSide(id, flow, req, rlcMuxModule.get(), false);
+    const DrbDesc& drb = materializeDrb(flow, req, flow.sourceId, id, false);
     LteMacBase *mac = macModule.get();
-    MacCid cid = MacCid(lteInfo->getSourceId(), mac->drbIdToLcid(lteInfo->getDrbId()));
+    MacCid cid = MacCid(flow.sourceId, mac->drbIdToLcid(flow.drbId));
     mac->configureLogicalChannel(cid, LogicalChannelConfig{drb.rlcType, drb.soFraming, drb.snFieldLength, drb.lcg});
     return rxEnt;
 }

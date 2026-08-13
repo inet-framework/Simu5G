@@ -178,8 +178,11 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     // Establish the connection unless its PDCP TX entity already exists. The entity
     // registry is authoritative: entities deleted at handover or D2D mode switch get
     // re-established by the next packet, even for an already-seen (drbId, destId) pair.
-    if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drb->getDrbId())))
-        binder_->establishDataConnection(lteInfo.get());
+    if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drb->getDrbId()))) {
+        // SDAP never sets traffic (LCG), so the tag has always carried enum 0 (CONVERSATIONAL)
+        // here; the RLC type is the one decision drbConfig makes for this DRB.
+        binder_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{CONVERSATIONAL, drb->rlcType});
+    }
 
     // Set protocol tag for outgoing frame to PDCP layer
     pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&LteProtocol::sdap);

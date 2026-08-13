@@ -868,10 +868,10 @@ cModule *Binder::getHandoverPacketHolderByNodeId(MacNodeId nodeId)
     return module->getSubmodule("cellularNic")->getSubmodule("handoverPacketHolder");
 }
 
-bool Binder::isDualConnectivityRequired(FlowControlInfo *info)
+bool Binder::isDualConnectivityRequired(const FlowId& flow)
 {
-    MacNodeId sourceId = info->getSourceId();
-    MacNodeId destId = info->getDestId();
+    MacNodeId sourceId = flow.sourceId;
+    MacNodeId destId = flow.destId;
 
     // Part 1: Check if NodeB is in DC setup
     MacNodeId nodeB = (getNodeTypeById(sourceId) == UE) ? getServingNode(sourceId) : sourceId;
@@ -895,39 +895,22 @@ bool Binder::isDualConnectivityRequired(FlowControlInfo *info)
     return nodeBInDC && ueIsDualTech;
 }
 
-// Build the FlowControlInfo of the reverse leg of a duplex bearer: same DRB,
-// same traffic/RLC parameters, endpoints and D2D peer roles swapped, direction
-// reversed (UL<->DL; a D2D flow's reverse is D2D between the same pair).
-static FlowControlInfo makeReverseFlowControlInfo(const FlowControlInfo& info)
-{
-    ASSERT(info.getDirection() != D2D_MULTI); // multicast bearers stay unidirectional
-
-    FlowControlInfo rev = info;
-    rev.setSourceId(info.getDestId());
-    rev.setDestId(info.getSourceId());
-    rev.setDirection(info.getDirection() == UL ? DL :
-                     info.getDirection() == DL ? UL : info.getDirection());
-    rev.setD2dTxPeerId(info.getD2dRxPeerId());
-    rev.setD2dRxPeerId(info.getD2dTxPeerId());
-    return rev;
-}
-
 DrbId Binder::assignDrbId(MacNodeId a, MacNodeId b)
 {
     auto pair = std::minmax(a, b);
     return DrbId(++drbIdCounters_[{pair.first, pair.second}]);
 }
 
-void Binder::establishDataConnection(FlowControlInfo *info)
+void Binder::establishDataConnection(const FlowId& flow, const BearerRequest& req)
 {
-    bool dualConnected = isDualConnectivityRequired(info);
+    bool dualConnected = isDualConnectivityRequired(flow);
     if (!dualConnected) {
-        createConnection(info, true);
+        createConnection(flow, req, true);
     }
     else {
-        MacNodeId sourceId = info->getSourceId();
-        MacNodeId destId = info->getDestId();
-        bool isMulticast = info->getMulticastGroupId() != NODEID_NONE;
+        MacNodeId sourceId = flow.sourceId;
+        MacNodeId destId = flow.destId;
+        bool isMulticast = flow.multicastGroupId != NODEID_NONE;
 
         // Get UE registration if any endpoint is UE
         Registration *ueReg = (getNodeTypeById(sourceId) == UE) ? check_and_cast<Registration*>(getRrcByNodeId(sourceId)->getSubmodule("registration")) :
@@ -937,36 +920,36 @@ void Binder::establishDataConnection(FlowControlInfo *info)
         //TODO assert that master is LTE, and secondary is NT;   alternatively, choose the UE nodeId that matches the technology of the NODEB
 
         // LTE Connection (Master)
-        FlowControlInfo lteInfo = *info;
-        lteInfo.setSourceId(getNodeTypeById(sourceId) == UE ?
+        FlowId lteFlow = flow;
+        lteFlow.sourceId = getNodeTypeById(sourceId) == UE ?
                             ueReg->getLteNodeId() :
-                            getMasterNodeOrSelf(sourceId));
+                            getMasterNodeOrSelf(sourceId);
         if (!isMulticast) {  // Only set destId for unicast
-            lteInfo.setDestId(getNodeTypeById(destId) == UE ?
+            lteFlow.destId = getNodeTypeById(destId) == UE ?
                               ueReg->getLteNodeId() :
-                              getMasterNodeOrSelf(destId));
+                              getMasterNodeOrSelf(destId);
         }
-        createConnection(&lteInfo, true);
+        createConnection(lteFlow, req, true);
 
         // NR Connection (Secondary)
-        FlowControlInfo nrInfo = *info;
-        nrInfo.setSourceId(getNodeTypeById(sourceId) == UE ?
+        FlowId nrFlow = flow;
+        nrFlow.sourceId = getNodeTypeById(sourceId) == UE ?
                            ueReg->getNrNodeId() :
-                           getSecondaryNode(getMasterNodeOrSelf(sourceId)));
+                           getSecondaryNode(getMasterNodeOrSelf(sourceId));
         if (!isMulticast) {  // Only set destId for unicast
-            nrInfo.setDestId(getNodeTypeById(destId) == UE ?
+            nrFlow.destId = getNodeTypeById(destId) == UE ?
                              ueReg->getNrNodeId() :
-                             getSecondaryNode(getMasterNodeOrSelf(destId)));
+                             getSecondaryNode(getMasterNodeOrSelf(destId));
         }
-        createConnection(&nrInfo, false);
+        createConnection(nrFlow, req, false);
     }
 }
 
-void Binder::createConnection(FlowControlInfo *lteInfo, bool withPdcp)
+void Binder::createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)
 {
-    MacNodeId sourceId = lteInfo->getSourceId();
-    MacNodeId destId = lteInfo->getDestId();
-    MacNodeId groupId = lteInfo->getMulticastGroupId();
+    MacNodeId sourceId = flow.sourceId;
+    MacNodeId destId = flow.destId;
+    MacNodeId groupId = flow.multicastGroupId;
 
     EV << "Binder::establishDataConnection - establishing connection from sourceId=" << sourceId
        << " to destId=" << destId << " groupId=" << groupId << endl;
@@ -976,39 +959,39 @@ void Binder::createConnection(FlowControlInfo *lteInfo, bool withPdcp)
     ASSERT(!sourceIsEnb || !destIsEnb);  // they cannot be both NodeBs
 
     bool sourceWithPdcp = getNodeTypeById(sourceId)==UE || withPdcp;
-    createOutgoingConnectionOnNode(sourceId, lteInfo, sourceWithPdcp);
+    createOutgoingConnectionOnNode(sourceId, flow, req, sourceWithPdcp);
 
     if (groupId == NODEID_NONE) {
         bool destWithPdcp = getNodeTypeById(destId)==UE || withPdcp;
-        createIncomingConnectionOnNode(destId, lteInfo, destWithPdcp);
+        createIncomingConnectionOnNode(destId, flow, req, destWithPdcp);
 
         // A DRB is bidirectional (TS 38.331): create the reverse leg of the bearer
         // at both endpoints as well, so reverse traffic -- user data or RLC-AM
         // STATUS PDUs -- finds its entities in place instead of establishing a
         // separate unidirectional bearer.
-        FlowControlInfo revInfo = makeReverseFlowControlInfo(*lteInfo);
-        createOutgoingConnectionOnNode(destId, &revInfo, destWithPdcp);
-        createIncomingConnectionOnNode(sourceId, &revInfo, sourceWithPdcp);
+        FlowId revFlow = flow.reversed();
+        createOutgoingConnectionOnNode(destId, revFlow, req, destWithPdcp);
+        createIncomingConnectionOnNode(sourceId, revFlow, req, sourceWithPdcp);
     }
     else {
         // Multicast bearers stay unidirectional: TX at the sender, RX at the members
         for (auto& [nodeId,_] : getNodeInfoMap())  //TODO use lte ones if LTE in DC setup, and NR ones if NR in DC setup
             if (nodeId != sourceId && isInMulticastGroup(nodeId, groupId))
-                createIncomingConnectionOnNode(nodeId, lteInfo, getNodeTypeById(nodeId)==UE || withPdcp);
+                createIncomingConnectionOnNode(nodeId, flow, req, getNodeTypeById(nodeId)==UE || withPdcp);
     }
 }
 
 
-void Binder::createIncomingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp)
+void Binder::createIncomingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp)
 {
     BearerManagement *bm = check_and_cast<BearerManagement*>(getRrcByNodeId(nodeId)->getSubmodule("bearerManagement"));
-    bm->createIncomingConnection(lteInfo, withPdcp);
+    bm->createIncomingConnection(flow, req, withPdcp);
 }
 
-void Binder::createOutgoingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp)
+void Binder::createOutgoingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp)
 {
     BearerManagement *bm = check_and_cast<BearerManagement*>(getRrcByNodeId(nodeId)->getSubmodule("bearerManagement"));
-    bm->createOutgoingConnection(lteInfo, withPdcp);
+    bm->createOutgoingConnection(flow, req, withPdcp);
 }
 
 } //namespace

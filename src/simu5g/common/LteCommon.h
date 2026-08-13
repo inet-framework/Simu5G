@@ -75,6 +75,32 @@ class LteProtocol
     static const inet::Protocol sdap;    // Service Data Adaptation Protocol
 };
 
+// Identity of one flow/bearer instance between two ends, as used to request bearer
+// establishment. This is the identity half of FlowControlInfo as a plain value: the
+// packet tag is constructed FROM it, not the other way around.
+struct FlowId {
+    MacNodeId sourceId = NODEID_NONE;
+    MacNodeId destId = NODEID_NONE;
+    Direction direction = DL;
+    DrbId drbId = DRBID_NONE;
+    MacNodeId multicastGroupId = NODEID_NONE;
+    MacNodeId d2dTxPeerId = NODEID_NONE;
+    MacNodeId d2dRxPeerId = NODEID_NONE;
+
+    DrbKey txDrbKey() const;    // same logic as ctrlInfoToTxDrbKey (multicast keys by group)
+    DrbKey rxDrbKey() const;    // same logic as ctrlInfoToRxDrbKey
+    FlowId reversed() const;    // same swaps as Binder's (former) makeReverseFlowControlInfo
+};
+
+// The configuration half of a bearer-establishment request: what the requester asks RRC
+// to set the bearer up as. rlcType = UNKNOWN_RLC_TYPE means "RRC decides from qosClass";
+// SDAP and the D2D mode-switch path pass it explicitly because they transport
+// already-decided configuration.
+struct BearerRequest {
+    LteTrafficClass qosClass = CONVERSATIONAL;   // -> logicalChannelGroup (lcg)
+    LteRlcType rlcType = UM;
+};
+
 /**
  * TODO
  */

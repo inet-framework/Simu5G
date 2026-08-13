@@ -18,6 +18,10 @@ import simu5g.common.LteCommon;
 import simu5g.common.LteCommonEnum;
 import simu5g.stack.mac.amc.UserTxParams;
 
+cplusplus {{
+#include "simu5g/common/LteCommon.h"   // for FlowId, BearerRequest
+}}
+
 namespace simu5g;
 
 //
@@ -70,6 +74,34 @@ class FlowControlInfo extends LteControlInfo {
 
 cplusplus (FlowControlInfo::setDrbId) {{
     ASSERT(num(drbId) <= 63);
+}}
+
+cplusplus(FlowControlInfo) {{
+    // Build a tag from a FlowId (identity only -- traffic/rlcType are left at their
+    // defaults; callers that also carry a BearerRequest set them explicitly).
+    static FlowControlInfo fromFlowId(const FlowId& flow) {
+        FlowControlInfo info;
+        info.setSourceId(flow.sourceId);
+        info.setDestId(flow.destId);
+        info.setDirection(flow.direction);
+        info.setD2dTxPeerId(flow.d2dTxPeerId);
+        info.setD2dRxPeerId(flow.d2dRxPeerId);
+        info.setDrbId(flow.drbId);
+        info.setMulticastGroupId(flow.multicastGroupId);
+        return info;
+    }
+    // Extract the identity half of this tag as a FlowId.
+    FlowId toFlowId() const {
+        FlowId flow;
+        flow.sourceId = getSourceId();
+        flow.destId = getDestId();
+        flow.direction = (Direction)getDirection();
+        flow.d2dTxPeerId = getD2dTxPeerId();
+        flow.d2dRxPeerId = getD2dRxPeerId();
+        flow.drbId = getDrbId();
+        flow.multicastGroupId = getMulticastGroupId();
+        return flow;
+    }
 }}
 
 // WIP: Describes logical channels (identified by remote node + LCID) in MAC

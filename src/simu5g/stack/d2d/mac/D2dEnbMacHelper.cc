@@ -107,6 +107,8 @@ void D2dEnbMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                     switchPktTx->setOldConnection(true);
                 else
                     switchPktTx->setOldConnection(false);
+                switchPktTx->setLcg(connInfo.flowInfo.getTraffic());
+                switchPktTx->setRlcType(connInfo.flowInfo.getRlcType());
                 pktTx->insertAtFront(switchPktTx);
                 *(pktTx->addTag<FlowControlInfo>()) = connInfo.flowInfo.toFlowControlInfo();
                 mac_->sendUpperPackets(pktTx);
@@ -150,6 +152,8 @@ void D2dEnbMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                     switchPktRx->setOldConnection(true);
                 else
                     switchPktRx->setOldConnection(false);
+                switchPktRx->setLcg(lteInfo.getTraffic());
+                switchPktRx->setRlcType(lteInfo.getRlcType());
 
                 pktRx->insertAtFront(switchPktRx);
                 *(pktRx->addTag<FlowControlInfo>()) = lteInfo.toFlowControlInfo();

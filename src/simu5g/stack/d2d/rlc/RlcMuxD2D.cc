@@ -35,12 +35,22 @@ void RlcMuxD2D::fromMacLayer(cPacket *pktAux)
         auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
         auto switchPkt = pkt->peekAtFront<D2DModeSwitchNotification>();
 
+        // The notification chunk carries its own BearerRequest (filled at the eNB build
+        // sites from the same connection descriptor that populates the tag below), so the
+        // buffer-creation calls don't need to read it back off the tag. Bridge assert: while
+        // the tag still carries traffic/rlcType too (until they are dropped from it), the two
+        // must agree -- they were populated from the very same source object.
+        FlowId flow = lteInfo->toFlowId();
+        BearerRequest req{(LteTrafficClass)switchPkt->getLcg(), (LteRlcType)switchPkt->getRlcType()};
+        ASSERT(switchPkt->getLcg() == lteInfo->getTraffic());
+        ASSERT(switchPkt->getRlcType() == lteInfo->getRlcType());
+
         if (switchPkt->getTxSide()) {
             // get the corresponding Tx buffer & call handler
-            DrbKey id = ctrlInfoToTxDrbKey(lteInfo.get());
+            DrbKey id = flow.txDrbKey();
             RlcTxEntityBase *txbuf = bearerManagement_->lookupRlcTxBuffer(id);
             if (txbuf == nullptr)
-                txbuf = bearerManagement_->createRlcTxBuffer(id, lteInfo.get());
+                txbuf = bearerManagement_->createRlcTxBuffer(id, flow, req);
             auto *umTxbuf = dynamic_cast<ID2dRlcUmTxEntity *>(txbuf);
             if (umTxbuf == nullptr)
                 throw cRuntimeError("RlcMuxD2D::fromMacLayer: D2D mode switch received for a non-UM TX bearer (%s): D2D mode switching supports UM bearers only", txbuf->getClassName());
@@ -49,13 +59,13 @@ void RlcMuxD2D::fromMacLayer(cPacket *pktAux)
             delete pkt;
         }
         else { // rx side
-            DrbKey id = ctrlInfoToRxDrbKey(lteInfo.get());
+            DrbKey id = flow.rxDrbKey();
             // The mux keeps only a DRB -> toRxEntity gate-index table, so reach the
             // entity through the gate it serves; create the bearer if it has none yet.
             auto it = rxGateIndices_.find(id);
             RlcRxEntityBase *rxbuf = it != rxGateIndices_.end()
                     ? check_and_cast<RlcRxEntityBase *>(gate("toRxEntity", it->second)->getPathEndGate()->getOwnerModule())
-                    : bearerManagement_->createRlcRxBuffer(id, lteInfo.get());
+                    : bearerManagement_->createRlcRxBuffer(id, flow, req);
             auto *umRxbuf = dynamic_cast<ID2dRlcUmRxEntity *>(rxbuf);
             if (umRxbuf == nullptr)
                 throw cRuntimeError("RlcMuxD2D::fromMacLayer: D2D mode switch received for a non-UM RX bearer (%s): D2D mode switching supports UM bearers only", rxbuf->getClassName());

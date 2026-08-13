@@ -596,7 +596,7 @@ class Binder : public cSimpleModule
     // bidirectional per TS 38.331; RLC-AM in particular needs the reverse path for
     // its STATUS PDUs). Multicast flows remain unidirectional (TX at the sender,
     // RX at the group members).
-    virtual void establishDataConnection(FlowControlInfo *lteInfo);
+    virtual void establishDataConnection(const FlowId& flow, const BearerRequest& req);
 
     // Allocate a new DRB ID, unique within the (unordered) node pair {a, b}, so the
     // two endpoints of a link can never mint colliding IDs for the same peer.
@@ -607,10 +607,10 @@ class Binder : public cSimpleModule
     // per-node-pair DRB ID counters for assignDrbId()
     std::map<std::pair<MacNodeId, MacNodeId>, unsigned short> drbIdCounters_;
 
-    virtual bool isDualConnectivityRequired(FlowControlInfo *info);
-    virtual void createConnection(FlowControlInfo *lteInfo, bool withPdcp);
-    virtual void createIncomingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp);
-    virtual void createOutgoingConnectionOnNode(MacNodeId nodeId, FlowControlInfo *lteInfo, bool withPdcp);
+    virtual bool isDualConnectivityRequired(const FlowId& flow);
+    virtual void createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp);
+    virtual void createIncomingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp);
+    virtual void createOutgoingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp);
 };
 
 } //namespace
