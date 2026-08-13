@@ -40,7 +40,7 @@ namespace simu5g {
  * to the PDCP layer.
  *
  * Supports all 3GPP PDU session types (IPv4, IPv6, Ethernet, Unstructured)
- * via the pduSessionType field in drbConfig.
+ * via the pduSessionType field of the pushed DRB configuration.
  */
 class NrSdap : public cSimpleModule
 {
@@ -64,6 +64,11 @@ class NrSdap : public cSimpleModule
     virtual void handleUpperPacket(inet::Packet *pkt);
     virtual void handleLowerPacket(inet::Packet *pkt);
 
+  public:
+    // Configuration push: RRC installs (or replaces) a bearer's SDAP configuration.
+    // SDAP does not author its own configuration; this is the only write path into
+    // its DRB table.
+    virtual void configureDrb(const DrbDesc& drb);
 };
 
 } //namespace

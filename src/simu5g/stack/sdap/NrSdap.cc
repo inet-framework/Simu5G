@@ -31,15 +31,6 @@ void NrSdap::initialize()
     binder_.reference(this, "binderModule", true);
     pdcpMux_.reference(this, "pdcpMuxModule", true);
 
-    // Load QFI-to-DRB mapping from drbConfig parameter
-    const cValueArray *arr = check_and_cast_nullable<const cValueArray *>(par("drbConfig").objectValue());
-    if (arr && arr->size() > 0) {
-        drbTable_.loadFromJson(arr);
-        EV << "NrSdap: Loaded " << drbTable_.getDrbMap().size() << " DRB entries from drbConfig" << endl;
-        for (const auto& [key, ctx] : drbTable_.getDrbMap())
-            EV << "  " << key << ": " << ctx << endl;
-    }
-
     // Get pointer to reflective QoS table
     reflectiveQosTable.reference(this, "reflectiveQosTableModule", false);
 
@@ -49,6 +40,13 @@ void NrSdap::initialize()
     establishBearersOnDemand_ = par("establishBearersOnDemand").boolValue();
     if (!isUe && reflectiveQosTable.getNullable() != nullptr)
         throw cRuntimeError("Only UE may use a reflective QoS table");
+}
+
+void NrSdap::configureDrb(const DrbDesc& drb)
+{
+    Enter_Method("configureDrb(drb %d)", (int)num(drb.getDrbId()));
+    EV << "NrSdap::configureDrb - " << drb << endl;
+    drbTable_.addOrUpdateDrb(drb);
 }
 
 bool NrSdap::requiresSdapHeader(const DrbDesc *drb)
@@ -72,7 +70,7 @@ const inet::Protocol *NrSdap::getUpperProtocol(const DrbDesc *ctx)
     if (ctx && !ctx->upperProtocol.empty()) {
         const inet::Protocol *proto = inet::Protocol::findProtocol(ctx->upperProtocol.c_str());
         if (!proto)
-            throw cRuntimeError("Unknown protocol '%s' in drbConfig upperProtocol", ctx->upperProtocol.c_str());
+            throw cRuntimeError("Unknown protocol '%s' in the DRB's upperProtocol configuration", ctx->upperProtocol.c_str());
         return proto;
     }
 
@@ -87,7 +85,7 @@ const inet::Protocol *NrSdap::getUpperProtocol(const DrbDesc *ctx)
         case ETHERNET:
             return &inet::Protocol::ethernetMac;
         case UNSTRUCTURED:
-            throw cRuntimeError("Unstructured PDU session requires explicit 'upperProtocol' in drbConfig");
+            throw cRuntimeError("Unstructured PDU session requires explicit 'upperProtocol' in the DRB configuration");
         default:
             throw cRuntimeError("Unknown PDU session type: %d", (int)pduSessionType);
     }
@@ -182,8 +180,8 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
         if (!establishBearersOnDemand_)
             throw cRuntimeError("SDAP TX: no established bearer for DRB %d (peer nodeId=%d), and on-demand bearer establishment is disabled -- missing or mismatched staticBearers entry?",
                     (int)num(drb->getDrbId()), (int)num(lteInfo->getDestId()));
-        // SDAP never decides traffic (LCG); the RLC type is the one decision drbConfig
-        // makes for this DRB.
+        // SDAP never decides traffic (LCG); the RLC type comes from the pushed DRB
+        // configuration, i.e. it is RRC's decision transported in the request.
         binder_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{CONVERSATIONAL, drb->rlcType});
     }
 
@@ -201,7 +199,7 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
     MacNodeId ueId = (!isUe && lteInfo) ? lteInfo->getSourceId() : NODEID_NONE;
     const DrbDesc *drb = (drbId != DRBID_NONE) ? drbTable_.getDrb(DrbKey(ueId, drbId)) : nullptr;
     if (!drb)
-        throw cRuntimeError("SDAP RX: Unknown DRB %d (ueId=%d) -- missing drbConfig entry?",
+        throw cRuntimeError("SDAP RX: Unknown DRB %d (ueId=%d) -- missing entry in the RRC drbTable's drbConfig?",
                             (int)num(drbId), (int)num(ueId));
 
     EV_INFO << "SDAP RX: Received packet from DRB " << drbId << ": " << pkt->peekAtFront() << "\n";

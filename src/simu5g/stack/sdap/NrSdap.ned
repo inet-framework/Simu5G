@@ -32,21 +32,11 @@ package simu5g.stack.sdap;
 // mapped to it.
 //
 // Supports all 3GPP PDU session types (IPv4, IPv6, Ethernet, Unstructured)
-// via the pduSessionType field in drbConfig.
+// via the pduSessionType field of the bearer configuration.
 //
-// drbConfig fields:
-//  - drb (int): DRB identifier (= nrPdcp[]/nrRlc[] array index)
-//  - ue (int, optional): UE MacNodeId (gNB only; omit on UE side)
-//  - qfiList (int[]): QFI values mapped to this DRB
-//  - rlcType (string, optional): RLC mode ("AM", "UM", "TM"); default: "UM"
-//  - pduSessionType (string, optional): "IPv4", "IPv6", "Ethernet", "Unstructured";
-//    default: "IPv4"
-//  - upperProtocol (string, optional): INET protocol name for upper layer dispatch
-//    (this is normally only needed for "Unstructured" PDU sessions); default:
-//    derived from pduSessionType
-//  - isDefault (bool, optional): marks this as the default DRB for the UE;
-//    if omitted, the first DRB entry per UE (per nodeId) is automatically used
-//    as default. The default DRB is the fallback when no QFI-to-DRB mapping matches.
+// SDAP does not author its own configuration: the QFI-to-DRB mapping and the
+// per-bearer SDAP settings are authored in RRC's DRB table (see the drbConfig
+// parameter of ~DrbTable) and pushed into this module at initialization.
 //
 // Gates:
 //  - upperLayerIn/upperLayerOut: connects to the upper layer (Ip2Nic or app).
@@ -58,7 +48,6 @@ simple NrSdap like INrSdap
         string nodeRole @enum("UE", "gNB");  // Node role: "UE" or "gNB" - determines reflective QoS behavior
         string binderModule = default("binder");
         string pdcpMuxModule = default("^.pdcpMux");
-        object drbConfig = default([]);  // JSON array: [{drb, ue, qfiList, rlcType, pduSessionType, upperProtocol, isDefault}, ...]; see banner comment for details
         bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (see the staticBearers parameter of ~Binder)
         string reflectiveQosTableModule = default("");  // UE only: path to ReflectiveQosTable module (empty = disabled)
         bool useReflectiveQos = default(false); // UE only

@@ -11,11 +11,12 @@ ini configuration.
 ## What is configured
 
 - **SDAP layer** is enabled on the gNB and UE NICs (`hasSdap = true`).
-  With SDAP enabled, the static `drbConfig` parameter is the sole authority
-  for DRB assignment (Ip2Nic's dynamic per-connection DRB creation is
-  bypassed).
+  With SDAP enabled, the static `drbConfig` parameter of RRC's DRB table
+  is the sole authority for DRB assignment (Ip2Nic's dynamic per-connection
+  DRB creation is bypassed); RRC pushes the mapping into SDAP at
+  initialization.
 
-- **Two DRBs per UE**, defined in `sdap.drbConfig`:
+- **Two DRBs per UE**, defined in `rrc.drbTable.drbConfig`:
   QFIs 1,2 (Voice/Video) map to DRB 0, QFIs 3,4 (Gaming/URLLC) map to DRB 1,
   both in RLC UM mode. DRB IDs are per-UE, as in 3GPP: each UE has a DRB 0
   and a DRB 1, distinguished at the gNB by the `ue` (MacNodeId) field

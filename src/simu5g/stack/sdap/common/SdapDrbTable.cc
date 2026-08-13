@@ -10,82 +10,38 @@
 ///
 
 #include "simu5g/stack/sdap/common/SdapDrbTable.h"
-#include <set>
-#include <omnetpp/cvaluearray.h>
-#include <omnetpp/cvaluemap.h>
 
 using namespace omnetpp;
 
 namespace simu5g {
 
-void SdapDrbTable::loadFromJson(const cValueArray *arr)
+void SdapDrbTable::addOrUpdateDrb(const DrbDesc& drb)
 {
-    for (int i = 0; i < (int)arr->size(); i++) {
-        const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
+    // Insert or replace the entry (map nodes are stable, so index pointers stay valid)
+    auto [it, inserted] = drbMap_.insert_or_assign(drb.key, drb);
+    const DrbDesc *ptr = &it->second;
+    MacNodeId ueNodeId = drb.getPeerId();
 
-        DrbDesc ctx;
-        DrbId drbId = DrbId(entry->get("drb").intValue());
+    // On an update, drop the QFI mappings of the replaced entry
+    if (!inserted)
+        for (auto qit = qfiToDrb_.begin(); qit != qfiToDrb_.end(); )
+            qit = (qit->second == ptr) ? qfiToDrb_.erase(qit) : std::next(qit);
 
-        // "ue" field: numeric MacNodeId (gNB side); omitted on UE side
-        MacNodeId ueNodeId = entry->containsKey("ue")
-                ? MacNodeId(entry->get("ue").intValue())
-                : NODEID_NONE;   // UE side: "self"
-        ctx.key = DrbKey(ueNodeId, drbId);
-        ctx.lcid = LogicalCid(num(drbId));
+    // Reverse lookup: (nodeId, qfi) -> DrbDesc*
+    for (Qfi qfi : ptr->qfiList)
+        qfiToDrb_[{ueNodeId, qfi}] = ptr;
 
-        // isDefault (optional; if not set, first DRB per nodeId becomes default)
-        if (entry->containsKey("isDefault"))
-            ctx.isDefault = entry->get("isDefault").boolValue();
-
-        // qfiList
-        const cValueArray *qfiArr = check_and_cast<const cValueArray *>(entry->get("qfiList").objectValue());
-        for (int j = 0; j < (int)qfiArr->size(); j++)
-            ctx.qfiList.push_back(Qfi(qfiArr->get(j).intValue()));
-
-        // rlcType (optional, default UM)
-        if (entry->containsKey("rlcType"))
-            ctx.rlcType = aToRlcType(entry->get("rlcType").stdstringValue());
-
-        // pduSessionType (optional, default IPv4)
-        if (entry->containsKey("pduSessionType"))
-            ctx.pduSessionType = aToPduSessionType(entry->get("pduSessionType").stdstringValue());
-
-        // upperProtocol (optional, empty = derive from pduSessionType)
-        if (entry->containsKey("upperProtocol"))
-            ctx.upperProtocol = entry->get("upperProtocol").stdstringValue();
-
-        drbMap_[ctx.key] = ctx;
+    // Default DRB map
+    if (ptr->isDefault) {
+        defaultDrb_[ueNodeId] = ptr;
+        if (ueNodeId == NODEID_NONE)
+            ueDefaultDrb_ = ptr;
     }
-
-    // Build derived lookup tables (pointers into drbMap_, stable after insertion)
-    // Also auto-assign isDefault to the first DRB per nodeId if none was explicitly marked
-    std::set<MacNodeId> nodesWithExplicitDefault;
-    for (auto& [key, ctx] : drbMap_) {
-        if (ctx.isDefault)
-            nodesWithExplicitDefault.insert(ctx.getPeerId());
-    }
-
-    std::set<MacNodeId> nodesWithAutoDefault;
-    for (auto& [key, ctx] : drbMap_) {
-        MacNodeId ueNodeId = ctx.getPeerId();
-        // Auto-assign default if no explicit isDefault was set for this nodeId
-        if (!nodesWithExplicitDefault.count(ueNodeId) &&
-            !nodesWithAutoDefault.count(ueNodeId)) {
-            ctx.isDefault = true;
-            nodesWithAutoDefault.insert(ueNodeId);
-        }
-
-        // Build reverse lookup: (nodeId, qfi) -> DrbDesc*
-        const DrbDesc *ptr = &ctx;
-        for (Qfi qfi : ctx.qfiList)
-            qfiToDrb_[{ueNodeId, qfi}] = ptr;
-
-        // Build default DRB map
-        if (ctx.isDefault) {
-            defaultDrb_[ueNodeId] = ptr;
-            if (ueNodeId == NODEID_NONE)
-                ueDefaultDrb_ = ptr;
-        }
+    else if (defaultDrb_.count(ueNodeId) && defaultDrb_[ueNodeId] == ptr) {
+        // The replaced entry was the node's default and no longer is
+        defaultDrb_.erase(ueNodeId);
+        if (ueNodeId == NODEID_NONE)
+            ueDefaultDrb_ = nullptr;
     }
 }
 

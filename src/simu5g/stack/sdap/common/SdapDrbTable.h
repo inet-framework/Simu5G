@@ -19,15 +19,13 @@
 #include "simu5g/stack/rrc/DrbDesc.h"
 #include "simu5g/common/LteCommon.h"
 
-namespace omnetpp { class cValueArray; }
-
 namespace simu5g {
 
 //
-// SDAP's view of the configured data radio bearers: the ~DrbDesc records authored by the
-// drbConfig parameter, indexed by QFI and by node so that SDAP can map a QoS flow onto a
-// bearer. RRC's own ~DrbTable holds the bearers it establishes; the two tables stay
-// separate until SDAP's configuration is folded into RRC's.
+// SDAP's working copy of the data radio bearer configuration, indexed by QFI and by node
+// so that SDAP can map a QoS flow onto a bearer. SDAP never authors this table: entries
+// are pushed by RRC (see NrSdap::configureDrb), from the configuration authored in RRC's
+// ~DrbTable (drbConfig parameter).
 //
 class SdapDrbTable
 {
@@ -45,7 +43,10 @@ class SdapDrbTable
     const DrbDesc *ueDefaultDrb_ = nullptr;
 
   public:
-    void loadFromJson(const omnetpp::cValueArray *arr);
+    // Inserts or replaces the entry for drb.key and updates the QFI and default-DRB
+    // indexes accordingly. The entry arrives with isDefault already resolved (the
+    // authoring side assigns the default DRB).
+    void addOrUpdateDrb(const DrbDesc& drb);
 
     // Primary lookup by DrbKey
     const DrbDesc *getDrb(DrbKey key) const;

@@ -22,6 +22,7 @@
 #include "simu5g/stack/pdcp/DcMux.h"
 #include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
 #include "simu5g/stack/pdcp/PdcpRxEntityBase.h"
+#include "simu5g/stack/sdap/NrSdap.h"
 #include "simu5g/common/InitStages.h"
 
 namespace simu5g {
@@ -76,6 +77,7 @@ void BearerManagement::initialize(int stage)
         nrRlcMuxModule.reference(this, "nrRlcMuxModule", false);
         macModule.reference(this, "macModule", true);
         nrMacModule.reference(this, "nrMacModule", false);
+        sdapModule.reference(this, "sdapModule", false);
 
         t311_ = par("t311");
         t301_ = par("t301");
@@ -86,6 +88,14 @@ void BearerManagement::initialize(int stage)
         streamingRlc_ = aToRlcType(par("streamingRlc"));
         interactiveRlc_ = aToRlcType(par("interactiveRlc"));
         backgroundRlc_ = aToRlcType(par("backgroundRlc"));
+    }
+    else if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
+        // Push the authored DRB configuration into SDAP: SDAP's QFI-to-DRB view is a
+        // working copy it never authors. (Post-local, so the drbTable has loaded its
+        // drbConfig parameter.)
+        if (sdapModule.getNullable() != nullptr)
+            for (const auto& [key, drb] : drbTableModule->getConfiguredDrbs())
+                sdapModule->configureDrb(drb);
     }
 }
 

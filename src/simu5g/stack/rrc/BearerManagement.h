@@ -34,6 +34,7 @@ class PdcpTxEntityBase;
 class PdcpRxEntityBase;
 class Registration;
 class Binder;
+class NrSdap;
 
 /**
  * @brief RRC Bearer Management — creates and tears down PDCP, RLC and MAC
@@ -64,6 +65,7 @@ class BearerManagement : public cSimpleModule
     inet::ModuleRefByPar<LteMacBase> nrMacModule;
     inet::ModuleRefByPar<Binder> binderModule;   // DC master/secondary topology lookups; peer BearerManagement on RLF
     inet::ModuleRefByPar<DrbTable> drbTableModule;   // the bearer configuration this module authors
+    inet::ModuleRefByPar<NrSdap> sdapModule;     // configuration push target; null when the NIC has no SDAP
 
     // Entity registries (CP owns the lifecycle of all entities)
     // One PDCP entity module (compound: TX+RX, see PdcpEntityBase) per bearer, keyed by (peer

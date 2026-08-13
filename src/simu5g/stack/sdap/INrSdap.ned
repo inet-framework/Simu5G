@@ -18,7 +18,6 @@ moduleinterface INrSdap
 {
     parameters:
         string nodeRole @enum("UE", "gNB");  // Node role: "UE" or "gNB" - determines reflective QoS behavior
-        object drbConfig;  // JSON array of DRB configurations: [{drb, ue, qfiList}, ...]
         bool useReflectiveQos; // UE only
         string reflectiveQosTableModule;  // UE only: path to ReflectiveQosTable module (empty = disabled)
 

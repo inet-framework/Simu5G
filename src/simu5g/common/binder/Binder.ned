@@ -34,7 +34,8 @@ package simu5g.common.binder;
 //    rlcType is omitted; default: "CONVERSATIONAL"
 //  - rlcType (string, optional): "TM", "UM" or "AM"; omitted = RRC decides from qosClass
 //  - drb (int, optional): DRB identity of the bearer; useful for matching the DRB ids
-//    of the SDAP drbConfig parameter; omitted = the next free id for the node pair
+//    of the drbConfig parameter of RRC's DrbTable; omitted = the next free id for the
+//    node pair
 //  - technology (string, optional): "LTE" or "NR", selects the stack of a dual-stack
 //    UE; omitted = the NR stack if the UE is attached with it, except when serving
 //    nodes are in a dual-connectivity setup (where establishment splits the bearer

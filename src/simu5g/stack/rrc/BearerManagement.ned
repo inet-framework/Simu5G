@@ -74,4 +74,5 @@ simple BearerManagement like IBearerManagement
         string nrRlcMuxModule = default("^.^.nrRlcMux");
         string macModule = default("^.^.mac");
         string nrMacModule = default("^.^.nrMac");
+        string sdapModule = default("^.^.sdap");   // configuration push target; unresolvable (no SDAP on the NIC) = no pushes
 }
