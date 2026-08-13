@@ -399,7 +399,7 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
         // (vQueueItemCounter feeds the DL schedule-list SDU count) and record per-PDU
         // payload sizes for the MAC to request. LTE-FI keeps the single-concatenated-PDU
         // path below. (UL is handled by LcgScheduler.)
-        bool soFraming = (dir == DL) && cwAllocatedBytes > 0 && mac_->getConnDesc(cid).getSoFraming();
+        bool soFraming = (dir == DL) && cwAllocatedBytes > 0 && mac_->getLogicalChannelConfig(cid).soFraming;
         if (soFraming) {
             std::vector<unsigned int>& pduSizes = scheduledSoPduSizes_[cid];
             int budget = (int)cwAllocatedBytes - MAC_HEADER;  // one MAC header for the TB
@@ -409,9 +409,9 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
                 // emit, so the carve and drain match byte-for-byte (sized for the flow's SN
                 // field length). UM: complete=1B (no SN) if the whole SDU fits, else
                 // first/continuation per nrUmHeaderBytes. AM always carries the SN. TS 38.322.
-                unsigned int snBits = mac_->getConnDesc(cid).getRlcSnFieldLength();
+                unsigned int snBits = mac_->getLogicalChannelConfig(cid).snFieldLength;
                 unsigned int rlcHdr;
-                if (mac_->getConnDesc(cid).getRlcType() == AM) {
+                if (mac_->getLogicalChannelConfig(cid).rlcType == AM) {
                     rlcHdr = nrAmHeaderBytes(soFrontIsContinuation_[cid] ? NRUM_CONTINUATION : NRUM_FIRST, snBits);
                 }
                 else {

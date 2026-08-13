@@ -96,6 +96,8 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
 
             // get the Flow descriptor
             const FlowDescriptor& connDesc = mac_->getConnDesc(cid);
+            // get the channel's RLC/logical-channel configuration, as pushed by RRC
+            const LogicalChannelConfig& lcConfig = mac_->getLogicalChannelConfig(cid);
             // TODO get the QoS parameters
 
             // connection must have the same direction as the grant
@@ -110,9 +112,9 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
             }
             else {
                 // we need to consider also the size of RLC and MAC headers
-                if (connDesc.getRlcType() == UM)
+                if (lcConfig.rlcType == UM)
                     toServe += RLC_HEADER_UM;
-                else if (connDesc.getRlcType() == AM)
+                else if (lcConfig.rlcType == AM)
                     toServe += RLC_HEADER_AM;
 
                 if (firstSdu)
@@ -192,7 +194,7 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                 //    ( sdu->size() <= availableBytes) && ( sdu->size() <= desc->parameters_.bucket_)
                 // Best Effort service:
                 //    ( sdu->size() <= availableBytes) && (!priorityService_)
-                if (connDesc.getSoFraming()) {
+                if (lcConfig.soFraming) {
                     // NR-SO: the RLC emits one SDU/segment per PDU (no concatenation),
                     // so fill the grant by multiplexing several PDUs into it. Record
                     // each PDU's payload size; the MAC issues one SDU request per entry.
@@ -210,9 +212,9 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                         // UM: complete=1B (no SN) if the whole remaining SDU fits, else
                         // first/continuation per nrUmHeaderBytes. AM always carries the SN
                         // (nrAmHeaderBytes). TS 38.322 6.2.1.3/6.2.1.4.
-                        unsigned int snBits = connDesc.getRlcSnFieldLength();
+                        unsigned int snBits = lcConfig.snFieldLength;
                         unsigned int rlcHdr;
-                        if (connDesc.getRlcType() == AM) {
+                        if (lcConfig.rlcType == AM) {
                             rlcHdr = nrAmHeaderBytes(soFrontIsContinuation[cid] ? NRUM_CONTINUATION : NRUM_FIRST, snBits);
                         }
                         else {
@@ -278,9 +280,9 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                     elem->occupancy_ = vQueue->getQueueOccupancy();
                     elem->sentData_ += alloc;
 
-                    if (connDesc.getRlcType() == UM)
+                    if (lcConfig.rlcType == UM)
                         alloc -= RLC_HEADER_UM;
-                    else if (connDesc.getRlcType() == AM)
+                    else if (lcConfig.rlcType == AM)
                         alloc -= RLC_HEADER_AM;
 
                     if (alloc > 0)
@@ -314,9 +316,9 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                     elem->occupancy_ = vQueue->getQueueOccupancy();
                     elem->sentData_ += alloc;
 
-                    if (connDesc.getRlcType() == UM)
+                    if (lcConfig.rlcType == UM)
                         alloc -= RLC_HEADER_UM;
-                    else if (connDesc.getRlcType() == AM)
+                    else if (lcConfig.rlcType == AM)
                         alloc -= RLC_HEADER_AM;
 
                     // check if there is space for a SDU

@@ -329,7 +329,7 @@ void NrMacUe::macPduMake(MacCid cid)
                         // went out in earlier PDUs or stays buffered for the next TTI), so
                         // stop adding PDUs gracefully rather than crash. LTE-FI plans an
                         // exact count, so there an empty buffer is a real bug.
-                        if (connDescOut_[destCid].flowInfo.getSoFraming())
+                        if (getLogicalChannelConfig(destCid).soFraming)
                             break;
                         throw cRuntimeError("Empty buffer for cid %s, while expected SDUs were %d", destCid.str().c_str(), sduPerCid);
                     }
@@ -357,9 +357,9 @@ void NrMacUe::macPduMake(MacCid cid)
 
                 if (size > 0) {
                     // take into account the RLC header size
-                    if (connDescOut_[destCid].flowInfo.getRlcType() == UM)
+                    if (getLogicalChannelConfig(destCid).rlcType == UM)
                         size += RLC_HEADER_UM;
-                    else if (connDescOut_[destCid].flowInfo.getRlcType() == AM)
+                    else if (getLogicalChannelConfig(destCid).rlcType == AM)
                         size += RLC_HEADER_AM;
                 }
             }
