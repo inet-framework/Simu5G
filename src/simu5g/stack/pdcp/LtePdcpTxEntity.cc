@@ -64,7 +64,6 @@ void LtePdcpTxEntity::handlePacketFromUpperLayer(Packet *pkt)
 {
     emit(receivedPacketFromUpperLayerSignal_, pkt);
 
-    auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
     EV << NOW << " LtePdcpTxEntity::handlePacketFromUpperLayer - processing packet " << pkt->getName() << " from IP layer" << endl;
 
     // perform PDCP operations
@@ -74,9 +73,7 @@ void LtePdcpTxEntity::handlePacketFromUpperLayer(Packet *pkt)
     auto pdcpHeader = makeShared<LtePdcpHeader>();
     pdcpHeader->setSequenceNumber(sno_++); // set sequence number in PDCP header
 
-    // The header size is resolved from this entity's own pushed "rlcType" param (see
-    // initialize()); the tag's rlcType field is redundant with it until it is dropped.
-    ASSERT((LteRlcType)lteInfo->getRlcType() == rlcType_);
+    // The header size is resolved from this entity's own pushed "rlcType" param (see initialize()).
     pdcpHeader->setChunkLength(B(pdcpHeaderLength_));
     pkt->trim();
     pkt->insertAtFront(pdcpHeader);

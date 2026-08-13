@@ -170,17 +170,16 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
         EV_INFO << "SDAP TX: No SDAP header required for DRB " << drb->getDrbId() << "\n";
     }
 
-    // Set DRB ID and RLC type on FlowControlInfo for PDCP/RLC entity creation and routing
+    // Set DRB ID on FlowControlInfo for PDCP/RLC entity creation and routing
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
     lteInfo->setDrbId(drb->getDrbId());
-    lteInfo->setRlcType(drb->rlcType);
 
     // Establish the connection unless its PDCP TX entity already exists. The entity
     // registry is authoritative: entities deleted at handover or D2D mode switch get
     // re-established by the next packet, even for an already-seen (drbId, destId) pair.
     if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drb->getDrbId()))) {
-        // SDAP never sets traffic (LCG), so the tag has always carried enum 0 (CONVERSATIONAL)
-        // here; the RLC type is the one decision drbConfig makes for this DRB.
+        // SDAP never decides traffic (LCG); the RLC type is the one decision drbConfig
+        // makes for this DRB.
         binder_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{CONVERSATIONAL, drb->rlcType});
     }
 

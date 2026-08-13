@@ -254,7 +254,6 @@ void LteRlcAmRxEntity::deliverSdu(Packet *sdu)
     ci->setDestId(ackFlowControlInfo_->getSourceId());
     ci->setDirection(dir);
     ci->setDrbId(ackFlowControlInfo_->getDrbId());
-    ci->setRlcType(AM);
     sdu->removeTagIfPresent<PdcpTrackingTag>();
 
     totalRcvdBytes_ += sdu->getByteLength();

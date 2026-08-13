@@ -193,7 +193,6 @@ void NrRlcAmRxEntity::passUpNr(int seqNum)
     ci->setDestId(dstId);
     ci->setDirection(dir);
     ci->setDrbId(ackFlowControlInfo_->getDrbId());
-    ci->setRlcType(AM);
     sdu->removeTagIfPresent<PdcpTrackingTag>();
 
     // This bearer's delay and throughput of the reassembled SDU

@@ -302,15 +302,13 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     // --- Common preamble ---
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
 
-    // Traffic category, RLC type (skipped when SDAP handles DRB/RLC assignment); also feeds
-    // the BearerRequest built below for bearer establishment, hence the function-level scope.
+    // Traffic category, RLC type (skipped when SDAP handles DRB/RLC assignment): feeds the
+    // BearerRequest built below for bearer establishment, hence the function-level scope.
     LteTrafficClass trafficCategory = CONVERSATIONAL;
     LteRlcType rlcType = UM;
     if (!hasSdap_) {
         trafficCategory = getTrafficCategory(pkt);
         rlcType = getRlcType(trafficCategory);
-        lteInfo->setTraffic(trafficCategory);
-        lteInfo->setRlcType(rlcType);
     }
 
     // direction of transmitted packets depends on node type

@@ -35,15 +35,10 @@ void RlcMuxD2D::fromMacLayer(cPacket *pktAux)
         auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
         auto switchPkt = pkt->peekAtFront<D2DModeSwitchNotification>();
 
-        // The notification chunk carries its own BearerRequest (filled at the eNB build
-        // sites from the same connection descriptor that populates the tag below), so the
-        // buffer-creation calls don't need to read it back off the tag. Bridge assert: while
-        // the tag still carries traffic/rlcType too (until they are dropped from it), the two
-        // must agree -- they were populated from the very same source object.
+        // The notification chunk carries its own BearerRequest, filled at the eNB build
+        // sites from the same connection descriptor that populates the tag below.
         FlowId flow = lteInfo->toFlowId();
         BearerRequest req{(LteTrafficClass)switchPkt->getLcg(), (LteRlcType)switchPkt->getRlcType()};
-        ASSERT(switchPkt->getLcg() == lteInfo->getTraffic());
-        ASSERT(switchPkt->getRlcType() == lteInfo->getRlcType());
 
         if (switchPkt->getTxSide()) {
             // get the corresponding Tx buffer & call handler

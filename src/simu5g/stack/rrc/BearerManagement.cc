@@ -31,14 +31,12 @@ using namespace inet;
 Define_Module(BearerManagement);
 
 // Build the FlowDescriptor a bearer-establishment call pushes into MAC and stores as the
-// RLC entity's FlowControlInfo prototype: identity from flow, configuration from req.
-// Value-identical to the FlowControlInfo tag these callers used to pass directly.
-static FlowDescriptor makeFlowDescriptor(const FlowId& flow, const BearerRequest& req)
+// RLC entity's FlowControlInfo prototype. FlowControlInfo carries identity only, so this
+// is just flow as a FlowDescriptor; bearer configuration (BearerRequest) travels
+// separately (LogicalChannelConfig into MAC, the "rlcType" NED param into PDCP).
+static FlowDescriptor makeFlowDescriptor(const FlowId& flow)
 {
-    FlowControlInfo info = FlowControlInfo::fromFlowId(flow);
-    info.setTraffic(req.qosClass);
-    info.setRlcType(req.rlcType);
-    return FlowDescriptor::fromFlowControlInfo(info);
+    return FlowDescriptor::fromFlowControlInfo(FlowControlInfo::fromFlowId(flow));
 }
 
 // Value for the PDCP entity's "rlcType" NED param (@enum(TM,UM,AM), matching case): unlike
@@ -241,7 +239,7 @@ void BearerManagement::createIncomingConnection(const FlowId& flow, const Bearer
     mac->configureLogicalChannel(cid, LogicalChannelConfig{drb.rlcType, drb.soFraming, drb.snFieldLength, drb.lcg});
 
     // Create MAC incoming connection
-    FlowDescriptor desc = makeFlowDescriptor(flow, req);
+    FlowDescriptor desc = makeFlowDescriptor(flow);
     mac->createIncomingConnection(cid, desc);
 
     // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
@@ -308,7 +306,7 @@ void BearerManagement::createOutgoingConnection(const FlowId& flow, const Bearer
     mac->configureLogicalChannel(cid, LogicalChannelConfig{drb.rlcType, drb.soFraming, drb.snFieldLength, drb.lcg});
 
     // Create MAC outgoing connection
-    FlowDescriptor desc = makeFlowDescriptor(flow, req);
+    FlowDescriptor desc = makeFlowDescriptor(flow);
     mac->createOutgoingConnection(cid, desc);
 
     // PDCP entity creation (compound: TX+RX, see PdcpEntityBase). At a DC secondary the bearer's
@@ -440,7 +438,7 @@ RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, const FlowId& flo
     rlcMux->setGateSize("macToTxEntity", macIdx + 1);
     rlcMux->gate("macToTxEntity", macIdx)->connectTo(module->gate("macIn"));
 
-    FlowDescriptor proto = makeFlowDescriptor(flow, req);
+    FlowDescriptor proto = makeFlowDescriptor(flow);
     txEnt->setFlowControlInfo(&proto); // note: a D2D UM TX entity also registers itself with the D2D mode controller here
 
 
@@ -462,7 +460,7 @@ RlcRxEntityBase *BearerManagement::installRlcRxSide(DrbKey id, const FlowId& flo
     rlcMux->setGateSize("toRxEntity", idx + 1);
     rlcMux->gate("toRxEntity", idx)->connectTo(module->gate("lowerIn"));
 
-    FlowDescriptor proto = makeFlowDescriptor(flow, req);
+    FlowDescriptor proto = makeFlowDescriptor(flow);
     rxEnt->setFlowControlInfo(&proto);
 
     // Register in mux routing table

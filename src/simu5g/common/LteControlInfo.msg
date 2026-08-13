@@ -67,9 +67,6 @@ class LteControlInfo extends inet::TagBase {
 class FlowControlInfo extends LteControlInfo {
     DrbId drbId;                                         // DRB (Data Radio Bearer) identifier
     MacNodeId multicastGroupId = NODEID_NONE;            // Identifier for a multicast group (it is in range [0:[2^28)-1] ) -- TODO probably should not be needed
-
-    unsigned short traffic enum(LteTrafficClass) = 0;       // Lte Traffic Type; analogous to LCG IDs (Logical Channel Group Identifiers) in LTE/NR
-    unsigned short rlcType enum(LteRlcType) = 0;            // RLC Traffic Type
 }
 
 cplusplus (FlowControlInfo::setDrbId) {{
@@ -77,8 +74,8 @@ cplusplus (FlowControlInfo::setDrbId) {{
 }}
 
 cplusplus(FlowControlInfo) {{
-    // Build a tag from a FlowId (identity only -- traffic/rlcType are left at their
-    // defaults; callers that also carry a BearerRequest set them explicitly).
+    // Build a tag from a FlowId. The tag carries identity only -- bearer configuration
+    // (BearerRequest) is a separate, explicit argument at establishment time, never tag state.
     static FlowControlInfo fromFlowId(const FlowId& flow) {
         FlowControlInfo info;
         info.setSourceId(flow.sourceId);

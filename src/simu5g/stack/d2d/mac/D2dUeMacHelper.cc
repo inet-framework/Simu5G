@@ -175,8 +175,11 @@ void D2dUeMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
             auto pktDup = pkt->dup();
             auto switchPkt_dup = pktDup->removeAtFront<D2DModeSwitchNotification>();
             switchPkt_dup->setOldConnection(true);
-            switchPkt_dup->setLcg(connInfo.getTraffic());
-            switchPkt_dup->setRlcType(connInfo.getRlcType());
+            {
+                const LogicalChannelConfig& lcConfig = mac_->getLogicalChannelConfig(cid);
+                switchPkt_dup->setLcg(lcConfig.lcg);
+                switchPkt_dup->setRlcType(lcConfig.rlcType);
+            }
             pktDup->insertAtFront(switchPkt_dup);
             *(pktDup->addTagIfAbsent<FlowControlInfo>()) = connInfo;
             mac_->sendUpperPackets(pktDup);
@@ -191,8 +194,11 @@ void D2dUeMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                 auto pktDup = pkt->dup();
                 auto switchPkt_dup = pktDup->removeAtFront<D2DModeSwitchNotification>();
                 switchPkt_dup->setOldConnection(false);
-                switchPkt_dup->setLcg(connInfo.getTraffic());
-                switchPkt_dup->setRlcType(connInfo.getRlcType());
+                {
+                    const LogicalChannelConfig& lcConfig = mac_->getLogicalChannelConfig(cid);
+                    switchPkt_dup->setLcg(lcConfig.lcg);
+                    switchPkt_dup->setRlcType(lcConfig.rlcType);
+                }
                 pktDup->insertAtFront(switchPkt_dup);
                 *(pktDup->addTagIfAbsent<FlowControlInfo>()) = connInfo;
                 mac_->sendUpperPackets(pktDup);
@@ -249,8 +255,11 @@ void D2dUeMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                 auto pktDup = pkt->dup();
                 auto switchPkt_dup = pktDup->removeAtFront<D2DModeSwitchNotification>();
                 switchPkt_dup->setOldConnection(true);
-                switchPkt_dup->setLcg(connInfo.getTraffic());
-                switchPkt_dup->setRlcType(connInfo.getRlcType());
+                {
+                    const LogicalChannelConfig& lcConfig = mac_->getLogicalChannelConfig(cid);
+                    switchPkt_dup->setLcg(lcConfig.lcg);
+                    switchPkt_dup->setRlcType(lcConfig.rlcType);
+                }
                 pktDup->insertAtFront(switchPkt_dup);
                 *(pktDup->addTagIfAbsent<FlowControlInfo>()) = connInfo;
                 mac_->sendUpperPackets(pktDup);
@@ -264,8 +273,11 @@ void D2dUeMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                 auto pktDup = pkt->dup();
                 auto switchPkt_dup = pktDup->removeAtFront<D2DModeSwitchNotification>();
                 switchPkt_dup->setOldConnection(false);
-                switchPkt_dup->setLcg(connInfo.getTraffic());
-                switchPkt_dup->setRlcType(connInfo.getRlcType());
+                {
+                    const LogicalChannelConfig& lcConfig = mac_->getLogicalChannelConfig(cid);
+                    switchPkt_dup->setLcg(lcConfig.lcg);
+                    switchPkt_dup->setRlcType(lcConfig.rlcType);
+                }
                 pktDup->insertAtFront(switchPkt_dup);
                 *(pktDup->addTagIfAbsent<FlowControlInfo>()) = connInfo;
                 mac_->sendUpperPackets(pktDup);
