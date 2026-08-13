@@ -109,7 +109,40 @@ struct SlGrant
     int reselectionCounter = 0;            // remaining periods until reselection (0 = static/preconfigured grant)
     int blindRetx = 0;                     // number of blind retransmissions per TB
 
+    // Mode-1 finite occasion trains (D30, SL-3): numOccasions == 0 keeps the
+    // pre-SL-3 semantics (unbounded periodic train, occasions every
+    // periodSlots); numOccasions > 0 makes the train finite - occasions at
+    // firstSlot + k*occasionGapSlots for k in [0, numOccasions), e.g. a
+    // dynamic grant's 1 initial + up to 2 preallocated retx occasions
+    // (DCI 3_0's "up to 2 additional resources")
+    int numOccasions = 0;
+    int occasionGapSlots = 0;
+
     bool isValid() const { return firstSlot != SLOTINDEX_NONE; }
+
+    /// next occasion of the train strictly after the given slot;
+    /// SLOTINDEX_NONE when a finite train is exhausted
+    SlotIndex nextOccasionAfter(SlotIndex slot) const
+    {
+        if (numOccasions <= 0) {  // unbounded periodic train
+            ASSERT(periodSlots > 0);
+            if (slot < firstSlot)
+                return firstSlot;
+            return firstSlot + ((slot - firstSlot) / periodSlots + 1) * periodSlots;
+        }
+        for (int k = 0; k < numOccasions; k++) {
+            SlotIndex occ = firstSlot + (SlotIndex)k * occasionGapSlots;
+            if (occ > slot)
+                return occ;
+        }
+        return SLOTINDEX_NONE;
+    }
+
+    /// finite train only: is this slot the train's final occasion?
+    bool isLastOccasion(SlotIndex slot) const
+    {
+        return numOccasions > 0 && slot == firstSlot + (SlotIndex)(numOccasions - 1) * occasionGapSlots;
+    }
 };
 
 } // namespace simu5g
