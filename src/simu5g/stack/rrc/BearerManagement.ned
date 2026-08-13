@@ -65,4 +65,20 @@ simple BearerManagement like IBearerManagement
         string nrRlcMuxModule = default("^.^.nrRlcMux");
         string macModule = default("^.^.mac");
         string nrMacModule = default("^.^.nrMac");
+
+        // Sidelink leg (referenced only when the optional SL leg exists)
+        string slRlcMuxModule = default("^.^.slRlcMux");
+        string slMacModule = default("^.^.slMac");
+        // SLRB PDCP entity type. Sidelink stays on the LTE profile: NrPdcpTxEntity
+        // rewrites a UE's source id to its NR node id, which would destroy the PC5
+        // L2 addressing the SL keying is built on.
+        string slPdcpEntityModuleType = default("simu5g.stack.pdcp.LtePdcpEntity");
+        // SLRB RLC entity types. NR sidelink RLC is TS 38.322 (TR 38.885 5.4.2), so
+        // SLRBs use the NR (SI/SO) compounds. UM serves broadcast, groupcast and
+        // unicast; AM is permitted on unicast links only (enforced in the C++).
+        // The reserved SL-SRB carrying over-the-air PC5-RRC uses the shared
+        // rlcTmEntityModuleType above (TM is RAT-independent).
+        string slRlcUmEntityModuleType = default("simu5g.stack.rlc.NrRlcUmEntity");
+        string slRlcAmEntityModuleType = default("simu5g.stack.rlc.NrRlcAmEntity");
+        string slSdapEntityModuleType = default("simu5g.stack.sidelink.sdap.SlSdapEntity");
 }

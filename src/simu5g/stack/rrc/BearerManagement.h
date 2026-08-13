@@ -40,6 +40,16 @@ class Binder;
  */
 class BearerManagement : public cSimpleModule
 {
+  public:
+    /**
+     * The protocol leg a bearer is built on. A leg is a (MAC, RlcMux) pair plus
+     * the entity profiles belonging to it; the NIC hosts up to three side by
+     * side (see ~NrNicUe): the LTE Uu leg, the NR Uu leg, and the optional
+     * sidelink (PC5) leg. Each leg keeps its own entity registry, so Uu
+     * handover/detach teardown never touches sidelink bearers.
+     */
+    enum StackLeg { LEG_LTE, LEG_NR, LEG_SL };
+
   protected:
     Registration *registration_ = nullptr;
 
@@ -57,11 +67,24 @@ class BearerManagement : public cSimpleModule
     cModuleType *nrRlcUmEntityModuleType_ = nullptr;
     cModuleType *nrRlcAmEntityModuleType_ = nullptr;
 
+    // Sidelink entity types (resolved lazily, only when the SL leg exists).
+    // SLRBs use the NR RLC profiles: NR sidelink RLC is TS 38.322 (TR 38.885
+    // 5.4.2). PDCP stays on the LTE profile: NrPdcpTxEntity rewrites a UE's
+    // source id to its NR node id, which would destroy the SL L2 addressing.
+    cModuleType *slPdcpEntityModuleType_ = nullptr;
+    cModuleType *slRlcUmEntityModuleType_ = nullptr;
+    cModuleType *slRlcAmEntityModuleType_ = nullptr;
+    cModuleType *slSdapEntityModuleType_ = nullptr;
+
     inet::ModuleRefByPar<RlcMux> rlcMuxModule;
     inet::ModuleRefByPar<RlcMux> nrRlcMuxModule;
     inet::ModuleRefByPar<LteMacBase> macModule;
     inet::ModuleRefByPar<LteMacBase> nrMacModule;
     inet::ModuleRefByPar<Binder> binderModule;   // DC master/secondary topology lookups; peer BearerManagement on RLF
+
+    // Sidelink leg modules (resolved lazily, only when hasSidelink)
+    RlcMux *slRlcMux_ = nullptr;
+    LteMacBase *slMac_ = nullptr;
 
     // Entity registries (CP owns the lifecycle of all entities)
     // One PDCP entity module (compound: TX+RX, see PdcpEntityBase) per bearer, keyed by (peer
@@ -75,6 +98,20 @@ class BearerManagement : public cSimpleModule
     // bearer, keyed by (peer node, DRB id); one map per leg (LTE / NR)
     std::map<DrbKey, cModule *> rlcEntities_;
     std::map<DrbKey, cModule *> nrRlcEntities_;
+
+    // Sidelink entity registries (keyed by L2Pid per design decision D3; kept
+    // separate from the Uu maps so handover/detach cleanup never touches them)
+    std::map<DrbKey, cModule *> slRlcEntities_;
+    std::map<DrbKey, cModule *> slPdcpEntities_;
+
+    void resolveSlModules();
+
+    // Per-leg accessors used by the shared entity install path.
+    std::map<DrbKey, cModule *>& rlcEntitiesOf(StackLeg leg);
+    std::map<DrbKey, cModule *>& pdcpEntitiesOf(StackLeg leg);
+    RlcMux *rlcMuxOf(StackLeg leg);
+    LteMacBase *macOf(StackLeg leg);
+    static const char *legPrefix(StackLeg leg);
 
     // Radio Link Failure: teardown is deferred to a safe execution context via a
     // self-message, so we never delete entity modules from inside RLC/PDCP processing.
@@ -95,22 +132,22 @@ class BearerManagement : public cSimpleModule
     // findOrCreatePdcpEntity)
     bool dualConnectivityEnabled_ = false;
 
-    virtual void setRlcEntityParams(cModule *entity, bool isNr);
+    virtual void setRlcEntityParams(cModule *entity, StackLeg leg);
     virtual void setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex);
-    virtual cModule *lookupRlcEntityModule(DrbKey id, bool isNr);
-    virtual cModule *findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    virtual RlcTxEntityBase *installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    virtual RlcRxEntityBase *installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    virtual cModule *findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux);
-    virtual void installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
-    virtual void installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, bool isNr);
+    virtual cModule *lookupRlcEntityModule(DrbKey id, StackLeg leg);
+    virtual cModule *findOrCreateRlcEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, StackLeg leg);
+    virtual RlcTxEntityBase *installRlcTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, StackLeg leg);
+    virtual RlcRxEntityBase *installRlcRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, StackLeg leg);
+    virtual cModule *findOrCreatePdcpEntity(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, StackLeg leg);
+    virtual void installPdcpTxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, StackLeg leg);
+    virtual void installPdcpRxSide(DrbKey id, FlowControlInfo *lteInfo, RlcMux *rlcMux, StackLeg leg);
     virtual cModule *findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux);
 
     // The layout of a bearer over the node's stack legs. getNumLegs() gives the number of legs
     // the bearer's PDCP entity is built with, selectPdcpLeg() the leg an establishment call
     // attaches to (and, for a leg of a bearer anchored elsewhere, the anchor bearer's key).
-    virtual int getNumLegs(DrbKey id, FlowControlInfo *lteInfo);
-    virtual int selectPdcpLeg(bool isNr, MacNodeId peerId, DrbKey& compoundId /*inout*/);
+    virtual int getNumLegs(DrbKey id, FlowControlInfo *lteInfo, StackLeg leg);
+    virtual int selectPdcpLeg(StackLeg leg, MacNodeId peerId, DrbKey& compoundId /*inout*/);
 
   protected:
     void initialize(int stage) override;
@@ -136,6 +173,24 @@ class BearerManagement : public cSimpleModule
     virtual void deleteLocalPdcpEntities(MacNodeId nodeId);
     virtual void deleteLocalRlcQueues(MacNodeId nodeId, bool nrStack=false);
     virtual void pdcpActiveUeUL(std::set<MacNodeId> *ueSet);
+
+    // Sidelink bearer (SLRB) chains on the SL leg (slMac/slRlcMux); invoked by
+    // SlRrc via the genie fan-out in SlBinder
+    virtual void createSlOutgoingConnection(FlowControlInfo *lteInfo);
+    virtual void createSlIncomingConnection(FlowControlInfo *lteInfo);
+
+    /// D20: create a per-peer SL-SDAP entity wired as a side chain off the
+    /// given SlIp2Nic module (gate vectors sdapTxOut/In or sdapRxOut/In);
+    /// returns the SlIp2Nic-side gate index of the new pair
+    virtual int createSlSdapEntity(bool tx, uint32_t peerKey, cModule *slIp2Nic);
+
+    /// D23: create the reserved TM SL-SRB (DRB 63) toward a peer -- MAC
+    /// connections both ways plus TM TX/RX entities wired directly to the
+    /// SlRrc module's srbOut[]/srbIn[] gates (PC5-RRC skips PDCP; the
+    /// control messages carry a minimal PDCP header for the TM contract).
+    /// outInfo/inInfo carry this side's TX and (sender-perspective) RX flow
+    /// infos; returns the SlRrc-side gate index of the new pair.
+    virtual int createSlSrbConnection(FlowControlInfo *outInfo, FlowControlInfo *inInfo, cModule *slRrcModule);
 };
 
 } // namespace simu5g
