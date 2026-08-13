@@ -73,6 +73,12 @@ class RlcAmRxEntityBase : public RlcRxEntityBase
      */
     virtual void emitRxStatistics(bool perPdu, double throughput, omnetpp::simtime_t delay);
 
+    /**
+     * Build ackFlowControlInfo_ -- the reversed flow info that stamps this
+     * entity's outgoing STATUS PDUs -- from the first received data PDU's info.
+     */
+    virtual void initAckFlowControlInfo(const FlowControlInfo *orig);
+
     void initialize(int stage) override;
 
     // Mode-specific INITSTAGE_LOCAL init (buffers, timers, window).

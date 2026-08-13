@@ -53,7 +53,9 @@ void NrRlcUmRxEntity::initMode(LteMacBase *mac)
 
 void NrRlcUmRxEntity::emitRxStatistics(bool perPdu, double throughput, simtime_t delay)
 {
-    Direction dir = static_cast<Direction>(flowControlInfo_->getDirection());
+    Direction dir;
+    if (!uuStatsDirection(static_cast<Direction>(flowControlInfo_->getDirection()), dir))
+        return;   // SLRB: no DL/UL bucket to record into
     emit(perPdu ? rlcPduThroughputSignal_[dir] : rlcThroughputSignal_[dir], throughput);
     emit(perPdu ? rlcPduDelaySignal_[dir] : rlcDelaySignal_[dir], delay.dbl());
 }
