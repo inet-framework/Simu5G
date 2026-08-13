@@ -52,6 +52,7 @@ void Ip2Nic::initialize(int stage)
         isNr_ = par("isNr");
 
         hasSdap_ = par("hasSdap").boolValue();
+        establishBearersOnDemand_ = par("establishBearersOnDemand").boolValue();
     }
 }
 
@@ -349,8 +350,12 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
         // Establish the connection unless its PDCP TX entity already exists. The entity
         // registry is authoritative: entities deleted at handover or D2D mode switch get
         // re-established by the next packet, even for an already-seen (drbId, destId) pair.
-        if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drbId)))
+        if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drbId))) {
+            if (!establishBearersOnDemand_)
+                throw cRuntimeError("Ip2Nic: no established bearer for flow %s -> %s (ToS=%d, drbId=%d), and on-demand bearer establishment is disabled",
+                        srcAddr.str().c_str(), destAddr.str().c_str(), (int)typeOfService, (int)num(drbId));
             establishConnection(lteInfo->toFlowId(), BearerRequest{trafficCategory, UNKNOWN_RLC_TYPE}, key);
+        }
 
         // Debug logging (UE only)
         if (!isEnb && isNr_) {

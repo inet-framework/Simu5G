@@ -46,6 +46,7 @@ void NrSdap::initialize()
     // Only UE uses reflective QoS table
     std::string nodeRole = par("nodeRole").stdstringValue();
     isUe = (nodeRole == "UE");
+    establishBearersOnDemand_ = par("establishBearersOnDemand").boolValue();
     if (!isUe && reflectiveQosTable.getNullable() != nullptr)
         throw cRuntimeError("Only UE may use a reflective QoS table");
 }
@@ -178,6 +179,9 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     // registry is authoritative: entities deleted at handover or D2D mode switch get
     // re-established by the next packet, even for an already-seen (drbId, destId) pair.
     if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drb->getDrbId()))) {
+        if (!establishBearersOnDemand_)
+            throw cRuntimeError("SDAP TX: no established bearer for DRB %d (peer nodeId=%d), and on-demand bearer establishment is disabled -- missing or mismatched staticBearers entry?",
+                    (int)num(drb->getDrbId()), (int)num(lteInfo->getDestId()));
         // SDAP never decides traffic (LCG); the RLC type is the one decision drbConfig
         // makes for this DRB.
         binder_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{CONVERSATIONAL, drb->rlcType});

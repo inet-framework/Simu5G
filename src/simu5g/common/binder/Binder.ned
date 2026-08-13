@@ -40,6 +40,20 @@ package simu5g.common.binder;
 //    nodes are in a dual-connectivity setup (where establishment splits the bearer
 //    into per-technology legs itself)
 //
+// Example (in an ini file):
+//
+// <pre>
+// *.binder.staticBearers = [
+//     {"ue": "ue[0]", "drb": 0, "rlcType": "UM"},
+//     {"ue": "ue[1]", "drb": 1, "qosClass": "INTERACTIVE", "rlcType": "AM"}
+//     ]
+// </pre>
+//
+// To make the static configuration the only source of bearers, disable
+// packet-triggered establishment via the establishBearersOnDemand parameter of
+// ~NrSdap (or ~Ip2Nic, for stacks without SDAP). See the VoIP-DL-MultiQfi-StaticBearers
+// configuration of the simulations/nr/standalone_drb example.
+//
 simple Binder
 {
     parameters:

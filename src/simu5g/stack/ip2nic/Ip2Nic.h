@@ -54,6 +54,7 @@ class Ip2Nic : public cSimpleModule
     // Flag mirroring PDCP's (to be verified with ASSERTs, then used to replace PDCP dependency)
     bool isNr_ = false;
     bool hasSdap_ = false;
+    bool establishBearersOnDemand_ = true;
 
     // Key for identifying connections (for DRB ID assignment)
     struct ConnectionKey {

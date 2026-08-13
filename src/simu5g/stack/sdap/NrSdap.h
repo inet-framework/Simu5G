@@ -53,6 +53,7 @@ class NrSdap : public cSimpleModule
     inet::ModuleRefByPar<PdcpMux> pdcpMux_;
 
     bool isUe = true;  // Node role: true for UE, false for gNB
+    bool establishBearersOnDemand_ = true;
 
   protected:
     virtual bool requiresSdapHeader(const DrbDesc *drb);

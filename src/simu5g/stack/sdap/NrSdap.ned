@@ -59,6 +59,7 @@ simple NrSdap like INrSdap
         string binderModule = default("binder");
         string pdcpMuxModule = default("^.pdcpMux");
         object drbConfig = default([]);  // JSON array: [{drb, ue, qfiList, rlcType, pduSessionType, upperProtocol, isDefault}, ...]; see banner comment for details
+        bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (see the staticBearers parameter of ~Binder)
         string reflectiveQosTableModule = default("");  // UE only: path to ReflectiveQosTable module (empty = disabled)
         bool useReflectiveQos = default(false); // UE only
         @display("i=block/layer");
