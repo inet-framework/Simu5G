@@ -38,6 +38,18 @@ void RlcAmRxEntityBase::initialize(int stage)
     }
 }
 
+void RlcAmRxEntityBase::initAckFlowControlInfo(const FlowControlInfo *orig)
+{
+    ackFlowControlInfo_ = orig->dup();
+    ackFlowControlInfo_->setSourceId(orig->getDestId());
+    ackFlowControlInfo_->setDestId(orig->getSourceId());
+    // The reverse bearer of a sidelink bearer is a sidelink bearer too, so its
+    // direction does not flip; the endpoint swap above is what points the STATUS
+    // PDUs back at the data sender.
+    if (orig->getDirection() != SL)
+        ackFlowControlInfo_->setDirection((orig->getDirection() == DL) ? UL : DL);
+}
+
 void RlcAmRxEntityBase::emitRxStatistics(bool perPdu, double throughput, simtime_t delay)
 {
     if (ackFlowControlInfo_ == nullptr)
@@ -45,7 +57,12 @@ void RlcAmRxEntityBase::emitRxStatistics(bool perPdu, double throughput, simtime
 
     // ackFlowControlInfo_ is the reversed flow info (it stamps the STATUS PDUs going
     // back), so the data flowed in the opposite direction to the one it names.
-    Direction dir = (ackFlowControlInfo_->getDirection() == DL) ? UL : DL;
+    // On an SLRB the direction is not reversed (there is no DL/UL pair) and the
+    // bearer has no Uu bucket to record into.
+    Direction dir;
+    if (!uuStatsDirection(static_cast<Direction>(ackFlowControlInfo_->getDirection()), dir))
+        return;
+    dir = (dir == DL) ? UL : DL;
 
     emit(perPdu ? rlcPduThroughputSignal_[dir] : rlcThroughputSignal_[dir], throughput);
     emit(perPdu ? rlcPduDelaySignal_[dir] : rlcDelaySignal_[dir], delay.dbl());

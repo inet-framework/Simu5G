@@ -88,13 +88,8 @@ void NrRlcAmRxEntity::enque(Packet *pkt)
 
     auto pdu = pkt->peekAtFront<NrRlcAmDataPdu>();
 
-    if (ackFlowControlInfo_ == nullptr) {
-        auto orig = pkt->getTag<FlowControlInfo>();
-        ackFlowControlInfo_ = orig->dup();
-        ackFlowControlInfo_->setSourceId(orig->getDestId());
-        ackFlowControlInfo_->setDestId(orig->getSourceId());
-        ackFlowControlInfo_->setDirection((orig->getDirection() == DL) ? UL : DL);
-    }
+    if (ackFlowControlInfo_ == nullptr)
+        initAckFlowControlInfo(pkt->getTag<FlowControlInfo>().get());
 
     // Per-PDU delay and throughput, as seen on the air interface (before reassembly).
     // Counted here, before the in-window test, so that duplicates and out-of-window

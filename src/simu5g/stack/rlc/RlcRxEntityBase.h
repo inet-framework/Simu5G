@@ -32,6 +32,21 @@ class RlcRxEntityBase : public omnetpp::cSimpleModule
 
     void handleMessage(omnetpp::cMessage *msg) override;
 
+    /**
+     * The RLC per-bearer statistics come in DL/UL pairs, so a bearer's direction
+     * doubles as the index into those signal arrays. Sidelink has no such pair:
+     * PC5 is neither uplink nor downlink (TR 38.885), and folding SLRB samples
+     * into a Uu bucket would corrupt the Uu statistics of a UE that runs both
+     * legs. Returns false for an SLRB, in which case the caller emits nothing —
+     * sidelink records its own throughput/latency on the sidelink modules.
+     */
+    static bool uuStatsDirection(Direction dir, Direction& index) {
+        if (dir == SL)
+            return false;
+        index = (dir == DL) ? DL : UL;
+        return true;
+    }
+
   public:
     virtual void setFlowControlInfo(FlowControlInfo *info);
     FlowControlInfo *getFlowControlInfo() { return flowControlInfo_; }
