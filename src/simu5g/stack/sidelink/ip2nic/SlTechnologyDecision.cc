@@ -14,7 +14,6 @@
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 
 #include "simu5g/common/LteControlInfoTags_m.h"
-#include "simu5g/stack/sidelink/common/SlBinder.h"
 #include "simu5g/stack/sidelink/ip2nic/SlIp2Nic.h"
 
 namespace simu5g {
@@ -27,8 +26,6 @@ void SlTechnologyDecision::initialize(int stage)
 {
     TechnologyDecision::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
-        slBinder_ = SlBinder::getInstance();
-        pc5UnicastEnabled_ = par("pc5UnicastEnabled");
         // G27: the path decision is SlIp2Nic's - one shared function, so the
         // three classification seams cannot drift apart per packet (D33)
         slIp2Nic_ = check_and_cast<SlIp2Nic *>(getModuleByPath(par("slIp2NicModule").stringValue()));

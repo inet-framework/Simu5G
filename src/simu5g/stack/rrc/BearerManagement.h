@@ -213,7 +213,6 @@ class BearerManagement : public cSimpleModule
     std::map<DrbKey, cModule *>& rlcEntitiesOf(StackLeg leg);
     std::map<DrbKey, cModule *>& pdcpEntitiesOf(StackLeg leg);
     RlcMux *rlcMuxOf(StackLeg leg);
-    LteMacBase *macOf(StackLeg leg);
     static const char *legPrefix(StackLeg leg);
 };
 

@@ -432,15 +432,6 @@ RlcMux *BearerManagement::rlcMuxOf(StackLeg leg)
     }
 }
 
-LteMacBase *BearerManagement::macOf(StackLeg leg)
-{
-    switch (leg) {
-        case LEG_NR: return nrMacModule.get();
-        case LEG_SL: resolveSlModules(); return slMac_;
-        default: return macModule.get();
-    }
-}
-
 const char *BearerManagement::legPrefix(StackLeg leg)
 {
     switch (leg) {

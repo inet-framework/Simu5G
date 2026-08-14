@@ -23,10 +23,7 @@ simple SlTechnologyDecision extends TechnologyDecision
     parameters:
         @class(SlTechnologyDecision);
 
-        // recognize unicast packets to SL-capable peers as PC5-destined
-        // (D16); must match SlIp2Nic.pc5UnicastEnabled of the same NIC
-        bool pc5UnicastEnabled = default(true);
-
-        // the SlIp2Nic owning the shared path decision (D33/G27)
+        // the SlIp2Nic owning the shared path decision (D33/G27); its
+        // pc5UnicastEnabled/pathSelectionPolicy govern this seam too
         string slIp2NicModule = default("^.ip2nic");
 }

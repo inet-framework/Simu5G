@@ -16,7 +16,6 @@
 
 namespace simu5g {
 
-class SlBinder;
 class SlIp2Nic;
 
 /**
@@ -28,9 +27,7 @@ class SlIp2Nic;
 class SlHandoverPacketHolderUe : public HandoverPacketHolderUe
 {
   protected:
-    SlBinder *slBinder_ = nullptr;
     SlIp2Nic *slIp2Nic_ = nullptr;   // the shared path-decision owner (D33/G27)
-    bool pc5UnicastEnabled_ = false;
 
     void initialize(int stage) override;
     bool isDeliverable(inet::Packet *datagram) override;

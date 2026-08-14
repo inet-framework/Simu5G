@@ -514,14 +514,14 @@ void NrSlMacUe::drainVirtualBuffer(LteMacBuffer *buffer, int64_t bytes)
     // request that cannot hold a whole SDU. (First found on the SL-3 CG2
     // burst example, where an idling flow stranded its boundary packet.)
     while (bytes > 0 && !buffer->isEmpty()) {
-    PacketInfo vpkt = buffer->popFront();
-    if ((int64_t)vpkt.first > bytes) {
-        vpkt.first -= bytes;
-        buffer->pushFront(vpkt);
-        return;
+        PacketInfo vpkt = buffer->popFront();
+        if ((int64_t)vpkt.first > bytes) {
+            vpkt.first -= bytes;
+            buffer->pushFront(vpkt);
+            return;
+        }
+        bytes -= vpkt.first;
     }
-    bytes -= vpkt.first;
-}
 }
 
 void NrSlMacUe::handleUpperMessage(cPacket *pktAux)
