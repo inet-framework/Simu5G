@@ -13,6 +13,7 @@
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/rrc/Registration.h"
 #include "simu5g/stack/mac/LteMacBase.h"
+#include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/ip2nic/Ip2Nic.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/rlc/RlcMux.h"
@@ -90,12 +91,17 @@ void BearerManagement::initialize(int stage)
         backgroundRlc_ = aToRlcType(par("backgroundRlc"));
     }
     else if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
-        // Push the authored DRB configuration into SDAP: SDAP's QFI-to-DRB view is a
-        // working copy it never authors. (Post-local, so the drbTable has loaded its
-        // drbConfig parameter.)
-        if (sdapModule.getNullable() != nullptr)
-            for (const auto& [key, drb] : drbTableModule->getConfiguredDrbs())
+        // Push the authored DRB configuration into the layers that consume it: SDAP's
+        // QFI-to-DRB view and the eNB MAC's per-bearer QoS profiles are working copies
+        // those modules never author themselves. (Post-local, so the drbTable has
+        // loaded its drbConfig parameter.)
+        bool isEnb = (registration_->getNodeType() == NODEB);
+        for (const auto& [key, drb] : drbTableModule->getConfiguredDrbs()) {
+            if (sdapModule.getNullable() != nullptr)
                 sdapModule->configureDrb(drb);
+            if (drb.hasQosProfile && isEnb)
+                check_and_cast<LteMacEnb *>(macModule.get())->configureDrbQos(key, drb.qos);
+        }
     }
 }
 
@@ -564,13 +570,15 @@ const DrbDesc& BearerManagement::materializeDrb(const FlowId& flow, const Bearer
     auto *txEnt = check_and_cast<RlcTxEntityBase *>(rlcEnt->getSubmodule("tx"));
     drb.snFieldLength = txEnt->snFieldLength();
 
-    // The SDAP half comes from the authored configuration, if any, so the established
-    // descriptor is the complete record of the bearer.
+    // The SDAP half and the QoS profile come from the authored configuration, if any,
+    // so the established descriptor is the complete record of the bearer.
     if (const DrbDesc *cfg = lookupConfiguredDrb(flow, peerId)) {
         drb.pduSessionType = cfg->pduSessionType;
         drb.upperProtocol = cfg->upperProtocol;
         drb.qfiList = cfg->qfiList;
         drb.isDefault = cfg->isDefault;
+        drb.hasQosProfile = cfg->hasQosProfile;
+        drb.qos = cfg->qos;
     }
 
     EV << "BearerManagement::materializeDrb - " << drb << endl;

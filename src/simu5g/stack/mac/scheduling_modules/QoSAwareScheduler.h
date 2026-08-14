@@ -14,29 +14,21 @@
 #define STACK_MAC_SCHEDULING_MODULES_QOSAWARESCHEDULER_H_
 
 #include "simu5g/stack/mac/scheduler/LteScheduler.h"
-#include "simu5g/stack/mac/DrbQosEntry.h"
+#include "simu5g/stack/mac/DrbQosProfile.h"
 #include <map>
 #include <queue>
 
 namespace simu5g {
 
 /**
- * Extends the LTE/NR MAC layer scheduler to support QoS-aware scheduling
- * decisions based on QFI (QoS Flow Identifier) contexts. DrbTable
- * maintains mappings between QFIs, CIDs, and their associated QoS parameters.
+ * QoS-aware proportional-fair scheduler: scores active CIDs with QoS weights
+ * derived from the per-DRB QoS profile (GBR flag, packet delay budget, packet
+ * error rate, priority level). The profiles come from the MAC's DRB QoS map
+ * (see LteMacEnb::getDrbQosMap()), which RRC fills from the authored bearer
+ * configuration (the drbConfig parameter of the DrbTable module).
  *
- * Key Features:
- * - Implements a PF-based scheduler that dynamically scores active CIDs using
- *   QoS weights derived from QFI context (e.g., 5QI, GBR, delay budget, PER,
- *   priority).
- * - Supports per-CID registration of QFIs
- * - DrbTable can load QFI-DRB configurations from file
- * - Provides flexible QoS weight computation based on service criticality.
- * - Enables more realistic traffic differentiation for scenarios involving
- *   conversational voice, URLLC, video streaming, etc.
- *
- * Notes:
- * - Scheduler gracefully defaults to best-effort when no QFI context is found.
+ * A CID whose bearer has no QoS profile is scheduled with a neutral weight
+ * (plain proportional fair).
  */
 class QoSAwareScheduler : public LteScheduler
 {
@@ -49,7 +41,7 @@ class QoSAwareScheduler : public LteScheduler
     double pfAlpha_;
     const double scoreEpsilon_ = 1e-6;
 
-    const std::map<DrbKey, DrbQosEntry> *drbQosMap_ = nullptr;
+    const std::map<DrbKey, DrbQosProfile> *drbQosMap_ = nullptr;
 
     // QoS weight parameters  TODO initialize from NED parameters
     double gbrMultiplier_ = 2.0;
@@ -62,14 +54,14 @@ class QoSAwareScheduler : public LteScheduler
     double delayLooseMultiplier_ = 1.5;
 
     // Helpers
-    virtual double computeQosWeight(const DrbQosEntry& e);
-    virtual const DrbQosEntry* getDrbQosForCid(MacCid cid);
+    virtual double computeQosWeight(const DrbQosProfile& e);
+    virtual const DrbQosProfile *getDrbQosForCid(MacCid cid);
 
   public:
     double& pfAlpha() { return pfAlpha_; }
 
     QoSAwareScheduler(Binder* binder, double pfAlpha);
-    void setDrbQosMap(const std::map<DrbKey, DrbQosEntry> *m) { drbQosMap_ = m; }
+    void setDrbQosMap(const std::map<DrbKey, DrbQosProfile> *m) { drbQosMap_ = m; }
     void prepareSchedule() override;
     void commitSchedule() override;
 };

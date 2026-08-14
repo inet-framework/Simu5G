@@ -136,25 +136,7 @@ void LteMacEnb::initialize(int stage)
 
         eNodeBCount = par("eNodeBCount");
         WATCH_MAP(bsrbuf_);
-
-        // Parse DRB QoS configuration (optional, for QoS-aware scheduling)
-        const cValueArray *qosArr = check_and_cast_nullable<const cValueArray *>(par("drbQosConfig").objectValue());
-        if (qosArr && qosArr->size() > 0) {
-            for (int i = 0; i < (int)qosArr->size(); i++) {
-                const cValueMap *obj = check_and_cast<const cValueMap *>(qosArr->get(i).objectValue());
-                DrbQosEntry e;
-                e.drbIndex = obj->get("drb").intValue();
-                if (obj->containsKey("ue"))
-                    e.ueNodeId = MacNodeId(obj->get("ue").intValue());
-                e.gbr = obj->containsKey("gbr") ? obj->get("gbr").boolValue() : false;
-                e.delayBudgetMs = obj->containsKey("delayBudget") ? obj->get("delayBudget").doubleValue() : 0;
-                e.packetErrorRate = obj->containsKey("per") ? obj->get("per").doubleValue() : 0;
-                e.priorityLevel = obj->containsKey("priority") ? obj->get("priority").intValue() : 0;
-                DrbKey key(e.ueNodeId, DrbId(e.drbIndex));
-                drbQosMap_[key] = e;
-                EV << "MAC drbQosConfig: " << key << " " << e << endl;
-            }
-        }
+        WATCH_MAP(drbQosMap_);
     }
     else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS) {
         // Insert EnbInfo in the Binder
@@ -205,6 +187,13 @@ void LteMacEnb::initialize(int stage)
         enbSchedulerDl_->initializeSchedulerPeriodCounter(cellInfo_->getMaxNumerologyIndex());
         enbSchedulerUl_->initializeSchedulerPeriodCounter(cellInfo_->getMaxNumerologyIndex());
     }
+}
+
+void LteMacEnb::configureDrbQos(DrbKey key, const DrbQosProfile& qos)
+{
+    Enter_Method("configureDrbQos(%s)", key.str().c_str());
+    EV << "LteMacEnb::configureDrbQos - " << key << " " << qos << endl;
+    drbQosMap_[key] = qos;
 }
 
 void LteMacEnb::handleMessage(cMessage *msg)

@@ -20,7 +20,7 @@
 #include "simu5g/stack/mac/amc/LteAmc.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/background/trafficGenerator/IBackgroundTrafficManager.h"
-#include "simu5g/stack/mac/DrbQosEntry.h"
+#include "simu5g/stack/mac/DrbQosProfile.h"
 
 namespace simu5g {
 
@@ -76,8 +76,8 @@ class LteMacEnb : public LteMacBase
     /// Number of HARQ processes needing retransmission, per carrier and direction
     std::map<GHz, std::map<Direction, int>> needRtx_;
 
-    /// DRB QoS map (DrbKey -> QoS entry), parsed from the drbQosConfig parameter (for QoS-aware scheduling)
-    std::map<DrbKey, DrbQosEntry> drbQosMap_;
+    /// DRB QoS map (DrbKey -> QoS profile), pushed by RRC (for QoS-aware scheduling)
+    std::map<DrbKey, DrbQosProfile> drbQosMap_;
 
     /**
      * Reads MAC parameters for eNb and performs initialization.
@@ -298,8 +298,12 @@ class LteMacEnb : public LteMacBase
     unsigned int getDlBandStatus(Band b);
     unsigned int getDlPrevBandStatus(Band b);
 
-    // Get DRB QoS map (DrbKey -> QoS entry), parsed from the drbQosConfig parameter
-    const std::map<DrbKey, DrbQosEntry> *getDrbQosMap() {
+    // Configuration push: RRC installs (or replaces) a bearer's QoS profile. MAC does
+    // not author its own configuration; this is the only write path into the map.
+    virtual void configureDrbQos(DrbKey key, const DrbQosProfile& qos);
+
+    // Get DRB QoS map (DrbKey -> QoS profile), pushed by RRC
+    const std::map<DrbKey, DrbQosProfile> *getDrbQosMap() {
         return drbQosMap_.empty() ? nullptr : &drbQosMap_;
     }
 

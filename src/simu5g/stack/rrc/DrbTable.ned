@@ -26,7 +26,8 @@ package simu5g.stack.rrc;
 // drbConfig fields:
 //  - drb (int): DRB identifier (= nrPdcp[]/nrRlc[] array index)
 //  - ue (int, optional): UE MacNodeId (gNB only; omit on UE side)
-//  - qfiList (int[]): QFI values mapped to this DRB
+//  - qfiList (int[], optional): QFI values mapped to this DRB; an entry without it
+//    does not take part in SDAP's QFI-to-DRB mapping
 //  - rlcType (string, optional): RLC mode ("AM", "UM", "TM"); omitted = RRC decides
 //    from the traffic class (see the conversationalRlc/... parameters of
 //    ~BearerManagement)
@@ -38,6 +39,10 @@ package simu5g.stack.rrc;
 //  - isDefault (bool, optional): marks this as the default DRB for the UE;
 //    if omitted, the first DRB entry per UE (per nodeId) is automatically used
 //    as default. The default DRB is the fallback when no QFI-to-DRB mapping matches.
+//  - gbr (bool), delayBudget (double, ms), per (double), priority (int) -- all
+//    optional: the QoS profile of the bearer's flows (5QI characteristics). Any of
+//    them present marks the bearer as having a QoS profile, which RRC pushes into
+//    the eNB/gNB MAC for QoS-aware scheduling (gNB-side entries only).
 //
 simple DrbTable like IDrbTable
 {

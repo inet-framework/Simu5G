@@ -52,10 +52,26 @@ void DrbTable::loadConfig(const cValueArray *arr)
         if (entry->containsKey("isDefault"))
             drb.isDefault = entry->get("isDefault").boolValue();
 
-        // qfiList
-        const cValueArray *qfiArr = check_and_cast<const cValueArray *>(entry->get("qfiList").objectValue());
-        for (int j = 0; j < (int)qfiArr->size(); j++)
-            drb.qfiList.push_back(Qfi(qfiArr->get(j).intValue()));
+        // qfiList (optional; an entry without it does not take part in SDAP's
+        // QFI-to-DRB mapping, e.g. it only carries the bearer's QoS profile)
+        if (entry->containsKey("qfiList")) {
+            const cValueArray *qfiArr = check_and_cast<const cValueArray *>(entry->get("qfiList").objectValue());
+            for (int j = 0; j < (int)qfiArr->size(); j++)
+                drb.qfiList.push_back(Qfi(qfiArr->get(j).intValue()));
+        }
+
+        // QoS profile (all optional; any of them present = the bearer has a QoS
+        // profile, pushed into the eNB MAC for QoS-aware scheduling)
+        drb.hasQosProfile = entry->containsKey("gbr") || entry->containsKey("delayBudget")
+                || entry->containsKey("per") || entry->containsKey("priority");
+        if (entry->containsKey("gbr"))
+            drb.qos.gbr = entry->get("gbr").boolValue();
+        if (entry->containsKey("delayBudget"))
+            drb.qos.delayBudgetMs = entry->get("delayBudget").doubleValue();
+        if (entry->containsKey("per"))
+            drb.qos.packetErrorRate = entry->get("per").doubleValue();
+        if (entry->containsKey("priority"))
+            drb.qos.priorityLevel = entry->get("priority").intValue();
 
         // rlcType (optional; omitted = "RRC decides from qosClass", as for staticBearers)
         drb.rlcType = entry->containsKey("rlcType")

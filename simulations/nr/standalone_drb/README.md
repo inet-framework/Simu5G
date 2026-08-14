@@ -23,11 +23,12 @@ ini configuration.
   (2049 = ue[0], 2050 = ue[1]). The first DRB entry of each UE acts as its
   *default DRB*, which carries traffic whose QFI has no explicit mapping.
 
-- **QoS-aware scheduling**: `schedulingDiscipline = "QOS_PF"` with
-  `mac.drbQosConfig` supplying per-DRB QoS parameters (GBR flag, packet
-  delay budget, packet error rate, priority) to the QoS-aware
-  proportional-fair scheduler. DRB 1 is configured as the more demanding
-  bearer (50 ms budget, 10^-3 PER, priority 1).
+- **QoS-aware scheduling**: `schedulingDiscipline = "QOS_PF"` with the
+  per-DRB QoS profile (GBR flag, packet delay budget, packet error rate,
+  priority) authored on the same `drbConfig` entries and pushed by RRC
+  into the gNB MAC for the QoS-aware proportional-fair scheduler. DRB 1
+  is configured as the more demanding bearer (50 ms budget, 10^-3 PER,
+  priority 1).
 
 ## How packets get their QFI
 

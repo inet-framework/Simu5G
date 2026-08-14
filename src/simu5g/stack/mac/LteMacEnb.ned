@@ -85,9 +85,6 @@ module LteMacEnb extends LteMacBase
         // Proportional Fair parameters
         double pfAlpha = default(0.95);
 
-        // DRB QoS config: array of {drb, ue, gbr, delayBudget, per, priority}, for QoS-aware scheduling
-        object drbQosConfig = default([]);
-
         string pilotMode @enum(IN_CQI,MAX_CQI,AVG_CQI,MEDIAN_CQI,ROBUST_CQI) = default("ROBUST_CQI");
 
         int numPreambles = default(64);        // number of RACH preambles available for contention-based random access

@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/stack/mac/DrbQosProfile.h"
 
 namespace simu5g {
 
@@ -47,6 +48,12 @@ struct DrbDesc {
     LogicalCid lcid = LCID_NONE;        // logicalChannelIdentity
     LteTrafficClass lcg = CONVERSATIONAL;   // logicalChannelGroup, mac-LogicalChannelConfig
 
+    // QoS profile of the bearer's flows (5QI characteristics), for QoS-aware MAC
+    // scheduling; only meaningful when hasQosProfile is set (an authored entry
+    // carried at least one qos field)
+    bool hasQosProfile = false;
+    DrbQosProfile qos;
+
     DrbId getDrbId() const { return key.getDrbId(); }
     MacNodeId getPeerId() const { return key.getNodeId(); }
 };
@@ -65,6 +72,8 @@ inline std::ostream& operator<<(std::ostream& os, const DrbDesc& drb) {
     os << " rlc=" << rlcTypeToA(drb.rlcType) << (drb.soFraming ? " SO" : " FI")
        << " snBits=" << drb.snFieldLength
        << " lcid=" << num(drb.lcid) << " lcg=" << lteTrafficClassToA(drb.lcg);
+    if (drb.hasQosProfile)
+        os << " qos: " << drb.qos;
     return os;
 }
 

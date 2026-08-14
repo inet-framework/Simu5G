@@ -20,7 +20,7 @@ QoSAwareScheduler::QoSAwareScheduler(Binder* binder, double pfAlpha)
 {
 }
 
-double QoSAwareScheduler::computeQosWeight(const DrbQosEntry& e)
+double QoSAwareScheduler::computeQosWeight(const DrbQosProfile& e)
 {
     double weight = 1.0;
     if (e.gbr) weight *= gbrMultiplier_;
@@ -28,26 +28,26 @@ double QoSAwareScheduler::computeQosWeight(const DrbQosEntry& e)
     if (e.delayBudgetMs <= delayUrgentMs_) weight *= delayUrgentMultiplier_;
     else if (e.delayBudgetMs <= delayTightMs_) weight *= delayTightMultiplier_;
     else if (e.delayBudgetMs <= delayLooseMs_) weight *= delayLooseMultiplier_;
-    EV << NOW << " DRB " << e.drbIndex << " ue=" << e.ueNodeId << " Weight: " << weight << endl;
     return weight;
 }
 
-const DrbQosEntry* QoSAwareScheduler::getDrbQosForCid(MacCid cid)
+const DrbQosProfile *QoSAwareScheduler::getDrbQosForCid(MacCid cid)
 {
     if (!drbQosMap_) return nullptr;
     DrbKey key(cid.getNodeId(), eNbScheduler_->mac_->lcidToDrbId(cid.getLcid()));
     auto it = drbQosMap_->find(key);
     if (it != drbQosMap_->end())
         return &it->second;
-    EV_WARN << "QoSAwareScheduler: No DRB QoS entry for CID " << cid << " (" << key << ")\n";
+    EV_WARN << "QoSAwareScheduler: No DRB QoS profile for CID " << cid << " (" << key << ")\n";
     return nullptr;
 }
 
 void QoSAwareScheduler::prepareSchedule()
 {
     if (!drbQosMap_)
-        throw cRuntimeError("QoSAwareScheduler requires drbQosConfig but none was configured. "
-                            "Set mac.drbQosConfig parameter.");
+        throw cRuntimeError("QoSAwareScheduler requires DRB QoS profiles but none were configured. "
+                            "Author them via the qos fields (gbr/delayBudget/per/priority) of the "
+                            "rrc.drbTable.drbConfig entries.");
 
     EV << NOW << " QoSAwareScheduler::prepareSchedule" << endl;
 
@@ -91,7 +91,7 @@ void QoSAwareScheduler::prepareSchedule()
             }
         }
 
-        const DrbQosEntry* qos = getDrbQosForCid(cid);
+        const DrbQosProfile *qos = getDrbQosForCid(cid);
         double qosWeight = qos ? computeQosWeight(*qos) : 1.0;
 
         EV << NOW << " QoSAwareScheduler::Cid: "<< cid << " QoS Weight: " << qosWeight << endl;
