@@ -121,6 +121,7 @@ void SlRrc::resolvePool()
             preconfig_.subchannelSize = cell.subchannelSize;
             preconfig_.numSubchannels = cell.numSubchannels;
             preconfig_.slotBitmap = cell.slotBitmap;
+            preconfig_.txPercentage = cell.txPercentage;
             preconfig_.t0Ms = cell.t0Ms;
             preconfig_.t1 = cell.t1;
             preconfig_.t2 = cell.t2;
