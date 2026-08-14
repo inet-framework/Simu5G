@@ -16,6 +16,15 @@ namespace simu5g;
 enum Direction
 {
     DL = 0; UL = 1; D2D = 2; D2D_MULTI = 3; UNKNOWN_DIRECTION = 4;
+    SL = 5;  // NR sidelink (PC5); produced only by the optional sidelink package
+};
+
+// Cast type of a sidelink transmission (TR 38.885 5.1). Decides which RLC modes a
+// sidelink bearer may use, how HARQ feedback is requested, and how the PHY filters
+// receptions. Only ever set on a bearer of the sidelink leg.
+enum SlCastType
+{
+    SL_BROADCAST = 0; SL_GROUPCAST = 1; SL_UNICAST = 2;
 };
 
 /// Modulations

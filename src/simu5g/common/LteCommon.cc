@@ -146,6 +146,22 @@ const std::string dirToA(Direction dir)
             return "D2D";
         case D2D_MULTI:
             return "D2D_MULTI";
+        case SL:
+            return "SL";
+        default:
+            return "Unrecognized";
+    }
+}
+
+const std::string slCastTypeToA(SlCastType castType)
+{
+    switch (castType) {
+        case SL_BROADCAST:
+            return "broadcast";
+        case SL_GROUPCAST:
+            return "groupcast";
+        case SL_UNICAST:
+            return "unicast";
         default:
             return "Unrecognized";
     }
@@ -330,6 +346,12 @@ void verifyControlInfo(const FlowControlInfo *info)
             ASSERT(srcType == UE);
             //ASSERT(destType == UE);
             break;
+        case SL:
+            // Sidelink: the source is a UE; the destination is a peer UE on a unicast
+            // link, or the pseudo node id standing for a group or broadcast L2 ID.
+            ASSERT(srcType == UE);
+            ASSERT(destType == UE || isMulticastDestId(info->getDestId()));
+            break;
         default:
             throw cRuntimeError("Unknown direction %d", info->getDirection());
     }
@@ -461,6 +483,10 @@ MacNodeId ctrlInfoToUeId(const FlowControlInfo *info)
         case D2D_MULTI:
             ASSERT(info->getMulticastGroupId() != NODEID_NONE);
             return info->getMulticastGroupId();
+        case SL:
+            // Sidelink: the sending UE identifies the flow, since the destination may
+            // be the pseudo node id of a group rather than a node.
+            return info->getSourceId();
         default:
             throw cRuntimeError("ctrlInfoToMacCid - unknown direction %d", info->getDirection());
     }

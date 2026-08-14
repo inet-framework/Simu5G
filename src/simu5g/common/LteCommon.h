@@ -99,6 +99,9 @@ struct FlowId {
 struct BearerRequest {
     LteTrafficClass qosClass = CONVERSATIONAL;   // -> logicalChannelGroup (lcg)
     LteRlcType rlcType = UM;
+    // PC5 half, set only for a bearer of the sidelink leg
+    SlCastType slCastType = SL_BROADCAST;
+    unsigned int slPqi = 0;
 };
 
 /**
@@ -437,6 +440,7 @@ typedef std::map<std::string, cMsgPar> ParameterMap;
 *********************/
 
 const std::string dirToA(Direction dir);
+const std::string slCastTypeToA(SlCastType castType);
 /// Maps a BSR logical channel id to the traffic direction it announces
 /// (reserved D2D BSR LCIDs promote to the D2D directions); returns 'fallback' otherwise.
 Direction directionFromBsrLcid(LogicalCid lcid, Direction fallback);

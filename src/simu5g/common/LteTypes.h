@@ -88,6 +88,7 @@ constexpr DrbId DRBID_NONE = DrbId(65535);
 constexpr LogicalCid SHORT_BSR = LogicalCid(0); // should be 62 (NR)
 constexpr LogicalCid D2D_SHORT_BSR = LogicalCid(1); // Simu5G-specific
 constexpr LogicalCid D2D_MULTI_SHORT_BSR = LogicalCid(2); // Simu5G-specific
+constexpr LogicalCid SL_SHORT_BSR = LogicalCid(3); // Simu5G-specific (NR sidelink mode-1 SL-BSR, SL-3)
 
 /// Connection Identifier: <MacNodeId,LogicalCid>
 // MacCid is now a class with separate fields instead of a packed integer
