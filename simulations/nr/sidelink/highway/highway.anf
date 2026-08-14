@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<analysis version="2">
+    <inputs>
+        <input pattern="results/Highway/*.sca"/>
+        <input pattern="results/Highway/*.vec"/>
+    </inputs>
+    <charts>
+        <chart createdWith="OMNeT++ 6.3" icon="icons/full/obj/linechart.png" id="1" name="PRR and PIR vs distance" type="MATPLOTLIB">
+            <script><![CDATA[import re
+import matplotlib.pyplot as plt
+from omnetpp.scave import results, chart, utils
+
+props = chart.get_properties()
+utils.preconfigure_plot(props)
+
+def bins_of(name_pattern):
+    df = results.get_scalars('module =~ "**.slStatsCollector" AND name =~ "' + name_pattern + '"')
+    if df.empty:
+        raise chart.ChartScriptError("No collector scalars found - run the Highway config first.")
+    rows = []
+    for _, row in df.iterrows():
+        m = re.match(r".* d=\[(\d+),(\d+)\)m", row["name"])
+        if m:
+            rows.append(((int(m.group(1)) + int(m.group(2))) / 2.0, row["value"]))
+    rows.sort()
+    return [r[0] for r in rows], [r[1] for r in rows]
+
+xs, prr = bins_of("prr d=*")
+ax1 = plt.gca()
+ax1.plot(xs, prr, marker="o", color="C0", label="PRR")
+ax1.set_xlabel("transmitter-receiver distance [m]")
+ax1.set_ylabel("packet reception ratio (PRR)", color="C0")
+ax1.set_ylim(0.9, 1.005)
+ax1.grid(True, alpha=0.3)
+
+xs2, pir = bins_of("pir d=*")
+ax2 = ax1.twinx()
+ax2.plot(xs2, [v * 1000 for v in pir], marker="s", color="C1", label="PIR")
+ax2.set_ylabel("packet inter-reception time (PIR) [ms]", color="C1")
+
+plt.title("Application-level V2X metrics per distance bin (TR 37.885 6.1.5)")
+
+utils.postconfigure_plot(props)
+utils.export_image_if_needed(props)
+]]></script>
+            <property name="title" value="PRR and PIR vs distance"/>
+        </chart>
+        <chart createdWith="OMNeT++ 6.3" icon="icons/full/obj/linechart.png" id="2" name="Channel busy ratio over time" type="MATPLOTLIB">
+            <script><![CDATA[import matplotlib.pyplot as plt
+from omnetpp.scave import chart, utils
+
+props = chart.get_properties()
+utils.preconfigure_plot(props)
+
+# NOTE: vector data is parsed from the text .vec file directly instead of
+# results.get_vectors(): the standalone scave python bindings corrupt vector
+# data on this build (opp_scavetool reads the same file correctly) - see the
+# "known issue" note in doc/showcase.md.
+def load_vectors(vecfile, name):
+    decls, data = {}, {}
+    with open(vecfile, errors="replace") as f:
+        for line in f:
+            if line.startswith("vector "):
+                p = line.split()
+                if p[3] == name:
+                    decls[p[1]] = p[2]
+                    data[p[1]] = ([], [])
+            else:
+                p = line.split("\t")
+                if len(p) == 4 and p[0] in data:
+                    data[p[0]][0].append(float(p[2]))
+                    data[p[0]][1].append(float(p[3]))
+    return [(mod, *data[vid]) for vid, mod in decls.items() if data[vid][0]]
+
+vectors = load_vectors("results/Highway/0.vec", "slCbr:vector")
+if not vectors:
+    raise chart.ChartScriptError("No slCbr vectors found - run the Highway config first.")
+
+for module, times, values in vectors:
+    ue = module.split(".")[1]  # SidelinkHighway.ue[k].cellularNic.slPhy
+    plt.plot(times, values, label=ue, linewidth=0.8, alpha=0.8)
+
+plt.xlabel("time [s]")
+plt.ylabel("channel busy ratio (CBR)")
+plt.title("SL channel busy ratio (TS 38.215), sampled at slot-end processing")
+plt.legend(loc="lower right", ncol=4, fontsize=8)
+plt.grid(True, alpha=0.3)
+
+utils.postconfigure_plot(props)
+utils.export_image_if_needed(props)
+]]></script>
+            <property name="title" value="Channel busy ratio over time"/>
+        </chart>
+        <chart createdWith="OMNeT++ 6.3" icon="icons/full/obj/histogramchart.png" id="3" name="SL SINR distribution" type="MATPLOTLIB">
+            <script><![CDATA[import numpy as np
+import matplotlib.pyplot as plt
+from omnetpp.scave import chart, utils
+
+props = chart.get_properties()
+utils.preconfigure_plot(props)
+
+# NOTE: direct .vec parsing, see the note in the CBR chart.
+def load_vectors(vecfile, name):
+    decls, data = {}, {}
+    with open(vecfile, errors="replace") as f:
+        for line in f:
+            if line.startswith("vector "):
+                p = line.split()
+                if p[3] == name:
+                    decls[p[1]] = p[2]
+                    data[p[1]] = ([], [])
+            else:
+                p = line.split("\t")
+                if len(p) == 4 and p[0] in data:
+                    data[p[0]][0].append(float(p[2]))
+                    data[p[0]][1].append(float(p[3]))
+    return [(mod, *data[vid]) for vid, mod in decls.items() if data[vid][0]]
+
+vectors = load_vectors("results/Highway/0.vec", "slSinr:vector")
+if not vectors:
+    raise chart.ChartScriptError("No slSinr vectors found - run the Highway config first.")
+
+samples = np.concatenate([np.asarray(v) for _, _, v in vectors])
+plt.hist(samples, bins=60, color="C0", alpha=0.85)
+plt.xlabel("SINR of received SL frames [dB]")
+plt.ylabel("frames")
+plt.title("SL SINR distribution at 8 observed receivers (%d frames)" % len(samples))
+plt.grid(True, alpha=0.3)
+
+utils.postconfigure_plot(props)
+utils.export_image_if_needed(props)
+]]></script>
+            <property name="title" value="SL SINR distribution"/>
+        </chart>
+    </charts>
+</analysis>
