@@ -16,7 +16,7 @@
 
 #include "simu5g/stack/rrc/DrbDesc.h"
 
-namespace omnetpp { class cValueArray; }
+namespace omnetpp { class cValueArray; class cValueMap; }
 
 using namespace omnetpp;
 
@@ -47,9 +47,11 @@ class DrbTable : public cSimpleModule
     void handleMessage(cMessage *msg) override;
     void refreshDisplay() const override;
 
-    // Fills configuredDrbs_ from the drbConfig JSON array; if no entry of a peer is marked
-    // isDefault, the first one becomes the default DRB.
-    virtual void loadConfig(const cValueArray *arr);
+    // Fills configuredDrbs_ from the drbConfig JSON array; an entry may reference a named
+    // field group in profiles (its "profile" field) supplying defaults for the fields the
+    // entry does not spell out itself. If no entry of a peer is marked isDefault, the
+    // first one becomes the default DRB.
+    virtual void loadConfig(const cValueArray *arr, const cValueMap *profiles);
 
   public:
     virtual const DrbDesc *findDrb(DrbKey key) const;

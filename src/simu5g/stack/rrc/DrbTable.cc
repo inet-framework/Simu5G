@@ -22,8 +22,9 @@ Define_Module(DrbTable);
 void DrbTable::initialize()
 {
     const cValueArray *arr = check_and_cast_nullable<const cValueArray *>(par("drbConfig").objectValue());
+    const cValueMap *profiles = check_and_cast_nullable<const cValueMap *>(par("drbProfiles").objectValue());
     if (arr && arr->size() > 0) {
-        loadConfig(arr);
+        loadConfig(arr, profiles);
         EV << "DrbTable: loaded " << configuredDrbs_.size() << " DRB entries from drbConfig" << endl;
         for (const auto& [key, drb] : configuredDrbs_)
             EV << "  " << key << ": " << drb << endl;
@@ -33,10 +34,37 @@ void DrbTable::initialize()
     WATCH_MAP(configuredDrbs_);
 }
 
-void DrbTable::loadConfig(const cValueArray *arr)
+void DrbTable::loadConfig(const cValueArray *arr, const cValueMap *profiles)
 {
     for (int i = 0; i < (int)arr->size(); i++) {
         const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
+
+        // Resolve the entry's named profile, if any
+        const cValueMap *profile = nullptr;
+        if (entry->containsKey("profile")) {
+            const char *name = entry->get("profile").stringValue();
+            if (!profiles || !profiles->containsKey(name)) {
+                std::string available;
+                if (profiles)
+                    for (const auto& [profileName, value] : profiles->getFields())
+                        available += (available.empty() ? "" : ", ") + profileName;
+                throw cRuntimeError("drbConfig entry %d references unknown profile '%s' (available: %s)",
+                        i, name, available.empty() ? "none" : available.c_str());
+            }
+            profile = check_and_cast<const cValueMap *>(profiles->get(name).objectValue());
+            for (const char *forbidden : { "drb", "ue", "profile" })
+                if (profile->containsKey(forbidden))
+                    throw cRuntimeError("drbProfiles entry '%s' must not contain the '%s' field", name, forbidden);
+        }
+
+        // Field lookup: the entry's own value wins over the profile's
+        auto field = [&](const char *key) -> const cValue * {
+            if (entry->containsKey(key))
+                return &entry->get(key);
+            if (profile && profile->containsKey(key))
+                return &profile->get(key);
+            return nullptr;
+        };
 
         DrbDesc drb;
         DrbId drbId = DrbId(entry->get("drb").intValue());
@@ -49,42 +77,40 @@ void DrbTable::loadConfig(const cValueArray *arr)
         drb.lcid = LogicalCid(num(drbId));
 
         // isDefault (optional; if not set, first DRB per nodeId becomes default)
-        if (entry->containsKey("isDefault"))
-            drb.isDefault = entry->get("isDefault").boolValue();
+        if (const cValue *v = field("isDefault"))
+            drb.isDefault = v->boolValue();
 
         // qfiList (optional; an entry without it does not take part in SDAP's
         // QFI-to-DRB mapping, e.g. it only carries the bearer's QoS profile)
-        if (entry->containsKey("qfiList")) {
-            const cValueArray *qfiArr = check_and_cast<const cValueArray *>(entry->get("qfiList").objectValue());
+        if (const cValue *v = field("qfiList")) {
+            const cValueArray *qfiArr = check_and_cast<const cValueArray *>(v->objectValue());
             for (int j = 0; j < (int)qfiArr->size(); j++)
                 drb.qfiList.push_back(Qfi(qfiArr->get(j).intValue()));
         }
 
         // QoS profile (all optional; any of them present = the bearer has a QoS
         // profile, pushed into the eNB MAC for QoS-aware scheduling)
-        drb.hasQosProfile = entry->containsKey("gbr") || entry->containsKey("delayBudget")
-                || entry->containsKey("per") || entry->containsKey("priority");
-        if (entry->containsKey("gbr"))
-            drb.qos.gbr = entry->get("gbr").boolValue();
-        if (entry->containsKey("delayBudget"))
-            drb.qos.delayBudgetMs = entry->get("delayBudget").doubleValue();
-        if (entry->containsKey("per"))
-            drb.qos.packetErrorRate = entry->get("per").doubleValue();
-        if (entry->containsKey("priority"))
-            drb.qos.priorityLevel = entry->get("priority").intValue();
+        drb.hasQosProfile = field("gbr") || field("delayBudget") || field("per") || field("priority");
+        if (const cValue *v = field("gbr"))
+            drb.qos.gbr = v->boolValue();
+        if (const cValue *v = field("delayBudget"))
+            drb.qos.delayBudgetMs = v->doubleValue();
+        if (const cValue *v = field("per"))
+            drb.qos.packetErrorRate = v->doubleValue();
+        if (const cValue *v = field("priority"))
+            drb.qos.priorityLevel = v->intValue();
 
         // rlcType (optional; omitted = "RRC decides from qosClass", as for staticBearers)
-        drb.rlcType = entry->containsKey("rlcType")
-                ? aToRlcType(entry->get("rlcType").stdstringValue())
-                : UNKNOWN_RLC_TYPE;
+        const cValue *rlcTypeValue = field("rlcType");
+        drb.rlcType = rlcTypeValue ? aToRlcType(rlcTypeValue->stdstringValue()) : UNKNOWN_RLC_TYPE;
 
         // pduSessionType (optional, default IPv4)
-        if (entry->containsKey("pduSessionType"))
-            drb.pduSessionType = aToPduSessionType(entry->get("pduSessionType").stdstringValue());
+        if (const cValue *v = field("pduSessionType"))
+            drb.pduSessionType = aToPduSessionType(v->stdstringValue());
 
         // upperProtocol (optional, empty = derive from pduSessionType)
-        if (entry->containsKey("upperProtocol"))
-            drb.upperProtocol = entry->get("upperProtocol").stdstringValue();
+        if (const cValue *v = field("upperProtocol"))
+            drb.upperProtocol = v->stdstringValue();
 
         configuredDrbs_[drb.key] = drb;
     }

@@ -23,9 +23,17 @@ package simu5g.stack.rrc;
 // configuration. The established bearers are filled in by ~BearerManagement as bearers
 // are established, and dropped together with the bearer's PDCP entity.
 //
+// Repeating field groups can be named once in the drbProfiles parameter (a JSON map of
+// name -> field group) and referenced from entries via their "profile" field; the
+// profile supplies defaults for any field the entry does not spell out itself (the
+// entry's own value wins). A profile may hold any entry field except drb, ue and
+// profile.
+//
 // drbConfig fields:
 //  - drb (int): DRB identifier (= nrPdcp[]/nrRlc[] array index)
 //  - ue (int, optional): UE MacNodeId (gNB only; omit on UE side)
+//  - profile (string, optional): name of a drbProfiles entry supplying defaults for
+//    the fields below
 //  - qfiList (int[], optional): QFI values mapped to this DRB; an entry without it
 //    does not take part in SDAP's QFI-to-DRB mapping
 //  - rlcType (string, optional): RLC mode ("AM", "UM", "TM"); omitted = RRC decides
@@ -49,5 +57,6 @@ simple DrbTable like IDrbTable
     parameters:
         @display("i=block/table");
         @class(DrbTable);
-        object drbConfig = default([]);  // JSON array: [{drb, ue, qfiList, rlcType, pduSessionType, upperProtocol, isDefault}, ...]; see banner comment for details
+        object drbConfig = default([]);  // JSON array: [{drb, ue, profile, qfiList, rlcType, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
+        object drbProfiles = default({});  // JSON map of named field groups referenced by the entries' "profile" field, e.g. {"voice": {"rlcType": "UM", "gbr": true, ...}, ...}; see banner comment
 }

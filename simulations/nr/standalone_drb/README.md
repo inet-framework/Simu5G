@@ -18,10 +18,13 @@ ini configuration.
 
 - **Two DRBs per UE**, defined in `rrc.drbTable.drbConfig`:
   QFIs 1,2 (Voice/Video) map to DRB 0, QFIs 3,4 (Gaming/URLLC) map to DRB 1,
-  both in RLC UM mode. DRB IDs are per-UE, as in 3GPP: each UE has a DRB 0
-  and a DRB 1, distinguished at the gNB by the `ue` (MacNodeId) field
-  (2049 = ue[0], 2050 = ue[1]). The first DRB entry of each UE acts as its
-  *default DRB*, which carries traffic whose QFI has no explicit mapping.
+  both in RLC UM mode. The two bearer kinds are defined once as named
+  profiles (`rrc.drbTable.drbProfiles`, assigned network-wide with a `**`
+  key), and the per-node entries just reference them via their `profile`
+  field. DRB IDs are per-UE, as in 3GPP: each UE has a DRB 0 and a DRB 1,
+  distinguished at the gNB by the `ue` (MacNodeId) field (2049 = ue[0],
+  2050 = ue[1]). The first DRB entry of each UE acts as its *default DRB*,
+  which carries traffic whose QFI has no explicit mapping.
 
 - **QoS-aware scheduling**: `schedulingDiscipline = "QOS_PF"` with the
   per-DRB QoS profile (GBR flag, packet delay budget, packet error rate,
