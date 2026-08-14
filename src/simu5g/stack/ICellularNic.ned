@@ -28,5 +28,6 @@ moduleinterface ICellularNic extends IWirelessInterface
     gates:
         inout x2[] @loose;     // optional x2 manager
         input nrRadioIn @loose;        // for NR support
+        input slRadioIn @loose;        // for sidelink (PC5) support
 }
 

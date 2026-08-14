@@ -29,10 +29,14 @@ module NrUe extends LteUe
         int nrServingNodeId = default(0); // the initial serving gNodeB of the UE; 0 if none
         int nrMacNodeId = default(2049+simu5g_seq("NrUe_macNodeId"));
 
+        bool hasSidelink = default(false);  // enables the NR sidelink (PC5) leg of the NIC
+        cellularNic.hasSidelink = default(this.hasSidelink);
+
         cellularNic.nrMac.collectorModule = hasRniSupport ? "^.^.nrUeCollector" : "";
         cellularNic.rrc.nrHandoverController.hasCollector = hasRniSupport;
     gates:
         input nrRadioIn @directIn;     // connection to master
+        input slRadioIn @directIn;     // sidelink (PC5) input, peer slPhy -> slPhy via sendDirect()
 
     submodules:
         //# UeStatsCollector - for MEC
@@ -43,4 +47,5 @@ module NrUe extends LteUe
     connections allowunconnected:
 
         cellularNic.nrRadioIn <-- nrRadioIn;
+        cellularNic.slRadioIn <-- slRadioIn if hasSidelink;
 }

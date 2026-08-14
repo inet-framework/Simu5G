@@ -19,6 +19,7 @@ import simu5g.stack.phy.IPhy;
 import simu5g.stack.phy.channelmodel.IChannelModel;
 import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 import simu5g.stack.rlc.IRlcMux;
+import simu5g.stack.rrc.IRrc;
 import simu5g.stack.sdap.INrSdap;
 import simu5g.stack.sdap.common.IReflectiveQosTable;
 
@@ -33,6 +34,7 @@ module NrNicUe extends LteNicUe
 {
     parameters:
         bool hasSdap = default(false);
+        bool hasSidelink = default(false);  // enables the NR sidelink (PC5) leg
         bool useReflectiveQos = default(false);
         ip2nic.hasSdap = default(this.hasSdap);
         sdap.nodeRole = default("UE");
@@ -47,7 +49,15 @@ module NrNicUe extends LteNicUe
         ip2nic.isNr = default(true);
         rrc.bearerManagement.pdcpEntityModuleType = default("simu5g.stack.pdcp.NrPdcpEntity");
 
+        // sidelink leg: swap in the SL-aware packet classification variants
+        handoverPacketHolder.typename = default(hasSidelink ? "simu5g.stack.sidelink.ip2nic.SlHandoverPacketHolderUe" : "HandoverPacketHolderUe");
+        technologyDecision.typename = default(hasSidelink ? "simu5g.stack.sidelink.ip2nic.SlTechnologyDecision" : "TechnologyDecision");
+        ip2nic.typename = default(hasSidelink ? "simu5g.stack.sidelink.ip2nic.SlIp2Nic" : "Ip2Nic");
+
         rrc.hasNrHandoverController = true;
+        // the sidelink leg is an NR leg: its modules take the node's NR MacNodeId
+        slMac.macNodeId = parent.nrMacNodeId;
+        slPhy.macNodeId = parent.nrMacNodeId;
         rrc.nrHandoverController.isNr = true;
         nrMac.isNr = true;
         nrPhy.isNr = true;
@@ -76,12 +86,15 @@ module NrNicUe extends LteNicUe
         nrRlcMux: <default("RlcMux")> like IRlcMux {
             @display("p=570,430;is=s");
         }
-        // MAC Layer
-        nrMac: <default("NrMacUe")> like ILteMac {
+        // MAC Layer (SL-aware variant when the sidelink leg is present:
+        // carries the mode-1 RAC/SL-BSR/grant plumbing, quiescent otherwise)
+        nrMac: <default(hasSidelink ? "simu5g.stack.sidelink.mac.NrMacUeSl" : "NrMacUe")> like ILteMac {
             @display("p=570,510");
         }
-        // PHY Layer
-        nrPhy: <default("PhyUe")> like IPhy {
+        // PHY Layer (SL-aware variant when the sidelink leg is present:
+        // carries the D32 half-duplex arbiter's Uu side, quiescent unless
+        // sharedUuSlRadio is enabled)
+        nrPhy: <default(hasSidelink ? "simu5g.stack.sidelink.phy.NrPhyUeSl" : "PhyUe")> like IPhy {
             @display("p=570,600");
         }
         // NR Channel Model
@@ -102,6 +115,23 @@ module NrNicUe extends LteNicUe
             isNrObserver = true;
         }
 
+        //# sidelink (PC5) leg: a third protocol leg beside the LTE and NR Uu legs
+        slRrc: <default("simu5g.stack.sidelink.rrc.SlRrc")> like IRrc if hasSidelink {
+            @display("p=80,60,col;g=left");
+        }
+        slRlcMux: <default("RlcMux")> like IRlcMux if hasSidelink {
+            @display("p=700,430;is=s");
+        }
+        slMac: <default("simu5g.stack.sidelink.mac.NrSlMacUe")> like ILteMac if hasSidelink {
+            @display("p=700,510");
+        }
+        slPhy: <default("simu5g.stack.sidelink.phy.NrSlPhyUe")> like IPhy if hasSidelink {
+            @display("p=700,600");
+        }
+        slChannelModel: <default("simu5g.stack.sidelink.phy.SlIdealChannelModel")> like IChannelModel if hasSidelink {
+            @display("p=80,60,col;g=left");
+        }
+
     connections:
 
         //# NR RLC <-> MAC
@@ -116,6 +146,13 @@ module NrNicUe extends LteNicUe
 
         //# external: lower connection
         nrRadioIn --> nrPhy.radioIn;
+
+        //# sidelink leg
+        slRlcMux.macOut --> slMac.upperLayerIn if hasSidelink;
+        slRlcMux.macIn <-- slMac.upperLayerOut if hasSidelink;
+        slMac.phyOut --> slPhy.upperGateIn if hasSidelink;
+        slMac.phyIn <-- slPhy.upperGateOut if hasSidelink;
+        slRadioIn --> slPhy.radioIn if hasSidelink;
 
         //# SDAP layer (optional, spliced between ip2nic and pdcpMux)
         ip2nic.stackOut --> { @reconnect; } --> sdap.upperLayerIn if hasSdap;

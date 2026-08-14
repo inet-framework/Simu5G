@@ -54,6 +54,10 @@ class HandoverPacketHolderUe : public cSimpleModule
     virtual void fromIpUe(inet::Packet *datagram);
     virtual void toStackUe(inet::Packet *datagram);
 
+    /// whether the stack can deliver this packet; base: only when attached to
+    /// a serving node (subclasses may accept more, e.g. sidelink destinations)
+    virtual bool isDeliverable(inet::Packet *datagram);
+
   public:
     ~HandoverPacketHolderUe() override;
     virtual void triggerHandoverUe(MacNodeId newMasterId, bool isNr = false);
