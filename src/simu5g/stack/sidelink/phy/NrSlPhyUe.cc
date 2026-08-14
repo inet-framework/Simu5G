@@ -533,9 +533,12 @@ void NrSlPhyUe::transmitPendingPsfch()
     ASSERT(it != pendingPsfch_.end() && it->first == slot);
 
     // half-duplex: a UE transmitting PSFCH cannot receive in this slot
-    // (neither data nor other feedback -- the Rel-16 pain point)
+    // (neither data nor other feedback -- the Rel-16 pain point), so it is
+    // also unmonitored for mode-2 sensing, exactly like a data-TX slot
     lastTxSlot_ = slot;
     recordSlTx(slot);    // D32: visible to the Uu leg when the arbiter is on
+    if (slMac_ != nullptr)
+        slMac_->onSlotUnmonitored(slot);
 
     for (const PendingPsfch& fb : it->second) {
         auto phyIt = slBinder_->getSlPhys().find(fb.targetPid);
