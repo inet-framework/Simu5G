@@ -74,5 +74,17 @@ simple BearerManagement like IBearerManagement
         string nrRlcMuxModule = default("^.^.nrRlcMux");
         string macModule = default("^.^.mac");
         string nrMacModule = default("^.^.nrMac");
+
+        // Sidelink (PC5) leg, referenced only on a node configured with it.
+        string slRlcMuxModule = default("^.^.slRlcMux");
+        string slMacModule = default("^.^.slMac");
+        // Sidelink RLC is TS 38.322, so sidelink bearers use the NR (SI/SO)
+        // entity compounds. PDCP stays on the LTE profile: the NR PDCP TX side
+        // rewrites a UE's source id to its NR node id, which would destroy the
+        // PC5 addressing the sidelink keying is built on.
+        string slPdcpEntityModuleType = default("simu5g.stack.pdcp.LtePdcpEntity");
+        string slRlcUmEntityModuleType = default("simu5g.stack.rlc.NrRlcUmEntity");
+        string slRlcAmEntityModuleType = default("simu5g.stack.rlc.NrRlcAmEntity");
+        string slSdapEntityModuleType = default("simu5g.stack.sidelink.sdap.SlSdapEntity");
         string sdapModule = default("^.^.sdap");   // configuration push target; unresolvable (no SDAP on the NIC) = no pushes
 }
