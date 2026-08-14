@@ -54,6 +54,13 @@ struct DrbDesc {
     bool hasQosProfile = false;
     DrbQosProfile qos;
 
+    // SL-RLC-BearerConfig / SLRB-Config (TS 38.331): the PC5 half of a sidelink
+    // bearer. Meaningful only on a bearer of the sidelink leg, where the cast type
+    // decides which RLC modes are admissible (TR 38.885 5.4.2) and how HARQ feedback
+    // is requested, and the PC5 5QI drives the sidelink logical channel prioritization.
+    SlCastType slCastType = SL_BROADCAST;
+    unsigned int slPqi = 0;
+
     DrbId getDrbId() const { return key.getDrbId(); }
     MacNodeId getPeerId() const { return key.getNodeId(); }
 };
@@ -69,6 +76,8 @@ inline std::ostream& operator<<(std::ostream& os, const DrbDesc& drb) {
     os << "] pduSession=" << pduSessionTypeToA(drb.pduSessionType);
     if (!drb.upperProtocol.empty())
         os << " upperProto=" << drb.upperProtocol;
+    if (drb.slCastType != SL_BROADCAST || drb.slPqi != 0)
+        os << " sl=" << slCastTypeToA(drb.slCastType) << "/pqi" << drb.slPqi;
     os << " rlc=" << rlcTypeToA(drb.rlcType) << (drb.soFraming ? " SO" : " FI")
        << " snBits=" << drb.snFieldLength
        << " lcid=" << num(drb.lcid) << " lcg=" << lteTrafficClassToA(drb.lcg);

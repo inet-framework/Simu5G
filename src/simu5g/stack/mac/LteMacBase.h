@@ -59,6 +59,8 @@ struct LogicalChannelConfig {
     bool soFraming = false;             // wire format: false = LTE FI/concatenation (TS 36.322), true = NR SI/SO (TS 38.322)
     unsigned int snFieldLength = 12;    // sn-FieldLength, in bits
     LteTrafficClass lcg = CONVERSATIONAL;   // logicalChannelGroup
+    SlCastType slCastType = SL_BROADCAST;   // sidelink cast type of the channel's bearer
+    unsigned int slPqi = 0;             // PC5 5QI, drives sidelink logical channel prioritization
 };
 
 /**
