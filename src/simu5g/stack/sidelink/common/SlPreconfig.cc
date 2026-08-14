@@ -149,8 +149,10 @@ void SlPreconfig::loadFromJson(const cValueMap *map)
         throw cRuntimeError("SlPreconfig: invalid selection window [%d,%d]", t1, t2);
     if (psfchPeriod != 0 && psfchPeriod != 1 && psfchPeriod != 2 && psfchPeriod != 4)
         throw cRuntimeError("SlPreconfig: psfchPeriod %d not in {0,1,2,4}", psfchPeriod);
-    if (psfchMinGap < 0 || psfchResources <= 0)
-        throw cRuntimeError("SlPreconfig: invalid PSFCH parameters (minGap %d, resources %d)", psfchMinGap, psfchResources);
+    // minGap 0 would let the feedback slot coincide with the PSSCH slot, which
+    // slot-end decoding cannot meet (the spec's MinTimeGapPSFCH is 2-3 slots)
+    if (psfchMinGap < 1 || psfchResources <= 0)
+        throw cRuntimeError("SlPreconfig: invalid PSFCH parameters (minGap %d, resources %d; minGap must be >= 1)", psfchMinGap, psfchResources);
     for (const auto& e : slrbConfig) {
         if (e.psfchMode != SL_PSFCH_OFF && e.castType != SL_GROUPCAST)
             throw cRuntimeError("SlPreconfig: psfchMode is a groupcast option (unicast SLRBs use ACK/NACK implicitly when the pool has PSFCH)");
