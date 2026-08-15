@@ -128,12 +128,13 @@ std::unordered_map<ConnectionKey, DrbId, ConnectionKeyHash> drbIdTable_;
     virtual Direction connectionKeyDirection(FlowControlInfo *lteInfo) { return isNr_ ? (Direction)lteInfo->getDirection() : Direction(0xFFFF); }
     virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
     virtual LteTrafficClass getTrafficCategory(cPacket *pkt);
-    virtual DrbId lookupOrAssignDrbId(const ConnectionKey& key, const FlowControlInfo *lteInfo);
 
     // Establish the (duplex) bearer for the flow via the Binder, then register the
     // mirrored flow->DRB mapping at the peer's Ip2Nic so reverse application traffic
     // resolves to this bearer's reverse leg instead of allocating a new DRB.
-    virtual void establishConnection(const FlowId& flow, const BearerRequest& req, const ConnectionKey& key);
+    // Returns the bearer's DRB id, which the establishment assigns when the flow
+    // carries none (DRBID_NONE).
+    virtual DrbId establishConnection(const FlowId& flow, const BearerRequest& req, const ConnectionKey& key);
 
     // Called by a peer's Ip2Nic: bind an incoming flow key to the DRB of a bearer
     // established from the remote side (no-op if the key is already bound).

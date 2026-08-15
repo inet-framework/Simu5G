@@ -596,7 +596,12 @@ class Binder : public cSimpleModule
     // bidirectional per TS 38.331; RLC-AM in particular needs the reverse path for
     // its STATUS PDUs). Multicast flows remain unidirectional (TX at the sender,
     // RX at the group members).
-    virtual void establishDataConnection(const FlowId& flow, const BearerRequest& req);
+    //
+    // The bearer's DRB id is the flow's own when it has one, and a freshly assigned
+    // one (see assignDrbId()) when flow.drbId is DRBID_NONE, i.e. when the requester
+    // is establishing a bearer for a flow it has not seen before. Either way the id
+    // of the established bearer is returned.
+    virtual DrbId establishDataConnection(const FlowId& flow, const BearerRequest& req);
 
     // Allocate a new DRB ID, unique within the (unordered) node pair {a, b}, so the
     // two endpoints of a link can never mint colliding IDs for the same peer.

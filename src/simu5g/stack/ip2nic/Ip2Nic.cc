@@ -199,33 +199,15 @@ LteTrafficClass Ip2Nic::getTrafficCategory(cPacket *pkt)
         return BACKGROUND;
 }
 
-DrbId Ip2Nic::lookupOrAssignDrbId(const ConnectionKey& key, const FlowControlInfo *lteInfo)
-{
-    auto it = drbIdTable_.find(key);
-    if (it != drbIdTable_.end())
-        return it->second;
-    else {
-        // Allocate via the Binder: DRB IDs are unique per node pair, so the two ends
-        // of a link cannot mint colliding IDs. For multicast, the "pair" is
-        // (sender, multicast group): there is no single peer node.
-        MacNodeId peerId = (lteInfo->getMulticastGroupId() != NODEID_NONE)
-                ? lteInfo->getMulticastGroupId() : lteInfo->getDestId();
-        DrbId drbId = binder_->assignDrbId(lteInfo->getSourceId(), peerId);
-        drbIdTable_[key] = drbId;
-        EV << "Connection not found, new DRB ID assigned: " << drbId << "\n";
-        return drbId;
-    }
-}
-
 void Ip2Nic::registerDrbMapping(const ConnectionKey& key, DrbId drbId)
 {
     Enter_Method_Silent("registerDrbMapping()");
     drbIdTable_.emplace(key, drbId);  // no-op if the flow is already bound
 }
 
-void Ip2Nic::establishConnection(const FlowId& flow, const BearerRequest& req, const ConnectionKey& key)
+DrbId Ip2Nic::establishConnection(const FlowId& flow, const BearerRequest& req, const ConnectionKey& key)
 {
-    binder_->establishDataConnection(flow, req);
+    DrbId drbId = binder_->establishDataConnection(flow, req);
 
     // Bind the mirrored flow (swapped addresses, reversed direction) to the same DRB
     // at the peer, so its own traffic on the reverse leg reuses this duplex bearer.
@@ -236,8 +218,9 @@ void Ip2Nic::establishConnection(const FlowId& flow, const BearerRequest& req, c
         ConnectionKey mirrorKey{key.dstAddr, key.srcAddr, key.typeOfService, revDir};
         auto *peerIp2Nic = check_and_cast_nullable<Ip2Nic *>(binder_->getIp2NicByNodeId(flow.destId));
         if (peerIp2Nic != nullptr)
-            peerIp2Nic->registerDrbMapping(mirrorKey, DrbId(flow.drbId));
+            peerIp2Nic->registerDrbMapping(mirrorKey, drbId);
     }
+    return drbId;
 }
 
 MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
@@ -340,22 +323,27 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
             lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
     }
 
-    // --- DRB ID assignment (skipped when SDAP handles it) ---
+    // --- DRB resolution (skipped when SDAP handles it) ---
     if (!hasSdap_) {
         // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
         ConnectionKey key{srcAddr, destAddr, typeOfService, connectionKeyDirection(lteInfo.get())};
-        DrbId drbId = lookupOrAssignDrbId(key, lteInfo.get());
-        lteInfo->setDrbId(drbId);
+        auto it = drbIdTable_.find(key);
+        bool flowIsBound = (it != drbIdTable_.end());
+        DrbId drbId = flowIsBound ? it->second : DRBID_NONE;
 
-        // Establish the connection unless its PDCP TX entity already exists. The entity
-        // registry is authoritative: entities deleted at handover or D2D mode switch get
-        // re-established by the next packet, even for an already-seen (drbId, destId) pair.
-        if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drbId))) {
+        // Ask for a bearer if this flow has none yet, or if its PDCP TX entity is gone.
+        // The entity registry is authoritative: entities deleted at handover or D2D mode
+        // switch get re-established by the next packet, on the flow's existing DRB.
+        if (!flowIsBound || !pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drbId))) {
             if (!establishBearersOnDemand_)
-                throw cRuntimeError("Ip2Nic: no established bearer for flow %s -> %s (ToS=%d, drbId=%d), and on-demand bearer establishment is disabled",
-                        srcAddr.str().c_str(), destAddr.str().c_str(), (int)typeOfService, (int)num(drbId));
-            establishConnection(lteInfo->toFlowId(), BearerRequest{trafficCategory, UNKNOWN_RLC_TYPE}, key);
+                throw cRuntimeError("Ip2Nic: no established bearer for flow %s -> %s (ToS=%d), and on-demand bearer establishment is disabled",
+                        srcAddr.str().c_str(), destAddr.str().c_str(), (int)typeOfService);
+            FlowId flow = lteInfo->toFlowId();
+            flow.drbId = drbId;   // DRBID_NONE => a new bearer, whose id the establishment assigns
+            drbId = establishConnection(flow, BearerRequest{trafficCategory, UNKNOWN_RLC_TYPE}, key);
+            drbIdTable_[key] = drbId;
         }
+        lteInfo->setDrbId(drbId);
 
         // Debug logging (UE only)
         if (!isEnb && isNr_) {

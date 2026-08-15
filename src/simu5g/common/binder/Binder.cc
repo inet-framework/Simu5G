@@ -955,16 +955,15 @@ void Binder::establishStaticBearers()
             throw cRuntimeError("staticBearers: UE '%s' (nodeId=%hu) is not attached to a cell", uePath, num(ueId));
 
         // DRB id: explicit (also reserve it in the node pair's counter, so on-demand
-        // establishment cannot mint the same id later), or the next free one
-        DrbId drbId;
+        // establishment cannot mint the same id later), or left unset for
+        // establishDataConnection() to assign the next free one
+        DrbId drbId = DRBID_NONE;
         if (entry->containsKey("drb")) {
             drbId = DrbId(entry->get("drb").intValue());
             auto pair = std::minmax(ueId, servingNodeId);
             unsigned short& counter = drbIdCounters_[{pair.first, pair.second}];
             counter = std::max(counter, (unsigned short)num(drbId));
         }
-        else
-            drbId = assignDrbId(ueId, servingNodeId);
 
         LteTrafficClass qosClass = CONVERSATIONAL;
         if (entry->containsKey("qosClass")) {
@@ -987,14 +986,24 @@ void Binder::establishStaticBearers()
         flow.direction = UL;
         flow.drbId = drbId;
 
-        EV << "Binder::establishStaticBearers - establishing DRB " << drbId << " for UE '" << uePath
+        EV << "Binder::establishStaticBearers - establishing a bearer for UE '" << uePath
            << "' (nodeId=" << ueId << ") towards serving node " << servingNodeId << endl;
         establishDataConnection(flow, BearerRequest{qosClass, rlcType});
     }
 }
 
-void Binder::establishDataConnection(const FlowId& flow, const BearerRequest& req)
+DrbId Binder::establishDataConnection(const FlowId& flowIn, const BearerRequest& req)
 {
+    // Assign the bearer's DRB id unless the requester brought one (SDAP and the
+    // staticBearers entries name their bearers explicitly). IDs are unique per node
+    // pair; for multicast the "pair" is (sender, group), there being no single peer.
+    FlowId flow = flowIn;
+    if (flow.drbId == DRBID_NONE) {
+        MacNodeId peerId = (flow.multicastGroupId != NODEID_NONE) ? flow.multicastGroupId : flow.destId;
+        flow.drbId = assignDrbId(flow.sourceId, peerId);
+        EV << "Binder::establishDataConnection - new DRB ID assigned: " << flow.drbId << endl;
+    }
+
     bool dualConnected = isDualConnectivityRequired(flow);
     if (!dualConnected) {
         createConnection(flow, req, true);
@@ -1035,6 +1044,7 @@ void Binder::establishDataConnection(const FlowId& flow, const BearerRequest& re
         }
         createConnection(nrFlow, req, false);
     }
+    return flow.drbId;
 }
 
 void Binder::createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)
