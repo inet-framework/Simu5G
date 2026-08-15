@@ -52,10 +52,22 @@ class Ip2Nic : public cSimpleModule
     bool hasSdap_ = false;
     bool establishBearersOnDemand_ = true;
 
-    // Packet analysis (moved from PDCP): classifies the packet and fills FlowControlInfo tag.
-    // Core handles the plain UL/DL path (LTE) and the NR (non-D2D) path; the D2D-aware
-    // overrides live in Ip2NicD2D.
-    virtual void analyzePacket(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
+    // Fills in an outgoing packet's FlowControlInfo -- its endpoints, direction and the
+    // DRB carrying its flow -- so the stack below can route it. Not free of consequences:
+    // a flow that no bearer carries yet gets one established (see
+    // establishBearerOnDemand()). Core handles the plain UL/DL path (LTE) and the NR
+    // (non-D2D) path; the D2D-aware overrides live in Ip2NicD2D.
+    virtual void attachFlowControlInfo(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
+
+    // Fills in the flow's endpoint ids: this node on the near side, and on the far side
+    // the next hop towards the destination (the multicast group's sender, for multicast).
+    virtual void assignEndpointIds(FlowControlInfo *lteInfo, const inet::Ipv4Address& destAddr, bool useNR, bool isEnb);
+
+    // Establishes a bearer for a flow that has none, and returns the DRB id it got. This
+    // is the data plane asking RRC for a bearer, so it is the packet path's one
+    // control-plane action -- it builds entities at BOTH endpoints. Throws instead when
+    // the establishBearersOnDemand parameter turned this fallback off.
+    virtual DrbId establishBearerOnDemand(const FlowBindingKey& key, FlowControlInfo *lteInfo, cPacket *pkt);
 
     // Which bearer carries which flow: the classifier's half of a bearer, and the only
     // bearer state this module holds. Entirely maintained by RRC, which installs an
@@ -89,7 +101,7 @@ class Ip2Nic : public cSimpleModule
     virtual void toStackUe(inet::Packet *datagram);
 
     /// classifies the connection of an outgoing packet (called after the
-    /// common preamble of analyzePacket(), before source/destination IDs are
+    /// common preamble of attachFlowControlInfo(), before the endpoint ids are
     /// assigned). No-op in the base; D2D-aware subclasses set the multicast
     /// group, peer IDs and the actual flow direction here.
     virtual void classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const inet::Ipv4Address& destAddr, MacNodeId localNodeId, bool isEnb) {}

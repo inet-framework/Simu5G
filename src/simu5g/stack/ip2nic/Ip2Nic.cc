@@ -120,8 +120,7 @@ void Ip2Nic::toStackUe(Packet *pkt)
 
     // TechnologyReq tag (useNR) is already set by TechnologyDecision
 
-    // Classify the packet and fill FlowControlInfo tag
-    analyzePacket(pkt, srcAddr, destAddr, tos);
+    attachFlowControlInfo(pkt, srcAddr, destAddr, tos);
 
     // Send datagram to LTE stack or LteIp peer
     send(pkt, stackGateOut_);
@@ -179,8 +178,7 @@ void Ip2Nic::toStackBs(Packet *pkt)
 
     // TechnologyReq tag (useNR) is already set by TechnologyDecision
 
-    // Classify the packet and fill FlowControlInfo tag
-    analyzePacket(pkt, srcAddr, destAddr, tos);
+    attachFlowControlInfo(pkt, srcAddr, destAddr, tos);
 
     send(pkt, stackGateOut_);
 }
@@ -257,7 +255,7 @@ MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacN
     }
 }
 
-void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address destAddr, uint16_t typeOfService)
+void Ip2Nic::attachFlowControlInfo(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address destAddr, uint16_t typeOfService)
 {
     // --- Common preamble ---
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
@@ -279,7 +277,29 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     // flow direction here; no-op otherwise
     classifyConnection(pkt, lteInfo.get(), destAddr, localNodeId, isEnb);
 
-    // --- Source and Dest IDs ---
+    assignEndpointIds(lteInfo.get(), destAddr, useNR, isEnb);
+
+    // --- The bearer carrying the flow (skipped when SDAP assigns the DRB instead) ---
+    if (!hasSdap_) {
+        // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
+        FlowBindingKey key{srcAddr, destAddr, typeOfService, bindingDirection(lteInfo.get())};
+        auto it = flowBindings_.find(key);
+        // A flow is bound exactly while a bearer carries it: an unbound one is either new,
+        // or its bearer was torn down (at a handover, say), which unbinds it.
+        DrbId drbId = (it != flowBindings_.end()) ? it->second.getDrbId()
+                                                  : establishBearerOnDemand(key, lteInfo.get(), pkt);
+        lteInfo->setDrbId(drbId);
+
+        // Debug logging (UE only)
+        if (!isEnb && isNr_) {
+            EV << "NrPdcpUe : Assigned DRB ID: " << drbId << "\n";
+            EV << "NrPdcpUe : Assigned Node ID: " << localNodeId << "\n";
+        }
+    }
+}
+
+void Ip2Nic::assignEndpointIds(FlowControlInfo *lteInfo, const Ipv4Address& destAddr, bool useNR, bool isEnb)
+{
     if (isNr_) {
         // For PDCP entity dispatch, always use technology-neutral (LTE/master-leg) IDs.
         // The TechnologyReq::useNR flag carries the LTE-vs-NR routing decision separately;
@@ -311,40 +331,21 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
         else
             lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));
     }
+}
 
-    // --- DRB resolution (skipped when SDAP handles it) ---
-    if (!hasSdap_) {
-        // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
-        FlowBindingKey key{srcAddr, destAddr, typeOfService, bindingDirection(lteInfo.get())};
-        auto it = flowBindings_.find(key);
-        DrbId drbId;
-        if (it != flowBindings_.end())
-            drbId = it->second.getDrbId();
-        else {
-            // No bearer carries this flow: either it is new, or the bearer it used to be
-            // bound to was torn down (at a handover, say), which unbinds it. Ask for one.
-            if (!establishBearersOnDemand_)
-                throw cRuntimeError("Ip2Nic: no established bearer for flow %s -> %s (ToS=%d), and on-demand bearer establishment is disabled",
-                        srcAddr.str().c_str(), destAddr.str().c_str(), (int)typeOfService);
-            FlowId flow = lteInfo->toFlowId();
-            flow.drbId = DRBID_NONE;   // a new bearer, whose id the establishment assigns
+DrbId Ip2Nic::establishBearerOnDemand(const FlowBindingKey& key, FlowControlInfo *lteInfo, cPacket *pkt)
+{
+    if (!establishBearersOnDemand_)
+        throw cRuntimeError("Ip2Nic: no established bearer for flow %s -> %s (ToS=%d), and on-demand bearer establishment is disabled",
+                key.srcAddr.str().c_str(), key.dstAddr.str().c_str(), (int)key.typeOfService);
 
-            // Traffic category: parameter for the bearer establishment call.
-            LteTrafficClass trafficCategory = getTrafficCategory(pkt);
+    FlowId flow = lteInfo->toFlowId();
+    flow.drbId = DRBID_NONE;   // a new bearer, whose id the establishment assigns
 
-            // The flow key travels with the request: RRC binds the flow to the bearer at
-            // both endpoints (see configureFlowBinding), so this node's own binding and
-            // the peer's mirrored one are installed by the same establishment.
-            drbId = binder_->establishDataConnection(flow, BearerRequest{trafficCategory, UNKNOWN_RLC_TYPE, key});
-        }
-        lteInfo->setDrbId(drbId);
-
-        // Debug logging (UE only)
-        if (!isEnb && isNr_) {
-            EV << "NrPdcpUe : Assigned DRB ID: " << drbId << "\n";
-            EV << "NrPdcpUe : Assigned Node ID: " << localNodeId << "\n";
-        }
-    }
+    // The flow key travels with the request: RRC binds the flow to the bearer at both
+    // endpoints (see configureFlowBinding), so this node's own binding and the peer's
+    // mirrored one are installed by the same establishment.
+    return binder_->establishDataConnection(flow, BearerRequest{getTrafficCategory(pkt), UNKNOWN_RLC_TYPE, key});
 }
 
 } //namespace

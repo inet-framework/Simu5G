@@ -954,7 +954,7 @@ void Binder::establishStaticBearers()
             throw cRuntimeError("staticBearers: module '%s' is not a registered UE", uePath);
 
         // select the UE's stack: the explicit technology field, or the same default
-        // that packet-triggered establishment uses (see Ip2Nic::analyzePacket): the
+        // that packet-triggered establishment uses (see Ip2Nic::attachFlowControlInfo): the
         // technology-neutral LTE id when the serving nodes form a DC setup (so that
         // establishDataConnection() splits the bearer into legs), the NR id otherwise
         MacNodeId ueId;
