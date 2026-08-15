@@ -326,8 +326,10 @@ void Ip2Nic::assignEndpointIds(FlowControlInfo *lteInfo, const Ipv4Address& dest
         }
     }
     else {
-        // TODO CHANGE HERE!!! Must be the NR node ID if this is an NR connection
-        // (unlike the UE branch above, which picks nrNodeId_ when useNR)
+        // This NIC has no NR leg, so there is no NR id to select and useNR does not
+        // apply: getNextHopNodeId() consults it only when isNr_ is set. Every NR-capable
+        // NIC takes the branch above, a dual-connectivity master eNB included (it sets
+        // isNr from the ini).
         lteInfo->setSourceId(nodeId_);
         if (lteInfo->getMulticastGroupId() != NODEID_NONE)  // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
             lteInfo->setDestId(nodeId_);
