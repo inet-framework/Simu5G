@@ -82,6 +82,10 @@ constexpr Qfi QFI_NONE = Qfi(0);
 constexpr LogicalCid LCID_NONE = LogicalCid(65535);
 constexpr DrbId DRBID_NONE = DrbId(65535);
 
+/// Highest usable DRB identity. A DRB id maps 1:1 onto its logical channel id, which is
+/// what bounds it here; 3GPP's own DRB-Identity range is the narrower 1..32 (TS 38.331).
+constexpr unsigned short MAX_DRB_ID = 63;
+
 /// Special LogicalCid values for Buffer Status Reports
 // TODO add LONG/TRUNCATED BSR
 // TODO FIXME these conflict with DRB LCIDs (1..), and also 0 is reserved for CCCH (common control channel)

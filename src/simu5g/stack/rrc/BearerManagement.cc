@@ -158,10 +158,23 @@ void BearerManagement::handleMessage(cMessage *msg)
     throw cRuntimeError("This module does not process messages");
 }
 
+void BearerManagement::releaseDrbIdOf(DrbKey bearer)
+{
+    // The identity belongs to the pool of the (this node, peer) pair. A dual-stack node
+    // may have established the bearer under either of its own ids, so offer it back to
+    // both pools -- releasing an id that is not in use there is a no-op.
+    MacNodeId lteId = registration_->getLteNodeId();
+    MacNodeId nrId = registration_->getNrNodeId();
+    if (lteId != NODEID_NONE)
+        binderModule->releaseDrbId(lteId, bearer.getNodeId(), bearer.getDrbId());
+    if (nrId != NODEID_NONE)
+        binderModule->releaseDrbId(nrId, bearer.getNodeId(), bearer.getDrbId());
+}
+
 void BearerManagement::notifyBearerEstablished(DrbKey key)
 {
-    if (ip2nicModule_ != nullptr)
-        ip2nicModule_->bearerEstablished(key);
+    // Ip2Nic learns of the bearer through the flow binding installed in
+    // createOutgoingConnection(), which is where the flow it carries is known.
     if (sdapModule.getNullable() != nullptr)
         sdapModule->bearerEstablished(key);
 }
@@ -169,7 +182,7 @@ void BearerManagement::notifyBearerEstablished(DrbKey key)
 void BearerManagement::notifyBearerReleased(DrbKey key)
 {
     if (ip2nicModule_ != nullptr)
-        ip2nicModule_->bearerReleased(key);
+        ip2nicModule_->releaseFlowBindings(key);
     if (sdapModule.getNullable() != nullptr)
         sdapModule->bearerReleased(key);
 }
@@ -376,7 +389,7 @@ void BearerManagement::createOutgoingConnection(const FlowId& flow, const Bearer
     // parallel one. Ip2Nic never authors these bindings itself.
     if (req.flowBindingKey.has_value()) {
         if (ip2nicModule_ != nullptr)
-            ip2nicModule_->configureFlowBinding(*req.flowBindingKey, flow.drbId);
+            ip2nicModule_->configureFlowBinding(*req.flowBindingKey, DrbKey(flow.destId, flow.drbId));
     }
 
     // Idempotence guard: with duplex bearer establishment this half may already
@@ -829,6 +842,7 @@ void BearerManagement::deleteLocalPdcpEntities(MacNodeId nodeId)
                 pdcpTxEntities_.erase(it->first);
             }
             pdcpRxEntities_.erase(it->first);
+            releaseDrbIdOf(it->first);
             it->second->deleteModule();
             it = pdcpEntities_.erase(it);
         } else ++it;

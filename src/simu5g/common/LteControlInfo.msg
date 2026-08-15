@@ -70,7 +70,7 @@ class FlowControlInfo extends LteControlInfo {
 }
 
 cplusplus (FlowControlInfo::setDrbId) {{
-    ASSERT(num(drbId) <= 63);
+    ASSERT(num(drbId) <= MAX_DRB_ID);
 }}
 
 cplusplus(FlowControlInfo) {{

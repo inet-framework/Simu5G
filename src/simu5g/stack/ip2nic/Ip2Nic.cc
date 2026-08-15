@@ -198,28 +198,26 @@ LteTrafficClass Ip2Nic::getTrafficCategory(cPacket *pkt)
         return BACKGROUND;
 }
 
-void Ip2Nic::configureFlowBinding(const FlowBindingKey& key, DrbId drbId)
+void Ip2Nic::configureFlowBinding(const FlowBindingKey& key, DrbKey bearer)
 {
     Enter_Method_Silent("configureFlowBinding()");
     EV << "Ip2Nic::configureFlowBinding - flow " << key.srcAddr << " -> " << key.dstAddr
-       << " (ToS=" << key.typeOfService << ") is carried by DRB " << drbId << endl;
-    flowBindings_.emplace(key, drbId);  // no-op if the flow is already bound
+       << " (ToS=" << key.typeOfService << ") is carried by " << bearer << endl;
+    flowBindings_.emplace(key, bearer);  // no-op if the flow is already bound
 }
 
-void Ip2Nic::bearerEstablished(DrbKey key)
+void Ip2Nic::releaseFlowBindings(DrbKey bearer)
 {
-    Enter_Method_Silent("bearerEstablished()");
-    EV << "Ip2Nic::bearerEstablished - " << key << endl;
-    establishedBearers_.insert(key);
-}
-
-void Ip2Nic::bearerReleased(DrbKey key)
-{
-    Enter_Method_Silent("bearerReleased()");
-    EV << "Ip2Nic::bearerReleased - " << key << endl;
-    establishedBearers_.erase(key);
-    // The flow bindings stay: a flow keeps its DRB across the teardown, and its next
-    // packet re-establishes that same bearer (possibly towards a new serving node).
+    Enter_Method_Silent("releaseFlowBindings()");
+    for (auto it = flowBindings_.begin(); it != flowBindings_.end(); ) {
+        if (it->second == bearer) {
+            EV << "Ip2Nic::releaseFlowBindings - flow " << it->first.srcAddr << " -> "
+               << it->first.dstAddr << " (ToS=" << it->first.typeOfService << ") unbound from " << bearer << endl;
+            it = flowBindings_.erase(it);
+        }
+        else
+            ++it;
+    }
 }
 
 MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
@@ -327,18 +325,17 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
         // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
         FlowBindingKey key{srcAddr, destAddr, typeOfService, bindingDirection(lteInfo.get())};
         auto it = flowBindings_.find(key);
-        bool flowIsBound = (it != flowBindings_.end());
-        DrbId drbId = flowIsBound ? it->second : DRBID_NONE;
-
-        // Ask for a bearer if this flow has none yet, or if the one it is bound to is
-        // gone: bearers torn down at handover or at a D2D mode switch are re-established
-        // by the next packet, on the flow's existing DRB.
-        if (!flowIsBound || !establishedBearers_.count(DrbKey(lteInfo->getDestId(), drbId))) {
+        DrbId drbId;
+        if (it != flowBindings_.end())
+            drbId = it->second.getDrbId();
+        else {
+            // No bearer carries this flow: either it is new, or the bearer it used to be
+            // bound to was torn down (at a handover, say), which unbinds it. Ask for one.
             if (!establishBearersOnDemand_)
                 throw cRuntimeError("Ip2Nic: no established bearer for flow %s -> %s (ToS=%d), and on-demand bearer establishment is disabled",
                         srcAddr.str().c_str(), destAddr.str().c_str(), (int)typeOfService);
             FlowId flow = lteInfo->toFlowId();
-            flow.drbId = drbId;   // DRBID_NONE => a new bearer, whose id the establishment assigns
+            flow.drbId = DRBID_NONE;   // a new bearer, whose id the establishment assigns
             // The flow key travels with the request: RRC binds the flow to the bearer at
             // both endpoints (see configureFlowBinding), so this node's own binding and
             // the peer's mirrored one are installed by the same establishment.

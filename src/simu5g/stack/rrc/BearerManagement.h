@@ -76,6 +76,10 @@ class BearerManagement : public cSimpleModule
     virtual void notifyBearerEstablished(DrbKey key);
     virtual void notifyBearerReleased(DrbKey key);
 
+    // Give a torn-down bearer's DRB identity back to the Binder, which pools identities
+    // per node pair (see Binder::releaseDrbId).
+    virtual void releaseDrbIdOf(DrbKey bearer);
+
     // Entity registries (CP owns the lifecycle of all entities)
     // One PDCP entity module (compound: TX+RX, see PdcpEntityBase) per bearer, keyed by (peer
     // node, DRB id); the tx/rx submodule pointers below index into it for per-side lookups.

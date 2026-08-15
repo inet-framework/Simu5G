@@ -57,16 +57,12 @@ class Ip2Nic : public cSimpleModule
     // overrides live in Ip2NicD2D.
     virtual void analyzePacket(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
 
-    // Which DRB carries which flow: the classifier's half of a bearer. Not authored
-    // here -- RRC installs an entry at each endpoint of a bearer it establishes (see
-    // configureFlowBinding()), so the two ends agree on the binding and reverse
-    // traffic reuses the duplex bearer instead of establishing a parallel one.
-    std::unordered_map<FlowBindingKey, DrbId, FlowBindingKeyHash> flowBindings_;
-
-    // The bearers that currently exist on this node, as told by RRC. A flow whose
-    // bearer is not (or no longer) here needs one established -- after a handover or
-    // a mode switch the flow keeps its binding above, but its entities are gone.
-    std::set<DrbKey> establishedBearers_;
+    // Which bearer carries which flow: the classifier's half of a bearer, and the only
+    // bearer state this module holds. Entirely maintained by RRC, which installs an
+    // entry at each endpoint of a bearer it establishes and drops it again when it
+    // tears that bearer down -- so a flow is bound exactly while a bearer carries it,
+    // and an unbound flow is one that needs a bearer established.
+    std::unordered_map<FlowBindingKey, DrbKey, FlowBindingKeyHash> flowBindings_;
 
     // UEs whose context this node released after a radio link failure (RLF).
     // While a peer is listed here, its DL (gNB) / UL (UE) packets are dropped at
@@ -106,17 +102,17 @@ class Ip2Nic : public cSimpleModule
     virtual LteTrafficClass getTrafficCategory(cPacket *pkt);
 
   public:
-    // Configuration push: RRC binds a flow to the DRB carrying it, at both endpoints
+    // Configuration push: RRC binds a flow to the bearer carrying it, at both endpoints
     // of the bearer it establishes. First binding wins, so a flow already bound keeps
-    // its bearer. Ip2Nic does not author these bindings; this is the only write path.
-    virtual void configureFlowBinding(const FlowBindingKey& key, DrbId drbId);
+    // its bearer -- which is what makes a dual-connectivity UE keep the master-anchored
+    // bearer its packets are routed to. Ip2Nic does not author bindings; together with
+    // releaseFlowBindings() this is the only write path.
+    virtual void configureFlowBinding(const FlowBindingKey& key, DrbKey bearer);
 
-    // Bearer lifecycle notifications from RRC, which owns the entities and so knows
-    // exactly when they come and go. They keep establishedBearers_ current, so a
-    // packet's "does my bearer exist?" question is answered from this module's own
-    // state instead of by inspecting the PDCP layer's entity registry.
-    virtual void bearerEstablished(DrbKey key);
-    virtual void bearerReleased(DrbKey key);
+    // Unbind every flow the given bearer carried: RRC calls this where it tears the
+    // bearer down, so the bindings never outlive the entities behind them and the
+    // affected flows establish a fresh bearer on their next packet.
+    virtual void releaseFlowBindings(DrbKey bearer);
 
     // Radio link failure handling is data-plane only here: BearerManagement (RRC) drives
     // the release/re-establishment lifecycle and gates this node's packet dropping via

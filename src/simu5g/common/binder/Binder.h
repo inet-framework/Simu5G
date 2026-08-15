@@ -603,14 +603,24 @@ class Binder : public cSimpleModule
     // of the established bearer is returned.
     virtual DrbId establishDataConnection(const FlowId& flow, const BearerRequest& req);
 
-    // Allocate a new DRB ID, unique within the (unordered) node pair {a, b}, so the
+    // Allocate the lowest free DRB ID within the (unordered) node pair {a, b}, so the
     // two endpoints of a link can never mint colliding IDs for the same peer.
     // For multicast flows, pass the multicast group ID as the second node.
     virtual DrbId assignDrbId(MacNodeId a, MacNodeId b);
 
+    // Mark an externally chosen DRB ID as in use, so assignDrbId() cannot hand out the
+    // same one later (SDAP and the staticBearers entries name their bearers themselves).
+    virtual void reserveDrbId(MacNodeId a, MacNodeId b, DrbId drbId);
+
+    // Return a DRB ID to its pair's pool when the bearer is torn down. DRB identities are
+    // a finite per-UE resource (TS 38.331: DRB-Identity is 1..32) and are reused once
+    // released -- without this, a UE handing over repeatedly would exhaust the space.
+    // Releasing an ID that is not in use is a no-op, so both endpoints may call it.
+    virtual void releaseDrbId(MacNodeId a, MacNodeId b, DrbId drbId);
+
   private:
-    // per-node-pair DRB ID counters for assignDrbId()
-    std::map<std::pair<MacNodeId, MacNodeId>, unsigned short> drbIdCounters_;
+    // The DRB IDs currently in use within each node pair (see assignDrbId())
+    std::map<std::pair<MacNodeId, MacNodeId>, std::set<DrbId>> drbIdsInUse_;
 
     // Establish the bearers described by the staticBearers parameter (see NED
     // documentation), in the last initialization stage. Each entry goes through

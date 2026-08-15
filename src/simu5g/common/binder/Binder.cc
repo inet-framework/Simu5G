@@ -901,7 +901,35 @@ bool Binder::isDualConnectivityRequired(const FlowId& flow)
 DrbId Binder::assignDrbId(MacNodeId a, MacNodeId b)
 {
     auto pair = std::minmax(a, b);
-    return DrbId(++drbIdCounters_[{pair.first, pair.second}]);
+    auto& inUse = drbIdsInUse_[{pair.first, pair.second}];
+
+    // Lowest free ID: identities released with their bearer are handed out again, which
+    // is what keeps the space bounded for a UE that establishes and releases bearers
+    // repeatedly (at every handover, say).
+    unsigned short id = 1;
+    while (inUse.count(DrbId(id)))
+        id++;
+    if (id > MAX_DRB_ID)
+        throw cRuntimeError("Binder::assignDrbId - out of DRB identities for the node pair (%hu, %hu): "
+                "all %d are in use", num(pair.first), num(pair.second), MAX_DRB_ID);
+
+    inUse.insert(DrbId(id));
+    return DrbId(id);
+}
+
+void Binder::reserveDrbId(MacNodeId a, MacNodeId b, DrbId drbId)
+{
+    auto pair = std::minmax(a, b);
+    drbIdsInUse_[{pair.first, pair.second}].insert(drbId);
+}
+
+void Binder::releaseDrbId(MacNodeId a, MacNodeId b, DrbId drbId)
+{
+    auto pair = std::minmax(a, b);
+    auto it = drbIdsInUse_.find({pair.first, pair.second});
+    if (it != drbIdsInUse_.end() && it->second.erase(drbId) != 0)
+        EV << "Binder::releaseDrbId - DRB " << drbId << " of the node pair (" << pair.first
+           << ", " << pair.second << ") is free again" << endl;
 }
 
 void Binder::establishStaticBearers()
@@ -954,16 +982,12 @@ void Binder::establishStaticBearers()
         if (servingNodeId == NODEID_NONE)
             throw cRuntimeError("staticBearers: UE '%s' (nodeId=%hu) is not attached to a cell", uePath, num(ueId));
 
-        // DRB id: explicit (also reserve it in the node pair's counter, so on-demand
-        // establishment cannot mint the same id later), or left unset for
-        // establishDataConnection() to assign the next free one
+        // DRB id: explicit (establishDataConnection() reserves it, so on-demand
+        // establishment cannot hand out the same id later), or left unset for it to
+        // assign the lowest free one
         DrbId drbId = DRBID_NONE;
-        if (entry->containsKey("drb")) {
+        if (entry->containsKey("drb"))
             drbId = DrbId(entry->get("drb").intValue());
-            auto pair = std::minmax(ueId, servingNodeId);
-            unsigned short& counter = drbIdCounters_[{pair.first, pair.second}];
-            counter = std::max(counter, (unsigned short)num(drbId));
-        }
 
         LteTrafficClass qosClass = CONVERSATIONAL;
         if (entry->containsKey("qosClass")) {
@@ -998,11 +1022,13 @@ DrbId Binder::establishDataConnection(const FlowId& flowIn, const BearerRequest&
     // staticBearers entries name their bearers explicitly). IDs are unique per node
     // pair; for multicast the "pair" is (sender, group), there being no single peer.
     FlowId flow = flowIn;
+    MacNodeId peerId = (flow.multicastGroupId != NODEID_NONE) ? flow.multicastGroupId : flow.destId;
     if (flow.drbId == DRBID_NONE) {
-        MacNodeId peerId = (flow.multicastGroupId != NODEID_NONE) ? flow.multicastGroupId : flow.destId;
         flow.drbId = assignDrbId(flow.sourceId, peerId);
         EV << "Binder::establishDataConnection - new DRB ID assigned: " << flow.drbId << endl;
     }
+    else
+        reserveDrbId(flow.sourceId, peerId, flow.drbId);   // named by the requester; keep assignDrbId off it
 
     bool dualConnected = isDualConnectivityRequired(flow);
     if (!dualConnected) {
