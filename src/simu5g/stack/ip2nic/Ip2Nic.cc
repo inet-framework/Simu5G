@@ -262,14 +262,6 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     // --- Common preamble ---
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
 
-    // Traffic category (skipped when SDAP handles DRB/RLC assignment): feeds the
-    // BearerRequest built below for bearer establishment, hence the function-level scope.
-    // The RLC mode is not this module's decision (see BearerRequest::rlcType).
-    LteTrafficClass trafficCategory = CONVERSATIONAL;
-    if (!hasSdap_) {
-        trafficCategory = getTrafficCategory(pkt);
-    }
-
     // direction of transmitted packets depends on node type
     Direction dir = (nodeType_ == UE) ? UL : DL;
     lteInfo->setDirection(dir);
@@ -336,6 +328,10 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
                         srcAddr.str().c_str(), destAddr.str().c_str(), (int)typeOfService);
             FlowId flow = lteInfo->toFlowId();
             flow.drbId = DRBID_NONE;   // a new bearer, whose id the establishment assigns
+
+            // Traffic category: parameter for the bearer establishment call.
+            LteTrafficClass trafficCategory = getTrafficCategory(pkt);
+
             // The flow key travels with the request: RRC binds the flow to the bearer at
             // both endpoints (see configureFlowBinding), so this node's own binding and
             // the peer's mirrored one are installed by the same establishment.
