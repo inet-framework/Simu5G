@@ -29,7 +29,6 @@ Define_Module(NrSdap);
 void NrSdap::initialize()
 {
     binder_.reference(this, "binderModule", true);
-    pdcpMux_.reference(this, "pdcpMuxModule", true);
 
     // Get pointer to reflective QoS table
     reflectiveQosTable.reference(this, "reflectiveQosTableModule", false);
@@ -47,6 +46,20 @@ void NrSdap::configureDrb(const DrbDesc& drb)
     Enter_Method("configureDrb(drb %d)", (int)num(drb.getDrbId()));
     EV << "NrSdap::configureDrb - " << drb << endl;
     drbTable_.addOrUpdateDrb(drb);
+}
+
+void NrSdap::bearerEstablished(DrbKey key)
+{
+    Enter_Method_Silent("bearerEstablished()");
+    EV << "NrSdap::bearerEstablished - " << key << endl;
+    establishedBearers_.insert(key);
+}
+
+void NrSdap::bearerReleased(DrbKey key)
+{
+    Enter_Method_Silent("bearerReleased()");
+    EV << "NrSdap::bearerReleased - " << key << endl;
+    establishedBearers_.erase(key);
 }
 
 bool NrSdap::requiresSdapHeader(const DrbDesc *drb)
@@ -173,10 +186,10 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
     lteInfo->setDrbId(drb->getDrbId());
 
-    // Establish the connection unless its PDCP TX entity already exists. The entity
-    // registry is authoritative: entities deleted at handover or D2D mode switch get
-    // re-established by the next packet, even for an already-seen (drbId, destId) pair.
-    if (!pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drb->getDrbId()))) {
+    // Establish the connection unless the bearer already exists: bearers torn down at
+    // handover or at a D2D mode switch are re-established by the next packet, even for
+    // an already-seen (drbId, destId) pair.
+    if (!establishedBearers_.count(DrbKey(lteInfo->getDestId(), drb->getDrbId()))) {
         if (!establishBearersOnDemand_)
             throw cRuntimeError("SDAP TX: no established bearer for DRB %d (peer nodeId=%d), and on-demand bearer establishment is disabled -- missing or mismatched staticBearers entry?",
                     (int)num(drb->getDrbId()), (int)num(lteInfo->getDestId()));

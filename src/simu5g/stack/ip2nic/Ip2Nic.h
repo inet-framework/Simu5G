@@ -20,7 +20,6 @@
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/binder/Binder.h"
-#include "simu5g/stack/pdcp/PdcpMux.h"
 
 namespace simu5g {
 
@@ -39,9 +38,6 @@ class Ip2Nic : public cSimpleModule
 
     // reference to the binder
     inet::ModuleRefByPar<Binder> binder_;
-
-    // reference to the local PDCP dispatcher, the authoritative registry of PDCP TX entities
-    inet::ModuleRefByPar<PdcpMux> pdcpMux_;
 
     // LTE MAC node id of this node
     MacNodeId nodeId_ = NODEID_NONE;
@@ -66,6 +62,11 @@ class Ip2Nic : public cSimpleModule
     // configureFlowBinding()), so the two ends agree on the binding and reverse
     // traffic reuses the duplex bearer instead of establishing a parallel one.
     std::unordered_map<FlowBindingKey, DrbId, FlowBindingKeyHash> flowBindings_;
+
+    // The bearers that currently exist on this node, as told by RRC. A flow whose
+    // bearer is not (or no longer) here needs one established -- after a handover or
+    // a mode switch the flow keeps its binding above, but its entities are gone.
+    std::set<DrbKey> establishedBearers_;
 
     // UEs whose context this node released after a radio link failure (RLF).
     // While a peer is listed here, its DL (gNB) / UL (UE) packets are dropped at
@@ -109,6 +110,13 @@ class Ip2Nic : public cSimpleModule
     // of the bearer it establishes. First binding wins, so a flow already bound keeps
     // its bearer. Ip2Nic does not author these bindings; this is the only write path.
     virtual void configureFlowBinding(const FlowBindingKey& key, DrbId drbId);
+
+    // Bearer lifecycle notifications from RRC, which owns the entities and so knows
+    // exactly when they come and go. They keep establishedBearers_ current, so a
+    // packet's "does my bearer exist?" question is answered from this module's own
+    // state instead of by inspecting the PDCP layer's entity registry.
+    virtual void bearerEstablished(DrbKey key);
+    virtual void bearerReleased(DrbKey key);
 
     // Radio link failure handling is data-plane only here: BearerManagement (RRC) drives
     // the release/re-establishment lifecycle and gates this node's packet dropping via

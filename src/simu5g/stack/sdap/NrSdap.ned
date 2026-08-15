@@ -47,7 +47,6 @@ simple NrSdap like INrSdap
     parameters:
         string nodeRole @enum("UE", "gNB");  // Node role: "UE" or "gNB" - determines reflective QoS behavior
         string binderModule = default("binder");
-        string pdcpMuxModule = default("^.pdcpMux");
         bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (see the staticBearers parameter of ~Binder)
         string reflectiveQosTableModule = default("");  // UE only: path to ReflectiveQosTable module (empty = disabled)
         bool useReflectiveQos = default(false); // UE only

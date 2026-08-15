@@ -79,6 +79,7 @@ void BearerManagement::initialize(int stage)
         macModule.reference(this, "macModule", true);
         nrMacModule.reference(this, "nrMacModule", false);
         sdapModule.reference(this, "sdapModule", false);
+        ip2nicModule_ = inet::findModuleFromPar<Ip2Nic>(par("ip2nicModule"), this);
 
         t311_ = par("t311");
         t301_ = par("t301");
@@ -147,14 +148,30 @@ void BearerManagement::handleMessage(cMessage *msg)
         // re-establishes on demand and DL/UL traffic resumes.
         MacNodeId peerId = t3->second;
         t301Timers_.erase(t3);
-        if (auto *ip2nic = inet::findModuleFromPar<Ip2Nic>(par("ip2nicModule"), this))
-            ip2nic->resumeUe(peerId);
+        if (ip2nicModule_ != nullptr)
+            ip2nicModule_->resumeUe(peerId);
         EV << NOW << " BearerManagement - RRC re-establishment complete for node " << peerId
            << "; bearer re-establishes on demand, traffic resumes" << endl;
         delete msg;
         return;
     }
     throw cRuntimeError("This module does not process messages");
+}
+
+void BearerManagement::notifyBearerEstablished(DrbKey key)
+{
+    if (ip2nicModule_ != nullptr)
+        ip2nicModule_->bearerEstablished(key);
+    if (sdapModule.getNullable() != nullptr)
+        sdapModule->bearerEstablished(key);
+}
+
+void BearerManagement::notifyBearerReleased(DrbKey key)
+{
+    if (ip2nicModule_ != nullptr)
+        ip2nicModule_->bearerReleased(key);
+    if (sdapModule.getNullable() != nullptr)
+        sdapModule->bearerReleased(key);
 }
 
 void BearerManagement::scheduleRadioLinkFailure(MacNodeId nodeId, bool nrStack)
@@ -195,8 +212,8 @@ void BearerManagement::releaseLink(MacNodeId peerId)
     EV << NOW << " BearerManagement::releaseLink - releasing link to " << peerId << endl;
     // UE Context Release: stop traffic at Ip2Nic first, so no packet is pushed at a torn-down
     // bearer (which would otherwise hit PdcpMux's TX-entity assert).
-    if (auto *ip2nic = inet::findModuleFromPar<Ip2Nic>(par("ip2nicModule"), this)) {
-        ip2nic->releaseUe(peerId);
+    if (ip2nicModule_ != nullptr) {
+        ip2nicModule_->releaseUe(peerId);
         // RRC re-establishment (TS 38.331 5.3.7): start the cell-(re)selection timer T311. When it
         // fires a suitable cell is assumed selected and the RRCReestablishmentRequest->Complete
         // (T301) exchange runs, after which the peer is un-released and its bearer re-establishes
@@ -358,8 +375,8 @@ void BearerManagement::createOutgoingConnection(const FlowId& flow, const Bearer
     // sees it, so reverse traffic resolves to this bearer instead of establishing a
     // parallel one. Ip2Nic never authors these bindings itself.
     if (req.flowBindingKey.has_value()) {
-        if (auto *ip2nic = inet::findModuleFromPar<Ip2Nic>(par("ip2nicModule"), this))
-            ip2nic->configureFlowBinding(*req.flowBindingKey, flow.drbId);
+        if (ip2nicModule_ != nullptr)
+            ip2nicModule_->configureFlowBinding(*req.flowBindingKey, flow.drbId);
     }
 
     // Idempotence guard: with duplex bearer establishment this half may already
@@ -715,6 +732,7 @@ void BearerManagement::installPdcpTxSide(DrbKey id, const FlowId& flow, LteRlcTy
         pdcpMux->setGateSize("toTxEntity", idx + 1);
         pdcpMux->gate("toTxEntity", idx)->connectTo(pdcpEnt->gate("upperIn"));
         pdcpMux->registerTxEntity(compoundId, idx);
+        notifyBearerEstablished(compoundId);
 
         auto *txEnt = check_and_cast<PdcpTxEntityBase *>(pdcpEnt->getSubmodule("tx"));
         pdcpTxEntities_[compoundId] = txEnt;
@@ -807,6 +825,7 @@ void BearerManagement::deleteLocalPdcpEntities(MacNodeId nodeId)
         if (!keyed || it->first.getNodeId() == nodeId) {
             if (pdcpTxEntities_.count(it->first)) {
                 pdcpMux->unregisterTxEntity(it->first);
+                notifyBearerReleased(it->first);
                 pdcpTxEntities_.erase(it->first);
             }
             pdcpRxEntities_.erase(it->first);

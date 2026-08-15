@@ -32,7 +32,6 @@ void Ip2Nic::initialize(int stage)
         nodeType_ = aToNodeType(par("nodeType").stdstringValue());
 
         binder_.reference(this, "binderModule", true);
-        pdcpMux_.reference(this, "pdcpMuxModule", true);
 
         networkIf = getContainingNicModule(this);
         dualConnectivityEnabled_ = networkIf->par("dualConnectivityEnabled").boolValue();
@@ -86,9 +85,9 @@ void Ip2Nic::releaseUe(MacNodeId ueId)
     EV << NOW << " Ip2Nic::releaseUe - releasing context for node " << ueId
        << " (dropping its future DL/UL traffic)" << endl;
     releasedUes_.insert(ueId);
-    // No connection cache to purge here: establishment is existence-driven (the PDCP
-    // TX-entity check in analyzePacket), so after teardown the peer's next packet
-    // re-establishes on its own.
+    // Nothing to purge here: the teardown that follows notifies this module bearer by
+    // bearer (see bearerReleased()), so the peer's next packet -- once resumeUe() lets
+    // it through again -- re-establishes on its own.
 }
 
 void Ip2Nic::resumeUe(MacNodeId ueId)
@@ -207,6 +206,22 @@ void Ip2Nic::configureFlowBinding(const FlowBindingKey& key, DrbId drbId)
     flowBindings_.emplace(key, drbId);  // no-op if the flow is already bound
 }
 
+void Ip2Nic::bearerEstablished(DrbKey key)
+{
+    Enter_Method_Silent("bearerEstablished()");
+    EV << "Ip2Nic::bearerEstablished - " << key << endl;
+    establishedBearers_.insert(key);
+}
+
+void Ip2Nic::bearerReleased(DrbKey key)
+{
+    Enter_Method_Silent("bearerReleased()");
+    EV << "Ip2Nic::bearerReleased - " << key << endl;
+    establishedBearers_.erase(key);
+    // The flow bindings stay: a flow keeps its DRB across the teardown, and its next
+    // packet re-establishes that same bearer (possibly towards a new serving node).
+}
+
 MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
 {
     bool isEnb = (nodeType_ == NODEB);
@@ -315,10 +330,10 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
         bool flowIsBound = (it != flowBindings_.end());
         DrbId drbId = flowIsBound ? it->second : DRBID_NONE;
 
-        // Ask for a bearer if this flow has none yet, or if its PDCP TX entity is gone.
-        // The entity registry is authoritative: entities deleted at handover or D2D mode
-        // switch get re-established by the next packet, on the flow's existing DRB.
-        if (!flowIsBound || !pdcpMux_->hasTxEntity(DrbKey(lteInfo->getDestId(), drbId))) {
+        // Ask for a bearer if this flow has none yet, or if the one it is bound to is
+        // gone: bearers torn down at handover or at a D2D mode switch are re-established
+        // by the next packet, on the flow's existing DRB.
+        if (!flowIsBound || !establishedBearers_.count(DrbKey(lteInfo->getDestId(), drbId))) {
             if (!establishBearersOnDemand_)
                 throw cRuntimeError("Ip2Nic: no established bearer for flow %s -> %s (ToS=%d), and on-demand bearer establishment is disabled",
                         srcAddr.str().c_str(), destAddr.str().c_str(), (int)typeOfService);

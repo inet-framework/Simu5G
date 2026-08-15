@@ -17,7 +17,6 @@
 #include "simu5g/stack/sdap/common/SdapDrbTable.h"
 #include "simu5g/stack/sdap/common/ReflectiveQosTable.h"
 #include "simu5g/common/binder/Binder.h"
-#include "simu5g/stack/pdcp/PdcpMux.h"
 #include <inet/common/ModuleRefByPar.h>
 
 using namespace omnetpp;
@@ -49,8 +48,10 @@ class NrSdap : public cSimpleModule
     inet::ModuleRefByPar<ReflectiveQosTable> reflectiveQosTable;
     inet::ModuleRefByPar<Binder> binder_;
 
-    // reference to the local PDCP dispatcher, the authoritative registry of PDCP TX entities
-    inet::ModuleRefByPar<PdcpMux> pdcpMux_;
+    // The bearers that currently exist on this node, as told by RRC (see
+    // bearerEstablished()). A packet mapped to a bearer that is not here needs one
+    // established.
+    std::set<DrbKey> establishedBearers_;
 
     bool isUe = true;  // Node role: true for UE, false for gNB
     bool establishBearersOnDemand_ = true;
@@ -69,6 +70,12 @@ class NrSdap : public cSimpleModule
     // SDAP does not author its own configuration; this is the only write path into
     // its DRB table.
     virtual void configureDrb(const DrbDesc& drb);
+
+    // Bearer lifecycle notifications from RRC, which owns the entities. They keep
+    // establishedBearers_ current, so "does this DRB's bearer exist?" is answered from
+    // this module's own state instead of by inspecting the PDCP layer's registry.
+    virtual void bearerEstablished(DrbKey key);
+    virtual void bearerReleased(DrbKey key);
 };
 
 } //namespace
