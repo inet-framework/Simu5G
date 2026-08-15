@@ -121,6 +121,8 @@ void Ip2Nic::toStackUe(Packet *pkt)
     // TechnologyReq tag (useNR) is already set by TechnologyDecision
 
     attachFlowControlInfo(pkt, srcAddr, destAddr, tos);
+    if (!hasSdap_)   // with SDAP, it maps the QoS flow onto a DRB itself
+        assignBearer(pkt, srcAddr, destAddr, tos);
 
     // Send datagram to LTE stack or LteIp peer
     send(pkt, stackGateOut_);
@@ -179,6 +181,8 @@ void Ip2Nic::toStackBs(Packet *pkt)
     // TechnologyReq tag (useNR) is already set by TechnologyDecision
 
     attachFlowControlInfo(pkt, srcAddr, destAddr, tos);
+    if (!hasSdap_)   // with SDAP, it maps the QoS flow onto a DRB itself
+        assignBearer(pkt, srcAddr, destAddr, tos);
 
     send(pkt, stackGateOut_);
 }
@@ -278,24 +282,23 @@ void Ip2Nic::attachFlowControlInfo(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4A
     classifyConnection(pkt, lteInfo.get(), destAddr, localNodeId, isEnb);
 
     assignEndpointIds(lteInfo.get(), destAddr, useNR, isEnb);
+}
 
-    // --- The bearer carrying the flow (skipped when SDAP assigns the DRB instead) ---
-    if (!hasSdap_) {
-        // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
-        FlowBindingKey key{srcAddr, destAddr, typeOfService, bindingDirection(lteInfo.get())};
-        auto it = flowBindings_.find(key);
-        // A flow is bound exactly while a bearer carries it: an unbound one is either new,
-        // or its bearer was torn down (at a handover, say), which unbinds it.
-        DrbId drbId = (it != flowBindings_.end()) ? it->second.getDrbId()
-                                                  : establishBearerOnDemand(key, lteInfo.get(), pkt);
-        lteInfo->setDrbId(drbId);
+void Ip2Nic::assignBearer(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address destAddr, uint16_t typeOfService)
+{
+    auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
-        // Debug logging (UE only)
-        if (!isEnb && isNr_) {
-            EV << "NrPdcpUe : Assigned DRB ID: " << drbId << "\n";
-            EV << "NrPdcpUe : Assigned Node ID: " << localNodeId << "\n";
-        }
-    }
+    // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
+    FlowBindingKey key{srcAddr, destAddr, typeOfService, bindingDirection(lteInfo.get())};
+    auto it = flowBindings_.find(key);
+    // A flow is bound exactly while a bearer carries it: an unbound one is either new,
+    // or its bearer was torn down (at a handover, say), which unbinds it.
+    DrbId drbId = (it != flowBindings_.end()) ? it->second.getDrbId()
+                                              : establishBearerOnDemand(key, lteInfo.get(), pkt);
+    lteInfo->setDrbId(drbId);
+
+    EV << "Ip2Nic::assignBearer - flow " << srcAddr << " -> " << destAddr
+       << " (ToS=" << typeOfService << ") is carried by DRB " << drbId << endl;
 }
 
 void Ip2Nic::assignEndpointIds(FlowControlInfo *lteInfo, const Ipv4Address& destAddr, bool useNR, bool isEnb)

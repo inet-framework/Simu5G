@@ -52,12 +52,18 @@ class Ip2Nic : public cSimpleModule
     bool hasSdap_ = false;
     bool establishBearersOnDemand_ = true;
 
-    // Fills in an outgoing packet's FlowControlInfo -- its endpoints, direction and the
-    // DRB carrying its flow -- so the stack below can route it. Not free of consequences:
-    // a flow that no bearer carries yet gets one established (see
-    // establishBearerOnDemand()). Core handles the plain UL/DL path (LTE) and the NR
-    // (non-D2D) path; the D2D-aware overrides live in Ip2NicD2D.
+    // Fills in an outgoing packet's FlowControlInfo: the flow's endpoints, its direction
+    // and, for D2D, its peers. Identity only -- which bearer carries the flow is the
+    // separate question assignBearer() answers, because answering it can establish one.
+    // Core handles the plain UL/DL path (LTE) and the NR (non-D2D) path; the D2D-aware
+    // overrides live in Ip2NicD2D.
     virtual void attachFlowControlInfo(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
+
+    // Records in the packet's FlowControlInfo which DRB carries its flow, establishing a
+    // bearer for it if none does yet -- so calling this can create entities at both
+    // endpoints (see establishBearerOnDemand()). Not called when SDAP is present: it maps
+    // the QoS flow onto a DRB itself.
+    virtual void assignBearer(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
 
     // Fills in the flow's endpoint ids: this node on the near side, and on the far side
     // the next hop towards the destination (the multicast group's sender, for multicast).
