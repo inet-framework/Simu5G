@@ -1071,9 +1071,15 @@ void Binder::createConnection(const FlowId& flow, const BearerRequest& req, bool
         // at both endpoints as well, so reverse traffic -- user data or RLC-AM
         // STATUS PDUs -- finds its entities in place instead of establishing a
         // separate unidirectional bearer.
+        // The reverse leg is the same bearer with the same configuration, seen from the
+        // other end -- including the flow key, which the peer binds as IT sees the flow
+        // (addresses swapped, direction reversed).
         FlowId revFlow = flow.reversed();
-        createOutgoingConnectionOnNode(destId, revFlow, req, destWithPdcp);
-        createIncomingConnectionOnNode(sourceId, revFlow, req, sourceWithPdcp);
+        BearerRequest revReq = req;
+        if (revReq.flowBindingKey.has_value())
+            revReq.flowBindingKey = revReq.flowBindingKey->reversed();
+        createOutgoingConnectionOnNode(destId, revFlow, revReq, destWithPdcp);
+        createIncomingConnectionOnNode(sourceId, revFlow, revReq, sourceWithPdcp);
     }
     else {
         // Multicast bearers stay unidirectional: TX at the sender, RX at the members

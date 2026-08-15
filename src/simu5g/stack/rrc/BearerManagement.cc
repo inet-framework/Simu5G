@@ -353,6 +353,15 @@ void BearerManagement::createOutgoingConnection(const FlowId& flow, const Bearer
 
     ASSERT(flow.sourceId == registration_->getLteNodeId() || flow.sourceId == registration_->getNrNodeId());
 
+    // Bind the requester's flow to this bearer in the local classifier. Both endpoints
+    // are configured this way, each by its own RRC and each with the flow key as it
+    // sees it, so reverse traffic resolves to this bearer instead of establishing a
+    // parallel one. Ip2Nic never authors these bindings itself.
+    if (req.flowBindingKey.has_value()) {
+        if (auto *ip2nic = inet::findModuleFromPar<Ip2Nic>(par("ip2nicModule"), this))
+            ip2nic->configureFlowBinding(*req.flowBindingKey, flow.drbId);
+    }
+
     // Idempotence guard: with duplex bearer establishment this half may already
     // exist (e.g. re-establishment after a partial teardown); skip instead of
     // crashing on duplicate MAC/RLC/PDCP creation.

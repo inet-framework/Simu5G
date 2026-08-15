@@ -56,41 +56,16 @@ class Ip2Nic : public cSimpleModule
     bool hasSdap_ = false;
     bool establishBearersOnDemand_ = true;
 
-    // Key for identifying connections (for DRB ID assignment)
-    struct ConnectionKey {
-        inet::Ipv4Address srcAddr;
-        inet::Ipv4Address dstAddr;
-        uint16_t typeOfService;
-        Direction direction;
-
-        bool operator==(const ConnectionKey& other) const {
-            return srcAddr == other.srcAddr &&
-                   dstAddr == other.dstAddr &&
-                   typeOfService == other.typeOfService &&
-                   direction == other.direction;
-        }
-    };
-
-    struct ConnectionKeyHash {
-        std::size_t operator()(const ConnectionKey& key) const {
-            std::size_t h1 = std::hash<uint32_t>{}(key.srcAddr.getInt());
-            std::size_t h2 = std::hash<uint32_t>{}(key.dstAddr.getInt());
-            std::size_t h3 = std::hash<uint16_t>{}(key.typeOfService);
-            std::size_t h4 = std::hash<uint16_t>{}(uint16_t(key.direction));
-            return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3);
-        }
-    };
-
     // Packet analysis (moved from PDCP): classifies the packet and fills FlowControlInfo tag.
     // Core handles the plain UL/DL path (LTE) and the NR (non-D2D) path; the D2D-aware
     // overrides live in Ip2NicD2D.
     virtual void analyzePacket(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
 
-    // DRB ID table: flow (ConnectionKey) -> DRB ID. IDs are allocated by the Binder
-// (unique per node pair); entries are added locally on allocation, and remotely
-// via registerDrbMapping() when the peer establishes a duplex bearer whose
-// reverse leg terminates here.
-std::unordered_map<ConnectionKey, DrbId, ConnectionKeyHash> drbIdTable_;
+    // Which DRB carries which flow: the classifier's half of a bearer. Not authored
+    // here -- RRC installs an entry at each endpoint of a bearer it establishes (see
+    // configureFlowBinding()), so the two ends agree on the binding and reverse
+    // traffic reuses the duplex bearer instead of establishing a parallel one.
+    std::unordered_map<FlowBindingKey, DrbId, FlowBindingKeyHash> flowBindings_;
 
     // UEs whose context this node released after a radio link failure (RLF).
     // While a peer is listed here, its DL (gNB) / UL (UE) packets are dropped at
@@ -122,25 +97,19 @@ std::unordered_map<ConnectionKey, DrbId, ConnectionKeyHash> drbIdTable_;
     /// group, peer IDs and the actual flow direction here.
     virtual void classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const inet::Ipv4Address& destAddr, MacNodeId localNodeId, bool isEnb) {}
 
-    /// direction stored in the DRB ConnectionKey. The plain-LTE stack has
-    /// historically used a direction-agnostic key; the NR and D2D stacks key
-    /// by the actual flow direction.
-    virtual Direction connectionKeyDirection(FlowControlInfo *lteInfo) { return isNr_ ? (Direction)lteInfo->getDirection() : Direction(0xFFFF); }
+    /// direction stored in the flow key. The plain-LTE stack has historically used
+    /// a direction-agnostic key; the NR and D2D stacks key by the actual flow
+    /// direction.
+    virtual Direction bindingDirection(FlowControlInfo *lteInfo) { return isNr_ ? (Direction)lteInfo->getDirection() : Direction(0xFFFF); }
     virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
     virtual LteTrafficClass getTrafficCategory(cPacket *pkt);
 
-    // Establish the (duplex) bearer for the flow via the Binder, then register the
-    // mirrored flow->DRB mapping at the peer's Ip2Nic so reverse application traffic
-    // resolves to this bearer's reverse leg instead of allocating a new DRB.
-    // Returns the bearer's DRB id, which the establishment assigns when the flow
-    // carries none (DRBID_NONE).
-    virtual DrbId establishConnection(const FlowId& flow, const BearerRequest& req, const ConnectionKey& key);
-
-    // Called by a peer's Ip2Nic: bind an incoming flow key to the DRB of a bearer
-    // established from the remote side (no-op if the key is already bound).
-    virtual void registerDrbMapping(const ConnectionKey& key, DrbId drbId);
-
   public:
+    // Configuration push: RRC binds a flow to the DRB carrying it, at both endpoints
+    // of the bearer it establishes. First binding wins, so a flow already bound keeps
+    // its bearer. Ip2Nic does not author these bindings; this is the only write path.
+    virtual void configureFlowBinding(const FlowBindingKey& key, DrbId drbId);
+
     // Radio link failure handling is data-plane only here: BearerManagement (RRC) drives
     // the release/re-establishment lifecycle and gates this node's packet dropping via
     // the two calls below.

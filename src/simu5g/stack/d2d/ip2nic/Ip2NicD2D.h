@@ -41,7 +41,7 @@ class Ip2NicD2D : public Ip2Nic
     void classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const inet::Ipv4Address& destAddr, MacNodeId localNodeId, bool isEnb) override;
 
     /// all D2D-capable stacks key DRBs by the actual flow direction
-    Direction connectionKeyDirection(FlowControlInfo *lteInfo) override { return (Direction)lteInfo->getDirection(); }
+    Direction bindingDirection(FlowControlInfo *lteInfo) override { return (Direction)lteInfo->getDirection(); }
     MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId) override;
 };
 

@@ -199,28 +199,12 @@ LteTrafficClass Ip2Nic::getTrafficCategory(cPacket *pkt)
         return BACKGROUND;
 }
 
-void Ip2Nic::registerDrbMapping(const ConnectionKey& key, DrbId drbId)
+void Ip2Nic::configureFlowBinding(const FlowBindingKey& key, DrbId drbId)
 {
-    Enter_Method_Silent("registerDrbMapping()");
-    drbIdTable_.emplace(key, drbId);  // no-op if the flow is already bound
-}
-
-DrbId Ip2Nic::establishConnection(const FlowId& flow, const BearerRequest& req, const ConnectionKey& key)
-{
-    DrbId drbId = binder_->establishDataConnection(flow, req);
-
-    // Bind the mirrored flow (swapped addresses, reversed direction) to the same DRB
-    // at the peer, so its own traffic on the reverse leg reuses this duplex bearer.
-    // Multicast bearers are unidirectional: nothing to bind.
-    if (flow.multicastGroupId == NODEID_NONE) {
-        Direction revDir = (key.direction == UL) ? DL :
-                           (key.direction == DL) ? UL : key.direction; // D2D and the wildcard map to themselves
-        ConnectionKey mirrorKey{key.dstAddr, key.srcAddr, key.typeOfService, revDir};
-        auto *peerIp2Nic = check_and_cast_nullable<Ip2Nic *>(binder_->getIp2NicByNodeId(flow.destId));
-        if (peerIp2Nic != nullptr)
-            peerIp2Nic->registerDrbMapping(mirrorKey, drbId);
-    }
-    return drbId;
+    Enter_Method_Silent("configureFlowBinding()");
+    EV << "Ip2Nic::configureFlowBinding - flow " << key.srcAddr << " -> " << key.dstAddr
+       << " (ToS=" << key.typeOfService << ") is carried by DRB " << drbId << endl;
+    flowBindings_.emplace(key, drbId);  // no-op if the flow is already bound
 }
 
 MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
@@ -326,9 +310,9 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
     // --- DRB resolution (skipped when SDAP handles it) ---
     if (!hasSdap_) {
         // TODO: Since IP addresses can change when we add and remove nodes, maybe node IDs should be used instead of them
-        ConnectionKey key{srcAddr, destAddr, typeOfService, connectionKeyDirection(lteInfo.get())};
-        auto it = drbIdTable_.find(key);
-        bool flowIsBound = (it != drbIdTable_.end());
+        FlowBindingKey key{srcAddr, destAddr, typeOfService, bindingDirection(lteInfo.get())};
+        auto it = flowBindings_.find(key);
+        bool flowIsBound = (it != flowBindings_.end());
         DrbId drbId = flowIsBound ? it->second : DRBID_NONE;
 
         // Ask for a bearer if this flow has none yet, or if its PDCP TX entity is gone.
@@ -340,8 +324,10 @@ void Ip2Nic::analyzePacket(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address d
                         srcAddr.str().c_str(), destAddr.str().c_str(), (int)typeOfService);
             FlowId flow = lteInfo->toFlowId();
             flow.drbId = drbId;   // DRBID_NONE => a new bearer, whose id the establishment assigns
-            drbId = establishConnection(flow, BearerRequest{trafficCategory, UNKNOWN_RLC_TYPE}, key);
-            drbIdTable_[key] = drbId;
+            // The flow key travels with the request: RRC binds the flow to the bearer at
+            // both endpoints (see configureFlowBinding), so this node's own binding and
+            // the peer's mirrored one are installed by the same establishment.
+            drbId = binder_->establishDataConnection(flow, BearerRequest{trafficCategory, UNKNOWN_RLC_TYPE, key});
         }
         lteInfo->setDrbId(drbId);
 

@@ -25,6 +25,7 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <optional>
 #include <queue>
 #include <set>
 #include <sstream>
@@ -35,6 +36,7 @@
 #include <inet/common/Protocol.h>
 #include <inet/common/Units.h>
 #include <inet/common/geometry/Geometry_m.h>
+#include <inet/networklayer/contract/ipv4/Ipv4Address.h>
 
 #include "simu5g/common/LteDefs.h"
 #include "simu5g/common/LteTypes.h"
@@ -92,6 +94,39 @@ struct FlowId {
     FlowId reversed() const;    // same swaps as Binder's (former) makeReverseFlowControlInfo
 };
 
+// Identity of an IP flow as the packet classifier sees it: the fields the flow -> DRB
+// bindings of ~Ip2Nic are keyed by. Not a packet filter (yet): the fields match exactly,
+// except that the plain-LTE stack stores a wildcard direction to keep its key
+// direction-agnostic.
+struct FlowBindingKey {
+    inet::Ipv4Address srcAddr;
+    inet::Ipv4Address dstAddr;
+    uint16_t typeOfService = 0;
+    Direction direction = DL;
+
+    bool operator==(const FlowBindingKey& other) const {
+        return srcAddr == other.srcAddr && dstAddr == other.dstAddr &&
+               typeOfService == other.typeOfService && direction == other.direction;
+    }
+
+    // The same flow as seen from the other end: addresses swapped and direction
+    // reversed (D2D and the wildcard direction map to themselves).
+    FlowBindingKey reversed() const {
+        Direction revDir = (direction == UL) ? DL : (direction == DL) ? UL : direction;
+        return FlowBindingKey{dstAddr, srcAddr, typeOfService, revDir};
+    }
+};
+
+struct FlowBindingKeyHash {
+    std::size_t operator()(const FlowBindingKey& key) const {
+        std::size_t h1 = std::hash<uint32_t>{}(key.srcAddr.getInt());
+        std::size_t h2 = std::hash<uint32_t>{}(key.dstAddr.getInt());
+        std::size_t h3 = std::hash<uint16_t>{}(key.typeOfService);
+        std::size_t h4 = std::hash<uint16_t>{}(uint16_t(key.direction));
+        return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3);
+    }
+};
+
 // The configuration half of a bearer-establishment request: what the requester asks RRC
 // to set the bearer up as. rlcType = UNKNOWN_RLC_TYPE means "RRC decides from qosClass";
 // SDAP and the D2D mode-switch path pass it explicitly because they transport
@@ -99,6 +134,13 @@ struct FlowId {
 struct BearerRequest {
     LteTrafficClass qosClass = CONVERSATIONAL;   // -> logicalChannelGroup (lcg)
     LteRlcType rlcType = UM;
+
+    // The flow whose classification triggered this establishment, if any: RRC binds it
+    // to the bearer at both endpoints, so the reverse flow resolves to the same DRB
+    // instead of establishing a second, parallel bearer. Absent when the requester
+    // classifies by other means (SDAP maps QFIs) or configures bearers up front
+    // (the Binder's staticBearers).
+    std::optional<FlowBindingKey> flowBindingKey;
 };
 
 /**
