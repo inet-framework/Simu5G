@@ -22,6 +22,7 @@
 #include "simu5g/common/blerCurves/PhyPisaData.h"
 #include "simu5g/nodes/ExtCell.h"
 #include "simu5g/stack/mac/LteMacBase.h"
+#include "simu5g/stack/rrc/DrbDesc.h"
 
 // Forward declaration
 class FlowDescriptor;
@@ -621,6 +622,13 @@ class Binder : public cSimpleModule
   private:
     // The DRB IDs currently in use within each node pair (see assignDrbId())
     std::map<std::pair<MacNodeId, MacNodeId>, std::set<DrbId>> drbIdsInUse_;
+
+    // Configure the data radio bearers described by the drbConfig parameter (see NED
+    // documentation) by telling the RRC of each node involved in a bearer what to set
+    // up: BearerManagement::configureDrb() at the UE and at its serving node. This is
+    // the session management of the core network (the SMF's role) reaching the RAN --
+    // the configuration is pushed from here, and no module ever reads it back out.
+    virtual void configureDrbs();
 
     // Establish the bearers described by the staticBearers parameter (see NED
     // documentation), in the last initialization stage. Each entry goes through

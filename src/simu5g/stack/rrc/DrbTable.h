@@ -27,11 +27,12 @@ namespace simu5g {
  *
  * Holds two collections of ~DrbDesc records, both keyed by (peer node, DRB id):
  *
- * - The AUTHORED configuration, loaded from the drbConfig parameter: the bearers this
- *   node is configured with, before and independent of their establishment. On the UE
- *   side entries are keyed by NODEID_NONE ("my serving node"); on the gNB side by the
- *   UE's node id. These entries persist for the whole simulation; RRC pushes the SDAP
- *   half of each into the SDAP module (see BearerManagement).
+ * - The CONFIGURED bearers, delivered by the core network's session management (see
+ *   Binder::configureDrbs()) and taken in through BearerManagement::configureDrb(): the
+ *   bearers this node is configured with, before and independent of their establishment.
+ *   On the UE side entries are keyed by NODEID_NONE ("my serving node"); on the gNB side
+ *   by the UE's node id. These entries persist for the whole simulation. This table does
+ *   not author them and does not read them from a parameter.
  *
  * - The ESTABLISHED bearers: ~BearerManagement fills this in as it establishes bearers,
  *   and drops entries together with the bearer's PDCP entity.
@@ -40,27 +41,21 @@ class DrbTable : public cSimpleModule
 {
   protected:
     std::map<DrbKey, DrbDesc> drbs_;            // established bearers
-    std::map<DrbKey, DrbDesc> configuredDrbs_;  // authored configuration (drbConfig param)
+    std::map<DrbKey, DrbDesc> configuredDrbs_;  // configuration delivered by the core network
 
   protected:
     void initialize() override;
     void handleMessage(cMessage *msg) override;
     void refreshDisplay() const override;
 
-    // Fills configuredDrbs_ from the drbConfig JSON array; an entry may reference a named
-    // field group in profiles (its "profile" field) supplying defaults for the fields the
-    // entry does not spell out itself. If no entry of a peer is marked isDefault, the
-    // first one becomes the default DRB.
-    virtual void loadConfig(const cValueArray *arr, const cValueMap *profiles);
-
   public:
     virtual const DrbDesc *findDrb(DrbKey key) const;
     virtual DrbDesc& getOrCreateDrb(DrbKey key);
     virtual const std::map<DrbKey, DrbDesc>& getDrbs() const { return drbs_; }
 
-    // Authored configuration (UE side: key by NODEID_NONE)
+    // Configuration delivered by the core network (UE side: keyed by NODEID_NONE)
+    virtual void addConfiguredDrb(const DrbDesc& drb) { configuredDrbs_[drb.key] = drb; }
     virtual const DrbDesc *findConfiguredDrb(DrbKey key) const;
-    virtual const std::map<DrbKey, DrbDesc>& getConfiguredDrbs() const { return configuredDrbs_; }
 
     // Teardown: mirrors the lifecycle of the bearer's PDCP entity (see
     // BearerManagement::deleteLocalPdcpEntities). Established bearers only; the

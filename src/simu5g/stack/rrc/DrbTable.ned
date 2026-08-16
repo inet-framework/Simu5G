@@ -16,47 +16,17 @@ package simu5g.stack.rrc;
 // bearer's SDAP configuration and the RLC/logical-channel configuration of its radio
 // bearer (modeled on the DRB-ToAddMod and RLC-BearerConfig records of TS 38.331).
 //
-// The table holds two collections of descriptors. The authored configuration comes
-// from the drbConfig parameter and describes the node's bearers before and independent
-// of their establishment; RRC pushes the SDAP-relevant part of each entry into the
-// SDAP module at initialization (see ~BearerManagement), so SDAP never authors its own
-// configuration. The established bearers are filled in by ~BearerManagement as bearers
-// are established, and dropped together with the bearer's PDCP entity.
-//
-// Repeating field groups can be named once in the drbProfiles parameter (a JSON map of
-// name -> field group) and referenced from entries via their "profile" field; the
-// profile supplies defaults for any field the entry does not spell out itself (the
-// entry's own value wins). A profile may hold any entry field except drb, ue and
-// profile.
-//
-// drbConfig fields:
-//  - drb (int): DRB identifier (= nrPdcp[]/nrRlc[] array index)
-//  - ue (int, optional): UE MacNodeId (gNB only; omit on UE side)
-//  - profile (string, optional): name of a drbProfiles entry supplying defaults for
-//    the fields below
-//  - qfiList (int[], optional): QFI values mapped to this DRB; an entry without it
-//    does not take part in SDAP's QFI-to-DRB mapping
-//  - rlcType (string, optional): RLC mode ("AM", "UM", "TM"); omitted = RRC decides
-//    from the traffic class (see the conversationalRlc/... parameters of
-//    ~BearerManagement)
-//  - pduSessionType (string, optional): "IPv4", "IPv6", "Ethernet", "Unstructured";
-//    default: "IPv4"
-//  - upperProtocol (string, optional): INET protocol name for upper layer dispatch
-//    (this is normally only needed for "Unstructured" PDU sessions); default:
-//    derived from pduSessionType
-//  - isDefault (bool, optional): marks this as the default DRB for the UE;
-//    if omitted, the first DRB entry per UE (per nodeId) is automatically used
-//    as default. The default DRB is the fallback when no QFI-to-DRB mapping matches.
-//  - gbr (bool), delayBudget (double, ms), per (double), priority (int) -- all
-//    optional: the QoS profile of the bearer's flows (5QI characteristics). Any of
-//    them present marks the bearer as having a QoS profile, which RRC pushes into
-//    the eNB/gNB MAC for QoS-aware scheduling (gNB-side entries only).
+// The table holds two collections of descriptors. The configured bearers are the ones
+// this node has been told to set up, before and independent of their establishment:
+// the core network's session management delivers them (see the drbConfig parameter of
+// ~Binder), RRC takes them in and pushes the SDAP-relevant part of each into the SDAP
+// module, so neither this table nor SDAP authors any of it. The established bearers are
+// filled in by ~BearerManagement as bearers are established, and dropped together with
+// the bearer's PDCP entity.
 //
 simple DrbTable like IDrbTable
 {
     parameters:
         @display("i=block/table");
         @class(DrbTable);
-        object drbConfig = default([]);  // JSON array: [{drb, ue, profile, qfiList, rlcType, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
-        object drbProfiles = default({});  // JSON map of named field groups referenced by the entries' "profile" field, e.g. {"voice": {"rlcType": "UM", "gbr": true, ...}, ...}; see banner comment
 }

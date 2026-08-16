@@ -126,6 +126,12 @@ class BearerManagement : public cSimpleModule
     // The authored configuration entry for the bearer of an infrastructure unicast flow
     // (from the drbTable's drbConfig parameter), or nullptr. peerId is the flow's remote
     // end; on the UE side entries are keyed by NODEID_NONE instead.
+  public:
+    // Take delivery of one bearer's configuration from the core network's session
+    // management (see Binder::configureDrbs()). RRC never fetches this itself.
+    virtual void configureDrb(const DrbDesc& drb);
+
+  protected:
     virtual const DrbDesc *lookupConfiguredDrb(const FlowId& flow, MacNodeId peerId);
 
     // Resolves req.rlcType before any use of it (entity type selection, materializeDrb),

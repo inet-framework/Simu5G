@@ -91,19 +91,23 @@ void BearerManagement::initialize(int stage)
         interactiveRlc_ = aToRlcType(par("interactiveRlc"));
         backgroundRlc_ = aToRlcType(par("backgroundRlc"));
     }
-    else if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
-        // Push the authored DRB configuration into the layers that consume it: SDAP's
-        // QFI-to-DRB view and the eNB MAC's per-bearer QoS profiles are working copies
-        // those modules never author themselves. (Post-local, so the drbTable has
-        // loaded its drbConfig parameter.)
-        bool isEnb = (registration_->getNodeType() == NODEB);
-        for (const auto& [key, drb] : drbTableModule->getConfiguredDrbs()) {
-            if (sdapModule.getNullable() != nullptr)
-                sdapModule->configureDrb(drb);
-            if (drb.hasQosProfile && isEnb)
-                check_and_cast<LteMacEnb *>(macModule.get())->configureDrbQos(key, drb.qos);
-        }
-    }
+}
+
+// Take delivery of one bearer's configuration from the core network's session management
+// (see Binder::configureDrbs()). RRC records it, to establish the bearer from later, and
+// pushes on what the local layers consume: SDAP's QFI-to-DRB view and the eNB MAC's
+// per-bearer QoS profile are working copies those modules never author themselves.
+void BearerManagement::configureDrb(const DrbDesc& drb)
+{
+    Enter_Method("configureDrb(drb %d)", (int)num(drb.getDrbId()));
+    EV << "BearerManagement::configureDrb - " << drb << endl;
+
+    drbTableModule->addConfiguredDrb(drb);
+
+    if (sdapModule.getNullable() != nullptr)
+        sdapModule->configureDrb(drb);
+    if (drb.hasQosProfile && registration_->getNodeType() == NODEB)
+        check_and_cast<LteMacEnb *>(macModule.get())->configureDrbQos(drb.key, drb.qos);
 }
 
 BearerManagement::~BearerManagement()

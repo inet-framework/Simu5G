@@ -11,20 +11,22 @@ ini configuration.
 ## What is configured
 
 - **SDAP layer** is enabled on the gNB and UE NICs (`hasSdap = true`).
-  With SDAP enabled, the static `drbConfig` parameter of RRC's DRB table
-  is the sole authority for DRB assignment (Ip2Nic's dynamic per-connection
-  DRB creation is bypassed); RRC pushes the mapping into SDAP at
-  initialization.
+  With SDAP enabled, the static `drbConfig` parameter is the sole authority
+  for DRB assignment (Ip2Nic's dynamic per-connection DRB creation is
+  bypassed).
 
-- **Two DRBs per UE**, defined in `rrc.drbTable.drbConfig`:
-  QFIs 1,2 (Voice/Video) map to DRB 0, QFIs 3,4 (Gaming/URLLC) map to DRB 1,
-  both in RLC UM mode. The two bearer kinds are defined once as named
-  profiles (`rrc.drbTable.drbProfiles`, assigned network-wide with a `**`
-  key), and the per-node entries just reference them via their `profile`
-  field. DRB IDs are per-UE, as in 3GPP: each UE has a DRB 0 and a DRB 1,
-  distinguished at the gNB by the `ue` (MacNodeId) field (2049 = ue[0],
-  2050 = ue[1]). The first DRB entry of each UE acts as its *default DRB*,
-  which carries traffic whose QFI has no explicit mapping.
+- **Two DRBs per UE**, defined in `binder.drbConfig`: QFIs 1,2 (Voice/Video)
+  map to DRB 0, QFIs 3,4 (Gaming/URLLC) map to DRB 1, both in RLC UM mode.
+  The configuration is written once for the whole network and names its UE by
+  module path (`"ue": "ue[*]"`), so one entry describes a bearer of every UE
+  and neither end of the radio link is configured directly: the Binder, which
+  models the core network's session management, tells the UE's RRC and the
+  gNB's RRC what to set up, and each RRC pushes on what its own layers
+  consume. The two bearer kinds are named once as profiles
+  (`binder.drbProfiles`) saying what the bearer *is* (RLC mode, QoS); the
+  entries add what *selects* it (its UE and its QFIs). DRB IDs are per-UE, as
+  in 3GPP: each UE has a DRB 0 and a DRB 1. The first DRB of each UE acts as
+  its *default DRB*, which carries traffic whose QFI has no explicit mapping.
 
 - **QoS-aware scheduling**: `schedulingDiscipline = "QOS_PF"` with the
   per-DRB QoS profile (GBR flag, packet delay budget, packet error rate,
