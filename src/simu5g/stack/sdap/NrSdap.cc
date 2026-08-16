@@ -212,7 +212,7 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
     MacNodeId ueId = (!isUe && lteInfo) ? lteInfo->getSourceId() : NODEID_NONE;
     const DrbDesc *drb = (drbId != DRBID_NONE) ? drbTable_.getDrb(DrbKey(ueId, drbId)) : nullptr;
     if (!drb)
-        throw cRuntimeError("SDAP RX: Unknown DRB %d (ueId=%d) -- missing entry in the RRC drbTable's drbConfig?",
+        throw cRuntimeError("SDAP RX: Unknown DRB %d (ueId=%d) -- missing entry in the binder's staticDrbs?",
                             (int)num(drbId), (int)num(ueId));
 
     EV_INFO << "SDAP RX: Received packet from DRB " << drbId << ": " << pkt->peekAtFront() << "\n";

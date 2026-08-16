@@ -35,8 +35,9 @@ package simu5g.stack.sdap;
 // via the pduSessionType field of the bearer configuration.
 //
 // SDAP does not author its own configuration: the QFI-to-DRB mapping and the
-// per-bearer SDAP settings are authored in RRC's DRB table (see the drbConfig
-// parameter of ~DrbTable) and pushed into this module at initialization.
+// per-bearer SDAP settings are authored network-wide (see the staticDrbs
+// parameter of ~Binder), delivered to RRC, and pushed into this module from
+// there at initialization.
 //
 // Gates:
 //  - upperLayerIn/upperLayerOut: connects to the upper layer (Ip2Nic or app).

@@ -23,7 +23,7 @@ package simu5g.common.binder;
 // Only one instance of this module is permitted within the entire network, ensuring
 // the consistency and integrity of the shared information.
 //
-// The drbConfig parameter is the network's data radio bearer configuration: one entry per
+// The staticDrbs parameter is the network's data radio bearer configuration: one entry per
 // bearer per UE, describing the bearer before and independent of its establishment (modeled
 // on the DRB-ToAddMod and RLC-BearerConfig records of TS 38.331). The Binder acts on it the
 // way the core network's session management (the SMF) does: it tells the RRC of each node
@@ -34,7 +34,7 @@ package simu5g.common.binder;
 // follows the UE from cell to cell, and neither end of the radio link is configured
 // directly from the ini.
 //
-// drbConfig fields:
+// staticDrbs fields:
 //  - ue (string): module path of the UE node, relative to the network; patterns are allowed,
 //    so one entry can describe a bearer of many UEs (e.g. "ue[*]")
 //  - drb (int): DRB identifier (= nrPdcp[]/nrRlc[] array index)
@@ -68,7 +68,7 @@ package simu5g.common.binder;
 // *.binder.drbProfiles = {
 //     "voice":  {"rlcType": "UM", "gbr": true, "delayBudget": 100, "per": 1e-2, "priority": 2}
 //     }
-// *.binder.drbConfig = [
+// *.binder.staticDrbs = [
 //     {"ue": "ue[*]", "drb": 0, "qfiList": [1, 2], "profile": "voice"}
 //     ]
 // </pre>
@@ -84,8 +84,7 @@ package simu5g.common.binder;
 //    rlcType is omitted; default: "CONVERSATIONAL"
 //  - rlcType (string, optional): "TM", "UM" or "AM"; omitted = RRC decides from qosClass
 //  - drb (int, optional): DRB identity of the bearer; useful for matching the DRB ids
-//    of the drbConfig parameter of RRC's DrbTable; omitted = the next free id for the
-//    node pair
+//    of the staticDrbs parameter; omitted = the next free id for the node pair
 //  - technology (string, optional): "LTE" or "NR", selects the stack of a dual-stack
 //    UE; omitted = the NR stack if the UE is attached with it, except when serving
 //    nodes are in a dual-connectivity setup (where establishment splits the bearer
@@ -111,8 +110,8 @@ simple Binder
         int blerShift = default(0);
         double maxDataRatePerRb @unit("Mbps") = default(1.16Mbps);
         bool printTrafficGeneratorConfig = default(false);
-        object drbConfig = default([]);  // JSON array: [{ue, drb, profile, qfiList, rlcType, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
-        object drbProfiles = default({});  // JSON map of named field groups referenced by the drbConfig entries' "profile" field, e.g. {"voice": {"rlcType": "UM", "gbr": true, ...}, ...}; see banner comment
+        object staticDrbs = default([]);  // JSON array: [{ue, drb, profile, qfiList, rlcType, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
+        object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {"voice": {"rlcType": "UM", "gbr": true, ...}, ...}; see banner comment
         object staticBearers = default([]);  // JSON array: [{ue, qosClass, rlcType, drb, technology}, ...]; see banner comment for details
         @display("i=block/cogwheel");
 }

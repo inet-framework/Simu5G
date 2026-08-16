@@ -123,19 +123,13 @@ class BearerManagement : public cSimpleModule
     // interactive/backgroundRlc NED params).
     virtual LteRlcType qosClassToRlcType(LteTrafficClass qosClass);
 
-    // The authored configuration entry for the bearer of an infrastructure unicast flow
-    // (from the drbTable's drbConfig parameter), or nullptr. peerId is the flow's remote
-    // end; on the UE side entries are keyed by NODEID_NONE instead.
-  public:
-    // Take delivery of one bearer's configuration from the core network's session
-    // management (see Binder::configureDrbs()). RRC never fetches this itself.
-    virtual void configureDrb(const DrbDesc& drb);
-
-  protected:
+    // The configuration entry for the bearer of an infrastructure unicast flow, as
+    // delivered by configureDrb(), or nullptr. peerId is the flow's remote end; on the
+    // UE side entries are keyed by NODEID_NONE instead.
     virtual const DrbDesc *lookupConfiguredDrb(const FlowId& flow, MacNodeId peerId);
 
     // Resolves req.rlcType before any use of it (entity type selection, materializeDrb),
-    // called once at the top of each establishment entry point. The authored configuration
+    // called once at the top of each establishment entry point. The delivered configuration
     // wins (a conflicting explicit request throws); an rlcType still left as
     // UNKNOWN_RLC_TYPE ("RRC decides") falls back to qosClassToRlcType().
     virtual BearerRequest resolveBearerRequest(const BearerRequest& req, const FlowId& flow, MacNodeId peerId);
@@ -171,6 +165,9 @@ class BearerManagement : public cSimpleModule
 
   public:
     ~BearerManagement() override;
+    // Take delivery of one bearer's configuration from the core network's session
+    // management (see Binder::configureDrbs()). RRC never fetches this itself.
+    virtual void configureDrb(const DrbDesc& drb);
     // Schedule an RLC-detected radio link failure teardown for a peer node, deferred
     // to a safe execution context. nrStack selects the failing leg (LTE vs NR).
     virtual void scheduleRadioLinkFailure(MacNodeId nodeId, bool nrStack);

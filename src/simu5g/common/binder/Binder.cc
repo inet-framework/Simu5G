@@ -942,7 +942,7 @@ void Binder::releaseDrbId(MacNodeId a, MacNodeId b, DrbId drbId)
 
 void Binder::configureDrbs()
 {
-    const cValueArray *arr = check_and_cast_nullable<const cValueArray *>(par("drbConfig").objectValue());
+    const cValueArray *arr = check_and_cast_nullable<const cValueArray *>(par("staticDrbs").objectValue());
     const cValueMap *profiles = check_and_cast_nullable<const cValueMap *>(par("drbProfiles").objectValue());
     if (arr == nullptr || arr->size() == 0)
         return;
@@ -975,7 +975,7 @@ void Binder::configureDrbs()
                 if (profiles)
                     for (const auto& [profileName, value] : profiles->getFields())
                         available += (available.empty() ? "" : ", ") + profileName;
-                throw cRuntimeError("drbConfig entry %d references unknown profile '%s' (available: %s)",
+                throw cRuntimeError("staticDrbs entry %d references unknown profile '%s' (available: %s)",
                         i, name, available.empty() ? "none" : available.c_str());
             }
             profile = check_and_cast<const cValueMap *>(profiles->get(name).objectValue());
@@ -1027,7 +1027,7 @@ void Binder::configureDrbs()
             std::string rlcTypeStr = v->stdstringValue();
             drb.rlcType = aToRlcType(rlcTypeStr);
             if (drb.rlcType == UNKNOWN_RLC_TYPE)
-                throw cRuntimeError("drbConfig entry %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
+                throw cRuntimeError("staticDrbs entry %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
                         i, rlcTypeStr.c_str());
         }
 
@@ -1051,11 +1051,11 @@ void Binder::configureDrbs()
                 continue;
             numMatched++;
             if (!drbsOfUe[ueModule].insert({drbId, drb}).second)
-                throw cRuntimeError("drbConfig entry %d: DRB %d of UE '%s' is already configured by an earlier entry",
+                throw cRuntimeError("staticDrbs entry %d: DRB %d of UE '%s' is already configured by an earlier entry",
                         i, (int)num(drbId), path.c_str());
         }
         if (numMatched == 0)
-            throw cRuntimeError("drbConfig entry %d: its \"ue\" pattern '%s' matches no registered UE", i, uePattern);
+            throw cRuntimeError("staticDrbs entry %d: its \"ue\" pattern '%s' matches no registered UE", i, uePattern);
     }
 
     for (auto& [ueModule, drbs] : drbsOfUe) {

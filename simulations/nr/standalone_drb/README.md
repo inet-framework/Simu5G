@@ -11,11 +11,11 @@ ini configuration.
 ## What is configured
 
 - **SDAP layer** is enabled on the gNB and UE NICs (`hasSdap = true`).
-  With SDAP enabled, the static `drbConfig` parameter is the sole authority
+  With SDAP enabled, the static `staticDrbs` parameter is the sole authority
   for DRB assignment (Ip2Nic's dynamic per-connection DRB creation is
   bypassed).
 
-- **Two DRBs per UE**, defined in `binder.drbConfig`: QFIs 1,2 (Voice/Video)
+- **Two DRBs per UE**, defined in `binder.staticDrbs`: QFIs 1,2 (Voice/Video)
   map to DRB 0, QFIs 3,4 (Gaming/URLLC) map to DRB 1, both in RLC UM mode.
   The configuration is written once for the whole network and names its UE by
   module path (`"ue": "ue[*]"`), so one entry describes a bearer of every UE
@@ -30,7 +30,7 @@ ini configuration.
 
 - **QoS-aware scheduling**: `schedulingDiscipline = "QOS_PF"` with the
   per-DRB QoS profile (GBR flag, packet delay budget, packet error rate,
-  priority) authored on the same `drbConfig` entries and pushed by RRC
+  priority) authored on the same `staticDrbs` entries and pushed by RRC
   into the gNB MAC for the QoS-aware proportional-fair scheduler. DRB 1
   is configured as the more demanding bearer (50 ms budget, 10^-3 PER,
   priority 1).
@@ -54,7 +54,7 @@ ini configuration.
 - `Standalone`: Topology and DRB/QoS setup only, no traffic. Base for the others. |
 - `VoIP-DL`: 4 VoIP flows to each UE, downlink. No DSCP marking, so all traffic is QFI 0 and rides the default DRB — demonstrates the default-flow fallback. |
 - `VoIP-DL-MultiQfi`: Same as `VoIP-DL`, but apps 0..3 mark DSCP 1..4, so the four flows use QFI 1..4 and spread across both DRBs of each UE. |
-- `VoIP-DL-MultiQfi-StaticBearers`: Same as `VoIP-DL-MultiQfi`, but the bearers are established at initialization from the Binder's `staticBearers` parameter (its DRB ids matching those of `drbConfig`), and on-demand establishment is disabled (`sdap.establishBearersOnDemand = false`), so a packet that finds no bearer raises a configuration error. |
+- `VoIP-DL-MultiQfi-StaticBearers`: Same as `VoIP-DL-MultiQfi`, but the bearers are established at initialization from the Binder's `staticBearers` parameter (its DRB ids matching those of `staticDrbs`), and on-demand establishment is disabled (`sdap.establishBearersOnDemand = false`), so a packet that finds no bearer raises a configuration error. |
 - `VoIP-DL-MultiQfi-Heavy`: Same, with heavy traffic (1000 B every 1 ms, no silence periods) to create contention and exercise the QOS_PF scheduler. |
 - `VoIP-UL`: 4 VoIP flows from each UE to the server, uplink, with DSCP-derived QFIs 1..4. |
 

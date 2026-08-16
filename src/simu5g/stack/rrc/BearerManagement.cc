@@ -290,7 +290,7 @@ BearerRequest BearerManagement::resolveBearerRequest(const BearerRequest& reqIn,
     if (cfg && cfg->rlcType != UNKNOWN_RLC_TYPE) {
         if (req.rlcType != UNKNOWN_RLC_TYPE && req.rlcType != cfg->rlcType)
             throw cRuntimeError("Bearer establishment request for DRB %d (peer %d) asks for RLC mode %s, "
-                    "but the drbTable's drbConfig authors it as %s -- conflicting configuration",
+                    "but the binder's staticDrbs configures it as %s -- conflicting configuration",
                     (int)num(flow.drbId), (int)num(peerId),
                     rlcTypeToA(req.rlcType).c_str(), rlcTypeToA(cfg->rlcType).c_str());
         req.rlcType = cfg->rlcType;

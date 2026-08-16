@@ -24,8 +24,8 @@ namespace simu5g {
  * QoS-aware proportional-fair scheduler: scores active CIDs with QoS weights
  * derived from the per-DRB QoS profile (GBR flag, packet delay budget, packet
  * error rate, priority level). The profiles come from the MAC's DRB QoS map
- * (see LteMacEnb::getDrbQosMap()), which RRC fills from the authored bearer
- * configuration (the drbConfig parameter of the DrbTable module).
+ * (see LteMacEnb::getDrbQosMap()), which RRC fills from the bearer configuration
+ * delivered to it (the staticDrbs parameter of the Binder module).
  *
  * A CID whose bearer has no QoS profile is scheduled with a neutral weight
  * (plain proportional fair).

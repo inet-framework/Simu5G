@@ -623,7 +623,7 @@ class Binder : public cSimpleModule
     // The DRB IDs currently in use within each node pair (see assignDrbId())
     std::map<std::pair<MacNodeId, MacNodeId>, std::set<DrbId>> drbIdsInUse_;
 
-    // Configure the data radio bearers described by the drbConfig parameter (see NED
+    // Configure the data radio bearers described by the staticDrbs parameter (see NED
     // documentation) by telling the RRC of each node involved in a bearer what to set
     // up: BearerManagement::configureDrb() at the UE and at its serving node. This is
     // the session management of the core network (the SMF's role) reaching the RAN --
