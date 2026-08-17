@@ -203,9 +203,11 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
         if (!establishBearersOnDemand_)
             throw cRuntimeError("SDAP TX: no established bearer for DRB %d (peer nodeId=%d), and on-demand bearer establishment is disabled -- missing or mismatched staticBearers entry?",
                     (int)num(drb->getDrbId()), (int)num(lteInfo->getDestId()));
-        // SDAP never decides traffic (LCG); the RLC type comes from the pushed DRB
-        // configuration, i.e. it is RRC's decision transported in the request.
-        binder_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{CONVERSATIONAL, drb->rlcType});
+        // SDAP decides neither the traffic class (LCG) nor the RLC mode: RRC resolves
+        // both from the bearer's configured entry at establishment (see
+        // BearerManagement::resolveBearerRequest()), so the request carries no
+        // configuration at all.
+        binder_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{CONVERSATIONAL, UNKNOWN_RLC_TYPE});
     }
 
     // Set protocol tag for outgoing frame to PDCP layer
