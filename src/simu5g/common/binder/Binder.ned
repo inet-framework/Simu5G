@@ -147,7 +147,10 @@ package simu5g.common.binder;
 // configuration of the simulations/nr/standalone_drb example.
 //
 // The trafficClassRules parameter authors the traffic class of on-demand bearers that
-// no bearer definition covers -- the last resort of establishment-time classification.
+// no bearer definition covers: flows in configurations that author no definitions, and
+// D2D and multicast bearers, which definitions never describe. Unlike a definition, a
+// rule authors a property only -- each flow still gets its own bearer, and nothing is
+// created or delivered ahead of establishment.
 // A JSON array of rules, evaluated in order, first match wins; a flow matching no rule
 // is BACKGROUND (the class of the non-GBR default bearer). Rule fields:
 //  - filter (string, optional): an inet::PacketFilter -- a message-name pattern

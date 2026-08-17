@@ -669,8 +669,11 @@ class Binder : public cSimpleModule
 
     // A fallback-classification rule compiled from the trafficClassRules parameter:
     // what authors the traffic class of an on-demand bearer that no bearer
-    // definition covers. The parameter's default value carries the legacy
-    // packet-name classes ("VoIP*" = conversational, ...).
+    // definition covers -- including D2D and multicast bearers, which definitions
+    // never describe. Authors a property only: flows classified here still mint
+    // their own bearers, they never share one the way definition-matched flows do.
+    // The parameter's default value carries the legacy packet-name classes
+    // ("VoIP*" = conversational, ...).
     struct TrafficClassRule {
         std::unique_ptr<inet::PacketFilter> filter;   // null = match all
         LteTrafficClass qosClass = BACKGROUND;
