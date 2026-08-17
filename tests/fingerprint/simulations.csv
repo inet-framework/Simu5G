@@ -128,3 +128,8 @@
 /simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Lossy-UL -r 0,                     5s,         b9a0-5a7b/tplx;6270-2d8a/tilx;ea4d-c8ca/~tNl;ab8b-9cc3/sz, PASS,
 /simulations/lte/rlc/,                   -f omnetpp.ini -c TCP-AM -r 0,                          5s,         f51c-377b/tplx;a5d4-8fd3/tilx;f1ef-f4f4/~tNl;5b66-d496/sz, PASS,
 /simulations/lte/test_handover/,         -f omnetpp.ini -c VoIP-AM-Handover -r 0,               15s,         066d-7611/tplx;4ec1-1574/tilx;a44e-35d5/~tNl;435a-a9d9/sz, PASS,
+/simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-DL -r 1,               10s,         88a6-878e/tplx;23af-d63c/tilx;7959-87de/~tNl;c010-b8d5/sz, PASS,
+/simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-DL -r 2,               10s,         6636-30f9/tplx;2c89-82e5/tilx;2bf6-669f/~tNl;75ba-b877/sz, PASS,
+/simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-DL -r 3,               10s,         0169-354e/tplx;1063-6ce7/tilx;94cd-2f0b/~tNl;8a1e-7263/sz, PASS,
+/simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-DL -r 4,               10s,         08e4-61e9/tplx;4d25-d065/tilx;312e-c7de/~tNl;091e-f825/sz, PASS,
+/simulations/channelmodel/,              -f omnetpp.ini -c UMi-38901-RngRemap -r 0,              20s,         5a65-25ce/tplx;237c-5fc3/tilx;26b5-86e7/~tNl;aa78-7ae4/sz, PASS,
