@@ -82,7 +82,7 @@ package simu5g.common.binder;
 //     "voice":  {"rlcType": "UM", "gbr": true, "delayBudget": 100, "per": 1e-2, "priority": 2}
 //     }
 // *.binder.staticDrbs = [
-//     {"ue": "ue[*]", "drb": 0, "qfiList": [1, 2], "profile": "voice"}
+//     {"bearerType": "5gc", "ue": "ue[*]", "drb": 0, "qfiList": [1, 2], "profile": "voice"}
 //     ]
 // </pre>
 //
@@ -99,6 +99,21 @@ package simu5g.common.binder;
 // delivered to the RRCs involved exactly like a staticDrbs entry. Matching order is
 // staticDrbs entries first, then onDemandDrbs entries, each in table order, first
 // match wins.
+//
+// Example (in an ini file; the first entry suits a stack with SDAP, the other two
+// one without):
+//
+// <pre>
+// *.binder.onDemandDrbs = [
+//     {"bearerType": "5gc", "ue": "ue[*]", "qfiList": [3, 4], "profile": "gaming"},
+//     {"bearerType": "eps", "filters": ["expr(udp.destPort == 3000)"], "qosClass": "CONVERSATIONAL", "rlcType": "UM"},
+//     {"bearerType": "eps", "isDefault": true, "qosClass": "BACKGROUND"}
+//     ]
+// </pre>
+//
+// See the VoIP-DL-MultiQfi-OnDemandDrb configuration of simulations/nr/standalone_drb
+// ("5gc") and the SingleCell-DL-OnDemandDrb configuration of simulations/lte/tutorial
+// ("eps") for working setups.
 //
 // The staticBearers parameter establishes data radio bearers up front, in the last
 // initialization stage, instead of on the first packet of a flow. Each entry describes
