@@ -202,7 +202,7 @@ bool D2dChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId senderId
             allocatedUes = &(ulTransmissionMap->at(i));
 
             for (auto& ue_it : *allocatedUes) {
-                const auto interferer = StochasticChannelModel::describeInterferer(ue_it);
+                const auto interferer = StochasticChannelModel::describeInterferer(ue_it, medium_.get(), carrierFrequency);
                 const MacNodeId ueId = interferer.nodeId;
                 const MacCellId cellId = interferer.cellId;
                 const Direction dir = interferer.dir;

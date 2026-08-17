@@ -233,6 +233,31 @@ class StochasticChannelModel : public ChannelModelBase
     MacNodeId getNodeId() const { return phy_->getMacNodeId(); }
 
     /*
+     * Physical facts read through phy_, exposed for RadioMedium's registry
+     * accessors (coordOf, txPowerOf, txDirectionOf, txAngleOf): phy_ itself
+     * is a protected member, so the medium cannot dereference it directly.
+     */
+    inet::Coord getCoord() const { return phy_->getCoord(); }
+    double getTxPwr(Direction dir = UNKNOWN_DIRECTION) const { return phy_->getTxPwr(dir); }
+    TxDirectionType getTxDirection() const { return phy_->getTxDirection(); }
+    double getTxAngle() const { return phy_->getTxAngle(); }
+    RanNodeType getNodeType() const { return phy_->getNodeType(); }
+
+    /*
+     * Role-appropriate antenna gain / noise figure for RadioMedium's
+     * antennaGainOf()/noiseFigureOf(): the endpoint carries a parameter for
+     * every role (UE, base station), so the medium asks for the one that
+     * matches this endpoint's own node type.
+     */
+    double getAntennaGain() const { return getNodeType() == UE ? antennaGainUe_ : antennaGainEnB_; }
+    double getNoiseFigure() const { return getNodeType() == UE ? ueNoiseFigure_ : bsNoiseFigure_; }
+
+    /*
+     * Building-penetration distance for RadioMedium's insideDistanceOf().
+     */
+    double getInsideDistance() const { return inside_distance_; }
+
+    /*
      * Compute attenuation (path loss + optional shadowing) over a radio link.
      */
     double getAttenuation(const RadioLink& link) override;
@@ -498,8 +523,12 @@ class StochasticChannelModel : public ChannelModelBase
      * Unpack a UeAllocationInfo into the properties every interference
      * computation needs. Shared by the uplink and D2D interference loops, which
      * otherwise differ in their exclusion rules and antenna-gain terms.
+     *
+     * medium/carrierFrequency are needed only to bridge the real-UE branch's
+     * physical-fact reads against the medium's registry (S4); the background-UE
+     * branch stays unbridged since a traffic generator is not a registered radio.
      */
-    static InterfererInfo describeInterferer(const UeAllocationInfo& allocation);
+    static InterfererInfo describeInterferer(const UeAllocationInfo& allocation, RadioMedium *medium, GHz carrierFrequency);
 
     /*
      * Compute total interference due to eNB coexistence for the DL direction

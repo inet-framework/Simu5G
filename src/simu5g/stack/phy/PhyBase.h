@@ -298,6 +298,12 @@ class PhyBase : public ChannelAccess
      * Returns the MAC Node Id
      */
     MacNodeId getMacNodeId() { return nodeId_; }
+    /*
+     * Returns the RAN role of the node (UE or NODEB); needed by
+     * RadioMedium's antennaGainOf()/noiseFigureOf() to pick the peer's
+     * role-appropriate value.
+     */
+    RanNodeType getNodeType() { return nodeType_; }
 };
 
 } //namespace
