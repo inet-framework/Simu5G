@@ -119,7 +119,7 @@ void StochasticChannelModel::initialize(int stage)
         collectSinrStatistics_ = par("collectSinrStatistics");
 
         //clear jakes fading map structure
-        jakesFadingMap_.clear();
+        jakesState().clear();
     }
     else if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
         // carrierFrequencyHz_/GHz_/log10CarrierFrequencyGHz_ have just been set
@@ -258,14 +258,15 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     // If Euclidean distance since last LOS probability computation is greater than
     // correlation distance the UE could have changed its state and
     // its visibility from eNodeB, hence it is correct to recompute the LOS probability
-    if (correlationDist > correlationDistance_
-        || losMap_.find(link.stateKey) == losMap_.end())
+    bool losAlreadyComputed = false;
+    losState(link.stateKey, &losAlreadyComputed);
+    if (correlationDist > correlationDistance_ || !losAlreadyComputed)
     {
         computeLosProbability(threeDimDistance, twoDimDistance, link.stateKey);
     }
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = losMap_[link.stateKey];
+    bool los = losState(link.stateKey);
     double attenuation = computePathLoss(threeDimDistance, twoDimDistance, los);
 
     //    Applying shadowing only if it is enabled by configuration
@@ -289,7 +290,7 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, const Li
     if (cqiDl) // if we are computing a DL CQI we need the Shadowing Map stored on the UE side
         actualShadowingMap = obtainShadowingMap(ownerId);
     else
-        actualShadowingMap = &lastComputedSF_;
+        actualShadowingMap = &shadowingState();
 
     if (actualShadowingMap == nullptr)
         throw cRuntimeError("StochasticChannelModel::computeShadowing - actualShadowingMap not found (nullptr)");
@@ -297,7 +298,7 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, const Li
     double mean = 0;
 
     // Get std deviation according to LOS/NLOS and selected scenario
-    double stdDev = pathLoss_->getShadowingStdDev(d3D, d2D, losMap_[key]);
+    double stdDev = pathLoss_->getShadowingStdDev(d3D, d2D, losState(key));
     double time = 0;
     double space = 0;
     double att;
@@ -354,43 +355,51 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, const Li
 void StochasticChannelModel::updatePositionHistory(const MacNodeId nodeId,
         const Coord coord)
 {
-    if (positionHistory_.find(nodeId) != positionHistory_.end()) {
+    // createIfMissing=true: a freshly vivified (empty) queue makes
+    // "!history->empty()" false, exactly like the old find()==end() check
+    std::queue<Position> *history = positionHistory(nodeId, true);
+
+    if (!history->empty() && history->back().first == NOW)
         // position already updated for this TTI.
-        if (positionHistory_[nodeId].back().first == NOW)
-            return;
-    }
+        return;
 
     // FIXME: possible memory leak
-    positionHistory_[nodeId].push(Position(NOW, coord));
+    history->push(Position(NOW, coord));
 
-    if (positionHistory_[nodeId].size() > 2) // if we have more than a past and a current element
+    if (history->size() > 2) // if we have more than a past and a current element
         // drop the oldest one
-        positionHistory_[nodeId].pop();
+        history->pop();
 }
 
 void StochasticChannelModel::updateCorrelationDistance(const LinkKey& nodeId, const inet::Coord coord) {
 
-    if (lastCorrelationPoint_.find(nodeId) == lastCorrelationPoint_.end()) {
+    bool existed = false;
+    Position& point = correlationPoint(nodeId, &existed);
+
+    if (!existed) {
         // no lastCorrelationPoint set current point.
-        lastCorrelationPoint_[nodeId] = Position(NOW, coord);
+        point = Position(NOW, coord);
     }
-    else if ((lastCorrelationPoint_[nodeId].first != NOW) &&
-             lastCorrelationPoint_[nodeId].second.distance(coord) > correlationDistance_)
+    else if ((point.first != NOW) &&
+             point.second.distance(coord) > correlationDistance_)
     {
         // check simtime_t first
-        lastCorrelationPoint_[nodeId] = Position(NOW, coord);
+        point = Position(NOW, coord);
     }
 }
 
 double StochasticChannelModel::computeCorrelationDistance(const LinkKey& nodeId, const inet::Coord coord) {
     double dist = 0.0;
 
-    if (lastCorrelationPoint_.find(nodeId) == lastCorrelationPoint_.end()) {
+    bool existed = false;
+    Position& point = correlationPoint(nodeId, &existed);
+
+    if (!existed) {
         // no lastCorrelationPoint found. Add current position and return dist = 0.0
-        lastCorrelationPoint_[nodeId] = Position(NOW, coord);
+        point = Position(NOW, coord);
     }
     else {
-        dist = lastCorrelationPoint_[nodeId].second.distance(coord);
+        dist = point.second.distance(coord);
     }
     return dist;
 }
@@ -400,24 +409,29 @@ double StochasticChannelModel::computeSpeed(const MacNodeId nodeId,
 {
     double speed = 0.0;
 
-    if (positionHistory_.find(nodeId) == positionHistory_.end()) {
+    // createIfMissing=false: a node with no history yet must stay absent,
+    // not gain an empty placeholder queue that a later front()/back() would
+    // read as an entry
+    std::queue<Position> *history = positionHistory(nodeId, false);
+
+    if (history == nullptr) {
         // no entries
         return speed;
     }
     else {
         //compute distance traveled from last update by UE (eNodeB position is fixed)
 
-        if (positionHistory_[nodeId].size() == 1) {
+        if (history->size() == 1) {
             //  the only element refers to the present, return 0
             return speed;
         }
 
-        double movement = positionHistory_[nodeId].front().second.distance(coord);
+        double movement = history->front().second.distance(coord);
 
         if (movement <= 0.0)
             return speed;
         else {
-            double time = (NOW.dbl()) - (positionHistory_[nodeId].front().first.dbl());
+            double time = (NOW.dbl()) - (history->front().first.dbl());
             if (time <= 0.0) // time not updated since last speed call
                 throw cRuntimeError("Multiple entries detected in position history referring to the same time");
             // compute speed
@@ -1067,9 +1081,9 @@ double StochasticChannelModel::jakesFading(const LinkKey& key, MacNodeId ownerId
     JakesFadingMap *actualJakesMap;
 
     if (cqiDl) // if we are computing a DL CQI we need the Jakes Map stored on the UE side
-        actualJakesMap = (!isBgUe) ? obtainUeJakesMap(ownerId) : &jakesFadingMapBgUe_;
+        actualJakesMap = (!isBgUe) ? obtainUeJakesMap(ownerId) : &jakesStateBgUe();
     else
-        actualJakesMap = &jakesFadingMap_;
+        actualJakesMap = &jakesState();
 
     // if this is the first time that we compute fading for current user
     if (actualJakesMap->find(key) == actualJakesMap->end()) {
@@ -1278,11 +1292,11 @@ void StochasticChannelModel::computeLosProbability(double d3D, double d2D,
         const LinkKey& nodeId)
 {
     if (!dynamicLos_) {
-        losMap_[nodeId] = fixedLos_;
+        losState(nodeId) = fixedLos_;
         return;
     }
     double p = pathLoss_->computeLosProbability(d3D, d2D);
-    losMap_[nodeId] = (uniform(0.0, 1.0) <= p);
+    losState(nodeId) = (uniform(0.0, 1.0) <= p);
 }
 
 double StochasticChannelModel::computePathLoss(double distance, double dbp, bool los)
@@ -1515,7 +1529,7 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
 {
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = losMap_[nodeId];
+    bool los = losState(nodeId);
 
     if (!enable_extCell_los_)
         los = false;
