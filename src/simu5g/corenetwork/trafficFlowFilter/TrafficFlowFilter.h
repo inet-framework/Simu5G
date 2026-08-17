@@ -13,7 +13,12 @@
 #ifndef __TRAFFICFLOWFILTER_H_
 #define __TRAFFICFLOWFILTER_H_
 
+#include <memory>
+#include <vector>
+
 #include <inet/common/ModuleRefByPar.h>
+#include <inet/common/packet/PacketFilter.h>
+#include <inet/networklayer/ipv4/Ipv4Header_m.h>
 
 #include "simu5g/common/LteDefs.h"
 #include "simu5g/corenetwork/trafficFlowFilter/TftControlInfo_m.h"
@@ -64,6 +69,16 @@ class TrafficFlowFilter : public cSimpleModule
     inet::L3Address meAppsExtAddress_;
     int meAppsExtAddressMask_;
 
+    // A QFI-assignment rule, compiled from the qfiRules parameter: the first rule
+    // whose filter matches the packet supplies its QFI -- a fixed value, or the
+    // packet's DSCP field read as the QFI. A rule without a filter matches every
+    // packet.
+    struct QfiRule {
+        std::unique_ptr<inet::PacketFilter> filter;   // null = match all
+        Qfi qfi = QFI_NONE;
+        bool dscpAsQfi = false;
+    };
+    std::vector<QfiRule> qfiRules_;
 
   protected:
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
@@ -73,6 +88,12 @@ class TrafficFlowFilter : public cSimpleModule
     void handleMessage(cMessage *msg) override;
 
     CoreNodeType selectOwnerType(const char *type);
+
+    // parse and compile the qfiRules parameter; syntax errors throw here, at setup
+    void parseQfiRules();
+
+    // first-match-wins over qfiRules_; QFI_NONE (0, the default flow) when no rule matches
+    Qfi classify(inet::Packet *pkt, const inet::Ptr<const inet::Ipv4Header>& ipv4Header);
 
     // functions for managing filter tables
     TrafficFlowTemplateId findTrafficFlow(inet::L3Address srcAddress, inet::L3Address destAddress);

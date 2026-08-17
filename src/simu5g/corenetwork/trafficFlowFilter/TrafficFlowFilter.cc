@@ -85,6 +85,44 @@ void TrafficFlowFilter::initialize(int stage)
     auto gateIn = gate("internetFilterGateIn");
     registerProtocol(LteProtocol::ipv4uu, gateIn, SP_INDICATION);
     registerProtocol(LteProtocol::ipv4uu, gateIn, SP_CONFIRM);
+
+    parseQfiRules();
+}
+
+void TrafficFlowFilter::parseQfiRules()
+{
+    const cValueArray *arr = check_and_cast<const cValueArray *>(par("qfiRules").objectValue());
+    for (int i = 0; i < (int)arr->size(); i++) {
+        const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
+        for (const auto& [key, value] : entry->getFields())
+            if (key != "filter" && key != "qfi" && key != "dscpAsQfi")
+                throw cRuntimeError("qfiRules entry %d: unknown field '%s'", i, key.c_str());
+
+        QfiRule rule;
+        if (entry->containsKey("qfi")) {
+            long qfi = entry->get("qfi").intValue();
+            if (qfi < 0 || qfi > 63)
+                throw cRuntimeError("qfiRules entry %d: qfi %ld is outside the 0..63 range", i, qfi);
+            rule.qfi = Qfi(qfi);
+        }
+        if (entry->containsKey("dscpAsQfi"))
+            rule.dscpAsQfi = entry->get("dscpAsQfi").boolValue();
+        if (entry->containsKey("qfi") == rule.dscpAsQfi)
+            throw cRuntimeError("qfiRules entry %d: exactly one of \"qfi\" and \"dscpAsQfi\" must be given", i);
+        if (entry->containsKey("filter")) {
+            rule.filter = std::make_unique<inet::PacketFilter>();
+            configurePacketFilter(*rule.filter, entry->get("filter").stringValue());
+        }
+        qfiRules_.push_back(std::move(rule));
+    }
+}
+
+Qfi TrafficFlowFilter::classify(Packet *pkt, const Ptr<const Ipv4Header>& ipv4Header)
+{
+    for (const QfiRule& rule : qfiRules_)
+        if (rule.filter == nullptr || rule.filter->matches(pkt))
+            return rule.dscpAsQfi ? Qfi(ipv4Header->getDscp()) : rule.qfi;
+    return QFI_NONE;   // traffic no rule covers belongs to the default flow
 }
 
 CoreNodeType TrafficFlowFilter::selectOwnerType(const char *type)
@@ -134,9 +172,12 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
     auto tftInfo = pkt->addTag<TftControlInfo>();
     tftInfo->setTft(tftId);
 
-    // Simplified QFI derivation: use IP DSCP as QFI directly.
-    // In a real 5G UPF, this would be done via PDR/QER rules.
-    Qfi qfi = Qfi(ipv4Header->getDscp());
+    // QFI assignment. The qfiRules parameter models the packet detection and QoS
+    // enforcement rules (PDR/QER) that the SMF installs into a UPF over N4 at
+    // session setup; a real UPF holds no classification policy of its own, so a
+    // locally configured rule table is a modeling shortcut -- the ini author plays
+    // the SMF.
+    Qfi qfi = classify(pkt, ipv4Header);
     tftInfo->setQfi(qfi);
 
     EV << "TrafficFlowFilter::handleMessage - setting tft=" << tftId << " qfi=" << qfi << endl;
