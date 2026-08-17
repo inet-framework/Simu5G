@@ -55,6 +55,7 @@ ini configuration.
 - `VoIP-DL`: 4 VoIP flows to each UE, downlink. No DSCP marking, so all traffic is QFI 0 and rides the default DRB — demonstrates the default-flow fallback. |
 - `VoIP-DL-MultiQfi`: Same as `VoIP-DL`, but apps 0..3 mark DSCP 1..4, so the four flows use QFI 1..4 and spread across both DRBs of each UE. |
 - `VoIP-DL-MultiQfi-StaticBearers`: Same as `VoIP-DL-MultiQfi`, but the bearers are established at initialization from the Binder's `staticBearers` parameter (its DRB ids matching those of `staticDrbs`), and on-demand establishment is disabled (`sdap.establishBearersOnDemand = false`), so a packet that finds no bearer raises a configuration error. |
+- `VoIP-DL-MultiQfi-OnDemandDrb`: Same as `VoIP-DL-MultiQfi`, but the Gaming/URLLC DRB is not configured up front: QFIs 3 and 4 are served by an entry of the Binder's `onDemandDrbs` parameter, so that DRB is created by the first Gaming or URLLC packet (SDAP misses the QFI-to-DRB lookup and asks the Binder) and the other flow joins it. |
 - `VoIP-DL-MultiQfi-Heavy`: Same, with heavy traffic (1000 B every 1 ms, no silence periods) to create contention and exercise the QOS_PF scheduler. |
 - `VoIP-UL`: 4 VoIP flows from each UE to the server, uplink, with DSCP-derived QFIs 1..4. |
 
