@@ -29,7 +29,7 @@ package simu5g.corenetwork.trafficFlowFilter;
 //  - qfi (int, 0..63) or dscpAsQfi (bool): the QFI to assign -- a fixed value, or
 //    the packet's IPv4 DSCP field read as the QFI (exactly one of the two)
 // A packet matching no rule gets QFI 0 (the default flow). The parameter's default
-// value, [{"dscpAsQfi": true}], is plain DSCP-as-QFI assignment.
+// value, [{dscpAsQfi: true}], is plain DSCP-as-QFI assignment.
 //
 // The rules model the packet detection and QoS enforcement rules (PDR/QER) that the
 // SMF installs into a UPF over N4 signaling at session setup. A real UPF holds no
@@ -47,7 +47,7 @@ simple TrafficFlowFilter
         string binderModule = default("binder");
         string ownerType @enum(ENODEB,GNODEB,PGW,UPF,UPF_MEC); // must be one between ENODEB,GNODEB,PGW,UPF,UPF_MEC
         bool fastForwarding = default(true);
-        object qfiRules = default([{"dscpAsQfi": true}]);  // JSON array of QFI-assignment rules [{filter, qfi|dscpAsQfi}, ...], first match wins; see banner comment
+        object qfiRules = default([{dscpAsQfi: true}]);  // JSON array of QFI-assignment rules [{filter, qfi|dscpAsQfi}, ...], first match wins; see banner comment
     gates:
         input internetFilterGateIn;
         output gtpUserGateOut;

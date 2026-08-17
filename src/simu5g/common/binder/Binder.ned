@@ -79,16 +79,16 @@ package simu5g.common.binder;
 //
 // <pre>
 // *.binder.drbProfiles = {
-//     "voice":  {"rlcType": "UM", "gbr": true, "delayBudget": 100, "per": 1e-2, "priority": 2}
+//     voice:  {rlcType: "UM", gbr: true, delayBudget: 100, per: 1e-2, priority: 2}
 //     }
 // *.binder.staticDrbs = [
-//     {"bearerType": "5gc", "ue": "ue[*]", "drb": 0, "qfiList": [1, 2], "profile": "voice"}
+//     {bearerType: "5gc", ue: "ue[*]", drb: 0, qfiList: [1, 2], profile: "voice"}
 //     ]
 // </pre>
 //
 // The onDemandDrbs parameter describes bearers that are created when traffic first
 // matches them, instead of being configured up front. Entries have the same fields as
-// staticDrbs minus "drb": an on-demand bearer's id is assigned at creation, so
+// staticDrbs minus drb: an on-demand bearer's id is assigned at creation, so
 // definitions can never collide over ids ("ue" may also be omitted, meaning every UE).
 // A "5gc" entry serves the QFIs in its qfiList: the first packet of an uncovered QFI
 // creates the DRB (SDAP asks the Binder on a QFI-to-DRB lookup miss), and later QFIs
@@ -105,9 +105,9 @@ package simu5g.common.binder;
 //
 // <pre>
 // *.binder.onDemandDrbs = [
-//     {"bearerType": "5gc", "ue": "ue[*]", "qfiList": [3, 4], "profile": "gaming"},
-//     {"bearerType": "eps", "filters": ["expr(udp.destPort == 3000)"], "qosClass": "CONVERSATIONAL", "rlcType": "UM"},
-//     {"bearerType": "eps", "isDefault": true, "qosClass": "BACKGROUND"}
+//     {bearerType: "5gc", ue: "ue[*]", qfiList: [3, 4], profile: "gaming"},
+//     {bearerType: "eps", filters: ["expr(udp.destPort == 3000)"], qosClass: "CONVERSATIONAL", rlcType: "UM"},
+//     {bearerType: "eps", isDefault: true, qosClass: "BACKGROUND"}
 //     ]
 // </pre>
 //
@@ -136,8 +136,8 @@ package simu5g.common.binder;
 //
 // <pre>
 // *.binder.staticBearers = [
-//     {"ue": "ue[0]", "drb": 0, "rlcType": "UM"},
-//     {"ue": "ue[1]", "drb": 1, "qosClass": "INTERACTIVE", "rlcType": "AM"}
+//     {ue: "ue[0]", drb: 0, rlcType: "UM"},
+//     {ue: "ue[1]", drb: 1, qosClass: "INTERACTIVE", rlcType: "AM"}
 //     ]
 // </pre>
 //
@@ -168,13 +168,13 @@ simple Binder
         bool printTrafficGeneratorConfig = default(false);
         object staticDrbs = default([]);  // JSON array: [{bearerType, ue, drb, profile, qfiList, filters, qosClass, rlcType, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
         object onDemandDrbs = default([]);  // JSON array, staticDrbs schema minus "drb" (and "ue" optional): bearers created when traffic first matches them; see banner comment for details
-        object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {"voice": {"rlcType": "UM", "gbr": true, ...}, ...}; see banner comment
+        object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcType: "UM", gbr: true, ...}, ...}; see banner comment
         object staticBearers = default([]);  // JSON array: [{ue, qosClass, rlcType, drb, technology}, ...]; see banner comment for details
         object trafficClassRules = default([  // fallback classification of on-demand bearers no definition covers, [{filter, qosClass}, ...], first match wins; see banner comment
-                {"filter": "VoIP*", "qosClass": "CONVERSATIONAL"},
-                {"filter": "gaming*", "qosClass": "INTERACTIVE"},
-                {"filter": "VoDPacket*", "qosClass": "STREAMING"},
-                {"filter": "VoDFinishPacket*", "qosClass": "STREAMING"}
+                {filter: "VoIP*", qosClass: "CONVERSATIONAL"},
+                {filter: "gaming*", qosClass: "INTERACTIVE"},
+                {filter: "VoDPacket*", qosClass: "STREAMING"},
+                {filter: "VoDFinishPacket*", qosClass: "STREAMING"}
             ]);
         @display("i=block/cogwheel");
 }

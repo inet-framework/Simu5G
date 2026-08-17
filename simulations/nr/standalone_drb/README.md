@@ -18,7 +18,7 @@ ini configuration.
 - **Two DRBs per UE**, defined in `binder.staticDrbs`: QFIs 1,2 (Voice/Video)
   map to DRB 0, QFIs 3,4 (Gaming/URLLC) map to DRB 1, both in RLC UM mode.
   The configuration is written once for the whole network and names its UE by
-  module path (`"ue": "ue[*]"`), so one entry describes a bearer of every UE
+  module path (`ue: "ue[*]"`), so one entry describes a bearer of every UE
   and neither end of the radio link is configured directly: the Binder, which
   models the core network's session management, tells the UE's RRC and the
   gNB's RRC what to set up, and each RRC pushes on what its own layers
