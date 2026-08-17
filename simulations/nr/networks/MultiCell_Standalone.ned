@@ -23,6 +23,7 @@ import simu5g.nodes.NrUe;
 import simu5g.nodes.gNodeB;
 import simu5g.nodes.Upf;
 import simu5g.nodes.BackgroundCell;
+import simu5g.stack.phy.channelmodel.RadioMedium;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -79,6 +80,10 @@ network MultiCell_Standalone
         ue[numUe]: NrUe {
             @display("p=500,428");
         }
+        radioMedium: RadioMedium {
+            @display("p=50,341;is=s");
+        }
+
     connections:
 
         //# Data Network connections

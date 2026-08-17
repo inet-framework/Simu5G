@@ -24,6 +24,7 @@ import simu5g.nodes.Upf;
 import simu5g.nodes.MecHost;
 import simu5g.mec.orchestrator.MecOrchestrator;
 import simu5g.mec.ualcmp.Ualcmp;
+import simu5g.stack.phy.channelmodel.RadioMedium;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -78,6 +79,10 @@ network RnisTest
         ualcmp: Ualcmp {
             @display("p=545,158;i=device/smallrouter");
         }
+        radioMedium: RadioMedium {
+            @display("p=691,425;is=s");
+        }
+
 
 
     connections allowunconnected:

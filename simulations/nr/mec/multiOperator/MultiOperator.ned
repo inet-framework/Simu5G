@@ -26,6 +26,7 @@ import simu5g.nodes.BackgroundCell;
 import simu5g.nodes.MecHost;
 import simu5g.mec.orchestrator.MecOrchestrator;
 import simu5g.mec.ualcmp.Ualcmp;
+import simu5g.stack.phy.channelmodel.RadioMedium;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -126,6 +127,10 @@ network MultiOperator
         ualcmp_B: Ualcmp if enableMecOperatorB {
             @display("p=1027,73");
         }
+        radioMedium: RadioMedium {
+            @display("p=50,341;is=s");
+        }
+
 
     connections:
 

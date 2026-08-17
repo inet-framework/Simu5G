@@ -23,6 +23,7 @@ import simu5g.nodes.ExtCell;
 import simu5g.nodes.NrUe;
 import simu5g.nodes.gNodeB;
 import simu5g.nodes.Upf;
+import simu5g.stack.phy.channelmodel.RadioMedium;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -74,6 +75,10 @@ network ExtServerExample
         extCell[numExtCells]: ExtCell {
             @display("p=671,432;is=vl");
         }
+        radioMedium: RadioMedium {
+            @display("p=72,418;is=s");
+        }
+
     connections allowunconnected:
         router.pppg++ <--> Eth10G <--> upf.dnPppg;
         upf.pppg++ <--> Eth10G <--> gnb.ppp;

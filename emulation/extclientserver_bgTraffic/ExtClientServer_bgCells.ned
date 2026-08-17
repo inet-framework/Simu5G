@@ -23,6 +23,7 @@ import simu5g.nodes.NrUe;
 import simu5g.nodes.gNodeB;
 import simu5g.nodes.Upf;
 import simu5g.nodes.BackgroundCell;
+import simu5g.stack.phy.channelmodel.RadioMedium;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -73,6 +74,10 @@ network ExtClientServer_bgCells
         ue: NrUe {
             @display("p=670,309");
         }
+        radioMedium: RadioMedium {
+            @display("p=72,426;is=s");
+        }
+
 
     connections allowunconnected:
         router.pppg++ <--> Eth10G <--> upf.dnPppg;

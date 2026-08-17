@@ -24,6 +24,7 @@ import simu5g.nodes.Upf;
 import simu5g.nodes.MecHost;
 import simu5g.mec.orchestrator.MecOrchestrator;
 import simu5g.mec.ualcmp.Ualcmp;
+import simu5g.stack.phy.channelmodel.RadioMedium;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -81,6 +82,10 @@ network ExtUeAppExample
         ue: NrUe {
             @display("p=51,259");
         }
+        radioMedium: RadioMedium {
+            @display("p=368,117;is=s");
+        }
+
 
     connections allowunconnected:
 

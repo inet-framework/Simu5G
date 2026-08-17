@@ -23,6 +23,7 @@ import simu5g.nodes.NrUe;
 import simu5g.nodes.gNodeB;
 import simu5g.nodes.Upf;
 import simu5g.nodes.BackgroundCell;
+import simu5g.stack.phy.channelmodel.RadioMedium;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -81,6 +82,10 @@ network SingleCell_Standalone_D2D
         ueD2DRx[numUeD2DRx]: NrUe {
             @display("p=726,423");
         }
+        radioMedium: RadioMedium {
+            @display("p=50,341;is=s");
+        }
+
     connections:
         server.pppg++ <--> Eth10G <--> router.pppg++;
         router.pppg++ <--> Eth10G <--> upf.dnPppg;

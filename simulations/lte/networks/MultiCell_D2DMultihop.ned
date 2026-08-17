@@ -24,6 +24,7 @@ import simu5g.corenetwork.bearerConfigurator.BearerConfigurator;
 import simu5g.nodes.PgwStandard;
 import simu5g.nodes.LteUe;
 import simu5g.nodes.eNodeB;
+import simu5g.stack.phy.channelmodel.RadioMedium;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -115,6 +116,10 @@ network MultiCell_D2DMultihop
         d2dMultihopStatistics: MultihopD2DStatistics {
             @display("p=90,272;is=s");
         }
+        radioMedium: RadioMedium {
+            @display("p=50,341;is=s");
+        }
+
     connections:
         router1.pppg++ <--> Eth10G <--> eNodeB1.ppp;
         router2.pppg++ <--> Eth10G <--> eNodeB2.ppp;
