@@ -13,11 +13,31 @@
 #ifndef STACK_PHY_CHANNELMODEL_RADIOMEDIUM_H_
 #define STACK_PHY_CHANNELMODEL_RADIOMEDIUM_H_
 
+#include <map>
+#include <deque>
+#include <utility>
+
 #include <omnetpp.h>
+
+#include "simu5g/common/LteCommon.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
+
+class StochasticChannelModel;
+
+/**
+ * One radio endpoint registered with the medium: the endpoint itself, plus
+ * the identity the registry indexes it by. Kept minimal -- the accessor
+ * surface that reads it is added in a later step.
+ */
+struct RadioDescriptor
+{
+    StochasticChannelModel *endpoint = nullptr;
+    MacNodeId nodeId = NODEID_NONE;
+    GHz carrierFrequency = GHz(0);
+};
 
 /**
  * The central, network-level module that models the shared physical radio
@@ -27,11 +47,26 @@ using namespace omnetpp;
  */
 class RadioMedium : public cSimpleModule
 {
+  protected:
+    // Owns the descriptors; radioIndex_ points into it. Entries keep a stable
+    // address across add/remove: a deque's push_back never moves existing
+    // elements (a vector's reallocation would dangle every index pointer),
+    // and removeRadio() swaps the removed entry with the last one and
+    // re-indexes the moved entry instead of shifting the tail.
+    std::deque<RadioDescriptor> radios_;
+    std::map<std::pair<MacNodeId, GHz>, RadioDescriptor *> radioIndex_;
+
   public:
     void initialize() override {}
 
     /** Never called: this module has no gates and schedules no self-messages. */
     void handleMessage(cMessage *msg) override;
+
+    /** Registers a radio endpoint on its carrier. Duplicate registration is an error. */
+    virtual void addRadio(StochasticChannelModel *endpoint);
+
+    /** Unregisters a radio endpoint previously added with addRadio(). */
+    virtual void removeRadio(StochasticChannelModel *endpoint);
 };
 
 } //namespace

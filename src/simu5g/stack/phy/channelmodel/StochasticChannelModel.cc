@@ -22,6 +22,7 @@
 #include "simu5g/background/cell/BackgroundScheduler.h"
 #include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
+#include "simu5g/stack/phy/channelmodel/RadioMedium.h"
 #include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
 #include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
 #include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
@@ -40,6 +41,11 @@ simsignal_t StochasticChannelModel::measuredSinrUlSignal_ = registerSignal("meas
 
 StochasticChannelModel::~StochasticChannelModel()
 {
+    // the medium may already be gone by the time this endpoint is torn down
+    cModule *medium = getSimulation()->getModule(mediumModuleId_);
+    if (medium != nullptr)
+        check_and_cast<RadioMedium *>(medium)->removeRadio(this);
+
     delete pathLoss_;
     delete extCellPathLoss_;
 }
@@ -128,6 +134,13 @@ void StochasticChannelModel::initialize(int stage)
                 inside_building_, inside_distance_,
                 carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
                 tolerateMaxDistViolation_);
+    }
+    else if (stage == INITSTAGE_SIMU5G_NODE_RELATIONSHIPS) {
+        // phy_ is set at INITSTAGE_SIMU5G_REGISTRATIONS2, so both phy_ and
+        // this endpoint's identity are valid by the time it registers here
+        medium_.reference(this, "radioMediumModule", true);
+        mediumModuleId_ = medium_->getId();
+        medium_->addRadio(this);
     }
 }
 

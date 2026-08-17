@@ -15,6 +15,7 @@
 
 #include "simu5g/common/LteDefs.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
+#include "simu5g/stack/phy/channelmodel/RadioMedium.h"
 
 namespace simu5g {
 
@@ -73,6 +74,12 @@ class PathLossModel;
 class StochasticChannelModel : public ChannelModelBase
 {
   protected:
+
+    // The medium this endpoint registers with in initialize(), and the module
+    // id used to look it up safely from the destructor (it may already be
+    // gone by the time this endpoint is torn down).
+    inet::ModuleRefByPar<RadioMedium> medium_;
+    int mediumModuleId_ = -1;
 
     // Information needed about the playground
     bool useTorus_;
@@ -218,6 +225,12 @@ class StochasticChannelModel : public ChannelModelBase
     ~StochasticChannelModel() override;
 
     void initialize(int stage) override;
+
+    /*
+     * Node identity of the owning PHY, needed by RadioMedium::addRadio() to
+     * index the registry.
+     */
+    MacNodeId getNodeId() const { return phy_->getMacNodeId(); }
 
     /*
      * Compute attenuation (path loss + optional shadowing) over a radio link.
