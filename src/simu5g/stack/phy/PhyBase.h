@@ -304,6 +304,12 @@ class PhyBase : public ChannelAccess
      * role-appropriate value.
      */
     RanNodeType getNodeType() { return nodeType_; }
+    /*
+     * Returns whether this PHY is part of the NR stack (as opposed to LTE);
+     * needed by RadioMedium to key CarrierPhysics by carrier leg, not just
+     * carrier frequency.
+     */
+    bool isNr() const { return isNr_; }
 };
 
 } //namespace
