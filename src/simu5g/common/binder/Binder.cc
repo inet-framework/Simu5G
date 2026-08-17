@@ -306,6 +306,7 @@ void Binder::initialize(int stage)
         // and before INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION, where the scheduler takes
         // the address of the QoS map that this fills through RRC.
         configureDrbs();
+        parseTrafficClassRules();
     }
     else if (stage == inet::INITSTAGE_LAST) {
         establishStaticBearers();
@@ -1327,7 +1328,7 @@ DrbId Binder::establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& 
     }
 
     // No definition covers the flow: author the bearer from the packet
-    return establishDataConnection(flow, BearerRequest{getTrafficCategory(pkt), UNKNOWN_RLC_TYPE, key});
+    return establishDataConnection(flow, BearerRequest{classifyTrafficClass(pkt), UNKNOWN_RLC_TYPE, key});
 }
 
 DrbId Binder::establishFromDefinition(AuthoredBearer& ab, const FlowId& flowIn, const FlowBindingKey& key)
@@ -1379,17 +1380,37 @@ DrbId Binder::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
     return DRBID_NONE;
 }
 
-LteTrafficClass Binder::getTrafficCategory(const cPacket *pkt)
+void Binder::parseTrafficClassRules()
 {
-    const char *name = pkt->getName();
-    if (opp_stringbeginswith(name, "VoIP"))
-        return CONVERSATIONAL;
-    else if (opp_stringbeginswith(name, "gaming"))
-        return INTERACTIVE;
-    else if (opp_stringbeginswith(name, "VoDPacket") || opp_stringbeginswith(name, "VoDFinishPacket"))
-        return STREAMING;
-    else
-        return BACKGROUND;
+    const cValueArray *arr = check_and_cast<const cValueArray *>(par("trafficClassRules").objectValue());
+    for (int i = 0; i < (int)arr->size(); i++) {
+        const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
+        for (const auto& [key, value] : entry->getFields())
+            if (key != "filter" && key != "qosClass")
+                throw cRuntimeError("trafficClassRules entry %d: unknown field '%s'", i, key.c_str());
+
+        TrafficClassRule rule;
+        if (!entry->containsKey("qosClass"))
+            throw cRuntimeError("trafficClassRules entry %d: missing required field \"qosClass\"", i);
+        std::string qosClassStr = entry->get("qosClass").stdstringValue();
+        rule.qosClass = aToLteTrafficClass(qosClassStr);
+        if (rule.qosClass == UNKNOWN_TRAFFIC_TYPE)
+            throw cRuntimeError("trafficClassRules entry %d: invalid qosClass '%s', must be \"CONVERSATIONAL\", \"STREAMING\", \"INTERACTIVE\" or \"BACKGROUND\"",
+                    i, qosClassStr.c_str());
+        if (entry->containsKey("filter")) {
+            rule.filter = std::make_unique<inet::PacketFilter>();
+            configurePacketFilter(*rule.filter, entry->get("filter").stringValue());
+        }
+        trafficClassRules_.push_back(std::move(rule));
+    }
+}
+
+LteTrafficClass Binder::classifyTrafficClass(const inet::Packet *pkt)
+{
+    for (const TrafficClassRule& rule : trafficClassRules_)
+        if (rule.filter == nullptr || rule.filter->matches(pkt))
+            return rule.qosClass;
+    return BACKGROUND;
 }
 
 DrbId Binder::establishDataConnection(const FlowId& flowIn, const BearerRequest& req)

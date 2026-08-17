@@ -667,10 +667,22 @@ class Binder : public cSimpleModule
     // establishDataConnection(), exactly like packet-triggered establishment.
     virtual void establishStaticBearers();
 
-    // Fallback authoring of an on-demand bearer's traffic class, from the packet
-    // name: "VoIP*" = conversational, "gaming*" = interactive, "VoDPacket*"/
-    // "VoDFinishPacket*" = streaming, anything else = background.
-    virtual LteTrafficClass getTrafficCategory(const omnetpp::cPacket *pkt);
+    // A fallback-classification rule compiled from the trafficClassRules parameter:
+    // what authors the traffic class of an on-demand bearer that no bearer
+    // definition covers. The parameter's default value carries the legacy
+    // packet-name classes ("VoIP*" = conversational, ...).
+    struct TrafficClassRule {
+        std::unique_ptr<inet::PacketFilter> filter;   // null = match all
+        LteTrafficClass qosClass = BACKGROUND;
+    };
+    std::vector<TrafficClassRule> trafficClassRules_;
+
+    // Parse and compile the trafficClassRules parameter; errors throw at setup.
+    virtual void parseTrafficClassRules();
+
+    // First-match-wins over trafficClassRules_; BACKGROUND -- the class of the
+    // non-GBR default bearer -- when no rule matches.
+    virtual LteTrafficClass classifyTrafficClass(const inet::Packet *pkt);
 
     // Establish the flow on the bearer a definition describes, assigning the
     // definition its DRB id and delivering it to the RRCs first if it does not

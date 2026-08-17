@@ -131,6 +131,17 @@ package simu5g.common.binder;
 // ~NrSdap (or ~Ip2Nic, for stacks without SDAP). See the VoIP-DL-MultiQfi-StaticBearers
 // configuration of the simulations/nr/standalone_drb example.
 //
+// The trafficClassRules parameter authors the traffic class of on-demand bearers that
+// no bearer definition covers -- the last resort of establishment-time classification.
+// A JSON array of rules, evaluated in order, first match wins; a flow matching no rule
+// is BACKGROUND (the class of the non-GBR default bearer). Rule fields:
+//  - filter (string, optional): an inet::PacketFilter -- a message-name pattern
+//    (e.g. "VoIP*") or an expression written as "expr(...)"; omitted = matches all
+//  - qosClass (string): "CONVERSATIONAL", "STREAMING", "INTERACTIVE" or "BACKGROUND"
+// The parameter's default value classifies by well-known packet-name prefixes
+// ("VoIP*" = conversational, "gaming*" = interactive, "VoD*" = streaming); override
+// it -- e.g. with [] -- to turn that heuristic off.
+//
 simple Binder
 {
     parameters:
@@ -141,5 +152,11 @@ simple Binder
         object onDemandDrbs = default([]);  // JSON array, staticDrbs schema minus "drb" (and "ue" optional): bearers created when traffic first matches them; see banner comment for details
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {"voice": {"rlcType": "UM", "gbr": true, ...}, ...}; see banner comment
         object staticBearers = default([]);  // JSON array: [{ue, qosClass, rlcType, drb, technology}, ...]; see banner comment for details
+        object trafficClassRules = default([  // fallback classification of on-demand bearers no definition covers, [{filter, qosClass}, ...], first match wins; see banner comment
+                {"filter": "VoIP*", "qosClass": "CONVERSATIONAL"},
+                {"filter": "gaming*", "qosClass": "INTERACTIVE"},
+                {"filter": "VoDPacket*", "qosClass": "STREAMING"},
+                {"filter": "VoDFinishPacket*", "qosClass": "STREAMING"}
+            ]);
         @display("i=block/cogwheel");
 }
