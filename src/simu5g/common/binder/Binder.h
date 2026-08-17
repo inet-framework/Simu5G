@@ -13,8 +13,10 @@
 #ifndef _BINDER_H_
 #define _BINDER_H_
 
+#include <memory>
 #include <string>
 
+#include <inet/common/packet/PacketFilter.h>
 #include <inet/networklayer/contract/ipv4/Ipv4Address.h>
 #include <inet/networklayer/common/L3Address.h>
 
@@ -606,10 +608,20 @@ class Binder : public cSimpleModule
 
     // Establish a bearer for a flow the requester identifies but does not describe:
     // Ip2Nic supplies the flow, its classifier key and the triggering packet, and this
-    // method authors the bearer's properties -- the traffic class is derived from the
-    // packet, the RLC mode is left for RRC to decide. Returns the established bearer's
-    // DRB id.
+    // method authors the bearer's properties. An "eps" bearer definition whose packet
+    // filter matches (staticDrbs first, then onDemandDrbs, in table order; the default
+    // entry catches what no filter matched) supplies them; a flow no definition covers
+    // falls back to the traffic class derived from the packet, with the RLC mode left
+    // for RRC to decide. Returns the established bearer's DRB id.
     virtual DrbId establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& key, const inet::Packet *pkt);
+
+    // Create the DRB serving the given QFI at the given UE from a matching "5gc"
+    // onDemandDrbs definition: the id is assigned, and the definition is delivered to
+    // the RRCs involved exactly like a staticDrbs entry (so it also reaches SDAP's
+    // QFI-to-DRB table). Returns the DRB id, or DRBID_NONE when no definition covers
+    // the QFI (or the UE is not attached). Called by SDAP on a QFI-to-DRB lookup miss;
+    // repeated calls return the already-created DRB.
+    virtual DrbId createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi);
 
     // Allocate the lowest free DRB ID within the (unordered) node pair {a, b}, so the
     // two endpoints of a link can never mint colliding IDs for the same peer.
@@ -630,6 +642,19 @@ class Binder : public cSimpleModule
     // The DRB IDs currently in use within each node pair (see assignDrbId())
     std::map<std::pair<MacNodeId, MacNodeId>, std::set<DrbId>> drbIdsInUse_;
 
+    // A bearer definition retained for establishment-time authoring: the UE it belongs
+    // to, the descriptor delivered to the RRCs, and its compiled packet filters. One
+    // record per (entry x matched UE); records keep table order, staticDrbs before
+    // onDemandDrbs, which is the match order of establishOnDemandBearer(). An
+    // onDemandDrbs record has no DRB id (DRBID_NONE) until its first match assigns one.
+    struct AuthoredBearer {
+        cModule *ueModule = nullptr;
+        DrbDesc desc;                  // key = (NODEID_NONE, drbId)
+        bool onDemand = false;         // true = onDemandDrbs entry (id assigned at first match)
+        std::vector<std::unique_ptr<inet::PacketFilter>> filters;   // compiled desc.filters
+    };
+    std::vector<AuthoredBearer> authoredBearers_;
+
     // Configure the data radio bearers described by the staticDrbs parameter (see NED
     // documentation) by telling the RRC of each node involved in a bearer what to set
     // up: BearerManagement::configureDrb() at the UE and at its serving node. This is
@@ -646,6 +671,22 @@ class Binder : public cSimpleModule
     // name: "VoIP*" = conversational, "gaming*" = interactive, "VoDPacket*"/
     // "VoDFinishPacket*" = streaming, anything else = background.
     virtual LteTrafficClass getTrafficCategory(const omnetpp::cPacket *pkt);
+
+    // Establish the flow on the bearer a definition describes, assigning the
+    // definition its DRB id and delivering it to the RRCs first if it does not
+    // have one yet (i.e. an onDemandDrbs entry matched for the first time).
+    virtual DrbId establishFromDefinition(AuthoredBearer& ab, const FlowId& flow, const FlowBindingKey& key);
+
+    // Deliver one bearer's definition to the RRCs involved: the UE's (keyed by
+    // NODEID_NONE, "my serving node") and, for each attached stack, the serving
+    // node's (keyed by that stack's UE id), reserving the configured id per pair.
+    virtual void pushDrbToRrcs(cModule *ueModule, const DrbDesc& drb);
+
+    // Parse one bearer-definition table (staticDrbs or onDemandDrbs) into
+    // authoredBearers_, and, for staticDrbs, into drbsOfUe for the init-time pushes.
+    virtual void parseDrbDefinitions(const char *paramName, bool onDemand,
+            const std::map<cModule *, std::vector<MacNodeId>>& ueNodeIds, const std::string& networkPrefix,
+            std::map<cModule *, std::map<DrbId, DrbDesc>>& drbsOfUe);
 
     virtual bool isDualConnectivityRequired(const FlowId& flow);
     virtual void createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp);

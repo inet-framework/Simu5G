@@ -86,6 +86,20 @@ package simu5g.common.binder;
 //     ]
 // </pre>
 //
+// The onDemandDrbs parameter describes bearers that are created when traffic first
+// matches them, instead of being configured up front. Entries have the same fields as
+// staticDrbs minus "drb": an on-demand bearer's id is assigned at creation, so
+// definitions can never collide over ids ("ue" may also be omitted, meaning every UE).
+// A "5gc" entry serves the QFIs in its qfiList: the first packet of an uncovered QFI
+// creates the DRB (SDAP asks the Binder on a QFI-to-DRB lookup miss), and later QFIs
+// of the same entry join it. An "eps" entry is matched by its filters against the
+// packet that triggers bearer establishment, and an entry with isDefault=true catches
+// the flows no filter matched ("5gc" entries cannot be the default: the default DRB is
+// where unmapped QFIs go, so it must exist up front). A created bearer's definition is
+// delivered to the RRCs involved exactly like a staticDrbs entry. Matching order is
+// staticDrbs entries first, then onDemandDrbs entries, each in table order, first
+// match wins.
+//
 // The staticBearers parameter establishes data radio bearers up front, in the last
 // initialization stage, instead of on the first packet of a flow. Each entry describes
 // one bearer between a UE and its serving node (established as duplex, and split into
@@ -124,6 +138,7 @@ simple Binder
         double maxDataRatePerRb @unit("Mbps") = default(1.16Mbps);
         bool printTrafficGeneratorConfig = default(false);
         object staticDrbs = default([]);  // JSON array: [{bearerType, ue, drb, profile, qfiList, filters, qosClass, rlcType, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
+        object onDemandDrbs = default([]);  // JSON array, staticDrbs schema minus "drb" (and "ue" optional): bearers created when traffic first matches them; see banner comment for details
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {"voice": {"rlcType": "UM", "gbr": true, ...}, ...}; see banner comment
         object staticBearers = default([]);  // JSON array: [{ue, qosClass, rlcType, drb, technology}, ...]; see banner comment for details
         @display("i=block/cogwheel");

@@ -174,6 +174,18 @@ void BearerManagement::handleMessage(cMessage *msg)
 
 void BearerManagement::releaseDrbIdOf(DrbKey bearer)
 {
+    // A configured definition owns its id for the whole run: releasing it would let
+    // assignDrbId() hand the id to an unrelated bearer while the definition still
+    // names it, so only bearers without one return their id to the pool. (Configured
+    // entries describe infrastructure bearers, keyed by NODEID_NONE on the UE side and
+    // by the UE id on the eNB side; a D2D bearer's peer is a UE, so it cannot match.)
+    bool infraBearer = (registration_->getNodeType() == UE)
+            ? getNodeTypeById(bearer.getNodeId()) == NODEB   // peer is my serving node
+            : true;                                          // eNB-side bearers are keyed by their UE
+    MacNodeId cfgPeer = (registration_->getNodeType() == UE) ? NODEID_NONE : bearer.getNodeId();
+    if (infraBearer && drbTableModule->findConfiguredDrb(DrbKey(cfgPeer, bearer.getDrbId())) != nullptr)
+        return;
+
     // The identity belongs to the pool of the (this node, peer) pair. A dual-stack node
     // may have established the bearer under either of its own ids, so offer it back to
     // both pools -- releasing an id that is not in use there is a no-op.

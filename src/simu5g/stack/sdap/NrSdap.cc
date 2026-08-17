@@ -154,6 +154,16 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
 
     const DrbDesc *drb = drbTable_.getDrbForQfi(nodeId, qfi);
     if (!drb) {
+        // An uncovered QFI may still have an on-demand definition to create its DRB
+        // from (see the Binder's onDemandDrbs parameter); a successful creation is
+        // pushed back into this table, so retry the lookup. The Binder needs the
+        // actual UE: on the gNB that is nodeId (the destination), on the UE itself
+        // the flow's source.
+        MacNodeId ueId = isUe ? pkt->getTag<FlowControlInfo>()->getSourceId() : nodeId;
+        if (binder_->createOnDemandDrbForQfi(ueId, qfi) != DRBID_NONE)
+            drb = drbTable_.getDrbForQfi(nodeId, qfi);
+    }
+    if (!drb) {
         drb = drbTable_.getDefaultDrb(nodeId);
         if (drb)
             EV_WARN << "SDAP TX: No DRB mapping for nodeId=" << nodeId << " QFI=" << qfi

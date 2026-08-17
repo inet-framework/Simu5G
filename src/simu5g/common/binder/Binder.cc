@@ -954,11 +954,6 @@ static void configurePacketFilter(inet::PacketFilter& filter, const char *spec)
 
 void Binder::configureDrbs()
 {
-    const cValueArray *arr = check_and_cast_nullable<const cValueArray *>(par("staticDrbs").objectValue());
-    const cValueMap *profiles = check_and_cast_nullable<const cValueMap *>(par("drbProfiles").objectValue());
-    if (arr == nullptr || arr->size() == 0)
-        return;
-
     // The node ids of each registered UE: one per stack, both naming the same UE and so
     // the same bearers. The LTE id, which every UE has, serves as the UE's identity here.
     std::map<cModule *, std::vector<MacNodeId>> ueNodeIds;
@@ -966,19 +961,69 @@ void Binder::configureDrbs()
         if (getNodeTypeById(nodeId) == UE && info.moduleRef != nullptr)
             ueNodeIds[info.moduleRef].push_back(nodeId);
 
-    // UE module paths in the parameter are relative to the network
+    // UE module paths in the parameters are relative to the network
     std::string networkPrefix = std::string(getSystemModule()->getFullPath()) + ".";
 
-    // The bearers of each UE, collected before anything is pushed, so that the default
-    // DRB of a UE can be settled while all of its bearers are in hand
+    // The static bearers of each UE, collected before anything is pushed, so that the
+    // default DRB of a UE can be settled while all of its bearers are in hand
     std::map<cModule *, std::map<DrbId, DrbDesc>> drbsOfUe;
+
+    parseDrbDefinitions("staticDrbs", false, ueNodeIds, networkPrefix, drbsOfUe);
+    parseDrbDefinitions("onDemandDrbs", true, ueNodeIds, networkPrefix, drbsOfUe);
+
+    // A QFI is either mapped up front by a static definition or serves as an on-demand
+    // selector; both claiming it would leave the on-demand entry permanently dead
+    for (const AuthoredBearer& ab : authoredBearers_) {
+        if (!ab.onDemand || ab.desc.bearerType != BEARER_5GC)
+            continue;
+        auto uit = drbsOfUe.find(ab.ueModule);
+        if (uit == drbsOfUe.end())
+            continue;
+        for (const auto& [drbId, staticDrb] : uit->second)
+            for (Qfi qfi : ab.desc.qfiList)
+                if (contains(staticDrb.qfiList, qfi))
+                    throw cRuntimeError("onDemandDrbs: QFI %d of UE '%s' is already mapped to static DRB %d",
+                            (int)num(qfi), ab.ueModule->getFullPath().c_str(), (int)num(drbId));
+    }
+
+    for (auto& [ueModule, drbs] : drbsOfUe) {
+        // The default DRB is where traffic with no QFI-to-DRB mapping (5gc) or no
+        // matching packet filter (eps) goes; if the configuration does not name one
+        // in either table, the UE's first static bearer takes the role
+        bool onDemandDefault = false;
+        for (const AuthoredBearer& ab : authoredBearers_)
+            if (ab.onDemand && ab.ueModule == ueModule && ab.desc.isDefault)
+                onDemandDefault = true;
+        if (!onDemandDefault && std::none_of(drbs.begin(), drbs.end(), [](const auto& e) { return e.second.isDefault; }))
+            drbs.begin()->second.isDefault = true;
+
+        // The retained records are what establishment-time matching consults, so the
+        // settled default is propagated into them
+        for (AuthoredBearer& ab : authoredBearers_)
+            if (!ab.onDemand && ab.ueModule == ueModule)
+                ab.desc.isDefault = drbs.at(ab.desc.getDrbId()).isDefault;
+
+        for (const auto& [drbId, drb] : drbs)
+            pushDrbToRrcs(ueModule, drb);
+    }
+}
+
+void Binder::parseDrbDefinitions(const char *paramName, bool onDemand,
+        const std::map<cModule *, std::vector<MacNodeId>>& ueNodeIds, const std::string& networkPrefix,
+        std::map<cModule *, std::map<DrbId, DrbDesc>>& drbsOfUe)
+{
+    const cValueArray *arr = check_and_cast_nullable<const cValueArray *>(par(paramName).objectValue());
+    const cValueMap *profiles = check_and_cast_nullable<const cValueMap *>(par("drbProfiles").objectValue());
+    if (arr == nullptr || arr->size() == 0)
+        return;
 
     for (int i = 0; i < (int)arr->size(); i++) {
         const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
 
         // Resolve the entry's named profile, if any. A profile describes what the bearer
         // is, so it must not carry the fields that say which UE it belongs to (ue, drb)
-        // or which flows select it (qfiList, isDefault).
+        // or which architecture and flows select it (bearerType, qfiList, filters,
+        // isDefault).
         const cValueMap *profile = nullptr;
         if (entry->containsKey("profile")) {
             const char *name = entry->get("profile").stringValue();
@@ -987,8 +1032,8 @@ void Binder::configureDrbs()
                 if (profiles)
                     for (const auto& [profileName, value] : profiles->getFields())
                         available += (available.empty() ? "" : ", ") + profileName;
-                throw cRuntimeError("staticDrbs entry %d references unknown profile '%s' (available: %s)",
-                        i, name, available.empty() ? "none" : available.c_str());
+                throw cRuntimeError("%s entry %d references unknown profile '%s' (available: %s)",
+                        paramName, i, name, available.empty() ? "none" : available.c_str());
             }
             profile = check_and_cast<const cValueMap *>(profiles->get(name).objectValue());
             for (const char *forbidden : { "drb", "ue", "profile", "bearerType", "qfiList", "filters", "isDefault" })
@@ -1005,29 +1050,42 @@ void Binder::configureDrbs()
             return nullptr;
         };
 
+        // DRB id: static definitions pin it; an on-demand definition gets one assigned
+        // when it first matches (see establishFromDefinition()/createOnDemandDrbForQfi())
         DrbDesc drb;
-        DrbId drbId = DrbId(entry->get("drb").intValue());
-        drb.lcid = LogicalCid(num(drbId));
+        DrbId drbId = DRBID_NONE;
+        drb.key = DrbKey(NODEID_NONE, DRBID_NONE);
+        if (!onDemand) {
+            drbId = DrbId(entry->get("drb").intValue());
+            drb.key = DrbKey(NODEID_NONE, drbId);
+            drb.lcid = LogicalCid(num(drbId));
+        }
+        else if (entry->containsKey("drb"))
+            throw cRuntimeError("%s entry %d: on-demand definitions do not name a \"drb\" id; one is assigned when the entry first matches", paramName, i);
 
         // bearerType (required): which architecture selects the bearer. Stated per
         // entry, never inferred; the receiving RRC checks it against its own stack
         // (see BearerManagement::configureDrb()).
         if (!entry->containsKey("bearerType"))
-            throw cRuntimeError("staticDrbs entry %d: missing required field \"bearerType\" (\"eps\" or \"5gc\")", i);
+            throw cRuntimeError("%s entry %d: missing required field \"bearerType\" (\"eps\" or \"5gc\")", paramName, i);
         std::string bearerTypeStr = entry->get("bearerType").stdstringValue();
         drb.bearerType = aToBearerType(bearerTypeStr);
         if (drb.bearerType == UNKNOWN_BEARER_TYPE)
-            throw cRuntimeError("staticDrbs entry %d: invalid bearerType '%s', must be \"eps\" or \"5gc\"", i, bearerTypeStr.c_str());
+            throw cRuntimeError("%s entry %d: invalid bearerType '%s', must be \"eps\" or \"5gc\"", paramName, i, bearerTypeStr.c_str());
 
-        // isDefault (optional; if no entry of a UE is marked, its first one becomes default)
+        // isDefault (optional; if no entry of a UE is marked, its first static one
+        // becomes default). An on-demand "5gc" entry cannot be the default: the default
+        // DRB is where unmapped QFIs go, so it must exist up front.
         if (entry->containsKey("isDefault"))
             drb.isDefault = entry->get("isDefault").boolValue();
+        if (onDemand && drb.isDefault && drb.bearerType == BEARER_5GC)
+            throw cRuntimeError("%s entry %d: an on-demand \"5gc\" definition cannot be the default DRB", paramName, i);
 
         // qfiList (5gc only, optional; an entry without it does not take part in SDAP's
         // QFI-to-DRB mapping, e.g. it only carries the bearer's QoS profile)
         if (entry->containsKey("qfiList")) {
             if (drb.bearerType != BEARER_5GC)
-                throw cRuntimeError("staticDrbs entry %d: \"qfiList\" is a \"5gc\" selector, not valid on a \"%s\" bearer", i, bearerTypeStr.c_str());
+                throw cRuntimeError("%s entry %d: \"qfiList\" is a \"5gc\" selector, not valid on a \"%s\" bearer", paramName, i, bearerTypeStr.c_str());
             const cValueArray *qfiArr = check_and_cast<const cValueArray *>(entry->get("qfiList").objectValue());
             for (int j = 0; j < (int)qfiArr->size(); j++)
                 drb.qfiList.push_back(Qfi(qfiArr->get(j).intValue()));
@@ -1035,18 +1093,14 @@ void Binder::configureDrbs()
 
         // filters (eps only, optional; the packet filters that select this bearer --
         // an entry without them can still be the default bearer or carry only a QoS
-        // profile). Compiled here so a syntax error fails at setup, not on the
-        // first matching packet.
+        // profile). Compiled below, once per matched UE, so a syntax error fails at
+        // setup, not on the first packet.
         if (entry->containsKey("filters")) {
             if (drb.bearerType != BEARER_EPS)
-                throw cRuntimeError("staticDrbs entry %d: \"filters\" is an \"eps\" selector, not valid on a \"%s\" bearer", i, bearerTypeStr.c_str());
+                throw cRuntimeError("%s entry %d: \"filters\" is an \"eps\" selector, not valid on a \"%s\" bearer", paramName, i, bearerTypeStr.c_str());
             const cValueArray *fArr = check_and_cast<const cValueArray *>(entry->get("filters").objectValue());
-            for (int j = 0; j < (int)fArr->size(); j++) {
-                const char *spec = fArr->get(j).stringValue();
-                inet::PacketFilter checkOnly;
-                configurePacketFilter(checkOnly, spec);
-                drb.filters.push_back(spec);
-            }
+            for (int j = 0; j < (int)fArr->size(); j++)
+                drb.filters.push_back(fArr->get(j).stdstringValue());
         }
 
         // QoS profile (all optional; any of them present = the bearer has a QoS profile,
@@ -1067,8 +1121,8 @@ void Binder::configureDrbs()
             std::string rlcTypeStr = v->stdstringValue();
             drb.rlcType = aToRlcType(rlcTypeStr);
             if (drb.rlcType == UNKNOWN_RLC_TYPE)
-                throw cRuntimeError("staticDrbs entry %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
-                        i, rlcTypeStr.c_str());
+                throw cRuntimeError("%s entry %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
+                        paramName, i, rlcTypeStr.c_str());
         }
 
         // qosClass (eps only, optional; the bearer's traffic class, which establishment
@@ -1077,12 +1131,12 @@ void Binder::configureDrbs()
         // rather than silently ignored.)
         if (const cValue *v = field("qosClass")) {
             if (drb.bearerType != BEARER_EPS)
-                throw cRuntimeError("staticDrbs entry %d: \"qosClass\" is only supported on \"eps\" bearers", i);
+                throw cRuntimeError("%s entry %d: \"qosClass\" is only supported on \"eps\" bearers", paramName, i);
             std::string qosClassStr = v->stdstringValue();
             drb.lcg = aToLteTrafficClass(qosClassStr);
             if (drb.lcg == UNKNOWN_TRAFFIC_TYPE)
-                throw cRuntimeError("staticDrbs entry %d: invalid qosClass '%s', must be \"CONVERSATIONAL\", \"STREAMING\", \"INTERACTIVE\" or \"BACKGROUND\"",
-                        i, qosClassStr.c_str());
+                throw cRuntimeError("%s entry %d: invalid qosClass '%s', must be \"CONVERSATIONAL\", \"STREAMING\", \"INTERACTIVE\" or \"BACKGROUND\"",
+                        paramName, i, qosClassStr.c_str());
         }
 
         // pduSessionType (optional, default IPv4) and upperProtocol (optional, empty =
@@ -1093,8 +1147,14 @@ void Binder::configureDrbs()
             drb.upperProtocol = v->stdstringValue();
 
         // The entry names its UE by module path (patterns allowed), which is how the
-        // configuration follows the UE instead of naming an allocation-order-dependent id
-        const char *uePattern = entry->get("ue").stringValue();
+        // configuration follows the UE instead of naming an allocation-order-dependent
+        // id; an on-demand entry may omit it to cover every UE
+        const char *uePattern = entry->containsKey("ue") ? entry->get("ue").stringValue() : nullptr;
+        if (uePattern == nullptr) {
+            if (!onDemand)
+                throw cRuntimeError("%s entry %d: missing required field \"ue\"", paramName, i);
+            uePattern = "**";
+        }
         inet::PatternMatcher matcher(uePattern, true, true, true);
         int numMatched = 0;
         for (const auto& [ueModule, nodeIds] : ueNodeIds) {
@@ -1104,45 +1164,60 @@ void Binder::configureDrbs()
             if (!matcher.matches(path.c_str()))
                 continue;
             numMatched++;
-            if (!drbsOfUe[ueModule].insert({drbId, drb}).second)
-                throw cRuntimeError("staticDrbs entry %d: DRB %d of UE '%s' is already configured by an earlier entry",
-                        i, (int)num(drbId), path.c_str());
+            if (!onDemand && !drbsOfUe[ueModule].insert({drbId, drb}).second)
+                throw cRuntimeError("%s entry %d: DRB %d of UE '%s' is already configured by an earlier entry",
+                        paramName, i, (int)num(drbId), path.c_str());
+
+            // Retain the definition for establishment-time matching, its filters
+            // compiled; one record per (entry x UE), so an on-demand definition
+            // materializes separately per UE
+            AuthoredBearer ab;
+            ab.ueModule = ueModule;
+            ab.desc = drb;
+            ab.onDemand = onDemand;
+            for (const std::string& spec : drb.filters) {
+                auto filter = std::make_unique<inet::PacketFilter>();
+                configurePacketFilter(*filter, spec.c_str());
+                ab.filters.push_back(std::move(filter));
+            }
+            authoredBearers_.push_back(std::move(ab));
         }
         if (numMatched == 0)
-            throw cRuntimeError("staticDrbs entry %d: its \"ue\" pattern '%s' matches no registered UE", i, uePattern);
+            throw cRuntimeError("%s entry %d: its \"ue\" pattern '%s' matches no registered UE", paramName, i, uePattern);
     }
+}
 
-    for (auto& [ueModule, drbs] : drbsOfUe) {
-        // The default DRB is where traffic with no QFI-to-DRB mapping goes; if the
-        // configuration does not name one, the UE's first bearer takes the role
-        if (std::none_of(drbs.begin(), drbs.end(), [](const auto& e) { return e.second.isDefault; }))
-            drbs.begin()->second.isDefault = true;
+void Binder::pushDrbToRrcs(cModule *ueModule, const DrbDesc& drb)
+{
+    // node ids of the UE module, one per stack (see configureDrbs())
+    std::vector<MacNodeId> nodeIds;
+    for (const auto& [nodeId, info] : nodeInfoMap_)
+        if (getNodeTypeById(nodeId) == UE && info.moduleRef == ueModule)
+            nodeIds.push_back(nodeId);
+    ASSERT(!nodeIds.empty());
 
-        const std::vector<MacNodeId>& nodeIds = ueNodeIds[ueModule];
-        auto *ueRrc = check_and_cast<BearerManagement *>(getRrcByNodeId(nodeIds.front())->getSubmodule("bearerManagement"));
+    DrbId drbId = drb.getDrbId();
 
-        for (const auto& [drbId, drb] : drbs) {
-            // The UE keys its bearers by "my serving node" (NODEID_NONE), its serving
-            // node by the UE. A dual-stack UE has one bearer per stack id, and the
-            // serving node of each stack is told about the one that is its own.
-            DrbDesc ueDrb = drb;
-            ueDrb.key = DrbKey(NODEID_NONE, drbId);
-            ueRrc->configureDrb(ueDrb);
+    // The UE keys its bearers by "my serving node" (NODEID_NONE), its serving
+    // node by the UE. A dual-stack UE has one bearer per stack id, and the
+    // serving node of each stack is told about the one that is its own.
+    auto *ueRrc = check_and_cast<BearerManagement *>(getRrcByNodeId(nodeIds.front())->getSubmodule("bearerManagement"));
+    DrbDesc ueDrb = drb;
+    ueDrb.key = DrbKey(NODEID_NONE, drbId);
+    ueRrc->configureDrb(ueDrb);
 
-            for (MacNodeId ueId : nodeIds) {
-                MacNodeId servingNodeId = getServingNode(ueId);
-                if (servingNodeId == NODEID_NONE)
-                    continue;   // this stack is not attached to a cell
-                DrbDesc enbDrb = drb;
-                enbDrb.key = DrbKey(ueId, drbId);
-                auto *enbRrc = check_and_cast<BearerManagement *>(getRrcByNodeId(servingNodeId)->getSubmodule("bearerManagement"));
-                enbRrc->configureDrb(enbDrb);
+    for (MacNodeId ueId : nodeIds) {
+        MacNodeId servingNodeId = getServingNode(ueId);
+        if (servingNodeId == NODEID_NONE)
+            continue;   // this stack is not attached to a cell
+        DrbDesc enbDrb = drb;
+        enbDrb.key = DrbKey(ueId, drbId);
+        auto *enbRrc = check_and_cast<BearerManagement *>(getRrcByNodeId(servingNodeId)->getSubmodule("bearerManagement"));
+        enbRrc->configureDrb(enbDrb);
 
-                // The configuration names the bearer, so its id is taken out of the pool
-                // that assignDrbId() hands out to bearers that are not configured here
-                reserveDrbId(ueId, servingNodeId, drbId);
-            }
-        }
+        // The configuration names the bearer, so its id is taken out of the pool
+        // that assignDrbId() hands out to bearers that are not configured here
+        reserveDrbId(ueId, servingNodeId, drbId);
     }
 }
 
@@ -1235,7 +1310,84 @@ DrbId Binder::establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& 
     Enter_Method_Silent("establishOnDemandBearer");
 
     // The requester brings identity only; the bearer's properties are authored here.
+    // Authored definitions describe infrastructure bearers, so multicast and D2D
+    // flows go straight to the fallback below.
+    if (flow.multicastGroupId == NODEID_NONE && flow.d2dTxPeerId == NODEID_NONE && flow.d2dRxPeerId == NODEID_NONE
+            && !authoredBearers_.empty()) {
+        MacNodeId ueId = getNodeTypeById(flow.sourceId) == UE ? flow.sourceId : flow.destId;
+        auto nit = nodeInfoMap_.find(ueId);
+        cModule *ueModule = (nit != nodeInfoMap_.end()) ? static_cast<cModule *>(nit->second.moduleRef) : nullptr;
+
+        if (ueModule != nullptr) {
+            // First matching definition wins, in table order (staticDrbs records are
+            // retained ahead of onDemandDrbs ones); the default eps entry catches the
+            // flows no filter matched.
+            AuthoredBearer *defaultDef = nullptr;
+            for (auto& ab : authoredBearers_) {
+                if (ab.ueModule != ueModule || ab.desc.bearerType != BEARER_EPS)
+                    continue;
+                for (auto& filter : ab.filters)
+                    if (filter->matches(pkt))
+                        return establishFromDefinition(ab, flow, key);
+                if (ab.desc.isDefault && defaultDef == nullptr)
+                    defaultDef = &ab;
+            }
+            if (defaultDef != nullptr)
+                return establishFromDefinition(*defaultDef, flow, key);
+        }
+    }
+
+    // No definition covers the flow: author the bearer from the packet
     return establishDataConnection(flow, BearerRequest{getTrafficCategory(pkt), UNKNOWN_RLC_TYPE, key});
+}
+
+DrbId Binder::establishFromDefinition(AuthoredBearer& ab, const FlowId& flowIn, const FlowBindingKey& key)
+{
+    FlowId flow = flowIn;
+    if (ab.desc.getDrbId() == DRBID_NONE) {
+        // First match of an on-demand definition: assign its id within the flow's node
+        // pair and deliver it to the RRCs, as configureDrbs() does for static
+        // definitions -- from here on the bearer has an authored identity, which later
+        // flows matching the same definition join.
+        DrbId drbId = assignDrbId(flow.sourceId, flow.destId);
+        ab.desc.key = DrbKey(NODEID_NONE, drbId);
+        ab.desc.lcid = LogicalCid(num(drbId));
+        EV << "Binder::establishFromDefinition - on-demand definition materialized as DRB " << drbId
+           << " for UE " << ab.ueModule->getFullPath() << endl;
+        pushDrbToRrcs(ab.ueModule, ab.desc);
+    }
+    flow.drbId = ab.desc.getDrbId();
+    return establishDataConnection(flow, BearerRequest{ab.desc.lcg, ab.desc.rlcType, key});
+}
+
+DrbId Binder::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
+{
+    Enter_Method_Silent("createOnDemandDrbForQfi");
+
+    auto nit = nodeInfoMap_.find(ueNodeId);
+    if (nit == nodeInfoMap_.end() || nit->second.moduleRef == nullptr)
+        return DRBID_NONE;
+    cModule *ueModule = nit->second.moduleRef;
+
+    for (auto& ab : authoredBearers_) {
+        if (!ab.onDemand || ab.ueModule != ueModule || ab.desc.bearerType != BEARER_5GC)
+            continue;
+        if (!contains(ab.desc.qfiList, qfi))
+            continue;
+        if (ab.desc.getDrbId() == DRBID_NONE) {
+            MacNodeId servingNodeId = getServingNode(ueNodeId);
+            if (servingNodeId == NODEID_NONE)
+                return DRBID_NONE;   // not attached, nowhere to create the bearer
+            DrbId drbId = assignDrbId(ueNodeId, servingNodeId);
+            ab.desc.key = DrbKey(NODEID_NONE, drbId);
+            ab.desc.lcid = LogicalCid(num(drbId));
+            EV << "Binder::createOnDemandDrbForQfi - QFI " << num(qfi) << " gets on-demand DRB " << drbId
+               << " at UE " << ueModule->getFullPath() << endl;
+            pushDrbToRrcs(ab.ueModule, ab.desc);
+        }
+        return ab.desc.getDrbId();
+    }
+    return DRBID_NONE;
 }
 
 LteTrafficClass Binder::getTrafficCategory(const cPacket *pkt)
