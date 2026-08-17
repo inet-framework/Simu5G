@@ -1610,6 +1610,13 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
         if (interfChanModel == nullptr)
             continue;
 
+        // bridge: interfChanModel is a registered radio (every StochasticChannelModel
+        // registers with the medium), so the medium's registry must resolve the same
+        // physical facts this function still reads through the Binder's cached EnbInfo
+        ASSERT(medium_->txPowerOf(id, carrierFrequency) == enbInfo->txPwr);
+        ASSERT(medium_->txDirectionOf(id, carrierFrequency) == enbInfo->txDirection);
+        ASSERT(medium_->txAngleOf(id, carrierFrequency) == enbInfo->txAngle);
+
         // compute attenuation using data structures within the cell
         double att = interfChanModel->getAttenuation(ueId, UL, coord, isCqi);
         EV << "EnbId [" << id << "] - attenuation [" << att << "]";
@@ -1619,6 +1626,10 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
         if (enbInfo->txDirection == ANISOTROPIC) {
             //get tx angle
             double txAngle = enbInfo->txAngle;
+
+            // bridge: same physical fact (the interfering eNB's position), read
+            // through the registry
+            ASSERT(medium_->coordOf(id, carrierFrequency) == interfChanModel->phy_->getCoord());
 
             // compute the angle between uePosition and reference axis, considering the eNB as center
             double ueAngle = computeAngle(interfChanModel->phy_->getCoord(), coord);
@@ -1673,7 +1684,7 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
     return true;
 }
 
-StochasticChannelModel::InterfererInfo StochasticChannelModel::describeInterferer(const UeAllocationInfo& allocation)
+StochasticChannelModel::InterfererInfo StochasticChannelModel::describeInterferer(const UeAllocationInfo& allocation, RadioMedium *medium, GHz carrierFrequency)
 {
     InterfererInfo info;
     info.nodeId = allocation.nodeId;
@@ -1684,8 +1695,14 @@ StochasticChannelModel::InterfererInfo StochasticChannelModel::describeInterfere
         PhyUe *uePhy = check_and_cast<PhyUe *>(allocation.phy);
         info.txPwr = uePhy->getTxPwr(info.dir);
         info.coord = uePhy->getCoord();
+
+        // bridge: the peer is a registered radio, so the medium's registry
+        // must resolve the same physical facts this still reads through the
+        // UE's own PhyUe pointer
+        ASSERT(medium->txPowerOf(info.nodeId, carrierFrequency, info.dir) == info.txPwr);
+        ASSERT(medium->coordOf(info.nodeId, carrierFrequency) == info.coord);
     }
-    else { // this is a backgroundUe
+    else { // this is a backgroundUe -- not a registered radio (S12 adds phantom registration)
         TrafficGeneratorBase *trafficGen = check_and_cast<TrafficGeneratorBase *>(allocation.trafficGen);
         info.txPwr = trafficGen->getTxPwr();
         info.coord = trafficGen->getCoord();
@@ -1708,7 +1725,7 @@ bool StochasticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNodeI
                 allocatedUes = &(ulTransmissionMap->at(i));
 
                 for (auto& ue_it : *allocatedUes) {
-                    const InterfererInfo interferer = describeInterferer(ue_it);
+                    const InterfererInfo interferer = describeInterferer(ue_it, medium_.get(), carrierFrequency);
                     const MacNodeId ueId = interferer.nodeId;
                     const MacCellId cellId = interferer.cellId;
                     const Direction dir = interferer.dir;
@@ -1749,7 +1766,7 @@ bool StochasticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNodeI
                 allocatedUes = &(ulTransmissionMap->at(i));
 
                 for (auto& ue_it : *allocatedUes) {
-                    const InterfererInfo interferer = describeInterferer(ue_it);
+                    const InterfererInfo interferer = describeInterferer(ue_it, medium_.get(), carrierFrequency);
                     const MacNodeId ueId = interferer.nodeId;
                     const MacCellId cellId = interferer.cellId;
                     const Direction dir = interferer.dir;

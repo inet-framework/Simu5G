@@ -64,4 +64,47 @@ void RadioMedium::removeRadio(StochasticChannelModel *endpoint)
         radioIndex_[std::make_pair(radios_[idx].nodeId, radios_[idx].carrierFrequency)] = &radios_[idx];
 }
 
+const RadioDescriptor& RadioMedium::descriptorFor(MacNodeId nodeId, GHz carrierFrequency) const
+{
+    auto it = radioIndex_.find(std::make_pair(nodeId, carrierFrequency));
+    if (it == radioIndex_.end())
+        throw cRuntimeError("no radio registered for node %d on carrier %gGHz", num(nodeId), carrierFrequency.get());
+    return *it->second;
+}
+
+inet::Coord RadioMedium::coordOf(MacNodeId nodeId, GHz carrierFrequency) const
+{
+    return descriptorFor(nodeId, carrierFrequency).endpoint->getCoord();
+}
+
+double RadioMedium::txPowerOf(MacNodeId nodeId, GHz carrierFrequency, Direction dir) const
+{
+    return descriptorFor(nodeId, carrierFrequency).endpoint->getTxPwr(dir);
+}
+
+TxDirectionType RadioMedium::txDirectionOf(MacNodeId nodeId, GHz carrierFrequency) const
+{
+    return descriptorFor(nodeId, carrierFrequency).endpoint->getTxDirection();
+}
+
+double RadioMedium::txAngleOf(MacNodeId nodeId, GHz carrierFrequency) const
+{
+    return descriptorFor(nodeId, carrierFrequency).endpoint->getTxAngle();
+}
+
+double RadioMedium::antennaGainOf(MacNodeId nodeId, GHz carrierFrequency) const
+{
+    return descriptorFor(nodeId, carrierFrequency).endpoint->getAntennaGain();
+}
+
+double RadioMedium::noiseFigureOf(MacNodeId nodeId, GHz carrierFrequency) const
+{
+    return descriptorFor(nodeId, carrierFrequency).endpoint->getNoiseFigure();
+}
+
+double RadioMedium::insideDistanceOf(MacNodeId nodeId, GHz carrierFrequency) const
+{
+    return descriptorFor(nodeId, carrierFrequency).endpoint->getInsideDistance();
+}
+
 } //namespace

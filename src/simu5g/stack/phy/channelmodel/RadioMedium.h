@@ -18,6 +18,7 @@
 #include <utility>
 
 #include <omnetpp.h>
+#include <inet/common/geometry/common/Coord.h>
 
 #include "simu5g/common/LteCommon.h"
 
@@ -56,6 +57,9 @@ class RadioMedium : public cSimpleModule
     std::deque<RadioDescriptor> radios_;
     std::map<std::pair<MacNodeId, GHz>, RadioDescriptor *> radioIndex_;
 
+    /** Looks up the registered radio for (nodeId, carrierFrequency); throws if none is registered. */
+    const RadioDescriptor& descriptorFor(MacNodeId nodeId, GHz carrierFrequency) const;
+
   public:
     void initialize() override {}
 
@@ -67,6 +71,17 @@ class RadioMedium : public cSimpleModule
 
     /** Unregisters a radio endpoint previously added with addRadio(). */
     virtual void removeRadio(StochasticChannelModel *endpoint);
+
+    // Physical facts of a registered radio, read live through its own
+    // endpoint pointer -- the registry resolves identity, it does not cache
+    // values.
+    virtual inet::Coord coordOf(MacNodeId nodeId, GHz carrierFrequency) const;
+    virtual double txPowerOf(MacNodeId nodeId, GHz carrierFrequency, Direction dir = UNKNOWN_DIRECTION) const;
+    virtual TxDirectionType txDirectionOf(MacNodeId nodeId, GHz carrierFrequency) const;
+    virtual double txAngleOf(MacNodeId nodeId, GHz carrierFrequency) const;
+    virtual double antennaGainOf(MacNodeId nodeId, GHz carrierFrequency) const;
+    virtual double noiseFigureOf(MacNodeId nodeId, GHz carrierFrequency) const;
+    virtual double insideDistanceOf(MacNodeId nodeId, GHz carrierFrequency) const;
 };
 
 } //namespace
