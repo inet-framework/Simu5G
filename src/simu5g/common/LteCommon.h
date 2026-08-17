@@ -42,6 +42,10 @@
 #include "simu5g/common/LteTypes.h"
 #include "simu5g/common/LteCommonEnum_m.h"
 
+namespace inet {
+class PacketFilter;
+}
+
 using namespace omnetpp;
 
 using inet::Hz;
@@ -511,6 +515,10 @@ const std::string pduSessionTypeToA(PduSessionType type);
 PduSessionType aToPduSessionType(std::string s);
 const std::string bearerTypeToA(BearerType type);
 BearerType aToBearerType(std::string s);
+
+// Configure an inet::PacketFilter from its string form: an expression written as
+// "expr(...)", or a message-name pattern. Parse errors throw here, at setup time.
+void configurePacketFilter(inet::PacketFilter& filter, const char *spec);
 const std::string planeToA(Plane p);
 MacNodeId ctrlInfoToUeId(const FlowControlInfo *info);
 DrbKey ctrlInfoToTxDrbKey(const FlowControlInfo *info); // DrbKey for TX context: key by dest (remote receiver)

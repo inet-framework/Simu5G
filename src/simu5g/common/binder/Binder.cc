@@ -941,17 +941,6 @@ void Binder::releaseDrbId(MacNodeId a, MacNodeId b, DrbId drbId)
            << ", " << pair.second << ") is free again" << endl;
 }
 
-// Configure an inet::PacketFilter from its string form: an expression written as
-// "expr(...)", or a message-name pattern. Parse errors throw here, at setup time.
-static void configurePacketFilter(inet::PacketFilter& filter, const char *spec)
-{
-    std::string s = spec;
-    if (s.rfind("expr(", 0) == 0 && !s.empty() && s.back() == ')')
-        filter.setExpression(s.substr(5, s.size() - 6).c_str());
-    else
-        filter.setPattern(spec);
-}
-
 void Binder::configureDrbs()
 {
     // The node ids of each registered UE: one per stack, both naming the same UE and so

@@ -156,6 +156,15 @@ BearerType aToBearerType(std::string s)
     return UNKNOWN_BEARER_TYPE;
 }
 
+void configurePacketFilter(inet::PacketFilter& filter, const char *spec)
+{
+    std::string s = spec;
+    if (s.rfind("expr(", 0) == 0 && !s.empty() && s.back() == ')')
+        filter.setExpression(s.substr(5, s.size() - 6).c_str());
+    else
+        filter.setPattern(spec);
+}
+
 const std::string dirToA(Direction dir)
 {
     switch (dir) {
