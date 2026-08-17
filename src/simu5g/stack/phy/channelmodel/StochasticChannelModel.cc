@@ -1610,36 +1610,25 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
         if (interfChanModel == nullptr)
             continue;
 
-        // bridge: interfChanModel is a registered radio (every StochasticChannelModel
-        // registers with the medium), so the medium's registry must resolve the same
-        // physical facts this function still reads through the Binder's cached EnbInfo
-        ASSERT(medium_->txPowerOf(id, carrierFrequency) == enbInfo->txPwr);
-        ASSERT(medium_->txDirectionOf(id, carrierFrequency) == enbInfo->txDirection);
-        ASSERT(medium_->txAngleOf(id, carrierFrequency) == enbInfo->txAngle);
-
         // compute attenuation using data structures within the cell
         double att = interfChanModel->getAttenuation(ueId, UL, coord, isCqi);
         EV << "EnbId [" << id << "] - attenuation [" << att << "]";
 
         //=============== ANGULAR ATTENUATION =================
         double angularAtt = 0;
-        if (enbInfo->txDirection == ANISOTROPIC) {
+        if (medium_->txDirectionOf(id, carrierFrequency) == ANISOTROPIC) {
             //get tx angle
-            double txAngle = enbInfo->txAngle;
-
-            // bridge: same physical fact (the interfering eNB's position), read
-            // through the registry
-            ASSERT(medium_->coordOf(id, carrierFrequency) == interfChanModel->phy_->getCoord());
+            double txAngle = medium_->txAngleOf(id, carrierFrequency);
 
             // compute the angle between uePosition and reference axis, considering the eNB as center
-            double ueAngle = computeAngle(interfChanModel->phy_->getCoord(), coord);
+            double ueAngle = computeAngle(medium_->coordOf(id, carrierFrequency), coord);
 
             // compute the reception angle between ue and eNB
             double recvAngle = fabs(txAngle - ueAngle);
             if (recvAngle > 180)
                 recvAngle = 360 - recvAngle;
 
-            double verticalAngle = computeVerticalAngle(interfChanModel->phy_->getCoord(), coord);
+            double verticalAngle = computeVerticalAngle(medium_->coordOf(id, carrierFrequency), coord);
 
             // compute attenuation due to sectorial tx
             angularAtt = computeAngularAttenuation(recvAngle, verticalAngle);
@@ -1649,7 +1638,7 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
         // else, antenna is omni-directional
         //=============== END ANGULAR ATTENUATION =================
 
-        double txPwr = enbInfo->txPwr - angularAtt - cableLoss_ + antennaGainEnB_ + antennaGainUe_;
+        double txPwr = medium_->txPowerOf(id, carrierFrequency) - angularAtt - cableLoss_ + antennaGainEnB_ + antennaGainUe_;
 
         unsigned int numBands = std::min(numBands_, interfChanModel->getNumBands());
         EV << " - shared bands [" << numBands << "]" << endl;
@@ -1692,15 +1681,9 @@ StochasticChannelModel::InterfererInfo StochasticChannelModel::describeInterfere
     info.dir = allocation.dir;
 
     if (allocation.phy != nullptr) {
-        PhyUe *uePhy = check_and_cast<PhyUe *>(allocation.phy);
-        info.txPwr = uePhy->getTxPwr(info.dir);
-        info.coord = uePhy->getCoord();
-
-        // bridge: the peer is a registered radio, so the medium's registry
-        // must resolve the same physical facts this still reads through the
-        // UE's own PhyUe pointer
-        ASSERT(medium->txPowerOf(info.nodeId, carrierFrequency, info.dir) == info.txPwr);
-        ASSERT(medium->coordOf(info.nodeId, carrierFrequency) == info.coord);
+        // a real UE is a registered radio; read its physical facts from the medium
+        info.txPwr = medium->txPowerOf(info.nodeId, carrierFrequency, info.dir);
+        info.coord = medium->coordOf(info.nodeId, carrierFrequency);
     }
     else { // this is a backgroundUe -- not a registered radio (S12 adds phantom registration)
         TrafficGeneratorBase *trafficGen = check_and_cast<TrafficGeneratorBase *>(allocation.trafficGen);

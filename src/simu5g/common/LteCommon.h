@@ -58,7 +58,6 @@ class CellInfo;
 class LteMacEnb;
 class LteMacBase;
 class PhyBase;
-class StochasticChannelModel;
 class LteControlInfo;
 class FlowControlInfo;
 class ExtCell;
@@ -391,7 +390,6 @@ struct EnbInfo
     MacNodeId id;
     PhyBase *phy = nullptr;
     LteMacEnb *mac = nullptr;
-    StochasticChannelModel *realChan = nullptr;
     opp_component_ptr<cModule> eNodeB;
     int x2;
     std::string str() const;
@@ -403,7 +401,6 @@ struct UeInfo
     double txPwr;
     MacNodeId id;
     MacNodeId cellId;
-    StochasticChannelModel *realChan = nullptr;
     opp_component_ptr<cModule> ue;
     PhyBase *phy = nullptr;
     std::string str() const;
