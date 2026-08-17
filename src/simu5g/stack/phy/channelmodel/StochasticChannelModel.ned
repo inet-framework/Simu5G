@@ -42,6 +42,8 @@ simple StochasticChannelModel extends ChannelModelBase
     parameters:
         @class("StochasticChannelModel");
 
+        string radioMediumModule = default("radioMedium"); // module path of the medium this endpoint registers with
+
         string pathLossType @enum("Tr36814","Tr36873","Tr38901") = default("Tr36814"); // which 3GPP propagation study supplies the path loss formulas
 
         // Enable/disable shadowing

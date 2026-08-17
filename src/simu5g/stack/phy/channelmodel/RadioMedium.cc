@@ -12,6 +12,10 @@
 
 #include "simu5g/stack/phy/channelmodel/RadioMedium.h"
 
+#include <algorithm>
+
+#include "simu5g/stack/phy/channelmodel/StochasticChannelModel.h"
+
 namespace simu5g {
 
 Define_Module(RadioMedium);
@@ -19,6 +23,45 @@ Define_Module(RadioMedium);
 void RadioMedium::handleMessage(cMessage *msg)
 {
     throw cRuntimeError("unexpected message '%s': RadioMedium has no gates and schedules no self-messages", msg->getName());
+}
+
+void RadioMedium::addRadio(StochasticChannelModel *endpoint)
+{
+    ASSERT(endpoint != nullptr);
+
+    RadioDescriptor descriptor;
+    descriptor.endpoint = endpoint;
+    descriptor.nodeId = endpoint->getNodeId();
+    descriptor.carrierFrequency = endpoint->getCarrierFrequency();
+
+    auto key = std::make_pair(descriptor.nodeId, descriptor.carrierFrequency);
+    if (radioIndex_.find(key) != radioIndex_.end())
+        throw cRuntimeError("addRadio: node %d is already registered on carrier %gGHz",
+                num(descriptor.nodeId), descriptor.carrierFrequency.get());
+
+    radios_.push_back(descriptor);
+    radioIndex_[key] = &radios_.back();
+}
+
+void RadioMedium::removeRadio(StochasticChannelModel *endpoint)
+{
+    ASSERT(endpoint != nullptr);
+
+    auto it = std::find_if(radios_.begin(), radios_.end(),
+            [endpoint](const RadioDescriptor& d) { return d.endpoint == endpoint; });
+    if (it == radios_.end())
+        throw cRuntimeError("removeRadio: endpoint was never registered with this medium");
+
+    radioIndex_.erase(std::make_pair(it->nodeId, it->carrierFrequency));
+
+    // swap-and-pop: keeps every other descriptor's address stable, then
+    // re-points the index entry of whichever descriptor took the removed
+    // one's place (if the removed one was not already the last)
+    size_t idx = it - radios_.begin();
+    radios_[idx] = radios_.back();
+    radios_.pop_back();
+    if (idx < radios_.size())
+        radioIndex_[std::make_pair(radios_[idx].nodeId, radios_[idx].carrierFrequency)] = &radios_[idx];
 }
 
 } //namespace
