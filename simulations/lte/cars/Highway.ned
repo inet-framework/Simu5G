@@ -18,6 +18,7 @@ import inet.node.inet.Router;
 import inet.node.inet.StandardHost;
 import inet.node.ethernet.Eth10G;
 
+import simu5g.stack.phy.channelmodel.RadioMedium;
 import simu5g.world.radio.LteChannelControl;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.PgwStandard;
@@ -81,6 +82,10 @@ network Highway
         }
         //# submodule vector to store all cars - will be filled dynamically during simulations
         car[0]: LteCar;
+        radioMedium: RadioMedium {
+            @display("p=50,341;is=s");
+        }
+
 
     connections allowunconnected:
         server.pppg++ <--> Eth10G <--> router.pppg++;

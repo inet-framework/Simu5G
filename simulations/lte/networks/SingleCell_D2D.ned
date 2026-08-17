@@ -22,6 +22,7 @@ import simu5g.corenetwork.bearerConfigurator.BearerConfigurator;
 import simu5g.nodes.PgwStandard;
 import simu5g.nodes.LteUe;
 import simu5g.nodes.eNodeB;
+import simu5g.stack.phy.channelmodel.RadioMedium;
 import simu5g.world.radio.LteChannelControl;
 
 
@@ -72,6 +73,10 @@ network SingleCell_D2D
         ueD2DRx[numUeD2DRx]: LteUe {
             @display("p=544,300");
         }
+        radioMedium: RadioMedium {
+            @display("p=50,341;is=s");
+        }
+
     connections:
         server.pppg++ <--> Eth10G <--> router.pppg++;
         router.pppg++ <--> Eth10G <--> pgw.dnPppg;
