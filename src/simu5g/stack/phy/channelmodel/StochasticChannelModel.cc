@@ -117,9 +117,6 @@ void StochasticChannelModel::initialize(int stage)
         enable_extCell_los_ = par("enableExtCellLos");
 
         collectSinrStatistics_ = par("collectSinrStatistics");
-
-        //clear jakes fading map structure
-        jakesState().clear();
     }
     else if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
         // carrierFrequencyHz_/GHz_/log10CarrierFrequencyGHz_ have just been set
@@ -141,6 +138,16 @@ void StochasticChannelModel::initialize(int stage)
         medium_.reference(this, "radioMediumModule", true);
         mediumModuleId_ = medium_->getId();
         medium_->addRadio(this);
+        // S8: this endpoint's stochastic state now lives in the medium;
+        // cache the reference so the state accessors do not look it up
+        // (by identity) on every call
+        state_ = &medium_->stateOf(this);
+
+        // clear jakes fading map structure; must run here rather than at
+        // INITSTAGE_LOCAL, since state_ does not exist yet at that stage
+        // (a freshly registered radio's state is already empty by
+        // construction, so this is a no-op either way)
+        jakesState().clear();
     }
 }
 
@@ -632,9 +639,10 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
        << " - antennaGainTx=" << link.txAntennaGain << " - antennaGainRx=" << link.rxAntennaGain
        << " - txPwr=" << txPower << " - for nodeId=" << link.stateKey << endl;
 
-    // Speed must be read BEFORE getAttenuation(), which appends to positionHistory_:
-    // computeSpeed() derives from that history, so evaluating it afterwards would
-    // yield a different value and hence different fading. Load-bearing ordering.
+    // Speed must be read BEFORE getAttenuation(), which appends to the position
+    // history: computeSpeed() derives from that history, so evaluating it
+    // afterwards would yield a different value and hence different fading.
+    // Load-bearing ordering.
     double speed = computeSpeed(link.stateNodeId, link.stateCoord);
 
     // attenuation for the desired signal
@@ -1540,7 +1548,7 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
     return attenuation;
 }
 
-StochasticChannelModel::JakesFadingMap *StochasticChannelModel::obtainUeJakesMap(MacNodeId id)
+JakesFadingMap *StochasticChannelModel::obtainUeJakesMap(MacNodeId id)
 {
     // obtain a reference to UE phy
     PhyBase *phy = nullptr;
@@ -1566,7 +1574,7 @@ StochasticChannelModel::JakesFadingMap *StochasticChannelModel::obtainUeJakesMap
     return j;
 }
 
-StochasticChannelModel::ShadowFadingMap *StochasticChannelModel::obtainShadowingMap(MacNodeId id)
+ShadowFadingMap *StochasticChannelModel::obtainShadowingMap(MacNodeId id)
 {
     // obtain a reference to UE phy
     PhyBase *phy = nullptr;

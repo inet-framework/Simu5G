@@ -13,21 +13,54 @@
 #ifndef STACK_PHY_CHANNELMODEL_RADIOMEDIUM_H_
 #define STACK_PHY_CHANNELMODEL_RADIOMEDIUM_H_
 
-#include <map>
 #include <deque>
+#include <map>
+#include <queue>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <omnetpp.h>
 #include <inet/common/geometry/common/Coord.h>
 
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
 
 class StochasticChannelModel;
+
+/** A timestamped position: when it was recorded, and where. */
+typedef std::pair<inet::simtime_t, inet::Coord> Position;
+
+/** One fading path's angle of arrival and delay spread, drawn once per link per band. */
+struct JakesFadingData
+{
+    std::vector<double> angleOfArrival;
+    std::vector<simtime_t> delaySpread;
+};
+
+typedef std::map<LinkKey, std::vector<JakesFadingData>> JakesFadingMap;
+typedef std::map<LinkKey, std::pair<inet::simtime_t, double>> ShadowFadingMap;
+
+/**
+ * The stochastic state a StochasticChannelModel endpoint used to keep in its
+ * own member variables (losMap_, lastComputedSF_, jakesFadingMap_,
+ * jakesFadingMapBgUe_, positionHistory_, lastCorrelationPoint_), relocated
+ * here verbatim: same containers, same key types, no merging, no re-keying
+ * (the per-link re-key is a later step). One instance per registered radio.
+ */
+struct PerRadioStochasticState
+{
+    std::map<LinkKey, bool> losMap;
+    ShadowFadingMap lastComputedSF;
+    JakesFadingMap jakesFadingMap;
+    JakesFadingMap jakesFadingMapBgUe;
+    std::map<MacNodeId, std::queue<Position>> positionHistory;
+    std::map<LinkKey, Position> lastCorrelationPoint;
+};
 
 /**
  * One radio endpoint registered with the medium: the endpoint itself, plus
@@ -121,6 +154,14 @@ class RadioMedium : public cSimpleModule
     // radio to register on it (see addRadio()). Nothing reads this yet.
     std::map<CarrierLeg, CarrierPhysics> carrierPhysics_;
 
+    // Per-radio stochastic state (S8), keyed by the endpoint pointer itself
+    // rather than by position in radios_/radioIndex_: RadioDescriptor entries
+    // move on swap-and-pop removal, but the endpoint's own identity is stable
+    // for exactly its registered lifetime, which is what a std::map's node
+    // storage needs to hand out references (via stateOf()) that survive
+    // other radios' registration and removal. Erased in removeRadio().
+    std::map<StochasticChannelModel *, PerRadioStochasticState> radioState_;
+
     /** Looks up the registered radio for (nodeId, carrierFrequency); throws if none is registered. */
     const RadioDescriptor& descriptorFor(MacNodeId nodeId, GHz carrierFrequency) const;
 
@@ -142,6 +183,15 @@ class RadioMedium : public cSimpleModule
 
     /** Unregisters a radio endpoint previously added with addRadio(). */
     virtual void removeRadio(StochasticChannelModel *endpoint);
+
+    /**
+     * The per-radio stochastic state for a registered endpoint. Created in
+     * addRadio(), so an endpoint can cache the reference once at
+     * registration (its address is stable across other radios'
+     * registration and removal, since it lives in a std::map keyed by
+     * endpoint identity); erased in removeRadio().
+     */
+    virtual PerRadioStochasticState& stateOf(StochasticChannelModel *endpoint);
 
     // Physical facts of a registered radio, read live through its own
     // endpoint pointer -- the registry resolves identity, it does not cache

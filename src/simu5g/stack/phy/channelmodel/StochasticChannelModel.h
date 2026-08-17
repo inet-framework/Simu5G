@@ -81,6 +81,11 @@ class StochasticChannelModel : public ChannelModelBase
     inet::ModuleRefByPar<RadioMedium> medium_;
     int mediumModuleId_ = -1;
 
+    // This endpoint's stochastic state, owned by the medium (S8) and cached
+    // here at registration; its address is stable for as long as this
+    // endpoint stays registered (see RadioMedium::stateOf()).
+    PerRadioStochasticState *state_ = nullptr;
+
     // Information needed about the playground
     bool useTorus_;
 
@@ -117,14 +122,6 @@ class StochasticChannelModel : public ChannelModelBase
 
     bool enable_extCell_los_;
 
-    typedef std::pair<inet::simtime_t, inet::Coord> Position;
-
-    // Last position of current user
-    std::map<MacNodeId, std::queue<Position>> positionHistory_;
-
-    // Per link: the position at which the LOS probability was last computed.
-    std::map<LinkKey, Position> lastCorrelationPoint_;
-
     // Scenario
     DeploymentScenario scenario_;
 
@@ -135,13 +132,6 @@ class StochasticChannelModel : public ChannelModelBase
     // loss with the TR 36.814 formulas regardless of which propagation study
     // the model uses for its own links (see computeExtCellPathLoss); owned
     PathLossModel *extCellPathLoss_ = nullptr;
-
-    // Per link: whether it is in Line of Sight
-    std::map<LinkKey, bool> losMap_;
-
-    // Stores the last computed shadowing for each user
-    typedef std::map<LinkKey, std::pair<inet::simtime_t, double>> ShadowFadingMap;
-    ShadowFadingMap lastComputedSF_;
 
     // Correlation distance used in shadowing computation and
     // also used to recompute the probability of LOS
@@ -181,22 +171,6 @@ class StochasticChannelModel : public ChannelModelBase
     double delayRMS_;
 
     bool tolerateMaxDistViolation_;
-
-    // Struct used to store information about Jakes fading
-    struct JakesFadingData
-    {
-        std::vector<double> angleOfArrival;
-        std::vector<simtime_t> delaySpread;
-    };
-
-    // For each node and for each band we store information about Jakes fading
-    std::map<LinkKey, std::vector<JakesFadingData>> jakesFadingMap_;
-
-    // For each node and for each band we store information about Jakes fading
-    std::map<LinkKey, std::vector<JakesFadingData>> jakesFadingMapBgUe_;
-
-    typedef std::vector<JakesFadingData> JakesFadingVector;
-    typedef std::map<LinkKey, JakesFadingVector> JakesFadingMap;
 
     enum FadingType
     {
@@ -407,12 +381,12 @@ class StochasticChannelModel : public ChannelModelBase
 
     JakesFadingMap *getJakesMap()
     {
-        return &jakesFadingMap_;
+        return &jakesState();
     }
 
     ShadowFadingMap *getShadowingMap()
     {
-        return &lastComputedSF_;
+        return &shadowingState();
     }
 
     bool isUplinkInterferenceEnabled() override { return enableUplinkInterference_; }
@@ -575,15 +549,17 @@ class StochasticChannelModel : public ChannelModelBase
 
   private:
     /*
-     * Accessors for the five per-instance stochastic-state containers (S7 of
-     * the radio-medium plan): every touch of losMap_, lastComputedSF_,
-     * jakesFadingMap_, jakesFadingMapBgUe_, positionHistory_ and
-     * lastCorrelationPoint_ goes through one of these, so a later step can
-     * relocate the containers without hunting for scattered touches. No
-     * behavior change: each accessor reproduces the exact
-     * std::map::operator[] semantics the call sites already relied on (or,
-     * where a call site must not auto-vivify an entry, an explicit
-     * createIfMissing flag).
+     * Accessors for the six per-radio stochastic-state containers (S7 of the
+     * radio-medium plan): every touch of losMap, lastComputedSF,
+     * jakesFadingMap, jakesFadingMapBgUe, positionHistory and
+     * lastCorrelationPoint goes through one of these, so relocating the
+     * containers needed no hunting for scattered touches. As of S8 the
+     * containers themselves live in the medium's PerRadioStochasticState for
+     * this endpoint (state_, cached at registration); each accessor still
+     * reproduces the exact std::map::operator[] semantics the call sites
+     * relied on (or, where a call site must not auto-vivify an entry, an
+     * explicit createIfMissing flag). No RNG attribution changes: this
+     * endpoint still computes and still draws, only the storage moved.
      *
      * shadowingState()/jakesState()/jakesStateBgUe() return the whole
      * container, not a single link's entry: today's code selects between
@@ -593,43 +569,44 @@ class StochasticChannelModel : public ChannelModelBase
      * the seam has to be the same shape.
      */
 
-    /** Auto-vivifying access to losMap_[key]; existed, if given, reports whether the entry was already present. */
+    /** Auto-vivifying access to state_->losMap[key]; existed, if given, reports whether the entry was already present. */
     bool& losState(const LinkKey& key, bool *existed = nullptr)
     {
-        auto result = losMap_.try_emplace(key, false);
+        auto result = state_->losMap.try_emplace(key, false);
         if (existed != nullptr)
             *existed = !result.second;
         return result.first->second;
     }
 
-    /** The local shadowing-state container (whole-container seam; see the comment above). */
-    ShadowFadingMap& shadowingState() { return lastComputedSF_; }
+    /** This endpoint's shadowing-state container (whole-container seam; see the comment above). */
+    ShadowFadingMap& shadowingState() { return state_->lastComputedSF; }
 
-    /** The local (non-background-UE) Jakes-fading-state container. */
-    JakesFadingMap& jakesState() { return jakesFadingMap_; }
+    /** This endpoint's (non-background-UE) Jakes-fading-state container. */
+    JakesFadingMap& jakesState() { return state_->jakesFadingMap; }
 
-    /** jakesFadingMap_'s background-UE twin: same key type, selected instead of it when isBgUe is true. */
-    JakesFadingMap& jakesStateBgUe() { return jakesFadingMapBgUe_; }
+    /** jakesFadingMap's background-UE twin: same key type, selected instead of it when isBgUe is true. */
+    JakesFadingMap& jakesStateBgUe() { return state_->jakesFadingMapBgUe; }
 
     /**
-     * Access to positionHistory_[nodeId]. createIfMissing=true auto-vivifies
-     * an empty queue like std::map::operator[] (updatePositionHistory());
-     * createIfMissing=false returns nullptr instead of inserting a
-     * placeholder for a node with no history yet (computeSpeed(), which
-     * must not manufacture an entry it would then read as non-empty).
+     * Access to state_->positionHistory[nodeId]. createIfMissing=true
+     * auto-vivifies an empty queue like std::map::operator[]
+     * (updatePositionHistory()); createIfMissing=false returns nullptr
+     * instead of inserting a placeholder for a node with no history yet
+     * (computeSpeed(), which must not manufacture an entry it would then
+     * read as non-empty).
      */
     std::queue<Position> *positionHistory(MacNodeId nodeId, bool createIfMissing)
     {
         if (createIfMissing)
-            return &positionHistory_[nodeId];
-        auto it = positionHistory_.find(nodeId);
-        return it == positionHistory_.end() ? nullptr : &it->second;
+            return &state_->positionHistory[nodeId];
+        auto it = state_->positionHistory.find(nodeId);
+        return it == state_->positionHistory.end() ? nullptr : &it->second;
     }
 
-    /** Auto-vivifying access to lastCorrelationPoint_[key]; existed, if given, reports whether the entry was already present. */
+    /** Auto-vivifying access to state_->lastCorrelationPoint[key]; existed, if given, reports whether the entry was already present. */
     Position& correlationPoint(const LinkKey& key, bool *existed = nullptr)
     {
-        auto result = lastCorrelationPoint_.try_emplace(key);
+        auto result = state_->lastCorrelationPoint.try_emplace(key);
         if (existed != nullptr)
             *existed = !result.second;
         return result.first->second;

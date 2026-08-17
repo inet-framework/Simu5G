@@ -55,6 +55,10 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
         checkCarrierPhysics(cpIt->second, candidate, leg, endpoint->getFullPath());
     }
 
+    // create this radio's stochastic-state record (S8); stateOf() hands the
+    // endpoint a reference to it right after this call
+    radioState_[endpoint];
+
     radios_.push_back(descriptor);
     radioIndex_[key] = &radios_.back();
 }
@@ -157,6 +161,16 @@ void RadioMedium::removeRadio(StochasticChannelModel *endpoint)
     radios_.pop_back();
     if (idx < radios_.size())
         radioIndex_[std::make_pair(radios_[idx].nodeId, radios_[idx].carrierFrequency)] = &radios_[idx];
+
+    radioState_.erase(endpoint);
+}
+
+PerRadioStochasticState& RadioMedium::stateOf(StochasticChannelModel *endpoint)
+{
+    auto it = radioState_.find(endpoint);
+    if (it == radioState_.end())
+        throw cRuntimeError("stateOf: endpoint was never registered with this medium");
+    return it->second;
 }
 
 const RadioDescriptor& RadioMedium::descriptorFor(MacNodeId nodeId, GHz carrierFrequency) const
