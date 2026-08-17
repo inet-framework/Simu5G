@@ -102,6 +102,16 @@ void BearerManagement::configureDrb(const DrbDesc& drb)
     Enter_Method("configureDrb(drb %d)", (int)num(drb.getDrbId()));
     EV << "BearerManagement::configureDrb - " << drb << endl;
 
+    // The bearer's stated architecture must match this stack: 5gc bearers need SDAP
+    // to map their QoS flows, eps bearers a stack that classifies without it.
+    bool hasSdap = sdapModule.getNullable() != nullptr;
+    if (drb.bearerType == BEARER_5GC && !hasSdap)
+        throw cRuntimeError("configureDrb: DRB %d is a \"5gc\" bearer, but this stack has no SDAP to map its QoS flows",
+                (int)num(drb.getDrbId()));
+    if (drb.bearerType == BEARER_EPS && hasSdap)
+        throw cRuntimeError("configureDrb: DRB %d is an \"eps\" bearer, but this stack has SDAP -- its bearers are selected by QFI, not by packet filters",
+                (int)num(drb.getDrbId()));
+
     drbTableModule->addConfiguredDrb(drb);
 
     if (sdapModule.getNullable() != nullptr)
@@ -613,13 +623,16 @@ const DrbDesc& BearerManagement::materializeDrb(const FlowId& flow, const Bearer
     auto *txEnt = check_and_cast<RlcTxEntityBase *>(rlcEnt->getSubmodule("tx"));
     drb.snFieldLength = txEnt->snFieldLength();
 
-    // The SDAP half and the QoS profile come from the authored configuration, if any,
-    // so the established descriptor is the complete record of the bearer.
+    // The SDAP half, the selectors and the QoS profile come from the authored
+    // configuration, if any, so the established descriptor is the complete record
+    // of the bearer.
     if (const DrbDesc *cfg = lookupConfiguredDrb(flow, peerId)) {
+        drb.bearerType = cfg->bearerType;
         drb.pduSessionType = cfg->pduSessionType;
         drb.upperProtocol = cfg->upperProtocol;
         drb.qfiList = cfg->qfiList;
         drb.isDefault = cfg->isDefault;
+        drb.filters = cfg->filters;
         drb.hasQosProfile = cfg->hasQosProfile;
         drb.qos = cfg->qos;
     }

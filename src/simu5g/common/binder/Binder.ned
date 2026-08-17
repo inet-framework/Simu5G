@@ -35,13 +35,25 @@ package simu5g.common.binder;
 // directly from the ini.
 //
 // staticDrbs fields:
+//  - bearerType (string, required): "5gc" or "eps" -- which bearer architecture selects the
+//    bearer. A "5gc" bearer is selected by the QFIs mapped onto it (qfiList; needs SDAP in
+//    the stack); an "eps" bearer is selected by packet filters (filters; for stacks without
+//    SDAP). Stated per entry, never inferred; each receiving RRC checks it against its stack.
 //  - ue (string): module path of the UE node, relative to the network; patterns are allowed,
 //    so one entry can describe a bearer of many UEs (e.g. "ue[*]")
 //  - drb (int): DRB identifier (= nrPdcp[]/nrRlc[] array index)
 //  - profile (string, optional): name of a drbProfiles entry supplying defaults for the
 //    fields it does not spell out itself
-//  - qfiList (int[], optional): QFI values mapped to this DRB; an entry without it does not
-//    take part in SDAP's QFI-to-DRB mapping
+//  - qfiList (int[], optional, "5gc" only): QFI values mapped to this DRB; an entry without
+//    it does not take part in SDAP's QFI-to-DRB mapping
+//  - filters (string[], optional, "eps" only): packet filters selecting this bearer, each
+//    an inet::PacketFilter -- a message-name pattern (e.g. "VoIP*") or an expression written
+//    as "expr(...)" (e.g. "expr(udp.destPort == 3000)"). An expression sees the packet that
+//    triggers establishment, i.e. an UL-triggered and a DL-triggered flow present swapped
+//    port/address roles; a list can carry both spellings.
+//  - qosClass (string, optional, "eps" only): "CONVERSATIONAL", "STREAMING", "INTERACTIVE"
+//    or "BACKGROUND"; the bearer's traffic class, which establishment turns into the
+//    logical channel group; default: "CONVERSATIONAL"
 //  - rlcType (string, optional): RLC mode ("AM", "UM", "TM"); omitted = RRC decides from the
 //    traffic class (see the conversationalRlc/... parameters of ~BearerManagement)
 //  - pduSessionType (string, optional): "IPv4", "IPv6", "IPv4v6", "Ethernet", "Unstructured";
@@ -51,7 +63,7 @@ package simu5g.common.binder;
 //    pduSessionType
 //  - isDefault (bool, optional): marks this as the default DRB for the UE; if no entry of a
 //    UE is marked, its first bearer takes the role. The default DRB is the fallback when no
-//    QFI-to-DRB mapping matches.
+//    QFI-to-DRB mapping ("5gc") or packet filter ("eps") matches.
 //  - gbr (bool), delayBudget (double, ms), per (double), priority (int) -- all optional: the
 //    QoS profile of the bearer's flows (5QI characteristics). Any of them present marks the
 //    bearer as having a QoS profile, which RRC pushes into the eNB/gNB MAC for QoS-aware
@@ -60,7 +72,8 @@ package simu5g.common.binder;
 // Field groups that repeat across entries can be named once in the drbProfiles parameter (a
 // JSON map of name -> field group) and referenced from entries via their "profile" field. A
 // profile describes what the bearer is, so it may hold any entry field except the ones that
-// say which UE it belongs to (ue, drb) or which flows select it (qfiList, isDefault).
+// say which UE it belongs to (ue, drb), which architecture and flows select it (bearerType,
+// qfiList, filters, isDefault).
 //
 // Example (in an ini file):
 //
@@ -110,7 +123,7 @@ simple Binder
         int blerShift = default(0);
         double maxDataRatePerRb @unit("Mbps") = default(1.16Mbps);
         bool printTrafficGeneratorConfig = default(false);
-        object staticDrbs = default([]);  // JSON array: [{ue, drb, profile, qfiList, rlcType, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
+        object staticDrbs = default([]);  // JSON array: [{bearerType, ue, drb, profile, qfiList, filters, qosClass, rlcType, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {"voice": {"rlcType": "UM", "gbr": true, ...}, ...}; see banner comment
         object staticBearers = default([]);  // JSON array: [{ue, qosClass, rlcType, drb, technology}, ...]; see banner comment for details
         @display("i=block/cogwheel");

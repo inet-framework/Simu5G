@@ -35,11 +35,21 @@ namespace simu5g {
 struct DrbDesc {
     DrbKey key;                         // (peer node, DRB id); the peer is the UE at a gNB, the serving node at a UE
 
+    // Which bearer architecture selects this bearer: BEARER_5GC = QoS flows via
+    // qfiList (SDAP), BEARER_EPS = packet filters via filters (no SDAP). Authored
+    // entries always state it; descriptors materialized from establishment alone
+    // keep UNKNOWN_BEARER_TYPE.
+    BearerType bearerType = UNKNOWN_BEARER_TYPE;
+
     // SDAP-Config
     PduSessionType pduSessionType = IP_V4;
     std::string upperProtocol;          // INET protocol name for upper-layer dispatch (empty = derive from pduSessionType)
     std::vector<Qfi> qfiList;           // mappedQoS-FlowsToAdd
-    bool isDefault = false;             // defaultDRB
+    bool isDefault = false;             // defaultDRB (5gc: fallback for unmapped QFIs; eps: carries traffic matching no filter)
+
+    // Packet filters selecting this bearer (BEARER_EPS only; inet::PacketFilter
+    // syntax: a message-name pattern, or an expression written as "expr(...)")
+    std::vector<std::string> filters;
 
     // RLC-BearerConfig
     LteRlcType rlcType = UM;            // rlc-Config: TM, UM or AM
@@ -60,13 +70,23 @@ struct DrbDesc {
 
 inline std::ostream& operator<<(std::ostream& os, const DrbDesc& drb) {
     os << "drbId=" << drb.getDrbId() << " peer=" << drb.getPeerId();
+    if (drb.bearerType != UNKNOWN_BEARER_TYPE) os << " " << bearerTypeToA(drb.bearerType);
     if (drb.isDefault) os << " DEFAULT";
     os << " qfi=[";
     for (size_t i = 0; i < drb.qfiList.size(); i++) {
         if (i) os << ",";
         os << drb.qfiList[i];
     }
-    os << "] pduSession=" << pduSessionTypeToA(drb.pduSessionType);
+    os << "]";
+    if (!drb.filters.empty()) {
+        os << " filters=[";
+        for (size_t i = 0; i < drb.filters.size(); i++) {
+            if (i) os << ",";
+            os << "\"" << drb.filters[i] << "\"";
+        }
+        os << "]";
+    }
+    os << " pduSession=" << pduSessionTypeToA(drb.pduSessionType);
     if (!drb.upperProtocol.empty())
         os << " upperProto=" << drb.upperProtocol;
     os << " rlc=" << rlcTypeToA(drb.rlcType) << (drb.soFraming ? " SO" : " FI")

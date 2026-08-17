@@ -68,6 +68,14 @@ enum PduSessionType
     IP_V4 = 0; IP_V6 = 1; IP_V4V6 = 2; ETHERNET = 3; UNSTRUCTURED = 4;
 };
 
+/// Bearer architecture: which core network's bearer model selects the bearer.
+/// An EPS bearer (LTE core) is selected by packet filters; a 5GC bearer is
+/// selected by the QFIs mapped onto it (SDAP).
+enum BearerType
+{
+    BEARER_EPS = 0; BEARER_5GC = 1; UNKNOWN_BEARER_TYPE = 2;
+};
+
 /// Index for UL transmission map
 enum UlTransmissionMapTTI
 {

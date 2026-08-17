@@ -135,6 +135,27 @@ PduSessionType aToPduSessionType(std::string s)
     throw cRuntimeError("Unknown PDU session type: '%s'", s.c_str());
 }
 
+const std::string bearerTypeToA(BearerType type)
+{
+    switch (type) {
+        case BEARER_EPS:
+            return "eps";
+        case BEARER_5GC:
+            return "5gc";
+        default:
+            return "UNKNOWN_BEARER_TYPE";
+    }
+}
+
+BearerType aToBearerType(std::string s)
+{
+    if (s == "eps")
+        return BEARER_EPS;
+    if (s == "5gc")
+        return BEARER_5GC;
+    return UNKNOWN_BEARER_TYPE;
+}
+
 const std::string dirToA(Direction dir)
 {
     switch (dir) {

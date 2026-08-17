@@ -14,6 +14,7 @@
 #include <cctype>
 
 #include <inet/common/PatternMatcher.h>
+#include <inet/common/packet/PacketFilter.h>
 #include <inet/common/stlutils.h>
 #include <inet/networklayer/common/L3AddressResolver.h>
 
@@ -940,6 +941,17 @@ void Binder::releaseDrbId(MacNodeId a, MacNodeId b, DrbId drbId)
            << ", " << pair.second << ") is free again" << endl;
 }
 
+// Configure an inet::PacketFilter from its string form: an expression written as
+// "expr(...)", or a message-name pattern. Parse errors throw here, at setup time.
+static void configurePacketFilter(inet::PacketFilter& filter, const char *spec)
+{
+    std::string s = spec;
+    if (s.rfind("expr(", 0) == 0 && !s.empty() && s.back() == ')')
+        filter.setExpression(s.substr(5, s.size() - 6).c_str());
+    else
+        filter.setPattern(spec);
+}
+
 void Binder::configureDrbs()
 {
     const cValueArray *arr = check_and_cast_nullable<const cValueArray *>(par("staticDrbs").objectValue());
@@ -979,7 +991,7 @@ void Binder::configureDrbs()
                         i, name, available.empty() ? "none" : available.c_str());
             }
             profile = check_and_cast<const cValueMap *>(profiles->get(name).objectValue());
-            for (const char *forbidden : { "drb", "ue", "profile", "qfiList", "isDefault" })
+            for (const char *forbidden : { "drb", "ue", "profile", "bearerType", "qfiList", "filters", "isDefault" })
                 if (profile->containsKey(forbidden))
                     throw cRuntimeError("drbProfiles entry '%s' must not contain the '%s' field", name, forbidden);
         }
@@ -997,16 +1009,44 @@ void Binder::configureDrbs()
         DrbId drbId = DrbId(entry->get("drb").intValue());
         drb.lcid = LogicalCid(num(drbId));
 
+        // bearerType (required): which architecture selects the bearer. Stated per
+        // entry, never inferred; the receiving RRC checks it against its own stack
+        // (see BearerManagement::configureDrb()).
+        if (!entry->containsKey("bearerType"))
+            throw cRuntimeError("staticDrbs entry %d: missing required field \"bearerType\" (\"eps\" or \"5gc\")", i);
+        std::string bearerTypeStr = entry->get("bearerType").stdstringValue();
+        drb.bearerType = aToBearerType(bearerTypeStr);
+        if (drb.bearerType == UNKNOWN_BEARER_TYPE)
+            throw cRuntimeError("staticDrbs entry %d: invalid bearerType '%s', must be \"eps\" or \"5gc\"", i, bearerTypeStr.c_str());
+
         // isDefault (optional; if no entry of a UE is marked, its first one becomes default)
         if (entry->containsKey("isDefault"))
             drb.isDefault = entry->get("isDefault").boolValue();
 
-        // qfiList (optional; an entry without it does not take part in SDAP's
+        // qfiList (5gc only, optional; an entry without it does not take part in SDAP's
         // QFI-to-DRB mapping, e.g. it only carries the bearer's QoS profile)
         if (entry->containsKey("qfiList")) {
+            if (drb.bearerType != BEARER_5GC)
+                throw cRuntimeError("staticDrbs entry %d: \"qfiList\" is a \"5gc\" selector, not valid on a \"%s\" bearer", i, bearerTypeStr.c_str());
             const cValueArray *qfiArr = check_and_cast<const cValueArray *>(entry->get("qfiList").objectValue());
             for (int j = 0; j < (int)qfiArr->size(); j++)
                 drb.qfiList.push_back(Qfi(qfiArr->get(j).intValue()));
+        }
+
+        // filters (eps only, optional; the packet filters that select this bearer --
+        // an entry without them can still be the default bearer or carry only a QoS
+        // profile). Compiled here so a syntax error fails at setup, not on the
+        // first matching packet.
+        if (entry->containsKey("filters")) {
+            if (drb.bearerType != BEARER_EPS)
+                throw cRuntimeError("staticDrbs entry %d: \"filters\" is an \"eps\" selector, not valid on a \"%s\" bearer", i, bearerTypeStr.c_str());
+            const cValueArray *fArr = check_and_cast<const cValueArray *>(entry->get("filters").objectValue());
+            for (int j = 0; j < (int)fArr->size(); j++) {
+                const char *spec = fArr->get(j).stringValue();
+                inet::PacketFilter checkOnly;
+                configurePacketFilter(checkOnly, spec);
+                drb.filters.push_back(spec);
+            }
         }
 
         // QoS profile (all optional; any of them present = the bearer has a QoS profile,
@@ -1029,6 +1069,20 @@ void Binder::configureDrbs()
             if (drb.rlcType == UNKNOWN_RLC_TYPE)
                 throw cRuntimeError("staticDrbs entry %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
                         i, rlcTypeStr.c_str());
+        }
+
+        // qosClass (eps only, optional; the bearer's traffic class, which establishment
+        // turns into the logical channel group; omitted = conversational. 5gc
+        // establishment does not consume it, so authoring it there is rejected
+        // rather than silently ignored.)
+        if (const cValue *v = field("qosClass")) {
+            if (drb.bearerType != BEARER_EPS)
+                throw cRuntimeError("staticDrbs entry %d: \"qosClass\" is only supported on \"eps\" bearers", i);
+            std::string qosClassStr = v->stdstringValue();
+            drb.lcg = aToLteTrafficClass(qosClassStr);
+            if (drb.lcg == UNKNOWN_TRAFFIC_TYPE)
+                throw cRuntimeError("staticDrbs entry %d: invalid qosClass '%s', must be \"CONVERSATIONAL\", \"STREAMING\", \"INTERACTIVE\" or \"BACKGROUND\"",
+                        i, qosClassStr.c_str());
         }
 
         // pduSessionType (optional, default IPv4) and upperProtocol (optional, empty =

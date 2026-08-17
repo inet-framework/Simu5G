@@ -509,6 +509,8 @@ char *cStringToLower(char *str);
 LteRlcType aToRlcType(std::string s);
 const std::string pduSessionTypeToA(PduSessionType type);
 PduSessionType aToPduSessionType(std::string s);
+const std::string bearerTypeToA(BearerType type);
+BearerType aToBearerType(std::string s);
 const std::string planeToA(Plane p);
 MacNodeId ctrlInfoToUeId(const FlowControlInfo *info);
 DrbKey ctrlInfoToTxDrbKey(const FlowControlInfo *info); // DrbKey for TX context: key by dest (remote receiver)
