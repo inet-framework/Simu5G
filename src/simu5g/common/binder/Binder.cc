@@ -1381,7 +1381,7 @@ DrbId Binder::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
             DrbId drbId = assignDrbId(ueNodeId, servingNodeId);
             ab.desc.key = DrbKey(NODEID_NONE, drbId);
             ab.desc.lcid = LogicalCid(num(drbId));
-            EV << "Binder::createOnDemandDrbForQfi - QFI " << num(qfi) << " gets on-demand DRB " << drbId
+            EV << "Binder::createOnDemandDrbForQfi - QFI " << (int)num(qfi) << " gets on-demand DRB " << drbId
                << " at UE " << ueModule->getFullPath() << endl;
             pushDrbToRrcs(ab.ueModule, ab.desc);
         }
