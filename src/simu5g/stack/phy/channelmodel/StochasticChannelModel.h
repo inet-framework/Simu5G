@@ -242,6 +242,7 @@ class StochasticChannelModel : public ChannelModelBase
     TxDirectionType getTxDirection() const { return phy_->getTxDirection(); }
     double getTxAngle() const { return phy_->getTxAngle(); }
     RanNodeType getNodeType() const { return phy_->getNodeType(); }
+    bool isNr() const { return phy_->isNr(); }
 
     /*
      * Role-appropriate antenna gain / noise figure for RadioMedium's

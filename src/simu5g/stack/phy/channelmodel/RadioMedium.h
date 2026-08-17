@@ -15,6 +15,7 @@
 
 #include <map>
 #include <deque>
+#include <string>
 #include <utility>
 
 #include <omnetpp.h>
@@ -41,6 +42,65 @@ struct RadioDescriptor
 };
 
 /**
+ * The unit CarrierPhysics is grouped by: a carrier frequency alone conflates
+ * an NR UE's always-instantiated but unused LTE leg with the gNB it shares a
+ * default component-carrier frequency with, and conflates a dual-connectivity
+ * master eNB with its secondary gNB (plan section 3(h)). Frequency stays the
+ * primary component; isNr is the added discriminator.
+ */
+struct CarrierLeg
+{
+    GHz carrierFrequency = GHz(0);
+    bool isNr = false;
+
+    bool operator<(const CarrierLeg& o) const
+    {
+        return carrierFrequency != o.carrierFrequency ? carrierFrequency < o.carrierFrequency : isNr < o.isNr;
+    }
+};
+
+/**
+ * The per-carrier-leg physics parameters (plan section 3(e)/3(h)) that every
+ * radio registered on a given leg must agree on. Filled from the first radio
+ * to register on that leg; every later one is checked against it,
+ * field by field, in addRadio(). Per-radio parameters (antenna gains, cable
+ * loss, noise figures, insideBuilding and the module-path parameters) are
+ * deliberately not part of this record.
+ */
+struct CarrierPhysics
+{
+    std::string pathLossType;
+    std::string scenario;
+    bool shadowing = false;
+    double correlationDistance = 0;
+    bool dynamicLos = false;
+    bool fixedLos = false;
+    bool enableExtCellLos = false;
+    bool fading = false;
+    std::string fadingType;
+    int numFadingPaths = 0;
+    double delayRms = 0;
+    double thermalNoise = 0;
+    double nodebHeight = 0;
+    double ueHeight = 0;
+    double buildingHeight = 0;
+    double streetWidth = 0;
+    bool useTorus = false;
+    bool tolerateMaxDistViolation = false;
+    double harqReduction = 0;
+    double targetBler = 0;
+    bool useBuildingPenetrationHighLossModel = false;
+    bool bgCellInterference = false;
+    bool extCellInterference = false;
+    bool downlinkInterference = false;
+    bool uplinkInterference = false;
+
+    // full path of the radio whose parameters filled this record, named in
+    // a mismatch error alongside the radio that disagrees with it
+    std::string establishedByPath;
+};
+
+/**
  * The central, network-level module that models the shared physical radio
  * medium of a cellular network. It is the single owner of the physical facts
  * and channel effects of every radio link, shared by every carrier and every
@@ -57,8 +117,19 @@ class RadioMedium : public cSimpleModule
     std::deque<RadioDescriptor> radios_;
     std::map<std::pair<MacNodeId, GHz>, RadioDescriptor *> radioIndex_;
 
+    // One CarrierPhysics record per carrier leg, established by the first
+    // radio to register on it (see addRadio()). Nothing reads this yet.
+    std::map<CarrierLeg, CarrierPhysics> carrierPhysics_;
+
     /** Looks up the registered radio for (nodeId, carrierFrequency); throws if none is registered. */
     const RadioDescriptor& descriptorFor(MacNodeId nodeId, GHz carrierFrequency) const;
+
+    /** Reads the per-carrier-leg physics parameters (plan 3(e)) declared on the endpoint's own NED type. */
+    CarrierPhysics readCarrierPhysics(StochasticChannelModel *endpoint) const;
+
+    /** Checks candidate against the leg's established record; throws naming the first mismatched parameter. */
+    void checkCarrierPhysics(const CarrierPhysics& existing, const CarrierPhysics& candidate,
+            const CarrierLeg& leg, const std::string& candidatePath) const;
 
   public:
     void initialize() override {}
