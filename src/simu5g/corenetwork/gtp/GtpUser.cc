@@ -160,7 +160,10 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
 
     // If we are on the eNB and the flowId represents the ID of this eNB, forward the packet locally
     if (flowId == TFT_LOCAL_DELIVERY) {
-        // local delivery
+        // local delivery: keep the classified QFI with the packet, the same way
+        // handleFromUdp() restores it for tunneled traffic -- SDAP relies on
+        // QfiReq being present on the gNB DL path
+        datagram->addTagIfAbsent<QfiReq>()->setQfi(qfi);
         send(datagram, "pppGate");
     }
     else {
