@@ -1176,6 +1176,27 @@ void Binder::establishStaticBearers()
     }
 }
 
+DrbId Binder::establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& key, const inet::Packet *pkt)
+{
+    Enter_Method_Silent("establishOnDemandBearer");
+
+    // The requester brings identity only; the bearer's properties are authored here.
+    return establishDataConnection(flow, BearerRequest{getTrafficCategory(pkt), UNKNOWN_RLC_TYPE, key});
+}
+
+LteTrafficClass Binder::getTrafficCategory(const cPacket *pkt)
+{
+    const char *name = pkt->getName();
+    if (opp_stringbeginswith(name, "VoIP"))
+        return CONVERSATIONAL;
+    else if (opp_stringbeginswith(name, "gaming"))
+        return INTERACTIVE;
+    else if (opp_stringbeginswith(name, "VoDPacket") || opp_stringbeginswith(name, "VoDFinishPacket"))
+        return STREAMING;
+    else
+        return BACKGROUND;
+}
+
 DrbId Binder::establishDataConnection(const FlowId& flowIn, const BearerRequest& req)
 {
     // Assign the bearer's DRB id unless the requester brought one (SDAP and the

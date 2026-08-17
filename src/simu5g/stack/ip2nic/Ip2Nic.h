@@ -71,9 +71,11 @@ class Ip2Nic : public cSimpleModule
 
     // Establishes a bearer for a flow that has none, and returns the DRB id it got. This
     // is the data plane asking RRC for a bearer, so it is the packet path's one
-    // control-plane action -- it builds entities at BOTH endpoints. Throws instead when
-    // the establishBearersOnDemand parameter turned this fallback off.
-    virtual DrbId establishBearerOnDemand(const FlowBindingKey& key, FlowControlInfo *lteInfo, cPacket *pkt);
+    // control-plane action -- it builds entities at BOTH endpoints. The request carries
+    // identity only (the flow and its binding key); the bearer's properties are authored
+    // by the Binder (see Binder::establishOnDemandBearer). Throws instead when the
+    // establishBearersOnDemand parameter turned this fallback off.
+    virtual DrbId establishBearerOnDemand(const FlowBindingKey& key, FlowControlInfo *lteInfo, inet::Packet *pkt);
 
     // Which bearer carries which flow: the classifier's half of a bearer, and the only
     // bearer state this module holds. Entirely maintained by RRC, which installs an
@@ -117,7 +119,6 @@ class Ip2Nic : public cSimpleModule
     /// direction.
     virtual Direction bindingDirection(FlowControlInfo *lteInfo) { return isNr_ ? (Direction)lteInfo->getDirection() : Direction(0xFFFF); }
     virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
-    virtual LteTrafficClass getTrafficCategory(cPacket *pkt);
 
   public:
     // Configuration push: RRC binds a flow to the bearer carrying it, at both endpoints

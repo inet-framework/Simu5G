@@ -604,6 +604,13 @@ class Binder : public cSimpleModule
     // of the established bearer is returned.
     virtual DrbId establishDataConnection(const FlowId& flow, const BearerRequest& req);
 
+    // Establish a bearer for a flow the requester identifies but does not describe:
+    // Ip2Nic supplies the flow, its classifier key and the triggering packet, and this
+    // method authors the bearer's properties -- the traffic class is derived from the
+    // packet, the RLC mode is left for RRC to decide. Returns the established bearer's
+    // DRB id.
+    virtual DrbId establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& key, const inet::Packet *pkt);
+
     // Allocate the lowest free DRB ID within the (unordered) node pair {a, b}, so the
     // two endpoints of a link can never mint colliding IDs for the same peer.
     // For multicast flows, pass the multicast group ID as the second node.
@@ -634,6 +641,11 @@ class Binder : public cSimpleModule
     // documentation), in the last initialization stage. Each entry goes through
     // establishDataConnection(), exactly like packet-triggered establishment.
     virtual void establishStaticBearers();
+
+    // Fallback authoring of an on-demand bearer's traffic class, from the packet
+    // name: "VoIP*" = conversational, "gaming*" = interactive, "VoDPacket*"/
+    // "VoDFinishPacket*" = streaming, anything else = background.
+    virtual LteTrafficClass getTrafficCategory(const omnetpp::cPacket *pkt);
 
     virtual bool isDualConnectivityRequired(const FlowId& flow);
     virtual void createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp);

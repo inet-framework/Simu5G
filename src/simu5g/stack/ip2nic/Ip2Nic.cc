@@ -187,19 +187,6 @@ void Ip2Nic::toStackBs(Packet *pkt)
     send(pkt, stackGateOut_);
 }
 
-LteTrafficClass Ip2Nic::getTrafficCategory(cPacket *pkt)
-{
-    const char *name = pkt->getName();
-    if (opp_stringbeginswith(name, "VoIP"))
-        return CONVERSATIONAL;
-    else if (opp_stringbeginswith(name, "gaming"))
-        return INTERACTIVE;
-    else if (opp_stringbeginswith(name, "VoDPacket") || opp_stringbeginswith(name, "VoDFinishPacket"))
-        return STREAMING;
-    else
-        return BACKGROUND;
-}
-
 void Ip2Nic::configureFlowBinding(const FlowBindingKey& key, DrbKey bearer)
 {
     Enter_Method_Silent("configureFlowBinding()");
@@ -338,7 +325,7 @@ void Ip2Nic::assignEndpointIds(FlowControlInfo *lteInfo, const Ipv4Address& dest
     }
 }
 
-DrbId Ip2Nic::establishBearerOnDemand(const FlowBindingKey& key, FlowControlInfo *lteInfo, cPacket *pkt)
+DrbId Ip2Nic::establishBearerOnDemand(const FlowBindingKey& key, FlowControlInfo *lteInfo, inet::Packet *pkt)
 {
     if (!establishBearersOnDemand_)
         throw cRuntimeError("Ip2Nic: no established bearer for flow %s -> %s (ToS=%d), and on-demand bearer establishment is disabled",
@@ -349,8 +336,9 @@ DrbId Ip2Nic::establishBearerOnDemand(const FlowBindingKey& key, FlowControlInfo
 
     // The flow key travels with the request: RRC binds the flow to the bearer at both
     // endpoints (see configureFlowBinding), so this node's own binding and the peer's
-    // mirrored one are installed by the same establishment.
-    return binder_->establishDataConnection(flow, BearerRequest{getTrafficCategory(pkt), UNKNOWN_RLC_TYPE, key});
+    // mirrored one are installed by the same establishment. The packet is what the
+    // Binder authors the bearer's properties from.
+    return binder_->establishOnDemandBearer(flow, key, pkt);
 }
 
 } //namespace
