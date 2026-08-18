@@ -33,6 +33,7 @@ using namespace omnetpp;
 
 class StochasticChannelModel;
 class CellularInterferenceModel;
+class D2dChannelModel;
 
 /** A timestamped position: when it was recorded, and where. */
 typedef std::pair<inet::simtime_t, inet::Coord> Position;
@@ -74,6 +75,15 @@ struct RadioDescriptor
     StochasticChannelModel *endpoint = nullptr;
     MacNodeId nodeId = NODEID_NONE;
     GHz carrierFrequency = GHz(0);
+
+    // The D2D marker (plan S12): endpoint downcast once at registration,
+    // non-null iff this radio is D2D-capable. The registration-time
+    // dynamic_cast this is built from is the only one -- every D2D-aware
+    // branch reads this cached pointer afterward instead of casting itself,
+    // and it doubles as the handle onto D2D-only facts (isD2DInterferenceEnabled(),
+    // the rcvdSinrD2D signal, getSINR_D2D()) that plain StochasticChannelModel
+    // does not carry.
+    D2dChannelModel *d2dEndpoint = nullptr;
 };
 
 /**
@@ -269,14 +279,9 @@ class RadioMedium : public cSimpleModule
      * StochasticChannelModel (plan step S10): same one-line-forwarder shape
      * as the S9b computation above. isReceptionSuccessful's BLER draw
      * (uniform(0.0, 1.0)) moves with it, onto this medium's rng-0 stream --
-     * another RNG canary. Where the moved body calls a still-resident
-     * StochasticChannelModel method that D2dChannelModel overrides
-     * (computeInterferencePlusNoise, getReceptionSinr, emitRcvdSinr), it
-     * calls back through radio rather than on itself, so that override
-     * still fires for a D2D-capable radio. The four interference walks
-     * (S11) are no longer among them: computeInterferencePlusNoise now
-     * calls interference_ (this medium's own submodule, never radio),
-     * since they were never a D2D-override dispatch point to begin with.
+     * another RNG canary. computeInterferencePlusNoise calls interference_
+     * (this medium's own submodule), never radio, for the four cellular
+     * walks (S11) and, since S12, for the D2D walk too.
      */
     virtual std::vector<double> getSINR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
     virtual std::vector<double> getSINR(StochasticChannelModel *radio, const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);
@@ -290,6 +295,25 @@ class RadioMedium : public cSimpleModule
             RbMap& rbmap, double totN, std::vector<double>& den);
     virtual bool isReceptionSuccessful(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo,
             const std::vector<double>& rsrpVector);
+
+    /**
+     * D2D-aware branches folded in from D2dChannelModel (plan step S12):
+     * D2dChannelModel becomes an endpoint marker (RadioDescriptor::d2dEndpoint),
+     * and getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise stop being
+     * virtual dispatch points -- there is nothing left overriding them, so
+     * isReceptionSuccessful/getSINR call them as plain sibling methods here
+     * instead of through radio. d2dLink is the link-builder counterpart of
+     * linkFor/cellularLink (S9b/S10 shape); computeD2DInterference is
+     * interference-walk-shaped and lives beside its four cellular siblings on
+     * interference_ (S11 shape) instead. Neither draws; the only random draw
+     * a D2D reception depends on is getAttenuation's, reached through radio's
+     * own carrier leg exactly like a cellular link's.
+     */
+    virtual RadioLink d2dLink(StochasticChannelModel *radio, MacNodeId srcId, inet::Coord srcCoord,
+            MacNodeId destId, inet::Coord destCoord, bool useUeSideMaps);
+    virtual std::vector<double> getReceptionSinr(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo,
+            const std::vector<double>& rsrpVector);
+    virtual void emitRcvdSinr(StochasticChannelModel *radio, Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr);
 };
 
 } //namespace

@@ -22,10 +22,21 @@ using namespace inet;
 using namespace omnetpp;
 
 /**
- * Channel model for D2D-capable NICs: StochasticChannelModel (whose
- * pathLossType parameter selects the propagation study -- TR 36.814, 36.873
- * or 38.901) plus the ~800 lines of D2D channel math (attenuation, RSRP/SINR,
- * interference and reception decision) layered on top of it.
+ * Marker for D2D-capable NICs, plus the ID2dChannelModel entry points D2D-aware
+ * PHY code calls directly (getRSRP_D2D/getSINR_D2D).
+ *
+ * Through plan step S12, this class held ~800 lines of D2D channel math
+ * (attenuation, RSRP/SINR, interference, reception decision) on top of
+ * StochasticChannelModel. That math is now D2D-aware branches in RadioMedium
+ * (d2dLink, getReceptionSinr, emitRcvdSinr, computeInterferencePlusNoise) and
+ * in its interference submodule (computeD2DInterference), reached from a
+ * registered radio's RadioDescriptor::d2dEndpoint -- the medium's marker for
+ * "this endpoint is D2D-capable", set once at registration by downcasting to
+ * this class. What is left here is the marker itself (being this class),
+ * getRSRP_D2D/getSINR_D2D (called from D2dUePhyHelper.cc and PhyEnbD2D.cc,
+ * unaffected by the fold), and the two small facts only a D2D-capable
+ * endpoint carries: whether D2D interference is enabled, and the signal a
+ * D2D reception is reported under.
  *
  * The rcvdSinrD2D signal is owned and interned here, not in the core channel model.
  */
@@ -40,31 +51,6 @@ class D2dChannelModel : public StochasticChannelModel, public ID2dChannelModel
     // "Signals" note in D2dUeMacBase.h.
     simsignal_t rcvdSinrD2DSignal_ = SIMSIGNAL_NULL;
 
-    /*
-     * Build the RadioLink for a UE-to-UE transmission, so that the core
-     * propagation path can evaluate it. Both endpoints being UEs is the whole of
-     * what makes a D2D link different: same antenna gain on both sides, the UE
-     * noise figure, and no sectorial antenna (hence no angular attenuation).
-     */
-    RadioLink d2dLink(MacNodeId srcId, inet::Coord srcCoord, MacNodeId destId, inet::Coord destCoord, bool useUeSideMaps);
-
-    /*
-     * Compute interference coming from neighboring UEs for the D2D/D2D_MULTI direction
-     */
-    bool computeD2DInterference(MacNodeId eNbId, MacNodeId senderId, inet::Coord senderCoord, MacNodeId destId, inet::Coord destCoord, bool isCqi, GHz carrierFrequency, std::vector<double> *interference, Direction dir);
-
-    // Route D2D/D2D_MULTI receptions through getSINR_D2D (called from the core
-    // isReceptionSuccessful()).
-    std::vector<double> getReceptionSinr(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) override;
-
-    // Report D2D receptions under rcvdSinrD2D rather than letting them fall into
-    // the core's uplink statistic.
-    void emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr) override;
-
-    // Substitute the UE-to-UE interference for the cellular contributions.
-    void computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
-            RbMap& rbmap, double totN, std::vector<double>& den) override;
-
   public:
     void initialize(int stage) override;
 
@@ -75,6 +61,13 @@ class D2dChannelModel : public StochasticChannelModel, public ID2dChannelModel
 
     virtual bool isD2DInterferenceEnabled() { return enableD2DInterference_; }
     bool recordsUlTransmissionMap() override { return isUplinkInterferenceEnabled() || enableD2DInterference_; }
+
+    /*
+     * The signal a D2D reception is reported under, for RadioMedium's
+     * relocated emitRcvdSinr() (S12), reached through this endpoint's own
+     * RadioDescriptor::d2dEndpoint.
+     */
+    simsignal_t getRcvdSinrD2DSignal() const { return rcvdSinrD2DSignal_; }
 };
 
 } //namespace
