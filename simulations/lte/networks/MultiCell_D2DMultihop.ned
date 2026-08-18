@@ -20,6 +20,7 @@ import simu5g.apps.d2dMultihop.eventGenerator.EventGenerator;
 import simu5g.apps.d2dMultihop.statistics.MultihopD2DStatistics;
 import simu5g.common.binder.Binder;
 import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.corenetwork.smf.Smf;
 import simu5g.nodes.PgwStandard;
 import simu5g.nodes.LteUe;
 import simu5g.nodes.eNodeB;
@@ -47,6 +48,9 @@ network MultiCell_D2DMultihop
         }
         binder: Binder {
             @display("p=90,171;is=s");
+        }
+        smf: Smf {
+            @display("p=150,171;is=s");
         }
         carrierAggregation: CarrierAggregation {
             @display("p=50,258;is=s");
