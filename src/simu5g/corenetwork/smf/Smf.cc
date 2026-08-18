@@ -573,6 +573,8 @@ LteTrafficClass Smf::classifyTrafficClass(const inet::Packet *pkt)
 
 DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& req)
 {
+    Enter_Method_Silent("establishDataConnection");
+
     // Assign the bearer's DRB id unless the requester brought one (SDAP and the
     // staticBearers entries name their bearers explicitly). IDs are unique per node
     // pair; for multicast the "pair" is (sender, group), there being no single peer.
