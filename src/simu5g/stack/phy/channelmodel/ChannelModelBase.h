@@ -57,7 +57,6 @@ struct LinkKey
     {
         return num(a) != num(o.a) ? num(a) < num(o.a) : num(b) < num(o.b);
     }
-    bool operator==(const LinkKey& o) const { return a == o.a && b == o.b; }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const LinkKey& k)

@@ -12,12 +12,6 @@
 
 #include "simu5g/stack/d2d/phy/channelmodel/D2dChannelModel.h"
 
-#include "simu5g/background/trafficGenerator/generators/TrafficGeneratorBase.h"
-#include "simu5g/common/LteCommon.h"
-#include "simu5g/stack/mac/amc/UserTxParams.h"
-#include "simu5g/stack/phy/PhyUe.h"
-#include "simu5g/stack/phy/packet/LteAirFrame.h"
-
 namespace simu5g {
 
 Define_Module(D2dChannelModel);

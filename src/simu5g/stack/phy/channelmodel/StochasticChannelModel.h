@@ -22,7 +22,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 class Binder;
-class PathLossModel;
 
 /**
  * The full PHY link model: everything between a transmitted air frame and the
@@ -46,24 +45,28 @@ class PathLossModel;
  *   history, speed, and the point at which shadowing and LOS were last drawn;
  * - the SINR statistics.
  *
- * getAttenuation, computePathLoss, computeLosProbability, computeShadowing,
- * jakesFading, rayleighFading, computeSpeed, getSINR, getSIR, getRSRP,
- * getSINR_bgUe, getReceivedPower_bgUe, computeInterferencePlusNoise and
- * isReceptionSuccessful are one-line forwarders to the RadioMedium this
- * endpoint registers with: the medium owns the per-carrier-leg PathLossModel
- * strategy (chosen by the pathLossType parameter -- "Tr36814", "Tr36873" or
- * "Tr38901"), the SINR assembly and the reception decision, and every random
- * draw both make -- including isReceptionSuccessful's BLER draw. Tr36873ChannelModel
- * and Tr38901ChannelModel are NED-level presets of this class (no C++ class
- * of their own) that only override the pathLossType default, to Tr36873 and
- * Tr38901 respectively. The four cellular interference walks moved to the
- * medium's interference submodule at S11; the D2D interference walk and the
- * D2D branches of getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise
- * folded into the medium alongside them at S12 -- D2dChannelModel no longer
- * overrides any of the three, so none of them are virtual dispatch points
- * here anymore. computeCorrelationDistance and the per-link/per-node
- * stochastic state itself moved to the medium at S13 (plan §3(b)); this
- * endpoint no longer caches any of it.
+ * getAttenuation, computePathLoss, getSINR, getSIR, getRSRP, getSINR_bgUe,
+ * getReceivedPower_bgUe and isReceptionSuccessful are one-line forwarders to
+ * the RadioMedium this endpoint registers with: the medium owns the
+ * per-carrier-leg PathLossModel strategy (chosen by the pathLossType
+ * parameter -- "Tr36814", "Tr36873" or "Tr38901"), the SINR assembly and the
+ * reception decision, and every random draw both make -- including
+ * isReceptionSuccessful's BLER draw. Tr36873ChannelModel and Tr38901ChannelModel
+ * are NED-level presets of this class (no C++ class of their own) that only
+ * override the pathLossType default, to Tr36873 and Tr38901 respectively.
+ * The four cellular interference walks moved to the medium's interference
+ * submodule at S11; the D2D interference walk and the D2D branches of
+ * getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise folded into the
+ * medium alongside them at S12 -- D2dChannelModel no longer overrides any of
+ * the three, so none of them are virtual dispatch points here anymore. The
+ * per-link/per-node stochastic state moved to the medium at S13 (plan §3(b));
+ * this endpoint no longer caches any of it. The medium computes shadowing,
+ * Jakes/Rayleigh fading, LOS probability and speed directly rather than
+ * calling back through the endpoint, so this class carries no forwarder for
+ * any of them (S14). The ext-cell/background-cell path-loss strategy is
+ * likewise one Tr36814PathLossModel per carrier leg, owned by the medium and
+ * reached through extCellPathLossFor(); this endpoint holds no instance of
+ * its own.
  *
  * Supported propagation studies:
  * - 3GPP TR 36.814, "Further advancements for E-UTRA physical layer aspects", v9.2.0, March 2017
@@ -91,64 +94,30 @@ class StochasticChannelModel : public ChannelModelBase
     inet::ModuleRefByPar<RadioMedium> medium_;
     int mediumModuleId_ = -1;
 
-    // Information needed about the playground
-    bool useTorus_;
-
-    // eNodeB Height
-    double hNodeB_;
-
-    // UE Height
-    double hUe_;
-
-    // average Building Heights
-    double hBuilding_;
-
     // true if the UE is inside a building
     bool inside_building_;
 
-    // distance from the building wall
+    // distance from the building wall; drawn once at registration (S9b/§3(f).2
+    // rule 1) rather than in the medium, so it stays resident -- handed to the
+    // medium per-call through o2iStateOf() instead of cached there
     double inside_distance_;
 
-    // Average street's width
-    double wStreet_;
-
-    // enable/disable the shadowing
-    bool shadowing_;
-
-    // enable/disable intercell interference computation
-    bool enableBackgroundCellInterference_;
-    bool enableExtCellInterference_;
-    bool enableDownlinkInterference_;
+    // enable/disable the interference computation for UL connections, for
+    // isUplinkInterferenceEnabled()/recordsUlTransmissionMap()
     bool enableUplinkInterference_;
 
     bool enable_extCell_los_;
 
-    // Scenario
-    DeploymentScenario scenario_;
-
-    // The ext-cell and background-cell interference paths evaluate their path
-    // loss with the TR 36.814 formulas regardless of which propagation study
-    // the model uses for its own links (see computeExtCellPathLoss); owned
-    PathLossModel *extCellPathLoss_ = nullptr;
-
-    // Correlation distance used in shadowing computation and
-    // also used to recompute the probability of LOS
-    double correlationDistance_;
-
-    // Percentage of error probability reduction for each h-arq retransmission
-    double harqReduction_;
-
     // Antenna gain of eNodeB
     double antennaGainEnB_;
 
-    // Antenna gain of micro node
+    // Antenna gain of micro node; write-only since before this refactor plan
+    // began (verified against the pre-plan baseline) -- out of this plan's
+    // scope to resolve
     double antennaGainMicro_;
 
     // Antenna gain of UE
     double antennaGainUe_;
-
-    // Thermal noise
-    double thermalNoise_;
 
     // Cable loss
     double cableLoss_;
@@ -158,31 +127,6 @@ class StochasticChannelModel : public ChannelModelBase
 
     // eNodeB noise figure
     double bsNoiseFigure_;
-
-    // Enable disable fading
-    bool fading_;
-
-    // Number of fading paths in Jakes fading
-    int fadingPaths_;
-
-    // Average delay spread in Jakes fading
-    double delayRMS_;
-
-    bool tolerateMaxDistViolation_;
-
-    enum FadingType
-    {
-        RAYLEIGH, JAKES
-    };
-
-    // Fading type (JAKES or RAYLEIGH)
-    FadingType fadingType_;
-
-    // Enable or disable the dynamic computation of LOS NLOS probability for each user
-    bool dynamicLos_;
-
-    // If dynamicLos is false this boolean is initialized to true if all users will be in LOS or false otherwise
-    bool fixedLos_;
 
     // If false, disable the collection of SINR statistics, which might be quite time-consuming
     bool collectSinrStatistics_;
@@ -309,16 +253,6 @@ class StochasticChannelModel : public ChannelModelBase
     virtual double computeAngularAttenuation(double hAngle, double vAngle = 0);
 
     /*
-     * Compute shadowing
-     *
-     * @param d3D 3D distance between UE and eNodeB
-     * @param d2D 2D distance between UE and eNodeB
-     * @param nodeid mac node id of UE
-     * @param speed speed of UE
-     */
-    virtual double computeShadowing(double d3D, double d2D, const LinkKey& key, double speed);
-
-    /*
      * Compute sir for each band for user nodeId according to multipath fading
      *
      * @param frame pointer to the packet
@@ -333,14 +267,6 @@ class StochasticChannelModel : public ChannelModelBase
      * @param lteinfo pointer to the user control info
      */
     std::vector<double> getSINR(LteAirFrame *frame, UserControlInfo *lteInfo) override;
-
-    /*
-     * Add noise and interference to an already-computed per-band received-power
-     * vector. Split out so that a caller which already holds the RSRP (the D2D
-     * one-to-many capture-effect path) shares this implementation instead of
-     * repeating it.
-     */
-    virtual std::vector<double> getSINR(const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);
 
     /*
      * Compute received useful signal for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading
@@ -382,43 +308,12 @@ class StochasticChannelModel : public ChannelModelBase
      */
     double computePathLoss(double distance, double dbp, bool los) override;
 
-    /*
-     * Compute Rayleigh fading
-     *
-     * @param i index in the trace file
-     * @param nodeid mac node id of UE
-     */
-    virtual double rayleighFading(MacNodeId id, unsigned int band);
-
-    /*
-     * Compute Jakes fading
-     *
-     * @param speed speed of UE
-     * @param nodeid mac node id of UE
-     * @param band logical band id
-     * @param isBgUe if true, this is called for a background UE
-     */
-    virtual double jakesFading(const LinkKey& key, double speed, unsigned int band, bool isBgUe = false);
-
-    /*
-     * Compute LOS probability
-     *
-     * @param d3D 3D distance between UE and eNodeB
-     * @param d2D 2D distance between UE and eNodeB
-     * @param nodeid mac node id of UE
-     */
-    virtual void computeLosProbability(double d3D, double d2D, const LinkKey& key);
-
     bool isUplinkInterferenceEnabled() override { return enableUplinkInterference_; }
-    /*
-     * Compute the received useful signal (RSRP) per band over a radio link.
-     */
-    virtual std::vector<double> getRSRP(const RadioLink& link, double txPower);
 
     /*
-     * Public for RadioMedium's relocated getAttenuation()/computeShadowing()/
-     * jakesFading() (S9b): a plain, stateless coordinate helper the relocated
-     * bodies call back on the radio pointer.
+     * Public for RadioMedium's relocated getAttenuation() (S9b): a plain,
+     * stateless coordinate helper the relocated body calls back on the radio
+     * pointer.
      */
     virtual double getTwoDimDistance(inet::Coord a, inet::Coord b);
 
@@ -466,13 +361,14 @@ class StochasticChannelModel : public ChannelModelBase
 
     /*
      * Compute attenuation due to path loss and shadowing, always with the
-     * TR 36.814 formulas regardless of pathLossType (extCellPathLoss_).
-     * Public for CellularInterferenceModel's relocated computeExtCellInterference()/
+     * TR 36.814 formulas regardless of pathLossType. Public for
+     * CellularInterferenceModel's relocated computeExtCellInterference()/
      * computeBackgroundCellInterference() (S11), which call it back on the
      * radio pointer: it reads the medium's shared LOS state (losStateFor(),
-     * plan S13) for radio's own carrier leg, and this endpoint's own
-     * extCellPathLoss_ instance, neither reachable from outside, so it stays
-     * resident rather than moving with the walks that call it.
+     * S13) and shared per-leg Tr36814 strategy (extCellPathLossFor(), S14)
+     * for radio's own carrier leg, plus this endpoint's own inside_building_/
+     * inside_distance_ (not reachable from outside), so it stays resident
+     * rather than moving with the walks that call it.
      * @return attenuation expressed in dBm
      */
     virtual double computeExtCellPathLoss(double dist, const LinkKey& key);
@@ -487,11 +383,22 @@ class StochasticChannelModel : public ChannelModelBase
     RadioLink cellularLink(MacNodeId ueId, Direction dir, inet::Coord coord);
 
     /*
-     * Compute speed (m/s) for a given node
-     * @param nodeid mac node id of UE
-     * @return the speed in m/s
+     * Compute received useful signal (RSRP) per band over a radio link.
+     * Narrowed back from public at S14: the only caller left is
+     * D2dChannelModel::getRSRP_D2D() (a subclass, reached through an
+     * unqualified self-call), which protected access already covers -- the
+     * medium computes RSRP itself rather than calling back through radio.
      */
-    virtual double computeSpeed(const MacNodeId nodeId, const inet::Coord coord);
+    virtual std::vector<double> getRSRP(const RadioLink& link, double txPower);
+
+    /*
+     * Add noise and interference to an already-computed per-band received-power
+     * vector. Narrowed back from public at S14 for the same reason as
+     * getRSRP(const RadioLink&, double) above: only D2dChannelModel's own
+     * one-to-many capture-effect path (D2dChannelModel::getSINR_D2D()) still
+     * calls it.
+     */
+    virtual std::vector<double> getSINR(const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);
 };
 
 } //namespace
