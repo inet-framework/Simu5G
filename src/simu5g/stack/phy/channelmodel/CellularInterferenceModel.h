@@ -13,23 +13,88 @@
 #ifndef STACK_PHY_CHANNELMODEL_CELLULARINTERFERENCEMODEL_H_
 #define STACK_PHY_CHANNELMODEL_CELLULARINTERFERENCEMODEL_H_
 
+#include <vector>
+
 #include <omnetpp.h>
+#include <inet/common/ModuleRefByPar.h>
+#include <inet/common/geometry/common/Coord.h>
+
+#include "simu5g/common/LteCommon.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
 
+class Binder;
+class RadioMedium;
+class StochasticChannelModel;
+
 /**
  * Computes interference for the radio medium: the received power contributed
  * by transmissions other than the one being evaluated.
+ *
+ * The four walks read the Binder (binder_, resolved here since the endpoint's
+ * own binder_ is out of reach from an unrelated class) for allocation facts --
+ * which eNB used which RB this TTI, who is transmitting on which band, the
+ * ext-cell and background-cell lists, all produced by the MAC scheduler -- and
+ * the medium's registry (medium_, this module's own parent) for the physical
+ * facts of other registered radios (plan section 3(c)). Each walk also takes
+ * radio, the calling endpoint, for facts that stay genuinely per-radio
+ * (antenna gain, cable loss) and for the still-resident endpoint methods
+ * (computeAngle, computeAngularAttenuation, computeExtCellPathLoss) it calls
+ * back on -- the same one-radio-pointer shape RadioMedium's own relocated
+ * computation already uses (S9b/S10). Never draws: every random draw the
+ * interference contributions depend on (an interferer's own attenuation, via
+ * getAttenuation) is made by the medium's S9b/S10 functions, reached through
+ * radio or through the interfering endpoint's own channel model, not here.
  */
 class CellularInterferenceModel : public cSimpleModule
 {
+  protected:
+    // This module's own parent (S2's submodule slot); resolved once at
+    // initialize(), read live thereafter like the rest of the medium's
+    // accessor family.
+    RadioMedium *medium_ = nullptr;
+
+    // Allocation facts (plan 3(c)) come from the Binder, populated by the MAC
+    // scheduler; not available through the medium's registry, which only
+    // knows physical facts.
+    inet::ModuleRefByPar<Binder> binder_;
+
   public:
-    void initialize() override {}
+    void initialize() override;
 
     /** Never called: this module has no gates and schedules no self-messages. */
     void handleMessage(cMessage *msg) override;
+
+    /*
+     * Compute total interference due to eNB coexistence for the DL direction
+     * @param eNbId id of the considered eNb
+     * @param isCqi if we are computing a CQI
+     */
+    virtual bool computeDownlinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId ueId,
+            inet::Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
+
+    /*
+     * Compute interference coming from neighboring cells for the UL direction
+     */
+    virtual bool computeUplinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
+            bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
+
+    /*
+     * Evaluates total interference from external cells seen from the spot given by coord
+     * @return total interference expressed in dBm
+     */
+    virtual bool computeExtCellInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId nodeId,
+            inet::Coord coord, bool isCqi, GHz carrierFrequency, std::vector<double> *interference);
+
+    /*
+     * Evaluates total interference from external cells seen from the spot given by coord
+     * @return total interference expressed in dBm
+     */
+    virtual bool computeBackgroundCellInterference(StochasticChannelModel *radio, MacNodeId nodeId,
+            inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap,
+            Direction dir, std::vector<double> *interference);
 };
 
 } //namespace

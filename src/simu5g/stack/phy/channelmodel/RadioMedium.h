@@ -32,6 +32,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 class StochasticChannelModel;
+class CellularInterferenceModel;
 
 /** A timestamped position: when it was recorded, and where. */
 typedef std::pair<inet::simtime_t, inet::Coord> Position;
@@ -171,6 +172,11 @@ class RadioMedium : public cSimpleModule
     // strategy lives for the run.
     std::map<CarrierLeg, PathLossModel *> pathLoss_;
 
+    // This medium's own interference submodule (S2's slot, S11's payload):
+    // resolved once at initialize(), read live thereafter. Not owned -- it
+    // is a child module, torn down by the module hierarchy like any other.
+    CellularInterferenceModel *interference_ = nullptr;
+
     /** Looks up the registered radio for (nodeId, carrierFrequency); throws if none is registered. */
     const RadioDescriptor& descriptorFor(MacNodeId nodeId, GHz carrierFrequency) const;
 
@@ -193,7 +199,8 @@ class RadioMedium : public cSimpleModule
   public:
     ~RadioMedium() override;
 
-    void initialize() override {}
+    /** Resolves interference_, this medium's own interference submodule (S2/S11). */
+    void initialize() override;
 
     /** Never called: this module has no gates and schedules no self-messages. */
     void handleMessage(cMessage *msg) override;
@@ -266,8 +273,10 @@ class RadioMedium : public cSimpleModule
      * StochasticChannelModel method that D2dChannelModel overrides
      * (computeInterferencePlusNoise, getReceptionSinr, emitRcvdSinr), it
      * calls back through radio rather than on itself, so that override
-     * still fires for a D2D-capable radio; the four interference walks
-     * (S11) are reached the same way, since they too stay resident for now.
+     * still fires for a D2D-capable radio. The four interference walks
+     * (S11) are no longer among them: computeInterferencePlusNoise now
+     * calls interference_ (this medium's own submodule, never radio),
+     * since they were never a D2D-override dispatch point to begin with.
      */
     virtual std::vector<double> getSINR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
     virtual std::vector<double> getSINR(StochasticChannelModel *radio, const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);

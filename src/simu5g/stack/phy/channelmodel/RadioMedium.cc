@@ -21,6 +21,7 @@
 #include "simu5g/common/cellInfo/CellInfo.h"
 #include "simu5g/stack/mac/amc/UserTxParams.h"
 #include "simu5g/stack/phy/PhyUe.h"
+#include "simu5g/stack/phy/channelmodel/CellularInterferenceModel.h"
 #include "simu5g/stack/phy/channelmodel/StochasticChannelModel.h"
 #include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
 #include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
@@ -96,6 +97,13 @@ RadioMedium::~RadioMedium()
 {
     for (auto& [leg, model] : pathLoss_)
         delete model;
+}
+
+void RadioMedium::initialize()
+{
+    // this medium's own submodule (S2's slot); purely structural, so
+    // resolvable regardless of init-stage ordering
+    interference_ = check_and_cast<CellularInterferenceModel *>(getSubmodule("interference"));
 }
 
 void RadioMedium::handleMessage(cMessage *msg)
@@ -726,10 +734,10 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     // prepare data structure
     multiCellInterference.resize(radio->getNumBands(), 0);
     if (cp.downlinkInterference && dir == DL && lteInfo->getFrameType() != BEACONPKT) {
-        radio->computeDownlinkInterference(eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+        interference_->computeDownlinkInterference(radio, eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
     else if (cp.uplinkInterference && dir == UL) {
-        radio->computeUplinkInterference(eNbId, ueId, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+        interference_->computeUplinkInterference(radio, eNbId, ueId, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
 
     //============ BACKGROUND CELLS INTERFERENCE COMPUTATION =================
@@ -738,7 +746,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     // prepare data structure
     bgCellInterference.resize(radio->getNumBands(), 0);
     if (cp.bgCellInterference) {
-        radio->computeBackgroundCellInterference(ueId, enbCoord, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
+        interference_->computeBackgroundCellInterference(radio, ueId, enbCoord, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
 
     //============ EXTCELL INTERFERENCE COMPUTATION =================
@@ -748,7 +756,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     // prepare data structure
     extCellInterference.resize(radio->getNumBands(), 0);
     if (cp.extCellInterference && dir == DL) {
-        radio->computeExtCellInterference(eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
+        interference_->computeExtCellInterference(radio, eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
 
     EV << "RadioMedium::getSINR - distance from my eNb=" << enbCoord.distance(ueCoord) << " - DIR=" << ((dir == DL) ? "DL" : "UL") << endl;
@@ -1032,10 +1040,10 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     // prepare data structure
     multiCellInterference.resize(radio->getNumBands(), 0);
     if (cp.downlinkInterference && dir == DL) {
-        radio->computeDownlinkInterference(eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+        interference_->computeDownlinkInterference(radio, eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
     else if (cp.uplinkInterference && dir == UL) {
-        radio->computeUplinkInterference(eNbId, bgUeId, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+        interference_->computeUplinkInterference(radio, eNbId, bgUeId, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
 
     //============ BACKGROUND CELLS INTERFERENCE COMPUTATION =================
@@ -1044,7 +1052,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     // prepare data structure
     bgCellInterference.resize(radio->getNumBands(), 0);
     if (cp.bgCellInterference) {
-        radio->computeBackgroundCellInterference(bgUeId, enbCoord, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
+        interference_->computeBackgroundCellInterference(radio, bgUeId, enbCoord, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
 
     //============ EXTCELL INTERFERENCE COMPUTATION =================
@@ -1054,7 +1062,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     // prepare data structure
     extCellInterference.resize(radio->getNumBands(), 0);
     if (cp.extCellInterference && dir == DL) {
-        radio->computeExtCellInterference(eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
+        interference_->computeExtCellInterference(radio, eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
 
     //===================== SINR COMPUTATION ========================

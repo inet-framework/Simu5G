@@ -78,7 +78,7 @@ std::vector<double> D2dChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControl
 std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId)
 {
     // desired-signal RSRP (pathloss + shadowing + fading), then noise and
-    // interference on top: exactly the two halves this body used to inline
+    // interference on top
     std::vector<double> rsrpVector = getRSRP_D2D(frame, lteInfo, destId, destCoord);
     return getSINR_D2D(frame, lteInfo, destId, destCoord, enbId, rsrpVector);
 }
