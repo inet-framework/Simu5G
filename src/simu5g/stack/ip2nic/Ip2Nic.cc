@@ -23,6 +23,11 @@ using namespace omnetpp;
 
 Define_Module(Ip2Nic);
 
+Ip2Nic::~Ip2Nic()
+{
+    delete useNrCondition_;
+}
+
 void Ip2Nic::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
@@ -46,7 +51,10 @@ void Ip2Nic::initialize(int stage)
             nodeId_ = MacNodeId(ue->par("macNodeId").intValue());
             if (ue->hasPar("nrMacNodeId"))
                 nrNodeId_ = MacNodeId(ue->par("nrMacNodeId").intValue());
+            handoverPacketHolder_ = getModuleFromPar<HandoverPacketHolderUe>(par("handoverPacketHolderModule"), this);
         }
+
+        useNrCondition_ = getExpressionFromPar(par("useNrCondition"), new PolicyResolver(this));
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         isNr_ = par("isNr");
@@ -99,6 +107,47 @@ void Ip2Nic::resumeUe(MacNodeId ueId)
     releasedUes_.erase(ueId);
 }
 
+void Ip2Nic::getStackAvailability(const Ipv4Address& destAddr, bool& hasLte, bool& hasNr)
+{
+    if (nodeType_ == NODEB) {
+        // the packet travels to the UE the destination address names
+        MacNodeId ueId = binder_->getMacNodeId(destAddr);
+        MacNodeId nrUeId = binder_->getNrMacNodeId(destAddr);
+        hasLte = (binder_->getServingNodeOrSelf(ueId) != NODEID_NONE);
+        hasNr = (binder_->getServingNodeOrSelf(nrUeId) != NODEID_NONE);
+    }
+    else {
+        // KLUDGE: this UE's own attachment, read from the handover helper's latched serving
+        // node ids rather than from the Binder, which lags them within an event:
+        //
+        //    test_numerology, multicell_CBR_UL, ue[9], t=0.001909132428, event #475 (HandoverPacketHolder), #476 (Ip2Nic)
+        //    latched: servingNodeId=1, nrServingNodeId=2 --> both stacks attached
+        //    binder:  servingNodeId=1, nrServingNodeId=0 --> NR stack not attached
+        //
+        // The two disagree only during a handover, and the Binder's answer makes the UE
+        // abandon a stack that is in fact attached. This goes away once a bearer's legs
+        // are configured rather than derived per packet.
+        hasLte = (handoverPacketHolder_->getServingNodeId() != NODEID_NONE);
+        hasNr = (handoverPacketHolder_->getNrServingNodeId() != NODEID_NONE);
+    }
+}
+
+bool Ip2Nic::selectNrStack(const Ipv4Address& destAddr, uint16_t typeOfService, bool hasLte, bool hasNr)
+{
+    if (!hasNr)
+        return false;
+    if (!hasLte)
+        return true;
+    currentTypeOfService_ = typeOfService;
+    return useNrCondition_->boolValue();
+}
+
+cValue Ip2Nic::PolicyResolver::readVariable(cExpression::Context *context, const char *name)
+{
+    if (!strcmp(name, "typeOfService")) return (intval_t)module_->currentTypeOfService_;
+    throw cRuntimeError("Ip2Nic: unknown variable '%s' in the useNrCondition expression", name);
+}
+
 void Ip2Nic::toStackUe(Packet *pkt)
 {
     EV << "Ip2Nic::fromIpUe - message from IP layer: send to stack: " << pkt->str() << std::endl;
@@ -119,9 +168,15 @@ void Ip2Nic::toStackUe(Packet *pkt)
 
     // TODO: Add support for IPv6 (=> see L3Tools.cc of INET)
 
-    // TechnologyReq tag (useNR) is already set by TechnologyDecision
+    bool hasLte, hasNr;
+    getStackAvailability(destAddr, hasLte, hasNr);
+    if (!hasLte && !hasNr) {
+        EV << "Ip2Nic::toStackUe - this UE is attached to no serving node; dropping UL packet" << endl;
+        delete pkt;
+        return;
+    }
 
-    attachFlowControlInfo(pkt, srcAddr, destAddr, tos);
+    attachFlowControlInfo(pkt, srcAddr, destAddr, tos, selectNrStack(destAddr, tos, hasLte, hasNr));
     if (!hasSdap_)   // with SDAP, it maps the QoS flow onto a DRB itself
         assignBearer(pkt, srcAddr, destAddr, tos);
 
@@ -179,9 +234,15 @@ void Ip2Nic::toStackBs(Packet *pkt)
         }
     }
 
-    // TechnologyReq tag (useNR) is already set by TechnologyDecision
+    bool hasLte, hasNr;
+    getStackAvailability(destAddr, hasLte, hasNr);
+    if (!hasLte && !hasNr) {
+        EV << "Ip2Nic::toStackBs - the destination UE is attached to no serving node; dropping DL packet" << endl;
+        delete pkt;
+        return;
+    }
 
-    attachFlowControlInfo(pkt, srcAddr, destAddr, tos);
+    attachFlowControlInfo(pkt, srcAddr, destAddr, tos, selectNrStack(destAddr, tos, hasLte, hasNr));
     if (!hasSdap_)   // with SDAP, it maps the QoS flow onto a DRB itself
         assignBearer(pkt, srcAddr, destAddr, tos);
 
@@ -247,7 +308,7 @@ MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacN
     }
 }
 
-void Ip2Nic::attachFlowControlInfo(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address destAddr, uint16_t typeOfService)
+void Ip2Nic::attachFlowControlInfo(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address destAddr, uint16_t typeOfService, bool useNR)
 {
     // --- Common preamble ---
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
@@ -259,7 +320,12 @@ void Ip2Nic::attachFlowControlInfo(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4A
     // the IP header stops being reachable below PDCP, so the marking travels with the flow
     lteInfo->setTypeOfService(typeOfService);
 
-    bool useNR = pkt->getTag<TechnologyReq>()->getUseNR();
+    // TRANSITIONAL: TechnologyDecision still makes the same choice above this module; the
+    // two must agree until it is removed. Under dual connectivity the two stacks are the
+    // legs of one bearer and the flag is unused here, so only the tag's own choice is
+    // meaningful there -- and it is the leg splitter that has to match it.
+    ASSERT(dualConnectivityEnabled_ || useNR == pkt->getTag<TechnologyReq>()->getUseNR());
+
     bool isEnb = (dir == DL);
 
     // For NrPdcpUe, the effective local node ID depends on the useNR flag

@@ -14,9 +14,13 @@ package simu5g.stack.ip2nic;
 //
 // Bridges the IP network layer and the cellular protocol stack, handling bidirectional packet flow.
 // Extracts flow information from IP headers and attaches it as control tags for the stack.
-// Supports dual connectivity by selecting between LTE and NR paths based on Type of Service field.
 // In base stations, determines the destination user equipment from IP addresses.
-// In split bearer mode, distributes packets alternately across LTE and NR interfaces.
+//
+// A packet whose UE is attached with neither of its stacks is dropped here. When the UE is
+// attached with both, the useNrCondition parameter decides which of them carries the flow --
+// but only outside dual connectivity, where the two stacks are separate paths. Under dual
+// connectivity they are the legs of one bearer, and the choice is made per PDU, further down,
+// by the bearer's leg splitter (see ~DcPdcpLegSplitter).
 //
 simple Ip2Nic like INetworkLayer2CellularNic
 {
@@ -24,6 +28,8 @@ simple Ip2Nic like INetworkLayer2CellularNic
         string nodeType;
         string binderModule = default("binder");
         string smfModule = default("smf");
+        string handoverPacketHolderModule = default("^.handoverPacketHolder");
+        object useNrCondition = default(expr(typeOfService >= 10));  // UE with both stacks attached, no dual connectivity: expr() over typeOfService, true = use the NR stack
         bool isNr = default(false);   // true for the NR leg (set by NrNicUe/NrNicEnb, or in the ini for a DC master eNB)
         bool hasSdap = default(false);  // when true, SDAP handles DRB/RLC assignment; Ip2Nic skips traffic classification
         bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (see the staticBearers parameter of ~Smf)
