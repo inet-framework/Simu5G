@@ -12,6 +12,7 @@
 
 #include "simu5g/common/LteCommon.h"
 
+#include <inet/common/packet/PacketFilter.h>
 #include <inet/common/packet/dissector/ProtocolDissectorRegistry.h>
 #include <inet/networklayer/ipv4/Ipv4ProtocolDissector.h>
 #include <inet/common/IProtocolRegistrationListener.h>

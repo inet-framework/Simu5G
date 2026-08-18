@@ -16,7 +16,7 @@
 #include <set>
 #include "simu5g/stack/sdap/common/SdapDrbTable.h"
 #include "simu5g/stack/sdap/common/ReflectiveQosTable.h"
-#include "simu5g/common/binder/Binder.h"
+#include "simu5g/corenetwork/smf/Smf.h"
 #include <inet/common/ModuleRefByPar.h>
 
 using namespace omnetpp;
@@ -46,7 +46,7 @@ class NrSdap : public cSimpleModule
   protected:
     SdapDrbTable drbTable_;
     inet::ModuleRefByPar<ReflectiveQosTable> reflectiveQosTable;
-    inet::ModuleRefByPar<Binder> binder_;
+    inet::ModuleRefByPar<Smf> smf_;
 
     // The bearers that currently exist on this node, as told by RRC (see
     // bearerEstablished()). A packet mapped to a bearer that is not here needs one

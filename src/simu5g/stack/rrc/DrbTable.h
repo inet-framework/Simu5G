@@ -28,7 +28,7 @@ namespace simu5g {
  * Holds two collections of ~DrbDesc records, both keyed by (peer node, DRB id):
  *
  * - The CONFIGURED bearers, delivered by the core network's session management (see
- *   Binder::configureDrbs()) and taken in through BearerManagement::configureDrb(): the
+ *   Smf::configureDrbs()) and taken in through BearerManagement::configureDrb(): the
  *   bearers this node is configured with, before and independent of their establishment.
  *   On the UE side entries are keyed by NODEID_NONE ("my serving node"); on the gNB side
  *   by the UE's node id. These entries persist for the whole simulation. This table does

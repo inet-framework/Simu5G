@@ -47,7 +47,7 @@ void QoSAwareScheduler::prepareSchedule()
     if (!drbQosMap_)
         throw cRuntimeError("QoSAwareScheduler requires DRB QoS profiles but none were configured. "
                             "Author them via the qos fields (gbr/delayBudget/per/priority) of the "
-                            "binder.staticDrbs entries.");
+                            "smf.staticDrbs entries.");
 
     EV << NOW << " QoSAwareScheduler::prepareSchedule" << endl;
 

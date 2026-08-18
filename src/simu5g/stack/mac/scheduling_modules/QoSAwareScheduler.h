@@ -25,7 +25,7 @@ namespace simu5g {
  * derived from the per-DRB QoS profile (GBR flag, packet delay budget, packet
  * error rate, priority level). The profiles come from the MAC's DRB QoS map
  * (see LteMacEnb::getDrbQosMap()), which RRC fills from the bearer configuration
- * delivered to it (the staticDrbs parameter of the Binder module).
+ * delivered to it (the staticDrbs parameter of the ~Smf module).
  *
  * A CID whose bearer has no QoS profile is scheduled with a neutral weight
  * (plain proportional fair).

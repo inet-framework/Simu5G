@@ -20,6 +20,7 @@
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/binder/Binder.h"
+#include "simu5g/corenetwork/smf/Smf.h"
 
 namespace simu5g {
 
@@ -38,6 +39,9 @@ class Ip2Nic : public cSimpleModule
 
     // reference to the binder
     inet::ModuleRefByPar<Binder> binder_;
+
+    // the core network's session management, which authors and establishes bearers
+    inet::ModuleRefByPar<Smf> smf_;
 
     // LTE MAC node id of this node
     MacNodeId nodeId_ = NODEID_NONE;
@@ -73,7 +77,7 @@ class Ip2Nic : public cSimpleModule
     // is the data plane asking RRC for a bearer, so it is the packet path's one
     // control-plane action -- it builds entities at BOTH endpoints. The request carries
     // identity only (the flow and its binding key); the bearer's properties are authored
-    // by the Binder (see Binder::establishOnDemandBearer). Throws instead when the
+    // by the SMF (see Smf::establishOnDemandBearer). Throws instead when the
     // establishBearersOnDemand parameter turned this fallback off.
     virtual DrbId establishBearerOnDemand(const FlowBindingKey& key, FlowControlInfo *lteInfo, inet::Packet *pkt);
 

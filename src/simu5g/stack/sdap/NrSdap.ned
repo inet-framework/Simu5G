@@ -36,7 +36,7 @@ package simu5g.stack.sdap;
 //
 // SDAP does not author its own configuration: the QFI-to-DRB mapping and the
 // per-bearer SDAP settings are authored network-wide (see the staticDrbs
-// parameter of ~Binder), delivered to RRC, and pushed into this module from
+// parameter of ~Smf), delivered to RRC, and pushed into this module from
 // there at initialization.
 //
 // Gates:
@@ -47,8 +47,8 @@ simple NrSdap like INrSdap
 {
     parameters:
         string nodeRole @enum("UE", "gNB");  // Node role: "UE" or "gNB" - determines reflective QoS behavior
-        string binderModule = default("binder");
-        bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (see the staticBearers parameter of ~Binder)
+        string smfModule = default("smf");
+        bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (see the staticBearers parameter of ~Smf)
         string reflectiveQosTableModule = default("");  // UE only: path to ReflectiveQosTable module (empty = disabled)
         bool useReflectiveQos = default(false); // UE only
         @display("i=block/layer");

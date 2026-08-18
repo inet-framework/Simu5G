@@ -34,6 +34,7 @@ class PdcpTxEntityBase;
 class PdcpRxEntityBase;
 class Registration;
 class Binder;
+class Smf;
 class NrSdap;
 class Ip2Nic;
 
@@ -65,6 +66,7 @@ class BearerManagement : public cSimpleModule
     inet::ModuleRefByPar<LteMacBase> macModule;
     inet::ModuleRefByPar<LteMacBase> nrMacModule;
     inet::ModuleRefByPar<Binder> binderModule;   // DC master/secondary topology lookups; peer BearerManagement on RLF
+    inet::ModuleRefByPar<Smf> smfModule;         // the DRB identity pool a torn-down bearer's id goes back to
     inet::ModuleRefByPar<DrbTable> drbTableModule;   // the bearer configuration this module authors
     inet::ModuleRefByPar<NrSdap> sdapModule;     // configuration push target; null when the NIC has no SDAP
     Ip2Nic *ip2nicModule_ = nullptr;             // configuration/notification push target
@@ -76,8 +78,8 @@ class BearerManagement : public cSimpleModule
     virtual void notifyBearerEstablished(DrbKey key);
     virtual void notifyBearerReleased(DrbKey key);
 
-    // Give a torn-down bearer's DRB identity back to the Binder, which pools identities
-    // per node pair (see Binder::releaseDrbId).
+    // Give a torn-down bearer's DRB identity back to the SMF, which pools identities
+    // per node pair (see Smf::releaseDrbId).
     virtual void releaseDrbIdOf(DrbKey bearer);
 
     // Entity registries (CP owns the lifecycle of all entities)
@@ -166,7 +168,7 @@ class BearerManagement : public cSimpleModule
   public:
     ~BearerManagement() override;
     // Take delivery of one bearer's configuration from the core network's session
-    // management (see Binder::configureDrbs()). RRC never fetches this itself.
+    // management (see Smf::configureDrbs()). RRC never fetches this itself.
     virtual void configureDrb(const DrbDesc& drb);
     // Schedule an RLC-detected radio link failure teardown for a peer node, deferred
     // to a safe execution context. nrStack selects the failing leg (LTE vs NR).

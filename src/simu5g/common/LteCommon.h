@@ -143,7 +143,7 @@ struct BearerRequest {
     // to the bearer at both endpoints, so the reverse flow resolves to the same DRB
     // instead of establishing a second, parallel bearer. Absent when the requester
     // classifies by other means (SDAP maps QFIs) or configures bearers up front
-    // (the Binder's staticBearers).
+    // (the SMF's staticBearers).
     std::optional<FlowBindingKey> flowBindingKey;
 };
 

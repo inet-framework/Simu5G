@@ -25,7 +25,7 @@ namespace simu5g {
 // SDAP's working copy of the data radio bearer configuration, indexed by QFI and by node
 // so that SDAP can map a QoS flow onto a bearer. SDAP never authors this table: entries
 // are pushed by RRC (see NrSdap::configureDrb), from the configuration the core network's
-// session management delivered to it (the staticDrbs parameter of the Binder).
+// session management delivered to it (the staticDrbs parameter of the SMF).
 //
 class SdapDrbTable
 {

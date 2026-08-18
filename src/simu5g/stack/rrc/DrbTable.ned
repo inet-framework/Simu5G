@@ -19,7 +19,7 @@ package simu5g.stack.rrc;
 // The table holds two collections of descriptors. The configured bearers are the ones
 // this node has been told to set up, before and independent of their establishment:
 // the core network's session management delivers them (see the staticDrbs parameter of
-// ~Binder), RRC takes them in and pushes the SDAP-relevant part of each into the SDAP
+// ~Smf), RRC takes them in and pushes the SDAP-relevant part of each into the SDAP
 // module, so neither this table nor SDAP authors any of it. The established bearers are
 // filled in by ~BearerManagement as bearers are established, and dropped together with
 // the bearer's PDCP entity.

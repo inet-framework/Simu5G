@@ -28,7 +28,7 @@ Define_Module(NrSdap);
 
 void NrSdap::initialize()
 {
-    binder_.reference(this, "binderModule", true);
+    smf_.reference(this, "smfModule", true);
 
     // Get pointer to reflective QoS table
     reflectiveQosTable.reference(this, "reflectiveQosTableModule", false);
@@ -155,12 +155,12 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     const DrbDesc *drb = drbTable_.getDrbForQfi(nodeId, qfi);
     if (!drb) {
         // An uncovered QFI may still have an on-demand definition to create its DRB
-        // from (see the Binder's onDemandDrbs parameter); a successful creation is
-        // pushed back into this table, so retry the lookup. The Binder needs the
+        // from (see the SMF's onDemandDrbs parameter); a successful creation is
+        // pushed back into this table, so retry the lookup. The SMF needs the
         // actual UE: on the gNB that is nodeId (the destination), on the UE itself
         // the flow's source.
         MacNodeId ueId = isUe ? pkt->getTag<FlowControlInfo>()->getSourceId() : nodeId;
-        if (binder_->createOnDemandDrbForQfi(ueId, qfi) != DRBID_NONE)
+        if (smf_->createOnDemandDrbForQfi(ueId, qfi) != DRBID_NONE)
             drb = drbTable_.getDrbForQfi(nodeId, qfi);
     }
     if (!drb) {
@@ -207,7 +207,7 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
         // both from the bearer's configured entry at establishment (see
         // BearerManagement::resolveBearerRequest()), so the request carries no
         // configuration at all.
-        binder_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{CONVERSATIONAL, UNKNOWN_RLC_TYPE});
+        smf_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{CONVERSATIONAL, UNKNOWN_RLC_TYPE});
     }
 
     // Set protocol tag for outgoing frame to PDCP layer
@@ -224,7 +224,7 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
     MacNodeId ueId = (!isUe && lteInfo) ? lteInfo->getSourceId() : NODEID_NONE;
     const DrbDesc *drb = (drbId != DRBID_NONE) ? drbTable_.getDrb(DrbKey(ueId, drbId)) : nullptr;
     if (!drb)
-        throw cRuntimeError("SDAP RX: Unknown DRB %d (ueId=%d) -- missing entry in the binder's staticDrbs?",
+        throw cRuntimeError("SDAP RX: Unknown DRB %d (ueId=%d) -- missing entry in the SMF's staticDrbs?",
                             (int)num(drbId), (int)num(ueId));
 
     EV_INFO << "SDAP RX: Received packet from DRB " << drbId << ": " << pkt->peekAtFront() << "\n";

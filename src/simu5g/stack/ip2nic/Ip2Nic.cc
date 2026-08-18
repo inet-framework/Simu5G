@@ -32,6 +32,7 @@ void Ip2Nic::initialize(int stage)
         nodeType_ = aToNodeType(par("nodeType").stdstringValue());
 
         binder_.reference(this, "binderModule", true);
+        smf_.reference(this, "smfModule", true);
 
         networkIf = getContainingNicModule(this);
         dualConnectivityEnabled_ = networkIf->par("dualConnectivityEnabled").boolValue();
@@ -337,8 +338,8 @@ DrbId Ip2Nic::establishBearerOnDemand(const FlowBindingKey& key, FlowControlInfo
     // The flow key travels with the request: RRC binds the flow to the bearer at both
     // endpoints (see configureFlowBinding), so this node's own binding and the peer's
     // mirrored one are installed by the same establishment. The packet is what the
-    // Binder authors the bearer's properties from.
-    return binder_->establishOnDemandBearer(flow, key, pkt);
+    // SMF authors the bearer's properties from.
+    return smf_->establishOnDemandBearer(flow, key, pkt);
 }
 
 } //namespace
