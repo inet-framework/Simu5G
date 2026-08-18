@@ -19,7 +19,6 @@
 #include "simu5g/stack/mac/amc/UserTxParams.h"
 #include "simu5g/background/trafficGenerator/generators/TrafficGeneratorBase.h"
 #include "simu5g/common/LteCommon.h"
-#include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/phy/channelmodel/RadioMedium.h"
 #include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
@@ -332,12 +331,6 @@ std::vector<double> StochasticChannelModel::getSINR(const RadioLink& link, UserC
     return medium_->getSINR(this, link, lteInfo, snrVector);
 }
 
-void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
-        RbMap& rbmap, double totN, std::vector<double>& den)
-{
-    medium_->computeInterferencePlusNoise(this, link, lteInfo, rbmap, totN, den);
-}
-
 std::vector<double> StochasticChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     return medium_->getRSRP(this, frame, lteInfo);
@@ -377,19 +370,6 @@ double StochasticChannelModel::jakesFading(const LinkKey& key, MacNodeId ownerId
 bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     return medium_->isReceptionSuccessful(this, frame, lteInfo, rsrpVector);
-}
-
-void StochasticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)
-{
-    if (dir == DL) { // we are on the UE
-        emit(rcvdSinrDlSignal_, sinr);
-        return;
-    }
-
-    // we are on the BS, so we need to retrieve the channel model of the sender
-    // XXX I know, there might be a faster way...
-    ChannelModelBase *ueChannelModel = check_and_cast<PhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(carrierFrequency);
-    ueChannelModel->emit(rcvdSinrUlSignal_, sinr);
 }
 
 void StochasticChannelModel::computeLosProbability(double d3D, double d2D, const LinkKey& key)

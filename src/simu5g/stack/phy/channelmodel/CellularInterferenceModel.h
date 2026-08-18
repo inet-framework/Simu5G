@@ -33,20 +33,21 @@ class StochasticChannelModel;
  * Computes interference for the radio medium: the received power contributed
  * by transmissions other than the one being evaluated.
  *
- * The four walks read the Binder (binder_, resolved here since the endpoint's
- * own binder_ is out of reach from an unrelated class) for allocation facts --
- * which eNB used which RB this TTI, who is transmitting on which band, the
- * ext-cell and background-cell lists, all produced by the MAC scheduler -- and
- * the medium's registry (medium_, this module's own parent) for the physical
- * facts of other registered radios (plan section 3(c)). Each walk also takes
- * radio, the calling endpoint, for facts that stay genuinely per-radio
- * (antenna gain, cable loss) and for the still-resident endpoint methods
- * (computeAngle, computeAngularAttenuation, computeExtCellPathLoss) it calls
- * back on -- the same one-radio-pointer shape RadioMedium's own relocated
- * computation already uses (S9b/S10). Never draws: every random draw the
- * interference contributions depend on (an interferer's own attenuation, via
- * getAttenuation) is made by the medium's S9b/S10 functions, reached through
- * radio or through the interfering endpoint's own channel model, not here.
+ * The five walks (four cellular, plus computeD2DInterference folded in at S12)
+ * read the Binder (binder_, resolved here since the endpoint's own binder_ is
+ * out of reach from an unrelated class) for allocation facts -- which eNB used
+ * which RB this TTI, who is transmitting on which band, the ext-cell and
+ * background-cell lists, all produced by the MAC scheduler -- and the medium's
+ * registry (medium_, this module's own parent) for the physical facts of other
+ * registered radios (plan section 3(c)). Each walk also takes radio, the
+ * calling endpoint, for facts that stay genuinely per-radio (antenna gain,
+ * cable loss) and for the still-resident endpoint methods (computeAngle,
+ * computeAngularAttenuation, computeExtCellPathLoss) it calls back on -- the
+ * same one-radio-pointer shape RadioMedium's own relocated computation already
+ * uses (S9b/S10). Never draws: every random draw the interference contributions
+ * depend on (an interferer's own attenuation, via getAttenuation) is made by
+ * the medium's S9b/S10 functions, reached through radio or through the
+ * interfering endpoint's own channel model, not here.
  */
 class CellularInterferenceModel : public cSimpleModule
 {
@@ -95,6 +96,17 @@ class CellularInterferenceModel : public cSimpleModule
     virtual bool computeBackgroundCellInterference(StochasticChannelModel *radio, MacNodeId nodeId,
             inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap,
             Direction dir, std::vector<double> *interference);
+
+    /*
+     * Compute interference coming from neighboring UEs for the D2D/D2D_MULTI
+     * direction (plan S12: folded in from D2dChannelModel, interference-walk-shaped
+     * like its four cellular siblings above). radio's own D2D marker
+     * (RadioMedium::descriptorFor) is what the caller already resolved to decide
+     * this walk should run at all.
+     */
+    virtual bool computeD2DInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
+            inet::Coord senderCoord, MacNodeId destId, inet::Coord destCoord, bool isCqi, GHz carrierFrequency,
+            std::vector<double> *interference, Direction dir);
 };
 
 } //namespace

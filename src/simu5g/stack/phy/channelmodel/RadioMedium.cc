@@ -19,6 +19,7 @@
 
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
+#include "simu5g/stack/d2d/phy/channelmodel/D2dChannelModel.h"
 #include "simu5g/stack/mac/amc/UserTxParams.h"
 #include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/phy/channelmodel/CellularInterferenceModel.h"
@@ -119,6 +120,9 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
     descriptor.endpoint = endpoint;
     descriptor.nodeId = endpoint->getNodeId();
     descriptor.carrierFrequency = endpoint->getCarrierFrequency();
+    // The D2D marker (plan S12): one dynamic_cast, here, cached for every
+    // D2D-aware branch to read afterward instead of casting itself.
+    descriptor.d2dEndpoint = dynamic_cast<D2dChannelModel *>(endpoint);
 
     auto key = std::make_pair(descriptor.nodeId, descriptor.carrierFrequency);
     if (radioIndex_.find(key) != radioIndex_.end())
@@ -671,7 +675,7 @@ std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, const Ra
 
     // per-band interference-plus-noise denominator, in dBm
     std::vector<double> den(radio->getNumBands(), 0.0);
-    radio->computeInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
+    computeInterferencePlusNoise(radio, link, lteInfo, rbmap, totN, den);
 
     double sumSnr = 0.0;
     int usedRBs = 0;
@@ -718,6 +722,49 @@ std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, const Ra
 void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, const RadioLink& link, UserControlInfo *lteInfo,
         RbMap& rbmap, double totN, std::vector<double>& den)
 {
+    if (link.dir == D2D || link.dir == D2D_MULTI) {
+        const RadioDescriptor& d = descriptorFor(radio->getNodeId(), radio->getCarrierFrequency());
+        if (d.d2dEndpoint == nullptr)
+            throw cRuntimeError("computeInterferencePlusNoise: D2D/D2D_MULTI link direction on non-D2D-capable radio '%s'", radio->getFullPath().c_str());
+
+        /*
+         * In calculating a D2D CQI, the interference from other D2D UEs discriminates between calculating a CQI
+         * in the direction D2D_Tx--->D2D_Rx or D2D_Tx<---D2D_Rx (This happens due to the different positions of the
+         * interfering UEs relative to the position of the UE for whom we are calculating the CQI). We need that the CQI
+         * for the D2D_Tx is the same as the D2D_Rx (This is a help for the simulator because when the eNodeB allocates
+         * resources to a D2D_Tx it must refer to the quality channel of the D2D_Rx).
+         * To do so, here we must check if the ueId is the ID of the D2D_Tx: if it
+         * is so we swap the ueId with the one of his Peer (D2D_Rx). We do the same for the coord.
+         */
+        // vector containing the sum of inCell interference for each band
+        std::vector<double> d2dInterference; // Linear value (mW)
+        d2dInterference.resize(radio->getNumBands(), 0);
+        if (d.d2dEndpoint->isD2DInterferenceEnabled()) {
+            interference_->computeD2DInterference(radio, link.cellId, link.txId, link.txCoord, link.rxId, link.rxCoord,
+                    (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &d2dInterference, link.dir);
+        }
+
+        EV << "RadioMedium::computeInterferencePlusNoise - distance from my Peer = "
+           << link.rxCoord.distance(link.txCoord) << " - DIR=" << dirToA(link.dir) << endl;
+
+        // One loop for both cases: with interference disabled d2dInterference is all
+        // zeros, so this degenerates to the noise-only denominator. (The two used to be
+        // written out separately, the disabled branch summing noise directly instead of
+        // going through dBm -> linear -> dBm. That round trip is not bit-identical, so
+        // the collapse is observable -- but only where d2dInterference is false, which
+        // no shipped configuration sets.)
+        for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+            // the caller skips these bands too; leave their denominator untouched
+            if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
+                continue;
+
+            den[i] = linearToDBm(totN + d2dInterference[i]);
+
+            EV << "\t in[" << d2dInterference[i] << "] - den[" << den[i] << "]\n";
+        }
+        return;
+    }
+
     // The interference model is cellular-topology-aware (it asks "which cell?"),
     // so recover the UE/BS roles from the link. The propagation math does not need them.
     Direction dir = link.dir;
@@ -1259,9 +1306,9 @@ bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFra
     // Get txmode
     TxMode txmode = (TxMode)lteInfo->getTxMode();
 
-    // Take sinr (the D2D channel model overrides getReceptionSinr() to route
-    // D2D/D2D_MULTI receptions through getSINR_D2D)
-    std::vector<double> snrV = radio->getReceptionSinr(frame, lteInfo, rsrpVector);
+    // Take sinr (getReceptionSinr() routes D2D/D2D_MULTI receptions through
+    // getSINR_D2D on radio's own D2D marker)
+    std::vector<double> snrV = getReceptionSinr(radio, frame, lteInfo, rsrpVector);
 
     // Get the resource Block id used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();
@@ -1332,7 +1379,7 @@ bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFra
 
     // emit SINR statistic
     if (radio->getCollectSinrStatistics() && usedRBs > 0)
-        radio->emitRcvdSinr(dir, id, lteInfo->getCarrierFrequency(), sumSnr / usedRBs);
+        emitRcvdSinr(radio, dir, id, lteInfo->getCarrierFrequency(), sumSnr / usedRBs);
 
     bool receptionFailed = (randomSample <= effectiveErrorRateWithHarq);
     if (receptionFailed) {
@@ -1347,6 +1394,85 @@ bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFra
        << ") -> Receive AirFrame." << endl;
 
     return true;
+}
+
+RadioLink RadioMedium::d2dLink(StochasticChannelModel *radio, MacNodeId srcId, inet::Coord srcCoord,
+        MacNodeId destId, inet::Coord destCoord, bool useUeSideMaps)
+{
+    RadioLink link;
+    link.dir = D2D;
+
+    link.txId = srcId;
+    link.rxId = destId;
+    link.txCoord = srcCoord;
+    link.rxCoord = destCoord;
+
+    // Both endpoints are UEs.
+    link.txAntennaGain = link.rxAntennaGain = radio->getAntennaGainUe();
+    link.noiseFigure = radio->getUeNoiseFigure();
+    link.txIsBaseStation = false; // omnidirectional: no angular attenuation
+
+    // The channel state is keyed on the *link*, so a UE's several D2D peers each
+    // get their own LOS state, shadowing realization and fading process, instead
+    // of sharing the transmitter's single slot (and colliding with the
+    // transmitter's own cellular state).
+    //
+    // The owning node stays the transmitter: it is that UE's channel model that
+    // holds the maps, and it is that UE's motion that defines the speed.
+    link.stateKey = LinkKey(srcId, destId);
+    link.stateNodeId = srcId;
+    link.stateCoord = srcCoord;
+    link.useUeSideMaps = useUeSideMaps;
+
+    return link;
+}
+
+std::vector<double> RadioMedium::getReceptionSinr(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo,
+        const std::vector<double>& rsrpVector)
+{
+    Direction dir = lteInfo->getDirection();
+    if (dir == D2D || dir == D2D_MULTI) {
+        const RadioDescriptor& d = descriptorFor(radio->getNodeId(), radio->getCarrierFrequency());
+        if (d.d2dEndpoint == nullptr)
+            throw cRuntimeError("getReceptionSinr: D2D/D2D_MULTI direction on non-D2D-capable radio '%s'", radio->getFullPath().c_str());
+
+        MacNodeId destId = lteInfo->getDestId();
+        inet::Coord destCoord = radio->getCoord();
+        MacNodeId enbId = radio->getBinder()->getServingNodeOrSelf(lteInfo->getSourceId());
+
+        // One-to-many reception decides on the RSRP captured by the capture-effect
+        // logic (see D2dUePhyHelper::storeAirFrame), so the desired signal is not
+        // recomputed here.
+        if (dir == D2D_MULTI)
+            return d.d2dEndpoint->getSINR_D2D(frame, lteInfo, destId, destCoord, enbId, rsrpVector);
+        return d.d2dEndpoint->getSINR_D2D(frame, lteInfo, destId, destCoord, enbId);
+    }
+    return getSINR(radio, frame, lteInfo);
+}
+
+void RadioMedium::emitRcvdSinr(StochasticChannelModel *radio, Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)
+{
+    if (dir == D2D || dir == D2D_MULTI) {
+        // A D2D reception is not an uplink reception. Attribute it to the receiver
+        // -- radio, the same registered endpoint the pre-fold D2dChannelModel's own
+        // emitRcvdSinr() emitted on as "this" -- rather than to the sender's channel
+        // model the way the cellular UL branch below does.
+        const RadioDescriptor& d = descriptorFor(radio->getNodeId(), radio->getCarrierFrequency());
+        if (d.d2dEndpoint == nullptr)
+            throw cRuntimeError("emitRcvdSinr: D2D/D2D_MULTI direction on non-D2D-capable radio '%s'", radio->getFullPath().c_str());
+        radio->emit(d.d2dEndpoint->getRcvdSinrD2DSignal(), sinr);
+        return;
+    }
+
+    if (dir == DL) { // we are on the UE
+        radio->emit(StochasticChannelModel::rcvdSinrDlSignal_, sinr);
+        return;
+    }
+
+    // we are on the BS, so we need to retrieve the channel model of the sender
+    // XXX I know, there might be a faster way...
+    ChannelModelBase *ueChannelModel = check_and_cast<PhyUe *>(radio->getBinder()->getPhyByNodeId(ueId))->getChannelModel(carrierFrequency);
+    ueChannelModel->emit(StochasticChannelModel::rcvdSinrUlSignal_, sinr);
 }
 
 } //namespace

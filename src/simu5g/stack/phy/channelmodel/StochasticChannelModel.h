@@ -57,11 +57,12 @@ class PathLossModel;
  * including isReceptionSuccessful's BLER draw. Tr36873ChannelModel and
  * Tr38901ChannelModel are NED-level presets of this class (no C++ class of
  * their own) that only override the pathLossType default, to Tr36873 and
- * Tr38901 respectively. The four interference walks stay resident (moving
- * at a later step), and getReceptionSinr, emitRcvdSinr and
- * computeInterferencePlusNoise stay virtual dispatch points so
- * D2dChannelModel's overrides still fire when the medium calls them back
- * on this endpoint.
+ * Tr38901 respectively. The four cellular interference walks moved to the
+ * medium's interference submodule at S11; the D2D interference walk and the
+ * D2D branches of getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise
+ * folded into the medium alongside them at S12 -- D2dChannelModel no longer
+ * overrides any of the three, so none of them are virtual dispatch points
+ * here anymore.
  *
  * Supported propagation studies:
  * - 3GPP TR 36.814, "Further advancements for E-UTRA physical layer aspects", v9.2.0, March 2017
@@ -74,8 +75,10 @@ class PathLossModel;
  * scenarios (not every study covers every scenario; see the PathLossModel
  * subclasses).
  *
- * D2D links are not evaluated here. The D2dChannelModel subclass layers them on
- * top of this class.
+ * D2D links are evaluated by the medium too (S12); D2dChannelModel is now an
+ * endpoint marker (RadioMedium::RadioDescriptor::d2dEndpoint) plus the
+ * ID2dChannelModel entry points (getRSRP_D2D/getSINR_D2D) D2D-aware PHY code
+ * calls directly.
  */
 class StochasticChannelModel : public ChannelModelBase
 {
@@ -188,15 +191,13 @@ class StochasticChannelModel : public ChannelModelBase
     // If false, disable the collection of SINR statistics, which might be quite time-consuming
     bool collectSinrStatistics_;
 
-    // Statistics. rcvdSinr* stay protected: emitRcvdSinr(), the only reader,
-    // stays resident on the endpoint (it is a D2D-override dispatch point --
-    // see the getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise
-    // comment below). measuredSinr* are public: RadioMedium's relocated
-    // getSINR() (S10) reads them to emit on a peer endpoint's own signal.
+  public:
+    // Statistics, public: RadioMedium's relocated getSINR() (S10) reads
+    // measuredSinr* to emit on a peer endpoint's own signal, and its
+    // relocated emitRcvdSinr() (S12, folded in from the endpoint and from
+    // D2dChannelModel's override) reads rcvdSinr* the same way.
     static simsignal_t rcvdSinrDlSignal_;
     static simsignal_t rcvdSinrUlSignal_;
-
-  public:
     static simsignal_t measuredSinrDlSignal_;
     static simsignal_t measuredSinrUlSignal_;
     ~StochasticChannelModel() override;
@@ -446,33 +447,25 @@ class StochasticChannelModel : public ChannelModelBase
 
     /*
      * Public for RadioMedium's relocated getSINR()/getSIR()/getRSRP()/
-     * getSINR_bgUe()/getReceivedPower_bgUe()/isReceptionSuccessful() (S10).
-     * linkFor() is a plain resident helper the relocated bodies now call
-     * back on the radio pointer. computeInterferencePlusNoise(),
-     * getReceptionSinr() and emitRcvdSinr() are more than that: they are
-     * D2D-override dispatch points (D2dChannelModel substitutes UE-to-UE
-     * interference, routes through getSINR_D2D, and reports rcvdSinrD2D
-     * respectively), so the relocated bodies must call them on the radio
-     * pointer -- never on the medium itself -- for that override to still
-     * fire. The four interference walks that used to sit here moved to
-     * CellularInterferenceModel (S11): no subclass overrode them, so they
-     * were deleted rather than left as forwarders.
+     * getSINR_bgUe()/getReceivedPower_bgUe()/isReceptionSuccessful() (S10):
+     * a plain resident helper the relocated bodies call back on the radio
+     * pointer. computeInterferencePlusNoise(), getReceptionSinr() and
+     * emitRcvdSinr() used to sit here too, as D2D-override dispatch points --
+     * D2dChannelModel no longer overrides any of the three (S12 folds their
+     * D2D branches into the medium's own relocated computation instead), so
+     * like the four interference walks at S11, they were deleted rather than
+     * left as forwarders with nothing left to dispatch to.
      */
     virtual RadioLink linkFor(UserControlInfo *lteInfo);
-    virtual void emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr);
-    virtual void computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
-            RbMap& rbmap, double totN, std::vector<double>& den);
-    virtual std::vector<double> getReceptionSinr(LteAirFrame *frame, UserControlInfo *lteInfo,
-            const std::vector<double>& rsrpVector) { return getSINR(frame, lteInfo); }
 
     /*
      * One interfering transmitter, normalized across the two kinds the UL
      * transmission map can hold: a real UE (with a PHY) and a background UE
      * (with a traffic generator). Public, with describeInterferer() below,
-     * for CellularInterferenceModel::computeUplinkInterference() (S11) and
-     * D2dChannelModel::computeD2DInterference() (still resident, S12),
-     * which both call describeInterferer() by explicit qualification --
-     * the same shape D2D already used before this step, unaffected by it.
+     * for CellularInterferenceModel's computeUplinkInterference() and
+     * computeD2DInterference() (S11/S12), which both call describeInterferer()
+     * by explicit qualification -- the same shape D2D already used, before
+     * computeD2DInterference itself moved here alongside it.
      */
     struct InterfererInfo
     {

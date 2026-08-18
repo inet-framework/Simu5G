@@ -18,6 +18,7 @@
 #include "simu5g/background/trafficGenerator/generators/TrafficGeneratorBase.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/nodes/ExtCell.h"
+#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/phy/channelmodel/RadioMedium.h"
@@ -452,6 +453,69 @@ bool CellularInterferenceModel::computeBackgroundCellInterference(StochasticChan
             }
         }
     }
+
+    return true;
+}
+
+bool CellularInterferenceModel::computeD2DInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
+        inet::Coord senderCoord, MacNodeId destId, inet::Coord destCoord, bool isCqi, GHz carrierFrequency,
+        std::vector<double> *interference, Direction dir)
+{
+    EV << "**** D2D Interference for cellId[" << eNbId << "] node[" << destId << "] ****" << endl;
+
+    // get the D2D view of the eNodeB's MAC
+    ID2dMacEnb *macEnb = check_and_cast<ID2dMacEnb *>(binder_->getMacFromMacNodeId(eNbId));
+
+    const std::vector<std::vector<UeAllocationInfo>> *ulTransmissionMap;
+    const std::vector<UeAllocationInfo> *allocatedUes;
+
+    unsigned int numBands = radio->getNumBands();
+
+    // CQI computation checks the slot occupation of the current TTI;
+    // error computation checks the occupation of the previous TTI
+    ulTransmissionMap = binder_->getUlTransmissionMap(carrierFrequency, isCqi ? CURR_TTI : PREV_TTI);
+    if (ulTransmissionMap != nullptr && !ulTransmissionMap->empty()) {
+        for (unsigned int i = 0; i < numBands; i++) {
+            // get the UEs transmitting on the same band
+            allocatedUes = &(ulTransmissionMap->at(i));
+
+            for (auto& ue_it : *allocatedUes) {
+                const auto interferer = StochasticChannelModel::describeInterferer(ue_it, medium_, carrierFrequency);
+                const MacNodeId ueId = interferer.nodeId;
+                const MacCellId cellId = interferer.cellId;
+                const Direction dir = interferer.dir;
+                const double txPwr = interferer.txPwr;
+                const inet::Coord ueCoord = interferer.coord;
+
+                // no self-interference
+                if (ueId == senderId || ueId == destId)
+                    continue;
+
+                // no interference from UL connections of the same cell (no D2D-UL reuse allowed)
+                if (dir == UL && cellId == eNbId)
+                    continue;
+
+                // no interference from D2D connections of the same cell when reuse is disabled (otherwise, computation of CQI is misleading)
+                if (cellId == eNbId && (!macEnb->isReuseD2DEnabled() && !macEnb->isReuseD2DMultiEnabled()))
+                    continue;
+
+                EV << NOW << " CellularInterferenceModel::computeD2DInterference - Interference from UE: " << ueId << "(dir " << dirToA(dir) << ") on band[" << i << "]" << endl;
+
+                // get tx power and attenuation from this UE
+                double rxPwr = txPwr - radio->getCableLoss() + 2 * radio->getAntennaGainUe();
+                // interferer -> our receiver; the eNB-side maps are used for interferers
+                double att = medium_->getAttenuation(radio, medium_->d2dLink(radio, ueId, ueCoord, destId, destCoord, false));
+                (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
+
+                EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;
+            }
+        }
+    }
+
+    // Debug Output
+    EV << NOW << " CellularInterferenceModel::computeD2DInterference - Final Band Interference Status: " << endl;
+    for (unsigned int i = 0; i < numBands; i++)
+        EV << "\t band " << i << " int[" << (*interference)[i] << "]" << endl;
 
     return true;
 }
