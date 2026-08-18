@@ -25,6 +25,11 @@ simsignal_t DcPdcpLegSplitter::sentPacketToLowerLayerSignal_ = registerSignal("s
 simsignal_t DcPdcpLegSplitter::pdcpSduSentSignal_ = registerSignal("pdcpSduSent");
 simsignal_t DcPdcpLegSplitter::pdcpSduSentNrSignal_ = registerSignal("pdcpSduSentNr");
 
+DcPdcpLegSplitter::~DcPdcpLegSplitter()
+{
+    delete legSelection_;
+}
+
 void DcPdcpLegSplitter::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
@@ -37,7 +42,61 @@ void DcPdcpLegSplitter::initialize(int stage)
         if (node->hasPar("nrMacNodeId"))
             nrNodeId_ = MacNodeId(node->par("nrMacNodeId").intValue());
         isUe_ = (getNodeTypeById(nodeId_) == UE);
+        if (isUe_)
+            handoverPacketHolder_ = inet::getModuleFromPar<HandoverPacketHolderUe>(par("handoverPacketHolderModule"), this);
+
+        legSelection_ = getExpressionFromPar(par("legSelection"), new PolicyResolver(this));
     }
+}
+
+bool DcPdcpLegSplitter::isLegLive(int leg, const FlowControlInfo *lteInfo)
+{
+    if (leg >= numLegs_ || !gate("out", leg)->isConnected())
+        return false;   // RRC tore this leg down
+
+    if (isUe_) {
+        // this UE's own attachment, read from the handover helper's latched serving node
+        // ids rather than from the Binder, which lags them within an event (see the KLUDGE
+        // comment in Ip2Nic::getStackAvailability())
+        MacNodeId servingNode = (leg == 0) ? handoverPacketHolder_->getServingNodeId()
+                                           : handoverPacketHolder_->getNrServingNodeId();
+        return servingNode != NODEID_NONE;
+    }
+
+    // a base station: the UE's attachment on the stack this leg serves
+    MacNodeId peerId = binder_->getUeNodeId(lteInfo->getDestId(), leg == 1);
+    return peerId != NODEID_NONE && binder_->getServingNodeOrSelf(peerId) != NODEID_NONE;
+}
+
+int DcPdcpLegSplitter::selectLeg(const FlowControlInfo *lteInfo)
+{
+    int liveLegs = 0, lastLiveLeg = 0;
+    for (int leg = 0; leg < numLegs_; leg++)
+        if (isLegLive(leg, lteInfo)) {
+            liveLegs++;
+            lastLiveLeg = leg;
+        }
+
+    if (liveLegs == 0) {
+        EV_WARN << NOW << " DcPdcpLegSplitter - no leg of this bearer is available; falling back to leg 0" << endl;
+        return 0;
+    }
+    if (liveLegs == 1)
+        return lastLiveLeg;   // nothing to decide
+
+    currentTypeOfService_ = lteInfo->getTypeOfService();
+    currentPacketOrdinal_ = packetsSteered_++;
+    int leg = legSelection_->intValue();
+    if (leg < 0 || leg >= numLegs_ || !isLegLive(leg, lteInfo))
+        throw cRuntimeError("legSelection chose leg %d, which is not a live leg of this bearer", leg);
+    return leg;
+}
+
+cValue DcPdcpLegSplitter::PolicyResolver::readVariable(cExpression::Context *context, const char *name)
+{
+    if (!strcmp(name, "typeOfService")) return (intval_t)module_->currentTypeOfService_;
+    if (!strcmp(name, "packetOrdinal")) return (intval_t)module_->currentPacketOrdinal_;
+    throw cRuntimeError("DcPdcpLegSplitter: unknown variable '%s' in the legSelection expression", name);
 }
 
 void DcPdcpLegSplitter::handleMessage(cMessage *msg)
@@ -45,13 +104,11 @@ void DcPdcpLegSplitter::handleMessage(cMessage *msg)
     auto pkt = check_and_cast<inet::Packet *>(msg);
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
-    // Leg choice: follow the TechnologyReq tag -- the per-packet leg decision is the
-    // technology decision, owned by TechnologyDecision; this module only executes it.
-    int leg = pkt->getTag<TechnologyReq>()->getUseNR() ? 1 : 0;
-    if (leg >= numLegs_ || !gate("out", leg)->isConnected()) {
-        EV_WARN << NOW << " DcPdcpLegSplitter - leg " << leg << " is not available (torn down?); falling back to leg 0" << endl;
-        leg = 0;
-    }
+    int leg = selectLeg(lteInfo.get());
+
+    // TRANSITIONAL: TechnologyDecision still makes the same choice above the stack; the two
+    // must agree until it is removed.
+    ASSERT(leg == (pkt->getTag<TechnologyReq>()->getUseNR() ? 1 : 0));
 
     // Per-leg id adaptation + leg-flavored statistics (moved from NrPdcpTxEntity::deliverPdcpPdu).
     // Leg 0 is the local LTE leg; leg 1 is the UE's local NR stack, or a DC master's remote

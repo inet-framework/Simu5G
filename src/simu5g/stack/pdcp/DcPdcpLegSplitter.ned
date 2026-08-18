@@ -13,10 +13,12 @@ package simu5g.stack.pdcp;
 
 //
 // TX-side leg dispatcher for a dual-connectivity split bearer (two legs). Each
-// PDCP PDU is steered per its TechnologyReq tag (leg 1 when useNR, else leg 0) --
-// the per-packet leg decision is the technology decision, owned by the
-// ~TechnologyDecision module, so this module makes no steering decision of its
-// own. It then applies that leg's DC-specific id mapping on the way out:
+// PDCP PDU is steered to a leg by the legSelection policy expression, which sees
+// the flow's IP marking (typeOfService) and a per-bearer PDU counter
+// (packetOrdinal) and returns a leg index. Legs whose peer is not attached are
+// not offered to it: with one leg live the choice is made already, so the policy
+// only ever decides between legs that can carry the PDU.
+// The module then applies the chosen leg's DC-specific id mapping on the way out:
 //  - leg 0 (local LTE leg): ids already correct; emits pdcpSduSent.
 //  - leg 1 on a UE (the local NR stack): rewrites the flow's source/destination
 //    to the UE's NR-leg node ids (serving node looked up per packet, so
@@ -24,14 +26,18 @@ package simu5g.stack.pdcp;
 //  - leg 1 on a DC master (remote leg): rewrites the ids to (secondary gNB,
 //    NR UE) and adds the X2 addressing tag; the PDU leaves via the DcMux.
 //
-// If the selected leg is torn down (gate unconnected), the PDU falls back to
-// leg 0 with a warning -- steering avoids dead legs on its own.
+// If no leg is live at all, the PDU falls back to leg 0 with a warning.
 //
 simple DcPdcpLegSplitter like IPdcpLegSplitter
 {
     parameters:
         int numLegs;                        // number of legs (set by the enclosing PdcpEntityBase)
         string binderModule = default("binder");
+        string handoverPacketHolderModule = default("^.^.handoverPacketHolder");  // UEs only; the bearer's PDCP entity is a direct submodule of the NIC
+        object legSelection = default(expr(   // leg index for a PDU, from typeOfService and packetOrdinal; see banner comment
+            typeOfService >= 20 ? (packetOrdinal % 2)
+                                : (typeOfService >= 10 ? 1 : 0)
+        ));
         @display("i=block/dispatch");
         @signal[sentPacketToLowerLayer];
         @signal[pdcpSduSent];
