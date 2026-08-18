@@ -320,12 +320,6 @@ void Ip2Nic::attachFlowControlInfo(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4A
     // the IP header stops being reachable below PDCP, so the marking travels with the flow
     lteInfo->setTypeOfService(typeOfService);
 
-    // TRANSITIONAL: TechnologyDecision still makes the same choice above this module; the
-    // two must agree until it is removed. Under dual connectivity the two stacks are the
-    // legs of one bearer and the flag is unused here, so only the tag's own choice is
-    // meaningful there -- and it is the leg splitter that has to match it.
-    ASSERT(dualConnectivityEnabled_ || useNR == pkt->getTag<TechnologyReq>()->getUseNR());
-
     bool isEnb = (dir == DL);
 
     // For NrPdcpUe, the effective local node ID depends on the useNR flag
@@ -362,8 +356,8 @@ void Ip2Nic::assignEndpointIds(FlowControlInfo *lteInfo, const Ipv4Address& dest
 {
     if (isNr_) {
         // For PDCP entity dispatch, always use technology-neutral (LTE/master-leg) IDs.
-        // The TechnologyReq::useNR flag carries the LTE-vs-NR routing decision separately;
-        // NrPdcpTxEntity reads it in deliverPdcpPdu() to decide local RLC vs X2 forwarding.
+        // Under dual connectivity the two stacks are the legs of one bearer, and which leg
+        // carries a PDU is decided per PDU by the bearer's splitter (see DcPdcpLegSplitter).
         if (isEnb) {
             lteInfo->setSourceId(nodeId_);
             if (lteInfo->getMulticastGroupId() != NODEID_NONE)

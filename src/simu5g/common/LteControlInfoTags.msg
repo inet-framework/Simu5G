@@ -70,15 +70,6 @@ class RlcConfigurationInd extends RlcConfigurationTagBase {
 }
 
 //
-// Request tag that specifies whether to use NR or LTE.
-//
-// Usually sent by Ip2Nic to PDCP.
-//
-class TechnologyReq extends inet::TagBase {
-    bool useNR = false;                 // Use NR (5G) instead of LTE
-}
-
-//
 // Indication tag containing carrier and technology configuration
 // Normally exchanged by the PHY and MAC layers.
 //

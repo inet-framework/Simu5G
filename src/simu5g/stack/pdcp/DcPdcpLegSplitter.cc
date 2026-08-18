@@ -106,10 +106,6 @@ void DcPdcpLegSplitter::handleMessage(cMessage *msg)
 
     int leg = selectLeg(lteInfo.get());
 
-    // TRANSITIONAL: TechnologyDecision still makes the same choice above the stack; the two
-    // must agree until it is removed.
-    ASSERT(leg == (pkt->getTag<TechnologyReq>()->getUseNR() ? 1 : 0));
-
     // Per-leg id adaptation + leg-flavored statistics (moved from NrPdcpTxEntity::deliverPdcpPdu).
     // Leg 0 is the local LTE leg; leg 1 is the UE's local NR stack, or a DC master's remote
     // leg via X2.
