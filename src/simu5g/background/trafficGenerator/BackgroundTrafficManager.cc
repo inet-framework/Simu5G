@@ -17,6 +17,20 @@ namespace simu5g {
 Define_Module(BackgroundTrafficManager);
 
 
+BackgroundTrafficManager::~BackgroundTrafficManager()
+{
+    // the medium may already be gone by the time this manager is torn down;
+    // mac_ itself may already be nulled out too (ModuleRefByPar clears on
+    // its target's deletion), which is why cellId_ was cached at
+    // registration instead of read from mac_ here
+    cModule *medium = getSimulation()->getModule(mediumModuleId_);
+    if (medium == nullptr)
+        return;
+    RadioMedium *radioMedium = check_and_cast<RadioMedium *>(medium);
+    for (int i = 0; i < numBgUEs_; i++)
+        radioMedium->removeBackgroundRadio(BgUeKey{cellId_, carrierFrequency_, MacNodeId(BGUE_MIN_ID + i)});
+}
+
 void BackgroundTrafficManager::initialize(int stage)
 {
     BackgroundTrafficManagerBase::initialize(stage);
@@ -31,6 +45,16 @@ void BackgroundTrafficManager::initialize(int stage)
         channelModel_ = phy_->getChannelModel(carrierFrequency_);
         if (channelModel_ == nullptr)
             throw cRuntimeError("BackgroundTrafficManagerBase::initialize - cannot find channel model for carrier frequency %f", carrierFrequency_.get());
+
+        // Register each background UE as a phantom radio (plan S12b/3(j)):
+        // this manager's own MacNodeId numbering is not network-unique, so
+        // the medium keys phantoms by (cellId, carrierFrequency, bgUeId)
+        // instead
+        medium_.reference(this, "radioMediumModule", true);
+        mediumModuleId_ = medium_->getId();
+        cellId_ = mac_->getMacCellId();
+        for (int i = 0; i < numBgUEs_; i++)
+            medium_->addBackgroundRadio(BgUeKey{cellId_, carrierFrequency_, MacNodeId(BGUE_MIN_ID + i)}, bgUe_.at(i));
     }
 }
 

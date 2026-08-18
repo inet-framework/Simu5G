@@ -21,6 +21,7 @@
 #include "simu5g/background/trafficGenerator/generators/TrafficGeneratorBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/phy/PhyEnb.h"
+#include "simu5g/stack/phy/channelmodel/RadioMedium.h"
 
 namespace simu5g {
 
@@ -45,6 +46,22 @@ class BackgroundTrafficManager : public BackgroundTrafficManagerBase
     // reference to the channel model for the given carrier
     ChannelModelBase *channelModel_ = nullptr;
 
+    // the medium each of this manager's background UEs registers a phantom
+    // radio with (plan S12b/3(j)); this NIC-side manager has a MAC/cell
+    // identity to key phantoms by, unlike BackgroundCellTrafficManager and
+    // BackgroundScheduler, which do not register
+    inet::ModuleRefByPar<RadioMedium> medium_;
+
+    // medium_'s module id, cached so the destructor can find it without
+    // dereferencing medium_ itself, which may already be gone by teardown
+    // (mirrors StochasticChannelModel's own registration/deregistration)
+    int mediumModuleId_ = -1;
+
+    // the owning e/gNodeB's cell id, cached at registration for the same
+    // reason: mac_ (a ModuleRefByPar) may already be nulled out by the time
+    // the destructor runs, if the MAC module is torn down first
+    MacCellId cellId_ = NODEID_NONE;
+
   protected:
     void initialize(int stage) override;
 
@@ -53,6 +70,7 @@ class BackgroundTrafficManager : public BackgroundTrafficManagerBase
     std::vector<double> getSINR(int bgUeIndex, Direction dir, inet::Coord bgUePos, double bgUeTxPower) override;
 
   public:
+    ~BackgroundTrafficManager() override;
 
     // get the number of RBs
     unsigned int getNumBands() override;

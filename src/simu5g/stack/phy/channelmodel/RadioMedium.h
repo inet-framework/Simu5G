@@ -34,6 +34,7 @@ using namespace omnetpp;
 class StochasticChannelModel;
 class CellularInterferenceModel;
 class D2dChannelModel;
+class TrafficGeneratorBase;
 
 /** A timestamped position: when it was recorded, and where. */
 typedef std::pair<inet::simtime_t, inet::Coord> Position;
@@ -66,17 +67,42 @@ struct PerRadioStochasticState
 };
 
 /**
+ * A background transmitter's phantom key (plan 3(j)): the tuple that *is*
+ * network-unique, since its own MacNodeId is not -- every
+ * BackgroundTrafficManager numbers its population from BGUE_MIN_ID, so the
+ * first background UE of every manager in the network is MacNodeId(4097).
+ * cellId is the owning eNB/gNB's MacCellId (mac_->getMacCellId() on the
+ * registering manager), matching what LteSchedulerEnb stores alongside that
+ * same background UE's allocation.
+ */
+struct BgUeKey
+{
+    MacCellId cellId = NODEID_NONE;
+    GHz carrierFrequency = GHz(0);
+    MacNodeId bgUeId = NODEID_NONE;
+
+    bool operator<(const BgUeKey& o) const
+    {
+        if (cellId != o.cellId)
+            return cellId < o.cellId;
+        if (carrierFrequency != o.carrierFrequency)
+            return carrierFrequency < o.carrierFrequency;
+        return bgUeId < o.bgUeId;
+    }
+};
+
+/**
  * One radio endpoint registered with the medium: the endpoint itself, plus
  * the identity the registry indexes it by. Kept minimal -- the accessor
  * surface that reads it is added in a later step.
  */
 struct RadioDescriptor
 {
-    StochasticChannelModel *endpoint = nullptr;
+    StochasticChannelModel *endpoint = nullptr;   // null iff this is a phantom (plan 3(j))
     MacNodeId nodeId = NODEID_NONE;
     GHz carrierFrequency = GHz(0);
 
-    // The D2D marker (plan S12): endpoint downcast once at registration,
+    // The D2D marker (plan S12a): endpoint downcast once at registration,
     // non-null iff this radio is D2D-capable. The registration-time
     // dynamic_cast this is built from is the only one -- every D2D-aware
     // branch reads this cached pointer afterward instead of casting itself,
@@ -84,6 +110,17 @@ struct RadioDescriptor
     // the rcvdSinrD2D signal, getSINR_D2D()) that plain StochasticChannelModel
     // does not carry.
     D2dChannelModel *d2dEndpoint = nullptr;
+
+    // The phantom half (plan S12b/3(j)): non-null iff endpoint == nullptr --
+    // ASSERTed at registration that exactly one of the two is non-null. A
+    // phantom is never reachable through radioIndex_/descriptorFor(MacNodeId,
+    // GHz) -- it lives in bgRadioIndex_ instead, keyed by BgUeKey, the tuple
+    // that is actually unique. nodeId/carrierFrequency above still carry the
+    // phantom's own bgUeId and carrier (for reindex() and BgUeKey's other two
+    // fields); bgCellId is the third component, the owning cell, that neither
+    // field carries.
+    TrafficGeneratorBase *bgGenerator = nullptr;
+    MacCellId bgCellId = NODEID_NONE;
 };
 
 /**
@@ -162,6 +199,13 @@ class RadioMedium : public cSimpleModule
     std::deque<RadioDescriptor> radios_;
     std::map<std::pair<MacNodeId, GHz>, RadioDescriptor *> radioIndex_;
 
+    // Phantom radios (plan S12b/3(j)), keyed by the tuple that is unique --
+    // real radios never enter this index, and a phantom never enters
+    // radioIndex_. Same radios_ deque, same lifetime story, same
+    // swap-and-pop removal; reindex() is what keeps a moved descriptor
+    // pointed at from the right index.
+    std::map<BgUeKey, RadioDescriptor *> bgRadioIndex_;
+
     // One CarrierPhysics record per carrier leg, established by the first
     // radio to register on it (see addRadio()). Nothing reads this yet.
     std::map<CarrierLeg, CarrierPhysics> carrierPhysics_;
@@ -189,6 +233,18 @@ class RadioMedium : public cSimpleModule
 
     /** Looks up the registered radio for (nodeId, carrierFrequency); throws if none is registered. */
     const RadioDescriptor& descriptorFor(MacNodeId nodeId, GHz carrierFrequency) const;
+
+    /** Looks up the registered phantom for key; throws if none is registered (plan S12b). */
+    const RadioDescriptor& descriptorFor(const BgUeKey& key) const;
+
+    /**
+     * Re-points radioIndex_ or bgRadioIndex_ (dispatching on endpoint != nullptr)
+     * for descriptor, whose address just changed under swap-and-pop removal.
+     * Factored so both removal paths use it: using removeRadio's own re-index
+     * line unconditionally would write a phantom into the real-radio index
+     * (plan S12b item 5 / risk 18).
+     */
+    void reindex(RadioDescriptor& descriptor);
 
     /** Reads the per-carrier-leg physics parameters (plan 3(e)) declared on the endpoint's own NED type. */
     CarrierPhysics readCarrierPhysics(StochasticChannelModel *endpoint) const;
@@ -222,6 +278,19 @@ class RadioMedium : public cSimpleModule
     virtual void removeRadio(StochasticChannelModel *endpoint);
 
     /**
+     * Registers a background transmitter's phantom radio under key, the
+     * tuple that is unique (plan S12b/3(j)): unlike addRadio(), this
+     * establishes no CarrierPhysics record and creates no PathLossModel or
+     * per-radio stochastic state -- a phantom declares none of the 25
+     * per-carrier-leg physics parameters and owns no stochastic state.
+     * Duplicate registration is an error, exactly as addRadio()'s is.
+     */
+    virtual void addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *generator);
+
+    /** Unregisters a background transmitter's phantom radio previously added with addBackgroundRadio(). */
+    virtual void removeBackgroundRadio(const BgUeKey& key);
+
+    /**
      * The per-radio stochastic state for a registered endpoint. Created in
      * addRadio(), so an endpoint can cache the reference once at
      * registration (its address is stable across other radios'
@@ -240,6 +309,17 @@ class RadioMedium : public cSimpleModule
     virtual double antennaGainOf(MacNodeId nodeId, GHz carrierFrequency) const;
     virtual double noiseFigureOf(MacNodeId nodeId, GHz carrierFrequency) const;
     virtual double insideDistanceOf(MacNodeId nodeId, GHz carrierFrequency) const;
+
+    /**
+     * Physical facts of a registered background transmitter (plan S12b/3(j)):
+     * the accessor family widens to the phantom key rather than forking --
+     * two overloads on the existing names, not new ones. No Direction
+     * overload of txPowerOf: TrafficGeneratorBase::getTxPwr() takes none, a
+     * background UE has one tx power, and today's branch this replaces
+     * passes no direction either.
+     */
+    virtual inet::Coord coordOf(const BgUeKey& key) const;
+    virtual double txPowerOf(const BgUeKey& key) const;
 
     /** The calling radio's outdoor-to-indoor geometry (plan 3(i)), read live off its registered endpoint. */
     virtual O2iState o2iStateOf(MacNodeId nodeId, GHz carrierFrequency) const;

@@ -17,7 +17,6 @@
 #include "simu5g/stack/phy/packet/LteAirFrame.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/mac/amc/UserTxParams.h"
-#include "simu5g/background/trafficGenerator/generators/TrafficGeneratorBase.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/phy/channelmodel/RadioMedium.h"
@@ -463,10 +462,10 @@ StochasticChannelModel::InterfererInfo StochasticChannelModel::describeInterfere
         info.txPwr = medium->txPowerOf(info.nodeId, carrierFrequency, info.dir);
         info.coord = medium->coordOf(info.nodeId, carrierFrequency);
     }
-    else { // this is a backgroundUe -- not a registered radio (S12 adds phantom registration)
-        TrafficGeneratorBase *trafficGen = check_and_cast<TrafficGeneratorBase *>(allocation.trafficGen);
-        info.txPwr = trafficGen->getTxPwr();
-        info.coord = trafficGen->getCoord();
+    else { // a background UE is a registered phantom radio (plan S12b/3(j))
+        BgUeKey key{allocation.cellId, carrierFrequency, allocation.nodeId};
+        info.txPwr = medium->txPowerOf(key);
+        info.coord = medium->coordOf(key);
     }
     return info;
 }

@@ -24,6 +24,7 @@ simple BackgroundTrafficManager extends BackgroundTrafficManagerBase
         @class("BackgroundTrafficManager");
         string macModule = default("^.^.mac");
         string phyModule = default("^.^.phy");
+        string radioMediumModule = default("radioMedium"); // module path of the medium each background UE registers a phantom radio with
         bool enablePeriodicCqiUpdate;
         bool computeAvgInterference;
 }
