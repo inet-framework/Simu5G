@@ -67,6 +67,7 @@ class LteControlInfo extends inet::TagBase {
 class FlowControlInfo extends LteControlInfo {
     DrbId drbId;                                         // DRB (Data Radio Bearer) identifier
     MacNodeId multicastGroupId = NODEID_NONE;            // Identifier for a multicast group (it is in range [0:[2^28)-1] ) -- TODO probably should not be needed
+    short typeOfService;                                 // the IP header's TOS byte, carried for policy expressions evaluated below the network layer
 }
 
 cplusplus (FlowControlInfo::setDrbId) {{
