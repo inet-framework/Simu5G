@@ -41,7 +41,7 @@ namespace simu5g {
 class Tr36873PathLossModel : public Tr36814PathLossModel
 {
   public:
-    double computePathLoss(double d3D, double d2D, bool los) override;
+    double computePathLoss(double d3D, double d2D, bool los, const O2iState& o2i) override;
     double computeLosProbability(double d3D, double d2D) override;
     double getShadowingStdDev(double d3D, double d2D, bool losState) override;
     double computeAngularAttenuation(double hAngle, double vAngle) override;
@@ -49,7 +49,7 @@ class Tr36873PathLossModel : public Tr36814PathLossModel
   private:
     double computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los);
     double computeUrbanMicro3D(double threeDimDistance, double twoDimDistance, bool los);
-    double computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los);
+    double computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los, const O2iState& o2i);
     double computeRuralMacro3D(double threeDimDistance, double twoDimDistance, bool los);
 };
 

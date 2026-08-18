@@ -20,8 +20,9 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-double Tr36814PathLossModel::computePathLoss(double d3D, double d2D, bool los)
+double Tr36814PathLossModel::computePathLoss(double d3D, double d2D, bool los, const O2iState& o2i)
 {
+    // TR 36.814 defines no building-penetration term; o2i is unused here.
     // compute attenuation based on selected scenario and based on LOS or NLOS
     double pathLoss = 0;
     double dbp = 0;

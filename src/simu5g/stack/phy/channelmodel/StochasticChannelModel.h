@@ -104,10 +104,6 @@ class StochasticChannelModel : public ChannelModelBase
     // distance from the building wall
     double inside_distance_;
 
-    // flag for using high-loss or low-loss model for building penetration
-    // see table 7.4.3-2 in TR 38.901
-    bool useBuildingPenetrationHighLossModel_;
-
     // Average street's width
     double wStreet_;
 
@@ -231,6 +227,12 @@ class StochasticChannelModel : public ChannelModelBase
      * Building-penetration distance for RadioMedium's insideDistanceOf().
      */
     double getInsideDistance() const { return inside_distance_; }
+
+    /*
+     * Building-penetration flag, paired with getInsideDistance() into the
+     * O2iState PathLossModel::computePathLoss() reads.
+     */
+    bool getInsideBuilding() const { return inside_building_; }
 
     /*
      * Compute attenuation (path loss + optional shadowing) over a radio link.

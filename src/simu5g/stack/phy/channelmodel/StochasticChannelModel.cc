@@ -59,9 +59,7 @@ PathLossModel *StochasticChannelModel::createPathLossModel()
         return new Tr36873PathLossModel();
     else if (pathLossType == "Tr38901") {
         auto *model = new Tr38901PathLossModel();
-        if (inside_building_)
-            useBuildingPenetrationHighLossModel_ = par("useBuildingPenetrationHighLossModel").boolValue();
-        model->setUseBuildingPenetrationHighLossModel(useBuildingPenetrationHighLossModel_);
+        model->setUseBuildingPenetrationHighLossModel(par("useBuildingPenetrationHighLossModel").boolValue());
         return model;
     }
     else
@@ -123,12 +121,10 @@ void StochasticChannelModel::initialize(int stage)
         // by ChannelModelBase::initialize() above, in this same stage
         pathLoss_ = createPathLossModel();
         pathLoss_->initialize(this, scenario_, hNodeB_, hUe_, hBuilding_, wStreet_,
-                inside_building_, inside_distance_,
                 carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
                 tolerateMaxDistViolation_);
         extCellPathLoss_ = new Tr36814PathLossModel();
         extCellPathLoss_->initialize(this, scenario_, hNodeB_, hUe_, hBuilding_, wStreet_,
-                inside_building_, inside_distance_,
                 carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
                 tolerateMaxDistViolation_);
     }
@@ -1309,7 +1305,7 @@ void StochasticChannelModel::computeLosProbability(double d3D, double d2D,
 
 double StochasticChannelModel::computePathLoss(double distance, double dbp, bool los)
 {
-    return pathLoss_->computePathLoss(distance, dbp, los);
+    return pathLoss_->computePathLoss(distance, dbp, los, O2iState{inside_building_, inside_distance_});
 }
 
 double StochasticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
@@ -1543,7 +1539,7 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
         los = false;
 
     // always the TR 36.814 formulas, whatever study the model itself uses
-    double attenuation = extCellPathLoss_->computePathLoss(dist, dist, los);
+    double attenuation = extCellPathLoss_->computePathLoss(dist, dist, los, O2iState{inside_building_, inside_distance_});
 
     return attenuation;
 }
