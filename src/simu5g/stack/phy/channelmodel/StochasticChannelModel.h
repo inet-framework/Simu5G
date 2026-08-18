@@ -47,15 +47,21 @@ class PathLossModel;
  * - the SINR statistics.
  *
  * getAttenuation, computePathLoss, computeLosProbability, computeShadowing,
- * jakesFading, rayleighFading, computeSpeed and computeCorrelationDistance are
- * one-line forwarders to the RadioMedium this endpoint registers with: the
- * medium owns the per-carrier-leg PathLossModel strategy (chosen by the
- * pathLossType parameter -- "Tr36814", "Tr36873" or "Tr38901") and every
- * random draw the propagation formulas make. Tr36873ChannelModel and
+ * jakesFading, rayleighFading, computeSpeed, computeCorrelationDistance,
+ * getSINR, getSIR, getRSRP, getSINR_bgUe, getReceivedPower_bgUe,
+ * computeInterferencePlusNoise and isReceptionSuccessful are one-line
+ * forwarders to the RadioMedium this endpoint registers with: the medium
+ * owns the per-carrier-leg PathLossModel strategy (chosen by the
+ * pathLossType parameter -- "Tr36814", "Tr36873" or "Tr38901"), the SINR
+ * assembly and the reception decision, and every random draw both make --
+ * including isReceptionSuccessful's BLER draw. Tr36873ChannelModel and
  * Tr38901ChannelModel are NED-level presets of this class (no C++ class of
  * their own) that only override the pathLossType default, to Tr36873 and
- * Tr38901 respectively. All the rest -- fading, interference, SINR assembly,
- * the reception decision -- is shared by every pathLossType.
+ * Tr38901 respectively. The four interference walks stay resident (moving
+ * at a later step), and getReceptionSinr, emitRcvdSinr and
+ * computeInterferencePlusNoise stay virtual dispatch points so
+ * D2dChannelModel's overrides still fire when the medium calls them back
+ * on this endpoint.
  *
  * Supported propagation studies:
  * - 3GPP TR 36.814, "Further advancements for E-UTRA physical layer aspects", v9.2.0, March 2017
@@ -182,13 +188,17 @@ class StochasticChannelModel : public ChannelModelBase
     // If false, disable the collection of SINR statistics, which might be quite time-consuming
     bool collectSinrStatistics_;
 
-    // Statistics
+    // Statistics. rcvdSinr* stay protected: emitRcvdSinr(), the only reader,
+    // stays resident on the endpoint (it is a D2D-override dispatch point --
+    // see the getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise
+    // comment below). measuredSinr* are public: RadioMedium's relocated
+    // getSINR() (S10) reads them to emit on a peer endpoint's own signal.
     static simsignal_t rcvdSinrDlSignal_;
     static simsignal_t rcvdSinrUlSignal_;
-    static simsignal_t measuredSinrDlSignal_;
-    static simsignal_t measuredSinrUlSignal_;
 
   public:
+    static simsignal_t measuredSinrDlSignal_;
+    static simsignal_t measuredSinrUlSignal_;
     ~StochasticChannelModel() override;
 
     void initialize(int stage) override;
@@ -219,6 +229,25 @@ class StochasticChannelModel : public ChannelModelBase
      */
     double getAntennaGain() const { return getNodeType() == UE ? antennaGainUe_ : antennaGainEnB_; }
     double getNoiseFigure() const { return getNodeType() == UE ? ueNoiseFigure_ : bsNoiseFigure_; }
+
+    /*
+     * The raw per-role antenna gains, noise figures and cable loss, for
+     * RadioMedium's relocated getSINR_bgUe()/getReceivedPower_bgUe()/getRSRP()
+     * (S10): unlike getAntennaGain()/getNoiseFigure() above, these background-UE
+     * paths need both roles' values from the one endpoint that plays the eNB
+     * side, not just the value matching this endpoint's own role.
+     */
+    double getAntennaGainEnB() const { return antennaGainEnB_; }
+    double getAntennaGainUe() const { return antennaGainUe_; }
+    double getUeNoiseFigure() const { return ueNoiseFigure_; }
+    double getBsNoiseFigure() const { return bsNoiseFigure_; }
+    double getCableLoss() const { return cableLoss_; }
+
+    /*
+     * Whether to collect the measured/received-SINR statistics, for
+     * RadioMedium's relocated getSINR()/isReceptionSuccessful() (S10).
+     */
+    bool getCollectSinrStatistics() const { return collectSinrStatistics_; }
 
     /*
      * Building-penetration distance for RadioMedium's insideDistanceOf().
@@ -415,14 +444,31 @@ class StochasticChannelModel : public ChannelModelBase
     virtual JakesFadingMap *obtainUeJakesMap(MacNodeId id);
     virtual ShadowFadingMap *obtainShadowingMap(MacNodeId id);
 
-  protected:
-
     /*
-     * Build the RadioLink described by a frame's control info (DL, UL, and the
-     * feedback variants). The D2D path builds its links separately -- its API
-     * takes the peer endpoint explicitly rather than deriving it.
+     * Public for RadioMedium's relocated getSINR()/getSIR()/getRSRP()/
+     * getSINR_bgUe()/getReceivedPower_bgUe()/isReceptionSuccessful() (S10).
+     * linkFor() and the four interference walks below are plain resident
+     * helpers the relocated bodies now call back on the radio pointer.
+     * computeInterferencePlusNoise(), getReceptionSinr() and emitRcvdSinr()
+     * are more than that: they are D2D-override dispatch points
+     * (D2dChannelModel substitutes UE-to-UE interference, routes through
+     * getSINR_D2D, and reports rcvdSinrD2D respectively), so the relocated
+     * bodies must call them on the radio pointer -- never on the medium
+     * itself -- for that override to still fire. The four interference
+     * walks are S11's; they stay resident only until then.
      */
     virtual RadioLink linkFor(UserControlInfo *lteInfo);
+    virtual void emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr);
+    virtual void computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
+            RbMap& rbmap, double totN, std::vector<double>& den);
+    virtual std::vector<double> getReceptionSinr(LteAirFrame *frame, UserControlInfo *lteInfo,
+            const std::vector<double>& rsrpVector) { return getSINR(frame, lteInfo); }
+    virtual bool computeDownlinkInterference(MacNodeId eNbId, MacNodeId ueId, inet::Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
+    virtual bool computeUplinkInterference(MacNodeId eNbId, MacNodeId senderId, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
+    virtual bool computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeId, inet::Coord coord, bool isCqi, GHz carrierFrequency, std::vector<double> *interference);
+    virtual bool computeBackgroundCellInterference(MacNodeId nodeId, inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, Direction dir, std::vector<double> *interference);
+
+  protected:
 
     /*
      * Build the RadioLink for a UE<->serving-BS link expressed the old way: the
@@ -430,39 +476,6 @@ class StochasticChannelModel : public ChannelModelBase
      * the two is the UE.
      */
     RadioLink cellularLink(MacNodeId ueId, Direction dir, inet::Coord coord, bool cqiDl);
-
-    /*
-     * Emit the received-SINR statistic for a decoded frame. Routes D2D/D2D_MULTI
-     * receptions to rcvdSinrD2D instead of letting them fall into the uplink
-     * statistic, which is where the DL/else split used to put them.
-     *
-     * @param dir direction of the reception
-     * @param ueId the UE end of the link (the sender, for an uplink reception)
-     * @param carrierFrequency carrier the frame arrived on
-     * @param sinr mean SINR over the resource blocks actually used
-     */
-    virtual void emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr);
-
-    /*
-     * Fill den[] with the per-band interference-plus-noise denominator, in dBm,
-     * for the bands this frame actually uses. Computes the cellular contributions
-     * (multi-cell, background-cell, external-cell). A subclass substitutes its own
-     * for link types the cellular model does not describe.
-     *
-     * @param totN linearized thermal noise + noise figure (mW)
-     */
-    virtual void computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
-            RbMap& rbmap, double totN, std::vector<double>& den);
-
-    /*
-     * Computes the per-band SINR used by isReceptionSuccessful(). Split out so that
-     * a subclass can route link types the cellular model does not describe -- the
-     * D2D channel model overrides this to send D2D/D2D_MULTI through getSINR_D2D.
-     *
-     * @param rsrpVector the RSRP the caller already holds, when it has one
-     */
-    virtual std::vector<double> getReceptionSinr(LteAirFrame *frame, UserControlInfo *lteInfo,
-            const std::vector<double>& rsrpVector) { return getSINR(frame, lteInfo); }
 
     /*
      * Compute speed (m/s) for a given node
@@ -501,30 +514,6 @@ class StochasticChannelModel : public ChannelModelBase
      * branch stays unbridged since a traffic generator is not a registered radio.
      */
     static InterfererInfo describeInterferer(const UeAllocationInfo& allocation, RadioMedium *medium, GHz carrierFrequency);
-
-    /*
-     * Compute total interference due to eNB coexistence for the DL direction
-     * @param eNbId id of the considered eNb
-     * @param isCqi if we are computing a CQI
-     */
-    virtual bool computeDownlinkInterference(MacNodeId eNbId, MacNodeId ueId, inet::Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
-
-    /*
-     * Compute interference coming from neighboring cells for the UL direction
-     */
-    virtual bool computeUplinkInterference(MacNodeId eNbId, MacNodeId senderId, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
-
-    /*
-     * Evaluates total interference from external cells seen from the spot given by coord
-     * @return total interference expressed in dBm
-     */
-    virtual bool computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeId, inet::Coord coord, bool isCqi, GHz carrierFrequency, std::vector<double> *interference);
-
-    /*
-     * Evaluates total interference from external cells seen from the spot given by coord
-     * @return total interference expressed in dBm
-     */
-    virtual bool computeBackgroundCellInterference(MacNodeId nodeId, inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, Direction dir, std::vector<double> *interference);
 
     /*
      * Compute attenuation due to path loss and shadowing

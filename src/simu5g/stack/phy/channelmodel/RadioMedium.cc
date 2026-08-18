@@ -17,6 +17,10 @@
 
 #include <inet/common/INETDefs.h>
 
+#include "simu5g/common/binder/Binder.h"
+#include "simu5g/common/cellInfo/CellInfo.h"
+#include "simu5g/stack/mac/amc/UserTxParams.h"
+#include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/phy/channelmodel/StochasticChannelModel.h"
 #include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
 #include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
@@ -624,6 +628,717 @@ double RadioMedium::computeCorrelationDistance(StochasticChannelModel *radio, co
         dist = point.second.distance(coord);
     }
     return dist;
+}
+
+std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo)
+{
+    RadioLink link = radio->linkFor(lteInfo);
+
+    EV << "------------ GET SINR ----------------" << endl;
+
+    // The desired signal: path loss, shadowing and fading. getSINR() below adds
+    // noise and interference on top of it.
+    return getSINR(radio, link, lteInfo, getRSRP(radio, link, lteInfo->getTxPower()));
+}
+
+std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector)
+{
+    // Get the Resource Blocks used to transmit this packet
+    RbMap rbmap = lteInfo->getGrantedBlocks();
+
+    /*
+     * The SINR will be calculated as follows
+     *
+     *              Pwr
+     * SINR = ---------
+     *           N  +  I
+     *
+     * Ndb = thermalNoise + noiseFigure (measured in decibels)
+     */
+
+    const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
+
+    // compute and linearize total noise
+    double totN = dBmToLinear(cp.thermalNoise + link.noiseFigure);
+
+    // per-band interference-plus-noise denominator, in dBm
+    std::vector<double> den(radio->getNumBands(), 0.0);
+    radio->computeInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
+
+    double sumSnr = 0.0;
+    int usedRBs = 0;
+    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+        // if we are decoding a data transmission and this RB has not been used, skip it
+        // TODO fix for multi-antenna case
+        if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
+            continue;
+
+        // compute final SINR. Subtraction in dB is equivalent to linear division
+        snrVector[i] -= den[i];
+
+        sumSnr += snrVector[i];
+        ++usedRBs;
+    }
+
+    MacNodeId ueId = link.txIsBaseStation ? link.rxId : link.txId;
+
+    // emit SINR statistic. Only DL and UL have a measured-SINR signal; other link
+    // types must not be reported as one of them.
+    if (radio->getCollectSinrStatistics() && (lteInfo->getFrameType() == FEEDBACKPKT) && usedRBs > 0
+        && (link.dir == DL || link.dir == UL))
+    {
+        // we are on the BS, so we need to retrieve the channel model of the sender
+        // XXX I know, there might be a faster way...
+        ChannelModelBase *ueChannelModel = check_and_cast<PhyUe *>(radio->getBinder()->getPhyByNodeId(ueId))->getChannelModel(lteInfo->getCarrierFrequency());
+
+        if (link.dir == DL) // we are on the UE
+            ueChannelModel->emit(StochasticChannelModel::measuredSinrDlSignal_, sumSnr / usedRBs);
+        else
+            ueChannelModel->emit(StochasticChannelModel::measuredSinrUlSignal_, sumSnr / usedRBs);
+    }
+
+    // if sender is an eNodeB
+    if (link.dir == DL)
+        // store the position of user
+        radio->updatePositionHistory(ueId, radio->getCoord());
+    // sender is a UE
+    else
+        radio->updatePositionHistory(ueId, lteInfo->getCoord());
+    return snrVector;
+}
+
+void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, const RadioLink& link, UserControlInfo *lteInfo,
+        RbMap& rbmap, double totN, std::vector<double>& den)
+{
+    // The interference model is cellular-topology-aware (it asks "which cell?"),
+    // so recover the UE/BS roles from the link. The propagation math does not need them.
+    Direction dir = link.dir;
+    MacNodeId ueId = link.txIsBaseStation ? link.rxId : link.txId;
+    MacNodeId eNbId = link.cellId;
+    inet::Coord ueCoord = link.txIsBaseStation ? link.rxCoord : link.txCoord;
+    inet::Coord enbCoord = link.txIsBaseStation ? link.txCoord : link.rxCoord;
+
+    const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
+
+    //============ MULTI CELL INTERFERENCE COMPUTATION =================
+    // vector containing the sum of multi-cell interference for each band
+    std::vector<double> multiCellInterference; // Linear value (mW)
+    // prepare data structure
+    multiCellInterference.resize(radio->getNumBands(), 0);
+    if (cp.downlinkInterference && dir == DL && lteInfo->getFrameType() != BEACONPKT) {
+        radio->computeDownlinkInterference(eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+    }
+    else if (cp.uplinkInterference && dir == UL) {
+        radio->computeUplinkInterference(eNbId, ueId, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+    }
+
+    //============ BACKGROUND CELLS INTERFERENCE COMPUTATION =================
+    // vector containing the sum of background cell interference for each band
+    std::vector<double> bgCellInterference; // Linear value (mW)
+    // prepare data structure
+    bgCellInterference.resize(radio->getNumBands(), 0);
+    if (cp.bgCellInterference) {
+        radio->computeBackgroundCellInterference(ueId, enbCoord, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
+    }
+
+    //============ EXTCELL INTERFERENCE COMPUTATION =================
+    // TODO this might be obsolete as it is replaced by background cell interference
+    // vector containing the sum of external cell interference for each band
+    std::vector<double> extCellInterference; // Linear value (mW)
+    // prepare data structure
+    extCellInterference.resize(radio->getNumBands(), 0);
+    if (cp.extCellInterference && dir == DL) {
+        radio->computeExtCellInterference(eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
+    }
+
+    EV << "RadioMedium::getSINR - distance from my eNb=" << enbCoord.distance(ueCoord) << " - DIR=" << ((dir == DL) ? "DL" : "UL") << endl;
+
+    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+        // the caller skips these bands too; leave their denominator untouched
+        if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
+            continue;
+
+        //                  (      mW              +          mW            +  mW  +        mW            )
+        den[i] = linearToDBm(bgCellInterference[i] + extCellInterference[i] + totN + multiCellInterference[i]);
+
+        EV << "\t bgCell[" << bgCellInterference[i] << "] - ext[" << extCellInterference[i] << "] - multi[" << multiCellInterference[i]
+           << "] - den[" << den[i] << "]\n";
+    }
+}
+
+std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo)
+{
+    return getRSRP(radio, radio->linkFor(lteInfo), lteInfo->getTxPower());
+}
+
+std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const RadioLink& link, double txPower)
+{
+    double recvPower = txPower; // dBm
+
+    EV << "RadioMedium::getRSRP - txId=" << link.txId
+       << " - rxId=" << link.rxId
+       << " - DIR=" << dirToA(link.dir)
+       << " - txPwr " << txPower
+       << " - txCoord[" << link.txCoord << "] - rxCoord[" << link.rxCoord << "]" << endl;
+
+    // =============== PATH LOSS + SHADOWING + FADING =================
+    EV << "\t using parameters - noiseFigure=" << link.noiseFigure
+       << " - antennaGainTx=" << link.txAntennaGain << " - antennaGainRx=" << link.rxAntennaGain
+       << " - txPwr=" << txPower << " - for nodeId=" << link.stateKey << endl;
+
+    // Speed must be read BEFORE getAttenuation(), which appends to the position
+    // history: computeSpeed() derives from that history, so evaluating it
+    // afterwards would yield a different value and hence different fading.
+    // Load-bearing ordering.
+    double speed = computeSpeed(radio, link.stateNodeId, link.stateCoord);
+
+    // attenuation for the desired signal
+    double attenuation = getAttenuation(radio, link); // dB
+
+    // compute attenuation (PATHLOSS + SHADOWING)
+    recvPower -= attenuation; // (dBm-dB)=dBm
+
+    // add antenna gain
+    recvPower += link.txAntennaGain; // (dBm+dB)=dBm
+    recvPower += link.rxAntennaGain; // (dBm+dB)=dBm
+
+    // sub cable loss
+    recvPower -= radio->getCableLoss(); // (dBm-dB)=dBm
+
+    // =============== ANGULAR ATTENUATION =================
+    // Only a base station has a sectorial antenna; a UE-to-UE link never gets here.
+    if (link.txIsBaseStation) {
+        cModule *eNbModule = radio->getBinder()->getNodeModule(link.txId);
+        PhyBase *ltePhy = eNbModule ?
+            check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
+            nullptr;
+
+        if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
+            // get tx angle
+            double txAngle = ltePhy->getTxAngle();
+
+            // compute the angle between the receiver position and the reference axis,
+            // considering the transmitting BS as center
+            double ueAngle = radio->computeAngle(link.txCoord, link.rxCoord);
+
+            // compute the reception angle
+            double recvAngle = fabs(txAngle - ueAngle);
+
+            if (recvAngle > 180)
+                recvAngle = 360 - recvAngle;
+
+            double verticalAngle = radio->computeVerticalAngle(link.txCoord, link.rxCoord);
+
+            // compute attenuation due to sectorial tx
+            double angularAtt = radio->computeAngularAttenuation(recvAngle, verticalAngle);
+
+            recvPower -= angularAtt;
+        }
+        // else, antenna is omni-directional
+    }
+    // =============== END ANGULAR ATTENUATION =================
+
+    std::vector<double> rsrpVector;
+    rsrpVector.resize(radio->getNumBands(), 0.0);
+
+    // compute and add interference due to fading
+    // Apply fading for each band
+    // if the phy layer is localized we can assume that for each logical band we have different fading attenuation
+    // if the phy layer is distributed the number of logical bands should be set to 1
+    double fadingAttenuation = 0;
+
+    const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
+
+    // for each logical band
+    // FIXME compute fading only for used RBs
+    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+        fadingAttenuation = 0;
+        // if fading is enabled
+        if (cp.fading) {
+            // Applying fading
+            if (cp.fadingType == "RAYLEIGH")
+                fadingAttenuation = rayleighFading(radio, link.stateNodeId, i);
+
+            else if (cp.fadingType == "JAKES")
+                fadingAttenuation = jakesFading(radio, link.stateKey, link.stateNodeId, speed, i, link.useUeSideMaps);
+        }
+        // add fading contribution to the received power
+        double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
+
+        EV << " RadioMedium::getRSRP node " << link.stateKey
+           << " band " << i << " recvPower " << recvPower
+           << " direction " << dirToA(link.dir) << " antenna gain tx "
+           << link.txAntennaGain << " antenna gain rx " << link.rxAntennaGain
+           << " noise figure " << link.noiseFigure
+           << " cable loss   " << radio->getCableLoss()
+           << " attenuation (pathloss + shadowing) " << attenuation
+           << " speed " << speed << " thermal noise " << cp.thermalNoise
+           << " fading attenuation " << fadingAttenuation << endl;
+
+        rsrpVector[i] = finalRecvPower;
+    }
+    // ============ END PATH LOSS + SHADOWING + FADING ===============
+
+    return rsrpVector;
+}
+
+std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo)
+{
+    //get tx power
+    double recvPower = lteInfo->getTxPower(); // dBm
+
+    // get MacId and Direction
+    MacNodeId bgUeId = lteInfo->getSourceId();
+    MacNodeId eNbId = lteInfo->getDestId();
+    Direction dir = lteInfo->getDirection();
+
+    // position of e/gNb and UE
+    inet::Coord ueCoord = lteInfo->getCoord();
+    inet::Coord enbCoord = radio->getCoord();
+
+    double antennaGainTx = 0.0;
+    double antennaGainRx = 0.0;
+    double noiseFigure = 0.0;
+    double speed = 0.0;
+
+    // true if we are computing a CQI for the DL direction
+    bool cqiDl = false;
+
+    EV << "------------ GET SINR for background UE ----------------" << endl;
+    //===================== PARAMETERS SETUP ============================
+    /*
+     * This function is called on the e/gNodeB side and is similar
+     * to what is called when computing feedback
+     */
+    if (dir == DL) {
+        //set noise figure
+        noiseFigure = radio->getUeNoiseFigure(); //dB
+        //set antenna gain figure
+        antennaGainTx = radio->getAntennaGainEnB(); //dB
+        antennaGainRx = radio->getAntennaGainUe();  //dB
+        // use the jakes map on the UE side
+        cqiDl = true;
+    }
+    else { // if( dir == UL )
+        // TODO check if antennaGainEnB should be added in UL direction too
+        antennaGainTx = radio->getAntennaGainUe();
+        antennaGainRx = radio->getAntennaGainEnB();
+        noiseFigure = radio->getBsNoiseFigure();
+        // use the jakes map on the eNb side
+        cqiDl = false;
+    }
+    speed = computeSpeed(radio, bgUeId, ueCoord);
+
+    CellInfo *eNbCell = radio->getBinder()->getCellInfoByNodeId(eNbId);
+    const char *eNbTypeString = eNbCell ? (eNbCell->getEnbType() == MACRO_ENB ? "MACRO" : "MICRO") : "NULL";
+
+    EV << "RadioMedium::getSINR_bgUe - DIR=" << ((dir == DL) ? "DL" : "UL")
+       << " " << eNbTypeString << " - txPwr " << lteInfo->getTxPower()
+       << " - ueCoord[" << ueCoord << "] - enbCoord[" << enbCoord << "] - enbId[" << eNbId << "]" <<
+        endl;
+
+    //=================== END PARAMETERS SETUP =======================
+
+    //=============== PATH LOSS =================
+    // Note that shadowing and fading effects are not applied here and left FFW
+
+    // UL because we are computing a feedback
+    double attenuation = radio->getAttenuation(bgUeId, UL, ueCoord, cqiDl);
+
+    //compute recvPower
+    recvPower -= attenuation; // (dBm-dB)=dBm
+
+    //add antenna gain
+    recvPower += antennaGainTx; // (dBm+dB)=dBm
+    recvPower += antennaGainRx; // (dBm+dB)=dBm
+    //sub cable loss
+    recvPower -= radio->getCableLoss(); // (dBm-dB)=dBm
+
+    // ANGULAR ATTENUATION
+    if (dir == DL) {
+        //get tx angle
+        cModule *eNbModule = radio->getBinder()->getNodeModule(eNbId);
+        PhyBase *ltePhy = eNbModule ?
+            check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
+            nullptr;
+
+        if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
+            // get tx angle
+            double txAngle = ltePhy->getTxAngle();
+
+            // compute the angle between uePosition and reference axis, considering the eNb as center
+            double ueAngle = radio->computeAngle(enbCoord, ueCoord);
+
+            // compute the reception angle between ue and eNb
+            double recvAngle = fabs(txAngle - ueAngle);
+
+            if (recvAngle > 180)
+                recvAngle = 360 - recvAngle;
+
+            double verticalAngle = radio->computeVerticalAngle(enbCoord, ueCoord);
+
+            // compute attenuation due to sectorial tx
+            double angularAtt = radio->computeAngularAttenuation(recvAngle, verticalAngle);
+
+            recvPower -= angularAtt;
+        }
+        // else, antenna is omni-directional
+    }
+
+    std::vector<double> snrVector;
+    snrVector.resize(radio->getNumBands(), recvPower);
+
+    const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
+
+    // for each logical band
+    double fadingAttenuation = 0;
+    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+        //if fading is enabled
+        if (cp.fading) {
+            //Applying fading
+            if (cp.fadingType == "RAYLEIGH")
+                fadingAttenuation = rayleighFading(radio, bgUeId, i);
+
+            else if (cp.fadingType == "JAKES")
+                fadingAttenuation = jakesFading(radio, LinkKey(bgUeId), bgUeId, speed, i, cqiDl, true);
+        }
+        // add fading contribution to the received power
+        double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
+
+        snrVector[i] = finalRecvPower;
+    }
+
+    //============ END PATH LOSS + SHADOWING + FADING ===============
+
+    /*
+     * The SINR will be calculated as follows
+     *
+     *           Pwr
+     * SINR = ---------
+     *         N  +  I
+     *
+     * Ndb = thermalNoise + noiseFigure (measured in decibel)
+     * I = extCellInterference + multiCellInterference
+     */
+
+    // TODO Interference computation still needs to be implemented
+
+    //============ MULTI CELL INTERFERENCE COMPUTATION =================
+    // for background UEs, we only compute CQI
+    bool isCqi = true;
+    RbMap rbmap;
+    //vector containing the sum of multicell interference for each band
+    std::vector<double> multiCellInterference; // Linear value (mW)
+    // prepare data structure
+    multiCellInterference.resize(radio->getNumBands(), 0);
+    if (cp.downlinkInterference && dir == DL) {
+        radio->computeDownlinkInterference(eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+    }
+    else if (cp.uplinkInterference && dir == UL) {
+        radio->computeUplinkInterference(eNbId, bgUeId, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+    }
+
+    //============ BACKGROUND CELLS INTERFERENCE COMPUTATION =================
+    //vector containing the sum of bg-cell interference for each band
+    std::vector<double> bgCellInterference; // Linear value (mW)
+    // prepare data structure
+    bgCellInterference.resize(radio->getNumBands(), 0);
+    if (cp.bgCellInterference) {
+        radio->computeBackgroundCellInterference(bgUeId, enbCoord, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
+    }
+
+    //============ EXTCELL INTERFERENCE COMPUTATION =================
+    // TODO this might be obsolete as it is replaced by background cell interference
+    //vector containing the sum of ext-cell interference for each band
+    std::vector<double> extCellInterference; // Linear value (mW)
+    // prepare data structure
+    extCellInterference.resize(radio->getNumBands(), 0);
+    if (cp.extCellInterference && dir == DL) {
+        radio->computeExtCellInterference(eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
+    }
+
+    //===================== SINR COMPUTATION ========================
+    // compute and linearize total noise
+    double totN = dBmToLinear(cp.thermalNoise + noiseFigure);
+
+    // add interference for each band
+    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+        // denominator expressed in dBm as (N+extCell+multiCell)
+        //               (      mW              +          mW            +  mW  +        mW            )
+        double den = linearToDBm(bgCellInterference[i] + extCellInterference[i] + totN + multiCellInterference[i]);
+
+        EV << "\t bgCell[" << bgCellInterference[i] << "] - ext[" << extCellInterference[i] << "] - multi[" << multiCellInterference[i] << "] - recvPwr["
+           << dBmToLinear(snrVector[i]) << "] - sinr[" << snrVector[i] - den << "]\n";
+
+        // compute final SINR
+        snrVector[i] -= den;
+    }
+
+    return snrVector;
+}
+
+double RadioMedium::getReceivedPower_bgUe(StochasticChannelModel *radio, double txPower, inet::Coord txPos, inet::Coord rxPos,
+        Direction dir, bool losStatus, MacNodeId bsId)
+{
+    double antennaGainTx = 0.0;
+    double antennaGainRx = 0.0;
+
+    EV << NOW << " RadioMedium::getReceivedPower_bgUe" << endl;
+
+    //===================== PARAMETERS SETUP ============================
+    if (dir == DL) {
+        antennaGainTx = radio->getAntennaGainEnB(); //dB
+        antennaGainRx = radio->getAntennaGainUe();  //dB
+    }
+    else { // if( dir == UL )
+        antennaGainTx = radio->getAntennaGainUe();
+        antennaGainRx = radio->getAntennaGainEnB();
+    }
+
+    EV << "RadioMedium::getReceivedPower_bgUe - DIR=" << ((dir == DL) ? "DL" : "UL")
+       << " - txPwr " << txPower << " - txPos[" << txPos << "] - rxPos[" << rxPos << "] " << endl;
+    //=================== END PARAMETERS SETUP =======================
+
+    //=============== PATH LOSS =================
+    // Note that shadowing and fading effects are not applied here and left FFW
+
+    //compute attenuation based on selected scenario and based on LOS or NLOS
+    double sqrDistance = txPos.distance(rxPos);
+    double dbp = 0;
+    double attenuation = computePathLoss(radio, sqrDistance, dbp, losStatus);
+
+    //compute recvPower
+    double recvPower = txPower - attenuation; // (dBm-dB)=dBm
+
+    //add antenna gain
+    recvPower += antennaGainTx; // (dBm+dB)=dBm
+    recvPower += antennaGainRx; // (dBm+dB)=dBm
+    //sub cable loss
+    recvPower -= radio->getCableLoss(); // (dBm-dB)=dBm
+
+    // ANGULAR ATTENUATION
+    if (dir == DL) {
+        //get tx angle
+        cModule *bsModule = radio->getBinder()->getNodeModule(bsId);
+        PhyBase *phy = bsModule ? check_and_cast<PhyBase *>(bsModule->getSubmodule("cellularNic")->getSubmodule("phy")) : nullptr;
+
+        if (phy && phy->getTxDirection() == ANISOTROPIC) {
+            // get tx angle
+            double txAngle = phy->getTxAngle();
+
+            // compute the angle between uePosition and reference axis, considering the eNb as center
+            double ueAngle = radio->computeAngle(txPos, rxPos);
+
+            // compute the reception angle between ue and eNb
+            double recvAngle = fabs(txAngle - ueAngle);
+
+            if (recvAngle > 180)
+                recvAngle = 360 - recvAngle;
+
+            double verticalAngle = radio->computeVerticalAngle(txPos, rxPos);
+
+            // compute attenuation due to sectorial tx
+            double angularAtt = radio->computeAngularAttenuation(recvAngle, verticalAngle);
+
+            recvPower -= angularAtt;
+        }
+        // else, antenna is omni-directional
+    }
+    //============ END PATH LOSS + ANGULAR ATTENUATION ===============
+
+    return recvPower;
+}
+
+std::vector<double> RadioMedium::getSIR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo)
+{
+    // get tx power
+    double recvPower = lteInfo->getTxPower();
+
+    inet::Coord coord = lteInfo->getCoord();
+
+    Direction dir = lteInfo->getDirection();
+
+    MacNodeId id = NODEID_NONE;
+    double speed = 0.0;
+
+    // if direction is DL
+    if (dir == DL && (lteInfo->getFrameType() != FEEDBACKPKT)) {
+        id = lteInfo->getDestId();
+        speed = computeSpeed(radio, id, radio->getCoord());
+    }
+    /*
+     * If direction is UL OR
+     * if the packet is a feedback packet
+     * it means that this function is called by the feedback computation module
+     * located in the eNodeB that computes the feedback received by the UE
+     * Hence, the UE macNodeId can be taken from the sourceId of the lteInfo
+     * and the speed of the UE is contained in the Move object associated with the lteInfo
+     */
+    else {
+        id = lteInfo->getSourceId();
+        speed = computeSpeed(radio, id, coord);
+    }
+
+    // Apply fading for each band
+    // if the phy layer is localized we can assume that for each logical band we have different fading attenuation
+    // if the phy layer is distributed, the number of logical bands should be set to 1
+    std::vector<double> snrVector;
+
+    const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
+    double fadingAttenuation = 0;
+    // for each logical band
+    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+        fadingAttenuation = 0;
+        // if fading is enabled
+        if (cp.fading) {
+            // Applying fading
+            if (cp.fadingType == "RAYLEIGH") {
+                fadingAttenuation = rayleighFading(radio, id, i);
+            }
+            else if (cp.fadingType == "JAKES") {
+                fadingAttenuation = jakesFading(radio, LinkKey(id), id, speed, i, dir);
+            }
+        }
+        // add fading contribution to the final SINR
+        double finalSnr = recvPower + fadingAttenuation;
+
+        snrVector.push_back(finalSnr);
+    }
+
+    // if sender is an eNodeB
+    if (dir == DL)
+        // store the position of the user
+        radio->updatePositionHistory(id, radio->getCoord());
+    // sender is a UE
+    else
+        radio->updatePositionHistory(id, coord);
+    return snrVector;
+}
+
+bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo,
+        const std::vector<double>& rsrpVector)
+{
+    EV << "RadioMedium::error" << endl;
+
+    // get codeword
+    unsigned char cw = lteInfo->getCw();
+    // get number of codewords
+    int size = lteInfo->getUserTxParams()->readCqiVector().size();
+
+    // if total number of codewords is equal to 1 the cw index should be only 0
+    if (size == 1)
+        cw = 0;
+
+    // get cqi used to transmit this cw
+    Cqi cqi = lteInfo->getUserTxParams()->readCqiVector()[cw];
+
+    MacNodeId id;
+    Direction dir = lteInfo->getDirection();
+
+    // Get MacNodeId of UE
+    if (dir == DL)
+        id = lteInfo->getDestId();
+    else
+        id = lteInfo->getSourceId();
+
+    // Get Number of transmission attempts (includes original + retransmissions)
+    unsigned char transmissionAttempt = lteInfo->getTxNumber();
+
+    // consistency check
+    if (transmissionAttempt == 0)
+        throw cRuntimeError("Transmissions counter should not be 0");
+
+    // Get txmode
+    TxMode txmode = (TxMode)lteInfo->getTxMode();
+
+    // Take sinr (the D2D channel model overrides getReceptionSinr() to route
+    // D2D/D2D_MULTI receptions through getSINR_D2D)
+    std::vector<double> snrV = radio->getReceptionSinr(frame, lteInfo, rsrpVector);
+
+    // Get the resource Block id used to transmit this packet
+    RbMap rbmap = lteInfo->getGrantedBlocks();
+
+    // Get txmode
+    unsigned int itxmode = txModeToIndex[txmode];
+
+    double blockErrorRate = 0.0;
+    double cumulativeSuccessProbability = 1.0;
+
+    // for statistical purposes
+    double sumSnr = 0.0;
+    int usedRBs = 0;
+
+    // for each Remote unit used to transmit the packet
+    for (const auto &[remoteUnit, rbList] : rbmap) {
+        // for each logical band used to transmit the packet
+        for (const auto &[band, allocation] : rbList) {
+            // this Rb is not allocated
+            if (allocation == 0)
+                continue;
+
+            // Get the Bler
+            if (cqi == 0)
+                return false; // CQI 0 means channel below usable quality (e.g. after handover) — loss
+            if (cqi > 15)
+                throw cRuntimeError("A packet has been transmitted with a cqi greater than 15 cqi:%d txmode:%d dir:%d rb:%d cw:%d rtx:%d", cqi, lteInfo->getTxMode(), dir, band, cw, transmissionAttempt);
+
+            // for statistical purposes
+            sumSnr += snrV[band];
+            usedRBs++;
+
+            int snr = snrV[band];// XXX because band is a Band (=unsigned short)
+            if (snr < radio->getBinder()->phyPisaData.minSnr())
+                return false;
+            else if (snr > radio->getBinder()->phyPisaData.maxSnr())
+                blockErrorRate = 0.0;
+            else
+                blockErrorRate = radio->getBinder()->phyPisaData.getBler(itxmode, cqi, snr);
+
+            EV << "\t bler computation: [itxMode=" << itxmode << "] - [cqi=" << cqi
+               << "] - [snr=" << snr << "]" << endl;
+
+            double blockSuccessRate = 1.0 - blockErrorRate;
+            // compute the success probability according to the number of RB used
+            double allocationSuccessProbability = pow(blockSuccessRate, (double)allocation);
+            // compute the success probability according to the number of LB used
+            cumulativeSuccessProbability *= allocationSuccessProbability;
+
+            EV << " RadioMedium::error direction " << dirToA(dir)
+               << " node " << id << " remote unit " << dasToA(remoteUnit)
+               << " Band " << band << " SNR " << snr << " CQI " << cqi
+               << " BLER " << blockErrorRate << " success probability " << allocationSuccessProbability
+               << " total success probability " << cumulativeSuccessProbability << endl;
+        }
+    }
+    // Compute total error probability
+    double packetErrorRate = 1.0 - cumulativeSuccessProbability;
+    // Apply HARQ soft combining gain
+    double effectiveErrorRateWithHarq = packetErrorRate * pow(carrierPhysicsFor(legFor(radio)).harqReduction, transmissionAttempt - 1);
+
+    double randomSample = uniform(0.0, 1.0);
+
+    EV << " RadioMedium::error direction " << dirToA(dir)
+       << " node " << id << " total ERROR probability  " << packetErrorRate
+       << " per with H-ARQ error reduction " << effectiveErrorRateWithHarq
+       << " - CQI[" << cqi << "]- random error extracted[" << randomSample << "]" << endl;
+
+    // emit SINR statistic
+    if (radio->getCollectSinrStatistics() && usedRBs > 0)
+        radio->emitRcvdSinr(dir, id, lteInfo->getCarrierFrequency(), sumSnr / usedRBs);
+
+    bool receptionFailed = (randomSample <= effectiveErrorRateWithHarq);
+    if (receptionFailed) {
+        EV << "This is NOT your lucky day (" << randomSample << " < " << effectiveErrorRateWithHarq
+           << ") -> do not receive." << endl;
+
+        // Signal too weak, we can't receive it
+        return false;
+    }
+    // Signal is strong enough, receive this Signal
+    EV << "This is your lucky day (" << randomSample << " > " << effectiveErrorRateWithHarq
+       << ") -> Receive AirFrame." << endl;
+
+    return true;
 }
 
 } //namespace
