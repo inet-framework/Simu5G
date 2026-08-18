@@ -230,6 +230,16 @@ class RadioMedium : public cSimpleModule
     // strategy lives for the run.
     std::map<CarrierLeg, PathLossModel *> pathLoss_;
 
+    // One Tr36814PathLossModel instance per carrier leg (S14), replacing the
+    // per-*endpoint* instance StochasticChannelModel::extCellPathLoss_ used
+    // to own: the ext-cell/background-cell interference path always uses
+    // TR 36.814 regardless of the leg's own pathLossType (computeExtCellPathLoss),
+    // so every radio on a leg would build an identical instance -- the same
+    // duplication pathLoss_ existed to eliminate. Draw-free (verified: neither
+    // Tr36814PathLossModel.cc nor computeExtCellPathLoss() itself draws), so
+    // consolidating it costs nothing in RNG attribution. Owned, like pathLoss_.
+    std::map<CarrierLeg, PathLossModel *> extCellPathLoss_;
+
     // This medium's own interference submodule (S2's slot, S11's payload):
     // resolved once at initialize(), read live thereafter. Not owned -- it
     // is a child module, torn down by the module hierarchy like any other.
@@ -265,6 +275,9 @@ class RadioMedium : public cSimpleModule
 
     /** Builds the propagation-formula strategy matching cp.pathLossType and initializes it from the leg's own established CarrierPhysics record and carrier frequency (plan 3(i).4). */
     PathLossModel *createPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg);
+
+    /** Builds this leg's ext-cell/background-cell strategy (S14): always Tr36814PathLossModel, regardless of cp.pathLossType, from the same CarrierPhysics fields createPathLossModel() reads. */
+    PathLossModel *createExtCellPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg);
 
     /**
      * Per-link/per-node stochastic-state accessors (plan S13/§3(b)): the
@@ -364,6 +377,15 @@ class RadioMedium : public cSimpleModule
      * now that pathLoss_ no longer lives on the endpoint.
      */
     virtual PathLossModel& pathLossFor(MacNodeId nodeId, GHz carrierFrequency) const;
+
+    /**
+     * The per-leg ext-cell/background-cell strategy for a registered radio
+     * (plan S14): the medium's counterpart of pathLossFor(), letting the
+     * still-resident computeExtCellPathLoss() delegate to a shared instance
+     * instead of owning its own -- extCellPathLoss_ no longer lives on the
+     * endpoint.
+     */
+    virtual PathLossModel& extCellPathLossFor(MacNodeId nodeId, GHz carrierFrequency) const;
 
     /**
      * The physical-layer computation relocated from StochasticChannelModel

@@ -12,17 +12,7 @@
 
 #include "simu5g/stack/phy/channelmodel/StochasticChannelModel.h"
 
-#include <fstream>
-#include "simu5g/common/cellInfo/CellInfo.h"
-#include "simu5g/stack/phy/packet/LteAirFrame.h"
-#include "simu5g/common/binder/Binder.h"
-#include "simu5g/stack/mac/amc/UserTxParams.h"
-#include "simu5g/common/LteCommon.h"
-#include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/phy/channelmodel/RadioMedium.h"
-#include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
-#include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
-#include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
 
 namespace simu5g {
 
@@ -42,67 +32,36 @@ StochasticChannelModel::~StochasticChannelModel()
     cModule *medium = getSimulation()->getModule(mediumModuleId_);
     if (medium != nullptr)
         check_and_cast<RadioMedium *>(medium)->removeRadio(this);
-
-    delete extCellPathLoss_;
 }
 
 void StochasticChannelModel::initialize(int stage)
 {
     ChannelModelBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
-        scenario_ = aToDeploymentScenario(par("scenario").stringValue());
-        hNodeB_ = par("nodebHeight");
-        shadowing_ = par("shadowing");
-        hBuilding_ = par("buildingHeight");
         inside_building_ = par("insideBuilding");
         if (inside_building_)
             inside_distance_ = uniform(0.0, 25.0);
-        tolerateMaxDistViolation_ = par("tolerateMaxDistViolation");
-        hUe_ = par("ueHeight");
-
-        wStreet_ = par("streetWidth");
-
-        correlationDistance_ = par("correlationDistance");
-        harqReduction_ = par("harqReduction");
 
         antennaGainUe_ = par("antennaGainUe");
         antennaGainEnB_ = par("antennGainEnB");
         antennaGainMicro_ = par("antennGainMicro");
-        thermalNoise_ = par("thermalNoise");
         cableLoss_ = par("cableLoss");
         ueNoiseFigure_ = par("ueNoiseFigure");
         bsNoiseFigure_ = par("bsNoiseFigure");
-        useTorus_ = par("useTorus");
-        dynamicLos_ = par("dynamicLos");
-        fixedLos_ = par("fixedLos");
 
-        fading_ = par("fading");
+        // fadingType has no medium-side validation the way pathLossType does
+        // (createPathLossModel's else-throw) -- kept here so a misconfigured
+        // NED value still fails fast at init instead of silently drawing no
+        // fading at all (RadioMedium's fadingType dispatch has no else branch)
         std::string fType = par("fadingType");
-        if (fType == "JAKES")
-            fadingType_ = JAKES;
-        else if (fType == "RAYLEIGH")
-            fadingType_ = RAYLEIGH;
-        else
+        if (fType != "JAKES" && fType != "RAYLEIGH")
             throw cRuntimeError("Unrecognized value in 'fadingType' parameter: \"%s\"", fType.c_str());
 
-        fadingPaths_ = par("numFadingPaths");
-        enableBackgroundCellInterference_ = par("bgCellInterference");
-        enableExtCellInterference_ = par("extCellInterference");
-        enableDownlinkInterference_ = par("downlinkInterference");
         enableUplinkInterference_ = par("uplinkInterference");
-        delayRMS_ = par("delayRms");
 
         enable_extCell_los_ = par("enableExtCellLos");
 
         collectSinrStatistics_ = par("collectSinrStatistics");
-    }
-    else if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
-        // carrierFrequencyHz_/GHz_/log10CarrierFrequencyGHz_ have just been set
-        // by ChannelModelBase::initialize() above, in this same stage
-        extCellPathLoss_ = new Tr36814PathLossModel();
-        extCellPathLoss_->initialize(this, scenario_, hNodeB_, hUe_, hBuilding_, wStreet_,
-                carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
-                tolerateMaxDistViolation_);
     }
     else if (stage == INITSTAGE_SIMU5G_NODE_RELATIONSHIPS) {
         // phy_ is set at INITSTAGE_SIMU5G_REGISTRATIONS2, so both phy_ and
@@ -216,16 +175,6 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     return medium_->getAttenuation(this, link);
 }
 
-double StochasticChannelModel::computeShadowing(double d3D, double d2D, const LinkKey& key, double speed)
-{
-    return medium_->computeShadowing(this, d3D, d2D, key, speed);
-}
-
-double StochasticChannelModel::computeSpeed(const MacNodeId nodeId, const Coord coord)
-{
-    return medium_->computeSpeed(this, nodeId, coord);
-}
-
 double StochasticChannelModel::computeAngle(Coord center, Coord point) {
     double relx, rely, arcoSen, angle, dist;
 
@@ -300,24 +249,9 @@ std::vector<double> StochasticChannelModel::getSIR(LteAirFrame *frame, UserContr
     return medium_->getSIR(this, frame, lteInfo);
 }
 
-double StochasticChannelModel::rayleighFading(MacNodeId id, unsigned int band)
-{
-    return medium_->rayleighFading(this, id, band);
-}
-
-double StochasticChannelModel::jakesFading(const LinkKey& key, double speed, unsigned int band, bool isBgUe)
-{
-    return medium_->jakesFading(this, key, speed, band, isBgUe);
-}
-
 bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     return medium_->isReceptionSuccessful(this, frame, lteInfo, rsrpVector);
-}
-
-void StochasticChannelModel::computeLosProbability(double d3D, double d2D, const LinkKey& key)
-{
-    medium_->computeLosProbability(this, d3D, d2D, key);
 }
 
 double StochasticChannelModel::computePathLoss(double distance, double dbp, bool los)
@@ -342,7 +276,8 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
         los = false;
 
     // always the TR 36.814 formulas, whatever study the model itself uses
-    double attenuation = extCellPathLoss_->computePathLoss(dist, dist, los, O2iState{inside_building_, inside_distance_});
+    double attenuation = medium_->extCellPathLossFor(getNodeId(), getCarrierFrequency())
+            .computePathLoss(dist, dist, los, O2iState{inside_building_, inside_distance_});
 
     return attenuation;
 }

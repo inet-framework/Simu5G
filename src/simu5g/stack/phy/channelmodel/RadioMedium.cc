@@ -113,6 +113,8 @@ RadioMedium::~RadioMedium()
 {
     for (auto& [leg, model] : pathLoss_)
         delete model;
+    for (auto& [leg, model] : extCellPathLoss_)
+        delete model;
 }
 
 void RadioMedium::initialize()
@@ -161,6 +163,10 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
         // this leg's path-loss strategy (S9b), built from the record just
         // established -- never from this radio's own members (plan 3(i).4)
         pathLoss_[leg] = createPathLossModel(candidate, leg);
+
+        // this leg's ext-cell/background-cell strategy (S14), replacing what
+        // every radio on the leg used to build for itself
+        extCellPathLoss_[leg] = createExtCellPathLossModel(candidate, leg);
     }
     else {
         checkCarrierPhysics(cpIt->second, candidate, leg, endpoint->getFullPath());
@@ -409,6 +415,17 @@ PathLossModel& RadioMedium::pathLossFor(MacNodeId nodeId, GHz carrierFrequency) 
     return pathLossFor(legFor(d.endpoint));
 }
 
+PathLossModel& RadioMedium::extCellPathLossFor(MacNodeId nodeId, GHz carrierFrequency) const
+{
+    const RadioDescriptor& d = descriptorFor(nodeId, carrierFrequency);
+    const CarrierLeg leg = legFor(d.endpoint);
+    auto it = extCellPathLoss_.find(leg);
+    if (it == extCellPathLoss_.end())
+        throw cRuntimeError("no ext-cell path-loss strategy for carrier leg %gGHz/%s",
+                leg.carrierFrequency.get(), leg.isNr ? "NR" : "LTE");
+    return *it->second;
+}
+
 const CarrierPhysics& RadioMedium::carrierPhysicsFor(const CarrierLeg& leg) const
 {
     auto it = carrierPhysics_.find(leg);
@@ -436,6 +453,21 @@ PathLossModel *RadioMedium::createPathLossModel(const CarrierPhysics& cp, const 
     // the frequency triple reproduces ChannelModelBase's own derivation
     // (ChannelModelBase.cc:26-29) from the leg's own carrier frequency, with
     // no round-trip through an endpoint (plan 3(i).4)
+    double carrierFrequencyGHz = GHz(leg.carrierFrequency).get();
+    double carrierFrequencyHz = Hz(leg.carrierFrequency).get();
+    model->initialize(this, aToDeploymentScenario(cp.scenario), cp.nodebHeight, cp.ueHeight, cp.buildingHeight, cp.streetWidth,
+            carrierFrequencyHz, carrierFrequencyGHz, log10(carrierFrequencyGHz),
+            cp.tolerateMaxDistViolation);
+    return model;
+}
+
+PathLossModel *RadioMedium::createExtCellPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg)
+{
+    // always TR 36.814, regardless of cp.pathLossType: the ext-cell and
+    // background-cell interference paths (computeExtCellPathLoss) use those
+    // formulas unconditionally (plan S14)
+    auto *model = new Tr36814PathLossModel();
+
     double carrierFrequencyGHz = GHz(leg.carrierFrequency).get();
     double carrierFrequencyHz = Hz(leg.carrierFrequency).get();
     model->initialize(this, aToDeploymentScenario(cp.scenario), cp.nodebHeight, cp.ueHeight, cp.buildingHeight, cp.streetWidth,
