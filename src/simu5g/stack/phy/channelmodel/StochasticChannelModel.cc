@@ -46,24 +46,7 @@ StochasticChannelModel::~StochasticChannelModel()
     if (medium != nullptr)
         check_and_cast<RadioMedium *>(medium)->removeRadio(this);
 
-    delete pathLoss_;
     delete extCellPathLoss_;
-}
-
-PathLossModel *StochasticChannelModel::createPathLossModel()
-{
-    std::string pathLossType = par("pathLossType").stringValue();
-    if (pathLossType == "Tr36814")
-        return new Tr36814PathLossModel();
-    else if (pathLossType == "Tr36873")
-        return new Tr36873PathLossModel();
-    else if (pathLossType == "Tr38901") {
-        auto *model = new Tr38901PathLossModel();
-        model->setUseBuildingPenetrationHighLossModel(par("useBuildingPenetrationHighLossModel").boolValue());
-        return model;
-    }
-    else
-        throw cRuntimeError("Unrecognized value in 'pathLossType' parameter: \"%s\"", pathLossType.c_str());
 }
 
 void StochasticChannelModel::initialize(int stage)
@@ -119,10 +102,6 @@ void StochasticChannelModel::initialize(int stage)
     else if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
         // carrierFrequencyHz_/GHz_/log10CarrierFrequencyGHz_ have just been set
         // by ChannelModelBase::initialize() above, in this same stage
-        pathLoss_ = createPathLossModel();
-        pathLoss_->initialize(this, scenario_, hNodeB_, hUe_, hBuilding_, wStreet_,
-                carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
-                tolerateMaxDistViolation_);
         extCellPathLoss_ = new Tr36814PathLossModel();
         extCellPathLoss_->initialize(this, scenario_, hNodeB_, hUe_, hBuilding_, wStreet_,
                 carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
@@ -251,108 +230,12 @@ RadioLink StochasticChannelModel::linkFor(UserControlInfo *lteInfo)
 
 double StochasticChannelModel::getAttenuation(const RadioLink& link)
 {
-    // COMPUTE 3D and 2D DISTANCE between the two endpoints
-    double threeDimDistance = link.txCoord.distance(link.rxCoord);
-    double twoDimDistance = getTwoDimDistance(link.txCoord, link.rxCoord);
-
-    double speed = computeSpeed(link.stateNodeId, link.stateCoord);
-    double correlationDist = computeCorrelationDistance(link.stateKey, link.stateCoord);
-
-    // If Euclidean distance since last LOS probability computation is greater than
-    // correlation distance the UE could have changed its state and
-    // its visibility from eNodeB, hence it is correct to recompute the LOS probability
-    bool losAlreadyComputed = false;
-    losState(link.stateKey, &losAlreadyComputed);
-    if (correlationDist > correlationDistance_ || !losAlreadyComputed)
-    {
-        computeLosProbability(threeDimDistance, twoDimDistance, link.stateKey);
-    }
-
-    //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = losState(link.stateKey);
-    double attenuation = computePathLoss(threeDimDistance, twoDimDistance, los);
-
-    //    Applying shadowing only if it is enabled by configuration
-    //    log-normal shadowing (not available for background UEs)
-    if (num(link.stateNodeId) < BGUE_MIN_ID && shadowing_)
-        attenuation += computeShadowing(threeDimDistance, twoDimDistance, link.stateKey, link.stateNodeId, speed, link.useUeSideMaps);
-
-    // update the tracked node's current position
-    updatePositionHistory(link.stateNodeId, link.stateCoord);
-    updateCorrelationDistance(link.stateKey, link.stateCoord);
-
-    EV << "StochasticChannelModel::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNB is " << attenuation << endl;
-
-    return attenuation;
+    return medium_->getAttenuation(this, link);
 }
 
 double StochasticChannelModel::computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl)
 {
-    ShadowFadingMap *actualShadowingMap;
-
-    if (cqiDl) // if we are computing a DL CQI we need the Shadowing Map stored on the UE side
-        actualShadowingMap = obtainShadowingMap(ownerId);
-    else
-        actualShadowingMap = &shadowingState();
-
-    if (actualShadowingMap == nullptr)
-        throw cRuntimeError("StochasticChannelModel::computeShadowing - actualShadowingMap not found (nullptr)");
-
-    double mean = 0;
-
-    // Get std deviation according to LOS/NLOS and selected scenario
-    double stdDev = pathLoss_->getShadowingStdDev(d3D, d2D, losState(key));
-    double time = 0;
-    double space = 0;
-    double att;
-
-    // if direction is DOWNLINK it means that this module is located in the UE stack than
-    // the Move object associated with the UE is myMove_ variable
-    // if direction is UPLINK it means that this module is located in the UE stack than
-    // the Move object associated with the UE is move variable
-
-    // if shadowing for current user has never been computed
-    if (actualShadowingMap->find(key) == actualShadowingMap->end()) {
-        //Get the log-normal shadowing with std deviation stdDev
-        att = normal(mean, stdDev);
-
-        //store the shadowing attenuation for this user and the temporal mark
-        std::pair<simtime_t, double> tmp(NOW, att);
-        (*actualShadowingMap)[key] = tmp;
-
-        //If the shadowing attenuation has been computed at least one time for this user
-        // and the distance traveled by the UE is greater than correlation distance
-    }
-    else if ((NOW - actualShadowingMap->at(key).first).dbl() * speed
-             > correlationDistance_)
-    {
-
-        //get the temporal mark of the last computed shadowing attenuation
-        time = (NOW - actualShadowingMap->at(key).first).dbl();
-
-        //compute the traveled distance
-        space = time * speed;
-
-        //Compute shadowing with an EAW (Exponential Average Window) (step 1)
-        double a = exp(-0.5 * (space / correlationDistance_));
-
-        //Get last shadowing attenuation computed
-        double old = actualShadowingMap->at(key).second;
-
-        //Compute shadowing with an EAW (Exponential Average Window) (step 2)
-        att = a * old + sqrt(1 - pow(a, 2)) * normal(mean, stdDev);
-
-        // Store the new computed shadowing
-        std::pair<simtime_t, double> tmp(NOW, att);
-        (*actualShadowingMap)[key] = tmp;
-
-        // if the distance traveled by the UE is smaller than correlation distance shadowing attenuation remains the same
-    }
-    else {
-        att = actualShadowingMap->at(key).second;
-    }
-
-    return att;
+    return medium_->computeShadowing(this, d3D, d2D, key, ownerId, speed, cqiDl);
 }
 
 void StochasticChannelModel::updatePositionHistory(const MacNodeId nodeId,
@@ -391,57 +274,14 @@ void StochasticChannelModel::updateCorrelationDistance(const LinkKey& nodeId, co
     }
 }
 
-double StochasticChannelModel::computeCorrelationDistance(const LinkKey& nodeId, const inet::Coord coord) {
-    double dist = 0.0;
-
-    bool existed = false;
-    Position& point = correlationPoint(nodeId, &existed);
-
-    if (!existed) {
-        // no lastCorrelationPoint found. Add current position and return dist = 0.0
-        point = Position(NOW, coord);
-    }
-    else {
-        dist = point.second.distance(coord);
-    }
-    return dist;
+double StochasticChannelModel::computeCorrelationDistance(const LinkKey& key, const inet::Coord coord)
+{
+    return medium_->computeCorrelationDistance(this, key, coord);
 }
 
-double StochasticChannelModel::computeSpeed(const MacNodeId nodeId,
-        const Coord coord)
+double StochasticChannelModel::computeSpeed(const MacNodeId nodeId, const Coord coord)
 {
-    double speed = 0.0;
-
-    // createIfMissing=false: a node with no history yet must stay absent,
-    // not gain an empty placeholder queue that a later front()/back() would
-    // read as an entry
-    std::queue<Position> *history = positionHistory(nodeId, false);
-
-    if (history == nullptr) {
-        // no entries
-        return speed;
-    }
-    else {
-        //compute distance traveled from last update by UE (eNodeB position is fixed)
-
-        if (history->size() == 1) {
-            //  the only element refers to the present, return 0
-            return speed;
-        }
-
-        double movement = history->front().second.distance(coord);
-
-        if (movement <= 0.0)
-            return speed;
-        else {
-            double time = (NOW.dbl()) - (history->front().first.dbl());
-            if (time <= 0.0) // time not updated since last speed call
-                throw cRuntimeError("Multiple entries detected in position history referring to the same time");
-            // compute speed
-            speed = (movement) / (time);
-        }
-    }
-    return speed;
+    return medium_->computeSpeed(this, nodeId, coord);
 }
 
 double StochasticChannelModel::computeAngle(Coord center, Coord point) {
@@ -480,7 +320,7 @@ double StochasticChannelModel::computeVerticalAngle(Coord center, Coord point)
 }
 
 double StochasticChannelModel::computeAngularAttenuation(double hAngle, double vAngle) {
-    return pathLoss_->computeAngularAttenuation(hAngle, vAngle);
+    return medium_->pathLossFor(getNodeId(), getCarrierFrequency()).computeAngularAttenuation(hAngle, vAngle);
 }
 
 std::vector<double> StochasticChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
@@ -1059,98 +899,15 @@ std::vector<double> StochasticChannelModel::getSIR(LteAirFrame *frame,
     return snrVector;
 }
 
-double StochasticChannelModel::rayleighFading(MacNodeId id,
-        unsigned int band)
+double StochasticChannelModel::rayleighFading(MacNodeId id, unsigned int band)
 {
-    // get rayleigh variable from trace file
-    const int channelndex = 0;
-    double temp1 = binder_->phyPisaData.getChannel(channelndex + band);
-    return linearToDb(temp1);
+    return medium_->rayleighFading(this, id, band);
 }
 
 double StochasticChannelModel::jakesFading(const LinkKey& key, MacNodeId ownerId, double speed,
         unsigned int band, bool cqiDl, bool isBgUe)
 {
-    /**
-     * NOTE: there are two different Jakes maps. One on the UE side and one on the eNB side, with different values.
-     *
-     * eNB side => used for CQI computation and for error-probability evaluation in UL
-     * UE side  => used for error-probability evaluation in DL
-     *
-     * the one within eNB is referred to the UL direction
-     * the one within UE is referred to the DL direction
-     *
-     * thus the actual map should be chosen carefully (i.e. just check the cqiDL flag)
-     */
-    JakesFadingMap *actualJakesMap;
-
-    if (cqiDl) // if we are computing a DL CQI we need the Jakes Map stored on the UE side
-        actualJakesMap = (!isBgUe) ? obtainUeJakesMap(ownerId) : &jakesStateBgUe();
-    else
-        actualJakesMap = &jakesState();
-
-    // if this is the first time that we compute fading for current user
-    if (actualJakesMap->find(key) == actualJakesMap->end()) {
-        // clear the map
-        // FIXME: possible memory leak
-        (*actualJakesMap)[key].clear();
-
-        // for each band we are going to create a Jakes fading
-        for (unsigned int j = 0; j < numBands_; j++) {
-            // clear some structure
-            JakesFadingData temp;
-            temp.angleOfArrival.clear();
-            temp.delaySpread.clear();
-
-            // for each fading path
-            for (int i = 0; i < fadingPaths_; i++) {
-                // get angle of arrivals
-                temp.angleOfArrival.push_back(cos(uniform(0, M_PI)));
-
-                // get delay spread
-                temp.delaySpread.push_back(exponential(delayRMS_));
-            }
-            // store the Jakes fading for this user
-            (*actualJakesMap)[key].push_back(temp);
-        }
-    }
-    // convert carrier frequency from GHz to Hz
-    double f = carrierFrequencyHz_;
-
-    // get transmission time start (TTI = 1ms)
-    simtime_t t = simTime().dbl() - 0.001;
-
-    double re_h = 0;
-    double im_h = 0;
-
-    const JakesFadingData& actualJakesData = actualJakesMap->at(key).at(band);
-
-    // Compute Doppler shift.
-    double doppler_shift = (speed * f) / SPEED_OF_LIGHT;
-
-    for (int i = 0; i < fadingPaths_; i++) {
-        // Phase shift due to Doppler => t-selectivity.
-        double phi_d = actualJakesData.angleOfArrival[i] * doppler_shift;
-
-        // Phase shift due to delay spread => f-selectivity.
-        double phi_i = actualJakesData.delaySpread[i].dbl() * f;
-
-        // Calculate resulting phase due to t-selective and f-selective fading.
-        double phi = 2.00 * M_PI * (phi_d * t.dbl() - phi_i);
-
-        // One ring model/Clarke's model plus f-selectivity according to Cavers:
-        // Due to isotropic antenna gain pattern on all paths only a^2 can be received on all paths.
-        // Since we are interested in attenuation a := 1, attenuation per path is then:
-        double attenuation = (1.00 / sqrt(static_cast<double>(fadingPaths_)));
-
-        // Convert to cartesian form and aggregate {Re, Im} over all fading paths.
-        re_h = re_h + attenuation * cos(phi);
-        im_h = im_h - attenuation * sin(phi);
-    }
-
-    // Output: |H_f|^2 = absolute channel impulse response due to fading.
-    // Note that this may be >1 due to constructive interference.
-    return linearToDb(re_h * re_h + im_h * im_h);
+    return medium_->jakesFading(this, key, ownerId, speed, band, cqiDl, isBgUe);
 }
 
 bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
@@ -1292,20 +1049,14 @@ void StochasticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz car
     ueChannelModel->emit(rcvdSinrUlSignal_, sinr);
 }
 
-void StochasticChannelModel::computeLosProbability(double d3D, double d2D,
-        const LinkKey& nodeId)
+void StochasticChannelModel::computeLosProbability(double d3D, double d2D, const LinkKey& key)
 {
-    if (!dynamicLos_) {
-        losState(nodeId) = fixedLos_;
-        return;
-    }
-    double p = pathLoss_->computeLosProbability(d3D, d2D);
-    losState(nodeId) = (uniform(0.0, 1.0) <= p);
+    medium_->computeLosProbability(this, d3D, d2D, key);
 }
 
 double StochasticChannelModel::computePathLoss(double distance, double dbp, bool los)
 {
-    return pathLoss_->computePathLoss(distance, dbp, los, O2iState{inside_building_, inside_distance_});
+    return medium_->computePathLoss(this, distance, dbp, los);
 }
 
 double StochasticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
