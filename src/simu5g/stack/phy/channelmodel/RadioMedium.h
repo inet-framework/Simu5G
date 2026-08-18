@@ -25,6 +25,7 @@
 
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
+#include "simu5g/stack/phy/channelmodel/PathLossModel.h"
 
 namespace simu5g {
 
@@ -162,6 +163,14 @@ class RadioMedium : public cSimpleModule
     // other radios' registration and removal. Erased in removeRadio().
     std::map<StochasticChannelModel *, PerRadioStochasticState> radioState_;
 
+    // One PathLossModel strategy per carrier leg (S9b), created eagerly in
+    // addRadio() when a leg's CarrierPhysics record is first established.
+    // PathLossModel::owner_ is this medium, which is what relocates every
+    // propagation-formula random draw onto the medium's own rng-0 stream.
+    // Owned; leg records are never removed (like carrierPhysics_), so a
+    // strategy lives for the run.
+    std::map<CarrierLeg, PathLossModel *> pathLoss_;
+
     /** Looks up the registered radio for (nodeId, carrierFrequency); throws if none is registered. */
     const RadioDescriptor& descriptorFor(MacNodeId nodeId, GHz carrierFrequency) const;
 
@@ -172,7 +181,18 @@ class RadioMedium : public cSimpleModule
     void checkCarrierPhysics(const CarrierPhysics& existing, const CarrierPhysics& candidate,
             const CarrierLeg& leg, const std::string& candidatePath) const;
 
+    /** The per-leg path-loss strategy established in addRadio(); throws if no radio has registered on the leg. */
+    PathLossModel& pathLossFor(const CarrierLeg& leg) const;
+
+    /** The per-leg CarrierPhysics record established in addRadio(); throws if no radio has registered on the leg. */
+    const CarrierPhysics& carrierPhysicsFor(const CarrierLeg& leg) const;
+
+    /** Builds the propagation-formula strategy matching cp.pathLossType and initializes it from the leg's own established CarrierPhysics record and carrier frequency (plan 3(i).4). */
+    PathLossModel *createPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg);
+
   public:
+    ~RadioMedium() override;
+
     void initialize() override {}
 
     /** Never called: this module has no gates and schedules no self-messages. */
@@ -203,6 +223,39 @@ class RadioMedium : public cSimpleModule
     virtual double antennaGainOf(MacNodeId nodeId, GHz carrierFrequency) const;
     virtual double noiseFigureOf(MacNodeId nodeId, GHz carrierFrequency) const;
     virtual double insideDistanceOf(MacNodeId nodeId, GHz carrierFrequency) const;
+
+    /** The calling radio's outdoor-to-indoor geometry (plan 3(i)), read live off its registered endpoint. */
+    virtual O2iState o2iStateOf(MacNodeId nodeId, GHz carrierFrequency) const;
+
+    /**
+     * The per-leg path-loss strategy for a registered radio, resolved through
+     * the registry like the rest of this accessor family. Lets a still-resident
+     * endpoint method (computeAngularAttenuation, whose formula never drew and
+     * so was never on S9b's relocation list) keep delegating to the strategy
+     * now that pathLoss_ no longer lives on the endpoint.
+     */
+    virtual PathLossModel& pathLossFor(MacNodeId nodeId, GHz carrierFrequency) const;
+
+    /**
+     * The physical-layer computation relocated from StochasticChannelModel
+     * (plan step S9b): the endpoint that used to compute these now holds
+     * only a one-line forwarder to here, so every random draw that used to
+     * consume the endpoint's own rng-0 stream now consumes this medium's,
+     * in the same order and the same count -- the byte-identical relocation
+     * the step depends on. radio identifies the calling endpoint, whose own
+     * per-radio state (stateOf) and O2I geometry (o2iStateOf) these read;
+     * the shared PathLossModel strategy is looked up by radio's carrier leg.
+     */
+    virtual double getAttenuation(StochasticChannelModel *radio, const RadioLink& link);
+    virtual double computePathLoss(StochasticChannelModel *radio, double distance, double dbp, bool los);
+    virtual void computeLosProbability(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key);
+    virtual double computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key,
+            MacNodeId ownerId, double speed, bool cqiDl);
+    virtual double jakesFading(StochasticChannelModel *radio, const LinkKey& key, MacNodeId ownerId, double speed,
+            unsigned int band, bool cqiDl, bool isBgUe = false);
+    virtual double rayleighFading(StochasticChannelModel *radio, MacNodeId id, unsigned int band);
+    virtual double computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
+    virtual double computeCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, const inet::Coord coord);
 };
 
 } //namespace

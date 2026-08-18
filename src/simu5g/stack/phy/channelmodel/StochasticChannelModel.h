@@ -46,16 +46,16 @@ class PathLossModel;
  *   history, speed, and the point at which shadowing and LOS were last drawn;
  * - the SINR statistics.
  *
- * The propagation formulas proper live in a PathLossModel strategy (pathLoss_)
- * that this class owns and delegates to from computePathLoss, computeLosProbability,
- * computeShadowing and computeAngularAttenuation. Which 3GPP propagation study
- * the strategy implements is chosen by the pathLossType parameter ("Tr36814",
- * "Tr36873" or "Tr38901"); createPathLossModel() instantiates the matching
- * strategy class. Tr36873ChannelModel and Tr38901ChannelModel are NED-level
- * presets of this class (no C++ class of their own) that only override the
- * pathLossType default, to Tr36873 and Tr38901 respectively. All the rest --
- * fading, interference, SINR assembly, the reception decision -- is shared
- * by every pathLossType.
+ * getAttenuation, computePathLoss, computeLosProbability, computeShadowing,
+ * jakesFading, rayleighFading, computeSpeed and computeCorrelationDistance are
+ * one-line forwarders to the RadioMedium this endpoint registers with: the
+ * medium owns the per-carrier-leg PathLossModel strategy (chosen by the
+ * pathLossType parameter -- "Tr36814", "Tr36873" or "Tr38901") and every
+ * random draw the propagation formulas make. Tr36873ChannelModel and
+ * Tr38901ChannelModel are NED-level presets of this class (no C++ class of
+ * their own) that only override the pathLossType default, to Tr36873 and
+ * Tr38901 respectively. All the rest -- fading, interference, SINR assembly,
+ * the reception decision -- is shared by every pathLossType.
  *
  * Supported propagation studies:
  * - 3GPP TR 36.814, "Further advancements for E-UTRA physical layer aspects", v9.2.0, March 2017
@@ -120,9 +120,6 @@ class StochasticChannelModel : public ChannelModelBase
 
     // Scenario
     DeploymentScenario scenario_;
-
-    // Formulas of the selected 3GPP propagation study; owned, created in initialize()
-    PathLossModel *pathLoss_ = nullptr;
 
     // The ext-cell and background-cell interference paths evaluate their path
     // loss with the TR 36.814 formulas regardless of which propagation study
@@ -233,6 +230,12 @@ class StochasticChannelModel : public ChannelModelBase
      * O2iState PathLossModel::computePathLoss() reads.
      */
     bool getInsideBuilding() const { return inside_building_; }
+
+    /*
+     * The Binder, for RadioMedium's relocated rayleighFading() (S9b): binder_
+     * itself is a protected member, so the medium cannot dereference it directly.
+     */
+    Binder *getBinder() const { return binder_; }
 
     /*
      * Compute attenuation (path loss + optional shadowing) over a radio link.
@@ -397,13 +400,22 @@ class StochasticChannelModel : public ChannelModelBase
      */
     virtual std::vector<double> getRSRP(const RadioLink& link, double txPower);
 
-  protected:
-
     /*
-     * Create the strategy object supplying the propagation formulas
-     * (pathLoss_), chosen by the pathLossType parameter.
+     * Public for RadioMedium's relocated getAttenuation()/computeShadowing()/
+     * jakesFading() (S9b), which call these on the radio identifying the
+     * caller: getTwoDimDistance() and the position/correlation-distance
+     * bookkeeping stay on the endpoint since they are also read from the
+     * still-resident getSINR()/getSIR(), and obtainUeJakesMap()/
+     * obtainShadowingMap() bridge to a peer endpoint's own state and are
+     * deleted, not relocated, at a later step.
      */
-    virtual PathLossModel *createPathLossModel();
+    virtual double getTwoDimDistance(inet::Coord a, inet::Coord b);
+    virtual void updatePositionHistory(const MacNodeId nodeId, const inet::Coord coord);
+    virtual void updateCorrelationDistance(const LinkKey& key, const inet::Coord coord);
+    virtual JakesFadingMap *obtainUeJakesMap(MacNodeId id);
+    virtual ShadowFadingMap *obtainShadowingMap(MacNodeId id);
+
+  protected:
 
     /*
      * Build the RadioLink described by a frame's control info (DL, UL, and the
@@ -453,11 +465,6 @@ class StochasticChannelModel : public ChannelModelBase
             const std::vector<double>& rsrpVector) { return getSINR(frame, lteInfo); }
 
     /*
-     * Returns the 2D distance between two coordinates (ignore z-axis)
-     */
-    virtual double getTwoDimDistance(inet::Coord a, inet::Coord b);
-
-    /*
      * Compute speed (m/s) for a given node
      * @param nodeid mac node id of UE
      * @return the speed in m/s
@@ -469,18 +476,6 @@ class StochasticChannelModel : public ChannelModelBase
      * last position used to calculate the LOS probability
      */
     virtual double computeCorrelationDistance(const LinkKey& key, const inet::Coord coord);
-
-    /*
-     * Update base point if distance to previous value is greater than the
-     * correlationDistance_
-     */
-    virtual void updateCorrelationDistance(const LinkKey& key, const inet::Coord coord);
-
-    /*
-     * Updates position for a given node
-     * @param nodeid mac node id of UE
-     */
-    virtual void updatePositionHistory(const MacNodeId nodeId, const inet::Coord coord);
 
     /*
      * One interfering transmitter, normalized across the two kinds the UL
@@ -536,18 +531,6 @@ class StochasticChannelModel : public ChannelModelBase
      * @return attenuation expressed in dBm
      */
     virtual double computeExtCellPathLoss(double dist, const LinkKey& key);
-
-    /*
-     * Obtain the jakes map for the specified UE
-     * @param id mac id of the user
-     */
-    virtual JakesFadingMap *obtainUeJakesMap(MacNodeId id);
-
-    /*
-     * Obtain the shadowing map for the specified UE
-     * @param id mac id of the user
-     */
-    virtual ShadowFadingMap *obtainShadowingMap(MacNodeId id);
 
   private:
     /*
