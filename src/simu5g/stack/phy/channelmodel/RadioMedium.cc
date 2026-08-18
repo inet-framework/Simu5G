@@ -17,6 +17,7 @@
 
 #include <inet/common/INETDefs.h>
 
+#include "simu5g/background/trafficGenerator/generators/TrafficGeneratorBase.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
 #include "simu5g/stack/d2d/phy/channelmodel/D2dChannelModel.h"
@@ -120,9 +121,11 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
     descriptor.endpoint = endpoint;
     descriptor.nodeId = endpoint->getNodeId();
     descriptor.carrierFrequency = endpoint->getCarrierFrequency();
-    // The D2D marker (plan S12): one dynamic_cast, here, cached for every
+    // The D2D marker (plan S12a): one dynamic_cast, here, cached for every
     // D2D-aware branch to read afterward instead of casting itself.
     descriptor.d2dEndpoint = dynamic_cast<D2dChannelModel *>(endpoint);
+    // exactly one of endpoint/bgGenerator is ever non-null (plan S12b/3(j))
+    ASSERT((descriptor.endpoint != nullptr) != (descriptor.bgGenerator != nullptr));
 
     auto key = std::make_pair(descriptor.nodeId, descriptor.carrierFrequency);
     if (radioIndex_.find(key) != radioIndex_.end())
@@ -155,6 +158,49 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
 
     radios_.push_back(descriptor);
     radioIndex_[key] = &radios_.back();
+}
+
+void RadioMedium::addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *generator)
+{
+    ASSERT(generator != nullptr);
+
+    if (bgRadioIndex_.find(key) != bgRadioIndex_.end())
+        throw cRuntimeError("addBackgroundRadio: background UE %d of cell %d is already registered on carrier %gGHz",
+                num(key.bgUeId), num(key.cellId), key.carrierFrequency.get());
+
+    RadioDescriptor descriptor;
+    descriptor.bgGenerator = generator;
+    descriptor.nodeId = key.bgUeId;
+    descriptor.carrierFrequency = key.carrierFrequency;
+    descriptor.bgCellId = key.cellId;
+    // exactly one of endpoint/bgGenerator is ever non-null (plan S12b/3(j))
+    ASSERT((descriptor.endpoint != nullptr) != (descriptor.bgGenerator != nullptr));
+
+    // no readCarrierPhysics, no checkCarrierPhysics, no createPathLossModel,
+    // no radioState_ entry: a phantom declares none of the 25 per-carrier-leg
+    // physics parameters and owns no stochastic state (plan S12b item 3)
+    radios_.push_back(descriptor);
+    bgRadioIndex_[key] = &radios_.back();
+}
+
+void RadioMedium::removeBackgroundRadio(const BgUeKey& key)
+{
+    auto it = std::find_if(radios_.begin(), radios_.end(),
+            [&key](const RadioDescriptor& d) {
+                return d.bgGenerator != nullptr && d.bgCellId == key.cellId
+                    && d.carrierFrequency == key.carrierFrequency && d.nodeId == key.bgUeId;
+            });
+    if (it == radios_.end())
+        throw cRuntimeError("removeBackgroundRadio: background radio was never registered with this medium");
+
+    bgRadioIndex_.erase(key);
+
+    // swap-and-pop, mirroring removeRadio()
+    size_t idx = it - radios_.begin();
+    radios_[idx] = radios_.back();
+    radios_.pop_back();
+    if (idx < radios_.size())
+        reindex(radios_[idx]);
 }
 
 CarrierPhysics RadioMedium::readCarrierPhysics(StochasticChannelModel *endpoint) const
@@ -248,15 +294,26 @@ void RadioMedium::removeRadio(StochasticChannelModel *endpoint)
     radioIndex_.erase(std::make_pair(it->nodeId, it->carrierFrequency));
 
     // swap-and-pop: keeps every other descriptor's address stable, then
-    // re-points the index entry of whichever descriptor took the removed
-    // one's place (if the removed one was not already the last)
+    // re-points whichever index entry (radioIndex_ or bgRadioIndex_) held
+    // the descriptor that took the removed one's place (if the removed one
+    // was not already the last) -- reindex() dispatches on which one
+    // (plan S12b item 5 / risk 18: unconditionally re-indexing into
+    // radioIndex_ here would write a phantom into the real-radio index)
     size_t idx = it - radios_.begin();
     radios_[idx] = radios_.back();
     radios_.pop_back();
     if (idx < radios_.size())
-        radioIndex_[std::make_pair(radios_[idx].nodeId, radios_[idx].carrierFrequency)] = &radios_[idx];
+        reindex(radios_[idx]);
 
     radioState_.erase(endpoint);
+}
+
+void RadioMedium::reindex(RadioDescriptor& descriptor)
+{
+    if (descriptor.endpoint != nullptr)
+        radioIndex_[std::make_pair(descriptor.nodeId, descriptor.carrierFrequency)] = &descriptor;
+    else
+        bgRadioIndex_[BgUeKey{descriptor.bgCellId, descriptor.carrierFrequency, descriptor.nodeId}] = &descriptor;
 }
 
 PerRadioStochasticState& RadioMedium::stateOf(StochasticChannelModel *endpoint)
@@ -275,6 +332,15 @@ const RadioDescriptor& RadioMedium::descriptorFor(MacNodeId nodeId, GHz carrierF
     return *it->second;
 }
 
+const RadioDescriptor& RadioMedium::descriptorFor(const BgUeKey& key) const
+{
+    auto it = bgRadioIndex_.find(key);
+    if (it == bgRadioIndex_.end())
+        throw cRuntimeError("no background radio registered for cell %d, bgUe %d on carrier %gGHz",
+                num(key.cellId), num(key.bgUeId), key.carrierFrequency.get());
+    return *it->second;
+}
+
 inet::Coord RadioMedium::coordOf(MacNodeId nodeId, GHz carrierFrequency) const
 {
     return descriptorFor(nodeId, carrierFrequency).endpoint->getCoord();
@@ -283,6 +349,16 @@ inet::Coord RadioMedium::coordOf(MacNodeId nodeId, GHz carrierFrequency) const
 double RadioMedium::txPowerOf(MacNodeId nodeId, GHz carrierFrequency, Direction dir) const
 {
     return descriptorFor(nodeId, carrierFrequency).endpoint->getTxPwr(dir);
+}
+
+inet::Coord RadioMedium::coordOf(const BgUeKey& key) const
+{
+    return descriptorFor(key).bgGenerator->getCoord();
+}
+
+double RadioMedium::txPowerOf(const BgUeKey& key) const
+{
+    return descriptorFor(key).bgGenerator->getTxPwr();
 }
 
 TxDirectionType RadioMedium::txDirectionOf(MacNodeId nodeId, GHz carrierFrequency) const
