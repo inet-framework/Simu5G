@@ -20,7 +20,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-double Tr36873PathLossModel::computePathLoss(double d3D, double d2D, bool los)
+double Tr36873PathLossModel::computePathLoss(double d3D, double d2D, bool los, const O2iState& o2i)
 {
     // compute attenuation based on selected scenario and based on LOS or NLOS
     double pathLoss = 0;
@@ -32,7 +32,7 @@ double Tr36873PathLossModel::computePathLoss(double d3D, double d2D, bool los)
             pathLoss = computeUrbanMicro3D(d3D, d2D, los);
             break;
         case URBAN_MACROCELL:
-            pathLoss = computeUrbanMacro3D(d3D, d2D, los);
+            pathLoss = computeUrbanMacro3D(d3D, d2D, los, o2i);
             break;
         case RURAL_MACROCELL:
             pathLoss = computeRuralMacro3D(d3D, d2D, los);
@@ -42,7 +42,7 @@ double Tr36873PathLossModel::computePathLoss(double d3D, double d2D, bool los)
             // with the 2D distance rather than the 3D distance its own
             // convention would suggest (pinned by the SMa-36873 and
             // SMa-38901 fingerprint rows).
-            return Tr36814PathLossModel::computePathLoss(d2D, d2D, los);
+            return Tr36814PathLossModel::computePathLoss(d2D, d2D, los, o2i);
     }
     return pathLoss;
 }
@@ -166,7 +166,7 @@ double Tr36873PathLossModel::computeUrbanMicro3D(double threeDimDistance, double
     return (pLoss_los > pLoss_nlos) ? pLoss_los : pLoss_nlos;
 }
 
-double Tr36873PathLossModel::computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los)
+double Tr36873PathLossModel::computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los, const O2iState& o2i)
 {
     if (twoDimDistance < 10)
         twoDimDistance = 10;
@@ -184,8 +184,8 @@ double Tr36873PathLossModel::computeUrbanMacro3D(double threeDimDistance, double
     // O2I penetration loss of clause 7.2.3: a flat 20 dB through the external
     // wall plus 0.5 dB per metre of the distance inside, at every frequency.
     double penetrationLoss = 0.0;
-    if (inside_building_) {
-        double inside_distance = (inside_distance_ < threeDimDistance) ? inside_distance_ : threeDimDistance;
+    if (o2i.insideBuilding) {
+        double inside_distance = (o2i.insideDistance < threeDimDistance) ? o2i.insideDistance : threeDimDistance;
         penetrationLoss = 20.0 + 0.5 * inside_distance;
     }
 

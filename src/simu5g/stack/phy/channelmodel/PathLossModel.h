@@ -20,6 +20,17 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
+ * The transmitting/receiving radio's outdoor-to-indoor geometry: TR 38.901
+ * clause 7.4.3, TR 36.873 clause 7.2.3. Per-radio, so it travels as a call
+ * argument to computePathLoss() rather than as cached strategy state.
+ */
+struct O2iState
+{
+    bool insideBuilding = false;
+    double insideDistance = 0;
+};
+
+/**
  * Stateless propagation-formula strategy: one concrete subclass per 3GPP
  * propagation study (TR 36.814, TR 36.873, TR 38.901). A channel-model shell
  * owns an instance, feeds it the deployment-scenario parameters once at
@@ -42,8 +53,6 @@ class PathLossModel
     double hUe_ = 0;
     double hBuilding_ = 0;
     double wStreet_ = 0;
-    bool inside_building_ = false;
-    double inside_distance_ = 0;
     double carrierFrequencyHz_ = 0;
     double carrierFrequencyGHz_ = 0;
     double log10CarrierFrequencyGHz_ = 0;
@@ -69,16 +78,16 @@ class PathLossModel
      */
     virtual void initialize(cComponent *owner, DeploymentScenario scenario,
             double hNodeB, double hUe, double hBuilding, double wStreet,
-            bool insideBuilding, double insideDistance,
             double carrierFrequencyHz, double carrierFrequencyGHz, double log10CarrierFrequencyGHz,
             bool tolerateMaxDistViolation);
 
     /*
      * Compute the path-loss attenuation according to the selected scenario.
      * A concrete model that needs only one of the two distances ignores the
-     * other.
+     * other. o2i is the calling radio's own outdoor-to-indoor geometry, read
+     * by the scenarios that model building-penetration loss.
      */
-    virtual double computePathLoss(double d3D, double d2D, bool los) = 0;
+    virtual double computePathLoss(double d3D, double d2D, bool los, const O2iState& o2i) = 0;
 
     /*
      * Compute the LOS probability according to the selected scenario.
