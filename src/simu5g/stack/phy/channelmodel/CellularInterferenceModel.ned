@@ -21,4 +21,6 @@ simple CellularInterferenceModel like IInterferenceModel
     parameters:
         @class(CellularInterferenceModel);
         @display("i=block/classifier2");
+
+        string binderModule = default("binder");
 }

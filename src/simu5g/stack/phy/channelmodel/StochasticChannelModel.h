@@ -447,15 +447,16 @@ class StochasticChannelModel : public ChannelModelBase
     /*
      * Public for RadioMedium's relocated getSINR()/getSIR()/getRSRP()/
      * getSINR_bgUe()/getReceivedPower_bgUe()/isReceptionSuccessful() (S10).
-     * linkFor() and the four interference walks below are plain resident
-     * helpers the relocated bodies now call back on the radio pointer.
-     * computeInterferencePlusNoise(), getReceptionSinr() and emitRcvdSinr()
-     * are more than that: they are D2D-override dispatch points
-     * (D2dChannelModel substitutes UE-to-UE interference, routes through
-     * getSINR_D2D, and reports rcvdSinrD2D respectively), so the relocated
-     * bodies must call them on the radio pointer -- never on the medium
-     * itself -- for that override to still fire. The four interference
-     * walks are S11's; they stay resident only until then.
+     * linkFor() is a plain resident helper the relocated bodies now call
+     * back on the radio pointer. computeInterferencePlusNoise(),
+     * getReceptionSinr() and emitRcvdSinr() are more than that: they are
+     * D2D-override dispatch points (D2dChannelModel substitutes UE-to-UE
+     * interference, routes through getSINR_D2D, and reports rcvdSinrD2D
+     * respectively), so the relocated bodies must call them on the radio
+     * pointer -- never on the medium itself -- for that override to still
+     * fire. The four interference walks that used to sit here moved to
+     * CellularInterferenceModel (S11): no subclass overrode them, so they
+     * were deleted rather than left as forwarders.
      */
     virtual RadioLink linkFor(UserControlInfo *lteInfo);
     virtual void emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr);
@@ -463,37 +464,15 @@ class StochasticChannelModel : public ChannelModelBase
             RbMap& rbmap, double totN, std::vector<double>& den);
     virtual std::vector<double> getReceptionSinr(LteAirFrame *frame, UserControlInfo *lteInfo,
             const std::vector<double>& rsrpVector) { return getSINR(frame, lteInfo); }
-    virtual bool computeDownlinkInterference(MacNodeId eNbId, MacNodeId ueId, inet::Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
-    virtual bool computeUplinkInterference(MacNodeId eNbId, MacNodeId senderId, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
-    virtual bool computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeId, inet::Coord coord, bool isCqi, GHz carrierFrequency, std::vector<double> *interference);
-    virtual bool computeBackgroundCellInterference(MacNodeId nodeId, inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, Direction dir, std::vector<double> *interference);
-
-  protected:
-
-    /*
-     * Build the RadioLink for a UE<->serving-BS link expressed the old way: the
-     * local module is one endpoint, 'coord' the other, and 'dir' says which of
-     * the two is the UE.
-     */
-    RadioLink cellularLink(MacNodeId ueId, Direction dir, inet::Coord coord, bool cqiDl);
-
-    /*
-     * Compute speed (m/s) for a given node
-     * @param nodeid mac node id of UE
-     * @return the speed in m/s
-     */
-    virtual double computeSpeed(const MacNodeId nodeId, const inet::Coord coord);
-
-    /*
-     * Compute the euclidean distance between the current position and the
-     * last position used to calculate the LOS probability
-     */
-    virtual double computeCorrelationDistance(const LinkKey& key, const inet::Coord coord);
 
     /*
      * One interfering transmitter, normalized across the two kinds the UL
      * transmission map can hold: a real UE (with a PHY) and a background UE
-     * (with a traffic generator).
+     * (with a traffic generator). Public, with describeInterferer() below,
+     * for CellularInterferenceModel::computeUplinkInterference() (S11) and
+     * D2dChannelModel::computeD2DInterference() (still resident, S12),
+     * which both call describeInterferer() by explicit qualification --
+     * the same shape D2D already used before this step, unaffected by it.
      */
     struct InterfererInfo
     {
@@ -516,10 +495,38 @@ class StochasticChannelModel : public ChannelModelBase
     static InterfererInfo describeInterferer(const UeAllocationInfo& allocation, RadioMedium *medium, GHz carrierFrequency);
 
     /*
-     * Compute attenuation due to path loss and shadowing
+     * Compute attenuation due to path loss and shadowing, always with the
+     * TR 36.814 formulas regardless of pathLossType (extCellPathLoss_).
+     * Public for CellularInterferenceModel's relocated computeExtCellInterference()/
+     * computeBackgroundCellInterference() (S11), which call it back on the
+     * radio pointer: it reads this endpoint's own LOS state and its own
+     * extCellPathLoss_ instance, neither reachable from outside, so it stays
+     * resident rather than moving with the walks that call it.
      * @return attenuation expressed in dBm
      */
     virtual double computeExtCellPathLoss(double dist, const LinkKey& key);
+
+  protected:
+
+    /*
+     * Build the RadioLink for a UE<->serving-BS link expressed the old way: the
+     * local module is one endpoint, 'coord' the other, and 'dir' says which of
+     * the two is the UE.
+     */
+    RadioLink cellularLink(MacNodeId ueId, Direction dir, inet::Coord coord, bool cqiDl);
+
+    /*
+     * Compute speed (m/s) for a given node
+     * @param nodeid mac node id of UE
+     * @return the speed in m/s
+     */
+    virtual double computeSpeed(const MacNodeId nodeId, const inet::Coord coord);
+
+    /*
+     * Compute the euclidean distance between the current position and the
+     * last position used to calculate the LOS probability
+     */
+    virtual double computeCorrelationDistance(const LinkKey& key, const inet::Coord coord);
 
   private:
     /*
