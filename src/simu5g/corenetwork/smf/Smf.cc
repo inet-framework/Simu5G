@@ -289,6 +289,59 @@ void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
                         paramName, i, qosClassStr.c_str());
         }
 
+        // legs (optional): the cell groups that serve this bearer, i.e. its RLC bearers.
+        // An element is either a leg name, or an object naming the leg and overriding the
+        // RLC fields it inherits from the entry. Omitted = the configuration does not say,
+        // and RRC derives the bearer's legs as it always has.
+        if (const cValue *v = field("legs")) {
+            const cValueArray *legArr = check_and_cast<const cValueArray *>(v->objectValue());
+            if (legArr->size() == 0)
+                throw cRuntimeError("%s entry %d: \"legs\" is empty; omit it to leave the legs to RRC", paramName, i);
+            for (int j = 0; j < (int)legArr->size(); j++) {
+                const cValue& legValue = legArr->get(j);
+                const cValueMap *legEntry = nullptr;
+                std::string groupStr;
+                if (legValue.getType() == cValue::OBJECT) {
+                    legEntry = check_and_cast<const cValueMap *>(legValue.objectValue());
+                    for (const auto& [key, value] : legEntry->getFields())
+                        if (key != "leg" && key != "rlcType" && key != "soFraming" && key != "snFieldLength")
+                            throw cRuntimeError("%s entry %d, leg %d: unknown field '%s'", paramName, i, j, key.c_str());
+                    if (!legEntry->containsKey("leg"))
+                        throw cRuntimeError("%s entry %d, leg %d: missing required field \"leg\"", paramName, i, j);
+                    groupStr = legEntry->get("leg").stdstringValue();
+                }
+                else
+                    groupStr = legValue.stdstringValue();
+
+                RlcBearerDesc leg;
+                leg.cellGroup = aToCellGroup(groupStr);
+                if (leg.cellGroup == UNKNOWN_CELL_GROUP)
+                    throw cRuntimeError("%s entry %d, leg %d: invalid cell group '%s', must be \"MCG\" or \"SCG\"",
+                            paramName, i, j, groupStr.c_str());
+                for (const RlcBearerDesc& earlier : drb.legs)
+                    if (earlier.cellGroup == leg.cellGroup)
+                        throw cRuntimeError("%s entry %d: cell group \"%s\" appears twice in \"legs\"",
+                                paramName, i, groupStr.c_str());
+
+                // The RLC mode is the bearer's unless the leg overrides it; the wire format
+                // and SN space are RRC's decision at establishment, and a leg states them
+                // only to take that decision away from it
+                leg.rlcType = drb.rlcType;
+                if (legEntry && legEntry->containsKey("rlcType")) {
+                    std::string legRlcStr = legEntry->get("rlcType").stdstringValue();
+                    leg.rlcType = aToRlcType(legRlcStr);
+                    if (leg.rlcType == UNKNOWN_RLC_TYPE)
+                        throw cRuntimeError("%s entry %d, leg %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
+                                paramName, i, j, legRlcStr.c_str());
+                }
+                if (legEntry && legEntry->containsKey("soFraming"))
+                    leg.soFraming = legEntry->get("soFraming").boolValue();
+                if (legEntry && legEntry->containsKey("snFieldLength"))
+                    leg.snFieldLength = legEntry->get("snFieldLength").intValue();
+                drb.legs.push_back(leg);
+            }
+        }
+
         // pduSessionType (optional, default IPv4) and upperProtocol (optional, empty =
         // derive from pduSessionType)
         if (const cValue *v = field("pduSessionType"))

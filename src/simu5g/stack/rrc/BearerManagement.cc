@@ -662,13 +662,24 @@ int BearerManagement::getNumLegs(DrbKey id, const FlowId& flow)
     // (local leg + remote leg via X2 to the secondary). Everything else -- non-DC nodes, D2D
     // and multicast bearers, secondaries (X2 relay only) -- is single-leg.
     bool isEnb = (registration_->getNodeType() == NODEB);
+    int numLegs = 1;
     if (dualConnectivityEnabled_ && flow.multicastGroupId == NODEID_NONE) {
         if (!isEnb && getNodeTypeById(id.getNodeId()) == NODEB)
-            return 2;
+            numLegs = 2;
         else if (isEnb && binderModule->getSecondaryNode(registration_->getLteNodeId()) != NODEID_NONE)
-            return 2;
+            numLegs = 2;
     }
-    return 1;
+
+    // TRANSITIONAL: a bearer whose configuration states its legs must derive the same
+    // count here, or the authoring model is wrong and nothing may be built on it. The
+    // derivation is what still decides; the authored legs are checked, not used.
+    if (const DrbDesc *cfg = lookupConfiguredDrb(flow, id.getNodeId()))
+        if (!cfg->legs.empty() && (int)cfg->legs.size() != numLegs)
+            throw cRuntimeError("DRB %d is configured with %d leg(s), but this node establishes it with %d -- "
+                    "the \"legs\" of its definition do not describe the bearer this node builds",
+                    (int)num(id.getDrbId()), (int)cfg->legs.size(), numLegs);
+
+    return numLegs;
 }
 
 cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, const FlowId& flow, LteRlcType rlcType, RlcMux *rlcMux)

@@ -515,6 +515,8 @@ const std::string pduSessionTypeToA(PduSessionType type);
 PduSessionType aToPduSessionType(std::string s);
 const std::string bearerTypeToA(BearerType type);
 BearerType aToBearerType(std::string s);
+const std::string cellGroupToA(CellGroup group);
+CellGroup aToCellGroup(std::string s);
 
 // Configure an inet::PacketFilter from its string form: an expression written as
 // "expr(...)", or a message-name pattern. Parse errors throw here, at setup time.

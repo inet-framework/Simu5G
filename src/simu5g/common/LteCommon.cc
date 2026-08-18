@@ -157,6 +157,27 @@ BearerType aToBearerType(std::string s)
     return UNKNOWN_BEARER_TYPE;
 }
 
+const std::string cellGroupToA(CellGroup group)
+{
+    switch (group) {
+        case MCG:
+            return "MCG";
+        case SCG:
+            return "SCG";
+        default:
+            return "UNKNOWN_CELL_GROUP";
+    }
+}
+
+CellGroup aToCellGroup(std::string s)
+{
+    if (s == "MCG")
+        return MCG;
+    if (s == "SCG")
+        return SCG;
+    return UNKNOWN_CELL_GROUP;
+}
+
 void configurePacketFilter(inet::PacketFilter& filter, const char *spec)
 {
     std::string s = spec;

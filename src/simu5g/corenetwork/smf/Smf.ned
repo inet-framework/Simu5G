@@ -52,6 +52,12 @@ package simu5g.corenetwork.smf;
 //    logical channel group; default: "CONVERSATIONAL"
 //  - rlcType (string, optional): RLC mode ("AM", "UM", "TM"); omitted = RRC decides from the
 //    traffic class (see the conversationalRlc/... parameters of ~BearerManagement)
+//  - legs (string[]/object[], optional): the cell groups that serve this bearer, i.e. its
+//    RLC bearers (TS 38.331 RLC-BearerConfig). One leg = an MCG or an SCG bearer, both =
+//    a split bearer. An element is either a cell group name ("MCG" or "SCG"), or an object
+//    naming it and overriding the RLC configuration it inherits from the entry:
+//    {leg: "SCG", rlcType: "AM", soFraming: true, snFieldLength: 18}. Omitted = the
+//    configuration does not state the legs and RRC derives them, as it always has.
 //  - pduSessionType (string, optional): "IPv4", "IPv6", "IPv4v6", "Ethernet", "Unstructured";
 //    default: "IPv4"
 //  - upperProtocol (string, optional): INET protocol name for upper layer dispatch (this is
@@ -160,7 +166,7 @@ simple Smf
 {
     parameters:
         string binderModule = default("binder");
-        object staticDrbs = default([]);  // JSON array: [{bearerType, ue, drb, profile, qfiList, filters, qosClass, rlcType, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
+        object staticDrbs = default([]);  // JSON array: [{bearerType, ue, drb, profile, qfiList, filters, qosClass, rlcType, legs, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
         object onDemandDrbs = default([]);  // JSON array, staticDrbs schema minus "drb" (and "ue" optional): bearers created when traffic first matches them; see banner comment for details
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcType: "UM", gbr: true, ...}, ...}; see banner comment
         object staticBearers = default([]);  // JSON array: [{ue, qosClass, rlcType, drb, technology}, ...]; see banner comment for details

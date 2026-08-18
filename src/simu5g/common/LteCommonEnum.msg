@@ -76,6 +76,15 @@ enum BearerType
     BEARER_EPS = 0; BEARER_5GC = 1; UNKNOWN_BEARER_TYPE = 2;
 };
 
+/// Cell group a bearer's RLC bearer belongs to (TS 38.331 RLC-BearerConfig): the
+/// master cell group is the one the UE is anchored on, the secondary cell group the
+/// one a dual-connectivity secondary node serves. A bearer with both is a split
+/// bearer.
+enum CellGroup
+{
+    MCG = 0; SCG = 1; UNKNOWN_CELL_GROUP = 2;
+};
+
 /// Index for UL transmission map
 enum UlTransmissionMapTTI
 {
