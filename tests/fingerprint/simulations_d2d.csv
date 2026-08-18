@@ -50,6 +50,8 @@
 /simulations/nr/dualConnectivity/,       -f omnetpp.ini -c DualConn-SecondaryOnly-UL -r 0,       5s,         57a8-4f48/tplx;c530-72bd/tilx;e590-232b/~tNl;8ba7-4ae3/sz, PASS,
 /simulations/nr/dualConnectivity/,       -f omnetpp.ini -c DualConn-SplitBearer-DL -r 0,         5s,         253a-d9b7/tplx;b956-d1a9/tilx;216d-a376/~tNl;e236-1c22/sz, PASS,
 /simulations/nr/dualConnectivity/,       -f omnetpp.ini -c DualConn-SplitBearer-UL -r 0,         5s,         a6df-3b9f/tplx;77ca-6d9d/tilx;8302-1c02/~tNl;5602-e466/sz, PASS,
+/simulations/nr/dualConnectivity/,       -f omnetpp.ini -c DualConn-McgBearer-DL -r 0,          5s,         c979-e99a/tplx;6bf3-a64d/tilx;7596-fd84/~tNl;c73f-f714/sz, PASS,
+/simulations/nr/dualConnectivity/,       -f omnetpp.ini -c DualConn-SplitBearer-Configured-DL -r 0, 5s,     427a-4827/tplx;d4b7-db2a/tilx;216d-a376/~tNl;e236-1c22/sz, PASS,
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-DL -r 0,               20s,         63c2-ea48/tplx;bc70-8c7b/tilx;760a-1180/~tNl;197a-a541/sz, PASS,
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-UL -r 0,               20s,         81ed-5c26/tplx;6b0d-0936/tilx;5fe1-b55f/~tNl;9eaf-716e/sz, PASS,
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-DL -r 0,              10s,         3040-ba29/tplx;8d67-4fc6/tilx;4fbf-c345/~tNl;60f2-731f/sz, PASS,
