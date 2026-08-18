@@ -166,6 +166,17 @@ void configurePacketFilter(inet::PacketFilter& filter, const char *spec)
         filter.setPattern(spec);
 }
 
+cDynamicExpression *getExpressionFromPar(cPar& par, cDynamicExpression::IResolver *resolver)
+{
+    cObject *obj = par.objectValue();
+    auto *exprObj = dynamic_cast<cOwnedDynamicExpression *>(obj);
+    if (!exprObj)
+        throw cRuntimeError("Parameter '%s' must be an expr() expression", par.getFullPath().c_str());
+    auto *expr = exprObj->dup();
+    expr->setResolver(resolver);
+    return expr;
+}
+
 const std::string dirToA(Direction dir)
 {
     switch (dir) {

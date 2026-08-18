@@ -16,17 +16,6 @@ TechnologyDecision::~TechnologyDecision()
     delete useNrExpression_;
 }
 
-static cDynamicExpression *getExpressionFromPar(cPar& par, cDynamicExpression::IResolver *resolver)
-{
-    cObject *obj = par.objectValue();
-    auto *exprObj = dynamic_cast<cOwnedDynamicExpression *>(obj);
-    if (!exprObj)
-        throw cRuntimeError("Parameter '%s' must be an expr() expression", par.getFullPath().c_str());
-    auto *expr = exprObj->dup();
-    expr->setResolver(resolver);
-    return expr;
-}
-
 void TechnologyDecision::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {

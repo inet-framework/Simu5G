@@ -519,6 +519,12 @@ BearerType aToBearerType(std::string s);
 // Configure an inet::PacketFilter from its string form: an expression written as
 // "expr(...)", or a message-name pattern. Parse errors throw here, at setup time.
 void configurePacketFilter(inet::PacketFilter& filter, const char *spec);
+
+// Take the expr() value of a policy parameter as an evaluatable expression, bound to
+// the given variable resolver (whose ownership passes to the expression). The returned
+// expression is the caller's to delete. Parameters holding anything but an expr()
+// throw here, at setup time.
+omnetpp::cDynamicExpression *getExpressionFromPar(omnetpp::cPar& par, omnetpp::cDynamicExpression::IResolver *resolver);
 const std::string planeToA(Plane p);
 MacNodeId ctrlInfoToUeId(const FlowControlInfo *info);
 DrbKey ctrlInfoToTxDrbKey(const FlowControlInfo *info); // DrbKey for TX context: key by dest (remote receiver)
