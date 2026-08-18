@@ -95,6 +95,9 @@ class Smf : public cSimpleModule
     // have one yet (i.e. an onDemandDrbs entry matched for the first time).
     virtual DrbId establishFromDefinition(AuthoredBearer& ab, const FlowId& flow, const FlowBindingKey& key);
 
+    // The definition a flow's bearer was authored from, or nullptr if none covers it
+    virtual const DrbDesc *findBearerDefinition(const FlowId& flow);
+
     // Deliver one bearer's definition to the RRCs involved: the UE's (keyed by
     // NODEID_NONE, "my serving node") and, for each attached stack, the serving
     // node's (keyed by that stack's UE id), reserving the configured id per pair.

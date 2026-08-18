@@ -670,14 +670,13 @@ int BearerManagement::getNumLegs(DrbKey id, const FlowId& flow)
             numLegs = 2;
     }
 
-    // TRANSITIONAL: a bearer whose configuration states its legs must derive the same
-    // count here, or the authoring model is wrong and nothing may be built on it. The
-    // derivation is what still decides; the authored legs are checked, not used.
+    // A bearer whose configuration states its legs has them; the derivation above is the
+    // fallback for the bearers no definition covers, and for definitions that leave the
+    // legs to RRC. A configuration can therefore keep a bearer off the secondary node in a
+    // dual-connectivity network, which the derivation alone cannot express.
     if (const DrbDesc *cfg = lookupConfiguredDrb(flow, id.getNodeId()))
-        if (!cfg->legs.empty() && (int)cfg->legs.size() != numLegs)
-            throw cRuntimeError("DRB %d is configured with %d leg(s), but this node establishes it with %d -- "
-                    "the \"legs\" of its definition do not describe the bearer this node builds",
-                    (int)num(id.getDrbId()), (int)cfg->legs.size(), numLegs);
+        if (!cfg->legs.empty())
+            return cfg->legs.size();
 
     return numLegs;
 }

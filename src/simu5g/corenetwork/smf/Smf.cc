@@ -14,6 +14,7 @@
 
 #include "simu5g/common/InitStages.h"
 #include "simu5g/corenetwork/smf/Smf.h"
+#include <algorithm>
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/rrc/Registration.h"
 
@@ -340,6 +341,15 @@ void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
                     leg.snFieldLength = legEntry->get("snFieldLength").intValue();
                 drb.legs.push_back(leg);
             }
+
+            // Leg order is positional at establishment: leg 0 is the master cell group's
+            // RLC bearer, leg 1 the secondary's (see BearerManagement::selectPdcpLeg()).
+            // Until that mapping is driven by the cell group rather than by which stack
+            // establishes the bearer, a bearer's legs have to be stated in that order, and
+            // an SCG-only bearer -- legitimate in 3GPP -- cannot be wired at all.
+            if (drb.legs.front().cellGroup != MCG)
+                throw cRuntimeError("%s entry %d: \"legs\" must start with \"MCG\"; an SCG-only bearer is not supported yet, "
+                        "and a split bearer lists its cell groups in the order MCG, SCG", paramName, i);
         }
 
         // pduSessionType (optional, default IPv4) and upperProtocol (optional, empty =
@@ -656,6 +666,15 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
 
         //TODO assert that master is LTE, and secondary is NT;   alternatively, choose the UE nodeId that matches the technology of the NODEB
 
+        // A bearer whose definition states its legs is established on those and no others,
+        // so a dual-connectivity network can carry a bearer that never reaches the
+        // secondary node. A definition that leaves the legs to RRC gets both, as before.
+        bool useSecondary = true;
+        if (const DrbDesc *def = findBearerDefinition(flow))
+            if (!def->legs.empty())
+                useSecondary = std::any_of(def->legs.begin(), def->legs.end(),
+                        [](const RlcBearerDesc& leg) { return leg.cellGroup == SCG; });
+
         // LTE Connection (Master)
         FlowId lteFlow = flow;
         lteFlow.sourceId = getNodeTypeById(sourceId) == UE ?
@@ -678,9 +697,27 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
                              ueReg->getNrNodeId() :
                              binder_->getSecondaryNode(binder_->getMasterNodeOrSelf(destId));
         }
-        createConnection(nrFlow, req, false);
+        if (useSecondary)
+            createConnection(nrFlow, req, false);
     }
     return flow.drbId;
+}
+
+// The definition a flow's bearer was authored from, if any: the entry whose UE and DRB id
+// the flow names. Definitions describe infrastructure bearers only, so a D2D or multicast
+// flow never has one.
+const DrbDesc *Smf::findBearerDefinition(const FlowId& flow)
+{
+    if (flow.multicastGroupId != NODEID_NONE || flow.d2dTxPeerId != NODEID_NONE || flow.d2dRxPeerId != NODEID_NONE)
+        return nullptr;
+    MacNodeId ueId = (getNodeTypeById(flow.sourceId) == UE) ? flow.sourceId : flow.destId;
+    if (getNodeTypeById(ueId) != UE)
+        return nullptr;
+    cModule *ueModule = binder_->getNodeModule(ueId);
+    for (const AuthoredBearer& ab : authoredBearers_)
+        if (ab.ueModule == ueModule && ab.desc.getDrbId() == flow.drbId)
+            return &ab.desc;
+    return nullptr;
 }
 
 void Smf::createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)
