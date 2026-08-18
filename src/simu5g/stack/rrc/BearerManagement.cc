@@ -746,17 +746,53 @@ cModule *BearerManagement::findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux
 // ONE entity whose legs split/rejoin below PDCP. The master-keyed lookup must be precise
 // (master node + same DRB id): matching the bare DRB id would also match unrelated bearers of
 // this UE, since DRB ids are only unique per peer. Everything else is leg 0 of its own compound.
-int BearerManagement::selectPdcpLeg(bool isNr, MacNodeId peerId, DrbKey& compoundId /*inout*/)
+int BearerManagement::selectPdcpLeg(bool isNr, MacNodeId peerId, const FlowId& flow, DrbKey& compoundId /*inout*/)
 {
+    // Which cell group this establishment call serves. At a UE it is the secondary's when
+    // the call reaches its NR stack towards a dual-connectivity secondary node; at a base
+    // station it is whichever group the node itself is, since a secondary node serves the
+    // secondary cell group and nothing else.
     bool isUe = (registration_->getNodeType() == UE);
-    if (isUe && isNr && dualConnectivityEnabled_ && getNodeTypeById(peerId) == NODEB) {
-        MacNodeId masterNodeId = binderModule->getMasterNodeOrSelf(peerId);
-        if (masterNodeId != peerId) {  // the peer is a DC secondary node
-            compoundId = DrbKey(masterNodeId, compoundId.getDrbId());
-            return 1;
+    bool isSecondaryLeg = false;
+    MacNodeId masterNodeId = NODEID_NONE;
+    if (isUe) {
+        if (isNr && dualConnectivityEnabled_ && getNodeTypeById(peerId) == NODEB) {
+            masterNodeId = binderModule->getMasterNodeOrSelf(peerId);
+            isSecondaryLeg = (masterNodeId != peerId);
         }
     }
-    return 0;
+    else {
+        // a base station holds its own id under the technology it is (see Registration)
+        MacNodeId myId = registration_->getLteNodeId() != NODEID_NONE ?
+                registration_->getLteNodeId() : registration_->getNrNodeId();
+        isSecondaryLeg = (myId != NODEID_NONE && binderModule->getMasterNodeOrSelf(myId) != myId);
+    }
+
+    const DrbDesc *cfg = lookupConfiguredDrb(flow, compoundId.getNodeId());
+    bool authoredLegs = (cfg != nullptr && !cfg->legs.empty());
+
+    // A dual-connectivity UE keys every bearer by its master node, whichever cell groups
+    // serve it: the UE has one PDCP entity per DRB, and the ids its packets carry are the
+    // technology-neutral ones Ip2Nic assigns before the bearer is even known. Which node
+    // the network side terminates PDCP at is a separate question, answered there.
+    //
+    // Only the UE side has a master node to rekey to. A secondary node reaches this point
+    // with none, because a bearer's PDCP does not live there -- it installs a relay
+    // instead (see findOrCreatePdcpRelayEntity()) -- so there is nothing to rekey either.
+    if (isSecondaryLeg && masterNodeId != NODEID_NONE)
+        compoundId = DrbKey(masterNodeId, compoundId.getDrbId());
+
+    // The leg's index is where its cell group sits in the bearer's legs, so the single leg
+    // of an SCG bearer is index 0 just as the single leg of an MCG bearer is.
+    if (authoredLegs) {
+        CellGroup group = isSecondaryLeg ? SCG : MCG;
+        for (size_t k = 0; k < cfg->legs.size(); k++)
+            if (cfg->legs[k].cellGroup == group)
+                return (int)k;
+        throw cRuntimeError("DRB %d is being established on the %s, which its definition does not list among its legs",
+                (int)num(compoundId.getDrbId()), cellGroupToA(group).c_str());
+    }
+    return isSecondaryLeg ? 1 : 0;
 }
 
 void BearerManagement::installPdcpTxSide(DrbKey id, const FlowId& flow, LteRlcType rlcType, RlcMux *rlcMux, bool isNr)
@@ -767,7 +803,7 @@ void BearerManagement::installPdcpTxSide(DrbKey id, const FlowId& flow, LteRlcTy
     DrbKey rlcId = flow.txDrbKey();
 
     DrbKey compoundId = id;
-    int legIdx = selectPdcpLeg(isNr, flow.destId, compoundId);
+    int legIdx = selectPdcpLeg(isNr, flow.destId, flow, compoundId);
 
     cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, flow, rlcType, rlcMux);
     if (pdcpEnt->gate("legOut", legIdx)->isConnectedOutside()) {
@@ -799,7 +835,7 @@ void BearerManagement::installPdcpRxSide(DrbKey id, const FlowId& flow, LteRlcTy
     DrbKey rlcId = flow.rxDrbKey();
 
     DrbKey compoundId = id;
-    int legIdx = selectPdcpLeg(isNr, flow.sourceId, compoundId);
+    int legIdx = selectPdcpLeg(isNr, flow.sourceId, flow, compoundId);
 
     cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, flow, rlcType, rlcMux);
     if (pdcpEnt->gate("legIn", legIdx)->isConnectedOutside()) {

@@ -342,14 +342,21 @@ void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
                 drb.legs.push_back(leg);
             }
 
-            // Leg order is positional at establishment: leg 0 is the master cell group's
-            // RLC bearer, leg 1 the secondary's (see BearerManagement::selectPdcpLeg()).
-            // Until that mapping is driven by the cell group rather than by which stack
-            // establishes the bearer, a bearer's legs have to be stated in that order, and
-            // an SCG-only bearer -- legitimate in 3GPP -- cannot be wired at all.
+            // A split bearer's legs are told apart by their position: the leg splitter maps
+            // leg 0 onto the master cell group's RLC and leg 1 onto the secondary's (see
+            // ~DcPdcpLegSplitter), so they are stated in that order.
+            //
+            // An SCG bearer -- one the secondary cell group alone serves -- is a bearer
+            // type of its own in TS 37.340, and this model cannot build one yet: the core
+            // network tunnels a UE's traffic to its master node, so the master terminates
+            // the bearer's PDCP whatever cell group carries it onwards, and an SCG bearer
+            // needs the master's leg to reach the secondary over X2 instead of its own RLC.
+            // Establishment wires a master's leg to its local RLC unless the bearer is
+            // split, so the shape has no expression yet.
             if (drb.legs.front().cellGroup != MCG)
-                throw cRuntimeError("%s entry %d: \"legs\" must start with \"MCG\"; an SCG-only bearer is not supported yet, "
-                        "and a split bearer lists its cell groups in the order MCG, SCG", paramName, i);
+                throw cRuntimeError("%s entry %d: \"legs\" must start with \"MCG\". A bearer served by the SCG alone "
+                        "is not supported yet -- the core network delivers to the master node, so such a bearer needs "
+                        "the master to relay it over X2, which establishment cannot yet wire", paramName, i);
         }
 
         // pduSessionType (optional, default IPv4) and upperProtocol (optional, empty =
@@ -668,7 +675,8 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
 
         // A bearer whose definition states its legs is established on those and no others,
         // so a dual-connectivity network can carry a bearer that never reaches the
-        // secondary node. A definition that leaves the legs to RRC gets both, as before.
+        // secondary node, or one that only ever reaches it. A definition that leaves the
+        // legs to RRC gets both, as before.
         bool useSecondary = true;
         if (const DrbDesc *def = findBearerDefinition(flow))
             if (!def->legs.empty())

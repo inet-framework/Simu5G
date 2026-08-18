@@ -151,7 +151,7 @@ class BearerManagement : public cSimpleModule
     // the bearer's PDCP entity is built with, selectPdcpLeg() the leg an establishment call
     // attaches to (and, for a leg of a bearer anchored elsewhere, the anchor bearer's key).
     virtual int getNumLegs(DrbKey id, const FlowId& flow);
-    virtual int selectPdcpLeg(bool isNr, MacNodeId peerId, DrbKey& compoundId /*inout*/);
+    virtual int selectPdcpLeg(bool isNr, MacNodeId peerId, const FlowId& flow, DrbKey& compoundId /*inout*/);
 
     // Records the configuration of the bearer this establishment call sets up, from
     // exactly the derivations the entities are built from. Runs after the RLC entity
