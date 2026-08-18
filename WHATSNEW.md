@@ -19,6 +19,16 @@ simulations/channelmodel/ built specifically to exercise every propagation
 formula, both delegation chains, penetration, tall-UE, Rayleigh fading and the
 sectorial antenna pattern).
 
+A second, larger change in this release centralizes the channel model's
+physical computation into one network-level `radioMedium` module per
+network, following the shape of INET's own `RadioMedium`/per-node `radio`
+split. Per-node channel model instances become thin radio endpoints that
+carry configuration and forward to the medium. The consolidation also
+fixes a real defect -- the two ends of a link could previously disagree on
+line-of-sight state -- so, unlike the refactor above, it legitimately
+moves a majority of the fingerprint baselines; see below for the details
+and the migration notes for out-of-tree configurations.
+
 Tested with INET-4.5.4 and OMNeT++ 6.3, compatible with INET-4.6.0 and OMNeT++
 6.1 through 6.4.
 
@@ -126,6 +136,88 @@ keys are unaffected; only configurations that name the old NED types
 explicitly (ini `typename` selectors, `like` clauses, `@class` overrides)
 need updating to the new names. The `LtePhyFrameType` enum keeps its name --
 it tags frame types and is not a PHY module class.
+
+### Channel model computation centralized in a network-level radio medium
+
+Every carrier's propagation, shadowing, fading, interference and reception
+decision is now computed by one network-level `radioMedium` module
+(`RadioMedium`), instead of independently inside each node's own channel
+model instance. Its shape mirrors INET's `RadioMedium`: a compound module
+with an `interference` submodule (`CellularInterferenceModel` by default,
+selected through the new `IInterferenceModel` interface) that performs the
+four cellular interference walks and the D2D one. Every in-tree network
+gained a `radioMedium: RadioMedium` submodule, alongside the existing
+`binder` and `carrierAggregation` singletons.
+
+The per-node `channelModel[*]`/`nrChannelModel[*]` submodules stay exactly
+where they were, and every physical NED parameter (`pathLossType`,
+`scenario`, antenna gains, noise figures, and so on) stays declared on
+them, unchanged -- no ini file needs to change. What changed is what they
+do: each instance now registers itself with the medium as a radio
+endpoint at startup, and every computation method on it (`getAttenuation`,
+`getSINR`, `getRSRP`, `isReceptionSuccessful`, and the rest) is a one-line
+forwarder to the medium, which reads the parameters back off the
+registered endpoints -- one shared `PathLossModel` strategy and one set of
+physical parameters per *carrier leg* (a carrier frequency plus whether it
+is an NR or an LTE leg, since a dual-connectivity UE's LTE and NR legs, or
+a gNB and its stray unused LTE leg, can share a frequency while needing
+different physics).
+
+Background traffic generators register too, as phantom radios: registry
+entries that carry a position and a transmit power but no PHY module, so
+that a background UE's interference contribution is read from the same
+registry as a real radio's. A phantom is keyed by `(owning cell, carrier,
+background-UE id)`, since a background UE's own id is only unique within
+its own manager, not across the network.
+
+### Per-link LOS, shadowing and fading state now shared by both link ends
+
+Line-of-sight state, shadowing history and Jakes/Rayleigh fading
+realizations are now stored once per physical link inside the radio
+medium, keyed by carrier leg and node pair, and read by whichever end of
+the link asks. Previously, each end of a link -- the eNB/gNB computing a
+DL CQI and the UE receiving DL data, for instance -- held and drew its own
+independent copy of this state; only the shadowing map was patched to
+redirect to the peer's copy for a DL CQI computation, and the LOS state
+was never patched at all, so the two ends of the same link could compute
+with different, disagreeing LOS realizations.
+
+This is an intentional behavioral change, confined to this one
+consolidation. Any configuration with `shadowing` and/or `fading` enabled
+-- both default to `true` -- can see different results, since the
+correlated draw sequence for a link is now shared rather than duplicated
+per end. About 78% of the fingerprint suite (145 of 187 rows) moved and
+has been re-recorded against the new behavior; every in-tree configuration
+that pins both `shadowing` and `fading` off (among them
+`simulations/lte/test_handover` and `simulations/nr/dualConnectivity_multicell`)
+is confirmed byte-identical, since nothing about this change reaches them.
+
+### Migrating to the central radio medium
+
+- **Out-of-tree networks** that instantiate `binder`/`carrierAggregation`
+  at network level need their own `radioMedium: RadioMedium` submodule now
+  -- every in-tree network gained one. `channelModel`/`nrChannelModel`
+  endpoints resolve it through the `radioMediumModule` parameter, which
+  defaults to `"radioMedium"`, so a submodule under that name is enough;
+  without it, registration fails at initialization.
+
+- **Configurations that remap the channel models' `rng-0`** (`num-rngs`,
+  `**.channelModel[*].rng-0 = ...`, `**.nrChannelModel[*].rng-0 = ...`)
+  must give `**.radioMedium*.rng-0` the *same* mapping, or every draw the
+  medium now makes on the endpoints' behalf -- path loss, LOS, shadowing,
+  fading, the BLER reception draw -- silently switches to a different RNG
+  stream. `simulations/channelmodel/omnetpp.ini`'s `UMi-38901-RngRemap`
+  configuration is a worked example of the three lines this takes.
+
+- **C++ subclasses of `StochasticChannelModel`** that override one of the
+  relocated computation methods need to be reworked against the medium.
+  The per-carrier-leg path-loss, LOS-probability, shadowing, fading,
+  SINR/RSRP and interference computation now lives on `RadioMedium`
+  and `CellularInterferenceModel`, and the per-radio state it used to
+  read (`losMap_`, `jakesFadingMap_`, `positionHistory_`, and more) no
+  longer exists on the endpoint. A subclass that only adds parameters or
+  forwards to the medium -- the shape `D2dChannelModel` now has -- is
+  unaffected.
 
 ## v1.6.0 (2026-07-31)
 

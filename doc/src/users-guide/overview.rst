@@ -162,21 +162,21 @@ The architecture of the PHY module in Simu5G mirrors the one of
    :align: center
    :figwidth: 100.0%
 
-When a MAC PDU is sent from a sender to a receiver, an OMNeT++
-message is exchanged between them. On receipt of the latter,
-the receiver applies a channel model to compute the received
-power. The channel model can be configured to incorporate
-fading, shadowing, pathloss, etc., and can be made arbitrarily
-complex. From the received power, the receiver computes the
-SINR, querying the Binder to know which other nodes were
-interfering on the same resources. Then, it leverages Block
-Error Rate (BLER) curves to compute the reception probability
-for each RB composing the ongoing transmission. This makes it
-possible to translate a SINR and a transmission format to a
-probability of correct reception of the entire MAC PDU. The
-above modelling abates the computational complexity of the
-decoding operation, hence the simulation running time, while
-preserving its correctness.
+When a MAC PDU is sent from a sender to a receiver, an OMNeT++ message is
+exchanged between them. On receipt of the latter, the receiver's channel
+model computes the received power. The channel model can be configured to
+incorporate fading, shadowing, pathloss, etc., and can be made arbitrarily
+complex. From the received power, the SINR is computed, factoring in
+interference from every other transmission on the same resources: which
+nodes are transmitting comes from the Binder, and the interferers'
+positions, transmit power and antenna gains come from the shared radio
+medium described below. Then, it leverages Block Error Rate (BLER) curves
+to compute the reception probability for each RB composing the ongoing
+transmission. This makes it possible to translate a SINR and a
+transmission format to a probability of correct reception of the entire
+MAC PDU. The above modelling abates the computational complexity of the
+decoding operation, hence the simulation running time, while preserving
+its correctness.
 
 In Simu5G, each MAC TB is encapsulated within an AirFrame
 message and sent to the destination module, which applies the
@@ -189,6 +189,18 @@ to compute the SINR at the receiving side. For this reason,
 each gNB/UE is equipped with a vector of channelModel modules,
 and each of them is associated with one of the CCs available in
 the carrierAggregation module.
+
+Every channelModel instance in the network -- and, on a dual-connectivity
+UE, every nrChannelModel instance -- registers as a radio endpoint with
+one shared, network-level radioMedium module (an instance of RadioMedium,
+package simu5g.stack.phy.channelmodel). The radioMedium module is the
+single owner of the propagation, interference and reception-decision
+computation for every carrier and every registered radio in the network;
+a channelModel instance itself carries only the per-carrier configuration
+parameters (path-loss study, scenario, antenna gains, and so on) and
+forwards every computation to the medium. Background traffic generators
+managed by a base station's own traffic manager register too, as phantom
+radios that carry only a position and a transmit power.
 
 Simu5G's PHY model has been validated in compliance with the
 guidelines reported in `3GPP -
