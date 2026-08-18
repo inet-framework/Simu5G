@@ -256,6 +256,31 @@ class RadioMedium : public cSimpleModule
     virtual double rayleighFading(StochasticChannelModel *radio, MacNodeId id, unsigned int band);
     virtual double computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
     virtual double computeCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, const inet::Coord coord);
+
+    /**
+     * The SINR/RSRP/reception-decision surface relocated from
+     * StochasticChannelModel (plan step S10): same one-line-forwarder shape
+     * as the S9b computation above. isReceptionSuccessful's BLER draw
+     * (uniform(0.0, 1.0)) moves with it, onto this medium's rng-0 stream --
+     * another RNG canary. Where the moved body calls a still-resident
+     * StochasticChannelModel method that D2dChannelModel overrides
+     * (computeInterferencePlusNoise, getReceptionSinr, emitRcvdSinr), it
+     * calls back through radio rather than on itself, so that override
+     * still fires for a D2D-capable radio; the four interference walks
+     * (S11) are reached the same way, since they too stay resident for now.
+     */
+    virtual std::vector<double> getSINR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
+    virtual std::vector<double> getSINR(StochasticChannelModel *radio, const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);
+    virtual std::vector<double> getSIR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
+    virtual std::vector<double> getRSRP(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
+    virtual std::vector<double> getRSRP(StochasticChannelModel *radio, const RadioLink& link, double txPower);
+    virtual std::vector<double> getSINR_bgUe(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
+    virtual double getReceivedPower_bgUe(StochasticChannelModel *radio, double txPower, inet::Coord txPos, inet::Coord rxPos,
+            Direction dir, bool losStatus, MacNodeId bsId);
+    virtual void computeInterferencePlusNoise(StochasticChannelModel *radio, const RadioLink& link, UserControlInfo *lteInfo,
+            RbMap& rbmap, double totN, std::vector<double>& den);
+    virtual bool isReceptionSuccessful(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo,
+            const std::vector<double>& rsrpVector);
 };
 
 } //namespace
