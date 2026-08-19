@@ -61,6 +61,22 @@ void Ip2Nic::initialize(int stage)
 
         hasSdap_ = par("hasSdap").boolValue();
         establishBearersOnDemand_ = par("establishBearersOnDemand").boolValue();
+
+        if (dualConnectivityEnabled_) {
+            if (nodeType_ == NODEB) {
+                // note: not the isNr_ parameter, which EN-DC sets on the LTE master too
+                anchorNr_ = binder_->isNrNodeB(nodeId_);
+            }
+            else {
+                // the anchor stack is the one attached to a master node
+                MacNodeId sLte = binder_->getServingNode(nodeId_);
+                MacNodeId sNr = (nrNodeId_ != NODEID_NONE) ? binder_->getServingNode(nrNodeId_) : NODEID_NONE;
+                bool lteFacesMaster = sLte != NODEID_NONE && binder_->getMasterNodeOrSelf(sLte) == sLte;
+                bool nrFacesMaster = sNr != NODEID_NONE && binder_->getMasterNodeOrSelf(sNr) == sNr;
+                anchorNr_ = nrFacesMaster && !lteFacesMaster;
+                anchorId_ = anchorNr_ ? nrNodeId_ : nodeId_;
+            }
+        }
     }
 }
 
@@ -276,9 +292,13 @@ MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacN
     bool isEnb = (nodeType_ == NODEB);
 
     if (isEnb) {
-        // ENB variants
+        // ENB variants: resolve the UE by the id this node addresses it with. Under dual
+        // connectivity that is the anchor cell group's id -- the id space of this node's
+        // own technology -- whatever leg later carries the PDU.
         MacNodeId destId;
-        if (isNr_ && (!dualConnectivityEnabled_ || useNR))
+        if (dualConnectivityEnabled_)
+            destId = anchorNr_ ? binder_->getNrMacNodeId(destAddr) : binder_->getMacNodeId(destAddr);
+        else if (isNr_ && useNR)
             destId = binder_->getNrMacNodeId(destAddr);
         else
             destId = binder_->getMacNodeId(destAddr);
@@ -366,9 +386,9 @@ void Ip2Nic::assignEndpointIds(FlowControlInfo *lteInfo, const Ipv4Address& dest
                 lteInfo->setDestId(getNextHopNodeId(destAddr, !dualConnectivityEnabled_ && useNR, nodeId_));
         }
         else {
-            // UE: use LTE UE ID when DC is enabled (both legs share one PDCP entity),
-            // NR UE ID when non-DC NR (entity was created with NR IDs)
-            MacNodeId ueSourceId = (dualConnectivityEnabled_ ? nodeId_ : (useNR ? nrNodeId_ : nodeId_));
+            // UE: use the anchor stack's UE ID when DC is enabled (both legs share one PDCP
+            // entity, keyed by it), NR UE ID when non-DC NR (entity was created with NR IDs)
+            MacNodeId ueSourceId = (dualConnectivityEnabled_ ? anchorId_ : (useNR ? nrNodeId_ : nodeId_));
             lteInfo->setSourceId(ueSourceId);
             if (lteInfo->getMulticastGroupId() != NODEID_NONE)
                 lteInfo->setDestId(nodeId_);

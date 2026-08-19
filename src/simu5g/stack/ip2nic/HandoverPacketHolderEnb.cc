@@ -17,6 +17,7 @@
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/linklayer/common/InterfaceTag_m.h>
 #include "simu5g/common/binder/Binder.h"
+#include "simu5g/common/InitStages.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/handoverX2Forwarder/HandoverX2Forwarder.h"
 
@@ -57,6 +58,21 @@ void HandoverPacketHolderEnb::initialize(int stage)
         cModule *bs = getContainingNode(this);
         nodeId_ = MacNodeId(bs->par("macNodeId").intValue());
     }
+    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
+        amNr_ = binder_->isNrNodeB(nodeId_);
+    }
+}
+
+MacNodeId HandoverPacketHolderEnb::resolveUeNodeId(const inet::Ipv4Address& destAddr)
+{
+    // The UE's id on this node's own cell group: an NR node serves, holds and forwards
+    // NR ids, an LTE node LTE ids -- a dual-stack UE has both, and picking by this node's
+    // technology (rather than LTE-first) is what lets an NR node be the master. The
+    // other-stack id is the fallback for a single-stack UE of the other technology.
+    MacNodeId destId = amNr_ ? binder_->getNrMacNodeId(destAddr) : binder_->getMacNodeId(destAddr);
+    if (destId == NODEID_NONE)
+        destId = amNr_ ? binder_->getMacNodeId(destAddr) : binder_->getNrMacNodeId(destAddr);
+    return destId;
 }
 
 void HandoverPacketHolderEnb::handleMessage(cMessage *msg)
@@ -85,9 +101,7 @@ void HandoverPacketHolderEnb::fromIpBs(Packet *pkt)
     const Ipv4Address& destAddr = ipHeader->getDestAddress();
 
     // handle "forwarding" of packets during handover
-    MacNodeId destId = binder_->getMacNodeId(destAddr);
-    if (destId == NODEID_NONE)
-        destId = binder_->getNrMacNodeId(destAddr);
+    MacNodeId destId = resolveUeNodeId(destAddr);
 
     if (hoForwarding_.find(destId) != hoForwarding_.end()) {
         // data packet must be forwarded (via X2) to another eNB
@@ -162,9 +176,7 @@ void HandoverPacketHolderEnb::receiveTunneledPacketOnHandover(Packet *datagram)
     EV << "HandoverPacketHolder::receiveTunneledPacketOnHandover - received packet via X2" << endl;
     const auto& hdr = datagram->peekAtFront<Ipv4Header>();
     const Ipv4Address& destAddr = hdr->getDestAddress();
-    MacNodeId destId = binder_->getMacNodeId(destAddr);
-    if (destId == NODEID_NONE)
-        destId = binder_->getNrMacNodeId(destAddr);
+    MacNodeId destId = resolveUeNodeId(destAddr);
 
     if (hoFromX2_.find(destId) == hoFromX2_.end()) {
         IpDatagramQueue queue;

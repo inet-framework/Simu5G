@@ -33,6 +33,7 @@ class HandoverPacketHolderEnb : public cSimpleModule
     inet::ModuleRefByPar<Binder> binder_;
 
     // MAC node id of this node
+    bool amNr_ = false;    // this node's technology, from the Binder; decides which of a UE's ids this node handles
     MacNodeId nodeId_ = NODEID_NONE;
 
     inet::ModuleRefByPar<HandoverX2Forwarder> hoManager_;
@@ -50,6 +51,9 @@ class HandoverPacketHolderEnb : public cSimpleModule
   protected:
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
+
+    // The UE the address names, by the id of this node's own cell group
+    virtual MacNodeId resolveUeNodeId(const inet::Ipv4Address& destAddr);
     void handleMessage(cMessage *msg) override;
 
     virtual void fromIpBs(inet::Packet *datagram);

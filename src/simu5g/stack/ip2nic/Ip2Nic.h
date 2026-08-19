@@ -61,6 +61,14 @@ class Ip2Nic : public cSimpleModule
     // Enable for dual connectivity
     bool dualConnectivityEnabled_;
 
+    // Dual connectivity only: the anchor cell group's identity at this node -- the id every
+    // packet carries until the bearer's splitter picks a leg. At a base station it is the
+    // UE-id space of the node's own technology; at a UE it is the id of the stack that
+    // faces the master. Computed once at initialization: the master/serving relations it
+    // reads are the configured ones, and no handover can be in flight during init.
+    bool anchorNr_ = false;
+    MacNodeId anchorId_ = NODEID_NONE;   // UEs only: this UE's id on the anchor stack
+
     // Flag mirroring PDCP's (to be verified with ASSERTs, then used to replace PDCP dependency)
     bool isNr_ = false;
     bool hasSdap_ = false;
