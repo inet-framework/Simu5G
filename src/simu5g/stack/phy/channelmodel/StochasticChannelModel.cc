@@ -244,11 +244,6 @@ double StochasticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord
     return medium_->getReceivedPower_bgUe(this, txPower, txPos, rxPos, dir, losStatus, bsId);
 }
 
-std::vector<double> StochasticChannelModel::getSIR(LteAirFrame *frame, UserControlInfo *lteInfo)
-{
-    return medium_->getSIR(this, frame, lteInfo);
-}
-
 bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     return medium_->isReceptionSuccessful(this, frame, lteInfo, rsrpVector);

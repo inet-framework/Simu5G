@@ -116,7 +116,7 @@ struct RadioLink
  *
  * This is not a propagation model: it is the interface to the entire PHY link
  * model. A channel model is asked for received power (getRSRP), for per-band
- * SINR (getSINR, getSIR, getSINR_bgUe), and for the reception decision itself
+ * SINR (getSINR, getSINR_bgUe), and for the reception decision itself
  * (isReceptionSuccessful), so it owns propagation, fading, interference and
  * the SINR-to-error mapping alike. Path loss (getAttenuation,
  * computePathLoss) is one ingredient among those, not the subject of the
@@ -202,13 +202,6 @@ class ChannelModelBase : public cSimpleModule
      * @param los line-of-sight flag
      */
     virtual double computePathLoss(double distance, double dbp, bool los) = 0;
-    /*
-     * Compute SIR for each band for user nodeId according to multipath fading
-     *
-     * @param frame pointer to the packet
-     * @param lteInfo pointer to the user control info
-     */
-    virtual std::vector<double> getSIR(LteAirFrame *frame, UserControlInfo *lteInfo) = 0;
     /*
      * Compute SINR for each band for user nodeId according to path loss, shadowing (optional), and multipath fading
      *

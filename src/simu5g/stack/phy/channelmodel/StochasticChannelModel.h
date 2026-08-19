@@ -45,7 +45,7 @@ class Binder;
  *   history, speed, and the point at which shadowing and LOS were last drawn;
  * - the SINR statistics.
  *
- * getAttenuation, computePathLoss, getSINR, getSIR, getRSRP, getSINR_bgUe,
+ * getAttenuation, computePathLoss, getSINR, getRSRP, getSINR_bgUe,
  * getReceivedPower_bgUe and isReceptionSuccessful are one-line forwarders to
  * the RadioMedium this endpoint registers with: the medium owns the
  * per-carrier-leg PathLossModel strategy (chosen by the pathLossType
@@ -157,24 +157,14 @@ class StochasticChannelModel : public ChannelModelBase
     double getTxPwr(Direction dir = UNKNOWN_DIRECTION) const { return phy_->getTxPwr(dir); }
     TxDirectionType getTxDirection() const { return phy_->getTxDirection(); }
     double getTxAngle() const { return phy_->getTxAngle(); }
-    RanNodeType getNodeType() const { return phy_->getNodeType(); }
     bool isNr() const { return phy_->isNr(); }
-
-    /*
-     * Role-appropriate antenna gain / noise figure for RadioMedium's
-     * antennaGainOf()/noiseFigureOf(): the endpoint carries a parameter for
-     * every role (UE, base station), so the medium asks for the one that
-     * matches this endpoint's own node type.
-     */
-    double getAntennaGain() const { return getNodeType() == UE ? antennaGainUe_ : antennaGainEnB_; }
-    double getNoiseFigure() const { return getNodeType() == UE ? ueNoiseFigure_ : bsNoiseFigure_; }
 
     /*
      * The raw per-role antenna gains, noise figures and cable loss, for
      * RadioMedium's getSINR_bgUe()/getReceivedPower_bgUe()/getRSRP():
-     * unlike getAntennaGain()/getNoiseFigure() above, these background-UE
-     * paths need both roles' values from the one endpoint that plays the eNB
-     * side, not just the value matching this endpoint's own role.
+     * these background-UE paths need both roles' values from the one
+     * endpoint that plays the eNB side, not just the value matching this
+     * endpoint's own role.
      */
     double getAntennaGainEnB() const { return antennaGainEnB_; }
     double getAntennaGainUe() const { return antennaGainUe_; }
@@ -189,7 +179,8 @@ class StochasticChannelModel : public ChannelModelBase
     bool getCollectSinrStatistics() const { return collectSinrStatistics_; }
 
     /*
-     * Building-penetration distance for RadioMedium's insideDistanceOf().
+     * Building-penetration distance, paired with getInsideBuilding() into
+     * the O2iState RadioMedium's o2iStateOf() returns.
      */
     double getInsideDistance() const { return inside_distance_; }
 
@@ -251,14 +242,6 @@ class StochasticChannelModel : public ChannelModelBase
     virtual double computeAngularAttenuation(double hAngle, double vAngle = 0);
 
     /*
-     * Compute sir for each band for user nodeId according to multipath fading
-     *
-     * @param frame pointer to the packet
-     * @param lteinfo pointer to the user control info
-     */
-    std::vector<double> getSIR(LteAirFrame *frame, UserControlInfo *lteInfo) override;
-
-    /*
      * Compute sinr for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading
      *
      * @param frame pointer to the packet
@@ -316,7 +299,7 @@ class StochasticChannelModel : public ChannelModelBase
     virtual double getTwoDimDistance(inet::Coord a, inet::Coord b);
 
     /*
-     * Public: RadioMedium's getSINR()/getSIR()/getRSRP()/
+     * Public: RadioMedium's getSINR()/getRSRP()/
      * getSINR_bgUe()/getReceivedPower_bgUe()/isReceptionSuccessful(),
      * resident on the medium, call this plain resident helper back on the
      * radio pointer.

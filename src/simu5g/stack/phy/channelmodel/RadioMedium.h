@@ -345,9 +345,6 @@ class RadioMedium : public cSimpleModule
     virtual double txPowerOf(MacNodeId nodeId, GHz carrierFrequency, Direction dir = UNKNOWN_DIRECTION) const;
     virtual TxDirectionType txDirectionOf(MacNodeId nodeId, GHz carrierFrequency) const;
     virtual double txAngleOf(MacNodeId nodeId, GHz carrierFrequency) const;
-    virtual double antennaGainOf(MacNodeId nodeId, GHz carrierFrequency) const;
-    virtual double noiseFigureOf(MacNodeId nodeId, GHz carrierFrequency) const;
-    virtual double insideDistanceOf(MacNodeId nodeId, GHz carrierFrequency) const;
 
     /**
      * Physical facts of a registered background transmitter:
@@ -428,7 +425,6 @@ class RadioMedium : public cSimpleModule
      */
     virtual std::vector<double> getSINR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
     virtual std::vector<double> getSINR(StochasticChannelModel *radio, const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);
-    virtual std::vector<double> getSIR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
     virtual std::vector<double> getRSRP(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
     virtual std::vector<double> getRSRP(StochasticChannelModel *radio, const RadioLink& link, double txPower);
     virtual std::vector<double> getSINR_bgUe(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);

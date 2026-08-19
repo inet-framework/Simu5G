@@ -299,12 +299,6 @@ class PhyBase : public ChannelAccess
      */
     MacNodeId getMacNodeId() { return nodeId_; }
     /*
-     * Returns the RAN role of the node (UE or NODEB); needed by
-     * RadioMedium's antennaGainOf()/noiseFigureOf() to pick the peer's
-     * role-appropriate value.
-     */
-    RanNodeType getNodeType() { return nodeType_; }
-    /*
      * Returns whether this PHY is part of the NR stack (as opposed to LTE);
      * needed by RadioMedium to key CarrierPhysics by carrier leg, not just
      * carrier frequency.
