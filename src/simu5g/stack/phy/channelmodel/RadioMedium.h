@@ -240,6 +240,16 @@ class RadioMedium : public cSimpleModule
     // is a child module, torn down by the module hierarchy like any other.
     CellularInterferenceModel *interference_ = nullptr;
 
+    /**
+     * Scans the active configuration for ini keys that name a parameter this
+     * plan has removed or renamed -- OMNeT++ gives no diagnostic for a key
+     * that matches nothing (envir has no "unused key" warning), so without
+     * this a stale key is a silent physics change. Throws, naming every
+     * offending key and its replacement, if any are found. Grows one entry
+     * at a time as the migration removes more of the parameter surface.
+     */
+    void checkForLegacyConfigKeys() const;
+
     /** Looks up the registered radio for (nodeId, carrierFrequency); throws if none is registered. */
     const RadioDescriptor& descriptorFor(MacNodeId nodeId, GHz carrierFrequency) const;
 
