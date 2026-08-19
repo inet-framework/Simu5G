@@ -53,9 +53,43 @@ RadioMedium::~RadioMedium()
 
 void RadioMedium::initialize()
 {
+    checkForLegacyConfigKeys();
+
     // this medium's own submodule; purely structural, so
     // resolvable regardless of init-stage ordering
     interference_ = check_and_cast<CellularInterferenceModel *>(getSubmodule("interference"));
+}
+
+void RadioMedium::checkForLegacyConfigKeys() const
+{
+    // Ini-key name -> what to tell a reader who still sets it. Grown one
+    // entry per removal/rename as the radio-endpoint recast proceeds; see
+    // the design doc, "the legacy-key guard".
+    static const std::vector<std::pair<std::string, std::string>> legacyNames = {
+        { "antennGainMicro", "removed from the radio endpoint; still live on BackgroundCellChannelModel" },
+    };
+
+    // Both flags are required: a per-object config option such as 'rng-0'
+    // is classified by FILT_PER_OBJECT_CONFIG, not FILT_PARAM, because its
+    // key's last path segment contains a hyphen (sectionbasedconfig.cc).
+    std::vector<const char *> pairs = getEnvir()->getConfigEx()->getKeyValuePairs(
+            cConfigurationEx::FILT_PARAM | cConfigurationEx::FILT_PER_OBJECT_CONFIG);
+
+    std::string offenders;
+    for (size_t i = 0; i < pairs.size(); i += 2) {
+        std::string key = pairs[i];
+        size_t lastDot = key.find_last_of('.');
+        std::string lastSegment = (lastDot == std::string::npos) ? key : key.substr(lastDot + 1);
+        for (const auto& [name, replacement] : legacyNames) {
+            if (lastSegment == name) {
+                offenders += "\n  " + key + "\n    " + name + ": " + replacement;
+                break;
+            }
+        }
+    }
+
+    if (!offenders.empty())
+        throw cRuntimeError("stale configuration key(s), no longer effective:%s", offenders.c_str());
 }
 
 void RadioMedium::handleMessage(cMessage *msg)

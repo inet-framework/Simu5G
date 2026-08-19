@@ -1,0 +1,24 @@
+%description:
+
+The legacy-key guard (RadioMedium::checkForLegacyConfigKeys(), called from
+RadioMedium::initialize()) turns a stale ini key -- one OMNeT++ gives no
+diagnostic for, because an ini key matching no parameter is silently ignored
+-- into a startup error. Checks that a configuration line still setting the
+removed antennGainMicro parameter is rejected loudly instead.
+
+%file: test.ned
+
+import simu5g.stack.phy.channelmodel.RadioMedium;
+
+network Test extends RadioMedium
+{
+}
+
+%inifile: test.ini
+[General]
+**.antennGainMicro = 5
+
+%exitcode: 1
+
+%contains-regex: stderr
+antennGainMicro
