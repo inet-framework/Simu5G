@@ -21,6 +21,7 @@
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 
 #include "simu5g/common/LteDefs.h"
+#include "simu5g/common/QfiRuleSet.h"
 #include "simu5g/corenetwork/trafficFlowFilter/TftControlInfo_m.h"
 #include "simu5g/common/binder/Binder.h"
 
@@ -73,12 +74,8 @@ class TrafficFlowFilter : public cSimpleModule
     // whose filter matches the packet supplies its QFI -- a fixed value, or the
     // packet's DSCP field read as the QFI. A rule without a filter matches every
     // packet.
-    struct QfiRule {
-        std::unique_ptr<inet::PacketFilter> filter;   // null = match all
-        Qfi qfi = QFI_NONE;
-        bool dscpAsQfi = false;
-    };
-    std::vector<QfiRule> qfiRules_;
+
+    QfiRuleSet qfiRules_;
 
   protected:
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
@@ -90,10 +87,7 @@ class TrafficFlowFilter : public cSimpleModule
     CoreNodeType selectOwnerType(const char *type);
 
     // parse and compile the qfiRules parameter; syntax errors throw here, at setup
-    void parseQfiRules();
 
-    // first-match-wins over qfiRules_; QFI_NONE (0, the default flow) when no rule matches
-    Qfi classify(inet::Packet *pkt, const inet::Ptr<const inet::Ipv4Header>& ipv4Header);
 
     // functions for managing filter tables
     TrafficFlowTemplateId findTrafficFlow(inet::L3Address srcAddress, inet::L3Address destAddress);
