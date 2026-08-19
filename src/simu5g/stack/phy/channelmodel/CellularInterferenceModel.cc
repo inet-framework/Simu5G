@@ -41,7 +41,7 @@ void CellularInterferenceModel::handleMessage(cMessage *msg)
     throw cRuntimeError("unexpected message '%s': CellularInterferenceModel has no gates and schedules no self-messages", msg->getName());
 }
 
-bool CellularInterferenceModel::computeDownlinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId ueId,
+void CellularInterferenceModel::computeDownlinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId ueId,
         inet::Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference)
 {
     EV << "**** Downlink Interference ****" << endl;
@@ -143,11 +143,9 @@ bool CellularInterferenceModel::computeDownlinkInterference(StochasticChannelMod
             }
         }
     }
-
-    return true;
 }
 
-bool CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
+void CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
         bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference)
 {
     EV << "**** Uplink Interference for cellId[" << eNbId << "] node[" << senderId << "] ****" << endl;
@@ -238,11 +236,9 @@ bool CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel
     EV << NOW << " CellularInterferenceModel::computeUplinkInterference - Final Band Interference Status: " << endl;
     for (unsigned int i = 0; i < numBands; i++)
         EV << "\t band " << i << " int[" << (*interference)[i] << "]" << endl;
-
-    return true;
 }
 
-bool CellularInterferenceModel::computeExtCellInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId nodeId,
+void CellularInterferenceModel::computeExtCellInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId nodeId,
         inet::Coord coord, bool isCqi, GHz carrierFrequency, std::vector<double> *interference)
 {
     EV << "**** Ext Cell Interference **** " << endl;
@@ -315,11 +311,9 @@ bool CellularInterferenceModel::computeExtCellInterference(StochasticChannelMode
             }
         }
     }
-
-    return true;
 }
 
-bool CellularInterferenceModel::computeBackgroundCellInterference(StochasticChannelModel *radio, MacNodeId nodeId,
+void CellularInterferenceModel::computeBackgroundCellInterference(StochasticChannelModel *radio, MacNodeId nodeId,
         inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap,
         Direction dir, std::vector<double> *interference)
 {
@@ -453,11 +447,9 @@ bool CellularInterferenceModel::computeBackgroundCellInterference(StochasticChan
             }
         }
     }
-
-    return true;
 }
 
-bool CellularInterferenceModel::computeD2DInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
+void CellularInterferenceModel::computeD2DInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
         inet::Coord senderCoord, MacNodeId destId, inet::Coord destCoord, bool isCqi, GHz carrierFrequency,
         std::vector<double> *interference, Direction dir)
 {
@@ -516,8 +508,6 @@ bool CellularInterferenceModel::computeD2DInterference(StochasticChannelModel *r
     EV << NOW << " CellularInterferenceModel::computeD2DInterference - Final Band Interference Status: " << endl;
     for (unsigned int i = 0; i < numBands; i++)
         EV << "\t band " << i << " int[" << (*interference)[i] << "]" << endl;
-
-    return true;
 }
 
 } //namespace
