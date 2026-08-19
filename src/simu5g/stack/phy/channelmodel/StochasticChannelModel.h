@@ -54,16 +54,16 @@ class Binder;
  * isReceptionSuccessful's BLER draw. Tr36873ChannelModel and Tr38901ChannelModel
  * are NED-level presets of this class (no C++ class of their own) that only
  * override the pathLossType default, to Tr36873 and Tr38901 respectively.
- * The four cellular interference walks moved to the medium's interference
- * submodule at S11; the D2D interference walk and the D2D branches of
- * getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise folded into the
- * medium alongside them at S12 -- D2dChannelModel no longer overrides any of
- * the three, so none of them are virtual dispatch points here anymore. The
- * per-link/per-node stochastic state moved to the medium at S13 (plan §3(b));
- * this endpoint no longer caches any of it. The medium computes shadowing,
+ * The four cellular interference walks live on the medium's interference
+ * submodule; the D2D interference walk and the D2D branches of
+ * getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise live in the
+ * medium alongside them -- D2dChannelModel does not override any of
+ * the three, so none of them are virtual dispatch points here. The
+ * per-link/per-node stochastic state lives on the medium;
+ * this endpoint caches none of it. The medium computes shadowing,
  * Jakes/Rayleigh fading, LOS probability and speed directly rather than
  * calling back through the endpoint, so this class carries no forwarder for
- * any of them (S14). The ext-cell/background-cell path-loss strategy is
+ * any of them. The ext-cell/background-cell path-loss strategy is
  * likewise one Tr36814PathLossModel per carrier leg, owned by the medium and
  * reached through extCellPathLossFor(); this endpoint holds no instance of
  * its own.
@@ -79,7 +79,7 @@ class Binder;
  * scenarios (not every study covers every scenario; see the PathLossModel
  * subclasses).
  *
- * D2D links are evaluated by the medium too (S12); D2dChannelModel is now an
+ * D2D links are evaluated by the medium too; D2dChannelModel is an
  * endpoint marker (RadioMedium::RadioDescriptor::d2dEndpoint) plus the
  * ID2dChannelModel entry points (getRSRP_D2D/getSINR_D2D) D2D-aware PHY code
  * calls directly.
@@ -97,8 +97,8 @@ class StochasticChannelModel : public ChannelModelBase
     // true if the UE is inside a building
     bool inside_building_;
 
-    // distance from the building wall; drawn once at registration (S9b/§3(f).2
-    // rule 1) rather than in the medium, so it stays resident -- handed to the
+    // distance from the building wall; drawn once at registration
+    // rather than in the medium, so it stays resident -- handed to the
     // medium per-call through o2iStateOf() instead of cached there
     double inside_distance_;
 
@@ -111,9 +111,8 @@ class StochasticChannelModel : public ChannelModelBase
     // Antenna gain of eNodeB
     double antennaGainEnB_;
 
-    // Antenna gain of micro node; write-only since before this refactor plan
-    // began (verified against the pre-plan baseline) -- out of this plan's
-    // scope to resolve
+    // Antenna gain of micro node; write-only (set from the antennGainMicro
+    // parameter, never read)
     double antennaGainMicro_;
 
     // Antenna gain of UE
@@ -132,10 +131,9 @@ class StochasticChannelModel : public ChannelModelBase
     bool collectSinrStatistics_;
 
   public:
-    // Statistics, public: RadioMedium's relocated getSINR() (S10) reads
+    // Statistics, public: RadioMedium's getSINR() reads
     // measuredSinr* to emit on a peer endpoint's own signal, and its
-    // relocated emitRcvdSinr() (S12, folded in from the endpoint and from
-    // D2dChannelModel's override) reads rcvdSinr* the same way.
+    // emitRcvdSinr() reads rcvdSinr* the same way.
     static simsignal_t rcvdSinrDlSignal_;
     static simsignal_t rcvdSinrUlSignal_;
     static simsignal_t measuredSinrDlSignal_;
@@ -173,8 +171,8 @@ class StochasticChannelModel : public ChannelModelBase
 
     /*
      * The raw per-role antenna gains, noise figures and cable loss, for
-     * RadioMedium's relocated getSINR_bgUe()/getReceivedPower_bgUe()/getRSRP()
-     * (S10): unlike getAntennaGain()/getNoiseFigure() above, these background-UE
+     * RadioMedium's getSINR_bgUe()/getReceivedPower_bgUe()/getRSRP():
+     * unlike getAntennaGain()/getNoiseFigure() above, these background-UE
      * paths need both roles' values from the one endpoint that plays the eNB
      * side, not just the value matching this endpoint's own role.
      */
@@ -186,7 +184,7 @@ class StochasticChannelModel : public ChannelModelBase
 
     /*
      * Whether to collect the measured/received-SINR statistics, for
-     * RadioMedium's relocated getSINR()/isReceptionSuccessful() (S10).
+     * RadioMedium's getSINR()/isReceptionSuccessful().
      */
     bool getCollectSinrStatistics() const { return collectSinrStatistics_; }
 
@@ -202,7 +200,7 @@ class StochasticChannelModel : public ChannelModelBase
     bool getInsideBuilding() const { return inside_building_; }
 
     /*
-     * The Binder, for RadioMedium's relocated rayleighFading() (S9b): binder_
+     * The Binder, for RadioMedium's rayleighFading(): binder_
      * itself is a protected member, so the medium cannot dereference it directly.
      */
     Binder *getBinder() const { return binder_; }
@@ -311,22 +309,17 @@ class StochasticChannelModel : public ChannelModelBase
     bool isUplinkInterferenceEnabled() override { return enableUplinkInterference_; }
 
     /*
-     * Public for RadioMedium's relocated getAttenuation() (S9b): a plain,
-     * stateless coordinate helper the relocated body calls back on the radio
+     * Public for RadioMedium's getAttenuation(): a plain,
+     * stateless coordinate helper the medium calls back on the radio
      * pointer.
      */
     virtual double getTwoDimDistance(inet::Coord a, inet::Coord b);
 
     /*
-     * Public for RadioMedium's relocated getSINR()/getSIR()/getRSRP()/
-     * getSINR_bgUe()/getReceivedPower_bgUe()/isReceptionSuccessful() (S10):
-     * a plain resident helper the relocated bodies call back on the radio
-     * pointer. computeInterferencePlusNoise(), getReceptionSinr() and
-     * emitRcvdSinr() used to sit here too, as D2D-override dispatch points --
-     * D2dChannelModel no longer overrides any of the three (S12 folds their
-     * D2D branches into the medium's own relocated computation instead), so
-     * like the four interference walks at S11, they were deleted rather than
-     * left as forwarders with nothing left to dispatch to.
+     * Public: RadioMedium's getSINR()/getSIR()/getRSRP()/
+     * getSINR_bgUe()/getReceivedPower_bgUe()/isReceptionSuccessful(),
+     * resident on the medium, call this plain resident helper back on the
+     * radio pointer.
      */
     virtual RadioLink linkFor(UserControlInfo *lteInfo);
 
@@ -335,9 +328,8 @@ class StochasticChannelModel : public ChannelModelBase
      * transmission map can hold: a real UE (with a PHY) and a background UE
      * (with a traffic generator). Public, with describeInterferer() below,
      * for CellularInterferenceModel's computeUplinkInterference() and
-     * computeD2DInterference() (S11/S12), which both call describeInterferer()
-     * by explicit qualification -- the same shape D2D already used, before
-     * computeD2DInterference itself moved here alongside it.
+     * computeD2DInterference(), which both call describeInterferer()
+     * by explicit qualification.
      */
     struct InterfererInfo
     {
@@ -354,7 +346,7 @@ class StochasticChannelModel : public ChannelModelBase
      * otherwise differ in their exclusion rules and antenna-gain terms.
      *
      * medium/carrierFrequency are needed only to bridge the real-UE branch's
-     * physical-fact reads against the medium's registry (S4); the background-UE
+     * physical-fact reads against the medium's registry; the background-UE
      * branch stays unbridged since a traffic generator is not a registered radio.
      */
     static InterfererInfo describeInterferer(const UeAllocationInfo& allocation, RadioMedium *medium, GHz carrierFrequency);
@@ -362,10 +354,10 @@ class StochasticChannelModel : public ChannelModelBase
     /*
      * Compute attenuation due to path loss and shadowing, always with the
      * TR 36.814 formulas regardless of pathLossType. Public for
-     * CellularInterferenceModel's relocated computeExtCellInterference()/
-     * computeBackgroundCellInterference() (S11), which call it back on the
-     * radio pointer: it reads the medium's shared LOS state (losStateFor(),
-     * S13) and shared per-leg Tr36814 strategy (extCellPathLossFor(), S14)
+     * CellularInterferenceModel's computeExtCellInterference()/
+     * computeBackgroundCellInterference(), which call it back on the
+     * radio pointer: it reads the medium's shared LOS state (losStateFor())
+     * and shared per-leg Tr36814 strategy (extCellPathLossFor())
      * for radio's own carrier leg, plus this endpoint's own inside_building_/
      * inside_distance_ (not reachable from outside), so it stays resident
      * rather than moving with the walks that call it.
@@ -384,18 +376,18 @@ class StochasticChannelModel : public ChannelModelBase
 
     /*
      * Compute received useful signal (RSRP) per band over a radio link.
-     * Narrowed back from public at S14: the only caller left is
+     * Protected: the only caller is
      * D2dChannelModel::getRSRP_D2D() (a subclass, reached through an
-     * unqualified self-call), which protected access already covers -- the
+     * unqualified self-call) -- the
      * medium computes RSRP itself rather than calling back through radio.
      */
     virtual std::vector<double> getRSRP(const RadioLink& link, double txPower);
 
     /*
      * Add noise and interference to an already-computed per-band received-power
-     * vector. Narrowed back from public at S14 for the same reason as
+     * vector. Protected, for the same reason as
      * getRSRP(const RadioLink&, double) above: only D2dChannelModel's own
-     * one-to-many capture-effect path (D2dChannelModel::getSINR_D2D()) still
+     * one-to-many capture-effect path (D2dChannelModel::getSINR_D2D())
      * calls it.
      */
     virtual std::vector<double> getSINR(const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);

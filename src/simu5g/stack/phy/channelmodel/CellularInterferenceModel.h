@@ -33,31 +33,31 @@ class StochasticChannelModel;
  * Computes interference for the radio medium: the received power contributed
  * by transmissions other than the one being evaluated.
  *
- * The five walks (four cellular, plus computeD2DInterference folded in at S12)
+ * The five walks (four cellular, plus computeD2DInterference)
  * read the Binder (binder_, resolved here since the endpoint's own binder_ is
  * out of reach from an unrelated class) for allocation facts -- which eNB used
  * which RB this TTI, who is transmitting on which band, the ext-cell and
  * background-cell lists, all produced by the MAC scheduler -- and the medium's
  * registry (medium_, this module's own parent) for the physical facts of other
- * registered radios (plan section 3(c)). Each walk also takes radio, the
+ * registered radios. Each walk also takes radio, the
  * calling endpoint, for facts that stay genuinely per-radio (antenna gain,
  * cable loss) and for the still-resident endpoint methods (computeAngle,
  * computeAngularAttenuation, computeExtCellPathLoss) it calls back on -- the
- * same one-radio-pointer shape RadioMedium's own relocated computation already
- * uses (S9b/S10). Never draws: every random draw the interference contributions
+ * same one-radio-pointer shape RadioMedium's own computation
+ * uses. Never draws: every random draw the interference contributions
  * depend on (an interferer's own attenuation, via getAttenuation) is made by
- * the medium's S9b/S10 functions, reached through radio or through the
+ * the medium's functions, reached through radio or through the
  * interfering endpoint's own channel model, not here.
  */
 class CellularInterferenceModel : public cSimpleModule
 {
   protected:
-    // This module's own parent (S2's submodule slot); resolved once at
+    // This module's own parent; resolved once at
     // initialize(), read live thereafter like the rest of the medium's
     // accessor family.
     RadioMedium *medium_ = nullptr;
 
-    // Allocation facts (plan 3(c)) come from the Binder, populated by the MAC
+    // Allocation facts come from the Binder, populated by the MAC
     // scheduler; not available through the medium's registry, which only
     // knows physical facts.
     inet::ModuleRefByPar<Binder> binder_;
@@ -99,7 +99,7 @@ class CellularInterferenceModel : public cSimpleModule
 
     /*
      * Compute interference coming from neighboring UEs for the D2D/D2D_MULTI
-     * direction (plan S12: folded in from D2dChannelModel, interference-walk-shaped
+     * direction (interference-walk-shaped
      * like its four cellular siblings above). radio's own D2D marker
      * (RadioMedium::descriptorFor) is what the caller already resolved to decide
      * this walk should run at all.

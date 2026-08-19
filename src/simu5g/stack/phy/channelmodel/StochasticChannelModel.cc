@@ -294,7 +294,7 @@ StochasticChannelModel::InterfererInfo StochasticChannelModel::describeInterfere
         info.txPwr = medium->txPowerOf(info.nodeId, carrierFrequency, info.dir);
         info.coord = medium->coordOf(info.nodeId, carrierFrequency);
     }
-    else { // a background UE is a registered phantom radio (plan S12b/3(j))
+    else { // a background UE is a registered phantom radio
         BgUeKey key{allocation.cellId, carrierFrequency, allocation.nodeId};
         info.txPwr = medium->txPowerOf(key);
         info.coord = medium->coordOf(key);

@@ -47,11 +47,11 @@ struct JakesFadingData
 };
 
 /**
- * The unit CarrierPhysics -- and, since S13, the medium's per-link stochastic
- * state -- is grouped by: a carrier frequency alone conflates an NR UE's
+ * The unit CarrierPhysics and the medium's per-link stochastic state are
+ * grouped by: a carrier frequency alone conflates an NR UE's
  * always-instantiated but unused LTE leg with the gNB it shares a default
  * component-carrier frequency with, and conflates a dual-connectivity master
- * eNB with its secondary gNB (plan section 3(h)). Frequency stays the
+ * eNB with its secondary gNB. Frequency stays the
  * primary component; isNr is the added discriminator.
  */
 struct CarrierLeg
@@ -66,12 +66,11 @@ struct CarrierLeg
 };
 
 /**
- * Key for the medium's per-link stochastic state (plan S13/§3(b)): the
+ * Key for the medium's per-link stochastic state: the
  * carrier leg plus the unordered pair of nodes the link connects (LinkKey
  * already normalizes that pair). One entry per physical link, shared by
- * both ends -- not one per registering endpoint, which is the per-end
- * asymmetry this step abolishes: the same link no longer draws its own LOS,
- * shadowing and Jakes realization once from each side.
+ * both ends: the same link draws its own LOS, shadowing and Jakes
+ * realization once, not once per end.
  */
 typedef std::pair<CarrierLeg, LinkKey> LinkStateKey;
 
@@ -79,7 +78,7 @@ typedef std::map<LinkStateKey, std::vector<JakesFadingData>> JakesFadingMap;
 typedef std::map<LinkStateKey, std::pair<inet::simtime_t, double>> ShadowFadingMap;
 
 /**
- * A background transmitter's phantom key (plan 3(j)): the tuple that *is*
+ * A background transmitter's phantom key: the tuple that *is*
  * network-unique, since its own MacNodeId is not -- every
  * BackgroundTrafficManager numbers its population from BGUE_MIN_ID, so the
  * first background UE of every manager in the network is MacNodeId(4097).
@@ -105,16 +104,15 @@ struct BgUeKey
 
 /**
  * One radio endpoint registered with the medium: the endpoint itself, plus
- * the identity the registry indexes it by. Kept minimal -- the accessor
- * surface that reads it is added in a later step.
+ * the identity the registry indexes it by.
  */
 struct RadioDescriptor
 {
-    StochasticChannelModel *endpoint = nullptr;   // null iff this is a phantom (plan 3(j))
+    StochasticChannelModel *endpoint = nullptr;   // null iff this is a phantom
     MacNodeId nodeId = NODEID_NONE;
     GHz carrierFrequency = GHz(0);
 
-    // The D2D marker (plan S12a): endpoint downcast once at registration,
+    // The D2D marker: endpoint downcast once at registration,
     // non-null iff this radio is D2D-capable. The registration-time
     // dynamic_cast this is built from is the only one -- every D2D-aware
     // branch reads this cached pointer afterward instead of casting itself,
@@ -123,7 +121,7 @@ struct RadioDescriptor
     // does not carry.
     D2dChannelModel *d2dEndpoint = nullptr;
 
-    // The phantom half (plan S12b/3(j)): non-null iff endpoint == nullptr --
+    // The phantom half: non-null iff endpoint == nullptr --
     // ASSERTed at registration that exactly one of the two is non-null. A
     // phantom is never reachable through radioIndex_/descriptorFor(MacNodeId,
     // GHz) -- it lives in bgRadioIndex_ instead, keyed by BgUeKey, the tuple
@@ -136,7 +134,7 @@ struct RadioDescriptor
 };
 
 /**
- * The per-carrier-leg physics parameters (plan section 3(e)/3(h)) that every
+ * The per-carrier-leg physics parameters that every
  * radio registered on a given leg must agree on. Filled from the first radio
  * to register on that leg; every later one is checked against it,
  * field by field, in addRadio(). Per-radio parameters (antenna gains, cable
@@ -193,7 +191,7 @@ class RadioMedium : public cSimpleModule
     std::deque<RadioDescriptor> radios_;
     std::map<std::pair<MacNodeId, GHz>, RadioDescriptor *> radioIndex_;
 
-    // Phantom radios (plan S12b/3(j)), keyed by the tuple that is unique --
+    // Phantom radios, keyed by the tuple that is unique --
     // real radios never enter this index, and a phantom never enters
     // radioIndex_. Same radios_ deque, same lifetime story, same
     // swap-and-pop removal; reindex() is what keeps a moved descriptor
@@ -204,25 +202,23 @@ class RadioMedium : public cSimpleModule
     // radio to register on it (see addRadio()). Nothing reads this yet.
     std::map<CarrierLeg, CarrierPhysics> carrierPhysics_;
 
-    // Per-link stochastic state (plan S13/§3(b)), keyed by LinkStateKey --
-    // one shared entry per physical link, not one per registering endpoint
-    // the way the S8-S12 radioState_ this replaces was. losMap_ and
-    // lastComputedSF_/jakesFadingMap_/jakesFadingMapBgUe_ together replace
-    // that per-radio scheme's six containers.
+    // Per-link stochastic state, keyed by LinkStateKey --
+    // one shared entry per physical link, shared by both endpoints. losMap_ and
+    // lastComputedSF_/jakesFadingMap_/jakesFadingMapBgUe_ together hold this
+    // link-level LOS/shadowing/Jakes state.
     std::map<LinkStateKey, bool> losMap_;
     ShadowFadingMap lastComputedSF_;
     JakesFadingMap jakesFadingMap_;
     JakesFadingMap jakesFadingMapBgUe_;
 
-    // Per-(node, CarrierLeg) mobility state (plan S13/§3(b)): a node's motion
+    // Per-(node, CarrierLeg) mobility state: a node's motion
     // is a property of the node itself, not of a link between two nodes, so
     // these stay keyed one level coarser than the four containers above --
-    // shared across every link that tracks the same node on the same leg,
-    // rather than once per (observing endpoint, node) as before S13.
+    // shared across every link that tracks the same node on the same leg.
     std::map<std::pair<MacNodeId, CarrierLeg>, std::queue<Position>> positionHistory_;
     std::map<std::pair<MacNodeId, CarrierLeg>, Position> lastCorrelationPoint_;
 
-    // One PathLossModel strategy per carrier leg (S9b), created eagerly in
+    // One PathLossModel strategy per carrier leg, created eagerly in
     // addRadio() when a leg's CarrierPhysics record is first established.
     // PathLossModel::owner_ is this medium, which is what relocates every
     // propagation-formula random draw onto the medium's own rng-0 stream.
@@ -230,17 +226,16 @@ class RadioMedium : public cSimpleModule
     // strategy lives for the run.
     std::map<CarrierLeg, PathLossModel *> pathLoss_;
 
-    // One Tr36814PathLossModel instance per carrier leg (S14), replacing the
-    // per-*endpoint* instance StochasticChannelModel::extCellPathLoss_ used
-    // to own: the ext-cell/background-cell interference path always uses
+    // One Tr36814PathLossModel instance per carrier leg: the
+    // ext-cell/background-cell interference path always uses
     // TR 36.814 regardless of the leg's own pathLossType (computeExtCellPathLoss),
-    // so every radio on a leg would build an identical instance -- the same
-    // duplication pathLoss_ existed to eliminate. Draw-free (verified: neither
+    // so every radio on a leg would otherwise build an identical instance.
+    // Draw-free (verified: neither
     // Tr36814PathLossModel.cc nor computeExtCellPathLoss() itself draws), so
-    // consolidating it costs nothing in RNG attribution. Owned, like pathLoss_.
+    // sharing it costs nothing in RNG attribution. Owned, like pathLoss_.
     std::map<CarrierLeg, PathLossModel *> extCellPathLoss_;
 
-    // This medium's own interference submodule (S2's slot, S11's payload):
+    // This medium's own interference submodule:
     // resolved once at initialize(), read live thereafter. Not owned -- it
     // is a child module, torn down by the module hierarchy like any other.
     CellularInterferenceModel *interference_ = nullptr;
@@ -248,19 +243,18 @@ class RadioMedium : public cSimpleModule
     /** Looks up the registered radio for (nodeId, carrierFrequency); throws if none is registered. */
     const RadioDescriptor& descriptorFor(MacNodeId nodeId, GHz carrierFrequency) const;
 
-    /** Looks up the registered phantom for key; throws if none is registered (plan S12b). */
+    /** Looks up the registered phantom for key; throws if none is registered. */
     const RadioDescriptor& descriptorFor(const BgUeKey& key) const;
 
     /**
      * Re-points radioIndex_ or bgRadioIndex_ (dispatching on endpoint != nullptr)
      * for descriptor, whose address just changed under swap-and-pop removal.
      * Factored so both removal paths use it: using removeRadio's own re-index
-     * line unconditionally would write a phantom into the real-radio index
-     * (plan S12b item 5 / risk 18).
+     * line unconditionally would write a phantom into the real-radio index.
      */
     void reindex(RadioDescriptor& descriptor);
 
-    /** Reads the per-carrier-leg physics parameters (plan 3(e)) declared on the endpoint's own NED type. */
+    /** Reads the per-carrier-leg physics parameters declared on the endpoint's own NED type. */
     CarrierPhysics readCarrierPhysics(StochasticChannelModel *endpoint) const;
 
     /** Checks candidate against the leg's established record; throws naming the first mismatched parameter. */
@@ -273,10 +267,10 @@ class RadioMedium : public cSimpleModule
     /** The per-leg CarrierPhysics record established in addRadio(); throws if no radio has registered on the leg. */
     const CarrierPhysics& carrierPhysicsFor(const CarrierLeg& leg) const;
 
-    /** Builds the propagation-formula strategy matching cp.pathLossType and initializes it from the leg's own established CarrierPhysics record and carrier frequency (plan 3(i).4). */
+    /** Builds the propagation-formula strategy matching cp.pathLossType and initializes it from the leg's own established CarrierPhysics record and carrier frequency. */
     PathLossModel *createPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg);
 
-    /** Builds this leg's ext-cell/background-cell strategy (S14): always Tr36814PathLossModel, regardless of cp.pathLossType, from the same CarrierPhysics fields createPathLossModel() reads. */
+    /** Builds this leg's ext-cell/background-cell strategy: always Tr36814PathLossModel, regardless of cp.pathLossType, from the same CarrierPhysics fields createPathLossModel() reads. */
     PathLossModel *createExtCellPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg);
 
     /**
@@ -308,7 +302,7 @@ class RadioMedium : public cSimpleModule
   public:
     ~RadioMedium() override;
 
-    /** Resolves interference_, this medium's own interference submodule (S2/S11). */
+    /** Resolves interference_, this medium's own interference submodule. */
     void initialize() override;
 
     /** Never called: this module has no gates and schedules no self-messages. */
@@ -322,7 +316,7 @@ class RadioMedium : public cSimpleModule
 
     /**
      * Registers a background transmitter's phantom radio under key, the
-     * tuple that is unique (plan S12b/3(j)): unlike addRadio(), this
+     * tuple that is unique: unlike addRadio(), this
      * establishes no CarrierPhysics record and creates no PathLossModel or
      * per-radio stochastic state -- a phantom declares none of the 25
      * per-carrier-leg physics parameters and owns no stochastic state.
@@ -334,8 +328,8 @@ class RadioMedium : public cSimpleModule
     virtual void removeBackgroundRadio(const BgUeKey& key);
 
     /**
-     * The shared LOS/NLOS state for radio's own carrier leg (plan
-     * S13/§3(b)): auto-vivifies to NLOS (false) if this link's LOS has
+     * The shared LOS/NLOS state for radio's own carrier leg:
+     * auto-vivifies to NLOS (false) if this link's LOS has
      * never been computed. Public for StochasticChannelModel's resident
      * computeExtCellPathLoss(), which -- like the primary in-cell
      * attenuation computation -- reads (and may share) this same losMap_
@@ -356,56 +350,51 @@ class RadioMedium : public cSimpleModule
     virtual double insideDistanceOf(MacNodeId nodeId, GHz carrierFrequency) const;
 
     /**
-     * Physical facts of a registered background transmitter (plan S12b/3(j)):
+     * Physical facts of a registered background transmitter:
      * the accessor family widens to the phantom key rather than forking --
      * two overloads on the existing names, not new ones. No Direction
      * overload of txPowerOf: TrafficGeneratorBase::getTxPwr() takes none, a
-     * background UE has one tx power, and today's branch this replaces
-     * passes no direction either.
+     * background UE has one tx power.
      */
     virtual inet::Coord coordOf(const BgUeKey& key) const;
     virtual double txPowerOf(const BgUeKey& key) const;
 
-    /** The calling radio's outdoor-to-indoor geometry (plan 3(i)), read live off its registered endpoint. */
+    /** The calling radio's outdoor-to-indoor geometry, read live off its registered endpoint. */
     virtual O2iState o2iStateOf(MacNodeId nodeId, GHz carrierFrequency) const;
 
     /**
      * The per-leg path-loss strategy for a registered radio, resolved through
-     * the registry like the rest of this accessor family. Lets a still-resident
-     * endpoint method (computeAngularAttenuation, whose formula never drew and
-     * so was never on S9b's relocation list) keep delegating to the strategy
-     * now that pathLoss_ no longer lives on the endpoint.
+     * the registry like the rest of this accessor family. Lets the
+     * endpoint's own computeAngularAttenuation -- whose formula never draws,
+     * so it stays resident on the endpoint -- keep delegating to the strategy,
+     * which pathLoss_ holds on the medium, not the endpoint.
      */
     virtual PathLossModel& pathLossFor(MacNodeId nodeId, GHz carrierFrequency) const;
 
     /**
-     * The per-leg ext-cell/background-cell strategy for a registered radio
-     * (plan S14): the medium's counterpart of pathLossFor(), letting the
-     * still-resident computeExtCellPathLoss() delegate to a shared instance
-     * instead of owning its own -- extCellPathLoss_ no longer lives on the
-     * endpoint.
+     * The per-leg ext-cell/background-cell strategy for a registered radio:
+     * the medium's counterpart of pathLossFor(), letting the
+     * resident computeExtCellPathLoss() delegate to a shared instance
+     * instead of owning its own -- extCellPathLoss_ lives on the medium, not
+     * the endpoint.
      */
     virtual PathLossModel& extCellPathLossFor(MacNodeId nodeId, GHz carrierFrequency) const;
 
     /**
-     * The physical-layer computation relocated from StochasticChannelModel
-     * (plan step S9b): the endpoint that used to compute these now holds
-     * only a one-line forwarder to here, so every random draw that used to
-     * consume the endpoint's own rng-0 stream now consumes this medium's,
-     * in the same order and the same count -- the byte-identical relocation
-     * the step depends on. radio identifies the calling endpoint, whose own
+     * The physical-layer computation, resident on the medium: the endpoint
+     * holds only a one-line forwarder to here, so every random draw
+     * consumes this medium's rng-0 stream, in the same order and the same
+     * count for every endpoint. radio identifies the calling endpoint, whose own
      * O2I geometry (o2iStateOf) these read; the shared PathLossModel
      * strategy and the per-link/per-node stochastic state are both looked
-     * up by radio's carrier leg (plan S13/§3(b)).
+     * up by radio's carrier leg.
      *
-     * computeShadowing()/jakesFading() lost their cqiDl parameter and
-     * jakesFading() its ownerId at S13: both used to select between this
-     * radio's own state and a *different*, peer endpoint's (obtainShadowingMap()/
-     * obtainUeJakesMap(), deleted) -- now there is one shared entry per link
-     * regardless of which end asks, so there is nothing left to redirect to.
+     * computeShadowing()/jakesFading() take no cqiDl parameter and
+     * jakesFading() no ownerId: there is one shared entry per link,
+     * regardless of which end asks, so there is nothing to redirect to.
      * computeCorrelationDistance() takes nodeId rather than a LinkKey for the
      * same reason updatePositionHistory()/updateCorrelationDistance() below
-     * do: per §3(b), a node's correlation point is a property of the node
+     * do: a node's correlation point is a property of the node
      * and its carrier leg, not of a link between two nodes.
      */
     virtual double getAttenuation(StochasticChannelModel *radio, const RadioLink& link);
@@ -419,12 +408,9 @@ class RadioMedium : public cSimpleModule
     virtual double computeCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
 
     /**
-     * The node-motion bookkeeping relocated from StochasticChannelModel at
-     * S13, alongside the positionHistory_/lastCorrelationPoint_ containers
-     * themselves: both used to be resident because they read the endpoint's
-     * own per-radio state directly; now that state lives here, keyed by
-     * (node, CarrierLeg) (plan §3(b)), so does the bookkeeping that touches
-     * it. updatePositionHistory() maintains the two-entry rolling history
+     * The node-motion bookkeeping, resident on the medium alongside the
+     * positionHistory_/lastCorrelationPoint_ containers themselves, keyed by
+     * (node, CarrierLeg). updatePositionHistory() maintains the two-entry rolling history
      * computeSpeed() reads; updateCorrelationDistance() records the point
      * getAttenuation() measures the next call's correlationDist against.
      */
@@ -432,13 +418,13 @@ class RadioMedium : public cSimpleModule
     virtual void updateCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
 
     /**
-     * The SINR/RSRP/reception-decision surface relocated from
-     * StochasticChannelModel (plan step S10): same one-line-forwarder shape
-     * as the S9b computation above. isReceptionSuccessful's BLER draw
-     * (uniform(0.0, 1.0)) moves with it, onto this medium's rng-0 stream --
-     * another RNG canary. computeInterferencePlusNoise calls interference_
+     * The SINR/RSRP/reception-decision surface, resident on the medium:
+     * same one-line-forwarder shape
+     * as the physical-layer computation above. isReceptionSuccessful's BLER draw
+     * (uniform(0.0, 1.0)) draws from this medium's rng-0 stream.
+     * computeInterferencePlusNoise calls interference_
      * (this medium's own submodule), never radio, for the four cellular
-     * walks (S11) and, since S12, for the D2D walk too.
+     * walks and for the D2D walk too.
      */
     virtual std::vector<double> getSINR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
     virtual std::vector<double> getSINR(StochasticChannelModel *radio, const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);
@@ -454,18 +440,18 @@ class RadioMedium : public cSimpleModule
             const std::vector<double>& rsrpVector);
 
     /**
-     * D2D-aware branches folded in from D2dChannelModel (plan step S12):
-     * D2dChannelModel becomes an endpoint marker (RadioDescriptor::d2dEndpoint),
-     * and getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise stop being
-     * virtual dispatch points -- there is nothing left overriding them, so
-     * isReceptionSuccessful/getSINR call them as plain sibling methods here
+     * D2D-aware branches, resident on the medium:
+     * D2dChannelModel is an endpoint marker (RadioDescriptor::d2dEndpoint),
+     * and getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise are plain
+     * sibling methods here, not virtual dispatch points, so
+     * isReceptionSuccessful/getSINR call them directly
      * instead of through radio. d2dLink is the link-builder counterpart of
-     * linkFor/cellularLink (S9b/S10 shape); computeD2DInterference is
+     * linkFor/cellularLink; computeD2DInterference is
      * interference-walk-shaped and lives beside its four cellular siblings on
-     * interference_ (S11 shape) instead. Neither draws; the only random draw
+     * interference_. Neither draws; the only random draw
      * a D2D reception depends on is getAttenuation's, reached through radio's
-     * own carrier leg exactly like a cellular link's. d2dLink no longer takes
-     * a useUeSideMaps flag as of S13: RadioLink lost the field it fed, since
+     * own carrier leg exactly like a cellular link's. d2dLink takes no
+     * useUeSideMaps flag: RadioLink carries no such field, since
      * a D2D link's state is the same shared entry regardless of which end asks.
      */
     virtual RadioLink d2dLink(StochasticChannelModel *radio, MacNodeId srcId, inet::Coord srcCoord,

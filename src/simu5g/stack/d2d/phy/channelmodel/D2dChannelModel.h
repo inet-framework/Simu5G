@@ -25,16 +25,15 @@ using namespace omnetpp;
  * Marker for D2D-capable NICs, plus the ID2dChannelModel entry points D2D-aware
  * PHY code calls directly (getRSRP_D2D/getSINR_D2D).
  *
- * Through plan step S12, this class held ~800 lines of D2D channel math
- * (attenuation, RSRP/SINR, interference, reception decision) on top of
- * StochasticChannelModel. That math is now D2D-aware branches in RadioMedium
+ * D2D channel math (attenuation, RSRP/SINR, interference, reception decision)
+ * lives as D2D-aware branches in RadioMedium
  * (d2dLink, getReceptionSinr, emitRcvdSinr, computeInterferencePlusNoise) and
  * in its interference submodule (computeD2DInterference), reached from a
  * registered radio's RadioDescriptor::d2dEndpoint -- the medium's marker for
  * "this endpoint is D2D-capable", set once at registration by downcasting to
  * this class. What is left here is the marker itself (being this class),
- * getRSRP_D2D/getSINR_D2D (called from D2dUePhyHelper.cc and PhyEnbD2D.cc,
- * unaffected by the fold), and the two small facts only a D2D-capable
+ * getRSRP_D2D/getSINR_D2D (called from D2dUePhyHelper.cc and PhyEnbD2D.cc),
+ * and the two small facts only a D2D-capable
  * endpoint carries: whether D2D interference is enabled, and the signal a
  * D2D reception is reported under.
  *
@@ -64,7 +63,7 @@ class D2dChannelModel : public StochasticChannelModel, public ID2dChannelModel
 
     /*
      * The signal a D2D reception is reported under, for RadioMedium's
-     * relocated emitRcvdSinr() (S12), reached through this endpoint's own
+     * emitRcvdSinr(), reached through this endpoint's own
      * RadioDescriptor::d2dEndpoint.
      */
     simsignal_t getRcvdSinrD2DSignal() const { return rcvdSinrD2DSignal_; }

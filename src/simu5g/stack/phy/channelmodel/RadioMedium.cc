@@ -35,7 +35,7 @@ Define_Module(RadioMedium);
 
 namespace {
 
-/** The carrier leg a registered endpoint belongs to (plan 3(h)): its own carrier frequency plus its isNr flag. */
+/** The carrier leg a registered endpoint belongs to: its own carrier frequency plus its isNr flag. */
 CarrierLeg legFor(StochasticChannelModel *endpoint)
 {
     return CarrierLeg{endpoint->getCarrierFrequency(), endpoint->isNr()};
@@ -119,7 +119,7 @@ RadioMedium::~RadioMedium()
 
 void RadioMedium::initialize()
 {
-    // this medium's own submodule (S2's slot); purely structural, so
+    // this medium's own submodule; purely structural, so
     // resolvable regardless of init-stage ordering
     interference_ = check_and_cast<CellularInterferenceModel *>(getSubmodule("interference"));
 }
@@ -137,10 +137,10 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
     descriptor.endpoint = endpoint;
     descriptor.nodeId = endpoint->getNodeId();
     descriptor.carrierFrequency = endpoint->getCarrierFrequency();
-    // The D2D marker (plan S12a): one dynamic_cast, here, cached for every
+    // The D2D marker: one dynamic_cast, here, cached for every
     // D2D-aware branch to read afterward instead of casting itself.
     descriptor.d2dEndpoint = dynamic_cast<D2dChannelModel *>(endpoint);
-    // exactly one of endpoint/bgGenerator is ever non-null (plan S12b/3(j))
+    // exactly one of endpoint/bgGenerator is ever non-null
     ASSERT((descriptor.endpoint != nullptr) != (descriptor.bgGenerator != nullptr));
 
     auto key = std::make_pair(descriptor.nodeId, descriptor.carrierFrequency);
@@ -150,7 +150,7 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
 
     // establish this carrier leg's physics from the first radio to register
     // on it, or check that this radio agrees with what an earlier one
-    // established (plan 3(h): frequency alone conflates an NR UE's vestigial
+    // established (frequency alone conflates an NR UE's vestigial
     // LTE leg with the gNB it shares a default component carrier with, and a
     // dual-connectivity master eNB with its secondary gNB)
     CarrierLeg leg = legFor(endpoint);
@@ -160,12 +160,12 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
         candidate.establishedByPath = endpoint->getFullPath();
         carrierPhysics_[leg] = candidate;
 
-        // this leg's path-loss strategy (S9b), built from the record just
-        // established -- never from this radio's own members (plan 3(i).4)
+        // this leg's path-loss strategy, built from the record just
+        // established -- never from this radio's own members
         pathLoss_[leg] = createPathLossModel(candidate, leg);
 
-        // this leg's ext-cell/background-cell strategy (S14), replacing what
-        // every radio on the leg used to build for itself
+        // this leg's ext-cell/background-cell strategy, shared by every
+        // radio on the leg
         extCellPathLoss_[leg] = createExtCellPathLossModel(candidate, leg);
     }
     else {
@@ -189,14 +189,13 @@ void RadioMedium::addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *g
     descriptor.nodeId = key.bgUeId;
     descriptor.carrierFrequency = key.carrierFrequency;
     descriptor.bgCellId = key.cellId;
-    // exactly one of endpoint/bgGenerator is ever non-null (plan S12b/3(j))
+    // exactly one of endpoint/bgGenerator is ever non-null
     ASSERT((descriptor.endpoint != nullptr) != (descriptor.bgGenerator != nullptr));
 
     // no readCarrierPhysics, no checkCarrierPhysics, no createPathLossModel:
     // a phantom declares none of the 25 per-carrier-leg physics parameters
     // and, since it is never radio in getAttenuation()/computeShadowing()/
     // jakesFading(), never keys an entry into the per-link state either
-    // (plan S12b item 3)
     radios_.push_back(descriptor);
     bgRadioIndex_[key] = &radios_.back();
 }
@@ -315,7 +314,7 @@ void RadioMedium::removeRadio(StochasticChannelModel *endpoint)
     // re-points whichever index entry (radioIndex_ or bgRadioIndex_) held
     // the descriptor that took the removed one's place (if the removed one
     // was not already the last) -- reindex() dispatches on which one
-    // (plan S12b item 5 / risk 18: unconditionally re-indexing into
+    // (unconditionally re-indexing into
     // radioIndex_ here would write a phantom into the real-radio index)
     size_t idx = it - radios_.begin();
     radios_[idx] = radios_.back();
@@ -452,7 +451,7 @@ PathLossModel *RadioMedium::createPathLossModel(const CarrierPhysics& cp, const 
 
     // the frequency triple reproduces ChannelModelBase's own derivation
     // (ChannelModelBase.cc:26-29) from the leg's own carrier frequency, with
-    // no round-trip through an endpoint (plan 3(i).4)
+    // no round-trip through an endpoint
     double carrierFrequencyGHz = GHz(leg.carrierFrequency).get();
     double carrierFrequencyHz = Hz(leg.carrierFrequency).get();
     model->initialize(this, aToDeploymentScenario(cp.scenario), cp.nodebHeight, cp.ueHeight, cp.buildingHeight, cp.streetWidth,
@@ -465,7 +464,7 @@ PathLossModel *RadioMedium::createExtCellPathLossModel(const CarrierPhysics& cp,
 {
     // always TR 36.814, regardless of cp.pathLossType: the ext-cell and
     // background-cell interference paths (computeExtCellPathLoss) use those
-    // formulas unconditionally (plan S14)
+    // formulas unconditionally
     auto *model = new Tr36814PathLossModel();
 
     double carrierFrequencyGHz = GHz(leg.carrierFrequency).get();
@@ -592,7 +591,7 @@ double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, 
 double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& key, double speed,
         unsigned int band, bool isBgUe)
 {
-    // isBgUe selects the background-UE Jakes twin (plan S13/§3(b)): the two
+    // isBgUe selects the background-UE Jakes twin: the two
     // maps are otherwise identical in shape and semantics, kept separate
     // only so a background UE's key range (>= BGUE_MIN_ID) never shares an
     // entry with a real UE's, even coincidentally.
@@ -833,11 +832,10 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
            << link.rxCoord.distance(link.txCoord) << " - DIR=" << dirToA(link.dir) << endl;
 
         // One loop for both cases: with interference disabled d2dInterference is all
-        // zeros, so this degenerates to the noise-only denominator. (The two used to be
-        // written out separately, the disabled branch summing noise directly instead of
-        // going through dBm -> linear -> dBm. That round trip is not bit-identical, so
-        // the collapse is observable -- but only where d2dInterference is false, which
-        // no shipped configuration sets.)
+        // zeros, so this degenerates to the noise-only denominator. Because this goes
+        // through dBm -> linear -> dBm rather than summing noise directly in dBm, the
+        // two are not bit-identical -- observable only when D2D interference is
+        // disabled, which no shipped configuration does.
         for (unsigned int i = 0; i < radio->getNumBands(); i++) {
             // the caller skips these bands too; leave their denominator untouched
             if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
@@ -1411,7 +1409,7 @@ bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFra
 
             // Get the Bler
             if (cqi == 0)
-                return false; // CQI 0 means channel below usable quality (e.g. after handover) — loss
+                return false; // CQI 0 means channel below usable quality (e.g. after handover) -- loss
             if (cqi > 15)
                 throw cRuntimeError("A packet has been transmitted with a cqi greater than 15 cqi:%d txmode:%d dir:%d rb:%d cw:%d rtx:%d", cqi, lteInfo->getTxMode(), dir, band, cw, transmissionAttempt);
 
@@ -1496,7 +1494,7 @@ RadioLink RadioMedium::d2dLink(StochasticChannelModel *radio, MacNodeId srcId, i
     // transmitter's own cellular state).
     //
     // The tracked node stays the transmitter: it is that UE's motion that
-    // defines the speed, regardless of which end (radio) is asking (plan S13).
+    // defines the speed, regardless of which end (radio) is asking.
     link.stateKey = LinkKey(srcId, destId);
     link.stateNodeId = srcId;
     link.stateCoord = srcCoord;
