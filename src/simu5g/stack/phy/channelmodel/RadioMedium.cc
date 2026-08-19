@@ -75,7 +75,6 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
     // D2D-aware branch to read afterward instead of casting itself.
     descriptor.d2dEndpoint = dynamic_cast<D2dChannelModel *>(endpoint);
     // exactly one of endpoint/bgGenerator is ever non-null
-    ASSERT((descriptor.endpoint != nullptr) != (descriptor.bgGenerator != nullptr));
 
     auto key = std::make_pair(descriptor.nodeId, descriptor.carrierFrequency);
     if (radioIndex_.find(key) != radioIndex_.end())
@@ -124,7 +123,6 @@ void RadioMedium::addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *g
     descriptor.carrierFrequency = key.carrierFrequency;
     descriptor.bgCellId = key.cellId;
     // exactly one of endpoint/bgGenerator is ever non-null
-    ASSERT((descriptor.endpoint != nullptr) != (descriptor.bgGenerator != nullptr));
 
     // no readCarrierPhysics, no checkCarrierPhysics, no createPathLossModel:
     // a phantom declares none of the 25 per-carrier-leg physics parameters

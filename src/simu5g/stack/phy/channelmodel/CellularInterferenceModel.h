@@ -73,27 +73,25 @@ class CellularInterferenceModel : public cSimpleModule
      * @param eNbId id of the considered eNb
      * @param isCqi if we are computing a CQI
      */
-    virtual bool computeDownlinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId ueId,
+    virtual void computeDownlinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId ueId,
             inet::Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
 
     /*
      * Compute interference coming from neighboring cells for the UL direction
      */
-    virtual bool computeUplinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
+    virtual void computeUplinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
             bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference);
 
     /*
      * Evaluates total interference from external cells seen from the spot given by coord
-     * @return total interference expressed in dBm
      */
-    virtual bool computeExtCellInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId nodeId,
+    virtual void computeExtCellInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId nodeId,
             inet::Coord coord, bool isCqi, GHz carrierFrequency, std::vector<double> *interference);
 
     /*
      * Evaluates total interference from external cells seen from the spot given by coord
-     * @return total interference expressed in dBm
      */
-    virtual bool computeBackgroundCellInterference(StochasticChannelModel *radio, MacNodeId nodeId,
+    virtual void computeBackgroundCellInterference(StochasticChannelModel *radio, MacNodeId nodeId,
             inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap,
             Direction dir, std::vector<double> *interference);
 
@@ -104,7 +102,7 @@ class CellularInterferenceModel : public cSimpleModule
      * (RadioMedium::descriptorFor) is what the caller already resolved to decide
      * this walk should run at all.
      */
-    virtual bool computeD2DInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
+    virtual void computeD2DInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
             inet::Coord senderCoord, MacNodeId destId, inet::Coord destCoord, bool isCqi, GHz carrierFrequency,
             std::vector<double> *interference, Direction dir);
 };
