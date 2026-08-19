@@ -20,6 +20,7 @@
 /simulations/channelmodel/,              -f omnetpp.ini -c Penetration-36873 -r 0,       20s,        41e9-0911/tplx;a0f0-61ce/tilx;2818-5d9a/~tNl;fde5-29d5/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c PenetrationLow-38901 -r 0,    20s,        c970-bd70/tplx;412d-4222/tilx;a0a7-a8cf/~tNl;da18-eb73/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c PenetrationHigh-38901 -r 0,   20s,        c462-7000/tplx;6af6-0b6a/tilx;b841-08b3/~tNl;8401-dde7/sz, PASS,
+/simulations/channelmodel/,              -f omnetpp.ini -c Penetration-MultiCarrier-38901 -r 0, 20s, fc46-117f/tplx;b2c4-c2a1/tilx;da19-3600/~tNl;28e4-6214/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c Rayleigh-38901 -r 0,          20s,        1313-e9a4/tplx;052e-bda8/tilx;addb-e111/~tNl;87db-d47c/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c Anisotropic-36873 -r 0,       20s,        fc49-2f4d/tplx;b945-e307/tilx;f31f-eef2/~tNl;2ac3-127b/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c SMa-38901 -r 0,               20s,        17a5-d096/tplx;7c74-cc2d/tilx;73aa-a34c/~tNl;e6f2-733f/sz, PASS,
