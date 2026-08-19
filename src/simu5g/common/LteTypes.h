@@ -43,7 +43,7 @@ namespace simu5g {
 #define SIMU5G_STRONG_TYPEDEF(TypeName, UnderlyingType) \
     enum class TypeName : UnderlyingType {}; \
     inline UnderlyingType num(TypeName id) { return static_cast<UnderlyingType>(id); } \
-    inline std::ostream& operator<<(std::ostream& os, TypeName id) { os << static_cast<UnderlyingType>(id); return os; } \
+    inline std::ostream& operator<<(std::ostream& os, TypeName id) { os << +static_cast<UnderlyingType>(id); return os; } /* unary + : a uint8_t id is a number, not a character */ \
     inline void doParsimPacking(omnetpp::cCommBuffer *buffer, TypeName d) { buffer->pack(num(d)); } \
     inline void doParsimUnpacking(omnetpp::cCommBuffer *buffer, TypeName& d) { UnderlyingType tmp; buffer->unpack(tmp); d = TypeName(tmp); }
 
@@ -80,6 +80,7 @@ SIMU5G_STRONG_TYPEDEF(Qfi, uint8_t)
 // QFI -- the default QoS flow's -- and a sentinel that collides with it cannot be told
 // apart from a packet classified onto the default flow
 constexpr Qfi QFI_NONE = Qfi(255);
+
 
 /// Invalid/uninitialized LCID and DRB ID values
 constexpr LogicalCid LCID_NONE = LogicalCid(65535);

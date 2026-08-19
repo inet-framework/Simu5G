@@ -39,7 +39,7 @@ void QosFlowClassifier::handleMessage(cMessage *msg)
         Qfi qfi = qfiRules_.classify(pkt, ipv4Header);
         if (qfi != QFI_NONE) {
             pkt->addTag<QfiReq>()->setQfi(qfi);
-            EV_INFO << "QosFlowClassifier - " << pkt->getName() << " classified to QFI " << (int)num(qfi) << "\n";
+            EV_INFO << "QosFlowClassifier - " << pkt->getName() << " classified to QFI " << qfi << "\n";
         }
         else
             EV_INFO << "QosFlowClassifier - " << pkt->getName() << " matches no rule, left unclassified\n";
