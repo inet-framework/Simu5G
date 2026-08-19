@@ -54,17 +54,22 @@ bool DcPdcpLegSplitter::isLegLive(int leg, const FlowControlInfo *lteInfo)
     if (leg >= numLegs_ || !gate("out", leg)->isConnected())
         return false;   // RRC tore this leg down
 
+    // Which technology serves this leg: leg 0 is the anchor stack, whose technology the
+    // flow's own (anchor) ids reveal; leg 1 is the other one.
+    bool anchorNr = isNrUe(isUe_ ? lteInfo->getSourceId() : lteInfo->getDestId());
+    bool legNr = (leg == 0) ? anchorNr : !anchorNr;
+
     if (isUe_) {
         // this UE's own attachment, read from the handover helper's latched serving node
         // ids rather than from the Binder, which lags them within an event (see the KLUDGE
         // comment in Ip2Nic::getStackAvailability())
-        MacNodeId servingNode = (leg == 0) ? handoverPacketHolder_->getServingNodeId()
-                                           : handoverPacketHolder_->getNrServingNodeId();
+        MacNodeId servingNode = legNr ? handoverPacketHolder_->getNrServingNodeId()
+                                      : handoverPacketHolder_->getServingNodeId();
         return servingNode != NODEID_NONE;
     }
 
     // a base station: the UE's attachment on the stack this leg serves
-    MacNodeId peerId = binder_->getUeNodeId(lteInfo->getDestId(), leg == 1);
+    MacNodeId peerId = binder_->getUeNodeId(lteInfo->getDestId(), legNr);
     return peerId != NODEID_NONE && binder_->getServingNodeOrSelf(peerId) != NODEID_NONE;
 }
 
@@ -107,36 +112,40 @@ void DcPdcpLegSplitter::handleMessage(cMessage *msg)
     int leg = selectLeg(lteInfo.get());
 
     // Per-leg id adaptation + leg-flavored statistics (moved from NrPdcpTxEntity::deliverPdcpPdu).
-    // Leg 0 is the local LTE leg; leg 1 is the UE's local NR stack, or a DC master's remote
-    // leg via X2.
+    // Leg 0 is the anchor (master cell group) leg; leg 1 is the UE's local secondary stack,
+    // or a DC master's remote leg via X2. The flow's tags carry the anchor stack's ids, so
+    // the anchor's technology can be read off them (isNrUe), and the secondary stack is the
+    // other one -- under EN-DC the anchor is LTE and the secondary NR, under NE-DC reversed.
     if (leg == 0) {
-        // local LTE leg: ids already correct
-        EV << NOW << " DcPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to LTE RLC" << endl;
+        // anchor leg: ids already correct
+        EV << NOW << " DcPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to the anchor leg's RLC" << endl;
         if (hasListeners(pdcpSduSentSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D)
             emit(pdcpSduSentSignal_, pkt);
         emit(sentPacketToLowerLayerSignal_, pkt);
     }
     else if (isUe_) {
-        // UE's local NR stack: translate to the NR-leg ids for the NR RLC (the serving node
-        // is looked up per packet, so handover is honored)
-        EV << NOW << " DcPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to NR RLC" << endl;
-        lteInfo->setSourceId(nrNodeId_);
-        lteInfo->setDestId(binder_->getServingNodeOrSelf(nrNodeId_));
+        // UE's local secondary stack: translate to that stack's ids for its RLC (the
+        // serving node is looked up per packet, so handover is honored)
+        EV << NOW << " DcPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to the secondary leg's RLC" << endl;
+        MacNodeId scgNodeId = isNrUe(lteInfo->getSourceId()) ? nodeId_ : nrNodeId_;
+        ASSERT(scgNodeId != NODEID_NONE);
+        lteInfo->setSourceId(scgNodeId);
+        lteInfo->setDestId(binder_->getServingNodeOrSelf(scgNodeId));
         if (hasListeners(pdcpSduSentNrSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D)
             emit(pdcpSduSentNrSignal_, pkt);
         emit(sentPacketToLowerLayerSignal_, pkt);
     }
     else {
-        // DC master's remote leg: rewrite to the secondary gNB / NR UE ids and address the
-        // X2 tunnel; the PDU leaves via the DcMux
+        // DC master's remote leg: rewrite to (secondary node, the UE's secondary-stack id)
+        // and address the X2 tunnel; the PDU leaves via the DcMux
         EV << NOW << " DcPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - the destination is under the control of a secondary node" << endl;
         MacNodeId secondaryNodeId = binder_->getSecondaryNode(nodeId_);
         ASSERT(secondaryNodeId != NODEID_NONE);
         ASSERT(secondaryNodeId != nodeId_);
-        MacNodeId nrDestId = binder_->getUeNodeId(lteInfo->getDestId(), true);
-        ASSERT(nrDestId != NODEID_NONE);
+        MacNodeId scgDestId = binder_->getUeNodeId(lteInfo->getDestId(), !isNrUe(lteInfo->getDestId()));
+        ASSERT(scgDestId != NODEID_NONE);
         lteInfo->setSourceId(secondaryNodeId);
-        lteInfo->setDestId(nrDestId);
+        lteInfo->setDestId(scgDestId);
         pkt->addTagIfAbsent<X2TargetReq>()->setTargetNode(secondaryNodeId);
     }
 
