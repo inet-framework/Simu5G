@@ -32,21 +32,21 @@ struct O2iState
 
 /**
  * Stateless propagation-formula strategy: one concrete subclass per 3GPP
- * propagation study (TR 36.814, TR 36.873, TR 38.901). A channel-model shell
- * owns an instance, feeds it the deployment-scenario parameters once at
- * initialize() time, and calls it per link with the geometry (both
- * distances, LOS state) the shell has already resolved.
+ * propagation study (TR 36.814, TR 36.873, TR 38.901). The medium owns one
+ * instance per carrier leg, feeds it the deployment-scenario parameters once
+ * at initialize() time, and calls it per link with the geometry (both
+ * distances, LOS state) it has already resolved.
  *
  * All per-link state -- LOS map, shadowing history, fading maps, position
- * history -- stays in the owning channel model; an instance of this class
+ * history -- stays in the medium; an instance of this class
  * holds nothing but the cached scenario parameters and a back-pointer to the
- * owner for RNG draws, so that every random draw a formula makes still comes
- * from the same RNG stream as before.
+ * owner for RNG draws, so that every random draw a formula makes comes from
+ * the owner's own rng-0 stream.
  */
 class PathLossModel
 {
   protected:
-    cComponent *owner_ = nullptr;  // RNG + parameter context
+    cComponent *owner_ = nullptr;  // RNG context only: no par() reads
 
     DeploymentScenario scenario_ = UNKNOWN_SCENARIO;
     double hNodeB_ = 0;

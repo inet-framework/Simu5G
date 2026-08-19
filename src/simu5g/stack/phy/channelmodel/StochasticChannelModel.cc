@@ -261,11 +261,11 @@ double StochasticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
     return a.distance(b);
 }
 
-double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey& nodeId)
+double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey& key)
 {
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = medium_->losStateFor(this, nodeId);
+    bool los = medium_->losStateFor(this, key);
 
     if (!enable_extCell_los_)
         los = false;
