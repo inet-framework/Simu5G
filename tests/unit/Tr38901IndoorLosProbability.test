@@ -1,0 +1,54 @@
+%description:
+
+Known deviation: Tr38901PathLossModel omits the 0.54 factor of the InH LOS
+probability beyond 49 m.
+
+3GPP TR 38.901 v16.1.0, Table 7.4.2-1, gives for Indoor - Open office
+
+    P = 1                                     d2D <= 5 m
+    P = exp(-(d2D - 5) / 70.8)                5 m < d2D <= 49 m
+    P = 0.54 exp(-(d2D - 49) / 211.7)         d2D > 49 m
+
+Tr38901PathLossModel::computeLosProbability() implements the third branch as
+exp(-(d2D - 49) / 211.7) without the 0.54 factor. That makes the LOS
+probability jump from 0.537 to 1.0 as the link crosses 49 m instead of
+staying continuous, and overstates it by a factor 1.85 at every larger
+distance.
+
+The check below is the InH case left out of PathLossLosProbability.test.
+
+%expected-failure: the InH LOS probability beyond 49 m is missing its 0.54 factor
+
+%includes:
+#include "PathLossTestUtil.h"
+#include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+NumericChecker c(1e-8);
+Tr38901PathLossModel m;
+ScenarioParams p;
+
+p = ScenarioParams();
+p.scenario = INDOOR_HOTSPOT;
+p.apply(m, this);
+
+c.check("901 InH d2D=50",  m.computeLosProbability(50.1, 50),   0.537455236);
+c.check("901 InH d2D=100", m.computeLosProbability(100.1, 100), 0.424393969);
+c.check("901 InH d2D=200", m.computeLosProbability(200.1, 200), 0.264620213);
+
+// The two branches meet at 49 m; without the factor the probability jumps.
+c.check("901 InH continuous at 49 m",
+        m.computeLosProbability(49.1, 49.0001) - m.computeLosProbability(48.9, 48.9999),
+        0.0, 1e-5);
+
+c.summary();
+
+%contains: stdout
+checks=4 failures=0
+
+%not-contains: stdout
+FAILED

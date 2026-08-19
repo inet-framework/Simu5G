@@ -1,0 +1,84 @@
+%description:
+
+Known deviation: Tr36814PathLossModel uses the UMi/UMa breakpoint distance
+for the RMa and SMa scenarios.
+
+3GPP TR 36.814 v9.2.0, Table A.2.1.1.2-3, defines two different breakpoint
+distances. UMi and UMa LOS switch slope at
+
+    d'BP = 4 (hBS - 1)(hUT - 1) fc / c
+
+using the effective antenna heights, while RMa and SMa LOS switch at
+
+    dBP = 2 pi hBS hUT fc / c
+
+using the actual antenna heights. Tr36814PathLossModel::computeRuralMacro(),
+computeSubUrbanMacro() and getShadowingStdDev() all use the first formula.
+For hBS = 35 m, hUT = 1.5 m and fc = 0.8 GHz that puts the RMa breakpoint at
+181.5 m instead of 880.3 m, so links between those two distances get the
+beyond-breakpoint 40 log10(d) slope and a 6 dB shadowing sigma where the
+specification asks for the below-breakpoint slope and 4 dB.
+
+Tr36873PathLossModel and Tr38901PathLossModel compute the RMa breakpoint
+correctly, so this also makes the three models disagree on the same link.
+
+The same methods cap min(0.044 h^1.72, ...) at 14.72 instead of the specified
+14.77. That has no effect for the building heights used here, and none for
+any h below about 30 m, so it is not exercised by a separate check.
+
+The checks below are the RMa and SMa cases left out of Tr36814PathLoss.test
+and PathLossShadowing.test.
+
+%expected-failure: the RMa/SMa breakpoint distance is computed with the UMi/UMa formula
+
+%includes:
+#include "PathLossTestUtil.h"
+#include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+NumericChecker c(1e-6);
+Tr36814PathLossModel m;
+ScenarioParams p;
+
+// --- RMa, hBS = 35 m, hUT = 1.5 m, fc = 0.8 GHz, W = 20 m, h = 5 m ----
+// dBP = 2 pi hBS hUT fc/c = 880.255 m
+p = ScenarioParams();
+p.scenario = RURAL_MACROCELL;
+p.hNodeB = 35;
+p.hUe = 1.5;
+p.hBuilding = 5;
+p.wStreet = 20;
+p.carrierFrequencyGHz = 0.8;
+p.apply(m, this);
+
+c.check("RMa LOS d=500 (below dBP)",  m.computePathLoss(500, 500, true, p.o2iState()),   85.770876911);
+c.check("RMa LOS d=3000 (above dBP)", m.computePathLoss(3000, 3000, true, p.o2iState()), 112.633125478);
+c.check("RMa sigma d=500 (below dBP)", m.getShadowingStdDev(500, 500, true), 4.0);
+
+// --- SMa, hBS = 35 m, hUT = 1.5 m, fc = 2 GHz, W = 20 m, h = 10 m -----
+// dBP = 2 pi hBS hUT fc/c = 2200.637 m
+p = ScenarioParams();
+p.scenario = SUBURBAN_MACROCELL;
+p.hNodeB = 35;
+p.hUe = 1.5;
+p.hBuilding = 10;
+p.wStreet = 20;
+p.carrierFrequencyGHz = 2.0;
+p.apply(m, this);
+
+c.check("SMa LOS d=500 (below dBP)",   m.computePathLoss(500, 500, true, p.o2iState()),   95.381938141);
+c.check("SMa LOS d=3000 (above dBP)",  m.computePathLoss(3000, 3000, true, p.o2iState()), 118.050957830);
+c.check("SMa sigma d=500 (below dBP)",  m.getShadowingStdDev(500, 500, true),   4.0);
+c.check("SMa sigma d=2000 (below dBP)", m.getShadowingStdDev(2000, 2000, true), 4.0);
+
+c.summary();
+
+%contains: stdout
+checks=7 failures=0
+
+%not-contains: stdout
+FAILED

@@ -35,6 +35,12 @@ namespace unittest {
  * The carrier frequency is given in GHz only; the Hz value and its logarithm,
  * which initialize() takes separately because the owning channel model caches
  * them, are derived from it.
+ *
+ * insideBuilding/insideDistance are not part of initialize() any more --
+ * PathLossModel::computePathLoss() takes them per call as an O2iState
+ * (PathLossModel.h) -- but they stay here because a test configures them
+ * together with the rest of the scenario; o2iState() extracts the bundle a
+ * computePathLoss() call needs.
  */
 struct ScenarioParams
 {
@@ -51,9 +57,13 @@ struct ScenarioParams
     void apply(PathLossModel& model, omnetpp::cComponent *owner) const
     {
         model.initialize(owner, scenario, hNodeB, hUe, hBuilding, wStreet,
-                insideBuilding, insideDistance,
                 carrierFrequencyGHz * 1e9, carrierFrequencyGHz, std::log10(carrierFrequencyGHz),
                 tolerateMaxDistViolation);
+    }
+
+    O2iState o2iState() const
+    {
+        return O2iState{insideBuilding, insideDistance};
     }
 };
 
@@ -158,7 +168,7 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d3D", d3D }, { "d2D", d2D }, { "los", static_cast<double>(los) } },
-                model.computePathLoss(d3D, d2D, los));
+                model.computePathLoss(d3D, d2D, los, p.o2iState()));
     }
 
     /**
@@ -171,7 +181,7 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d", d }, { "los", static_cast<double>(los) } },
-                model.computePathLoss(d, d, los));
+                model.computePathLoss(d, d, los, p.o2iState()));
     }
 
     void losProbability(const char *ref, PathLossModel& model, const ScenarioParams& p,
@@ -257,6 +267,47 @@ class CaseRecorder
     void summary() const
     {
         std::cout << "modelchecks=" << modelChecks_ << " modelfailures=" << modelFailures_ << std::endl;
+    }
+};
+
+/**
+ * Checks a computed value against a literal expected value baked into the
+ * test, rather than against pathloss_reference.py's transcription of a
+ * formula -- for a test that pins down a documented deviation from the
+ * specification: the expected value is what the specification would
+ * produce, the model is known to produce something else, and the file
+ * declares %expected-failure so the mismatch is the point of the test.
+ */
+class NumericChecker
+{
+  private:
+    double tolerance_;
+    int checks_ = 0;
+    int failures_ = 0;
+
+  public:
+    explicit NumericChecker(double tolerance) : tolerance_(tolerance) {}
+
+    void check(const std::string& what, double actual, double expected)
+    {
+        check(what, actual, expected, tolerance_);
+    }
+
+    void check(const std::string& what, double actual, double expected, double tolerance)
+    {
+        checks_++;
+        if (std::fabs(actual - expected) > tolerance) {
+            failures_++;
+            std::cout << "FAILED: " << what << ": actual=" << actual
+                      << " expected=" << expected << std::endl;
+        }
+        else
+            std::cout << "ok: " << what << " = " << actual << std::endl;
+    }
+
+    void summary() const
+    {
+        std::cout << "checks=" << checks_ << " failures=" << failures_ << std::endl;
     }
 };
 

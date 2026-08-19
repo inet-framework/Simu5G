@@ -1,0 +1,57 @@
+%description:
+
+Known deviation: Tr36873PathLossModel selects the RMa shadowing sigma with a
+different breakpoint distance than the one its own RMa path loss uses.
+
+Tr36873PathLossModel::computeRuralMacro3D() switches path-loss slope at
+
+    dBP = 2 pi hBS hUT fc / c
+
+as the specification prescribes, but getShadowingStdDev() inherits the
+UMi/UMa breakpoint of TR 36.814 from its base class,
+
+    d'BP = 4 (hBS - 1)(hUT - 1) fc / c
+
+and applies it to RMa and SMa as well. For hBS = 35 m, hUT = 1.5 m and
+fc = 0.8 GHz that is 181.5 m against 880.3 m, so a link at 500 m is treated
+as below the breakpoint by the path loss and above it by the shadowing.
+
+Tr38901PathLossModel::getShadowingStdDev() computes the 2 pi hBS hUT fc/c
+breakpoint itself and is unaffected.
+
+The check below is the RMa case left out of PathLossShadowing.test.
+
+%expected-failure: the RMa shadowing breakpoint does not match the RMa path-loss breakpoint
+
+%includes:
+#include "PathLossTestUtil.h"
+#include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+NumericChecker c(0.0);
+Tr36873PathLossModel m;
+ScenarioParams p;
+
+// dBP = 2 pi hBS hUT fc/c = 880.255 m
+p = ScenarioParams();
+p.scenario = RURAL_MACROCELL;
+p.hNodeB = 35;
+p.hUe = 1.5;
+p.carrierFrequencyGHz = 0.8;
+p.apply(m, this);
+
+c.check("873 RMa sigma d2D=300 (below dBP)", m.getShadowingStdDev(305.6, 300, true), 4.0);
+c.check("873 RMa sigma d2D=500 (below dBP)", m.getShadowingStdDev(501.1, 500, true), 4.0);
+c.check("873 RMa sigma d2D=800 (below dBP)", m.getShadowingStdDev(800.7, 800, true), 4.0);
+
+c.summary();
+
+%contains: stdout
+checks=3 failures=0
+
+%not-contains: stdout
+FAILED

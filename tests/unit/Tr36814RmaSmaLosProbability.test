@@ -1,0 +1,60 @@
+%description:
+
+Known deviation: Tr36814PathLossModel has the RMa and SMa LOS-probability
+decay constants swapped.
+
+3GPP TR 36.814 v9.2.0, Table A.2.1.1.2-3, which reproduces the LOS
+probabilities of ITU-R M.2135-1 Table A1-3, gives
+
+    RMa:  P = 1                          d <= 10 m
+          P = exp(-(d - 10) / 1000)      d > 10 m
+    SMa:  P = 1                          d <= 10 m
+          P = exp(-(d - 10) / 200)       d > 10 m
+
+Tr36814PathLossModel::computeLosProbability() uses 200 for RMa and 1000 for
+SMa, i.e. it makes the rural scenario lose line of sight five times faster
+than the suburban one. At 500 m it reports 8.6% LOS in RMa and 61.3% in SMa,
+where the specification asks for 61.3% and 8.6% respectively.
+
+Tr36873PathLossModel and Tr38901PathLossModel both use 1000 for RMa, so the
+three models also disagree with each other on the same link.
+
+%expected-failure: the RMa and SMa LOS-probability decay constants are swapped
+
+%includes:
+#include "PathLossTestUtil.h"
+#include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+NumericChecker c(1e-8);
+Tr36814PathLossModel m;
+ScenarioParams p;
+
+p = ScenarioParams();
+p.scenario = RURAL_MACROCELL;
+p.apply(m, this);
+
+c.check("814 RMa d=5",   m.computeLosProbability(5, 5),     1.0);
+c.check("814 RMa d=10",  m.computeLosProbability(10, 10),   1.0);
+c.check("814 RMa d=100", m.computeLosProbability(100, 100), 0.913931185);
+c.check("814 RMa d=500", m.computeLosProbability(500, 500), 0.612626394);
+
+p.scenario = SUBURBAN_MACROCELL;
+p.apply(m, this);
+
+c.check("814 SMa d=5",   m.computeLosProbability(5, 5),     1.0);
+c.check("814 SMa d=10",  m.computeLosProbability(10, 10),   1.0);
+c.check("814 SMa d=100", m.computeLosProbability(100, 100), 0.637628152);
+c.check("814 SMa d=500", m.computeLosProbability(500, 500), 0.086293586);
+
+c.summary();
+
+%contains: stdout
+checks=8 failures=0
+
+%not-contains: stdout
+FAILED
