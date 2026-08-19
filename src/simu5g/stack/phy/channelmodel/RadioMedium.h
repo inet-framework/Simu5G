@@ -273,16 +273,6 @@ class RadioMedium : public cSimpleModule
     /** Builds this leg's ext-cell/background-cell strategy: always Tr36814PathLossModel, regardless of cp.pathLossType, from the same CarrierPhysics fields createPathLossModel() reads. */
     PathLossModel *createExtCellPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg);
 
-    /**
-     * Per-link/per-node stochastic-state accessors (plan S13/§3(b)): the
-     * medium's own counterpart of the six accessors StochasticChannelModel
-     * used to carry (S7/S8). Now that the containers are medium-wide rather
-     * than per-endpoint, there is nothing left to redirect to a different
-     * endpoint's copy, so shadowingState()/jakesState() from the S8-S12
-     * shape are gone -- computeShadowing()/jakesFading() index
-     * lastComputedSF_/jakesFadingMap_/jakesFadingMapBgUe_ directly.
-     */
-
     /** Auto-vivifying access to losMap_[{leg,key}]; existed, if given, reports whether the entry was already present. */
     bool& losState(const CarrierLeg& leg, const LinkKey& key, bool *existed = nullptr);
 

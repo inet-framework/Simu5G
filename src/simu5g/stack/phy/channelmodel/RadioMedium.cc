@@ -874,7 +874,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
         interference_->computeExtCellInterference(radio, eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
 
-    EV << "RadioMedium::getSINR - distance from my eNb=" << enbCoord.distance(ueCoord) << " - DIR=" << ((dir == DL) ? "DL" : "UL") << endl;
+    EV << "RadioMedium::computeInterferencePlusNoise - distance from my eNb=" << enbCoord.distance(ueCoord) << " - DIR=" << ((dir == DL) ? "DL" : "UL") << endl;
 
     for (unsigned int i = 0; i < radio->getNumBands(); i++) {
         // the caller skips these bands too; leave their denominator untouched
@@ -1055,8 +1055,10 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
 
     //=================== END PARAMETERS SETUP =======================
 
-    //=============== PATH LOSS =================
-    // Note that shadowing and fading effects are not applied here and left FFW
+    //=============== PATH LOSS + ANGULAR ATTENUATION + FADING =================
+    // getAttenuation() applies shadowing only for a real UE (BGUE_MIN_ID-gated),
+    // so for this background UE it reduces to path loss; fading is applied per
+    // band below.
 
     // UL because we are computing a feedback
     double attenuation = radio->getAttenuation(bgUeId, UL, ueCoord);
@@ -1124,7 +1126,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
         snrVector[i] = finalRecvPower;
     }
 
-    //============ END PATH LOSS + SHADOWING + FADING ===============
+    //============ END PATH LOSS + ANGULAR ATTENUATION + FADING ===============
 
     /*
      * The SINR will be calculated as follows
@@ -1215,8 +1217,10 @@ double RadioMedium::getReceivedPower_bgUe(StochasticChannelModel *radio, double 
        << " - txPwr " << txPower << " - txPos[" << txPos << "] - rxPos[" << rxPos << "] " << endl;
     //=================== END PARAMETERS SETUP =======================
 
-    //=============== PATH LOSS =================
-    // Note that shadowing and fading effects are not applied here and left FFW
+    //=============== PATH LOSS + ANGULAR ATTENUATION =================
+    // A single scalar received-power estimate, computed via computePathLoss()
+    // directly (not getAttenuation()): no shadowing, and no per-band fading
+    // either.
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
     double sqrDistance = txPos.distance(rxPos);
@@ -1268,7 +1272,7 @@ double RadioMedium::getReceivedPower_bgUe(StochasticChannelModel *radio, double 
 bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo,
         const std::vector<double>& rsrpVector)
 {
-    EV << "RadioMedium::error" << endl;
+    EV << "RadioMedium::isReceptionSuccessful" << endl;
 
     // get codeword
     unsigned char cw = lteInfo->getCw();
@@ -1353,7 +1357,7 @@ bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFra
             // compute the success probability according to the number of LB used
             cumulativeSuccessProbability *= allocationSuccessProbability;
 
-            EV << " RadioMedium::error direction " << dirToA(dir)
+            EV << " RadioMedium::isReceptionSuccessful direction " << dirToA(dir)
                << " node " << id << " remote unit " << dasToA(remoteUnit)
                << " Band " << band << " SNR " << snr << " CQI " << cqi
                << " BLER " << blockErrorRate << " success probability " << allocationSuccessProbability
@@ -1367,7 +1371,7 @@ bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFra
 
     double randomSample = uniform(0.0, 1.0);
 
-    EV << " RadioMedium::error direction " << dirToA(dir)
+    EV << " RadioMedium::isReceptionSuccessful direction " << dirToA(dir)
        << " node " << id << " total ERROR probability  " << packetErrorRate
        << " per with H-ARQ error reduction " << effectiveErrorRateWithHarq
        << " - CQI[" << cqi << "]- random error extracted[" << randomSample << "]" << endl;
