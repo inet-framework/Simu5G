@@ -1,0 +1,71 @@
+%description:
+
+Known deviation: Tr36873PathLossModel draws the UMa effective environment
+height with the comparison inverted.
+
+3GPP TR 36.873 v12.7.0, Table 7.2-1, Note 1, defines the effective
+environment height of the 3D-UMa breakpoint distance as
+
+    hE = 1 m           with probability 1 / (1 + C(d2D, hUT))
+    hE = uniform(12, 15, ..., hUT - 1.5)    otherwise
+
+with C(d2D, hUT) = 0 for hUT < 13 m, so hE is 1 m with probability 1 for any
+UE height below 13 m. Tr36873PathLossModel::computeUrbanMacro3D() writes the
+draw as
+
+    if (prob < owner_->uniform(0.0, 1.0))
+        hEnvir = 1.0;
+
+which takes the branch only when the uniform draw exceeds the probability,
+i.e. exactly the complement of the intended condition. With prob = 1 it never
+holds, so hE is always taken from the "otherwise" list, which for
+hUT = 1.5 m degenerates to the single value hUT - 1.5 = 0.
+
+The result is d'BP = 4 hBS hUT fc/c = 1000.7 m instead of the specified
+4 (hBS - 1)(hUT - 1) fc/c = 320.2 m for the parameters below, so LOS links
+between those two distances keep the near-field 22 log10(d3D) slope where the
+specification asks for the 40 log10(d3D) slope.
+
+Tr38901PathLossModel::computeUrbanMacro3D() writes the same draw as
+uniform(0.0, 1.0) < prob and is unaffected.
+
+The check below is the UMa case left out of Tr36873PathLoss.test.
+
+%expected-failure: the UMa effective environment height draw has its comparison inverted
+
+%includes:
+#include "PathLossTestUtil.h"
+#include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+NumericChecker c(1e-6);
+Tr36873PathLossModel m;
+ScenarioParams p;
+
+// --- 3D-UMa, hBS = 25 m, hUT = 1.5 m, fc = 2 GHz ----------------------
+// hE = 1 m, so d'BP = 4 (hBS-1)(hUT-1) fc/c = 320.222 m
+//   LOS, d2D > d'BP: PL = 40 log10(d3D) + 28 + 20 log10(fc)
+//                         - 9 log10(d'BP^2 + (hBS - hUT)^2)
+p = ScenarioParams();
+p.scenario = URBAN_MACROCELL;
+p.hNodeB = 25;
+p.hUe = 1.5;
+p.hBuilding = 20;
+p.wStreet = 20;
+p.carrierFrequencyGHz = 2.0;
+p.apply(m, this);
+
+c.check("UMa LOS d2D=500 (above d'BP)",  m.computePathLoss(500.06, 500, true, p.o2iState()),   96.862381060);
+c.check("UMa LOS d2D=1000 (above d'BP)", m.computePathLoss(1000.28, 1000, true, p.o2iState()), 108.906359816);
+
+c.summary();
+
+%contains: stdout
+checks=2 failures=0
+
+%not-contains: stdout
+FAILED
