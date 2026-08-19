@@ -20,6 +20,7 @@ import simu5g.stack.phy.channelmodel.IChannelModel;
 import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 import simu5g.stack.rlc.IRlcMux;
 import simu5g.stack.sdap.INrSdap;
+import simu5g.stack.sdap.IQosFlowClassifier;
 import simu5g.stack.sdap.common.IReflectiveQosTable;
 
 //
@@ -66,6 +67,11 @@ module NrNicUe extends LteNicUe
         rrc.handoverController.otherHandoverControllerModule = "^.nrHandoverController";
 
     submodules:
+        // uplink QoS-flow classification (the TrafficFlowFilter's uplink counterpart),
+        // where uplink traffic enters the stack
+        qosFlowClassifier: <default("QosFlowClassifier")> like IQosFlowClassifier if hasSdap {
+            @display("p=440,120;is=s");
+        }
         sdap: <default("NrSdap")> like INrSdap if hasSdap {
             @display("p=230,155");
         }
@@ -116,6 +122,10 @@ module NrNicUe extends LteNicUe
 
         //# external: lower connection
         nrRadioIn --> nrPhy.radioIn;
+
+        //# uplink QoS-flow classifier (optional, spliced above ip2nic)
+        handoverPacketHolder.stackOut --> { @reconnect; } --> qosFlowClassifier.upperLayerIn if hasSdap;
+        qosFlowClassifier.lowerLayerOut --> ip2nic.upperLayerIn if hasSdap;
 
         //# SDAP layer (optional, spliced between ip2nic and pdcpMux)
         ip2nic.stackOut --> { @reconnect; } --> sdap.upperLayerIn if hasSdap;
