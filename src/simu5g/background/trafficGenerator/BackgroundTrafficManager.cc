@@ -46,7 +46,7 @@ void BackgroundTrafficManager::initialize(int stage)
         if (channelModel_ == nullptr)
             throw cRuntimeError("BackgroundTrafficManagerBase::initialize - cannot find channel model for carrier frequency %f", carrierFrequency_.get());
 
-        // Register each background UE as a phantom radio (plan S12b/3(j)):
+        // Register each background UE as a phantom radio:
         // this manager's own MacNodeId numbering is not network-unique, so
         // the medium keys phantoms by (cellId, carrierFrequency, bgUeId)
         // instead

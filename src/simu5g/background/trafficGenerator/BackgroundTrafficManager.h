@@ -47,7 +47,7 @@ class BackgroundTrafficManager : public BackgroundTrafficManagerBase
     ChannelModelBase *channelModel_ = nullptr;
 
     // the medium each of this manager's background UEs registers a phantom
-    // radio with (plan S12b/3(j)); this NIC-side manager has a MAC/cell
+    // radio with; this NIC-side manager has a MAC/cell
     // identity to key phantoms by, unlike BackgroundCellTrafficManager and
     // BackgroundScheduler, which do not register
     inet::ModuleRefByPar<RadioMedium> medium_;

@@ -35,13 +35,13 @@ class Binder;
  * LOS/NLOS, shadowing and multipath fading are properties of a *link*, not of a
  * node: two links from the same transmitter to peers in different directions and
  * at different distances have independent realizations. Keying that state by node
- * -- which is what this model did historically -- is harmless for cellular, where
+ * alone is harmless for cellular, where
  * a UE has exactly one link per channel-model instance, but wrong for D2D, where
- * one UE has many peers and they all shared a single slot.
+ * one UE has many peers that would all share a single slot.
  *
  * The pair is stored normalized so that a link is the same key seen from either
- * end. Cellular callers construct the degenerate key {id, id}, which reproduces
- * the historical node-keyed behavior exactly.
+ * end. Cellular callers construct the degenerate key {id, id}, keying by node
+ * alone -- exactly right since a UE has only one cellular link.
  */
 struct LinkKey
 {
@@ -68,17 +68,10 @@ inline std::ostream& operator<<(std::ostream& os, const LinkKey& k)
  * A radio link between two arbitrary endpoints, and the parameters the channel
  * model needs to evaluate it.
  *
- * The channel model used to be phrased as "a link between me (phy_->getCoord())
- * and one remote endpoint", with Direction selecting -- all at once -- which
- * endpoint was mobile, which antenna gains applied, which noise figure applied,
- * and which fading/shadowing map to use. A UE-to-UE link fits neither of those
- * two shapes, which is why the D2D channel model had to re-implement the whole
- * propagation path rather than reuse it.
- *
- * Here those four things are data. `dir` survives only as a tag: it selects the
- * statistic to emit and dispatches the (genuinely cellular-topology-aware)
- * interference computation, but it no longer derives any of the link geometry
- * or the link budget.
+ * Geometry, channel-state key and link budget are data. `dir` survives only
+ * as a tag: it selects the statistic to emit and dispatches the (genuinely
+ * cellular-topology-aware) interference computation, but it does not derive
+ * any of the link geometry or the link budget.
  */
 struct RadioLink
 {
@@ -91,7 +84,7 @@ struct RadioLink
     // ---- channel state ----
     // stateKey indexes the medium's per-link state: losMap_, lastComputedSF_
     // and jakesFadingMap_, keyed together with the caller's own carrier leg
-    // (plan S13/§3(b)) -- one shared entry per physical link, regardless of
+    // -- one shared entry per physical link, regardless of
     // which end asks.
     LinkKey stateKey;
 

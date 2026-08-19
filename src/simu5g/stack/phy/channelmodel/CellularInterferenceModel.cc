@@ -30,7 +30,7 @@ Define_Module(CellularInterferenceModel);
 
 void CellularInterferenceModel::initialize()
 {
-    // this module's own parent, the S2 submodule slot; purely structural, so
+    // this module's own parent; purely structural, so
     // resolvable regardless of init-stage ordering
     medium_ = check_and_cast<RadioMedium *>(getParentModule());
     binder_.reference(this, "binderModule", true);
