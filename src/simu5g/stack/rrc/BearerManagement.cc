@@ -338,7 +338,7 @@ void BearerManagement::createIncomingConnection(const FlowId& flow, const Bearer
         << " direction=" << dirToA(flow.direction)
         << " withPdcp=" << (withPdcp ? "yes" : "no") << endl;
 
-    ASSERT(flow.destId == registration_->getLteNodeId() || flow.destId == registration_->getNrNodeId() || flow.multicastGroupId != NODEID_NONE);
+    ASSERT(isLocalNodeId(flow.destId) || flow.multicastGroupId != NODEID_NONE);
 
     // Idempotence guard: with duplex bearer establishment this half may already
     // exist (e.g. re-establishment after a partial teardown); skip instead of
@@ -409,7 +409,7 @@ void BearerManagement::createOutgoingConnection(const FlowId& flow, const Bearer
         << " direction=" << dirToA(flow.direction)
         << " withPdcp=" << (withPdcp ? "yes" : "no") << endl;
 
-    ASSERT(flow.sourceId == registration_->getLteNodeId() || flow.sourceId == registration_->getNrNodeId());
+    ASSERT(isLocalNodeId(flow.sourceId));
 
     // Bind the requester's flow to this bearer in the local classifier. Both endpoints
     // are configured this way, each by its own RRC and each with the flow key as it
@@ -666,7 +666,7 @@ int BearerManagement::getNumLegs(DrbKey id, const FlowId& flow)
     if (dualConnectivityEnabled_ && flow.multicastGroupId == NODEID_NONE) {
         if (!isEnb && getNodeTypeById(id.getNodeId()) == NODEB)
             numLegs = 2;
-        else if (isEnb && binderModule->getSecondaryNode(registration_->getLteNodeId()) != NODEID_NONE)
+        else if (isEnb && binderModule->getSecondaryNode(getOwnNodeId()) != NODEID_NONE)
             numLegs = 2;
     }
 
@@ -746,6 +746,17 @@ cModule *BearerManagement::findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux
 // ONE entity whose legs split/rejoin below PDCP. The master-keyed lookup must be precise
 // (master node + same DRB id): matching the bare DRB id would also match unrelated bearers of
 // this UE, since DRB ids are only unique per peer. Everything else is leg 0 of its own compound.
+MacNodeId BearerManagement::getOwnNodeId() const
+{
+    return registration_->getLteNodeId() != NODEID_NONE ?
+            registration_->getLteNodeId() : registration_->getNrNodeId();
+}
+
+bool BearerManagement::isLocalNodeId(MacNodeId nodeId) const
+{
+    return nodeId == registration_->getLteNodeId() || nodeId == registration_->getNrNodeId();
+}
+
 int BearerManagement::selectPdcpLeg(bool isNr, MacNodeId peerId, const FlowId& flow, DrbKey& compoundId /*inout*/)
 {
     // Which cell group this establishment call serves. At a UE it is the secondary's when
@@ -762,9 +773,7 @@ int BearerManagement::selectPdcpLeg(bool isNr, MacNodeId peerId, const FlowId& f
         }
     }
     else {
-        // a base station holds its own id under the technology it is (see Registration)
-        MacNodeId myId = registration_->getLteNodeId() != NODEID_NONE ?
-                registration_->getLteNodeId() : registration_->getNrNodeId();
+        MacNodeId myId = getOwnNodeId();
         isSecondaryLeg = (myId != NODEID_NONE && binderModule->getMasterNodeOrSelf(myId) != myId);
     }
 

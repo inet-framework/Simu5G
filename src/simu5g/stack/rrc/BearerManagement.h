@@ -153,6 +153,15 @@ class BearerManagement : public cSimpleModule
     virtual int getNumLegs(DrbKey id, const FlowId& flow);
     virtual int selectPdcpLeg(bool isNr, MacNodeId peerId, const FlowId& flow, DrbKey& compoundId /*inout*/);
 
+    // This node's own MacNodeId. A base station holds it under the technology it is, so a
+    // gNB has no LTE id to ask for; a dual-stack UE has both, and its LTE id is its
+    // identity (see Registration).
+    virtual MacNodeId getOwnNodeId() const;
+
+    // Is this one of the node's own ids? Spelling the question out as "the LTE id or the
+    // NR id" is what breaks at a node whose stacks are not that pair.
+    virtual bool isLocalNodeId(MacNodeId nodeId) const;
+
     // Records the configuration of the bearer this establishment call sets up, from
     // exactly the derivations the entities are built from. Runs after the RLC entity
     // exists: the wire format and the SN field length are properties of the entity that
