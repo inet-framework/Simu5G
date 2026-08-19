@@ -127,17 +127,28 @@ class StochasticChannelModel : public ChannelModelBase
     // If false, disable the collection of SINR statistics, which might be quite time-consuming
     bool collectSinrStatistics_;
 
-  public:
-    // Statistics, public: RadioMedium's getSINR() reads
-    // measuredSinr* to emit on a peer endpoint's own signal, and its
-    // emitRcvdSinr() reads rcvdSinr* the same way.
+    // Statistics. Emitted only through emitMeasuredSinr()/emitRcvdSinr()
+    // below, which RadioMedium calls on the relevant endpoint instead of
+    // learning a signal id itself.
     static simsignal_t rcvdSinrDlSignal_;
     static simsignal_t rcvdSinrUlSignal_;
     static simsignal_t measuredSinrDlSignal_;
     static simsignal_t measuredSinrUlSignal_;
+
+  public:
     ~StochasticChannelModel() override;
 
     void initialize(int stage) override;
+
+    /*
+     * Emit this endpoint's own SINR-at-feedback-computation (measuredSinr*)
+     * or SINR-at-reception (rcvdSinr*) statistic, DL or UL per dir. For
+     * RadioMedium's getSINR()/emitRcvdSinr(), which compute a peer
+     * endpoint's SINR and need to report it on that endpoint without
+     * learning its signal ids.
+     */
+    void emitMeasuredSinr(Direction dir, double sinr);
+    void emitRcvdSinr(Direction dir, double sinr);
 
     /*
      * Node identity of the owning PHY, needed by RadioMedium::addRadio() to

@@ -768,12 +768,10 @@ std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, const Ra
     {
         // we are on the BS, so we need to retrieve the channel model of the sender
         // XXX I know, there might be a faster way...
-        ChannelModelBase *ueChannelModel = check_and_cast<PhyUe *>(radio->getBinder()->getPhyByNodeId(ueId))->getChannelModel(lteInfo->getCarrierFrequency());
+        StochasticChannelModel *ueChannelModel = check_and_cast<StochasticChannelModel *>(
+                check_and_cast<PhyUe *>(radio->getBinder()->getPhyByNodeId(ueId))->getChannelModel(lteInfo->getCarrierFrequency()));
 
-        if (link.dir == DL) // we are on the UE
-            ueChannelModel->emit(StochasticChannelModel::measuredSinrDlSignal_, sumSnr / usedRBs);
-        else
-            ueChannelModel->emit(StochasticChannelModel::measuredSinrUlSignal_, sumSnr / usedRBs);
+        ueChannelModel->emitMeasuredSinr(link.dir, sumSnr / usedRBs);
     }
 
     // if sender is an eNodeB
@@ -1461,14 +1459,15 @@ void RadioMedium::emitRcvdSinr(StochasticChannelModel *radio, Direction dir, Mac
     }
 
     if (dir == DL) { // we are on the UE
-        radio->emit(StochasticChannelModel::rcvdSinrDlSignal_, sinr);
+        radio->emitRcvdSinr(dir, sinr);
         return;
     }
 
     // we are on the BS, so we need to retrieve the channel model of the sender
     // XXX I know, there might be a faster way...
-    ChannelModelBase *ueChannelModel = check_and_cast<PhyUe *>(radio->getBinder()->getPhyByNodeId(ueId))->getChannelModel(carrierFrequency);
-    ueChannelModel->emit(StochasticChannelModel::rcvdSinrUlSignal_, sinr);
+    StochasticChannelModel *ueChannelModel = check_and_cast<StochasticChannelModel *>(
+            check_and_cast<PhyUe *>(radio->getBinder()->getPhyByNodeId(ueId))->getChannelModel(carrierFrequency));
+    ueChannelModel->emitRcvdSinr(dir, sinr);
 }
 
 } //namespace
