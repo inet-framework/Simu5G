@@ -71,6 +71,16 @@ void StochasticChannelModel::initialize(int stage)
     }
 }
 
+void StochasticChannelModel::emitMeasuredSinr(Direction dir, double sinr)
+{
+    emit(dir == DL ? measuredSinrDlSignal_ : measuredSinrUlSignal_, sinr);
+}
+
+void StochasticChannelModel::emitRcvdSinr(Direction dir, double sinr)
+{
+    emit(dir == DL ? rcvdSinrDlSignal_ : rcvdSinrUlSignal_, sinr);
+}
+
 RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Coord coord)
 {
     // The local module is one endpoint and 'coord' the other; 'dir' says which
