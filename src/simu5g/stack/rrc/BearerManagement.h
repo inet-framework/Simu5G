@@ -151,7 +151,7 @@ class BearerManagement : public cSimpleModule
     // the bearer's PDCP entity is built with, selectPdcpLeg() the leg an establishment call
     // attaches to (and, for a leg of a bearer anchored elsewhere, the anchor bearer's key).
     virtual int getNumLegs(DrbKey id, const FlowId& flow);
-    virtual int selectPdcpLeg(bool isNr, MacNodeId peerId, const FlowId& flow, DrbKey& compoundId /*inout*/);
+    virtual int selectPdcpLeg(MacNodeId peerId, const FlowId& flow, DrbKey& compoundId /*inout*/);
 
     // This node's own MacNodeId. A base station holds it under the technology it is, so a
     // gNB has no LTE id to ask for; a dual-stack UE has both, and its LTE id is its

@@ -757,17 +757,17 @@ bool BearerManagement::isLocalNodeId(MacNodeId nodeId) const
     return nodeId == registration_->getLteNodeId() || nodeId == registration_->getNrNodeId();
 }
 
-int BearerManagement::selectPdcpLeg(bool isNr, MacNodeId peerId, const FlowId& flow, DrbKey& compoundId /*inout*/)
+int BearerManagement::selectPdcpLeg(MacNodeId peerId, const FlowId& flow, DrbKey& compoundId /*inout*/)
 {
-    // Which cell group this establishment call serves. At a UE it is the secondary's when
-    // the call reaches its NR stack towards a dual-connectivity secondary node; at a base
-    // station it is whichever group the node itself is, since a secondary node serves the
-    // secondary cell group and nothing else.
+    // Which cell group this establishment call serves. At a UE the answer is in the peer:
+    // a call that reaches a secondary node serves the secondary cell group, whichever of
+    // the UE's stacks carries it. At a base station it is the node itself, since a
+    // secondary node serves the secondary cell group and nothing else.
     bool isUe = (registration_->getNodeType() == UE);
     bool isSecondaryLeg = false;
     MacNodeId masterNodeId = NODEID_NONE;
     if (isUe) {
-        if (isNr && dualConnectivityEnabled_ && getNodeTypeById(peerId) == NODEB) {
+        if (dualConnectivityEnabled_ && getNodeTypeById(peerId) == NODEB) {
             masterNodeId = binderModule->getMasterNodeOrSelf(peerId);
             isSecondaryLeg = (masterNodeId != peerId);
         }
@@ -812,7 +812,7 @@ void BearerManagement::installPdcpTxSide(DrbKey id, const FlowId& flow, LteRlcTy
     DrbKey rlcId = flow.txDrbKey();
 
     DrbKey compoundId = id;
-    int legIdx = selectPdcpLeg(isNr, flow.destId, flow, compoundId);
+    int legIdx = selectPdcpLeg(flow.destId, flow, compoundId);
 
     cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, flow, rlcType, rlcMux);
     if (pdcpEnt->gate("legOut", legIdx)->isConnectedOutside()) {
@@ -844,7 +844,7 @@ void BearerManagement::installPdcpRxSide(DrbKey id, const FlowId& flow, LteRlcTy
     DrbKey rlcId = flow.rxDrbKey();
 
     DrbKey compoundId = id;
-    int legIdx = selectPdcpLeg(isNr, flow.sourceId, flow, compoundId);
+    int legIdx = selectPdcpLeg(flow.sourceId, flow, compoundId);
 
     cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, flow, rlcType, rlcMux);
     if (pdcpEnt->gate("legIn", legIdx)->isConnectedOutside()) {
