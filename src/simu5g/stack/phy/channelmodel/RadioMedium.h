@@ -398,6 +398,20 @@ class RadioMedium : public cSimpleModule
     virtual double computeCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
 
     /**
+     * Attenuation from a sectorial (ANISOTROPIC) transmitter's antenna
+     * pattern, 0 for an OMNI one -- the shape shared by getRSRP(),
+     * getSINR_bgUe(), getReceivedPower_bgUe() and
+     * CellularInterferenceModel's computeDownlinkInterference(), which
+     * otherwise duplicated this body once each. Draws nothing: txId's
+     * direction/angle come from the registry (txDirectionOf/txAngleOf),
+     * not a fresh draw, and the angle geometry itself
+     * (radio->computeAngle/computeVerticalAngle/computeAngularAttenuation)
+     * is a deterministic formula.
+     */
+    virtual double computeSectorAttenuation(StochasticChannelModel *radio, MacNodeId txId, GHz carrierFrequency,
+            const inet::Coord& txCoord, const inet::Coord& rxCoord) const;
+
+    /**
      * The node-motion bookkeeping, resident on the medium alongside the
      * positionHistory_/lastCorrelationPoint_ containers themselves, keyed by
      * (node, CarrierLeg). updatePositionHistory() maintains the two-entry rolling history
