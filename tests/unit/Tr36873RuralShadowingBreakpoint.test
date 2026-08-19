@@ -44,9 +44,9 @@ p.hUe = 1.5;
 p.carrierFrequencyGHz = 0.8;
 p.apply(m, this);
 
-c.check("873 RMa sigma d2D=300 (below dBP)", m.getShadowingStdDev(305.6, 300, true), 4.0);
-c.check("873 RMa sigma d2D=500 (below dBP)", m.getShadowingStdDev(501.1, 500, true), 4.0);
-c.check("873 RMa sigma d2D=800 (below dBP)", m.getShadowingStdDev(800.7, 800, true), 4.0);
+c.check("873 RMa sigma d2D=300 (below dBP)", m.getShadowingStdDev(305.6, 300, true, p.linkContext()), 4.0);
+c.check("873 RMa sigma d2D=500 (below dBP)", m.getShadowingStdDev(501.1, 500, true, p.linkContext()), 4.0);
+c.check("873 RMa sigma d2D=800 (below dBP)", m.getShadowingStdDev(800.7, 800, true, p.linkContext()), 4.0);
 
 c.summary();
 

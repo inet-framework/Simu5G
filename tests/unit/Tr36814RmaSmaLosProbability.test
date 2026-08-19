@@ -38,18 +38,18 @@ p = ScenarioParams();
 p.scenario = RURAL_MACROCELL;
 p.apply(m, this);
 
-c.check("814 RMa d=5",   m.computeLosProbability(5, 5),     1.0);
-c.check("814 RMa d=10",  m.computeLosProbability(10, 10),   1.0);
-c.check("814 RMa d=100", m.computeLosProbability(100, 100), 0.913931185);
-c.check("814 RMa d=500", m.computeLosProbability(500, 500), 0.612626394);
+c.check("814 RMa d=5",   m.computeLosProbability(5, 5, p.linkContext()),     1.0);
+c.check("814 RMa d=10",  m.computeLosProbability(10, 10, p.linkContext()),   1.0);
+c.check("814 RMa d=100", m.computeLosProbability(100, 100, p.linkContext()), 0.913931185);
+c.check("814 RMa d=500", m.computeLosProbability(500, 500, p.linkContext()), 0.612626394);
 
 p.scenario = SUBURBAN_MACROCELL;
 p.apply(m, this);
 
-c.check("814 SMa d=5",   m.computeLosProbability(5, 5),     1.0);
-c.check("814 SMa d=10",  m.computeLosProbability(10, 10),   1.0);
-c.check("814 SMa d=100", m.computeLosProbability(100, 100), 0.637628152);
-c.check("814 SMa d=500", m.computeLosProbability(500, 500), 0.086293586);
+c.check("814 SMa d=5",   m.computeLosProbability(5, 5, p.linkContext()),     1.0);
+c.check("814 SMa d=10",  m.computeLosProbability(10, 10, p.linkContext()),   1.0);
+c.check("814 SMa d=100", m.computeLosProbability(100, 100, p.linkContext()), 0.637628152);
+c.check("814 SMa d=500", m.computeLosProbability(500, 500, p.linkContext()), 0.086293586);
 
 c.summary();
 

@@ -55,9 +55,9 @@ p.wStreet = 20;
 p.carrierFrequencyGHz = 0.8;
 p.apply(m, this);
 
-c.check("RMa LOS d=500 (below dBP)",  m.computePathLoss(500, 500, true, p.o2iState()),   85.770876911);
-c.check("RMa LOS d=3000 (above dBP)", m.computePathLoss(3000, 3000, true, p.o2iState()), 112.633125478);
-c.check("RMa sigma d=500 (below dBP)", m.getShadowingStdDev(500, 500, true), 4.0);
+c.check("RMa LOS d=500 (below dBP)",  m.computePathLoss(500, 500, true, p.o2iState(), p.linkContext()),   85.770876911);
+c.check("RMa LOS d=3000 (above dBP)", m.computePathLoss(3000, 3000, true, p.o2iState(), p.linkContext()), 112.633125478);
+c.check("RMa sigma d=500 (below dBP)", m.getShadowingStdDev(500, 500, true, p.linkContext()), 4.0);
 
 // --- SMa, hBS = 35 m, hUT = 1.5 m, fc = 2 GHz, W = 20 m, h = 10 m -----
 // dBP = 2 pi hBS hUT fc/c = 2200.637 m
@@ -70,10 +70,10 @@ p.wStreet = 20;
 p.carrierFrequencyGHz = 2.0;
 p.apply(m, this);
 
-c.check("SMa LOS d=500 (below dBP)",   m.computePathLoss(500, 500, true, p.o2iState()),   95.381938141);
-c.check("SMa LOS d=3000 (above dBP)",  m.computePathLoss(3000, 3000, true, p.o2iState()), 118.050957830);
-c.check("SMa sigma d=500 (below dBP)",  m.getShadowingStdDev(500, 500, true),   4.0);
-c.check("SMa sigma d=2000 (below dBP)", m.getShadowingStdDev(2000, 2000, true), 4.0);
+c.check("SMa LOS d=500 (below dBP)",   m.computePathLoss(500, 500, true, p.o2iState(), p.linkContext()),   95.381938141);
+c.check("SMa LOS d=3000 (above dBP)",  m.computePathLoss(3000, 3000, true, p.o2iState(), p.linkContext()), 118.050957830);
+c.check("SMa sigma d=500 (below dBP)",  m.getShadowingStdDev(500, 500, true, p.linkContext()),   4.0);
+c.check("SMa sigma d=2000 (below dBP)", m.getShadowingStdDev(2000, 2000, true, p.linkContext()), 4.0);
 
 c.summary();
 

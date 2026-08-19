@@ -59,8 +59,8 @@ p.wStreet = 20;
 p.carrierFrequencyGHz = 2.0;
 p.apply(m, this);
 
-c.check("UMa LOS d2D=500 (above d'BP)",  m.computePathLoss(500.06, 500, true, p.o2iState()),   96.862381060);
-c.check("UMa LOS d2D=1000 (above d'BP)", m.computePathLoss(1000.28, 1000, true, p.o2iState()), 108.906359816);
+c.check("UMa LOS d2D=500 (above d'BP)",  m.computePathLoss(500.06, 500, true, p.o2iState(), p.linkContext()),   96.862381060);
+c.check("UMa LOS d2D=1000 (above d'BP)", m.computePathLoss(1000.28, 1000, true, p.o2iState(), p.linkContext()), 108.906359816);
 
 c.summary();
 

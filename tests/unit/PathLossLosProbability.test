@@ -58,7 +58,7 @@ probe.losProbability("t814_p_los_uma", m814, p, 200);
 
 // The 2D distance is ignored: same 3D distance, different 2D distance.
 p.apply(m814, this);
-probe.record("t814_p_los_uma", p, { {"d", 50} }, m814.computeLosProbability(50, 7));
+probe.record("t814_p_los_uma", p, { {"d", 50} }, m814.computeLosProbability(50, 7, p.linkContext()));
 
 // --- RMa and SMa ---------------------------------------------------------
 p = ScenarioParams();
@@ -114,7 +114,7 @@ probe.losProbability("t873_p_los_rma", m873, p, 1000.1, 1000);
 // InH is evaluated by the TR 36.814 formula, fed the 3D distance.
 p.scenario = INDOOR_HOTSPOT;
 p.apply(m873, this);
-probe.record("t814_p_los_inh", p, { {"d", 25} }, m873.computeLosProbability(25, 20));
+probe.record("t814_p_los_inh", p, { {"d", 25} }, m873.computeLosProbability(25, 20, p.linkContext()));
 
 // =================== TR 38.901 ========================================
 Tr38901PathLossModel m901;

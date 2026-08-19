@@ -53,8 +53,13 @@ void BackgroundTrafficManager::initialize(int stage)
         medium_.reference(this, "radioMediumModule", true);
         mediumModuleId_ = medium_->getId();
         cellId_ = mac_->getMacCellId();
+        // Every background UE's antenna height (radio endpoint recast E4,
+        // §3(k)): today's UE-side default -- no in-tree config differentiates
+        // one background UE's height from another's, and none overrides
+        // ueHeight where background traffic is also configured.
+        constexpr double BG_UE_HEIGHT_M = 1.5;
         for (int i = 0; i < numBgUEs_; i++)
-            medium_->addBackgroundRadio(BgUeKey{cellId_, carrierFrequency_, MacNodeId(BGUE_MIN_ID + i)}, bgUe_.at(i));
+            medium_->addBackgroundRadio(BgUeKey{cellId_, carrierFrequency_, MacNodeId(BGUE_MIN_ID + i)}, bgUe_.at(i), BG_UE_HEIGHT_M);
     }
 }
 

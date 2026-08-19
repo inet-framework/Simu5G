@@ -27,20 +27,23 @@ namespace unittest {
 
 /**
  * Deployment-scenario parameters of a path-loss model, with the defaults of
- * the StochasticChannelModel NED parameters they mirror. A test fills in the
- * fields it cares about and hands it to a CaseRecorder, which configures the
- * model with it and reports it as the input of the case, which spares it the
- * twelve-argument PathLossModel::initialize() call.
+ * the StochasticChannelModel/RadioMedium NED parameters they mirror. A test
+ * fills in the fields it cares about and hands it to a CaseRecorder, which
+ * configures the model with it and reports it as the input of the case,
+ * which spares it the five-argument PathLossModel::initialize() call.
  *
- * The carrier frequency is given in GHz only; the Hz value and its logarithm,
- * which initialize() takes separately because the owning channel model caches
- * them, are derived from it.
+ * The carrier frequency and the two antenna heights are not part of
+ * initialize() any more (radio endpoint recast E4): they travel per call, in
+ * a LinkContext (PathLossModel.h) -- linkContext() extracts the bundle a
+ * computePathLoss()/computeLosProbability()/getShadowingStdDev() call needs,
+ * the carrier frequency given in GHz only, its Hz value and logarithm derived
+ * from it, matching what the owning medium derives from a registered radio's
+ * own carrier frequency.
  *
- * insideBuilding/insideDistance are not part of initialize() any more --
+ * insideBuilding/insideDistance are not part of initialize() either --
  * PathLossModel::computePathLoss() takes them per call as an O2iState
  * (PathLossModel.h) -- but they stay here because a test configures them
- * together with the rest of the scenario; o2iState() extracts the bundle a
- * computePathLoss() call needs.
+ * together with the rest of the scenario; o2iState() extracts that bundle.
  */
 struct ScenarioParams
 {
@@ -56,14 +59,17 @@ struct ScenarioParams
 
     void apply(PathLossModel& model, omnetpp::cComponent *owner) const
     {
-        model.initialize(owner, scenario, hNodeB, hUe, hBuilding, wStreet,
-                carrierFrequencyGHz * 1e9, carrierFrequencyGHz, std::log10(carrierFrequencyGHz),
-                tolerateMaxDistViolation);
+        model.initialize(owner, scenario, hBuilding, wStreet, tolerateMaxDistViolation);
     }
 
     O2iState o2iState() const
     {
         return O2iState{insideBuilding, insideDistance};
+    }
+
+    LinkContext linkContext() const
+    {
+        return LinkContext{carrierFrequencyGHz * 1e9, carrierFrequencyGHz, std::log10(carrierFrequencyGHz), hNodeB, hUe};
     }
 };
 
@@ -168,7 +174,7 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d3D", d3D }, { "d2D", d2D }, { "los", static_cast<double>(los) } },
-                model.computePathLoss(d3D, d2D, los, p.o2iState()));
+                model.computePathLoss(d3D, d2D, los, p.o2iState(), p.linkContext()));
     }
 
     /**
@@ -181,7 +187,7 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d", d }, { "los", static_cast<double>(los) } },
-                model.computePathLoss(d, d, los, p.o2iState()));
+                model.computePathLoss(d, d, los, p.o2iState(), p.linkContext()));
     }
 
     void losProbability(const char *ref, PathLossModel& model, const ScenarioParams& p,
@@ -189,13 +195,13 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d3D", d3D }, { "d2D", d2D } },
-                model.computeLosProbability(d3D, d2D));
+                model.computeLosProbability(d3D, d2D, p.linkContext()));
     }
 
     void losProbability(const char *ref, PathLossModel& model, const ScenarioParams& p, double d)
     {
         p.apply(model, owner_);
-        record(ref, p, { { "d", d } }, model.computeLosProbability(d, d));
+        record(ref, p, { { "d", d } }, model.computeLosProbability(d, d, p.linkContext()));
     }
 
     void shadowingStdDev(const char *ref, PathLossModel& model, const ScenarioParams& p,
@@ -203,7 +209,7 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d3D", d3D }, { "d2D", d2D }, { "los", static_cast<double>(los) } },
-                model.getShadowingStdDev(d3D, d2D, los));
+                model.getShadowingStdDev(d3D, d2D, los, p.linkContext()));
     }
 
     void shadowingStdDev(const char *ref, PathLossModel& model, const ScenarioParams& p,
@@ -211,7 +217,7 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d", d }, { "los", static_cast<double>(los) } },
-                model.getShadowingStdDev(d, d, los));
+                model.getShadowingStdDev(d, d, los, p.linkContext()));
     }
 
     /**

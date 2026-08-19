@@ -112,6 +112,14 @@ struct RadioDescriptor
     MacNodeId nodeId = NODEID_NONE;
     GHz carrierFrequency = GHz(0);
 
+    // This radio's own antenna height (radio endpoint recast E4, §3(k)): a
+    // per-node fact, not a per-leg constant any more. For a real endpoint,
+    // its own "height" NED parameter; for a phantom, the value
+    // addBackgroundRadio() was given (BackgroundTrafficManager's own
+    // constant, since no in-tree config ever differentiates one background
+    // UE's height from another's).
+    double height = 0;
+
     // The D2D marker: endpoint downcast once at registration,
     // non-null iff this radio is D2D-capable. The registration-time
     // dynamic_cast this is built from is the only one -- every D2D-aware
@@ -138,8 +146,9 @@ struct RadioDescriptor
  * radio registered on a given leg must agree on. Filled from the first radio
  * to register on that leg; every later one is checked against it,
  * field by field, in addRadio(). Per-radio parameters (antenna gains, cable
- * loss, noise figures, insideBuilding and the module-path parameters) are
- * deliberately not part of this record.
+ * loss, noise figures, insideBuilding, the module-path parameters and, since
+ * E4, the two antenna heights -- now a per-node RadioDescriptor::height,
+ * §3(k) -- are deliberately not part of this record.
  */
 struct CarrierPhysics
 {
@@ -155,8 +164,6 @@ struct CarrierPhysics
     int numFadingPaths = 0;
     double delayRms = 0;
     double thermalNoise = 0;
-    double nodebHeight = 0;
-    double ueHeight = 0;
     double buildingHeight = 0;
     double streetWidth = 0;
     bool useTorus = false;
@@ -265,13 +272,14 @@ class RadioMedium : public cSimpleModule
     void reindex(RadioDescriptor& descriptor);
 
     /**
-     * Reads the per-carrier-leg physics parameters: 17 of the 25 fields come
-     * from this medium's own NED parameters (the environment, stated once for
-     * the whole network -- radio endpoint recast E3); the remaining 8
-     * (pathLossType, scenario, nodebHeight, ueHeight, buildingHeight,
-     * streetWidth, tolerateMaxDistViolation, useBuildingPenetrationHighLossModel)
-     * still come from endpoint's own NED type, pending later steps of that
-     * recast.
+     * Reads the per-carrier-leg physics parameters: 17 of the (originally 25)
+     * fields come from this medium's own NED parameters (the environment,
+     * stated once for the whole network -- radio endpoint recast E3); the
+     * remaining 6 (pathLossType, scenario, buildingHeight, streetWidth,
+     * tolerateMaxDistViolation, useBuildingPenetrationHighLossModel) still
+     * come from endpoint's own NED type, pending later steps of that recast.
+     * nodebHeight/ueHeight left this record at E4 -- antenna height is a
+     * per-node fact (RadioDescriptor::height, §3(k)), not a per-leg one.
      */
     CarrierPhysics readCarrierPhysics(StochasticChannelModel *endpoint) const;
 
@@ -303,14 +311,22 @@ class RadioMedium : public cSimpleModule
     /** The per-leg CarrierPhysics record established in addRadio(); throws if no radio has registered on the leg. */
     const CarrierPhysics& carrierPhysicsFor(const CarrierLeg& leg) const;
 
-    /** Builds the propagation-formula strategy matching cp.pathLossType and initializes it from the leg's own established CarrierPhysics record and carrier frequency. */
-    PathLossModel *createPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg);
+    /** Builds the propagation-formula strategy matching cp.pathLossType and initializes it from the leg's own established CarrierPhysics record. */
+    PathLossModel *createPathLossModel(const CarrierPhysics& cp);
 
     /** Builds this leg's ext-cell/background-cell strategy: always Tr36814PathLossModel, regardless of cp.pathLossType, from the same CarrierPhysics fields createPathLossModel() reads. */
-    PathLossModel *createExtCellPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg);
+    PathLossModel *createExtCellPathLossModel(const CarrierPhysics& cp);
 
-    /** The frequency-triple derivation and initialize() call createPathLossModel()/createExtCellPathLossModel() share verbatim, once the concrete strategy is constructed. */
-    void initializePathLossStrategy(PathLossModel *model, const CarrierPhysics& cp, const CarrierLeg& leg);
+    /**
+     * The initialize() call createPathLossModel()/createExtCellPathLossModel()
+     * share verbatim, once the concrete strategy is constructed. Since E4 this
+     * carries only the leg-constant scenario parameters -- no carrier
+     * frequency and no antenna heights any more (neither is per-leg state:
+     * the frequency is the leg's own key already, and the heights are
+     * per-node, §3(k)); both travel per call now, in a LinkContext built by
+     * linkContextFor().
+     */
+    void initializePathLossStrategy(PathLossModel *model, const CarrierPhysics& cp);
 
     /** Auto-vivifying access to losMap_[{leg,key}]; existed, if given, reports whether the entry was already present. */
     bool& losState(const CarrierLeg& leg, const LinkKey& key, bool *existed = nullptr);
@@ -349,9 +365,12 @@ class RadioMedium : public cSimpleModule
      * establishes no CarrierPhysics record and creates no PathLossModel or
      * per-radio stochastic state -- a phantom declares none of the 25
      * per-carrier-leg physics parameters and owns no stochastic state.
+     * height is the phantom's own antenna height (E4/§3(k)) -- the caller's
+     * (BackgroundTrafficManager's own default, since no in-tree config
+     * differentiates one background UE's height from another's).
      * Duplicate registration is an error, exactly as addRadio()'s is.
      */
-    virtual void addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *generator);
+    virtual void addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *generator, double height);
 
     /** Unregisters a background transmitter's phantom radio previously added with addBackgroundRadio(). */
     virtual void removeBackgroundRadio(const BgUeKey& key);
@@ -389,6 +408,40 @@ class RadioMedium : public cSimpleModule
     virtual O2iState o2iStateOf(MacNodeId nodeId, GHz carrierFrequency) const;
 
     /**
+     * The per-*call* facts (carrier frequency triple, the two antenna
+     * heights) a propagation-formula call needs, resolved for the specific
+     * link between radio and peerId (radio endpoint recast E4, §3(f),(k)).
+     * Public, like the rest of this accessor family: StochasticChannelModel's
+     * resident computeExtCellPathLoss() calls it back on the medium too, the
+     * same way it already reaches extCellPathLossFor()/losStateFor().
+     *
+     * The frequency triple is radio's own carrier frequency, reproducing
+     * ChannelModelBase's own derivation (ChannelModelBase.cc:26-29) with no
+     * per-leg cache any more.
+     *
+     * Heights are resolved by *role*, not by which end is transmitting or
+     * receiving (risk 15): whichever of {radio, peerId} is eNB-role
+     * (getNodeTypeById()) supplies h_BS, whichever is UE-role supplies h_UT.
+     * radio's own role and height are read directly off its own registered
+     * radio; peerId's are looked up by id -- a real registered radio first,
+     * then (num(peerId) >= BGUE_MIN_ID) a phantom background UE, keyed off
+     * radio's own node id as the owning cell (valid because radio is always
+     * that phantom's serving eNB whenever it appears as a peer here --
+     * BackgroundTrafficManager registers a phantom under its own eNB's node
+     * id as cellId, LteMacEnb.cc:131).
+     *
+     * peerId == NODEID_NONE -- no specific peer identity reaches the call
+     * (getReceivedPower_bgUe(), the D2D conflict-graph's abstract distance
+     * estimate, computeExtCellPathLoss()'s ext-cell/background-cell walk,
+     * none of which identify a specific far-end node) -- falls back to the
+     * *other* role's own NIC-level default height (25m eNB-side, 1.5m
+     * UE-side) for the missing side. Value-preserving today by construction,
+     * not by guess: §3(k) verifies every in-tree config keeps that side at
+     * its role's default in exactly these calls' configs.
+     */
+    virtual LinkContext linkContextFor(StochasticChannelModel *radio, MacNodeId peerId) const;
+
+    /**
      * The per-leg path-loss strategy for a registered radio, resolved through
      * the registry like the rest of this accessor family. Lets the
      * endpoint's own computeAngularAttenuation -- whose formula never draws,
@@ -422,11 +475,17 @@ class RadioMedium : public cSimpleModule
      * same reason updatePositionHistory()/updateCorrelationDistance() below
      * do: a node's correlation point is a property of the node
      * and its carrier leg, not of a link between two nodes.
+     *
+     * peerId (E4/§3(k)): the other party of this specific link, for
+     * per-node height role-resolution (linkContextFor()) -- NODEID_NONE where
+     * no specific peer identity reaches the call (getReceivedPower_bgUe(),
+     * the D2D conflict-graph's abstract distance estimate), which
+     * linkContextFor() resolves to the UE-side default height.
      */
     virtual double getAttenuation(StochasticChannelModel *radio, const RadioLink& link);
-    virtual double computePathLoss(StochasticChannelModel *radio, double distance, double dbp, bool los);
-    virtual void computeLosProbability(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key);
-    virtual double computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, double speed);
+    virtual double computePathLoss(StochasticChannelModel *radio, double distance, double dbp, bool los, MacNodeId peerId);
+    virtual void computeLosProbability(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, MacNodeId peerId);
+    virtual double computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, double speed, MacNodeId peerId);
     virtual double jakesFading(StochasticChannelModel *radio, const LinkKey& key, double speed,
             unsigned int band, bool isBgUe = false);
     virtual double rayleighFading(StochasticChannelModel *radio, MacNodeId id, unsigned int band);
