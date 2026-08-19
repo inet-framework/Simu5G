@@ -264,12 +264,35 @@ class RadioMedium : public cSimpleModule
      */
     void reindex(RadioDescriptor& descriptor);
 
-    /** Reads the per-carrier-leg physics parameters declared on the endpoint's own NED type. */
+    /**
+     * Reads the per-carrier-leg physics parameters: 17 of the 25 fields come
+     * from this medium's own NED parameters (the environment, stated once for
+     * the whole network -- radio endpoint recast E3); the remaining 8
+     * (pathLossType, scenario, nodebHeight, ueHeight, buildingHeight,
+     * streetWidth, tolerateMaxDistViolation, useBuildingPenetrationHighLossModel)
+     * still come from endpoint's own NED type, pending later steps of that
+     * recast.
+     */
     CarrierPhysics readCarrierPhysics(StochasticChannelModel *endpoint) const;
 
     /** Checks candidate against the leg's established record; throws naming the first mismatched parameter. */
     void checkCarrierPhysics(const CarrierPhysics& existing, const CarrierPhysics& candidate,
             const CarrierLeg& leg, const std::string& candidatePath) const;
+
+    /**
+     * The ASSERT-equality bridge (move-code.md) for the 17 environment
+     * parameters readCarrierPhysics() now reads off this medium, plus
+     * d2dInterference for a D2D-capable endpoint: endpoint still declares its
+     * own copy of each (removal is a later step), so this compares that
+     * still-live value against the medium's and throws, naming both module
+     * paths, the moment they disagree -- which is exactly what an incorrectly
+     * migrated (or un-migrated) ini line produces. Called for every
+     * registering radio, not just the first on a leg, since these parameters
+     * are no longer per-leg but network-wide. d2dEndpoint is
+     * dynamic_cast<D2dChannelModel*>(endpoint), already computed by the
+     * caller; nullptr skips the d2dInterference check.
+     */
+    void checkEndpointAgreesWithMedium(StochasticChannelModel *endpoint, D2dChannelModel *d2dEndpoint) const;
 
     /** The per-leg path-loss strategy established in addRadio(); throws if no radio has registered on the leg. */
     PathLossModel& pathLossFor(const CarrierLeg& leg) const;
