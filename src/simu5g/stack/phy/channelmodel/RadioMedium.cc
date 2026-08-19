@@ -122,6 +122,7 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
     // dual-connectivity master eNB with its secondary gNB)
     CarrierLeg leg = legFor(endpoint);
     CarrierPhysics candidate = readCarrierPhysics(endpoint);
+    checkEndpointAgreesWithMedium(endpoint, descriptor.d2dEndpoint);
     auto cpIt = carrierPhysics_.find(leg);
     if (cpIt == carrierPhysics_.end()) {
         candidate.establishedByPath = endpoint->getFullPath();
@@ -189,32 +190,83 @@ void RadioMedium::removeBackgroundRadio(const BgUeKey& key)
 CarrierPhysics RadioMedium::readCarrierPhysics(StochasticChannelModel *endpoint) const
 {
     CarrierPhysics cp;
+    // still per-leg, read off the endpoint's own NED type (later steps of the
+    // radio endpoint recast move these too)
     cp.pathLossType = endpoint->par("pathLossType").stringValue();
     cp.scenario = endpoint->par("scenario").stringValue();
-    cp.shadowing = endpoint->par("shadowing");
-    cp.correlationDistance = endpoint->par("correlationDistance");
-    cp.dynamicLos = endpoint->par("dynamicLos");
-    cp.fixedLos = endpoint->par("fixedLos");
-    cp.enableExtCellLos = endpoint->par("enableExtCellLos");
-    cp.fading = endpoint->par("fading");
-    cp.fadingType = endpoint->par("fadingType").stringValue();
-    cp.numFadingPaths = endpoint->par("numFadingPaths");
-    cp.delayRms = endpoint->par("delayRms");
-    cp.thermalNoise = endpoint->par("thermalNoise");
     cp.nodebHeight = endpoint->par("nodebHeight");
     cp.ueHeight = endpoint->par("ueHeight");
     cp.buildingHeight = endpoint->par("buildingHeight");
     cp.streetWidth = endpoint->par("streetWidth");
-    cp.useTorus = endpoint->par("useTorus");
     cp.tolerateMaxDistViolation = endpoint->par("tolerateMaxDistViolation");
-    cp.harqReduction = endpoint->par("harqReduction");
-    cp.targetBler = endpoint->par("targetBler");
     cp.useBuildingPenetrationHighLossModel = endpoint->par("useBuildingPenetrationHighLossModel");
-    cp.bgCellInterference = endpoint->par("bgCellInterference");
-    cp.extCellInterference = endpoint->par("extCellInterference");
-    cp.downlinkInterference = endpoint->par("downlinkInterference");
-    cp.uplinkInterference = endpoint->par("uplinkInterference");
+    // the environment, stated once for the whole network: read off this
+    // medium's own NED parameters, not the registering endpoint's (E3)
+    cp.shadowing = par("shadowing");
+    cp.correlationDistance = par("correlationDistance");
+    cp.dynamicLos = par("dynamicLos");
+    cp.fixedLos = par("fixedLos");
+    cp.enableExtCellLos = par("enableExtCellLos");
+    cp.fading = par("fading");
+    cp.fadingType = par("fadingType").stringValue();
+    cp.numFadingPaths = par("numFadingPaths");
+    cp.delayRms = par("delayRms");
+    cp.thermalNoise = par("thermalNoise");
+    cp.useTorus = par("useTorus");
+    cp.harqReduction = par("harqReduction");
+    cp.targetBler = par("targetBler");
+    cp.bgCellInterference = par("bgCellInterference");
+    cp.extCellInterference = par("extCellInterference");
+    cp.downlinkInterference = par("downlinkInterference");
+    cp.uplinkInterference = par("uplinkInterference");
     return cp;
+}
+
+namespace {
+
+/** Bridge counterpart of checkCarrierField(): compares a value already sourced from the medium against the endpoint's own, still-declared value. */
+template<typename T>
+void checkBridgeField(const char *name, const T& mediumValue, const T& endpointValue,
+        const std::string& mediumPath, const std::string& endpointPath)
+{
+    if (!(mediumValue == endpointValue))
+        throw cRuntimeError("parameter '%s' was moved to the medium: '%s' says one value, but '%s' still declares "
+                "a different one for its own (now unused) copy -- an ini line was migrated incorrectly, or not at all",
+                name, mediumPath.c_str(), endpointPath.c_str());
+}
+
+} // namespace
+
+void RadioMedium::checkEndpointAgreesWithMedium(StochasticChannelModel *endpoint, D2dChannelModel *d2dEndpoint) const
+{
+    const std::string mediumPath = getFullPath();
+    const std::string endpointPath = endpoint->getFullPath();
+
+#define CHECK_BRIDGE_FIELD(name, type) \
+    checkBridgeField<type>(#name, (type)par(#name), (type)endpoint->par(#name), mediumPath, endpointPath)
+
+    CHECK_BRIDGE_FIELD(shadowing, bool);
+    CHECK_BRIDGE_FIELD(correlationDistance, double);
+    CHECK_BRIDGE_FIELD(dynamicLos, bool);
+    CHECK_BRIDGE_FIELD(fixedLos, bool);
+    CHECK_BRIDGE_FIELD(enableExtCellLos, bool);
+    CHECK_BRIDGE_FIELD(fading, bool);
+    checkBridgeField<std::string>("fadingType", par("fadingType").stringValue(), endpoint->par("fadingType").stringValue(), mediumPath, endpointPath);
+    CHECK_BRIDGE_FIELD(numFadingPaths, int);
+    CHECK_BRIDGE_FIELD(delayRms, double);
+    CHECK_BRIDGE_FIELD(thermalNoise, double);
+    CHECK_BRIDGE_FIELD(useTorus, bool);
+    CHECK_BRIDGE_FIELD(targetBler, double);
+    CHECK_BRIDGE_FIELD(harqReduction, double);
+    CHECK_BRIDGE_FIELD(bgCellInterference, bool);
+    CHECK_BRIDGE_FIELD(extCellInterference, bool);
+    CHECK_BRIDGE_FIELD(downlinkInterference, bool);
+    CHECK_BRIDGE_FIELD(uplinkInterference, bool);
+
+#undef CHECK_BRIDGE_FIELD
+
+    if (d2dEndpoint != nullptr)
+        checkBridgeField<bool>("d2dInterference", par("d2dInterference"), d2dEndpoint->par("d2dInterference"), mediumPath, endpointPath);
 }
 
 namespace {

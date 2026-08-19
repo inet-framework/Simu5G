@@ -24,6 +24,31 @@ module RadioMedium like IRadioMedium
     parameters:
         @class(RadioMedium);
         @display("i=misc/sun");
+
+        // The environment, stated once for the whole network -- moved here from
+        // the per-endpoint channel model (radio endpoint recast, E3): every radio
+        // registered with this medium shares one value of each, so stating it once
+        // replaces stating it identically on every endpoint. Defaults match the
+        // endpoint's own former defaults exactly (StochasticChannelModel.ned,
+        // D2dChannelModel.ned), so an unmigrated network still behaves as before.
+        bool shadowing = default(true);
+        double correlationDistance @unit(m) = default(50m);
+        bool dynamicLos = default(false);
+        bool fixedLos = default(false);
+        bool enableExtCellLos = default(true);
+        bool fading = default(true);
+        string fadingType @enum(RAYLEIGH,JAKES) = default("JAKES");
+        int numFadingPaths = default(6);
+        double delayRms @unit(s) = default(363ns);
+        double thermalNoise @unit(dBm) = default(-104.5dBm);
+        bool useTorus = default(false);
+        double targetBler = default(0.01);
+        double harqReduction = default(0.2);
+        bool bgCellInterference = default(true);
+        bool extCellInterference = default(true);
+        bool downlinkInterference = default(false);
+        bool uplinkInterference = default(false);
+        bool d2dInterference = default(true); // from D2dChannelModel.ned; only D2D-capable radios care
     submodules:
         interference: <default("CellularInterferenceModel")> like IInterferenceModel {
             @display("p=100,100");
