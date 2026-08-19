@@ -315,34 +315,6 @@ class StochasticChannelModel : public ChannelModelBase
     virtual RadioLink linkFor(UserControlInfo *lteInfo);
 
     /*
-     * One interfering transmitter, normalized across the two kinds the UL
-     * transmission map can hold: a real UE (with a PHY) and a background UE
-     * (with a traffic generator). Public, with describeInterferer() below,
-     * for CellularInterferenceModel's computeUplinkInterference() and
-     * computeD2DInterference(), which both call describeInterferer()
-     * by explicit qualification.
-     */
-    struct InterfererInfo
-    {
-        MacNodeId nodeId;
-        MacCellId cellId;
-        Direction dir;
-        double txPwr;
-        inet::Coord coord;
-    };
-
-    /*
-     * Unpack a UeAllocationInfo into the properties every interference
-     * computation needs. Shared by the uplink and D2D interference loops, which
-     * otherwise differ in their exclusion rules and antenna-gain terms.
-     *
-     * medium/carrierFrequency are needed only to bridge the real-UE branch's
-     * physical-fact reads against the medium's registry; the background-UE
-     * branch stays unbridged since a traffic generator is not a registered radio.
-     */
-    static InterfererInfo describeInterferer(const UeAllocationInfo& allocation, RadioMedium *medium, GHz carrierFrequency);
-
-    /*
      * Compute attenuation due to path loss and shadowing, always with the
      * TR 36.814 formulas regardless of pathLossType. Public for
      * CellularInterferenceModel's computeExtCellInterference()/

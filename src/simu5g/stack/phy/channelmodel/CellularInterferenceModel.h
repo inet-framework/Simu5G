@@ -105,6 +105,33 @@ class CellularInterferenceModel : public cSimpleModule
     virtual void computeD2DInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
             inet::Coord senderCoord, MacNodeId destId, inet::Coord destCoord, bool isCqi, GHz carrierFrequency,
             std::vector<double> *interference, Direction dir);
+
+  private:
+    /*
+     * One interfering transmitter, normalized across the two kinds the UL
+     * transmission map can hold: a real UE (with a PHY) and a background UE
+     * (with a traffic generator). Returned by describeInterferer() below.
+     */
+    struct InterfererInfo
+    {
+        MacNodeId nodeId;
+        MacCellId cellId;
+        Direction dir;
+        double txPwr;
+        inet::Coord coord;
+    };
+
+    /*
+     * Unpack a UeAllocationInfo into the properties every interference
+     * computation needs. Shared by the uplink and D2D interference loops, which
+     * otherwise differ in their exclusion rules and antenna-gain terms.
+     *
+     * carrierFrequency is needed only to bridge the real-UE branch's
+     * physical-fact reads against the medium's registry (medium_); the
+     * background-UE branch stays unbridged since a traffic generator is not
+     * a registered radio.
+     */
+    InterfererInfo describeInterferer(const UeAllocationInfo& allocation, GHz carrierFrequency) const;
 };
 
 } //namespace

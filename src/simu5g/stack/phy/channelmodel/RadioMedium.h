@@ -264,6 +264,9 @@ class RadioMedium : public cSimpleModule
     /** The per-leg path-loss strategy established in addRadio(); throws if no radio has registered on the leg. */
     PathLossModel& pathLossFor(const CarrierLeg& leg) const;
 
+    /** The per-leg ext-cell/background-cell path-loss strategy established in addRadio(); throws if no radio has registered on the leg. */
+    PathLossModel& extCellPathLossFor(const CarrierLeg& leg) const;
+
     /** The per-leg CarrierPhysics record established in addRadio(); throws if no radio has registered on the leg. */
     const CarrierPhysics& carrierPhysicsFor(const CarrierLeg& leg) const;
 

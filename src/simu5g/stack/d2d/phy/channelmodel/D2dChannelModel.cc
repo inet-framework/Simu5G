@@ -25,16 +25,16 @@ void D2dChannelModel::initialize(int stage)
     }
 }
 
-std::vector<double> D2dChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, Coord destCoord)
+std::vector<double> D2dChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord)
 {
     EV << "------------ GET RSRP D2D----------------" << endl;
 
     // D2D is like DL for the receivers, so the UE-side fading/shadowing maps apply.
-    RadioLink link = medium_->d2dLink(this, lteInfo_1->getSourceId(), lteInfo_1->getCoord(), destId, destCoord);
+    RadioLink link = medium_->d2dLink(this, lteInfo->getSourceId(), lteInfo->getCoord(), destId, destCoord);
 
     // Note the D2D-specific transmit power: a D2D transmission does not use the
     // power the UE would use towards the base station.
-    return getRSRP(link, lteInfo_1->getD2dTxPower());
+    return getRSRP(link, lteInfo->getD2dTxPower());
 }
 
 std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId)
@@ -45,13 +45,13 @@ std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControl
     return getSINR_D2D(frame, lteInfo, destId, destCoord, enbId, rsrpVector);
 }
 
-std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
+std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
 {
     EV << "------------ GET SINR D2D----------------" << endl;
 
     // The desired signal is already known; the medium's computeInterferencePlusNoise
     // asks its D2D branch for the D2D denominator.
-    RadioLink link = medium_->d2dLink(this, lteInfo_1->getSourceId(), lteInfo_1->getCoord(), destId, destCoord);
+    RadioLink link = medium_->d2dLink(this, lteInfo->getSourceId(), lteInfo->getCoord(), destId, destCoord);
     link.cellId = enbId;
 
     // The caller is expected to supply one RSRP value per band. The one-to-many
@@ -63,10 +63,10 @@ std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControl
         if (!rsrpVector.empty())
             throw cRuntimeError("D2dChannelModel::getSINR_D2D - RSRP vector has %zu entries, expected %u",
                     rsrpVector.size(), numBands_);
-        return getSINR(link, lteInfo_1, getRSRP(link, lteInfo_1->getD2dTxPower()));
+        return getSINR(link, lteInfo, getRSRP(link, lteInfo->getD2dTxPower()));
     }
 
-    return getSINR(link, lteInfo_1, rsrpVector);
+    return getSINR(link, lteInfo, rsrpVector);
 }
 
 } //namespace

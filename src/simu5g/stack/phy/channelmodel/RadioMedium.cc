@@ -331,15 +331,19 @@ PathLossModel& RadioMedium::pathLossFor(MacNodeId nodeId, GHz carrierFrequency) 
     return pathLossFor(legFor(d.endpoint));
 }
 
-PathLossModel& RadioMedium::extCellPathLossFor(MacNodeId nodeId, GHz carrierFrequency) const
+PathLossModel& RadioMedium::extCellPathLossFor(const CarrierLeg& leg) const
 {
-    const RadioDescriptor& d = descriptorFor(nodeId, carrierFrequency);
-    const CarrierLeg leg = legFor(d.endpoint);
     auto it = extCellPathLoss_.find(leg);
     if (it == extCellPathLoss_.end())
         throw cRuntimeError("no ext-cell path-loss strategy for carrier leg %gGHz/%s",
                 leg.carrierFrequency.get(), leg.isNr ? "NR" : "LTE");
     return *it->second;
+}
+
+PathLossModel& RadioMedium::extCellPathLossFor(MacNodeId nodeId, GHz carrierFrequency) const
+{
+    const RadioDescriptor& d = descriptorFor(nodeId, carrierFrequency);
+    return extCellPathLossFor(legFor(d.endpoint));
 }
 
 const CarrierPhysics& RadioMedium::carrierPhysicsFor(const CarrierLeg& leg) const
@@ -911,7 +915,10 @@ std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const Ra
     // Load-bearing ordering.
     double speed = computeSpeed(radio, link.stateNodeId, link.stateCoord);
 
-    // attenuation for the desired signal
+    // attenuation for the desired signal. getAttenuation() below recomputes
+    // computeSpeed() a second time on the same (radio, stateNodeId, stateCoord)
+    // -- idempotent, since it runs before its own position-history append too,
+    // so both calls read the same history and agree; reader-burden only.
     double attenuation = getAttenuation(radio, link); // dB
 
     // compute attenuation (PATHLOSS + SHADOWING)

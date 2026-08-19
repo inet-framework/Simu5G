@@ -41,6 +41,26 @@ void CellularInterferenceModel::handleMessage(cMessage *msg)
     throw cRuntimeError("unexpected message '%s': CellularInterferenceModel has no gates and schedules no self-messages", msg->getName());
 }
 
+CellularInterferenceModel::InterfererInfo CellularInterferenceModel::describeInterferer(const UeAllocationInfo& allocation, GHz carrierFrequency) const
+{
+    InterfererInfo info;
+    info.nodeId = allocation.nodeId;
+    info.cellId = allocation.cellId;
+    info.dir = allocation.dir;
+
+    if (allocation.phy != nullptr) {
+        // a real UE is a registered radio; read its physical facts from the medium
+        info.txPwr = medium_->txPowerOf(info.nodeId, carrierFrequency, info.dir);
+        info.coord = medium_->coordOf(info.nodeId, carrierFrequency);
+    }
+    else { // a background UE is a registered phantom radio
+        BgUeKey key{allocation.cellId, carrierFrequency, allocation.nodeId};
+        info.txPwr = medium_->txPowerOf(key);
+        info.coord = medium_->coordOf(key);
+    }
+    return info;
+}
+
 void CellularInterferenceModel::computeDownlinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId ueId,
         inet::Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference)
 {
@@ -163,7 +183,7 @@ void CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel
                 allocatedUes = &(ulTransmissionMap->at(i));
 
                 for (auto& ue_it : *allocatedUes) {
-                    const auto interferer = StochasticChannelModel::describeInterferer(ue_it, medium_, carrierFrequency);
+                    const auto interferer = describeInterferer(ue_it, carrierFrequency);
                     const MacNodeId ueId = interferer.nodeId;
                     const MacCellId cellId = interferer.cellId;
                     const Direction dir = interferer.dir;
@@ -204,7 +224,7 @@ void CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel
                 allocatedUes = &(ulTransmissionMap->at(i));
 
                 for (auto& ue_it : *allocatedUes) {
-                    const auto interferer = StochasticChannelModel::describeInterferer(ue_it, medium_, carrierFrequency);
+                    const auto interferer = describeInterferer(ue_it, carrierFrequency);
                     const MacNodeId ueId = interferer.nodeId;
                     const MacCellId cellId = interferer.cellId;
                     const Direction dir = interferer.dir;
@@ -472,7 +492,7 @@ void CellularInterferenceModel::computeD2DInterference(StochasticChannelModel *r
             allocatedUes = &(ulTransmissionMap->at(i));
 
             for (auto& ue_it : *allocatedUes) {
-                const auto interferer = StochasticChannelModel::describeInterferer(ue_it, medium_, carrierFrequency);
+                const auto interferer = describeInterferer(ue_it, carrierFrequency);
                 const MacNodeId ueId = interferer.nodeId;
                 const MacCellId cellId = interferer.cellId;
                 const Direction dir = interferer.dir;
