@@ -713,6 +713,28 @@ double RadioMedium::computeCorrelationDistance(StochasticChannelModel *radio, Ma
     return dist;
 }
 
+double RadioMedium::computeSectorAttenuation(StochasticChannelModel *radio, MacNodeId txId, GHz carrierFrequency,
+        const inet::Coord& txCoord, const inet::Coord& rxCoord) const
+{
+    if (txDirectionOf(txId, carrierFrequency) != ANISOTROPIC)
+        return 0.0; // antenna is omni-directional
+    double txAngle = txAngleOf(txId, carrierFrequency);
+
+    // compute the angle between the receiver position and the reference axis,
+    // considering the transmitter as center
+    double ueAngle = radio->computeAngle(txCoord, rxCoord);
+
+    // compute the reception angle
+    double recvAngle = fabs(txAngle - ueAngle);
+    if (recvAngle > 180)
+        recvAngle = 360 - recvAngle;
+
+    double verticalAngle = radio->computeVerticalAngle(txCoord, rxCoord);
+
+    // compute attenuation due to sectorial tx
+    return radio->computeAngularAttenuation(recvAngle, verticalAngle);
+}
+
 std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     RadioLink link = radio->linkFor(lteInfo);
@@ -933,35 +955,8 @@ std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const Ra
 
     // =============== ANGULAR ATTENUATION =================
     // Only a base station has a sectorial antenna; a UE-to-UE link never gets here.
-    if (link.txIsBaseStation) {
-        cModule *eNbModule = radio->getBinder()->getNodeModule(link.txId);
-        PhyBase *ltePhy = eNbModule ?
-            check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
-            nullptr;
-
-        if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
-            // get tx angle
-            double txAngle = ltePhy->getTxAngle();
-
-            // compute the angle between the receiver position and the reference axis,
-            // considering the transmitting BS as center
-            double ueAngle = radio->computeAngle(link.txCoord, link.rxCoord);
-
-            // compute the reception angle
-            double recvAngle = fabs(txAngle - ueAngle);
-
-            if (recvAngle > 180)
-                recvAngle = 360 - recvAngle;
-
-            double verticalAngle = radio->computeVerticalAngle(link.txCoord, link.rxCoord);
-
-            // compute attenuation due to sectorial tx
-            double angularAtt = radio->computeAngularAttenuation(recvAngle, verticalAngle);
-
-            recvPower -= angularAtt;
-        }
-        // else, antenna is omni-directional
-    }
+    if (link.txIsBaseStation)
+        recvPower -= computeSectorAttenuation(radio, link.txId, radio->getCarrierFrequency(), link.txCoord, link.rxCoord);
     // =============== END ANGULAR ATTENUATION =================
 
     std::vector<double> rsrpVector;
@@ -1076,35 +1071,8 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     recvPower -= radio->getCableLoss(); // (dBm-dB)=dBm
 
     // ANGULAR ATTENUATION
-    if (dir == DL) {
-        //get tx angle
-        cModule *eNbModule = radio->getBinder()->getNodeModule(eNbId);
-        PhyBase *ltePhy = eNbModule ?
-            check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
-            nullptr;
-
-        if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
-            // get tx angle
-            double txAngle = ltePhy->getTxAngle();
-
-            // compute the angle between uePosition and reference axis, considering the eNb as center
-            double ueAngle = radio->computeAngle(enbCoord, ueCoord);
-
-            // compute the reception angle between ue and eNb
-            double recvAngle = fabs(txAngle - ueAngle);
-
-            if (recvAngle > 180)
-                recvAngle = 360 - recvAngle;
-
-            double verticalAngle = radio->computeVerticalAngle(enbCoord, ueCoord);
-
-            // compute attenuation due to sectorial tx
-            double angularAtt = radio->computeAngularAttenuation(recvAngle, verticalAngle);
-
-            recvPower -= angularAtt;
-        }
-        // else, antenna is omni-directional
-    }
+    if (dir == DL)
+        recvPower -= computeSectorAttenuation(radio, eNbId, radio->getCarrierFrequency(), enbCoord, ueCoord);
 
     std::vector<double> snrVector;
     snrVector.resize(radio->getNumBands(), recvPower);
@@ -1240,33 +1208,8 @@ double RadioMedium::getReceivedPower_bgUe(StochasticChannelModel *radio, double 
     recvPower -= radio->getCableLoss(); // (dBm-dB)=dBm
 
     // ANGULAR ATTENUATION
-    if (dir == DL) {
-        //get tx angle
-        cModule *bsModule = radio->getBinder()->getNodeModule(bsId);
-        PhyBase *phy = bsModule ? check_and_cast<PhyBase *>(bsModule->getSubmodule("cellularNic")->getSubmodule("phy")) : nullptr;
-
-        if (phy && phy->getTxDirection() == ANISOTROPIC) {
-            // get tx angle
-            double txAngle = phy->getTxAngle();
-
-            // compute the angle between uePosition and reference axis, considering the eNb as center
-            double ueAngle = radio->computeAngle(txPos, rxPos);
-
-            // compute the reception angle between ue and eNb
-            double recvAngle = fabs(txAngle - ueAngle);
-
-            if (recvAngle > 180)
-                recvAngle = 360 - recvAngle;
-
-            double verticalAngle = radio->computeVerticalAngle(txPos, rxPos);
-
-            // compute attenuation due to sectorial tx
-            double angularAtt = radio->computeAngularAttenuation(recvAngle, verticalAngle);
-
-            recvPower -= angularAtt;
-        }
-        // else, antenna is omni-directional
-    }
+    if (dir == DL)
+        recvPower -= computeSectorAttenuation(radio, bsId, radio->getCarrierFrequency(), txPos, rxPos);
     //============ END PATH LOSS + ANGULAR ATTENUATION ===============
 
     return recvPower;

@@ -109,27 +109,8 @@ void CellularInterferenceModel::computeDownlinkInterference(StochasticChannelMod
         EV << "EnbId [" << id << "] - attenuation [" << att << "]";
 
         //=============== ANGULAR ATTENUATION =================
-        double angularAtt = 0;
-        if (medium_->txDirectionOf(id, carrierFrequency) == ANISOTROPIC) {
-            //get tx angle
-            double txAngle = medium_->txAngleOf(id, carrierFrequency);
-
-            // compute the angle between uePosition and reference axis, considering the eNB as center
-            double ueAngle = radio->computeAngle(medium_->coordOf(id, carrierFrequency), coord);
-
-            // compute the reception angle between ue and eNB
-            double recvAngle = fabs(txAngle - ueAngle);
-            if (recvAngle > 180)
-                recvAngle = 360 - recvAngle;
-
-            double verticalAngle = radio->computeVerticalAngle(medium_->coordOf(id, carrierFrequency), coord);
-
-            // compute attenuation due to sectorial tx
-            angularAtt = radio->computeAngularAttenuation(recvAngle, verticalAngle);
-
-            EV << "angular attenuation [" << angularAtt << "]";
-        }
-        // else, antenna is omni-directional
+        double angularAtt = medium_->computeSectorAttenuation(radio, id, carrierFrequency, medium_->coordOf(id, carrierFrequency), coord);
+        EV << "angular attenuation [" << angularAtt << "]";
         //=============== END ANGULAR ATTENUATION =================
 
         double txPwr = medium_->txPowerOf(id, carrierFrequency) - angularAtt - radio->getCableLoss() + radio->getAntennaGainEnB() + radio->getAntennaGainUe();
