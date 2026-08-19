@@ -43,72 +43,6 @@ CarrierLeg legFor(StochasticChannelModel *endpoint)
 
 } // namespace
 
-bool& RadioMedium::losState(const CarrierLeg& leg, const LinkKey& key, bool *existed)
-{
-    auto result = losMap_.try_emplace(LinkStateKey{leg, key}, false);
-    if (existed != nullptr)
-        *existed = !result.second;
-    return result.first->second;
-}
-
-std::queue<Position> *RadioMedium::positionHistory(MacNodeId nodeId, const CarrierLeg& leg, bool createIfMissing)
-{
-    auto key = std::make_pair(nodeId, leg);
-    if (createIfMissing)
-        return &positionHistory_[key];
-    auto it = positionHistory_.find(key);
-    return it == positionHistory_.end() ? nullptr : &it->second;
-}
-
-Position& RadioMedium::correlationPoint(MacNodeId nodeId, const CarrierLeg& leg, bool *existed)
-{
-    auto result = lastCorrelationPoint_.try_emplace(std::make_pair(nodeId, leg));
-    if (existed != nullptr)
-        *existed = !result.second;
-    return result.first->second;
-}
-
-bool RadioMedium::losStateFor(StochasticChannelModel *radio, const LinkKey& key)
-{
-    return losState(legFor(radio), key);
-}
-
-void RadioMedium::updatePositionHistory(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
-{
-    // createIfMissing=true: a freshly vivified (empty) queue makes
-    // "!history->empty()" false, exactly like the old find()==end() check
-    std::queue<Position> *history = positionHistory(nodeId, legFor(radio), true);
-
-    if (!history->empty() && history->back().first == NOW)
-        // position already updated for this TTI.
-        return;
-
-    // FIXME: possible memory leak
-    history->push(Position(NOW, coord));
-
-    if (history->size() > 2) // if we have more than a past and a current element
-        // drop the oldest one
-        history->pop();
-}
-
-void RadioMedium::updateCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
-{
-    const CarrierLeg leg = legFor(radio);
-    bool existed = false;
-    Position& point = correlationPoint(nodeId, leg, &existed);
-
-    if (!existed) {
-        // no lastCorrelationPoint set current point.
-        point = Position(NOW, coord);
-    }
-    else if ((point.first != NOW) &&
-             point.second.distance(coord) > carrierPhysicsFor(leg).correlationDistance)
-    {
-        // check simtime_t first
-        point = Position(NOW, coord);
-    }
-}
-
 RadioMedium::~RadioMedium()
 {
     for (auto& [leg, model] : pathLoss_)
@@ -458,6 +392,72 @@ PathLossModel *RadioMedium::createExtCellPathLossModel(const CarrierPhysics& cp,
             carrierFrequencyHz, carrierFrequencyGHz, log10(carrierFrequencyGHz),
             cp.tolerateMaxDistViolation);
     return model;
+}
+
+bool& RadioMedium::losState(const CarrierLeg& leg, const LinkKey& key, bool *existed)
+{
+    auto result = losMap_.try_emplace(LinkStateKey{leg, key}, false);
+    if (existed != nullptr)
+        *existed = !result.second;
+    return result.first->second;
+}
+
+std::queue<Position> *RadioMedium::positionHistory(MacNodeId nodeId, const CarrierLeg& leg, bool createIfMissing)
+{
+    auto key = std::make_pair(nodeId, leg);
+    if (createIfMissing)
+        return &positionHistory_[key];
+    auto it = positionHistory_.find(key);
+    return it == positionHistory_.end() ? nullptr : &it->second;
+}
+
+Position& RadioMedium::correlationPoint(MacNodeId nodeId, const CarrierLeg& leg, bool *existed)
+{
+    auto result = lastCorrelationPoint_.try_emplace(std::make_pair(nodeId, leg));
+    if (existed != nullptr)
+        *existed = !result.second;
+    return result.first->second;
+}
+
+bool RadioMedium::losStateFor(StochasticChannelModel *radio, const LinkKey& key)
+{
+    return losState(legFor(radio), key);
+}
+
+void RadioMedium::updatePositionHistory(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
+{
+    // createIfMissing=true: a freshly vivified (empty) queue makes
+    // "!history->empty()" false, exactly like the old find()==end() check
+    std::queue<Position> *history = positionHistory(nodeId, legFor(radio), true);
+
+    if (!history->empty() && history->back().first == NOW)
+        // position already updated for this TTI.
+        return;
+
+    // FIXME: possible memory leak
+    history->push(Position(NOW, coord));
+
+    if (history->size() > 2) // if we have more than a past and a current element
+        // drop the oldest one
+        history->pop();
+}
+
+void RadioMedium::updateCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
+{
+    const CarrierLeg leg = legFor(radio);
+    bool existed = false;
+    Position& point = correlationPoint(nodeId, leg, &existed);
+
+    if (!existed) {
+        // no lastCorrelationPoint set current point.
+        point = Position(NOW, coord);
+    }
+    else if ((point.first != NOW) &&
+             point.second.distance(coord) > carrierPhysicsFor(leg).correlationDistance)
+    {
+        // check simtime_t first
+        point = Position(NOW, coord);
+    }
 }
 
 double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLink& link)
