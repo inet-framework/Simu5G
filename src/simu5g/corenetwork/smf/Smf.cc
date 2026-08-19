@@ -671,7 +671,18 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
                      (!isMulticast && getNodeTypeById(destId) == UE) ? check_and_cast<Registration*>(binder_->getRrcByNodeId(destId)->getSubmodule("registration")) :
                      nullptr;
 
-        //TODO assert that master is LTE, and secondary is NT;   alternatively, choose the UE nodeId that matches the technology of the NODEB
+        // Which of the UE's two ids belongs to which cell group. A UE's stacks pair with
+        // their serving nodes by technology, so the master node's technology decides:
+        // under EN-DC the master is an eNB and the master cell group is the UE's LTE
+        // stack; under NE-DC the master is a gNB and it is the NR stack.
+        //
+        // The master's technology is asked of the node itself, not of the UE's current
+        // attachment. Attachment moves during a handover, and a stack whose serving node
+        // is mid-change matches neither cell group for as long as that lasts.
+        MacNodeId masterNodeB = binder_->getMasterNodeOrSelf(getNodeTypeById(sourceId) == UE ? destId : sourceId);
+        bool masterIsNr = isNrNodeB(masterNodeB);
+        MacNodeId ueMcgId = ueReg ? (masterIsNr ? ueReg->getNrNodeId() : ueReg->getLteNodeId()) : NODEID_NONE;
+        MacNodeId ueScgId = ueReg ? (masterIsNr ? ueReg->getLteNodeId() : ueReg->getNrNodeId()) : NODEID_NONE;
 
         // A bearer whose definition states its legs is established on those and no others,
         // so a dual-connectivity network can carry a bearer that never reaches the
@@ -683,26 +694,26 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
                 useSecondary = std::any_of(def->legs.begin(), def->legs.end(),
                         [](const RlcBearerDesc& leg) { return leg.cellGroup == SCG; });
 
-        // LTE Connection (Master)
+        // Master cell group connection
         FlowId lteFlow = flow;
         lteFlow.sourceId = getNodeTypeById(sourceId) == UE ?
-                            ueReg->getLteNodeId() :
+                            ueMcgId :
                             binder_->getMasterNodeOrSelf(sourceId);
         if (!isMulticast) {  // Only set destId for unicast
             lteFlow.destId = getNodeTypeById(destId) == UE ?
-                              ueReg->getLteNodeId() :
+                              ueMcgId :
                               binder_->getMasterNodeOrSelf(destId);
         }
         createConnection(lteFlow, req, true);
 
-        // NR Connection (Secondary)
+        // Secondary cell group connection
         FlowId nrFlow = flow;
         nrFlow.sourceId = getNodeTypeById(sourceId) == UE ?
-                           ueReg->getNrNodeId() :
+                           ueScgId :
                            binder_->getSecondaryNode(binder_->getMasterNodeOrSelf(sourceId));
         if (!isMulticast) {  // Only set destId for unicast
             nrFlow.destId = getNodeTypeById(destId) == UE ?
-                             ueReg->getNrNodeId() :
+                             ueScgId :
                              binder_->getSecondaryNode(binder_->getMasterNodeOrSelf(destId));
         }
         if (useSecondary)
@@ -726,6 +737,18 @@ const DrbDesc *Smf::findBearerDefinition(const FlowId& flow)
         if (ab.ueModule == ueModule && ab.desc.getDrbId() == flow.drbId)
             return &ab.desc;
     return nullptr;
+}
+
+// Is this base station an NR node? A base station holds its own id under the technology it
+// is (see Registration), and unlike UEs, base stations of the two technologies share one
+// node id range -- so the node has to be asked.
+bool Smf::isNrNodeB(MacNodeId nodeB)
+{
+    if (nodeB == NODEID_NONE)
+        return false;
+    cModule *rrc = binder_->getRrcByNodeId(nodeB);
+    auto *reg = check_and_cast<Registration *>(rrc->getSubmodule("registration"));
+    return reg->getNrNodeId() != NODEID_NONE;
 }
 
 void Smf::createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)

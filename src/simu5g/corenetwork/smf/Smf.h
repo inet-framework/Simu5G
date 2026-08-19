@@ -98,6 +98,10 @@ class Smf : public cSimpleModule
     // The definition a flow's bearer was authored from, or nullptr if none covers it
     virtual const DrbDesc *findBearerDefinition(const FlowId& flow);
 
+    // Whether a base station is an NR node; base stations of both technologies share one
+    // node id range, so this cannot be read off the id
+    virtual bool isNrNodeB(MacNodeId nodeB);
+
     // Deliver one bearer's definition to the RRCs involved: the UE's (keyed by
     // NODEID_NONE, "my serving node") and, for each attached stack, the serving
     // node's (keyed by that stack's UE id), reserving the configured id per pair.
