@@ -76,7 +76,10 @@ SIMU5G_STRONG_TYPEDEF(DrbId, unsigned short)
 
 /// QoS Flow Identifier (6-bit, 0-63 per 3GPP TS 24.501)
 SIMU5G_STRONG_TYPEDEF(Qfi, uint8_t)
-constexpr Qfi QFI_NONE = Qfi(0);
+// "no QFI": out of the 6-bit QFI value range (TS 38.331: 0..63), because 0 is a real
+// QFI -- the default QoS flow's -- and a sentinel that collides with it cannot be told
+// apart from a packet classified onto the default flow
+constexpr Qfi QFI_NONE = Qfi(255);
 
 /// Invalid/uninitialized LCID and DRB ID values
 constexpr LogicalCid LCID_NONE = LogicalCid(65535);

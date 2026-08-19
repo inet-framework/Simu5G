@@ -137,8 +137,11 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
                 EV_INFO << "SDAP TX: QFI = " << qfi << " derived from reflective QoS\n";
             }
         }
-        if (qfi == QFI_NONE)
+        if (qfi == QFI_NONE) {
+            // unclassified traffic joins the default QoS flow
+            qfi = Qfi(0);
             EV_WARN << "SDAP TX: No QFI from reflective QoS, using QFI=0 (default DRB)\n";
+        }
     }
     else {
         throw cRuntimeError("SDAP TX: QfiReq tag missing on gNB DL path -- GtpUser should always set it");

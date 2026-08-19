@@ -41,6 +41,7 @@ const Ptr<Chunk> GtpUserMsgSerializer::deserialize(MemoryInputStream& stream) co
     auto gtpUserMsg = makeShared<GtpUserMsg>();
     B dataLength = B(stream.readUint32Be());
     gtpUserMsg->setTeid(stream.readUint32Be());
+    gtpUserMsg->setQfi(Qfi(0));   // this simplified wire format does not carry the QFI; incoming traffic joins the default flow
 
     B remainders = dataLength - (stream.getPosition() - startPosition);
     ASSERT(remainders >= B(0));
