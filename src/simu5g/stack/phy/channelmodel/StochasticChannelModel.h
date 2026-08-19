@@ -112,10 +112,6 @@ class StochasticChannelModel : public ChannelModelBase
     // Antenna gain of eNodeB
     double antennaGainEnB_;
 
-    // Antenna gain of micro node; write-only (set from the antennGainMicro
-    // parameter, never read)
-    double antennaGainMicro_;
-
     // Antenna gain of UE
     double antennaGainUe_;
 

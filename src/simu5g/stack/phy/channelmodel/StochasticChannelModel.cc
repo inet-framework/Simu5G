@@ -44,7 +44,6 @@ void StochasticChannelModel::initialize(int stage)
 
         antennaGainUe_ = par("antennaGainUe");
         antennaGainEnB_ = par("antennGainEnB");
-        antennaGainMicro_ = par("antennGainMicro");
         cableLoss_ = par("cableLoss");
         ueNoiseFigure_ = par("ueNoiseFigure");
         bsNoiseFigure_ = par("bsNoiseFigure");

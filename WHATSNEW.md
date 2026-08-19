@@ -219,6 +219,14 @@ is confirmed byte-identical, since nothing about this change reaches them.
   forwards to the medium -- the shape `D2dChannelModel` now has -- is
   unaffected.
 
+- **`StochasticChannelModel`'s `antennGainMicro` NED parameter** is
+  removed, together with the `antennaGainMicro_` member it fed: nothing
+  ever read either one. Note that a configuration line still setting
+  `antennGainMicro` is silently ignored -- OMNeT++ does not diagnose ini
+  keys that no longer match any parameter. (The identically
+  named, identically dead parameter on `BackgroundCellChannelModel` is
+  untouched -- that module is removed wholesale in a later step.)
+
 ## v1.6.0 (2026-07-31)
 
 This release adds a standards-compliant NR RLC to Simu5G. RLC Unacknowledged
