@@ -49,8 +49,6 @@ using namespace omnetpp;
  * LteStack with LteDeciderControlInfo attached.
  */
 
-class ChannelModelBase;
-
 class PhyBase : public ChannelAccess
 {
 

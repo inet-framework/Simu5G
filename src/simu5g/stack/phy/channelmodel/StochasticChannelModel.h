@@ -14,6 +14,7 @@
 #define STACK_PHY_CHANNELMODEL_STOCHASTICCHANNELMODEL_H_
 
 #include "simu5g/common/LteDefs.h"
+#include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 #include "simu5g/stack/phy/channelmodel/RadioMedium.h"
 
