@@ -41,11 +41,13 @@ void RlcMuxD2D::fromMacLayer(cPacket *pktAux)
         BearerRequest req{(LteTrafficClass)switchPkt->getLcg(), (LteRlcType)switchPkt->getRlcType()};
 
         if (switchPkt->getTxSide()) {
-            // get the corresponding Tx buffer & call handler
+            // The mux keeps only a DRB -> macToTxEntity gate-index table, so reach the
+            // entity through the gate it serves; create the bearer if it has none yet.
             DrbKey id = flow.txDrbKey();
-            RlcTxEntityBase *txbuf = bearerManagement_->lookupRlcTxBuffer(id);
-            if (txbuf == nullptr)
-                txbuf = bearerManagement_->createRlcTxBuffer(id, flow, req);
+            auto it = txGateIndices_.find(id);
+            RlcTxEntityBase *txbuf = it != txGateIndices_.end()
+                    ? check_and_cast<RlcTxEntityBase *>(gate("macToTxEntity", it->second)->getPathEndGate()->getOwnerModule())
+                    : bearerManagement_->createRlcTxBuffer(id, flow, req);
             auto *umTxbuf = dynamic_cast<ID2dRlcUmTxEntity *>(txbuf);
             if (umTxbuf == nullptr)
                 throw cRuntimeError("RlcMuxD2D::fromMacLayer: D2D mode switch received for a non-UM TX bearer (%s): D2D mode switching supports UM bearers only", txbuf->getClassName());

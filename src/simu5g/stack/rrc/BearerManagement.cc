@@ -575,10 +575,12 @@ RlcTxEntityBase *BearerManagement::installRlcTxSide(DrbKey id, const FlowId& flo
     rlcMux->setGateSize("fromTxEntity", fromIdx + 1);
     module->gate("lowerOut")->connectTo(rlcMux->gate("fromTxEntity", fromIdx));
 
-    // Wire RlcMux macToTxEntity → entity macIn gate
+    // Wire RlcMux macToTxEntity → entity macIn gate, and tell the mux which gate serves
+    // this DRB, exactly as installRlcRxSide() registers the RX side
     int macIdx = rlcMux->gateSize("macToTxEntity");
     rlcMux->setGateSize("macToTxEntity", macIdx + 1);
     rlcMux->gate("macToTxEntity", macIdx)->connectTo(module->gate("macIn"));
+    rlcMux->registerTxEntity(id, macIdx);
 
     FlowDescriptor proto = makeFlowDescriptor(flow);
     txEnt->setFlowControlInfo(&proto); // note: a D2D UM TX entity also registers itself with the D2D mode controller here
@@ -982,6 +984,7 @@ void BearerManagement::deleteLocalRlcQueues(MacNodeId nodeId, bool nrStack)
     for (auto it = entities.begin(); it != entities.end(); ) {
         if (isEnb ? it->first.getNodeId() == nodeId : true) {
             rlcMux->unregisterRxEntity(it->first);  // no-op if the RX side was never installed
+            rlcMux->unregisterTxEntity(it->first);  // likewise for the TX side
             it->second->deleteModule();
             it = entities.erase(it);
         } else ++it;
@@ -998,19 +1001,6 @@ cModule *BearerManagement::lookupPdcpRelayEntityModule(DrbKey id)
 {
     auto it = pdcpRelayEntities_.find(id);
     return it != pdcpRelayEntities_.end() ? it->second : nullptr;
-}
-
-RlcTxEntityBase *BearerManagement::lookupRlcTxBuffer(DrbKey id)
-{
-    // Search both legs. Only an INSTALLED (mux-wired) TX side counts: with the
-    // compound entity, the RX-side install may have created the module while the
-    // TX side is not set up yet -- callers create it via createRlcTxBuffer then.
-    for (auto *entities : { &rlcEntities_, &nrRlcEntities_ }) {
-        auto it = entities->find(id);
-        if (it != entities->end() && it->second->gate("lowerOut")->isConnectedOutside())
-            return check_and_cast<RlcTxEntityBase *>(it->second->getSubmodule("tx"));
-    }
-    return nullptr;
 }
 
 PdcpTxEntityBase *BearerManagement::lookupPdcpTxEntity(DrbKey id)

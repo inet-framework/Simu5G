@@ -35,6 +35,7 @@ void RlcMux::initialize(int stage)
         bearerManagement_ = inet::getModuleFromPar<BearerManagement>(par("bearerManagementModule"), this);
 
         WATCH_MAP(rxGateIndices_);
+        WATCH_MAP(txGateIndices_);
     }
 }
 
@@ -64,12 +65,14 @@ void RlcMux::fromMacLayer(cPacket *pktAux)
     ASSERT(pkt->findTag<PdcpTrackingTag>() == nullptr);
 
     if (inet::dynamicPtrCast<const LteMacSduRequest>(chunk) != nullptr) {
-        // MAC SDU request — dispatch to TX entity via macToTxEntity gate
+        // MAC SDU request — dispatch to the requesting DRB's TX entity, from this mux's
+        // own gate table (the mirror of rxGateIndices_ below). A request follows the
+        // entity's own transmission, so its TX side is always installed by now.
         DrbKey id = ctrlInfoToTxDrbKey(lteInfo.get());
-        RlcTxEntityBase *txbuf = bearerManagement_->lookupRlcTxBuffer(id);
-        ASSERT(txbuf != nullptr);
+        auto it = txGateIndices_.find(id);
+        ASSERT(it != txGateIndices_.end());
 
-        send(pkt, txbuf->gate("macIn")->getPathStartGate());  // path start = our macToTxEntity gate (crosses the RlcEntity compound boundary)
+        send(pkt, "macToTxEntity", it->second);
     }
     else {
         // RLC PDU — dispatch to RX entity via toRxEntity gate
@@ -91,6 +94,20 @@ void RlcMux::registerRxEntity(DrbKey id, int gateIndex)
     ASSERT(gate("toRxEntity", gateIndex)->isConnectedOutside());
     rxGateIndices_[id] = gateIndex;
     EV << "RlcMux::registerRxEntity - Registered RX entity for " << id << " on toRxEntity gate " << gateIndex << "\n";
+}
+
+void RlcMux::registerTxEntity(DrbKey id, int gateIndex)
+{
+    if (txGateIndices_.find(id) != txGateIndices_.end())
+        throw cRuntimeError("RLC TX entity for %s already registered", id.str().c_str());
+
+    txGateIndices_[id] = gateIndex;
+    EV << "RlcMux::registerTxEntity - Registered TX entity for " << id << " on macToTxEntity gate " << gateIndex << "\n";
+}
+
+void RlcMux::unregisterTxEntity(DrbKey id)
+{
+    txGateIndices_.erase(id);
 }
 
 void RlcMux::unregisterRxEntity(DrbKey id)

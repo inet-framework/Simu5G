@@ -45,6 +45,7 @@ class RlcMux : public cSimpleModule
     cGate *macOutGate_ = nullptr;
 
     std::map<DrbKey, int> rxGateIndices_;  // DRB -> index of the toRxEntity gate serving it
+    std::map<DrbKey, int> txGateIndices_;  // DRB -> index of the macToTxEntity gate serving it
 
     typedef std::map<MacNodeId, Throughput> ULThroughputPerUE;
     ULThroughputPerUE ulThroughput_;
@@ -52,6 +53,8 @@ class RlcMux : public cSimpleModule
   public:
     virtual void registerRxEntity(DrbKey id, int gateIndex);
     virtual void unregisterRxEntity(DrbKey id);
+    virtual void registerTxEntity(DrbKey id, int gateIndex);
+    virtual void unregisterTxEntity(DrbKey id);
     virtual void activeUeUL(std::set<MacNodeId> *ueSet);
 
     virtual void addUeThroughput(MacNodeId nodeId, Throughput throughput);
