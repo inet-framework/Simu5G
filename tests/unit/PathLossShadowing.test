@@ -127,7 +127,7 @@ p.hNodeB = 35;
 p.hUe = 1.5;
 p.carrierFrequencyGHz = 2.0;
 p.apply(m901, this);
-probe.record("t814_sigma_sma", p, { {"d", 500}, {"los", 0} }, m901.getShadowingStdDev(501.1, 500, false));
+probe.record("t814_sigma_sma", p, { {"d", 500}, {"los", 0} }, m901.getShadowingStdDev(501.1, 500, false, p.linkContext()));
 
 %postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt
 

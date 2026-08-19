@@ -28,6 +28,8 @@ module LteNicUe extends LteNicBase
         phy.typename = default("PhyUe");
         handoverPacketHolder.typename = default("HandoverPacketHolderUe");
         packetFlowObserver.typename = default("PacketFlowObserverUe");
+        // UE-side antenna height default (radio endpoint recast E4, §3(k))
+        channelModel[*].height = default(1.5m);
 
         rrc.hasHandoverController = true;
         rrc.handoverController.isNr = false;

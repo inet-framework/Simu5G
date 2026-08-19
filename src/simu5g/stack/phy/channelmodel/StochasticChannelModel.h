@@ -115,6 +115,11 @@ class StochasticChannelModel : public ChannelModelBase
     // Antenna gain of UE
     double antennaGainUe_;
 
+    // This radio's own antenna height (radio endpoint recast E4, §3(k)): a
+    // per-node fact, defaulted 25m by the eNB/gNB-side NICs and 1.5m by the
+    // UE-side NICs, overridable per node.
+    double height_;
+
     // Cable loss
     double cableLoss_;
 
@@ -179,6 +184,12 @@ class StochasticChannelModel : public ChannelModelBase
     double getUeNoiseFigure() const { return ueNoiseFigure_; }
     double getBsNoiseFigure() const { return bsNoiseFigure_; }
     double getCableLoss() const { return cableLoss_; }
+
+    /*
+     * This radio's own antenna height, for RadioMedium's registry
+     * (RadioDescriptor::height) and linkContextFor() (E4/§3(k)).
+     */
+    double getHeight() const { return height_; }
 
     /*
      * Whether to collect the measured/received-SINR statistics, for

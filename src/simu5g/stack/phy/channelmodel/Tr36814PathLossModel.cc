@@ -20,7 +20,7 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-double Tr36814PathLossModel::computePathLoss(double d3D, double d2D, bool los, const O2iState& o2i)
+double Tr36814PathLossModel::computePathLoss(double d3D, double d2D, bool los, const O2iState& o2i, const LinkContext& link)
 {
     // TR 36.814 defines no building-penetration term; o2i is unused here.
     // compute attenuation based on selected scenario and based on LOS or NLOS
@@ -28,19 +28,19 @@ double Tr36814PathLossModel::computePathLoss(double d3D, double d2D, bool los, c
     double dbp = 0;
     switch (scenario_) {
         case INDOOR_HOTSPOT:
-            pathLoss = computeIndoor(d3D, los);
+            pathLoss = computeIndoor(d3D, los, link);
             break;
         case URBAN_MICROCELL:
-            pathLoss = computeUrbanMicro(d3D, los);
+            pathLoss = computeUrbanMicro(d3D, los, link);
             break;
         case URBAN_MACROCELL:
-            pathLoss = computeUrbanMacro(d3D, los);
+            pathLoss = computeUrbanMacro(d3D, los, link);
             break;
         case RURAL_MACROCELL:
-            pathLoss = computeRuralMacro(d3D, dbp, los);
+            pathLoss = computeRuralMacro(d3D, dbp, los, link);
             break;
         case SUBURBAN_MACROCELL:
-            pathLoss = computeSubUrbanMacro(d3D, dbp, los);
+            pathLoss = computeSubUrbanMacro(d3D, dbp, los, link);
             break;
         default:
             throw cRuntimeError("Wrong value %d for path-loss scenario", scenario_);
@@ -48,7 +48,7 @@ double Tr36814PathLossModel::computePathLoss(double d3D, double d2D, bool los, c
     return pathLoss;
 }
 
-double Tr36814PathLossModel::computeLosProbability(double d3D, double d2D)
+double Tr36814PathLossModel::computeLosProbability(double d3D, double d2D, const LinkContext& link)
 {
     double d = d3D;
     double p = 0;
@@ -88,11 +88,11 @@ double Tr36814PathLossModel::computeLosProbability(double d3D, double d2D)
     return p;
 }
 
-double Tr36814PathLossModel::getShadowingStdDev(double d3D, double d2D, bool losState)
+double Tr36814PathLossModel::getShadowingStdDev(double d3D, double d2D, bool losState, const LinkContext& link)
 {
     // Breakpoint distance of the RMa/SMa path loss, the only scenarios whose
     // LOS branch uses different sigma values below and above it.
-    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
+    double dbp = 2 * M_PI * link.hNodeB * link.hUe * (link.carrierFrequencyHz / PROPAGATION_VELOCITY);
     return selectStdDev(d3D < dbp, losState);
 }
 
@@ -144,7 +144,7 @@ double Tr36814PathLossModel::computeAngularAttenuation(double hAngle, double vAn
     return angularAtt;
 }
 
-double Tr36814PathLossModel::computeIndoor(double d, bool los)
+double Tr36814PathLossModel::computeIndoor(double d, bool los, const LinkContext& link)
 {
     double a, b;
     if (los) {
@@ -159,16 +159,16 @@ double Tr36814PathLossModel::computeIndoor(double d, bool los)
         a = 43.3;
         b = 11.5;
     }
-    return a * log10(d) + b + 20 * log10CarrierFrequencyGHz_;
+    return a * log10(d) + b + 20 * link.log10CarrierFrequencyGHz;
 }
 
-double Tr36814PathLossModel::computeUrbanMicro(double d, bool los)
+double Tr36814PathLossModel::computeUrbanMicro(double d, bool los, const LinkContext& link)
 {
     if (d < 10)
         d = 10;
 
-    double dbp = 4 * (hNodeB_ - 1) * (hUe_ - 1)
-        * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
+    double dbp = 4 * (link.hNodeB - 1) * (link.hUe - 1)
+        * (link.carrierFrequencyHz / PROPAGATION_VELOCITY);
     if (los) {
         // LOS situation
         if (d > 5000) {
@@ -178,10 +178,10 @@ double Tr36814PathLossModel::computeUrbanMicro(double d, bool los)
                 throw cRuntimeError("Error: LOS urban microcell path loss model is valid for d < 5000 m");
         }
         if (d < dbp)
-            return 22 * log10(d) + 28 + 20 * log10CarrierFrequencyGHz_;
+            return 22 * log10(d) + 28 + 20 * link.log10CarrierFrequencyGHz;
         else
-            return 40 * log10(d) + 7.8 - 18 * log10(hNodeB_ - 1)
-                   - 18 * log10(hUe_ - 1) + 2 * log10CarrierFrequencyGHz_;
+            return 40 * log10(d) + 7.8 - 18 * log10(link.hNodeB - 1)
+                   - 18 * log10(link.hUe - 1) + 2 * link.log10CarrierFrequencyGHz;
     }
     // NLOS situation
     if (d < 10)
@@ -192,16 +192,16 @@ double Tr36814PathLossModel::computeUrbanMicro(double d, bool los)
         else
             throw cRuntimeError("Error: NLOS urban microcell path loss model is valid for d < 2000 m");
     }
-    return 36.7 * log10(d) + 22.7 + 26 * log10CarrierFrequencyGHz_;
+    return 36.7 * log10(d) + 22.7 + 26 * link.log10CarrierFrequencyGHz;
 }
 
-double Tr36814PathLossModel::computeUrbanMacro(double d, bool los)
+double Tr36814PathLossModel::computeUrbanMacro(double d, bool los, const LinkContext& link)
 {
     if (d < 10)
         d = 10;
 
-    double dbp = 4 * (hNodeB_ - 1) * (hUe_ - 1)
-        * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
+    double dbp = 4 * (link.hNodeB - 1) * (link.hUe - 1)
+        * (link.carrierFrequencyHz / PROPAGATION_VELOCITY);
     if (los) {
         if (d > 5000) {
             if (tolerateMaxDistViolation_)
@@ -210,10 +210,10 @@ double Tr36814PathLossModel::computeUrbanMacro(double d, bool los)
                 throw cRuntimeError("Error: LOS urban macrocell path loss model is valid for d < 5000 m");
         }
         if (d < dbp)
-            return 22 * log10(d) + 28 + 20 * log10CarrierFrequencyGHz_;
+            return 22 * log10(d) + 28 + 20 * link.log10CarrierFrequencyGHz;
         else
-            return 40 * log10(d) + 7.8 - 18 * log10(hNodeB_ - 1)
-                   - 18 * log10(hUe_ - 1) + 2 * log10CarrierFrequencyGHz_;
+            return 40 * log10(d) + 7.8 - 18 * log10(link.hNodeB - 1)
+                   - 18 * log10(link.hUe - 1) + 2 * link.log10CarrierFrequencyGHz;
     }
 
     if (d < 10)
@@ -226,20 +226,20 @@ double Tr36814PathLossModel::computeUrbanMacro(double d, bool los)
     }
 
     double att = 161.04 - 7.1 * log10(wStreet_) + 7.5 * log10(hBuilding_)
-        - (24.37 - 3.7 * pow(hBuilding_ / hNodeB_, 2)) * log10(hNodeB_)
-        + (43.42 - 3.1 * log10(hNodeB_)) * (log10(d) - 3)
-        + 20 * log10CarrierFrequencyGHz_
-        - (3.2 * (pow(log10(11.75 * hUe_), 2)) - 4.97);
+        - (24.37 - 3.7 * pow(hBuilding_ / link.hNodeB, 2)) * log10(link.hNodeB)
+        + (43.42 - 3.1 * log10(link.hNodeB)) * (log10(d) - 3)
+        + 20 * link.log10CarrierFrequencyGHz
+        - (3.2 * (pow(log10(11.75 * link.hUe), 2)) - 4.97);
     return att;
 }
 
-double Tr36814PathLossModel::computeSubUrbanMacro(double d, double& dbp, bool los)
+double Tr36814PathLossModel::computeSubUrbanMacro(double d, double& dbp, bool los, const LinkContext& link)
 {
     if (d < 10)
         d = 10;
 
-    dbp = 2 * M_PI * hNodeB_ * hUe_
-        * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
+    dbp = 2 * M_PI * link.hNodeB * link.hUe
+        * (link.carrierFrequencyHz / PROPAGATION_VELOCITY);
     if (los) {
         if (d > 5000) {
             if (tolerateMaxDistViolation_)
@@ -252,13 +252,13 @@ double Tr36814PathLossModel::computeSubUrbanMacro(double d, double& dbp, bool lo
         double a = (a1 < 10) ? a1 : 10;
         double b = (b1 < 14.77) ? b1 : 14.77;
         if (d < dbp) {
-            double first = 20 * log10((40 * M_PI * d * carrierFrequencyGHz_) / 3);
+            double first = 20 * log10((40 * M_PI * d * link.carrierFrequencyGHz) / 3);
             double second = a * log10(d);
             double fourth = 0.002 * log10(hBuilding_) * d;
             return first + second - b + fourth;
         }
         else
-            return 20 * log10((40 * M_PI * dbp * carrierFrequencyGHz_) / 3)
+            return 20 * log10((40 * M_PI * dbp * link.carrierFrequencyGHz) / 3)
                    + a * log10(dbp) - b + 0.002 * log10(hBuilding_) * dbp
                    + 40 * log10(d / dbp);
     }
@@ -269,20 +269,20 @@ double Tr36814PathLossModel::computeSubUrbanMacro(double d, double& dbp, bool lo
             throw cRuntimeError("Error: NLOS suburban macrocell path loss model is valid for 10 < d < 5000 m");
     }
     double att = 161.04 - 7.1 * log10(wStreet_) + 7.5 * log10(hBuilding_)
-        - (24.37 - 3.7 * pow(hBuilding_ / hNodeB_, 2)) * log10(hNodeB_)
-        + (43.42 - 3.1 * log10(hNodeB_)) * (log10(d) - 3)
-        + 20 * log10CarrierFrequencyGHz_
-        - (3.2 * (pow(log10(11.75 * hUe_), 2)) - 4.97);
+        - (24.37 - 3.7 * pow(hBuilding_ / link.hNodeB, 2)) * log10(link.hNodeB)
+        + (43.42 - 3.1 * log10(link.hNodeB)) * (log10(d) - 3)
+        + 20 * link.log10CarrierFrequencyGHz
+        - (3.2 * (pow(log10(11.75 * link.hUe), 2)) - 4.97);
     return att;
 }
 
-double Tr36814PathLossModel::computeRuralMacro(double d, double& dbp, bool los)
+double Tr36814PathLossModel::computeRuralMacro(double d, double& dbp, bool los, const LinkContext& link)
 {
     if (d < 10)
         d = 10;
 
-    dbp = 2 * M_PI * hNodeB_ * hUe_
-        * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
+    dbp = 2 * M_PI * link.hNodeB * link.hUe
+        * (link.carrierFrequencyHz / PROPAGATION_VELOCITY);
     if (los) {
         // LOS situation
         if (d > 10000) {
@@ -297,10 +297,10 @@ double Tr36814PathLossModel::computeRuralMacro(double d, double& dbp, bool los)
         double a = (a1 < 10) ? a1 : 10;
         double b = (b1 < 14.77) ? b1 : 14.77;
         if (d < dbp)
-            return 20 * log10((40 * M_PI * d * carrierFrequencyGHz_) / 3)
+            return 20 * log10((40 * M_PI * d * link.carrierFrequencyGHz) / 3)
                    + a * log10(d) - b + 0.002 * log10(hBuilding_) * d;
         else
-            return 20 * log10((40 * M_PI * dbp * carrierFrequencyGHz_) / 3)
+            return 20 * log10((40 * M_PI * dbp * link.carrierFrequencyGHz) / 3)
                    + a * log10(dbp) - b + 0.002 * log10(hBuilding_) * dbp
                    + 40 * log10(d / dbp);
     }
@@ -313,10 +313,10 @@ double Tr36814PathLossModel::computeRuralMacro(double d, double& dbp, bool los)
     }
 
     double att = 161.04 - 7.1 * log10(wStreet_) + 7.5 * log10(hBuilding_)
-        - (24.37 - 3.7 * pow(hBuilding_ / hNodeB_, 2)) * log10(hNodeB_)
-        + (43.42 - 3.1 * log10(hNodeB_)) * (log10(d) - 3)
-        + 20 * log10CarrierFrequencyGHz_
-        - (3.2 * (pow(log10(11.75 * hUe_), 2)) - 4.97);
+        - (24.37 - 3.7 * pow(hBuilding_ / link.hNodeB, 2)) * log10(link.hNodeB)
+        + (43.42 - 3.1 * log10(link.hNodeB)) * (log10(d) - 3)
+        + 20 * link.log10CarrierFrequencyGHz
+        - (3.2 * (pow(log10(11.75 * link.hUe), 2)) - 4.97);
     return att;
 }
 

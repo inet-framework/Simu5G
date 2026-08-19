@@ -41,16 +41,16 @@ namespace simu5g {
 class Tr36873PathLossModel : public Tr36814PathLossModel
 {
   public:
-    double computePathLoss(double d3D, double d2D, bool los, const O2iState& o2i) override;
-    double computeLosProbability(double d3D, double d2D) override;
-    double getShadowingStdDev(double d3D, double d2D, bool losState) override;
+    double computePathLoss(double d3D, double d2D, bool los, const O2iState& o2i, const LinkContext& link) override;
+    double computeLosProbability(double d3D, double d2D, const LinkContext& link) override;
+    double getShadowingStdDev(double d3D, double d2D, bool losState, const LinkContext& link) override;
     double computeAngularAttenuation(double hAngle, double vAngle) override;
 
   private:
-    double computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los);
-    double computeUrbanMicro3D(double threeDimDistance, double twoDimDistance, bool los);
-    double computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los, const O2iState& o2i);
-    double computeRuralMacro3D(double threeDimDistance, double twoDimDistance, bool los);
+    double computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los, const LinkContext& link);
+    double computeUrbanMicro3D(double threeDimDistance, double twoDimDistance, bool los, const LinkContext& link);
+    double computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los, const O2iState& o2i, const LinkContext& link);
+    double computeRuralMacro3D(double threeDimDistance, double twoDimDistance, bool los, const LinkContext& link);
 };
 
 } //namespace

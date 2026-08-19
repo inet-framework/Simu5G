@@ -33,6 +33,10 @@ simple ExtCell
         double positionY @unit("m") = default(0m);
         double positionZ @unit("m") = default(0m);
 
+        // antenna height (radio endpoint recast E4, §3(k)); unused today --
+        // ExtCell does not yet register with RadioMedium (parent follow-up 1)
+        double height @unit(m) = default(25m);
+
         // transmission power
         double txPower @unit(dBm) = default(46dBm);
 

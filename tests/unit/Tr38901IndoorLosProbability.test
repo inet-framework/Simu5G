@@ -36,13 +36,13 @@ p = ScenarioParams();
 p.scenario = INDOOR_HOTSPOT;
 p.apply(m, this);
 
-c.check("901 InH d2D=50",  m.computeLosProbability(50.1, 50),   0.537455236);
-c.check("901 InH d2D=100", m.computeLosProbability(100.1, 100), 0.424393969);
-c.check("901 InH d2D=200", m.computeLosProbability(200.1, 200), 0.264620213);
+c.check("901 InH d2D=50",  m.computeLosProbability(50.1, 50, p.linkContext()),   0.537455236);
+c.check("901 InH d2D=100", m.computeLosProbability(100.1, 100, p.linkContext()), 0.424393969);
+c.check("901 InH d2D=200", m.computeLosProbability(200.1, 200, p.linkContext()), 0.264620213);
 
 // The two branches meet at 49 m; without the factor the probability jumps.
 c.check("901 InH continuous at 49 m",
-        m.computeLosProbability(49.1, 49.0001) - m.computeLosProbability(48.9, 48.9999),
+        m.computeLosProbability(49.1, 49.0001, p.linkContext()) - m.computeLosProbability(48.9, 48.9999, p.linkContext()),
         0.0, 1e-5);
 
 c.summary();

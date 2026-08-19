@@ -17,6 +17,7 @@
 
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/binder/Binder.h"
+#include "simu5g/stack/phy/channelmodel/PathLossModel.h"
 
 namespace simu5g {
 
@@ -164,6 +165,18 @@ class BackgroundCellChannelModel : public cSimpleModule
     // is permanently pinned to the same study (see its extCellPathLoss_),
     // so background cells and ext cells evaluate identical formulas.
     Tr36814PathLossModel *pathLoss_ = nullptr;
+
+    /**
+     * This class's own carrier frequency and antenna heights, bundled for a
+     * pathLoss_ call (radio endpoint recast E4/§3(f),(k)): unlike
+     * StochasticChannelModel, this class is not part of that recast's
+     * registry, so it keeps its own hNodeB_/hUe_/carrierFrequency*_ and
+     * hands them to the strategy per call instead of at construction time.
+     */
+    LinkContext linkContext() const
+    {
+        return LinkContext{carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_, hNodeB_, hUe_};
+    }
 
     /*
      * Compute Attenuation caused by pathloss and shadowing (optional)

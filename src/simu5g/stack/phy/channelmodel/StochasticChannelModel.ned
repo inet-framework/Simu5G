@@ -52,8 +52,10 @@ simple StochasticChannelModel extends ChannelModelBase
         // Pathloss scenario from ITU -->
         string scenario @enum(INDOOR_HOTSPOT,URBAN_MICROCELL,URBAN_MACROCELL,RURAL_MACROCELL,SUBURBAN_MACROCELL,UNKNOWN_SCENARIO) = default("URBAN_MACROCELL");
 
-        // eNodeB height -->
-        double nodebHeight @unit(m) = default(25m);
+        // This radio's own antenna height (radio endpoint recast E4, §3(k)):
+        // a per-node fact, not a per-leg constant. Defaulted here to the
+        // (former) UE height; the eNB/gNB-side NICs override it to 25m.
+        double height @unit(m) = default(1.5m);
         // Building height -->
         double buildingHeight @unit(m) = default(20m);
         // determines if the UE is inside a building
@@ -62,7 +64,6 @@ simple StochasticChannelModel extends ChannelModelBase
         bool useBuildingPenetrationHighLossModel = default(false);
 
         double streetWidth @unit(m) = default(20m);
-        double ueHeight @unit(m) = default(1.5m);
         bool tolerateMaxDistViolation = default(false);
         bool useTorus = default(false);
 

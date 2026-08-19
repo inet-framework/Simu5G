@@ -79,9 +79,11 @@ void BackgroundCellChannelModel::initialize(int stage)
         // INITSTAGE_SIMU5G_BINDER_ACCESS, which has completed for all
         // modules by this later stage
         pathLoss_ = new Tr36814PathLossModel();
-        pathLoss_->initialize(this, scenario_, hNodeB_, hUe_, hBuilding_, wStreet_,
-                carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
-                tolerateMaxDistViolation_);
+        // no carrier frequency, no antenna heights any more (radio endpoint
+        // recast E4): this class keeps its own hNodeB_/hUe_/carrierFrequency*_
+        // (it is not part of that recast's registry), and hands them to the
+        // strategy per call instead, in a LinkContext (linkContext()).
+        pathLoss_->initialize(this, scenario_, hBuilding_, wStreet_, tolerateMaxDistViolation_);
     }
 }
 
@@ -331,7 +333,7 @@ void BackgroundCellChannelModel::computeLosProbability(double d, MacNodeId nodeI
         losMap_[nodeId] = fixedLos_;
         return;
     }
-    double p = pathLoss_->computeLosProbability(d, d);
+    double p = pathLoss_->computeLosProbability(d, d, linkContext());
     double random = uniform(0.0, 1.0);
     if (random <= p)
         losMap_[nodeId] = true;
@@ -341,7 +343,7 @@ void BackgroundCellChannelModel::computeLosProbability(double d, MacNodeId nodeI
 
 double BackgroundCellChannelModel::computePathLoss(double distance, double dbp, bool los)
 {
-    return pathLoss_->computePathLoss(distance, distance, los, O2iState{inside_building_, inside_distance_});
+    return pathLoss_->computePathLoss(distance, distance, los, O2iState{inside_building_, inside_distance_}, linkContext());
 }
 
 double BackgroundCellChannelModel::computeShadowing(double sqrDistance, MacNodeId nodeId, double speed)
@@ -349,7 +351,7 @@ double BackgroundCellChannelModel::computeShadowing(double sqrDistance, MacNodeI
     double mean = 0;
 
     // Get std deviation according to los/nlos and selected scenario
-    double stdDev = pathLoss_->getShadowingStdDev(sqrDistance, sqrDistance, losMap_[nodeId]);
+    double stdDev = pathLoss_->getShadowingStdDev(sqrDistance, sqrDistance, losMap_[nodeId], linkContext());
     double time = 0;
     double space = 0;
     double att;

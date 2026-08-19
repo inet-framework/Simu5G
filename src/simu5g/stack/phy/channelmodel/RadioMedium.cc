@@ -67,6 +67,13 @@ void RadioMedium::checkForLegacyConfigKeys() const
     // the design doc, "the legacy-key guard".
     static const std::vector<std::pair<std::string, std::string>> legacyNames = {
         { "antennGainMicro", "removed from the radio endpoint; still live on BackgroundCellChannelModel" },
+        // E4: unlike the 17 environment parameters E3 moved (still valid
+        // under **.X, since RadioMedium re-declares the same name), these two
+        // are gone from every module -- replaced by the per-node "height",
+        // not merely relocated -- so they qualify for the name rule already
+        // (§3(g)), ahead of the plan's own general E6/E8/E9 growth schedule.
+        { "nodebHeight", "replaced by the per-node 'height' on the radio endpoint (eNB/gNB-role)" },
+        { "ueHeight", "replaced by the per-node 'height' on the radio endpoint (UE-role)" },
     };
 
     // Both flags are required: a per-object config option such as 'rng-0'
@@ -105,6 +112,7 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
     descriptor.endpoint = endpoint;
     descriptor.nodeId = endpoint->getNodeId();
     descriptor.carrierFrequency = endpoint->getCarrierFrequency();
+    descriptor.height = endpoint->getHeight();
     // The D2D marker: one dynamic_cast, here, cached for every
     // D2D-aware branch to read afterward instead of casting itself.
     descriptor.d2dEndpoint = dynamic_cast<D2dChannelModel *>(endpoint);
@@ -130,11 +138,11 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
 
         // this leg's path-loss strategy, built from the record just
         // established -- never from this radio's own members
-        pathLoss_[leg] = createPathLossModel(candidate, leg);
+        pathLoss_[leg] = createPathLossModel(candidate);
 
         // this leg's ext-cell/background-cell strategy, shared by every
         // radio on the leg
-        extCellPathLoss_[leg] = createExtCellPathLossModel(candidate, leg);
+        extCellPathLoss_[leg] = createExtCellPathLossModel(candidate);
     }
     else {
         checkCarrierPhysics(cpIt->second, candidate, leg, endpoint->getFullPath());
@@ -144,7 +152,7 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
     radioIndex_[key] = &radios_.back();
 }
 
-void RadioMedium::addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *generator)
+void RadioMedium::addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *generator, double height)
 {
     ASSERT(generator != nullptr);
 
@@ -157,6 +165,7 @@ void RadioMedium::addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *g
     descriptor.nodeId = key.bgUeId;
     descriptor.carrierFrequency = key.carrierFrequency;
     descriptor.bgCellId = key.cellId;
+    descriptor.height = height;
     // exactly one of endpoint/bgGenerator is ever non-null
 
     // no readCarrierPhysics, no checkCarrierPhysics, no createPathLossModel:
@@ -194,8 +203,6 @@ CarrierPhysics RadioMedium::readCarrierPhysics(StochasticChannelModel *endpoint)
     // radio endpoint recast move these too)
     cp.pathLossType = endpoint->par("pathLossType").stringValue();
     cp.scenario = endpoint->par("scenario").stringValue();
-    cp.nodebHeight = endpoint->par("nodebHeight");
-    cp.ueHeight = endpoint->par("ueHeight");
     cp.buildingHeight = endpoint->par("buildingHeight");
     cp.streetWidth = endpoint->par("streetWidth");
     cp.tolerateMaxDistViolation = endpoint->par("tolerateMaxDistViolation");
@@ -300,8 +307,6 @@ void RadioMedium::checkCarrierPhysics(const CarrierPhysics& existing, const Carr
     CHECK_CARRIER_FIELD(numFadingPaths);
     CHECK_CARRIER_FIELD(delayRms);
     CHECK_CARRIER_FIELD(thermalNoise);
-    CHECK_CARRIER_FIELD(nodebHeight);
-    CHECK_CARRIER_FIELD(ueHeight);
     CHECK_CARRIER_FIELD(buildingHeight);
     CHECK_CARRIER_FIELD(streetWidth);
     CHECK_CARRIER_FIELD(useTorus);
@@ -402,6 +407,67 @@ O2iState RadioMedium::o2iStateOf(MacNodeId nodeId, GHz carrierFrequency) const
     return O2iState{d.endpoint->getInsideBuilding(), d.endpoint->getInsideDistance()};
 }
 
+namespace {
+
+// NIC-level default heights (LteNicEnb.ned/LteNicUe.ned, StochasticChannelModel.ned):
+// the fallback for linkContextFor()'s missing side when no specific peer
+// identity reaches the call. Every in-tree config that reaches that fallback
+// keeps the missing side at exactly this default (§3(k)), so the constant
+// reproduces today's value rather than guessing at it.
+constexpr double DEFAULT_ENB_HEIGHT_M = 25;
+constexpr double DEFAULT_UE_HEIGHT_M = 1.5;
+
+} // namespace
+
+LinkContext RadioMedium::linkContextFor(StochasticChannelModel *radio, MacNodeId peerId) const
+{
+    LinkContext link;
+
+    // frequency triple: radio's own carrier frequency, reproducing
+    // ChannelModelBase's own derivation (ChannelModelBase.cc:26-29) -- no
+    // per-leg cache any more (E4/§3(f))
+    GHz freq = radio->getCarrierFrequency();
+    link.carrierFrequencyGHz = GHz(freq).get();
+    link.carrierFrequencyHz = Hz(freq).get();
+    link.log10CarrierFrequencyGHz = log10(link.carrierFrequencyGHz);
+
+    // heights: role-based, not tx/rx-based (risk 15)
+    RanNodeType radioRole = getNodeTypeById(radio->getNodeId());
+    ASSERT(radioRole == NODEB || radioRole == UE);
+    double radioHeight = radio->getHeight();
+
+    double peerHeight;
+    if (peerId == NODEID_NONE) {
+        // no specific peer identity reaches this call (getReceivedPower_bgUe(),
+        // the D2D conflict-graph's abstract distance estimate,
+        // computeExtCellPathLoss()'s ext-cell/background-cell walk) -- the
+        // missing side falls back to the *other* role's own NIC-level default.
+        peerHeight = (radioRole == NODEB) ? DEFAULT_UE_HEIGHT_M : DEFAULT_ENB_HEIGHT_M;
+    }
+    else if (num(peerId) < BGUE_MIN_ID) {
+        // a real registered radio
+        peerHeight = descriptorFor(peerId, freq).height;
+    }
+    else {
+        // a phantom background UE, owned by radio's own cell -- radio is
+        // always that phantom's serving eNB whenever it appears as a peer
+        // here (BackgroundTrafficManager registers it under its own eNB's
+        // node id as cellId, LteMacEnb.cc:131)
+        ASSERT(radioRole == NODEB);
+        peerHeight = descriptorFor(BgUeKey{radio->getNodeId(), freq, peerId}).height;
+    }
+
+    if (radioRole == NODEB) {
+        link.hNodeB = radioHeight;
+        link.hUe = peerHeight;
+    }
+    else {
+        link.hNodeB = peerHeight;
+        link.hUe = radioHeight;
+    }
+    return link;
+}
+
 PathLossModel& RadioMedium::pathLossFor(const CarrierLeg& leg) const
 {
     auto it = pathLoss_.find(leg);
@@ -441,7 +507,7 @@ const CarrierPhysics& RadioMedium::carrierPhysicsFor(const CarrierLeg& leg) cons
     return it->second;
 }
 
-PathLossModel *RadioMedium::createPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg)
+PathLossModel *RadioMedium::createPathLossModel(const CarrierPhysics& cp)
 {
     PathLossModel *model;
     if (cp.pathLossType == "Tr36814")
@@ -456,30 +522,26 @@ PathLossModel *RadioMedium::createPathLossModel(const CarrierPhysics& cp, const 
     else
         throw cRuntimeError("Unrecognized value in 'pathLossType' parameter: \"%s\"", cp.pathLossType.c_str());
 
-    initializePathLossStrategy(model, cp, leg);
+    initializePathLossStrategy(model, cp);
     return model;
 }
 
-PathLossModel *RadioMedium::createExtCellPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg)
+PathLossModel *RadioMedium::createExtCellPathLossModel(const CarrierPhysics& cp)
 {
     // always TR 36.814, regardless of cp.pathLossType: the ext-cell and
     // background-cell interference paths (computeExtCellPathLoss) use those
     // formulas unconditionally
     auto *model = new Tr36814PathLossModel();
 
-    initializePathLossStrategy(model, cp, leg);
+    initializePathLossStrategy(model, cp);
     return model;
 }
 
-void RadioMedium::initializePathLossStrategy(PathLossModel *model, const CarrierPhysics& cp, const CarrierLeg& leg)
+void RadioMedium::initializePathLossStrategy(PathLossModel *model, const CarrierPhysics& cp)
 {
-    // the frequency triple reproduces ChannelModelBase's own derivation
-    // (ChannelModelBase.cc:26-29) from the leg's own carrier frequency, with
-    // no round-trip through an endpoint
-    double carrierFrequencyGHz = GHz(leg.carrierFrequency).get();
-    double carrierFrequencyHz = Hz(leg.carrierFrequency).get();
-    model->initialize(this, aToDeploymentScenario(cp.scenario), cp.nodebHeight, cp.ueHeight, cp.buildingHeight, cp.streetWidth,
-            carrierFrequencyHz, carrierFrequencyGHz, log10(carrierFrequencyGHz),
+    // no carrier frequency, no antenna heights any more (E4): those travel
+    // per call now, in a LinkContext built by linkContextFor()
+    model->initialize(this, aToDeploymentScenario(cp.scenario), cp.buildingHeight, cp.streetWidth,
             cp.tolerateMaxDistViolation);
 }
 
@@ -560,23 +622,33 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
     const CarrierLeg leg = legFor(radio);
     const CarrierPhysics& cp = carrierPhysicsFor(leg);
 
+    // The other party of this link, for height role-resolution (E4/§3(k),
+    // risk 15): whichever of {radio, peerId} is eNB-role supplies h_BS,
+    // whichever is UE-role supplies h_UT (linkContextFor()). radio's own
+    // role is intrinsic to its own node id; the peer is stateNodeId (always
+    // the UE, cellularLink()/linkFor()) when radio is eNB-role, or cellId
+    // (always the serving eNB, linkFor()/d2dLink()) when radio is UE-role --
+    // radio is never the eNB-role party of a D2D link, so this reduces
+    // correctly there too.
+    MacNodeId peerId = (getNodeTypeById(radio->getNodeId()) == NODEB) ? link.stateNodeId : link.cellId;
+
     // If Euclidean distance since last LOS probability computation is greater than
     // correlation distance the UE could have changed its state and
     // its visibility from eNodeB, hence it is correct to recompute the LOS probability
     bool losAlreadyComputed = false;
     losState(leg, link.stateKey, &losAlreadyComputed);
     if (correlationDist > cp.correlationDistance || !losAlreadyComputed) {
-        computeLosProbability(radio, threeDimDistance, twoDimDistance, link.stateKey);
+        computeLosProbability(radio, threeDimDistance, twoDimDistance, link.stateKey, peerId);
     }
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
     bool los = losState(leg, link.stateKey);
-    double attenuation = computePathLoss(radio, threeDimDistance, twoDimDistance, los);
+    double attenuation = computePathLoss(radio, threeDimDistance, twoDimDistance, los, peerId);
 
     //    Applying shadowing only if it is enabled by configuration
     //    log-normal shadowing (not available for background UEs)
     if (num(link.stateNodeId) < BGUE_MIN_ID && cp.shadowing)
-        attenuation += computeShadowing(radio, threeDimDistance, twoDimDistance, link.stateKey, speed);
+        attenuation += computeShadowing(radio, threeDimDistance, twoDimDistance, link.stateKey, speed, peerId);
 
     // update the tracked node's current position
     updatePositionHistory(radio, link.stateNodeId, link.stateCoord);
@@ -587,13 +659,13 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
     return attenuation;
 }
 
-double RadioMedium::computePathLoss(StochasticChannelModel *radio, double distance, double dbp, bool los)
+double RadioMedium::computePathLoss(StochasticChannelModel *radio, double distance, double dbp, bool los, MacNodeId peerId)
 {
     O2iState o2i = o2iStateOf(radio->getNodeId(), radio->getCarrierFrequency());
-    return pathLossFor(legFor(radio)).computePathLoss(distance, dbp, los, o2i);
+    return pathLossFor(legFor(radio)).computePathLoss(distance, dbp, los, o2i, linkContextFor(radio, peerId));
 }
 
-void RadioMedium::computeLosProbability(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key)
+void RadioMedium::computeLosProbability(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, MacNodeId peerId)
 {
     const CarrierLeg leg = legFor(radio);
     const CarrierPhysics& cp = carrierPhysicsFor(leg);
@@ -602,11 +674,11 @@ void RadioMedium::computeLosProbability(StochasticChannelModel *radio, double d3
         losState(leg, key) = cp.fixedLos;
         return;
     }
-    double p = pathLossFor(leg).computeLosProbability(d3D, d2D);
+    double p = pathLossFor(leg).computeLosProbability(d3D, d2D, linkContextFor(radio, peerId));
     losState(leg, key) = (uniform(0.0, 1.0) <= p);
 }
 
-double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, double speed)
+double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, double speed, MacNodeId peerId)
 {
     const CarrierLeg leg = legFor(radio);
     const CarrierPhysics& cp = carrierPhysicsFor(leg);
@@ -615,7 +687,7 @@ double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, 
     double mean = 0;
 
     // Get std deviation according to LOS/NLOS and selected scenario
-    double stdDev = pathLossFor(leg).getShadowingStdDev(d3D, d2D, losState(leg, key));
+    double stdDev = pathLossFor(leg).getShadowingStdDev(d3D, d2D, losState(leg, key), linkContextFor(radio, peerId));
     double time = 0;
     double space = 0;
     double att;
@@ -1283,7 +1355,9 @@ double RadioMedium::getReceivedPower_bgUe(StochasticChannelModel *radio, double 
     //compute attenuation based on selected scenario and based on LOS or NLOS
     double sqrDistance = txPos.distance(rxPos);
     double dbp = 0;
-    double attenuation = computePathLoss(radio, sqrDistance, dbp, losStatus);
+    // No specific bg-UE identity reaches this call (§3(k)): radio is always
+    // the eNB side, so linkContextFor() falls back to the UE-side default height.
+    double attenuation = computePathLoss(radio, sqrDistance, dbp, losStatus, NODEID_NONE);
 
     //compute recvPower
     double recvPower = txPower - attenuation; // (dBm-dB)=dBm
@@ -1443,6 +1517,11 @@ RadioLink RadioMedium::d2dLink(StochasticChannelModel *radio, MacNodeId srcId, i
     link.txAntennaGain = link.rxAntennaGain = radio->getAntennaGainUe();
     link.noiseFigure = radio->getUeNoiseFigure();
     link.txIsBaseStation = false; // omnidirectional: no angular attenuation
+
+    // radio's own serving cell -- for height role-resolution (E4/§3(k), risk
+    // 16): both D2D ends are UEs, so h_BS is resolved via the serving cell,
+    // not via either end.
+    link.cellId = radio->getBinder()->getServingNodeOrSelf(radio->getNodeId());
 
     // The channel state is keyed on the *link*, so a UE's several D2D peers each
     // get their own LOS state, shadowing realization and fading process, instead

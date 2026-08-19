@@ -45,6 +45,7 @@ void StochasticChannelModel::initialize(int stage)
         antennaGainUe_ = par("antennaGainUe");
         antennaGainEnB_ = par("antennGainEnB");
         cableLoss_ = par("cableLoss");
+        height_ = par("height");
         ueNoiseFigure_ = par("ueNoiseFigure");
         bsNoiseFigure_ = par("bsNoiseFigure");
 
@@ -260,7 +261,11 @@ bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserContr
 
 double StochasticChannelModel::computePathLoss(double distance, double dbp, bool los)
 {
-    return medium_->computePathLoss(this, distance, dbp, los);
+    // No specific peer identity reaches this call either (the D2D
+    // conflict-graph's abstract distance estimate, DistanceBasedConflictGraph.cc,
+    // is its only caller): linkContextFor() falls back to the other role's
+    // own NIC-level default height for the missing side (E4/§3(k)).
+    return medium_->computePathLoss(this, distance, dbp, los, NODEID_NONE);
 }
 
 double StochasticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
@@ -279,9 +284,14 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
     if (!enable_extCell_los_)
         los = false;
 
-    // always the TR 36.814 formulas, whatever study the model itself uses
+    // always the TR 36.814 formulas, whatever study the model itself uses.
+    // No specific ext-cell/background-cell identity reaches this call
+    // (§3(k), verified: every in-tree ext-cell is at the eNB-side default
+    // height): linkContextFor() falls back to the other role's own
+    // NIC-level default height for the missing side.
     double attenuation = medium_->extCellPathLossFor(getNodeId(), getCarrierFrequency())
-            .computePathLoss(dist, dist, los, O2iState{inside_building_, inside_distance_});
+            .computePathLoss(dist, dist, los, O2iState{inside_building_, inside_distance_},
+                    medium_->linkContextFor(this, NODEID_NONE));
 
     return attenuation;
 }
