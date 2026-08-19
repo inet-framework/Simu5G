@@ -21,10 +21,12 @@ package simu5g.stack.sdap;
 // For SDUs received from the upper layer, performs QFI-to-DRB mapping,
 // encapsulates the data with SDAP headers if needed, and forwards the packets
 // to the PDCP layer. On the gNB DL path, the QFI is always taken from the
-// QfiReq tag (set by GtpUser). On the UE UL path, the QFI resolution chain is:
-//   1. QfiReq tag (if set by the application)
-//   2. Reflective QoS table (if enabled)
-//   3. QFI=0 (falls back to default DRB)
+// QfiReq tag (set by GtpUser). On the UE UL path two sources may answer: the
+// classified QFI (the QfiReq tag, stamped by ~QosFlowClassifier's rules or set
+// by the application directly) and a reflective QoS match, the rule derived
+// from observed downlink traffic. When both answer, reflectiveQosOverridesQfi
+// says which wins; one alone is used as-is; a packet with neither joins the
+// default QoS flow (QFI 0, the default DRB).
 //
 // An SDAP header is only added when the QFI cannot be unambiguously recovered
 // from the DRB alone on the RX side, i.e. when the DRB is the default DRB
@@ -51,6 +53,7 @@ simple NrSdap like INrSdap
         bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (see the staticBearers parameter of ~Smf)
         string reflectiveQosTableModule = default("");  // UE only: path to ReflectiveQosTable module (empty = disabled)
         bool useReflectiveQos = default(false); // UE only
+        bool reflectiveQosOverridesQfi = default(false);  // UE only: when a packet has both a classified QFI (QfiReq tag) and a reflective QoS match, true = the reflective QFI wins, false = the classified one; a packet with only one of the two always uses it
         @display("i=block/layer");
     gates:
         input upperLayerIn;     // from upper layer (Ip2Nic or app)

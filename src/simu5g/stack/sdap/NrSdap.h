@@ -55,6 +55,7 @@ class NrSdap : public cSimpleModule
 
     bool isUe = true;  // Node role: true for UE, false for gNB
     bool establishBearersOnDemand_ = true;
+    bool reflectiveQosOverridesQfi_ = false;   // when a packet has both a classified QFI and a reflective QoS match: true = reflective wins
 
   protected:
     virtual bool requiresSdapHeader(const DrbDesc *drb);

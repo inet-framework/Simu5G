@@ -37,6 +37,7 @@ void NrSdap::initialize()
     std::string nodeRole = par("nodeRole").stdstringValue();
     isUe = (nodeRole == "UE");
     establishBearersOnDemand_ = par("establishBearersOnDemand").boolValue();
+    reflectiveQosOverridesQfi_ = par("reflectiveQosOverridesQfi").boolValue();
     if (!isUe && reflectiveQosTable.getNullable() != nullptr)
         throw cRuntimeError("Only UE may use a reflective QoS table");
 }
@@ -122,29 +123,35 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     Qfi qfi = QFI_NONE;
     bool qfiFromReflectiveQos = false;
 
-    // Extract QFI from QfiReq tag if present (set by GtpUser from GTP-U header, or by app directly)
-    if (pkt->hasTag<QfiReq>()) {
+    if (!isUe) {
+        // gNB DL: the QFI always arrives from the GTP-U header, via GtpUser's QfiReq tag
+        if (!pkt->hasTag<QfiReq>())
+            throw cRuntimeError("SDAP TX: QfiReq tag missing on gNB DL path -- GtpUser should always set it");
         qfi = pkt->getTag<QfiReq>()->getQfi();
         EV_INFO << "SDAP TX: QFI = " << qfi << " extracted from QfiReq\n";
     }
-    else if (isUe) {
-        // UE UL: try reflective QoS first (3GPP-defined mechanism)
-        if (reflectiveQosTable != nullptr) {
-            Qfi reflectiveQfi = reflectiveQosTable->lookupUplinkQfi(pkt);
-            if (reflectiveQfi != QFI_NONE) {
-                qfi = reflectiveQfi;
-                qfiFromReflectiveQos = true;
-                EV_INFO << "SDAP TX: QFI = " << qfi << " derived from reflective QoS\n";
-            }
+    else {
+        // UE UL: two sources may answer -- the classified QFI (a QfiReq tag, stamped by
+        // the QosFlowClassifier's rules or set by the application directly) and a
+        // reflective QoS match, the rule derived from observed downlink traffic. When
+        // both answer, the reflectiveQosOverridesQfi switch says which wins; one alone
+        // is used as-is; deliberately no per-rule precedence between the two kinds.
+        Qfi taggedQfi = pkt->hasTag<QfiReq>() ? pkt->getTag<QfiReq>()->getQfi() : QFI_NONE;
+        Qfi reflectiveQfi = (reflectiveQosTable != nullptr) ? reflectiveQosTable->lookupUplinkQfi(pkt) : QFI_NONE;
+        if (taggedQfi != QFI_NONE && (reflectiveQfi == QFI_NONE || !reflectiveQosOverridesQfi_)) {
+            qfi = taggedQfi;
+            EV_INFO << "SDAP TX: QFI = " << qfi << " extracted from QfiReq\n";
         }
-        if (qfi == QFI_NONE) {
+        else if (reflectiveQfi != QFI_NONE) {
+            qfi = reflectiveQfi;
+            qfiFromReflectiveQos = true;
+            EV_INFO << "SDAP TX: QFI = " << qfi << " derived from reflective QoS\n";
+        }
+        else {
             // unclassified traffic joins the default QoS flow
             qfi = Qfi(0);
-            EV_WARN << "SDAP TX: No QFI from reflective QoS, using QFI=0 (default DRB)\n";
+            EV_WARN << "SDAP TX: unclassified packet joins the default QoS flow (QFI 0)\n";
         }
-    }
-    else {
-        throw cRuntimeError("SDAP TX: QfiReq tag missing on gNB DL path -- GtpUser should always set it");
     }
 
     // Lookup DRB context: nodeId is NODEID_NONE on UE, destUeId on gNB
