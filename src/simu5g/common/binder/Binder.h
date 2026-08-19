@@ -36,6 +36,9 @@ class UeStatsCollector;
 struct NodeInfo {
     opp_component_ptr<cModule> moduleRef;
     opp_component_ptr<LteMacBase> macModule;
+    bool isNr = false;    // the node's radio technology, as stated at registration. For a UE
+                          // the id says the same thing (isNrUe()); for a base station this
+                          // is the only record of it, since eNBs and gNBs share one id range.
 };
 
 /**
@@ -343,6 +346,13 @@ class Binder : public cSimpleModule
      * @return The requested nodeId, or NODEID_NONE if not found/available
      */
     virtual MacNodeId getUeNodeId(MacNodeId ue, bool isNr);
+
+    /**
+     * Whether the given base station is an NR node (gNB). Unlike UEs, whose technology is
+     * encoded in the node id range, base stations of both technologies share one id range,
+     * so this reads what the node stated at registration.
+     */
+    virtual bool isNrNodeB(MacNodeId nodeB);
 
     /**
      * author Alessandro Noferi

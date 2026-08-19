@@ -166,7 +166,18 @@ void Binder::registerNode(MacNodeId nodeId, cModule *nodeModule, RanNodeType typ
     // registering new node
     NodeInfo nodeInfo;
     nodeInfo.moduleRef = nodeModule;
+    nodeInfo.isNr = isNr;
     nodeInfoMap_[nodeId] = nodeInfo;
+}
+
+bool Binder::isNrNodeB(MacNodeId nodeB)
+{
+    if (nodeB == NODEID_NONE || getNodeTypeById(nodeB) != NODEB)
+        throw cRuntimeError("Binder::isNrNodeB(): %hu is not a base station's node id", num(nodeB));
+    auto it = nodeInfoMap_.find(nodeB);
+    if (it == nodeInfoMap_.end())
+        throw cRuntimeError("Binder::isNrNodeB(): node %hu is not registered", num(nodeB));
+    return it->second.isNr;
 }
 
 void Binder::unregisterNode(MacNodeId id)

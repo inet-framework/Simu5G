@@ -680,7 +680,7 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
         // attachment. Attachment moves during a handover, and a stack whose serving node
         // is mid-change matches neither cell group for as long as that lasts.
         MacNodeId masterNodeB = binder_->getMasterNodeOrSelf(getNodeTypeById(sourceId) == UE ? destId : sourceId);
-        bool masterIsNr = isNrNodeB(masterNodeB);
+        bool masterIsNr = binder_->isNrNodeB(masterNodeB);
         MacNodeId ueMcgId = ueReg ? (masterIsNr ? ueReg->getNrNodeId() : ueReg->getLteNodeId()) : NODEID_NONE;
         MacNodeId ueScgId = ueReg ? (masterIsNr ? ueReg->getLteNodeId() : ueReg->getNrNodeId()) : NODEID_NONE;
 
@@ -737,18 +737,6 @@ const DrbDesc *Smf::findBearerDefinition(const FlowId& flow)
         if (ab.ueModule == ueModule && ab.desc.getDrbId() == flow.drbId)
             return &ab.desc;
     return nullptr;
-}
-
-// Is this base station an NR node? A base station holds its own id under the technology it
-// is (see Registration), and unlike UEs, base stations of the two technologies share one
-// node id range -- so the node has to be asked.
-bool Smf::isNrNodeB(MacNodeId nodeB)
-{
-    if (nodeB == NODEID_NONE)
-        return false;
-    cModule *rrc = binder_->getRrcByNodeId(nodeB);
-    auto *reg = check_and_cast<Registration *>(rrc->getSubmodule("registration"));
-    return reg->getNrNodeId() != NODEID_NONE;
 }
 
 void Smf::createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)
