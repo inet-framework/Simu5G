@@ -370,14 +370,7 @@ PathLossModel *RadioMedium::createPathLossModel(const CarrierPhysics& cp, const 
     else
         throw cRuntimeError("Unrecognized value in 'pathLossType' parameter: \"%s\"", cp.pathLossType.c_str());
 
-    // the frequency triple reproduces ChannelModelBase's own derivation
-    // (ChannelModelBase.cc:26-29) from the leg's own carrier frequency, with
-    // no round-trip through an endpoint
-    double carrierFrequencyGHz = GHz(leg.carrierFrequency).get();
-    double carrierFrequencyHz = Hz(leg.carrierFrequency).get();
-    model->initialize(this, aToDeploymentScenario(cp.scenario), cp.nodebHeight, cp.ueHeight, cp.buildingHeight, cp.streetWidth,
-            carrierFrequencyHz, carrierFrequencyGHz, log10(carrierFrequencyGHz),
-            cp.tolerateMaxDistViolation);
+    initializePathLossStrategy(model, cp, leg);
     return model;
 }
 
@@ -388,12 +381,20 @@ PathLossModel *RadioMedium::createExtCellPathLossModel(const CarrierPhysics& cp,
     // formulas unconditionally
     auto *model = new Tr36814PathLossModel();
 
+    initializePathLossStrategy(model, cp, leg);
+    return model;
+}
+
+void RadioMedium::initializePathLossStrategy(PathLossModel *model, const CarrierPhysics& cp, const CarrierLeg& leg)
+{
+    // the frequency triple reproduces ChannelModelBase's own derivation
+    // (ChannelModelBase.cc:26-29) from the leg's own carrier frequency, with
+    // no round-trip through an endpoint
     double carrierFrequencyGHz = GHz(leg.carrierFrequency).get();
     double carrierFrequencyHz = Hz(leg.carrierFrequency).get();
     model->initialize(this, aToDeploymentScenario(cp.scenario), cp.nodebHeight, cp.ueHeight, cp.buildingHeight, cp.streetWidth,
             carrierFrequencyHz, carrierFrequencyGHz, log10(carrierFrequencyGHz),
             cp.tolerateMaxDistViolation);
-    return model;
 }
 
 bool& RadioMedium::losState(const CarrierLeg& leg, const LinkKey& key, bool *existed)
@@ -658,6 +659,22 @@ double RadioMedium::rayleighFading(StochasticChannelModel *radio, MacNodeId id, 
     const int channelndex = 0;
     double temp1 = radio->getBinder()->phyPisaData.getChannel(channelndex + band);
     return linearToDb(temp1);
+}
+
+double RadioMedium::applyFading(StochasticChannelModel *radio, const CarrierPhysics& cp, MacNodeId nodeId,
+        const LinkKey& key, double speed, unsigned int band, bool isBgUe)
+{
+    double fadingAttenuation = 0;
+    // if fading is enabled
+    if (cp.fading) {
+        // Applying fading
+        if (cp.fadingType == "RAYLEIGH")
+            fadingAttenuation = rayleighFading(radio, nodeId, band);
+
+        else if (cp.fadingType == "JAKES")
+            fadingAttenuation = jakesFading(radio, key, speed, band, isBgUe);
+    }
+    return fadingAttenuation;
 }
 
 double RadioMedium::computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
@@ -973,16 +990,8 @@ std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const Ra
     // for each logical band
     // FIXME compute fading only for used RBs
     for (unsigned int i = 0; i < radio->getNumBands(); i++) {
-        fadingAttenuation = 0;
-        // if fading is enabled
-        if (cp.fading) {
-            // Applying fading
-            if (cp.fadingType == "RAYLEIGH")
-                fadingAttenuation = rayleighFading(radio, link.stateNodeId, i);
+        fadingAttenuation = applyFading(radio, cp, link.stateNodeId, link.stateKey, speed, i);
 
-            else if (cp.fadingType == "JAKES")
-                fadingAttenuation = jakesFading(radio, link.stateKey, speed, i);
-        }
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
 
@@ -1082,15 +1091,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     // for each logical band
     double fadingAttenuation = 0;
     for (unsigned int i = 0; i < radio->getNumBands(); i++) {
-        //if fading is enabled
-        if (cp.fading) {
-            //Applying fading
-            if (cp.fadingType == "RAYLEIGH")
-                fadingAttenuation = rayleighFading(radio, bgUeId, i);
-
-            else if (cp.fadingType == "JAKES")
-                fadingAttenuation = jakesFading(radio, LinkKey(bgUeId), speed, i, true);
-        }
+        fadingAttenuation = applyFading(radio, cp, bgUeId, LinkKey(bgUeId), speed, i, true);
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
 

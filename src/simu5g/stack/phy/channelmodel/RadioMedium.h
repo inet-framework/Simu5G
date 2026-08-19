@@ -276,6 +276,9 @@ class RadioMedium : public cSimpleModule
     /** Builds this leg's ext-cell/background-cell strategy: always Tr36814PathLossModel, regardless of cp.pathLossType, from the same CarrierPhysics fields createPathLossModel() reads. */
     PathLossModel *createExtCellPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg);
 
+    /** The frequency-triple derivation and initialize() call createPathLossModel()/createExtCellPathLossModel() share verbatim, once the concrete strategy is constructed. */
+    void initializePathLossStrategy(PathLossModel *model, const CarrierPhysics& cp, const CarrierLeg& leg);
+
     /** Auto-vivifying access to losMap_[{leg,key}]; existed, if given, reports whether the entry was already present. */
     bool& losState(const CarrierLeg& leg, const LinkKey& key, bool *existed = nullptr);
 
@@ -394,6 +397,18 @@ class RadioMedium : public cSimpleModule
     virtual double jakesFading(StochasticChannelModel *radio, const LinkKey& key, double speed,
             unsigned int band, bool isBgUe = false);
     virtual double rayleighFading(StochasticChannelModel *radio, MacNodeId id, unsigned int band);
+
+    /**
+     * The multipath-fading attenuation for one band, RAYLEIGH or JAKES per
+     * cp.fadingType, 0 if cp.fading is off -- the body getRSRP() and
+     * getSINR_bgUe() each looped over per band. Exact code motion: draws
+     * from the same rng-0 stream as rayleighFading()/jakesFading()
+     * themselves, in the same relative position in the caller's loop, so
+     * this changes no draw's order or count.
+     */
+    virtual double applyFading(StochasticChannelModel *radio, const CarrierPhysics& cp, MacNodeId nodeId,
+            const LinkKey& key, double speed, unsigned int band, bool isBgUe = false);
+
     virtual double computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
     virtual double computeCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
 
