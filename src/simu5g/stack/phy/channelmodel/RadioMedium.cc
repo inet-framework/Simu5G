@@ -378,21 +378,6 @@ double RadioMedium::txAngleOf(MacNodeId nodeId, GHz carrierFrequency) const
     return descriptorFor(nodeId, carrierFrequency).endpoint->getTxAngle();
 }
 
-double RadioMedium::antennaGainOf(MacNodeId nodeId, GHz carrierFrequency) const
-{
-    return descriptorFor(nodeId, carrierFrequency).endpoint->getAntennaGain();
-}
-
-double RadioMedium::noiseFigureOf(MacNodeId nodeId, GHz carrierFrequency) const
-{
-    return descriptorFor(nodeId, carrierFrequency).endpoint->getNoiseFigure();
-}
-
-double RadioMedium::insideDistanceOf(MacNodeId nodeId, GHz carrierFrequency) const
-{
-    return descriptorFor(nodeId, carrierFrequency).endpoint->getInsideDistance();
-}
-
 O2iState RadioMedium::o2iStateOf(MacNodeId nodeId, GHz carrierFrequency) const
 {
     const RadioDescriptor& d = descriptorFor(nodeId, carrierFrequency);
@@ -1278,72 +1263,6 @@ double RadioMedium::getReceivedPower_bgUe(StochasticChannelModel *radio, double 
     //============ END PATH LOSS + ANGULAR ATTENUATION ===============
 
     return recvPower;
-}
-
-std::vector<double> RadioMedium::getSIR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo)
-{
-    // get tx power
-    double recvPower = lteInfo->getTxPower();
-
-    inet::Coord coord = lteInfo->getCoord();
-
-    Direction dir = lteInfo->getDirection();
-
-    MacNodeId id = NODEID_NONE;
-    double speed = 0.0;
-
-    // if direction is DL
-    if (dir == DL && (lteInfo->getFrameType() != FEEDBACKPKT)) {
-        id = lteInfo->getDestId();
-        speed = computeSpeed(radio, id, radio->getCoord());
-    }
-    /*
-     * If direction is UL OR
-     * if the packet is a feedback packet
-     * it means that this function is called by the feedback computation module
-     * located in the eNodeB that computes the feedback received by the UE
-     * Hence, the UE macNodeId can be taken from the sourceId of the lteInfo
-     * and the speed of the UE is contained in the Move object associated with the lteInfo
-     */
-    else {
-        id = lteInfo->getSourceId();
-        speed = computeSpeed(radio, id, coord);
-    }
-
-    // Apply fading for each band
-    // if the phy layer is localized we can assume that for each logical band we have different fading attenuation
-    // if the phy layer is distributed, the number of logical bands should be set to 1
-    std::vector<double> snrVector;
-
-    const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
-    double fadingAttenuation = 0;
-    // for each logical band
-    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
-        fadingAttenuation = 0;
-        // if fading is enabled
-        if (cp.fading) {
-            // Applying fading
-            if (cp.fadingType == "RAYLEIGH") {
-                fadingAttenuation = rayleighFading(radio, id, i);
-            }
-            else if (cp.fadingType == "JAKES") {
-                fadingAttenuation = jakesFading(radio, LinkKey(id), speed, i);
-            }
-        }
-        // add fading contribution to the final SINR
-        double finalSnr = recvPower + fadingAttenuation;
-
-        snrVector.push_back(finalSnr);
-    }
-
-    // if sender is an eNodeB
-    if (dir == DL)
-        // store the position of the user
-        updatePositionHistory(radio, id, radio->getCoord());
-    // sender is a UE
-    else
-        updatePositionHistory(radio, id, coord);
-    return snrVector;
 }
 
 bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo,

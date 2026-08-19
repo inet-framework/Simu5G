@@ -63,13 +63,6 @@ class IdealChannelModel : public ChannelModelBase
     }
 
     /*
-     * Compute fake SIR for each band for user nodeId according to multipath fading
-     *
-     * @param frame pointer to the packet
-     * @param lteInfo pointer to the user control info
-     */
-    std::vector<double> getSIR(LteAirFrame *frame, UserControlInfo *lteInfo) override;
-    /*
      * Compute fake SINR for each band for user nodeId according to path loss, shadowing (optional) and multipath fading
      *
      * @param frame pointer to the packet
