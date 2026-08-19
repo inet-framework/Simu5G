@@ -54,9 +54,9 @@ class D2dChannelModel : public StochasticChannelModel, public ID2dChannelModel
     void initialize(int stage) override;
 
     // ---- ID2dChannelModel ----
-    std::vector<double> getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord) override;
+    std::vector<double> getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord) override;
     std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId = NODEID_NONE) override;
-    std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) override;
+    std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) override;
 
     virtual bool isD2DInterferenceEnabled() { return enableD2DInterference_; }
     bool recordsUlTransmissionMap() override { return isUplinkInterferenceEnabled() || enableD2DInterference_; }

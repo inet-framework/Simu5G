@@ -286,24 +286,4 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
     return attenuation;
 }
 
-StochasticChannelModel::InterfererInfo StochasticChannelModel::describeInterferer(const UeAllocationInfo& allocation, RadioMedium *medium, GHz carrierFrequency)
-{
-    InterfererInfo info;
-    info.nodeId = allocation.nodeId;
-    info.cellId = allocation.cellId;
-    info.dir = allocation.dir;
-
-    if (allocation.phy != nullptr) {
-        // a real UE is a registered radio; read its physical facts from the medium
-        info.txPwr = medium->txPowerOf(info.nodeId, carrierFrequency, info.dir);
-        info.coord = medium->coordOf(info.nodeId, carrierFrequency);
-    }
-    else { // a background UE is a registered phantom radio
-        BgUeKey key{allocation.cellId, carrierFrequency, allocation.nodeId};
-        info.txPwr = medium->txPowerOf(key);
-        info.coord = medium->coordOf(key);
-    }
-    return info;
-}
-
 } //namespace
