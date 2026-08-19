@@ -98,6 +98,14 @@ is confirmed byte-identical, since nothing about this change reaches them.
   unaffected.
 
 
+- **`StochasticChannelModel`'s `antennGainMicro` NED parameter** is
+  removed, together with the `antennaGainMicro_` member it fed: nothing
+  ever read either one. Note that a configuration line still setting
+  `antennGainMicro` is silently ignored -- OMNeT++ does not diagnose ini
+  keys that no longer match any parameter. (The identically
+  named, identically dead parameter on `BackgroundCellChannelModel` is
+  untouched -- that module is removed wholesale in a later step.)
+
 ## v1.7.0 (2026-09-14)
 
 The most significant change in this release is bearer and QoS management, which
@@ -725,7 +733,6 @@ None of this changes behavior; the full fingerprint suite is byte-identical.
   function, the UE's division of an uplink grant among its connections, the
   backlog its buffer status reports announce, and the eNB's per-LCG backlog
   tracking and grant construction.
-
 
 ## v1.6.0 (2026-07-31)
 

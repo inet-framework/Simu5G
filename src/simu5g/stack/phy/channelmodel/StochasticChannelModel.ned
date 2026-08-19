@@ -77,8 +77,6 @@ simple StochasticChannelModel extends ChannelModelBase
         double antennaGainUe @unit(dBi) = default(0dBi);
         // Antenna Gain of eNodeB -->
         double antennGainEnB @unit(dBi) = default(18dBi);
-        // Antenna Gain of Micro node -->
-        double antennGainMicro @unit(dBi) = default(5dBi);
         // Thermal Noise for 10 MHz of Bandwidth -->
         double thermalNoise @unit(dBm) = default(-104.5dBm);
         // Ue noise figure -->
