@@ -15,6 +15,8 @@
 #include <inet/networklayer/common/L3AddressResolver.h>
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 
+#include "simu5g/common/QfiTag_m.h"
+
 namespace simu5g {
 
 Define_Module(TrafficFlowFilter);
@@ -136,12 +138,22 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
     auto tftInfo = pkt->addTag<TftControlInfo>();
     tftInfo->setTft(tftId);
 
-    // QFI assignment. The qfiRules parameter models the packet detection and QoS
-    // enforcement rules (PDR/QER) that the SMF installs into a UPF over N4 at
-    // session setup; a real UPF holds no classification policy of its own, so a
-    // locally configured rule table is a modeling shortcut -- the ini author plays
-    // the SMF.
-    Qfi qfi = qfiRules_.classify(pkt, ipv4Header);
+    // QFI assignment. An uplink packet that SDAP already attributed to a QoS flow
+    // (the QfiInd tag, carrying the QFI the UE classified it with) keeps that QFI on
+    // its way into the core network, rather than being re-classified by this node's
+    // rules -- the two rule sets can disagree, and the UE's classification is the
+    // flow's identity. Everything else -- downlink traffic entering the tunnel, and
+    // uplink from stacks without SDAP -- is classified here.
+    //
+    // The qfiRules parameter models the packet detection and QoS enforcement rules
+    // (PDR/QER) that the SMF installs into a UPF over N4 at session setup; a real UPF
+    // holds no classification policy of its own, so a locally configured rule table is
+    // a modeling shortcut -- the ini author plays the SMF.
+    Qfi qfi = QFI_NONE;
+    if (auto qfiInd = pkt->findTag<QfiInd>())
+        qfi = qfiInd->getQfi();
+    if (qfi == QFI_NONE)
+        qfi = qfiRules_.classify(pkt, ipv4Header);
     if (qfi == QFI_NONE)
         qfi = Qfi(0);   // traffic no rule covers belongs to the default flow
     tftInfo->setQfi(qfi);
