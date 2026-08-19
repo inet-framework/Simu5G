@@ -34,7 +34,10 @@ simple DcPdcpLegSplitter like IPdcpLegSplitter
         int numLegs;                        // number of legs (set by the enclosing PdcpEntityBase)
         string binderModule = default("binder");
         string handoverPacketHolderModule = default("^.^.handoverPacketHolder");  // UEs only; the bearer's PDCP entity is a direct submodule of the NIC
-        object legSelection = default(expr(   // leg index for a PDU, from typeOfService and packetOrdinal; see banner comment
+        // Leg index for a PDU, from typeOfService and packetOrdinal; see banner comment.
+        // The default policy: a legSelection in the bearer's definition, delivered by RRC
+        // through setLegSelection(), overrides this parameter.
+        object legSelection = default(expr(
             typeOfService >= 20 ? (packetOrdinal % 2)
                                 : (typeOfService >= 10 ? 1 : 0)
         ));

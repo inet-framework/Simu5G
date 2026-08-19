@@ -22,6 +22,7 @@
 #include "simu5g/stack/rlc/RlcTxEntityBase.h"
 #include "simu5g/stack/pdcp/PdcpMux.h"
 #include "simu5g/stack/pdcp/DcMux.h"
+#include "simu5g/stack/pdcp/DcPdcpLegSplitter.h"
 #include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
 #include "simu5g/stack/pdcp/PdcpRxEntityBase.h"
 #include "simu5g/stack/sdap/NrSdap.h"
@@ -700,6 +701,19 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, const FlowId& flow,
     module->par("rlcType") = rlcTypeToParamValue(rlcType);
     module->finalizeParameters();
     module->buildInside();
+
+    // A steering policy in the bearer's definition is pushed into the leg splitter, which
+    // buildInside() has just created, the same way every other layer takes its bearer
+    // configuration: through a C++ call. It overrides the splitter's legSelection
+    // parameter, which stays the policy of the bearers that state nothing.
+    if (const DrbDesc *cfg = lookupConfiguredDrb(flow, id.getNodeId()))
+        if (!cfg->legSelection.empty()) {
+            cModule *splitter = module->getSubmodule("splitter");
+            if (splitter == nullptr)
+                throw cRuntimeError("DRB %d: its definition carries a \"legSelection\", but the bearer was established with a single leg -- there is nothing to steer between",
+                        (int)num(id.getDrbId()));
+            check_and_cast<DcPdcpLegSplitter *>(splitter)->setLegSelection(cfg->legSelection.c_str());
+        }
     setEntityDisplayPosition(module, true, rlcMux, num(id.getDrbId()));
     module->scheduleStart(simTime());
     module->callInitialize();

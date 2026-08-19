@@ -45,8 +45,28 @@ void DcPdcpLegSplitter::initialize(int stage)
         if (isUe_)
             handoverPacketHolder_ = inet::getModuleFromPar<HandoverPacketHolderUe>(par("handoverPacketHolderModule"), this);
 
-        legSelection_ = getExpressionFromPar(par("legSelection"), new PolicyResolver(this));
+        if (legSelection_ == nullptr)   // unless a bearer definition already pushed one (setLegSelection())
+            legSelection_ = getExpressionFromPar(par("legSelection"), new PolicyResolver(this));
     }
+}
+
+void DcPdcpLegSplitter::setLegSelection(const char *spec)
+{
+    Enter_Method("setLegSelection()");
+    std::string src = spec;
+    if (src.rfind("expr(", 0) != 0 || src.empty() || src.back() != ')')
+        throw cRuntimeError("setLegSelection: '%s' is not an expression written as \"expr(...)\"", spec);
+    auto *expr = new cDynamicExpression();
+    try {
+        expr->parse(src.substr(5, src.size() - 6).c_str());
+    }
+    catch (std::exception& e) {
+        delete expr;
+        throw;
+    }
+    expr->setResolver(new PolicyResolver(this));
+    delete legSelection_;
+    legSelection_ = expr;
 }
 
 bool DcPdcpLegSplitter::isLegLive(int leg, const FlowControlInfo *lteInfo)

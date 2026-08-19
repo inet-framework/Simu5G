@@ -73,6 +73,11 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
     virtual bool isLegLive(int leg, const FlowControlInfo *lteInfo);
 
   public:
+    // Configuration push from RRC: the steering policy of this bearer's definition, in
+    // the same source form the legSelection parameter takes -- an expression written as
+    // "expr(...)" -- which it overrides. Compiled here, so errors throw at establishment.
+    virtual void setLegSelection(const char *spec);
+
     ~DcPdcpLegSplitter() override;
 };
 

@@ -52,6 +52,10 @@ package simu5g.corenetwork.smf;
 //    logical channel group; default: "CONVERSATIONAL"
 //  - rlcType (string, optional): RLC mode ("AM", "UM", "TM"); omitted = RRC decides from the
 //    traffic class (see the conversationalRlc/... parameters of ~BearerManagement)
+//  - legSelection (string, optional): which leg of a split bearer carries a given PDU;
+//    an expression written as "expr(...)" over typeOfService and packetOrdinal, compiled
+//    and evaluated per PDU by the bearer's leg splitter (see ~DcPdcpLegSplitter, whose
+//    legSelection parameter this overrides). Only meaningful on a bearer with two legs.
 //  - legs (string[]/object[], optional): the cell groups that serve this bearer, i.e. its
 //    RLC bearers (TS 38.331 RLC-BearerConfig). One leg = an MCG or an SCG bearer, both =
 //    a split bearer. An element is either a cell group name ("MCG" or "SCG"), or an object

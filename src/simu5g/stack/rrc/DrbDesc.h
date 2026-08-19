@@ -81,6 +81,12 @@ struct DrbDesc {
     // syntax: a message-name pattern, or an expression written as "expr(...)")
     std::vector<std::string> filters;
 
+    // Which leg of a split bearer carries a PDU: an expr() over typeOfService and
+    // packetOrdinal, evaluated per PDU by the bearer's leg splitter (see
+    // ~DcPdcpLegSplitter, whose parameter this feeds). Kept as source text, like filters:
+    // the consumer compiles it. Empty = the splitter's own parameter default applies.
+    std::string legSelection;
+
     // The bearer's RLC bearers, one per cell group it is served in (TS 38.331 keeps them
     // in a list joined on drb-Identity). Empty = the configuration did not state them and
     // RRC derives the bearer's legs, as it always has. Authored, not yet consumed: the

@@ -359,6 +359,17 @@ void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
                         "the master to relay it over X2, which establishment cannot yet wire", paramName, i);
         }
 
+        // legSelection (optional): the split-bearer steering policy, an expr() source
+        // string the bearer's leg splitter compiles. Meaningless on a bearer with one
+        // leg, so stating both is rejected; an entry that leaves the legs to RRC may
+        // carry it, for the case where RRC derives two.
+        if (const cValue *v = field("legSelection")) {
+            drb.legSelection = v->stdstringValue();
+            if (drb.legs.size() == 1)
+                throw cRuntimeError("%s entry %d: \"legSelection\" steers between the legs of a split bearer, "
+                        "but this bearer has one leg", paramName, i);
+        }
+
         // pduSessionType (optional, default IPv4) and upperProtocol (optional, empty =
         // derive from pduSessionType)
         if (const cValue *v = field("pduSessionType"))
