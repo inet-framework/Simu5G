@@ -12,6 +12,10 @@
 
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 
+#include "simu5g/common/binder/Binder.h"
+#include "simu5g/common/cellInfo/CellInfo.h"
+#include "simu5g/stack/phy/PhyBase.h"
+
 namespace simu5g {
 
 

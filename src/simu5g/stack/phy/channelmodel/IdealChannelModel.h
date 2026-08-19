@@ -14,6 +14,7 @@
 #define STACK_PHY_CHANNELMODEL_IDEALCHANNELMODEL_H_
 
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 
 namespace simu5g {

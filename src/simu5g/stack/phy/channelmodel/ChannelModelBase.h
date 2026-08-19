@@ -18,7 +18,6 @@
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/carrierAggregation/ComponentCarrier.h"
-#include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/phy/packet/LteAirFrame.h"
 namespace simu5g {
 
