@@ -59,6 +59,7 @@ ini configuration.
 - `VoIP-DL-MultiQfi-OnDemandDrb`: Same as `VoIP-DL-MultiQfi`, but the Gaming/URLLC DRB is not configured up front: QFIs 3 and 4 are served by an entry of the SMF's `onDemandDrbs` parameter, so that DRB is created by the first Gaming or URLLC packet (SDAP misses the QFI-to-DRB lookup and asks the SMF) and the other flow joins it. |
 - `VoIP-DL-MultiQfi-Heavy`: Same, with heavy traffic (1000 B every 1 ms, no silence periods) to create contention and exercise the QOS_PF scheduler. |
 - `VoIP-UL`: 4 VoIP flows from each UE to the server, uplink, with DSCP-derived QFIs 1..4. |
+- `VoIP-UL-FilterRules`: Same as `VoIP-UL`, but the traffic is unmarked and the classifier assigns QFIs by destination port (`{filter, qfi}` rules) -- classification without the applications' cooperation. |
 
 ## What to look at
 
