@@ -35,6 +35,9 @@ using namespace omnetpp;
  */
 class Smf : public cSimpleModule
 {
+  public:
+    ~Smf() override;
+
   protected:
     inet::ModuleRefByPar<Binder> binder_;
 
@@ -97,6 +100,11 @@ class Smf : public cSimpleModule
 
     // The definition a flow's bearer was authored from, or nullptr if none covers it
     virtual const DrbDesc *findBearerDefinition(const FlowId& flow);
+
+    // The standardized QoS characteristics rows as built-in drbProfiles entries
+    // ("qci-1".."qci-9", "5qi-1".."5qi-9"); built lazily, owned by this module
+    omnetpp::cValueMap *predefinedDrbProfiles_ = nullptr;
+    virtual const omnetpp::cValueMap *getPredefinedDrbProfiles();
 
 
     // Deliver one bearer's definition to the RRCs involved: the UE's (keyed by

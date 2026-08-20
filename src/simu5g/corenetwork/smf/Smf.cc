@@ -103,6 +103,64 @@ void Smf::releaseDrbId(MacNodeId a, MacNodeId b, DrbId drbId)
            << ", " << pair.second << ") is free again" << endl;
 }
 
+Smf::~Smf()
+{
+    // plain delete, not dropAndDelete(): deleting while still owned lets ~cOwnedObject
+    // deregister from this module's owner list (dropAndDelete nulls the owner first,
+    // which leaves a stale list slot that crashes cComponent's teardown)
+    delete predefinedDrbProfiles_;
+}
+
+const cValueMap *Smf::getPredefinedDrbProfiles()
+{
+    if (predefinedDrbProfiles_ == nullptr) {
+        // The standardized QoS characteristics tables as built-in profiles, referenced
+        // from entries exactly like user-defined ones: "qci-N" carries the QCI rows of
+        // TS 23.203 Table 6.1.7-A, "5qi-N" the 5QI rows of TS 23.501 Table 5.7.4-1
+        // (the core 1..9 of each; row 1 = conversational voice, 2 = conversational
+        // video, 3 = real-time gaming, 4 = buffered video, 5 = IMS signalling,
+        // 6/8 = buffered video and TCP services, 7 = voice/live video/interactive
+        // gaming, 9 = the default best-effort bearer). A row carries what the spec
+        // standardizes -- resource type, priority, packet delay budget, packet error
+        // rate -- and nothing else: the RLC mode and the logical channel group are RAN
+        // choices, not row columns, so an entry states them itself if it needs to.
+        //
+        // NOTE the two tables use different priority scales (QCI 1..9, 5QI 10..90), and
+        // both differ from the small hand-picked values existing configurations use; the
+        // QoS-aware scheduler weights bearers by 1/(priority+1), so profiles from
+        // different scales should not be mixed within one network.
+        //
+        // Built by evaluating the literal below, so the container ownership is exactly
+        // that of an ini-file object value.
+        static const char *table = R"({
+            "qci-1": {gbr: true,  priority: 2, delayBudget: 100, per: 1e-2},
+            "qci-2": {gbr: true,  priority: 4, delayBudget: 150, per: 1e-3},
+            "qci-3": {gbr: true,  priority: 3, delayBudget: 50,  per: 1e-3},
+            "qci-4": {gbr: true,  priority: 5, delayBudget: 300, per: 1e-6},
+            "qci-5": {gbr: false, priority: 1, delayBudget: 100, per: 1e-6},
+            "qci-6": {gbr: false, priority: 6, delayBudget: 300, per: 1e-6},
+            "qci-7": {gbr: false, priority: 7, delayBudget: 100, per: 1e-3},
+            "qci-8": {gbr: false, priority: 8, delayBudget: 300, per: 1e-6},
+            "qci-9": {gbr: false, priority: 9, delayBudget: 300, per: 1e-6},
+            "5qi-1": {gbr: true,  priority: 20, delayBudget: 100, per: 1e-2},
+            "5qi-2": {gbr: true,  priority: 40, delayBudget: 150, per: 1e-3},
+            "5qi-3": {gbr: true,  priority: 30, delayBudget: 50,  per: 1e-3},
+            "5qi-4": {gbr: true,  priority: 50, delayBudget: 300, per: 1e-6},
+            "5qi-5": {gbr: false, priority: 10, delayBudget: 100, per: 1e-6},
+            "5qi-6": {gbr: false, priority: 60, delayBudget: 300, per: 1e-6},
+            "5qi-7": {gbr: false, priority: 70, delayBudget: 100, per: 1e-3},
+            "5qi-8": {gbr: false, priority: 80, delayBudget: 300, per: 1e-6},
+            "5qi-9": {gbr: false, priority: 90, delayBudget: 300, per: 1e-6}
+        })";
+        cDynamicExpression expr;
+        expr.parse(table);
+        auto *map = check_and_cast<cValueMap *>(expr.evaluate(this).objectValue());
+        take(map);
+        predefinedDrbProfiles_ = map;
+    }
+    return predefinedDrbProfiles_;
+}
+
 void Smf::configureDrbs()
 {
     // The node ids of each registered UE: one per stack, both naming the same UE and so
@@ -118,6 +176,14 @@ void Smf::configureDrbs()
     // The static bearers of each UE, collected before anything is pushed, so that the
     // default DRB of a UE can be settled while all of its bearers are in hand
     std::map<cModule *, std::map<DrbId, DrbDesc>> drbsOfUe;
+
+    // A user profile must not redefine a predefined row: silently shadowing a
+    // standardized name would make "5qi-1" mean different things in different inis
+    if (const cValueMap *userProfiles = check_and_cast_nullable<const cValueMap *>(par("drbProfiles").objectValue()))
+        for (const auto& [profileName, value] : userProfiles->getFields())
+            if (getPredefinedDrbProfiles()->containsKey(profileName.c_str()))
+                throw cRuntimeError("drbProfiles entry '%s' redefines a predefined profile; the standardized rows cannot be overridden",
+                        profileName.c_str());
 
     parseDrbDefinitions("staticDrbs", false, ueNodeIds, networkPrefix, drbsOfUe);
     parseDrbDefinitions("onDemandDrbs", true, ueNodeIds, networkPrefix, drbsOfUe);
@@ -178,15 +244,18 @@ void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
         const cValueMap *profile = nullptr;
         if (entry->containsKey("profile")) {
             const char *name = entry->get("profile").stringValue();
-            if (!profiles || !profiles->containsKey(name)) {
+            if (profiles && profiles->containsKey(name))
+                profile = check_and_cast<const cValueMap *>(profiles->get(name).objectValue());
+            else if (getPredefinedDrbProfiles()->containsKey(name))
+                profile = check_and_cast<const cValueMap *>(getPredefinedDrbProfiles()->get(name).objectValue());
+            else {
                 std::string available;
                 if (profiles)
                     for (const auto& [profileName, value] : profiles->getFields())
                         available += (available.empty() ? "" : ", ") + profileName;
-                throw cRuntimeError("%s entry %d references unknown profile '%s' (available: %s)",
+                throw cRuntimeError("%s entry %d references unknown profile '%s' (available: %s; plus the predefined \"qci-1\"..\"qci-9\" and \"5qi-1\"..\"5qi-9\")",
                         paramName, i, name, available.empty() ? "none" : available.c_str());
             }
-            profile = check_and_cast<const cValueMap *>(profiles->get(name).objectValue());
             for (const char *forbidden : { "drb", "ue", "profile", "bearerType", "qfiList", "filters", "isDefault" })
                 if (profile->containsKey(forbidden))
                     throw cRuntimeError("drbProfiles entry '%s' must not contain the '%s' field", name, forbidden);

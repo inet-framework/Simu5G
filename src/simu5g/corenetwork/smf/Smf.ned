@@ -81,6 +81,17 @@ package simu5g.corenetwork.smf;
 // say which UE it belongs to (ue, drb), which architecture and flows select it (bearerType,
 // qfiList, filters, isDefault).
 //
+// The standardized QoS characteristics rows are available as predefined profiles, referenced
+// by name without being defined: "qci-1".."qci-9" (TS 23.203 Table 6.1.7-A) and
+// "5qi-1".."5qi-9" (TS 23.501 Table 5.7.4-1). A row carries what the spec standardizes --
+// gbr, priority, delayBudget, per -- and nothing else: the RLC mode and the logical channel
+// group are RAN choices, so an entry states them itself when it needs to, e.g.
+// {bearerType: "5gc", ue: "ue[*]", drb: 0, qfiList: [1, 2], profile: "5qi-1", rlcType: "UM"}.
+// A drbProfiles entry may not redefine a predefined name. NOTE the spec's priority scales
+// (QCI 1..9, 5QI 10..90) differ from each other and from the small hand-picked values older
+// configurations use; the QoS-aware scheduler weights bearers by 1/(priority+1), so profiles
+// from different scales should not be mixed within one network.
+//
 // Example (in an ini file):
 //
 // <pre>
