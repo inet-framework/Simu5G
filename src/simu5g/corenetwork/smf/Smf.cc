@@ -204,6 +204,20 @@ void Smf::configureDrbs()
                 throw cRuntimeError("drbProfiles entry '%s' redefines a predefined profile; the standardized rows cannot be overridden",
                         profileName.c_str());
 
+    // The QoS-derivation policy the definitions below may rely on
+    amPerThreshold_ = par("amPerThreshold");
+    lcgPriorityBounds_.clear();
+    auto *boundsArr = check_and_cast<const cValueArray *>(par("lcgPriorityBounds").objectValue());
+    if (boundsArr->size() != NUM_LCGS - 1)
+        throw cRuntimeError("lcgPriorityBounds must have %d entries, one bound between each pair of adjacent LCGs",
+                NUM_LCGS - 1);
+    for (int i = 0; i < (int)boundsArr->size(); i++) {
+        long bound = (long)boundsArr->get(i).intValue();
+        if (i > 0 && bound <= lcgPriorityBounds_.back())
+            throw cRuntimeError("lcgPriorityBounds must be strictly ascending");
+        lcgPriorityBounds_.push_back(bound);
+    }
+
     parseDrbDefinitions("staticDrbs", false, ueNodeIds, networkPrefix, drbsOfUe);
     parseDrbDefinitions("onDemandDrbs", true, ueNodeIds, networkPrefix, drbsOfUe);
 
@@ -363,26 +377,40 @@ void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
         if (const cValue *v = field("priority"))
             drb.qos.priorityLevel = v->intValue();
 
-        // rlcType (required; the RLC mode is the definition's to state, in the entry or
-        // in its profile)
+        // rlcType: stated by the definition, or derived from its QoS profile's packet
+        // error rate -- a PER target HARQ alone cannot meet gets ARQ, the RAN-side
+        // decision a gNB makes from the delivered QoS profile (amPerThreshold).
+        // Required when there is nothing to derive it from.
         const cValue *rlcTypeVal = field("rlcType");
-        if (rlcTypeVal == nullptr)
+        if (rlcTypeVal != nullptr) {
+            std::string rlcTypeStr = rlcTypeVal->stdstringValue();
+            drb.rlcType = aToRlcType(rlcTypeStr);
+            if (drb.rlcType == UNKNOWN_RLC_TYPE)
+                throw cRuntimeError("%s entry %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
+                        paramName, i, rlcTypeStr.c_str());
+        }
+        else if (field("per") != nullptr)
+            drb.rlcType = (drb.qos.packetErrorRate <= amPerThreshold_) ? AM : UM;
+        else
             throw cRuntimeError("%s entry %d: missing \"rlcType\" -- a bearer definition must state its "
-                    "RLC mode (\"TM\", \"UM\" or \"AM\"), in the entry or in its profile",
-                    paramName, i);
-        std::string rlcTypeStr = rlcTypeVal->stdstringValue();
-        drb.rlcType = aToRlcType(rlcTypeStr);
-        if (drb.rlcType == UNKNOWN_RLC_TYPE)
-            throw cRuntimeError("%s entry %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
-                    paramName, i, rlcTypeStr.c_str());
+                    "RLC mode (\"TM\", \"UM\" or \"AM\") in the entry or its profile, or carry a QoS "
+                    "profile with a \"per\" to derive it from", paramName, i);
 
-        // lcg (optional): the bearer's logical channel group; omitted = 0
+        // lcg: stated by the definition, or derived from its QoS profile's priority
+        // level (bucketed by lcgPriorityBounds); 0 when there is nothing to derive
+        // it from
         if (const cValue *v = field("lcg")) {
             long lcgVal = (long)v->intValue();
             if (lcgVal < 0 || lcgVal >= NUM_LCGS)
                 throw cRuntimeError("%s entry %d: invalid lcg %ld, must be 0..%d",
                         paramName, i, lcgVal, NUM_LCGS - 1);
             drb.lcg = Lcg(lcgVal);
+        }
+        else if (field("priority") != nullptr) {
+            int bucket = 0;
+            while (bucket < (int)lcgPriorityBounds_.size() && (long)drb.qos.priorityLevel >= lcgPriorityBounds_[bucket])
+                bucket++;
+            drb.lcg = Lcg(bucket);
         }
 
         // legs (optional): the cell groups that serve this bearer, i.e. its RLC bearers.

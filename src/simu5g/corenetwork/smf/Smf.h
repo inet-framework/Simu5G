@@ -41,6 +41,11 @@ class Smf : public cSimpleModule
   protected:
     inet::ModuleRefByPar<Binder> binder_;
 
+    // QoS-derived RAN defaults for definitions that state no rlcType/lcg themselves:
+    // the amPerThreshold and lcgPriorityBounds parameters (see the NED documentation)
+    double amPerThreshold_ = 0;
+    std::vector<long> lcgPriorityBounds_;
+
     // The DRB IDs currently in use within each node pair (see assignDrbId())
     std::map<std::pair<MacNodeId, MacNodeId>, std::set<DrbId>> drbIdsInUse_;
 

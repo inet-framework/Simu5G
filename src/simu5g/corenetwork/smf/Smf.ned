@@ -48,8 +48,13 @@ package simu5g.corenetwork.smf;
 //    triggers establishment, i.e. an UL-triggered and a DL-triggered flow present swapped
 //    port/address roles; a list can carry both spellings.
 //  - lcg (int, optional): the bearer's logical channel group (0..3), which the MAC's
-//    LCG scheduler serves in increasing-index priority order; default: 0
-//  - rlcType (string, required, entry or profile): RLC mode ("AM", "UM", "TM")
+//    LCG scheduler serves in increasing-index priority order; omitted = derived from
+//    the QoS profile's priority level (bucketed by lcgPriorityBounds), or 0 when the
+//    definition carries no "priority"
+//  - rlcType (string, optional when the definition carries a "per"): RLC mode ("AM",
+//    "UM", "TM"); omitted = derived from the QoS profile's packet error rate (per <=
+//    amPerThreshold -> "AM", else "UM": a PER target HARQ alone cannot meet gets ARQ).
+//    Required, in the entry or its profile, when there is nothing to derive it from.
 //  - legSelection (string, optional): which leg of a split bearer carries a given PDU;
 //    an expression written as "expr(...)" over typeOfService and packetOrdinal, compiled
 //    and evaluated per PDU by the bearer's leg splitter (see ~DcPdcpLegSplitter, whose
@@ -83,12 +88,15 @@ package simu5g.corenetwork.smf;
 // by name without being defined: "qci-1".."qci-9" (TS 23.203 Table 6.1.7-A) and
 // "5qi-1".."5qi-9" (TS 23.501 Table 5.7.4-1). A row carries what the spec standardizes --
 // gbr, priority, delayBudget, per -- and nothing else: the RLC mode and the logical channel
-// group are RAN choices, so an entry states them itself when it needs to, e.g.
-// {bearerType: "5gc", ue: "ue[*]", drb: 0, qfiList: [1, 2], profile: "5qi-1", rlcType: "UM"}.
+// group are RAN choices, derived from those characteristics by default (the way a gNB
+// derives its AS configuration from the delivered QoS profile; see the rlcType and lcg
+// field descriptions) and stated on the entry only to override, e.g.
+// {bearerType: "5gc", ue: "ue[*]", drb: 0, qfiList: [1, 2], profile: "5qi-1"}.
 // A drbProfiles entry may not redefine a predefined name. NOTE the spec's priority scales
 // (QCI 1..9, 5QI 10..90) differ from each other and from the small hand-picked values older
-// configurations use; the QoS-aware scheduler weights bearers by 1/(priority+1), so profiles
-// from different scales should not be mixed within one network.
+// configurations use; the QoS-aware scheduler weights bearers by 1/(priority+1), and the
+// default lcgPriorityBounds suit the 5QI scale (single-digit priorities all land in LCG 0),
+// so profiles from different scales should not be mixed within one network.
 //
 // Example (in an ini file):
 //
@@ -185,5 +193,11 @@ simple Smf
             ]);
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcType: "UM", gbr: true, ...}, ...}; see banner comment
         object staticBearers = default([]);  // JSON array: [{ue, lcg, rlcType, drb, technology}, ...]; see banner comment for details
+
+        // QoS-derived RAN defaults for definitions that do not state rlcType/lcg themselves
+        // (operator policy, not spec-mandated: 3GPP standardizes the QoS characteristics,
+        // the RAN chooses what to make of them)
+        double amPerThreshold = default(1e-4);  // rlcType derivation: a definition whose QoS profile has per <= this gets "AM", else "UM"
+        object lcgPriorityBounds = default([25, 50, 75]);  // lcg derivation: priority < bounds[k] -> LCG k, else LCG 3; strictly ascending, one bound between each pair of adjacent LCGs
         @display("i=block/cogwheel");
 }
