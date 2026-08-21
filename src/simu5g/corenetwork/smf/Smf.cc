@@ -713,25 +713,33 @@ DrbId Smf::establishFromDefinition(AuthoredBearer& ab, const FlowId& flowIn, con
 {
     FlowId flow = flowIn;
 
-    // A DRB id is pair-scoped, so the definition materializes once per node pair:
-    // the first match within a pair assigns the pair's lowest free id and delivers
-    // the definition to the RRCs involved, and later flows matching the definition
-    // join that bearer. After a handover the new pair assigns afresh, and a
-    // torn-down bearer's id returns to its pool (see forgetOnDemandDrbId()) --
-    // exactly the identity lifecycle of a bearer nobody authored.
-    std::pair<MacNodeId, MacNodeId> pairKey = std::minmax(flow.sourceId, flow.destId);
-    auto it = ab.pairIds.find(pairKey);
-    if (it == ab.pairIds.end()) {
-        DrbId drbId = assignDrbId(flow.sourceId, flow.destId);
-        it = ab.pairIds.insert({pairKey, drbId}).first;
-        DrbDesc desc = ab.desc;
-        desc.key = DrbKey(NODEID_NONE, drbId);
-        desc.lcid = LogicalCid(num(drbId));
-        EV << "Smf::establishFromDefinition - on-demand definition materialized as DRB " << drbId
-           << " for UE " << ab.ueModule->getFullPath() << endl;
-        pushDrbToRrcs(ab.ueModule, desc);
+    if (!ab.onDemand) {
+        // A static definition's id is pinned, and its descriptor was delivered to the
+        // RRCs at initialization: the flow simply joins the configured bearer.
+        flow.drbId = ab.desc.getDrbId();
     }
-    flow.drbId = it->second;
+    else {
+        // An on-demand DRB id is pair-scoped, so the definition materializes once per
+        // node pair: the first match within a pair assigns the pair's lowest free id
+        // and delivers the definition to the RRCs involved, and later flows matching
+        // the definition join that bearer. After a handover the new pair assigns
+        // afresh, and a torn-down bearer's id returns to its pool (see
+        // forgetOnDemandDrbId()) -- exactly the identity lifecycle of a bearer nobody
+        // authored.
+        std::pair<MacNodeId, MacNodeId> pairKey = std::minmax(flow.sourceId, flow.destId);
+        auto it = ab.pairIds.find(pairKey);
+        if (it == ab.pairIds.end()) {
+            DrbId drbId = assignDrbId(flow.sourceId, flow.destId);
+            it = ab.pairIds.insert({pairKey, drbId}).first;
+            DrbDesc desc = ab.desc;
+            desc.key = DrbKey(NODEID_NONE, drbId);
+            desc.lcid = LogicalCid(num(drbId));
+            EV << "Smf::establishFromDefinition - on-demand definition materialized as DRB " << drbId
+               << " for UE " << ab.ueModule->getFullPath() << endl;
+            pushDrbToRrcs(ab.ueModule, desc);
+        }
+        flow.drbId = it->second;
+    }
     return establishDataConnection(flow, BearerRequest{ab.desc.rlcType, ab.desc.lcg, key});
 }
 

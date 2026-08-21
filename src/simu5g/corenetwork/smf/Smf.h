@@ -84,9 +84,10 @@ class Smf : public cSimpleModule
     // establishDataConnection(), exactly like packet-triggered establishment.
     virtual void establishStaticBearers();
 
-    // Establish the flow on the bearer a definition describes, assigning the
-    // definition its DRB id and delivering it to the RRCs first if it does not
-    // have one yet (i.e. an onDemandDrbs entry matched for the first time).
+    // Establish the flow on the bearer a definition describes: a static entry's flow
+    // joins the configured bearer under its pinned id; an on-demand entry is assigned
+    // its pair-scoped id, and delivered to the RRCs, when it first matches within the
+    // node pair.
     virtual DrbId establishFromDefinition(AuthoredBearer& ab, const FlowId& flow, const FlowBindingKey& key);
 
     // The definition a flow's bearer was authored from, or nullptr if none covers it
