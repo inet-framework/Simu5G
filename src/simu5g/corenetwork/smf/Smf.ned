@@ -115,6 +115,19 @@ package simu5g.corenetwork.smf;
 // staticDrbs entries first, then onDemandDrbs entries, each in table order, first
 // match wins.
 //
+// A flow that no definition covers is a configuration error: every on-demand bearer's
+// properties come from a definition entry, never from the packet. The parameter's
+// default value keeps configurations that author nothing working -- it carries the
+// well-known packet-name classes as ordinary catch-all definitions ("VoIP*" = LCG 0,
+// "gaming*" = LCG 2, "VoD*" = LCG 1, everything else LCG 3, all RLC UM), so overriding
+// the parameter replaces that classification with the configuration's own bearer set.
+// An "eps" entry describes bearers of SDAP-less stacks only; a "ue" pattern (or an
+// omitted "ue") covering UEs of both kinds simply skips the SDAP ones, but an entry
+// whose explicit "ue" pattern matches no UE with a compatible stack is an error.
+// D2D and multicast bearers are outside the definition system and are established
+// with a fixed transitional configuration (RLC UM, LCG 3) until they get definitions
+// of their own.
+//
 // Example (in an ini file; the first entry suits a stack with SDAP, the other two
 // one without):
 //
@@ -159,36 +172,18 @@ package simu5g.corenetwork.smf;
 // ~NrSdap (or ~Ip2Nic, for stacks without SDAP). See the VoIP-DL-MultiQfi-StaticBearers
 // configuration of the simulations/nr/standalone_drb example.
 //
-// The lcgRules parameter authors the logical channel group of on-demand bearers that
-// no bearer definition covers: flows in configurations that author no definitions, and
-// D2D and multicast bearers, which definitions never describe. Unlike a definition, a
-// rule authors a property only -- each flow still gets its own bearer, and nothing is
-// created or delivered ahead of establishment.
-// A JSON array of rules, evaluated in order, first match wins; a flow matching no rule
-// gets LCG 3 (the group of the non-GBR default bearer). A bearer established this way
-// takes its RLC mode from the defaultRlcType parameter -- a rule authors the LCG only.
-// Rule fields:
-//  - filter (string, optional): an inet::PacketFilter -- a message-name pattern
-//    (e.g. "VoIP*") or an expression written as "expr(...)"; omitted = matches all
-//  - lcg (int): the logical channel group, 0..3
-// The parameter's default value classifies by well-known packet-name prefixes
-// ("VoIP*" = LCG 0, "gaming*" = LCG 2, "VoD*" = LCG 1); override it -- e.g. with [] --
-// to turn that heuristic off.
-//
 simple Smf
 {
     parameters:
         string binderModule = default("binder");
         object staticDrbs = default([]);  // JSON array: [{bearerType, ue, drb, profile, qfiList, filters, lcg, rlcType, legs, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
-        object onDemandDrbs = default([]);  // JSON array, staticDrbs schema minus "drb" (and "ue" optional): bearers created when traffic first matches them; see banner comment for details
+        object onDemandDrbs = default([  // JSON array, staticDrbs schema minus "drb" (and "ue" optional): bearers created when traffic first matches them; the default value carries the legacy packet-name classification; see banner comment for details
+                {bearerType: "eps", filters: ["VoIP*"], lcg: 0, rlcType: "UM"},
+                {bearerType: "eps", filters: ["gaming*"], lcg: 2, rlcType: "UM"},
+                {bearerType: "eps", filters: ["VoDPacket*", "VoDFinishPacket*"], lcg: 1, rlcType: "UM"},
+                {bearerType: "eps", isDefault: true, lcg: 3, rlcType: "UM"}
+            ]);
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcType: "UM", gbr: true, ...}, ...}; see banner comment
         object staticBearers = default([]);  // JSON array: [{ue, lcg, rlcType, drb, technology}, ...]; see banner comment for details
-        string defaultRlcType @enum(TM,UM,AM) = default("UM");  // RLC mode of bearers established with no definition entry (packet-classified on-demand bearers, incl. D2D and multicast); definition entries state their own rlcType
-        object lcgRules = default([  // fallback LCG assignment for on-demand bearers no definition covers, [{filter, lcg}, ...], first match wins; see banner comment
-                {filter: "VoIP*", lcg: 0},
-                {filter: "gaming*", lcg: 2},
-                {filter: "VoDPacket*", lcg: 1},
-                {filter: "VoDFinishPacket*", lcg: 1}
-            ]);
         @display("i=block/cogwheel");
 }

@@ -48,31 +48,20 @@ class Smf : public cSimpleModule
     // to, the descriptor delivered to the RRCs, and its compiled packet filters. One
     // record per (entry x matched UE); records keep table order, staticDrbs before
     // onDemandDrbs, which is the match order of establishOnDemandBearer(). An
-    // onDemandDrbs record has no DRB id (DRBID_NONE) until its first match assigns one.
+    // onDemandDrbs record carries no DRB id of its own (desc.key stays DRBID_NONE):
+    // like every DRB id, an on-demand bearer's identity is pair-scoped, assigned at the
+    // definition's first match within each node pair (pairIds) and returned to the
+    // pair's pool with the bearer (see forgetOnDemandDrbId()) -- so a UE that moves to
+    // another serving node materializes the definition afresh there.
     struct AuthoredBearer {
         cModule *ueModule = nullptr;
-        DrbDesc desc;                  // key = (NODEID_NONE, drbId)
-        bool onDemand = false;         // true = onDemandDrbs entry (id assigned at first match)
+        DrbDesc desc;                  // key = (NODEID_NONE, drbId); DRBID_NONE for onDemand
+        bool onDemand = false;         // true = onDemandDrbs entry (ids assigned at first match, per pair)
         std::vector<std::unique_ptr<inet::PacketFilter>> filters;   // compiled desc.filters
+        std::map<std::pair<MacNodeId, MacNodeId>, DrbId> pairIds;   // onDemand only: id per materialized node pair
     };
     std::vector<AuthoredBearer> authoredBearers_;
 
-    // A fallback-classification rule compiled from the lcgRules parameter:
-    // what authors the logical channel group of an on-demand bearer that no bearer
-    // definition covers -- including D2D and multicast bearers, which definitions
-    // never describe. Authors a property only: flows classified here still mint
-    // their own bearers, they never share one the way definition-matched flows do.
-    // The parameter's default value carries the legacy packet-name mapping
-    // ("VoIP*" = LCG 0, ...).
-    struct LcgRule {
-        std::unique_ptr<inet::PacketFilter> filter;   // null = match all
-        Lcg lcg = Lcg(3);
-    };
-    std::vector<LcgRule> lcgRules_;
-
-    // The RLC mode of the bearers the fallback rules classify (definition entries state
-    // their own); the defaultRlcType parameter. Transitional, like lcgRules_.
-    LteRlcType defaultRlcType_ = UM;
 
   protected:
     void initialize(int stage) override;
@@ -89,13 +78,6 @@ class Smf : public cSimpleModule
     // documentation), in the last initialization stage. Each entry goes through
     // establishDataConnection(), exactly like packet-triggered establishment.
     virtual void establishStaticBearers();
-
-    // Parse and compile the lcgRules parameter; errors throw at setup.
-    virtual void parseLcgRules();
-
-    // First-match-wins over lcgRules_; LCG 3 -- the group of the non-GBR default
-    // bearer -- when no rule matches.
-    virtual Lcg classifyLcg(const inet::Packet *pkt);
 
     // Establish the flow on the bearer a definition describes, assigning the
     // definition its DRB id and delivering it to the RRCs first if it does not
@@ -141,12 +123,14 @@ class Smf : public cSimpleModule
     virtual DrbId establishDataConnection(const FlowId& flow, const BearerRequest& req);
 
     // Establish a bearer for a flow the requester identifies but does not describe:
-    // Ip2Nic supplies the flow, its classifier key and the triggering packet, and this
-    // method authors the bearer's properties. An "eps" bearer definition whose packet
-    // filter matches (staticDrbs first, then onDemandDrbs, in table order; the default
-    // entry catches what no filter matched) supplies them; a flow no definition covers
-    // falls back to the LCG the lcgRules derive from the packet, with the RLC mode
-    // filled from defaultRlcType. Returns the established bearer's DRB id.
+    // Ip2Nic supplies the flow, its classifier key and the triggering packet, and the
+    // bearer's properties come from the "eps" definition whose packet filter matches
+    // (staticDrbs first, then onDemandDrbs, in table order; the default entry catches
+    // what no filter matched). A flow no definition covers throws: the onDemandDrbs
+    // default value carries catch-all definitions, so only a configuration that
+    // replaced them with a non-covering set can get here. D2D and multicast bearers
+    // are outside the definition system and get a fixed transitional configuration
+    // (RLC UM, LCG 3). Returns the established bearer's DRB id.
     virtual DrbId establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& key, const inet::Packet *pkt);
 
     // Create the DRB serving the given QFI at the given UE from a matching "5gc"
@@ -171,6 +155,17 @@ class Smf : public cSimpleModule
     // released -- without this, a UE handing over repeatedly would exhaust the space.
     // Releasing an ID that is not in use is a no-op, so both endpoints may call it.
     virtual void releaseDrbId(MacNodeId a, MacNodeId b, DrbId drbId);
+
+    // True if a staticDrbs entry of the UE names this DRB id. A static definition owns
+    // its id for the whole run: releasing it would let assignDrbId() hand the id to an
+    // unrelated bearer while the definition still names it, so teardown must skip it.
+    virtual bool ownsStaticDrbId(cModule *ueModule, DrbId drbId);
+
+    // Forget an on-demand definition's materialization in the given node pair when its
+    // bearer is torn down: the id has returned to the pair's pool (releaseDrbId()), and
+    // the next matching flow assigns afresh. Forgetting an id that is not recorded is a
+    // no-op, so both endpoints may call it.
+    virtual void forgetOnDemandDrbId(cModule *ueModule, MacNodeId a, MacNodeId b, DrbId drbId);
 };
 
 } //namespace

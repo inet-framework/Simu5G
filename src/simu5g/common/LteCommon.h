@@ -133,10 +133,9 @@ struct FlowBindingKeyHash {
 
 // The configuration half of a bearer-establishment request: what the requester asks RRC
 // to set the bearer up as. rlcType = UNKNOWN_RLC_TYPE means the requester states nothing;
-// the SMF then resolves it from the bearer's definition entry, or from its defaultRlcType
-// parameter for a bearer no entry describes, before the request reaches RRC. The D2D
-// mode-switch path passes it explicitly because it transports already-decided
-// configuration.
+// the SMF then resolves the request from the bearer's definition entry before it reaches
+// RRC. The D2D mode-switch path passes explicit values because it transports
+// already-decided configuration.
 struct BearerRequest {
     LteRlcType rlcType = UM;
     Lcg lcg = Lcg(0);   // logicalChannelGroup (mac-LogicalChannelConfig)

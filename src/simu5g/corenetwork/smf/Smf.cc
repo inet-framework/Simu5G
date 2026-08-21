@@ -35,11 +35,6 @@ void Smf::initialize(int stage)
         // and before INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION, where the scheduler takes
         // the address of the QoS map that this fills through RRC.
         configureDrbs();
-        parseLcgRules();
-        std::string defaultRlcTypeStr = par("defaultRlcType").stdstringValue();
-        defaultRlcType_ = aToRlcType(defaultRlcTypeStr);
-        if (defaultRlcType_ == UNKNOWN_RLC_TYPE)
-            throw cRuntimeError("invalid defaultRlcType '%s', must be \"TM\", \"UM\" or \"AM\"", defaultRlcTypeStr.c_str());
     }
     else if (stage == inet::INITSTAGE_LAST) {
         establishStaticBearers();
@@ -105,6 +100,26 @@ void Smf::releaseDrbId(MacNodeId a, MacNodeId b, DrbId drbId)
     if (it != drbIdsInUse_.end() && it->second.erase(drbId) != 0)
         EV << "Smf::releaseDrbId - DRB " << drbId << " of the node pair (" << pair.first
            << ", " << pair.second << ") is free again" << endl;
+}
+
+bool Smf::ownsStaticDrbId(cModule *ueModule, DrbId drbId)
+{
+    for (const AuthoredBearer& ab : authoredBearers_)
+        if (!ab.onDemand && ab.ueModule == ueModule && ab.desc.getDrbId() == drbId)
+            return true;
+    return false;
+}
+
+void Smf::forgetOnDemandDrbId(cModule *ueModule, MacNodeId a, MacNodeId b, DrbId drbId)
+{
+    std::pair<MacNodeId, MacNodeId> pairKey = std::minmax(a, b);
+    for (AuthoredBearer& ab : authoredBearers_) {
+        if (!ab.onDemand || ab.ueModule != ueModule)
+            continue;
+        auto it = ab.pairIds.find(pairKey);
+        if (it != ab.pairIds.end() && it->second == drbId)
+            ab.pairIds.erase(it);
+    }
 }
 
 Smf::~Smf()
@@ -227,6 +242,15 @@ void Smf::configureDrbs()
         for (const auto& [drbId, drb] : drbs)
             pushDrbToRrcs(ueModule, drb);
     }
+}
+
+// Whether the UE's stack contains SDAP. Structure, not configuration: the sdap
+// submodule exists iff the NIC's hasSdap is set, the same resolvability test
+// BearerManagement::configureDrb() applies on its own side.
+static bool ueStackHasSdap(cModule *ueModule)
+{
+    cModule *nic = ueModule->getSubmodule("cellularNic");
+    return nic != nullptr && nic->getSubmodule("sdap") != nullptr;
 }
 
 void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
@@ -465,6 +489,14 @@ void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
                 path.erase(0, networkPrefix.size());
             if (!matcher.matches(path.c_str()))
                 continue;
+            // An "eps" definition describes a bearer of an SDAP-less stack (SDAP
+            // stacks select bearers by QFI, so an eps record could never match there,
+            // and its isDefault flag would wrongly suppress the auto-default marking
+            // above). A pattern legitimately covers UEs of both kinds, so
+            // incompatible UEs are skipped rather than rejected; numMatched counts
+            // compatible UEs only, so an entry naming only such UEs still errors.
+            if (drb.bearerType == BEARER_EPS && ueStackHasSdap(ueModule))
+                continue;
             numMatched++;
             if (!onDemand && !drbsOfUe[ueModule].insert({drbId, drb}).second)
                 throw cRuntimeError("%s entry %d: DRB %d of UE '%s' is already configured by an earlier entry",
@@ -484,8 +516,9 @@ void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
             }
             authoredBearers_.push_back(std::move(ab));
         }
-        if (numMatched == 0)
-            throw cRuntimeError("%s entry %d: its \"ue\" pattern '%s' matches no registered UE", paramName, i, uePattern);
+        if (numMatched == 0 && entry->containsKey("ue"))
+            throw cRuntimeError("%s entry %d: its \"ue\" pattern '%s' matches no registered UE with a "
+                    "compatible stack", paramName, i, uePattern);
     }
 }
 
@@ -612,53 +645,65 @@ DrbId Smf::establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& key
 {
     Enter_Method_Silent("establishOnDemandBearer");
 
-    // The requester brings identity only; the bearer's properties are authored here.
-    // Authored definitions describe infrastructure bearers, so multicast and D2D
-    // flows go straight to the fallback below.
-    if (flow.multicastGroupId == NODEID_NONE && flow.d2dTxPeerId == NODEID_NONE && flow.d2dRxPeerId == NODEID_NONE
-            && !authoredBearers_.empty()) {
-        MacNodeId ueId = getNodeTypeById(flow.sourceId) == UE ? flow.sourceId : flow.destId;
-        cModule *ueModule = binder_->getNodeModule(ueId);
+    // D2D and multicast bearers are outside the definition system (definitions
+    // describe infrastructure bearers), and are established with a fixed transitional
+    // configuration -- RLC UM on LCG 3, the non-GBR default bearer's group -- until
+    // they get definitions of their own.
+    if (flow.multicastGroupId != NODEID_NONE || flow.d2dTxPeerId != NODEID_NONE || flow.d2dRxPeerId != NODEID_NONE)
+        return establishDataConnection(flow, BearerRequest{UM, Lcg(3), key});
 
-        if (ueModule != nullptr) {
-            // First matching definition wins, in table order (staticDrbs records are
-            // retained ahead of onDemandDrbs ones); the default eps entry catches the
-            // flows no filter matched.
-            AuthoredBearer *defaultDef = nullptr;
-            for (auto& ab : authoredBearers_) {
-                if (ab.ueModule != ueModule || ab.desc.bearerType != BEARER_EPS)
-                    continue;
-                for (auto& filter : ab.filters)
-                    if (filter->matches(pkt))
-                        return establishFromDefinition(ab, flow, key);
-                if (ab.desc.isDefault && defaultDef == nullptr)
-                    defaultDef = &ab;
-            }
-            if (defaultDef != nullptr)
-                return establishFromDefinition(*defaultDef, flow, key);
+    // The requester brings identity only; the bearer's properties come from the
+    // definition the flow matches. First matching definition wins, in table order
+    // (staticDrbs records are retained ahead of onDemandDrbs ones); the default eps
+    // entry catches the flows no filter matched.
+    MacNodeId ueId = getNodeTypeById(flow.sourceId) == UE ? flow.sourceId : flow.destId;
+    cModule *ueModule = binder_->getNodeModule(ueId);
+    if (ueModule != nullptr) {
+        AuthoredBearer *defaultDef = nullptr;
+        for (auto& ab : authoredBearers_) {
+            if (ab.ueModule != ueModule || ab.desc.bearerType != BEARER_EPS)
+                continue;
+            for (auto& filter : ab.filters)
+                if (filter->matches(pkt))
+                    return establishFromDefinition(ab, flow, key);
+            if (ab.desc.isDefault && defaultDef == nullptr)
+                defaultDef = &ab;
         }
+        if (defaultDef != nullptr)
+            return establishFromDefinition(*defaultDef, flow, key);
     }
 
-    // No definition covers the flow: author the bearer from the packet
-    return establishDataConnection(flow, BearerRequest{UNKNOWN_RLC_TYPE, classifyLcg(pkt), key});
+    // Every on-demand bearer's properties come from a definition entry, never from
+    // the packet; the onDemandDrbs default value carries catch-all definitions, so
+    // only a configuration that replaced them with a non-covering set can get here.
+    throw cRuntimeError("no bearer definition covers packet '%s' of UE '%s' (nodeId=%d) -- an on-demand "
+            "bearer requires a covering staticDrbs/onDemandDrbs entry",
+            pkt->getName(), ueModule ? ueModule->getFullPath().c_str() : "?", (int)num(ueId));
 }
 
 DrbId Smf::establishFromDefinition(AuthoredBearer& ab, const FlowId& flowIn, const FlowBindingKey& key)
 {
     FlowId flow = flowIn;
-    if (ab.desc.getDrbId() == DRBID_NONE) {
-        // First match of an on-demand definition: assign its id within the flow's node
-        // pair and deliver it to the RRCs, as configureDrbs() does for static
-        // definitions -- from here on the bearer has an authored identity, which later
-        // flows matching the same definition join.
+
+    // A DRB id is pair-scoped, so the definition materializes once per node pair:
+    // the first match within a pair assigns the pair's lowest free id and delivers
+    // the definition to the RRCs involved, and later flows matching the definition
+    // join that bearer. After a handover the new pair assigns afresh, and a
+    // torn-down bearer's id returns to its pool (see forgetOnDemandDrbId()) --
+    // exactly the identity lifecycle of a bearer nobody authored.
+    std::pair<MacNodeId, MacNodeId> pairKey = std::minmax(flow.sourceId, flow.destId);
+    auto it = ab.pairIds.find(pairKey);
+    if (it == ab.pairIds.end()) {
         DrbId drbId = assignDrbId(flow.sourceId, flow.destId);
-        ab.desc.key = DrbKey(NODEID_NONE, drbId);
-        ab.desc.lcid = LogicalCid(num(drbId));
+        it = ab.pairIds.insert({pairKey, drbId}).first;
+        DrbDesc desc = ab.desc;
+        desc.key = DrbKey(NODEID_NONE, drbId);
+        desc.lcid = LogicalCid(num(drbId));
         EV << "Smf::establishFromDefinition - on-demand definition materialized as DRB " << drbId
            << " for UE " << ab.ueModule->getFullPath() << endl;
-        pushDrbToRrcs(ab.ueModule, ab.desc);
+        pushDrbToRrcs(ab.ueModule, desc);
     }
-    flow.drbId = ab.desc.getDrbId();
+    flow.drbId = it->second;
     return establishDataConnection(flow, BearerRequest{ab.desc.rlcType, ab.desc.lcg, key});
 }
 
@@ -675,53 +720,25 @@ DrbId Smf::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
             continue;
         if (!contains(ab.desc.qfiList, qfi))
             continue;
-        if (ab.desc.getDrbId() == DRBID_NONE) {
-            MacNodeId servingNodeId = binder_->getServingNode(ueNodeId);
-            if (servingNodeId == NODEID_NONE)
-                return DRBID_NONE;   // not attached, nowhere to create the bearer
+        MacNodeId servingNodeId = binder_->getServingNode(ueNodeId);
+        if (servingNodeId == NODEID_NONE)
+            return DRBID_NONE;   // not attached, nowhere to create the bearer
+        // materialized once per node pair, like establishFromDefinition()
+        std::pair<MacNodeId, MacNodeId> pairKey = std::minmax(ueNodeId, servingNodeId);
+        auto it = ab.pairIds.find(pairKey);
+        if (it == ab.pairIds.end()) {
             DrbId drbId = assignDrbId(ueNodeId, servingNodeId);
-            ab.desc.key = DrbKey(NODEID_NONE, drbId);
-            ab.desc.lcid = LogicalCid(num(drbId));
+            it = ab.pairIds.insert({pairKey, drbId}).first;
+            DrbDesc desc = ab.desc;
+            desc.key = DrbKey(NODEID_NONE, drbId);
+            desc.lcid = LogicalCid(num(drbId));
             EV << "Smf::createOnDemandDrbForQfi - QFI " << (int)num(qfi) << " gets on-demand DRB " << drbId
                << " at UE " << ueModule->getFullPath() << endl;
-            pushDrbToRrcs(ab.ueModule, ab.desc);
+            pushDrbToRrcs(ab.ueModule, desc);
         }
-        return ab.desc.getDrbId();
+        return it->second;
     }
     return DRBID_NONE;
-}
-
-void Smf::parseLcgRules()
-{
-    const cValueArray *arr = check_and_cast<const cValueArray *>(par("lcgRules").objectValue());
-    for (int i = 0; i < (int)arr->size(); i++) {
-        const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
-        for (const auto& [key, value] : entry->getFields())
-            if (key != "filter" && key != "lcg")
-                throw cRuntimeError("lcgRules entry %d: unknown field '%s'", i, key.c_str());
-
-        LcgRule rule;
-        if (!entry->containsKey("lcg"))
-            throw cRuntimeError("lcgRules entry %d: missing required field \"lcg\"", i);
-        long lcgVal = (long)entry->get("lcg").intValue();
-        if (lcgVal < 0 || lcgVal >= NUM_LCGS)
-            throw cRuntimeError("lcgRules entry %d: invalid lcg %ld, must be 0..%d", i, lcgVal, NUM_LCGS - 1);
-        rule.lcg = Lcg(lcgVal);
-        if (entry->containsKey("filter")) {
-            rule.filter = std::make_unique<inet::PacketFilter>();
-            configurePacketFilter(*rule.filter, entry->get("filter").stringValue());
-        }
-        lcgRules_.push_back(std::move(rule));
-    }
-}
-
-Lcg Smf::classifyLcg(const inet::Packet *pkt)
-{
-    // LCG 3 -- the group of the non-GBR default bearer -- when no rule matches
-    for (const LcgRule& rule : lcgRules_)
-        if (rule.filter == nullptr || rule.filter->matches(pkt))
-            return rule.lcg;
-    return Lcg(3);
 }
 
 DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& reqIn)
@@ -740,18 +757,18 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
     else
         reserveDrbId(flow.sourceId, peerId, flow.drbId);   // named by the requester; keep assignDrbId off it
 
-    // A request that states no RLC mode (SDAP's, for one) takes it from the bearer's
-    // definition entry; a bearer no entry describes gets the transitional
-    // defaultRlcType. Definition entries always state theirs, so the request RRC
-    // receives is always concrete.
+    // A request that states no RLC mode (SDAP's, for one) takes it, and the LCG, from
+    // the bearer's definition entry. Definition entries always state their RLC mode,
+    // so the request RRC receives is always concrete.
     BearerRequest req = reqIn;
     if (req.rlcType == UNKNOWN_RLC_TYPE) {
-        if (const DrbDesc *def = findBearerDefinition(flow)) {
-            req.rlcType = def->rlcType;
-            req.lcg = def->lcg;
-        }
-        else
-            req.rlcType = defaultRlcType_;
+        const DrbDesc *def = findBearerDefinition(flow);
+        if (def == nullptr)
+            throw cRuntimeError("bearer establishment for DRB %d carries no RLC mode, and no definition "
+                    "entry names that DRB -- a request that states no configuration is only valid for "
+                    "definition-covered bearers", (int)num(flow.drbId));
+        req.rlcType = def->rlcType;
+        req.lcg = def->lcg;
     }
 
     bool dualConnected = isDualConnectivityRequired(flow);
@@ -830,9 +847,19 @@ const DrbDesc *Smf::findBearerDefinition(const FlowId& flow)
     if (getNodeTypeById(ueId) != UE)
         return nullptr;
     cModule *ueModule = binder_->getNodeModule(ueId);
-    for (const AuthoredBearer& ab : authoredBearers_)
-        if (ab.ueModule == ueModule && ab.desc.getDrbId() == flow.drbId)
+    std::pair<MacNodeId, MacNodeId> pairKey = std::minmax(flow.sourceId, flow.destId);
+    for (const AuthoredBearer& ab : authoredBearers_) {
+        if (ab.ueModule != ueModule)
+            continue;
+        if (!ab.onDemand && ab.desc.getDrbId() == flow.drbId)
             return &ab.desc;
+        if (ab.onDemand) {
+            // an on-demand definition's id is per node pair (see establishFromDefinition())
+            auto it = ab.pairIds.find(pairKey);
+            if (it != ab.pairIds.end() && it->second == flow.drbId)
+                return &ab.desc;
+        }
+    }
     return nullptr;
 }
 

@@ -122,8 +122,9 @@ class BearerManagement : public cSimpleModule
     // Checks req.rlcType before any use of it (entity type selection, materializeDrb),
     // called once at the top of each establishment entry point. The delivered configuration
     // wins (a conflicting explicit request throws). The SMF resolves every request before
-    // it reaches RRC (from the bearer's definition entry, or its defaultRlcType), so an
-    // rlcType still UNKNOWN_RLC_TYPE here is a requester bug and throws.
+    // it reaches RRC (from the bearer's definition entry, or the fixed D2D/multicast
+    // configuration), so an rlcType still UNKNOWN_RLC_TYPE here is a requester bug and
+    // throws.
     virtual BearerRequest resolveBearerRequest(const BearerRequest& req, const FlowId& flow, MacNodeId peerId);
 
     virtual void setRlcEntityParams(cModule *entity, bool isNr);

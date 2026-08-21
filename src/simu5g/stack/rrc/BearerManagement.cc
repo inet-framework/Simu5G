@@ -172,16 +172,21 @@ void BearerManagement::handleMessage(cMessage *msg)
 
 void BearerManagement::releaseDrbIdOf(DrbKey bearer)
 {
-    // A configured definition owns its id for the whole run: releasing it would let
+    // A static definition owns its id for the whole run: releasing it would let
     // assignDrbId() hand the id to an unrelated bearer while the definition still
-    // names it, so only bearers without one return their id to the pool. (Configured
-    // entries describe infrastructure bearers, keyed by NODEID_NONE on the UE side and
-    // by the UE id on the eNB side; a D2D bearer's peer is a UE, so it cannot match.)
+    // names it. An on-demand definition's id is pair-scoped like any other bearer's:
+    // it returns to the pool with its bearer, and the definition materializes afresh
+    // on the next match -- which after a handover is a new node pair. (Definitions
+    // describe infrastructure bearers, keyed by NODEID_NONE on the UE side and by the
+    // UE id on the eNB side; a D2D bearer's peer is a UE, so it cannot match.)
     bool infraBearer = (registration_->getNodeType() == UE)
             ? getNodeTypeById(bearer.getNodeId()) == NODEB   // peer is my serving node
             : true;                                          // eNB-side bearers are keyed by their UE
-    MacNodeId cfgPeer = (registration_->getNodeType() == UE) ? NODEID_NONE : bearer.getNodeId();
-    if (infraBearer && drbTableModule->findConfiguredDrb(DrbKey(cfgPeer, bearer.getDrbId())) != nullptr)
+    MacNodeId ueNodeId = (registration_->getNodeType() == UE)
+            ? (registration_->getLteNodeId() != NODEID_NONE ? registration_->getLteNodeId() : registration_->getNrNodeId())
+            : bearer.getNodeId();
+    cModule *ueModule = infraBearer ? binderModule->getNodeModule(ueNodeId) : nullptr;
+    if (ueModule != nullptr && smfModule->ownsStaticDrbId(ueModule, bearer.getDrbId()))
         return;
 
     // The identity belongs to the pool of the (this node, peer) pair. A dual-stack node
@@ -189,10 +194,16 @@ void BearerManagement::releaseDrbIdOf(DrbKey bearer)
     // both pools -- releasing an id that is not in use there is a no-op.
     MacNodeId lteId = registration_->getLteNodeId();
     MacNodeId nrId = registration_->getNrNodeId();
-    if (lteId != NODEID_NONE)
+    if (lteId != NODEID_NONE) {
         smfModule->releaseDrbId(lteId, bearer.getNodeId(), bearer.getDrbId());
-    if (nrId != NODEID_NONE)
+        if (ueModule != nullptr)
+            smfModule->forgetOnDemandDrbId(ueModule, lteId, bearer.getNodeId(), bearer.getDrbId());
+    }
+    if (nrId != NODEID_NONE) {
         smfModule->releaseDrbId(nrId, bearer.getNodeId(), bearer.getDrbId());
+        if (ueModule != nullptr)
+            smfModule->forgetOnDemandDrbId(ueModule, nrId, bearer.getNodeId(), bearer.getDrbId());
+    }
 }
 
 void BearerManagement::notifyBearerEstablished(DrbKey key)
@@ -307,7 +318,7 @@ BearerRequest BearerManagement::resolveBearerRequest(const BearerRequest& reqIn,
 
     if (req.rlcType == UNKNOWN_RLC_TYPE)
         throw cRuntimeError("Bearer establishment request for DRB %d (peer %d) carries no RLC mode -- "
-                "the SMF resolves every request from the bearer's definition entry or its defaultRlcType, "
+                "the SMF resolves every request from the bearer's definition entry, "
                 "so an unresolved request reaching RRC is a requester bug",
                 (int)num(flow.drbId), (int)num(peerId));
     return req;
