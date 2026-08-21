@@ -79,10 +79,13 @@ class Smf : public cSimpleModule
     // configuration is pushed from here, and no module ever reads it back out.
     virtual void configureDrbs();
 
-    // Establish the bearers described by the staticBearers parameter (see NED
-    // documentation), in the last initialization stage. Each entry goes through
-    // establishDataConnection(), exactly like packet-triggered establishment.
-    virtual void establishStaticBearers();
+    // Establish the bearers the staticDrbs entries describe, in the last
+    // initialization stage: each retained static record goes through
+    // establishDataConnection(), exactly like packet-triggered establishment, so
+    // traffic finds the configured bearers in place. A dual-stack UE's bearer is
+    // established on the stack packet-triggered establishment would pick; a UE
+    // attached on no stack is a configuration error.
+    virtual void establishStaticDrbs();
 
     // Establish the flow on the bearer a definition describes: a static entry's flow
     // joins the configured bearer under its pinned id; an on-demand entry is assigned
@@ -153,7 +156,7 @@ class Smf : public cSimpleModule
     virtual DrbId assignDrbId(MacNodeId a, MacNodeId b);
 
     // Mark an externally chosen DRB ID as in use, so assignDrbId() cannot hand out the
-    // same one later (SDAP and the staticBearers entries name their bearers themselves).
+    // same one later (SDAP and the static definitions name their bearers themselves).
     virtual void reserveDrbId(MacNodeId a, MacNodeId b, DrbId drbId);
 
     // Return a DRB ID to its pair's pool when the bearer is torn down. DRB identities are

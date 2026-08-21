@@ -50,7 +50,7 @@ simple NrSdap like INrSdap
     parameters:
         string nodeRole @enum("UE", "gNB");  // Node role: "UE" or "gNB" - determines reflective QoS behavior
         string smfModule = default("smf");
-        bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (see the staticBearers parameter of ~Smf)
+        bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (static bearers are established up front; see the staticDrbs parameter of ~Smf)
         string reflectiveQosTableModule = default("");  // UE only: path to ReflectiveQosTable module (empty = disabled)
         bool useReflectiveQos = default(false); // UE only
         bool reflectiveQosOverridesQfi = default(false);  // UE only: when a packet has both a classified QFI (QfiReq tag) and a reflective QoS match, true = the reflective QFI wins, false = the classified one; a packet with only one of the two always uses it

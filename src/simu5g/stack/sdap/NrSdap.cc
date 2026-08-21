@@ -211,7 +211,7 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     // an already-seen (drbId, destId) pair.
     if (!establishedBearers_.count(DrbKey(lteInfo->getDestId(), drb->getDrbId()))) {
         if (!establishBearersOnDemand_)
-            throw cRuntimeError("SDAP TX: no established bearer for DRB %d (peer nodeId=%d), and on-demand bearer establishment is disabled -- missing or mismatched staticBearers entry?",
+            throw cRuntimeError("SDAP TX: no established bearer for DRB %d (peer nodeId=%d), and on-demand bearer establishment is disabled -- missing or mismatched staticDrbs entry?",
                     (int)num(drb->getDrbId()), (int)num(lteInfo->getDestId()));
         // SDAP decides neither the LCG nor the RLC mode: the SMF resolves both from
         // the bearer's definition entry at establishment (see

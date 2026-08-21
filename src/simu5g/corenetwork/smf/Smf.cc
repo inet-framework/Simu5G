@@ -37,7 +37,7 @@ void Smf::initialize(int stage)
         configureDrbs();
     }
     else if (stage == inet::INITSTAGE_LAST) {
-        establishStaticBearers();
+        establishStaticDrbs();
     }
 }
 
@@ -584,88 +584,45 @@ void Smf::pushDrbToRrcs(cModule *ueModule, const DrbDesc& drb)
     }
 }
 
-void Smf::establishStaticBearers()
+void Smf::establishStaticDrbs()
 {
-    auto *entries = check_and_cast<cValueArray *>(par("staticBearers").objectValue());
-    for (int i = 0; i < (int)entries->size(); i++) {
-        const cValueMap *entry = check_and_cast<const cValueMap *>(entries->get(i).objectValue());
+    for (AuthoredBearer& ab : authoredBearers_) {
+        if (ab.onDemand)
+            continue;
 
-        // resolve the UE module to its registered node id(s) -- one per stack
-        const char *uePath = entry->get("ue").stringValue();
-        cModule *ueModule = getSimulation()->getSystemModule()->findModuleByPath(uePath);
-        if (ueModule == nullptr)
-            throw cRuntimeError("staticBearers: no module at path '%s'", uePath);
+        // the UE's registered node id(s) -- one per stack
         MacNodeId lteUeId = NODEID_NONE, nrUeId = NODEID_NONE;
         for (const auto& [nodeId, info] : binder_->getNodeInfoMap())
-            if (info.moduleRef == ueModule) {
-                if (getNodeTypeById(nodeId) != UE)
-                    throw cRuntimeError("staticBearers: module '%s' is not a UE", uePath);
+            if (info.moduleRef == ab.ueModule)
                 (num(nodeId) >= NR_UE_MIN_ID ? nrUeId : lteUeId) = nodeId;
-            }
-        if (lteUeId == NODEID_NONE && nrUeId == NODEID_NONE)
-            throw cRuntimeError("staticBearers: module '%s' is not a registered UE", uePath);
 
-        // select the UE's stack: the explicit technology field, or the same default
-        // that packet-triggered establishment uses (see Ip2Nic::assignBearer): the
-        // technology-neutral LTE id when the serving nodes form a DC setup (so that
-        // establishDataConnection() splits the bearer into legs), the NR id otherwise
-        MacNodeId ueId;
-        if (entry->containsKey("technology")) {
-            std::string tech = entry->get("technology").stdstringValue();
-            if (tech != "LTE" && tech != "NR")
-                throw cRuntimeError("staticBearers: invalid technology '%s' for UE '%s', must be \"LTE\" or \"NR\"", tech.c_str(), uePath);
-            ueId = (tech == "NR") ? nrUeId : lteUeId;
-            if (ueId == NODEID_NONE)
-                throw cRuntimeError("staticBearers: UE '%s' has no %s stack", uePath, tech.c_str());
-        }
-        else {
-            bool lteAttached = lteUeId != NODEID_NONE && binder_->getServingNode(lteUeId) != NODEID_NONE;
-            bool nrAttached = nrUeId != NODEID_NONE && binder_->getServingNode(nrUeId) != NODEID_NONE;
-            if (!lteAttached && !nrAttached)
-                throw cRuntimeError("staticBearers: UE '%s' is not attached to any cell", uePath);
-            MacNodeId lteNodeB = lteAttached ? binder_->getServingNode(lteUeId) : NODEID_NONE;
-            bool dcSetup = lteNodeB != NODEID_NONE &&
-                    (binder_->getSecondaryNode(lteNodeB) != NODEID_NONE || binder_->getMasterNodeOrSelf(lteNodeB) != lteNodeB);
-            ueId = (lteAttached && nrAttached && dcSetup) ? lteUeId :
-                   nrAttached ? nrUeId : lteUeId;
-        }
-
-        MacNodeId servingNodeId = binder_->getServingNode(ueId);
-        if (servingNodeId == NODEID_NONE)
-            throw cRuntimeError("staticBearers: UE '%s' (nodeId=%hu) is not attached to a cell", uePath, num(ueId));
-
-        // DRB id: explicit (establishDataConnection() reserves it, so on-demand
-        // establishment cannot hand out the same id later), or left unset for it to
-        // assign the lowest free one
-        DrbId drbId = DRBID_NONE;
-        if (entry->containsKey("drb"))
-            drbId = DrbId(entry->get("drb").intValue());
-
-        Lcg lcg = Lcg(0);
-        if (entry->containsKey("lcg")) {
-            long lcgVal = (long)entry->get("lcg").intValue();
-            if (lcgVal < 0 || lcgVal >= NUM_LCGS)
-                throw cRuntimeError("staticBearers: invalid lcg %ld for UE '%s', must be 0..%d",
-                        lcgVal, uePath, NUM_LCGS - 1);
-            lcg = Lcg(lcgVal);
-        }
-        if (!entry->containsKey("rlcType"))
-            throw cRuntimeError("staticBearers: missing rlcType for UE '%s' -- an entry must state its "
-                    "bearer's RLC mode (\"TM\", \"UM\" or \"AM\")", uePath);
-        std::string rlcTypeStr = entry->get("rlcType").stdstringValue();
-        LteRlcType rlcType = aToRlcType(rlcTypeStr);
-        if (rlcType == UNKNOWN_RLC_TYPE)
-            throw cRuntimeError("staticBearers: invalid rlcType '%s' for UE '%s'", rlcTypeStr.c_str(), uePath);
+        // select the UE's stack, with the same default that packet-triggered
+        // establishment uses (see Ip2Nic::assignBearer): the technology-neutral LTE id
+        // when the serving nodes form a DC setup (so that establishDataConnection()
+        // splits the bearer into legs), the NR id otherwise. A stack that is not
+        // attached is skipped, like in the configuration push (pushDrbToRrcs()); a UE
+        // attached on no stack has nowhere to establish, which is an error.
+        bool lteAttached = lteUeId != NODEID_NONE && binder_->getServingNode(lteUeId) != NODEID_NONE;
+        bool nrAttached = nrUeId != NODEID_NONE && binder_->getServingNode(nrUeId) != NODEID_NONE;
+        if (!lteAttached && !nrAttached)
+            throw cRuntimeError("staticDrbs: cannot establish DRB %d of UE '%s': the UE is not attached to any cell",
+                    (int)num(ab.desc.getDrbId()), ab.ueModule->getFullPath().c_str());
+        MacNodeId lteNodeB = lteAttached ? binder_->getServingNode(lteUeId) : NODEID_NONE;
+        bool dcSetup = lteNodeB != NODEID_NONE &&
+                (binder_->getSecondaryNode(lteNodeB) != NODEID_NONE || binder_->getMasterNodeOrSelf(lteNodeB) != lteNodeB);
+        MacNodeId ueId = (lteAttached && nrAttached && dcSetup) ? lteUeId :
+                         nrAttached ? nrUeId : lteUeId;
 
         FlowId flow;
         flow.sourceId = ueId;
-        flow.destId = servingNodeId;
+        flow.destId = binder_->getServingNode(ueId);
         flow.direction = UL;
-        flow.drbId = drbId;
+        flow.drbId = ab.desc.getDrbId();
 
-        EV << "Smf::establishStaticBearers - establishing a bearer for UE '" << uePath
-           << "' (nodeId=" << ueId << ") towards serving node " << servingNodeId << endl;
-        establishDataConnection(flow, BearerRequest{rlcType, lcg});
+        EV << "Smf::establishStaticDrbs - establishing DRB " << flow.drbId << " of UE '"
+           << ab.ueModule->getFullPath() << "' (nodeId=" << ueId << ") towards serving node "
+           << flow.destId << endl;
+        establishDataConnection(flow, BearerRequest{ab.desc.rlcType, ab.desc.lcg});
     }
 }
 
@@ -782,7 +739,7 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
     Enter_Method_Silent("establishDataConnection");
 
     // Assign the bearer's DRB id unless the requester brought one (SDAP and the
-    // staticBearers entries name their bearers explicitly). IDs are unique per node
+    // static definitions name their bearers explicitly). IDs are unique per node
     // pair; for multicast the "pair" is (sender, group), there being no single peer.
     FlowId flow = flowIn;
     MacNodeId peerId = (flow.multicastGroupId != NODEID_NONE) ? flow.multicastGroupId : flow.destId;

@@ -26,6 +26,17 @@ package simu5g.corenetwork.smf;
 // of each node involved in a bearer -- the UE and its serving node -- what to set up, and
 // RRC pushes on what each of its layers consumes. Nothing reads this configuration back out.
 //
+// A static bearer is not only configured but also established up front, in the last
+// initialization stage: each entry results in the same establishment call that
+// packet-triggered setup makes, so traffic finds the bearer in place. A dual-stack UE's
+// bearer is established on the stack that packet-triggered establishment would pick
+// (split into per-technology legs when the UE is served by a node pair in dual
+// connectivity); an entry whose UE is attached to no cell at that point is a
+// configuration error. To make the static configuration the only source of bearers,
+// disable packet-triggered establishment via the establishBearersOnDemand parameter of
+// ~NrSdap (or ~Ip2Nic, for stacks without SDAP); see the VoIP-DL-MultiQfi-NoOnDemand
+// configuration of the simulations/nr/standalone_drb example.
+//
 // Because an entry names its UE by module path rather than by node id, the configuration
 // follows the UE from cell to cell, and neither end of the radio link is configured
 // directly from the ini.
@@ -151,35 +162,6 @@ package simu5g.corenetwork.smf;
 // ("5gc") and the SingleCell-DL-OnDemandDrb configuration of simulations/lte/tutorial
 // ("eps") for working setups.
 //
-// The staticBearers parameter establishes data radio bearers up front, in the last
-// initialization stage, instead of on the first packet of a flow. Each entry describes
-// one bearer between a UE and its serving node (established as duplex, and split into
-// two legs when the UE is served by a node pair in dual connectivity), and results in
-// the same establishment call that packet-triggered setup makes. Entry fields:
-//  - ue (string): module path of the UE node, relative to the network (e.g. "ue[0]")
-//  - lcg (int, optional): the bearer's logical channel group (0..3); default: 0
-//  - rlcType (string, required): "TM", "UM" or "AM"
-//  - drb (int, optional): DRB identity of the bearer; useful for matching the DRB ids
-//    of the staticDrbs parameter; omitted = the next free id for the node pair
-//  - technology (string, optional): "LTE" or "NR", selects the stack of a dual-stack
-//    UE; omitted = the NR stack if the UE is attached with it, except when serving
-//    nodes are in a dual-connectivity setup (where establishment splits the bearer
-//    into per-technology legs itself)
-//
-// Example (in an ini file):
-//
-// <pre>
-// *.smf.staticBearers = [
-//     {ue: "ue[0]", drb: 0, rlcType: "UM"},
-//     {ue: "ue[1]", drb: 1, lcg: 2, rlcType: "AM"}
-//     ]
-// </pre>
-//
-// To make the static configuration the only source of bearers, disable
-// packet-triggered establishment via the establishBearersOnDemand parameter of
-// ~NrSdap (or ~Ip2Nic, for stacks without SDAP). See the VoIP-DL-MultiQfi-StaticBearers
-// configuration of the simulations/nr/standalone_drb example.
-//
 simple Smf
 {
     parameters:
@@ -192,7 +174,6 @@ simple Smf
                 {bearerType: "eps", isDefault: true, lcg: 3, rlcType: "UM"}
             ]);
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcType: "UM", gbr: true, ...}, ...}; see banner comment
-        object staticBearers = default([]);  // JSON array: [{ue, lcg, rlcType, drb, technology}, ...]; see banner comment for details
 
         // QoS-derived RAN defaults for definitions that do not state rlcType/lcg themselves
         // (operator policy, not spec-mandated: 3GPP standardizes the QoS characteristics,
