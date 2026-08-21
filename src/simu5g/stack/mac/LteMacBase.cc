@@ -220,8 +220,8 @@ void LteMacBase::createOutgoingConnection(MacCid cid, const FlowDescriptor& conn
     // register connection to LCG map. The logical-channel configuration RRC pushes via
     // configureLogicalChannel() must already be in place -- the stage-2 both-directions
     // establishment invariant that getLogicalChannelConfig()'s strict throw enforces.
-    LteTrafficClass tClass = getLogicalChannelConfig(cid).lcg;
-    lcgMap_.insert(LcgPair(tClass, CidBufferPair(cid, virtualBuffer)));
+    Lcg lcg = getLogicalChannelConfig(cid).lcg;
+    lcgMap_.insert(LcgPair(lcg, CidBufferPair(cid, virtualBuffer)));
 }
 
 void LteMacBase::deleteOutgoingConnection(MacCid cid)

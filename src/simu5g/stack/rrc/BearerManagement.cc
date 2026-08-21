@@ -609,7 +609,7 @@ const DrbDesc& BearerManagement::materializeDrb(const FlowId& flow, const Bearer
 {
     DrbDesc& drb = drbTableModule->getOrCreateDrb(DrbKey(peerId, flow.drbId));
     drb.lcid = LogicalCid(num(flow.drbId));   // the 1:1 mapping of LteMacBase::drbIdToLcid
-    drb.lcg = req.qosClass;
+    drb.lcg = req.lcg;
     drb.rlcType = req.rlcType;
 
     // soFraming is RRC's own decision: the RAT+mode predicate that also selects the

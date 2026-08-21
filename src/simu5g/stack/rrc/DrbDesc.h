@@ -98,7 +98,7 @@ struct DrbDesc {
     bool soFraming = false;             // wire format: false = LTE FI/concatenation (TS 36.322), true = NR SI/SO (TS 38.322)
     unsigned int snFieldLength = 12;    // sn-FieldLength, in bits
     LogicalCid lcid = LCID_NONE;        // logicalChannelIdentity
-    LteTrafficClass lcg = CONVERSATIONAL;   // logicalChannelGroup, mac-LogicalChannelConfig
+    Lcg lcg = Lcg(0);                       // logicalChannelGroup, mac-LogicalChannelConfig
 
     // QoS profile of the bearer's flows (5QI characteristics), for QoS-aware MAC
     // scheduling; only meaningful when hasQosProfile is set (an authored entry
@@ -141,7 +141,7 @@ inline std::ostream& operator<<(std::ostream& os, const DrbDesc& drb) {
     }
     os << " rlc=" << rlcTypeToA(drb.rlcType) << (drb.soFraming ? " SO" : " FI")
        << " snBits=" << drb.snFieldLength
-       << " lcid=" << num(drb.lcid) << " lcg=" << lteTrafficClassToA(drb.lcg);
+       << " lcid=" << num(drb.lcid) << " lcg=" << drb.lcg;
     if (drb.hasQosProfile)
         os << " qos: " << drb.qos;
     return os;

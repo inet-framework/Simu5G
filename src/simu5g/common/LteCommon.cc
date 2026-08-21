@@ -41,35 +41,6 @@ const inet::Protocol LteProtocol::gtp("gtp", "GTP");            // GPRS Tunnelin
 const inet::Protocol LteProtocol::x2ap("x2ap", "X2AP");         // X2AP Protocol
 const inet::Protocol LteProtocol::sdap("sdap", "SDAP");         // Service Data Adaptation Protocol
 
-const std::string lteTrafficClassToA(LteTrafficClass type)
-{
-    switch (type) {
-        case CONVERSATIONAL:
-            return "CONVERSATIONAL";
-        case STREAMING:
-            return "STREAMING";
-        case INTERACTIVE:
-            return "INTERACTIVE";
-        case BACKGROUND:
-            return "BACKGROUND";
-        default:
-            return "UNKNOWN_TRAFFIC_TYPE";
-    }
-}
-
-LteTrafficClass aToLteTrafficClass(std::string s)
-{
-    if (s == "CONVERSATIONAL")
-        return CONVERSATIONAL;
-    if (s == "STREAMING")
-        return STREAMING;
-    if (s == "INTERACTIVE")
-        return INTERACTIVE;
-    if (s == "BACKGROUND")
-        return BACKGROUND;
-    return UNKNOWN_TRAFFIC_TYPE;
-}
-
 const std::string rlcTypeToA(LteRlcType type)
 {
     switch (type) {

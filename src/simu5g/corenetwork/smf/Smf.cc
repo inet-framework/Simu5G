@@ -35,7 +35,7 @@ void Smf::initialize(int stage)
         // and before INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION, where the scheduler takes
         // the address of the QoS map that this fills through RRC.
         configureDrbs();
-        parseTrafficClassRules();
+        parseLcgRules();
         std::string defaultRlcTypeStr = par("defaultRlcType").stdstringValue();
         defaultRlcType_ = aToRlcType(defaultRlcTypeStr);
         if (defaultRlcType_ == UNKNOWN_RLC_TYPE)
@@ -352,18 +352,13 @@ void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
             throw cRuntimeError("%s entry %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
                     paramName, i, rlcTypeStr.c_str());
 
-        // qosClass (eps only, optional; the bearer's traffic class, which establishment
-        // turns into the logical channel group; omitted = conversational. 5gc
-        // establishment does not consume it, so authoring it there is rejected
-        // rather than silently ignored.)
-        if (const cValue *v = field("qosClass")) {
-            if (drb.bearerType != BEARER_EPS)
-                throw cRuntimeError("%s entry %d: \"qosClass\" is only supported on \"eps\" bearers", paramName, i);
-            std::string qosClassStr = v->stdstringValue();
-            drb.lcg = aToLteTrafficClass(qosClassStr);
-            if (drb.lcg == UNKNOWN_TRAFFIC_TYPE)
-                throw cRuntimeError("%s entry %d: invalid qosClass '%s', must be \"CONVERSATIONAL\", \"STREAMING\", \"INTERACTIVE\" or \"BACKGROUND\"",
-                        paramName, i, qosClassStr.c_str());
+        // lcg (optional): the bearer's logical channel group; omitted = 0
+        if (const cValue *v = field("lcg")) {
+            long lcgVal = (long)v->intValue();
+            if (lcgVal < 0 || lcgVal >= NUM_LCGS)
+                throw cRuntimeError("%s entry %d: invalid lcg %ld, must be 0..%d",
+                        paramName, i, lcgVal, NUM_LCGS - 1);
+            drb.lcg = Lcg(lcgVal);
         }
 
         // legs (optional): the cell groups that serve this bearer, i.e. its RLC bearers.
@@ -585,12 +580,13 @@ void Smf::establishStaticBearers()
         if (entry->containsKey("drb"))
             drbId = DrbId(entry->get("drb").intValue());
 
-        LteTrafficClass qosClass = CONVERSATIONAL;
-        if (entry->containsKey("qosClass")) {
-            std::string qosClassStr = entry->get("qosClass").stdstringValue();
-            qosClass = aToLteTrafficClass(qosClassStr);
-            if (qosClass == UNKNOWN_TRAFFIC_TYPE)
-                throw cRuntimeError("staticBearers: invalid qosClass '%s' for UE '%s'", qosClassStr.c_str(), uePath);
+        Lcg lcg = Lcg(0);
+        if (entry->containsKey("lcg")) {
+            long lcgVal = (long)entry->get("lcg").intValue();
+            if (lcgVal < 0 || lcgVal >= NUM_LCGS)
+                throw cRuntimeError("staticBearers: invalid lcg %ld for UE '%s', must be 0..%d",
+                        lcgVal, uePath, NUM_LCGS - 1);
+            lcg = Lcg(lcgVal);
         }
         if (!entry->containsKey("rlcType"))
             throw cRuntimeError("staticBearers: missing rlcType for UE '%s' -- an entry must state its "
@@ -608,7 +604,7 @@ void Smf::establishStaticBearers()
 
         EV << "Smf::establishStaticBearers - establishing a bearer for UE '" << uePath
            << "' (nodeId=" << ueId << ") towards serving node " << servingNodeId << endl;
-        establishDataConnection(flow, BearerRequest{qosClass, rlcType});
+        establishDataConnection(flow, BearerRequest{rlcType, lcg});
     }
 }
 
@@ -644,7 +640,7 @@ DrbId Smf::establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& key
     }
 
     // No definition covers the flow: author the bearer from the packet
-    return establishDataConnection(flow, BearerRequest{classifyTrafficClass(pkt), UNKNOWN_RLC_TYPE, key});
+    return establishDataConnection(flow, BearerRequest{UNKNOWN_RLC_TYPE, classifyLcg(pkt), key});
 }
 
 DrbId Smf::establishFromDefinition(AuthoredBearer& ab, const FlowId& flowIn, const FlowBindingKey& key)
@@ -663,7 +659,7 @@ DrbId Smf::establishFromDefinition(AuthoredBearer& ab, const FlowId& flowIn, con
         pushDrbToRrcs(ab.ueModule, ab.desc);
     }
     flow.drbId = ab.desc.getDrbId();
-    return establishDataConnection(flow, BearerRequest{ab.desc.lcg, ab.desc.rlcType, key});
+    return establishDataConnection(flow, BearerRequest{ab.desc.rlcType, ab.desc.lcg, key});
 }
 
 DrbId Smf::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
@@ -695,37 +691,37 @@ DrbId Smf::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
     return DRBID_NONE;
 }
 
-void Smf::parseTrafficClassRules()
+void Smf::parseLcgRules()
 {
-    const cValueArray *arr = check_and_cast<const cValueArray *>(par("trafficClassRules").objectValue());
+    const cValueArray *arr = check_and_cast<const cValueArray *>(par("lcgRules").objectValue());
     for (int i = 0; i < (int)arr->size(); i++) {
         const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
         for (const auto& [key, value] : entry->getFields())
-            if (key != "filter" && key != "qosClass")
-                throw cRuntimeError("trafficClassRules entry %d: unknown field '%s'", i, key.c_str());
+            if (key != "filter" && key != "lcg")
+                throw cRuntimeError("lcgRules entry %d: unknown field '%s'", i, key.c_str());
 
-        TrafficClassRule rule;
-        if (!entry->containsKey("qosClass"))
-            throw cRuntimeError("trafficClassRules entry %d: missing required field \"qosClass\"", i);
-        std::string qosClassStr = entry->get("qosClass").stdstringValue();
-        rule.qosClass = aToLteTrafficClass(qosClassStr);
-        if (rule.qosClass == UNKNOWN_TRAFFIC_TYPE)
-            throw cRuntimeError("trafficClassRules entry %d: invalid qosClass '%s', must be \"CONVERSATIONAL\", \"STREAMING\", \"INTERACTIVE\" or \"BACKGROUND\"",
-                    i, qosClassStr.c_str());
+        LcgRule rule;
+        if (!entry->containsKey("lcg"))
+            throw cRuntimeError("lcgRules entry %d: missing required field \"lcg\"", i);
+        long lcgVal = (long)entry->get("lcg").intValue();
+        if (lcgVal < 0 || lcgVal >= NUM_LCGS)
+            throw cRuntimeError("lcgRules entry %d: invalid lcg %ld, must be 0..%d", i, lcgVal, NUM_LCGS - 1);
+        rule.lcg = Lcg(lcgVal);
         if (entry->containsKey("filter")) {
             rule.filter = std::make_unique<inet::PacketFilter>();
             configurePacketFilter(*rule.filter, entry->get("filter").stringValue());
         }
-        trafficClassRules_.push_back(std::move(rule));
+        lcgRules_.push_back(std::move(rule));
     }
 }
 
-LteTrafficClass Smf::classifyTrafficClass(const inet::Packet *pkt)
+Lcg Smf::classifyLcg(const inet::Packet *pkt)
 {
-    for (const TrafficClassRule& rule : trafficClassRules_)
+    // LCG 3 -- the group of the non-GBR default bearer -- when no rule matches
+    for (const LcgRule& rule : lcgRules_)
         if (rule.filter == nullptr || rule.filter->matches(pkt))
-            return rule.qosClass;
-    return BACKGROUND;
+            return rule.lcg;
+    return Lcg(3);
 }
 
 DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& reqIn)
@@ -752,7 +748,7 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
     if (req.rlcType == UNKNOWN_RLC_TYPE) {
         if (const DrbDesc *def = findBearerDefinition(flow)) {
             req.rlcType = def->rlcType;
-            req.qosClass = def->lcg;
+            req.lcg = def->lcg;
         }
         else
             req.rlcType = defaultRlcType_;

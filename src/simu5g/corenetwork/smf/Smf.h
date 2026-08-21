@@ -57,21 +57,21 @@ class Smf : public cSimpleModule
     };
     std::vector<AuthoredBearer> authoredBearers_;
 
-    // A fallback-classification rule compiled from the trafficClassRules parameter:
-    // what authors the traffic class of an on-demand bearer that no bearer
+    // A fallback-classification rule compiled from the lcgRules parameter:
+    // what authors the logical channel group of an on-demand bearer that no bearer
     // definition covers -- including D2D and multicast bearers, which definitions
     // never describe. Authors a property only: flows classified here still mint
     // their own bearers, they never share one the way definition-matched flows do.
-    // The parameter's default value carries the legacy packet-name classes
-    // ("VoIP*" = conversational, ...).
-    struct TrafficClassRule {
+    // The parameter's default value carries the legacy packet-name mapping
+    // ("VoIP*" = LCG 0, ...).
+    struct LcgRule {
         std::unique_ptr<inet::PacketFilter> filter;   // null = match all
-        LteTrafficClass qosClass = BACKGROUND;
+        Lcg lcg = Lcg(3);
     };
-    std::vector<TrafficClassRule> trafficClassRules_;
+    std::vector<LcgRule> lcgRules_;
 
     // The RLC mode of the bearers the fallback rules classify (definition entries state
-    // their own); the defaultRlcType parameter. Transitional, like trafficClassRules_.
+    // their own); the defaultRlcType parameter. Transitional, like lcgRules_.
     LteRlcType defaultRlcType_ = UM;
 
   protected:
@@ -90,12 +90,12 @@ class Smf : public cSimpleModule
     // establishDataConnection(), exactly like packet-triggered establishment.
     virtual void establishStaticBearers();
 
-    // Parse and compile the trafficClassRules parameter; errors throw at setup.
-    virtual void parseTrafficClassRules();
+    // Parse and compile the lcgRules parameter; errors throw at setup.
+    virtual void parseLcgRules();
 
-    // First-match-wins over trafficClassRules_; BACKGROUND -- the class of the
-    // non-GBR default bearer -- when no rule matches.
-    virtual LteTrafficClass classifyTrafficClass(const inet::Packet *pkt);
+    // First-match-wins over lcgRules_; LCG 3 -- the group of the non-GBR default
+    // bearer -- when no rule matches.
+    virtual Lcg classifyLcg(const inet::Packet *pkt);
 
     // Establish the flow on the bearer a definition describes, assigning the
     // definition its DRB id and delivering it to the RRCs first if it does not
@@ -145,8 +145,8 @@ class Smf : public cSimpleModule
     // method authors the bearer's properties. An "eps" bearer definition whose packet
     // filter matches (staticDrbs first, then onDemandDrbs, in table order; the default
     // entry catches what no filter matched) supplies them; a flow no definition covers
-    // falls back to the traffic class derived from the packet, with the RLC mode left
-    // for RRC to decide. Returns the established bearer's DRB id.
+    // falls back to the LCG the lcgRules derive from the packet, with the RLC mode
+    // filled from defaultRlcType. Returns the established bearer's DRB id.
     virtual DrbId establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& key, const inet::Packet *pkt);
 
     // Create the DRB serving the given QFI at the given UE from a matching "5gc"

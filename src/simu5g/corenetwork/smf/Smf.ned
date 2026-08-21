@@ -47,9 +47,8 @@ package simu5g.corenetwork.smf;
 //    as "expr(...)" (e.g. "expr(udp.destPort == 3000)"). An expression sees the packet that
 //    triggers establishment, i.e. an UL-triggered and a DL-triggered flow present swapped
 //    port/address roles; a list can carry both spellings.
-//  - qosClass (string, optional, "eps" only): "CONVERSATIONAL", "STREAMING", "INTERACTIVE"
-//    or "BACKGROUND"; the bearer's traffic class, which establishment turns into the
-//    logical channel group; default: "CONVERSATIONAL"
+//  - lcg (int, optional): the bearer's logical channel group (0..3), which the MAC's
+//    LCG scheduler serves in increasing-index priority order; default: 0
 //  - rlcType (string, required, entry or profile): RLC mode ("AM", "UM", "TM")
 //  - legSelection (string, optional): which leg of a split bearer carries a given PDU;
 //    an expression written as "expr(...)" over typeOfService and packetOrdinal, compiled
@@ -122,8 +121,8 @@ package simu5g.corenetwork.smf;
 // <pre>
 // *.smf.onDemandDrbs = [
 //     {bearerType: "5gc", ue: "ue[*]", qfiList: [3, 4], profile: "gaming"},
-//     {bearerType: "eps", filters: ["expr(udp.destPort == 3000)"], qosClass: "CONVERSATIONAL", rlcType: "UM"},
-//     {bearerType: "eps", isDefault: true, qosClass: "BACKGROUND", rlcType: "UM"}
+//     {bearerType: "eps", filters: ["expr(udp.destPort == 3000)"], lcg: 0, rlcType: "UM"},
+//     {bearerType: "eps", isDefault: true, lcg: 3, rlcType: "UM"}
 //     ]
 // </pre>
 //
@@ -137,8 +136,7 @@ package simu5g.corenetwork.smf;
 // two legs when the UE is served by a node pair in dual connectivity), and results in
 // the same establishment call that packet-triggered setup makes. Entry fields:
 //  - ue (string): module path of the UE node, relative to the network (e.g. "ue[0]")
-//  - qosClass (string, optional): "CONVERSATIONAL", "STREAMING", "INTERACTIVE" or
-//    "BACKGROUND"; determines the logical channel group; default: "CONVERSATIONAL"
+//  - lcg (int, optional): the bearer's logical channel group (0..3); default: 0
 //  - rlcType (string, required): "TM", "UM" or "AM"
 //  - drb (int, optional): DRB identity of the bearer; useful for matching the DRB ids
 //    of the staticDrbs parameter; omitted = the next free id for the node pair
@@ -152,7 +150,7 @@ package simu5g.corenetwork.smf;
 // <pre>
 // *.smf.staticBearers = [
 //     {ue: "ue[0]", drb: 0, rlcType: "UM"},
-//     {ue: "ue[1]", drb: 1, qosClass: "INTERACTIVE", rlcType: "AM"}
+//     {ue: "ue[1]", drb: 1, lcg: 2, rlcType: "AM"}
 //     ]
 // </pre>
 //
@@ -161,36 +159,36 @@ package simu5g.corenetwork.smf;
 // ~NrSdap (or ~Ip2Nic, for stacks without SDAP). See the VoIP-DL-MultiQfi-StaticBearers
 // configuration of the simulations/nr/standalone_drb example.
 //
-// The trafficClassRules parameter authors the traffic class of on-demand bearers that
+// The lcgRules parameter authors the logical channel group of on-demand bearers that
 // no bearer definition covers: flows in configurations that author no definitions, and
 // D2D and multicast bearers, which definitions never describe. Unlike a definition, a
 // rule authors a property only -- each flow still gets its own bearer, and nothing is
 // created or delivered ahead of establishment.
 // A JSON array of rules, evaluated in order, first match wins; a flow matching no rule
-// is BACKGROUND (the class of the non-GBR default bearer). A bearer established this way
-// takes its RLC mode from the defaultRlcType parameter -- a rule authors the traffic
-// class only. Rule fields:
+// gets LCG 3 (the group of the non-GBR default bearer). A bearer established this way
+// takes its RLC mode from the defaultRlcType parameter -- a rule authors the LCG only.
+// Rule fields:
 //  - filter (string, optional): an inet::PacketFilter -- a message-name pattern
 //    (e.g. "VoIP*") or an expression written as "expr(...)"; omitted = matches all
-//  - qosClass (string): "CONVERSATIONAL", "STREAMING", "INTERACTIVE" or "BACKGROUND"
+//  - lcg (int): the logical channel group, 0..3
 // The parameter's default value classifies by well-known packet-name prefixes
-// ("VoIP*" = conversational, "gaming*" = interactive, "VoD*" = streaming); override
-// it -- e.g. with [] -- to turn that heuristic off.
+// ("VoIP*" = LCG 0, "gaming*" = LCG 2, "VoD*" = LCG 1); override it -- e.g. with [] --
+// to turn that heuristic off.
 //
 simple Smf
 {
     parameters:
         string binderModule = default("binder");
-        object staticDrbs = default([]);  // JSON array: [{bearerType, ue, drb, profile, qfiList, filters, qosClass, rlcType, legs, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
+        object staticDrbs = default([]);  // JSON array: [{bearerType, ue, drb, profile, qfiList, filters, lcg, rlcType, legs, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
         object onDemandDrbs = default([]);  // JSON array, staticDrbs schema minus "drb" (and "ue" optional): bearers created when traffic first matches them; see banner comment for details
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcType: "UM", gbr: true, ...}, ...}; see banner comment
-        object staticBearers = default([]);  // JSON array: [{ue, qosClass, rlcType, drb, technology}, ...]; see banner comment for details
+        object staticBearers = default([]);  // JSON array: [{ue, lcg, rlcType, drb, technology}, ...]; see banner comment for details
         string defaultRlcType @enum(TM,UM,AM) = default("UM");  // RLC mode of bearers established with no definition entry (packet-classified on-demand bearers, incl. D2D and multicast); definition entries state their own rlcType
-        object trafficClassRules = default([  // fallback classification of on-demand bearers no definition covers, [{filter, qosClass}, ...], first match wins; see banner comment
-                {filter: "VoIP*", qosClass: "CONVERSATIONAL"},
-                {filter: "gaming*", qosClass: "INTERACTIVE"},
-                {filter: "VoDPacket*", qosClass: "STREAMING"},
-                {filter: "VoDFinishPacket*", qosClass: "STREAMING"}
+        object lcgRules = default([  // fallback LCG assignment for on-demand bearers no definition covers, [{filter, lcg}, ...], first match wins; see banner comment
+                {filter: "VoIP*", lcg: 0},
+                {filter: "gaming*", lcg: 2},
+                {filter: "VoDPacket*", lcg: 1},
+                {filter: "VoDFinishPacket*", lcg: 1}
             ]);
         @display("i=block/cogwheel");
 }

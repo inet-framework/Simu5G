@@ -138,8 +138,8 @@ struct FlowBindingKeyHash {
 // mode-switch path passes it explicitly because it transports already-decided
 // configuration.
 struct BearerRequest {
-    LteTrafficClass qosClass = CONVERSATIONAL;   // -> logicalChannelGroup (lcg)
     LteRlcType rlcType = UM;
+    Lcg lcg = Lcg(0);   // logicalChannelGroup (mac-LogicalChannelConfig)
 
     // The flow whose classification triggered this establishment, if any: RRC binds it
     // to the bearer at both endpoints, so the reverse flow resolves to the same DRB
@@ -506,8 +506,6 @@ void verifyControlInfo(const FlowControlInfo *info);
 bool isNrUe(MacNodeId id);
 FeedbackType getFeedbackType(std::string s);
 RbAllocationType getRbAllocationType(std::string s);
-const std::string lteTrafficClassToA(LteTrafficClass type);
-LteTrafficClass aToLteTrafficClass(std::string s);
 const std::string phyFrameTypeToA(const LtePhyFrameType r);
 LtePhyFrameType aToPhyFrameType(std::string s);
 const std::string rlcTypeToA(LteRlcType type);

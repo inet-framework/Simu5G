@@ -94,6 +94,19 @@ class Qfi {
     @fromValue(Qfi($.intValue()));
 };
 
+/// Logical Channel Group id (LTE: 4 groups, NR: up to 8; TS 36.321 / TS 38.321)
+class Lcg {
+    @existingClass; // enum class Lcg : uint8_t;
+    @descriptor(false);
+    @primitive;
+    @castFunction(false);
+    @fromString(Lcg(string2int64($)));
+    @toString(int642string(num($)));
+    @defaultValue(Lcg(0));
+    @toValue((omnetpp::intval_t)(num($)));
+    @fromValue(Lcg($.intValue()));
+};
+
 /// Connection Identifier: <MacNodeId,LogicalCid>
 class MacCid {
     @existingClass; // class MacCid with separate nodeId and lcid fields

@@ -31,14 +31,6 @@ class NodeIdentificationInd extends inet::TagBase {
 }
 
 //
-// Indication tag containing traffic class for QoS handling.
-// Usually sent by PDCP to MAC layer.
-//
-class TrafficClassInd extends inet::TagBase {
-    unsigned short traffic enum(LteTrafficClass) = 0;      // LTE Traffic Class
-}
-
-//
 // Identifies the logical connection and multicast group for the packet.
 // Usually sent by PDCP to RLC and MAC layers.
 //

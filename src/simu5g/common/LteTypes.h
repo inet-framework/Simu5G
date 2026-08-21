@@ -81,6 +81,12 @@ SIMU5G_STRONG_TYPEDEF(Qfi, uint8_t)
 // apart from a packet classified onto the default flow
 constexpr Qfi QFI_NONE = Qfi(255);
 
+/// Logical Channel Group id, as reported in Buffer Status Reports
+SIMU5G_STRONG_TYPEDEF(Lcg, uint8_t)
+// LTE has 4 LCGs (TS 36.321), NR allows up to 8 (TS 38.321); the LCG schedulers serve
+// this many, in increasing-index priority order (lower LCG index is served first)
+constexpr unsigned short NUM_LCGS = 4;
+
 
 /// Invalid/uninitialized LCID and DRB ID values
 constexpr LogicalCid LCID_NONE = LogicalCid(65535);

@@ -46,8 +46,8 @@ typedef std::map<MacNodeId, LteHarqBufferRx *> HarqRxBuffers;
  * corresponding virtual buffer pointer
  */
 typedef std::pair<MacCid, LteMacBuffer *> CidBufferPair;
-typedef std::pair<LteTrafficClass, CidBufferPair> LcgPair;
-typedef std::multimap<LteTrafficClass, CidBufferPair> LcgMap;
+typedef std::pair<Lcg, CidBufferPair> LcgPair;
+typedef std::multimap<Lcg, CidBufferPair> LcgMap;
 
 // The RLC/logical-channel configuration of one logical channel, as the configuring
 // entity (RRC) pushes it at bearer establishment via configureLogicalChannel().
@@ -58,7 +58,7 @@ struct LogicalChannelConfig {
     LteRlcType rlcType = UM;            // rlc-Config: TM, UM or AM
     bool soFraming = false;             // wire format: false = LTE FI/concatenation (TS 36.322), true = NR SI/SO (TS 38.322)
     unsigned int snFieldLength = 12;    // sn-FieldLength, in bits
-    LteTrafficClass lcg = CONVERSATIONAL;   // logicalChannelGroup
+    Lcg lcg = Lcg(0);                   // logicalChannelGroup
 };
 
 /**
@@ -311,7 +311,7 @@ class LteMacBase : public cSimpleModule
         return getActiveConnectionCids();
     }
 
-    // Returns Traffic Class to cid mapping
+    // Returns the LCG-to-cid mapping
     const LcgMap& getLcgMap()
     {
         return lcgMap_;

@@ -65,25 +65,25 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
     if (lcgMap.empty())
         return scheduleList_;
 
-    // for all traffic classes
-    for (unsigned short i = 0; i < UNKNOWN_TRAFFIC_TYPE; ++i) {
+    // for all LCGs, in increasing-index priority order
+    for (unsigned short i = 0; i < NUM_LCGS; ++i) {
         // Prepare the iterators to cycle the entire scheduling set
-        auto it_pair = lcgMap.equal_range((LteTrafficClass)i);
+        auto it_pair = lcgMap.equal_range(Lcg(i));
         auto it = it_pair.first, et = it_pair.second;
 
-        EV << NOW << " LcgScheduler::schedule - Node  " << mac_->getMacNodeId() << ", Starting priority service for traffic class " << i << endl;
+        EV << NOW << " LcgScheduler::schedule - Node  " << mac_->getMacNodeId() << ", Starting priority service for LCG " << i << endl;
 
         // -------------------------------------------------------------------------------------------------- //
         // A D2D-capable UE with both UL and D2D active connections may need to withhold
         // this UL grant so that it carries the BSR of an active D2D connection instead.
         // This is handled by the D2D subclass (LcgSchedulerD2D); no-op for non-D2D UEs.
-        if (checkForPendingAdditionalBsr(grantDir, (LteTrafficClass)i))
+        if (checkForPendingAdditionalBsr(grantDir, Lcg(i)))
             return scheduleList_;
         // -------------------------------------------------------------------------------------------------- //
 
         //! FIXME Allocation of the same resource to flows with the same priority not implemented
         for (it = it_pair.first; it != et; ++it) {
-            // processing all connections of the same traffic class
+            // processing all connections of the same LCG
 
             // get the connection virtual buffer
             LteMacBuffer *vQueue = it->second.second;
@@ -378,17 +378,17 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                     scheduledBytesList_[cid] += elem->sentData_;
                 }
             }
-            // If the end of the connections map is reached and we were on priority and on last traffic class
-            if (priorityService && (it == et) && ((i + 1) == (unsigned short)UNKNOWN_TRAFFIC_TYPE)) {
+            // If the end of the connections map is reached and we were on priority and on the last LCG
+            if (priorityService && (it == et) && ((i + 1) == NUM_LCGS)) {
                 // the first phase of the LCP algorithm has completed ...
                 // ... switch to best effort allocation!
                 priorityService = false;
-                //  reset traffic class
+                //  reset the LCG index
                 i = 0;
                 EV << "LcgScheduler::schedule - Node" << mac_->getMacNodeId() << ", Starting best effort service" << endl;
             }
         } // END of connections cycle
-    } // END of Traffic Classes cycle
+    } // END of LCG cycle
 
     return scheduleList_;
 }

@@ -38,7 +38,7 @@ void RlcMuxD2D::fromMacLayer(cPacket *pktAux)
         // The notification chunk carries its own BearerRequest, filled at the eNB build
         // sites from the same connection descriptor that populates the tag below.
         FlowId flow = lteInfo->toFlowId();
-        BearerRequest req{(LteTrafficClass)switchPkt->getLcg(), (LteRlcType)switchPkt->getRlcType()};
+        BearerRequest req{(LteRlcType)switchPkt->getRlcType(), switchPkt->getLcg()};
 
         if (switchPkt->getTxSide()) {
             // The mux keeps only a DRB -> macToTxEntity gate-index table, so reach the

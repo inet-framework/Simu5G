@@ -129,12 +129,12 @@ class LcgScheduler
     protected:
 
     /**
-     * Hook, called once per traffic class during schedule(): returns true if the
+     * Hook, called once per LCG during schedule(): returns true if the
      * current UL grant must be withheld so that it can carry the BSR of an active
      * D2D connection instead. Default implementation never withholds (no-op);
      * overridden by LcgSchedulerD2D.
      */
-    virtual bool checkForPendingAdditionalBsr(Direction grantDir, LteTrafficClass tc) { return false; }
+    virtual bool checkForPendingAdditionalBsr(Direction grantDir, Lcg lcg) { return false; }
 };
 
 } //namespace simu5g
