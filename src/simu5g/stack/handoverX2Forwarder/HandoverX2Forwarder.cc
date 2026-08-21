@@ -83,6 +83,11 @@ void HandoverX2Forwarder::handleX2Message(cPacket *pkt)
     X2NodeId sourceId = x2msg->getSourceId();
 
     if (x2msg->getType() == X2_HANDOVER_DATA_MSG) {
+        // The payload is the forwarded IP datagram again; restore the protocol the
+        // forwarding side overwrote with x2ap, so downstream consumers (e.g. the
+        // packet-filter dissection of bearer definitions) see the packet for what
+        // it is.
+        datagram->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&inet::Protocol::ipv4);
         receiveDataFromSourceEnb(datagram, sourceId);
     }
     else { // X2_HANDOVER_CONTROL_MSG
