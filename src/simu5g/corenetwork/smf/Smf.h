@@ -70,6 +70,10 @@ class Smf : public cSimpleModule
     };
     std::vector<TrafficClassRule> trafficClassRules_;
 
+    // The RLC mode of the bearers the fallback rules classify (definition entries state
+    // their own); the defaultRlcType parameter. Transitional, like trafficClassRules_.
+    LteRlcType defaultRlcType_ = UM;
+
   protected:
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }

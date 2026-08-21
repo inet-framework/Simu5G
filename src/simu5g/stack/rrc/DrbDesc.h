@@ -34,7 +34,7 @@ namespace simu5g {
 //
 struct RlcBearerDesc {
     CellGroup cellGroup = MCG;              // which cell group serves this leg
-    LteRlcType rlcType = UNKNOWN_RLC_TYPE;  // rlc-Config: TM, UM or AM; UNKNOWN = not stated, RRC decides from the QoS class
+    LteRlcType rlcType = UNKNOWN_RLC_TYPE;  // rlc-Config: TM, UM or AM; UNKNOWN = not stated, the leg inherits the entry's rlcType
     std::optional<bool> soFraming;          // wire format: false = LTE FI/concatenation (TS 36.322), true = NR SI/SO (TS 38.322)
     std::optional<unsigned int> snFieldLength;   // sn-FieldLength, in bits
 };

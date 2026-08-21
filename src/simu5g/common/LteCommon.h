@@ -132,9 +132,11 @@ struct FlowBindingKeyHash {
 };
 
 // The configuration half of a bearer-establishment request: what the requester asks RRC
-// to set the bearer up as. rlcType = UNKNOWN_RLC_TYPE means "RRC decides from qosClass";
-// SDAP and the D2D mode-switch path pass it explicitly because they transport
-// already-decided configuration.
+// to set the bearer up as. rlcType = UNKNOWN_RLC_TYPE means the requester states nothing;
+// the SMF then resolves it from the bearer's definition entry, or from its defaultRlcType
+// parameter for a bearer no entry describes, before the request reaches RRC. The D2D
+// mode-switch path passes it explicitly because it transports already-decided
+// configuration.
 struct BearerRequest {
     LteTrafficClass qosClass = CONVERSATIONAL;   // -> logicalChannelGroup (lcg)
     LteRlcType rlcType = UM;

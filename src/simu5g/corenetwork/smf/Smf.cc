@@ -36,6 +36,10 @@ void Smf::initialize(int stage)
         // the address of the QoS map that this fills through RRC.
         configureDrbs();
         parseTrafficClassRules();
+        std::string defaultRlcTypeStr = par("defaultRlcType").stdstringValue();
+        defaultRlcType_ = aToRlcType(defaultRlcTypeStr);
+        if (defaultRlcType_ == UNKNOWN_RLC_TYPE)
+            throw cRuntimeError("invalid defaultRlcType '%s', must be \"TM\", \"UM\" or \"AM\"", defaultRlcTypeStr.c_str());
     }
     else if (stage == inet::INITSTAGE_LAST) {
         establishStaticBearers();
@@ -335,15 +339,18 @@ void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
         if (const cValue *v = field("priority"))
             drb.qos.priorityLevel = v->intValue();
 
-        // rlcType (optional; omitted = "RRC decides from the QoS class", as for staticBearers)
-        drb.rlcType = UNKNOWN_RLC_TYPE;
-        if (const cValue *v = field("rlcType")) {
-            std::string rlcTypeStr = v->stdstringValue();
-            drb.rlcType = aToRlcType(rlcTypeStr);
-            if (drb.rlcType == UNKNOWN_RLC_TYPE)
-                throw cRuntimeError("%s entry %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
-                        paramName, i, rlcTypeStr.c_str());
-        }
+        // rlcType (required; the RLC mode is the definition's to state, in the entry or
+        // in its profile)
+        const cValue *rlcTypeVal = field("rlcType");
+        if (rlcTypeVal == nullptr)
+            throw cRuntimeError("%s entry %d: missing \"rlcType\" -- a bearer definition must state its "
+                    "RLC mode (\"TM\", \"UM\" or \"AM\"), in the entry or in its profile",
+                    paramName, i);
+        std::string rlcTypeStr = rlcTypeVal->stdstringValue();
+        drb.rlcType = aToRlcType(rlcTypeStr);
+        if (drb.rlcType == UNKNOWN_RLC_TYPE)
+            throw cRuntimeError("%s entry %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
+                    paramName, i, rlcTypeStr.c_str());
 
         // qosClass (eps only, optional; the bearer's traffic class, which establishment
         // turns into the logical channel group; omitted = conversational. 5gc
@@ -585,13 +592,13 @@ void Smf::establishStaticBearers()
             if (qosClass == UNKNOWN_TRAFFIC_TYPE)
                 throw cRuntimeError("staticBearers: invalid qosClass '%s' for UE '%s'", qosClassStr.c_str(), uePath);
         }
-        LteRlcType rlcType = UNKNOWN_RLC_TYPE;  // = RRC decides from qosClass
-        if (entry->containsKey("rlcType")) {
-            std::string rlcTypeStr = entry->get("rlcType").stdstringValue();
-            rlcType = aToRlcType(rlcTypeStr);
-            if (rlcType == UNKNOWN_RLC_TYPE)
-                throw cRuntimeError("staticBearers: invalid rlcType '%s' for UE '%s'", rlcTypeStr.c_str(), uePath);
-        }
+        if (!entry->containsKey("rlcType"))
+            throw cRuntimeError("staticBearers: missing rlcType for UE '%s' -- an entry must state its "
+                    "bearer's RLC mode (\"TM\", \"UM\" or \"AM\")", uePath);
+        std::string rlcTypeStr = entry->get("rlcType").stdstringValue();
+        LteRlcType rlcType = aToRlcType(rlcTypeStr);
+        if (rlcType == UNKNOWN_RLC_TYPE)
+            throw cRuntimeError("staticBearers: invalid rlcType '%s' for UE '%s'", rlcTypeStr.c_str(), uePath);
 
         FlowId flow;
         flow.sourceId = ueId;
@@ -721,7 +728,7 @@ LteTrafficClass Smf::classifyTrafficClass(const inet::Packet *pkt)
     return BACKGROUND;
 }
 
-DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& req)
+DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& reqIn)
 {
     Enter_Method_Silent("establishDataConnection");
 
@@ -736,6 +743,20 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
     }
     else
         reserveDrbId(flow.sourceId, peerId, flow.drbId);   // named by the requester; keep assignDrbId off it
+
+    // A request that states no RLC mode (SDAP's, for one) takes it from the bearer's
+    // definition entry; a bearer no entry describes gets the transitional
+    // defaultRlcType. Definition entries always state theirs, so the request RRC
+    // receives is always concrete.
+    BearerRequest req = reqIn;
+    if (req.rlcType == UNKNOWN_RLC_TYPE) {
+        if (const DrbDesc *def = findBearerDefinition(flow)) {
+            req.rlcType = def->rlcType;
+            req.qosClass = def->lcg;
+        }
+        else
+            req.rlcType = defaultRlcType_;
+    }
 
     bool dualConnected = isDualConnectivityRequired(flow);
     if (!dualConnected) {

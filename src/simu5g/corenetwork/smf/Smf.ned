@@ -50,8 +50,7 @@ package simu5g.corenetwork.smf;
 //  - qosClass (string, optional, "eps" only): "CONVERSATIONAL", "STREAMING", "INTERACTIVE"
 //    or "BACKGROUND"; the bearer's traffic class, which establishment turns into the
 //    logical channel group; default: "CONVERSATIONAL"
-//  - rlcType (string, optional): RLC mode ("AM", "UM", "TM"); omitted = RRC decides from the
-//    traffic class (see the conversationalRlc/... parameters of ~BearerManagement)
+//  - rlcType (string, required, entry or profile): RLC mode ("AM", "UM", "TM")
 //  - legSelection (string, optional): which leg of a split bearer carries a given PDU;
 //    an expression written as "expr(...)" over typeOfService and packetOrdinal, compiled
 //    and evaluated per PDU by the bearer's leg splitter (see ~DcPdcpLegSplitter, whose
@@ -124,7 +123,7 @@ package simu5g.corenetwork.smf;
 // *.smf.onDemandDrbs = [
 //     {bearerType: "5gc", ue: "ue[*]", qfiList: [3, 4], profile: "gaming"},
 //     {bearerType: "eps", filters: ["expr(udp.destPort == 3000)"], qosClass: "CONVERSATIONAL", rlcType: "UM"},
-//     {bearerType: "eps", isDefault: true, qosClass: "BACKGROUND"}
+//     {bearerType: "eps", isDefault: true, qosClass: "BACKGROUND", rlcType: "UM"}
 //     ]
 // </pre>
 //
@@ -139,9 +138,8 @@ package simu5g.corenetwork.smf;
 // the same establishment call that packet-triggered setup makes. Entry fields:
 //  - ue (string): module path of the UE node, relative to the network (e.g. "ue[0]")
 //  - qosClass (string, optional): "CONVERSATIONAL", "STREAMING", "INTERACTIVE" or
-//    "BACKGROUND"; determines the logical channel group, and the RLC mode when
-//    rlcType is omitted; default: "CONVERSATIONAL"
-//  - rlcType (string, optional): "TM", "UM" or "AM"; omitted = RRC decides from qosClass
+//    "BACKGROUND"; determines the logical channel group; default: "CONVERSATIONAL"
+//  - rlcType (string, required): "TM", "UM" or "AM"
 //  - drb (int, optional): DRB identity of the bearer; useful for matching the DRB ids
 //    of the staticDrbs parameter; omitted = the next free id for the node pair
 //  - technology (string, optional): "LTE" or "NR", selects the stack of a dual-stack
@@ -169,7 +167,9 @@ package simu5g.corenetwork.smf;
 // rule authors a property only -- each flow still gets its own bearer, and nothing is
 // created or delivered ahead of establishment.
 // A JSON array of rules, evaluated in order, first match wins; a flow matching no rule
-// is BACKGROUND (the class of the non-GBR default bearer). Rule fields:
+// is BACKGROUND (the class of the non-GBR default bearer). A bearer established this way
+// takes its RLC mode from the defaultRlcType parameter -- a rule authors the traffic
+// class only. Rule fields:
 //  - filter (string, optional): an inet::PacketFilter -- a message-name pattern
 //    (e.g. "VoIP*") or an expression written as "expr(...)"; omitted = matches all
 //  - qosClass (string): "CONVERSATIONAL", "STREAMING", "INTERACTIVE" or "BACKGROUND"
@@ -185,6 +185,7 @@ simple Smf
         object onDemandDrbs = default([]);  // JSON array, staticDrbs schema minus "drb" (and "ue" optional): bearers created when traffic first matches them; see banner comment for details
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcType: "UM", gbr: true, ...}, ...}; see banner comment
         object staticBearers = default([]);  // JSON array: [{ue, qosClass, rlcType, drb, technology}, ...]; see banner comment for details
+        string defaultRlcType @enum(TM,UM,AM) = default("UM");  // RLC mode of bearers established with no definition entry (packet-classified on-demand bearers, incl. D2D and multicast); definition entries state their own rlcType
         object trafficClassRules = default([  // fallback classification of on-demand bearers no definition covers, [{filter, qosClass}, ...], first match wins; see banner comment
                 {filter: "VoIP*", qosClass: "CONVERSATIONAL"},
                 {filter: "gaming*", qosClass: "INTERACTIVE"},

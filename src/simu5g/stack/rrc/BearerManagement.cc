@@ -88,11 +88,6 @@ void BearerManagement::initialize(int stage)
         t301_ = par("t301");
 
         dualConnectivityEnabled_ = par("dualConnectivityEnabled");
-
-        conversationalRlc_ = aToRlcType(par("conversationalRlc"));
-        streamingRlc_ = aToRlcType(par("streamingRlc"));
-        interactiveRlc_ = aToRlcType(par("interactiveRlc"));
-        backgroundRlc_ = aToRlcType(par("backgroundRlc"));
     }
 }
 
@@ -281,17 +276,6 @@ void BearerManagement::releaseLink(MacNodeId peerId)
     deleteLocalPdcpEntities(peerId);
 }
 
-LteRlcType BearerManagement::qosClassToRlcType(LteTrafficClass qosClass)
-{
-    switch (qosClass) {
-        case CONVERSATIONAL: return conversationalRlc_;
-        case INTERACTIVE: return interactiveRlc_;
-        case STREAMING: return streamingRlc_;
-        case BACKGROUND: return backgroundRlc_;
-        default: return backgroundRlc_;  // fallback
-    }
-}
-
 const DrbDesc *BearerManagement::lookupConfiguredDrb(const FlowId& flow, MacNodeId peerId)
 {
     // Authored entries describe infrastructure bearers only; multicast and D2D bearers
@@ -322,7 +306,10 @@ BearerRequest BearerManagement::resolveBearerRequest(const BearerRequest& reqIn,
     }
 
     if (req.rlcType == UNKNOWN_RLC_TYPE)
-        req.rlcType = qosClassToRlcType(req.qosClass);
+        throw cRuntimeError("Bearer establishment request for DRB %d (peer %d) carries no RLC mode -- "
+                "the SMF resolves every request from the bearer's definition entry or its defaultRlcType, "
+                "so an unresolved request reaching RRC is a requester bug",
+                (int)num(flow.drbId), (int)num(peerId));
     return req;
 }
 

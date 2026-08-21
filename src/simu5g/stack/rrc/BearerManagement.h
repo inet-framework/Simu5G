@@ -114,26 +114,16 @@ class BearerManagement : public cSimpleModule
     // findOrCreatePdcpEntity)
     bool dualConnectivityEnabled_ = false;
 
-    // QoS-class -> RLC-mode mapping, applied by qosClassToRlcType() when a bearer request's
-    // rlcType is left unresolved (UNKNOWN_RLC_TYPE).
-    LteRlcType conversationalRlc_ = UNKNOWN_RLC_TYPE;
-    LteRlcType streamingRlc_ = UNKNOWN_RLC_TYPE;
-    LteRlcType interactiveRlc_ = UNKNOWN_RLC_TYPE;
-    LteRlcType backgroundRlc_ = UNKNOWN_RLC_TYPE;
-
-    // Maps a traffic class to its configured RLC mode (conversational/streaming/
-    // interactive/backgroundRlc NED params).
-    virtual LteRlcType qosClassToRlcType(LteTrafficClass qosClass);
-
     // The configuration entry for the bearer of an infrastructure unicast flow, as
     // delivered by configureDrb(), or nullptr. peerId is the flow's remote end; on the
     // UE side entries are keyed by NODEID_NONE instead.
     virtual const DrbDesc *lookupConfiguredDrb(const FlowId& flow, MacNodeId peerId);
 
-    // Resolves req.rlcType before any use of it (entity type selection, materializeDrb),
+    // Checks req.rlcType before any use of it (entity type selection, materializeDrb),
     // called once at the top of each establishment entry point. The delivered configuration
-    // wins (a conflicting explicit request throws); an rlcType still left as
-    // UNKNOWN_RLC_TYPE ("RRC decides") falls back to qosClassToRlcType().
+    // wins (a conflicting explicit request throws). The SMF resolves every request before
+    // it reaches RRC (from the bearer's definition entry, or its defaultRlcType), so an
+    // rlcType still UNKNOWN_RLC_TYPE here is a requester bug and throws.
     virtual BearerRequest resolveBearerRequest(const BearerRequest& req, const FlowId& flow, MacNodeId peerId);
 
     virtual void setRlcEntityParams(cModule *entity, bool isNr);
