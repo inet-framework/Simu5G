@@ -108,7 +108,7 @@ void BearerManagement::configureDrb(const DrbDesc& drb)
         throw cRuntimeError("configureDrb: DRB %d is a \"5gc\" bearer, but this stack has no SDAP to map its QoS flows",
                 (int)num(drb.getDrbId()));
     if (drb.coreNetwork == CN_EPC && hasSdap)
-        throw cRuntimeError("configureDrb: DRB %d is an \"eps\" bearer, but this stack has SDAP -- its bearers are selected by QFI, not by packet filters",
+        throw cRuntimeError("configureDrb: DRB %d is an \"epc\" bearer, but this stack has SDAP -- its bearers are selected by QFI, not by packet filters",
                 (int)num(drb.getDrbId()));
 
     drbTableModule->addConfiguredDrb(drb);

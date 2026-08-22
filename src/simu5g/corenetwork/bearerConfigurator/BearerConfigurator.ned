@@ -75,7 +75,7 @@ package simu5g.corenetwork.bearerConfigurator;
 //  - drbId (int): DRB identifier (= nrPdcp[]/nrRlc[] array index)
 //  - profile (string, optional): name of a drbProfiles entry supplying defaults for the
 //    fields it does not spell out itself
-//  - mappedQfis (int[], optional, "5gc" only): QFI values mapped to this DRB; an entry without
+//  - mappedQfis (int[], optional, "5gc" only): QFI values (0..63) mapped to this DRB; an entry without
 //    it does not take part in SDAP's QFI-to-DRB mapping. This field maps already-assigned
 //    QFIs onto the DRB; which QFI a packet carries is decided elsewhere (the qfiRules
 //    parameter of ~QosFlowClassifier for UL and of ~TrafficFlowFilter for DL, where the
@@ -94,7 +94,9 @@ package simu5g.corenetwork.bearerConfigurator;
 //    QoS profile's priority level (bucketed by lcgPriorityBounds), or 0 when the
 //    definition carries no "qosPriorityLevel"
 //  - rlcMode (string, optional when the definition carries a "packetErrorRate"): RLC
-//    mode ("AM", "UM", "TM"); omitted = derived from the QoS profile's packet error rate
+//    mode ("AM" or "UM"; "TM" is rejected -- 3GPP transparent mode carries
+//    BCCH/PCCH/SRB0-class channels, not DRBs); omitted = derived from the QoS
+//    profile's packet error rate
 //    (packetErrorRate <= amPerThreshold -> "AM", else "UM": a PER target HARQ alone
 //    cannot meet gets ARQ).
 //    Required, in the entry or its profile, when there is nothing to derive it from.
@@ -115,9 +117,10 @@ package simu5g.corenetwork.bearerConfigurator;
 //  - upperProtocol (string, optional): INET protocol name for upper layer dispatch (this is
 //    normally only needed for "Unstructured" PDU sessions); default: derived from
 //    pduSessionType
-//  - isDefault (bool, optional): marks this as the default DRB for the UE; if no entry of a
-//    UE is marked, its first bearer takes the role. The default DRB is the fallback when no
-//    QFI-to-DRB mapping ("5gc") or packet filter ("epc") matches.
+//  - isDefault (bool, optional): marks this as the default DRB for the UE -- the fallback
+//    when no QFI-to-DRB mapping ("5gc") or packet filter ("epc") matches. If no entry of
+//    a UE is marked in either table, the UE's single static bearer takes the role; a UE
+//    with several bearers must mark one explicitly.
 //  - gbr (bool), packetDelayBudget (double, ms), packetErrorRate (double),
 //    qosPriorityLevel (int) -- all optional: the
 //    QoS profile of the bearer's flows (5QI characteristics). Any of them present marks the

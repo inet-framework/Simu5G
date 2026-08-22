@@ -25,6 +25,21 @@ using namespace inet;
 
 Define_Module(BearerConfigurator);
 
+// The complete field vocabulary of a bearer-definition entry (staticDrbs/onDemandDrbs);
+// anything else in an entry or profile is rejected as a typo
+static const std::vector<std::string> KNOWN_ENTRY_FIELDS = {
+    "coreNetwork", "ue", "drbId", "profile", "mappedQfis", "filters", "lcg", "rlcMode",
+    "legSelection", "legs", "pduSessionType", "upperProtocol", "isDefault",
+    "gbr", "packetDelayBudget", "packetErrorRate", "qosPriorityLevel"
+};
+
+// The entry fields a profile may not carry: a profile describes what a bearer is,
+// never which UE it belongs to (ue, drbId) or which architecture and flows select
+// it (coreNetwork, mappedQfis, filters, isDefault)
+static const std::vector<std::string> FORBIDDEN_PROFILE_FIELDS = {
+    "drbId", "ue", "profile", "coreNetwork", "mappedQfis", "filters", "isDefault"
+};
+
 void BearerConfigurator::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
@@ -197,12 +212,23 @@ void BearerConfigurator::configureDrbs()
     std::map<cModule *, std::map<DrbId, DrbDesc>> drbsOfUe;
 
     // A user profile must not redefine a predefined row: silently shadowing a
-    // standardized name would make "5qi-1" mean different things in different inis
+    // standardized name would make "5qi-1" mean different things in different inis.
+    // Its fields must come from the entry vocabulary, minus the per-bearer ones
+    // (see FORBIDDEN_PROFILE_FIELDS); anything else is a typo, and a typo'd field
+    // would otherwise be silently ignored.
     if (const cValueMap *userProfiles = check_and_cast_nullable<const cValueMap *>(par("drbProfiles").objectValue()))
-        for (const auto& [profileName, value] : userProfiles->getFields())
+        for (const auto& [profileName, value] : userProfiles->getFields()) {
             if (getPredefinedDrbProfiles()->containsKey(profileName.c_str()))
                 throw cRuntimeError("drbProfiles entry '%s' redefines a predefined profile; the standardized rows cannot be overridden",
                         profileName.c_str());
+            const cValueMap *profile = check_and_cast<const cValueMap *>(value.objectValue());
+            for (const auto& [key, fieldValue] : profile->getFields()) {
+                if (contains(FORBIDDEN_PROFILE_FIELDS, key))
+                    throw cRuntimeError("drbProfiles entry '%s' must not contain the '%s' field", profileName.c_str(), key.c_str());
+                if (!contains(KNOWN_ENTRY_FIELDS, key))
+                    throw cRuntimeError("drbProfiles entry '%s' contains unknown field '%s'", profileName.c_str(), key.c_str());
+            }
+        }
 
     // The QoS-derivation policy the definitions below may rely on
     amPerThreshold_ = par("amPerThreshold");
@@ -238,14 +264,21 @@ void BearerConfigurator::configureDrbs()
 
     for (auto& [ueModule, drbs] : drbsOfUe) {
         // The default DRB is where traffic with no QFI-to-DRB mapping (5gc) or no
-        // matching packet filter (eps) goes; if the configuration does not name one
-        // in either table, the UE's first static bearer takes the role
+        // matching packet filter (epc) goes. If the configuration marks none in
+        // either table, a UE's single static bearer takes the role; a UE with
+        // several bearers must mark one explicitly -- inferring it from entry
+        // order would hide configuration mistakes.
         bool onDemandDefault = false;
         for (const AuthoredBearer& ab : authoredBearers_)
             if (ab.onDemand && ab.ueModule == ueModule && ab.desc.isDefault)
                 onDemandDefault = true;
-        if (!onDemandDefault && std::none_of(drbs.begin(), drbs.end(), [](const auto& e) { return e.second.isDefault; }))
+        if (!onDemandDefault && std::none_of(drbs.begin(), drbs.end(), [](const auto& e) { return e.second.isDefault; })) {
+            if (drbs.size() > 1)
+                throw cRuntimeError("no default DRB designated for UE '%s': it has %d static bearers and no "
+                        "entry of either table marks isDefault=true -- with several bearers the choice "
+                        "must be explicit", ueModule->getFullPath().c_str(), (int)drbs.size());
             drbs.begin()->second.isDefault = true;
+        }
 
         // The retained records are what establishment-time matching consults, so the
         // settled default is propagated into them
@@ -279,10 +312,13 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
     for (int i = 0; i < (int)arr->size(); i++) {
         const cValueMap *entry = check_and_cast<const cValueMap *>(arr->get(i).objectValue());
 
-        // Resolve the entry's named profile, if any. A profile describes what the bearer
-        // is, so it must not carry the fields that say which UE it belongs to (ue, drb)
-        // or which architecture and flows select it (coreNetwork, mappedQfis, filters,
-        // isDefault).
+        // A typo'd field name would be silently ignored, so unknown fields are rejected
+        for (const auto& [key, value] : entry->getFields())
+            if (!contains(KNOWN_ENTRY_FIELDS, key))
+                throw cRuntimeError("%s entry %d: unknown field '%s'", paramName, i, key.c_str());
+
+        // Resolve the entry's named profile, if any (user profiles were validated
+        // up front, see configureDrbs())
         const cValueMap *profile = nullptr;
         if (entry->containsKey("profile")) {
             const char *name = entry->get("profile").stringValue();
@@ -298,9 +334,6 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
                 throw cRuntimeError("%s entry %d references unknown profile '%s' (available: %s; plus the predefined \"qci-1\"..\"qci-9\" and \"5qi-1\"..\"5qi-9\")",
                         paramName, i, name, available.empty() ? "none" : available.c_str());
             }
-            for (const char *forbidden : { "drbId", "ue", "profile", "coreNetwork", "mappedQfis", "filters", "isDefault" })
-                if (profile->containsKey(forbidden))
-                    throw cRuntimeError("drbProfiles entry '%s' must not contain the '%s' field", name, forbidden);
         }
 
         // Field lookup: the entry's own value wins over the profile's
@@ -318,7 +351,10 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
         DrbId drbId = DRBID_NONE;
         drb.key = DrbKey(NODEID_NONE, DRBID_NONE);
         if (!onDemand) {
-            drbId = DrbId(entry->get("drbId").intValue());
+            long id = entry->get("drbId").intValue();
+            if (id < 0 || id > MAX_DRB_ID)
+                throw cRuntimeError("%s entry %d: invalid drbId %ld, must be 0..%d", paramName, i, id, MAX_DRB_ID);
+            drbId = DrbId(id);
             drb.key = DrbKey(NODEID_NONE, drbId);
             drb.lcid = LogicalCid(num(drbId));
         }
@@ -329,11 +365,11 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
         // entry, never inferred; the receiving RRC checks it against its own stack
         // (see BearerManagement::configureDrb()).
         if (!entry->containsKey("coreNetwork"))
-            throw cRuntimeError("%s entry %d: missing required field \"coreNetwork\" (\"eps\" or \"5gc\")", paramName, i);
+            throw cRuntimeError("%s entry %d: missing required field \"coreNetwork\" (\"epc\" or \"5gc\")", paramName, i);
         std::string coreNetworkStr = entry->get("coreNetwork").stdstringValue();
         drb.coreNetwork = aToCoreNetwork(coreNetworkStr);
         if (drb.coreNetwork == UNKNOWN_CORE_NETWORK)
-            throw cRuntimeError("%s entry %d: invalid coreNetwork '%s', must be \"eps\" or \"5gc\"", paramName, i, coreNetworkStr.c_str());
+            throw cRuntimeError("%s entry %d: invalid coreNetwork '%s', must be \"epc\" or \"5gc\"", paramName, i, coreNetworkStr.c_str());
 
         // isDefault (optional; if no entry of a UE is marked, its first static one
         // becomes default). An on-demand "5gc" entry cannot be the default: the default
@@ -349,9 +385,21 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
             if (drb.coreNetwork != CN_5GC)
                 throw cRuntimeError("%s entry %d: \"mappedQfis\" is a \"5gc\" selector, not valid on a \"%s\" bearer", paramName, i, coreNetworkStr.c_str());
             const cValueArray *qfiArr = check_and_cast<const cValueArray *>(entry->get("mappedQfis").objectValue());
-            for (int j = 0; j < (int)qfiArr->size(); j++)
-                drb.mappedQfis.push_back(Qfi(qfiArr->get(j).intValue()));
+            for (int j = 0; j < (int)qfiArr->size(); j++) {
+                long q = qfiArr->get(j).intValue();
+                if (q < 0 || q > 63)
+                    throw cRuntimeError("%s entry %d: invalid QFI %ld, must be 0..63", paramName, i, q);
+                if (contains(drb.mappedQfis, Qfi(q)))
+                    throw cRuntimeError("%s entry %d: duplicate QFI %ld in \"mappedQfis\"", paramName, i, q);
+                drb.mappedQfis.push_back(Qfi(q));
+            }
         }
+
+        // An on-demand "5gc" definition is selected by its mappedQfis alone, so one
+        // without them could never match
+        if (onDemand && drb.coreNetwork == CN_5GC && drb.mappedQfis.empty())
+            throw cRuntimeError("%s entry %d: an on-demand \"5gc\" definition needs a non-empty \"mappedQfis\" -- "
+                    "it is selected by its QFIs and could never match without them", paramName, i);
 
         // filters (eps only, optional; the packet filters that select this bearer --
         // an entry without them can still be the default bearer or carry only a QoS
@@ -359,7 +407,7 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
         // setup, not on the first packet.
         if (entry->containsKey("filters")) {
             if (drb.coreNetwork != CN_EPC)
-                throw cRuntimeError("%s entry %d: \"filters\" is an \"eps\" selector, not valid on a \"%s\" bearer", paramName, i, coreNetworkStr.c_str());
+                throw cRuntimeError("%s entry %d: \"filters\" is an \"epc\" selector, not valid on a \"%s\" bearer", paramName, i, coreNetworkStr.c_str());
             const cValueArray *fArr = check_and_cast<const cValueArray *>(entry->get("filters").objectValue());
             for (int j = 0; j < (int)fArr->size(); j++)
                 drb.filters.push_back(fArr->get(j).stdstringValue());
@@ -385,16 +433,20 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
         if (rlcModeVal != nullptr) {
             std::string rlcModeStr = rlcModeVal->stdstringValue();
             drb.rlcMode = aToRlcMode(rlcModeStr);
+            if (drb.rlcMode == TM)
+                throw cRuntimeError("%s entry %d: rlcMode \"TM\" is not valid for a data radio bearer -- "
+                        "3GPP transparent mode carries BCCH/PCCH/SRB0-class channels, not DRBs; "
+                        "use \"UM\" or \"AM\"", paramName, i);
             if (drb.rlcMode == UNKNOWN_RLC_MODE)
-                throw cRuntimeError("%s entry %d: invalid rlcMode '%s', must be \"TM\", \"UM\" or \"AM\"",
+                throw cRuntimeError("%s entry %d: invalid rlcMode '%s', must be \"UM\" or \"AM\"",
                         paramName, i, rlcModeStr.c_str());
         }
         else if (field("packetErrorRate") != nullptr)
             drb.rlcMode = (drb.qos.packetErrorRate <= amPerThreshold_) ? AM : UM;
         else
             throw cRuntimeError("%s entry %d: missing \"rlcMode\" -- a bearer definition must state its "
-                    "RLC mode (\"TM\", \"UM\" or \"AM\") in the entry or its profile, or carry a QoS "
-                    "profile with a \"per\" to derive it from", paramName, i);
+                    "RLC mode (\"UM\" or \"AM\") in the entry or its profile, or carry a QoS "
+                    "profile with a \"packetErrorRate\" to derive it from", paramName, i);
 
         // lcg: stated by the definition, or derived from its QoS profile's priority
         // level (bucketed by lcgPriorityBounds); 0 when there is nothing to derive
@@ -454,8 +506,8 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
                 if (legEntry && legEntry->containsKey("rlcMode")) {
                     std::string legRlcStr = legEntry->get("rlcMode").stdstringValue();
                     leg.rlcMode = aToRlcMode(legRlcStr);
-                    if (leg.rlcMode == UNKNOWN_RLC_MODE)
-                        throw cRuntimeError("%s entry %d, leg %d: invalid rlcMode '%s', must be \"TM\", \"UM\" or \"AM\"",
+                    if (leg.rlcMode == TM || leg.rlcMode == UNKNOWN_RLC_MODE)
+                        throw cRuntimeError("%s entry %d, leg %d: invalid rlcMode '%s', must be \"UM\" or \"AM\"",
                                 paramName, i, j, legRlcStr.c_str());
                 }
                 if (legEntry && legEntry->containsKey("soFraming"))
