@@ -72,7 +72,7 @@ package simu5g.corenetwork.bearerConfigurator;
 //    SDAP). Stated per entry, never inferred; each receiving RRC checks it against its stack.
 //  - ue (string): module path of the UE node, relative to the network; patterns are allowed,
 //    so one entry can describe a bearer of many UEs (e.g. "ue[*]")
-//  - drbId (int): DRB identifier (= nrPdcp[]/nrRlc[] array index)
+//  - drbId (int): DRB identity, 1..32 (TS 38.331 DRB-Identity)
 //  - profile (string, optional): name of a drbProfiles entry supplying defaults for the
 //    fields it does not spell out itself
 //  - mappedQfis (int[], optional, "5gc" only): QFI values (0..63) mapped to this DRB; an entry without
@@ -142,7 +142,7 @@ package simu5g.corenetwork.bearerConfigurator;
 // from those characteristics by default (the way a gNB derives its AS configuration
 // from the delivered QoS profile; see the rlcMode and lcg field descriptions) and
 // stated on the entry only to override, e.g.
-// {coreNetwork: "5gc", ue: "ue[*]", drbId: 0, mappedQfis: [1, 2], profile: "5qi-1"}.
+// {coreNetwork: "5gc", ue: "ue[*]", drbId: 1, mappedQfis: [1, 2], profile: "5qi-1"}.
 // A drbProfiles entry may not redefine a predefined name. NOTE the spec's priority
 // scales (QCI 1..9, 5QI 10..90) differ from each other and from the small hand-picked
 // values older configurations use; the QoS-aware scheduler weights bearers by
@@ -158,7 +158,7 @@ package simu5g.corenetwork.bearerConfigurator;
 //              qosPriorityLevel: 2}
 //     }
 // *.bearerConfigurator.staticDrbs = [
-//     {coreNetwork: "5gc", ue: "ue[*]", drbId: 0, mappedQfis: [1, 2], profile: "voice"}
+//     {coreNetwork: "5gc", ue: "ue[*]", drbId: 1, mappedQfis: [1, 2], profile: "voice"}
 //     ]
 // </pre>
 //

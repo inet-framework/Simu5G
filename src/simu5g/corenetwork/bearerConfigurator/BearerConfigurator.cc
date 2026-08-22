@@ -352,8 +352,8 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
         drb.key = DrbKey(NODEID_NONE, DRBID_NONE);
         if (!onDemand) {
             long id = entry->get("drbId").intValue();
-            if (id < 0 || id > MAX_DRB_ID)
-                throw cRuntimeError("%s entry %d: invalid drbId %ld, must be 0..%d", paramName, i, id, MAX_DRB_ID);
+            if (id < 1 || id > MAX_DRB_ID)
+                throw cRuntimeError("%s entry %d: invalid drbId %ld, must be 1..%d (TS 38.331 DRB-Identity)", paramName, i, id, MAX_DRB_ID);
             drbId = DrbId(id);
             drb.key = DrbKey(NODEID_NONE, drbId);
             drb.lcid = LogicalCid(num(drbId));
