@@ -41,7 +41,7 @@ const inet::Protocol LteProtocol::gtp("gtp", "GTP");            // GPRS Tunnelin
 const inet::Protocol LteProtocol::x2ap("x2ap", "X2AP");         // X2AP Protocol
 const inet::Protocol LteProtocol::sdap("sdap", "SDAP");         // Service Data Adaptation Protocol
 
-const std::string rlcTypeToA(LteRlcType type)
+const std::string rlcModeToA(RlcMode type)
 {
     switch (type) {
         case TM:
@@ -51,7 +51,7 @@ const std::string rlcTypeToA(LteRlcType type)
         case AM:
             return "am";
         default:
-            return "UNKNOWN_RLC_TYPE";
+            return "UNKNOWN_RLC_MODE";
     }
 }
 
@@ -63,7 +63,7 @@ char *cStringToLower(char *str)
     return str;
 }
 
-LteRlcType aToRlcType(std::string s)
+RlcMode aToRlcMode(std::string s)
 {
     if (s == "TM")
         return TM;
@@ -71,7 +71,7 @@ LteRlcType aToRlcType(std::string s)
         return UM;
     if (s == "AM")
         return AM;
-    return UNKNOWN_RLC_TYPE;
+    return UNKNOWN_RLC_MODE;
 }
 
 const std::string pduSessionTypeToA(PduSessionType type)
@@ -107,25 +107,25 @@ PduSessionType aToPduSessionType(std::string s)
     throw cRuntimeError("Unknown PDU session type: '%s'", s.c_str());
 }
 
-const std::string bearerTypeToA(BearerType type)
+const std::string coreNetworkToA(CoreNetwork type)
 {
     switch (type) {
-        case BEARER_EPS:
-            return "eps";
-        case BEARER_5GC:
+        case CN_EPC:
+            return "epc";
+        case CN_5GC:
             return "5gc";
         default:
-            return "UNKNOWN_BEARER_TYPE";
+            return "UNKNOWN_CORE_NETWORK";
     }
 }
 
-BearerType aToBearerType(std::string s)
+CoreNetwork aToCoreNetwork(std::string s)
 {
-    if (s == "eps")
-        return BEARER_EPS;
+    if (s == "epc")
+        return CN_EPC;
     if (s == "5gc")
-        return BEARER_5GC;
-    return UNKNOWN_BEARER_TYPE;
+        return CN_5GC;
+    return UNKNOWN_CORE_NETWORK;
 }
 
 const std::string cellGroupToA(CellGroup group)

@@ -178,7 +178,7 @@ void D2dUeMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
             {
                 const LogicalChannelConfig& lcConfig = mac_->getLogicalChannelConfig(cid);
                 switchPkt_dup->setLcg(lcConfig.lcg);
-                switchPkt_dup->setRlcType(lcConfig.rlcType);
+                switchPkt_dup->setRlcMode(lcConfig.rlcMode);
             }
             pktDup->insertAtFront(switchPkt_dup);
             *(pktDup->addTagIfAbsent<FlowControlInfo>()) = connInfo;
@@ -197,7 +197,7 @@ void D2dUeMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                 {
                     const LogicalChannelConfig& lcConfig = mac_->getLogicalChannelConfig(cid);
                     switchPkt_dup->setLcg(lcConfig.lcg);
-                    switchPkt_dup->setRlcType(lcConfig.rlcType);
+                    switchPkt_dup->setRlcMode(lcConfig.rlcMode);
                 }
                 pktDup->insertAtFront(switchPkt_dup);
                 *(pktDup->addTagIfAbsent<FlowControlInfo>()) = connInfo;
@@ -258,7 +258,7 @@ void D2dUeMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                 {
                     const LogicalChannelConfig& lcConfig = mac_->getLogicalChannelConfig(cid);
                     switchPkt_dup->setLcg(lcConfig.lcg);
-                    switchPkt_dup->setRlcType(lcConfig.rlcType);
+                    switchPkt_dup->setRlcMode(lcConfig.rlcMode);
                 }
                 pktDup->insertAtFront(switchPkt_dup);
                 *(pktDup->addTagIfAbsent<FlowControlInfo>()) = connInfo;
@@ -276,7 +276,7 @@ void D2dUeMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                 {
                     const LogicalChannelConfig& lcConfig = mac_->getLogicalChannelConfig(cid);
                     switchPkt_dup->setLcg(lcConfig.lcg);
-                    switchPkt_dup->setRlcType(lcConfig.rlcType);
+                    switchPkt_dup->setRlcMode(lcConfig.rlcMode);
                 }
                 pktDup->insertAtFront(switchPkt_dup);
                 *(pktDup->addTagIfAbsent<FlowControlInfo>()) = connInfo;

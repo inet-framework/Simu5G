@@ -53,9 +53,9 @@ class LtePdcpTxEntity : public PdcpTxEntityBase
     // Header size after ROHC (RObust Header Compression)
     inet::B headerCompressedSize_;
 
-    // RLC mode of this bearer's logical channel, as pushed by RRC via the "rlcType" NED
+    // RLC mode of this bearer's logical channel, as pushed by RRC via the "rlcMode" NED
     // param (see PdcpEntityBase); resolved once in initialize() into the PDCP header size.
-    LteRlcType rlcType_ = UM;
+    RlcMode rlcType_ = UM;
     unsigned int pdcpHeaderLength_ = PDCP_HEADER_UM;
 
     // false on a multi-leg bearer: the compound's splitter emits the per-leg statistics

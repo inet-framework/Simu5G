@@ -289,7 +289,7 @@ void LteMacBase::configureLogicalChannel(MacCid cid, const LogicalChannelConfig&
 {
     Enter_Method("configureLogicalChannel(%s)", cid.str().c_str());
     EV << "LteMacBase::configureLogicalChannel - CID: " << cid
-       << " rlcType: " << rlcTypeToA(cfg.rlcType)
+       << " rlcMode: " << rlcModeToA(cfg.rlcMode)
        << " soFraming: " << cfg.soFraming
        << " snFieldLength: " << cfg.snFieldLength << endl;
 

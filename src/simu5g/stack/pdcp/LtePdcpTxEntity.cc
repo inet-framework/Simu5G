@@ -49,13 +49,13 @@ void LtePdcpTxEntity::initialize(int stage) {
 
         emitPerSduSignals_ = par("emitPerSduSignals");
 
-        rlcType_ = aToRlcType(par("rlcType").stringValue());
+        rlcType_ = aToRlcMode(par("rlcMode").stringValue());
         switch (rlcType_) {
             case UM: pdcpHeaderLength_ = PDCP_HEADER_UM; break;
             case AM: pdcpHeaderLength_ = PDCP_HEADER_AM; break;
             case TM: pdcpHeaderLength_ = 0; break;
             default:
-                throw cRuntimeError("LtePdcpTxEntity::initialize(): invalid rlcType param '%s'", par("rlcType").stringValue());
+                throw cRuntimeError("LtePdcpTxEntity::initialize(): invalid rlcMode param '%s'", par("rlcMode").stringValue());
         }
     }
 }
@@ -73,7 +73,7 @@ void LtePdcpTxEntity::handlePacketFromUpperLayer(Packet *pkt)
     auto pdcpHeader = makeShared<LtePdcpHeader>();
     pdcpHeader->setSequenceNumber(sno_++); // set sequence number in PDCP header
 
-    // The header size is resolved from this entity's own pushed "rlcType" param (see initialize()).
+    // The header size is resolved from this entity's own pushed "rlcMode" param (see initialize()).
     pdcpHeader->setChunkLength(B(pdcpHeaderLength_));
     pkt->trim();
     pkt->insertAtFront(pdcpHeader);

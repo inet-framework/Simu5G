@@ -55,7 +55,7 @@ typedef std::multimap<Lcg, CidBufferPair> LcgMap;
 // TS 38.331. One record per channel (MacCid = remote node + LCID), shared by the
 // outgoing and incoming direction.
 struct LogicalChannelConfig {
-    LteRlcType rlcType = UM;            // rlc-Config: TM, UM or AM
+    RlcMode rlcMode = UM;            // rlc-Config: TM, UM or AM
     bool soFraming = false;             // wire format: false = LTE FI/concatenation (TS 36.322), true = NR SI/SO (TS 38.322)
     unsigned int snFieldLength = 12;    // sn-FieldLength, in bits
     Lcg lcg = Lcg(0);                   // logicalChannelGroup

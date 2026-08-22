@@ -152,24 +152,24 @@ const cValueMap *BearerConfigurator::getPredefinedDrbProfiles()
         // Built by evaluating the literal below, so the container ownership is exactly
         // that of an ini-file object value.
         static const char *table = R"({
-            "qci-1": {gbr: true,  priority: 2, delayBudget: 100, per: 1e-2},
-            "qci-2": {gbr: true,  priority: 4, delayBudget: 150, per: 1e-3},
-            "qci-3": {gbr: true,  priority: 3, delayBudget: 50,  per: 1e-3},
-            "qci-4": {gbr: true,  priority: 5, delayBudget: 300, per: 1e-6},
-            "qci-5": {gbr: false, priority: 1, delayBudget: 100, per: 1e-6},
-            "qci-6": {gbr: false, priority: 6, delayBudget: 300, per: 1e-6},
-            "qci-7": {gbr: false, priority: 7, delayBudget: 100, per: 1e-3},
-            "qci-8": {gbr: false, priority: 8, delayBudget: 300, per: 1e-6},
-            "qci-9": {gbr: false, priority: 9, delayBudget: 300, per: 1e-6},
-            "5qi-1": {gbr: true,  priority: 20, delayBudget: 100, per: 1e-2},
-            "5qi-2": {gbr: true,  priority: 40, delayBudget: 150, per: 1e-3},
-            "5qi-3": {gbr: true,  priority: 30, delayBudget: 50,  per: 1e-3},
-            "5qi-4": {gbr: true,  priority: 50, delayBudget: 300, per: 1e-6},
-            "5qi-5": {gbr: false, priority: 10, delayBudget: 100, per: 1e-6},
-            "5qi-6": {gbr: false, priority: 60, delayBudget: 300, per: 1e-6},
-            "5qi-7": {gbr: false, priority: 70, delayBudget: 100, per: 1e-3},
-            "5qi-8": {gbr: false, priority: 80, delayBudget: 300, per: 1e-6},
-            "5qi-9": {gbr: false, priority: 90, delayBudget: 300, per: 1e-6}
+            "qci-1": {gbr: true,  qosPriorityLevel: 2, packetDelayBudget: 100, packetErrorRate: 1e-2},
+            "qci-2": {gbr: true,  qosPriorityLevel: 4, packetDelayBudget: 150, packetErrorRate: 1e-3},
+            "qci-3": {gbr: true,  qosPriorityLevel: 3, packetDelayBudget: 50,  packetErrorRate: 1e-3},
+            "qci-4": {gbr: true,  qosPriorityLevel: 5, packetDelayBudget: 300, packetErrorRate: 1e-6},
+            "qci-5": {gbr: false, qosPriorityLevel: 1, packetDelayBudget: 100, packetErrorRate: 1e-6},
+            "qci-6": {gbr: false, qosPriorityLevel: 6, packetDelayBudget: 300, packetErrorRate: 1e-6},
+            "qci-7": {gbr: false, qosPriorityLevel: 7, packetDelayBudget: 100, packetErrorRate: 1e-3},
+            "qci-8": {gbr: false, qosPriorityLevel: 8, packetDelayBudget: 300, packetErrorRate: 1e-6},
+            "qci-9": {gbr: false, qosPriorityLevel: 9, packetDelayBudget: 300, packetErrorRate: 1e-6},
+            "5qi-1": {gbr: true,  qosPriorityLevel: 20, packetDelayBudget: 100, packetErrorRate: 1e-2},
+            "5qi-2": {gbr: true,  qosPriorityLevel: 40, packetDelayBudget: 150, packetErrorRate: 1e-3},
+            "5qi-3": {gbr: true,  qosPriorityLevel: 30, packetDelayBudget: 50,  packetErrorRate: 1e-3},
+            "5qi-4": {gbr: true,  qosPriorityLevel: 50, packetDelayBudget: 300, packetErrorRate: 1e-6},
+            "5qi-5": {gbr: false, qosPriorityLevel: 10, packetDelayBudget: 100, packetErrorRate: 1e-6},
+            "5qi-6": {gbr: false, qosPriorityLevel: 60, packetDelayBudget: 300, packetErrorRate: 1e-6},
+            "5qi-7": {gbr: false, qosPriorityLevel: 70, packetDelayBudget: 100, packetErrorRate: 1e-3},
+            "5qi-8": {gbr: false, qosPriorityLevel: 80, packetDelayBudget: 300, packetErrorRate: 1e-6},
+            "5qi-9": {gbr: false, qosPriorityLevel: 90, packetDelayBudget: 300, packetErrorRate: 1e-6}
         })";
         cDynamicExpression expr;
         expr.parse(table);
@@ -224,14 +224,14 @@ void BearerConfigurator::configureDrbs()
     // A QFI is either mapped up front by a static definition or serves as an on-demand
     // selector; both claiming it would leave the on-demand entry permanently dead
     for (const AuthoredBearer& ab : authoredBearers_) {
-        if (!ab.onDemand || ab.desc.bearerType != BEARER_5GC)
+        if (!ab.onDemand || ab.desc.coreNetwork != CN_5GC)
             continue;
         auto uit = drbsOfUe.find(ab.ueModule);
         if (uit == drbsOfUe.end())
             continue;
         for (const auto& [drbId, staticDrb] : uit->second)
-            for (Qfi qfi : ab.desc.qfiList)
-                if (contains(staticDrb.qfiList, qfi))
+            for (Qfi qfi : ab.desc.mappedQfis)
+                if (contains(staticDrb.mappedQfis, qfi))
                     throw cRuntimeError("onDemandDrbs: QFI %d of UE '%s' is already mapped to static DRB %d",
                             (int)num(qfi), ab.ueModule->getFullPath().c_str(), (int)num(drbId));
     }
@@ -281,7 +281,7 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
 
         // Resolve the entry's named profile, if any. A profile describes what the bearer
         // is, so it must not carry the fields that say which UE it belongs to (ue, drb)
-        // or which architecture and flows select it (bearerType, qfiList, filters,
+        // or which architecture and flows select it (coreNetwork, mappedQfis, filters,
         // isDefault).
         const cValueMap *profile = nullptr;
         if (entry->containsKey("profile")) {
@@ -298,7 +298,7 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
                 throw cRuntimeError("%s entry %d references unknown profile '%s' (available: %s; plus the predefined \"qci-1\"..\"qci-9\" and \"5qi-1\"..\"5qi-9\")",
                         paramName, i, name, available.empty() ? "none" : available.c_str());
             }
-            for (const char *forbidden : { "drb", "ue", "profile", "bearerType", "qfiList", "filters", "isDefault" })
+            for (const char *forbidden : { "drbId", "ue", "profile", "coreNetwork", "mappedQfis", "filters", "isDefault" })
                 if (profile->containsKey(forbidden))
                     throw cRuntimeError("drbProfiles entry '%s' must not contain the '%s' field", name, forbidden);
         }
@@ -318,39 +318,39 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
         DrbId drbId = DRBID_NONE;
         drb.key = DrbKey(NODEID_NONE, DRBID_NONE);
         if (!onDemand) {
-            drbId = DrbId(entry->get("drb").intValue());
+            drbId = DrbId(entry->get("drbId").intValue());
             drb.key = DrbKey(NODEID_NONE, drbId);
             drb.lcid = LogicalCid(num(drbId));
         }
-        else if (entry->containsKey("drb"))
-            throw cRuntimeError("%s entry %d: on-demand definitions do not name a \"drb\" id; one is assigned when the entry first matches", paramName, i);
+        else if (entry->containsKey("drbId"))
+            throw cRuntimeError("%s entry %d: on-demand definitions do not name a \"drbId\"; one is assigned when the entry first matches", paramName, i);
 
-        // bearerType (required): which architecture selects the bearer. Stated per
+        // coreNetwork (required): which architecture selects the bearer. Stated per
         // entry, never inferred; the receiving RRC checks it against its own stack
         // (see BearerManagement::configureDrb()).
-        if (!entry->containsKey("bearerType"))
-            throw cRuntimeError("%s entry %d: missing required field \"bearerType\" (\"eps\" or \"5gc\")", paramName, i);
-        std::string bearerTypeStr = entry->get("bearerType").stdstringValue();
-        drb.bearerType = aToBearerType(bearerTypeStr);
-        if (drb.bearerType == UNKNOWN_BEARER_TYPE)
-            throw cRuntimeError("%s entry %d: invalid bearerType '%s', must be \"eps\" or \"5gc\"", paramName, i, bearerTypeStr.c_str());
+        if (!entry->containsKey("coreNetwork"))
+            throw cRuntimeError("%s entry %d: missing required field \"coreNetwork\" (\"eps\" or \"5gc\")", paramName, i);
+        std::string coreNetworkStr = entry->get("coreNetwork").stdstringValue();
+        drb.coreNetwork = aToCoreNetwork(coreNetworkStr);
+        if (drb.coreNetwork == UNKNOWN_CORE_NETWORK)
+            throw cRuntimeError("%s entry %d: invalid coreNetwork '%s', must be \"eps\" or \"5gc\"", paramName, i, coreNetworkStr.c_str());
 
         // isDefault (optional; if no entry of a UE is marked, its first static one
         // becomes default). An on-demand "5gc" entry cannot be the default: the default
         // DRB is where unmapped QFIs go, so it must exist up front.
         if (entry->containsKey("isDefault"))
             drb.isDefault = entry->get("isDefault").boolValue();
-        if (onDemand && drb.isDefault && drb.bearerType == BEARER_5GC)
+        if (onDemand && drb.isDefault && drb.coreNetwork == CN_5GC)
             throw cRuntimeError("%s entry %d: an on-demand \"5gc\" definition cannot be the default DRB", paramName, i);
 
-        // qfiList (5gc only, optional; an entry without it does not take part in SDAP's
+        // mappedQfis (5gc only, optional; an entry without it does not take part in SDAP's
         // QFI-to-DRB mapping, e.g. it only carries the bearer's QoS profile)
-        if (entry->containsKey("qfiList")) {
-            if (drb.bearerType != BEARER_5GC)
-                throw cRuntimeError("%s entry %d: \"qfiList\" is a \"5gc\" selector, not valid on a \"%s\" bearer", paramName, i, bearerTypeStr.c_str());
-            const cValueArray *qfiArr = check_and_cast<const cValueArray *>(entry->get("qfiList").objectValue());
+        if (entry->containsKey("mappedQfis")) {
+            if (drb.coreNetwork != CN_5GC)
+                throw cRuntimeError("%s entry %d: \"mappedQfis\" is a \"5gc\" selector, not valid on a \"%s\" bearer", paramName, i, coreNetworkStr.c_str());
+            const cValueArray *qfiArr = check_and_cast<const cValueArray *>(entry->get("mappedQfis").objectValue());
             for (int j = 0; j < (int)qfiArr->size(); j++)
-                drb.qfiList.push_back(Qfi(qfiArr->get(j).intValue()));
+                drb.mappedQfis.push_back(Qfi(qfiArr->get(j).intValue()));
         }
 
         // filters (eps only, optional; the packet filters that select this bearer --
@@ -358,8 +358,8 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
         // profile). Compiled below, once per matched UE, so a syntax error fails at
         // setup, not on the first packet.
         if (entry->containsKey("filters")) {
-            if (drb.bearerType != BEARER_EPS)
-                throw cRuntimeError("%s entry %d: \"filters\" is an \"eps\" selector, not valid on a \"%s\" bearer", paramName, i, bearerTypeStr.c_str());
+            if (drb.coreNetwork != CN_EPC)
+                throw cRuntimeError("%s entry %d: \"filters\" is an \"eps\" selector, not valid on a \"%s\" bearer", paramName, i, coreNetworkStr.c_str());
             const cValueArray *fArr = check_and_cast<const cValueArray *>(entry->get("filters").objectValue());
             for (int j = 0; j < (int)fArr->size(); j++)
                 drb.filters.push_back(fArr->get(j).stdstringValue());
@@ -367,32 +367,32 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
 
         // QoS profile (all optional; any of them present = the bearer has a QoS profile,
         // which RRC pushes into the eNB/gNB MAC for QoS-aware scheduling)
-        drb.hasQosProfile = field("gbr") || field("delayBudget") || field("per") || field("priority");
+        drb.hasQosProfile = field("gbr") || field("packetDelayBudget") || field("packetErrorRate") || field("qosPriorityLevel");
         if (const cValue *v = field("gbr"))
             drb.qos.gbr = v->boolValue();
-        if (const cValue *v = field("delayBudget"))
+        if (const cValue *v = field("packetDelayBudget"))
             drb.qos.delayBudgetMs = v->doubleValue();
-        if (const cValue *v = field("per"))
+        if (const cValue *v = field("packetErrorRate"))
             drb.qos.packetErrorRate = v->doubleValue();
-        if (const cValue *v = field("priority"))
+        if (const cValue *v = field("qosPriorityLevel"))
             drb.qos.priorityLevel = v->intValue();
 
-        // rlcType: stated by the definition, or derived from its QoS profile's packet
+        // rlcMode: stated by the definition, or derived from its QoS profile's packet
         // error rate -- a PER target HARQ alone cannot meet gets ARQ, the RAN-side
         // decision a gNB makes from the delivered QoS profile (amPerThreshold).
         // Required when there is nothing to derive it from.
-        const cValue *rlcTypeVal = field("rlcType");
-        if (rlcTypeVal != nullptr) {
-            std::string rlcTypeStr = rlcTypeVal->stdstringValue();
-            drb.rlcType = aToRlcType(rlcTypeStr);
-            if (drb.rlcType == UNKNOWN_RLC_TYPE)
-                throw cRuntimeError("%s entry %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
-                        paramName, i, rlcTypeStr.c_str());
+        const cValue *rlcModeVal = field("rlcMode");
+        if (rlcModeVal != nullptr) {
+            std::string rlcModeStr = rlcModeVal->stdstringValue();
+            drb.rlcMode = aToRlcMode(rlcModeStr);
+            if (drb.rlcMode == UNKNOWN_RLC_MODE)
+                throw cRuntimeError("%s entry %d: invalid rlcMode '%s', must be \"TM\", \"UM\" or \"AM\"",
+                        paramName, i, rlcModeStr.c_str());
         }
-        else if (field("per") != nullptr)
-            drb.rlcType = (drb.qos.packetErrorRate <= amPerThreshold_) ? AM : UM;
+        else if (field("packetErrorRate") != nullptr)
+            drb.rlcMode = (drb.qos.packetErrorRate <= amPerThreshold_) ? AM : UM;
         else
-            throw cRuntimeError("%s entry %d: missing \"rlcType\" -- a bearer definition must state its "
+            throw cRuntimeError("%s entry %d: missing \"rlcMode\" -- a bearer definition must state its "
                     "RLC mode (\"TM\", \"UM\" or \"AM\") in the entry or its profile, or carry a QoS "
                     "profile with a \"per\" to derive it from", paramName, i);
 
@@ -406,7 +406,7 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
                         paramName, i, lcgVal, NUM_LCGS - 1);
             drb.lcg = Lcg(lcgVal);
         }
-        else if (field("priority") != nullptr) {
+        else if (field("qosPriorityLevel") != nullptr) {
             int bucket = 0;
             while (bucket < (int)lcgPriorityBounds_.size() && (long)drb.qos.priorityLevel >= lcgPriorityBounds_[bucket])
                 bucket++;
@@ -428,7 +428,7 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
                 if (legValue.getType() == cValue::OBJECT) {
                     legEntry = check_and_cast<const cValueMap *>(legValue.objectValue());
                     for (const auto& [key, value] : legEntry->getFields())
-                        if (key != "leg" && key != "rlcType" && key != "soFraming" && key != "snFieldLength")
+                        if (key != "leg" && key != "rlcMode" && key != "soFraming" && key != "snFieldLength")
                             throw cRuntimeError("%s entry %d, leg %d: unknown field '%s'", paramName, i, j, key.c_str());
                     if (!legEntry->containsKey("leg"))
                         throw cRuntimeError("%s entry %d, leg %d: missing required field \"leg\"", paramName, i, j);
@@ -450,12 +450,12 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
                 // The RLC mode is the bearer's unless the leg overrides it; the wire format
                 // and SN space are RRC's decision at establishment, and a leg states them
                 // only to take that decision away from it
-                leg.rlcType = drb.rlcType;
-                if (legEntry && legEntry->containsKey("rlcType")) {
-                    std::string legRlcStr = legEntry->get("rlcType").stdstringValue();
-                    leg.rlcType = aToRlcType(legRlcStr);
-                    if (leg.rlcType == UNKNOWN_RLC_TYPE)
-                        throw cRuntimeError("%s entry %d, leg %d: invalid rlcType '%s', must be \"TM\", \"UM\" or \"AM\"",
+                leg.rlcMode = drb.rlcMode;
+                if (legEntry && legEntry->containsKey("rlcMode")) {
+                    std::string legRlcStr = legEntry->get("rlcMode").stdstringValue();
+                    leg.rlcMode = aToRlcMode(legRlcStr);
+                    if (leg.rlcMode == UNKNOWN_RLC_MODE)
+                        throw cRuntimeError("%s entry %d, leg %d: invalid rlcMode '%s', must be \"TM\", \"UM\" or \"AM\"",
                                 paramName, i, j, legRlcStr.c_str());
                 }
                 if (legEntry && legEntry->containsKey("soFraming"))
@@ -517,13 +517,13 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
                 path.erase(0, networkPrefix.size());
             if (!matcher.matches(path.c_str()))
                 continue;
-            // An "eps" definition describes a bearer of an SDAP-less stack (SDAP
+            // An "epc" definition describes a bearer of an SDAP-less stack (SDAP
             // stacks select bearers by QFI, so an eps record could never match there,
             // and its isDefault flag would wrongly suppress the auto-default marking
             // above). A pattern legitimately covers UEs of both kinds, so
             // incompatible UEs are skipped rather than rejected; numMatched counts
             // compatible UEs only, so an entry naming only such UEs still errors.
-            if (drb.bearerType == BEARER_EPS && ueStackHasSdap(ueModule))
+            if (drb.coreNetwork == CN_EPC && ueStackHasSdap(ueModule))
                 continue;
             numMatched++;
             if (!onDemand && !drbsOfUe[ueModule].insert({drbId, drb}).second)
@@ -622,7 +622,7 @@ void BearerConfigurator::establishStaticDrbs()
         EV << "BearerConfigurator::establishStaticDrbs - establishing DRB " << flow.drbId << " of UE '"
            << ab.ueModule->getFullPath() << "' (nodeId=" << ueId << ") towards serving node "
            << flow.destId << endl;
-        establishDataConnection(flow, BearerRequest{ab.desc.rlcType, ab.desc.lcg});
+        establishDataConnection(flow, BearerRequest{ab.desc.rlcMode, ab.desc.lcg});
     }
 }
 
@@ -646,7 +646,7 @@ DrbId BearerConfigurator::establishOnDemandBearer(const FlowId& flow, const Flow
     if (ueModule != nullptr) {
         AuthoredBearer *defaultDef = nullptr;
         for (auto& ab : authoredBearers_) {
-            if (ab.ueModule != ueModule || ab.desc.bearerType != BEARER_EPS)
+            if (ab.ueModule != ueModule || ab.desc.coreNetwork != CN_EPC)
                 continue;
             for (auto& filter : ab.filters)
                 if (filter->matches(pkt))
@@ -697,7 +697,7 @@ DrbId BearerConfigurator::establishFromDefinition(AuthoredBearer& ab, const Flow
         }
         flow.drbId = it->second;
     }
-    return establishDataConnection(flow, BearerRequest{ab.desc.rlcType, ab.desc.lcg, key});
+    return establishDataConnection(flow, BearerRequest{ab.desc.rlcMode, ab.desc.lcg, key});
 }
 
 DrbId BearerConfigurator::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
@@ -709,9 +709,9 @@ DrbId BearerConfigurator::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
         return DRBID_NONE;
 
     for (auto& ab : authoredBearers_) {
-        if (!ab.onDemand || ab.ueModule != ueModule || ab.desc.bearerType != BEARER_5GC)
+        if (!ab.onDemand || ab.ueModule != ueModule || ab.desc.coreNetwork != CN_5GC)
             continue;
-        if (!contains(ab.desc.qfiList, qfi))
+        if (!contains(ab.desc.mappedQfis, qfi))
             continue;
         MacNodeId servingNodeId = binder_->getServingNode(ueNodeId);
         if (servingNodeId == NODEID_NONE)
@@ -754,13 +754,13 @@ DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const Be
     // the bearer's definition entry. Definition entries always state their RLC mode,
     // so the request RRC receives is always concrete.
     BearerRequest req = reqIn;
-    if (req.rlcType == UNKNOWN_RLC_TYPE) {
+    if (req.rlcMode == UNKNOWN_RLC_MODE) {
         const DrbDesc *def = findBearerDefinition(flow);
         if (def == nullptr)
             throw cRuntimeError("bearer establishment for DRB %d carries no RLC mode, and no definition "
                     "entry names that DRB -- a request that states no configuration is only valid for "
                     "definition-covered bearers", (int)num(flow.drbId));
-        req.rlcType = def->rlcType;
+        req.rlcMode = def->rlcMode;
         req.lcg = def->lcg;
     }
 

@@ -70,7 +70,7 @@ bool NrSdap::requiresSdapHeader(const DrbDesc *drb)
     // - default DRB: may carry packets with unmapped QFIs (fallback traffic)
     // - multiple QFIs mapped: reverse mapping is ambiguous
     // Caller must ensure drb is not null.
-    return drb->isDefault || drb->qfiList.size() > 1;
+    return drb->isDefault || drb->mappedQfis.size() > 1;
 }
 
 bool NrSdap::shouldEnableReflectiveQos(Qfi qfi)
@@ -217,7 +217,7 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
         // the bearer's definition entry at establishment (see
         // BearerConfigurator::establishDataConnection()), so the request carries no configuration
         // at all.
-        bearerConfigurator_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{UNKNOWN_RLC_TYPE});
+        bearerConfigurator_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{UNKNOWN_RLC_MODE});
     }
 
     // Set protocol tag for outgoing frame to PDCP layer
@@ -267,16 +267,16 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
         EV_INFO << "SDAP RX: No SDAP header expected for DRB " << drbId << "\n";
 
         // For DRBs without SDAP header, derive QFI from DRB context (use first QFI in the list)
-        if (drb && !drb->qfiList.empty()) {
-            qfi = drb->qfiList[0];
+        if (drb && !drb->mappedQfis.empty()) {
+            qfi = drb->mappedQfis[0];
             EV_INFO << "SDAP RX: Using QFI " << qfi << " from DRB context\n";
         }
     }
 
     // Validate QFI ↔ DRB consistency
     if (drb) {
-        if (!contains(drb->qfiList, qfi))
-            EV_WARN << "SDAP RX: DRB/QFI mismatch! Received on DRB=" << drbId << ", QFI=" << qfi << " not in qfiList\n";
+        if (!contains(drb->mappedQfis, qfi))
+            EV_WARN << "SDAP RX: DRB/QFI mismatch! Received on DRB=" << drbId << ", QFI=" << qfi << " not in mappedQfis\n";
     }
 
     // Add QoS indication tag for upper layers

@@ -42,8 +42,8 @@ module PdcpEntityBase
         int numLegs = default(1);                  // number of RLC legs of this bearer
         int headerCompressedSize @unit(B) = default(-1B);
         *.headerCompressedSize = default(this.headerCompressedSize);
-        string rlcType @enum(TM,UM,AM) = default("UM");   // forwarded to tx only; determines the PDCP header size
-        *.rlcType = default(this.rlcType);
+        string rlcMode @enum(TM,UM,AM) = default("UM");   // forwarded to tx only; determines the PDCP header size
+        *.rlcMode = default(this.rlcMode);
         *.numLegs = this.numLegs;
         *.emitPerSduSignals = this.numLegs == 1;   // on a multi-leg bearer, the splitter emits the per-leg statistics
         *.reorderingEnabled = this.numLegs > 1;    // reorder the SN stream merged from several legs

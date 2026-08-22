@@ -28,7 +28,7 @@ void SdapDrbTable::addOrUpdateDrb(const DrbDesc& drb)
             qit = (qit->second == ptr) ? qfiToDrb_.erase(qit) : std::next(qit);
 
     // Reverse lookup: (nodeId, qfi) -> DrbDesc*
-    for (Qfi qfi : ptr->qfiList)
+    for (Qfi qfi : ptr->mappedQfis)
         qfiToDrb_[{ueNodeId, qfi}] = ptr;
 
     // Default DRB map

@@ -42,18 +42,18 @@ package simu5g.corenetwork.bearerConfigurator;
 // directly from the ini.
 //
 // staticDrbs fields:
-//  - bearerType (string, required): "5gc" or "eps" -- which bearer architecture selects the
-//    bearer. A "5gc" bearer is selected by the QFIs mapped onto it (qfiList; needs SDAP in
-//    the stack); an "eps" bearer is selected by packet filters (filters; for stacks without
+//  - coreNetwork (string, required): "5gc" or "epc" -- which bearer architecture selects the
+//    bearer. A "5gc" bearer is selected by the QFIs mapped onto it (mappedQfis; needs SDAP in
+//    the stack); an "epc" bearer is selected by packet filters (filters; for stacks without
 //    SDAP). Stated per entry, never inferred; each receiving RRC checks it against its stack.
 //  - ue (string): module path of the UE node, relative to the network; patterns are allowed,
 //    so one entry can describe a bearer of many UEs (e.g. "ue[*]")
-//  - drb (int): DRB identifier (= nrPdcp[]/nrRlc[] array index)
+//  - drbId (int): DRB identifier (= nrPdcp[]/nrRlc[] array index)
 //  - profile (string, optional): name of a drbProfiles entry supplying defaults for the
 //    fields it does not spell out itself
-//  - qfiList (int[], optional, "5gc" only): QFI values mapped to this DRB; an entry without
+//  - mappedQfis (int[], optional, "5gc" only): QFI values mapped to this DRB; an entry without
 //    it does not take part in SDAP's QFI-to-DRB mapping
-//  - filters (string[], optional, "eps" only): packet filters selecting this bearer, each
+//  - filters (string[], optional, "epc" only): packet filters selecting this bearer, each
 //    an inet::PacketFilter -- a message-name pattern (e.g. "VoIP*") or an expression written
 //    as "expr(...)" (e.g. "expr(udp.destPort == 3000)"). An expression sees the packet that
 //    triggers establishment, i.e. an UL-triggered and a DL-triggered flow present swapped
@@ -61,10 +61,11 @@ package simu5g.corenetwork.bearerConfigurator;
 //  - lcg (int, optional): the bearer's logical channel group (0..3), which the MAC's
 //    LCG scheduler serves in increasing-index priority order; omitted = derived from
 //    the QoS profile's priority level (bucketed by lcgPriorityBounds), or 0 when the
-//    definition carries no "priority"
-//  - rlcType (string, optional when the definition carries a "per"): RLC mode ("AM",
-//    "UM", "TM"); omitted = derived from the QoS profile's packet error rate (per <=
-//    amPerThreshold -> "AM", else "UM": a PER target HARQ alone cannot meet gets ARQ).
+//    definition carries no "qosPriorityLevel"
+//  - rlcMode (string, optional when the definition carries a "packetErrorRate"): RLC
+//    mode ("AM", "UM", "TM"); omitted = derived from the QoS profile's packet error rate
+//    (packetErrorRate <= amPerThreshold -> "AM", else "UM": a PER target HARQ alone
+//    cannot meet gets ARQ).
 //    Required, in the entry or its profile, when there is nothing to derive it from.
 //  - legSelection (string, optional): which leg of a split bearer carries a given PDU;
 //    an expression written as "expr(...)" over typeOfService and packetOrdinal, compiled
@@ -74,7 +75,7 @@ package simu5g.corenetwork.bearerConfigurator;
 //    RLC bearers (TS 38.331 RLC-BearerConfig). One leg = an MCG or an SCG bearer, both =
 //    a split bearer. An element is either a cell group name ("MCG" or "SCG"), or an object
 //    naming it and overriding the RLC configuration it inherits from the entry:
-//    {leg: "SCG", rlcType: "AM", soFraming: true, snFieldLength: 18}. Omitted = the
+//    {leg: "SCG", rlcMode: "AM", soFraming: true, snFieldLength: 18}. Omitted = the
 //    configuration does not state the legs and RRC derives them, as it always has.
 //  - pduSessionType (string, optional): "IPv4", "IPv6", "IPv4v6", "Ethernet", "Unstructured";
 //    default: "IPv4"
@@ -83,8 +84,9 @@ package simu5g.corenetwork.bearerConfigurator;
 //    pduSessionType
 //  - isDefault (bool, optional): marks this as the default DRB for the UE; if no entry of a
 //    UE is marked, its first bearer takes the role. The default DRB is the fallback when no
-//    QFI-to-DRB mapping ("5gc") or packet filter ("eps") matches.
-//  - gbr (bool), delayBudget (double, ms), per (double), priority (int) -- all optional: the
+//    QFI-to-DRB mapping ("5gc") or packet filter ("epc") matches.
+//  - gbr (bool), packetDelayBudget (double, ms), packetErrorRate (double),
+//    qosPriorityLevel (int) -- all optional: the
 //    QoS profile of the bearer's flows (5QI characteristics). Any of them present marks the
 //    bearer as having a QoS profile, which RRC pushes into the eNB/gNB MAC for QoS-aware
 //    scheduling.
@@ -92,20 +94,21 @@ package simu5g.corenetwork.bearerConfigurator;
 // Field groups that repeat across entries can be named once in the drbProfiles parameter (a
 // JSON map of name -> field group) and referenced from entries via their "profile" field. A
 // profile describes what the bearer is, so it may hold any entry field except the ones that
-// say which UE it belongs to (ue, drb), which architecture and flows select it (bearerType,
-// qfiList, filters, isDefault).
+// say which UE it belongs to (ue, drbId), which architecture and flows select it (coreNetwork,
+// mappedQfis, filters, isDefault).
 //
 // The standardized QoS characteristics rows are available as predefined profiles, referenced
 // by name without being defined: "qci-1".."qci-9" (TS 23.203 Table 6.1.7-A) and
 // "5qi-1".."5qi-9" (TS 23.501 Table 5.7.4-1). A row carries what the spec standardizes --
-// gbr, priority, delayBudget, per -- and nothing else: the RLC mode and the logical channel
+// gbr, qosPriorityLevel, packetDelayBudget, packetErrorRate -- and nothing else: the
+// RLC mode and the logical channel
 // group are RAN choices, derived from those characteristics by default (the way a gNB
-// derives its AS configuration from the delivered QoS profile; see the rlcType and lcg
+// derives its AS configuration from the delivered QoS profile; see the rlcMode and lcg
 // field descriptions) and stated on the entry only to override, e.g.
-// {bearerType: "5gc", ue: "ue[*]", drb: 0, qfiList: [1, 2], profile: "5qi-1"}.
+// {coreNetwork: "5gc", ue: "ue[*]", drbId: 0, mappedQfis: [1, 2], profile: "5qi-1"}.
 // A drbProfiles entry may not redefine a predefined name. NOTE the spec's priority scales
 // (QCI 1..9, 5QI 10..90) differ from each other and from the small hand-picked values older
-// configurations use; the QoS-aware scheduler weights bearers by 1/(priority+1), and the
+// configurations use; the QoS-aware scheduler weights bearers by 1/(qosPriorityLevel+1), and the
 // default lcgPriorityBounds suit the 5QI scale (single-digit priorities all land in LCG 0),
 // so profiles from different scales should not be mixed within one network.
 //
@@ -113,20 +116,21 @@ package simu5g.corenetwork.bearerConfigurator;
 //
 // <pre>
 // *.bearerConfigurator.drbProfiles = {
-//     voice:  {rlcType: "UM", gbr: true, delayBudget: 100, per: 1e-2, priority: 2}
+//     voice:  {rlcMode: "UM", gbr: true, packetDelayBudget: 100, packetErrorRate: 1e-2,
+//              qosPriorityLevel: 2}
 //     }
 // *.bearerConfigurator.staticDrbs = [
-//     {bearerType: "5gc", ue: "ue[*]", drb: 0, qfiList: [1, 2], profile: "voice"}
+//     {coreNetwork: "5gc", ue: "ue[*]", drbId: 0, mappedQfis: [1, 2], profile: "voice"}
 //     ]
 // </pre>
 //
 // The onDemandDrbs parameter describes bearers that are created when traffic first
 // matches them, instead of being configured up front. Entries have the same fields as
-// staticDrbs minus drb: an on-demand bearer's id is assigned at creation, so
+// staticDrbs minus drbId: an on-demand bearer's id is assigned at creation, so
 // definitions can never collide over ids ("ue" may also be omitted, meaning every UE).
-// A "5gc" entry serves the QFIs in its qfiList: the first packet of an uncovered QFI
+// A "5gc" entry serves the QFIs in its mappedQfis: the first packet of an uncovered QFI
 // creates the DRB (SDAP asks this module on a QFI-to-DRB lookup miss), and later QFIs
-// of the same entry join it. An "eps" entry is matched by its filters against the
+// of the same entry join it. An "epc" entry is matched by its filters against the
 // packet that triggers bearer establishment, and an entry with isDefault=true catches
 // the flows no filter matched ("5gc" entries cannot be the default: the default DRB is
 // where unmapped QFIs go, so it must exist up front). A created bearer's definition is
@@ -140,7 +144,7 @@ package simu5g.corenetwork.bearerConfigurator;
 // well-known packet-name classes as ordinary catch-all definitions ("VoIP*" = LCG 0,
 // "gaming*" = LCG 2, "VoD*" = LCG 1, everything else LCG 3, all RLC UM), so overriding
 // the parameter replaces that classification with the configuration's own bearer set.
-// An "eps" entry describes bearers of SDAP-less stacks only; a "ue" pattern (or an
+// An "epc" entry describes bearers of SDAP-less stacks only; a "ue" pattern (or an
 // omitted "ue") covering UEs of both kinds simply skips the SDAP ones, but an entry
 // whose explicit "ue" pattern matches no UE with a compatible stack is an error.
 // D2D and multicast bearers are outside the definition system and are established
@@ -152,33 +156,33 @@ package simu5g.corenetwork.bearerConfigurator;
 //
 // <pre>
 // *.bearerConfigurator.onDemandDrbs = [
-//     {bearerType: "5gc", ue: "ue[*]", qfiList: [3, 4], profile: "gaming"},
-//     {bearerType: "eps", filters: ["expr(udp.destPort == 3000)"], lcg: 0, rlcType: "UM"},
-//     {bearerType: "eps", isDefault: true, lcg: 3, rlcType: "UM"}
+//     {coreNetwork: "5gc", ue: "ue[*]", mappedQfis: [3, 4], profile: "gaming"},
+//     {coreNetwork: "epc", filters: ["expr(udp.destPort == 3000)"], lcg: 0, rlcMode: "UM"},
+//     {coreNetwork: "epc", isDefault: true, lcg: 3, rlcMode: "UM"}
 //     ]
 // </pre>
 //
 // See the VoIP-DL-MultiQfi-OnDemandDrb configuration of simulations/nr/standalone_drb
 // ("5gc") and the SingleCell-DL-OnDemandDrb configuration of simulations/lte/tutorial
-// ("eps") for working setups.
+// ("epc") for working setups.
 //
 simple BearerConfigurator
 {
     parameters:
         string binderModule = default("binder");
-        object staticDrbs = default([]);  // JSON array: [{bearerType, ue, drb, profile, qfiList, filters, lcg, rlcType, legs, pduSessionType, upperProtocol, isDefault, gbr, delayBudget, per, priority}, ...]; see banner comment for details
-        object onDemandDrbs = default([  // JSON array, staticDrbs schema minus "drb" (and "ue" optional): bearers created when traffic first matches them; the default value carries the legacy packet-name classification; see banner comment for details
-                {bearerType: "eps", filters: ["VoIP*"], lcg: 0, rlcType: "UM"},
-                {bearerType: "eps", filters: ["gaming*"], lcg: 2, rlcType: "UM"},
-                {bearerType: "eps", filters: ["VoDPacket*", "VoDFinishPacket*"], lcg: 1, rlcType: "UM"},
-                {bearerType: "eps", isDefault: true, lcg: 3, rlcType: "UM"}
+        object staticDrbs = default([]);  // JSON array: [{coreNetwork, ue, drbId, profile, mappedQfis, filters, lcg, rlcMode, legs, pduSessionType, upperProtocol, isDefault, gbr, packetDelayBudget, packetErrorRate, qosPriorityLevel}, ...]; see banner comment for details
+        object onDemandDrbs = default([  // JSON array, staticDrbs schema minus "drbId" (and "ue" optional): bearers created when traffic first matches them; the default value carries the legacy packet-name classification; see banner comment for details
+                {coreNetwork: "epc", filters: ["VoIP*"], lcg: 0, rlcMode: "UM"},
+                {coreNetwork: "epc", filters: ["gaming*"], lcg: 2, rlcMode: "UM"},
+                {coreNetwork: "epc", filters: ["VoDPacket*", "VoDFinishPacket*"], lcg: 1, rlcMode: "UM"},
+                {coreNetwork: "epc", isDefault: true, lcg: 3, rlcMode: "UM"}
             ]);
-        object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcType: "UM", gbr: true, ...}, ...}; see banner comment
+        object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcMode: "UM", gbr: true, ...}, ...}; see banner comment
 
-        // QoS-derived RAN defaults for definitions that do not state rlcType/lcg themselves
+        // QoS-derived RAN defaults for definitions that do not state rlcMode/lcg themselves
         // (operator policy, not spec-mandated: 3GPP standardizes the QoS characteristics,
         // the RAN chooses what to make of them)
-        double amPerThreshold = default(1e-4);  // rlcType derivation: a definition whose QoS profile has per <= this gets "AM", else "UM"
-        object lcgPriorityBounds = default([25, 50, 75]);  // lcg derivation: priority < bounds[k] -> LCG k, else LCG 3; strictly ascending, one bound between each pair of adjacent LCGs
+        double amPerThreshold = default(1e-4);  // rlcMode derivation: a definition whose QoS profile has packetErrorRate <= this gets "AM", else "UM"
+        object lcgPriorityBounds = default([25, 50, 75]);  // lcg derivation: qosPriorityLevel < bounds[k] -> LCG k, else LCG 3; strictly ascending, one bound between each pair of adjacent LCGs
         @display("i=block/cogwheel");
 }

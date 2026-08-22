@@ -27,5 +27,5 @@ class D2DModeSwitchNotification extends inet::FieldsChunk
     bool interruptHarq;
     bool clearRlcBuffer;
     Lcg lcg;                                           // BearerRequest.lcg of the switched bearer
-    unsigned short rlcType enum(LteRlcType) = 0;       // BearerRequest.rlcType of the switched bearer
+    unsigned short rlcMode enum(RlcMode) = 0;       // BearerRequest.rlcMode of the switched bearer
 }

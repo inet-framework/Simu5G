@@ -119,23 +119,23 @@ class BearerManagement : public cSimpleModule
     // UE side entries are keyed by NODEID_NONE instead.
     virtual const DrbDesc *lookupConfiguredDrb(const FlowId& flow, MacNodeId peerId);
 
-    // Checks req.rlcType before any use of it (entity type selection, materializeDrb),
+    // Checks req.rlcMode before any use of it (entity type selection, materializeDrb),
     // called once at the top of each establishment entry point. The delivered configuration
     // wins (a conflicting explicit request throws). The bearer configurator resolves
     // every request before it reaches RRC (from the bearer's definition entry, or the fixed D2D/multicast
-    // configuration), so an rlcType still UNKNOWN_RLC_TYPE here is a requester bug and
+    // configuration), so an rlcMode still UNKNOWN_RLC_MODE here is a requester bug and
     // throws.
     virtual BearerRequest resolveBearerRequest(const BearerRequest& req, const FlowId& flow, MacNodeId peerId);
 
     virtual void setRlcEntityParams(cModule *entity, bool isNr);
     virtual void setEntityDisplayPosition(cModule *entity, bool isPdcpEntity, cModule *rlcMux, int bearerIndex);
     virtual cModule *lookupRlcEntityModule(DrbKey id, bool isNr);
-    virtual cModule *findOrCreateRlcEntity(DrbKey id, LteRlcType rlcType, const FlowId& flow, RlcMux *rlcMux, bool isNr);
+    virtual cModule *findOrCreateRlcEntity(DrbKey id, RlcMode rlcMode, const FlowId& flow, RlcMux *rlcMux, bool isNr);
     virtual RlcTxEntityBase *installRlcTxSide(DrbKey id, const FlowId& flow, const BearerRequest& req, RlcMux *rlcMux, bool isNr);
     virtual RlcRxEntityBase *installRlcRxSide(DrbKey id, const FlowId& flow, const BearerRequest& req, RlcMux *rlcMux, bool isNr);
-    virtual cModule *findOrCreatePdcpEntity(DrbKey id, const FlowId& flow, LteRlcType rlcType, RlcMux *rlcMux);
-    virtual void installPdcpTxSide(DrbKey id, const FlowId& flow, LteRlcType rlcType, RlcMux *rlcMux, bool isNr);
-    virtual void installPdcpRxSide(DrbKey id, const FlowId& flow, LteRlcType rlcType, RlcMux *rlcMux, bool isNr);
+    virtual cModule *findOrCreatePdcpEntity(DrbKey id, const FlowId& flow, RlcMode rlcMode, RlcMux *rlcMux);
+    virtual void installPdcpTxSide(DrbKey id, const FlowId& flow, RlcMode rlcMode, RlcMux *rlcMux, bool isNr);
+    virtual void installPdcpRxSide(DrbKey id, const FlowId& flow, RlcMode rlcMode, RlcMux *rlcMux, bool isNr);
     virtual cModule *findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux);
 
     // The layout of a bearer over the node's stack legs. getNumLegs() gives the number of legs

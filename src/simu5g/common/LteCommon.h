@@ -132,12 +132,12 @@ struct FlowBindingKeyHash {
 };
 
 // The configuration half of a bearer-establishment request: what the requester asks RRC
-// to set the bearer up as. rlcType = UNKNOWN_RLC_TYPE means the requester states nothing;
+// to set the bearer up as. rlcMode = UNKNOWN_RLC_MODE means the requester states nothing;
 // the bearer configurator then resolves the request from the bearer's definition entry
 // before it reaches RRC. The D2D mode-switch path passes explicit values because it
 // transports already-decided configuration.
 struct BearerRequest {
-    LteRlcType rlcType = UM;
+    RlcMode rlcMode = UM;
     Lcg lcg = Lcg(0);   // logicalChannelGroup (mac-LogicalChannelConfig)
 
     // The flow whose classification triggered this establishment, if any: RRC binds it
@@ -507,13 +507,13 @@ FeedbackType getFeedbackType(std::string s);
 RbAllocationType getRbAllocationType(std::string s);
 const std::string phyFrameTypeToA(const LtePhyFrameType r);
 LtePhyFrameType aToPhyFrameType(std::string s);
-const std::string rlcTypeToA(LteRlcType type);
+const std::string rlcModeToA(RlcMode type);
 char *cStringToLower(char *str);
-LteRlcType aToRlcType(std::string s);
+RlcMode aToRlcMode(std::string s);
 const std::string pduSessionTypeToA(PduSessionType type);
 PduSessionType aToPduSessionType(std::string s);
-const std::string bearerTypeToA(BearerType type);
-BearerType aToBearerType(std::string s);
+const std::string coreNetworkToA(CoreNetwork type);
+CoreNetwork aToCoreNetwork(std::string s);
 const std::string cellGroupToA(CellGroup group);
 CellGroup aToCellGroup(std::string s);
 

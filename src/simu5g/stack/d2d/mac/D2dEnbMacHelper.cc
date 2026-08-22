@@ -109,7 +109,7 @@ void D2dEnbMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                     switchPktTx->setOldConnection(false);
                 const LogicalChannelConfig& lcConfig = mac_->getLogicalChannelConfig(cid);
                 switchPktTx->setLcg(lcConfig.lcg);
-                switchPktTx->setRlcType(lcConfig.rlcType);
+                switchPktTx->setRlcMode(lcConfig.rlcMode);
                 pktTx->insertAtFront(switchPktTx);
                 *(pktTx->addTag<FlowControlInfo>()) = connInfo.flowInfo.toFlowControlInfo();
                 mac_->sendUpperPackets(pktTx);
@@ -155,7 +155,7 @@ void D2dEnbMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                     switchPktRx->setOldConnection(false);
                 const LogicalChannelConfig& lcConfig = mac_->getLogicalChannelConfig(cid);
                 switchPktRx->setLcg(lcConfig.lcg);
-                switchPktRx->setRlcType(lcConfig.rlcType);
+                switchPktRx->setRlcMode(lcConfig.rlcMode);
 
                 pktRx->insertAtFront(switchPktRx);
                 *(pktRx->addTag<FlowControlInfo>()) = lteInfo.toFlowControlInfo();

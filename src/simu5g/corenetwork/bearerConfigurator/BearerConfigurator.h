@@ -41,7 +41,7 @@ class BearerConfigurator : public cSimpleModule
   protected:
     inet::ModuleRefByPar<Binder> binder_;
 
-    // QoS-derived RAN defaults for definitions that state no rlcType/lcg themselves:
+    // QoS-derived RAN defaults for definitions that state no rlcMode/lcg themselves:
     // the amPerThreshold and lcgPriorityBounds parameters (see the NED documentation)
     double amPerThreshold_ = 0;
     std::vector<long> lcgPriorityBounds_;
@@ -133,7 +133,7 @@ class BearerConfigurator : public cSimpleModule
 
     // Establish a bearer for a flow the requester identifies but does not describe:
     // Ip2Nic supplies the flow, its classifier key and the triggering packet, and the
-    // bearer's properties come from the "eps" definition whose packet filter matches
+    // bearer's properties come from the "epc" definition whose packet filter matches
     // (staticDrbs first, then onDemandDrbs, in table order; the default entry catches
     // what no filter matched). A flow no definition covers throws: the onDemandDrbs
     // default value carries catch-all definitions, so only a configuration that

@@ -49,10 +49,10 @@ enum GrantType
     FITALL = 0; FIXED_ = 1; URGENT = 2; UNKNOWN_GRANT_TYPE = 3; // Note: FIXED would clash with <windows.h>
 };
 
-/// Lte RLC Types
-enum LteRlcType
+/// RLC modes (TS 36.322 / TS 38.322)
+enum RlcMode
 {
-    TM = 0; UM = 1; AM = 2; UNKNOWN_RLC_TYPE = 3;
+    TM = 0; UM = 1; AM = 2; UNKNOWN_RLC_MODE = 3;
 };
 
 /// PDU Session Types (3GPP TS 23.501)
@@ -61,12 +61,12 @@ enum PduSessionType
     IP_V4 = 0; IP_V6 = 1; IP_V4V6 = 2; ETHERNET = 3; UNSTRUCTURED = 4;
 };
 
-/// Bearer architecture: which core network's bearer model selects the bearer.
-/// An EPS bearer (LTE core) is selected by packet filters; a 5GC bearer is
-/// selected by the QFIs mapped onto it (SDAP).
-enum BearerType
+/// Which core network's bearer model a bearer belongs to. An EPC bearer (an EPS
+/// bearer, LTE core) is selected by packet filters; a 5GC bearer is selected by
+/// the QFIs mapped onto it (SDAP).
+enum CoreNetwork
 {
-    BEARER_EPS = 0; BEARER_5GC = 1; UNKNOWN_BEARER_TYPE = 2;
+    CN_EPC = 0; CN_5GC = 1; UNKNOWN_CORE_NETWORK = 2;
 };
 
 /// Cell group a bearer's RLC bearer belongs to (TS 38.331 RLC-BearerConfig): the

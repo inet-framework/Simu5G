@@ -34,14 +34,14 @@ namespace simu5g {
 //
 struct RlcBearerDesc {
     CellGroup cellGroup = MCG;              // which cell group serves this leg
-    LteRlcType rlcType = UNKNOWN_RLC_TYPE;  // rlc-Config: TM, UM or AM; UNKNOWN = not stated, the leg inherits the entry's rlcType
+    RlcMode rlcMode = UNKNOWN_RLC_MODE;  // rlc-Config: TM, UM or AM; UNKNOWN = not stated, the leg inherits the entry's rlcMode
     std::optional<bool> soFraming;          // wire format: false = LTE FI/concatenation (TS 36.322), true = NR SI/SO (TS 38.322)
     std::optional<unsigned int> snFieldLength;   // sn-FieldLength, in bits
 };
 
 inline std::ostream& operator<<(std::ostream& os, const RlcBearerDesc& leg) {
     os << cellGroupToA(leg.cellGroup);
-    if (leg.rlcType != UNKNOWN_RLC_TYPE) os << " " << rlcTypeToA(leg.rlcType);
+    if (leg.rlcMode != UNKNOWN_RLC_MODE) os << " " << rlcModeToA(leg.rlcMode);
     if (leg.soFraming) os << (*leg.soFraming ? " SO" : " FI");
     if (leg.snFieldLength) os << " snBits=" << *leg.snFieldLength;
     return os;
@@ -65,19 +65,19 @@ inline std::ostream& operator<<(std::ostream& os, const RlcBearerDesc& leg) {
 struct DrbDesc {
     DrbKey key;                         // (peer node, DRB id); the peer is the UE at a gNB, the serving node at a UE
 
-    // Which bearer architecture selects this bearer: BEARER_5GC = QoS flows via
-    // qfiList (SDAP), BEARER_EPS = packet filters via filters (no SDAP). Authored
+    // Which bearer architecture selects this bearer: CN_5GC = QoS flows via
+    // mappedQfis (SDAP), CN_EPC = packet filters via filters (no SDAP). Authored
     // entries always state it; descriptors materialized from establishment alone
-    // keep UNKNOWN_BEARER_TYPE.
-    BearerType bearerType = UNKNOWN_BEARER_TYPE;
+    // keep UNKNOWN_CORE_NETWORK.
+    CoreNetwork coreNetwork = UNKNOWN_CORE_NETWORK;
 
     // SDAP-Config
     PduSessionType pduSessionType = IP_V4;
     std::string upperProtocol;          // INET protocol name for upper-layer dispatch (empty = derive from pduSessionType)
-    std::vector<Qfi> qfiList;           // mappedQoS-FlowsToAdd
-    bool isDefault = false;             // defaultDRB (5gc: fallback for unmapped QFIs; eps: carries traffic matching no filter)
+    std::vector<Qfi> mappedQfis;           // mappedQoS-FlowsToAdd
+    bool isDefault = false;             // defaultDRB (5gc: fallback for unmapped QFIs; epc: carries traffic matching no filter)
 
-    // Packet filters selecting this bearer (BEARER_EPS only; inet::PacketFilter
+    // Packet filters selecting this bearer (CN_EPC only; inet::PacketFilter
     // syntax: a message-name pattern, or an expression written as "expr(...)")
     std::vector<std::string> filters;
 
@@ -94,7 +94,7 @@ struct DrbDesc {
     std::vector<RlcBearerDesc> legs;
 
     // RLC-BearerConfig
-    LteRlcType rlcType = UM;            // rlc-Config: TM, UM or AM
+    RlcMode rlcMode = UM;            // rlc-Config: TM, UM or AM
     bool soFraming = false;             // wire format: false = LTE FI/concatenation (TS 36.322), true = NR SI/SO (TS 38.322)
     unsigned int snFieldLength = 12;    // sn-FieldLength, in bits
     LogicalCid lcid = LCID_NONE;        // logicalChannelIdentity
@@ -112,12 +112,12 @@ struct DrbDesc {
 
 inline std::ostream& operator<<(std::ostream& os, const DrbDesc& drb) {
     os << "drbId=" << drb.getDrbId() << " peer=" << drb.getPeerId();
-    if (drb.bearerType != UNKNOWN_BEARER_TYPE) os << " " << bearerTypeToA(drb.bearerType);
+    if (drb.coreNetwork != UNKNOWN_CORE_NETWORK) os << " " << coreNetworkToA(drb.coreNetwork);
     if (drb.isDefault) os << " DEFAULT";
     os << " qfi=[";
-    for (size_t i = 0; i < drb.qfiList.size(); i++) {
+    for (size_t i = 0; i < drb.mappedQfis.size(); i++) {
         if (i) os << ",";
-        os << drb.qfiList[i];
+        os << drb.mappedQfis[i];
     }
     os << "]";
     if (!drb.filters.empty()) {
@@ -139,7 +139,7 @@ inline std::ostream& operator<<(std::ostream& os, const DrbDesc& drb) {
         }
         os << "]";
     }
-    os << " rlc=" << rlcTypeToA(drb.rlcType) << (drb.soFraming ? " SO" : " FI")
+    os << " rlc=" << rlcModeToA(drb.rlcMode) << (drb.soFraming ? " SO" : " FI")
        << " snBits=" << drb.snFieldLength
        << " lcid=" << num(drb.lcid) << " lcg=" << drb.lcg;
     if (drb.hasQosProfile)

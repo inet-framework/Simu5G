@@ -44,7 +44,7 @@ class LogicalConnectionInd extends inet::TagBase {
 // Usually exchanged between PDCP and RLC layers.
 //
 class RlcConfigurationTagBase extends inet::TagBase {
-    unsigned short rlcType enum(LteRlcType) = 0;  // RLC mode (TM, UM, AM)
+    unsigned short rlcMode enum(RlcMode) = 0;  // RLC mode (TM, UM, AM)
 }
 
 //

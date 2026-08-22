@@ -112,9 +112,9 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
             }
             else {
                 // we need to consider also the size of RLC and MAC headers
-                if (lcConfig.rlcType == UM)
+                if (lcConfig.rlcMode == UM)
                     toServe += RLC_HEADER_UM;
-                else if (lcConfig.rlcType == AM)
+                else if (lcConfig.rlcMode == AM)
                     toServe += RLC_HEADER_AM;
 
                 if (firstSdu)
@@ -214,7 +214,7 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                         // (nrAmHeaderBytes). TS 38.322 6.2.1.3/6.2.1.4.
                         unsigned int snBits = lcConfig.snFieldLength;
                         unsigned int rlcHdr;
-                        if (lcConfig.rlcType == AM) {
+                        if (lcConfig.rlcMode == AM) {
                             rlcHdr = nrAmHeaderBytes(soFrontIsContinuation[cid] ? NRUM_CONTINUATION : NRUM_FIRST, snBits);
                         }
                         else {
@@ -280,9 +280,9 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                     elem->occupancy_ = vQueue->getQueueOccupancy();
                     elem->sentData_ += alloc;
 
-                    if (lcConfig.rlcType == UM)
+                    if (lcConfig.rlcMode == UM)
                         alloc -= RLC_HEADER_UM;
-                    else if (lcConfig.rlcType == AM)
+                    else if (lcConfig.rlcMode == AM)
                         alloc -= RLC_HEADER_AM;
 
                     if (alloc > 0)
@@ -316,9 +316,9 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
                     elem->occupancy_ = vQueue->getQueueOccupancy();
                     elem->sentData_ += alloc;
 
-                    if (lcConfig.rlcType == UM)
+                    if (lcConfig.rlcMode == UM)
                         alloc -= RLC_HEADER_UM;
-                    else if (lcConfig.rlcType == AM)
+                    else if (lcConfig.rlcMode == AM)
                         alloc -= RLC_HEADER_AM;
 
                     // check if there is space for a SDU

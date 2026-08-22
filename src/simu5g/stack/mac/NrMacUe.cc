@@ -357,9 +357,9 @@ void NrMacUe::macPduMake(MacCid cid)
 
                 if (size > 0) {
                     // take into account the RLC header size
-                    if (getLogicalChannelConfig(destCid).rlcType == UM)
+                    if (getLogicalChannelConfig(destCid).rlcMode == UM)
                         size += RLC_HEADER_UM;
-                    else if (getLogicalChannelConfig(destCid).rlcType == AM)
+                    else if (getLogicalChannelConfig(destCid).rlcMode == AM)
                         size += RLC_HEADER_AM;
                 }
             }

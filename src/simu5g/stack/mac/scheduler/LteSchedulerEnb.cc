@@ -411,7 +411,7 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
                 // first/continuation per nrUmHeaderBytes. AM always carries the SN. TS 38.322.
                 unsigned int snBits = mac_->getLogicalChannelConfig(cid).snFieldLength;
                 unsigned int rlcHdr;
-                if (mac_->getLogicalChannelConfig(cid).rlcType == AM) {
+                if (mac_->getLogicalChannelConfig(cid).rlcMode == AM) {
                     rlcHdr = nrAmHeaderBytes(soFrontIsContinuation_[cid] ? NRUM_CONTINUATION : NRUM_FIRST, snBits);
                 }
                 else {

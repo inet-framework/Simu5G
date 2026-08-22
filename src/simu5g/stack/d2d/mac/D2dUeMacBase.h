@@ -189,9 +189,9 @@ void D2dUeMacBase<Base>::macPduMake(MacCid cid)
 
                     // take into account the RLC header size
                     if (sizeBsr > 0) {
-                        if (this->getLogicalChannelConfig(cid).rlcType == UM)
+                        if (this->getLogicalChannelConfig(cid).rlcMode == UM)
                             sizeBsr += RLC_HEADER_UM;
-                        else if (this->getLogicalChannelConfig(cid).rlcType == AM)
+                        else if (this->getLogicalChannelConfig(cid).rlcMode == AM)
                             sizeBsr += RLC_HEADER_AM;
                     }
                 }
@@ -318,9 +318,9 @@ void D2dUeMacBase<Base>::macPduMake(MacCid cid)
 
                 if (size > 0) {
                     // take into account the RLC header size
-                    if (this->getLogicalChannelConfig(destCid).rlcType == UM)
+                    if (this->getLogicalChannelConfig(destCid).rlcMode == UM)
                         size += RLC_HEADER_UM;
-                    else if (this->getLogicalChannelConfig(destCid).rlcType == AM)
+                    else if (this->getLogicalChannelConfig(destCid).rlcMode == AM)
                         size += RLC_HEADER_AM;
                 }
             }
