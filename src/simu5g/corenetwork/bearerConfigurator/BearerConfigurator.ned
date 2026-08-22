@@ -24,7 +24,14 @@ package simu5g.corenetwork.bearerConfigurator;
 // modeled: within the model, the RAN never authors a bearer of its own -- every
 // bearer comes from this module's tables.
 //
-// Only one instance of this module is permitted within the entire network.
+// One cellular network holds one instance of this module, alongside its ~Binder. Like
+// the Binder, it is always reached through module paths supplied in parameters
+// (bearerConfiguratorModule), never through hardcoded ones, so several cellular
+// networks -- each with its own Binder and BearerConfigurator pair -- can coexist
+// within one simulation. The "ue" patterns of the definition tables range over the
+// UEs registered in this instance's Binder only, but are matched against module paths
+// relative to the toplevel network, so in such a setup the entries (and the
+// module-path parameters) name their nodes by qualified paths, e.g. "networkA.ue[*]".
 //
 // Modeling abstractions and current limitations:
 //  - Bearer establishment is a direct call into the RRC of each node involved; no

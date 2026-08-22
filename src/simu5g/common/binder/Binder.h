@@ -42,9 +42,9 @@ struct NodeInfo {
 };
 
 /**
- * The Binder module has one instance in the whole network.
- * It stores global mapping tables with OMNeT++ module IDs,
- * IP addresses, etc.
+ * The Binder module has one instance per cellular network (a simulation may hold
+ * several such networks, each with its own Binder; see the NED file). It stores
+ * global mapping tables with OMNeT++ module IDs, IP addresses, etc.
  */
 class Binder : public cSimpleModule
 {

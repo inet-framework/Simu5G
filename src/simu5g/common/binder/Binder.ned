@@ -20,8 +20,14 @@ package simu5g.common.binder;
 // utilized throughout the simulation for various control-plane functionalities. It provides
 // a centralized storage and access point for data such as network configurations and
 // operational parameters.
-// Only one instance of this module is permitted within the entire network, ensuring
-// the consistency and integrity of the shared information.
+//
+// One instance serves one cellular network: the base stations, UEs and core-network
+// entities that share a node-id (MacNodeId) space, and with it the cell associations,
+// dual-connectivity relations, X2 peerings and multicast groups keyed by those ids.
+// The module is always reached through module paths supplied in parameters
+// (binderModule), never through hardcoded ones, so one simulation may hold several
+// cellular networks side by side, each with its own Binder and ~BearerConfigurator,
+// provided every module references those of its own network.
 //
 simple Binder
 {
