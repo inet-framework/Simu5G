@@ -14,11 +14,35 @@ package simu5g.corenetwork.bearerConfigurator;
 //
 // Central configurator of the network's data radio bearers.
 //
-// The session management of the core network is what decides which data radio bearers
-// exist, what they look like, and when they are set up: it configures the RAN, and the
-// RAN never authors a bearer of its own. This module is where that role lives.
+// This module does not model a single 3GPP network function. It combines, in one
+// network-wide service, decisions that a real system distributes between the core
+// network and the RAN: in 5GS, the SMF controls PDU sessions and QoS flows, while the
+// NG-RAN decides how QoS flows map onto DRBs and derives the radio configuration
+// (TS 23.501 5.7.1, TS 38.300 12); in EPS, the corresponding roles are spread across
+// the MME and the eNB. Here every bearer is authored in one place instead, and the
+// signalling that would carry the configuration (N1/N2/S1/RRC procedures) is not
+// modeled: within the model, the RAN never authors a bearer of its own -- every
+// bearer comes from this module's tables.
 //
 // Only one instance of this module is permitted within the entire network.
+//
+// Modeling abstractions and current limitations:
+//  - Bearer establishment is a direct call into the RRC of each node involved; no
+//    signalling procedure carries it.
+//  - Packet-triggered establishment (onDemandDrbs) is a simulation policy. In 5GS, a
+//    first UL packet with an unmapped QFI would ride the already-established default
+//    DRB, and the gNB could reconfigure the mapping afterwards (TS 38.300 Annex A);
+//    creating the DRB before the first packet is delivered is a shortcut.
+//  - One PDU session (in EPS terms: one PDN connection) per UE is assumed. QFI
+//    mappings, the default DRB and the pduSessionType are therefore scoped per UE,
+//    although the spec scopes all of them per PDU session (TS 37.324); a UE with
+//    several sessions, e.g. toward multiple DNs or with two session types, cannot
+//    be described yet.
+//  - The QoS characteristics attached to a definition describe the DRB as a whole.
+//    In 5GS they belong to QoS flows, and flows with different QoS profiles may
+//    legitimately share a DRB; per-flow QoS is not modeled.
+//  - legSelection is a Simu5G extension: 3GPP steers split bearers by PDCP-level
+//    controls (primaryPath, ul-DataSplitThreshold), not by per-PDU expressions.
 //
 // The staticDrbs parameter is the network's data radio bearer configuration: one entry per
 // bearer per UE, describing the bearer before and independent of its establishment (modeled
@@ -52,15 +76,22 @@ package simu5g.corenetwork.bearerConfigurator;
 //  - profile (string, optional): name of a drbProfiles entry supplying defaults for the
 //    fields it does not spell out itself
 //  - mappedQfis (int[], optional, "5gc" only): QFI values mapped to this DRB; an entry without
-//    it does not take part in SDAP's QFI-to-DRB mapping
+//    it does not take part in SDAP's QFI-to-DRB mapping. This field maps already-assigned
+//    QFIs onto the DRB; which QFI a packet carries is decided elsewhere (the qfiRules
+//    parameter of ~QosFlowClassifier for UL and of ~TrafficFlowFilter for DL, where the
+//    ini author plays the NAS)
 //  - filters (string[], optional, "epc" only): packet filters selecting this bearer, each
 //    an inet::PacketFilter -- a message-name pattern (e.g. "VoIP*") or an expression written
 //    as "expr(...)" (e.g. "expr(udp.destPort == 3000)"). An expression sees the packet that
 //    triggers establishment, i.e. an UL-triggered and a DL-triggered flow present swapped
 //    port/address roles; a list can carry both spellings.
-//  - lcg (int, optional): the bearer's logical channel group (0..3), which the MAC's
-//    LCG scheduler serves in increasing-index priority order; omitted = derived from
-//    the QoS profile's priority level (bucketed by lcgPriorityBounds), or 0 when the
+//  - lcg (int, optional): the bearer's logical channel group (0..3;
+//    mac-LogicalChannelConfig). In 3GPP an LCG only groups logical-channel buffers
+//    for buffer status reporting; that Simu5G's MAC scheduler additionally serves
+//    lower LCG indices first is a Simu5G scheduling policy, not spec semantics (the
+//    spec's per-logical-channel priority is a separate parameter, not modeled, and
+//    NR allows 8 LCGs where this model keeps LTE's 4). Omitted = derived from the
+//    QoS profile's priority level (bucketed by lcgPriorityBounds), or 0 when the
 //    definition carries no "qosPriorityLevel"
 //  - rlcMode (string, optional when the definition carries a "packetErrorRate"): RLC
 //    mode ("AM", "UM", "TM"); omitted = derived from the QoS profile's packet error rate
@@ -70,7 +101,9 @@ package simu5g.corenetwork.bearerConfigurator;
 //  - legSelection (string, optional): which leg of a split bearer carries a given PDU;
 //    an expression written as "expr(...)" over typeOfService and packetOrdinal, compiled
 //    and evaluated per PDU by the bearer's leg splitter (see ~DcPdcpLegSplitter, whose
-//    legSelection parameter this overrides). Only meaningful on a bearer with two legs.
+//    legSelection parameter this overrides; packetOrdinal counts the PDUs of this
+//    bearer at that splitter, so its scope is the bearer, not the flow). Only
+//    meaningful on a bearer with two legs.
 //  - legs (string[]/object[], optional): the cell groups that serve this bearer, i.e. its
 //    RLC bearers (TS 38.331 RLC-BearerConfig). One leg = an MCG or an SCG bearer, both =
 //    a split bearer. An element is either a cell group name ("MCG" or "SCG"), or an object
@@ -97,20 +130,22 @@ package simu5g.corenetwork.bearerConfigurator;
 // say which UE it belongs to (ue, drbId), which architecture and flows select it (coreNetwork,
 // mappedQfis, filters, isDefault).
 //
-// The standardized QoS characteristics rows are available as predefined profiles, referenced
-// by name without being defined: "qci-1".."qci-9" (TS 23.203 Table 6.1.7-A) and
-// "5qi-1".."5qi-9" (TS 23.501 Table 5.7.4-1). A row carries what the spec standardizes --
-// gbr, qosPriorityLevel, packetDelayBudget, packetErrorRate -- and nothing else: the
-// RLC mode and the logical channel
-// group are RAN choices, derived from those characteristics by default (the way a gNB
-// derives its AS configuration from the delivered QoS profile; see the rlcMode and lcg
-// field descriptions) and stated on the entry only to override, e.g.
+// A commonly used subset of the standardized QoS characteristics rows -- the core 1..9
+// of each table; both tables define many more -- is available as predefined profiles,
+// referenced by name without being defined: "qci-1".."qci-9" (TS 23.203 Table 6.1.7-A)
+// and "5qi-1".."5qi-9" (TS 23.501 Table 5.7.4-1). A row carries what the spec
+// standardizes -- gbr, qosPriorityLevel, packetDelayBudget, packetErrorRate -- and
+// nothing else: the RLC mode and the logical channel group are RAN choices, derived
+// from those characteristics by default (the way a gNB derives its AS configuration
+// from the delivered QoS profile; see the rlcMode and lcg field descriptions) and
+// stated on the entry only to override, e.g.
 // {coreNetwork: "5gc", ue: "ue[*]", drbId: 0, mappedQfis: [1, 2], profile: "5qi-1"}.
-// A drbProfiles entry may not redefine a predefined name. NOTE the spec's priority scales
-// (QCI 1..9, 5QI 10..90) differ from each other and from the small hand-picked values older
-// configurations use; the QoS-aware scheduler weights bearers by 1/(qosPriorityLevel+1), and the
-// default lcgPriorityBounds suit the 5QI scale (single-digit priorities all land in LCG 0),
-// so profiles from different scales should not be mixed within one network.
+// A drbProfiles entry may not redefine a predefined name. NOTE the spec's priority
+// scales (QCI 1..9, 5QI 10..90) differ from each other and from the small hand-picked
+// values older configurations use; the QoS-aware scheduler weights bearers by
+// 1/(qosPriorityLevel+1), and the default lcgPriorityBounds suit the 5QI scale
+// (single-digit priorities all land in LCG 0), so profiles from different scales
+// should not be mixed within one network.
 //
 // Example (in an ini file):
 //
@@ -147,6 +182,10 @@ package simu5g.corenetwork.bearerConfigurator;
 // An "epc" entry describes bearers of SDAP-less stacks only; a "ue" pattern (or an
 // omitted "ue") covering UEs of both kinds simply skips the SDAP ones, but an entry
 // whose explicit "ue" pattern matches no UE with a compatible stack is an error.
+// The default value's rows are all "epc" because that is all a default needs: a
+// stack with SDAP cannot run unauthored anyway (its QFI-to-DRB mapping exists only
+// if authored), so the configurations that author nothing are exactly the SDAP-less
+// ones.
 // D2D and multicast bearers are outside the definition system and are established
 // with a fixed transitional configuration (RLC UM, LCG 3) until they get definitions
 // of their own.
@@ -156,7 +195,7 @@ package simu5g.corenetwork.bearerConfigurator;
 //
 // <pre>
 // *.bearerConfigurator.onDemandDrbs = [
-//     {coreNetwork: "5gc", ue: "ue[*]", mappedQfis: [3, 4], profile: "gaming"},
+//     {coreNetwork: "5gc", ue: "ue[*]", mappedQfis: [3, 4], profile: "5qi-3"},
 //     {coreNetwork: "epc", filters: ["expr(udp.destPort == 3000)"], lcg: 0, rlcMode: "UM"},
 //     {coreNetwork: "epc", isDefault: true, lcg: 3, rlcMode: "UM"}
 //     ]

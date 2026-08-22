@@ -29,9 +29,11 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- * The network's central bearer configurator. It has one instance in
- * the whole network, and it is what decides which data radio bearers exist and
- * when they are set up. See the NED file for details.
+ * The network's central bearer configurator: a network-wide simulation service
+ * combining bearer decisions that a real system distributes across the core
+ * network and the RAN. It has one instance in the whole network, and it is what
+ * decides which data radio bearers exist and when they are set up. See the NED
+ * file for details.
  */
 class BearerConfigurator : public cSimpleModule
 {
