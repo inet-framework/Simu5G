@@ -9,10 +9,10 @@
 // and cannot be removed from it.
 //
 
-package simu5g.corenetwork.smf;
+package simu5g.corenetwork.bearerConfigurator;
 
 //
-// Session Management Function (SMF) of the core network.
+// Central configurator of the network's data radio bearers.
 //
 // The session management of the core network is what decides which data radio bearers
 // exist, what they look like, and when they are set up: it configures the RAN, and the
@@ -112,10 +112,10 @@ package simu5g.corenetwork.smf;
 // Example (in an ini file):
 //
 // <pre>
-// *.smf.drbProfiles = {
+// *.bearerConfigurator.drbProfiles = {
 //     voice:  {rlcType: "UM", gbr: true, delayBudget: 100, per: 1e-2, priority: 2}
 //     }
-// *.smf.staticDrbs = [
+// *.bearerConfigurator.staticDrbs = [
 //     {bearerType: "5gc", ue: "ue[*]", drb: 0, qfiList: [1, 2], profile: "voice"}
 //     ]
 // </pre>
@@ -151,7 +151,7 @@ package simu5g.corenetwork.smf;
 // one without):
 //
 // <pre>
-// *.smf.onDemandDrbs = [
+// *.bearerConfigurator.onDemandDrbs = [
 //     {bearerType: "5gc", ue: "ue[*]", qfiList: [3, 4], profile: "gaming"},
 //     {bearerType: "eps", filters: ["expr(udp.destPort == 3000)"], lcg: 0, rlcType: "UM"},
 //     {bearerType: "eps", isDefault: true, lcg: 3, rlcType: "UM"}
@@ -162,7 +162,7 @@ package simu5g.corenetwork.smf;
 // ("5gc") and the SingleCell-DL-OnDemandDrb configuration of simulations/lte/tutorial
 // ("eps") for working setups.
 //
-simple Smf
+simple BearerConfigurator
 {
     parameters:
         string binderModule = default("binder");

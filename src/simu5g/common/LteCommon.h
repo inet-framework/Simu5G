@@ -133,9 +133,9 @@ struct FlowBindingKeyHash {
 
 // The configuration half of a bearer-establishment request: what the requester asks RRC
 // to set the bearer up as. rlcType = UNKNOWN_RLC_TYPE means the requester states nothing;
-// the SMF then resolves the request from the bearer's definition entry before it reaches
-// RRC. The D2D mode-switch path passes explicit values because it transports
-// already-decided configuration.
+// the bearer configurator then resolves the request from the bearer's definition entry
+// before it reaches RRC. The D2D mode-switch path passes explicit values because it
+// transports already-decided configuration.
 struct BearerRequest {
     LteRlcType rlcType = UM;
     Lcg lcg = Lcg(0);   // logicalChannelGroup (mac-LogicalChannelConfig)
@@ -144,7 +144,7 @@ struct BearerRequest {
     // to the bearer at both endpoints, so the reverse flow resolves to the same DRB
     // instead of establishing a second, parallel bearer. Absent when the requester
     // classifies by other means (SDAP maps QFIs) or establishes bearers up front
-    // (the SMF's static definitions).
+    // (the bearer configurator's static definitions).
     std::optional<FlowBindingKey> flowBindingKey;
 };
 

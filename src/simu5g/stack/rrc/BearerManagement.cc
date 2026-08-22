@@ -11,7 +11,7 @@
 
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/common/binder/Binder.h"
-#include "simu5g/corenetwork/smf/Smf.h"
+#include "simu5g/corenetwork/bearerConfigurator/BearerConfigurator.h"
 #include "simu5g/stack/rrc/Registration.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
@@ -75,7 +75,7 @@ void BearerManagement::initialize(int stage)
         nicModule_ = inet::getContainingNicModule(this);
 
         binderModule.reference(this, "binderModule", true);
-        smfModule.reference(this, "smfModule", true);
+        bearerConfiguratorModule.reference(this, "bearerConfiguratorModule", true);
         drbTableModule.reference(this, "drbTableModule", true);
         rlcMuxModule.reference(this, "rlcMuxModule", true);
         nrRlcMuxModule.reference(this, "nrRlcMuxModule", false);
@@ -92,7 +92,8 @@ void BearerManagement::initialize(int stage)
 }
 
 // Take delivery of one bearer's configuration from the core network's session management
-// (see Smf::configureDrbs()). RRC records it, to establish the bearer from later, and
+// (see BearerConfigurator::configureDrbs()). RRC records it, to establish the bearer
+// from later, and
 // pushes on what the local layers consume: SDAP's QFI-to-DRB view and the eNB MAC's
 // per-bearer QoS profile are working copies those modules never author themselves.
 void BearerManagement::configureDrb(const DrbDesc& drb)
@@ -186,7 +187,7 @@ void BearerManagement::releaseDrbIdOf(DrbKey bearer)
             ? (registration_->getLteNodeId() != NODEID_NONE ? registration_->getLteNodeId() : registration_->getNrNodeId())
             : bearer.getNodeId();
     cModule *ueModule = infraBearer ? binderModule->getNodeModule(ueNodeId) : nullptr;
-    if (ueModule != nullptr && smfModule->ownsStaticDrbId(ueModule, bearer.getDrbId()))
+    if (ueModule != nullptr && bearerConfiguratorModule->ownsStaticDrbId(ueModule, bearer.getDrbId()))
         return;
 
     // The identity belongs to the pool of the (this node, peer) pair. A dual-stack node
@@ -195,14 +196,14 @@ void BearerManagement::releaseDrbIdOf(DrbKey bearer)
     MacNodeId lteId = registration_->getLteNodeId();
     MacNodeId nrId = registration_->getNrNodeId();
     if (lteId != NODEID_NONE) {
-        smfModule->releaseDrbId(lteId, bearer.getNodeId(), bearer.getDrbId());
+        bearerConfiguratorModule->releaseDrbId(lteId, bearer.getNodeId(), bearer.getDrbId());
         if (ueModule != nullptr)
-            smfModule->forgetOnDemandDrbId(ueModule, lteId, bearer.getNodeId(), bearer.getDrbId());
+            bearerConfiguratorModule->forgetOnDemandDrbId(ueModule, lteId, bearer.getNodeId(), bearer.getDrbId());
     }
     if (nrId != NODEID_NONE) {
-        smfModule->releaseDrbId(nrId, bearer.getNodeId(), bearer.getDrbId());
+        bearerConfiguratorModule->releaseDrbId(nrId, bearer.getNodeId(), bearer.getDrbId());
         if (ueModule != nullptr)
-            smfModule->forgetOnDemandDrbId(ueModule, nrId, bearer.getNodeId(), bearer.getDrbId());
+            bearerConfiguratorModule->forgetOnDemandDrbId(ueModule, nrId, bearer.getNodeId(), bearer.getDrbId());
     }
 }
 
@@ -318,7 +319,7 @@ BearerRequest BearerManagement::resolveBearerRequest(const BearerRequest& reqIn,
 
     if (req.rlcType == UNKNOWN_RLC_TYPE)
         throw cRuntimeError("Bearer establishment request for DRB %d (peer %d) carries no RLC mode -- "
-                "the SMF resolves every request from the bearer's definition entry, "
+                "the bearer configurator resolves every request from the bearer's definition entry, "
                 "so an unresolved request reaching RRC is a requester bug",
                 (int)num(flow.drbId), (int)num(peerId));
     return req;

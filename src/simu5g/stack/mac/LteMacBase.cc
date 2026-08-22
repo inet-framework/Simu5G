@@ -319,7 +319,7 @@ bool LteMacBase::bufferizePacket(cPacket *cpkt)
     // check if queues exist
     if (connDescOut_.find(cid) == connDescOut_.end())
         //TODO this is dead code -- this throw needs to be added in subclasses too!!!!!!!!!!!
-        throw cRuntimeError("LteMacBase::bufferizePacket - Buffer for CID %s not found. Connection must be established via Binder SMF before use.", cid.str().c_str());
+        throw cRuntimeError("LteMacBase::bufferizePacket - Buffer for CID %s not found. Connection must be established via the BearerConfigurator before use.", cid.str().c_str());
 
     OutgoingConnectionInfo& connInfo = connDescOut_.at(cid);
     LteMacQueue *queue = connInfo.queue;

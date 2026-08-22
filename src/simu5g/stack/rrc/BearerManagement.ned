@@ -21,7 +21,7 @@ simple BearerManagement like IBearerManagement
         @display("i=block/control");
         @class(BearerManagement);
         string binderModule = default("binder");   // to reach a peer's BearerManagement on RLF
-        string smfModule = default("smf");   // to return a torn-down bearer's DRB identity to its pool
+        string bearerConfiguratorModule = default("bearerConfigurator");   // to return a torn-down bearer's DRB identity to its pool
 
         // RRC re-establishment after a radio link failure (TS 38.331 5.3.7). On RLF the peer's
         // link is released (Ip2Nic drops its traffic); t311 = cell-(re)selection timer, and when

@@ -9,8 +9,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _SMF_H_
-#define _SMF_H_
+#ifndef _BEARERCONFIGURATOR_H_
+#define _BEARERCONFIGURATOR_H_
 
 #include <map>
 #include <memory>
@@ -29,14 +29,14 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- * The Session Management Function of the core network. It has one instance in
+ * The network's central bearer configurator. It has one instance in
  * the whole network, and it is what decides which data radio bearers exist and
  * when they are set up. See the NED file for details.
  */
-class Smf : public cSimpleModule
+class BearerConfigurator : public cSimpleModule
 {
   public:
-    ~Smf() override;
+    ~BearerConfigurator() override;
 
   protected:
     inet::ModuleRefByPar<Binder> binder_;

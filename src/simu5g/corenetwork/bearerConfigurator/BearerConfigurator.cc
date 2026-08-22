@@ -13,7 +13,7 @@
 #include <inet/common/stlutils.h>
 
 #include "simu5g/common/InitStages.h"
-#include "simu5g/corenetwork/smf/Smf.h"
+#include "simu5g/corenetwork/bearerConfigurator/BearerConfigurator.h"
 #include <algorithm>
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/rrc/Registration.h"
@@ -23,9 +23,9 @@ namespace simu5g {
 using namespace omnetpp;
 using namespace inet;
 
-Define_Module(Smf);
+Define_Module(BearerConfigurator);
 
-void Smf::initialize(int stage)
+void BearerConfigurator::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
@@ -41,7 +41,7 @@ void Smf::initialize(int stage)
     }
 }
 
-bool Smf::isDualConnectivityRequired(const FlowId& flow)
+bool BearerConfigurator::isDualConnectivityRequired(const FlowId& flow)
 {
     MacNodeId sourceId = flow.sourceId;
     MacNodeId destId = flow.destId;
@@ -68,7 +68,7 @@ bool Smf::isDualConnectivityRequired(const FlowId& flow)
     return nodeBInDC && ueIsDualTech;
 }
 
-DrbId Smf::assignDrbId(MacNodeId a, MacNodeId b)
+DrbId BearerConfigurator::assignDrbId(MacNodeId a, MacNodeId b)
 {
     auto pair = std::minmax(a, b);
     auto& inUse = drbIdsInUse_[{pair.first, pair.second}];
@@ -80,29 +80,29 @@ DrbId Smf::assignDrbId(MacNodeId a, MacNodeId b)
     while (inUse.count(DrbId(id)))
         id++;
     if (id > MAX_DRB_ID)
-        throw cRuntimeError("Smf::assignDrbId - out of DRB identities for the node pair (%hu, %hu): "
+        throw cRuntimeError("BearerConfigurator::assignDrbId - out of DRB identities for the node pair (%hu, %hu): "
                 "all %d are in use", num(pair.first), num(pair.second), MAX_DRB_ID);
 
     inUse.insert(DrbId(id));
     return DrbId(id);
 }
 
-void Smf::reserveDrbId(MacNodeId a, MacNodeId b, DrbId drbId)
+void BearerConfigurator::reserveDrbId(MacNodeId a, MacNodeId b, DrbId drbId)
 {
     auto pair = std::minmax(a, b);
     drbIdsInUse_[{pair.first, pair.second}].insert(drbId);
 }
 
-void Smf::releaseDrbId(MacNodeId a, MacNodeId b, DrbId drbId)
+void BearerConfigurator::releaseDrbId(MacNodeId a, MacNodeId b, DrbId drbId)
 {
     auto pair = std::minmax(a, b);
     auto it = drbIdsInUse_.find({pair.first, pair.second});
     if (it != drbIdsInUse_.end() && it->second.erase(drbId) != 0)
-        EV << "Smf::releaseDrbId - DRB " << drbId << " of the node pair (" << pair.first
+        EV << "BearerConfigurator::releaseDrbId - DRB " << drbId << " of the node pair (" << pair.first
            << ", " << pair.second << ") is free again" << endl;
 }
 
-bool Smf::ownsStaticDrbId(cModule *ueModule, DrbId drbId)
+bool BearerConfigurator::ownsStaticDrbId(cModule *ueModule, DrbId drbId)
 {
     for (const AuthoredBearer& ab : authoredBearers_)
         if (!ab.onDemand && ab.ueModule == ueModule && ab.desc.getDrbId() == drbId)
@@ -110,7 +110,7 @@ bool Smf::ownsStaticDrbId(cModule *ueModule, DrbId drbId)
     return false;
 }
 
-void Smf::forgetOnDemandDrbId(cModule *ueModule, MacNodeId a, MacNodeId b, DrbId drbId)
+void BearerConfigurator::forgetOnDemandDrbId(cModule *ueModule, MacNodeId a, MacNodeId b, DrbId drbId)
 {
     std::pair<MacNodeId, MacNodeId> pairKey = std::minmax(a, b);
     for (AuthoredBearer& ab : authoredBearers_) {
@@ -122,7 +122,7 @@ void Smf::forgetOnDemandDrbId(cModule *ueModule, MacNodeId a, MacNodeId b, DrbId
     }
 }
 
-Smf::~Smf()
+BearerConfigurator::~BearerConfigurator()
 {
     // plain delete, not dropAndDelete(): deleting while still owned lets ~cOwnedObject
     // deregister from this module's owner list (dropAndDelete nulls the owner first,
@@ -130,7 +130,7 @@ Smf::~Smf()
     delete predefinedDrbProfiles_;
 }
 
-const cValueMap *Smf::getPredefinedDrbProfiles()
+const cValueMap *BearerConfigurator::getPredefinedDrbProfiles()
 {
     if (predefinedDrbProfiles_ == nullptr) {
         // The standardized QoS characteristics tables as built-in profiles, referenced
@@ -180,7 +180,7 @@ const cValueMap *Smf::getPredefinedDrbProfiles()
     return predefinedDrbProfiles_;
 }
 
-void Smf::configureDrbs()
+void BearerConfigurator::configureDrbs()
 {
     // The node ids of each registered UE: one per stack, both naming the same UE and so
     // the same bearers. The LTE id, which every UE has, serves as the UE's identity here.
@@ -267,7 +267,7 @@ static bool ueStackHasSdap(cModule *ueModule)
     return nic != nullptr && nic->getSubmodule("sdap") != nullptr;
 }
 
-void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
+void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDemand,
         const std::map<cModule *, std::vector<MacNodeId>>& ueNodeIds, const std::string& networkPrefix,
         std::map<cModule *, std::map<DrbId, DrbDesc>>& drbsOfUe)
 {
@@ -550,7 +550,7 @@ void Smf::parseDrbDefinitions(const char *paramName, bool onDemand,
     }
 }
 
-void Smf::pushDrbToRrcs(cModule *ueModule, const DrbDesc& drb)
+void BearerConfigurator::pushDrbToRrcs(cModule *ueModule, const DrbDesc& drb)
 {
     // node ids of the UE module, one per stack (see configureDrbs())
     std::vector<MacNodeId> nodeIds;
@@ -584,7 +584,7 @@ void Smf::pushDrbToRrcs(cModule *ueModule, const DrbDesc& drb)
     }
 }
 
-void Smf::establishStaticDrbs()
+void BearerConfigurator::establishStaticDrbs()
 {
     for (AuthoredBearer& ab : authoredBearers_) {
         if (ab.onDemand)
@@ -619,14 +619,14 @@ void Smf::establishStaticDrbs()
         flow.direction = UL;
         flow.drbId = ab.desc.getDrbId();
 
-        EV << "Smf::establishStaticDrbs - establishing DRB " << flow.drbId << " of UE '"
+        EV << "BearerConfigurator::establishStaticDrbs - establishing DRB " << flow.drbId << " of UE '"
            << ab.ueModule->getFullPath() << "' (nodeId=" << ueId << ") towards serving node "
            << flow.destId << endl;
         establishDataConnection(flow, BearerRequest{ab.desc.rlcType, ab.desc.lcg});
     }
 }
 
-DrbId Smf::establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& key, const inet::Packet *pkt)
+DrbId BearerConfigurator::establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& key, const inet::Packet *pkt)
 {
     Enter_Method_Silent("establishOnDemandBearer");
 
@@ -666,7 +666,7 @@ DrbId Smf::establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& key
             pkt->getName(), ueModule ? ueModule->getFullPath().c_str() : "?", (int)num(ueId));
 }
 
-DrbId Smf::establishFromDefinition(AuthoredBearer& ab, const FlowId& flowIn, const FlowBindingKey& key)
+DrbId BearerConfigurator::establishFromDefinition(AuthoredBearer& ab, const FlowId& flowIn, const FlowBindingKey& key)
 {
     FlowId flow = flowIn;
 
@@ -691,7 +691,7 @@ DrbId Smf::establishFromDefinition(AuthoredBearer& ab, const FlowId& flowIn, con
             DrbDesc desc = ab.desc;
             desc.key = DrbKey(NODEID_NONE, drbId);
             desc.lcid = LogicalCid(num(drbId));
-            EV << "Smf::establishFromDefinition - on-demand definition materialized as DRB " << drbId
+            EV << "BearerConfigurator::establishFromDefinition - on-demand definition materialized as DRB " << drbId
                << " for UE " << ab.ueModule->getFullPath() << endl;
             pushDrbToRrcs(ab.ueModule, desc);
         }
@@ -700,7 +700,7 @@ DrbId Smf::establishFromDefinition(AuthoredBearer& ab, const FlowId& flowIn, con
     return establishDataConnection(flow, BearerRequest{ab.desc.rlcType, ab.desc.lcg, key});
 }
 
-DrbId Smf::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
+DrbId BearerConfigurator::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
 {
     Enter_Method_Silent("createOnDemandDrbForQfi");
 
@@ -725,7 +725,7 @@ DrbId Smf::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
             DrbDesc desc = ab.desc;
             desc.key = DrbKey(NODEID_NONE, drbId);
             desc.lcid = LogicalCid(num(drbId));
-            EV << "Smf::createOnDemandDrbForQfi - QFI " << (int)num(qfi) << " gets on-demand DRB " << drbId
+            EV << "BearerConfigurator::createOnDemandDrbForQfi - QFI " << (int)num(qfi) << " gets on-demand DRB " << drbId
                << " at UE " << ueModule->getFullPath() << endl;
             pushDrbToRrcs(ab.ueModule, desc);
         }
@@ -734,7 +734,7 @@ DrbId Smf::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
     return DRBID_NONE;
 }
 
-DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& reqIn)
+DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const BearerRequest& reqIn)
 {
     Enter_Method_Silent("establishDataConnection");
 
@@ -745,7 +745,7 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
     MacNodeId peerId = (flow.multicastGroupId != NODEID_NONE) ? flow.multicastGroupId : flow.destId;
     if (flow.drbId == DRBID_NONE) {
         flow.drbId = assignDrbId(flow.sourceId, peerId);
-        EV << "Smf::establishDataConnection - new DRB ID assigned: " << flow.drbId << endl;
+        EV << "BearerConfigurator::establishDataConnection - new DRB ID assigned: " << flow.drbId << endl;
     }
     else
         reserveDrbId(flow.sourceId, peerId, flow.drbId);   // named by the requester; keep assignDrbId off it
@@ -832,7 +832,7 @@ DrbId Smf::establishDataConnection(const FlowId& flowIn, const BearerRequest& re
 // The definition a flow's bearer was authored from, if any: the entry whose UE and DRB id
 // the flow names. Definitions describe infrastructure bearers only, so a D2D or multicast
 // flow never has one.
-const DrbDesc *Smf::findBearerDefinition(const FlowId& flow)
+const DrbDesc *BearerConfigurator::findBearerDefinition(const FlowId& flow)
 {
     if (flow.multicastGroupId != NODEID_NONE || flow.d2dTxPeerId != NODEID_NONE || flow.d2dRxPeerId != NODEID_NONE)
         return nullptr;
@@ -856,13 +856,13 @@ const DrbDesc *Smf::findBearerDefinition(const FlowId& flow)
     return nullptr;
 }
 
-void Smf::createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)
+void BearerConfigurator::createConnection(const FlowId& flow, const BearerRequest& req, bool withPdcp)
 {
     MacNodeId sourceId = flow.sourceId;
     MacNodeId destId = flow.destId;
     MacNodeId groupId = flow.multicastGroupId;
 
-    EV << "Smf::establishDataConnection - establishing connection from sourceId=" << sourceId
+    EV << "BearerConfigurator::establishDataConnection - establishing connection from sourceId=" << sourceId
        << " to destId=" << destId << " groupId=" << groupId << endl;
 
     bool sourceIsEnb = getNodeTypeById(sourceId) == NODEB;
@@ -899,13 +899,13 @@ void Smf::createConnection(const FlowId& flow, const BearerRequest& req, bool wi
 }
 
 
-void Smf::createIncomingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp)
+void BearerConfigurator::createIncomingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp)
 {
     BearerManagement *bm = check_and_cast<BearerManagement*>(binder_->getRrcByNodeId(nodeId)->getSubmodule("bearerManagement"));
     bm->createIncomingConnection(flow, req, withPdcp);
 }
 
-void Smf::createOutgoingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp)
+void BearerConfigurator::createOutgoingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp)
 {
     BearerManagement *bm = check_and_cast<BearerManagement*>(binder_->getRrcByNodeId(nodeId)->getSubmodule("bearerManagement"));
     bm->createOutgoingConnection(flow, req, withPdcp);

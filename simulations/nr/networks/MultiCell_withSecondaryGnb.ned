@@ -18,7 +18,7 @@ import inet.node.inet.Router;
 import inet.node.inet.StandardHost;
 import simu5g.common.binder.Binder;
 import simu5g.common.carrierAggregation.CarrierAggregation;
-import simu5g.corenetwork.smf.Smf;
+import simu5g.corenetwork.bearerConfigurator.BearerConfigurator;
 import simu5g.nodes.NrUe;
 import simu5g.nodes.gNodeB;
 import simu5g.nodes.PgwStandard;
@@ -52,7 +52,7 @@ network MultiCell_withSecondaryGnb
         binder: Binder {
             @display("p=106,334;is=s");
         }
-        smf: Smf {
+        bearerConfigurator: BearerConfigurator {
             @display("p=166,334;is=s");
         }
         carrierAggregation: CarrierAggregation {

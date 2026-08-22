@@ -28,7 +28,7 @@ Define_Module(NrSdap);
 
 void NrSdap::initialize()
 {
-    smf_.reference(this, "smfModule", true);
+    bearerConfigurator_.reference(this, "bearerConfiguratorModule", true);
 
     // Get pointer to reflective QoS table
     reflectiveQosTable.reference(this, "reflectiveQosTableModule", false);
@@ -165,12 +165,12 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     const DrbDesc *drb = drbTable_.getDrbForQfi(nodeId, qfi);
     if (!drb) {
         // An uncovered QFI may still have an on-demand definition to create its DRB
-        // from (see the SMF's onDemandDrbs parameter); a successful creation is
-        // pushed back into this table, so retry the lookup. The SMF needs the
+        // from (see the bearer configurator's onDemandDrbs parameter); a successful creation is
+        // pushed back into this table, so retry the lookup. The bearer configurator needs the
         // actual UE: on the gNB that is nodeId (the destination), on the UE itself
         // the flow's source.
         MacNodeId ueId = isUe ? pkt->getTag<FlowControlInfo>()->getSourceId() : nodeId;
-        if (smf_->createOnDemandDrbForQfi(ueId, qfi) != DRBID_NONE)
+        if (bearerConfigurator_->createOnDemandDrbForQfi(ueId, qfi) != DRBID_NONE)
             drb = drbTable_.getDrbForQfi(nodeId, qfi);
     }
     if (!drb) {
@@ -213,11 +213,11 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
         if (!establishBearersOnDemand_)
             throw cRuntimeError("SDAP TX: no established bearer for DRB %d (peer nodeId=%d), and on-demand bearer establishment is disabled -- missing or mismatched staticDrbs entry?",
                     (int)num(drb->getDrbId()), (int)num(lteInfo->getDestId()));
-        // SDAP decides neither the LCG nor the RLC mode: the SMF resolves both from
+        // SDAP decides neither the LCG nor the RLC mode: the bearer configurator resolves both from
         // the bearer's definition entry at establishment (see
-        // Smf::establishDataConnection()), so the request carries no configuration
+        // BearerConfigurator::establishDataConnection()), so the request carries no configuration
         // at all.
-        smf_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{UNKNOWN_RLC_TYPE});
+        bearerConfigurator_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{UNKNOWN_RLC_TYPE});
     }
 
     // Set protocol tag for outgoing frame to PDCP layer
@@ -234,7 +234,7 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
     MacNodeId ueId = (!isUe && lteInfo) ? lteInfo->getSourceId() : NODEID_NONE;
     const DrbDesc *drb = (drbId != DRBID_NONE) ? drbTable_.getDrb(DrbKey(ueId, drbId)) : nullptr;
     if (!drb)
-        throw cRuntimeError("SDAP RX: Unknown DRB %d (ueId=%d) -- missing entry in the SMF's staticDrbs?",
+        throw cRuntimeError("SDAP RX: Unknown DRB %d (ueId=%d) -- missing entry in bearerConfigurator.staticDrbs?",
                             (int)num(drbId), (int)num(ueId));
 
     EV_INFO << "SDAP RX: Received packet from DRB " << drbId << ": " << pkt->peekAtFront() << "\n";

@@ -27,12 +27,12 @@ simple Ip2Nic like INetworkLayer2CellularNic
     parameters:
         string nodeType;
         string binderModule = default("binder");
-        string smfModule = default("smf");
+        string bearerConfiguratorModule = default("bearerConfigurator");
         string handoverPacketHolderModule = default("^.handoverPacketHolder");
         object useNrCondition = default(expr(typeOfService >= 10));  // UE with both stacks attached, no dual connectivity: expr() over typeOfService, true = use the NR stack
         bool isNr = default(false);   // true for the NR leg (set by NrNicUe/NrNicEnb, or in the ini for a DC master eNB)
         bool hasSdap = default(false);  // when true, SDAP handles DRB/RLC assignment; Ip2Nic skips traffic classification
-        bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (static bearers are established up front; see the staticDrbs parameter of ~Smf)
+        bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (static bearers are established up front; see the staticDrbs parameter of ~BearerConfigurator)
         @display("i=block/layer");
     gates:
         // connection to network layer

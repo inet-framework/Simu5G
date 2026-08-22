@@ -34,7 +34,7 @@ class PdcpTxEntityBase;
 class PdcpRxEntityBase;
 class Registration;
 class Binder;
-class Smf;
+class BearerConfigurator;
 class NrSdap;
 class Ip2Nic;
 
@@ -66,7 +66,7 @@ class BearerManagement : public cSimpleModule
     inet::ModuleRefByPar<LteMacBase> macModule;
     inet::ModuleRefByPar<LteMacBase> nrMacModule;
     inet::ModuleRefByPar<Binder> binderModule;   // DC master/secondary topology lookups; peer BearerManagement on RLF
-    inet::ModuleRefByPar<Smf> smfModule;         // the DRB identity pool a torn-down bearer's id goes back to
+    inet::ModuleRefByPar<BearerConfigurator> bearerConfiguratorModule;         // the DRB identity pool a torn-down bearer's id goes back to
     inet::ModuleRefByPar<DrbTable> drbTableModule;   // the bearer configuration this module authors
     inet::ModuleRefByPar<NrSdap> sdapModule;     // configuration push target; null when the NIC has no SDAP
     Ip2Nic *ip2nicModule_ = nullptr;             // configuration/notification push target
@@ -78,8 +78,8 @@ class BearerManagement : public cSimpleModule
     virtual void notifyBearerEstablished(DrbKey key);
     virtual void notifyBearerReleased(DrbKey key);
 
-    // Give a torn-down bearer's DRB identity back to the SMF, which pools identities
-    // per node pair (see Smf::releaseDrbId).
+    // Give a torn-down bearer's DRB identity back to the bearer configurator,
+    // which pools identities per node pair (see BearerConfigurator::releaseDrbId).
     virtual void releaseDrbIdOf(DrbKey bearer);
 
     // Entity registries (CP owns the lifecycle of all entities)
@@ -121,8 +121,8 @@ class BearerManagement : public cSimpleModule
 
     // Checks req.rlcType before any use of it (entity type selection, materializeDrb),
     // called once at the top of each establishment entry point. The delivered configuration
-    // wins (a conflicting explicit request throws). The SMF resolves every request before
-    // it reaches RRC (from the bearer's definition entry, or the fixed D2D/multicast
+    // wins (a conflicting explicit request throws). The bearer configurator resolves
+    // every request before it reaches RRC (from the bearer's definition entry, or the fixed D2D/multicast
     // configuration), so an rlcType still UNKNOWN_RLC_TYPE here is a requester bug and
     // throws.
     virtual BearerRequest resolveBearerRequest(const BearerRequest& req, const FlowId& flow, MacNodeId peerId);
@@ -168,7 +168,7 @@ class BearerManagement : public cSimpleModule
   public:
     ~BearerManagement() override;
     // Take delivery of one bearer's configuration from the core network's session
-    // management (see Smf::configureDrbs()). RRC never fetches this itself.
+    // management (see BearerConfigurator::configureDrbs()). RRC never fetches this itself.
     virtual void configureDrb(const DrbDesc& drb);
     // Schedule an RLC-detected radio link failure teardown for a peer node, deferred
     // to a safe execution context. nrStack selects the failing leg (LTE vs NR).

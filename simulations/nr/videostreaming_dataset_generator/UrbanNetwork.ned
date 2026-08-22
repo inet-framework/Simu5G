@@ -17,7 +17,7 @@ import inet.networklayer.ipv4.RoutingTableRecorder;
 import inet.node.ethernet.Eth10G;
 import simu5g.common.binder.Binder;
 import simu5g.common.carrierAggregation.CarrierAggregation;
-import simu5g.corenetwork.smf.Smf;
+import simu5g.corenetwork.bearerConfigurator.BearerConfigurator;
 import simu5g.mobility.trafficLightMobility.TrafficLight;
 import simu5g.nodes.NrUe;
 import simu5g.nodes.gNodeB;
@@ -52,7 +52,7 @@ network UrbanNetwork
         binder: Binder {
             @display("p=115,242;is=s");
         }
-        smf: Smf {
+        bearerConfigurator: BearerConfigurator {
             @display("p=175,242;is=s");
         }
         carrierAggregation: CarrierAggregation {
