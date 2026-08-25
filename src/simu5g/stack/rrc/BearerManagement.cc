@@ -292,7 +292,7 @@ const DrbDesc *BearerManagement::lookupConfiguredDrb(const FlowId& flow, MacNode
 {
     // Authored entries describe infrastructure bearers only; multicast and D2D bearers
     // have DRB ids from other key spaces and must not match them.
-    if (flow.multicastGroupId != NODEID_NONE || flow.d2dTxPeerId != NODEID_NONE || flow.d2dRxPeerId != NODEID_NONE)
+    if (flow.d2dGroupId != NODEID_NONE || flow.d2dTxPeerId != NODEID_NONE || flow.d2dRxPeerId != NODEID_NONE)
         return nullptr;
     // Authored entries are keyed by NODEID_NONE ("my serving node") on the UE side,
     // and by the UE's node id on the gNB side.
@@ -334,11 +334,11 @@ void BearerManagement::createIncomingConnection(const FlowId& flow, const Bearer
     const BearerRequest req = resolveBearerRequest(reqIn, flow, flow.sourceId);
 
     EV << "BearerManagement::createIncomingConnection - " << " srcId=" << flow.sourceId << " destId=" << flow.destId
-        << " groupId=" << flow.multicastGroupId << " drbId=" << flow.drbId
+        << " groupId=" << flow.d2dGroupId << " drbId=" << flow.drbId
         << " direction=" << dirToA(flow.direction)
         << " withPdcp=" << (withPdcp ? "yes" : "no") << endl;
 
-    ASSERT(isLocalNodeId(flow.destId) || flow.multicastGroupId != NODEID_NONE);
+    ASSERT(isLocalNodeId(flow.destId) || flow.d2dGroupId != NODEID_NONE);
 
     // Idempotence guard: with duplex bearer establishment this half may already
     // exist (e.g. re-establishment after a partial teardown); skip instead of
@@ -352,7 +352,7 @@ void BearerManagement::createIncomingConnection(const FlowId& flow, const Bearer
     // skips receivers whose isNrUe() disagrees with the transmitting PHY's isNr_), so there
     // the sender's id selects the leg. This mirrors createOutgoingConnection(), which uses
     // sourceId because there the sender is this node.
-    MacNodeId legNodeId = (flow.multicastGroupId != NODEID_NONE) ? flow.sourceId : flow.destId;
+    MacNodeId legNodeId = (flow.d2dGroupId != NODEID_NONE) ? flow.sourceId : flow.destId;
     bool isNr = (registration_->getNodeType() == UE && isNrUe(legNodeId));
     cModule *existingRlcEnt = lookupRlcEntityModule(rlcId, isNr);
     if (existingRlcEnt != nullptr && existingRlcEnt->gate("lowerIn")->isConnectedOutside()) {
@@ -414,7 +414,7 @@ void BearerManagement::createOutgoingConnection(const FlowId& flow, const Bearer
     const BearerRequest req = resolveBearerRequest(reqIn, flow, flow.destId);
 
     EV << "BearerManagement::createOutgoingConnection - " << " srcId=" << flow.sourceId << " destId=" << flow.destId
-        << " groupId=" << flow.multicastGroupId << " drbId=" << flow.drbId
+        << " groupId=" << flow.d2dGroupId << " drbId=" << flow.drbId
         << " direction=" << dirToA(flow.direction)
         << " withPdcp=" << (withPdcp ? "yes" : "no") << endl;
 
@@ -674,7 +674,7 @@ int BearerManagement::getNumLegs(DrbKey id, const FlowId& flow)
     // and multicast bearers, secondaries (X2 relay only) -- is single-leg.
     bool isEnb = (registration_->getNodeType() == NODEB);
     int numLegs = 1;
-    if (dualConnectivityEnabled_ && flow.multicastGroupId == NODEID_NONE) {
+    if (dualConnectivityEnabled_ && flow.d2dGroupId == NODEID_NONE) {
         if (!isEnb && getNodeTypeById(id.getNodeId()) == NODEB)
             numLegs = 2;
         else if (isEnb && binderModule->getSecondaryNode(getOwnNodeId()) != NODEID_NONE)

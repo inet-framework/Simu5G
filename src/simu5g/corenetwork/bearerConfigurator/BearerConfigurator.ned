@@ -196,9 +196,11 @@ package simu5g.corenetwork.bearerConfigurator;
 // stack with SDAP cannot run unauthored anyway (its QFI-to-DRB mapping exists only
 // if authored), so the configurations that author nothing are exactly the SDAP-less
 // ones.
-// D2D and multicast bearers are outside the definition system and are established
-// with a fixed transitional configuration (RLC UM, LCG 3) until they get definitions
-// of their own.
+// D2D and multicast bearers are outside the definition system: the tables describe
+// infrastructure (Uu) bearers, while those are sidelink ones. They are established
+// with a fixed configuration (RLC UM, LCG 3). The model has no sidelink bearer
+// vocabulary and needs none: the only multicast in the model is D2D groupcast, which
+// is kept working as it stands, and the network never originates multicast of its own.
 //
 // Example (in an ini file; the first entry suits a stack with SDAP, the other two
 // one without):

@@ -31,12 +31,12 @@ class NodeIdentificationInd extends inet::TagBase {
 }
 
 //
-// Identifies the logical connection and multicast group for the packet.
+// Identifies the logical connection and D2D groupcast destination for the packet.
 // Usually sent by PDCP to RLC and MAC layers.
 //
 class LogicalConnectionInd extends inet::TagBase {
     LogicalCid lcid;                    // Logical Connection Identifier
-    int32 multicastGroupId = -1;        // Multicast group ID (-1 for unicast)
+    int32 d2dGroupId = -1;              // D2D groupcast id (-1 = not a groupcast flow)
 }
 
 //

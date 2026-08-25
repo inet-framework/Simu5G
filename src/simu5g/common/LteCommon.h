@@ -89,11 +89,11 @@ struct FlowId {
     MacNodeId destId = NODEID_NONE;
     Direction direction = DL;
     DrbId drbId = DRBID_NONE;
-    MacNodeId multicastGroupId = NODEID_NONE;
+    MacNodeId d2dGroupId = NODEID_NONE;
     MacNodeId d2dTxPeerId = NODEID_NONE;
     MacNodeId d2dRxPeerId = NODEID_NONE;
 
-    DrbKey txDrbKey() const;    // same logic as ctrlInfoToTxDrbKey (multicast keys by group)
+    DrbKey txDrbKey() const;    // same logic as ctrlInfoToTxDrbKey (D2D groupcast keys by group)
     DrbKey rxDrbKey() const;    // same logic as ctrlInfoToRxDrbKey
     FlowId reversed() const;    // same swaps as Binder's (former) makeReverseFlowControlInfo
 };
@@ -532,7 +532,6 @@ DrbKey ctrlInfoToTxDrbKey(const FlowControlInfo *info); // DrbKey for TX context
 DrbKey ctrlInfoToRxDrbKey(const FlowControlInfo *info); // DrbKey for RX context: key by source (remote sender)
 const std::string DeploymentScenarioToA(DeploymentScenario type);
 DeploymentScenario aToDeploymentScenario(std::string s);
-bool isMulticastConnection(FlowControlInfo *lteInfo);
 
 /**
  * Check if a MacNodeId represents a multicast destination ID

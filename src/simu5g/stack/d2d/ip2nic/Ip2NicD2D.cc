@@ -65,7 +65,7 @@ void Ip2NicD2D::classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, 
         d2dBinder_->addD2DMulticastTransmitter(localNodeId);
         lteInfo->setDirection(D2D_MULTI);
         MacNodeId groupId = binder_->getOrAssignDestIdForMulticastAddress(destAddr);
-        lteInfo->setMulticastGroupId(groupId);
+        lteInfo->setD2dGroupId(groupId);
     }
     else {
         MacNodeId destId = binder_->getMacNodeId(destAddr);

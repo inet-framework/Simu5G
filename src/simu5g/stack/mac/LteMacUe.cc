@@ -502,7 +502,7 @@ void LteMacUe::macPduMake(MacCid cid)
 
                     // multicast support: carry the group id from the MAC SDU to the MAC PDU
                     if (auto flowInfo = pkt->findTag<FlowControlInfo>()) {
-                        MacNodeId groupId = flowInfo->getMulticastGroupId();
+                        MacNodeId groupId = flowInfo->getD2dGroupId();
                         if (groupId != NODEID_NONE) // for unicast, group id is NONE
                             macPkt->getTagForUpdate<UserControlInfo>()->setPacketMulticastGroupId(groupId);
                     }

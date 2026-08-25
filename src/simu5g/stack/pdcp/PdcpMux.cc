@@ -59,7 +59,7 @@ void PdcpMux::fromDataPort(cPacket *pktAux)
 
     EV << "fromDataPort in " << getFullPath() << " event #" << getSimulation()->getEventNumber()
        << ": Processing packet " << pkt->getName() << " src=" << lteInfo->getSourceId() << " dest=" << lteInfo->getDestId()
-       << " multicast=" << lteInfo->getMulticastGroupId() << " direction=" << dirToA((Direction)lteInfo->getDirection())
+       << " d2dGroup=" << lteInfo->getD2dGroupId() << " direction=" << dirToA((Direction)lteInfo->getDirection())
        << " ---> " << id << std::endl;
 
     // A missing entity must never be silently dropped -- ASSERT is compiled out in release

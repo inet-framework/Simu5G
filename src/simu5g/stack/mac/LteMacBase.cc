@@ -207,7 +207,7 @@ void LteMacBase::createOutgoingConnection(MacCid cid, const FlowDescriptor& conn
        << " sourceId: " << connInfo.getSourceId()
        << " destId: " << connInfo.getDestId()
        << " direction: " << dirToA(connInfo.getDirection())
-       << " multicastGroupId: " << connInfo.getMulticastGroupId() << endl;
+       << " d2dGroupId: " << connInfo.getD2dGroupId() << endl;
 
     ASSERT(connDescOut_.find(cid) == connDescOut_.end());
 
@@ -279,7 +279,7 @@ void LteMacBase::createIncomingConnection(MacCid cid, const FlowDescriptor& conn
        << " sourceId: " << connInfo.getSourceId()
        << " destId: " << connInfo.getDestId()
        << " direction: " << dirToA(connInfo.getDirection())
-       << " multicastGroupId: " << connInfo.getMulticastGroupId() << endl;
+       << " d2dGroupId: " << connInfo.getD2dGroupId() << endl;
 
     ASSERT(connDescIn_.find(cid) == connDescIn_.end());
     connDescIn_[cid] = connInfo;

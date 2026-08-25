@@ -687,7 +687,7 @@ DrbId BearerConfigurator::establishOnDemandBearer(const FlowId& flow, const Flow
     // describe infrastructure bearers), and are established with a fixed transitional
     // configuration -- RLC UM on LCG 3, the non-GBR default bearer's group -- until
     // they get definitions of their own.
-    if (flow.multicastGroupId != NODEID_NONE || flow.d2dTxPeerId != NODEID_NONE || flow.d2dRxPeerId != NODEID_NONE)
+    if (flow.d2dGroupId != NODEID_NONE || flow.d2dTxPeerId != NODEID_NONE || flow.d2dRxPeerId != NODEID_NONE)
         return establishDataConnection(flow, BearerRequest{UM, Lcg(3), key});
 
     // The requester brings identity only; the bearer's properties come from the
@@ -795,7 +795,7 @@ DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const Be
     // static definitions name their bearers explicitly). IDs are unique per node
     // pair; for multicast the "pair" is (sender, group), there being no single peer.
     FlowId flow = flowIn;
-    MacNodeId peerId = (flow.multicastGroupId != NODEID_NONE) ? flow.multicastGroupId : flow.destId;
+    MacNodeId peerId = (flow.d2dGroupId != NODEID_NONE) ? flow.d2dGroupId : flow.destId;
     if (flow.drbId == DRBID_NONE) {
         flow.drbId = assignDrbId(flow.sourceId, peerId);
         EV << "BearerConfigurator::establishDataConnection - new DRB ID assigned: " << flow.drbId << endl;
@@ -824,11 +824,11 @@ DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const Be
     else {
         MacNodeId sourceId = flow.sourceId;
         MacNodeId destId = flow.destId;
-        bool isMulticast = flow.multicastGroupId != NODEID_NONE;
+        bool isGroupcast = flow.d2dGroupId != NODEID_NONE;
 
         // Get UE registration if any endpoint is UE
         Registration *ueReg = (getNodeTypeById(sourceId) == UE) ? check_and_cast<Registration*>(binder_->getRrcByNodeId(sourceId)->getSubmodule("registration")) :
-                     (!isMulticast && getNodeTypeById(destId) == UE) ? check_and_cast<Registration*>(binder_->getRrcByNodeId(destId)->getSubmodule("registration")) :
+                     (!isGroupcast && getNodeTypeById(destId) == UE) ? check_and_cast<Registration*>(binder_->getRrcByNodeId(destId)->getSubmodule("registration")) :
                      nullptr;
 
         // Which of the UE's two ids belongs to which cell group. A UE's stacks pair with
@@ -859,7 +859,7 @@ DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const Be
         lteFlow.sourceId = getNodeTypeById(sourceId) == UE ?
                             ueMcgId :
                             binder_->getMasterNodeOrSelf(sourceId);
-        if (!isMulticast) {  // Only set destId for unicast
+        if (!isGroupcast) {  // Only set destId for unicast
             lteFlow.destId = getNodeTypeById(destId) == UE ?
                               ueMcgId :
                               binder_->getMasterNodeOrSelf(destId);
@@ -871,7 +871,7 @@ DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const Be
         nrFlow.sourceId = getNodeTypeById(sourceId) == UE ?
                            ueScgId :
                            binder_->getSecondaryNode(binder_->getMasterNodeOrSelf(sourceId));
-        if (!isMulticast) {  // Only set destId for unicast
+        if (!isGroupcast) {  // Only set destId for unicast
             nrFlow.destId = getNodeTypeById(destId) == UE ?
                              ueScgId :
                              binder_->getSecondaryNode(binder_->getMasterNodeOrSelf(destId));
@@ -887,7 +887,7 @@ DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const Be
 // flow never has one.
 const DrbDesc *BearerConfigurator::findBearerDefinition(const FlowId& flow)
 {
-    if (flow.multicastGroupId != NODEID_NONE || flow.d2dTxPeerId != NODEID_NONE || flow.d2dRxPeerId != NODEID_NONE)
+    if (flow.d2dGroupId != NODEID_NONE || flow.d2dTxPeerId != NODEID_NONE || flow.d2dRxPeerId != NODEID_NONE)
         return nullptr;
     MacNodeId ueId = (getNodeTypeById(flow.sourceId) == UE) ? flow.sourceId : flow.destId;
     if (getNodeTypeById(ueId) != UE)
@@ -940,7 +940,7 @@ void BearerConfigurator::createConnection(const FlowId& flow, const BearerReques
 {
     MacNodeId sourceId = flow.sourceId;
     MacNodeId destId = flow.destId;
-    MacNodeId groupId = flow.multicastGroupId;
+    MacNodeId groupId = flow.d2dGroupId;
 
     EV << "BearerConfigurator::establishDataConnection - establishing connection from sourceId=" << sourceId
        << " to destId=" << destId << " groupId=" << groupId << endl;

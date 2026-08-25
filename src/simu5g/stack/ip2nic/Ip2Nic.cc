@@ -380,7 +380,7 @@ void Ip2Nic::assignEndpointIds(FlowControlInfo *lteInfo, const Ipv4Address& dest
         // carries a PDU is decided per PDU by the bearer's splitter (see DcPdcpLegSplitter).
         if (isEnb) {
             lteInfo->setSourceId(nodeId_);
-            if (lteInfo->getMulticastGroupId() != NODEID_NONE)
+            if (lteInfo->getD2dGroupId() != NODEID_NONE)
                 lteInfo->setDestId(nodeId_);
             else
                 lteInfo->setDestId(getNextHopNodeId(destAddr, !dualConnectivityEnabled_ && useNR, nodeId_));
@@ -390,7 +390,7 @@ void Ip2Nic::assignEndpointIds(FlowControlInfo *lteInfo, const Ipv4Address& dest
             // entity, keyed by it), NR UE ID when non-DC NR (entity was created with NR IDs)
             MacNodeId ueSourceId = (dualConnectivityEnabled_ ? anchorId_ : (useNR ? nrNodeId_ : nodeId_));
             lteInfo->setSourceId(ueSourceId);
-            if (lteInfo->getMulticastGroupId() != NODEID_NONE)
+            if (lteInfo->getD2dGroupId() != NODEID_NONE)
                 lteInfo->setDestId(nodeId_);
             else
                 lteInfo->setDestId(getNextHopNodeId(destAddr, !dualConnectivityEnabled_ && useNR, ueSourceId));
@@ -402,7 +402,7 @@ void Ip2Nic::assignEndpointIds(FlowControlInfo *lteInfo, const Ipv4Address& dest
         // NIC takes the branch above, a dual-connectivity master eNB included (it sets
         // isNr from the ini).
         lteInfo->setSourceId(nodeId_);
-        if (lteInfo->getMulticastGroupId() != NODEID_NONE)  // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
+        if (lteInfo->getD2dGroupId() != NODEID_NONE)  // destId is meaningless for multicast D2D (we use the id of the source for statistic purposes at lower levels)
             lteInfo->setDestId(nodeId_);
         else
             lteInfo->setDestId(getNextHopNodeId(destAddr, false, lteInfo->getSourceId()));

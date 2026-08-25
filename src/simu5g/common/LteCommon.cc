@@ -341,26 +341,26 @@ void verifyControlInfo(const FlowControlInfo *info)
 {
     auto srcType = getNodeTypeById(info->getSourceId());
     auto destType = getNodeTypeById(info->getDestId());
-    bool isMulticast = info->getMulticastGroupId() != NODEID_NONE;
+    bool isGroupcast = info->getD2dGroupId() != NODEID_NONE;
 
     switch (info->getDirection()) {
         case UL:
-            ASSERT(!isMulticast);
+            ASSERT(!isGroupcast);
             ASSERT(srcType == UE);
             ASSERT(destType == NODEB);
             break;
         case DL:
-            ASSERT(!isMulticast);
+            ASSERT(!isGroupcast);
             ASSERT(srcType == NODEB);
             ASSERT(destType == UE);
             break;
         case D2D:
-            ASSERT(!isMulticast);
+            ASSERT(!isGroupcast);
             ASSERT(srcType == UE);
             ASSERT(destType == UE);
             break;
         case D2D_MULTI:
-            ASSERT(isMulticast);
+            ASSERT(isGroupcast);
             ASSERT(srcType == UE);
             //ASSERT(destType == UE);
             break;
@@ -397,8 +397,8 @@ const std::string planeToA(Plane p)
 DrbKey FlowId::txDrbKey() const
 {
     if (direction == D2D_MULTI) {
-        ASSERT(multicastGroupId != NODEID_NONE);
-        return DrbKey(multicastGroupId, drbId);
+        ASSERT(d2dGroupId != NODEID_NONE);
+        return DrbKey(d2dGroupId, drbId);
     }
     return DrbKey(destId, drbId);
 }
@@ -434,8 +434,8 @@ FlowId FlowId::reversed() const
 DrbKey ctrlInfoToTxDrbKey(const FlowControlInfo *info)
 {
     if (info->getDirection() == D2D_MULTI) {
-        ASSERT(info->getMulticastGroupId() != NODEID_NONE);
-        return DrbKey(info->getMulticastGroupId(), info->getDrbId());
+        ASSERT(info->getD2dGroupId() != NODEID_NONE);
+        return DrbKey(info->getD2dGroupId(), info->getDrbId());
     }
     return DrbKey(info->getDestId(), info->getDrbId());
 }
@@ -443,14 +443,14 @@ DrbKey ctrlInfoToTxDrbKey(const FlowControlInfo *info)
 /*
  * Obtain the DrbKey for RX context (key by source, i.e. remote sender).
  *
- * For D2D_MULTI, we use sourceId (not multicastGroupId) because multiple
+ * For D2D_MULTI, we use sourceId (not d2dGroupId) because multiple
  * senders can relay to the same multicast group, and each needs its own
- * RX buffer. Using multicastGroupId would cause key collisions across
+ * RX buffer. Using d2dGroupId would cause key collisions across
  * senders. In theory, (sourceId, drbId) could collide if the same sender
  * participates in multiple multicast groups that share the same drbId,
  * but in practice each group uses a distinct drbId so this does not occur.
  * A fully correct solution would require extending DrbKey to three fields
- * (sourceId, multicastGroupId, drbId).
+ * (sourceId, d2dGroupId, drbId).
  */
 DrbKey ctrlInfoToRxDrbKey(const FlowControlInfo *info)
 {
@@ -466,11 +466,6 @@ const std::string DeploymentScenarioToA(DeploymentScenario type)
 DeploymentScenario aToDeploymentScenario(std::string s)
 {
     return static_cast<DeploymentScenario>(omnetpp::cEnum::get("simu5g::DeploymentScenario")->lookup(s.c_str(), UNKNOWN_SCENARIO));
-}
-
-bool isMulticastConnection(FlowControlInfo *lteInfo)
-{
-    return lteInfo->getMulticastGroupId() != NODEID_NONE;
 }
 
 
@@ -493,8 +488,8 @@ MacNodeId ctrlInfoToUeId(const FlowControlInfo *info)
         case UL:
             return info->getSourceId();
         case D2D_MULTI:
-            ASSERT(info->getMulticastGroupId() != NODEID_NONE);
-            return info->getMulticastGroupId();
+            ASSERT(info->getD2dGroupId() != NODEID_NONE);
+            return info->getD2dGroupId();
         default:
             throw cRuntimeError("ctrlInfoToMacCid - unknown direction %d", info->getDirection());
     }
