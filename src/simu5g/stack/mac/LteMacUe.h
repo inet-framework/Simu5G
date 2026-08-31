@@ -26,7 +26,7 @@ class LteSchedulingGrant;
 class LteSchedulerUeUl;
 class LcgScheduler;
 class Binder;
-class ChannelModelBase;
+class RadioBase;
 
 class LteMacUe : public LteMacBase
 {

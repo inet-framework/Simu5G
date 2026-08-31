@@ -17,8 +17,8 @@
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/phy/PhyBase.h"
-#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
-#include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/RadioBase.h"
+#include "simu5g/stack/d2d/phy/channelmodel/ID2dRadio.h"
 #include "simu5g/stack/phy/packet/LteAirFrame.h"
 
 namespace simu5g {
@@ -31,8 +31,8 @@ void D2dUePhyHelper::storeAirFrame(LteAirFrame *newFrame)
     // Store the frame received from the nearest transmitter
     UserControlInfo *newInfo = check_and_cast<UserControlInfo *>(newFrame->getControlInfo());
     GHz carrierFreq = newInfo->getCarrierFrequency();
-    ChannelModelBase *channelModel = phy_->getChannelModel(carrierFreq);
-    if (channelModel == nullptr)
+    RadioBase *radio = phy_->getRadio(carrierFreq);
+    if (radio == nullptr)
         throw cRuntimeError("D2dUePhyHelper::storeAirFrame - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 
     Coord myCoord = phy_->getCoord();
@@ -46,7 +46,7 @@ void D2dUePhyHelper::storeAirFrame(LteAirFrame *newFrame)
 
         double sum = 0.0;
         unsigned int allocatedRbs = 0;
-        rsrpVector = check_and_cast<ID2dChannelModel *>(channelModel)->getRSRP_D2D(newFrame, newInfo, phy_->getMacNodeId(), myCoord);
+        rsrpVector = check_and_cast<ID2dRadio *>(radio)->getRSRP_D2D(newFrame, newInfo, phy_->getMacNodeId(), myCoord);
 
         // Get the average RSRP on the RBs allocated for the transmission
         RbMap rbmap = newInfo->getGrantedBlocks();
@@ -125,14 +125,14 @@ void D2dUePhyHelper::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo
     EV << NOW << " D2dUePhyHelper::decodeAirFrame - Start decoding..." << endl;
 
     GHz carrierFreq = lteInfo->getCarrierFrequency();
-    ChannelModelBase *channelModel = phy_->getChannelModel(carrierFreq);
-    if (channelModel == nullptr)
+    RadioBase *radio = phy_->getRadio(carrierFreq);
+    if (radio == nullptr)
         throw cRuntimeError("D2dUePhyHelper::decodeAirFrame - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 
     // Apply decider to received packet. D2D and D2D_MULTI no longer need their own
     // entry point: the core reception decision handles every direction, and
     // bestRsrpVector_ carries the capture-effect RSRP for the one-to-many case.
-    bool result = channelModel->isReceptionSuccessful(frame, lteInfo, bestRsrpVector_);
+    bool result = radio->isReceptionSuccessful(frame, lteInfo, bestRsrpVector_);
 
     EV << "Handled LteAirframe with ID " << frame->getId() << " with result "
        << (result ? "RECEIVED" : "NOT RECEIVED") << endl;

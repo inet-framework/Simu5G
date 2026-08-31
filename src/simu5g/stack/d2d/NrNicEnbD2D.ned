@@ -32,7 +32,7 @@ module NrNicEnbD2D extends NrNicEnb
 
         // use the D2D-capable channel model (the study itself -- TR 38.901 on
         // NR legs -- is selected on the medium's carrier leg, not here)
-        channelModelType = default("D2dChannelModel");
+        radioType = default("D2dRadio");
         rrc.typename = default("RrcD2D");
         rrc.hasD2DModeSelection = true;
 }

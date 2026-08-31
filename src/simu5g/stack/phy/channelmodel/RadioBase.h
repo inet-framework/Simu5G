@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef STACK_PHY_CHANNELMODEL_CHANNELMODELBASE_H_
-#define STACK_PHY_CHANNELMODEL_CHANNELMODELBASE_H_
+#ifndef STACK_PHY_CHANNELMODEL_RADIOBASE_H_
+#define STACK_PHY_CHANNELMODEL_RADIOBASE_H_
 
 #include <inet/common/ModuleRefByPar.h>
 
@@ -119,26 +119,26 @@ struct RadioLink
 };
 
 /**
- * Abstract base for the channel models a PHY layer can be equipped with.
+ * Abstract base for the radios a PHY layer can be equipped with.
  *
  * This is not a propagation model: it is the interface to the entire PHY link
- * model. A channel model is asked for received power (getRSRP), for per-band
+ * model. A radio is asked for received power (getRSRP), for per-band
  * SINR (getSINR, getSINR_bgUe), and for the reception decision itself
  * (isReceptionSuccessful), so it owns propagation, fading, interference and
  * the SINR-to-error mapping alike. Path loss (getAttenuation,
  * computePathLoss) is one ingredient among those, not the subject of the
  * class.
  *
- * The class and interface names are RAT-neutral: the concrete models differ
+ * The class and interface names are RAT-neutral: the concrete radios differ
  * in which 3GPP propagation study supplies their formulas (selected on the
  * medium's matching carrier leg, not on the endpoint), never in whether they
  * serve an LTE or an NR carrier, and any of
- * them can be plugged into the channelModelType slot of any NIC through the
- * IChannelModel interface. Everything
+ * them can be plugged into the radioType slot of any NIC through the
+ * IRadio interface. Everything
  * technology-dependent -- carrier frequency, bandwidth, numerology -- is
  * read from the ComponentCarrier module rather than encoded in the class.
  */
-class ChannelModelBase : public cSimpleModule
+class RadioBase : public cSimpleModule
 {
   protected:
     // Reference to Binder module
@@ -167,7 +167,7 @@ class ChannelModelBase : public cSimpleModule
     double log10CarrierFrequencyGHz_;
 
     // Number of bands of the PRIMARY carrier -- kept single-valued for
-    // IdealChannelModel/D2dChannelModel, which read this member directly
+    // IdealRadio/D2dRadio, which read this member directly
     // rather than through getNumBands(GHz) and are never configured with
     // more than one carrier in tree.
     unsigned int numBands_ = -1;
@@ -226,7 +226,7 @@ class ChannelModelBase : public cSimpleModule
     /*
      * The carriers this radio serves, in componentCarrierModules'
      * declaration order (radio endpoint recast E8, §3(c)): what PhyBase's
-     * initializeChannelModel() iterates for the binder_->registerCarrierUe
+     * initializeRadio() iterates for the binder_->registerCarrierUe
      * sweep, in place of the old per-carrier submodule vector's index order.
      */
     const std::vector<ComponentCarrier *>& getComponentCarriers() const { return componentCarriers_; }

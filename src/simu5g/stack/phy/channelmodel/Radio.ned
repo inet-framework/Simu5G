@@ -17,7 +17,7 @@ package simu5g.stack.phy.channelmodel;
 // decision on whether it was received. The channel impairments are modeled
 // statistically -- drawn from the distributions of a 3GPP propagation study,
 // rather than computed from the geometry of an actual environment -- which is
-// what sets this model apart from ~IdealChannelModel, where there are no
+// what sets this model apart from ~IdealRadio, where there are no
 // impairments at all, only a configured packet error rate.
 //
 // It covers:
@@ -39,10 +39,10 @@ package simu5g.stack.phy.channelmodel;
 // stated once for the whole network, on ~RadioMedium and its carrierLeg
 // submodules.
 //
-simple StochasticChannelModel extends ChannelModelBase
+simple Radio extends RadioBase
 {
     parameters:
-        @class("StochasticChannelModel");
+        @class("Radio");
 
         string radioMediumModule = default("radioMedium"); // module path of the medium this endpoint registers with
 

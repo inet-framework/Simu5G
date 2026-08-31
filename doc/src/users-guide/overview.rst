@@ -163,10 +163,11 @@ The architecture of the PHY module in Simu5G mirrors the one of
    :figwidth: 100.0%
 
 When a MAC PDU is sent from a sender to a receiver, an OMNeT++ message is
-exchanged between them. On receipt of the latter, the receiver's channel
-model computes the received power. The channel model can be configured to
-incorporate fading, shadowing, pathloss, etc., and can be made arbitrarily
-complex. From the received power, the SINR is computed, factoring in
+exchanged between them. On receipt of the latter, the receiver's radio
+forwards the computation to the radio medium, which computes the received
+power. The radio medium can be configured to incorporate fading, shadowing,
+pathloss, etc., and can be made arbitrarily complex. From the received
+power, the SINR is computed, factoring in
 interference from every other transmission on the same resources: which
 nodes are transmitting comes from the Binder, and the interferers'
 positions, transmit power and antenna gains come from the shared radio

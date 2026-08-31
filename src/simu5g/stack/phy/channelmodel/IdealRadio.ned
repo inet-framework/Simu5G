@@ -13,7 +13,7 @@
 package simu5g.stack.phy.channelmodel;
 
 //
-// A channel model that replaces propagation modelling with a configurable packet
+// A radio that replaces propagation modelling with a configurable packet
 // error rate. Path loss, shadowing and fading are not modelled at all: the
 // attenuation is zero and the reported SINR/RSRP are a fixed large value, so the
 // CQI reported to the scheduler is pinned at its maximum and the transport block
@@ -41,10 +41,10 @@ package simu5g.stack.phy.channelmodel;
 //
 // This model is intended for protocol validation, not for performance studies.
 //
-simple IdealChannelModel extends ChannelModelBase like IChannelModel
+simple IdealRadio extends RadioBase like IRadio
 {
     parameters:
-        @class("IdealChannelModel");
+        @class("IdealRadio");
 
         // Error probability of the first transmission attempt; the per-direction
         // parameters below default to it

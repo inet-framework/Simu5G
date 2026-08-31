@@ -16,7 +16,7 @@ package simu5g.stack;
 import simu5g.stack.mac.ILteMac;
 import simu5g.stack.packetFlowObserver.IPacketFlowObserver;
 import simu5g.stack.phy.IPhy;
-import simu5g.stack.phy.channelmodel.IChannelModel;
+import simu5g.stack.phy.channelmodel.IRadio;
 import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
 import simu5g.stack.rlc.IRlcMux;
 import simu5g.stack.sdap.INrSdap;
@@ -39,9 +39,9 @@ module NrNicUe extends LteNicUe
         sdap.nodeRole = default("UE");
         sdap.useReflectiveQos = default(this.useReflectiveQos);
         sdap.reflectiveQosTableModule = default(this.useReflectiveQos ? "^.reflectiveQosTable" : "");
-        string nrChannelModelType = default("StochasticChannelModel");
+        string nrRadioType = default("Radio");
         // UE-side antenna height default (radio endpoint recast E4, §3(k))
-        nrChannelModel.height = default(1.5m);
+        nrRadio.height = default(1.5m);
 
         packetFlowObserver.typename = default("PacketFlowObserverUe");
 
@@ -61,7 +61,7 @@ module NrNicUe extends LteNicUe
         nrPhy.macNodeId = parent.nrMacNodeId;
         nrDlFbGen.macNodeId = parent.nrMacNodeId;
         rrc.nrHandoverController.otherHandoverControllerModule = "^.handoverController";
-        nrPhy.channelModelModule = "^.nrChannelModel";
+        nrPhy.radioModule = "^.nrRadio";
         nrPhy.feedbackGeneratorModule = "^.nrDlFbGen";
         nrPhy.handoverControllerModule = "^.rrc.nrHandoverController";
         rrc.nrHandoverController.macModule = "^.^.nrMac";
@@ -94,7 +94,7 @@ module NrNicUe extends LteNicUe
         }
         // NR Channel Model (radio endpoint recast E8: one radio endpoint,
         // serving all of numNrCarriers through componentCarrierModules, §3(c))
-        nrChannelModel: <nrChannelModelType> like IChannelModel {
+        nrRadio: <nrRadioType> like IRadio {
             @display("p=80,60,col;g=left");
         }
 

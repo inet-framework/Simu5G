@@ -10,22 +10,22 @@
 // and cannot be removed from it.
 //
 
-#include "IdealChannelModel.h"
+#include "IdealRadio.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
 
-Define_Module(IdealChannelModel);
+Define_Module(IdealRadio);
 
 // Reported on every band, in place of a computed value. Large enough that the AMC
 // always picks the highest CQI, so the transport block size never varies with the
 // channel and the only source of loss is the configured error rate.
 static const double FAKE_SINR_DB = 10000;
 
-void IdealChannelModel::initialize(int stage)
+void IdealRadio::initialize(int stage)
 {
-    ChannelModelBase::initialize(stage);
+    RadioBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         perDl_ = &par("perDl");
         perUl_ = &par("perUl");
@@ -34,10 +34,10 @@ void IdealChannelModel::initialize(int stage)
     }
 }
 
-double IdealChannelModel::getErrorProbability(Direction dir, unsigned char txNumber) const
+double IdealRadio::getErrorProbability(Direction dir, unsigned char txNumber) const
 {
     if (txNumber == 0)
-        throw cRuntimeError("IdealChannelModel::getErrorProbability(): transmission number must be at least 1");
+        throw cRuntimeError("IdealRadio::getErrorProbability(): transmission number must be at least 1");
 
     cPar *per;
     switch (dir) {
@@ -46,42 +46,42 @@ double IdealChannelModel::getErrorProbability(Direction dir, unsigned char txNum
         case D2D:
         case D2D_MULTI: per = perD2D_; break;
         default:
-            throw cRuntimeError("IdealChannelModel::getErrorProbability(): unexpected direction %d", (int)dir);
+            throw cRuntimeError("IdealRadio::getErrorProbability(): unexpected direction %d", (int)dir);
     }
     return per->doubleValue() * pow(harqReduction_, txNumber - 1);
 }
 
-std::vector<double> IdealChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> IdealRadio::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
-std::vector<double> IdealChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> IdealRadio::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake RSRP is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
-std::vector<double> IdealChannelModel::getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> IdealRadio::getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
-double IdealChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId)
+double IdealRadio::getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId)
 {
     return 10000.0;
 }
 
-bool IdealChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+bool IdealRadio::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     double per = getErrorProbability(lteInfo->getDirection(), lteInfo->getTxNumber());
     bool success = uniform(0.0, 1.0) > per;
-    EV << "IdealChannelModel::isReceptionSuccessful - transmission " << (int)lteInfo->getTxNumber()
+    EV << "IdealRadio::isReceptionSuccessful - transmission " << (int)lteInfo->getTxNumber()
        << ", error probability " << per << " -> " << (success ? "received" : "lost") << endl;
     return success;
 }

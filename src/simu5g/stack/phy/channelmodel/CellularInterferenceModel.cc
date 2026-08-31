@@ -22,7 +22,7 @@
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/phy/channelmodel/RadioMedium.h"
-#include "simu5g/stack/phy/channelmodel/StochasticChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/Radio.h"
 
 namespace simu5g {
 
@@ -61,7 +61,7 @@ CellularInterferenceModel::InterfererInfo CellularInterferenceModel::describeInt
     return info;
 }
 
-void CellularInterferenceModel::computeDownlinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId ueId,
+void CellularInterferenceModel::computeDownlinkInterference(Radio *radio, MacNodeId eNbId, MacNodeId ueId,
         inet::Coord coord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference)
 {
     EV << "**** Downlink Interference ****" << endl;
@@ -98,14 +98,14 @@ void CellularInterferenceModel::computeDownlinkInterference(StochasticChannelMod
             enbInfo->init = true;
         }
 
-        StochasticChannelModel *interfChanModel = dynamic_cast<StochasticChannelModel *>(enbInfo->phy->getChannelModel(carrierFrequency));
+        Radio *interferingRadio = dynamic_cast<Radio *>(enbInfo->phy->getRadio(carrierFrequency));
 
         // if the eNB does not use the selected carrier frequency, skip it
-        if (interfChanModel == nullptr)
+        if (interferingRadio == nullptr)
             continue;
 
         // compute attenuation using data structures within the cell
-        double att = interfChanModel->getAttenuation(ueId, UL, coord, carrierFrequency);
+        double att = interferingRadio->getAttenuation(ueId, UL, coord, carrierFrequency);
         EV << "EnbId [" << id << "] - attenuation [" << att << "]";
 
         //=============== ANGULAR ATTENUATION =================
@@ -115,7 +115,7 @@ void CellularInterferenceModel::computeDownlinkInterference(StochasticChannelMod
 
         double txPwr = medium_->txPowerOf(id, carrierFrequency) - angularAtt - radio->getCableLoss() + radio->getAntennaGainEnB() + radio->getAntennaGainUe();
 
-        unsigned int numBands = std::min(radio->getNumBands(carrierFrequency), interfChanModel->getNumBands(carrierFrequency));
+        unsigned int numBands = std::min(radio->getNumBands(carrierFrequency), interferingRadio->getNumBands(carrierFrequency));
         EV << " - shared bands [" << numBands << "]" << endl;
 
         if (isCqi) {// check slot occupation for this TTI
@@ -146,7 +146,7 @@ void CellularInterferenceModel::computeDownlinkInterference(StochasticChannelMod
     }
 }
 
-void CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
+void CellularInterferenceModel::computeUplinkInterference(Radio *radio, MacNodeId eNbId, MacNodeId senderId,
         bool isCqi, GHz carrierFrequency, const RbMap& rbmap, std::vector<double> *interference)
 {
     EV << "**** Uplink Interference for cellId[" << eNbId << "] node[" << senderId << "] ****" << endl;
@@ -239,7 +239,7 @@ void CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel
         EV << "\t band " << i << " int[" << (*interference)[i] << "]" << endl;
 }
 
-void CellularInterferenceModel::computeExtCellInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId nodeId,
+void CellularInterferenceModel::computeExtCellInterference(Radio *radio, MacNodeId eNbId, MacNodeId nodeId,
         inet::Coord coord, bool isCqi, GHz carrierFrequency, std::vector<double> *interference)
 {
     EV << "**** Ext Cell Interference **** " << endl;
@@ -314,7 +314,7 @@ void CellularInterferenceModel::computeExtCellInterference(StochasticChannelMode
     }
 }
 
-void CellularInterferenceModel::computeBackgroundCellInterference(StochasticChannelModel *radio, MacNodeId nodeId,
+void CellularInterferenceModel::computeBackgroundCellInterference(Radio *radio, MacNodeId nodeId,
         inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap,
         Direction dir, std::vector<double> *interference)
 {
@@ -450,7 +450,7 @@ void CellularInterferenceModel::computeBackgroundCellInterference(StochasticChan
     }
 }
 
-void CellularInterferenceModel::computeD2DInterference(StochasticChannelModel *radio, MacNodeId eNbId, MacNodeId senderId,
+void CellularInterferenceModel::computeD2DInterference(Radio *radio, MacNodeId eNbId, MacNodeId senderId,
         inet::Coord senderCoord, MacNodeId destId, inet::Coord destCoord, bool isCqi, GHz carrierFrequency,
         std::vector<double> *interference, Direction dir)
 {

@@ -12,20 +12,20 @@
 
 package simu5g.stack.d2d.phy.channelmodel;
 
-import simu5g.stack.phy.channelmodel.StochasticChannelModel;
+import simu5g.stack.phy.channelmodel.Radio;
 
 //
-// D2D-capable channel model: ~StochasticChannelModel plus the device-to-device
+// D2D-capable radio: ~Radio plus the device-to-device
 // channel math (RSRP/SINR, D2D interference, D2D reception decision). It is
-// the channel model of the D2D NICs on all propagation studies; like every
+// the radio of the D2D NICs on all propagation studies; like every
 // other piece of the environment, the study is selected on the medium's
 // matching carrier leg, and the D2D interference toggle is ~RadioMedium's own
 // d2dInterference parameter.
 //
-simple D2dChannelModel extends StochasticChannelModel
+simple D2dRadio extends Radio
 {
     parameters:
-        @class("D2dChannelModel");
+        @class("D2dRadio");
 
         // statistics
         @signal[rcvdSinrD2D];

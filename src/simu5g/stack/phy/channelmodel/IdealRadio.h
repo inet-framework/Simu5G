@@ -10,18 +10,18 @@
 // and cannot be removed from it.
 //
 
-#ifndef STACK_PHY_CHANNELMODEL_IDEALCHANNELMODEL_H_
-#define STACK_PHY_CHANNELMODEL_IDEALCHANNELMODEL_H_
+#ifndef STACK_PHY_CHANNELMODEL_IDEALRADIO_H_
+#define STACK_PHY_CHANNELMODEL_IDEALRADIO_H_
 
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/stack/phy/PhyBase.h"
-#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
+#include "simu5g/stack/phy/channelmodel/RadioBase.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
 
-class IdealChannelModel : public ChannelModelBase
+class IdealRadio : public RadioBase
 {
   private:
     // volatile, so that the error rate can be made a function of simulation time --
@@ -93,5 +93,5 @@ class IdealChannelModel : public ChannelModelBase
 
 } //namespace
 
-#endif /* STACK_PHY_CHANNELMODEL_IDEALCHANNELMODEL_H_ */
+#endif /* STACK_PHY_CHANNELMODEL_IDEALRADIO_H_ */
 

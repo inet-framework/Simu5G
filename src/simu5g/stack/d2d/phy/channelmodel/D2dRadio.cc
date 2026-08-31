@@ -10,21 +10,21 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/d2d/phy/channelmodel/D2dChannelModel.h"
+#include "simu5g/stack/d2d/phy/channelmodel/D2dRadio.h"
 
 namespace simu5g {
 
-Define_Module(D2dChannelModel);
+Define_Module(D2dRadio);
 
-void D2dChannelModel::initialize(int stage)
+void D2dRadio::initialize(int stage)
 {
-    StochasticChannelModel::initialize(stage);
+    Radio::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         rcvdSinrD2DSignal_ = cComponent::registerSignal("rcvdSinrD2D");
     }
 }
 
-std::vector<double> D2dChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord)
+std::vector<double> D2dRadio::getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord)
 {
     EV << "------------ GET RSRP D2D----------------" << endl;
 
@@ -36,7 +36,7 @@ std::vector<double> D2dChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControl
     return getRSRP(link, lteInfo->getD2dTxPower());
 }
 
-std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId)
+std::vector<double> D2dRadio::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId)
 {
     // desired-signal RSRP (pathloss + shadowing + fading), then noise and
     // interference on top
@@ -44,7 +44,7 @@ std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControl
     return getSINR_D2D(frame, lteInfo, destId, destCoord, enbId, rsrpVector);
 }
 
-std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
+std::vector<double> D2dRadio::getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
 {
     EV << "------------ GET SINR D2D----------------" << endl;
 
@@ -60,7 +60,7 @@ std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControl
     // reading past the end.
     if (rsrpVector.size() < numBands_) {
         if (!rsrpVector.empty())
-            throw cRuntimeError("D2dChannelModel::getSINR_D2D - RSRP vector has %zu entries, expected %u",
+            throw cRuntimeError("D2dRadio::getSINR_D2D - RSRP vector has %zu entries, expected %u",
                     rsrpVector.size(), numBands_);
         return getSINR(link, lteInfo, getRSRP(link, lteInfo->getD2dTxPower()));
     }

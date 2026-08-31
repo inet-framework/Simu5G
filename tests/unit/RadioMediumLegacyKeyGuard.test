@@ -3,10 +3,13 @@
 The legacy-key guard (RadioMedium::checkForLegacyConfigKeys(), called from
 RadioMedium::initialize()) turns a stale ini key -- one OMNeT++ gives no
 diagnostic for, because an ini key matching no parameter is silently ignored
--- into a startup error. Checks all three rule classes at once, since the
+-- into a startup error. Checks all four rule classes at once, since the
 guard collects every offender before throwing: a removed parameter name
 (antennGainMicro), a deleted parameter name (pathLossType),
-and a stale *value* naming a deleted NED type (Tr38901ChannelModel).
+a stale *value* naming a deleted NED type (Tr38901ChannelModel), and --
+armed once no module is named channelModel/nrChannelModel any more --
+the path rule: an otherwise-live parameter name (componentCarrierModules)
+reached through a path segment naming a module that no longer exists.
 
 %file: test.ned
 
@@ -21,6 +24,7 @@ network Test extends RadioMedium
 **.antennGainMicro = 5
 **.channelModel[0].pathLossType = "Tr36873"
 **.cellularNic.channelModelType = "Tr38901ChannelModel"
+**.cellularNic.channelModel.componentCarrierModules = "carrierAggregation.componentCarrier[0]"
 
 %exitcode: 1
 
@@ -32,3 +36,9 @@ pathLossType
 
 %contains-regex: stderr
 Tr38901ChannelModel
+
+%contains-regex: stderr
+componentCarrierModules
+
+%contains-regex: stderr
+now named "radio"

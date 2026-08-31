@@ -17,11 +17,11 @@ package simu5g.stack.phy;
 // Base module for the Physical (PHY) layer of the LTE/NR protocol stack.
 //
 // Provides the common functionalities for PHY operations at both the
-// eNodeB and User Equipment (UE) sides, such as the initialization of ChannelModel
-// module instances, one for each Carrier Component (CC) supported by the node, and
-// the transmission of frames over the radio. It provides parameters to configure
-// the transmission power and direction of the node, as well as to enable or disable
-// handover procedures.
+// eNodeB and User Equipment (UE) sides, such as the initialization of this
+// leg's one radio endpoint, serving every Component Carrier (CC) the node
+// supports, and the transmission of frames over the radio. It provides
+// parameters to configure the transmission power and direction of the
+// node, as well as to enable or disable handover procedures.
 //
 simple PhyBase like IPhy
 {
@@ -36,7 +36,7 @@ simple PhyBase like IPhy
         double txAngle @unit(deg) = default(0deg);
 
         string binderModule = default("binder");
-        string channelModelModule = default("^.channelModel"); // or "nrChannelModel"
+        string radioModule = default("^.radio"); // or "nrRadio"
 
     gates:
         input upperGateIn;       // from upper layer
