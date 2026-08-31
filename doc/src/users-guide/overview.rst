@@ -184,24 +184,25 @@ message and sent to the destination module, which applies the
 model of the air channel to decide whether the AirFrame is
 received successfully or not. Since a MAC TB is associated with
 a given CC, the corresponding AirFrame is subjected to channel
-effects (e.g. path loss, shadowing etc.) that depend on that
-CC. This means that different channel models have to be applied
-to compute the SINR at the receiving side. For this reason,
-each gNB/UE is equipped with a vector of channelModel modules,
-and each of them is associated with one of the CCs available in
-the carrierAggregation module.
+effects (e.g. path loss, shadowing etc.) that depend on that CC.
 
-Every channelModel instance in the network -- and, on a dual-connectivity
-UE, every nrChannelModel instance -- registers as a radio endpoint with
-one shared, network-level radioMedium module (an instance of RadioMedium,
-package simu5g.stack.phy.channelmodel). The radioMedium module is the
-single owner of the propagation, interference and reception-decision
-computation for every carrier and every registered radio in the network;
-a channelModel instance itself carries only the per-carrier configuration
-parameters (path-loss study, scenario, antenna gains, and so on) and
-forwards every computation to the medium. Background traffic generators
-managed by a base station's own traffic manager register too, as phantom
-radios that carry only a position and a transmit power.
+Every gNB/UE has one radio endpoint per PHY leg -- a radio submodule and,
+on a dual-connectivity UE, a second nrRadio submodule for the NR leg --
+rather than one channel-model module per CC. Each endpoint serves every
+CC of its own leg and registers itself with one shared, network-level
+radioMedium module (an instance of RadioMedium, package
+simu5g.stack.phy.channelmodel) once per carrier it serves. The radioMedium
+module is the single owner of the environment -- the propagation study,
+deployment geometry, shadowing, fading, line-of-sight state and
+interference toggles, stated once for the whole network on radioMedium
+and its per-carrier-leg carrierLeg submodules -- and computes the
+propagation, interference and reception-decision for every carrier and
+every registered radio. A radio endpoint itself carries only what is
+genuinely per node -- antenna gains, noise figures, cable loss, antenna
+height and outdoor/indoor state -- and forwards every computation to the
+medium. Background traffic generators managed by a base station's own
+traffic manager register too, as phantom radios that carry only a
+position and a transmit power.
 
 Simu5G's PHY model has been validated in compliance with the
 guidelines reported in `3GPP -
