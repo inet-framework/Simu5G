@@ -29,6 +29,22 @@ line-of-sight state -- so, unlike the refactor above, it legitimately
 moves a majority of the fingerprint baselines; see below for the details
 and the migration notes for out-of-tree configurations.
 
+A third change carries the same consolidation to its conclusion: every
+environment and propagation-geometry parameter moves off the per-node
+channel-model instance and onto `radioMedium` itself, the per-carrier
+vector of channel-model instances collapses to one radio endpoint per PHY
+leg, and the classes, NED types, submodules and NIC parameters the second
+change left with a `channelModel`/`ChannelModel` name are renamed to
+`radio`/`Radio` names throughout. Renames and relocations are byte-for-byte
+behavior-preserving; the one behavioral piece -- collapsing the per-carrier
+vector -- corrects the outdoor-to-indoor draw to be per node rather than per
+(node, carrier), as 3GPP TR 38.901 requires, and moves the small set of
+fingerprint rows that exercise carrier aggregation or that draw
+outdoor-to-indoor state. A startup
+guard on `radioMedium` turns a stale ini key left over from either change
+into an error naming its replacement; see the migration notes below for the
+one class of stale key it cannot catch.
+
 Tested with INET-4.5.4 and OMNeT++ 6.3, compatible with INET-4.6.0 and OMNeT++
 6.1 through 6.4.
 
@@ -221,11 +237,216 @@ is confirmed byte-identical, since nothing about this change reaches them.
 
 - **`StochasticChannelModel`'s `antennGainMicro` NED parameter** is
   removed, together with the `antennaGainMicro_` member it fed: nothing
-  ever read either one. Note that a configuration line still setting
-  `antennGainMicro` is silently ignored -- OMNeT++ does not diagnose ini
-  keys that no longer match any parameter. (The identically
-  named, identically dead parameter on `BackgroundCellChannelModel` is
-  untouched -- that module is removed wholesale in a later step.)
+  ever read either one. A configuration line still setting `antennGainMicro`
+  on the channel model no longer silently does nothing -- see "Migrating to
+  the moved parameter surface" below, which turns this and every other
+  parameter move or rename in this release into a startup error naming the
+  replacement. (The identically named, identically dead parameter on
+  `BackgroundCellChannelModel` is untouched -- that module is removed
+  wholesale in a later step.)
+
+The sections above describe this release's channel-model consolidation as it
+first landed. The radio endpoint recast below carries the same consolidation
+further, in this same unreleased release: several of the names and defaults
+just described (`pathLossType`, `IChannelModel`, `ChannelModelBase`,
+`StochasticChannelModel`, `channelModelType`/`nrChannelModelType`, and the
+per-carrier vector of channel-model instances) are superseded by what
+follows. Where the two disagree, the sections below state Simu5G's actual
+v1.6.1 behavior.
+
+### Endpoint parameter surface moves onto the medium
+
+Every environment and deployment-geometry parameter that used to be declared
+once per carrier, on each node's `channelModel`/`nrChannelModel` instance, is
+now declared once for the whole network, on `radioMedium` and its
+`carrierLeg[]` submodules:
+
+      channelModel[*].shadowing              ->  radioMedium.shadowing
+      channelModel[*].correlationDistance    ->  radioMedium.correlationDistance
+      channelModel[*].dynamicLos             ->  radioMedium.dynamicLos
+      channelModel[*].fixedLos               ->  radioMedium.fixedLos
+      channelModel[*].enableExtCellLos       ->  radioMedium.enableExtCellLos
+      channelModel[*].fading                 ->  radioMedium.fading
+      channelModel[*].fadingType             ->  radioMedium.fadingType
+      channelModel[*].numFadingPaths         ->  radioMedium.numFadingPaths
+      channelModel[*].delayRms               ->  radioMedium.delayRms
+      channelModel[*].thermalNoise           ->  radioMedium.thermalNoise
+      channelModel[*].useTorus               ->  radioMedium.useTorus
+      channelModel[*].targetBler             ->  radioMedium.targetBler
+      channelModel[*].harqReduction          ->  radioMedium.harqReduction
+      channelModel[*].bgCellInterference     ->  radioMedium.bgCellInterference
+      channelModel[*].extCellInterference    ->  radioMedium.extCellInterference
+      channelModel[*].downlinkInterference   ->  radioMedium.downlinkInterference
+      channelModel[*].uplinkInterference     ->  radioMedium.uplinkInterference
+      channelModel[*].d2dInterference        ->  radioMedium.d2dInterference
+      channelModel[*].scenario               ->  radioMedium.carrierLeg[*].scenario
+      channelModel[*].buildingHeight         ->  radioMedium.carrierLeg[*].buildingHeight
+      channelModel[*].streetWidth            ->  radioMedium.carrierLeg[*].streetWidth
+      channelModel[*].tolerateMaxDistViolation
+                                              ->  radioMedium.carrierLeg[*].tolerateMaxDistViolation
+      channelModel[*].useBuildingPenetrationHighLossModel
+                                              ->  radioMedium.carrierLeg[*].pathLoss.useBuildingPenetrationHighLossModel
+                                                  (only meaningful when that leg's pathLoss is Tr38901PathLoss)
+      channelModel[*].pathLossType           ->  removed; see "NIC study-preset
+                                                  defaults removed" below
+      channelModel[*].nodebHeight, .ueHeight ->  removed; replaced by one
+                                                  `height` parameter on the
+                                                  endpoint itself (see below)
+
+The same mapping applies to `nrChannelModel[*]` on the NR leg of a
+dual-connectivity UE.
+
+Two groups of parameters stay declared on the endpoint (renamed `radio`/
+`nrRadio`, see below), because they are genuinely per node, not per network:
+`insideBuilding`, the antenna/noise/cable-loss block (`antennaGainUe`,
+`antennGainEnB`, `ueNoiseFigure`, `bsNoiseFigure`, `cableLoss`), and
+`collectSinrStatistics`. `nodebHeight`/`ueHeight` are not simply relocated:
+they are replaced by a single `height` parameter on the endpoint, defaulted
+to 25m by the eNB/gNB-side NICs and 1.5m by the UE-side NICs, and
+overridable per node like any other endpoint parameter -- so a config that
+gave every eNB or every UE the same height needs no change, and one that
+gave individual nodes different heights sets `height` on that node's
+`radio`/`nrRadio` instead of `nodebHeight`/`ueHeight` on the old
+per-carrier instance.
+
+The endpoint's own `componentCarrierModule` (singular -- the one component
+carrier it served) is renamed `componentCarrierModules` (plural -- a
+space-separated list, resolved in declaration order), since one endpoint now
+serves every component carrier of its PHY leg rather than one carrier each.
+
+### Renamed types, submodules and NIC parameters
+
+The classes, NED types, submodules and NIC parameters this release's
+consolidation (above) left with a `channelModel`/`ChannelModel` name are
+renamed again, to a name that describes a radio endpoint rather than the
+channel-model instance it used to be the only thing living on:
+
+      IChannelModel            ->  IRadio
+      ChannelModelBase         ->  RadioBase
+      StochasticChannelModel   ->  Radio
+      D2dChannelModel          ->  D2dRadio
+      IdealChannelModel        ->  IdealRadio
+      ID2dChannelModel         ->  ID2dRadio
+      channelModel (submodule) ->  radio
+      nrChannelModel (submodule) -> nrRadio
+      channelModelType (NIC parameter)   -> radioType
+      nrChannelModelType (NIC parameter) -> nrRadioType
+      channelModelModule (NIC parameter) -> radioModule
+
+`Tr36873ChannelModel` and `Tr38901ChannelModel` -- the `pathLossType`-default
+presets described above -- are deleted outright rather than renamed: their
+only job, selecting a propagation study, is now the medium's `pathLoss`
+submodule typename (see "NIC study-preset defaults removed" below).
+
+Configurations that name any of the old NED types explicitly (`@class`
+overrides, ini `typename`/`like` selectors) need the new name. The NIC
+parameter that points a PHY at its endpoint is renamed too, from
+`channelModelModule` to `radioModule` -- and its default module path
+changed along with it, from `"^.channelModel"`/`"^.nrChannelModel"` to
+`"^.radio"`/`"^.nrRadio"`.
+
+One narrow compatibility shim exists and should not be relied on: a header
+at the old `StochasticChannelModel.h` path still defines
+`using StochasticChannelModel = Radio;`, solely so that
+`BackgroundCellChannelModel.cc` -- slated for removal in a later change --
+keeps compiling unchanged. New code should name `Radio` directly.
+
+### One radio endpoint per PHY leg; carrier-aggregation statistics collapse
+
+Each NIC's `channelModel[numCarriers]` vector (`nrChannelModel[numNrCarriers]`
+on the NR leg) is now a single, scalar `radio`/`nrRadio` submodule that
+serves every one of that leg's component carriers, named by the new
+`componentCarrierModules` parameter. Every carrier still gets its own
+propagation computation on `radioMedium`; the collapse removes the
+one-endpoint-per-carrier bookkeeping, not the per-carrier physics.
+
+The five statistics the endpoint records (`rcvdSinrDl`, `rcvdSinrUl`,
+`measuredSinrDl`, `measuredSinrUl`, `rcvdSinrD2D`) stay declared and emitted
+on the endpoint, so their result *names* are unchanged and ini lines that
+select them by name keep working (`**.rcvdSinrUl*`, for example). Their
+result *paths* change, because the hosting module is renamed and there is
+one of it instead of several:
+
+      <node>.cellularNic.channelModel[0].rcvdSinrDl   ->  <node>.cellularNic.radio.rcvdSinrDl
+      <node>.cellularNic.nrChannelModel[0].rcvdSinrDl  ->  <node>.cellularNic.nrRadio.rcvdSinrDl
+
+**This breaks any saved `.anf` file or results-analysis script that selects
+a result by module path rather than by statistic name.** It also has a real
+cost for carrier-aggregation scenarios: before this release, a two-carrier
+NIC recorded two independent SINR vectors, one per `channelModel[*]`
+instance; after it, the single `radio` instance records what two used to,
+and the per-carrier identity of the recorded signal is gone -- there is no
+per-carrier statistic split left to select. A scenario that needs per-carrier
+SINR has to add its own instrumentation. In-tree, this affects
+`MultiCarrier-CBR-DL`/`-UL` (`simulations/nr/test_multiCarrier`) and the
+`CarrierAggregation`/`Numerology` configurations
+(`simulations/nr/tutorial`, `tutorials/nr`).
+
+### NIC study-preset defaults removed; the study is selected on the medium
+
+Previously, a NIC's `channelModelType`/`nrChannelModelType` parameter
+selected one of `StochasticChannelModel`, `Tr36873ChannelModel` or
+`Tr38901ChannelModel` -- the latter two only overriding the `pathLossType`
+default -- so a gNodeB NIC and the NR leg of a UE NIC ran TR 38.901 by
+NIC-level default even when nothing in the network said so explicitly. Both
+presets are gone; `radioType`/`nrRadioType` now default uniformly to the
+plain `"Radio"` type on every NIC, and the propagation study is selected
+once for the network, on the medium's `pathLoss` submodule:
+
+      *.radioMedium.carrierLeg[0].pathLoss.typename = "Tr38901PathLoss"
+
+Every in-tree network states this explicitly now: an LTE-only network picks
+`Tr36814PathLoss` (`simulations/lte/networks/SingleCell.ned`), an NR
+standalone network with distinct LTE and NR legs declares two `carrierLeg[]`
+entries, one per leg, each with its own study
+(`simulations/nr/networks/SingleCell_Standalone.ned`). An out-of-tree
+network that relied on the old NIC-level default needs the same kind of
+line: leaving a `carrierLeg[]` entry's `pathLoss` unset is a NED error (the
+submodule has no default type), not a silent fallback to a particular study.
+
+### Migrating to the moved parameter surface
+
+`RadioMedium::checkForLegacyConfigKeys()` scans the active configuration at
+startup and aborts with one `cRuntimeError` listing every ini key it
+recognizes as stale -- a parameter that used to live on the endpoint and has
+moved, been renamed, or been deleted by this release -- together with its
+replacement. This catches most of the breakage the changes above cause in an
+out-of-tree configuration: every `**.channelModel[*]`/`**.nrChannelModel[*]`
+key (neither module exists under either name any more), every
+`antennGainMicro`, `nodebHeight`, `ueHeight`, `pathLossType`,
+`channelModelType` or `nrChannelModelType` key, and every ini value still
+naming `Tr36873ChannelModel`/`Tr38901ChannelModel`.
+
+**One class of stale key the guard cannot catch**: a node-scoped wildcard
+such as `*.ue[*].**.shadowing`. `shadowing` is still a live parameter name
+-- just on `radioMedium` now, not on the endpoint -- so the name rule does
+not fire; the key names no `channelModel`/`nrChannelModel` path segment, so
+the path rule does not fire either. Yet `radioMedium` is a network-level
+singleton, not a submodule of `ue[*]`, so the key silently matches nothing.
+There is no mechanical way to tell this apart from a key that is
+legitimately unused. Re-scope any line of this shape onto `radioMedium` by
+hand, e.g. `*.ue[*].**.shadowing = false` becomes
+`*.radioMedium.shadowing = false` -- and note that if different UEs
+genuinely needed different values, that is no longer possible: shadowing,
+like every parameter this release moved onto the medium, is now one value
+for the whole network.
+
+**A second class the guard cannot catch, for a different reason**: the
+`channelModelModule` NIC parameter (see "Renamed types, submodules and NIC
+parameters" above) is not in the guard's name list, even though it was
+renamed. `BackgroundCellTrafficManager`'s helper module `BackgroundScheduler`
+declares its own, unrelated `channelModelModule` parameter (pointing at its
+`bgChannelModel` submodule, not at a radio), so a bare-name guard entry would
+reject that still-valid configuration along with the stale one. A leftover
+`channelModelModule` key aimed at a PHY is therefore silently ignored rather
+than rejected -- resolve it the same way as the `shadowing` case above, by
+inspection.
+
+The guard is a deliberately temporary safety net for this migration; nothing
+else in Simu5G reads the global configuration this way. This file records no
+established convention yet for retiring a migration guard like this one, so
+by default it is kept until Simu5G's next major release, after which
+`checkForLegacyConfigKeys()` and its legacy-key lists may be deleted.
 
 ## v1.6.0 (2026-07-31)
 
