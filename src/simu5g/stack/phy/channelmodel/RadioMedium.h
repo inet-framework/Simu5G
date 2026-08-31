@@ -47,7 +47,7 @@ struct JakesFadingData
 };
 
 /**
- * The unit CarrierPhysics and the medium's per-link stochastic state are
+ * The unit the medium's per-leg strategies and per-link stochastic state are
  * grouped by: a carrier frequency alone conflates an NR UE's
  * always-instantiated but unused LTE leg with the gNB it shares a default
  * component-carrier frequency with, and conflates a dual-connectivity master
@@ -124,9 +124,9 @@ struct RadioDescriptor
     // non-null iff this radio is D2D-capable. The registration-time
     // dynamic_cast this is built from is the only one -- every D2D-aware
     // branch reads this cached pointer afterward instead of casting itself,
-    // and it doubles as the handle onto D2D-only facts (isD2DInterferenceEnabled(),
-    // the rcvdSinrD2D signal, getSINR_D2D()) that plain StochasticChannelModel
-    // does not carry.
+    // and it doubles as the handle onto D2D-only facts (the rcvdSinrD2D
+    // signal, getSINR_D2D()) that plain StochasticChannelModel does not
+    // carry.
     D2dChannelModel *d2dEndpoint = nullptr;
 
     // The phantom half: non-null iff endpoint == nullptr --
@@ -139,46 +139,6 @@ struct RadioDescriptor
     // field carries.
     TrafficGeneratorBase *bgGenerator = nullptr;
     MacCellId bgCellId = NODEID_NONE;
-};
-
-/**
- * The per-carrier-leg physics parameters that every
- * radio registered on a given leg must agree on. Filled from the first radio
- * to register on that leg; every later one is checked against it,
- * field by field, in addRadio(). Per-radio parameters (antenna gains, cable
- * loss, noise figures, insideBuilding, the module-path parameters and, since
- * E4, the two antenna heights -- now a per-node RadioDescriptor::height,
- * §3(k) -- are deliberately not part of this record.
- */
-struct CarrierPhysics
-{
-    std::string pathLossType;
-    std::string scenario;
-    bool shadowing = false;
-    double correlationDistance = 0;
-    bool dynamicLos = false;
-    bool fixedLos = false;
-    bool enableExtCellLos = false;
-    bool fading = false;
-    std::string fadingType;
-    int numFadingPaths = 0;
-    double delayRms = 0;
-    double thermalNoise = 0;
-    double buildingHeight = 0;
-    double streetWidth = 0;
-    bool useTorus = false;
-    bool tolerateMaxDistViolation = false;
-    double harqReduction = 0;
-    double targetBler = 0;
-    bool useBuildingPenetrationHighLossModel = false;
-    bool bgCellInterference = false;
-    bool extCellInterference = false;
-    bool downlinkInterference = false;
-    bool uplinkInterference = false;
-
-    // full path of the radio whose parameters filled this record, named in
-    // a mismatch error alongside the radio that disagrees with it
-    std::string establishedByPath;
 };
 
 /**
@@ -205,10 +165,6 @@ class RadioMedium : public cSimpleModule
     // pointed at from the right index.
     std::map<BgUeKey, RadioDescriptor *> bgRadioIndex_;
 
-    // One CarrierPhysics record per carrier leg, established by the first
-    // radio to register on it (see addRadio()). Nothing reads this yet.
-    std::map<CarrierLeg, CarrierPhysics> carrierPhysics_;
-
     // Per-link stochastic state, keyed by LinkStateKey --
     // one shared entry per physical link, shared by both endpoints. losMap_ and
     // lastComputedSF_/jakesFadingMap_/jakesFadingMapBgUe_ together hold this
@@ -226,7 +182,7 @@ class RadioMedium : public cSimpleModule
     std::map<std::pair<MacNodeId, CarrierLeg>, Position> lastCorrelationPoint_;
 
     // One PathLossModel strategy per carrier leg, resolved eagerly in
-    // addRadio() when a leg's CarrierPhysics record is first established:
+    // addRadio() when the first radio registers on the leg:
     // the matched carrierLeg[]'s own "pathLoss" submodule (radio endpoint
     // recast E5), not a freshly `new`-ed object any more. PathLossModel::owner_
     // is this medium, which is what relocates every propagation-formula
@@ -249,6 +205,29 @@ class RadioMedium : public cSimpleModule
     // resolved once at initialize(), read live thereafter. Not owned -- it
     // is a child module, torn down by the module hierarchy like any other.
     CellularInterferenceModel *interference_ = nullptr;
+
+    // The environment, stated once for the whole network: this medium's own
+    // NED parameters (radio endpoint recast E3), cached at initialize() and
+    // read on the computation paths below. useTorus and targetBler stay
+    // NED-declared but have no reader here -- neither had one on the old
+    // endpoint either (targetBler's live consumer is PhyEnb's own parameter
+    // of the same name).
+    bool shadowing_ = false;
+    double correlationDistance_ = 0;
+    bool dynamicLos_ = false;
+    bool fixedLos_ = false;
+    bool enableExtCellLos_ = false;
+    bool fading_ = false;
+    std::string fadingType_;
+    int numFadingPaths_ = 0;
+    double delayRms_ = 0;
+    double thermalNoise_ = 0;
+    double harqReduction_ = 0;
+    bool bgCellInterference_ = false;
+    bool extCellInterference_ = false;
+    bool downlinkInterference_ = false;
+    bool uplinkInterference_ = false;
+    bool d2dInterference_ = false;
 
     /**
      * Scans the active configuration for ini keys that name a parameter this
@@ -284,78 +263,29 @@ class RadioMedium : public cSimpleModule
     /** Whether legModule's own componentCarrierModule/leg parameters admit a radio on carrierFrequency/isNr. */
     bool carrierLegMatches(cModule *legModule, GHz carrierFrequency, bool isNr) const;
 
-    /**
-     * The 3GPP study name ("Tr36814"/"Tr36873"/"Tr38901") pathLossModule's
-     * own NED type encodes -- the trailing "PathLoss" stripped, matching the
-     * endpoint's own "pathLossType" enum values, so a leg-sourced
-     * CarrierPhysics::pathLossType compares equal to the endpoint's bridge
-     * copy exactly when the two agree.
-     */
-    std::string pathLossStudyOf(cModule *pathLossModule) const;
-
-    /**
-     * Reads the per-carrier-leg physics parameters: 17 of the (originally 25)
-     * fields come from this medium's own NED parameters (the environment,
-     * stated once for the whole network -- radio endpoint recast E3); the
-     * remaining 6 (pathLossType, scenario, buildingHeight, streetWidth,
-     * tolerateMaxDistViolation, useBuildingPenetrationHighLossModel) come
-     * from legModule -- the carrierLeg[] submodule matchCarrierLeg() matched
-     * endpoint to (radio endpoint recast E5), not from endpoint's own NED
-     * type any more. nodebHeight/ueHeight left this record at E4 -- antenna
-     * height is a per-node fact (RadioDescriptor::height, §3(k)), not a
-     * per-leg one.
-     */
-    CarrierPhysics readCarrierPhysics(StochasticChannelModel *endpoint, cModule *legModule) const;
-
-    /** Checks candidate against the leg's established record; throws naming the first mismatched parameter. */
-    void checkCarrierPhysics(const CarrierPhysics& existing, const CarrierPhysics& candidate,
-            const CarrierLeg& leg, const std::string& candidatePath) const;
-
-    /**
-     * The ASSERT-equality bridge (move-code.md) for the parameters
-     * readCarrierPhysics() now reads off this medium and off legModule: the
-     * 17 environment parameters and d2dInterference (E3), plus, since E5,
-     * the 6 study/geometry fields legModule now supplies -- pathLossType,
-     * scenario, buildingHeight, streetWidth, tolerateMaxDistViolation and
-     * (when the matched study is Tr38901) useBuildingPenetrationHighLossModel.
-     * endpoint still declares its own copy of each (removal is E6), so this
-     * compares that still-live value against the medium's/leg's and throws,
-     * naming both module paths, the moment they disagree -- which is exactly
-     * what an incorrectly migrated (or un-migrated) ini line produces.
-     * Called for every registering radio, not just the first on a leg: the
-     * 17+1 environment fields are network-wide, and even the 6 leg fields
-     * are cheap to re-check per radio since legModule and candidate are
-     * already in hand. d2dEndpoint is dynamic_cast<D2dChannelModel*>(endpoint),
-     * already computed by the caller; nullptr skips the d2dInterference check.
-     */
-    void checkEndpointAgreesWithMedium(StochasticChannelModel *endpoint, D2dChannelModel *d2dEndpoint,
-            cModule *legModule, const CarrierPhysics& candidate) const;
-
     /** The per-leg path-loss strategy resolved in addRadio(); throws if no radio has registered on the leg. */
     PathLossModel& pathLossFor(const CarrierLeg& leg) const;
 
     /** The per-leg ext-cell/background-cell path-loss strategy resolved in addRadio(); throws if no radio has registered on the leg. */
     PathLossModel& extCellPathLossFor(const CarrierLeg& leg) const;
 
-    /** The per-leg CarrierPhysics record established in addRadio(); throws if no radio has registered on the leg. */
-    const CarrierPhysics& carrierPhysicsFor(const CarrierLeg& leg) const;
+    /** Resolves legModule's own "pathLoss" submodule -- the leg's configured study -- and initializes it from legModule's geometry parameters. */
+    PathLossModel *resolvePathLossStrategy(cModule *legModule);
 
-    /** Resolves legModule's own "pathLoss" submodule (cp.pathLossType's concrete type, by construction) and initializes it from cp. */
-    PathLossModel *resolvePathLossStrategy(cModule *legModule, const CarrierPhysics& cp);
-
-    /** Resolves legModule's own "extCellPathLoss" submodule -- always Tr36814PathLoss, regardless of cp.pathLossType -- and initializes it from the same cp fields resolvePathLossStrategy() reads. */
-    PathLossModel *resolveExtCellPathLossStrategy(cModule *legModule, const CarrierPhysics& cp);
+    /** Resolves legModule's own "extCellPathLoss" submodule -- always Tr36814PathLoss, whatever the leg's own study -- and initializes it from the same legModule geometry resolvePathLossStrategy() reads. */
+    PathLossModel *resolveExtCellPathLossStrategy(cModule *legModule);
 
     /**
      * The initialize() call resolvePathLossStrategy()/resolveExtCellPathLossStrategy()
      * share verbatim, once the concrete strategy is resolved. Since E4 this
-     * carries only the leg-constant scenario parameters -- no carrier
+     * carries only the leg-constant scenario parameters, read off legModule
+     * (the deployment geometry, per-leg since E5) -- no carrier
      * frequency and no antenna heights any more (neither is per-leg state:
      * the frequency is the leg's own key already, and the heights are
      * per-node, §3(k)); both travel per call now, in a LinkContext built by
      * linkContextFor().
      */
-    void initializePathLossStrategy(PathLossModel *model, const CarrierPhysics& cp);
+    void initializePathLossStrategy(PathLossModel *model, cModule *legModule);
 
     /** Auto-vivifying access to losMap_[{leg,key}]; existed, if given, reports whether the entry was already present. */
     bool& losState(const CarrierLeg& leg, const LinkKey& key, bool *existed = nullptr);
@@ -389,9 +319,8 @@ class RadioMedium : public cSimpleModule
     /**
      * Registers a background transmitter's phantom radio under key, the
      * tuple that is unique: unlike addRadio(), this
-     * establishes no CarrierPhysics record and creates no PathLossModel or
-     * per-radio stochastic state -- a phantom declares none of the 25
-     * per-carrier-leg physics parameters and owns no stochastic state.
+     * resolves no carrierLeg[] entry and no PathLossModel strategy, and a
+     * phantom owns no stochastic state.
      * height is the phantom's own antenna height (E4/§3(k)) -- the caller's
      * (BackgroundTrafficManager's own default, since no in-tree config
      * differentiates one background UE's height from another's).
@@ -401,6 +330,17 @@ class RadioMedium : public cSimpleModule
 
     /** Unregisters a background transmitter's phantom radio previously added with addBackgroundRadio(). */
     virtual void removeBackgroundRadio(const BgUeKey& key);
+
+    /**
+     * The network-wide interference and LOS toggles, owned by the medium
+     * since E3 and, since E6, no longer declared by the endpoints at all --
+     * the endpoints' isUplinkInterferenceEnabled()/isD2DInterferenceEnabled()
+     * overrides and the resident computeExtCellPathLoss() answer by asking
+     * back here (§3(b)).
+     */
+    bool isUplinkInterferenceEnabled() const { return uplinkInterference_; }
+    bool isD2dInterferenceEnabled() const { return d2dInterference_; }
+    bool isExtCellLosEnabled() const { return enableExtCellLos_; }
 
     /**
      * The shared LOS/NLOS state for radio's own carrier leg:
@@ -519,13 +459,13 @@ class RadioMedium : public cSimpleModule
 
     /**
      * The multipath-fading attenuation for one band, RAYLEIGH or JAKES per
-     * cp.fadingType, 0 if cp.fading is off -- the body getRSRP() and
+     * fadingType_, 0 if fading_ is off -- the body getRSRP() and
      * getSINR_bgUe() each looped over per band. Exact code motion: draws
      * from the same rng-0 stream as rayleighFading()/jakesFading()
      * themselves, in the same relative position in the caller's loop, so
      * this changes no draw's order or count.
      */
-    virtual double applyFading(StochasticChannelModel *radio, const CarrierPhysics& cp, MacNodeId nodeId,
+    virtual double applyFading(StochasticChannelModel *radio, MacNodeId nodeId,
             const LinkKey& key, double speed, unsigned int band, bool isBgUe = false);
 
     virtual double computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);

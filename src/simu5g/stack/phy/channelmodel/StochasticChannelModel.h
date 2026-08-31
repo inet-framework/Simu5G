@@ -49,12 +49,10 @@ class Binder;
  * getAttenuation, computePathLoss, getSINR, getRSRP, getSINR_bgUe,
  * getReceivedPower_bgUe and isReceptionSuccessful are one-line forwarders to
  * the RadioMedium this endpoint registers with: the medium owns the
- * per-carrier-leg PathLossModel strategy (chosen by the pathLossType
- * parameter -- "Tr36814", "Tr36873" or "Tr38901"), the SINR assembly and the
- * reception decision, and every random draw both make -- including
- * isReceptionSuccessful's BLER draw. Tr36873ChannelModel and Tr38901ChannelModel
- * are NED-level presets of this class (no C++ class of their own) that only
- * override the pathLossType default, to Tr36873 and Tr38901 respectively.
+ * per-carrier-leg PathLossModel strategy (its carrierLeg[] submodules'
+ * pathLoss typename selects TR 36.814, 36.873 or 38.901), the SINR assembly
+ * and the reception decision, and every random draw both make -- including
+ * isReceptionSuccessful's BLER draw.
  * The four cellular interference walks live on the medium's interference
  * submodule; the D2D interference walk and the D2D branches of
  * getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise live in the
@@ -102,12 +100,6 @@ class StochasticChannelModel : public ChannelModelBase
     // rather than in the medium, so it stays resident -- handed to the
     // medium per-call through o2iStateOf() instead of cached there
     double inside_distance_;
-
-    // enable/disable the interference computation for UL connections, for
-    // isUplinkInterferenceEnabled()/recordsUlTransmissionMap()
-    bool enableUplinkInterference_;
-
-    bool enable_extCell_los_;
 
     // Antenna gain of eNodeB
     double antennaGainEnB_;
@@ -308,7 +300,9 @@ class StochasticChannelModel : public ChannelModelBase
      */
     double computePathLoss(double distance, double dbp, bool los) override;
 
-    bool isUplinkInterferenceEnabled() override { return enableUplinkInterference_; }
+    // the flag is network-wide, owned by the medium (E6, §3(b)); the
+    // signature and its callers stay, answered by asking the medium
+    bool isUplinkInterferenceEnabled() override { return medium_->isUplinkInterferenceEnabled(); }
 
     /*
      * Public for RadioMedium's getAttenuation(): a plain,

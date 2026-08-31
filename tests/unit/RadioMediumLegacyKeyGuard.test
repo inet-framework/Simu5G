@@ -3,8 +3,10 @@
 The legacy-key guard (RadioMedium::checkForLegacyConfigKeys(), called from
 RadioMedium::initialize()) turns a stale ini key -- one OMNeT++ gives no
 diagnostic for, because an ini key matching no parameter is silently ignored
--- into a startup error. Checks that a configuration line still setting the
-removed antennGainMicro parameter is rejected loudly instead.
+-- into a startup error. Checks all three rule classes at once, since the
+guard collects every offender before throwing: a removed parameter name
+(antennGainMicro), a deleted parameter name (pathLossType),
+and a stale *value* naming a deleted NED type (Tr38901ChannelModel).
 
 %file: test.ned
 
@@ -17,8 +19,16 @@ network Test extends RadioMedium
 %inifile: test.ini
 [General]
 **.antennGainMicro = 5
+**.channelModel[0].pathLossType = "Tr36873"
+**.cellularNic.channelModelType = "Tr38901ChannelModel"
 
 %exitcode: 1
 
 %contains-regex: stderr
 antennGainMicro
+
+%contains-regex: stderr
+pathLossType
+
+%contains-regex: stderr
+Tr38901ChannelModel

@@ -49,18 +49,6 @@ void StochasticChannelModel::initialize(int stage)
         ueNoiseFigure_ = par("ueNoiseFigure");
         bsNoiseFigure_ = par("bsNoiseFigure");
 
-        // fadingType has no medium-side validation the way pathLossType does
-        // (createPathLossModel's else-throw) -- kept here so a misconfigured
-        // NED value still fails fast at init instead of silently drawing no
-        // fading at all (RadioMedium's fadingType dispatch has no else branch)
-        std::string fType = par("fadingType");
-        if (fType != "JAKES" && fType != "RAYLEIGH")
-            throw cRuntimeError("Unrecognized value in 'fadingType' parameter: \"%s\"", fType.c_str());
-
-        enableUplinkInterference_ = par("uplinkInterference");
-
-        enable_extCell_los_ = par("enableExtCellLos");
-
         collectSinrStatistics_ = par("collectSinrStatistics");
     }
     else if (stage == INITSTAGE_SIMU5G_NODE_RELATIONSHIPS) {
@@ -281,7 +269,7 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
     //compute attenuation based on selected scenario and based on LOS or NLOS
     bool los = medium_->losStateFor(this, key);
 
-    if (!enable_extCell_los_)
+    if (!medium_->isExtCellLosEnabled())
         los = false;
 
     // always the TR 36.814 formulas, whatever study the model itself uses.

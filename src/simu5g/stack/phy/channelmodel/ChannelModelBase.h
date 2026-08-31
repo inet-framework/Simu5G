@@ -122,11 +122,11 @@ struct RadioLink
  * class.
  *
  * The class and interface names are RAT-neutral: the concrete models differ
- * in which 3GPP propagation study supplies their formulas (the pathLossType
- * parameter), not in whether they serve an LTE or an NR carrier, and any of
+ * in which 3GPP propagation study supplies their formulas (selected on the
+ * medium's matching carrier leg, not on the endpoint), never in whether they
+ * serve an LTE or an NR carrier, and any of
  * them can be plugged into the channelModelType slot of any NIC through the
- * IChannelModel interface -- the gNodeB NIC, for instance, selects the
- * Tr38901ChannelModel preset there by default. Everything
+ * IChannelModel interface. Everything
  * technology-dependent -- carrier frequency, bandwidth, numerology -- is
  * read from the ComponentCarrier module rather than encoded in the class.
  */

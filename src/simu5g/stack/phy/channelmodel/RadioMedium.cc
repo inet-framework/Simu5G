@@ -46,6 +46,29 @@ void RadioMedium::initialize()
 {
     checkForLegacyConfigKeys();
 
+    // the environment, stated once for the whole network (E3): cached off
+    // this medium's own NED parameters, read on the computation paths below
+    shadowing_ = par("shadowing");
+    correlationDistance_ = par("correlationDistance");
+    dynamicLos_ = par("dynamicLos");
+    fixedLos_ = par("fixedLos");
+    enableExtCellLos_ = par("enableExtCellLos");
+    fading_ = par("fading");
+    fadingType_ = par("fadingType").stringValue();
+    // fail fast at init: applyFading()'s fadingType dispatch has no else
+    // branch, so a misconfigured value would silently draw no fading at all
+    if (fadingType_ != "JAKES" && fadingType_ != "RAYLEIGH")
+        throw cRuntimeError("Unrecognized value in 'fadingType' parameter: \"%s\"", fadingType_.c_str());
+    numFadingPaths_ = par("numFadingPaths");
+    delayRms_ = par("delayRms");
+    thermalNoise_ = par("thermalNoise");
+    harqReduction_ = par("harqReduction");
+    bgCellInterference_ = par("bgCellInterference");
+    extCellInterference_ = par("extCellInterference");
+    downlinkInterference_ = par("downlinkInterference");
+    uplinkInterference_ = par("uplinkInterference");
+    d2dInterference_ = par("d2dInterference");
+
     // this medium's own submodule; purely structural, so
     // resolvable regardless of init-stage ordering
     interference_ = check_and_cast<CellularInterferenceModel *>(getSubmodule("interference"));
@@ -65,6 +88,20 @@ void RadioMedium::checkForLegacyConfigKeys() const
         // (§3(g)), ahead of the plan's own general E6/E8/E9 growth schedule.
         { "nodebHeight", "replaced by the per-node 'height' on the radio endpoint (eNB/gNB-role)" },
         { "ueHeight", "replaced by the per-node 'height' on the radio endpoint (UE-role)" },
+        // E6: the study is selected on the medium now, per carrier leg
+        { "pathLossType", "removed -- select the study on the medium instead: "
+                          "radioMedium.carrierLeg[*].pathLoss.typename = \"Tr36814PathLoss\"/\"Tr36873PathLoss\"/\"Tr38901PathLoss\"" },
+    };
+
+    // Stale ini *values* (S8: matched as values, not key names): the two
+    // preset NED types died with the endpoint's pathLossType parameter at
+    // E6, so any key still selecting one -- channelModelType,
+    // nrChannelModelType -- silently instantiates nothing.
+    static const std::vector<std::pair<std::string, std::string>> legacyValues = {
+        { "Tr36873ChannelModel", "this NED type is gone -- use \"StochasticChannelModel\" and select the study on the medium: "
+                                 "radioMedium.carrierLeg[*].pathLoss.typename = \"Tr36873PathLoss\"" },
+        { "Tr38901ChannelModel", "this NED type is gone -- use \"StochasticChannelModel\" and select the study on the medium: "
+                                 "radioMedium.carrierLeg[*].pathLoss.typename = \"Tr38901PathLoss\"" },
     };
 
     // Both flags are required: a per-object config option such as 'rng-0'
@@ -81,6 +118,14 @@ void RadioMedium::checkForLegacyConfigKeys() const
         for (const auto& [name, replacement] : legacyNames) {
             if (lastSegment == name) {
                 offenders += "\n  " + key + "\n    " + name + ": " + replacement;
+                break;
+            }
+        }
+        std::string value = pairs[i + 1];
+        for (const auto& [name, replacement] : legacyValues) {
+            // substring, not equality: the raw config value carries its quotes
+            if (value.find(name) != std::string::npos) {
+                offenders += "\n  " + key + " = " + value + "\n    " + name + ": " + replacement;
                 break;
             }
         }
@@ -130,16 +175,6 @@ cModule *RadioMedium::matchCarrierLeg(StochasticChannelModel *endpoint) const
     return match;
 }
 
-std::string RadioMedium::pathLossStudyOf(cModule *pathLossModule) const
-{
-    std::string typeName = pathLossModule->getComponentType()->getName();
-    static const std::string suffix = "PathLoss";
-    if (typeName.size() <= suffix.size() || typeName.compare(typeName.size() - suffix.size(), suffix.size(), suffix) != 0)
-        throw cRuntimeError("carrierLeg pathLoss submodule '%s' has unrecognized NED type '%s'",
-                pathLossModule->getFullPath().c_str(), typeName.c_str());
-    return typeName.substr(0, typeName.size() - suffix.size());
-}
-
 void RadioMedium::addRadio(StochasticChannelModel *endpoint)
 {
     ASSERT(endpoint != nullptr);
@@ -159,31 +194,25 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
         throw cRuntimeError("addRadio: node %d is already registered on carrier %gGHz",
                 num(descriptor.nodeId), descriptor.carrierFrequency.get());
 
-    // establish this carrier leg's physics from the first radio to register
-    // on it, or check that this radio agrees with what an earlier one
-    // established (frequency alone conflates an NR UE's vestigial
-    // LTE leg with the gNB it shares a default component carrier with, and a
-    // dual-connectivity master eNB with its secondary gNB)
+    // resolve this carrier leg's two strategies from the matched carrierLeg[]
+    // submodule the first time a radio registers on the leg. Later
+    // registrants cannot disagree with the first any more (E6): every physics
+    // value is read off that same leg submodule and off this medium's own
+    // parameters, never off the registering radio. (The leg, not the bare
+    // frequency: frequency alone conflates an NR UE's vestigial LTE leg with
+    // the gNB it shares a default component carrier with, and a
+    // dual-connectivity master eNB with its secondary gNB.)
     CarrierLeg leg = legFor(endpoint);
     cModule *legModule = matchCarrierLeg(endpoint);
-    CarrierPhysics candidate = readCarrierPhysics(endpoint, legModule);
-    checkEndpointAgreesWithMedium(endpoint, descriptor.d2dEndpoint, legModule, candidate);
-    auto cpIt = carrierPhysics_.find(leg);
-    if (cpIt == carrierPhysics_.end()) {
-        candidate.establishedByPath = endpoint->getFullPath();
-        carrierPhysics_[leg] = candidate;
-
+    if (pathLoss_.find(leg) == pathLoss_.end()) {
         // this leg's path-loss strategy: legModule's own "pathLoss"
-        // submodule, resolved (not constructed) from the record just
-        // established -- never from this radio's own members
-        pathLoss_[leg] = resolvePathLossStrategy(legModule, candidate);
+        // submodule, resolved (not constructed) -- never from this radio's
+        // own members
+        pathLoss_[leg] = resolvePathLossStrategy(legModule);
 
         // this leg's ext-cell/background-cell strategy, shared by every
         // radio on the leg
-        extCellPathLoss_[leg] = resolveExtCellPathLossStrategy(legModule, candidate);
-    }
-    else {
-        checkCarrierPhysics(cpIt->second, candidate, leg, endpoint->getFullPath());
+        extCellPathLoss_[leg] = resolveExtCellPathLossStrategy(legModule);
     }
 
     radios_.push_back(descriptor);
@@ -206,10 +235,9 @@ void RadioMedium::addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *g
     descriptor.height = height;
     // exactly one of endpoint/bgGenerator is ever non-null
 
-    // no readCarrierPhysics, no checkCarrierPhysics, no resolvePathLossStrategy:
-    // a phantom declares none of the 25 per-carrier-leg physics parameters
-    // and, since it is never radio in getAttenuation()/computeShadowing()/
-    // jakesFading(), never keys an entry into the per-link state either
+    // no matchCarrierLeg, no resolvePathLossStrategy: a phantom
+    // is never radio in getAttenuation()/computeShadowing()/
+    // jakesFading(), so it never keys an entry into the per-link state either
     radios_.push_back(descriptor);
     bgRadioIndex_[key] = &radios_.back();
 }
@@ -232,155 +260,6 @@ void RadioMedium::removeBackgroundRadio(const BgUeKey& key)
     radios_.pop_back();
     if (idx < radios_.size())
         reindex(radios_[idx]);
-}
-
-CarrierPhysics RadioMedium::readCarrierPhysics(StochasticChannelModel *endpoint, cModule *legModule) const
-{
-    CarrierPhysics cp;
-    // leg-sourced (E5): legModule's own NED parameters -- the carrierLeg[]
-    // submodule matchCarrierLeg() matched endpoint to -- not the endpoint's
-    // any more. Every radio matched to the same leg necessarily agrees,
-    // since they all read the same submodule.
-    cModule *pathLossModule = legModule->getSubmodule("pathLoss");
-    cp.pathLossType = pathLossStudyOf(pathLossModule);
-    cp.scenario = legModule->par("scenario").stringValue();
-    cp.buildingHeight = legModule->par("buildingHeight");
-    cp.streetWidth = legModule->par("streetWidth");
-    cp.tolerateMaxDistViolation = legModule->par("tolerateMaxDistViolation");
-    // useBuildingPenetrationHighLossModel exists only on a Tr38901PathLoss
-    // submodule -- reading it off any other concrete type would throw
-    // "no such parameter"
-    cp.useBuildingPenetrationHighLossModel = (cp.pathLossType == "Tr38901")
-            && (bool)pathLossModule->par("useBuildingPenetrationHighLossModel");
-    // the environment, stated once for the whole network: read off this
-    // medium's own NED parameters, not the registering endpoint's (E3)
-    cp.shadowing = par("shadowing");
-    cp.correlationDistance = par("correlationDistance");
-    cp.dynamicLos = par("dynamicLos");
-    cp.fixedLos = par("fixedLos");
-    cp.enableExtCellLos = par("enableExtCellLos");
-    cp.fading = par("fading");
-    cp.fadingType = par("fadingType").stringValue();
-    cp.numFadingPaths = par("numFadingPaths");
-    cp.delayRms = par("delayRms");
-    cp.thermalNoise = par("thermalNoise");
-    cp.useTorus = par("useTorus");
-    cp.harqReduction = par("harqReduction");
-    cp.targetBler = par("targetBler");
-    cp.bgCellInterference = par("bgCellInterference");
-    cp.extCellInterference = par("extCellInterference");
-    cp.downlinkInterference = par("downlinkInterference");
-    cp.uplinkInterference = par("uplinkInterference");
-    return cp;
-}
-
-namespace {
-
-/** Bridge counterpart of checkCarrierField(): compares a value already sourced from the medium against the endpoint's own, still-declared value. */
-template<typename T>
-void checkBridgeField(const char *name, const T& mediumValue, const T& endpointValue,
-        const std::string& mediumPath, const std::string& endpointPath)
-{
-    if (!(mediumValue == endpointValue))
-        throw cRuntimeError("parameter '%s' was moved to the medium: '%s' says one value, but '%s' still declares "
-                "a different one for its own (now unused) copy -- an ini line was migrated incorrectly, or not at all",
-                name, mediumPath.c_str(), endpointPath.c_str());
-}
-
-} // namespace
-
-void RadioMedium::checkEndpointAgreesWithMedium(StochasticChannelModel *endpoint, D2dChannelModel *d2dEndpoint,
-        cModule *legModule, const CarrierPhysics& candidate) const
-{
-    const std::string mediumPath = getFullPath();
-    const std::string endpointPath = endpoint->getFullPath();
-
-#define CHECK_BRIDGE_FIELD(name, type) \
-    checkBridgeField<type>(#name, (type)par(#name), (type)endpoint->par(#name), mediumPath, endpointPath)
-
-    CHECK_BRIDGE_FIELD(shadowing, bool);
-    CHECK_BRIDGE_FIELD(correlationDistance, double);
-    CHECK_BRIDGE_FIELD(dynamicLos, bool);
-    CHECK_BRIDGE_FIELD(fixedLos, bool);
-    CHECK_BRIDGE_FIELD(enableExtCellLos, bool);
-    CHECK_BRIDGE_FIELD(fading, bool);
-    checkBridgeField<std::string>("fadingType", par("fadingType").stringValue(), endpoint->par("fadingType").stringValue(), mediumPath, endpointPath);
-    CHECK_BRIDGE_FIELD(numFadingPaths, int);
-    CHECK_BRIDGE_FIELD(delayRms, double);
-    CHECK_BRIDGE_FIELD(thermalNoise, double);
-    CHECK_BRIDGE_FIELD(useTorus, bool);
-    CHECK_BRIDGE_FIELD(targetBler, double);
-    CHECK_BRIDGE_FIELD(harqReduction, double);
-    CHECK_BRIDGE_FIELD(bgCellInterference, bool);
-    CHECK_BRIDGE_FIELD(extCellInterference, bool);
-    CHECK_BRIDGE_FIELD(downlinkInterference, bool);
-    CHECK_BRIDGE_FIELD(uplinkInterference, bool);
-
-#undef CHECK_BRIDGE_FIELD
-
-    if (d2dEndpoint != nullptr)
-        checkBridgeField<bool>("d2dInterference", par("d2dInterference"), d2dEndpoint->par("d2dInterference"), mediumPath, endpointPath);
-
-    // E5: the 6 study/geometry fields, now leg-sourced -- compared against
-    // the endpoint's own still-declared copy (removal is E6). candidate was
-    // already read off legModule by readCarrierPhysics(), so this reuses it
-    // rather than re-reading legModule's parameters a second time.
-    const std::string legPath = legModule->getFullPath();
-
-    checkBridgeField<std::string>("pathLossType", candidate.pathLossType, endpoint->par("pathLossType").stringValue(), legPath, endpointPath);
-    checkBridgeField<std::string>("scenario", candidate.scenario, endpoint->par("scenario").stringValue(), legPath, endpointPath);
-    checkBridgeField<double>("buildingHeight", candidate.buildingHeight, (double)endpoint->par("buildingHeight"), legPath, endpointPath);
-    checkBridgeField<double>("streetWidth", candidate.streetWidth, (double)endpoint->par("streetWidth"), legPath, endpointPath);
-    checkBridgeField<bool>("tolerateMaxDistViolation", candidate.tolerateMaxDistViolation, (bool)endpoint->par("tolerateMaxDistViolation"), legPath, endpointPath);
-    if (candidate.pathLossType == "Tr38901")
-        checkBridgeField<bool>("useBuildingPenetrationHighLossModel", candidate.useBuildingPenetrationHighLossModel,
-                (bool)endpoint->par("useBuildingPenetrationHighLossModel"), legPath, endpointPath);
-}
-
-namespace {
-
-template<typename T>
-void checkCarrierField(const char *name, const T& existing, const T& candidate, const CarrierLeg& leg,
-        const std::string& existingPath, const std::string& candidatePath)
-{
-    if (!(existing == candidate))
-        throw cRuntimeError("carrier leg %gGHz/%s: parameter '%s' differs between registered radios '%s' and '%s'",
-                leg.carrierFrequency.get(), leg.isNr ? "NR" : "LTE", name, existingPath.c_str(), candidatePath.c_str());
-}
-
-} // namespace
-
-void RadioMedium::checkCarrierPhysics(const CarrierPhysics& existing, const CarrierPhysics& candidate,
-        const CarrierLeg& leg, const std::string& candidatePath) const
-{
-#define CHECK_CARRIER_FIELD(field) \
-    checkCarrierField(#field, existing.field, candidate.field, leg, existing.establishedByPath, candidatePath)
-
-    CHECK_CARRIER_FIELD(pathLossType);
-    CHECK_CARRIER_FIELD(scenario);
-    CHECK_CARRIER_FIELD(shadowing);
-    CHECK_CARRIER_FIELD(correlationDistance);
-    CHECK_CARRIER_FIELD(dynamicLos);
-    CHECK_CARRIER_FIELD(fixedLos);
-    CHECK_CARRIER_FIELD(enableExtCellLos);
-    CHECK_CARRIER_FIELD(fading);
-    CHECK_CARRIER_FIELD(fadingType);
-    CHECK_CARRIER_FIELD(numFadingPaths);
-    CHECK_CARRIER_FIELD(delayRms);
-    CHECK_CARRIER_FIELD(thermalNoise);
-    CHECK_CARRIER_FIELD(buildingHeight);
-    CHECK_CARRIER_FIELD(streetWidth);
-    CHECK_CARRIER_FIELD(useTorus);
-    CHECK_CARRIER_FIELD(tolerateMaxDistViolation);
-    CHECK_CARRIER_FIELD(harqReduction);
-    CHECK_CARRIER_FIELD(targetBler);
-    CHECK_CARRIER_FIELD(useBuildingPenetrationHighLossModel);
-    CHECK_CARRIER_FIELD(bgCellInterference);
-    CHECK_CARRIER_FIELD(extCellInterference);
-    CHECK_CARRIER_FIELD(downlinkInterference);
-    CHECK_CARRIER_FIELD(uplinkInterference);
-
-#undef CHECK_CARRIER_FIELD
 }
 
 void RadioMedium::removeRadio(StochasticChannelModel *endpoint)
@@ -559,51 +438,43 @@ PathLossModel& RadioMedium::extCellPathLossFor(MacNodeId nodeId, GHz carrierFreq
     return extCellPathLossFor(legFor(d.endpoint));
 }
 
-const CarrierPhysics& RadioMedium::carrierPhysicsFor(const CarrierLeg& leg) const
+PathLossModel *RadioMedium::resolvePathLossStrategy(cModule *legModule)
 {
-    auto it = carrierPhysics_.find(leg);
-    if (it == carrierPhysics_.end())
-        throw cRuntimeError("no carrier physics record for carrier leg %gGHz/%s",
-                leg.carrierFrequency.get(), leg.isNr ? "NR" : "LTE");
-    return it->second;
-}
+    // legModule's own "pathLoss" submodule: its concrete NED type IS the
+    // leg's configured study, so there is no type-name dispatch left to do
+    // here -- only the Tr38901-specific setter call, whose parameter lives
+    // on the Tr38901PathLoss NED type alone (reading it off any other
+    // concrete type would throw "no such parameter").
+    cModule *pathLossModule = legModule->getSubmodule("pathLoss");
+    auto *model = check_and_cast<PathLossModel *>(pathLossModule);
 
-PathLossModel *RadioMedium::resolvePathLossStrategy(cModule *legModule, const CarrierPhysics& cp)
-{
-    // legModule's own "pathLoss" submodule: its concrete NED type is
-    // cp.pathLossType's `<TypeName>PathLoss` counterpart by construction
-    // (readCarrierPhysics() derived cp.pathLossType from this very
-    // submodule's type), so there is no type-name dispatch left to do here --
-    // only the Tr38901-specific setter call, mirroring today's shape.
-    auto *model = check_and_cast<PathLossModel *>(legModule->getSubmodule("pathLoss"));
+    if (auto *tr38901 = dynamic_cast<Tr38901PathLossModel *>(model))
+        tr38901->setUseBuildingPenetrationHighLossModel(pathLossModule->par("useBuildingPenetrationHighLossModel"));
 
-    if (cp.pathLossType == "Tr38901") {
-        auto *tr38901 = check_and_cast<Tr38901PathLossModel *>(model);
-        tr38901->setUseBuildingPenetrationHighLossModel(cp.useBuildingPenetrationHighLossModel);
-    }
-
-    initializePathLossStrategy(model, cp);
+    initializePathLossStrategy(model, legModule);
     return model;
 }
 
-PathLossModel *RadioMedium::resolveExtCellPathLossStrategy(cModule *legModule, const CarrierPhysics& cp)
+PathLossModel *RadioMedium::resolveExtCellPathLossStrategy(cModule *legModule)
 {
-    // always TR 36.814, regardless of cp.pathLossType: the ext-cell and
+    // always TR 36.814, whatever the leg's own study: the ext-cell and
     // background-cell interference paths (computeExtCellPathLoss) use those
     // formulas unconditionally -- CarrierLegPhysics.extCellPathLoss's own
     // default typename enforces this, not a choice made here
     auto *model = check_and_cast<PathLossModel *>(legModule->getSubmodule("extCellPathLoss"));
 
-    initializePathLossStrategy(model, cp);
+    initializePathLossStrategy(model, legModule);
     return model;
 }
 
-void RadioMedium::initializePathLossStrategy(PathLossModel *model, const CarrierPhysics& cp)
+void RadioMedium::initializePathLossStrategy(PathLossModel *model, cModule *legModule)
 {
-    // no carrier frequency, no antenna heights any more (E4): those travel
-    // per call now, in a LinkContext built by linkContextFor()
-    model->initialize(this, aToDeploymentScenario(cp.scenario), cp.buildingHeight, cp.streetWidth,
-            cp.tolerateMaxDistViolation);
+    // the leg-constant deployment geometry, legModule's own NED parameters
+    // (E5/E6). No carrier frequency, no antenna heights any more (E4): those
+    // travel per call now, in a LinkContext built by linkContextFor()
+    model->initialize(this, aToDeploymentScenario(legModule->par("scenario").stringValue()),
+            legModule->par("buildingHeight"), legModule->par("streetWidth"),
+            legModule->par("tolerateMaxDistViolation"));
 }
 
 bool& RadioMedium::losState(const CarrierLeg& leg, const LinkKey& key, bool *existed)
@@ -665,7 +536,7 @@ void RadioMedium::updateCorrelationDistance(StochasticChannelModel *radio, MacNo
         point = Position(NOW, coord);
     }
     else if ((point.first != NOW) &&
-             point.second.distance(coord) > carrierPhysicsFor(leg).correlationDistance)
+             point.second.distance(coord) > correlationDistance_)
     {
         // check simtime_t first
         point = Position(NOW, coord);
@@ -681,7 +552,6 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
     double correlationDist = computeCorrelationDistance(radio, link.stateNodeId, link.stateCoord);
 
     const CarrierLeg leg = legFor(radio);
-    const CarrierPhysics& cp = carrierPhysicsFor(leg);
 
     // The other party of this link, for height role-resolution (E4/§3(k),
     // risk 15): whichever of {radio, peerId} is eNB-role supplies h_BS,
@@ -698,7 +568,7 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
     // its visibility from eNodeB, hence it is correct to recompute the LOS probability
     bool losAlreadyComputed = false;
     losState(leg, link.stateKey, &losAlreadyComputed);
-    if (correlationDist > cp.correlationDistance || !losAlreadyComputed) {
+    if (correlationDist > correlationDistance_ || !losAlreadyComputed) {
         computeLosProbability(radio, threeDimDistance, twoDimDistance, link.stateKey, peerId);
     }
 
@@ -708,7 +578,7 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
 
     //    Applying shadowing only if it is enabled by configuration
     //    log-normal shadowing (not available for background UEs)
-    if (num(link.stateNodeId) < BGUE_MIN_ID && cp.shadowing)
+    if (num(link.stateNodeId) < BGUE_MIN_ID && shadowing_)
         attenuation += computeShadowing(radio, threeDimDistance, twoDimDistance, link.stateKey, speed, peerId);
 
     // update the tracked node's current position
@@ -729,10 +599,9 @@ double RadioMedium::computePathLoss(StochasticChannelModel *radio, double distan
 void RadioMedium::computeLosProbability(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, MacNodeId peerId)
 {
     const CarrierLeg leg = legFor(radio);
-    const CarrierPhysics& cp = carrierPhysicsFor(leg);
 
-    if (!cp.dynamicLos) {
-        losState(leg, key) = cp.fixedLos;
+    if (!dynamicLos_) {
+        losState(leg, key) = fixedLos_;
         return;
     }
     double p = pathLossFor(leg).computeLosProbability(d3D, d2D, linkContextFor(radio, peerId));
@@ -742,7 +611,6 @@ void RadioMedium::computeLosProbability(StochasticChannelModel *radio, double d3
 double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, double speed, MacNodeId peerId)
 {
     const CarrierLeg leg = legFor(radio);
-    const CarrierPhysics& cp = carrierPhysicsFor(leg);
     const LinkStateKey stateKey{leg, key};
 
     double mean = 0;
@@ -765,7 +633,7 @@ double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, 
         //If the shadowing attenuation has been computed at least one time for this link
         // and the distance traveled by the UE is greater than correlation distance
     }
-    else if ((NOW - lastComputedSF_.at(stateKey).first).dbl() * speed > cp.correlationDistance) {
+    else if ((NOW - lastComputedSF_.at(stateKey).first).dbl() * speed > correlationDistance_) {
 
         //get the temporal mark of the last computed shadowing attenuation
         time = (NOW - lastComputedSF_.at(stateKey).first).dbl();
@@ -774,7 +642,7 @@ double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, 
         space = time * speed;
 
         //Compute shadowing with an EAW (Exponential Average Window) (step 1)
-        double a = exp(-0.5 * (space / cp.correlationDistance));
+        double a = exp(-0.5 * (space / correlationDistance_));
 
         //Get last shadowing attenuation computed
         double old = lastComputedSF_.at(stateKey).second;
@@ -805,7 +673,6 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
     JakesFadingMap& actualJakesMap = isBgUe ? jakesFadingMapBgUe_ : jakesFadingMap_;
 
     const CarrierLeg leg = legFor(radio);
-    const CarrierPhysics& cp = carrierPhysicsFor(leg);
     const LinkStateKey stateKey{leg, key};
 
     // if this is the first time that we compute fading for current link
@@ -822,12 +689,12 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
             temp.delaySpread.clear();
 
             // for each fading path
-            for (int i = 0; i < cp.numFadingPaths; i++) {
+            for (int i = 0; i < numFadingPaths_; i++) {
                 // get angle of arrivals
                 temp.angleOfArrival.push_back(cos(uniform(0, M_PI)));
 
                 // get delay spread
-                temp.delaySpread.push_back(exponential(cp.delayRms));
+                temp.delaySpread.push_back(exponential(delayRms_));
             }
             // store the Jakes fading for this link
             actualJakesMap[stateKey].push_back(temp);
@@ -847,7 +714,7 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
     // Compute Doppler shift.
     double doppler_shift = (speed * f) / SPEED_OF_LIGHT;
 
-    for (int i = 0; i < cp.numFadingPaths; i++) {
+    for (int i = 0; i < numFadingPaths_; i++) {
         // Phase shift due to Doppler => t-selectivity.
         double phi_d = actualJakesData.angleOfArrival[i] * doppler_shift;
 
@@ -860,7 +727,7 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
         // One ring model/Clarke's model plus f-selectivity according to Cavers:
         // Due to isotropic antenna gain pattern on all paths only a^2 can be received on all paths.
         // Since we are interested in attenuation a := 1, attenuation per path is then:
-        double attenuation = (1.00 / sqrt(static_cast<double>(cp.numFadingPaths)));
+        double attenuation = (1.00 / sqrt(static_cast<double>(numFadingPaths_)));
 
         // Convert to cartesian form and aggregate {Re, Im} over all fading paths.
         re_h = re_h + attenuation * cos(phi);
@@ -880,17 +747,17 @@ double RadioMedium::rayleighFading(StochasticChannelModel *radio, MacNodeId id, 
     return linearToDb(temp1);
 }
 
-double RadioMedium::applyFading(StochasticChannelModel *radio, const CarrierPhysics& cp, MacNodeId nodeId,
+double RadioMedium::applyFading(StochasticChannelModel *radio, MacNodeId nodeId,
         const LinkKey& key, double speed, unsigned int band, bool isBgUe)
 {
     double fadingAttenuation = 0;
     // if fading is enabled
-    if (cp.fading) {
+    if (fading_) {
         // Applying fading
-        if (cp.fadingType == "RAYLEIGH")
+        if (fadingType_ == "RAYLEIGH")
             fadingAttenuation = rayleighFading(radio, nodeId, band);
 
-        else if (cp.fadingType == "JAKES")
+        else if (fadingType_ == "JAKES")
             fadingAttenuation = jakesFading(radio, key, speed, band, isBgUe);
     }
     return fadingAttenuation;
@@ -997,10 +864,9 @@ std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, const Ra
      * Ndb = thermalNoise + noiseFigure (measured in decibels)
      */
 
-    const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
 
     // compute and linearize total noise
-    double totN = dBmToLinear(cp.thermalNoise + link.noiseFigure);
+    double totN = dBmToLinear(thermalNoise_ + link.noiseFigure);
 
     // per-band interference-plus-noise denominator, in dBm
     std::vector<double> den(radio->getNumBands(), 0.0);
@@ -1066,7 +932,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
         // vector containing the sum of inCell interference for each band
         std::vector<double> d2dInterference; // Linear value (mW)
         d2dInterference.resize(radio->getNumBands(), 0);
-        if (d.d2dEndpoint->isD2DInterferenceEnabled()) {
+        if (d2dInterference_) {
             interference_->computeD2DInterference(radio, link.cellId, link.txId, link.txCoord, link.rxId, link.rxCoord,
                     (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &d2dInterference, link.dir);
         }
@@ -1099,17 +965,16 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     inet::Coord ueCoord = link.txIsBaseStation ? link.rxCoord : link.txCoord;
     inet::Coord enbCoord = link.txIsBaseStation ? link.txCoord : link.rxCoord;
 
-    const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
 
     //============ MULTI CELL INTERFERENCE COMPUTATION =================
     // vector containing the sum of multi-cell interference for each band
     std::vector<double> multiCellInterference; // Linear value (mW)
     // prepare data structure
     multiCellInterference.resize(radio->getNumBands(), 0);
-    if (cp.downlinkInterference && dir == DL && lteInfo->getFrameType() != BEACONPKT) {
+    if (downlinkInterference_ && dir == DL && lteInfo->getFrameType() != BEACONPKT) {
         interference_->computeDownlinkInterference(radio, eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
-    else if (cp.uplinkInterference && dir == UL) {
+    else if (uplinkInterference_ && dir == UL) {
         interference_->computeUplinkInterference(radio, eNbId, ueId, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
 
@@ -1118,7 +983,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     std::vector<double> bgCellInterference; // Linear value (mW)
     // prepare data structure
     bgCellInterference.resize(radio->getNumBands(), 0);
-    if (cp.bgCellInterference) {
+    if (bgCellInterference_) {
         interference_->computeBackgroundCellInterference(radio, ueId, enbCoord, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
 
@@ -1128,7 +993,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     std::vector<double> extCellInterference; // Linear value (mW)
     // prepare data structure
     extCellInterference.resize(radio->getNumBands(), 0);
-    if (cp.extCellInterference && dir == DL) {
+    if (extCellInterference_ && dir == DL) {
         interference_->computeExtCellInterference(radio, eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
 
@@ -1204,12 +1069,11 @@ std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const Ra
     // if the phy layer is distributed the number of logical bands should be set to 1
     double fadingAttenuation = 0;
 
-    const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
 
     // for each logical band
     // FIXME compute fading only for used RBs
     for (unsigned int i = 0; i < radio->getNumBands(); i++) {
-        fadingAttenuation = applyFading(radio, cp, link.stateNodeId, link.stateKey, speed, i);
+        fadingAttenuation = applyFading(radio, link.stateNodeId, link.stateKey, speed, i);
 
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
@@ -1221,7 +1085,7 @@ std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const Ra
            << " noise figure " << link.noiseFigure
            << " cable loss   " << radio->getCableLoss()
            << " attenuation (pathloss + shadowing) " << attenuation
-           << " speed " << speed << " thermal noise " << cp.thermalNoise
+           << " speed " << speed << " thermal noise " << thermalNoise_
            << " fading attenuation " << fadingAttenuation << endl;
 
         rsrpVector[i] = finalRecvPower;
@@ -1305,12 +1169,11 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     std::vector<double> snrVector;
     snrVector.resize(radio->getNumBands(), recvPower);
 
-    const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
 
     // for each logical band
     double fadingAttenuation = 0;
     for (unsigned int i = 0; i < radio->getNumBands(); i++) {
-        fadingAttenuation = applyFading(radio, cp, bgUeId, LinkKey(bgUeId), speed, i, true);
+        fadingAttenuation = applyFading(radio, bgUeId, LinkKey(bgUeId), speed, i, true);
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
 
@@ -1340,10 +1203,10 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     std::vector<double> multiCellInterference; // Linear value (mW)
     // prepare data structure
     multiCellInterference.resize(radio->getNumBands(), 0);
-    if (cp.downlinkInterference && dir == DL) {
+    if (downlinkInterference_ && dir == DL) {
         interference_->computeDownlinkInterference(radio, eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
-    else if (cp.uplinkInterference && dir == UL) {
+    else if (uplinkInterference_ && dir == UL) {
         interference_->computeUplinkInterference(radio, eNbId, bgUeId, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
 
@@ -1352,7 +1215,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     std::vector<double> bgCellInterference; // Linear value (mW)
     // prepare data structure
     bgCellInterference.resize(radio->getNumBands(), 0);
-    if (cp.bgCellInterference) {
+    if (bgCellInterference_) {
         interference_->computeBackgroundCellInterference(radio, bgUeId, enbCoord, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
 
@@ -1362,13 +1225,13 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     std::vector<double> extCellInterference; // Linear value (mW)
     // prepare data structure
     extCellInterference.resize(radio->getNumBands(), 0);
-    if (cp.extCellInterference && dir == DL) {
+    if (extCellInterference_ && dir == DL) {
         interference_->computeExtCellInterference(radio, eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
 
     //===================== SINR COMPUTATION ========================
     // compute and linearize total noise
-    double totN = dBmToLinear(cp.thermalNoise + noiseFigure);
+    double totN = dBmToLinear(thermalNoise_ + noiseFigure);
 
     // add interference for each band
     for (unsigned int i = 0; i < radio->getNumBands(); i++) {
@@ -1535,7 +1398,7 @@ bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFra
     // Compute total error probability
     double packetErrorRate = 1.0 - cumulativeSuccessProbability;
     // Apply HARQ soft combining gain
-    double effectiveErrorRateWithHarq = packetErrorRate * pow(carrierPhysicsFor(legFor(radio)).harqReduction, transmissionAttempt - 1);
+    double effectiveErrorRateWithHarq = packetErrorRate * pow(harqReduction_, transmissionAttempt - 1);
 
     double randomSample = uniform(0.0, 1.0);
 

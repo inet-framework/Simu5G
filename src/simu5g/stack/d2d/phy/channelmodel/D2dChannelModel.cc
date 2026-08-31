@@ -21,7 +21,6 @@ void D2dChannelModel::initialize(int stage)
     StochasticChannelModel::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         rcvdSinrD2DSignal_ = cComponent::registerSignal("rcvdSinrD2D");
-        enableD2DInterference_ = par("d2dInterference");
     }
 }
 

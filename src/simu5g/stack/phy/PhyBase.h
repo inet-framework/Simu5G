@@ -298,8 +298,8 @@ class PhyBase : public ChannelAccess
     MacNodeId getMacNodeId() { return nodeId_; }
     /*
      * Returns whether this PHY is part of the NR stack (as opposed to LTE);
-     * needed by RadioMedium to key CarrierPhysics by carrier leg, not just
-     * carrier frequency.
+     * needed by RadioMedium to key its per-leg strategies and state by
+     * carrier leg, not just carrier frequency.
      */
     bool isNr() const { return isNr_; }
 };
