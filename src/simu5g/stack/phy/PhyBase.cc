@@ -150,7 +150,7 @@ void PhyBase::initializeChannelModel()
     primaryChannelModel_.reference(this, "channelModelModule", true);
     primaryChannelModel_->setPhy(this);
     GHz carrierFreq = primaryChannelModel_->getCarrierFrequency();
-    unsigned int numerologyIndex = primaryChannelModel_->getNumerologyIndex();
+    unsigned int numerologyIndex = primaryChannelModel_->getNumerologyIndex(carrierFreq);
     channelModel_[carrierFreq] = primaryChannelModel_;
 
     if (nodeType_ == UE)
@@ -161,7 +161,7 @@ void PhyBase::initializeChannelModel()
         ChannelModelBase *chanModel = check_and_cast<ChannelModelBase *>(primaryChannelModel_->getParentModule()->getSubmodule(primaryChannelModel_->getName(), index));
         chanModel->setPhy(this);
         GHz carrierFreq = chanModel->getCarrierFrequency();
-        unsigned int numerologyIndex = chanModel->getNumerologyIndex();
+        unsigned int numerologyIndex = chanModel->getNumerologyIndex(carrierFreq);
         channelModel_[carrierFreq] = chanModel;
         if (nodeType_ == UE)
             binder_->registerCarrierUe(carrierFreq, numerologyIndex, nodeId_);

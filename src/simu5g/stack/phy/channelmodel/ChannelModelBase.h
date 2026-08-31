@@ -165,14 +165,37 @@ class ChannelModelBase : public cSimpleModule
     virtual GHz getCarrierFrequency() const { return GHz(carrierFrequencyGHz_); }
 
     /*
-     * Returns the number of logical bands
+     * Returns the number of logical bands for the given carrier.
+     *
+     * Flattened ahead of the carrier-vector collapse (radio endpoint recast
+     * E7): the module still serves exactly one carrier today, so the
+     * argument must always equal getCarrierFrequency() -- the ASSERT makes
+     * that invariant loud rather than assumed. Once a radio serves several
+     * carriers (E8), the argument selects among them.
      */
-    virtual unsigned int getNumBands() const { return numBands_; }
+    virtual unsigned int getNumBands(GHz carrierFrequency) const
+    {
+        ASSERT(carrierFrequency == carrierFrequency_);
+        return numBands_;
+    }
 
     /*
-     * Returns the numerology index
+     * Legacy no-argument form, kept only for BackgroundCellChannelModel.cc's
+     * one remaining caller: that file is out of scope for this step (it is
+     * slated for deletion by parent follow-up 1) and must not be touched.
+     * Remove this overload when that caller goes away.
      */
-    virtual unsigned int getNumerologyIndex() const { return componentCarrier_->getNumerologyIndex(); }
+    virtual unsigned int getNumBands() const { return getNumBands(carrierFrequency_); }
+
+    /*
+     * Returns the numerology index for the given carrier (see getNumBands
+     * for why the argument is required now).
+     */
+    virtual unsigned int getNumerologyIndex(GHz carrierFrequency) const
+    {
+        ASSERT(carrierFrequency == carrierFrequency_);
+        return componentCarrier_->getNumerologyIndex();
+    }
 
     virtual void setPhy(PhyBase *phy) { phy_ = phy; }
 

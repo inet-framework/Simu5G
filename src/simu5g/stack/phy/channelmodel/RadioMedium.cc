@@ -682,7 +682,7 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
         actualJakesMap[stateKey].clear();
 
         // for each band we are going to create a Jakes fading
-        for (unsigned int j = 0; j < radio->getNumBands(); j++) {
+        for (unsigned int j = 0; j < radio->getNumBands(radio->getCarrierFrequency()); j++) {
             // clear some structure
             JakesFadingData temp;
             temp.angleOfArrival.clear();
@@ -869,12 +869,12 @@ std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, const Ra
     double totN = dBmToLinear(thermalNoise_ + link.noiseFigure);
 
     // per-band interference-plus-noise denominator, in dBm
-    std::vector<double> den(radio->getNumBands(), 0.0);
+    std::vector<double> den(radio->getNumBands(radio->getCarrierFrequency()), 0.0);
     computeInterferencePlusNoise(radio, link, lteInfo, rbmap, totN, den);
 
     double sumSnr = 0.0;
     int usedRBs = 0;
-    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+    for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
         // if we are decoding a data transmission and this RB has not been used, skip it
         // TODO fix for multi-antenna case
         if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
@@ -931,7 +931,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
          */
         // vector containing the sum of inCell interference for each band
         std::vector<double> d2dInterference; // Linear value (mW)
-        d2dInterference.resize(radio->getNumBands(), 0);
+        d2dInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
         if (d2dInterference_) {
             interference_->computeD2DInterference(radio, link.cellId, link.txId, link.txCoord, link.rxId, link.rxCoord,
                     (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &d2dInterference, link.dir);
@@ -945,7 +945,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
         // through dBm -> linear -> dBm rather than summing noise directly in dBm, the
         // two are not bit-identical -- observable only when D2D interference is
         // disabled, which no shipped configuration does.
-        for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+        for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
             // the caller skips these bands too; leave their denominator untouched
             if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
                 continue;
@@ -970,7 +970,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     // vector containing the sum of multi-cell interference for each band
     std::vector<double> multiCellInterference; // Linear value (mW)
     // prepare data structure
-    multiCellInterference.resize(radio->getNumBands(), 0);
+    multiCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
     if (downlinkInterference_ && dir == DL && lteInfo->getFrameType() != BEACONPKT) {
         interference_->computeDownlinkInterference(radio, eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
@@ -982,7 +982,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     // vector containing the sum of background cell interference for each band
     std::vector<double> bgCellInterference; // Linear value (mW)
     // prepare data structure
-    bgCellInterference.resize(radio->getNumBands(), 0);
+    bgCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
     if (bgCellInterference_) {
         interference_->computeBackgroundCellInterference(radio, ueId, enbCoord, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
@@ -992,14 +992,14 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     // vector containing the sum of external cell interference for each band
     std::vector<double> extCellInterference; // Linear value (mW)
     // prepare data structure
-    extCellInterference.resize(radio->getNumBands(), 0);
+    extCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
     if (extCellInterference_ && dir == DL) {
         interference_->computeExtCellInterference(radio, eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
 
     EV << "RadioMedium::computeInterferencePlusNoise - distance from my eNb=" << enbCoord.distance(ueCoord) << " - DIR=" << ((dir == DL) ? "DL" : "UL") << endl;
 
-    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+    for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
         // the caller skips these bands too; leave their denominator untouched
         if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
             continue;
@@ -1061,7 +1061,7 @@ std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const Ra
     // =============== END ANGULAR ATTENUATION =================
 
     std::vector<double> rsrpVector;
-    rsrpVector.resize(radio->getNumBands(), 0.0);
+    rsrpVector.resize(radio->getNumBands(radio->getCarrierFrequency()), 0.0);
 
     // compute and add interference due to fading
     // Apply fading for each band
@@ -1072,7 +1072,7 @@ std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const Ra
 
     // for each logical band
     // FIXME compute fading only for used RBs
-    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+    for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
         fadingAttenuation = applyFading(radio, link.stateNodeId, link.stateKey, speed, i);
 
         // add fading contribution to the received power
@@ -1167,12 +1167,12 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
         recvPower -= computeSectorAttenuation(radio, eNbId, radio->getCarrierFrequency(), enbCoord, ueCoord);
 
     std::vector<double> snrVector;
-    snrVector.resize(radio->getNumBands(), recvPower);
+    snrVector.resize(radio->getNumBands(radio->getCarrierFrequency()), recvPower);
 
 
     // for each logical band
     double fadingAttenuation = 0;
-    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+    for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
         fadingAttenuation = applyFading(radio, bgUeId, LinkKey(bgUeId), speed, i, true);
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
@@ -1202,7 +1202,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     //vector containing the sum of multicell interference for each band
     std::vector<double> multiCellInterference; // Linear value (mW)
     // prepare data structure
-    multiCellInterference.resize(radio->getNumBands(), 0);
+    multiCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
     if (downlinkInterference_ && dir == DL) {
         interference_->computeDownlinkInterference(radio, eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
@@ -1214,7 +1214,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     //vector containing the sum of bg-cell interference for each band
     std::vector<double> bgCellInterference; // Linear value (mW)
     // prepare data structure
-    bgCellInterference.resize(radio->getNumBands(), 0);
+    bgCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
     if (bgCellInterference_) {
         interference_->computeBackgroundCellInterference(radio, bgUeId, enbCoord, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
@@ -1224,7 +1224,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     //vector containing the sum of ext-cell interference for each band
     std::vector<double> extCellInterference; // Linear value (mW)
     // prepare data structure
-    extCellInterference.resize(radio->getNumBands(), 0);
+    extCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
     if (extCellInterference_ && dir == DL) {
         interference_->computeExtCellInterference(radio, eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
@@ -1234,7 +1234,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     double totN = dBmToLinear(thermalNoise_ + noiseFigure);
 
     // add interference for each band
-    for (unsigned int i = 0; i < radio->getNumBands(); i++) {
+    for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
         // denominator expressed in dBm as (N+extCell+multiCell)
         //               (      mW              +          mW            +  mW  +        mW            )
         double den = linearToDBm(bgCellInterference[i] + extCellInterference[i] + totN + multiCellInterference[i]);
