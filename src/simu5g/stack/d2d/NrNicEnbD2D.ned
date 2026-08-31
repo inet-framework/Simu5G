@@ -30,10 +30,9 @@ module NrNicEnbD2D extends NrNicEnb
         rrc.bearerManagement.lteRlcUmEntityModuleType = default("simu5g.stack.d2d.rlc.LteRlcUmEntityD2D");
         rrc.bearerManagement.nrRlcUmEntityModuleType = default("simu5g.stack.d2d.rlc.NrRlcUmEntityD2D");
 
-        // use the D2D-capable channel model (matching the NrNicEnb default of
-        // TR 38.901 on the gNodeB's channelModel slot)
+        // use the D2D-capable channel model (the study itself -- TR 38.901 on
+        // NR legs -- is selected on the medium's carrier leg, not here)
         channelModelType = default("D2dChannelModel");
-        channelModel[*].pathLossType = default("Tr38901");
         rrc.typename = default("RrcD2D");
         rrc.hasD2DModeSelection = true;
 }

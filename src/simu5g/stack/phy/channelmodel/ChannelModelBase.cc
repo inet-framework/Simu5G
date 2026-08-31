@@ -41,17 +41,5 @@ void ChannelModelBase::initialize(int stage)
     }
 }
 
-std::vector<double> ChannelModelBase::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
-{
-    static const std::vector<double> tmp { 10000.0 };
-    return tmp;
-}
-
-std::vector<double> ChannelModelBase::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
-{
-    static const std::vector<double> tmp { 10000.0 };
-    return tmp;
-}
-
 } //namespace
 

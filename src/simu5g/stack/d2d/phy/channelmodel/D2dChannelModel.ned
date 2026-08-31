@@ -16,18 +16,16 @@ import simu5g.stack.phy.channelmodel.StochasticChannelModel;
 
 //
 // D2D-capable channel model: ~StochasticChannelModel plus the device-to-device
-// channel math (RSRP/SINR, D2D interference, D2D reception decision). It is the
-// channel model of the D2D NICs on all propagation studies; the pathLossType
-// parameter (inherited from ~StochasticChannelModel) selects TR 36.814, 36.873
-// or 38.901.
+// channel math (RSRP/SINR, D2D interference, D2D reception decision). It is
+// the channel model of the D2D NICs on all propagation studies; like every
+// other piece of the environment, the study is selected on the medium's
+// matching carrier leg, and the D2D interference toggle is ~RadioMedium's own
+// d2dInterference parameter.
 //
 simple D2dChannelModel extends StochasticChannelModel
 {
     parameters:
         @class("D2dChannelModel");
-
-        // if true, enables the interference computation for D2D connections
-        bool d2dInterference = default(true);
 
         // statistics
         @signal[rcvdSinrD2D];

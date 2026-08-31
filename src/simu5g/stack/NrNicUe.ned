@@ -39,7 +39,7 @@ module NrNicUe extends LteNicUe
         sdap.nodeRole = default("UE");
         sdap.useReflectiveQos = default(this.useReflectiveQos);
         sdap.reflectiveQosTableModule = default(this.useReflectiveQos ? "^.reflectiveQosTable" : "");
-        string nrChannelModelType = default("Tr38901ChannelModel");
+        string nrChannelModelType = default("StochasticChannelModel");
         // UE-side antenna height default (radio endpoint recast E4, §3(k))
         nrChannelModel[*].height = default(1.5m);
 

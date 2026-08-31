@@ -26,11 +26,10 @@ module RadioMedium like IRadioMedium
         @display("i=misc/sun");
 
         // The environment, stated once for the whole network -- moved here from
-        // the per-endpoint channel model (radio endpoint recast, E3): every radio
-        // registered with this medium shares one value of each, so stating it once
-        // replaces stating it identically on every endpoint. Defaults match the
-        // endpoint's own former defaults exactly (StochasticChannelModel.ned,
-        // D2dChannelModel.ned), so an unmigrated network still behaves as before.
+        // the per-endpoint channel model (radio endpoint recast, E3/E6): every
+        // radio registered with this medium shares one value of each, so stating
+        // it once replaces stating it identically on every endpoint. The
+        // defaults are the former per-endpoint defaults, unchanged.
         bool shadowing = default(true);
         double correlationDistance @unit(m) = default(50m);
         bool dynamicLos = default(false);
@@ -48,7 +47,7 @@ module RadioMedium like IRadioMedium
         bool extCellInterference = default(true);
         bool downlinkInterference = default(false);
         bool uplinkInterference = default(false);
-        bool d2dInterference = default(true); // from D2dChannelModel.ned; only D2D-capable radios care
+        bool d2dInterference = default(true); // only D2D-capable radios care
 
         // Number of carrier legs this medium's radios run distinct
         // propagation studies on (radio endpoint recast E5, §3(d)). 1

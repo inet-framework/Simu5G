@@ -33,18 +33,14 @@ using namespace omnetpp;
  * "this endpoint is D2D-capable", set once at registration by downcasting to
  * this class. What is left here is the marker itself (being this class),
  * getRSRP_D2D/getSINR_D2D (called from D2dUePhyHelper.cc and PhyEnbD2D.cc),
- * and the two small facts only a D2D-capable
- * endpoint carries: whether D2D interference is enabled, and the signal a
- * D2D reception is reported under.
+ * and the one small fact only a D2D-capable
+ * endpoint carries: the signal a D2D reception is reported under.
  *
  * The rcvdSinrD2D signal is owned and interned here, not in the core channel model.
  */
 class D2dChannelModel : public StochasticChannelModel, public ID2dChannelModel
 {
   protected:
-    // enable/disable the interference computation for D2D connections
-    bool enableD2DInterference_ = false;
-
     // Interned in initialize() rather than registered by a static initializer, so that
     // linking the D2D package in cannot shift the signal ids the core assigns. See the
     // "Signals" note in D2dUeMacBase.h.
@@ -58,8 +54,10 @@ class D2dChannelModel : public StochasticChannelModel, public ID2dChannelModel
     std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId = NODEID_NONE) override;
     std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) override;
 
-    virtual bool isD2DInterferenceEnabled() { return enableD2DInterference_; }
-    bool recordsUlTransmissionMap() override { return isUplinkInterferenceEnabled() || enableD2DInterference_; }
+    // both flags are network-wide, owned by the medium (E6, §3(b)); the
+    // signatures and their callers stay, answered by asking the medium
+    virtual bool isD2DInterferenceEnabled() { return medium_->isD2dInterferenceEnabled(); }
+    bool recordsUlTransmissionMap() override { return isUplinkInterferenceEnabled() || isD2DInterferenceEnabled(); }
 
     /*
      * The signal a D2D reception is reported under, for RadioMedium's

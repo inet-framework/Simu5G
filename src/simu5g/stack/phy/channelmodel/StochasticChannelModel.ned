@@ -22,8 +22,8 @@ package simu5g.stack.phy.channelmodel;
 //
 // It covers:
 // - path loss per deployment scenario, LOS/NLOS state and log-normal shadowing,
-//   with the formulas of the 3GPP propagation study selected by ~pathLossType~
-//   (TR 36.814, TR 36.873 or TR 38.901);
+//   with the formulas of the 3GPP propagation study configured on the medium's
+//   matching carrier leg (TR 36.814, TR 36.873 or TR 38.901);
 // - multipath fading, Jakes or Rayleigh;
 // - the antenna pattern attenuation and the link budget (antenna gains, cable
 //   loss, noise figures, thermal noise);
@@ -32,10 +32,12 @@ package simu5g.stack.phy.channelmodel;
 // - the assembly of all of the above into a per-band SINR, and the mapping of
 //   that SINR onto a block error probability that decides reception.
 //
-// Only the path loss, LOS probability, shadowing and angular attenuation come
-// from the selected propagation study; everything else is the same whichever
-// study is selected. The ~Tr36873ChannelModel and ~Tr38901ChannelModel presets
-// differ from this type only in their pathLossType default.
+// This endpoint declares only the facts that are genuinely per node: its
+// antenna properties and noise figures, its outdoor-to-indoor geometry, and
+// its statistics toggle. The environment -- the propagation study, deployment
+// geometry, shadowing/fading/LOS model and the interference toggles -- is
+// stated once for the whole network, on ~RadioMedium and its carrierLeg
+// submodules.
 //
 simple StochasticChannelModel extends ChannelModelBase
 {
@@ -44,72 +46,23 @@ simple StochasticChannelModel extends ChannelModelBase
 
         string radioMediumModule = default("radioMedium"); // module path of the medium this endpoint registers with
 
-        string pathLossType @enum("Tr36814","Tr36873","Tr38901") = default("Tr36814"); // which 3GPP propagation study supplies the path loss formulas
-
-        // Enable/disable shadowing
-        bool shadowing = default(true);
-
-        // Pathloss scenario from ITU -->
-        string scenario @enum(INDOOR_HOTSPOT,URBAN_MICROCELL,URBAN_MACROCELL,RURAL_MACROCELL,SUBURBAN_MACROCELL,UNKNOWN_SCENARIO) = default("URBAN_MACROCELL");
-
         // This radio's own antenna height (radio endpoint recast E4, §3(k)):
         // a per-node fact, not a per-leg constant. Defaulted here to the
         // (former) UE height; the eNB/gNB-side NICs override it to 25m.
         double height @unit(m) = default(1.5m);
-        // Building height -->
-        double buildingHeight @unit(m) = default(20m);
         // determines if the UE is inside a building
         bool insideBuilding = default(false);
-        // enable the high-loss building penetration model (table 7.4.3-2 in TR 38.901); only used with pathLossType="Tr38901"
-        bool useBuildingPenetrationHighLossModel = default(false);
-
-        double streetWidth @unit(m) = default(20m);
-        bool tolerateMaxDistViolation = default(false);
-        bool useTorus = default(false);
-
-        double correlationDistance @unit(m) = default(50m);
-
-        // Target bler used to compute feedback -->
-        double targetBler = default(0.01);
-        // HARQ reduction -->
-        double harqReduction = default(0.2);
 
         // Antenna Gain of UE -->
         double antennaGainUe @unit(dBi) = default(0dBi);
         // Antenna Gain of eNodeB -->
         double antennGainEnB @unit(dBi) = default(18dBi);
-        // Thermal Noise for 10 MHz of Bandwidth -->
-        double thermalNoise @unit(dBm) = default(-104.5dBm);
         // Ue noise figure -->
         double ueNoiseFigure @unit(dBm) = default(7dBm);
         // eNodeB noise figure -->
         double bsNoiseFigure @unit(dBm) = default(5dBm);
         // Cable Loss -->
         double cableLoss @unit(dB) = default(2dB);
-
-        // If true enable the possibility to switch dinamically the LOS/NLOS pathloss computation -->
-        bool dynamicLos = default(false);
-        // If dynamic-los is false this parameter, if true, compute LOS pathloss otherwise compute NLOS pathloss -->
-        bool fixedLos = default(false);
-        // Enable/disable fading -->
-        bool fading = default(true);
-        // Fading type (JAKES or RAYGHLEY) -->
-        string fadingType @enum(RAYLEIGH,JAKES) = default("JAKES");
-        // If jakes fading this parameter specify the number of path (tap channel) -->
-        int numFadingPaths = default(6);
-
-        double delayRms @unit(s) = default(363ns);
-
-        // if true, enables the inter-cell interference computation for UL and DL connections from background cells -->
-        bool bgCellInterference = default(true);
-        // if true, enables the inter-cell interference computation for DL connections from external cells (maybe this is obsolete and should be removed) -->
-        bool extCellInterference = default(true);
-        // if true, enables the inter-cell interference computation for DL connections -->
-        bool downlinkInterference = default(false);
-        // if true, enables the interference computation for UL connections -->
-        bool uplinkInterference = default(false);
-
-        bool enableExtCellLos = default(true);
 
         // collection of SINR statistics can be disabled because it might be quite time-consuming
         bool collectSinrStatistics = default(true);

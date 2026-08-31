@@ -39,11 +39,11 @@ module NrNicUeD2D extends NrNicUe
         rrc.bearerManagement.nrRlcUmEntityModuleType = default("simu5g.stack.d2d.rlc.NrRlcUmEntityD2D");
         nrRlcMux.typename = default("RlcMuxD2D");
 
-        // use the D2D-capable channel model on both legs (matching the
-        // pre-separation defaults: TR 36.814 on the LTE leg, TR 38.901 on the NR leg)
+        // use the D2D-capable channel model on both legs (the studies
+        // themselves -- TR 36.814 on the LTE leg, TR 38.901 on the NR leg --
+        // are selected on the medium's carrier legs, not here)
         channelModelType = default("D2dChannelModel");
         nrChannelModelType = default("D2dChannelModel");
-        nrChannelModel[*].pathLossType = default("Tr38901");
 
         rrc.typename = default("RrcD2D");
         rrc.handoverController.typename = default("HandoverControllerD2D");
