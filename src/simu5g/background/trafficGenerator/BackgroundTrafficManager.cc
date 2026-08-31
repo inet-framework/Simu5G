@@ -70,7 +70,7 @@ bool BackgroundTrafficManager::isSetBgTrafficManagerInfoInit()
 
 unsigned int BackgroundTrafficManager::getNumBands()
 {
-    return channelModel_->getNumBands();
+    return channelModel_->getNumBands(carrierFrequency_);
 }
 
 std::vector<double> BackgroundTrafficManager::getSINR(int bgUeIndex, Direction dir, inet::Coord bgUePos, double bgUeTxPower)

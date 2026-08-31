@@ -115,7 +115,7 @@ void CellularInterferenceModel::computeDownlinkInterference(StochasticChannelMod
 
         double txPwr = medium_->txPowerOf(id, carrierFrequency) - angularAtt - radio->getCableLoss() + radio->getAntennaGainEnB() + radio->getAntennaGainUe();
 
-        unsigned int numBands = std::min(radio->getNumBands(), interfChanModel->getNumBands());
+        unsigned int numBands = std::min(radio->getNumBands(radio->getCarrierFrequency()), interfChanModel->getNumBands(interfChanModel->getCarrierFrequency()));
         EV << " - shared bands [" << numBands << "]" << endl;
 
         if (isCqi) {// check slot occupation for this TTI
@@ -154,7 +154,7 @@ void CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel
     const std::vector<std::vector<UeAllocationInfo>> *ulTransmissionMap;
     const std::vector<UeAllocationInfo> *allocatedUes;
 
-    unsigned int numBands = radio->getNumBands();
+    unsigned int numBands = radio->getNumBands(radio->getCarrierFrequency());
 
     if (isCqi) {// check slot occupation for this TTI
         ulTransmissionMap = binder_->getUlTransmissionMap(carrierFrequency, CURR_TTI);
@@ -293,7 +293,7 @@ void CellularInterferenceModel::computeExtCellInterference(StochasticChannelMode
         recvPwrDBm = extCell->getTxPower() - att - angularAtt - radio->getCableLoss() + radio->getAntennaGainEnB() + radio->getAntennaGainUe();
         recvPwr = dBmToLinear(recvPwrDBm);
 
-        unsigned int numBands = std::min(radio->getNumBands(), extCell->getNumBands());
+        unsigned int numBands = std::min(radio->getNumBands(radio->getCarrierFrequency()), extCell->getNumBands());
         EV << " - shared bands [" << numBands << "]" << endl;
 
         // add interference in those bands where the ext cell is active
@@ -377,7 +377,7 @@ void CellularInterferenceModel::computeBackgroundCellInterference(StochasticChan
             recvPwr = dBmToLinear(recvPwrDBm);
             EV << " recvPwr[" << recvPwr << "]\t";
 
-            unsigned int numBands = std::min(radio->getNumBands(), bgScheduler->getNumBands());
+            unsigned int numBands = std::min(radio->getNumBands(radio->getCarrierFrequency()), bgScheduler->getNumBands());
             EV << " - shared bands [" << numBands << "]\t";
             EV << " - interfering bands[";
 
@@ -408,7 +408,7 @@ void CellularInterferenceModel::computeBackgroundCellInterference(StochasticChan
 
             angularAtt = 0;  // we assume OMNI directional UEs
 
-            unsigned int numBands = std::min(radio->getNumBands(), bgScheduler->getNumBands());
+            unsigned int numBands = std::min(radio->getNumBands(radio->getCarrierFrequency()), bgScheduler->getNumBands());
             EV << " - shared bands [" << numBands << "]" << endl;
 
             // add interference in those bands where a UE in the background cell is active
@@ -462,7 +462,7 @@ void CellularInterferenceModel::computeD2DInterference(StochasticChannelModel *r
     const std::vector<std::vector<UeAllocationInfo>> *ulTransmissionMap;
     const std::vector<UeAllocationInfo> *allocatedUes;
 
-    unsigned int numBands = radio->getNumBands();
+    unsigned int numBands = radio->getNumBands(radio->getCarrierFrequency());
 
     // CQI computation checks the slot occupation of the current TTI;
     // error computation checks the occupation of the previous TTI

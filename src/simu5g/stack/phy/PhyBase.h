@@ -130,6 +130,19 @@ class PhyBase : public ChannelAccess
         return primaryChannelModel_;
     }
 
+    /*
+     * The carrier frequency of this PHY leg's primary carrier -- the
+     * concept the three call sites in PhyEnb/PhyUe that mean "this leg's
+     * carrier" actually want (radio endpoint recast E7). Flattened onto
+     * PhyBase, rather than left as a direct primaryChannelModel_ read, so
+     * a later collapse of the carrier vector (E8) only has to change this
+     * one place.
+     */
+    GHz getPrimaryCarrierFrequency() const
+    {
+        return primaryChannelModel_->getCarrierFrequency();
+    }
+
     const std::map<GHz, opp_component_ptr<ChannelModelBase>>& getChannelModels()
     {
         return channelModel_;

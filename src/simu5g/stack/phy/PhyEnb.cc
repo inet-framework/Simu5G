@@ -103,7 +103,7 @@ LteAirFrame *PhyEnb::createBeaconMessage()
     cInfo->setSourceId(nodeId_);
     cInfo->setFrameType(BEACONPKT);
     cInfo->setTxPower(txPower_);
-    cInfo->setCarrierFrequency(primaryChannelModel_->getCarrierFrequency());
+    cInfo->setCarrierFrequency(getPrimaryCarrierFrequency());
     cInfo->setIsNr(isNr_);
     beaconAirFrame->setControlInfo(cInfo);
     beaconAirFrame->setDuration(0);

@@ -83,7 +83,7 @@ void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandida
         double cellTxPower = cellPhy->getTxPwr();
         Coord cellPos = cellPhy->getCoord();
         // check whether the BS supports the carrier frequency used by the UE
-        GHz ueCarrierFrequency = primaryChannelModel_->getCarrierFrequency();
+        GHz ueCarrierFrequency = getPrimaryCarrierFrequency();
         ChannelModelBase *cellChannelModel = cellPhy->getChannelModel(ueCarrierFrequency);
         if (cellChannelModel == nullptr)
             continue;
@@ -177,7 +177,7 @@ void PhyUe::handleAirFrame(cMessage *msg)
     // Update coordinates of this user
     if (lteInfo->getFrameType() == BEACONPKT) {
         // Check if the message is on another carrier frequency
-        if (carrierFreq != primaryChannelModel_->getCarrierFrequency()) {
+        if (carrierFreq != getPrimaryCarrierFrequency()) {
             EV << "Received beacon packet on a different carrier frequency. Delete it." << endl;
             delete lteInfo;
             delete frame;
