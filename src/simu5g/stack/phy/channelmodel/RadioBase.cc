@@ -10,7 +10,7 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
+#include "simu5g/stack/phy/channelmodel/RadioBase.h"
 
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
@@ -19,14 +19,14 @@
 namespace simu5g {
 
 
-void ChannelModelBase::initialize(int stage)
+void RadioBase::initialize(int stage)
 {
     if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
         binder_.reference(this, "binderModule", true);
 
         // radio endpoint recast E8 (§3(c)): a space-separated list, resolved
         // in declaration order -- the order the registration sweeps below,
-        // and PhyBase::initializeChannelModel()'s binder_->registerCarrierUe
+        // and PhyBase::initializeRadio()'s binder_->registerCarrierUe
         // sweep, register in.
         cStringTokenizer tokenizer(par("componentCarrierModules").stringValue());
         while (tokenizer.hasMoreTokens())
@@ -38,7 +38,7 @@ void ChannelModelBase::initialize(int stage)
         // (LteNicEnb.ned) and no longer sizes this radio's own carrier list --
         // catch the two drifting apart loudly instead of leaving it to
         // silently misbehave.
-        const char *countParName = (std::string(getName()) == "nrChannelModel") ? "numNrCarriers" : "numCarriers";
+        const char *countParName = (std::string(getName()) == "nrRadio") ? "numNrCarriers" : "numCarriers";
         cModule *nic = getParentModule();
         if (nic->hasPar(countParName)) {
             int declaredCount = nic->par(countParName);
@@ -48,8 +48,8 @@ void ChannelModelBase::initialize(int stage)
         }
 
         // PRIMARY (first-declared) carrier's frequency, cached the same way
-        // the single-carrier module used to -- TODO fix this for UEs' channel
-        // model (probably it's not used)
+        // the single-carrier module used to -- TODO fix this for UEs' radio
+        // (probably it's not used)
         numBands_ = componentCarriers_[0]->getNumBands();
         carrierFrequency_ = componentCarriers_[0]->getCarrierFrequency();
         carrierFrequencyGHz_ = GHz(carrierFrequency_).get();

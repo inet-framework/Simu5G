@@ -42,8 +42,8 @@ void BackgroundTrafficManager::initialize(int stage)
         // Get the reference to the channel model for the given carrier
         bsTxPower_ = phy_->getTxPwr();
         bsCoord_ = phy_->getCoord();
-        channelModel_ = phy_->getChannelModel(carrierFrequency_);
-        if (channelModel_ == nullptr)
+        radio_ = phy_->getRadio(carrierFrequency_);
+        if (radio_ == nullptr)
             throw cRuntimeError("BackgroundTrafficManagerBase::initialize - cannot find channel model for carrier frequency %f", carrierFrequency_.get());
 
         // Register each background UE as a phantom radio:
@@ -70,7 +70,7 @@ bool BackgroundTrafficManager::isSetBgTrafficManagerInfoInit()
 
 unsigned int BackgroundTrafficManager::getNumBands()
 {
-    return channelModel_->getNumBands(carrierFrequency_);
+    return radio_->getNumBands(carrierFrequency_);
 }
 
 std::vector<double> BackgroundTrafficManager::getSINR(int bgUeIndex, Direction dir, inet::Coord bgUePos, double bgUeTxPower)
@@ -91,7 +91,7 @@ std::vector<double> BackgroundTrafficManager::getSINR(int bgUeIndex, Direction d
     else
         cInfo->setTxPower(bsTxPower_);
 
-    std::vector<double> snr = channelModel_->getSINR_bgUe(frame, cInfo);
+    std::vector<double> snr = radio_->getSINR_bgUe(frame, cInfo);
 
     // Free memory
     delete frame;
@@ -117,7 +117,7 @@ double BackgroundTrafficManager::getTtiPeriod()
 double BackgroundTrafficManager::getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus)
 {
     MacNodeId bsId = mac_->getMacNodeId();
-    return channelModel_->getReceivedPower_bgUe(txPower, txPos, rxPos, dir, losStatus, bsId);
+    return radio_->getReceivedPower_bgUe(txPower, txPos, rxPos, dir, losStatus, bsId);
 }
 
 } //namespace

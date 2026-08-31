@@ -161,8 +161,8 @@ void PhyEnb::handleAirFrame(cMessage *msg)
 
     // check if the air frame was sent on a correct carrier frequency
     GHz carrierFreq = lteInfo->getCarrierFrequency();
-    ChannelModelBase *channelModel = getChannelModel(carrierFreq);
-    if (channelModel == nullptr) {
+    RadioBase *radio = getRadio(carrierFreq);
+    if (radio == nullptr) {
         EV << "Received packet on carrier frequency not supported by this node. Delete it." << endl;
         delete lteInfo;
         delete frame;
@@ -219,7 +219,7 @@ void PhyEnb::handleAirFrame(cMessage *msg)
         return; // If frame contains a control packet no further action is needed
 
     // DAS removed - single antenna only
-    bool result = channelModel->isReceptionSuccessful(frame, lteInfo);
+    bool result = radio->isReceptionSuccessful(frame, lteInfo);
     if (result)
         numAirFrameReceived_++;
     else
@@ -252,7 +252,7 @@ void PhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Packe
     LteFeedbackDoubleVector fb;
 
     // select the correct channel model according to the carrier frequency
-    ChannelModelBase *channelModel = getChannelModel(lteinfo->getCarrierFrequency());
+    RadioBase *radio = getRadio(lteinfo->getCarrierFrequency());
 
     //get UE Position
     Coord sendersPos = lteinfo->getCoord();
@@ -263,10 +263,10 @@ void PhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Packe
 
     //Apply analog model (path loss)
     //Get snr for UL direction
-    if (channelModel != nullptr)
-        snr = channelModel->getSINR(frame, lteinfo);
+    if (radio != nullptr)
+        snr = radio->getSINR(frame, lteinfo);
     else
-        throw cRuntimeError("PhyEnb::requestFeedback - channelModel is a null pointer");
+        throw cRuntimeError("PhyEnb::requestFeedback - radio is a null pointer");
 
     FeedbackRequest req = lteinfo->getFeedbackReq();
     //Feedback computation
@@ -295,17 +295,17 @@ void PhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Packe
             lteinfo->setDirection(DL);
 
             //Get snr for DL direction
-            if (channelModel != nullptr)
-                snr = channelModel->getSINR(frame, lteinfo);
+            if (radio != nullptr)
+                snr = radio->getSINR(frame, lteinfo);
             else
-                throw cRuntimeError("PhyEnb::requestFeedback - channelModel is a null pointer");
+                throw cRuntimeError("PhyEnb::requestFeedback - radio is a null pointer");
         }
         else
             header->setLteFeedbackDoubleVectorDl(fb);
     }
 
     // additional per-link feedback (none in the base implementation)
-    appendExtraFeedback(header, lteinfo, frame, channelModel);
+    appendExtraFeedback(header, lteinfo, frame, radio);
     EV << "PhyEnb::requestFeedback : Pisa Feedback Generated for nodeId: "
        << nodeId_ << " Feedback size: " << fb.size()
        << " Carrier: " << lteinfo->getCarrierFrequency() << endl;

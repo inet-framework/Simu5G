@@ -24,16 +24,16 @@
 #include <inet/common/geometry/common/Coord.h>
 
 #include "simu5g/common/LteCommon.h"
-#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
+#include "simu5g/stack/phy/channelmodel/RadioBase.h"
 #include "simu5g/stack/phy/channelmodel/PathLossModel.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
 
-class StochasticChannelModel;
+class Radio;
 class CellularInterferenceModel;
-class D2dChannelModel;
+class D2dRadio;
 class TrafficGeneratorBase;
 
 /** A timestamped position: when it was recorded, and where. */
@@ -108,7 +108,7 @@ struct BgUeKey
  */
 struct RadioDescriptor
 {
-    StochasticChannelModel *endpoint = nullptr;   // null iff this is a phantom
+    Radio *endpoint = nullptr;   // null iff this is a phantom
     MacNodeId nodeId = NODEID_NONE;
     GHz carrierFrequency = GHz(0);
 
@@ -125,9 +125,9 @@ struct RadioDescriptor
     // dynamic_cast this is built from is the only one -- every D2D-aware
     // branch reads this cached pointer afterward instead of casting itself,
     // and it doubles as the handle onto D2D-only facts (the rcvdSinrD2D
-    // signal, getSINR_D2D()) that plain StochasticChannelModel does not
+    // signal, getSINR_D2D()) that plain Radio does not
     // carry.
-    D2dChannelModel *d2dEndpoint = nullptr;
+    D2dRadio *d2dEndpoint = nullptr;
 
     // The phantom half: non-null iff endpoint == nullptr --
     // ASSERTed at registration that exactly one of the two is non-null. A
@@ -261,7 +261,7 @@ class RadioMedium : public cSimpleModule
      * endpoint->getCarrierFrequency(), because since E8 one endpoint can
      * register on several carriers.
      */
-    cModule *matchCarrierLeg(StochasticChannelModel *endpoint, GHz carrierFrequency) const;
+    cModule *matchCarrierLeg(Radio *endpoint, GHz carrierFrequency) const;
 
     /**
      * addRadio()'s per-carrier work, factored out so the public entry point
@@ -270,7 +270,7 @@ class RadioMedium : public cSimpleModule
      * resolving that carrier's leg's strategies the first time any radio
      * registers on it.
      */
-    void addRadioOnCarrier(StochasticChannelModel *endpoint, GHz carrierFrequency);
+    void addRadioOnCarrier(Radio *endpoint, GHz carrierFrequency);
 
     /** Whether legModule's own componentCarrierModule/leg parameters admit a radio on carrierFrequency/isNr. */
     bool carrierLegMatches(cModule *legModule, GHz carrierFrequency, bool isNr) const;
@@ -330,10 +330,10 @@ class RadioMedium : public cSimpleModule
      * sharing the same endpoint pointer. Duplicate registration (on any one
      * carrier) is an error.
      */
-    virtual void addRadio(StochasticChannelModel *endpoint);
+    virtual void addRadio(Radio *endpoint);
 
     /** Unregisters a radio endpoint previously added with addRadio(). */
-    virtual void removeRadio(StochasticChannelModel *endpoint);
+    virtual void removeRadio(Radio *endpoint);
 
     /**
      * Registers a background transmitter's phantom radio under key, the
@@ -364,13 +364,13 @@ class RadioMedium : public cSimpleModule
     /**
      * The shared LOS/NLOS state for radio's own carrier leg:
      * auto-vivifies to NLOS (false) if this link's LOS has
-     * never been computed. Public for StochasticChannelModel's resident
+     * never been computed. Public for Radio's resident
      * computeExtCellPathLoss(), which -- like the primary in-cell
      * attenuation computation -- reads (and may share) this same losMap_
      * entry rather than drawing its own independent LOS state for the
      * ext-cell/background-cell interference path.
      */
-    virtual bool losStateFor(StochasticChannelModel *radio, const LinkKey& key, GHz carrierFrequency);
+    virtual bool losStateFor(Radio *radio, const LinkKey& key, GHz carrierFrequency);
 
     // Physical facts of a registered radio, read live through its own
     // endpoint pointer -- the registry resolves identity, it does not cache
@@ -397,12 +397,12 @@ class RadioMedium : public cSimpleModule
      * The per-*call* facts (carrier frequency triple, the two antenna
      * heights) a propagation-formula call needs, resolved for the specific
      * link between radio and peerId (radio endpoint recast E4, §3(f),(k)).
-     * Public, like the rest of this accessor family: StochasticChannelModel's
+     * Public, like the rest of this accessor family: Radio's
      * resident computeExtCellPathLoss() calls it back on the medium too, the
      * same way it already reaches extCellPathLossFor()/losStateFor().
      *
      * The frequency triple is radio's own carrier frequency, reproducing
-     * ChannelModelBase's own derivation (ChannelModelBase.cc:26-29) with no
+     * RadioBase's own derivation (RadioBase.cc:26-29) with no
      * per-leg cache any more.
      *
      * Heights are resolved by *role*, not by which end is transmitting or
@@ -425,7 +425,7 @@ class RadioMedium : public cSimpleModule
      * not by guess: §3(k) verifies every in-tree config keeps that side at
      * its role's default in exactly these calls' configs.
      */
-    virtual LinkContext linkContextFor(StochasticChannelModel *radio, MacNodeId peerId, GHz carrierFrequency) const;
+    virtual LinkContext linkContextFor(Radio *radio, MacNodeId peerId, GHz carrierFrequency) const;
 
     /**
      * The per-leg path-loss strategy for a registered radio, resolved through
@@ -468,13 +468,13 @@ class RadioMedium : public cSimpleModule
      * the D2D conflict-graph's abstract distance estimate), which
      * linkContextFor() resolves to the UE-side default height.
      */
-    virtual double getAttenuation(StochasticChannelModel *radio, const RadioLink& link);
-    virtual double computePathLoss(StochasticChannelModel *radio, double distance, double dbp, bool los, MacNodeId peerId, GHz carrierFrequency);
-    virtual void computeLosProbability(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, MacNodeId peerId, GHz carrierFrequency);
-    virtual double computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, double speed, MacNodeId peerId, GHz carrierFrequency);
-    virtual double jakesFading(StochasticChannelModel *radio, const LinkKey& key, double speed,
+    virtual double getAttenuation(Radio *radio, const RadioLink& link);
+    virtual double computePathLoss(Radio *radio, double distance, double dbp, bool los, MacNodeId peerId, GHz carrierFrequency);
+    virtual void computeLosProbability(Radio *radio, double d3D, double d2D, const LinkKey& key, MacNodeId peerId, GHz carrierFrequency);
+    virtual double computeShadowing(Radio *radio, double d3D, double d2D, const LinkKey& key, double speed, MacNodeId peerId, GHz carrierFrequency);
+    virtual double jakesFading(Radio *radio, const LinkKey& key, double speed,
             unsigned int band, GHz carrierFrequency, bool isBgUe = false);
-    virtual double rayleighFading(StochasticChannelModel *radio, MacNodeId id, unsigned int band);
+    virtual double rayleighFading(Radio *radio, MacNodeId id, unsigned int band);
 
     /**
      * The multipath-fading attenuation for one band, RAYLEIGH or JAKES per
@@ -484,11 +484,11 @@ class RadioMedium : public cSimpleModule
      * themselves, in the same relative position in the caller's loop, so
      * this changes no draw's order or count.
      */
-    virtual double applyFading(StochasticChannelModel *radio, MacNodeId nodeId,
+    virtual double applyFading(Radio *radio, MacNodeId nodeId,
             const LinkKey& key, double speed, unsigned int band, GHz carrierFrequency, bool isBgUe = false);
 
-    virtual double computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency);
-    virtual double computeCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency);
+    virtual double computeSpeed(Radio *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency);
+    virtual double computeCorrelationDistance(Radio *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency);
 
     /**
      * Attenuation from a sectorial (ANISOTROPIC) transmitter's antenna
@@ -501,7 +501,7 @@ class RadioMedium : public cSimpleModule
      * (radio->computeAngle/computeVerticalAngle/computeAngularAttenuation)
      * is a deterministic formula.
      */
-    virtual double computeSectorAttenuation(StochasticChannelModel *radio, MacNodeId txId, GHz carrierFrequency,
+    virtual double computeSectorAttenuation(Radio *radio, MacNodeId txId, GHz carrierFrequency,
             const inet::Coord& txCoord, const inet::Coord& rxCoord) const;
 
     /**
@@ -511,8 +511,8 @@ class RadioMedium : public cSimpleModule
      * computeSpeed() reads; updateCorrelationDistance() records the point
      * getAttenuation() measures the next call's correlationDist against.
      */
-    virtual void updatePositionHistory(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency);
-    virtual void updateCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency);
+    virtual void updatePositionHistory(Radio *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency);
+    virtual void updateCorrelationDistance(Radio *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency);
 
     /**
      * The SINR/RSRP/reception-decision surface, resident on the medium:
@@ -523,21 +523,21 @@ class RadioMedium : public cSimpleModule
      * (this medium's own submodule), never radio, for the four cellular
      * walks and for the D2D walk too.
      */
-    virtual std::vector<double> getSINR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
-    virtual std::vector<double> getSINR(StochasticChannelModel *radio, const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);
-    virtual std::vector<double> getRSRP(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
-    virtual std::vector<double> getRSRP(StochasticChannelModel *radio, const RadioLink& link, double txPower);
-    virtual std::vector<double> getSINR_bgUe(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
-    virtual double getReceivedPower_bgUe(StochasticChannelModel *radio, double txPower, inet::Coord txPos, inet::Coord rxPos,
+    virtual std::vector<double> getSINR(Radio *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
+    virtual std::vector<double> getSINR(Radio *radio, const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);
+    virtual std::vector<double> getRSRP(Radio *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
+    virtual std::vector<double> getRSRP(Radio *radio, const RadioLink& link, double txPower);
+    virtual std::vector<double> getSINR_bgUe(Radio *radio, LteAirFrame *frame, UserControlInfo *lteInfo);
+    virtual double getReceivedPower_bgUe(Radio *radio, double txPower, inet::Coord txPos, inet::Coord rxPos,
             Direction dir, bool losStatus, MacNodeId bsId);
-    virtual void computeInterferencePlusNoise(StochasticChannelModel *radio, const RadioLink& link, UserControlInfo *lteInfo,
+    virtual void computeInterferencePlusNoise(Radio *radio, const RadioLink& link, UserControlInfo *lteInfo,
             RbMap& rbmap, double totN, std::vector<double>& den);
-    virtual bool isReceptionSuccessful(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo,
+    virtual bool isReceptionSuccessful(Radio *radio, LteAirFrame *frame, UserControlInfo *lteInfo,
             const std::vector<double>& rsrpVector);
 
     /**
      * D2D-aware branches, resident on the medium:
-     * D2dChannelModel is an endpoint marker (RadioDescriptor::d2dEndpoint),
+     * D2dRadio is an endpoint marker (RadioDescriptor::d2dEndpoint),
      * and getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise are plain
      * sibling methods here, not virtual dispatch points, so
      * isReceptionSuccessful/getSINR call them directly
@@ -550,11 +550,11 @@ class RadioMedium : public cSimpleModule
      * useUeSideMaps flag: RadioLink carries no such field, since
      * a D2D link's state is the same shared entry regardless of which end asks.
      */
-    virtual RadioLink d2dLink(StochasticChannelModel *radio, MacNodeId srcId, inet::Coord srcCoord,
+    virtual RadioLink d2dLink(Radio *radio, MacNodeId srcId, inet::Coord srcCoord,
             MacNodeId destId, inet::Coord destCoord, GHz carrierFrequency);
-    virtual std::vector<double> getReceptionSinr(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo,
+    virtual std::vector<double> getReceptionSinr(Radio *radio, LteAirFrame *frame, UserControlInfo *lteInfo,
             const std::vector<double>& rsrpVector);
-    virtual void emitRcvdSinr(StochasticChannelModel *radio, Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr);
+    virtual void emitRcvdSinr(Radio *radio, Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr);
 };
 
 } //namespace

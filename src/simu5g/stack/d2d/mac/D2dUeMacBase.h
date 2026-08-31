@@ -21,7 +21,7 @@
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 #include "simu5g/stack/mac/packet/LteRac_m.h"
 #include "simu5g/stack/mac/packet/LteSchedulingGrant.h"
-#include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
+#include "simu5g/stack/phy/channelmodel/RadioBase.h"
 #include "simu5g/stack/rlc/packet/PdcpTrackingTag_m.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/d2d/mac/ID2dMacUe.h"
@@ -224,10 +224,10 @@ bool D2dUeMacBase<Base>::buildStandaloneBsr()
 
                     // Add the created BSR to the PDU List
                     // select channel model for the given carrier frequency
-                    ChannelModelBase *channelModel = this->phy_->getChannelModel(carrierFreq);
-                    if (channelModel == nullptr)
+                    RadioBase *radio = this->phy_->getRadio(carrierFreq);
+                    if (radio == nullptr)
                         throw cRuntimeError("D2dUeMacBase::buildStandaloneBsr - channel model is a null pointer");
-                    this->macPduList_[channelModel->getCarrierFrequency()][{this->getMacCellId(), 0}] = macPktBsr;
+                    this->macPduList_[radio->getCarrierFrequency()][{this->getMacCellId(), 0}] = macPktBsr;
                     EV << "D2dUeMacBase::buildStandaloneBsr - BSR D2D created with size " << sizeBsr << " bytes created" << endl;
 
                     this->bsrRtxTimer_ = this->bsrRtxTimerStart_;  // this prevents the UE from sending an unnecessary RAC request

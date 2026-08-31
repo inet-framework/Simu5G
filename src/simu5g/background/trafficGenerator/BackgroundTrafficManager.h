@@ -29,7 +29,7 @@ using namespace omnetpp;
 
 class TrafficGeneratorBase;
 class LteMacEnb;
-class ChannelModelBase;
+class RadioBase;
 
 //
 // BackgroundTrafficManager
@@ -44,7 +44,7 @@ class BackgroundTrafficManager : public BackgroundTrafficManagerBase
     inet::ModuleRefByPar<PhyEnb> phy_;
 
     // reference to the channel model for the given carrier
-    ChannelModelBase *channelModel_ = nullptr;
+    RadioBase *radio_ = nullptr;
 
     // the medium each of this manager's background UEs registers a phantom
     // radio with; this NIC-side manager has a MAC/cell
@@ -54,7 +54,7 @@ class BackgroundTrafficManager : public BackgroundTrafficManagerBase
 
     // medium_'s module id, cached so the destructor can find it without
     // dereferencing medium_ itself, which may already be gone by teardown
-    // (mirrors StochasticChannelModel's own registration/deregistration)
+    // (mirrors Radio's own registration/deregistration)
     int mediumModuleId_ = -1;
 
     // the owning e/gNodeB's cell id, cached at registration for the same

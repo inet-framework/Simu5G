@@ -40,7 +40,7 @@ class PhyEnbD2D : public PhyEnb
   protected:
     void initialize(int stage) override;
 
-    void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, ChannelModelBase *channelModel) override;
+    void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, RadioBase *radio) override;
 
     const char *airFrameNameFor(const UserControlInfo *info) override
     {

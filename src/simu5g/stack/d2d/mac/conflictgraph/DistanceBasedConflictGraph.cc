@@ -45,13 +45,13 @@ double DistanceBasedConflictGraph::getDbmFromDistance(double distance)
     double pLoss = 0;
 
     // get the reference to the channel model of the eNB
-    ChannelModelBase *channelModel = macEnb_->getPhy()->getChannelModel();
+    RadioBase *radio = macEnb_->getPhy()->getRadio();
 
     // obtain path loss in dBm
-    if (channelModel == nullptr)
+    if (radio == nullptr)
         throw cRuntimeError("DistanceBasedConflictGraph::getDbmFromDistance - channel model is a null pointer");
     else
-        pLoss = channelModel->computePathLoss(distance, dbp, los);
+        pLoss = radio->computePathLoss(distance, dbp, los);
 
     return pLoss;
 }

@@ -42,8 +42,8 @@ module NrNicUeD2D extends NrNicUe
         // use the D2D-capable channel model on both legs (the studies
         // themselves -- TR 36.814 on the LTE leg, TR 38.901 on the NR leg --
         // are selected on the medium's carrier legs, not here)
-        channelModelType = default("D2dChannelModel");
-        nrChannelModelType = default("D2dChannelModel");
+        radioType = default("D2dRadio");
+        nrRadioType = default("D2dRadio");
 
         rrc.typename = default("RrcD2D");
         rrc.handoverController.typename = default("HandoverControllerD2D");

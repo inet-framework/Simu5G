@@ -22,7 +22,7 @@ import simu5g.stack.pdcp.IPdcpMux;
 import simu5g.stack.phy.IPhy;
 import simu5g.stack.rlc.IRlcMux;
 import simu5g.stack.rrc.IRrc;
-import simu5g.stack.phy.channelmodel.IChannelModel;
+import simu5g.stack.phy.channelmodel.IRadio;
 
 
 //
@@ -47,7 +47,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
         double processingDelayIn @unit(s) = default(0s);   // additional processing delay for incoming ip packets
         double processingDelayOut @unit(s) = default(0s);   // additional processing delay for outgoing ip packets
 
-        string channelModelType = default("StochasticChannelModel");
+        string radioType = default("Radio");
 
         bool dualConnectivityEnabled = default(false);
         int numCarriers = default(1);
@@ -105,7 +105,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
         // radio endpoint recast E8: one radio endpoint per PHY leg, not one
         // per carrier -- it serves all of numCarriers through
         // componentCarrierModules (§3(c))
-        channelModel: <channelModelType> like IChannelModel {
+        radio: <radioType> like IRadio {
             @display("p=80,60,col;g=left");
         }
 

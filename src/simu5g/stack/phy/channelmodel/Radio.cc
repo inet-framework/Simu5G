@@ -10,7 +10,7 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/phy/channelmodel/StochasticChannelModel.h"
+#include "simu5g/stack/phy/channelmodel/Radio.h"
 
 #include "simu5g/stack/phy/channelmodel/RadioMedium.h"
 
@@ -18,15 +18,15 @@ namespace simu5g {
 
 using namespace inet;
 using namespace omnetpp;
-Define_Module(StochasticChannelModel);
+Define_Module(Radio);
 
-simsignal_t StochasticChannelModel::rcvdSinrDlSignal_ = registerSignal("rcvdSinrDl");
-simsignal_t StochasticChannelModel::rcvdSinrUlSignal_ = registerSignal("rcvdSinrUl");
+simsignal_t Radio::rcvdSinrDlSignal_ = registerSignal("rcvdSinrDl");
+simsignal_t Radio::rcvdSinrUlSignal_ = registerSignal("rcvdSinrUl");
 
-simsignal_t StochasticChannelModel::measuredSinrDlSignal_ = registerSignal("measuredSinrDl");
-simsignal_t StochasticChannelModel::measuredSinrUlSignal_ = registerSignal("measuredSinrUl");
+simsignal_t Radio::measuredSinrDlSignal_ = registerSignal("measuredSinrDl");
+simsignal_t Radio::measuredSinrUlSignal_ = registerSignal("measuredSinrUl");
 
-StochasticChannelModel::~StochasticChannelModel()
+Radio::~Radio()
 {
     // the medium may already be gone by the time this endpoint is torn down
     cModule *medium = getSimulation()->getModule(mediumModuleId_);
@@ -34,9 +34,9 @@ StochasticChannelModel::~StochasticChannelModel()
         check_and_cast<RadioMedium *>(medium)->removeRadio(this);
 }
 
-void StochasticChannelModel::initialize(int stage)
+void Radio::initialize(int stage)
 {
-    ChannelModelBase::initialize(stage);
+    RadioBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         inside_building_ = par("insideBuilding");
         if (inside_building_)
@@ -60,17 +60,17 @@ void StochasticChannelModel::initialize(int stage)
     }
 }
 
-void StochasticChannelModel::emitMeasuredSinr(Direction dir, double sinr)
+void Radio::emitMeasuredSinr(Direction dir, double sinr)
 {
     emit(dir == DL ? measuredSinrDlSignal_ : measuredSinrUlSignal_, sinr);
 }
 
-void StochasticChannelModel::emitRcvdSinr(Direction dir, double sinr)
+void Radio::emitRcvdSinr(Direction dir, double sinr)
 {
     emit(dir == DL ? rcvdSinrDlSignal_ : rcvdSinrUlSignal_, sinr);
 }
 
-RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Coord coord, GHz carrierFrequency)
+RadioLink Radio::cellularLink(MacNodeId ueId, Direction dir, Coord coord, GHz carrierFrequency)
 {
     // The local module is one endpoint and 'coord' the other; 'dir' says which
     // of the two is the UE. The UE is the node whose channel state we track.
@@ -99,7 +99,7 @@ RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Co
     return link;
 }
 
-RadioLink StochasticChannelModel::linkFor(UserControlInfo *lteInfo)
+RadioLink Radio::linkFor(UserControlInfo *lteInfo)
 {
     RadioLink link;
     link.dir = lteInfo->getDirection();
@@ -170,12 +170,12 @@ RadioLink StochasticChannelModel::linkFor(UserControlInfo *lteInfo)
     return link;
 }
 
-double StochasticChannelModel::getAttenuation(const RadioLink& link)
+double Radio::getAttenuation(const RadioLink& link)
 {
     return medium_->getAttenuation(this, link);
 }
 
-double StochasticChannelModel::computeAngle(Coord center, Coord point) {
+double Radio::computeAngle(Coord center, Coord point) {
     double relx, rely, arcoSen, angle, dist;
 
     // compute distance between points
@@ -202,7 +202,7 @@ double StochasticChannelModel::computeAngle(Coord center, Coord point) {
     return angle;
 }
 
-double StochasticChannelModel::computeVerticalAngle(Coord center, Coord point)
+double Radio::computeVerticalAngle(Coord center, Coord point)
 {
     double threeDimDistance = center.distance(point);
     double twoDimDistance = getTwoDimDistance(center, point);
@@ -210,46 +210,46 @@ double StochasticChannelModel::computeVerticalAngle(Coord center, Coord point)
     return 90 + arccos;
 }
 
-double StochasticChannelModel::computeAngularAttenuation(double hAngle, double vAngle, GHz carrierFrequency) {
+double Radio::computeAngularAttenuation(double hAngle, double vAngle, GHz carrierFrequency) {
     return medium_->pathLossFor(getNodeId(), carrierFrequency).computeAngularAttenuation(hAngle, vAngle);
 }
 
-std::vector<double> StochasticChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> Radio::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     return medium_->getSINR(this, frame, lteInfo);
 }
 
-std::vector<double> StochasticChannelModel::getSINR(const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector)
+std::vector<double> Radio::getSINR(const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector)
 {
     return medium_->getSINR(this, link, lteInfo, snrVector);
 }
 
-std::vector<double> StochasticChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> Radio::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     return medium_->getRSRP(this, frame, lteInfo);
 }
 
-std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, double txPower)
+std::vector<double> Radio::getRSRP(const RadioLink& link, double txPower)
 {
     return medium_->getRSRP(this, link, txPower);
 }
 
-std::vector<double> StochasticChannelModel::getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> Radio::getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
     return medium_->getSINR_bgUe(this, frame, lteInfo);
 }
 
-double StochasticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId)
+double Radio::getReceivedPower_bgUe(double txPower, inet::Coord txPos, inet::Coord rxPos, Direction dir, bool losStatus, MacNodeId bsId)
 {
     return medium_->getReceivedPower_bgUe(this, txPower, txPos, rxPos, dir, losStatus, bsId);
 }
 
-bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+bool Radio::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     return medium_->isReceptionSuccessful(this, frame, lteInfo, rsrpVector);
 }
 
-double StochasticChannelModel::computePathLoss(double distance, double dbp, bool los)
+double Radio::computePathLoss(double distance, double dbp, bool los)
 {
     // No specific peer identity, and no specific carrier, reach this call
     // either (the D2D conflict-graph's abstract distance estimate,
@@ -261,14 +261,14 @@ double StochasticChannelModel::computePathLoss(double distance, double dbp, bool
     return medium_->computePathLoss(this, distance, dbp, los, NODEID_NONE, getCarrierFrequency());
 }
 
-double StochasticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
+double Radio::getTwoDimDistance(inet::Coord a, inet::Coord b)
 {
     a.z = 0.0;
     b.z = 0.0;
     return a.distance(b);
 }
 
-double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey& key, GHz carrierFrequency)
+double Radio::computeExtCellPathLoss(double dist, const LinkKey& key, GHz carrierFrequency)
 {
 
     //compute attenuation based on selected scenario and based on LOS or NLOS

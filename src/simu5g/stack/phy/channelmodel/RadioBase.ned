@@ -13,16 +13,16 @@
 package simu5g.stack.phy.channelmodel;
 
 //
-// This is the base module for developing more realistic models of the radio channel.
-// It primarily provides the initialization of parameters such as the reference to the
-// Component Carrier (CC) and its associated parameters related to the channel
-// model itself.
+// This is the base module for radios that model the radio channel
+// realistically (as opposed to ~IdealRadio). It primarily provides the
+// initialization of parameters such as the reference to the Component
+// Carrier (CC) and its associated parameters.
 //
-simple ChannelModelBase like IChannelModel
+simple RadioBase like IRadio
 {
     parameters:
         @display("i=block/classifier2");
-        @class("ChannelModelBase");
+        @class("RadioBase");
 
         string binderModule = default("binder");
         string cellInfoModule = default("^.^.cellInfo");  // optional

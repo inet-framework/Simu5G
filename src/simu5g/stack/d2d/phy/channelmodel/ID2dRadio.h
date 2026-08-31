@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_ID2DCHANNELMODEL_H_
-#define _LTE_ID2DCHANNELMODEL_H_
+#ifndef _LTE_ID2DRADIO_H_
+#define _LTE_ID2DRADIO_H_
 
 #include <vector>
 
@@ -25,18 +25,18 @@ class LteAirFrame;
 class UserControlInfo;
 
 /*
- * Interface implemented by the D2D-capable channel model (D2dChannelModel).
+ * Interface implemented by the D2D-capable radio (D2dRadio).
  *
- * D2D PHY code talks to the channel model's D2D reception/feedback machinery through
- * this interface instead of the concrete channel-model class, so that the core
- * channel model (StochasticChannelModel) carries no D2D code. Obtain it with
- * check_and_cast<ID2dChannelModel *>(channelModel): a D2D NIC always wires a D2D
- * channel model into its channelModel slots.
+ * D2D PHY code talks to the radio's D2D reception/feedback machinery through
+ * this interface instead of the concrete radio class, so that the core
+ * radio (Radio) carries no D2D code. Obtain it with
+ * check_and_cast<ID2dRadio *>(channelModel): a D2D NIC always wires a D2D
+ * radio into its radio/nrRadio slots.
  */
-class ID2dChannelModel
+class ID2dRadio
 {
   public:
-    virtual ~ID2dChannelModel() {}
+    virtual ~ID2dRadio() {}
 
     /// Compute the received useful signal (RSRP) for a D2D transmission, per band.
     virtual std::vector<double> getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord) = 0;

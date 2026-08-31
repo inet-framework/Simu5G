@@ -10,11 +10,11 @@
 // and cannot be removed from it.
 //
 
-#ifndef STACK_D2D_PHY_CHANNELMODEL_D2DCHANNELMODEL_H_
-#define STACK_D2D_PHY_CHANNELMODEL_D2DCHANNELMODEL_H_
+#ifndef STACK_D2D_PHY_CHANNELMODEL_D2DRADIO_H_
+#define STACK_D2D_PHY_CHANNELMODEL_D2DRADIO_H_
 
-#include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
-#include "simu5g/stack/phy/channelmodel/StochasticChannelModel.h"
+#include "simu5g/stack/d2d/phy/channelmodel/ID2dRadio.h"
+#include "simu5g/stack/phy/channelmodel/Radio.h"
 
 namespace simu5g {
 
@@ -22,7 +22,7 @@ using namespace inet;
 using namespace omnetpp;
 
 /**
- * Marker for D2D-capable NICs, plus the ID2dChannelModel entry points D2D-aware
+ * Marker for D2D-capable NICs, plus the ID2dRadio entry points D2D-aware
  * PHY code calls directly (getRSRP_D2D/getSINR_D2D).
  *
  * D2D channel math (attenuation, RSRP/SINR, interference, reception decision)
@@ -36,9 +36,9 @@ using namespace omnetpp;
  * and the one small fact only a D2D-capable
  * endpoint carries: the signal a D2D reception is reported under.
  *
- * The rcvdSinrD2D signal is owned and interned here, not in the core channel model.
+ * The rcvdSinrD2D signal is owned and interned here, not in the core Radio.
  */
-class D2dChannelModel : public StochasticChannelModel, public ID2dChannelModel
+class D2dRadio : public Radio, public ID2dRadio
 {
   protected:
     // Interned in initialize() rather than registered by a static initializer, so that
@@ -49,7 +49,7 @@ class D2dChannelModel : public StochasticChannelModel, public ID2dChannelModel
   public:
     void initialize(int stage) override;
 
-    // ---- ID2dChannelModel ----
+    // ---- ID2dRadio ----
     std::vector<double> getRSRP_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord) override;
     std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId = NODEID_NONE) override;
     std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) override;
@@ -69,4 +69,4 @@ class D2dChannelModel : public StochasticChannelModel, public ID2dChannelModel
 
 } //namespace
 
-#endif /* STACK_D2D_PHY_CHANNELMODEL_D2DCHANNELMODEL_H_ */
+#endif /* STACK_D2D_PHY_CHANNELMODEL_D2DRADIO_H_ */

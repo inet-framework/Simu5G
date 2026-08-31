@@ -93,7 +93,7 @@ class PathLossModel
 
     /*
      * Copy the deployment-scenario parameters the formulas need. Parameter
-     * ownership stays with the owning channel model; this only receives the
+     * ownership stays with the carrier leg module; this only receives the
      * values it has already read from its NED parameters. The carrier
      * frequency and the two antenna heights are no longer among them (E4):
      * they travel per call, in a LinkContext.

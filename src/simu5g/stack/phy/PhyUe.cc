@@ -84,8 +84,8 @@ void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandida
         Coord cellPos = cellPhy->getCoord();
         // check whether the BS supports the carrier frequency used by the UE
         GHz ueCarrierFrequency = getPrimaryCarrierFrequency();
-        ChannelModelBase *cellChannelModel = cellPhy->getChannelModel(ueCarrierFrequency);
-        if (cellChannelModel == nullptr)
+        RadioBase *cellRadio = cellPhy->getRadio(ueCarrierFrequency);
+        if (cellRadio == nullptr)
             continue;
 
         // build a control info
@@ -102,7 +102,7 @@ void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandida
         cInfo->setCarrierFrequency(ueCarrierFrequency);
         // get RSSI from the BS
         double rssi = 0;
-        std::vector<double> rssiV = primaryChannelModel_->getRSRP(frame, cInfo);
+        std::vector<double> rssiV = primaryRadio_->getRSRP(frame, cInfo);
         for (auto value : rssiV)
             rssi += value;
         rssi /= rssiV.size(); // compute the mean over all RBs
@@ -148,7 +148,7 @@ void PhyUe::changeServingNode(MacNodeId servingNodeId)
 
 double PhyUe::computeReceivedBeaconPacketRssi(LteAirFrame *frame, UserControlInfo *lteInfo)
 {
-    std::vector<double> rssiV = primaryChannelModel_->getSINR(frame, lteInfo);
+    std::vector<double> rssiV = primaryRadio_->getSINR(frame, lteInfo);
     double rssi = 0;
     for (auto value : rssiV)
         rssi += value;
@@ -172,8 +172,8 @@ void PhyUe::handleAirFrame(cMessage *msg)
     }
 
     GHz carrierFreq = lteInfo->getCarrierFrequency();
-    ChannelModelBase *channelModel = getChannelModel(carrierFreq);
-    if (channelModel == nullptr) {
+    RadioBase *radio = getRadio(carrierFreq);
+    if (radio == nullptr) {
         EV << "Received packet on carrier frequency not supported by this node. Delete it." << endl;
         delete lteInfo;
         delete frame;
@@ -270,7 +270,7 @@ void PhyUe::handleAirFrame(cMessage *msg)
         }
     }
 
-    bool result = channelModel->isReceptionSuccessful(frame, lteInfo);
+    bool result = radio->isReceptionSuccessful(frame, lteInfo);
 
     // Update statistics
     if (result)
@@ -316,20 +316,20 @@ void PhyUe::handleUpperMessage(cMessage *msg)
     validateOutgoingFrame(lteInfo.get());
 
     GHz carrierFreq = lteInfo->getCarrierFrequency();
-    ChannelModelBase *channelModel = getChannelModel(carrierFreq);
-    if (channelModel == nullptr)
+    RadioBase *radio = getRadio(carrierFreq);
+    if (radio == nullptr)
         throw cRuntimeError("PhyUe::handleUpperMessage - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 
-    if (lteInfo->getFrameType() == DATAPKT && channelModel->recordsUlTransmissionMap()) {
+    if (lteInfo->getFrameType() == DATAPKT && radio->recordsUlTransmissionMap()) {
         // Store the RBs used for data transmission to the binder (for UL interference computation)
         RbMap rbMap = lteInfo->getGrantedBlocks();
         Remote antenna = MACRO;  // TODO fix for multi-antenna
         // note: the direction is always UL here for a plain UE (enforced by validateOutgoingFrame() above)
-        // carrierFreq, not channelModel->getCarrierFrequency(): the one radio
+        // carrierFreq, not radio->getCarrierFrequency(): the one radio
         // endpoint may serve several carriers since E8, and
-        // channelModel->getCarrierFrequency() answers for its primary one --
+        // radio->getCarrierFrequency() answers for its primary one --
         // carrierFreq is the one this packet is actually on (it is what
-        // resolved channelModel in the first place)
+        // resolved radio in the first place)
         binder_->storeUlTransmissionMap(carrierFreq, antenna, rbMap, nodeId_, servingNodeId_, this, (Direction)lteInfo->getDirection());
     }
 

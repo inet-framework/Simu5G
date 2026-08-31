@@ -27,7 +27,7 @@ namespace unittest {
 
 /**
  * Deployment-scenario parameters of a path-loss model, with the defaults of
- * the StochasticChannelModel/RadioMedium NED parameters they mirror. A test
+ * the Radio/RadioMedium NED parameters they mirror. A test
  * fills in the fields it cares about and hands it to a CaseRecorder, which
  * configures the model with it and reports it as the input of the case,
  * which spares it the five-argument PathLossModel::initialize() call.

@@ -47,7 +47,7 @@ void PhyBase::initialize(int stage)
         WATCH(numAirFrameNotReceived_);
     }
     else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS2) {
-        initializeChannelModel();
+        initializeRadio();
     }
 }
 
@@ -145,17 +145,17 @@ void PhyBase::transmitFrame(LteAirFrame *frame, const UserControlInfo *info)
     sendUnicast(frame);
 }
 
-void PhyBase::initializeChannelModel()
+void PhyBase::initializeRadio()
 {
-    primaryChannelModel_.reference(this, "channelModelModule", true);
-    primaryChannelModel_->setPhy(this);
+    primaryRadio_.reference(this, "radioModule", true);
+    primaryRadio_->setPhy(this);
 
     // radio endpoint recast E8 (§3(c)): one radio endpoint per PHY leg,
     // serving every carrier named in its own componentCarrierModules --
     // iterate that list, in its declaration order, instead of the old
     // per-carrier submodule vector's getVectorSize(). Declaration order is
     // what the binder_->registerCarrierUe sweep below preserves.
-    for (auto *cc : primaryChannelModel_->getComponentCarriers()) {
+    for (auto *cc : primaryRadio_->getComponentCarriers()) {
         GHz carrierFreq = cc->getCarrierFrequency();
         servedCarriers_.insert(carrierFreq);
         if (nodeType_ == UE)
