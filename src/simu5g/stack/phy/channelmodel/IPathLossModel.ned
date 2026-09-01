@@ -19,7 +19,7 @@ package simu5g.stack.phy.channelmodel;
 // propagation study (TR 36.814, TR 36.873 or TR 38.901). The medium resolves
 // one such submodule per matched carrier leg (RadioMedium::addRadio()) and
 // calls it for every link on that leg; the submodule itself never draws on
-// its own rng-0 (radio endpoint recast §3(e)) -- all propagation randomness
+// its own rng-0 -- all propagation randomness
 // comes out of the owning ~RadioMedium's own rng-0 stream.
 //
 moduleinterface IPathLossModel

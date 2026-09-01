@@ -25,11 +25,9 @@ module RadioMedium like IRadioMedium
         @class(RadioMedium);
         @display("i=misc/sun");
 
-        // The environment, stated once for the whole network -- moved here from
-        // the per-endpoint channel model (radio endpoint recast, E3/E6): every
-        // radio registered with this medium shares one value of each, so stating
-        // it once replaces stating it identically on every endpoint. The
-        // defaults are the former per-endpoint defaults, unchanged.
+        // The environment, stated once for the whole network: every radio
+        // registered with this medium shares one value of each, so stating
+        // it once replaces stating it identically on every endpoint.
         bool shadowing = default(true);
         double correlationDistance @unit(m) = default(50m);
         bool dynamicLos = default(false);
@@ -50,18 +48,17 @@ module RadioMedium like IRadioMedium
         bool d2dInterference = default(true); // only D2D-capable radios care
 
         // Number of carrier legs this medium's radios run distinct
-        // propagation studies on (radio endpoint recast E5, §3(d)). 1
-        // (the default) covers every in-tree network but the few that
-        // genuinely run two studies at once, e.g. LTE + NR dual
-        // connectivity -- see carrierLeg below.
+        // propagation studies on. 1 (the default) covers every in-tree
+        // network but the few that genuinely run two studies at once, e.g.
+        // LTE + NR dual connectivity -- see carrierLeg below.
         int numCarrierLegs = default(1);
     submodules:
         interference: <default("CellularInterferenceModel")> like IInterferenceModel {
             @display("p=100,100");
         }
         // MUST stay declared after interference, and radioMedium must stay
-        // the last network-level submodule in every network (§3(d)
-        // ordering invariant): OMNeT++ creates a compound module's direct
+        // the last network-level submodule in every network: OMNeT++
+        // creates a compound module's direct
         // children before building any sibling's subtree, so this is what
         // guarantees these submodules get the highest module ids in the
         // network and shift no other module's id.

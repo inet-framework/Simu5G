@@ -37,11 +37,10 @@ namespace {
 /**
  * The carrier leg a call is on: carrierFrequency plus the radio's isNr flag.
  * carrierFrequency is explicit, not radio->getCarrierFrequency(), because
- * since E8 one radio endpoint can serve several carriers -- its own
+ * one radio endpoint can serve several carriers -- its own
  * getCarrierFrequency() answers only for its PRIMARY one, and every carrier
  * a radio serves needs its own leg-keyed state (pathLoss_, losMap_,
- * positionHistory_, ...), exactly as when each carrier had its own endpoint
- * object.
+ * positionHistory_, ...).
  */
 CarrierLeg legFor(GHz carrierFrequency, bool isNr)
 {
@@ -54,7 +53,7 @@ void RadioMedium::initialize()
 {
     checkForLegacyConfigKeys();
 
-    // the environment, stated once for the whole network (E3): cached off
+    // the environment, stated once for the whole network: cached off
     // this medium's own NED parameters, read on the computation paths below
     shadowing_ = par("shadowing");
     correlationDistance_ = par("correlationDistance");
@@ -85,37 +84,34 @@ void RadioMedium::initialize()
 void RadioMedium::checkForLegacyConfigKeys() const
 {
     // Ini-key name -> what to tell a reader who still sets it. Grown one
-    // entry per removal/rename as the radio-endpoint recast proceeds; see
-    // the design doc, "the legacy-key guard".
+    // entry per removal or rename.
     static const std::vector<std::pair<std::string, std::string>> legacyNames = {
         { "antennGainMicro", "removed from the radio endpoint; still live on BackgroundCellChannelModel" },
-        // E4: unlike the 17 environment parameters E3 moved (still valid
-        // under **.X, since RadioMedium re-declares the same name), these two
-        // are gone from every module -- replaced by the per-node "height",
-        // not merely relocated -- so they qualify for the name rule already
-        // (§3(g)), ahead of the plan's own general E6/E8/E9 growth schedule.
+        // Unlike the environment parameters, which are still valid under
+        // **.X (RadioMedium re-declares the same names), these two are gone
+        // from every module -- replaced by the per-node "height", not
+        // merely relocated.
         { "nodebHeight", "replaced by the per-node 'height' on the radio endpoint (eNB/gNB-role)" },
         { "ueHeight", "replaced by the per-node 'height' on the radio endpoint (UE-role)" },
-        // E6: the study is selected on the medium now, per carrier leg
+        // The study is selected on the medium, per carrier leg
         { "pathLossType", "removed -- select the study on the medium instead: "
                           "radioMedium.carrierLeg[*].pathLoss.typename = \"Tr36814PathLoss\"/\"Tr36873PathLoss\"/\"Tr38901PathLoss\"" },
-        // E9: renamed, not merely relocated -- "radioType"/"nrRadioType" is a
-        // different name, so the old ones now name nothing (§3(g), §3(i)).
+        // Renamed, not merely relocated -- "radioType"/"nrRadioType" is a
+        // different name, so the old ones name nothing.
         // NOTE: "componentCarrierModule" (singular) deliberately does NOT
         // join this list -- CarrierLegPhysics still declares a live
         // parameter of that exact name (its own leg-routing key), so listing
-        // it here would reject that valid configuration. The rename of the
-        // old NIC-level "componentCarrierModule" happened at E8
-        // (componentCarrierModules, plural) and is already covered by the
-        // path rule below, since every such line also names a channelModel/
-        // nrChannelModel path segment.
+        // it here would reject that valid configuration. The old NIC-level
+        // "componentCarrierModule" (componentCarrierModules, plural) is
+        // already covered by the path rule below, since every such line
+        // also names a channelModel/nrChannelModel path segment.
         { "channelModelType", "renamed -- use \"radioType\" instead" },
         { "nrChannelModelType", "renamed -- use \"nrRadioType\" instead" },
     };
 
-    // Stale ini *values* (S8: matched as values, not key names): the two
-    // preset NED types died with the endpoint's pathLossType parameter at
-    // E6, so any key still selecting one -- channelModelType,
+    // Stale ini *values* (matched as values, not key names): the two
+    // preset NED types died with the endpoint's pathLossType parameter,
+    // so any key still selecting one -- channelModelType,
     // nrChannelModelType -- silently instantiates nothing.
     static const std::vector<std::pair<std::string, std::string>> legacyValues = {
         { "Tr36873ChannelModel", "this NED type is gone -- use \"Radio\" and select the study on the medium: "
@@ -124,15 +120,14 @@ void RadioMedium::checkForLegacyConfigKeys() const
                                  "radioMedium.carrierLeg[*].pathLoss.typename = \"Tr38901PathLoss\"" },
     };
 
-    // Path rule (§3(g)) -- armed at E9: after this commit no module anywhere
-    // in the tree is named "channelModel"/"nrChannelModel" any more (both
-    // submodule slots are "radio"/"nrRadio" now), so any key whose object
-    // path names one of the old names as a path segment -- with or without a
-    // now-defunct vector index/wildcard, e.g. "channelModel[0]" or
-    // "channelModel[*]" -- can never resolve to a live parameter. Precise,
-    // zero false positives: it covers every physics/rng-0/insideBuilding/
-    // componentCarrierModule(s) line this recast has ever moved, without
-    // enumerating any of them by name.
+    // Path rule: no module anywhere in the tree is named
+    // "channelModel"/"nrChannelModel" (both submodule slots are
+    // "radio"/"nrRadio"), so any key whose object path names one of the old
+    // names as a path segment -- with or without a defunct vector
+    // index/wildcard, e.g. "channelModel[0]" or "channelModel[*]" -- can
+    // never resolve to a live parameter. Precise, zero false positives: it
+    // covers every physics/rng-0/insideBuilding/componentCarrierModule(s)
+    // line ever moved, without enumerating any of them by name.
     static const std::vector<std::pair<std::string, std::string>> legacyPathSegments = {
         { "channelModel", "this module is now named \"radio\"" },
         { "nrChannelModel", "this module is now named \"nrRadio\"" },
@@ -236,12 +231,12 @@ void RadioMedium::addRadio(Radio *endpoint)
 {
     ASSERT(endpoint != nullptr);
 
-    // radio endpoint recast E8 (§3(c)): one endpoint module now serves a
-    // whole PHY leg, possibly several carriers -- register it once per
-    // carrier, in endpoint->getComponentCarriers()'s declaration order, each
-    // registration producing its own RadioDescriptor (radioIndex_ stays keyed
-    // by (nodeId, carrierFrequency), unchanged) that shares this same
-    // endpoint pointer.
+    // One endpoint module serves a whole PHY leg, possibly several
+    // carriers -- register it once per carrier, in
+    // endpoint->getComponentCarriers()'s declaration order, each
+    // registration producing its own RadioDescriptor (radioIndex_ stays
+    // keyed by (nodeId, carrierFrequency)) that shares this same endpoint
+    // pointer.
     for (auto *cc : endpoint->getComponentCarriers())
         addRadioOnCarrier(endpoint, cc->getCarrierFrequency());
 }
@@ -265,7 +260,7 @@ void RadioMedium::addRadioOnCarrier(Radio *endpoint, GHz carrierFrequency)
 
     // resolve this carrier leg's two strategies from the matched carrierLeg[]
     // submodule the first time a radio registers on the leg. Later
-    // registrants cannot disagree with the first any more (E6): every physics
+    // registrants cannot disagree with the first: every physics
     // value is read off that same leg submodule and off this medium's own
     // parameters, never off the registering radio. (The leg, not the bare
     // frequency: frequency alone conflates an NR UE's vestigial LTE leg with
@@ -421,7 +416,7 @@ namespace {
 // NIC-level default heights (LteNicEnb.ned/LteNicUe.ned, Radio.ned):
 // the fallback for linkContextFor()'s missing side when no specific peer
 // identity reaches the call. Every in-tree config that reaches that fallback
-// keeps the missing side at exactly this default (§3(k)), so the constant
+// keeps the missing side at exactly this default, so the constant
 // reproduces today's value rather than guessing at it.
 constexpr double DEFAULT_ENB_HEIGHT_M = 25;
 constexpr double DEFAULT_UE_HEIGHT_M = 1.5;
@@ -432,16 +427,15 @@ LinkContext RadioMedium::linkContextFor(Radio *radio, MacNodeId peerId, GHz carr
 {
     LinkContext link;
 
-    // frequency triple: the call's own carrier frequency (explicit since E8,
-    // when one radio started being able to serve several), reproducing
-    // RadioBase's own derivation (RadioBase.cc:26-29) -- no
-    // per-leg cache any more (E4/§3(f))
+    // frequency triple: the call's own carrier frequency (explicit, since
+    // one radio can serve several), reproducing RadioBase's own derivation
+    // (RadioBase::initialize()) -- no per-leg cache
     GHz freq = carrierFrequency;
     link.carrierFrequencyGHz = GHz(freq).get();
     link.carrierFrequencyHz = Hz(freq).get();
     link.log10CarrierFrequencyGHz = log10(link.carrierFrequencyGHz);
 
-    // heights: role-based, not tx/rx-based (risk 15)
+    // heights: role-based, not tx/rx-based
     RanNodeType radioRole = getNodeTypeById(radio->getNodeId());
     ASSERT(radioRole == NODEB || radioRole == UE);
     double radioHeight = radio->getHeight();
@@ -539,9 +533,9 @@ PathLossModel *RadioMedium::resolveExtCellPathLossStrategy(cModule *legModule)
 
 void RadioMedium::initializePathLossStrategy(PathLossModel *model, cModule *legModule)
 {
-    // the leg-constant deployment geometry, legModule's own NED parameters
-    // (E5/E6). No carrier frequency, no antenna heights any more (E4): those
-    // travel per call now, in a LinkContext built by linkContextFor()
+    // the leg-constant deployment geometry, legModule's own NED parameters.
+    // No carrier frequency, no antenna heights: those travel per call, in a
+    // LinkContext built by linkContextFor()
     model->initialize(this, aToDeploymentScenario(legModule->par("scenario").stringValue()),
             legModule->par("buildingHeight"), legModule->par("streetWidth"),
             legModule->par("tolerateMaxDistViolation"));
@@ -623,9 +617,9 @@ double RadioMedium::getAttenuation(Radio *radio, const RadioLink& link)
 
     const CarrierLeg leg = legFor(link.carrierFrequency, radio->isNr());
 
-    // The other party of this link, for height role-resolution (E4/§3(k),
-    // risk 15): whichever of {radio, peerId} is eNB-role supplies h_BS,
-    // whichever is UE-role supplies h_UT (linkContextFor()). radio's own
+    // The other party of this link, for height role-resolution: whichever
+    // of {radio, peerId} is eNB-role supplies h_BS, whichever is UE-role
+    // supplies h_UT (linkContextFor()). radio's own
     // role is intrinsic to its own node id; the peer is stateNodeId (always
     // the UE, cellularLink()/linkFor()) when radio is eNB-role, or cellId
     // (always the serving eNB, linkFor()/d2dLink()) when radio is UE-role --
@@ -1349,8 +1343,8 @@ double RadioMedium::getReceivedPower_bgUe(Radio *radio, double txPower, inet::Co
     //compute attenuation based on selected scenario and based on LOS or NLOS
     double sqrDistance = txPos.distance(rxPos);
     double dbp = 0;
-    // No specific bg-UE identity, and no specific carrier (no lteInfo reaches
-    // this call), reach this call (§3(k)): radio's own (primary) carrier is
+    // No specific bg-UE identity, and no specific carrier (no lteInfo
+    // reaches this call), reach this call: radio's own (primary) carrier is
     // used, and linkContextFor() falls back to the UE-side default height.
     double attenuation = computePathLoss(radio, sqrDistance, dbp, losStatus, NODEID_NONE, radio->getCarrierFrequency());
 
@@ -1514,9 +1508,9 @@ RadioLink RadioMedium::d2dLink(Radio *radio, MacNodeId srcId, inet::Coord srcCoo
     link.noiseFigure = radio->getUeNoiseFigure();
     link.txIsBaseStation = false; // omnidirectional: no angular attenuation
 
-    // radio's own serving cell -- for height role-resolution (E4/§3(k), risk
-    // 16): both D2D ends are UEs, so h_BS is resolved via the serving cell,
-    // not via either end.
+    // radio's own serving cell -- for height role-resolution: both D2D
+    // ends are UEs, so h_BS is resolved via the serving cell, not via
+    // either end.
     link.cellId = radio->getBinder()->getServingNodeOrSelf(radio->getNodeId());
 
     // The channel state is keyed on the *link*, so a UE's several D2D peers each

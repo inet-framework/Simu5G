@@ -94,12 +94,11 @@ struct RadioLink
 
     inet::Coord stateCoord;      // position feeding computeSpeed + correlation distance
 
-    // Which of the calling radio's (possibly several, since E8) carriers
+    // Which of the calling radio's (possibly several) carriers
     // this link is on -- keys the medium's per-leg state (pathLoss_,
     // losMap_, positionHistory_, ...) alongside stateKey/stateNodeId above.
-    // Before E8 a radio endpoint served exactly one carrier, so this was
-    // implicit in the endpoint's own identity; now that one endpoint can
-    // serve several, it travels with the link instead.
+    // One endpoint can serve several carriers, so this travels with the
+    // link rather than being implicit in the endpoint's own identity.
     GHz carrierFrequency = GHz(0);
 
     // ---- link budget ----
@@ -151,9 +150,9 @@ class RadioBase : public cSimpleModule
     opp_component_ptr<PhyBase> phy_;
 
     // The component carriers this radio serves, resolved from
-    // componentCarrierModules (radio endpoint recast E8, §3(c)) in
-    // DECLARATION order -- the order cellInfo_->registerCarrier and
-    // PhyBase's binder_->registerCarrierUe sweep register in.
+    // componentCarrierModules in DECLARATION order -- the order
+    // cellInfo_->registerCarrier and PhyBase's binder_->registerCarrierUe
+    // sweep register in.
     std::vector<ComponentCarrier *> componentCarriers_;
 
     // Carrier Frequency of the PRIMARY (first-declared) carrier, and its
@@ -183,15 +182,10 @@ class RadioBase : public cSimpleModule
     virtual GHz getCarrierFrequency() const { return GHz(carrierFrequencyGHz_); }
 
     /*
-     * Returns the number of logical bands for the given carrier.
-     *
-     * Flattened ahead of the carrier-vector collapse (radio endpoint recast
-     * E7) as a tautological ASSERT bridge, since the module served exactly
-     * one carrier at that point. E8 collapses the per-carrier submodule
-     * vector into this one radio serving possibly several carriers
-     * (componentCarrierModules, §3(c)), which is where the check becomes
-     * load-bearing: a real lookup among the carriers this radio actually
-     * serves, throwing rather than silently answering for the wrong one.
+     * Returns the number of logical bands for the given carrier: a real
+     * lookup among the carriers this radio actually serves
+     * (componentCarrierModules), throwing rather than silently answering
+     * for the wrong one.
      */
     virtual unsigned int getNumBands(GHz carrierFrequency) const
     {
@@ -212,8 +206,7 @@ class RadioBase : public cSimpleModule
 
     /*
      * Returns the numerology index for the given carrier (see getNumBands
-     * for why the argument is required, and why E8 is where it starts doing
-     * real work).
+     * for why the argument is required).
      */
     virtual unsigned int getNumerologyIndex(GHz carrierFrequency) const
     {
@@ -225,9 +218,8 @@ class RadioBase : public cSimpleModule
 
     /*
      * The carriers this radio serves, in componentCarrierModules'
-     * declaration order (radio endpoint recast E8, §3(c)): what PhyBase's
-     * initializeRadio() iterates for the binder_->registerCarrierUe
-     * sweep, in place of the old per-carrier submodule vector's index order.
+     * declaration order: what PhyBase's initializeRadio() iterates
+     * for the binder_->registerCarrierUe sweep.
      */
     const std::vector<ComponentCarrier *>& getComponentCarriers() const { return componentCarriers_; }
 

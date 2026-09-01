@@ -46,9 +46,8 @@ simple Radio extends RadioBase
 
         string radioMediumModule = default("radioMedium"); // module path of the medium this endpoint registers with
 
-        // This radio's own antenna height (radio endpoint recast E4, §3(k)):
-        // a per-node fact, not a per-leg constant. Defaulted here to the
-        // (former) UE height; the eNB/gNB-side NICs override it to 25m.
+        // This radio's own antenna height: a per-node fact. Defaulted here
+        // to the UE height; the eNB/gNB-side NICs override it to 25m.
         double height @unit(m) = default(1.5m);
         // determines if the UE is inside a building
         bool insideBuilding = default(false);

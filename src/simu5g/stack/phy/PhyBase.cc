@@ -150,11 +150,10 @@ void PhyBase::initializeRadio()
     primaryRadio_.reference(this, "radioModule", true);
     primaryRadio_->setPhy(this);
 
-    // radio endpoint recast E8 (§3(c)): one radio endpoint per PHY leg,
-    // serving every carrier named in its own componentCarrierModules --
-    // iterate that list, in its declaration order, instead of the old
-    // per-carrier submodule vector's getVectorSize(). Declaration order is
-    // what the binder_->registerCarrierUe sweep below preserves.
+    // One radio endpoint per PHY leg, serving every carrier named in its
+    // own componentCarrierModules -- iterate that list, in its declaration
+    // order. Declaration order is what the binder_->registerCarrierUe
+    // sweep below preserves.
     for (auto *cc : primaryRadio_->getComponentCarriers()) {
         GHz carrierFreq = cc->getCarrierFrequency();
         servedCarriers_.insert(carrierFreq);

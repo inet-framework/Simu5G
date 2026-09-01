@@ -40,7 +40,7 @@ module NrNicUe extends LteNicUe
         sdap.useReflectiveQos = default(this.useReflectiveQos);
         sdap.reflectiveQosTableModule = default(this.useReflectiveQos ? "^.reflectiveQosTable" : "");
         string nrRadioType = default("Radio");
-        // UE-side antenna height default (radio endpoint recast E4, §3(k))
+        // UE-side antenna height default
         nrRadio.height = default(1.5m);
 
         packetFlowObserver.typename = default("PacketFlowObserverUe");
@@ -92,8 +92,8 @@ module NrNicUe extends LteNicUe
         nrPhy: <default("PhyUe")> like IPhy {
             @display("p=570,600");
         }
-        // NR Channel Model (radio endpoint recast E8: one radio endpoint,
-        // serving all of numNrCarriers through componentCarrierModules, §3(c))
+        // NR radio (one radio endpoint, serving all of numNrCarriers
+        // through componentCarrierModules)
         nrRadio: <nrRadioType> like IRadio {
             @display("p=80,60,col;g=left");
         }

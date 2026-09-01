@@ -15,7 +15,7 @@ package simu5g.stack.phy.channelmodel;
 //
 // NED-submodule wrapper around Tr36873PathLossModel's propagation formulas
 // (3GPP TR 36.873), so the strategy can be a ~CarrierLegPhysics.pathLoss /
-// .extCellPathLoss submodule of the medium (radio endpoint recast E5).
+// .extCellPathLoss submodule of the medium.
 //
 simple Tr36873PathLoss like IPathLossModel
 {

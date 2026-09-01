@@ -54,7 +54,7 @@ class D2dRadio : public Radio, public ID2dRadio
     std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId = NODEID_NONE) override;
     std::vector<double> getSINR_D2D(LteAirFrame *frame, UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) override;
 
-    // both flags are network-wide, owned by the medium (E6, §3(b)); the
+    // both flags are network-wide, owned by the medium; the
     // signatures and their callers stay, answered by asking the medium
     virtual bool isD2DInterferenceEnabled() { return medium_->isD2dInterferenceEnabled(); }
     bool recordsUlTransmissionMap() override { return isUplinkInterferenceEnabled() || isD2DInterferenceEnabled(); }

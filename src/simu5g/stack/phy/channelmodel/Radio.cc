@@ -257,7 +257,7 @@ double Radio::computePathLoss(double distance, double dbp, bool los)
     // never configured with more than one carrier in tree): getCarrierFrequency()
     // (this radio's primary carrier) is exactly this radio's own carrier, and
     // linkContextFor() falls back to the other role's own NIC-level default
-    // height for the missing side (E4/§3(k)).
+    // height for the missing side.
     return medium_->computePathLoss(this, distance, dbp, los, NODEID_NONE, getCarrierFrequency());
 }
 
@@ -279,7 +279,7 @@ double Radio::computeExtCellPathLoss(double dist, const LinkKey& key, GHz carrie
 
     // always the TR 36.814 formulas, whatever study the model itself uses.
     // No specific ext-cell/background-cell identity reaches this call
-    // (§3(k), verified: every in-tree ext-cell is at the eNB-side default
+    // (verified: every in-tree ext-cell is at the eNB-side default
     // height): linkContextFor() falls back to the other role's own
     // NIC-level default height for the missing side.
     double attenuation = medium_->extCellPathLossFor(getNodeId(), carrierFrequency)

@@ -22,7 +22,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- * Mixin, INET's own shape (radio endpoint recast §3(e)): a NED submodule
+ * Mixin, INET's own shape: a NED submodule
  * that is also a Tr36814PathLossModel, so the strategy stays a plain,
  * stack-constructible object for the tests/unit/ harness while also being a
  * `like IPathLossModel` submodule of the medium. Carries no state and no

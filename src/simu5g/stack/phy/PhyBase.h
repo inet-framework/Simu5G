@@ -70,14 +70,11 @@ class PhyBase : public ChannelAccess
     static short airFramePriority_;
     /**
      * The carriers this PHY leg's one radio endpoint (primaryRadio_)
-     * serves (radio endpoint recast E8, §3(c)/§4): channelModel_'s old
-     * per-carrier map collapses to this set plus the one endpoint reference
-     * below, since one endpoint module now serves every carrier of the leg.
-     * A std::set so iteration stays in ascending-frequency order, exactly
-     * what range-for over the old std::map<GHz, ...> gave every reader
-     * (sendFeedback(), LteMacUe's per-carrier scheduler setup) -- registration
-     * order (componentCarrierModules' declaration order) is a separate
-     * concern, preserved by RadioBase::getComponentCarriers() instead.
+     * serves. A std::set so iteration stays in ascending-frequency order,
+     * what every reader needs (sendFeedback(), LteMacUe's per-carrier
+     * scheduler setup) -- registration order (componentCarrierModules'
+     * declaration order) is a separate concern, preserved by
+     * RadioBase::getComponentCarriers() instead.
      */
     std::set<GHz> servedCarriers_;
     inet::ModuleRefByPar<RadioBase> primaryRadio_;
@@ -144,17 +141,15 @@ class PhyBase : public ChannelAccess
     /*
      * The carrier frequency of this PHY leg's primary carrier -- the
      * concept the three call sites in PhyEnb/PhyUe that mean "this leg's
-     * carrier" actually want (radio endpoint recast E7). Flattened onto
-     * PhyBase, rather than left as a direct primaryRadio_ read, so
-     * a later collapse of the carrier vector (E8) only has to change this
-     * one place.
+     * carrier" actually want. Flattened onto PhyBase, rather than left as a
+     * direct primaryRadio_ read.
      */
     GHz getPrimaryCarrierFrequency() const
     {
         return primaryRadio_->getCarrierFrequency();
     }
 
-    /** Which carriers this leg's one radio endpoint serves, ascending by frequency (radio endpoint recast E8). */
+    /** Which carriers this leg's one radio endpoint serves, ascending by frequency. */
     const std::set<GHz>& getServedCarriers()
     {
         return servedCarriers_;
@@ -165,7 +160,7 @@ class PhyBase : public ChannelAccess
         if (primaryRadio_ == nullptr)
             return nullptr;
         // when not specified, returns the one radio endpoint (there is only
-        // ever one per leg since E8); otherwise it must be one of the
+        // ever one per leg); otherwise it must be one of the
         // carriers that endpoint actually serves
         if (carrierFreq == GHz(0.0) || servedCarriers_.count(carrierFreq))
             return primaryRadio_;

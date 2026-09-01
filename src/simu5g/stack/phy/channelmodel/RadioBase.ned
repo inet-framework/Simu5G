@@ -28,7 +28,7 @@ simple RadioBase like IRadio
         string cellInfoModule = default("^.^.cellInfo");  // optional
 
         // component carriers this radio serves, space-separated, resolved in
-        // declaration order (radio endpoint recast E8, §3(c)): the order the
+        // declaration order: the order the
         // cellInfo_->registerCarrier / binder_->registerCarrierUe sweeps register in
         string componentCarrierModules = default("carrierAggregation.componentCarrier[0]");
 }
