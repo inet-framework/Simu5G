@@ -133,11 +133,6 @@ class PhyBase : public ChannelAccess
 
   public:
 
-    const RadioBase *getPrimaryChannelModel()
-    {
-        return primaryRadio_;
-    }
-
     /*
      * The carrier frequency of this PHY leg's primary carrier -- the
      * concept the three call sites in PhyEnb/PhyUe that mean "this leg's

@@ -1027,7 +1027,7 @@ void LteMacUe::checkRAC()
         racReq->setPreambleIndex(intuniform(0, numPreambles_ - 1));
         pkt->insertAtFront(racReq);
 
-        GHz carrierFrequency = phy_->getPrimaryChannelModel()->getCarrierFrequency();
+        GHz carrierFrequency = phy_->getPrimaryCarrierFrequency();
         pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(carrierFrequency);
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(getMacCellId());

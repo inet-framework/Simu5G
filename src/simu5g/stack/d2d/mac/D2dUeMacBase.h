@@ -426,7 +426,7 @@ void D2dUeMacBase<Base>::checkRAC()
     d2dUeHelper_.setRacD2DMulticastRequested(racD2DMulticastRequested);
     if (this->racRequested_ || racD2DMulticastRequested) {
         auto pkt = new inet::Packet("RacRequest");
-        GHz carrierFrequency = this->phy_->getPrimaryChannelModel()->getCarrierFrequency();
+        GHz carrierFrequency = this->phy_->getPrimaryCarrierFrequency();
         pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(carrierFrequency);
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(this->getMacNodeId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(this->getMacCellId());
