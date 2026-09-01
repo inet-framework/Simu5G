@@ -13,8 +13,7 @@
 #ifndef STACK_PHY_CHANNELMODEL_TR36814PATHLOSS_H_
 #define STACK_PHY_CHANNELMODEL_TR36814PATHLOSS_H_
 
-#include <omnetpp.h>
-
+#include "simu5g/stack/phy/channelmodel/PathLossModule.h"
 #include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
 
 namespace simu5g {
@@ -26,17 +25,16 @@ using namespace omnetpp;
  * that is also a Tr36814PathLossModel, so the strategy stays a plain,
  * stack-constructible object for the tests/unit/ harness while also being a
  * `like IPathLossModel` submodule of the medium. Carries no state and no
- * logic of its own -- everything is Tr36814PathLossModel's. In particular it
- * does not override cSimpleModule::initialize(): the strategy's own
- * "initialize" (owner_, scenario_, ...) is a same-named but unrelated method
- * of the unrelated PathLossModel base, called explicitly by RadioMedium
- * through a PathLossModel* pointer, never by the module lifecycle.
+ * logic of its own -- everything is Tr36814PathLossModel's (the mixin's
+ * cSimpleModule half, including handleMessage(), is PathLossModule's). In
+ * particular it does not override cSimpleModule::initialize(): the
+ * strategy's own "initialize" (owner_, scenario_, ...) is a same-named but
+ * unrelated method of the unrelated PathLossModel base, called explicitly by
+ * RadioMedium through a PathLossModel* pointer, never by the module
+ * lifecycle.
  */
-class Tr36814PathLoss : public cSimpleModule, public Tr36814PathLossModel
+class Tr36814PathLoss : public PathLossModule, public Tr36814PathLossModel
 {
-  protected:
-    /** Never called: this module has no gates and schedules no self-messages. */
-    void handleMessage(cMessage *msg) override;
 };
 
 } //namespace

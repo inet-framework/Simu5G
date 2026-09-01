@@ -13,8 +13,7 @@
 #ifndef STACK_PHY_CHANNELMODEL_TR38901PATHLOSS_H_
 #define STACK_PHY_CHANNELMODEL_TR38901PATHLOSS_H_
 
-#include <omnetpp.h>
-
+#include "simu5g/stack/phy/channelmodel/PathLossModule.h"
 #include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
 
 namespace simu5g {
@@ -30,11 +29,8 @@ using namespace omnetpp;
  * explicitly, the same way it already does for a freshly constructed
  * strategy, so the module itself carries no initialize() override.
  */
-class Tr38901PathLoss : public cSimpleModule, public Tr38901PathLossModel
+class Tr38901PathLoss : public PathLossModule, public Tr38901PathLossModel
 {
-  protected:
-    /** Never called: this module has no gates and schedules no self-messages. */
-    void handleMessage(cMessage *msg) override;
 };
 
 } //namespace

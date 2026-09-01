@@ -267,11 +267,11 @@ void RadioMedium::addRadioOnCarrier(Radio *endpoint, GHz carrierFrequency)
         // this leg's path-loss strategy: legModule's own "pathLoss"
         // submodule, resolved (not constructed) -- never from this radio's
         // own members
-        pathLoss_[leg] = resolvePathLossStrategy(legModule);
+        pathLoss_[leg] = resolveStrategy(legModule, "pathLoss");
 
         // this leg's ext-cell/background-cell strategy, shared by every
         // radio on the leg
-        extCellPathLoss_[leg] = resolveExtCellPathLossStrategy(legModule);
+        extCellPathLoss_[leg] = resolveStrategy(legModule, "extCellPathLoss");
     }
 
     radios_.push_back(descriptor);
@@ -294,7 +294,7 @@ void RadioMedium::addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *g
     descriptor.height = height;
     // exactly one of endpoint/bgGenerator is ever non-null
 
-    // no matchCarrierLeg, no resolvePathLossStrategy: a phantom
+    // no matchCarrierLeg, no resolveStrategy: a phantom
     // is never radio in getAttenuation()/computeShadowing()/
     // jakesFading(), so it never keys an entry into the per-link state either
     radios_.push_back(descriptor);
@@ -455,13 +455,18 @@ LinkContext RadioMedium::linkContextFor(Radio *radio, MacNodeId peerId, GHz carr
     return link;
 }
 
-PathLossModel& RadioMedium::pathLossFor(const CarrierLeg& leg) const
+PathLossModel& RadioMedium::strategyFor(const std::map<CarrierLeg, PathLossModel *>& strategies, const CarrierLeg& leg, const char *what) const
 {
-    auto it = pathLoss_.find(leg);
-    if (it == pathLoss_.end())
-        throw cRuntimeError("no path-loss strategy for carrier leg %gGHz/%s",
+    auto it = strategies.find(leg);
+    if (it == strategies.end())
+        throw cRuntimeError("no %s strategy for carrier leg %gGHz/%s", what,
                 leg.carrierFrequency.get(), leg.isNr ? "NR" : "LTE");
     return *it->second;
+}
+
+PathLossModel& RadioMedium::pathLossFor(const CarrierLeg& leg) const
+{
+    return strategyFor(pathLoss_, leg, "path-loss");
 }
 
 PathLossModel& RadioMedium::pathLossFor(MacNodeId nodeId, GHz carrierFrequency) const
@@ -472,11 +477,7 @@ PathLossModel& RadioMedium::pathLossFor(MacNodeId nodeId, GHz carrierFrequency) 
 
 PathLossModel& RadioMedium::extCellPathLossFor(const CarrierLeg& leg) const
 {
-    auto it = extCellPathLoss_.find(leg);
-    if (it == extCellPathLoss_.end())
-        throw cRuntimeError("no ext-cell path-loss strategy for carrier leg %gGHz/%s",
-                leg.carrierFrequency.get(), leg.isNr ? "NR" : "LTE");
-    return *it->second;
+    return strategyFor(extCellPathLoss_, leg, "ext-cell path-loss");
 }
 
 PathLossModel& RadioMedium::extCellPathLossFor(MacNodeId nodeId, GHz carrierFrequency) const
@@ -485,30 +486,23 @@ PathLossModel& RadioMedium::extCellPathLossFor(MacNodeId nodeId, GHz carrierFreq
     return extCellPathLossFor(CarrierLeg(carrierFrequency, d.endpoint->isNr()));
 }
 
-PathLossModel *RadioMedium::resolvePathLossStrategy(cModule *legModule)
+PathLossModel *RadioMedium::resolveStrategy(cModule *legModule, const char *submoduleName)
 {
-    // legModule's own "pathLoss" submodule: its concrete NED type IS the
+    // legModule's own submoduleName submodule: its concrete NED type IS the
     // leg's configured study, so there is no type-name dispatch left to do
     // here -- only the Tr38901-specific setter call, whose parameter lives
     // on the Tr38901PathLoss NED type alone (reading it off any other
-    // concrete type would throw "no such parameter").
-    cModule *pathLossModule = legModule->getSubmodule("pathLoss");
-    auto *model = check_and_cast<PathLossModel *>(pathLossModule);
+    // concrete type would throw "no such parameter"); it is a no-op for
+    // "extCellPathLoss", whose submodule is always Tr36814PathLoss, whatever
+    // the leg's own study -- the ext-cell and background-cell interference
+    // paths (computeExtCellPathLoss) use those formulas unconditionally
+    // (CarrierLegPhysics.extCellPathLoss's own default typename enforces
+    // this, not a choice made here).
+    cModule *strategyModule = legModule->getSubmodule(submoduleName);
+    auto *model = check_and_cast<PathLossModel *>(strategyModule);
 
     if (auto *tr38901 = dynamic_cast<Tr38901PathLossModel *>(model))
-        tr38901->setUseBuildingPenetrationHighLossModel(pathLossModule->par("useBuildingPenetrationHighLossModel"));
-
-    initializePathLossStrategy(model, legModule);
-    return model;
-}
-
-PathLossModel *RadioMedium::resolveExtCellPathLossStrategy(cModule *legModule)
-{
-    // always TR 36.814, whatever the leg's own study: the ext-cell and
-    // background-cell interference paths (computeExtCellPathLoss) use those
-    // formulas unconditionally -- CarrierLegPhysics.extCellPathLoss's own
-    // default typename enforces this, not a choice made here
-    auto *model = check_and_cast<PathLossModel *>(legModule->getSubmodule("extCellPathLoss"));
+        tr38901->setUseBuildingPenetrationHighLossModel(strategyModule->par("useBuildingPenetrationHighLossModel"));
 
     initializePathLossStrategy(model, legModule);
     return model;

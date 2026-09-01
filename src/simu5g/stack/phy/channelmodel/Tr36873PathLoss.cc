@@ -16,9 +16,4 @@ namespace simu5g {
 
 Define_Module(Tr36873PathLoss);
 
-void Tr36873PathLoss::handleMessage(cMessage *msg)
-{
-    throw cRuntimeError("unexpected message '%s': Tr36873PathLoss has no gates and schedules no self-messages", msg->getName());
-}
-
 } //namespace

@@ -10,10 +10,17 @@
 // and cannot be removed from it.
 //
 
-#include "simu5g/stack/phy/channelmodel/Tr38901PathLoss.h"
+#include "simu5g/stack/phy/channelmodel/PathLossModule.h"
 
 namespace simu5g {
 
-Define_Module(Tr38901PathLoss);
+void PathLossModule::handleMessage(cMessage *msg)
+{
+    // getComponentType()->getName(): the NED type's own unqualified name
+    // (e.g. "Tr36814PathLoss"), so the message still names the concrete
+    // study, the same as when each mixin threw this itself.
+    throw cRuntimeError("unexpected message '%s': %s has no gates and schedules no self-messages",
+            msg->getName(), getComponentType()->getName());
+}
 
 } //namespace
