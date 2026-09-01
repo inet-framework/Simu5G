@@ -89,6 +89,11 @@ void RadioMedium::checkForLegacyConfigKeys() const
         // tree and is now fully gone, not merely relocated -- same shape
         // as nodebHeight/ueHeight above.
         { "useTorus", "removed -- had no reader anywhere in the tree" },
+        // NrNicUe's "nrRadio" slot never sized anything of its own --
+        // componentCarrierModules is the radio's single source of truth for
+        // its own carrier count, same shape as nodebHeight/ueHeight/useTorus
+        // above.
+        { "numNrCarriers", "removed -- had no reader anywhere in the tree" },
         // The study is selected on the medium, per carrier leg
         { "pathLossType", "removed -- select the study on the medium instead: "
                           "radioMedium.carrierLeg[*].pathLoss.typename = \"Tr36814PathLoss\"/\"Tr36873PathLoss\"/\"Tr38901PathLoss\"" },

@@ -43,8 +43,6 @@ module NrNicUe extends LteNicUe
 
         packetFlowObserver.typename = default("PacketFlowObserverUe");
 
-        int numNrCarriers = default(1);
-
         ip2nic.isNr = default(true);
         rrc.bearerManagement.pdcpEntityModuleType = default("simu5g.stack.pdcp.NrPdcpEntity");
 
@@ -90,8 +88,10 @@ module NrNicUe extends LteNicUe
         nrPhy: <default("PhyUe")> like IPhy {
             @display("p=570,600");
         }
-        // NR radio (one radio endpoint, serving all of numNrCarriers
-        // through componentCarrierModules)
+        // NR radio (one radio endpoint, serving every carrier named in
+        // its own componentCarrierModules -- no NIC-level count to state
+        // separately, unlike the "radio" slot's numCarriers, which also
+        // sizes bgTrafficGenerator[] on ENB-side NICs)
         nrRadio: <nrRadioType> like IRadio {
             @display("p=80,60,col;g=left");
         }
