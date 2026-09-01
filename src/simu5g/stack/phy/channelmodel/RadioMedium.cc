@@ -32,23 +32,6 @@ namespace simu5g {
 
 Define_Module(RadioMedium);
 
-namespace {
-
-/**
- * The carrier leg a call is on: carrierFrequency plus the radio's isNr flag.
- * carrierFrequency is explicit, not radio->getCarrierFrequency(), because
- * one radio endpoint can serve several carriers -- its own
- * getCarrierFrequency() answers only for its PRIMARY one, and every carrier
- * a radio serves needs its own leg-keyed state (pathLoss_, losMap_,
- * positionHistory_, ...).
- */
-CarrierLeg legFor(GHz carrierFrequency, bool isNr)
-{
-    return CarrierLeg{carrierFrequency, isNr};
-}
-
-} // namespace
-
 void RadioMedium::initialize()
 {
     checkForLegacyConfigKeys();
@@ -210,22 +193,21 @@ bool RadioMedium::carrierLegMatches(cModule *legModule, GHz carrierFrequency, bo
 
 cModule *RadioMedium::matchCarrierLeg(Radio *endpoint, GHz carrierFrequency) const
 {
-    GHz freq = carrierFrequency;
     bool isNr = endpoint->isNr();
 
     cModule *match = nullptr;
     int numLegs = getSubmoduleVectorSize("carrierLeg");
     for (int i = 0; i < numLegs; i++) {
         cModule *legModule = getSubmodule("carrierLeg", i);
-        if (carrierLegMatches(legModule, freq, isNr)) {
+        if (carrierLegMatches(legModule, carrierFrequency, isNr)) {
             if (match != nullptr)
                 throw cRuntimeError("ambiguous carrierLeg match for leg %gGHz/%s: both '%s' and '%s' match",
-                        freq.get(), isNr ? "NR" : "LTE", match->getFullPath().c_str(), legModule->getFullPath().c_str());
+                        carrierFrequency.get(), isNr ? "NR" : "LTE", match->getFullPath().c_str(), legModule->getFullPath().c_str());
             match = legModule;
         }
     }
     if (match == nullptr)
-        throw cRuntimeError("no carrierLeg entry configures leg %gGHz/%s", freq.get(), isNr ? "NR" : "LTE");
+        throw cRuntimeError("no carrierLeg entry configures leg %gGHz/%s", carrierFrequency.get(), isNr ? "NR" : "LTE");
     return match;
 }
 
@@ -268,7 +250,7 @@ void RadioMedium::addRadioOnCarrier(Radio *endpoint, GHz carrierFrequency)
     // frequency: frequency alone conflates an NR UE's vestigial LTE leg with
     // the gNB it shares a default component carrier with, and a
     // dual-connectivity master eNB with its secondary gNB.)
-    CarrierLeg leg = legFor(carrierFrequency, endpoint->isNr());
+    CarrierLeg leg(carrierFrequency, endpoint->isNr());
     cModule *legModule = matchCarrierLeg(endpoint, carrierFrequency);
     if (pathLoss_.find(leg) == pathLoss_.end()) {
         // this leg's path-loss strategy: legModule's own "pathLoss"
@@ -420,9 +402,8 @@ LinkContext RadioMedium::linkContextFor(Radio *radio, MacNodeId peerId, GHz carr
     // frequency triple: the call's own carrier frequency (explicit, since
     // one radio can serve several), reproducing RadioBase's own derivation
     // (RadioBase::initialize()) -- no per-leg cache
-    GHz freq = carrierFrequency;
-    link.carrierFrequencyGHz = GHz(freq).get();
-    link.carrierFrequencyHz = Hz(freq).get();
+    link.carrierFrequencyGHz = GHz(carrierFrequency).get();
+    link.carrierFrequencyHz = Hz(carrierFrequency).get();
     link.log10CarrierFrequencyGHz = log10(link.carrierFrequencyGHz);
 
     // heights: role-based, not tx/rx-based
@@ -441,7 +422,7 @@ LinkContext RadioMedium::linkContextFor(Radio *radio, MacNodeId peerId, GHz carr
     }
     else if (num(peerId) < BGUE_MIN_ID) {
         // a real registered radio
-        peerHeight = descriptorFor(peerId, freq).height;
+        peerHeight = descriptorFor(peerId, carrierFrequency).height;
     }
     else {
         // a phantom background UE, owned by radio's own cell -- radio is
@@ -449,7 +430,7 @@ LinkContext RadioMedium::linkContextFor(Radio *radio, MacNodeId peerId, GHz carr
         // here (BackgroundTrafficManager registers it under its own eNB's
         // node id as cellId, LteMacEnb.cc:131)
         ASSERT(radioRole == NODEB);
-        peerHeight = descriptorFor(BgUeKey{radio->getNodeId(), freq, peerId}).height;
+        peerHeight = descriptorFor(BgUeKey{radio->getNodeId(), carrierFrequency, peerId}).height;
     }
 
     if (radioRole == NODEB) {
@@ -475,7 +456,7 @@ PathLossModel& RadioMedium::pathLossFor(const CarrierLeg& leg) const
 PathLossModel& RadioMedium::pathLossFor(MacNodeId nodeId, GHz carrierFrequency) const
 {
     const RadioDescriptor& d = descriptorFor(nodeId, carrierFrequency);
-    return pathLossFor(legFor(carrierFrequency, d.endpoint->isNr()));
+    return pathLossFor(CarrierLeg(carrierFrequency, d.endpoint->isNr()));
 }
 
 PathLossModel& RadioMedium::extCellPathLossFor(const CarrierLeg& leg) const
@@ -490,7 +471,7 @@ PathLossModel& RadioMedium::extCellPathLossFor(const CarrierLeg& leg) const
 PathLossModel& RadioMedium::extCellPathLossFor(MacNodeId nodeId, GHz carrierFrequency) const
 {
     const RadioDescriptor& d = descriptorFor(nodeId, carrierFrequency);
-    return extCellPathLossFor(legFor(carrierFrequency, d.endpoint->isNr()));
+    return extCellPathLossFor(CarrierLeg(carrierFrequency, d.endpoint->isNr()));
 }
 
 PathLossModel *RadioMedium::resolvePathLossStrategy(cModule *legModule)
@@ -559,14 +540,14 @@ Position& RadioMedium::correlationPoint(MacNodeId nodeId, const CarrierLeg& leg,
 
 bool RadioMedium::losStateFor(Radio *radio, const LinkKey& key, GHz carrierFrequency)
 {
-    return losState(legFor(carrierFrequency, radio->isNr()), key);
+    return losState(CarrierLeg(carrierFrequency, radio->isNr()), key);
 }
 
 void RadioMedium::updatePositionHistory(Radio *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency)
 {
     // createIfMissing=true: a freshly vivified (empty) queue makes
     // "!history->empty()" false, exactly like the old find()==end() check
-    std::queue<Position> *history = positionHistory(nodeId, legFor(carrierFrequency, radio->isNr()), true);
+    std::queue<Position> *history = positionHistory(nodeId, CarrierLeg(carrierFrequency, radio->isNr()), true);
 
     if (!history->empty() && history->back().first == NOW)
         // position already updated for this TTI.
@@ -582,7 +563,7 @@ void RadioMedium::updatePositionHistory(Radio *radio, MacNodeId nodeId, const in
 
 void RadioMedium::updateCorrelationDistance(Radio *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency)
 {
-    const CarrierLeg leg = legFor(carrierFrequency, radio->isNr());
+    const CarrierLeg leg(carrierFrequency, radio->isNr());
     bool existed = false;
     Position& point = correlationPoint(nodeId, leg, &existed);
 
@@ -606,7 +587,7 @@ double RadioMedium::getAttenuation(Radio *radio, const RadioLink& link)
     double speed = computeSpeed(radio, link.stateNodeId, link.stateCoord, link.carrierFrequency);
     double correlationDist = computeCorrelationDistance(radio, link.stateNodeId, link.stateCoord, link.carrierFrequency);
 
-    const CarrierLeg leg = legFor(link.carrierFrequency, radio->isNr());
+    const CarrierLeg leg(link.carrierFrequency, radio->isNr());
 
     // The other party of this link, for height role-resolution: whichever
     // of {radio, peerId} is eNB-role supplies h_BS, whichever is UE-role
@@ -648,12 +629,12 @@ double RadioMedium::getAttenuation(Radio *radio, const RadioLink& link)
 double RadioMedium::computePathLoss(Radio *radio, double distance, double dbp, bool los, MacNodeId peerId, GHz carrierFrequency)
 {
     O2iState o2i = o2iStateOf(radio->getNodeId(), carrierFrequency);
-    return pathLossFor(legFor(carrierFrequency, radio->isNr())).computePathLoss(distance, dbp, los, o2i, linkContextFor(radio, peerId, carrierFrequency));
+    return pathLossFor(CarrierLeg(carrierFrequency, radio->isNr())).computePathLoss(distance, dbp, los, o2i, linkContextFor(radio, peerId, carrierFrequency));
 }
 
 void RadioMedium::computeLosProbability(Radio *radio, double d3D, double d2D, const LinkKey& key, MacNodeId peerId, GHz carrierFrequency)
 {
-    const CarrierLeg leg = legFor(carrierFrequency, radio->isNr());
+    const CarrierLeg leg(carrierFrequency, radio->isNr());
 
     if (!dynamicLos_) {
         losState(leg, key) = fixedLos_;
@@ -665,7 +646,7 @@ void RadioMedium::computeLosProbability(Radio *radio, double d3D, double d2D, co
 
 double RadioMedium::computeShadowing(Radio *radio, double d3D, double d2D, const LinkKey& key, double speed, MacNodeId peerId, GHz carrierFrequency)
 {
-    const CarrierLeg leg = legFor(carrierFrequency, radio->isNr());
+    const CarrierLeg leg(carrierFrequency, radio->isNr());
     const LinkStateKey stateKey{leg, key};
 
     double mean = 0;
@@ -727,7 +708,7 @@ double RadioMedium::jakesFading(Radio *radio, const LinkKey& key, double speed,
     // entry with a real UE's, even coincidentally.
     JakesFadingMap& actualJakesMap = isBgUe ? jakesFadingMapBgUe_ : jakesFadingMap_;
 
-    const CarrierLeg leg = legFor(carrierFrequency, radio->isNr());
+    const CarrierLeg leg(carrierFrequency, radio->isNr());
     const LinkStateKey stateKey{leg, key};
 
     // if this is the first time that we compute fading for current link
@@ -825,7 +806,7 @@ double RadioMedium::computeSpeed(Radio *radio, MacNodeId nodeId, const inet::Coo
     // createIfMissing=false: a node with no history yet must stay absent,
     // not gain an empty placeholder queue that a later front()/back() would
     // read as an entry
-    std::queue<Position> *history = positionHistory(nodeId, legFor(carrierFrequency, radio->isNr()), false);
+    std::queue<Position> *history = positionHistory(nodeId, CarrierLeg(carrierFrequency, radio->isNr()), false);
 
     if (history == nullptr) {
         // no entries
@@ -859,7 +840,7 @@ double RadioMedium::computeCorrelationDistance(Radio *radio, MacNodeId nodeId, c
     double dist = 0.0;
 
     bool existed = false;
-    Position& point = correlationPoint(nodeId, legFor(carrierFrequency, radio->isNr()), &existed);
+    Position& point = correlationPoint(nodeId, CarrierLeg(carrierFrequency, radio->isNr()), &existed);
 
     if (!existed) {
         // no lastCorrelationPoint found. Add current position and return dist = 0.0

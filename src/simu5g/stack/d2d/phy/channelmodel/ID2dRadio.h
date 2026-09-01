@@ -10,8 +10,8 @@
 // and cannot be removed from it.
 //
 
-#ifndef _LTE_ID2DRADIO_H_
-#define _LTE_ID2DRADIO_H_
+#ifndef STACK_D2D_PHY_CHANNELMODEL_ID2DRADIO_H_
+#define STACK_D2D_PHY_CHANNELMODEL_ID2DRADIO_H_
 
 #include <vector>
 

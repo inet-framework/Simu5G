@@ -59,6 +59,15 @@ struct CarrierLeg
     GHz carrierFrequency = GHz(0);
     bool isNr = false;
 
+    CarrierLeg() = default;
+
+    // carrierFrequency is explicit, not radio->getCarrierFrequency(), because
+    // one radio endpoint can serve several carriers -- its own
+    // getCarrierFrequency() answers only for its PRIMARY one, and every
+    // carrier a radio serves needs its own leg-keyed state (pathLoss_,
+    // losMap_, positionHistory_, ...).
+    CarrierLeg(GHz carrierFrequency, bool isNr) : carrierFrequency(carrierFrequency), isNr(isNr) {}
+
     bool operator<(const CarrierLeg& o) const
     {
         return carrierFrequency != o.carrierFrequency ? carrierFrequency < o.carrierFrequency : isNr < o.isNr;
@@ -351,7 +360,7 @@ class RadioMedium : public cSimpleModule
     /**
      * The network-wide interference and LOS toggles, owned by the medium,
      * not declared by the endpoints at all -- the endpoints'
-     * isUplinkInterferenceEnabled()/isD2DInterferenceEnabled() overrides and
+     * isUplinkInterferenceEnabled()/isD2dInterferenceEnabled() overrides and
      * the resident computeExtCellPathLoss() answer by asking back here.
      */
     bool isUplinkInterferenceEnabled() const { return uplinkInterference_; }

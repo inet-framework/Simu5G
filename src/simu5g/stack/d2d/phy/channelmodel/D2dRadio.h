@@ -56,8 +56,8 @@ class D2dRadio : public Radio, public ID2dRadio
 
     // both flags are network-wide, owned by the medium; the
     // signatures and their callers stay, answered by asking the medium
-    virtual bool isD2DInterferenceEnabled() { return medium_->isD2dInterferenceEnabled(); }
-    bool recordsUlTransmissionMap() override { return isUplinkInterferenceEnabled() || isD2DInterferenceEnabled(); }
+    virtual bool isD2dInterferenceEnabled() { return medium_->isD2dInterferenceEnabled(); }
+    bool recordsUlTransmissionMap() override { return isUplinkInterferenceEnabled() || isD2dInterferenceEnabled(); }
 
     /*
      * The signal a D2D reception is reported under, for RadioMedium's
