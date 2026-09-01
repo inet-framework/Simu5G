@@ -22,6 +22,7 @@ network Test extends RadioMedium
 %inifile: test.ini
 [General]
 **.antennGainMicro = 5
+**.antennGainEnB = 5
 **.channelModel[0].pathLossType = "Tr36873"
 **.cellularNic.channelModelType = "Tr38901ChannelModel"
 **.cellularNic.channelModel.componentCarrierModules = "carrierAggregation.componentCarrier[0]"
@@ -30,6 +31,9 @@ network Test extends RadioMedium
 
 %contains-regex: stderr
 antennGainMicro
+
+%contains-regex: stderr
+antennGainEnB
 
 %contains-regex: stderr
 pathLossType
