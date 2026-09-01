@@ -14,7 +14,7 @@
 
 namespace simu5g {
 
-void PathLossModel::initialize(cComponent *owner, DeploymentScenario scenario,
+void PathLossModel::configure(cComponent *owner, DeploymentScenario scenario,
         double hBuilding, double wStreet, bool tolerateMaxDistViolation)
 {
     owner_ = owner;
