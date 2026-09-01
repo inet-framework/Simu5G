@@ -38,8 +38,6 @@ module RadioMedium like IRadioMedium
         int numFadingPaths = default(6);
         double delayRms @unit(s) = default(363ns);
         double thermalNoise @unit(dBm) = default(-104.5dBm);
-        bool useTorus = default(false);
-        double targetBler = default(0.01);
         double harqReduction = default(0.2);
         bool bgCellInterference = default(true);
         bool extCellInterference = default(true);

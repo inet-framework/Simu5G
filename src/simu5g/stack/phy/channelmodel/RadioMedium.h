@@ -215,9 +215,7 @@ class RadioMedium : public cSimpleModule
 
     // The environment, stated once for the whole network: this medium's own
     // NED parameters, cached at initialize() and read on the computation
-    // paths below. useTorus and targetBler stay NED-declared but have no
-    // reader here (targetBler's live consumer is PhyEnb's own parameter of
-    // the same name).
+    // paths below.
     bool shadowing_ = false;
     double correlationDistance_ = 0;
     bool dynamicLos_ = false;
