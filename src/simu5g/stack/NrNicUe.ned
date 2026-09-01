@@ -40,8 +40,6 @@ module NrNicUe extends LteNicUe
         sdap.useReflectiveQos = default(this.useReflectiveQos);
         sdap.reflectiveQosTableModule = default(this.useReflectiveQos ? "^.reflectiveQosTable" : "");
         string nrRadioType = default("Radio");
-        // UE-side antenna height default
-        nrRadio.height = default(1.5m);
 
         packetFlowObserver.typename = default("PacketFlowObserverUe");
 

@@ -225,6 +225,10 @@ class RadioMedium : public cSimpleModule
     bool downlinkInterference_ = false;
     bool uplinkInterference_ = false;
     bool d2dInterference_ = false;
+    // Role-based height fallback (linkContextFor()'s missing side, when no
+    // specific peer identity reaches the call).
+    double defaultNodeBHeight_ = 0;
+    double defaultUeHeight_ = 0;
 
     /**
      * Scans the active configuration for ini keys that name a parameter this
@@ -335,7 +339,7 @@ class RadioMedium : public cSimpleModule
      * resolves no carrierLeg[] entry and no PathLossModel strategy, and a
      * phantom owns no stochastic state.
      * height is the phantom's own antenna height -- the caller's
-     * (BackgroundTrafficManager's own default, since no in-tree config
+     * (this medium's own defaultUeHeight, since no in-tree config
      * differentiates one background UE's height from another's).
      * Duplicate registration is an error, exactly as addRadio()'s is.
      */
@@ -353,6 +357,9 @@ class RadioMedium : public cSimpleModule
     bool isUplinkInterferenceEnabled() const { return uplinkInterference_; }
     bool isD2dInterferenceEnabled() const { return d2dInterference_; }
     bool isExtCellLosEnabled() const { return enableExtCellLos_; }
+
+    /** The UE-role height fallback (defaultUeHeight NED parameter), read by BackgroundTrafficManager to place its phantom radios. */
+    double getDefaultUeHeight() const { return defaultUeHeight_; }
 
     /**
      * The shared LOS/NLOS state for radio's own carrier leg:

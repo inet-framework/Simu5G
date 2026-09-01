@@ -75,6 +75,8 @@ void RadioMedium::initialize()
     downlinkInterference_ = par("downlinkInterference");
     uplinkInterference_ = par("uplinkInterference");
     d2dInterference_ = par("d2dInterference");
+    defaultNodeBHeight_ = par("defaultNodeBHeight");
+    defaultUeHeight_ = par("defaultUeHeight");
 
     // this medium's own submodule; purely structural, so
     // resolvable regardless of init-stage ordering
@@ -411,18 +413,6 @@ O2iState RadioMedium::o2iStateOf(MacNodeId nodeId, GHz carrierFrequency) const
     return O2iState{d.endpoint->getInsideBuilding(), d.endpoint->getInsideDistance()};
 }
 
-namespace {
-
-// NIC-level default heights (LteNicEnb.ned/LteNicUe.ned, Radio.ned):
-// the fallback for linkContextFor()'s missing side when no specific peer
-// identity reaches the call. Every in-tree config that reaches that fallback
-// keeps the missing side at exactly this default, so the constant
-// reproduces today's value rather than guessing at it.
-constexpr double DEFAULT_ENB_HEIGHT_M = 25;
-constexpr double DEFAULT_UE_HEIGHT_M = 1.5;
-
-} // namespace
-
 LinkContext RadioMedium::linkContextFor(Radio *radio, MacNodeId peerId, GHz carrierFrequency) const
 {
     LinkContext link;
@@ -445,8 +435,9 @@ LinkContext RadioMedium::linkContextFor(Radio *radio, MacNodeId peerId, GHz carr
         // no specific peer identity reaches this call (getReceivedPower_bgUe(),
         // the D2D conflict-graph's abstract distance estimate,
         // computeExtCellPathLoss()'s ext-cell/background-cell walk) -- the
-        // missing side falls back to the *other* role's own NIC-level default.
-        peerHeight = (radioRole == NODEB) ? DEFAULT_UE_HEIGHT_M : DEFAULT_ENB_HEIGHT_M;
+        // missing side falls back to this medium's own default for the
+        // *other* role.
+        peerHeight = (radioRole == NODEB) ? defaultUeHeight_ : defaultNodeBHeight_;
     }
     else if (num(peerId) < BGUE_MIN_ID) {
         // a real registered radio

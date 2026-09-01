@@ -47,6 +47,12 @@ module RadioMedium like IRadioMedium
         bool uplinkInterference = default(false);
         bool d2dInterference = default(true); // only D2D-capable radios care
 
+        // Role-based height fallback for a link whose peer carries no
+        // identified radio: single-sourced here (rule 4) rather than
+        // restated on every NIC.
+        double defaultNodeBHeight @unit(m) = default(25m);
+        double defaultUeHeight @unit(m) = default(1.5m);
+
         // Number of carrier legs this medium's radios run distinct
         // propagation studies on. 1 (the default) covers every in-tree
         // network but the few that genuinely run two studies at once, e.g.
