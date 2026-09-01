@@ -106,9 +106,9 @@ class Radio : public RadioBase
     // Antenna gain of UE
     double antennaGainUe_;
 
-    // This radio's own antenna height (radio endpoint recast E4, §3(k)): a
-    // per-node fact, defaulted 25m by the eNB/gNB-side NICs and 1.5m by the
-    // UE-side NICs, overridable per node.
+    // This radio's own antenna height: a per-node fact, defaulted 25m by
+    // the eNB/gNB-side NICs and 1.5m by the UE-side NICs, overridable per
+    // node.
     double height_;
 
     // Cable loss
@@ -178,7 +178,7 @@ class Radio : public RadioBase
 
     /*
      * This radio's own antenna height, for RadioMedium's registry
-     * (RadioDescriptor::height) and linkContextFor() (E4/§3(k)).
+     * (RadioDescriptor::height) and linkContextFor().
      */
     double getHeight() const { return height_; }
 
@@ -220,7 +220,7 @@ class Radio : public RadioBase
      * @param nodeId mac node id of UE
      * @param dir traffic direction
      * @param coord position of end point communication (if dir==UL is the position of UE else is the position of eNodeB)
-     * @param carrierFrequency which of this radio's (possibly several, since E8) carriers the link is on
+     * @param carrierFrequency which of this radio's (possibly several) carriers the link is on
      */
     double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord, GHz carrierFrequency)
     {
@@ -300,7 +300,7 @@ class Radio : public RadioBase
      */
     double computePathLoss(double distance, double dbp, bool los) override;
 
-    // the flag is network-wide, owned by the medium (E6, §3(b)); the
+    // the flag is network-wide, owned by the medium; the
     // signature and its callers stay, answered by asking the medium
     bool isUplinkInterferenceEnabled() override { return medium_->isUplinkInterferenceEnabled(); }
 
@@ -329,7 +329,7 @@ class Radio : public RadioBase
      * for radio's own carrier leg, plus this endpoint's own inside_building_/
      * inside_distance_ (not reachable from outside), so it stays resident
      * rather than moving with the walks that call it.
-     * @param carrierFrequency which of this radio's (possibly several, since E8) carriers the walk is on
+     * @param carrierFrequency which of this radio's (possibly several) carriers the walk is on
      * @return attenuation expressed in dBm
      */
     virtual double computeExtCellPathLoss(double dist, const LinkKey& key, GHz carrierFrequency);

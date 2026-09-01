@@ -94,11 +94,11 @@ void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandida
         cInfo->setCoord(cellPos);
         cInfo->setFrameType(BROADCASTPKT);
         cInfo->setDirection(DL);
-        // radio endpoint recast E8: RadioLink::carrierFrequency (which the RSRP
-        // call below now keys the UE's own served-carrier lookup by) is read off
-        // this control info's carrierFrequency -- unset before, harmlessly,
-        // because nothing read it; ueCarrierFrequency (already established as
-        // the carrier the candidate cell was matched on) is the correct value.
+        // RadioLink::carrierFrequency (which the RSRP call below keys the
+        // UE's own served-carrier lookup by) is read off this control
+        // info's carrierFrequency; ueCarrierFrequency (already established
+        // as the carrier the candidate cell was matched on) is the correct
+        // value.
         cInfo->setCarrierFrequency(ueCarrierFrequency);
         // get RSSI from the BS
         double rssi = 0;
@@ -326,7 +326,7 @@ void PhyUe::handleUpperMessage(cMessage *msg)
         Remote antenna = MACRO;  // TODO fix for multi-antenna
         // note: the direction is always UL here for a plain UE (enforced by validateOutgoingFrame() above)
         // carrierFreq, not radio->getCarrierFrequency(): the one radio
-        // endpoint may serve several carriers since E8, and
+        // endpoint may serve several carriers, and
         // radio->getCarrierFrequency() answers for its primary one --
         // carrierFreq is the one this packet is actually on (it is what
         // resolved radio in the first place)

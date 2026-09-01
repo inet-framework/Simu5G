@@ -22,7 +22,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 /**
- * Mixin, INET's own shape (radio endpoint recast §3(e)): a NED submodule
+ * Mixin, INET's own shape: a NED submodule
  * that is also a Tr36873PathLossModel. See Tr36814PathLoss for the full
  * rationale, shared by all three wrappers.
  */

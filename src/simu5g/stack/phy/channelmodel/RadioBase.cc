@@ -24,9 +24,9 @@ void RadioBase::initialize(int stage)
     if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
         binder_.reference(this, "binderModule", true);
 
-        // radio endpoint recast E8 (§3(c)): a space-separated list, resolved
-        // in declaration order -- the order the registration sweeps below,
-        // and PhyBase::initializeRadio()'s binder_->registerCarrierUe
+        // A space-separated list, resolved in declaration order -- the
+        // order the registration sweeps below, and
+        // PhyBase::initializeRadio()'s binder_->registerCarrierUe
         // sweep, register in.
         cStringTokenizer tokenizer(par("componentCarrierModules").stringValue());
         while (tokenizer.hasMoreTokens())
@@ -34,10 +34,9 @@ void RadioBase::initialize(int stage)
         if (componentCarriers_.empty())
             throw cRuntimeError("%s: componentCarrierModules must name at least one ComponentCarrier module", getFullPath().c_str());
 
-        // risk 9: numCarriers/numNrCarriers still sizes bgTrafficGenerator[]
-        // (LteNicEnb.ned) and no longer sizes this radio's own carrier list --
-        // catch the two drifting apart loudly instead of leaving it to
-        // silently misbehave.
+        // numCarriers/numNrCarriers sizes bgTrafficGenerator[] (LteNicEnb.ned);
+        // it does not size this radio's own carrier list -- catch the two
+        // drifting apart loudly instead of leaving it to silently misbehave.
         const char *countParName = (std::string(getName()) == "nrRadio") ? "numNrCarriers" : "numCarriers";
         cModule *nic = getParentModule();
         if (nic->hasPar(countParName)) {
@@ -58,7 +57,7 @@ void RadioBase::initialize(int stage)
     }
     if (stage == INITSTAGE_SIMU5G_REGISTRATIONS) {
         // register every carrier this radio serves to the cellInfo module,
-        // in componentCarrierModules' declaration order (E8, §3(c)):
+        // in componentCarrierModules' declaration order:
         // CellInfo::carriersVector_ is a push_back, so registration order is
         // observable
         cellInfo_.reference(this, "cellInfoModule", false);

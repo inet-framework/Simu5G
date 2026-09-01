@@ -32,13 +32,12 @@ struct O2iState
 
 /**
  * The per-*link* facts a propagation formula needs beyond distance/LOS/O2I:
- * the carrier frequency triple and the two antenna heights (radio endpoint
- * recast, E4/§3(f),(k)). Threaded per call rather than cached at
- * initialize() time -- the carrier frequency because a single pathLoss
- * submodule per leg entry could eventually serve more than one frequency;
- * the heights because they are per-*node* facts (the human's 2026-08-19
- * amendment) and a link's two ends need not be the same pair of nodes twice
- * in a row (background UEs, D2D peers, ...).
+ * the carrier frequency triple and the two antenna heights. Threaded per
+ * call rather than cached at initialize() time -- the carrier frequency
+ * because a single pathLoss submodule per leg entry could eventually serve
+ * more than one frequency; the heights because they are per-*node* facts
+ * and a link's two ends need not be the same pair of nodes twice in a row
+ * (background UEs, D2D peers, ...).
  *
  * hNodeB/hUe name the two roles the formulas were written against (base
  * station / UE), resolved per link as h_BS from the link's eNB-role
@@ -95,8 +94,8 @@ class PathLossModel
      * Copy the deployment-scenario parameters the formulas need. Parameter
      * ownership stays with the carrier leg module; this only receives the
      * values it has already read from its NED parameters. The carrier
-     * frequency and the two antenna heights are no longer among them (E4):
-     * they travel per call, in a LinkContext.
+     * frequency and the two antenna heights are not among them: they
+     * travel per call, in a LinkContext.
      */
     virtual void initialize(cComponent *owner, DeploymentScenario scenario,
             double hBuilding, double wStreet, bool tolerateMaxDistViolation);
@@ -106,7 +105,7 @@ class PathLossModel
      * A concrete model that needs only one of the two distances ignores the
      * other. o2i is the calling radio's own outdoor-to-indoor geometry, read
      * by the scenarios that model building-penetration loss. link carries
-     * this call's carrier frequency and antenna heights (E4).
+     * this call's carrier frequency and antenna heights.
      */
     virtual double computePathLoss(double d3D, double d2D, bool los, const O2iState& o2i, const LinkContext& link) = 0;
 
@@ -114,7 +113,7 @@ class PathLossModel
      * Compute the LOS probability according to the selected scenario.
      * Returns the probability p; the caller draws against it and stores the
      * outcome. link carries this call's carrier frequency and antenna
-     * heights (E4); most scenarios need only link.hUe, none needs the
+     * heights; most scenarios need only link.hUe, none needs the
      * frequency, but the one bundle is passed uniformly (as O2iState already
      * is to computePathLoss, unused by the scenarios that ignore it).
      */
@@ -123,7 +122,7 @@ class PathLossModel
     /*
      * Compute the standard deviation of the log-normal shadowing according
      * to the selected scenario and the LOS state of the link. link carries
-     * this call's carrier frequency and antenna heights (E4).
+     * this call's carrier frequency and antenna heights.
      */
     virtual double getShadowingStdDev(double d3D, double d2D, bool losState, const LinkContext& link) = 0;
 

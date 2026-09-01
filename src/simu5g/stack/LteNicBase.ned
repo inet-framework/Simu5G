@@ -102,9 +102,8 @@ module LteNicBase extends NetworkInterface like ICellularNic
             @display("p=310,600");
         }
 
-        // radio endpoint recast E8: one radio endpoint per PHY leg, not one
-        // per carrier -- it serves all of numCarriers through
-        // componentCarrierModules (§3(c))
+        // One radio endpoint per PHY leg, not one per carrier -- it serves
+        // all of numCarriers through componentCarrierModules
         radio: <radioType> like IRadio {
             @display("p=80,60,col;g=left");
         }

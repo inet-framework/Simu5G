@@ -112,8 +112,7 @@ struct RadioDescriptor
     MacNodeId nodeId = NODEID_NONE;
     GHz carrierFrequency = GHz(0);
 
-    // This radio's own antenna height (radio endpoint recast E4, §3(k)): a
-    // per-node fact, not a per-leg constant any more. For a real endpoint,
+    // This radio's own antenna height: a per-node fact. For a real endpoint,
     // its own "height" NED parameter; for a phantom, the value
     // addBackgroundRadio() was given (BackgroundTrafficManager's own
     // constant, since no in-tree config ever differentiates one background
@@ -183,13 +182,12 @@ class RadioMedium : public cSimpleModule
 
     // One PathLossModel strategy per carrier leg, resolved eagerly in
     // addRadio() when the first radio registers on the leg:
-    // the matched carrierLeg[]'s own "pathLoss" submodule (radio endpoint
-    // recast E5), not a freshly `new`-ed object any more. PathLossModel::owner_
+    // the matched carrierLeg[]'s own "pathLoss" submodule. PathLossModel::owner_
     // is this medium, which is what relocates every propagation-formula
     // random draw onto the medium's own rng-0 stream. NOT owned: the
     // submodule is owned by the module tree (the matched carrierLeg[]
     // element), like any other submodule -- ~RadioMedium() must not delete
-    // through these pointers any more.
+    // through these pointers.
     std::map<CarrierLeg, PathLossModel *> pathLoss_;
 
     // One Tr36814PathLoss submodule per carrier leg: the
@@ -207,11 +205,10 @@ class RadioMedium : public cSimpleModule
     CellularInterferenceModel *interference_ = nullptr;
 
     // The environment, stated once for the whole network: this medium's own
-    // NED parameters (radio endpoint recast E3), cached at initialize() and
-    // read on the computation paths below. useTorus and targetBler stay
-    // NED-declared but have no reader here -- neither had one on the old
-    // endpoint either (targetBler's live consumer is PhyEnb's own parameter
-    // of the same name).
+    // NED parameters, cached at initialize() and read on the computation
+    // paths below. useTorus and targetBler stay NED-declared but have no
+    // reader here (targetBler's live consumer is PhyEnb's own parameter of
+    // the same name).
     bool shadowing_ = false;
     double correlationDistance_ = 0;
     bool dynamicLos_ = false;
@@ -254,21 +251,20 @@ class RadioMedium : public cSimpleModule
     void reindex(RadioDescriptor& descriptor);
 
     /**
-     * The single carrierLeg[] submodule (of type CarrierLegPhysics, radio
-     * endpoint recast E5) whose (componentCarrierModule, leg) matches the
+     * The single carrierLeg[] submodule (of type CarrierLegPhysics) whose
+     * (componentCarrierModule, leg) matches the
      * (carrierFrequency, endpoint->isNr()) leg being registered; throws if
      * zero or more than one match. carrierFrequency is explicit, not
-     * endpoint->getCarrierFrequency(), because since E8 one endpoint can
+     * endpoint->getCarrierFrequency(), because one endpoint can
      * register on several carriers.
      */
     cModule *matchCarrierLeg(Radio *endpoint, GHz carrierFrequency) const;
 
     /**
      * addRadio()'s per-carrier work, factored out so the public entry point
-     * can loop endpoint->getComponentCarriers() (radio endpoint recast E8,
-     * §3(c)): builds and indexes one RadioDescriptor for (endpoint, carrierFrequency),
-     * resolving that carrier's leg's strategies the first time any radio
-     * registers on it.
+     * can loop endpoint->getComponentCarriers(): builds and indexes one
+     * RadioDescriptor for (endpoint, carrierFrequency), resolving that
+     * carrier's leg's strategies the first time any radio registers on it.
      */
     void addRadioOnCarrier(Radio *endpoint, GHz carrierFrequency);
 
@@ -289,13 +285,12 @@ class RadioMedium : public cSimpleModule
 
     /**
      * The initialize() call resolvePathLossStrategy()/resolveExtCellPathLossStrategy()
-     * share verbatim, once the concrete strategy is resolved. Since E4 this
-     * carries only the leg-constant scenario parameters, read off legModule
-     * (the deployment geometry, per-leg since E5) -- no carrier
-     * frequency and no antenna heights any more (neither is per-leg state:
-     * the frequency is the leg's own key already, and the heights are
-     * per-node, §3(k)); both travel per call now, in a LinkContext built by
-     * linkContextFor().
+     * share verbatim, once the concrete strategy is resolved: only the
+     * leg-constant scenario parameters, read off legModule (the deployment
+     * geometry, per-leg) -- no carrier frequency and no antenna heights
+     * (neither is per-leg state: the frequency is the leg's own key
+     * already, and the heights are per-node); both travel per call instead,
+     * in a LinkContext built by linkContextFor().
      */
     void initializePathLossStrategy(PathLossModel *model, cModule *legModule);
 
@@ -324,11 +319,10 @@ class RadioMedium : public cSimpleModule
 
     /**
      * Registers a radio endpoint on every carrier it serves
-     * (endpoint->getComponentCarriers(), radio endpoint recast E8, §3(c)):
-     * one endpoint module now serves a whole PHY leg rather than one carrier
-     * each, so this fans out into one RadioDescriptor per carrier, all
-     * sharing the same endpoint pointer. Duplicate registration (on any one
-     * carrier) is an error.
+     * (endpoint->getComponentCarriers()): one endpoint module serves a whole
+     * PHY leg rather than one carrier each, so this fans out into one
+     * RadioDescriptor per carrier, all sharing the same endpoint pointer.
+     * Duplicate registration (on any one carrier) is an error.
      */
     virtual void addRadio(Radio *endpoint);
 
@@ -340,7 +334,7 @@ class RadioMedium : public cSimpleModule
      * tuple that is unique: unlike addRadio(), this
      * resolves no carrierLeg[] entry and no PathLossModel strategy, and a
      * phantom owns no stochastic state.
-     * height is the phantom's own antenna height (E4/§3(k)) -- the caller's
+     * height is the phantom's own antenna height -- the caller's
      * (BackgroundTrafficManager's own default, since no in-tree config
      * differentiates one background UE's height from another's).
      * Duplicate registration is an error, exactly as addRadio()'s is.
@@ -351,11 +345,10 @@ class RadioMedium : public cSimpleModule
     virtual void removeBackgroundRadio(const BgUeKey& key);
 
     /**
-     * The network-wide interference and LOS toggles, owned by the medium
-     * since E3 and, since E6, no longer declared by the endpoints at all --
-     * the endpoints' isUplinkInterferenceEnabled()/isD2DInterferenceEnabled()
-     * overrides and the resident computeExtCellPathLoss() answer by asking
-     * back here (§3(b)).
+     * The network-wide interference and LOS toggles, owned by the medium,
+     * not declared by the endpoints at all -- the endpoints'
+     * isUplinkInterferenceEnabled()/isD2DInterferenceEnabled() overrides and
+     * the resident computeExtCellPathLoss() answer by asking back here.
      */
     bool isUplinkInterferenceEnabled() const { return uplinkInterference_; }
     bool isD2dInterferenceEnabled() const { return d2dInterference_; }
@@ -396,17 +389,17 @@ class RadioMedium : public cSimpleModule
     /**
      * The per-*call* facts (carrier frequency triple, the two antenna
      * heights) a propagation-formula call needs, resolved for the specific
-     * link between radio and peerId (radio endpoint recast E4, §3(f),(k)).
-     * Public, like the rest of this accessor family: Radio's
-     * resident computeExtCellPathLoss() calls it back on the medium too, the
-     * same way it already reaches extCellPathLossFor()/losStateFor().
+     * link between radio and peerId. Public, like the rest of this accessor
+     * family: Radio's resident computeExtCellPathLoss() calls it back on the
+     * medium too, the same way it already reaches
+     * extCellPathLossFor()/losStateFor().
      *
      * The frequency triple is radio's own carrier frequency, reproducing
-     * RadioBase's own derivation (RadioBase.cc:26-29) with no
-     * per-leg cache any more.
+     * RadioBase's own derivation (RadioBase::initialize()) with no per-leg
+     * cache.
      *
      * Heights are resolved by *role*, not by which end is transmitting or
-     * receiving (risk 15): whichever of {radio, peerId} is eNB-role
+     * receiving: whichever of {radio, peerId} is eNB-role
      * (getNodeTypeById()) supplies h_BS, whichever is UE-role supplies h_UT.
      * radio's own role and height are read directly off its own registered
      * radio; peerId's are looked up by id -- a real registered radio first,
@@ -414,16 +407,16 @@ class RadioMedium : public cSimpleModule
      * radio's own node id as the owning cell (valid because radio is always
      * that phantom's serving eNB whenever it appears as a peer here --
      * BackgroundTrafficManager registers a phantom under its own eNB's node
-     * id as cellId, LteMacEnb.cc:131).
+     * id as cellId, LteMacEnb::initialize()).
      *
      * peerId == NODEID_NONE -- no specific peer identity reaches the call
      * (getReceivedPower_bgUe(), the D2D conflict-graph's abstract distance
      * estimate, computeExtCellPathLoss()'s ext-cell/background-cell walk,
      * none of which identify a specific far-end node) -- falls back to the
      * *other* role's own NIC-level default height (25m eNB-side, 1.5m
-     * UE-side) for the missing side. Value-preserving today by construction,
-     * not by guess: §3(k) verifies every in-tree config keeps that side at
-     * its role's default in exactly these calls' configs.
+     * UE-side) for the missing side. Value-preserving by construction:
+     * every in-tree config keeps that side at its role's default in exactly
+     * these calls' configs.
      */
     virtual LinkContext linkContextFor(Radio *radio, MacNodeId peerId, GHz carrierFrequency) const;
 
@@ -462,7 +455,7 @@ class RadioMedium : public cSimpleModule
      * do: a node's correlation point is a property of the node
      * and its carrier leg, not of a link between two nodes.
      *
-     * peerId (E4/§3(k)): the other party of this specific link, for
+     * peerId: the other party of this specific link, for
      * per-node height role-resolution (linkContextFor()) -- NODEID_NONE where
      * no specific peer identity reaches the call (getReceivedPower_bgUe(),
      * the D2D conflict-graph's abstract distance estimate), which
@@ -494,8 +487,8 @@ class RadioMedium : public cSimpleModule
      * Attenuation from a sectorial (ANISOTROPIC) transmitter's antenna
      * pattern, 0 for an OMNI one -- the shape shared by getRSRP(),
      * getSINR_bgUe(), getReceivedPower_bgUe() and
-     * CellularInterferenceModel's computeDownlinkInterference(), which
-     * otherwise duplicated this body once each. Draws nothing: txId's
+     * CellularInterferenceModel's computeDownlinkInterference(). Draws
+     * nothing: txId's
      * direction/angle come from the registry (txDirectionOf/txAngleOf),
      * not a fresh draw, and the angle geometry itself
      * (radio->computeAngle/computeVerticalAngle/computeAngularAttenuation)
