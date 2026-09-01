@@ -43,7 +43,7 @@ void Radio::initialize(int stage)
             inside_distance_ = uniform(0.0, 25.0);
 
         antennaGainUe_ = par("antennaGainUe");
-        antennaGainEnB_ = par("antennGainEnB");
+        antennaGainEnB_ = par("antennaGainEnB");
         cableLoss_ = par("cableLoss");
         height_ = par("height");
         ueNoiseFigure_ = par("ueNoiseFigure");

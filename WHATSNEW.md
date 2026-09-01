@@ -299,8 +299,13 @@ dual-connectivity UE.
 Two groups of parameters stay declared on the endpoint (renamed `radio`/
 `nrRadio`, see below), because they are genuinely per node, not per network:
 `insideBuilding`, the antenna/noise/cable-loss block (`antennaGainUe`,
-`antennGainEnB`, `ueNoiseFigure`, `bsNoiseFigure`, `cableLoss`), and
-`collectSinrStatistics`. `nodebHeight`/`ueHeight` are not simply relocated:
+`antennaGainEnB`, `ueNoiseFigure`, `bsNoiseFigure`, `cableLoss`), and
+`collectSinrStatistics`. `antennaGainEnB` also corrects a long-standing
+misspelling (`antennGainEnB`); the guard cannot catch a leftover old
+spelling, because `BackgroundCellChannelModel` still declares a parameter of
+that exact misspelled name for its own, unrelated purpose.
+
+`nodebHeight`/`ueHeight` are not simply relocated:
 they are replaced by a single `height` parameter on the endpoint, defaulted
 to 25m by the eNB/gNB-side NICs and 1.5m by the UE-side NICs, and
 overridable per node like any other endpoint parameter -- so a config that

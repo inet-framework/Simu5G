@@ -72,6 +72,11 @@ void RadioMedium::checkForLegacyConfigKeys() const
     // entry per removal or rename.
     static const std::vector<std::pair<std::string, std::string>> legacyNames = {
         { "antennGainMicro", "removed from the radio endpoint; still live on BackgroundCellChannelModel" },
+        // Same collision shape as antennGainMicro above: the misspelling was
+        // fixed on the radio endpoint but BackgroundCellChannelModel
+        // still declares and reads its own antennGainEnB of the same name --
+        // dies with that file, an accepted false-positive until then.
+        { "antennGainEnB", "renamed to \"antennaGainEnB\" on the radio endpoint; the old spelling is still live on BackgroundCellChannelModel" },
         // Unlike the environment parameters, which are still valid under
         // **.X (RadioMedium re-declares the same names), these two are gone
         // from every module -- replaced by the per-node "height", not

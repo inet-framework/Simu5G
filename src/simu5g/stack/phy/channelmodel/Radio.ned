@@ -55,7 +55,7 @@ simple Radio extends RadioBase
         // Antenna Gain of UE -->
         double antennaGainUe @unit(dBi) = default(0dBi);
         // Antenna Gain of eNodeB -->
-        double antennGainEnB @unit(dBi) = default(18dBi);
+        double antennaGainEnB @unit(dBi) = default(18dBi);
         // Ue noise figure -->
         double ueNoiseFigure @unit(dBm) = default(7dBm);
         // eNodeB noise figure -->
