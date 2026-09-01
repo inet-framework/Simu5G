@@ -155,6 +155,19 @@ class RadioBase : public cSimpleModule
     // sweep register in.
     std::vector<ComponentCarrier *> componentCarriers_;
 
+    /*
+     * getNumBands(GHz)/getNumerologyIndex(GHz)'s shared lookup: a real scan
+     * among the carriers this radio actually serves (componentCarriers_),
+     * throwing rather than silently answering for the wrong one.
+     */
+    ComponentCarrier *carrierFor(GHz carrierFrequency) const
+    {
+        for (auto *cc : componentCarriers_)
+            if (cc->getCarrierFrequency() == carrierFrequency)
+                return cc;
+        throw cRuntimeError("%s: carrier %gGHz is not served by this radio", getFullPath().c_str(), carrierFrequency.get());
+    }
+
     // Carrier Frequency of the PRIMARY (first-declared) carrier, and its
     // base-10 logarithm. Single-valued because most readers -- every
     // single-carrier leg, 181 of 187 fingerprint rows -- have exactly one
@@ -189,10 +202,7 @@ class RadioBase : public cSimpleModule
      */
     virtual unsigned int getNumBands(GHz carrierFrequency) const
     {
-        for (auto *cc : componentCarriers_)
-            if (cc->getCarrierFrequency() == carrierFrequency)
-                return cc->getNumBands();
-        throw cRuntimeError("%s: carrier %gGHz is not served by this radio", getFullPath().c_str(), carrierFrequency.get());
+        return carrierFor(carrierFrequency)->getNumBands();
     }
 
     /*
@@ -210,10 +220,7 @@ class RadioBase : public cSimpleModule
      */
     virtual unsigned int getNumerologyIndex(GHz carrierFrequency) const
     {
-        for (auto *cc : componentCarriers_)
-            if (cc->getCarrierFrequency() == carrierFrequency)
-                return cc->getNumerologyIndex();
-        throw cRuntimeError("%s: carrier %gGHz is not served by this radio", getFullPath().c_str(), carrierFrequency.get());
+        return carrierFor(carrierFrequency)->getNumerologyIndex();
     }
 
     /*

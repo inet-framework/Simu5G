@@ -282,26 +282,33 @@ class RadioMedium : public cSimpleModule
     /** Whether legModule's own componentCarrierModule/leg parameters admit a radio on carrierFrequency/isNr. */
     bool carrierLegMatches(cModule *legModule, GHz carrierFrequency, bool isNr) const;
 
+    /** pathLossFor(const CarrierLeg&)/extCellPathLossFor(const CarrierLeg&)'s shared lookup: strategies[leg], or throws naming "what" kind of strategy is missing. */
+    PathLossModel& strategyFor(const std::map<CarrierLeg, PathLossModel *>& strategies, const CarrierLeg& leg, const char *what) const;
+
     /** The per-leg path-loss strategy resolved in addRadio(); throws if no radio has registered on the leg. */
     PathLossModel& pathLossFor(const CarrierLeg& leg) const;
 
     /** The per-leg ext-cell/background-cell path-loss strategy resolved in addRadio(); throws if no radio has registered on the leg. */
     PathLossModel& extCellPathLossFor(const CarrierLeg& leg) const;
 
-    /** Resolves legModule's own "pathLoss" submodule -- the leg's configured study -- and initializes it from legModule's geometry parameters. */
-    PathLossModel *resolvePathLossStrategy(cModule *legModule);
-
-    /** Resolves legModule's own "extCellPathLoss" submodule -- always Tr36814PathLoss, whatever the leg's own study -- and initializes it from the same legModule geometry resolvePathLossStrategy() reads. */
-    PathLossModel *resolveExtCellPathLossStrategy(cModule *legModule);
+    /**
+     * Resolves legModule's own submoduleName submodule (either "pathLoss" --
+     * the leg's configured study -- or "extCellPathLoss" -- always
+     * Tr36814PathLoss, whatever the leg's own study) and initializes it from
+     * legModule's geometry parameters. The Tr38901-specific setter call is a
+     * no-op unless the resolved submodule actually is a Tr38901PathLossModel
+     * (never true for "extCellPathLoss").
+     */
+    PathLossModel *resolveStrategy(cModule *legModule, const char *submoduleName);
 
     /**
-     * The initialize() call resolvePathLossStrategy()/resolveExtCellPathLossStrategy()
-     * share verbatim, once the concrete strategy is resolved: only the
-     * leg-constant scenario parameters, read off legModule (the deployment
-     * geometry, per-leg) -- no carrier frequency and no antenna heights
-     * (neither is per-leg state: the frequency is the leg's own key
-     * already, and the heights are per-node); both travel per call instead,
-     * in a LinkContext built by linkContextFor().
+     * The initialize() call resolveStrategy() makes for both "pathLoss" and
+     * "extCellPathLoss" shares verbatim, once the concrete strategy is
+     * resolved: only the leg-constant scenario parameters, read off
+     * legModule (the deployment geometry, per-leg) -- no carrier frequency
+     * and no antenna heights (neither is per-leg state: the frequency is
+     * the leg's own key already, and the heights are per-node); both travel
+     * per call instead, in a LinkContext built by linkContextFor().
      */
     void initializePathLossStrategy(PathLossModel *model, cModule *legModule);
 

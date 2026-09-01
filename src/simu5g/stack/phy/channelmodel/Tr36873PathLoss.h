@@ -13,8 +13,7 @@
 #ifndef STACK_PHY_CHANNELMODEL_TR36873PATHLOSS_H_
 #define STACK_PHY_CHANNELMODEL_TR36873PATHLOSS_H_
 
-#include <omnetpp.h>
-
+#include "simu5g/stack/phy/channelmodel/PathLossModule.h"
 #include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
 
 namespace simu5g {
@@ -26,11 +25,8 @@ using namespace omnetpp;
  * that is also a Tr36873PathLossModel. See Tr36814PathLoss for the full
  * rationale, shared by all three wrappers.
  */
-class Tr36873PathLoss : public cSimpleModule, public Tr36873PathLossModel
+class Tr36873PathLoss : public PathLossModule, public Tr36873PathLossModel
 {
-  protected:
-    /** Never called: this module has no gates and schedules no self-messages. */
-    void handleMessage(cMessage *msg) override;
 };
 
 } //namespace
