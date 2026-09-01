@@ -78,6 +78,12 @@ void RadioMedium::checkForLegacyConfigKeys() const
         // merely relocated.
         { "nodebHeight", "replaced by the per-node 'height' on the radio endpoint (eNB/gNB-role)" },
         { "ueHeight", "replaced by the per-node 'height' on the radio endpoint (UE-role)" },
+        // Unlike targetBler (still a live PhyEnb parameter of the same
+        // name, so a bare-name guard entry would reject that valid
+        // configuration too), useTorus had zero readers anywhere in the
+        // tree and is now fully gone, not merely relocated -- same shape
+        // as nodebHeight/ueHeight above.
+        { "useTorus", "removed -- had no reader anywhere in the tree" },
         // The study is selected on the medium, per carrier leg
         { "pathLossType", "removed -- select the study on the medium instead: "
                           "radioMedium.carrierLeg[*].pathLoss.typename = \"Tr36814PathLoss\"/\"Tr36873PathLoss\"/\"Tr38901PathLoss\"" },
