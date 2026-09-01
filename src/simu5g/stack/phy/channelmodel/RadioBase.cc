@@ -34,16 +34,20 @@ void RadioBase::initialize(int stage)
         if (componentCarriers_.empty())
             throw cRuntimeError("%s: componentCarrierModules must name at least one ComponentCarrier module", getFullPath().c_str());
 
-        // numCarriers/numNrCarriers sizes bgTrafficGenerator[] (LteNicEnb.ned);
-        // it does not size this radio's own carrier list -- catch the two
-        // drifting apart loudly instead of leaving it to silently misbehave.
-        const char *countParName = (std::string(getName()) == "nrRadio") ? "numNrCarriers" : "numCarriers";
-        cModule *nic = getParentModule();
-        if (nic->hasPar(countParName)) {
-            int declaredCount = nic->par(countParName);
+        // numCarriers sizes bgTrafficGenerator[] (LteNicEnb.ned) -- the
+        // NIC's one and only carrier-count parameter (every LteNicBase
+        // subtype declares it). It does not size this radio's own carrier
+        // list (componentCarrierModules is that list's single source of
+        // truth) -- catch the two drifting apart loudly instead of leaving
+        // it to silently misbehave. Only the "radio" slot feeds that
+        // contract; "nrRadio" (NrNicUe's NR leg) has no NIC-level count of
+        // its own to guard.
+        if (std::string(getName()) == "radio") {
+            cModule *nic = getParentModule();
+            int declaredCount = nic->par("numCarriers");
             if ((int)componentCarriers_.size() != declaredCount)
-                throw cRuntimeError("%s: %s=%d does not match the %zu carrier(s) named in componentCarrierModules",
-                        getFullPath().c_str(), countParName, declaredCount, componentCarriers_.size());
+                throw cRuntimeError("%s: numCarriers=%d does not match the %zu carrier(s) named in componentCarrierModules",
+                        getFullPath().c_str(), declaredCount, componentCarriers_.size());
         }
 
         // PRIMARY (first-declared) carrier's frequency, cached the same way
