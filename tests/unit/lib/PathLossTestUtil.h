@@ -30,17 +30,17 @@ namespace unittest {
  * the Radio/RadioMedium NED parameters they mirror. A test
  * fills in the fields it cares about and hands it to a CaseRecorder, which
  * configures the model with it and reports it as the input of the case,
- * which spares it the five-argument PathLossModel::initialize() call.
+ * which spares it the five-argument PathLossModel::configure() call.
  *
  * The carrier frequency and the two antenna heights are not part of
- * initialize() any more (radio endpoint recast E4): they travel per call, in
+ * configure(): they travel per call, in
  * a LinkContext (PathLossModel.h) -- linkContext() extracts the bundle a
  * computePathLoss()/computeLosProbability()/getShadowingStdDev() call needs,
  * the carrier frequency given in GHz only, its Hz value and logarithm derived
  * from it, matching what the owning medium derives from a registered radio's
  * own carrier frequency.
  *
- * insideBuilding/insideDistance are not part of initialize() either --
+ * insideBuilding/insideDistance are not part of configure() either --
  * PathLossModel::computePathLoss() takes them per call as an O2iState
  * (PathLossModel.h) -- but they stay here because a test configures them
  * together with the rest of the scenario; o2iState() extracts that bundle.
@@ -59,7 +59,7 @@ struct ScenarioParams
 
     void apply(PathLossModel& model, omnetpp::cComponent *owner) const
     {
-        model.initialize(owner, scenario, hBuilding, wStreet, tolerateMaxDistViolation);
+        model.configure(owner, scenario, hBuilding, wStreet, tolerateMaxDistViolation);
     }
 
     O2iState o2iState() const

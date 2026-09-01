@@ -58,7 +58,7 @@ struct LinkContext
  * Stateless propagation-formula strategy: one concrete subclass per 3GPP
  * propagation study (TR 36.814, TR 36.873, TR 38.901). The medium owns one
  * instance per carrier leg, feeds it the deployment-scenario parameters once
- * at initialize() time, and calls it per link with the geometry (both
+ * at configure() time, and calls it per link with the geometry (both
  * distances, LOS state) it has already resolved.
  *
  * All per-link state -- LOS map, shadowing history, fading maps, position
@@ -97,8 +97,17 @@ class PathLossModel
      * frequency and the two antenna heights are not among them: they
      * travel per call, in a LinkContext.
      */
-    virtual void initialize(cComponent *owner, DeploymentScenario scenario,
+    virtual void configure(cComponent *owner, DeploymentScenario scenario,
             double hBuilding, double wStreet, bool tolerateMaxDistViolation);
+
+    // Compatibility forwarder for BackgroundCellChannelModel.cc's one
+    // remaining caller (a Tr36814PathLossModel, called through this base);
+    // remove this together with BackgroundCellChannelModel.* .
+    void initialize(cComponent *owner, DeploymentScenario scenario,
+            double hBuilding, double wStreet, bool tolerateMaxDistViolation)
+    {
+        configure(owner, scenario, hBuilding, wStreet, tolerateMaxDistViolation);
+    }
 
     /*
      * Compute the path-loss attenuation according to the selected scenario.

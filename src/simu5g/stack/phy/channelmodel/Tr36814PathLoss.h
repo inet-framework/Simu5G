@@ -26,12 +26,10 @@ using namespace omnetpp;
  * stack-constructible object for the tests/unit/ harness while also being a
  * `like IPathLossModel` submodule of the medium. Carries no state and no
  * logic of its own -- everything is Tr36814PathLossModel's (the mixin's
- * cSimpleModule half, including handleMessage(), is PathLossModule's). In
- * particular it does not override cSimpleModule::initialize(): the
- * strategy's own "initialize" (owner_, scenario_, ...) is a same-named but
- * unrelated method of the unrelated PathLossModel base, called explicitly by
- * RadioMedium through a PathLossModel* pointer, never by the module
- * lifecycle.
+ * cSimpleModule half, including handleMessage(), is PathLossModule's).
+ * PathLossModel::configure(owner_, scenario_, ...), called explicitly by
+ * RadioMedium through a PathLossModel* pointer, is unrelated to the module
+ * lifecycle and never called by it.
  */
 class Tr36814PathLoss : public PathLossModule, public Tr36814PathLossModel
 {

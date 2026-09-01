@@ -513,7 +513,7 @@ void RadioMedium::initializePathLossStrategy(PathLossModel *model, cModule *legM
     // the leg-constant deployment geometry, legModule's own NED parameters.
     // No carrier frequency, no antenna heights: those travel per call, in a
     // LinkContext built by linkContextFor()
-    model->initialize(this, aToDeploymentScenario(legModule->par("scenario").stringValue()),
+    model->configure(this, aToDeploymentScenario(legModule->par("scenario").stringValue()),
             legModule->par("buildingHeight"), legModule->par("streetWidth"),
             legModule->par("tolerateMaxDistViolation"));
 }
