@@ -301,9 +301,11 @@ Two groups of parameters stay declared on the endpoint (renamed `radio`/
 `insideBuilding`, the antenna/noise/cable-loss block (`antennaGainUe`,
 `antennaGainEnB`, `ueNoiseFigure`, `bsNoiseFigure`, `cableLoss`), and
 `collectSinrStatistics`. `antennaGainEnB` also corrects a long-standing
-misspelling (`antennGainEnB`); the guard cannot catch a leftover old
-spelling, because `BackgroundCellChannelModel` still declares a parameter of
-that exact misspelled name for its own, unrelated purpose.
+misspelling (`antennGainEnB`); a leftover old spelling is caught by the
+guard as a legacy key, at the accepted cost of a false positive for a
+configuration that addresses `BackgroundCellChannelModel`'s unrelated
+parameter of the same misspelled name (like `antennGainMicro`, the entry
+dies with that module).
 
 `nodebHeight`/`ueHeight` are not simply relocated:
 they are replaced by a single `height` parameter on the endpoint, defaulted
