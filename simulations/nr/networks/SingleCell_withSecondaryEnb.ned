@@ -43,10 +43,10 @@ import simu5g.world.radio.LteChannelControl;
 network SingleCell_withSecondaryEnb
 {
     parameters:
-        // radio endpoint recast E5, §3(d): secondaryEnb (LTE, Tr36814) and
-        // masterGnb (NR, Tr38901) are genuinely two active legs, not the
-        // vestigial-leg case a single match-anything entry covers -- both
-        // carry traffic (dual connectivity), so each needs its own study.
+        // secondaryEnb (LTE, Tr36814) and masterGnb (NR, Tr38901) are
+        // genuinely two active legs, not the vestigial-leg case a single
+        // match-anything entry covers -- both carry traffic (dual
+        // connectivity), so each needs its own study.
         radioMedium.numCarrierLegs = default(2);
         radioMedium.carrierLeg[0].leg = default("LTE");
         radioMedium.carrierLeg[1].leg = default("NR");

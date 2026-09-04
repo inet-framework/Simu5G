@@ -31,7 +31,7 @@ import simu5g.world.radio.LteChannelControl;
 network SingleMecHost
 {
     parameters:
-        // radio endpoint recast E5, §3(d): every network must state its propagation study explicitly (mandatory pathLoss typename)
+        // the network-wide propagation study (the carrierLeg pathLoss default is Tr36814)
         radioMedium.carrierLeg[0].pathLoss.typename = default("Tr38901PathLoss");
         @display("i=block/network2;bgb=811,507;bgi=background/pisa");
 
