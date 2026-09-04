@@ -34,7 +34,7 @@ network SingleMecHost
         // The gNBs connect to a 5GC (Upf), so every cellular stack has SDAP:
         // TS 37.324 ties SDAP to the 5GC connection, not to the radio
         **.cellularNic.hasSdap = default(true);
-        // radio endpoint recast E5, §3(d): every network must state its propagation study explicitly (mandatory pathLoss typename)
+        // the network-wide propagation study (the carrierLeg pathLoss default is Tr36814)
         radioMedium.carrierLeg[0].pathLoss.typename = default("Tr38901PathLoss");
         @display("i=block/network2;bgb=811,507;bgi=background/pisa");
 
