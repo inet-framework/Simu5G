@@ -39,19 +39,8 @@ void StochasticChannelModel::initialize(int stage)
     ChannelModelBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         inside_building_ = par("insideBuilding");
-        if (inside_building_) {
-            // E8b draw-preserving kludge: one uniform() per served carrier,
-            // in componentCarrierModules' declaration order, reproducing the
-            // per-carrier channel-model objects' draws the collapse merges
-            // into this one object. componentCarriers_ is not resolved until
-            // POSTLOCAL, so count the module list here and key the draws to
-            // frequencies there. (E8c draws just once, per radio.)
-            cStringTokenizer tokenizer(par("componentCarrierModules").stringValue());
-            while (tokenizer.hasMoreTokens()) {
-                tokenizer.nextToken();
-                pendingInsideDistances_.push_back(uniform(0.0, 25.0));
-            }
-        }
+        if (inside_building_)
+            inside_distance_ = uniform(0.0, 25.0);
 
         antennaGainUe_ = par("antennaGainUe");
         antennaGainEnB_ = par("antennGainEnB");
@@ -61,15 +50,6 @@ void StochasticChannelModel::initialize(int stage)
         bsNoiseFigure_ = par("bsNoiseFigure");
 
         collectSinrStatistics_ = par("collectSinrStatistics");
-    }
-    else if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
-        // ChannelModelBase::initialize(POSTLOCAL) above just resolved
-        // componentCarriers_; key each LOCAL-stage draw to its carrier
-        if (inside_building_) {
-            const auto& ccs = getComponentCarriers();
-            for (size_t i = 0; i < ccs.size(); i++)
-                inside_distances_[ccs[i]->getCarrierFrequency()] = pendingInsideDistances_[i];
-        }
     }
     else if (stage == INITSTAGE_SIMU5G_NODE_RELATIONSHIPS) {
         // phy_ is set at INITSTAGE_SIMU5G_REGISTRATIONS2, so both phy_ and
@@ -303,7 +283,7 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
     // height): linkContextFor() falls back to the other role's own
     // NIC-level default height for the missing side.
     double attenuation = medium_->extCellPathLossFor(getNodeId(), carrierFrequency)
-            .computePathLoss(dist, dist, los, O2iState{inside_building_, getInsideDistance(carrierFrequency)},
+            .computePathLoss(dist, dist, los, O2iState{inside_building_, inside_distance_},
                     medium_->linkContextFor(this, NODEID_NONE, carrierFrequency));
 
     return attenuation;

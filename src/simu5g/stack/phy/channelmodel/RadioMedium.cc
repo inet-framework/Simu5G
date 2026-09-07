@@ -364,7 +364,7 @@ double RadioMedium::txAngleOf(MacNodeId nodeId, GHz carrierFrequency) const
 O2iState RadioMedium::o2iStateOf(MacNodeId nodeId, GHz carrierFrequency) const
 {
     const RadioDescriptor& d = descriptorFor(nodeId, carrierFrequency);
-    return O2iState{d.endpoint->getInsideBuilding(), d.endpoint->getInsideDistance(carrierFrequency)};
+    return O2iState{d.endpoint->getInsideBuilding(), d.endpoint->getInsideDistance()};
 }
 
 namespace {
