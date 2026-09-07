@@ -46,25 +46,20 @@ struct JakesFadingData
     std::vector<simtime_t> delaySpread;
 };
 
-typedef std::map<LinkKey, std::vector<JakesFadingData>> JakesFadingMap;
-typedef std::map<LinkKey, std::pair<inet::simtime_t, double>> ShadowFadingMap;
-
 /**
- * The stochastic state a StochasticChannelModel endpoint used to keep in its
- * own member variables (losMap_, lastComputedSF_, jakesFadingMap_,
- * jakesFadingMapBgUe_, positionHistory_, lastCorrelationPoint_), relocated
- * here verbatim: same containers, same key types, no merging, no re-keying
- * (the per-link re-key is a later step). One instance per registered radio.
+ * S13 transitional key (step 13a): the OWNING endpoint prefixed to the old
+ * link key. Owner-prefixed entries in medium-wide maps reproduce the retired
+ * per-radio PerRadioStochasticState partition exactly -- same entries, same
+ * draws, no merging -- including the cqiDl redirect's habit of selecting a
+ * peer UE's map, whose owner is then that peer endpoint
+ * (StochasticChannelModel::obtainUeEndpoint()). Steps 13b..13f replace the
+ * owner component with the carrier leg, one container at a time, and step
+ * 13g deletes what is then dead.
  */
-struct PerRadioStochasticState
-{
-    std::map<LinkKey, bool> losMap;
-    ShadowFadingMap lastComputedSF;
-    JakesFadingMap jakesFadingMap;
-    JakesFadingMap jakesFadingMapBgUe;
-    std::map<MacNodeId, std::queue<Position>> positionHistory;
-    std::map<LinkKey, Position> lastCorrelationPoint;
-};
+typedef std::pair<StochasticChannelModel *, LinkKey> OwnerLinkKey;
+
+typedef std::map<OwnerLinkKey, std::vector<JakesFadingData>> JakesFadingMap;
+typedef std::map<OwnerLinkKey, std::pair<inet::simtime_t, double>> ShadowFadingMap;
 
 /**
  * A background transmitter's phantom key (plan 3(j)): the tuple that *is*
@@ -210,13 +205,19 @@ class RadioMedium : public cSimpleModule
     // radio to register on it (see addRadio()). Nothing reads this yet.
     std::map<CarrierLeg, CarrierPhysics> carrierPhysics_;
 
-    // Per-radio stochastic state (S8), keyed by the endpoint pointer itself
-    // rather than by position in radios_/radioIndex_: RadioDescriptor entries
-    // move on swap-and-pop removal, but the endpoint's own identity is stable
-    // for exactly its registered lifetime, which is what a std::map's node
-    // storage needs to hand out references (via stateOf()) that survive
-    // other radios' registration and removal. Erased in removeRadio().
-    std::map<StochasticChannelModel *, PerRadioStochasticState> radioState_;
+    // The six per-radio stochastic-state containers, flattened into
+    // medium-wide maps (step 13a): each entry carries the owning endpoint in
+    // its key, so the partition (and every lookup, draw and erase) is exactly
+    // the retired radioState_ per-radio scheme's. The endpoint's own identity
+    // is stable for exactly its registered lifetime, as before; a removed
+    // radio's entries are erased in removeRadio(). Steps 13b..13f re-key
+    // these to the carrier leg, one at a time.
+    std::map<OwnerLinkKey, bool> losMap_;
+    ShadowFadingMap lastComputedSF_;
+    JakesFadingMap jakesFadingMap_;
+    JakesFadingMap jakesFadingMapBgUe_;
+    std::map<std::pair<StochasticChannelModel *, MacNodeId>, std::queue<Position>> positionHistory_;
+    std::map<OwnerLinkKey, Position> lastCorrelationPoint_;
 
     // One PathLossModel strategy per carrier leg (S9b), created eagerly in
     // addRadio() when a leg's CarrierPhysics record is first established.
@@ -262,6 +263,38 @@ class RadioMedium : public cSimpleModule
     /** Builds the propagation-formula strategy matching cp.pathLossType and initializes it from the leg's own established CarrierPhysics record and carrier frequency (plan 3(i).4). */
     PathLossModel *createPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg);
 
+    /**
+     * Owner-keyed stochastic-state accessors (step 13a): the medium's own
+     * counterpart of the six accessors relocated at S9b, now indexing the
+     * flattened medium-wide maps by {owner, old key}. owner is the endpoint
+     * whose per-radio record would have held the entry before the flatten.
+     * The shadowing/jakes containers have no accessor of their own:
+     * computeShadowing()/jakesFading() index lastComputedSF_/jakesFadingMap_/
+     * jakesFadingMapBgUe_ directly, choosing owner by the same cqiDl logic
+     * that used to choose the map pointer.
+     */
+
+    /** Auto-vivifying access to losMap_[{owner,key}]; existed, if given, reports whether the entry was already present. */
+    bool& losState(StochasticChannelModel *owner, const LinkKey& key, bool *existed = nullptr);
+
+    /**
+     * Access to positionHistory_[{owner,nodeId}]. createIfMissing=true
+     * auto-vivifies an empty queue like std::map::operator[]
+     * (updatePositionHistory()); createIfMissing=false returns nullptr
+     * instead of inserting a placeholder for a node with no history yet
+     * (computeSpeed(), which must not manufacture an entry it would then
+     * read as non-empty).
+     */
+    std::queue<Position> *positionHistory(StochasticChannelModel *owner, MacNodeId nodeId, bool createIfMissing);
+
+    /**
+     * Auto-vivifying access to lastCorrelationPoint_[{owner,key}]; existed,
+     * if given, reports whether the entry was already present. nodeId is
+     * carried but not read until step 13f, where it replaces key as the
+     * entry's identity (a correlation point is a per-node fact, plan §3(b)).
+     */
+    Position& correlationPoint(StochasticChannelModel *owner, const LinkKey& key, MacNodeId nodeId, bool *existed = nullptr);
+
   public:
     ~RadioMedium() override;
 
@@ -291,13 +324,14 @@ class RadioMedium : public cSimpleModule
     virtual void removeBackgroundRadio(const BgUeKey& key);
 
     /**
-     * The per-radio stochastic state for a registered endpoint. Created in
-     * addRadio(), so an endpoint can cache the reference once at
-     * registration (its address is stable across other radios'
-     * registration and removal, since it lives in a std::map keyed by
-     * endpoint identity); erased in removeRadio().
+     * radio's own LOS state for key (step 13a): auto-vivifies to NLOS
+     * (false) if this link's LOS has never been computed. Public for
+     * StochasticChannelModel's resident computeExtCellPathLoss(), which --
+     * like the primary in-cell attenuation computation -- reads (and may
+     * share) this same losMap_ entry rather than drawing its own independent
+     * LOS state for the ext-cell/background-cell interference path.
      */
-    virtual PerRadioStochasticState& stateOf(StochasticChannelModel *endpoint);
+    virtual bool losStateFor(StochasticChannelModel *radio, const LinkKey& key);
 
     // Physical facts of a registered radio, read live through its own
     // endpoint pointer -- the registry resolves identity, it does not cache
@@ -352,7 +386,21 @@ class RadioMedium : public cSimpleModule
             unsigned int band, bool cqiDl, bool isBgUe = false);
     virtual double rayleighFading(StochasticChannelModel *radio, MacNodeId id, unsigned int band);
     virtual double computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
-    virtual double computeCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, const inet::Coord coord);
+    virtual double computeCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, MacNodeId nodeId, const inet::Coord coord);
+
+    /**
+     * The node-motion bookkeeping relocated from StochasticChannelModel at
+     * step 13a, alongside the positionHistory_/lastCorrelationPoint_
+     * containers themselves: both used to be resident because they read the
+     * endpoint's own per-radio state directly; now that state lives here.
+     * updatePositionHistory() maintains the two-entry rolling history
+     * computeSpeed() reads; updateCorrelationDistance() records the point
+     * getAttenuation() measures the next call's correlationDist against.
+     * Like correlationPoint(), the correlation-distance pair carries both
+     * key (read now) and nodeId (read from step 13f on).
+     */
+    virtual void updatePositionHistory(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
+    virtual void updateCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, MacNodeId nodeId, const inet::Coord coord);
 
     /**
      * The SINR/RSRP/reception-decision surface relocated from

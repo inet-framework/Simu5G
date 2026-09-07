@@ -110,16 +110,6 @@ void StochasticChannelModel::initialize(int stage)
         medium_.reference(this, "radioMediumModule", true);
         mediumModuleId_ = medium_->getId();
         medium_->addRadio(this);
-        // S8: this endpoint's stochastic state now lives in the medium;
-        // cache the reference so the state accessors do not look it up
-        // (by identity) on every call
-        state_ = &medium_->stateOf(this);
-
-        // clear jakes fading map structure; must run here rather than at
-        // INITSTAGE_LOCAL, since state_ does not exist yet at that stage
-        // (a freshly registered radio's state is already empty by
-        // construction, so this is a no-op either way)
-        jakesState().clear();
     }
 }
 
@@ -233,47 +223,6 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
 double StochasticChannelModel::computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl)
 {
     return medium_->computeShadowing(this, d3D, d2D, key, ownerId, speed, cqiDl);
-}
-
-void StochasticChannelModel::updatePositionHistory(const MacNodeId nodeId,
-        const Coord coord)
-{
-    // createIfMissing=true: a freshly vivified (empty) queue makes
-    // "!history->empty()" false, exactly like the old find()==end() check
-    std::queue<Position> *history = positionHistory(nodeId, true);
-
-    if (!history->empty() && history->back().first == NOW)
-        // position already updated for this TTI.
-        return;
-
-    // FIXME: possible memory leak
-    history->push(Position(NOW, coord));
-
-    if (history->size() > 2) // if we have more than a past and a current element
-        // drop the oldest one
-        history->pop();
-}
-
-void StochasticChannelModel::updateCorrelationDistance(const LinkKey& nodeId, const inet::Coord coord) {
-
-    bool existed = false;
-    Position& point = correlationPoint(nodeId, &existed);
-
-    if (!existed) {
-        // no lastCorrelationPoint set current point.
-        point = Position(NOW, coord);
-    }
-    else if ((point.first != NOW) &&
-             point.second.distance(coord) > correlationDistance_)
-    {
-        // check simtime_t first
-        point = Position(NOW, coord);
-    }
-}
-
-double StochasticChannelModel::computeCorrelationDistance(const LinkKey& key, const inet::Coord coord)
-{
-    return medium_->computeCorrelationDistance(this, key, coord);
 }
 
 double StochasticChannelModel::computeSpeed(const MacNodeId nodeId, const Coord coord)
@@ -392,7 +341,7 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
 {
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = losState(nodeId);
+    bool los = medium_->losStateFor(this, nodeId);
 
     if (!enable_extCell_los_)
         los = false;
@@ -403,7 +352,7 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
     return attenuation;
 }
 
-JakesFadingMap *StochasticChannelModel::obtainUeJakesMap(MacNodeId id)
+StochasticChannelModel *StochasticChannelModel::obtainUeEndpoint(MacNodeId id)
 {
     // obtain a reference to UE phy
     PhyBase *phy = nullptr;
@@ -418,36 +367,11 @@ JakesFadingMap *StochasticChannelModel::obtainUeJakesMap(MacNodeId id)
     if (phy == nullptr)
         return nullptr;
 
-    // get the associated channel and get a reference to its Jakes Map
-    JakesFadingMap *j;
-    StochasticChannelModel *re = dynamic_cast<StochasticChannelModel *>(phy->getChannelModel(carrierFrequency_));
-    if (re == nullptr)
-        throw cRuntimeError("StochasticChannelModel::obtainUeJakesMap - channel model is a null pointer");
-    else
-        j = re->getJakesMap();
-
-    return j;
-}
-
-ShadowFadingMap *StochasticChannelModel::obtainShadowingMap(MacNodeId id)
-{
-    // obtain a reference to UE phy
-    PhyBase *phy = nullptr;
-
-    for (const auto& ueInfo : binder_->getUeList()) {
-        if (ueInfo->id == id) {
-            phy = ueInfo->phy;
-            break;
-        }
-    }
-
-    if (phy == nullptr)
-        return nullptr;
-
-    // get the associated channel and get a reference to its shadowing Map
-    StochasticChannelModel *re = dynamic_cast<StochasticChannelModel *>(phy->getChannelModel(carrierFrequency_));
-    ShadowFadingMap *j = re->getShadowingMap();
-    return j;
+    // the peer UE's channel model on this same carrier: the endpoint whose
+    // owner-prefixed map entries the cqiDl redirect selects (step 13a; the
+    // retired obtainUeJakesMap()/obtainShadowingMap() fetched raw map
+    // pointers out of this same module)
+    return dynamic_cast<StochasticChannelModel *>(phy->getChannelModel(carrierFrequency_));
 }
 
 StochasticChannelModel::InterfererInfo StochasticChannelModel::describeInterferer(const UeAllocationInfo& allocation, RadioMedium *medium, GHz carrierFrequency)
