@@ -41,59 +41,89 @@ CarrierLeg legFor(StochasticChannelModel *endpoint)
     return CarrierLeg{endpoint->getCarrierFrequency(), endpoint->isNr()};
 }
 
-/*
- * The six per-radio stochastic-state accessors relocated alongside the
- * computation that draws through them (plan step S9b). They reproduce
- * StochasticChannelModel's own private accessors exactly (same map
- * operations, same semantics), parameterized over a PerRadioStochasticState
- * reference instead of an implicit state_ member, since the medium already
- * owns every registered radio's state (S8) and the computation that reads
- * it now runs here instead of on the endpoint.
- */
-
-/** Auto-vivifying access to state.losMap[key]; existed, if given, reports whether the entry was already present. */
-bool& losState(PerRadioStochasticState& state, const LinkKey& key, bool *existed = nullptr)
-{
-    auto result = state.losMap.try_emplace(key, false);
-    if (existed != nullptr)
-        *existed = !result.second;
-    return result.first->second;
-}
-
-/** radio's shadowing-state container (whole-container seam: computeShadowing may redirect to a different radio's via obtainShadowingMap()). */
-ShadowFadingMap& shadowingState(PerRadioStochasticState& state) { return state.lastComputedSF; }
-
-/** radio's (non-background-UE) Jakes-fading-state container. */
-JakesFadingMap& jakesState(PerRadioStochasticState& state) { return state.jakesFadingMap; }
-
-/** jakesFadingMap's background-UE twin: same key type, selected instead of it when isBgUe is true. */
-JakesFadingMap& jakesStateBgUe(PerRadioStochasticState& state) { return state.jakesFadingMapBgUe; }
-
 /**
- * Access to state.positionHistory[nodeId]. createIfMissing=true
- * auto-vivifies an empty queue like std::map::operator[]; createIfMissing=false
- * returns nullptr instead of inserting a placeholder for a node with no
- * history yet (computeSpeed(), which must not manufacture an entry it would
- * then read as non-empty).
+ * Erases every owner-prefixed entry of one flattened state map (step 13a):
+ * the same per-radio state destruction radioState_.erase(endpoint) used to
+ * perform in one node. Each flip that re-keys a container to the carrier leg
+ * removes its call from removeRadio() -- per-link state stops being any one
+ * endpoint's property.
  */
-std::queue<Position> *positionHistory(PerRadioStochasticState& state, MacNodeId nodeId, bool createIfMissing)
+template<typename M>
+void eraseOwnerEntries(M& map, StochasticChannelModel *owner)
 {
-    if (createIfMissing)
-        return &state.positionHistory[nodeId];
-    auto it = state.positionHistory.find(nodeId);
-    return it == state.positionHistory.end() ? nullptr : &it->second;
-}
-
-/** Auto-vivifying access to state.lastCorrelationPoint[key]; existed, if given, reports whether the entry was already present. */
-Position& correlationPoint(PerRadioStochasticState& state, const LinkKey& key, bool *existed = nullptr)
-{
-    auto result = state.lastCorrelationPoint.try_emplace(key);
-    if (existed != nullptr)
-        *existed = !result.second;
-    return result.first->second;
+    for (auto it = map.begin(); it != map.end(); )
+        it = (it->first.first == owner) ? map.erase(it) : ++it;
 }
 
 } // namespace
+
+bool& RadioMedium::losState(StochasticChannelModel *owner, const LinkKey& key, bool *existed)
+{
+    auto result = losMap_.try_emplace(OwnerLinkKey{owner, key}, false);
+    if (existed != nullptr)
+        *existed = !result.second;
+    return result.first->second;
+}
+
+std::queue<Position> *RadioMedium::positionHistory(StochasticChannelModel *owner, MacNodeId nodeId, bool createIfMissing)
+{
+    auto key = std::make_pair(owner, nodeId);
+    if (createIfMissing)
+        return &positionHistory_[key];
+    auto it = positionHistory_.find(key);
+    return it == positionHistory_.end() ? nullptr : &it->second;
+}
+
+Position& RadioMedium::correlationPoint(StochasticChannelModel *owner, const LinkKey& key, MacNodeId nodeId, bool *existed)
+{
+    auto result = lastCorrelationPoint_.try_emplace(OwnerLinkKey{owner, key});
+    if (existed != nullptr)
+        *existed = !result.second;
+    return result.first->second;
+}
+
+bool RadioMedium::losStateFor(StochasticChannelModel *radio, const LinkKey& key)
+{
+    return losState(radio, key);
+}
+
+void RadioMedium::updatePositionHistory(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
+{
+    // createIfMissing=true: a freshly vivified (empty) queue makes
+    // "!history->empty()" false, exactly like the old find()==end() check
+    std::queue<Position> *history = positionHistory(radio, nodeId, true);
+
+    if (!history->empty() && history->back().first == NOW)
+        // position already updated for this TTI.
+        return;
+
+    // FIXME: possible memory leak
+    history->push(Position(NOW, coord));
+
+    if (history->size() > 2) // if we have more than a past and a current element
+        // drop the oldest one
+        history->pop();
+}
+
+void RadioMedium::updateCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, MacNodeId nodeId, const inet::Coord coord)
+{
+    bool existed = false;
+    Position& point = correlationPoint(radio, key, nodeId, &existed);
+
+    if (!existed) {
+        // no lastCorrelationPoint set current point.
+        point = Position(NOW, coord);
+    }
+    else if ((point.first != NOW) &&
+             // the leg's established correlationDistance record: equal to the
+             // endpoint's own retired correlationDistance_ member by
+             // checkCarrierPhysics() (every radio on a leg agrees, field 4)
+             point.second.distance(coord) > carrierPhysicsFor(legFor(radio)).correlationDistance)
+    {
+        // check simtime_t first
+        point = Position(NOW, coord);
+    }
+}
 
 RadioMedium::~RadioMedium()
 {
@@ -152,10 +182,6 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
         checkCarrierPhysics(cpIt->second, candidate, leg, endpoint->getFullPath());
     }
 
-    // create this radio's stochastic-state record (S8); stateOf() hands the
-    // endpoint a reference to it right after this call
-    radioState_[endpoint];
-
     radios_.push_back(descriptor);
     radioIndex_[key] = &radios_.back();
 }
@@ -177,8 +203,10 @@ void RadioMedium::addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *g
     ASSERT((descriptor.endpoint != nullptr) != (descriptor.bgGenerator != nullptr));
 
     // no readCarrierPhysics, no checkCarrierPhysics, no createPathLossModel,
-    // no radioState_ entry: a phantom declares none of the 25 per-carrier-leg
-    // physics parameters and owns no stochastic state (plan S12b item 3)
+    // no owner-keyed state entries: a phantom declares none of the 25
+    // per-carrier-leg physics parameters and, since it is never the radio in
+    // getAttenuation()/computeShadowing()/jakesFading(), never owns an entry
+    // in the flattened state maps either (plan S12b item 3)
     radios_.push_back(descriptor);
     bgRadioIndex_[key] = &radios_.back();
 }
@@ -305,7 +333,14 @@ void RadioMedium::removeRadio(StochasticChannelModel *endpoint)
     if (idx < radios_.size())
         reindex(radios_[idx]);
 
-    radioState_.erase(endpoint);
+    // step 13a: the same per-radio state destruction radioState_.erase()
+    // performed, one flattened container at a time
+    eraseOwnerEntries(losMap_, endpoint);
+    eraseOwnerEntries(lastComputedSF_, endpoint);
+    eraseOwnerEntries(jakesFadingMap_, endpoint);
+    eraseOwnerEntries(jakesFadingMapBgUe_, endpoint);
+    eraseOwnerEntries(positionHistory_, endpoint);
+    eraseOwnerEntries(lastCorrelationPoint_, endpoint);
 }
 
 void RadioMedium::reindex(RadioDescriptor& descriptor)
@@ -314,14 +349,6 @@ void RadioMedium::reindex(RadioDescriptor& descriptor)
         radioIndex_[std::make_pair(descriptor.nodeId, descriptor.carrierFrequency)] = &descriptor;
     else
         bgRadioIndex_[BgUeKey{descriptor.bgCellId, descriptor.carrierFrequency, descriptor.nodeId}] = &descriptor;
-}
-
-PerRadioStochasticState& RadioMedium::stateOf(StochasticChannelModel *endpoint)
-{
-    auto it = radioState_.find(endpoint);
-    if (it == radioState_.end())
-        throw cRuntimeError("stateOf: endpoint was never registered with this medium");
-    return it->second;
 }
 
 const RadioDescriptor& RadioMedium::descriptorFor(MacNodeId nodeId, GHz carrierFrequency) const
@@ -448,22 +475,21 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
     double twoDimDistance = radio->getTwoDimDistance(link.txCoord, link.rxCoord);
 
     double speed = computeSpeed(radio, link.stateNodeId, link.stateCoord);
-    double correlationDist = computeCorrelationDistance(radio, link.stateKey, link.stateCoord);
+    double correlationDist = computeCorrelationDistance(radio, link.stateKey, link.stateNodeId, link.stateCoord);
 
-    PerRadioStochasticState& state = stateOf(radio);
     const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
 
     // If Euclidean distance since last LOS probability computation is greater than
     // correlation distance the UE could have changed its state and
     // its visibility from eNodeB, hence it is correct to recompute the LOS probability
     bool losAlreadyComputed = false;
-    losState(state, link.stateKey, &losAlreadyComputed);
+    losState(radio, link.stateKey, &losAlreadyComputed);
     if (correlationDist > cp.correlationDistance || !losAlreadyComputed) {
         computeLosProbability(radio, threeDimDistance, twoDimDistance, link.stateKey);
     }
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = losState(state, link.stateKey);
+    bool los = losState(radio, link.stateKey);
     double attenuation = computePathLoss(radio, threeDimDistance, twoDimDistance, los);
 
     //    Applying shadowing only if it is enabled by configuration
@@ -472,8 +498,8 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
         attenuation += computeShadowing(radio, threeDimDistance, twoDimDistance, link.stateKey, link.stateNodeId, speed, link.useUeSideMaps);
 
     // update the tracked node's current position
-    radio->updatePositionHistory(link.stateNodeId, link.stateCoord);
-    radio->updateCorrelationDistance(link.stateKey, link.stateCoord);
+    updatePositionHistory(radio, link.stateNodeId, link.stateCoord);
+    updateCorrelationDistance(radio, link.stateKey, link.stateNodeId, link.stateCoord);
 
     EV << "RadioMedium::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNB is " << attenuation << endl;
 
@@ -490,56 +516,53 @@ void RadioMedium::computeLosProbability(StochasticChannelModel *radio, double d3
 {
     const CarrierLeg leg = legFor(radio);
     const CarrierPhysics& cp = carrierPhysicsFor(leg);
-    PerRadioStochasticState& state = stateOf(radio);
 
     if (!cp.dynamicLos) {
-        losState(state, key) = cp.fixedLos;
+        losState(radio, key) = cp.fixedLos;
         return;
     }
     double p = pathLossFor(leg).computeLosProbability(d3D, d2D);
-    losState(state, key) = (uniform(0.0, 1.0) <= p);
+    losState(radio, key) = (uniform(0.0, 1.0) <= p);
 }
 
 double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key,
         MacNodeId ownerId, double speed, bool cqiDl)
 {
     const CarrierLeg leg = legFor(radio);
-    PerRadioStochasticState& state = stateOf(radio);
     const CarrierPhysics& cp = carrierPhysicsFor(leg);
 
-    ShadowFadingMap *actualShadowingMap;
-    if (cqiDl) // if we are computing a DL CQI we need the Shadowing Map stored on the UE side
-        actualShadowingMap = radio->obtainShadowingMap(ownerId);
-    else
-        actualShadowingMap = &shadowingState(state);
-
-    if (actualShadowingMap == nullptr)
+    // step 13a: the cqiDl redirect now resolves the OWNING endpoint -- whose
+    // owner-prefixed entries the medium-wide lastComputedSF_ holds -- instead
+    // of fetching a raw map pointer out of the peer module
+    StochasticChannelModel *owner = cqiDl ? radio->obtainUeEndpoint(ownerId) : radio;
+    if (owner == nullptr)
         throw cRuntimeError("RadioMedium::computeShadowing - actualShadowingMap not found (nullptr)");
+    const OwnerLinkKey stateKey{owner, key};
 
     double mean = 0;
 
     // Get std deviation according to LOS/NLOS and selected scenario
-    double stdDev = pathLossFor(leg).getShadowingStdDev(d3D, d2D, losState(state, key));
+    double stdDev = pathLossFor(leg).getShadowingStdDev(d3D, d2D, losState(radio, key));
     double time = 0;
     double space = 0;
     double att;
 
     // if shadowing for current user has never been computed
-    if (actualShadowingMap->find(key) == actualShadowingMap->end()) {
+    if (lastComputedSF_.find(stateKey) == lastComputedSF_.end()) {
         //Get the log-normal shadowing with std deviation stdDev
         att = normal(mean, stdDev);
 
         //store the shadowing attenuation for this user and the temporal mark
         std::pair<simtime_t, double> tmp(NOW, att);
-        (*actualShadowingMap)[key] = tmp;
+        lastComputedSF_[stateKey] = tmp;
 
         //If the shadowing attenuation has been computed at least one time for this user
         // and the distance traveled by the UE is greater than correlation distance
     }
-    else if ((NOW - actualShadowingMap->at(key).first).dbl() * speed > cp.correlationDistance) {
+    else if ((NOW - lastComputedSF_.at(stateKey).first).dbl() * speed > cp.correlationDistance) {
 
         //get the temporal mark of the last computed shadowing attenuation
-        time = (NOW - actualShadowingMap->at(key).first).dbl();
+        time = (NOW - lastComputedSF_.at(stateKey).first).dbl();
 
         //compute the traveled distance
         space = time * speed;
@@ -548,19 +571,19 @@ double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, 
         double a = exp(-0.5 * (space / cp.correlationDistance));
 
         //Get last shadowing attenuation computed
-        double old = actualShadowingMap->at(key).second;
+        double old = lastComputedSF_.at(stateKey).second;
 
         //Compute shadowing with an EAW (Exponential Average Window) (step 2)
         att = a * old + sqrt(1 - pow(a, 2)) * normal(mean, stdDev);
 
         // Store the new computed shadowing
         std::pair<simtime_t, double> tmp(NOW, att);
-        (*actualShadowingMap)[key] = tmp;
+        lastComputedSF_[stateKey] = tmp;
 
         // if the distance traveled by the UE is smaller than correlation distance shadowing attenuation remains the same
     }
     else {
-        att = actualShadowingMap->at(key).second;
+        att = lastComputedSF_.at(stateKey).second;
     }
 
     return att;
@@ -580,22 +603,32 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
      *
      * thus the actual map should be chosen carefully (i.e. just check the cqiDL flag)
      */
-    PerRadioStochasticState& state = stateOf(radio);
+    // step 13a: the same map choice, expressed as (container, owner): the
+    // retired obtainUeJakesMap() raw-pointer fetch becomes resolution of the
+    // owning endpoint, whose owner-prefixed entries jakesFadingMap_ holds.
     JakesFadingMap *actualJakesMap;
-
-    if (cqiDl) // if we are computing a DL CQI we need the Jakes Map stored on the UE side
-        actualJakesMap = (!isBgUe) ? radio->obtainUeJakesMap(ownerId) : &jakesStateBgUe(state);
+    StochasticChannelModel *owner = radio;
+    if (cqiDl && !isBgUe) { // if we are computing a DL CQI we need the Jakes Map stored on the UE side
+        owner = radio->obtainUeEndpoint(ownerId);
+        if (owner == nullptr)
+            throw cRuntimeError("StochasticChannelModel::obtainUeJakesMap - channel model is a null pointer");
+        actualJakesMap = &jakesFadingMap_;
+    }
+    else if (cqiDl && isBgUe)
+        actualJakesMap = &jakesFadingMapBgUe_;
     else
-        actualJakesMap = &jakesState(state);
+        actualJakesMap = &jakesFadingMap_;
+
+    const OwnerLinkKey stateKey{owner, key};
 
     const CarrierLeg leg = legFor(radio);
     const CarrierPhysics& cp = carrierPhysicsFor(leg);
 
     // if this is the first time that we compute fading for current user
-    if (actualJakesMap->find(key) == actualJakesMap->end()) {
+    if (actualJakesMap->find(stateKey) == actualJakesMap->end()) {
         // clear the map
         // FIXME: possible memory leak
-        (*actualJakesMap)[key].clear();
+        (*actualJakesMap)[stateKey].clear();
 
         // for each band we are going to create a Jakes fading
         for (unsigned int j = 0; j < radio->getNumBands(); j++) {
@@ -613,7 +646,7 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
                 temp.delaySpread.push_back(exponential(cp.delayRms));
             }
             // store the Jakes fading for this user
-            (*actualJakesMap)[key].push_back(temp);
+            (*actualJakesMap)[stateKey].push_back(temp);
         }
     }
     // convert carrier frequency from GHz to Hz
@@ -625,7 +658,7 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
     double re_h = 0;
     double im_h = 0;
 
-    const JakesFadingData& actualJakesData = actualJakesMap->at(key).at(band);
+    const JakesFadingData& actualJakesData = actualJakesMap->at(stateKey).at(band);
 
     // Compute Doppler shift.
     double doppler_shift = (speed * f) / SPEED_OF_LIGHT;
@@ -666,12 +699,11 @@ double RadioMedium::rayleighFading(StochasticChannelModel *radio, MacNodeId id, 
 double RadioMedium::computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
 {
     double speed = 0.0;
-    PerRadioStochasticState& state = stateOf(radio);
 
     // createIfMissing=false: a node with no history yet must stay absent,
     // not gain an empty placeholder queue that a later front()/back() would
     // read as an entry
-    std::queue<Position> *history = positionHistory(state, nodeId, false);
+    std::queue<Position> *history = positionHistory(radio, nodeId, false);
 
     if (history == nullptr) {
         // no entries
@@ -700,13 +732,12 @@ double RadioMedium::computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId
     return speed;
 }
 
-double RadioMedium::computeCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, const inet::Coord coord)
+double RadioMedium::computeCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, MacNodeId nodeId, const inet::Coord coord)
 {
     double dist = 0.0;
-    PerRadioStochasticState& state = stateOf(radio);
 
     bool existed = false;
-    Position& point = correlationPoint(state, key, &existed);
+    Position& point = correlationPoint(radio, key, nodeId, &existed);
 
     if (!existed) {
         // no lastCorrelationPoint found. Add current position and return dist = 0.0
@@ -788,10 +819,10 @@ std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, const Ra
     // if sender is an eNodeB
     if (link.dir == DL)
         // store the position of user
-        radio->updatePositionHistory(ueId, radio->getCoord());
+        updatePositionHistory(radio, ueId, radio->getCoord());
     // sender is a UE
     else
-        radio->updatePositionHistory(ueId, lteInfo->getCoord());
+        updatePositionHistory(radio, ueId, lteInfo->getCoord());
     return snrVector;
 }
 
@@ -1339,10 +1370,10 @@ std::vector<double> RadioMedium::getSIR(StochasticChannelModel *radio, LteAirFra
     // if sender is an eNodeB
     if (dir == DL)
         // store the position of the user
-        radio->updatePositionHistory(id, radio->getCoord());
+        updatePositionHistory(radio, id, radio->getCoord());
     // sender is a UE
     else
-        radio->updatePositionHistory(id, coord);
+        updatePositionHistory(radio, id, coord);
     return snrVector;
 }
 

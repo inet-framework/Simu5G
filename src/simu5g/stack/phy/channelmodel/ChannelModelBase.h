@@ -95,11 +95,12 @@ struct RadioLink
     LinkKey stateKey;
 
     // stateNodeId is the *node* the state belongs to -- the UE. It selects which
-    // module owns the maps (with useUeSideMaps they are fetched from that UE's own
-    // channel model via obtainShadowingMap() / obtainUeJakesMap(), otherwise they
-    // are this module's), it indexes positionHistory_, which is genuinely a node
-    // property because it defines the node's speed, and it distinguishes
-    // background UEs.
+    // endpoint OWNS the state entries (with useUeSideMaps the owner component of
+    // the medium's shadowing/Jakes keys is that UE's own channel model, resolved
+    // via obtainUeEndpoint(); otherwise it is the calling module -- step 13a's
+    // owner-prefixed rendering of the retired map-pointer redirect), it indexes
+    // positionHistory_, which is genuinely a node property because it defines
+    // the node's speed, and it distinguishes background UEs.
     MacNodeId stateNodeId = NODEID_NONE;
 
     inet::Coord stateCoord;      // position feeding computeSpeed + correlation distance

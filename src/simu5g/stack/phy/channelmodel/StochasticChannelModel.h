@@ -47,22 +47,23 @@ class PathLossModel;
  * - the SINR statistics.
  *
  * getAttenuation, computePathLoss, computeLosProbability, computeShadowing,
- * jakesFading, rayleighFading, computeSpeed, computeCorrelationDistance,
- * getSINR, getSIR, getRSRP, getSINR_bgUe, getReceivedPower_bgUe,
- * computeInterferencePlusNoise and isReceptionSuccessful are one-line
- * forwarders to the RadioMedium this endpoint registers with: the medium
- * owns the per-carrier-leg PathLossModel strategy (chosen by the
- * pathLossType parameter -- "Tr36814", "Tr36873" or "Tr38901"), the SINR
- * assembly and the reception decision, and every random draw both make --
- * including isReceptionSuccessful's BLER draw. Tr36873ChannelModel and
- * Tr38901ChannelModel are NED-level presets of this class (no C++ class of
- * their own) that only override the pathLossType default, to Tr36873 and
+ * jakesFading, rayleighFading, computeSpeed, getSINR, getSIR, getRSRP,
+ * getSINR_bgUe, getReceivedPower_bgUe, computeInterferencePlusNoise and
+ * isReceptionSuccessful are one-line forwarders to the RadioMedium this
+ * endpoint registers with: the medium owns the per-carrier-leg PathLossModel
+ * strategy (chosen by the pathLossType parameter -- "Tr36814", "Tr36873" or
+ * "Tr38901"), the SINR assembly and the reception decision, and every random
+ * draw both make -- including isReceptionSuccessful's BLER draw. Tr36873ChannelModel
+ * and Tr38901ChannelModel are NED-level presets of this class (no C++ class
+ * of their own) that only override the pathLossType default, to Tr36873 and
  * Tr38901 respectively. The four cellular interference walks moved to the
  * medium's interference submodule at S11; the D2D interference walk and the
  * D2D branches of getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise
  * folded into the medium alongside them at S12 -- D2dChannelModel no longer
  * overrides any of the three, so none of them are virtual dispatch points
- * here anymore.
+ * here anymore. computeCorrelationDistance and the per-radio stochastic
+ * state itself moved to the medium at step 13a (owner-keyed for now); this
+ * endpoint no longer caches any of it.
  *
  * Supported propagation studies:
  * - 3GPP TR 36.814, "Further advancements for E-UTRA physical layer aspects", v9.2.0, March 2017
@@ -89,11 +90,6 @@ class StochasticChannelModel : public ChannelModelBase
     // gone by the time this endpoint is torn down).
     inet::ModuleRefByPar<RadioMedium> medium_;
     int mediumModuleId_ = -1;
-
-    // This endpoint's stochastic state, owned by the medium (S8) and cached
-    // here at registration; its address is stable for as long as this
-    // endpoint stays registered (see RadioMedium::stateOf()).
-    PerRadioStochasticState *state_ = nullptr;
 
     // Information needed about the playground
     bool useTorus_;
@@ -414,16 +410,6 @@ class StochasticChannelModel : public ChannelModelBase
      */
     virtual void computeLosProbability(double d3D, double d2D, const LinkKey& key);
 
-    JakesFadingMap *getJakesMap()
-    {
-        return &jakesState();
-    }
-
-    ShadowFadingMap *getShadowingMap()
-    {
-        return &shadowingState();
-    }
-
     bool isUplinkInterferenceEnabled() override { return enableUplinkInterference_; }
     /*
      * Compute the received useful signal (RSRP) per band over a radio link.
@@ -433,17 +419,15 @@ class StochasticChannelModel : public ChannelModelBase
     /*
      * Public for RadioMedium's relocated getAttenuation()/computeShadowing()/
      * jakesFading() (S9b), which call these on the radio identifying the
-     * caller: getTwoDimDistance() and the position/correlation-distance
-     * bookkeeping stay on the endpoint since they are also read from the
-     * still-resident getSINR()/getSIR(), and obtainUeJakesMap()/
-     * obtainShadowingMap() bridge to a peer endpoint's own state and are
-     * deleted, not relocated, at a later step.
+     * caller: getTwoDimDistance() is a plain, stateless coordinate helper,
+     * and obtainUeEndpoint() (step 13a: the surviving core of the retired
+     * obtainUeJakesMap()/obtainShadowingMap() pair) resolves the peer UE
+     * endpoint whose owner-prefixed entries the medium's cqiDl-redirected
+     * shadowing/Jakes lookups select. The position/correlation-distance
+     * bookkeeping moved to the medium with the containers (13a).
      */
     virtual double getTwoDimDistance(inet::Coord a, inet::Coord b);
-    virtual void updatePositionHistory(const MacNodeId nodeId, const inet::Coord coord);
-    virtual void updateCorrelationDistance(const LinkKey& key, const inet::Coord coord);
-    virtual JakesFadingMap *obtainUeJakesMap(MacNodeId id);
-    virtual ShadowFadingMap *obtainShadowingMap(MacNodeId id);
+    virtual StochasticChannelModel *obtainUeEndpoint(MacNodeId id);
 
     /*
      * Public for RadioMedium's relocated getSINR()/getSIR()/getRSRP()/
@@ -492,9 +476,10 @@ class StochasticChannelModel : public ChannelModelBase
      * TR 36.814 formulas regardless of pathLossType (extCellPathLoss_).
      * Public for CellularInterferenceModel's relocated computeExtCellInterference()/
      * computeBackgroundCellInterference() (S11), which call it back on the
-     * radio pointer: it reads this endpoint's own LOS state and its own
-     * extCellPathLoss_ instance, neither reachable from outside, so it stays
-     * resident rather than moving with the walks that call it.
+     * radio pointer: it reads the medium's own LOS state for this endpoint
+     * (losStateFor(), step 13a) and its own extCellPathLoss_ instance (not
+     * reachable from outside), so it stays resident rather than moving with
+     * the walks that call it.
      * @return attenuation expressed in dBm
      */
     virtual double computeExtCellPathLoss(double dist, const LinkKey& key);
@@ -515,76 +500,6 @@ class StochasticChannelModel : public ChannelModelBase
      */
     virtual double computeSpeed(const MacNodeId nodeId, const inet::Coord coord);
 
-    /*
-     * Compute the euclidean distance between the current position and the
-     * last position used to calculate the LOS probability
-     */
-    virtual double computeCorrelationDistance(const LinkKey& key, const inet::Coord coord);
-
-  private:
-    /*
-     * Accessors for the six per-radio stochastic-state containers (S7 of the
-     * radio-medium plan): every touch of losMap, lastComputedSF,
-     * jakesFadingMap, jakesFadingMapBgUe, positionHistory and
-     * lastCorrelationPoint goes through one of these, so relocating the
-     * containers needed no hunting for scattered touches. As of S8 the
-     * containers themselves live in the medium's PerRadioStochasticState for
-     * this endpoint (state_, cached at registration); each accessor still
-     * reproduces the exact std::map::operator[] semantics the call sites
-     * relied on (or, where a call site must not auto-vivify an entry, an
-     * explicit createIfMissing flag). No RNG attribution changes: this
-     * endpoint still computes and still draws, only the storage moved.
-     *
-     * shadowingState()/jakesState()/jakesStateBgUe() return the whole
-     * container, not a single link's entry: today's code selects between
-     * this local container and a *remote* endpoint's map
-     * (obtainShadowingMap()/obtainUeJakesMap(), left untouched here -- they
-     * are deleted, not relocated, at S13) through one raw map pointer, so
-     * the seam has to be the same shape.
-     */
-
-    /** Auto-vivifying access to state_->losMap[key]; existed, if given, reports whether the entry was already present. */
-    bool& losState(const LinkKey& key, bool *existed = nullptr)
-    {
-        auto result = state_->losMap.try_emplace(key, false);
-        if (existed != nullptr)
-            *existed = !result.second;
-        return result.first->second;
-    }
-
-    /** This endpoint's shadowing-state container (whole-container seam; see the comment above). */
-    ShadowFadingMap& shadowingState() { return state_->lastComputedSF; }
-
-    /** This endpoint's (non-background-UE) Jakes-fading-state container. */
-    JakesFadingMap& jakesState() { return state_->jakesFadingMap; }
-
-    /** jakesFadingMap's background-UE twin: same key type, selected instead of it when isBgUe is true. */
-    JakesFadingMap& jakesStateBgUe() { return state_->jakesFadingMapBgUe; }
-
-    /**
-     * Access to state_->positionHistory[nodeId]. createIfMissing=true
-     * auto-vivifies an empty queue like std::map::operator[]
-     * (updatePositionHistory()); createIfMissing=false returns nullptr
-     * instead of inserting a placeholder for a node with no history yet
-     * (computeSpeed(), which must not manufacture an entry it would then
-     * read as non-empty).
-     */
-    std::queue<Position> *positionHistory(MacNodeId nodeId, bool createIfMissing)
-    {
-        if (createIfMissing)
-            return &state_->positionHistory[nodeId];
-        auto it = state_->positionHistory.find(nodeId);
-        return it == state_->positionHistory.end() ? nullptr : &it->second;
-    }
-
-    /** Auto-vivifying access to state_->lastCorrelationPoint[key]; existed, if given, reports whether the entry was already present. */
-    Position& correlationPoint(const LinkKey& key, bool *existed = nullptr)
-    {
-        auto result = state_->lastCorrelationPoint.try_emplace(key);
-        if (existed != nullptr)
-            *existed = !result.second;
-        return result.first->second;
-    }
 };
 
 } //namespace
