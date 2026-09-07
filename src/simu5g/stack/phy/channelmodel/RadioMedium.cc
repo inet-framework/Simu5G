@@ -337,8 +337,8 @@ void RadioMedium::removeRadio(StochasticChannelModel *endpoint)
 
     // step 13a: the same per-radio state destruction radioState_.erase()
     // performed, one flattened container at a time (losMap_ left this list
-    // at 13b: per-link state is no one endpoint's property)
-    eraseOwnerEntries(lastComputedSF_, endpoint);
+    // at 13b, lastComputedSF_ at 13c: per-link state is no one endpoint's
+    // property)
     eraseOwnerEntries(jakesFadingMap_, endpoint);
     eraseOwnerEntries(jakesFadingMapBgUe_, endpoint);
     eraseOwnerEntries(positionHistory_, endpoint);
@@ -533,13 +533,10 @@ double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, 
     const CarrierLeg leg = legFor(radio);
     const CarrierPhysics& cp = carrierPhysicsFor(leg);
 
-    // step 13a: the cqiDl redirect now resolves the OWNING endpoint -- whose
-    // owner-prefixed entries the medium-wide lastComputedSF_ holds -- instead
-    // of fetching a raw map pointer out of the peer module
-    StochasticChannelModel *owner = cqiDl ? radio->obtainUeEndpoint(ownerId) : radio;
-    if (owner == nullptr)
-        throw cRuntimeError("RadioMedium::computeShadowing - actualShadowingMap not found (nullptr)");
-    const OwnerLinkKey stateKey{owner, key};
+    // step 13c: one shared shadowing entry per physical link, whichever end
+    // (and whichever direction) asks -- the cqiDl owner redirect that used
+    // to select the UE-side copy has nothing left to redirect to
+    const LinkStateKey stateKey{leg, key};
 
     double mean = 0;
 

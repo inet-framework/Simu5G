@@ -59,7 +59,6 @@ struct JakesFadingData
 typedef std::pair<StochasticChannelModel *, LinkKey> OwnerLinkKey;
 
 typedef std::map<OwnerLinkKey, std::vector<JakesFadingData>> JakesFadingMap;
-typedef std::map<OwnerLinkKey, std::pair<inet::simtime_t, double>> ShadowFadingMap;
 
 /**
  * A background transmitter's phantom key (plan 3(j)): the tuple that *is*
@@ -146,6 +145,8 @@ struct CarrierLeg
  */
 typedef std::pair<CarrierLeg, LinkKey> LinkStateKey;
 
+typedef std::map<LinkStateKey, std::pair<inet::simtime_t, double>> ShadowFadingMap;
+
 /**
  * The per-carrier-leg physics parameters (plan section 3(e)/3(h)) that every
  * radio registered on a given leg must agree on. Filled from the first radio
@@ -222,8 +223,9 @@ class RadioMedium : public cSimpleModule
     // is stable for exactly its registered lifetime, as before; a removed
     // radio's entries are erased in removeRadio(). Steps 13b..13f re-key
     // these to the carrier leg, one at a time.
-    // losMap_ re-keyed per link at step 13b: one shared LOS entry per
-    // physical link on a carrier leg, whichever end asks.
+    // losMap_ re-keyed per link at step 13b, lastComputedSF_ at 13c: one
+    // shared entry per physical link on a carrier leg, whichever end (and
+    // whichever direction) asks.
     std::map<LinkStateKey, bool> losMap_;
     ShadowFadingMap lastComputedSF_;
     JakesFadingMap jakesFadingMap_;
