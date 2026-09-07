@@ -600,12 +600,14 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
      *
      * thus the actual map should be chosen carefully (i.e. just check the cqiDL flag)
      */
-    // step 13d: one shared Jakes realization per physical link, whichever
-    // end asks -- the retired obtainUeEndpoint() owner redirect (the UE-side
-    // map for a DL CQI) has nothing left to redirect to, so the choice is
-    // just the background-UE twin vs the regular map. isBgUe still rides
-    // through cqiDl here, exactly as before; step 13e drops that gate.
-    JakesFadingMap& actualJakesMap = (cqiDl && isBgUe) ? jakesFadingMapBgUe_ : jakesFadingMap_;
+    // step 13e: the background-UE Jakes twin is now selected by isBgUe
+    // alone. Its previous DL-only use (cqiDl && isBgUe) was an artifact of
+    // the deleted cross-endpoint redirect, not a modeled choice: a bg UE's
+    // key range (>= BGUE_MIN_ID) never coincides with a real UE's, so the
+    // twin exists only to keep the two populations' entries apart, which is
+    // a property of the UE, not of the direction the reception is computed
+    // in.
+    JakesFadingMap& actualJakesMap = isBgUe ? jakesFadingMapBgUe_ : jakesFadingMap_;
 
     const CarrierLeg leg = legFor(radio);
     const LinkStateKey stateKey{leg, key};

@@ -52,7 +52,7 @@
 /simulations/lte/x2/,                    -f omnetpp.ini -c X2-Mesh-unbalanced -r 0,              5s,         230d-2018/tplx;f124-836f/tilx;789d-930a/~tNl;8adf-626a/sz, PASS,
 /simulations/lte/x2/,                    -f omnetpp.ini -c X2-MeshTopology -r 0,                 5s,         829a-a5dd/tplx;de6a-a6c2/tilx;f7ac-b770/~tNl;d4df-63a4/sz, PASS,
 /simulations/nr/bgTraffic/,              -f omnetpp.ini -c CBR-DL -r 0,                          5s,         7055-268b/tplx;db85-f594/tilx;e7b8-f99f/~tNl;eff7-755e/sz, PASS,
-/simulations/nr/bgTraffic/,              -f omnetpp.ini -c CBR-DL_UL -r 0,                       5s,         7010-ee67/tplx;66af-8874/tilx;d0a3-4249/~tNl;1d42-cdcf/sz, PASS,
+/simulations/nr/bgTraffic/,              -f omnetpp.ini -c CBR-DL_UL -r 0,                       5s,         6dde-3de2/tplx;2e03-903a/tilx;8441-a820/~tNl;b64b-614a/sz, PASS,
 /simulations/nr/bgTraffic/,              -f omnetpp.ini -c CBR-UL -r 0,                          5s,         e6c9-2a2f/tplx;dc5c-d40d/tilx;ee9a-ecb4/~tNl;264d-9480/sz, PASS,
 /simulations/nr/mec/multiMecHost/,       -f omnetpp.ini -c MultiMec -r 0,                        20s,        9e35-f912/tplx;45c2-ab22/tilx;b9f0-1461/~tNl;0aa0-d1de/sz,  PASS,
 /simulations/nr/mec/multiOperator/,      -f omnetpp.ini -c MultiOperator_MultiMec -r 0,          20s,        1c75-4d40/tplx;8752-ac10/tilx;5e24-0224/~tNl;37d9-5f5c/sz,  PASS,
