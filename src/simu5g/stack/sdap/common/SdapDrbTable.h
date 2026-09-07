@@ -36,16 +36,8 @@ class SdapDrbTable
     // Reverse lookup: (nodeId, qfi) -> DrbDesc*  (UE uses NODEID_NONE as nodeId)
     std::map<std::pair<MacNodeId, Qfi>, const DrbDesc *> qfiToDrb_;
 
-    // Default DRB per nodeId (UE: NODEID_NONE key; gNB: per-UE keys)
-    std::map<MacNodeId, const DrbDesc *> defaultDrb_;
-
-    // UE shortcut: default DRB for NODEID_NONE (nullptr if not configured)
-    const DrbDesc *ueDefaultDrb_ = nullptr;
-
   public:
-    // Inserts or replaces the entry for drb.key and updates the QFI and default-DRB
-    // indexes accordingly. The entry arrives with isDefault already resolved (the
-    // authoring side assigns the default DRB).
+    // Inserts or replaces the entry for drb.key and updates the QFI index accordingly.
     void addOrUpdateDrb(const DrbDesc& drb);
 
     // Primary lookup by DrbKey
@@ -53,12 +45,6 @@ class SdapDrbTable
 
     // Reverse lookup: (nodeId, qfi) -> DrbDesc  (UE passes NODEID_NONE)
     const DrbDesc *getDrbForQfi(MacNodeId nodeId, Qfi qfi) const;
-
-    // Default DRB for a given nodeId (gNB: per-UE; UE: NODEID_NONE)
-    const DrbDesc *getDefaultDrb(MacNodeId nodeId) const;
-
-    // UE shortcut: default DRB (NODEID_NONE)
-    const DrbDesc *getDefaultDrb() const { return ueDefaultDrb_; }
 
     // Access full DRB map
     const std::map<DrbKey, DrbDesc>& getDrbMap() const { return drbMap_; }

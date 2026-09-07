@@ -30,19 +30,6 @@ void SdapDrbTable::addOrUpdateDrb(const DrbDesc& drb)
     // Reverse lookup: (nodeId, qfi) -> DrbDesc*
     for (Qfi qfi : ptr->mappedQfis)
         qfiToDrb_[{ueNodeId, qfi}] = ptr;
-
-    // Default DRB map
-    if (ptr->isDefault) {
-        defaultDrb_[ueNodeId] = ptr;
-        if (ueNodeId == NODEID_NONE)
-            ueDefaultDrb_ = ptr;
-    }
-    else if (defaultDrb_.count(ueNodeId) && defaultDrb_[ueNodeId] == ptr) {
-        // The replaced entry was the node's default and no longer is
-        defaultDrb_.erase(ueNodeId);
-        if (ueNodeId == NODEID_NONE)
-            ueDefaultDrb_ = nullptr;
-    }
 }
 
 const DrbDesc *SdapDrbTable::getDrb(DrbKey key) const
@@ -55,12 +42,6 @@ const DrbDesc *SdapDrbTable::getDrbForQfi(MacNodeId nodeId, Qfi qfi) const
 {
     auto it = qfiToDrb_.find({nodeId, qfi});
     return it != qfiToDrb_.end() ? it->second : nullptr;
-}
-
-const DrbDesc *SdapDrbTable::getDefaultDrb(MacNodeId nodeId) const
-{
-    auto it = defaultDrb_.find(nodeId);
-    return it != defaultDrb_.end() ? it->second : nullptr;
 }
 
 void SdapDrbTable::dump(std::ostream& os) const
