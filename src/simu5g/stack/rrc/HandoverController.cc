@@ -348,8 +348,16 @@ void HandoverController::triggerHandover()
     // Add UE handover trigger
     binder_->addUeHandoverTriggered(nodeId_);
 
+    // RRC's stack attachment ledger changes the instant the handover begins, ahead of
+    // its execution: packets steered from now on must already see the new attachment
+    // (see BearerManagement::pushServingNodeIds())
+    if (isNr_)
+        bearerManagement_->setNrServingNodeId(candidateServingNodeId_);
+    else
+        bearerManagement_->setServingNodeId(candidateServingNodeId_);
+
     // Inform the UE's HandoverPacketHolder module to start holding downstream packets
-    handoverPacketHolder_->triggerHandoverUe(candidateServingNodeId_, isNr_);
+    handoverPacketHolder_->triggerHandoverUe(candidateServingNodeId_);
 
     // Single-stack UE: no other leg reads the handoverTriggered record, so remove it right away.
     // (Dual-stack UEs keep it until doHandover(), so the other leg can see the handover in progress.)

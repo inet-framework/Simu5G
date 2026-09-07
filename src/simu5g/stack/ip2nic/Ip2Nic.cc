@@ -13,6 +13,7 @@
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/linklayer/common/InterfaceTag_m.h>
 #include "simu5g/stack/ip2nic/Ip2Nic.h"
+
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
@@ -51,7 +52,6 @@ void Ip2Nic::initialize(int stage)
             nodeId_ = MacNodeId(ue->par("macNodeId").intValue());
             if (ue->hasPar("nrMacNodeId"))
                 nrNodeId_ = MacNodeId(ue->par("nrMacNodeId").intValue());
-            handoverPacketHolder_ = getModuleFromPar<HandoverPacketHolderUe>(par("handoverPacketHolderModule"), this);
         }
 
         useNrCondition_ = getExpressionFromPar(par("useNrCondition"), new PolicyResolver(this));
@@ -123,6 +123,13 @@ void Ip2Nic::resumeUe(MacNodeId ueId)
     releasedUes_.erase(ueId);
 }
 
+void Ip2Nic::setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId)
+{
+    Enter_Method_Silent("setServingNodeIds");
+    lteServingNodeId_ = servingNodeId;
+    nrServingNodeId_ = nrServingNodeId;
+}
+
 void Ip2Nic::getStackAvailability(const Ipv4Address& destAddr, bool& hasLte, bool& hasNr)
 {
     if (nodeType_ == NODEB) {
@@ -133,18 +140,10 @@ void Ip2Nic::getStackAvailability(const Ipv4Address& destAddr, bool& hasLte, boo
         hasNr = (binder_->getServingNodeOrSelf(nrUeId) != NODEID_NONE);
     }
     else {
-        // KLUDGE: this UE's own attachment, read from the handover helper's latched serving
-        // node ids rather than from the Binder, which lags them within an event:
-        //
-        //    test_numerology, multicell_CBR_UL, ue[9], t=0.001909132428, event #475 (HandoverPacketHolder), #476 (Ip2Nic)
-        //    latched: servingNodeId=1, nrServingNodeId=2 --> both stacks attached
-        //    binder:  servingNodeId=1, nrServingNodeId=0 --> NR stack not attached
-        //
-        // The two disagree only during a handover, and the Binder's answer makes the UE
-        // abandon a stack that is in fact attached. This goes away once a bearer's legs
-        // are configured rather than derived per packet.
-        hasLte = (handoverPacketHolder_->getServingNodeId() != NODEID_NONE);
-        hasNr = (handoverPacketHolder_->getNrServingNodeId() != NODEID_NONE);
+        // this UE's own attachment, as RRC pushed it -- current as of handover start,
+        // ahead of the Binder (see BearerManagement::pushServingNodeIds())
+        hasLte = (lteServingNodeId_ != NODEID_NONE);
+        hasNr = (nrServingNodeId_ != NODEID_NONE);
     }
 }
 

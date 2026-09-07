@@ -28,7 +28,6 @@ simple Ip2Nic like INetworkLayer2CellularNic
         string nodeType;
         string binderModule = default("binder");
         string bearerConfiguratorModule = default("bearerConfigurator");
-        string handoverPacketHolderModule = default("^.handoverPacketHolder");
         object useNrCondition = default(expr(typeOfService >= 10));  // UE with both stacks attached, no dual connectivity: expr() over typeOfService, true = use the NR stack
         bool isNr = default(false);   // true for the NR leg (set by NrNicUe/NrNicEnb, or in the ini for a DC master eNB)
         bool hasSdap = default(false);  // when true, SDAP handles DRB/RLC assignment; Ip2Nic skips traffic classification

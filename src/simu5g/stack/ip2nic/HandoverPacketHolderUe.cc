@@ -13,7 +13,6 @@
 
 #include <inet/linklayer/common/InterfaceTag_m.h>
 #include <inet/common/socket/SocketTag_m.h>
-#include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
@@ -32,24 +31,16 @@ HandoverPacketHolderUe::~HandoverPacketHolderUe()
     }
 }
 
-void HandoverPacketHolderUe::initialize(int stage)
+void HandoverPacketHolderUe::initialize()
 {
-    if (stage == inet::INITSTAGE_LOCAL) {
-        stackGateOut_ = gate("stackOut");
-        binder_.reference(this, "binderModule", true);
+    stackGateOut_ = gate("stackOut");
+}
 
-        cModule *ue = getContainingNode(this);
-        nodeId_ = MacNodeId(ue->par("macNodeId").intValue());
-        if (ue->hasPar("nrMacNodeId"))
-            nrNodeId_ = MacNodeId(ue->par("nrMacNodeId").intValue());
-    }
-    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
-        // get serving node IDs -- note the this is STLL not late enough to pick up the result of dynamic cell association
-        if (nodeId_ != NODEID_NONE)
-            servingNodeId_ = binder_->getServingNode(nodeId_);
-        if (nrNodeId_ != NODEID_NONE)
-            nrServingNodeId_ = binder_->getServingNode(nrNodeId_);
-    }
+void HandoverPacketHolderUe::setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId)
+{
+    Enter_Method_Silent("setServingNodeIds");
+    servingNodeId_ = servingNodeId;
+    nrServingNodeId_ = nrServingNodeId;
 }
 
 void HandoverPacketHolderUe::handleMessage(cMessage *msg)
@@ -90,27 +81,19 @@ void HandoverPacketHolderUe::toStackUe(Packet *pkt)
     send(pkt, stackGateOut_);
 }
 
-void HandoverPacketHolderUe::triggerHandoverUe(MacNodeId newMasterId, bool isNr)
+void HandoverPacketHolderUe::triggerHandoverUe(MacNodeId newMasterId)
 {
     EV << NOW << " HandoverPacketHolder::triggerHandoverUe - start holding packets" << endl;
 
-    if (newMasterId != NODEID_NONE) {
+    if (newMasterId != NODEID_NONE)
         ueHold_ = true;
-        MacNodeId& servingNodeIdToSet = !isNr ? servingNodeId_ : nrServingNodeId_;
-        servingNodeIdToSet = newMasterId;
-    }
-    else {
-        MacNodeId& servingNodeIdToSet = !isNr ? servingNodeId_ : nrServingNodeId_;
-        servingNodeIdToSet = NODEID_NONE;
-    }
 }
 
 void HandoverPacketHolderUe::signalHandoverCompleteUe(bool isNr)
 {
     Enter_Method("signalHandoverCompleteUe");
 
-    MacNodeId servingNodeId = !isNr ? servingNodeId_ : nrServingNodeId_;
-    if (servingNodeId != NODEID_NONE) {
+    if ((isNr ? nrServingNodeId_ : servingNodeId_) != NODEID_NONE) {
         // send held packets
         while (!ueHoldFromIp_.empty()) {
             auto pkt = ueHoldFromIp_.front();

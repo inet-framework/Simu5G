@@ -16,6 +16,7 @@
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/ip2nic/Ip2Nic.h"
+#include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/rlc/RlcMux.h"
 #include "simu5g/stack/rlc/RlcRxEntityBase.h"
@@ -89,6 +90,46 @@ void BearerManagement::initialize(int stage)
 
         dualConnectivityEnabled_ = par("dualConnectivityEnabled");
     }
+    else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
+        // Seed the stack attachment ledger from the Binder and deliver it (UE only; see
+        // the servingNodeId_ member note). This is still too early to see the result
+        // of dynamic cell association.
+        if (registration_->getNodeType() == UE) {
+            if (registration_->getLteNodeId() != NODEID_NONE)
+                servingNodeId_ = binderModule->getServingNode(registration_->getLteNodeId());
+            if (registration_->getNrNodeId() != NODEID_NONE)
+                nrServingNodeId_ = binderModule->getServingNode(registration_->getNrNodeId());
+            handoverPacketHolderModule_ = inet::getModuleFromPar<HandoverPacketHolderUe>(par("handoverPacketHolderModule"), this);
+            pushServingNodeIds();
+        }
+    }
+}
+
+void BearerManagement::setServingNodeId(MacNodeId servingNodeId)
+{
+    Enter_Method_Silent("setServingNodeId");
+    ASSERT(registration_->getNodeType() == UE);
+    servingNodeId_ = servingNodeId;
+    pushServingNodeIds();
+}
+
+void BearerManagement::setNrServingNodeId(MacNodeId servingNodeId)
+{
+    Enter_Method_Silent("setNrServingNodeId");
+    ASSERT(registration_->getNodeType() == UE);
+    nrServingNodeId_ = servingNodeId;
+    pushServingNodeIds();
+}
+
+void BearerManagement::pushServingNodeIds()
+{
+    ASSERT(registration_->getNodeType() == UE);
+    if (ip2nicModule_ != nullptr)
+        ip2nicModule_->setServingNodeIds(servingNodeId_, nrServingNodeId_);
+    handoverPacketHolderModule_->setServingNodeIds(servingNodeId_, nrServingNodeId_);
+    for (auto& [id, module] : pdcpEntities_)
+        if (cModule *splitter = module->getSubmodule("splitter"))
+            check_and_cast<DcPdcpLegSplitter *>(splitter)->setServingNodeIds(servingNodeId_, nrServingNodeId_);
 }
 
 // Take delivery of one bearer's configuration from the core network's session management
@@ -724,6 +765,12 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, const FlowId& flow,
                         (int)num(id.getDrbId()));
             check_and_cast<DcPdcpLegSplitter *>(splitter)->setLegSelection(cfg->legSelection.c_str());
         }
+
+    // A UE's splitter steers by the stacks' attachment, which RRC pushes: here at
+    // creation, and on every handover event (see pushServingNodeIds())
+    if (!isEnb)
+        if (cModule *splitter = module->getSubmodule("splitter"))
+            check_and_cast<DcPdcpLegSplitter *>(splitter)->setServingNodeIds(servingNodeId_, nrServingNodeId_);
     setEntityDisplayPosition(module, true, rlcMux, num(id.getDrbId()));
     module->scheduleStart(simTime());
     module->callInitialize();

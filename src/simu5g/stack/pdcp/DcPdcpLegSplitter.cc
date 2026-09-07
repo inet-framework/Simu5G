@@ -42,12 +42,16 @@ void DcPdcpLegSplitter::initialize(int stage)
         if (node->hasPar("nrMacNodeId"))
             nrNodeId_ = MacNodeId(node->par("nrMacNodeId").intValue());
         isUe_ = (getNodeTypeById(nodeId_) == UE);
-        if (isUe_)
-            handoverPacketHolder_ = inet::getModuleFromPar<HandoverPacketHolderUe>(par("handoverPacketHolderModule"), this);
-
         if (legSelection_ == nullptr)   // unless a bearer definition already pushed one (setLegSelection())
             legSelection_ = getExpressionFromPar(par("legSelection"), new PolicyResolver(this));
     }
+}
+
+void DcPdcpLegSplitter::setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId)
+{
+    Enter_Method_Silent("setServingNodeIds");
+    servingNodeId_ = servingNodeId;
+    nrServingNodeId_ = nrServingNodeId;
 }
 
 void DcPdcpLegSplitter::setLegSelection(const char *spec)
@@ -71,8 +75,8 @@ void DcPdcpLegSplitter::setLegSelection(const char *spec)
 
 bool DcPdcpLegSplitter::isLegLive(int leg, const FlowControlInfo *lteInfo)
 {
-    if (leg >= numLegs_ || !gate("out", leg)->isConnected())
-        return false;   // RRC tore this leg down
+    if (leg >= numLegs_)
+        return false;   // not a leg of this bearer
 
     // Which technology serves this leg: leg 0 is the anchor stack, whose technology the
     // flow's own (anchor) ids reveal; leg 1 is the other one.
@@ -80,15 +84,13 @@ bool DcPdcpLegSplitter::isLegLive(int leg, const FlowControlInfo *lteInfo)
     bool legNr = (leg == 0) ? anchorNr : !anchorNr;
 
     if (isUe_) {
-        // this UE's own attachment, read from the handover helper's latched serving node
-        // ids rather than from the Binder, which lags them within an event (see the KLUDGE
-        // comment in Ip2Nic::getStackAvailability())
-        MacNodeId servingNode = legNr ? handoverPacketHolder_->getNrServingNodeId()
-                                      : handoverPacketHolder_->getServingNodeId();
-        return servingNode != NODEID_NONE;
+        // this UE's own attachment on the leg's stack, as RRC pushed it -- current as of
+        // handover start, ahead of the Binder (see BearerManagement::pushServingNodeIds())
+        return (legNr ? nrServingNodeId_ : servingNodeId_) != NODEID_NONE;
     }
 
-    // a base station: the UE's attachment on the stack this leg serves
+    // a base station: the UE's attachment on the stack this leg serves. The network
+    // learns of a UE's handover by signaling, so the Binder is the authority here.
     MacNodeId peerId = binder_->getUeNodeId(lteInfo->getDestId(), legNr);
     return peerId != NODEID_NONE && binder_->getServingNodeOrSelf(peerId) != NODEID_NONE;
 }

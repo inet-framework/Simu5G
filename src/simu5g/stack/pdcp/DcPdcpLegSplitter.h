@@ -16,9 +16,9 @@
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/binder/Binder.h"
-#include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"
 
 namespace simu5g {
+
 
 /**
  * @brief TX-side leg dispatcher for a dual-connectivity split bearer.
@@ -50,8 +50,10 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
     MacNodeId nodeId_ = NODEID_NONE;     // this node's (LTE/base) id
     MacNodeId nrNodeId_ = NODEID_NONE;   // this UE's NR-leg id (UEs only)
 
-    // UEs only: the latched serving node ids this module reads (see isLegLive())
-    omnetpp::opp_component_ptr<HandoverPacketHolderUe> handoverPacketHolder_;
+    // UEs only: mirror of RRC's stack attachment ledger, pushed at creation and on
+    // every handover event (see setServingNodeIds()); NODEID_NONE = not attached
+    MacNodeId servingNodeId_ = NODEID_NONE;     // the LTE stack's serving node
+    MacNodeId nrServingNodeId_ = NODEID_NONE;   // the NR stack's serving node
 
     omnetpp::cDynamicExpression *legSelection_ = nullptr;
 
@@ -77,6 +79,11 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
     // the same source form the legSelection parameter takes -- an expression written as
     // "expr(...)" -- which it overrides. Compiled here, so errors throw at establishment.
     virtual void setLegSelection(const char *spec);
+
+    // RRC's push of the stacks' attachment (see BearerManagement::pushServingNodeIds()):
+    // the serving node of the UE's LTE and NR stack, current as of handover start.
+    // UEs only; a base station's splitter steers by the Binder.
+    virtual void setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId);
 
     ~DcPdcpLegSplitter() override;
 };

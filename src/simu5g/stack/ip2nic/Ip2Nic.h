@@ -21,9 +21,9 @@
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/corenetwork/bearerConfigurator/BearerConfigurator.h"
-#include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"
 
 namespace simu5g {
+
 
 using namespace omnetpp;
 
@@ -127,9 +127,10 @@ class Ip2Nic : public cSimpleModule
     cGate *stackGateOut_ = nullptr;       // gate connecting Ip2Nic module to cellular stack
     cGate *ipGateOut_ = nullptr;          // gate connecting Ip2Nic module to network layer
 
-    // UE only: the serving node ids this module reads are the ones the handover helper
-    // latched, not the Binder's (see getStackAvailability())
-    opp_component_ptr<HandoverPacketHolderUe> handoverPacketHolder_;
+    // UE only: mirror of RRC's stack attachment ledger, pushed on every handover event
+    // (see setServingNodeIds() and getStackAvailability()); NODEID_NONE = not attached
+    MacNodeId lteServingNodeId_ = NODEID_NONE;  // the LTE stack's serving node
+    MacNodeId nrServingNodeId_ = NODEID_NONE;   // the NR stack's serving node
 
     // corresponding entry for our interface
     opp_component_ptr<inet::NetworkInterface> networkIf;
@@ -180,6 +181,10 @@ class Ip2Nic : public cSimpleModule
 
     // Stop dropping the peer's packets (RRC re-establishment complete); traffic resumes.
     virtual void resumeUe(MacNodeId ueId);
+
+    // RRC's push of the stacks' attachment (see BearerManagement::pushServingNodeIds()):
+    // the serving node of this UE's LTE and NR stack, current as of handover start. UE only.
+    virtual void setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId);
 
     ~Ip2Nic() override;
 };

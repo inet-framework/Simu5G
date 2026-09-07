@@ -60,6 +60,7 @@ simple BearerManagement like IBearerManagement
         string registrationModule = default("^.registration");
         string drbTableModule = default("^.drbTable");
         string ip2nicModule = default("^.^.ip2nic");
+        string handoverPacketHolderModule = default("^.^.handoverPacketHolder");   // attachment-ledger push target (UE only)
         string pdcpMuxModule = default("^.^.pdcpMux");
         string pdcpDcMuxModule = default("^.^.pdcpDcMux");
         string d2dModeControllerModule = default("^.d2dModeController");

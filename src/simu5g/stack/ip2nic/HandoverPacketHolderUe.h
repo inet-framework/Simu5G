@@ -12,13 +12,14 @@
 #ifndef __HANDOVERPACKETHOLDERUE_H_
 #define __HANDOVERPACKETHOLDERUE_H_
 
-#include <inet/common/ModuleRefByPar.h>
+#include <omnetpp.h>
+#include <inet/common/packet/Packet.h>
 #include "simu5g/common/LteCommon.h"
-#include "simu5g/common/binder/Binder.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
+
 
 /**
  *
@@ -27,18 +28,10 @@ class HandoverPacketHolderUe : public cSimpleModule
 {
   protected:
 
-    // reference to the binder
-    inet::ModuleRefByPar<Binder> binder_;
-
-    // LTE MAC node id of this node
-    MacNodeId nodeId_ = NODEID_NONE;
-    // NR MAC node id of this node (if enabled)
-    MacNodeId nrNodeId_ = NODEID_NONE;
-
-    // LTE MAC node id of this node's master
-    MacNodeId servingNodeId_ = NODEID_NONE;
-    // NR MAC node id of this node's master (if enabled)
-    MacNodeId nrServingNodeId_ = NODEID_NONE;
+    // mirror of RRC's stack attachment ledger, pushed on every handover event (see
+    // setServingNodeIds()); NODEID_NONE = not attached
+    MacNodeId servingNodeId_ = NODEID_NONE;     // the LTE stack's serving node
+    MacNodeId nrServingNodeId_ = NODEID_NONE;   // the NR stack's serving node
 
     bool ueHold_ = false;
     typedef std::list<inet::Packet *> IpDatagramQueue;
@@ -47,8 +40,7 @@ class HandoverPacketHolderUe : public cSimpleModule
     cGate *stackGateOut_ = nullptr;
 
   protected:
-    void initialize(int stage) override;
-    int numInitStages() const override { return inet::NUM_INIT_STAGES; }
+    void initialize() override;
     void handleMessage(cMessage *msg) override;
 
     virtual void fromIpUe(inet::Packet *datagram);
@@ -56,12 +48,12 @@ class HandoverPacketHolderUe : public cSimpleModule
 
   public:
     ~HandoverPacketHolderUe() override;
-    virtual void triggerHandoverUe(MacNodeId newMasterId, bool isNr = false);
+    virtual void triggerHandoverUe(MacNodeId newMasterId);
     virtual void signalHandoverCompleteUe(bool isNr = false);
 
-    MacNodeId getServingNodeId() const { return servingNodeId_; }
-    MacNodeId getNrServingNodeId() const { return nrServingNodeId_; }
-
+    // RRC's push of the stacks' attachment (see BearerManagement::pushServingNodeIds()):
+    // the serving node of this UE's LTE and NR stack, current as of handover start.
+    virtual void setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId);
 };
 
 } //namespace

@@ -13,13 +13,13 @@ package simu5g.stack.ip2nic;
 //
 // Manages uplink packet buffering during handover at the user equipment.
 // Temporarily holds packets from the network layer when handover is in progress.
-// Tracks the current serving base station identifier to determine connectivity status.
+// Whether the UE is attached at all is read from a mirror of RRC's stack attachment
+// ledger, which RRC pushes on every handover event (see BearerManagement).
 // Releases buffered packets to the protocol stack once handover completes successfully.
 //
 simple HandoverPacketHolderUe like IHandoverPacketHolder
 {
     parameters:
-        string binderModule = default("binder");
         @display("i=block/layer");
     gates:
         input upperLayerIn;

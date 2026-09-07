@@ -37,6 +37,7 @@ class Binder;
 class BearerConfigurator;
 class NrSdap;
 class Ip2Nic;
+class HandoverPacketHolderUe;
 
 /**
  * @brief RRC Bearer Management — creates and tears down PDCP, RLC and MAC
@@ -114,6 +115,27 @@ class BearerManagement : public cSimpleModule
     // findOrCreatePdcpEntity)
     bool dualConnectivityEnabled_ = false;
 
+    /*
+     * The serving node of each of this UE's stacks, as RRC knows
+     * it: updated the instant a handover, attachment or detachment BEGINS (see
+     * HandoverController::triggerHandover()), which is ahead of the Binder -- that
+     * learns only when the handover executes. Within that window this is the answer
+     * that matches what the stack is actually doing; the Binder's stale one would make
+     * the UE abandon a stack that is attached, or about to be. Seeded from the Binder
+     * at initialization, which is still too early to see the result of dynamic cell
+     * association. UE only: a base station learns of its UEs' handovers by signaling
+     * and has no earlier local knowledge (its bearer legs consult the Binder).
+     *
+     * Delivery is push only: every change is fanned out to the modules that steer by
+     * it (see pushServingNodeIds()), which keep mirrors and never call back into
+     * RRC on the data path.
+     */
+    MacNodeId servingNodeId_ = NODEID_NONE;     // the LTE stack's serving node
+    MacNodeId nrServingNodeId_ = NODEID_NONE;   // the NR stack's serving node
+
+    // push target of the attachment ledger (UE only; see pushServingNodeIds())
+    HandoverPacketHolderUe *handoverPacketHolderModule_ = nullptr;
+
     // The configuration entry for the bearer of an infrastructure unicast flow, as
     // delivered by configureDrb(), or nullptr. peerId is the flow's remote end; on the
     // UE side entries are keyed by NODEID_NONE instead.
@@ -170,6 +192,17 @@ class BearerManagement : public cSimpleModule
     // Take delivery of one bearer's configuration from the core network's session
     // management (see BearerConfigurator::configureDrbs()). RRC never fetches this itself.
     virtual void configureDrb(const DrbDesc& drb);
+    // Record that one of this UE's stacks is changing its serving node -- called by the
+    // handover controller the instant a handover, attachment or detachment begins,
+    // ahead of its execution. NODEID_NONE = the stack is detaching. Each updates the
+    // ledger and pushes it to every consumer (see servingNodeId_). UE only.
+    virtual void setServingNodeId(MacNodeId servingNodeId);
+    virtual void setNrServingNodeId(MacNodeId servingNodeId);
+    // Deliver the attachment ledger to everything that steers by it -- ~Ip2Nic, the
+    // ~HandoverPacketHolderUe, and each bearer's leg splitter. Consumers keep pushed
+    // mirrors; nothing pulls. A splitter created later gets its initial push at
+    // creation (see findOrCreatePdcpEntity()).
+    virtual void pushServingNodeIds();
     // Schedule an RLC-detected radio link failure teardown for a peer node, deferred
     // to a safe execution context. nrStack selects the failing leg (LTE vs NR).
     virtual void scheduleRadioLinkFailure(MacNodeId nodeId, bool nrStack);
