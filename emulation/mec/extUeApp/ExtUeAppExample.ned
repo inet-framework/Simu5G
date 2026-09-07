@@ -31,6 +31,24 @@ import simu5g.world.radio.LteChannelControl;
 network ExtUeAppExample
 {
     parameters:
+        // radio endpoint recast E5, §3(d): a single match-anything entry
+        // would give the UE's vestigial LTE leg (LteNicBase's own default,
+        // Tr36814) the same Tr38901 study as the real NR leg -- and the
+        // ASSERT-equality bridge (RadioMedium::addRadio()) makes that
+        // mismatch a startup error for every registering radio, including
+        // the vestigial one, not merely a fingerprint difference to
+        // discover later. Taking the plan's pre-authorized escape path
+        // (§3(d) decision point) unconditionally rather than only if the
+        // suite showed movement, since the bridge shows it immediately.
+        // carrierLeg[0] is the real, traffic-carrying NR leg (what ini
+        // Configs override to switch study); carrierLeg[1] is the
+        // vestigial LTE leg, always Tr36814 like the endpoint's own
+        // untouched default, never traffic-carrying, never overridden in
+        // this tree.
+        radioMedium.numCarrierLegs = default(2);
+        radioMedium.carrierLeg[0].leg = default("NR");
+        radioMedium.carrierLeg[0].pathLoss.typename = default("Tr38901PathLoss");
+        radioMedium.carrierLeg[1].leg = default("LTE");
 
         double playgroundSizeX @unit(m); // x size of the area the nodes are in (in meters)
         double playgroundSizeY @unit(m); // y size of the area the nodes are in (in meters)
