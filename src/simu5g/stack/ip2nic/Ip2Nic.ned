@@ -16,11 +16,11 @@ package simu5g.stack.ip2nic;
 // Extracts flow information from IP headers and attaches it as control tags for the stack.
 // In base stations, determines the destination user equipment from IP addresses.
 //
-// A packet whose UE is attached with neither of its stacks is dropped here. When the UE is
-// attached with both, the useNrCondition parameter decides which of them carries the flow --
-// but only outside dual connectivity, where the two stacks are separate paths. Under dual
-// connectivity they are the legs of one bearer, and the choice is made per PDU, further down,
-// by the bearer's leg splitter (see ~DcPdcpLegSplitter).
+// A packet whose UE is attached with neither of its stacks is dropped here. Which stack
+// carries a flow follows from the UE's attachment: outside dual connectivity a UE is
+// attached with at most one stack, and under dual connectivity the two stacks are the
+// legs of one bearer, so the choice is made per PDU, further down, by the bearer's leg
+// splitter (see ~DcPdcpLegSplitter).
 //
 simple Ip2Nic like INetworkLayer2CellularNic
 {
@@ -28,7 +28,6 @@ simple Ip2Nic like INetworkLayer2CellularNic
         string nodeType;
         string binderModule = default("binder");
         string bearerConfiguratorModule = default("bearerConfigurator");
-        object useNrCondition = default(expr(typeOfService >= 10));  // UE with both stacks attached, no dual connectivity: expr() over typeOfService, true = use the NR stack
         bool isNr = default(false);   // true for the NR leg (set by NrNicUe/NrNicEnb, or in the ini for a DC master eNB)
         bool hasSdap = default(false);  // when true, SDAP handles DRB/RLC assignment; Ip2Nic skips traffic classification
         bool establishBearersOnDemand = default(true);  // when false, a packet that finds no established bearer raises an error instead of establishing one (static bearers are established up front; see the staticDrbs parameter of ~BearerConfigurator)

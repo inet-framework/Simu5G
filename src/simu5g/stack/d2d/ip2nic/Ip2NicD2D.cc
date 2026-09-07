@@ -29,18 +29,17 @@ void Ip2NicD2D::initialize(int stage)
         d2dBinder_ = D2dBinder::getInstance(this);
 }
 
-MacNodeId Ip2NicD2D::getNextHopNodeId(const Ipv4Address& destAddr, bool useNR, MacNodeId sourceId)
+MacNodeId Ip2NicD2D::getNextHopNodeId(const Ipv4Address& destAddr, MacNodeId sourceId)
 {
     if (nodeType_ == NODEB)
-        return Ip2Nic::getNextHopNodeId(destAddr, useNR, sourceId);  // eNB next-hop is D2D-agnostic
+        return Ip2Nic::getNextHopNodeId(destAddr, sourceId);  // eNB next-hop is D2D-agnostic
 
     // D2D-capable UE: check if direct D2D communication is possible
     MacNodeId destId = binder_->getMacNodeId(destAddr);
-    MacNodeId srcId = isNr_ ? (useNR ? nrNodeId_ : nodeId_) : nodeId_;
 
     // check whether the destination is inside the LTE network and D2D is active
     if (destId == NODEID_NONE ||
-        !(d2dBinder_->getD2DCapability(srcId, destId) && d2dBinder_->getD2DMode(srcId, destId) == DM)) {
+        !(d2dBinder_->getD2DCapability(sourceId, destId) && d2dBinder_->getD2DMode(sourceId, destId) == DM)) {
         // packet is destined to the eNB; UE is subject to handovers: master may change
         return binder_->getServingNodeOrSelf(sourceId);
     }

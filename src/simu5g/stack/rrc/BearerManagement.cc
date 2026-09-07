@@ -124,6 +124,9 @@ void BearerManagement::setNrServingNodeId(MacNodeId servingNodeId)
 void BearerManagement::pushServingNodeIds()
 {
     ASSERT(registration_->getNodeType() == UE);
+    if (servingNodeId_ != NODEID_NONE && nrServingNodeId_ != NODEID_NONE && !dualConnectivityEnabled_)
+        throw cRuntimeError("This UE is attached with both its LTE and its NR stack, but dual "
+                "connectivity is off -- dual attachment outside dual connectivity is not supported");
     if (ip2nicModule_ != nullptr)
         ip2nicModule_->setServingNodeIds(servingNodeId_, nrServingNodeId_);
     handoverPacketHolderModule_->setServingNodeIds(servingNodeId_, nrServingNodeId_);

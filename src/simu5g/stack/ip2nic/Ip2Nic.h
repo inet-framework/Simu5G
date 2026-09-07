@@ -36,15 +36,6 @@ class HandoverX2Forwarder;
 class Ip2Nic : public cSimpleModule
 {
   protected:
-    // Variable bindings for the useNrCondition expression
-    class PolicyResolver : public cDynamicExpression::IResolver {
-        Ip2Nic *module_;
-      public:
-        PolicyResolver(Ip2Nic *module) : module_(module) {}
-        IResolver *dup() const override { return new PolicyResolver(module_); }
-        cValue readVariable(cExpression::Context *context, const char *name) override;
-    };
-
     RanNodeType nodeType_;      // UE or NODEB
 
     // reference to the binder
@@ -74,23 +65,22 @@ class Ip2Nic : public cSimpleModule
     bool hasSdap_ = false;
     bool establishBearersOnDemand_ = true;
 
-    // Which stack of a dual-stack UE carries a flow, when both are attached and the two
-    // are not joined into a dual-connectivity bearer (where the choice is per PDU and
-    // belongs to the bearer's leg splitter instead). Evaluated per packet.
-    cDynamicExpression *useNrCondition_ = nullptr;
-    int currentTypeOfService_ = 0;      // evaluation context of the expression
-
     // Whether the UE this packet travels to/from is attached with its LTE stack, its NR
-    // stack, both, or neither -- a packet whose UE is attached with neither is dropped.
+    // stack, both (dual connectivity only), or neither -- a packet whose UE is attached
+    // with neither is dropped.
     virtual void getStackAvailability(const inet::Ipv4Address& destAddr, bool& hasLte, bool& hasNr);
-    virtual bool selectNrStack(const inet::Ipv4Address& destAddr, uint16_t typeOfService, bool hasLte, bool hasNr);
+
+    // UE only: the id this UE's outgoing flows carry as their source -- the anchor
+    // stack's id under dual connectivity (which leg carries a PDU is the bearer
+    // splitter's per-PDU choice), otherwise the id of the stack the UE is attached with.
+    virtual MacNodeId ueSourceNodeId();
 
     // Fills in an outgoing packet's FlowControlInfo: the flow's endpoints, its direction
     // and, for D2D, its peers. Identity only -- which bearer carries the flow is the
     // separate question assignBearer() answers, because answering it can establish one.
     // Core handles the plain UL/DL path (LTE) and the NR (non-D2D) path; the D2D-aware
     // overrides live in Ip2NicD2D.
-    virtual void attachFlowControlInfo(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService, bool useNR);
+    virtual void attachFlowControlInfo(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
 
     // Records in the packet's FlowControlInfo which DRB carries its flow, establishing a
     // bearer for it if none does yet -- so calling this can create entities at both
@@ -100,7 +90,7 @@ class Ip2Nic : public cSimpleModule
 
     // Fills in the flow's endpoint ids: this node on the near side, and on the far side
     // the next hop towards the destination (the multicast group's sender, for multicast).
-    virtual void assignEndpointIds(FlowControlInfo *lteInfo, const inet::Ipv4Address& destAddr, bool useNR, bool isEnb);
+    virtual void assignEndpointIds(FlowControlInfo *lteInfo, const inet::Ipv4Address& destAddr, bool isEnb);
 
     // Establishes a bearer for a flow that has none, and returns the DRB id it got. This
     // is the data plane asking RRC for a bearer, so it is the packet path's one
@@ -156,7 +146,7 @@ class Ip2Nic : public cSimpleModule
     /// a direction-agnostic key; the NR and D2D stacks key by the actual flow
     /// direction.
     virtual Direction bindingDirection(FlowControlInfo *lteInfo) { return isNr_ ? (Direction)lteInfo->getDirection() : Direction(0xFFFF); }
-    virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, bool useNR, MacNodeId sourceId);
+    virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, MacNodeId sourceId);
 
   public:
     // Configuration push: RRC binds a flow to the bearer carrying it, at both endpoints
@@ -185,8 +175,6 @@ class Ip2Nic : public cSimpleModule
     // RRC's push of the stacks' attachment (see BearerManagement::pushServingNodeIds()):
     // the serving node of this UE's LTE and NR stack, current as of handover start. UE only.
     virtual void setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId);
-
-    ~Ip2Nic() override;
 };
 
 } //namespace
