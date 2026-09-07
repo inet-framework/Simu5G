@@ -19,6 +19,7 @@
 
 #include "simu5g/background/trafficGenerator/generators/TrafficGeneratorBase.h"
 #include "simu5g/common/binder/Binder.h"
+#include "simu5g/common/carrierAggregation/ComponentCarrier.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
 #include "simu5g/stack/d2d/phy/channelmodel/D2dChannelModel.h"
 #include "simu5g/stack/mac/amc/UserTxParams.h"
@@ -45,6 +46,8 @@ CarrierLeg legFor(StochasticChannelModel *endpoint)
 
 RadioMedium::~RadioMedium()
 {
+    // E5b: the strategies are still heap-owned here (createPathLossModel);
+    // E5c hands ownership to the module tree and drops this destructor
     for (auto& [leg, model] : pathLoss_)
         delete model;
     for (auto& [leg, model] : extCellPathLoss_)
@@ -104,6 +107,51 @@ void RadioMedium::handleMessage(cMessage *msg)
     throw cRuntimeError("unexpected message '%s': RadioMedium has no gates and schedules no self-messages", msg->getName());
 }
 
+bool RadioMedium::carrierLegMatches(cModule *legModule, GHz carrierFrequency, bool isNr) const
+{
+    std::string legStr = legModule->par("leg").stringValue();
+    if (legStr != "any" && legStr != (isNr ? "NR" : "LTE"))
+        return false;
+
+    std::string ccPath = legModule->par("componentCarrierModule").stringValue();
+    if (ccPath.empty())
+        return true;   // "" -- matches any carrier frequency
+
+    auto *cc = check_and_cast<ComponentCarrier *>(legModule->getModuleByPath(ccPath.c_str()));
+    return cc->getCarrierFrequency() == carrierFrequency;
+}
+
+cModule *RadioMedium::matchCarrierLeg(StochasticChannelModel *endpoint) const
+{
+    GHz freq = endpoint->getCarrierFrequency();
+    bool isNr = endpoint->isNr();
+
+    cModule *match = nullptr;
+    int numLegs = getSubmoduleVectorSize("carrierLeg");
+    for (int i = 0; i < numLegs; i++) {
+        cModule *legModule = getSubmodule("carrierLeg", i);
+        if (carrierLegMatches(legModule, freq, isNr)) {
+            if (match != nullptr)
+                throw cRuntimeError("ambiguous carrierLeg match for leg %gGHz/%s: both '%s' and '%s' match",
+                        freq.get(), isNr ? "NR" : "LTE", match->getFullPath().c_str(), legModule->getFullPath().c_str());
+            match = legModule;
+        }
+    }
+    if (match == nullptr)
+        throw cRuntimeError("no carrierLeg entry configures leg %gGHz/%s", freq.get(), isNr ? "NR" : "LTE");
+    return match;
+}
+
+std::string RadioMedium::pathLossStudyOf(cModule *pathLossModule) const
+{
+    std::string typeName = pathLossModule->getComponentType()->getName();
+    static const std::string suffix = "PathLoss";
+    if (typeName.size() <= suffix.size() || typeName.compare(typeName.size() - suffix.size(), suffix.size(), suffix) != 0)
+        throw cRuntimeError("carrierLeg pathLoss submodule '%s' has unrecognized NED type '%s'",
+                pathLossModule->getFullPath().c_str(), typeName.c_str());
+    return typeName.substr(0, typeName.size() - suffix.size());
+}
+
 void RadioMedium::addRadio(StochasticChannelModel *endpoint)
 {
     ASSERT(endpoint != nullptr);
@@ -129,15 +177,17 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
     // LTE leg with the gNB it shares a default component carrier with, and a
     // dual-connectivity master eNB with its secondary gNB)
     CarrierLeg leg = legFor(endpoint);
-    CarrierPhysics candidate = readCarrierPhysics(endpoint);
-    checkEndpointAgreesWithMedium(endpoint, descriptor.d2dEndpoint);
+    cModule *legModule = matchCarrierLeg(endpoint);
+    CarrierPhysics candidate = readCarrierPhysics(endpoint, legModule);
+    checkEndpointAgreesWithMedium(endpoint, descriptor.d2dEndpoint, legModule, candidate);
     auto cpIt = carrierPhysics_.find(leg);
     if (cpIt == carrierPhysics_.end()) {
         candidate.establishedByPath = endpoint->getFullPath();
         carrierPhysics_[leg] = candidate;
 
-        // this leg's path-loss strategy, built from the record just
-        // established -- never from this radio's own members
+        // this leg's path-loss strategy, still built from the record just
+        // established (E5b keeps createPathLossModel; E5c makes it resolve
+        // legModule's own "pathLoss" submodule instead)
         pathLoss_[leg] = createPathLossModel(candidate);
 
         // this leg's ext-cell/background-cell strategy, shared by every
@@ -196,17 +246,24 @@ void RadioMedium::removeBackgroundRadio(const BgUeKey& key)
         reindex(radios_[idx]);
 }
 
-CarrierPhysics RadioMedium::readCarrierPhysics(StochasticChannelModel *endpoint) const
+CarrierPhysics RadioMedium::readCarrierPhysics(StochasticChannelModel *endpoint, cModule *legModule) const
 {
     CarrierPhysics cp;
-    // still per-leg, read off the endpoint's own NED type (later steps of the
-    // radio endpoint recast move these too)
-    cp.pathLossType = endpoint->par("pathLossType").stringValue();
-    cp.scenario = endpoint->par("scenario").stringValue();
-    cp.buildingHeight = endpoint->par("buildingHeight");
-    cp.streetWidth = endpoint->par("streetWidth");
-    cp.tolerateMaxDistViolation = endpoint->par("tolerateMaxDistViolation");
-    cp.useBuildingPenetrationHighLossModel = endpoint->par("useBuildingPenetrationHighLossModel");
+    // leg-sourced (E5): legModule's own NED parameters -- the carrierLeg[]
+    // submodule matchCarrierLeg() matched endpoint to -- not the endpoint's
+    // any more. Every radio matched to the same leg necessarily agrees,
+    // since they all read the same submodule.
+    cModule *pathLossModule = legModule->getSubmodule("pathLoss");
+    cp.pathLossType = pathLossStudyOf(pathLossModule);
+    cp.scenario = legModule->par("scenario").stringValue();
+    cp.buildingHeight = legModule->par("buildingHeight");
+    cp.streetWidth = legModule->par("streetWidth");
+    cp.tolerateMaxDistViolation = legModule->par("tolerateMaxDistViolation");
+    // useBuildingPenetrationHighLossModel exists only on a Tr38901PathLoss
+    // submodule -- reading it off any other concrete type would throw
+    // "no such parameter"
+    cp.useBuildingPenetrationHighLossModel = (cp.pathLossType == "Tr38901")
+            && (bool)pathLossModule->par("useBuildingPenetrationHighLossModel");
     // the environment, stated once for the whole network: read off this
     // medium's own NED parameters, not the registering endpoint's (E3)
     cp.shadowing = par("shadowing");
@@ -244,7 +301,8 @@ void checkBridgeField(const char *name, const T& mediumValue, const T& endpointV
 
 } // namespace
 
-void RadioMedium::checkEndpointAgreesWithMedium(StochasticChannelModel *endpoint, D2dChannelModel *d2dEndpoint) const
+void RadioMedium::checkEndpointAgreesWithMedium(StochasticChannelModel *endpoint, D2dChannelModel *d2dEndpoint,
+        cModule *legModule, const CarrierPhysics& candidate) const
 {
     const std::string mediumPath = getFullPath();
     const std::string endpointPath = endpoint->getFullPath();
@@ -274,6 +332,21 @@ void RadioMedium::checkEndpointAgreesWithMedium(StochasticChannelModel *endpoint
 
     if (d2dEndpoint != nullptr)
         checkBridgeField<bool>("d2dInterference", par("d2dInterference"), d2dEndpoint->par("d2dInterference"), mediumPath, endpointPath);
+
+    // E5: the 6 study/geometry fields, now leg-sourced -- compared against
+    // the endpoint's own still-declared copy (removal is E6). candidate was
+    // already read off legModule by readCarrierPhysics(), so this reuses it
+    // rather than re-reading legModule's parameters a second time.
+    const std::string legPath = legModule->getFullPath();
+
+    checkBridgeField<std::string>("pathLossType", candidate.pathLossType, endpoint->par("pathLossType").stringValue(), legPath, endpointPath);
+    checkBridgeField<std::string>("scenario", candidate.scenario, endpoint->par("scenario").stringValue(), legPath, endpointPath);
+    checkBridgeField<double>("buildingHeight", candidate.buildingHeight, (double)endpoint->par("buildingHeight"), legPath, endpointPath);
+    checkBridgeField<double>("streetWidth", candidate.streetWidth, (double)endpoint->par("streetWidth"), legPath, endpointPath);
+    checkBridgeField<bool>("tolerateMaxDistViolation", candidate.tolerateMaxDistViolation, (bool)endpoint->par("tolerateMaxDistViolation"), legPath, endpointPath);
+    if (candidate.pathLossType == "Tr38901")
+        checkBridgeField<bool>("useBuildingPenetrationHighLossModel", candidate.useBuildingPenetrationHighLossModel,
+                (bool)endpoint->par("useBuildingPenetrationHighLossModel"), legPath, endpointPath);
 }
 
 namespace {
@@ -509,6 +582,10 @@ const CarrierPhysics& RadioMedium::carrierPhysicsFor(const CarrierLeg& leg) cons
 
 PathLossModel *RadioMedium::createPathLossModel(const CarrierPhysics& cp)
 {
+    // E5b: cp.pathLossType is now derived from legModule's own "pathLoss"
+    // submodule type (readCarrierPhysics()) and bridged against the
+    // endpoint's still-declared par, but the strategy is still heap-built by
+    // name-string dispatch. E5c makes this resolve the submodule directly.
     PathLossModel *model;
     if (cp.pathLossType == "Tr36814")
         model = new Tr36814PathLossModel();
