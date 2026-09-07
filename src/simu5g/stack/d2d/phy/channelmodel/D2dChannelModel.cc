@@ -36,7 +36,7 @@ std::vector<double> D2dChannelModel::getRSRP_D2D(LteAirFrame *frame, UserControl
     EV << "------------ GET RSRP D2D----------------" << endl;
 
     // D2D is like DL for the receivers, so the UE-side fading/shadowing maps apply.
-    RadioLink link = medium_->d2dLink(this, lteInfo_1->getSourceId(), lteInfo_1->getCoord(), destId, destCoord, true);
+    RadioLink link = medium_->d2dLink(this, lteInfo_1->getSourceId(), lteInfo_1->getCoord(), destId, destCoord);
 
     // Note the D2D-specific transmit power: a D2D transmission does not use the
     // power the UE would use towards the base station.
@@ -57,7 +57,7 @@ std::vector<double> D2dChannelModel::getSINR_D2D(LteAirFrame *frame, UserControl
 
     // The desired signal is already known; the medium's computeInterferencePlusNoise
     // asks its D2D branch for the D2D denominator.
-    RadioLink link = medium_->d2dLink(this, lteInfo_1->getSourceId(), lteInfo_1->getCoord(), destId, destCoord, true);
+    RadioLink link = medium_->d2dLink(this, lteInfo_1->getSourceId(), lteInfo_1->getCoord(), destId, destCoord);
     link.cellId = enbId;
 
     // The caller is expected to supply one RSRP value per band. The one-to-many

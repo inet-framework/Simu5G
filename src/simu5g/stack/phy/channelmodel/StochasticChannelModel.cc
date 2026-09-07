@@ -113,7 +113,7 @@ void StochasticChannelModel::initialize(int stage)
     }
 }
 
-RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Coord coord, bool cqiDl)
+RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Coord coord)
 {
     // The local module is one endpoint and 'coord' the other; 'dir' says which
     // of the two is the UE. The UE is the node whose channel state we track.
@@ -123,7 +123,6 @@ RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Co
     // node-keyed behavior exactly, since a UE has one such link per instance.
     link.stateKey = LinkKey(ueId);
     link.stateNodeId = ueId;
-    link.useUeSideMaps = cqiDl;
 
     if (dir == DL) { // the local module is the UE, 'coord' is the BS
         link.txIsBaseStation = true;
@@ -163,7 +162,6 @@ RadioLink StochasticChannelModel::linkFor(UserControlInfo *lteInfo)
         eNbId = lteInfo->getSourceId();
         ueCoord = phy_->getCoord();
         enbCoord = coord;
-        link.useUeSideMaps = false;
     }
     /*
      * If the direction is UL, or the packet is a feedback packet, this function is called
@@ -175,8 +173,6 @@ RadioLink StochasticChannelModel::linkFor(UserControlInfo *lteInfo)
         eNbId = lteInfo->getDestId();
         ueCoord = coord;
         enbCoord = phy_->getCoord();
-        // for a DL CQI we need the maps stored on the UE side
-        link.useUeSideMaps = (link.dir == DL);
     }
 
     if (link.dir == DL) {
@@ -220,9 +216,9 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     return medium_->getAttenuation(this, link);
 }
 
-double StochasticChannelModel::computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl)
+double StochasticChannelModel::computeShadowing(double d3D, double d2D, const LinkKey& key, double speed)
 {
-    return medium_->computeShadowing(this, d3D, d2D, key, ownerId, speed, cqiDl);
+    return medium_->computeShadowing(this, d3D, d2D, key, speed);
 }
 
 double StochasticChannelModel::computeSpeed(const MacNodeId nodeId, const Coord coord)
@@ -309,10 +305,9 @@ double StochasticChannelModel::rayleighFading(MacNodeId id, unsigned int band)
     return medium_->rayleighFading(this, id, band);
 }
 
-double StochasticChannelModel::jakesFading(const LinkKey& key, MacNodeId ownerId, double speed,
-        unsigned int band, bool cqiDl, bool isBgUe)
+double StochasticChannelModel::jakesFading(const LinkKey& key, double speed, unsigned int band, bool isBgUe)
 {
-    return medium_->jakesFading(this, key, ownerId, speed, band, cqiDl, isBgUe);
+    return medium_->jakesFading(this, key, speed, band, isBgUe);
 }
 
 bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
@@ -350,28 +345,6 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
     double attenuation = extCellPathLoss_->computePathLoss(dist, dist, los, O2iState{inside_building_, inside_distance_});
 
     return attenuation;
-}
-
-StochasticChannelModel *StochasticChannelModel::obtainUeEndpoint(MacNodeId id)
-{
-    // obtain a reference to UE phy
-    PhyBase *phy = nullptr;
-
-    for (const auto& ueInfo : binder_->getUeList()) {
-        if (ueInfo->id == id) {
-            phy = ueInfo->phy;
-            break;
-        }
-    }
-
-    if (phy == nullptr)
-        return nullptr;
-
-    // the peer UE's channel model on this same carrier: the endpoint whose
-    // owner-prefixed map entries the cqiDl redirect selects (step 13a; the
-    // retired obtainUeJakesMap()/obtainShadowingMap() fetched raw map
-    // pointers out of this same module)
-    return dynamic_cast<StochasticChannelModel *>(phy->getChannelModel(carrierFrequency_));
 }
 
 StochasticChannelModel::InterfererInfo StochasticChannelModel::describeInterferer(const UeAllocationInfo& allocation, RadioMedium *medium, GHz carrierFrequency)

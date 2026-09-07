@@ -43,11 +43,9 @@ CarrierLeg legFor(StochasticChannelModel *endpoint)
 
 } // namespace
 
-bool& RadioMedium::losState(StochasticChannelModel *owner, const LinkKey& key, bool *existed)
+bool& RadioMedium::losState(const CarrierLeg& leg, const LinkKey& key, bool *existed)
 {
-    // step 13b: owner's LEG keys the entry, not owner itself -- one LOS
-    // state per physical link, shared by both ends
-    auto result = losMap_.try_emplace(LinkStateKey{legFor(owner), key}, false);
+    auto result = losMap_.try_emplace(LinkStateKey{leg, key}, false);
     if (existed != nullptr)
         *existed = !result.second;
     return result.first->second;
@@ -72,7 +70,7 @@ Position& RadioMedium::correlationPoint(MacNodeId nodeId, const CarrierLeg& leg,
 
 bool RadioMedium::losStateFor(StochasticChannelModel *radio, const LinkKey& key)
 {
-    return losState(radio, key);
+    return losState(legFor(radio), key);
 }
 
 void RadioMedium::updatePositionHistory(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
@@ -188,11 +186,11 @@ void RadioMedium::addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *g
     // exactly one of endpoint/bgGenerator is ever non-null (plan S12b/3(j))
     ASSERT((descriptor.endpoint != nullptr) != (descriptor.bgGenerator != nullptr));
 
-    // no readCarrierPhysics, no checkCarrierPhysics, no createPathLossModel,
-    // no owner-keyed state entries: a phantom declares none of the 25
-    // per-carrier-leg physics parameters and, since it is never the radio in
-    // getAttenuation()/computeShadowing()/jakesFading(), never owns an entry
-    // in the flattened state maps either (plan S12b item 3)
+    // no readCarrierPhysics, no checkCarrierPhysics, no createPathLossModel:
+    // a phantom declares none of the 25 per-carrier-leg physics parameters
+    // and, since it is never radio in getAttenuation()/computeShadowing()/
+    // jakesFading(), never keys an entry into the per-link state either
+    // (plan S12b item 3)
     radios_.push_back(descriptor);
     bgRadioIndex_[key] = &radios_.back();
 }
@@ -454,25 +452,26 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
     double speed = computeSpeed(radio, link.stateNodeId, link.stateCoord);
     double correlationDist = computeCorrelationDistance(radio, link.stateNodeId, link.stateCoord);
 
-    const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
+    const CarrierLeg leg = legFor(radio);
+    const CarrierPhysics& cp = carrierPhysicsFor(leg);
 
     // If Euclidean distance since last LOS probability computation is greater than
     // correlation distance the UE could have changed its state and
     // its visibility from eNodeB, hence it is correct to recompute the LOS probability
     bool losAlreadyComputed = false;
-    losState(radio, link.stateKey, &losAlreadyComputed);
+    losState(leg, link.stateKey, &losAlreadyComputed);
     if (correlationDist > cp.correlationDistance || !losAlreadyComputed) {
         computeLosProbability(radio, threeDimDistance, twoDimDistance, link.stateKey);
     }
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = losState(radio, link.stateKey);
+    bool los = losState(leg, link.stateKey);
     double attenuation = computePathLoss(radio, threeDimDistance, twoDimDistance, los);
 
     //    Applying shadowing only if it is enabled by configuration
     //    log-normal shadowing (not available for background UEs)
     if (num(link.stateNodeId) < BGUE_MIN_ID && cp.shadowing)
-        attenuation += computeShadowing(radio, threeDimDistance, twoDimDistance, link.stateKey, link.stateNodeId, speed, link.useUeSideMaps);
+        attenuation += computeShadowing(radio, threeDimDistance, twoDimDistance, link.stateKey, speed);
 
     // update the tracked node's current position
     updatePositionHistory(radio, link.stateNodeId, link.stateCoord);
@@ -495,42 +494,37 @@ void RadioMedium::computeLosProbability(StochasticChannelModel *radio, double d3
     const CarrierPhysics& cp = carrierPhysicsFor(leg);
 
     if (!cp.dynamicLos) {
-        losState(radio, key) = cp.fixedLos;
+        losState(leg, key) = cp.fixedLos;
         return;
     }
     double p = pathLossFor(leg).computeLosProbability(d3D, d2D);
-    losState(radio, key) = (uniform(0.0, 1.0) <= p);
+    losState(leg, key) = (uniform(0.0, 1.0) <= p);
 }
 
-double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key,
-        MacNodeId ownerId, double speed, bool cqiDl)
+double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, double speed)
 {
     const CarrierLeg leg = legFor(radio);
     const CarrierPhysics& cp = carrierPhysicsFor(leg);
-
-    // step 13c: one shared shadowing entry per physical link, whichever end
-    // (and whichever direction) asks -- the cqiDl owner redirect that used
-    // to select the UE-side copy has nothing left to redirect to
     const LinkStateKey stateKey{leg, key};
 
     double mean = 0;
 
     // Get std deviation according to LOS/NLOS and selected scenario
-    double stdDev = pathLossFor(leg).getShadowingStdDev(d3D, d2D, losState(radio, key));
+    double stdDev = pathLossFor(leg).getShadowingStdDev(d3D, d2D, losState(leg, key));
     double time = 0;
     double space = 0;
     double att;
 
-    // if shadowing for current user has never been computed
+    // if shadowing for current link has never been computed
     if (lastComputedSF_.find(stateKey) == lastComputedSF_.end()) {
         //Get the log-normal shadowing with std deviation stdDev
         att = normal(mean, stdDev);
 
-        //store the shadowing attenuation for this user and the temporal mark
+        //store the shadowing attenuation for this link and the temporal mark
         std::pair<simtime_t, double> tmp(NOW, att);
         lastComputedSF_[stateKey] = tmp;
 
-        //If the shadowing attenuation has been computed at least one time for this user
+        //If the shadowing attenuation has been computed at least one time for this link
         // and the distance traveled by the UE is greater than correlation distance
     }
     else if ((NOW - lastComputedSF_.at(stateKey).first).dbl() * speed > cp.correlationDistance) {
@@ -563,35 +557,20 @@ double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, 
     return att;
 }
 
-double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& key, MacNodeId ownerId, double speed,
-        unsigned int band, bool cqiDl, bool isBgUe)
+double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& key, double speed,
+        unsigned int band, bool isBgUe)
 {
-    /**
-     * NOTE: there are two different Jakes maps. One on the UE side and one on the eNB side, with different values.
-     *
-     * eNB side => used for CQI computation and for error-probability evaluation in UL
-     * UE side  => used for error-probability evaluation in DL
-     *
-     * the one within eNB is referred to the UL direction
-     * the one within UE is referred to the DL direction
-     *
-     * thus the actual map should be chosen carefully (i.e. just check the cqiDL flag)
-     */
-    // step 13e: the background-UE Jakes twin is now selected by isBgUe
-    // alone. Its previous DL-only use (cqiDl && isBgUe) was an artifact of
-    // the deleted cross-endpoint redirect, not a modeled choice: a bg UE's
-    // key range (>= BGUE_MIN_ID) never coincides with a real UE's, so the
-    // twin exists only to keep the two populations' entries apart, which is
-    // a property of the UE, not of the direction the reception is computed
-    // in.
+    // isBgUe selects the background-UE Jakes twin (plan S13/§3(b)): the two
+    // maps are otherwise identical in shape and semantics, kept separate
+    // only so a background UE's key range (>= BGUE_MIN_ID) never shares an
+    // entry with a real UE's, even coincidentally.
     JakesFadingMap& actualJakesMap = isBgUe ? jakesFadingMapBgUe_ : jakesFadingMap_;
 
     const CarrierLeg leg = legFor(radio);
+    const CarrierPhysics& cp = carrierPhysicsFor(leg);
     const LinkStateKey stateKey{leg, key};
 
-    const CarrierPhysics& cp = carrierPhysicsFor(leg);
-
-    // if this is the first time that we compute fading for current user
+    // if this is the first time that we compute fading for current link
     if (actualJakesMap.find(stateKey) == actualJakesMap.end()) {
         // clear the map
         // FIXME: possible memory leak
@@ -612,7 +591,7 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
                 // get delay spread
                 temp.delaySpread.push_back(exponential(cp.delayRms));
             }
-            // store the Jakes fading for this user
+            // store the Jakes fading for this link
             actualJakesMap[stateKey].push_back(temp);
         }
     }
@@ -989,7 +968,7 @@ std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const Ra
                 fadingAttenuation = rayleighFading(radio, link.stateNodeId, i);
 
             else if (cp.fadingType == "JAKES")
-                fadingAttenuation = jakesFading(radio, link.stateKey, link.stateNodeId, speed, i, link.useUeSideMaps);
+                fadingAttenuation = jakesFading(radio, link.stateKey, speed, i);
         }
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
@@ -1030,9 +1009,6 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     double noiseFigure = 0.0;
     double speed = 0.0;
 
-    // true if we are computing a CQI for the DL direction
-    bool cqiDl = false;
-
     EV << "------------ GET SINR for background UE ----------------" << endl;
     //===================== PARAMETERS SETUP ============================
     /*
@@ -1045,16 +1021,12 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
         //set antenna gain figure
         antennaGainTx = radio->getAntennaGainEnB(); //dB
         antennaGainRx = radio->getAntennaGainUe();  //dB
-        // use the jakes map on the UE side
-        cqiDl = true;
     }
     else { // if( dir == UL )
         // TODO check if antennaGainEnB should be added in UL direction too
         antennaGainTx = radio->getAntennaGainUe();
         antennaGainRx = radio->getAntennaGainEnB();
         noiseFigure = radio->getBsNoiseFigure();
-        // use the jakes map on the eNb side
-        cqiDl = false;
     }
     speed = computeSpeed(radio, bgUeId, ueCoord);
 
@@ -1072,7 +1044,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     // Note that shadowing and fading effects are not applied here and left FFW
 
     // UL because we are computing a feedback
-    double attenuation = radio->getAttenuation(bgUeId, UL, ueCoord, cqiDl);
+    double attenuation = radio->getAttenuation(bgUeId, UL, ueCoord);
 
     //compute recvPower
     recvPower -= attenuation; // (dBm-dB)=dBm
@@ -1129,7 +1101,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
                 fadingAttenuation = rayleighFading(radio, bgUeId, i);
 
             else if (cp.fadingType == "JAKES")
-                fadingAttenuation = jakesFading(radio, LinkKey(bgUeId), bgUeId, speed, i, cqiDl, true);
+                fadingAttenuation = jakesFading(radio, LinkKey(bgUeId), speed, i, true);
         }
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
@@ -1325,7 +1297,7 @@ std::vector<double> RadioMedium::getSIR(StochasticChannelModel *radio, LteAirFra
                 fadingAttenuation = rayleighFading(radio, id, i);
             }
             else if (cp.fadingType == "JAKES") {
-                fadingAttenuation = jakesFading(radio, LinkKey(id), id, speed, i, dir);
+                fadingAttenuation = jakesFading(radio, LinkKey(id), speed, i);
             }
         }
         // add fading contribution to the final SINR
@@ -1471,7 +1443,7 @@ bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFra
 }
 
 RadioLink RadioMedium::d2dLink(StochasticChannelModel *radio, MacNodeId srcId, inet::Coord srcCoord,
-        MacNodeId destId, inet::Coord destCoord, bool useUeSideMaps)
+        MacNodeId destId, inet::Coord destCoord)
 {
     RadioLink link;
     link.dir = D2D;
@@ -1491,12 +1463,11 @@ RadioLink RadioMedium::d2dLink(StochasticChannelModel *radio, MacNodeId srcId, i
     // of sharing the transmitter's single slot (and colliding with the
     // transmitter's own cellular state).
     //
-    // The owning node stays the transmitter: it is that UE's channel model that
-    // holds the maps, and it is that UE's motion that defines the speed.
+    // The tracked node stays the transmitter: it is that UE's motion that
+    // defines the speed, regardless of which end (radio) is asking (plan S13).
     link.stateKey = LinkKey(srcId, destId);
     link.stateNodeId = srcId;
     link.stateCoord = srcCoord;
-    link.useUeSideMaps = useUeSideMaps;
 
     return link;
 }

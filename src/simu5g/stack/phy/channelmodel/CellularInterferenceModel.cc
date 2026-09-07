@@ -85,7 +85,7 @@ bool CellularInterferenceModel::computeDownlinkInterference(StochasticChannelMod
             continue;
 
         // compute attenuation using data structures within the cell
-        double att = interfChanModel->getAttenuation(ueId, UL, coord, isCqi);
+        double att = interfChanModel->getAttenuation(ueId, UL, coord);
         EV << "EnbId [" << id << "] - attenuation [" << att << "]";
 
         //=============== ANGULAR ATTENUATION =================
@@ -184,7 +184,7 @@ bool CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel
 
                     // get rx power and attenuation from this UE
                     double rxPwr = txPwr - radio->getCableLoss() + radio->getAntennaGainUe() + radio->getAntennaGainEnB();
-                    double att = radio->getAttenuation(ueId, UL, ueCoord, false);
+                    double att = radio->getAttenuation(ueId, UL, ueCoord);
                     (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
 
                     EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;
@@ -225,7 +225,7 @@ bool CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel
 
                     // get tx power and attenuation from this UE
                     double rxPwr = txPwr - radio->getCableLoss() + radio->getAntennaGainUe() + radio->getAntennaGainEnB();
-                    double att = radio->getAttenuation(ueId, UL, ueCoord, false);
+                    double att = radio->getAttenuation(ueId, UL, ueCoord);
                     (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
 
                     EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;
@@ -503,8 +503,8 @@ bool CellularInterferenceModel::computeD2DInterference(StochasticChannelModel *r
 
                 // get tx power and attenuation from this UE
                 double rxPwr = txPwr - radio->getCableLoss() + 2 * radio->getAntennaGainUe();
-                // interferer -> our receiver; the eNB-side maps are used for interferers
-                double att = medium_->getAttenuation(radio, medium_->d2dLink(radio, ueId, ueCoord, destId, destCoord, false));
+                // interferer -> our receiver
+                double att = medium_->getAttenuation(radio, medium_->d2dLink(radio, ueId, ueCoord, destId, destCoord));
                 (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
 
                 EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;

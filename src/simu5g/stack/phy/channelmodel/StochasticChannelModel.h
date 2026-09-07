@@ -61,8 +61,8 @@ class PathLossModel;
  * D2D branches of getReceptionSinr/emitRcvdSinr/computeInterferencePlusNoise
  * folded into the medium alongside them at S12 -- D2dChannelModel no longer
  * overrides any of the three, so none of them are virtual dispatch points
- * here anymore. computeCorrelationDistance and the per-radio stochastic
- * state itself moved to the medium at step 13a (owner-keyed for now); this
+ * here anymore. computeCorrelationDistance and the per-link/per-node
+ * stochastic state itself moved to the medium at S13 (plan §3(b)); this
  * endpoint no longer caches any of it.
  *
  * Supported propagation studies:
@@ -278,9 +278,9 @@ class StochasticChannelModel : public ChannelModelBase
      * @param dir traffic direction
      * @param coord position of end point communication (if dir==UL is the position of UE else is the position of eNodeB)
      */
-    double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord, bool cqiDl)
+    double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord)
     {
-        return getAttenuation(cellularLink(nodeId, dir, coord, cqiDl));
+        return getAttenuation(cellularLink(nodeId, dir, coord));
     }
 
     /*
@@ -316,7 +316,7 @@ class StochasticChannelModel : public ChannelModelBase
      * @param nodeid mac node id of UE
      * @param speed speed of UE
      */
-    virtual double computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl);
+    virtual double computeShadowing(double d3D, double d2D, const LinkKey& key, double speed);
 
     /*
      * Compute sir for each band for user nodeId according to multipath fading
@@ -396,10 +396,9 @@ class StochasticChannelModel : public ChannelModelBase
      * @param speed speed of UE
      * @param nodeid mac node id of UE
      * @param band logical band id
-     * @param cqiDl if true, the jakesMap in the UE side should be used
      * @param isBgUe if true, this is called for a background UE
      */
-    virtual double jakesFading(const LinkKey& key, MacNodeId ownerId, double speed, unsigned int band, bool cqiDl, bool isBgUe = false);
+    virtual double jakesFading(const LinkKey& key, double speed, unsigned int band, bool isBgUe = false);
 
     /*
      * Compute LOS probability
@@ -418,16 +417,10 @@ class StochasticChannelModel : public ChannelModelBase
 
     /*
      * Public for RadioMedium's relocated getAttenuation()/computeShadowing()/
-     * jakesFading() (S9b), which call these on the radio identifying the
-     * caller: getTwoDimDistance() is a plain, stateless coordinate helper,
-     * and obtainUeEndpoint() (step 13a: the surviving core of the retired
-     * obtainUeJakesMap()/obtainShadowingMap() pair) resolves the peer UE
-     * endpoint whose owner-prefixed entries the medium's cqiDl-redirected
-     * shadowing/Jakes lookups select. The position/correlation-distance
-     * bookkeeping moved to the medium with the containers (13a).
+     * jakesFading() (S9b): a plain, stateless coordinate helper the relocated
+     * bodies call back on the radio pointer.
      */
     virtual double getTwoDimDistance(inet::Coord a, inet::Coord b);
-    virtual StochasticChannelModel *obtainUeEndpoint(MacNodeId id);
 
     /*
      * Public for RadioMedium's relocated getSINR()/getSIR()/getRSRP()/
@@ -476,10 +469,10 @@ class StochasticChannelModel : public ChannelModelBase
      * TR 36.814 formulas regardless of pathLossType (extCellPathLoss_).
      * Public for CellularInterferenceModel's relocated computeExtCellInterference()/
      * computeBackgroundCellInterference() (S11), which call it back on the
-     * radio pointer: it reads the medium's own LOS state for this endpoint
-     * (losStateFor(), step 13a) and its own extCellPathLoss_ instance (not
-     * reachable from outside), so it stays resident rather than moving with
-     * the walks that call it.
+     * radio pointer: it reads the medium's shared LOS state (losStateFor(),
+     * plan S13) for radio's own carrier leg, and this endpoint's own
+     * extCellPathLoss_ instance, neither reachable from outside, so it stays
+     * resident rather than moving with the walks that call it.
      * @return attenuation expressed in dBm
      */
     virtual double computeExtCellPathLoss(double dist, const LinkKey& key);
@@ -491,7 +484,7 @@ class StochasticChannelModel : public ChannelModelBase
      * local module is one endpoint, 'coord' the other, and 'dir' says which of
      * the two is the UE.
      */
-    RadioLink cellularLink(MacNodeId ueId, Direction dir, inet::Coord coord, bool cqiDl);
+    RadioLink cellularLink(MacNodeId ueId, Direction dir, inet::Coord coord);
 
     /*
      * Compute speed (m/s) for a given node
@@ -499,7 +492,6 @@ class StochasticChannelModel : public ChannelModelBase
      * @return the speed in m/s
      */
     virtual double computeSpeed(const MacNodeId nodeId, const inet::Coord coord);
-
 };
 
 } //namespace
