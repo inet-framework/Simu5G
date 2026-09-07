@@ -225,22 +225,24 @@ class RadioMedium : public cSimpleModule
     std::map<std::pair<MacNodeId, CarrierLeg>, std::queue<Position>> positionHistory_;
     std::map<std::pair<MacNodeId, CarrierLeg>, Position> lastCorrelationPoint_;
 
-    // One PathLossModel strategy per carrier leg, created eagerly in
-    // addRadio() when a leg's CarrierPhysics record is first established.
-    // PathLossModel::owner_ is this medium, which is what relocates every
-    // propagation-formula random draw onto the medium's own rng-0 stream.
-    // Owned; leg records are never removed (like carrierPhysics_), so a
-    // strategy lives for the run. (E5c makes these point at legModule's own
-    // submodules instead, at which point they are no longer owned.)
+    // One PathLossModel strategy per carrier leg, resolved eagerly in
+    // addRadio() when a leg's CarrierPhysics record is first established:
+    // the matched carrierLeg[]'s own "pathLoss" submodule (radio endpoint
+    // recast E5), not a freshly `new`-ed object any more. PathLossModel::owner_
+    // is this medium, which is what relocates every propagation-formula
+    // random draw onto the medium's own rng-0 stream. NOT owned: the
+    // submodule is owned by the module tree (the matched carrierLeg[]
+    // element), like any other submodule -- ~RadioMedium() must not delete
+    // through these pointers any more.
     std::map<CarrierLeg, PathLossModel *> pathLoss_;
 
-    // One Tr36814PathLossModel instance per carrier leg: the
+    // One Tr36814PathLoss submodule per carrier leg: the
     // ext-cell/background-cell interference path always uses
     // TR 36.814 regardless of the leg's own pathLossType (computeExtCellPathLoss),
-    // so every radio on a leg would otherwise build an identical instance.
+    // so every radio on a leg would otherwise resolve an identical instance.
     // Draw-free (verified: neither
     // Tr36814PathLossModel.cc nor computeExtCellPathLoss() itself draws), so
-    // sharing it costs nothing in RNG attribution. Owned, like pathLoss_.
+    // sharing it costs nothing in RNG attribution. NOT owned, like pathLoss_.
     std::map<CarrierLeg, PathLossModel *> extCellPathLoss_;
 
     // This medium's own interference submodule:
@@ -338,15 +340,15 @@ class RadioMedium : public cSimpleModule
     /** The per-leg CarrierPhysics record established in addRadio(); throws if no radio has registered on the leg. */
     const CarrierPhysics& carrierPhysicsFor(const CarrierLeg& leg) const;
 
-    /** Builds the propagation-formula strategy matching cp.pathLossType (E5b: cp.pathLossType now derived from legModule, but still a heap `new`; E5c resolves the submodule instead) and initializes it from cp. */
-    PathLossModel *createPathLossModel(const CarrierPhysics& cp);
+    /** Resolves legModule's own "pathLoss" submodule (cp.pathLossType's concrete type, by construction) and initializes it from cp. */
+    PathLossModel *resolvePathLossStrategy(cModule *legModule, const CarrierPhysics& cp);
 
-    /** Builds this leg's ext-cell/background-cell strategy: always Tr36814PathLossModel, regardless of cp.pathLossType, from the same CarrierPhysics fields createPathLossModel() reads. */
-    PathLossModel *createExtCellPathLossModel(const CarrierPhysics& cp);
+    /** Resolves legModule's own "extCellPathLoss" submodule -- always Tr36814PathLoss, regardless of cp.pathLossType -- and initializes it from the same cp fields resolvePathLossStrategy() reads. */
+    PathLossModel *resolveExtCellPathLossStrategy(cModule *legModule, const CarrierPhysics& cp);
 
     /**
-     * The initialize() call createPathLossModel()/createExtCellPathLossModel()
-     * share verbatim, once the concrete strategy is constructed. Since E4 this
+     * The initialize() call resolvePathLossStrategy()/resolveExtCellPathLossStrategy()
+     * share verbatim, once the concrete strategy is resolved. Since E4 this
      * carries only the leg-constant scenario parameters -- no carrier
      * frequency and no antenna heights any more (neither is per-leg state:
      * the frequency is the leg's own key already, and the heights are
@@ -372,9 +374,6 @@ class RadioMedium : public cSimpleModule
     Position& correlationPoint(MacNodeId nodeId, const CarrierLeg& leg, bool *existed = nullptr);
 
   public:
-    /** E5b owns the heap-built path-loss strategies; E5c hands them to the module tree and drops this. */
-    ~RadioMedium() override;
-
     /** Resolves interference_, this medium's own interference submodule. */
     void initialize() override;
 
