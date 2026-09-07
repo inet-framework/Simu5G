@@ -230,10 +230,14 @@ class RadioMedium : public cSimpleModule
     JakesFadingMap jakesFadingMap_;
     JakesFadingMap jakesFadingMapBgUe_;
 
-    // Still owner-keyed (step 13a): a node's motion is genuinely a per-node,
-    // per-owning-endpoint fact until step 13f re-keys these by (node, leg).
-    std::map<std::pair<StochasticChannelModel *, MacNodeId>, std::queue<Position>> positionHistory_;
-    std::map<OwnerLinkKey, Position> lastCorrelationPoint_;
+    // Per-(node, CarrierLeg) mobility state (step 13f, plan §3(b)): a node's
+    // motion is a property of the node itself, not of a link between two
+    // nodes or of which endpoint observes it, so these are keyed one level
+    // coarser than the four per-link containers above -- shared across every
+    // link that tracks the same node on the same leg. lastCorrelationPoint_
+    // also drops its LinkKey: a correlation point is genuinely per node.
+    std::map<std::pair<MacNodeId, CarrierLeg>, std::queue<Position>> positionHistory_;
+    std::map<std::pair<MacNodeId, CarrierLeg>, Position> lastCorrelationPoint_;
 
     // One PathLossModel strategy per carrier leg (S9b), created eagerly in
     // addRadio() when a leg's CarrierPhysics record is first established.
@@ -294,22 +298,17 @@ class RadioMedium : public cSimpleModule
     bool& losState(StochasticChannelModel *owner, const LinkKey& key, bool *existed = nullptr);
 
     /**
-     * Access to positionHistory_[{owner,nodeId}]. createIfMissing=true
+     * Access to positionHistory_[{nodeId,leg}]. createIfMissing=true
      * auto-vivifies an empty queue like std::map::operator[]
      * (updatePositionHistory()); createIfMissing=false returns nullptr
      * instead of inserting a placeholder for a node with no history yet
      * (computeSpeed(), which must not manufacture an entry it would then
      * read as non-empty).
      */
-    std::queue<Position> *positionHistory(StochasticChannelModel *owner, MacNodeId nodeId, bool createIfMissing);
+    std::queue<Position> *positionHistory(MacNodeId nodeId, const CarrierLeg& leg, bool createIfMissing);
 
-    /**
-     * Auto-vivifying access to lastCorrelationPoint_[{owner,key}]; existed,
-     * if given, reports whether the entry was already present. nodeId is
-     * carried but not read until step 13f, where it replaces key as the
-     * entry's identity (a correlation point is a per-node fact, plan §3(b)).
-     */
-    Position& correlationPoint(StochasticChannelModel *owner, const LinkKey& key, MacNodeId nodeId, bool *existed = nullptr);
+    /** Auto-vivifying access to lastCorrelationPoint_[{nodeId,leg}]; existed, if given, reports whether the entry was already present. */
+    Position& correlationPoint(MacNodeId nodeId, const CarrierLeg& leg, bool *existed = nullptr);
 
   public:
     ~RadioMedium() override;
@@ -402,21 +401,21 @@ class RadioMedium : public cSimpleModule
             unsigned int band, bool cqiDl, bool isBgUe = false);
     virtual double rayleighFading(StochasticChannelModel *radio, MacNodeId id, unsigned int band);
     virtual double computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
-    virtual double computeCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, MacNodeId nodeId, const inet::Coord coord);
+    virtual double computeCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
 
     /**
      * The node-motion bookkeeping relocated from StochasticChannelModel at
      * step 13a, alongside the positionHistory_/lastCorrelationPoint_
      * containers themselves: both used to be resident because they read the
-     * endpoint's own per-radio state directly; now that state lives here.
-     * updatePositionHistory() maintains the two-entry rolling history
-     * computeSpeed() reads; updateCorrelationDistance() records the point
-     * getAttenuation() measures the next call's correlationDist against.
-     * Like correlationPoint(), the correlation-distance pair carries both
-     * key (read now) and nodeId (read from step 13f on).
+     * endpoint's own per-radio state directly; now that state lives here,
+     * keyed by (node, leg) since step 13f (plan §3(b)), so does the
+     * bookkeeping that touches it. updatePositionHistory() maintains the
+     * two-entry rolling history computeSpeed() reads; updateCorrelationDistance()
+     * records the point getAttenuation() measures the next call's
+     * correlationDist against.
      */
     virtual void updatePositionHistory(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
-    virtual void updateCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, MacNodeId nodeId, const inet::Coord coord);
+    virtual void updateCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
 
     /**
      * The SINR/RSRP/reception-decision surface relocated from
