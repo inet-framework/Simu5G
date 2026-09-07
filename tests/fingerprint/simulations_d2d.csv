@@ -54,6 +54,7 @@
 /simulations/nr/dualConnectivity/,       -f omnetpp.ini -c DualConn-SplitBearer-Configured-DL -r 0, 5s,     427a-4827/tplx;d4b7-db2a/tilx;216d-a376/~tNl;e236-1c22/sz, PASS,
 /simulations/nr/dualConnectivity/,       -f omnetpp.ini -c DualConn-ScgBearer-DL -r 0,           5s,         752c-d259/tplx;ab4d-4ba0/tilx;ae00-98d5/~tNl;7575-f27c/sz, PASS,
 /simulations/nr/dualConnectivity/,       -f omnetpp.ini -c DualConn-ScgBearer-UL -r 0,           5s,         533b-4f59/tplx;d25c-2a55/tilx;c676-e8bc/~tNl;3769-4398/sz, PASS,
+/simulations/nr/dualConnectivity/,       -f omnetpp.ini -c DualConn-ReorderWindowStall -r 0,     20s,        fe4b-6312/tplx;c087-3d2c/tilx;d5be-57c1/~tNl;a0cf-e559/sz, PASS,
 /simulations/nr/dualConnectivity/,       -f omnetpp.ini -c NeDualConn-VoIP-DL -r 0,              5s,         57c3-ba64/tplx;a71e-d514/tilx;2083-9260/~tNl;0a23-0435/sz, PASS,
 /simulations/nr/dualConnectivity/,       -f omnetpp.ini -c NeDualConn-VoIP-UL -r 0,              5s,         2d8e-c73f/tplx;9eec-9480/tilx;39eb-02f1/~tNl;4ea9-6e17/sz, PASS,
 /simulations/nr/dualConnectivity/,       -f omnetpp.ini -c NeDualConn-SplitBearer-Configured-DL -r 0, 5s,     a45e-5f33/tplx;2a2b-9b7f/tilx;7046-3a09/~tNl;f157-ebd8/sz, PASS,
