@@ -90,21 +90,18 @@ struct RadioLink
     inet::Coord rxCoord;
 
     // ---- channel state ----
-    // stateKey indexes the *per-link* state: losMap_, lastComputedSF_,
-    // jakesFadingMap_ and lastCorrelationPoint_.
+    // stateKey indexes the medium's per-link state: losMap_, lastComputedSF_
+    // and jakesFadingMap_, keyed together with the caller's own carrier leg
+    // (plan S13/§3(b)) -- one shared entry per physical link, regardless of
+    // which end asks.
     LinkKey stateKey;
 
-    // stateNodeId is the *node* the state belongs to -- the UE. It selects which
-    // endpoint OWNS the state entries (with useUeSideMaps the owner component of
-    // the medium's shadowing/Jakes keys is that UE's own channel model, resolved
-    // via obtainUeEndpoint(); otherwise it is the calling module -- step 13a's
-    // owner-prefixed rendering of the retired map-pointer redirect), it indexes
-    // positionHistory_, which is genuinely a node property because it defines
-    // the node's speed, and it distinguishes background UEs.
+    // stateNodeId is the *node* the state belongs to -- the UE. It indexes
+    // positionHistory_, which is genuinely a node property because it
+    // defines the node's speed, and it distinguishes background UEs.
     MacNodeId stateNodeId = NODEID_NONE;
 
     inet::Coord stateCoord;      // position feeding computeSpeed + correlation distance
-    bool useUeSideMaps = false;  // the former 'cqiDl' flag
 
     // ---- link budget ----
     double txAntennaGain = 0.0;

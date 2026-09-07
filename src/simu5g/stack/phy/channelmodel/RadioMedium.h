@@ -47,16 +47,36 @@ struct JakesFadingData
 };
 
 /**
- * S13 transitional key (step 13a): the OWNING endpoint prefixed to the old
- * link key. Owner-prefixed entries in medium-wide maps reproduce the retired
- * per-radio PerRadioStochasticState partition exactly -- same entries, same
- * draws, no merging -- including the cqiDl redirect's habit of selecting a
- * peer UE's map, whose owner is then that peer endpoint
- * (StochasticChannelModel::obtainUeEndpoint()). Steps 13b..13f replace the
- * owner component with the carrier leg, one container at a time, and step
- * 13g deletes what is then dead.
+ * The unit CarrierPhysics -- and, since S13, the medium's per-link stochastic
+ * state -- is grouped by: a carrier frequency alone conflates an NR UE's
+ * always-instantiated but unused LTE leg with the gNB it shares a default
+ * component-carrier frequency with, and conflates a dual-connectivity master
+ * eNB with its secondary gNB (plan section 3(h)). Frequency stays the
+ * primary component; isNr is the added discriminator.
  */
-typedef std::pair<StochasticChannelModel *, LinkKey> OwnerLinkKey;
+struct CarrierLeg
+{
+    GHz carrierFrequency = GHz(0);
+    bool isNr = false;
+
+    bool operator<(const CarrierLeg& o) const
+    {
+        return carrierFrequency != o.carrierFrequency ? carrierFrequency < o.carrierFrequency : isNr < o.isNr;
+    }
+};
+
+/**
+ * Key for the medium's per-link stochastic state (plan S13/§3(b)): the
+ * carrier leg plus the unordered pair of nodes the link connects (LinkKey
+ * already normalizes that pair). One entry per physical link, shared by
+ * both ends -- not one per registering endpoint, which is the per-end
+ * asymmetry this step abolishes: the same link no longer draws its own LOS,
+ * shadowing and Jakes realization once from each side.
+ */
+typedef std::pair<CarrierLeg, LinkKey> LinkStateKey;
+
+typedef std::map<LinkStateKey, std::vector<JakesFadingData>> JakesFadingMap;
+typedef std::map<LinkStateKey, std::pair<inet::simtime_t, double>> ShadowFadingMap;
 
 /**
  * A background transmitter's phantom key (plan 3(j)): the tuple that *is*
@@ -114,37 +134,6 @@ struct RadioDescriptor
     TrafficGeneratorBase *bgGenerator = nullptr;
     MacCellId bgCellId = NODEID_NONE;
 };
-
-/**
- * The unit CarrierPhysics is grouped by: a carrier frequency alone conflates
- * an NR UE's always-instantiated but unused LTE leg with the gNB it shares a
- * default component-carrier frequency with, and conflates a dual-connectivity
- * master eNB with its secondary gNB (plan section 3(h)). Frequency stays the
- * primary component; isNr is the added discriminator.
- */
-struct CarrierLeg
-{
-    GHz carrierFrequency = GHz(0);
-    bool isNr = false;
-
-    bool operator<(const CarrierLeg& o) const
-    {
-        return carrierFrequency != o.carrierFrequency ? carrierFrequency < o.carrierFrequency : isNr < o.isNr;
-    }
-};
-
-/**
- * Key for the medium's per-link stochastic state (plan S13/§3(b)): the
- * carrier leg plus the unordered pair of nodes the link connects (LinkKey
- * already normalizes that pair). One entry per physical link, shared by
- * both ends -- not one per owning endpoint. Collapsing the owner component
- * of one container's OwnerLinkKey into the carrier leg is exactly the
- * semantic flip each of steps 13b..13f performs, one container at a time.
- */
-typedef std::pair<CarrierLeg, LinkKey> LinkStateKey;
-
-typedef std::map<LinkStateKey, std::pair<inet::simtime_t, double>> ShadowFadingMap;
-typedef std::map<LinkStateKey, std::vector<JakesFadingData>> JakesFadingMap;
 
 /**
  * The per-carrier-leg physics parameters (plan section 3(e)/3(h)) that every
@@ -215,27 +204,21 @@ class RadioMedium : public cSimpleModule
     // radio to register on it (see addRadio()). Nothing reads this yet.
     std::map<CarrierLeg, CarrierPhysics> carrierPhysics_;
 
-    // The six per-radio stochastic-state containers, flattened into
-    // medium-wide maps (step 13a): each entry carries the owning endpoint in
-    // its key, so the partition (and every lookup, draw and erase) is exactly
-    // the retired radioState_ per-radio scheme's. The endpoint's own identity
-    // is stable for exactly its registered lifetime, as before; a removed
-    // radio's entries are erased in removeRadio(). Steps 13b..13f re-key
-    // these to the carrier leg, one at a time.
-    // losMap_ re-keyed per link at step 13b, lastComputedSF_ at 13c: one
-    // shared entry per physical link on a carrier leg, whichever end (and
-    // whichever direction) asks.
+    // Per-link stochastic state (plan S13/§3(b)), keyed by LinkStateKey --
+    // one shared entry per physical link, not one per registering endpoint
+    // the way the S8-S12 radioState_ this replaces was. losMap_ and
+    // lastComputedSF_/jakesFadingMap_/jakesFadingMapBgUe_ together replace
+    // that per-radio scheme's six containers.
     std::map<LinkStateKey, bool> losMap_;
     ShadowFadingMap lastComputedSF_;
     JakesFadingMap jakesFadingMap_;
     JakesFadingMap jakesFadingMapBgUe_;
 
-    // Per-(node, CarrierLeg) mobility state (step 13f, plan §3(b)): a node's
-    // motion is a property of the node itself, not of a link between two
-    // nodes or of which endpoint observes it, so these are keyed one level
-    // coarser than the four per-link containers above -- shared across every
-    // link that tracks the same node on the same leg. lastCorrelationPoint_
-    // also drops its LinkKey: a correlation point is genuinely per node.
+    // Per-(node, CarrierLeg) mobility state (plan S13/§3(b)): a node's motion
+    // is a property of the node itself, not of a link between two nodes, so
+    // these stay keyed one level coarser than the four containers above --
+    // shared across every link that tracks the same node on the same leg,
+    // rather than once per (observing endpoint, node) as before S13.
     std::map<std::pair<MacNodeId, CarrierLeg>, std::queue<Position>> positionHistory_;
     std::map<std::pair<MacNodeId, CarrierLeg>, Position> lastCorrelationPoint_;
 
@@ -284,18 +267,17 @@ class RadioMedium : public cSimpleModule
     PathLossModel *createPathLossModel(const CarrierPhysics& cp, const CarrierLeg& leg);
 
     /**
-     * Owner-keyed stochastic-state accessors (step 13a): the medium's own
-     * counterpart of the six accessors relocated at S9b, now indexing the
-     * flattened medium-wide maps by {owner, old key}. owner is the endpoint
-     * whose per-radio record would have held the entry before the flatten.
-     * The shadowing/jakes containers have no accessor of their own:
-     * computeShadowing()/jakesFading() index lastComputedSF_/jakesFadingMap_/
-     * jakesFadingMapBgUe_ directly, choosing owner by the same cqiDl logic
-     * that used to choose the map pointer.
+     * Per-link/per-node stochastic-state accessors (plan S13/§3(b)): the
+     * medium's own counterpart of the six accessors StochasticChannelModel
+     * used to carry (S7/S8). Now that the containers are medium-wide rather
+     * than per-endpoint, there is nothing left to redirect to a different
+     * endpoint's copy, so shadowingState()/jakesState() from the S8-S12
+     * shape are gone -- computeShadowing()/jakesFading() index
+     * lastComputedSF_/jakesFadingMap_/jakesFadingMapBgUe_ directly.
      */
 
-    /** Auto-vivifying access to losMap_[{owner,key}]; existed, if given, reports whether the entry was already present. */
-    bool& losState(StochasticChannelModel *owner, const LinkKey& key, bool *existed = nullptr);
+    /** Auto-vivifying access to losMap_[{leg,key}]; existed, if given, reports whether the entry was already present. */
+    bool& losState(const CarrierLeg& leg, const LinkKey& key, bool *existed = nullptr);
 
     /**
      * Access to positionHistory_[{nodeId,leg}]. createIfMissing=true
@@ -339,12 +321,13 @@ class RadioMedium : public cSimpleModule
     virtual void removeBackgroundRadio(const BgUeKey& key);
 
     /**
-     * radio's own LOS state for key (step 13a): auto-vivifies to NLOS
-     * (false) if this link's LOS has never been computed. Public for
-     * StochasticChannelModel's resident computeExtCellPathLoss(), which --
-     * like the primary in-cell attenuation computation -- reads (and may
-     * share) this same losMap_ entry rather than drawing its own independent
-     * LOS state for the ext-cell/background-cell interference path.
+     * The shared LOS/NLOS state for radio's own carrier leg (plan
+     * S13/§3(b)): auto-vivifies to NLOS (false) if this link's LOS has
+     * never been computed. Public for StochasticChannelModel's resident
+     * computeExtCellPathLoss(), which -- like the primary in-cell
+     * attenuation computation -- reads (and may share) this same losMap_
+     * entry rather than drawing its own independent LOS state for the
+     * ext-cell/background-cell interference path.
      */
     virtual bool losStateFor(StochasticChannelModel *radio, const LinkKey& key);
 
@@ -389,30 +372,39 @@ class RadioMedium : public cSimpleModule
      * consume the endpoint's own rng-0 stream now consumes this medium's,
      * in the same order and the same count -- the byte-identical relocation
      * the step depends on. radio identifies the calling endpoint, whose own
-     * per-radio state (stateOf) and O2I geometry (o2iStateOf) these read;
-     * the shared PathLossModel strategy is looked up by radio's carrier leg.
+     * O2I geometry (o2iStateOf) these read; the shared PathLossModel
+     * strategy and the per-link/per-node stochastic state are both looked
+     * up by radio's carrier leg (plan S13/§3(b)).
+     *
+     * computeShadowing()/jakesFading() lost their cqiDl parameter and
+     * jakesFading() its ownerId at S13: both used to select between this
+     * radio's own state and a *different*, peer endpoint's (obtainShadowingMap()/
+     * obtainUeJakesMap(), deleted) -- now there is one shared entry per link
+     * regardless of which end asks, so there is nothing left to redirect to.
+     * computeCorrelationDistance() takes nodeId rather than a LinkKey for the
+     * same reason updatePositionHistory()/updateCorrelationDistance() below
+     * do: per §3(b), a node's correlation point is a property of the node
+     * and its carrier leg, not of a link between two nodes.
      */
     virtual double getAttenuation(StochasticChannelModel *radio, const RadioLink& link);
     virtual double computePathLoss(StochasticChannelModel *radio, double distance, double dbp, bool los);
     virtual void computeLosProbability(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key);
-    virtual double computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key,
-            MacNodeId ownerId, double speed, bool cqiDl);
-    virtual double jakesFading(StochasticChannelModel *radio, const LinkKey& key, MacNodeId ownerId, double speed,
-            unsigned int band, bool cqiDl, bool isBgUe = false);
+    virtual double computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, double speed);
+    virtual double jakesFading(StochasticChannelModel *radio, const LinkKey& key, double speed,
+            unsigned int band, bool isBgUe = false);
     virtual double rayleighFading(StochasticChannelModel *radio, MacNodeId id, unsigned int band);
     virtual double computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
     virtual double computeCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
 
     /**
      * The node-motion bookkeeping relocated from StochasticChannelModel at
-     * step 13a, alongside the positionHistory_/lastCorrelationPoint_
-     * containers themselves: both used to be resident because they read the
-     * endpoint's own per-radio state directly; now that state lives here,
-     * keyed by (node, leg) since step 13f (plan §3(b)), so does the
-     * bookkeeping that touches it. updatePositionHistory() maintains the
-     * two-entry rolling history computeSpeed() reads; updateCorrelationDistance()
-     * records the point getAttenuation() measures the next call's
-     * correlationDist against.
+     * S13, alongside the positionHistory_/lastCorrelationPoint_ containers
+     * themselves: both used to be resident because they read the endpoint's
+     * own per-radio state directly; now that state lives here, keyed by
+     * (node, CarrierLeg) (plan §3(b)), so does the bookkeeping that touches
+     * it. updatePositionHistory() maintains the two-entry rolling history
+     * computeSpeed() reads; updateCorrelationDistance() records the point
+     * getAttenuation() measures the next call's correlationDist against.
      */
     virtual void updatePositionHistory(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
     virtual void updateCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord);
@@ -450,10 +442,12 @@ class RadioMedium : public cSimpleModule
      * interference-walk-shaped and lives beside its four cellular siblings on
      * interference_ (S11 shape) instead. Neither draws; the only random draw
      * a D2D reception depends on is getAttenuation's, reached through radio's
-     * own carrier leg exactly like a cellular link's.
+     * own carrier leg exactly like a cellular link's. d2dLink no longer takes
+     * a useUeSideMaps flag as of S13: RadioLink lost the field it fed, since
+     * a D2D link's state is the same shared entry regardless of which end asks.
      */
     virtual RadioLink d2dLink(StochasticChannelModel *radio, MacNodeId srcId, inet::Coord srcCoord,
-            MacNodeId destId, inet::Coord destCoord, bool useUeSideMaps);
+            MacNodeId destId, inet::Coord destCoord);
     virtual std::vector<double> getReceptionSinr(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo,
             const std::vector<double>& rsrpVector);
     virtual void emitRcvdSinr(StochasticChannelModel *radio, Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr);
