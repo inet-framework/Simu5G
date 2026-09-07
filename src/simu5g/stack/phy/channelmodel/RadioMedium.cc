@@ -337,10 +337,8 @@ void RadioMedium::removeRadio(StochasticChannelModel *endpoint)
 
     // step 13a: the same per-radio state destruction radioState_.erase()
     // performed, one flattened container at a time (losMap_ left this list
-    // at 13b, lastComputedSF_ at 13c: per-link state is no one endpoint's
-    // property)
-    eraseOwnerEntries(jakesFadingMap_, endpoint);
-    eraseOwnerEntries(jakesFadingMapBgUe_, endpoint);
+    // at 13b, lastComputedSF_ at 13c, the two Jakes maps at 13d: per-link
+    // state is no one endpoint's property)
     eraseOwnerEntries(positionHistory_, endpoint);
     eraseOwnerEntries(lastCorrelationPoint_, endpoint);
 }
@@ -602,32 +600,23 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
      *
      * thus the actual map should be chosen carefully (i.e. just check the cqiDL flag)
      */
-    // step 13a: the same map choice, expressed as (container, owner): the
-    // retired obtainUeJakesMap() raw-pointer fetch becomes resolution of the
-    // owning endpoint, whose owner-prefixed entries jakesFadingMap_ holds.
-    JakesFadingMap *actualJakesMap;
-    StochasticChannelModel *owner = radio;
-    if (cqiDl && !isBgUe) { // if we are computing a DL CQI we need the Jakes Map stored on the UE side
-        owner = radio->obtainUeEndpoint(ownerId);
-        if (owner == nullptr)
-            throw cRuntimeError("StochasticChannelModel::obtainUeJakesMap - channel model is a null pointer");
-        actualJakesMap = &jakesFadingMap_;
-    }
-    else if (cqiDl && isBgUe)
-        actualJakesMap = &jakesFadingMapBgUe_;
-    else
-        actualJakesMap = &jakesFadingMap_;
-
-    const OwnerLinkKey stateKey{owner, key};
+    // step 13d: one shared Jakes realization per physical link, whichever
+    // end asks -- the retired obtainUeEndpoint() owner redirect (the UE-side
+    // map for a DL CQI) has nothing left to redirect to, so the choice is
+    // just the background-UE twin vs the regular map. isBgUe still rides
+    // through cqiDl here, exactly as before; step 13e drops that gate.
+    JakesFadingMap& actualJakesMap = (cqiDl && isBgUe) ? jakesFadingMapBgUe_ : jakesFadingMap_;
 
     const CarrierLeg leg = legFor(radio);
+    const LinkStateKey stateKey{leg, key};
+
     const CarrierPhysics& cp = carrierPhysicsFor(leg);
 
     // if this is the first time that we compute fading for current user
-    if (actualJakesMap->find(stateKey) == actualJakesMap->end()) {
+    if (actualJakesMap.find(stateKey) == actualJakesMap.end()) {
         // clear the map
         // FIXME: possible memory leak
-        (*actualJakesMap)[stateKey].clear();
+        actualJakesMap[stateKey].clear();
 
         // for each band we are going to create a Jakes fading
         for (unsigned int j = 0; j < radio->getNumBands(); j++) {
@@ -645,7 +634,7 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
                 temp.delaySpread.push_back(exponential(cp.delayRms));
             }
             // store the Jakes fading for this user
-            (*actualJakesMap)[stateKey].push_back(temp);
+            actualJakesMap[stateKey].push_back(temp);
         }
     }
     // convert carrier frequency from GHz to Hz
@@ -657,7 +646,7 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
     double re_h = 0;
     double im_h = 0;
 
-    const JakesFadingData& actualJakesData = actualJakesMap->at(stateKey).at(band);
+    const JakesFadingData& actualJakesData = actualJakesMap.at(stateKey).at(band);
 
     // Compute Doppler shift.
     double doppler_shift = (speed * f) / SPEED_OF_LIGHT;

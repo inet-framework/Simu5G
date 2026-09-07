@@ -58,8 +58,6 @@ struct JakesFadingData
  */
 typedef std::pair<StochasticChannelModel *, LinkKey> OwnerLinkKey;
 
-typedef std::map<OwnerLinkKey, std::vector<JakesFadingData>> JakesFadingMap;
-
 /**
  * A background transmitter's phantom key (plan 3(j)): the tuple that *is*
  * network-unique, since its own MacNodeId is not -- every
@@ -146,6 +144,7 @@ struct CarrierLeg
 typedef std::pair<CarrierLeg, LinkKey> LinkStateKey;
 
 typedef std::map<LinkStateKey, std::pair<inet::simtime_t, double>> ShadowFadingMap;
+typedef std::map<LinkStateKey, std::vector<JakesFadingData>> JakesFadingMap;
 
 /**
  * The per-carrier-leg physics parameters (plan section 3(e)/3(h)) that every
@@ -230,6 +229,9 @@ class RadioMedium : public cSimpleModule
     ShadowFadingMap lastComputedSF_;
     JakesFadingMap jakesFadingMap_;
     JakesFadingMap jakesFadingMapBgUe_;
+
+    // Still owner-keyed (step 13a): a node's motion is genuinely a per-node,
+    // per-owning-endpoint fact until step 13f re-keys these by (node, leg).
     std::map<std::pair<StochasticChannelModel *, MacNodeId>, std::queue<Position>> positionHistory_;
     std::map<OwnerLinkKey, Position> lastCorrelationPoint_;
 
