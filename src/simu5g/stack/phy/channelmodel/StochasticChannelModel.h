@@ -96,17 +96,10 @@ class StochasticChannelModel : public ChannelModelBase
     // true if the UE is inside a building
     bool inside_building_;
 
-    // distance from the building wall, PER SERVED CARRIER (E8b draw-preserving
-    // kludge). Before the carrier-vector collapse each carrier had its own
-    // channel-model object drawing its own inside_distance_ once; the one
-    // collapsed object keeps that exact draw count by drawing once per served
-    // carrier (initialize()), so the RNG stream is byte-identical to the
-    // vector's. E8c drops this to a single draw per radio (TR 38.901 7.4.3.1:
-    // d_2D-in is UT-specific), which is the recast's one behavioral step.
-    std::map<GHz, double> inside_distances_;
-    // the LOCAL-stage draws, before componentCarriers_ (POSTLOCAL) is known
-    // to key them by frequency
-    std::vector<double> pendingInsideDistances_;
+    // distance from the building wall; drawn once at registration
+    // rather than in the medium, so it stays resident -- handed to the
+    // medium per-call through o2iStateOf() instead of cached there
+    double inside_distance_;
 
     // Antenna gain of eNodeB
     double antennaGainEnB_;
@@ -197,16 +190,10 @@ class StochasticChannelModel : public ChannelModelBase
     bool getCollectSinrStatistics() const { return collectSinrStatistics_; }
 
     /*
-     * Building-penetration distance for one served carrier, paired with
-     * getInsideBuilding() into the O2iState RadioMedium's o2iStateOf()
-     * returns. Per-carrier only for the E8b draw-preserving kludge; E8c
-     * collapses it to one value per radio.
+     * Building-penetration distance, paired with getInsideBuilding() into
+     * the O2iState RadioMedium's o2iStateOf() returns.
      */
-    double getInsideDistance(GHz carrierFrequency) const
-    {
-        auto it = inside_distances_.find(carrierFrequency);
-        return it == inside_distances_.end() ? 0.0 : it->second;
-    }
+    double getInsideDistance() const { return inside_distance_; }
 
     /*
      * Building-penetration flag, paired with getInsideDistance() into the

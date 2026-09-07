@@ -26,7 +26,7 @@
 /simulations/channelmodel/,              -f omnetpp.ini -c TallUe-38901 -r 0,            20s,        5717-42d8/tplx;39f5-0cdf/tilx;025b-4da4/~tNl;fa28-9da4/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c TallUe-36873 -r 0,            20s,        0a57-cba4/tplx;397f-ce54/tilx;7561-06bd/~tNl;eb8d-69c8/sz, PASS,
 /simulations/channelmodel/,              -f omnetpp.ini -c UMi-38901-RngRemap -r 0,              20s,         9326-44a0/tplx;b89c-0e13/tilx;1d3b-ef3e/~tNl;5b78-69e1/sz, PASS,
-/simulations/channelmodel/,              -f omnetpp.ini -c Penetration-MultiCarrier-38901 -r 0, 20s, 3725-abc3/tplx;6d19-5085/tilx;da19-3600/~tNl;0ed6-3f6c/sz, PASS,
+/simulations/channelmodel/,              -f omnetpp.ini -c Penetration-MultiCarrier-38901 -r 0, 20s, c644-e5b1/tplx;134a-eba7/tilx;2d80-6c4a/~tNl;74bb-18e8/sz, PASS,
 /simulations/lte/demo/,                  -f omnetpp.ini -c CBR-DL -r 0,                          5s,         66f6-9f69/tplx;bd57-9c5b/tilx;1a65-06a9/~tNl;9faa-4185/sz, PASS,
 /simulations/lte/demo/,                  -f omnetpp.ini -c CBR-DL -r 5,                          5s,         ffc0-27e0/tplx;cb5c-846a/tilx;7d92-7053/~tNl;116b-8b77/sz, PASS,
 /simulations/lte/demo/,                  -f omnetpp.ini -c CBR-UL -r 0,                          5s,         3400-24ee/tplx;9239-57c4/tilx;72e6-cdf6/~tNl;4a13-757b/sz, PASS,
