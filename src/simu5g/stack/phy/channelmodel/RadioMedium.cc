@@ -41,20 +41,6 @@ CarrierLeg legFor(StochasticChannelModel *endpoint)
     return CarrierLeg{endpoint->getCarrierFrequency(), endpoint->isNr()};
 }
 
-/**
- * Erases every owner-prefixed entry of one flattened state map (step 13a):
- * the same per-radio state destruction radioState_.erase(endpoint) used to
- * perform in one node. Each flip that re-keys a container to the carrier leg
- * removes its call from removeRadio() -- per-link state stops being any one
- * endpoint's property.
- */
-template<typename M>
-void eraseOwnerEntries(M& map, StochasticChannelModel *owner)
-{
-    for (auto it = map.begin(); it != map.end(); )
-        it = (it->first.first == owner) ? map.erase(it) : ++it;
-}
-
 } // namespace
 
 bool& RadioMedium::losState(StochasticChannelModel *owner, const LinkKey& key, bool *existed)
@@ -67,18 +53,18 @@ bool& RadioMedium::losState(StochasticChannelModel *owner, const LinkKey& key, b
     return result.first->second;
 }
 
-std::queue<Position> *RadioMedium::positionHistory(StochasticChannelModel *owner, MacNodeId nodeId, bool createIfMissing)
+std::queue<Position> *RadioMedium::positionHistory(MacNodeId nodeId, const CarrierLeg& leg, bool createIfMissing)
 {
-    auto key = std::make_pair(owner, nodeId);
+    auto key = std::make_pair(nodeId, leg);
     if (createIfMissing)
         return &positionHistory_[key];
     auto it = positionHistory_.find(key);
     return it == positionHistory_.end() ? nullptr : &it->second;
 }
 
-Position& RadioMedium::correlationPoint(StochasticChannelModel *owner, const LinkKey& key, MacNodeId nodeId, bool *existed)
+Position& RadioMedium::correlationPoint(MacNodeId nodeId, const CarrierLeg& leg, bool *existed)
 {
-    auto result = lastCorrelationPoint_.try_emplace(OwnerLinkKey{owner, key});
+    auto result = lastCorrelationPoint_.try_emplace(std::make_pair(nodeId, leg));
     if (existed != nullptr)
         *existed = !result.second;
     return result.first->second;
@@ -93,7 +79,7 @@ void RadioMedium::updatePositionHistory(StochasticChannelModel *radio, MacNodeId
 {
     // createIfMissing=true: a freshly vivified (empty) queue makes
     // "!history->empty()" false, exactly like the old find()==end() check
-    std::queue<Position> *history = positionHistory(radio, nodeId, true);
+    std::queue<Position> *history = positionHistory(nodeId, legFor(radio), true);
 
     if (!history->empty() && history->back().first == NOW)
         // position already updated for this TTI.
@@ -107,20 +93,18 @@ void RadioMedium::updatePositionHistory(StochasticChannelModel *radio, MacNodeId
         history->pop();
 }
 
-void RadioMedium::updateCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, MacNodeId nodeId, const inet::Coord coord)
+void RadioMedium::updateCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
 {
+    const CarrierLeg leg = legFor(radio);
     bool existed = false;
-    Position& point = correlationPoint(radio, key, nodeId, &existed);
+    Position& point = correlationPoint(nodeId, leg, &existed);
 
     if (!existed) {
         // no lastCorrelationPoint set current point.
         point = Position(NOW, coord);
     }
     else if ((point.first != NOW) &&
-             // the leg's established correlationDistance record: equal to the
-             // endpoint's own retired correlationDistance_ member by
-             // checkCarrierPhysics() (every radio on a leg agrees, field 4)
-             point.second.distance(coord) > carrierPhysicsFor(legFor(radio)).correlationDistance)
+             point.second.distance(coord) > carrierPhysicsFor(leg).correlationDistance)
     {
         // check simtime_t first
         point = Position(NOW, coord);
@@ -334,13 +318,6 @@ void RadioMedium::removeRadio(StochasticChannelModel *endpoint)
     radios_.pop_back();
     if (idx < radios_.size())
         reindex(radios_[idx]);
-
-    // step 13a: the same per-radio state destruction radioState_.erase()
-    // performed, one flattened container at a time (losMap_ left this list
-    // at 13b, lastComputedSF_ at 13c, the two Jakes maps at 13d: per-link
-    // state is no one endpoint's property)
-    eraseOwnerEntries(positionHistory_, endpoint);
-    eraseOwnerEntries(lastCorrelationPoint_, endpoint);
 }
 
 void RadioMedium::reindex(RadioDescriptor& descriptor)
@@ -475,7 +452,7 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
     double twoDimDistance = radio->getTwoDimDistance(link.txCoord, link.rxCoord);
 
     double speed = computeSpeed(radio, link.stateNodeId, link.stateCoord);
-    double correlationDist = computeCorrelationDistance(radio, link.stateKey, link.stateNodeId, link.stateCoord);
+    double correlationDist = computeCorrelationDistance(radio, link.stateNodeId, link.stateCoord);
 
     const CarrierPhysics& cp = carrierPhysicsFor(legFor(radio));
 
@@ -499,7 +476,7 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
 
     // update the tracked node's current position
     updatePositionHistory(radio, link.stateNodeId, link.stateCoord);
-    updateCorrelationDistance(radio, link.stateKey, link.stateNodeId, link.stateCoord);
+    updateCorrelationDistance(radio, link.stateNodeId, link.stateCoord);
 
     EV << "RadioMedium::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNB is " << attenuation << endl;
 
@@ -693,7 +670,7 @@ double RadioMedium::computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId
     // createIfMissing=false: a node with no history yet must stay absent,
     // not gain an empty placeholder queue that a later front()/back() would
     // read as an entry
-    std::queue<Position> *history = positionHistory(radio, nodeId, false);
+    std::queue<Position> *history = positionHistory(nodeId, legFor(radio), false);
 
     if (history == nullptr) {
         // no entries
@@ -722,12 +699,12 @@ double RadioMedium::computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId
     return speed;
 }
 
-double RadioMedium::computeCorrelationDistance(StochasticChannelModel *radio, const LinkKey& key, MacNodeId nodeId, const inet::Coord coord)
+double RadioMedium::computeCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
 {
     double dist = 0.0;
 
     bool existed = false;
-    Position& point = correlationPoint(radio, key, nodeId, &existed);
+    Position& point = correlationPoint(nodeId, legFor(radio), &existed);
 
     if (!existed) {
         // no lastCorrelationPoint found. Add current position and return dist = 0.0
