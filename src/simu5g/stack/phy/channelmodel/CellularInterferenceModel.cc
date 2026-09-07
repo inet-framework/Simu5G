@@ -105,7 +105,7 @@ void CellularInterferenceModel::computeDownlinkInterference(StochasticChannelMod
             continue;
 
         // compute attenuation using data structures within the cell
-        double att = interfChanModel->getAttenuation(ueId, UL, coord);
+        double att = interfChanModel->getAttenuation(ueId, UL, coord, carrierFrequency);
         EV << "EnbId [" << id << "] - attenuation [" << att << "]";
 
         //=============== ANGULAR ATTENUATION =================
@@ -115,7 +115,7 @@ void CellularInterferenceModel::computeDownlinkInterference(StochasticChannelMod
 
         double txPwr = medium_->txPowerOf(id, carrierFrequency) - angularAtt - radio->getCableLoss() + radio->getAntennaGainEnB() + radio->getAntennaGainUe();
 
-        unsigned int numBands = std::min(radio->getNumBands(radio->getCarrierFrequency()), interfChanModel->getNumBands(interfChanModel->getCarrierFrequency()));
+        unsigned int numBands = std::min(radio->getNumBands(carrierFrequency), interfChanModel->getNumBands(carrierFrequency));
         EV << " - shared bands [" << numBands << "]" << endl;
 
         if (isCqi) {// check slot occupation for this TTI
@@ -154,7 +154,7 @@ void CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel
     const std::vector<std::vector<UeAllocationInfo>> *ulTransmissionMap;
     const std::vector<UeAllocationInfo> *allocatedUes;
 
-    unsigned int numBands = radio->getNumBands(radio->getCarrierFrequency());
+    unsigned int numBands = radio->getNumBands(carrierFrequency);
 
     if (isCqi) {// check slot occupation for this TTI
         ulTransmissionMap = binder_->getUlTransmissionMap(carrierFrequency, CURR_TTI);
@@ -183,7 +183,7 @@ void CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel
 
                     // get rx power and attenuation from this UE
                     double rxPwr = txPwr - radio->getCableLoss() + radio->getAntennaGainUe() + radio->getAntennaGainEnB();
-                    double att = radio->getAttenuation(ueId, UL, ueCoord);
+                    double att = radio->getAttenuation(ueId, UL, ueCoord, carrierFrequency);
                     (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
 
                     EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;
@@ -224,7 +224,7 @@ void CellularInterferenceModel::computeUplinkInterference(StochasticChannelModel
 
                     // get tx power and attenuation from this UE
                     double rxPwr = txPwr - radio->getCableLoss() + radio->getAntennaGainUe() + radio->getAntennaGainEnB();
-                    double att = radio->getAttenuation(ueId, UL, ueCoord);
+                    double att = radio->getAttenuation(ueId, UL, ueCoord, carrierFrequency);
                     (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
 
                     EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;
@@ -265,7 +265,7 @@ void CellularInterferenceModel::computeExtCellInterference(StochasticChannelMode
            << dist << "\t";
 
         // compute attenuation according to some path loss model
-        att = radio->computeExtCellPathLoss(dist, LinkKey(nodeId));
+        att = radio->computeExtCellPathLoss(dist, LinkKey(nodeId), carrierFrequency);
 
         //=============== ANGULAR ATTENUATION =================
         if (extCell->getTxDirection() == OMNI) {
@@ -284,7 +284,7 @@ void CellularInterferenceModel::computeExtCellInterference(StochasticChannelMode
             double verticalAngle = radio->computeVerticalAngle(c, coord);
 
             // compute attenuation due to sectorial tx
-            angularAtt = radio->computeAngularAttenuation(recvAngle, verticalAngle);
+            angularAtt = radio->computeAngularAttenuation(recvAngle, verticalAngle, carrierFrequency);
         }
         //=============== END ANGULAR ATTENUATION =================
 
@@ -293,7 +293,7 @@ void CellularInterferenceModel::computeExtCellInterference(StochasticChannelMode
         recvPwrDBm = extCell->getTxPower() - att - angularAtt - radio->getCableLoss() + radio->getAntennaGainEnB() + radio->getAntennaGainUe();
         recvPwr = dBmToLinear(recvPwrDBm);
 
-        unsigned int numBands = std::min(radio->getNumBands(radio->getCarrierFrequency()), extCell->getNumBands());
+        unsigned int numBands = std::min(radio->getNumBands(carrierFrequency), extCell->getNumBands());
         EV << " - shared bands [" << numBands << "]" << endl;
 
         // add interference in those bands where the ext cell is active
@@ -346,7 +346,7 @@ void CellularInterferenceModel::computeBackgroundCellInterference(StochasticChan
                << dist << "\t";
 
             // compute attenuation according to some path loss model
-            att = radio->computeExtCellPathLoss(dist, LinkKey(nodeId));
+            att = radio->computeExtCellPathLoss(dist, LinkKey(nodeId), carrierFrequency);
 
             txPwr = bgScheduler->getTxPower();
 
@@ -367,7 +367,7 @@ void CellularInterferenceModel::computeBackgroundCellInterference(StochasticChan
                 double verticalAngle = radio->computeVerticalAngle(c, ueCoord);
 
                 // compute attenuation due to sectorial tx
-                angularAtt = radio->computeAngularAttenuation(recvAngle, verticalAngle);
+                angularAtt = radio->computeAngularAttenuation(recvAngle, verticalAngle, carrierFrequency);
             }
             //=============== END ANGULAR ATTENUATION =================
 
@@ -377,7 +377,7 @@ void CellularInterferenceModel::computeBackgroundCellInterference(StochasticChan
             recvPwr = dBmToLinear(recvPwrDBm);
             EV << " recvPwr[" << recvPwr << "]\t";
 
-            unsigned int numBands = std::min(radio->getNumBands(radio->getCarrierFrequency()), bgScheduler->getNumBands());
+            unsigned int numBands = std::min(radio->getNumBands(carrierFrequency), bgScheduler->getNumBands());
             EV << " - shared bands [" << numBands << "]\t";
             EV << " - interfering bands[";
 
@@ -408,7 +408,7 @@ void CellularInterferenceModel::computeBackgroundCellInterference(StochasticChan
 
             angularAtt = 0;  // we assume OMNI directional UEs
 
-            unsigned int numBands = std::min(radio->getNumBands(radio->getCarrierFrequency()), bgScheduler->getNumBands());
+            unsigned int numBands = std::min(radio->getNumBands(carrierFrequency), bgScheduler->getNumBands());
             EV << " - shared bands [" << numBands << "]" << endl;
 
             // add interference in those bands where a UE in the background cell is active
@@ -438,7 +438,7 @@ void CellularInterferenceModel::computeBackgroundCellInterference(StochasticChan
                        << dist << "\t";
 
                     // compute attenuation according to some path loss model
-                    att = radio->computeExtCellPathLoss(dist, LinkKey(nodeId));
+                    att = radio->computeExtCellPathLoss(dist, LinkKey(nodeId), carrierFrequency);
 
                     recvPwrDBm = txPwr - att - angularAtt - radio->getCableLoss() + radio->getAntennaGainEnB() + antennaGainBgUe;
                     recvPwr = dBmToLinear(recvPwrDBm);
@@ -462,7 +462,7 @@ void CellularInterferenceModel::computeD2DInterference(StochasticChannelModel *r
     const std::vector<std::vector<UeAllocationInfo>> *ulTransmissionMap;
     const std::vector<UeAllocationInfo> *allocatedUes;
 
-    unsigned int numBands = radio->getNumBands(radio->getCarrierFrequency());
+    unsigned int numBands = radio->getNumBands(carrierFrequency);
 
     // CQI computation checks the slot occupation of the current TTI;
     // error computation checks the occupation of the previous TTI
@@ -497,7 +497,7 @@ void CellularInterferenceModel::computeD2DInterference(StochasticChannelModel *r
                 // get tx power and attenuation from this UE
                 double rxPwr = txPwr - radio->getCableLoss() + 2 * radio->getAntennaGainUe();
                 // interferer -> our receiver
-                double att = medium_->getAttenuation(radio, medium_->d2dLink(radio, ueId, ueCoord, destId, destCoord));
+                double att = medium_->getAttenuation(radio, medium_->d2dLink(radio, ueId, ueCoord, destId, destCoord, carrierFrequency));
                 (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
 
                 EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;

@@ -34,10 +34,18 @@ Define_Module(RadioMedium);
 
 namespace {
 
-/** The carrier leg a registered endpoint belongs to: its own carrier frequency plus its isNr flag. */
-CarrierLeg legFor(StochasticChannelModel *endpoint)
+/**
+ * The carrier leg a call is on: carrierFrequency plus the radio's isNr flag.
+ * carrierFrequency is explicit, not radio->getCarrierFrequency(), because
+ * since E8 one radio endpoint can serve several carriers -- its own
+ * getCarrierFrequency() answers only for its PRIMARY one, and every carrier
+ * a radio serves needs its own leg-keyed state (pathLoss_, losMap_,
+ * positionHistory_, ...), exactly as when each carrier had its own endpoint
+ * object.
+ */
+CarrierLeg legFor(GHz carrierFrequency, bool isNr)
 {
-    return CarrierLeg{endpoint->getCarrierFrequency(), endpoint->isNr()};
+    return CarrierLeg{carrierFrequency, isNr};
 }
 
 } // namespace
@@ -154,9 +162,9 @@ bool RadioMedium::carrierLegMatches(cModule *legModule, GHz carrierFrequency, bo
     return cc->getCarrierFrequency() == carrierFrequency;
 }
 
-cModule *RadioMedium::matchCarrierLeg(StochasticChannelModel *endpoint) const
+cModule *RadioMedium::matchCarrierLeg(StochasticChannelModel *endpoint, GHz carrierFrequency) const
 {
-    GHz freq = endpoint->getCarrierFrequency();
+    GHz freq = carrierFrequency;
     bool isNr = endpoint->isNr();
 
     cModule *match = nullptr;
@@ -179,10 +187,22 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
 {
     ASSERT(endpoint != nullptr);
 
+    // radio endpoint recast E8 (§3(c)): one endpoint module now serves a
+    // whole PHY leg, possibly several carriers -- register it once per
+    // carrier, in endpoint->getComponentCarriers()'s declaration order, each
+    // registration producing its own RadioDescriptor (radioIndex_ stays keyed
+    // by (nodeId, carrierFrequency), unchanged) that shares this same
+    // endpoint pointer.
+    for (auto *cc : endpoint->getComponentCarriers())
+        addRadioOnCarrier(endpoint, cc->getCarrierFrequency());
+}
+
+void RadioMedium::addRadioOnCarrier(StochasticChannelModel *endpoint, GHz carrierFrequency)
+{
     RadioDescriptor descriptor;
     descriptor.endpoint = endpoint;
     descriptor.nodeId = endpoint->getNodeId();
-    descriptor.carrierFrequency = endpoint->getCarrierFrequency();
+    descriptor.carrierFrequency = carrierFrequency;
     descriptor.height = endpoint->getHeight();
     // The D2D marker: one dynamic_cast, here, cached for every
     // D2D-aware branch to read afterward instead of casting itself.
@@ -202,8 +222,8 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
     // frequency: frequency alone conflates an NR UE's vestigial LTE leg with
     // the gNB it shares a default component carrier with, and a
     // dual-connectivity master eNB with its secondary gNB.)
-    CarrierLeg leg = legFor(endpoint);
-    cModule *legModule = matchCarrierLeg(endpoint);
+    CarrierLeg leg = legFor(carrierFrequency, endpoint->isNr());
+    cModule *legModule = matchCarrierLeg(endpoint, carrierFrequency);
     if (pathLoss_.find(leg) == pathLoss_.end()) {
         // this leg's path-loss strategy: legModule's own "pathLoss"
         // submodule, resolved (not constructed) -- never from this radio's
@@ -344,7 +364,7 @@ double RadioMedium::txAngleOf(MacNodeId nodeId, GHz carrierFrequency) const
 O2iState RadioMedium::o2iStateOf(MacNodeId nodeId, GHz carrierFrequency) const
 {
     const RadioDescriptor& d = descriptorFor(nodeId, carrierFrequency);
-    return O2iState{d.endpoint->getInsideBuilding(), d.endpoint->getInsideDistance()};
+    return O2iState{d.endpoint->getInsideBuilding(), d.endpoint->getInsideDistance(carrierFrequency)};
 }
 
 namespace {
@@ -359,14 +379,15 @@ constexpr double DEFAULT_UE_HEIGHT_M = 1.5;
 
 } // namespace
 
-LinkContext RadioMedium::linkContextFor(StochasticChannelModel *radio, MacNodeId peerId) const
+LinkContext RadioMedium::linkContextFor(StochasticChannelModel *radio, MacNodeId peerId, GHz carrierFrequency) const
 {
     LinkContext link;
 
-    // frequency triple: radio's own carrier frequency, reproducing
+    // frequency triple: the call's own carrier frequency (explicit since E8,
+    // when one radio started being able to serve several), reproducing
     // ChannelModelBase's own derivation (ChannelModelBase.cc:26-29) -- no
     // per-leg cache any more (E4/§3(f))
-    GHz freq = radio->getCarrierFrequency();
+    GHz freq = carrierFrequency;
     link.carrierFrequencyGHz = GHz(freq).get();
     link.carrierFrequencyHz = Hz(freq).get();
     link.log10CarrierFrequencyGHz = log10(link.carrierFrequencyGHz);
@@ -420,7 +441,7 @@ PathLossModel& RadioMedium::pathLossFor(const CarrierLeg& leg) const
 PathLossModel& RadioMedium::pathLossFor(MacNodeId nodeId, GHz carrierFrequency) const
 {
     const RadioDescriptor& d = descriptorFor(nodeId, carrierFrequency);
-    return pathLossFor(legFor(d.endpoint));
+    return pathLossFor(legFor(carrierFrequency, d.endpoint->isNr()));
 }
 
 PathLossModel& RadioMedium::extCellPathLossFor(const CarrierLeg& leg) const
@@ -435,7 +456,7 @@ PathLossModel& RadioMedium::extCellPathLossFor(const CarrierLeg& leg) const
 PathLossModel& RadioMedium::extCellPathLossFor(MacNodeId nodeId, GHz carrierFrequency) const
 {
     const RadioDescriptor& d = descriptorFor(nodeId, carrierFrequency);
-    return extCellPathLossFor(legFor(d.endpoint));
+    return extCellPathLossFor(legFor(carrierFrequency, d.endpoint->isNr()));
 }
 
 PathLossModel *RadioMedium::resolvePathLossStrategy(cModule *legModule)
@@ -502,16 +523,16 @@ Position& RadioMedium::correlationPoint(MacNodeId nodeId, const CarrierLeg& leg,
     return result.first->second;
 }
 
-bool RadioMedium::losStateFor(StochasticChannelModel *radio, const LinkKey& key)
+bool RadioMedium::losStateFor(StochasticChannelModel *radio, const LinkKey& key, GHz carrierFrequency)
 {
-    return losState(legFor(radio), key);
+    return losState(legFor(carrierFrequency, radio->isNr()), key);
 }
 
-void RadioMedium::updatePositionHistory(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
+void RadioMedium::updatePositionHistory(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency)
 {
     // createIfMissing=true: a freshly vivified (empty) queue makes
     // "!history->empty()" false, exactly like the old find()==end() check
-    std::queue<Position> *history = positionHistory(nodeId, legFor(radio), true);
+    std::queue<Position> *history = positionHistory(nodeId, legFor(carrierFrequency, radio->isNr()), true);
 
     if (!history->empty() && history->back().first == NOW)
         // position already updated for this TTI.
@@ -525,9 +546,9 @@ void RadioMedium::updatePositionHistory(StochasticChannelModel *radio, MacNodeId
         history->pop();
 }
 
-void RadioMedium::updateCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
+void RadioMedium::updateCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency)
 {
-    const CarrierLeg leg = legFor(radio);
+    const CarrierLeg leg = legFor(carrierFrequency, radio->isNr());
     bool existed = false;
     Position& point = correlationPoint(nodeId, leg, &existed);
 
@@ -548,10 +569,10 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
     double threeDimDistance = link.txCoord.distance(link.rxCoord);
     double twoDimDistance = radio->getTwoDimDistance(link.txCoord, link.rxCoord);
 
-    double speed = computeSpeed(radio, link.stateNodeId, link.stateCoord);
-    double correlationDist = computeCorrelationDistance(radio, link.stateNodeId, link.stateCoord);
+    double speed = computeSpeed(radio, link.stateNodeId, link.stateCoord, link.carrierFrequency);
+    double correlationDist = computeCorrelationDistance(radio, link.stateNodeId, link.stateCoord, link.carrierFrequency);
 
-    const CarrierLeg leg = legFor(radio);
+    const CarrierLeg leg = legFor(link.carrierFrequency, radio->isNr());
 
     // The other party of this link, for height role-resolution (E4/§3(k),
     // risk 15): whichever of {radio, peerId} is eNB-role supplies h_BS,
@@ -569,54 +590,54 @@ double RadioMedium::getAttenuation(StochasticChannelModel *radio, const RadioLin
     bool losAlreadyComputed = false;
     losState(leg, link.stateKey, &losAlreadyComputed);
     if (correlationDist > correlationDistance_ || !losAlreadyComputed) {
-        computeLosProbability(radio, threeDimDistance, twoDimDistance, link.stateKey, peerId);
+        computeLosProbability(radio, threeDimDistance, twoDimDistance, link.stateKey, peerId, link.carrierFrequency);
     }
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
     bool los = losState(leg, link.stateKey);
-    double attenuation = computePathLoss(radio, threeDimDistance, twoDimDistance, los, peerId);
+    double attenuation = computePathLoss(radio, threeDimDistance, twoDimDistance, los, peerId, link.carrierFrequency);
 
     //    Applying shadowing only if it is enabled by configuration
     //    log-normal shadowing (not available for background UEs)
     if (num(link.stateNodeId) < BGUE_MIN_ID && shadowing_)
-        attenuation += computeShadowing(radio, threeDimDistance, twoDimDistance, link.stateKey, speed, peerId);
+        attenuation += computeShadowing(radio, threeDimDistance, twoDimDistance, link.stateKey, speed, peerId, link.carrierFrequency);
 
     // update the tracked node's current position
-    updatePositionHistory(radio, link.stateNodeId, link.stateCoord);
-    updateCorrelationDistance(radio, link.stateNodeId, link.stateCoord);
+    updatePositionHistory(radio, link.stateNodeId, link.stateCoord, link.carrierFrequency);
+    updateCorrelationDistance(radio, link.stateNodeId, link.stateCoord, link.carrierFrequency);
 
     EV << "RadioMedium::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNB is " << attenuation << endl;
 
     return attenuation;
 }
 
-double RadioMedium::computePathLoss(StochasticChannelModel *radio, double distance, double dbp, bool los, MacNodeId peerId)
+double RadioMedium::computePathLoss(StochasticChannelModel *radio, double distance, double dbp, bool los, MacNodeId peerId, GHz carrierFrequency)
 {
-    O2iState o2i = o2iStateOf(radio->getNodeId(), radio->getCarrierFrequency());
-    return pathLossFor(legFor(radio)).computePathLoss(distance, dbp, los, o2i, linkContextFor(radio, peerId));
+    O2iState o2i = o2iStateOf(radio->getNodeId(), carrierFrequency);
+    return pathLossFor(legFor(carrierFrequency, radio->isNr())).computePathLoss(distance, dbp, los, o2i, linkContextFor(radio, peerId, carrierFrequency));
 }
 
-void RadioMedium::computeLosProbability(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, MacNodeId peerId)
+void RadioMedium::computeLosProbability(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, MacNodeId peerId, GHz carrierFrequency)
 {
-    const CarrierLeg leg = legFor(radio);
+    const CarrierLeg leg = legFor(carrierFrequency, radio->isNr());
 
     if (!dynamicLos_) {
         losState(leg, key) = fixedLos_;
         return;
     }
-    double p = pathLossFor(leg).computeLosProbability(d3D, d2D, linkContextFor(radio, peerId));
+    double p = pathLossFor(leg).computeLosProbability(d3D, d2D, linkContextFor(radio, peerId, carrierFrequency));
     losState(leg, key) = (uniform(0.0, 1.0) <= p);
 }
 
-double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, double speed, MacNodeId peerId)
+double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, double d2D, const LinkKey& key, double speed, MacNodeId peerId, GHz carrierFrequency)
 {
-    const CarrierLeg leg = legFor(radio);
+    const CarrierLeg leg = legFor(carrierFrequency, radio->isNr());
     const LinkStateKey stateKey{leg, key};
 
     double mean = 0;
 
     // Get std deviation according to LOS/NLOS and selected scenario
-    double stdDev = pathLossFor(leg).getShadowingStdDev(d3D, d2D, losState(leg, key), linkContextFor(radio, peerId));
+    double stdDev = pathLossFor(leg).getShadowingStdDev(d3D, d2D, losState(leg, key), linkContextFor(radio, peerId, carrierFrequency));
     double time = 0;
     double space = 0;
     double att;
@@ -664,7 +685,7 @@ double RadioMedium::computeShadowing(StochasticChannelModel *radio, double d3D, 
 }
 
 double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& key, double speed,
-        unsigned int band, bool isBgUe)
+        unsigned int band, GHz carrierFrequency, bool isBgUe)
 {
     // isBgUe selects the background-UE Jakes twin: the two
     // maps are otherwise identical in shape and semantics, kept separate
@@ -672,7 +693,7 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
     // entry with a real UE's, even coincidentally.
     JakesFadingMap& actualJakesMap = isBgUe ? jakesFadingMapBgUe_ : jakesFadingMap_;
 
-    const CarrierLeg leg = legFor(radio);
+    const CarrierLeg leg = legFor(carrierFrequency, radio->isNr());
     const LinkStateKey stateKey{leg, key};
 
     // if this is the first time that we compute fading for current link
@@ -682,7 +703,7 @@ double RadioMedium::jakesFading(StochasticChannelModel *radio, const LinkKey& ke
         actualJakesMap[stateKey].clear();
 
         // for each band we are going to create a Jakes fading
-        for (unsigned int j = 0; j < radio->getNumBands(radio->getCarrierFrequency()); j++) {
+        for (unsigned int j = 0; j < radio->getNumBands(carrierFrequency); j++) {
             // clear some structure
             JakesFadingData temp;
             temp.angleOfArrival.clear();
@@ -748,7 +769,7 @@ double RadioMedium::rayleighFading(StochasticChannelModel *radio, MacNodeId id, 
 }
 
 double RadioMedium::applyFading(StochasticChannelModel *radio, MacNodeId nodeId,
-        const LinkKey& key, double speed, unsigned int band, bool isBgUe)
+        const LinkKey& key, double speed, unsigned int band, GHz carrierFrequency, bool isBgUe)
 {
     double fadingAttenuation = 0;
     // if fading is enabled
@@ -758,19 +779,19 @@ double RadioMedium::applyFading(StochasticChannelModel *radio, MacNodeId nodeId,
             fadingAttenuation = rayleighFading(radio, nodeId, band);
 
         else if (fadingType_ == "JAKES")
-            fadingAttenuation = jakesFading(radio, key, speed, band, isBgUe);
+            fadingAttenuation = jakesFading(radio, key, speed, band, carrierFrequency, isBgUe);
     }
     return fadingAttenuation;
 }
 
-double RadioMedium::computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
+double RadioMedium::computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency)
 {
     double speed = 0.0;
 
     // createIfMissing=false: a node with no history yet must stay absent,
     // not gain an empty placeholder queue that a later front()/back() would
     // read as an entry
-    std::queue<Position> *history = positionHistory(nodeId, legFor(radio), false);
+    std::queue<Position> *history = positionHistory(nodeId, legFor(carrierFrequency, radio->isNr()), false);
 
     if (history == nullptr) {
         // no entries
@@ -799,12 +820,12 @@ double RadioMedium::computeSpeed(StochasticChannelModel *radio, MacNodeId nodeId
     return speed;
 }
 
-double RadioMedium::computeCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord)
+double RadioMedium::computeCorrelationDistance(StochasticChannelModel *radio, MacNodeId nodeId, const inet::Coord coord, GHz carrierFrequency)
 {
     double dist = 0.0;
 
     bool existed = false;
-    Position& point = correlationPoint(nodeId, legFor(radio), &existed);
+    Position& point = correlationPoint(nodeId, legFor(carrierFrequency, radio->isNr()), &existed);
 
     if (!existed) {
         // no lastCorrelationPoint found. Add current position and return dist = 0.0
@@ -835,7 +856,7 @@ double RadioMedium::computeSectorAttenuation(StochasticChannelModel *radio, MacN
     double verticalAngle = radio->computeVerticalAngle(txCoord, rxCoord);
 
     // compute attenuation due to sectorial tx
-    return radio->computeAngularAttenuation(recvAngle, verticalAngle);
+    return radio->computeAngularAttenuation(recvAngle, verticalAngle, carrierFrequency);
 }
 
 std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, LteAirFrame *frame, UserControlInfo *lteInfo)
@@ -869,12 +890,12 @@ std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, const Ra
     double totN = dBmToLinear(thermalNoise_ + link.noiseFigure);
 
     // per-band interference-plus-noise denominator, in dBm
-    std::vector<double> den(radio->getNumBands(radio->getCarrierFrequency()), 0.0);
+    std::vector<double> den(radio->getNumBands(link.carrierFrequency), 0.0);
     computeInterferencePlusNoise(radio, link, lteInfo, rbmap, totN, den);
 
     double sumSnr = 0.0;
     int usedRBs = 0;
-    for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
+    for (unsigned int i = 0; i < radio->getNumBands(link.carrierFrequency); i++) {
         // if we are decoding a data transmission and this RB has not been used, skip it
         // TODO fix for multi-antenna case
         if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
@@ -905,10 +926,10 @@ std::vector<double> RadioMedium::getSINR(StochasticChannelModel *radio, const Ra
     // if sender is an eNodeB
     if (link.dir == DL)
         // store the position of user
-        updatePositionHistory(radio, ueId, radio->getCoord());
+        updatePositionHistory(radio, ueId, radio->getCoord(), link.carrierFrequency);
     // sender is a UE
     else
-        updatePositionHistory(radio, ueId, lteInfo->getCoord());
+        updatePositionHistory(radio, ueId, lteInfo->getCoord(), link.carrierFrequency);
     return snrVector;
 }
 
@@ -916,7 +937,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
         RbMap& rbmap, double totN, std::vector<double>& den)
 {
     if (link.dir == D2D || link.dir == D2D_MULTI) {
-        const RadioDescriptor& d = descriptorFor(radio->getNodeId(), radio->getCarrierFrequency());
+        const RadioDescriptor& d = descriptorFor(radio->getNodeId(), link.carrierFrequency);
         if (d.d2dEndpoint == nullptr)
             throw cRuntimeError("computeInterferencePlusNoise: D2D/D2D_MULTI link direction on non-D2D-capable radio '%s'", radio->getFullPath().c_str());
 
@@ -931,7 +952,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
          */
         // vector containing the sum of inCell interference for each band
         std::vector<double> d2dInterference; // Linear value (mW)
-        d2dInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
+        d2dInterference.resize(radio->getNumBands(link.carrierFrequency), 0);
         if (d2dInterference_) {
             interference_->computeD2DInterference(radio, link.cellId, link.txId, link.txCoord, link.rxId, link.rxCoord,
                     (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &d2dInterference, link.dir);
@@ -945,7 +966,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
         // through dBm -> linear -> dBm rather than summing noise directly in dBm, the
         // two are not bit-identical -- observable only when D2D interference is
         // disabled, which no shipped configuration does.
-        for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
+        for (unsigned int i = 0; i < radio->getNumBands(link.carrierFrequency); i++) {
             // the caller skips these bands too; leave their denominator untouched
             if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
                 continue;
@@ -970,7 +991,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     // vector containing the sum of multi-cell interference for each band
     std::vector<double> multiCellInterference; // Linear value (mW)
     // prepare data structure
-    multiCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
+    multiCellInterference.resize(radio->getNumBands(link.carrierFrequency), 0);
     if (downlinkInterference_ && dir == DL && lteInfo->getFrameType() != BEACONPKT) {
         interference_->computeDownlinkInterference(radio, eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
@@ -982,7 +1003,7 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     // vector containing the sum of background cell interference for each band
     std::vector<double> bgCellInterference; // Linear value (mW)
     // prepare data structure
-    bgCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
+    bgCellInterference.resize(radio->getNumBands(link.carrierFrequency), 0);
     if (bgCellInterference_) {
         interference_->computeBackgroundCellInterference(radio, ueId, enbCoord, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
@@ -992,14 +1013,14 @@ void RadioMedium::computeInterferencePlusNoise(StochasticChannelModel *radio, co
     // vector containing the sum of external cell interference for each band
     std::vector<double> extCellInterference; // Linear value (mW)
     // prepare data structure
-    extCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
+    extCellInterference.resize(radio->getNumBands(link.carrierFrequency), 0);
     if (extCellInterference_ && dir == DL) {
         interference_->computeExtCellInterference(radio, eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
 
     EV << "RadioMedium::computeInterferencePlusNoise - distance from my eNb=" << enbCoord.distance(ueCoord) << " - DIR=" << ((dir == DL) ? "DL" : "UL") << endl;
 
-    for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
+    for (unsigned int i = 0; i < radio->getNumBands(link.carrierFrequency); i++) {
         // the caller skips these bands too; leave their denominator untouched
         if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
             continue;
@@ -1036,7 +1057,7 @@ std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const Ra
     // history: computeSpeed() derives from that history, so evaluating it
     // afterwards would yield a different value and hence different fading.
     // Load-bearing ordering.
-    double speed = computeSpeed(radio, link.stateNodeId, link.stateCoord);
+    double speed = computeSpeed(radio, link.stateNodeId, link.stateCoord, link.carrierFrequency);
 
     // attenuation for the desired signal. getAttenuation() below recomputes
     // computeSpeed() a second time on the same (radio, stateNodeId, stateCoord)
@@ -1057,11 +1078,11 @@ std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const Ra
     // =============== ANGULAR ATTENUATION =================
     // Only a base station has a sectorial antenna; a UE-to-UE link never gets here.
     if (link.txIsBaseStation)
-        recvPower -= computeSectorAttenuation(radio, link.txId, radio->getCarrierFrequency(), link.txCoord, link.rxCoord);
+        recvPower -= computeSectorAttenuation(radio, link.txId, link.carrierFrequency, link.txCoord, link.rxCoord);
     // =============== END ANGULAR ATTENUATION =================
 
     std::vector<double> rsrpVector;
-    rsrpVector.resize(radio->getNumBands(radio->getCarrierFrequency()), 0.0);
+    rsrpVector.resize(radio->getNumBands(link.carrierFrequency), 0.0);
 
     // compute and add interference due to fading
     // Apply fading for each band
@@ -1072,8 +1093,8 @@ std::vector<double> RadioMedium::getRSRP(StochasticChannelModel *radio, const Ra
 
     // for each logical band
     // FIXME compute fading only for used RBs
-    for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
-        fadingAttenuation = applyFading(radio, link.stateNodeId, link.stateKey, speed, i);
+    for (unsigned int i = 0; i < radio->getNumBands(link.carrierFrequency); i++) {
+        fadingAttenuation = applyFading(radio, link.stateNodeId, link.stateKey, speed, i, link.carrierFrequency);
 
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
@@ -1133,7 +1154,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
         antennaGainRx = radio->getAntennaGainEnB();
         noiseFigure = radio->getBsNoiseFigure();
     }
-    speed = computeSpeed(radio, bgUeId, ueCoord);
+    speed = computeSpeed(radio, bgUeId, ueCoord, lteInfo->getCarrierFrequency());
 
     CellInfo *eNbCell = radio->getBinder()->getCellInfoByNodeId(eNbId);
     const char *eNbTypeString = eNbCell ? (eNbCell->getEnbType() == MACRO_ENB ? "MACRO" : "MICRO") : "NULL";
@@ -1151,7 +1172,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     // band below.
 
     // UL because we are computing a feedback
-    double attenuation = radio->getAttenuation(bgUeId, UL, ueCoord);
+    double attenuation = radio->getAttenuation(bgUeId, UL, ueCoord, lteInfo->getCarrierFrequency());
 
     //compute recvPower
     recvPower -= attenuation; // (dBm-dB)=dBm
@@ -1164,16 +1185,16 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
 
     // ANGULAR ATTENUATION
     if (dir == DL)
-        recvPower -= computeSectorAttenuation(radio, eNbId, radio->getCarrierFrequency(), enbCoord, ueCoord);
+        recvPower -= computeSectorAttenuation(radio, eNbId, lteInfo->getCarrierFrequency(), enbCoord, ueCoord);
 
     std::vector<double> snrVector;
-    snrVector.resize(radio->getNumBands(radio->getCarrierFrequency()), recvPower);
+    snrVector.resize(radio->getNumBands(lteInfo->getCarrierFrequency()), recvPower);
 
 
     // for each logical band
     double fadingAttenuation = 0;
-    for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
-        fadingAttenuation = applyFading(radio, bgUeId, LinkKey(bgUeId), speed, i, true);
+    for (unsigned int i = 0; i < radio->getNumBands(lteInfo->getCarrierFrequency()); i++) {
+        fadingAttenuation = applyFading(radio, bgUeId, LinkKey(bgUeId), speed, i, lteInfo->getCarrierFrequency(), true);
         // add fading contribution to the received power
         double finalRecvPower = recvPower + fadingAttenuation; // (dBm+dB)=dBm
 
@@ -1202,7 +1223,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     //vector containing the sum of multicell interference for each band
     std::vector<double> multiCellInterference; // Linear value (mW)
     // prepare data structure
-    multiCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
+    multiCellInterference.resize(radio->getNumBands(lteInfo->getCarrierFrequency()), 0);
     if (downlinkInterference_ && dir == DL) {
         interference_->computeDownlinkInterference(radio, eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
     }
@@ -1214,7 +1235,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     //vector containing the sum of bg-cell interference for each band
     std::vector<double> bgCellInterference; // Linear value (mW)
     // prepare data structure
-    bgCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
+    bgCellInterference.resize(radio->getNumBands(lteInfo->getCarrierFrequency()), 0);
     if (bgCellInterference_) {
         interference_->computeBackgroundCellInterference(radio, bgUeId, enbCoord, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
@@ -1224,7 +1245,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     //vector containing the sum of ext-cell interference for each band
     std::vector<double> extCellInterference; // Linear value (mW)
     // prepare data structure
-    extCellInterference.resize(radio->getNumBands(radio->getCarrierFrequency()), 0);
+    extCellInterference.resize(radio->getNumBands(lteInfo->getCarrierFrequency()), 0);
     if (extCellInterference_ && dir == DL) {
         interference_->computeExtCellInterference(radio, eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
@@ -1234,7 +1255,7 @@ std::vector<double> RadioMedium::getSINR_bgUe(StochasticChannelModel *radio, Lte
     double totN = dBmToLinear(thermalNoise_ + noiseFigure);
 
     // add interference for each band
-    for (unsigned int i = 0; i < radio->getNumBands(radio->getCarrierFrequency()); i++) {
+    for (unsigned int i = 0; i < radio->getNumBands(lteInfo->getCarrierFrequency()); i++) {
         // denominator expressed in dBm as (N+extCell+multiCell)
         //               (      mW              +          mW            +  mW  +        mW            )
         double den = linearToDBm(bgCellInterference[i] + extCellInterference[i] + totN + multiCellInterference[i]);
@@ -1279,9 +1300,10 @@ double RadioMedium::getReceivedPower_bgUe(StochasticChannelModel *radio, double 
     //compute attenuation based on selected scenario and based on LOS or NLOS
     double sqrDistance = txPos.distance(rxPos);
     double dbp = 0;
-    // No specific bg-UE identity reaches this call (§3(k)): radio is always
-    // the eNB side, so linkContextFor() falls back to the UE-side default height.
-    double attenuation = computePathLoss(radio, sqrDistance, dbp, losStatus, NODEID_NONE);
+    // No specific bg-UE identity, and no specific carrier (no lteInfo reaches
+    // this call), reach this call (§3(k)): radio's own (primary) carrier is
+    // used, and linkContextFor() falls back to the UE-side default height.
+    double attenuation = computePathLoss(radio, sqrDistance, dbp, losStatus, NODEID_NONE, radio->getCarrierFrequency());
 
     //compute recvPower
     double recvPower = txPower - attenuation; // (dBm-dB)=dBm
@@ -1427,10 +1449,11 @@ bool RadioMedium::isReceptionSuccessful(StochasticChannelModel *radio, LteAirFra
 }
 
 RadioLink RadioMedium::d2dLink(StochasticChannelModel *radio, MacNodeId srcId, inet::Coord srcCoord,
-        MacNodeId destId, inet::Coord destCoord)
+        MacNodeId destId, inet::Coord destCoord, GHz carrierFrequency)
 {
     RadioLink link;
     link.dir = D2D;
+    link.carrierFrequency = carrierFrequency;
 
     link.txId = srcId;
     link.rxId = destId;
@@ -1466,7 +1489,7 @@ std::vector<double> RadioMedium::getReceptionSinr(StochasticChannelModel *radio,
 {
     Direction dir = lteInfo->getDirection();
     if (dir == D2D || dir == D2D_MULTI) {
-        const RadioDescriptor& d = descriptorFor(radio->getNodeId(), radio->getCarrierFrequency());
+        const RadioDescriptor& d = descriptorFor(radio->getNodeId(), lteInfo->getCarrierFrequency());
         if (d.d2dEndpoint == nullptr)
             throw cRuntimeError("getReceptionSinr: D2D/D2D_MULTI direction on non-D2D-capable radio '%s'", radio->getFullPath().c_str());
 
@@ -1491,7 +1514,7 @@ void RadioMedium::emitRcvdSinr(StochasticChannelModel *radio, Direction dir, Mac
         // -- radio, the same registered endpoint the pre-fold D2dChannelModel's own
         // emitRcvdSinr() emitted on as "this" -- rather than to the sender's channel
         // model the way the cellular UL branch below does.
-        const RadioDescriptor& d = descriptorFor(radio->getNodeId(), radio->getCarrierFrequency());
+        const RadioDescriptor& d = descriptorFor(radio->getNodeId(), carrierFrequency);
         if (d.d2dEndpoint == nullptr)
             throw cRuntimeError("emitRcvdSinr: D2D/D2D_MULTI direction on non-D2D-capable radio '%s'", radio->getFullPath().c_str());
         radio->emit(d.d2dEndpoint->getRcvdSinrD2DSignal(), sinr);

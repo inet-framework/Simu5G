@@ -36,7 +36,7 @@ module LteNicEnb extends LteNicBase
         handoverPacketHolder.typename = default("HandoverPacketHolderEnb");
         packetFlowObserver.typename = default("PacketFlowObserverEnb");
         // eNodeB-side antenna height default (radio endpoint recast E4, §3(k))
-        channelModel[*].height = default(25m);
+        channelModel.height = default(25m);
         bool compEnabled = default(false);
         *.handoverX2ForwarderModule = "^.handoverX2Forwarder";
 

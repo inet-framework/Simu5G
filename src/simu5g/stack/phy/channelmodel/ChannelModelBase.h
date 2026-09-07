@@ -94,6 +94,14 @@ struct RadioLink
 
     inet::Coord stateCoord;      // position feeding computeSpeed + correlation distance
 
+    // Which of the calling radio's (possibly several, since E8) carriers
+    // this link is on -- keys the medium's per-leg state (pathLoss_,
+    // losMap_, positionHistory_, ...) alongside stateKey/stateNodeId above.
+    // Before E8 a radio endpoint served exactly one carrier, so this was
+    // implicit in the endpoint's own identity; now that one endpoint can
+    // serve several, it travels with the link instead.
+    GHz carrierFrequency = GHz(0);
+
     // ---- link budget ----
     double txAntennaGain = 0.0;
     double rxAntennaGain = 0.0;
@@ -142,16 +150,26 @@ class ChannelModelBase : public cSimpleModule
     // Reference to the corresponding PHY layer
     opp_component_ptr<PhyBase> phy_;
 
-    // Reference to the component carrier
-    inet::ModuleRefByPar<ComponentCarrier> componentCarrier_;
+    // The component carriers this radio serves, resolved from
+    // componentCarrierModules (radio endpoint recast E8, §3(c)) in
+    // DECLARATION order -- the order cellInfo_->registerCarrier and
+    // PhyBase's binder_->registerCarrierUe sweep register in.
+    std::vector<ComponentCarrier *> componentCarriers_;
 
-    // Carrier Frequency and its base-10 logarithm
+    // Carrier Frequency of the PRIMARY (first-declared) carrier, and its
+    // base-10 logarithm. Single-valued because most readers -- every
+    // single-carrier leg, 181 of 187 fingerprint rows -- have exactly one
+    // carrier to mean; CA-aware callers use the explicit-carrier overloads
+    // below instead of this cached value.
     GHz carrierFrequency_;
     double carrierFrequencyHz_;
     double carrierFrequencyGHz_;
     double log10CarrierFrequencyGHz_;
 
-    // Number of bands for this carrier
+    // Number of bands of the PRIMARY carrier -- kept single-valued for
+    // IdealChannelModel/D2dChannelModel, which read this member directly
+    // rather than through getNumBands(GHz) and are never configured with
+    // more than one carrier in tree.
     unsigned int numBands_ = -1;
 
   public:
@@ -168,34 +186,50 @@ class ChannelModelBase : public cSimpleModule
      * Returns the number of logical bands for the given carrier.
      *
      * Flattened ahead of the carrier-vector collapse (radio endpoint recast
-     * E7): the module still serves exactly one carrier today, so the
-     * argument must always equal getCarrierFrequency() -- the ASSERT makes
-     * that invariant loud rather than assumed. Once a radio serves several
-     * carriers (E8), the argument selects among them.
+     * E7) as a tautological ASSERT bridge, since the module served exactly
+     * one carrier at that point. E8 collapses the per-carrier submodule
+     * vector into this one radio serving possibly several carriers
+     * (componentCarrierModules, §3(c)), which is where the check becomes
+     * load-bearing: a real lookup among the carriers this radio actually
+     * serves, throwing rather than silently answering for the wrong one.
      */
     virtual unsigned int getNumBands(GHz carrierFrequency) const
     {
-        ASSERT(carrierFrequency == carrierFrequency_);
-        return numBands_;
+        for (auto *cc : componentCarriers_)
+            if (cc->getCarrierFrequency() == carrierFrequency)
+                return cc->getNumBands();
+        throw cRuntimeError("%s: carrier %gGHz is not served by this radio", getFullPath().c_str(), carrierFrequency.get());
     }
 
     /*
      * Legacy no-argument form, kept only for BackgroundCellChannelModel.cc's
      * one remaining caller: that file is out of scope for this step (it is
      * slated for deletion by parent follow-up 1) and must not be touched.
-     * Remove this overload when that caller goes away.
+     * Remove this overload when that caller goes away. Answers for the
+     * PRIMARY carrier, exactly as the old single-carrier cache did.
      */
-    virtual unsigned int getNumBands() const { return getNumBands(carrierFrequency_); }
+    virtual unsigned int getNumBands() const { return numBands_; }
 
     /*
      * Returns the numerology index for the given carrier (see getNumBands
-     * for why the argument is required now).
+     * for why the argument is required, and why E8 is where it starts doing
+     * real work).
      */
     virtual unsigned int getNumerologyIndex(GHz carrierFrequency) const
     {
-        ASSERT(carrierFrequency == carrierFrequency_);
-        return componentCarrier_->getNumerologyIndex();
+        for (auto *cc : componentCarriers_)
+            if (cc->getCarrierFrequency() == carrierFrequency)
+                return cc->getNumerologyIndex();
+        throw cRuntimeError("%s: carrier %gGHz is not served by this radio", getFullPath().c_str(), carrierFrequency.get());
     }
+
+    /*
+     * The carriers this radio serves, in componentCarrierModules'
+     * declaration order (radio endpoint recast E8, §3(c)): what PhyBase's
+     * initializeChannelModel() iterates for the binder_->registerCarrierUe
+     * sweep, in place of the old per-carrier submodule vector's index order.
+     */
+    const std::vector<ComponentCarrier *>& getComponentCarriers() const { return componentCarriers_; }
 
     virtual void setPhy(PhyBase *phy) { phy_ = phy; }
 

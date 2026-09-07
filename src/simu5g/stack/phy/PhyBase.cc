@@ -149,22 +149,17 @@ void PhyBase::initializeChannelModel()
 {
     primaryChannelModel_.reference(this, "channelModelModule", true);
     primaryChannelModel_->setPhy(this);
-    GHz carrierFreq = primaryChannelModel_->getCarrierFrequency();
-    unsigned int numerologyIndex = primaryChannelModel_->getNumerologyIndex(carrierFreq);
-    channelModel_[carrierFreq] = primaryChannelModel_;
 
-    if (nodeType_ == UE)
-        binder_->registerCarrierUe(carrierFreq, numerologyIndex, nodeId_);
-
-    int numChannelModels = primaryChannelModel_->getVectorSize();
-    for (int index = 1; index < numChannelModels; index++) {
-        ChannelModelBase *chanModel = check_and_cast<ChannelModelBase *>(primaryChannelModel_->getParentModule()->getSubmodule(primaryChannelModel_->getName(), index));
-        chanModel->setPhy(this);
-        GHz carrierFreq = chanModel->getCarrierFrequency();
-        unsigned int numerologyIndex = chanModel->getNumerologyIndex(carrierFreq);
-        channelModel_[carrierFreq] = chanModel;
+    // radio endpoint recast E8 (§3(c)): one radio endpoint per PHY leg,
+    // serving every carrier named in its own componentCarrierModules --
+    // iterate that list, in its declaration order, instead of the old
+    // per-carrier submodule vector's getVectorSize(). Declaration order is
+    // what the binder_->registerCarrierUe sweep below preserves.
+    for (auto *cc : primaryChannelModel_->getComponentCarriers()) {
+        GHz carrierFreq = cc->getCarrierFrequency();
+        servedCarriers_.insert(carrierFreq);
         if (nodeType_ == UE)
-            binder_->registerCarrierUe(carrierFreq, numerologyIndex, nodeId_);
+            binder_->registerCarrierUe(carrierFreq, cc->getNumerologyIndex(), nodeId_);
     }
 }
 
