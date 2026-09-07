@@ -148,9 +148,19 @@ void NrPdcpRxEntity::handleMessage(cMessage *msg)
 
         unsigned int old = rxWindowDesc_.rxDeliv_;
 
-        // deliver buffered SDUs
+        // Every buffer index below is rxDeliv_ - old, and a valid reordering window keeps
+        // it addressable: rxDeliv_ <= rxReord_ <= rxNext_ <= old + windowSize_, so the two
+        // loops walk rxDeliv_ from old towards at most old + windowSize_. The bounds below
+        // are the algorithm's own (stop at rxReord_, then at rxNext_ -- there is no SDU past
+        // the highest one received); the ASSERTs state the window invariant those rely on,
+        // so a window an upstream defect has driven out of range (e.g. two SN streams feeding
+        // one entity) fails loudly here instead of silently misbehaving or tripping an opaque
+        // vector range error.
+
+        // deliver buffered SDUs up to rxReord_
         while (rxWindowDesc_.rxDeliv_ < rxWindowDesc_.rxReord_) {
-            int pos = rxWindowDesc_.rxDeliv_ - old;
+            unsigned int pos = rxWindowDesc_.rxDeliv_ - old;
+            ASSERT(pos < rxWindowDesc_.windowSize_);
             if (received_.at(pos) == true) {
                 EV << NOW << " NrPdcpRxEntity::handleMessage - Deliver SDU buffered at index[" << pos << "] to upper layer" << endl;
                 auto *sdu = check_and_cast<Packet *>(sduBuffer_.remove(pos));
@@ -160,25 +170,36 @@ void NrPdcpRxEntity::handleMessage(cMessage *msg)
             rxWindowDesc_.rxDeliv_++;
         }
 
-        while (received_.at(rxWindowDesc_.rxDeliv_ - old) == true) {
-            EV << NOW << " NrPdcpRxEntity::handleMessage - Deliver SDU buffered at index[" << (rxWindowDesc_.rxDeliv_ - old) << "] to upper layer" << endl;
-            auto *sdu = check_and_cast<Packet *>(sduBuffer_.remove(rxWindowDesc_.rxDeliv_ - old));
+        // then any further in-sequence SDUs above rxReord_, up to rxNext_
+        while (rxWindowDesc_.rxDeliv_ < rxWindowDesc_.rxNext_) {
+            unsigned int pos = rxWindowDesc_.rxDeliv_ - old;
+            ASSERT(pos < rxWindowDesc_.windowSize_);
+            if (received_.at(pos) != true)
+                break;
+            EV << NOW << " NrPdcpRxEntity::handleMessage - Deliver SDU buffered at index[" << pos << "] to upper layer" << endl;
+            auto *sdu = check_and_cast<Packet *>(sduBuffer_.remove(pos));
             sdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
             deliverSduToUpperLayer(sdu);
 
             rxWindowDesc_.rxDeliv_++;
-            if (rxWindowDesc_.rxDeliv_ == rxWindowDesc_.rxNext_)
-                break;
         }
 
-        // shift window by 'i' positions
-        int offset = rxWindowDesc_.rxDeliv_ - old;
+        // Slide the window down by 'offset', so the slot of the new rxDeliv_ becomes index 0.
+        // Every slot is rewritten: those above the vacated span shift down, the rest clear.
+        // Iterating over the whole window (rather than only the shifted span) is what clears
+        // a window that drained completely -- offset == windowSize_ -- instead of leaving its
+        // received-flags set for the next round to misread as already-received.
+        unsigned int offset = rxWindowDesc_.rxDeliv_ - old;
         EV << NOW << " NrPdcpRxEntity::handleMessage - shifting window by " << offset << " positions" << endl;
-        for (unsigned int i = offset; i < rxWindowDesc_.windowSize_; ++i) {
-            if (sduBuffer_.get(i) != nullptr)
-                sduBuffer_.addAt(i - offset, sduBuffer_.remove(i));
-            received_.at(i - offset) = received_.at(i);
-            received_.at(i) = false;
+        for (unsigned int i = 0; i < rxWindowDesc_.windowSize_; ++i) {
+            unsigned int src = i + offset;
+            if (src < rxWindowDesc_.windowSize_) {
+                if (sduBuffer_.get(src) != nullptr)
+                    sduBuffer_.addAt(i, sduBuffer_.remove(src));
+                received_.at(i) = received_.at(src);
+            }
+            else
+                received_.at(i) = false;
         }
 
         if (rxWindowDesc_.rxNext_ > rxWindowDesc_.rxDeliv_) {
