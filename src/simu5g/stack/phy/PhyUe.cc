@@ -94,6 +94,11 @@ void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandida
         cInfo->setCoord(cellPos);
         cInfo->setFrameType(BROADCASTPKT);
         cInfo->setDirection(DL);
+        // this synthetic control info's carrierFrequency was never set --
+        // harmless today because nothing reads it, but the carrier-vector
+        // collapse (E8) makes RadioLink key its state off it, so set it now
+        // to the carrier the candidate cell was matched on
+        cInfo->setCarrierFrequency(ueCarrierFrequency);
         // get RSSI from the BS
         double rssi = 0;
         std::vector<double> rssiV = primaryChannelModel_->getRSRP(frame, cInfo);
