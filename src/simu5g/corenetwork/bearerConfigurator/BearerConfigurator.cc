@@ -520,18 +520,9 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
             // A split bearer's legs are told apart by their position: the leg splitter maps
             // leg 0 onto the master cell group's RLC and leg 1 onto the secondary's (see
             // ~DcPdcpLegSplitter), so they are stated in that order.
-            //
-            // An SCG bearer -- one the secondary cell group alone serves -- is a bearer
-            // type of its own in TS 37.340, and this model cannot build one yet: the core
-            // network tunnels a UE's traffic to its master node, so the master terminates
-            // the bearer's PDCP whatever cell group carries it onwards, and an SCG bearer
-            // needs the master's leg to reach the secondary over X2 instead of its own RLC.
-            // Establishment wires a master's leg to its local RLC unless the bearer is
-            // split, so the shape has no expression yet.
-            if (drb.legs.front().cellGroup != MCG)
-                throw cRuntimeError("%s entry %d: \"legs\" must start with \"MCG\". A bearer served by the SCG alone "
-                        "is not supported yet -- the core network delivers to the master node, so such a bearer needs "
-                        "the master to relay it over X2, which establishment cannot yet wire", paramName, i);
+            if (drb.legs.size() > 1 && drb.legs.front().cellGroup != MCG)
+                throw cRuntimeError("%s entry %d: a split bearer's \"legs\" are stated in cell-group order, \"MCG\" first",
+                        paramName, i);
         }
 
         // legSelection (optional): the split-bearer steering policy, an expr() source
@@ -841,6 +832,13 @@ DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const Be
 
     bool dualConnected = isDualConnectivityRequired(flow);
     if (!dualConnected) {
+        // Without a secondary cell group there is nothing to carry an SCG leg
+        if (const DrbDesc *def = findBearerDefinition(flow))
+            if (std::any_of(def->legs.begin(), def->legs.end(),
+                    [](const RlcBearerDesc& leg) { return leg.cellGroup == SCG; }))
+                throw cRuntimeError("BearerConfigurator: the definition of DRB %d states an SCG leg, "
+                        "but the flow's UE is not served in dual connectivity -- there is no secondary "
+                        "cell group to carry it", (int)num(flow.drbId));
         createConnection(flow, req, true);
     }
     else {
@@ -866,15 +864,20 @@ DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const Be
         MacNodeId ueMcgId = ueReg ? (masterIsNr ? ueReg->getNrNodeId() : ueReg->getLteNodeId()) : NODEID_NONE;
         MacNodeId ueScgId = ueReg ? (masterIsNr ? ueReg->getLteNodeId() : ueReg->getNrNodeId()) : NODEID_NONE;
 
-        // A bearer whose definition states its legs is established on those and no others,
-        // so a dual-connectivity network can carry a bearer that never reaches the
-        // secondary node, or one that only ever reaches it. A definition that leaves the
-        // legs to RRC gets both, as before.
-        bool useSecondary = true;
-        if (const DrbDesc *def = findBearerDefinition(flow))
-            if (!def->legs.empty())
-                useSecondary = std::any_of(def->legs.begin(), def->legs.end(),
+        // A bearer whose definition states its legs is established on those and no others:
+        // an MCG bearer never reaches the secondary node, and an SCG bearer's traffic is
+        // carried by no cell group of the master's own -- though the master still
+        // terminates its PDCP, since the core network delivers the UE's traffic there.
+        // A definition that leaves the legs to RRC gets both legs, as before.
+        bool hasMcgLeg = true, hasScgLeg = true;
+        if (const DrbDesc *def = findBearerDefinition(flow)) {
+            if (!def->legs.empty()) {
+                hasMcgLeg = std::any_of(def->legs.begin(), def->legs.end(),
+                        [](const RlcBearerDesc& leg) { return leg.cellGroup == MCG; });
+                hasScgLeg = std::any_of(def->legs.begin(), def->legs.end(),
                         [](const RlcBearerDesc& leg) { return leg.cellGroup == SCG; });
+            }
+        }
 
         // Master cell group connection
         FlowId lteFlow = flow;
@@ -886,7 +889,29 @@ DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const Be
                               ueMcgId :
                               binder_->getMasterNodeOrSelf(destId);
         }
-        createConnection(lteFlow, req, true);
+        if (hasMcgLeg)
+            createConnection(lteFlow, req, true);
+        else {
+            // An SCG bearer: only the master's own ends are established -- its RRC wires
+            // the PDCP legs to the X2 path instead of local RLC (see
+            // BearerManagement::createOutgoingConnection()) -- and the UE's MCG stack is
+            // not involved at all. The flow keeps the anchor (MCG) ids: they are what the
+            // master's PDCP is keyed and addressed by, and the leg splitter maps them to
+            // the SCG per PDU, exactly as on a split bearer's secondary leg.
+            ASSERT(!isGroupcast);   // definitions never cover D2D/multicast flows
+            FlowId revFlow = lteFlow.reversed();
+            BearerRequest revReq = req;
+            if (revReq.flowBindingKey.has_value())
+                revReq.flowBindingKey = revReq.flowBindingKey->reversed();
+            if (lteFlow.sourceId == masterNodeB) {
+                createOutgoingConnectionOnNode(masterNodeB, lteFlow, req, true);
+                createIncomingConnectionOnNode(masterNodeB, revFlow, revReq, true);
+            }
+            else {
+                createIncomingConnectionOnNode(masterNodeB, lteFlow, req, true);
+                createOutgoingConnectionOnNode(masterNodeB, revFlow, revReq, true);
+            }
+        }
 
         // Secondary cell group connection
         FlowId nrFlow = flow;
@@ -898,7 +923,7 @@ DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const Be
                              ueScgId :
                              binder_->getSecondaryNode(binder_->getMasterNodeOrSelf(destId));
         }
-        if (useSecondary)
+        if (hasScgLeg)
             createConnection(nrFlow, req, false);
     }
     return flow.drbId;

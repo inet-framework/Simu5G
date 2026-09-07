@@ -115,10 +115,13 @@ package simu5g.corenetwork.bearerConfigurator;
 //    meaningful on a bearer with two legs.
 //  - legs (string[]/object[], optional): the cell groups that serve this bearer, i.e. its
 //    RLC bearers (TS 38.331 RLC-BearerConfig). One leg = an MCG or an SCG bearer, both =
-//    a split bearer. An element is either a cell group name ("MCG" or "SCG"), or an object
-//    naming it and overriding the RLC configuration it inherits from the entry:
-//    {leg: "SCG", rlcMode: "AM", soFraming: true, snFieldLength: 18}. Omitted = the
-//    configuration does not state the legs and RRC derives them, as it always has.
+//    a split bearer (TS 37.340; stated in that order). An element is either a cell group
+//    name ("MCG" or "SCG"), or an object naming it and overriding the RLC configuration
+//    it inherits from the entry: {leg: "SCG", rlcMode: "AM", soFraming: true,
+//    snFieldLength: 18}. Omitted = the configuration does not state the legs and RRC
+//    derives them, as it always has. An SCG bearer's PDCP still terminates at the master
+//    node -- the core network delivers the UE's traffic there -- and every PDU is
+//    relayed to the secondary over X2 (an MN-terminated SCG bearer in TS 37.340 terms).
 //  - pduSessionType (string, optional): "IPv4", "IPv6", "IPv4v6", "Ethernet", "Unstructured";
 //    default: "IPv4"
 //  - upperProtocol (string, optional): INET protocol name for upper layer dispatch (this is

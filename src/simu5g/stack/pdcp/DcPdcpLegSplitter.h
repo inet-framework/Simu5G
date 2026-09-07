@@ -45,7 +45,8 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
     inet::ModuleRefByPar<Binder> binder_;
 
     int numLegs_ = 1;
-    bool isUe_ = false;                  // selects leg 1's id mapping: UE's NR stack vs a master's X2 leg
+    std::vector<CellGroup> legGroups_;   // cell group of each leg, in leg-index order (the legs parameter)
+    bool isUe_ = false;                  // selects the SCG leg's id mapping: UE's secondary stack vs a master's X2 leg
 
     MacNodeId nodeId_ = NODEID_NONE;     // this node's (LTE/base) id
     MacNodeId nrNodeId_ = NODEID_NONE;   // this UE's NR-leg id (UEs only)

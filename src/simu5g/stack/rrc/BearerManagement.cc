@@ -384,6 +384,14 @@ void BearerManagement::createIncomingConnection(const FlowId& flow, const Bearer
 
     ASSERT(isLocalNodeId(flow.destId) || flow.d2dGroupId != NODEID_NONE);
 
+    // A DC master anchoring an SCG bearer: PDCP only, wired to the X2 path (see
+    // createOutgoingConnection())
+    if (isPdcpAnchorOnly(flow, flow.sourceId)) {
+        ASSERT(withPdcp);
+        installPdcpRxSide(DrbKey(flow.sourceId, flow.drbId), flow, req.rlcMode, rlcMuxModule.get(), false);
+        return;
+    }
+
     // Idempotence guard: with duplex bearer establishment this half may already
     // exist (e.g. re-establishment after a partial teardown); skip instead of
     // crashing on duplicate MAC/RLC/PDCP creation.
@@ -471,6 +479,15 @@ void BearerManagement::createOutgoingConnection(const FlowId& flow, const Bearer
     if (req.flowBindingKey.has_value()) {
         if (ip2nicModule_ != nullptr)
             ip2nicModule_->configureFlowBinding(*req.flowBindingKey, DrbKey(flow.destId, flow.drbId));
+    }
+
+    // A DC master anchoring an SCG bearer terminates the bearer's PDCP -- the core
+    // network delivers the UE's traffic here -- but no cell group of its own carries
+    // it: the PDCP legs are wired to the X2 path, and no local RLC/MAC state exists.
+    if (isPdcpAnchorOnly(flow, flow.destId)) {
+        ASSERT(withPdcp);
+        installPdcpTxSide(DrbKey(flow.destId, flow.drbId), flow, req.rlcMode, rlcMuxModule.get(), false);
+        return;
     }
 
     // Idempotence guard: with duplex bearer establishment this half may already
@@ -736,6 +753,34 @@ int BearerManagement::getNumLegs(DrbKey id, const FlowId& flow)
     return numLegs;
 }
 
+std::vector<CellGroup> BearerManagement::legCellGroups(DrbKey id, const FlowId& flow, int numLegs)
+{
+    if (const DrbDesc *cfg = lookupConfiguredDrb(flow, id.getNodeId())) {
+        if (!cfg->legs.empty()) {
+            ASSERT((int)cfg->legs.size() == numLegs);
+            std::vector<CellGroup> groups;
+            for (const RlcBearerDesc& leg : cfg->legs)
+                groups.push_back(leg.cellGroup);
+            return groups;
+        }
+    }
+    return numLegs == 2 ? std::vector<CellGroup>{MCG, SCG} : std::vector<CellGroup>{MCG};
+}
+
+bool BearerManagement::isPdcpAnchorOnly(const FlowId& flow, MacNodeId peerId)
+{
+    if (registration_->getNodeType() != NODEB)
+        return false;
+    // a secondary node never terminates PDCP -- it installs X2 relays, whatever the legs say
+    MacNodeId myId = getOwnNodeId();
+    if (myId != NODEID_NONE && binderModule->getMasterNodeOrSelf(myId) != myId)
+        return false;
+    const DrbDesc *cfg = lookupConfiguredDrb(flow, peerId);
+    return cfg != nullptr && !cfg->legs.empty() &&
+           std::none_of(cfg->legs.begin(), cfg->legs.end(),
+                   [](const RlcBearerDesc& leg) { return leg.cellGroup == MCG; });
+}
+
 cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, const FlowId& flow, RlcMode rlcMode, RlcMux *rlcMux)
 {
     auto it = pdcpEntities_.find(id);
@@ -744,14 +789,20 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, const FlowId& flow,
 
     bool isEnb = (registration_->getNodeType() == NODEB);
     int numLegs = getNumLegs(id, flow);
+    std::vector<CellGroup> legGroups = legCellGroups(id, flow, numLegs);
 
     // Create the per-bearer PDCP entity module (compound: TX + RX sides and, on a multi-leg
-    // bearer, the leg splitter/joiner). With duplex bearer establishment the first-processed
-    // direction creates it; later calls find it here and just wire their own leg/side.
+    // or SCG-leg bearer, the leg splitter/joiner). With duplex bearer establishment the
+    // first-processed direction creates it; later calls find it here and just wire their
+    // own leg/side.
     std::string name = "pdcp-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
     auto *module = pdcpEntityModuleType_->create(name.c_str(), nicModule_);
     module->par("headerCompressedSize") = par("headerCompressedSize");
     module->par("numLegs") = numLegs;
+    std::string legsStr;
+    for (CellGroup group : legGroups)
+        legsStr += (legsStr.empty() ? "" : " ") + cellGroupToA(group);
+    module->par("legs") = legsStr;
     module->par("rlcMode") = rlcTypeToParamValue(rlcMode);
     module->finalizeParameters();
     module->buildInside();
@@ -778,16 +829,21 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, const FlowId& flow,
     module->scheduleStart(simTime());
     module->callInitialize();
 
-    // DC master: wire the remote (X2) leg to the DcMux right away -- unlike the UE's NR leg,
-    // it has no establishment call of its own (the secondary side is an X2 relay only)
-    if (isEnb && numLegs == 2) {
-        auto *pdcpDcMux = inet::getModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this);
-        int dcIdx = pdcpDcMux->gateSize("fromEntity");
-        pdcpDcMux->setGateSize("fromEntity", dcIdx + 1);
-        module->gate("legOut", 1)->connectTo(pdcpDcMux->gate("fromEntity", dcIdx));
-        int rxIdx = pdcpDcMux->gateSize("toRxEntity");
-        pdcpDcMux->setGateSize("toRxEntity", rxIdx + 1);
-        pdcpDcMux->gate("toRxEntity", rxIdx)->connectTo(module->gate("legIn", 1));
+    // DC master: wire each remote (SCG/X2) leg to the DcMux right away -- unlike the UE's
+    // secondary-stack leg, it has no establishment call of its own (the secondary side is
+    // an X2 relay only). Leg 1 of a split bearer; the only leg of an SCG bearer.
+    if (isEnb) {
+        for (int k = 0; k < numLegs; k++) {
+            if (legGroups[k] != SCG)
+                continue;
+            auto *pdcpDcMux = inet::getModuleFromPar<DcMux>(par("pdcpDcMuxModule"), this);
+            int dcIdx = pdcpDcMux->gateSize("fromEntity");
+            pdcpDcMux->setGateSize("fromEntity", dcIdx + 1);
+            module->gate("legOut", k)->connectTo(pdcpDcMux->gate("fromEntity", dcIdx));
+            int rxIdx = pdcpDcMux->gateSize("toRxEntity");
+            pdcpDcMux->setGateSize("toRxEntity", rxIdx + 1);
+            pdcpDcMux->gate("toRxEntity", rxIdx)->connectTo(module->gate("legIn", k));
+        }
     }
 
     pdcpEntities_[id] = module;
@@ -869,6 +925,12 @@ int BearerManagement::selectPdcpLeg(MacNodeId peerId, const FlowId& flow, DrbKey
     // of an SCG bearer is index 0 just as the single leg of an MCG bearer is.
     if (authoredLegs) {
         CellGroup group = isSecondaryLeg ? SCG : MCG;
+        // A master anchoring an SCG bearer has no MCG leg for its local establishment
+        // call to serve; what it installs is the bearer's X2 leg (see isPdcpAnchorOnly())
+        if (!isUe && !isSecondaryLeg &&
+                std::none_of(cfg->legs.begin(), cfg->legs.end(),
+                        [](const RlcBearerDesc& leg) { return leg.cellGroup == MCG; }))
+            group = SCG;
         for (size_t k = 0; k < cfg->legs.size(); k++)
             if (cfg->legs[k].cellGroup == group)
                 return (int)k;
@@ -889,15 +951,27 @@ void BearerManagement::installPdcpTxSide(DrbKey id, const FlowId& flow, RlcMode 
     int legIdx = selectPdcpLeg(flow.destId, flow, compoundId);
 
     cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, flow, rlcMode, rlcMux);
-    if (pdcpEnt->gate("legOut", legIdx)->isConnectedOutside()) {
-        EV << "BearerManagement::installPdcpTxSide - TX side of " << compoundId.str() << " leg " << legIdx << " already installed\n";
+
+    // A master's X2 leg was wired to the DcMux at compound creation (see
+    // findOrCreatePdcpEntity()); only a local leg is wired to its RLC entity here.
+    // Idempotence goes by the leg's wiring for a local leg, by the TX registration
+    // for an X2 one, whose gate is connected from the start.
+    bool x2Leg = isPdcpAnchorOnly(flow, compoundId.getNodeId());
+    if (!x2Leg) {
+        if (pdcpEnt->gate("legOut", legIdx)->isConnectedOutside()) {
+            EV << "BearerManagement::installPdcpTxSide - TX side of " << compoundId.str() << " leg " << legIdx << " already installed\n";
+            return;
+        }
+
+        // Wire compound legOut[legIdx] (← tx/splitter) → RLC entity upperIn (direct per-DRB connection)
+        cModule *rlcEnt = lookupRlcEntityModule(rlcId, isNr);
+        ASSERT(rlcEnt != nullptr);
+        pdcpEnt->gate("legOut", legIdx)->connectTo(rlcEnt->gate("upperIn"));
+    }
+    else if (pdcpTxEntities_.count(compoundId)) {
+        EV << "BearerManagement::installPdcpTxSide - TX side of " << compoundId.str() << " already installed\n";
         return;
     }
-
-    // Wire compound legOut[legIdx] (← tx/splitter) → RLC entity upperIn (direct per-DRB connection)
-    cModule *rlcEnt = lookupRlcEntityModule(rlcId, isNr);
-    ASSERT(rlcEnt != nullptr);
-    pdcpEnt->gate("legOut", legIdx)->connectTo(rlcEnt->gate("upperIn"));
 
     if (legIdx == 0) {
         // Wire PdcpMux → compound upperIn (→ tx.in) and register the TX side
@@ -921,15 +995,25 @@ void BearerManagement::installPdcpRxSide(DrbKey id, const FlowId& flow, RlcMode 
     int legIdx = selectPdcpLeg(flow.sourceId, flow, compoundId);
 
     cModule *pdcpEnt = findOrCreatePdcpEntity(compoundId, flow, rlcMode, rlcMux);
-    if (pdcpEnt->gate("legIn", legIdx)->isConnectedOutside()) {
-        EV << "BearerManagement::installPdcpRxSide - RX side of " << compoundId.str() << " leg " << legIdx << " already installed\n";
+
+    // A master's X2 leg was wired to the DcMux at compound creation (see
+    // findOrCreatePdcpEntity() and installPdcpTxSide())
+    bool x2Leg = isPdcpAnchorOnly(flow, compoundId.getNodeId());
+    if (!x2Leg) {
+        if (pdcpEnt->gate("legIn", legIdx)->isConnectedOutside()) {
+            EV << "BearerManagement::installPdcpRxSide - RX side of " << compoundId.str() << " leg " << legIdx << " already installed\n";
+            return;
+        }
+
+        // Wire RLC entity upperOut → compound legIn[legIdx] (→ rx/joiner) (direct per-DRB connection)
+        cModule *rlcEnt = lookupRlcEntityModule(rlcId, isNr);
+        ASSERT(rlcEnt != nullptr);
+        rlcEnt->gate("upperOut")->connectTo(pdcpEnt->gate("legIn", legIdx));
+    }
+    else if (pdcpRxEntities_.count(compoundId)) {
+        EV << "BearerManagement::installPdcpRxSide - RX side of " << compoundId.str() << " already installed\n";
         return;
     }
-
-    // Wire RLC entity upperOut → compound legIn[legIdx] (→ rx/joiner) (direct per-DRB connection)
-    cModule *rlcEnt = lookupRlcEntityModule(rlcId, isNr);
-    ASSERT(rlcEnt != nullptr);
-    rlcEnt->gate("upperOut")->connectTo(pdcpEnt->gate("legIn", legIdx));
 
     if (legIdx == 0) {
         // Wire compound upperOut (← rx.out) → PdcpMux fromRxEntity and register the RX side

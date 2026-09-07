@@ -161,10 +161,19 @@ class BearerManagement : public cSimpleModule
     virtual cModule *findOrCreatePdcpRelayEntity(DrbKey id, RlcMux *rlcMux);
 
     // The layout of a bearer over the node's stack legs. getNumLegs() gives the number of legs
-    // the bearer's PDCP entity is built with, selectPdcpLeg() the leg an establishment call
-    // attaches to (and, for a leg of a bearer anchored elsewhere, the anchor bearer's key).
+    // the bearer's PDCP entity is built with, legCellGroups() the cell group of each leg
+    // (authored, or derived: two legs = an MCG+SCG split bearer, one = MCG), and
+    // selectPdcpLeg() the leg an establishment call attaches to (and, for a leg of a
+    // bearer anchored elsewhere, the anchor bearer's key).
     virtual int getNumLegs(DrbKey id, const FlowId& flow);
+    virtual std::vector<CellGroup> legCellGroups(DrbKey id, const FlowId& flow, int numLegs);
     virtual int selectPdcpLeg(MacNodeId peerId, const FlowId& flow, DrbKey& compoundId /*inout*/);
+
+    // True when this node terminates the bearer's PDCP without carrying an RLC leg of it:
+    // a DC master whose bearer states legs without an MCG leg (an SCG bearer, TS 37.340).
+    // The core network still delivers to the master, so its PDCP legs are wired to the
+    // X2 path and no local RLC/MAC state exists. peerId keys the configuration lookup.
+    virtual bool isPdcpAnchorOnly(const FlowId& flow, MacNodeId peerId);
 
     // This node's own MacNodeId. A base station holds it under the technology it is, so a
     // gNB has no LTE id to ask for; a dual-stack UE has both, and its LTE id is its

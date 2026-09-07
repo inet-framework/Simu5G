@@ -68,9 +68,17 @@ void DcMux::handleMessage(cMessage *msg)
 
             EV << NOW << " DcMux::handleMessage - Received UL PDCP PDU from secondary node " << sourceNode
                << " for " << id << " - dispatching to the PDCP entity's remote leg" << endl;
-            // the remote (X2) leg is leg 1 of the master's PDCP entity compound; path start =
-            // our toRxEntity gate (crosses the compound boundary into its joiner)
-            send(pkt, pdcpEnt->gate("legIn", 1)->getPathStartGate());
+            // the remote (X2) leg of the master's PDCP entity compound is the one whose
+            // legIn this mux feeds (leg 1 of a split bearer, leg 0 of an SCG bearer);
+            // path start = our toRxEntity gate (crosses the compound boundary)
+            cGate *x2LegIn = nullptr;
+            for (int i = 0; i < pdcpEnt->gateSize("legIn"); i++)
+                if (pdcpEnt->gate("legIn", i)->getPathStartGate()->getOwnerModule() == this) {
+                    x2LegIn = pdcpEnt->gate("legIn", i);
+                    break;
+                }
+            ASSERT(x2LegIn != nullptr);
+            send(pkt, x2LegIn->getPathStartGate());
         }
     }
     else if (incoming->isName("fromEntity")) {

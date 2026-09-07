@@ -37,6 +37,20 @@ void DcPdcpLegSplitter::initialize(int stage)
 
         numLegs_ = par("numLegs");
 
+        // The cell group of each leg: the id mapping and the liveness check go by cell
+        // group, not by leg position (a split bearer's SCG leg is leg 1, an SCG bearer's
+        // is its only leg, leg 0)
+        cStringTokenizer tokenizer(par("legs"));
+        while (tokenizer.hasMoreTokens()) {
+            CellGroup group = aToCellGroup(tokenizer.nextToken());
+            if (group == UNKNOWN_CELL_GROUP)
+                throw cRuntimeError("DcPdcpLegSplitter: invalid cell group in the legs parameter, must be \"MCG\" or \"SCG\"");
+            legGroups_.push_back(group);
+        }
+        if ((int)legGroups_.size() != numLegs_)
+            throw cRuntimeError("DcPdcpLegSplitter: the legs parameter names %d legs, numLegs says %d",
+                    (int)legGroups_.size(), numLegs_);
+
         cModule *node = inet::getContainingNode(this);
         nodeId_ = MacNodeId(node->par("macNodeId").intValue());
         if (node->hasPar("nrMacNodeId"))
@@ -78,10 +92,10 @@ bool DcPdcpLegSplitter::isLegLive(int leg, const FlowControlInfo *lteInfo)
     if (leg >= numLegs_)
         return false;   // not a leg of this bearer
 
-    // Which technology serves this leg: leg 0 is the anchor stack, whose technology the
-    // flow's own (anchor) ids reveal; leg 1 is the other one.
+    // Which technology serves this leg: the MCG leg is the anchor stack, whose technology
+    // the flow's own (anchor) ids reveal; an SCG leg is the other one.
     bool anchorNr = isNrUe(isUe_ ? lteInfo->getSourceId() : lteInfo->getDestId());
-    bool legNr = (leg == 0) ? anchorNr : !anchorNr;
+    bool legNr = (legGroups_[leg] == MCG) ? anchorNr : !anchorNr;
 
     if (isUe_) {
         // this UE's own attachment on the leg's stack, as RRC pushed it -- current as of
@@ -134,11 +148,12 @@ void DcPdcpLegSplitter::handleMessage(cMessage *msg)
     int leg = selectLeg(lteInfo.get());
 
     // Per-leg id adaptation + leg-flavored statistics (moved from NrPdcpTxEntity::deliverPdcpPdu).
-    // Leg 0 is the anchor (master cell group) leg; leg 1 is the UE's local secondary stack,
-    // or a DC master's remote leg via X2. The flow's tags carry the anchor stack's ids, so
-    // the anchor's technology can be read off them (isNrUe), and the secondary stack is the
-    // other one -- under EN-DC the anchor is LTE and the secondary NR, under NE-DC reversed.
-    if (leg == 0) {
+    // The MCG leg is the anchor (master cell group) leg; an SCG leg is the UE's local
+    // secondary stack, or a DC master's remote leg via X2. The flow's tags carry the anchor
+    // stack's ids, so the anchor's technology can be read off them (isNrUe), and the
+    // secondary stack is the other one -- under EN-DC the anchor is LTE and the secondary
+    // NR, under NE-DC reversed.
+    if (legGroups_[leg] == MCG) {
         // anchor leg: ids already correct
         EV << NOW << " DcPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to the anchor leg's RLC" << endl;
         if (hasListeners(pdcpSduSentSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D)
