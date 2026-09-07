@@ -137,6 +137,16 @@ struct CarrierLeg
 };
 
 /**
+ * Key for the medium's per-link stochastic state (plan S13/§3(b)): the
+ * carrier leg plus the unordered pair of nodes the link connects (LinkKey
+ * already normalizes that pair). One entry per physical link, shared by
+ * both ends -- not one per owning endpoint. Collapsing the owner component
+ * of one container's OwnerLinkKey into the carrier leg is exactly the
+ * semantic flip each of steps 13b..13f performs, one container at a time.
+ */
+typedef std::pair<CarrierLeg, LinkKey> LinkStateKey;
+
+/**
  * The per-carrier-leg physics parameters (plan section 3(e)/3(h)) that every
  * radio registered on a given leg must agree on. Filled from the first radio
  * to register on that leg; every later one is checked against it,
@@ -212,7 +222,9 @@ class RadioMedium : public cSimpleModule
     // is stable for exactly its registered lifetime, as before; a removed
     // radio's entries are erased in removeRadio(). Steps 13b..13f re-key
     // these to the carrier leg, one at a time.
-    std::map<OwnerLinkKey, bool> losMap_;
+    // losMap_ re-keyed per link at step 13b: one shared LOS entry per
+    // physical link on a carrier leg, whichever end asks.
+    std::map<LinkStateKey, bool> losMap_;
     ShadowFadingMap lastComputedSF_;
     JakesFadingMap jakesFadingMap_;
     JakesFadingMap jakesFadingMapBgUe_;

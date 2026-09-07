@@ -59,7 +59,9 @@ void eraseOwnerEntries(M& map, StochasticChannelModel *owner)
 
 bool& RadioMedium::losState(StochasticChannelModel *owner, const LinkKey& key, bool *existed)
 {
-    auto result = losMap_.try_emplace(OwnerLinkKey{owner, key}, false);
+    // step 13b: owner's LEG keys the entry, not owner itself -- one LOS
+    // state per physical link, shared by both ends
+    auto result = losMap_.try_emplace(LinkStateKey{legFor(owner), key}, false);
     if (existed != nullptr)
         *existed = !result.second;
     return result.first->second;
@@ -334,8 +336,8 @@ void RadioMedium::removeRadio(StochasticChannelModel *endpoint)
         reindex(radios_[idx]);
 
     // step 13a: the same per-radio state destruction radioState_.erase()
-    // performed, one flattened container at a time
-    eraseOwnerEntries(losMap_, endpoint);
+    // performed, one flattened container at a time (losMap_ left this list
+    // at 13b: per-link state is no one endpoint's property)
     eraseOwnerEntries(lastComputedSF_, endpoint);
     eraseOwnerEntries(jakesFadingMap_, endpoint);
     eraseOwnerEntries(jakesFadingMapBgUe_, endpoint);

@@ -60,5 +60,5 @@
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-DL -r 0,              10s,         3040-ba29/tplx;0348-9cb3/tilx;4fbf-c345/~tNl;60f2-731f/sz, PASS,
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-UL -r 0,              10s,         8c45-d90d/tplx;d2ef-68e0/tilx;a200-4b6e/~tNl;039b-93ae/sz, PASS,
 /simulations/nr/test_tdd/,               -f omnetpp.ini -c TestTdd -r 0,                         5s,         1452-66f7/tplx;9622-a47f/tilx;1357-11f1/~tNl;db4a-9b0a/sz, PASS,
-/simulations/nr/d2d/,                    -f omnetpp.ini -c ChannelModel-DynamicLos -r 0,         20s,        2348-be79/tplx;16ad-f69f/tilx;e37f-7d8f/~tNl;be61-df4c/sz, PASS,
+/simulations/nr/d2d/,                    -f omnetpp.ini -c ChannelModel-DynamicLos -r 0,         20s,        4e3e-28f3/tplx;373a-9d8d/tilx;5e6d-cfdc/~tNl;47eb-7beb/sz, PASS,
 /simulations/nr/d2d/,                    -f omnetpp.ini -c ChannelModel-IndoorD2D -r 0,           5s,        3d32-3990/tplx;bb94-863e/tilx;fda1-6e56/~tNl;3770-82da/sz, PASS,
