@@ -26,8 +26,6 @@
 #include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/phy/channelmodel/CellularInterferenceModel.h"
 #include "simu5g/stack/phy/channelmodel/StochasticChannelModel.h"
-#include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
-#include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
 #include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
 
 namespace simu5g {
@@ -43,16 +41,6 @@ CarrierLeg legFor(StochasticChannelModel *endpoint)
 }
 
 } // namespace
-
-RadioMedium::~RadioMedium()
-{
-    // E5b: the strategies are still heap-owned here (createPathLossModel);
-    // E5c hands ownership to the module tree and drops this destructor
-    for (auto& [leg, model] : pathLoss_)
-        delete model;
-    for (auto& [leg, model] : extCellPathLoss_)
-        delete model;
-}
 
 void RadioMedium::initialize()
 {
@@ -185,14 +173,14 @@ void RadioMedium::addRadio(StochasticChannelModel *endpoint)
         candidate.establishedByPath = endpoint->getFullPath();
         carrierPhysics_[leg] = candidate;
 
-        // this leg's path-loss strategy, still built from the record just
-        // established (E5b keeps createPathLossModel; E5c makes it resolve
-        // legModule's own "pathLoss" submodule instead)
-        pathLoss_[leg] = createPathLossModel(candidate);
+        // this leg's path-loss strategy: legModule's own "pathLoss"
+        // submodule, resolved (not constructed) from the record just
+        // established -- never from this radio's own members
+        pathLoss_[leg] = resolvePathLossStrategy(legModule, candidate);
 
         // this leg's ext-cell/background-cell strategy, shared by every
         // radio on the leg
-        extCellPathLoss_[leg] = createExtCellPathLossModel(candidate);
+        extCellPathLoss_[leg] = resolveExtCellPathLossStrategy(legModule, candidate);
     }
     else {
         checkCarrierPhysics(cpIt->second, candidate, leg, endpoint->getFullPath());
@@ -218,7 +206,7 @@ void RadioMedium::addBackgroundRadio(const BgUeKey& key, TrafficGeneratorBase *g
     descriptor.height = height;
     // exactly one of endpoint/bgGenerator is ever non-null
 
-    // no readCarrierPhysics, no checkCarrierPhysics, no createPathLossModel:
+    // no readCarrierPhysics, no checkCarrierPhysics, no resolvePathLossStrategy:
     // a phantom declares none of the 25 per-carrier-leg physics parameters
     // and, since it is never radio in getAttenuation()/computeShadowing()/
     // jakesFading(), never keys an entry into the per-link state either
@@ -580,35 +568,31 @@ const CarrierPhysics& RadioMedium::carrierPhysicsFor(const CarrierLeg& leg) cons
     return it->second;
 }
 
-PathLossModel *RadioMedium::createPathLossModel(const CarrierPhysics& cp)
+PathLossModel *RadioMedium::resolvePathLossStrategy(cModule *legModule, const CarrierPhysics& cp)
 {
-    // E5b: cp.pathLossType is now derived from legModule's own "pathLoss"
-    // submodule type (readCarrierPhysics()) and bridged against the
-    // endpoint's still-declared par, but the strategy is still heap-built by
-    // name-string dispatch. E5c makes this resolve the submodule directly.
-    PathLossModel *model;
-    if (cp.pathLossType == "Tr36814")
-        model = new Tr36814PathLossModel();
-    else if (cp.pathLossType == "Tr36873")
-        model = new Tr36873PathLossModel();
-    else if (cp.pathLossType == "Tr38901") {
-        auto *tr38901 = new Tr38901PathLossModel();
+    // legModule's own "pathLoss" submodule: its concrete NED type is
+    // cp.pathLossType's `<TypeName>PathLoss` counterpart by construction
+    // (readCarrierPhysics() derived cp.pathLossType from this very
+    // submodule's type), so there is no type-name dispatch left to do here --
+    // only the Tr38901-specific setter call, mirroring today's shape.
+    auto *model = check_and_cast<PathLossModel *>(legModule->getSubmodule("pathLoss"));
+
+    if (cp.pathLossType == "Tr38901") {
+        auto *tr38901 = check_and_cast<Tr38901PathLossModel *>(model);
         tr38901->setUseBuildingPenetrationHighLossModel(cp.useBuildingPenetrationHighLossModel);
-        model = tr38901;
     }
-    else
-        throw cRuntimeError("Unrecognized value in 'pathLossType' parameter: \"%s\"", cp.pathLossType.c_str());
 
     initializePathLossStrategy(model, cp);
     return model;
 }
 
-PathLossModel *RadioMedium::createExtCellPathLossModel(const CarrierPhysics& cp)
+PathLossModel *RadioMedium::resolveExtCellPathLossStrategy(cModule *legModule, const CarrierPhysics& cp)
 {
     // always TR 36.814, regardless of cp.pathLossType: the ext-cell and
     // background-cell interference paths (computeExtCellPathLoss) use those
-    // formulas unconditionally
-    auto *model = new Tr36814PathLossModel();
+    // formulas unconditionally -- CarrierLegPhysics.extCellPathLoss's own
+    // default typename enforces this, not a choice made here
+    auto *model = check_and_cast<PathLossModel *>(legModule->getSubmodule("extCellPathLoss"));
 
     initializePathLossStrategy(model, cp);
     return model;
