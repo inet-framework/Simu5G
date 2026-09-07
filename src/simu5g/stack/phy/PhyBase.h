@@ -14,6 +14,7 @@
 #define _PHYBASE_H_
 
 #include <map>
+#include <set>
 #include <vector>
 #include <iostream>
 #include <math.h>
@@ -67,8 +68,18 @@ class PhyBase : public ChannelAccess
      * is handled first the result of ChannelSenseRequest would differ.
      */
     static short airFramePriority_;
-    /** channel models to use.*/
-    std::map<GHz, opp_component_ptr<ChannelModelBase>> channelModel_;
+    /**
+     * The carriers this PHY leg's one radio endpoint (primaryChannelModel_)
+     * serves (radio endpoint recast E8, §3(c)/§4): channelModel_'s old
+     * per-carrier map collapses to this set plus the one endpoint reference
+     * below, since one endpoint module now serves every carrier of the leg.
+     * A std::set so iteration stays in ascending-frequency order, exactly
+     * what range-for over the old std::map<GHz, ...> gave every reader
+     * (sendFeedback(), LteMacUe's per-carrier scheduler setup) -- registration
+     * order (componentCarrierModules' declaration order) is a separate
+     * concern, preserved by ChannelModelBase::getComponentCarriers() instead.
+     */
+    std::set<GHz> servedCarriers_;
     inet::ModuleRefByPar<ChannelModelBase> primaryChannelModel_;
 
     /** The id of the in-data gate from the Stack */
@@ -143,19 +154,22 @@ class PhyBase : public ChannelAccess
         return primaryChannelModel_->getCarrierFrequency();
     }
 
-    const std::map<GHz, opp_component_ptr<ChannelModelBase>>& getChannelModels()
+    /** Which carriers this leg's one radio endpoint serves, ascending by frequency (radio endpoint recast E8). */
+    const std::set<GHz>& getServedCarriers()
     {
-        return channelModel_;
+        return servedCarriers_;
     }
 
     ChannelModelBase *getChannelModel(GHz carrierFreq = GHz(0.0))
     {
-        if (channelModel_.empty())
+        if (primaryChannelModel_ == nullptr)
             return nullptr;
-        if (carrierFreq == GHz(0.0)) // when not specified, returns the first channel model (primary cell) TODO check this
-            return channelModel_.begin()->second;
-        auto it = channelModel_.find(carrierFreq);
-        return (it == channelModel_.end()) ? nullptr : it->second;
+        // when not specified, returns the one radio endpoint (there is only
+        // ever one per leg since E8); otherwise it must be one of the
+        // carriers that endpoint actually serves
+        if (carrierFreq == GHz(0.0) || servedCarriers_.count(carrierFreq))
+            return primaryChannelModel_;
+        return nullptr;
     }
 
     double getMicroTxPwr()

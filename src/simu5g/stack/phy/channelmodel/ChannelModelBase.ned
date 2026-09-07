@@ -27,7 +27,9 @@ simple ChannelModelBase like IChannelModel
         string binderModule = default("binder");
         string cellInfoModule = default("^.^.cellInfo");  // optional
 
-        // component carrier for this channel model
-        string componentCarrierModule = default("carrierAggregation.componentCarrier[0]");
+        // component carriers this radio serves, space-separated, resolved in
+        // declaration order (radio endpoint recast E8, §3(c)): the order the
+        // cellInfo_->registerCarrier / binder_->registerCarrierUe sweeps register in
+        string componentCarrierModules = default("carrierAggregation.componentCarrier[0]");
 }
 

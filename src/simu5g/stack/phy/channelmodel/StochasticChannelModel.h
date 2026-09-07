@@ -96,10 +96,17 @@ class StochasticChannelModel : public ChannelModelBase
     // true if the UE is inside a building
     bool inside_building_;
 
-    // distance from the building wall; drawn once at registration
-    // rather than in the medium, so it stays resident -- handed to the
-    // medium per-call through o2iStateOf() instead of cached there
-    double inside_distance_;
+    // distance from the building wall, PER SERVED CARRIER (E8b draw-preserving
+    // kludge). Before the carrier-vector collapse each carrier had its own
+    // channel-model object drawing its own inside_distance_ once; the one
+    // collapsed object keeps that exact draw count by drawing once per served
+    // carrier (initialize()), so the RNG stream is byte-identical to the
+    // vector's. E8c drops this to a single draw per radio (TR 38.901 7.4.3.1:
+    // d_2D-in is UT-specific), which is the recast's one behavioral step.
+    std::map<GHz, double> inside_distances_;
+    // the LOCAL-stage draws, before componentCarriers_ (POSTLOCAL) is known
+    // to key them by frequency
+    std::vector<double> pendingInsideDistances_;
 
     // Antenna gain of eNodeB
     double antennaGainEnB_;
@@ -190,10 +197,16 @@ class StochasticChannelModel : public ChannelModelBase
     bool getCollectSinrStatistics() const { return collectSinrStatistics_; }
 
     /*
-     * Building-penetration distance, paired with getInsideBuilding() into
-     * the O2iState RadioMedium's o2iStateOf() returns.
+     * Building-penetration distance for one served carrier, paired with
+     * getInsideBuilding() into the O2iState RadioMedium's o2iStateOf()
+     * returns. Per-carrier only for the E8b draw-preserving kludge; E8c
+     * collapses it to one value per radio.
      */
-    double getInsideDistance() const { return inside_distance_; }
+    double getInsideDistance(GHz carrierFrequency) const
+    {
+        auto it = inside_distances_.find(carrierFrequency);
+        return it == inside_distances_.end() ? 0.0 : it->second;
+    }
 
     /*
      * Building-penetration flag, paired with getInsideDistance() into the
@@ -221,10 +234,11 @@ class StochasticChannelModel : public ChannelModelBase
      * @param nodeId mac node id of UE
      * @param dir traffic direction
      * @param coord position of end point communication (if dir==UL is the position of UE else is the position of eNodeB)
+     * @param carrierFrequency which of this radio's (possibly several, since E8) carriers the link is on
      */
-    double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord)
+    double getAttenuation(MacNodeId nodeId, Direction dir, inet::Coord coord, GHz carrierFrequency)
     {
-        return getAttenuation(cellularLink(nodeId, dir, coord));
+        return getAttenuation(cellularLink(nodeId, dir, coord, carrierFrequency));
     }
 
     /*
@@ -250,7 +264,7 @@ class StochasticChannelModel : public ChannelModelBase
      *
      * @param angle angle
      */
-    virtual double computeAngularAttenuation(double hAngle, double vAngle = 0);
+    virtual double computeAngularAttenuation(double hAngle, double vAngle, GHz carrierFrequency);
 
     /*
      * Compute sinr for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading
@@ -329,9 +343,10 @@ class StochasticChannelModel : public ChannelModelBase
      * for radio's own carrier leg, plus this endpoint's own inside_building_/
      * inside_distance_ (not reachable from outside), so it stays resident
      * rather than moving with the walks that call it.
+     * @param carrierFrequency which of this radio's (possibly several, since E8) carriers the walk is on
      * @return attenuation expressed in dBm
      */
-    virtual double computeExtCellPathLoss(double dist, const LinkKey& key);
+    virtual double computeExtCellPathLoss(double dist, const LinkKey& key, GHz carrierFrequency);
 
   protected:
 
@@ -340,7 +355,7 @@ class StochasticChannelModel : public ChannelModelBase
      * local module is one endpoint, 'coord' the other, and 'dir' says which of
      * the two is the UE.
      */
-    RadioLink cellularLink(MacNodeId ueId, Direction dir, inet::Coord coord);
+    RadioLink cellularLink(MacNodeId ueId, Direction dir, inet::Coord coord, GHz carrierFrequency);
 
     /*
      * Compute received useful signal (RSRP) per band over a radio link.

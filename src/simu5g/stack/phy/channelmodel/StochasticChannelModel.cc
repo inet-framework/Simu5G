@@ -39,8 +39,19 @@ void StochasticChannelModel::initialize(int stage)
     ChannelModelBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         inside_building_ = par("insideBuilding");
-        if (inside_building_)
-            inside_distance_ = uniform(0.0, 25.0);
+        if (inside_building_) {
+            // E8b draw-preserving kludge: one uniform() per served carrier,
+            // in componentCarrierModules' declaration order, reproducing the
+            // per-carrier channel-model objects' draws the collapse merges
+            // into this one object. componentCarriers_ is not resolved until
+            // POSTLOCAL, so count the module list here and key the draws to
+            // frequencies there. (E8c draws just once, per radio.)
+            cStringTokenizer tokenizer(par("componentCarrierModules").stringValue());
+            while (tokenizer.hasMoreTokens()) {
+                tokenizer.nextToken();
+                pendingInsideDistances_.push_back(uniform(0.0, 25.0));
+            }
+        }
 
         antennaGainUe_ = par("antennaGainUe");
         antennaGainEnB_ = par("antennGainEnB");
@@ -50,6 +61,15 @@ void StochasticChannelModel::initialize(int stage)
         bsNoiseFigure_ = par("bsNoiseFigure");
 
         collectSinrStatistics_ = par("collectSinrStatistics");
+    }
+    else if (stage == INITSTAGE_SIMU5G_POSTLOCAL) {
+        // ChannelModelBase::initialize(POSTLOCAL) above just resolved
+        // componentCarriers_; key each LOCAL-stage draw to its carrier
+        if (inside_building_) {
+            const auto& ccs = getComponentCarriers();
+            for (size_t i = 0; i < ccs.size(); i++)
+                inside_distances_[ccs[i]->getCarrierFrequency()] = pendingInsideDistances_[i];
+        }
     }
     else if (stage == INITSTAGE_SIMU5G_NODE_RELATIONSHIPS) {
         // phy_ is set at INITSTAGE_SIMU5G_REGISTRATIONS2, so both phy_ and
@@ -70,12 +90,13 @@ void StochasticChannelModel::emitRcvdSinr(Direction dir, double sinr)
     emit(dir == DL ? rcvdSinrDlSignal_ : rcvdSinrUlSignal_, sinr);
 }
 
-RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Coord coord)
+RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Coord coord, GHz carrierFrequency)
 {
     // The local module is one endpoint and 'coord' the other; 'dir' says which
     // of the two is the UE. The UE is the node whose channel state we track.
     RadioLink link;
     link.dir = dir;
+    link.carrierFrequency = carrierFrequency;
     // A cellular link: the degenerate key {ueId, ueId} reproduces the historical
     // node-keyed behavior exactly, since a UE has one such link per instance.
     link.stateKey = LinkKey(ueId);
@@ -102,6 +123,7 @@ RadioLink StochasticChannelModel::linkFor(UserControlInfo *lteInfo)
 {
     RadioLink link;
     link.dir = lteInfo->getDirection();
+    link.carrierFrequency = lteInfo->getCarrierFrequency();
 
     // The object associated with the packet: the eNodeB if the direction is DL,
     // the UE if it is UL.
@@ -208,8 +230,8 @@ double StochasticChannelModel::computeVerticalAngle(Coord center, Coord point)
     return 90 + arccos;
 }
 
-double StochasticChannelModel::computeAngularAttenuation(double hAngle, double vAngle) {
-    return medium_->pathLossFor(getNodeId(), getCarrierFrequency()).computeAngularAttenuation(hAngle, vAngle);
+double StochasticChannelModel::computeAngularAttenuation(double hAngle, double vAngle, GHz carrierFrequency) {
+    return medium_->pathLossFor(getNodeId(), carrierFrequency).computeAngularAttenuation(hAngle, vAngle);
 }
 
 std::vector<double> StochasticChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
@@ -249,11 +271,14 @@ bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserContr
 
 double StochasticChannelModel::computePathLoss(double distance, double dbp, bool los)
 {
-    // No specific peer identity reaches this call either (the D2D
-    // conflict-graph's abstract distance estimate, DistanceBasedConflictGraph.cc,
-    // is its only caller): linkContextFor() falls back to the other role's
-    // own NIC-level default height for the missing side (E4/§3(k)).
-    return medium_->computePathLoss(this, distance, dbp, los, NODEID_NONE);
+    // No specific peer identity, and no specific carrier, reach this call
+    // either (the D2D conflict-graph's abstract distance estimate,
+    // DistanceBasedConflictGraph.cc, is its only caller, and D2D radios are
+    // never configured with more than one carrier in tree): getCarrierFrequency()
+    // (this radio's primary carrier) is exactly this radio's own carrier, and
+    // linkContextFor() falls back to the other role's own NIC-level default
+    // height for the missing side (E4/§3(k)).
+    return medium_->computePathLoss(this, distance, dbp, los, NODEID_NONE, getCarrierFrequency());
 }
 
 double StochasticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
@@ -263,11 +288,11 @@ double StochasticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
     return a.distance(b);
 }
 
-double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey& key)
+double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey& key, GHz carrierFrequency)
 {
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = medium_->losStateFor(this, key);
+    bool los = medium_->losStateFor(this, key, carrierFrequency);
 
     if (!medium_->isExtCellLosEnabled())
         los = false;
@@ -277,9 +302,9 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
     // (§3(k), verified: every in-tree ext-cell is at the eNB-side default
     // height): linkContextFor() falls back to the other role's own
     // NIC-level default height for the missing side.
-    double attenuation = medium_->extCellPathLossFor(getNodeId(), getCarrierFrequency())
-            .computePathLoss(dist, dist, los, O2iState{inside_building_, inside_distance_},
-                    medium_->linkContextFor(this, NODEID_NONE));
+    double attenuation = medium_->extCellPathLossFor(getNodeId(), carrierFrequency)
+            .computePathLoss(dist, dist, los, O2iState{inside_building_, getInsideDistance(carrierFrequency)},
+                    medium_->linkContextFor(this, NODEID_NONE, carrierFrequency));
 
     return attenuation;
 }

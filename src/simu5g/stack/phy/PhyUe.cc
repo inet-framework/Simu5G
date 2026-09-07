@@ -94,10 +94,11 @@ void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandida
         cInfo->setCoord(cellPos);
         cInfo->setFrameType(BROADCASTPKT);
         cInfo->setDirection(DL);
-        // this synthetic control info's carrierFrequency was never set --
-        // harmless today because nothing reads it, but the carrier-vector
-        // collapse (E8) makes RadioLink key its state off it, so set it now
-        // to the carrier the candidate cell was matched on
+        // radio endpoint recast E8: RadioLink::carrierFrequency (which the RSRP
+        // call below now keys the UE's own served-carrier lookup by) is read off
+        // this control info's carrierFrequency -- unset before, harmlessly,
+        // because nothing read it; ueCarrierFrequency (already established as
+        // the carrier the candidate cell was matched on) is the correct value.
         cInfo->setCarrierFrequency(ueCarrierFrequency);
         // get RSSI from the BS
         double rssi = 0;
@@ -324,7 +325,12 @@ void PhyUe::handleUpperMessage(cMessage *msg)
         RbMap rbMap = lteInfo->getGrantedBlocks();
         Remote antenna = MACRO;  // TODO fix for multi-antenna
         // note: the direction is always UL here for a plain UE (enforced by validateOutgoingFrame() above)
-        binder_->storeUlTransmissionMap(channelModel->getCarrierFrequency(), antenna, rbMap, nodeId_, servingNodeId_, this, (Direction)lteInfo->getDirection());
+        // carrierFreq, not channelModel->getCarrierFrequency(): the one radio
+        // endpoint may serve several carriers since E8, and
+        // channelModel->getCarrierFrequency() answers for its primary one --
+        // carrierFreq is the one this packet is actually on (it is what
+        // resolved channelModel in the first place)
+        binder_->storeUlTransmissionMap(carrierFreq, antenna, rbMap, nodeId_, servingNodeId_, this, (Direction)lteInfo->getDirection());
     }
 
     if (lteInfo->getFrameType() == DATAPKT && lteInfo->getUserTxParams() != nullptr) {
@@ -388,8 +394,7 @@ void PhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
     lastFeedback_ = NOW;
 
     // send one feedback packet for each carrier
-    for (auto& cm : channelModel_) {
-        GHz carrierFrequency = cm.first;
+    for (GHz carrierFrequency : getServedCarriers()) {
         LteAirFrame *carrierFrame = frame->dup();
         UserControlInfo *carrierInfo = uinfo->dup();
         carrierInfo->setCarrierFrequency(carrierFrequency);

@@ -138,9 +138,8 @@ void LteMacUe::initialize(int stage)
         }
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
-        const auto& channelModels = phy_->getChannelModels();
-        for (const auto& cm : channelModels) {
-            lcgScheduler_[cm.first] = new LteSchedulerUeUl(this, cm.first);
+        for (GHz carrierFrequency : phy_->getServedCarriers()) {
+            lcgScheduler_[carrierFrequency] = new LteSchedulerUeUl(this, carrierFrequency);
         }
     }
     else if (stage == INITSTAGE_SIMU5G_TTI_SETUP) {

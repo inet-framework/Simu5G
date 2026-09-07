@@ -41,7 +41,7 @@ module NrNicUe extends LteNicUe
         sdap.reflectiveQosTableModule = default(this.useReflectiveQos ? "^.reflectiveQosTable" : "");
         string nrChannelModelType = default("StochasticChannelModel");
         // UE-side antenna height default (radio endpoint recast E4, §3(k))
-        nrChannelModel[*].height = default(1.5m);
+        nrChannelModel.height = default(1.5m);
 
         packetFlowObserver.typename = default("PacketFlowObserverUe");
 
@@ -61,7 +61,7 @@ module NrNicUe extends LteNicUe
         nrPhy.macNodeId = parent.nrMacNodeId;
         nrDlFbGen.macNodeId = parent.nrMacNodeId;
         rrc.nrHandoverController.otherHandoverControllerModule = "^.handoverController";
-        nrPhy.channelModelModule = "^.nrChannelModel[0]";
+        nrPhy.channelModelModule = "^.nrChannelModel";
         nrPhy.feedbackGeneratorModule = "^.nrDlFbGen";
         nrPhy.handoverControllerModule = "^.rrc.nrHandoverController";
         rrc.nrHandoverController.macModule = "^.^.nrMac";
@@ -92,8 +92,9 @@ module NrNicUe extends LteNicUe
         nrPhy: <default("PhyUe")> like IPhy {
             @display("p=570,600");
         }
-        // NR Channel Model
-        nrChannelModel[numNrCarriers]: <nrChannelModelType> like IChannelModel {
+        // NR Channel Model (radio endpoint recast E8: one radio endpoint,
+        // serving all of numNrCarriers through componentCarrierModules, §3(c))
+        nrChannelModel: <nrChannelModelType> like IChannelModel {
             @display("p=80,60,col;g=left");
         }
 
