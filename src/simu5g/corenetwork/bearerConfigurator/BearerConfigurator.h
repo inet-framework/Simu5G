@@ -115,6 +115,14 @@ class BearerConfigurator : public cSimpleModule, public cListener
     // node pair.
     virtual DrbId establishFromDefinition(AuthoredBearer& ab, const FlowId& flow, const FlowBindingKey& key);
 
+    // The DRB id a definition resolves to at the given UE, for the QFI path (see
+    // resolveDrbForQfi()): a static definition's bearer already exists, so its pinned
+    // id is returned as-is; an on-demand definition's bearer is materialized on first
+    // use within the node pair -- the id assigned and the descriptor delivered to the
+    // RRCs -- and that id returned. DRBID_NONE if the UE is not attached, so an
+    // on-demand bearer has nowhere to be established.
+    virtual DrbId drbOfDefinition(AuthoredBearer& ab, MacNodeId ueNodeId);
+
     // The definition a flow's bearer was authored from, or nullptr if none covers it
     virtual const DrbDesc *findBearerDefinition(const FlowId& flow);
 
@@ -180,13 +188,18 @@ class BearerConfigurator : public cSimpleModule, public cListener
     // (RLC UM, LCG 3). Returns the established bearer's DRB id.
     virtual DrbId establishOnDemandBearer(const FlowId& flow, const FlowBindingKey& key, const inet::Packet *pkt);
 
-    // Create the DRB serving the given QFI at the given UE from a matching "5gc"
-    // onDemandDrbs definition: the id is assigned, and the definition is delivered to
-    // the RRCs involved exactly like a staticDrbs entry (so it also reaches SDAP's
-    // QFI-to-DRB table). Returns the DRB id, or DRBID_NONE when no definition covers
-    // the QFI (or the UE is not attached). Called by SDAP on a QFI-to-DRB lookup miss;
-    // repeated calls return the already-created DRB.
-    virtual DrbId createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi);
+    // Resolve the DRB an unmapped QFI should use at the given UE, when SDAP's QFI-to-DRB
+    // table missed. The "5gc" definition that maps this QFI specifically wins; failing
+    // that, the UE's default bearer catches it (it carries the QFIs no other bearer
+    // maps). One walk in table order, static definitions before on-demand ones, so an
+    // authored default outranks the onDemandDrbs catch-all -- the precedence
+    // establishOnDemandBearer() gives packet filters. Returns the DRB id (materializing
+    // an on-demand definition's bearer on first use, so it also reaches SDAP's table via
+    // the RRC push), or DRBID_NONE when nothing covers the QFI or the UE is not attached.
+    // Called by SDAP on a lookup miss; repeated calls return the same bearer. This is
+    // SDAP's sole bearer-selection authority: SDAP holds no default-DRB fallback of its
+    // own.
+    virtual DrbId resolveDrbForQfi(MacNodeId ueNodeId, Qfi qfi);
 
     // Allocate the lowest free DRB ID within the (unordered) node pair {a, b}, so the
     // two endpoints of a link can never mint colliding IDs for the same peer.

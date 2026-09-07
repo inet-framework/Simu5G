@@ -347,7 +347,7 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
         };
 
         // DRB id: static definitions pin it; an on-demand definition gets one assigned
-        // when it first matches (see establishFromDefinition()/createOnDemandDrbForQfi())
+        // when it first matches (see establishFromDefinition()/drbOfDefinition())
         DrbDesc drb;
         DrbId drbId = DRBID_NONE;
         drb.key = DrbKey(NODEID_NONE, DRBID_NONE);
@@ -373,12 +373,9 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
             throw cRuntimeError("%s entry %d: invalid coreNetwork '%s', must be \"epc\" or \"5gc\"", paramName, i, coreNetworkStr.c_str());
 
         // isDefault (optional; if no entry of a UE is marked, its first static one
-        // becomes default). An on-demand "5gc" entry cannot be the default: the default
-        // DRB is where unmapped QFIs go, so it must exist up front.
+        // becomes default).
         if (entry->containsKey("isDefault"))
             drb.isDefault = entry->get("isDefault").boolValue();
-        if (onDemand && drb.isDefault && drb.coreNetwork == CN_5GC)
-            throw cRuntimeError("%s entry %d: an on-demand \"5gc\" definition cannot be the default DRB", paramName, i);
 
         // mappedQfis (5gc only, optional; an entry without it does not take part in SDAP's
         // QFI-to-DRB mapping, e.g. it only carries the bearer's QoS profile)
@@ -396,11 +393,13 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
             }
         }
 
-        // An on-demand "5gc" definition is selected by its mappedQfis alone, so one
-        // without them could never match
-        if (onDemand && drb.coreNetwork == CN_5GC && drb.mappedQfis.empty())
-            throw cRuntimeError("%s entry %d: an on-demand \"5gc\" definition needs a non-empty \"mappedQfis\" -- "
-                    "it is selected by its QFIs and could never match without them", paramName, i);
+        // An on-demand "5gc" definition is selected by its mappedQfis, so one without
+        // them could never match on a QFI -- unless it is the default, which is selected
+        // by not matching anything else (it catches the QFIs no other bearer maps).
+        if (onDemand && drb.coreNetwork == CN_5GC && drb.mappedQfis.empty() && !drb.isDefault)
+            throw cRuntimeError("%s entry %d: an on-demand \"5gc\" definition needs a non-empty \"mappedQfis\" "
+                    "unless it is the default -- it is selected by its QFIs and could never match without them",
+                    paramName, i);
 
         // filters (eps only, optional; the packet filters that select this bearer --
         // an entry without them can still be the default bearer or carry only a QoS
@@ -570,13 +569,15 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
                 path.erase(0, networkPrefix.size());
             if (!matcher.matches(path.c_str()))
                 continue;
-            // An "epc" definition describes a bearer of an SDAP-less stack (SDAP
-            // stacks select bearers by QFI, so an eps record could never match there,
-            // and its isDefault flag would wrongly suppress the auto-default marking
-            // above). A pattern legitimately covers UEs of both kinds, so
+            // A definition describes a bearer of the kind of stack its architecture
+            // belongs to, and only those: a "5gc" bearer is selected by QFI and needs
+            // SDAP to do the selecting, an "epc" bearer by packet filters and needs a
+            // stack without it. A record on the wrong stack could never match, and its
+            // isDefault flag would wrongly suppress the auto-default marking above. A
+            // pattern (or an omitted "ue") legitimately covers UEs of both kinds, so
             // incompatible UEs are skipped rather than rejected; numMatched counts
             // compatible UEs only, so an entry naming only such UEs still errors.
-            if (drb.coreNetwork == CN_EPC && ueStackHasSdap(ueModule))
+            if ((drb.coreNetwork == CN_5GC) != ueStackHasSdap(ueModule))
                 continue;
             numMatched++;
             if (!onDemand && !drbsOfUe[ueModule].insert({drbId, drb}).second)
@@ -753,38 +754,59 @@ DrbId BearerConfigurator::establishFromDefinition(AuthoredBearer& ab, const Flow
     return establishDataConnection(flow, BearerRequest{ab.desc.rlcMode, ab.desc.lcg, key});
 }
 
-DrbId BearerConfigurator::createOnDemandDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
+DrbId BearerConfigurator::resolveDrbForQfi(MacNodeId ueNodeId, Qfi qfi)
 {
-    Enter_Method_Silent("createOnDemandDrbForQfi");
+    Enter_Method_Silent("resolveDrbForQfi");
 
     cModule *ueModule = binder_->getNodeModule(ueNodeId);
     if (ueModule == nullptr)
         return DRBID_NONE;
 
-    for (auto& ab : authoredBearers_) {
-        if (!ab.onDemand || ab.ueModule != ueModule || ab.desc.coreNetwork != CN_5GC)
+    // One walk, the shape establishOnDemandBearer() uses for packet filters: the
+    // definition that maps this QFI specifically wins immediately, in table order;
+    // failing that, the first default definition catches it. authoredBearers_ keeps
+    // static records ahead of on-demand ones, so an authored default outranks the
+    // onDemandDrbs catch-all.
+    AuthoredBearer *defaultDef = nullptr;
+    for (AuthoredBearer& ab : authoredBearers_) {
+        if (ab.ueModule != ueModule || ab.desc.coreNetwork != CN_5GC)
             continue;
-        if (!contains(ab.desc.mappedQfis, qfi))
-            continue;
-        MacNodeId servingNodeId = binder_->getServingNode(ueNodeId);
-        if (servingNodeId == NODEID_NONE)
-            return DRBID_NONE;   // not attached, nowhere to create the bearer
-        // materialized once per node pair, like establishFromDefinition()
-        std::pair<MacNodeId, MacNodeId> pairKey = std::minmax(ueNodeId, servingNodeId);
-        auto it = ab.pairIds.find(pairKey);
-        if (it == ab.pairIds.end()) {
-            DrbId drbId = assignDrbId(ueNodeId, servingNodeId);
-            it = ab.pairIds.insert({pairKey, drbId}).first;
-            DrbDesc desc = ab.desc;
-            desc.key = DrbKey(NODEID_NONE, drbId);
-            desc.lcid = LogicalCid(num(drbId));
-            EV << "BearerConfigurator::createOnDemandDrbForQfi - QFI " << (int)num(qfi) << " gets on-demand DRB " << drbId
-               << " at UE " << ueModule->getFullPath() << endl;
-            pushDrbToRrcs(ab.ueModule, desc);
-        }
-        return it->second;
+        if (contains(ab.desc.mappedQfis, qfi))
+            return drbOfDefinition(ab, ueNodeId);
+        if (ab.desc.isDefault && defaultDef == nullptr)
+            defaultDef = &ab;
     }
+    if (defaultDef != nullptr)
+        return drbOfDefinition(*defaultDef, ueNodeId);
     return DRBID_NONE;
+}
+
+DrbId BearerConfigurator::drbOfDefinition(AuthoredBearer& ab, MacNodeId ueNodeId)
+{
+    // A static definition's bearer was established up front under its pinned id
+    if (!ab.onDemand)
+        return ab.desc.getDrbId();
+
+    // An on-demand definition materializes once per node pair, like
+    // establishFromDefinition(): the id is assigned and the descriptor delivered to the
+    // RRCs involved (so it also reaches SDAP's QFI-to-DRB table), and later lookups join
+    // the bearer already made.
+    MacNodeId servingNodeId = binder_->getServingNode(ueNodeId);
+    if (servingNodeId == NODEID_NONE)
+        return DRBID_NONE;   // not attached, nowhere to create the bearer
+    std::pair<MacNodeId, MacNodeId> pairKey = std::minmax(ueNodeId, servingNodeId);
+    auto it = ab.pairIds.find(pairKey);
+    if (it == ab.pairIds.end()) {
+        DrbId drbId = assignDrbId(ueNodeId, servingNodeId);
+        it = ab.pairIds.insert({pairKey, drbId}).first;
+        DrbDesc desc = ab.desc;
+        desc.key = DrbKey(NODEID_NONE, drbId);
+        desc.lcid = LogicalCid(num(drbId));
+        EV << "BearerConfigurator::drbOfDefinition - on-demand DRB " << drbId
+           << " materialized at UE " << ab.ueModule->getFullPath() << endl;
+        pushDrbToRrcs(ab.ueModule, desc);
+    }
+    return it->second;
 }
 
 DrbId BearerConfigurator::establishDataConnection(const FlowId& flowIn, const BearerRequest& reqIn)

@@ -164,23 +164,20 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
 
     const DrbDesc *drb = drbTable_.getDrbForQfi(nodeId, qfi);
     if (!drb) {
-        // An uncovered QFI may still have an on-demand definition to create its DRB
-        // from (see the bearer configurator's onDemandDrbs parameter); a successful creation is
-        // pushed back into this table, so retry the lookup. The bearer configurator needs the
-        // actual UE: on the gNB that is nodeId (the destination), on the UE itself
-        // the flow's source.
+        // The QFI is not in this node's table: ask the bearer configurator which DRB it
+        // resolves to -- the definition that maps it, or the UE's default bearer, an
+        // on-demand one being materialized (and pushed back into this table) on first
+        // use. The configurator is the sole bearer-selection authority; SDAP holds no
+        // default-DRB fallback of its own. It works in UE-id space: on the gNB that is
+        // nodeId (the destination), on the UE itself the flow's source.
         MacNodeId ueId = isUe ? pkt->getTag<FlowControlInfo>()->getSourceId() : nodeId;
-        if (bearerConfigurator_->createOnDemandDrbForQfi(ueId, qfi) != DRBID_NONE)
-            drb = drbTable_.getDrbForQfi(nodeId, qfi);
-    }
-    if (!drb) {
-        drb = drbTable_.getDefaultDrb(nodeId);
-        if (drb)
-            EV_WARN << "SDAP TX: No DRB mapping for nodeId=" << nodeId << " QFI=" << qfi
-                    << ", falling back to default DRB " << drb->getDrbId() << "\n";
+        DrbId drbId = bearerConfigurator_->resolveDrbForQfi(ueId, qfi);
+        if (drbId != DRBID_NONE)
+            drb = drbTable_.getDrb(DrbKey(nodeId, drbId));
     }
     if (!drb)
-        throw cRuntimeError("SDAP TX: No DRB available for nodeId=%d", (int)num(nodeId));
+        throw cRuntimeError("SDAP TX: no DRB for QFI %d at nodeId=%d -- no definition maps it and no default bearer is configured",
+                (int)num(qfi), (int)num(nodeId));
 
     EV_INFO << "SDAP TX: Selected DRB=" << drb->getDrbId() << " for QFI=" << qfi << "\n";
 

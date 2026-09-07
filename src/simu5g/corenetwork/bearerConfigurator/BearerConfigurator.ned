@@ -185,17 +185,20 @@ package simu5g.corenetwork.bearerConfigurator;
 //
 // A flow that no definition covers is a configuration error: every on-demand bearer's
 // properties come from a definition entry, never from the packet. The parameter's
-// default value keeps configurations that author nothing working -- it carries the
-// well-known packet-name classes as ordinary catch-all definitions ("VoIP*" = LCG 0,
-// "gaming*" = LCG 2, "VoD*" = LCG 1, everything else LCG 3, all RLC UM), so overriding
-// the parameter replaces that classification with the configuration's own bearer set.
-// An "epc" entry describes bearers of SDAP-less stacks only; a "ue" pattern (or an
-// omitted "ue") covering UEs of both kinds simply skips the SDAP ones, but an entry
-// whose explicit "ue" pattern matches no UE with a compatible stack is an error.
-// The default value's rows are all "epc" because that is all a default needs: a
-// stack with SDAP cannot run unauthored anyway (its QFI-to-DRB mapping exists only
-// if authored), so the configurations that author nothing are exactly the SDAP-less
-// ones.
+// default value keeps configurations that author nothing working, whichever stack they
+// run: for SDAP-less stacks it carries the well-known packet-name classes as ordinary
+// catch-all definitions ("VoIP*" = LCG 0, "gaming*" = LCG 2, "VoD*" = LCG 1, everything
+// else LCG 3, all RLC UM), and for SDAP stacks a single default bearer that carries
+// every QoS flow (the last row, "5gc"). Overriding the parameter replaces the whole set
+// with the configuration's own.
+// An "epc" entry describes bearers of SDAP-less stacks only and a "5gc" entry those of
+// SDAP stacks only; a "ue" pattern (or an omitted "ue") covering UEs of both kinds
+// simply skips the incompatible ones, but an entry whose explicit "ue" pattern matches
+// no UE with a compatible stack is an error. So in any given network only the rows for
+// the stacks present take effect, and the two default rows of the two kinds coexist
+// harmlessly: the "5gc" default bearer is what lets a UE with SDAP run unauthored (its
+// QFI-to-DRB table would otherwise be empty and the first packet would find no bearer),
+// the "epc" rows do the same for a UE without.
 // D2D and multicast bearers are outside the definition system: the tables describe
 // infrastructure (Uu) bearers, while those are sidelink ones. They are established
 // with a fixed configuration (RLC UM, LCG 3). The model has no sidelink bearer
@@ -222,11 +225,12 @@ simple BearerConfigurator
     parameters:
         string binderModule = default("binder");
         object staticDrbs = default([]);  // JSON array: [{coreNetwork, ue, drbId, profile, mappedQfis, filters, lcg, rlcMode, legs, pduSessionType, upperProtocol, isDefault, gbr, packetDelayBudget, packetErrorRate, qosPriorityLevel}, ...]; see banner comment for details
-        object onDemandDrbs = default([  // JSON array, staticDrbs schema minus "drbId" (and "ue" optional): bearers created when traffic first matches them; the default value carries the legacy packet-name classification; see banner comment for details
+        object onDemandDrbs = default([  // JSON array, staticDrbs schema minus "drbId" (and "ue" optional): bearers created when traffic first matches them; the default value lets both stack kinds run unauthored; see banner comment for details
                 {coreNetwork: "epc", filters: ["VoIP*"], lcg: 0, rlcMode: "UM"},
                 {coreNetwork: "epc", filters: ["gaming*"], lcg: 2, rlcMode: "UM"},
                 {coreNetwork: "epc", filters: ["VoDPacket*", "VoDFinishPacket*"], lcg: 1, rlcMode: "UM"},
-                {coreNetwork: "epc", isDefault: true, lcg: 3, rlcMode: "UM"}
+                {coreNetwork: "epc", isDefault: true, lcg: 3, rlcMode: "UM"},
+                {coreNetwork: "5gc", isDefault: true, lcg: 3, rlcMode: "UM"}
             ]);
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcMode: "UM", gbr: true, ...}, ...}; see banner comment
 
