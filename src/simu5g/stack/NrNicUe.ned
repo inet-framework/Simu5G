@@ -33,7 +33,7 @@ import simu5g.stack.sdap.common.IReflectiveQosTable;
 module NrNicUe extends LteNicUe
 {
     parameters:
-        bool hasSdap = default(false);
+        bool hasSdap = default(false);  // whether the stack has an SDAP layer: true on 5GC (Upf) networks, false on EPC/EN-DC ones; the network sets it per its core
         bool useReflectiveQos = default(false);
         ip2nic.hasSdap = default(this.hasSdap);
         sdap.nodeRole = default("UE");
