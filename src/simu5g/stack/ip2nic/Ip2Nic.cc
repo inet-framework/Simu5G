@@ -180,14 +180,18 @@ void Ip2Nic::toStackUe(Packet *pkt)
 
     attachFlowControlInfo(pkt, srcAddr, destAddr, tos);
 
-    // With SDAP, it maps the QoS flow onto a DRB itself -- except for sidelink
-    // traffic, which stays this module's: D2D bearers are peer-keyed and outside
-    // the QoS-flow architecture (3GPP sidelink has its own SL-SDAP over PC5, not
-    // modeled), so SDAP passes sidelink packets through untouched in both
-    // directions and their bearer assignment lives here in either case.
-    Direction dir = (Direction)pkt->getTag<FlowControlInfo>()->getDirection();
-    bool sidelink = (dir == D2D || dir == D2D_MULTI);
-    if (!hasSdap_ || sidelink)
+    // With SDAP, it maps the QoS flow onto a DRB itself -- except for flows of the
+    // D2D machinery, which stay this module's: their bearers are peer-keyed and
+    // outside the QoS-flow architecture (3GPP sidelink has its own SL-SDAP over
+    // PC5, not modeled), so SDAP passes their packets through untouched in both
+    // directions and their bearer assignment lives here in either case. That
+    // includes a D2D-capable pair's flow while in infrastructure mode: the mode
+    // switch tears down and re-establishes within the D2D machinery, so ownership
+    // must not change with the mode.
+    auto lteInfo = pkt->getTag<FlowControlInfo>();
+    bool d2dFlow = lteInfo->getD2dTxPeerId() != NODEID_NONE || lteInfo->getD2dRxPeerId() != NODEID_NONE
+            || lteInfo->getD2dGroupId() != NODEID_NONE;
+    if (!hasSdap_ || d2dFlow)
         assignBearer(pkt, srcAddr, destAddr, tos);
 
     // Send datagram to LTE stack or LteIp peer

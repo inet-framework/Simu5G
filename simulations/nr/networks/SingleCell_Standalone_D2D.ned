@@ -29,6 +29,9 @@ import simu5g.world.radio.LteChannelControl;
 network SingleCell_Standalone_D2D
 {
     parameters:
+        // The gNB connects to a 5GC (Upf), so every cellular stack has SDAP:
+        // TS 37.324 ties SDAP to the 5GC connection, not to the radio
+        **.cellularNic.hasSdap = default(true);
         int numUeCell = default(0);
         int numUeD2DTx = default(0);
         int numUeD2DRx = default(0);
