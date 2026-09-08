@@ -182,6 +182,15 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
     }
 
     const DrbDesc *drb = drbTable_.getDrbForQfi(nodeId, qfi);
+    if (drb != nullptr && !establishedBearers_.count(DrbKey(pkt->getTag<FlowControlInfo>()->getDestId(), drb->getDrbId()))) {
+        // The mapping names a bearer that is not established -- torn down at a handover
+        // or a D2D mode switch. An on-demand definition's id is pair-scoped and was
+        // released with the bearer, so the mapped id may belong to the past: treat the
+        // QFI as unmapped and re-resolve below -- the configurator materializes the
+        // definition for the current node pair and pushes the fresh descriptor back
+        // into this table.
+        drb = nullptr;
+    }
     if (!drb) {
         // The QFI is not in this node's table: ask the bearer configurator which DRB it
         // resolves to -- the definition that maps it, or the UE's default bearer, an
