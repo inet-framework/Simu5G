@@ -30,6 +30,9 @@ import simu5g.world.radio.LteChannelControl;
 network ExtUeAppMecAppExample
 {
     parameters:
+        // The gNBs connect to a 5GC (Upf), so every cellular stack has SDAP:
+        // TS 37.324 ties SDAP to the 5GC connection, not to the radio
+        **.cellularNic.hasSdap = default(true);
 
         double playgroundSizeX @unit(m); // x size of the area the nodes are in (in meters)
         double playgroundSizeY @unit(m); // y size of the area the nodes are in (in meters)

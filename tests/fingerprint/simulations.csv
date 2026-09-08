@@ -103,7 +103,7 @@
 /simulations/nr/tutorial/,               -f omnetpp.ini -c Multiple-UEs -r 0,                    5s,         2b2d-09a9/tplx;8b5b-1429/tilx;895c-6a4b/~tNl;9992-0e09/sz, PASS,
 /simulations/nr/tutorial/,               -f omnetpp.ini -c Numerology -r 0,                      5s,         e36b-1451/tplx;e3bd-bf26/tilx;8d3e-3e6f/~tNl;28f3-e273/sz, PASS,
 /simulations/nr/tutorial/,               -f omnetpp.ini -c Single-UE -r 0,                       5s,         cad7-a59d/tplx;2e6c-eb66/tilx;e65e-8aa1/~tNl;0d10-48e0/sz, PASS,
-/simulations/nr/videostreaming_dataset_generator/, -f omnetpp.ini -c UrbanNetwork -r 0,          10s,        85f3-5fcf/tplx;a454-255d/tilx;9a33-f6d4/~tNl;775b-bad6/sz, PASS,
+/simulations/nr/videostreaming_dataset_generator/, -f omnetpp.ini -c UrbanNetwork -r 0,          10s,        db7c-d620/tplx;dce7-19a5/tilx;9a33-f6d4/~tNl;775b-bad6/sz, PASS,
 /tutorials/nr/,                          -f omnetpp.ini -c BgTraffic -r 0,                       5s,         232d-e8b7/tplx;0ac2-aa52/tilx;b0a2-7574/~tNl;dab2-626f/sz, PASS,
 /tutorials/nr/,                          -f omnetpp.ini -c CarrierAggregation -r 0,              5s,         9071-1632/tplx;4e73-8ae2/tilx;6cb9-15f6/~tNl;d899-f9d7/sz, PASS,
 /tutorials/nr/,                          -f omnetpp.ini -c Multiple-UEs -r 0,                    5s,         93a6-5490/tplx;321f-6ee5/tilx;05fc-041c/~tNl;82e3-f616/sz, PASS,
