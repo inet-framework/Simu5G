@@ -15,6 +15,7 @@
 #include <inet/common/ProtocolTag_m.h>
 
 #include "simu5g/common/LteControlInfoTags_m.h"
+#include "simu5g/common/QfiTag_m.h"
 #include "simu5g/stack/handoverX2Forwarder/X2HandoverCommandIE.h"
 #include "simu5g/stack/ip2nic/HandoverPacketHolderEnb.h"
 
@@ -88,6 +89,16 @@ void HandoverX2Forwarder::handleX2Message(cPacket *pkt)
         // packet-filter dissection of bearer definitions) see the packet for what
         // it is.
         datagram->addTagIfAbsent<inet::PacketProtocolTag>()->setProtocol(&inet::Protocol::ipv4);
+
+        // Restore the datagram's QoS flow, carried alongside it the way the 3GPP
+        // forwarding tunnel carries the QFI (TS 38.425): the datagram re-enters the
+        // stack without passing GtpUser, and the target's SDAP needs the QfiReq tag
+        // to map it back onto a DRB. QFI_NONE = the bearer has no QoS flow (EPC).
+        auto hoData = inet::dynamicPtrCast<const X2HandoverDataMsg>(x2msg);
+        ASSERT(hoData != nullptr);
+        if (hoData->getQfi() != QFI_NONE)
+            datagram->addTagIfAbsent<QfiReq>()->setQfi(hoData->getQfi());
+
         receiveDataFromSourceEnb(datagram, sourceId);
     }
     else { // X2_HANDOVER_CONTROL_MSG
@@ -152,8 +163,11 @@ void HandoverX2Forwarder::forwardDataToTargetEnb(Packet *datagram, MacNodeId tar
     destList.push_back(targetEnb);
     ctrlInfo->setDestIdList(destList);
 
-    // build X2 Handover Msg
+    // build X2 Handover Msg; the datagram's QoS flow travels with it (see
+    // handleX2Message() for the restore side)
     auto hoMsg = makeShared<X2HandoverDataMsg>();
+    if (auto qfiReq = datagram->findTag<QfiReq>())
+        hoMsg->setQfi(qfiReq->getQfi());
     datagram->insertAtFront(hoMsg);
     datagram->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&LteProtocol::x2ap);
 

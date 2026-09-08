@@ -24,6 +24,13 @@ namespace simu5g {
  */
 class X2HandoverDataMsg : public LteX2Message
 {
+  protected:
+    // QoS flow of the forwarded datagram (QFI_NONE on bearers without one, i.e. EPC).
+    // In 3GPP the forwarding tunnel carries the QFI too (TS 38.425); the receiving
+    // side restores it as the QfiReq tag, which the target's SDAP needs to map the
+    // datagram back onto a DRB. Carried as a C++ field of the header chunk, like
+    // GtpUserMsg's qfi; it does not add to the message length.
+    Qfi qfi_ = QFI_NONE;
 
   public:
 
@@ -40,10 +47,14 @@ class X2HandoverDataMsg : public LteX2Message
         if (&other == this)
             return *this;
         LteX2Message::operator=(other);
+        qfi_ = other.qfi_;
         return *this;
     }
 
     X2HandoverDataMsg *dup() const override { return new X2HandoverDataMsg(*this); }
+
+    Qfi getQfi() const { return qfi_; }
+    void setQfi(Qfi qfi) { qfi_ = qfi; }
 
 };
 
