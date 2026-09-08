@@ -144,6 +144,14 @@ package simu5g.corenetwork.bearerConfigurator;
 //    when no QFI-to-DRB mapping ("5gc") or packet filter ("epc") matches. If no entry of
 //    a UE is marked in either table, the UE's single static bearer takes the role; a UE
 //    with several bearers must mark one explicitly.
+//  - suppressSdapHeader (bool, optional, "5gc" only): the bearer's packets carry no SDAP
+//    header (TS 38.331 sdap-HeaderDL/UL "absent"). Only meaningful on the default bearer
+//    (any other bearer with at most one mapped QFI is headerless already), and only sound
+//    when a single QoS flow actually rides it: the receiver assigns every headerless
+//    packet the bearer's sole mapped QFI (QFI 0 when none is mapped), and the sender
+//    verifies each packet against that value, stopping with an error when a second flow
+//    shows up. The header decision itself is computed by this module and delivered per
+//    bearer; SDAP applies it as pushed.
 //  - gbr (bool), packetDelayBudget (double, ms), packetErrorRate (double),
 //    qosPriorityLevel (int) -- all optional: the
 //    QoS profile of the bearer's flows (5QI characteristics). Any of them present marks the
@@ -204,8 +212,11 @@ package simu5g.corenetwork.bearerConfigurator;
 // default value keeps configurations that author nothing working, whichever stack they
 // run: for SDAP-less stacks it carries the well-known packet-name classes as ordinary
 // catch-all definitions ("VoIP*" = LCG 0, "gaming*" = LCG 2, "VoD*" = LCG 1, everything
-// else LCG 3, all RLC UM), and for SDAP stacks a single default bearer that carries
-// every QoS flow (the last row, "5gc"). Overriding the parameter replaces the whole set
+// else LCG 3, all RLC UM), and for SDAP stacks a single default bearer (the last row,
+// "5gc"), header-suppressed: an unauthored run carries the one default QoS flow with no
+// SDAP header on the wire, and a run whose traffic actually shows up with several QFIs
+// stops with an error asking for authored bearers (or an unsuppressed default) instead
+// of silently mixing its flows. Overriding the parameter replaces the whole set
 // with the configuration's own.
 // An "epc" entry describes bearers of SDAP-less stacks only and a "5gc" entry those of
 // SDAP stacks only; a "ue" pattern (or an omitted "ue") covering UEs of both kinds
@@ -240,13 +251,13 @@ simple BearerConfigurator
 {
     parameters:
         string binderModule = default("binder");
-        object staticDrbs = default([]);  // JSON array: [{coreNetwork, ue, drbId, profile, mappedQfis, filters, lcg, rlcMode, legs, pduSessionType, upperProtocol, isDefault, gbr, packetDelayBudget, packetErrorRate, qosPriorityLevel}, ...]; see banner comment for details
+        object staticDrbs = default([]);  // JSON array: [{coreNetwork, ue, drbId, profile, mappedQfis, filters, lcg, rlcMode, legs, pduSessionType, upperProtocol, isDefault, suppressSdapHeader, gbr, packetDelayBudget, packetErrorRate, qosPriorityLevel}, ...]; see banner comment for details
         object onDemandDrbs = default([  // JSON array, staticDrbs schema minus "drbId" (and "ue" optional): bearers created when traffic first matches them; the default value lets both stack kinds run unauthored; see banner comment for details
                 {coreNetwork: "epc", filters: ["VoIP*"], lcg: 0, rlcMode: "UM"},
                 {coreNetwork: "epc", filters: ["gaming*"], lcg: 2, rlcMode: "UM"},
                 {coreNetwork: "epc", filters: ["VoDPacket*", "VoDFinishPacket*"], lcg: 1, rlcMode: "UM"},
                 {coreNetwork: "epc", isDefault: true, lcg: 3, rlcMode: "UM"},
-                {coreNetwork: "5gc", isDefault: true, lcg: 3, rlcMode: "UM"}
+                {coreNetwork: "5gc", isDefault: true, suppressSdapHeader: true, lcg: 3, rlcMode: "UM"}
             ]);
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcMode: "UM", gbr: true, ...}, ...}; see banner comment
 

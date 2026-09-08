@@ -87,6 +87,17 @@ struct DrbDesc {
     std::vector<Qfi> mappedQfis;           // mappedQoS-FlowsToAdd
     bool isDefault = false;             // defaultDRB (5gc: fallback for unmapped QFIs; epc: carries traffic matching no filter)
 
+    // The configuration asks for the bearer's packets to carry no SDAP header. Input to
+    // the useSdapHeader decision below; only sound when a single QoS flow rides the
+    // bearer, which SDAP verifies per packet (see NrSdap::recoveryQfi()).
+    bool suppressSdapHeader = false;
+
+    // Whether the bearer's packets carry an SDAP header (TS 38.331 sdap-HeaderDL/UL) --
+    // the control plane's decision, computed by the BearerConfigurator once the UE's
+    // default bearer is settled (see computeUseSdapHeader() there). SDAP applies it as
+    // delivered and decides nothing itself.
+    bool useSdapHeader = false;
+
     // Packet filters selecting this bearer (CN_EPC only; inet::PacketFilter
     // syntax: a message-name pattern, or an expression written as "expr(...)")
     std::vector<std::string> filters;
@@ -137,6 +148,7 @@ inline std::ostream& operator<<(std::ostream& os, const DrbDesc& drb) {
     os << "drbId=" << drb.getDrbId() << " peer=" << drb.getPeerId();
     if (drb.coreNetwork != UNKNOWN_CORE_NETWORK) os << " " << coreNetworkToA(drb.coreNetwork);
     if (drb.isDefault) os << " DEFAULT";
+    if (drb.suppressSdapHeader) os << " noSdapHeader";
     os << " qfi=[";
     for (size_t i = 0; i < drb.mappedQfis.size(); i++) {
         if (i) os << ",";

@@ -28,10 +28,15 @@ package simu5g.stack.sdap;
 // says which wins; one alone is used as-is; a packet with neither joins the
 // default QoS flow (QFI 0, the default DRB).
 //
-// An SDAP header is only added when the QFI cannot be unambiguously recovered
-// from the DRB alone on the RX side, i.e. when the DRB is the default DRB
-// (which may carry unmapped fallback traffic) or when it has multiple QFIs
-// mapped to it.
+// Whether a bearer's packets carry an SDAP header is the control plane's
+// decision, delivered per bearer in the pushed configuration (computed by
+// ~BearerConfigurator: a header is needed exactly when the QFI could not be
+// recovered from the DRB alone on the RX side, unless the configuration
+// suppresses it -- see the suppressSdapHeader entry field there). On a
+// headerless bearer both ends agree on the one QFI it carries -- its sole
+// mapped QFI, or QFI 0 when none is mapped: RX assigns that value to every
+// packet, and TX verifies each packet against it, stopping with an error when
+// another QoS flow shows up.
 //
 // Supports all 3GPP PDU session types (IPv4, IPv6, Ethernet, Unstructured)
 // via the pduSessionType field of the bearer configuration.

@@ -30,15 +30,16 @@ Define_Module(BearerConfigurator);
 static const std::vector<std::string> KNOWN_ENTRY_FIELDS = {
     "coreNetwork", "ue", "drbId", "profile", "mappedQfis", "filters", "lcg", "rlcMode",
     "legs", "primaryPath", "ulDataSplitThreshold", "ulLegSelection", "dlLegSelection",
-    "pduSessionType", "upperProtocol", "isDefault",
+    "pduSessionType", "upperProtocol", "isDefault", "suppressSdapHeader",
     "gbr", "packetDelayBudget", "packetErrorRate", "qosPriorityLevel"
 };
 
 // The entry fields a profile may not carry: a profile describes what a bearer is,
 // never which UE it belongs to (ue, drbId) or which architecture and flows select
-// it (coreNetwork, mappedQfis, filters, isDefault)
+// it (coreNetwork, mappedQfis, filters, isDefault, and suppressSdapHeader, whose
+// validity is bound to them)
 static const std::vector<std::string> FORBIDDEN_PROFILE_FIELDS = {
-    "drbId", "ue", "profile", "coreNetwork", "mappedQfis", "filters", "isDefault"
+    "drbId", "ue", "profile", "coreNetwork", "mappedQfis", "filters", "isDefault", "suppressSdapHeader"
 };
 
 void BearerConfigurator::initialize(int stage)
@@ -197,6 +198,12 @@ const cValueMap *BearerConfigurator::getPredefinedDrbProfiles()
     return predefinedDrbProfiles_;
 }
 
+void BearerConfigurator::computeUseSdapHeader(DrbDesc& drb)
+{
+    drb.useSdapHeader = drb.coreNetwork == CN_5GC
+            && (drb.isDefault || drb.mappedQfis.size() > 1) && !drb.suppressSdapHeader;
+}
+
 void BearerConfigurator::configureDrbs()
 {
     // The node ids of each registered UE: one per stack, both naming the same UE and so
@@ -288,9 +295,17 @@ void BearerConfigurator::configureDrbs()
             if (!ab.onDemand && ab.ueModule == ueModule)
                 ab.desc.isDefault = drbs.at(ab.desc.getDrbId()).isDefault;
 
-        for (const auto& [drbId, drb] : drbs)
+        for (auto& [drbId, drb] : drbs) {
+            computeUseSdapHeader(drb);
             pushDrbToRrcs(ueModule, drb);
+        }
     }
+
+    // The header decision of the retained records, now that every UE's default bearer
+    // is settled; an on-demand record's descriptor copy inherits it at materialization
+    // (see establishFromDefinition()/drbOfDefinition())
+    for (AuthoredBearer& ab : authoredBearers_)
+        computeUseSdapHeader(ab.desc);
 }
 
 // Whether the UE's stack contains SDAP. Structure, not configuration: the sdap
@@ -401,6 +416,27 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
             throw cRuntimeError("%s entry %d: an on-demand \"5gc\" definition needs a non-empty \"mappedQfis\" "
                     "unless it is the default -- it is selected by its QFIs and could never match without them",
                     paramName, i);
+
+        // suppressSdapHeader ("5gc" only, optional): ask for the bearer's packets to
+        // carry no SDAP header. Meaningful on the default bearer only -- a non-default
+        // bearer with at most one mapped QFI is headerless already, and one with
+        // several needs the header to tell its flows apart, which is also why a
+        // suppressed default may map at most one QFI. The resulting decision is
+        // computed in computeUseSdapHeader(), and SDAP verifies the single-flow
+        // assertion per packet (see NrSdap::recoveryQfi()).
+        if (entry->containsKey("suppressSdapHeader")) {
+            if (drb.coreNetwork != CN_5GC)
+                throw cRuntimeError("%s entry %d: \"suppressSdapHeader\" is a \"5gc\" field, not valid on a \"%s\" "
+                        "bearer (a stack without SDAP has no SDAP header)", paramName, i, coreNetworkStr.c_str());
+            drb.suppressSdapHeader = entry->get("suppressSdapHeader").boolValue();
+            if (drb.suppressSdapHeader && !drb.isDefault)
+                throw cRuntimeError("%s entry %d: \"suppressSdapHeader\" is only meaningful on the default bearer "
+                        "(marked \"isDefault\") -- a non-default bearer with at most one mapped QFI carries no "
+                        "header anyway", paramName, i);
+            if (drb.suppressSdapHeader && drb.mappedQfis.size() > 1)
+                throw cRuntimeError("%s entry %d: \"suppressSdapHeader\" asserts that a single QoS flow rides the "
+                        "bearer, but %d QFIs are mapped to it", paramName, i, (int)drb.mappedQfis.size());
+        }
 
         // filters (eps only, optional; the packet filters that select this bearer --
         // an entry without them can still be the default bearer or carry only a QoS

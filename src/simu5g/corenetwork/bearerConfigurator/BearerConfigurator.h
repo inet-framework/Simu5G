@@ -132,6 +132,14 @@ class BearerConfigurator : public cSimpleModule, public cListener
     virtual const omnetpp::cValueMap *getPredefinedDrbProfiles();
 
 
+    // Settle the SDAP header decision of one bearer record (TS 38.331 sdap-HeaderDL/UL,
+    // stored in DrbDesc::useSdapHeader): a header is needed exactly when the bearer
+    // alone cannot name the arriving QFI on the RX side -- it is the default bearer or
+    // several QFIs map to it -- unless the configuration suppresses it, asserting that
+    // a single QoS flow rides the bearer (which SDAP verifies per packet). Called once
+    // the UE's default bearer is settled, since the decision hangs on isDefault.
+    virtual void computeUseSdapHeader(DrbDesc& drb);
+
     // Deliver one bearer's definition to the RRCs involved: the UE's (keyed by
     // NODEID_NONE, "my serving node") and, for each attached stack, the serving
     // node's (keyed by that stack's UE id), reserving the configured id per pair.

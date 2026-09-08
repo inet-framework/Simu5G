@@ -58,7 +58,7 @@ class NrSdap : public cSimpleModule
     bool reflectiveQosOverridesQfi_ = false;   // when a packet has both a classified QFI and a reflective QoS match: true = reflective wins
 
   protected:
-    virtual bool requiresSdapHeader(const DrbDesc *drb);
+    virtual Qfi recoveryQfi(const DrbDesc *drb);
     virtual bool shouldEnableReflectiveQos(Qfi qfi);
     virtual const inet::Protocol *getUpperProtocol(const DrbDesc *ctx);
     virtual void initialize() override;

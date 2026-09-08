@@ -63,14 +63,14 @@ void NrSdap::bearerReleased(DrbKey key)
     establishedBearers_.erase(key);
 }
 
-bool NrSdap::requiresSdapHeader(const DrbDesc *drb)
+Qfi NrSdap::recoveryQfi(const DrbDesc *drb)
 {
-    // SDAP header is needed when the QFI cannot be unambiguously determined
-    // from the DRB alone on the RX side:
-    // - default DRB: may carry packets with unmapped QFIs (fallback traffic)
-    // - multiple QFIs mapped: reverse mapping is ambiguous
-    // Caller must ensure drb is not null.
-    return drb->isDefault || drb->mappedQfis.size() > 1;
+    // The QFI the RX side assigns to a headerless packet: the bearer's sole mapped
+    // QFI, or the default flow's QFI 0 when none is mapped (the header-suppressed
+    // catch-all default bearer). The TX side checks every headerless packet against
+    // the same value, so the two ends agree without a header on the wire.
+    ASSERT(drb->mappedQfis.size() <= 1);  // with several mapped QFIs the header is never omitted
+    return drb->mappedQfis.empty() ? Qfi(0) : drb->mappedQfis[0];
 }
 
 bool NrSdap::shouldEnableReflectiveQos(Qfi qfi)
@@ -181,8 +181,9 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
 
     EV_INFO << "SDAP TX: Selected DRB=" << drb->getDrbId() << " for QFI=" << qfi << "\n";
 
-    // Check if SDAP header is required for this DRB
-    if (requiresSdapHeader(drb)) {
+    // Whether this bearer's packets carry an SDAP header is the control plane's
+    // decision, delivered in the descriptor (see DrbDesc::useSdapHeader)
+    if (drb->useSdapHeader) {
         // Build SDAP header according to 3GPP TS 37.324
         auto sdapHeader = makeShared<NrSdapHeader>();
         sdapHeader->setQfi(qfi);
@@ -196,6 +197,15 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
                 << ", reflectiveQoS = " << (enableReflectiveQos ? "true" : "false") << "\n";
     }
     else {
+        // No header goes on the wire, so the RX side will assign this packet the
+        // bearer's recovery QFI; a packet classified differently would silently
+        // change QoS flows in transit
+        if (qfi != recoveryQfi(drb))
+            throw cRuntimeError("SDAP TX: misconfigured DRB %d: it carries no SDAP header, so the "
+                    "receiver assigns its packets QFI %d, but this packet has QFI %d -- more than one "
+                    "QoS flow rides the bearer; map the extra flows to bearers of their own, or clear "
+                    "\"suppressSdapHeader\"",
+                    (int)num(drb->getDrbId()), (int)num(recoveryQfi(drb)), (int)num(qfi));
         EV_INFO << "SDAP TX: No SDAP header required for DRB " << drb->getDrbId() << "\n";
     }
 
@@ -238,8 +248,10 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
 
     Qfi qfi = QFI_NONE;
 
-    // Check if packet has SDAP header (should be at the front according to 3GPP TS 37.324)
-    if (requiresSdapHeader(drb)) {
+    // Whether the packet carries an SDAP header (at the front, 3GPP TS 37.324) is the
+    // control plane's per-bearer decision, delivered in the descriptor -- the same
+    // field the TX side applied, so the two ends agree by construction
+    if (drb->useSdapHeader) {
         // Extract SDAP header from the front of the packet
         auto sdapHeader = pkt->removeAtFront<NrSdapHeader>();
         qfi = sdapHeader->getQfi();
@@ -261,20 +273,16 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
         }
     }
     else {
-        EV_INFO << "SDAP RX: No SDAP header expected for DRB " << drbId << "\n";
-
-        // For DRBs without SDAP header, derive QFI from DRB context (use first QFI in the list)
-        if (drb && !drb->mappedQfis.empty()) {
-            qfi = drb->mappedQfis[0];
-            EV_INFO << "SDAP RX: Using QFI " << qfi << " from DRB context\n";
-        }
+        // No header on the wire: assign the recovery QFI, the one value the TX-side
+        // check guarantees is the packet's classified QFI
+        qfi = recoveryQfi(drb);
+        EV_INFO << "SDAP RX: No SDAP header expected for DRB " << drbId << ", using QFI " << qfi << " from DRB context\n";
     }
 
-    // Validate QFI ↔ DRB consistency
-    if (drb) {
-        if (!contains(drb->mappedQfis, qfi))
-            EV_WARN << "SDAP RX: DRB/QFI mismatch! Received on DRB=" << drbId << ", QFI=" << qfi << " not in mappedQfis\n";
-    }
+    // Validate QFI <-> DRB consistency; the default bearer is exempt -- carrying
+    // QFIs mapped nowhere is its job
+    if (!drb->isDefault && !contains(drb->mappedQfis, qfi))
+        EV_WARN << "SDAP RX: DRB/QFI mismatch! Received on DRB=" << drbId << ", QFI=" << qfi << " not in mappedQfis\n";
 
     // Add QoS indication tag for upper layers
     auto qosIndTag = pkt->addTagIfAbsent<QfiInd>();
