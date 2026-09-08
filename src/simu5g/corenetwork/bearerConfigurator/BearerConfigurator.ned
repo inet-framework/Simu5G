@@ -107,12 +107,25 @@ package simu5g.corenetwork.bearerConfigurator;
 //    (packetErrorRate <= amPerThreshold -> "AM", else "UM": a PER target HARQ alone
 //    cannot meet gets ARQ).
 //    Required, in the entry or its profile, when there is nothing to derive it from.
-//  - legSelection (string, optional): which leg of a split bearer carries a given PDU;
-//    an expression written as "expr(...)" over typeOfService and packetOrdinal, compiled
-//    and evaluated per PDU by the bearer's leg splitter (see ~DcPdcpLegSplitter, whose
-//    legSelection parameter this overrides; packetOrdinal counts the PDUs of this
-//    bearer at that splitter, so its scope is the bearer, not the flow). Only
-//    meaningful on a bearer with two legs.
+//  - primaryPath (string, default "MCG"): on a split bearer (two legs), the preferred leg --
+//    used in either direction whenever the bearer is not splitting; must be one of its two
+//    legs (TS 38.331 PDCP-Config, TS 38.323 5.2.1; applied by ~DcPdcpLegSplitter).
+//  - ulDataSplitThreshold (int bytes, or "infinity"; default "infinity"): uplink only. How
+//    much of a split bearer's data must be queued waiting to send (in its legs' RLC buffers)
+//    before the UE uses the second leg as well as primaryPath. "infinity" means never -- the
+//    uplink stays on primaryPath. (Only the UE has both legs' queues locally; downlink has no
+//    such threshold, see dlLegSelection.)
+//  - ulLegSelection (string, optional): once the uplink is using both legs (at or above the
+//    threshold), which leg each PDU takes -- an expr(...) over packetOrdinal (a running count
+//    of the bearer's PDUs) returning the leg number, 0 or 1 (e.g. "expr(packetOrdinal % 2)"
+//    for round-robin). Default when omitted: the less-loaded leg. Set ulDataSplitThreshold to
+//    0 to have it decide every uplink PDU; stating it while leaving the threshold at infinity
+//    is rejected.
+//  - dlLegSelection (string, optional): the downlink counterpart, applied at the DC master.
+//    The master cannot weigh the secondary leg's queue (it is at another node, across X2), so
+//    downlink has no threshold or load-balancing: with dlLegSelection each downlink PDU takes
+//    the leg it returns, and without it the downlink stays on primaryPath. (Real downlink
+//    split flow control is X2-feedback-driven and is not modeled.)
 //  - legs (string[]/object[], optional): the cell groups that serve this bearer, i.e. its
 //    RLC bearers (TS 38.331 RLC-BearerConfig). One leg = an MCG or an SCG bearer, both =
 //    a split bearer (TS 37.340; stated in that order). An element is either a cell group

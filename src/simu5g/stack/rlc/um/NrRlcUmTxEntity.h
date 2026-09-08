@@ -47,6 +47,7 @@ class NrRlcUmTxEntity : public RlcUmTxEntityBase
 
     void clearQueue() override;
     bool isTxBufferEmpty() const override { return !sduBuffer->hasData(); }
+    int64_t getBufferOccupancy() const override { return sduBuffer ? (int64_t)sduBuffer->getTotalPendingBytes() : 0; }
 
   protected:
 

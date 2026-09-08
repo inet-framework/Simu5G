@@ -14,6 +14,7 @@
 #include <inet/common/packet/Packet.h>
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
+#include "simu5g/stack/rlc/RlcTxEntityBase.h"
 
 namespace simu5g {
 
@@ -51,13 +52,13 @@ void DcPdcpLegSplitter::initialize(int stage)
             throw cRuntimeError("DcPdcpLegSplitter: the legs parameter names %d legs, numLegs says %d",
                     (int)legGroups_.size(), numLegs_);
 
+        legRlc_.assign(numLegs_, nullptr);
+
         cModule *node = inet::getContainingNode(this);
         nodeId_ = MacNodeId(node->par("macNodeId").intValue());
         if (node->hasPar("nrMacNodeId"))
             nrNodeId_ = MacNodeId(node->par("nrMacNodeId").intValue());
         isUe_ = (getNodeTypeById(nodeId_) == UE);
-        if (legSelection_ == nullptr)   // unless a bearer definition already pushed one (setLegSelection())
-            legSelection_ = getExpressionFromPar(par("legSelection"), new PolicyResolver(this));
     }
 }
 
@@ -66,6 +67,31 @@ void DcPdcpLegSplitter::setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrS
     Enter_Method_Silent("setServingNodeIds");
     servingNodeId_ = servingNodeId;
     nrServingNodeId_ = nrServingNodeId;
+}
+
+void DcPdcpLegSplitter::setSplitConfig(CellGroup primaryPath, int64_t ulDataSplitThreshold)
+{
+    Enter_Method_Silent("setSplitConfig");
+    primaryPath_ = primaryPath;
+    splitThreshold_ = ulDataSplitThreshold;
+}
+
+void DcPdcpLegSplitter::setLegRlc(int leg, RlcTxEntityBase *txEntity)
+{
+    Enter_Method_Silent("setLegRlc");
+    ASSERT(leg >= 0 && leg < (int)legRlc_.size());
+    legRlc_[leg] = txEntity;
+}
+
+int DcPdcpLegSplitter::primaryLeg() const
+{
+    for (int leg = 0; leg < numLegs_; leg++)
+        if (legGroups_[leg] == primaryPath_)
+            return leg;
+    // A split bearer whose legs do not include its primary path is a configuration error
+    // that establishment should have caught (see BearerConfigurator).
+    throw cRuntimeError("DcPdcpLegSplitter: the primary path %s is not one of this bearer's legs",
+            cellGroupToA(primaryPath_).c_str());
 }
 
 void DcPdcpLegSplitter::setLegSelection(const char *spec)
@@ -111,9 +137,11 @@ bool DcPdcpLegSplitter::isLegLive(int leg, const FlowControlInfo *lteInfo)
 
 int DcPdcpLegSplitter::selectLeg(const FlowControlInfo *lteInfo)
 {
+    std::vector<bool> live(numLegs_, false);
     int liveLegs = 0, lastLiveLeg = 0;
     for (int leg = 0; leg < numLegs_; leg++)
         if (isLegLive(leg, lteInfo)) {
+            live[leg] = true;
             liveLegs++;
             lastLiveLeg = leg;
         }
@@ -125,17 +153,64 @@ int DcPdcpLegSplitter::selectLeg(const FlowControlInfo *lteInfo)
     if (liveLegs == 1)
         return lastLiveLeg;   // nothing to decide
 
-    currentTypeOfService_ = lteInfo->getTypeOfService();
+    int primary = primaryLeg();
+
+    // Downlink at a DC master: the secondary leg's RLC queue is at another node (across X2)
+    // and cannot be weighed here, so there is no threshold or load-balancing -- the pushed
+    // dlLegSelection (in legSelection_) decides each PDU's leg, or the bearer stays on its
+    // primary leg. Real DL split flow control is X2-feedback-driven and is not modeled.
+    if (!isUe_) {
+        if (legSelection_ != nullptr)
+            return applyLegSelection(live);
+        return live[primary] ? primary : lastLiveLeg;
+    }
+
+    // Uplink at the UE, which sees both legs' RLC queues (TS 38.323 5.2.1): stay on the
+    // primary path until the pending data reaches the split threshold, then use either leg.
+    // The common "never split" bearer (infinite threshold) short-circuits before weighing
+    // the legs.
+    if (splitThreshold_ == SPLIT_THRESHOLD_INFINITY)
+        return live[primary] ? primary : lastLiveLeg;
+
+    int64_t pending = 0;
+    for (int leg = 0; leg < numLegs_; leg++)
+        if (live[leg] && legRlc_[leg] != nullptr)
+            pending += legRlc_[leg]->getBufferOccupancy();
+
+    if (pending < splitThreshold_)
+        return live[primary] ? primary : lastLiveLeg;
+
+    // At or above the threshold the spec allows either leg and leaves the choice to the
+    // implementation (TS 38.323 5.2.1; ul-DataSplitThreshold b0 = "own algorithm"). The
+    // pushed ulLegSelection is that algorithm, if the definition carries one; otherwise
+    // offload to the least-occupied live leg.
+    if (legSelection_ != nullptr)
+        return applyLegSelection(live);
+    int best = live[primary] ? primary : lastLiveLeg;
+    int64_t bestOcc = legRlc_[best] != nullptr ? legRlc_[best]->getBufferOccupancy() : 0;
+    for (int leg = 0; leg < numLegs_; leg++) {
+        if (!live[leg])
+            continue;
+        int64_t occ = legRlc_[leg] != nullptr ? legRlc_[leg]->getBufferOccupancy() : 0;
+        if (occ < bestOcc) {
+            best = leg;
+            bestOcc = occ;
+        }
+    }
+    return best;
+}
+
+int DcPdcpLegSplitter::applyLegSelection(const std::vector<bool>& live)
+{
     currentPacketOrdinal_ = packetsSteered_++;
     int leg = legSelection_->intValue();
-    if (leg < 0 || leg >= numLegs_ || !isLegLive(leg, lteInfo))
+    if (leg < 0 || leg >= numLegs_ || !live[leg])
         throw cRuntimeError("legSelection chose leg %d, which is not a live leg of this bearer", leg);
     return leg;
 }
 
 cValue DcPdcpLegSplitter::PolicyResolver::readVariable(cExpression::Context *context, const char *name)
 {
-    if (!strcmp(name, "typeOfService")) return (intval_t)module_->currentTypeOfService_;
     if (!strcmp(name, "packetOrdinal")) return (intval_t)module_->currentPacketOrdinal_;
     throw cRuntimeError("DcPdcpLegSplitter: unknown variable '%s' in the legSelection expression", name);
 }

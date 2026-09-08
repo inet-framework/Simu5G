@@ -94,6 +94,9 @@ class RlcAmTxEntityBase : public RlcTxEntityBase
     // Pending data volume (bytes not yet sent to the MAC), used for buffer
     // status reporting
     virtual unsigned int getPendingDataVolume() const = 0;
+
+    // The split threshold weighs the same pending data volume the buffer status reports.
+    int64_t getBufferOccupancy() const override { return (int64_t)getPendingDataVolume(); }
 };
 
 } //namespace

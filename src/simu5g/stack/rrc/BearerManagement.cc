@@ -807,18 +807,26 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, const FlowId& flow,
     module->finalizeParameters();
     module->buildInside();
 
-    // A steering policy in the bearer's definition is pushed into the leg splitter, which
-    // buildInside() has just created, the same way every other layer takes its bearer
-    // configuration: through a C++ call. It overrides the splitter's legSelection
-    // parameter, which stays the policy of the bearers that state nothing.
-    if (const DrbDesc *cfg = lookupConfiguredDrb(flow, id.getNodeId()))
-        if (!cfg->legSelection.empty()) {
-            cModule *splitter = module->getSubmodule("splitter");
+    // The bearer's split policy is pushed into the leg splitter, which buildInside() has
+    // just created, the same way every other layer takes its bearer configuration:
+    // through a C++ call. A bearer whose definition states nothing keeps the splitter's
+    // defaults (primary path MCG, never split). The leg-selection expression is pushed only
+    // when the definition carries one for this splitter's direction -- a UE's TX side is
+    // uplink, a base station's is downlink -- so the UE gets ulLegSelection and the base
+    // station dlLegSelection.
+    if (const DrbDesc *cfg = lookupConfiguredDrb(flow, id.getNodeId())) {
+        cModule *splitterMod = module->getSubmodule("splitter");
+        auto *splitter = splitterMod ? check_and_cast<DcPdcpLegSplitter *>(splitterMod) : nullptr;
+        if (splitter != nullptr)
+            splitter->setSplitConfig(cfg->primaryPath, cfg->ulDataSplitThreshold);
+        const std::string& legSelection = isEnb ? cfg->dlLegSelection : cfg->ulLegSelection;
+        if (!legSelection.empty()) {
             if (splitter == nullptr)
-                throw cRuntimeError("DRB %d: its definition carries a \"legSelection\", but the bearer was established with a single leg -- there is nothing to steer between",
+                throw cRuntimeError("DRB %d: its definition carries a leg-selection expression, but the bearer was established with a single leg -- there is nothing to steer between",
                         (int)num(id.getDrbId()));
-            check_and_cast<DcPdcpLegSplitter *>(splitter)->setLegSelection(cfg->legSelection.c_str());
+            splitter->setLegSelection(legSelection.c_str());
         }
+    }
 
     // A UE's splitter steers by the stacks' attachment, which RRC pushes: here at
     // creation, and on every handover event (see pushServingNodeIds())
@@ -967,6 +975,14 @@ void BearerManagement::installPdcpTxSide(DrbKey id, const FlowId& flow, RlcMode 
         cModule *rlcEnt = lookupRlcEntityModule(rlcId, isNr);
         ASSERT(rlcEnt != nullptr);
         pdcpEnt->gate("legOut", legIdx)->connectTo(rlcEnt->gate("upperIn"));
+
+        // Give the leg splitter this leg's TX RLC entity, so it can weigh its pending data
+        // volume against the split threshold. Only a multi-leg bearer has a splitter, and
+        // only a local leg (this branch) has an RLC entity to weigh.
+        if (cModule *splitterMod = pdcpEnt->getSubmodule("splitter")) {
+            auto *rlcTx = check_and_cast<RlcTxEntityBase *>(rlcEnt->getSubmodule("tx"));
+            check_and_cast<DcPdcpLegSplitter *>(splitterMod)->setLegRlc(legIdx, rlcTx);
+        }
     }
     else if (pdcpTxEntities_.count(compoundId)) {
         EV << "BearerManagement::installPdcpTxSide - TX side of " << compoundId.str() << " already installed\n";

@@ -29,7 +29,8 @@ Define_Module(BearerConfigurator);
 // anything else in an entry or profile is rejected as a typo
 static const std::vector<std::string> KNOWN_ENTRY_FIELDS = {
     "coreNetwork", "ue", "drbId", "profile", "mappedQfis", "filters", "lcg", "rlcMode",
-    "legSelection", "legs", "pduSessionType", "upperProtocol", "isDefault",
+    "legs", "primaryPath", "ulDataSplitThreshold", "ulLegSelection", "dlLegSelection",
+    "pduSessionType", "upperProtocol", "isDefault",
     "gbr", "packetDelayBudget", "packetErrorRate", "qosPriorityLevel"
 };
 
@@ -525,15 +526,63 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
                         paramName, i);
         }
 
-        // legSelection (optional): the split-bearer steering policy, an expr() source
-        // string the bearer's leg splitter compiles. Meaningless on a bearer with one
-        // leg, so stating both is rejected; an entry that leaves the legs to RRC may
-        // carry it, for the case where RRC derives two.
-        if (const cValue *v = field("legSelection")) {
-            drb.legSelection = v->stdstringValue();
+        // primaryPath (optional, default "MCG") and ulDataSplitThreshold (optional bytes,
+        // or "infinity"; default infinity): the split-bearer policy (TS 38.331). Meaningful
+        // only on a bearer with two legs; the primary path must be one of them. An entry
+        // that leaves the legs to RRC may still carry them, for when RRC derives two.
+        bool splitPolicyStated = false;
+        if (const cValue *v = field("primaryPath")) {
+            drb.primaryPath = aToCellGroup(v->stdstringValue());
+            if (drb.primaryPath == UNKNOWN_CELL_GROUP)
+                throw cRuntimeError("%s entry %d: invalid \"primaryPath\" '%s', must be \"MCG\" or \"SCG\"",
+                        paramName, i, v->stdstringValue().c_str());
+            splitPolicyStated = true;
+        }
+        if (const cValue *v = field("ulDataSplitThreshold")) {
+            if (v->getType() == cValue::STRING) {
+                if (v->stdstringValue() != "infinity")
+                    throw cRuntimeError("%s entry %d: \"ulDataSplitThreshold\" must be a byte count or \"infinity\"", paramName, i);
+                drb.ulDataSplitThreshold = SPLIT_THRESHOLD_INFINITY;
+            }
+            else {
+                drb.ulDataSplitThreshold = v->intValue();
+                if (drb.ulDataSplitThreshold < 0)
+                    throw cRuntimeError("%s entry %d: \"ulDataSplitThreshold\" must not be negative", paramName, i);
+            }
+            splitPolicyStated = true;
+        }
+        if (splitPolicyStated && !drb.legs.empty() && drb.legs.size() == 1)
+            throw cRuntimeError("%s entry %d: \"primaryPath\"/\"ulDataSplitThreshold\" configure a split bearer, "
+                    "but this bearer has one leg", paramName, i);
+        if (!drb.legs.empty() && drb.legs.size() > 1 &&
+                std::none_of(drb.legs.begin(), drb.legs.end(),
+                        [&](const RlcBearerDesc& leg) { return leg.cellGroup == drb.primaryPath; }))
+            throw cRuntimeError("%s entry %d: \"primaryPath\" %s is not one of the bearer's legs",
+                    paramName, i, cellGroupToA(drb.primaryPath).c_str());
+
+        // ulLegSelection / dlLegSelection (optional): the per-direction leg-selection
+        // expression over "packetOrdinal" that the leg splitter compiles. Meaningless on a
+        // bearer with one leg; an entry that leaves the legs to RRC may carry them, for when
+        // RRC derives two.
+        if (const cValue *v = field("ulLegSelection")) {
+            drb.ulLegSelection = v->stdstringValue();
             if (drb.legs.size() == 1)
-                throw cRuntimeError("%s entry %d: \"legSelection\" steers between the legs of a split bearer, "
+                throw cRuntimeError("%s entry %d: \"ulLegSelection\" steers between the legs of a split bearer, "
                         "but this bearer has one leg", paramName, i);
+            // Uplink leg selection is consulted only at or above the split threshold; with
+            // the threshold at infinity that never happens, so the expression would be dead.
+            if (drb.ulDataSplitThreshold == SPLIT_THRESHOLD_INFINITY)
+                throw cRuntimeError("%s entry %d: \"ulLegSelection\" is only consulted at or above the split "
+                        "threshold, but \"ulDataSplitThreshold\" is infinity -- set it (e.g. 0 to steer every "
+                        "uplink PDU by the expression)", paramName, i);
+        }
+        if (const cValue *v = field("dlLegSelection")) {
+            drb.dlLegSelection = v->stdstringValue();
+            if (drb.legs.size() == 1)
+                throw cRuntimeError("%s entry %d: \"dlLegSelection\" steers between the legs of a split bearer, "
+                        "but this bearer has one leg", paramName, i);
+            // Downlink has no threshold (the master cannot weigh the secondary's queue), so
+            // dlLegSelection needs no threshold companion; it decides every downlink PDU.
         }
 
         // pduSessionType (optional, default IPv4) and upperProtocol (optional, empty =

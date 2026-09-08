@@ -326,9 +326,6 @@ void Ip2Nic::attachFlowControlInfo(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4A
     Direction dir = (nodeType_ == UE) ? UL : DL;
     lteInfo->setDirection(dir);
 
-    // the IP header stops being reachable below PDCP, so the marking travels with the flow
-    lteInfo->setTypeOfService(typeOfService);
-
     bool isEnb = (dir == DL);
 
     MacNodeId localNodeId = isEnb ? nodeId_ : ueSourceNodeId();

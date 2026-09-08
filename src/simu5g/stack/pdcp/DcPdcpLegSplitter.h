@@ -16,20 +16,23 @@
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/binder/Binder.h"
+#include "simu5g/stack/rrc/DrbDesc.h"    // SPLIT_THRESHOLD_INFINITY
 
 namespace simu5g {
 
+class RlcTxEntityBase;
 
 /**
  * @brief TX-side leg dispatcher for a dual-connectivity split bearer.
  *
- * Chooses a leg for each PDU from the legSelection policy expression, and
- * applies that leg's DC-specific id mapping (see DcPdcpLegSplitter.ned).
+ * Chooses a leg for each PDU -- by the primaryPath/threshold buffer-occupancy
+ * policy, or a legSelection override -- and applies that leg's DC-specific id
+ * mapping (see DcPdcpLegSplitter.ned).
  */
 class DcPdcpLegSplitter : public omnetpp::cSimpleModule
 {
   protected:
-    // Variable bindings for the legSelection expression
+    // Variable bindings for the legSelection override expression
     class PolicyResolver : public omnetpp::cDynamicExpression::IResolver {
         DcPdcpLegSplitter *module_;
       public:
@@ -56,13 +59,25 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
     MacNodeId servingNodeId_ = NODEID_NONE;     // the LTE stack's serving node
     MacNodeId nrServingNodeId_ = NODEID_NONE;   // the NR stack's serving node
 
+    // The split policy (TS 38.331 PDCP-Config), pushed by RRC (see setSplitConfig()):
+    // the bearer rides primaryPath_ until the pending data volume reaches splitThreshold_.
+    CellGroup primaryPath_ = MCG;
+    int64_t splitThreshold_ = SPLIT_THRESHOLD_INFINITY;
+
+    // The TX RLC entity of each leg the splitter can weigh, in leg-index order; nullptr
+    // where the leg has no local RLC (a DC master's secondary leg, whose queue is across
+    // X2). Pushed at establishment (see setLegRlc()).
+    std::vector<RlcTxEntityBase *> legRlc_;
+
+    // This splitter's direction-appropriate leg-selection expression (ulLegSelection at a
+    // UE, dlLegSelection at a base station; RRC pushes the matching one, see setLegSelection).
+    // nullptr = none: uplink falls back to the least-occupied leg, downlink to the primary.
     omnetpp::cDynamicExpression *legSelection_ = nullptr;
 
-    // Evaluation context of the policy expression, set before each evaluation
-    int currentTypeOfService_ = 0;
+    // Evaluation context of the override expression, set before each evaluation
     int currentPacketOrdinal_ = 0;
 
-    // PDUs this bearer has steered by evaluating the policy; the "packetOrdinal" variable
+    // PDUs this bearer has steered by the override; the "packetOrdinal" variable
     int packetsSteered_ = 0;
 
     void initialize(int stage) override;
@@ -75,11 +90,27 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
     virtual int selectLeg(const FlowControlInfo *lteInfo);
     virtual bool isLegLive(int leg, const FlowControlInfo *lteInfo);
 
+    // Evaluate the legSelection expression to a live leg index (throws otherwise).
+    virtual int applyLegSelection(const std::vector<bool>& live);
+
+    // The leg index whose cell group is the primary path.
+    virtual int primaryLeg() const;
+
   public:
-    // Configuration push from RRC: the steering policy of this bearer's definition, in
-    // the same source form the legSelection parameter takes -- an expression written as
-    // "expr(...)" -- which it overrides. Compiled here, so errors throw at establishment.
+    // Configuration push from RRC (see BearerManagement): the bearer's split policy --
+    // the primary path cell group and the ul-DataSplitThreshold in bytes.
+    virtual void setSplitConfig(CellGroup primaryPath, int64_t ulDataSplitThreshold);
+
+    // Configuration push from RRC: this bearer's leg-selection expression for this
+    // splitter's direction (RRC passes ulLegSelection to a UE, dlLegSelection to a base
+    // station), as an "expr(...)" source string. Compiled here, so errors throw at
+    // establishment.
     virtual void setLegSelection(const char *spec);
+
+    // Configuration push from RRC: the TX RLC entity a leg was wired to, so the splitter
+    // can read its pending data volume for the split decision. UE legs and a master's
+    // local leg only; a master's secondary leg has none.
+    virtual void setLegRlc(int leg, RlcTxEntityBase *txEntity);
 
     // RRC's push of the stacks' attachment (see BearerManagement::pushServingNodeIds()):
     // the serving node of the UE's LTE and NR stack, current as of handover start.

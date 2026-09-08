@@ -12,6 +12,8 @@
 #ifndef _DRB_DESC_H_
 #define _DRB_DESC_H_
 
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -19,6 +21,14 @@
 #include "simu5g/stack/mac/DrbQosProfile.h"
 
 namespace simu5g {
+
+// ul-DataSplitThreshold value meaning "never split" (TS 38.331): the bearer stays on
+// its primary path whatever the pending data volume. The default for a split bearer that
+// does not state a threshold, so it behaves as a primary-path-only bearer until told to
+// split. It is the maximum int64 so it is unreachable by any real data volume; the leg
+// splitter still short-circuits on it, to skip weighing the legs on every PDU of a bearer
+// that will never split.
+constexpr int64_t SPLIT_THRESHOLD_INFINITY = std::numeric_limits<int64_t>::max();
 
 //
 // One RLC bearer of a data radio bearer: the leg that carries it in a given cell group
@@ -81,11 +91,24 @@ struct DrbDesc {
     // syntax: a message-name pattern, or an expression written as "expr(...)")
     std::vector<std::string> filters;
 
-    // Which leg of a split bearer carries a PDU: an expr() over typeOfService and
-    // packetOrdinal, evaluated per PDU by the bearer's leg splitter (see
-    // ~DcPdcpLegSplitter, whose parameter this feeds). Kept as source text, like filters:
-    // the consumer compiles it. Empty = the splitter's own parameter default applies.
-    std::string legSelection;
+    // How a split bearer shares its PDUs between its legs, per direction (consumed by
+    // ~DcPdcpLegSplitter). primaryPath is the preferred leg (used in either direction when
+    // the bearer is not splitting).
+    CellGroup primaryPath = MCG;
+
+    // Uplink (TS 38.331 PDCP-Config, TS 38.323 5.2.1): at the UE, which sees both legs'
+    // RLC queues, the bearer stays on primaryPath until the pending RLC data volume reaches
+    // ulDataSplitThreshold, then uses either leg -- ulLegSelection decides which (an expr()
+    // over the per-bearer PDU counter "packetOrdinal" returning the leg index), or, empty,
+    // the least-occupied leg. INFINITY = never split.
+    int64_t ulDataSplitThreshold = SPLIT_THRESHOLD_INFINITY;
+    std::string ulLegSelection;
+
+    // Downlink: at the DC master the secondary leg's RLC queue is at another node (across
+    // X2) and cannot be weighed, so there is no threshold or load-balancing -- dlLegSelection
+    // (same expr() form) decides each PDU's leg, or, empty, the bearer stays on primaryPath.
+    // Real DL split flow control is X2-feedback-driven and is not modeled.
+    std::string dlLegSelection;
 
     // The bearer's RLC bearers, one per cell group it is served in (TS 38.331 keeps them
     // in a list joined on drb-Identity). Empty = the configuration did not state them and
@@ -138,6 +161,15 @@ inline std::ostream& operator<<(std::ostream& os, const DrbDesc& drb) {
             os << drb.legs[i];
         }
         os << "]";
+        os << " primaryPath=" << cellGroupToA(drb.primaryPath);
+        if (drb.ulDataSplitThreshold == SPLIT_THRESHOLD_INFINITY)
+            os << " ulThreshold=infinity";
+        else
+            os << " ulThreshold=" << drb.ulDataSplitThreshold;
+        if (!drb.ulLegSelection.empty())
+            os << " ulLegSelection=" << drb.ulLegSelection;
+        if (!drb.dlLegSelection.empty())
+            os << " dlLegSelection=" << drb.dlLegSelection;
     }
     os << " rlc=" << rlcModeToA(drb.rlcMode) << (drb.soFraming ? " SO" : " FI")
        << " snBits=" << drb.snFieldLength

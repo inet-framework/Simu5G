@@ -42,6 +42,12 @@ class RlcTxEntityBase : public omnetpp::cSimpleModule
     // of truth, read by RRC into the bearer's descriptor (see DrbTable) at establishment.
     virtual unsigned int snFieldLength() const { return 12; }
 
+    // Bytes of SDU data pending initial transmission (not counting AM retransmissions):
+    // the RLC data volume a split bearer's leg splitter weighs against the split
+    // threshold (see ~DcPdcpLegSplitter, TS 38.331 ul-DataSplitThreshold). The concrete
+    // TX entities report it from their own queue; the base has none.
+    virtual int64_t getBufferOccupancy() const { return 0; }
+
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 };
 

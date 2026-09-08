@@ -12,16 +12,30 @@
 package simu5g.stack.pdcp;
 
 //
-// TX-side leg dispatcher of a dual-connectivity bearer. On a split bearer (two
-// legs), each PDCP PDU is steered to a leg by the legSelection policy
-// expression, which sees the flow's IP marking (typeOfService) and a per-bearer
-// PDU counter (packetOrdinal) and returns a leg index. Legs whose peer is not
-// attached are not offered to it: with one leg live the choice is made already,
-// so the policy only ever decides between legs that can carry the PDU. On a
-// single-leg SCG bearer there is nothing to steer, and the module serves its
-// second role alone.
-// That role is the chosen leg's DC-specific id mapping on the way out, selected
-// by the leg's cell group (the legs parameter):
+// TX-side leg dispatcher of a dual-connectivity split bearer (two legs), steering
+// each PDCP PDU to a leg from the split policy RRC pushes off the bearer's definition
+// (TS 38.331 PDCP-Config, TS 38.323 5.2.1). A splitter serves exactly one direction:
+// a UE's TX side is uplink, a base station's is downlink.
+//
+// Uplink (at the UE, which has both legs' RLC queues locally): below the
+// ul-DataSplitThreshold the bearer stays on its primary path; at or above it, either
+// leg may be used, and the spec leaves that choice to the implementation. The splitter
+// fills it with ulLegSelection if the definition carries one, else by offloading to
+// the least-occupied leg.
+//
+// Downlink (at the DC master): the secondary leg's RLC queue is at another node,
+// across X2, and cannot be weighed here, so there is no threshold or load-balancing --
+// dlLegSelection decides each PDU's leg, or the bearer stays on its primary leg. (Real
+// downlink split flow control is X2-feedback-driven and is not modeled.)
+//
+// The leg-selection expression (RRC passes the direction's -- ulLegSelection or
+// dlLegSelection) is over the per-bearer PDU counter "packetOrdinal" and returns the
+// leg index directly, e.g. packetOrdinal % 2 for round robin. A single-leg (MCG or
+// SCG) bearer has nothing to steer, and the module serves its second role alone.
+//
+// Legs whose peer is not attached are not offered to either policy: with one leg
+// live the choice is made already. That leg's DC-specific id mapping on the way out
+// is selected by its cell group (the legs parameter):
 //  - an MCG leg (the anchor stack): ids already correct; emits pdcpSduSent.
 //  - an SCG leg on a UE (the local secondary stack): rewrites the flow's
 //    source/destination to that stack's node ids (serving node looked up per
@@ -38,13 +52,8 @@ simple DcPdcpLegSplitter like IPdcpLegSplitter
         int numLegs;                        // number of legs (set by the enclosing PdcpEntityBase)
         string legs;                        // cell group of each leg, space-separated "MCG"/"SCG" (set by the enclosing PdcpEntityBase)
         string binderModule = default("binder");
-        // Leg index for a PDU, from typeOfService and packetOrdinal; see banner comment.
-        // The default policy: a legSelection in the bearer's definition, delivered by RRC
-        // through setLegSelection(), overrides this parameter.
-        object legSelection = default(expr(
-            typeOfService >= 20 ? (packetOrdinal % 2)
-                                : (typeOfService >= 10 ? 1 : 0)
-        ));
+        // The split policy (primary path, split threshold) and any legSelection override
+        // are pushed by RRC from the bearer's definition; see banner comment.
         @display("i=block/dispatch");
         @signal[sentPacketToLowerLayer];
         @signal[pdcpSduSent];

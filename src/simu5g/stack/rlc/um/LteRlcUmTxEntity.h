@@ -68,6 +68,7 @@ class LteRlcUmTxEntity : public RlcUmTxEntityBase
 
     void clearQueue() override;
     bool isTxBufferEmpty() const override { return sduQueue_.isEmpty(); }
+    int64_t getBufferOccupancy() const override { return queueLength_; }
 
   protected:
 
