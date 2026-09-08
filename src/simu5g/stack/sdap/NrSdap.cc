@@ -63,6 +63,15 @@ void NrSdap::bearerReleased(DrbKey key)
     establishedBearers_.erase(key);
 }
 
+bool NrSdap::isSidelink(inet::Packet *pkt)
+{
+    auto lteInfo = pkt->findTag<FlowControlInfo>();
+    if (lteInfo == nullptr)
+        return false;
+    Direction dir = (Direction)lteInfo->getDirection();
+    return dir == D2D || dir == D2D_MULTI;
+}
+
 Qfi NrSdap::recoveryQfi(const DrbDesc *drb)
 {
     // The QFI the RX side assigns to a headerless packet: the bearer's sole mapped
@@ -120,6 +129,16 @@ void NrSdap::handleMessage(cMessage *msg)
 
 void NrSdap::handleUpperPacket(inet::Packet *pkt)
 {
+    // Sidelink traffic is outside SDAP: D2D bearers are peer-keyed, carry no QoS
+    // flows, and Ip2Nic assigns them (3GPP sidelink has its own SL-SDAP over PC5,
+    // which is not modeled) -- pass the packet on untouched, exactly as the
+    // SDAP-less wiring would deliver it.
+    if (isSidelink(pkt)) {
+        EV_INFO << "SDAP TX: sidelink packet, passing through untouched\n";
+        send(pkt, "pdcpOut");
+        return;
+    }
+
     Qfi qfi = QFI_NONE;
     bool qfiFromReflectiveQos = false;
 
@@ -236,6 +255,14 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
 
 void NrSdap::handleLowerPacket(inet::Packet *pkt)
 {
+    // Sidelink traffic is outside SDAP (see handleUpperPacket()): no SDAP header,
+    // no QoS flow, no descriptor -- forward untouched
+    if (isSidelink(pkt)) {
+        EV_INFO << "SDAP RX: sidelink packet, passing through untouched\n";
+        send(pkt, "upperLayerOut");
+        return;
+    }
+
     auto lteInfo = pkt->findTag<FlowControlInfo>();
     DrbId drbId = lteInfo ? lteInfo->getDrbId() : DRBID_NONE;
     MacNodeId ueId = (!isUe && lteInfo) ? lteInfo->getSourceId() : NODEID_NONE;

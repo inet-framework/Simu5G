@@ -179,7 +179,15 @@ void Ip2Nic::toStackUe(Packet *pkt)
     }
 
     attachFlowControlInfo(pkt, srcAddr, destAddr, tos);
-    if (!hasSdap_)   // with SDAP, it maps the QoS flow onto a DRB itself
+
+    // With SDAP, it maps the QoS flow onto a DRB itself -- except for sidelink
+    // traffic, which stays this module's: D2D bearers are peer-keyed and outside
+    // the QoS-flow architecture (3GPP sidelink has its own SL-SDAP over PC5, not
+    // modeled), so SDAP passes sidelink packets through untouched in both
+    // directions and their bearer assignment lives here in either case.
+    Direction dir = (Direction)pkt->getTag<FlowControlInfo>()->getDirection();
+    bool sidelink = (dir == D2D || dir == D2D_MULTI);
+    if (!hasSdap_ || sidelink)
         assignBearer(pkt, srcAddr, destAddr, tos);
 
     // Send datagram to LTE stack or LteIp peer

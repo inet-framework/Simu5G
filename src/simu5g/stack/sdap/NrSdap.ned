@@ -38,6 +38,11 @@ package simu5g.stack.sdap;
 // packet, and TX verifies each packet against it, stopping with an error when
 // another QoS flow shows up.
 //
+// Sidelink (D2D) traffic is outside SDAP and passes through this module
+// untouched in both directions: D2D bearers are peer-keyed, carry no QoS
+// flows, and ~Ip2Nic assigns them (3GPP sidelink has its own SL-SDAP over
+// PC5, which is not modeled).
+//
 // Supports all 3GPP PDU session types (IPv4, IPv6, Ethernet, Unstructured)
 // via the pduSessionType field of the bearer configuration.
 //
