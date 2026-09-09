@@ -200,9 +200,24 @@ with different, disagreeing LOS realizations.
 
 This is an intentional behavioral change, confined to this one
 consolidation. Any configuration with `shadowing` and/or `fading` enabled
--- both default to `true` -- can see different results, since the
-correlated draw sequence for a link is now shared rather than duplicated
-per end. About 78% of the fingerprint suite (145 of 187 rows) moved and
+-- both default to `true` -- will see different results, and the
+difference is not just a different random realization: it is a
+systematic improvement in link performance. Before, the CQI a UE reported
+was computed on one copy of the shadowing/fading state and the actual
+data reception on another, so the CQI overestimated the channel by
+several dB on average (measured 3-5 dB on `simulations/channelmodel`
+RMa-36814 with shadowing or fading on) and the AMC chose MCS values the
+channel could not carry. Now both computations see the same realization,
+so the HARQ error rate lands near the AMC's BLER target instead of far
+above it. Over five seeds, the downlink HARQ error rate in the
+`simulations/channelmodel` configurations drops from roughly 0.15-0.23 to
+0.01-0.07 (InH 0.195 -> 0.010, RMa 0.228 -> 0.065, UMa 0.152 -> 0.037),
+D2D links in the `nr/d2d` mode-switching configurations from about 0.3 to
+below 0.01, and MAC-layer downlink delay and VoIP frame delay fall by
+10-25 % in the same configurations because fewer transport blocks need a
+retransmission. Throughput, CQI and packet-count statistics move only
+within seed-to-seed noise. With `shadowing`, `fading` and `dynamicLos` all
+off, results are unchanged to the last digit. About 78% of the fingerprint suite (145 of 187 rows) moved and
 has been re-recorded against the new behavior; every in-tree configuration
 that pins both `shadowing` and `fading` off (among them
 `simulations/lte/test_handover` and `simulations/nr/dualConnectivity_multicell`)
