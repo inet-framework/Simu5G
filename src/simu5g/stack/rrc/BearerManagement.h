@@ -187,6 +187,11 @@ class BearerManagement : public cSimpleModule
     // NR id" is what breaks at a node whose stacks are not that pair.
     virtual bool isLocalNodeId(MacNodeId nodeId) const;
 
+    // Whether this base station serves only a non-anchor leg of the given UE's bearers:
+    // it is a secondary node and the UE is also attached to its master, where the
+    // bearers' PDCP (and any SDAP) terminates. NODEB only; see configureDrb().
+    virtual bool servesNonAnchorLegOnly(MacNodeId ueId);
+
     // Records the configuration of the bearer this establishment call sets up, from
     // exactly the derivations the entities are built from. Runs after the RLC entity
     // exists: the wire format and the SN field length are properties of the entity that

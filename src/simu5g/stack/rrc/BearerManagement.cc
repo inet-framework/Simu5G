@@ -137,6 +137,25 @@ void BearerManagement::pushServingNodeIds()
             check_and_cast<DcPdcpLegSplitter *>(splitter)->setServingNodeIds(servingNodeId_, nrServingNodeId_);
 }
 
+// Whether this base station serves only a non-anchor leg of the given UE's bearers:
+// it is a secondary node, and the UE is also attached to its master, where the
+// bearers' PDCP -- and any SDAP -- terminates (MN-terminated, TS 37.340). This
+// node's contribution to such a bearer is RLC/MAC legs (or being the X2 relay
+// target), independent of the bearer's kind.
+bool BearerManagement::servesNonAnchorLegOnly(MacNodeId ueId)
+{
+    ASSERT(registration_->getNodeType() == NODEB);
+    MacNodeId myId = getOwnNodeId();
+    MacNodeId myMaster = binderModule->getMasterNodeOrSelf(myId);
+    if (myMaster == myId)
+        return false;   // a master or standalone node anchors the bearers of the UEs it serves
+    cModule *ueModule = binderModule->getNodeModule(ueId);
+    for (const auto& [nodeId, info] : binderModule->getNodeInfoMap())
+        if (info.moduleRef == ueModule && binderModule->getServingNode(nodeId) == myMaster)
+            return true;
+    return false;
+}
+
 // Take delivery of one bearer's configuration from the core network's session management
 // (see BearerConfigurator::configureDrbs()). RRC records it, to establish the bearer
 // from later, and
@@ -148,12 +167,18 @@ void BearerManagement::configureDrb(const DrbDesc& drb)
     EV << "BearerManagement::configureDrb - " << drb << endl;
 
     // The bearer's stated architecture must match this stack: 5gc bearers need SDAP
-    // to map their QoS flows, eps bearers a stack that classifies without it.
+    // to map their QoS flows, eps bearers a stack that classifies without it. The
+    // check applies where SDAP responsibilities live -- at the UE and at the node
+    // anchoring the bearer's PDCP. A secondary node serving a non-anchor leg does no
+    // SDAP work whatever the bearer's kind (the leg is RLC/MAC only; PDCP terminates
+    // at its master), so it accepts either -- while still recording the descriptor
+    // and pushing the QoS profile into its MAC below.
     bool hasSdap = sdapModule.getNullable() != nullptr;
-    if (drb.coreNetwork == CN_5GC && !hasSdap)
+    bool anchorEnd = registration_->getNodeType() == UE || !servesNonAnchorLegOnly(drb.key.getNodeId());
+    if (anchorEnd && drb.coreNetwork == CN_5GC && !hasSdap)
         throw cRuntimeError("configureDrb: DRB %d is a \"5gc\" bearer, but this stack has no SDAP to map its QoS flows",
                 (int)num(drb.getDrbId()));
-    if (drb.coreNetwork == CN_EPC && hasSdap)
+    if (anchorEnd && drb.coreNetwork == CN_EPC && hasSdap)
         throw cRuntimeError("configureDrb: DRB %d is an \"epc\" bearer, but this stack has SDAP -- its bearers are selected by QFI, not by packet filters",
                 (int)num(drb.getDrbId()));
 
