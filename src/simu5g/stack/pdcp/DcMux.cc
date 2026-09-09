@@ -58,13 +58,26 @@ void DcMux::handleMessage(cMessage *msg)
         else {
             // UL: secondary forwarded UL data — dispatch directly to RX entity
             auto lteInfo = pkt->getTag<FlowControlInfo>();
-            // The sourceId may be the NR UE ID; translate to LTE UE ID for RX entity lookup
+            // The PDU crossed X2 from the secondary leg, so it carries the UE's
+            // secondary-facing id (the leg splitter's rewrite), while this node's
+            // PDCP compounds are keyed by the id of the stack it serves itself.
+            // Translate to that id whenever the carried one is not this node's to
+            // serve: at an EN-DC master the NR id becomes the LTE one, at an NE-DC
+            // master the LTE id becomes the NR one.
             MacNodeId sourceId = lteInfo->getSourceId();
-            if (isNrUe(sourceId))
-                sourceId = binder_->getUeNodeId(sourceId, false);
+            if (binder_->getServingNode(sourceId) != nodeId_)
+                sourceId = binder_->getUeNodeId(sourceId, !isNrUe(sourceId));
             DrbKey id = DrbKey(sourceId, lteInfo->getDrbId());
             cModule *pdcpEnt = bearerManagement_->lookupPdcpEntityModule(id);
             ASSERT(pdcpEnt != nullptr);
+
+            // Above the compound's joiner the PDU belongs to the bearer, whose
+            // identity at this node is the served stack's pair: rewrite the ids so
+            // a secondary-leg PDU is indistinguishable from an anchor-leg one there
+            // (SDAP keys its RX lookup by the source id)
+            auto ctrlForUpdate = pkt->getTagForUpdate<FlowControlInfo>();
+            ctrlForUpdate->setSourceId(sourceId);
+            ctrlForUpdate->setDestId(nodeId_);
 
             EV << NOW << " DcMux::handleMessage - Received UL PDCP PDU from secondary node " << sourceNode
                << " for " << id << " - dispatching to the PDCP entity's remote leg" << endl;
