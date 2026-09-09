@@ -470,6 +470,38 @@ established convention yet for retiring a migration guard like this one, so
 by default it is kept until Simu5G's next major release, after which
 `checkForLegacyConfigKeys()` and its legacy-key lists may be deleted.
 
+### Other
+
+- **NR PDCP receive window corrupted after in-order delivery**: after
+  delivering an in-order SDU and the consecutive buffered ones behind it,
+  `NrPdcpRxEntity` shifted the remaining window slots down using a bound
+  computed from the already advanced `rxDeliv_`, so the last slots were
+  neither moved nor cleared. Their stale flags later matched unrelated
+  sequence numbers, `rxDeliv_` could run past `rxNext_`, and the entity
+  eventually threw `vector<bool>::_M_range_check` (seen in
+  `nr/test_numerology MultiCell-CBR-UL` under some seeds). The shift now
+  covers every live slot; the reordering-timer delivery loop got the
+  matching bound.
+
+- **D2D mode selection before the first D2D CQI report**: with the
+  best-CQI mode selection, the first selection period could run before any
+  UE had reported a D2D CQI, and the AMC's D2D feedback lookup threw
+  `std::out_of_range` because the per-carrier history it indexed did not
+  exist yet. The history is now created lazily, as for UL/DL, and a
+  never-filled summary (NOSIGNALCQI) is handed out until the first report.
+
+- **Real-time video streaming receiver and late segments**: a segment of a
+  frame whose playout slot had already passed was still buffered, and the
+  next playout tick then found a frame older than the expected one at the
+  head of the buffer and stopped the simulation with an error. Such late
+  segments are now discarded, matching what a real-time player does.
+
+- **tutorials/nr packet size**: `tutorials/nr/omnetpp.ini` set
+  `*.server.app[*].PacketSize`, a name no `CbrSender` parameter has, so the
+  tutorial silently ran with 40 B packets instead of the 1000 B (800 kb/s)
+  it documents and its copy under `simulations/nr/tutorial` uses. Fixed;
+  the two tutorials now run the same simulation.
+
 ## v1.6.0 (2026-07-31)
 
 This release adds a standards-compliant NR RLC to Simu5G. RLC Unacknowledged
