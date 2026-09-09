@@ -21,7 +21,7 @@ import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.corenetwork.bearerConfigurator.BearerConfigurator;
 import simu5g.nodes.NrUe;
 import simu5g.nodes.gNodeB;
-import simu5g.nodes.PgwStandard;
+import simu5g.nodes.Upf;
 import simu5g.nodes.BackgroundCell;
 import simu5g.nodes.eNodeB;
 import simu5g.world.radio.LteChannelControl;
@@ -34,16 +34,20 @@ import simu5g.world.radio.LteChannelControl;
 // its LTE stack carries the secondary cell group. All data-plane traffic enters at
 // the gNodeB.
 //
-// The core network is the LTE EPC, as in the EN-DC network. A real NR-anchored
-// deployment pairs an NR master with a 5GC, which would make these bearers "5gc"
-// bearers and put SDAP in the stack; that combination has never been exercised,
-// so this network is deliberately kept EPC-flavored until the QoS-flow work lands.
+// Unlike the EN-DC network, the core is a 5GC (Upf): that is NE-DC's shape in
+// TS 37.340 -- an NR master pairs with a 5GC -- so its bearers are "5gc" bearers,
+// selected by QFI, and SDAP is in the stack. The secondary eNodeB contributes the
+// secondary cell group's radio leg over X2 and has no core-network link of its
+// own; its bearers' PDCP terminates at the master (MN-terminated).
 //
 network SingleCell_withSecondaryEnb
 {
     parameters:
         int numUe = default(1);
         int numBgCells = default(0);
+        // The gNB connects to a 5GC (Upf), so every cellular stack has SDAP:
+        // TS 37.324 ties SDAP to the 5GC connection, not to the radio
+        **.cellularNic.hasSdap = default(true);
         @display("i=block/network2;bgb=991,558;bgi=background/pisa");
     submodules:
         channelControl: LteChannelControl {
@@ -70,8 +74,11 @@ network SingleCell_withSecondaryEnb
         router: Router {
             @display("p=361,62;i=device/smallrouter");
         }
-        pgw: PgwStandard {
+        upf: Upf {
             @display("p=524,63;is=l");
+        }
+        iUpf: Upf {
+            @display("p=524,170;is=l");
         }
         masterGnb: gNodeB {
             @display("p=527,277;is=vl");
@@ -87,8 +94,9 @@ network SingleCell_withSecondaryEnb
         }
     connections:
         server.pppg++ <--> Eth10G <--> router.pppg++;
-        router.pppg++ <--> Eth10G <--> pgw.dnPppg;
-        pgw.pppg++ <--> Eth10G <--> masterGnb.ppp;
+        router.pppg++ <--> Eth10G <--> upf.dnPppg;
+        upf.pppg++ <--> Eth10G <--> iUpf.pppg++;
+        iUpf.pppg++ <--> Eth10G <--> masterGnb.ppp;
 
         //# X2 connections
         masterGnb.x2++ <--> Eth10G <--> secondaryEnb.x2++;
