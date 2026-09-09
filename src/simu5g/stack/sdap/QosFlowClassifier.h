@@ -33,10 +33,16 @@ using namespace omnetpp;
 class QosFlowClassifier : public cSimpleModule
 {
   protected:
+    // The uplink QFI-assignment rules, delivered by the bearer configurator through
+    // the UE's RRC (see the ulQfiRules parameter of ~BearerConfigurator); empty
+    // until delivered, classifying nothing
     QfiRuleSet qfiRules_;
 
-    void initialize() override;
     void handleMessage(cMessage *msg) override;
+
+  public:
+    // Take delivery of this UE's compiled uplink QFI-assignment rules
+    virtual void setQfiRules(QfiRuleSet&& rules);
 };
 
 } // namespace simu5g

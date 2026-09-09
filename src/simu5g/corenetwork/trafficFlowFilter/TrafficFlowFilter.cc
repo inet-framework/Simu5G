@@ -16,6 +16,7 @@
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 
 #include "simu5g/common/QfiTag_m.h"
+#include "simu5g/corenetwork/bearerConfigurator/BearerConfigurator.h"
 
 namespace simu5g {
 
@@ -26,6 +27,22 @@ using namespace omnetpp;
 
 void TrafficFlowFilter::initialize(int stage)
 {
+    if (stage == inet::INITSTAGE_LOCAL) {
+        // reading and setting owner type
+        ownerType_ = selectOwnerType(par("ownerType"));
+
+        // A filter at a core-network tunnel entry registers with the bearer
+        // configurator, which delivers its QFI-assignment rules (see the dlQfiRules
+        // parameter). A base station is no rule-enforcement point -- no SMF installs
+        // classification rules there -- so its filter does not register and
+        // classifies by the built-in residual only (see handleMessage()).
+        if (!isBaseStation(ownerType_)) {
+            bearerConfigurator_.reference(this, "bearerConfiguratorModule", true);
+            bearerConfigurator_->registerTrafficFlowFilter(this);
+        }
+        return;
+    }
+
     // wait until all the IP addresses are configured
     if (stage != inet::INITSTAGE_NETWORK_LAYER)
         return;
@@ -35,8 +52,6 @@ void TrafficFlowFilter::initialize(int stage)
 
     fastForwarding_ = par("fastForwarding");
 
-    // reading and setting owner type
-    ownerType_ = selectOwnerType(par("ownerType"));
     if (ownerType_ == PGW || ownerType_ == UPF) {
         gateway_ = binder_->getNetworkName() + "." + std::string(getParentModule()->getFullName());
     }
@@ -87,8 +102,12 @@ void TrafficFlowFilter::initialize(int stage)
     auto gateIn = gate("internetFilterGateIn");
     registerProtocol(LteProtocol::ipv4uu, gateIn, SP_INDICATION);
     registerProtocol(LteProtocol::ipv4uu, gateIn, SP_CONFIRM);
+}
 
-    qfiRules_.parse(check_and_cast<const cValueArray *>(par("qfiRules").objectValue()), "qfiRules");
+void TrafficFlowFilter::setQfiRules(QfiRuleSet&& rules)
+{
+    Enter_Method_Silent("setQfiRules");
+    qfiRules_ = std::move(rules);
 }
 
 CoreNodeType TrafficFlowFilter::selectOwnerType(const char *type)
@@ -142,18 +161,19 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
     // (the QfiInd tag, carrying the QFI the UE classified it with) keeps that QFI on
     // its way into the core network, rather than being re-classified by this node's
     // rules -- the two rule sets can disagree, and the UE's classification is the
-    // flow's identity. Everything else -- downlink traffic entering the tunnel, and
-    // uplink from stacks without SDAP -- is classified here.
+    // flow's identity.
     //
-    // The qfiRules parameter models the packet detection and QoS enforcement rules
-    // (PDR/QER) that the SMF installs into a UPF over N4 at session setup; a real UPF
-    // holds no classification policy of its own, so a locally configured rule table is
-    // a modeling shortcut -- the ini author plays the SMF.
+    // At a core-network tunnel entry the rules are the ones the bearer configurator
+    // delivered (see its dlQfiRules parameter), modeling the packet detection and
+    // QoS enforcement rules (PDR/QER) that the SMF installs into a UPF over N4 at
+    // session setup. A base station is no such enforcement point, so unattributed
+    // traffic entering the tunnel there (uplink from a stack without SDAP) is
+    // classified by the built-in DSCP-as-QFI residual instead.
     Qfi qfi = QFI_NONE;
     if (auto qfiInd = pkt->findTag<QfiInd>())
         qfi = qfiInd->getQfi();
     if (qfi == QFI_NONE)
-        qfi = qfiRules_.classify(pkt, ipv4Header);
+        qfi = isBaseStation(ownerType_) ? Qfi(ipv4Header->getDscp()) : qfiRules_.classify(pkt, ipv4Header);
     if (qfi == QFI_NONE)
         qfi = Qfi(0);   // traffic no rule covers belongs to the default flow
     tftInfo->setQfi(qfi);

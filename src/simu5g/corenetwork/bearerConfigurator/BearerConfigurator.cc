@@ -13,8 +13,10 @@
 #include <inet/common/stlutils.h>
 
 #include "simu5g/common/InitStages.h"
+#include "simu5g/common/QfiRuleSet.h"
 #include "simu5g/corenetwork/bearerConfigurator/BearerConfigurator.h"
 #include <algorithm>
+#include "simu5g/corenetwork/trafficFlowFilter/TrafficFlowFilter.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
 #include "simu5g/stack/rrc/Registration.h"
 
@@ -53,6 +55,7 @@ void BearerConfigurator::initialize(int stage)
         // and before INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION, where the scheduler takes
         // the address of the QoS map that this fills through RRC.
         configureDrbs();
+        deliverQfiRules();
     }
     else if (stage == inet::INITSTAGE_LAST) {
         establishStaticDrbs();
@@ -677,6 +680,94 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
         if (numMatched == 0 && entry->containsKey("ue"))
             throw cRuntimeError("%s entry %d: its \"ue\" pattern '%s' matches no registered UE with a "
                     "compatible stack", paramName, i, uePattern);
+    }
+}
+
+void BearerConfigurator::registerTrafficFlowFilter(TrafficFlowFilter *tff)
+{
+    Enter_Method_Silent("registerTrafficFlowFilter");
+    trafficFlowFilters_.push_back(tff);
+}
+
+void BearerConfigurator::deliverQfiRules()
+{
+    // delivery-site module paths in the rule tables are relative to the network,
+    // like the bearer tables' "ue" patterns
+    std::string networkPrefix = std::string(getSystemModule()->getFullPath()) + ".";
+    auto relativePath = [&](cModule *module) {
+        std::string path = module->getFullPath();
+        if (path.compare(0, networkPrefix.size(), networkPrefix) == 0)
+            path.erase(0, networkPrefix.size());
+        return path;
+    };
+
+    // Validate a whole table up front -- also the entries no site matches, whose
+    // errors the per-site compilation below would never surface. A rule carries the
+    // shared grammar (see QfiRuleSet) plus the table's delivery-scoping column.
+    auto validateTable = [](const cValueArray *table, const char *paramName, const char *scopeField) {
+        QfiRuleSet scratch;
+        for (int i = 0; i < (int)table->size(); i++) {
+            const cValueMap *entry = check_and_cast<const cValueMap *>(table->get(i).objectValue());
+            std::string what = std::string(paramName) + " entry " + std::to_string(i);
+            for (const auto& [key, value] : entry->getFields())
+                if (key != "filter" && key != "qfi" && key != "dscpAsQfi" && key != scopeField)
+                    throw cRuntimeError("%s: unknown field '%s'", what.c_str(), key.c_str());
+            scratch.parseRule(entry, what.c_str());
+        }
+    };
+
+    // Compile the table subset scoped to one delivery site: the entries whose scope
+    // pattern matches the site (an entry without one matches every site), in table
+    // order, so evaluation stays first-match-wins among the site's rules.
+    auto compileFor = [](const cValueArray *table, const char *paramName, const char *scopeField,
+                         const std::string& sitePath, std::vector<bool>& matched) {
+        QfiRuleSet rules;
+        for (int i = 0; i < (int)table->size(); i++) {
+            const cValueMap *entry = check_and_cast<const cValueMap *>(table->get(i).objectValue());
+            if (entry->containsKey(scopeField)) {
+                inet::PatternMatcher matcher(entry->get(scopeField).stringValue(), true, true, true);
+                if (!matcher.matches(sitePath.c_str()))
+                    continue;
+            }
+            matched[i] = true;
+            std::string what = std::string(paramName) + " entry " + std::to_string(i);
+            rules.parseRule(entry, what.c_str());
+        }
+        return rules;
+    };
+
+    // Downlink: each registered tunnel-entry filter gets the rules scoped to its node
+    const cValueArray *dlTable = check_and_cast<const cValueArray *>(par("dlQfiRules").objectValue());
+    validateTable(dlTable, "dlQfiRules", "node");
+    std::vector<bool> dlMatched(dlTable->size(), false);
+    for (TrafficFlowFilter *tff : trafficFlowFilters_)
+        tff->setQfiRules(compileFor(dlTable, "dlQfiRules", "node", relativePath(tff->getParentModule()), dlMatched));
+    for (int i = 0; i < (int)dlTable->size(); i++) {
+        const cValueMap *entry = check_and_cast<const cValueMap *>(dlTable->get(i).objectValue());
+        if (!dlMatched[i] && entry->containsKey("node"))
+            throw cRuntimeError("dlQfiRules entry %d: its \"node\" pattern '%s' matches no core-network node "
+                    "with a traffic flow filter", i, entry->get("node").stringValue());
+    }
+
+    // Uplink: each SDAP UE's classifier gets the rules scoped to it, through its RRC
+    const cValueArray *ulTable = check_and_cast<const cValueArray *>(par("ulQfiRules").objectValue());
+    validateTable(ulTable, "ulQfiRules", "ue");
+    std::vector<bool> ulMatched(ulTable->size(), false);
+    std::map<cModule *, std::vector<MacNodeId>> ueNodeIds;
+    for (const auto& [nodeId, info] : binder_->getNodeInfoMap())
+        if (getNodeTypeById(nodeId) == UE && info.moduleRef != nullptr)
+            ueNodeIds[info.moduleRef].push_back(nodeId);
+    for (const auto& [ueModule, nodeIds] : ueNodeIds) {
+        if (!ueStackHasSdap(ueModule))
+            continue;   // no SDAP, no uplink QoS-flow classification
+        auto *ueRrc = check_and_cast<BearerManagement *>(binder_->getRrcByNodeId(nodeIds.front())->getSubmodule("bearerManagement"));
+        ueRrc->setUplinkQfiRules(compileFor(ulTable, "ulQfiRules", "ue", relativePath(ueModule), ulMatched));
+    }
+    for (int i = 0; i < (int)ulTable->size(); i++) {
+        const cValueMap *entry = check_and_cast<const cValueMap *>(ulTable->get(i).objectValue());
+        if (!ulMatched[i] && entry->containsKey("ue"))
+            throw cRuntimeError("ulQfiRules entry %d: its \"ue\" pattern '%s' matches no registered UE "
+                    "with SDAP", i, entry->get("ue").stringValue());
     }
 }
 

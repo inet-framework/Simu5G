@@ -28,6 +28,8 @@ namespace simu5g {
 
 using namespace omnetpp;
 
+class TrafficFlowFilter;
+
 /**
  * The network's central bearer configurator: a network-wide simulation service
  * combining bearer decisions that a real system distributes across the core
@@ -88,6 +90,11 @@ class BearerConfigurator : public cSimpleModule, public cListener
         bool withPdcp = false;
     };
     std::map<std::pair<MacNodeId, MacNodeId>, MulticastFlow> multicastFlows_;
+
+    // The traffic flow filters at the core network's tunnel entries, registered for
+    // QFI-rule delivery (see deliverQfiRules(); base stations do not register --
+    // no rules are installed there)
+    std::vector<TrafficFlowFilter *> trafficFlowFilters_;
 
 
   protected:
@@ -151,6 +158,15 @@ class BearerConfigurator : public cSimpleModule, public cListener
             const std::map<cModule *, std::vector<MacNodeId>>& ueNodeIds, const std::string& networkPrefix,
             std::map<cModule *, std::map<DrbId, DrbDesc>>& drbsOfUe);
 
+    // Compile and deliver the QFI classification rule tables to their evaluation
+    // sites: dlQfiRules to the registered tunnel-entry traffic flow filters (scoped
+    // by "node"), ulQfiRules to the SDAP UEs' classifiers through each UE's RRC
+    // (scoped by "ue"). The delivery stands in for the signaling the model does not
+    // have -- the SMF installing PDR/QER rules into a UPF over N4, and the
+    // NAS-signalled QoS rules a UE receives at PDU session establishment -- and the
+    // sites never author or read back rules of their own.
+    virtual void deliverQfiRules();
+
     /**
      * Binder::nodeUnregisteredSignal_: forget the DRB identity pools of a node that has
      * left the simulation. drbIdsInUse_ is keyed by node pair, so a departed id survives
@@ -164,6 +180,11 @@ class BearerConfigurator : public cSimpleModule, public cListener
     virtual void createOutgoingConnectionOnNode(MacNodeId nodeId, const FlowId& flow, const BearerRequest& req, bool withPdcp);
 
   public:
+    // A traffic flow filter at a core-network tunnel entry announces itself for
+    // QFI-rule delivery; called from TrafficFlowFilter::initialize() at
+    // INITSTAGE_LOCAL, before deliverQfiRules() runs.
+    virtual void registerTrafficFlowFilter(TrafficFlowFilter *tff);
+
     // A node has joined a multicast group (RRC registration tells us). If a sender has
     // already established that group's bearer, the node missed the RX-leg provisioning
     // createConnection() did over the membership as it stood then; give it one now, or

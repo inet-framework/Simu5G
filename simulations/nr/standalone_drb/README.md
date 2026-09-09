@@ -44,9 +44,9 @@ ini configuration.
   back to the default DRB.
 
 - **Uplink**: the UE application also marks packets with DSCP, and the UE's
-  QoS-flow classifier (`qosFlowClassifier.qfiRules`, the uplink mirror of the
-  `TrafficFlowFilter`'s rules) reads the DSCP as the QFI where the traffic
-  enters the stack. A packet no rule covers is left unclassified and falls
+  QoS-flow classifier (fed by the `ulQfiRules` parameter of the
+  `bearerConfigurator`, the uplink mirror of the downlink rules) reads the
+  DSCP as the QFI where the traffic enters the stack. A packet no rule covers is left unclassified and falls
   back to reflective QoS or the default DRB; an explicit QFI set by the
   application always wins.
 

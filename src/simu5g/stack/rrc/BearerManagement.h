@@ -36,6 +36,8 @@ class Registration;
 class Binder;
 class BearerConfigurator;
 class NrSdap;
+class QosFlowClassifier;
+class QfiRuleSet;
 class Ip2Nic;
 class HandoverPacketHolderUe;
 
@@ -70,6 +72,7 @@ class BearerManagement : public cSimpleModule
     inet::ModuleRefByPar<BearerConfigurator> bearerConfiguratorModule;         // the DRB identity pool a torn-down bearer's id goes back to
     inet::ModuleRefByPar<DrbTable> drbTableModule;   // the bearer configuration this module authors
     inet::ModuleRefByPar<NrSdap> sdapModule;     // configuration push target; null when the NIC has no SDAP
+    inet::ModuleRefByPar<QosFlowClassifier> qosFlowClassifierModule;   // uplink QFI rule push target; null unless a UE stack with SDAP
     Ip2Nic *ip2nicModule_ = nullptr;             // configuration/notification push target
 
     // Tell the user-plane modules that a bearer came up or went away, so they never have
@@ -201,6 +204,10 @@ class BearerManagement : public cSimpleModule
     // Take delivery of one bearer's configuration from the core network's session
     // management (see BearerConfigurator::configureDrbs()). RRC never fetches this itself.
     virtual void configureDrb(const DrbDesc& drb);
+    // Take delivery of this UE's uplink QFI-assignment rules from the bearer
+    // configurator (see BearerConfigurator::deliverQfiRules()) and push them into the
+    // QoS-flow classifier, which never authors rules of its own. UE with SDAP only.
+    virtual void setUplinkQfiRules(QfiRuleSet&& rules);
     // Record that one of this UE's stacks is changing its serving node -- called by the
     // handover controller the instant a handover, attachment or detachment begins,
     // ahead of its execution. NODEID_NONE = the stack is detaching. Each updates the

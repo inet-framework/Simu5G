@@ -27,6 +27,7 @@
 #include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
 #include "simu5g/stack/pdcp/PdcpRxEntityBase.h"
 #include "simu5g/stack/sdap/NrSdap.h"
+#include "simu5g/stack/sdap/QosFlowClassifier.h"
 #include "simu5g/common/InitStages.h"
 
 namespace simu5g {
@@ -83,6 +84,7 @@ void BearerManagement::initialize(int stage)
         macModule.reference(this, "macModule", true);
         nrMacModule.reference(this, "nrMacModule", false);
         sdapModule.reference(this, "sdapModule", false);
+        qosFlowClassifierModule.reference(this, "qosFlowClassifierModule", false);
         ip2nicModule_ = inet::findModuleFromPar<Ip2Nic>(par("ip2nicModule"), this);
 
         t311_ = par("t311");
@@ -161,6 +163,14 @@ void BearerManagement::configureDrb(const DrbDesc& drb)
         sdapModule->configureDrb(drb);
     if (drb.hasQosProfile && registration_->getNodeType() == NODEB)
         check_and_cast<LteMacEnb *>(macModule.get())->configureDrbQos(drb.key, drb.qos);
+}
+
+void BearerManagement::setUplinkQfiRules(QfiRuleSet&& rules)
+{
+    Enter_Method_Silent("setUplinkQfiRules");
+    if (qosFlowClassifierModule.getNullable() == nullptr)
+        throw cRuntimeError("setUplinkQfiRules: this stack has no QoS-flow classifier to deliver uplink QFI rules to");
+    qosFlowClassifierModule->setQfiRules(std::move(rules));
 }
 
 BearerManagement::~BearerManagement()

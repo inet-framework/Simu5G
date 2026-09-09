@@ -21,23 +21,18 @@ package simu5g.corenetwork.trafficFlowFilter;
 // serving the destination User Equipment (UE).
 //
 // The module also assigns each packet entering the tunnel its QoS Flow Identifier
-// (QFI), from the qfiRules parameter: a JSON array of rules, evaluated in order,
-// first match wins. Rule fields:
-//  - filter (string, optional): an inet::PacketFilter -- a message-name pattern
-//    (e.g. "*VoIP*") or an expression written as "expr(...)"
-//    (e.g. "expr(udp.destPort == 3000)"); omitted = the rule matches every packet
-//  - qfi (int, 0..63) or dscpAsQfi (bool): the QFI to assign -- a fixed value, or
-//    the packet's IPv4 DSCP field read as the QFI (exactly one of the two)
-// A packet matching no rule gets QFI 0 (the default flow). The parameter's default
-// value, [{dscpAsQfi: true}], is plain DSCP-as-QFI assignment.
+// (QFI). At a core-network tunnel entry (~Upf, ~PgwStandard, a MEC host's UPF) the
+// QFI-assignment rules are delivered by the ~BearerConfigurator (see its dlQfiRules
+// parameter): they model the packet detection and QoS enforcement rules (PDR/QER)
+// that the SMF installs into a UPF over N4 signaling at session setup -- a real UPF
+// holds no classification policy of its own, and neither does this module. A packet
+// matching no rule gets QFI 0 (the default flow).
 //
-// The rules model the packet detection and QoS enforcement rules (PDR/QER) that the
-// SMF installs into a UPF over N4 signaling at session setup. A real UPF holds no
-// classification policy of its own, so a locally configured rule table is a modeling
-// shortcut: the ini author plays the SMF. Each instance classifies the traffic
-// entering the tunnel at its own node -- downlink traffic at the core network's
-// gateway, uplink traffic at a base station -- so rules are written from that
-// instance's perspective.
+// A base station is no rule-enforcement point: no SMF installs classification rules
+// there, and none can be authored for it. An uplink packet that SDAP already
+// attributed to a QoS flow keeps that QFI on its way into the core network; uplink
+// traffic from a stack without SDAP is classified by a built-in DSCP-as-QFI
+// residual.
 //
 simple TrafficFlowFilter
 {
@@ -45,9 +40,9 @@ simple TrafficFlowFilter
         @display("i=block/filter");
 
         string binderModule = default("binder");
+        string bearerConfiguratorModule = default("bearerConfigurator");  // where a core-network instance registers for QFI-rule delivery
         string ownerType @enum(ENODEB,GNODEB,PGW,UPF,UPF_MEC); // must be one between ENODEB,GNODEB,PGW,UPF,UPF_MEC
         bool fastForwarding = default(true);
-        object qfiRules = default([{dscpAsQfi: true}]);  // JSON array of QFI-assignment rules [{filter, qfi|dscpAsQfi}, ...], first match wins; see banner comment
     gates:
         input internetFilterGateIn;
         output gtpUserGateOut;

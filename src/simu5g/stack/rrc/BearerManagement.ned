@@ -69,4 +69,5 @@ simple BearerManagement like IBearerManagement
         string macModule = default("^.^.mac");
         string nrMacModule = default("^.^.nrMac");
         string sdapModule = default("^.^.sdap");   // configuration push target; unresolvable (no SDAP on the NIC) = no pushes
+        string qosFlowClassifierModule = default("^.^.qosFlowClassifier");   // uplink QFI rule push target; unresolvable (not a UE stack with SDAP) = no pushes
 }

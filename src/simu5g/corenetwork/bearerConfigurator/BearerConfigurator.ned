@@ -84,9 +84,8 @@ package simu5g.corenetwork.bearerConfigurator;
 //    fields it does not spell out itself
 //  - mappedQfis (int[], optional, "5gc" only): QFI values (0..63) mapped to this DRB; an entry without
 //    it does not take part in SDAP's QFI-to-DRB mapping. This field maps already-assigned
-//    QFIs onto the DRB; which QFI a packet carries is decided elsewhere (the qfiRules
-//    parameter of ~QosFlowClassifier for UL and of ~TrafficFlowFilter for DL, where the
-//    ini author plays the NAS)
+//    QFIs onto the DRB; which QFI a packet carries is decided by the QFI classification
+//    rules (the dlQfiRules and ulQfiRules parameters below)
 //  - filters (string[], optional, "epc" only): packet filters selecting this bearer, each
 //    an inet::PacketFilter -- a message-name pattern (e.g. "VoIP*") or an expression written
 //    as "expr(...)" (e.g. "expr(udp.destPort == 3000)"). An expression sees the packet that
@@ -247,6 +246,51 @@ package simu5g.corenetwork.bearerConfigurator;
 // ("5gc") and the SingleCell-DL-OnDemandDrb configuration of simulations/lte/tutorial
 // ("epc") for working setups.
 //
+// The dlQfiRules and ulQfiRules parameters author the network's QFI classification:
+// which QoS flow (QFI) each packet belongs to. The bearer definitions above map
+// already-assigned QFIs onto DRBs (mappedQfis); these two tables are where the QFIs
+// themselves are assigned, once per direction at its ingress. The rules are
+// delivered from here to their evaluation sites -- dlQfiRules to the
+// ~TrafficFlowFilter at each core-network tunnel entry (modeling the PDR/QER rules
+// the SMF installs into a UPF over N4 at session setup), ulQfiRules to each UE's
+// ~QosFlowClassifier (modeling the QoS rules NAS signaling installs into a UE at
+// PDU session establishment, TS 23.501 5.7.1.4) -- and the sites never author rules
+// of their own: the ini author writes the operator's classification policy here,
+// and this module plays the signaling the model does not have.
+//
+// Rule fields (both tables; evaluated in order at each site, first match wins):
+//  - filter (string, optional): an inet::PacketFilter -- a message-name pattern
+//    (e.g. "*VoIP*") or an expression written as "expr(...)"
+//    (e.g. "expr(udp.destPort == 3000)"); omitted = the rule matches every packet
+//  - qfi (int, 0..63) or dscpAsQfi (bool): the QFI to assign -- a fixed value, or
+//    the packet's IPv4 DSCP field read as the QFI (exactly one of the two)
+//  - node (string, dlQfiRules only, optional): module-path pattern of the
+//    core-network nodes whose tunnel-entry filter gets the rule (relative to the
+//    network, e.g. "upf" or "**.upf_mec"); omitted = every such node
+//  - ue (string, ulQfiRules only, optional): module-path pattern of the UEs that
+//    get the rule, matched like the bearer tables' "ue" field; omitted = every UE
+//    with SDAP
+//
+// The two directions are authored separately, and a conversation that needs
+// classification in both states a rule in each table, each written from its own
+// direction's perspective. There is no sharing or reversal between them: the same
+// filter means different things at the two ends (in "expr(udp.destPort == 3000)"
+// the destination port is the UE's application port for downlink traffic and the
+// server's for uplink), and a filter expression cannot be reversed mechanically.
+// This mirrors the spec's own shape -- downlink PDRs at the UPF, uplink QoS rules
+// in the UE.
+//
+// A downlink packet no rule covers gets QFI 0, the default flow; an uplink packet
+// no rule covers is left unclassified, which lets reflective QoS or the default
+// DRB take over (see ~QosFlowClassifier). The dlQfiRules default value,
+// [{dscpAsQfi: true}], is plain DSCP-as-QFI assignment at every tunnel entry.
+// Overriding either parameter replaces its whole table, so a configuration that
+// scopes rules to one node (say, a MEC host's UPF) and still wants the DSCP
+// classification elsewhere appends the catch-all back explicitly. Base stations
+// are not delivery sites -- no SMF installs classification rules into a gNB -- and
+// their filters classify unattributed traffic by a built-in DSCP-as-QFI residual
+// (see ~TrafficFlowFilter).
+//
 simple BearerConfigurator
 {
     parameters:
@@ -260,6 +304,10 @@ simple BearerConfigurator
                 {coreNetwork: "5gc", isDefault: true, suppressSdapHeader: true, lcg: 3, rlcMode: "UM"}
             ]);
         object drbProfiles = default({});  // JSON map of named field groups referenced by the staticDrbs entries' "profile" field, e.g. {voice: {rlcMode: "UM", gbr: true, ...}, ...}; see banner comment
+
+        // QFI classification rules, delivered to their evaluation sites (see banner comment)
+        object dlQfiRules = default([{dscpAsQfi: true}]);  // JSON array of downlink QFI-assignment rules [{node, filter, qfi|dscpAsQfi}, ...], delivered to the traffic flow filters at core-network tunnel entries; first match wins per site
+        object ulQfiRules = default([]);  // JSON array of uplink QFI-assignment rules [{ue, filter, qfi|dscpAsQfi}, ...], delivered to the UEs' QoS-flow classifiers; [] = classify nothing
 
         // QoS-derived RAN defaults for definitions that do not state rlcMode/lcg themselves
         // (operator policy, not spec-mandated: 3GPP standardizes the QoS characteristics,

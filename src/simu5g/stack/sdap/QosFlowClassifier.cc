@@ -21,9 +21,10 @@ using namespace inet;
 
 Define_Module(QosFlowClassifier);
 
-void QosFlowClassifier::initialize()
+void QosFlowClassifier::setQfiRules(QfiRuleSet&& rules)
 {
-    qfiRules_.parse(check_and_cast<const cValueArray *>(par("qfiRules").objectValue()), "qfiRules");
+    Enter_Method_Silent("setQfiRules");
+    qfiRules_ = std::move(rules);
 }
 
 void QosFlowClassifier::handleMessage(cMessage *msg)

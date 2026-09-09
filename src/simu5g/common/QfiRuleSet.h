@@ -20,7 +20,7 @@
 
 #include "simu5g/common/LteCommon.h"
 
-namespace omnetpp { class cValueArray; }
+namespace omnetpp { class cValueMap; }
 
 namespace simu5g {
 
@@ -28,10 +28,12 @@ namespace simu5g {
  * @brief An ordered set of QFI-assignment rules, shared by every module that
  * classifies packets to QoS flows.
  *
- * The rule grammar is one and the same wherever a qfiRules parameter appears --
- * at the network side's tunnel entry (~TrafficFlowFilter, downlink) and at the
- * UE's stack entry (~QosFlowClassifier, uplink): a JSON array evaluated in
- * order, first match wins. Rule fields:
+ * The rule grammar is one and the same at both evaluation sites -- the network
+ * side's tunnel entry (~TrafficFlowFilter, downlink) and the UE's stack entry
+ * (~QosFlowClassifier, uplink): rules are evaluated in order, first match wins.
+ * The rules are authored centrally, in the dlQfiRules and ulQfiRules parameters
+ * of ~BearerConfigurator, which compiles each site's table and delivers it.
+ * Rule fields:
  *  - filter (string, optional): an inet::PacketFilter -- a message-name pattern
  *    (e.g. "*VoIP*") or an expression written as "expr(...)"
  *    (e.g. "expr(udp.destPort == 3000)"); omitted = the rule matches every packet
@@ -54,9 +56,12 @@ class QfiRuleSet
     std::vector<QfiRule> rules_;
 
   public:
-    // Parse and validate a qfiRules parameter value; errors name the parameter
-    // and the entry, and throw at setup time rather than on the first packet.
-    void parse(const omnetpp::cValueArray *rules, const char *paramName);
+    // Parse and validate one rule and append it; 'what' names the rule in error
+    // messages (e.g. "dlQfiRules entry 2"), and errors throw at setup time rather
+    // than on the first packet. Only the rule grammar's own fields are read: the
+    // full entry schema, including the delivery-scoping columns that ride in the
+    // same maps, is the caller's to validate.
+    void parseRule(const omnetpp::cValueMap *rule, const char *what);
 
     // The QFI of the first matching rule, or QFI_NONE if no rule covers the packet
     Qfi classify(inet::Packet *pkt, const inet::Ptr<const inet::Ipv4Header>& ipv4Header) const;
