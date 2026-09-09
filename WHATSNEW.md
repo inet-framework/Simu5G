@@ -1,26 +1,286 @@
 # What's New in Simu5G
 
-## v1.6.1 (unreleased)
+## v1.7.0 (unreleased)
 
-This release factors the channel model's per-3GPP-study propagation formulas
-out into a standalone strategy class family and renames the channel-model
-classes, NED types and NIC parameter to be RAT-neutral, replacing names that
-implied an LTE/NR split which was never actually there -- any channel model
-can serve either an LTE or an NR carrier; what varies is which 3GPP
-propagation study supplies its formulas, and the new names say so. The PHY
-module classes get the same treatment: the vestigial `NrPhyUe`/`NrPhyUeD2D`
-marker classes are removed and the `Lte` prefix is dropped from the PHY
-class names. This is a
-pure refactor: no
-propagation formula, random draw, signal or statistic was changed, only where
-the code lives and what it is called. Behavior is bit-for-bit unchanged,
-verified against the full fingerprint suite (182 rows, including the 23 in
-simulations/channelmodel/ built specifically to exercise every propagation
-formula, both delegation chains, penetration, tall-UE, Rayleigh fading and the
-sectorial antenna pattern).
+The main themes of this release are the centralization of bearer and QoS
+configuration, the extension of dual connectivity, the separation of D2D
+support from the core stack, and the overhaul of the channel model. Every
+data radio bearer is now authored centrally in the new `BearerConfigurator`
+module, replacing the scattered per-module bearer parameters and the
+packet-name traffic classifier; SDAP is on by default in every network with
+a 5G core; dual connectivity gained NE-DC support, SCG bearers and
+per-bearer split configuration; and the D2D machinery moved out of the core
+LTE/NR stack into a package of its own, behind a `hasD2D` switch. On the
+channel model, the 3GPP propagation formulas were audited against the
+reports, fixed, covered with unit tests, and factored into a class family
+with RAT-neutral names. This release, like all releases since v1.3.1, was
+developed by Andras Varga and the OMNeT++ core team.
 
-Tested with INET-4.5.4 and OMNeT++ 6.3, compatible with INET-4.6.0 and OMNeT++
-6.1 through 6.4.
+Tested with INET-4.5.4 and OMNeT++ 6.3, compatible with INET-4.6.0 and
+OMNeT++ 6.1 through 6.4.
+
+### Bearer configuration centralized: the BearerConfigurator module
+
+Every data radio bearer is now described by an entry in the tables of
+`BearerConfigurator`, a new module that exists once per cellular network,
+alongside the `Binder`. It combines, in one network-wide service, decisions
+that a real system distributes between the core network and the RAN (in 5GS,
+the SMF controls sessions and QoS flows while the NG-RAN maps flows onto
+DRBs; in EPS, the roles are spread across the MME and the eNB); the
+signaling that would carry the configuration is not modeled, and within the
+model the RAN never authors a bearer of its own.
+
+- **`staticDrbs`** is the network's bearer configuration: one entry per
+  bearer per UE, modeled on the DRB-ToAddMod and RLC-BearerConfig records of
+  TS 38.331. A static bearer is configured and established up front, in the
+  last initialization stage, so traffic finds it in place. Entries name
+  their UE by module path (patterns allowed, so one entry can describe a
+  bearer of many UEs), and the configuration follows the UE from cell to
+  cell.
+
+- **`onDemandDrbs`** describes bearers created when traffic first matches
+  them. An on-demand bearer's properties always come from its definition
+  entry, never from the packet that triggers it, and a flow that no
+  definition covers is a configuration error. The parameter's default value
+  keeps unauthored configurations working: it carries the well-known
+  packet-name classes (`VoIP*`, `gaming*`, `VoD*`) as ordinary catch-all
+  definitions for SDAP-less stacks, and a single header-suppressed default
+  DRB for stacks with SDAP.
+
+- An entry states its architecture with the required **`coreNetwork`**
+  field: a `"5gc"` bearer is selected by the QFIs mapped onto it
+  (`mappedQfis`; needs SDAP in the stack), an `"epc"` bearer by packet
+  filters (`filters`, each an `inet::PacketFilter` -- a message-name pattern
+  or an `expr(...)` expression). Further fields include the QoS profile of
+  the bearer's flows (`gbr`, `packetDelayBudget`, `packetErrorRate`,
+  `qosPriorityLevel` -- 5QI characteristics, pushed into the eNB/gNB MAC for
+  QoS-aware scheduling), `rlcMode` and `lcg`, `pduSessionType`, `isDefault`,
+  `suppressSdapHeader`, and the dual-connectivity fields described below.
+  See the `BearerConfigurator` NED documentation for the full schema and the
+  modeling abstractions.
+
+- **`drbProfiles`** allows named bearer profiles to be defined: a profile
+  groups field values (QoS characteristics, `rlcMode`, and so on) under a
+  name, and an entry that references it via its `profile` field need not
+  spell those fields out itself -- the profile supplies defaults for the
+  fields the entry does not state. A commonly used subset of the
+  standardized QoS characteristics rows is predefined: `"qci-1"`..`"qci-9"`
+  (TS 23.203) and `"5qi-1"`..`"5qi-9"` (TS 23.501) can be referenced without
+  being defined. A row carries what the spec standardizes and nothing else.
+
+- The RLC mode and the logical channel group are RAN choices **derived from
+  the QoS profile** when a definition does not state them: a packet error
+  rate at or below `amPerThreshold` gets RLC AM (a PER target that HARQ
+  alone cannot meet gets ARQ), and the priority level is bucketed into an
+  LCG by `lcgPriorityBounds`.
+
+- DRB identities moved to the 3GPP range: **`drbId` is 1..32** (TS 38.331
+  DRB-Identity).
+
+- D2D and multicast bearers are outside the definition system: they are
+  sidelink bearers, whereas the tables describe infrastructure (Uu)
+  bearers. They are established with a fixed configuration (RLC UM, LCG 3).
+
+This replaces every previous bearer-configuration surface, so
+configurations that used one of them need updating:
+
+- **`NrSdap.drbConfig` is gone**; its role is taken by `staticDrbs`. An old
+  entry like `{"drb": 0, "ue": 2049, "qfiList": [1, 2], "rlcType": "UM"}`
+  becomes `{coreNetwork: "5gc", ue: "ue[0]", drbId: 1, mappedQfis: [1, 2],
+  rlcMode: "UM"}` -- the UE is named by module path rather than node id, and
+  both ends of the bearer are configured from the one entry, so the
+  two-sided "rlcType must agree" pitfall of v1.6.0 no longer exists.
+
+- **The packet-name traffic classifier is gone.** `Ip2Nic` no longer sorts
+  packets into conversational/streaming/interactive/background classes; its
+  `conversationalRlc`, `streamingRlc`, `interactiveRlc` and `backgroundRlc`
+  parameters no longer exist, and the `LteTrafficClass` enum was removed
+  (what the scheduler actually consumed all along was the logical channel
+  group). The old name-based classes survive as the default `onDemandDrbs`
+  rows, so configurations that relied on the defaults behave as before;
+  configurations that set the removed parameters state `rlcMode` (and
+  `lcg`) on bearer definitions or profiles instead.
+
+- Packet-triggered establishment can be disabled with the new
+  `establishBearersOnDemand` parameter of `NrSdap` / `Ip2Nic`, making the
+  static configuration the only source of bearers (see the
+  `VoIP-DL-MultiQfi-NoOnDemand` configuration of `nr/standalone_drb`).
+
+### QoS flow classification: the dlQfiRules and ulQfiRules parameters
+
+Which QoS flow (QFI) a packet belongs to is now authored configuration as
+well, once per direction at its ingress: `BearerConfigurator`'s `dlQfiRules`
+are delivered to the `TrafficFlowFilter` at each core-network tunnel entry
+(modeling the packet detection rules the SMF installs into a UPF), and
+`ulQfiRules` to each UE's new `QosFlowClassifier` module (modeling the QoS
+rules NAS signaling installs into a UE at PDU session establishment). A rule
+matches with an `inet::PacketFilter` and assigns either a fixed `qfi` or the
+packet's DSCP field read as the QFI (`dscpAsQfi`); rules are evaluated in
+order, first match wins.
+
+Previously the DSCP-as-QFI mapping was hardcoded in `TrafficFlowFilter`, and
+at the UE only reflective QoS could assign an uplink QFI. The `dlQfiRules`
+default value, `[{dscpAsQfi: true}]`, preserves the old downlink behavior. A
+UE-classified uplink QFI now survives to the core network, and the new
+`reflectiveQosOverridesQfi` parameter of `NrSdap` arbitrates between a
+classified QFI and a reflective QoS match. `NrSdap`'s `useDscpAsQfiFallback`
+parameter was removed; a `{dscpAsQfi: true}` rule in `ulQfiRules` expresses
+the same policy, authored where the other classification rules live.
+
+### SDAP on by default in 5G standalone networks
+
+`hasSdap`, which used to default to false everywhere, is now derived from
+the network's core: every example network built around a `Upf` sets
+`**.cellularNic.hasSdap = default(true)` -- the standalone, MEC, cars,
+videostreaming and emulation networks all follow. A gNB-served UE in these
+networks therefore runs the SDAP sublayer and QFI-based flow-to-DRB mapping,
+as a standalone deployment does, and is configured with `"5gc"` bearer
+definitions; the EN-DC networks (an LTE core with NR secondaries) remain
+deliberately SDAP-less, matching the architecture they model. **Set
+`hasSdap = false` explicitly to keep a 5GC-cored simulation on the old
+SDAP-less stack.**
+
+Whether a bearer's packets carry the SDAP header on the wire is now a
+per-bearer decision (TS 38.331 sdap-HeaderDL/UL), stated with the
+`suppressSdapHeader` definition field and verified per packet at the sender:
+suppression is only sound while a single QoS flow rides the bearer, and a
+second flow showing up stops the simulation with an error instead of
+silently mixing flows. The default (unauthored) DRB is header-suppressed, so
+turning SDAP on does not by itself change what the example simulations put
+on the air -- their re-recorded fingerprints confirm the packet histories
+byte-identical -- but the NIC's module structure changes: an `sdap`
+submodule and a `qosFlowClassifier` appear.
+
+D2D (sidelink) traffic does not pass through SDAP: SDAP sits between the
+core network and the UE, and sidelink flows never touch the core. D2D flows
+work identically whether the stack has SDAP or not.
+
+### Dual connectivity: NE-DC, SCG bearers, split-bearer configuration
+
+NE-DC -- dual connectivity with an NR master and an LTE secondary -- now
+works end to end. The code had NE-DC in its DC role vocabulary but assumed
+an LTE master in several places (per-leg id pairing, UE resolution, leg
+steering, the X2 mux keying of secondary-leg uplink PDUs); those now read
+the actual technologies off the configuration, and a flow's anchor is the
+master's cell group whichever technology that is. The `NeDualConn` example
+network moved onto a proper 5GC core, making it the first dual-connectivity
+example with SDAP; its new MultiQfi configurations carry SDAP-headered flows
+across both legs of a DC bearer.
+
+A bearer definition can now state its dual-connectivity layout:
+
+- **`legs`**: the cell groups that serve the bearer -- one of `"MCG"` /
+  `"SCG"`, or both for a split bearer (TS 37.340); a leg element can also
+  override the RLC configuration it inherits from the entry. An SCG bearer's
+  PDCP still terminates at the master node (an MN-terminated SCG bearer):
+  the core network delivers the UE's traffic there, and every PDU crosses to
+  the secondary over X2.
+
+- **`primaryPath`**, **`ulDataSplitThreshold`**, **`ulLegSelection`**,
+  **`dlLegSelection`**: which leg a split bearer's PDUs take. The uplink
+  follows the TS 38.323 shape: the UE stays on the primary path until the
+  amount queued in its legs' RLC buffers reaches the threshold, then uses
+  both legs -- by default the less-loaded one per PDU, or as the
+  `ulLegSelection` expression directs. Steering is by buffer occupancy;
+  previously each packet's leg was decided from its IP type-of-service
+  marking.
+
+The `TechnologyDecision` module was removed together with the mechanism it
+implemented: **IP type-of-service markings no longer influence leg steering
+or stack selection**. For a non-DC dual-stack UE, the stack a flow uses
+follows from the UE's attachment (the `useNrCondition` parameter, default
+`typeOfService >= 10`, is gone); for DC split bearers, steering is the
+per-bearer configuration above. Configurations that set
+`technologyDecision.typename` or relied on ToS-based selection need
+updating.
+
+### D2D support factored into a separate package
+
+All device-to-device (D2D) code has been moved out of the core LTE/NR stack
+into a dedicated `simu5g.stack.d2d` package, and D2D is enabled per node via
+a single `hasD2D` switch. The core LTE/NR modules no longer contain any D2D
+machinery, and clean (non-D2D) nodes no longer construct it. D2D remains a
+research prototype and is not based on any specific 3GPP specification.
+
+- **`hasD2D` node switch.** `LteUe` and `eNodeB` (and, by inheritance,
+  `NrUe`, `gNodeB`, `LteCar`, `NrCar`) gained a `bool hasD2D =
+  default(false)` parameter. Setting `**.hasD2D = true` on a node (or a
+  whole fleet) selects the D2D-capable `cellularNic` variant for that node;
+  an explicit `cellularNic.typename` still works and takes precedence.
+  **The former `d2dCapable` node parameter no longer exists.**
+
+- **D2D module types moved to `simu5g.stack.d2d`**, and the NR stack gained
+  dedicated D2D leaf types (previously D2D was baked into the plain
+  `NrNicUe`/`NrNicEnb` and their submodules): NICs `LteNicUeD2D`,
+  `LteNicEnbD2D` and the new `NrNicUeD2D`, `NrNicEnbD2D`; MACs
+  `LteMacUeD2D`, `LteMacEnbD2D`, `NrMacUeD2D`, `NrMacGnbD2D`, with the D2D
+  AMCs `LteAmcD2D`/`NrAmcD2D` and the D2D uplink schedulers; PHYs
+  `PhyUeD2D`, `PhyEnbD2D` with the `D2dChannelModel`; `RlcMuxD2D` and the
+  D2D UM entity types; `Ip2NicD2D`; `RrcD2D`, `HandoverControllerD2D`,
+  `D2DModeController` and the mode-selection policies; and the new
+  `D2dBinder`, which holds the global D2D state the `Binder` used to.
+  Module typenames in ini files are unqualified, so these package moves do
+  not break existing ini files, and most of these types are selected
+  automatically by the D2D NIC anyway.
+
+- **D2D mode selection is configured through RRC.** The D2D-capable eNB/gNB
+  NIC sets `rrc.hasD2DModeSelection = true`, which instantiates the periodic
+  mode-selection module; the policy is chosen with
+  `cellularNic.rrc.d2dModeSelection.typename`. The older `d2dModeSelection`
+  / `d2dModeSelectionType` NIC parameters are gone.
+
+- **D2D is a project feature** (`Simu5G_D2D`, enabled by default), so Simu5G
+  can be compiled without the D2D code and examples.
+
+Clean NR nodes no longer construct any D2D machinery, so they no longer run
+the periodic mode-selection tick or record D2D statistics -- the `-nan` D2D
+scalars that used to appear in non-D2D runs are gone.
+
+### Channel model: the 3GPP propagation formulas audited and fixed
+
+The stochastic channel model's path loss, LOS probability, shadowing and
+penetration-loss formulas were audited line by line against the reports they
+implement (TR 36.814, TR 36.873, TR 38.901), and the defects found were
+fixed. Among others:
+
+- LOS probability: UMa used the UMi formula; RMa's and SMa's exponential
+  decay constants were swapped; InH lost a 0.54 factor beyond 49 m; and the
+  TR 38.901 LOS-probability overrides were never dispatched, so the
+  TR 36.873 formulas ran in their place.
+
+- Path loss: RMa and SMa switched to the post-breakpoint slope at the wrong
+  distance and evaluated the carrier frequency in the wrong unit; breakpoint
+  distances now use the 3.0e8 m/s propagation speed the reports define; the
+  TR 38.901 UMa path never drew the 1 m effective environment height and
+  missed the tall-UE height draw, and its delegated suburban path aborted,
+  or dropped the distance.
+
+- Shadowing: several scenarios chose the shadowing sigma with a breakpoint
+  distance inconsistent with the one their path loss used (or with zero), so
+  the wrong sigma applied around the breakpoint.
+
+- Building penetration: the O2I model is selected by scenario rather than by
+  carrier frequency; TR 36.873's is the flat 20 dB the report specifies;
+  TR 38.901's high- and low-loss models were swapped, and its selector
+  parameter could never take effect.
+
+Channel state is also keyed correctly now: LOS, shadowing and fading state
+belong to a link (a transmitter-receiver pair), not to a node, and the
+LOS/shadowing draw is re-anchored each time a link moves a correlation
+distance instead of being drawn once per run. D2D receptions are recorded
+under the D2D statistics (`rcvdSinrD2D`) instead of the uplink ones, and the
+one-to-many (D2D multicast) reception path runs the same SINR and
+reception-decision code as everything else.
+
+These fixes change the statistical results of simulations that use the
+affected scenarios and models -- in some cases substantially (a swapped
+decay constant or penetration model is a many-dB error). To keep the
+formulas fixed, they are now covered by tests: the new `tests/unit` suite
+grades each implementation against oracle values produced by scripts
+transcribed verbatim from the reports, and the new `simulations/channelmodel`
+example directory (23 fingerprint configurations) exercises every
+propagation formula, both delegation chains, penetration, tall-UE handling,
+fading and the sectorial antenna pattern in full simulations.
 
 ### Path loss formulas factored into a PathLossModel strategy family
 
@@ -47,10 +307,13 @@ shared code.
       NrChannelModel              ->  Tr36873ChannelModel
       NrChannelModel_3GPP38_901   ->  Tr38901ChannelModel
 
-`StochasticChannelModel` says how the model works rather than how good it is:
-its impairments are drawn from the distributions of a 3GPP propagation study,
-as opposed to being computed from the geometry of an actual environment, and
-as opposed to the impairment-free `IdealChannelModel`.
+The old names implied an LTE/NR split which was never actually there -- any
+channel model can serve either an LTE or an NR carrier; what varies is which
+3GPP propagation study supplies its formulas, and the new names say so.
+`StochasticChannelModel` says how the model works rather than how good it
+is: its impairments are drawn from the distributions of a 3GPP propagation
+study, as opposed to being computed from the geometry of an actual
+environment, and as opposed to the impairment-free `IdealChannelModel`.
 
 `Tr36873ChannelModel` and `Tr38901ChannelModel` are NED-level presets of
 `StochasticChannelModel` (no C++ class of their own) that only override the
@@ -76,19 +339,23 @@ Configurations (ini files, NED parameter assignments) that set
 is silently ignored rather than rejected, so a configuration using it stops
 taking effect without any error being raised.
 
-### D2D channel models collapsed into one class
+### D2D channel math factored into D2dChannelModel
 
-The three D2D channel-model NED types, previously three template
-instantiations of a `D2dChannelModel<Base>` differing only in their
-propagation study, are now the single, `pathLossType`-selectable
-`D2dChannelModel` (extending `StochasticChannelModel`, like the presets above):
+The device-to-device channel math -- D2D RSRP/SINR computation, D2D
+interference, and the D2D reception decision -- used to be built into
+`LteRealisticChannelModel` itself, so every node's channel model carried it
+whether the node had D2D or not. It now lives in `D2dChannelModel`, a
+subclass of `StochasticChannelModel` in the D2D package, which is the
+channel model of the D2D NICs (their `channelModelType` default) on every
+propagation study: the inherited `pathLossType` parameter selects TR
+36.814, 36.873 or 38.901 as usual. The `d2dInterference` parameter and the
+`rcvdSinrD2D` statistic moved with the code; neither exists on the non-D2D
+channel models anymore.
 
-      D2dRealisticChannelModel       ->  D2dChannelModel  (pathLossType = "Tr36814", the default)
-      D2dNrChannelModel              ->  D2dChannelModel  + pathLossType = "Tr36873"
-      D2dNrChannelModel_3GPP38_901   ->  D2dChannelModel  + pathLossType = "Tr38901"
-
-Configurations that select these old NED types explicitly need to be updated
-to `D2dChannelModel` with the corresponding `pathLossType` setting.
+D2D configurations normally need not select a channel model at all: the
+D2D NICs default to `D2dChannelModel`, and the study is stated with
+`pathLossType`. The core channel models no longer handle D2D
+transmissions.
 
 ### NrPhyUe and NrPhyUeD2D removed
 
@@ -126,6 +393,67 @@ keys are unaffected; only configurations that name the old NED types
 explicitly (ini `typename` selectors, `like` clauses, `@class` overrides)
 need updating to the new names. The `LtePhyFrameType` enum keeps its name --
 it tags frame types and is not a PHY module class.
+
+### Stack opened up for extension
+
+The stack was systematically opened up for external projects that extend
+Simu5G by subclassing its modules rather than patching them: some 350
+methods across the stack's C++ classes were made virtual (guided by an
+explicit rule about what is an extension seam and what is an invariant), the
+`Rrc` compound's submodule types became parametric, the layout of a bearer's
+legs is overridable, and per-leg identity (the leg's `MacNodeId`, its
+gates) is resolved from module parameters instead of hardwired assumptions.
+None of this changes behavior; the full fingerprint suite is byte-identical.
+
+### Other
+
+- **Mid-simulation node removal**: a node deleted mid-simulation no longer
+  leaves state behind that crashes or corrupts the rest of the run: the
+  `Binder` purges all per-node state when a node is unregistered, RRC tears
+  down the bearers of a UE deleted mid-run, the AMC forgets D2D feedback
+  peers that have left the simulation, and a D2D UM TX entity withdraws
+  from the mode controller before it dies.
+
+- **Handover**: X2-forwarded packets keep their protocol declaration and
+  their QFI across the forwarding, and a stale QFI-to-DRB mapping left over
+  from before a handover no longer misroutes flows afterwards.
+
+- **RRC**: dynamic cell association no longer detaches a UE whose
+  association scan finds no candidate cell. The serving-node lookup in
+  `Binder::getServingNode()` no longer reads out of bounds.
+
+- **PDCP**: `NrPdcpRxEntity`'s reorder window handles a full drain correctly
+  (a window that emptied could go out of bounds); a new test fills the
+  window to capacity.
+
+- **MAC / BSR**: the LTE UE's buffer status reports account for RLC header
+  bytes; a triggered BSR is reported even when the buffers have drained to
+  zero by reporting time; the standalone BSR the UE main loop schedules is
+  actually sent; and the NR and D2D grant headers are sized in bytes, as
+  plain LTE's are.
+
+- **GtpUser**: locally delivered packets (UE-to-UE within one network) keep
+  their QFI.
+
+- **D2D multicast**: late joiners of a multicast group get their RX leg, a
+  remembered multicast flow belongs to its sender rather than just its
+  group, and the overlapping multicast group ranges in the `nr/cars` example
+  were fixed.
+
+- **Examples**: `nr/standalone_drb` gained MultiQfi and on-demand-bearer
+  configurations, `lte/tutorial` an on-demand-bearer configuration,
+  `NeDualConn` the MultiQfi ones, and a new configuration demonstrates
+  uplink QoS classification without the applications' cooperation.
+
+- **Fingerprint tests**: the suite grew from 157 to 199 configurations, now
+  in two CSVs (`simulations.csv` and `simulations_d2d.csv`, the latter
+  requiring the D2D project feature), covering the channel-model scenarios
+  and the new bearer, SDAP and dual-connectivity configurations.
+
+- **Documentation**: the D2D package and its user-guide chapter, and the
+  `BearerConfigurator` NED documentation, which describes the full bearer
+  schema and labels its modeling abstractions honestly -- what is spec, what
+  is Simu5G policy, and what is not modeled.
 
 ## v1.6.0 (2026-07-31)
 
