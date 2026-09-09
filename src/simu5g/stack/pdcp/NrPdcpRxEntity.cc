@@ -79,6 +79,8 @@ void NrPdcpRxEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
         rxWindowDesc_.rxNext_ = rcvdSno + 1;
 
     if (rcvdSno == rxWindowDesc_.rxDeliv_) {
+        unsigned int oldRxDeliv = rxWindowDesc_.rxDeliv_;
+
         // this SDU is the next one to be delivered
         EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - Deliver SDU SN[" << rcvdSno << "] to upper layer" << endl;
         pdcpSdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
@@ -100,9 +102,14 @@ void NrPdcpRxEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
             pos++;
         }
 
-        // shift window by 'i' positions
+        // shift the window by 'pos' positions. The slots still holding state are the
+        // ones for SNs below rxNext_, i.e. old indices [pos, rxNext_ - oldRxDeliv):
+        // the bound must be taken relative to rxDeliv_ as it was before the deliveries
+        // above advanced it, otherwise the last 'pos' slots are neither moved nor
+        // cleared and their stale flags later corrupt the window.
         EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - shifting window by " << pos << " positions" << endl;
-        for (unsigned int i = pos; i < rxWindowDesc_.rxNext_ - rxWindowDesc_.rxDeliv_; ++i) {
+        ASSERT(rxWindowDesc_.rxNext_ >= rxWindowDesc_.rxDeliv_);
+        for (unsigned int i = pos; i < rxWindowDesc_.rxNext_ - oldRxDeliv; ++i) {
             if (sduBuffer_.get(i) != nullptr)
                 sduBuffer_.addAt(i - pos, sduBuffer_.remove(i));
             received_.at(i - pos) = received_.at(i);
@@ -160,15 +167,16 @@ void NrPdcpRxEntity::handleMessage(cMessage *msg)
             rxWindowDesc_.rxDeliv_++;
         }
 
-        while (received_.at(rxWindowDesc_.rxDeliv_ - old) == true) {
+        // deliver the in-sequence SDUs that follow, if any. Nothing was received at or
+        // beyond rxNext_, so stop there: rxNext_ - old can equal windowSize_ (the SDU
+        // at the last window slot arrived), and received_ has no slot at that index.
+        while (rxWindowDesc_.rxDeliv_ < rxWindowDesc_.rxNext_ && received_.at(rxWindowDesc_.rxDeliv_ - old) == true) {
             EV << NOW << " NrPdcpRxEntity::handleMessage - Deliver SDU buffered at index[" << (rxWindowDesc_.rxDeliv_ - old) << "] to upper layer" << endl;
             auto *sdu = check_and_cast<Packet *>(sduBuffer_.remove(rxWindowDesc_.rxDeliv_ - old));
             sdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
             deliverSduToUpperLayer(sdu);
 
             rxWindowDesc_.rxDeliv_++;
-            if (rxWindowDesc_.rxDeliv_ == rxWindowDesc_.rxNext_)
-                break;
         }
 
         // shift window by 'i' positions
