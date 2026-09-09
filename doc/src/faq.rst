@@ -79,7 +79,7 @@ Frequently Asked Questions
    can be part of the same simulation, also in Dual Connectivity deployments:
    EN-DC (a 4G eNB acting as the master node and a 5G gNB as the secondary
    node) and NE-DC (a gNB master with an eNB secondary). See the
-   :doc:`users-guide/overview` page.
+   :doc:`users-guide/introduction` page.
 
    Simu5G is not a drop-in replacement for SimuLTE, however. The models have
    been substantially revised since, and modules and parameters have been

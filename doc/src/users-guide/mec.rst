@@ -342,8 +342,8 @@ we need to add the default IP route within new namespaces
    sudo ip netns exec ns2 route add default dev veth2
 
 These are the main steps to being able to run an emulation of
-Simu5G with the MEC framework. Read the `Building Simu5G for
-real-time emulation <http://simu5g.org/emulation.html>`__
+Simu5G with the MEC framework. Read the :doc:`Building Simu5G for
+real-time emulation <emulation>`
 section to learn how to launch it. The described example is
 available in the emulation folder in Simu5G
 (`here <https://github.com/Unipisa/Simu5G/tree/master/emulation/mec/extUeAppMecApp>`__),

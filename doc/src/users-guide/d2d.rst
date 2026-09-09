@@ -1,5 +1,5 @@
 Device-to-device (D2D) communications
-======================================
+=====================================
 
 Simu5G includes a model of network-assisted device-to-device (D2D)
 communications, in which two nearby UEs served by the same base station can
@@ -47,7 +47,7 @@ knobs:
   conflict-graph parameters).
 
 Module organization and extension points
------------------------------------------
+----------------------------------------
 
 All D2D-specific modules live under the ``simu5g.stack.d2d`` package, kept
 separate from the core LTE/NR stack: the D2D-capable NICs (``LteNicUeD2D``,

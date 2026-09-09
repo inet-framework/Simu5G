@@ -6,8 +6,8 @@ must run in real time and must be able to communicate with the
 real world, i.e. capturing/injecting packets from/to real
 networks. This is especially useful for integrating Simu5G with
 external real-world applications and frameworks. For example,
-it allows one to `make Simu5G interoperable with the Intel
-OpenNESS framework <emulation_openness.html>`__.
+it allows one to :doc:`make Simu5G interoperable with the Intel
+OpenNESS framework <emulation_openness>`.
 
 Check out our IEEE Access paper on this topic:
 
