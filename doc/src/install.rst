@@ -150,9 +150,13 @@ and SUMO versions that match your INET version.
    Project Features`, or ``opp_featuretool enable Simu5G_Cars``), and rebuild
    the project.
 
-#. Before running a ``cars`` example, launch SUMO through Veins: in the
-   ``veins/bin`` directory, run ``./veins_launchd -vv -c <path-to-sumo>``. The
-   ``-c`` option is not needed if SUMO's ``bin`` directory is on the ``PATH``.
+#. Launch SUMO through Veins: in the ``veins/bin`` directory, run
+   ``./veins_launchd -vv -c <path-to-sumo>``. The ``-c`` option is not needed
+   if SUMO's ``bin`` directory is on the ``PATH``.
+
+#. Run one of the vehicular examples, ``simulations/nr/cars`` or
+   ``simulations/lte/cars``, e.g. by selecting its folder in the IDE and
+   clicking Run on the toolbar.
 
 Running the Examples
 --------------------
