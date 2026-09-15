@@ -43,18 +43,27 @@ Windows, it can be used in WSL2.
 
       opp_env install simu5g-latest
 
-   Use ``opp_env list`` to see the available versions; ``simu5g-git``
-   installs the current development version from the git repository.
+   This will download and build OMNeT++, INET, and Simu5G. Use ``opp_env
+   list`` to see the available versions; ``simu5g-git`` installs the current
+   development version from the git repository.
 
-#. Open a development shell, then start the IDE (``omnetpp``) from there, or
-   continue working from the command line as described below:
+#. Open a shell:
 
    .. code:: bash
 
       opp_env shell simu5g-latest
 
+   Everything is built and the environment is set up, so you can run
+   simulations right away (see :ref:`running-the-examples`). The IDE can also
+   be started from this shell, with the ``omnetpp`` command.
+
 Installing manually
 -------------------
+
+This section is for the case when OMNeT++ and INET are already installed (in
+whatever way), and you obtained Simu5G separately, as a source archive or a git
+clone. If you installed Simu5G with ``opp_env``, skip it: Simu5G has already
+been built, and the environment is set up by ``opp_env shell``.
 
 Obtaining Simu5G
 ~~~~~~~~~~~~~~~~
@@ -76,7 +85,7 @@ Building from the command line
    to the INET directory.
 
 #. Make sure that ``. setenv`` was executed both in the OMNeT++ and in the INET
-   root directory. (In an ``opp_env`` shell, this has already been done.)
+   root directory.
 
 #. Change to the Simu5G root directory, and type ``. setenv``. This sets
    ``SIMU5G_ROOT``, and adds Simu5G's ``bin`` directory to the ``PATH``.
@@ -157,6 +166,8 @@ and SUMO versions that match your INET version.
 #. Run one of the vehicular examples, ``simulations/nr/cars`` or
    ``simulations/lte/cars``, e.g. by selecting its folder in the IDE and
    clicking Run on the toolbar.
+
+.. _running-the-examples:
 
 Running the Examples
 --------------------
