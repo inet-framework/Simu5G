@@ -2,21 +2,21 @@
 
 ## v1.7.1 (unreleased)
 
-A second, larger change in this release centralizes the channel model's
-physical computation into one network-level `radioMedium` module per
-network, following the shape of INET's own `RadioMedium`/per-node `radio`
-split. Per-node channel model instances become thin radio endpoints that
-carry configuration and forward to the medium. The consolidation also
-fixes a real defect -- the two ends of a link could previously disagree on
-line-of-sight state -- so, unlike the refactor above, it legitimately
-moves a majority of the fingerprint baselines; see below for the details
-and the migration notes for out-of-tree configurations.
+This release centralizes the channel model's physical computation into one
+network-level `radioMedium` module per network, following the shape of
+INET's own `RadioMedium`/per-node `radio` split. Per-node channel model
+instances become thin radio endpoints that carry configuration and forward
+to the medium. The consolidation also fixes a real defect -- the two ends
+of a link could previously disagree on line-of-sight state -- so, unlike
+the RAT-neutral channel-model refactor of v1.7.0 that it continues, it
+legitimately moves a majority of the fingerprint baselines; see below for
+the details and the migration notes for out-of-tree configurations.
 
-A third change carries the same consolidation to its conclusion: every
+A second change carries the same consolidation to its conclusion: every
 environment and propagation-geometry parameter moves off the per-node
 channel-model instance and onto `radioMedium` itself, the per-carrier
 vector of channel-model instances collapses to one radio endpoint per PHY
-leg, and the classes, NED types, submodules and NIC parameters the second
+leg, and the classes, NED types, submodules and NIC parameters the first
 change left with a `channelModel`/`ChannelModel` name are renamed to
 `radio`/`Radio` names throughout. Renames and relocations are byte-for-byte
 behavior-preserving; the one behavioral piece -- collapsing the per-carrier
@@ -138,14 +138,13 @@ is confirmed byte-identical, since nothing about this change reaches them.
   `BackgroundCellChannelModel` is untouched -- that module is removed
   wholesale in a later step.)
 
-The sections above describe this release's channel-model consolidation as it
-first landed. The radio endpoint recast below carries the same consolidation
-further, in this same unreleased release: several of the names and defaults
-just described (`pathLossType`, `IChannelModel`, `ChannelModelBase`,
+The sections above, and the channel-model sections of the v1.7.0 entry,
+describe the consolidation as it first landed. The radio endpoint recast
+below carries it further, and supersedes several of the names and defaults
+described there (`pathLossType`, `IChannelModel`, `ChannelModelBase`,
 `StochasticChannelModel`, `channelModelType`/`nrChannelModelType`, and the
-per-carrier vector of channel-model instances) are superseded by what
-follows. Where the two disagree, the sections below state Simu5G's actual
-v1.6.1 behavior.
+per-carrier vector of channel-model instances). Where the two disagree, the
+sections below state Simu5G's actual v1.7.1 behavior.
 
 ### Endpoint parameter surface moves onto the medium
 
