@@ -1,7 +1,7 @@
 FEATURETOOL = opp_featuretool
 FEATURES_H = src/simu5g/common/features.h
 
-.PHONY: all clean cleanall makefiles checkenvir checkmakefiles dist neddoc tests unittests
+.PHONY: all clean cleanall makefiles checkenvir checkmakefiles dist neddoc tests unittests physicstests
 
 all: makefiles $(FEATURES_H)
 	@cd src && $(MAKE)
@@ -11,6 +11,9 @@ tests: all
 
 unittests: all
 	@cd tests/unit && ./runtest
+
+physicstests: all
+	@cd tests/physics && ./runtest
 
 clean: makefiles
 	@cd src && $(MAKE) clean
