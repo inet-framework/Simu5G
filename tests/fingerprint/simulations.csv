@@ -40,10 +40,10 @@
 /simulations/lte/multicell/,             -f omnetpp.ini -c InterferenceTest -r 0,                5s,         9881-8967/tplx;ad9d-ca21/tilx;685e-319b/~tNl;0b60-c9ea/sz, PASS, radio interference anisotropic
 /simulations/lte/multicell/,             -f omnetpp.ini -c InterferenceTest -r 1,                5s,         e82c-aae7/tplx;e2ea-167a/tilx;70f3-8ef2/~tNl;a2de-720e/sz, PASS, radio interference anisotropic
 /simulations/lte/multicell/,             -f omnetpp.ini -c InterferenceTest -r 2,                5s,         cf71-c0e6/tplx;0afa-60be/tilx;685e-319b/~tNl;f992-7cde/sz, PASS, radio interference anisotropic
-/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-AllOn -r 0,                5s,         fc80-7950/tplx;b42a-4251/tilx;2707-b1d1/~tNl;b1ea-25a6/sz, PASS, radio interference anisotropic
-/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-NoDownlink -r 0,                5s,         abef-ab3c/tplx;3a24-bb0d/tilx;04be-0256/~tNl;d2ce-ef8b/sz, PASS, radio interference anisotropic
-/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-NoUplink -r 0,                5s,         5a52-9388/tplx;2bf6-3446/tilx;402f-a539/~tNl;1a28-ae6d/sz, PASS, radio interference anisotropic
-/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-NoExtCell -r 0,                5s,         fc80-7950/tplx;b42a-4251/tilx;2707-b1d1/~tNl;addf-93a1/sz, PASS, radio interference anisotropic
+/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-AllOn -r 0,                5s,         3613-f080/tplx;f00e-6a80/tilx;2707-b1d1/~tNl;441e-c3b1/sz, PASS, radio interference anisotropic
+/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-NoDownlink -r 0,                5s,         b958-f27b/tplx;7f6c-2070/tilx;04be-0256/~tNl;721b-607b/sz, PASS, radio interference anisotropic
+/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-NoUplink -r 0,                5s,         1cb5-8279/tplx;81f8-32ff/tilx;402f-a539/~tNl;824b-3ca0/sz, PASS, radio interference anisotropic
+/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-NoExtCell -r 0,                5s,         3613-f080/tplx;f00e-6a80/tilx;2707-b1d1/~tNl;addf-93a1/sz, PASS, radio interference anisotropic
 /simulations/lte/multicell/,             -f omnetpp.ini -c VoIP -r 0,                            5s,         927c-9fb0/tplx;fe2b-e0e1/tilx;aec6-9caa/~tNl;0c4b-4a9d/sz, PASS, radio interference
 /simulations/lte/test_handover/,         -f omnetpp.ini -c FileTransfer-DL_UL -r 0,             15s,         eeef-f4d0/tplx;6505-b0fe/tilx;fe07-23a8/~tNl;09f6-2a4b/sz, PASS, radio nofading
 /simulations/lte/test_handover/,         -f omnetpp.ini -c Handover-General -r 0,               15s,         2ffa-5733/tplx;6eb0-feed/tilx;1c3c-82a8/~tNl;860c-740f/sz, PASS, radio nofading
