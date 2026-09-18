@@ -40,6 +40,10 @@
 /simulations/lte/multicell/,             -f omnetpp.ini -c InterferenceTest -r 0,                5s,         552b-b751/tplx;d530-70ee/tilx;fee4-e14e/~tNl;1acc-75da/sz, PASS, radio interference anisotropic
 /simulations/lte/multicell/,             -f omnetpp.ini -c InterferenceTest -r 1,                5s,         0892-5881/tplx;53be-32de/tilx;bdd5-ec20/~tNl;e48a-009b/sz, PASS, radio interference anisotropic
 /simulations/lte/multicell/,             -f omnetpp.ini -c InterferenceTest -r 2,                5s,         d425-eacb/tplx;8d3b-9814/tilx;fee4-e14e/~tNl;6915-6cc7/sz, PASS, radio interference anisotropic
+/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-AllOn -r 0,                5s,         fc80-7950/tplx;b42a-4251/tilx;2707-b1d1/~tNl;65c2-2474/sz, PASS, radio interference anisotropic
+/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-NoDownlink -r 0,                5s,         abef-ab3c/tplx;3a24-bb0d/tilx;04be-0256/~tNl;909b-17df/sz, PASS, radio interference anisotropic
+/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-NoUplink -r 0,                5s,         5a52-9388/tplx;2bf6-3446/tilx;402f-a539/~tNl;c939-42ae/sz, PASS, radio interference anisotropic
+/simulations/lte/multicell/,             -f omnetpp.ini -c Interference-NoExtCell -r 0,                5s,         fc80-7950/tplx;b42a-4251/tilx;2707-b1d1/~tNl;d381-ff06/sz, PASS, radio interference anisotropic
 /simulations/lte/multicell/,             -f omnetpp.ini -c VoIP -r 0,                            5s,         802f-3ce4/tplx;9147-2d48/tilx;7f9c-5e9b/~tNl;d649-5f3c/sz, PASS, radio interference
 /simulations/lte/test_handover/,         -f omnetpp.ini -c FileTransfer-DL_UL -r 0,             15s,         f4f4-bc06/tplx;d4a3-80d2/tilx;fe07-23a8/~tNl;994e-cc41/sz, PASS, radio nofading
 /simulations/lte/test_handover/,         -f omnetpp.ini -c Handover-General -r 0,               15s,         60ee-bb3c/tplx;7874-e42c/tilx;1c3c-82a8/~tNl;88a6-9b84/sz, PASS, radio nofading
