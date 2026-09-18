@@ -919,7 +919,7 @@ if __name__ == "__main__":
     if defaultNumThreads >= 6:
         defaultNumThreads = defaultNumThreads - 1
     parser = argparse.ArgumentParser(description='Run the fingerprint tests specified in the input files.')
-    parser.add_argument('testspecfiles', nargs='*', metavar='testspecfile', help='CSV files that contain the tests to run (default: *.csv). Expected CSV file columns: working directory, command to run, simulation time limit, expected fingerprint, expected result, tags. The command column may contain only options without a program name (i.e. it starts with - ). In this case the --executable option can be used to specify a program name.')
+    parser.add_argument('testspecfiles', nargs='*', metavar='testspecfile', help='CSV or YAML files that contain the tests to run (default: *.csv, *.yaml and *.yml). Expected CSV file columns: working directory, command to run, simulation time limit, expected fingerprint, expected result, tags. The command column may contain only options without a program name (i.e. it starts with - ). In this case the --executable option can be used to specify a program name.')
     parser.add_argument('-f', '--fpfilter', default=list(), action='append', metavar='ingredient', help='fingerprint ingredient filter (expected values after the "/" character)')
     parser.add_argument('-F', '--excludefpfilter', default=list(), action='append', metavar='ingredient', help='fingerprint ingredient excluding filter (excluded values after the "/" character)')
     parser.add_argument('-m', '--match', action='append', metavar='regex', help='Line filter: a line (more precisely, workingdir+SPACE+args) must match any of the regular expressions in order for that test case to be run')

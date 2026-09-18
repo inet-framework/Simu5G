@@ -1,0 +1,1189 @@
+simulations:
+- workingdir: /showcases/nr/standalone/
+  args: -f omnetpp.ini -c Standalone -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 1f9a-d9b8
+    tilx: b60b-8c22
+    ~tNl: 4871-706a
+    sz: 9cc2-c152
+  expected: PASS
+- workingdir: /showcases/nr/standalone/
+  args: -f omnetpp.ini -c VoIP-DL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 954c-0add
+    tilx: 996b-e71b
+    ~tNl: c361-0414
+    sz: 39b5-5d94
+  expected: PASS
+- workingdir: /showcases/nr/standalone/
+  args: -f omnetpp.ini -c VoIP-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 56cb-8ef9
+    tilx: ca0b-4839
+    ~tNl: 53e6-b9b0
+    sz: bfad-7de9
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c InH-38901 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: a4b7-d0b9
+    tilx: 4139-9512
+    ~tNl: 9779-4021
+    sz: 45bf-e8da
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c UMi-38901 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 8259-9545
+    tilx: 39bf-eef7
+    ~tNl: 0ad0-d7b1
+    sz: 06b2-7b24
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c UMa-38901 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 5317-9d42
+    tilx: 2a10-58c0
+    ~tNl: 955d-b69f
+    sz: 0f77-78f7
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c RMa-38901 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 413e-edb7
+    tilx: db6f-ef07
+    ~tNl: 2924-70ed
+    sz: 3b06-aac9
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c InH-36873 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 0ec5-2fb4
+    tilx: 8014-008f
+    ~tNl: dc23-077c
+    sz: 6355-2811
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c UMi-36873 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 2ed0-6cdb
+    tilx: 6ff3-c9bc
+    ~tNl: 0c73-c8fe
+    sz: 4244-306f
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c UMa-36873 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 5317-9d42
+    tilx: 2a10-58c0
+    ~tNl: 955d-b69f
+    sz: 4cd3-048e
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c RMa-36873 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: f931-ee0b
+    tilx: 5d57-e566
+    ~tNl: 2e99-4bad
+    sz: 2f32-1b06
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c SMa-36873 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 0c61-14ae
+    tilx: 6169-ae9c
+    ~tNl: 3589-962e
+    sz: 8d02-0735
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c InH-36814 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 0ec5-2fb4
+    tilx: 8014-008f
+    ~tNl: dc23-077c
+    sz: 6355-2811
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c UMi-36814 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: f5ca-feb4
+    tilx: 3d6d-4ea3
+    ~tNl: 3545-ffe6
+    sz: 8d4d-0717
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c UMa-36814 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: df56-812f
+    tilx: 2ab3-9b49
+    ~tNl: 1d3b-2d39
+    sz: 38b2-f0c1
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c RMa-36814 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: f931-ee0b
+    tilx: 5d57-e566
+    ~tNl: 2e99-4bad
+    sz: 2f32-1b06
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c SMa-36814 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 0c61-14ae
+    tilx: 6169-ae9c
+    ~tNl: 3589-962e
+    sz: 73e1-ae20
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c FixedLos-38901 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: a894-02eb
+    tilx: 3c07-1398
+    ~tNl: 29f8-f47f
+    sz: 5fd0-8788
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c Penetration-36873 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: e03f-fc90
+    tilx: 9779-68cb
+    ~tNl: f6be-b7ba
+    sz: a10f-c236
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c PenetrationLow-38901 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: c8a1-b332
+    tilx: c52f-04f9
+    ~tNl: 8d65-88e8
+    sz: b030-e169
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c PenetrationHigh-38901 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: e5df-9eea
+    tilx: 4720-3b82
+    ~tNl: b17e-d73e
+    sz: b37e-427a
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c Rayleigh-38901 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 2588-6bf9
+    tilx: 4bb7-9a68
+    ~tNl: 8c23-31d8
+    sz: f684-096b
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c Anisotropic-36873 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: a8c3-1328
+    tilx: a873-219b
+    ~tNl: 31b0-63f9
+    sz: 2100-b778
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c SMa-38901 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 0c61-14ae
+    tilx: 6169-ae9c
+    ~tNl: 3589-962e
+    sz: 8d02-0735
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c TallUe-38901 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 40f0-0995
+    tilx: 9173-5b8a
+    ~tNl: cc74-95b3
+    sz: 6f36-6bee
+  expected: PASS
+- workingdir: /simulations/channelmodel/
+  args: -f omnetpp.ini -c TallUe-36873 -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 7d50-327b
+    tilx: b461-3317
+    ~tNl: e8ae-b667
+    sz: 7dd7-1cd2
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c CBR-DL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 66f6-9f69
+    tilx: 6f9e-5273
+    ~tNl: 1a65-06a9
+    sz: 25b1-7ebb
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c CBR-DL -r 5
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 0092-a69c
+    tilx: 5931-5c3d
+    ~tNl: 06aa-b915
+    sz: 251e-277e
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c CBR-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 3400-24ee
+    tilx: b091-d6b5
+    ~tNl: 72e6-cdf6
+    sz: b396-a6ce
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c CBR-UL -r 5
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 3828-be73
+    tilx: 9b2a-dc9a
+    ~tNl: 869b-9516
+    sz: 242b-c838
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c MixedTraffic -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 7653-d9df
+    tilx: ee48-6f4e
+    ~tNl: 5093-9407
+    sz: 363f-6fed
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c SchedulersTest -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 99ff-526d
+    tilx: 1997-8269
+    ~tNl: f0fc-e64c
+    sz: 6f80-de3f
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c SchedulersTest -r 12
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 9f95-aeb6
+    tilx: ec3a-4c24
+    ~tNl: 3895-db2b
+    sz: c69c-0b97
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c VideoStreaming -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: e62f-fe44
+    tilx: c638-a9e0
+    ~tNl: 367f-e6e8
+    sz: 5d66-8444
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c VoIP -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 4372-100c
+    tilx: 0646-6071
+    ~tNl: 27fd-7d25
+    sz: 58e7-db85
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c VoIP_DL-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: de41-a235
+    tilx: efe8-3a21
+    ~tNl: 8710-d488
+    sz: 51b8-9b01
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c VoIP-DL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 825f-a0f0
+    tilx: 27fa-e155
+    ~tNl: 3718-e4c4
+    sz: 0e13-30b3
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c VoIP-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: a048-1303
+    tilx: 4c53-3380
+    ~tNl: 88d0-4f8a
+    sz: d627-77cd
+  expected: PASS
+- workingdir: /simulations/lte/multicell/
+  args: -f omnetpp.ini -c InterferenceTest -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 552b-b751
+    tilx: d530-70ee
+    ~tNl: fee4-e14e
+    sz: 5fa1-4a65
+  expected: PASS
+- workingdir: /simulations/lte/multicell/
+  args: -f omnetpp.ini -c VoIP -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 802f-3ce4
+    tilx: 9147-2d48
+    ~tNl: 7f9c-5e9b
+    sz: e17e-8a73
+  expected: PASS
+- workingdir: /simulations/lte/test_handover/
+  args: -f omnetpp.ini -c FileTransfer-DL_UL -r 0
+  simtimelimit: 15s
+  fingerprint:
+    tplx: eeef-f4d0
+    tilx: 6505-b0fe
+    ~tNl: fe07-23a8
+    sz: 09f6-2a4b
+  expected: PASS
+- workingdir: /simulations/lte/test_handover/
+  args: -f omnetpp.ini -c Handover-General -r 0
+  simtimelimit: 15s
+  fingerprint:
+    tplx: 2ffa-5733
+    tilx: 6eb0-feed
+    ~tNl: 1c3c-82a8
+    sz: 860c-740f
+  expected: PASS
+- workingdir: /simulations/lte/test_handover/
+  args: -f omnetpp.ini -c VoIP-DL -r 0
+  simtimelimit: 15s
+  fingerprint:
+    tplx: 0aeb-cc6c
+    tilx: 181f-cfc5
+    ~tNl: 4045-5e39
+    sz: e5ac-e308
+  expected: PASS
+- workingdir: /simulations/lte/test_handover/
+  args: -f omnetpp.ini -c VoIP-DL_UL -r 0
+  simtimelimit: 15s
+  fingerprint:
+    tplx: b8c2-11f3
+    tilx: 9467-fff1
+    ~tNl: f960-afc5
+    sz: d58b-69b7
+  expected: PASS
+- workingdir: /simulations/lte/test_handover/
+  args: -f omnetpp.ini -c VoIP-UL -r 0
+  simtimelimit: 15s
+  fingerprint:
+    tplx: 5c90-bd34
+    tilx: 6ec1-9a9f
+    ~tNl: 7ba5-1422
+    sz: aea7-db70
+  expected: PASS
+- workingdir: /simulations/lte/tutorial/
+  args: -f omnetpp.ini -c MultiCell-DL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 2bf6-5fc9
+    tilx: 9777-719d
+    ~tNl: 3309-7638
+    sz: c18e-5b51
+  expected: PASS
+- workingdir: /simulations/lte/tutorial/
+  args: -f omnetpp.ini -c SingleCell-DL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 3541-428d
+    tilx: 9e59-1672
+    ~tNl: 73ca-55da
+    sz: 4964-6eba
+  expected: PASS
+- workingdir: /simulations/lte/tutorial/
+  args: -f omnetpp.ini -c SingleCell-DL-OnDemandDrb -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 3541-428d
+    tilx: 9e59-1672
+    ~tNl: 73ca-55da
+    sz: 4964-6eba
+  expected: PASS
+- workingdir: /simulations/lte/tutorial/
+  args: -f omnetpp.ini -c SingleCell-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 3329-c4cf
+    tilx: 8241-e2d1
+    ~tNl: d52c-b0d3
+    sz: 6630-a907
+  expected: PASS
+- workingdir: /simulations/lte/x2/
+  args: -f omnetpp.ini -c X2-Mesh-balanced -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: a96c-9adf
+    tilx: 698f-1d18
+    ~tNl: b903-861f
+    sz: bcba-1a30
+  expected: PASS
+- workingdir: /simulations/lte/x2/
+  args: -f omnetpp.ini -c X2-Mesh-unbalanced -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: a81b-ce97
+    tilx: 5133-4671
+    ~tNl: ab10-3282
+    sz: 0137-240f
+  expected: PASS
+- workingdir: /simulations/lte/x2/
+  args: -f omnetpp.ini -c X2-MeshTopology -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 829a-a5dd
+    tilx: 9fec-49dd
+    ~tNl: f7ac-b770
+    sz: ee5e-365e
+  expected: PASS
+- workingdir: /simulations/nr/bgTraffic/
+  args: -f omnetpp.ini -c CBR-DL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 9b96-21e2
+    tilx: 6cbd-748b
+    ~tNl: e7b8-f99f
+    sz: 7efc-df5d
+  expected: PASS
+- workingdir: /simulations/nr/bgTraffic/
+  args: -f omnetpp.ini -c CBR-DL_UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 36e8-621b
+    tilx: 72d1-bd2c
+    ~tNl: a86b-03cb
+    sz: af67-334a
+  expected: PASS
+- workingdir: /simulations/nr/bgTraffic/
+  args: -f omnetpp.ini -c CBR-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: b75a-9848
+    tilx: b9f2-6880
+    ~tNl: f79e-7593
+    sz: 8958-e3ec
+  expected: PASS
+- workingdir: /simulations/nr/mec/multiMecHost/
+  args: -f omnetpp.ini -c MultiMec -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 0721-ca99
+    tilx: 206f-6b55
+    ~tNl: 3219-949b
+    sz: e5e8-1971
+  expected: PASS
+- workingdir: /simulations/nr/mec/multiOperator/
+  args: -f omnetpp.ini -c MultiOperator_MultiMec -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: db05-bb53
+    tilx: 8b1d-f76c
+    ~tNl: 6963-d3fe
+    sz: 301f-40dd
+  expected: PASS
+- workingdir: /simulations/nr/mec/multiOperator/
+  args: -f omnetpp.ini -c MultiOperator_SingleMec -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 331b-1d4a
+    tilx: ecb6-f0cb
+    ~tNl: a1a2-f2e7
+    sz: 6599-1d81
+  expected: PASS
+- workingdir: /simulations/nr/mec/requestResponseApp/
+  args: -f omnetpp.ini -c best_case -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: 3022-0f51
+    tilx: 906a-54e0
+    ~tNl: 40d6-38ef
+    sz: 4b6f-ba07
+  expected: PASS
+- workingdir: /simulations/nr/mec/requestResponseApp/
+  args: -f omnetpp.ini -c best_case_load_gen -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: 1112-5107
+    tilx: 67d8-8919
+    ~tNl: 64be-2bd2
+    sz: 4b6f-ba07
+  expected: PASS
+- workingdir: /simulations/nr/mec/requestResponseApp/
+  args: -f omnetpp.ini -c bgUEs_gnb1 -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: a45f-4a66
+    tilx: 1537-9c81
+    ~tNl: 5383-a52c
+    sz: 7b50-1d4e
+  expected: PASS
+- workingdir: /simulations/nr/mec/requestResponseApp/
+  args: -f omnetpp.ini -c bgUEs_gnb2 -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: a45f-4a66
+    tilx: 1537-9c81
+    ~tNl: 5383-a52c
+    sz: 7b50-1d4e
+  expected: PASS
+- workingdir: /simulations/nr/mec/requestResponseApp/
+  args: -f omnetpp.ini -c farRNI -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: 8ece-8119
+    tilx: 2997-7ac6
+    ~tNl: f88c-522d
+    sz: 6556-1d30
+  expected: PASS
+- workingdir: /simulations/nr/mec/requestResponseApp/
+  args: -f omnetpp.ini -c MultiMec -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: a45f-4a66
+    tilx: 1537-9c81
+    ~tNl: 5383-a52c
+    sz: 7b50-1d4e
+  expected: PASS
+- workingdir: /simulations/nr/mec/requestResponseApp/
+  args: -f omnetpp.ini -c nearRNI -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: 92e5-a19c
+    tilx: 34e8-fea0
+    ~tNl: c797-052e
+    sz: 2be1-4d99
+  expected: PASS
+- workingdir: /simulations/nr/mec/requestResponseApp/
+  args: -f omnetpp.ini -c nearRNI_bgUEs_gnb1 -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: 92e5-a19c
+    tilx: 34e8-fea0
+    ~tNl: c797-052e
+    sz: 2be1-4d99
+  expected: PASS
+- workingdir: /simulations/nr/mec/requestResponseApp/
+  args: -f omnetpp.ini -c nearRNI_bgUEs_gnb2 -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: 92e5-a19c
+    tilx: 34e8-fea0
+    ~tNl: c797-052e
+    sz: 2be1-4d99
+  expected: PASS
+- workingdir: /simulations/nr/mec/requestResponseApp/
+  args: -f omnetpp.ini -c worst_case -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: a2c8-c7f1
+    tilx: 052f-fc98
+    ~tNl: 5e4c-3f49
+    sz: 4b6f-ba07
+  expected: PASS
+- workingdir: /simulations/nr/mec/requestResponseApp/
+  args: -f omnetpp.ini -c worst_case_load_gen -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: adc6-18ca
+    tilx: 6a4d-1805
+    ~tNl: d989-28f4
+    sz: 4b6f-45c7
+  expected: PASS
+- workingdir: /simulations/nr/mec/rnisTest/
+  args: -f omnetpp.ini -c RnisTest -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 7965-4e21
+    tilx: b4c6-189a
+    ~tNl: 2e04-43ae
+    sz: 308f-c4d0
+  expected: PASS
+- workingdir: /simulations/nr/mec/singleMecHost/
+  args: -f omnetpp.ini -c BgGeneratorApp -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: f673-e904
+    tilx: aeaa-8173
+    ~tNl: acb3-d040
+    sz: c649-597c
+  expected: PASS
+- workingdir: /simulations/nr/mec/singleMecHost/
+  args: -f omnetpp.ini -c LoadGenerator -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: c732-1311
+    tilx: a91a-6b3e
+    ~tNl: c4b8-1e82
+    sz: c649-597c
+  expected: PASS
+- workingdir: /simulations/nr/mec/singleMecHost/
+  args: -f omnetpp.ini -c OneFg_NindependentMecApps -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 9018-cc68
+    tilx: 05ac-6745
+    ~tNl: 68b5-8f8e
+    sz: c649-597c
+  expected: PASS
+- workingdir: /simulations/nr/mec/singleMecHost/
+  args: -f omnetpp.ini -c SingleMec -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: f2b8-2a03
+    tilx: 79d2-f3b6
+    ~tNl: 03d9-9d92
+    sz: c649-597c
+  expected: PASS
+- workingdir: /simulations/nr/mec/singleMecHost/
+  args: -f omnetpp.ini -c ThreeFg_NindependentMecApps -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: ec4b-3f57
+    tilx: 0c05-4ebf
+    ~tNl: 5211-dece
+    sz: c649-597c
+  expected: PASS
+- workingdir: /simulations/nr/standalone_multicell/
+  args: -f omnetpp.ini -c CBR-DL -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 2cfa-af12
+    tilx: ac4f-357f
+    ~tNl: 1eee-a52b
+    sz: 0de7-d588
+  expected: PASS
+- workingdir: /simulations/nr/standalone_multicell/
+  args: -f omnetpp.ini -c CBR-UL -r 0
+  simtimelimit: 20s
+  fingerprint:
+    tplx: 2a61-7043
+    tilx: a69e-0c86
+    ~tNl: a53f-34a8
+    sz: 8879-732f
+  expected: PASS
+- workingdir: /simulations/nr/standalone/
+  args: -f omnetpp.ini -c Standalone -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 1f9a-d9b8
+    tilx: b60b-8c22
+    ~tNl: 4871-706a
+    sz: 9cc2-c152
+  expected: PASS
+- workingdir: /simulations/nr/standalone/
+  args: -f omnetpp.ini -c VoIP-DL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 954c-0add
+    tilx: 996b-e71b
+    ~tNl: c361-0414
+    sz: 39b5-5d94
+  expected: PASS
+- workingdir: /simulations/nr/standalone/
+  args: -f omnetpp.ini -c VoIP-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 56cb-8ef9
+    tilx: ca0b-4839
+    ~tNl: 53e6-b9b0
+    sz: bfad-7de9
+  expected: PASS
+- workingdir: /simulations/nr/standalone/
+  args: -f omnetpp.ini -c VoIP-DL-AM -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 0340-6c8b
+    tilx: 854d-7611
+    ~tNl: 84c1-c878
+    sz: 3801-3b83
+  expected: PASS
+- workingdir: /simulations/nr/standalone/
+  args: -f omnetpp.ini -c VoIP-DL-AM-Lossy -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 0cf3-f135
+    tilx: c24e-9f50
+    ~tNl: f880-3b09
+    sz: b3fe-1f43
+  expected: PASS
+- workingdir: /simulations/nr/standalone/
+  args: -f omnetpp.ini -c VoIP-UL-AM -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: c840-8bca
+    tilx: 4354-f628
+    ~tNl: 4394-aff8
+    sz: 99a4-dc12
+  expected: PASS
+- workingdir: /simulations/nr/standalone/
+  args: -f omnetpp.ini -c VoIP-DL-UM-NR -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 954c-0add
+    tilx: 996b-e71b
+    ~tNl: c361-0414
+    sz: 39b5-5d94
+  expected: PASS
+- workingdir: /simulations/nr/standalone/
+  args: -f omnetpp.ini -c VoIP-UL-UM-NR -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 56cb-8ef9
+    tilx: ca0b-4839
+    ~tNl: 53e6-b9b0
+    sz: bfad-7de9
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c Standalone -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: fd3e-4b87
+    tilx: 1d6f-03ab
+    ~tNl: 43e8-e082
+    sz: 57e0-f58a
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c VoIP-DL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: f343-0300
+    tilx: c95b-10d2
+    ~tNl: 8d56-10dc
+    sz: 7011-656b
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c VoIP-DL-MultiQfi -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 7afe-164d
+    tilx: 249b-a9f3
+    ~tNl: 07ae-1dfe
+    sz: a768-4c48
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c VoIP-DL-MultiQfi-5qiProfiles -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 1bd3-d9e3
+    tilx: f922-c373
+    ~tNl: 4fb3-41fd
+    sz: c391-e0ab
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c VoIP-DL-MultiQfi-Heavy -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: f1e6-0d03
+    tilx: a421-515b
+    ~tNl: 11c2-15c8
+    sz: 1524-66ef
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c VoIP-DL-MultiQfi-NoOnDemand -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 7afe-164d
+    tilx: 249b-a9f3
+    ~tNl: 07ae-1dfe
+    sz: a768-4c48
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c VoIP-DL-MultiQfi-OnDemandDrb -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 7afe-164d
+    tilx: 1552-7aea
+    ~tNl: 07ae-1dfe
+    sz: a768-4c48
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c VoIP-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 88e2-f2c3
+    tilx: cc3c-a343
+    ~tNl: 6e58-411e
+    sz: b9a4-a80e
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c VoIP-UL-FilterRules -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: d494-155b
+    tilx: cbe9-d4da
+    ~tNl: 6e58-411e
+    sz: b9a4-a80e
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c VoIP-UL-CrossLcg -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 5526-d98c
+    tilx: 3883-cefb
+    ~tNl: 096e-3723
+    sz: a3f0-63ee
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c VoIP-UL-CrossLcg-Heavy -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 4e9b-5601
+    tilx: c99f-6da7
+    ~tNl: 3903-bfab
+    sz: adb6-4aa4
+  expected: PASS
+- workingdir: /simulations/nr/standalone_drb/
+  args: -f omnetpp.ini -c VoIP-DL-NoDrbConfig -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: d98a-2ef6
+    tilx: 27e9-cb96
+    ~tNl: 7c8d-c4ba
+    sz: c106-91d4
+  expected: PASS
+- workingdir: /simulations/nr/test_multiCarrier/
+  args: -f omnetpp.ini -c MultiCarrier-CBR-DL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 3839-690e
+    tilx: 28a0-164a
+    ~tNl: e0fb-1748
+    sz: e201-89bc
+  expected: PASS
+- workingdir: /simulations/nr/test_multiCarrier/
+  args: -f omnetpp.ini -c MultiCarrier-CBR-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 05e0-0614
+    tilx: a114-bba6
+    ~tNl: 7985-aadb
+    sz: 2fb8-947d
+  expected: PASS
+- workingdir: /simulations/nr/test_multiCarrier/
+  args: -f omnetpp.ini -c SingleCarrier-CBR-DL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 6a4a-0c09
+    tilx: 313c-ac0d
+    ~tNl: a089-682e
+    sz: a871-5b75
+  expected: PASS
+- workingdir: /simulations/nr/test_multiCarrier/
+  args: -f omnetpp.ini -c SingleCarrier-CBR-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: bddf-5272
+    tilx: 244b-7011
+    ~tNl: b28a-30a4
+    sz: dc7b-3cf5
+  expected: PASS
+- workingdir: /simulations/nr/tutorial/
+  args: -f omnetpp.ini -c BgTraffic -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: ff8b-5a83
+    tilx: 85ab-1a0b
+    ~tNl: eaf3-8f94
+    sz: 10dc-43f7
+  expected: PASS
+- workingdir: /simulations/nr/tutorial/
+  args: -f omnetpp.ini -c CarrierAggregation -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: e36b-1451
+    tilx: e3bd-bf26
+    ~tNl: 8d3e-3e6f
+    sz: 99f3-a549
+  expected: PASS
+- workingdir: /simulations/nr/tutorial/
+  args: -f omnetpp.ini -c Multiple-UEs -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 2b2d-09a9
+    tilx: 8b5b-1429
+    ~tNl: 895c-6a4b
+    sz: 1954-63d7
+  expected: PASS
+- workingdir: /simulations/nr/tutorial/
+  args: -f omnetpp.ini -c Numerology -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: e36b-1451
+    tilx: e3bd-bf26
+    ~tNl: 8d3e-3e6f
+    sz: 99f3-a549
+  expected: PASS
+- workingdir: /simulations/nr/tutorial/
+  args: -f omnetpp.ini -c Single-UE -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: cad7-a59d
+    tilx: 2e6c-eb66
+    ~tNl: e65e-8aa1
+    sz: 72b9-4a6c
+  expected: PASS
+- workingdir: /simulations/nr/videostreaming_dataset_generator/
+  args: -f omnetpp.ini -c UrbanNetwork -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: db7c-d620
+    tilx: 7fe7-f89a
+    ~tNl: 9a33-f6d4
+    sz: c909-3ba9
+  expected: PASS
+- workingdir: /tutorials/nr/
+  args: -f omnetpp.ini -c BgTraffic -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: ff8b-5a83
+    tilx: 85ab-1a0b
+    ~tNl: eaf3-8f94
+    sz: 10dc-43f7
+  expected: PASS
+- workingdir: /tutorials/nr/
+  args: -f omnetpp.ini -c CarrierAggregation -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: e36b-1451
+    tilx: e3bd-bf26
+    ~tNl: 8d3e-3e6f
+    sz: 99f3-a549
+  expected: PASS
+- workingdir: /tutorials/nr/
+  args: -f omnetpp.ini -c Multiple-UEs -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 2b2d-09a9
+    tilx: 8b5b-1429
+    ~tNl: 895c-6a4b
+    sz: 1954-63d7
+  expected: PASS
+- workingdir: /tutorials/nr/
+  args: -f omnetpp.ini -c Numerology -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: e36b-1451
+    tilx: e3bd-bf26
+    ~tNl: 8d3e-3e6f
+    sz: 99f3-a549
+  expected: PASS
+- workingdir: /tutorials/nr/
+  args: -f omnetpp.ini -c Single-UE -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: cad7-a59d
+    tilx: 2e6c-eb66
+    ~tNl: e65e-8aa1
+    sz: 72b9-4a6c
+  expected: PASS
+- workingdir: /simulations/nr/rlc/
+  args: -f omnetpp.ini -c AM-Clean -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: aa75-a3e6
+    tilx: 7edd-cb39
+    ~tNl: 5796-60ae
+    sz: 2a93-d7dc
+  expected: PASS
+- workingdir: /simulations/nr/rlc/
+  args: -f omnetpp.ini -c AM-Lossy -r 2
+  simtimelimit: 5s
+  fingerprint:
+    tplx: e645-ae94
+    tilx: b7c7-cf06
+    ~tNl: 9748-6bc6
+    sz: c6f9-6470
+  expected: PASS
+- workingdir: /simulations/nr/rlc/
+  args: -f omnetpp.ini -c AM-Segmentation -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 3f27-9e6c
+    tilx: 75c8-9337
+    ~tNl: 6813-f983
+    sz: ec59-0378
+  expected: PASS
+- workingdir: /simulations/nr/rlc/
+  args: -f omnetpp.ini -c AM-WindowStall -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 7635-80d3
+    tilx: d003-966d
+    ~tNl: ed6e-93db
+    sz: 88f3-84fb
+  expected: PASS
+- workingdir: /simulations/nr/rlc/
+  args: -f omnetpp.ini -c AM-RLF -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: 2491-175d
+    tilx: 6c3e-dde7
+    ~tNl: ffde-d14b
+    sz: a1d8-7e62
+  expected: PASS
+- workingdir: /simulations/nr/rlc/
+  args: -f omnetpp.ini -c AM-RLF-Reestablish -r 0
+  simtimelimit: 14s
+  fingerprint:
+    tplx: 4bd3-f818
+    tilx: 53a5-2f19
+    ~tNl: af81-3b4f
+    sz: 1c32-8e98
+  expected: PASS
+- workingdir: /simulations/nr/rlc/
+  args: -f omnetpp.ini -c UM-Lossy -r 2
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 4141-09a4
+    tilx: 66a0-6375
+    ~tNl: 4ae8-ce14
+    sz: a4df-e0e5
+  expected: PASS
+- workingdir: /simulations/lte/rlc/
+  args: -f omnetpp.ini -c AM-Clean -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: d845-0416
+    tilx: f2a1-3ae0
+    ~tNl: 5a1c-b517
+    sz: 9ad7-41b0
+  expected: PASS
+- workingdir: /simulations/lte/rlc/
+  args: -f omnetpp.ini -c AM-Lossy -r 2
+  simtimelimit: 5s
+  fingerprint:
+    tplx: c058-6350
+    tilx: 4bee-d73c
+    ~tNl: bb0b-853e
+    sz: 30b8-a7ff
+  expected: PASS
+- workingdir: /simulations/lte/rlc/
+  args: -f omnetpp.ini -c AM-Concatenation -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: e078-635a
+    tilx: c3a3-86e8
+    ~tNl: a60a-f194
+    sz: 95d8-b121
+  expected: PASS
+- workingdir: /simulations/lte/rlc/
+  args: -f omnetpp.ini -c AM-Segmentation -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 1406-6185
+    tilx: 5101-ad43
+    ~tNl: 16cf-6a58
+    sz: 788c-45b5
+  expected: PASS
+- workingdir: /simulations/lte/rlc/
+  args: -f omnetpp.ini -c AM-WindowStall -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: b15b-b593
+    tilx: 4d86-1a09
+    ~tNl: ffef-e141
+    sz: a207-5515
+  expected: PASS
+- workingdir: /simulations/lte/rlc/
+  args: -f omnetpp.ini -c AM-RLF -r 0
+  simtimelimit: 10s
+  fingerprint:
+    tplx: 19b9-6d60
+    tilx: 2356-9d27
+    ~tNl: ef67-8387
+    sz: 2ed7-8f7c
+  expected: PASS
+- workingdir: /simulations/lte/rlc/
+  args: -f omnetpp.ini -c AM-RLF-Reestablish -r 0
+  simtimelimit: 14s
+  fingerprint:
+    tplx: ab18-9f53
+    tilx: 750d-6ac5
+    ~tNl: 42b4-42d1
+    sz: 67b5-4ae3
+  expected: PASS
+- workingdir: /simulations/lte/rlc/
+  args: -f omnetpp.ini -c UM-Lossy -r 2
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 7098-b3b9
+    tilx: 2fae-70a3
+    ~tNl: b264-c369
+    sz: 979d-1937
+  expected: PASS
+- workingdir: /simulations/lte/demo/
+  args: -f omnetpp.ini -c VoIP-AM -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 8aa7-9829
+    tilx: dff8-5e72
+    ~tNl: 725f-0e6b
+    sz: 927c-3334
+  expected: PASS
+- workingdir: /simulations/nr/rlc/
+  args: -f omnetpp.ini -c AM-Lossy-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: 6779-364f
+    tilx: cb00-1683
+    ~tNl: c049-a7f6
+    sz: dab6-09d0
+  expected: PASS
+- workingdir: /simulations/lte/rlc/
+  args: -f omnetpp.ini -c AM-Lossy-UL -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: b9a0-5a7b
+    tilx: 6270-2d8a
+    ~tNl: ea4d-c8ca
+    sz: 2723-9492
+  expected: PASS
+- workingdir: /simulations/lte/rlc/
+  args: -f omnetpp.ini -c TCP-AM -r 0
+  simtimelimit: 5s
+  fingerprint:
+    tplx: f51c-377b
+    tilx: a5d4-8fd3
+    ~tNl: f1ef-f4f4
+    sz: 2b23-2c4c
+  expected: PASS
+- workingdir: /simulations/lte/test_handover/
+  args: -f omnetpp.ini -c VoIP-AM-Handover -r 0
+  simtimelimit: 15s
+  fingerprint:
+    tplx: 07c6-f9b5
+    tilx: e171-cbf3
+    ~tNl: a44e-35d5
+    sz: 9ede-364a
+  expected: PASS

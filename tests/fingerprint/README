@@ -19,7 +19,7 @@ updated.
 Notes on INET/OMNeT++ versions:
 
 - **Fingerprints are INET/OMNeT++ version specific**: the fingerprints
-  recorded in `simulations.csv` and `simulations_d2d.csv` are tied to the
+  recorded in `simulations.yaml` and `simulations_d2d.yaml` are tied to the
   versions CI records them with, INET-4.7.0 and OMNeT++ 6.4.0 (see
   `.github/workflows/fingerprint-tests.yml`). Running the suite against a
   different INET or OMNeT++ version reports mismatches, and those mismatches
