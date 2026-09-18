@@ -68,9 +68,15 @@ void ExtCell::initialize(int stage)
 
         // get the allocation parameters
         if (allocationType_ == FULL_ALLOC) {
-            // mark all RBs as occupied
-            bandStatus_.resize(numBands_, 1);
-            prevBandStatus_.resize(numBands_, 1);
+            // Mark all RBs as occupied. assign() rather than resize(): the
+            // vectors already have numBands_ elements from above, and resize
+            // only initializes the elements it adds, so resizing to the size
+            // they already have left every band unoccupied and a FULL_ALLOC
+            // cell contributing no interference at all. The other two policies
+            // were unaffected -- they fill the vectors from updateBandStatus(),
+            // which runs off a TTI tick FULL_ALLOC does not schedule.
+            bandStatus_.assign(numBands_, 1);
+            prevBandStatus_.assign(numBands_, 1);
         }
         else {
             // get the band utilization
