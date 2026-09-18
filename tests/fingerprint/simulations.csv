@@ -37,7 +37,7 @@
 /simulations/lte/demo/,                  -f omnetpp.ini -c VoIP_DL-UL -r 0,                      5s,         a495-ce77/tplx;5283-ec4c/tilx;f7c6-296e/~tNl;853c-eda5/sz, PASS, radio
 /simulations/lte/demo/,                  -f omnetpp.ini -c VoIP-DL -r 0,                         5s,         51c3-c22a/tplx;7150-663c/tilx;e406-2239/~tNl;bb40-3eda/sz, PASS, radio
 /simulations/lte/demo/,                  -f omnetpp.ini -c VoIP-UL -r 0,                         5s,         6294-dcd1/tplx;f2dd-a673/tilx;908d-2e99/~tNl;8b9a-1972/sz, PASS, radio
-/simulations/lte/multicell/,             -f omnetpp.ini -c InterferenceTest -r 0,                5s,         9881-8967/tplx;ad9d-ca21/tilx;685e-319b/~tNl;a55b-1afa/sz, PASS, radio interference anisotropic
+/simulations/lte/multicell/,             -f omnetpp.ini -c InterferenceTest -r 0,                5s,         9881-8967/tplx;ad9d-ca21/tilx;685e-319b/~tNl;0b60-c9ea/sz, PASS, radio interference anisotropic
 /simulations/lte/multicell/,             -f omnetpp.ini -c InterferenceTest -r 1,                5s,         e82c-aae7/tplx;e2ea-167a/tilx;70f3-8ef2/~tNl;a2de-720e/sz, PASS, radio interference anisotropic
 /simulations/lte/multicell/,             -f omnetpp.ini -c InterferenceTest -r 2,                5s,         cf71-c0e6/tplx;0afa-60be/tilx;685e-319b/~tNl;f992-7cde/sz, PASS, radio interference anisotropic
 /simulations/lte/multicell/,             -f omnetpp.ini -c Interference-AllOn -r 0,                5s,         fc80-7950/tplx;b42a-4251/tilx;2707-b1d1/~tNl;b1ea-25a6/sz, PASS, radio interference anisotropic
