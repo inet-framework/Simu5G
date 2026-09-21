@@ -630,6 +630,9 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
         PhyBase *ltePhy = eNbModule ?
             check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
             nullptr;
+        // IRadioEndpoint bridge, removed in the next step: the Binder lookup has to
+        // resolve to the very PHY the hardcoded submodule path does.
+        ASSERT(binder_->findRadioEndpoint(link.txId) == ltePhy);
 
         if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
             // get tx angle
@@ -777,6 +780,9 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(LteAirFrame *frame, Use
         PhyBase *ltePhy = eNbModule ?
             check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
             nullptr;
+        // IRadioEndpoint bridge, removed in the next step: the Binder lookup has to
+        // resolve to the very PHY the hardcoded submodule path does.
+        ASSERT(binder_->findRadioEndpoint(eNbId) == ltePhy);
 
         if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
             // get tx angle
@@ -934,6 +940,9 @@ double StochasticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord
         //get tx angle
         cModule *bsModule = binder_->getNodeModule(bsId);
         PhyBase *phy = bsModule ? check_and_cast<PhyBase *>(bsModule->getSubmodule("cellularNic")->getSubmodule("phy")) : nullptr;
+        // IRadioEndpoint bridge, removed in the next step: the Binder lookup has to
+        // resolve to the very PHY the hardcoded submodule path does.
+        ASSERT(binder_->findRadioEndpoint(bsId) == phy);
 
         if (phy && phy->getTxDirection() == ANISOTROPIC) {
             // get tx angle
@@ -1596,6 +1605,10 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
         // if the eNB does not use the selected carrier frequency, skip it
         if (interfChanModel == nullptr)
             continue;
+
+        // IRadioEndpoint bridge, removed in the next step: the interfering cell's
+        // channel model belongs to that cell's PHY, which is enbInfo->phy.
+        ASSERT(interfChanModel->phy_ == enbInfo->phy);
 
         // compute attenuation using data structures within the cell
         double att = interfChanModel->getAttenuation(ueId, UL, coord, isCqi);
