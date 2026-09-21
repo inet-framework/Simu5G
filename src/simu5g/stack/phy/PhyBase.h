@@ -27,7 +27,6 @@
 #include "simu5g/stack/phy/packet/LteAirFrame.h"
 #include "simu5g/stack/mac/amc/LteAmc.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
-#include "simu5g/stack/phy/feedback/LteFeedbackComputationRealistic.h"
 
 namespace simu5g {
 
@@ -108,10 +107,6 @@ class PhyBase : public ChannelAccess
     TxDirectionType txDirection_ = OMNI;
     // Tx Angle
     double txAngle_ = NAN;
-    // Attenuation array
-    AttenuationVector attenuationVector_;
-    //Used only for PisaPhy
-    LteFeedbackComputation *lteFeedbackComputation_ = nullptr;
 
     /*
      * NR Support

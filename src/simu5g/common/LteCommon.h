@@ -204,9 +204,6 @@ typedef unsigned short Codeword;
 /// Numerology Index
 typedef unsigned short NumerologyIndex;
 
-// Attenuation vector for analogue models
-typedef std::vector<double> AttenuationVector;
-
 
 /*************************
 *   Transmission Modes  *

@@ -14,6 +14,7 @@
 #define _PHYENB_H_
 
 #include "simu5g/stack/phy/PhyBase.h"
+#include "simu5g/stack/phy/feedback/LteFeedbackComputationRealistic.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 
 namespace simu5g {
@@ -34,6 +35,9 @@ class PhyEnb : public PhyBase
 
     int randomChannelIndex_;
 
+    /** Computes the feedback of the primary carrier from the received SINR */
+    LteFeedbackComputation *lteFeedbackComputation_ = nullptr;
+
     void initialize(int stage) override;
 
     void handleSelfMessage(cMessage *msg) override;
@@ -46,8 +50,6 @@ class PhyEnb : public PhyBase
     /// none); called after the UL and DL vectors have been stored, with the
     /// control info still in its end-of-loop (DL) state
     virtual void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, LteAirFrame *frame, ChannelModelBase *channelModel) {}
-    // Feedback computation for PisaPhy
-    virtual LteFeedbackComputation *getFeedbackComputationFromName(std::string name, ParameterMap& params);
     virtual void initializeFeedbackComputation();
     virtual LteAirFrame *createBeaconMessage();
 
