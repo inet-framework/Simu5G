@@ -19,6 +19,5 @@ namespace simu5g;
 //
 packet AirFrame extends cPacket
 {
-    int channelNumber; // Channel on which the packet is sent
     simtime_t duration; // Time it takes to transmit the packet, in seconds
 }

@@ -36,7 +36,7 @@ class LteChannelControl : public ChannelControl
 
   public:
 
-    /** Called from ChannelAccess to transmit a frame to all the radios in range on the frame's channel */
+    /** Called from ChannelAccess to transmit a frame to all the radios in range */
     void sendToChannel(RadioRef srcRadio, AirFrame *airFrame) override;
 };
 

@@ -38,8 +38,6 @@ std::ostream& operator<<(std::ostream& os, const ChannelControl::RadioEntry& rad
 void ChannelControl::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
-        numChannels = par("numChannels");
-
         maxInterferenceDistance = calcInterfDist();
     }
 }
@@ -93,7 +91,6 @@ ChannelControl::RadioRef ChannelControl::registerRadio(cModule *radio, cGate *ra
     re.radioModule = radio;
     re.radioInGate = radioInGate->getPathStartGate();
     re.isNeighborListValid = false;
-    re.channel = 0;  // for now
     radios.push_back(re);
     return &radios.back(); // last element
 }
@@ -171,25 +168,11 @@ void ChannelControl::updateConnections(RadioRef h)
     }
 }
 
-void ChannelControl::checkChannel(int channel)
-{
-    if (channel >= numChannels || channel < 0)
-        throw cRuntimeError("Invalid channel, must be above 0 and below %d", numChannels);
-}
-
 void ChannelControl::setRadioPosition(RadioRef r, const inet::Coord& pos)
 {
     Enter_Method_Silent();
     r->pos = pos;
     updateConnections(r);
-}
-
-void ChannelControl::setRadioChannel(RadioRef r, int channel)
-{
-    Enter_Method_Silent();
-    checkChannel(channel);
-
-    r->channel = channel;
 }
 
 void ChannelControl::sendToChannel(RadioRef srcRadio, AirFrame *airFrame)
@@ -199,18 +182,13 @@ void ChannelControl::sendToChannel(RadioRef srcRadio, AirFrame *airFrame)
     // loop through all radios in range
     const RadioRefVector& neighbors = getNeighbors(srcRadio);
     int n = neighbors.size();
-    int channel = airFrame->getChannelNumber();
     for (int i = 0; i < n; i++) {
         RadioRef r = neighbors[i];
-        if (r->channel == channel) {
-            EV << "sending message to radio listening on the same channel\n";
-            // account for propagation delay, based on distance in meters
-            // Over 300m, dt=1us=10 bit times @ 10Mbps
-            simtime_t delay = srcRadio->pos.distance(r->pos) / SPEED_OF_LIGHT;
-            check_and_cast<cSimpleModule *>(srcRadio->radioModule.get())->sendDirect(airFrame->dup(), delay, airFrame->getDuration(), r->radioInGate);
-        }
-        else
-            EV << "skipping radio listening on a different channel\n";
+        EV << "sending message to radio\n";
+        // account for propagation delay, based on distance in meters
+        // Over 300m, dt=1us=10 bit times @ 10Mbps
+        simtime_t delay = srcRadio->pos.distance(r->pos) / SPEED_OF_LIGHT;
+        check_and_cast<cSimpleModule *>(srcRadio->radioModule.get())->sendDirect(airFrame->dup(), delay, airFrame->getDuration(), r->radioInGate);
     }
 
     // the radios in range got copies; the original frame can be deleted
