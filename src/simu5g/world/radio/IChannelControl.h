@@ -52,19 +52,10 @@ class IChannelControl
     /** Returns the input gate of the host for receiving AirFrames */
     virtual cGate *getRadioGate(RadioRef r) const = 0;
 
-    /** Returns the channel the given radio listens on */
-    virtual int getRadioChannel(RadioRef r) const = 0;
-
     /** To be called when the host moved; updates proximity info */
     virtual void setRadioPosition(RadioRef r, const inet::Coord& pos) = 0;
 
-    /** Called when host switches channel */
-    virtual void setRadioChannel(RadioRef r, int channel) = 0;
-
-    /** Returns the number of radio channels (frequencies) simulated */
-    virtual int getNumChannels() = 0;
-
-    /** Called from ChannelAccess, to transmit a frame to the radios in range, on the frame's channel */
+    /** Called from ChannelAccess, to transmit a frame to the radios in range */
     virtual void sendToChannel(RadioRef srcRadio, AirFrame *airFrame) = 0;
 
     /** Returns the maximal interference distance */

@@ -27,8 +27,7 @@ simple ChannelControl
         double pMax @unit("mW") = default(20mW); // Maximum sending power used for this network (in mW)
         double sat @unit("dBm") = default(-110dBm); // Signal attenuation threshold (in dBm)
         double alpha = default(2); // Path loss coefficient
-        double carrierFrequency @unit("Hz") = default(2.4GHz); // Base carrier frequency of all the channels (in Hz)
-        int numChannels = default(1); // Number of radio channels (frequencies)
+        double carrierFrequency @unit("Hz") = default(2.4GHz); // Carrier frequency (in Hz)
         @display("i=misc/sun");
         @labels(node);
 }

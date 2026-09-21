@@ -31,14 +31,13 @@ using namespace omnetpp;
 class AirFrame;
 
 /**
- * Keeps track of radios/NICs, their positions and channels;
+ * Keeps track of radios/NICs and their positions;
  * also caches neighbor info (which other Radios are within
  * interference distance).
  */
 struct IChannelControl::RadioEntry {
     opp_component_ptr<cModule> radioModule;  // the module that registered this radio interface
     cGate *radioInGate = nullptr;  // gate on host module used to receive airframes
-    int channel;
     inet::Coord pos; // cached radio position
 
     struct Compare {
@@ -56,7 +55,7 @@ struct IChannelControl::RadioEntry {
 };
 
 /**
- * Monitors which radios are "in range". Supports multiple channels.
+ * Monitors which radios are "in range".
  *
  * @ingroup channelControl
  * @see ChannelAccess
@@ -74,9 +73,6 @@ class ChannelControl : public cSimpleModule, public IChannelControl
     /** the maximum interference distance in the network.*/
     double maxInterferenceDistance;
 
-    /** the number of controlled channels */
-    int numChannels;
-
   protected:
     virtual void updateConnections(RadioRef h);
 
@@ -86,9 +82,6 @@ class ChannelControl : public cSimpleModule, public IChannelControl
     /** Reads init parameters and calculates a maximum interference distance*/
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
-
-    /** Validate the channel identifier */
-    virtual void checkChannel(int channel);
 
     /** Get the list of modules in range of the given host */
     virtual const RadioRefVector& getNeighbors(RadioRef h);
@@ -109,19 +102,10 @@ class ChannelControl : public cSimpleModule, public IChannelControl
     /** Returns the input gate of the host for receiving AirFrames */
     cGate *getRadioGate(RadioRef r) const override { return r->radioInGate; }
 
-    /** Returns the channel the given radio listens on */
-    int getRadioChannel(RadioRef r) const override { return r->channel; }
-
     /** To be called when the host moved; updates proximity info */
     void setRadioPosition(RadioRef r, const inet::Coord& pos) override;
 
-    /** Called when host switches channel */
-    void setRadioChannel(RadioRef r, int channel) override;
-
-    /** Returns the number of radio channels (frequencies) simulated */
-    int getNumChannels() override { return numChannels; }
-
-    /** Called from ChannelAccess, to transmit a frame to the radios in range, on the frame's channel */
+    /** Called from ChannelAccess, to transmit a frame to the radios in range */
     void sendToChannel(RadioRef srcRadio, AirFrame *airFrame) override;
 
     /** Returns the maximum interference distance*/
