@@ -19,6 +19,7 @@
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/carrierAggregation/ComponentCarrier.h"
 #include "simu5g/stack/phy/PhyBase.h"
+#include "simu5g/stack/phy/channelmodel/IRadioEndpoint.h"
 #include "simu5g/stack/phy/packet/LteAirFrame.h"
 namespace simu5g {
 
@@ -150,8 +151,13 @@ class ChannelModelBase : public cSimpleModule
     // Reference to cell info module
     inet::ModuleRefByPar<CellInfo> cellInfo_;
 
-    // Reference to the corresponding PHY layer
-    opp_component_ptr<PhyBase> phy_;
+    // The radio endpoint this channel model belongs to -- in a running model,
+    // its node's PHY. Everything the channel model needs from it is in
+    // IRadioEndpoint, which is what lets a test put a stub here. A plain pointer
+    // rather than an opp_component_ptr, because an interface is not a
+    // cComponent; the PHY and its channel models are submodules of the same NIC
+    // and are torn down together, so the pointer cannot outlive its target.
+    IRadioEndpoint *phy_ = nullptr;
 
     // Reference to the component carrier
     inet::ModuleRefByPar<ComponentCarrier> componentCarrier_;
@@ -185,7 +191,7 @@ class ChannelModelBase : public cSimpleModule
      */
     virtual unsigned int getNumerologyIndex() const { return componentCarrier_->getNumerologyIndex(); }
 
-    virtual void setPhy(PhyBase *phy) { phy_ = phy; }
+    virtual void setPhy(IRadioEndpoint *phy) { phy_ = phy; }
 
     /*
      * Compute the error probability of the transmitted packet according to CQI used, TX mode, and the received power
