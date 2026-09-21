@@ -62,7 +62,6 @@ simple StochasticChannelModel extends ChannelModelBase
         double streetWidth @unit(m) = default(20m);
         double ueHeight @unit(m) = default(1.5m);
         bool tolerateMaxDistViolation = default(false);
-        bool useTorus = default(false);
 
         double correlationDistance @unit(m) = default(50m);
 

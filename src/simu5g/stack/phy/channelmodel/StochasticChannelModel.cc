@@ -88,7 +88,6 @@ void StochasticChannelModel::initialize(int stage)
         cableLoss_ = par("cableLoss");
         ueNoiseFigure_ = par("ueNoiseFigure");
         bsNoiseFigure_ = par("bsNoiseFigure");
-        useTorus_ = par("useTorus");
         dynamicLos_ = par("dynamicLos");
         fixedLos_ = par("fixedLos");
 

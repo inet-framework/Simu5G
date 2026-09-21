@@ -28,11 +28,6 @@ Define_Module(CellInfo);
 void CellInfo::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
-        pgnMinX_ = par("constraintAreaMinX");
-        pgnMinY_ = par("constraintAreaMinY");
-        pgnMaxX_ = par("constraintAreaMaxX");
-        pgnMaxY_ = par("constraintAreaMaxY");
-
         eNbType_ = par("microCell").boolValue() ? MICRO_ENB : MACRO_ENB;
         rbyDl_ = par("rbyDl");
         rbyUl_ = par("rbyUl");

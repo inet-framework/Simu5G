@@ -38,15 +38,6 @@ class CellInfo : public cSimpleModule
     // MACRO_ENB or MICRO_ENB
     EnbType eNbType_;
 
-    /// x playground lower bound
-    double pgnMinX_;
-    /// y playground lower bound
-    double pgnMinY_;
-    /// x playground upper bound
-    double pgnMaxX_;
-    /// y playground upper bound
-    double pgnMaxY_;
-
     /// x eNB position
     double nodeX_ = 0;
     /// y eNB position
