@@ -510,7 +510,7 @@ std::vector<double> StochasticChannelModel::getSINR(const RadioLink& link, UserC
     {
         // we are on the BS, so we need to retrieve the channel model of the sender
         // XXX I know, there might be a faster way...
-        ChannelModelBase *ueChannelModel = check_and_cast<PhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(lteInfo->getCarrierFrequency());
+        ChannelModelBase *ueChannelModel = binder_->getRadioEndpoint(ueId)->getChannelModel(lteInfo->getCarrierFrequency());
 
         if (link.dir == DL) // we are on the UE
             ueChannelModel->emit(measuredSinrDlSignal_, sumSnr / usedRBs);
@@ -1257,7 +1257,7 @@ void StochasticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz car
 
     // we are on the BS, so we need to retrieve the channel model of the sender
     // XXX I know, there might be a faster way...
-    ChannelModelBase *ueChannelModel = check_and_cast<PhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(carrierFrequency);
+    ChannelModelBase *ueChannelModel = binder_->getRadioEndpoint(ueId)->getChannelModel(carrierFrequency);
     ueChannelModel->emit(rcvdSinrUlSignal_, sinr);
 }
 

@@ -28,6 +28,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 class UeStatsCollector;
+class IRadioEndpoint;
 
 
 struct NodeInfo {
@@ -599,6 +600,18 @@ class Binder : public cSimpleModule
     // Moved from LteCommon - getter functions that were taking Binder as first parameter
     virtual CellInfo *getCellInfoByNodeId(MacNodeId nodeId);
     virtual cModule *getPhyByNodeId(MacNodeId nodeId);
+
+    /**
+     * A node's PHY as a channel model sees it -- for an NR UE its NR PHY, as with
+     * getPhyByNodeId(). Throws if the node is not in the simulation.
+     */
+    virtual IRadioEndpoint *getRadioEndpoint(MacNodeId nodeId);
+
+    /**
+     * As getRadioEndpoint(), but returns nullptr for a node that is not in the
+     * simulation (a UE may have left it).
+     */
+    virtual IRadioEndpoint *findRadioEndpoint(MacNodeId nodeId);
     virtual cModule *getMacByNodeId(MacNodeId nodeId);
     virtual cModule *getRrcByNodeId(MacNodeId nodeId);
     virtual cModule *getIp2NicByNodeId(MacNodeId nodeId);

@@ -21,6 +21,7 @@
 #include "simu5g/corenetwork/statsCollector/UeStatsCollector.h"
 #include "simu5g/stack/mac/LteMacUe.h"
 #include "simu5g/stack/phy/PhyUe.h"
+#include "simu5g/stack/phy/channelmodel/IRadioEndpoint.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
 #include "simu5g/common/InitStages.h"
 
@@ -846,6 +847,20 @@ cModule *Binder::getPhyByNodeId(MacNodeId nodeId)
     if (isNrUe(nodeId))
         return module->getSubmodule("cellularNic")->getSubmodule("nrPhy");
     return module->getSubmodule("cellularNic")->getSubmodule("phy");
+}
+
+IRadioEndpoint *Binder::getRadioEndpoint(MacNodeId nodeId)
+{
+    IRadioEndpoint *endpoint = findRadioEndpoint(nodeId);
+    if (endpoint == nullptr)
+        throw cRuntimeError("Binder::getRadioEndpoint(): node %d is not in the simulation", num(nodeId));
+    return endpoint;
+}
+
+IRadioEndpoint *Binder::findRadioEndpoint(MacNodeId nodeId)
+{
+    cModule *phy = getPhyByNodeId(nodeId);
+    return phy == nullptr ? nullptr : check_and_cast<IRadioEndpoint *>(phy);
 }
 
 cModule *Binder::getMacByNodeId(MacNodeId nodeId)
