@@ -27,6 +27,7 @@
 #include "simu5g/stack/phy/packet/LteAirFrame.h"
 #include "simu5g/stack/mac/amc/LteAmc.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
+#include "simu5g/stack/phy/channelmodel/IRadioEndpoint.h"
 #include "simu5g/stack/phy/feedback/LteFeedbackComputationRealistic.h"
 
 namespace simu5g {
@@ -51,7 +52,7 @@ using namespace omnetpp;
 
 class ChannelModelBase;
 
-class PhyBase : public ChannelAccess
+class PhyBase : public ChannelAccess, public IRadioEndpoint
 {
 
   protected:
@@ -137,7 +138,7 @@ class PhyBase : public ChannelAccess
         return channelModel_;
     }
 
-    ChannelModelBase *getChannelModel(GHz carrierFreq = GHz(0.0))
+    ChannelModelBase *getChannelModel(GHz carrierFreq = GHz(0.0)) override
     {
         if (channelModel_.empty())
             return nullptr;
@@ -157,17 +158,17 @@ class PhyBase : public ChannelAccess
         return eNodeBtxPower_;
     }
 
-    virtual double getTxPwr(Direction dir = UNKNOWN_DIRECTION)
+    double getTxPwr(Direction dir = UNKNOWN_DIRECTION) override
     {
         return txPower_;
     }
 
-    TxDirectionType getTxDirection()
+    TxDirectionType getTxDirection() override
     {
         return txDirection_;
     }
 
-    double getTxAngle()
+    double getTxAngle() override
     {
         return txAngle_;
     }
@@ -289,7 +290,7 @@ class PhyBase : public ChannelAccess
     /*
      * Returns the current position of the node
      */
-    const inet::Coord& getCoord() { return getRadioPosition(); }
+    const inet::Coord& getCoord() override { return getRadioPosition(); }
     /*
      * Returns the time of the last transmission performed
      */
