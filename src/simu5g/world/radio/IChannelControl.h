@@ -37,7 +37,6 @@ class IChannelControl
 
   public:
     typedef RadioEntry *RadioRef; // handle for ChannelControl's clients
-    typedef std::list<AirFrame *> TransmissionList;
 
   public:
 
@@ -65,20 +64,11 @@ class IChannelControl
     /** Returns the number of radio channels (frequencies) simulated */
     virtual int getNumChannels() = 0;
 
-    /** Provides a list of transmissions currently on the air */
-    virtual const TransmissionList& getOngoingTransmissions(int channel) = 0;
-
     /** Called from ChannelAccess, to transmit a frame to the radios in range, on the frame's channel */
     virtual void sendToChannel(RadioRef srcRadio, AirFrame *airFrame) = 0;
 
     /** Returns the maximal interference distance */
     virtual double getInterferenceRange(RadioRef r) = 0;
-
-    /** Disable the reception in the reference module */
-    virtual void disableReception(RadioRef r) = 0;
-
-    /** Enable the reception in the reference module */
-    virtual void enableReception(RadioRef r) = 0;
 
     /** Returns propagation speed of the signal in meters/sec */
     virtual double getPropagationSpeed() = 0;

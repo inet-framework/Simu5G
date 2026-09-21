@@ -35,26 +35,10 @@ std::ostream& operator<<(std::ostream& os, const ChannelControl::RadioEntry& rad
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const ChannelControl::TransmissionList& tl)
-{
-    for (auto it : tl)
-        os << endl << it;
-    return os;
-}
-
-
-ChannelControl::~ChannelControl()
-{
-    for (auto& channelTransmission : transmissions)
-        for (auto airFrame : channelTransmission)
-            delete airFrame;
-}
-
 void ChannelControl::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         numChannels = par("numChannels");
-        transmissions.resize(numChannels);
 
         maxInterferenceDistance = calcInterfDist();
     }
@@ -110,7 +94,6 @@ ChannelControl::RadioRef ChannelControl::registerRadio(cModule *radio, cGate *ra
     re.radioInGate = radioInGate->getPathStartGate();
     re.isNeighborListValid = false;
     re.channel = 0;  // for now
-    re.isActive = true;
     radios.push_back(re);
     return &radios.back(); // last element
 }
@@ -209,54 +192,6 @@ void ChannelControl::setRadioChannel(RadioRef r, int channel)
     r->channel = channel;
 }
 
-const ChannelControl::TransmissionList& ChannelControl::getOngoingTransmissions(int channel)
-{
-    Enter_Method_Silent();
-
-    checkChannel(channel);
-    purgeOngoingTransmissions();
-    return transmissions[channel];
-}
-
-void ChannelControl::addOngoingTransmission(RadioRef h, AirFrame *frame)
-{
-    Enter_Method_Silent();
-
-    // we only keep track of ongoing transmissions so that we can support
-    // NICs switching channels -- so there's no point doing it if there's only
-    // one channel
-    if (numChannels == 1) {
-        delete frame;
-        return;
-    }
-
-    // purge old transmissions from time to time
-    if (simTime() - lastOngoingTransmissionsUpdate > TRANSMISSION_PURGE_INTERVAL) {
-        purgeOngoingTransmissions();
-        lastOngoingTransmissionsUpdate = simTime();
-    }
-
-    // register ongoing transmission
-    take(frame);
-    frame->setTimestamp(); // store time of transmission start
-    transmissions[frame->getChannelNumber()].push_back(frame);
-}
-
-void ChannelControl::purgeOngoingTransmissions()
-{
-    for (int i = 0; i < numChannels; i++) {
-        for (auto it = transmissions[i].begin(); it != transmissions[i].end(); ) {
-            AirFrame *frame = *it;
-            if (frame->getTimestamp() + frame->getDuration() + TRANSMISSION_PURGE_INTERVAL < simTime()) {
-                delete frame;
-                it = transmissions[i].erase(it);
-            }
-            else
-                ++it;
-        }
-    }
-}
-
 void ChannelControl::sendToChannel(RadioRef srcRadio, AirFrame *airFrame)
 {
     // NOTE: no Enter_Method()! We pretend this method is part of ChannelAccess
@@ -267,10 +202,6 @@ void ChannelControl::sendToChannel(RadioRef srcRadio, AirFrame *airFrame)
     int channel = airFrame->getChannelNumber();
     for (int i = 0; i < n; i++) {
         RadioRef r = neighbors[i];
-        if (!r->isActive) {
-            EV << "skipping disabled radio interface \n";
-            continue;
-        }
         if (r->channel == channel) {
             EV << "sending message to radio listening on the same channel\n";
             // account for propagation delay, based on distance in meters
@@ -282,8 +213,8 @@ void ChannelControl::sendToChannel(RadioRef srcRadio, AirFrame *airFrame)
             EV << "skipping radio listening on a different channel\n";
     }
 
-    // register transmission
-    addOngoingTransmission(srcRadio, airFrame);
+    // the radios in range got copies; the original frame can be deleted
+    delete airFrame;
 }
 
 } //namespace
