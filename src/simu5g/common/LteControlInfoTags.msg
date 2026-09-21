@@ -90,7 +90,6 @@ class PhyTransmissionInd extends inet::TagBase {
     unsigned int frameType = 0 enum(LtePhyFrameType);   // Frame type
     double txPower = NaN;                               // Transmission power
     double d2dTxPower = NaN;                            // D2D transmission power
-    unsigned int totalGrantedBlocks = 0;                // Total granted resource blocks
     unsigned int grantId = 0;                           // Grant identifier
     inet::Coord coord;                                  // Playground position of the sending host
     RbMap grantedBlocks;                                // Resource blocks granted on all Remotes, all Bands

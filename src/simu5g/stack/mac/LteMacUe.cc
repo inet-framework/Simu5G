@@ -1095,10 +1095,7 @@ void LteMacUe::updateUserTxParam(cPacket *pktAux)
 
     lteInfo->setTxMode(schedulingGrant_[carrierFrequency]->getUserTxParams()->readTxMode());
 
-    int grantedBlocks = schedulingGrant_[carrierFrequency]->getTotalGrantedBlocks();
-
     lteInfo->setGrantedBlocks(schedulingGrant_[carrierFrequency]->getGrantedBlocks());
-    lteInfo->setTotalGrantedBlocks(grantedBlocks);
 }
 
 void LteMacUe::flushHarqBuffers()

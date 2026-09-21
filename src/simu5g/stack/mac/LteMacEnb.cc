@@ -476,7 +476,6 @@ void LteMacEnb::macPduMake(MacCid cid)
             MacNodeId destId = destCid.getNodeId();
             std::pair<MacNodeId, Codeword> pktId = {destId, cw};
             unsigned int sduPerCid = it.second;
-            unsigned int grantedBlocks = 0;
             TxMode txmode;
 
             if (macPduList_.find(carrierFreq) == macPduList_.end()) {
@@ -506,10 +505,9 @@ void LteMacEnb::macPduMake(MacCid cid)
                 pkt->addTagIfAbsent<UserControlInfo>()->setTxMode(txmode);
                 pkt->addTagIfAbsent<UserControlInfo>()->setCw(cw);
 
-                grantedBlocks = enbSchedulerDl_->readRbOccupation(destId, carrierFreq, rbMap);
+                enbSchedulerDl_->readRbOccupation(destId, carrierFreq, rbMap);
 
                 pkt->addTagIfAbsent<UserControlInfo>()->setGrantedBlocks(rbMap);
-                pkt->addTagIfAbsent<UserControlInfo>()->setTotalGrantedBlocks(grantedBlocks);
                 macPacket = pkt;
 
                 auto macPkt = makeShared<LteMacPdu>();
@@ -941,10 +939,9 @@ void LteMacEnb::updateUserTxParam(cPacket *pktAux)
     lteInfo->setTxMode(newParam.readTxMode());
     LteSchedulerEnb *scheduler = ((dir == DL) ? static_cast<LteSchedulerEnb *>(enbSchedulerDl_) : static_cast<LteSchedulerEnb *>(enbSchedulerUl_));
 
-    int grantedBlocks = scheduler->readRbOccupation(lteInfo->getDestId(), lteInfo->getCarrierFrequency(), rbMap);
+    scheduler->readRbOccupation(lteInfo->getDestId(), lteInfo->getCarrierFrequency(), rbMap);
 
     lteInfo->setGrantedBlocks(rbMap);
-    lteInfo->setTotalGrantedBlocks(grantedBlocks);
 }
 
 ActiveSet *LteMacEnb::getActiveSet(Direction dir)
