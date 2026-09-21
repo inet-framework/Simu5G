@@ -22,7 +22,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 class PhyBase;
-class LteAirFrame;
+class AirFrame;
 class UserControlInfo;
 
 /*
@@ -57,12 +57,12 @@ class D2dUePhyHelper
     std::vector<double> bestRsrpVector_;
     double bestRsrpMean_ = 0.0;
     // airframes received in the current TTI; only one will be decoded (capture effect)
-    std::vector<LteAirFrame *> d2dReceivedFrames_;
+    std::vector<AirFrame *> d2dReceivedFrames_;
 
     // pick the frame to be decoded among those received in the current TTI
-    LteAirFrame *extractAirFrame();
+    AirFrame *extractAirFrame();
     // decode the given frame and hand the decapsulated packet to the PHY's upper layer
-    void decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo);
+    void decodeAirFrame(AirFrame *frame, UserControlInfo *lteInfo);
 
   public:
     D2dUePhyHelper(PhyBase *phy) : phy_(phy) {}
@@ -82,7 +82,7 @@ class D2dUePhyHelper
     void setMulticastEnableCaptureEffect(bool v) { d2dMulticastEnableCaptureEffect_ = v; }
 
     // store a received D2D-multicast airframe, applying the capture effect
-    void storeAirFrame(LteAirFrame *newFrame);
+    void storeAirFrame(AirFrame *newFrame);
 
     // decode the captured airframe (called from the leaf's decoding-timer handler)
     // and clear the current-TTI receive buffer

@@ -47,7 +47,7 @@ unsigned int BackgroundTrafficManager::getNumBands()
 std::vector<double> BackgroundTrafficManager::getSINR(int bgUeIndex, Direction dir, inet::Coord bgUePos, double bgUeTxPower)
 {
     // This is a fictitious frame that we need to compute the SINR
-    LteAirFrame *frame = new LteAirFrame("bgUeSinrComputationFrame");
+    AirFrame *frame = new AirFrame("bgUeSinrComputationFrame");
     UserControlInfo *cInfo = new UserControlInfo();
 
     // Build a control info

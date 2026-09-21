@@ -66,7 +66,7 @@ void PhyUe::initialize(int stage)
 void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi)
 {
     // this is a fictitious frame that needs to compute the SINR
-    LteAirFrame *frame = new LteAirFrame("cellSelectionFrame");
+    AirFrame *frame = new AirFrame("cellSelectionFrame");
     UserControlInfo *cInfo = new UserControlInfo();
     outCandidateMasterId = NODEID_NONE;
 
@@ -140,7 +140,7 @@ void PhyUe::changeServingNode(MacNodeId servingNodeId)
 
 }
 
-double PhyUe::computeReceivedBeaconPacketRssi(LteAirFrame *frame, UserControlInfo *lteInfo)
+double PhyUe::computeReceivedBeaconPacketRssi(AirFrame *frame, UserControlInfo *lteInfo)
 {
     std::vector<double> rssiV = primaryChannelModel_->getSINR(frame, lteInfo);
     double rssi = 0;
@@ -153,10 +153,10 @@ double PhyUe::computeReceivedBeaconPacketRssi(LteAirFrame *frame, UserControlInf
 // TODO: ***reorganize*** method
 void PhyUe::handleAirFrame(cMessage *msg)
 {
-    LteAirFrame *frame = static_cast<LteAirFrame *>(msg);
+    AirFrame *frame = static_cast<AirFrame *>(msg);
     UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
 
-    EV << "PhyUe: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
+    EV << "PhyUe: received new AirFrame with ID " << frame->getId() << " from channel" << endl;
 
     MacNodeId sourceId = lteInfo->getSourceId();
     if (!binder_->nodeExists(sourceId)) {
@@ -364,8 +364,8 @@ void PhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
     uinfo->setSourceId(nodeId_);
     uinfo->setDestId(servingNodeId_);
     uinfo->setFrameType(FEEDBACKPKT);
-    // create LteAirFrame and encapsulate a feedback packet
-    LteAirFrame *frame = new LteAirFrame("feedback_pkt");
+    // create AirFrame and encapsulate a feedback packet
+    AirFrame *frame = new AirFrame("feedback_pkt");
     frame->encapsulate(check_and_cast<cPacket *>(pkt));
     uinfo->setFeedbackReq(req);
     uinfo->setDirection(UL);
@@ -385,7 +385,7 @@ void PhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
     // send one feedback packet for each carrier
     for (auto& cm : channelModel_) {
         GHz carrierFrequency = cm.first;
-        LteAirFrame *carrierFrame = frame->dup();
+        AirFrame *carrierFrame = frame->dup();
         UserControlInfo *carrierInfo = uinfo->dup();
         carrierInfo->setCarrierFrequency(carrierFrequency);
         carrierFrame->setControlInfo(carrierInfo);

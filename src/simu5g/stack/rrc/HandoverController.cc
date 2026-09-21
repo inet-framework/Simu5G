@@ -163,7 +163,7 @@ void HandoverController::onNodeLeaving()
 {
 }
 
-void HandoverController::beaconReceived(LteAirFrame *frame, UserControlInfo *lteInfo)
+void HandoverController::beaconReceived(AirFrame *frame, UserControlInfo *lteInfo)
 {
     Enter_Method("beaconReceived");
     take(frame);

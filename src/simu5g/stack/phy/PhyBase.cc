@@ -73,7 +73,7 @@ void PhyBase::handleMessage(cMessage *msg)
     }
 }
 
-void PhyBase::handleControlMsg(LteAirFrame *frame,
+void PhyBase::handleControlMsg(AirFrame *frame,
         UserControlInfo *userInfo)
 {
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
@@ -107,7 +107,7 @@ void PhyBase::handleUpperMessage(cMessage *msg)
     auto pkt = check_and_cast<inet::Packet *>(msg);
     auto lteInfo = pkt->removeTag<UserControlInfo>();
 
-    LteAirFrame *frame = new LteAirFrame(airFrameNameFor(lteInfo.get()));
+    AirFrame *frame = new AirFrame(airFrameNameFor(lteInfo.get()));
 
     frame->encapsulate(check_and_cast<cPacket *>(msg));
 
@@ -140,7 +140,7 @@ const char *PhyBase::airFrameNameFor(const UserControlInfo *info)
     }
 }
 
-void PhyBase::transmitFrame(LteAirFrame *frame, const UserControlInfo *info)
+void PhyBase::transmitFrame(AirFrame *frame, const UserControlInfo *info)
 {
     sendUnicast(frame);
 }
@@ -178,7 +178,7 @@ void PhyBase::updateDisplayString()
     getDisplayString().setTagArg("t", 0, buf);
 }
 
-void PhyBase::sendBroadcast(LteAirFrame *airFrame)
+void PhyBase::sendBroadcast(AirFrame *airFrame)
 {
     // Remove control info to allow parsim packing
     if (airFrame->getControlInfo() != nullptr) {
@@ -191,7 +191,7 @@ void PhyBase::sendBroadcast(LteAirFrame *airFrame)
     sendToChannel(airFrame);
 }
 
-void PhyBase::sendUnicast(LteAirFrame *frame)
+void PhyBase::sendUnicast(AirFrame *frame)
 {
     UserControlInfo *ci = check_and_cast<UserControlInfo *>(
             frame->getControlInfo());

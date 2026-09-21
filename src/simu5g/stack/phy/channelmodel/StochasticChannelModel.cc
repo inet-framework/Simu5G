@@ -14,7 +14,7 @@
 
 #include <fstream>
 #include "simu5g/common/cellInfo/CellInfo.h"
-#include "simu5g/stack/phy/packet/LteAirFrame.h"
+#include "simu5g/stack/phy/packet/AirFrame_m.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/mac/amc/UserTxParams.h"
 #include "simu5g/common/LteCommon.h"
@@ -452,7 +452,7 @@ double StochasticChannelModel::computeAngularAttenuation(double hAngle, double v
     return pathLoss_->computeAngularAttenuation(hAngle, vAngle);
 }
 
-std::vector<double> StochasticChannelModel::getSINR(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> StochasticChannelModel::getSINR(AirFrame *frame, UserControlInfo *lteInfo)
 {
     RadioLink link = linkFor(lteInfo);
 
@@ -584,7 +584,7 @@ void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link,
     }
 }
 
-std::vector<double> StochasticChannelModel::getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> StochasticChannelModel::getRSRP(AirFrame *frame, UserControlInfo *lteInfo)
 {
     return getRSRP(linkFor(lteInfo), lteInfo->getTxPower());
 }
@@ -694,7 +694,7 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
     return rsrpVector;
 }
 
-std::vector<double> StochasticChannelModel::getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> StochasticChannelModel::getSINR_bgUe(AirFrame *frame, UserControlInfo *lteInfo)
 {
     //get tx power
     double recvPower = lteInfo->getTxPower(); // dBm
@@ -1048,7 +1048,7 @@ double StochasticChannelModel::jakesFading(const LinkKey& key, MacNodeId ownerId
     return linearToDb(re_h * re_h + im_h * im_h);
 }
 
-bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+bool StochasticChannelModel::isReceptionSuccessful(AirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     EV << "StochasticChannelModel::error" << endl;
 

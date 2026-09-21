@@ -86,7 +86,7 @@ void PhyEnb::initialize(int stage)
 void PhyEnb::handleSelfMessage(cMessage *msg)
 {
     if (msg->isName("beaconStarter")) {
-        LteAirFrame *frame = createBeaconMessage();
+        AirFrame *frame = createBeaconMessage();
         sendBroadcast(frame);
         scheduleAt(NOW + beaconInterval_, msg);
     }
@@ -95,10 +95,10 @@ void PhyEnb::handleSelfMessage(cMessage *msg)
     }
 }
 
-LteAirFrame *PhyEnb::createBeaconMessage()
+AirFrame *PhyEnb::createBeaconMessage()
 {
     // broadcast airframe
-    LteAirFrame *beaconAirFrame = new LteAirFrame("beaconMessage");
+    AirFrame *beaconAirFrame = new AirFrame("beaconMessage");
     UserControlInfo *cInfo = new UserControlInfo();
     cInfo->setSourceId(nodeId_);
     cInfo->setFrameType(BEACONPKT);
@@ -114,7 +114,7 @@ LteAirFrame *PhyEnb::createBeaconMessage()
 }
 
 
-bool PhyEnb::handleControlPkt(UserControlInfo *lteinfo, LteAirFrame *frame)
+bool PhyEnb::handleControlPkt(UserControlInfo *lteinfo, AirFrame *frame)
 {
     EV << "Received control packet " << endl;
     MacNodeId senderMacNodeId = lteinfo->getSourceId();
@@ -146,10 +146,10 @@ bool PhyEnb::handleControlPkt(UserControlInfo *lteinfo, LteAirFrame *frame)
 
 void PhyEnb::handleAirFrame(cMessage *msg)
 {
-    LteAirFrame *frame = static_cast<LteAirFrame *>(msg);
+    AirFrame *frame = static_cast<AirFrame *>(msg);
     UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
 
-    EV << "Phy: received new LteAirFrame with ID " << frame->getId() << " from channel" << endl;
+    EV << "Phy: received new AirFrame with ID " << frame->getId() << " from channel" << endl;
 
     // handle broadcast packet sent by another eNB
     if (lteInfo->getFrameType() == BEACONPKT) {
@@ -246,7 +246,7 @@ void PhyEnb::handleAirFrame(cMessage *msg)
         updateDisplayString();
 }
 
-void PhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Packet *pktAux)
+void PhyEnb::requestFeedback(UserControlInfo *lteinfo, AirFrame *frame, Packet *pktAux)
 {
     EV << NOW << " PhyEnb::requestFeedback " << endl;
     LteFeedbackDoubleVector fb;
@@ -314,7 +314,7 @@ void PhyEnb::requestFeedback(UserControlInfo *lteinfo, LteAirFrame *frame, Packe
 }
 
 void PhyEnb::handleFeedbackPkt(UserControlInfo *lteinfo,
-        LteAirFrame *frame)
+        AirFrame *frame)
 {
     EV << "Handled Feedback Packet with ID " << frame->getId() << endl;
     auto pktAux = check_and_cast<Packet *>(frame->decapsulate());

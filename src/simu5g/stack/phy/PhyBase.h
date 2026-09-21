@@ -24,7 +24,7 @@
 #include "simu5g/world/radio/ChannelControl.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
-#include "simu5g/stack/phy/packet/LteAirFrame.h"
+#include "simu5g/stack/phy/packet/AirFrame_m.h"
 #include "simu5g/stack/mac/amc/LteAmc.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 
@@ -39,9 +39,9 @@ using namespace omnetpp;
  * It contains methods to manage analog models and the decider.
  *
  * The module receives packets from the LteStack and
- * sends them to the air channel, encapsulated in LteAirFrames.
+ * sends them to the air channel, encapsulated in AirFrames.
  *
- * The module receives LteAirFrames from the radioIn gate,
+ * The module receives AirFrames from the radioIn gate,
  * filters the received signal using the analog models,
  * processes the received signal using the decider,
  * then decapsulates the inner packet and sends it to the
@@ -76,12 +76,12 @@ class PhyBase : public ChannelAccess
     int upperGateIn_ = -1;
     /** The id of the out-data gate to the Stack */
     int upperGateOut_ = -1;
-    /** The id of the radioIn gate to receive LteAirFrames */
+    /** The id of the radioIn gate to receive AirFrames */
     int radioInGate_ = -1;
 
     /** Statistics */
-    unsigned int numAirFrameReceived_ = 0;    /// number of LteAirFrame correctly received
-    unsigned int numAirFrameNotReceived_ = 0; /// number of LteAirFrame not received
+    unsigned int numAirFrameReceived_ = 0;    /// number of AirFrame correctly received
+    unsigned int numAirFrameNotReceived_ = 0; /// number of AirFrame not received
 
     /** Local device MacNodeId */
     MacNodeId nodeId_ = NODEID_NONE;
@@ -202,14 +202,14 @@ class PhyBase : public ChannelAccess
      *
      * Frames are sent with zero transmission delay.
      */
-    virtual void sendBroadcast(LteAirFrame *airFrame);
+    virtual void sendBroadcast(AirFrame *airFrame);
 
     /**
      * Sends a frame uniquely to the destination specified in carried control info.
      *
      * Delay is calculated based on sender's and receiver's positions.
      */
-    virtual void sendUnicast(LteAirFrame *airFrame);
+    virtual void sendUnicast(AirFrame *airFrame);
 
     /**
      * @brief Called when a mobilityStateChanged signal is received.
@@ -226,10 +226,10 @@ class PhyBase : public ChannelAccess
      * Called by the handleMessage() method
      * when a message from #upperGateIn_ gate is received.
      *
-     * The message is encapsulated into an LteAirFrame to which
+     * The message is encapsulated into an AirFrame to which
      * a Signal object containing info about TX power, bit-rate and
      * movement pattern is attached.
-     * The LteAirFrame is then sent to the wireless channel.
+     * The AirFrame is then sent to the wireless channel.
      *
      * @param msg packet received from LteStack
      */
@@ -245,7 +245,7 @@ class PhyBase : public ChannelAccess
     virtual void stampExtraTxControlInfo(UserControlInfo *info) {}
 
     /// hands the prepared air frame to the channel (default: unicast to the destination)
-    virtual void transmitFrame(LteAirFrame *frame, const UserControlInfo *info);
+    virtual void transmitFrame(AirFrame *frame, const UserControlInfo *info);
 
     /**
      * Processes messages received from the wireless channel.
@@ -258,13 +258,13 @@ class PhyBase : public ChannelAccess
      * sent out to #upperGateOut_ gate along with the result (attached as
      * control info). Concrete behavior is implemented by subclasses.
      *
-     * @param msg LteAirFrame received from the air channel
+     * @param msg AirFrame received from the air channel
      */
     virtual void handleAirFrame(cMessage *msg) = 0;
 
     virtual void handleSelfMessage(cMessage *msg) = 0;
 
-    virtual void handleControlMsg(LteAirFrame *frame, UserControlInfo *userInfo);
+    virtual void handleControlMsg(AirFrame *frame, UserControlInfo *userInfo);
 
     virtual void initializeChannelModel();
 

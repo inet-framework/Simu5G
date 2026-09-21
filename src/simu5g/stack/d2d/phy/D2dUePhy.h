@@ -88,7 +88,7 @@ class D2dUePhy : public Base
     }
 
     /// D2D-multicast capture effect: store the frame and decode it at the end of the TTI
-    bool interceptIncomingFrame(LteAirFrame *frame, UserControlInfo *lteInfo) override
+    bool interceptIncomingFrame(AirFrame *frame, UserControlInfo *lteInfo) override
     {
         if (!(d2dHelper_.getMulticastEnableCaptureEffect() && this->binder_->isInMulticastGroup(this->nodeId_, lteInfo->getPacketMulticastGroupId())))
             return false;
@@ -136,7 +136,7 @@ class D2dUePhy : public Base
     }
 
     /// one-to-many D2D transmissions go out via sendDirect to all group members
-    void transmitFrame(LteAirFrame *frame, const UserControlInfo *info) override
+    void transmitFrame(AirFrame *frame, const UserControlInfo *info) override
     {
         if (info->getDirection() == D2D_MULTI)
             sendMulticast(frame);
@@ -150,7 +150,7 @@ class D2dUePhy : public Base
      * Frames are sent with zero transmission delay. D2D-specific: only the
      * D2D UE PHY originates one-to-many D2D transmissions.
      */
-    void sendMulticast(LteAirFrame *frame);
+    void sendMulticast(AirFrame *frame);
 
   public:
     double getTxPwr(Direction dir = UNKNOWN_DIRECTION) override
@@ -198,7 +198,7 @@ void D2dUePhy<Base>::handleSelfMessage(cMessage *msg)
 }
 
 template<class Base>
-void D2dUePhy<Base>::sendMulticast(LteAirFrame *frame)
+void D2dUePhy<Base>::sendMulticast(AirFrame *frame)
 {
     UserControlInfo *ci = check_and_cast<UserControlInfo *>(frame->getControlInfo());
 
@@ -242,7 +242,7 @@ void D2dUePhy<Base>::sendMulticast(LteAirFrame *frame)
             EV << NOW << " D2dUePhy::sendMulticast - sending frame to node " << destId << endl;
 
             // Create a duplicate frame before sending
-            LteAirFrame *frameToSend = frame->dup();
+            AirFrame *frameToSend = frame->dup();
             this->sendDirect(frameToSend, 0, frame->getDuration(), receiver, this->getReceiverGateIndex(receiver, destId));
         }
     }
