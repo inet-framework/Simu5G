@@ -74,9 +74,6 @@ class StochasticChannelModel : public ChannelModelBase
 {
   protected:
 
-    // Information needed about the playground
-    bool useTorus_;
-
     // eNodeB Height
     double hNodeB_;
 
