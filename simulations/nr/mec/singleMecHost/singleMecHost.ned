@@ -42,10 +42,6 @@ network SingleMecHost
 
         int numUes = default(0);
 
-        double playgroundSizeX @unit(m); // X size of the area the nodes are in (in meters)
-        double playgroundSizeY @unit(m); // Y size of the area the nodes are in (in meters)
-        double playgroundSizeZ @unit(m); // Z size of the area the nodes are in (in meters)
-
     submodules:
 
         routingRecorder: RoutingTableRecorder {
