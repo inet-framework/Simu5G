@@ -10,7 +10,6 @@
 // and cannot be removed from it.
 //
 
-import inet.common.geometry.Geometry;
 import simu5g.stack.phy.packet.AirFrame;
 import simu5g.common.LteControlInfo;
 
@@ -19,12 +18,6 @@ cplusplus {{
 }}
 
 namespace simu5g;
-
-struct RemoteUnitPhyData
-{
-    int txPower;
-    inet::Coord m;
-}
 
 //
 // Represents a physical layer transmission frame that encapsulates various types of
@@ -36,11 +29,5 @@ struct RemoteUnitPhyData
 // In the simulation, all these messages types are abstracted as LteAirFrame transmissions.
 //
 packet LteAirFrame extends AirFrame {
-    RemoteUnitPhyData remoteUnitPhyDataVector[] @nopack;
     UserControlInfo additionalInfo @nopack;
 }
-
-cplusplus(LteAirFrame) {{
-  public:
-    void addRemoteUnitPhyDataVector(const RemoteUnitPhyData& data) { appendRemoteUnitPhyDataVector(data); }
-}}

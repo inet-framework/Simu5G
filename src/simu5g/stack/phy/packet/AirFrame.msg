@@ -10,12 +10,6 @@
 // and cannot be removed from it.
 //
 
-import inet.common.geometry.Geometry;
-import inet.common.Units;
-
-import simu5g.common.LteCommon;
-import simu5g.stack.phy.packet.ModulationType;
-
 namespace simu5g;
 
 //
@@ -25,15 +19,6 @@ namespace simu5g;
 //
 packet AirFrame extends cPacket
 {
-    double pSend; // Power with which this packet is transmitted
     int channelNumber; // Channel on which the packet is sent
     simtime_t duration; // Time it takes to transmit the packet, in seconds
-    double bitrate;
-    double snr;
-    double lossRate;
-    double powRec; // Power in the receiver
-    inet::Coord senderPos @nopack;
-    inet::GHz carrierFrequency;
-    double bandwidth;
-    ModulationType modulationType @nopack;
 }
