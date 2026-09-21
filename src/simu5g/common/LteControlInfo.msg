@@ -129,8 +129,9 @@ struct FeedbackRequest
 //
 // It contains the following information:
 // - H-ARQ Control Information
-// - PHY Control Informations: Broadcast, Corruption, Type,
-//   txMode, Resource blocks used, RemoteSet
+// - PHY Control Information: transmission mode, frame type, transmit power,
+//   resource blocks used (per remote antenna and band), sender position and
+//   feedback request
 //
 class UserControlInfo extends LteControlInfo {
     //TODO packetLcid and packetMulticastGroupId make no sense in UserControlInfo, eliminate
@@ -149,7 +150,7 @@ class UserControlInfo extends LteControlInfo {
 
     //# PHY Control Informations
 
-    unsigned short txMode = 0 enum(TxMode);             // Traffic Type
+    unsigned short txMode = 0 enum(TxMode);             // Transmission mode
     unsigned int frameType = 0 enum(LtePhyFrameType);   // Frame Type
     double txPower = NaN;                               //Transmission Power
     double d2dTxPower = NaN;                            // D2D Transmission Power (used for feedback reporting of D2D links
