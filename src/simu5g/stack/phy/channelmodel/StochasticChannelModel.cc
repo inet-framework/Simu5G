@@ -509,7 +509,7 @@ std::vector<double> StochasticChannelModel::getSINR(const RadioLink& link, UserC
     {
         // we are on the BS, so we need to retrieve the channel model of the sender
         // XXX I know, there might be a faster way...
-        ChannelModelBase *ueChannelModel = check_and_cast<PhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(lteInfo->getCarrierFrequency());
+        ChannelModelBase *ueChannelModel = binder_->getPhy(ueId)->getChannelModel(lteInfo->getCarrierFrequency());
 
         if (link.dir == DL) // we are on the UE
             ueChannelModel->emit(measuredSinrDlSignal_, sumSnr / usedRBs);
@@ -625,10 +625,7 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
     // =============== ANGULAR ATTENUATION =================
     // Only a base station has a sectorial antenna; a UE-to-UE link never gets here.
     if (link.txIsBaseStation) {
-        cModule *eNbModule = binder_->getNodeModule(link.txId);
-        PhyBase *ltePhy = eNbModule ?
-            check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
-            nullptr;
+        PhyBase *ltePhy = binder_->findPhy(link.txId);
 
         if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
             // get tx angle
@@ -772,10 +769,7 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(LteAirFrame *frame, Use
     // ANGULAR ATTENUATION
     if (dir == DL) {
         //get tx angle
-        cModule *eNbModule = binder_->getNodeModule(eNbId);
-        PhyBase *ltePhy = eNbModule ?
-            check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
-            nullptr;
+        PhyBase *ltePhy = binder_->findPhy(eNbId);
 
         if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
             // get tx angle
@@ -931,8 +925,7 @@ double StochasticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord
     // ANGULAR ATTENUATION
     if (dir == DL) {
         //get tx angle
-        cModule *bsModule = binder_->getNodeModule(bsId);
-        PhyBase *phy = bsModule ? check_and_cast<PhyBase *>(bsModule->getSubmodule("cellularNic")->getSubmodule("phy")) : nullptr;
+        PhyBase *phy = binder_->findPhy(bsId);
 
         if (phy && phy->getTxDirection() == ANISOTROPIC) {
             // get tx angle
@@ -1184,7 +1177,7 @@ void StochasticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz car
 
     // we are on the BS, so we need to retrieve the channel model of the sender
     // XXX I know, there might be a faster way...
-    ChannelModelBase *ueChannelModel = check_and_cast<PhyUe *>(binder_->getPhyByNodeId(ueId))->getChannelModel(carrierFrequency);
+    ChannelModelBase *ueChannelModel = binder_->getPhy(ueId)->getChannelModel(carrierFrequency);
     ueChannelModel->emit(rcvdSinrUlSignal_, sinr);
 }
 
@@ -1502,7 +1495,7 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
         // initialize eNB data structures
         if (!enbInfo->init) {
             // obtain a reference to eNB phy and obtain tx power
-            enbInfo->phy = check_and_cast<PhyBase *>(binder_->getPhyByNodeId(id));
+            enbInfo->phy = binder_->getPhy(id);
 
             enbInfo->txPwr = enbInfo->phy->getTxPwr();//dBm
 

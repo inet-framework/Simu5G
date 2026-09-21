@@ -848,6 +848,22 @@ cModule *Binder::getPhyByNodeId(MacNodeId nodeId)
     return module->getSubmodule("cellularNic")->getSubmodule("phy");
 }
 
+PhyBase *Binder::getPhy(MacNodeId nodeId)
+{
+    PhyBase *phy = findPhy(nodeId);
+    if (phy == nullptr)
+        throw cRuntimeError("Binder::getPhy(): node %d is not in the simulation", num(nodeId));
+    return phy;
+}
+
+PhyBase *Binder::findPhy(MacNodeId nodeId)
+{
+    // only a node that is not in the simulation may lack a PHY
+    if (getNodeModule(nodeId) == nullptr)
+        return nullptr;
+    return check_and_cast<PhyBase *>(getPhyByNodeId(nodeId));
+}
+
 cModule *Binder::getMacByNodeId(MacNodeId nodeId)
 {
     // UE might have left the simulation, return NULL in this case

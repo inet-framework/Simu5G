@@ -620,7 +620,7 @@ bool BackgroundCellChannelModel::computeDownlinkInterference(MacNodeId bgUeId, i
         // initialize eNb data structures
         if (!enb->init) {
             // obtain a reference to enb phy and obtain tx power
-            enb->phy = check_and_cast<PhyBase *>(binder_->getPhyByNodeId(id));
+            enb->phy = binder_->getPhy(id);
 
             enb->txPwr = enb->phy->getTxPwr();//dBm
 

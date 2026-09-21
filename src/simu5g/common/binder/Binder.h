@@ -599,6 +599,18 @@ class Binder : public cSimpleModule
     // Moved from LteCommon - getter functions that were taking Binder as first parameter
     virtual CellInfo *getCellInfoByNodeId(MacNodeId nodeId);
     virtual cModule *getPhyByNodeId(MacNodeId nodeId);
+
+    /**
+     * A node's PHY -- for an NR UE its NR PHY, as with getPhyByNodeId(). Throws
+     * if the node is not in the simulation.
+     */
+    virtual PhyBase *getPhy(MacNodeId nodeId);
+
+    /**
+     * As getPhy(), but returns nullptr for a node that is not in the simulation
+     * (a UE may have left it).
+     */
+    virtual PhyBase *findPhy(MacNodeId nodeId);
     virtual cModule *getMacByNodeId(MacNodeId nodeId);
     virtual cModule *getRrcByNodeId(MacNodeId nodeId);
     virtual cModule *getIp2NicByNodeId(MacNodeId nodeId);
