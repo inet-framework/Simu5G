@@ -626,17 +626,11 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
     // =============== ANGULAR ATTENUATION =================
     // Only a base station has a sectorial antenna; a UE-to-UE link never gets here.
     if (link.txIsBaseStation) {
-        cModule *eNbModule = binder_->getNodeModule(link.txId);
-        PhyBase *ltePhy = eNbModule ?
-            check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
-            nullptr;
-        // IRadioEndpoint bridge, removed in the next step: the Binder lookup has to
-        // resolve to the very PHY the hardcoded submodule path does.
-        ASSERT(binder_->findRadioEndpoint(link.txId) == ltePhy);
+        IRadioEndpoint *bsEndpoint = binder_->findRadioEndpoint(link.txId);
 
-        if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
+        if (bsEndpoint && bsEndpoint->getTxDirection() == ANISOTROPIC) {
             // get tx angle
-            double txAngle = ltePhy->getTxAngle();
+            double txAngle = bsEndpoint->getTxAngle();
 
             // compute the angle between the receiver position and the reference axis,
             // considering the transmitting BS as center
@@ -776,17 +770,11 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(LteAirFrame *frame, Use
     // ANGULAR ATTENUATION
     if (dir == DL) {
         //get tx angle
-        cModule *eNbModule = binder_->getNodeModule(eNbId);
-        PhyBase *ltePhy = eNbModule ?
-            check_and_cast<PhyBase *>(eNbModule->getSubmodule("cellularNic")->getSubmodule("phy")) :
-            nullptr;
-        // IRadioEndpoint bridge, removed in the next step: the Binder lookup has to
-        // resolve to the very PHY the hardcoded submodule path does.
-        ASSERT(binder_->findRadioEndpoint(eNbId) == ltePhy);
+        IRadioEndpoint *bsEndpoint = binder_->findRadioEndpoint(eNbId);
 
-        if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
+        if (bsEndpoint && bsEndpoint->getTxDirection() == ANISOTROPIC) {
             // get tx angle
-            double txAngle = ltePhy->getTxAngle();
+            double txAngle = bsEndpoint->getTxAngle();
 
             // compute the angle between uePosition and reference axis, considering the eNb as center
             double ueAngle = computeAngle(enbCoord, ueCoord);
@@ -938,15 +926,11 @@ double StochasticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord
     // ANGULAR ATTENUATION
     if (dir == DL) {
         //get tx angle
-        cModule *bsModule = binder_->getNodeModule(bsId);
-        PhyBase *phy = bsModule ? check_and_cast<PhyBase *>(bsModule->getSubmodule("cellularNic")->getSubmodule("phy")) : nullptr;
-        // IRadioEndpoint bridge, removed in the next step: the Binder lookup has to
-        // resolve to the very PHY the hardcoded submodule path does.
-        ASSERT(binder_->findRadioEndpoint(bsId) == phy);
+        IRadioEndpoint *bsEndpoint = binder_->findRadioEndpoint(bsId);
 
-        if (phy && phy->getTxDirection() == ANISOTROPIC) {
+        if (bsEndpoint && bsEndpoint->getTxDirection() == ANISOTROPIC) {
             // get tx angle
-            double txAngle = phy->getTxAngle();
+            double txAngle = bsEndpoint->getTxAngle();
 
             // compute the angle between uePosition and reference axis, considering the eNb as center
             double ueAngle = computeAngle(txPos, rxPos);
@@ -1606,10 +1590,6 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
         if (interfChanModel == nullptr)
             continue;
 
-        // IRadioEndpoint bridge, removed in the next step: the interfering cell's
-        // channel model belongs to that cell's PHY, which is enbInfo->phy.
-        ASSERT(interfChanModel->phy_ == enbInfo->phy);
-
         // compute attenuation using data structures within the cell
         double att = interfChanModel->getAttenuation(ueId, UL, coord, isCqi);
         EV << "EnbId [" << id << "] - attenuation [" << att << "]";
@@ -1621,14 +1601,14 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
             double txAngle = enbInfo->txAngle;
 
             // compute the angle between uePosition and reference axis, considering the eNB as center
-            double ueAngle = computeAngle(interfChanModel->phy_->getCoord(), coord);
+            double ueAngle = computeAngle(enbInfo->phy->getCoord(), coord);
 
             // compute the reception angle between ue and eNB
             double recvAngle = fabs(txAngle - ueAngle);
             if (recvAngle > 180)
                 recvAngle = 360 - recvAngle;
 
-            double verticalAngle = computeVerticalAngle(interfChanModel->phy_->getCoord(), coord);
+            double verticalAngle = computeVerticalAngle(enbInfo->phy->getCoord(), coord);
 
             // compute attenuation due to sectorial tx
             angularAtt = computeAngularAttenuation(recvAngle, verticalAngle);
