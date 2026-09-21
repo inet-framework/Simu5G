@@ -13,8 +13,10 @@
 import inet.common.INETDefs;
 import inet.common.TagBase;
 import inet.common.geometry.Geometry; // for Coord
+import inet.common.Units;
 import inet.networklayer.contract.ipv4.Ipv4Address;
 import simu5g.common.LteCommon;
+import simu5g.common.LteCommonEnum;
 import simu5g.common.LteControlInfo;
 import simu5g.stack.mac.amc.UserTxParams;
 
@@ -31,12 +33,20 @@ class NodeIdentificationInd extends inet::TagBase {
 }
 
 //
+// Indication tag containing the traffic direction.
+// Normally exchanged by the PHY and MAC layers.
+//
+class TrafficDirectionInd extends inet::TagBase {
+    Direction direction = DL;             // Traffic direction (UL, DL, D2D, D2D_MULTI)
+}
+
+//
 // Identifies the logical connection and D2D groupcast destination for the packet.
 // Usually sent by PDCP to RLC and MAC layers.
 //
 class LogicalConnectionInd extends inet::TagBase {
-    LogicalCid lcid;                    // Logical Connection Identifier
-    int32 d2dGroupId = -1;              // D2D groupcast id (-1 = not a groupcast flow)
+    LogicalCid lcid;                      // Logical Connection Identifier
+    MacNodeId d2dGroupId = NODEID_NONE;   // D2D groupcast destination; NODEID_NONE = not a groupcast flow
 }
 
 //
@@ -67,7 +77,7 @@ class RlcConfigurationInd extends RlcConfigurationTagBase {
 //
 class CarrierConfigurationInd extends inet::TagBase {
     bool isNr = false;                  // Packet is for NR processing
-    double carrierFrequency = NaN;      // Carrier frequency for transmission
+    inet::GHz carrierFrequency;         // Carrier frequency for transmission
 }
 
 //
