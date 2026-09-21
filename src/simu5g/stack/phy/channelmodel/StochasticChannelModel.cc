@@ -1087,9 +1087,6 @@ bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserContr
     if (transmissionAttempt == 0)
         throw cRuntimeError("Transmissions counter should not be 0");
 
-    // Get txmode
-    TxMode txmode = (TxMode)lteInfo->getTxMode();
-
     // Take sinr
     // Take sinr (the D2D channel model overrides getReceptionSinr() to route
     // D2D/D2D_MULTI receptions through getSINR_D2D)
@@ -1097,9 +1094,6 @@ bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserContr
 
     // Get the resource Block id used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();
-
-    // Get txmode
-    unsigned int itxmode = txModeToIndex[txmode];
 
     double blockErrorRate = 0.0;
     double cumulativeSuccessProbability = 1.0;
@@ -1132,9 +1126,9 @@ bool StochasticChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserContr
             else if (snr > binder_->phyPisaData.maxSnr())
                 blockErrorRate = 0.0;
             else
-                blockErrorRate = binder_->phyPisaData.getBler(itxmode, cqi, snr);
+                blockErrorRate = binder_->phyPisaData.getBler(cqi, snr);
 
-            EV << "\t bler computation: [itxMode=" << itxmode << "] - [cqi=" << cqi
+            EV << "\t bler computation: [cqi=" << cqi
                << "] - [snr=" << snr << "]" << endl;
 
             double blockSuccessRate = 1.0 - blockErrorRate;

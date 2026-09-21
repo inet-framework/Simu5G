@@ -140,7 +140,6 @@ Cqi BackgroundTrafficManagerBase::computeCqiFromSinr(double sinr)
     if (newsnr > phyPisaData_->maxSnr())
         return 15;
 
-    unsigned int txm = 1;
     std::vector<double> min;
     int found = 0;
     double low = 2;
@@ -151,7 +150,7 @@ Cqi BackgroundTrafficManagerBase::computeCqiFromSinr(double sinr)
     double targetBler = 0.01; // TODO get this from parameters
 
     for (int i = 0; i < phyPisaData_->nCqi(); i++) {
-        double tmp = phyPisaData_->getBler(txm, i + 1, newsnr);
+        double tmp = phyPisaData_->getBler(i + 1, newsnr);
         double diff = targetBler - tmp;
         min[i] = (diff > 0) ? diff : (diff * -1);
         if (low >= min[i]) {

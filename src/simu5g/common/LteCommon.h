@@ -199,13 +199,6 @@ const unsigned char DL_NUM_TXMODE = 6; //UNKNOWN_TX_MODE;
 const unsigned char UL_NUM_TXMODE = 6; //UNKNOWN_TX_MODE;
 
 
-const unsigned int txModeToIndex[2] = { 0, 1 };
-
-const TxMode indexToTxMode[2] = {
-    SINGLE_ANTENNA_PORT0,
-    TRANSMIT_DIVERSITY
-};
-
 typedef std::map<MacNodeId, TxMode> TxModeMap;
 
 const double cqiToByteTms[16] = { 0, 2, 3, 5, 11, 15, 20, 25, 36, 38, 49, 63, 72, 79, 89, 92 };

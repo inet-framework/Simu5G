@@ -30,13 +30,13 @@ class PhyPisaData
     PhyPisaData();
     virtual ~PhyPisaData();
 
-    int nTxMode() { return 3; }
     int nCqi() { return 15; }
 
     int maxChannel2() { return 1000; }
 
-    // getBler parameters: txMode (0-2), cqi (1-15, per 3GPP), sinr
-    double getBler(int txMode, int cqi, int sinr) { return GetBLER_TU(sinr + blerShift_, cqi); };
+    // BLER of the given CQI (1-15, per 3GPP) at the given SINR (dB), read from the
+    // single TU curve set of BLERvsSINR_15CQI_TU.h, whatever the transmission mode
+    double getBler(int cqi, int sinr) { return GetBLER_TU(sinr + blerShift_, cqi); };
     int minSnr() { return -14 - blerShift_; }//SINR_15_CQI_TU [0] [0];}
     int maxSnr() { return 40 - blerShift_; }//SINR_15_CQI_TU [14] [15];}
 
