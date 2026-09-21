@@ -1508,8 +1508,8 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
 
 StochasticChannelModel::JakesFadingMap *StochasticChannelModel::obtainUeJakesMap(MacNodeId id)
 {
-    // obtain a reference to UE phy
-    PhyBase *phy = nullptr;
+    // obtain a reference to the UE's endpoint
+    IRadioEndpoint *phy = nullptr;
 
     for (const auto& ueInfo : binder_->getUeList()) {
         if (ueInfo->id == id) {
@@ -1534,8 +1534,8 @@ StochasticChannelModel::JakesFadingMap *StochasticChannelModel::obtainUeJakesMap
 
 StochasticChannelModel::ShadowFadingMap *StochasticChannelModel::obtainShadowingMap(MacNodeId id)
 {
-    // obtain a reference to UE phy
-    PhyBase *phy = nullptr;
+    // obtain a reference to the UE's endpoint
+    IRadioEndpoint *phy = nullptr;
 
     for (const auto& ueInfo : binder_->getUeList()) {
         if (ueInfo->id == id) {
@@ -1568,7 +1568,7 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
         // initialize eNB data structures
         if (!enbInfo->init) {
             // obtain a reference to eNB phy and obtain tx power
-            enbInfo->phy = check_and_cast<PhyBase *>(binder_->getPhyByNodeId(id));
+            enbInfo->phy = binder_->getRadioEndpoint(id);
 
             enbInfo->txPwr = enbInfo->phy->getTxPwr();//dBm
 
