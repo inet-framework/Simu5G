@@ -20,7 +20,6 @@
 #include "simu5g/stack/phy/feedback/LteFeedback.h"
 #include "simu5g/common/timer/TTimer.h"
 #include "simu5g/common/timer/TTimerMsg_m.h"
-#include "simu5g/stack/phy/feedback/LteFeedbackComputation.h"
 #include "simu5g/stack/phy/PhyUe.h"
 
 namespace simu5g {
@@ -88,8 +87,6 @@ class LteDlFeedbackGenerator : public cSimpleModule
      * DUMMY: should be provided by PHY
      */
     virtual void sendFeedback(LteFeedbackDoubleVector fb, FbPeriodicity per);
-
-    virtual LteFeedbackComputation *getFeedbackComputationFromName(std::string name, ParameterMap& params);
 
   protected:
 

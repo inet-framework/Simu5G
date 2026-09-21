@@ -361,27 +361,6 @@ void PhyEnb::handleFeedbackPkt(UserControlInfo *lteinfo,
     send(pktAux, upperGateOut_);
 }
 
-// TODO adjust default value
-LteFeedbackComputation *PhyEnb::getFeedbackComputationFromName(std::string name, ParameterMap& params)
-{
-    ParameterMap::iterator it;
-    if (name == "REAL") {
-        // default value
-        double targetBler = 0.1;
-        it = params.find("targetBler");
-        if (it != params.end()) {
-            targetBler = params["targetBler"].doubleValue();
-        }
-        LteFeedbackComputation *fbcomp = new LteFeedbackComputationRealistic(
-                binder_,
-                targetBler,
-                cellInfo_->getNumBands());
-        return fbcomp;
-    }
-    else
-        return nullptr;
-}
-
 void PhyEnb::initializeFeedbackComputation()
 {
     const char *name = "REAL";

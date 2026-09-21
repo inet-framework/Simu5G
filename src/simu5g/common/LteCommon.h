@@ -187,9 +187,6 @@ constexpr TrafficFlowTemplateId TFT_EXTERNAL_DESTINATION = -1;   // External des
 constexpr TrafficFlowTemplateId TFT_LOCAL_DELIVERY = 0;          // Local delivery (same base station)
 constexpr TrafficFlowTemplateId TFT_MEC_HOST = -3;               // MEC host destination
 
-// Attenuation vector for analogue models
-typedef std::vector<double> AttenuationVector;
-
 
 /*************************
 *   Transmission Modes  *

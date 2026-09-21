@@ -216,18 +216,6 @@ void LteDlFeedbackGenerator::sendFeedback(LteFeedbackDoubleVector fb,
     phy_->sendFeedback(fb, fb, feedbackReq);
 }
 
-// TODO adjust default value
-LteFeedbackComputation *LteDlFeedbackGenerator::getFeedbackComputationFromName(std::string name, ParameterMap& params)
-{
-    ParameterMap::iterator it;
-    if (name == "REAL") {
-        feedbackComputationPisa_ = true;
-        return nullptr;
-    }
-    else
-        return nullptr;
-}
-
 void LteDlFeedbackGenerator::handleHandover(MacCellId newEnbId)
 {
     Enter_Method("LteDlFeedbackGenerator::handleHandover()");
