@@ -275,14 +275,6 @@ class StochasticChannelModel : public ChannelModelBase
     virtual double computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl);
 
     /*
-     * Compute sir for each band for user nodeId according to multipath fading
-     *
-     * @param frame pointer to the packet
-     * @param lteinfo pointer to the user control info
-     */
-    std::vector<double> getSIR(LteAirFrame *frame, UserControlInfo *lteInfo) override;
-
-    /*
      * Compute sinr for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading
      *
      * @param frame pointer to the packet

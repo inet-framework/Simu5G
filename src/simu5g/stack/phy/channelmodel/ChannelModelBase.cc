@@ -49,11 +49,5 @@ std::vector<double> ChannelModelBase::getRSRP(LteAirFrame *frame, UserControlInf
     return tmp;
 }
 
-std::vector<double> ChannelModelBase::getSIR(LteAirFrame *frame, UserControlInfo *lteInfo)
-{
-    static const std::vector<double> tmp { 10000.0 };
-    return tmp;
-}
-
 } //namespace
 

@@ -77,13 +77,6 @@ double IdealChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord txPo
     return 10000.0;
 }
 
-std::vector<double> IdealChannelModel::getSIR(LteAirFrame *frame, UserControlInfo *lteInfo)
-{
-    std::vector<double> tmp(numBands_, FAKE_SINR_DB);
-    // fake SIR is needed by the handover function to decide if the terminal should trigger the handover
-    return tmp;
-}
-
 bool IdealChannelModel::isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     double per = getErrorProbability(lteInfo->getDirection(), lteInfo->getTxNumber());
