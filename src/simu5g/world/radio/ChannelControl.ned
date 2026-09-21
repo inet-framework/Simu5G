@@ -18,8 +18,14 @@ package simu5g.world.radio;
 //
 // Utility module that records the position of each radio module in the network.
 // Exactly one instance of this module (or its derived extensions) must be present
-// in the network. Note that channel parameters in this module are obsolete and
-// are not utilized.
+// in the network.
+//
+// The parameters pMax, sat, alpha and carrierFrequency are not part of the
+// radio propagation model -- that is the channel model of each PHY -- but they
+// are used: they set the maximum interference distance, the distance at which a
+// free-space transmission at pMax falls to the sat threshold. Base station
+// beacons are delivered only to the radios within that distance of the sender,
+// and beacons drive handover and the detection of a lost serving cell.
 //
 simple ChannelControl
 {

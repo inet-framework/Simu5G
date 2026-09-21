@@ -14,8 +14,11 @@ package simu5g.world.radio;
 
 //
 // Utility module that records the position of each LTE radio module in the network.
-// Exactly one instance of this module must be present in the network. Note that
-// channel parameters in this module are obsolete and not utilized.
+// Exactly one instance of this module must be present in the network.
+//
+// The inherited parameters pMax, sat, alpha and carrierFrequency set the maximum
+// interference distance, which limits the radios a base station beacon reaches;
+// see ~ChannelControl.
 //
 simple LteChannelControl extends ChannelControl
 {
