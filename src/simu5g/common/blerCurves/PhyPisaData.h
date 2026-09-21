@@ -13,7 +13,6 @@
 #ifndef _PHYPISADATA_H_
 #define _PHYPISADATA_H_
 
-#include <string.h>
 #include <vector>
 #include <iostream>
 
@@ -23,8 +22,6 @@ namespace simu5g {
 
 class PhyPisaData
 {
-    double lambdaTable_[10000][3];
-    double blerCurves_[3][15][49];
     std::vector<double> channel_;
 
     int blerShift_ = 0;
@@ -33,11 +30,9 @@ class PhyPisaData
     PhyPisaData();
     virtual ~PhyPisaData();
 
-    double getLambda(int i, int j) { return lambdaTable_[i][j]; }
     int nTxMode() { return 3; }
     int nCqi() { return 15; }
 
-    int maxChannel() { return 10000; }
     int maxChannel2() { return 1000; }
 
     // getBler parameters: txMode (0-2), cqi (1-15, per 3GPP), sinr
