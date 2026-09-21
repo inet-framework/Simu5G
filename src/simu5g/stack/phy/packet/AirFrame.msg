@@ -10,14 +10,24 @@
 // and cannot be removed from it.
 //
 
+import simu5g.common.LteControlInfo;
+
+cplusplus {{
+#include "simu5g/common/LteControlInfo.h"
+}}
+
 namespace simu5g;
 
 //
-// Format of the messages that are sent to the channel
+// Represents a physical layer transmission frame that encapsulates various types of
+// messages/packets for transmission over the air interface, such as:
+// - MAC PDUs (user data): transmitted as Transport Blocks (TB) on PDSCH/PUSCH
+// - HARQ feedback: transmitted on PUCCH (uplink control channel)
+// - Scheduling grants (DCI): transmitted on PDCCH (downlink control channel)
+// - Random access and D2D packets: transmitted on respective control/data channels
+// In the simulation, all these messages types are abstracted as AirFrame transmissions.
 //
-// subclass if you want to create your own ~AirFrame message class
-//
-packet AirFrame extends cPacket
-{
-    simtime_t duration; // Time it takes to transmit the packet, in seconds
+packet AirFrame extends cPacket {
+    simtime_t duration; // Time it takes to transmit the frame, in seconds
+    UserControlInfo additionalInfo @nopack;
 }

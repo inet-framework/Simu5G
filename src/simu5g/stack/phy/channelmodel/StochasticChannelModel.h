@@ -283,7 +283,7 @@ class StochasticChannelModel : public ChannelModelBase
      * @param frame pointer to the packet
      * @param lteinfo pointer to the user control info
      */
-    std::vector<double> getSINR(LteAirFrame *frame, UserControlInfo *lteInfo) override;
+    std::vector<double> getSINR(AirFrame *frame, UserControlInfo *lteInfo) override;
 
     /*
      * Add noise and interference to an already-computed per-band received-power
@@ -299,7 +299,7 @@ class StochasticChannelModel : public ChannelModelBase
      * @param frame pointer to the packet
      * @param lteinfo pointer to the user control info
      */
-    std::vector<double> getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo) override;
+    std::vector<double> getRSRP(AirFrame *frame, UserControlInfo *lteInfo) override;
 
     /*
      * Compute sinr for each band for a background UE according to pathloss
@@ -307,7 +307,7 @@ class StochasticChannelModel : public ChannelModelBase
      * @param frame pointer to the packet
      * @param lteinfo pointer to the user control info
      */
-    std::vector<double> getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo) override;
+    std::vector<double> getSINR_bgUe(AirFrame *frame, UserControlInfo *lteInfo) override;
 
     /*
      * Compute received power for a background UE according to pathloss
@@ -323,7 +323,7 @@ class StochasticChannelModel : public ChannelModelBase
      * @param lteinfo pointer to the user control info
      * @param rsrpVector the received signal for each RB, if it has already been computed
      */
-    bool isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteI, const std::vector<double>& rsrpVector) override;
+    bool isReceptionSuccessful(AirFrame *frame, UserControlInfo *lteI, const std::vector<double>& rsrpVector) override;
 
     /*
      * Compute the path-loss attenuation according to the selected scenario
@@ -429,7 +429,7 @@ class StochasticChannelModel : public ChannelModelBase
      *
      * @param rsrpVector the RSRP the caller already holds, when it has one
      */
-    virtual std::vector<double> getReceptionSinr(LteAirFrame *frame, UserControlInfo *lteInfo,
+    virtual std::vector<double> getReceptionSinr(AirFrame *frame, UserControlInfo *lteInfo,
             const std::vector<double>& rsrpVector) { return getSINR(frame, lteInfo); }
 
     /*

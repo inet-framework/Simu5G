@@ -62,7 +62,7 @@ class PhyUe : public PhyBase
     virtual bool isControlFrameType(LtePhyFrameType type) { return type == HARQPKT || type == GRANTPKT || type == RACPKT; }
 
     /// gives subclasses a chance to consume an incoming data frame before decoding (default: no)
-    virtual bool interceptIncomingFrame(LteAirFrame *frame, UserControlInfo *lteInfo) { return false; }
+    virtual bool interceptIncomingFrame(AirFrame *frame, UserControlInfo *lteInfo) { return false; }
     void finish() override;
     void finish(cComponent *component, simsignal_t signalID) override { cIListener::finish(component, signalID); }
 
@@ -84,7 +84,7 @@ class PhyUe : public PhyBase
      */
     virtual void sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req);
 
-    virtual double computeReceivedBeaconPacketRssi(LteAirFrame *frame, UserControlInfo *lteInfo);
+    virtual double computeReceivedBeaconPacketRssi(AirFrame *frame, UserControlInfo *lteInfo);
 
     virtual void findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi);
 

@@ -28,7 +28,7 @@ class Binder;
 class PhyUe;
 class LteMacUe;
 class LteAmc;
-class LteAirFrame;
+class AirFrame;
 class UserControlInfo;
 class BearerManagement;
 class ConnectionControlEnb;
@@ -174,7 +174,7 @@ class ConnectionControlUe : public ConnectionControlBase
     /**
      * Called from PHY on reception of a beacon signal
      */
-    virtual void beaconReceived(LteAirFrame *frame, UserControlInfo *lteInfo);
+    virtual void beaconReceived(AirFrame *frame, UserControlInfo *lteInfo);
 
     /**
      * Used in a DC setup. Called by a ConnectionControlUe to force the

@@ -19,7 +19,7 @@
 #include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 #include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
-#include "simu5g/stack/phy/packet/LteAirFrame.h"
+#include "simu5g/stack/phy/packet/AirFrame_m.h"
 
 namespace simu5g {
 
@@ -32,7 +32,7 @@ void D2dUePhyHelper::initWatches()
     WATCH(bestRsrpVector_);
 }
 
-void D2dUePhyHelper::storeAirFrame(LteAirFrame *newFrame)
+void D2dUePhyHelper::storeAirFrame(AirFrame *newFrame)
 {
     // Implements the capture effect
     // Store the frame received from the nearest transmitter
@@ -79,7 +79,7 @@ void D2dUePhyHelper::storeAirFrame(LteAirFrame *newFrame)
     }
 
     if (!d2dReceivedFrames_.empty()) {
-        LteAirFrame *prevFrame = d2dReceivedFrames_.front();
+        AirFrame *prevFrame = d2dReceivedFrames_.front();
         if (!useRsrp && distance < nearestDistance_) {
             EV << "[ < nearestDistance: " << nearestDistance_ << "]" << endl;
 
@@ -119,7 +119,7 @@ void D2dUePhyHelper::storeAirFrame(LteAirFrame *newFrame)
     }
 }
 
-LteAirFrame *D2dUePhyHelper::extractAirFrame()
+AirFrame *D2dUePhyHelper::extractAirFrame()
 {
     // Implements the capture effect
     // The vector is storing the frame received from the strongest/nearest transmitter
@@ -127,7 +127,7 @@ LteAirFrame *D2dUePhyHelper::extractAirFrame()
     return d2dReceivedFrames_.front();
 }
 
-void D2dUePhyHelper::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo)
+void D2dUePhyHelper::decodeAirFrame(AirFrame *frame, UserControlInfo *lteInfo)
 {
     EV << NOW << " D2dUePhyHelper::decodeAirFrame - Start decoding..." << endl;
 
@@ -160,7 +160,7 @@ void D2dUePhyHelper::decodeAirFrame(LteAirFrame *frame, UserControlInfo *lteInfo
 void D2dUePhyHelper::decodeStoredFrames()
 {
     // Select one frame from the buffer. Implements the capture effect.
-    LteAirFrame *frame = extractAirFrame();
+    AirFrame *frame = extractAirFrame();
     UserControlInfo *lteInfo = check_and_cast<UserControlInfo *>(frame->removeControlInfo());
 
     // Decode the selected frame.
@@ -168,7 +168,7 @@ void D2dUePhyHelper::decodeStoredFrames()
 
     // Clear buffer.
     while (!d2dReceivedFrames_.empty()) {
-        LteAirFrame *f = d2dReceivedFrames_.back();
+        AirFrame *f = d2dReceivedFrames_.back();
         d2dReceivedFrames_.pop_back();
         delete f;
     }

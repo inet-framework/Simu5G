@@ -19,13 +19,13 @@
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/carrierAggregation/ComponentCarrier.h"
 #include "simu5g/stack/phy/PhyBase.h"
-#include "simu5g/stack/phy/packet/LteAirFrame.h"
+#include "simu5g/stack/phy/packet/AirFrame_m.h"
 namespace simu5g {
 
 using namespace inet;
 using namespace omnetpp;
 
-class LteAirFrame;
+class AirFrame;
 class PhyBase;
 class Binder;
 
@@ -197,7 +197,7 @@ class ChannelModelBase : public cSimpleModule
      *        caller already has it (the D2D one-to-many capture-effect path). Empty
      *        otherwise; models that do not need it ignore it.
      */
-    virtual bool isReceptionSuccessful(LteAirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector = {}) = 0;
+    virtual bool isReceptionSuccessful(AirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector = {}) = 0;
 
     /*
      * Compute attenuation (path loss + optional shadowing) over a radio link.
@@ -218,14 +218,14 @@ class ChannelModelBase : public cSimpleModule
      * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
-    virtual std::vector<double> getSINR(LteAirFrame *frame, UserControlInfo *lteInfo) = 0;
+    virtual std::vector<double> getSINR(AirFrame *frame, UserControlInfo *lteInfo) = 0;
     /*
      * Compute SINR for each band for a background UE according to path loss
      *
      * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
-    virtual std::vector<double> getSINR_bgUe(LteAirFrame *frame, UserControlInfo *lteInfo) = 0;
+    virtual std::vector<double> getSINR_bgUe(AirFrame *frame, UserControlInfo *lteInfo) = 0;
 
     /*
      * Compute received power for a background UE according to path loss
@@ -239,7 +239,7 @@ class ChannelModelBase : public cSimpleModule
      * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
-    virtual std::vector<double> getRSRP(LteAirFrame *frame, UserControlInfo *lteInfo) = 0;
+    virtual std::vector<double> getRSRP(AirFrame *frame, UserControlInfo *lteInfo) = 0;
 
     virtual bool isUplinkInterferenceEnabled() { return false; }
 

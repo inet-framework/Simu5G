@@ -151,7 +151,7 @@ void ConnectionControlUe::handleMessage(cMessage *msg)
         throw cRuntimeError("ConnectionControlUe::handleMessage: unknown self-message '%s'", msg->getName());
 }
 
-void ConnectionControlUe::beaconReceived(LteAirFrame *frame, UserControlInfo *lteInfo)
+void ConnectionControlUe::beaconReceived(AirFrame *frame, UserControlInfo *lteInfo)
 {
     Enter_Method("beaconReceived");
     take(frame);
