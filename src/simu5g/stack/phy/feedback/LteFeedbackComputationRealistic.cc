@@ -27,7 +27,7 @@ LteFeedbackComputationRealistic::LteFeedbackComputationRealistic(Binder *binder,
 
 
 void LteFeedbackComputationRealistic::generateBaseFeedback(int numBands, int numPreferredBands, LteFeedback& fb,
-        FeedbackType fbType, int cw, RbAllocationType rbAllocationType, TxMode txmode, std::vector<double> snr)
+        FeedbackType fbType, int cw, RbAllocationType rbAllocationType, std::vector<double> snr)
 {
     int layer = 1;
     std::vector<CqiVector> cqiTmp2;
@@ -40,7 +40,7 @@ void LteFeedbackComputationRealistic::generateBaseFeedback(int numBands, int num
         mean = meanSnr(snr);
     if (fbType == WIDEBAND) {
         cqiTmp.resize(layer, 0);
-        cqi = getCqi(txmode, mean);
+        cqi = getCqi(mean);
         for (unsigned short & i : cqiTmp)
             i = cqi;
         fb.setWideBandCqi(cqiTmp);
@@ -51,14 +51,14 @@ void LteFeedbackComputationRealistic::generateBaseFeedback(int numBands, int num
             for (unsigned int i = 0; i < cqiTmp2.size(); i++) {
                 cqiTmp2[i].resize(numBands, 0);
                 for (int j = 0; j < numBands; j++) {
-                    cqi = getCqi(txmode, snr[j]);
+                    cqi = getCqi(snr[j]);
                     cqiTmp2[i][j] = cqi;
                 }
                 fb.setPerBandCqi(cqiTmp2[i], i);
             }
         }
         else if (rbAllocationType == TYPE2_DISTRIBUTED) {
-            cqi = getCqi(txmode, mean);
+            cqi = getCqi(mean);
             cqiTmp2.resize(layer);
             for (unsigned int i = 0; i < cqiTmp2.size(); i++) {
                 cqiTmp2[i].resize(numBands, 0);
@@ -79,21 +79,20 @@ unsigned int LteFeedbackComputationRealistic::computeRank(MacNodeId id)
     return 1;
 }
 
-Cqi LteFeedbackComputationRealistic::getCqi(TxMode txmode, double snr)
+Cqi LteFeedbackComputationRealistic::getCqi(double snr)
 {
     int newsnr = floor(snr + 0.5);
     if (newsnr <= phyPisaData_->minSnr())
         return 0;
     if (newsnr > phyPisaData_->maxSnr())
         return 15;
-    unsigned int txm = txModeToIndex[txmode];
     std::vector<double> min;
     int found = 0;
     double low = 2;
 
     min = baseMin_;
     for (int i = 0; i < phyPisaData_->nCqi(); i++) {
-        double tmp = phyPisaData_->getBler(txm, i + 1, newsnr);
+        double tmp = phyPisaData_->getBler(i + 1, newsnr);
         double diff = targetBler_ - tmp;
         min[i] = (diff > 0) ? diff : (diff * -1);
         if (low >= min[i]) {
@@ -128,7 +127,7 @@ LteFeedbackDoubleVector LteFeedbackComputationRealistic::computeFeedback(Feedbac
                 // Generate feedback for txmode z
                 fb.setRankIndicator(rank);
                 fb.setAntenna((Remote)j);
-                generateBaseFeedback(numBands_, numPreferredBands, fb, fbType, antennaCws[(Remote)j], rbAllocationType, (TxMode)z, snr);
+                generateBaseFeedback(numBands_, numPreferredBands, fb, fbType, antennaCws[(Remote)j], rbAllocationType, snr);
             }
             fbvv[j][z] = fb;
         }
@@ -153,7 +152,7 @@ LteFeedbackVector LteFeedbackComputationRealistic::computeFeedback(const Remote 
             // Generate feedback for txmode z
             fb.setRankIndicator(rank);
             fb.setAntenna(remote);
-            generateBaseFeedback(numBands_, numPreferredBands, fb, fbType, antennaCws, rbAllocationType, (TxMode)z, snr);
+            generateBaseFeedback(numBands_, numPreferredBands, fb, fbType, antennaCws, rbAllocationType, snr);
         }
         fbv[z] = fb;
     }
@@ -173,7 +172,7 @@ LteFeedback LteFeedbackComputationRealistic::computeFeedback(const Remote remote
     // Set the remote in the feedback object
     fb.setAntenna(remote);
     fb.setTxMode(txmode);
-    generateBaseFeedback(numBands_, numPreferredBands, fb, fbType, antennaCws, rbAllocationType, txmode, snr);
+    generateBaseFeedback(numBands_, numPreferredBands, fb, fbType, antennaCws, rbAllocationType, snr);
     return fb;
 }
 
