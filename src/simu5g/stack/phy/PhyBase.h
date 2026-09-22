@@ -184,11 +184,12 @@ class PhyBase : public cSimpleModule, public cListener
 
     /**
      * Delivers a decoded packet to the upper (stack) layer: records the
-     * reception outcome, attaches the decider result and sends the packet
-     * to #upperGateOut_. A D2D-agnostic core operation used, e.g., by the
+     * reception outcome, attaches the control-info tags of the received
+     * transmission and the decider result, and sends the packet to
+     * #upperGateOut_. A D2D-agnostic core operation used, e.g., by the
      * capture-effect decoding in the D2D UE-PHY helper.
      */
-    void sendDecodedPacketUp(inet::Packet *pkt, bool receptionSuccessful);
+    void sendDecodedPacketUp(inet::Packet *pkt, const TransmissionDescriptor& rx, bool receptionSuccessful);
 
   protected:
 
@@ -219,7 +220,7 @@ class PhyBase : public cSimpleModule, public cListener
     virtual void sendBroadcast(AirFrame *airFrame, simtime_t duration);
 
     /**
-     * Sends a frame to the destination specified in its control info, with
+     * Sends a frame to the destination specified in its descriptor, with
      * zero propagation delay; the transmission lasts for the given duration.
      */
     virtual void sendUnicast(AirFrame *airFrame, simtime_t duration);
@@ -236,28 +237,38 @@ class PhyBase : public cSimpleModule, public cListener
      * Sends the given message to the wireless channel.
      *
      * Called by the handleMessage() method
-     * when a message from #upperGateIn_ gate is received.
-     *
-     * The message is encapsulated into an AirFrame to which
-     * a Signal object containing info about TX power, bit-rate and
-     * movement pattern is attached.
-     * The AirFrame is then sent to the wireless channel.
+     * when a message from #upperGateIn_ gate is received. Takes the
+     * control-info tags off the packet as its transmission descriptor, and
+     * passes both to handleUpperPacket().
      *
      * @param msg packet received from LteStack
      */
     virtual void handleUpperMessage(cMessage *msg);
 
+    /**
+     * Encapsulates a packet from the stack into an AirFrame, completes its
+     * transmission descriptor with the position and TX power of this PHY,
+     * attaches it to the frame, and sends the frame to the wireless channel.
+     */
+    virtual void handleUpperPacket(inet::Packet *pkt, TransmissionDescriptor& tx);
+
     /// name of the air frame created for an outgoing upper-layer packet
-    virtual const char *airFrameNameFor(const UserControlInfo *info);
+    virtual const char *airFrameNameFor(const TransmissionDescriptor& tx);
 
     /// scheduling priority of the air frame created for an outgoing upper-layer packet
-    virtual short airFramePriorityFor(const UserControlInfo *info) { return airFramePriority_; }
+    virtual short airFramePriorityFor(const TransmissionDescriptor& tx) { return airFramePriority_; }
 
-    /// stamps additional per-technology fields on the outgoing control info (called after the Tx power)
-    virtual void stampExtraTxControlInfo(UserControlInfo *info) {}
+    /// stamps additional per-technology fields on the outgoing descriptor (called after the Tx power)
+    virtual void stampExtraTxDescriptor(TransmissionDescriptor& tx) {}
 
     /// hands the prepared air frame to the channel, for the given transmission duration (default: unicast to the destination)
-    virtual void transmitFrame(AirFrame *frame, const UserControlInfo *info, simtime_t duration);
+    virtual void transmitFrame(AirFrame *frame, simtime_t duration);
+
+    /// takes the control-info tags off an outgoing packet, as the descriptor of its transmission
+    static TransmissionDescriptor takeDescriptorFromTags(inet::Packet *pkt);
+
+    /// attaches the control-info tags described by a received transmission to its packet
+    static void addTagsFromDescriptor(inet::Packet *pkt, const TransmissionDescriptor& rx);
 
     /**
      * Processes messages received from the wireless channel.
@@ -267,8 +278,9 @@ class PhyBase : public cSimpleModule, public cListener
      *
      * The channel model prepared during the initialization phase determines
      * whether reception is successful, and the frame's inner packet is then
-     * sent out to #upperGateOut_ gate along with the result (attached as
-     * control info). Concrete behavior is implemented by subclasses.
+     * sent out to #upperGateOut_ gate along with the result and the control
+     * info of the frame's descriptor (attached as tags). Concrete behavior is
+     * implemented by subclasses.
      *
      * @param msg AirFrame received from the air channel
      */
@@ -276,7 +288,8 @@ class PhyBase : public cSimpleModule, public cListener
 
     virtual void handleSelfMessage(cMessage *msg) = 0;
 
-    virtual void handleControlMsg(AirFrame *frame, UserControlInfo *userInfo);
+    /// sends the packet of a received control frame up, with the control info of the frame's descriptor
+    virtual void handleControlMsg(AirFrame *frame);
 
     virtual void initializeChannelModel();
 

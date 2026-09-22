@@ -37,13 +37,13 @@ void ChannelModelBase::initialize(int stage)
     }
 }
 
-std::vector<double> ChannelModelBase::getSINR(UserControlInfo *lteInfo)
+std::vector<double> ChannelModelBase::getSINR(const TransmissionDescriptor& tx)
 {
     static const std::vector<double> tmp { 10000.0 };
     return tmp;
 }
 
-std::vector<double> ChannelModelBase::getRSRP(UserControlInfo *lteInfo)
+std::vector<double> ChannelModelBase::getRSRP(const TransmissionDescriptor& tx)
 {
     static const std::vector<double> tmp { 10000.0 };
     return tmp;

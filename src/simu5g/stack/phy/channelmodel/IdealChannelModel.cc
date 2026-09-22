@@ -51,21 +51,21 @@ double IdealChannelModel::getErrorProbability(Direction dir, unsigned char txNum
     return per->doubleValue() * pow(harqReduction_, txNumber - 1);
 }
 
-std::vector<double> IdealChannelModel::getSINR(UserControlInfo *lteInfo)
+std::vector<double> IdealChannelModel::getSINR(const TransmissionDescriptor& tx)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
-std::vector<double> IdealChannelModel::getRSRP(UserControlInfo *lteInfo)
+std::vector<double> IdealChannelModel::getRSRP(const TransmissionDescriptor& tx)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake RSRP is needed by the handover function to decide if the terminal should trigger the handover
     return tmp;
 }
 
-std::vector<double> IdealChannelModel::getSINR_bgUe(UserControlInfo *lteInfo)
+std::vector<double> IdealChannelModel::getSINR_bgUe(const TransmissionDescriptor& tx)
 {
     std::vector<double> tmp(numBands_, FAKE_SINR_DB);
     // fake SINR is needed by the handover function to decide if the terminal should trigger the handover
@@ -77,11 +77,11 @@ double IdealChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord txPo
     return 10000.0;
 }
 
-bool IdealChannelModel::isReceptionSuccessful(UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+bool IdealChannelModel::isReceptionSuccessful(const TransmissionDescriptor& tx, const std::vector<double>& rsrpVector)
 {
-    double per = getErrorProbability(lteInfo->getDirection(), lteInfo->getTxNumber());
+    double per = getErrorProbability(tx.getTrafficDirection().getDirection(), tx.getHarq().getTxNumber());
     bool success = uniform(0.0, 1.0) > per;
-    EV << "IdealChannelModel::isReceptionSuccessful - transmission " << (int)lteInfo->getTxNumber()
+    EV << "IdealChannelModel::isReceptionSuccessful - transmission " << (int)tx.getHarq().getTxNumber()
        << ", error probability " << per << " -> " << (success ? "received" : "lost") << endl;
     return success;
 }

@@ -65,7 +65,7 @@ void PhyUe::initialize(int stage)
 
 void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi)
 {
-    UserControlInfo *cInfo = new UserControlInfo();
+    TransmissionDescriptor broadcast;
     outCandidateMasterId = NODEID_NONE;
 
     // get the list of all eNodeBs in the network
@@ -86,15 +86,16 @@ void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandida
         if (cellChannelModel == nullptr)
             continue;
 
-        // build a control info
-        cInfo->setSourceId(cellId);
-        cInfo->setTxPower(cellTxPower);
-        cInfo->setCoord(cellPos);
-        cInfo->setFrameType(BROADCASTPKT);
-        cInfo->setDirection(DL);
+        // describe a broadcast of the BS
+        broadcast.getIdentityForUpdate().setSourceId(cellId);
+        auto& phyTransmission = broadcast.getPhyTransmissionForUpdate();
+        phyTransmission.setTxPower(cellTxPower);
+        phyTransmission.setCoord(cellPos);
+        phyTransmission.setFrameType(BROADCASTPKT);
+        broadcast.getTrafficDirectionForUpdate().setDirection(DL);
         // get RSSI from the BS
         double rssi = 0;
-        std::vector<double> rssiV = primaryChannelModel_->getRSRP(cInfo);
+        std::vector<double> rssiV = primaryChannelModel_->getRSRP(broadcast);
         for (auto value : rssiV)
             rssi += value;
         rssi /= rssiV.size(); // compute the mean over all RBs
@@ -104,7 +105,6 @@ void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandida
             outCandidateMasterRssi = rssi;
         }
     }
-    delete cInfo;
 }
 
 void PhyUe::handleSelfMessage(cMessage *msg)
@@ -137,9 +137,9 @@ void PhyUe::changeServingNode(MacNodeId servingNodeId)
 
 }
 
-double PhyUe::computeReceivedBeaconPacketRssi(UserControlInfo *lteInfo)
+double PhyUe::computeReceivedBeaconPacketRssi(const TransmissionDescriptor& rx)
 {
-    std::vector<double> rssiV = primaryChannelModel_->getSINR(lteInfo);
+    std::vector<double> rssiV = primaryChannelModel_->getSINR(rx);
     double rssi = 0;
     for (auto value : rssiV)
         rssi += value;
@@ -151,33 +151,31 @@ double PhyUe::computeReceivedBeaconPacketRssi(UserControlInfo *lteInfo)
 void PhyUe::handleAirFrame(cMessage *msg)
 {
     AirFrame *frame = static_cast<AirFrame *>(msg);
-    UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
+    TransmissionDescriptor& rx = frame->getTransmissionForUpdate();
 
     EV << "PhyUe: received new AirFrame with ID " << frame->getId() << " from channel" << endl;
 
-    MacNodeId sourceId = lteInfo->getSourceId();
+    MacNodeId sourceId = rx.getIdentity().getSourceId();
     if (!binder_->nodeExists(sourceId)) {
         // The source has left the simulation
         delete msg;
         return;
     }
 
-    GHz carrierFreq = lteInfo->getCarrierFrequency();
+    GHz carrierFreq = rx.getCarrier().getCarrierFrequency();
     ChannelModelBase *channelModel = getChannelModel(carrierFreq);
     if (channelModel == nullptr) {
         EV << "Received packet on carrier frequency not supported by this node. Delete it." << endl;
-        delete lteInfo;
         delete frame;
         return;
     }
 
     // Update coordinates of this user
-    if (lteInfo->getFrameType() == BEACONPKT) {
+    if (rx.getPhyTransmission().getFrameType() == BEACONPKT) {
         // Check if the message is on another carrier frequency
         if (carrierFreq != primaryChannelModel_->getCarrierFrequency()) {
             EV << "Received beacon packet on a different carrier frequency. Delete it." << endl;
-            delete lteInfo;
-            delete frame;
+                delete frame;
             return;
         }
 
@@ -186,24 +184,23 @@ void PhyUe::handleAirFrame(cMessage *msg)
         // solely in PhyEnb::createBeaconMessage()), and the only true channel broadcasts
         // reaching both radios of a dual-PHY UE; non-beacon frames are technology-routed at
         // the sender. Hence the filter is scoped to beacons.
-        if (lteInfo->isNr() != isNr_) {
-            EV << "Received beacon packet [from NR=" << lteInfo->isNr() << "] from a different radio technology [to NR=" << isNr_ << "]. Delete it." << endl;
-            delete lteInfo;
-            delete frame;
+        if (rx.getCarrier().isNr() != isNr_) {
+            EV << "Received beacon packet [from NR=" << rx.getCarrier().isNr() << "] from a different radio technology [to NR=" << isNr_ << "]. Delete it." << endl;
+                delete frame;
             return;
         }
 
-        handoverController_->beaconReceived(frame, lteInfo);
+        handoverController_->beaconReceived(rx);
+        delete frame;
         return;
     }
 
     // Check if the frame is for us ( MacNodeId matches or - if this is a multicast communication - enrolled in multicast group)
-    if (lteInfo->getDestId() != nodeId_ && !(binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId()))) {
+    if (rx.getIdentity().getDestId() != nodeId_ && !(binder_->isInMulticastGroup(nodeId_, rx.getLogicalConnection().getD2dGroupId()))) {
         EV << "ERROR: Frame is not for us. Delete it." << endl;
-        EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
-        EV << "Frame MacNodeId: " << lteInfo->getDestId() << endl;
+        EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)rx.getPhyTransmission().getFrameType()) << endl;
+        EV << "Frame MacNodeId: " << rx.getIdentity().getDestId() << endl;
         EV << "Local MacNodeId: " << nodeId_ << endl;
-        delete lteInfo;
         delete frame;
         return;
     }
@@ -216,21 +213,20 @@ void PhyUe::handleAirFrame(cMessage *msg)
      *                     TTI x+0.1: UE changes master
      *                     TTI x+1: packet from the old master arrives at the UE
      */
-    if (isStaleFrame(lteInfo)) {
+    if (isStaleFrame(rx)) {
         EV << "WARNING: Frame from an old master during handover: deleted " << endl;
-        EV << "Source MacNodeId: " << lteInfo->getSourceId() << endl;
+        EV << "Source MacNodeId: " << rx.getIdentity().getSourceId() << endl;
         EV << "Master MacNodeId: " << servingNodeId_ << endl;
-        delete lteInfo;
         delete frame;
         return;
     }
 
     // D2D-aware subclasses rewrite the multicast destination here
-    frameAccepted(lteInfo);
+    frameAccepted(rx);
 
     // Send H-ARQ feedback and other control messages up
-    if (isControlFrameType((LtePhyFrameType)lteInfo->getFrameType())) {
-        handleControlMsg(frame, lteInfo);
+    if (isControlFrameType((LtePhyFrameType)rx.getPhyTransmission().getFrameType())) {
+        handleControlMsg(frame);
         return;
     }
 
@@ -241,95 +237,78 @@ void PhyUe::handleAirFrame(cMessage *msg)
         // Handing this data packet to the MAC layer will lead to null pointers.
         // (Matters for D2D/D2D_MULTI DATA in-flight during the mid-handover detachment window.)
         EV << "PhyUe: UE " << nodeId_ << " received data packet while not associated with any base station. Drop it." << endl;
-        delete lteInfo;
         delete frame;
         return;
     }
 
     // D2D-aware subclasses store multicast frames for end-of-TTI decoding (capture effect)
-    if (interceptIncomingFrame(frame, lteInfo))
+    if (interceptIncomingFrame(frame))
         return;
 
-    if ((lteInfo->getUserTxParams()) != nullptr) {
-        int cw = lteInfo->getCw();
-        if (lteInfo->getUserTxParams()->readCqiVector().size() == 1)
+    const UserTxParams *userTxParams = rx.getTxParams().getUserTxParams();
+    if (userTxParams != nullptr) {
+        int cw = rx.getHarq().getCw();
+        if (userTxParams->readCqiVector().size() == 1)
             cw = 0;
-        double cqi = lteInfo->getUserTxParams()->readCqiVector()[cw];
-        if (lteInfo->getDirection() == DL) {
+        double cqi = userTxParams->readCqiVector()[cw];
+        if (rx.getTrafficDirection().getDirection() == DL) {
             emit(averageCqiDlSignal_, cqi);
             recordCqi(cqi, DL);
         }
     }
 
-    bool result = channelModel->isReceptionSuccessful(lteInfo);
-
-    // Update statistics
-    if (result)
-        numAirFrameReceived_++;
-    else
-        numAirFrameNotReceived_++;
+    bool result = channelModel->isReceptionSuccessful(rx);
 
     EV << "Handled LteAirframe with ID " << frame->getId() << " with result "
        << (result ? "RECEIVED" : "NOT RECEIVED") << endl;
 
+    // Send the decapsulated packet up, with the decider result and the control info
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
+    sendDecodedPacketUp(pkt, rx, result);
 
     // Here frame has to be destroyed since it is no more useful
     delete frame;
-
-    // Attach the decider result to the packet as control info
-    *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
-    delete lteInfo;
-
-    pkt->addTagIfAbsent<PhyReceptionInd>()->setDeciderResult(result);
-
-    // Send decapsulated message along with result control info to upperGateOut_
-    send(pkt, upperGateOut_);
-
-    if (getEnvir()->isGUI())
-        updateDisplayString();
 }
 
-void PhyUe::validateOutgoingFrame(const UserControlInfo *info)
+void PhyUe::validateOutgoingFrame(const TransmissionDescriptor& tx)
 {
-    MacNodeId dest = info->getDestId();
+    MacNodeId dest = tx.getIdentity().getDestId();
     if (dest != servingNodeId_) {
         // UE is not sending to its master!!
         throw cRuntimeError("PhyUe::validateOutgoingFrame  Ue preparing to send message to %hu instead of its master (%hu)", num(dest), num(servingNodeId_));
     }
 }
 
-void PhyUe::handleUpperMessage(cMessage *msg)
+void PhyUe::handleUpperPacket(inet::Packet *pkt, TransmissionDescriptor& tx)
 {
-    auto pkt = check_and_cast<inet::Packet *>(msg);
-    auto lteInfo = pkt->getTag<UserControlInfo>();
+    validateOutgoingFrame(tx);
 
-    validateOutgoingFrame(lteInfo.get());
-
-    GHz carrierFreq = lteInfo->getCarrierFrequency();
+    GHz carrierFreq = tx.getCarrier().getCarrierFrequency();
     ChannelModelBase *channelModel = getChannelModel(carrierFreq);
     if (channelModel == nullptr)
-        throw cRuntimeError("PhyUe::handleUpperMessage - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
+        throw cRuntimeError("PhyUe::handleUpperPacket - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
 
-    if (lteInfo->getFrameType() == DATAPKT && channelModel->recordsUlTransmissionMap()) {
+    const auto& phyTransmission = tx.getPhyTransmission();
+    if (phyTransmission.getFrameType() == DATAPKT && channelModel->recordsUlTransmissionMap()) {
         // Store the RBs used for data transmission to the binder (for UL interference computation)
-        RbMap rbMap = lteInfo->getGrantedBlocks();
+        RbMap rbMap = phyTransmission.getGrantedBlocks();
         Remote antenna = MACRO;  // TODO fix for multi-antenna
         // note: the direction is always UL here for a plain UE (enforced by validateOutgoingFrame() above)
-        binder_->storeUlTransmissionMap(channelModel->getCarrierFrequency(), antenna, rbMap, nodeId_, servingNodeId_, this, (Direction)lteInfo->getDirection());
+        binder_->storeUlTransmissionMap(channelModel->getCarrierFrequency(), antenna, rbMap, nodeId_, servingNodeId_, this, tx.getTrafficDirection().getDirection());
     }
 
-    if (lteInfo->getFrameType() == DATAPKT && lteInfo->getUserTxParams() != nullptr) {
-        double cqi = lteInfo->getUserTxParams()->readCqiVector()[lteInfo->getCw()];
-        if (lteInfo->getDirection() == UL) {
+    const UserTxParams *userTxParams = tx.getTxParams().getUserTxParams();
+    if (phyTransmission.getFrameType() == DATAPKT && userTxParams != nullptr) {
+        double cqi = userTxParams->readCqiVector()[tx.getHarq().getCw()];
+        if (tx.getTrafficDirection().getDirection() == UL) {
             emit(averageCqiUlSignal_, cqi);
             recordCqi(cqi, UL);
         }
         else
-            recordExtraTxCqi(cqi, lteInfo.get());
+            recordExtraTxCqi(cqi, tx);
     }
 
-    PhyBase::handleUpperMessage(msg);
+    PhyBase::handleUpperPacket(pkt, tx);
 }
 
 void PhyUe::emitMobilityStats()
@@ -357,23 +336,24 @@ void PhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
     auto pkt = new Packet("feedback_pkt");
     pkt->insertAtFront(fbPkt);
 
-    UserControlInfo *uinfo = new UserControlInfo();
-    uinfo->setSourceId(nodeId_);
-    uinfo->setDestId(servingNodeId_);
-    uinfo->setFrameType(FEEDBACKPKT);
     // create AirFrame and encapsulate a feedback packet
     AirFrame *frame = new AirFrame("feedback_pkt");
     frame->encapsulate(check_and_cast<cPacket *>(pkt));
-    uinfo->setFeedbackReq(req);
-    uinfo->setDirection(UL);
+    TransmissionDescriptor& tx = frame->getTransmissionForUpdate();
+    tx.getIdentityForUpdate().setSourceId(nodeId_);
+    tx.getIdentityForUpdate().setDestId(servingNodeId_);
+    auto& phyTransmission = tx.getPhyTransmissionForUpdate();
+    phyTransmission.setFrameType(FEEDBACKPKT);
+    phyTransmission.setFeedbackReq(req);
+    tx.getTrafficDirectionForUpdate().setDirection(UL);
     simtime_t signalLength = TTI;
-    uinfo->setTxPower(txPower_);
-    stampExtraTxControlInfo(uinfo);
+    phyTransmission.setTxPower(txPower_);
+    stampExtraTxDescriptor(tx);
     // initialize frame fields
 
     frame->setSchedulingPriority(airFramePriority_);
 
-    uinfo->setCoord(getCoord());
+    phyTransmission.setCoord(getCoord());
 
     //TODO access speed data Update channel index
     lastFeedback_ = NOW;
@@ -382,9 +362,7 @@ void PhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
     for (auto& cm : channelModel_) {
         GHz carrierFrequency = cm.first;
         AirFrame *carrierFrame = frame->dup();
-        UserControlInfo *carrierInfo = uinfo->dup();
-        carrierInfo->setCarrierFrequency(carrierFrequency);
-        carrierFrame->setControlInfo(carrierInfo);
+        carrierFrame->getTransmissionForUpdate().getCarrierForUpdate().setCarrierFrequency(carrierFrequency);
 
         EV << "Phy: " << nodeTypeToA(nodeType_) << " with id "
            << nodeId_ << " sending feedback to the air channel for carrier " << carrierFrequency << endl;
@@ -392,7 +370,6 @@ void PhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
     }
 
     delete frame;
-    delete uinfo;
 }
 
 void PhyUe::recordCqi(unsigned int sample, Direction dir)

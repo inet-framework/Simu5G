@@ -159,14 +159,14 @@ RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Co
     return link;
 }
 
-RadioLink StochasticChannelModel::linkFor(UserControlInfo *lteInfo)
+RadioLink StochasticChannelModel::linkFor(const TransmissionDescriptor& tx)
 {
     RadioLink link;
-    link.dir = lteInfo->getDirection();
+    link.dir = tx.getTrafficDirection().getDirection();
 
     // The object associated with the packet: the eNodeB if the direction is DL,
     // the UE if it is UL.
-    Coord coord = lteInfo->getCoord();
+    Coord coord = tx.getPhyTransmission().getCoord();
 
     MacNodeId ueId, eNbId;
     Coord ueCoord, enbCoord;
@@ -175,9 +175,9 @@ RadioLink StochasticChannelModel::linkFor(UserControlInfo *lteInfo)
      * If the direction is DL and this is not a feedback packet, this function has been
      * called by isReceptionSuccessful() in the UE: downlink error computation.
      */
-    if (link.dir == DL && (lteInfo->getFrameType() != FEEDBACKPKT)) {
-        ueId = lteInfo->getDestId();
-        eNbId = lteInfo->getSourceId();
+    if (link.dir == DL && (tx.getPhyTransmission().getFrameType() != FEEDBACKPKT)) {
+        ueId = tx.getIdentity().getDestId();
+        eNbId = tx.getIdentity().getSourceId();
         ueCoord = phy_->getCoord();
         enbCoord = coord;
         link.useUeSideMaps = false;
@@ -185,11 +185,11 @@ RadioLink StochasticChannelModel::linkFor(UserControlInfo *lteInfo)
     /*
      * If the direction is UL, or the packet is a feedback packet, this function is called
      * by the feedback computation module located in the eNodeB, which computes the feedback
-     * received from the UE. Hence the UE macNodeId comes from the sourceId of the lteInfo.
+     * received from the UE. Hence the UE macNodeId comes from the sourceId of the descriptor.
      */
     else { // UL/DL CQI & UL error computation
-        ueId = lteInfo->getSourceId();
-        eNbId = lteInfo->getDestId();
+        ueId = tx.getIdentity().getSourceId();
+        eNbId = tx.getIdentity().getDestId();
         ueCoord = coord;
         enbCoord = phy_->getCoord();
         // for a DL CQI we need the maps stored on the UE side
@@ -452,21 +452,21 @@ double StochasticChannelModel::computeAngularAttenuation(double hAngle, double v
     return pathLoss_->computeAngularAttenuation(hAngle, vAngle);
 }
 
-std::vector<double> StochasticChannelModel::getSINR(UserControlInfo *lteInfo)
+std::vector<double> StochasticChannelModel::getSINR(const TransmissionDescriptor& tx)
 {
-    RadioLink link = linkFor(lteInfo);
+    RadioLink link = linkFor(tx);
 
     EV << "------------ GET SINR ----------------" << endl;
 
     // The desired signal: path loss, shadowing and fading. getSINR() below adds
     // noise and interference on top of it.
-    return getSINR(link, lteInfo, getRSRP(link, lteInfo->getTxPower()));
+    return getSINR(link, tx, getRSRP(link, tx.getPhyTransmission().getTxPower()));
 }
 
-std::vector<double> StochasticChannelModel::getSINR(const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector)
+std::vector<double> StochasticChannelModel::getSINR(const RadioLink& link, const TransmissionDescriptor& tx, std::vector<double> snrVector)
 {
     // Get the Resource Blocks used to transmit this packet
-    RbMap rbmap = lteInfo->getGrantedBlocks();
+    RbMap rbmap = tx.getPhyTransmission().getGrantedBlocks();
 
     /*
      * The SINR will be calculated as follows
@@ -483,14 +483,14 @@ std::vector<double> StochasticChannelModel::getSINR(const RadioLink& link, UserC
 
     // per-band interference-plus-noise denominator, in dBm
     std::vector<double> den(numBands_, 0.0);
-    computeInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
+    computeInterferencePlusNoise(link, tx, rbmap, totN, den);
 
     double sumSnr = 0.0;
     int usedRBs = 0;
     for (unsigned int i = 0; i < numBands_; i++) {
         // if we are decoding a data transmission and this RB has not been used, skip it
         // TODO fix for multi-antenna case
-        if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
+        if (tx.getPhyTransmission().getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
             continue;
 
         // compute final SINR. Subtraction in dB is equivalent to linear division
@@ -504,12 +504,12 @@ std::vector<double> StochasticChannelModel::getSINR(const RadioLink& link, UserC
 
     // emit SINR statistic. Only DL and UL have a measured-SINR signal; other link
     // types must not be reported as one of them.
-    if (collectSinrStatistics_ && (lteInfo->getFrameType() == FEEDBACKPKT) && usedRBs > 0
+    if (collectSinrStatistics_ && (tx.getPhyTransmission().getFrameType() == FEEDBACKPKT) && usedRBs > 0
         && (link.dir == DL || link.dir == UL))
     {
         // we are on the BS, so we need to retrieve the channel model of the sender
         // XXX I know, there might be a faster way...
-        ChannelModelBase *ueChannelModel = binder_->getPhy(ueId)->getChannelModel(lteInfo->getCarrierFrequency());
+        ChannelModelBase *ueChannelModel = binder_->getPhy(ueId)->getChannelModel(tx.getCarrier().getCarrierFrequency());
 
         if (link.dir == DL) // we are on the UE
             ueChannelModel->emit(measuredSinrDlSignal_, sumSnr / usedRBs);
@@ -523,11 +523,11 @@ std::vector<double> StochasticChannelModel::getSINR(const RadioLink& link, UserC
         updatePositionHistory(ueId, phy_->getCoord());
     // sender is a UE
     else
-        updatePositionHistory(ueId, lteInfo->getCoord());
+        updatePositionHistory(ueId, tx.getPhyTransmission().getCoord());
     return snrVector;
 }
 
-void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
+void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link, const TransmissionDescriptor& tx,
         RbMap& rbmap, double totN, std::vector<double>& den)
 {
     // The interference model is cellular-topology-aware (it asks "which cell?"),
@@ -543,11 +543,11 @@ void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link,
     std::vector<double> multiCellInterference; // Linear value (mW)
     // prepare data structure
     multiCellInterference.resize(numBands_, 0);
-    if (enableDownlinkInterference_ && dir == DL && lteInfo->getFrameType() != BEACONPKT) {
-        computeDownlinkInterference(eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+    if (enableDownlinkInterference_ && dir == DL && tx.getPhyTransmission().getFrameType() != BEACONPKT) {
+        computeDownlinkInterference(eNbId, ueId, ueCoord, (tx.getPhyTransmission().getFrameType() == FEEDBACKPKT), tx.getCarrier().getCarrierFrequency(), rbmap, &multiCellInterference);
     }
     else if (enableUplinkInterference_ && dir == UL) {
-        computeUplinkInterference(eNbId, ueId, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+        computeUplinkInterference(eNbId, ueId, (tx.getPhyTransmission().getFrameType() == FEEDBACKPKT), tx.getCarrier().getCarrierFrequency(), rbmap, &multiCellInterference);
     }
 
     //============ BACKGROUND CELLS INTERFERENCE COMPUTATION =================
@@ -556,7 +556,7 @@ void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link,
     // prepare data structure
     bgCellInterference.resize(numBands_, 0);
     if (enableBackgroundCellInterference_) {
-        computeBackgroundCellInterference(ueId, enbCoord, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
+        computeBackgroundCellInterference(ueId, enbCoord, ueCoord, (tx.getPhyTransmission().getFrameType() == FEEDBACKPKT), tx.getCarrier().getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
 
     //============ EXTCELL INTERFERENCE COMPUTATION =================
@@ -566,14 +566,14 @@ void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link,
     // prepare data structure
     extCellInterference.resize(numBands_, 0);
     if (enableExtCellInterference_ && dir == DL) {
-        computeExtCellInterference(eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
+        computeExtCellInterference(eNbId, ueId, ueCoord, (tx.getPhyTransmission().getFrameType() == FEEDBACKPKT), tx.getCarrier().getCarrierFrequency(), &extCellInterference); // dBm
     }
 
     EV << "StochasticChannelModel::getSINR - distance from my eNb=" << enbCoord.distance(ueCoord) << " - DIR=" << ((dir == DL) ? "DL" : "UL") << endl;
 
     for (unsigned int i = 0; i < numBands_; i++) {
         // the caller skips these bands too; leave their denominator untouched
-        if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
+        if (tx.getPhyTransmission().getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
             continue;
 
         //                  (      mW              +          mW            +  mW  +        mW            )
@@ -584,9 +584,9 @@ void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link,
     }
 }
 
-std::vector<double> StochasticChannelModel::getRSRP(UserControlInfo *lteInfo)
+std::vector<double> StochasticChannelModel::getRSRP(const TransmissionDescriptor& tx)
 {
-    return getRSRP(linkFor(lteInfo), lteInfo->getTxPower());
+    return getRSRP(linkFor(tx), tx.getPhyTransmission().getTxPower());
 }
 
 std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, double txPower)
@@ -694,18 +694,18 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
     return rsrpVector;
 }
 
-std::vector<double> StochasticChannelModel::getSINR_bgUe(UserControlInfo *lteInfo)
+std::vector<double> StochasticChannelModel::getSINR_bgUe(const TransmissionDescriptor& tx)
 {
     //get tx power
-    double recvPower = lteInfo->getTxPower(); // dBm
+    double recvPower = tx.getPhyTransmission().getTxPower(); // dBm
 
     // get MacId and Direction
-    MacNodeId bgUeId = lteInfo->getSourceId();
-    MacNodeId eNbId = lteInfo->getDestId();
-    Direction dir = lteInfo->getDirection();
+    MacNodeId bgUeId = tx.getIdentity().getSourceId();
+    MacNodeId eNbId = tx.getIdentity().getDestId();
+    Direction dir = tx.getTrafficDirection().getDirection();
 
     // position of e/gNb and UE
-    Coord ueCoord = lteInfo->getCoord();
+    Coord ueCoord = tx.getPhyTransmission().getCoord();
     Coord enbCoord = phy_->getCoord();
 
     double antennaGainTx = 0.0;
@@ -745,7 +745,7 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(UserControlInfo *lteInf
     const char *eNbTypeString = eNbCell ? (eNbCell->getEnbType() == MACRO_ENB ? "MACRO" : "MICRO") : "NULL";
 
     EV << "StochasticChannelModel::getSINR_bgUe - DIR=" << ((dir == DL) ? "DL" : "UL")
-       << " " << eNbTypeString << " - txPwr " << lteInfo->getTxPower()
+       << " " << eNbTypeString << " - txPwr " << tx.getPhyTransmission().getTxPower()
        << " - ueCoord[" << ueCoord << "] - enbCoord[" << enbCoord << "] - enbId[" << eNbId << "]" <<
         endl;
 
@@ -839,10 +839,10 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(UserControlInfo *lteInf
     // prepare data structure
     multiCellInterference.resize(numBands_, 0);
     if (enableDownlinkInterference_ && dir == DL) {
-        computeDownlinkInterference(eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+        computeDownlinkInterference(eNbId, bgUeId, ueCoord, isCqi, tx.getCarrier().getCarrierFrequency(), rbmap, &multiCellInterference);
     }
     else if (enableUplinkInterference_ && dir == UL) {
-        computeUplinkInterference(eNbId, bgUeId, isCqi, lteInfo->getCarrierFrequency(), rbmap, &multiCellInterference);
+        computeUplinkInterference(eNbId, bgUeId, isCqi, tx.getCarrier().getCarrierFrequency(), rbmap, &multiCellInterference);
     }
 
     //============ BACKGROUND CELLS INTERFERENCE COMPUTATION =================
@@ -851,7 +851,7 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(UserControlInfo *lteInf
     // prepare data structure
     bgCellInterference.resize(numBands_, 0);
     if (enableBackgroundCellInterference_) {
-        computeBackgroundCellInterference(bgUeId, enbCoord, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
+        computeBackgroundCellInterference(bgUeId, enbCoord, ueCoord, isCqi, tx.getCarrier().getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
 
     //============ EXTCELL INTERFERENCE COMPUTATION =================
@@ -861,7 +861,7 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(UserControlInfo *lteInf
     // prepare data structure
     extCellInterference.resize(numBands_, 0);
     if (enableExtCellInterference_ && dir == DL) {
-        computeExtCellInterference(eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
+        computeExtCellInterference(eNbId, bgUeId, ueCoord, isCqi, tx.getCarrier().getCarrierFrequency(), &extCellInterference); // dBm
     }
 
     //===================== SINR COMPUTATION ========================
@@ -1048,33 +1048,33 @@ double StochasticChannelModel::jakesFading(const LinkKey& key, MacNodeId ownerId
     return linearToDb(re_h * re_h + im_h * im_h);
 }
 
-bool StochasticChannelModel::isReceptionSuccessful(UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+bool StochasticChannelModel::isReceptionSuccessful(const TransmissionDescriptor& tx, const std::vector<double>& rsrpVector)
 {
     EV << "StochasticChannelModel::error" << endl;
 
     // get codeword
-    unsigned char cw = lteInfo->getCw();
+    unsigned char cw = tx.getHarq().getCw();
     // get number of codewords
-    int size = lteInfo->getUserTxParams()->readCqiVector().size();
+    int size = tx.getTxParams().getUserTxParams()->readCqiVector().size();
 
     // if total number of codewords is equal to 1 the cw index should be only 0
     if (size == 1)
         cw = 0;
 
     // get cqi used to transmit this cw
-    Cqi cqi = lteInfo->getUserTxParams()->readCqiVector()[cw];
+    Cqi cqi = tx.getTxParams().getUserTxParams()->readCqiVector()[cw];
 
     MacNodeId id;
-    Direction dir = lteInfo->getDirection();
+    Direction dir = tx.getTrafficDirection().getDirection();
 
     // Get MacNodeId of UE
     if (dir == DL)
-        id = lteInfo->getDestId();
+        id = tx.getIdentity().getDestId();
     else
-        id = lteInfo->getSourceId();
+        id = tx.getIdentity().getSourceId();
 
     // Get Number of transmission attempts (includes original + retransmissions)
-    unsigned char transmissionAttempt = lteInfo->getTxNumber();
+    unsigned char transmissionAttempt = tx.getHarq().getTxNumber();
 
     // consistency check
     if (transmissionAttempt == 0)
@@ -1083,10 +1083,10 @@ bool StochasticChannelModel::isReceptionSuccessful(UserControlInfo *lteInfo, con
     // Take sinr
     // Take sinr (the D2D channel model overrides getReceptionSinr() to route
     // D2D/D2D_MULTI receptions through getSINR_D2D)
-    std::vector<double> snrV = getReceptionSinr(lteInfo, rsrpVector);
+    std::vector<double> snrV = getReceptionSinr(tx, rsrpVector);
 
     // Get the resource Block id used to transmit this packet
-    RbMap rbmap = lteInfo->getGrantedBlocks();
+    RbMap rbmap = tx.getPhyTransmission().getGrantedBlocks();
 
     double blockErrorRate = 0.0;
     double cumulativeSuccessProbability = 1.0;
@@ -1107,7 +1107,7 @@ bool StochasticChannelModel::isReceptionSuccessful(UserControlInfo *lteInfo, con
             if (cqi == 0)
                 return false; // CQI 0 means channel below usable quality (e.g. after handover) — loss
             if (cqi > 15)
-                throw cRuntimeError("A packet has been transmitted with a cqi greater than 15 cqi:%d txmode:%d dir:%d rb:%d cw:%d rtx:%d", cqi, lteInfo->getTxMode(), dir, band, cw, transmissionAttempt);
+                throw cRuntimeError("A packet has been transmitted with a cqi greater than 15 cqi:%d txmode:%d dir:%d rb:%d cw:%d rtx:%d", cqi, tx.getPhyTransmission().getTxMode(), dir, band, cw, transmissionAttempt);
 
             // for statistical purposes
             sumSnr += snrV[band];
@@ -1151,7 +1151,7 @@ bool StochasticChannelModel::isReceptionSuccessful(UserControlInfo *lteInfo, con
 
     // emit SINR statistic
     if (collectSinrStatistics_ && usedRBs > 0)
-        emitRcvdSinr(dir, id, lteInfo->getCarrierFrequency(), sumSnr / usedRBs);
+        emitRcvdSinr(dir, id, tx.getCarrier().getCarrierFrequency(), sumSnr / usedRBs);
 
     bool receptionFailed = (randomSample <= effectiveErrorRateWithHarq);
     if (receptionFailed) {

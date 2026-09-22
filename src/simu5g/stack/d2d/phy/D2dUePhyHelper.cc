@@ -14,7 +14,6 @@
 
 #include <inet/common/packet/Packet.h>
 
-#include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
@@ -29,8 +28,8 @@ void D2dUePhyHelper::storeAirFrame(AirFrame *newFrame)
 {
     // Implements the capture effect
     // Store the frame received from the nearest transmitter
-    UserControlInfo *newInfo = check_and_cast<UserControlInfo *>(newFrame->getControlInfo());
-    GHz carrierFreq = newInfo->getCarrierFrequency();
+    const TransmissionDescriptor& newTx = newFrame->getTransmission();
+    GHz carrierFreq = newTx.getCarrier().getCarrierFrequency();
     ChannelModelBase *channelModel = phy_->getChannelModel(carrierFreq);
     if (channelModel == nullptr)
         throw cRuntimeError("D2dUePhyHelper::storeAirFrame - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
@@ -46,10 +45,10 @@ void D2dUePhyHelper::storeAirFrame(AirFrame *newFrame)
 
         double sum = 0.0;
         unsigned int allocatedRbs = 0;
-        rsrpVector = check_and_cast<ID2dChannelModel *>(channelModel)->getRSRP_D2D(newInfo, phy_->getMacNodeId(), myCoord);
+        rsrpVector = check_and_cast<ID2dChannelModel *>(channelModel)->getRSRP_D2D(newTx, phy_->getMacNodeId(), myCoord);
 
         // Get the average RSRP on the RBs allocated for the transmission
-        RbMap rbmap = newInfo->getGrantedBlocks();
+        RbMap rbmap = newTx.getPhyTransmission().getGrantedBlocks();
         // For each Remote unit used to transmit the packet
         for (const auto &[remoteUnit, rbList] : rbmap) {
             // For each logical band used to transmit the packet
@@ -63,12 +62,12 @@ void D2dUePhyHelper::storeAirFrame(AirFrame *newFrame)
         }
         if (allocatedRbs > 0)
             rsrpMean = sum / allocatedRbs;
-        EV << NOW << " D2dUePhyHelper::storeAirFrame - Average RSRP from node " << newInfo->getSourceId() << ": " << rsrpMean << endl;
+        EV << NOW << " D2dUePhyHelper::storeAirFrame - Average RSRP from node " << newTx.getIdentity().getSourceId() << ": " << rsrpMean << endl;
     }
     else { // Distance
-        Coord newSenderCoord = newInfo->getCoord();
+        Coord newSenderCoord = newTx.getPhyTransmission().getCoord();
         distance = myCoord.distance(newSenderCoord);
-        EV << NOW << " D2dUePhyHelper::storeAirFrame - Distance from node " << newInfo->getSourceId() << ": " << distance << endl;
+        EV << NOW << " D2dUePhyHelper::storeAirFrame - Distance from node " << newTx.getIdentity().getSourceId() << ": " << distance << endl;
     }
 
     if (!d2dReceivedFrames_.empty()) {
@@ -120,11 +119,12 @@ AirFrame *D2dUePhyHelper::extractAirFrame()
     return d2dReceivedFrames_.front();
 }
 
-void D2dUePhyHelper::decodeAirFrame(AirFrame *frame, UserControlInfo *lteInfo)
+void D2dUePhyHelper::decodeAirFrame(AirFrame *frame)
 {
     EV << NOW << " D2dUePhyHelper::decodeAirFrame - Start decoding..." << endl;
 
-    GHz carrierFreq = lteInfo->getCarrierFrequency();
+    const TransmissionDescriptor& rx = frame->getTransmission();
+    GHz carrierFreq = rx.getCarrier().getCarrierFrequency();
     ChannelModelBase *channelModel = phy_->getChannelModel(carrierFreq);
     if (channelModel == nullptr)
         throw cRuntimeError("D2dUePhyHelper::decodeAirFrame - Carrier frequency [%f] not supported by any channel model", carrierFreq.get());
@@ -132,7 +132,7 @@ void D2dUePhyHelper::decodeAirFrame(AirFrame *frame, UserControlInfo *lteInfo)
     // Apply decider to received packet. D2D and D2D_MULTI no longer need their own
     // entry point: the core reception decision handles every direction, and
     // bestRsrpVector_ carries the capture-effect RSRP for the one-to-many case.
-    bool result = channelModel->isReceptionSuccessful(lteInfo, bestRsrpVector_);
+    bool result = channelModel->isReceptionSuccessful(rx, bestRsrpVector_);
 
     EV << "Handled LteAirframe with ID " << frame->getId() << " with result "
        << (result ? "RECEIVED" : "NOT RECEIVED") << endl;
@@ -142,22 +142,18 @@ void D2dUePhyHelper::decodeAirFrame(AirFrame *frame, UserControlInfo *lteInfo)
     // Note: no need to delete the frame itself - will be deleted later when the buffer of
     // received frames is cleared
 
-    // Attach the decider result to the packet as control info
-    *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
-    delete lteInfo;
-
-    // Send the decapsulated packet up (updates stats and display string)
-    phy_->sendDecodedPacketUp(pkt, result);
+    // Send the decapsulated packet up, with the decider result and the control info
+    // (updates stats and display string)
+    phy_->sendDecodedPacketUp(pkt, rx, result);
 }
 
 void D2dUePhyHelper::decodeStoredFrames()
 {
     // Select one frame from the buffer. Implements the capture effect.
     AirFrame *frame = extractAirFrame();
-    UserControlInfo *lteInfo = check_and_cast<UserControlInfo *>(frame->removeControlInfo());
 
     // Decode the selected frame.
-    decodeAirFrame(frame, lteInfo);
+    decodeAirFrame(frame);
 
     // Clear buffer.
     while (!d2dReceivedFrames_.empty()) {

@@ -40,20 +40,20 @@ class PhyEnbD2D : public PhyEnb
   protected:
     void initialize(int stage) override;
 
-    void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, ChannelModelBase *channelModel) override;
+    void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, const TransmissionDescriptor& tx, ChannelModelBase *channelModel) override;
 
-    const char *airFrameNameFor(const UserControlInfo *info) override
+    const char *airFrameNameFor(const TransmissionDescriptor& tx) override
     {
-        if (info->getFrameType() == D2DMODESWITCHPKT)
+        if (tx.getPhyTransmission().getFrameType() == D2DMODESWITCHPKT)
             return "d2dModeSwitch";
-        return PhyEnb::airFrameNameFor(info);
+        return PhyEnb::airFrameNameFor(tx);
     }
 
-    short airFramePriorityFor(const UserControlInfo *info) override
+    short airFramePriorityFor(const TransmissionDescriptor& tx) override
     {
-        if (info->getFrameType() == D2DMODESWITCHPKT)
+        if (tx.getPhyTransmission().getFrameType() == D2DMODESWITCHPKT)
             return -1;
-        return PhyEnb::airFramePriorityFor(info);
+        return PhyEnb::airFramePriorityFor(tx);
     }
 };
 

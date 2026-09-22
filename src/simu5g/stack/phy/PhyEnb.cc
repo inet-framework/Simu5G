@@ -99,44 +99,46 @@ AirFrame *PhyEnb::createBeaconMessage()
 {
     // broadcast airframe
     AirFrame *beaconAirFrame = new AirFrame("beaconMessage");
-    UserControlInfo *cInfo = new UserControlInfo();
-    cInfo->setSourceId(nodeId_);
-    cInfo->setFrameType(BEACONPKT);
-    cInfo->setTxPower(txPower_);
-    cInfo->setCarrierFrequency(primaryChannelModel_->getCarrierFrequency());
-    cInfo->setIsNr(isNr_);
-    beaconAirFrame->setControlInfo(cInfo);
+    TransmissionDescriptor& tx = beaconAirFrame->getTransmissionForUpdate();
+    tx.getIdentityForUpdate().setSourceId(nodeId_);
+    auto& phyTransmission = tx.getPhyTransmissionForUpdate();
+    phyTransmission.setFrameType(BEACONPKT);
+    phyTransmission.setTxPower(txPower_);
+    tx.getCarrierForUpdate().setCarrierFrequency(primaryChannelModel_->getCarrierFrequency());
+    tx.getCarrierForUpdate().setIsNr(isNr_);
     beaconAirFrame->setSchedulingPriority(airFramePriority_);
     // current position
-    cInfo->setCoord(getCoord());
+    phyTransmission.setCoord(getCoord());
     return beaconAirFrame;
 }
 
 
-bool PhyEnb::handleControlPkt(UserControlInfo *lteinfo, AirFrame *frame)
+bool PhyEnb::handleControlPkt(AirFrame *frame)
 {
     EV << "Received control packet " << endl;
-    MacNodeId senderMacNodeId = lteinfo->getSourceId();
+    const TransmissionDescriptor& rx = frame->getTransmission();
+    MacNodeId senderMacNodeId = rx.getIdentity().getSourceId();
     if (!binder_->nodeExists(senderMacNodeId)) {
         EV << "Sender (" << senderMacNodeId << ") does not exist anymore!" << std::endl;
         delete frame;
         return true;    // FIXME ? make sure that nodes that left the simulation do not send
     }
-    if (lteinfo->getFrameType() == BEACONPKT) {
+    LtePhyFrameType frameType = (LtePhyFrameType)rx.getPhyTransmission().getFrameType();
+    if (frameType == BEACONPKT) {
         // handover broadcast frames must not be relayed or processed by eNB
         delete frame;
         return true;
     }
     // send H-ARQ feedback up
-    if (lteinfo->getFrameType() == HARQPKT
-        || lteinfo->getFrameType() == RACPKT)
+    if (frameType == HARQPKT
+        || frameType == RACPKT)
     {
-        handleControlMsg(frame, lteinfo);
+        handleControlMsg(frame);
         return true;
     }
     //handle feedback packet
-    if (lteinfo->getFrameType() == FEEDBACKPKT) {
-        handleFeedbackPkt(lteinfo, frame);
+    if (frameType == FEEDBACKPKT) {
+        handleFeedbackPkt(frame);
         delete frame;
         return true;
     }
@@ -146,46 +148,42 @@ bool PhyEnb::handleControlPkt(UserControlInfo *lteinfo, AirFrame *frame)
 void PhyEnb::handleAirFrame(cMessage *msg)
 {
     AirFrame *frame = static_cast<AirFrame *>(msg);
-    UserControlInfo *lteInfo = new UserControlInfo(frame->getAdditionalInfo());
+    const TransmissionDescriptor& rx = frame->getTransmission();
 
     EV << "Phy: received new AirFrame with ID " << frame->getId() << " from channel" << endl;
 
     // handle broadcast packet sent by another eNB
-    if (lteInfo->getFrameType() == BEACONPKT) {
+    if (rx.getPhyTransmission().getFrameType() == BEACONPKT) {
         EV << "PhyEnb::handleAirFrame - received beacon packet from another eNodeB. Ignore it." << endl;
-        delete lteInfo;
         delete frame;
         return;
     }
 
     // check if the air frame was sent on a correct carrier frequency
-    GHz carrierFreq = lteInfo->getCarrierFrequency();
+    GHz carrierFreq = rx.getCarrier().getCarrierFrequency();
     ChannelModelBase *channelModel = getChannelModel(carrierFreq);
     if (channelModel == nullptr) {
         EV << "Received packet on carrier frequency not supported by this node. Delete it." << endl;
-        delete lteInfo;
         delete frame;
         return;
     }
 
     // Check if the frame is for us (the destination MacNodeId matches; for a
     // multicast frame, we must be enrolled in its multicast group)
-    if (lteInfo->getDestId() != nodeId_) {
+    if (rx.getIdentity().getDestId() != nodeId_) {
         EV << "ERROR: Frame is not for us. Delete it." << endl;
-        EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
-        EV << "Frame MacNodeId: " << lteInfo->getDestId() << endl;
+        EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)rx.getPhyTransmission().getFrameType()) << endl;
+        EV << "Frame MacNodeId: " << rx.getIdentity().getDestId() << endl;
         EV << "Local MacNodeId: " << nodeId_ << endl;
-        delete lteInfo;
         delete frame;
         return;
     }
 
-    if (lteInfo->getPacketMulticastGroupId() != NODEID_NONE && !(binder_->isInMulticastGroup(nodeId_, lteInfo->getPacketMulticastGroupId()))) {
+    if (rx.getLogicalConnection().getD2dGroupId() != NODEID_NONE && !(binder_->isInMulticastGroup(nodeId_, rx.getLogicalConnection().getD2dGroupId()))) {
         EV << "Frame is for a multicast group, but we do not belong to that group. Delete the frame." << endl;
-        EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)lteInfo->getFrameType()) << endl;
-        EV << "Frame MacNodeId: " << lteInfo->getDestId() << endl;
+        EV << "Packet Type: " << phyFrameTypeToA((LtePhyFrameType)rx.getPhyTransmission().getFrameType()) << endl;
+        EV << "Frame MacNodeId: " << rx.getIdentity().getDestId() << endl;
         EV << "Local MacNodeId: " << nodeId_ << endl;
-        delete lteInfo;
         delete frame;
         return;
     }
@@ -198,64 +196,53 @@ void PhyEnb::handleAirFrame(cMessage *msg)
      *                     TTI x+0.1: ue changes master
      *                     TTI x+1: packet from UE arrives at the old master
      */
-    if (binder_->getServingNodeOrSelf(lteInfo->getSourceId()) != nodeId_) {
+    if (binder_->getServingNodeOrSelf(rx.getIdentity().getSourceId()) != nodeId_) {
         EV << "WARNING: frame from a UE that is leaving this cell (handover): deleted " << endl;
-        EV << "Source MacNodeId: " << lteInfo->getSourceId() << endl;
+        EV << "Source MacNodeId: " << rx.getIdentity().getSourceId() << endl;
         EV << "Master MacNodeId: " << nodeId_ << endl;
-        delete lteInfo;
         delete frame;
         return;
     }
 
-    if (!binder_->nodeExists(lteInfo->getSourceId()) || !binder_->nodeExists(lteInfo->getDestId())) {
+    if (!binder_->nodeExists(rx.getIdentity().getSourceId()) || !binder_->nodeExists(rx.getIdentity().getDestId())) {
         // either source or destination have left the simulation
         delete msg;
         return;
     }
 
     //handle all control packets
-    if (handleControlPkt(lteInfo, frame))
+    if (handleControlPkt(frame))
         return; // If frame contains a control packet no further action is needed
 
     // DAS removed - single antenna only
-    bool result = channelModel->isReceptionSuccessful(lteInfo);
-    if (result)
-        numAirFrameReceived_++;
-    else
-        numAirFrameNotReceived_++;
+    bool result = channelModel->isReceptionSuccessful(rx);
 
     EV << "Handled LteAirframe with ID " << frame->getId() << " with result "
        << (result ? "RECEIVED" : "NOT RECEIVED") << endl;
 
+    // send the decapsulated packet up, with the decider result and the control info
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
+    sendDecodedPacketUp(pkt, rx, result);
 
     // here frame has to be destroyed since it is no more useful
     delete frame;
-
-    // attach the decider result to the packet as control info
-    *(pkt->addTagIfAbsent<UserControlInfo>()) = *lteInfo;
-    delete lteInfo;
-
-    pkt->addTagIfAbsent<PhyReceptionInd>()->setDeciderResult(result);
-
-    // send decapsulated message along with result control info to upperGateOut_
-    send(pkt, upperGateOut_);
-
-    if (getEnvir()->isGUI())
-        updateDisplayString();
 }
 
-void PhyEnb::requestFeedback(UserControlInfo *lteinfo, Packet *pktAux)
+void PhyEnb::requestFeedback(const TransmissionDescriptor& rx, Packet *pktAux)
 {
     EV << NOW << " PhyEnb::requestFeedback " << endl;
     LteFeedbackDoubleVector fb;
 
+    // the UL SINR is computed on the received transmission, the DL SINR on the
+    // same transmission turned around, as if this eNB had sent it
+    TransmissionDescriptor tx = rx;
+
     // select the correct channel model according to the carrier frequency
-    ChannelModelBase *channelModel = getChannelModel(lteinfo->getCarrierFrequency());
+    ChannelModelBase *channelModel = getChannelModel(tx.getCarrier().getCarrierFrequency());
 
     //get UE Position
-    Coord sendersPos = lteinfo->getCoord();
-    cellInfo_->setUePosition(lteinfo->getSourceId(), sendersPos);
+    Coord sendersPos = tx.getPhyTransmission().getCoord();
+    cellInfo_->setUePosition(tx.getIdentity().getSourceId(), sendersPos);
 
     std::vector<double> snr;
     auto header = pktAux->removeAtFront<LteFeedbackPkt>();
@@ -263,11 +250,11 @@ void PhyEnb::requestFeedback(UserControlInfo *lteinfo, Packet *pktAux)
     //Apply analog model (path loss)
     //Get snr for UL direction
     if (channelModel != nullptr)
-        snr = channelModel->getSINR(lteinfo);
+        snr = channelModel->getSINR(tx);
     else
         throw cRuntimeError("PhyEnb::requestFeedback - channelModel is a null pointer");
 
-    FeedbackRequest req = lteinfo->getFeedbackReq();
+    FeedbackRequest req = tx.getPhyTransmission().getFeedbackReq();
     //Feedback computation
     fb.clear();
     // DAS removed - single antenna (remote 0) only
@@ -285,17 +272,17 @@ void PhyEnb::requestFeedback(UserControlInfo *lteinfo, Packet *pktAux)
         // MIMO/DAS support removed. We only support MACRO and treat it as IDEAL for now.
         fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,
                 antennaCws, numPreferredBand, nRus, snr,
-                lteinfo->getSourceId());
+                tx.getIdentity().getSourceId());
 
         if (dir == UL) {
             header->setLteFeedbackDoubleVectorUl(fb);
             //Prepare  parameters for next loop iteration - in order to compute SNR in DL
-            lteinfo->setTxPower(txPower_);
-            lteinfo->setDirection(DL);
+            tx.getPhyTransmissionForUpdate().setTxPower(txPower_);
+            tx.getTrafficDirectionForUpdate().setDirection(DL);
 
             //Get snr for DL direction
             if (channelModel != nullptr)
-                snr = channelModel->getSINR(lteinfo);
+                snr = channelModel->getSINR(tx);
             else
                 throw cRuntimeError("PhyEnb::requestFeedback - channelModel is a null pointer");
         }
@@ -304,26 +291,26 @@ void PhyEnb::requestFeedback(UserControlInfo *lteinfo, Packet *pktAux)
     }
 
     // additional per-link feedback (none in the base implementation)
-    appendExtraFeedback(header, lteinfo, channelModel);
+    appendExtraFeedback(header, tx, channelModel);
     EV << "PhyEnb::requestFeedback : Pisa Feedback Generated for nodeId: "
        << nodeId_ << " Feedback size: " << fb.size()
-       << " Carrier: " << lteinfo->getCarrierFrequency() << endl;
+       << " Carrier: " << tx.getCarrier().getCarrierFrequency() << endl;
 
     pktAux->insertAtFront(header);
 }
 
-void PhyEnb::handleFeedbackPkt(UserControlInfo *lteinfo,
-        AirFrame *frame)
+void PhyEnb::handleFeedbackPkt(AirFrame *frame)
 {
     EV << "Handled Feedback Packet with ID " << frame->getId() << endl;
+    const TransmissionDescriptor& rx = frame->getTransmission();
     auto pktAux = check_and_cast<Packet *>(frame->decapsulate());
     auto header = pktAux->peekAtFront<LteFeedbackPkt>();
 
-    *(pktAux->addTagIfAbsent<UserControlInfo>()) = *lteinfo;
+    addTagsFromDescriptor(pktAux, rx);
 
     // if feedback was generated by dummy phy we can send up to mac else nodeb should generate the "real" feedback
-    if (lteinfo->getFeedbackReq().request) {
-        requestFeedback(lteinfo, pktAux);
+    if (rx.getPhyTransmission().getFeedbackReq().request) {
+        requestFeedback(rx, pktAux);
 
         // DEBUG
         bool debug = false;
@@ -331,7 +318,7 @@ void PhyEnb::handleFeedbackPkt(UserControlInfo *lteinfo,
             LteFeedbackDoubleVector vec = header->getLteFeedbackDoubleVectorDl();
             for (const auto& feedbackDouble : vec) {
                 for (const auto& feedback : feedbackDouble) {
-                    MacNodeId id = lteinfo->getSourceId();
+                    MacNodeId id = rx.getIdentity().getSourceId();
                     EV << endl << "Node:" << id << endl;
                     TxMode t = feedback.getTxMode();
                     EV << "TXMODE: " << txModeToA(t) << endl;
@@ -355,7 +342,6 @@ void PhyEnb::handleFeedbackPkt(UserControlInfo *lteinfo,
             }
         }
     }
-    delete lteinfo;
     // send decapsulated message along with result control info to upperGateOut_
     send(pktAux, upperGateOut_);
 }

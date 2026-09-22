@@ -274,9 +274,9 @@ class StochasticChannelModel : public ChannelModelBase
     /*
      * Compute sinr for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading
      *
-     * @param lteinfo pointer to the user control info
+     * @param tx the transmission
      */
-    std::vector<double> getSINR(UserControlInfo *lteInfo) override;
+    std::vector<double> getSINR(const TransmissionDescriptor& tx) override;
 
     /*
      * Add noise and interference to an already-computed per-band received-power
@@ -284,21 +284,21 @@ class StochasticChannelModel : public ChannelModelBase
      * one-to-many capture-effect path) shares this implementation instead of
      * repeating it.
      */
-    virtual std::vector<double> getSINR(const RadioLink& link, UserControlInfo *lteInfo, std::vector<double> snrVector);
+    virtual std::vector<double> getSINR(const RadioLink& link, const TransmissionDescriptor& tx, std::vector<double> snrVector);
 
     /*
      * Compute received useful signal for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading
      *
-     * @param lteinfo pointer to the user control info
+     * @param tx the transmission
      */
-    std::vector<double> getRSRP(UserControlInfo *lteInfo) override;
+    std::vector<double> getRSRP(const TransmissionDescriptor& tx) override;
 
     /*
      * Compute sinr for each band for a background UE according to pathloss
      *
-     * @param lteinfo pointer to the user control info
+     * @param tx the transmission
      */
-    std::vector<double> getSINR_bgUe(UserControlInfo *lteInfo) override;
+    std::vector<double> getSINR_bgUe(const TransmissionDescriptor& tx) override;
 
     /*
      * Compute received power for a background UE according to pathloss
@@ -310,10 +310,10 @@ class StochasticChannelModel : public ChannelModelBase
      * Compute the error probability of the transmitted packet according to cqi used, txmode, and the received power
      * after that it throws a random number in order to check if this packet will be corrupted or not
      *
-     * @param lteinfo pointer to the user control info
+     * @param tx the transmission
      * @param rsrpVector the received signal for each RB, if it has already been computed
      */
-    bool isReceptionSuccessful(UserControlInfo *lteI, const std::vector<double>& rsrpVector) override;
+    bool isReceptionSuccessful(const TransmissionDescriptor& tx, const std::vector<double>& rsrpVector) override;
 
     /*
      * Compute the path-loss attenuation according to the selected scenario
@@ -376,11 +376,11 @@ class StochasticChannelModel : public ChannelModelBase
     virtual PathLossModel *createPathLossModel();
 
     /*
-     * Build the RadioLink described by a frame's control info (DL, UL, and the
+     * Build the RadioLink described by a transmission descriptor (DL, UL, and the
      * feedback variants). The D2D path builds its links separately -- its API
      * takes the peer endpoint explicitly rather than deriving it.
      */
-    virtual RadioLink linkFor(UserControlInfo *lteInfo);
+    virtual RadioLink linkFor(const TransmissionDescriptor& tx);
 
     /*
      * Build the RadioLink for a UE<->serving-BS link expressed the old way: the
@@ -409,7 +409,7 @@ class StochasticChannelModel : public ChannelModelBase
      *
      * @param totN linearized thermal noise + noise figure (mW)
      */
-    virtual void computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
+    virtual void computeInterferencePlusNoise(const RadioLink& link, const TransmissionDescriptor& tx,
             RbMap& rbmap, double totN, std::vector<double>& den);
 
     /*
@@ -419,8 +419,8 @@ class StochasticChannelModel : public ChannelModelBase
      *
      * @param rsrpVector the RSRP the caller already holds, when it has one
      */
-    virtual std::vector<double> getReceptionSinr(UserControlInfo *lteInfo,
-            const std::vector<double>& rsrpVector) { return getSINR(lteInfo); }
+    virtual std::vector<double> getReceptionSinr(const TransmissionDescriptor& tx,
+            const std::vector<double>& rsrpVector) { return getSINR(tx); }
 
     /*
      * Returns the 2D distance between two coordinates (ignore z-axis)

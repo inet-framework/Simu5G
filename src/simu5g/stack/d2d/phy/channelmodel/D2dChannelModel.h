@@ -55,23 +55,23 @@ class D2dChannelModel : public StochasticChannelModel, public ID2dChannelModel
 
     // Route D2D/D2D_MULTI receptions through getSINR_D2D (called from the core
     // isReceptionSuccessful()).
-    std::vector<double> getReceptionSinr(UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) override;
+    std::vector<double> getReceptionSinr(const TransmissionDescriptor& tx, const std::vector<double>& rsrpVector) override;
 
     // Report D2D receptions under rcvdSinrD2D rather than letting them fall into
     // the core's uplink statistic.
     void emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr) override;
 
     // Substitute the UE-to-UE interference for the cellular contributions.
-    void computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
+    void computeInterferencePlusNoise(const RadioLink& link, const TransmissionDescriptor& tx,
             RbMap& rbmap, double totN, std::vector<double>& den) override;
 
   public:
     void initialize(int stage) override;
 
     // ---- ID2dChannelModel ----
-    std::vector<double> getRSRP_D2D(UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord) override;
-    std::vector<double> getSINR_D2D(UserControlInfo *lteInfo, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId = NODEID_NONE) override;
-    std::vector<double> getSINR_D2D(UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) override;
+    std::vector<double> getRSRP_D2D(const TransmissionDescriptor& tx, MacNodeId destId, inet::Coord destCoord) override;
+    std::vector<double> getSINR_D2D(const TransmissionDescriptor& tx, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId = NODEID_NONE) override;
+    std::vector<double> getSINR_D2D(const TransmissionDescriptor& tx, MacNodeId destId, inet::Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector) override;
 
     virtual bool isD2DInterferenceEnabled() { return enableD2DInterference_; }
     bool recordsUlTransmissionMap() override { return isUplinkInterferenceEnabled() || enableD2DInterference_; }

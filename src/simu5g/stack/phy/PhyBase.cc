@@ -149,17 +149,15 @@ void PhyBase::handleMessage(cMessage *msg)
     }
 }
 
-void PhyBase::handleControlMsg(AirFrame *frame,
-        UserControlInfo *userInfo)
+void PhyBase::handleControlMsg(AirFrame *frame)
 {
     auto pkt = check_and_cast<inet::Packet *>(frame->decapsulate());
+    addTagsFromDescriptor(pkt, frame->getTransmission());
     delete frame;
-    *(pkt->addTagIfAbsent<UserControlInfo>()) = *userInfo;
-    delete userInfo;
     send(pkt, upperGateOut_);
 }
 
-void PhyBase::sendDecodedPacketUp(inet::Packet *pkt, bool receptionSuccessful)
+void PhyBase::sendDecodedPacketUp(inet::Packet *pkt, const TransmissionDescriptor& rx, bool receptionSuccessful)
 {
     // Update statistics
     if (receptionSuccessful)
@@ -167,6 +165,7 @@ void PhyBase::sendDecodedPacketUp(inet::Packet *pkt, bool receptionSuccessful)
     else
         numAirFrameNotReceived_++;
 
+    addTagsFromDescriptor(pkt, rx);
     pkt->addTagIfAbsent<PhyReceptionInd>()->setDeciderResult(receptionSuccessful);
 
     // Send decapsulated message along with result control info to upperGateOut_
@@ -181,33 +180,114 @@ void PhyBase::handleUpperMessage(cMessage *msg)
     EV << "Phy: message from stack" << endl;
 
     auto pkt = check_and_cast<inet::Packet *>(msg);
-    auto lteInfo = pkt->removeTag<UserControlInfo>();
+    TransmissionDescriptor tx = takeDescriptorFromTags(pkt);
+    handleUpperPacket(pkt, tx);
+}
 
-    AirFrame *frame = new AirFrame(airFrameNameFor(lteInfo.get()));
+void PhyBase::handleUpperPacket(inet::Packet *pkt, TransmissionDescriptor& tx)
+{
+    AirFrame *frame = new AirFrame(airFrameNameFor(tx));
 
-    frame->encapsulate(check_and_cast<cPacket *>(msg));
+    frame->encapsulate(pkt);
 
     // initialize frame fields
-    frame->setSchedulingPriority(airFramePriorityFor(lteInfo.get()));
+    frame->setSchedulingPriority(airFramePriorityFor(tx));
 
     // set transmission duration according to the numerology
-    NumerologyIndex numerologyIndex = binder_->getNumerologyIndexFromCarrierFreq(lteInfo->getCarrierFrequency());
+    NumerologyIndex numerologyIndex = binder_->getNumerologyIndexFromCarrierFreq(tx.getCarrier().getCarrierFrequency());
     double slotDuration = binder_->getSlotDurationFromNumerologyIndex(numerologyIndex);
 
     // set current position
-    lteInfo->setCoord(getCoord());
-    lteInfo->setTxPower(txPower_);
-    stampExtraTxControlInfo(lteInfo.get());
-    frame->setControlInfo(lteInfo.get()->dup());
+    tx.getPhyTransmissionForUpdate().setCoord(getCoord());
+    tx.getPhyTransmissionForUpdate().setTxPower(txPower_);
+    stampExtraTxDescriptor(tx);
+    frame->setTransmission(tx);
 
     EV << "Phy: " << nodeTypeToA(nodeType_) << " with id " << nodeId_
-       << " sending message to the air channel. Dest=" << lteInfo->getDestId() << endl;
-    transmitFrame(frame, lteInfo.get(), slotDuration);
+       << " sending message to the air channel. Dest=" << tx.getIdentity().getDestId() << endl;
+    transmitFrame(frame, slotDuration);
 }
 
-const char *PhyBase::airFrameNameFor(const UserControlInfo *info)
+TransmissionDescriptor PhyBase::takeDescriptorFromTags(inet::Packet *pkt)
 {
-    switch (info->getFrameType()) {
+    auto info = pkt->removeTag<UserControlInfo>();
+    TransmissionDescriptor tx;
+
+    auto& identity = tx.getIdentityForUpdate();
+    identity.setSourceId(info->getSourceId());
+    identity.setDestId(info->getDestId());
+
+    tx.getTrafficDirectionForUpdate().setDirection(info->getDirection());
+
+    auto& logicalConnection = tx.getLogicalConnectionForUpdate();
+    logicalConnection.setLcid(info->getPacketLcid());
+    logicalConnection.setD2dGroupId(info->getPacketMulticastGroupId());
+
+    auto& carrier = tx.getCarrierForUpdate();
+    carrier.setIsNr(info->isNr());
+    carrier.setCarrierFrequency(info->getCarrierFrequency());
+
+    auto& harq = tx.getHarqForUpdate();
+    harq.setAcid(info->getAcid());
+    harq.setCw(info->getCw());
+    harq.setTxNumber(info->getTxNumber());
+    harq.setNdi(info->getNdi());
+
+    auto& phyTransmission = tx.getPhyTransmissionForUpdate();
+    phyTransmission.setTxMode(info->getTxMode());
+    phyTransmission.setFrameType(info->getFrameType());
+    phyTransmission.setTxPower(info->getTxPower());
+    phyTransmission.setD2dTxPower(info->getD2dTxPower());
+    phyTransmission.setGrantId(info->getGrantId());
+    phyTransmission.setCoord(info->getCoord());
+    phyTransmission.setGrantedBlocks(info->getGrantedBlocks());
+    phyTransmission.setFeedbackReq(info->getFeedbackReq());
+
+    tx.getTxParamsForUpdate().setUserTxParams(info->removeUserTxParams());
+    return tx;
+}
+
+void PhyBase::addTagsFromDescriptor(inet::Packet *pkt, const TransmissionDescriptor& rx)
+{
+    auto info = pkt->addTagIfAbsent<UserControlInfo>();
+
+    const auto& identity = rx.getIdentity();
+    info->setSourceId(identity.getSourceId());
+    info->setDestId(identity.getDestId());
+
+    info->setDirection(rx.getTrafficDirection().getDirection());
+
+    const auto& logicalConnection = rx.getLogicalConnection();
+    info->setPacketLcid(logicalConnection.getLcid());
+    info->setPacketMulticastGroupId(logicalConnection.getD2dGroupId());
+
+    const auto& carrier = rx.getCarrier();
+    info->setIsNr(carrier.isNr());
+    info->setCarrierFrequency(carrier.getCarrierFrequency());
+
+    const auto& harq = rx.getHarq();
+    info->setAcid(harq.getAcid());
+    info->setCw(harq.getCw());
+    info->setTxNumber(harq.getTxNumber());
+    info->setNdi(harq.getNdi());
+
+    const auto& phyTransmission = rx.getPhyTransmission();
+    info->setTxMode(phyTransmission.getTxMode());
+    info->setFrameType(phyTransmission.getFrameType());
+    info->setTxPower(phyTransmission.getTxPower());
+    info->setD2dTxPower(phyTransmission.getD2dTxPower());
+    info->setGrantId(phyTransmission.getGrantId());
+    info->setCoord(phyTransmission.getCoord());
+    info->setGrantedBlocks(phyTransmission.getGrantedBlocks());
+    info->setFeedbackReq(phyTransmission.getFeedbackReq());
+
+    const UserTxParams *userTxParams = rx.getTxParams().getUserTxParams();
+    info->setUserTxParams(userTxParams != nullptr ? userTxParams->dup() : nullptr);
+}
+
+const char *PhyBase::airFrameNameFor(const TransmissionDescriptor& tx)
+{
+    switch (tx.getPhyTransmission().getFrameType()) {
         case HARQPKT: return "harqFeedback";
         case GRANTPKT: return "harqFeedback-grant";
         case RACPKT: return "rac";
@@ -215,7 +295,7 @@ const char *PhyBase::airFrameNameFor(const UserControlInfo *info)
     }
 }
 
-void PhyBase::transmitFrame(AirFrame *frame, const UserControlInfo *info, simtime_t duration)
+void PhyBase::transmitFrame(AirFrame *frame, simtime_t duration)
 {
     sendUnicast(frame, duration);
 }
@@ -255,35 +335,18 @@ void PhyBase::updateDisplayString()
 
 void PhyBase::sendBroadcast(AirFrame *airFrame, simtime_t duration)
 {
-    // Remove control info to allow parsim packing
-    if (airFrame->getControlInfo() != nullptr) {
-        UserControlInfo *userControlInfo = check_and_cast<UserControlInfo *>(airFrame->removeControlInfo());
-        airFrame->setAdditionalInfo(*userControlInfo);
-        delete userControlInfo;
-    }
-
     // ChannelControl delivers it to the radios in range
     channelControl_->sendToChannel(radioRef_, airFrame, duration);
 }
 
 void PhyBase::sendUnicast(AirFrame *frame, simtime_t duration)
 {
-    UserControlInfo *ci = check_and_cast<UserControlInfo *>(
-            frame->getControlInfo());
-    // dest MacNodeId from control info
-    MacNodeId dest = ci->getDestId();
+    MacNodeId dest = frame->getTransmission().getIdentity().getDestId();
     cModule *receiver = binder_->getNodeModule(dest);
     if (receiver == nullptr) {
         // destination node has left the simulation
         delete frame;
         return;
-    }
-
-    // Remove control info to allow parsim packing
-    if (frame->getControlInfo() != nullptr) {
-        UserControlInfo *userControlInfo = check_and_cast<UserControlInfo *>(frame->removeControlInfo());
-        frame->setAdditionalInfo(*userControlInfo);
-        delete userControlInfo;
     }
 
     sendDirect(frame, 0, duration, receiver, getReceiverGateIndex(receiver, dest));

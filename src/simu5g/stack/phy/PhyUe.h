@@ -53,27 +53,27 @@ class PhyUe : public PhyBase
 
     /// stale-source test on the receive path
     /// (default: any frame not sent by the serving cell)
-    virtual bool isStaleFrame(const UserControlInfo *lteInfo) { return lteInfo->getSourceId() != servingNodeId_; }
+    virtual bool isStaleFrame(const TransmissionDescriptor& rx) { return rx.getIdentity().getSourceId() != servingNodeId_; }
 
     /// called once an incoming frame has passed the acceptance checks (default: nothing)
-    virtual void frameAccepted(UserControlInfo *lteInfo) {}
+    virtual void frameAccepted(TransmissionDescriptor& rx) {}
 
     /// frame types handed to handleControlMsg() on the receive path
     virtual bool isControlFrameType(LtePhyFrameType type) { return type == HARQPKT || type == GRANTPKT || type == RACPKT; }
 
     /// gives subclasses a chance to consume an incoming data frame before decoding (default: no)
-    virtual bool interceptIncomingFrame(AirFrame *frame, UserControlInfo *lteInfo) { return false; }
+    virtual bool interceptIncomingFrame(AirFrame *frame) { return false; }
     void finish() override;
     void finish(cComponent *component, simsignal_t signalID) override { cIListener::finish(component, signalID); }
 
-    void handleUpperMessage(cMessage *msg) override;
+    void handleUpperPacket(inet::Packet *pkt, TransmissionDescriptor& tx) override;
 
     /// checks an outgoing upper-layer packet before transmission
     /// (default: it must target the serving cell)
-    virtual void validateOutgoingFrame(const UserControlInfo *info);
+    virtual void validateOutgoingFrame(const TransmissionDescriptor& tx);
 
     /// CQI accounting for outgoing data packets in directions other than UL
-    virtual void recordExtraTxCqi(double cqi, const UserControlInfo *info) {}
+    virtual void recordExtraTxCqi(double cqi, const TransmissionDescriptor& tx) {}
 
     void emitMobilityStats() override;
 
@@ -84,7 +84,7 @@ class PhyUe : public PhyBase
      */
     virtual void sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req);
 
-    virtual double computeReceivedBeaconPacketRssi(UserControlInfo *lteInfo);
+    virtual double computeReceivedBeaconPacketRssi(const TransmissionDescriptor& rx);
 
     virtual void findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi);
 

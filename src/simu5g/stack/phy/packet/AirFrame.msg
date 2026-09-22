@@ -10,11 +10,7 @@
 // and cannot be removed from it.
 //
 
-import simu5g.common.LteControlInfo;
-
-cplusplus {{
-#include "simu5g/common/LteControlInfo.h"
-}}
+import simu5g.stack.phy.packet.TransmissionDescriptor;
 
 namespace simu5g;
 
@@ -28,5 +24,5 @@ namespace simu5g;
 // In the simulation, all these messages types are abstracted as AirFrame transmissions.
 //
 packet AirFrame extends cPacket {
-    UserControlInfo additionalInfo @nopack;
+    TransmissionDescriptor transmission @nopack;  // what the receiver needs to know about the transmission
 }

@@ -163,54 +163,47 @@ void HandoverController::onNodeLeaving()
 {
 }
 
-void HandoverController::beaconReceived(AirFrame *frame, UserControlInfo *lteInfo)
+void HandoverController::beaconReceived(const TransmissionDescriptor& beacon)
 {
     Enter_Method("beaconReceived");
-    take(frame);
 
-    if (!enableHandover_) {
-        delete frame;
-        delete lteInfo;
+    if (!enableHandover_)
         return;
-    }
 
     if (handoverTrigger_ != nullptr && handoverTrigger_->isScheduled()) {
         EV << "Handover already in progress, ignoring beacon packet." << endl;
-        delete lteInfo;
-        delete frame;
         return;
     }
 
+    MacNodeId sourceId = beacon.getIdentity().getSourceId();
+
     // Dual-stack UE: check if the beacon comes from a DC Secondary node
     if (hasOtherLeg()) {
-        MacNodeId sourceId = lteInfo->getSourceId();
         MacNodeId masterNodeId = binder_->getMasterNodeOrSelf(sourceId);
         if (masterNodeId != sourceId) {
             // The node has a DC Master node, check if the other PHY of this UE is attached to that Master.
             // If not, the UE cannot attach to this Secondary node and the packet must be deleted.
             if (otherHandoverController_->getServingNodeId() != masterNodeId) {
                 EV << "Received beacon packet from " << sourceId << ", which is a secondary node to a master [" << masterNodeId << "] different from the one this UE is attached to. Delete packet." << endl;
-                delete lteInfo;
-                delete frame;
                 return;
             }
         }
     }
 
-    lteInfo->setDestId(nodeId_);
-    frame->setControlInfo(lteInfo);
+    // the beacon was broadcast: evaluate it as a transmission to this UE
+    TransmissionDescriptor rx = beacon;
+    rx.getIdentityForUpdate().setDestId(nodeId_);
 
-    double rssi = phy_->computeReceivedBeaconPacketRssi(lteInfo);
-    EV << "UE " << nodeId_ << " broadcast frame from " << lteInfo->getSourceId() << " with RSSI: " << rssi << " at " << simTime() << endl;
+    double rssi = phy_->computeReceivedBeaconPacketRssi(rx);
+    EV << "UE " << nodeId_ << " broadcast frame from " << sourceId << " with RSSI: " << rssi << " at " << simTime() << endl;
 
-    if (lteInfo->getSourceId() != servingNodeId_ && rssi < minRssi_) {
+    if (sourceId != servingNodeId_ && rssi < minRssi_) {
         EV << "Signal from candidate too weak - minRssi[" << minRssi_ << "]" << endl;
-        delete frame;
         return;
     }
 
     if (rssi > candidateServingNodeRssi_ + hysteresisThreshold_) {
-        if (lteInfo->getSourceId() == servingNodeId_) {
+        if (sourceId == servingNodeId_) {
             // receiving even stronger broadcast from current serving node
             servingNodeRssi_ = rssi;
             candidateServingNodeId_ = servingNodeId_;
@@ -220,7 +213,7 @@ void HandoverController::beaconReceived(AirFrame *frame, UserControlInfo *lteInf
         }
         else {
             // broadcast from another serving node with higher RSSI
-            candidateServingNodeId_ = lteInfo->getSourceId();
+            candidateServingNodeId_ = sourceId;
             candidateServingNodeRssi_ = rssi;
             updateHysteresisThreshold(rssi);
             binder_->addHandoverTriggered(nodeId_, servingNodeId_, candidateServingNodeId_);
@@ -235,7 +228,7 @@ void HandoverController::beaconReceived(AirFrame *frame, UserControlInfo *lteInf
         }
     }
     else {
-        if (lteInfo->getSourceId() == servingNodeId_) {
+        if (sourceId == servingNodeId_) {
             if (rssi >= minRssi_) {
                 servingNodeRssi_ = rssi;
                 candidateServingNodeRssi_ = rssi;
@@ -262,8 +255,6 @@ void HandoverController::beaconReceived(AirFrame *frame, UserControlInfo *lteInf
             }
         }
     }
-
-    delete frame;
 }
 
 void HandoverController::triggerHandover()

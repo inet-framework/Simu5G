@@ -46,26 +46,21 @@ unsigned int BackgroundTrafficManager::getNumBands()
 
 std::vector<double> BackgroundTrafficManager::getSINR(int bgUeIndex, Direction dir, inet::Coord bgUePos, double bgUeTxPower)
 {
-    UserControlInfo *cInfo = new UserControlInfo();
-
-    // Build a control info
-    cInfo->setSourceId(MacNodeId(BGUE_MIN_ID + bgUeIndex));  // MacNodeId for the bgUe
-    cInfo->setDestId(mac_->getMacNodeId());  // ID of the e/gNodeB
-    cInfo->setFrameType(FEEDBACKPKT);
-    cInfo->setCoord(bgUePos);
-    cInfo->setDirection(dir);
-    cInfo->setCarrierFrequency(carrierFrequency_);
+    // Describe a transmission over the link of the bgUe
+    TransmissionDescriptor tx;
+    tx.getIdentityForUpdate().setSourceId(MacNodeId(BGUE_MIN_ID + bgUeIndex));  // MacNodeId for the bgUe
+    tx.getIdentityForUpdate().setDestId(mac_->getMacNodeId());  // ID of the e/gNodeB
+    auto& phyTransmission = tx.getPhyTransmissionForUpdate();
+    phyTransmission.setFrameType(FEEDBACKPKT);
+    phyTransmission.setCoord(bgUePos);
+    tx.getTrafficDirectionForUpdate().setDirection(dir);
+    tx.getCarrierForUpdate().setCarrierFrequency(carrierFrequency_);
     if (dir == UL)
-        cInfo->setTxPower(bgUeTxPower);
+        phyTransmission.setTxPower(bgUeTxPower);
     else
-        cInfo->setTxPower(bsTxPower_);
+        phyTransmission.setTxPower(bsTxPower_);
 
-    std::vector<double> snr = channelModel_->getSINR_bgUe(cInfo);
-
-    // Free memory
-    delete cInfo;
-
-    return snr;
+    return channelModel_->getSINR_bgUe(tx);
 }
 
 unsigned int BackgroundTrafficManager::getBackloggedUeBytesPerBlock(MacNodeId bgUeId, Direction dir)

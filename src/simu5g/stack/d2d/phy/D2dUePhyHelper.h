@@ -23,7 +23,6 @@ using namespace omnetpp;
 
 class PhyBase;
 class AirFrame;
-class UserControlInfo;
 
 /*
  * Plain helper that holds the D2D-specific PHY state and logic shared by every
@@ -62,7 +61,7 @@ class D2dUePhyHelper
     // pick the frame to be decoded among those received in the current TTI
     AirFrame *extractAirFrame();
     // decode the given frame and hand the decapsulated packet to the PHY's upper layer
-    void decodeAirFrame(AirFrame *frame, UserControlInfo *lteInfo);
+    void decodeAirFrame(AirFrame *frame);
 
   public:
     D2dUePhyHelper(PhyBase *phy) : phy_(phy) {}

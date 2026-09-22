@@ -67,18 +67,19 @@ class D2dUePhy : public Base
     // ---- incoming-frame seams (replace the historical handleAirFrame copy) ----
 
     /// D2D/D2D_MULTI frames legitimately arrive from peers, not the serving cell
-    bool isStaleFrame(const UserControlInfo *lteInfo) override
+    bool isStaleFrame(const TransmissionDescriptor& rx) override
     {
-        return lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI
-               && lteInfo->getSourceId() != this->servingNodeId_;
+        Direction dir = rx.getTrafficDirection().getDirection();
+        return dir != D2D && dir != D2D_MULTI
+               && rx.getIdentity().getSourceId() != this->servingNodeId_;
     }
 
     /// HACK: if this is a multicast connection, change the destId of the
     /// airframe so that upper layers can handle it
-    void frameAccepted(UserControlInfo *lteInfo) override
+    void frameAccepted(TransmissionDescriptor& rx) override
     {
-        if (this->binder_->isInMulticastGroup(this->nodeId_, lteInfo->getPacketMulticastGroupId()))
-            lteInfo->setDestId(this->nodeId_);
+        if (this->binder_->isInMulticastGroup(this->nodeId_, rx.getLogicalConnection().getD2dGroupId()))
+            rx.getIdentityForUpdate().setDestId(this->nodeId_);
     }
 
     /// D2D mode-switch notifications are control frames too
@@ -88,9 +89,9 @@ class D2dUePhy : public Base
     }
 
     /// D2D-multicast capture effect: store the frame and decode it at the end of the TTI
-    bool interceptIncomingFrame(AirFrame *frame, UserControlInfo *lteInfo) override
+    bool interceptIncomingFrame(AirFrame *frame) override
     {
-        if (!(d2dHelper_.getMulticastEnableCaptureEffect() && this->binder_->isInMulticastGroup(this->nodeId_, lteInfo->getPacketMulticastGroupId())))
+        if (!(d2dHelper_.getMulticastEnableCaptureEffect() && this->binder_->isInMulticastGroup(this->nodeId_, frame->getTransmission().getLogicalConnection().getD2dGroupId())))
             return false;
 
         // If not already started, auto-send a message to signal the presence of data to be decoded
@@ -100,8 +101,7 @@ class D2dUePhy : public Base
             this->scheduleAt(NOW, d2dDecodingTimer_);
         }
 
-        // Store frame, together with related control info
-        frame->setControlInfo(lteInfo);
+        // Store frame, together with its descriptor
         d2dHelper_.storeAirFrame(frame);            // implements the capture effect
         return true;
     }
@@ -110,19 +110,20 @@ class D2dUePhy : public Base
 
     /// the D2D UE PHY performs no serving-cell check on outgoing frames
     /// (D2D/D2D_MULTI frames legitimately target peers)
-    void validateOutgoingFrame(const UserControlInfo *info) override {}
+    void validateOutgoingFrame(const TransmissionDescriptor& tx) override {}
 
     /// D2D CQI accounting for outgoing data packets
-    void recordExtraTxCqi(double cqi, const UserControlInfo *info) override
+    void recordExtraTxCqi(double cqi, const TransmissionDescriptor& tx) override
     {
-        if (info->getDirection() == D2D || info->getDirection() == D2D_MULTI)
+        Direction dir = tx.getTrafficDirection().getDirection();
+        if (dir == D2D || dir == D2D_MULTI)
             this->emit(averageCqiD2DSignal_, cqi);
     }
 
     /// keep the historical D2D frame naming (all control frames named "harqFeedback-grant")
-    const char *airFrameNameFor(const UserControlInfo *info) override
+    const char *airFrameNameFor(const TransmissionDescriptor& tx) override
     {
-        switch (info->getFrameType()) {
+        switch (tx.getPhyTransmission().getFrameType()) {
             case HARQPKT:
             case GRANTPKT:
             case RACPKT: return "harqFeedback-grant";
@@ -130,15 +131,15 @@ class D2dUePhy : public Base
         }
     }
 
-    void stampExtraTxControlInfo(UserControlInfo *info) override
+    void stampExtraTxDescriptor(TransmissionDescriptor& tx) override
     {
-        info->setD2dTxPower(d2dHelper_.getD2dTxPower());
+        tx.getPhyTransmissionForUpdate().setD2dTxPower(d2dHelper_.getD2dTxPower());
     }
 
     /// one-to-many D2D transmissions go out via sendDirect to all group members
-    void transmitFrame(AirFrame *frame, const UserControlInfo *info, simtime_t duration) override
+    void transmitFrame(AirFrame *frame, simtime_t duration) override
     {
-        if (info->getDirection() == D2D_MULTI)
+        if (frame->getTransmission().getTrafficDirection().getDirection() == D2D_MULTI)
             sendMulticast(frame, duration);
         else
             this->sendUnicast(frame, duration);
@@ -201,16 +202,10 @@ void D2dUePhy<Base>::handleSelfMessage(cMessage *msg)
 template<class Base>
 void D2dUePhy<Base>::sendMulticast(AirFrame *frame, simtime_t duration)
 {
-    UserControlInfo *ci = check_and_cast<UserControlInfo *>(frame->getControlInfo());
-
     // get the group Id
-    MacNodeId groupId = ci->getPacketMulticastGroupId();
+    MacNodeId groupId = frame->getTransmission().getLogicalConnection().getD2dGroupId();
     if (groupId == NODEID_NONE)
         throw cRuntimeError("D2dUePhy::sendMulticast - Error. Group ID %d is not valid.", num(groupId));
-
-    // transfer control info into airframe fields
-    frame->setAdditionalInfo(*ci);
-    delete frame->removeControlInfo();
 
     // send the frame to nodes belonging to the multicast group only
     for (auto [destId, nodeInfo] : this->binder_->getNodeInfoMap()) {

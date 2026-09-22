@@ -24,8 +24,7 @@ class Binder;
 class PhyUe;
 class LteMacUe;
 class LteAmc;
-class AirFrame;
-class UserControlInfo;
+class TransmissionDescriptor;
 class BearerManagement;
 class HandoverPacketHolderUe;
 class LteDlFeedbackGenerator;
@@ -156,7 +155,7 @@ class HandoverController : public cSimpleModule
     /**
      * Called from PHY on reception of a beacon signal
      */
-    virtual void beaconReceived(AirFrame *frame, UserControlInfo *lteInfo);
+    virtual void beaconReceived(const TransmissionDescriptor& beacon);
 
     /**
      * Used in a DC setup. Called by a HandoverController to force the

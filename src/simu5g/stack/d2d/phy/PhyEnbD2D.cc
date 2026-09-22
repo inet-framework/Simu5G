@@ -31,13 +31,13 @@ void PhyEnbD2D::initialize(int stage)
     }
 }
 
-void PhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, ChannelModelBase *channelModel)
+void PhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, const TransmissionDescriptor& tx, ChannelModelBase *channelModel)
 {
     if (!enableD2DCqiReporting_)
         return;
 
     // recompute the feedback-computation context from the request
-    FeedbackRequest req = lteinfo->getFeedbackReq();
+    FeedbackRequest req = tx.getPhyTransmission().getFeedbackReq();
     TxMode txmode = req.txMode;
     FeedbackType type = req.type;
     RbAllocationType rbtype = req.rbAllocationType;
@@ -49,19 +49,20 @@ void PhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserContr
     // Compute D2D feedback for all possible peering UEs
     for (const auto& ueInfo : binder_->getUeList()) {
         MacNodeId peerId = ueInfo->id;
-        if (peerId != lteinfo->getSourceId() && d2dBinder_->getD2DCapability(lteinfo->getSourceId(), peerId) && binder_->getServingNodeOrSelf(peerId) == nodeId_) {
+        MacNodeId sourceId = tx.getIdentity().getSourceId();
+        if (peerId != sourceId && d2dBinder_->getD2DCapability(sourceId, peerId) && binder_->getServingNodeOrSelf(peerId) == nodeId_) {
             // The source UE might communicate with this peer using D2D, so compute feedback (only in-cell D2D)
 
             // Retrieve the position of the peer
             Coord peerCoord = ueInfo->phy->getCoord();
 
             // Get SINR for this link
-            std::vector<double> snr = check_and_cast<ID2dChannelModel *>(channelModel)->getSINR_D2D(lteinfo, peerId, peerCoord, nodeId_);
+            std::vector<double> snr = check_and_cast<ID2dChannelModel *>(channelModel)->getSINR_D2D(tx, peerId, peerCoord, nodeId_);
 
             // Compute the feedback for this link
             LteFeedbackDoubleVector fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,
                     antennaCws, numPreferredBand, nRus, snr,
-                    lteinfo->getSourceId());
+                    sourceId);
 
             header->setLteFeedbackDoubleVectorD2D(peerId, fb);
         }

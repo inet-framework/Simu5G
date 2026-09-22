@@ -13,7 +13,7 @@
 #ifndef STACK_PHY_CHANNELMODEL_IDEALCHANNELMODEL_H_
 #define STACK_PHY_CHANNELMODEL_IDEALCHANNELMODEL_H_
 
-#include "simu5g/common/LteControlInfo.h"
+#include "simu5g/stack/phy/packet/TransmissionDescriptor_m.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 
 namespace simu5g {
@@ -42,9 +42,9 @@ class IdealChannelModel : public ChannelModelBase
     /*
      * Compute the error probability of the transmitted packet
      *
-     * @param lteInfo pointer to the user control info
+     * @param tx the transmission
      */
-    bool isReceptionSuccessful(UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) override;
+    bool isReceptionSuccessful(const TransmissionDescriptor& tx, const std::vector<double>& rsrpVector) override;
     /*
      * Compute the path-loss attenuation according to the selected scenario
      */
@@ -64,21 +64,21 @@ class IdealChannelModel : public ChannelModelBase
     /*
      * Compute fake SINR for each band for user nodeId according to path loss, shadowing (optional) and multipath fading
      *
-     * @param lteInfo pointer to the user control info
+     * @param tx the transmission
      */
-    std::vector<double> getSINR(UserControlInfo *lteInfo) override;
+    std::vector<double> getSINR(const TransmissionDescriptor& tx) override;
     /*
      * Compute fake received useful signal for each band for user nodeId according to path loss, shadowing (optional) and multipath fading
      *
-     * @param lteInfo pointer to the user control info
+     * @param tx the transmission
      */
-    std::vector<double> getRSRP(UserControlInfo *lteInfo) override;
+    std::vector<double> getRSRP(const TransmissionDescriptor& tx) override;
     /*
      * Compute SINR for each band for a background UE according to path loss
      *
-     * @param lteInfo pointer to the user control info
+     * @param tx the transmission
      */
-    std::vector<double> getSINR_bgUe(UserControlInfo *lteInfo) override;
+    std::vector<double> getSINR_bgUe(const TransmissionDescriptor& tx) override;
     /*
      * Compute received power for a background UE according to path loss
      *

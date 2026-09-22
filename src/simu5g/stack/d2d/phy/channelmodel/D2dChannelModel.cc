@@ -63,33 +63,33 @@ RadioLink D2dChannelModel::d2dLink(MacNodeId srcId, Coord srcCoord, MacNodeId de
     return link;
 }
 
-std::vector<double> D2dChannelModel::getRSRP_D2D(UserControlInfo *lteInfo_1, MacNodeId destId, Coord destCoord)
+std::vector<double> D2dChannelModel::getRSRP_D2D(const TransmissionDescriptor& tx, MacNodeId destId, Coord destCoord)
 {
     EV << "------------ GET RSRP D2D----------------" << endl;
 
     // D2D is like DL for the receivers, so the UE-side fading/shadowing maps apply.
-    RadioLink link = d2dLink(lteInfo_1->getSourceId(), lteInfo_1->getCoord(), destId, destCoord, true);
+    RadioLink link = d2dLink(tx.getIdentity().getSourceId(), tx.getPhyTransmission().getCoord(), destId, destCoord, true);
 
     // Note the D2D-specific transmit power: a D2D transmission does not use the
     // power the UE would use towards the base station.
-    return getRSRP(link, lteInfo_1->getD2dTxPower());
+    return getRSRP(link, tx.getPhyTransmission().getD2dTxPower());
 }
 
-std::vector<double> D2dChannelModel::getSINR_D2D(UserControlInfo *lteInfo, MacNodeId destId, Coord destCoord, MacNodeId enbId)
+std::vector<double> D2dChannelModel::getSINR_D2D(const TransmissionDescriptor& tx, MacNodeId destId, Coord destCoord, MacNodeId enbId)
 {
     // desired-signal RSRP (pathloss + shadowing + fading), then noise and
     // interference on top: exactly the two halves this body used to inline
-    std::vector<double> rsrpVector = getRSRP_D2D(lteInfo, destId, destCoord);
-    return getSINR_D2D(lteInfo, destId, destCoord, enbId, rsrpVector);
+    std::vector<double> rsrpVector = getRSRP_D2D(tx, destId, destCoord);
+    return getSINR_D2D(tx, destId, destCoord, enbId, rsrpVector);
 }
 
-std::vector<double> D2dChannelModel::getSINR_D2D(UserControlInfo *lteInfo_1, MacNodeId destId, Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
+std::vector<double> D2dChannelModel::getSINR_D2D(const TransmissionDescriptor& tx, MacNodeId destId, Coord destCoord, MacNodeId enbId, const std::vector<double>& rsrpVector)
 {
     EV << "------------ GET SINR D2D----------------" << endl;
 
     // The desired signal is already known; the core adds noise and interference,
     // asking computeInterferencePlusNoise() below for the D2D denominator.
-    RadioLink link = d2dLink(lteInfo_1->getSourceId(), lteInfo_1->getCoord(), destId, destCoord, true);
+    RadioLink link = d2dLink(tx.getIdentity().getSourceId(), tx.getPhyTransmission().getCoord(), destId, destCoord, true);
     link.cellId = enbId;
 
     // The caller is expected to supply one RSRP value per band. The one-to-many
@@ -101,17 +101,17 @@ std::vector<double> D2dChannelModel::getSINR_D2D(UserControlInfo *lteInfo_1, Mac
         if (!rsrpVector.empty())
             throw cRuntimeError("D2dChannelModel::getSINR_D2D - RSRP vector has %zu entries, expected %u",
                     rsrpVector.size(), numBands_);
-        return getSINR(link, lteInfo_1, getRSRP(link, lteInfo_1->getD2dTxPower()));
+        return getSINR(link, tx, getRSRP(link, tx.getPhyTransmission().getD2dTxPower()));
     }
 
-    return getSINR(link, lteInfo_1, rsrpVector);
+    return getSINR(link, tx, rsrpVector);
 }
 
-void D2dChannelModel::computeInterferencePlusNoise(const RadioLink& link, UserControlInfo *lteInfo,
+void D2dChannelModel::computeInterferencePlusNoise(const RadioLink& link, const TransmissionDescriptor& tx,
         RbMap& rbmap, double totN, std::vector<double>& den)
 {
     if (link.dir != D2D && link.dir != D2D_MULTI) {
-        StochasticChannelModel::computeInterferencePlusNoise(link, lteInfo, rbmap, totN, den);
+        StochasticChannelModel::computeInterferencePlusNoise(link, tx, rbmap, totN, den);
         return;
     }
 
@@ -129,7 +129,7 @@ void D2dChannelModel::computeInterferencePlusNoise(const RadioLink& link, UserCo
     d2dInterference.resize(numBands_, 0);
     if (enableD2DInterference_) {
         computeD2DInterference(link.cellId, link.txId, link.txCoord, link.rxId, link.rxCoord,
-                (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &d2dInterference, link.dir);
+                (tx.getPhyTransmission().getFrameType() == FEEDBACKPKT), tx.getCarrier().getCarrierFrequency(), &d2dInterference, link.dir);
     }
 
     EV << "D2dChannelModel::computeInterferencePlusNoise - distance from my Peer = "
@@ -143,7 +143,7 @@ void D2dChannelModel::computeInterferencePlusNoise(const RadioLink& link, UserCo
     // no shipped configuration sets.)
     for (unsigned int i = 0; i < numBands_; i++) {
         // the caller skips these bands too; leave their denominator untouched
-        if (lteInfo->getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
+        if (tx.getPhyTransmission().getFrameType() == DATAPKT && rbmap[MACRO][i] == 0)
             continue;
 
         den[i] = linearToDBm(totN + d2dInterference[i]);
@@ -152,22 +152,22 @@ void D2dChannelModel::computeInterferencePlusNoise(const RadioLink& link, UserCo
     }
 }
 
-std::vector<double> D2dChannelModel::getReceptionSinr(UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+std::vector<double> D2dChannelModel::getReceptionSinr(const TransmissionDescriptor& tx, const std::vector<double>& rsrpVector)
 {
-    Direction dir = lteInfo->getDirection();
+    Direction dir = tx.getTrafficDirection().getDirection();
     if (dir == D2D || dir == D2D_MULTI) {
-        MacNodeId destId = lteInfo->getDestId();
+        MacNodeId destId = tx.getIdentity().getDestId();
         Coord destCoord = phy_->getCoord();
-        MacNodeId enbId = binder_->getServingNodeOrSelf(lteInfo->getSourceId());
+        MacNodeId enbId = binder_->getServingNodeOrSelf(tx.getIdentity().getSourceId());
 
         // One-to-many reception decides on the RSRP captured by the capture-effect
         // logic (see D2dUePhyHelper::storeAirFrame), so the desired signal is not
         // recomputed here.
         if (dir == D2D_MULTI)
-            return getSINR_D2D(lteInfo, destId, destCoord, enbId, rsrpVector);
-        return getSINR_D2D(lteInfo, destId, destCoord, enbId);
+            return getSINR_D2D(tx, destId, destCoord, enbId, rsrpVector);
+        return getSINR_D2D(tx, destId, destCoord, enbId);
     }
-    return StochasticChannelModel::getReceptionSinr(lteInfo, rsrpVector);
+    return StochasticChannelModel::getReceptionSinr(tx, rsrpVector);
 }
 
 void D2dChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)

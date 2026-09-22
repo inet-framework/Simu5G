@@ -16,7 +16,7 @@
 #include <inet/common/ModuleRefByPar.h>
 
 #include "simu5g/common/LteCommon.h"
-#include "simu5g/common/LteControlInfo.h"
+#include "simu5g/stack/phy/packet/TransmissionDescriptor_m.h"
 #include "simu5g/common/carrierAggregation/ComponentCarrier.h"
 #include "simu5g/stack/phy/PhyBase.h"
 
@@ -190,12 +190,12 @@ class ChannelModelBase : public cSimpleModule
      * Compute the error probability of the transmitted packet according to CQI used, TX mode, and the received power
      * After that, it generates a random number to check if this packet will be corrupted or not
      *
-     * @param lteInfo pointer to the user control info
+     * @param tx the transmission
      * @param rsrpVector the per-band received power captured for this frame, when the
      *        caller already has it (the D2D one-to-many capture-effect path). Empty
      *        otherwise; models that do not need it ignore it.
      */
-    virtual bool isReceptionSuccessful(UserControlInfo *lteInfo, const std::vector<double>& rsrpVector = {}) = 0;
+    virtual bool isReceptionSuccessful(const TransmissionDescriptor& tx, const std::vector<double>& rsrpVector = {}) = 0;
 
     /*
      * Compute attenuation (path loss + optional shadowing) over a radio link.
@@ -213,15 +213,15 @@ class ChannelModelBase : public cSimpleModule
     /*
      * Compute SINR for each band for user nodeId according to path loss, shadowing (optional), and multipath fading
      *
-     * @param lteInfo pointer to the user control info
+     * @param tx the transmission
      */
-    virtual std::vector<double> getSINR(UserControlInfo *lteInfo) = 0;
+    virtual std::vector<double> getSINR(const TransmissionDescriptor& tx) = 0;
     /*
      * Compute SINR for each band for a background UE according to path loss
      *
-     * @param lteInfo pointer to the user control info
+     * @param tx the transmission
      */
-    virtual std::vector<double> getSINR_bgUe(UserControlInfo *lteInfo) = 0;
+    virtual std::vector<double> getSINR_bgUe(const TransmissionDescriptor& tx) = 0;
 
     /*
      * Compute received power for a background UE according to path loss
@@ -232,9 +232,9 @@ class ChannelModelBase : public cSimpleModule
     /*
      * Compute received useful signal for each band for user nodeId according to path loss, shadowing (optional), and multipath fading
      *
-     * @param lteInfo pointer to the user control info
+     * @param tx the transmission
      */
-    virtual std::vector<double> getRSRP(UserControlInfo *lteInfo) = 0;
+    virtual std::vector<double> getRSRP(const TransmissionDescriptor& tx) = 0;
 
     virtual bool isUplinkInterferenceEnabled() { return false; }
 
