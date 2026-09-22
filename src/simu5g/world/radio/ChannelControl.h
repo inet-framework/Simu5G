@@ -100,23 +100,11 @@ class ChannelControl : public cSimpleModule
     /** Unregisters the given radio */
     virtual void unregisterRadio(RadioRef r);
 
-    /** Returns the host module that contains the given radio */
-    virtual cModule *getRadioModule(RadioRef r) const { return r->radioModule; }
-
-    /** Returns the input gate of the host for receiving AirFrames */
-    virtual cGate *getRadioGate(RadioRef r) const { return r->radioInGate; }
-
     /** To be called when the host moved; updates proximity info */
     virtual void setRadioPosition(RadioRef r, const inet::Coord& pos);
 
     /** Called from ChannelAccess, to transmit a frame to the radios in range */
     virtual void sendToChannel(RadioRef srcRadio, AirFrame *airFrame);
-
-    /** Returns the maximum interference distance*/
-    virtual double getInterferenceRange(RadioRef r) { return maxInterferenceDistance; }
-
-    /** Returns propagation speed of the signal in meters/sec */
-    virtual double getPropagationSpeed() { return SPEED_OF_LIGHT; }
 };
 
 } //namespace
