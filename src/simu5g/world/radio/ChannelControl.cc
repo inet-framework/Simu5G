@@ -180,15 +180,10 @@ void ChannelControl::sendToChannel(RadioRef srcRadio, AirFrame *airFrame)
     // NOTE: no Enter_Method()! We pretend this method is part of ChannelAccess
 
     // loop through all radios in range
-    const RadioRefVector& neighbors = getNeighbors(srcRadio);
-    int n = neighbors.size();
-    for (int i = 0; i < n; i++) {
-        RadioRef r = neighbors[i];
+    for (RadioRef r : getNeighbors(srcRadio)) {
         EV << "sending message to radio\n";
-        // account for propagation delay, based on distance in meters
-        // Over 300m, dt=1us=10 bit times @ 10Mbps
-        simtime_t delay = srcRadio->pos.distance(r->pos) / SPEED_OF_LIGHT;
-        check_and_cast<cSimpleModule *>(srcRadio->radioModule.get())->sendDirect(airFrame->dup(), delay, airFrame->getDuration(), r->radioInGate);
+        // no propagation delay, as for the frames sent by PhyBase::sendUnicast()
+        check_and_cast<cSimpleModule *>(srcRadio->radioModule.get())->sendDirect(airFrame->dup(), 0, airFrame->getDuration(), r->radioInGate);
     }
 
     // the radios in range got copies; the original frame can be deleted
