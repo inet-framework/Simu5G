@@ -68,7 +68,6 @@ class ChannelAccess : public cSimpleModule, public cListener
     /** Sends a message to all radios in range */
     virtual void sendToChannel(AirFrame *msg);
 
-    virtual cPar& getChannelControlPar(const char *parName) { return check_and_cast<cModule *>(cc.get())->par(parName); }
     const inet::Coord& getRadioPosition() const { return radioPos; }
     cModule *getHostModule() const { return hostModule; }
 
