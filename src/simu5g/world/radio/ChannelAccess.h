@@ -22,7 +22,7 @@
 #include <inet/common/INETDefs.h>
 
 #include "simu5g/common/LteDefs.h"
-#include "simu5g/world/radio/IChannelControl.h"
+#include "simu5g/world/radio/ChannelControl.h"
 #include "simu5g/common/features.h"
 
 namespace simu5g {
@@ -38,8 +38,8 @@ class AirFrame;
 class ChannelAccess : public cSimpleModule, public cListener
 {
   protected:
-    opp_component_ptr<IChannelControl> cc = nullptr;  // Pointer to the ChannelControl module
-    IChannelControl::RadioRef myRadioRef = nullptr;  // Identifies this radio in the ChannelControl module
+    opp_component_ptr<ChannelControl> cc = nullptr;  // the ChannelControl module
+    ChannelControl::RadioRef myRadioRef = nullptr;  // Identifies this radio in the ChannelControl module
     opp_component_ptr<cModule> hostModule;    // the host that contains this radio model
     inet::Coord radioPos;  // the physical position of the radio (derived from display string or from mobility models)
     bool positionUpdateArrived = false;
@@ -55,7 +55,7 @@ class ChannelAccess : public cSimpleModule, public cListener
     void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *) override;
 
     /** Finds the channelControl module in the network */
-    IChannelControl *getChannelControl();
+    ChannelControl *getChannelControl();
 
     /**
      * @brief Called when a mobilityStateChanged signal is received.

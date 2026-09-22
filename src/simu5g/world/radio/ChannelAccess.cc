@@ -42,11 +42,9 @@ static int parseInt(const char *s, int defaultValue)
 // the destructor unregisters the radio module
 ChannelAccess::~ChannelAccess()
 {
+    // cc is nullptr if the ChannelControl module has already been deleted
     if (cc != nullptr && myRadioRef != nullptr) {
-        // check if channel control exists
-        IChannelControl *cc = dynamic_cast<IChannelControl *>(getSimulation()->findModuleByPath("channelControl"));
-        if (cc)
-            cc->unregisterRadio(myRadioRef);
+        cc->unregisterRadio(myRadioRef);
         myRadioRef = nullptr;
     }
 }
@@ -96,9 +94,9 @@ void ChannelAccess::initialize(int stage)
     }
 }
 
-IChannelControl *ChannelAccess::getChannelControl()
+ChannelControl *ChannelAccess::getChannelControl()
 {
-    IChannelControl *cc = dynamic_cast<IChannelControl *>(getSimulation()->findModuleByPath("channelControl"));
+    ChannelControl *cc = dynamic_cast<ChannelControl *>(getSimulation()->findModuleByPath("channelControl"));
     if (!cc)
         throw cRuntimeError("Could not find ChannelControl module with name 'channelControl' in the top-level network.");
     return cc;

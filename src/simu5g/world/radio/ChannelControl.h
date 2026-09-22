@@ -21,8 +21,6 @@
 #include <inet/common/INETDefs.h>
 #include <inet/common/geometry/common/Coord.h>
 
-#include "simu5g/world/radio/IChannelControl.h"
-
 namespace simu5g {
 
 using namespace omnetpp;
@@ -31,38 +29,44 @@ using namespace omnetpp;
 class AirFrame;
 
 /**
- * Keeps track of radios/NICs and their positions;
- * also caches neighbor info (which other Radios are within
- * interference distance).
- */
-struct IChannelControl::RadioEntry {
-    opp_component_ptr<cModule> radioModule;  // the module that registered this radio interface
-    cGate *radioInGate = nullptr;  // gate on host module used to receive airframes
-    inet::Coord pos; // cached radio position
-
-    struct Compare {
-        bool operator()(const RadioRef& lhs, const RadioRef& rhs) const {
-            ASSERT(lhs != nullptr);
-            ASSERT(rhs != nullptr);
-            return lhs->radioModule->getId() < rhs->radioModule->getId();
-        }
-    };
-    // we cache neighbors set in a std::vector, because std::set iteration is slow;
-    // std::vector is created and updated on demand
-    std::set<RadioRef, Compare> neighbors; // cached neighbor list
-    std::vector<RadioRef> neighborList;
-    bool isNeighborListValid;
-};
-
-/**
  * Monitors which radios are "in range".
  *
  * @ingroup channelControl
  * @see ChannelAccess
  */
-class ChannelControl : public cSimpleModule, public IChannelControl
+class ChannelControl : public cSimpleModule
 {
   protected:
+    struct RadioEntry;
+
+  public:
+    typedef RadioEntry *RadioRef; // handle for ChannelControl's clients
+
+  protected:
+    /**
+     * Keeps track of radios/NICs and their positions;
+     * also caches neighbor info (which other Radios are within
+     * interference distance).
+     */
+    struct RadioEntry {
+        opp_component_ptr<cModule> radioModule;  // the module that registered this radio interface
+        cGate *radioInGate = nullptr;  // gate on host module used to receive airframes
+        inet::Coord pos; // cached radio position
+
+        struct Compare {
+            bool operator()(const RadioRef& lhs, const RadioRef& rhs) const {
+                ASSERT(lhs != nullptr);
+                ASSERT(rhs != nullptr);
+                return lhs->radioModule->getId() < rhs->radioModule->getId();
+            }
+        };
+        // we cache neighbors set in a std::vector, because std::set iteration is slow;
+        // std::vector is created and updated on demand
+        std::set<RadioRef, Compare> neighbors; // cached neighbor list
+        std::vector<RadioRef> neighborList;
+        bool isNeighborListValid;
+    };
+
     typedef std::list<RadioEntry> RadioList;
     typedef std::vector<RadioRef> RadioRefVector;
 
@@ -91,28 +95,28 @@ class ChannelControl : public cSimpleModule, public IChannelControl
 
   public:
     /** Registers the given radio. If radioInGate==NULL, the "radioIn" gate is assumed */
-    RadioRef registerRadio(cModule *radioModule, cGate *radioInGate = nullptr) override;
+    virtual RadioRef registerRadio(cModule *radioModule, cGate *radioInGate = nullptr);
 
     /** Unregisters the given radio */
-    void unregisterRadio(RadioRef r) override;
+    virtual void unregisterRadio(RadioRef r);
 
     /** Returns the host module that contains the given radio */
-    cModule *getRadioModule(RadioRef r) const override { return r->radioModule; }
+    virtual cModule *getRadioModule(RadioRef r) const { return r->radioModule; }
 
     /** Returns the input gate of the host for receiving AirFrames */
-    cGate *getRadioGate(RadioRef r) const override { return r->radioInGate; }
+    virtual cGate *getRadioGate(RadioRef r) const { return r->radioInGate; }
 
     /** To be called when the host moved; updates proximity info */
-    void setRadioPosition(RadioRef r, const inet::Coord& pos) override;
+    virtual void setRadioPosition(RadioRef r, const inet::Coord& pos);
 
     /** Called from ChannelAccess, to transmit a frame to the radios in range */
-    void sendToChannel(RadioRef srcRadio, AirFrame *airFrame) override;
+    virtual void sendToChannel(RadioRef srcRadio, AirFrame *airFrame);
 
     /** Returns the maximum interference distance*/
-    double getInterferenceRange(RadioRef r) override { return maxInterferenceDistance; }
+    virtual double getInterferenceRange(RadioRef r) { return maxInterferenceDistance; }
 
     /** Returns propagation speed of the signal in meters/sec */
-    double getPropagationSpeed() override { return SPEED_OF_LIGHT; }
+    virtual double getPropagationSpeed() { return SPEED_OF_LIGHT; }
 };
 
 } //namespace
