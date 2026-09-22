@@ -87,7 +87,7 @@ void PhyEnb::handleSelfMessage(cMessage *msg)
 {
     if (msg->isName("beaconStarter")) {
         AirFrame *frame = createBeaconMessage();
-        sendBroadcast(frame);
+        sendBroadcast(frame, 0);  // beacons are modelled as taking no air time
         scheduleAt(NOW + beaconInterval_, msg);
     }
     else {
@@ -106,7 +106,6 @@ AirFrame *PhyEnb::createBeaconMessage()
     cInfo->setCarrierFrequency(primaryChannelModel_->getCarrierFrequency());
     cInfo->setIsNr(isNr_);
     beaconAirFrame->setControlInfo(cInfo);
-    beaconAirFrame->setDuration(0);
     beaconAirFrame->setSchedulingPriority(airFramePriority_);
     // current position
     cInfo->setCoord(getCoord());

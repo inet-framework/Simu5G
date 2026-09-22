@@ -175,7 +175,7 @@ void ChannelControl::setRadioPosition(RadioRef r, const inet::Coord& pos)
     updateConnections(r);
 }
 
-void ChannelControl::sendToChannel(RadioRef srcRadio, AirFrame *airFrame)
+void ChannelControl::sendToChannel(RadioRef srcRadio, AirFrame *airFrame, simtime_t duration)
 {
     // NOTE: no Enter_Method()! We pretend this method is part of PhyBase
 
@@ -183,7 +183,7 @@ void ChannelControl::sendToChannel(RadioRef srcRadio, AirFrame *airFrame)
     for (RadioRef r : getNeighbors(srcRadio)) {
         EV << "sending message to radio\n";
         // no propagation delay, as for the frames sent by PhyBase::sendUnicast()
-        check_and_cast<cSimpleModule *>(srcRadio->radioModule.get())->sendDirect(airFrame->dup(), 0, airFrame->getDuration(), r->radioInGate);
+        check_and_cast<cSimpleModule *>(srcRadio->radioModule.get())->sendDirect(airFrame->dup(), 0, duration, r->radioInGate);
     }
 
     // the radios in range got copies; the original frame can be deleted

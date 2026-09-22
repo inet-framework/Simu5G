@@ -103,8 +103,8 @@ class ChannelControl : public cSimpleModule
     /** To be called when the host moved; updates proximity info */
     virtual void setRadioPosition(RadioRef r, const inet::Coord& pos);
 
-    /** Called from PhyBase, to transmit a frame to the radios in range */
-    virtual void sendToChannel(RadioRef srcRadio, AirFrame *airFrame);
+    /** Called from PhyBase, to transmit a frame to the radios in range; the transmission lasts for the given duration */
+    virtual void sendToChannel(RadioRef srcRadio, AirFrame *airFrame, simtime_t duration);
 };
 
 } //namespace

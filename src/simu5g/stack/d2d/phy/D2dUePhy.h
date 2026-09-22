@@ -136,21 +136,22 @@ class D2dUePhy : public Base
     }
 
     /// one-to-many D2D transmissions go out via sendDirect to all group members
-    void transmitFrame(AirFrame *frame, const UserControlInfo *info) override
+    void transmitFrame(AirFrame *frame, const UserControlInfo *info, simtime_t duration) override
     {
         if (info->getDirection() == D2D_MULTI)
-            sendMulticast(frame);
+            sendMulticast(frame, duration);
         else
-            this->sendUnicast(frame);
+            this->sendUnicast(frame, duration);
     }
 
     /**
      * Sends a frame to the UEs registered to the multicast group indicated in
      * the frame (optionally skipping receivers beyond multicastD2DRange).
-     * Frames are sent with zero transmission delay. D2D-specific: only the
-     * D2D UE PHY originates one-to-many D2D transmissions.
+     * Frames are sent with zero propagation delay; the transmission lasts for
+     * the given duration. D2D-specific: only the D2D UE PHY originates
+     * one-to-many D2D transmissions.
      */
-    void sendMulticast(AirFrame *frame);
+    void sendMulticast(AirFrame *frame, simtime_t duration);
 
   public:
     double getTxPwr(Direction dir = UNKNOWN_DIRECTION) override
@@ -198,7 +199,7 @@ void D2dUePhy<Base>::handleSelfMessage(cMessage *msg)
 }
 
 template<class Base>
-void D2dUePhy<Base>::sendMulticast(AirFrame *frame)
+void D2dUePhy<Base>::sendMulticast(AirFrame *frame, simtime_t duration)
 {
     UserControlInfo *ci = check_and_cast<UserControlInfo *>(frame->getControlInfo());
 
@@ -243,7 +244,7 @@ void D2dUePhy<Base>::sendMulticast(AirFrame *frame)
 
             // Create a duplicate frame before sending
             AirFrame *frameToSend = frame->dup();
-            this->sendDirect(frameToSend, 0, frame->getDuration(), receiver, this->getReceiverGateIndex(receiver, destId));
+            this->sendDirect(frameToSend, 0, duration, receiver, this->getReceiverGateIndex(receiver, destId));
         }
     }
 

@@ -193,7 +193,6 @@ void PhyBase::handleUpperMessage(cMessage *msg)
     // set transmission duration according to the numerology
     NumerologyIndex numerologyIndex = binder_->getNumerologyIndexFromCarrierFreq(lteInfo->getCarrierFrequency());
     double slotDuration = binder_->getSlotDurationFromNumerologyIndex(numerologyIndex);
-    frame->setDuration(slotDuration);
 
     // set current position
     lteInfo->setCoord(getCoord());
@@ -203,7 +202,7 @@ void PhyBase::handleUpperMessage(cMessage *msg)
 
     EV << "Phy: " << nodeTypeToA(nodeType_) << " with id " << nodeId_
        << " sending message to the air channel. Dest=" << lteInfo->getDestId() << endl;
-    transmitFrame(frame, lteInfo.get());
+    transmitFrame(frame, lteInfo.get(), slotDuration);
 }
 
 const char *PhyBase::airFrameNameFor(const UserControlInfo *info)
@@ -216,9 +215,9 @@ const char *PhyBase::airFrameNameFor(const UserControlInfo *info)
     }
 }
 
-void PhyBase::transmitFrame(AirFrame *frame, const UserControlInfo *info)
+void PhyBase::transmitFrame(AirFrame *frame, const UserControlInfo *info, simtime_t duration)
 {
-    sendUnicast(frame);
+    sendUnicast(frame, duration);
 }
 
 void PhyBase::initializeChannelModel()
@@ -254,7 +253,7 @@ void PhyBase::updateDisplayString()
     getDisplayString().setTagArg("t", 0, buf);
 }
 
-void PhyBase::sendBroadcast(AirFrame *airFrame)
+void PhyBase::sendBroadcast(AirFrame *airFrame, simtime_t duration)
 {
     // Remove control info to allow parsim packing
     if (airFrame->getControlInfo() != nullptr) {
@@ -264,10 +263,10 @@ void PhyBase::sendBroadcast(AirFrame *airFrame)
     }
 
     // ChannelControl delivers it to the radios in range
-    channelControl_->sendToChannel(radioRef_, airFrame);
+    channelControl_->sendToChannel(radioRef_, airFrame, duration);
 }
 
-void PhyBase::sendUnicast(AirFrame *frame)
+void PhyBase::sendUnicast(AirFrame *frame, simtime_t duration)
 {
     UserControlInfo *ci = check_and_cast<UserControlInfo *>(
             frame->getControlInfo());
@@ -287,7 +286,7 @@ void PhyBase::sendUnicast(AirFrame *frame)
         delete userControlInfo;
     }
 
-    sendDirect(frame, 0, frame->getDuration(), receiver, getReceiverGateIndex(receiver, dest));
+    sendDirect(frame, 0, duration, receiver, getReceiverGateIndex(receiver, dest));
 }
 
 int PhyBase::getReceiverGateIndex(const cModule *receiver, MacNodeId dest) const
