@@ -84,7 +84,7 @@ class PhyUe : public PhyBase
      */
     virtual void sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector fbUl, FeedbackRequest req);
 
-    virtual double computeReceivedBeaconPacketRssi(AirFrame *frame, UserControlInfo *lteInfo);
+    virtual double computeReceivedBeaconPacketRssi(UserControlInfo *lteInfo);
 
     virtual void findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi);
 

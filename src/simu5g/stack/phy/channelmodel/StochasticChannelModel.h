@@ -274,10 +274,9 @@ class StochasticChannelModel : public ChannelModelBase
     /*
      * Compute sinr for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading
      *
-     * @param frame pointer to the packet
      * @param lteinfo pointer to the user control info
      */
-    std::vector<double> getSINR(AirFrame *frame, UserControlInfo *lteInfo) override;
+    std::vector<double> getSINR(UserControlInfo *lteInfo) override;
 
     /*
      * Add noise and interference to an already-computed per-band received-power
@@ -290,18 +289,16 @@ class StochasticChannelModel : public ChannelModelBase
     /*
      * Compute received useful signal for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading
      *
-     * @param frame pointer to the packet
      * @param lteinfo pointer to the user control info
      */
-    std::vector<double> getRSRP(AirFrame *frame, UserControlInfo *lteInfo) override;
+    std::vector<double> getRSRP(UserControlInfo *lteInfo) override;
 
     /*
      * Compute sinr for each band for a background UE according to pathloss
      *
-     * @param frame pointer to the packet
      * @param lteinfo pointer to the user control info
      */
-    std::vector<double> getSINR_bgUe(AirFrame *frame, UserControlInfo *lteInfo) override;
+    std::vector<double> getSINR_bgUe(UserControlInfo *lteInfo) override;
 
     /*
      * Compute received power for a background UE according to pathloss
@@ -313,11 +310,10 @@ class StochasticChannelModel : public ChannelModelBase
      * Compute the error probability of the transmitted packet according to cqi used, txmode, and the received power
      * after that it throws a random number in order to check if this packet will be corrupted or not
      *
-     * @param frame pointer to the packet
      * @param lteinfo pointer to the user control info
      * @param rsrpVector the received signal for each RB, if it has already been computed
      */
-    bool isReceptionSuccessful(AirFrame *frame, UserControlInfo *lteI, const std::vector<double>& rsrpVector) override;
+    bool isReceptionSuccessful(UserControlInfo *lteI, const std::vector<double>& rsrpVector) override;
 
     /*
      * Compute the path-loss attenuation according to the selected scenario
@@ -423,8 +419,8 @@ class StochasticChannelModel : public ChannelModelBase
      *
      * @param rsrpVector the RSRP the caller already holds, when it has one
      */
-    virtual std::vector<double> getReceptionSinr(AirFrame *frame, UserControlInfo *lteInfo,
-            const std::vector<double>& rsrpVector) { return getSINR(frame, lteInfo); }
+    virtual std::vector<double> getReceptionSinr(UserControlInfo *lteInfo,
+            const std::vector<double>& rsrpVector) { return getSINR(lteInfo); }
 
     /*
      * Returns the 2D distance between two coordinates (ignore z-axis)

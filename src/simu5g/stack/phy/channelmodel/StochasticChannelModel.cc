@@ -452,7 +452,7 @@ double StochasticChannelModel::computeAngularAttenuation(double hAngle, double v
     return pathLoss_->computeAngularAttenuation(hAngle, vAngle);
 }
 
-std::vector<double> StochasticChannelModel::getSINR(AirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> StochasticChannelModel::getSINR(UserControlInfo *lteInfo)
 {
     RadioLink link = linkFor(lteInfo);
 
@@ -584,7 +584,7 @@ void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link,
     }
 }
 
-std::vector<double> StochasticChannelModel::getRSRP(AirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> StochasticChannelModel::getRSRP(UserControlInfo *lteInfo)
 {
     return getRSRP(linkFor(lteInfo), lteInfo->getTxPower());
 }
@@ -694,7 +694,7 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
     return rsrpVector;
 }
 
-std::vector<double> StochasticChannelModel::getSINR_bgUe(AirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> StochasticChannelModel::getSINR_bgUe(UserControlInfo *lteInfo)
 {
     //get tx power
     double recvPower = lteInfo->getTxPower(); // dBm
@@ -1048,7 +1048,7 @@ double StochasticChannelModel::jakesFading(const LinkKey& key, MacNodeId ownerId
     return linearToDb(re_h * re_h + im_h * im_h);
 }
 
-bool StochasticChannelModel::isReceptionSuccessful(AirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
+bool StochasticChannelModel::isReceptionSuccessful(UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
     EV << "StochasticChannelModel::error" << endl;
 
@@ -1083,7 +1083,7 @@ bool StochasticChannelModel::isReceptionSuccessful(AirFrame *frame, UserControlI
     // Take sinr
     // Take sinr (the D2D channel model overrides getReceptionSinr() to route
     // D2D/D2D_MULTI receptions through getSINR_D2D)
-    std::vector<double> snrV = getReceptionSinr(frame, lteInfo, rsrpVector);
+    std::vector<double> snrV = getReceptionSinr(lteInfo, rsrpVector);
 
     // Get the resource Block id used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();

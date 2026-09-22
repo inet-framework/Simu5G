@@ -200,7 +200,7 @@ void HandoverController::beaconReceived(AirFrame *frame, UserControlInfo *lteInf
     lteInfo->setDestId(nodeId_);
     frame->setControlInfo(lteInfo);
 
-    double rssi = phy_->computeReceivedBeaconPacketRssi(frame, lteInfo);
+    double rssi = phy_->computeReceivedBeaconPacketRssi(lteInfo);
     EV << "UE " << nodeId_ << " broadcast frame from " << lteInfo->getSourceId() << " with RSSI: " << rssi << " at " << simTime() << endl;
 
     if (lteInfo->getSourceId() != servingNodeId_ && rssi < minRssi_) {

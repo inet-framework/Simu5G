@@ -65,8 +65,6 @@ void PhyUe::initialize(int stage)
 
 void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandidateMasterRssi)
 {
-    // this is a fictitious frame that needs to compute the SINR
-    AirFrame *frame = new AirFrame("cellSelectionFrame");
     UserControlInfo *cInfo = new UserControlInfo();
     outCandidateMasterId = NODEID_NONE;
 
@@ -96,7 +94,7 @@ void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandida
         cInfo->setDirection(DL);
         // get RSSI from the BS
         double rssi = 0;
-        std::vector<double> rssiV = primaryChannelModel_->getRSRP(frame, cInfo);
+        std::vector<double> rssiV = primaryChannelModel_->getRSRP(cInfo);
         for (auto value : rssiV)
             rssi += value;
         rssi /= rssiV.size(); // compute the mean over all RBs
@@ -107,7 +105,6 @@ void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandida
         }
     }
     delete cInfo;
-    delete frame;
 }
 
 void PhyUe::handleSelfMessage(cMessage *msg)
@@ -140,9 +137,9 @@ void PhyUe::changeServingNode(MacNodeId servingNodeId)
 
 }
 
-double PhyUe::computeReceivedBeaconPacketRssi(AirFrame *frame, UserControlInfo *lteInfo)
+double PhyUe::computeReceivedBeaconPacketRssi(UserControlInfo *lteInfo)
 {
-    std::vector<double> rssiV = primaryChannelModel_->getSINR(frame, lteInfo);
+    std::vector<double> rssiV = primaryChannelModel_->getSINR(lteInfo);
     double rssi = 0;
     for (auto value : rssiV)
         rssi += value;
@@ -264,7 +261,7 @@ void PhyUe::handleAirFrame(cMessage *msg)
         }
     }
 
-    bool result = channelModel->isReceptionSuccessful(frame, lteInfo);
+    bool result = channelModel->isReceptionSuccessful(lteInfo);
 
     // Update statistics
     if (result)

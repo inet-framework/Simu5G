@@ -44,12 +44,12 @@ class PhyEnb : public PhyBase
     void handleAirFrame(cMessage *msg) override;
     virtual bool handleControlPkt(UserControlInfo *lteinfo, AirFrame *frame);
     virtual void handleFeedbackPkt(UserControlInfo *lteinfo, AirFrame *frame);
-    virtual void requestFeedback(UserControlInfo *lteinfo, AirFrame *frame, inet::Packet *pkt);
+    virtual void requestFeedback(UserControlInfo *lteinfo, inet::Packet *pkt);
 
     /// appends additional per-link feedback to the feedback packet (default:
     /// none); called after the UL and DL vectors have been stored, with the
     /// control info still in its end-of-loop (DL) state
-    virtual void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, AirFrame *frame, ChannelModelBase *channelModel) {}
+    virtual void appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, ChannelModelBase *channelModel) {}
     virtual void initializeFeedbackComputation();
     virtual AirFrame *createBeaconMessage();
 

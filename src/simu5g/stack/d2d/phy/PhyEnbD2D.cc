@@ -31,7 +31,7 @@ void PhyEnbD2D::initialize(int stage)
     }
 }
 
-void PhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, AirFrame *frame, ChannelModelBase *channelModel)
+void PhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserControlInfo *lteinfo, ChannelModelBase *channelModel)
 {
     if (!enableD2DCqiReporting_)
         return;
@@ -56,7 +56,7 @@ void PhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserContr
             Coord peerCoord = ueInfo->phy->getCoord();
 
             // Get SINR for this link
-            std::vector<double> snr = check_and_cast<ID2dChannelModel *>(channelModel)->getSINR_D2D(frame, lteinfo, peerId, peerCoord, nodeId_);
+            std::vector<double> snr = check_and_cast<ID2dChannelModel *>(channelModel)->getSINR_D2D(lteinfo, peerId, peerCoord, nodeId_);
 
             // Compute the feedback for this link
             LteFeedbackDoubleVector fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,

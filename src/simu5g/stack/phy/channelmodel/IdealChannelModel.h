@@ -42,10 +42,9 @@ class IdealChannelModel : public ChannelModelBase
     /*
      * Compute the error probability of the transmitted packet
      *
-     * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
-    bool isReceptionSuccessful(AirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) override;
+    bool isReceptionSuccessful(UserControlInfo *lteInfo, const std::vector<double>& rsrpVector) override;
     /*
      * Compute the path-loss attenuation according to the selected scenario
      */
@@ -65,24 +64,21 @@ class IdealChannelModel : public ChannelModelBase
     /*
      * Compute fake SINR for each band for user nodeId according to path loss, shadowing (optional) and multipath fading
      *
-     * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
-    std::vector<double> getSINR(AirFrame *frame, UserControlInfo *lteInfo) override;
+    std::vector<double> getSINR(UserControlInfo *lteInfo) override;
     /*
      * Compute fake received useful signal for each band for user nodeId according to path loss, shadowing (optional) and multipath fading
      *
-     * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
-    std::vector<double> getRSRP(AirFrame *frame, UserControlInfo *lteInfo) override;
+    std::vector<double> getRSRP(UserControlInfo *lteInfo) override;
     /*
      * Compute SINR for each band for a background UE according to path loss
      *
-     * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
-    std::vector<double> getSINR_bgUe(AirFrame *frame, UserControlInfo *lteInfo) override;
+    std::vector<double> getSINR_bgUe(UserControlInfo *lteInfo) override;
     /*
      * Compute received power for a background UE according to path loss
      *
