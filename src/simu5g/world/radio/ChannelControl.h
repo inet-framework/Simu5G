@@ -32,7 +32,7 @@ class AirFrame;
  * Monitors which radios are "in range".
  *
  * @ingroup channelControl
- * @see ChannelAccess
+ * @see PhyBase
  */
 class ChannelControl : public cSimpleModule
 {
@@ -103,7 +103,7 @@ class ChannelControl : public cSimpleModule
     /** To be called when the host moved; updates proximity info */
     virtual void setRadioPosition(RadioRef r, const inet::Coord& pos);
 
-    /** Called from ChannelAccess, to transmit a frame to the radios in range */
+    /** Called from PhyBase, to transmit a frame to the radios in range */
     virtual void sendToChannel(RadioRef srcRadio, AirFrame *airFrame);
 };
 

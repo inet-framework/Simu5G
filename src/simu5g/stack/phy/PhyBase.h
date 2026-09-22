@@ -20,7 +20,6 @@
 #include <inet/common/ModuleRefByPar.h>
 #include <inet/common/Units.h>
 
-#include "simu5g/world/radio/ChannelAccess.h"
 #include "simu5g/world/radio/ChannelControl.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
@@ -32,25 +31,21 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-/**
- * @brief Physical layer of Lte Nic.
- *
- * This class implements the physical layer of the Lte Nic.
- * It contains methods to manage analog models and the decider.
- *
- * The module receives packets from the LteStack and
- * sends them to the air channel, encapsulated in AirFrames.
- *
- * The module receives AirFrames from the radioIn gate,
- * filters the received signal using the analog models,
- * processes the received signal using the decider,
- * then decapsulates the inner packet and sends it to the
- * LteStack with LteDeciderControlInfo attached.
- */
-
 class ChannelModelBase;
 
-class PhyBase : public ChannelAccess
+/**
+ * Base class of the physical layer of the LTE and NR NICs.
+ *
+ * Packets from the stack (#upperGateIn_) are encapsulated into AirFrames and
+ * sent directly to the receiving PHYs; received AirFrames arrive on
+ * #radioInGate_ and are handled by the subclasses.
+ *
+ * The PHY also registers its radio with the ChannelControl module and keeps
+ * the radio's position up to date from the host's mobility module; the
+ * ChannelControl uses both to deliver broadcast frames (the base station
+ * beacons) to the radios in range.
+ */
+class PhyBase : public cSimpleModule, public cListener
 {
 
   protected:
@@ -78,6 +73,17 @@ class PhyBase : public ChannelAccess
     int upperGateOut_ = -1;
     /** The id of the radioIn gate to receive AirFrames */
     int radioInGate_ = -1;
+
+    /// the ChannelControl module, which delivers broadcast frames to the radios in range
+    opp_component_ptr<ChannelControl> channelControl_;
+    /// identifies this radio in the ChannelControl module
+    ChannelControl::RadioRef radioRef_ = nullptr;
+    /// the host that contains this PHY
+    opp_component_ptr<cModule> hostModule_;
+    /// the position of the radio, kept up to date from the host's mobility module
+    inet::Coord radioPos_;
+    /// whether the host's mobility module has reported a position yet
+    bool positionUpdateArrived_ = false;
 
     /** Statistics */
     unsigned int numAirFrameReceived_ = 0;    /// number of AirFrame correctly received
@@ -121,6 +127,15 @@ class PhyBase : public ChannelAccess
     simtime_t lastActive_;
 
   public:
+
+    ~PhyBase() override;
+
+    /**
+     * Called when the host's mobility module reports a position change:
+     * updates the radio position in ChannelControl and emits the mobility
+     * statistics.
+     */
+    void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *) override;
 
     const ChannelModelBase *getPrimaryChannelModel()
     {
@@ -212,11 +227,10 @@ class PhyBase : public ChannelAccess
     virtual void sendUnicast(AirFrame *airFrame);
 
     /**
-     * @brief Called when a mobilityStateChanged signal is received.
-     *
-     * Emits statistics related to the serving cell
+     * Called when the host's mobility module reports a position change.
+     * Subclasses emit their position-related statistics here.
      */
-    void emitMobilityStats() override {}
+    virtual void emitMobilityStats() {}
 
   protected:
 
@@ -284,7 +298,7 @@ class PhyBase : public ChannelAccess
     /*
      * Returns the current position of the node
      */
-    const inet::Coord& getCoord() { return getRadioPosition(); }
+    const inet::Coord& getCoord() const { return radioPos_; }
     /*
      * Returns the time of the last transmission performed
      */

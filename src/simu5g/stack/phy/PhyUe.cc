@@ -346,7 +346,7 @@ void PhyUe::emitMobilityStats()
     if (servingNodeMobility_) {
         // emit distance from current serving cell
         inet::Coord masterPos = servingNodeMobility_->getCurrentPosition();
-        double distance = getRadioPosition().distance(masterPos);
+        double distance = getCoord().distance(masterPos);
         emit(distanceSignal_, distance);
     }
 }
@@ -383,7 +383,7 @@ void PhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
     frame->setSchedulingPriority(airFramePriority_);
     frame->setDuration(signalLength);
 
-    uinfo->setCoord(getRadioPosition());
+    uinfo->setCoord(getCoord());
 
     //TODO access speed data Update channel index
     lastFeedback_ = NOW;

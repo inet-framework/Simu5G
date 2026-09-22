@@ -14,9 +14,6 @@
 
 #include <inet/mobility/static/StationaryMobility.h>
 
-#include "simu5g/world/radio/ChannelControl.h"
-#include "simu5g/world/radio/ChannelAccess.h"
-
 namespace simu5g {
 
 using namespace omnetpp;
