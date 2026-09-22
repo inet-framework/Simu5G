@@ -28,6 +28,5 @@ namespace simu5g;
 // In the simulation, all these messages types are abstracted as AirFrame transmissions.
 //
 packet AirFrame extends cPacket {
-    simtime_t duration; // Time it takes to transmit the frame, in seconds
     UserControlInfo additionalInfo @nopack;
 }

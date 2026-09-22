@@ -381,7 +381,6 @@ void PhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
     // initialize frame fields
 
     frame->setSchedulingPriority(airFramePriority_);
-    frame->setDuration(signalLength);
 
     uinfo->setCoord(getCoord());
 
@@ -398,7 +397,7 @@ void PhyUe::sendFeedback(LteFeedbackDoubleVector fbDl, LteFeedbackDoubleVector f
 
         EV << "Phy: " << nodeTypeToA(nodeType_) << " with id "
            << nodeId_ << " sending feedback to the air channel for carrier " << carrierFrequency << endl;
-        sendUnicast(carrierFrame);
+        sendUnicast(carrierFrame, signalLength);
     }
 
     delete frame;

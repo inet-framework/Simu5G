@@ -213,18 +213,16 @@ class PhyBase : public cSimpleModule, public cListener
     void handleMessage(cMessage *msg) override;
 
     /**
-     * Sends a frame to all NICs in range.
-     *
-     * Frames are sent with zero transmission delay.
+     * Sends a frame to all radios in range (see ChannelControl), with zero
+     * propagation delay; the transmission lasts for the given duration.
      */
-    virtual void sendBroadcast(AirFrame *airFrame);
+    virtual void sendBroadcast(AirFrame *airFrame, simtime_t duration);
 
     /**
-     * Sends a frame uniquely to the destination specified in carried control info.
-     *
-     * Delay is calculated based on sender's and receiver's positions.
+     * Sends a frame to the destination specified in its control info, with
+     * zero propagation delay; the transmission lasts for the given duration.
      */
-    virtual void sendUnicast(AirFrame *airFrame);
+    virtual void sendUnicast(AirFrame *airFrame, simtime_t duration);
 
     /**
      * Called when the host's mobility module reports a position change.
@@ -258,8 +256,8 @@ class PhyBase : public cSimpleModule, public cListener
     /// stamps additional per-technology fields on the outgoing control info (called after the Tx power)
     virtual void stampExtraTxControlInfo(UserControlInfo *info) {}
 
-    /// hands the prepared air frame to the channel (default: unicast to the destination)
-    virtual void transmitFrame(AirFrame *frame, const UserControlInfo *info);
+    /// hands the prepared air frame to the channel, for the given transmission duration (default: unicast to the destination)
+    virtual void transmitFrame(AirFrame *frame, const UserControlInfo *info, simtime_t duration);
 
     /**
      * Processes messages received from the wireless channel.
