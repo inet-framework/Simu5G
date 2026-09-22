@@ -14,6 +14,7 @@
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/mac/packet/LteHarqFeedback_m.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 
@@ -36,6 +37,7 @@ Packet *LteHarqProcessRxD2D::createFeedback(Codeword cw)
     Packet *pkt = nullptr;
 
     auto pduInfo = (pdu_.at(cw)->getTag<UserControlInfo>());
+    GHz pduCarrierFrequency = pdu_.at(cw)->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
     auto pdu = pdu_.at(cw)->peekAtFront<LteMacPdu>();
 
     // if the PDU belongs to a multicast connection, then do not create feedback
@@ -53,7 +55,7 @@ Packet *LteHarqProcessRxD2D::createFeedback(Codeword cw)
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(pduInfo->getSourceId());
         pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(HARQPKT);
         pkt->addTagIfAbsent<UserControlInfo>()->setDirection(pduInfo->getDirection());
-        pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(pduInfo->getCarrierFrequency());
+        pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(pduCarrierFrequency);
 
         pkt->insertAtFront(fb);
     }
@@ -81,7 +83,7 @@ Packet *LteHarqProcessRxD2D::createFeedback(Codeword cw)
             else {
                 if (macOwner_->getNodeType() == NODEB) {
                     // signal the MAC the need for retransmission
-                    check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(pduInfo->getSourceId(), pduInfo->getCarrierFrequency(), pduInfo->getDirection());
+                    check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(pduInfo->getSourceId(), pduCarrierFrequency, pduInfo->getDirection());
                 }
             }
         }
@@ -99,6 +101,7 @@ Packet *LteHarqProcessRxD2D::createFeedbackMirror(Codeword cw)
         throw cRuntimeError("Cannot send feedback for a PDU not in EVALUATING state");
 
     auto pduInfo = pdu_.at(cw)->getTag<UserControlInfo>();
+    GHz pduCarrierFrequency = pdu_.at(cw)->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
     auto pdu = pdu_.at(cw)->peekAtFront<LteMacPdu>();
 
     Packet *pkt = nullptr;
@@ -122,7 +125,7 @@ Packet *LteHarqProcessRxD2D::createFeedbackMirror(Codeword cw)
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(pduInfo->getDestId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(macOwner_->getMacCellId());
         pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(HARQPKT);
-        pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(pduInfo->getCarrierFrequency());
+        pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(pduCarrierFrequency);
     }
     return pkt;
 }

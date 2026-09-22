@@ -78,7 +78,7 @@ class RlcConfigurationInd extends RlcConfigurationTagBase {
 // Normally exchanged by the PHY and MAC layers.
 //
 class CarrierConfigurationInd extends inet::TagBase {
-    bool isNr = false;                  // Packet is for NR processing
+    bool isNr = false;                  // The sender is an NR node (set on beacons only)
     inet::GHz carrierFrequency;         // Carrier frequency for transmission
 }
 

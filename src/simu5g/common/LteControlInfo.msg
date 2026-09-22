@@ -134,9 +134,6 @@ struct FeedbackRequest
 //   feedback request
 //
 class UserControlInfo extends LteControlInfo {
-    bool isNr = false;
-    inet::GHz carrierFrequency;       // carrier frequency
-
     //# H-ARQ Control Information
 
     unsigned char acid = 0;              // H-ARQ process identifier

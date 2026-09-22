@@ -68,8 +68,7 @@ bool LteHarqProcessRx::isEvaluated(Codeword cw)
 {
     if (status_.at(cw) == RXHARQ_PDU_EVALUATING) {
         // get carrier frequency from the control info included in pdu_
-        auto lteInfo = pdu_[cw]->getTag<UserControlInfo>();
-        GHz carrierFreq = lteInfo->getCarrierFrequency();
+        GHz carrierFreq = pdu_[cw]->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
         // obtain numerology and corresponding slot duration
         NumerologyIndex numerologyIndex = binder_->getNumerologyIndexFromCarrierFreq((carrierFreq));
@@ -87,6 +86,7 @@ Packet *LteHarqProcessRx::createFeedback(Codeword cw)
         throw cRuntimeError("Cannot send feedback for a PDU not in EVALUATING state");
 
     auto pduInfo = pdu_.at(cw)->getTag<UserControlInfo>();
+    GHz pduCarrierFrequency = pdu_.at(cw)->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
     auto pdu = pdu_.at(cw)->peekAtFront<LteMacPdu>();
 
     // TODO: Change to Tag (allows length 0)
@@ -103,7 +103,7 @@ Packet *LteHarqProcessRx::createFeedback(Codeword cw)
     pkt->addTagIfAbsent<UserControlInfo>()->setDestId(pduInfo->getSourceId());
     pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(HARQPKT);
     pkt->addTagIfAbsent<UserControlInfo>()->setDirection(pduInfo->getDirection());
-    pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(pduInfo->getCarrierFrequency());
+    pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(pduCarrierFrequency);
 
     if (!result_.at(cw)) {
         // NACK will be sent
@@ -120,7 +120,7 @@ Packet *LteHarqProcessRx::createFeedback(Codeword cw)
         else {
             if (macOwner_->getNodeType() == NODEB) {
                 // signal the MAC the need for retransmission
-                check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(pduInfo->getSourceId(), pduInfo->getCarrierFrequency(), pduInfo->getDirection());
+                check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(pduInfo->getSourceId(), pduCarrierFrequency, pduInfo->getDirection());
             }
         }
     }

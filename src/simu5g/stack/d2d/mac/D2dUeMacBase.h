@@ -211,8 +211,8 @@ bool D2dUeMacBase<Base>::buildStandaloneBsr()
                     d2dUeHelper_.setBsrD2DMulticastTriggered(false);
                     inet::Packet *macPktBsr = d2dUeHelper_.makeBsr(sizeBsr);
                     macPktBsr->addTag<LogicalConnectionInd>()->setLcid(bsrType);
+                    macPktBsr->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
                     auto info = macPktBsr->getTagForUpdate<UserControlInfo>();
-                    info->setCarrierFrequency(carrierFreq);
                     info->setUserTxParams(grant->getUserTxParams()->dup());
 
                     // Add the created BSR to the PDU List
@@ -253,9 +253,9 @@ Packet *D2dUeMacBase<Base>::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacN
     info->setSourceId(this->getMacNodeId());
     info->setDestId(destId);
     info->setDirection(this->connDescOut_.at(destCid).flowInfo.getDirection());
-    info->setCarrierFrequency(carrierFreq);
     info->setGrantId(this->schedulingGrant_[carrierFreq]->getGrantId());
     macPkt->template addTag<LogicalConnectionInd>()->setLcid(SHORT_BSR);
+    macPkt->template addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
 
     // a D2D transmitter may be configured to ignore the grant's parameters
     if (d2dUeHelper_.getUsePreconfiguredTxParams())
@@ -331,8 +331,7 @@ void D2dUeMacBase<Base>::macHandleGrant(cPacket *pktAux)
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
     auto grant = pkt->popAtFront<LteSchedulingGrant>();
 
-    auto userInfo = pkt->getTag<UserControlInfo>();
-    GHz carrierFrequency = userInfo->getCarrierFrequency();
+    GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
     EV << NOW << " D2dUeMacBase::macHandleGrant - Direction: " << dirToA(grant->getDirection()) << " Carrier: " << carrierFrequency << endl;
 
     // delete old grant
@@ -420,7 +419,7 @@ void D2dUeMacBase<Base>::checkRAC()
     if (this->racRequested_ || racD2DMulticastRequested) {
         auto pkt = new inet::Packet("RacRequest");
         GHz carrierFrequency = this->phy_->getPrimaryChannelModel()->getCarrierFrequency();
-        pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(carrierFrequency);
+        pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFrequency);
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(this->getMacNodeId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(this->getMacCellId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDirection(UL);

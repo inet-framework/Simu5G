@@ -12,6 +12,7 @@
 
 #include "simu5g/stack/d2d/mac/harq/LteHarqBufferMirrorD2D.h"
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
 
@@ -35,7 +36,7 @@ void LteHarqBufferMirrorD2D::receiveHarqFeedback(inet::Packet *pkt)
     unsigned char acid = fbpkt->getAcid();
     unsigned int pduLength = fbpkt->getPduLength();
     MacNodeId d2dSenderId = fbpkt->getD2dSenderId();
-    GHz carrierFrequency = pkt->getTag<UserControlInfo>()->getCarrierFrequency();
+    GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
     processes_[acid]->storeFeedback(harqResult, pduLength, d2dSenderId, carrierFrequency, cw);
 
     // debug output

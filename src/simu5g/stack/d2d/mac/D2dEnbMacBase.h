@@ -159,7 +159,7 @@ void D2dEnbMacBase<Base>::macHandleFeedbackPkt(cPacket *pktAux)
 {
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
     auto fb = pkt->peekAtFront<LteFeedbackPkt>();
-    auto lteInfo = pkt->getTag<UserControlInfo>();
+    GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
     std::map<MacNodeId, LteFeedbackDoubleVector> fbMapD2D = fb->getLteFeedbackDoubleVectorD2D();
 
@@ -176,7 +176,7 @@ void D2dEnbMacBase<Base>::macHandleFeedbackPkt(cPacket *pktAux)
             for (const auto& it : mapIt.second) {
                 for (const auto& jt : it) {
                     if (!jt.isEmptyFeedback()) {
-                        d2dAmc->pushFeedbackD2D(id, jt, peerId, lteInfo->getCarrierFrequency());
+                        d2dAmc->pushFeedbackD2D(id, jt, peerId, carrierFrequency);
                     }
                 }
             }
@@ -304,7 +304,7 @@ void D2dEnbMacBase<Base>::fromPhy(cPacket *pktAux)
     auto userInfo = pkt->getTag<UserControlInfo>();
     if (userInfo->getFrameType() == HARQPKT) {
         MacNodeId src = userInfo->getSourceId();
-        GHz carrierFrequency = userInfo->getCarrierFrequency();
+        GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
         // this feedback refers to a mirrored H-ARQ buffer
         auto hfbpkt = pkt->peekAtFront<LteHarqFeedback>();

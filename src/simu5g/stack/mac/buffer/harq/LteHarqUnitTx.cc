@@ -143,7 +143,7 @@ bool LteHarqUnitTx::pduFeedback(HarqAcknowledgment a)
 
             if (macOwner_->getNodeType() == NODEB) {
                 // signal the MAC the need for retransmission
-                check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(lteInfo->getDestId(), lteInfo->getCarrierFrequency(), lteInfo->getDirection());
+                check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(lteInfo->getDestId(), pdu_->getTag<CarrierConfigurationInd>()->getCarrierFrequency(), lteInfo->getDirection());
             }
         }
     }

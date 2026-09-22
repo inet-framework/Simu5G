@@ -333,7 +333,7 @@ void LteMacEnb::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
             pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
             pkt->addTagIfAbsent<UserControlInfo>()->setDestId(nodeId);
             pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(GRANTPKT);
-            pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(carrierFreq);
+            pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
 
             const UserTxParams& ui = getAmc()->computeTxParams(nodeId, dir, carrierFreq);
             UserTxParams *txPara = new UserTxParams(ui);
@@ -430,7 +430,7 @@ void LteMacEnb::resolveRacCollisions()
             else {
                 // unique preamble: RAC succeeds
                 racPkt->setSuccess(true);
-                enbSchedulerUl_->signalRac(ueId, uinfo->getCarrierFrequency());
+                enbSchedulerUl_->signalRac(ueId, pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency());
                 EV << NOW << "LteMacEnb::resolveRacCollisions - UE " << ueId
                    << " RAC SUCCESS" << endl;
             }
@@ -489,7 +489,7 @@ void LteMacEnb::macPduMake(MacCid cid)
                 pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
                 pkt->addTagIfAbsent<UserControlInfo>()->setDestId(destId);
                 pkt->addTagIfAbsent<UserControlInfo>()->setDirection(DL);
-                pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(carrierFreq);
+                pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
 
                 const UserTxParams& txInfo = amc_->computeTxParams(destId, DL, carrierFreq);
 
@@ -898,19 +898,19 @@ void LteMacEnb::macHandleFeedbackPkt(cPacket *pktAux)
     LteFeedbackDoubleVector fbMapUl = fbPk->getLteFeedbackDoubleVectorUl();
     MacNodeId srcNodeId = fbPk->getSourceNodeId();
 
-    auto lteInfo = pkt->getTag<UserControlInfo>();
+    GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
     for (auto& fbv : fbMapDl) {
         for (auto& fb : fbv) {
             if (!fb.isEmptyFeedback()) {
-                amc_->pushFeedback(srcNodeId, DL, fb, lteInfo->getCarrierFrequency());
+                amc_->pushFeedback(srcNodeId, DL, fb, carrierFrequency);
             }
         }
     }
     for (auto& fbv : fbMapUl) {
         for (auto& fb : fbv) {
             if (!fb.isEmptyFeedback())
-                amc_->pushFeedback(srcNodeId, UL, fb, lteInfo->getCarrierFrequency());
+                amc_->pushFeedback(srcNodeId, UL, fb, carrierFrequency);
         }
     }
     delete pkt;
@@ -926,8 +926,9 @@ void LteMacEnb::updateUserTxParam(cPacket *pktAux)
         return; // TODO check if this should be removed.
 
     auto dir = lteInfo->getDirection();
+    GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
-    const UserTxParams& newParam = amc_->computeTxParams(lteInfo->getDestId(), dir, lteInfo->getCarrierFrequency());
+    const UserTxParams& newParam = amc_->computeTxParams(lteInfo->getDestId(), dir, carrierFrequency);
     UserTxParams *tmp = new UserTxParams(newParam);
 
     lteInfo->setUserTxParams(tmp);
@@ -935,7 +936,7 @@ void LteMacEnb::updateUserTxParam(cPacket *pktAux)
     lteInfo->setTxMode(newParam.readTxMode());
     LteSchedulerEnb *scheduler = ((dir == DL) ? static_cast<LteSchedulerEnb *>(enbSchedulerDl_) : static_cast<LteSchedulerEnb *>(enbSchedulerUl_));
 
-    scheduler->readRbOccupation(lteInfo->getDestId(), lteInfo->getCarrierFrequency(), rbMap);
+    scheduler->readRbOccupation(lteInfo->getDestId(), carrierFrequency, rbMap);
 
     lteInfo->setGrantedBlocks(rbMap);
 }

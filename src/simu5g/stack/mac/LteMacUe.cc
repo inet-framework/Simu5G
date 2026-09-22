@@ -436,8 +436,8 @@ bool LteMacUe::buildStandaloneBsr()
         info->setSourceId(getMacNodeId());
         info->setDestId(getMacCellId());
         info->setDirection(UL);
-        info->setCarrierFrequency(carrierFreq);
         info->setUserTxParams(grant->getUserTxParams()->dup());
+        macPkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
         macPkt->addTag<LogicalConnectionInd>()->setLcid(SHORT_BSR);
         macPkt->setTimestamp(NOW);
 
@@ -469,7 +469,7 @@ Packet *LteMacUe::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId dest
      * This is useful at eNB side to calculate the packet delay
      */
     info->setGrantId(schedulingGrant_[carrierFreq]->getGrantId());
-    info->setCarrierFrequency(carrierFreq);
+    macPkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
     // Declare which kind of BSR this PDU may carry. Left unset, the LCID keeps its
     // LCID_NONE default (65535), which is not a BsrType at all -- and the eNB keys
     // its BSR virtual buffers by it (see LteMacEnb::bsrCeCid). NrMacUe and the D2D
@@ -953,8 +953,7 @@ void LteMacUe::macHandleGrant(cPacket *pktAux)
     auto grant = pkt->popAtFront<LteSchedulingGrant>();
 
     // delete old grant
-    auto userInfo = pkt->getTag<UserControlInfo>();
-    GHz carrierFrequency = userInfo->getCarrierFrequency();
+    GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
     EV << NOW << " LteMacUe::macHandleGrant - Direction: " << dirToA(grant->getDirection()) << " Carrier: " << carrierFrequency << endl;
 
@@ -1064,7 +1063,7 @@ void LteMacUe::checkRAC()
         pkt->insertAtFront(racReq);
 
         GHz carrierFrequency = phy_->getPrimaryChannelModel()->getCarrierFrequency();
-        pkt->addTagIfAbsent<UserControlInfo>()->setCarrierFrequency(carrierFrequency);
+        pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFrequency);
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(getMacCellId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDirection(UL);
@@ -1089,7 +1088,7 @@ void LteMacUe::updateUserTxParam(cPacket *pktAux)
     if (lteInfo->getFrameType() != DATAPKT)
         return;
 
-    GHz carrierFrequency = lteInfo->getCarrierFrequency();
+    GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
     lteInfo->setUserTxParams(schedulingGrant_[carrierFrequency]->getUserTxParams()->dup());
 

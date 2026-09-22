@@ -15,6 +15,7 @@
 
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 
