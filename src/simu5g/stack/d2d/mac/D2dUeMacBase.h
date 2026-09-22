@@ -210,8 +210,8 @@ bool D2dUeMacBase<Base>::buildStandaloneBsr()
                     LogicalCid bsrType = d2dUeHelper_.getBsrD2DMulticastTriggered() ? D2D_MULTI_SHORT_BSR : D2D_SHORT_BSR;
                     d2dUeHelper_.setBsrD2DMulticastTriggered(false);
                     inet::Packet *macPktBsr = d2dUeHelper_.makeBsr(sizeBsr);
+                    macPktBsr->addTag<LogicalConnectionInd>()->setLcid(bsrType);
                     auto info = macPktBsr->getTagForUpdate<UserControlInfo>();
-                    info->setPacketLcid(bsrType);
                     info->setCarrierFrequency(carrierFreq);
                     info->setUserTxParams(grant->getUserTxParams()->dup());
 
@@ -253,9 +253,9 @@ Packet *D2dUeMacBase<Base>::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacN
     info->setSourceId(this->getMacNodeId());
     info->setDestId(destId);
     info->setDirection(this->connDescOut_.at(destCid).flowInfo.getDirection());
-    info->setPacketLcid(SHORT_BSR);
     info->setCarrierFrequency(carrierFreq);
     info->setGrantId(this->schedulingGrant_[carrierFreq]->getGrantId());
+    macPkt->template addTag<LogicalConnectionInd>()->setLcid(SHORT_BSR);
 
     // a D2D transmitter may be configured to ignore the grant's parameters
     if (d2dUeHelper_.getUsePreconfiguredTxParams())

@@ -436,9 +436,9 @@ bool LteMacUe::buildStandaloneBsr()
         info->setSourceId(getMacNodeId());
         info->setDestId(getMacCellId());
         info->setDirection(UL);
-        info->setPacketLcid(SHORT_BSR);
         info->setCarrierFrequency(carrierFreq);
         info->setUserTxParams(grant->getUserTxParams()->dup());
+        macPkt->addTag<LogicalConnectionInd>()->setLcid(SHORT_BSR);
         macPkt->setTimestamp(NOW);
 
         cancelBsr();
@@ -470,11 +470,11 @@ Packet *LteMacUe::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId dest
      */
     info->setGrantId(schedulingGrant_[carrierFreq]->getGrantId());
     info->setCarrierFrequency(carrierFreq);
-    // Declare which kind of BSR this PDU may carry. Left unset, the field keeps its
+    // Declare which kind of BSR this PDU may carry. Left unset, the LCID keeps its
     // LCID_NONE default (65535), which is not a BsrType at all -- and the eNB keys
     // its BSR virtual buffers by it (see LteMacEnb::bsrCeCid). NrMacUe and the D2D
     // MAC have always stamped it; this is the LTE UE catching up.
-    info->setPacketLcid(SHORT_BSR);
+    macPkt->addTag<LogicalConnectionInd>()->setLcid(SHORT_BSR);
 
     macPkt->setTimestamp(NOW);
     return macPkt;
@@ -545,7 +545,7 @@ void LteMacUe::macPduMake(MacCid cid)
                     if (auto flowInfo = pkt->findTag<FlowControlInfo>()) {
                         MacNodeId groupId = flowInfo->getD2dGroupId();
                         if (groupId != NODEID_NONE) // for unicast, group id is NONE
-                            macPkt->getTagForUpdate<UserControlInfo>()->setPacketMulticastGroupId(groupId);
+                            macPkt->getTagForUpdate<LogicalConnectionInd>()->setD2dGroupId(groupId);
                     }
 
                     drop(pkt);

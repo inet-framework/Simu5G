@@ -213,15 +213,15 @@ TransmissionDescriptor PhyBase::takeDescriptorFromTags(inet::Packet *pkt)
     auto info = pkt->removeTag<UserControlInfo>();
     TransmissionDescriptor tx;
 
+    // a concern the MAC did not tag goes on the air with its defaults
+    if (auto logicalConnection = pkt->removeTagIfPresent<LogicalConnectionInd>())
+        tx.setLogicalConnection(*logicalConnection);
+
     auto& identity = tx.getIdentityForUpdate();
     identity.setSourceId(info->getSourceId());
     identity.setDestId(info->getDestId());
 
     tx.getTrafficDirectionForUpdate().setDirection(info->getDirection());
-
-    auto& logicalConnection = tx.getLogicalConnectionForUpdate();
-    logicalConnection.setLcid(info->getPacketLcid());
-    logicalConnection.setD2dGroupId(info->getPacketMulticastGroupId());
 
     auto& carrier = tx.getCarrierForUpdate();
     carrier.setIsNr(info->isNr());
@@ -249,6 +249,8 @@ TransmissionDescriptor PhyBase::takeDescriptorFromTags(inet::Packet *pkt)
 
 void PhyBase::addTagsFromDescriptor(inet::Packet *pkt, const TransmissionDescriptor& rx)
 {
+    *pkt->addTag<LogicalConnectionInd>() = rx.getLogicalConnection();
+
     auto info = pkt->addTagIfAbsent<UserControlInfo>();
 
     const auto& identity = rx.getIdentity();
@@ -256,10 +258,6 @@ void PhyBase::addTagsFromDescriptor(inet::Packet *pkt, const TransmissionDescrip
     info->setDestId(identity.getDestId());
 
     info->setDirection(rx.getTrafficDirection().getDirection());
-
-    const auto& logicalConnection = rx.getLogicalConnection();
-    info->setPacketLcid(logicalConnection.getLcid());
-    info->setPacketMulticastGroupId(logicalConnection.getD2dGroupId());
 
     const auto& carrier = rx.getCarrier();
     info->setIsNr(carrier.isNr());

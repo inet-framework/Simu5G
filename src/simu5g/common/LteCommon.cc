@@ -19,6 +19,7 @@
 #include <inet/common/ProtocolTag_m.h>
 
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/cellInfo/CellInfo.h"
 #include "simu5g/corenetwork/trafficFlowFilter/TftControlInfo_m.h"
@@ -608,6 +609,7 @@ void removeAllSimu5GTags(inet::Packet *pkt)
     pkt->removeTagIfPresent<X2ControlInfoTag>();
     pkt->removeTagIfPresent<FlowControlInfo>();
     pkt->removeTagIfPresent<UserControlInfo>();
+    pkt->removeTagIfPresent<LogicalConnectionInd>();
     pkt->removeTagIfPresent<LteControlInfo>();
 }
 

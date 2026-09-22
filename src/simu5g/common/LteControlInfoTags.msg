@@ -41,8 +41,10 @@ class TrafficDirectionInd extends inet::TagBase {
 }
 
 //
-// Identifies the logical connection and D2D groupcast destination for the packet.
-// Usually sent by PDCP to RLC and MAC layers.
+// Indication tag containing the logical connection of a MAC PDU: its LCID,
+// which on an uplink PDU tells the type of BSR it may carry, and the D2D
+// multicast group it is addressed to.
+// Normally exchanged by the PHY and MAC layers.
 //
 class LogicalConnectionInd extends inet::TagBase {
     LogicalCid lcid;                      // Logical Connection Identifier

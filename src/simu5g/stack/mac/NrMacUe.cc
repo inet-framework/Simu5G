@@ -243,10 +243,10 @@ Packet *NrMacUe::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId destI
     info->setSourceId(getMacNodeId());
     info->setDestId(destId);
     info->setDirection(connDescOut_.at(destCid).flowInfo.getDirection());
-    info->setPacketLcid(SHORT_BSR);
     info->setCarrierFrequency(carrierFreq);
     info->setGrantId(schedulingGrant_[carrierFreq]->getGrantId());
     info->setUserTxParams(schedulingGrant_[carrierFreq]->getUserTxParams()->dup());
+    macPkt->addTag<LogicalConnectionInd>()->setLcid(SHORT_BSR);
 
     return macPkt;
 }

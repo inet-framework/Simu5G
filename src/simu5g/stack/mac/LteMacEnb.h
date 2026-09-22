@@ -176,9 +176,10 @@ class LteMacEnb : public LteMacBase
      * and updates its type's single mirror.
      *
      * @param bsr the received BSR control element (not retained)
-     * @param lteInfo control info of the PDU that carried it (source, packet LCID)
+     * @param ueId the UE that sent it
+     * @param reportType the LCID of the PDU that carried it
      */
-    virtual void bufferizeBsr(const MacBsr *bsr, const UserControlInfo *lteInfo);
+    virtual void bufferizeBsr(const MacBsr *bsr, MacNodeId ueId, LogicalCid reportType);
 
     /**
      * bufferizePacket() is called every time a packet is

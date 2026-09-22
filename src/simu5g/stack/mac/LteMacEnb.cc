@@ -258,11 +258,8 @@ void LteMacEnb::macSduRequest()
     EV << "------ END LteMacEnb::macSduRequest ------\n";
 }
 
-void LteMacEnb::bufferizeBsr(const MacBsr *bsr, const UserControlInfo *lteInfo)
+void LteMacEnb::bufferizeBsr(const MacBsr *bsr, MacNodeId ueId, LogicalCid reportType)
 {
-    MacNodeId ueId = lteInfo->getSourceId();
-    LogicalCid reportType = lteInfo->getPacketLcid();
-
     if (reportType == SHORT_BSR && bsr->getLcgSizeArraySize() == NUM_LCGS) {
         // uplink report: one figure per logical channel group, one mirror each
         for (unsigned short g = 0; g < NUM_LCGS; g++)
@@ -637,8 +634,7 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
         // Extract CE. bufferizeBsr() copies what it needs and never retains
         // the CE, so it is deleted here on every path.
         MacBsr *bsr = check_and_cast<MacBsr *>(macPdu->popCe());
-        auto lteInfo = pkt->getTag<UserControlInfo>();
-        bufferizeBsr(bsr, lteInfo.get());
+        bufferizeBsr(bsr, userInfo->getSourceId(), pkt->getTag<LogicalConnectionInd>()->getLcid());
         delete bsr;
     }
     pkt->insertAtFront(macPdu);

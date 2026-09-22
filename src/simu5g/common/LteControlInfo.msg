@@ -134,10 +134,6 @@ struct FeedbackRequest
 //   feedback request
 //
 class UserControlInfo extends LteControlInfo {
-    //TODO packetLcid and packetMulticastGroupId make no sense in UserControlInfo, eliminate
-    LogicalCid packetLcid;                 //  only used to indicate BSR type in MAC
-    MacNodeId packetMulticastGroupId = NODEID_NONE;     // Identifier for a multicast group (it is in range [0:[2^28)-1] ) -- TODO seems to be used instead of proper MBMS RNTIs stored in destId
-
     bool isNr = false;
     inet::GHz carrierFrequency;       // carrier frequency
 
