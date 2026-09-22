@@ -109,7 +109,7 @@ AirFrame *PhyEnb::createBeaconMessage()
     beaconAirFrame->setDuration(0);
     beaconAirFrame->setSchedulingPriority(airFramePriority_);
     // current position
-    cInfo->setCoord(getRadioPosition());
+    cInfo->setCoord(getCoord());
     return beaconAirFrame;
 }
 

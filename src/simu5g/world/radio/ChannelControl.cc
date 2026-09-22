@@ -177,7 +177,7 @@ void ChannelControl::setRadioPosition(RadioRef r, const inet::Coord& pos)
 
 void ChannelControl::sendToChannel(RadioRef srcRadio, AirFrame *airFrame)
 {
-    // NOTE: no Enter_Method()! We pretend this method is part of ChannelAccess
+    // NOTE: no Enter_Method()! We pretend this method is part of PhyBase
 
     // loop through all radios in range
     for (RadioRef r : getNeighbors(srcRadio)) {

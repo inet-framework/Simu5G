@@ -231,7 +231,7 @@ void D2dUePhy<Base>::sendMulticast(AirFrame *frame)
                     throw cRuntimeError("D2dUePhy::sendMulticast - node %d is in multicast group %d but has no registered D2D PHY",
                             num(destId), num(groupId));
 
-                double dist = recvPhy->getCoord().distance(this->getRadioPosition());
+                double dist = recvPhy->getCoord().distance(this->getCoord());
 
                 if (dist > d2dHelper_.getMulticastD2DRange()) {
                     EV << NOW << " D2dUePhy::sendMulticast - node too far (" << dist << " > " << d2dHelper_.getMulticastD2DRange() << ". skipping transmission" << endl;

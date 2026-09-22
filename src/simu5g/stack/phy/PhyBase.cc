@@ -15,6 +15,16 @@
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
 
+#include <inet/common/InitStages.h>
+#include <inet/common/ModuleAccess.h>
+#include <inet/mobility/contract/IMobility.h>
+
+namespace inet {
+// this is needed to ensure the correct ordering among initialization stages
+// this should be fixed directly in INET
+Define_InitStage_Dependency(PHYSICAL_LAYER, SINGLE_MOBILITY);
+} // namespace inet
+
 namespace simu5g {
 
 using namespace omnetpp;
@@ -25,12 +35,34 @@ short PhyBase::airFramePriority_ = 10;
 simsignal_t PhyBase::averageCqiDlSignal_ = registerSignal("averageCqiDl");
 simsignal_t PhyBase::averageCqiUlSignal_ = registerSignal("averageCqiUl");
 
+static int parseInt(const char *s, int defaultValue)
+{
+    if (!s || !*s)
+        return defaultValue;
+
+    char *endptr;
+    int value = strtol(s, &endptr, 10);
+    return *endptr == '\0' ? value : defaultValue;
+}
+
+PhyBase::~PhyBase()
+{
+    // channelControl_ is nullptr if the ChannelControl module has already been deleted
+    if (channelControl_ != nullptr && radioRef_ != nullptr)
+        channelControl_->unregisterRadio(radioRef_);
+}
 
 void PhyBase::initialize(int stage)
 {
-    ChannelAccess::initialize(stage);
-
     if (stage == inet::INITSTAGE_LOCAL) {
+        channelControl_ = dynamic_cast<ChannelControl *>(getSimulation()->findModuleByPath("channelControl"));
+        if (!channelControl_)
+            throw cRuntimeError("Could not find ChannelControl module with name 'channelControl' in the top-level network.");
+        hostModule_ = inet::getContainingNode(this);
+        // register to get a notification when position changes
+        if (hostModule_->findSubmodule("mobility") != -1)
+            hostModule_->subscribe(inet::IMobility::mobilityStateChangedSignal, this);
+
         binder_.reference(this, "binderModule", true);
         // get gate ids
         upperGateIn_ = findGate("upperGateIn");
@@ -46,8 +78,52 @@ void PhyBase::initialize(int stage)
         WATCH(numAirFrameReceived_);
         WATCH(numAirFrameNotReceived_);
     }
+    else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS) {
+        radioRef_ = channelControl_->registerRadio(this);
+    }
+    else if (stage == inet::INITSTAGE_SINGLE_MOBILITY) {
+        if (!positionUpdateArrived_ && hostModule_->isSubscribed(inet::IMobility::mobilityStateChangedSignal, this)) {
+            // ...else, get the initial position from the display string
+            radioPos_.x = parseInt(hostModule_->getDisplayString().getTagArg("p", 0), -1);
+            radioPos_.y = parseInt(hostModule_->getDisplayString().getTagArg("p", 1), -1);
+
+            if (radioPos_.x == -1 || radioPos_.y == -1)
+                throw cRuntimeError("The coordinates of '%s' host are invalid. Please set coordinates in "
+                      "'@display' attribute, or configure Mobility for this host.",
+                        hostModule_->getFullPath().c_str());
+
+            const char *s = hostModule_->getDisplayString().getTagArg("p", 2);
+            if (s != nullptr && *s)
+                throw cRuntimeError("The coordinates of '%s' host are invalid. Please remove automatic arrangement"
+                      " (3rd argument of 'p' tag)"
+                      " from '@display' attribute, or configure Mobility for this host.",
+                        hostModule_->getFullPath().c_str());
+        }
+        channelControl_->setRadioPosition(radioRef_, radioPos_);
+    }
     else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS2) {
         initializeChannelModel();
+    }
+}
+
+void PhyBase::receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *)
+{
+    // since background UEs and their mobility modules are submodules of the e/gNB, a mobilityStateChangedSignal
+    // intended for a background UE would be intercepted by the e/gNB too, making it change its position.
+    // To prevent this issue, we need to check if the source of the signal is the same as the module receiving it
+    if (hostModule_ != source->getParentModule())
+        return;
+
+    if (signalID == inet::IMobility::mobilityStateChangedSignal) {
+        inet::IMobility *mobility = check_and_cast<inet::IMobility *>(obj);
+        radioPos_ = mobility->getCurrentPosition();
+        positionUpdateArrived_ = true;
+
+        if (radioRef_ != nullptr)
+            channelControl_->setRadioPosition(radioRef_, radioPos_);
+
+        // emit serving cell and the distance from it
+        emitMobilityStats();
     }
 }
 
@@ -120,7 +196,7 @@ void PhyBase::handleUpperMessage(cMessage *msg)
     frame->setDuration(slotDuration);
 
     // set current position
-    lteInfo->setCoord(getRadioPosition());
+    lteInfo->setCoord(getCoord());
     lteInfo->setTxPower(txPower_);
     stampExtraTxControlInfo(lteInfo.get());
     frame->setControlInfo(lteInfo.get()->dup());
@@ -187,8 +263,8 @@ void PhyBase::sendBroadcast(AirFrame *airFrame)
         delete userControlInfo;
     }
 
-    // delegate the ChannelControl to send the airframe
-    sendToChannel(airFrame);
+    // ChannelControl delivers it to the radios in range
+    channelControl_->sendToChannel(radioRef_, airFrame);
 }
 
 void PhyBase::sendUnicast(AirFrame *frame)
