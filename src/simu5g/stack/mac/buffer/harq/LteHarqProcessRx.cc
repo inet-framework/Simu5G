@@ -36,9 +36,7 @@ void LteHarqProcessRx::insertPdu(Codeword cw, Packet *pkt)
 {
 
     auto pdu = pkt->peekAtFront<LteMacPdu>();
-    auto lteInfo = pkt->getTag<UserControlInfo>();
-
-    bool ndi = lteInfo->getNdi();
+    bool ndi = pkt->getTag<HarqInfoInd>()->getNdi();
 
     EV << "LteHarqProcessRx::insertPdu - ndi is " << ndi << endl;
     if (ndi && !(status_.at(cw) == RXHARQ_PDU_EMPTY))

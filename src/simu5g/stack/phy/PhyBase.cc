@@ -218,18 +218,14 @@ TransmissionDescriptor PhyBase::takeDescriptorFromTags(inet::Packet *pkt)
         tx.setLogicalConnection(*logicalConnection);
     if (auto carrier = pkt->removeTagIfPresent<CarrierConfigurationInd>())
         tx.setCarrier(*carrier);
+    if (auto harq = pkt->removeTagIfPresent<HarqInfoInd>())
+        tx.setHarq(*harq);
 
     auto& identity = tx.getIdentityForUpdate();
     identity.setSourceId(info->getSourceId());
     identity.setDestId(info->getDestId());
 
     tx.getTrafficDirectionForUpdate().setDirection(info->getDirection());
-
-    auto& harq = tx.getHarqForUpdate();
-    harq.setAcid(info->getAcid());
-    harq.setCw(info->getCw());
-    harq.setTxNumber(info->getTxNumber());
-    harq.setNdi(info->getNdi());
 
     auto& phyTransmission = tx.getPhyTransmissionForUpdate();
     phyTransmission.setTxMode(info->getTxMode());
@@ -249,6 +245,7 @@ void PhyBase::addTagsFromDescriptor(inet::Packet *pkt, const TransmissionDescrip
 {
     *pkt->addTag<LogicalConnectionInd>() = rx.getLogicalConnection();
     *pkt->addTag<CarrierConfigurationInd>() = rx.getCarrier();
+    *pkt->addTag<HarqInfoInd>() = rx.getHarq();
 
     auto info = pkt->addTagIfAbsent<UserControlInfo>();
 
@@ -257,12 +254,6 @@ void PhyBase::addTagsFromDescriptor(inet::Packet *pkt, const TransmissionDescrip
     info->setDestId(identity.getDestId());
 
     info->setDirection(rx.getTrafficDirection().getDirection());
-
-    const auto& harq = rx.getHarq();
-    info->setAcid(harq.getAcid());
-    info->setCw(harq.getCw());
-    info->setTxNumber(harq.getTxNumber());
-    info->setNdi(harq.getNdi());
 
     const auto& phyTransmission = rx.getPhyTransmission();
     info->setTxMode(phyTransmission.getTxMode());

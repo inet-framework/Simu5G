@@ -61,14 +61,15 @@ void LteHarqUnitTx::insertPdu(Packet *pkt)
     transmissions_ = 0;
     status_ = TXHARQ_PDU_SELECTED;
     pduLength_ = pdu_->getByteLength();
-    auto lteInfo = pdu_->getTagForUpdate<UserControlInfo>();
+    // the UE MACs leave the codeword of their PDUs unset, i.e. 0
+    auto harqInfo = pdu_->addTagIfAbsent<HarqInfoInd>();
 
-    lteInfo->setAcid(acid_);
-    Codeword cw_old = lteInfo->getCw();
+    harqInfo->setAcid(acid_);
+    Codeword cw_old = harqInfo->getCw();
     if (cw_ != cw_old)
         throw cRuntimeError("mismatch in cw settings");
 
-    lteInfo->setCw(cw_);
+    harqInfo->setCw(cw_);
 }
 
 void LteHarqUnitTx::markSelected()
@@ -91,9 +92,9 @@ Packet *LteHarqUnitTx::extractPdu()
     transmissions_++;
     status_ = TXHARQ_PDU_WAITING; // waiting for feedback
 
-    auto lteInfo = pdu_->getTagForUpdate<UserControlInfo>();
-    lteInfo->setTxNumber(transmissions_);
-    lteInfo->setNdi(transmissions_ == 1);
+    auto harqInfo = pdu_->getTagForUpdate<HarqInfoInd>();
+    harqInfo->setTxNumber(transmissions_);
+    harqInfo->setNdi(transmissions_ == 1);
     EV << "LteHarqUnitTx::extractPdu - ndi set to " << ((transmissions_ == 1) ? "true" : "false") << endl;
 
     auto extractedPdu = pdu_->dup();

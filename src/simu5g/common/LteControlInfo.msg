@@ -134,13 +134,6 @@ struct FeedbackRequest
 //   feedback request
 //
 class UserControlInfo extends LteControlInfo {
-    //# H-ARQ Control Information
-
-    unsigned char acid = 0;              // H-ARQ process identifier
-    unsigned char cw = 0;                // H-ARQ codeword identifier
-    unsigned char txNumber = 0;          // number of (re)transmissions for the same pdu (1, 2, 3, 4)
-    bool ndi = true;                     // new data indicator (new data overwrites a process content if present)
-
     //# PHY Control Informations
 
     unsigned short txMode = 0 enum(TxMode);             // Transmission mode

@@ -152,7 +152,7 @@ void LteMacBase::fromPhy(cPacket *pktAux)
 
         auto pduAux = pkt->peekAtFront<LteMacPdu>();
         auto pdu = pkt;
-        Codeword cw = userInfo->getCw();
+        Codeword cw = pkt->getTag<HarqInfoInd>()->getCw();
 
         if (harqRxBuffers_.find(carrierFreq) == harqRxBuffers_.end()) {
             HarqRxBuffers newRxBuffs;

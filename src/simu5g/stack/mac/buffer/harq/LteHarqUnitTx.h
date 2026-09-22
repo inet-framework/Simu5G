@@ -117,7 +117,7 @@ class LteHarqUnitTx : noncopyable
      *
      * The H-ARQ process containing this unit must call this method in order
      * to extract the pdu the Mac layer will send.
-     * Before extraction, control info is updated with transmission counter and ndi.
+     * Before extraction, the HARQ info tag is updated with the transmission counter and ndi.
      */
     virtual Packet *extractPdu();
 

@@ -13,6 +13,7 @@
 #include "simu5g/stack/d2d/mac/harq/LteHarqBufferRxD2D.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
 #include "simu5g/common/LteControlInfo.h"
+#include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/mac/packet/LteHarqFeedback_m.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
@@ -52,7 +53,7 @@ void LteHarqBufferRxD2D::insertPdu(Codeword cw, Packet *pkt)
         return;
     }
 
-    unsigned char acid = uInfo->getAcid();
+    unsigned char acid = pkt->getTag<HarqInfoInd>()->getAcid();
     processes_[acid]->insertPdu(cw, pkt);
     // debug output
     EV << "H-ARQ RX: new PDU (id " << pdu->getId() << " ) inserted into process " << (int)acid << endl;

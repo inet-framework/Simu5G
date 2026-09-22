@@ -500,7 +500,7 @@ void LteMacEnb::macPduMake(MacCid cid)
                 RbMap rbMap;
 
                 pkt->addTagIfAbsent<UserControlInfo>()->setTxMode(txmode);
-                pkt->addTagIfAbsent<UserControlInfo>()->setCw(cw);
+                pkt->addTag<HarqInfoInd>()->setCw(cw);
 
                 enbSchedulerDl_->readRbOccupation(destId, carrierFreq, rbMap);
 
