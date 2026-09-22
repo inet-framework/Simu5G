@@ -25,7 +25,7 @@ import simu5g.nodes.PgwStandard;
 import simu5g.nodes.LteUe;
 import simu5g.nodes.eNodeB;
 import simu5g.stack.d2d.binder.D2dBinder;
-import simu5g.world.radio.LteChannelControl;
+import simu5g.world.radio.ChannelControl;
 
 
 //
@@ -42,7 +42,7 @@ network MultiCell
         bool hasD2D = default(false);  // Whether the network hosts D2D-capable nodes
         @display("i=block/network2;bgb=991,558;bgi=background/budapest");
     submodules:
-        channelControl: LteChannelControl {
+        channelControl: ChannelControl {
             @display("p=50,25;is=s");
         }
         routingRecorder: RoutingTableRecorder {

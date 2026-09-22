@@ -36,7 +36,7 @@ import simu5g.corenetwork.coreControl.CoreControl;
 import simu5g.nodes.NrUe;
 import simu5g.nodes.Upf;
 import simu5g.nodes.gNodeB;
-import simu5g.world.radio.LteChannelControl;
+import simu5g.world.radio.ChannelControl;
 
 simple TwoSessionCoreControl extends CoreControl
 {
@@ -73,7 +73,7 @@ network TwoSessionNetwork
     parameters:
         **.cellularNic.hasSdap = default(true);
     submodules:
-        channelControl: LteChannelControl;
+        channelControl: ChannelControl;
         configurator: Ipv4NetworkConfigurator;
         ipv6Configurator: Ipv6NetworkConfigurator;
         binder: Binder;

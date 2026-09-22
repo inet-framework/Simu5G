@@ -18,7 +18,7 @@ package simu5g.world.radio;
 //
 // Utility module that records the position of each radio module in the network.
 // Exactly one instance of this module (or its derived extensions) must be present
-// in the network.
+// in the network, as a submodule named "channelControl".
 //
 // The parameters pMax, sat, alpha and carrierFrequency are not part of the
 // radio propagation model -- that is the channel model of each PHY -- but they

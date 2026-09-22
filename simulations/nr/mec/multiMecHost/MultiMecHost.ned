@@ -25,7 +25,7 @@ import simu5g.nodes.BackgroundCell;
 import simu5g.nodes.MecHost;
 import simu5g.mec.orchestrator.MecOrchestrator;
 import simu5g.mec.ualcmp.Ualcmp;
-import simu5g.world.radio.LteChannelControl;
+import simu5g.world.radio.ChannelControl;
 
 
 //
@@ -45,7 +45,7 @@ network MultiMecHost
         int numBgCells = default(0);
         @display("i=block/network2;bgb=1088,678;bgi=background/pisa");
     submodules:
-        channelControl: LteChannelControl {
+        channelControl: ChannelControl {
             @display("p=50,25;is=s");
         }
         routingRecorder: RoutingTableRecorder {

@@ -18,7 +18,7 @@ import inet.node.inet.Router;
 import inet.node.inet.StandardHost;
 import inet.node.ethernet.Eth10G;
 
-import simu5g.world.radio.LteChannelControl;
+import simu5g.world.radio.ChannelControl;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.nodes.Upf;
 import simu5g.common.binder.Binder;
@@ -60,7 +60,7 @@ network Highway
         }
 
         //# LTE modules
-        channelControl: LteChannelControl {
+        channelControl: ChannelControl {
             @display("p=50,25;is=s");
         }
         binder: Binder {

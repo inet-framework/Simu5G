@@ -23,7 +23,7 @@ import simu5g.corenetwork.coreControl.CoreControl;
 import simu5g.nodes.NrUe;
 import simu5g.nodes.Upf;
 import simu5g.nodes.gNodeB;
-import simu5g.world.radio.LteChannelControl;
+import simu5g.world.radio.ChannelControl;
 
 //
 // A 5G standalone network whose UPF anchors Ethernet PDU sessions: its Ethernet N6 link
@@ -43,7 +43,7 @@ network EthernetSessions
         upf.hasEthernetBridge = default(true);
         @display("i=block/network2;bgb=1000,700");
     submodules:
-        channelControl: LteChannelControl {
+        channelControl: ChannelControl {
             @display("p=50,25;is=s");
         }
         configurator: Ipv4NetworkConfigurator {

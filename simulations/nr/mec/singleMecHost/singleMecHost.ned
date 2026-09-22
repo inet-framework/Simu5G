@@ -25,7 +25,7 @@ import simu5g.nodes.Upf;
 import simu5g.nodes.MecHost;
 import simu5g.mec.orchestrator.MecOrchestrator;
 import simu5g.mec.ualcmp.Ualcmp;
-import simu5g.world.radio.LteChannelControl;
+import simu5g.world.radio.ChannelControl;
 
 
 //
@@ -51,7 +51,7 @@ network SingleMecHost
         configurator: Ipv4NetworkConfigurator {
             @display("p=690,124;is=s");
         }
-        channelControl: LteChannelControl {
+        channelControl: ChannelControl {
             @display("p=690,24;is=s");
         }
         binder: Binder {

@@ -27,7 +27,7 @@ import simu5g.nodes.BackgroundCell;
 import simu5g.nodes.MecHost;
 import simu5g.mec.orchestrator.MecOrchestrator;
 import simu5g.mec.ualcmp.Ualcmp;
-import simu5g.world.radio.LteChannelControl;
+import simu5g.world.radio.ChannelControl;
 
 
 network UrbanNetwork
@@ -41,7 +41,7 @@ network UrbanNetwork
         @display("i=block/network2;bgb=2000,2000;bgi=intersections");
     submodules:
 
-        channelControl: LteChannelControl {
+        channelControl: ChannelControl {
             @display("p=114,32;is=s");
         }
         routingRecorder: RoutingTableRecorder {

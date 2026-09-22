@@ -23,7 +23,7 @@ import simu5g.nodes.ExtCell;
 import simu5g.nodes.NrUe;
 import simu5g.nodes.gNodeB;
 import simu5g.nodes.Upf;
-import simu5g.world.radio.LteChannelControl;
+import simu5g.world.radio.ChannelControl;
 
 
 //
@@ -47,7 +47,7 @@ network ExtServerExample
         configurator: Ipv4NetworkConfigurator {
             @display("p=73,172;is=s");
         }
-        channelControl: LteChannelControl {
+        channelControl: ChannelControl {
             @display("p=73,72;is=s");
         }
         binder: Binder {

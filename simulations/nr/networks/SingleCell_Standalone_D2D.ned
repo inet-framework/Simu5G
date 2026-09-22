@@ -25,7 +25,7 @@ import simu5g.nodes.gNodeB;
 import simu5g.nodes.Upf;
 import simu5g.nodes.BackgroundCell;
 import simu5g.stack.d2d.binder.D2dBinder;
-import simu5g.world.radio.LteChannelControl;
+import simu5g.world.radio.ChannelControl;
 
 
 //
@@ -48,7 +48,7 @@ network SingleCell_Standalone_D2D
         @display("i=block/network2;bgb=826,558;bgi=background/pisa");
 
     submodules:
-        channelControl: LteChannelControl {
+        channelControl: ChannelControl {
             @display("p=50,25;is=s");
         }
         routingRecorder: RoutingTableRecorder {

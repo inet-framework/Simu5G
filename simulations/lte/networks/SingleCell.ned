@@ -23,7 +23,7 @@ import simu5g.corenetwork.coreControl.CoreControl;
 import simu5g.nodes.PgwStandard;
 import simu5g.nodes.LteUe;
 import simu5g.nodes.eNodeB;
-import simu5g.world.radio.LteChannelControl;
+import simu5g.world.radio.ChannelControl;
 
 
 //
@@ -36,7 +36,7 @@ network SingleCell
         int numUe = default(1);
         @display("i=block/network2;bgb=991,558;bgi=background/budapest");
     submodules:
-        channelControl: LteChannelControl {
+        channelControl: ChannelControl {
             @display("p=50,25;is=s");
         }
         routingRecorder: RoutingTableRecorder {

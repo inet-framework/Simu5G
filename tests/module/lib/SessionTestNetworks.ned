@@ -27,7 +27,7 @@ import simu5g.nodes.Upf;
 import simu5g.nodes.eNodeB;
 import simu5g.nodes.gNodeB;
 import simu5g.stack.d2d.binder.D2dBinder;
-import simu5g.world.radio.LteChannelControl;
+import simu5g.world.radio.ChannelControl;
 
 //
 // A 5G core network for the tests of PDU sessions: one ~gNodeB, whose ~Upf anchors the
@@ -43,7 +43,7 @@ network NrSessionTestNetwork
         **.cellularNic.hasSdap = default(true);
         @display("bgb=700,500");
     submodules:
-        channelControl: LteChannelControl {
+        channelControl: ChannelControl {
             @display("p=50,25;is=s");
         }
         configurator: Ipv4NetworkConfigurator {
@@ -98,7 +98,7 @@ network EpcSessionTestNetwork
         int numUe = default(1);
         @display("bgb=700,500");
     submodules:
-        channelControl: LteChannelControl {
+        channelControl: ChannelControl {
             @display("p=50,25;is=s");
         }
         configurator: Ipv4NetworkConfigurator {
