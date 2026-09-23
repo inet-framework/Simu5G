@@ -625,11 +625,11 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
     // =============== ANGULAR ATTENUATION =================
     // Only a base station has a sectorial antenna; a UE-to-UE link never gets here.
     if (link.txIsBaseStation) {
-        PhyBase *ltePhy = binder_->findPhy(link.txId);
+        IRadioEndpoint *bsEndpoint = binder_->findPhy(link.txId);
 
-        if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
+        if (bsEndpoint && bsEndpoint->getTxDirection() == ANISOTROPIC) {
             // get tx angle
-            double txAngle = ltePhy->getTxAngle();
+            double txAngle = bsEndpoint->getTxAngle();
 
             // compute the angle between the receiver position and the reference axis,
             // considering the transmitting BS as center
@@ -769,11 +769,11 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(const TransmissionDescr
     // ANGULAR ATTENUATION
     if (dir == DL) {
         //get tx angle
-        PhyBase *ltePhy = binder_->findPhy(eNbId);
+        IRadioEndpoint *bsEndpoint = binder_->findPhy(eNbId);
 
-        if (ltePhy && ltePhy->getTxDirection() == ANISOTROPIC) {
+        if (bsEndpoint && bsEndpoint->getTxDirection() == ANISOTROPIC) {
             // get tx angle
-            double txAngle = ltePhy->getTxAngle();
+            double txAngle = bsEndpoint->getTxAngle();
 
             // compute the angle between uePosition and reference axis, considering the eNb as center
             double ueAngle = computeAngle(enbCoord, ueCoord);
@@ -925,11 +925,11 @@ double StochasticChannelModel::getReceivedPower_bgUe(double txPower, inet::Coord
     // ANGULAR ATTENUATION
     if (dir == DL) {
         //get tx angle
-        PhyBase *phy = binder_->findPhy(bsId);
+        IRadioEndpoint *bsEndpoint = binder_->findPhy(bsId);
 
-        if (phy && phy->getTxDirection() == ANISOTROPIC) {
+        if (bsEndpoint && bsEndpoint->getTxDirection() == ANISOTROPIC) {
             // get tx angle
-            double txAngle = phy->getTxAngle();
+            double txAngle = bsEndpoint->getTxAngle();
 
             // compute the angle between uePosition and reference axis, considering the eNb as center
             double ueAngle = computeAngle(txPos, rxPos);
