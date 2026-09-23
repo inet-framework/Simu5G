@@ -252,7 +252,7 @@ Packet *D2dUeMacBase<Base>::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacN
     info->setSourceId(this->getMacNodeId());
     info->setDestId(destId);
     info->setDirection(this->connDescOut_.at(destCid).flowInfo.getDirection());
-    info->setGrantId(this->schedulingGrant_[carrierFreq]->getGrantId());
+    macPkt->template addTag<PhyTransmissionInd>()->setGrantId(this->schedulingGrant_[carrierFreq]->getGrantId());
     macPkt->template addTag<LogicalConnectionInd>()->setLcid(SHORT_BSR);
     macPkt->template addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
 
@@ -303,9 +303,7 @@ void D2dUeMacBase<Base>::handleMessage(cMessage *msg)
     cGate *incoming = pkt->getArrivalGate();
 
     if (incoming == this->downInGate_) {
-        auto userInfo = pkt->getTag<UserControlInfo>();
-
-        if (userInfo->getFrameType() == D2DMODESWITCHPKT) {
+        if (pkt->getTag<PhyTransmissionInd>()->getFrameType() == D2DMODESWITCHPKT) {
             EV << "D2dUeMacBase::handleMessage - Received packet " << pkt->getName() <<
                 " from port " << pkt->getArrivalGate()->getName() << endl;
 
@@ -423,7 +421,7 @@ void D2dUeMacBase<Base>::checkRAC()
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(this->getMacNodeId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(this->getMacCellId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDirection(UL);
-        pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(RACPKT);
+        pkt->addTag<PhyTransmissionInd>()->setFrameType(RACPKT);
 
         auto racReq = inet::makeShared<LteRac>();
         racReq->setPreambleIndex(this->intuniform(0, this->numPreambles_ - 1));

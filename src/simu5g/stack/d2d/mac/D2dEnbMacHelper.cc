@@ -100,6 +100,7 @@ void D2dEnbMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
 
                 auto pktTx = pkt->dup();
                 pktTx->removeTagIfPresent<UserControlInfo>();
+                pktTx->removeTagIfPresent<PhyTransmissionInd>();
                 auto switchPktTx = pktTx->removeAtFront<D2DModeSwitchNotification>();
                 switchPktTx->setTxSide(true);
 
@@ -144,6 +145,7 @@ void D2dEnbMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
 
                 auto pktRx = pkt->dup();
                 pktRx->removeTagIfPresent<UserControlInfo>();
+                pktRx->removeTagIfPresent<PhyTransmissionInd>();
                 auto switchPktRx = pktRx->removeAtFront<D2DModeSwitchNotification>();
 
                 EV << NOW << " D2dEnbMacHelper::macHandleD2DModeSwitch - send signal for RX entity to upper layers in the eNB (cid=" << cid << ")" << endl;

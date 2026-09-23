@@ -612,6 +612,7 @@ void removeAllSimu5GTags(inet::Packet *pkt)
     pkt->removeTagIfPresent<LogicalConnectionInd>();
     pkt->removeTagIfPresent<CarrierConfigurationInd>();
     pkt->removeTagIfPresent<HarqInfoInd>();
+    pkt->removeTagIfPresent<PhyTransmissionInd>();
     pkt->removeTagIfPresent<UserTransmissionParametersInd>();
     pkt->removeTagIfPresent<LteControlInfo>();
 }

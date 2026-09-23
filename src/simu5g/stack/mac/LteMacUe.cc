@@ -468,7 +468,7 @@ Packet *LteMacUe::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId dest
      *
      * This is useful at eNB side to calculate the packet delay
      */
-    info->setGrantId(schedulingGrant_[carrierFreq]->getGrantId());
+    macPkt->addTag<PhyTransmissionInd>()->setGrantId(schedulingGrant_[carrierFreq]->getGrantId());
     macPkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
     // Declare which kind of BSR this PDU may carry. Left unset, the LCID keeps its
     // LCID_NONE default (65535), which is not a BsrType at all -- and the eNB keys
@@ -1067,7 +1067,7 @@ void LteMacUe::checkRAC()
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(getMacCellId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDirection(UL);
-        pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(RACPKT);
+        pkt->addTag<PhyTransmissionInd>()->setFrameType(RACPKT);
 
         sendLowerPackets(pkt);
 
@@ -1083,18 +1083,19 @@ void LteMacUe::updateUserTxParam(cPacket *pktAux)
 {
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
 
-    auto lteInfo = pkt->getTagForUpdate<UserControlInfo>();
+    // a PDU that carries a BSR only has no PHY transmission parameters yet, i.e. it is a DATAPKT
+    auto phyTransmission = pkt->addTagIfAbsent<PhyTransmissionInd>();
 
-    if (lteInfo->getFrameType() != DATAPKT)
+    if (phyTransmission->getFrameType() != DATAPKT)
         return;
 
     GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
     pkt->getTagForUpdate<UserTransmissionParametersInd>()->setUserTxParams(schedulingGrant_[carrierFrequency]->getUserTxParams()->dup());
 
-    lteInfo->setTxMode(schedulingGrant_[carrierFrequency]->getUserTxParams()->readTxMode());
+    phyTransmission->setTxMode(schedulingGrant_[carrierFrequency]->getUserTxParams()->readTxMode());
 
-    lteInfo->setGrantedBlocks(schedulingGrant_[carrierFrequency]->getGrantedBlocks());
+    phyTransmission->setGrantedBlocks(schedulingGrant_[carrierFrequency]->getGrantedBlocks());
 }
 
 void LteMacUe::flushHarqBuffers()

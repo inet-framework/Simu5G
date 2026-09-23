@@ -220,6 +220,8 @@ TransmissionDescriptor PhyBase::takeDescriptorFromTags(inet::Packet *pkt)
         tx.setCarrier(*carrier);
     if (auto harq = pkt->removeTagIfPresent<HarqInfoInd>())
         tx.setHarq(*harq);
+    if (auto phyTransmission = pkt->removeTagIfPresent<PhyTransmissionInd>())
+        tx.setPhyTransmission(*phyTransmission);
     if (auto txParams = pkt->removeTagIfPresent<UserTransmissionParametersInd>())
         tx.setTxParams(*txParams);
 
@@ -229,16 +231,6 @@ TransmissionDescriptor PhyBase::takeDescriptorFromTags(inet::Packet *pkt)
 
     tx.getTrafficDirectionForUpdate().setDirection(info->getDirection());
 
-    auto& phyTransmission = tx.getPhyTransmissionForUpdate();
-    phyTransmission.setTxMode(info->getTxMode());
-    phyTransmission.setFrameType(info->getFrameType());
-    phyTransmission.setTxPower(info->getTxPower());
-    phyTransmission.setD2dTxPower(info->getD2dTxPower());
-    phyTransmission.setGrantId(info->getGrantId());
-    phyTransmission.setCoord(info->getCoord());
-    phyTransmission.setGrantedBlocks(info->getGrantedBlocks());
-    phyTransmission.setFeedbackReq(info->getFeedbackReq());
-
     return tx;
 }
 
@@ -247,6 +239,7 @@ void PhyBase::addTagsFromDescriptor(inet::Packet *pkt, const TransmissionDescrip
     *pkt->addTag<LogicalConnectionInd>() = rx.getLogicalConnection();
     *pkt->addTag<CarrierConfigurationInd>() = rx.getCarrier();
     *pkt->addTag<HarqInfoInd>() = rx.getHarq();
+    *pkt->addTag<PhyTransmissionInd>() = rx.getPhyTransmission();
     *pkt->addTag<UserTransmissionParametersInd>() = rx.getTxParams();
 
     auto info = pkt->addTagIfAbsent<UserControlInfo>();
@@ -256,16 +249,6 @@ void PhyBase::addTagsFromDescriptor(inet::Packet *pkt, const TransmissionDescrip
     info->setDestId(identity.getDestId());
 
     info->setDirection(rx.getTrafficDirection().getDirection());
-
-    const auto& phyTransmission = rx.getPhyTransmission();
-    info->setTxMode(phyTransmission.getTxMode());
-    info->setFrameType(phyTransmission.getFrameType());
-    info->setTxPower(phyTransmission.getTxPower());
-    info->setD2dTxPower(phyTransmission.getD2dTxPower());
-    info->setGrantId(phyTransmission.getGrantId());
-    info->setCoord(phyTransmission.getCoord());
-    info->setGrantedBlocks(phyTransmission.getGrantedBlocks());
-    info->setFeedbackReq(phyTransmission.getFeedbackReq());
 }
 
 const char *PhyBase::airFrameNameFor(const TransmissionDescriptor& tx)

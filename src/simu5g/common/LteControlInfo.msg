@@ -126,22 +126,8 @@ struct FeedbackRequest
 // @class UserControlInfo
 // @brief contains information flowing from Mac to Phy
 //
-// It contains the following information:
-// - H-ARQ Control Information
-// - PHY Control Information: transmission mode, frame type, transmit power,
-//   resource blocks used (per remote antenna and band), sender position and
-//   feedback request
+// What is left of it, the identity and the direction, is inherited from
+// LteControlInfo; every concern that was its own field is now the tag of
+// LteControlInfoTags.msg that carries it.
 //
-class UserControlInfo extends LteControlInfo {
-    //# PHY Control Informations
-
-    unsigned short txMode = 0 enum(TxMode);             // Transmission mode
-    unsigned int frameType = 0 enum(LtePhyFrameType);   // Frame Type
-    double txPower = NaN;                               //Transmission Power
-    double d2dTxPower = NaN;                            // D2D Transmission Power (used for feedback reporting of D2D links
-    unsigned int grantId = 0;                           // grantId related to the grand that allowed the sending of a MEC PDU (used only for MAC PDU sent by UEs)
-
-    RbMap grantedBlocks;
-    inet::Coord coord;                                  // The playground position of the sending host
-    FeedbackRequest feedbackReq;
-}
+class UserControlInfo extends LteControlInfo {}

@@ -53,7 +53,7 @@ Packet *LteHarqProcessRxD2D::createFeedback(Codeword cw)
         fb->setChunkLength(b(1));
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(pduInfo->getDestId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(pduInfo->getSourceId());
-        pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(HARQPKT);
+        pkt->addTag<PhyTransmissionInd>()->setFrameType(HARQPKT);
         pkt->addTagIfAbsent<UserControlInfo>()->setDirection(pduInfo->getDirection());
         pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(pduCarrierFrequency);
 
@@ -124,7 +124,7 @@ Packet *LteHarqProcessRxD2D::createFeedbackMirror(Codeword cw)
         pkt->insertAtFront(fb);
         pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(pduInfo->getDestId());
         pkt->addTagIfAbsent<UserControlInfo>()->setDestId(macOwner_->getMacCellId());
-        pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(HARQPKT);
+        pkt->addTag<PhyTransmissionInd>()->setFrameType(HARQPKT);
         pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(pduCarrierFrequency);
     }
     return pkt;

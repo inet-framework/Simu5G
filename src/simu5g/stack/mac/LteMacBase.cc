@@ -113,8 +113,9 @@ void LteMacBase::fromPhy(cPacket *pktAux)
 
     MacNodeId src = userInfo->getSourceId();
     GHz carrierFreq = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
+    auto frameType = pkt->getTag<PhyTransmissionInd>()->getFrameType();
 
-    if (userInfo->getFrameType() == HARQPKT) {
+    if (frameType == HARQPKT) {
         if (harqTxBuffers_.find(carrierFreq) == harqTxBuffers_.end()) {
             HarqTxBuffers newTxBuffs;
             harqTxBuffers_[carrierFreq] = newTxBuffs;
@@ -136,17 +137,17 @@ void LteMacBase::fromPhy(cPacket *pktAux)
         auto hfbpkt = pkt->peekAtFront<LteHarqFeedback>();
         htit->second->receiveHarqFeedback(pkt);
     }
-    else if (userInfo->getFrameType() == FEEDBACKPKT) {
+    else if (frameType == FEEDBACKPKT) {
         // Feedback pkt
         EV << NOW << " Mac::fromPhy: node " << nodeId_ << " Received feedback pkt" << endl;
         macHandleFeedbackPkt(pkt);
     }
-    else if (userInfo->getFrameType() == GRANTPKT) {
+    else if (frameType == GRANTPKT) {
         // Scheduling Grant
         EV << NOW << " Mac::fromPhy: node " << nodeId_ << " Received Scheduling Grant pkt" << endl;
         macHandleGrant(pkt);
     }
-    else if (userInfo->getFrameType() == DATAPKT) {
+    else if (frameType == DATAPKT) {
         // data packet: insert in proper RX buffer
         EV << NOW << " Mac::fromPhy: node " << nodeId_ << " Received DATA packet" << endl;
 
@@ -170,12 +171,12 @@ void LteMacBase::fromPhy(cPacket *pktAux)
             hrb->insertPdu(cw, pdu);
         }
     }
-    else if (userInfo->getFrameType() == RACPKT) {
+    else if (frameType == RACPKT) {
         EV << NOW << " Mac::fromPhy: node " << nodeId_ << " Received RAC packet" << endl;
         macHandleRac(pkt);
     }
     else {
-        throw cRuntimeError("Unknown packet type %d", (int)userInfo->getFrameType());
+        throw cRuntimeError("Unknown packet type %d", (int)frameType);
     }
 }
 

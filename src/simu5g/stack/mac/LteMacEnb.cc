@@ -332,7 +332,7 @@ void LteMacEnb::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
 
             pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
             pkt->addTagIfAbsent<UserControlInfo>()->setDestId(nodeId);
-            pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(GRANTPKT);
+            pkt->addTag<PhyTransmissionInd>()->setFrameType(GRANTPKT);
             pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
 
             const UserTxParams& ui = getAmc()->computeTxParams(nodeId, dir, carrierFreq);
@@ -499,12 +499,13 @@ void LteMacEnb::macPduMake(MacCid cid)
                 txmode = txInfo.readTxMode();
                 RbMap rbMap;
 
-                pkt->addTagIfAbsent<UserControlInfo>()->setTxMode(txmode);
+                auto phyTransmission = pkt->addTag<PhyTransmissionInd>();
+                phyTransmission->setTxMode(txmode);
                 pkt->addTag<HarqInfoInd>()->setCw(cw);
 
                 enbSchedulerDl_->readRbOccupation(destId, carrierFreq, rbMap);
 
-                pkt->addTagIfAbsent<UserControlInfo>()->setGrantedBlocks(rbMap);
+                phyTransmission->setGrantedBlocks(rbMap);
                 macPacket = pkt;
 
                 auto macPkt = makeShared<LteMacPdu>();
@@ -596,7 +597,7 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
     // Notify the packet flow manager about the successful arrival of a TB from a UE.
     // From ETSI TS 138314 V16.0.0 (2020-07)
     if (hasListeners(ulMacPduArrivedSignal_)) {
-        GrantSignalInfo ulInfo(userInfo->getSourceId(), userInfo->getGrantId());
+        GrantSignalInfo ulInfo(userInfo->getSourceId(), pkt->getTag<PhyTransmissionInd>()->getGrantId());
         emit(ulMacPduArrivedSignal_, &ulInfo);
     }
 
@@ -920,9 +921,10 @@ void LteMacEnb::updateUserTxParam(cPacket *pktAux)
 {
 
     auto pkt = check_and_cast<Packet *>(pktAux);
-    auto lteInfo = pkt->getTagForUpdate<UserControlInfo>();
+    auto lteInfo = pkt->getTag<UserControlInfo>();
+    auto phyTransmission = pkt->getTagForUpdate<PhyTransmissionInd>();
 
-    if (lteInfo->getFrameType() != DATAPKT)
+    if (phyTransmission->getFrameType() != DATAPKT)
         return; // TODO check if this should be removed.
 
     auto dir = lteInfo->getDirection();
@@ -933,12 +935,12 @@ void LteMacEnb::updateUserTxParam(cPacket *pktAux)
 
     pkt->getTagForUpdate<UserTransmissionParametersInd>()->setUserTxParams(tmp);
     RbMap rbMap;
-    lteInfo->setTxMode(newParam.readTxMode());
+    phyTransmission->setTxMode(newParam.readTxMode());
     LteSchedulerEnb *scheduler = ((dir == DL) ? static_cast<LteSchedulerEnb *>(enbSchedulerDl_) : static_cast<LteSchedulerEnb *>(enbSchedulerUl_));
 
     scheduler->readRbOccupation(lteInfo->getDestId(), carrierFrequency, rbMap);
 
-    lteInfo->setGrantedBlocks(rbMap);
+    phyTransmission->setGrantedBlocks(rbMap);
 }
 
 ActiveSet *LteMacEnb::getActiveSet(Direction dir)

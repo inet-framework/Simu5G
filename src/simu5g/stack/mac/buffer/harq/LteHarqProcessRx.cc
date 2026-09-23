@@ -99,7 +99,7 @@ Packet *LteHarqProcessRx::createFeedback(Codeword cw)
 
     pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(pduInfo->getDestId());
     pkt->addTagIfAbsent<UserControlInfo>()->setDestId(pduInfo->getSourceId());
-    pkt->addTagIfAbsent<UserControlInfo>()->setFrameType(HARQPKT);
+    pkt->addTag<PhyTransmissionInd>()->setFrameType(HARQPKT);
     pkt->addTagIfAbsent<UserControlInfo>()->setDirection(pduInfo->getDirection());
     pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(pduCarrierFrequency);
 

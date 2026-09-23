@@ -249,7 +249,7 @@ void D2dEnbMacBase<Base>::sendModeSwitchNotification(MacNodeId srcId, MacNodeId 
 
     pktTx->addTagIfAbsent<UserControlInfo>()->setSourceId(this->nodeId_);
     pktTx->addTagIfAbsent<UserControlInfo>()->setDestId(srcId);
-    pktTx->addTagIfAbsent<UserControlInfo>()->setFrameType(D2DMODESWITCHPKT);
+    pktTx->addTag<PhyTransmissionInd>()->setFrameType(D2DMODESWITCHPKT);
 
     pktTx->insertAtFront(switchPktTx);
     auto switchPktTx_local = pktTx->dup();
@@ -266,7 +266,7 @@ void D2dEnbMacBase<Base>::sendModeSwitchNotification(MacNodeId srcId, MacNodeId 
 
     pktRx->addTagIfAbsent<UserControlInfo>()->setSourceId(this->nodeId_);
     pktRx->addTagIfAbsent<UserControlInfo>()->setDestId(dstId);
-    pktRx->addTagIfAbsent<UserControlInfo>()->setFrameType(D2DMODESWITCHPKT);
+    pktRx->addTag<PhyTransmissionInd>()->setFrameType(D2DMODESWITCHPKT);
     pktRx->insertAtFront(switchPktRx);
 
     auto switchPktRx_local = pktRx->dup();
@@ -302,7 +302,7 @@ void D2dEnbMacBase<Base>::fromPhy(cPacket *pktAux)
 {
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
     auto userInfo = pkt->getTag<UserControlInfo>();
-    if (userInfo->getFrameType() == HARQPKT) {
+    if (pkt->getTag<PhyTransmissionInd>()->getFrameType() == HARQPKT) {
         MacNodeId src = userInfo->getSourceId();
         GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
