@@ -495,7 +495,7 @@ void LteMacEnb::macPduMake(MacCid cid)
 
                 UserTxParams *txPara = new UserTxParams(txInfo);
 
-                pkt->addTagIfAbsent<UserControlInfo>()->setUserTxParams(txPara);
+                pkt->addTag<UserTransmissionParametersInd>()->setUserTxParams(txPara);
                 txmode = txInfo.readTxMode();
                 RbMap rbMap;
 
@@ -931,7 +931,7 @@ void LteMacEnb::updateUserTxParam(cPacket *pktAux)
     const UserTxParams& newParam = amc_->computeTxParams(lteInfo->getDestId(), dir, carrierFrequency);
     UserTxParams *tmp = new UserTxParams(newParam);
 
-    lteInfo->setUserTxParams(tmp);
+    pkt->getTagForUpdate<UserTransmissionParametersInd>()->setUserTxParams(tmp);
     RbMap rbMap;
     lteInfo->setTxMode(newParam.readTxMode());
     LteSchedulerEnb *scheduler = ((dir == DL) ? static_cast<LteSchedulerEnb *>(enbSchedulerDl_) : static_cast<LteSchedulerEnb *>(enbSchedulerUl_));

@@ -220,6 +220,8 @@ TransmissionDescriptor PhyBase::takeDescriptorFromTags(inet::Packet *pkt)
         tx.setCarrier(*carrier);
     if (auto harq = pkt->removeTagIfPresent<HarqInfoInd>())
         tx.setHarq(*harq);
+    if (auto txParams = pkt->removeTagIfPresent<UserTransmissionParametersInd>())
+        tx.setTxParams(*txParams);
 
     auto& identity = tx.getIdentityForUpdate();
     identity.setSourceId(info->getSourceId());
@@ -237,7 +239,6 @@ TransmissionDescriptor PhyBase::takeDescriptorFromTags(inet::Packet *pkt)
     phyTransmission.setGrantedBlocks(info->getGrantedBlocks());
     phyTransmission.setFeedbackReq(info->getFeedbackReq());
 
-    tx.getTxParamsForUpdate().setUserTxParams(info->removeUserTxParams());
     return tx;
 }
 
@@ -246,6 +247,7 @@ void PhyBase::addTagsFromDescriptor(inet::Packet *pkt, const TransmissionDescrip
     *pkt->addTag<LogicalConnectionInd>() = rx.getLogicalConnection();
     *pkt->addTag<CarrierConfigurationInd>() = rx.getCarrier();
     *pkt->addTag<HarqInfoInd>() = rx.getHarq();
+    *pkt->addTag<UserTransmissionParametersInd>() = rx.getTxParams();
 
     auto info = pkt->addTagIfAbsent<UserControlInfo>();
 
@@ -264,9 +266,6 @@ void PhyBase::addTagsFromDescriptor(inet::Packet *pkt, const TransmissionDescrip
     info->setCoord(phyTransmission.getCoord());
     info->setGrantedBlocks(phyTransmission.getGrantedBlocks());
     info->setFeedbackReq(phyTransmission.getFeedbackReq());
-
-    const UserTxParams *userTxParams = rx.getTxParams().getUserTxParams();
-    info->setUserTxParams(userTxParams != nullptr ? userTxParams->dup() : nullptr);
 }
 
 const char *PhyBase::airFrameNameFor(const TransmissionDescriptor& tx)

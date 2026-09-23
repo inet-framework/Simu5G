@@ -436,7 +436,7 @@ bool LteMacUe::buildStandaloneBsr()
         info->setSourceId(getMacNodeId());
         info->setDestId(getMacCellId());
         info->setDirection(UL);
-        info->setUserTxParams(grant->getUserTxParams()->dup());
+        macPkt->addTag<UserTransmissionParametersInd>()->setUserTxParams(grant->getUserTxParams()->dup());
         macPkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
         macPkt->addTag<LogicalConnectionInd>()->setLcid(SHORT_BSR);
         macPkt->setTimestamp(NOW);
@@ -460,7 +460,7 @@ Packet *LteMacUe::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId dest
     info->setSourceId(getMacNodeId());
     info->setDestId(destId);
     info->setDirection(UL);
-    info->setUserTxParams(schedulingGrant_[carrierFreq]->getUserTxParams()->dup());
+    macPkt->addTag<UserTransmissionParametersInd>()->setUserTxParams(schedulingGrant_[carrierFreq]->getUserTxParams()->dup());
     /*
      * @author Alessandro Noferi
      * retrieve the grantId from the grant object in schedulingGrant_[carrierFreq]
@@ -1090,7 +1090,7 @@ void LteMacUe::updateUserTxParam(cPacket *pktAux)
 
     GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
-    lteInfo->setUserTxParams(schedulingGrant_[carrierFrequency]->getUserTxParams()->dup());
+    pkt->getTagForUpdate<UserTransmissionParametersInd>()->setUserTxParams(schedulingGrant_[carrierFrequency]->getUserTxParams()->dup());
 
     lteInfo->setTxMode(schedulingGrant_[carrierFrequency]->getUserTxParams()->readTxMode());
 

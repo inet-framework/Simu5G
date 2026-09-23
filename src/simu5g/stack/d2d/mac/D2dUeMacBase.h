@@ -212,8 +212,7 @@ bool D2dUeMacBase<Base>::buildStandaloneBsr()
                     inet::Packet *macPktBsr = d2dUeHelper_.makeBsr(sizeBsr);
                     macPktBsr->addTag<LogicalConnectionInd>()->setLcid(bsrType);
                     macPktBsr->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
-                    auto info = macPktBsr->getTagForUpdate<UserControlInfo>();
-                    info->setUserTxParams(grant->getUserTxParams()->dup());
+                    macPktBsr->addTag<UserTransmissionParametersInd>()->setUserTxParams(grant->getUserTxParams()->dup());
 
                     // Add the created BSR to the PDU List
                     // select channel model for the given carrier frequency
@@ -258,10 +257,11 @@ Packet *D2dUeMacBase<Base>::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacN
     macPkt->template addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
 
     // a D2D transmitter may be configured to ignore the grant's parameters
+    auto txParams = macPkt->template addTag<UserTransmissionParametersInd>();
     if (d2dUeHelper_.getUsePreconfiguredTxParams())
-        info->setUserTxParams(d2dUeHelper_.getPreconfiguredTxParams()->dup());
+        txParams->setUserTxParams(d2dUeHelper_.getPreconfiguredTxParams()->dup());
     else
-        info->setUserTxParams(this->schedulingGrant_[carrierFreq]->getUserTxParams()->dup());
+        txParams->setUserTxParams(this->schedulingGrant_[carrierFreq]->getUserTxParams()->dup());
 
     return macPkt;
 }

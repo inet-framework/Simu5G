@@ -16,7 +16,6 @@ import inet.common.geometry.Geometry; // for Coord
 import inet.common.Units;
 import simu5g.common.LteCommon;
 import simu5g.common.LteCommonEnum;
-import simu5g.stack.mac.amc.UserTxParams;
 
 cplusplus {{
 #include "simu5g/common/LteCommon.h"   // for FlowId, BearerRequest
@@ -142,14 +141,7 @@ class UserControlInfo extends LteControlInfo {
     double d2dTxPower = NaN;                            // D2D Transmission Power (used for feedback reporting of D2D links
     unsigned int grantId = 0;                           // grantId related to the grand that allowed the sending of a MEC PDU (used only for MAC PDU sent by UEs)
 
-    UserTxParams *userTxParams @owned;
     RbMap grantedBlocks;
     inet::Coord coord;                                  // The playground position of the sending host
     FeedbackRequest feedbackReq;
 }
-
-cplusplus (UserControlInfo::setUserTxParams) {{
-    // Code inserted at top of setUserTxParams(); allows silent overwrite of earlier object.
-    delete this->userTxParams;
-    this->userTxParams = nullptr;
-}}
