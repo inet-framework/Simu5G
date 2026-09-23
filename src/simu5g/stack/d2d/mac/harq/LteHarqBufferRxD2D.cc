@@ -12,7 +12,6 @@
 
 #include "simu5g/stack/d2d/mac/harq/LteHarqBufferRxD2D.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
-#include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/mac/packet/LteHarqFeedback_m.h"
 #include "simu5g/stack/mac/LteMacBase.h"
@@ -43,9 +42,7 @@ LteHarqBufferRxD2D::LteHarqBufferRxD2D(unsigned int num, LteMacBase *owner, Bind
 void LteHarqBufferRxD2D::insertPdu(Codeword cw, Packet *pkt)
 {
     auto pdu = pkt->peekAtFront<LteMacPdu>();
-    auto uInfo = pkt->getTag<UserControlInfo>();
-
-    MacNodeId srcId = uInfo->getSourceId();
+    MacNodeId srcId = pkt->getTag<NodeIdentificationInd>()->getSourceId();
     if (macOwner_->isHarqReset(srcId)) {
         // if the HARQ processes have been aborted during this TTI (e.g. due to a D2D mode switch),
         // incoming packets should not be accepted
@@ -84,12 +81,12 @@ void LteHarqBufferRxD2D::sendFeedback()
 
                 auto hfb = pktHbf->peekAtFront<LteHarqFeedback>();
                 // debug output:
-                auto cInfo = pktHbf->getTag<UserControlInfo>();
+                auto identity = pktHbf->getTag<NodeIdentificationInd>();
                 const char *r = hfb->getResult() ? "ACK" : "NACK";
                 EV << "H-ARQ RX: feedback sent to TX process "
                    << (int)hfb->getAcid() << " Codeword  " << (int)cw
                    << " of node with id "
-                   << cInfo->getDestId()
+                   << identity->getDestId()
                    << " result: " << r << endl;
 
                 macOwner_->sendLowerPackets(pktHbf);
@@ -108,13 +105,13 @@ std::list<Packet *> LteHarqBufferRxD2D::extractCorrectPdus()
             if (processes_[i]->isCorrect(cw)) {
                 auto temp = processes_[i]->extractPdu(cw);
                 unsigned int size = temp->getByteLength();
-                auto info = temp->getTag<UserControlInfo>();
+                Direction pduDirection = temp->getTag<TrafficDirectionInd>()->getDirection();
 
                 // emit delay statistic
-                if (info->getDirection() == D2D)
+                if (pduDirection == D2D)
                     macUe_emit(macDelayD2D_, (NOW - temp->getCreationTime()).dbl());
                 else
-                    macUe_emit(macDelaySignal_[dir], (NOW - temp->getCreationTime()).dbl()); // TODO `info->getDirection()` and `dir` maybe differs
+                    macUe_emit(macDelaySignal_[dir], (NOW - temp->getCreationTime()).dbl()); // TODO `pduDirection` and `dir` maybe differs
 
                 // Calculate Throughput by sending the number of bits for this packet
                 totalRcvdBytes_ += size;
@@ -124,10 +121,10 @@ std::list<Packet *> LteHarqBufferRxD2D::extractCorrectPdus()
                 // emit throughput statistics
                 if (den > 0) {
                     double tputSample = (double)totalRcvdBytes_ / den;
-                    if (info->getDirection() == D2D)
+                    if (pduDirection == D2D)
                         macUe_emit(macThroughputD2D_, tputSample);
                     else
-                        macUe_emit(macThroughputSignal_[dir], tputSample); // TODO `info->getDirection()` and `dir` maybe differs
+                        macUe_emit(macThroughputSignal_[dir], tputSample); // TODO `pduDirection` and `dir` maybe differs
                 }
 
                 ret.push_back(temp);

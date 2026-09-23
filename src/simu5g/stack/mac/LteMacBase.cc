@@ -109,9 +109,7 @@ void LteMacBase::fromPhy(cPacket *pktAux)
     // to manage H-ARQ feedback)
 
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
-    auto userInfo = pkt->getTag<UserControlInfo>();
-
-    MacNodeId src = userInfo->getSourceId();
+    MacNodeId src = pkt->getTag<NodeIdentificationInd>()->getSourceId();
     GHz carrierFreq = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
     auto frameType = pkt->getTag<PhyTransmissionInd>()->getFrameType();
 
@@ -166,7 +164,7 @@ void LteMacBase::fromPhy(cPacket *pktAux)
         }
         else {
             // FIXME: possible memory leak
-            LteHarqBufferRx *hrb = createRxHarqBuffer(src, userInfo.get());
+            LteHarqBufferRx *hrb = createRxHarqBuffer(src, pkt->getTag<TrafficDirectionInd>()->getDirection());
             harqRxBuffers_[carrierFreq][src] = hrb;
             hrb->insertPdu(cw, pdu);
         }
@@ -193,9 +191,8 @@ void LteMacBase::recordBufferOverflow(Direction dir, double sample)
                 "by the core MAC", dirToA(dir).c_str());
 }
 
-LteHarqBufferRx *LteMacBase::createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo)
+LteHarqBufferRx *LteMacBase::createRxHarqBuffer(MacNodeId src, Direction dir)
 {
-    Direction dir = (Direction)userInfo->getDirection();
     if (dir != DL && dir != UL)
         throw cRuntimeError("LteMacBase::createRxHarqBuffer: direction %s not supported", dirToA(dir).c_str());
     return new LteHarqBufferRx(harqProcesses_, this, binder_, src);
@@ -499,11 +496,10 @@ void LteMacBase::handleMessage(cMessage *msg)
 void LteMacBase::harqAckToFlowObserver(const inet::Packet *macPdu)
 {
     if (hasListeners(macPduAckedSignal_)) {
-        auto lteInfo = macPdu->getTag<UserControlInfo>();
-        Direction dir = lteInfo->getDirection();
+        Direction dir = macPdu->getTag<TrafficDirectionInd>()->getDirection();
         if (dir == DL || dir == UL) {
             auto pdu = macPdu->peekAtFront<LteMacPdu>();
-            MacPduSignalInfo info(lteInfo->getDestId(), pdu.get());
+            MacPduSignalInfo info(macPdu->getTag<NodeIdentificationInd>()->getDestId(), pdu.get());
             emit(macPduAckedSignal_, &info);
         }
     }
@@ -512,11 +508,10 @@ void LteMacBase::harqAckToFlowObserver(const inet::Packet *macPdu)
 void LteMacBase::discardMacPdu(const inet::Packet *macPdu)
 {
     if (hasListeners(macPduDiscardedSignal_)) {
-        auto lteInfo = macPdu->getTag<UserControlInfo>();
-        Direction dir = lteInfo->getDirection();
+        Direction dir = macPdu->getTag<TrafficDirectionInd>()->getDirection();
         if (dir == DL || dir == UL) {
             auto pdu = macPdu->peekAtFront<LteMacPdu>();
-            MacPduSignalInfo info(lteInfo->getDestId(), pdu.get());
+            MacPduSignalInfo info(macPdu->getTag<NodeIdentificationInd>()->getDestId(), pdu.get());
             emit(macPduDiscardedSignal_, &info);
         }
     }

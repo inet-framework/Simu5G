@@ -11,7 +11,6 @@
 //
 
 #include "simu5g/stack/d2d/mac/harq/LteHarqBufferMirrorD2D.h"
-#include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {

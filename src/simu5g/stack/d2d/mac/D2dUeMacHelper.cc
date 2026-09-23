@@ -46,9 +46,9 @@ Packet *D2dUeMacHelper::makeBsr(int size)
     bsr->setSize(size);
     header->pushCe(bsr);
     macPkt->insertAtFront(header);
-    macPkt->addTagIfAbsent<UserControlInfo>()->setSourceId(mac_->getMacNodeId());
-    macPkt->addTagIfAbsent<UserControlInfo>()->setDestId(mac_->getMacCellId());
-    macPkt->addTagIfAbsent<UserControlInfo>()->setDirection(UL);
+    macPkt->addTagIfAbsent<NodeIdentificationInd>()->setSourceId(mac_->getMacNodeId());
+    macPkt->addTagIfAbsent<NodeIdentificationInd>()->setDestId(mac_->getMacCellId());
+    macPkt->addTag<TrafficDirectionInd>()->setDirection(UL);
 
     mac_->cancelBsr();
     EV << "D2dUeMacHelper::makeBsr() - BSR with size " << size << " bytes created" << endl;

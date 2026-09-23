@@ -126,11 +126,11 @@ void LteHarqBufferTx::insertPdu(unsigned char acid, Codeword cw, Packet *pkt)
     numEmptyProc_--;
     processes_[acid]->insertPdu(pkt, cw);
 
-    auto tag = pkt->getTag<UserControlInfo>();
+    auto identity = pkt->getTag<NodeIdentificationInd>();
     // debug output
     EV << "H-ARQ TX: new pdu (id " << pdu->getId() << " ) inserted into process " << (int)acid << " "
                                                                                                   "codeword id: " << (int)cw << " "
-                                                                                                                                "for node with id " << tag->getDestId() << endl;
+                                                                                                                                "for node with id " << identity->getDestId() << endl;
 
 }
 
@@ -235,12 +235,12 @@ void LteHarqBufferTx::sendSelectedDown()
     for (const auto& id : ul) {
         auto pkt = processes_[selectedAcid_]->extractPdu(id);
         auto pduToSend = pkt->peekAtFront<LteMacPdu>();
-        auto cinfo = pkt->getTag<UserControlInfo>();
+        auto identity = pkt->getTag<NodeIdentificationInd>();
         macOwner_->sendLowerPackets(pkt);
 
         // debug output
         EV << "\t H-ARQ TX: pdu (id " << pduToSend->getId() << " ) extracted from process " << (int)selectedAcid_ << " "
-                "codeword " << (int)id << " for node with id " << cinfo->getDestId() << endl;
+                "codeword " << (int)id << " for node with id " << identity->getDestId() << endl;
     }
     selectedAcid_ = HARQ_NONE;
 }

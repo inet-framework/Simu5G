@@ -69,7 +69,7 @@ class D2dEnbMacBase : public Base, public ID2dMacEnb
     void fromPhy(cPacket *pkt) override;
 
     /// HARQ RX buffer factory: adds support for the D2D and D2D_MULTI directions
-    LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo) override;
+    LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, Direction dir) override;
 
   public:
     D2dEnbMacBase() : d2dEnbHelper_(this)
@@ -247,8 +247,8 @@ void D2dEnbMacBase<Base>::sendModeSwitchNotification(MacNodeId srcId, MacNodeId 
     switchPktTx->setInterruptHarq(d2dEnbHelper_.getMsHarqInterrupt());
     switchPktTx->setClearRlcBuffer(d2dEnbHelper_.getMsClearRlcBuffer());
 
-    pktTx->addTagIfAbsent<UserControlInfo>()->setSourceId(this->nodeId_);
-    pktTx->addTagIfAbsent<UserControlInfo>()->setDestId(srcId);
+    pktTx->addTagIfAbsent<NodeIdentificationInd>()->setSourceId(this->nodeId_);
+    pktTx->addTagIfAbsent<NodeIdentificationInd>()->setDestId(srcId);
     pktTx->addTag<PhyTransmissionInd>()->setFrameType(D2DMODESWITCHPKT);
 
     pktTx->insertAtFront(switchPktTx);
@@ -264,8 +264,8 @@ void D2dEnbMacBase<Base>::sendModeSwitchNotification(MacNodeId srcId, MacNodeId 
     switchPktRx->setInterruptHarq(d2dEnbHelper_.getMsHarqInterrupt());
     switchPktRx->setClearRlcBuffer(d2dEnbHelper_.getMsClearRlcBuffer());
 
-    pktRx->addTagIfAbsent<UserControlInfo>()->setSourceId(this->nodeId_);
-    pktRx->addTagIfAbsent<UserControlInfo>()->setDestId(dstId);
+    pktRx->addTagIfAbsent<NodeIdentificationInd>()->setSourceId(this->nodeId_);
+    pktRx->addTagIfAbsent<NodeIdentificationInd>()->setDestId(dstId);
     pktRx->addTag<PhyTransmissionInd>()->setFrameType(D2DMODESWITCHPKT);
     pktRx->insertAtFront(switchPktRx);
 
@@ -289,21 +289,19 @@ void D2dEnbMacBase<Base>::flushHarqBuffers()
 }
 
 template<class Base>
-LteHarqBufferRx *D2dEnbMacBase<Base>::createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo)
+LteHarqBufferRx *D2dEnbMacBase<Base>::createRxHarqBuffer(MacNodeId src, Direction dir)
 {
-    Direction dir = (Direction)userInfo->getDirection();
     if (dir == D2D || dir == D2D_MULTI)
         return new LteHarqBufferRxD2D(this->harqProcesses_, this, this->binder_, src, (dir == D2D_MULTI));
-    return Base::createRxHarqBuffer(src, userInfo);
+    return Base::createRxHarqBuffer(src, dir);
 }
 
 template<class Base>
 void D2dEnbMacBase<Base>::fromPhy(cPacket *pktAux)
 {
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
-    auto userInfo = pkt->getTag<UserControlInfo>();
     if (pkt->getTag<PhyTransmissionInd>()->getFrameType() == HARQPKT) {
-        MacNodeId src = userInfo->getSourceId();
+        MacNodeId src = pkt->getTag<NodeIdentificationInd>()->getSourceId();
         GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
         // this feedback refers to a mirrored H-ARQ buffer

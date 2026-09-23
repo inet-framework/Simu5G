@@ -13,7 +13,6 @@
 #include "simu5g/stack/d2d/mac/harq/LteHarqProcessRxD2D.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
-#include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/mac/packet/LteHarqFeedback_m.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
@@ -36,13 +35,14 @@ Packet *LteHarqProcessRxD2D::createFeedback(Codeword cw)
 
     Packet *pkt = nullptr;
 
-    auto pduInfo = (pdu_.at(cw)->getTag<UserControlInfo>());
+    auto pduIdentity = pdu_.at(cw)->getTag<NodeIdentificationInd>();
+    Direction pduDirection = pdu_.at(cw)->getTag<TrafficDirectionInd>()->getDirection();
     GHz pduCarrierFrequency = pdu_.at(cw)->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
     auto pdu = pdu_.at(cw)->peekAtFront<LteMacPdu>();
 
     // if the PDU belongs to a multicast connection, then do not create feedback
     // (i.e., in all other cases, feedback is created)
-    if (pduInfo->getDirection() != D2D_MULTI) {
+    if (pduDirection != D2D_MULTI) {
         // TODO: Change LteHarqFeedback from chunk to tag,
         pkt = new Packet();
         auto fb = makeShared<LteHarqFeedback>();
@@ -51,17 +51,17 @@ Packet *LteHarqProcessRxD2D::createFeedback(Codeword cw)
         fb->setResult(result_.at(cw));
         fb->setFbMacPduId(pdu->getMacPduId());
         fb->setChunkLength(b(1));
-        pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(pduInfo->getDestId());
-        pkt->addTagIfAbsent<UserControlInfo>()->setDestId(pduInfo->getSourceId());
+        pkt->addTagIfAbsent<NodeIdentificationInd>()->setSourceId(pduIdentity->getDestId());
+        pkt->addTagIfAbsent<NodeIdentificationInd>()->setDestId(pduIdentity->getSourceId());
         pkt->addTag<PhyTransmissionInd>()->setFrameType(HARQPKT);
-        pkt->addTagIfAbsent<UserControlInfo>()->setDirection(pduInfo->getDirection());
+        pkt->addTag<TrafficDirectionInd>()->setDirection(pduDirection);
         pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(pduCarrierFrequency);
 
         pkt->insertAtFront(fb);
     }
 
     if (!result_.at(cw)) {
-        if (pduInfo->getDirection() == D2D_MULTI) {
+        if (pduDirection == D2D_MULTI) {
             // if the PDU belongs to a multicast/broadcast connection, then reset the codeword, since there will be no retransmission
             EV << NOW << " LteHarqProcessRxD2D::createFeedback - PDU for CW " << cw << " belonged to a multicast/broadcast connection. Resetting CW " << endl;
             delete pdu_.at(cw);
@@ -83,7 +83,7 @@ Packet *LteHarqProcessRxD2D::createFeedback(Codeword cw)
             else {
                 if (macOwner_->getNodeType() == NODEB) {
                     // signal the MAC the need for retransmission
-                    check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(pduInfo->getSourceId(), pduCarrierFrequency, pduInfo->getDirection());
+                    check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(pduIdentity->getSourceId(), pduCarrierFrequency, pduDirection);
                 }
             }
         }
@@ -100,7 +100,8 @@ Packet *LteHarqProcessRxD2D::createFeedbackMirror(Codeword cw)
     if (!isEvaluated(cw))
         throw cRuntimeError("Cannot send feedback for a PDU not in EVALUATING state");
 
-    auto pduInfo = pdu_.at(cw)->getTag<UserControlInfo>();
+    auto pduIdentity = pdu_.at(cw)->getTag<NodeIdentificationInd>();
+    Direction pduDirection = pdu_.at(cw)->getTag<TrafficDirectionInd>()->getDirection();
     GHz pduCarrierFrequency = pdu_.at(cw)->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
     auto pdu = pdu_.at(cw)->peekAtFront<LteMacPdu>();
 
@@ -108,7 +109,7 @@ Packet *LteHarqProcessRxD2D::createFeedbackMirror(Codeword cw)
 
     // if the PDU belongs to a multicast connection, then do not create feedback
     // (i.e., in all other cases, feedback is created)
-    if (pduInfo->getDirection() != D2D_MULTI) {
+    if (pduDirection != D2D_MULTI) {
         // TODO: Change LteHarqFeedbackMirror from chunk to tag,
         pkt = new Packet();
         auto fb = makeShared<LteHarqFeedbackMirror>();
@@ -118,12 +119,12 @@ Packet *LteHarqProcessRxD2D::createFeedbackMirror(Codeword cw)
         fb->setFbMacPduId(pdu->getMacPduId());
         fb->setChunkLength(b(1)); // TODO: should be 0
         fb->setPduLength(pdu->getByteLength());
-        fb->setD2dSenderId(pduInfo->getSourceId());
-        fb->setD2dReceiverId(pduInfo->getDestId());
+        fb->setD2dSenderId(pduIdentity->getSourceId());
+        fb->setD2dReceiverId(pduIdentity->getDestId());
 
         pkt->insertAtFront(fb);
-        pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(pduInfo->getDestId());
-        pkt->addTagIfAbsent<UserControlInfo>()->setDestId(macOwner_->getMacCellId());
+        pkt->addTagIfAbsent<NodeIdentificationInd>()->setSourceId(pduIdentity->getDestId());
+        pkt->addTagIfAbsent<NodeIdentificationInd>()->setDestId(macOwner_->getMacCellId());
         pkt->addTag<PhyTransmissionInd>()->setFrameType(HARQPKT);
         pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(pduCarrierFrequency);
     }

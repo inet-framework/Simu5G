@@ -432,10 +432,10 @@ bool LteMacUe::buildStandaloneBsr()
         header->pushCe(bsr);
         macPkt->insertAtFront(header);
 
-        auto info = macPkt->addTagIfAbsent<UserControlInfo>();
-        info->setSourceId(getMacNodeId());
-        info->setDestId(getMacCellId());
-        info->setDirection(UL);
+        auto identity = macPkt->addTag<NodeIdentificationInd>();
+        identity->setSourceId(getMacNodeId());
+        identity->setDestId(getMacCellId());
+        macPkt->addTag<TrafficDirectionInd>()->setDirection(UL);
         macPkt->addTag<UserTransmissionParametersInd>()->setUserTxParams(grant->getUserTxParams()->dup());
         macPkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
         macPkt->addTag<LogicalConnectionInd>()->setLcid(SHORT_BSR);
@@ -456,10 +456,10 @@ Packet *LteMacUe::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId dest
     header->setHeaderLength(MAC_HEADER);
     macPkt->insertAtFront(header);
 
-    auto info = macPkt->addTagIfAbsent<UserControlInfo>();
-    info->setSourceId(getMacNodeId());
-    info->setDestId(destId);
-    info->setDirection(UL);
+    auto identity = macPkt->addTag<NodeIdentificationInd>();
+    identity->setSourceId(getMacNodeId());
+    identity->setDestId(destId);
+    macPkt->addTag<TrafficDirectionInd>()->setDirection(UL);
     macPkt->addTag<UserTransmissionParametersInd>()->setUserTxParams(schedulingGrant_[carrierFreq]->getUserTxParams()->dup());
     /*
      * @author Alessandro Noferi
@@ -591,7 +591,7 @@ void LteMacUe::macPduMake(MacCid cid)
             // The direction is read back off the PDU rather than assumed UL: at an LTE
             // UE createUlMacPdu() stamped UL there, so this is the same value, and the
             // D2D leg needs the real one for both the buffer and the H-ARQ policy.
-            Direction dir = (Direction)pit.second->getTag<UserControlInfo>()->getDirection();
+            Direction dir = pit.second->getTag<TrafficDirectionInd>()->getDirection();
 
             // Check if the HarqTx buffer already exists for the destId
             // Get a reference for the destId TXBuffer
@@ -703,7 +703,7 @@ void LteMacUe::macPduUnmake(cPacket *cpkt)
 {
     auto pkt = check_and_cast<Packet *>(cpkt);
     auto macPdu = pkt->removeAtFront<LteMacPdu>();
-    auto userInfo = pkt->getTag<UserControlInfo>();
+    auto identity = pkt->getTag<NodeIdentificationInd>();
 
     while (macPdu->hasSdu()) {
         // Extract and send SDU
@@ -713,7 +713,7 @@ void LteMacUe::macPduUnmake(cPacket *cpkt)
 
         EV << "LteMacBase: pduUnmaker extracted SDU" << endl;
 
-        MacNodeId senderId = userInfo->getSourceId();
+        MacNodeId senderId = identity->getSourceId();
         MacCid cid = MacCid(senderId, lcid);
 
         // For RLC-AM, status reports arrive in the reverse direction and may not
@@ -868,8 +868,8 @@ void LteMacUe::handleSelfMessage()
                 // check if one 'ready' unit has the same direction as the grant
                 bool checkDir = false;
                 for (Codeword cw : cwListRetx) {
-                    auto info = currHarq->getProcess(currentHarq_)->getPdu(cw)->getTag<UserControlInfo>();
-                    if (info->getDirection() == schedulingGrant_[carrierFrequency]->getDirection()) {
+                    Direction pduDirection = currHarq->getProcess(currentHarq_)->getPdu(cw)->getTag<TrafficDirectionInd>()->getDirection();
+                    if (pduDirection == schedulingGrant_[carrierFrequency]->getDirection()) {
                         checkDir = true;
                         break;
                     }
@@ -1064,9 +1064,9 @@ void LteMacUe::checkRAC()
 
         GHz carrierFrequency = phy_->getPrimaryChannelModel()->getCarrierFrequency();
         pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFrequency);
-        pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
-        pkt->addTagIfAbsent<UserControlInfo>()->setDestId(getMacCellId());
-        pkt->addTagIfAbsent<UserControlInfo>()->setDirection(UL);
+        pkt->addTagIfAbsent<NodeIdentificationInd>()->setSourceId(getMacNodeId());
+        pkt->addTagIfAbsent<NodeIdentificationInd>()->setDestId(getMacCellId());
+        pkt->addTag<TrafficDirectionInd>()->setDirection(UL);
         pkt->addTag<PhyTransmissionInd>()->setFrameType(RACPKT);
 
         sendLowerPackets(pkt);

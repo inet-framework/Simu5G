@@ -13,7 +13,6 @@
 #include "simu5g/stack/mac/buffer/harq/LteHarqProcessRx.h"
 #include "simu5g/stack/mac/LteMacBase.h"
 #include "simu5g/stack/mac/LteMacEnb.h"
-#include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/mac/packet/LteHarqFeedback_m.h"
@@ -83,7 +82,8 @@ Packet *LteHarqProcessRx::createFeedback(Codeword cw)
     if (!isEvaluated(cw))
         throw cRuntimeError("Cannot send feedback for a PDU not in EVALUATING state");
 
-    auto pduInfo = pdu_.at(cw)->getTag<UserControlInfo>();
+    auto pduIdentity = pdu_.at(cw)->getTag<NodeIdentificationInd>();
+    Direction pduDirection = pdu_.at(cw)->getTag<TrafficDirectionInd>()->getDirection();
     GHz pduCarrierFrequency = pdu_.at(cw)->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
     auto pdu = pdu_.at(cw)->peekAtFront<LteMacPdu>();
 
@@ -97,10 +97,10 @@ Packet *LteHarqProcessRx::createFeedback(Codeword cw)
     auto pkt = new Packet("harqFeedback");
     pkt->insertAtFront(fb);
 
-    pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(pduInfo->getDestId());
-    pkt->addTagIfAbsent<UserControlInfo>()->setDestId(pduInfo->getSourceId());
+    pkt->addTagIfAbsent<NodeIdentificationInd>()->setSourceId(pduIdentity->getDestId());
+    pkt->addTagIfAbsent<NodeIdentificationInd>()->setDestId(pduIdentity->getSourceId());
     pkt->addTag<PhyTransmissionInd>()->setFrameType(HARQPKT);
-    pkt->addTagIfAbsent<UserControlInfo>()->setDirection(pduInfo->getDirection());
+    pkt->addTag<TrafficDirectionInd>()->setDirection(pduDirection);
     pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(pduCarrierFrequency);
 
     if (!result_.at(cw)) {
@@ -118,7 +118,7 @@ Packet *LteHarqProcessRx::createFeedback(Codeword cw)
         else {
             if (macOwner_->getNodeType() == NODEB) {
                 // signal the MAC the need for retransmission
-                check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(pduInfo->getSourceId(), pduCarrierFrequency, pduInfo->getDirection());
+                check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(pduIdentity->getSourceId(), pduCarrierFrequency, pduDirection);
             }
         }
     }

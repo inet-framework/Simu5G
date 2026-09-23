@@ -210,10 +210,13 @@ void PhyBase::handleUpperPacket(inet::Packet *pkt, TransmissionDescriptor& tx)
 
 TransmissionDescriptor PhyBase::takeDescriptorFromTags(inet::Packet *pkt)
 {
-    auto info = pkt->removeTag<UserControlInfo>();
     TransmissionDescriptor tx;
 
     // a concern the MAC did not tag goes on the air with its defaults
+    if (auto identity = pkt->removeTagIfPresent<NodeIdentificationInd>())
+        tx.setIdentity(*identity);
+    if (auto trafficDirection = pkt->removeTagIfPresent<TrafficDirectionInd>())
+        tx.setTrafficDirection(*trafficDirection);
     if (auto logicalConnection = pkt->removeTagIfPresent<LogicalConnectionInd>())
         tx.setLogicalConnection(*logicalConnection);
     if (auto carrier = pkt->removeTagIfPresent<CarrierConfigurationInd>())
@@ -225,30 +228,18 @@ TransmissionDescriptor PhyBase::takeDescriptorFromTags(inet::Packet *pkt)
     if (auto txParams = pkt->removeTagIfPresent<UserTransmissionParametersInd>())
         tx.setTxParams(*txParams);
 
-    auto& identity = tx.getIdentityForUpdate();
-    identity.setSourceId(info->getSourceId());
-    identity.setDestId(info->getDestId());
-
-    tx.getTrafficDirectionForUpdate().setDirection(info->getDirection());
-
     return tx;
 }
 
 void PhyBase::addTagsFromDescriptor(inet::Packet *pkt, const TransmissionDescriptor& rx)
 {
+    *pkt->addTag<NodeIdentificationInd>() = rx.getIdentity();
+    *pkt->addTag<TrafficDirectionInd>() = rx.getTrafficDirection();
     *pkt->addTag<LogicalConnectionInd>() = rx.getLogicalConnection();
     *pkt->addTag<CarrierConfigurationInd>() = rx.getCarrier();
     *pkt->addTag<HarqInfoInd>() = rx.getHarq();
     *pkt->addTag<PhyTransmissionInd>() = rx.getPhyTransmission();
     *pkt->addTag<UserTransmissionParametersInd>() = rx.getTxParams();
-
-    auto info = pkt->addTagIfAbsent<UserControlInfo>();
-
-    const auto& identity = rx.getIdentity();
-    info->setSourceId(identity.getSourceId());
-    info->setDestId(identity.getDestId());
-
-    info->setDirection(rx.getTrafficDirection().getDirection());
 }
 
 const char *PhyBase::airFrameNameFor(const TransmissionDescriptor& tx)

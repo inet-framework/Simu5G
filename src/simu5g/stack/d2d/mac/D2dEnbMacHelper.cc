@@ -87,9 +87,7 @@ void D2dEnbMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
 {
     auto pkt = check_and_cast<inet::Packet *>(pktAux);
     auto switchPkt = pkt->peekAtFront<D2DModeSwitchNotification>();
-    auto uinfo = pkt->getTag<UserControlInfo>();
-
-    MacNodeId nodeId = uinfo->getDestId();
+    MacNodeId nodeId = pkt->getTag<NodeIdentificationInd>()->getDestId();
     LteD2DMode oldMode = switchPkt->getOldMode();
 
     if (!switchPkt->getTxSide()) { // address the receiving endpoint of the D2D flow (tx entities at the eNB)
@@ -99,7 +97,7 @@ void D2dEnbMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                 EV << NOW << " D2dEnbMacHelper::macHandleD2DModeSwitch - send signal for TX entity to upper layers in the eNB (cid=" << cid << ")" << endl;
 
                 auto pktTx = pkt->dup();
-                pktTx->removeTagIfPresent<UserControlInfo>();
+                pktTx->removeTagIfPresent<NodeIdentificationInd>();
                 pktTx->removeTagIfPresent<PhyTransmissionInd>();
                 auto switchPktTx = pktTx->removeAtFront<D2DModeSwitchNotification>();
                 switchPktTx->setTxSide(true);
@@ -144,7 +142,7 @@ void D2dEnbMacHelper::macHandleD2DModeSwitch(cPacket *pktAux)
                 }
 
                 auto pktRx = pkt->dup();
-                pktRx->removeTagIfPresent<UserControlInfo>();
+                pktRx->removeTagIfPresent<NodeIdentificationInd>();
                 pktRx->removeTagIfPresent<PhyTransmissionInd>();
                 auto switchPktRx = pktRx->removeAtFront<D2DModeSwitchNotification>();
 

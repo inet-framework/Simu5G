@@ -107,8 +107,7 @@ bool LteHarqUnitTx::pduFeedback(HarqAcknowledgment a)
     EV << "LteHarqUnitTx::pduFeedback - Welcome!" << endl;
     double sample;
     bool reset = false;
-    auto lteInfo = pdu_->getTag<UserControlInfo>();
-    Direction dir = lteInfo->getDirection();
+    Direction dir = pdu_->getTag<TrafficDirectionInd>()->getDirection();
     unsigned int ntx = transmissions_;
     if (!(status_ == TXHARQ_PDU_WAITING))
         throw cRuntimeError("Feedback sent to an H-ARQ unit not waiting for it");
@@ -144,7 +143,7 @@ bool LteHarqUnitTx::pduFeedback(HarqAcknowledgment a)
 
             if (macOwner_->getNodeType() == NODEB) {
                 // signal the MAC the need for retransmission
-                check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(lteInfo->getDestId(), pdu_->getTag<CarrierConfigurationInd>()->getCarrierFrequency(), lteInfo->getDirection());
+                check_and_cast<LteMacEnb *>(macOwner_.get())->signalProcessForRtx(pdu_->getTag<NodeIdentificationInd>()->getDestId(), pdu_->getTag<CarrierConfigurationInd>()->getCarrierFrequency(), dir);
             }
         }
     }

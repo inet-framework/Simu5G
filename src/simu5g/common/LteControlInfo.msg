@@ -12,8 +12,6 @@
 
 import inet.common.INETDefs;
 import inet.common.TagBase;
-import inet.common.geometry.Geometry; // for Coord
-import inet.common.Units;
 import simu5g.common.LteCommon;
 import simu5g.common.LteCommonEnum;
 
@@ -29,11 +27,9 @@ namespace simu5g;
 // - FlowControlInfo contains information with flow granularity.
 //   It is used from Ip2Nic to Mac.
 //
-// - UserControlInfo contains information with user granularity.
-//   It is used from Mac to Phy.
-//
-// Both FlowControlInfo and UserControlInfo inherit from LteControlInfo
-// to avoid replication of common parts.
+// - Between the MAC and the PHY, a packet carries the tags of
+//   LteControlInfoTags.msg, one per concern, and what the PHY sends over
+//   the air is the TransmissionDescriptor it builds from them.
 //
 // The Mac layer receives packets (MAC sdu) with FlowControlInfo attached
 //
@@ -42,14 +38,13 @@ namespace simu5g;
 
 //
 // @class LteControlInfo
-// @brief Base class for FlowControlInfo and UserControlInfo
+// @brief Base class of FlowControlInfo
 //
-// This class contains information present in both Flow and User ControlInfo:
+// This class contains the identity of a flow:
 // - Source MAC Node ID
 // - Destination MAC Node ID
 // - D2D MAC Node Ids
 // - Traffic Direction
-// - Connection information: LCID
 //
 class LteControlInfo extends inet::TagBase {
     MacNodeId sourceId = NODEID_NONE;                    // Source MacNodeId
@@ -122,12 +117,3 @@ struct FeedbackRequest
     RbAllocationType rbAllocationType;
 };
 
-//
-// @class UserControlInfo
-// @brief contains information flowing from Mac to Phy
-//
-// What is left of it, the identity and the direction, is inherited from
-// LteControlInfo; every concern that was its own field is now the tag of
-// LteControlInfoTags.msg that carries it.
-//
-class UserControlInfo extends LteControlInfo {}

@@ -147,7 +147,7 @@ class D2dUeMacBase : public Base, public ID2dMacUe
     virtual void macHandleD2DModeSwitch(cPacket *pkt);
 
     /// HARQ buffer factories: add support for the D2D and D2D_MULTI directions
-    LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo) override;
+    LteHarqBufferRx *createRxHarqBuffer(MacNodeId src, Direction dir) override;
     LteHarqBufferTx *createTxHarqBuffer(MacNodeId destId, Direction dir) override;
 
     /// Factory override: use the D2D-capable LCG scheduler
@@ -248,10 +248,10 @@ Packet *D2dUeMacBase<Base>::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacN
     macPkt->insertAtFront(header);
 
     // the direction is the flow's (UL, D2D or D2D_MULTI), not a constant
-    auto info = macPkt->template addTagIfAbsent<UserControlInfo>();
-    info->setSourceId(this->getMacNodeId());
-    info->setDestId(destId);
-    info->setDirection(this->connDescOut_.at(destCid).flowInfo.getDirection());
+    auto identity = macPkt->template addTag<NodeIdentificationInd>();
+    identity->setSourceId(this->getMacNodeId());
+    identity->setDestId(destId);
+    macPkt->template addTag<TrafficDirectionInd>()->setDirection(this->connDescOut_.at(destCid).flowInfo.getDirection());
     macPkt->template addTag<PhyTransmissionInd>()->setGrantId(this->schedulingGrant_[carrierFreq]->getGrantId());
     macPkt->template addTag<LogicalConnectionInd>()->setLcid(SHORT_BSR);
     macPkt->template addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
@@ -267,12 +267,11 @@ Packet *D2dUeMacBase<Base>::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacN
 }
 
 template<class Base>
-LteHarqBufferRx *D2dUeMacBase<Base>::createRxHarqBuffer(MacNodeId src, const UserControlInfo *userInfo)
+LteHarqBufferRx *D2dUeMacBase<Base>::createRxHarqBuffer(MacNodeId src, Direction dir)
 {
-    Direction dir = (Direction)userInfo->getDirection();
     if (dir == D2D || dir == D2D_MULTI)
         return new LteHarqBufferRxD2D(this->harqProcesses_, this, this->binder_, src, (dir == D2D_MULTI));
-    return Base::createRxHarqBuffer(src, userInfo);
+    return Base::createRxHarqBuffer(src, dir);
 }
 
 template<class Base>
@@ -418,9 +417,9 @@ void D2dUeMacBase<Base>::checkRAC()
         auto pkt = new inet::Packet("RacRequest");
         GHz carrierFrequency = this->phy_->getPrimaryChannelModel()->getCarrierFrequency();
         pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFrequency);
-        pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(this->getMacNodeId());
-        pkt->addTagIfAbsent<UserControlInfo>()->setDestId(this->getMacCellId());
-        pkt->addTagIfAbsent<UserControlInfo>()->setDirection(UL);
+        pkt->addTagIfAbsent<NodeIdentificationInd>()->setSourceId(this->getMacNodeId());
+        pkt->addTagIfAbsent<NodeIdentificationInd>()->setDestId(this->getMacCellId());
+        pkt->addTag<TrafficDirectionInd>()->setDirection(UL);
         pkt->addTag<PhyTransmissionInd>()->setFrameType(RACPKT);
 
         auto racReq = inet::makeShared<LteRac>();

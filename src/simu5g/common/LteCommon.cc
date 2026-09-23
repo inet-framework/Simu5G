@@ -608,7 +608,8 @@ void removeAllSimu5GTags(inet::Packet *pkt)
     pkt->removeTagIfPresent<TftControlInfo>();
     pkt->removeTagIfPresent<X2ControlInfoTag>();
     pkt->removeTagIfPresent<FlowControlInfo>();
-    pkt->removeTagIfPresent<UserControlInfo>();
+    pkt->removeTagIfPresent<NodeIdentificationInd>();
+    pkt->removeTagIfPresent<TrafficDirectionInd>();
     pkt->removeTagIfPresent<LogicalConnectionInd>();
     pkt->removeTagIfPresent<CarrierConfigurationInd>();
     pkt->removeTagIfPresent<HarqInfoInd>();

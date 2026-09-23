@@ -44,8 +44,7 @@ bool LteHarqUnitTxD2D::pduFeedback(HarqAcknowledgment a)
     EV << "LteHarqUnitTxD2D::pduFeedback - Welcome!" << endl;
     double sample;
     bool reset = false;
-    auto lteInfo = (pdu_->getTag<UserControlInfo>());
-    short unsigned int dir = lteInfo->getDirection();
+    short unsigned int dir = pdu_->getTag<TrafficDirectionInd>()->getDirection();
     unsigned int ntx = transmissions_;
     if (!(status_ == TXHARQ_PDU_WAITING))
         throw cRuntimeError("Feedback sent to an H-ARQ unit not waiting for it");
@@ -161,11 +160,11 @@ Packet *LteHarqUnitTxD2D::extractPdu()
     auto harqInfo = pdu_->getTagForUpdate<HarqInfoInd>();
     harqInfo->setTxNumber(transmissions_);
     harqInfo->setNdi(transmissions_ == 1);
-    auto lteInfo = pdu_->getTag<UserControlInfo>();
+    Direction pduDirection = pdu_->getTag<TrafficDirectionInd>()->getDirection();
     EV << "LteHarqUnitTxD2D::extractPdu - ndi set to " << (transmissions_ == 1 ? "true" : "false") << endl;
 
     auto extractedPdu = pdu_->dup();
-    if (lteInfo->getDirection() == D2D_MULTI) {
+    if (pduDirection == D2D_MULTI) {
         // for multicast, there is no feedback to wait, so reset the unit.
         EV << NOW << " LteHarqUnitTxD2D::extractPdu - the extracted pdu belongs to a multicast/broadcast connection. "
            << "Since the feedback is not expected, reset the unit. " << endl;

@@ -12,7 +12,6 @@
 
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
 #include "simu5g/stack/mac/packet/LteMacPdu.h"
-#include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/mac/packet/LteHarqFeedback_m.h"
 #include "simu5g/stack/mac/LteMacBase.h"
@@ -49,9 +48,7 @@ void LteHarqBufferRx::insertPdu(Codeword cw, inet::Packet *pkt)
 {
 
     auto pdu = pkt->peekAtFront<LteMacPdu>();
-    auto uInfo = pkt->getTag<UserControlInfo>();
-
-    MacNodeId srcId = uInfo->getSourceId();
+    MacNodeId srcId = pkt->getTag<NodeIdentificationInd>()->getSourceId();
     if (macOwner_->isHarqReset(srcId)) {
         // if the HARQ processes have been aborted during this TTI (e.g., due to a D2D mode switch),
         // incoming packets should not be accepted
@@ -74,12 +71,12 @@ void LteHarqBufferRx::sendFeedback()
                 auto hfb = pkt->peekAtFront<LteHarqFeedback>();
 
                 // debug output:
-                auto uInfo = pkt->getTag<UserControlInfo>();
+                auto identity = pkt->getTag<NodeIdentificationInd>();
                 const char *r = hfb->getResult() ? "ACK" : "NACK";
                 EV << "H-ARQ RX: feedback sent to TX process "
                    << (int)hfb->getAcid() << " Codeword  " << (int)cw
                    << " of node with id "
-                   << uInfo->getDestId()
+                   << identity->getDestId()
                    << " result: " << r << endl;
 
                 macOwner_->takeObj(pkt);
@@ -118,8 +115,6 @@ std::list<Packet *> LteHarqBufferRx::extractCorrectPdus()
             if (processes_[i]->isCorrect(cw)) {
                 auto pktTemp = processes_[i]->extractPdu(cw);
                 auto temp = pktTemp->peekAtFront<LteMacPdu>();
-                auto uInfo = pktTemp->getTag<UserControlInfo>();
-
                 unsigned int size = pktTemp->getByteLength();
 
                 // emit delay statistic

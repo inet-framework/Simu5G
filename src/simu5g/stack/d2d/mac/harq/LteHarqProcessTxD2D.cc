@@ -39,8 +39,7 @@ Packet *LteHarqProcessTxD2D::extractPdu(Codeword cw)
 
     numSelected_--;
     Packet *pkt = units_[cw]->extractPdu();
-    auto info = pkt->getTag<UserControlInfo>();
-    if (info->getDirection() == D2D_MULTI) {
+    if (pkt->getTag<TrafficDirectionInd>()->getDirection() == D2D_MULTI) {
         // if the PDU is for a multicast/broadcast connection, the selected unit has been emptied
         numEmptyUnits_++;
     }

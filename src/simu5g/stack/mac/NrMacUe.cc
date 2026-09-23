@@ -142,8 +142,8 @@ void NrMacUe::handleSelfMessage()
                     // check if one 'ready' unit has the same direction of the grant
                     bool checkDir = false;
                     for (Codeword cw : cwListRetx) {
-                        auto info = currProc->getPdu(cw)->getTag<UserControlInfo>();
-                        if (info->getDirection() == schedulingGrant_[carrierFrequency]->getDirection()) {
+                        Direction pduDirection = currProc->getPdu(cw)->getTag<TrafficDirectionInd>()->getDirection();
+                        if (pduDirection == schedulingGrant_[carrierFrequency]->getDirection()) {
                             checkDir = true;
                             break;
                         }
@@ -239,10 +239,10 @@ Packet *NrMacUe::createUlMacPdu(MacCid destCid, GHz carrierFreq, MacNodeId destI
     macPkt->insertAtFront(header);
 
     // the direction is the flow's (UL, or D2D on a D2D-capable subclass), not a constant
-    auto info = macPkt->addTagIfAbsent<UserControlInfo>();
-    info->setSourceId(getMacNodeId());
-    info->setDestId(destId);
-    info->setDirection(connDescOut_.at(destCid).flowInfo.getDirection());
+    auto identity = macPkt->addTag<NodeIdentificationInd>();
+    identity->setSourceId(getMacNodeId());
+    identity->setDestId(destId);
+    macPkt->addTag<TrafficDirectionInd>()->setDirection(connDescOut_.at(destCid).flowInfo.getDirection());
     macPkt->addTag<PhyTransmissionInd>()->setGrantId(schedulingGrant_[carrierFreq]->getGrantId());
     macPkt->addTag<UserTransmissionParametersInd>()->setUserTxParams(schedulingGrant_[carrierFreq]->getUserTxParams()->dup());
     macPkt->addTag<LogicalConnectionInd>()->setLcid(SHORT_BSR);

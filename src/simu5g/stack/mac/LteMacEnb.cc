@@ -330,8 +330,8 @@ void LteMacEnb::sendGrants(std::map<GHz, LteMacScheduleList> *scheduleList)
             grant->setTotalGrantedBlocks(granted.totalBlocks);
             grant->setChunkLength(grantChunkLength());
 
-            pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
-            pkt->addTagIfAbsent<UserControlInfo>()->setDestId(nodeId);
+            pkt->addTagIfAbsent<NodeIdentificationInd>()->setSourceId(getMacNodeId());
+            pkt->addTagIfAbsent<NodeIdentificationInd>()->setDestId(nodeId);
             pkt->addTag<PhyTransmissionInd>()->setFrameType(GRANTPKT);
             pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
 
@@ -394,7 +394,7 @@ void LteMacEnb::macHandleRac(cPacket *pktAux)
     int preamble = racPkt->getPreambleIndex();
 
     EV << NOW << "LteMacEnb::macHandleRac - buffering RAC from UE "
-       << pkt->getTag<UserControlInfo>()->getSourceId()
+       << pkt->getTag<NodeIdentificationInd>()->getSourceId()
        << " preamble=" << preamble << endl;
 
     pendingRacRequests_[preamble].push_back(pkt);
@@ -418,8 +418,8 @@ void LteMacEnb::resolveRacCollisions()
 
         for (auto *pkt : pkts) {
             auto racPkt = pkt->removeAtFront<LteRac>();
-            auto uinfo = pkt->getTagForUpdate<UserControlInfo>();
-            MacNodeId ueId = uinfo->getSourceId();
+            auto identity = pkt->getTagForUpdate<NodeIdentificationInd>();
+            MacNodeId ueId = identity->getSourceId();
 
             if (collision) {
                 // preamble collision: RAC fails
@@ -437,9 +437,9 @@ void LteMacEnb::resolveRacCollisions()
 
             pkt->insertAtFront(racPkt);
 
-            uinfo->setDestId(ueId);
-            uinfo->setSourceId(nodeId_);
-            uinfo->setDirection(DL);
+            identity->setDestId(ueId);
+            identity->setSourceId(nodeId_);
+            pkt->getTagForUpdate<TrafficDirectionInd>()->setDirection(DL);
 
             sendLowerPackets(pkt);
         }
@@ -486,9 +486,9 @@ void LteMacEnb::macPduMake(MacCid cid)
             // No packets for this user on this codeword
             if (pit == macPduList_[carrierFreq].end()) {
                 auto pkt = new Packet("LteMacPdu");
-                pkt->addTagIfAbsent<UserControlInfo>()->setSourceId(getMacNodeId());
-                pkt->addTagIfAbsent<UserControlInfo>()->setDestId(destId);
-                pkt->addTagIfAbsent<UserControlInfo>()->setDirection(DL);
+                pkt->addTagIfAbsent<NodeIdentificationInd>()->setSourceId(getMacNodeId());
+                pkt->addTagIfAbsent<NodeIdentificationInd>()->setDestId(destId);
+                pkt->addTag<TrafficDirectionInd>()->setDirection(DL);
                 pkt->addTag<CarrierConfigurationInd>()->setCarrierFrequency(carrierFreq);
 
                 const UserTxParams& txInfo = amc_->computeTxParams(destId, DL, carrierFreq);
@@ -592,12 +592,12 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
 {
     auto pkt = check_and_cast<Packet *>(cpkt);
     auto macPdu = pkt->removeAtFront<LteMacPdu>();
-    auto userInfo = pkt->getTag<UserControlInfo>();
+    auto identity = pkt->getTag<NodeIdentificationInd>();
 
     // Notify the packet flow manager about the successful arrival of a TB from a UE.
     // From ETSI TS 138314 V16.0.0 (2020-07)
     if (hasListeners(ulMacPduArrivedSignal_)) {
-        GrantSignalInfo ulInfo(userInfo->getSourceId(), pkt->getTag<PhyTransmissionInd>()->getGrantId());
+        GrantSignalInfo ulInfo(identity->getSourceId(), pkt->getTag<PhyTransmissionInd>()->getGrantId());
         emit(ulMacPduArrivedSignal_, &ulInfo);
     }
 
@@ -609,7 +609,7 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
 
         EV << "LteMacEnb: pduUnmaker extracted SDU" << endl;
 
-        MacNodeId senderId = userInfo->getSourceId();
+        MacNodeId senderId = identity->getSourceId();
         MacCid cid = MacCid(senderId, lcid);
 
         // For RLC-AM, status reports arrive in the reverse direction and may not
@@ -635,7 +635,7 @@ void LteMacEnb::macPduUnmake(cPacket *cpkt)
         // Extract CE. bufferizeBsr() copies what it needs and never retains
         // the CE, so it is deleted here on every path.
         MacBsr *bsr = check_and_cast<MacBsr *>(macPdu->popCe());
-        bufferizeBsr(bsr, userInfo->getSourceId(), pkt->getTag<LogicalConnectionInd>()->getLcid());
+        bufferizeBsr(bsr, identity->getSourceId(), pkt->getTag<LogicalConnectionInd>()->getLcid());
         delete bsr;
     }
     pkt->insertAtFront(macPdu);
@@ -921,16 +921,16 @@ void LteMacEnb::updateUserTxParam(cPacket *pktAux)
 {
 
     auto pkt = check_and_cast<Packet *>(pktAux);
-    auto lteInfo = pkt->getTag<UserControlInfo>();
     auto phyTransmission = pkt->getTagForUpdate<PhyTransmissionInd>();
 
     if (phyTransmission->getFrameType() != DATAPKT)
         return; // TODO check if this should be removed.
 
-    auto dir = lteInfo->getDirection();
+    auto dir = pkt->getTag<TrafficDirectionInd>()->getDirection();
+    MacNodeId destId = pkt->getTag<NodeIdentificationInd>()->getDestId();
     GHz carrierFrequency = pkt->getTag<CarrierConfigurationInd>()->getCarrierFrequency();
 
-    const UserTxParams& newParam = amc_->computeTxParams(lteInfo->getDestId(), dir, carrierFrequency);
+    const UserTxParams& newParam = amc_->computeTxParams(destId, dir, carrierFrequency);
     UserTxParams *tmp = new UserTxParams(newParam);
 
     pkt->getTagForUpdate<UserTransmissionParametersInd>()->setUserTxParams(tmp);
@@ -938,7 +938,7 @@ void LteMacEnb::updateUserTxParam(cPacket *pktAux)
     phyTransmission->setTxMode(newParam.readTxMode());
     LteSchedulerEnb *scheduler = ((dir == DL) ? static_cast<LteSchedulerEnb *>(enbSchedulerDl_) : static_cast<LteSchedulerEnb *>(enbSchedulerUl_));
 
-    scheduler->readRbOccupation(lteInfo->getDestId(), carrierFrequency, rbMap);
+    scheduler->readRbOccupation(destId, carrierFrequency, rbMap);
 
     phyTransmission->setGrantedBlocks(rbMap);
 }
