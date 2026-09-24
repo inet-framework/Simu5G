@@ -131,3 +131,4 @@
 /simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Lossy-UL -r 0,                     5s,         b9a0-5a7b/tplx;6270-2d8a/tilx;ea4d-c8ca/~tNl;2723-9492/sz, PASS,
 /simulations/lte/rlc/,                   -f omnetpp.ini -c TCP-AM -r 0,                          5s,         f51c-377b/tplx;a5d4-8fd3/tilx;f1ef-f4f4/~tNl;2b23-2c4c/sz, PASS,
 /simulations/lte/test_handover/,         -f omnetpp.ini -c VoIP-AM-Handover -r 0,               15s,         87a9-5a20/tplx;d9f3-c358/tilx;a44e-35d5/~tNl;9ede-364a/sz, PASS,
+/simulations/nr/standalone/,             -f omnetpp.ini -c VoIP-DL-Rohc -r 0,                      5s,        acb8-e154/tplx;52a5-5caa/tilx;62d6-eb6a/~tNl;68a2-16e2/sz, PASS,
