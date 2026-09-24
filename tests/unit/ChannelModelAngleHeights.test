@@ -1,7 +1,7 @@
 %description:
 
-Two defects in the angles that place a UE in a sectorial antenna pattern,
-recorded rather than fixed. Both show only when the two ends are at different
+A defect in the azimuth that places a UE in a sectorial antenna pattern,
+recorded rather than fixed. It shows only when the two ends are at different
 heights -- which for a base station and a UE is always.
 
 computeAngle() is meant to be the horizontal angle, the azimuth: the vertical
@@ -18,15 +18,10 @@ z = 0, which is the one geometry in which the defect cannot show -- and so the
 suite has exercised sectorial antennas almost only where they could not
 reveal it.
 
-computeVerticalAngle() is documented as the angle from the zenith, but it
-returns 90 + acos(d2D / d3D) regardless of which end is higher, so a point
-above the centre is placed below the horizon. No shipped scenario puts a UE
-above its base station, so today this is latent.
-
 When fixed, drop the %expected-failure line and fold the checks into
 ChannelModelGeometry, which is where they belong.
 
-%expected-failure: the angles mix height into azimuth and ignore the sign of the height difference
+%expected-failure: the azimuth mixes height into the angle
 
 %includes:
 #include "SchedulerTestUtil.h"
@@ -75,15 +70,10 @@ c.expectNear("a UE due north of a mast is at azimuth 90, whatever the heights",
 c.expectNear("a UE at 45 degrees is at azimuth 45, whatever the heights",
         m->computeAngle(mast, Coord(50, 50, 1.5)), 45, 1e-9);
 
-const Coord ue(0, 0, 1.5);
-double elevation = atan(23.5 / 50.0) * 180 / M_PI;
-c.expectNear("a point above the centre is above the horizon: 90 minus its elevation",
-        m->computeVerticalAngle(ue, Coord(50, 0, 25)), 90 - elevation, 1e-9);
-
 c.summary();
 
 %contains: stdout
-modelchecks=3 modelfailures=0
+modelchecks=2 modelfailures=0
 
 %not-contains: stdout
 FAILED

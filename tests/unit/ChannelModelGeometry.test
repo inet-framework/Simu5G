@@ -11,7 +11,7 @@ angle from the zenith, so 90 is the horizon and 180 straight down. Checked
 here with both ends at the same height -- all four quadrants, the four axes,
 and that only the difference of the two positions matters -- and, for the
 vertical angle, with the point below the centre, which is how every shipped
-scenario places a UE relative to a base station.
+scenario places a UE relative to a base station, and above it.
 
 Every direction, the negative y axis included, comes back in [0, 360).
 
@@ -87,13 +87,17 @@ c.expectNear("a point at the centre's height is on the horizon: 90 from the zeni
         m->computeVerticalAngle(o, Coord(d, 0, 10)), 90, 0);
 c.expectNear("a point as far below as it is away is 45 below the horizon: 135",
         m->computeVerticalAngle(o, Coord(8, 0, 2)), 135, 1e-9);
+c.expectNear("a point as far above as it is away is 45 above the horizon: 45",
+        m->computeVerticalAngle(o, Coord(8, 0, 18)), 45, 1e-9);
 c.expectNear("a point straight below is at the nadir: 180",
         m->computeVerticalAngle(o, Coord(0, 0, 1.5)), 180, 0);
+c.expectNear("a point straight above is at the zenith: 0",
+        m->computeVerticalAngle(o, Coord(0, 0, 25)), 0, 0);
 
 c.summary();
 
 %contains: stdout
-modelchecks=12 modelfailures=0
+modelchecks=14 modelfailures=0
 
 %not-contains: stdout
 FAILED
