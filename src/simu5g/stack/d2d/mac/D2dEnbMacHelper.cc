@@ -17,6 +17,7 @@
 #include "simu5g/stack/mac/LteMacEnb.h"
 #include "simu5g/stack/mac/buffer/harq/LteHarqBufferRx.h"
 #include "simu5g/stack/d2d/mac/conflictgraph/DistanceBasedConflictGraph.h"
+#include "simu5g/stack/d2d/mac/harq/LteHarqBufferMirrorD2D.h"
 #include "simu5g/stack/d2d/rrc/D2DModeSwitchNotification_m.h"
 
 namespace simu5g {
