@@ -1,0 +1,240 @@
+%description:
+
+The ROHC compressor of a PDCP entity (RohcCompressor): which profile a packet
+is compressed with, the compressed header size in each state of a context,
+the state sequence of the unidirectional mode with its periodic refreshes,
+and the context bookkeeping (CIDs, the add-CID octet, taking over the least
+recently used context).
+
+The expected values are decided here, from the model's definition (the header
+comment of RohcCompressor): the IR packet carries the original headers plus
+the IR overhead, FO and SO packets the configured sizes, and CIDs 1..15 one
+octet more. The header sizes of INET's chunks (IPv4 20B, IPv6 40B, UDP 8B,
+TCP 20B, RTP 12B) are part of the arithmetic.
+
+%includes:
+#include <inet/common/packet/chunk/ByteCountChunk.h>
+#include <inet/networklayer/common/IpProtocolId_m.h>
+#include <inet/networklayer/ipv4/Ipv4Header_m.h>
+#include <inet/networklayer/ipv6/Ipv6Header.h>
+#include <inet/transportlayer/rtp/RtpPacket_m.h>
+#include <inet/transportlayer/tcp_common/TcpHeader.h>
+#include <inet/transportlayer/udp/UdpHeader_m.h>
+#include "simu5g/stack/pdcp/packet/RohcHeader.h"
+#include "simu5g/stack/pdcp/rohc/RohcCompressor.h"
+#include "SchedulerTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using namespace inet;
+
+enum Transport { UDP, RTP, TCP, ICMP };
+
+// A datagram with the given headers and a 40-byte payload
+static Packet *makeDatagram(bool ipv6, Transport transport, int destPort = 3000, bool fragment = false)
+{
+    auto pkt = new Packet("datagram");
+    pkt->insertAtBack(makeShared<ByteCountChunk>(B(40)));
+    IpProtocolId protocolId = IP_PROT_ICMP;
+    if (transport == RTP) {
+        auto rtpHeader = makeShared<rtp::RtpHeader>();
+        rtpHeader->setSsrc(4711);
+        pkt->insertAtFront(rtpHeader);
+    }
+    if (transport == UDP || transport == RTP) {
+        auto udpHeader = makeShared<UdpHeader>();
+        udpHeader->setSrcPort(5000);
+        udpHeader->setDestPort(destPort);
+        pkt->insertAtFront(udpHeader);
+        protocolId = IP_PROT_UDP;
+    }
+    if (transport == TCP) {
+        auto tcpHeader = makeShared<tcp::TcpHeader>();
+        tcpHeader->setSrcPort(5000);
+        tcpHeader->setDestPort(destPort);
+        pkt->insertAtFront(tcpHeader);
+        protocolId = IP_PROT_TCP;
+    }
+    if (!ipv6) {
+        auto ipHeader = makeShared<Ipv4Header>();
+        ipHeader->setSrcAddress(Ipv4Address("10.0.0.1"));
+        ipHeader->setDestAddress(Ipv4Address("10.0.0.2"));
+        ipHeader->setProtocolId(protocolId);
+        ipHeader->setMoreFragments(fragment);
+        pkt->insertAtFront(ipHeader);
+    }
+    else {
+        auto ipHeader = makeShared<Ipv6Header>();
+        ipHeader->setSrcAddress(Ipv6Address("2001:db8::1"));
+        ipHeader->setDestAddress(Ipv6Address("2001:db8::2"));
+        ipHeader->setProtocolId(fragment ? IP_PROT_IPv6EXT_FRAGMENT : protocolId);
+        pkt->insertAtFront(ipHeader);
+    }
+    return pkt;
+}
+
+static RohcCompressor::Parameters defaultParameters(std::set<RohcProfile> profiles = {ROHC_RTP, ROHC_UDP, ROHC_TCP, ROHC_IP})
+{
+    RohcCompressor::Parameters params;
+    params.profiles = profiles;
+    params.foHeaderSize = {{ROHC_RTP, B(6)}, {ROHC_UDP, B(6)}, {ROHC_TCP, B(9)}, {ROHC_IP, B(4)}};
+    params.soHeaderSize = {{ROHC_RTP, B(3)}, {ROHC_UDP, B(3)}, {ROHC_TCP, B(5)}, {ROHC_IP, B(1)}};
+    return params;   // IR overhead 3B, 3 IR and 3 FO packets, refreshes every 1700/700
+}
+
+// Compresses one datagram, returns the result, and checks that the RohcHeader carries
+// exactly the headers that left the packet
+static RohcCompressor::Result compressOne(Checker& c, RohcCompressor& compressor, Packet *pkt)
+{
+    b before = pkt->getDataLength();
+    RohcCompressor::Result result = compressor.compress(pkt);
+    const auto& rohcHeader = pkt->peekAtFront<RohcHeader>();
+    b carried = rohcHeader->getChunk()->getChunkLength();
+    if (pkt->getDataLength() - rohcHeader->getChunkLength() + carried != before)
+        c.check("RohcHeader carries the removed headers", false, "carried=" + carried.str());
+    return result;
+}
+
+// Compresses one datagram and disposes of it
+static RohcCompressor::Result compressAndDelete(Checker& c, RohcCompressor& compressor, Packet *pkt)
+{
+    RohcCompressor::Result result = compressOne(c, compressor, pkt);
+    delete pkt;
+    return result;
+}
+
+static long long sizeOf(const RohcCompressor::Result& result)
+{
+    return B(result.compressedSize).get();
+}
+
+%activity:
+Checker c;
+
+// --- profile choice, and the IR size of each profile (original headers + 3B) ---
+{
+    RohcCompressor compressor(defaultParameters());
+    auto check = [&](const char *what, Packet *pkt, RohcProfile profile, long long irSize) {
+        RohcCompressor::Result r = compressOne(c, compressor, pkt);
+        c.check(std::string(what) + ": profile " + rohcProfileName(profile), r.profile == profile, std::string("actual=") + rohcProfileName(r.profile));
+        c.expectValue(std::string(what) + ": IR size", sizeOf(r) - (r.cid > 0 ? 1 : 0), irSize);
+        delete pkt;
+    };
+    check("IPv4/UDP", makeDatagram(false, UDP, 3000), ROHC_UDP, 20 + 8 + 3);
+    check("IPv6/UDP", makeDatagram(true, UDP, 3001), ROHC_UDP, 40 + 8 + 3);
+    check("IPv4/UDP/RTP", makeDatagram(false, RTP, 3002), ROHC_RTP, 20 + 8 + 12 + 3);
+    check("IPv4/TCP", makeDatagram(false, TCP, 3003), ROHC_TCP, 20 + 20 + 3);
+    check("IPv4/ICMP", makeDatagram(false, ICMP), ROHC_IP, 20 + 3);
+    check("IPv4 fragment of UDP", makeDatagram(false, UDP, 3004, true), ROHC_IP, 20 + 3);
+    check("IPv6 fragment of UDP", makeDatagram(true, UDP, 3005, true), ROHC_IP, 40 + 3);
+}
+
+// --- the configured profiles restrict the choice ---
+{
+    RohcCompressor compressor(defaultParameters({ROHC_UDP, ROHC_IP}));
+    RohcCompressor::Result r = compressAndDelete(c, compressor, makeDatagram(false, RTP));
+    c.check("RTP datagram without the rtp profile uses udp", r.profile == ROHC_UDP, rohcProfileName(r.profile));
+}
+{
+    RohcCompressor compressor(defaultParameters({ROHC_IP}));
+    Packet *pkt = makeDatagram(false, UDP);
+    RohcCompressor::Result r = compressOne(c, compressor, pkt);
+    c.check("UDP datagram with only the ip profile uses ip", r.profile == ROHC_IP, rohcProfileName(r.profile));
+    b rohcLength = pkt->peekAtFront<RohcHeader>()->getChunkLength();
+    c.check("the ip profile leaves the UDP header in the packet",
+            dynamicPtrCast<const UdpHeader>(pkt->peekDataAt(rohcLength)) != nullptr);
+    delete pkt;
+}
+{
+    RohcCompressor compressor(defaultParameters({ROHC_TCP}));
+    Packet *pkt = makeDatagram(false, UDP);
+    b before = pkt->getDataLength();
+    RohcCompressor::Result r = compressOne(c, compressor, pkt);
+    c.check("no configured profile fits: uncompressed", r.profile == ROHC_UNCOMPRESSED, rohcProfileName(r.profile));
+    c.expectValue("an uncompressed datagram keeps its size", B(pkt->getDataLength()).get(), B(before).get());
+    delete pkt;
+}
+
+// --- the state sequence with the default parameters: 3 IR, 3 FO, then SO ---
+{
+    RohcCompressor compressor(defaultParameters());
+    std::string states, sizes;
+    for (int i = 0; i < 8; i++) {
+        Packet *pkt = makeDatagram(false, UDP);
+        RohcCompressor::Result r = compressOne(c, compressor, pkt);
+        states += std::string(states.empty() ? "" : " ") + rohcStateName(r.state);
+        sizes += std::string(sizes.empty() ? "" : " ") + std::to_string(sizeOf(r));
+        delete pkt;
+    }
+    c.check("default state sequence", states == "IR IR IR FO FO FO SO SO", states);
+    c.check("default size sequence (IPv4/UDP)", sizes == "31 31 31 6 6 6 3 3", sizes);
+}
+
+// --- periodic refreshes: to FO every foRefresh SO packets, to IR every irRefresh non-IR packets ---
+{
+    RohcCompressor::Parameters params = defaultParameters();
+    params.irPackets = 1;
+    params.foPackets = 1;
+    params.irRefresh = 6;
+    params.foRefresh = 2;
+    RohcCompressor compressor(params);
+    std::string states;
+    for (int i = 0; i < 9; i++) {
+        Packet *pkt = makeDatagram(false, UDP);
+        states += std::string(states.empty() ? "" : " ") + rohcStateName(compressOne(c, compressor, pkt).state);
+        delete pkt;
+    }
+    c.check("state sequence with refreshes", states == "IR FO SO SO FO SO SO IR FO", states);
+}
+
+// --- contexts: one per flow, CID 0 free, CIDs 1..15 one octet, the 17th flow takes over the LRU context ---
+{
+    RohcCompressor compressor(defaultParameters());
+    RohcCompressor::Result first = compressAndDelete(c, compressor, makeDatagram(false, UDP, 3000));
+    RohcCompressor::Result second = compressAndDelete(c, compressor, makeDatagram(false, UDP, 3001));
+    c.expectValue("first flow gets CID 0", first.cid, 0);
+    c.expectValue("second flow gets CID 1", second.cid, 1);
+    c.expectValue("CID 0 costs nothing", sizeOf(first), 31);
+    c.expectValue("CID 1 costs the add-CID octet", sizeOf(second), 32);
+    RohcCompressor::Result again = compressAndDelete(c, compressor, makeDatagram(false, UDP, 3000));
+    c.expectValue("a known flow keeps its context", again.cid, 0);
+    for (int port = 3002; port < 3016; port++)
+        compressAndDelete(c, compressor, makeDatagram(false, UDP, port));
+    c.expectValue("16 flows fill the 16 contexts", compressor.getNumContexts(), 16);
+    // flow 3001 (CID 1) is now the least recently used one
+    RohcCompressor::Result takeover = compressAndDelete(c, compressor, makeDatagram(false, UDP, 4000));
+    c.expectValue("the 17th flow takes over the least recently used context", takeover.cid, 1);
+    c.check("... and starts over in IR", takeover.state == RohcCompressor::IR, rohcStateName(takeover.state));
+    c.expectValue("still 16 contexts", compressor.getNumContexts(), 16);
+}
+
+// --- the profile is part of the flow: same addresses and ports, different transport ---
+{
+    RohcCompressor compressor(defaultParameters());
+    RohcCompressor::Result udp = compressAndDelete(c, compressor, makeDatagram(false, UDP, 3000));
+    RohcCompressor::Result tcp = compressAndDelete(c, compressor, makeDatagram(false, TCP, 3000));
+    c.check("same ports, different transport: different contexts", udp.cid != tcp.cid);
+}
+
+// --- configuration errors ---
+c.expectRejected("profile \"esp\" is not modeled", []() { parseRohcProfile("esp"); });
+c.expectRejected("unknown profile name", []() { parseRohcProfile("rtcp"); });
+c.expectRejected("a configured profile without sizes", []() {
+    RohcCompressor::Parameters params = defaultParameters();
+    params.soHeaderSize.erase(ROHC_TCP);
+    RohcCompressor compressor(params);
+});
+c.expectRejected("irPackets must be at least 1", []() {
+    RohcCompressor::Parameters params = defaultParameters();
+    params.irPackets = 0;
+    RohcCompressor compressor(params);
+});
+
+c.summary();
+
+%contains: stdout
+modelfailures=0
+
+%not-contains: stdout
+FAILED

@@ -41,13 +41,22 @@ void LtePdcpTxEntity::initialize(int stage) {
             RohcCompressor::Parameters params;
             while (profiles.hasMoreTokens())
                 params.profiles.insert(parseRohcProfile(profiles.nextToken()));
-            const cValueMap *sizes = check_and_cast<const cValueMap *>(par("rohcSoHeaderSizes").objectValue());
-            for (const auto& [name, value] : sizes->getFields()) {
-                long size = value.intValue();
-                if (size < 1)
-                    throw cRuntimeError("rohcSoHeaderSizes: the compressed header size of profile \"%s\" must be at least 1 byte", name.c_str());
-                params.soHeaderSize[parseRohcProfile(name)] = B(size);
-            }
+            auto readSizes = [this](const char *parName, std::map<RohcProfile, B>& sizes) {
+                const cValueMap *map = check_and_cast<const cValueMap *>(par(parName).objectValue());
+                for (const auto& [name, value] : map->getFields()) {
+                    long size = value.intValue();
+                    if (size < 1)
+                        throw cRuntimeError("%s: the compressed header size of profile \"%s\" must be at least 1 byte", parName, name.c_str());
+                    sizes[parseRohcProfile(name)] = B(size);
+                }
+            };
+            readSizes("rohcFoHeaderSizes", params.foHeaderSize);
+            readSizes("rohcSoHeaderSizes", params.soHeaderSize);
+            params.irOverhead = B(par("rohcIrOverhead"));
+            params.irPackets = par("rohcIrPackets");
+            params.foPackets = par("rohcFoPackets");
+            params.irRefresh = par("rohcIrRefresh");
+            params.foRefresh = par("rohcFoRefresh");
             rohc_ = std::make_unique<RohcCompressor>(params);
         }
 
@@ -102,8 +111,9 @@ void LtePdcpTxEntity::compressHeader(Packet *pkt)
             EV << "LtePdcp : Removed SDAP header before compression\n";
         }
 
-        RohcProfile profile = rohc_->compress(pkt);
-        EV << "LtePdcp : Header compression performed, profile " << rohcProfileName(profile) << "\n";
+        RohcCompressor::Result result = rohc_->compress(pkt);
+        EV << "LtePdcp : Header compression performed, profile " << rohcProfileName(result.profile) << ", CID " << result.cid
+           << ", " << rohcStateName(result.state) << ", compressed header " << result.compressedSize << "\n";
 
         // If we had an SDAP header, add it back on top of the ROHC header
         if (sdapHeader) {

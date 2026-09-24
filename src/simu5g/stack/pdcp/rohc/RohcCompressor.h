@@ -40,36 +40,89 @@ RohcProfile parseRohcProfile(const std::string& name);
 const std::vector<std::string>& rohcProfileNames();
 
 /**
- * The ROHC compressor of one PDCP entity (a size model: the removed headers travel
- * along inside the RohcHeader chunk, and the decompressor puts them back).
+ * The ROHC compressor of one PDCP entity, in the unidirectional mode (U-mode, RFC 3095
+ * 5.3), which needs no feedback from the decompressor. A size model: the removed headers
+ * travel along inside the RohcHeader chunk, and the decompressor puts them back.
  *
  * Every packet is compressed with the most specific of the bearer's profiles that fits
  * it: RTP if an RTP header follows the UDP header, then UDP, TCP, and IP, which covers
  * the IP header only. A fragment can only use the IP profile. A packet no configured
- * profile fits goes uncompressed (profile 0x0000), and costs no extra bytes.
+ * profile fits goes uncompressed (profile 0x0000).
+ *
+ * Each flow (a profile and the header fields that do not change: addresses, protocol,
+ * ports, RTP SSRC) has a context, identified by a CID. A bearer has at most 16 contexts
+ * (CIDs 0..15, the small-CID encoding): CID 0 costs nothing, the others one byte per
+ * packet. A new flow finding every CID taken takes over the least recently used context.
+ *
+ * A context starts in the IR (initialization and refresh) state, whose packets carry the
+ * full headers plus irOverhead; after irPackets of them it moves to FO (first order), and
+ * after foPackets FO packets to SO (second order), the steady state. The compressor goes
+ * back to IR every irRefresh packets and to FO every foRefresh packets of a context, so
+ * that a decompressor that lost its context recovers. Uncompressed packets carry their
+ * headers as they are.
+ *
+ * Not modeled: context damage after losses (decompression failures until the next
+ * refresh), the O-mode and R-mode feedback, and ROHCv2.
  */
 class RohcCompressor
 {
   public:
+    enum State { IR, FO, SO };
+
     struct Parameters {
         std::set<RohcProfile> profiles;                // the bearer's configured profiles
-        std::map<RohcProfile, inet::B> soHeaderSize;   // compressed header size per profile
+        std::map<RohcProfile, inet::B> foHeaderSize;   // compressed header size per profile, FO state
+        std::map<RohcProfile, inet::B> soHeaderSize;   // compressed header size per profile, SO state
+        inet::B irOverhead = inet::B(3);               // IR packet: packet type, profile, CRC
+        int irPackets = 3;                             // IR packets before moving to FO
+        int foPackets = 3;                             // FO packets before moving to SO
+        int irRefresh = 1700;                          // packets of a context between IR refreshes
+        int foRefresh = 700;                           // packets of a context between FO refreshes
+    };
+
+    static const int MAX_CONTEXTS = 16;
+
+    struct Result {
+        RohcProfile profile;
+        int cid;
+        State state;
+        inet::b compressedSize;
     };
 
   protected:
+    struct Context {
+        std::string flow;          // the profile and the static header fields
+        State state = IR;
+        int packetsInState = 0;    // since the context entered its state
+        int packetsSinceIr = 0;
+        int packetsSinceFo = 0;
+        uint64_t lastUsed = 0;
+    };
+
     Parameters params_;
+    std::vector<Context> contexts_;   // indexed by CID
+    uint64_t packetCount_ = 0;
 
     virtual bool isAllowed(RohcProfile profile) const { return params_.profiles.count(profile) != 0; }
+
+    // The CID of the flow's context, creating it (in IR) if there is none
+    virtual int findOrCreateContext(const std::string& flow);
+
+    // The state the context's next packet is sent in; advances the context
+    virtual State nextState(Context& context);
 
   public:
     explicit RohcCompressor(const Parameters& params);
     virtual ~RohcCompressor() {}
 
     // Replaces the headers of the IP datagram at the front of the packet that its profile
-    // covers with a RohcHeader of the compressed size, which carries them. Returns the
-    // profile used.
-    virtual RohcProfile compress(inet::Packet *pkt);
+    // covers with a RohcHeader of the compressed size, which carries them
+    virtual Result compress(inet::Packet *pkt);
+
+    int getNumContexts() const { return contexts_.size(); }
 };
+
+const char *rohcStateName(RohcCompressor::State state);
 
 } // namespace simu5g
 
