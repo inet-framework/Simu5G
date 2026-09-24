@@ -251,10 +251,12 @@ base.sinr[2] = 6.0;
     c.expectRejected("a CQI above 15 is rejected", [&] { decide(model, rx); });
 
     rx.blocks.clear();
+    c.expectRejected("...even in an empty grant: the CQI is checked before any band is", [&] { decide(model, rx); });
+
+    rx.cqis = base.cqis;
     bool received = false;
     bool drew = drawsDuring(model, [&] { received = decide(model, rx); });
     c.check("an empty grant is a certain success, decided by a draw like any other", received && drew);
-    c.check("...and its CQI is never checked: only an allocated band looks at it", received);
 }
 {
     Reception rx = base;
