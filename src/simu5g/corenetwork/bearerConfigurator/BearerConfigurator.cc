@@ -18,6 +18,7 @@
 #include <algorithm>
 #include "simu5g/corenetwork/trafficFlowFilter/TrafficFlowFilter.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
+#include "simu5g/stack/pdcp/rohc/RohcCompressor.h"
 #include "simu5g/stack/rrc/Registration.h"
 
 namespace simu5g {
@@ -32,7 +33,7 @@ Define_Module(BearerConfigurator);
 static const std::vector<std::string> KNOWN_ENTRY_FIELDS = {
     "coreNetwork", "ue", "drbId", "profile", "mappedQfis", "filters", "lcg", "rlcMode",
     "legs", "primaryPath", "ulDataSplitThreshold", "ulLegSelection", "dlLegSelection",
-    "pduSessionType", "upperProtocol", "isDefault", "suppressSdapHeader",
+    "pduSessionType", "upperProtocol", "isDefault", "suppressSdapHeader", "rohc",
     "gbr", "packetDelayBudget", "packetErrorRate", "qosPriorityLevel"
 };
 
@@ -318,6 +319,36 @@ static bool ueStackHasSdap(cModule *ueModule)
 {
     cModule *nic = ueModule->getSubmodule("cellularNic");
     return nic != nullptr && nic->getSubmodule("sdap") != nullptr;
+}
+
+// The "rohc" field of a bearer definition: true (every modeled profile), false, or an
+// object with an optional "profiles" list of profile names (omitted = every modeled one).
+// Returns the profiles, empty for false.
+static std::vector<std::string> parseRohcField(const cValue& value, const char *paramName, int i)
+{
+    if (value.getType() == cValue::BOOL)
+        return value.boolValue() ? rohcProfileNames() : std::vector<std::string>();
+    const cValueMap *rohc = value.containsObject() ? dynamic_cast<const cValueMap *>(value.objectValue()) : nullptr;
+    if (rohc == nullptr)
+        throw cRuntimeError("%s entry %d: \"rohc\" must be true, false, or an object like {profiles: [\"udp\", \"ip\"]}", paramName, i);
+    for (const auto& [key, fieldValue] : rohc->getFields())
+        if (key != "profiles")
+            throw cRuntimeError("%s entry %d: unknown field '%s' in \"rohc\" (the only one is \"profiles\")", paramName, i, key.c_str());
+    if (!rohc->containsKey("profiles"))
+        return rohcProfileNames();
+    const cValueArray *arr = dynamic_cast<const cValueArray *>(rohc->get("profiles").containsObject() ? rohc->get("profiles").objectValue() : nullptr);
+    if (arr == nullptr || arr->size() == 0)
+        throw cRuntimeError("%s entry %d: \"rohc\" profiles must be a non-empty list of profile names", paramName, i);
+    std::vector<std::string> profiles;
+    for (int j = 0; j < (int)arr->size(); j++) {
+        std::string name = arr->get(j).stdstringValue();
+        if (!contains(rohcProfileNames(), name))
+            throw cRuntimeError("%s entry %d: unknown or unmodeled ROHC profile \"%s\" (available: \"rtp\", \"udp\", \"tcp\", \"ip\")", paramName, i, name.c_str());
+        if (contains(profiles, name))
+            throw cRuntimeError("%s entry %d: duplicate ROHC profile \"%s\"", paramName, i, name.c_str());
+        profiles.push_back(name);
+    }
+    return profiles;
 }
 
 void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDemand,
@@ -635,6 +666,11 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
             drb.pduSessionType = aToPduSessionType(v->stdstringValue());
         if (const cValue *v = field("upperProtocol"))
             drb.upperProtocol = v->stdstringValue();
+
+        // rohc (optional): header compression, PDCP-Config headerCompression -- true (every
+        // modeled profile), false, or {profiles: [...]}
+        if (const cValue *v = field("rohc"))
+            drb.rohcProfiles = parseRohcField(*v, paramName, i);
 
         // The entry names its UE by module path (patterns allowed), which is how the
         // configuration follows the UE instead of naming an allocation-order-dependent

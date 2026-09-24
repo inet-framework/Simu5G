@@ -127,6 +127,10 @@ struct DrbDesc {
     // legs a bearer is established with still come from BearerManagement::getNumLegs().
     std::vector<RlcBearerDesc> legs;
 
+    // PDCP-Config headerCompression: the ROHC profiles the bearer uses, by their
+    // configuration names (see RohcCompressor); empty = notUsed
+    std::vector<std::string> rohcProfiles;
+
     // RLC-BearerConfig
     RlcMode rlcMode = UM;            // rlc-Config: TM, UM or AM
     bool soFraming = false;             // wire format: false = LTE FI/concatenation (TS 36.322), true = NR SI/SO (TS 38.322)
@@ -164,6 +168,14 @@ inline std::ostream& operator<<(std::ostream& os, const DrbDesc& drb) {
         os << "]";
     }
     os << " pduSession=" << pduSessionTypeToA(drb.pduSessionType);
+    if (!drb.rohcProfiles.empty()) {
+        os << " rohc=[";
+        for (size_t i = 0; i < drb.rohcProfiles.size(); i++) {
+            if (i) os << ",";
+            os << drb.rohcProfiles[i];
+        }
+        os << "]";
+    }
     if (!drb.upperProtocol.empty())
         os << " upperProto=" << drb.upperProtocol;
     if (!drb.legs.empty()) {

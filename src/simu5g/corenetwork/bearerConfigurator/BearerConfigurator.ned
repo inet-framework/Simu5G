@@ -139,6 +139,14 @@ package simu5g.corenetwork.bearerConfigurator;
 //    does not allow is a configuration error (e.g. an IPv6 UE on the default "IPv4");
 //    an "IPv4v6" session carries both, and the receiver tells them apart by the datagram
 //    itself
+//  - rohc (bool or object, optional): PDCP header compression on the bearer (TS 38.331
+//    PDCP-Config headerCompression). true = ROHC with every modeled profile, false = none
+//    (the default), or an object restricting the profiles, e.g. {profiles: ["udp", "ip"]}.
+//    Profiles: "rtp" (IP/UDP/RTP headers), "udp" (IP/UDP), "tcp" (IP/TCP), "ip" (the IP
+//    header only); each packet is compressed with the most specific one that fits it, see
+//    ~LtePdcpTxEntity for the model. Not modeled from PDCP-Config: maxCID (a bearer has up
+//    to 16 contexts), drb-ContinueROHC (a handover starts every context over), and
+//    uplinkOnlyROHC.
 //  - upperProtocol (string, optional): INET protocol name for upper layer dispatch (this is
 //    normally only needed for "Unstructured" PDU sessions); default: derived from
 //    pduSessionType
@@ -303,7 +311,7 @@ simple BearerConfigurator
 {
     parameters:
         string binderModule = default("binder");
-        object staticDrbs = default([]);  // JSON array: [{coreNetwork, ue, drbId, profile, mappedQfis, filters, lcg, rlcMode, legs, pduSessionType, upperProtocol, isDefault, suppressSdapHeader, gbr, packetDelayBudget, packetErrorRate, qosPriorityLevel}, ...]; see banner comment for details
+        object staticDrbs = default([]);  // JSON array: [{coreNetwork, ue, drbId, profile, mappedQfis, filters, lcg, rlcMode, legs, pduSessionType, upperProtocol, isDefault, suppressSdapHeader, rohc, gbr, packetDelayBudget, packetErrorRate, qosPriorityLevel}, ...]; see banner comment for details
         object onDemandDrbs = default([  // JSON array, staticDrbs schema minus "drbId" (and "ue" optional): bearers created when traffic first matches them; the default value lets both stack kinds run unauthored; see banner comment for details
                 {coreNetwork: "epc", filters: ["VoIP*"], lcg: 0, rlcMode: "UM"},
                 {coreNetwork: "epc", filters: ["gaming*"], lcg: 2, rlcMode: "UM"},

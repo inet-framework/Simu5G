@@ -41,8 +41,6 @@ void PacketFlowObserverEnb::initialize(int stage)
     PacketFlowObserverBase::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
-        if (headerCompressedSize_ == -1)
-            headerCompressedSize_ = 0;
         timesUe_.setName("delay");
     }
 }

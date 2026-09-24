@@ -62,6 +62,11 @@ void BearerManagement::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         registration_ = inet::getModuleFromPar<Registration>(par("registrationModule"), this);
 
+        if (par("headerCompressedSize").intValue() != -1)
+            throw cRuntimeError("The headerCompressedSize parameter is no longer supported: header compression (ROHC) is "
+                    "configured per bearer, by the \"rohc\" field of the bearer definitions (see BearerConfigurator), "
+                    "and the compressed header sizes by the rohcSoHeaderSizes parameter of the PDCP TX entities");
+
         // Resolve PDCP entity types
         pdcpEntityModuleType_ = cModuleType::get(par("pdcpEntityModuleType").stringValue());
         pdcpRelayEntityModuleType_ = cModuleType::get(par("pdcpRelayEntityModuleType").stringValue());
@@ -832,7 +837,12 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, const FlowId& flow,
     // own leg/side.
     std::string name = "pdcp-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
     auto *module = pdcpEntityModuleType_->create(name.c_str(), nicModule_);
-    module->par("headerCompressedSize") = par("headerCompressedSize");
+    // PDCP-Config headerCompression, as the bearer's configuration states it
+    std::string rohcProfiles;
+    if (const DrbDesc *cfg = lookupConfiguredDrb(flow, id.getNodeId()))
+        for (const std::string& profile : cfg->rohcProfiles)
+            rohcProfiles += (rohcProfiles.empty() ? "" : " ") + profile;
+    module->par("rohcProfiles") = rohcProfiles;
     module->par("numLegs") = numLegs;
     std::string legsStr;
     for (CellGroup group : legGroups)

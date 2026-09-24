@@ -21,8 +21,8 @@ namespace simu5g {
  * The original data is specified with another chunk, and the ROHC header stores information
  * about the original sizes of the compressed headers to allow proper decompression.
  *
- * ROHC is modeled by reducing the compressed headers to a lower size as indicated by the
- * headerCompressedSize_ parameter. The additional ROHC header allows to restore the
+ * ROHC is modeled by reducing the compressed headers to a lower size, chosen by the
+ * compressor (see RohcCompressor). The additional ROHC header allows to restore the
  * compressed headers to their full size when decompressing.
  */
 class RohcHeader : public inet::Chunk

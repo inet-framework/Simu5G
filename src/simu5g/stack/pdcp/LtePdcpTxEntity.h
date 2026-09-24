@@ -13,21 +13,21 @@
 #ifndef _LTE_LTEPDCPTXENTITY_H_
 #define _LTE_LTEPDCPTXENTITY_H_
 
+#include <memory>
+
 #include <inet/common/ModuleRefByPar.h>
 
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/stack/pdcp/PdcpTxEntityBase.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/binder/Binder.h"
+#include "simu5g/stack/pdcp/rohc/RohcCompressor.h"
 
 namespace simu5g {
 
 class LtePdcpHeader;
 
 using namespace inet;
-
-
-#define LTE_PDCP_HEADER_COMPRESSION_DISABLED    B(-1)
 
 /**
  * @brief Entity for PDCP Layer
@@ -50,8 +50,8 @@ class LtePdcpTxEntity : public PdcpTxEntityBase
     // Identifier for this node
     MacNodeId nodeId_;
 
-    // Header size after ROHC (RObust Header Compression)
-    inet::B headerCompressedSize_;
+    // ROHC (RObust Header Compression), if the bearer has it configured
+    std::unique_ptr<RohcCompressor> rohc_;
 
     // RLC mode of this bearer's logical channel, as pushed by RRC via the "rlcMode" NED
     // param (see PdcpEntityBase); resolved once in initialize() into the PDCP header size.
@@ -69,7 +69,7 @@ class LtePdcpTxEntity : public PdcpTxEntityBase
 
     virtual void compressHeader(inet::Packet *pkt);
 
-    bool isCompressionEnabled() { return headerCompressedSize_ != LTE_PDCP_HEADER_COMPRESSION_DISABLED; }
+    bool isCompressionEnabled() { return rohc_ != nullptr; }
 
   public:
 

@@ -11,25 +11,15 @@
 //
 
 #include "simu5g/stack/pdcp/LtePdcpTxEntity.h"
-#include "simu5g/common/L3Utils.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
-#include <inet/networklayer/ipv4/Ipv4Header_m.h>
-#include <inet/networklayer/ipv6/Ipv6Header.h>
-#include <inet/transportlayer/tcp_common/TcpHeader.h>
-#include <inet/transportlayer/udp/UdpHeader_m.h>
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverBase.h"
 #include "simu5g/stack/pdcp/packet/LteRohcPdu_m.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include <inet/common/ProtocolTag_m.h>
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/sdap/packet/NrSdapHeader_m.h"
-#include "simu5g/stack/pdcp/packet/RohcHeader.h"
-
-// We require a minimum length of 1 Byte for each header even in compressed state
-// (transport, network and ROHC header, i.e. minimum is 3 Bytes)
-#define MIN_COMPRESSED_HEADER_SIZE    B(3)
 
 
 namespace simu5g {
@@ -45,9 +35,21 @@ void LtePdcpTxEntity::initialize(int stage) {
         binder_.reference(this, "binderModule", true);
         nodeId_ = MacNodeId(getContainingNode(this)->par("macNodeId").intValue());
 
-        headerCompressedSize_ = B(par("headerCompressedSize"));
-        if (headerCompressedSize_ != LTE_PDCP_HEADER_COMPRESSION_DISABLED && headerCompressedSize_ < MIN_COMPRESSED_HEADER_SIZE)
-            throw cRuntimeError("Size of compressed header must not be less than %" PRId64 "B.", MIN_COMPRESSED_HEADER_SIZE.get());
+        // the bearer's header compression, as RRC pushed it (see PdcpEntityBase)
+        cStringTokenizer profiles(par("rohcProfiles").stringValue());
+        if (profiles.hasMoreTokens()) {
+            RohcCompressor::Parameters params;
+            while (profiles.hasMoreTokens())
+                params.profiles.insert(parseRohcProfile(profiles.nextToken()));
+            const cValueMap *sizes = check_and_cast<const cValueMap *>(par("rohcSoHeaderSizes").objectValue());
+            for (const auto& [name, value] : sizes->getFields()) {
+                long size = value.intValue();
+                if (size < 1)
+                    throw cRuntimeError("rohcSoHeaderSizes: the compressed header size of profile \"%s\" must be at least 1 byte", name.c_str());
+                params.soHeaderSize[parseRohcProfile(name)] = B(size);
+            }
+            rohc_ = std::make_unique<RohcCompressor>(params);
+        }
 
         emitPerSduSignals_ = par("emitPerSduSignals");
 
@@ -100,58 +102,8 @@ void LtePdcpTxEntity::compressHeader(Packet *pkt)
             EV << "LtePdcp : Removed SDAP header before compression\n";
         }
 
-        // Extract IP and transport headers to be compressed. A non-first IPv4 fragment
-        // carries no transport header. With IPv6 extension headers (e.g. a fragment
-        // header), the Next Header field names the first of them: they and whatever
-        // follows stay uncompressed.
-        inet::Ptr<inet::Chunk> ipHeader;
-        int transportProtocol;
-        bool hasTransportHeader;
-        if (&ipProtocolOf(pkt) == &Protocol::ipv4) {
-            auto ipv4Header = pkt->removeAtFront<Ipv4Header>();
-            transportProtocol = ipv4Header->getProtocolId();
-            hasTransportHeader = ipv4Header->getFragmentOffset() == 0;
-            ipHeader = ipv4Header;
-        }
-        else {
-            auto ipv6Header = pkt->removeAtFront<Ipv6Header>();
-            transportProtocol = ipv6Header->getProtocolId();
-            hasTransportHeader = true;
-            ipHeader = ipv6Header;
-        }
-
-        inet::Ptr<inet::Chunk> transportHeader;
-        if (!hasTransportHeader) {
-            transportHeader = nullptr;
-        }
-        else if (transportProtocol == IP_PROT_TCP) {
-            transportHeader = pkt->removeAtFront<tcp::TcpHeader>();
-        }
-        else if (transportProtocol == IP_PROT_UDP) {
-            transportHeader = pkt->removeAtFront<UdpHeader>();
-        }
-        else {
-            transportHeader = nullptr;  // cannot compress
-        }
-
-        // Create a sequence chunk containing the original headers
-        auto originalHeaders = inet::makeShared<inet::SequenceChunk>();
-
-        // Make headers immutable before inserting into SequenceChunk
-        ipHeader->markImmutable();
-        originalHeaders->insertAtBack(ipHeader);
-        if (transportHeader) {
-            transportHeader->markImmutable();
-            originalHeaders->insertAtBack(transportHeader);
-        }
-
-        // Make originalHeaders immutable before passing to RohcHeader
-        originalHeaders->markImmutable();
-
-        // Create ROHC header with original headers and compressed size
-        auto rohcHeader = makeShared<RohcHeader>(originalHeaders, headerCompressedSize_);
-        rohcHeader->markImmutable();
-        pkt->insertAtFront(rohcHeader);
+        RohcProfile profile = rohc_->compress(pkt);
+        EV << "LtePdcp : Header compression performed, profile " << rohcProfileName(profile) << "\n";
 
         // If we had an SDAP header, add it back on top of the ROHC header
         if (sdapHeader) {
@@ -159,8 +111,6 @@ void LtePdcpTxEntity::compressHeader(Packet *pkt)
             pkt->insertAtFront(sdapHeader);
             EV << "LtePdcp : Added SDAP header back on top of ROHC header\n";
         }
-
-        EV << "LtePdcp : Header compression performed\n";
     }
 }
 

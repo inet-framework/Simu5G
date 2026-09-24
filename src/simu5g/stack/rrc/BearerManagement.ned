@@ -32,8 +32,7 @@ simple BearerManagement like IBearerManagement
         double t311 @unit(s) = default(0s);     // RRC re-establishment cell-selection timer (0 => release-to-IDLE)
         double t301 @unit(s) = default(0.1s);   // RRC re-establishment (request -> complete) timer
 
-        // PDCP entity parameters
-        int headerCompressedSize @unit(B) = default(-1B);
+        int headerCompressedSize @unit(B) = default(-1B);  // Removed, an error if set: header compression is configured per bearer (the rohc field of ~BearerConfigurator's bearer definitions)
 
         // PDCP entity types: the full PDCP entity is a compound (PdcpEntityBase, TX+RX sides plus
         // the leg split/join stage of a multi-leg bearer); the instantiable types are its

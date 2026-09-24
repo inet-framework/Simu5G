@@ -73,8 +73,6 @@ class PacketFlowObserverBase : public cSimpleModule, public cListener
 
     std::string pfmType;
 
-    int headerCompressedSize_;
-
   protected:
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void initialize(int stage) override;

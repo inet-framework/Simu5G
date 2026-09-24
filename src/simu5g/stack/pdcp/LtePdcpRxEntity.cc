@@ -36,7 +36,7 @@ void LtePdcpRxEntity::initialize(int stage)
         binder_.reference(this, "binderModule", true);
         nodeId_ = MacNodeId(getContainingNode(this)->par("macNodeId").intValue());
 
-        headerCompressionEnabled_ = par("headerCompressedSize").intValue() > 0;
+        headerCompressionEnabled_ = !opp_isblank(par("rohcProfiles").stringValue());
     }
 }
 

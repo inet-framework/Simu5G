@@ -40,8 +40,8 @@ module PdcpEntityBase
         int numLegs = default(1);                  // Number of RLC legs of this bearer
         string legs = default(numLegs == 1 ? "MCG" : "MCG SCG");  // Cell group of each leg, space-separated, in leg-index order
         bool hasSplitter = numLegs > 1 || legs != "MCG";  // The TX side routes through the splitter whenever a leg needs its per-leg id mapping
-        int headerCompressedSize @unit(B) = default(-1B);
-        *.headerCompressedSize = default(this.headerCompressedSize);
+        string rohcProfiles = default("");  // The bearer's ROHC profiles, space-separated, pushed by RRC; "" = no header compression
+        *.rohcProfiles = default(this.rohcProfiles);
         string rlcMode @enum(TM,UM,AM) = default("UM");   // Forwarded to tx only; determines the PDCP header size
         *.rlcMode = default(this.rlcMode);
         *.numLegs = this.numLegs;
