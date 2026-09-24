@@ -36,6 +36,7 @@
 #include <inet/common/Protocol.h>
 #include <inet/common/Units.h>
 #include <inet/common/geometry/Geometry_m.h>
+#include <inet/networklayer/common/L3Address.h>
 #include <inet/networklayer/contract/ipv4/Ipv4Address.h>
 
 #include "simu5g/common/LteDefs.h"
@@ -103,8 +104,8 @@ struct FlowId {
 // except that the plain-LTE stack stores a wildcard direction to keep its key
 // direction-agnostic.
 struct FlowBindingKey {
-    inet::Ipv4Address srcAddr;
-    inet::Ipv4Address dstAddr;
+    inet::L3Address srcAddr;
+    inet::L3Address dstAddr;
     uint16_t typeOfService = 0;
     Direction direction = DL;
 
@@ -122,9 +123,15 @@ struct FlowBindingKey {
 };
 
 struct FlowBindingKeyHash {
+    static std::size_t hashAddress(const inet::L3Address& addr) {
+        if (addr.getType() == inet::L3Address::IPv4)
+            return std::hash<uint32_t>{}(addr.toIpv4().getInt());
+        const uint32_t *w = addr.toIpv6().words();
+        return std::hash<uint32_t>{}(w[0] ^ w[1] ^ w[2] ^ w[3]);
+    }
     std::size_t operator()(const FlowBindingKey& key) const {
-        std::size_t h1 = std::hash<uint32_t>{}(key.srcAddr.getInt());
-        std::size_t h2 = std::hash<uint32_t>{}(key.dstAddr.getInt());
+        std::size_t h1 = hashAddress(key.srcAddr);
+        std::size_t h2 = hashAddress(key.dstAddr);
         std::size_t h3 = std::hash<uint16_t>{}(key.typeOfService);
         std::size_t h4 = std::hash<uint16_t>{}(uint16_t(key.direction));
         return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3);

@@ -11,10 +11,13 @@
 
 #include "ReflectiveQosTable.h"
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
+#include <inet/networklayer/ipv6/Ipv6Header.h>
 #include <inet/transportlayer/tcp_common/TcpHeader.h>
 #include <inet/transportlayer/udp/UdpHeader_m.h>
 #include <iostream>
 #include <sstream>
+
+#include "simu5g/common/L3Utils.h"
 
 using namespace simu5g;
 
@@ -176,17 +179,25 @@ FlowKey ReflectiveQosTable::extractFlowKey(inet::Packet *pkt) const
 
     try {
         // Extract IP header
-        auto ipHeader = pkt->peekAtFront<inet::Ipv4Header>();
+        auto ipHeader = peekIpHeader(pkt);
         if (!ipHeader) {
             return flowKey; // Return empty FlowKey
         }
 
-        flowKey.srcAddr = ipHeader->getSrcAddress().str();
-        flowKey.dstAddr = ipHeader->getDestAddress().str();
-        flowKey.protocol = ipHeader->getProtocolId();
+        flowKey.srcAddr = ipHeader->getSourceAddress().str();
+        flowKey.dstAddr = ipHeader->getDestinationAddress().str();
 
-        // Extract transport layer ports
-        auto ipHeaderLength = ipHeader->getHeaderLength();
+        // Extract transport layer ports; an IPv6 header chunk includes the extension headers
+        inet::b ipHeaderLength;
+        if (auto ipv4Header = inet::dynamicPtrCast<const inet::Ipv4Header>(ipHeader)) {
+            flowKey.protocol = ipv4Header->getProtocolId();
+            ipHeaderLength = inet::b(ipv4Header->getHeaderLength());
+        }
+        else {
+            auto ipv6Header = inet::staticPtrCast<const inet::Ipv6Header>(ipHeader);
+            flowKey.protocol = ipv6Header->getProtocolId();
+            ipHeaderLength = ipv6Header->getChunkLength();
+        }
 
         if (flowKey.protocol == inet::IP_PROT_TCP) {
             auto tcpHeader = pkt->peekDataAt<inet::tcp::TcpHeader>(ipHeaderLength);

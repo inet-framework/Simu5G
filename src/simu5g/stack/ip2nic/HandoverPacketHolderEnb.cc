@@ -63,7 +63,7 @@ void HandoverPacketHolderEnb::initialize(int stage)
     }
 }
 
-MacNodeId HandoverPacketHolderEnb::resolveUeNodeId(const inet::Ipv4Address& destAddr)
+MacNodeId HandoverPacketHolderEnb::resolveUeNodeId(const inet::L3Address& destAddr)
 {
     // The UE's id on this node's own cell group: an NR node serves, holds and forwards
     // NR ids, an LTE node LTE ids -- a dual-stack UE has both, and picking by this node's
@@ -100,7 +100,7 @@ void HandoverPacketHolderEnb::fromIpBs(Packet *pkt)
     auto ipFields = attachIpHeaderFields(pkt);
 
     // handle "forwarding" of packets during handover
-    MacNodeId destId = resolveUeNodeId(ipFields->getDestAddress().toIpv4());
+    MacNodeId destId = resolveUeNodeId(ipFields->getDestAddress());
 
     if (hoForwarding_.find(destId) != hoForwarding_.end()) {
         // data packet must be forwarded (via X2) to another eNB
@@ -175,7 +175,7 @@ void HandoverPacketHolderEnb::receiveTunneledPacketOnHandover(Packet *datagram)
     EV << "HandoverPacketHolder::receiveTunneledPacketOnHandover - received packet via X2" << endl;
     // the base station's entry for downlink traffic forwarded by the handover source
     auto ipFields = attachIpHeaderFields(datagram);
-    MacNodeId destId = resolveUeNodeId(ipFields->getDestAddress().toIpv4());
+    MacNodeId destId = resolveUeNodeId(ipFields->getDestAddress());
 
     if (hoFromX2_.find(destId) == hoFromX2_.end()) {
         IpDatagramQueue queue;

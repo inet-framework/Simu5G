@@ -126,7 +126,7 @@ void Ip2Nic::setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeI
     nrServingNodeId_ = nrServingNodeId;
 }
 
-void Ip2Nic::getStackAvailability(const Ipv4Address& destAddr, bool& hasLte, bool& hasNr)
+void Ip2Nic::getStackAvailability(const L3Address& destAddr, bool& hasLte, bool& hasNr)
 {
     if (nodeType_ == NODEB) {
         // the packet travels to the UE the destination address names
@@ -157,8 +157,8 @@ void Ip2Nic::toStackUe(Packet *pkt)
 {
     EV << "Ip2Nic::fromIpUe - message from IP layer: send to stack: " << pkt->str() << std::endl;
     auto ipFields = pkt->getTag<IpHeaderFieldsTag>();
-    Ipv4Address srcAddr = ipFields->getSrcAddress().toIpv4();
-    Ipv4Address destAddr = ipFields->getDestAddress().toIpv4();
+    const L3Address& srcAddr = ipFields->getSrcAddress();
+    const L3Address& destAddr = ipFields->getDestAddress();
     short int tos = ipFields->getTos();
 
     // Drop UL packets if this UE released its link to the serving node after RLF.
@@ -226,8 +226,8 @@ void Ip2Nic::toStackBs(Packet *pkt)
     EV << "Ip2Nic::toStackBs - message from IP layer: send to stack" << endl;
     removeAllSimu5GTags(pkt);
     auto ipFields = pkt->getTag<IpHeaderFieldsTag>();
-    Ipv4Address srcAddr = ipFields->getSrcAddress().toIpv4();
-    Ipv4Address destAddr = ipFields->getDestAddress().toIpv4();
+    const L3Address& srcAddr = ipFields->getSrcAddress();
+    const L3Address& destAddr = ipFields->getDestAddress();
     short int tos = ipFields->getTos();
 
     // Drop DL packets destined to a UE whose context was released after RLF
@@ -278,7 +278,7 @@ void Ip2Nic::releaseFlowBindings(DrbKey bearer)
     }
 }
 
-MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, MacNodeId sourceId)
+MacNodeId Ip2Nic::getNextHopNodeId(const L3Address& destAddr, MacNodeId sourceId)
 {
     bool isEnb = (nodeType_ == NODEB);
 
@@ -322,7 +322,7 @@ MacNodeId Ip2Nic::getNextHopNodeId(const Ipv4Address& destAddr, MacNodeId source
     }
 }
 
-void Ip2Nic::attachFlowControlInfo(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address destAddr, uint16_t typeOfService)
+void Ip2Nic::attachFlowControlInfo(inet::Packet *pkt, const L3Address& srcAddr, const L3Address& destAddr, uint16_t typeOfService)
 {
     // --- Common preamble ---
     auto lteInfo = pkt->addTagIfAbsent<FlowControlInfo>();
@@ -345,7 +345,7 @@ void Ip2Nic::attachFlowControlInfo(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4A
     assignEndpointIds(lteInfo.get(), destAddr, isEnb);
 }
 
-void Ip2Nic::assignBearer(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address destAddr, uint16_t typeOfService)
+void Ip2Nic::assignBearer(inet::Packet *pkt, const L3Address& srcAddr, const L3Address& destAddr, uint16_t typeOfService)
 {
     auto lteInfo = pkt->getTagForUpdate<FlowControlInfo>();
 
@@ -362,7 +362,7 @@ void Ip2Nic::assignBearer(inet::Packet *pkt, Ipv4Address srcAddr, Ipv4Address de
        << " (ToS=" << typeOfService << ") is carried by DRB " << drbId << endl;
 }
 
-void Ip2Nic::assignEndpointIds(FlowControlInfo *lteInfo, const Ipv4Address& destAddr, bool isEnb)
+void Ip2Nic::assignEndpointIds(FlowControlInfo *lteInfo, const L3Address& destAddr, bool isEnb)
 {
     if (isNr_) {
         // For PDCP entity dispatch, always use technology-neutral (LTE/master-leg) IDs.

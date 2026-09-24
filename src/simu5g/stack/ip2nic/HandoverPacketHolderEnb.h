@@ -53,7 +53,7 @@ class HandoverPacketHolderEnb : public cSimpleModule
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
     // The UE the address names, by the id of this node's own cell group
-    virtual MacNodeId resolveUeNodeId(const inet::Ipv4Address& destAddr);
+    virtual MacNodeId resolveUeNodeId(const inet::L3Address& destAddr);
     void handleMessage(cMessage *msg) override;
 
     virtual void fromIpBs(inet::Packet *datagram);

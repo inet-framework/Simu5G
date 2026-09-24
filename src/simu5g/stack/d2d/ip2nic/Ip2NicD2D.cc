@@ -9,7 +9,6 @@
 // The above files and the present reference are part of the software itself,
 // and cannot be removed from it.
 //
-#include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include "simu5g/stack/d2d/ip2nic/Ip2NicD2D.h"
 #include "simu5g/stack/d2d/binder/D2dBinder.h"
 #include "simu5g/common/binder/Binder.h"
@@ -29,7 +28,7 @@ void Ip2NicD2D::initialize(int stage)
         d2dBinder_ = D2dBinder::getInstance(this);
 }
 
-MacNodeId Ip2NicD2D::getNextHopNodeId(const Ipv4Address& destAddr, MacNodeId sourceId)
+MacNodeId Ip2NicD2D::getNextHopNodeId(const L3Address& destAddr, MacNodeId sourceId)
 {
     if (nodeType_ == NODEB)
         return Ip2Nic::getNextHopNodeId(destAddr, sourceId);  // eNB next-hop is D2D-agnostic
@@ -47,7 +46,7 @@ MacNodeId Ip2NicD2D::getNextHopNodeId(const Ipv4Address& destAddr, MacNodeId sou
     return destId;
 }
 
-void Ip2NicD2D::classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const Ipv4Address& destAddr, MacNodeId localNodeId, bool isEnb)
+void Ip2NicD2D::classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const L3Address& destAddr, MacNodeId localNodeId, bool isEnb)
 {
     if (isEnb) {
         // ENB: set D2D peer IDs to none
@@ -60,10 +59,12 @@ void Ip2NicD2D::classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, 
     if (isNr_)
         lteInfo->setSourceId(localNodeId);
 
-    if (destAddr.isMulticast()) {
+    // D2D groupcast is IPv4-only: IPv6 multicast (the node's own Neighbor Discovery
+    // traffic, too) goes up the PDU session like any other packet
+    if (destAddr.getType() == L3Address::IPv4 && destAddr.isMulticast()) {
         d2dBinder_->addD2DMulticastTransmitter(localNodeId);
         lteInfo->setDirection(D2D_MULTI);
-        MacNodeId groupId = binder_->getOrAssignDestIdForMulticastAddress(destAddr);
+        MacNodeId groupId = binder_->getOrAssignDestIdForMulticastAddress(destAddr.toIpv4());
         lteInfo->setD2dGroupId(groupId);
     }
     else {

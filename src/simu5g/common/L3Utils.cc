@@ -11,19 +11,48 @@
 
 #include "simu5g/common/L3Utils.h"
 
+#include <inet/common/packet/chunk/BytesChunk.h>
+#include <inet/networklayer/common/L3Tools.h>
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
+#include <inet/networklayer/ipv6/Ipv6Header.h>
 
 namespace simu5g {
 
 using namespace inet;
+using namespace omnetpp;
+
+const Protocol& ipProtocolOf(const Packet *pkt)
+{
+    // A header object's type stands for the version field; a datagram in raw bytes
+    // (e.g. from an emulation interface) has the field itself.
+    const auto& front = pkt->peekAtFront();
+    if (dynamicPtrCast<const Ipv4Header>(front))
+        return Protocol::ipv4;
+    if (dynamicPtrCast<const Ipv6Header>(front))
+        return Protocol::ipv6;
+    int version = pkt->peekDataAt<BytesChunk>(b(0), B(1))->getByte(0) >> 4;
+    if (version == 4)
+        return Protocol::ipv4;
+    if (version == 6)
+        return Protocol::ipv6;
+    throw cRuntimeError("Packet '%s' does not start with an IP datagram (IP version field: %d)", pkt->getName(), version);
+}
+
+Ptr<const NetworkHeaderBase> peekIpHeader(const Packet *pkt)
+{
+    return peekNetworkProtocolHeader(pkt, ipProtocolOf(pkt));
+}
 
 Ptr<const IpHeaderFieldsTag> attachIpHeaderFields(Packet *pkt)
 {
-    const auto& ipv4Header = pkt->peekAtFront<Ipv4Header>();
+    const auto& ipHeader = peekIpHeader(pkt);
     auto tag = pkt->addTagIfAbsent<IpHeaderFieldsTag>();
-    tag->setSrcAddress(ipv4Header->getSrcAddress());
-    tag->setDestAddress(ipv4Header->getDestAddress());
-    tag->setTos(ipv4Header->getTypeOfService());
+    tag->setSrcAddress(ipHeader->getSourceAddress());
+    tag->setDestAddress(ipHeader->getDestinationAddress());
+    if (auto ipv4Header = dynamicPtrCast<const Ipv4Header>(ipHeader))
+        tag->setTos(ipv4Header->getTypeOfService());
+    else
+        tag->setTos(staticPtrCast<const Ipv6Header>(ipHeader)->getTrafficClass());
     return tag;
 }
 

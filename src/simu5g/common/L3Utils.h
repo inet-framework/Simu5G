@@ -12,11 +12,22 @@
 #ifndef _L3_UTILS_H_
 #define _L3_UTILS_H_
 
+#include <inet/common/Protocol.h>
 #include <inet/common/packet/Packet.h>
+#include <inet/networklayer/contract/NetworkHeaderBase_m.h>
 
 #include "simu5g/common/IpHeaderFieldsTag_m.h"
 
 namespace simu5g {
+
+// The IP version of the datagram at the front of the packet, Protocol::ipv4 or
+// Protocol::ipv6, taken from the datagram itself (3GPP does not signal it per packet,
+// a receiver of an IPv4v6 session reads the version field). Throws if the packet
+// does not start with an IP datagram.
+const inet::Protocol& ipProtocolOf(const inet::Packet *pkt);
+
+// The IP header at the front of the packet, of either family
+inet::Ptr<const inet::NetworkHeaderBase> peekIpHeader(const inet::Packet *pkt);
 
 // Parses the IP header at the front of a user-plane packet and attaches its fields
 // as an IpHeaderFieldsTag, replacing any tag already there. Called where the packet

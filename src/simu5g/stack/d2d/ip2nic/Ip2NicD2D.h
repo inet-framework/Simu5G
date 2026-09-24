@@ -38,11 +38,11 @@ class Ip2NicD2D : public Ip2Nic
 
     void initialize(int stage) override;
     /// D2D classification: multicast group, peer bookkeeping, DM/IM direction
-    void classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const inet::Ipv4Address& destAddr, MacNodeId localNodeId, bool isEnb) override;
+    void classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const inet::L3Address& destAddr, MacNodeId localNodeId, bool isEnb) override;
 
     /// all D2D-capable stacks key DRBs by the actual flow direction
     Direction bindingDirection(FlowControlInfo *lteInfo) override { return (Direction)lteInfo->getDirection(); }
-    MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, MacNodeId sourceId) override;
+    MacNodeId getNextHopNodeId(const inet::L3Address& destAddr, MacNodeId sourceId) override;
 };
 
 } //namespace

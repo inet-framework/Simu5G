@@ -68,7 +68,7 @@ class Ip2Nic : public cSimpleModule
     // Whether the UE this packet travels to/from is attached with its LTE stack, its NR
     // stack, both (dual connectivity only), or neither -- a packet whose UE is attached
     // with neither is dropped.
-    virtual void getStackAvailability(const inet::Ipv4Address& destAddr, bool& hasLte, bool& hasNr);
+    virtual void getStackAvailability(const inet::L3Address& destAddr, bool& hasLte, bool& hasNr);
 
     // UE only: the id this UE's outgoing flows carry as their source -- the anchor
     // stack's id under dual connectivity (which leg carries a PDU is the bearer
@@ -80,17 +80,17 @@ class Ip2Nic : public cSimpleModule
     // separate question assignBearer() answers, because answering it can establish one.
     // Core handles the plain UL/DL path (LTE) and the NR (non-D2D) path; the D2D-aware
     // overrides live in Ip2NicD2D.
-    virtual void attachFlowControlInfo(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
+    virtual void attachFlowControlInfo(inet::Packet *pkt, const inet::L3Address& srcAddr, const inet::L3Address& destAddr, uint16_t typeOfService);
 
     // Records in the packet's FlowControlInfo which DRB carries its flow, establishing a
     // bearer for it if none does yet -- so calling this can create entities at both
     // endpoints (see establishBearerOnDemand()). Not called when SDAP is present: it maps
     // the QoS flow onto a DRB itself.
-    virtual void assignBearer(inet::Packet *pkt, inet::Ipv4Address srcAddr, inet::Ipv4Address destAddr, uint16_t typeOfService);
+    virtual void assignBearer(inet::Packet *pkt, const inet::L3Address& srcAddr, const inet::L3Address& destAddr, uint16_t typeOfService);
 
     // Fills in the flow's endpoint ids: this node on the near side, and on the far side
     // the next hop towards the destination (the multicast group's sender, for multicast).
-    virtual void assignEndpointIds(FlowControlInfo *lteInfo, const inet::Ipv4Address& destAddr, bool isEnb);
+    virtual void assignEndpointIds(FlowControlInfo *lteInfo, const inet::L3Address& destAddr, bool isEnb);
 
     // Establishes a bearer for a flow that has none, and returns the DRB id it got. This
     // is the data plane asking RRC for a bearer, so it is the packet path's one
@@ -140,13 +140,13 @@ class Ip2Nic : public cSimpleModule
     /// common preamble of attachFlowControlInfo(), before the endpoint ids are
     /// assigned). No-op in the base; D2D-aware subclasses set the multicast
     /// group, peer IDs and the actual flow direction here.
-    virtual void classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const inet::Ipv4Address& destAddr, MacNodeId localNodeId, bool isEnb) {}
+    virtual void classifyConnection(inet::Packet *pkt, FlowControlInfo *lteInfo, const inet::L3Address& destAddr, MacNodeId localNodeId, bool isEnb) {}
 
     /// direction stored in the flow key. The plain-LTE stack has historically used
     /// a direction-agnostic key; the NR and D2D stacks key by the actual flow
     /// direction.
     virtual Direction bindingDirection(FlowControlInfo *lteInfo) { return isNr_ ? (Direction)lteInfo->getDirection() : Direction(0xFFFF); }
-    virtual MacNodeId getNextHopNodeId(const inet::Ipv4Address& destAddr, MacNodeId sourceId);
+    virtual MacNodeId getNextHopNodeId(const inet::L3Address& destAddr, MacNodeId sourceId);
 
   public:
     // Configuration push: RRC binds a flow to the bearer carrying it, at both endpoints

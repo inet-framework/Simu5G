@@ -11,11 +11,10 @@
 //
 #include "simu5g/corenetwork/gtp/GtpUser.h"
 #include "simu5g/corenetwork/trafficFlowFilter/TftControlInfo_m.h"
-#include "simu5g/common/IpHeaderFieldsTag_m.h"
+#include "simu5g/common/L3Utils.h"
 #include "simu5g/common/QfiTag_m.h"
 #include <iostream>
 #include <inet/networklayer/common/L3AddressResolver.h>
-#include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/common/packet/printer/PacketPrinter.h>
 #include <inet/common/socket/SocketTag_m.h>
 #include <inet/linklayer/common/InterfaceTag_m.h>
@@ -264,8 +263,7 @@ void GtpUser::handleFromUdp(Packet *pkt)
     }
     else if (ownerType_ == PGW || ownerType_ == UPF) {
         // the tunnel does not identify the session (TEID 0), so the destination does
-        const auto& hdr = originalPacket->peekAtFront<Ipv4Header>();
-        const Ipv4Address& destAddr = hdr->getDestAddress();
+        L3Address destAddr = peekIpHeader(originalPacket)->getDestinationAddress();
         MacNodeId destId = binder_->getMacNodeId(destAddr);
         if (destId != NODEID_NONE) { // final destination is a UE
             MacNodeId destMaster = binder_->getServingNodeOrSelf(destId);
