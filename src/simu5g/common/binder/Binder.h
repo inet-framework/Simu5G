@@ -411,6 +411,19 @@ class Binder : public cSimpleModule
     }
 
     /**
+     * Removes the association of the given IP address with the given MacNodeId, if any.
+     *
+     * @param address IP address
+     */
+    virtual void unsetMacNodeId(const inet::L3Address& address, MacNodeId nodeId)
+    {
+        auto& addressToNodeId = isNrUe(nodeId) ? ipAddressToNrMacNodeId_ : ipAddressToMacNodeId_;
+        auto it = addressToNodeId.find(address);
+        if (it != addressToNodeId.end() && it->second == nodeId)
+            addressToNodeId.erase(it);
+    }
+
+    /**
      * Associates the given IP address with the given X2NodeId.
      *
      * @param address IP address

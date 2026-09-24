@@ -12,7 +12,6 @@
 
 #include "simu5g/stack/mac/LteMacUe.h"
 
-#include <inet/networklayer/ipv4/Ipv4InterfaceData.h>
 
 #include "simu5g/corenetwork/statsCollector/UeStatsCollector.h"
 #include "simu5g/stack/mac/buffer/LteMacBuffer.h"
@@ -118,23 +117,6 @@ void LteMacUe::initialize(int stage)
                 EV << "I am a UE with node id: " << nodeId_ << " and the base station with id: " << cellId_ << " has a different type" << endl;
                 // TODO: is this a valid check or is the collector module possible here:    ASSERT(par("collectorModule").isEmptyString());
             }
-        }
-
-        // find interface entry and use its address
-        NetworkInterface *iface = findContainingNicModule(this);
-        if (iface == nullptr)
-            throw new cRuntimeError("no interface entry for lte interface - cannot bind node id [%hu]", num(nodeId_));
-
-        auto ipv4if = iface->getProtocolData<Ipv4InterfaceData>();
-        if (ipv4if == nullptr)
-            throw new cRuntimeError("no Ipv4 interface data - cannot bind node id [%hu]", num(nodeId_));
-        binder_->setMacNodeId(ipv4if->getIPAddress(), nodeId_);
-
-        // for emulation mode
-        const char *extHostAddress = networkNode_->par("extHostAddress").stringValue();
-        if (strcmp(extHostAddress, "") != 0) {
-            // register the address of the external host to enable forwarding
-            binder_->setMacNodeId(Ipv4Address(extHostAddress), nodeId_);
         }
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {

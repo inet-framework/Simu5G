@@ -10,9 +10,12 @@
 //
 
 #include <inet/common/ModuleAccess.h>
+#include <inet/common/Simsignals.h>
+#include <inet/common/stlutils.h>
 #include <inet/networklayer/ipv4/IIpv4RoutingTable.h>
 #include <inet/networklayer/ipv4/Ipv4InterfaceData.h>
 #include <inet/networklayer/ipv4/Ipv4Route.h>
+#include <inet/networklayer/ipv6/Ipv6InterfaceData.h>
 #include "simu5g/stack/rrc/Registration.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/InitStages.h"
@@ -83,6 +86,24 @@ void Registration::initialize(int stage)
             }
         }
     }
+    else if (stage == inet::INITSTAGE_NETWORK_LAYER) {
+        if (nodeType == UE) {
+            // The Binder's address-to-node-id mapping is how the network side finds the
+            // UE a downlink packet is for
+            registerAddresses();
+            cModule *ue = inet::getContainingNode(this);
+            ue->subscribe(interfaceIpv4ConfigChangedSignal, this);
+            ue->subscribe(interfaceIpv6ConfigChangedSignal, this);
+
+            // emulation: the external host behind the UE is reached through it
+            const char *extHostAddress = ue->par("extHostAddress").stringValue();
+            if (strcmp(extHostAddress, "") != 0) {
+                binder->setMacNodeId(Ipv4Address(extHostAddress), lteNodeId);
+                if (nrNodeId != NODEID_NONE)
+                    binder->setMacNodeId(Ipv4Address(extHostAddress), nrNodeId);
+            }
+        }
+    }
     else if (stage == inet::INITSTAGE_STATIC_ROUTING) {
         if (nodeType == UE) {
             // if the UE has been created dynamically, we need to manually add a default route having our cellular interface as output interface
@@ -146,6 +167,44 @@ void Registration::registerInterface()
     // capabilities
     networkIf->setMulticast(true);
     networkIf->setPointToPoint(true);
+}
+
+void Registration::registerAddresses()
+{
+    std::set<L3Address> addresses;
+    if (auto ipv4Data = networkIf->findProtocolData<Ipv4InterfaceData>())
+        if (!ipv4Data->getIPAddress().isUnspecified())
+            addresses.insert(ipv4Data->getIPAddress());
+    if (auto ipv6Data = networkIf->findProtocolData<Ipv6InterfaceData>())
+        for (int i = 0; i < ipv6Data->getNumAddresses(); i++)
+            if (!ipv6Data->isTentativeAddress(i))
+                addresses.insert(ipv6Data->getAddress(i));
+
+    for (const auto& address : registeredAddresses) {
+        if (!contains(addresses, address)) {
+            EV_INFO << "Registration: address " << address << " no longer maps to this UE" << endl;
+            binder->unsetMacNodeId(address, lteNodeId);
+            if (nrNodeId != NODEID_NONE)
+                binder->unsetMacNodeId(address, nrNodeId);
+        }
+    }
+    for (const auto& address : addresses) {
+        if (!contains(registeredAddresses, address)) {
+            EV_INFO << "Registration: address " << address << " maps to this UE" << endl;
+            binder->setMacNodeId(address, lteNodeId);
+            if (nrNodeId != NODEID_NONE)
+                binder->setMacNodeId(address, nrNodeId);
+        }
+    }
+    registeredAddresses = addresses;
+}
+
+void Registration::receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details)
+{
+    Enter_Method("%s", cComponent::getSignalName(signalID));
+    auto change = check_and_cast<const NetworkInterfaceChangeDetails *>(obj);
+    if (change->getNetworkInterface() == networkIf)
+        registerAddresses();
 }
 
 void Registration::registerMulticastGroups()

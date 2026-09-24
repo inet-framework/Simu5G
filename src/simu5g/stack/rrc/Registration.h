@@ -25,7 +25,7 @@ namespace simu5g {
  * @brief RRC Registration — registers the node with the Binder, sets up
  *        the network interface, and joins multicast groups.
  */
-class Registration : public cSimpleModule
+class Registration : public cSimpleModule, public cListener
 {
   private:
     MacNodeId lteNodeId = NODEID_NONE;
@@ -38,6 +38,9 @@ class Registration : public cSimpleModule
     inet::ModuleRefByPar<Binder> binder;
     inet::ModuleRefByPar<BearerConfigurator> bearerConfigurator;
 
+    // UE only: the cellular interface's addresses the Binder maps to this UE
+    std::set<inet::L3Address> registeredAddresses;
+
   protected:
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
@@ -46,6 +49,16 @@ class Registration : public cSimpleModule
 
     virtual void registerInterface();
     virtual void registerMulticastGroups();
+
+    // UE only: makes the Binder map exactly the cellular interface's current unicast
+    // addresses, of both families, to this UE's LTE and NR node ids. Tentative IPv6
+    // addresses (duplicate address detection still running) are left out.
+    virtual void registerAddresses();
+
+    // Interface configuration changes: the UE's addresses can change during the run
+    // (an IPv6 link-local address, for one, appears only when Neighbor Discovery has
+    // started up), and the Binder must follow them
+    void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details) override;
 
   public:
     RanNodeType getNodeType() const { return nodeType; }
