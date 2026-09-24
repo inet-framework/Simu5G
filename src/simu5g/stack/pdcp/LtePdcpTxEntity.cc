@@ -11,10 +11,12 @@
 //
 
 #include "simu5g/stack/pdcp/LtePdcpTxEntity.h"
+#include "simu5g/common/L3Utils.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
+#include <inet/networklayer/ipv6/Ipv6Header.h>
 #include <inet/transportlayer/tcp_common/TcpHeader.h>
 #include <inet/transportlayer/udp/UdpHeader_m.h>
 #include "simu5g/stack/packetFlowObserver/PacketFlowObserverBase.h"
@@ -98,12 +100,31 @@ void LtePdcpTxEntity::compressHeader(Packet *pkt)
             EV << "LtePdcp : Removed SDAP header before compression\n";
         }
 
-        // Extract IP and transport headers to be compressed
-        auto ipHeader = pkt->removeAtFront<Ipv4Header>();
-        int transportProtocol = ipHeader->getProtocolId();
+        // Extract IP and transport headers to be compressed. A non-first IPv4 fragment
+        // carries no transport header. With IPv6 extension headers (e.g. a fragment
+        // header), the Next Header field names the first of them: they and whatever
+        // follows stay uncompressed.
+        inet::Ptr<inet::Chunk> ipHeader;
+        int transportProtocol;
+        bool hasTransportHeader;
+        if (&ipProtocolOf(pkt) == &Protocol::ipv4) {
+            auto ipv4Header = pkt->removeAtFront<Ipv4Header>();
+            transportProtocol = ipv4Header->getProtocolId();
+            hasTransportHeader = ipv4Header->getFragmentOffset() == 0;
+            ipHeader = ipv4Header;
+        }
+        else {
+            auto ipv6Header = pkt->removeAtFront<Ipv6Header>();
+            transportProtocol = ipv6Header->getProtocolId();
+            hasTransportHeader = true;
+            ipHeader = ipv6Header;
+        }
 
         inet::Ptr<inet::Chunk> transportHeader;
-        if (transportProtocol == IP_PROT_TCP) {
+        if (!hasTransportHeader) {
+            transportHeader = nullptr;
+        }
+        else if (transportProtocol == IP_PROT_TCP) {
             transportHeader = pkt->removeAtFront<tcp::TcpHeader>();
         }
         else if (transportProtocol == IP_PROT_UDP) {

@@ -187,7 +187,8 @@ FlowKey ReflectiveQosTable::extractFlowKey(inet::Packet *pkt) const
         flowKey.srcAddr = ipHeader->getSourceAddress().str();
         flowKey.dstAddr = ipHeader->getDestinationAddress().str();
 
-        // Extract transport layer ports; an IPv6 header chunk includes the extension headers
+        // Extract transport layer ports. With IPv6 extension headers (separate chunks) the Next
+        // Header field names the first extension header, and no ports are extracted.
         inet::b ipHeaderLength;
         if (auto ipv4Header = inet::dynamicPtrCast<const inet::Ipv4Header>(ipHeader)) {
             flowKey.protocol = ipv4Header->getProtocolId();
