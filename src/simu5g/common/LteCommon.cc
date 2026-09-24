@@ -13,8 +13,6 @@
 #include "simu5g/common/LteCommon.h"
 
 #include <inet/common/packet/PacketFilter.h>
-#include <inet/common/packet/dissector/ProtocolDissectorRegistry.h>
-#include <inet/networklayer/ipv4/Ipv4ProtocolDissector.h>
 #include <inet/common/IProtocolRegistrationListener.h>
 #include <inet/common/ProtocolTag_m.h>
 
@@ -30,9 +28,6 @@ namespace simu5g {
 using namespace omnetpp;
 
 using namespace inet;
-
-const inet::Protocol LteProtocol::ipv4uu("ipv4uu", "IPv4 (LTE Uu link)");
-Register_Protocol_Dissector(&LteProtocol::ipv4uu, Ipv4ProtocolDissector);
 
 const inet::Protocol LteProtocol::pdcp("pdcp", "PDCP");         // Packet Data Convergence Protocol
 const inet::Protocol LteProtocol::rlc("rlc", "RLC");            // Radio Link Control

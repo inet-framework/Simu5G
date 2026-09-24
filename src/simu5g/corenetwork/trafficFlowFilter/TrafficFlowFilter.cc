@@ -11,7 +11,6 @@
 //
 
 #include "simu5g/corenetwork/trafficFlowFilter/TrafficFlowFilter.h"
-#include <inet/common/IProtocolRegistrationListener.h>
 #include <inet/networklayer/common/L3AddressResolver.h>
 
 #include "simu5g/common/L3Utils.h"
@@ -97,11 +96,6 @@ void TrafficFlowFilter::initialize(int stage)
         }
     }
     //end mec
-
-    // register service processing IP packets on the LTE Uu Link
-    auto gateIn = gate("internetFilterGateIn");
-    registerProtocol(LteProtocol::ipv4uu, gateIn, SP_INDICATION);
-    registerProtocol(LteProtocol::ipv4uu, gateIn, SP_CONFIRM);
 }
 
 void TrafficFlowFilter::setQfiRules(QfiRuleSet&& rules)

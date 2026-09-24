@@ -73,7 +73,6 @@ class TrafficGeneratorBase;
 class LteProtocol
 {
   public:
-    static const inet::Protocol ipv4uu;  // IP protocol on the uU interface
     static const inet::Protocol pdcp;    // Packet Data Convergence Protocol
     static const inet::Protocol rlc;     // Radio Link Control
     static const inet::Protocol ltemac;  // LTE Medium Access Control

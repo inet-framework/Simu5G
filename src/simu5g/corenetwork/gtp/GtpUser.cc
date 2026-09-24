@@ -65,23 +65,6 @@ void GtpUser::initialize(int stage)
         myMacNodeID = MacNodeId(networkNode_->par("macNodeId").intValue());
     else
         myMacNodeID = NODEID_NONE;
-
-    ie_ = detectInterface();
-}
-
-NetworkInterface *GtpUser::detectInterface()
-{
-    IInterfaceTable *ift = getModuleFromPar<IInterfaceTable>(par("interfaceTableModule"), this);
-    const char *interfaceName = par("ipOutInterface");
-    NetworkInterface *ie = nullptr;
-
-    if (strlen(interfaceName) > 0) {
-        ie = ift->findInterfaceByName(interfaceName);
-        if (ie == nullptr)
-            throw cRuntimeError("Interface \"%s\" does not exist", interfaceName);
-    }
-
-    return ie;
 }
 
 CoreNodeType GtpUser::selectOwnerType(const char *type)
@@ -164,11 +147,7 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
         // handleFromUdp() restores it for tunneled traffic -- SDAP relies on
         // QfiReq being present on the gNB DL path
         datagram->addTagIfAbsent<QfiReq>()->setQfi(qfi);
-        // the datagram re-enters this node's IP layer, which routes it to the UE
-        const Protocol *protocol = &ipProtocolOf(datagram);
-        datagram->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(protocol);
-        datagram->addTagIfAbsent<PacketProtocolTag>()->setProtocol(protocol);
-        send(datagram, "pppGate");
+        send(datagram, "pppGate");  // to the cellular NIC
     }
     else {
         // the packet is ready to be tunneled via GTP to another node in the core network
@@ -252,12 +231,7 @@ void GtpUser::handleFromUdp(Packet *pkt)
     delete pkt;
 
     if (isBaseStation(ownerType_)) {
-        // add Interface-Request for cellular NIC
-        if (ie_ != nullptr)
-            originalPacket->addTagIfAbsent<InterfaceReq>()->setInterfaceId(ie_->getInterfaceId());
-
         EV << "GtpUser::handleFromUdp - Datagram local delivery to the cellular NIC" << endl;
-        // local delivery
         send(originalPacket, "pppGate");
     }
     else if (ownerType_ == UPF_MEC) {

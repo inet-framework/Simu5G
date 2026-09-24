@@ -222,7 +222,6 @@ module eNodeB
         gtpUser: GtpUser {
             parameters:
                 @display("p=1041,80");
-                ipOutInterface = "cellular";
                 gateway = parent.gateway;
         }
 
@@ -255,11 +254,12 @@ module eNodeB
         }
 
         //#
-        //# Connections to the core network
+        //# User plane: the cellular NIC is wired to the tunnel endpoint directly, the
+        //# base station does not IP-route the UEs' traffic
         //#
-        at.in++ <-- gtpUser.pppGate;
+        cellularNic.upperLayerOut --> trafficFlowFilter.internetFilterGateIn;
         trafficFlowFilter.gtpUserGateOut --> gtpUser.trafficFlowFilterGate;
-        trafficFlowFilter.internetFilterGateIn <-- at.out++;
+        gtpUser.pppGate --> cellularNic.upperLayerIn;
         gtpUser.socketOut --> at.in++;
         gtpUser.socketIn <-- at.out++;
 
@@ -325,9 +325,6 @@ module eNodeB
 
         at.out++ --> tn.in++;
         at.in++ <-- tn.out++;
-
-        cellularNic.upperLayerIn <-- nl.out++;
-        cellularNic.upperLayerOut --> nl.in++;
 
         //#
         //# MEC support

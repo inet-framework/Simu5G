@@ -19,7 +19,10 @@ package simu5g.corenetwork.gtp;
 // UDP). The destination endpoint is identified by utilizing information from the
 // ~TrafficFlowFilter module. On the other hand, when this module receives GTP packets
 // from a tunnel source endpoint, it decapsulates the included IP datagram and sends it
-// to the intended destination according to normal IP forwarding.
+// out on pppGate: at a base station into the cellular NIC (a base station does not
+// IP-route the UEs' traffic), at a ~Upf or ~PgwStandard onto the data network, unless
+// the destination is a UE of the same core network, whose base station the datagram
+// is then tunneled on to.
 // Used by all entities that need to communicate within the cellular core
 // network, such as ~eNodeB, ~gNodeB, ~PgwStandard, ~Upf, and ~MecHost modules.
 //
@@ -27,8 +30,6 @@ simple GtpUser
 {
     parameters:
         string binderModule = default("binder");
-        string interfaceTableModule;            // Path to the InterfaceTable module
-        string ipOutInterface = default("");    // Optional: manual specification of outgoing interface for received IP
         int localPort = default(31);
         int tunnelPeerPort = default(31);
         string gateway = default("");			// Optional

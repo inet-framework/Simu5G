@@ -57,8 +57,6 @@ class GtpUser : public cSimpleModule
     // if this module is on BS, this variable includes the ID of the BS
     MacNodeId myMacNodeID;
 
-    opp_component_ptr<inet::NetworkInterface> ie_;
-
     opp_component_ptr<cModule> networkNode_;
 
     CoreNodeType selectOwnerType(const char *type);
@@ -74,9 +72,6 @@ class GtpUser : public cSimpleModule
 
     // receive a GTP-U packet from Udp, reads the TEID and decides whether performing label switching or removal
     void handleFromUdp(inet::Packet *gtpMsg);
-
-    // detect outgoing interface name (CellularNic)
-    inet::NetworkInterface *detectInterface();
 };
 
 } //namespace

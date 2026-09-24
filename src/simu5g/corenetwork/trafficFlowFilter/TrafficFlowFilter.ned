@@ -18,7 +18,8 @@ package simu5g.corenetwork.trafficFlowFilter;
 // Resides in any module that also includes a ~GtpUser module, such as ~eNodeB, ~gNodeB, ~PgwStandard,
 // ~Upf, and ~MecHost modules. For instance, in a ~Upf module acting as the entry point of the 5G network, it
 // identifies the destination endpoint of the GTP tunnel that the packet should traverse, which is the gNodeB
-// serving the destination User Equipment (UE).
+// serving the destination User Equipment (UE). In a base station, it receives the UEs'
+// uplink datagrams straight from the cellular NIC.
 //
 // The module also assigns each packet entering the tunnel its QoS Flow Identifier
 // (QFI). At a core-network tunnel entry (~Upf, ~PgwStandard, a MEC host's UPF) the

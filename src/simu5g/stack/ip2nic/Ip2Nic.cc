@@ -217,8 +217,10 @@ void Ip2Nic::toIpUe(Packet *pkt)
 
 void Ip2Nic::toIpBs(Packet *pkt)
 {
-    prepareForIp(pkt, &LteProtocol::ipv4uu);
-    EV << "Ip2Nic::toIpBs - message from stack: send to IP layer" << endl;
+    // The datagram goes to the node's tunnel entry (TrafficFlowFilter), which is
+    // wired to the NIC directly: a base station does not IP-route user-plane traffic
+    pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&ipProtocolOf(pkt));
+    EV << "Ip2Nic::toIpBs - message from stack: send to the tunnel entry" << endl;
     send(pkt, ipGateOut_);
 }
 
