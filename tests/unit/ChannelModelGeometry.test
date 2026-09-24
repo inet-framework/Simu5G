@@ -13,11 +13,7 @@ and that only the difference of the two positions matters -- and, for the
 vertical angle, with the point below the centre, which is how every shipped
 scenario places a UE relative to a base station.
 
-One behaviour is pinned rather than endorsed: the negative y axis comes back
-as -90 rather than 270, the only direction returned outside [0, 360). It is
-the right direction modulo 360, and getRSRP()'s wrap of the reception angle
-together with the pattern's symmetry make it harmless today; the check exists
-so that a normalization of the result is noticed.
+Every direction, the negative y axis included, comes back in [0, 360).
 
 What these functions get wrong when the two ends are at different heights is
 recorded separately, as an expected failure, in ChannelModelAngleHeights.
@@ -78,10 +74,8 @@ c.expectNear("quadrant IV",  m->computeAngle(o, at(330)), 330, 1e-9);
 c.expectNear("the positive x axis is 0",   m->computeAngle(o, Coord(d, 0, 10)),  0,   0);
 c.expectNear("the positive y axis is 90",  m->computeAngle(o, Coord(0, d, 10)),  90,  0);
 c.expectNear("the negative x axis is 180", m->computeAngle(o, Coord(-d, 0, 10)), 180, 0);
-c.expectNear("the negative y axis is returned as -90, the one direction outside [0, 360)",
-        m->computeAngle(o, Coord(0, -d, 10)), -90, 0);
-c.expectNear("...which is 270 modulo 360: the direction is right",
-        fmod(m->computeAngle(o, Coord(0, -d, 10)) + 360, 360), 270, 0);
+c.expectNear("the negative y axis is 270",
+        m->computeAngle(o, Coord(0, -d, 10)), 270, 0);
 
 {
     const Coord shift(1234.5, -678.25, 0);
@@ -99,7 +93,7 @@ c.expectNear("a point straight below is at the nadir: 180",
 c.summary();
 
 %contains: stdout
-modelchecks=13 modelfailures=0
+modelchecks=12 modelfailures=0
 
 %not-contains: stdout
 FAILED
