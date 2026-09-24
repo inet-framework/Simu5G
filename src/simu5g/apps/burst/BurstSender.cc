@@ -13,6 +13,7 @@
 #include <cmath>
 #include <inet/common/TimeTag_m.h>
 #include "simu5g/apps/burst/BurstSender.h"
+#include "simu5g/common/L3Utils.h"
 
 namespace simu5g {
 
@@ -81,8 +82,7 @@ void BurstSender::socketClosed(UdpSocket *socket)
 void BurstSender::initTraffic()
 {
     std::string destAddress = par("destAddress").stringValue();
-    cModule *destModule = findModuleByPath(par("destAddress").stringValue());
-    if (destModule == nullptr) {
+    if (!addressSpecHostExists(this, destAddress.c_str())) {
         // this might happen when users are created dynamically
         EV << simTime() << "BurstSender::initTraffic - destination " << destAddress << " not found" << endl;
 

@@ -34,6 +34,11 @@ inet::Ptr<const inet::NetworkHeaderBase> peekIpHeader(const inet::Packet *pkt);
 // enters a node's user plane; the node's later modules read the tag.
 inet::Ptr<const IpHeaderFieldsTag> attachIpHeaderFields(inet::Packet *pkt);
 
+// Whether the host an L3AddressResolver address spec names exists yet, looked up
+// relative to the given module: the "host" part of "host", "host%interface",
+// "host(ipv6)" or "host>peer". A literal address counts as existing.
+bool addressSpecHostExists(omnetpp::cModule *context, const char *addressSpec);
+
 // The DSCP field of a DSCP and ECN octet (see IpHeaderFieldsTag::tos)
 inline uint8_t dscpOf(uint8_t tos) { return (tos & 0xfc) >> 2; }
 

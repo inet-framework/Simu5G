@@ -43,6 +43,16 @@ Ptr<const NetworkHeaderBase> peekIpHeader(const Packet *pkt)
     return peekNetworkProtocolHeader(pkt, ipProtocolOf(pkt));
 }
 
+bool addressSpecHostExists(cModule *context, const char *addressSpec)
+{
+    L3Address literal;
+    if (literal.tryParse(addressSpec))
+        return true;
+    std::string path = addressSpec;
+    path = path.substr(0, path.find_first_of("%(>"));
+    return context->findModuleByPath(path.c_str()) != nullptr;
+}
+
 Ptr<const IpHeaderFieldsTag> attachIpHeaderFields(Packet *pkt)
 {
     const auto& ipHeader = peekIpHeader(pkt);

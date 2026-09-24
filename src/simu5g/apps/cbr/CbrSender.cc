@@ -13,6 +13,7 @@
 #include <cmath>
 #include <inet/common/TimeTag_m.h>
 #include "CbrSender.h"
+#include "simu5g/common/L3Utils.h"
 
 namespace simu5g {
 
@@ -91,8 +92,7 @@ void CbrSender::socketClosed(UdpSocket *socket)
 void CbrSender::initTraffic()
 {
     std::string destAddress = par("destAddress").stringValue();
-    cModule *destModule = findModuleByPath(par("destAddress").stringValue());
-    if (destModule == nullptr) {
+    if (!addressSpecHostExists(this, destAddress.c_str())) {
         // this might happen when users are created dynamically
         EV << simTime() << "CbrSender::initTraffic - destination " << destAddress << " not found" << endl;
 
