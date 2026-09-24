@@ -186,14 +186,16 @@ const double nfUe = bs->par("ueNoiseFigure").doubleValue(), nfBs = bs->par("bsNo
     c.check("cellularLink takes the side of the state from its argument",
             atEnb.cellularLink(ueId, DL, uePos, true).useUeSideMaps
             && !atEnb.cellularLink(ueId, DL, uePos, false).useUeSideMaps);
-    c.check("cellularLink carries geometry and state only: its budget fields are left zero",
-            dl.txAntennaGain == 0 && dl.rxAntennaGain == 0 && dl.noiseFigure == 0);
+    c.check("cellularLink, DL: the downlink budget, as linkFor gives it",
+            dl.txAntennaGain == gEnb && dl.rxAntennaGain == gUe && dl.noiseFigure == nfUe);
+    c.check("cellularLink, UL: the uplink budget, as linkFor gives it",
+            ul.txAntennaGain == gUe && ul.rxAntennaGain == gEnb && ul.noiseFigure == nfBs);
 }
 
 c.summary();
 
 %contains: stdout
-modelchecks=21 modelfailures=0
+modelchecks=22 modelfailures=0
 
 %not-contains: stdout
 FAILED
