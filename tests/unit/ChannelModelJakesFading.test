@@ -229,6 +229,11 @@ wait(0.010);
     // own map drew its own for the uplink.
     double uplinkView = bs->jakesFading(key, ueId, 3.0, 4, false);
     c.check("the uplink is a different realization from the downlink", uplinkView != decoderView);
+
+    // A UE the Binder does not know is an error, not a null map to dereference.
+    c.expectRejected("a DL CQI for a UE the Binder does not know is rejected", [&] {
+        bs->jakesFading(LinkKey(MacNodeId(1199)), MacNodeId(1199), 3.0, 4, true);
+    });
 }
 {
     // A background UE has no model of its own; its DL realization lives in the
@@ -279,7 +284,7 @@ wait(0.010);
 c.summary();
 
 %contains: stdout
-modelchecks=21 modelfailures=0
+modelchecks=22 modelfailures=0
 
 %not-contains: stdout
 FAILED

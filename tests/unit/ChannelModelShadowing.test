@@ -213,8 +213,7 @@ const double d3D = 200.0, d2D = 198.6;
     c.check("the shadowing a DL CQI assumes is the shadowing the UE decodes through",
             cqiView == decoderView);
 
-    // A UE the Binder does not know is an error, not a silent default -- the
-    // guard jakesFading() lacks.
+    // A UE the Binder does not know is an error, not a silent default.
     c.expectRejected("a DL CQI for a UE the Binder does not know is rejected", [&] {
         bs->computeShadowing(d3D, d2D, LinkKey(MacNodeId(1199)), MacNodeId(1199), 0.0, true);
     });

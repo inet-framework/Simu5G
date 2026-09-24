@@ -100,8 +100,20 @@ auto *ue = harnessModule<StochasticChannelModel>(this, "ueChannelModel");
             probe.obtainUeJakesMap(ueId) == ue->getJakesMap());
     c.check("...and so is its shadowing map",
             probe.obtainShadowingMap(ueId) == ue->getShadowingMap());
-    c.check("an id nobody registered reaches no map",
-            probe.obtainUeJakesMap(MacNodeId(1099)) == nullptr);
+    c.expectRejected("an id nobody registered is rejected, not answered with no map", [&] {
+        probe.obtainUeJakesMap(MacNodeId(1099));
+    });
+
+    // A registered UE whose model on this carrier is not a StochasticChannelModel
+    // is rejected too, for either map.
+    StubEndpoint modelless;
+    StubUeRegistration modellessRegistration(binder, MacNodeId(1026), &modelless);
+    c.expectRejected("a UE without a stochastic model on the carrier is rejected (Jakes)", [&] {
+        probe.obtainUeJakesMap(MacNodeId(1026));
+    });
+    c.expectRejected("...and (shadowing)", [&] {
+        probe.obtainShadowingMap(MacNodeId(1026));
+    });
 }
 {
     // The snapshot replays the model's own stream, draw for draw.
@@ -117,7 +129,7 @@ auto *ue = harnessModule<StochasticChannelModel>(this, "ueChannelModel");
 c.summary();
 
 %contains: stdout
-modelchecks=7 modelfailures=0
+modelchecks=9 modelfailures=0
 
 %not-contains: stdout
 FAILED
