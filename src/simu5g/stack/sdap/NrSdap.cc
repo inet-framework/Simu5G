@@ -13,6 +13,7 @@
 #include "NrSdap.h"
 
 #include "simu5g/stack/sdap/packet/NrSdapHeader_m.h"
+#include "simu5g/common/L3Utils.h"
 #include "simu5g/common/QfiTag_m.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/common/LteCommon.h"
@@ -92,7 +93,7 @@ bool NrSdap::shouldEnableReflectiveQos(Qfi qfi)
     return par("useReflectiveQos").boolValue(); // for now -- should come from RRC config
 }
 
-const inet::Protocol *NrSdap::getUpperProtocol(const DrbDesc *ctx)
+const inet::Protocol *NrSdap::getUpperProtocol(const DrbDesc *ctx, inet::Packet *pkt)
 {
     // If an explicit upperProtocol is configured on this DRB, use it
     if (ctx && !ctx->upperProtocol.empty()) {
@@ -102,14 +103,19 @@ const inet::Protocol *NrSdap::getUpperProtocol(const DrbDesc *ctx)
         return proto;
     }
 
-    // Otherwise derive from pduSessionType
+    // Otherwise derive from pduSessionType. 3GPP does not signal the IP version per
+    // packet: an IP session's receiver reads it from the datagram, and the session
+    // type only says which versions may occur.
     PduSessionType pduSessionType = ctx ? ctx->pduSessionType : IP_V4;
     switch (pduSessionType) {
         case IP_V4:
-        case IP_V4V6:
-            return &inet::Protocol::ipv4;
         case IP_V6:
-            return &inet::Protocol::ipv6;
+        case IP_V4V6: {
+            const inet::Protocol *protocol = &ipProtocolOf(pkt);
+            if ((pduSessionType == IP_V4 && protocol != &inet::Protocol::ipv4) || (pduSessionType == IP_V6 && protocol != &inet::Protocol::ipv6))
+                throw cRuntimeError("%s datagram received on a DRB of an %s PDU session", protocol->getDescriptiveName(), pduSessionType == IP_V4 ? "IPv4" : "IPv6");
+            return protocol;
+        }
         case ETHERNET:
             return &inet::Protocol::ethernetMac;
         case UNSTRUCTURED:
@@ -329,8 +335,8 @@ void NrSdap::handleLowerPacket(inet::Packet *pkt)
     auto qosIndTag = pkt->addTagIfAbsent<QfiInd>();
     qosIndTag->setQfi(qfi);
 
-    // Set protocol tag for upper layer based on PDU session type
-    const inet::Protocol *upperProto = getUpperProtocol(drb);
+    // Set protocol tag for upper layer (see getUpperProtocol())
+    const inet::Protocol *upperProto = getUpperProtocol(drb, pkt);
     pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(upperProto);
 
     EV_INFO << "SDAP RX: Forwarding packet with QFI=" << qfi << " to upper layer (protocol: " << upperProto->getName() << ")\n";

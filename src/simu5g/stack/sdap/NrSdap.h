@@ -61,7 +61,9 @@ class NrSdap : public cSimpleModule
     virtual bool isD2dFlow(inet::Packet *pkt);
     virtual Qfi recoveryQfi(const DrbDesc *drb);
     virtual bool shouldEnableReflectiveQos(Qfi qfi);
-    virtual const inet::Protocol *getUpperProtocol(const DrbDesc *ctx);
+    // The protocol a received packet goes up as. On an IP session that is the IP
+    // version the datagram carries, which the session type only validates.
+    virtual const inet::Protocol *getUpperProtocol(const DrbDesc *ctx, inet::Packet *pkt);
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
     virtual void handleUpperPacket(inet::Packet *pkt);

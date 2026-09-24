@@ -15,7 +15,7 @@
 #include "simu5g/stack/ip2nic/Ip2Nic.h"
 
 #include "simu5g/common/binder/Binder.h"
-#include "simu5g/common/IpHeaderFieldsTag_m.h"
+#include "simu5g/common/L3Utils.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
@@ -199,7 +199,7 @@ void Ip2Nic::toStackUe(Packet *pkt)
     send(pkt, stackGateOut_);
 }
 
-void Ip2Nic::prepareForIpv4(Packet *datagram, const Protocol *protocol) {
+void Ip2Nic::prepareForIp(Packet *datagram, const Protocol *protocol) {
     // add DispatchProtocolRequest so that the packet is handled by the specified protocol
     datagram->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(protocol);
     datagram->addTagIfAbsent<PacketProtocolTag>()->setProtocol(protocol);
@@ -209,14 +209,15 @@ void Ip2Nic::prepareForIpv4(Packet *datagram, const Protocol *protocol) {
 
 void Ip2Nic::toIpUe(Packet *pkt)
 {
-    prepareForIpv4(pkt);
+    // the IP version from the datagram itself, as on a real IPv4v6 PDU session
+    prepareForIp(pkt, &ipProtocolOf(pkt));
     EV << "Ip2Nic::toIpUe - message from stack: send to IP layer" << endl;
     send(pkt, ipGateOut_);
 }
 
 void Ip2Nic::toIpBs(Packet *pkt)
 {
-    prepareForIpv4(pkt, &LteProtocol::ipv4uu);
+    prepareForIp(pkt, &LteProtocol::ipv4uu);
     EV << "Ip2Nic::toIpBs - message from stack: send to IP layer" << endl;
     send(pkt, ipGateOut_);
 }

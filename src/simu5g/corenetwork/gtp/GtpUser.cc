@@ -164,6 +164,10 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
         // handleFromUdp() restores it for tunneled traffic -- SDAP relies on
         // QfiReq being present on the gNB DL path
         datagram->addTagIfAbsent<QfiReq>()->setQfi(qfi);
+        // the datagram re-enters this node's IP layer, which routes it to the UE
+        const Protocol *protocol = &ipProtocolOf(datagram);
+        datagram->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(protocol);
+        datagram->addTagIfAbsent<PacketProtocolTag>()->setProtocol(protocol);
         send(datagram, "pppGate");
     }
     else {
@@ -235,7 +239,7 @@ void GtpUser::handleFromUdp(Packet *pkt)
     auto originalPacket = new Packet(pkt->getName());
     auto gtpUserMsg = pkt->popAtFront<GtpUserMsg>();
     originalPacket->insertAtBack(pkt->peekData());
-    originalPacket->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
+    originalPacket->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&ipProtocolOf(originalPacket));
 
     // Restore QFI from GTP-U header so SDAP can use it for QFI-to-DRB mapping.
     // Always set the tag, even for QFI 0 (unmarked/default-flow traffic): SDAP

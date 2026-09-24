@@ -130,7 +130,9 @@ class Ip2Nic : public cSimpleModule
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
 
-    virtual void prepareForIpv4(inet::Packet *datagram, const inet::Protocol *protocol = & inet::Protocol::ipv4);
+    // Tags a received datagram for the dispatchers above the NIC: to be handled by
+    // the given protocol, as having arrived on this interface
+    virtual void prepareForIp(inet::Packet *datagram, const inet::Protocol *protocol);
     virtual void toIpUe(inet::Packet *datagram);
     virtual void toIpBs(inet::Packet *datagram);
     virtual void toStackBs(inet::Packet *datagram);

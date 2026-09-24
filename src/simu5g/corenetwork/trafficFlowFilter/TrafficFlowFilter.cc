@@ -142,8 +142,6 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
     auto ipFields = attachIpHeaderFields(pkt);
     const L3Address& destAddr = ipFields->getDestAddress();
     const L3Address& srcAddr = ipFields->getSrcAddress();
-    pkt->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ipv4);
-    pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
 
     // TODO check for source and dest port number
 
