@@ -50,8 +50,11 @@ class Binder : public cSimpleModule
     // name of the system (top-level) module
     std::string networkName_;
 
-    std::map<inet::Ipv4Address, MacNodeId> ipAddressToMacNodeId_;
-    std::map<inet::Ipv4Address, MacNodeId> ipAddressToNrMacNodeId_;
+    // A node may be known under several addresses: a UE under those of its cellular
+    // interface (several with IPv6, of either family on a dual-stack UE), a base station
+    // under those of its X2 interfaces
+    std::map<inet::L3Address, MacNodeId> ipAddressToMacNodeId_;
+    std::map<inet::L3Address, MacNodeId> ipAddressToNrMacNodeId_;
 
     // Consolidated node information - replaces nodeIds_, macNodeIdToModuleName_, macNodeIdToModuleRef_, macNodeIdToModule_
     std::map<MacNodeId, NodeInfo> nodeInfoMap_;
@@ -318,7 +321,7 @@ class Binder : public cSimpleModule
      * @param address IP address
      * @return MacNodeId corresponding to the IP address
      */
-    virtual MacNodeId getMacNodeId(inet::Ipv4Address address)
+    virtual MacNodeId getMacNodeId(const inet::L3Address& address)
     {
         if (ipAddressToMacNodeId_.find(address) == ipAddressToMacNodeId_.end())
             return NODEID_NONE;
@@ -336,7 +339,7 @@ class Binder : public cSimpleModule
      * @param address IP address
      * @return MacNodeId corresponding to the IP address
      */
-    virtual MacNodeId getNrMacNodeId(inet::Ipv4Address address)
+    virtual MacNodeId getNrMacNodeId(const inet::L3Address& address)
     {
         if (ipAddressToNrMacNodeId_.find(address) == ipAddressToNrMacNodeId_.end())
             return NODEID_NONE;
@@ -362,21 +365,23 @@ class Binder : public cSimpleModule
     /**
      * author Alessandro Noferi
      *
-     * Returns the IP address for the given MacNodeId
+     * Returns the IPv4 address for the given MacNodeId, or the unspecified address
+     * if the node has none (e.g. an IPv6-only UE). The MEC service APIs report UEs by
+     * IPv4 address.
      *
      * @param MacNodeId of the node
-     * @return IP address corresponding to the MacNodeId
+     * @return IPv4 address corresponding to the MacNodeId
      *
      */
     virtual inet::Ipv4Address getIPv4Address(MacNodeId nodeId)
     {
         for (const auto& kv : ipAddressToMacNodeId_) {
-            if (kv.second == nodeId)
-                return kv.first;
+            if (kv.second == nodeId && kv.first.getType() == inet::L3Address::IPv4)
+                return kv.first.toIpv4();
         }
         for (const auto& kv : ipAddressToNrMacNodeId_) {
-            if (kv.second == nodeId)
-                return kv.first;
+            if (kv.second == nodeId && kv.first.getType() == inet::L3Address::IPv4)
+                return kv.first.toIpv4();
         }
         return inet::Ipv4Address::UNSPECIFIED_ADDRESS;
     }
@@ -387,7 +392,7 @@ class Binder : public cSimpleModule
      * @param address IP address
      * @return X2NodeId corresponding to the IP address
      */
-    virtual X2NodeId getX2NodeId(inet::Ipv4Address address)
+    virtual X2NodeId getX2NodeId(const inet::L3Address& address)
     {
         return getMacNodeId(address);
     }
@@ -397,7 +402,7 @@ class Binder : public cSimpleModule
      *
      * @param address IP address
      */
-    virtual void setMacNodeId(inet::Ipv4Address address, MacNodeId nodeId)
+    virtual void setMacNodeId(const inet::L3Address& address, MacNodeId nodeId)
     {
         if (isNrUe(nodeId))
             ipAddressToNrMacNodeId_[address] = nodeId;
@@ -410,7 +415,7 @@ class Binder : public cSimpleModule
      *
      * @param address IP address
      */
-    virtual void setX2NodeId(inet::Ipv4Address address, X2NodeId nodeId)
+    virtual void setX2NodeId(const inet::L3Address& address, X2NodeId nodeId)
     {
         setMacNodeId(address, nodeId);
     }

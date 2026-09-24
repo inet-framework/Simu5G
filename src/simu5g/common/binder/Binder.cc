@@ -471,8 +471,23 @@ MacNodeId Binder::getUeNodeId(MacNodeId ue, bool isNr)
     if (!isValidNodeId(ue) || getNodeTypeById(ue) != UE)
         throw cRuntimeError("Binder::getUeNodeId(): bad ueId %hu", num(ue));
 
-    inet::Ipv4Address ueIpAddr = getIPv4Address(ue);
-    if (ueIpAddr == inet::Ipv4Address::UNSPECIFIED_ADDRESS)
+    // any address of the UE will do: they all map to the same LTE/NR id pair
+    inet::L3Address ueIpAddr;
+    for (const auto& kv : ipAddressToMacNodeId_) {
+        if (kv.second == ue) {
+            ueIpAddr = kv.first;
+            break;
+        }
+    }
+    if (ueIpAddr.isUnspecified()) {
+        for (const auto& kv : ipAddressToNrMacNodeId_) {
+            if (kv.second == ue) {
+                ueIpAddr = kv.first;
+                break;
+            }
+        }
+    }
+    if (ueIpAddr.isUnspecified())
         throw cRuntimeError("Binder::getUeNodeId(): no IP address for UE %hu", num(ue));
 
     if (isNr) {

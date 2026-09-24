@@ -40,7 +40,7 @@ void X2AppClient::initialize(int stage)
 
         // get the connectAddress and the corresponding X2 id
         L3Address addr = L3AddressResolver().resolve(par("connectAddress").stringValue());
-        X2NodeId peerId = binder->getX2NodeId(addr.toIpv4());
+        X2NodeId peerId = binder->getX2NodeId(addr);
 
         X2NodeId nodeId = check_and_cast<LteMacEnb *>(getContainingNode(this)->getSubmodule("cellularNic")->getSubmodule("mac"))->getMacCellId();
         binder->setX2PeerAddress(nodeId, peerId, addr);

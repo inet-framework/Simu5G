@@ -205,8 +205,8 @@ TrafficFlowTemplateId TrafficFlowFilter::findTrafficFlow(L3Address srcAddress, L
         return TFT_MEC_HOST;
     }
 
-    MacNodeId destId = binder_->getMacNodeId(destAddress.toIpv4());
-    destId = (destId != NODEID_NONE) ? destId : binder_->getNrMacNodeId(destAddress.toIpv4());
+    MacNodeId destId = binder_->getMacNodeId(destAddress);
+    destId = (destId != NODEID_NONE) ? destId : binder_->getNrMacNodeId(destAddress);
     if (destId == NODEID_NONE) {
         EV << "TrafficFlowFilter::findTrafficFlow - destination " << destAddress.str() << " is not a UE. ";
         if (ownerType_ == UPF || ownerType_ == PGW) {
@@ -228,7 +228,7 @@ TrafficFlowTemplateId TrafficFlowFilter::findTrafficFlow(L3Address srcAddress, L
     // the serving node for the UE might be a secondary node in case of NR Dual Connectivity
     // obtains the master node, if any (the function returns destEnb if it is a master already)
     MacNodeId destMaster = binder_->getMasterNodeOrSelf(destBS);
-    MacNodeId srcMaster = binder_->getServingNodeOrSelf(binder_->getMacNodeId(srcAddress.toIpv4()));
+    MacNodeId srcMaster = binder_->getServingNodeOrSelf(binder_->getMacNodeId(srcAddress));
 
     if (isBaseStation(ownerType_)) {
         if (fastForwarding_ && srcMaster == destMaster)
