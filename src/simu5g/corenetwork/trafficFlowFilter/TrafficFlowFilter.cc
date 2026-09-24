@@ -141,6 +141,14 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
 
     EV << "TrafficFlowFilter::handleMessage - Received datagram : " << pkt->getName() << " - src[" << srcAddr << "] - dest[" << destAddr << "]\n";
 
+    // Link-local IPv6 traffic on the data network link (e.g. the Neighbor Discovery of
+    // the router there) is addressed to this node, and is for none of the UEs
+    if (!isBaseStation(ownerType_) && destAddr.getType() == L3Address::IPv6 && isLinkLocalScope(destAddr.toIpv6())) {
+        EV << "TrafficFlowFilter::handleMessage - link-local traffic on the data network link, consumed" << endl;
+        delete pkt;
+        return;
+    }
+
     // run packet filter and associate a flowId to the connection (default bearer?)
     // search within tftTable the proper entry for this destination
     TrafficFlowTemplateId tftId = findTrafficFlow(srcAddr, destAddr);   // search for the tftId in the binder

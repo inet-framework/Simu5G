@@ -88,9 +88,9 @@ package simu5g.corenetwork.bearerConfigurator;
 //    rules (the dlQfiRules and ulQfiRules parameters below)
 //  - filters (string[], optional, "epc" only): packet filters selecting this bearer, each
 //    an inet::PacketFilter -- a message-name pattern (e.g. "VoIP*") or an expression written
-//    as "expr(...)" (e.g. "expr(udp.destPort == 3000)"). An expression sees the packet that
-//    triggers establishment, i.e. an UL-triggered and a DL-triggered flow present swapped
-//    port/address roles; a list can carry both spellings.
+//    as "expr(...)" (e.g. "expr(has(udp) && udp.destPort == 3000)"). An expression sees the
+//    packet that triggers establishment, i.e. an UL-triggered and a DL-triggered flow present
+//    swapped port/address roles; a list can carry both spellings.
 //  - lcg (int, optional): the bearer's logical channel group (0..3;
 //    mac-LogicalChannelConfig). In 3GPP an LCG only groups logical-channel buffers
 //    for buffer status reporting; that Simu5G's MAC scheduler additionally serves
@@ -135,7 +135,10 @@ package simu5g.corenetwork.bearerConfigurator;
 //    node -- the core network delivers the UE's traffic there -- and every PDU is
 //    relayed to the secondary over X2 (an MN-terminated SCG bearer in TS 37.340 terms).
 //  - pduSessionType (string, optional): "IPv4", "IPv6", "IPv4v6", "Ethernet", "Unstructured";
-//    default: "IPv4"
+//    default: "IPv4". With SDAP, a received datagram of an IP version the session type
+//    does not allow is a configuration error (e.g. an IPv6 UE on the default "IPv4");
+//    an "IPv4v6" session carries both, and the receiver tells them apart by the datagram
+//    itself
 //  - upperProtocol (string, optional): INET protocol name for upper layer dispatch (this is
 //    normally only needed for "Unstructured" PDU sessions); default: derived from
 //    pduSessionType
@@ -239,7 +242,7 @@ package simu5g.corenetwork.bearerConfigurator;
 // <pre>
 // *.bearerConfigurator.onDemandDrbs = [
 //     {coreNetwork: "5gc", ue: "ue[*]", mappedQfis: [3, 4], profile: "5qi-3"},
-//     {coreNetwork: "epc", filters: ["expr(udp.destPort == 3000)"], lcg: 0, rlcMode: "UM"},
+//     {coreNetwork: "epc", filters: ["expr(has(udp) && udp.destPort == 3000)"], lcg: 0, rlcMode: "UM"},
 //     {coreNetwork: "epc", isDefault: true, lcg: 3, rlcMode: "UM"}
 //     ]
 // </pre>
@@ -263,9 +266,12 @@ package simu5g.corenetwork.bearerConfigurator;
 // Rule fields (both tables; evaluated in order at each site, first match wins):
 //  - filter (string, optional): an inet::PacketFilter -- a message-name pattern
 //    (e.g. "*VoIP*") or an expression written as "expr(...)"
-//    (e.g. "expr(udp.destPort == 3000)"); omitted = the rule matches every packet
+//    (e.g. "expr(has(udp) && udp.destPort == 3000)"); omitted = the rule matches every
+//    packet. An expression is evaluated on every packet of the site, e.g. on an IPv6
+//    UE's Neighbor Discovery messages too, so it must check for the headers it reads
 //  - qfi (int, 0..63) or dscpAsQfi (bool): the QFI to assign -- a fixed value, or
-//    the packet's IPv4 DSCP field read as the QFI (exactly one of the two)
+//    the packet's DSCP field (IPv4 Type of Service or IPv6 Traffic Class) read as the
+//    QFI (exactly one of the two)
 //  - node (string, dlQfiRules only, optional): module-path pattern of the
 //    core-network nodes whose tunnel-entry filter gets the rule (relative to the
 //    network, e.g. "upf" or "**.upf_mec"); omitted = every such node
@@ -276,7 +282,7 @@ package simu5g.corenetwork.bearerConfigurator;
 // The two directions are authored separately, and a conversation that needs
 // classification in both states a rule in each table, each written from its own
 // direction's perspective. There is no sharing or reversal between them: the same
-// filter means different things at the two ends (in "expr(udp.destPort == 3000)"
+// filter means different things at the two ends (in "expr(has(udp) && udp.destPort == 3000)"
 // the destination port is the UE's application port for downlink traffic and the
 // server's for uplink), and a filter expression cannot be reversed mechanically.
 // This mirrors the spec's own shape -- downlink PDRs at the UPF, uplink QoS rules

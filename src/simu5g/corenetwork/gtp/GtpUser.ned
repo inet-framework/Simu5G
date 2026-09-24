@@ -42,5 +42,7 @@ simple GtpUser
 
         input trafficFlowFilterGate;
         output pppGate;
+        output ndOut @loose;  // To the Neighbor Discovery responder of a UPF or PGW, see ~Ipv6NdResponder
+        input ndIn @loose;
 }
 

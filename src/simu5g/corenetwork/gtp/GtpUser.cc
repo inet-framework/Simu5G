@@ -92,7 +92,7 @@ void GtpUser::handleMessage(cMessage *msg)
     if (msg->arrivedOn("trafficFlowFilterGate")) {
         EV << "GtpUser::handleMessage - message from trafficFlowFilter" << endl;
 
-        // forward the encapsulated IPv4 datagram
+        // forward the encapsulated IP datagram
         handleFromTrafficFlowFilter(check_and_cast<Packet *>(msg));
     }
     else if (msg->arrivedOn("socketIn")) {
@@ -102,6 +102,10 @@ void GtpUser::handleMessage(cMessage *msg)
         printer.printPacket(EV, packet); // print to standard output
 
         handleFromUdp(packet);
+    }
+    else if (msg->arrivedOn("ndIn")) {
+        EV << "GtpUser::handleMessage - message from the Neighbor Discovery responder" << endl;
+        handleFromNdResponder(check_and_cast<Packet *>(msg));
     }
 }
 
@@ -242,6 +246,16 @@ void GtpUser::handleFromUdp(Packet *pkt)
     else if (ownerType_ == PGW || ownerType_ == UPF) {
         // the tunnel does not identify the session (TEID 0), so the destination does
         L3Address destAddr = peekIpHeader(originalPacket)->getDestinationAddress();
+
+        // The IP link of a UE's IPv6 session ends here: link-local-scope traffic (Neighbor
+        // Discovery) is answered at this node and must not leak onto the data network
+        if (destAddr.getType() == L3Address::IPv6 && isLinkLocalScope(destAddr.toIpv6())) {
+            if (!gate("ndOut")->isConnected())
+                throw cRuntimeError("GtpUser: link-local IPv6 traffic (destination %s) from a UE arrived, but this node has no Neighbor Discovery responder (see the hasNdResponder parameter)", destAddr.str().c_str());
+            send(originalPacket, "ndOut");
+            return;
+        }
+
         MacNodeId destId = binder_->getMacNodeId(destAddr);
         if (destId != NODEID_NONE) { // final destination is a UE
             MacNodeId destMaster = binder_->getServingNodeOrSelf(destId);
@@ -250,27 +264,8 @@ void GtpUser::handleFromUdp(Packet *pkt)
             std::string gwFullPath = binder_->getNetworkName() + "." + binder_->getModuleByMacNodeId(destMaster)->par("gateway").stdstringValue();
             if (networkNode_->getFullPath() == gwFullPath) {
                 // the destination is a Base Station under the same core network as this PGW/UPF,
-                // tunnel the packet toward that BS
-                std::string symbolicName = binder_->getNodeModule(destMaster)->getFullPath();
-                L3Address tunnelPeerAddress = L3AddressResolver().resolve(symbolicName.c_str());
-                EV << "GtpUser::handleFromUdp - tunneling to BS " << symbolicName << endl;
-
-                // send the message to the BS through GTP tunneling
-                // * create a new GtpUserMessage
-                // * encapsulate the datagram within the GtpUserMsg
-                auto header = makeShared<GtpUserMsg>();
-                header->setTeid(0);
-                header->setQfi(gtpUserMsg->getQfi());  // preserve QFI from incoming GTP-U
-                header->setChunkLength(B(8));
-                auto gtpMsg = new Packet(originalPacket->getName());
-                gtpMsg->insertAtFront(header);
-                auto data = originalPacket->peekData();
-                gtpMsg->insertAtBack(data);
-                delete originalPacket;
-
-                // forward the re-encapsulated GTP-U message
-                EV << "GtpUser::handleFromUdp - Tunneling datagram to " << tunnelPeerAddress.str() << ", final destination[" << destAddr.str() << "]" << endl;
-                socket_.sendTo(gtpMsg, tunnelPeerAddress, tunnelPeerPort_);
+                // tunnel the packet toward that BS, preserving the QFI of the incoming GTP-U
+                tunnelToBaseStation(originalPacket, destMaster, gtpUserMsg->getQfi());
                 return;
             }
         }
@@ -279,6 +274,47 @@ void GtpUser::handleFromUdp(Packet *pkt)
         EV << "GtpUser::handleFromUdp - Sending datagram outside the radio network, destination[" << destAddr.str() << "]" << endl;
         send(originalPacket, "pppGate");
     }
+}
+
+void GtpUser::handleFromNdResponder(Packet *datagram)
+{
+    L3Address destAddr = peekIpHeader(datagram)->getDestinationAddress();
+    MacNodeId destId = binder_->getMacNodeId(destAddr);
+    if (destId == NODEID_NONE)
+        throw cRuntimeError("GtpUser: the Neighbor Discovery responder answered %s, which is no UE's address", destAddr.str().c_str());
+
+    // the UE's tunnel ends at the master of its serving node, the node its downlink enters
+    // the radio network at (see TrafficFlowFilter::findTrafficFlow())
+    MacNodeId servingNode = binder_->getServingNodeOrSelf(destId);
+    if (servingNode == NODEID_NONE) {
+        EV_WARN << "GtpUser::handleFromNdResponder - UE " << destId << " is attached to no base station, reply to " << destAddr << " discarded" << endl;
+        delete datagram;
+        return;
+    }
+    tunnelToBaseStation(datagram, binder_->getMasterNodeOrSelf(servingNode), Qfi(0));  // the default QoS flow
+}
+
+void GtpUser::tunnelToBaseStation(Packet *datagram, MacNodeId bsId, Qfi qfi)
+{
+    std::string symbolicName = binder_->getNodeModule(bsId)->getFullPath();
+    L3Address tunnelPeerAddress = L3AddressResolver().resolve(symbolicName.c_str());
+    EV << "GtpUser::tunnelToBaseStation - tunneling to BS " << symbolicName << endl;
+
+    // send the message to the BS through GTP tunneling
+    // * create a new GtpUserMessage
+    // * encapsulate the datagram within the GtpUserMsg
+    auto header = makeShared<GtpUserMsg>();
+    header->setTeid(0);
+    header->setQfi(qfi);
+    header->setChunkLength(B(8));
+    auto gtpMsg = new Packet(datagram->getName());
+    gtpMsg->insertAtFront(header);
+    auto data = datagram->peekData();
+    gtpMsg->insertAtBack(data);
+    delete datagram;
+
+    EV << "GtpUser::tunnelToBaseStation - Tunneling datagram to " << tunnelPeerAddress.str() << endl;
+    socket_.sendTo(gtpMsg, tunnelPeerAddress, tunnelPeerPort_);
 }
 
 } //namespace

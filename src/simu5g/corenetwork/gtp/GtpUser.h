@@ -72,6 +72,12 @@ class GtpUser : public cSimpleModule
 
     // receive a GTP-U packet from Udp, reads the TEID and decides whether performing label switching or removal
     void handleFromUdp(inet::Packet *gtpMsg);
+
+    // receive a reply of the Neighbor Discovery responder (UPF/PGW only), and tunnel it to the UE's base station
+    void handleFromNdResponder(inet::Packet *datagram);
+
+    // encapsulate a datagram into GTP-U, and send it through the tunnel to the given base station
+    void tunnelToBaseStation(inet::Packet *datagram, MacNodeId bsId, Qfi qfi);
 };
 
 } //namespace

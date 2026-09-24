@@ -16,6 +16,7 @@ import inet.linklayer.ppp.PppInterface;
 import inet.node.base.ApplicationLayerNodeBase;
 import inet.transportlayer.udp.Udp;
 import simu5g.corenetwork.gtp.GtpUser;
+import simu5g.corenetwork.ndResponder.Ipv6NdResponder;
 import simu5g.corenetwork.trafficFlowFilter.TrafficFlowFilter;
 
 //
@@ -34,6 +35,7 @@ module Upf extends ApplicationLayerNodeBase
 
         string nodeType = default("UPF");   // Do NOT change!
         string gateway = default("");
+        bool hasNdResponder = default(false);  // Answer the IPv6 Neighbor Discovery of the UEs' PDU sessions (needed when UEs run IPv6), see ~Ipv6NdResponder
         forwarding = default(true);
         multicastForwarding = default(false);
 
@@ -57,6 +59,10 @@ module Upf extends ApplicationLayerNodeBase
                 @display("p=1000,75");
                 gateway = parent.gateway;
         }
+        ndResponder: Ipv6NdResponder if hasNdResponder {
+            parameters:
+                @display("p=1000,175");
+        }
 
     connections:
 
@@ -67,6 +73,9 @@ module Upf extends ApplicationLayerNodeBase
         dnPpp.upperLayerIn <-- gtp_user.pppGate;
 
         trafficFlowFilter.gtpUserGateOut --> gtp_user.trafficFlowFilterGate;
+
+        gtp_user.ndOut --> ndResponder.in if hasNdResponder;
+        gtp_user.ndIn <-- ndResponder.out if hasNdResponder;
 
         dnPpp.phys <--> dnPppg;
 }

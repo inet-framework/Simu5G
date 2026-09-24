@@ -108,11 +108,12 @@ void Registration::initialize(int stage)
         if (nodeType == UE) {
             // if the UE has been created dynamically, we need to manually add a default route having our cellular interface as output interface
             // otherwise we are not able to reach devices outside the cellular network
-            if (NOW > 0) {
+            // (An IPv6 UE gets its default route from the UPF's Router Advertisement.)
+            IIpv4RoutingTable *irt = findModuleFromPar<IIpv4RoutingTable>(par("routingTableModule"), this);
+            if (NOW > 0 && irt != nullptr) {
                 /**
                  * TODO: might need a bit more care, if the interface has changed, the query might, too
                  */
-                IIpv4RoutingTable *irt = getModuleFromPar<IIpv4RoutingTable>(par("routingTableModule"), this);
                 Ipv4Route *defaultRoute = new Ipv4Route();
                 defaultRoute->setDestination(inet::Ipv4Address::UNSPECIFIED_ADDRESS);
                 defaultRoute->setNetmask(inet::Ipv4Address::UNSPECIFIED_ADDRESS);
@@ -212,10 +213,15 @@ void Registration::registerMulticastGroups()
     // get all the multicast addresses where the node is enrolled
     IInterfaceTable *ift = getModuleFromPar<IInterfaceTable>(par("interfaceTableModule"), this);
     NetworkInterface *iface = ift->findInterfaceByName(par("interfaceName").stdstringValue().c_str());
-    unsigned int numOfAddresses = iface->getProtocolData<Ipv4InterfaceData>()->getNumOfJoinedMulticastGroups();
+
+    // IPv4 groups only: multicast on the UE side is D2D groupcast, which is IPv4-only
+    auto ipv4Data = iface->findProtocolData<Ipv4InterfaceData>();
+    if (ipv4Data == nullptr)
+        return;
+    unsigned int numOfAddresses = ipv4Data->getNumOfJoinedMulticastGroups();
 
     for (unsigned int i = 0; i < numOfAddresses; ++i) {
-        Ipv4Address addr = iface->getProtocolData<Ipv4InterfaceData>()->getJoinedMulticastGroup(i);
+        Ipv4Address addr = ipv4Data->getJoinedMulticastGroup(i);
         MacNodeId multicastDestId = binder->getOrAssignDestIdForMulticastAddress(addr);
         // register in the LTE and also the NR stack, if any
         binder->joinMulticastGroup(lteNodeId, multicastDestId);

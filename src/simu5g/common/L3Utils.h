@@ -15,6 +15,7 @@
 #include <inet/common/Protocol.h>
 #include <inet/common/packet/Packet.h>
 #include <inet/networklayer/contract/NetworkHeaderBase_m.h>
+#include <inet/networklayer/contract/ipv6/Ipv6Address.h>
 
 #include "simu5g/common/IpHeaderFieldsTag_m.h"
 
@@ -33,6 +34,10 @@ inet::Ptr<const inet::NetworkHeaderBase> peekIpHeader(const inet::Packet *pkt);
 // as an IpHeaderFieldsTag, replacing any tag already there. Called where the packet
 // enters a node's user plane; the node's later modules read the tag.
 inet::Ptr<const IpHeaderFieldsTag> attachIpHeaderFields(inet::Packet *pkt);
+
+// Whether an IPv6 destination has link-local scope: link-local unicast, or a
+// multicast group of interface-local or link-local scope
+bool isLinkLocalScope(const inet::Ipv6Address& address);
 
 // Whether the host an L3AddressResolver address spec names exists yet, looked up
 // relative to the given module: the "host" part of "host", "host%interface",

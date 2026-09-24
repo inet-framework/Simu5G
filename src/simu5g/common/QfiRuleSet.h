@@ -35,9 +35,13 @@ namespace simu5g {
  * Rule fields:
  *  - filter (string, optional): an inet::PacketFilter -- a message-name pattern
  *    (e.g. "*VoIP*") or an expression written as "expr(...)"
- *    (e.g. "expr(udp.destPort == 3000)"); omitted = the rule matches every packet
+ *    (e.g. "expr(has(udp) && udp.destPort == 3000)"); omitted = the rule matches
+ *    every packet. An expression is evaluated on every packet of the site, e.g. on
+ *    an IPv6 UE's Neighbor Discovery messages too, so it must check for the
+ *    headers it reads (has()).
  *  - qfi (int, 0..63) or dscpAsQfi (bool): the QFI to assign -- a fixed value, or
- *    the packet's IPv4 DSCP field read as the QFI (exactly one of the two)
+ *    the packet's DSCP field (IPv4 Type of Service or IPv6 Traffic Class) read as
+ *    the QFI (exactly one of the two)
  *
  * A packet matching no rule is left unclassified: classify() returns QFI_NONE,
  * and what that means -- the default flow, or no marking at all -- is the

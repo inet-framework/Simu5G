@@ -43,6 +43,11 @@ Ptr<const NetworkHeaderBase> peekIpHeader(const Packet *pkt)
     return peekNetworkProtocolHeader(pkt, ipProtocolOf(pkt));
 }
 
+bool isLinkLocalScope(const Ipv6Address& address)
+{
+    return address.isLinkLocal() || (address.isMulticast() && address.getMulticastScope() <= 2);
+}
+
 bool addressSpecHostExists(cModule *context, const char *addressSpec)
 {
     L3Address literal;

@@ -387,6 +387,19 @@ class Binder : public cSimpleModule
     }
 
     /**
+     * Returns the addresses the given node is known by (see setMacNodeId()), of
+     * either family, in address order
+     */
+    virtual std::vector<inet::L3Address> getAddresses(MacNodeId nodeId)
+    {
+        std::vector<inet::L3Address> addresses;
+        for (const auto& kv : isNrUe(nodeId) ? ipAddressToNrMacNodeId_ : ipAddressToMacNodeId_)
+            if (kv.second == nodeId)
+                addresses.push_back(kv.first);
+        return addresses;
+    }
+
+    /**
      * Returns the X2NodeId for the given IP address
      *
      * @param address IP address

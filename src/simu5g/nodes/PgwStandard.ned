@@ -16,6 +16,7 @@ import inet.linklayer.ppp.PppInterface;
 import inet.node.base.ApplicationLayerNodeBase;
 import inet.transportlayer.udp.Udp;
 import simu5g.corenetwork.gtp.GtpUser;
+import simu5g.corenetwork.ndResponder.Ipv6NdResponder;
 import simu5g.corenetwork.trafficFlowFilter.TrafficFlowFilter;
 
 //
@@ -35,6 +36,7 @@ module PgwStandard extends ApplicationLayerNodeBase
         @figure[submodules];
 
         string nodeType = "PGW";
+        bool hasNdResponder = default(false);  // Answer the IPv6 Neighbor Discovery of the UEs' PDU sessions (needed when UEs run IPv6), see ~Ipv6NdResponder
 
         forwarding = default(true);
         multicastForwarding = default(false);
@@ -56,6 +58,10 @@ module PgwStandard extends ApplicationLayerNodeBase
             parameters:
                 @display("p=1000,75");
         }
+        ndResponder: Ipv6NdResponder if hasNdResponder {
+            parameters:
+                @display("p=1000,175");
+        }
 
     connections:
 
@@ -66,6 +72,9 @@ module PgwStandard extends ApplicationLayerNodeBase
         dnPpp.upperLayerIn <-- gtp_user.pppGate;
 
         trafficFlowFilter.gtpUserGateOut --> gtp_user.trafficFlowFilterGate;
+
+        gtp_user.ndOut --> ndResponder.in if hasNdResponder;
+        gtp_user.ndIn <-- ndResponder.out if hasNdResponder;
 
         dnPpp.phys <--> dnPppg;
 }
