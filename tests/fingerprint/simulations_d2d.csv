@@ -69,3 +69,5 @@
 /simulations/nr/test_tdd/,               -f omnetpp.ini -c TestTdd -r 0,                         5s,         1452-66f7/tplx;7331-60de/tilx;1357-11f1/~tNl;4dad-73f7/sz, PASS,
 /simulations/nr/d2d/,                    -f omnetpp.ini -c ChannelModel-DynamicLos -r 0,         20s,        7857-e4bb/tplx;2889-ab7c/tilx;e37f-7d8f/~tNl;9f42-48a3/sz, PASS,
 /simulations/nr/d2d/,                    -f omnetpp.ini -c ChannelModel-IndoorD2D -r 0,           5s,        3bf0-7540/tplx;862e-481b/tilx;fda1-6e56/~tNl;6785-ad47/sz, PASS,
+/simulations/nr/dualConnectivity/,       -f omnetpp.ini -c NeDualConn-VoIP-DL-IPv6 -r 0,           5s,        1682-80cd/tplx;8355-9a30/tilx;67fb-aa43/~tNl;2c72-d053/sz, PASS,
+/simulations/lte/d2d/,                   -f omnetpp.ini -c SinglePair-UDP-D2D-IPv6 -r 0,           5s,        7948-a4f9/tplx;bb97-6de2/tilx;1b7e-a5b7/~tNl;90dd-4ace/sz, PASS,

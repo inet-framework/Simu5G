@@ -12,6 +12,7 @@
 package simu5g.simulations.nr.networks;
 
 import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
+import inet.networklayer.configurator.contract.IL3NetworkConfigurator;
 import inet.networklayer.ipv4.RoutingTableRecorder;
 import inet.node.ethernet.Eth10G;
 import inet.node.inet.Router;
@@ -52,6 +53,9 @@ network MultiCell_Standalone
         }
         configurator: Ipv4NetworkConfigurator {
             @display("p=50,125;is=s");
+        }
+        ipv6Configurator: <default("")> like IL3NetworkConfigurator if typename != "" {
+            @display("p=50,325;is=s");
         }
         binder: Binder {
             @display("p=50,175;is=s");
