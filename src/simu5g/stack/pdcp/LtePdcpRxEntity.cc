@@ -88,7 +88,7 @@ void LtePdcpRxEntity::decompressHeader(Packet *pkt)
 
         // Check if there's an SDAP header on top
         inet::Ptr<inet::Chunk> sdapHeader = nullptr;
-        if (pkt->peekAtFront<NrSdapHeader>()) {
+        if (dynamicPtrCast<const NrSdapHeader>(pkt->peekAtFront())) {
             sdapHeader = pkt->removeAtFront<NrSdapHeader>();
             EV << "LtePdcp : Removed SDAP header before decompression\n";
         }

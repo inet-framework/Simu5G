@@ -232,6 +232,9 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
         sdapHeader->setReflectiveQoS(enableReflectiveQos);
 
         pkt->insertAtFront(sdapHeader);
+        // an SDAP header is now the packet's outermost protocol (PDCP's header
+        // compression reads this)
+        pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&LteProtocol::sdap);
         EV_INFO << "SDAP TX: Inserted SDAP header with QFI = " << qfi
                 << ", reflectiveQoS = " << (enableReflectiveQos ? "true" : "false") << "\n";
     }
@@ -265,9 +268,6 @@ void NrSdap::handleUpperPacket(inet::Packet *pkt)
         // at all.
         bearerConfigurator_->establishDataConnection(lteInfo->toFlowId(), BearerRequest{UNKNOWN_RLC_MODE});
     }
-
-    // Set protocol tag for outgoing frame to PDCP layer
-    pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&LteProtocol::sdap);
 
     EV_INFO << "SDAP TX: Forwarding to DRB " << drb->getDrbId() << "\n";
     send(pkt, "pdcpOut");
