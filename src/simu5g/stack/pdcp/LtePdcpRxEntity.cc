@@ -13,7 +13,6 @@
 #include "simu5g/stack/pdcp/LtePdcpRxEntity.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfo.h"
-#include <inet/common/ProtocolTag_m.h>
 #include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/transportlayer/tcp_common/TcpHeader.h>
 #include <inet/transportlayer/udp/UdpHeader_m.h>
@@ -73,7 +72,6 @@ void LtePdcpRxEntity::handlePdcpSdu(Packet *pkt, unsigned int sequenceNumber)
     EV << NOW << " LtePdcpRxEntity::handlePdcpSdu - processing PDCP SDU with SN[" << sequenceNumber << "]" << endl;
 
     // deliver to IP layer
-    pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
     deliverSduToUpperLayer(pkt);
 }
 

@@ -13,6 +13,7 @@
 
 #include <inet/linklayer/common/InterfaceTag_m.h>
 #include <inet/common/socket/SocketTag_m.h>
+#include "simu5g/common/L3Utils.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
@@ -61,6 +62,9 @@ void HandoverPacketHolderUe::fromIpUe(Packet *datagram)
 
     // Remove InterfaceReq Tag (we already are on an interface now)
     datagram->removeTagIfPresent<InterfaceReq>();
+
+    // the UE's uplink user-plane entry
+    attachIpHeaderFields(datagram);
 
     if (ueHold_) {
         // hold packets until handover is complete

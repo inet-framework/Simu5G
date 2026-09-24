@@ -9,12 +9,13 @@
 // The above files and the present reference are part of the software itself,
 // and cannot be removed from it.
 //
+#include <inet/common/ProtocolTag_m.h>
 #include <inet/common/socket/SocketTag_m.h>
-#include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/linklayer/common/InterfaceTag_m.h>
 #include "simu5g/stack/ip2nic/Ip2Nic.h"
 
 #include "simu5g/common/binder/Binder.h"
+#include "simu5g/common/IpHeaderFieldsTag_m.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 
 namespace simu5g {
@@ -87,6 +88,8 @@ void Ip2Nic::handleMessage(cMessage *msg)
         auto pkt = check_and_cast<Packet *>(msg);
         pkt->removeTagIfPresent<SocketInd>();
         removeAllSimu5GTags(pkt);
+        // the transmitting node's, which the packet may still carry over the air
+        pkt->removeTagIfPresent<IpHeaderFieldsTag>();
         if (nodeType_ == NODEB)
             toIpBs(pkt);
         else
@@ -153,10 +156,10 @@ MacNodeId Ip2Nic::ueSourceNodeId()
 void Ip2Nic::toStackUe(Packet *pkt)
 {
     EV << "Ip2Nic::fromIpUe - message from IP layer: send to stack: " << pkt->str() << std::endl;
-    auto ipHeader = pkt->peekAtFront<Ipv4Header>();
-    auto srcAddr = ipHeader->getSrcAddress();
-    auto destAddr = ipHeader->getDestAddress();
-    short int tos = ipHeader->getTypeOfService();
+    auto ipFields = pkt->getTag<IpHeaderFieldsTag>();
+    Ipv4Address srcAddr = ipFields->getSrcAddress().toIpv4();
+    Ipv4Address destAddr = ipFields->getDestAddress().toIpv4();
+    short int tos = ipFields->getTos();
 
     // Drop UL packets if this UE released its link to the serving node after RLF.
     if (!releasedUes_.empty()) {
@@ -167,8 +170,6 @@ void Ip2Nic::toStackUe(Packet *pkt)
             return;
         }
     }
-
-    // TODO: Add support for IPv6 (=> see L3Tools.cc of INET)
 
     bool hasLte, hasNr;
     getStackAvailability(destAddr, hasLte, hasNr);
@@ -208,10 +209,6 @@ void Ip2Nic::prepareForIpv4(Packet *datagram, const Protocol *protocol) {
 
 void Ip2Nic::toIpUe(Packet *pkt)
 {
-    auto ipHeader = pkt->peekAtFront<Ipv4Header>();
-    auto networkProtocolInd = pkt->addTagIfAbsent<NetworkProtocolInd>();
-    networkProtocolInd->setProtocol(&Protocol::ipv4);
-    networkProtocolInd->setNetworkProtocolHeader(ipHeader);
     prepareForIpv4(pkt);
     EV << "Ip2Nic::toIpUe - message from stack: send to IP layer" << endl;
     send(pkt, ipGateOut_);
@@ -219,10 +216,6 @@ void Ip2Nic::toIpUe(Packet *pkt)
 
 void Ip2Nic::toIpBs(Packet *pkt)
 {
-    auto ipHeader = pkt->peekAtFront<Ipv4Header>();
-    auto networkProtocolInd = pkt->addTagIfAbsent<NetworkProtocolInd>();
-    networkProtocolInd->setProtocol(&Protocol::ipv4);
-    networkProtocolInd->setNetworkProtocolHeader(ipHeader);
     prepareForIpv4(pkt, &LteProtocol::ipv4uu);
     EV << "Ip2Nic::toIpBs - message from stack: send to IP layer" << endl;
     send(pkt, ipGateOut_);
@@ -232,10 +225,10 @@ void Ip2Nic::toStackBs(Packet *pkt)
 {
     EV << "Ip2Nic::toStackBs - message from IP layer: send to stack" << endl;
     removeAllSimu5GTags(pkt);
-    auto ipHeader = pkt->peekAtFront<Ipv4Header>();
-    auto srcAddr = ipHeader->getSrcAddress();
-    auto destAddr = ipHeader->getDestAddress();
-    short int tos = ipHeader->getTypeOfService();
+    auto ipFields = pkt->getTag<IpHeaderFieldsTag>();
+    Ipv4Address srcAddr = ipFields->getSrcAddress().toIpv4();
+    Ipv4Address destAddr = ipFields->getDestAddress().toIpv4();
+    short int tos = ipFields->getTos();
 
     // Drop DL packets destined to a UE whose context was released after RLF
     // (UE Context Release: discard rather than push at a torn-down bearer).

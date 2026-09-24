@@ -35,11 +35,11 @@ void QfiRuleSet::parseRule(const cValueMap *entry, const char *what)
     rules_.push_back(std::move(rule));
 }
 
-Qfi QfiRuleSet::classify(inet::Packet *pkt, const inet::Ptr<const inet::Ipv4Header>& ipv4Header) const
+Qfi QfiRuleSet::classify(inet::Packet *pkt, uint8_t dscp) const
 {
     for (const QfiRule& rule : rules_)
         if (rule.filter == nullptr || rule.filter->matches(pkt))
-            return rule.dscpAsQfi ? Qfi(ipv4Header->getDscp()) : rule.qfi;
+            return rule.dscpAsQfi ? Qfi(dscp) : rule.qfi;
     return QFI_NONE;
 }
 

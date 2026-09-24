@@ -16,7 +16,6 @@
 #include <vector>
 
 #include <inet/common/packet/PacketFilter.h>
-#include <inet/networklayer/ipv4/Ipv4Header_m.h>
 
 #include "simu5g/common/LteCommon.h"
 
@@ -63,8 +62,9 @@ class QfiRuleSet
     // same maps, is the caller's to validate.
     void parseRule(const omnetpp::cValueMap *rule, const char *what);
 
-    // The QFI of the first matching rule, or QFI_NONE if no rule covers the packet
-    Qfi classify(inet::Packet *pkt, const inet::Ptr<const inet::Ipv4Header>& ipv4Header) const;
+    // The QFI of the first matching rule, or QFI_NONE if no rule covers the packet;
+    // dscp is the packet's DSCP field, the QFI of a dscpAsQfi rule
+    Qfi classify(inet::Packet *pkt, uint8_t dscp) const;
 
     bool empty() const { return rules_.empty(); }
 };

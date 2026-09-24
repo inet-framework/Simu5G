@@ -11,6 +11,7 @@
 //
 #include "simu5g/corenetwork/gtp/GtpUser.h"
 #include "simu5g/corenetwork/trafficFlowFilter/TftControlInfo_m.h"
+#include "simu5g/common/IpHeaderFieldsTag_m.h"
 #include "simu5g/common/QfiTag_m.h"
 #include <iostream>
 #include <inet/networklayer/common/L3AddressResolver.h>
@@ -168,8 +169,7 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
     }
     else {
         // the packet is ready to be tunneled via GTP to another node in the core network
-        const auto& hdr = datagram->peekAtFront<Ipv4Header>();
-        const Ipv4Address& destAddr = hdr->getDestAddress();
+        L3Address destAddr = datagram->getTag<IpHeaderFieldsTag>()->getDestAddress();
 
         // create a new GtpUserMessage and encapsulate the datagram within the GtpUserMessage
         auto header = makeShared<GtpUserMsg>();
@@ -195,7 +195,7 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
 
             // retrieve the address of the UPF included within the MEC host
             EV << "GtpUser::handleFromTrafficFlowFilter - tunneling to " << destAddr.str() << endl;
-            tunnelPeerAddress = binder_->getUpfFromMecHost(inet::L3Address(destAddr));
+            tunnelPeerAddress = binder_->getUpfFromMecHost(destAddr);
         }
         else { // send to a BS
             // check if the destination is within the same core network
@@ -248,24 +248,24 @@ void GtpUser::handleFromUdp(Packet *pkt)
 
     delete pkt;
 
-    const auto& hdr = originalPacket->peekAtFront<Ipv4Header>();
-    const Ipv4Address& destAddr = hdr->getDestAddress();
-
     if (isBaseStation(ownerType_)) {
         // add Interface-Request for cellular NIC
         if (ie_ != nullptr)
             originalPacket->addTagIfAbsent<InterfaceReq>()->setInterfaceId(ie_->getInterfaceId());
 
-        EV << "GtpUser::handleFromUdp - Datagram local delivery to " << destAddr.str() << endl;
+        EV << "GtpUser::handleFromUdp - Datagram local delivery to the cellular NIC" << endl;
         // local delivery
         send(originalPacket, "pppGate");
     }
     else if (ownerType_ == UPF_MEC) {
         // we are on the MEC, local delivery
-        EV << "GtpUser::handleFromUdp - Datagram local delivery to " << destAddr.str() << endl;
+        EV << "GtpUser::handleFromUdp - Datagram local delivery to the MEC host" << endl;
         send(originalPacket, "pppGate");
     }
     else if (ownerType_ == PGW || ownerType_ == UPF) {
+        // the tunnel does not identify the session (TEID 0), so the destination does
+        const auto& hdr = originalPacket->peekAtFront<Ipv4Header>();
+        const Ipv4Address& destAddr = hdr->getDestAddress();
         MacNodeId destId = binder_->getMacNodeId(destAddr);
         if (destId != NODEID_NONE) { // final destination is a UE
             MacNodeId destMaster = binder_->getServingNodeOrSelf(destId);

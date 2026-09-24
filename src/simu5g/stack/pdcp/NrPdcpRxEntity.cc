@@ -12,7 +12,6 @@
 
 #include "simu5g/stack/pdcp/NrPdcpRxEntity.h"
 #include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
-#include <inet/common/ProtocolTag_m.h>
 #include <inet/networklayer/common/NetworkInterface.h>
 
 namespace simu5g {
@@ -46,7 +45,6 @@ void NrPdcpRxEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
 
     if (!reorderingEnabled_ || outOfOrderDelivery_) { // deliver packet to upper layer
         EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - Deliver SDU SN[" << rcvdSno << "] to upper layer" << endl;
-        pdcpSdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
         deliverSduToUpperLayer(pdcpSdu);
         return;
     }
@@ -83,7 +81,6 @@ void NrPdcpRxEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
 
         // this SDU is the next one to be delivered
         EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - Deliver SDU SN[" << rcvdSno << "] to upper layer" << endl;
-        pdcpSdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
         deliverSduToUpperLayer(pdcpSdu);
 
         rxWindowDesc_.rxDeliv_++;
@@ -95,7 +92,6 @@ void NrPdcpRxEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
             received_.at(pos) = false;
 
             EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - Deliver SDU buffered at index[" << pos << "] to upper layer" << endl;
-            sdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
             deliverSduToUpperLayer(sdu);
 
             rxWindowDesc_.rxDeliv_++;
@@ -171,7 +167,6 @@ void NrPdcpRxEntity::handleMessage(cMessage *msg)
             if (received_.at(pos) == true) {
                 EV << NOW << " NrPdcpRxEntity::handleMessage - Deliver SDU buffered at index[" << pos << "] to upper layer" << endl;
                 auto *sdu = check_and_cast<Packet *>(sduBuffer_.remove(pos));
-                sdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
                 deliverSduToUpperLayer(sdu);
             }
             rxWindowDesc_.rxDeliv_++;
@@ -185,7 +180,6 @@ void NrPdcpRxEntity::handleMessage(cMessage *msg)
                 break;
             EV << NOW << " NrPdcpRxEntity::handleMessage - Deliver SDU buffered at index[" << pos << "] to upper layer" << endl;
             auto *sdu = check_and_cast<Packet *>(sduBuffer_.remove(pos));
-            sdu->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
             deliverSduToUpperLayer(sdu);
 
             rxWindowDesc_.rxDeliv_++;

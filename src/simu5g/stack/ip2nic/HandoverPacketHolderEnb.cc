@@ -14,10 +14,10 @@
 #include <inet/common/ModuleAccess.h>
 #include <inet/common/IInterfaceRegistrationListener.h>
 #include <inet/common/socket/SocketTag_m.h>
-#include <inet/networklayer/ipv4/Ipv4Header_m.h>
 #include <inet/linklayer/common/InterfaceTag_m.h>
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/common/InitStages.h"
+#include "simu5g/common/L3Utils.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
 #include "simu5g/stack/handoverX2Forwarder/HandoverX2Forwarder.h"
 
@@ -96,12 +96,11 @@ void HandoverPacketHolderEnb::fromIpBs(Packet *pkt)
     // Remove InterfaceReq Tag (we already are on an interface now)
     pkt->removeTagIfPresent<InterfaceReq>();
 
-    // TODO: Add support for IPv6
-    auto ipHeader = pkt->peekAtFront<Ipv4Header>();
-    const Ipv4Address& destAddr = ipHeader->getDestAddress();
+    // the base station's downlink user-plane entry
+    auto ipFields = attachIpHeaderFields(pkt);
 
     // handle "forwarding" of packets during handover
-    MacNodeId destId = resolveUeNodeId(destAddr);
+    MacNodeId destId = resolveUeNodeId(ipFields->getDestAddress().toIpv4());
 
     if (hoForwarding_.find(destId) != hoForwarding_.end()) {
         // data packet must be forwarded (via X2) to another eNB
@@ -174,9 +173,9 @@ void HandoverPacketHolderEnb::sendTunneledPacketOnHandover(Packet *datagram, Mac
 void HandoverPacketHolderEnb::receiveTunneledPacketOnHandover(Packet *datagram)
 {
     EV << "HandoverPacketHolder::receiveTunneledPacketOnHandover - received packet via X2" << endl;
-    const auto& hdr = datagram->peekAtFront<Ipv4Header>();
-    const Ipv4Address& destAddr = hdr->getDestAddress();
-    MacNodeId destId = resolveUeNodeId(destAddr);
+    // the base station's entry for downlink traffic forwarded by the handover source
+    auto ipFields = attachIpHeaderFields(datagram);
+    MacNodeId destId = resolveUeNodeId(ipFields->getDestAddress().toIpv4());
 
     if (hoFromX2_.find(destId) == hoFromX2_.end()) {
         IpDatagramQueue queue;

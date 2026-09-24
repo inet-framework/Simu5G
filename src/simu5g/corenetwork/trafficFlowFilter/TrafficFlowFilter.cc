@@ -13,8 +13,8 @@
 #include "simu5g/corenetwork/trafficFlowFilter/TrafficFlowFilter.h"
 #include <inet/common/IProtocolRegistrationListener.h>
 #include <inet/networklayer/common/L3AddressResolver.h>
-#include <inet/networklayer/ipv4/Ipv4Header_m.h>
 
+#include "simu5g/common/L3Utils.h"
 #include "simu5g/common/QfiTag_m.h"
 #include "simu5g/corenetwork/bearerConfigurator/BearerConfigurator.h"
 
@@ -137,11 +137,11 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
 
     Packet *pkt = check_and_cast<Packet *>(msg);
 
-    // receive and read IP datagram
-    // TODO: needs to be adapted for IPv6
-    const auto& ipv4Header = pkt->peekAtFront<Ipv4Header>();
-    const Ipv4Address& destAddr = ipv4Header->getDestAddress();
-    const Ipv4Address& srcAddr = ipv4Header->getSrcAddress();
+    // the user-plane entry of the core network (downlink) or of a base station's
+    // tunnel (uplink)
+    auto ipFields = attachIpHeaderFields(pkt);
+    const L3Address& destAddr = ipFields->getDestAddress();
+    const L3Address& srcAddr = ipFields->getSrcAddress();
     pkt->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(&Protocol::ipv4);
     pkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ipv4);
 
@@ -173,7 +173,7 @@ void TrafficFlowFilter::handleMessage(cMessage *msg)
     if (auto qfiInd = pkt->findTag<QfiInd>())
         qfi = qfiInd->getQfi();
     if (qfi == QFI_NONE)
-        qfi = isBaseStation(ownerType_) ? Qfi(ipv4Header->getDscp()) : qfiRules_.classify(pkt, ipv4Header);
+        qfi = isBaseStation(ownerType_) ? Qfi(dscpOf(ipFields->getTos())) : qfiRules_.classify(pkt, dscpOf(ipFields->getTos()));
     if (qfi == QFI_NONE)
         qfi = Qfi(0);   // traffic no rule covers belongs to the default flow
     tftInfo->setQfi(qfi);
