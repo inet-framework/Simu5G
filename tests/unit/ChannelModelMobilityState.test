@@ -6,16 +6,15 @@ call-order invariant getRSRP() documents about it.
 Three pieces of state. positionHistory_ is a two-entry window per node -- the
 past position and the current one -- from which computeSpeed() derives the
 speed that drives Doppler in Jakes fading and the shadowing recurrence. The
-correlation point, per link, is where the LOS state was last decided. Neither
-is what its name suggests in one respect each, and both are pinned:
+correlation point, per link, is where the LOS state was last decided. The
+position history is not quite what its name suggests, in two respects, both
+pinned:
 
  - the first position recorded in a TTI wins; a later one in the same TTI is
    ignored, not merged;
  - computeSpeed() measures from the older of the two recorded positions to the
    position it is asked about, not to the latest recorded one, and with only
-   one recorded position it returns 0 however old that position is;
- - computeCorrelationDistance() is not read-only: on first use it records the
-   point.
+   one recorded position it returns 0 however old that position is.
 
 computeSpeed() throws on two history entries at the same instant. That state
 cannot be produced through updatePositionHistory(), whose same-TTI early
@@ -156,8 +155,10 @@ wait(1.0);
     const LinkKey key(MacNodeId(1105));
     auto& points = probe.lastCorrelationPoint();
     double first = probe.computeCorrelationDistance(key, Coord(0, 0, 1.5));
-    c.check("computeCorrelationDistance() records the point on first use -- it is not read-only",
-            first == 0 && points.count(key) == 1 && points[key].second == Coord(0, 0, 1.5));
+    c.check("a link with no correlation point is at distance 0, and reading it records nothing",
+            first == 0 && points.count(key) == 0);
+    probe.updateCorrelationDistance(key, Coord(0, 0, 1.5));
+    c.check("the first update records the point", points.count(key) == 1 && points[key].second == Coord(0, 0, 1.5));
     wait(1.0);
     double later = probe.computeCorrelationDistance(key, Coord(30, 0, 1.5));
     c.check("...and afterwards measures from it without moving it",
@@ -223,7 +224,7 @@ wait(1.0);
 c.summary();
 
 %contains: stdout
-modelchecks=19 modelfailures=0
+modelchecks=20 modelfailures=0
 
 %not-contains: stdout
 FAILED
