@@ -50,6 +50,10 @@ class BearerConfigurator : public cSimpleModule, public cListener
     double amPerThreshold_ = 0;
     std::vector<long> lcgPriorityBounds_;
 
+    // Header compression policy for definitions that do not state "rohc": the profile
+    // names whose bearers get ROHC (the rohcForDrbProfiles parameter)
+    std::set<std::string> rohcForDrbProfiles_;
+
     // The DRB IDs currently in use within each node pair (see assignDrbId())
     std::map<std::pair<MacNodeId, MacNodeId>, std::set<DrbId>> drbIdsInUse_;
 

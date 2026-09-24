@@ -146,7 +146,8 @@ package simu5g.corenetwork.bearerConfigurator;
 //    header only); each packet is compressed with the most specific one that fits it, see
 //    ~LtePdcpTxEntity for the model. Not modeled from PDCP-Config: maxCID (a bearer has up
 //    to 16 contexts), drb-ContinueROHC (a handover starts every context over), and
-//    uplinkOnlyROHC.
+//    uplinkOnlyROHC. A definition that does not state rohc follows the operator policy of
+//    the rohcForDrbProfiles parameter: on if it names one of the listed profiles.
 //  - upperProtocol (string, optional): INET protocol name for upper layer dispatch (this is
 //    normally only needed for "Unstructured" PDU sessions); default: derived from
 //    pduSessionType
@@ -330,5 +331,6 @@ simple BearerConfigurator
         // the RAN chooses what to make of them)
         double amPerThreshold = default(1e-4);  // rlcMode derivation: a definition whose QoS profile has packetErrorRate <= this gets "AM", else "UM"
         object lcgPriorityBounds = default([25, 50, 75]);  // Lcg derivation: qosPriorityLevel < bounds[k] -> LCG k, else LCG 3; strictly ascending, one bound between each pair of adjacent LCGs
+        object rohcForDrbProfiles = default([]);  // Header compression policy: definitions naming one of these profiles (e.g. "5qi-1", "qci-1") get "rohc: true" unless they state rohc themselves
         @display("i=block/cogwheel");
 }

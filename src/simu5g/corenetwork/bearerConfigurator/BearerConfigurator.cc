@@ -256,6 +256,15 @@ void BearerConfigurator::configureDrbs()
             throw cRuntimeError("lcgPriorityBounds must be strictly ascending");
         lcgPriorityBounds_.push_back(bound);
     }
+    rohcForDrbProfiles_.clear();
+    const cValueMap *userProfiles = check_and_cast_nullable<const cValueMap *>(par("drbProfiles").objectValue());
+    auto *rohcArr = check_and_cast<const cValueArray *>(par("rohcForDrbProfiles").objectValue());
+    for (int i = 0; i < (int)rohcArr->size(); i++) {
+        std::string name = rohcArr->get(i).stdstringValue();
+        if (!getPredefinedDrbProfiles()->containsKey(name.c_str()) && !(userProfiles && userProfiles->containsKey(name.c_str())))
+            throw cRuntimeError("rohcForDrbProfiles names unknown profile '%s'", name.c_str());
+        rohcForDrbProfiles_.insert(name);
+    }
 
     parseDrbDefinitions("staticDrbs", false, ueNodeIds, networkPrefix, drbsOfUe);
     parseDrbDefinitions("onDemandDrbs", true, ueNodeIds, networkPrefix, drbsOfUe);
@@ -671,6 +680,8 @@ void BearerConfigurator::parseDrbDefinitions(const char *paramName, bool onDeman
         // modeled profile), false, or {profiles: [...]}
         if (const cValue *v = field("rohc"))
             drb.rohcProfiles = parseRohcField(*v, paramName, i);
+        else if (entry->containsKey("profile") && contains(rohcForDrbProfiles_, entry->get("profile").stdstringValue()))
+            drb.rohcProfiles = rohcProfileNames();   // the header compression policy (rohcForDrbProfiles)
 
         // The entry names its UE by module path (patterns allowed), which is how the
         // configuration follows the UE instead of naming an allocation-order-dependent
