@@ -331,6 +331,6 @@ simple BearerConfigurator
         // the RAN chooses what to make of them)
         double amPerThreshold = default(1e-4);  // rlcMode derivation: a definition whose QoS profile has packetErrorRate <= this gets "AM", else "UM"
         object lcgPriorityBounds = default([25, 50, 75]);  // Lcg derivation: qosPriorityLevel < bounds[k] -> LCG k, else LCG 3; strictly ascending, one bound between each pair of adjacent LCGs
-        object rohcForDrbProfiles = default([]);  // Header compression policy: definitions naming one of these profiles (e.g. "5qi-1", "qci-1") get "rohc: true" unless they state rohc themselves
+        object rohcForDrbProfiles = default(["5qi-1", "qci-1"]);  // Header compression policy: definitions naming one of these profiles get "rohc: true" unless they state rohc themselves; default: the voice bearers
         @display("i=block/cogwheel");
 }
