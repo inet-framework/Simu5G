@@ -68,10 +68,10 @@
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-DL -r 3,               20s,         2f3d-2fc5/tplx;ccf1-2484/tilx;28f8-823b/~tNl;1faf-48c7/sz, PASS, radio interference multicarrier
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-DL -r 4,               20s,         c352-9427/tplx;5cde-ce7e/tilx;8b21-8add/~tNl;c898-26c1/sz, PASS, radio interference multicarrier
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-UL -r 0,               20s,         936b-888b/tplx;f987-be15/tilx;61be-fec1/~tNl;d217-84a9/sz, PASS, radio interference multicarrier
-/simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-UL -r 1,               20s,         36e6-15e7/tplx;9e36-507d/tilx;ea91-6835/~tNl;104e-aa6e/sz, PASS, radio interference multicarrier
-/simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-UL -r 2,               20s,         1ba0-0baf/tplx;0d3c-6a4f/tilx;5f66-2d00/~tNl;0dd2-01ed/sz, PASS, radio interference multicarrier
-/simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-UL -r 3,               20s,         69d3-2829/tplx;0626-0ff5/tilx;8018-b9cc/~tNl;b668-916e/sz, PASS, radio interference multicarrier
-/simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-UL -r 4,               20s,         9b0b-fcf1/tplx;c079-5d65/tilx;e8a0-5346/~tNl;e54a-1494/sz, PASS, radio interference multicarrier
+/simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-UL -r 1,               20s,         f019-6916/tplx;4ea4-770f/tilx;ddb3-5747/~tNl;641a-19b8/sz, PASS, radio interference multicarrier
+/simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-UL -r 2,               20s,         843f-25ee/tplx;da1e-1e73/tilx;3e8c-d944/~tNl;8708-aae8/sz, PASS, radio interference multicarrier
+/simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-UL -r 3,               20s,         2959-fab7/tplx;7e5b-4ff9/tilx;cc8f-b980/~tNl;9f6f-e329/sz, PASS, radio interference multicarrier
+/simulations/nr/test_numerology/,        -f omnetpp.ini -c MultiCell-CBR-UL -r 4,               20s,         7577-b2f7/tplx;3d78-86bd/tilx;fa2d-0217/~tNl;1959-4a4b/sz, PASS, radio interference multicarrier
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-DL -r 0,              10s,         1da5-10cc/tplx;257e-e905/tilx;383c-6067/~tNl;cc89-bab1/sz, PASS, radio interference multicarrier
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-DL -r 1,              10s,         7a53-64c3/tplx;79f5-60e1/tilx;f4f8-6522/~tNl;bea7-0316/sz, PASS, radio interference multicarrier
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-DL -r 2,              10s,         bf69-38b0/tplx;4de0-3506/tilx;ed7d-7185/~tNl;23bc-5f86/sz, PASS, radio interference multicarrier
