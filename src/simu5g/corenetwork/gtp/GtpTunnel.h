@@ -50,9 +50,6 @@ struct PduSessionRef
     MacNodeId lteNodeId = NODEID_NONE;
     MacNodeId nrNodeId = NODEID_NONE;
     PduSessionId id = PduSessionId(0);
-
-    // true if nodeId is one of the UE's node ids
-    bool isUe(MacNodeId nodeId) const { return nodeId != NODEID_NONE && (nodeId == lteNodeId || nodeId == nrNodeId); }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const PduSessionRef& session)
