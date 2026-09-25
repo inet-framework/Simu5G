@@ -14,15 +14,32 @@
 
 #include <omnetpp.h>
 
+#include "simu5g/stack/phy/medium/CellularRadioMedium.h"
+
 namespace simu5g {
 
 using namespace omnetpp;
 
+class AirFrame;
+
 /**
- * See the NED documentation of CellularRadio.
+ * See the NED documentation of CellularRadio. Received frames are passed up
+ * unchanged; a frame from the PHY carries a RadioTransmissionRequest that says
+ * where to send it.
  */
 class CellularRadio : public cSimpleModule
 {
+  protected:
+    int radioInGateId_ = -1;
+    int upperLayerInGateId_ = -1;
+    int upperLayerOutGateId_ = -1;
+    opp_component_ptr<CellularRadioMedium> radioMedium_;
+
+  protected:
+    virtual void initialize(int stage) override;
+    virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
+    virtual void handleMessage(cMessage *msg) override;
+    virtual void transmit(AirFrame *frame);
 };
 
 } // namespace simu5g
