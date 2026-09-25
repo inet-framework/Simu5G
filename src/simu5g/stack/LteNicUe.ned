@@ -29,6 +29,8 @@ module LteNicUe extends LteNicBase
     parameters:
         mac.typename = default("LteMacUe");
         phy.typename = default("PhyUe");
+        radio.antenna.gain = default(0dBi);
+        radio.receiver.noiseFigure = default(7dB);
         handoverPacketHolder.typename = default("HandoverPacketHolderUe");
         packetFlowObserver.typename = default("PacketFlowObserverUe");
 
