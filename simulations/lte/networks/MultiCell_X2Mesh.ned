@@ -23,7 +23,6 @@ import simu5g.nodes.ExtCell;
 import simu5g.nodes.PgwStandard;
 import simu5g.nodes.LteUe;
 import simu5g.nodes.eNodeB;
-import simu5g.world.radio.LteChannelControl;
 import simu5g.stack.phy.medium.CellularRadioMedium;
 
 
@@ -42,9 +41,6 @@ network MultiCell_X2Mesh
         int numExtCells = default(0);
         @display("i=block/network2;bgb=701,558;bgi=background/budapest");
     submodules:
-        channelControl: LteChannelControl {
-            @display("p=50,25;is=s");
-        }
         routingRecorder: RoutingTableRecorder {
             @display("p=50,75;is=s");
         }

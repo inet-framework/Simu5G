@@ -24,7 +24,6 @@ import simu5g.nodes.gNodeB;
 import simu5g.nodes.PgwStandard;
 import simu5g.nodes.BackgroundCell;
 import simu5g.nodes.eNodeB;
-import simu5g.world.radio.LteChannelControl;
 import simu5g.stack.phy.medium.CellularRadioMedium;
 
 
@@ -42,9 +41,6 @@ network SingleCell_withSecondaryGnb
         int numBgCells = default(0);
         @display("i=block/network2;bgb=991,558;bgi=background/pisa");
     submodules:
-        channelControl: LteChannelControl {
-            @display("p=88,24;is=s");
-        }
         routingRecorder: RoutingTableRecorder {
             @display("p=88,74;is=s");
         }

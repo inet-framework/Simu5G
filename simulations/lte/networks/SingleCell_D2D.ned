@@ -22,7 +22,6 @@ import simu5g.corenetwork.bearerConfigurator.BearerConfigurator;
 import simu5g.nodes.PgwStandard;
 import simu5g.nodes.LteUe;
 import simu5g.nodes.eNodeB;
-import simu5g.world.radio.LteChannelControl;
 import simu5g.stack.phy.medium.CellularRadioMedium;
 
 
@@ -40,9 +39,6 @@ network SingleCell_D2D
         int numUeD2DRx = default(0);
         @display("i=block/network2;bgb=991,558;bgi=background/budapest");
     submodules:
-        channelControl: LteChannelControl {
-            @display("p=50,25;is=s");
-        }
         routingRecorder: RoutingTableRecorder {
             @display("p=50,75;is=s");
         }

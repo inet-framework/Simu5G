@@ -24,7 +24,6 @@ import simu5g.corenetwork.bearerConfigurator.BearerConfigurator;
 import simu5g.nodes.PgwStandard;
 import simu5g.nodes.LteUe;
 import simu5g.nodes.eNodeB;
-import simu5g.world.radio.LteChannelControl;
 import simu5g.stack.phy.medium.CellularRadioMedium;
 
 
@@ -45,9 +44,6 @@ network MultiCell_D2DMultihop
         int numUe5 = default(1);
         @display("i=block/network2;bgb=2000,500;");
     submodules:
-        channelControl: LteChannelControl {
-            @display("p=90,24;is=s");
-        }
         routingRecorder: RoutingTableRecorder {
             @display("p=90,74;is=s");
         }
