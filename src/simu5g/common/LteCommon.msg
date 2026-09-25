@@ -107,6 +107,19 @@ class Teid {
     @fromValue(Teid($.intValue()));
 };
 
+/// PDU Session ID (TS 24.007: 1..15, 0 = none assigned)
+class PduSessionId {
+    @existingClass; // enum class PduSessionId : uint8_t;
+    @descriptor(false);
+    @primitive;
+    @castFunction(false);
+    @fromString(PduSessionId(string2int64($)));
+    @toString(int642string(num($)));
+    @defaultValue(PduSessionId(0));
+    @toValue((omnetpp::intval_t)(num($)));
+    @fromValue(PduSessionId($.intValue()));
+};
+
 /// Logical Channel Group id (LTE: 4 groups, NR: up to 8; TS 36.321 / TS 38.321)
 class Lcg {
     @existingClass; // enum class Lcg : uint8_t;

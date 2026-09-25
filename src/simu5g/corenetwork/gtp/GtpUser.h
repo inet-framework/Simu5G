@@ -113,6 +113,14 @@ class GtpUser : public cSimpleModule
     // node id, which sent a datagram with the given source address
     const UplinkTunnels& getUplinkTunnels(MacNodeId ueNodeId, const inet::L3Address& srcAddress);
 
+    // At a base station: the PDU session of a UE whose uplink enters the core network
+    // here, by one of the UE's node ids; throws if it has none
+    const PduSessionRef& getServedSession(MacNodeId ueNodeId);
+
+    // Tells the modules after this tunnel end which PDU session, and so which UE, the
+    // datagram belongs to (see PduSessionTag)
+    void attachPduSessionTag(inet::Packet *datagram, const PduSessionRef& session);
+
     // The PDU session of a tunnel ending here; throws for an unknown TEID
     const PduSessionRef& findTunnel(Teid teid);
 
