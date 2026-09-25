@@ -22,6 +22,7 @@ import simu5g.stack.rlc.IRlcMux;
 import simu5g.stack.sdap.INrSdap;
 import simu5g.stack.sdap.IQosFlowClassifier;
 import simu5g.stack.sdap.common.IReflectiveQosTable;
+import simu5g.stack.phy.radio.CellularRadio;
 
 //
 // Defines a User Equipment (UE) network interface card that
@@ -92,6 +93,10 @@ module NrNicUe extends LteNicUe
         // PHY Layer
         nrPhy: <default("PhyUe")> like IPhy {
             @display("p=570,600");
+        }
+        // the radio of the NR PHY leg
+        nrRadio: CellularRadio {
+            @display("p=570,680");
         }
         // NR Channel Model
         nrChannelModel[numNrCarriers]: <nrChannelModelType> like IChannelModel {

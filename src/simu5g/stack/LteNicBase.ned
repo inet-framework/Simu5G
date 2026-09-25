@@ -23,6 +23,7 @@ import simu5g.stack.phy.IPhy;
 import simu5g.stack.rlc.IRlcMux;
 import simu5g.stack.rrc.IRrc;
 import simu5g.stack.phy.channelmodel.IChannelModel;
+import simu5g.stack.phy.radio.CellularRadio;
 
 
 //
@@ -101,6 +102,10 @@ module LteNicBase extends NetworkInterface like ICellularNic
         // PHY submodule
         phy: <> like IPhy {
             @display("p=310,600");
+        }
+        // the radio of the PHY leg
+        radio: CellularRadio {
+            @display("p=310,680");
         }
 
         channelModel[numCarriers]: <channelModelType> like IChannelModel {
