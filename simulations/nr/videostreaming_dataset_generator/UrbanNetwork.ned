@@ -27,6 +27,7 @@ import simu5g.nodes.MecHost;
 import simu5g.mec.orchestrator.MecOrchestrator;
 import simu5g.mec.ualcmp.Ualcmp;
 import simu5g.world.radio.LteChannelControl;
+import simu5g.stack.phy.medium.CellularRadioMedium;
 
 
 network UrbanNetwork
@@ -117,6 +118,9 @@ network UrbanNetwork
 
         ue[numUe]: NrUe {
             @display("p=200,2026");
+        }
+        radioMedium: CellularRadioMedium {
+            @display("p=114,107;is=s");
         }
 
     connections:
