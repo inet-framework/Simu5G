@@ -461,14 +461,6 @@ const PduSessionRef& GtpUser::getServedSession(MacNodeId ueNodeId)
     return it->second.session;
 }
 
-void GtpUser::attachPduSessionTag(Packet *datagram, const PduSessionRef& session)
-{
-    auto tag = datagram->addTag<PduSessionTag>();
-    tag->setPduSessionId(session.id);
-    tag->setLteNodeId(session.lteNodeId);
-    tag->setNrNodeId(session.nrNodeId);
-}
-
 const PduSessionRef& GtpUser::findTunnel(Teid teid)
 {
     auto it = rxTunnels_.find(teid);
