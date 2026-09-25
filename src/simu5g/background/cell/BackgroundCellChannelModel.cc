@@ -72,6 +72,7 @@ void BackgroundCellChannelModel::initialize(int stage)
 
         //get binder
         binder_.reference(this, "binderModule", true);
+        radioMedium_.reference(this, "radioMediumModule", true);
     }
     else if (stage == INITSTAGE_SIMU5G_AMC_SETUP) {
         // carrierFrequencyHz_/GHz_/log10CarrierFrequencyGHz_ are set by
@@ -555,7 +556,7 @@ bool BackgroundCellChannelModel::computeDownlinkInterference(MacNodeId bgUeId, i
         // initialize eNb data structures
         if (!enb->init) {
             // obtain a reference to enb phy and obtain tx power
-            enb->phy = binder_->getPhy(id);
+            enb->phy = radioMedium_->getRadio(id);
 
             enb->txPwr = enb->phy->getTxPwr();//dBm
 
