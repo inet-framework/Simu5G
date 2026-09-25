@@ -317,6 +317,7 @@ void Binder::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         phyPisaData.setBlerShift(par("blerShift"));
         networkName_ = getSystemModule()->getName();
+        radioMedium_ = dynamic_cast<CellularRadioMedium *>(getSystemModule()->getSubmodule("radioMedium"));
 
         // Add WATCH macros for all member variables
         WATCH(networkName_);
@@ -861,7 +862,9 @@ IRadioEndpoint *Binder::findPhy(MacNodeId nodeId)
     // only a node that is not in the simulation may lack a PHY
     if (getNodeModule(nodeId) == nullptr)
         return nullptr;
-    return check_and_cast<IRadioEndpoint *>(getPhyByNodeId(nodeId));
+    IRadioEndpoint *phy = check_and_cast<IRadioEndpoint *>(getPhyByNodeId(nodeId));
+    ASSERT(radioMedium_ == nullptr || radioMedium_->findRadio(nodeId) == phy);
+    return phy;
 }
 
 cModule *Binder::getMacByNodeId(MacNodeId nodeId)

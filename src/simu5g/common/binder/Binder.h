@@ -22,6 +22,7 @@
 #include "simu5g/common/blerCurves/PhyPisaData.h"
 #include "simu5g/nodes/ExtCell.h"
 #include "simu5g/stack/mac/LteMacBase.h"
+#include "simu5g/stack/phy/medium/CellularRadioMedium.h"
 
 namespace simu5g {
 
@@ -49,6 +50,9 @@ class Binder : public cSimpleModule
 
     // name of the system (top-level) module
     std::string networkName_;
+
+    // the network's radio medium, whose registry findPhy() is checked against; nullptr if there is none
+    opp_component_ptr<CellularRadioMedium> radioMedium_;
 
     std::map<inet::Ipv4Address, MacNodeId> ipAddressToMacNodeId_;
     std::map<inet::Ipv4Address, MacNodeId> ipAddressToNrMacNodeId_;
