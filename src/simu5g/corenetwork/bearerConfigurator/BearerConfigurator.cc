@@ -49,6 +49,11 @@ void BearerConfigurator::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
         binder_->subscribe(Binder::nodeUnregisteredSignal_, this);
+
+        WATCH(drbIdsInUse_);
+        WATCH(authoredBearers_);
+        WATCH(multicastFlows_);
+        WATCH(predefinedDrbProfiles_);
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         // After INITSTAGE_SIMU5G_NODE_RELATIONSHIPS, so the UEs' serving nodes are known,

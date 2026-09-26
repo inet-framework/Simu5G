@@ -67,6 +67,8 @@ void GtpUser::initialize(int stage)
         myMacNodeID = NODEID_NONE;
 
     ie_ = detectInterface();
+
+    WATCH(gwAddress_);
 }
 
 NetworkInterface *GtpUser::detectInterface()

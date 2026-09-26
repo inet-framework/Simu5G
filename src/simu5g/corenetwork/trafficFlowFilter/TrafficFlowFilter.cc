@@ -102,6 +102,13 @@ void TrafficFlowFilter::initialize(int stage)
     auto gateIn = gate("internetFilterGateIn");
     registerProtocol(LteProtocol::ipv4uu, gateIn, SP_INDICATION);
     registerProtocol(LteProtocol::ipv4uu, gateIn, SP_CONFIRM);
+
+    WATCH(gateway_);
+    WATCH(meHost);
+    WATCH(meHostAddress);
+    WATCH(meAppsExtAddress_);
+    WATCH(meAppsExtAddressMask_);
+    WATCH(qfiRules_);
 }
 
 void TrafficFlowFilter::setQfiRules(QfiRuleSet&& rules)

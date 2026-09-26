@@ -67,6 +67,17 @@ class QfiRuleSet
     Qfi classify(inet::Packet *pkt, const inet::Ptr<const inet::Ipv4Header>& ipv4Header) const;
 
     bool empty() const { return rules_.empty(); }
+
+    friend std::ostream& operator<<(std::ostream& os, const QfiRuleSet& e)
+    {
+        os << "rules=" << e.rules_.size();
+        for (size_t i = 0; i < e.rules_.size(); i++) {
+            const auto& r = e.rules_[i];
+            os << " [" << i << ": " << (r.filter ? "filtered" : "matchAll")
+               << (r.dscpAsQfi ? " dscpAsQfi" : "") << " qfi=" << r.qfi << "]";
+        }
+        return os;
+    }
 };
 
 } // namespace simu5g

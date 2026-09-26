@@ -68,6 +68,15 @@ class BearerConfigurator : public cSimpleModule, public cListener
         bool onDemand = false;         // true = onDemandDrbs entry (ids assigned at first match, per pair)
         std::vector<std::unique_ptr<inet::PacketFilter>> filters;   // compiled desc.filters
         std::map<std::pair<MacNodeId, MacNodeId>, DrbId> pairIds;   // onDemand only: id per materialized node pair
+
+        friend std::ostream& operator<<(std::ostream& os, const AuthoredBearer& e)
+        {
+            // ueModule is not dereferenced here: it is not reset when a UE departs the
+            // simulation, so it can go stale while this record is still in authoredBearers_
+            os << "ue=" << static_cast<const void *>(e.ueModule) << " drbKey=" << e.desc.key
+               << " onDemand=" << e.onDemand << " pairs=" << e.pairIds.size() << " filters=" << e.filters.size();
+            return os;
+        }
     };
     std::vector<AuthoredBearer> authoredBearers_;
 
@@ -88,6 +97,12 @@ class BearerConfigurator : public cSimpleModule, public cListener
         FlowId flow;
         BearerRequest req;
         bool withPdcp = false;
+
+        friend std::ostream& operator<<(std::ostream& os, const MulticastFlow& e)
+        {
+            os << "flow=[" << e.flow << "] req=[" << e.req << "] withPdcp=" << e.withPdcp;
+            return os;
+        }
     };
     std::map<std::pair<MacNodeId, MacNodeId>, MulticastFlow> multicastFlows_;
 
