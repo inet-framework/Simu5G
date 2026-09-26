@@ -37,8 +37,6 @@ void D2dAmcHelper::initD2D()
         d2dRevNodeIndex_.push_back(nodeId);
     }
 
-    WATCH(mcsScaleD2D_);
-    WATCH(fbhbCapacityD2D_);
     WATCH(d2dConnectedUe_);
     WATCH(d2dNodeIndex_);
     WATCH(d2dRevNodeIndex_);

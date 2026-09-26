@@ -67,12 +67,6 @@ void HandoverController::initialize(int stage)
         WATCH(servingNodeRssi_);
         WATCH(candidateServingNodeRssi_);
         WATCH(hysteresisThreshold_);
-        WATCH(hysteresisFactor_);
-        WATCH(handoverDelta_);
-        WATCH(handoverDetachmentTime_);
-        WATCH(handoverAttachmentTime_);
-        WATCH(minRssi_);
-        WATCH(enableHandover_);
 
     }
     else if (stage == INITSTAGE_SIMU5G_PHYSICAL_LAYER) {
