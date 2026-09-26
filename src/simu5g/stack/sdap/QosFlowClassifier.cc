@@ -21,6 +21,11 @@ using namespace inet;
 
 Define_Module(QosFlowClassifier);
 
+void QosFlowClassifier::initialize()
+{
+    WATCH(qfiRules_);
+}
+
 void QosFlowClassifier::setQfiRules(QfiRuleSet&& rules)
 {
     Enter_Method_Silent("setQfiRules");

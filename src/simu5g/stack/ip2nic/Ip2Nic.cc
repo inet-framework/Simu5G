@@ -48,6 +48,11 @@ void Ip2Nic::initialize(int stage)
             if (ue->hasPar("nrMacNodeId"))
                 nrNodeId_ = MacNodeId(ue->par("nrMacNodeId").intValue());
         }
+
+        WATCH(flowBindings_);
+        WATCH(releasedUes_);
+        WATCH(lteServingNodeId_);
+        WATCH(nrServingNodeId_);
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         isNr_ = par("isNr");
@@ -70,6 +75,9 @@ void Ip2Nic::initialize(int stage)
                 anchorId_ = anchorNr_ ? nrNodeId_ : nodeId_;
             }
         }
+
+        WATCH(anchorNr_);
+        WATCH(anchorId_);
     }
 }
 

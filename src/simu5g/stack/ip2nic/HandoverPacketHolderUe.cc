@@ -34,6 +34,10 @@ HandoverPacketHolderUe::~HandoverPacketHolderUe()
 void HandoverPacketHolderUe::initialize()
 {
     stackGateOut_ = gate("stackOut");
+
+    WATCH(servingNodeId_);
+    WATCH(nrServingNodeId_);
+    WATCH(ueHold_);
 }
 
 void HandoverPacketHolderUe::setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId)

@@ -44,6 +44,15 @@ void PacketFlowObserverEnb::initialize(int stage)
         if (headerCompressedSize_ == -1)
             headerCompressedSize_ = 0;
         timesUe_.setName("delay");
+
+        WATCH(connectionMap_);
+        WATCH(ULPktDelay_);
+        WATCH(ulGrants_);
+        WATCH(packetLossRate_);
+        WATCH(pdcpDelay_);
+        WATCH(pdcpThroughput_);
+        WATCH(pktDiscardCounterPerUe_);
+        WATCH(sduDataVolume_);
     }
 }
 

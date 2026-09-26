@@ -38,6 +38,8 @@ void ReflectiveQosTable::initialize()
     // Initialize cleanup timer
     cleanupTimer_ = new cMessage("cleanupTimer");
     scheduleCleanupTimer();
+
+    WATCH(reflectiveFlows_);
 }
 
 void ReflectiveQosTable::handleMessage(cMessage *msg)

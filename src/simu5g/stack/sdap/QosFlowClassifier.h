@@ -38,6 +38,7 @@ class QosFlowClassifier : public cSimpleModule
     // until delivered, classifying nothing
     QfiRuleSet qfiRules_;
 
+    void initialize() override;
     void handleMessage(cMessage *msg) override;
 
   public:
