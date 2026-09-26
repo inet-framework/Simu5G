@@ -127,6 +127,8 @@ template<class Base>
 void D2dEnbMacBase<Base>::initialize(int stage)
 {
     Base::initialize(stage);
+    if (stage == inet::INITSTAGE_LOCAL)
+        d2dEnbHelper_.initWatches();
     // (the AMC pilot/mode-switch parameter setup historically also ran at
     // INITSTAGE_PHYSICAL_ENVIRONMENT -- an identical, idempotent copy of the
     // INITSTAGE_SIMU5G_AMC_SETUP block below; the early copy is gone)

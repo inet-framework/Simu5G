@@ -44,6 +44,7 @@ void D2dBinder::initialize()
     binder_.reference(this, "binderModule", true);
     binder_->subscribe(Binder::nodeUnregisteredSignal_, this);
     WATCH(multicastTransmitterSet_);
+    WATCH(d2dPeeringMap_);
 }
 
 void D2dBinder::receiveSignal(cComponent *source, simsignal_t signalID, long nodeId, cObject *details)

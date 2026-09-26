@@ -38,6 +38,8 @@ void D2dModeSelectionBase::initialize(int stage)
         modeSelectionTick_ = new cMessage("modeSelectionTick");
         modeSelectionTick_->setSchedulingPriority(1);  // do mode selection after the (possible) reception of data from the upper layers
         scheduleAt(NOW + 0.05, modeSelectionTick_);
+
+        WATCH(switchList_);
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         // get the reference to the global D2D state (holds the peering/mode map)
