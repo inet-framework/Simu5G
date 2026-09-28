@@ -124,23 +124,23 @@
 /tutorials/nr/,                          -f omnetpp.ini -c Multiple-UEs -r 0,                    5s,         2d37-bf9e/tplx;ffcc-726e/tilx;5ddd-4226/~tNl;c7b5-cd8f/sz, PASS, radio bgcell
 /tutorials/nr/,                          -f omnetpp.ini -c Numerology -r 0,                      5s,         cfff-65d6/tplx;177c-8dcf/tilx;4eb4-9d12/~tNl;77e9-40c4/sz, PASS, radio bgcell multicarrier
 /tutorials/nr/,                          -f omnetpp.ini -c Single-UE -r 0,                       5s,         4495-06e1/tplx;23e3-f117/tilx;cd72-a665/~tNl;b71d-c13f/sz, PASS, radio
-/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Clean -r 0,                        5s,         e60c-f79a/tplx;2234-32ba/tilx;cc3c-f654/~tNl;084f-544c/sz, PASS, idealchannel
-/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Lossy -r 2,                        5s,         bf8f-411c/tplx;b917-640e/tilx;0397-e5f6/~tNl;e425-e7e0/sz, PASS, idealchannel
-/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Segmentation -r 0,                 5s,         5069-8ed4/tplx;a828-bd46/tilx;ccd5-14e8/~tNl;8c5d-a512/sz, PASS, idealchannel
-/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-WindowStall -r 0,                  5s,         6e8b-47af/tplx;1800-3c6d/tilx;e960-6906/~tNl;7d1d-f936/sz, PASS, idealchannel
-/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-RLF -r 0,                          10s,        9426-3ba6/tplx;6652-967b/tilx;f72b-5e16/~tNl;fed6-fa4a/sz, PASS, idealchannel
-/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-RLF-Reestablish -r 0,              14s,        26ed-9f0d/tplx;551d-c198/tilx;c134-ab69/~tNl;ed61-370b/sz, PASS, idealchannel
-/simulations/nr/rlc/,                    -f omnetpp.ini -c UM-Lossy -r 2,                        5s,         9020-e7de/tplx;59a1-759c/tilx;aacd-ad7c/~tNl;785c-70c7/sz, PASS, idealchannel
-/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Clean -r 0,                        5s,         574d-259d/tplx;0b13-91e2/tilx;af58-d844/~tNl;98fa-8989/sz, PASS, idealchannel
-/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Lossy -r 2,                        5s,         f109-1297/tplx;977e-dd1b/tilx;105c-4968/~tNl;3295-6fc6/sz, PASS, idealchannel
-/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Concatenation -r 0,                5s,         15d8-7b5c/tplx;8e9e-e7b0/tilx;fde1-7f1d/~tNl;a19f-745e/sz, PASS, idealchannel
-/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Segmentation -r 0,                 5s,         b0a4-b74e/tplx;7397-282c/tilx;ebbb-87dd/~tNl;de8c-0fd3/sz, PASS, idealchannel
-/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-WindowStall -r 0,                  5s,         803e-65aa/tplx;8e38-cc07/tilx;cd80-681f/~tNl;7d59-b2c9/sz, PASS, idealchannel
-/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-RLF -r 0,                          10s,        9cbf-9fe5/tplx;4989-1098/tilx;d05b-4d25/~tNl;aaff-d072/sz, PASS, idealchannel
-/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-RLF-Reestablish -r 0,              14s,        595b-53b2/tplx;ae9a-142a/tilx;78f5-5d97/~tNl;58a0-717a/sz, PASS, idealchannel
-/simulations/lte/rlc/,                   -f omnetpp.ini -c UM-Lossy -r 2,                        5s,         d361-764f/tplx;0884-4968/tilx;5614-18de/~tNl;ae9f-34ff/sz, PASS, idealchannel
+/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Clean -r 0,                        5s,         e60c-f79a/tplx;2234-32ba/tilx;cc3c-f654/~tNl;c6ec-93e6/sz, PASS, idealchannel
+/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Lossy -r 2,                        5s,         bf8f-411c/tplx;b917-640e/tilx;0397-e5f6/~tNl;677c-4895/sz, PASS, idealchannel
+/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Segmentation -r 0,                 5s,         5069-8ed4/tplx;a828-bd46/tilx;ccd5-14e8/~tNl;6045-682b/sz, PASS, idealchannel
+/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-WindowStall -r 0,                  5s,         6e8b-47af/tplx;1800-3c6d/tilx;e960-6906/~tNl;cbc7-41e2/sz, PASS, idealchannel
+/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-RLF -r 0,                          10s,        9426-3ba6/tplx;6652-967b/tilx;f72b-5e16/~tNl;f89b-f70c/sz, PASS, idealchannel
+/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-RLF-Reestablish -r 0,              14s,        26ed-9f0d/tplx;551d-c198/tilx;c134-ab69/~tNl;8ee4-b46e/sz, PASS, idealchannel
+/simulations/nr/rlc/,                    -f omnetpp.ini -c UM-Lossy -r 2,                        5s,         9020-e7de/tplx;59a1-759c/tilx;aacd-ad7c/~tNl;1d0e-1797/sz, PASS, idealchannel
+/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Clean -r 0,                        5s,         574d-259d/tplx;0b13-91e2/tilx;af58-d844/~tNl;d969-4694/sz, PASS, idealchannel
+/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Lossy -r 2,                        5s,         f109-1297/tplx;977e-dd1b/tilx;105c-4968/~tNl;218e-d170/sz, PASS, idealchannel
+/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Concatenation -r 0,                5s,         15d8-7b5c/tplx;8e9e-e7b0/tilx;fde1-7f1d/~tNl;738b-13ff/sz, PASS, idealchannel
+/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Segmentation -r 0,                 5s,         b0a4-b74e/tplx;7397-282c/tilx;ebbb-87dd/~tNl;a35c-4b3a/sz, PASS, idealchannel
+/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-WindowStall -r 0,                  5s,         803e-65aa/tplx;8e38-cc07/tilx;cd80-681f/~tNl;0b44-4f5f/sz, PASS, idealchannel
+/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-RLF -r 0,                          10s,        9cbf-9fe5/tplx;4989-1098/tilx;d05b-4d25/~tNl;2582-95c5/sz, PASS, idealchannel
+/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-RLF-Reestablish -r 0,              14s,        595b-53b2/tplx;ae9a-142a/tilx;78f5-5d97/~tNl;d293-5eec/sz, PASS, idealchannel
+/simulations/lte/rlc/,                   -f omnetpp.ini -c UM-Lossy -r 2,                        5s,         d361-764f/tplx;0884-4968/tilx;5614-18de/~tNl;3db2-0673/sz, PASS, idealchannel
 /simulations/lte/demo/,                  -f omnetpp.ini -c VoIP-AM -r 0,                         5s,         aa60-df2e/tplx;42cc-2a4b/tilx;a824-ff00/~tNl;80a8-68ae/sz, PASS, radio
-/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Lossy-UL -r 0,                     5s,         e19f-f671/tplx;7d98-7afc/tilx;2b33-8ed5/~tNl;2687-c674/sz, PASS, idealchannel
-/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Lossy-UL -r 0,                     5s,         c7fb-3dbe/tplx;feff-53e7/tilx;d3c9-adad/~tNl;99e2-a124/sz, PASS, idealchannel
-/simulations/lte/rlc/,                   -f omnetpp.ini -c TCP-AM -r 0,                          5s,         b95e-5a3b/tplx;46e4-c1e0/tilx;b686-265f/~tNl;2b23-2c4c/sz, PASS, idealchannel
+/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Lossy-UL -r 0,                     5s,         e19f-f671/tplx;7d98-7afc/tilx;2b33-8ed5/~tNl;ff85-9ff6/sz, PASS, idealchannel
+/simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Lossy-UL -r 0,                     5s,         c7fb-3dbe/tplx;feff-53e7/tilx;d3c9-adad/~tNl;14b7-cf92/sz, PASS, idealchannel
+/simulations/lte/rlc/,                   -f omnetpp.ini -c TCP-AM -r 0,                          5s,         b95e-5a3b/tplx;46e4-c1e0/tilx;b686-265f/~tNl;003d-ce9b/sz, PASS, idealchannel
 /simulations/lte/test_handover/,         -f omnetpp.ini -c VoIP-AM-Handover -r 0,               15s,         8336-28a2/tplx;d5bd-8101/tilx;a50e-8f6d/~tNl;a5fd-6a9e/sz, PASS, radio nofading
