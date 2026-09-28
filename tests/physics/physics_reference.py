@@ -316,7 +316,7 @@ def grade_module_order_permutation(grader):
     # would report a naming artifact as a physics difference, which an earlier
     # draft of this test duly did.
     table = all_scalars_by_run(('swap',),
-                               'module =~ "*.ue[*].cellularNic.nrChannelModel[*]"'
+                               'module =~ "*.ue[*].cellularNic.nrRadio.receiver"'
                                ' OR module =~ "*.ue[*].cellularNic.nrPhy"'
                                ' OR module =~ "*.ue[*].cellularNic.nrMac"'
                                ' OR module =~ "*.ue[*].app[*]"')
@@ -403,7 +403,7 @@ def grade_interference_delta(grader):
     quiet = budget.sinr(d_serving)
     loaded = budget.sinr(d_serving, d_interferer)
 
-    table = scalar_table('module =~ "*.ue[0].*.nrChannelModel[*]" '
+    table = scalar_table('module =~ "*.ue[0].*.nrRadio.receiver" '
                          'AND name =~ "measuredSinrDl:*"', itervars=('dli',))
     for dli, row in table.iterrows():
         on = str(dli) == 'true'
@@ -445,7 +445,7 @@ def grade_link_budget(grader):
                           pos['*.gnb.mobility.initialZ'] - pos['*.ue[0].mobility.initialZ'],
                           budget.hBS - budget.hUT, 0.0, " m")
 
-    table = scalar_table('module =~ "*.nrChannelModel[*]" AND name =~ "measuredSinrDl:*"',
+    table = scalar_table('module =~ "*.nrRadio.receiver" AND name =~ "measuredSinrDl:*"',
                          itervars=('d',))
     previous = None
     for d2D, row in table.iterrows():
@@ -488,7 +488,7 @@ def grade_background_cell_floor(grader):
     quiet = budget.over_noise(signal)
     loaded = budget.over_noise(signal, interferer)
 
-    table = scalar_table('module =~ "*.ue[0].*.nrChannelModel[*]" '
+    table = scalar_table('module =~ "*.ue[0].*.nrRadio.receiver" '
                          'AND name =~ "measuredSinrDl:*"', itervars=('bgi',))
     for bgi, row in table.iterrows():
         on = str(bgi) == 'true'
@@ -521,7 +521,7 @@ def grade_link_reciprocity(grader):
     expected = ((powers['**.eNodeBTxPower'] - powers['**.ueTxPower'])
                 - (powers['**.ueNoiseFigure'] - powers['**.bsNoiseFigure']))
 
-    table = scalar_table('module =~ "*.ue[0].*.nrChannelModel[*]" '
+    table = scalar_table('module =~ "*.ue[0].*.nrRadio.receiver" '
                          'AND (name =~ "measuredSinrDl:mean" OR name =~ "measuredSinrUl:mean")',
                          itervars=('shad',))
     for shad, row in table.iterrows():
