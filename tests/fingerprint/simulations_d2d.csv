@@ -83,5 +83,5 @@
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-UL -r 3,              10s,         5dc9-8611/tplx;29d8-5e2f/tilx;eeaf-36cd/~tNl;a79c-3679/sz, PASS, radio interference multicarrier
 /simulations/nr/test_numerology/,        -f omnetpp.ini -c SingleCell-CBR-UL -r 4,              10s,         d62a-87e5/tplx;83bc-a230/tilx;c881-9a20/~tNl;8e9c-d134/sz, PASS, radio interference multicarrier
 /simulations/nr/test_tdd/,               -f omnetpp.ini -c TestTdd -r 0,                         5s,         4913-924c/tplx;52aa-9d71/tilx;b85d-91ea/~tNl;e1c7-700b/sz, PASS, radio interference
-/simulations/nr/d2d/,                    -f omnetpp.ini -c ChannelModel-DynamicLos -r 0,         20s,        f42e-cd8f/tplx;d6c7-d30e/tilx;ac62-0aa3/~tNl;0a3e-223f/sz, PASS, radio propagation
+/simulations/nr/d2d/,                    -f omnetpp.ini -c ChannelModel-DynamicLos -r 0,         20s,        3994-81d9/tplx;3eb5-8d26/tilx;ec40-1b23/~tNl;6798-e42b/sz, PASS, radio propagation
 /simulations/nr/d2d/,                    -f omnetpp.ini -c ChannelModel-IndoorD2D -r 0,           5s,        5803-88b5/tplx;cf15-9abb/tilx;f805-b5c1/~tNl;2833-1879/sz, PASS, radio propagation
