@@ -40,6 +40,7 @@ namespace unittest {
 class StubEndpoint : public IRadioEndpoint
 {
   public:
+    MacNodeId nodeId = NODEID_NONE;
     inet::Coord coord;
     TxDirectionType txDirection = OMNI;
     double txAngle = 0.0;
@@ -50,6 +51,7 @@ class StubEndpoint : public IRadioEndpoint
     CellularReceiver *receiver = nullptr;
     std::map<GHz, ChannelModelBase *> channelModels;  // by carrier frequency
 
+    MacNodeId getMacNodeId() override { return nodeId; }
     const inet::Coord& getCoord() const override { return coord; }
     TxDirectionType getTxDirection() override { return txDirection; }
     double getTxAngle() override { return txAngle; }
@@ -146,6 +148,7 @@ class ChannelModelProbe
     {
         using ChannelStateAccessor = ChannelState& (StochasticChannelModel::*)();
         static ChannelStateAccessor channelStatePtr() { return &Access::channelState; }
+        static auto losMapPtr() { return &Access::losMap; }
         static auto pathLossPtr() { return &Access::pathLoss_; }
         static auto fadingPtr() { return &Access::fading_; }
 
@@ -171,10 +174,11 @@ class ChannelModelProbe
     ChannelState& channelState() { return (model_->*Access::channelStatePtr())(); }
     auto& positionHistory() { return channelState().positionHistory; }
     auto& lastCorrelationPoint() { return channelState().lastCorrelationPoint; }
-    auto& losMap() { return channelState().losMap; }
     auto& shadowingMap() { return channelState().shadowingMap; }
     auto& jakesMap() { return channelState().jakesFadingMap; }
     auto& jakesMapBgUe() { return channelState().jakesFadingMapBgUe; }
+    // the LOS state of the links on the model's carrier, which the radio medium keeps once per link
+    std::map<LinkKey, bool>& losMap() { return (model_->*Access::losMapPtr())(); }
     PathLossModel *pathLoss() { return model_->*Access::pathLossPtr(); }
     bool& fading() { return model_->*Access::fadingPtr(); }
 

@@ -74,6 +74,13 @@ const ChannelState& StochasticChannelModel::channelState() const
     return const_cast<StochasticChannelModel *>(this)->channelState();
 }
 
+std::map<LinkKey, bool>& StochasticChannelModel::losMap()
+{
+    if (losMap_ == nullptr)
+        losMap_ = &radioMedium_->getLosMap(carrierFrequency_);
+    return *losMap_;
+}
+
 void StochasticChannelModel::initialize(int stage)
 {
     ChannelModelBase::initialize(stage);
@@ -143,8 +150,11 @@ RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Co
     // of the two is the UE. The UE is the node whose channel state we track.
     RadioLink link;
     link.dir = dir;
-    // A cellular link: the degenerate key {ueId, ueId} reproduces the historical
-    // node-keyed behavior exactly, since a UE has one such link per instance.
+    // The link is the UE and the local radio. For DL the local radio is the UE
+    // itself, and the base station at 'coord' is not named.
+    link.linkKey = (dir == DL) ? LinkKey(ueId, NODEID_NONE) : LinkKey(ueId, phy_->getMacNodeId());
+    // The degenerate key {ueId, ueId} keys the model's own channel state on the
+    // UE: a model keeps one entry per UE, whichever base station is the other end.
     link.stateKey = LinkKey(ueId);
     link.stateNodeId = ueId;
     link.useUeSideMaps = cqiDl;
@@ -235,6 +245,12 @@ RadioLink StochasticChannelModel::linkFor(UserControlInfo *lteInfo)
         link.rxRadio = phy_;
     }
 
+    // The link is the frame's source and the local radio: whatever the direction,
+    // the source is the other end -- the base station of a DL frame or a beacon,
+    // the UE of a UL frame or a CQI report. A beacon and a cell-selection probe
+    // carry no destination, so the local end is named by the local radio.
+    link.linkKey = LinkKey(lteInfo->getSourceId(), phy_->getMacNodeId());
+
     // The UE owns the channel state, and it is always the UE's position that feeds
     // the speed and correlation-distance computation -- which is why the old code's
     // "pass UL for a FEEDBACKPKT" special case is not needed here: it only existed
@@ -262,19 +278,19 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     // correlation distance the UE could have changed its state and
     // its visibility from eNodeB, hence it is correct to recompute the LOS probability
     if (correlationDist > correlationDistance_
-        || channelState().losMap.find(link.stateKey) == channelState().losMap.end())
+        || losMap().find(link.linkKey) == losMap().end())
     {
-        computeLosProbability(threeDimDistance, twoDimDistance, link.stateKey);
+        computeLosProbability(threeDimDistance, twoDimDistance, link.linkKey);
     }
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = channelState().losMap[link.stateKey];
+    bool los = losMap()[link.linkKey];
     double attenuation = computePathLoss(threeDimDistance, twoDimDistance, los);
 
     //    Applying shadowing only if it is enabled by configuration
     //    log-normal shadowing (not available for background UEs)
     if (num(link.stateNodeId) < BGUE_MIN_ID && shadowing_)
-        attenuation += computeShadowing(threeDimDistance, twoDimDistance, link.stateKey, link.stateNodeId, speed, link.useUeSideMaps);
+        attenuation += computeShadowing(threeDimDistance, twoDimDistance, los, link.stateKey, link.stateNodeId, speed, link.useUeSideMaps);
 
     // update the tracked node's current position
     updatePositionHistory(link.stateNodeId, link.stateCoord);
@@ -285,7 +301,7 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     return attenuation;
 }
 
-double StochasticChannelModel::computeShadowing(double d3D, double d2D, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl)
+double StochasticChannelModel::computeShadowing(double d3D, double d2D, bool los, const LinkKey& key, MacNodeId ownerId, double speed, bool cqiDl)
 {
     ShadowFadingMap *actualShadowingMap;
 
@@ -297,7 +313,7 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, const Li
     double mean = 0;
 
     // Get std deviation according to LOS/NLOS and selected scenario
-    double stdDev = pathLoss_->getShadowingStdDev(d3D, d2D, channelState().losMap[key]);
+    double stdDev = pathLoss_->getShadowingStdDev(d3D, d2D, los);
     double time = 0;
     double space = 0;
     double att;
@@ -563,7 +579,7 @@ void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link,
     // prepare data structure
     bgCellInterference.resize(numBands_, 0);
     if (enableBackgroundCellInterference_) {
-        computeBackgroundCellInterference(ueId, enbCoord, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
+        computeBackgroundCellInterference(link.linkKey, enbCoord, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
 
     //============ EXTCELL INTERFERENCE COMPUTATION =================
@@ -573,7 +589,7 @@ void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link,
     // prepare data structure
     extCellInterference.resize(numBands_, 0);
     if (enableExtCellInterference_ && dir == DL) {
-        computeExtCellInterference(eNbId, ueId, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
+        computeExtCellInterference(eNbId, link.linkKey, ueCoord, (lteInfo->getFrameType() == FEEDBACKPKT), lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
 
     EV << "StochasticChannelModel::getSINR - distance from my eNb=" << enbCoord.distance(ueCoord) << " - DIR=" << ((dir == DL) ? "DL" : "UL") << endl;
@@ -769,7 +785,8 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(AirFrame *frame, UserCo
     // Note that shadowing and fading effects are not applied here and left FFW
 
     // UL because we are computing a feedback
-    double attenuation = getAttenuation(bgUeId, UL, ueCoord, cqiDl);
+    RadioLink link = cellularLink(bgUeId, UL, ueCoord, cqiDl);
+    double attenuation = getAttenuation(link);
 
     //compute recvPower
     recvPower -= attenuation; // (dBm-dB)=dBm
@@ -865,7 +882,7 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(AirFrame *frame, UserCo
     // prepare data structure
     bgCellInterference.resize(numBands_, 0);
     if (enableBackgroundCellInterference_) {
-        computeBackgroundCellInterference(bgUeId, enbCoord, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
+        computeBackgroundCellInterference(link.linkKey, enbCoord, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, dir, &bgCellInterference); // dBm
     }
 
     //============ EXTCELL INTERFERENCE COMPUTATION =================
@@ -875,7 +892,7 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(AirFrame *frame, UserCo
     // prepare data structure
     extCellInterference.resize(numBands_, 0);
     if (enableExtCellInterference_ && dir == DL) {
-        computeExtCellInterference(eNbId, bgUeId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
+        computeExtCellInterference(eNbId, link.linkKey, ueCoord, isCqi, lteInfo->getCarrierFrequency(), &extCellInterference); // dBm
     }
 
     //===================== SINR COMPUTATION ========================
@@ -1084,14 +1101,14 @@ void StochasticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz car
 }
 
 void StochasticChannelModel::computeLosProbability(double d3D, double d2D,
-        const LinkKey& nodeId)
+        const LinkKey& key)
 {
     if (!dynamicLos_) {
-        channelState().losMap[nodeId] = fixedLos_;
+        losMap()[key] = fixedLos_;
         return;
     }
     double p = pathLoss_->computeLosProbability(d3D, d2D);
-    channelState().losMap[nodeId] = (uniform(0.0, 1.0) <= p);
+    losMap()[key] = (uniform(0.0, 1.0) <= p);
 }
 
 double StochasticChannelModel::computePathLoss(double distance, double dbp, bool los)
@@ -1106,7 +1123,7 @@ double StochasticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
     return a.distance(b);
 }
 
-bool StochasticChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNodeId nodeId, Coord coord, bool isCqi, GHz carrierFrequency,
+bool StochasticChannelModel::computeExtCellInterference(MacNodeId eNbId, const LinkKey& link, Coord coord, bool isCqi, GHz carrierFrequency,
         std::vector<double> *interference)
 {
     EV << "**** Ext Cell Interference **** " << endl;
@@ -1132,7 +1149,7 @@ bool StochasticChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNode
            << dist << "\t";
 
         // compute attenuation according to some path loss model
-        att = computeExtCellPathLoss(dist, LinkKey(nodeId));
+        att = computeExtCellPathLoss(dist, link);
 
         //=============== ANGULAR ATTENUATION =================
         if (extCell->getTxDirection() == OMNI) {
@@ -1183,7 +1200,7 @@ bool StochasticChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNode
     return true;
 }
 
-bool StochasticChannelModel::computeBackgroundCellInterference(MacNodeId nodeId, inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, Direction dir,
+bool StochasticChannelModel::computeBackgroundCellInterference(const LinkKey& link, inet::Coord bsCoord, inet::Coord ueCoord, bool isCqi, GHz carrierFrequency, const RbMap& rbmap, Direction dir,
         std::vector<double> *interference)
 {
     EV << "**** Background Cell Interference **** " << endl;
@@ -1214,7 +1231,7 @@ bool StochasticChannelModel::computeBackgroundCellInterference(MacNodeId nodeId,
                << dist << "\t";
 
             // compute attenuation according to some path loss model
-            att = computeExtCellPathLoss(dist, LinkKey(nodeId));
+            att = computeExtCellPathLoss(dist, link);
 
             txPwr = bgScheduler->getTxPower();
 
@@ -1306,7 +1323,7 @@ bool StochasticChannelModel::computeBackgroundCellInterference(MacNodeId nodeId,
                        << dist << "\t";
 
                     // compute attenuation according to some path loss model
-                    att = computeExtCellPathLoss(dist, LinkKey(nodeId));
+                    att = computeExtCellPathLoss(dist, link);
 
                     recvPwrDBm = txPwr - att - angularAtt - cableLoss_ + antennaGainEnB_ + antennaGainBgUe;
                     recvPwr = dBmToLinear(recvPwrDBm);
@@ -1320,11 +1337,11 @@ bool StochasticChannelModel::computeBackgroundCellInterference(MacNodeId nodeId,
     return true;
 }
 
-double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey& nodeId)
+double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey& key)
 {
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    bool los = channelState().losMap[nodeId];
+    bool los = losMap()[key];
 
     if (!enable_extCell_los_)
         los = false;
