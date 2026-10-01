@@ -1,5 +1,54 @@
 # What's New in Simu5G
 
+## Unreleased
+
+### The UE is an INET StandardHost
+
+`LteUe`, and with it `NrUe`, `LteCar` and `NrCar`, now extends INET's
+`StandardHost`, with the cellular NIC as one more network interface of the
+link layer, next to `lo` and the `eth[]` interfaces. The UE used to repeat the
+structure of INET's node base modules by hand; it now inherits it, together
+with `StandardHost`'s configuration options, and `StandardHost`'s optional
+submodules (e.g. `clock`) become available in the UE.
+Simulated traffic is unchanged: in the fingerprints, `tplx` and `~tNl` are
+identical, while `tilx` (module ids) and `sz` (the scalars of the removed
+`encap` module) change.
+
+Configurations written for v1.7.0 may need these updates:
+
+- **IP forwarding**: `*.ue.ipv4.forwarding = true` must become
+  `*.ue.forwarding = true`. `StandardHost` sets its network layers'
+  `forwarding` from its own parameter, so the old key is silently ignored
+  rather than rejected. The emulation examples are updated.
+
+- **Radio input gate**: the UE's `radioIn` gate is renamed `lteRadioIn`,
+  because `StandardHost` already has a `radioIn[]` gate vector (for its
+  wireless LAN interfaces). The gate receives the air frames by direct
+  sending and is not connected in networks, so only code that refers to it
+  by name is affected.
+
+- **`encap` renamed `ethernet`**: the Ethernet encapsulation of the `eth[]`
+  interfaces (emulation mode) is now `StandardHost`'s `ethernet` submodule,
+  and it exists only when the UE has `eth[]` interfaces. Parameter settings on
+  `ue.encap` must address `ue.ethernet` instead.
+
+- **`ethg[]` gates**: the UE now has `ethg[]` gates for its `eth[]`
+  interfaces, as every INET node does. A network containing a UE with
+  `eth[]` interfaces whose `ethg[]` gates stay unconnected (e.g. emulation)
+  must declare `connections allowunconnected`, as INET requires for
+  `StandardHost`; all emulation examples already do.
+
+- **Interface order and name resolution**: the UE's interfaces are now
+  registered as `lo0`, the `eth[]` interfaces, then `cellular` (previously
+  `cellular` came before the `eth[]` interfaces). An address given as the
+  UE's name, e.g. `destAddress = "ue[0]"`, resolves to the first
+  non-loopback interface that has an address; for a UE whose `eth[]`
+  interfaces have IP addresses (emulation), that is now an `eth[]` address,
+  which the core network cannot deliver to, and the traffic is lost without
+  an error. Name the cellular interface explicitly in such configurations:
+  `"ue[0]%cellular"`. UEs without addressed `eth[]` interfaces, which
+  includes all simulation examples, are unaffected.
+
 ## v1.7.0 (2026-09-14)
 
 The most significant change in this release is bearer and QoS management, which
