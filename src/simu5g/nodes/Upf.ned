@@ -52,7 +52,7 @@ module Upf extends ApplicationLayerNodeBase
     submodules:
         dnPpp: PppInterface {
             parameters:
-                @display("p=1100,975");
+                @display("p=1025,975");
         }
         trafficFlowFilter: TrafficFlowFilter {
             parameters:
@@ -76,7 +76,7 @@ module Upf extends ApplicationLayerNodeBase
         }
         ethernetBridge: EthernetSessionBridge if hasEthernetBridge {
             parameters:
-                @display("p=1100,275");
+                @display("p=1150,975");
         }
 
     connections:
