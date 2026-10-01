@@ -54,6 +54,7 @@ void BackgroundTrafficManagerBase::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         numBgUEs_ = par("numBgUes");
         binder_.reference(this, "binderModule", true);
+        firstBgUeId_ = binder_->allocateBackgroundUeIds(numBgUEs_);
         radioMedium_.reference(this, "radioMediumModule", true);
 
         // create vector of BackgroundUEs
