@@ -74,15 +74,17 @@ module LteUe
 {
     parameters:
         @networkNode();
-        @display("i=device/pocketpc;bgb=858,659");
-        @figure[applicationLayer](type=rectangle; pos=250,6; size=600,130; lineColor=#808080; cornerRadius=5; fillColor=#ffff00; fillOpacity=0.1);
-        @figure[applicationLayer.title](type=text; pos=845,11; anchor=ne; text="application layer");
-        @figure[transportLayer](type=rectangle; pos=250,156; size=600,130; fillColor=#ff0000; lineColor=#808080; cornerRadius=5; fillOpacity=0.1);
-        @figure[transportLayer.title](type=text; pos=845,161; anchor=ne; text="transport layer");
-        @figure[networkLayer](type=rectangle; pos=250,306; size=600,130; fillColor=#00ff00; lineColor=#808080; cornerRadius=5; fillOpacity=0.1);
-        @figure[networkLayer.title](type=text; pos=845,311; anchor=ne; text="network layer");
-        @figure[linkLayer](type=rectangle; pos=250,456; size=600,130; fillColor=#0000ff; lineColor=#808080; cornerRadius=5; fillOpacity=0.1);
-        @figure[linkLayer.title](type=text; pos=845,461; anchor=ne; text="link layer");
+        @display("i=device/pocketpc;bgb=856,1125");
+        @figure[applicationLayer](type=rectangle; pos=250,5; size=600,137; lineColor=#808080; cornerRadius=5; fillColor=#ffff00; fillOpacity=0.1);
+        @figure[applicationLayer.title](type=text; pos=845,10; anchor=ne; text="application layer");
+        @figure[transportLayer](type=rectangle; pos=250,158; size=600,134; fillColor=#ff0000; lineColor=#808080; cornerRadius=5; fillOpacity=0.1);
+        @figure[transportLayer.title](type=text; pos=845,163; anchor=ne; text="transport layer");
+        @figure[networkLayer](type=rectangle; pos=250,308; size=600,134; fillColor=#00ff00; lineColor=#808080; cornerRadius=5; fillOpacity=0.1);
+        @figure[networkLayer.title](type=text; pos=845,313; anchor=ne; text="network layer");
+        @figure[linkLayer](type=rectangle; pos=250,458; size=600,434; fillColor=#0000ff; lineColor=#808080; cornerRadius=5; fillOpacity=0.1);
+        @figure[linkLayer.title](type=text; pos=845,463; anchor=ne; text="link layer");
+        @figure[interfaceLayer](type=rectangle; pos=250,908; size=600,210; fillColor=#00ffff; lineColor=#808080; cornerRadius=5; fillOpacity=0.1);
+        @figure[interfaceLayer.title](type=text; pos=845,913; anchor=ne; text="interface layer");
         @figure[submodules];
 
         //# Apps
@@ -138,10 +140,10 @@ module LteUe
 
     submodules:
         interfaceTable: InterfaceTable {
-            @display("p=127,257;is=s");
+            @display("p=125,240;is=s");
         }
         mobility: <default("StationaryMobility")> like IMobility {
-            @display("p=127,172;is=s");
+            @display("p=125,160;is=s");
         }
 
         //# layer submodules (must be ordered from lower to upper layers)
@@ -149,86 +151,87 @@ module LteUe
         //# link layer
         lo[numLoInterfaces]: <default("LoopbackInterface")> like ILoopbackInterface {
             parameters:
-                @display("p=503,590,row,150");
+                @display("p=525,975,row,150");
         }
         cellularNic: <default(hasD2D ? "LteNicUeD2D" : "LteNicUe")> like ICellularNic {
             nodeType = parent.nodeType;
             sessionType = parent.sessionType;
-            @display("p=355,589");
+            @display("p=375,975");
         }
 
         //# ethernet interface used for communicating with external applications in emulation mode;
         //# with an Ethernet session in bridge mode, the links to the devices behind the UE
         eth[numEthInterfaces]: <default(hasEthernetSession ? "LayeredEthernetInterface" : "ExtLowerEthernetInterface")> like IEthernetInterface {
             parameters:
-                @display("p=674,590,row,150;q=txQueue");
+                @display("p=675,975,row,150;q=txQueue");
         }
 
         //# the link layer of an Ethernet session (as in INET's LinkLayerNodeBase): the
-        //# cellular NIC and eth[] are its interfaces
-        cb: MessageDispatcher if hasEthernetSession {
-            @display("p=550,520;b=600,5,,,,1");
+        //# cellular NIC and eth[] are its interfaces; the dispatchers are always present
+        //# (as in INET), but connected only with an Ethernet session
+        cb: MessageDispatcher {
+            @display("p=550,600;b=600,5");
         }
         bridging: <default(ethernetMode == "bridge" ? "BridgingLayer" : "")> like IProtocolLayer if hasEthernetSession && typename != "" {
-            @display("p=375,520");
+            @display("p=550,675");
         }
         macTable: <default("MacForwardingTable")> like IMacForwardingTable if hasEthernetSession && ethernetMode == "bridge" {
-            @display("p=127,430;is=s");
+            @display("p=125,880;is=s");
         }
-        bl: MessageDispatcher if hasEthernetSession {
-            @display("p=550,545;b=600,5,,,,1");
+        bl: MessageDispatcher {
+            @display("p=550,750;b=600,5");
         }
         ethernet: <default("EthernetLayer")> like IEthernetLayer if hasEthernetSession {
-            @display("p=375,560");
+            @display("p=375,825");
         }
         ieee8021q: <default("Ieee8021qProtocol")> like IIeee8021qLayer if hasEthernetSession {
-            @display("p=525,560");
+            @display("p=525,825");
         }
-        li: MessageDispatcher if hasEthernetSession {
-            @display("p=550,575;b=600,5,,,,1");
+        li: MessageDispatcher {
+            @display("p=550,900;b=600,5,,,,1");
         }
         encap: <default(hasEthernetSession ? "" : "EthernetEncapsulation")> like IEthernetLayer if typename != "" {
             parameters:
                 registerProtocol = true;
-                @display("p=674,500");
+                @display("p=375,825");
         }
 
         //# network layer
         ipv4: <default("Ipv4NetworkLayer")> like INetworkLayer if hasIpv4 {
             parameters:
-                @display("p=375,376;q=queue");
+                @display("p=375,375;q=queue");
         }
         ipv6: <default("Ipv6NetworkLayer")> like INetworkLayer if hasIpv6 {
             parameters:
-                @display("p=525,376;q=queue");
+                @display("p=525,375;q=queue");
         }
 
         //# transport layer
         udp: <default(firstAvailableOrEmpty("Udp"))> like IUdp if hasUdp {
             parameters:
-                @display("p=375,226");
+                @display("p=375,225");
         }
         tcp: <default(firstAvailableOrEmpty("Tcp", "TcpLwip", "TcpNsc"))> like ITcp if hasTcp {
             parameters:
-                @display("p=525,226");
+                @display("p=525,225");
         }
         sctp: <default(firstAvailableOrEmpty("Sctp"))> like ISctp if hasSctp {
             parameters:
-                @display("p=675,226");
+                @display("p=675,225");
         }
 
         //# app layer
         app[numApps]: <> like IApp {
-            @display("p=374,72,row,140");
+            @display("p=375,75,row,150");
         }
         unstructuredApp[numUnstructuredApps]: <default("UnstructuredApp")> like IApp {
-            @display("p=726,72,row,140");
+            @display("p=825,75,row,150");
         }
 
         //# message dispatcher for SAP between application and transport layer
         at: MessageDispatcher {
             parameters:
-                @display("p=550,146;b=600,5,,,,1");
+                @display("p=550,150;b=600,5,,,,1");
         }
         //# message dispatcher for SAP between transport and network layer
         tn: MessageDispatcher {
@@ -238,16 +241,16 @@ module LteUe
         //# message dispatcher for SAP to link layer
         nl: MessageDispatcher {
             parameters:
-                @display("p=550,446;b=600,5,,,,1");
+                @display("p=550,450;b=600,5,,,,1");
         }
         //# PcapRecorders
         pcapRecorder[numPcapRecorders]: PcapRecorder {
-            @display("p=126,346,r,10");
+            @display("p=125,720,row,50;is=s");
         }
 
         //# UeStatsCollector - for MEC
         ueCollector: UeStatsCollector if hasRniSupport {
-            @display("p=126,588;is=s");
+            @display("p=125,960;is=s");
         }
 
     connections allowunconnected:
