@@ -21,6 +21,7 @@ namespace simu5g {
 using namespace omnetpp;
 
 class AirFrame;
+class IRadioEndpoint;
 
 /**
  * See the NED documentation of CellularRadio. A received frame is held until
@@ -35,12 +36,17 @@ class CellularRadio : public cSimpleModule
     int upperLayerInGateId_ = -1;
     int upperLayerOutGateId_ = -1;
     opp_component_ptr<CellularRadioMedium> radioMedium_;
+    IRadioEndpoint *endpoint_ = nullptr; // the PHY the radio sends and receives frames for
 
   protected:
     virtual void initialize(int stage) override;
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     virtual void handleMessage(cMessage *msg) override;
     virtual void transmit(AirFrame *frame);
+
+  public:
+    /** Sets the PHY the radio sends and receives frames for, whose position is the radio's. */
+    virtual void setEndpoint(IRadioEndpoint *endpoint) { endpoint_ = endpoint; }
 };
 
 } // namespace simu5g
