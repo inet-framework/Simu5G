@@ -307,6 +307,12 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
      */
     double getSpeed() override;
     /*
+     * Whether the node is inside a building, and how far inside, as its
+     * primary channel model is configured
+     */
+    bool isInsideBuilding() override;
+    double getInsideDistance() override;
+    /*
      * Returns the time of the last transmission performed
      */
     simtime_t getLastActive() { return lastActive_; }

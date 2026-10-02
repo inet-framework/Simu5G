@@ -43,6 +43,8 @@ class StubEndpoint : public IRadioEndpoint
     MacNodeId nodeId = NODEID_NONE;
     inet::Coord coord;
     double speed = 0.0;
+    bool insideBuilding = false;
+    double insideDistance = 0.0;
     TxDirectionType txDirection = OMNI;
     double txAngle = 0.0;
     double txPower = 0.0;
@@ -55,6 +57,8 @@ class StubEndpoint : public IRadioEndpoint
     MacNodeId getMacNodeId() override { return nodeId; }
     const inet::Coord& getCoord() const override { return coord; }
     double getSpeed() override { return speed; }
+    bool isInsideBuilding() override { return insideBuilding; }
+    double getInsideDistance() override { return insideDistance; }
     TxDirectionType getTxDirection() override { return txDirection; }
     double getTxAngle() override { return txAngle; }
     double getTxPwr(Direction dir = UNKNOWN_DIRECTION) override { return txPower; }

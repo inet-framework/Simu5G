@@ -195,6 +195,9 @@ class StochasticChannelModel : public ChannelModelBase
      */
     double getAttenuation(const RadioLink& link) override;
 
+    bool isInsideBuilding() const override { return inside_building_; }
+    double getInsideDistance() const override { return inside_distance_; }
+
     /*
      * Convenience overload for the cellular callers that still think in
      * (UE, direction, remote coordinate) terms -- the interference helpers and
@@ -520,9 +523,10 @@ class StochasticChannelModel : public ChannelModelBase
      * background cell, or of a background cell's UE, arrives at the given
      * position: the model's path loss in the LOS state of the given link (see
      * computePhantomPathLoss), the antenna's attenuation, the model's own gains
-     * and cable loss.
+     * and cable loss. 'ue' is the receiving UE of a downlink transmission, whose
+     * building penetration applies; nullptr for an uplink one.
      */
-    double phantomPowerAt(const CellularTransmission& transmission, const inet::Coord& position, const LinkKey& link);
+    double phantomPowerAt(const CellularTransmission& transmission, const inet::Coord& position, const LinkKey& link, IRadioEndpoint *ue);
 
     /*
      * The path loss of a phantom transmission, in dB: the model's own path-loss
