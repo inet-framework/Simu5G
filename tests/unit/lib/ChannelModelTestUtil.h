@@ -42,6 +42,7 @@ class StubEndpoint : public IRadioEndpoint
   public:
     MacNodeId nodeId = NODEID_NONE;
     inet::Coord coord;
+    double speed = 0.0;
     TxDirectionType txDirection = OMNI;
     double txAngle = 0.0;
     double txPower = 0.0;
@@ -53,6 +54,7 @@ class StubEndpoint : public IRadioEndpoint
 
     MacNodeId getMacNodeId() override { return nodeId; }
     const inet::Coord& getCoord() const override { return coord; }
+    double getSpeed() override { return speed; }
     TxDirectionType getTxDirection() override { return txDirection; }
     double getTxAngle() override { return txAngle; }
     double getTxPwr(Direction dir = UNKNOWN_DIRECTION) override { return txPower; }
@@ -157,8 +159,6 @@ class ChannelModelProbe
 
         static auto linkForPtr() { return &Access::linkFor; }
         static auto cellularLinkPtr() { return &Access::cellularLink; }
-        static auto computeSpeedPtr() { return &Access::computeSpeed; }
-        static auto updatePositionHistoryPtr() { return &Access::updatePositionHistory; }
         static auto emitRcvdSinrPtr() { return &Access::emitRcvdSinr; }
     };
 
@@ -171,7 +171,6 @@ class ChannelModelProbe
 
     // state: the model's channel state, which the radio medium keeps
     ChannelState& channelState() { return (model_->*Access::channelStatePtr())(); }
-    auto& positionHistory() { return channelState().positionHistory; }
     // the LOS state of the links on the model's carrier, which the radio medium keeps once per link
     ChannelState::LosMap& losMap() { return (model_->*Access::losMapPtr())(); }
     // the shadowing of the links on the model's carrier, which the radio medium keeps once per link
@@ -188,8 +187,6 @@ class ChannelModelProbe
     {
         return (model_->*Access::cellularLinkPtr())(ueId, dir, coord);
     }
-    double computeSpeed(MacNodeId id, inet::Coord coord) { return (model_->*Access::computeSpeedPtr())(id, coord); }
-    void updatePositionHistory(MacNodeId id, inet::Coord coord) { (model_->*Access::updatePositionHistoryPtr())(id, coord); }
     void emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)
     {
         (model_->*Access::emitRcvdSinrPtr())(dir, ueId, carrierFrequency, sinr);

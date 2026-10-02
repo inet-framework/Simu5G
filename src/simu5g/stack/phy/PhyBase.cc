@@ -123,6 +123,11 @@ const inet::Coord& PhyBase::getCoord() const
     return radioPos_;
 }
 
+double PhyBase::getSpeed()
+{
+    return mobility_ != nullptr ? mobility_->getCurrentVelocity().length() : 0.0;
+}
+
 void PhyBase::receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *)
 {
     // since background UEs and their mobility modules are submodules of the e/gNB, a mobilityStateChangedSignal

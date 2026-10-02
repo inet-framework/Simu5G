@@ -303,6 +303,10 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
      */
     const inet::Coord& getCoord() const override;
     /*
+     * Returns the current speed of the node, from its mobility (0 without one)
+     */
+    double getSpeed() override;
+    /*
      * Returns the time of the last transmission performed
      */
     simtime_t getLastActive() { return lastActive_; }

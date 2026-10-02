@@ -66,12 +66,9 @@ struct RadioLink
     // and its Jakes fading paths.
     LinkKey linkKey;
 
-    // stateNodeId is the *node* the state belongs to -- the UE. It indexes the
-    // position history, which is genuinely a node property because it defines
-    // the node's speed, and it distinguishes background UEs.
+    // stateNodeId is the link's mobile end -- the UE, or a D2D link's
+    // transmitter. It keys the Rayleigh fading and distinguishes background UEs.
     MacNodeId stateNodeId = NODEID_NONE;
-
-    inet::Coord stateCoord;      // position feeding computeSpeed
 
     // ---- radios ----
     // The link budget is not part of the link: the antenna gains, the cable loss
@@ -215,7 +212,7 @@ class ChannelModelBase : public cSimpleModule
      * @param frame pointer to the packet
      * @param lteInfo pointer to the user control info
      */
-    virtual std::vector<double> getSINR_bgUe(AirFrame *frame, UserControlInfo *lteInfo) = 0;
+    virtual std::vector<double> getSINR_bgUe(AirFrame *frame, UserControlInfo *lteInfo, double speed) = 0;
 
     /*
      * Compute received useful signal for each band for user nodeId according to path loss, shadowing (optional), and multipath fading

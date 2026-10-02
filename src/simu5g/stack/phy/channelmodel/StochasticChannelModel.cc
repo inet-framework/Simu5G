@@ -171,7 +171,6 @@ RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Co
         link.txIsBaseStation = true;
         link.txCoord = coord;
         link.rxCoord = phy_->getCoord();
-        link.stateCoord = phy_->getCoord();
         link.rxId = ueId;
         link.rxRadio = phy_;
     }
@@ -179,7 +178,6 @@ RadioLink StochasticChannelModel::cellularLink(MacNodeId ueId, Direction dir, Co
         link.txIsBaseStation = false;
         link.txCoord = coord;
         link.rxCoord = phy_->getCoord();
-        link.stateCoord = coord;
         link.txId = ueId;
         link.rxId = phy_->getMacNodeId();
         link.txRadio = radioMedium_->findRadio(ueId);
@@ -273,7 +271,6 @@ RadioLink StochasticChannelModel::linkFor(UserControlInfo *lteInfo, const Coord&
     // here: it only existed to make getAttenuation() pick 'coord' rather than
     // phy_->getCoord().
     link.stateNodeId = ueId;
-    link.stateCoord = ueCoord;
 
     // the cell this link belongs to, for the interference computation
     link.cellId = eNbId;
@@ -306,9 +303,6 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     //    log-normal shadowing (not available for background UEs)
     if (num(link.stateNodeId) < BGUE_MIN_ID && shadowing_)
         attenuation += computeShadowing(threeDimDistance, twoDimDistance, los, link);
-
-    // update the tracked node's current position
-    updatePositionHistory(link.stateNodeId, link.stateCoord);
 
     EV << "StochasticChannelModel::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNB is " << attenuation << endl;
 
@@ -368,58 +362,6 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, bool los
     }
 
     return att;
-}
-
-void StochasticChannelModel::updatePositionHistory(const MacNodeId nodeId,
-        const Coord coord)
-{
-    auto& positionHistory = channelState().positionHistory;
-
-    if (positionHistory.find(nodeId) != positionHistory.end()) {
-        // position already updated for this TTI.
-        if (positionHistory[nodeId].back().first == NOW)
-            return;
-    }
-
-    // FIXME: possible memory leak
-    positionHistory[nodeId].push(Position(NOW, coord));
-
-    if (positionHistory[nodeId].size() > 2) // if we have more than a past and a current element
-        // drop the oldest one
-        positionHistory[nodeId].pop();
-}
-
-double StochasticChannelModel::computeSpeed(const MacNodeId nodeId,
-        const Coord coord)
-{
-    double speed = 0.0;
-    auto& positionHistory = channelState().positionHistory;
-
-    if (positionHistory.find(nodeId) == positionHistory.end()) {
-        // no entries
-        return speed;
-    }
-    else {
-        //compute distance traveled from last update by UE (eNodeB position is fixed)
-
-        if (positionHistory[nodeId].size() == 1) {
-            //  the only element refers to the present, return 0
-            return speed;
-        }
-
-        double movement = positionHistory[nodeId].front().second.distance(coord);
-
-        if (movement <= 0.0)
-            return speed;
-        else {
-            double time = (NOW.dbl()) - (positionHistory[nodeId].front().first.dbl());
-            if (time <= 0.0) // time not updated since last speed call
-                throw cRuntimeError("Multiple entries detected in position history referring to the same time");
-            // compute speed
-            speed = (movement) / (time);
-        }
-    }
-    return speed;
 }
 
 double StochasticChannelModel::computeAngle(Coord center, Coord point) {
@@ -520,14 +462,6 @@ std::vector<double> StochasticChannelModel::getSINR(const RadioLink& link, UserC
     if (collectSinrStatistics_ && (lteInfo->getFrameType() == FEEDBACKPKT) && usedRBs > 0
         && (link.dir == DL || link.dir == UL))
         radioMedium_->getRadio(ueId)->getReceiver()->emitMeasuredSinr(link.dir, lteInfo->getCarrierFrequency(), sumSnr / usedRBs);
-
-    // if sender is an eNodeB
-    if (link.dir == DL)
-        // store the position of user
-        updatePositionHistory(link.stateNodeId, phy_->getCoord());
-    // sender is a UE
-    else
-        updatePositionHistory(link.stateNodeId, lteInfo->getCoord());
     return snrVector;
 }
 
@@ -594,11 +528,8 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
     EV << "\t using parameters - antennaGainTx=" << txAntennaGain << " - antennaGainRx=" << rxAntennaGain
        << " - txPwr=" << txPower << " - for link=" << link.linkKey << endl;
 
-    // Speed must be read BEFORE getAttenuation(), which appends to the position
-    // history: computeSpeed() derives from that history, so evaluating it
-    // afterwards would yield a different value and hence different fading.
-    // Load-bearing ordering.
-    double speed = computeSpeed(link.stateNodeId, link.stateCoord);
+    // the speed of the link's mobile end: the UE, or a D2D link's transmitter
+    double speed = (link.txIsBaseStation ? link.rxRadio : link.txRadio)->getSpeed();
 
     // attenuation for the desired signal
     double attenuation = getAttenuation(link); // dB
@@ -682,7 +613,7 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
     return rsrpVector;
 }
 
-std::vector<double> StochasticChannelModel::getSINR_bgUe(AirFrame *frame, UserControlInfo *lteInfo)
+std::vector<double> StochasticChannelModel::getSINR_bgUe(AirFrame *frame, UserControlInfo *lteInfo, double speed)
 {
     //get tx power
     double recvPower = lteInfo->getTxPower(); // dBm
@@ -699,8 +630,6 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(AirFrame *frame, UserCo
     double antennaGainTx = 0.0;
     double antennaGainRx = 0.0;
     double noiseFigure = 0.0;
-    double speed = 0.0;
-
 
     EV << "------------ GET SINR for background UE ----------------" << endl;
     //===================== PARAMETERS SETUP ============================
@@ -721,8 +650,6 @@ std::vector<double> StochasticChannelModel::getSINR_bgUe(AirFrame *frame, UserCo
         antennaGainRx = antennaGainEnB_;
         noiseFigure = bsNoiseFigure_;
     }
-    speed = computeSpeed(bgUeId, ueCoord);
-
     CellInfo *eNbCell = binder_->getCellInfoByNodeId(eNbId);
     const char *eNbTypeString = eNbCell ? (eNbCell->getEnbType() == MACRO_ENB ? "MACRO" : "MICRO") : "NULL";
 
