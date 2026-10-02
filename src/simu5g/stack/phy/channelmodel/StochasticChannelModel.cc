@@ -36,7 +36,6 @@ Define_Module(StochasticChannelModel);
 StochasticChannelModel::~StochasticChannelModel()
 {
     delete pathLoss_;
-    delete extCellPathLoss_;
     // radioMedium_ is unset if the medium has already been deleted
     if (channelState_ != nullptr && radioMedium_)
         radioMedium_->removeChannelState(this);
@@ -154,11 +153,6 @@ void StochasticChannelModel::initialize(int stage)
         // by ChannelModelBase::initialize() above, in this same stage
         pathLoss_ = createPathLossModel();
         pathLoss_->initialize(this, scenario_, hNodeB_, hUe_, hBuilding_, wStreet_,
-                inside_building_, inside_distance_,
-                carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
-                tolerateMaxDistViolation_);
-        extCellPathLoss_ = new Tr36814PathLossModel();
-        extCellPathLoss_->initialize(this, scenario_, hNodeB_, hUe_, hBuilding_, wStreet_,
                 inside_building_, inside_distance_,
                 carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
                 tolerateMaxDistViolation_);
@@ -1049,7 +1043,7 @@ double StochasticChannelModel::phantomPowerAt(const CellularTransmission& transm
     const Coord& c = transmission.startPosition;
 
     // compute attenuation according to some path loss model
-    double att = computeExtCellPathLoss(position.distance(c), link);
+    double att = computePhantomPathLoss(position.distance(c), getTwoDimDistance(c, position), link);
 
     //=============== ANGULAR ATTENUATION =================
     double angularAtt = 0;
@@ -1074,7 +1068,7 @@ double StochasticChannelModel::phantomPowerAt(const CellularTransmission& transm
     return transmission.txPower - att - angularAtt - cableLoss_ + antennaGainEnB_ + antennaGainUe_;
 }
 
-double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey& key)
+double StochasticChannelModel::computePhantomPathLoss(double d3D, double d2D, const LinkKey& key)
 {
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
@@ -1083,8 +1077,7 @@ double StochasticChannelModel::computeExtCellPathLoss(double dist, const LinkKey
     if (!enable_extCell_los_)
         los = false;
 
-    // always the TR 36.814 formulas, whatever study the model itself uses
-    double attenuation = extCellPathLoss_->computePathLoss(dist, dist, los);
+    double attenuation = computePathLoss(d3D, d2D, los);
 
     return attenuation;
 }
@@ -1137,7 +1130,7 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
         if (transmission->direction != DL || id == eNbId)
             continue;
 
-        // an external or a background cell, whose interference takes the TR 36.814 path loss
+        // an external or a background cell, whose interference takes the model's path loss
         if (transmission->phantomCell != nullptr) {
             bool external = dynamic_cast<const ExtCell *>(transmission->phantomCell) != nullptr;
             if (external ? !enableExtCellInterference_ : !enableBackgroundCellInterference_)
@@ -1286,7 +1279,7 @@ bool StochasticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNodeI
     const RbMap& receptionBands = isCqi ? everyBand : rbmap;
     // in creation order
     for (auto transmission : radioMedium_->getUplinkTransmissionsDuring(carrierFrequency, slotStart, slotEnd)) {
-        // a background cell's UE, whose interference takes the TR 36.814 path loss
+        // a background cell's UE, whose interference takes the model's path loss
         if (transmission->phantomCell != nullptr) {
             if (!enableBackgroundCellInterference_)
                 continue;

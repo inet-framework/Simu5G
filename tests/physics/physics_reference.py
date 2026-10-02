@@ -357,16 +357,13 @@ class Budget:
                 + self.cfg['**.antennGainEnB'] + self.cfg['**.antennaGainUe']
                 - self.cfg['**.cableLoss'])
 
-    def background_received_power(self, distance, tx_power):
+    def background_received_power(self, d3D, d2D, tx_power):
         """dBm at the UE from an external or background cell.
 
-        Same budget as a real base station's, but a different propagation
-        model: computeExtCellPathLoss always applies the TR 36.814 formulas,
-        whatever study the channel model itself is configured with, and passes
-        the plain distance between the two nodes as both the 3D and the 2D
-        one. NLOS, which is what enableExtCellLos = false selects; left true,
-        the interferer would borrow the serving link's LOS state."""
-        return (tx_power - self.plr.t814_umi_nlos(distance, self.fc)
+        Same budget and same propagation study as a real base station's, but
+        NLOS, which is what enableExtCellLos = false selects; left true, the
+        interferer would borrow the serving link's LOS state."""
+        return (tx_power - self.plr.t901_umi_nlos(d3D, d2D, self.fc, self.hBS, self.hUT)
                 + self.cfg['**.antennGainEnB'] + self.cfg['**.antennaGainUe']
                 - self.cfg['**.cableLoss'])
 
@@ -465,7 +462,7 @@ def grade_link_budget(grader):
 
 def grade_background_cell_floor(grader):
     """One real cell, one background cell. The wanted signal and the
-    interferer are both closed-form, from two different propagation studies."""
+    interferer are both closed-form, from the same propagation study."""
     budget = Budget()
     pos = config_values([
         '*.gnb.mobility.initialX', '*.gnb.mobility.initialZ',
@@ -478,13 +475,12 @@ def grade_background_cell_floor(grader):
                           budget.hBS - budget.hUT, 0.0, " m")
 
     d_serving = abs(pos['*.ue[0].mobility.initialX'] - pos['*.gnb.mobility.initialX'])
-    # The background path takes the straight distance between the two nodes,
-    # heights included, and uses it as both the 3D and the 2D distance.
-    d_bg = math.hypot(pos['*.bgCell[0].mobility.initialX'] - pos['*.ue[0].mobility.initialX'],
-                      pos['*.bgCell[0].mobility.initialZ'] - pos['*.ue[0].mobility.initialZ'])
+    d_bg_2D = abs(pos['*.bgCell[0].mobility.initialX'] - pos['*.ue[0].mobility.initialX'])
+    d_bg_3D = math.hypot(d_bg_2D,
+                         pos['*.bgCell[0].mobility.initialZ'] - pos['*.ue[0].mobility.initialZ'])
 
     signal = budget.received_power(d_serving)
-    interferer = budget.background_received_power(d_bg, pos['*.bgCell[0].bgScheduler.txPower'])
+    interferer = budget.background_received_power(d_bg_3D, d_bg_2D, pos['*.bgCell[0].bgScheduler.txPower'])
     quiet = budget.over_noise(signal)
     loaded = budget.over_noise(signal, interferer)
 
