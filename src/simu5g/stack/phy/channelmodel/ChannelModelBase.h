@@ -129,15 +129,10 @@ class ChannelModelBase : public cSimpleModule
     // The radio medium, whose registry holds the radios of all nodes
     inet::ModuleRefByPar<CellularRadioMedium> radioMedium_;
 
-    // Reference to cell info module
-    inet::ModuleRefByPar<CellInfo> cellInfo_;
-
-    // The radio endpoint this channel model belongs to -- in a running model,
-    // its node's PHY. Everything the channel model needs from it is in
-    // IRadioEndpoint, which is what lets a test put a stub here. A plain pointer
-    // rather than an opp_component_ptr, because an interface is not a
-    // cComponent; the PHY and its channel models are submodules of the same NIC
-    // and are torn down together, so the pointer cannot outlive its target.
+    // The radio the model is evaluating a link at, set for the evaluation by
+    // EvaluatedAt: the model is the radio medium's, shared by every radio of
+    // its RAT on its carrier. Everything the channel model needs from it is in
+    // IRadioEndpoint, which is what lets a test put a stub here.
     IRadioEndpoint *phy_ = nullptr;
 
     // Reference to the component carrier
@@ -168,18 +163,31 @@ class ChannelModelBase : public cSimpleModule
     virtual unsigned int getNumBands() const { return numBands_; }
 
     /*
-     * Whether the radio this model belongs to is inside a building, and how
-     * far inside (configured and drawn on the model for now)
-     */
-    virtual bool isInsideBuilding() const { return false; }
-    virtual double getInsideDistance() const { return 0.0; }
-
-    /*
      * Returns the numerology index
      */
     virtual unsigned int getNumerologyIndex() const { return componentCarrier_->getNumerologyIndex(); }
 
     virtual void setPhy(IRadioEndpoint *phy) { phy_ = phy; }
+
+    /**
+     * Names the radio the model evaluates at -- the receiver of a frame, or
+     * the base station computing a CQI -- for the lifetime of the object, and
+     * restores the previous one after it, so evaluations can nest (an
+     * interfering cell's link evaluated at that cell, in the middle of a
+     * reception at another radio).
+     */
+    class EvaluatedAt
+    {
+      private:
+        ChannelModelBase *model_;
+        IRadioEndpoint *previous_;
+
+      public:
+        EvaluatedAt(ChannelModelBase *model, IRadioEndpoint *radio) : model_(model), previous_(model->phy_) { model_->phy_ = radio; }
+        ~EvaluatedAt() { model_->phy_ = previous_; }
+        EvaluatedAt(const EvaluatedAt&) = delete;
+        EvaluatedAt& operator=(const EvaluatedAt&) = delete;
+    };
 
     /*
      * Compute the error probability of the transmitted packet according to CQI used, TX mode, and the received power

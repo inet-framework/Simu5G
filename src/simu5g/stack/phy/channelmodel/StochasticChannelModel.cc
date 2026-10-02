@@ -50,8 +50,7 @@ PathLossModel *StochasticChannelModel::createPathLossModel()
         return new Tr36873PathLossModel();
     else if (pathLossType == "Tr38901") {
         auto *model = new Tr38901PathLossModel();
-        if (inside_building_)
-            useBuildingPenetrationHighLossModel_ = par("useBuildingPenetrationHighLossModel").boolValue();
+        useBuildingPenetrationHighLossModel_ = par("useBuildingPenetrationHighLossModel").boolValue();
         model->setUseBuildingPenetrationHighLossModel(useBuildingPenetrationHighLossModel_);
         return model;
     }
@@ -101,17 +100,6 @@ void StochasticChannelModel::initialize(int stage)
         hNodeB_ = par("nodebHeight");
         shadowing_ = par("shadowing");
         hBuilding_ = par("buildingHeight");
-        inside_building_ = par("insideBuilding");
-        if (inside_building_) {
-            // The distance from the building wall is the UE's, not a carrier's:
-            // the first channel model of the radio's carriers draws it, and the
-            // others take it (they initialize after it, in vector order).
-            auto *first = isVector() && getIndex() > 0 ? dynamic_cast<StochasticChannelModel *>(getParentModule()->getSubmodule(getName(), 0)) : nullptr;
-            if (first != nullptr && first->inside_building_)
-                inside_distance_ = first->inside_distance_;
-            else
-                inside_distance_ = uniform(0.0, 25.0);
-        }
         tolerateMaxDistViolation_ = par("tolerateMaxDistViolation");
         hUe_ = par("ueHeight");
 
@@ -153,7 +141,7 @@ void StochasticChannelModel::initialize(int stage)
         // by ChannelModelBase::initialize() above, in this same stage
         pathLoss_ = createPathLossModel();
         pathLoss_->initialize(this, scenario_, hNodeB_, hUe_, hBuilding_, wStreet_,
-                inside_building_, inside_distance_,
+                false, 0.0,
                 carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
                 tolerateMaxDistViolation_);
     }
@@ -1098,8 +1086,12 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
 
         double txPwr = powerTowardsUe(id, *transmission);
 
-        // compute attenuation using data structures within the cell
-        double att = interfChanModel->getAttenuation(ueId, UL, coord);
+        // the attenuation, evaluated at the interfering cell with its channel model
+        double att;
+        {
+            EvaluatedAt at(interfChanModel, cell);
+            att = interfChanModel->getAttenuation(ueId, UL, coord);
+        }
         EV << "EnbId [" << id << "] - attenuation [" << att << "]" << endl;
 
         for (unsigned int i : bands) {
