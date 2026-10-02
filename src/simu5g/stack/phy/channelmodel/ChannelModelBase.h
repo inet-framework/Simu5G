@@ -129,15 +129,10 @@ class ChannelModelBase : public cSimpleModule
     // The radio medium, whose registry holds the radios of all nodes
     inet::ModuleRefByPar<CellularRadioMedium> radioMedium_;
 
-    // Reference to cell info module
-    inet::ModuleRefByPar<CellInfo> cellInfo_;
-
-    // The radio endpoint this channel model belongs to -- in a running model,
-    // its node's PHY. Everything the channel model needs from it is in
-    // IRadioEndpoint, which is what lets a test put a stub here. A plain pointer
-    // rather than an opp_component_ptr, because an interface is not a
-    // cComponent; the PHY and its channel models are submodules of the same NIC
-    // and are torn down together, so the pointer cannot outlive its target.
+    // The radio the model is evaluating a link at, set for the evaluation by
+    // EvaluatedAt: the model is the radio medium's, shared by every radio of
+    // its RAT on its carrier. Everything the channel model needs from it is in
+    // IRadioEndpoint, which is what lets a test put a stub here.
     IRadioEndpoint *phy_ = nullptr;
 
     // Reference to the component carrier
