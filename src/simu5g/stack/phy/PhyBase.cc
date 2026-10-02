@@ -114,6 +114,15 @@ void PhyBase::initialize(int stage)
     }
 }
 
+const inet::Coord& PhyBase::getCoord() const
+{
+    // reading the position moves the mobility to this instant, which reports
+    // the new position through receiveSignal()
+    if (mobility_ != nullptr)
+        radioPos_ = mobility_->getCurrentPosition();
+    return radioPos_;
+}
+
 void PhyBase::receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *)
 {
     // since background UEs and their mobility modules are submodules of the e/gNB, a mobilityStateChangedSignal
@@ -123,8 +132,8 @@ void PhyBase::receiveSignal(cComponent *source, simsignal_t signalID, cObject *o
         return;
 
     if (signalID == inet::IMobility::mobilityStateChangedSignal) {
-        inet::IMobility *mobility = check_and_cast<inet::IMobility *>(obj);
-        radioPos_ = mobility->getCurrentPosition();
+        mobility_ = check_and_cast<inet::IMobility *>(obj);
+        radioPos_ = mobility_->getCurrentPosition();
         positionUpdateArrived_ = true;
 
         // emit serving cell and the distance from it
