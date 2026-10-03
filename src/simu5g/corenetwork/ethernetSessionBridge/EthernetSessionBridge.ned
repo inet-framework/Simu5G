@@ -69,17 +69,17 @@ module EthernetSessionBridge
             @display("p=100,200;is=s");
         }
         sessionMux: EthernetSessionMux {
-            portDisplayString = default("p=300,420,row,100;g=sessionPorts");
-            @display("p=400,520");
+            portDisplayString = default("p=500,420,row,100;g=sessionPorts");
+            @display("p=600,520");
         }
         cb: MessageDispatcher {
-            @display("p=400,50;b=500,5,,,,1");
+            @display("p=400,50;b=700,5,,,,1");
         }
         bridging: <default("BridgingLayer")> like IProtocolLayer {
             @display("p=400,120");
         }
         bl: MessageDispatcher {
-            @display("p=400,190;b=500,5,,,,1");
+            @display("p=400,190;b=700,5,,,,1");
         }
         ethernet: <default("EthernetLayer")> like IEthernetLayer {
             @display("p=300,260");
@@ -88,7 +88,7 @@ module EthernetSessionBridge
             @display("p=500,260");
         }
         li: MessageDispatcher {
-            @display("p=400,330;b=500,5,,,,1");
+            @display("p=400,330;b=700,5,,,,1");
         }
     connections allowunconnected:
         cb.out++ --> bridging.upperLayerIn;
