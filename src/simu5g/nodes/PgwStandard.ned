@@ -62,7 +62,7 @@ module PgwStandard extends ApplicationLayerNodeBase
         }
         relay: UserPlaneRelay {
             parameters:
-                @display("p=1400,225");
+                @display("p=1125,75");
                 ownerType = parent.nodeType;
         }
         nodeControl: UserPlaneNodeControl {
@@ -80,12 +80,12 @@ module PgwStandard extends ApplicationLayerNodeBase
         relay.socketOut --> at.in++;
         relay.socketIn <-- at.out++;
 
-        dnPpp.upperLayerOut --> relay.lowerLayerIn;
-        dnPpp.upperLayerIn <-- relay.lowerLayerOut;
+        dnPpp.upperLayerOut --> { @display("m=v,h"); } --> relay.lowerLayerIn;
+        relay.lowerLayerOut --> { @display("m=h,v"); } --> dnPpp.upperLayerIn;
 
         relay.ndOut --> ndResponder.in if hasNdResponder;
         relay.ndIn <-- ndResponder.out if hasNdResponder;
 
-        dnPpp.phys <--> dnPppg;
+        dnPpp.phys <--> { @display("m=s"); } <--> dnPppg;
 }
 

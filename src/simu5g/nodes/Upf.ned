@@ -66,7 +66,7 @@ module Upf extends ApplicationLayerNodeBase
         }
         relay: UserPlaneRelay {
             parameters:
-                @display("p=1400,225");
+                @display("p=1125,75");
                 ownerType = parent.nodeType;
                 gateway = parent.gateway;
         }
@@ -90,15 +90,15 @@ module Upf extends ApplicationLayerNodeBase
         relay.socketOut --> at.in++;
         relay.socketIn <-- at.out++;
 
-        dnPpp.upperLayerOut --> relay.lowerLayerIn;
-        dnPpp.upperLayerIn <-- relay.lowerLayerOut;
+        dnPpp.upperLayerOut --> { @display("m=v,h"); } --> relay.lowerLayerIn;
+        relay.lowerLayerOut --> { @display("m=h,v"); } --> dnPpp.upperLayerIn;
 
         relay.ndOut --> ndResponder.in if hasNdResponder;
         relay.ndIn <-- ndResponder.out if hasNdResponder;
 
-        relay.ethernetBridgeOut --> ethBridge.sessionIn if hasEthernetBridge;
-        ethBridge.sessionOut --> relay.ethernetBridgeIn if hasEthernetBridge;
-        ethBridge.dnEthg <--> dnEthg if hasEthernetBridge;
+        relay.ethernetBridgeOut --> { @display("m=h,v"); } --> ethBridge.sessionIn if hasEthernetBridge;
+        ethBridge.sessionOut --> { @display("m=v,h"); } --> relay.ethernetBridgeIn if hasEthernetBridge;
+        ethBridge.dnEthg <--> { @display("m=s"); } <--> dnEthg if hasEthernetBridge;
 
-        dnPpp.phys <--> dnPppg;
+        dnPpp.phys <--> { @display("m=s"); } <--> dnPppg;
 }
