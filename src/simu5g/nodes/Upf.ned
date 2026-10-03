@@ -44,8 +44,8 @@ module Upf extends ApplicationLayerNodeBase
 {
     parameters:
         @display("i=abstract/switch;bgb=1700,1125");
-        @figure[relay](type=rectangle; pos=1275,5; size=400,437; fillColor=#ff8000; lineColor=#808080; cornerRadius=5; fillOpacity=0.1);
-        @figure[relay.title](type=text; pos=1670,10; anchor=ne; text="relay");
+        @figure[userPlane](type=rectangle; pos=1275,5; size=400,437; fillColor=#ff8000; lineColor=#808080; cornerRadius=5; fillOpacity=0.1);
+        @figure[userPlane.title](type=text; pos=1670,10; anchor=ne; text="user plane");
         @figure[n6Interfaces](type=rectangle; pos=1275,458; size=400,660; fillColor=#00ffff; lineColor=#808080; cornerRadius=5; fillOpacity=0.1);
         @figure[n6Interfaces.title](type=text; pos=1670,463; anchor=ne; text="N6 interfaces");
         @figure[submodules];
