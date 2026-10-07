@@ -26,7 +26,7 @@ simple PhyUe extends PhyBase
     parameters:
         @class("PhyUe");
 
-        string connectionControlModule = default("^.rrc.connectionControl");
+        string connectionControlModule = default("^.rrc.lteConnectionControl");
 
         @signal[distance];
         @statistic[distance](title="distance between UE and serving base station"; unit="meters"; source="distance"; record=mean,vector);

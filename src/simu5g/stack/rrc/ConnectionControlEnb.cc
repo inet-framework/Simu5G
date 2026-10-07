@@ -73,7 +73,7 @@ ConnectionControlBase *ConnectionControlEnb::controlOf(MacNodeId nodeId)
 {
     // a UE's entry point is per leg: the controller of the leg the id names
     cModule *rrc = binder_->getRrcByNodeId(nodeId);
-    const char *name = getNodeTypeById(nodeId) == UE && isNrUe(nodeId) ? "nrConnectionControl" : "connectionControl";
+    const char *name = getNodeTypeById(nodeId) != UE ? "connectionControl" : isNrUe(nodeId) ? "nrConnectionControl" : "lteConnectionControl";
     auto *control = rrc != nullptr ? dynamic_cast<ConnectionControlBase *>(rrc->getSubmodule(name)) : nullptr;
     if (control == nullptr)
         throw cRuntimeError("ConnectionControlEnb: node %d has no rrc.%s module", (int)num(nodeId), name);

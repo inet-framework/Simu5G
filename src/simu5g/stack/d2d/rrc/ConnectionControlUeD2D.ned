@@ -18,7 +18,7 @@ import simu5g.stack.rrc.ConnectionControlUe;
 // when it connects to a base station (if its PHY is), which is where the D2D side
 // of its handovers is handled (~ConnectionControlEnbD2D), and a torn-down sidelink
 // bearer's DRB identity returns to the network-wide sidelink pool (~D2dBinder).
-// Selected via 'connectionControl.typename' / 'nrConnectionControl.typename' by
+// Selected via 'lteConnectionControl.typename' / 'nrConnectionControl.typename' by
 // the D2D-capable UE NICs.
 //
 simple ConnectionControlUeD2D extends ConnectionControlUe

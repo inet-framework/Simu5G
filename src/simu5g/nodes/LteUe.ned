@@ -91,7 +91,7 @@ module LteUe extends StandardHost
 
         bool hasRniSupport = default(false);
         cellularNic.lteMac.collectorModule = hasRniSupport ? "^.^.lteUeCollector" : "";
-        cellularNic.rrc.connectionControl.hasCollector = hasRniSupport;
+        cellularNic.rrc.lteConnectionControl.hasCollector = hasRniSupport;
 
         mobility.typename = default("StationaryMobility");
 

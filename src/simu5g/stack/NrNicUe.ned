@@ -42,6 +42,7 @@ module NrNicUe extends LteNicUe
         sdap.nodeRole = default("UE");
         sdap.useReflectiveQos = default(this.useReflectiveQos);
         sdap.reflectiveQosTableModule = default(this.useReflectiveQos ? "^.reflectiveQosTable" : "");
+        sdap.connectionControlModule = "^.rrc.lteConnectionControl";
         string nrChannelModelType = default("Tr38901ChannelModel");
 
         ltePacketFlowObserver.typename = default("PacketFlowObserverUe");
@@ -63,13 +64,13 @@ module NrNicUe extends LteNicUe
         nrMac.macNodeId = parent.nrMacNodeId;
         nrPhy.macNodeId = parent.nrMacNodeId;
         nrDlFbGen.macNodeId = parent.nrMacNodeId;
-        rrc.nrConnectionControl.otherConnectionControlModule = "^.connectionControl";
+        rrc.nrConnectionControl.otherConnectionControlModule = "^.lteConnectionControl";
         nrPhy.channelModelModule = "^.nrChannelModel[0]";
         nrPhy.feedbackGeneratorModule = "^.nrDlFbGen";
         nrPhy.connectionControlModule = "^.rrc.nrConnectionControl";
         rrc.nrConnectionControl.macModule = "^.^.nrMac";
         rrc.nrConnectionControl.feedbackGeneratorModule = "^.^.nrDlFbGen";
-        rrc.connectionControl.otherConnectionControlModule = "^.nrConnectionControl";
+        rrc.lteConnectionControl.otherConnectionControlModule = "^.nrConnectionControl";
 
     submodules:
         // uplink QoS-flow classification (the TrafficFlowFilter's uplink counterpart),

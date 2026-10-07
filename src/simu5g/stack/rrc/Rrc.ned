@@ -18,10 +18,12 @@ package simu5g.stack.rrc;
 //   - registration: registers the node with the Binder, sets up the interface
 //   - drbTable: the configuration of the node's data radio bearers
 //   - bearerManagement: sets up and tears down data radio bearers
-//   - connectionControl: the node's control-plane entry point, which the control
-//     plane of other nodes and the node's own data path talk to: ~ConnectionControlEnb
-//     at a base station, ~ConnectionControlUe at a UE (the LTE leg's; its handover
-//     decisions are the serving base station's, its execution the UE's)
+//   - connectionControl: the ~ConnectionControlEnb of a base station, the node's
+//     control-plane entry point, which the control plane of other nodes and the
+//     node's own data path talk to
+//   - lteConnectionControl: the LTE leg's ~ConnectionControlUe at a UE, the UE's
+//     control-plane entry point (its handover decisions are the serving base
+//     station's, its execution the UE's)
 //   - nrConnectionControl: the NR leg's ~ConnectionControlUe at a dual-stack UE
 //
 // The D2D-specific submodules (d2dModeController, d2dModeSelection) are added by
@@ -36,6 +38,7 @@ module Rrc like IRrc
         string routingTableModule;
 
         bool hasConnectionControl = default(false);
+        bool hasLteConnectionControl = default(false);
         bool hasNrConnectionControl = default(false);
 
         *.interfaceTableModule = default(absPath(this.interfaceTableModule));
@@ -52,6 +55,9 @@ module Rrc like IRrc
             @display("p=400,80");
         }
         connectionControl: <default("ConnectionControlEnb")> like IConnectionControl if hasConnectionControl {
+            @display("p=550,80");
+        }
+        lteConnectionControl: <default("ConnectionControlUe")> like IConnectionControl if hasLteConnectionControl {
             @display("p=550,80");
         }
         nrConnectionControl: <default("ConnectionControlUe")> like IConnectionControl if hasNrConnectionControl {

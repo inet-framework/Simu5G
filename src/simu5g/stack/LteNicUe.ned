@@ -40,11 +40,14 @@ module LteNicUe extends LteNicBase like IUeCellularNic
 
         string sessionType;  // The type of the UE's session (see ~LteUe), set by the node
 
-        rrc.hasConnectionControl = true;
-        rrc.connectionControl.typename = default("ConnectionControlUe");
-        rrc.connectionControl.isNr = false;
-        rrc.connectionControl.macNodeId = parent.macNodeId;
-        rrc.connectionControl.sessionType = this.sessionType;
+        rrc.hasLteConnectionControl = true;
+        rrc.lteConnectionControl.isNr = false;
+        rrc.lteConnectionControl.macNodeId = parent.macNodeId;
+        rrc.lteConnectionControl.sessionType = this.sessionType;
+        // The UE's control-plane entry point is its LTE leg's connection control
+        ip2nic.connectionControlModule = "^.rrc.lteConnectionControl";
+        rrc.registration.connectionControlModule = "^.lteConnectionControl";
+        rrc.bearerManagement.connectionControlModule = "^.lteConnectionControl";
         rrc.registration.sessionType = this.sessionType;
         handoverPacketHolder.sessionType = this.sessionType;
         ip2nic.sessionType = this.sessionType;
