@@ -14,7 +14,12 @@
 package simu5g.stack;
 
 import simu5g.stack.ethernet.EthernetPortal;
+import simu5g.stack.mac.ILteMac;
+import simu5g.stack.packetFlowObserver.IPacketFlowObserver;
+import simu5g.stack.phy.IPhy;
+import simu5g.stack.phy.channelmodel.IChannelModel;
 import simu5g.stack.phy.feedback.LteDlFeedbackGenerator;
+import simu5g.stack.rlc.IRlcMux;
 
 //
 // The LteNicUe module is a network interface that provides LTE connectivity
@@ -44,8 +49,33 @@ module LteNicUe extends LteNicBase like IUeCellularNic
         handoverPacketHolder.sessionType = this.sessionType;
         ip2nic.sessionType = this.sessionType;
         dlFbGen.macNodeId = parent.macNodeId;
+        // The LTE leg's modules take their MacNodeId from the node
+        phy.macNodeId = parent.macNodeId;
+        mac.macNodeId = parent.macNodeId;
 
     submodules:
+        // RLC submodules (flattened from former LteRlc compound)
+        rlcMux: <default("RlcMux")> like IRlcMux {
+            @display("p=310,580;is=s");
+        }
+        // MAC Layer
+        mac: <> like ILteMac {
+            @display("p=310,660");
+        }
+        // PHY submodule
+        phy: <> like IPhy {
+            @display("p=310,750");
+        }
+
+        channelModel[numCarriers]: <channelModelType> like IChannelModel {
+            @display("p=80,60,col;g=left");
+        }
+
+        //# Modules used to take trace of PDCP pkt flow
+        packetFlowObserver: <default("")> like IPacketFlowObserver if hasRniSupport {
+            @display("p=80,60,col;g=left");
+        }
+
         // Feedback generator submodule
         dlFbGen: LteDlFeedbackGenerator {
             @display("p=80,60,col;g=left");
@@ -56,6 +86,17 @@ module LteNicUe extends LteNicBase like IUeCellularNic
         }
 
     connections allowunconnected:
+        //# RLC <-> MAC
+        rlcMux.macOut --> mac.upperLayerIn;
+        rlcMux.macIn <-- mac.upperLayerOut;
+
+        //# Connections from LTE Stack to radio interface
+        mac.phyOut --> phy.upperGateIn;
+        mac.phyIn <-- phy.upperGateOut;
+
+        //# external: lower connection
+        radioIn --> phy.radioIn;
+
         upperLayerIn --> { @reconnect; delay = parent.processingDelayIn; } --> ethernetPortal.upperLayerIn if sessionType == "Ethernet";
         ethernetPortal.lowerLayerOut --> handoverPacketHolder.upperLayerIn if sessionType == "Ethernet";
         ip2nic.upperLayerOut --> { @reconnect; } --> ethernetPortal.lowerLayerIn if sessionType == "Ethernet";

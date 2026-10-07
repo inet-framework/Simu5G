@@ -16,13 +16,8 @@ package simu5g.stack;
 import inet.networklayer.common.NetworkInterface;
 import simu5g.stack.ip2nic.IHandoverPacketHolder;
 import simu5g.stack.ip2nic.INetworkLayer2CellularNic;
-import simu5g.stack.mac.ILteMac;
-import simu5g.stack.packetFlowObserver.IPacketFlowObserver;
 import simu5g.stack.pdcp.IPdcpMux;
-import simu5g.stack.phy.IPhy;
-import simu5g.stack.rlc.IRlcMux;
 import simu5g.stack.rrc.IRrc;
-import simu5g.stack.phy.channelmodel.IChannelModel;
 
 
 //
@@ -33,7 +28,9 @@ import simu5g.stack.phy.channelmodel.IChannelModel;
 // specific requirements.
 //
 // The PDCP and RLC entities are missing from the submodules on purpose: the RRC
-// layer's ~BearerManagement creates them per bearer at run time.
+// layer's ~BearerManagement creates them per bearer at run time. The RLC mux,
+// MAC, PHY and channel models are declared by the subtypes ~LteNicUe and
+// ~LteNicEnb.
 //
 module LteNicBase extends NetworkInterface like ICellularNic
 {
@@ -56,9 +53,6 @@ module LteNicBase extends NetworkInterface like ICellularNic
         int numCarriers = default(1);
 
         string address @mutable = default("auto");
-        // The LTE leg's modules take their MacNodeId from the node
-        phy.macNodeId = parent.macNodeId;
-        mac.macNodeId = parent.macNodeId;
         *.interfaceTableModule = default(absPath(this.interfaceTableModule));
         *.routingTableModule = default(absPath(this.routingTableModule));
         **.dualConnectivityEnabled = default(this.dualConnectivityEnabled);
@@ -90,45 +84,12 @@ module LteNicBase extends NetworkInterface like ICellularNic
         pdcpMux: <default("PdcpMux")> like IPdcpMux {
             @display("p=310,340;is=s");
         }
-        // RLC submodules (flattened from former LteRlc compound)
-        rlcMux: <default("RlcMux")> like IRlcMux {
-            @display("p=310,580;is=s");
-        }
-        // MAC Layer
-        mac: <> like ILteMac {
-            @display("p=310,660");
-        }
-        // PHY submodule
-        phy: <> like IPhy {
-            @display("p=310,750");
-        }
-
-        channelModel[numCarriers]: <channelModelType> like IChannelModel {
-            @display("p=80,60,col;g=left");
-        }
-
-        //# Modules used to take trace of PDCP pkt flow
-        packetFlowObserver: <default("")> like IPacketFlowObserver if hasRniSupport {
-            @display("p=80,60,col;g=left");
-        }
 
     connections allowunconnected:
         handoverPacketHolder.stackOut --> ip2nic.upperLayerIn;
         ip2nic.stackOut --> pdcpMux.upperLayerIn;
         ip2nic.stackIn <-- pdcpMux.upperLayerOut;
 
-        //# Internal LTE Stack Connections
-
-        //# RLC <-> MAC
-        rlcMux.macOut --> mac.upperLayerIn;
-        rlcMux.macIn <-- mac.upperLayerOut;
-
-        //# Connections from LTE Stack to radio interface
-        mac.phyOut --> phy.upperGateIn;
-        mac.phyIn <-- phy.upperGateOut;
-
-        //# external: lower connection
-        radioIn --> phy.radioIn;
         ip2nic.upperLayerOut --> {  delay = parent.processingDelayOut; } --> upperLayerOut;
         upperLayerIn --> {  delay = parent.processingDelayIn; } --> handoverPacketHolder.upperLayerIn;
 }

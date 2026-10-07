@@ -18,6 +18,11 @@ import simu5g.stack.compManager.ILteCompManager;
 import simu5g.stack.dcX2Forwarder.DcX2Forwarder;
 import simu5g.stack.pdcp.DcMux;
 import simu5g.stack.handoverX2Forwarder.HandoverX2Forwarder;
+import simu5g.stack.mac.ILteMac;
+import simu5g.stack.packetFlowObserver.IPacketFlowObserver;
+import simu5g.stack.phy.IPhy;
+import simu5g.stack.phy.channelmodel.IChannelModel;
+import simu5g.stack.rlc.IRlcMux;
 import simu5g.x2.LteX2Manager;
 
 
@@ -41,8 +46,33 @@ module LteNicEnb extends LteNicBase
         bool compEnabled = default(false);
         rrc.hasConnectionControl = true;
         rrc.connectionControl.macNodeId = parent.macNodeId;
+        // The MAC and PHY take their MacNodeId from the node
+        phy.macNodeId = parent.macNodeId;
+        mac.macNodeId = parent.macNodeId;
 
     submodules:
+        // RLC submodules (flattened from former LteRlc compound)
+        rlcMux: <default("RlcMux")> like IRlcMux {
+            @display("p=310,580;is=s");
+        }
+        // MAC Layer
+        mac: <> like ILteMac {
+            @display("p=310,660");
+        }
+        // PHY submodule
+        phy: <> like IPhy {
+            @display("p=310,750");
+        }
+
+        channelModel[numCarriers]: <channelModelType> like IChannelModel {
+            @display("p=80,60,col;g=left");
+        }
+
+        //# Modules used to take trace of PDCP pkt flow
+        packetFlowObserver: <default("")> like IPacketFlowObserver if hasRniSupport {
+            @display("p=80,60,col;g=left");
+        }
+
         pdcpDcMux: DcMux {
             @display("p=609,340;is=s");
         }
@@ -71,6 +101,17 @@ module LteNicEnb extends LteNicBase
         }
 
     connections:
+        //# RLC <-> MAC
+        rlcMux.macOut --> mac.upperLayerIn;
+        rlcMux.macIn <-- mac.upperLayerOut;
+
+        //# Connections from LTE Stack to radio interface
+        mac.phyOut --> phy.upperGateIn;
+        mac.phyIn <-- phy.upperGateOut;
+
+        //# external: lower connection
+        radioIn --> phy.radioIn;
+
         //# connections between X2 Manager and its users
         compManager.x2ManagerIn <-- x2Manager.dataPortOut++ if compEnabled;
         compManager.x2ManagerOut --> x2Manager.dataPortIn++ if compEnabled;
