@@ -190,7 +190,7 @@ class Ip2Nic : public cSimpleModule
 
     // RRC's push of the stacks' attachment (see BearerManagement::pushServingNodeIds()):
     // the serving node of this UE's LTE and NR stack, current as of handover start. UE only.
-    virtual void setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId);
+    virtual void setServingNodeIds(MacNodeId lteServingNodeId, MacNodeId nrServingNodeId);
 };
 
 } //namespace

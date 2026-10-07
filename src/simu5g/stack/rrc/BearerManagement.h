@@ -133,7 +133,7 @@ class BearerManagement : public cSimpleModule
      * it (see pushServingNodeIds()), which keep mirrors and never call back into
      * RRC on the data path.
      */
-    MacNodeId servingNodeId_ = NODEID_NONE;     // the LTE stack's serving node
+    MacNodeId lteServingNodeId_ = NODEID_NONE;  // the LTE stack's serving node
     MacNodeId nrServingNodeId_ = NODEID_NONE;   // the NR stack's serving node
 
     // push target of the attachment ledger (UE only; see pushServingNodeIds())
@@ -221,9 +221,9 @@ class BearerManagement : public cSimpleModule
     // Record that one of this UE's stacks is changing its serving node -- called by the
     // UE's connection control the instant a handover, attachment or detachment begins,
     // ahead of its execution. NODEID_NONE = the stack is detaching. Each updates the
-    // ledger and pushes it to every consumer (see servingNodeId_). UE only.
-    virtual void setServingNodeId(MacNodeId servingNodeId);
-    virtual void setNrServingNodeId(MacNodeId servingNodeId);
+    // ledger and pushes it to every consumer (see lteServingNodeId_). UE only.
+    virtual void setLteServingNodeId(MacNodeId lteServingNodeId);
+    virtual void setNrServingNodeId(MacNodeId nrServingNodeId);
     // Deliver the attachment ledger to everything that steers by it -- ~Ip2Nic, the
     // ~HandoverPacketHolderUe, and each bearer's leg splitter. Consumers keep pushed
     // mirrors; nothing pulls. A splitter created later gets its initial push at

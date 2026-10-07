@@ -97,17 +97,17 @@ void BearerManagement::initialize(int stage)
 
         dualConnectivityEnabled_ = par("dualConnectivityEnabled");
 
-        WATCH(servingNodeId_);
+        WATCH(lteServingNodeId_);
         WATCH(nrServingNodeId_);
         WATCH(pendingRlf_);
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         // Seed the stack attachment ledger from the Binder and deliver it (UE only; see
-        // the servingNodeId_ member note). This is still too early to see the result
+        // the lteServingNodeId_ member note). This is still too early to see the result
         // of dynamic cell association.
         if (registration_->getNodeType() == UE) {
             if (registration_->getLteNodeId() != NODEID_NONE)
-                servingNodeId_ = binderModule->getServingNode(registration_->getLteNodeId());
+                lteServingNodeId_ = binderModule->getServingNode(registration_->getLteNodeId());
             if (registration_->getNrNodeId() != NODEID_NONE)
                 nrServingNodeId_ = binderModule->getServingNode(registration_->getNrNodeId());
             handoverPacketHolderModule_ = inet::getModuleFromPar<HandoverPacketHolderUe>(par("handoverPacketHolderModule"), this);
@@ -116,34 +116,34 @@ void BearerManagement::initialize(int stage)
     }
 }
 
-void BearerManagement::setServingNodeId(MacNodeId servingNodeId)
+void BearerManagement::setLteServingNodeId(MacNodeId lteServingNodeId)
 {
-    Enter_Method_Silent("setServingNodeId");
+    Enter_Method_Silent("setLteServingNodeId");
     ASSERT(registration_->getNodeType() == UE);
-    servingNodeId_ = servingNodeId;
+    lteServingNodeId_ = lteServingNodeId;
     pushServingNodeIds();
 }
 
-void BearerManagement::setNrServingNodeId(MacNodeId servingNodeId)
+void BearerManagement::setNrServingNodeId(MacNodeId nrServingNodeId)
 {
     Enter_Method_Silent("setNrServingNodeId");
     ASSERT(registration_->getNodeType() == UE);
-    nrServingNodeId_ = servingNodeId;
+    nrServingNodeId_ = nrServingNodeId;
     pushServingNodeIds();
 }
 
 void BearerManagement::pushServingNodeIds()
 {
     ASSERT(registration_->getNodeType() == UE);
-    if (servingNodeId_ != NODEID_NONE && nrServingNodeId_ != NODEID_NONE && !dualConnectivityEnabled_)
+    if (lteServingNodeId_ != NODEID_NONE && nrServingNodeId_ != NODEID_NONE && !dualConnectivityEnabled_)
         throw cRuntimeError("This UE is attached with both its LTE and its NR stack, but dual "
                 "connectivity is off -- dual attachment outside dual connectivity is not supported");
     if (ip2nicModule_ != nullptr)
-        ip2nicModule_->setServingNodeIds(servingNodeId_, nrServingNodeId_);
-    handoverPacketHolderModule_->setServingNodeIds(servingNodeId_, nrServingNodeId_);
+        ip2nicModule_->setServingNodeIds(lteServingNodeId_, nrServingNodeId_);
+    handoverPacketHolderModule_->setServingNodeIds(lteServingNodeId_, nrServingNodeId_);
     for (auto& [id, module] : pdcpEntities_)
         if (cModule *splitter = module->getSubmodule("splitter"))
-            check_and_cast<DcPdcpLegSplitter *>(splitter)->setServingNodeIds(servingNodeId_, nrServingNodeId_);
+            check_and_cast<DcPdcpLegSplitter *>(splitter)->setServingNodeIds(lteServingNodeId_, nrServingNodeId_);
 }
 
 // Whether this base station serves only a non-anchor leg of the given UE's bearers:
@@ -858,7 +858,7 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, const FlowId& flow,
     // creation, and on every handover event (see pushServingNodeIds())
     if (!isEnb)
         if (cModule *splitter = module->getSubmodule("splitter"))
-            check_and_cast<DcPdcpLegSplitter *>(splitter)->setServingNodeIds(servingNodeId_, nrServingNodeId_);
+            check_and_cast<DcPdcpLegSplitter *>(splitter)->setServingNodeIds(lteServingNodeId_, nrServingNodeId_);
     setEntityDisplayPosition(module, true, rlcMux, num(id.getDrbId()));
     module->scheduleStart(simTime());
     module->callInitialize();

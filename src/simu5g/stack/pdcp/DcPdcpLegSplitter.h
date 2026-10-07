@@ -56,7 +56,7 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
 
     // UEs only: mirror of RRC's stack attachment ledger, pushed at creation and on
     // every handover event (see setServingNodeIds()); NODEID_NONE = not attached
-    MacNodeId servingNodeId_ = NODEID_NONE;     // the LTE stack's serving node
+    MacNodeId lteServingNodeId_ = NODEID_NONE;  // the LTE stack's serving node
     MacNodeId nrServingNodeId_ = NODEID_NONE;   // the NR stack's serving node
 
     // The split policy (TS 38.331 PDCP-Config), pushed by RRC (see setSplitConfig()):
@@ -115,7 +115,7 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
     // RRC's push of the stacks' attachment (see BearerManagement::pushServingNodeIds()):
     // the serving node of the UE's LTE and NR stack, current as of handover start.
     // UEs only; a base station's splitter steers by the Binder.
-    virtual void setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId);
+    virtual void setServingNodeIds(MacNodeId lteServingNodeId, MacNodeId nrServingNodeId);
 
     ~DcPdcpLegSplitter() override;
 };

@@ -134,10 +134,10 @@ void Ip2Nic::resumeUe(MacNodeId ueId)
     releasedUes_.erase(ueId);
 }
 
-void Ip2Nic::setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId)
+void Ip2Nic::setServingNodeIds(MacNodeId lteServingNodeId, MacNodeId nrServingNodeId)
 {
     Enter_Method_Silent("setServingNodeIds");
-    lteServingNodeId_ = servingNodeId;
+    lteServingNodeId_ = lteServingNodeId;
     nrServingNodeId_ = nrServingNodeId;
 }
 
@@ -338,7 +338,7 @@ MacNodeId Ip2Nic::getNextHopNodeId(const L3Address& destAddr, MacNodeId sourceId
 MacNodeId Ip2Nic::getDownlinkNextHopNodeId(const SessionTag *session)
 {
     ASSERT(nodeType_ == NODEB);
-    MacNodeId ueId = session->getLteNodeId();
+    MacNodeId lteUeId = session->getLteNodeId();
     MacNodeId nrUeId = session->getNrNodeId();
 
     // Resolve the UE by the id this node addresses it with. Under dual connectivity
@@ -347,12 +347,12 @@ MacNodeId Ip2Nic::getDownlinkNextHopNodeId(const SessionTag *session)
     // the id of the stack the UE is attached with (at most one).
     MacNodeId destId;
     if (dualConnectivityEnabled_) {
-        destId = anchorNr_ ? nrUeId : ueId;
+        destId = anchorNr_ ? nrUeId : lteUeId;
     }
     else {
         MacNodeId nrId = isNr_ ? nrUeId : NODEID_NONE;
         bool nrAttached = nrId != NODEID_NONE && binder_->getServingNodeOrSelf(nrId) != NODEID_NONE;
-        destId = nrAttached ? nrId : ueId;
+        destId = nrAttached ? nrId : lteUeId;
     }
 
     // master of this UE (myself)

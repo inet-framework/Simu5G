@@ -369,7 +369,7 @@ void ConnectionControlUe::startHandover()
     if (isNr_)
         bearerManagement_->setNrServingNodeId(candidateServingNodeId_);
     else
-        bearerManagement_->setServingNodeId(candidateServingNodeId_);
+        bearerManagement_->setLteServingNodeId(candidateServingNodeId_);
 
     // Inform the UE's HandoverPacketHolder module to start holding downstream packets
     handoverPacketHolder_->triggerHandoverUe(candidateServingNodeId_);

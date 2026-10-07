@@ -38,15 +38,15 @@ void HandoverPacketHolderUe::initialize()
     stackGateOut_ = gate("stackOut");
     sessionType_ = aToSessionType(par("sessionType").stdstringValue());
 
-    WATCH(servingNodeId_);
+    WATCH(lteServingNodeId_);
     WATCH(nrServingNodeId_);
     WATCH(ueHold_);
 }
 
-void HandoverPacketHolderUe::setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId)
+void HandoverPacketHolderUe::setServingNodeIds(MacNodeId lteServingNodeId, MacNodeId nrServingNodeId)
 {
     Enter_Method_Silent("setServingNodeIds");
-    servingNodeId_ = servingNodeId;
+    lteServingNodeId_ = lteServingNodeId;
     nrServingNodeId_ = nrServingNodeId;
 }
 
@@ -82,7 +82,7 @@ void HandoverPacketHolderUe::fromIpUe(Packet *datagram)
         ueHoldFromIp_.push_back(datagram);
     }
     else {
-        if (servingNodeId_ == NODEID_NONE && nrServingNodeId_ == NODEID_NONE) { // UE is detached
+        if (lteServingNodeId_ == NODEID_NONE && nrServingNodeId_ == NODEID_NONE) { // UE is detached
             EV << "HandoverPacketHolder::fromIpUe - UE is not attached to any serving node. Delete packet." << endl;
             delete datagram;
         }
@@ -108,7 +108,7 @@ void HandoverPacketHolderUe::signalHandoverCompleteUe(bool isNr)
 {
     Enter_Method("signalHandoverCompleteUe");
 
-    if ((isNr ? nrServingNodeId_ : servingNodeId_) != NODEID_NONE) {
+    if ((isNr ? nrServingNodeId_ : lteServingNodeId_) != NODEID_NONE) {
         // send held packets
         while (!ueHoldFromIp_.empty()) {
             auto pkt = ueHoldFromIp_.front();

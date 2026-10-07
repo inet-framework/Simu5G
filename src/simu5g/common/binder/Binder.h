@@ -54,7 +54,7 @@ class Binder : public cSimpleModule
     // A node may be known under several addresses: a UE under those of its cellular
     // interface (several with IPv6, of either family on a dual-stack UE), a base station
     // under those of its X2 interfaces
-    std::map<inet::L3Address, MacNodeId> ipAddressToMacNodeId_;
+    std::map<inet::L3Address, MacNodeId> ipAddressToLteMacNodeId_;
     std::map<inet::L3Address, MacNodeId> ipAddressToNrMacNodeId_;
 
     // Consolidated node information - replaces nodeIds_, macNodeIdToModuleName_, macNodeIdToModuleRef_, macNodeIdToModule_
@@ -339,9 +339,9 @@ class Binder : public cSimpleModule
      */
     virtual MacNodeId getMacNodeId(const inet::L3Address& address)
     {
-        if (ipAddressToMacNodeId_.find(address) == ipAddressToMacNodeId_.end())
+        if (ipAddressToLteMacNodeId_.find(address) == ipAddressToLteMacNodeId_.end())
             return NODEID_NONE;
-        MacNodeId nodeId = ipAddressToMacNodeId_[address];
+        MacNodeId nodeId = ipAddressToLteMacNodeId_[address];
 
         // if the UE is disconnected (its master node is 0), check the NR node Id
         if (getServingNodeOrSelf(nodeId) == NODEID_NONE)
@@ -391,7 +391,7 @@ class Binder : public cSimpleModule
      */
     virtual inet::Ipv4Address getIPv4Address(MacNodeId nodeId)
     {
-        for (const auto& kv : ipAddressToMacNodeId_) {
+        for (const auto& kv : ipAddressToLteMacNodeId_) {
             if (kv.second == nodeId && kv.first.getType() == inet::L3Address::IPv4)
                 return kv.first.toIpv4();
         }
@@ -409,7 +409,7 @@ class Binder : public cSimpleModule
     virtual std::vector<inet::L3Address> getAddresses(MacNodeId nodeId)
     {
         std::vector<inet::L3Address> addresses;
-        for (const auto& kv : isNrUe(nodeId) ? ipAddressToNrMacNodeId_ : ipAddressToMacNodeId_)
+        for (const auto& kv : isNrUe(nodeId) ? ipAddressToNrMacNodeId_ : ipAddressToLteMacNodeId_)
             if (kv.second == nodeId)
                 addresses.push_back(kv.first);
         return addresses;
@@ -436,7 +436,7 @@ class Binder : public cSimpleModule
         if (isNrUe(nodeId))
             ipAddressToNrMacNodeId_[address] = nodeId;
         else
-            ipAddressToMacNodeId_[address] = nodeId;
+            ipAddressToLteMacNodeId_[address] = nodeId;
     }
 
     /**
@@ -446,7 +446,7 @@ class Binder : public cSimpleModule
      */
     virtual void unsetMacNodeId(const inet::L3Address& address, MacNodeId nodeId)
     {
-        auto& addressToNodeId = isNrUe(nodeId) ? ipAddressToNrMacNodeId_ : ipAddressToMacNodeId_;
+        auto& addressToNodeId = isNrUe(nodeId) ? ipAddressToNrMacNodeId_ : ipAddressToLteMacNodeId_;
         auto it = addressToNodeId.find(address);
         if (it != addressToNodeId.end() && it->second == nodeId)
             addressToNodeId.erase(it);

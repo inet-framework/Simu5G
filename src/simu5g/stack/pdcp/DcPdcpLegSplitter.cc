@@ -58,7 +58,7 @@ void DcPdcpLegSplitter::initialize(int stage)
         nrNodeId_ = MacNodeId(par("nrMacNodeId").intValue());
         isUe_ = (getNodeTypeById(nodeId_) == UE);
 
-        WATCH(servingNodeId_);
+        WATCH(lteServingNodeId_);
         WATCH(nrServingNodeId_);
         WATCH(primaryPath_);
         WATCH(splitThreshold_);
@@ -67,10 +67,10 @@ void DcPdcpLegSplitter::initialize(int stage)
     }
 }
 
-void DcPdcpLegSplitter::setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId)
+void DcPdcpLegSplitter::setServingNodeIds(MacNodeId lteServingNodeId, MacNodeId nrServingNodeId)
 {
     Enter_Method_Silent("setServingNodeIds");
-    servingNodeId_ = servingNodeId;
+    lteServingNodeId_ = lteServingNodeId;
     nrServingNodeId_ = nrServingNodeId;
 }
 
@@ -131,7 +131,7 @@ bool DcPdcpLegSplitter::isLegLive(int leg, const FlowControlInfo *lteInfo)
     if (isUe_) {
         // this UE's own attachment on the leg's stack, as RRC pushed it -- current as of
         // handover start, ahead of the Binder (see BearerManagement::pushServingNodeIds())
-        return (legNr ? nrServingNodeId_ : servingNodeId_) != NODEID_NONE;
+        return (legNr ? nrServingNodeId_ : lteServingNodeId_) != NODEID_NONE;
     }
 
     // a base station: the UE's attachment on the stack this leg serves. The network

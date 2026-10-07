@@ -197,9 +197,9 @@ void Binder::unregisterNode(MacNodeId id)
 {
     EV << NOW << " Binder::unregisterNode - unregistering node " << id << endl;
 
-    for (auto it = ipAddressToMacNodeId_.begin(); it != ipAddressToMacNodeId_.end(); ) {
+    for (auto it = ipAddressToLteMacNodeId_.begin(); it != ipAddressToLteMacNodeId_.end(); ) {
         if (it->second == id) {
-            it = ipAddressToMacNodeId_.erase(it);
+            it = ipAddressToLteMacNodeId_.erase(it);
         }
         else {
             it++;
@@ -328,7 +328,7 @@ void Binder::initialize(int stage)
         networkName_ = getSystemModule()->getName();
 
         WATCH(networkName_);
-        WATCH(ipAddressToMacNodeId_);
+        WATCH(ipAddressToLteMacNodeId_);
         WATCH(ipAddressToNrMacNodeId_);
         WATCH(servingNode_);
         WATCH(secondaryNodeToMasterNodeOrSelf_);
@@ -479,7 +479,7 @@ MacNodeId Binder::getUeNodeId(MacNodeId ue, bool isNr)
 
     // any address of the UE will do: they all map to the same LTE/NR id pair
     inet::L3Address ueIpAddr;
-    for (const auto& kv : ipAddressToMacNodeId_) {
+    for (const auto& kv : ipAddressToLteMacNodeId_) {
         if (kv.second == ue) {
             ueIpAddr = kv.first;
             break;
@@ -503,8 +503,8 @@ MacNodeId Binder::getUeNodeId(MacNodeId ue, bool isNr)
     }
     else {
         // Request for LTE nodeId
-        if (ipAddressToMacNodeId_.find(ueIpAddr) != ipAddressToMacNodeId_.end())
-            return ipAddressToMacNodeId_[ueIpAddr];
+        if (ipAddressToLteMacNodeId_.find(ueIpAddr) != ipAddressToLteMacNodeId_.end())
+            return ipAddressToLteMacNodeId_[ueIpAddr];
     }
 
     return NODEID_NONE;

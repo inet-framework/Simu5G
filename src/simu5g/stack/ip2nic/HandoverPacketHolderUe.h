@@ -30,7 +30,7 @@ class HandoverPacketHolderUe : public cSimpleModule
 
     // mirror of RRC's stack attachment ledger, pushed on every handover event (see
     // setServingNodeIds()); NODEID_NONE = not attached
-    MacNodeId servingNodeId_ = NODEID_NONE;     // the LTE stack's serving node
+    MacNodeId lteServingNodeId_ = NODEID_NONE;  // the LTE stack's serving node
     MacNodeId nrServingNodeId_ = NODEID_NONE;   // the NR stack's serving node
 
     SessionType sessionType_ = IP_V4;   // the type of the UE's session (the sessionType parameter)
@@ -55,7 +55,7 @@ class HandoverPacketHolderUe : public cSimpleModule
 
     // RRC's push of the stacks' attachment (see BearerManagement::pushServingNodeIds()):
     // the serving node of this UE's LTE and NR stack, current as of handover start.
-    virtual void setServingNodeIds(MacNodeId servingNodeId, MacNodeId nrServingNodeId);
+    virtual void setServingNodeIds(MacNodeId lteServingNodeId, MacNodeId nrServingNodeId);
 };
 
 } //namespace
