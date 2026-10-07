@@ -1,0 +1,156 @@
+%description:
+At a UE, the per-SDU signals of the PDCP TX side tell which leg an SDU leaves on: the
+LTE leg's signal (pdcpSduSent) or the NR leg's (pdcpSduSentNr); the UE's two packet flow
+observers count the legs by them. EN-DC (an eNodeB master, a gNodeB secondary): ue[0]'s
+uplink rides an MCG bearer, whose single leg is the LTE (anchor) leg; ue[1]'s a split
+bearer that sends every fourth PDU on its SCG (NR) leg and the rest on its MCG (LTE) leg.
+A probe counts each UE's SDUs by the leg the signals name.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
+import inet.node.ethernet.Eth10G;
+import inet.node.inet.Router;
+import inet.node.inet.StandardHost;
+import simu5g.common.binder.Binder;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.corenetwork.bearerConfigurator.BearerConfigurator;
+import simu5g.corenetwork.coreControl.CoreControl;
+import simu5g.nodes.NrUe;
+import simu5g.nodes.PgwStandard;
+import simu5g.nodes.eNodeB;
+import simu5g.nodes.gNodeB;
+import simu5g.world.radio.LteChannelControl;
+
+simple PdcpSduProbe
+{
+}
+
+network EnDcTestNetwork
+{
+    parameters:
+        int numUe = default(2);
+    submodules:
+        probe: PdcpSduProbe;
+        channelControl: LteChannelControl;
+        configurator: Ipv4NetworkConfigurator;
+        binder: Binder;
+        coreControl: CoreControl;
+        bearerConfigurator: BearerConfigurator;
+        carrierAggregation: CarrierAggregation;
+        server: StandardHost;
+        router: Router;
+        pgw: PgwStandard;
+        masterEnb: eNodeB;
+        secondaryGnb: gNodeB;
+        ue[numUe]: NrUe;
+    connections:
+        server.pppg++ <--> Eth10G <--> router.pppg++;
+        router.pppg++ <--> Eth10G <--> pgw.dnPppg;
+        pgw.pppg++ <--> Eth10G <--> masterEnb.ppp;
+        masterEnb.x2++ <--> Eth10G <--> secondaryGnb.x2++;
+}
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: PdcpSduProbe.cc
+#include <map>
+#include <string>
+#include <inet/common/ModuleAccess.h>
+
+using namespace omnetpp;
+
+namespace PdcpSduLegSignals_EnDc {   // the test's NED namespace (opp_test)
+
+// Counts the PDCP SDUs of every UE by the leg the per-SDU signal names
+class PdcpSduProbe : public cSimpleModule, public cListener
+{
+    simsignal_t lteSignal = registerSignal("pdcpSduSent");
+    simsignal_t lteSignal2 = registerSignal("pdcpSduSentLte");
+    simsignal_t nrSignal = registerSignal("pdcpSduSentNr");
+    std::map<std::string, std::pair<int, int>> counts;  // UE -> (LTE leg, NR leg)
+
+  protected:
+    virtual void initialize() override
+    {
+        for (simsignal_t signal : {lteSignal, lteSignal2, nrSignal})
+            getSimulation()->getSystemModule()->subscribe(signal, this);
+    }
+
+    virtual void receiveSignal(cComponent *source, simsignal_t signal, cObject *obj, cObject *details) override
+    {
+        cModule *node = inet::getContainingNode(check_and_cast<cModule *>(source));
+        if (std::string(node->par("nodeType").stringValue()) != "UE")
+            return;
+        auto& c = counts[node->getFullName()];
+        (signal == nrSignal ? c.second : c.first)++;
+    }
+
+    virtual void finish() override
+    {
+        for (const auto& [ue, c] : counts)
+            std::cout << "PDCP SDUs of " << ue << ": LTE leg " << c.first << ", NR leg " << c.second << std::endl;
+    }
+};
+
+Define_Module(PdcpSduProbe);
+
+} // namespace PdcpSduLegSignals_EnDc
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = EnDcTestNetwork
+
+**.sctp.nagleEnabled = false
+**.sctp.enableHeartbeats = false
+
+*.masterEnb.mobility.initialX = 400m
+*.masterEnb.mobility.initialY = 300m
+*.secondaryGnb.mobility.initialX = 500m
+*.secondaryGnb.mobility.initialY = 300m
+*.ue[*].mobility.initialX = 450m
+*.ue[*].mobility.initialY = 350m
+
+*.masterEnb.cellularNic.ip2nic.isNr = true
+*.masterEnb.cellularNic.rrc.bearerManagement.pdcpEntityModuleType = "simu5g.stack.pdcp.NrPdcpEntity"
+*.secondaryGnb.masterId = 1
+**.dualConnectivityEnabled = true
+*.*nb.numX2Apps = 1
+*.*nb.x2App[*].server.localPort = 5000 + ancestorIndex(1)
+*.masterEnb.x2App[0].client.connectAddress = "secondaryGnb%x2ppp0"
+*.secondaryGnb.x2App[0].client.connectAddress = "masterEnb%x2ppp0"
+*.ue[*].lteServingNodeId = 1
+*.ue[*].nrServingNodeId = 2
+
+# ue[0]'s flow (ToS 10) rides an MCG bearer, ue[1]'s (ToS 20) a split bearer whose
+# every fourth PDU takes the SCG leg
+*.bearerConfigurator.onDemandDrbs = [
+    {coreNetwork: "epc", filters: ["expr(ipv4.typeOfService == 10)"], lcg: 0, rlcMode: "UM", legs: ["MCG"]},
+    {coreNetwork: "epc", filters: ["expr(ipv4.typeOfService == 20)"], lcg: 0, rlcMode: "UM", legs: ["MCG", "SCG"],
+     ulDataSplitThreshold: 0, ulLegSelection: "expr(packetOrdinal % 4 == 0 ? 1 : 0)"},
+    {coreNetwork: "epc", isDefault: true, lcg: 0, rlcMode: "UM"}
+    ]
+
+*.ue[*].numApps = 1
+*.ue[*].app[0].typename = "UdpBasicApp"
+*.ue[*].app[0].destAddresses = "server"
+*.ue[*].app[0].destPort = 1000 + ancestorIndex(1)
+*.ue[*].app[0].messageLength = 100B
+*.ue[*].app[0].sendInterval = 10ms
+*.ue[*].app[0].startTime = 0.1s
+*.ue[*].app[0].stopTime = 0.205s
+*.ue[0].app[0].tos = 10
+*.ue[1].app[0].tos = 20
+*.server.numApps = 2
+*.server.app[*].typename = "UdpSink"
+*.server.app[*].localPort = 1000 + ancestorIndex(0)
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+PDCP SDUs of ue[0]: LTE leg 11, NR leg 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+PDCP SDUs of ue[1]: LTE leg 8, NR leg 3
+%#--------------------------------------------------------------------------------------------------------------
