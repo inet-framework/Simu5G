@@ -16,4 +16,6 @@ package simu5g.stack.mac.scheduler;
 //
 moduleinterface ILteSchedulerEnbDl
 {
+    parameters:
+        @display("i=block/cogwheel");
 }

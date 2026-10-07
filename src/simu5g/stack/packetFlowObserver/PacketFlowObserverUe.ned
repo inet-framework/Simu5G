@@ -20,6 +20,7 @@ package simu5g.stack.packetFlowObserver;
 simple PacketFlowObserverUe like IPacketFlowObserver
 {
     @class("PacketFlowObserverUe");
+    @display("i=block/cogwheel");
     string macModule = default("^.mac");
     string pdcpModule = default("^");
     string rlcModule = default("^");

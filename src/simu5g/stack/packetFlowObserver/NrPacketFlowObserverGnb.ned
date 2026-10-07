@@ -20,6 +20,7 @@ package simu5g.stack.packetFlowObserver;
 simple NrPacketFlowObserverGnb like IPacketFlowObserver
 {
     @class("PacketFlowObserverEnb");
+    @display("i=block/cogwheel");
     string macModule = default("^.mac");
     string pdcpModule = default("^");
     string rlcModule = default("^");

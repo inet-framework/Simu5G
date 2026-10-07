@@ -14,6 +14,7 @@ package simu5g.stack.packetFlowObserver;
 
 moduleinterface IPacketFlowObserver
 {
+    @display("i=block/cogwheel");
     string macModule;
     string pdcpModule;
     string rlcModule;

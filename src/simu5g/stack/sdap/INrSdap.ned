@@ -17,6 +17,7 @@ package simu5g.stack.sdap;
 moduleinterface INrSdap
 {
     parameters:
+        @display("i=block/layer");
         string nodeRole @enum("UE", "gNB");  // Node role: "UE" or "gNB" - determines reflective QoS behavior
         bool useReflectiveQos; // UE only
         string reflectiveQosTableModule;  // UE only: path to ReflectiveQosTable module (empty = disabled)

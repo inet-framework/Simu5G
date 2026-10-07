@@ -16,4 +16,6 @@ package simu5g.stack.mac.amc;
 //
 moduleinterface ILteAmc
 {
+    parameters:
+        @display("i=block/table2");
 }
