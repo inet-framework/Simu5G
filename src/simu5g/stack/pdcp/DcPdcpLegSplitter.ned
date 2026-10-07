@@ -36,13 +36,17 @@ package simu5g.stack.pdcp;
 // Legs whose peer is not attached are not offered to either policy: with one leg
 // live the choice is made already. That leg's DC-specific id mapping on the way out
 // is selected by its cell group (the legs parameter):
-//  - an MCG leg (the anchor stack): ids already correct; emits pdcpSduSent.
+//  - an MCG leg (the anchor stack): ids already correct.
 //  - an SCG leg on a UE (the local secondary stack): rewrites the flow's
 //    source/destination to that stack's node ids (serving node looked up per
-//    packet, so handover is honored); emits pdcpSduSentNr.
+//    packet, so handover is honored).
 //  - an SCG leg on a DC master (remote leg): rewrites the ids to (secondary
 //    node, the UE's secondary-stack id) and adds the X2 addressing tag; the
 //    PDU leaves via the DcMux.
+//
+// A PDU leaving on a local leg is signaled per SDU: at a UE by the technology of
+// the leg (pdcpSduSentNr on the NR leg, pdcpSduSent on the LTE leg, whichever
+// cell group it is), at a DC master by pdcpSduSent.
 //
 // If no leg is live at all, the PDU falls back to leg 0 with a warning.
 //

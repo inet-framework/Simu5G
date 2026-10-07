@@ -96,6 +96,10 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
     // The leg index whose cell group is the primary path.
     virtual int primaryLeg() const;
 
+    // Emits the per-SDU signal of the leg the PDU leaves on, once its ids are adapted:
+    // at a UE that of the leg's technology, at a base station pdcpSduSent.
+    virtual void emitPdcpSduSent(inet::Packet *pkt, const FlowControlInfo *lteInfo);
+
   public:
     // Configuration push from RRC (see BearerManagement): the bearer's split policy --
     // the primary path cell group and the ul-DataSplitThreshold in bytes.

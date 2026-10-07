@@ -15,10 +15,11 @@ package simu5g.stack.pdcp;
 //
 // Handles the operations related to the NR PDCP (Packet Data Convergence Protocol)
 // layer at the transmitting side of a specific connection. It extends the
-// ~LtePdcpTxEntity module with the NR flavor of the per-SDU statistics
-// (pdcpSduSentNr) and the NR-leg id mapping of a single-leg NR bearer. On a
-// multi-leg bearer, leg dispatch, id mapping and per-leg statistics are handled
-// by the enclosing compound's splitter instead (see ~PdcpEntityBase).
+// ~LtePdcpTxEntity module: at a UE, it signals each SDU of a single-leg bearer
+// by the technology of the bearer's leg (pdcpSduSentNr on the NR leg,
+// pdcpSduSent on the LTE leg). On a multi-leg bearer, leg dispatch, id mapping
+// and per-leg statistics are handled by the enclosing compound's splitter
+// instead (see ~PdcpEntityBase).
 //
 simple NrPdcpTxEntity extends LtePdcpTxEntity
 {
@@ -27,6 +28,5 @@ simple NrPdcpTxEntity extends LtePdcpTxEntity
         @class("NrPdcpTxEntity");
         @display("i=block/layer");
         @signal[pdcpSduSentNr];
-        int nrMacNodeId = default(0);  // UE only: the NR-leg id of a dual-stack UE, 0 if none; set by the enclosing PdcpEntityBase
 }
 

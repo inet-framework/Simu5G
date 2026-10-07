@@ -220,6 +220,15 @@ cValue DcPdcpLegSplitter::PolicyResolver::readVariable(cExpression::Context *con
     throw cRuntimeError("DcPdcpLegSplitter: unknown variable '%s' in the legSelection expression", name);
 }
 
+void DcPdcpLegSplitter::emitPdcpSduSent(inet::Packet *pkt, const FlowControlInfo *lteInfo)
+{
+    if (lteInfo->getDirection() == D2D_MULTI || lteInfo->getDirection() == D2D)
+        return;
+    simsignal_t signal = isUe_ && isNrUe(lteInfo->getSourceId()) ? pdcpSduSentNrSignal_ : pdcpSduSentSignal_;
+    if (hasListeners(signal))
+        emit(signal, pkt);
+}
+
 void DcPdcpLegSplitter::handleMessage(cMessage *msg)
 {
     auto pkt = check_and_cast<inet::Packet *>(msg);
@@ -236,8 +245,7 @@ void DcPdcpLegSplitter::handleMessage(cMessage *msg)
     if (legGroups_[leg] == MCG) {
         // anchor leg: ids already correct
         EV << NOW << " DcPdcpLegSplitter - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to the anchor leg's RLC" << endl;
-        if (hasListeners(pdcpSduSentSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D)
-            emit(pdcpSduSentSignal_, pkt);
+        emitPdcpSduSent(pkt, lteInfo.get());
         emit(sentPacketToLowerLayerSignal_, pkt);
     }
     else if (isUe_) {
@@ -248,8 +256,7 @@ void DcPdcpLegSplitter::handleMessage(cMessage *msg)
         ASSERT(scgNodeId != NODEID_NONE);
         lteInfo->setSourceId(scgNodeId);
         lteInfo->setDestId(binder_->getServingNodeOrSelf(scgNodeId));
-        if (hasListeners(pdcpSduSentNrSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D)
-            emit(pdcpSduSentNrSignal_, pkt);
+        emitPdcpSduSent(pkt, lteInfo.get());
         emit(sentPacketToLowerLayerSignal_, pkt);
     }
     else {

@@ -20,24 +20,19 @@ namespace simu5g {
 /**
  * @brief NR flavor of the transmitting PDCP entity.
  *
- * Adds the NR per-SDU statistics (pdcpSduSentNr) and the NR-leg source id of a
- * single-leg NR bearer at a UE. On a multi-leg bearer the enclosing compound's
- * splitter handles leg dispatch, id mapping and per-leg statistics instead
- * (see PdcpEntityBase.ned), and this entity just forwards.
+ * At a UE, signals each SDU of a single-leg bearer by the technology of the
+ * bearer's leg: pdcpSduSentNr on the NR leg, pdcpSduSent on the LTE leg. On a
+ * multi-leg bearer the enclosing compound's splitter handles leg dispatch, id
+ * mapping and per-leg statistics instead (see PdcpEntityBase.ned), and this
+ * entity just forwards.
  */
 class NrPdcpTxEntity : public LtePdcpTxEntity
 {
     static simsignal_t pdcpSduSentNrSignal_;
 
   protected:
-    // NR node ID (of NR-capable UEs)
-    MacNodeId nrNodeId_ = NODEID_NONE;
-
     // deliver the PDCP PDU to the lower layer
     void deliverPdcpPdu(Packet *pkt) override;
-
-  public:
-    void initialize(int stage) override;
 };
 
 } //namespace
