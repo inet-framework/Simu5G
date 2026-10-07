@@ -33,7 +33,7 @@ void NrPdcpTxEntity::deliverPdcpPdu(Packet *pkt)
         auto lteInfo = pkt->getTag<FlowControlInfo>();
         bool isNrLeg = isNrUe(lteInfo->getSourceId());
         EV << NOW << " NrPdcpTxEntity::deliverPdcpPdu - DRB ID[" << lteInfo->getDrbId() << "] - sending packet to the " << (isNrLeg ? "NR" : "LTE") << " RLC" << endl;
-        simsignal_t signal = isNrLeg ? pdcpSduSentNrSignal_ : pdcpSduSentSignal_;
+        simsignal_t signal = isNrLeg ? pdcpSduSentNrSignal_ : pdcpSduSentLteSignal_;
         if (hasListeners(signal) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D) {
             emit(signal, pkt);
         }

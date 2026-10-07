@@ -34,7 +34,8 @@ void PacketFlowObserverBase::initialize(int stage)
         // Subscribe to PDCP signals
         cModule *pdcpModule = getModuleFromPar<cModule>(par("pdcpModule"), this);
         bool isNrObserver = par("isNrObserver").boolValue();
-        simsignal_t pdcpSduSentSignal = registerSignal(isNrObserver ? "pdcpSduSentNr" : "pdcpSduSent");
+        // a UE has an observer per leg; a base station's observes its only leg
+        simsignal_t pdcpSduSentSignal = registerSignal(isNrObserver ? "pdcpSduSentNr" : nodeType_ == UE ? "pdcpSduSentLte" : "pdcpSduSent");
         simsignal_t pdcpSduReceivedSignal = registerSignal("pdcpSduReceived");
         pdcpModule->subscribe(pdcpSduSentSignal, this);
         pdcpModule->subscribe(pdcpSduReceivedSignal, this);
@@ -60,6 +61,7 @@ void PacketFlowObserverBase::receiveSignal(cComponent *source, simsignal_t signa
 {
     static simsignal_t pdcpSduSentSignal = registerSignal("pdcpSduSent");
     static simsignal_t pdcpSduSentNrSignal = registerSignal("pdcpSduSentNr");
+    static simsignal_t pdcpSduSentLteSignal = registerSignal("pdcpSduSentLte");
     static simsignal_t pdcpSduReceivedSignal = registerSignal("pdcpSduReceived");
     static simsignal_t rlcPduCreatedSignal = registerSignal("rlcPduCreated");
     static simsignal_t macPduAckedSignal = registerSignal("macPduAcked");
@@ -68,7 +70,7 @@ void PacketFlowObserverBase::receiveSignal(cComponent *source, simsignal_t signa
     static simsignal_t grantSentSignal = registerSignal("grantSent");
     static simsignal_t ulMacPduArrivedSignal = registerSignal("ulMacPduArrived");
 
-    if (signalID == pdcpSduSentSignal || signalID == pdcpSduSentNrSignal) {
+    if (signalID == pdcpSduSentSignal || signalID == pdcpSduSentNrSignal || signalID == pdcpSduSentLteSignal) {
         auto pkt = check_and_cast<inet::Packet *>(obj);
         insertPdcpSdu(pkt);
     }

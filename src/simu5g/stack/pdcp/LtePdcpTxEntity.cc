@@ -33,6 +33,7 @@ void LtePdcpTxEntity::initialize(int stage) {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
         nodeId_ = MacNodeId(par("macNodeId").intValue());
+        pdcpSduSentLteSignal_ = registerSignal("pdcpSduSentLte");
 
         // the bearer's header compression, as RRC pushed it (see PdcpEntityBase)
         cStringTokenizer profiles(par("rohcProfiles").stringValue());
@@ -129,9 +130,11 @@ void LtePdcpTxEntity::compressHeader(Packet *pkt)
 void LtePdcpTxEntity::deliverPdcpPdu(Packet *pdcpPkt)
 {
     if (emitPerSduSignals_) {
+        // a base station's SDUs are signaled by pdcpSduSent, those of a UE's LTE leg by pdcpSduSentLte
         auto lteInfo = pdcpPkt->getTag<FlowControlInfo>();
-        if (hasListeners(pdcpSduSentSignal_) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D) {
-            emit(pdcpSduSentSignal_, pdcpPkt);
+        simsignal_t signal = getNodeTypeById(nodeId_) == UE ? pdcpSduSentLteSignal_ : pdcpSduSentSignal_;
+        if (hasListeners(signal) && lteInfo->getDirection() != D2D_MULTI && lteInfo->getDirection() != D2D) {
+            emit(signal, pdcpPkt);
         }
         emit(sentPacketToLowerLayerSignal_, pdcpPkt);
     }

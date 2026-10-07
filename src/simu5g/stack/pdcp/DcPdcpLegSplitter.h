@@ -44,6 +44,7 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
     static omnetpp::simsignal_t sentPacketToLowerLayerSignal_;
     static omnetpp::simsignal_t pdcpSduSentSignal_;
     static omnetpp::simsignal_t pdcpSduSentNrSignal_;
+    omnetpp::simsignal_t pdcpSduSentLteSignal_ = -1;  // registered in initialize(), so that the new name does not shift the ids of the statically registered signals
 
     inet::ModuleRefByPar<Binder> binder_;
 
@@ -97,7 +98,8 @@ class DcPdcpLegSplitter : public omnetpp::cSimpleModule
     virtual int primaryLeg() const;
 
     // Emits the per-SDU signal of the leg the PDU leaves on, once its ids are adapted:
-    // at a UE that of the leg's technology, at a base station pdcpSduSent.
+    // at a UE that of the leg's technology (pdcpSduSentLte or pdcpSduSentNr), at a base
+    // station pdcpSduSent.
     virtual void emitPdcpSduSent(inet::Packet *pkt, const FlowControlInfo *lteInfo);
 
   public:

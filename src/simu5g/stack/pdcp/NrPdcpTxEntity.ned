@@ -17,7 +17,7 @@ package simu5g.stack.pdcp;
 // layer at the transmitting side of a specific connection. It extends the
 // ~LtePdcpTxEntity module: at a UE, it signals each SDU of a single-leg bearer
 // by the technology of the bearer's leg (pdcpSduSentNr on the NR leg,
-// pdcpSduSent on the LTE leg). On a multi-leg bearer, leg dispatch, id mapping
+// pdcpSduSentLte on the LTE leg). On a multi-leg bearer, leg dispatch, id mapping
 // and per-leg statistics are handled by the enclosing compound's splitter
 // instead (see ~PdcpEntityBase).
 //

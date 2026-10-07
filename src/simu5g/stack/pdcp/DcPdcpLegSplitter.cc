@@ -35,6 +35,7 @@ void DcPdcpLegSplitter::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
+        pdcpSduSentLteSignal_ = registerSignal("pdcpSduSentLte");
 
         numLegs_ = par("numLegs");
 
@@ -224,7 +225,7 @@ void DcPdcpLegSplitter::emitPdcpSduSent(inet::Packet *pkt, const FlowControlInfo
 {
     if (lteInfo->getDirection() == D2D_MULTI || lteInfo->getDirection() == D2D)
         return;
-    simsignal_t signal = isUe_ && isNrUe(lteInfo->getSourceId()) ? pdcpSduSentNrSignal_ : pdcpSduSentSignal_;
+    simsignal_t signal = !isUe_ ? pdcpSduSentSignal_ : isNrUe(lteInfo->getSourceId()) ? pdcpSduSentNrSignal_ : pdcpSduSentLteSignal_;
     if (hasListeners(signal))
         emit(signal, pkt);
 }

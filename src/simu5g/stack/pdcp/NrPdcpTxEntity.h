@@ -21,7 +21,7 @@ namespace simu5g {
  * @brief NR flavor of the transmitting PDCP entity.
  *
  * At a UE, signals each SDU of a single-leg bearer by the technology of the
- * bearer's leg: pdcpSduSentNr on the NR leg, pdcpSduSent on the LTE leg. On a
+ * bearer's leg: pdcpSduSentNr on the NR leg, pdcpSduSentLte on the LTE leg. On a
  * multi-leg bearer the enclosing compound's splitter handles leg dispatch, id
  * mapping and per-leg statistics instead (see PdcpEntityBase.ned), and this
  * entity just forwards.

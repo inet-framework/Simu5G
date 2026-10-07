@@ -45,6 +45,7 @@ simple LtePdcpTxEntity like IPdcpTxEntity
         @signal[receivedPacketFromUpperLayer];
         @signal[sentPacketToLowerLayer];
         @signal[pdcpSduSent];
+        @signal[pdcpSduSentLte];
         string binderModule = default("binder");
         int macNodeId;  // The node's id: a base station's, or the LTE-leg id of a UE; set by the enclosing PdcpEntityBase
         bool emitPerSduSignals = default(true);              // Cleared by a PdcpEntityBase with a splitter: the splitter emits the per-leg statistics

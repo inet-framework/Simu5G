@@ -45,7 +45,7 @@ package simu5g.stack.pdcp;
 //    PDU leaves via the DcMux.
 //
 // A PDU leaving on a local leg is signaled per SDU: at a UE by the technology of
-// the leg (pdcpSduSentNr on the NR leg, pdcpSduSent on the LTE leg, whichever
+// the leg (pdcpSduSentNr on the NR leg, pdcpSduSentLte on the LTE leg, whichever
 // cell group it is), at a DC master by pdcpSduSent.
 //
 // If no leg is live at all, the PDU falls back to leg 0 with a warning.
@@ -63,6 +63,7 @@ simple DcPdcpLegSplitter like IPdcpLegSplitter
         @display("i=block/dispatch");
         @signal[sentPacketToLowerLayer];
         @signal[pdcpSduSent];
+        @signal[pdcpSduSentLte];
         @signal[pdcpSduSentNr];
     gates:
         input in;               // PDUs from the TX entity

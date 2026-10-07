@@ -1,6 +1,6 @@
 %description:
 At a UE, the per-SDU signals of the PDCP TX side tell which leg an SDU leaves on: the
-LTE leg's signal (pdcpSduSent) or the NR leg's (pdcpSduSentNr); the UE's two packet flow
+LTE leg's signal (pdcpSduSentLte) or the NR leg's (pdcpSduSentNr); the UE's two packet flow
 observers count the legs by them. NE-DC (a gNodeB master, an eNodeB secondary): the UE's
 uplink rides a split bearer that sends every fourth PDU on its SCG leg, which is the LTE
 leg here, and the rest on its MCG (anchor) leg, which is the NR leg. A probe counts the

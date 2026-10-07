@@ -44,6 +44,7 @@ class LtePdcpTxEntity : public PdcpTxEntityBase
     static simsignal_t receivedPacketFromUpperLayerSignal_;
     static simsignal_t sentPacketToLowerLayerSignal_;
     static simsignal_t pdcpSduSentSignal_;
+    simsignal_t pdcpSduSentLteSignal_ = -1;  // registered in initialize(), so that the new name does not shift the ids of the statically registered signals
     // Modules references
     inet::ModuleRefByPar<Binder> binder_;
 
