@@ -21,6 +21,8 @@ simple BearerManagement like IBearerManagement
         @display("i=block/control");
         @class(BearerManagement);
         string binderModule = default("binder");   // To reach a peer's BearerManagement on RLF
+        int macNodeId;  // The node's id: a base station's, or the LTE-leg id of a UE; set by the NIC, passed on to the PDCP entities
+        int nrMacNodeId = default(0);  // UE only: the NR-leg id of a dual-stack UE, 0 if none; set by the NIC, passed on to the PDCP entities
         string connectionControlModule = default("^.connectionControl");   // The node's control-plane entry point (see ~Rrc), which a torn-down bearer's DRB identity goes back through
 
         // RRC re-establishment after a radio link failure (TS 38.331 5.3.7). On RLF the peer's

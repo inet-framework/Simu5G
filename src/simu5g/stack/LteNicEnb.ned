@@ -46,6 +46,9 @@ module LteNicEnb extends LteNicBase
         bool compEnabled = default(false);
         rrc.hasConnectionControl = true;
         rrc.connectionControl.macNodeId = parent.macNodeId;
+        ip2nic.macNodeId = parent.macNodeId;
+        rrc.registration.macNodeId = parent.macNodeId;
+        rrc.bearerManagement.macNodeId = parent.macNodeId;
         // The MAC and PHY take their MacNodeId from the node
         phy.macNodeId = parent.macNodeId;
         mac.macNodeId = parent.macNodeId;

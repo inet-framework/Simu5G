@@ -64,6 +64,10 @@ module NrNicUe extends LteNicUe
         nrMac.macNodeId = parent.nrMacNodeId;
         nrPhy.macNodeId = parent.nrMacNodeId;
         nrDlFbGen.macNodeId = parent.nrMacNodeId;
+        ip2nic.nrMacNodeId = parent.nrMacNodeId;
+        rrc.registration.nrMacNodeId = parent.nrMacNodeId;
+        rrc.registration.nrServingNodeId = parent.nrServingNodeId;
+        rrc.bearerManagement.nrMacNodeId = parent.nrMacNodeId;
         rrc.nrConnectionControl.otherConnectionControlModule = "^.lteConnectionControl";
         nrPhy.channelModelModule = "^.nrChannelModel[0]";
         nrPhy.feedbackGeneratorModule = "^.nrDlFbGen";

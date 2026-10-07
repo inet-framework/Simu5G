@@ -26,6 +26,7 @@ simple LtePdcpRxEntity like IPdcpRxEntity
         @signal[pdcpSduReceived];
         @signal[sentPacketToUpperLayer];
         string binderModule = default("binder");
+        int macNodeId;  // The node's id: a base station's, or the LTE-leg id of a UE; set by the enclosing PdcpEntityBase
         string rohcProfiles = default("");  // The bearer's ROHC profiles, space-separated, pushed by RRC; "" = no header compression
 
     gates:

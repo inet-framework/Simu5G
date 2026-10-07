@@ -26,5 +26,9 @@ simple Registration like IRegistration
         string routingTableModule;
         string binderModule = default("binder");
         string connectionControlModule = default("^.connectionControl");   // The node's control-plane entry point (see ~Rrc), told about a multicast group join
+        int macNodeId;  // The node's id: a base station's, or the LTE-leg id of a UE; set by the NIC
+        int nrMacNodeId = default(0);  // UE only: the NR-leg id of a dual-stack UE, 0 if none; set by the NIC
+        int servingNodeId = default(0);  // UE only: the initial serving node of the LTE leg, 0 if none; set by the NIC
+        int nrServingNodeId = default(0);  // UE only: the initial serving node of the NR leg, 0 if none; set by the NIC
         string sessionType = default("");  // UE only: the type of the UE's session (see ~LteUe): a UE created during the run gets an IPv4 default route through the NIC only on an IP session, and the NIC of an Ethernet session is an Ethernet port; set by the NIC
 }

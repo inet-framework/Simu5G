@@ -33,12 +33,11 @@ void Registration::initialize(int stage)
         connectionControl.reference(this, "connectionControlModule", true);
 
         cModule *containingNode = inet::getContainingNode(this);
-        MacNodeId nodeId = MacNodeId(containingNode->par("macNodeId").intValue());
+        MacNodeId nodeId = MacNodeId(par("macNodeId").intValue());
         nodeType = getNodeTypeById(nodeId);
         if (nodeType == UE) {
             lteNodeId = nodeId;
-            if (containingNode->hasPar("nrMacNodeId"))
-                nrNodeId = MacNodeId(containingNode->par("nrMacNodeId").intValue());
+            nrNodeId = MacNodeId(par("nrMacNodeId").intValue());
             sessionType_ = aToSessionType(par("sessionType").stdstringValue());
         }
         if (nodeType == NODEB) {
@@ -78,11 +77,10 @@ void Registration::initialize(int stage)
             binder->registerMasterNode(masterId, nodeId);  // note: even if masterId == NODEID_NONE!
         }
         if (nodeType == UE) {
-            cModule *ue = inet::getContainingNode(this);
-            MacNodeId servingNodeId = MacNodeId(ue->par("servingNodeId").intValue());
+            MacNodeId servingNodeId = MacNodeId(par("servingNodeId").intValue());
             binder->registerServingNode(servingNodeId, lteNodeId);
             if (nrNodeId != NODEID_NONE) {
-                MacNodeId nrServingNodeId = MacNodeId(ue->par("nrServingNodeId").intValue());
+                MacNodeId nrServingNodeId = MacNodeId(par("nrServingNodeId").intValue());
                 binder->registerServingNode(nrServingNodeId, nrNodeId);
             }
         }

@@ -27,5 +27,6 @@ simple NrPdcpTxEntity extends LtePdcpTxEntity
         @class("NrPdcpTxEntity");
         @display("i=block/layer");
         @signal[pdcpSduSentNr];
+        int nrMacNodeId = default(0);  // UE only: the NR-leg id of a dual-stack UE, 0 if none; set by the enclosing PdcpEntityBase
 }
 

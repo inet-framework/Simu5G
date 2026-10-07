@@ -44,14 +44,11 @@ void Ip2Nic::initialize(int stage)
         dualConnectivityEnabled_ = networkIf->par("dualConnectivityEnabled").boolValue();
 
         if (nodeType_ == NODEB) {
-            cModule *bs = getContainingNode(this);
-            nodeId_ = MacNodeId(bs->par("macNodeId").intValue());
+            nodeId_ = MacNodeId(par("macNodeId").intValue());
         }
         else if (nodeType_ == UE) {
-            cModule *ue = getContainingNode(this);
-            nodeId_ = MacNodeId(ue->par("macNodeId").intValue());
-            if (ue->hasPar("nrMacNodeId"))
-                nrNodeId_ = MacNodeId(ue->par("nrMacNodeId").intValue());
+            nodeId_ = MacNodeId(par("macNodeId").intValue());
+            nrNodeId_ = MacNodeId(par("nrMacNodeId").intValue());
             sessionType_ = aToSessionType(par("sessionType").stdstringValue());
         }
 

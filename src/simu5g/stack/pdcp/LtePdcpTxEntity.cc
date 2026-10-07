@@ -32,7 +32,7 @@ simsignal_t LtePdcpTxEntity::pdcpSduSentSignal_ = registerSignal("pdcpSduSent");
 void LtePdcpTxEntity::initialize(int stage) {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
-        nodeId_ = MacNodeId(getContainingNode(this)->par("macNodeId").intValue());
+        nodeId_ = MacNodeId(par("macNodeId").intValue());
 
         // the bearer's header compression, as RRC pushed it (see PdcpEntityBase)
         cStringTokenizer profiles(par("rohcProfiles").stringValue());

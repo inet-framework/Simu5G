@@ -54,10 +54,8 @@ void DcPdcpLegSplitter::initialize(int stage)
 
         legRlc_.assign(numLegs_, nullptr);
 
-        cModule *node = inet::getContainingNode(this);
-        nodeId_ = MacNodeId(node->par("macNodeId").intValue());
-        if (node->hasPar("nrMacNodeId"))
-            nrNodeId_ = MacNodeId(node->par("nrMacNodeId").intValue());
+        nodeId_ = MacNodeId(par("macNodeId").intValue());
+        nrNodeId_ = MacNodeId(par("nrMacNodeId").intValue());
         isUe_ = (getNodeTypeById(nodeId_) == UE);
 
         WATCH(servingNodeId_);

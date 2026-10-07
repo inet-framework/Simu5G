@@ -822,6 +822,8 @@ cModule *BearerManagement::findOrCreatePdcpEntity(DrbKey id, const FlowId& flow,
         for (const std::string& profile : cfg->rohcProfiles)
             rohcProfiles += (rohcProfiles.empty() ? "" : " ") + profile;
     module->par("rohcProfiles") = rohcProfiles;
+    module->par("macNodeId") = par("macNodeId").intValue();
+    module->par("nrMacNodeId") = par("nrMacNodeId").intValue();
     module->par("numLegs") = numLegs;
     std::string legsStr;
     for (CellGroup group : legGroups)

@@ -37,6 +37,10 @@ module PdcpEntityBase
     parameters:
         @dynamic(true);
         @display("i=block/wheelbarrow");
+        int macNodeId;                             // The node's id: a base station's, or the LTE-leg id of a UE; set by BearerManagement
+        int nrMacNodeId = default(0);              // UE only: the NR-leg id of a dual-stack UE, 0 if none; set by BearerManagement
+        *.macNodeId = this.macNodeId;
+        *.nrMacNodeId = this.nrMacNodeId;
         int numLegs = default(1);                  // Number of RLC legs of this bearer
         string legs = default(numLegs == 1 ? "MCG" : "MCG SCG");  // Cell group of each leg, space-separated, in leg-index order
         bool hasSplitter = numLegs > 1 || legs != "MCG";  // The TX side routes through the splitter whenever a leg needs its per-leg id mapping

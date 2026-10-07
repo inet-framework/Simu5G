@@ -27,6 +27,8 @@ simple Ip2Nic like INetworkLayer2CellularNic
     parameters:
         string nodeType;
         string binderModule = default("binder");
+        int macNodeId;  // The node's id: a base station's, or the LTE-leg id of a UE; set by the NIC
+        int nrMacNodeId = default(0);  // UE only: the NR-leg id of a dual-stack UE, 0 if none; set by the NIC
         string connectionControlModule = default("^.rrc.connectionControl");   // The node's control-plane entry point, asked for a bearer on a lookup miss
         bool isNr = default(false);   // True for the NR leg (set by NrNicUe/NrNicEnb, or in the ini for a DC master eNB)
         bool hasSdap = default(false);  // When true, SDAP handles DRB/RLC assignment; Ip2Nic skips traffic classification

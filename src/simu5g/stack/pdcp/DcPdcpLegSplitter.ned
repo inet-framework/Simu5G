@@ -52,6 +52,8 @@ simple DcPdcpLegSplitter like IPdcpLegSplitter
         int numLegs;                        // Number of legs (set by the enclosing PdcpEntityBase)
         string legs;                        // Cell group of each leg, space-separated "MCG"/"SCG" (set by the enclosing PdcpEntityBase)
         string binderModule = default("binder");
+        int macNodeId;  // The node's id: a base station's, or the LTE-leg id of a UE; set by the enclosing PdcpEntityBase
+        int nrMacNodeId = default(0);  // UE only: the NR-leg id of a dual-stack UE, 0 if none; set by the enclosing PdcpEntityBase
         // The split policy (primary path, split threshold) and any legSelection override
         // are pushed by RRC from the bearer's definition; see banner comment.
         @display("i=block/dispatch");

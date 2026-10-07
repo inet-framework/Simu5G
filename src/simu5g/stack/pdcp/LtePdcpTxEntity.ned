@@ -46,6 +46,7 @@ simple LtePdcpTxEntity like IPdcpTxEntity
         @signal[sentPacketToLowerLayer];
         @signal[pdcpSduSent];
         string binderModule = default("binder");
+        int macNodeId;  // The node's id: a base station's, or the LTE-leg id of a UE; set by the enclosing PdcpEntityBase
         bool emitPerSduSignals = default(true);              // Cleared by a PdcpEntityBase with a splitter: the splitter emits the per-leg statistics
         string rohcProfiles = default("");  // The bearer's ROHC profiles, space-separated, pushed by RRC; "" = no header compression
         object rohcFoHeaderSizes = default({rtp: 6, udp: 6, tcp: 9, ip: 4});  // Compressed header size per ROHC profile in the FO state, in bytes

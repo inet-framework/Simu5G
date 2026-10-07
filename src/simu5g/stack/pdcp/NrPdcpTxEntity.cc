@@ -23,7 +23,7 @@ void NrPdcpTxEntity::initialize(int stage)
     LtePdcpTxEntity::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         if (getNodeTypeById(nodeId_) == UE)
-            nrNodeId_ = MacNodeId(getContainingNode(this)->par("nrMacNodeId").intValue());
+            nrNodeId_ = MacNodeId(par("nrMacNodeId").intValue());
     }
 }
 

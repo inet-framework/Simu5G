@@ -52,6 +52,10 @@ module LteNicUe extends LteNicBase like IUeCellularNic
         handoverPacketHolder.sessionType = this.sessionType;
         ip2nic.sessionType = this.sessionType;
         lteDlFbGen.macNodeId = parent.macNodeId;
+        ip2nic.macNodeId = parent.macNodeId;
+        rrc.registration.macNodeId = parent.macNodeId;
+        rrc.registration.servingNodeId = parent.servingNodeId;
+        rrc.bearerManagement.macNodeId = parent.macNodeId;
         // The LTE leg's modules take their MacNodeId from the node
         ltePhy.macNodeId = parent.macNodeId;
         lteMac.macNodeId = parent.macNodeId;
