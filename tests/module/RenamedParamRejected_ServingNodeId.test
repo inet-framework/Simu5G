@@ -1,0 +1,22 @@
+%description:
+The UE's servingNodeId parameter was renamed to lteServingNodeId. A configuration that
+still sets the old name is an error, instead of the UE silently starting on the default
+serving node. (The lteServingNodeId = default line undoes the assignment of defaults.ini,
+so the UE is configured as a configuration that never set the new name.)
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.EpcSessionTestNetwork
+
+*.ue[*].servingNodeId = 1
+*.ue[*].lteServingNodeId = default
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+Parameter 'servingNodeId' was renamed to 'lteServingNodeId', set that one instead
+%#--------------------------------------------------------------------------------------------------------------

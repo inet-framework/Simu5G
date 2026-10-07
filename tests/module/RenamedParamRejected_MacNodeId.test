@@ -1,0 +1,20 @@
+%description:
+The UE's macNodeId parameter was renamed to lteMacNodeId. A configuration that still
+sets the old name is an error, instead of the UE silently getting an automatically
+assigned node id.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.EpcSessionTestNetwork
+
+*.ue[0].macNodeId = 1030
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+Parameter 'macNodeId' was renamed to 'lteMacNodeId', set that one instead
+%#--------------------------------------------------------------------------------------------------------------

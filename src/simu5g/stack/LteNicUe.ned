@@ -42,7 +42,7 @@ module LteNicUe extends LteNicBase like IUeCellularNic
 
         rrc.hasLteConnectionControl = true;
         rrc.lteConnectionControl.isNr = false;
-        rrc.lteConnectionControl.macNodeId = parent.macNodeId;
+        rrc.lteConnectionControl.macNodeId = parent.lteMacNodeId;
         rrc.lteConnectionControl.sessionType = this.sessionType;
         // The UE's control-plane entry point is its LTE leg's connection control
         ip2nic.connectionControlModule = "^.rrc.lteConnectionControl";
@@ -51,14 +51,14 @@ module LteNicUe extends LteNicBase like IUeCellularNic
         rrc.registration.sessionType = this.sessionType;
         handoverPacketHolder.sessionType = this.sessionType;
         ip2nic.sessionType = this.sessionType;
-        lteDlFbGen.macNodeId = parent.macNodeId;
-        ip2nic.macNodeId = parent.macNodeId;
-        rrc.registration.macNodeId = parent.macNodeId;
-        rrc.registration.servingNodeId = parent.servingNodeId;
-        rrc.bearerManagement.macNodeId = parent.macNodeId;
+        lteDlFbGen.macNodeId = parent.lteMacNodeId;
+        ip2nic.macNodeId = parent.lteMacNodeId;
+        rrc.registration.macNodeId = parent.lteMacNodeId;
+        rrc.registration.servingNodeId = parent.lteServingNodeId;
+        rrc.bearerManagement.macNodeId = parent.lteMacNodeId;
         // The LTE leg's modules take their MacNodeId from the node
-        ltePhy.macNodeId = parent.macNodeId;
-        lteMac.macNodeId = parent.macNodeId;
+        ltePhy.macNodeId = parent.lteMacNodeId;
+        lteMac.macNodeId = parent.lteMacNodeId;
         // The LTE leg's RLC entities attach to the LTE leg's mux and MAC
         rrc.bearerManagement.rlcMuxModule = "^.^.lteRlcMux";
         rrc.bearerManagement.macModule = "^.^.lteMac";

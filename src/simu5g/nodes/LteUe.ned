@@ -76,8 +76,10 @@ module LteUe extends StandardHost
 
         //# Node specs
         string nodeType = "UE";  // DO NOT CHANGE
-        int servingNodeId = default(0); // The initial serving eNodeB of the UE; 0 if none
-        int macNodeId = default(1025+simu5g_seq("LteUe_macNodeId"));
+        int servingNodeId = default(-1);  // Renamed to lteServingNodeId; setting it is an error
+        int lteServingNodeId = default(simu5g_renamedParam(servingNodeId, -1, "servingNodeId", "lteServingNodeId", 0));  // The initial serving eNodeB of the UE's LTE leg; 0 if none
+        int macNodeId = default(-1);  // Renamed to lteMacNodeId; setting it is an error
+        int lteMacNodeId = default(simu5g_renamedParam(macNodeId, -1, "macNodeId", "lteMacNodeId", 1025+simu5g_seq("LteUe_macNodeId")));  // The node id of the UE's LTE leg
         string sessionType @enum("IPv4","IPv6","IPv4v6","Ethernet","Unstructured") = default("IPv4");  // The type of the session the UE requests (see the main comment)
         string ethernetMode @enum("host","bridge") = default("host");  // Ethernet sessions only: the UE is an Ethernet host, or a bridge for the devices on its eth[] interfaces (see the main comment)
         bool hasEthernetSession = sessionType == "Ethernet";  // Do not change: whether the UE has the Ethernet link layer (see the main comment)

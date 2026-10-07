@@ -40,7 +40,7 @@ cmdenv-log-prefix = ""
 **.cmdenv-log-level = off
 
 # the serving cells (defaults.ini sets them for NrSessionTestNetwork by name)
-*.ue[*].servingNodeId = 0
+*.ue[*].lteServingNodeId = 0
 *.ue[*].nrServingNodeId = 1
 
 *.upf.hasEthernetBridge = true

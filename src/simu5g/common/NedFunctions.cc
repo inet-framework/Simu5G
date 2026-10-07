@@ -40,4 +40,19 @@ Define_NED_Function2(nedf_seq,
         "Returns the next integer (starting from 0) from the sequence identified by the first argument as name."
         );
 
+static cNEDValue nedf_renamedParam(cComponent *context, cNEDValue argv[], int argc)
+{
+    if (argv[0].intValue() != argv[1].intValue())
+        throw cRuntimeError(context, "Parameter '%s' was renamed to '%s', set that one instead", argv[2].stringValue(), argv[3].stringValue());
+    return argv[4];
+}
+
+Define_NED_Function2(nedf_renamedParam,
+        "int simu5g_renamedParam(int oldValue, int unsetValue, string oldName, string newName, int value)",
+        "misc",
+        "Guards a renamed integer parameter: the old parameter stays declared with unsetValue as its default, and the new "
+        "parameter's default calls this function, which throws an error if the old parameter was set (oldValue differs "
+        "from unsetValue), and returns value otherwise."
+        );
+
 } //namespace
