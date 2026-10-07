@@ -44,7 +44,7 @@ module NrNicUe extends LteNicUe
         sdap.reflectiveQosTableModule = default(this.useReflectiveQos ? "^.reflectiveQosTable" : "");
         string nrChannelModelType = default("Tr38901ChannelModel");
 
-        packetFlowObserver.typename = default("PacketFlowObserverUe");
+        ltePacketFlowObserver.typename = default("PacketFlowObserverUe");
 
         int numNrCarriers = default(1);
 

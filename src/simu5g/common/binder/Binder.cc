@@ -794,12 +794,12 @@ void Binder::moveUeCollector(MacNodeId ue, MacCellId oldCell, MacCellId newCell)
             addUeCollectorToEnodeB(ue, ueColl, newCell);
         }
         else {
-            // Retrieve ueCollector for eNodeB
+            // Retrieve lteUeCollector for eNodeB
             cModule *ueModule = getModuleByMacNodeId(ue);
-            if (ueModule->findSubmodule("ueCollector") == -1)
-                ueColl = check_and_cast<UeStatsCollector *>(ueModule->getSubmodule("ueCollector"));
+            if (ueModule->findSubmodule("lteUeCollector") == -1)
+                ueColl = check_and_cast<UeStatsCollector *>(ueModule->getSubmodule("lteUeCollector"));
             else
-                throw cRuntimeError("LteBinder::moveUeCollector - Ue [%hu] does not have an 'ueCollector' submodule required for the eNB", num(ue));
+                throw cRuntimeError("LteBinder::moveUeCollector - Ue [%hu] does not have an 'lteUeCollector' submodule required for the eNB", num(ue));
             addUeCollectorToEnodeB(ue, ueColl, newCell);
         }
     }
@@ -832,6 +832,8 @@ cModule *Binder::getPhyByNodeId(MacNodeId nodeId)
     }
     if (isNrUe(nodeId))
         return module->getSubmodule("cellularNic")->getSubmodule("nrPhy");
+    if (getNodeTypeById(nodeId) == UE)
+        return module->getSubmodule("cellularNic")->getSubmodule("ltePhy");
     return module->getSubmodule("cellularNic")->getSubmodule("phy");
 }
 
@@ -845,6 +847,8 @@ cModule *Binder::getMacByNodeId(MacNodeId nodeId)
     }
     if (isNrUe(nodeId))
         return module->getSubmodule("cellularNic")->getSubmodule("nrMac");
+    if (getNodeTypeById(nodeId) == UE)
+        return module->getSubmodule("cellularNic")->getSubmodule("lteMac");
     return module->getSubmodule("cellularNic")->getSubmodule("mac");
 }
 

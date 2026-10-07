@@ -76,4 +76,4 @@ nodes; the Infra-only configs set hasD2D = false. The relevant knobs are:
       based on a periodically recomputed conflict graph.
 
   Separate D2D transmit power (optional):
-      *.ueD2D*[*].cellularNic.phy.d2dTxPower = 20dBm       # ueTxPower is used for UL
+      *.ueD2D*[*].cellularNic.ltePhy.d2dTxPower = 20dBm       # ueTxPower is used for UL

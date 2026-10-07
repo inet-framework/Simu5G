@@ -569,11 +569,12 @@ void BearerManagement::setRlcEntityParams(cModule *entity, bool isNr)
     // The compound NED absPath()-resolves them and passes them to its tx/rx submodules (see
     // '*.macModule = default(absPath(this.macModule))'). hasPar() guards because not every
     // compound/leg declares both (TM has neither; AM has no rlcMux). Per leg: a UE's NR leg uses
-    // nrMac/nrRlcMux; everything else (incl. a gNB's NR bearers, which have no nrMac) uses mac/rlcMux.
+    // the nrMac/nrRlcMux modules; everything else (incl. a gNB's NR bearers, which have no nrMac)
+    // uses the macModule/rlcMuxModule ones (lteMac/lteRlcMux at a UE, mac/rlcMux at a base station).
     if (entity->hasPar("macModule"))
-        entity->par("macModule").setStringValue(isNr ? "^.nrMac" : "^.mac");
+        entity->par("macModule").setStringValue(std::string("^.") + (isNr ? nrMacModule.get() : macModule.get())->getName());
     if (entity->hasPar("rlcMuxModule"))
-        entity->par("rlcMuxModule").setStringValue(isNr ? "^.nrRlcMux" : "^.rlcMux");
+        entity->par("rlcMuxModule").setStringValue(std::string("^.") + (isNr ? nrRlcMuxModule.get() : rlcMuxModule.get())->getName());
     // The RLC entity's wire format is not a parameter: it is inherent to the entity
     // class selected per bearer in findOrCreateRlcEntity() (NR-SO vs LTE-FI, by the same
     // RAT predicate as here), and RRC records the choice in the bearer's descriptor
@@ -629,7 +630,8 @@ cModule *BearerManagement::findOrCreateRlcEntity(DrbKey id, RlcMode rlcMode, con
         case AM: moduleType = isNrBearer ? nrRlcAmEntityModuleType_ : lteRlcAmEntityModuleType_; prefix = "am"; break;
         default: moduleType = isNrBearer ? nrRlcUmEntityModuleType_ : lteRlcUmEntityModuleType_; prefix = "um"; break;
     }
-    std::string name = std::string(isNr ? "nrRlc-" : "rlc-") + prefix + "-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
+    const char *legPrefix = isNr ? "nrRlc-" : registration_->getNodeType() == UE ? "lteRlc-" : "rlc-";
+    std::string name = std::string(legPrefix) + prefix + "-" + std::to_string(num(id.getNodeId())) + "-" + std::to_string(num(id.getDrbId()));
     auto *module = moduleType->create(name.c_str(), nicModule_);
     // Set the leg's MAC/RLC-mux paths on the COMPOUND before finalize; its NED passes them down
     // to the tx/rx submodules (see '*.macModule = this.macModule' in RlcUmEntityBase/RlcAmEntityBase), so

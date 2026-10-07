@@ -78,4 +78,4 @@ D2D configs move them to the direct link with the knobs below:
       based on a periodically recomputed conflict graph.
 
   Separate D2D transmit power (optional):
-      *.ueD2D*[*].cellularNic.phy.d2dTxPower = 20dBm       # ueTxPower is used for UL
+      *.ueD2D*[*].cellularNic.ltePhy.d2dTxPower = 20dBm       # ueTxPower is used for UL

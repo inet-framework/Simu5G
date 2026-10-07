@@ -49,13 +49,13 @@ simple ConnectionControlUe like IConnectionControl
         double hysteresisFactor = default(10);
 
         string binderModule = default("binder");
-        string macModule = default("^.^.mac");
+        string macModule = default("^.^.lteMac");
         string bearerManagementModule = default("^.bearerManagement");
         string handoverPacketHolderModule = default("^.^.handoverPacketHolder");
-        string feedbackGeneratorModule = default("^.^.dlFbGen"); // TODO or "^.^.nrDlFbGen"
+        string feedbackGeneratorModule = default("^.^.lteDlFbGen"); // TODO or "^.^.nrDlFbGen"
         string otherConnectionControlModule = default("");
 
-        bool hasCollector = default(false); // True when node has a collector module (ueCollector/nrUeCollector) for this PHY module
+        bool hasCollector = default(false); // True when node has a collector module (lteUeCollector/nrUeCollector) for this PHY module
 
         @signal[servingCell];
         @statistic[servingCell](title="ID of the serving cell for the UE"; unit=""; source="servingCell"; record=vector);

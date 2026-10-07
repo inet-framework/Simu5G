@@ -21,7 +21,7 @@ simple PacketFlowObserverUe like IPacketFlowObserver
 {
     @class("PacketFlowObserverUe");
     @display("i=block/cogwheel");
-    string macModule = default("^.mac");
+    string macModule = default("^.lteMac");
     string pdcpModule = default("^");
     string rlcModule = default("^");
     bool isNrObserver = default(false);

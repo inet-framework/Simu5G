@@ -32,12 +32,12 @@ module NrNicUeD2D extends NrNicUe
 
         // LTE leg: also runs the D2D-capable MAC/PHY leaves (the PHY carries
         // the averageCqiD2D statistic)
-        mac.typename = default("LteMacUeD2D");
-        phy.typename = default("PhyUeD2D");
+        lteMac.typename = default("LteMacUeD2D");
+        ltePhy.typename = default("PhyUeD2D");
         ip2nic.typename = default("Ip2NicD2D");
 
         // Both legs previously ran with the NIC-wide D2D support enabled
-        rlcMux.typename = default("RlcMuxD2D");
+        lteRlcMux.typename = default("RlcMuxD2D");
         rrc.bearerManagement.lteRlcUmEntityModuleType = default("simu5g.stack.d2d.rlc.LteRlcUmEntityD2D");
         rrc.bearerManagement.nrRlcUmEntityModuleType = default("simu5g.stack.d2d.rlc.NrRlcUmEntityD2D");
         nrRlcMux.typename = default("RlcMuxD2D");

@@ -61,8 +61,8 @@ simple MultihopD2D like IApp
 
         //# Network Layer specs
         string interfaceTableModule = default(absPath(".interfaceTable"));
-        string lteMacModule = default("^.cellularNic.mac");
-        string ltePhyModule = default("^.cellularNic.phy");
+        string lteMacModule = default("^.cellularNic.lteMac");
+        string ltePhyModule = default("^.cellularNic.ltePhy");
 
         int tos = default(-1); // If not -1, set the Type of Service (IPv4) / Traffic Class (IPv6) field of sent packets to this value
 

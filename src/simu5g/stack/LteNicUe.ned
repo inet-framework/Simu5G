@@ -33,10 +33,10 @@ import simu5g.stack.rlc.IRlcMux;
 module LteNicUe extends LteNicBase like IUeCellularNic
 {
     parameters:
-        mac.typename = default("LteMacUe");
-        phy.typename = default("PhyUe");
+        lteMac.typename = default("LteMacUe");
+        ltePhy.typename = default("PhyUe");
         handoverPacketHolder.typename = default("HandoverPacketHolderUe");
-        packetFlowObserver.typename = default("PacketFlowObserverUe");
+        ltePacketFlowObserver.typename = default("PacketFlowObserverUe");
 
         string sessionType;  // The type of the UE's session (see ~LteUe), set by the node
 
@@ -48,22 +48,25 @@ module LteNicUe extends LteNicBase like IUeCellularNic
         rrc.registration.sessionType = this.sessionType;
         handoverPacketHolder.sessionType = this.sessionType;
         ip2nic.sessionType = this.sessionType;
-        dlFbGen.macNodeId = parent.macNodeId;
+        lteDlFbGen.macNodeId = parent.macNodeId;
         // The LTE leg's modules take their MacNodeId from the node
-        phy.macNodeId = parent.macNodeId;
-        mac.macNodeId = parent.macNodeId;
+        ltePhy.macNodeId = parent.macNodeId;
+        lteMac.macNodeId = parent.macNodeId;
+        // The LTE leg's RLC entities attach to the LTE leg's mux and MAC
+        rrc.bearerManagement.rlcMuxModule = "^.^.lteRlcMux";
+        rrc.bearerManagement.macModule = "^.^.lteMac";
 
     submodules:
         // RLC submodules (flattened from former LteRlc compound)
-        rlcMux: <default("RlcMux")> like IRlcMux {
+        lteRlcMux: <default("RlcMux")> like IRlcMux {
             @display("p=310,580;is=s");
         }
         // MAC Layer
-        mac: <> like ILteMac {
+        lteMac: <> like ILteMac {
             @display("p=310,660");
         }
         // PHY submodule
-        phy: <> like IPhy {
+        ltePhy: <> like IPhy {
             @display("p=310,750");
         }
 
@@ -72,12 +75,12 @@ module LteNicUe extends LteNicBase like IUeCellularNic
         }
 
         //# Modules used to take trace of PDCP pkt flow
-        packetFlowObserver: <default("")> like IPacketFlowObserver if hasRniSupport {
+        ltePacketFlowObserver: <default("")> like IPacketFlowObserver if hasRniSupport {
             @display("p=80,60,col;g=left");
         }
 
         // Feedback generator submodule
-        dlFbGen: LteDlFeedbackGenerator {
+        lteDlFbGen: LteDlFeedbackGenerator {
             @display("p=80,60,col;g=left");
         }
         // the NIC's top in Ethernet mode, an Ethernet port of the UE's link layer
@@ -87,15 +90,15 @@ module LteNicUe extends LteNicBase like IUeCellularNic
 
     connections allowunconnected:
         //# RLC <-> MAC
-        rlcMux.macOut --> mac.upperLayerIn;
-        rlcMux.macIn <-- mac.upperLayerOut;
+        lteRlcMux.macOut --> lteMac.upperLayerIn;
+        lteRlcMux.macIn <-- lteMac.upperLayerOut;
 
         //# Connections from LTE Stack to radio interface
-        mac.phyOut --> phy.upperGateIn;
-        mac.phyIn <-- phy.upperGateOut;
+        lteMac.phyOut --> ltePhy.upperGateIn;
+        lteMac.phyIn <-- ltePhy.upperGateOut;
 
         //# external: lower connection
-        radioIn --> phy.radioIn;
+        radioIn --> ltePhy.radioIn;
 
         upperLayerIn --> { @reconnect; delay = parent.processingDelayIn; } --> ethernetPortal.upperLayerIn if sessionType == "Ethernet";
         ethernetPortal.lowerLayerOut --> handoverPacketHolder.upperLayerIn if sessionType == "Ethernet";

@@ -44,5 +44,5 @@ simple LteDlFeedbackGenerator
         string initialTxMode @enum(SINGLE_ANTENNA_PORT0,TRANSMIT_DIVERSITY) = default("SINGLE_ANTENNA_PORT0");
 
         string binderModule = default("binder");
-        string phyModule = default("^.phy");
+        string phyModule = default("^.ltePhy");
 }

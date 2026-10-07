@@ -24,9 +24,9 @@ module UeStatsCollector like IStatsCollector
         string collectorType = default("ueStatsCollector");
         string binderModule = default("binder");
         string interfaceTableModule;
-        string macModule = default("^.cellularNic.mac");
+        string macModule = default("^.cellularNic.lteMac");
         // string pdcpModule = default("^.cellularNic.pdcp");
-        string packetFlowObserverModule = default("^.cellularNic.packetFlowObserver");
+        string packetFlowObserverModule = default("^.cellularNic.ltePacketFlowObserver");
         bool movingAverage = default(true);
 
         // Time periods for measurements

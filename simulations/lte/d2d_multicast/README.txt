@@ -52,7 +52,7 @@ knobs are:
       selects the modulation/coding.
 
   PHY-level multicast range check (checkMulticastRange config):
-      **.phy.enableMulticastD2DRangeCheck = true
-      **.phy.multicastD2DRange = 1000m
+      **.ltePhy.enableMulticastD2DRangeCheck = true
+      **.ltePhy.multicastD2DRange = 1000m
       When enabled, the PHY delivers a multicast packet only to receivers within
       the given range of the transmitter.

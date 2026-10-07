@@ -90,7 +90,7 @@ module LteUe extends StandardHost
         string extHostAddress = default("");
 
         bool hasRniSupport = default(false);
-        cellularNic.mac.collectorModule = hasRniSupport ? "^.^.ueCollector" : "";
+        cellularNic.lteMac.collectorModule = hasRniSupport ? "^.^.lteUeCollector" : "";
         cellularNic.rrc.connectionControl.hasCollector = hasRniSupport;
 
         mobility.typename = default("StationaryMobility");
@@ -122,7 +122,7 @@ module LteUe extends StandardHost
         }
 
         //# UeStatsCollector - for MEC
-        ueCollector: UeStatsCollector if hasRniSupport {
+        lteUeCollector: UeStatsCollector if hasRniSupport {
             @display("p=125,960;is=s");
         }
 

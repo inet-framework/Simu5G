@@ -27,11 +27,11 @@ import simu5g.stack.LteNicUe;
 module LteNicUeD2D extends LteNicUe
 {
     parameters:
-        mac.typename = default("LteMacUeD2D");
-        phy.typename = default("PhyUeD2D");
-        packetFlowObserver.typename = default("PacketFlowObserverUe");
+        lteMac.typename = default("LteMacUeD2D");
+        ltePhy.typename = default("PhyUeD2D");
+        ltePacketFlowObserver.typename = default("PacketFlowObserverUe");
         ip2nic.typename = default("Ip2NicD2D");
-        rlcMux.typename = default("RlcMuxD2D");
+        lteRlcMux.typename = default("RlcMuxD2D");
         rrc.bearerManagement.lteRlcUmEntityModuleType = default("simu5g.stack.d2d.rlc.LteRlcUmEntityD2D");
 
         // Use the D2D-capable channel model
