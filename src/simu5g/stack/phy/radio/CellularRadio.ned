@@ -1,45 +1,37 @@
 //
-//                  Simu5G
+// SPIKE (stage C): CellularRadio is an INET Radio. INET's antenna,
+// transmitter and receiver deliver and time the signals (unit-disk: no
+// physics, no draws); Simu5G's own antenna, transmitter and receiver keep
+// their roles under the cellular* names.
 //
-// Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea et al. (University of Pisa)
-//
-// This file is part of a software released under the license included in file
-// "license.pdf". Please read LICENSE and README files before using it.
-// The above files and the present reference are part of the software itself,
-// and cannot be removed from it.
-//
-
 package simu5g.stack.phy.radio;
 
-//
-// The radio of a cellular PHY leg: the node-side counterpart of the radio
-// medium, holding the antenna, the transmitter and the receiver. Every frame
-// the PHY transmits passes through it (the PHY says where it goes), and every
-// frame that arrives for the node's PHY leg enters through it; the PHY and its
-// channel models still decide everything else.
-//
-// A frame arrives when its transmission starts. The radio holds it until the
-// transmission ends and passes it up to the PHY then, at the frame's own
-// scheduling priority; a frame that takes no air time (a beacon) is passed up
-// on arrival.
-//
-module CellularRadio
+import inet.physicallayer.wireless.common.radio.packetlevel.Radio;
+
+module CellularRadio extends Radio
 {
     parameters:
         @class(CellularRadio);
         @display("i=device/antennatower");
-    gates:
-        input radioIn @directIn;    // frames from other radios
-        input upperLayerIn;         // frames to transmit, from the PHY
-        output upperLayerOut;       // received frames, to the PHY
+        signalAnalogRepresentation = "unitDisk";
+        initialRadioMode = "off"; // INET 4.7: the initial mode listens before the radio is on the medium; switched on at INITSTAGE_LAST
+        allowConcurrentTransmissions = true;
+        allowConcurrentReceptions = true;
+        antenna.mobilityModule = default("^.^.^.mobility");
+        transmitter.typename = "SpikeTransmitter";
+        receiver.typename = "SpikeReceiver";
+        receiver.ignoreInterference = true;
+        transmitter.analogModel.communicationRange = 1e9m;
+        transmitter.analogModel.interferenceRange = 1e9m;
+        transmitter.analogModel.detectionRange = 1e9m;
     submodules:
-        antenna: CellularAntenna {
-            @display("p=100,100");
+        cellularAntenna: CellularAntenna {
+            @display("p=250,100");
         }
-        transmitter: CellularTransmitter {
-            @display("p=100,200");
+        cellularTransmitter: CellularTransmitter {
+            @display("p=250,200");
         }
-        receiver: CellularReceiver {
-            @display("p=100,300");
+        cellularReceiver: CellularReceiver {
+            @display("p=250,300");
         }
 }

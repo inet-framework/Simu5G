@@ -1,85 +1,95 @@
-//
-//                  Simu5G
-//
-// Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea et al. (University of Pisa)
-//
-// This file is part of a software released under the license included in file
-// "license.pdf". Please read LICENSE and README files before using it.
-// The above files and the present reference are part of the software itself,
-// and cannot be removed from it.
-//
-
+// SPIKE (stage C): CellularRadio is an INET Radio
 #include "simu5g/stack/phy/radio/CellularRadio.h"
+
+#include <inet/common/packet/chunk/cPacketChunk.h>
+#include <inet/common/ProtocolTag_m.h>
+#include <inet/common/Protocol.h>
+#include <inet/physicallayer/wireless/common/signal/WirelessSignal.h>
 
 #include "simu5g/stack/phy/channelmodel/IRadioEndpoint.h"
 #include "simu5g/stack/phy/packet/AirFrame_m.h"
 #include "simu5g/stack/phy/radio/CellularTransmitter.h"
-#include "simu5g/stack/phy/radio/RadioTransmissionRequest.h"
 
 namespace simu5g {
 
+using namespace inet;
+using namespace inet::physicallayer;
+
 Define_Module(CellularRadio);
+Define_Module(SpikeTransmitter);
+Define_Module(SpikeReceiver);
+
+static const Protocol cellularAirFrame("cellularAirFrame", "Simu5G air frame");
+
+const ITransmission *SpikeTransmitter::createTransmission(const IRadio *transmitter, const Packet *packet, const simtime_t startTime) const
+{
+    auto radio = check_and_cast<const CellularRadio *>(transmitter);
+    const RadioTransmissionRequest *request = radio->getPendingRequest();
+    simtime_t duration = request->duration;
+    auto mobility = transmitter->getAntenna()->getMobility();
+    auto position = mobility->getCurrentPosition();
+    auto orientation = mobility->getCurrentAngularPosition();
+    auto analogModel = getAnalogModel()->createAnalogModel(0, 0, duration, Hz(NaN), Hz(NaN), W(NaN));
+    auto transmission = new SpikeTransmission(transmitter, packet, startTime, startTime + duration, 0, 0, duration,
+            position, position, orientation, orientation, nullptr, nullptr, nullptr, nullptr, analogModel);
+    transmission->broadcast = request->broadcast;
+    transmission->targets = request->targets;
+    transmission->frame = radio->getPendingFrame()->dup();
+    transmission->priority = radio->getPendingFrame()->getSchedulingPriority();
+    return transmission;
+}
 
 void CellularRadio::initialize(int stage)
 {
-    if (stage == inet::INITSTAGE_LOCAL) {
-        radioInGateId_ = findGate("radioIn");
-        // frames arrive at the start of their transmission
-        gate(radioInGateId_)->setDeliverImmediately(true);
-        upperLayerInGateId_ = findGate("upperLayerIn");
-        upperLayerOutGateId_ = findGate("upperLayerOut");
-        radioMedium_ = dynamic_cast<CellularRadioMedium *>(getSimulation()->findModuleByPath("radioMedium"));
-        if (!radioMedium_)
-            throw cRuntimeError("Could not find CellularRadioMedium module with name 'radioMedium' in the top-level network.");
-    }
+    Radio::initialize(stage);
+    if (stage == INITSTAGE_LOCAL)
+        cellularMedium_ = check_and_cast<CellularRadioMedium *>(getSimulation()->findModuleByPath("radioMedium"));
+    else if (stage == INITSTAGE_LAST)
+        setRadioMode(RADIO_MODE_TRANSCEIVER);
 }
 
-void CellularRadio::handleMessage(cMessage *msg)
+void CellularRadio::handleUpperMessage(cMessage *message)
 {
-    if (msg->isSelfMessage()) {
-        if (auto frame = dynamic_cast<AirFrame *>(msg))
-            // the end of a held frame's transmission
-            send(frame, upperLayerOutGateId_);
-        else
-            // the end of this radio's own transmission
-            delete msg;
-    }
-    else if (msg->getArrivalGateId() == radioInGateId_) {
-        auto frame = check_and_cast<AirFrame *>(msg);
-        // the reception is evaluated where the radio is as the frame starts to arrive
-        frame->setArrivalPosition(endpoint_->getCoord());
-        frame->setReceptionStartTime(simTime());
-        // held until the transmission ends -- for a zero-duration beacon, an
-        // event at the same instant, as INET's reception timer; the frame keeps
-        // its scheduling priority
-        scheduleAfter(frame->getDuration(), frame);
-    }
-    else if (msg->getArrivalGateId() == upperLayerInGateId_)
-        transmit(check_and_cast<AirFrame *>(msg));
-    else
-        throw cRuntimeError("CellularRadio: unexpected message on gate %s", msg->getArrivalGate()->getFullName());
-}
-
-void CellularRadio::transmit(AirFrame *frame)
-{
+    auto frame = check_and_cast<AirFrame *>(message);
     auto request = check_and_cast<RadioTransmissionRequest *>(frame->removeControlInfo());
-    // every frame that leaves the radio is a transmission on the medium, in the order they are created
-    auto transmitter = check_and_cast<CellularTransmitter *>(getSubmodule("transmitter"));
-    radioMedium_->addTransmission(transmitter->createTransmission(*request, frame->getAdditionalInfo()));
-    if (request->broadcast)
-        radioMedium_->sendToNeighbors(request->sender, this, frame, request->duration);
-    else if (request->copyPerTarget) {
-        for (cGate *target : request->targets)
-            sendDirect(frame->dup(), 0, request->duration, target);
-        delete frame;
-    }
-    else {
-        ASSERT(request->targets.size() == 1);
-        sendDirect(frame, 0, request->duration, request->targets.front());
-    }
-    // the transmission ends with an event of its own at the transmitter, as INET's radio schedules one
-    scheduleAfter(request->duration, new cMessage("transmissionTimer"));
+    // the medium's own registry, which the channel models read
+    auto transmitter = check_and_cast<CellularTransmitter *>(getSubmodule("cellularTransmitter"));
+    cellularMedium_->addTransmission(transmitter->createTransmission(*request, frame->getAdditionalInfo()));
+    pendingFrame_ = frame;
+    auto packet = new Packet(frame->getName(), makeShared<cPacketChunk>(frame->dup()));
+    packet->addTag<PacketProtocolTag>()->setProtocol(&cellularAirFrame);
+    pendingRequest_ = request;
+    handleUpperPacket(packet);
+    pendingRequest_ = nullptr;
+    pendingFrame_ = nullptr;
+    delete frame;
     delete request;
+}
+
+void CellularRadio::startReception(cMessage *timer, IRadioSignal::SignalPart part)
+{
+    // the reception ends with the frame's scheduling priority, as the frame did
+    auto signal = static_cast<WirelessSignal *>(timer->getControlInfo());
+    timer->setSchedulingPriority(signal->getSchedulingPriority());
+    Radio::startReception(timer, part);
+}
+
+void CellularRadio::endReception(cMessage *timer)
+{
+    auto signal = static_cast<WirelessSignal *>(timer->getControlInfo());
+    endingArrivalPosition_ = signal->getArrival()->getStartPosition();
+    endingArrivalStart_ = signal->getArrival()->getStartTime();
+    endingFrame_ = check_and_cast<const SpikeTransmission *>(signal->getTransmission())->frame;
+    Radio::endReception(timer);
+}
+
+void CellularRadio::sendUp(Packet *macFrame)
+{
+    auto frame = endingFrame_->dup();
+    frame->setArrivalPosition(endingArrivalPosition_);
+    frame->setReceptionStartTime(endingArrivalStart_);
+    delete macFrame;
+    send(frame, upperLayerOutGateId);
 }
 
 } // namespace simu5g

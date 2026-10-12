@@ -62,8 +62,8 @@ module NrNicUe extends LteNicUe
         nrDlFbGen.macNodeId = parent.nrMacNodeId;
         rrc.nrHandoverController.otherHandoverControllerModule = "^.handoverController";
         nrPhy.radioModule = "^.nrRadio";
-        nrRadio.antenna.gain = default(0dBi);
-        nrRadio.receiver.noiseFigure = default(7dB);
+        nrRadio.cellularAntenna.gain = default(0dBi);
+        nrRadio.cellularReceiver.noiseFigure = default(7dB);
         nrPhy.feedbackGeneratorModule = "^.nrDlFbGen";
         nrPhy.handoverControllerModule = "^.rrc.nrHandoverController";
         rrc.nrHandoverController.macModule = "^.^.nrMac";

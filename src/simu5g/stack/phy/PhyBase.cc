@@ -351,17 +351,17 @@ void PhyBase::sendUnicast(AirFrame *frame, simtime_t duration)
 
 TxDirectionType PhyBase::getTxDirection()
 {
-    return check_and_cast<CellularAntenna *>(radio_->getSubmodule("antenna"))->getTxDirection();
+    return check_and_cast<CellularAntenna *>(radio_->getSubmodule("cellularAntenna"))->getTxDirection();
 }
 
 double PhyBase::getTxAngle()
 {
-    return check_and_cast<CellularAntenna *>(radio_->getSubmodule("antenna"))->getTxAngle();
+    return check_and_cast<CellularAntenna *>(radio_->getSubmodule("cellularAntenna"))->getTxAngle();
 }
 
 double PhyBase::getAntennaGain()
 {
-    return check_and_cast<CellularAntenna *>(radio_->getSubmodule("antenna"))->getGain();
+    return check_and_cast<CellularAntenna *>(radio_->getSubmodule("cellularAntenna"))->getGain();
 }
 
 double PhyBase::getNoiseFigure()
@@ -376,7 +376,7 @@ double PhyBase::getCableLoss()
 
 CellularReceiver *PhyBase::getReceiver()
 {
-    return check_and_cast<CellularReceiver *>(radio_->getSubmodule("receiver"));
+    return check_and_cast<CellularReceiver *>(radio_->getSubmodule("cellularReceiver"));
 }
 
 int PhyBase::getReceiverGateIndex(const cModule *receiver, MacNodeId dest) const

@@ -12,6 +12,7 @@
 package simu5g.stack.phy.medium;
 
 import simu5g.stack.phy.channelmodel.IChannelModel;
+import inet.physicallayer.wireless.common.medium.RadioMedium;
 
 //
 // The radio medium of a cellular network: the network-level module that is to
@@ -32,9 +33,15 @@ import simu5g.stack.phy.channelmodel.IChannelModel;
 // transmission at pMax falls to the sat threshold. Beacons drive handover and
 // the detection of a lost serving cell.
 //
-module CellularRadioMedium
+module CellularRadioMedium extends RadioMedium
 {
     parameters:
+        // SPIKE (stage C): INET's medium delivers and times the signals, unit-disk (no physics, no draws)
+        signalAnalogRepresentation = "unitDisk";
+        sameTransmissionStartTimeCheck = "ignore";
+        transmissionPurgeMode = "onTransmission";
+        propagation.typename = "ConstantTimePropagation";
+        propagation.propagationTime = 0s;
         int numCarriers = default(1); // The network's component carriers; the networks set it to carrierAggregation.numComponentCarriers
         string channelModelType = default("StochasticChannelModel"); // The channel model of the LTE radios, one per carrier
         string nrChannelModelType = default("Tr38901ChannelModel"); // The channel model of the NR radios, one per carrier

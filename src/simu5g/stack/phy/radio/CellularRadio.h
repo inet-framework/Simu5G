@@ -1,20 +1,13 @@
-//
-//                  Simu5G
-//
-// Copyright (C) 2022-2026 Giovanni Nardini, Giovanni Stea et al. (University of Pisa)
-//
-// This file is part of a software released under the license included in file
-// "license.pdf". Please read LICENSE and README files before using it.
-// The above files and the present reference are part of the software itself,
-// and cannot be removed from it.
-//
-
 #ifndef STACK_PHY_RADIO_CELLULARRADIO_H_
 #define STACK_PHY_RADIO_CELLULARRADIO_H_
 
-#include <omnetpp.h>
+#include <inet/physicallayer/wireless/common/radio/packetlevel/Radio.h>
+#include <inet/physicallayer/wireless/generic/GenericTransmission.h>
+#include <inet/physicallayer/wireless/common/base/packetlevel/TransmitterBase.h>
+#include <inet/physicallayer/wireless/generic/GenericReceiver.h>
 
 #include "simu5g/stack/phy/medium/CellularRadioMedium.h"
+#include "simu5g/stack/phy/radio/RadioTransmissionRequest.h"
 
 namespace simu5g {
 
@@ -23,30 +16,57 @@ using namespace omnetpp;
 class AirFrame;
 class IRadioEndpoint;
 
-/**
- * See the NED documentation of CellularRadio. A received frame is held until
- * the end of its transmission (it is rescheduled as a self-message) and then
- * passed up unchanged; a frame from the PHY carries a RadioTransmissionRequest
- * that says where to send it.
- */
-class CellularRadio : public cSimpleModule
+// SPIKE (stage C): an INET transmission carrying where the PHY sends the frame
+class SpikeTransmission : public inet::physicallayer::GenericTransmission
+{
+  public:
+    using GenericTransmission::GenericTransmission;
+    bool broadcast = false;
+    std::vector<cGate *> targets;
+    AirFrame *frame = nullptr;   // a copy of the frame, delivered to the receivers' PHYs (owned)
+    short priority = 0;          // the frame's scheduling priority
+    ~SpikeTransmission() { delete frame; }
+};
+
+class SpikeTransmitter : public inet::physicallayer::TransmitterBase
+{
+  public:
+    const inet::physicallayer::ITransmission *createTransmission(const inet::physicallayer::IRadio *transmitter, const inet::Packet *packet, const simtime_t startTime) const override;
+};
+
+class SpikeReceiver : public inet::physicallayer::GenericReceiver
+{
+  public:
+    bool computeIsReceptionAttempted(const inet::physicallayer::IListening *listening, const inet::physicallayer::IReception *reception, inet::physicallayer::IRadioSignal::SignalPart part, const inet::physicallayer::IInterference *interference) const override
+    {
+        return computeIsReceptionPossible(listening, reception, part);
+    }
+};
+
+// SPIKE (stage C): CellularRadio is an INET Radio
+class CellularRadio : public inet::physicallayer::Radio
 {
   protected:
-    int radioInGateId_ = -1;
-    int upperLayerInGateId_ = -1;
-    int upperLayerOutGateId_ = -1;
-    opp_component_ptr<CellularRadioMedium> radioMedium_;
+    opp_component_ptr<CellularRadioMedium> cellularMedium_;
     IRadioEndpoint *endpoint_ = nullptr; // the PHY the radio sends and receives frames for
+    const RadioTransmissionRequest *pendingRequest_ = nullptr; // the request of the frame being transmitted
+    AirFrame *pendingFrame_ = nullptr; // the frame being transmitted
+    inet::Coord endingArrivalPosition_; // where the reception being ended arrived
+    const AirFrame *endingFrame_ = nullptr; // the frame of the reception being ended
+    simtime_t endingArrivalStart_;
 
   protected:
     virtual void initialize(int stage) override;
-    virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
-    virtual void handleMessage(cMessage *msg) override;
-    virtual void transmit(AirFrame *frame);
+    virtual void handleUpperMessage(cMessage *message) override;
+    virtual void startReception(cMessage *timer, inet::physicallayer::IRadioSignal::SignalPart part) override;
+    virtual void endReception(cMessage *timer) override;
+    virtual void sendUp(inet::Packet *macFrame) override;
 
   public:
-    /** Sets the PHY the radio sends and receives frames for, whose position is the radio's. */
     virtual void setEndpoint(IRadioEndpoint *endpoint) { endpoint_ = endpoint; }
+    IRadioEndpoint *getEndpoint() const { return endpoint_; }
+    const RadioTransmissionRequest *getPendingRequest() const { return pendingRequest_; }
+    AirFrame *getPendingFrame() const { return pendingFrame_; }
 };
 
 } // namespace simu5g

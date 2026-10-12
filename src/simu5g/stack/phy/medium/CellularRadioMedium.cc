@@ -20,6 +20,9 @@
 #include "simu5g/stack/phy/packet/AirFrame_m.h"
 #include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
+#include "simu5g/stack/phy/radio/CellularRadio.h"
+#include <inet/common/packet/chunk/cPacketChunk.h>
+#include <inet/physicallayer/wireless/common/signal/WirelessSignal.h>
 
 namespace simu5g {
 
@@ -38,6 +41,7 @@ ChannelModelBase *CellularRadioMedium::getChannelModel(GHz carrierFrequency, boo
 
 void CellularRadioMedium::initialize(int stage)
 {
+    RadioMedium::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         // the distance at which a free-space transmission at pMax falls to the sat threshold
         double waveLength = SPEED_OF_LIGHT / par("carrierFrequency").doubleValue();
@@ -243,6 +247,43 @@ ChannelState::ShadowFadingMap& CellularRadioMedium::getShadowingMap(GHz carrierF
 ChannelState::JakesFadingMap& CellularRadioMedium::getJakesFadingMap(GHz carrierFrequency)
 {
     return jakesFadingMaps[carrierFrequency];
+}
+
+} // namespace simu5g
+
+namespace simu5g {
+
+using namespace inet;
+using namespace inet::physicallayer;
+
+bool CellularRadioMedium::isPotentialReceiver(const IRadio *receiver, const ITransmission *transmission) const
+{
+    auto t = dynamic_cast<const SpikeTransmission *>(transmission);
+    if (t == nullptr)
+        return RadioMedium::isPotentialReceiver(receiver, transmission);
+    auto radio = check_and_cast<const CellularRadio *>(receiver);
+    if (t->broadcast) {
+        // B's rule: every radio within the broadcast range
+        double maxDistanceSquared = maxInterferenceDistance * maxInterferenceDistance;
+        return t->getStartPosition().sqrdist(radio->getEndpoint()->getCoord()) < maxDistanceSquared;
+    }
+    cGate *gate = radio->getRadioGate()->getPathStartGate();
+    return std::find(t->targets.begin(), t->targets.end(), gate) != t->targets.end();
+}
+
+
+IWirelessSignal *CellularRadioMedium::createTransmitterSignal(const IRadio *radio, Packet *packet)
+{
+    auto signal = check_and_cast<WirelessSignal *>(RadioMedium::createTransmitterSignal(radio, packet));
+    signal->setSchedulingPriority(check_and_cast<const SpikeTransmission *>(signal->getTransmission())->priority);
+    return signal;
+}
+
+IWirelessSignal *CellularRadioMedium::createReceiverSignal(const ITransmission *transmission)
+{
+    auto signal = check_and_cast<WirelessSignal *>(RadioMedium::createReceiverSignal(transmission));
+    signal->setSchedulingPriority(check_and_cast<const SpikeTransmission *>(transmission)->priority);
+    return signal;
 }
 
 } // namespace simu5g
