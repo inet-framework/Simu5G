@@ -13,6 +13,7 @@
 #define STACK_PHY_MEDIUM_CELLULARRADIOMEDIUM_H_
 
 #include <map>
+#include <vector>
 
 #include <omnetpp.h>
 
@@ -47,7 +48,7 @@ class CellularRadioMedium : public cSimpleModule
     };
 
     std::map<MacNodeId, IRadioEndpoint *> radios; // the radios with a node id
-    std::map<int, RadioModule> radioModules; // by the endpoint's (PHY's) module id: the order broadcast frames are delivered in
+    std::vector<RadioModule> radioModules; // in the order the radios were added: the order broadcast frames are delivered in, as INET's medium sends to its radios
     double maxInterferenceDistance = 0; // the range of a broadcast
     long nextTransmissionId = 0;
     std::map<GHz, std::vector<const CellularTransmission *>> transmissions; // per carrier, in creation order; the ones not yet over
