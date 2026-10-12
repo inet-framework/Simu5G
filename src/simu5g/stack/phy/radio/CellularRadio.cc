@@ -37,9 +37,12 @@ void CellularRadio::initialize(int stage)
 void CellularRadio::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage()) {
-        if (auto frame = dynamic_cast<AirFrame *>(msg))
+        if (strcmp(msg->getName(), "receptionTimer") == 0) {
             // the end of a held frame's transmission
+            auto frame = static_cast<AirFrame *>(msg->getContextPointer());
+            delete msg;
             send(frame, upperLayerOutGateId_);
+        }
         else
             // the end of this radio's own transmission
             delete msg;
@@ -52,7 +55,11 @@ void CellularRadio::handleMessage(cMessage *msg)
         // held until the transmission ends -- for a zero-duration beacon, an
         // event at the same instant, as INET's reception timer; the frame keeps
         // its scheduling priority
-        scheduleAfter(frame->getDuration(), frame);
+        auto timer = new cMessage("receptionTimer");
+        timer->setContextPointer(frame);
+        timer->setSchedulingPriority(frame->getSchedulingPriority());
+        take(frame);
+        scheduleAfter(frame->getDuration(), timer);
     }
     else if (msg->getArrivalGateId() == upperLayerInGateId_)
         transmit(check_and_cast<AirFrame *>(msg));
