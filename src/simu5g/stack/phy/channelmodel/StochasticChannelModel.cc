@@ -1159,9 +1159,10 @@ bool StochasticChannelModel::computeUplinkInterference(IRadioEndpoint *radio, Ma
     const RbMap& receptionBands = isCqi ? everyBand : rbmap;
     // in creation order
     for (auto transmission : radioMedium_->getUplinkTransmissionsDuring(carrierFrequency, slotStart, slotEnd)) {
-        // a background cell's UE, whose interference takes the model's path loss
+        // a background cell's UE, whose interference takes the model's path loss;
+        // at its own background cell, as a real UE at its own, it does not interfere
         if (transmission->phantomCell != nullptr) {
-            if (!enableBackgroundCellInterference_)
+            if (!enableBackgroundCellInterference_ || !interferes(describeInterferer(*transmission)))
                 continue;
             double recvPwr = dBmToLinear(phantomPowerAt(*transmission, radio, enbCoord));
             for (unsigned int i : sharedBands(*transmission, numBands_, receptionBands)) {
