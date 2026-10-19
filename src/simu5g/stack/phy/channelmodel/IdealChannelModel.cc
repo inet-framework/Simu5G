@@ -14,6 +14,8 @@
 
 #include "simu5g/stack/phy/channelmodel/IRadioEndpoint.h"
 #include "simu5g/stack/phy/radio/CellularReceiver.h"
+#include "simu5g/stack/phy/radio/ICellularErrorModel.h"
+#include "simu5g/stack/mac/amc/UserTxParams.h"
 
 namespace simu5g {
 
@@ -25,34 +27,6 @@ Define_Module(IdealChannelModel);
 // always picks the highest CQI, so the transport block size never varies with the
 // channel and the only source of loss is the configured error rate.
 static const double FAKE_SINR_DB = 10000;
-
-void IdealChannelModel::initialize(int stage)
-{
-    ChannelModelBase::initialize(stage);
-    if (stage == inet::INITSTAGE_LOCAL) {
-        perDl_ = &par("perDl");
-        perUl_ = &par("perUl");
-        perD2D_ = &par("perD2D");
-        harqReduction_ = par("harqReduction");
-    }
-}
-
-double IdealChannelModel::getErrorProbability(Direction dir, unsigned char txNumber) const
-{
-    if (txNumber == 0)
-        throw cRuntimeError("IdealChannelModel::getErrorProbability(): transmission number must be at least 1");
-
-    cPar *per;
-    switch (dir) {
-        case DL: per = perDl_; break;
-        case UL: per = perUl_; break;
-        case D2D:
-        case D2D_MULTI: per = perD2D_; break;
-        default:
-            throw cRuntimeError("IdealChannelModel::getErrorProbability(): unexpected direction %d", (int)dir);
-    }
-    return per->doubleValue() * pow(harqReduction_, txNumber - 1);
-}
 
 std::vector<double> IdealChannelModel::getSINR(IRadioEndpoint *radio, AirFrame *frame, UserControlInfo *lteInfo)
 {
@@ -81,11 +55,21 @@ std::vector<double> IdealChannelModel::computeReceptionRsrp(IRadioEndpoint *rece
 
 bool IdealChannelModel::isReceptionSuccessful(IRadioEndpoint *radio, AirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
-    double per = getErrorProbability(lteInfo->getDirection(), lteInfo->getTxNumber());
-    // the receiving node's receiver draws the decision
-    bool success = radio->getReceiver()->decide(per);
+    // the CQI the codeword was sent with
+    unsigned char cw = lteInfo->getCw();
+    const auto& cqis = lteInfo->getUserTxParams()->readCqiVector();
+    Cqi cqi = cqis[cqis.size() == 1 ? 0 : cw];
+
+    // the receiving node's receiver decides, against its error model
+    CellularReceiver *receiver = radio->getReceiver();
+    std::vector<double> sinr(numBands_, FAKE_SINR_DB);
+    std::optional<double> packetErrorRate = receiver->getErrorModel()->computePacketErrorRate((Direction)lteInfo->getDirection(), cqi, sinr,
+            lteInfo->getGrantedBlocks(), lteInfo->getTxNumber());
+    if (!packetErrorRate)
+        return false; // lost for certain, no decision to draw
+    bool success = receiver->decide(*packetErrorRate);
     EV << "IdealChannelModel::isReceptionSuccessful - transmission " << (int)lteInfo->getTxNumber()
-       << ", error probability " << per << " -> " << (success ? "received" : "lost") << endl;
+       << ", error probability " << *packetErrorRate << " -> " << (success ? "received" : "lost") << endl;
     return success;
 }
 
