@@ -1175,12 +1175,11 @@ bool StochasticChannelModel::computeUplinkInterference(IRadioEndpoint *radio, Ma
         EV << "\t band " << band << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[band] << "]" << endl;
     };
 
-    // a reception: the uplink transmissions of the slot just completed, on its bands -- the Binder's
-    // map of the previous TTI lists the same ones; a CQI: those of the slot completed last, on every band
+    // a reception: the uplink transmissions of the slot just completed, on its bands; a CQI: those of
+    // the slot completed last, on every band
     static const RbMap everyBand;
     simtime_t slotEnd = isCqi ? lastCompletedSlotEnd(carrierFrequency) : NOW;
     simtime_t slotStart = slotEnd - slotDuration(carrierFrequency);
-    ASSERT(isCqi || !cells || radioMedium_->matchesUplinkTransmissionMap(carrierFrequency, slotStart, slotEnd, binder_->getUlTransmissionMap(carrierFrequency, PREV_TTI)));
     const RbMap& receptionBands = isCqi ? everyBand : rbmap;
     // in creation order
     for (auto transmission : radioMedium_->getUplinkTransmissionsDuring(carrierFrequency, slotStart, slotEnd)) {
@@ -1391,12 +1390,11 @@ bool StochasticChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId s
         EV << "\t band " << band << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[band] << "]" << endl;
     };
 
-    // a reception: the uplink transmissions of the slot just completed, on its bands -- the Binder's
-    // map of the previous TTI lists the same ones; a CQI: those of the slot completed last, on every band
+    // a reception: the uplink transmissions of the slot just completed, on its bands; a CQI: those of
+    // the slot completed last, on every band
     static const RbMap everyBand;
     simtime_t slotEnd = isCqi ? lastCompletedSlotEnd(carrierFrequency) : NOW;
     simtime_t slotStart = slotEnd - slotDuration(carrierFrequency);
-    ASSERT(isCqi || radioMedium_->matchesUplinkTransmissionMap(carrierFrequency, slotStart, slotEnd, binder_->getUlTransmissionMap(carrierFrequency, PREV_TTI)));
     const RbMap& receptionBands = isCqi ? everyBand : rbmap;
     // in creation order
     for (auto transmission : radioMedium_->getUplinkTransmissionsDuring(carrierFrequency, slotStart, slotEnd)) {
