@@ -330,7 +330,6 @@ class StochasticChannelModel : public ChannelModelBase
 
     bool isUplinkInterferenceEnabled() override { return enableUplinkInterference_; }
     virtual bool isD2DInterferenceEnabled() { return enableD2DInterference_; }
-    bool recordsUlTransmissionMap() override { return isUplinkInterferenceEnabled() || enableD2DInterference_; }
 
     /// Compute the received useful signal (RSRP) for a D2D transmission, per band.
     std::vector<double> getRSRP_D2D(AirFrame *frame, UserControlInfo *lteInfo_1, MacNodeId destId, inet::Coord destCoord);
