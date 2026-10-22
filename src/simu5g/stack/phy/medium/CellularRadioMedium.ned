@@ -14,20 +14,24 @@ package simu5g.stack.phy.medium;
 import simu5g.stack.phy.channelmodel.IChannelModel;
 
 //
-// The radio medium of a cellular network: the network-level module that is to
-// own signal propagation, the per-link channel realization, interference and
-// the SINR, while the nodes keep their antennas, receivers and reception
-// decisions. So far it keeps the registry of the radios (every PHY registers
-// its own), delivers broadcast frames, the base station beacons, to the
-// radios in range, and keeps the channel state the channel models evaluate
-// links against: whether each link is in line of sight, its shadowing and
-// its fading paths, once per link and carrier, shared by every channel model
-// evaluating the link, and the position histories, one record per channel
-// model. The channel models still do everything else. Exactly one instance is
-// expected in the network, named radioMedium.
+// The radio medium of a cellular network: the network-level module that owns
+// signal propagation, the per-link channel realization, interference and the
+// SINR, while the nodes keep their antennas, receivers and reception
+// decisions. It keeps the registry of the radios (every PHY and every phantom
+// radio registers its own) and of their transmissions, delivers broadcast
+// frames, the base station beacons, to the radios in range, keeps the channel
+// state of every link -- whether it is in line of sight, its shadowing and its
+// fading paths, once per link and carrier -- and has the channel models,
+// one per carrier and RAT (channelModel[k] for LTE, nrChannelModel[k] for NR),
+// evaluate the links. Exactly one instance is expected in the network, named
+// radioMedium.
+//
+// Its first six submodules are empty placeholders (~CellularMediumPlaceholder)
+// for the submodules INET's radio medium has, in INET's order, so that the
+// module tree has INET's shape.
 //
 // The parameters pMax, sat, alpha and carrierFrequency are not part of the
-// radio propagation model -- that is the channel model of each PHY -- but they
+// radio propagation model -- that is the channel models' -- but they
 // set the range of a broadcast: the distance at which a free-space
 // transmission at pMax falls to the sat threshold. Beacons drive handover and
 // the detection of a lost serving cell.
@@ -45,6 +49,24 @@ module CellularRadioMedium
         @class(CellularRadioMedium);
         @display("i=misc/sun");
     submodules:
+        propagation: CellularMediumPlaceholder {
+            @display("p=80,200");
+        }
+        analogModel: CellularMediumPlaceholder {
+            @display("p=200,200");
+        }
+        backgroundNoise: CellularMediumPlaceholder {
+            @display("p=320,200");
+        }
+        pathLoss: CellularMediumPlaceholder {
+            @display("p=440,200");
+        }
+        mediumLimitCache: CellularMediumPlaceholder {
+            @display("p=560,200");
+        }
+        communicationCache: CellularMediumPlaceholder {
+            @display("p=680,200");
+        }
         channelModel[numCarriers]: <channelModelType> like IChannelModel {
             componentCarrierModule = "carrierAggregation.componentCarrier[" + string(index) + "]";
             @display("p=80,60,col;g=lte");
