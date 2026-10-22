@@ -27,6 +27,7 @@ module CellularRadio
 {
     parameters:
         string radioMediumModule = default("radioMedium"); // The network's radio medium
+        bool insideBuilding = default(false); // Whether the radio is inside a building; its distance from the wall (uniformly in [0, 25] m) and the random term of its building penetration loss (standard normal, scaled by the study's sigma_P) are drawn once
         @class(CellularRadio);
         @display("i=device/antennatower");
     gates:
