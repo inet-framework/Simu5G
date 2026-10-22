@@ -72,11 +72,6 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
     opp_component_ptr<ChannelModelBase> primaryChannelModel_;
     /// the component carriers this leg operates on, the primary first
     std::vector<ComponentCarrier *> componentCarriers_;
-    /// whether the node is inside a building, and how far from its wall
-    bool insideBuilding_ = false;
-    double insideDistance_ = 0.0;
-    /// the standard-normal deviate of the node's building penetration loss
-    double penetrationLossDeviate_ = 0.0;
 
     /** The id of the in-data gate from the Stack */
     int upperGateIn_ = -1;
@@ -326,7 +321,7 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
      */
     bool isInsideBuilding() override;
     double getInsideDistance() override;
-    double getPenetrationLossDeviate() override { return penetrationLossDeviate_; }
+    double getPenetrationLossDeviate() override;
     /*
      * Returns the time of the last transmission performed
      */
