@@ -333,21 +333,21 @@ class Budget:
     def __init__(self):
         self.plr = pathloss_reference()
         self.cfg = config_values([
-            '**.eNodeBTxPower', '**.antennGainEnB', '**.antennaGainUe', '**.cableLoss',
-            '**.thermalNoise', '**.ueNoiseFigure', '**.nodebHeight', '**.ueHeight',
+            '**.eNodeBTxPower', '*.gnb*.cellularNic.radio.antenna.gain', '*.ue[*].cellularNic.*adio.antenna.gain', '**.cableLoss',
+            '**.thermalNoise', '*.ue[*].cellularNic.*adio.receiver.noiseFigure', '**.nodebHeight', '**.ueHeight',
             '*.carrierAggregation.componentCarrier[0].carrierFrequency',
         ])
         self.hBS = self.cfg['**.nodebHeight']
         self.hUT = self.cfg['**.ueHeight']
         self.fc = self.cfg['*.carrierAggregation.componentCarrier[0].carrierFrequency']
-        self.noise = self.cfg['**.thermalNoise'] + self.cfg['**.ueNoiseFigure']
+        self.noise = self.cfg['**.thermalNoise'] + self.cfg['*.ue[*].cellularNic.*adio.receiver.noiseFigure']
 
     def received_power(self, d2D):
         """dBm at the UE, for a base station d2D metres away."""
         d3D = math.sqrt(d2D ** 2 + (self.hBS - self.hUT) ** 2)
         return (self.cfg['**.eNodeBTxPower']
                 - self.plr.t901_umi_los(d3D, d2D, self.fc, self.hBS, self.hUT)
-                + self.cfg['**.antennGainEnB'] + self.cfg['**.antennaGainUe']
+                + self.cfg['*.gnb*.cellularNic.radio.antenna.gain'] + self.cfg['*.ue[*].cellularNic.*adio.antenna.gain']
                 - self.cfg['**.cableLoss'])
 
     def background_received_power(self, d3D, d2D, tx_power):
@@ -355,9 +355,9 @@ class Budget:
 
         Same budget and same propagation study as a real base station's, but
         NLOS, which is what enableExtCellLos = false selects; left true, the
-        interferer would borrow the serving link's LOS state."""
+        interferer's link would take a LOS state of its own."""
         return (tx_power - self.plr.t901_umi_nlos(d3D, d2D, self.fc, self.hBS, self.hUT)
-                + self.cfg['**.antennGainEnB'] + self.cfg['**.antennaGainUe']
+                + self.cfg['*.gnb*.cellularNic.radio.antenna.gain'] + self.cfg['*.ue[*].cellularNic.*adio.antenna.gain']
                 - self.cfg['**.cableLoss'])
 
     def over_noise(self, signal_dbm, interference_dbm=None):
@@ -504,11 +504,11 @@ def grade_link_reciprocity(grader):
     the link -- as long as the channel does the same thing to both ends."""
     budget = Budget()
     powers = config_values(['**.eNodeBTxPower', '**.ueTxPower',
-                            '**.ueNoiseFigure', '**.bsNoiseFigure'])
+                            '*.ue[*].cellularNic.*adio.receiver.noiseFigure', '*.gnb*.cellularNic.radio.receiver.noiseFigure'])
     # Antenna gains and cable loss appear in both directions and cancel; what
     # is left is the transmit powers and the noise figures.
     expected = ((powers['**.eNodeBTxPower'] - powers['**.ueTxPower'])
-                - (powers['**.ueNoiseFigure'] - powers['**.bsNoiseFigure']))
+                - (powers['*.ue[*].cellularNic.*adio.receiver.noiseFigure'] - powers['*.gnb*.cellularNic.radio.receiver.noiseFigure']))
 
     table = scalar_table('module =~ "*.ue[0].*.nrRadio.receiver" '
                          'AND (name =~ "measuredSinrDl:mean" OR name =~ "measuredSinrUl:mean")',
