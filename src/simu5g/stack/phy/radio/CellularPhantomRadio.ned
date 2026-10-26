@@ -35,6 +35,7 @@ module CellularPhantomRadio
         @display("i=device/antennatower");
     submodules:
         antenna: CellularAntenna {
+            mobilityModule = "^.^.mobility";
             @display("p=100,100");
         }
         transmitter: CellularTransmitter {

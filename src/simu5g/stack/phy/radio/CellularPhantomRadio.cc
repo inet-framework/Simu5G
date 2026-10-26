@@ -84,7 +84,7 @@ double CellularPhantomRadio::getTxAngle()
 
 double CellularPhantomRadio::getAntennaGain()
 {
-    return antenna_->getGain();
+    return antenna_->getGainDb();
 }
 
 ChannelModelBase *CellularPhantomRadio::getChannelModel(GHz carrierFreq)

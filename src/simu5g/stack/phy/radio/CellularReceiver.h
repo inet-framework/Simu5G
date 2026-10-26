@@ -13,6 +13,7 @@
 #define STACK_PHY_RADIO_CELLULARRECEIVER_H_
 
 #include <omnetpp.h>
+#include <inet/physicallayer/wireless/generic/GenericReceiver.h>
 
 #include "simu5g/common/LteCommon.h"
 
@@ -25,7 +26,7 @@ class ICellularErrorModel;
 /**
  * See the NED documentation of CellularReceiver.
  */
-class CellularReceiver : public cSimpleModule
+class CellularReceiver : public inet::physicallayer::GenericReceiver
 {
   protected:
     double noiseFigure_ = NAN;
@@ -51,7 +52,17 @@ class CellularReceiver : public cSimpleModule
     simsignal_t rcvdSinrD2DSignal_ = SIMSIGNAL_NULL;
 
   protected:
-    virtual void initialize() override;
+    virtual void initialize(int stage) override;
+
+  public:
+    // SPIKE: every reception the medium delivers is possible and attempted; no INET physics
+    virtual const inet::physicallayer::IListening *createListening(const inet::physicallayer::IRadio *radio, const simtime_t startTime, const simtime_t endTime, const inet::Coord& startPosition, const inet::Coord& endPosition) const override;
+    virtual const inet::physicallayer::IListeningDecision *computeListeningDecision(const inet::physicallayer::IListening *listening, const inet::physicallayer::IInterference *interference) const override;
+    virtual bool computeIsReceptionPossible(const inet::physicallayer::IListening *listening, const inet::physicallayer::ITransmission *transmission) const override { return true; }
+    virtual bool computeIsReceptionPossible(const inet::physicallayer::IListening *listening, const inet::physicallayer::IReception *reception, inet::physicallayer::IRadioSignal::SignalPart part) const override { return true; }
+    virtual bool computeIsReceptionAttempted(const inet::physicallayer::IListening *listening, const inet::physicallayer::IReception *reception, inet::physicallayer::IRadioSignal::SignalPart part, const inet::physicallayer::IInterference *interference) const override { return true; }
+
+  protected:
 
     /** Registers the per-carrier signal of a statistic and attaches its recorders. */
     simsignal_t addCarrierStatistic(const char *statisticName, GHz carrierFrequency);

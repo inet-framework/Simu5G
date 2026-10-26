@@ -12,6 +12,8 @@
 #include "simu5g/stack/phy/radio/CellularReceiver.h"
 
 #include "simu5g/stack/phy/radio/ICellularErrorModel.h"
+#include <inet/physicallayer/wireless/common/analogmodel/unitdisk/UnitDiskListening.h>
+#include <inet/physicallayer/wireless/common/radio/packetlevel/ListeningDecision.h>
 
 namespace simu5g {
 
@@ -22,8 +24,11 @@ simsignal_t CellularReceiver::rcvdSinrUlSignal_ = registerSignal("rcvdSinrUl");
 simsignal_t CellularReceiver::measuredSinrDlSignal_ = registerSignal("measuredSinrDl");
 simsignal_t CellularReceiver::measuredSinrUlSignal_ = registerSignal("measuredSinrUl");
 
-void CellularReceiver::initialize()
+void CellularReceiver::initialize(int stage)
 {
+    GenericReceiver::initialize(stage);
+    if (stage != inet::INITSTAGE_LOCAL)
+        return;
     noiseFigure_ = par("noiseFigure");
     cableLoss_ = par("cableLoss");
 }
@@ -133,6 +138,17 @@ void CellularReceiver::emitMeasuredSinr(Direction dir, GHz carrierFrequency, dou
     emit(dir == DL ? measuredSinrDlSignal_ : measuredSinrUlSignal_, sinr);
     if (const CarrierSignals *signals = findCarrierSignals(carrierFrequency))
         emitOnCarrier(dir == DL ? signals->measuredSinrDl : signals->measuredSinrUl, sinr);
+}
+
+const inet::physicallayer::IListening *CellularReceiver::createListening(const inet::physicallayer::IRadio *radio, const simtime_t startTime, const simtime_t endTime, const inet::Coord& startPosition, const inet::Coord& endPosition) const
+{
+    return new inet::physicallayer::UnitDiskListening(radio, startTime, endTime, startPosition, endPosition);
+}
+
+const inet::physicallayer::IListeningDecision *CellularReceiver::computeListeningDecision(const inet::physicallayer::IListening *listening, const inet::physicallayer::IInterference *interference) const
+{
+    // no energy detected: the medium decides what arrives, not an energy threshold
+    return new inet::physicallayer::ListeningDecision(listening, false);
 }
 
 } // namespace simu5g

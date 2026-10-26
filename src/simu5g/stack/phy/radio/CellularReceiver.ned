@@ -11,6 +11,8 @@
 
 package simu5g.stack.phy.radio;
 
+import inet.physicallayer.wireless.generic.GenericReceiver;
+
 //
 // The receiver of a cellular radio: noise figure and cable loss, the
 // reception decision and its random draw, and the SINR statistics; the error
@@ -25,9 +27,11 @@ package simu5g.stack.phy.radio;
 // recorded per carrier, under the statistic's name followed by the carrier
 // frequency in MHz (measuredSinrDl-3500MHz, for example).
 //
-module CellularReceiver
+module CellularReceiver extends GenericReceiver
 {
     parameters:
+        analogModel.typename = ""; // SPIKE: no INET physics in the receiver
+        ignoreInterference = true;
         double noiseFigure @unit(dB) = default(7dB);
         double cableLoss @unit(dB) = default(2dB);   // Loss between the antenna and the receiver
         @class(CellularReceiver);
