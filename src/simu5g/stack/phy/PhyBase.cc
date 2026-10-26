@@ -361,7 +361,7 @@ double PhyBase::getTxAngle()
 
 double PhyBase::getAntennaGain()
 {
-    return check_and_cast<CellularAntenna *>(radio_->getSubmodule("antenna"))->getGain();
+    return check_and_cast<CellularAntenna *>(radio_->getSubmodule("antenna"))->getGainDb();
 }
 
 double PhyBase::getNoiseFigure()

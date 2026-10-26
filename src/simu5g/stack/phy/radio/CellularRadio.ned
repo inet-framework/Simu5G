@@ -11,6 +11,8 @@
 
 package simu5g.stack.phy.radio;
 
+import inet.physicallayer.wireless.common.radio.packetlevel.Radio;
+
 //
 // The radio of a cellular PHY leg: the node-side counterpart of the radio
 // medium, holding the antenna, the transmitter and the receiver. Every frame
@@ -23,25 +25,19 @@ package simu5g.stack.phy.radio;
 // scheduling priority; a frame that takes no air time (a beacon) is passed up
 // on arrival.
 //
-module CellularRadio
+module CellularRadio extends Radio
 {
     parameters:
-        string radioMediumModule = default("radioMedium"); // The network's radio medium
         bool insideBuilding = default(false); // Whether the radio is inside a building; its distance from the wall (uniformly in [0, 25] m) and the random term of its building penetration loss (standard normal, scaled by the study's sigma_P) are drawn once
+        // SPIKE: INET's radio delivers and times the signals, unit-disk (no physics, no draws)
+        signalAnalogRepresentation = "unitDisk";
+        initialRadioMode = "off"; // INET 4.7: the initial mode listens before the radio is on the medium; switched on at INITSTAGE_LAST
+        allowConcurrentTransmissions = true;
+        allowConcurrentReceptions = true;
+        antenna.typename = "CellularAntenna";
+        antenna.mobilityModule = default("^.^.^.mobility");
+        transmitter.typename = "CellularTransmitter";
+        receiver.typename = "CellularReceiver";
         @class(CellularRadio);
         @display("i=device/antennatower");
-    gates:
-        input radioIn @directIn;    // frames from other radios
-        input upperLayerIn;         // frames to transmit, from the PHY
-        output upperLayerOut;       // received frames, to the PHY
-    submodules:
-        antenna: CellularAntenna {
-            @display("p=100,100");
-        }
-        transmitter: CellularTransmitter {
-            @display("p=100,200");
-        }
-        receiver: CellularReceiver {
-            @display("p=100,300");
-        }
 }

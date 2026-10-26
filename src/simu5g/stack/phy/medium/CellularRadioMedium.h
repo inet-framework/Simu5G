@@ -18,6 +18,7 @@
 #include <omnetpp.h>
 
 #include <inet/common/INETDefs.h>
+#include <inet/physicallayer/wireless/common/medium/RadioMedium.h>
 
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/stack/phy/medium/CellularTransmission.h"
@@ -38,8 +39,20 @@ class ChannelModelBase;
  * two radios -- delivers broadcast frames to the radios in range, and keeps
  * the channel state every channel model evaluates links against.
  */
-class CellularRadioMedium : public cSimpleModule
+class CellularRadioMedium : public inet::physicallayer::RadioMedium
 {
+  public:
+    // SPIKE: INET's radio registry and transmissions, next to Simu5G's
+    using RadioMedium::addRadio;
+    using RadioMedium::removeRadio;
+    using RadioMedium::addTransmission;
+
+  protected:
+    // SPIKE: B's delivery rule, and the frame's priority on the signals
+    virtual bool isPotentialReceiver(const inet::physicallayer::IRadio *receiver, const inet::physicallayer::ITransmission *transmission) const override;
+    virtual inet::physicallayer::IWirelessSignal *createTransmitterSignal(const inet::physicallayer::IRadio *radio, inet::Packet *packet) override;
+    virtual inet::physicallayer::IWirelessSignal *createReceiverSignal(const inet::physicallayer::ITransmission *transmission) override;
+
   protected:
     /** A radio that can be sent frames. */
     struct RadioModule {

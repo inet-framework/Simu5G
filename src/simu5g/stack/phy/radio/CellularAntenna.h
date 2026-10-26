@@ -13,6 +13,7 @@
 #define STACK_PHY_RADIO_CELLULARANTENNA_H_
 
 #include <omnetpp.h>
+#include <inet/physicallayer/wireless/common/antenna/IsotropicAntenna.h>
 
 #include "simu5g/common/LteCommon.h"
 
@@ -23,7 +24,7 @@ using namespace omnetpp;
 /**
  * See the NED documentation of CellularAntenna.
  */
-class CellularAntenna : public cSimpleModule
+class CellularAntenna : public inet::physicallayer::IsotropicAntenna
 {
   protected:
     double gain_ = NAN;
@@ -31,11 +32,11 @@ class CellularAntenna : public cSimpleModule
     double txAngle_ = NAN;
 
   protected:
-    virtual void initialize() override;
+    virtual void initialize(int stage) override;
 
   public:
     /** Antenna gain in dBi. */
-    double getGain() const { return gain_; }
+    double getGainDb() const { return gain_; }
     /** Whether the antenna radiates omnidirectionally or sectorially. */
     TxDirectionType getTxDirection() const { return txDirection_; }
     /** The boresight of a sectorial antenna, in degrees; 0 for an omnidirectional one. */

@@ -14,6 +14,7 @@
 
 #include <omnetpp.h>
 #include <inet/common/ModuleRefByPar.h>
+#include <inet/physicallayer/wireless/common/radio/packetlevel/Radio.h>
 
 #include "simu5g/stack/phy/medium/CellularRadioMedium.h"
 
@@ -30,25 +31,36 @@ class IRadioEndpoint;
  * passed up unchanged; a frame from the PHY carries a RadioTransmissionRequest
  * that says where to send it.
  */
-class CellularRadio : public cSimpleModule
+class RadioTransmissionRequest;
+
+class CellularRadio : public inet::physicallayer::Radio
 {
   protected:
-    int radioInGateId_ = -1;
-    int upperLayerInGateId_ = -1;
-    int upperLayerOutGateId_ = -1;
-    inet::ModuleRefByPar<CellularRadioMedium> radioMedium_;
+    opp_component_ptr<CellularRadioMedium> cellularMedium_;
     IRadioEndpoint *endpoint_ = nullptr; // the PHY the radio sends and receives frames for
     bool insideBuilding_ = false; // whether the radio is inside a building, and how far from its wall
     double insideDistance_ = 0.0;
     double penetrationLossDeviate_ = 0.0; // the standard-normal deviate of its building penetration loss
+    // SPIKE: the frame being sent, and the reception being ended
+    const RadioTransmissionRequest *pendingRequest_ = nullptr;
+    AirFrame *pendingFrame_ = nullptr;
+    inet::Coord endingArrivalPosition_;
+    const AirFrame *endingFrame_ = nullptr;
+    simtime_t endingArrivalStart_;
 
   protected:
     virtual void initialize(int stage) override;
-    virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
-    virtual void handleMessage(cMessage *msg) override;
-    virtual void transmit(AirFrame *frame);
+    virtual void handleUpperMessage(cMessage *message) override;
+    virtual void startReception(cMessage *timer, inet::physicallayer::IRadioSignal::SignalPart part) override;
+    virtual void endReception(cMessage *timer) override;
+    virtual void sendUp(inet::Packet *macFrame) override;
+    // SPIKE: INET's createSignal() without its ASSERT on a zero duration (beacons take no air time)
+    virtual inet::physicallayer::WirelessSignal *createSignal(inet::Packet *packet) const override;
 
   public:
+    IRadioEndpoint *getEndpoint() const { return endpoint_; }
+    const RadioTransmissionRequest *getPendingRequest() const { return pendingRequest_; }
+    AirFrame *getPendingFrame() const { return pendingFrame_; }
     /** Sets the PHY the radio sends and receives frames for, whose position is the radio's. */
     virtual void setEndpoint(IRadioEndpoint *endpoint) { endpoint_ = endpoint; }
 

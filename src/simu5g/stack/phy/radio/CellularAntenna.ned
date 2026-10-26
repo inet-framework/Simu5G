@@ -11,12 +11,14 @@
 
 package simu5g.stack.phy.radio;
 
+import inet.physicallayer.wireless.common.antenna.IsotropicAntenna;
+
 //
 // The antenna of a cellular radio: its gain, and whether it radiates in all
 // directions or sectorially, towards txAngle. The sector's pattern is the
 // propagation study's (see the channel model's pathLossType).
 //
-simple CellularAntenna
+module CellularAntenna extends IsotropicAntenna
 {
     parameters:
         double gain @unit(dBi) = default(0dBi);     // Antenna gain, transmitting and receiving

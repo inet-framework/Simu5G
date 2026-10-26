@@ -15,8 +15,11 @@ namespace simu5g {
 
 Define_Module(CellularAntenna);
 
-void CellularAntenna::initialize()
+void CellularAntenna::initialize(int stage)
 {
+    IsotropicAntenna::initialize(stage);
+    if (stage != inet::INITSTAGE_LOCAL)
+        return;
     gain_ = par("gain");
     const char *txDirection = par("txDirection");
     txDirection_ = static_cast<TxDirectionType>(cEnum::get("simu5g::TxDirectionType")->lookup(txDirection));

@@ -14,6 +14,9 @@
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/stack/phy/channelmodel/IRadioEndpoint.h"
 #include "simu5g/stack/phy/radio/RadioTransmissionRequest.h"
+#include "simu5g/stack/phy/radio/CellularRadio.h"
+#include "simu5g/stack/phy/packet/AirFrame_m.h"
+#include <inet/physicallayer/wireless/common/analogmodel/unitdisk/UnitDiskTransmissionAnalogModel.h>
 
 namespace simu5g {
 
@@ -61,6 +64,31 @@ CellularTransmission *CellularTransmitter::createPhantomTransmission(IRadioEndpo
     transmission->txAngle = sender->getTxAngle();
     transmission->startTime = simTime();
     transmission->duration = duration;
+    return transmission;
+}
+
+CellularInetTransmission::~CellularInetTransmission()
+{
+    delete frame;
+}
+
+const inet::physicallayer::ITransmission *CellularTransmitter::createTransmission(const inet::physicallayer::IRadio *transmitter, const inet::Packet *packet, const simtime_t startTime) const
+{
+    using namespace inet;
+    using namespace inet::physicallayer;
+    auto radio = check_and_cast<const CellularRadio *>(transmitter);
+    const RadioTransmissionRequest *request = radio->getPendingRequest();
+    simtime_t duration = request->duration;
+    auto mobility = transmitter->getAntenna()->getMobility();
+    auto position = mobility->getCurrentPosition();
+    auto orientation = mobility->getCurrentAngularPosition();
+    auto analogModel = new UnitDiskTransmissionAnalogModel(0, 0, duration, m(1e9), m(1e9), m(1e9));
+    auto transmission = new CellularInetTransmission(transmitter, packet, startTime, startTime + duration, 0, 0, duration,
+            position, position, orientation, orientation, nullptr, nullptr, nullptr, nullptr, analogModel);
+    transmission->broadcast = request->broadcast;
+    transmission->targets = request->targets;
+    transmission->frame = radio->getPendingFrame()->dup();
+    transmission->priority = radio->getPendingFrame()->getSchedulingPriority();
     return transmission;
 }
 
