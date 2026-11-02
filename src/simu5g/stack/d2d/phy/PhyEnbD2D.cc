@@ -11,6 +11,7 @@
 //
 
 #include "simu5g/stack/d2d/phy/PhyEnbD2D.h"
+#include "simu5g/common/RxTrace.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/d2d/binder/D2dBinder.h"
 #include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
@@ -56,7 +57,11 @@ void PhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserContr
             Coord peerCoord = ueInfo->phy->getCoord();
 
             // Get SINR for this link
+            rxtrace::WhatIf whatIf("CQI", lteinfo->getCarrierFrequency(), D2D);
+            if (whatIf.isActive())
+                whatIf.setLink(rxtrace::nameOf(binder_, lteinfo->getSourceId()), rxtrace::nameOf(binder_, peerId), rxtrace::ratOf(lteinfo->getSourceId()));
             std::vector<double> snr = check_and_cast<ID2dChannelModel *>(channelModel)->getSINR_D2D(frame, lteinfo, peerId, peerCoord, nodeId_);
+            whatIf.finish(snr);
 
             // Compute the feedback for this link
             LteFeedbackDoubleVector fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,
