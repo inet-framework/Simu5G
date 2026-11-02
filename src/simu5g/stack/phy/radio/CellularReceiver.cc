@@ -11,6 +11,7 @@
 
 #include "simu5g/stack/phy/radio/CellularReceiver.h"
 
+#include "simu5g/common/RxTrace.h"
 #include "simu5g/stack/phy/radio/ICellularErrorModel.h"
 #include <inet/physicallayer/wireless/common/analogmodel/unitdisk/UnitDiskListening.h>
 #include <inet/physicallayer/wireless/common/radio/packetlevel/ListeningDecision.h>
@@ -41,7 +42,10 @@ ICellularErrorModel *CellularReceiver::getErrorModel() const
 bool CellularReceiver::decide(double packetErrorRate)
 {
     Enter_Method("decide");
+    uint64_t numbersDrawn = getRNG(0)->getNumbersDrawn();
     double randomSample = uniform(0.0, 1.0);
+    if (rxtrace::Reception *reception = rxtrace::getCurrentReception())
+        reception->setDraw(randomSample, numbersDrawn);
     bool received = randomSample > packetErrorRate;
     EV << "CellularReceiver: packet error rate " << packetErrorRate << ", random sample " << randomSample
        << " -> " << (received ? "received" : "lost") << endl;

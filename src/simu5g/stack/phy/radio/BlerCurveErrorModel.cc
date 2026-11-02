@@ -11,6 +11,7 @@
 
 #include "simu5g/stack/phy/radio/BlerCurveErrorModel.h"
 
+#include "simu5g/common/RxTrace.h"
 #include "simu5g/common/binder/Binder.h"
 
 namespace simu5g {
@@ -33,13 +34,19 @@ std::optional<double> BlerCurveErrorModel::computePacketErrorRate(Direction dire
         for (const auto& [band, allocation] : rbList) {
             if (allocation == 0)
                 continue;
-            if (cqi == 0)
+            if (cqi == 0) {
+                if (rxtrace::Reception *reception = rxtrace::getCurrentReception())
+                    reception->setNoDrawReason("cqi0");
                 return std::nullopt; // CQI 0 means channel below usable quality (e.g. after handover): loss
+            }
 
             int snr = sinrPerBand[band];
             double blockErrorRate;
-            if (snr < curves.minSnr())
+            if (snr < curves.minSnr()) {
+                if (rxtrace::Reception *reception = rxtrace::getCurrentReception())
+                    reception->setNoDrawReason("minsnr");
                 return std::nullopt;
+            }
             else if (snr > curves.maxSnr())
                 blockErrorRate = 0.0;
             else
