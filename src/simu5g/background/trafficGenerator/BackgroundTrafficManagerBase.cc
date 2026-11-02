@@ -13,6 +13,7 @@
 #include "simu5g/background/trafficGenerator/BackgroundTrafficManagerBase.h"
 
 #include "simu5g/background/trafficGenerator/ActiveUeNotification_m.h"
+#include "simu5g/common/RxTrace.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 #include "simu5g/stack/phy/radio/CellularPhantomRadio.h"
 
@@ -120,7 +121,15 @@ void BackgroundTrafficManagerBase::notifyBacklog(int index, Direction dir, bool 
 
 Cqi BackgroundTrafficManagerBase::computeCqi(int bgUeIndex, Direction dir)
 {
+    rxtrace::WhatIf whatIf("BG-CQI", carrierFrequency_, dir, false);
+    if (whatIf.isActive()) {
+        std::string manager = rxtrace::nameOf(this);
+        std::string ue = manager + "/bgUE[" + std::to_string(bgUeIndex) + "]";
+        std::string cell = manager.substr(0, manager.find('/'));
+        whatIf.setLink(dir == DL ? cell : ue, dir == DL ? ue : cell, "-");
+    }
     std::vector<double> snr = getSINR(bgUeIndex, dir);
+    whatIf.finish(snr);
 
     // convert the SNR to CQI and compute the mean
     double meanSinr = 0;
