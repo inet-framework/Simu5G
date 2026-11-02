@@ -12,6 +12,9 @@
 
 #include "IdealChannelModel.h"
 
+#include "simu5g/common/RxTrace.h"
+#include "simu5g/stack/phy/packet/AirFrame_m.h"
+
 namespace simu5g {
 
 using namespace omnetpp;
@@ -74,11 +77,16 @@ std::vector<double> IdealChannelModel::getSINR_bgUe(AirFrame *frame, UserControl
 
 bool IdealChannelModel::isReceptionSuccessful(AirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
+    rxtrace::Reception rec(this, binder_, lteInfo, frame->getArrivalTime() - frame->getDuration());
     double per = getErrorProbability(lteInfo->getDirection(), lteInfo->getTxNumber());
-    bool success = uniform(0.0, 1.0) > per;
+    rec.setPer(per);
+    uint64_t numbersDrawn = getRNG(0)->getNumbersDrawn();
+    double draw = uniform(0.0, 1.0);
+    rec.setDraw(draw, numbersDrawn);
+    bool success = draw > per;
     EV << "IdealChannelModel::isReceptionSuccessful - transmission " << (int)lteInfo->getTxNumber()
        << ", error probability " << per << " -> " << (success ? "received" : "lost") << endl;
-    return success;
+    return rec.finish(success);
 }
 
 } //namespace

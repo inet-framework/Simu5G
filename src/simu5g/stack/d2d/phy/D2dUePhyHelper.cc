@@ -16,6 +16,8 @@
 
 #include "simu5g/common/LteControlInfo.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
+#include "simu5g/common/RxTrace.h"
+#include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/phy/PhyBase.h"
 #include "simu5g/stack/phy/channelmodel/ChannelModelBase.h"
 #include "simu5g/stack/d2d/phy/channelmodel/ID2dChannelModel.h"
@@ -53,7 +55,11 @@ void D2dUePhyHelper::storeAirFrame(AirFrame *newFrame)
 
         double sum = 0.0;
         unsigned int allocatedRbs = 0;
+        rxtrace::WhatIf whatIf("D2D-RSRP", carrierFreq, newInfo->getDirection());
+        if (whatIf.isActive())
+            whatIf.setLink(rxtrace::nameOf(check_and_cast<Binder *>(phy_->getModuleByPath(phy_->par("binderModule"))), newInfo->getSourceId()), rxtrace::nameOf(phy_), rxtrace::ratOf(newInfo->getSourceId()));
         rsrpVector = check_and_cast<ID2dChannelModel *>(channelModel)->getRSRP_D2D(newFrame, newInfo, phy_->getMacNodeId(), myCoord);
+        whatIf.finish(rsrpVector);
 
         // Get the average RSRP on the RBs allocated for the transmission
         RbMap rbmap = newInfo->getGrantedBlocks();

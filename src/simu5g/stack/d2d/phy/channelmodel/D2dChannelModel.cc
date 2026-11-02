@@ -14,6 +14,7 @@
 
 #include "simu5g/background/trafficGenerator/generators/TrafficGeneratorBase.h"
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/common/RxTrace.h"
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
 #include "simu5g/stack/mac/amc/UserTxParams.h"
@@ -228,6 +229,7 @@ bool D2dChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId senderId
                 // interferer -> our receiver; the eNB-side maps are used for interferers
                 double att = getAttenuation(d2dLink(ueId, ueCoord, destId, destCoord, false));
                 (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
+                if (rxtrace::isCollecting()) rxtrace::addInterferer(ue_it.phy != nullptr ? static_cast<const cModule *>(ue_it.phy) : static_cast<const cModule *>(ue_it.trafficGen));
 
                 EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;
             }

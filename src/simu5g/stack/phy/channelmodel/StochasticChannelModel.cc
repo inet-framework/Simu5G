@@ -18,6 +18,7 @@
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/mac/amc/UserTxParams.h"
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/common/RxTrace.h"
 #include "simu5g/nodes/ExtCell.h"
 #include "simu5g/background/cell/BackgroundScheduler.h"
 #include "simu5g/stack/phy/PhyUe.h"
@@ -990,6 +991,8 @@ bool StochasticChannelModel::isReceptionSuccessful(AirFrame *frame, UserControlI
 {
     EV << "StochasticChannelModel::error" << endl;
 
+    rxtrace::Reception rec(this, binder_, lteInfo, frame->getArrivalTime() - frame->getDuration());
+
     // get codeword
     unsigned char cw = lteInfo->getCw();
     // get number of codewords
@@ -1025,6 +1028,7 @@ bool StochasticChannelModel::isReceptionSuccessful(AirFrame *frame, UserControlI
     // Take sinr (the D2D channel model overrides getReceptionSinr() to route
     // D2D/D2D_MULTI receptions through getSINR_D2D)
     std::vector<double> snrV = getReceptionSinr(frame, lteInfo, rsrpVector);
+    rec.setSinr(snrV);
 
     // Get the resource Block id used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();
@@ -1046,7 +1050,7 @@ bool StochasticChannelModel::isReceptionSuccessful(AirFrame *frame, UserControlI
 
             // Get the Bler
             if (cqi == 0)
-                return false; // CQI 0 means channel below usable quality (e.g. after handover) — loss
+                return rec.finish(false, "cqi0"); // CQI 0 means channel below usable quality (e.g. after handover) — loss
 
             // for statistical purposes
             sumSnr += snrV[band];
@@ -1054,7 +1058,7 @@ bool StochasticChannelModel::isReceptionSuccessful(AirFrame *frame, UserControlI
 
             int snr = snrV[band];// XXX because band is a Band (=unsigned short)
             if (snr < binder_->phyPisaData.minSnr())
-                return false;
+                return rec.finish(false, "minsnr");
             else if (snr > binder_->phyPisaData.maxSnr())
                 blockErrorRate = 0.0;
             else
@@ -1081,7 +1085,10 @@ bool StochasticChannelModel::isReceptionSuccessful(AirFrame *frame, UserControlI
     // Apply HARQ soft combining gain
     double effectiveErrorRateWithHarq = packetErrorRate * pow(harqReduction_, transmissionAttempt - 1);
 
+    rec.setPer(effectiveErrorRateWithHarq);
+    uint64_t numbersDrawn = getRNG(0)->getNumbersDrawn();
     double randomSample = uniform(0.0, 1.0);
+    rec.setDraw(randomSample, numbersDrawn);
 
     EV << " StochasticChannelModel::error direction " << dirToA(dir)
        << " node " << id << " total ERROR probability  " << packetErrorRate
@@ -1098,13 +1105,13 @@ bool StochasticChannelModel::isReceptionSuccessful(AirFrame *frame, UserControlI
            << ") -> do not receive." << endl;
 
         // Signal too weak, we can't receive it
-        return false;
+        return rec.finish(false);
     }
     // Signal is strong enough, receive this Signal
     EV << "This is your lucky day (" << randomSample << " > " << effectiveErrorRateWithHarq
        << ") -> Receive AirFrame." << endl;
 
-    return true;
+    return rec.finish(true);
 }
 
 void StochasticChannelModel::emitRcvdSinr(Direction dir, MacNodeId ueId, GHz carrierFrequency, double sinr)
@@ -1213,6 +1220,7 @@ bool StochasticChannelModel::computeExtCellInterference(MacNodeId eNbId, MacNode
             // if the ext cell is active, add interference
             if (occ) {
                 (*interference)[i] += recvPwr;
+                if (rxtrace::isCollecting()) rxtrace::addInterferer(extCell);
             }
         }
     }
@@ -1300,6 +1308,7 @@ bool StochasticChannelModel::computeBackgroundCellInterference(MacNodeId nodeId,
                 if (occ > 0) {
                     EV << i << ",";
                     (*interference)[i] += recvPwr;
+                    if (rxtrace::isCollecting()) rxtrace::addInterferer(bgScheduler);
                 }
             }
             EV << "]" << endl;
@@ -1349,6 +1358,7 @@ bool StochasticChannelModel::computeBackgroundCellInterference(MacNodeId nodeId,
                     recvPwr = dBmToLinear(recvPwrDBm);
 
                     (*interference)[i] += recvPwr;
+                    if (rxtrace::isCollecting()) rxtrace::addInterferer(bgUe);
                 }
             }
         }
@@ -1480,6 +1490,7 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
                 int temp = enbInfo->mac->getDlBandStatus(i);
                 if (temp != 0)
                     (*interference)[i] += dBmToLinear(txPwr - att); //(dBm-dB)=dBm
+                    if (rxtrace::isCollecting()) rxtrace::addInterferer(dynamic_cast<const cModule *>(enbInfo->phy));
 
                 EV << "\t band " << i << " occupied " << temp << "/pwr[" << txPwr << "]-int[" << (*interference)[i] << "]" << endl;
             }
@@ -1495,6 +1506,7 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
                 int temp = enbInfo->mac->getDlPrevBandStatus(i);
                 if (temp != 0)
                     (*interference)[i] += dBmToLinear(txPwr - att); //(dBm-dB)=dBm
+                    if (rxtrace::isCollecting()) rxtrace::addInterferer(dynamic_cast<const cModule *>(enbInfo->phy));
 
                 EV << "\t band " << i << " occupied " << temp << "/pwr[" << txPwr << "]-int[" << (*interference)[i] << "]" << endl;
             }
@@ -1560,6 +1572,7 @@ bool StochasticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNodeI
                     double rxPwr = txPwr - cableLoss_ + antennaGainUe_ + antennaGainEnB_;
                     double att = getAttenuation(ueId, UL, ueCoord, false);
                     (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
+                    if (rxtrace::isCollecting()) rxtrace::addInterferer(ue_it.phy != nullptr ? static_cast<const cModule *>(ue_it.phy) : static_cast<const cModule *>(ue_it.trafficGen));
 
                     EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;
                 }
@@ -1601,6 +1614,7 @@ bool StochasticChannelModel::computeUplinkInterference(MacNodeId eNbId, MacNodeI
                     double rxPwr = txPwr - cableLoss_ + antennaGainUe_ + antennaGainEnB_;
                     double att = getAttenuation(ueId, UL, ueCoord, false);
                     (*interference)[i] += dBmToLinear(rxPwr - att);//(dBm-dB)=dBm
+                    if (rxtrace::isCollecting()) rxtrace::addInterferer(ue_it.phy != nullptr ? static_cast<const cModule *>(ue_it.phy) : static_cast<const cModule *>(ue_it.trafficGen));
 
                     EV << "\t band " << i << "/pwr[" << rxPwr - att << "]-int[" << (*interference)[i] << "]" << endl;
                 }

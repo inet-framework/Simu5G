@@ -14,6 +14,7 @@
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
+#include "simu5g/common/RxTrace.h"
 
 namespace simu5g {
 
@@ -259,8 +260,13 @@ void PhyEnb::requestFeedback(UserControlInfo *lteinfo, AirFrame *frame, Packet *
 
     //Apply analog model (path loss)
     //Get snr for UL direction
-    if (channelModel != nullptr)
+    if (channelModel != nullptr) {
+        rxtrace::WhatIf whatIf("CQI", lteinfo->getCarrierFrequency(), UL);
+        if (whatIf.isActive())
+            whatIf.setLink(rxtrace::nameOf(binder_, lteinfo->getSourceId()), rxtrace::nameOf(this), rxtrace::ratOf(lteinfo->getSourceId()));
         snr = channelModel->getSINR(frame, lteinfo);
+        whatIf.finish(snr);
+    }
     else
         throw cRuntimeError("PhyEnb::requestFeedback - channelModel is a null pointer");
 
@@ -291,8 +297,13 @@ void PhyEnb::requestFeedback(UserControlInfo *lteinfo, AirFrame *frame, Packet *
             lteinfo->setDirection(DL);
 
             //Get snr for DL direction
-            if (channelModel != nullptr)
+            if (channelModel != nullptr) {
+                rxtrace::WhatIf whatIf("CQI", lteinfo->getCarrierFrequency(), DL);
+                if (whatIf.isActive())
+                    whatIf.setLink(rxtrace::nameOf(this), rxtrace::nameOf(binder_, lteinfo->getSourceId()), rxtrace::ratOf(lteinfo->getSourceId()));
                 snr = channelModel->getSINR(frame, lteinfo);
+                whatIf.finish(snr);
+            }
             else
                 throw cRuntimeError("PhyEnb::requestFeedback - channelModel is a null pointer");
         }
