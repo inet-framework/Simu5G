@@ -497,9 +497,11 @@ class FingerprintTestCase(SimulationTestCase):
         # print("COMMAND: " + command + '\n')
         anyFingerprintBad = False
         computedFingerprints = list()
+        self.elapsedTime = 0.0
         for rep in range(self.repeat):
             curFp = list()
             result = self.runSimulation(self.title, command, workingdir, resultdir)
+            self.elapsedTime += result.elapsedTime
 
             # process the result
             # note: fingerprint mismatch is technically NOT an error in omnetpp 6.0 or before! (exitcode==0)
@@ -672,7 +674,7 @@ class SimulationTextTestResult(ThreadedTestResult):
         super(SimulationTextTestResult, self).addSuccess(test)
         if test.expectedResult == 'PASS':
             if self.showAll:
-                self.stream.write(": " + txtPASS + "\n")
+                self.stream.write(": " + txtPASS + " (%.1fs)\n" % test.elapsedTime)
             elif self.dots:
                 self.stream.write('.')
                 self.stream.flush()
