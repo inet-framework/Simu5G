@@ -409,6 +409,8 @@ class SimulationTestCase(unittest.TestCase):
                         raise Exception("Cannot parse fingerprint-related error message: " + err + "\nPattern: >>>"+pattern+'<<<')
             elif re.search("Simulation time limit reached", err):
                 pass
+            elif re.search(r"^<!> Warning: \d+ configuration entr(y|ies) had no effect", err):
+                pass  # OMNeT++ 6.5 unused-entry-check; not a simulation error
             else:
                 errorMsg += "\n" + err
                 wasError = True
