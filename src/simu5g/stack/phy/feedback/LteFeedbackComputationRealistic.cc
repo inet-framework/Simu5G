@@ -118,8 +118,8 @@ LteFeedbackDoubleVector LteFeedbackComputationRealistic::computeFeedback(Feedbac
     // For each Remote
     for (int j = 0; j < numRus; j++) {
         LteFeedback fb;
-        // For each txmode we generate a feedback excluding MU_MIMO because it is treated as SISO
-        for (int z = 0; z < DL_NUM_TXMODE - 1; z++) {
+        // For each txmode we generate a feedback
+        for (int z = 0; z < DL_NUM_TXMODE; z++) {
             fb.reset();
             fb.setTxMode((TxMode)z);
             unsigned int rank = 1;

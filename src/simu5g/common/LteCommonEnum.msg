@@ -129,7 +129,7 @@ enum PilotComputationModes
 ///   Transmission Modes
 enum TxMode
 {
-    // Note: If you add more tx modes, update DL_NUM_TXMODE and UL_NUM_TXMODE
+    // Note: UNKNOWN_TX_MODE stays last; DL_NUM_TXMODE and UL_NUM_TXMODE (LteCommon.h) take their value from it
     SINGLE_ANTENNA_PORT0 = 0;
     TRANSMIT_DIVERSITY = 1;
     UNKNOWN_TX_MODE = 2;

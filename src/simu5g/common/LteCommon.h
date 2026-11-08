@@ -210,11 +210,12 @@ typedef unsigned short NumerologyIndex;
 *   Transmission Modes  *
 *************************/
 
-/// Number of transmission modes in DL direction.
-const unsigned char DL_NUM_TXMODE = 6; //UNKNOWN_TX_MODE;
+/// Number of transmission modes in DL direction: the TxMode enumerators before the UNKNOWN_TX_MODE sentinel.
+/// Feedback vectors and the AMC's feedback histories hold one entry per mode, indexed by TxMode.
+const unsigned char DL_NUM_TXMODE = UNKNOWN_TX_MODE;
 
-/// Number of transmission modes in UL direction.
-const unsigned char UL_NUM_TXMODE = 6; //UNKNOWN_TX_MODE;
+/// Number of transmission modes in UL direction (see DL_NUM_TXMODE).
+const unsigned char UL_NUM_TXMODE = UNKNOWN_TX_MODE;
 
 
 typedef std::map<MacNodeId, TxMode> TxModeMap;
