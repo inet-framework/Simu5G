@@ -307,6 +307,7 @@ void GtpUser::handleFromTrafficFlowFilter(Packet *datagram)
         gtpPacket->insertAtFront(header);
         auto data = datagram->peekData();
         gtpPacket->insertAtBack(data);
+        gtpPacket->copyRegionTags(*datagram, datagram->getFrontOffset(), header->getChunkLength(), datagram->getDataLength());
 
         delete datagram;
 
@@ -346,6 +347,7 @@ void GtpUser::handleFromUdp(Packet *pkt)
     auto originalPacket = new Packet(pkt->getName());
     auto gtpUserMsg = pkt->popAtFront<GtpUserMsg>();
     originalPacket->insertAtBack(pkt->peekData());
+    originalPacket->copyRegionTags(*pkt, pkt->getFrontOffset(), b(0), pkt->getDataLength());
 
     // The tunnel names the session the T-PDU belongs to, and so what it carries (a
     // base station knows every tunnel ending here); a relay between a MEC host's UPF
@@ -464,6 +466,7 @@ void GtpUser::tunnelDownlink(Packet *datagram, const FTeid& tunnel, Qfi qfi)
     gtpMsg->insertAtFront(header);
     auto data = datagram->peekData();
     gtpMsg->insertAtBack(data);
+    gtpMsg->copyRegionTags(*datagram, datagram->getFrontOffset(), header->getChunkLength(), datagram->getDataLength());
     delete datagram;
 
     socket_.sendTo(gtpMsg, tunnel.address, tunnelPeerPort_);

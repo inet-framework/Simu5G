@@ -1,0 +1,206 @@
+%description:
+The tunnels of the user plane carry the region tags of a packet with its data, uplink
+and downlink: a base station tunnels the packets of its UEs, a UPF those of the data
+network, and each end decapsulates what it receives. GtpUser creates a new Packet for
+every GTP-U message, so it has to copy the region tags of the data it carries.
+
+The test uses an Ethernet PDU session. ue[0] and dnStation, a host on the UPF's N6
+Ethernet LAN, each send one frame. RegionTagProbe adds a region tag (CreationTimeTag)
+to the whole frame where the frame is about to enter the tunnel, and counts the bytes
+of the frame that carry it where the frame has left the tunnel:
+ - downlink: tagged as the Ethernet layer of the UPF's bridge has finished the frame,
+   counted as the PDCP entity of the gNB receives it from the upper layer;
+ - uplink: tagged as the PDCP entity of the gNB passes the frame up, counted as the
+   Ethernet layer of the UPF's bridge receives it.
+The stack around the tunnel does not keep the tag on every byte (the uplink frame loses
+two bytes in the base station), so the test expects some bytes tagged, not all of them.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.node.ethernet.Eth1G;
+import inet.node.inet.StandardHost;
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+simple RegionTagProbe
+{
+    @class(RegionTagProbe);
+}
+
+network GtpRegionTagsNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        dnStation: StandardHost {
+            @display("p=650,75");
+        }
+        probe: RegionTagProbe;
+    connections:
+        upf.dnEthg <--> Eth1G <--> dnStation.ethg++;
+}
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: RegionTagProbe.cc
+#include <iostream>
+#include <string>
+
+#include <inet/common/TimeTag_m.h>
+#include <inet/common/packet/Packet.h>
+
+using namespace omnetpp;
+using namespace inet;
+
+namespace GtpRegionTags {   // the test's NED namespace (opp_test)
+
+class RegionTagProbe : public cSimpleModule, public cListener
+{
+  protected:
+    simsignal_t pushedIn_ = registerSignal("packetPushedIn");
+    simsignal_t pushedOut_ = registerSignal("packetPushedOut");
+    simsignal_t pdcpReceivedFromUpper_ = registerSignal("receivedPacketFromUpperLayer");
+    simsignal_t pdcpSentToUpper_ = registerSignal("sentPacketToUpperLayer");
+
+    void initialize() override
+    {
+        for (auto signal : {pushedIn_, pushedOut_, pdcpReceivedFromUpper_, pdcpSentToUpper_})
+            getSystemModule()->subscribe(signal, this);
+    }
+
+    void handleMessage(cMessage *msg) override { throw cRuntimeError("no messages"); }
+
+    static bool contains(cComponent *component, const char *part)
+    {
+        return component->getFullPath().find(part) != std::string::npos;
+    }
+
+    static bool endsWith(cComponent *component, const char *suffix)
+    {
+        std::string path = component->getFullPath();
+        std::string s = suffix;
+        return path.size() >= s.size() && path.compare(path.size() - s.size(), s.size(), s) == 0;
+    }
+
+    // the number of bytes of the packet that carry a CreationTimeTag of the probe
+    static long taggedBytes(Packet *packet)
+    {
+        long bytes = 0;
+        packet->mapAllRegionTags<CreationTimeTag>(b(0), packet->getTotalLength(), [&] (b offset, b length, const Ptr<const CreationTimeTag>& tag) {
+            if (tag->getCreationTime() == 0.123)
+                bytes += B(length).get<B>();
+        });
+        return bytes;
+    }
+
+    // the frame is about to enter the tunnel: the whole frame gets a region tag
+    void tag(Packet *packet, const char *direction)
+    {
+        packet->addRegionTag<CreationTimeTag>(b(0), packet->getTotalLength())->setCreationTime(0.123);
+        std::cout << "RegionTagProbe: " << direction << " tagged " << taggedBytes(packet) << " of " << B(packet->getTotalLength()).get<B>() << " bytes" << std::endl;
+    }
+
+    // the frame has left the tunnel
+    void count(Packet *packet, const char *direction)
+    {
+        std::cout << "RegionTagProbe: " << direction << " arrived with " << taggedBytes(packet) << " of " << B(packet->getTotalLength()).get<B>() << " bytes tagged" << std::endl;
+    }
+
+    void receiveSignal(cComponent *, simsignal_t, intval_t, cObject *) override {}
+    void receiveSignal(cComponent *, simsignal_t, uintval_t, cObject *) override {}
+    void receiveSignal(cComponent *, simsignal_t, bool, cObject *) override {}
+    void receiveSignal(cComponent *, simsignal_t, double, cObject *) override {}
+    void receiveSignal(cComponent *, simsignal_t, const SimTime&, cObject *) override {}
+    void receiveSignal(cComponent *, simsignal_t, const char *, cObject *) override {}
+
+    void receiveSignal(cComponent *source, simsignal_t signal, cObject *obj, cObject *details) override
+    {
+        auto *packet = dynamic_cast<Packet *>(obj);
+        if (packet == nullptr)
+            return;
+        std::string name = packet->getName();
+        if (name == "dl-probe") {
+            if (signal == pushedOut_ && endsWith(source, "upf.ethBridge.ethernet.fcsInserter"))
+                tag(packet, "downlink");
+            else if (signal == pdcpReceivedFromUpper_ && contains(source, "gnb.cellularNic.pdcp-") && endsWith(source, ".tx"))
+                count(packet, "downlink");
+        }
+        else if (name == "ul-probe") {
+            if (signal == pdcpSentToUpper_ && contains(source, "gnb.cellularNic.pdcp-") && endsWith(source, ".rx"))
+                tag(packet, "uplink");
+            else if (signal == pushedIn_ && endsWith(source, "upf.ethBridge.ethernet.fcsChecker"))
+                count(packet, "uplink");
+        }
+    }
+};
+
+Define_Module(RegionTagProbe);
+
+}
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = GtpRegionTagsNetwork
+cmdenv-express-mode = false
+**.cmdenv-log-level = off
+
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+
+*.upf.hasEthernetBridge = true
+*.ue[*].sessionType = "Ethernet"
+*.ue[*].hasIpv4 = false
+*.numUe = 1
+*.ue[0].cellularNic.address = "02-00-00-00-0E-01"
+
+*.dnStation.hasIpv4 = false
+*.dnStation.eth[*].typename = "LayeredEthernetInterface"
+*.dnStation.eth[0].address = "02-00-00-00-0D-01"
+*.dnStation.eth[*].bitrate = 1Gbps
+*.dnStation.ethernet.typename = "EthernetLayer"
+*.dnStation.ethernet.hasSocketSupport = true
+*.dnStation.ieee8021q.typename = "Ieee8021qProtocol"
+*.dnStation.llc.typename = ""
+
+*.bearerConfigurator.staticDrbs = [
+    {coreNetwork: "5gc", ue: "ue[0]", drbId: 1, isDefault: true, lcg: 3, rlcMode: "UM"}
+    ]
+
+*.ue[0].numApps = 2
+*.ue[0].app[0].typename = "EthernetSourceApp"
+*.ue[0].app[0].source.packetNameFormat = "ul-probe"
+*.ue[0].app[1].typename = "EthernetSinkApp"
+*.ue[0].app[1].io.localAddress = "02-00-00-00-0E-01"
+*.ue[0].app[1].io.steal = true
+*.ue[0].app[1].io.remoteAddress = ""
+
+*.dnStation.numApps = 2
+*.dnStation.app[0].typename = "EthernetSourceApp"
+*.dnStation.app[0].source.packetNameFormat = "dl-probe"
+*.dnStation.app[1].typename = "EthernetSinkApp"
+*.dnStation.app[1].io.localAddress = "02-00-00-00-0D-01"
+*.dnStation.app[1].io.steal = true
+*.dnStation.app[1].io.remoteAddress = ""
+
+*.ue[*].app[*].io.remoteAddress = "02-00-00-00-0D-01"
+*.dnStation.app[*].io.remoteAddress = "02-00-00-00-0E-01"
+*.ue[*].app[*].io.interface = "cellular"
+*.dnStation.app[*].io.interface = "eth0"
+**.app[*].source.productionInterval = 10s
+**.app[*].source.initialProductionOffset = 0.1s
+**.app[*].source.packetLength = 100B
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains-regex: stdout
+RegionTagProbe: downlink tagged \d+ of \d+ bytes
+%#--------------------------------------------------------------------------------------------------------------
+%contains-regex: stdout
+RegionTagProbe: uplink tagged \d+ of \d+ bytes
+%#--------------------------------------------------------------------------------------------------------------
+%contains-regex: stdout
+RegionTagProbe: downlink arrived with [1-9]\d* of \d+ bytes tagged
+%#--------------------------------------------------------------------------------------------------------------
+%contains-regex: stdout
+RegionTagProbe: uplink arrived with [1-9]\d* of \d+ bytes tagged
+%#--------------------------------------------------------------------------------------------------------------
