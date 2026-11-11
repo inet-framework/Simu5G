@@ -25,14 +25,14 @@ left out or applied once too often, one block per band, the worst band alone,
 the first remote unit alone, the first codeword's CQI -- and each of them has
 to be contradicted by at least one reception.
 
-Two behaviours are pinned as the model's current contract, not endorsed:
+One behaviour is pinned as the model's current contract, not endorsed: the
+SINR is truncated toward zero, where the CQI computation rounds it (see
+BlerCqiRoundTrip.test): -14.9 dB is judged as -14, inside the curves, and
+-2.7 dB as -2.
 
- - the SINR is truncated toward zero, where the CQI computation rounds it
-   (see BlerCqiRoundTrip.test): -14.9 dB is judged as -14, inside the
-   curves, and -2.7 dB as -2;
- - the SINR statistic is recorded only for a reception that reaches the draw.
-   A packet lost to CQI 0, or to a band below the curves, records nothing, so
-   rcvdSinrDl and rcvdSinrUl leave out exactly the worst receptions.
+The SINR statistic is recorded for every reception decided, also for a packet
+lost without a draw (to CQI 0, or to a band below the curves), so rcvdSinrDl
+and rcvdSinrUl include the worst receptions.
 
 %includes:
 #include <algorithm>
@@ -330,8 +330,8 @@ base.sinr[2] = 6.0;
     recorder.values.clear();
     decide(model, &decoder, zeroCqi);
     decide(model, &decoder, belowCurves);
-    c.check("a packet lost before the draw records no SINR: the statistic leaves out the worst receptions",
-            recorder.values.empty());
+    c.check("a packet lost before the draw records its SINR too: the statistic includes the worst receptions",
+            recorder.values.size() == 2 && recorder.values[0] == (3.7 + 8.1) / 2 && recorder.values[1] == (3.7 + -15.0) / 2);
 }
 
 //
