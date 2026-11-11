@@ -806,14 +806,7 @@ bool StochasticChannelModel::isReceptionSuccessful(IRadioEndpoint *radio, AirFra
     // Get the resource Block id used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();
 
-    // the receiving node's receiver decides, against its error model
-    CellularReceiver *receiver = radio->getReceiver();
-    ASSERT(receiver != nullptr); // no frame reaches a phantom radio
-    std::optional<double> packetErrorRate = receiver->getErrorModel()->computePacketErrorRate(dir, cqi, snrV, rbmap, transmissionAttempt);
-    if (!packetErrorRate)
-        return false; // lost for certain, no decision to draw
-
-    // emit SINR statistic: the mean over the allocated bands
+    // emit SINR statistic: the mean over the allocated bands, also for a reception lost without a draw
     if (collectSinrStatistics_) {
         double sumSnr = 0.0;
         int usedRBs = 0;
@@ -828,6 +821,13 @@ bool StochasticChannelModel::isReceptionSuccessful(IRadioEndpoint *radio, AirFra
         if (usedRBs > 0)
             emitRcvdSinr(radio, dir, id, lteInfo->getCarrierFrequency(), sumSnr / usedRBs);
     }
+
+    // the receiving node's receiver decides, against its error model
+    CellularReceiver *receiver = radio->getReceiver();
+    ASSERT(receiver != nullptr); // no frame reaches a phantom radio
+    std::optional<double> packetErrorRate = receiver->getErrorModel()->computePacketErrorRate(dir, cqi, snrV, rbmap, transmissionAttempt);
+    if (!packetErrorRate)
+        return false; // lost for certain, no decision to draw
 
     return receiver->decide(*packetErrorRate);
 }
