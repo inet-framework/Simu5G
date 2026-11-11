@@ -117,16 +117,16 @@
 /simulations/nr/test_multiCarrier/,      -f omnetpp.ini -c MultiCarrier-CBR-UL -r 0,             5s,         be69-3f5f/tplx;a0ba-b562/tilx;00fa-5bfb/~tNl;d195-1869/sz, PASS, radio interference multicarrier
 /simulations/nr/test_multiCarrier/,      -f omnetpp.ini -c SingleCarrier-CBR-DL -r 0,            5s,         2777-f262/tplx;6c25-3582/tilx;e4ee-7506/~tNl;01c1-d98f/sz, PASS, radio interference
 /simulations/nr/test_multiCarrier/,      -f omnetpp.ini -c SingleCarrier-CBR-UL -r 0,            5s,         15a5-814a/tplx;d87b-3d57/tilx;6548-9ed8/~tNl;82bb-4750/sz, PASS, radio interference
-/simulations/nr/tutorial/,               -f omnetpp.ini -c BgTraffic -r 0 --warmup-period=0s,    5s,         8901-e074/tplx;4c8f-1005/tilx;0520-b6e1/~tNl;d1aa-9b89/sz, PASS, radio bgcell
-/simulations/nr/tutorial/,               -f omnetpp.ini -c CarrierAggregation -r 0 --warmup-period=0s, 5s,         3ac2-5671/tplx;f031-e9d1/tilx;823b-53b8/~tNl;6ce7-dc9b/sz, PASS, radio bgcell multicarrier
-/simulations/nr/tutorial/,               -f omnetpp.ini -c Multiple-UEs -r 0 --warmup-period=0s, 5s,         956c-0d06/tplx;5f8e-13e5/tilx;6df1-2000/~tNl;12ba-a031/sz, PASS, radio bgcell
-/simulations/nr/tutorial/,               -f omnetpp.ini -c Numerology -r 0 --warmup-period=0s,   5s,         3ac2-5671/tplx;f031-e9d1/tilx;823b-53b8/~tNl;6ce7-dc9b/sz, PASS, radio bgcell multicarrier
+/simulations/nr/tutorial/,               -f omnetpp.ini -c BgTraffic -r 0 --warmup-period=0s,    5s,         0ceb-d7c7/tplx;bb08-36b7/tilx;3f63-cd04/~tNl;f644-709d/sz, PASS, radio bgcell
+/simulations/nr/tutorial/,               -f omnetpp.ini -c CarrierAggregation -r 0 --warmup-period=0s, 5s,         2421-b79a/tplx;0278-149f/tilx;ebf2-b993/~tNl;85a9-3525/sz, PASS, radio bgcell multicarrier
+/simulations/nr/tutorial/,               -f omnetpp.ini -c Multiple-UEs -r 0 --warmup-period=0s, 5s,         60be-9fd4/tplx;ce80-ca23/tilx;6df1-2000/~tNl;78b1-24e4/sz, PASS, radio bgcell
+/simulations/nr/tutorial/,               -f omnetpp.ini -c Numerology -r 0 --warmup-period=0s,   5s,         2421-b79a/tplx;0278-149f/tilx;ebf2-b993/~tNl;85a9-3525/sz, PASS, radio bgcell multicarrier
 /simulations/nr/tutorial/,               -f omnetpp.ini -c Single-UE -r 0 --warmup-period=0s,    5s,         28be-86b9/tplx;a697-ec6a/tilx;90fa-95b6/~tNl;f57d-454d/sz, PASS, radio
 /simulations/nr/videostreaming_dataset_generator/, -f omnetpp.ini -c UrbanNetwork -r 0,          10s,        27c6-bf1e/tplx;7391-9465/tilx;8d27-f2fa/~tNl;6a13-d919/sz, PASS, radio interference bgcell bgue
-/tutorials/nr/,                          -f omnetpp.ini -c BgTraffic -r 0 --warmup-period=0s,    5s,         8901-e074/tplx;4c8f-1005/tilx;0520-b6e1/~tNl;d1aa-9b89/sz, PASS, radio bgcell
-/tutorials/nr/,                          -f omnetpp.ini -c CarrierAggregation -r 0 --warmup-period=0s, 5s,         3ac2-5671/tplx;f031-e9d1/tilx;823b-53b8/~tNl;6ce7-dc9b/sz, PASS, radio bgcell multicarrier
-/tutorials/nr/,                          -f omnetpp.ini -c Multiple-UEs -r 0 --warmup-period=0s, 5s,         956c-0d06/tplx;5f8e-13e5/tilx;6df1-2000/~tNl;12ba-a031/sz, PASS, radio bgcell
-/tutorials/nr/,                          -f omnetpp.ini -c Numerology -r 0 --warmup-period=0s,   5s,         3ac2-5671/tplx;f031-e9d1/tilx;823b-53b8/~tNl;6ce7-dc9b/sz, PASS, radio bgcell multicarrier
+/tutorials/nr/,                          -f omnetpp.ini -c BgTraffic -r 0 --warmup-period=0s,    5s,         0ceb-d7c7/tplx;bb08-36b7/tilx;3f63-cd04/~tNl;f644-709d/sz, PASS, radio bgcell
+/tutorials/nr/,                          -f omnetpp.ini -c CarrierAggregation -r 0 --warmup-period=0s, 5s,         2421-b79a/tplx;0278-149f/tilx;ebf2-b993/~tNl;85a9-3525/sz, PASS, radio bgcell multicarrier
+/tutorials/nr/,                          -f omnetpp.ini -c Multiple-UEs -r 0 --warmup-period=0s, 5s,         60be-9fd4/tplx;ce80-ca23/tilx;6df1-2000/~tNl;78b1-24e4/sz, PASS, radio bgcell
+/tutorials/nr/,                          -f omnetpp.ini -c Numerology -r 0 --warmup-period=0s,   5s,         2421-b79a/tplx;0278-149f/tilx;ebf2-b993/~tNl;85a9-3525/sz, PASS, radio bgcell multicarrier
 /tutorials/nr/,                          -f omnetpp.ini -c Single-UE -r 0 --warmup-period=0s,    5s,         28be-86b9/tplx;a697-ec6a/tilx;90fa-95b6/~tNl;f57d-454d/sz, PASS, radio
 /simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Clean -r 0,                        5s,         3827-c138/tplx;f489-88e8/tilx;106a-ceb8/~tNl;2b1c-0337/sz, PASS, idealchannel
 /simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Lossy -r 2,                        5s,         fbfb-e6aa/tplx;d77f-81d2/tilx;4629-edc8/~tNl;924b-c38f/sz, PASS, idealchannel
