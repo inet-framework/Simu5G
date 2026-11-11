@@ -12,6 +12,7 @@
 
 #include "IdealChannelModel.h"
 
+#include "simu5g/common/RxTrace.h"
 #include "simu5g/stack/phy/channelmodel/IRadioEndpoint.h"
 #include "simu5g/stack/phy/radio/CellularReceiver.h"
 #include "simu5g/stack/phy/radio/ICellularErrorModel.h"
@@ -55,6 +56,8 @@ std::vector<double> IdealChannelModel::computeReceptionRsrp(IRadioEndpoint *rece
 
 bool IdealChannelModel::isReceptionSuccessful(IRadioEndpoint *radio, AirFrame *frame, UserControlInfo *lteInfo, const std::vector<double>& rsrpVector)
 {
+    RxTrace::Reception rec(radioMedium_->getRxTrace(), dynamic_cast<const cModule *>(radio), binder_, lteInfo, frame);
+
     // the CQI the codeword was sent with
     unsigned char cw = lteInfo->getCw();
     const auto& cqis = lteInfo->getUserTxParams()->readCqiVector();
@@ -68,14 +71,16 @@ bool IdealChannelModel::isReceptionSuccessful(IRadioEndpoint *radio, AirFrame *f
     CellularReceiver *receiver = radio->getReceiver();
     ASSERT(receiver != nullptr); // no frame reaches a phantom radio
     std::vector<double> sinr = getSINR(radio, frame, lteInfo);
+    rec.setSinr(sinr);
     std::optional<double> packetErrorRate = receiver->getErrorModel()->computePacketErrorRate((Direction)lteInfo->getDirection(), cqi, sinr,
             lteInfo->getGrantedBlocks(), lteInfo->getTxNumber());
     if (!packetErrorRate)
-        return false; // lost for certain, no decision to draw
-    bool success = receiver->decide(*packetErrorRate);
+        return rec.finishWithoutDraw(); // lost for certain, no decision to draw
+    rec.setPer(*packetErrorRate);
+    bool success = receiver->decide(*packetErrorRate, &rec);
     EV << "IdealChannelModel::isReceptionSuccessful - transmission " << (int)lteInfo->getTxNumber()
        << ", error probability " << *packetErrorRate << " -> " << (success ? "received" : "lost") << endl;
-    return success;
+    return rec.finish(success);
 }
 
 } //namespace

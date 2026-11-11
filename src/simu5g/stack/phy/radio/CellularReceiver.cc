@@ -33,11 +33,15 @@ ICellularErrorModel *CellularReceiver::getErrorModel() const
     return check_and_cast<ICellularErrorModel *>(getSubmodule("errorModel"));
 }
 
-bool CellularReceiver::decide(double packetErrorRate)
+bool CellularReceiver::decide(double packetErrorRate, RxTrace::Reception *reception)
 {
     Enter_Method("decide");
     ASSERT(packetErrorRate >= 0 && packetErrorRate <= 1);
+    bool traced = reception != nullptr && reception->isActive();
+    uint64_t numbersDrawn = traced ? getRNG(0)->getNumbersDrawn() : 0;
     double randomSample = uniform(0.0, 1.0);
+    if (traced)
+        reception->setDraw(randomSample, numbersDrawn);
     bool received = randomSample > packetErrorRate;
     EV << "CellularReceiver: packet error rate " << packetErrorRate << ", random sample " << randomSample
        << " -> " << (received ? "received" : "lost") << endl;

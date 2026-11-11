@@ -146,6 +146,9 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
      */
     void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *) override;
 
+    /** The Binder, for the helpers that act on this PHY's behalf */
+    Binder *getBinder() { return binder_.get(); }
+
     const ChannelModelBase *getPrimaryChannelModel()
     {
         return primaryChannelModel_;

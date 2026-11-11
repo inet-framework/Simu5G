@@ -11,6 +11,7 @@
 //
 
 #include "simu5g/stack/d2d/phy/PhyEnbD2D.h"
+#include "simu5g/common/RxTrace.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/d2d/binder/D2dBinder.h"
 
@@ -69,7 +70,11 @@ void PhyEnbD2D::appendExtraFeedback(inet::Ptr<LteFeedbackPkt>& header, UserContr
             d2dCqiTransmission.txDirection = sourceRadio->getTxDirection();
             d2dCqiTransmission.txAngle = sourceRadio->getTxAngle();
             d2dCqiTransmission.startTime = simTime();
+            RxTrace::WhatIf whatIf(radioMedium_->getRxTrace(), "CQI", lteinfo->getCarrierFrequency(), D2D);
+            if (whatIf.isActive())
+                whatIf.setLink(RxTrace::nameOf(binder_, lteinfo->getSourceId()), RxTrace::nameOf(binder_, peerId), RxTrace::ratOf(lteinfo->getSourceId()));
             std::vector<double> snr = radioMedium_->computeSinr(ueInfo->phy, d2dCqiTransmission);
+            whatIf.finish(snr);
 
             // Compute the feedback for this link
             LteFeedbackDoubleVector fb = lteFeedbackComputation_->computeFeedback(type, rbtype, txmode,

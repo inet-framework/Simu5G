@@ -14,6 +14,7 @@
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
+#include "simu5g/common/RxTrace.h"
 
 #include <inet/common/packet/chunk/ByteCountChunk.h>
 
@@ -254,8 +255,13 @@ void PhyEnb::requestFeedback(UserControlInfo *lteinfo, AirFrame *frame, Packet *
 
     //Apply analog model (path loss)
     //Get snr for UL direction
-    if (channelModel != nullptr)
+    if (channelModel != nullptr) {
+        RxTrace::WhatIf whatIf(radioMedium_->getRxTrace(), "CQI", lteinfo->getCarrierFrequency(), UL);
+        if (whatIf.isActive())
+            whatIf.setLink(RxTrace::nameOf(binder_, lteinfo->getSourceId()), RxTrace::nameOf(this), RxTrace::ratOf(lteinfo->getSourceId()));
         snr = channelModel->getSINR(this, frame, lteinfo);
+        whatIf.finish(snr);
+    }
     else
         throw cRuntimeError("PhyEnb::requestFeedback - channelModel is a null pointer");
 
@@ -299,7 +305,11 @@ void PhyEnb::requestFeedback(UserControlInfo *lteinfo, AirFrame *frame, Packet *
             dlCqiTransmission.txDirection = getTxDirection();
             dlCqiTransmission.txAngle = getTxAngle();
             dlCqiTransmission.startTime = simTime();
+            RxTrace::WhatIf whatIf(radioMedium_->getRxTrace(), "CQI", lteinfo->getCarrierFrequency(), DL);
+            if (whatIf.isActive())
+                whatIf.setLink(RxTrace::nameOf(this), RxTrace::nameOf(binder_, lteinfo->getSourceId()), RxTrace::ratOf(lteinfo->getSourceId()));
             snr = radioMedium_->computeSinr(radioMedium_->getRadio(lteinfo->getSourceId()), dlCqiTransmission);
+            whatIf.finish(snr);
         }
         else
             header->setLteFeedbackDoubleVectorDl(fb);

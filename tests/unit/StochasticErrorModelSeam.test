@@ -399,9 +399,9 @@ for (const Link& link : links) {
 #endif
     };
     const double nan = std::numeric_limits<double>::quiet_NaN();
-    expectAssert("decide(1.5)", [&] { ueReceiver->decide(1.5); });
-    expectAssert("decide(-0.1)", [&] { ueReceiver->decide(-0.1); });
-    expectAssert("decide(NaN)", [&] { ueReceiver->decide(nan); });
+    expectAssert("decide(1.5)", [&] { ueReceiver->decide(1.5, nullptr); });
+    expectAssert("decide(-0.1)", [&] { ueReceiver->decide(-0.1, nullptr); });
+    expectAssert("decide(NaN)", [&] { ueReceiver->decide(nan, nullptr); });
 
     Reception r = makeReception(links[0]);
     r.blocks = everyBand;

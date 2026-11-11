@@ -20,7 +20,10 @@ Tools used beyond the test suites of this folder:
   the RNG's position, the outcome. Off by default; written with
   `--simu5g-rxtrace-file='${resultdir}/rxtrace.txt'`, and fingerprint-inert when
   on. It was kept on its own branch during the acceptance and applied to the
-  compared commits in throwaway worktrees.
+  compared commits in throwaway worktrees. On dev it is owned by the radio
+  medium and switched on by its recordReceptionTrace parameter
+  (`--**.radioMedium.recordReceptionTrace=true`), which writes
+  `${resultdir}/${configname}-${runnumber}.rxtrace`.
 - **Mutation runs.** A new check is run against a build in which the mechanism
   it guards is deliberately broken, and must fail.
 

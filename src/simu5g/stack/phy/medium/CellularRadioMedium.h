@@ -20,6 +20,7 @@
 #include <inet/common/INETDefs.h>
 
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/common/RxTrace.h"
 #include "simu5g/stack/phy/medium/CellularTransmission.h"
 #include "simu5g/stack/phy/medium/ChannelState.h"
 
@@ -55,10 +56,12 @@ class CellularRadioMedium : public cSimpleModule
     std::map<GHz, ChannelState::LosMap> losMaps; // per carrier: whether each link is in line of sight
     std::map<GHz, ChannelState::ShadowFadingMap> shadowingMaps; // per carrier: the last shadowing sample of each link
     std::map<GHz, ChannelState::JakesFadingMap> jakesFadingMaps; // per carrier: the Jakes fading paths of each link
+    mutable RxTrace rxTrace; // open when recordReceptionTrace is set; written by the evaluations, also through const paths
 
   protected:
     virtual void initialize(int stage) override;
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
+    virtual void finish() override;
 
     /**
      * The channel model a what-if is evaluated with: the receiver's on the
@@ -75,6 +78,9 @@ class CellularRadioMedium : public cSimpleModule
 
   public:
     virtual ~CellularRadioMedium();
+
+    /** The reception trace, written only when the recordReceptionTrace parameter is set. */
+    RxTrace& getRxTrace() const { return rxTrace; }
 
     /**
      * The channel model of the given carrier for the radios of the given RAT:

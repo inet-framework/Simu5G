@@ -42,6 +42,7 @@ module CellularRadioMedium
         double sat @unit("dBm") = default(-110dBm); // Signal attenuation threshold (in dBm)
         double alpha = default(2); // Path loss coefficient
         double carrierFrequency @unit("Hz") = default(2.4GHz); // Carrier frequency (in Hz)
+        bool recordReceptionTrace = default(false); // When enabled, the medium writes the reception trace (see RxTrace) into ${resultdir}/${configname}-${runnumber}.rxtrace
         @class(CellularRadioMedium);
         @display("i=misc/sun");
     submodules:

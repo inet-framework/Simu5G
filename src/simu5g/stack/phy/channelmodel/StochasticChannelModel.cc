@@ -18,6 +18,7 @@
 #include "simu5g/common/binder/Binder.h"
 #include "simu5g/stack/mac/amc/UserTxParams.h"
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/common/RxTrace.h"
 #include "simu5g/nodes/ExtCellAllocator.h"
 #include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/d2d/mac/ID2dMacEnb.h"
@@ -769,6 +770,8 @@ bool StochasticChannelModel::isReceptionSuccessful(IRadioEndpoint *radio, AirFra
 {
     EV << "StochasticChannelModel::error" << endl;
 
+    RxTrace::Reception rec(radioMedium_->getRxTrace(), dynamic_cast<const cModule *>(radio), binder_, lteInfo, frame);
+
     // get codeword
     unsigned char cw = lteInfo->getCw();
     // get number of codewords
@@ -802,6 +805,7 @@ bool StochasticChannelModel::isReceptionSuccessful(IRadioEndpoint *radio, AirFra
 
     // Take sinr (getReceptionSinr() routes D2D/D2D_MULTI receptions through getSINR_D2D)
     std::vector<double> snrV = getReceptionSinr(radio, frame, lteInfo, rsrpVector);
+    rec.setSinr(snrV);
 
     // Get the resource Block id used to transmit this packet
     RbMap rbmap = lteInfo->getGrantedBlocks();
@@ -827,9 +831,10 @@ bool StochasticChannelModel::isReceptionSuccessful(IRadioEndpoint *radio, AirFra
     ASSERT(receiver != nullptr); // no frame reaches a phantom radio
     std::optional<double> packetErrorRate = receiver->getErrorModel()->computePacketErrorRate(dir, cqi, snrV, rbmap, transmissionAttempt);
     if (!packetErrorRate)
-        return false; // lost for certain, no decision to draw
+        return rec.finishWithoutDraw(); // lost for certain, no decision to draw
+    rec.setPer(*packetErrorRate);
 
-    return receiver->decide(*packetErrorRate);
+    return rec.finish(receiver->decide(*packetErrorRate, &rec));
 }
 
 double StochasticChannelModel::antennaGainOf(MacNodeId nodeId) const
@@ -1030,6 +1035,7 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
 
                 EV << "\t band " << i << " occupied by " << (external ? "external" : "background") << " cell " << id << "/pwr[" << linearToDBm(recvPwr) << "]-int[" << (*interference)[i] << "]" << endl;
             }
+            radioMedium_->getRxTrace().addInterferer(dynamic_cast<const cModule *>(transmission->transmitter));
             continue;
         }
 
@@ -1058,6 +1064,7 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
 
             EV << "\t band " << i << " occupied/pwr[" << txPwr << "]-int[" << (*interference)[i] << "]" << endl;
         }
+        radioMedium_->getRxTrace().addInterferer(dynamic_cast<const cModule *>(transmission->transmitter));
     }
 
     return true;
@@ -1164,6 +1171,7 @@ bool StochasticChannelModel::computeUplinkInterference(IRadioEndpoint *radio, Ma
 
                 EV << "\t band " << i << " occupied by background UE " << transmission->sourceId << "/pwr[" << linearToDBm(recvPwr) << "]-int[" << (*interference)[i] << "]" << endl;
             }
+            radioMedium_->getRxTrace().addInterferer(dynamic_cast<const cModule *>(transmission->transmitter));
             continue;
         }
 
@@ -1181,6 +1189,7 @@ bool StochasticChannelModel::computeUplinkInterference(IRadioEndpoint *radio, Ma
         double att = attenuationFrom(interferer);
         for (unsigned int i : bands)
             addInterference(interferer, i, att);
+        radioMedium_->getRxTrace().addInterferer(dynamic_cast<const cModule *>(transmission->transmitter));
     }
 
     // Debug Output
@@ -1374,6 +1383,7 @@ bool StochasticChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId s
         double att = attenuationFrom(interferer);
         for (unsigned int i : bands)
             addInterference(interferer, i, att);
+        radioMedium_->getRxTrace().addInterferer(dynamic_cast<const cModule *>(transmission->transmitter));
     }
 
     // Debug Output

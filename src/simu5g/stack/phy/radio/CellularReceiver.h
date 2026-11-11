@@ -15,6 +15,7 @@
 #include <omnetpp.h>
 
 #include "simu5g/common/LteCommon.h"
+#include "simu5g/common/RxTrace.h"
 
 namespace simu5g {
 
@@ -71,9 +72,10 @@ class CellularReceiver : public cSimpleModule
 
     /**
      * Decides a reception with the given packet error rate by one uniform
-     * draw from this module's RNG: received if the draw exceeds the rate.
+     * draw from this module's RNG: received if the draw exceeds the rate. The
+     * draw goes into the reception's trace line; reception may be nullptr.
      */
-    virtual bool decide(double packetErrorRate);
+    virtual bool decide(double packetErrorRate, RxTrace::Reception *reception);
 
     /** Noise figure in dB. */
     double getNoiseFigure() const { return noiseFigure_; }

@@ -72,7 +72,14 @@ void CellularRadioMedium::initialize(int stage)
         maxInterferenceDistance = pow(waveLength * waveLength * par("pMax").doubleValue()
                 / (16.0 * M_PI * M_PI * minReceivePower), 1.0 / par("alpha").doubleValue());
         EV << "max interference distance:" << maxInterferenceDistance << endl;
+        if (par("recordReceptionTrace"))
+            rxTrace.open(getEnvir()->getConfig()->substituteVariables("${resultdir}/${configname}-${runnumber}.rxtrace"));
     }
+}
+
+void CellularRadioMedium::finish()
+{
+    rxTrace.close();
 }
 
 CellularRadioMedium::~CellularRadioMedium()

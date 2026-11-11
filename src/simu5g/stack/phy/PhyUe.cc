@@ -19,6 +19,7 @@
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/stack/phy/feedback/LteDlFeedbackGenerator.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
+#include "simu5g/common/RxTrace.h"
 
 namespace simu5g {
 
@@ -106,7 +107,11 @@ void PhyUe::findCandidateEnb(MacNodeId& outCandidateMasterId, double& outCandida
         broadcast.startTime = simTime();
         // get RSSI from the BS
         double rssi = 0;
+        RxTrace::WhatIf whatIf(radioMedium_->getRxTrace(), "RSRP", ueCarrierFrequency, DL);
+        if (whatIf.isActive())
+            whatIf.setLink(RxTrace::nameOf(binder_, cellId), RxTrace::nameOf(this), RxTrace::ratOf(nodeId_));
         std::vector<double> rssiV = radioMedium_->computeRsrp(this, broadcast);
+        whatIf.finish(rssiV);
         for (auto value : rssiV)
             rssi += value;
         rssi /= rssiV.size(); // compute the mean over all RBs
@@ -150,7 +155,11 @@ void PhyUe::changeServingNode(MacNodeId servingNodeId)
 
 double PhyUe::computeReceivedBeaconPacketRssi(AirFrame *frame, UserControlInfo *lteInfo)
 {
+    RxTrace::WhatIf whatIf(radioMedium_->getRxTrace(), "BEACON", lteInfo->getCarrierFrequency(), DL);
+    if (whatIf.isActive())
+        whatIf.setLink(RxTrace::nameOf(binder_, lteInfo->getSourceId()), RxTrace::nameOf(this), RxTrace::ratOf(nodeId_));
     std::vector<double> rssiV = primaryChannelModel_->getSINR(this, frame, lteInfo);
+    whatIf.finish(rssiV);
     double rssi = 0;
     for (auto value : rssiV)
         rssi += value;
