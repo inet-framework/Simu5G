@@ -1,0 +1,121 @@
+%description:
+
+A deviation of the uplink from TR 38.901, recorded rather than fixed
+(model-deviations.md item 33): a sectorial (ANISOTROPIC) base station's
+antenna pattern is applied only when the base station transmits. When it
+receives, the pattern is applied to nothing: not to its own UEs, and not to
+the interfering UEs (computeUplinkInterference() takes getAttenuation(), which
+has no angular term). So a sector hears the UEs behind it at full gain, which
+matters most in three-sector sites, where every sector has two neighbours
+pointing away from it.
+
+TR 38.901 7.5 Step 1 d): "Give BS and UT antenna field patterns Frx and Ftx in
+the global coordinate system and array geometries"; Frx is the "Receive
+antenna element u field pattern". The pattern is Table 7.3-1's, so a UE 300 m
+behind the sector arrives 29.943020172152938 dB weaker than one 300 m in
+front, as in the downlink; the geometry and the expected value are those of
+ChannelModelSectorPattern, which pins the current behaviour (no difference).
+
+When fixed, drop the %expected-failure line, and change the pinned check of
+ChannelModelSectorPattern into this one.
+
+%expected-failure: the receive pattern of a sectorial base station is ignored in the uplink
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+// The control information a packet from 'source' to 'dest' carries.
+static UserControlInfo controlInfo(Direction dir, LtePhyFrameType type, MacNodeId source,
+        MacNodeId dest)
+{
+    UserControlInfo info;
+    info.setDirection(dir);
+    info.setFrameType(type);
+    info.setSourceId(source);
+    info.setDestId(dest);
+    return info;
+}
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        model: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 3.5GHz
+*.carrierAggregation.componentCarrier[0].numBands = 1
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+**.scenario = "URBAN_MICROCELL"
+**.nodebHeight = 25m
+**.ueHeight = 1.5m
+**.dynamicLos = false
+**.fixedLos = true
+**.shadowing = false
+**.fading = false
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *model = harnessModule<StochasticChannelModel>(this, "model");
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+
+StubEndpoint bs, front, behind;
+const MacNodeId bsId = MacNodeId(1), frontId = MacNodeId(1025), behindId = MacNodeId(1026);
+bs.nodeId = bsId;
+bs.coord = Coord(0, 0, 25);
+bs.txDirection = ANISOTROPIC;
+bs.txAngle = 0;
+front.nodeId = frontId;
+front.coord = Coord(300, 0, 1.5);
+behind.nodeId = behindId;
+behind.coord = Coord(-300, 0, 1.5);
+StubRadioRegistration bsRadio(medium, bsId, &bs);
+StubRadioRegistration frontRadio(medium, frontId, &front);
+StubRadioRegistration behindRadio(medium, behindId, &behind);
+ChannelModelProbe probe(model);
+
+// TR 38.901 Table 7.3-1, A(theta, 0) - A(theta, 180) at theta = 90 + atan(23.5 / 300) deg
+const double patternDifference = 29.943020172152938;
+
+// TR 38.901 7.5 Step 1 d) and Table 7.3-1: the base station's receive pattern
+UserControlInfo fromFront = controlInfo(UL, DATAPKT, frontId, bsId);
+UserControlInfo fromBehind = controlInfo(UL, DATAPKT, behindId, bsId);
+double ulFront = model->getRSRP(probe.linkFor(&bs, &fromFront, front.coord), 23.0)[0];
+double ulBehind = model->getRSRP(probe.linkFor(&bs, &fromBehind, behind.coord), 23.0)[0];
+c.expectNear("UL: the UE behind the sector arrives weaker by the pattern of TR 38.901 Table 7.3-1",
+        ulFront - ulBehind, patternDifference, 1e-9);
+
+c.summary();
+
+%contains: stdout
+modelchecks=1 modelfailures=0
+
+%not-contains: stdout
+FAILED

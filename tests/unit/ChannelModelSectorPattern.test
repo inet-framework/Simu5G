@@ -1,0 +1,130 @@
+%description:
+
+The antenna pattern of a sectorial (ANISOTROPIC) base station, in both
+directions of a link: two UEs at the same distance from the base station, one
+on the boresight and one behind it, so the path loss of the two links is the
+same and the difference of their received powers is the pattern alone.
+
+ - DL: the base station transmits. The UE behind it receives less by the
+   pattern of TR 38.901 Table 7.3-1, A(theta, 0) - A(theta, 180).
+ - UL: the base station receives. PINNED DEFECT (model-deviations.md item
+   33): the model applies the pattern only when the base station transmits,
+   so the UE behind the sector arrives as strong as the one in front. TR
+   38.901 7.5 Step 1 d) gives the receive pattern too ("Give BS and UT antenna
+   field patterns Frx and Ftx"), which gives the same 29.94 dB as in the DL;
+   ChannelModelUplinkSectorPattern asserts that, as an expected failure.
+
+The geometry: the base station at 25 m with its boresight along the x axis,
+the UEs at 1.5 m, 300 m in front and 300 m behind, both on the x axis, so the
+azimuth defect of item 10 cannot show. The expected value is Table 7.3-1
+verbatim (theta3dB = phi3dB = 65 deg, SLA_V = A_max = 30 dB) at the zenith
+angle theta = 90 + atan(23.5 / 300) deg = 94.479 deg: A(theta, 0) = -0.05698
+dB, A(theta, 180) = -30 dB, a difference of 29.943020172152938 dB. Shadowing
+and fading are off, the LOS state is fixed.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+// The control information a packet from 'source' to 'dest' carries.
+static UserControlInfo controlInfo(Direction dir, LtePhyFrameType type, MacNodeId source,
+        MacNodeId dest)
+{
+    UserControlInfo info;
+    info.setDirection(dir);
+    info.setFrameType(type);
+    info.setSourceId(source);
+    info.setDestId(dest);
+    return info;
+}
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        model: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 3.5GHz
+*.carrierAggregation.componentCarrier[0].numBands = 1
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+**.scenario = "URBAN_MICROCELL"
+**.nodebHeight = 25m
+**.ueHeight = 1.5m
+**.dynamicLos = false
+**.fixedLos = true
+**.shadowing = false
+**.fading = false
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *model = harnessModule<StochasticChannelModel>(this, "model");
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+
+StubEndpoint bs, front, behind;
+const MacNodeId bsId = MacNodeId(1), frontId = MacNodeId(1025), behindId = MacNodeId(1026);
+bs.nodeId = bsId;
+bs.coord = Coord(0, 0, 25);
+bs.txDirection = ANISOTROPIC;
+bs.txAngle = 0;
+front.nodeId = frontId;
+front.coord = Coord(300, 0, 1.5);
+behind.nodeId = behindId;
+behind.coord = Coord(-300, 0, 1.5);
+StubRadioRegistration bsRadio(medium, bsId, &bs);
+StubRadioRegistration frontRadio(medium, frontId, &front);
+StubRadioRegistration behindRadio(medium, behindId, &behind);
+ChannelModelProbe probe(model);
+
+// TR 38.901 Table 7.3-1, A(theta, 0) - A(theta, 180) at theta = 90 + atan(23.5 / 300) deg
+const double patternDifference = 29.943020172152938;
+
+// downlink: the base station transmits, each UE evaluates the link at its end
+UserControlInfo toFront = controlInfo(DL, DATAPKT, bsId, frontId);
+UserControlInfo toBehind = controlInfo(DL, DATAPKT, bsId, behindId);
+double dlFront = model->getRSRP(probe.linkFor(&front, &toFront, bs.coord), 46.0)[0];
+double dlBehind = model->getRSRP(probe.linkFor(&behind, &toBehind, bs.coord), 46.0)[0];
+c.expectNear("DL: the UE behind the sector receives less by the pattern of TR 38.901 Table 7.3-1",
+        dlFront - dlBehind, patternDifference, 1e-9);
+
+// uplink: each UE transmits, the base station evaluates the link at its end
+UserControlInfo fromFront = controlInfo(UL, DATAPKT, frontId, bsId);
+UserControlInfo fromBehind = controlInfo(UL, DATAPKT, behindId, bsId);
+double ulFront = model->getRSRP(probe.linkFor(&bs, &fromFront, front.coord), 23.0)[0];
+double ulBehind = model->getRSRP(probe.linkFor(&bs, &fromBehind, behind.coord), 23.0)[0];
+c.expectNear("PINNED DEFECT (model-deviations.md item 33): UL: the UE behind the sector arrives as strong as the one in front; TR 38.901 gives 29.94 dB less",
+        ulFront - ulBehind, 0, 1e-9);
+
+c.summary();
+
+%contains: stdout
+modelchecks=2 modelfailures=0
+
+%not-contains: stdout
+FAILED

@@ -181,6 +181,15 @@ Recorded, not fixed in the branch, like the items of the earlier pieces.
    - Reached in every row as a mismatch of positions and heights; as a lost capability, in no row, which is why no suite showed it. Item 6's residue and item 4 are parts of this.
    - Fix shape: both heights from the link's positions; the scenario a property of the cell or site. The examples then need real heights, which moves results widely.
 
+## Found 2026-11-12: fix after the full merge
+
+33. **A sectorial base station's antenna pattern applies only when it transmits: in the uplink it is ignored.**
+   - What the model does: StochasticChannelModel::getRSRP() subtracts the angular attenuation only when link.txIsBaseStation, so the uplink signal of a base station's own UEs takes no pattern. The uplink interference takes getAttenuation(), which has no angular term, and phantomPowerAt() applies only the transmitter's pattern, a UE's, which is omnidirectional. A UE behind an ANISOTROPIC sector therefore arrives at full gain, as its own signal and as interference.
+   - What the specification says: TR 38.901 7.5 Step 1 d): "Give BS and UT antenna field patterns Frx and Ftx in the global coordinate system and array geometries", Frx being the "Receive antenna element u field pattern"; 7.3: "The antenna radiation power pattern of each antenna element is generated according to Table 7.3-1." The receiving base station takes the same pattern as the transmitting one.
+   - Effect: in the uplink, every sector hears the UEs off its boresight up to 30 dB too strong: the uplink interference is too high, and the signal of a UE served off the boresight too strong, wherever the base stations are sectorial; most in a three-sector site, where every sector has two neighbours pointing away from it. The downlink is right: ChannelModelSectorPattern checks it against Table 7.3-1.
+   - Reached in rows whose base stations are ANISOTROPIC (lte/tutorial, lte/multicell, lte/x2, channelmodel) wherever they carry uplink traffic; not checked row by row. Pinned by tests/unit/ChannelModelSectorPattern ("PINNED DEFECT"); the specification is asserted by tests/unit/ChannelModelUplinkSectorPattern, an expected failure.
+   - Fix shape: apply the base station's pattern at its end of every link, whichever end transmits: the serving UE's signal, the uplink interference and the phantom uplink. No example has a three-sector site (three co-located cells at 0, 120 and 240 degrees) yet; one should come with the fix, and it needs computeAngle() at zero distance between the co-located sectors defined.
+
 ## Fixed later in the branch, re-check only
 
 - **The O2I loss's random term redrawn at every evaluation:** accepted with piece 6a. Drawn once per UE from "the random term of a UE's building penetration loss is drawn once, the UE's own"; see item 14 for the per-radio residue.
