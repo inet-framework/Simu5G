@@ -156,19 +156,16 @@ the top of the NIC is an Ethernet port of the UE's link layer (see
 :doc:`ethernet-sessions`); for an Unstructured session, the application is
 attached to the NIC directly.
 
-Other UE parameters
--------------------
+MEC and emulation
+-----------------
 
-``hasRniSupport``
-   Adds the statistics collectors that the MEC Radio Network Information
-   service reads (see :doc:`mec`).
+In a MEC scenario, the MEC platform's Radio Network Information service reads
+the radio measurements of the UEs. A UE provides them when it has the
+statistics collectors that ``hasRniSupport = true`` adds (see :doc:`mec`).
 
-``extHostAddress``
-   In an emulation, the IPv4 address of a real host behind the UE: traffic to
-   that address is delivered to this UE (see :doc:`emulation`).
-
-The complete list of parameters is in the NED Reference of :ned:`LteUe` and
-:ned:`NrUe`.
+In an emulation, a UE can stand for a real host behind it: traffic to the
+IPv4 address set in the UE's ``extHostAddress`` parameter is delivered to the
+UE (see :doc:`emulation`).
 
 Example simulations
 -------------------

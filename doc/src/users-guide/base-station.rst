@@ -81,7 +81,8 @@ A base station is connected to the core network through its ``ppp`` gate, on
 an ordinary link to a UPF, a P-GW or a router of the core network. It has a
 full INET network layer and transport layer on this side, but these carry only
 the tunnels: the UEs' traffic does not pass through the base station's IP
-routing.
+routing. This transport network is IPv4 by default (``hasIpv4``), and it can
+stay IPv4 when the UEs' sessions are IPv6.
 
 The ``relay`` submodule (:ned:`UserPlaneRelay`) sits between the cellular NIC
 and the tunnels. Uplink user data from the NIC is classified by the relay's
@@ -143,28 +144,15 @@ over X2. See :doc:`dual-connectivity`.
    *.secondaryGnb.masterId = 1
    **.dualConnectivityEnabled = true
 
-Other base station parameters
------------------------------
+MEC support
+-----------
 
-``macNodeId``, ``macCellId``
-   The node id of the base station and the id of its cell, assigned
-   automatically (see :doc:`architecture`).
-
-``hasIpv4``, ``hasIpv6``
-   The network layers of the core network side, which carry the tunnels: the
-   transport network. It is IPv4 by default, and can stay IPv4 when the UEs'
-   sessions are IPv6.
-
-``numApps``
-   Applications running on the base station itself, rarely needed.
-
-``mecHost``, ``hasRniSupport``, ``extMeAppsAddress``, ``mcc``, ``mnc``
-   MEC support: the MEC host the base station steers traffic to, the
-   statistics collector of the Radio Network Information service, and the
-   identity of the network the service reports. See :doc:`mec`.
-
-The complete list is in the NED Reference of :ned:`eNodeB` and
-:ned:`gNodeB`.
+A base station takes part in a MEC scenario in two ways. It steers the traffic
+of the MEC applications to the MEC host named in its ``mecHost`` parameter,
+through a link on its ``pppMEHost`` gate. And with ``hasRniSupport = true``, it
+gets the statistics collector from which the MEC platform's Radio Network
+Information service reads the cell's measurements; the service identifies the
+network by the base station's ``mcc`` and ``mnc``. See :doc:`mec`.
 
 Statistics
 ----------

@@ -121,7 +121,11 @@ for every data radio bearer, as the bearer is established, and deletes them
 when it is torn down. In a running simulation, they appear in the NIC next to
 the static submodules.
 
-A NIC with SDAP has two more submodules (see :doc:`qos`):
+An NR NIC has SDAP when its ``hasSdap`` parameter is true. SDAP belongs to a
+stack connected to a 5G core, so the networks set ``hasSdap`` according to
+their core network: true with a 5G core, false with an EPC (see
+:doc:`deployments`). A NIC with SDAP has two more submodules (see
+:doc:`qos`):
 
 ``sdap`` (:ned:`NrSdap`)
    The SDAP layer, between ``ip2nic`` and ``pdcpMux``: it maps QoS flows to
@@ -142,7 +146,8 @@ messages; ``handoverX2Forwarder``, which forwards the downlink of a UE in
 handover; ``dcX2Forwarder`` and ``pdcpDcMux``, which carry the data of the
 dual connectivity bearers between the master and the secondary node; and
 ``compManager``, the CoMP manager, present with ``compEnabled``. It also has
-one background traffic generator per carrier, ``bgTrafficGenerator[]`` (see
+one background traffic generator per carrier it serves,
+``bgTrafficGenerator[]``, sized by its ``numCarriers`` parameter (see
 :doc:`background`).
 
 The path of a packet
@@ -166,7 +171,9 @@ network layer.
 The uplink takes the same path in the opposite direction, with one addition at
 a UE with SDAP: the ``qosFlowClassifier`` assigns each uplink packet its QoS
 flow before it enters ``ip2nic``. At the base station, the NIC hands the
-uplink data to the relay, which tunnels it into the core network.
+uplink data to the relay, which tunnels it into the core network. An extra
+delay for the packets entering and leaving the NIC at the top can be set with
+``processingDelayIn`` and ``processingDelayOut``; both are 0 by default.
 
 For a UE with an Ethernet session, the top of the NIC is an Ethernet port of
 the UE's link layer (``ethernetPortal``); for a UE with an Unstructured
@@ -216,30 +223,6 @@ deployment uses NR PDCP entities:
 
    *.masterEnb.cellularNic.rrc.bearerManagement.pdcpEntityModuleType = \
            "simu5g.stack.pdcp.NrPdcpEntity"
-
-Other NIC parameters
---------------------
-
-``processingDelayIn``, ``processingDelayOut``
-   An additional delay for the packets entering and leaving the NIC at the top,
-   0 by default.
-
-``hasSdap``
-   Whether the stack has an SDAP layer (:ned:`NrNicEnb` and :ned:`NrNicUe`).
-   The networks set it according to their core network: true with a 5G core,
-   false with an EPC (see :doc:`deployments`).
-
-``useReflectiveQos``
-   Whether the UE uses reflective QoS (:ned:`NrNicUe`, see :doc:`qos`).
-
-``compEnabled``
-   Adds the CoMP manager (base stations, see :doc:`x2`).
-
-``numCarriers``
-   The number of carriers a base station serves, which sizes
-   ``bgTrafficGenerator[]``.
-
-The complete list of parameters is in the NED Reference of each NIC type.
 
 Fidelity
 --------
