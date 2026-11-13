@@ -4,11 +4,28 @@ The PDCP Layer
 Overview
 --------
 
-The Packet Data Convergence Protocol (3GPP TS 36.323 for LTE, TS 38.323 for
-NR) is the top of the radio protocol stack proper. In Simu5G it performs
-sequence numbering, header handling, an (optional, simplified) header
-compression, and -- for dual-connectivity bearers -- the splitting and
-re-merging of the PDU stream over multiple legs.
+The Packet Data Convergence Protocol (PDCP; 3GPP TS 38.323 for NR, TS 36.323
+for LTE) sits above RLC and has one entity per radio bearer. Its main
+functions are header compression, ciphering and integrity protection,
+reordering with in-order delivery, and the routing and joining of the packets
+of a split bearer. For reordering, the transmitting entity numbers every
+packet with a sequence number, and the receiving entity uses the numbers to
+put the packets back in order and to discard duplicates. For a split bearer in
+dual connectivity, the transmitting entity routes the packets over the two
+legs, in two cell groups, and the receiving entity joins the two streams by
+sequence number. Header compression (ROHC) matters for small packets: it
+reduces the tens of bytes of IP, UDP and RTP headers of a voice frame to a few
+bytes. PDCP also discards packets that waited too long for transmission, and
+can duplicate packets over two legs for reliability.
+
+Simu5G models the PDCP functions that change what is transmitted and when: the
+PDCP header, whose size follows the bearer's RLC mode; header compression, as
+a size model of ROHC that follows the states of the compressor; and the split
+of a dual connectivity bearer over two legs, with reordering of the merged
+stream at the receiver. Ciphering and integrity protection, packet
+duplication, the discard timer and PDCP status reports are not modeled, and a
+receiving NR entity with a single leg delivers packets in arrival order, a
+known deviation from TS 38.323.
 
 PDCP is organized per bearer: each established DRB gets its own pair of
 transmitting and receiving PDCP entities, created and torn down by the

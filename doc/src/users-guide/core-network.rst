@@ -4,11 +4,26 @@ The Core Network
 Overview
 --------
 
-The core network connects the radio access network to the data network. Its
-user plane carries the UEs' traffic in GTP-U tunnels between the base stations
-and the anchor of each session; its control plane registers the UEs,
-establishes their sessions, and programs the tunnels. Simu5G models a 5G core
-(3GPP TS 23.501) and an EPC (TS 23.401) with the same building blocks:
+The core network connects the radio access network to the data networks. In a
+5G core (3GPP TS 23.501), User Plane Functions (UPFs) forward the users'
+traffic: the PDU Session Anchor connects a session to a data network over N6,
+intermediate UPFs may relay it over N9, and the traffic between the radio
+access network and the UPFs is carried in GTP-U tunnels over N3. The control
+plane is a set of network functions with service-based interfaces: the AMF
+handles registration and mobility, the SMF establishes the PDU sessions and
+programs the UPFs over N4 with PFCP, and further functions handle policy (PCF)
+and subscriber data (UDM). In an EPC (TS 23.401), the Serving Gateway and the
+PDN Gateway carry the user plane, and the MME handles the control plane.
+
+Simu5G models the user plane of the core network node by node, with UPFs and a
+PDN Gateway that end the GTP-U tunnels of the sessions. The control plane is a
+single network-level module that acts as the AMF and the SMF (or as the MME
+and the gateways' control plane), and its signaling with the base stations and
+the user plane nodes is modeled as direct calls. The Serving Gateway,
+intermediate UPFs that end tunnels, the service-based interfaces, and the PCF
+and UDM are not modeled.
+
+The building blocks are:
 
 :ned:`Upf`
    The User Plane Function of a 5G core. A UPF connected to the data network

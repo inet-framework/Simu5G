@@ -4,11 +4,25 @@ The Cellular NIC
 Overview
 --------
 
-Every UE and every base station has a cellular NIC, the ``cellularNic``
-submodule, which carries the radio protocol stack: SDAP, PDCP, RLC, MAC and
-PHY, the RRC that configures them, and the radio that connects the node to the
-radio medium. To the rest of the node, the NIC is a network interface like any
-other INET interface, named ``cellular``.
+3GPP describes the radio interface of the UE and the base station as a
+protocol stack (TS 38.300 for NR, TS 36.300 for LTE). In the user plane, from
+the top: SDAP, in NR only, maps QoS flows to radio bearers; PDCP handles
+header compression, ciphering and in-order delivery; RLC segments and
+retransmits; MAC multiplexes the logical channels into transport blocks,
+schedules them and runs HARQ; and the physical layer transmits them. In the
+control plane, the RRC configures these layers and controls the connection.
+A UE in dual connectivity has a MAC and a physical layer for each of its two
+cell groups, below a shared PDCP.
+
+Simu5G packages the stack of a node into one compound module, the cellular
+NIC: the ``cellularNic`` submodule of every UE and base station. To the rest of
+the node, the NIC is a network interface like any other INET interface, named
+``cellular``. It contains every layer of the user plane and the RRC, and the
+radio that connects the node to the radio medium; the PDCP and RLC entities of
+the bearers are created at run time. The NIC of a dual connectivity UE has two
+legs below PDCP, one per radio technology. The RRC configures the layers of
+its node through direct calls, and the RRC messages between the UE and the
+base station are not simulated.
 
 This chapter describes the NIC as a whole: the NIC types, the submodules they
 contain, the path a packet takes through them, and the parts that can be

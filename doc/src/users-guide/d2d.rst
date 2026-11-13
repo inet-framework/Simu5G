@@ -1,21 +1,37 @@
 Device-to-device (D2D) communications
 =====================================
 
-Simu5G includes a model of network-assisted device-to-device (D2D)
-communications, in which two nearby UEs served by the same base station can
-exchange data directly, over a UE-to-UE link, instead of relaying every packet
-through the eNodeB/gNodeB. The base station retains control of the link: it
-allocates the radio resources, drives the AMC, and decides (statically or
-dynamically) whether each flow uses the direct D2D mode or the conventional
-two-hop infrastructure mode. Both one-to-one and one-to-many (multicast) D2D
-are supported, entirely below the IP layer, so applications are unaware of the
-transport mode in use. D2D in Simu5G is a research prototype and is **not**
-based on any specific 3GPP specification; the modeling is described in
-A. Virdis, G. Nardini, G. Stea, "Modeling unicast device-to-device
-communications with SimuLTE" (IWSLS2 2016) and in G. Nardini, A. Virdis,
-G. Stea, "Modeling network-controlled device-to-device communications in
-SimuLTE" (MDPI Sensors, 2018). Ready-to-run examples are provided under
-``simulations/lte/d2d``, ``simulations/lte/d2d_multicast``,
+Overview
+--------
+
+Device-to-device (D2D) communication lets nearby UEs exchange data directly,
+over the sidelink (the PC5 interface), instead of through a base station. 3GPP
+specifies it as Proximity Services (ProSe, TS 23.303) and as sidelink
+communication in the radio access network (TS 36.300 for LTE, TS 38.300 for
+NR). Its main functions are sidelink discovery, sidelink communication in
+unicast, groupcast and broadcast, and the allocation of sidelink resources,
+either scheduled by the base station or selected by the UEs themselves from
+configured resource pools. For scheduled allocation, the base station keeps
+control of the direct link: it assigns the radio resources of every sidelink
+transmission. Sidelink communication also works out of network coverage,
+where only UE-selected resources are possible.
+
+Simu5G models network-assisted D2D, with a research prototype that is not based
+on the 3GPP sidelink specifications: two UEs served by the same base station
+exchange data over a direct link whose radio resources the base station
+schedules, either one-to-one or one-to-many (multicast). The base station also
+decides, statically or dynamically, whether a flow takes the direct path or the
+conventional path through the base station. All of this happens below the IP
+layer, in both the LTE and the NR stack, so applications are unaware of the path
+in use. Sidelink discovery, UE-selected resources from resource pools, and
+out-of-coverage operation are not modeled. D2D is a legacy feature of Simu5G: it
+is kept working, but it gets no new features.
+
+The modeling is described in A. Virdis, G. Nardini, G. Stea, "Modeling unicast
+device-to-device communications with SimuLTE" (IWSLS2 2016) and in G. Nardini,
+A. Virdis, G. Stea, "Modeling network-controlled device-to-device
+communications in SimuLTE" (MDPI Sensors, 2018). Ready-to-run examples are
+provided under ``simulations/lte/d2d``, ``simulations/lte/d2d_multicast``,
 ``simulations/lte/d2d_multihop`` and ``simulations/nr/d2d``.
 
 Enabling D2D

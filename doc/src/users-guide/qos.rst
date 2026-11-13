@@ -4,20 +4,45 @@ Bearers, QoS and SDAP
 Overview
 --------
 
-User traffic in a cellular network is carried over *data radio bearers*
-(DRBs), each with its own QoS treatment. In 4G, an application flow maps
-directly onto an EPS bearer; in 5G, packets are first classified onto *QoS
-flows* (identified by a QoS Flow Identifier, QFI), which the SDAP layer then
-maps onto DRBs. Simu5G models both arrangements.
+In the 5G system (3GPP TS 23.501 5.7), the QoS flow is the finest granularity
+of QoS: a flow within a PDU session, identified by its QoS Flow Identifier
+(QFI). Each QoS flow has a QoS profile, whose 5QI points to standardized QoS
+characteristics -- resource type (GBR or non-GBR), priority level, packet
+delay budget, packet error rate -- and which, for a GBR flow, adds the
+guaranteed and maximum flow bit rates. Packets are classified onto QoS flows
+at the two ends of the session: in the downlink by the UPF, with the packet
+detection rules the SMF installs, and in the uplink by the UE, with the QoS
+rules it receives at session establishment or derives from the downlink
+traffic (reflective QoS). In the radio access network, the QoS flows ride on
+data radio bearers (DRBs). The Service Data Adaptation Protocol (SDAP; TS
+37.324) sits above PDCP and has one entity per PDU session. Its functions are
+the mapping between QoS flows and DRBs, and the marking of packets with their
+QFI, in the SDAP header. Several QoS flows, even with different QoS profiles,
+can share a DRB, and how many DRBs a UE has and which flows they carry is the
+gNB's decision. In LTE (TS 23.401), the unit of QoS is the EPS bearer,
+identified by its QCI, and packets are mapped onto bearers directly by the
+packet filters of the core network and of the UE; there is no SDAP.
+
+Simu5G models both arrangements. In the 5G one, the downlink is classified at
+the anchor UPF's traffic flow filter and the uplink at the UE's QoS flow
+classifier, both with rules from the configuration; SDAP maps the QFIs to
+DRBs, adds and removes the SDAP header, and supports reflective QoS at the UE.
+In the LTE one, packet filters select the bearer directly. The QoS
+characteristics of the standardized 5QI and QCI values 1 to 9 are available as
+predefined profiles; they set the RLC mode and the logical channel group of a
+bearer, and its weight in the QoS-aware scheduler. Not modeled are QoS
+characteristics per flow (they belong to the DRB as a whole), the guaranteed
+and maximum bit rates of GBR flows (``gbr`` is a flag only), and more than one
+PDU session per UE.
 
 Since Simu5G does not simulate control-plane signaling, bearers are not
 negotiated through message exchanges. Instead, the network-level
-``BearerConfigurator`` module owns the complete bearer and QoS
+:ned:`BearerConfigurator` module owns the complete bearer and QoS
 configuration and stands in for the corresponding control-plane functions
 (the SMF's session management, the RAN's bearer setup decisions, and the
 MME's EPS bearer handling). The configuration is declarative: a set of
 JSON-style object parameters in the INI file describes the bearers and the
-classification rules, and the configurator delivers each piece of it to the
+classification rules, and the control plane delivers each piece of it to the
 module that acts on it.
 
 The authoritative reference for every field mentioned in this chapter is the

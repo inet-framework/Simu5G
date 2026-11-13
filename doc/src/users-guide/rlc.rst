@@ -4,24 +4,39 @@ The RLC Layer
 Overview
 --------
 
-The Radio Link Control layer (3GPP TS 36.322 for LTE, TS 38.322 for NR)
-provides segmentation and, depending on the mode, in-sequence delivery and
-retransmission on top of the MAC layer. Simu5G implements all three RLC
-modes:
+The Radio Link Control protocol (RLC; 3GPP TS 38.322 for NR, TS 36.322 for
+LTE) sits above MAC and has one entity per logical channel: one per radio
+bearer, and one per leg of a split bearer. Its main functions are the transfer
+of upper-layer PDUs in one of three modes, sequence numbering, segmentation
+and reassembly, error correction through ARQ, duplicate detection, and RLC SDU
+discard. LTE RLC also concatenates SDUs and delivers them in order.
+Transparent Mode (TM) passes packets through without a header, and carries
+only certain control channels; Unacknowledged Mode (UM) adds a sequence number
+and segments the SDUs to fit the transport block that the MAC offers at each
+transmission opportunity; Acknowledged Mode (AM) adds retransmissions. In AM,
+the receiver reports the PDUs it is missing in status reports, which the
+transmitter can ask for by polling, and the transmitter retransmits them,
+re-segmenting them to fit the current transmission opportunity. AM trades
+delay for reliability: it recovers the losses that HARQ leaves, at the cost of
+a status report round trip. An AM transmitter that reaches the maximum number
+of retransmissions of a PDU declares radio link failure. NR RLC delivers each
+SDU as soon as it is complete, out of order; restoring the order is left to
+PDCP.
 
-*  *Transparent Mode* (TM) -- pass-through, no headers, no buffers beyond a
-   simple queue;
-*  *Unacknowledged Mode* (UM) -- segmentation/reassembly and sequence
-   numbering, no retransmissions;
-*  *Acknowledged Mode* (AM) -- UM functionality plus ARQ: status reporting,
-   polling and retransmissions.
+Simu5G models all three modes, UM and AM in an LTE and an NR flavor each:
+segmentation and reassembly, with concatenation in LTE and byte-offset
+segments in NR; reordering with t-Reordering in LTE and reassembly windows
+with t-Reassembly in NR; duplicate detection; and in AM the ARQ loop of status
+reports, polling, retransmission with re-segmentation, and radio link failure
+after ``maxRtxThreshold`` retransmissions. RLC SDU discard is not modeled. TM
+is available as an entity type, but data radio bearers use UM or AM only.
 
-Like PDCP, RLC is organized per bearer: each DRB owns a pair of TX/RX
-entities in the mode configured for it. The mode comes from the bearer
-definition (its ``rlcMode`` field, possibly derived from the QoS profile --
-see :doc:`qos`); entities are created by the bearer management
-machinery. A multiplexer module (``RlcMux``) dispatches PDUs between the
-entities and the MAC layer.
+Like PDCP, RLC is organized per bearer: each DRB has, on each of its legs, an
+entity in the mode configured for it, a compound of a transmitting and a
+receiving entity. The mode comes from the bearer definition (its ``rlcMode``
+field, possibly derived from the QoS profile -- see :doc:`qos`); entities are
+created by the bearer management machinery. A multiplexer module
+(:ned:`RlcMux`) dispatches PDUs between the entities and the MAC layer.
 
 Entity types
 ------------

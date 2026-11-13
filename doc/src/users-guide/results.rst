@@ -4,19 +4,32 @@ Collecting Results
 Overview
 --------
 
-Simu5G records results through OMNeT++'s standard signal/statistic
-mechanism: modules declare ``@statistic`` properties in their NED files,
-and recording is controlled from the INI file exactly as described in the
-OMNeT++ Simulation Manual (``**.result-recording-modes``,
-``**.scalar-recording``, ``**.vector-recording``, and per-statistic
-filters). The model library declares over two hundred statistics; this
-chapter points out the ones most evaluations need, layer by layer. The
-generated NED documentation lists them all.
+In a simulation study, the results are the measurements the runs record: the
+performance figures of the study, such as delay, throughput or the use of the
+radio resources. They are recorded where they arise -- end to end at the
+applications, or per node and per layer in the protocol stack -- as values over
+time (vectors), as summaries (scalars), or as distributions (histograms). A
+study records the results it needs selectively, because recording everything
+costs run time and disk space, and then processes them into plots and tables.
 
-One Simu5G-specific detail: throughput statistics use a custom result
-recorder, ``simu5g_rateavg``, which averages the received bits over the
-measurement time -- keep this in mind when post-processing raw vectors
-yourself.
+Simu5G records its results through the standard OMNeT++ mechanism: its modules
+emit signals, and the statistics declared in their NED files (``@statistic``)
+turn them into scalars, vectors and histograms, under the control of the ini
+file. The statistics cover the applications and the layers
+of the radio protocol stack at the UEs and the base stations, from RLC to the
+PHY's SINR and CQI. Throughput statistics use Simu5G's own result recorder,
+``simu5g_rateavg``, a time-weighted average of the rate values in which each
+value holds for the interval before its emission. Besides statistics, the
+radio medium can write a reception trace, one line per reception decision and
+per channel evaluation (the ``recordReceptionTrace`` parameter of
+:ned:`CellularRadioMedium`). The analysis of the results needs nothing
+Simu5G-specific: the OMNeT++ tools apply.
+
+Recording is controlled from the ini file exactly as described in the OMNeT++
+Simulation Manual (``**.result-recording-modes``, ``**.scalar-recording``,
+``**.vector-recording``, and per-statistic filters). This chapter points out
+the statistics most evaluations need, layer by layer; the generated NED
+documentation lists them all.
 
 Application level
 -----------------

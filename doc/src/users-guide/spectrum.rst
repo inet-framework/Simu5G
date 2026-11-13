@@ -4,14 +4,37 @@ Carriers, Numerologies and Duplexing
 Overview
 --------
 
-The radio spectrum of a Simu5G network is described centrally, by the
-network-level ``CarrierAggregation`` module, as a set of *component
-carriers* (CCs). Every carrier-dependent piece of the stack -- schedulers,
-HARQ timing, channel models -- refers to these definitions, and a node
-participates in a carrier by binding one of its channel model instances to
-it. This chapter covers the carrier definitions and the binding mechanism;
-the interpretation of numerology in scheduling appears in :doc:`mac`,
-and per-carrier channel modeling in :doc:`phy`.
+In 3GPP, the spectrum a cell uses is a set of carriers (TS 38.211, TS 38.213
+and TS 38.300 for NR; TS 36.211 and TS 36.300 for LTE). A carrier has a
+frequency and a bandwidth, divided into resource blocks of 12 subcarriers. Its
+main properties are the numerology, the duplexing mode, the bandwidth parts,
+and carrier aggregation. For the numerology (TS 38.211 4.2), the index
+:math:`\mu` sets the subcarrier spacing, :math:`15 \cdot 2^\mu` kHz, and with
+it the slot length, :math:`2^{-\mu}` ms; LTE uses the equivalent of
+numerology 0. For duplexing, a carrier is operated in frequency division
+duplex (FDD), with separate downlink and uplink spectrum, or in time division
+duplex (TDD), where a slot format divides the symbols of each slot between
+downlink, uplink and flexible use, and can differ from slot to slot (TS
+38.213 11.1). Bandwidth parts let a UE operate on a part of a wide carrier,
+with a numerology of its own. With carrier aggregation (TS 38.300 5.4), a base
+station serves a UE on several component carriers at once, a primary cell and
+secondary cells, each scheduled separately and with a HARQ entity of its own.
+
+Simu5G models the carriers of a network in one place, the
+:ned:`CarrierAggregation` module, as component carriers
+(:ned:`ComponentCarrier`) with a carrier frequency, a number of resource
+blocks, a numerology from 0 to 4, and FDD or TDD. The PHY of each base station
+and UE leg names the carriers it operates on, the primary one first, and a
+base station with several carriers performs carrier aggregation: it runs a
+scheduler per carrier, at that carrier's slot rate. TDD is modeled as one
+fixed division of every slot's 14 symbols between downlink and uplink, with
+the remaining symbols used as guard; it scales how much data a slot carries in
+each direction. Slot formats that change from slot to slot, and with them the
+delay of waiting for a slot of the right direction, are not modeled, and
+neither are bandwidth parts.
+
+The interpretation of the numerology in scheduling is described in
+:doc:`mac`, and the channel models of the carriers in :doc:`radio-medium`.
 
 Component carriers
 ------------------

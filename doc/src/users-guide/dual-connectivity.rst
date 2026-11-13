@@ -4,14 +4,36 @@ Dual Connectivity
 Overview
 --------
 
-Dual connectivity (3GPP TS 37.340) lets a UE exchange data through two base
-stations at once: a *master node* (MN) that anchors the connection towards
-the core network, and a *secondary node* (SN) reached over the X2
-interface. Simu5G supports the E-UTRA/NR flavors of the architecture:
+Multi-radio dual connectivity (MR-DC; 3GPP TS 37.340) lets a UE use the radio
+resources of two base stations at once. The master node (MN) holds the UE's
+control-plane connection to the core network, and the secondary node (SN) is
+connected to the master over Xn, or over X2 when the master is an eNB. Each
+node serves the UE with a cell group: the master cell group (MCG) and the
+secondary cell group (SCG). The flavors are named after the technologies of
+the two nodes and the core network: EN-DC (an LTE master and an NR secondary,
+with an EPC), NGEN-DC (the same with a 5G core), NE-DC (an NR master and an
+LTE secondary, with a 5G core) and NR-DC (two NR nodes). The main functions
+of MR-DC are the bearer types, the bearer termination, the routing of a
+split bearer's PDUs over the two legs, and the procedures that add, change and
+release the secondary node. A bearer is an MCG bearer, an SCG bearer, or a
+split bearer that uses both cell groups, and its PDCP terminates at either node
+(MN-terminated or SN-terminated). For a split bearer, the uplink stays on a
+primary path until the data waiting in the UE exceeds a split threshold, and
+the downlink split is decided by the node that holds the PDCP, with flow
+control over Xn (TS 38.425).
 
-*  *EN-DC* -- LTE eNB as master, gNB as secondary, EPC core: the classic
-   Non-Standalone 5G deployment;
-*  *NE-DC* -- gNB as master, eNB as secondary.
+Simu5G models EN-DC and NE-DC. The secondary node is paired with its master
+by configuration, and the master installs the secondary's part of each bearer.
+All three bearer types are available, chosen in the bearer's definition, and
+every bearer is MN-terminated: its PDCP entity is at the master, and a relay
+entity at the secondary carries its PDUs to and from the master over X2. A
+split bearer's uplink follows the primary path and the data split threshold,
+and above the threshold uses the less loaded leg or a configurable
+expression; its downlink takes the leg a configurable per-PDU expression
+chooses, a Simu5G extension, or stays on the primary path. SN-terminated
+bearers and the downlink flow control over Xn are not modeled. NR-DC is not
+possible, because a UE has a single NR leg, and NGEN-DC has no reference
+network.
 
 The deployment side -- example networks, X2 wiring, the ``masterId``
 parameter on the secondary node, and the UE's two serving-node parameters

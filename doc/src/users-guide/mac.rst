@@ -4,13 +4,44 @@ The MAC Layer and Scheduling
 Overview
 --------
 
-The MAC layer is where radio resources are allocated: the base station's MAC
-runs the downlink and uplink schedulers, grants resources to UEs, and
-operates HARQ; the UE's MAC requests resources (random access, buffer status
-reports) and assembles MAC PDUs according to received grants. Adaptive
-Modulation and Coding (AMC) -- the choice of transport format based on
-channel quality feedback -- also lives here, as a submodule of the base
-station MAC.
+The Medium Access Control protocol (MAC; 3GPP TS 38.321 for NR, TS 36.321 for
+LTE) sits above the physical layer and has one entity per cell group: a base
+station has one for its cell, and a dual connectivity UE one for each leg. Its
+main functions are the mapping between logical channels and transport channels,
+the multiplexing of MAC SDUs from several logical channels into one transport
+block, scheduling, error correction through HARQ, logical channel
+prioritization, scheduling information reporting, and random access. For
+multiplexing, the MAC PDU carries a subheader for each SDU and for each control
+element, such as a buffer status report. Scheduling is the base station's: in
+every slot, it decides which UEs get which resource blocks of each carrier, in
+the downlink and the uplink, and with which modulation and coding scheme, chosen
+from the channel quality the UEs report; the decisions reach the UEs as grants
+on the downlink control channel (PDCCH). For the uplink, a UE reports how much
+data it has waiting in buffer status reports, per logical channel group, and
+asks for the resources to send them with a scheduling request on the uplink
+control channel (PUCCH), or by random access when it has no such resource.
+Within a grant, the UE divides the bytes among its logical channels by logical
+channel prioritization, which serves the channels in priority order, each up to
+its prioritized bit rate first. HARQ retransmits a transport block that the
+receiver could not decode, and the receiver combines the copies (soft
+combining); several HARQ processes run in parallel, so that the link keeps
+transmitting while it waits for feedback. The MAC also reports the UE's power
+headroom, and handles discontinuous reception (DRX) and timing advance.
+
+Simu5G models the MAC at the level of transport blocks and resource blocks.
+The base station's schedulers allocate the resource blocks of each carrier in
+every slot, with a choice of scheduling policies, and its adaptive modulation
+and coding (AMC) submodule chooses the transport format from the UEs' CQI
+reports. HARQ runs with a configurable number of processes; soft combining is
+modeled in the receiver's error model, as a lower error rate for each
+retransmission. A UE reports its buffer per logical channel group, and serves
+its logical channels in the order of their groups. Random access is modeled as
+preamble contention with backoff. Not modeled are the control channels (grants
+and HARQ feedback are error-free and take no resources), scheduling requests
+(a UE asks for uplink resources by random access only), the prioritized bit
+rate of logical channel prioritization, power headroom reports, DRX and timing
+advance. Instead of the subheaders, the MAC PDU has a header of a fixed 2
+bytes, whatever the number of SDUs and control elements it carries.
 
 Module types
 ------------

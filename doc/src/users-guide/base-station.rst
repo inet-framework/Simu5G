@@ -4,12 +4,25 @@ The Base Station
 Overview
 --------
 
-A base station serves the UEs of its cell over the radio interface and
-connects them to the core network. Simu5G models the LTE base station, the eNB
-(:ned:`eNodeB`), and the NR base station, the gNB (:ned:`gNodeB`). The two share
-almost everything: :ned:`gNodeB` extends :ned:`eNodeB`, and differs from it
-in its cellular NIC, which carries the NR protocol stack, and in the name of
-its default core network gateway. This chapter describes both.
+In 3GPP, the base station is the node of the radio access network: the eNB in
+LTE (TS 36.300), the gNB in NR (TS 38.300). It terminates the radio protocols
+towards the UEs of its cells, and hosts radio resource management: the
+scheduling of the radio resources, admission control, and the control of the
+UEs' connections and mobility. It connects to the core network over S1 (eNB)
+or NG (gNB), with a control-plane part towards the MME or the AMF and a
+user-plane part, GTP-U tunnels, towards the Serving Gateway or the UPF. It
+connects to neighboring base stations over X2 or Xn. A gNB can be split into a
+central unit (CU) and distributed units (DU), connected over F1.
+
+Simu5G models the eNB as :ned:`eNodeB` and the gNB as :ned:`gNodeB`, which
+extends it, and differs from it in its cellular NIC, which carries the NR
+protocol stack, and in the name of its default core network gateway. A base
+station carries the full radio protocol stack with its schedulers, ends the
+GTP-U tunnels of the user plane, and runs X2 links to its neighbors for
+handover, dual connectivity and CoMP. Its control-plane interfaces are modeled
+as direct calls, and an NR base station uses X2 in place of Xn. Admission
+control and the split into CU and DU are not modeled. This chapter describes
+both node types.
 
 A base station combines three sides:
 

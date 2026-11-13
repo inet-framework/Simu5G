@@ -4,12 +4,31 @@ Architecture Overview
 Overview
 --------
 
-Simu5G models a mobile network after the 3GPP system architecture: its nodes
-are the 3GPP network entities, its interfaces are the 3GPP reference points,
-and the protocol stack inside its nodes is the 3GPP protocol stack. A reader
-who knows the architecture of the 5G system (3GPP TS 23.501) or of the EPS
-(TS 23.401) already knows the map of Simu5G; this chapter shows where each
-part of that map is in the model, and how faithfully it is modeled.
+The 5G system of 3GPP TS 23.501 consists of the User Equipment (UE), the radio
+access network (NG-RAN, made of gNBs), and the 5G core network (5GC), and
+connects UEs to data networks. It separates the user plane, which carries the
+users' traffic, from the control plane, which configures it. In the 5GC, User
+Plane Functions (UPFs) forward the traffic: an anchor UPF towards the data
+network, and possibly intermediate UPFs on the way. Control-plane network
+functions, which talk to each other over service-based interfaces, register
+the UEs and establish their sessions: the Access and Mobility Management
+Function (AMF), the Session Management Function (SMF), and further functions
+for policy (PCF) and subscriber data (UDM). The entities are connected through
+reference points, among them the radio interface Uu between the UE and the
+RAN, N3 between the RAN and the UPF, N6 between the UPF and a data network, and
+Xn between gNBs. The 4G counterpart, the EPS of TS 23.401, has the same shape:
+eNBs, and an Evolved Packet Core with a Serving Gateway, a PDN Gateway and a
+Mobility Management Entity (MME). The two can be combined: in dual
+connectivity, a UE is served by an eNB and a gNB at once.
+
+Simu5G models this architecture entity by entity. The UE, the eNB and gNB, the
+UPF and the PDN Gateway are node types; the control-plane functions of the core
+network are one network-level module; and the radio interface is a radio
+medium. The user plane is modeled at the packet level, through every protocol
+layer and tunnel. The control plane is modeled through its entities and
+procedures, but its signaling messages are direct calls rather than packets.
+The Serving Gateway, intermediate UPFs that end tunnels, the service-based
+interfaces, and the PCF and UDM are not modeled.
 
 The chapter first lists the 3GPP entities and the Simu5G modules that model
 them. It then follows the user plane and the control plane through the model,

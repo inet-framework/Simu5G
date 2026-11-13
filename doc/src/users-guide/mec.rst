@@ -1,17 +1,42 @@
 ETSI MEC model in Simu5G
 ========================
 
-Simu5G includes a model of ETSI Multi-Access Edge Computing
-(MEC). Our MEC model aims to provide MEC developers a tool for
-rapid prototyping of MEC apps, which can exploit MEC services
-made available by Simu5G. Application endpoints (e.g. Mp1 and
-Mx2 interfaces) and MEC service communication are implemented
-according to ETSI specifications. Since Simu5G can run as a
-real-time network emulator, one can also interface real MEC
-apps with it. This way, one can test MEC apps in a
-computation/communication framework that includes 5G transport,
-a MEC infrastructure, and the MEC services provided by the
-former to the latter.
+Overview
+--------
+
+Multi-access Edge Computing (MEC) brings computing to the edge of the network,
+next to the base stations, so that applications can serve UEs with low latency
+and with knowledge of the radio network. ETSI specifies the MEC architecture in
+GS MEC 003. A MEC system consists of MEC hosts and system-level management:
+each MEC host runs MEC applications on a virtualisation infrastructure, and
+its MEC platform offers MEC services to them through the Mp1 reference point.
+The main functions of the system are the lifecycle management of MEC
+applications, MEC service registration and discovery (GS MEC 011), and the MEC
+services themselves, among them the Radio Network Information Service (RNIS,
+GS MEC 012) and the Location Service (GS MEC 013). For lifecycle management, a
+device application on a UE asks the user application lifecycle management proxy
+(UALCMP) over the Mx2 reference point (GS MEC 016) to instantiate a MEC
+application, and the MEC orchestrator chooses the MEC host that runs it. In a
+5G network, a MEC host reaches the UEs' traffic through a UPF of its own.
+
+Simu5G models a MEC system with these entities: the MEC orchestrator
+(:ned:`MecOrchestrator`), which chooses a MEC host by a configurable policy
+from the requirements in the application's descriptor; the UALCMP
+(:ned:`Ualcmp`), with part of the Mx2 API; and MEC hosts (:ned:`MecHost`),
+each with its own UPF, a virtualisation infrastructure that accounts for the
+RAM, disk and CPU the MEC applications use, and a MEC platform with the Service
+Registry, a subset of the RNIS API, and the Location Service. MEC applications
+are instantiated on demand and use the services through REST APIs, and the
+base stations steer the traffic of the MEC applications to their MEC host.
+Of the Mx2 API, the operations to list applications and to create and delete
+application contexts are modeled; of the RNIS API, a subset of the layer-2
+measurements.
+
+The aim of the model is to give MEC developers a tool for rapid prototyping of
+MEC applications that use the MEC services Simu5G provides. Since Simu5G can
+run as a real-time network emulator, real MEC applications can also be
+interfaced with it, and tested in a framework that includes the 5G transport,
+a MEC infrastructure, and its MEC services.
 
 MEC system-level modeling
 -------------------------

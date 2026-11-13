@@ -4,11 +4,29 @@ Deployment Options
 Overview
 --------
 
+3GPP TR 38.801 describes the deployment options that combine LTE and NR radio
+access with an EPC or a 5G core. In option 1, eNBs connect to an EPC; in
+option 2, 5G standalone (SA), gNBs connect to a 5G core; in option 5, eNBs
+connect to a 5G core. The other options use multi-radio dual connectivity
+(MR-DC, TS 37.340), in which a UE is served by a master node and a secondary
+node of the other radio technology. In options 3, 3a and 3x (EN-DC), an eNB is
+the master and the core is an EPC; in options 4 and 4a (NE-DC), a gNB is the
+master and the core is a 5G core; in options 7, 7a and 7x, an eNB is the master
+and the core is a 5G core. The variants of each option differ in where the user
+plane is split: at the master node (3, 4, 7), at the core network (3a, 4a, 7a),
+or at the secondary node (3x, 7x).
+
+Simu5G provides a reference network for option 1 (LTE), option 2 (5G
+standalone), option 3 (EN-DC) and option 4 (NE-DC). In its dual connectivity
+networks, only the master node has a core network link, so the user plane is
+always split at the master. The variants in which the secondary node is
+connected to the core network (3a, 3x, 4a, 7a, 7x), and options 5 and 7, have
+no reference network.
+
 This chapter shows how complete cellular networks are assembled from Simu5G
-components, and how the standard deployment options of 3GPP TR 38.801 map to
-Simu5G network descriptions: 5G standalone, LTE, and the two flavors of
-dual connectivity between LTE and NR. The node types themselves are described
-in :doc:`ue`, :doc:`base-station` and :doc:`core-network`.
+components, and how the deployment options map to Simu5G network
+descriptions. The node types themselves are described in :doc:`ue`,
+:doc:`base-station` and :doc:`core-network`.
 
 Simu5G ships a reference network for each deployment option, under
 ``simulations/nr/networks/`` and ``simulations/lte/networks/``. They are good
@@ -120,7 +138,7 @@ LTE UEs are attached with their ``servingNodeId`` parameter.
 E-UTRA/NR dual connectivity (EN-DC)
 -----------------------------------
 
-In an EN-DC deployment (options 3 and 3a of TR 38.801), an LTE eNB is the
+In an EN-DC deployment (option 3 of TR 38.801), an LTE eNB is the
 *master node* and a gNB its *secondary node*. Only the master is connected to
 the core network, an EPC; the secondary contributes its radio leg over the X2
 link to the master. The UEs are :ned:`NrUe` modules with both legs attached:
@@ -244,9 +262,10 @@ Fidelity
 --------
 
 *  Of the deployment options of TR 38.801, the reference networks cover option
-   1 (LTE), option 2 (5G standalone), options 3 and 3a (EN-DC) and option 4
-   (NE-DC). Options 5 and 7, in which an eNB connects to a 5G core, have no
-   reference network and no example simulation.
+   1 (LTE), option 2 (5G standalone), option 3 (EN-DC) and option 4 (NE-DC).
+   The variants with a core network link at the secondary node (3a, 3x, 4a,
+   7a, 7x), and options 5 and 7, in which an eNB connects to a 5G core, have
+   no reference network and no example simulation.
 
 *  The EPC is reduced to the P-GW, which also ends the tunnels from the eNBs;
    there is no separate S-GW.

@@ -4,15 +4,39 @@ The Physical Layer and Channel Models
 Overview
 --------
 
-Simu5G models the physical layer at the level of transport blocks and
-resource blocks, not OFDM symbols. When a MAC PDU is transmitted, it is
-encapsulated in an air frame message and delivered to the receiver's PHY,
-which applies a channel model to compute the received power, queries the
-``Binder`` for the set of nodes interfering on the same resources, computes
-the per-resource-block SINR, and uses Block Error Rate (BLER) curves to
-turn SINR and transport format into a probability of correct reception of
-the whole PDU. This abates the computational cost of decoding by orders of
-magnitude while preserving correctness of the results.
+The physical layer (PHY; 3GPP TS 38.201 and TS 38.211 to TS 38.214 for NR,
+TS 36.201 and TS 36.211 to TS 36.213 for LTE) sits below MAC and carries the
+MAC's transport blocks over the air, in the resource blocks the scheduler
+allocated. Its main functions are channel coding and modulation, HARQ soft
+combining, multi-antenna processing (MIMO), and the measurements that drive
+link adaptation and mobility. For coding and modulation, the transmitter
+protects each transport block with a CRC and a channel code and maps it onto
+modulation symbols, at the modulation and coding scheme (MCS) the MAC chose;
+the receiver decodes the block and checks its CRC. For HARQ, a receiver that
+fails to decode a block keeps what it received and combines it with the
+retransmission, so a retransmission is more likely to succeed than the first
+attempt. For link adaptation, the UE measures the downlink channel and
+reports channel state information (CSI), whose channel quality indicator
+(CQI) tells the base station the highest MCS the UE can receive at a target
+block error rate. The UE also measures the received power of the cells around
+it, which drives cell selection and handover.
+
+Simu5G models the PHY at the level of transport blocks and resource blocks,
+not OFDM symbols. The radio medium computes the SINR of each resource block of
+a reception (see :doc:`radio-medium`), and the receiver of the node's radio
+decides whether the transport block is received, against an error model. The
+default error model, :ned:`BlerCurveErrorModel`, takes the error probability
+of each resource block from BLER curves at the reception's CQI and SINR, and
+stands in for soft combining by reducing the error probability by a fixed
+factor at each HARQ retransmission; :ned:`ConfiguredRateErrorModel` uses a
+configured error rate instead. The UE generates periodic and aperiodic CQI
+reports, and the base stations send beacons, whose received power the UEs
+measure for cell selection and handover. Channel coding, modulation and the
+CRC are not simulated, and transmissions are single-layer: the reported rank
+is always 1, so spatial multiplexing is not modeled. Two known deviations:
+the CQI has no measurement delay, while TS 38.214 5.2.2.5 measures it several
+slots before the report, and the BLER curves drop to zero error beyond their
+last tabulated point.
 
 .. figure:: images/phy_processing.png
    :align: center

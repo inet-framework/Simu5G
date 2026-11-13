@@ -1,13 +1,34 @@
 Running Simu5G as a real-time network emulator
 ==============================================
 
-Running Simu5G as a network emulator means that the simulation
-must run in real time and must be able to communicate with the
-real world, i.e. capturing/injecting packets from/to real
-networks. This is especially useful for integrating Simu5G with
-external real-world applications and frameworks. For example,
-it allows one to :doc:`make Simu5G interoperable with the Intel
-OpenNESS framework <emulation_openness>`.
+Overview
+--------
+
+Network emulation runs real software over a simulated network. The simulation
+runs in real time and exchanges packets with the real world: it captures the
+packets of real hosts and applications from network interfaces of the machine
+it runs on, carries them across the modeled network, and injects them into the
+real network at the other end. This lets real applications, devices and
+frameworks be tested against a network that would be costly or impossible to
+build, such as a 5G deployment with many cells and loaded radio resources. The
+condition is that the simulation keeps up with real time: a model that needs
+more processing time than the time it simulates delays the real packets it
+carries.
+
+Simu5G provides emulation on top of INET's emulation support: the simulation
+runs with INET's real-time scheduler (``inet::RealTimeScheduler``), and INET's
+external interfaces (:ned:`ExtLowerEthernetInterface`) connect nodes of the
+simulated network, such as a UE and a router of the data network, to network
+interfaces of the host, typically virtual Ethernet (veth) pairs. A UE stands
+for a real host behind it with its ``extHostAddress`` parameter. To keep large
+scenarios within real time, Simu5G provides background cells and background
+UEs, which load the radio resources and create interference without simulating
+their protocol stacks (see :doc:`background`). The example emulations are in
+the ``emulation/`` directory of the source tree.
+
+Emulation is especially useful for integrating Simu5G with external real-world
+applications and frameworks. For example, it allows one to :doc:`make Simu5G
+interoperable with the Intel OpenNESS framework <emulation_openness>`.
 
 Check out our IEEE Access paper on this topic:
 

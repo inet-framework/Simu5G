@@ -4,11 +4,22 @@ The UE
 Overview
 --------
 
-The User Equipment (UE) is the mobile terminal of the network. In Simu5G, a UE
-is an INET host with a cellular network interface: it has INET's
-applications, transport protocols, network layers and mobility models, and the
-cellular NIC, which carries the LTE or NR protocol stack, connects it to the
-network through the radio medium.
+In 3GPP, the User Equipment (UE) is the terminal through which a user accesses
+the network (TS 23.501, TS 38.300). It connects to the radio access network
+over the radio interface, registers with the core network, and reaches data
+networks through one or more PDU sessions. Its RRC is in one of three states:
+RRC_IDLE, RRC_INACTIVE or RRC_CONNECTED. Only a connected UE exchanges user
+data; an idle UE is reached through paging. A connected UE moves between cells
+by handover, an idle one by cell reselection. A UE that supports both LTE and
+NR can be connected to an eNB and a gNB at once, in dual connectivity.
+
+Simu5G models the UE as an INET host with a cellular network interface: it has
+INET's applications, transport protocols, network layers and mobility models,
+and its cellular NIC carries the LTE or NR protocol stack. Each stack leg of a
+UE is either attached to a cell or detached; it attaches at initialization or
+when it finds a cell, and moves between cells by handover. A UE has exactly
+one PDU session. The RRC states, paging and idle-mode cell reselection are not
+modeled.
 
 Simu5G provides two UE types and their vehicular variants:
 
