@@ -1,6 +1,6 @@
 # What's New in Simu5G
 
-## (unreleased)
+## v1.9.0 (unreleased)
 
 The most significant change in this release is a network-level radio medium,
 shaped after INET's. Propagation, the per-link channel state, interference
@@ -10,6 +10,10 @@ antenna, a transmitter and a receiver) that holds its link budget and decides
 its receptions. This is groundwork for running Simu5G on INET's own radio
 medium in a later release, and it changes simulation results: the channel of
 a link is now one realization, evaluated the same way from both of its ends.
+This release, like all releases since v1.3.1, was developed by Andras Varga
+and the OMNeT++ core team.
+
+This release requires INET-4.7.0 and OMNeT++ 6.4.0 or 6.5.0 (unchanged from v1.8.0).
 
 ### The radio medium
 
@@ -42,33 +46,85 @@ updated is ignored and the run uses the default; OMNeT++ 6.5 reports such
 entries as having had no effect, 6.4 does not. Keys written as `**.name` usually
 keep matching; keys with a full path do not. `**.channelModel[*].name` and
 `**.channelModelType` used to reach a gNB's models and now reach only the LTE
-ones: an NR cell's are `radioMedium.nrChannelModel[k]`. In the table, `radio`
-stands for `cellularNic.radio`, and for a UE's NR leg `cellularNic.nrRadio`: on
-an NR UE, `cellularNic.radio.*` configures the unused LTE radio and silently
-changes nothing.
+ones: an NR cell's are `radioMedium.nrChannelModel[k]`. Below, `radio` stands
+for `cellularNic.radio`, and for a UE's NR leg `cellularNic.nrRadio`: on an NR
+UE, `cellularNic.radio.*` configures the unused LTE radio and silently changes
+nothing.
 
-| Before | Now |
-|---|---|
-| NIC `channelModelType` / `nrChannelModelType`, `cellularNic.channelModel[k].*` | `radioMedium.channelModelType` / `nrChannelModelType`, `radioMedium.channelModel[k].*` / `radioMedium.nrChannelModel[k].*` (one model per carrier and RAT for the whole network: per-node channel model settings can no longer be expressed) |
-| PHY `channelModelModule` | PHY `componentCarrierModules` (space-separated, primary first; `nrPhy` on an NR leg) |
-| PHY `txDirection`, `txAngle` | `radio.antenna.txDirection`, `radio.antenna.txAngle` |
-| channel model `antennaGainUe`, `antennGainEnB` | `radio.antenna.gain` (UE default 0 dBi, base station 18 dBi) |
-| channel model `ueNoiseFigure`, `bsNoiseFigure` | `radio.receiver.noiseFigure` (UE default 7 dB, base station 5 dB) |
-| channel model `cableLoss` | `radio.receiver.cableLoss` (default 2 dB) |
-| channel model `harqReduction` | `radio.receiver.errorModel.harqReduction` |
-| channel model `insideBuilding` | `radio.insideBuilding`, which counts on a UE's radio |
-| `IdealChannelModel` `per`, `perDl`, `perUl`, `perD2D`, `harqReduction` | the receivers' error model: `**.receiver.errorModel.typename = "ConfiguredRateErrorModel"`, and then `**.perDl` etc. match its parameters. Same names and default values, but a rate is now one per receiver, not per carrier and RAT (see Ideal channel below) |
-| `D2dChannelModel` | `StochasticChannelModel` (D2D links are evaluated by every channel model; `d2dInterference` is now its parameter) |
-| `Tr38901D2dChannelModel` | `Tr38901ChannelModel` |
-| `BackgroundCell.bgChannelModel.*` (`BackgroundCellChannelModel`) | removed; a background cell's links are evaluated by the medium's channel models. `antennaGainUe`: `bgTrafficGenerator.bgUE[*].radio.antenna.gain`. `antennGainEnB`: `bgCell[*].radio.antenna.gain`. `ueNoiseFigure`: `bgUE[*].radio.noiseFigure`. `bsNoiseFigure`: `bgCell[*].radio.noiseFigure`. `cableLoss`: `radio.cableLoss` of the receiving phantom radio. `scenario`, the heights, `buildingHeight`, `streetWidth`, the fading and LOS keys, `correlationDistance`, `delayRms`, `thermalNoise` and the interference switches: `radioMedium.nrChannelModel[k].*` or `channelModel[k].*`, shared by every link on the carrier and RAT (the switches default to off there). `shadowing`, `insideBuilding`, `antennGainMicro`: no successor (no shadowing on these links; a phantom radio is outdoors) |
-| NIC `cellularNic.channelModel[k].componentCarrierModule`, `nrChannelModel[k].componentCarrierModule` | PHY `componentCarrierModules` (the old key is silently ignored and the leg stays on carrier 0) |
-| NIC `numCarriers`, `numNrCarriers` as the number of a node's carriers | PHY `componentCarrierModules` lists them; a leg with the default serves carrier 0 only. `numNrCarriers` and a UE's `numCarriers` are gone. A base station's `numCarriers` stays: it sizes `bgTrafficGenerator[]`, one per carrier, so it must equal its number of carriers |
-| `channelControl.pMax`, `sat`, `alpha`, `carrierFrequency` | `radioMedium.pMax`, `sat`, `alpha`, `carrierFrequency` (the beacons' range) |
-| `channelControl.numChannels` | removed |
-| channel model `cellInfoModule` | PHY `cellInfoModule` |
-| `BackgroundScheduler.channelModelModule` | removed |
-| channel model `antennGainMicro` | removed (nothing read it) |
-| channel model `useTorus`, `CellInfo` `constraintArea*` | removed (the toroidal playground was not implemented) |
+The channel models and the carriers:
+
+- The NIC's `channelModelType` and `nrChannelModelType` are now
+  `radioMedium.channelModelType` and `radioMedium.nrChannelModelType`, and
+  `cellularNic.channelModel[k].*` is now `radioMedium.channelModel[k].*` (LTE)
+  or `radioMedium.nrChannelModel[k].*` (NR). There is one model per carrier
+  and RAT for the whole network, so per-node channel model settings can no
+  longer be expressed.
+- The PHY's `channelModelModule` is replaced by the PHY's
+  `componentCarrierModules`: a space-separated list, primary carrier first
+  (on an NR leg, the parameter of `nrPhy`).
+- The NIC's `cellularNic.channelModel[k].componentCarrierModule` and
+  `nrChannelModel[k].componentCarrierModule` are replaced by the same
+  `componentCarrierModules`. The old key is silently ignored, and the leg
+  stays on carrier 0.
+- The NIC's `numCarriers` and `numNrCarriers` no longer give a node's
+  carriers: `componentCarrierModules` lists them, and a leg with the default
+  serves carrier 0 only. `numNrCarriers` and a UE's `numCarriers` are gone. A
+  base station's `numCarriers` stays, because it sizes `bgTrafficGenerator[]`
+  (one per carrier), so it must equal the base station's number of carriers.
+- The channel model's `cellInfoModule` is now the PHY's `cellInfoModule`.
+- `D2dChannelModel` is replaced by `StochasticChannelModel`: every channel
+  model evaluates D2D links, and `d2dInterference` is now its parameter.
+  `Tr38901D2dChannelModel` is replaced by `Tr38901ChannelModel`.
+
+The link budget, now on the radio:
+
+- The PHY's `txDirection` and `txAngle` are now `radio.antenna.txDirection`
+  and `radio.antenna.txAngle`.
+- The channel model's `antennaGainUe` and `antennGainEnB` are now
+  `radio.antenna.gain` (default 0 dBi on a UE, 18 dBi on a base station).
+- The channel model's `ueNoiseFigure` and `bsNoiseFigure` are now
+  `radio.receiver.noiseFigure` (default 7 dB on a UE, 5 dB on a base
+  station).
+- The channel model's `cableLoss` is now `radio.receiver.cableLoss` (default
+  2 dB).
+- The channel model's `harqReduction` is now
+  `radio.receiver.errorModel.harqReduction`.
+- The channel model's `insideBuilding` is now `radio.insideBuilding`, which
+  counts on a UE's radio.
+- `IdealChannelModel`'s `per`, `perDl`, `perUl`, `perD2D` and `harqReduction`
+  are now parameters of the receivers' error model: set
+  `**.receiver.errorModel.typename = "ConfiguredRateErrorModel"`, and then
+  `**.perDl` etc. match its parameters. The names and default values are the
+  same, but a rate is now one per receiver, not per carrier and RAT (see
+  Ideal channel below).
+
+The background cells:
+
+- `BackgroundCell.bgChannelModel` (`BackgroundCellChannelModel`) is removed: a
+  background cell's links are evaluated by the medium's channel models. Its
+  parameters went as follows:
+  - `antennaGainUe` is now `bgTrafficGenerator.bgUE[*].radio.antenna.gain`,
+    and `antennGainEnB` is now `bgCell[*].radio.antenna.gain`.
+  - `ueNoiseFigure` is now `bgUE[*].radio.noiseFigure`, and `bsNoiseFigure`
+    is now `bgCell[*].radio.noiseFigure`.
+  - `cableLoss` is now `radio.cableLoss` of the receiving phantom radio.
+  - `scenario`, the heights, `buildingHeight`, `streetWidth`, the fading and
+    LOS keys, `correlationDistance`, `delayRms`, `thermalNoise` and the
+    interference switches are now set on `radioMedium.nrChannelModel[k]` or
+    `radioMedium.channelModel[k]`, and are shared by every link on the
+    carrier and RAT. The interference switches default to off there.
+  - `shadowing`, `insideBuilding` and `antennGainMicro` have no successor:
+    these links have no shadowing, and a phantom radio is outdoors.
+- `BackgroundScheduler.channelModelModule` is removed.
+
+The former `channelControl`, and what nothing read:
+
+- `channelControl.pMax`, `sat`, `alpha` and `carrierFrequency` (the beacons'
+  range) are now `radioMedium.pMax`, `sat`, `alpha` and `carrierFrequency`.
+- `channelControl.numChannels` is removed.
+- The channel model's `antennGainMicro` is removed; nothing read it.
+- The channel model's `useTorus` and `CellInfo`'s `constraintArea*` are
+  removed; the toroidal playground was never implemented.
 
 **Ideal channel.** `IdealChannelModel` now models only the channel: no
 propagation, a fixed large SINR. Whether a frame is received is decided by
@@ -118,6 +174,46 @@ decided at the configured rate too.
 Analysis scripts that read these statistics from the channel model's path
 need updating.
 
+- `rcvdSinrDl`, `rcvdSinrUl` and `rcvdSinrD2D` (and their per-carrier
+  variants) now include the receptions that are lost for certain, without a
+  random draw: those with CQI 0, or with a band below the lowest SINR of the
+  BLER curves. They used to leave out exactly the worst receptions, so their
+  means were too high, by a lot where many receptions are hopeless. For
+  example, in `lte/d2d_multihop` (MultihopD2D) a UE's `rcvdSinrD2D:mean` goes
+  from -7.3 dB to -27.9 dB, and in `lte/x2` (X2-Mesh-balanced) a UE's
+  `rcvdSinrDl:mean` from 29.7 dB to 3.3 dB; where few receptions are
+  hopeless, the change is small (0.04 dB in `channelmodel` UMa-38901).
+- `CbrSender`'s `cbrGeneratedBytes` is declared in bytes, as the receiver's
+  `cbrReceivedBytes` is, and records `mean`, `vector` and `sum`. It was
+  declared as a rate (`Bps`) and recorded `mean` and
+  `last(sumPerDuration)`; a tool that converts values by their unit, such as
+  `omnetpp.scave.results.get_scalars()` by default, rescaled the packet size
+  it holds. The rate is recorded by `cbrGeneratedThroughput`, as before; the
+  `sum` against the receiver's `cbrReceivedBytes:sum` gives the bytes lost.
+
+### Reception trace
+
+The radio medium can write a reception trace, a text file with one line per
+reception decision and one per channel evaluation that feeds a decision.
+Fingerprints tell whether a run moved; the trace tells which transmission
+moved, and in which input, so two versions of the radio model can be
+compared transmission by transmission. It is off by default; switch it on
+with `**.radioMedium.recordReceptionTrace = true`, and the medium writes
+`${resultdir}/${configname}-${runnumber}.rxtrace`, as INET's radio medium
+writes its communication log. It draws no random number and schedules no
+event, so it does not change the run.
+
+A reception line gives the transmitter, the receiver, the carrier, RAT,
+direction and codeword, the reception's start, the CQI, the H-ARQ process
+and attempt, the SINR of every band the error model reads, the interferers,
+the error rate, the random draw with the RNG's position before it, and the
+outcome. Evaluation lines are written for the UL, DL and D2D CQIs, the
+handover beacon, the initial cell selection, the D2D capture effect and a
+background UE's CQI. Nodes are identified by their names (a background UE as
+`<node>/<generator>/bgUE[k]`), and numbers are written exactly, so lines
+compare across versions. The format is documented
+in `RxTrace.h`.
+
 ### Why results change
 
 The model changes below move the results of almost every configuration.
@@ -163,6 +259,22 @@ Each is a deliberate change; they are listed in user terms.
   transmitting radio and a reception on a timer of the receiving radio, as
   in INET; a beacon frame carries a packet of 24 bits (the size of a master
   information block). These move event counts, not results.
+- **The random number stream.** A base station's PHY no longer draws a random
+  number at initialization that nothing used. Every later draw from that
+  stream shifts, so nearly every run moves statistically, without a change
+  of the model.
+- **The NR tutorial.** The configurations with a background cell
+  (BgTraffic, and Multiple-UEs, CarrierAggregation and Numerology, which
+  extend it) in `tutorials/nr` and `simulations/nr/tutorial` switch on
+  `**.downlinkInterference` and `**.uplinkInterference`, so the background
+  UEs' CQIs include the foreground cell's interference again (see External
+  and background cells above). The background UEs' downlink SINR drops by 6
+  to 17 dB; the foreground UE moves little.
+- **Example configurations.** `simulations/nr/d2d` (SinglePair-modeSwitching)
+  disables fading and shadowing on the NR leg too, as its comment says, and
+  `simulations/nr/mec/singleMecHost` applies its choice of
+  `Tr36873ChannelModel` to the NR leg too; in both, the two ends of a link
+  used different channel settings.
 
 The users guide's statement that the SINR distribution matches the RP-180524
 calibration has not been re-checked with the new medium.
@@ -187,12 +299,82 @@ calibration has not been re-checked with the new medium.
 - A RAC request from a UE the cell no longer serves gets no response.
 - A D2D mode switch no longer leaves uplink H-ARQ processes waiting for feedback
   forever.
-- Smaller ones: uplink interference was taken from the wrong slot with carriers
-  of different numerologies and after an idle gap; asking for the X2 address of
-  a non-peer returned an empty address; LteMaxCi treated the first background UE
-  as a real one; the Binder's inspector showed the multicast destination id
-  counter as negative; a background UE's allocation map was keyed by the loop
-  index instead of the band.
+- A cell of one RAT interferes at a UE of the other RAT on the same carrier
+  whatever its own channel model is. With `IdealChannelModel` for LTE and the
+  default NR model, an LTE eNB on an NR UE's carrier added nothing to the
+  UE's interference.
+- An interfering base station with several carriers is counted on a band of
+  the victim's carrier only when it occupied that band on that carrier. It
+  counted when it had allocated the band of the same index on any of its
+  carriers.
+- The capture effect of a one-to-many D2D receiver works with every channel
+  model; it threw under the ideal model and under a channel model that was
+  not a D2D one.
+
+Smaller ones:
+
+- Uplink interference was taken from the wrong slot with carriers of
+  different numerologies.
+- Uplink interference was taken from the wrong slot after an idle gap.
+- Asking for the X2 address of a base station that is no X2 peer returned an
+  empty address; it is now an error.
+- LteMaxCi treated the first background UE (id 4097) as a real UE.
+- The Binder's inspector showed the multicast destination id counter as
+  negative.
+- A background UE's allocation map was keyed by the loop index instead of
+  the band.
+- The vertical angle of a UE above its base station came out below the
+  horizon.
+- The horizontal angle of a point on the negative y axis came out as -90
+  degrees instead of 270 (no effect on results: the antenna pattern is
+  symmetric).
+- A CQI above 15 passed unnoticed on a grant with no band; it is now an
+  error.
+- An unknown UE crashed the Jakes fading lookup; it is now an error.
+- A channel model's cellular link builder left the link budget (antenna
+  gains, noise figure) at zero (no effect on results: no caller read it).
+- Reading a link's correlation distance recorded the link's correlation point
+  (no effect on results: the point was recorded anyway right after).
+
+Fixed during the development of this release; no released version had
+these faults:
+
+- A UE that left the simulation (e.g. a Veins car) aborted a neighbour's
+  reception or CQI with "no radio is registered for node".
+- An external cell outside the nodes' mobility constraint area aborted the
+  run at startup.
+- The frames still on the air when a run ended were reported by OMNeT++ as
+  undisposed objects.
+- At an outdoor base station, an indoor UE's TR 38.901 building penetration
+  loss took the low-loss or the high-loss table from an uninitialized value.
+- The D2D conflict graph's path-loss estimate took the indoor state of
+  whichever link had been evaluated last.
+
+### Tests and known deviations
+
+- `tests/physics` is a new suite: small simulations of the shipped model,
+  graded against values derived from first principles (the link budget in
+  closed form, the HARQ residual loss, what a second cell, an external cell
+  or a background cell costs, invariance under moving or rotating the
+  network) rather than against the model's last run.
+- `tests/unit` has a harness that exercises a channel model without a node,
+  and tests of fading, shadowing, LOS state, geometry, the BLER lookup and
+  the reception decision; `tests/module` gained tests for the fixes of this
+  release and of v1.8.1.
+- `tests/README` describes how a model change is validated, and
+  `tests/abtest` is the replicated A/B comparison tool the radio medium was
+  accepted with (30 runs per side, a Mann-Whitney U test per scalar).
+- `tests/doc/model-deviations.md` lists the known deviations of the channel
+  and PHY model from the 3GPP specifications, and `tests/doc/open-defects.md`
+  the known defects: what the model does, what the specification says, the
+  effect, and the shape of a fix. Where a unit test covers one, it pins the
+  current behavior and asserts the specification in a separate expected
+  failure. They move results, so they are addressed in later releases; it is
+  worth reading the list before relying on a result that depends on one of
+  them.
+- The fingerprint rows are tagged with what they exercise, and new rows
+  cover the interference contributions one at a time, the external-cell
+  allocation policies, the background-cell densities and the numerologies.
 
 ### For model developers
 
@@ -203,6 +385,12 @@ calibration has not been re-checked with the new medium.
   `CellularTransmission`.
 - The receiver's error model is a module interface, `ICellularErrorModel`
   (`BlerCurveErrorModel`, `ConfiguredRateErrorModel`).
+- The power with which a received frame arrived is
+  `CellularRadioMedium::computeReceptionRsrp()`, evaluated where the receiver
+  was as the frame began to arrive. The reception trace is the medium's
+  `RxTrace`, `CellularRadioMedium::getRxTrace()`; a custom channel model's
+  decisions are traced only if it writes them there, as `StochasticChannelModel`
+  and `IdealChannelModel` do.
 - Deleted: `LteChannelControl`, `ChannelControl`, `D2dChannelModel`, `Tr38901D2dChannelModel`,
   `ID2dChannelModel`, `BackgroundCellChannelModel`, `getSINR_bgUe()`,
   `getRSRP(frame)`, `Binder::getPhy()` /
