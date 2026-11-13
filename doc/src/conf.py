@@ -13,7 +13,7 @@ import re
 # -- Project information -----------------------------------------------------
 
 project = 'Simu5G'
-author = 'Antonio Virdis, Giovanni Nardini'
+author = 'Antonio Virdis, Giovanni Nardini, Andras Varga'
 copyright = author
 
 # The short X.Y version this doc refers to (last tagged release)
