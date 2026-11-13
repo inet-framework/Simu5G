@@ -63,7 +63,7 @@ Configuring simulations
 Simulations are configured the standard OMNeT++ way:
 
 *  The *network* -- which nodes exist and how they are wired -- is described
-   in NED files. Chapter :doc:`networks` describes how cellular networks
+   in NED files. Chapter :doc:`deployments` describes how cellular networks
    are assembled.
 *  Everything else -- module types to use for open slots, parameter values,
    traffic, mobility, channel model settings -- is given in the INI file.

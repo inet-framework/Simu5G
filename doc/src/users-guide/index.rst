@@ -1,3 +1,5 @@
+:orphan:
+
 User's Guide
 ============
 
@@ -8,22 +10,11 @@ assumes working knowledge of OMNeT++ and the INET Framework.
 .. toctree::
    :maxdepth: 2
 
-   introduction
-   usage
-   networks
-   network-nodes
-   global-modules
-   bearers
-   pdcp
-   rlc
-   mac
-   carriers
-   phy
-   dual-connectivity
-   handover
-   d2d
-   apps
-   mec
-   emulation
-   emulation_openness
-   results
+   part-getting-started
+   part-architecture
+   part-sessions
+   part-radio-stack
+   part-control-plane
+   part-radio
+   part-scenario-components
+   part-running

@@ -57,12 +57,3 @@ The applications modeling the ETSI MEC ecosystem -- the UE-side
 ``DeviceApp``, MEC apps deployed on MEC hosts, and the sample
 warning-alert, request-response and RNIS test app pairs -- are described
 in :doc:`mec`.
-
-Background traffic
-------------------
-
-For load that should consume radio resources without being simulated
-end-to-end, do not use application modules at all: the background traffic
-generator machinery (background UEs inside real or background cells) is
-far cheaper and designed exactly for that. It is described in
-:doc:`emulation`.

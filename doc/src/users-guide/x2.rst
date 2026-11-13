@@ -1,0 +1,18 @@
+X2 and CoMP
+===========
+
+.. TODO: This chapter covers: LteX2Manager and the X2 applications; CoMP.
+
+Coordinated multi-point
+-----------------------
+
+For inter-cell interference coordination studies, base stations can be
+equipped with a CoMP manager (``compEnabled = true`` on the base station
+NIC): a coordinator node partitions resource blocks among client cells over
+X2, and the clients schedule within their partition using the
+``"MAXCI_COMP"`` discipline. The provided algorithm
+(``LteCompManagerProportional``) partitions proportionally to load; the
+base class is the extension point for custom coordination schemes.
+
+.. TODO: parameters of compManager (coordinatorId, clientList,
+   coordinationPeriod) and a pointer to a runnable CoMP example.

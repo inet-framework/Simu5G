@@ -70,35 +70,6 @@ Error Rate (BLER) curves. This abates computational complexity by orders of
 magnitude while preserving the accuracy of the results; Simu5G's PHY model has
 been validated against the 3GPP calibration guidelines of RP-180524.
 
-Architecture at a glance
-------------------------
-
-An end-to-end Simu5G scenario contains some or all of the following elements:
-
-*  *User Equipments* (UEs) -- mobile hosts with a full TCP/IP protocol stack
-   and a cellular network interface;
-*  *base stations* -- gNBs (5G) and/or eNBs (4G), possibly interconnected via
-   the *X2 interface* for handover and interference coordination;
-*  *core network* nodes -- UPFs (or, for LTE, PGWs) that tunnel user traffic
-   between the base stations and the external data network;
-*  standard INET nodes -- routers, servers, switches -- making up the rest of
-   the network;
-*  a few *global modules* instantiated once per network: the ``Binder`` (a
-   directory of all cellular nodes), the ``CarrierAggregation`` module
-   (describing the component carriers in use), and the ``BearerConfigurator``
-   (bearer and QoS-flow configuration).
-
-.. figure:: images/architecture.png
-   :align: center
-   :figwidth: 70%
-
-Base stations can be organized in StandAlone (SA) or Non-StandAlone (NSA)
-deployments. In an SA deployment, gNBs connect directly to the 5G core; in an
-NSA (EN-DC) deployment, a gNB acts as secondary node of an LTE eNB, which is
-connected to the Evolved Packet Core, and NR traffic reaches the gNB through
-the eNB via X2. These deployment options are described in
-:doc:`networks`.
-
 Relationship to OMNeT++ and INET
 --------------------------------
 

@@ -15,7 +15,7 @@ interface. Simu5G supports the E-UTRA/NR flavors of the architecture:
 
 The deployment side -- example networks, X2 wiring, the ``masterId``
 parameter on the secondary node, and the UE's two serving-node parameters
--- is described in :doc:`networks`. This chapter covers how user
+-- is described in :doc:`deployments`. This chapter covers how user
 traffic actually uses the two legs.
 
 .. figure:: images/dual_stack.png
@@ -27,7 +27,7 @@ Bearer types
 
 Under dual connectivity, each bearer of a UE is carried in one of three
 ways, chosen by the ``legs`` field of its bearer definition
-(:doc:`bearers`):
+(:doc:`qos`):
 
 *MCG bearer*
    The bearer uses the master's cell group only -- the classic single-leg

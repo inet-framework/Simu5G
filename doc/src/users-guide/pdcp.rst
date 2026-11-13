@@ -12,7 +12,7 @@ re-merging of the PDU stream over multiple legs.
 
 PDCP is organized per bearer: each established DRB gets its own pair of
 transmitting and receiving PDCP entities, created and torn down by the
-bearer management machinery in the RRC module (see :doc:`bearers`). A
+bearer management machinery in the RRC module (see :doc:`qos`). A
 dispatcher module (``PdcpMux``) routes SDUs arriving from the upper layer
 (SDAP, or the IP-to-NIC adapter where there is no SDAP) to the entity of the
 right bearer.
@@ -67,4 +67,4 @@ side, the ``PdcpLegJoiner`` feeding the reordering receive entity, the
 ``PdcpRelayEntity`` standing in for the bearer at the secondary node -- are
 described from the user's perspective in :doc:`dual-connectivity`; the
 user-facing configuration (leg selection policies, the uplink data split
-threshold) lives in the bearer definitions of :doc:`bearers`.
+threshold) lives in the bearer definitions of :doc:`qos`.

@@ -188,3 +188,15 @@ Ready-to-run configurations using authored bearers can be found under
 
 .. TODO: flesh out with a downlink QFI classification example (dlQfiRules
    with explicit node/filter/qfi entries) once the qfiRules examples settle.
+
+The BearerConfigurator
+----------------------
+
+The ``BearerConfigurator`` (``src/simu5g/corenetwork/bearerConfigurator/``)
+is the single authority for bearer and QoS configuration: which data radio
+bearers exist or may be created on demand, what their QoS characteristics
+are, and how packets are classified onto QoS flows. Its configuration is
+expressed in a few JSON-style object parameters (``staticDrbs``,
+``onDemandDrbs``, ``drbProfiles``, ``dlQfiRules``, ``ulQfiRules``) and is
+delivered to the evaluation sites in the network at initialization. It is
+the subject of :doc:`qos`.

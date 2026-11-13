@@ -350,3 +350,17 @@ available in the emulation folder in Simu5G
 so you can look at it to have a complete view of both the
 configuration and the setup.
 
+MEC-enabled networks
+--------------------
+
+Networks can also include ETSI MEC elements -- ``MecHost`` nodes attached
+to the core network, a MEC orchestrator and the related infrastructure.
+These are described in :doc:`mec`.
+
+MEC hosts
+---------
+
+``MecHost`` models an ETSI MEC host, containing a virtualisation
+infrastructure with configurable computing resources, a MEC platform hosting
+MEC services, and its own UPF so it can be attached anywhere in the core
+network. It is described in :doc:`mec`.

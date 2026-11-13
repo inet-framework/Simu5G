@@ -89,3 +89,13 @@ reference configurations:
 *  ``simulations/nr/test_numerology`` -- mixed numerologies across
    carriers;
 *  ``simulations/nr/test_tdd`` -- TDD slot formats.
+
+The CarrierAggregation module
+-----------------------------
+
+The ``CarrierAggregation`` module (``src/simu5g/common/carrierAggregation/``)
+describes the radio spectrum of the network as a vector of
+``ComponentCarrier`` submodules, each with its own carrier frequency, number
+of resource blocks, numerology and duplexing settings. Base stations and UEs
+refer to these carriers; per-carrier configuration is described in
+:doc:`spectrum`.

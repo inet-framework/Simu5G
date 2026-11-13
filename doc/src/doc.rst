@@ -15,7 +15,14 @@ User's Guide
 .. toctree::
    :maxdepth: 2
 
-   users-guide/index
+   users-guide/part-getting-started
+   users-guide/part-architecture
+   users-guide/part-sessions
+   users-guide/part-radio-stack
+   users-guide/part-control-plane
+   users-guide/part-radio
+   users-guide/part-scenario-components
+   users-guide/part-running
 
 Showcases
 ---------

@@ -43,13 +43,13 @@ with the ``schedulingDisciplineDl`` parameter of the base station MAC:
 ``"QOS_PF"``
    QoS-aware Proportional Fair: PF weighted by the per-bearer QoS profile
    (GBR flag, packet delay budget, packet error rate, priority level) taken
-   from the bearer configuration (:doc:`bearers`).
+   from the bearer configuration (:doc:`qos`).
 
 ``"MAXCI_MB"``, ``"MAXCI_OPT_MB"``, ``"MAXCI_COMP"``
    Multiband variants of Max C/I; the ``_OPT_MB`` variant formulates the
    allocation as an LP problem solved by an external ``glpsol`` process, and
    the ``_COMP`` variant cooperates with the CoMP manager (see
-   `Coordinated multi-point`_).
+   :doc:`x2`).
 
 Writing a custom scheduling policy is a common Simu5G research task; the
 policies above are C++ classes with a small common interface, and the
@@ -70,7 +70,7 @@ groups*.
 
 Each bearer belongs to one of four logical channel groups (LCGs), assigned
 in its bearer definition or derived from its QoS priority (see
-:doc:`bearers`); buffer status is reported per LCG, so the LCG choice
+:doc:`qos`); buffer status is reported per LCG, so the LCG choice
 determines which traffic a UE serves first when uplink resources are
 scarce.
 
@@ -105,17 +105,3 @@ decisions. Its main knobs, all parameters of the base station MAC:
 
 How the CQI feedback itself is generated -- periodicity, wideband vs.
 per-band -- is configured at the PHY layer (:doc:`phy`).
-
-Coordinated multi-point
------------------------
-
-For inter-cell interference coordination studies, base stations can be
-equipped with a CoMP manager (``compEnabled = true`` on the base station
-NIC): a coordinator node partitions resource blocks among client cells over
-X2, and the clients schedule within their partition using the
-``"MAXCI_COMP"`` discipline. The provided algorithm
-(``LteCompManagerProportional``) partitions proportionally to load; the
-base class is the extension point for custom coordination schemes.
-
-.. TODO: parameters of compManager (coordinatorId, clientList,
-   coordinationPeriod) and a pointer to a runnable CoMP example.

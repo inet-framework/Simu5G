@@ -8,7 +8,7 @@ This chapter describes how cellular networks are assembled from Simu5G
 components: which modules every network needs, how base stations, UEs and
 core network nodes are connected, and how the standard 3GPP deployment
 options map to Simu5G network descriptions. The internals of the individual
-node types are covered in :doc:`network-nodes`.
+node types are covered in :doc:`ue`, :doc:`base-station` and :doc:`core-network`.
 
 The example networks referenced throughout this chapter can be found under
 ``simulations/lte/networks/`` and ``simulations/nr/networks/`` in the Simu5G
@@ -27,11 +27,11 @@ infrastructure modules instantiated once at the network level:
 
 ``bearerConfigurator`` (``BearerConfigurator``)
    The authority for bearer and QoS-flow configuration (see
-   :doc:`bearers`).
+   :doc:`qos`).
 
 ``carrierAggregation`` (``CarrierAggregation``)
    Describes the component carriers available in the network (see
-   :doc:`carriers`).
+   :doc:`spectrum`).
 
 ``channelControl`` (``LteChannelControl``)
    Keeps track of the positions of radio-capable nodes, so that receivers
@@ -79,7 +79,7 @@ network -- a router and a server:
 User traffic between the gNB and the ``upf`` exit point is carried in GTP
 tunnels; any number of intermediate UPFs can be placed along the path, and
 they behave like IP routers forwarding the tunneled traffic (see
-:doc:`network-nodes`).
+:doc:`core-network`).
 
 The multicell counterpart, ``MultiCell_Standalone``, instantiates two gNBs
 connected to the same core and peered with each other via the X2 interface,
@@ -127,7 +127,7 @@ The master/secondary relationship itself is configured on the secondary
 node, by setting its ``masterId`` parameter to the master's node id. UEs are
 ``NrUe`` modules -- dual-stack terminals that attach to the eNB with
 their LTE leg and to the gNB with their NR leg (``servingNodeId`` and
-``nrServingNodeId`` parameters, see :doc:`network-nodes`).
+``nrServingNodeId`` parameters, see :doc:`ue`).
 
 How traffic is distributed over the two legs -- MCG, SCG and split bearers
 -- is the subject of :doc:`dual-connectivity`. A multicell variant,
@@ -158,27 +158,4 @@ gate index on both sides:
 
 The X2 endpoints find each other automatically at initialization; the
 per-peer applications and the SCTP-based X2 protocol stack inside the base
-stations are described in :doc:`network-nodes`.
-
-Interference-only elements
---------------------------
-
-Two node types create realistic load and interference without the cost of
-simulating full protocol stacks:
-
-*  ``BackgroundCell`` -- a lightweight cell with its own scheduler,
-   channel model and a configurable population of background UEs (see
-   :doc:`emulation`, where the background traffic model is described in
-   detail);
-*  ``ExtCell`` -- a fictitious neighboring cell that occupies a
-   configurable part of the spectrum with a given transmission power and
-   direction.
-
-Both can be dropped into any network and configured from the INI file.
-
-MEC-enabled networks
---------------------
-
-Networks can also include ETSI MEC elements -- ``MecHost`` nodes attached
-to the core network, a MEC orchestrator and the related infrastructure.
-These are described in :doc:`mec`.
+stations are described in :doc:`x2`.

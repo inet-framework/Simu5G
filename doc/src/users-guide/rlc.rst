@@ -19,7 +19,7 @@ modes:
 Like PDCP, RLC is organized per bearer: each DRB owns a pair of TX/RX
 entities in the mode configured for it. The mode comes from the bearer
 definition (its ``rlcMode`` field, possibly derived from the QoS profile --
-see :doc:`bearers`); entities are created by the bearer management
+see :doc:`qos`); entities are created by the bearer management
 machinery. A multiplexer module (``RlcMux``) dispatches PDUs between the
 entities and the MAC layer.
 

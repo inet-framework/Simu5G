@@ -40,30 +40,7 @@ handover beaconing switches (``enableHandover``, ``enableBeacons`` -- see
 
 Since channel effects are carrier-dependent, each NIC holds a *vector* of
 channel model submodules, one per component carrier the node is bound to
-(see :doc:`carriers`).
-
-Channel models
---------------
-
-Channel models implement the ``IChannelModel`` module interface and are
-selected per NIC via the channel model submodule's ``typename``. The
-provided models:
-
-``StochasticChannelModel``
-   The full statistical link model: path loss with LOS/NLOS states,
-   log-normal shadowing, fast fading, inter-cell interference, and the
-   SINR-to-BLER mapping. This is the workhorse for performance studies.
-
-``Tr36873ChannelModel``, ``Tr38901ChannelModel``
-   Presets of ``StochasticChannelModel`` selecting the 3GPP TR 36.873 (3D
-   channel model for LTE) and TR 38.901 (0.5--100 GHz) path loss models
-   respectively. TR 38.901 is the default for gNBs and the NR leg of UEs.
-
-``IdealChannelModel``
-   No propagation modeling at all -- reception is decided by a configured
-   constant packet error rate (``per``, with direction-specific variants).
-   Useful for protocol-level validation and debugging, not for performance
-   evaluation.
+(see :doc:`spectrum`).
 
 Key parameters
 --------------
