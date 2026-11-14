@@ -571,11 +571,13 @@ void Binder::registerX2Port(X2NodeId nodeId, int port)
 
 int Binder::getX2Port(X2NodeId nodeId)
 {
-    if (x2ListeningPorts_.find(nodeId) == x2ListeningPorts_.end())
-        throw cRuntimeError("Binder::getX2Port - No ports available on node %hu", num(nodeId));
+    // each X2 client takes a server port of its own at the peer
+    auto it = x2ListeningPorts_.find(nodeId);
+    if (it == x2ListeningPorts_.end() || it->second.empty())
+        throw cRuntimeError("Binder: node %d has no free X2 server port: more X2 clients connect to it than it has X2 apps (numX2Apps)", (int)num(nodeId));
 
-    int port = x2ListeningPorts_[nodeId].front();
-    x2ListeningPorts_[nodeId].pop_front();
+    int port = it->second.front();
+    it->second.pop_front();
     return port;
 }
 
