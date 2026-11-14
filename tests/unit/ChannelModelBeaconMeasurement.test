@@ -1,0 +1,148 @@
+%description:
+
+What a UE measures on a handover beacon: the cell's signal against noise, and
+no interference of any kind. The handover decision compares the beacons of
+two cells, as the A3 event of a real network compares their received powers;
+a measurement that counted the interference of some transmitters and not of
+others (the external and background cells', but not the real cells') made the
+comparison depend on which kind of cell happened to be loaded nearby.
+
+Checked with a UE 300 m from its base station and an external cell 100 m from
+the UE that occupies the band without end: the SINR of a beacon is the same
+with the external cell as without it. A CQI on the same link, for which the
+external cell does count, is lower with it: the interferer is in effect.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+// The control information a packet from 'source' to 'dest' carries.
+static UserControlInfo controlInfo(Direction dir, LtePhyFrameType type, MacNodeId source,
+        MacNodeId dest)
+{
+    UserControlInfo info;
+    info.setDirection(dir);
+    info.setFrameType(type);
+    info.setSourceId(source);
+    info.setDestId(dest);
+    return info;
+}
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        model: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 3.5GHz
+*.carrierAggregation.componentCarrier[0].numBands = 1
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+**.scenario = "URBAN_MICROCELL"
+**.nodebHeight = 25m
+**.ueHeight = 1.5m
+**.dynamicLos = false
+**.fixedLos = true
+**.shadowing = false
+**.fading = false
+**.enableExtCellLos = false
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *model = harnessModule<StochasticChannelModel>(this, "model");
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+const simtime_t slot = SimTime(1, SIMTIME_MS);
+const GHz carrier = GHz(3.5);
+
+StubEndpoint bs, ue, external;
+const MacNodeId bsId = MacNodeId(1), ueId = MacNodeId(1025), externalId = MacNodeId(1000);
+bs.nodeId = bsId;
+bs.coord = Coord(0, 0, 25);
+ue.nodeId = ueId;
+ue.coord = Coord(300, 0, 1.5);
+external.nodeId = externalId;
+external.coord = Coord(400, 0, 25);
+StubRadioRegistration bsRadio(medium, bsId, &bs);
+StubRadioRegistration ueRadio(medium, ueId, &ue);
+StubRadioRegistration externalRadio(medium, externalId, &external);
+ChannelModelProbe probe(model);
+
+RbMap band0;
+band0[MACRO][0] = 1;
+
+// the SINR of a beacon of the base station's at the UE
+auto beaconSinr = [&] {
+    UserControlInfo info = controlInfo(DL, BEACONPKT, bsId, ueId);
+    info.setCarrierFrequency(carrier);
+    RadioLink link = probe.linkFor(&ue, &info, bs.coord);
+    return model->getSINR(link, &info, model->getRSRP(link, 46.0))[0];
+};
+
+// the SINR of a downlink CQI of the UE, a what-if of the base station's
+auto cqiSinr = [&] {
+    CellularTransmission whatIf = dlCqiTransmission(&bs, ueId);
+    whatIf.carrierFrequency = carrier;
+    whatIf.txPower = 46.0;
+    return model->computeSinr(&ue, whatIf)[0];
+};
+
+wait(10 * slot);
+const double beaconAlone = beaconSinr();
+const double cqiAlone = cqiSinr();
+
+// the external cell starts to occupy the band, and never stops
+auto *transmission = new CellularTransmission();
+transmission->transmitter = &external;
+transmission->phantomCell = this;
+transmission->sourceId = externalId;
+transmission->cellId = externalId;
+transmission->direction = DL;
+transmission->frameType = DATAPKT;
+transmission->carrierFrequency = carrier;
+transmission->grantedBlocks = band0;
+transmission->txPower = 46.0;
+transmission->startPosition = external.coord;
+transmission->startTime = simTime();
+transmission->duration = SimTime::getMaxTime() - simTime();
+medium->addPhantomTransmission(transmission);
+wait(10 * slot);
+
+const double cqiWithExternal = cqiSinr();
+c.check("a CQI counts the external cell's interference", cqiWithExternal < cqiAlone - 10.0,
+        "CQI SINR " + std::to_string(cqiWithExternal) + " dB, alone " + std::to_string(cqiAlone) + " dB");
+c.expectNear("a beacon is measured against noise only: the external cell does not change it",
+        beaconSinr(), beaconAlone, 1e-9);
+
+c.summary();
+
+%contains: stdout
+modelchecks=2 modelfailures=0
+
+%not-contains: stdout
+FAILED

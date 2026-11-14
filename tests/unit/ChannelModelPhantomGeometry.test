@@ -108,6 +108,7 @@ cmdenv-express-mode = false
 cmdenv-log-prefix = ""
 sim-time-limit = 1s
 *.carrierAggregation.numComponentCarriers = 3
+*.radioMedium.numCarriers = 3
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 3.5GHz
 *.carrierAggregation.componentCarrier[0].numBands = 10
 *.carrierAggregation.componentCarrier[1].carrierFrequency = 0.7GHz

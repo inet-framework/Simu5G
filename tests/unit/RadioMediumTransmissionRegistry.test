@@ -19,11 +19,10 @@ that drops the slot completed last would pass them.
 Checked on a carrier with 1 ms slots, with transmissions registered at slot
 boundaries as the radios register them.
 
-A deviation is pinned here: a transmission registered between slot boundaries
--- a beacon, which takes no air time, when the beacon interval is not a
-multiple of the slot -- prunes every transmission that ended before it,
-including those of the slot completed last. RadioMediumTransmissionRegistryOffGrid
-states what the medium should keep, as an expected failure.
+A transmission registered between slot boundaries -- a beacon, which takes no
+air time, when the beacon interval is not a multiple of the slot -- keeps the
+slot completed last as well; RadioMediumTransmissionRegistryOffGrid has that
+case on its own.
 
 %includes:
 #include <algorithm>
@@ -91,9 +90,11 @@ cmdenv-express-mode = false
 cmdenv-log-prefix = ""
 sim-time-limit = 1s
 *.binder.printTrafficGeneratorConfig = false
-*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.numComponentCarriers = 2
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.carrierAggregation.componentCarrier[*].numBands = 6
+*.radioMedium.numCarriers = 2
 **.cellInfoModule = ""
 
 %no-default-inifile: 1
@@ -166,8 +167,8 @@ c.check("the transmission that never ends is in every slot", got == std::vector<
 wait(slot / 2);
 medium->addTransmission(transmissionNow(bs1, DL, BEACONPKT, carrier1, 0));
 got = during(carrier1, 3 * slot, 4 * slot);
-c.check("PINNED DEFECT: a transmission between slot boundaries prunes the slot completed last",
-        got == std::vector<long>{forever->id}, show(got));
+c.check("a transmission between slot boundaries keeps the slot completed last",
+        got == (std::vector<long>{forever->id, third->id}), show(got));
 
 c.summary();
 

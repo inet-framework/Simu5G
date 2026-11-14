@@ -1,25 +1,15 @@
 %description:
 
-A defect of the radio medium's transmission registry, recorded rather than
-fixed: a transmission registered between two slot boundaries prunes the slot
-completed last.
+The radio medium keeps the transmissions of the slot completed last, whatever
+is registered in the slot under way: a CQI computed during a slot is computed
+from the interference of the slot before it.
 
-When a transmission is added, the medium drops every transmission of its
-carrier that ended before the slot preceding it, which it takes as starting
-one of the new transmission's own durations before its start. For a
-transmission of one slot added at a slot boundary that is the slot completed
-last, which is kept. A beacon takes no air time: added between two
-boundaries -- whenever the beacon interval is not a multiple of the slot --
-it keeps nothing that ended before itself, so the transmissions of the slot
-completed last are gone, and a CQI computed in the rest of the slot sees none
-of their interference.
-
-The check below states what the medium should keep: the slot completed last,
-whatever is added in the slot under way. RadioMediumTransmissionRegistry pins
-what it does today. When the medium keeps the slot, update that pin and drop
-the %expected-failure line here.
-
-%expected-failure: a transmission between slot boundaries prunes the slot completed last
+A beacon takes no air time, and is sent between two slot boundaries whenever
+the beacon interval is not a multiple of the slot. Registered at 2.5 ms on a
+carrier with 1 ms slots, it must leave the data transmission of the slot [1
+ms, 2 ms) on the medium until the slot under way, [2 ms, 3 ms), is over. (The
+medium took the slot to keep as one of the new transmission's own durations
+before its start, which for a beacon is nothing.)
 
 %includes:
 #include <algorithm>
