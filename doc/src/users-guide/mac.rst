@@ -40,8 +40,7 @@ preamble contention with backoff. Not modeled are the control channels (grants
 and HARQ feedback are error-free and take no resources), scheduling requests
 (a UE asks for uplink resources by random access only), the prioritized bit
 rate of logical channel prioritization, power headroom reports, DRX and timing
-advance. Instead of the subheaders, the MAC PDU has a header of a fixed 2
-bytes, whatever the number of SDUs and control elements it carries.
+advance.
 
 This chapter describes the MAC of the base station and of the UE, the cycle
 in which the base station schedules each slot, how downlink and uplink
@@ -128,8 +127,9 @@ process.
 
 After scheduling, the MAC asks each scheduled connection's RLC entity for
 exactly as many bytes as the connection's resource blocks carry, minus the
-MAC header. RLC answers with a PDU of that size, segmenting or concatenating
-SDUs as needed (see :doc:`rlc`), and the MAC builds the MAC PDU from it.
+subheaders of the MAC SDUs it will carry. RLC answers with a PDU of that size,
+segmenting or concatenating SDUs as needed (see :doc:`rlc`), and the MAC builds
+the MAC PDU from it.
 
 The policy is chosen per direction with the base station MAC's
 ``schedulingDisciplineDl`` and ``schedulingDisciplineUl`` parameters. The same
@@ -288,9 +288,35 @@ The MAC PDU
 -----------
 
 A MAC PDU carries the MAC SDUs of one or more logical channels of one UE, and
-MAC control elements such as a buffer status report. Its header has a fixed
-size of 2 bytes, whatever the number of SDUs and control elements it carries,
-and the MAC leaves room for it when it sizes the data it asks RLC for.
+MAC control elements such as a buffer status report. Each SDU carries the
+identity of its logical channel, from which the receiving MAC finds the
+bearer, and each SDU and control element has a subheader whose size follows
+TS 38.321 6.1.2 in NR and TS 36.321 6.1.2 in LTE:
+
+*  In NR, an SDU's subheader is 2 bytes, or 3 bytes for an SDU longer than
+   255 bytes; a fixed-size control element, such as a Short BSR, has a 1-byte
+   subheader, and a variable-size one, such as a Long BSR, a 2-byte one.
+
+*  In LTE, an SDU's subheader is 2 bytes, or 3 bytes for an SDU longer than
+   127 bytes, except the last subheader of the PDU, which is 1 byte; a control
+   element has a 1-byte subheader.
+
+A buffer status report is a Short BSR (1 byte) when one logical channel group
+has data, and a Long BSR otherwise (in NR a bitmap byte plus one byte per
+reported group, in LTE 3 bytes).
+
+When the scheduler and the UE's logical channel prioritization size the data
+they ask RLC for, they leave room for the full subheader of every SDU they
+plan, and for a buffer status report that will go with the data. The PDU's
+actual header can come out a byte or two shorter, for example for LTE's last
+subheader; the rest of the transport block is padding.
+
+.. TODO: this describes the fix planned in ai-plans
+   plans/pending/simu5g-2026-11-14_mac-subheader-sizes-plan.md (on dev, every
+   MAC PDU has a fixed 2-byte header, and control elements take no bytes; the
+   BSR sizing follows the plan's decision D2). Check that the fix has landed,
+   and that the decisions came out as written here, before the guide is
+   published.
 
 Configuration
 -------------
@@ -391,8 +417,7 @@ Fidelity
 
 *  **Buffer status reports are sent only after a won random access.** The
    regular, periodic and padding BSR triggers of TS 38.321 5.4.5 are not
-   modeled, and a report is always one fixed-size element, never a short,
-   long or truncated BSR.
+   modeled, and neither is the truncated BSR.
 
 *  **Logical channel prioritization is strict priority by group.** The
    prioritized bit rate, which in TS 38.321 5.4.3.1 protects lower-priority
@@ -401,10 +426,6 @@ Fidelity
 
 *  **No power headroom reports, DRX or timing advance,** and no
    semi-persistent or configured-grant scheduling.
-
-*  **Known deviation: a fixed MAC header.** Instead of a subheader per SDU and
-   control element (TS 38.321 6.1.2, TS 36.321 6.1.2), every MAC PDU has a
-   header of 2 bytes.
 
 *  **One codeword.** The scheduler allocates a single codeword per UE; spatial
    multiplexing is not modeled (see :doc:`phy`).
