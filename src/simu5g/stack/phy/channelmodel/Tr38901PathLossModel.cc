@@ -16,8 +16,18 @@ namespace simu5g {
 
 using namespace omnetpp;
 
+void Tr38901PathLossModel::checkPenetrationLoss() const
+{
+    // clause 7.4.3.1 has an outdoor-to-indoor loss for UMa, UMi-Street Canyon and RMa (and InF)
+    if (scenario_ != URBAN_MACROCELL && scenario_ != URBAN_MICROCELL && scenario_ != RURAL_MACROCELL)
+        throwNoPenetrationLoss("TR 38.901", false);
+}
+
 double Tr38901PathLossModel::computePathLoss(double d3D, double d2D, bool los, const LinkConditions& conditions)
 {
+    if (conditions.indoor)
+        checkPenetrationLoss();
+
     // compute attenuation based on selected scenario and based on LOS or NLOS
     double pathLoss = 0;
     switch (scenario_) {
@@ -129,12 +139,9 @@ double Tr38901PathLossModel::computePenetrationLoss(double threeDimDistance, con
     // Which through-wall model applies is a function of the scenario. Table
     // 7.4.3-3 -- a flat 20 dB whose sigma_P is 0, kept for backwards
     // compatibility with TR 36.873 -- is offered for UMa and UMi
-    // single-frequency simulations below 6 GHz. TR 38.901 defines no O2I loss
-    // for the indoor-office scenario at all, so it follows the urban ones for
-    // want of anything to derive.
+    // single-frequency simulations below 6 GHz.
     bool singleFrequencyModel = carrierFrequencyGHz_ <= 6.0
-        && (scenario_ == URBAN_MACROCELL || scenario_ == URBAN_MICROCELL
-            || scenario_ == INDOOR_HOTSPOT);
+        && (scenario_ == URBAN_MACROCELL || scenario_ == URBAN_MICROCELL);
     if (singleFrequencyModel)
         return 20.0 + pLoss_in;
 
@@ -313,14 +320,9 @@ double Tr38901PathLossModel::computeIndoor3D(double threeDimDistance, double two
     if (threeDimDistance > 150 && !tolerateMaxDistViolation_)
         throw cRuntimeError("Error: Indoor hotspot path loss model is valid for d<150m only");
 
-    // Compute penetration loss
-    double penetrationLoss = 0.0;
-    if (conditions.indoor)
-        penetrationLoss = computePenetrationLoss(threeDimDistance, conditions);
-
-    // Compute LOS path loss
+    // Compute LOS path loss (no penetration loss: TR 38.901 defines none for
+    // this scenario, see checkPenetrationLoss())
     double pLoss_los = 32.4 + 17.3 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_;
-    pLoss_los += penetrationLoss;
 
     double pLoss = 0.0;
     if (los)
@@ -328,7 +330,6 @@ double Tr38901PathLossModel::computeIndoor3D(double threeDimDistance, double two
     else {
         // Compute NLOS path loss
         double pLoss_nlos = 38.3 * log10(threeDimDistance) + 17.3 + 24.9 * log10CarrierFrequencyGHz_;
-        pLoss_nlos += penetrationLoss;
 
         pLoss = (pLoss_los > pLoss_nlos) ? pLoss_los : pLoss_nlos;
     }

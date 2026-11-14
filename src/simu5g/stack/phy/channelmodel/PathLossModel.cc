@@ -31,4 +31,15 @@ void PathLossModel::initialize(cComponent *owner, DeploymentScenario scenario,
     tolerateMaxDistViolation_ = tolerateMaxDistViolation;
 }
 
+void PathLossModel::throwNoPenetrationLoss(const char *study, bool definedInStudy) const
+{
+    std::string owner = owner_ != nullptr ? owner_->getFullPath() : "path loss model";
+    std::string scenario = DeploymentScenarioToA(scenario_);
+    if (definedInStudy)
+        throw cRuntimeError("%s: the UE end of the link is inside a building (insideBuilding), and the building penetration loss of %s for the scenario %s is not implemented",
+                owner.c_str(), study, scenario.c_str());
+    throw cRuntimeError("%s: the UE end of the link is inside a building (insideBuilding), and %s defines no building penetration loss for the scenario %s",
+            owner.c_str(), study, scenario.c_str());
+}
+
 } //namespace

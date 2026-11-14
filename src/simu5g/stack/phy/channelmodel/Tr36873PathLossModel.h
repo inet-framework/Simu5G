@@ -41,6 +41,7 @@ namespace simu5g {
 class Tr36873PathLossModel : public Tr36814PathLossModel
 {
   public:
+    void checkPenetrationLoss() const override;
     double computePathLoss(double d3D, double d2D, bool los, const LinkConditions& conditions) override;
     double computeLosProbability(double d3D, double d2D) override;
     double getShadowingStdDev(double d3D, double d2D, bool losState) override;

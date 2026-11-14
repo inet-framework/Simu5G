@@ -20,8 +20,18 @@ namespace simu5g {
 
 using namespace omnetpp;
 
+void Tr36873PathLossModel::checkPenetrationLoss() const
+{
+    // clause 7.2.3 has an outdoor-to-indoor loss for 3D-UMa and 3D-UMi; the model has the first
+    if (scenario_ != URBAN_MACROCELL)
+        throwNoPenetrationLoss("TR 36.873", scenario_ == URBAN_MICROCELL);
+}
+
 double Tr36873PathLossModel::computePathLoss(double d3D, double d2D, bool los, const LinkConditions& conditions)
 {
+    if (conditions.indoor)
+        checkPenetrationLoss();
+
     // compute attenuation based on selected scenario and based on LOS or NLOS
     double pathLoss = 0;
     switch (scenario_) {

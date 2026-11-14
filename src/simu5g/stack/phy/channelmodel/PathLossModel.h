@@ -59,6 +59,12 @@ class PathLossModel
      */
     static constexpr double PROPAGATION_VELOCITY = 3.0e8;
 
+    /*
+     * The error of checkPenetrationLoss(): the study defines no building
+     * penetration loss for the scenario, or defines one that the model lacks.
+     */
+    [[noreturn]] void throwNoPenetrationLoss(const char *study, bool definedInStudy) const;
+
   public:
     /**
      * The facts of the link being evaluated that its geometry does not give:
@@ -93,6 +99,13 @@ class PathLossModel
      * and scenario have no other value or the probability of 1 m is 1.
      */
     virtual double drawEnvironmentHeight(double d2D) { return 1.0; }
+
+    /*
+     * Throws if the model has no building penetration loss for its scenario:
+     * a link with its UE end inside a building cannot be evaluated then.
+     * computePathLoss() calls it for such a link.
+     */
+    virtual void checkPenetrationLoss() const = 0;
 
     /*
      * Compute the path-loss attenuation according to the selected scenario,

@@ -151,10 +151,11 @@ Recorded, not fixed in the branch, like the items of the earlier pieces.
    - Reached in every row with moving UEs and CQI reporting.
    - Fix shape: evaluate the CQI at its CSI reference resource -- the positions and the fading nCSI_ref slots before the report -- for the DL, UL and D2D CQI alike.
 29. **A UE inside a building has no penetration loss under TR 36.814, nor under TR 36.873 except in UMa.**
-   - What the model does: only Tr36873PathLossModel's UMa and Tr38901PathLossModel add a building penetration loss. Tr36814PathLossModel, in every scenario, and Tr36873PathLossModel's UMi, RMa and InH (and SMa, which is TR 36.814's formula) take the link's conditions and do not use them, so `insideBuilding = true` on a UE silently changes nothing.
+   - What the model does: only Tr36873PathLossModel's UMa and Tr38901PathLossModel's UMa, UMi and RMa add a building penetration loss. Under every other study and scenario, a link whose UE end has `insideBuilding = true` is rejected when it is first evaluated; where the study defines an outdoor-to-indoor loss (TR 36.873 UMi, TR 36.814 UMi), the error says that it is not implemented.
    - What the specification says: TR 36.873 7.2.3: "3D-UMi O2I PL = PLb + PLtw + PLin", "PLb = PL3D-UMi (d3D-out + d3D-in)", "PLtw = 20", "PLin = 0.5d2D-in", "0m < d2D-in < 25m". TR 36.814 Table B.1.2.1-1, UMi outdoor-to-indoor: "PLtw = 20, other values remain the same", "0 m < din< 25 m". The other scenarios of the two studies have no outdoor-to-indoor model.
-   - Reached in no row: the Penetration rows use TR 38.901 and TR 36.873 UMa.
-   - Fix shape: the O2I loss in TR 36.873 UMi and TR 36.814 UMi; an indoor UE rejected where the study has no O2I model.
+   - Reached in no row: the Penetration rows use TR 38.901 UMa and TR 36.873 UMa.
+   - Recorded in tests/module/IndoorRejected_NoPenetrationLossInStudy and IndoorRejected_PenetrationLossNotImplemented.
+   - Fix shape: the O2I loss in TR 36.873 UMi and TR 36.814 UMi.
 30. **A moving base station interferes from where it is when the interference is evaluated, not from where its transmission started.**
    - What the model does: the DL interference walk evaluates another cell's link through StochasticChannelModel::cellularLink(), which reads the interfering cell's current position; the angular attenuation of the same walk and the uplink interference take the transmission's start position.
    - What the medium's model says: from "every radio's position is read as a transmission starts" on, a transmission's arrival is computed from where it started, as on INET's medium.
