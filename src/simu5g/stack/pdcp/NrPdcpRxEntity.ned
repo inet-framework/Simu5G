@@ -28,6 +28,8 @@ simple NrPdcpRxEntity extends LtePdcpRxEntity
         @dynamic(true);
         @class("NrPdcpRxEntity");
         @display("i=block/layer");
+        @signal[pdcpPduOutsideWindow](type=inet::Packet);
+        @statistic[pdcpPduOutsideWindow](title="PDCP PDUs discarded at or beyond the reception window"; record=count; interpolationmode=none);
         bool outOfOrderDelivery = default(false);  // Deliver each SDU on arrival instead of in COUNT order (TS 38.331 outOfOrderDelivery)
         double timeout @unit(s) = default(0.1s);   // t-Reordering; a modeling default, as TS 38.331 applies infinity when the network leaves it out
         int rxWindowSize = default(4096);

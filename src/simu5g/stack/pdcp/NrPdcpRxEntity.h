@@ -73,6 +73,7 @@ enum PdcpRxTimerType
 class NrPdcpRxEntity : public LtePdcpRxEntity
 {
   protected:
+    static simsignal_t pdcpPduOutsideWindowSignal_;
 
     // outOfOrderDelivery (TS 38.323): deliver each SDU on arrival instead of in COUNT order
     bool outOfOrderDelivery_;

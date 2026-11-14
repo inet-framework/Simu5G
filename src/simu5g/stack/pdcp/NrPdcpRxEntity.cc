@@ -18,6 +18,8 @@ namespace simu5g {
 
 Define_Module(NrPdcpRxEntity);
 
+simsignal_t NrPdcpRxEntity::pdcpPduOutsideWindowSignal_ = registerSignal("pdcpPduOutsideWindow");
+
 
 
 NrPdcpRxEntity::~NrPdcpRxEntity()
@@ -58,8 +60,11 @@ void NrPdcpRxEntity::handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber)
         return;
     }
 
+    // At or beyond RX_DELIV + Window_Size, a real receiver derives the COUNT with the previous HFN
+    // (TS 38.323 5.2.2.1), which puts it below RX_DELIV, so it discards the PDU
     if (rcvdSno - rxWindowDesc_.rxDeliv_ >= rxWindowDesc_.windowSize_) {
-        EV << NOW << " NrPdcpRxEntity::handlePdcpSdu - the SN[" << rcvdSno << "] <  is too large with respect to the window size. Advance the window and deliver out-of-sequence SDUs" << endl;
+        EV_WARN << NOW << " NrPdcpRxEntity::handlePdcpSdu - the SN[" << rcvdSno << "] is at or beyond RX_DELIV + Window_Size (" << rxWindowDesc_.rxDeliv_ << " + " << rxWindowDesc_.windowSize_ << "). Discard the SDU" << endl;
+        emit(pdcpPduOutsideWindowSignal_, pdcpSdu);
         delete pdcpSdu;
         return;
     }
