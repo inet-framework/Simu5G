@@ -1,0 +1,84 @@
+%description:
+The handover hysteresis is a margin in dB: a UE hands over to another cell when that cell's
+beacon is received stronger than the serving cell's by more than hysteresis. (It was a tenth of
+the serving cell's beacon SINR in dB: 5 dB at 50 dB, nothing at 0 dB, and negative below.)
+
+Two gNBs 600 m apart with an X2 link, no shadowing and no fading, and a UE that moves from the
+middle towards gnb2 at 15 m/s. Beacons are sent every 0.1 s, so the difference between the two
+beacons' SINR grows by less than 0.2 dB from one round of beacons to the next. With hysteresis =
+6 dB, the UE must hand over in the first round in which gnb2's beacon exceeds gnb's by more
+than 6 dB, and not before.
+
+Checked by lib/handover_hysteresis_check.py on the reception trace, which has the SINR of every
+beacon, and on the vector of the UE's serving cell: no handover within the run, a handover
+before the difference reaches the hysteresis, or one that is still not triggered when the
+difference exceeds it, fails. The tolerance is 0.4 dB, two rounds' growth.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.node.ethernet.Eth10G;
+import simu5g.nodes.gNodeB;
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+network HandoverHysteresisTestNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        gnb2: gNodeB {
+            @display("p=650,250");
+        }
+    connections:
+        upf.pppg++ <--> Eth10G <--> gnb2.ppp;
+        gnb.x2++ <--> Eth10G <--> gnb2.x2++;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = HandoverHysteresisTestNetwork
+sim-time-limit = 6s
+
+# what the check reads
+*.radioMedium.recordReceptionTrace = true
+*.ue[0].cellularNic.rrc.nrConnectionControl.**.vector-recording = true
+
+# two cells with an X2 link; the UE starts at gnb, in the middle between the two
+*.gnb.mobility.initialX = 200m
+*.gnb.mobility.initialY = 500m
+*.gnb2.mobility.initialX = 800m
+*.gnb2.mobility.initialY = 500m
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+*.ue[*].mobility.typename = "LinearMobility"
+*.ue[*].mobility.initialX = 495m
+*.ue[*].mobility.initialY = 500m
+*.ue[*].mobility.speed = 15mps
+*.ue[*].mobility.initialMovementHeading = 0deg
+*.gnb*.numX2Apps = 1
+*.gnb*.x2App[*].server.localPort = 5000 + ancestorIndex(1)
+*.gnb.x2App[0].client.connectAddress = "gnb2%x2ppp0"
+*.gnb2.x2App[0].client.connectAddress = "gnb%x2ppp0"
+**.sctp.nagleEnabled = false
+**.sctp.enableHeartbeats = false
+*.configurator.config = xml("<config><interface among='gnb* upf*' address='10.x.x.x' netmask='255.255.255.0'/><interface hosts='*' address='192.168.x.x' netmask='255.255.255.0'/></config>")
+
+# a deterministic channel: path loss only
+**.shadowing = false
+**.fading = false
+**.dynamicLos = false
+**.fixedLos = false
+
+# handover, with beacons every 0.1 s
+**.enableHandover = true
+**.cellInfo.beaconInterval = 0.1s
+**.hysteresis = 6dB
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%postrun-command: python3 ../../lib/handover_hysteresis_check.py 6 results/General-0.rxtrace results/General-#0.vec > verdict.txt
+%#--------------------------------------------------------------------------------------------------------------
+%contains: verdict.txt
+PASS
+%#--------------------------------------------------------------------------------------------------------------
+%not-contains: verdict.txt
+FAIL
+%#--------------------------------------------------------------------------------------------------------------

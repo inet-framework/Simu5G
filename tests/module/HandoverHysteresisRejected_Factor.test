@@ -1,0 +1,21 @@
+%description:
+hysteresisFactor, which divided the serving cell's beacon SINR in dB to give the handover
+margin, is replaced by hysteresis, a margin in dB. An ini file that still sets it would be
+ignored without a message if the parameter were gone, and the handovers of the simulation
+would silently follow the default margin. Setting it is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+**.hysteresisFactor = 5
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+hysteresisFactor is replaced by hysteresis, in dB
+%#--------------------------------------------------------------------------------------------------------------
