@@ -26,6 +26,7 @@ as many blocks as the allocator holds for the UE on band 3.
 #include "SchedulerTestUtil.h"
 #include "MacTestStubs.h"
 #include "simu5g/background/trafficGenerator/IBackgroundTrafficManager.h"
+#include "simu5g/common/cellInfo/CellInfo.h"
 #include "simu5g/stack/mac/allocator/LteAllocationModule.h"
 #include "simu5g/stack/mac/scheduler/LteSchedulerEnbDl.h"
 
@@ -75,11 +76,25 @@ class RecordingBgManager : public IBackgroundTrafficManager
     void racHandled(MacNodeId bgUeId) override { unexpected("racHandled"); }
 };
 
-// An eNB MAC whose background traffic manager is the recording stub.
+// A cell's carriers, registered by hand. Never initialize()d.
+class TestCellInfo : public CellInfo
+{
+  protected:
+    void initialize(int stage) override {}
+};
+
+// An eNB MAC whose background traffic manager is the recording stub, in a cell with the given carriers.
 class TestEnbMac : public StubEnbMac
 {
   public:
     RecordingBgManager manager;
+    TestCellInfo cellInfo;
+    TestEnbMac(std::vector<GHz> carriers, unsigned int numBands)
+    {
+        for (GHz carrier : carriers)
+            cellInfo.registerCarrier(carrier, numBands, 0);
+    }
+    CellInfo *getCellInfo() override { return &cellInfo; }
     IBackgroundTrafficManager *getBackgroundTrafficManager(GHz carrierFrequency) override { return &manager; }
 };
 
@@ -127,7 +142,7 @@ auto checkRecorded = [&](const std::string& what, TestEnbMac *mac, TestScheduler
 };
 
 {
-    TestEnbMac *mac = new TestEnbMac();
+    TestEnbMac *mac = new TestEnbMac({carrier}, numBands);
     TestSchedulerEnbDl *scheduler = new TestSchedulerEnbDl();
     scheduler->setup(mac, numBands);
     BandLimitVector bandLim = { BandLimit(band) };
@@ -139,7 +154,7 @@ auto checkRecorded = [&](const std::string& what, TestEnbMac *mac, TestScheduler
 }
 
 {
-    TestEnbMac *mac = new TestEnbMac();
+    TestEnbMac *mac = new TestEnbMac({carrier}, numBands);
     TestSchedulerEnbDl *scheduler = new TestSchedulerEnbDl();
     scheduler->setup(mac, numBands);
     BandLimitVector bandLim = { BandLimit(band) };
