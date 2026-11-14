@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 
 #include <inet/common/stlutils.h>
 #include <inet/networklayer/common/L3AddressResolver.h>
@@ -38,28 +39,40 @@ simsignal_t Binder::nodeUnregisteredSignal_ = cComponent::registerSignal("nodeUn
 
 void Binder::registerCarrier(GHz carrierFrequency, unsigned int carrierNumBands, unsigned int numerologyIndex, bool useTdd, unsigned int tddNumSymbolsDl, unsigned int tddNumSymbolsUl)
 {
-    CarrierInfoMap::iterator it = componentCarriers_.find(carrierFrequency);
-    if (it != componentCarriers_.end() && carrierNumBands <= componentCarriers_[carrierFrequency].numBands) {
-        EV << "Binder::registerCarrier - Carrier @ " << carrierFrequency << "GHz already registered" << endl;
+    if (componentCarriers_.find(carrierFrequency) != componentCarriers_.end())
+        throw cRuntimeError("Binder: two component carriers are at %g GHz: a carrier's frequency identifies it", carrierFrequency.get());
+
+    // transmissions interfere on the same carrier only, so carriers must not share spectrum:
+    // a carrier occupies numBands resource blocks of 12 subcarriers around its frequency
+    auto widthInMHz = [](unsigned int numBands, unsigned int numerologyIndex) {
+        return numBands * 12 * 0.015 * (1 << numerologyIndex);
+    };
+    double width = widthInMHz(carrierNumBands, numerologyIndex);
+    for (const auto& [otherFrequency, other] : componentCarriers_) {
+        double otherWidth = widthInMHz(other.numBands, other.numerologyIndex);
+        double distanceInMHz = std::abs(carrierFrequency.get() - otherFrequency.get()) * 1000;
+        if (distanceInMHz < (width + otherWidth) / 2 - 1e-6) // adjacent carriers do not overlap
+            throw cRuntimeError("Binder: the component carriers at %g GHz (%g MHz wide) and %g GHz (%g MHz wide) overlap: "
+                    "partly overlapping carriers are not supported",
+                    otherFrequency.get(), otherWidth, carrierFrequency.get(), width);
     }
-    else {
-        CarrierInfo cInfo;
-        cInfo.carrierFrequency = carrierFrequency;
-        cInfo.numBands = carrierNumBands;
-        cInfo.numerologyIndex = numerologyIndex;
-        cInfo.slotFormat = computeSlotFormat(useTdd, tddNumSymbolsDl, tddNumSymbolsUl);
-        componentCarriers_[carrierFrequency] = cInfo;
 
-        // update total number of bands in the system
-        totalBands_ += carrierNumBands;
+    CarrierInfo cInfo;
+    cInfo.carrierFrequency = carrierFrequency;
+    cInfo.numBands = carrierNumBands;
+    cInfo.numerologyIndex = numerologyIndex;
+    cInfo.slotFormat = computeSlotFormat(useTdd, tddNumSymbolsDl, tddNumSymbolsUl);
+    componentCarriers_[carrierFrequency] = cInfo;
 
-        EV << "Binder::registerCarrier - Registered component carrier @ " << carrierFrequency << "GHz" << endl;
+    // update total number of bands in the system
+    totalBands_ += carrierNumBands;
 
-        carrierFreqToNumerologyIndex_[carrierFrequency] = numerologyIndex;
+    EV << "Binder::registerCarrier - Registered component carrier @ " << carrierFrequency << "GHz" << endl;
 
-        // add new (empty) entry to carrierUeMap
-        carrierUeMap_[carrierFrequency] = {};
-    }
+    carrierFreqToNumerologyIndex_[carrierFrequency] = numerologyIndex;
+
+    // add new (empty) entry to carrierUeMap
+    carrierUeMap_[carrierFrequency] = {};
 }
 
 void Binder::registerCarrierUe(GHz carrierFrequency, unsigned int numerologyIndex, MacNodeId ueId)
