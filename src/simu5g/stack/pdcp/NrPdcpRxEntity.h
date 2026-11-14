@@ -13,6 +13,8 @@
 #ifndef _NRPDCPRXENTITY_H_
 #define _NRPDCPRXENTITY_H_
 
+#include <map>
+
 #include "simu5g/stack/pdcp/LtePdcpRxEntity.h"
 #include "simu5g/stack/dcX2Forwarder/DcX2Forwarder.h"
 #include "simu5g/common/timer/TTimer.h"
@@ -79,11 +81,8 @@ class NrPdcpRxEntity : public LtePdcpRxEntity
     // NOTE: reordering can apply for Split Bearers only
     bool outOfOrderDelivery_;
 
-    // The SDU enqueue buffer.
-    cArray sduBuffer_;
-
-    // For each SDU a received status variable is kept
-    std::vector<bool> received_;
+    // the reception buffer: the stored SDUs not yet delivered, keyed by COUNT
+    std::map<unsigned int, inet::Packet *> reorderingBuffer_;
 
     // State variables
     PdcpRxWindowDesc rxWindowDesc_;
@@ -97,14 +96,17 @@ class NrPdcpRxEntity : public LtePdcpRxEntity
     // handler for PDCP SDU
     void handlePdcpSdu(Packet *pdcpSdu, unsigned int sequenceNumber) override;
 
-  public:
+    // deliver the stored SDUs with consecutive COUNTs from RX_DELIV, advancing RX_DELIV past them
+    virtual void deliverConsecutiveSdus();
 
+  public:
+    ~NrPdcpRxEntity() override;
 
     void initialize(int stage) override;
 
     void handleMessage(cMessage *msg) override;
 
-    bool isEmpty() const override { return sduBuffer_.size() == 0; }
+    bool isEmpty() const override { return reorderingBuffer_.empty(); }
 };
 
 } //namespace
