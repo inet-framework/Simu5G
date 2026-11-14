@@ -34,3 +34,15 @@ all radio-capable modules and their positions, so that transmissions can be
 delivered to the modules they may affect. It plays the same role INET's
 radio medium module plays for INET wireless models. Exactly one instance is
 required per network; its parameters rarely need to be changed.
+
+Calibration
+-----------
+
+Simu5G's PHY model has been validated in compliance with the calibration
+guidelines of 3GPP RP-180524: in the Urban Macro scenario prescribed there,
+the SINR distribution obtained with Simu5G matches the reference
+distribution.
+
+.. figure:: images/SINR.png
+   :align: center
+   :figwidth: 70.0%

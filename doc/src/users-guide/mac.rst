@@ -43,96 +43,368 @@ rate of logical channel prioritization, power headroom reports, DRX and timing
 advance. Instead of the subheaders, the MAC PDU has a header of a fixed 2
 bytes, whatever the number of SDUs and control elements it carries.
 
-Module types
-------------
+This chapter describes the MAC of the base station and of the UE, the cycle
+in which the base station schedules each slot, how downlink and uplink
+resources are allocated, HARQ, link adaptation, carrier aggregation, and the
+MAC PDU. The coordination of schedulers between cells (CoMP) is described in
+:doc:`x2`.
 
-``LteMacBase`` implements the functionality common to all MAC modules
-(SDU/PDU exchange with RLC and PHY, buffers, HARQ machinery); ``LteMacEnb``
-and ``LteMacUe`` add the base-station and UE roles; ``NrMacGnb`` and
-``NrMacUe`` specialize them for NR (different HARQ process count, NR AMC,
-the NR uplink scheduler, NR timing). The right type is instantiated by the
-NIC; users normally interact with the MAC through its parameters only.
+Modules
+-------
+
+Every NIC has a MAC submodule per stack leg: ``mac`` for the LTE leg, and
+``nrMac`` for the NR leg of a UE. Their types follow the node's role and
+technology:
+
+*  :ned:`LteMacEnb` at an eNB, :ned:`NrMacGnb` at a gNB;
+
+*  :ned:`LteMacUe` on the LTE leg of a UE, :ned:`NrMacUe` on its NR leg.
+
+All of them extend :ned:`LteMacBase`, which holds what both roles share: the
+buffers, the HARQ entities and the statistics. A base station's MAC has three
+submodules of its own: the downlink scheduler ``schedulerDl``
+(:ned:`LteSchedulerEnbDl`), the uplink scheduler ``schedulerUl``
+(:ned:`LteSchedulerEnbUl`, or :ned:`NrSchedulerGnbUl` at a gNB), and the
+adaptive modulation and coding module ``amc`` (:ned:`LteAmc`, or :ned:`NrAmc`
+at a gNB).
+
+The MAC schedules *connections*: a connection is one logical channel of one
+UE, so each bearer of a UE is a connection of its own in the downlink. In the
+uplink, the base station sees a UE's backlog per logical channel group, so
+there the connections are the UE's groups (see `Uplink scheduling`_).
+
+The slot cycle
+--------------
+
+A base station's MAC runs in slots. It ticks at the slot length of the
+highest numerology among the carriers it serves (1 ms for numerology 0, half
+of that for numerology 1, and so on; see :doc:`spectrum`), and serves each
+carrier at that carrier's own slot rate: a carrier of a lower numerology is
+served every second, fourth, ... tick. An LTE base station has numerology 0
+carriers only, so its slot is the 1 ms TTI.
+
+At every tick, the MAC:
+
+1. resolves the random access preambles received since the previous tick;
+
+2. takes the uplink transport blocks that were received correctly out of the
+   HARQ buffers, and passes their contents up to RLC;
+
+3. runs the uplink scheduler, and sends the resulting grants to the UEs;
+
+4. runs the downlink scheduler, and requests from RLC the data the scheduled
+   connections are to send;
+
+5. builds the downlink MAC PDUs from that data, and hands them to HARQ for
+   transmission.
+
+Within a carrier, a scheduler serves three kinds of demand in a fixed order:
+first the grants of the UEs that have just won random access, then the HARQ
+retransmissions, and only then new transmissions, with the resource blocks
+that are left.
 
 Downlink scheduling
 -------------------
 
-The downlink scheduler allocates the resource blocks of each carrier among
-the backlogged connections once per TTI. The scheduling policy is selected
-with the ``schedulingDisciplineDl`` parameter of the base station MAC:
+The downlink scheduler decides, for each carrier and each slot, which
+connections are served and how many resource blocks each gets. It works from
+two pieces of information:
 
-``"MAXCI"`` (default)
-   Max C/I: grants the connection with the best channel condition first --
-   maximizes cell throughput, ignores fairness.
+*  **The backlog of each connection.** The MAC does not hold the downlink data
+   itself until it is scheduled: the data waits in the RLC entities, and RLC
+   notifies the MAC of every new SDU, which the MAC records in a *virtual
+   buffer* per connection. A connection with a nonempty virtual buffer is
+   *active*, a candidate for scheduling.
 
-``"PF"``
-   Proportional Fair: scores connections by the ratio of instantaneous to
-   average rate; the ``pfAlpha`` parameter controls the averaging memory.
+*  **The channel quality of each UE.** The AMC module turns the UE's CQI
+   reports into transmission parameters: the bands the UE can use, and how
+   many bytes one resource block carries for it (see `Link adaptation`_).
 
-``"DRR"``
-   Deficit Round Robin: throughput-agnostic fair queuing among connections.
+The scheduling policy orders the active connections, and the scheduler then
+serves them in that order: each connection gets as many resource blocks as
+its backlog needs, until the carrier's resource blocks run out. A connection
+whose CQI is 0 is not scheduled, and neither is a UE that has no free HARQ
+process.
 
-``"QOS_PF"``
-   QoS-aware Proportional Fair: PF weighted by the per-bearer QoS profile
-   (GBR flag, packet delay budget, packet error rate, priority level) taken
-   from the bearer configuration (:doc:`qos`).
+After scheduling, the MAC asks each scheduled connection's RLC entity for
+exactly as many bytes as the connection's resource blocks carry, minus the
+MAC header. RLC answers with a PDU of that size, segmenting or concatenating
+SDUs as needed (see :doc:`rlc`), and the MAC builds the MAC PDU from it.
 
-``"MAXCI_MB"``, ``"MAXCI_OPT_MB"``, ``"MAXCI_COMP"``
-   Multiband variants of Max C/I; the ``_OPT_MB`` variant formulates the
-   allocation as an LP problem solved by an external ``glpsol`` process, and
-   the ``_COMP`` variant cooperates with the CoMP manager (see
-   :doc:`x2`).
+The policy is chosen per direction with the base station MAC's
+``schedulingDisciplineDl`` and ``schedulingDisciplineUl`` parameters. The same
+policy serves every carrier of the base station. The policies are:
 
-Writing a custom scheduling policy is a common Simu5G research task; the
-policies above are C++ classes with a small common interface, and the
-example set under ``src/simu5g/stack/mac/scheduling_modules/`` is the
-template to follow.
+``MAXCI`` (the default)
+   Maximum carrier-to-interference: connections are served in the order of how
+   many bytes a resource block carries for them, so the UEs with the best
+   channels are served first. It maximizes cell throughput and ignores
+   fairness: a UE with a poor channel can starve.
+
+``PF``
+   Proportional fair: connections are ordered by the ratio of the bytes a
+   resource block carries for them now to the rate they have received
+   recently. The recent rate is an exponential average, in which
+   ``pfAlpha`` (0.95 by default) is the weight of the latest slot. A UE whose
+   channel is good relative to its own history is preferred, which balances
+   throughput and fairness.
+
+``QOS_PF``
+   Proportional fair, with each connection's score multiplied by a weight
+   derived from its bearer's QoS profile: higher for a higher priority (a
+   lower priority level), for a GBR bearer, and for a tighter packet delay
+   budget. A connection whose bearer has no profile is scheduled as in
+   ``PF``. See :doc:`qos` for the profiles.
+
+``DRR``
+   Deficit round robin: the active connections take turns, each with an equal
+   byte quantum per round, regardless of their channel quality.
+
+``MAXCI_MB``
+   Maximum carrier-to-interference that scores each connection with the CQI
+   of each band separately (multiband CQI), instead of one CQI for the whole
+   carrier.
+
+``MAXCI_OPT_MB``
+   Formulates the multiband allocation as an optimization problem, writes it
+   to a file and solves it with an external CPLEX solver (the ``cplex``
+   command must be installed). Meant for research on optimal allocation, not
+   for general use.
+
+``MAXCI_COMP``
+   Maximum carrier-to-interference restricted to the bands the CoMP manager
+   assigns to the cell (see :doc:`x2`).
+
+``ALLOCATOR_BESTFIT``
+   An uplink allocator for D2D frequency reuse, usable only with a
+   D2D-capable uplink scheduler (see :doc:`d2d`).
+
+Writing a scheduling policy of one's own is a common research use of Simu5G.
+The policies are C++ classes derived from ``LteScheduler``, under
+``src/simu5g/stack/mac/scheduling_modules/``; the existing ones are the
+templates to follow.
 
 Uplink scheduling
 -----------------
 
-Uplink allocation is grant-based, mirroring the standard: UEs signal their
-demand through the Random Access procedure (``numPreambles``,
-``maxRacAttempts``, ``raResponseWindow`` and backoff parameters on the UE
-MAC) and Buffer Status Reports (retransmitted per ``retxBsrTimer``). The
-base station's uplink scheduler (``schedulingDisciplineUl``, same policy set
-as the downlink) grants resources per UE; within a grant, the UE's own
-``LcgScheduler`` distributes the allocation across its *logical channel
-groups*.
+In the uplink, the data waits at the UEs, so the base station has to learn
+about it before it can schedule it:
 
-Each bearer belongs to one of four logical channel groups (LCGs), assigned
-in its bearer definition or derived from its QoS priority (see
-:doc:`qos`); buffer status is reported per LCG, so the LCG choice
-determines which traffic a UE serves first when uplink resources are
-scarce.
+1. **Random access.** A UE that has data and no grant sends a random access
+   preamble, chosen at random from ``numPreambles`` preambles (64 by default).
+   If two UEs choose the same preamble in the same slot, both attempts fail,
+   and each UE retries after a random backoff, up to ``maxRacAttempts`` times.
+
+2. **The first grant.** A UE that wins random access gets a grant from the
+   base station's uplink scheduler, ahead of all other uplink traffic.
+
+3. **The buffer status report.** In the transport block of that grant, the UE
+   sends a buffer status report (BSR): how many bytes wait in each of its four
+   logical channel groups (LCGs).
+
+4. **Grants.** The base station records the reported backlog per UE and LCG,
+   and its uplink scheduler grants resource blocks to those (UE, LCG) pairs
+   as the downlink scheduler does to connections, with the policy of
+   ``schedulingDisciplineUl``. Every grant reduces the recorded backlog, and
+   a new report replaces it.
+
+5. **Logical channel prioritization.** Within a grant, the UE divides the
+   bytes among its logical channels: it serves the groups in the order of
+   their index, LCG 0 first, and the backlogged channels of a group in turns.
+   Which group a bearer belongs to comes from its definition, or is derived
+   from its QoS priority (see :doc:`qos`).
+
+A UE reports its buffer only after a won random access. While backlog
+remains after the report, the UE waits for grants for ``retxBsrTimer`` slots
+before it starts a new random access; data that arrives after the report
+therefore needs a new random access before the base station learns about it.
+
+The uplink HARQ processes run differently in the two technologies: an LTE
+eNB's uplink scheduler cycles through a UE's processes synchronously, one per
+TTI, while a gNB's NR uplink is asynchronous, and does not grant a UE whose
+HARQ processes are all busy.
 
 HARQ
 ----
 
-Hybrid ARQ is modeled with the standard parallel stop-and-wait processes:
+Every transport block is sent in a HARQ process. A MAC has a HARQ entity per
+peer and carrier, with ``harqProcesses`` parallel processes: 8 by default on
+LTE, 5 on NR. The receiver evaluates a transport block and sends its HARQ
+feedback after ``harqFbEvaluationTimer`` slots (4 by default). On a negative
+acknowledgement the block is retransmitted, up to ``maxHarqRtx`` times (3 by
+default, so up to four transmissions in all); after the last failed attempt,
+the block is discarded, and its loss is left to RLC: an RLC AM bearer
+recovers it by its own retransmission, a UM bearer loses it.
 
-*  ``harqProcesses`` -- number of parallel processes (8 for LTE, 5 for NR);
-*  ``maxHarqRtx`` -- maximum retransmissions before the PDU is dropped (and
-   the loss, for AM bearers, is left to RLC to recover);
-*  ``harqFbEvaluationTimer`` -- feedback timing in slots.
+Retransmissions are scheduled like new data, but ahead of it (see `The slot
+cycle`_). Soft combining is modeled in the receiver's error model: each
+retransmission is received with a lower error probability than the attempt
+before it (see :doc:`phy`).
 
-HARQ behavior is observable through a rich set of statistics
-(per-transmission-attempt error rates, attempt counts); see
-:doc:`results`.
+Link adaptation
+---------------
 
-AMC and CQI handling
---------------------
+The base station's AMC module chooses, for every UE and direction, the
+transport format: which modulation and coding scheme a resource block is sent
+with, and thus how many bytes it carries. It works from channel quality
+indicators (CQI). In the downlink, the UEs report them (see :doc:`phy`); in
+the uplink, the base station computes them itself from the SINR of the UEs'
+transmissions. The CQI maps to a transport block size through the tables of
+the specifications (for NR, those of TS 38.214).
 
-The base station MAC contains the AMC module (``amcType``: ``LteAmc`` /
-``NrAmc``, or D2D variants), which turns CQI feedback into transport-format
-decisions. Its main knobs, all parameters of the base station MAC:
+A CQI report has a value per band, and the AMC's *pilot* summarizes them into
+the one value it uses, as the base station MAC's ``pilotMode`` parameter says:
 
-*  ``pilotMode`` -- how the per-band CQI reports are summarized into the
-   value AMC acts on (``"ROBUST_CQI"``, ``"MAX_CQI"``, ``"AVG_CQI"``,
-   ``"MEDIAN_CQI"``, ``"IN_CQI"``);
-*  ``amcMode`` -- ``"AUTO"`` for infrastructure traffic, ``"D2D"`` when
-   D2D links are in use (:doc:`d2d`);
-*  ``targetBler`` -- the block error rate the link adaptation aims for
-   (also honored by the channel model when generating feedback).
+``ROBUST_CQI`` (the default)
+   The average of the bands' CQIs; only the bands whose CQI reaches the
+   average are used for the UE.
 
-How the CQI feedback itself is generated -- periodicity, wideband vs.
-per-band -- is configured at the PHY layer (:doc:`phy`).
+``AVG_CQI``, ``MEDIAN_CQI``
+   The mean or the median of the bands' CQIs, over all bands.
+
+``MAX_CQI``
+   The CQI of the best band.
+
+A minimum mode exists in the code under the name ``MIN_CQI``, but the
+parameter's declared values list it as ``IN_CQI``, a recorded defect.
+
+The target block error rate that the CQI computation aims for is not a MAC
+parameter: it belongs to the physical layer and the channel model (the
+``targetBler`` parameters of :ned:`PhyEnb` and of the channel models; see
+:doc:`phy`).
+
+Carrier aggregation
+-------------------
+
+A base station that serves several carriers runs a scheduler instance per
+carrier and per direction, each at its carrier's slot rate, and has a HARQ
+entity per UE and carrier. A UE served on several carriers receives grants on
+each of them, and its transport blocks on each carrier are acknowledged and
+retransmitted independently. The carriers of a base station and of a UE are
+listed in their PHY's ``componentCarrierModules`` parameter (see
+:doc:`spectrum`).
+
+The MAC PDU
+-----------
+
+A MAC PDU carries the MAC SDUs of one or more logical channels of one UE, and
+MAC control elements such as a buffer status report. Its header has a fixed
+size of 2 bytes, whatever the number of SDUs and control elements it carries,
+and the MAC leaves room for it when it sizes the data it asks RLC for.
+
+Configuration
+-------------
+
+**Choose the scheduling policy.** Set it per direction at the base station's
+MAC. The ``Standalone`` configuration of ``simulations/nr/standalone_drb``
+uses the QoS-aware scheduler in both directions:
+
+.. code:: ini
+
+   *.gnb.cellularNic.mac.schedulingDisciplineDl = "QOS_PF"
+   *.gnb.cellularNic.mac.schedulingDisciplineUl = "QOS_PF"
+
+To compare policies, make the policy an iteration variable, as
+``simulations/lte/demo`` does:
+
+.. code:: ini
+
+   **.schedulingDisciplineDl = ${sched="PF","MAXCI"}
+
+**Allow fewer HARQ retransmissions.** ``maxHarqRtx`` must be the same at both
+ends of a link, so set it for all MACs at once. The ``nr/standalone``
+configuration that exercises RLC AM allows a single retransmission, and raises
+the target block error rate so that HARQ has losses to deal with:
+
+.. code:: ini
+
+   **.maxHarqRtx = 1
+   **.targetBler = 0.3
+
+**Change how the CQI reports are summarized.**
+
+.. code:: ini
+
+   **.pilotMode = "AVG_CQI"
+
+**Write a scheduler of your own.** Derive a class from ``LteScheduler``, modeled
+on one of the existing policies under
+``src/simu5g/stack/mac/scheduling_modules/``. Then give it a name in the
+``SchedDiscipline`` enumeration, create it in the scheduler factory
+(``LteSchedulerEnb::getScheduler()``), and add the name to the values of the
+``schedulingDisciplineDl`` and ``schedulingDisciplineUl`` parameters.
+
+Statistics
+----------
+
+The MAC records, per UE and direction:
+
+*  ``macDelayDl``, ``macDelayUl``: the time from a MAC PDU's creation to its
+   correct reception, HARQ retransmissions included;
+
+*  ``macThroughputDl``, ``macThroughputUl``: the rate of the correctly received
+   MAC PDUs, averaged over time;
+
+*  ``harqErrorRateDl``, ``harqErrorRateUl``: the share of transmissions that
+   fail, and ``harqErrorRate_1st_Dl`` to ``harqErrorRate_4th_Dl`` (and their
+   uplink counterparts) the same per attempt;
+
+*  ``harqTxAttemptsDl``, ``harqTxAttemptsUl``: how many attempts a
+   successfully delivered MAC PDU took;
+
+*  ``macPacketLossDl``, ``macPacketLossUl``: the share of MAC PDUs discarded
+   after the last HARQ attempt.
+
+The base station records the cell's view: ``avgServedBlocksDl`` and
+``avgServedBlocksUl``, the number of resource blocks allocated per slot, and
+``macCellPacketLossDl`` and ``macCellPacketLossUl``, the MAC PDU loss over all
+of its UEs. Buffer overflows of the MAC queues are recorded in
+``macBufferOverFlowDl`` and ``macBufferOverFlowUl``. See :doc:`results` for
+recording and analysis.
+
+Example simulations
+-------------------
+
+*  ``simulations/nr/standalone_drb``: the ``QOS_PF`` scheduler with bearers of
+   different QoS profiles;
+
+*  ``simulations/lte/demo``: scheduler comparison (``PF`` versus ``MAXCI``);
+
+*  ``simulations/nr/standalone``: HARQ with a single retransmission, under RLC
+   AM;
+
+*  ``simulations/lte/x2``: ``MAXCI_COMP`` with CoMP;
+
+*  ``simulations/nr/test_numerology`` and ``simulations/nr/test_multiCarrier``:
+   carriers of different numerologies, and carrier aggregation.
+
+Fidelity
+--------
+
+*  **Control channels are not modeled.** Grants and HARQ feedback reach their
+   destination without errors and without consuming radio resources; there is
+   no PDCCH or PUCCH capacity limit, and no grant is ever missed.
+
+*  **No scheduling requests.** A UE with uplink data and no grant always uses
+   random access to ask for resources; the scheduling request on PUCCH is not
+   modeled.
+
+*  **Buffer status reports are sent only after a won random access.** The
+   regular, periodic and padding BSR triggers of TS 38.321 5.4.5 are not
+   modeled, and a report is always one fixed-size element, never a short,
+   long or truncated BSR.
+
+*  **Logical channel prioritization is strict priority by group.** The
+   prioritized bit rate, which in TS 38.321 5.4.3.1 protects lower-priority
+   channels from starvation, is not modeled, and the priority is that of the
+   logical channel group, not of the individual channel.
+
+*  **No power headroom reports, DRX or timing advance,** and no
+   semi-persistent or configured-grant scheduling.
+
+*  **Known deviation: a fixed MAC header.** Instead of a subheader per SDU and
+   control element (TS 38.321 6.1.2, TS 36.321 6.1.2), every MAC PDU has a
+   header of 2 bytes.
+
+*  **One codeword.** The scheduler allocates a single codeword per UE; spatial
+   multiplexing is not modeled (see :doc:`phy`).
