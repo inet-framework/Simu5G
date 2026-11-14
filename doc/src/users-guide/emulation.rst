@@ -28,322 +28,224 @@ the ``emulation/`` directory of the source tree.
 
 Emulation is especially useful for integrating Simu5G with external real-world
 applications and frameworks. For example, it allows one to :doc:`make Simu5G
-interoperable with the Intel OpenNESS framework <emulation_openness>`.
+interoperable with the Intel OpenNESS framework <emulation_openness>`. The
+emulation model is described in this paper:
 
-Check out our IEEE Access paper on this topic:
+-  G. Nardini, G. Stea, A. Virdis, "Scalable Real-time Emulation of 5G
+   Networks with Simu5G", IEEE Access, vol. 9, pp. 148504-148520, 2021. doi:
+   10.1109/ACCESS.2021.3123873.
 
--  G. Nardini, G. Stea, A. Virdis, "Scalable Real-time Emulation 
-   of 5G Networks with Simu5G", IEEE Access, vol. 9, 
-   pp. 148504-148520, 2021. doi: 10.1109/ACCESS.2021.3123873. 
-   
+.. TODO: the emulation examples are broken on dev: none of the six networks
+   under emulation/ has the coreControl module (CoreControl), which every
+   base station's connection control requires since 37eb3f4aa ("cplane:
+   coreControl,bearerConfigurator,rrc: refactor: the core network's control
+   plane becomes its own module, CoreControl"). Fix them, and run each
+   example once, before the guide is published.
 
 An emulation demo
 -----------------
 
-With reference to the video below, the "sender" PC on the left
-sends 2.5kB packets to the "receiver" laptop on the right every
-100ms, and the PC in the middle runs Simu5G as an emulator,
-transporting packets between the two endpoints. On receipt of a
-packet, the receiver sends back an ACK. TCP is used as a
-transport protocol. The scenario emulated in Simu5G is
-displayed on the middle screen, and it contains one UE (the red
-dot) that moves away from its serving gNB (the triangle in the
-central hexagon) and back again. Neighboring gNBs interfere on
-the downlink spectrum. The deployment bandwdith is kept
-artificially low, to saturate the radio frame. Within Simu5G,
-the sender is connected to a remote server (not shown in the
-picture) and the receiver is connected to the moving UE. The
-sender screen displays a moving-window average of the
-round-trip time (RTT) of the communication, measured at the
-application layer. The RTT climbs up as the UE moves away from
-the gNB, because its CQI goes down, hence more radio resources
-are used for the same transmission, and then it climbs down
-again as the UE moves back towards the gNB. Local delay spikes
-can be observed, corresponding to H-ARQ retransmissions.
+With reference to the video below, the "sender" PC on the left sends 2.5 kB
+packets to the "receiver" laptop on the right every 100 ms, and the PC in the
+middle runs Simu5G as an emulator, transporting packets between the two
+endpoints. On receipt of a packet, the receiver sends back an ACK. TCP is used
+as the transport protocol. The scenario emulated in Simu5G is displayed on the
+middle screen, and it contains one UE (the red dot) that moves away from its
+serving gNB (the triangle in the central hexagon) and back again. Neighboring
+gNBs interfere on the downlink spectrum. The deployment bandwidth is kept
+artificially low, to saturate the radio frame. Within Simu5G, the sender is
+connected to a remote server (not shown in the picture) and the receiver is
+connected to the moving UE. The sender screen displays a moving-window average
+of the round-trip time (RTT) of the communication, measured at the application
+layer. The RTT climbs up as the UE moves away from the gNB, because its CQI
+goes down, hence more radio resources are used for the same transmission, and
+then it climbs down again as the UE moves back towards the gNB. Local delay
+spikes can be observed, corresponding to HARQ retransmissions.
 
 Large-scale real-time emulation with Simu5G
 -------------------------------------------
 
-Real-time emulation with Simu5G is possible thanks to:
+Real-time emulation rests on the real-time event scheduler of OMNeT++ and on
+INET's ability to exchange packets between a running simulation and the
+operating system. What remains is to keep the model light enough to run in
+real time on a desktop machine, up to fairly large scales (ten cells, a
+thousand UEs), which realistic inter-cell interference and resource
+contention require.
 
--  the capabilities of the OMNeT++ environment to run a
-   real-time event scheduler;
--  the capabilities of the INET library to exchange packets
-   between a running simulation and the operating system.
+Simu5G does this by offering two levels of detail for UEs and cells. A
+foreground UE is one whose packets or statistics the experiment observes: it
+is a full UE, with every protocol layer from the application to the PHY. A
+background UE exists only to compete for the radio resources and to
+interfere: it has no protocol stack, only a traffic generator, which sizes
+its buffers, a mobility model, which gives it a position, and a radio that
+stands for it on the radio medium. Likewise, a foreground cell is a real base
+station, which serves at least one foreground UE, while a background cell only
+serves background UEs, to create interference: it has no protocol stack, only
+a scheduler that allocates its resource blocks to its background UEs.
 
-Moreover, a careful modeling of Simu5G functionalities and
-entities is required to make the software lightweight enough to
-be executed in real-time on a desktop machine. We designed new
-functionalities in Simu5G so as to allow it to run in real time
-up to fairly large scales (i.e., ten cells, a thousand UEs),
-which are required to create scenarios where realistic
-intercell interference and resource contentions are emulated.
-Our solution is to provide multiple models of the main network
-elements (i.e., UEs and cells), representing different tradeoff
-points between the level of detail and the processing overhead.
-We distinguish between foreground (FG) and background (BG) UEs,
-depending on their role within a simulation experiment. A FG UE
-is one whose application packets and/or statistics you will
-want to observe. In a FG UE, all the protocols must be modeled
-(from the application to the PHY sublayer of the NR stack), and
-PHY-layer reporting must be enabled. On the other hand, a BG UE
-needs not have the full protocol stack and exists only for the
-sake of creating resource contention at the MAC level and
-interference. Thus, a BG UE basically consists of a traffic
-generator and a mobility model.
+A real base station can serve background UEs too, next to its foreground UEs:
+its NIC has a background traffic generator per carrier, whose background UEs
+compete with the real ones in the base station's scheduler. The background
+models are described in :doc:`background`.
 
-Similarly, we distinguish FG and BG cells. A FG cell is one to
-which at least one FG UE is associated, whereas a BG cell only
-serves BG UEs. BG cells are employed to create interference to
-FG cells.
-
-A FG cell needs to perform all the operations required by all
-the layers of the protocol stack including scheduling in both
-the DL and the UL directions. On the other hand, a BG cell does
-not need to implement the whole protocol stack and only needs
-to determine which BG UEs occupies which RBs at the MAC layer.
-Since the only tangible effect of BG UEs in both FG and BG’s
-MAC layers is to affect the scheduling process at the gNB
-itself, we choose to deploy them using a new module called
-BackgroundTrafficGenerator within both FG and BG cells.
-
-The figure below depicts the enhanced internal architecture of
-the NR NIC of a FG cell and the new BackgroundCell model for
-the BG cell, both including a BackgroundTrafficGenerator
-submodule.
-
-.. figure:: images/bgTrafficModel.png
-   :figwidth: 70.0%
-
-   NR NIC
-
-The BackgroundTrafficGenerator includes:
-
--  a vector of modules representing a configurable number of BG
-   UEs;
--  a BackgroundTrafficManager module that manages the
-   interaction between the BG UEs and the gNB’s protocol stack.
-
-In turn, each BG UE is composed of two submodules, namely
-Mobility and TrafficGenerator. The former stores the position
-of the BG UE in the network floorplan and manages its movement,
-whereas the latter stores the size of the BG UE’s data buffer
-according to some traffic generation pattern. Both Mobility and
-TrafficGenerator can be extended through inheritance of OMNeT++
-modules to configure the desired mobility pattern and traffic
-generation distribution, as shown in the figure below.
-
-.. figure:: images/bgTrafficModules.png
-   :figwidth: 70.0%
-
-   Class hierarchy
-
-As far as the BackgroundCell module is concerned, the
-BackgroundTrafficGenerator submodule described above represents
-BG UEs under the control of such BG cell. Then, a module called
-BackgroundScheduler takes care of allocating RBs in both UL and
-DL directions. To accomplish that, it interacts with the
-BackgroundTrafficGenerator to get the BG UEs’ buffers and
-stores data structures relevant to the resource allocation.
-The SINR of the BG UEs is computed by the radio medium's channel
-models, like that of any UE, over the BG cell's radio and those
-of its BG UEs, whereas the Mobility module stores the position
-of the BG cell in the floorplan. Using this model, one can deploy
-the desired number of BG cells in the floorplan, each with its
-own transmission parameters and BG UEs.
+.. TODO: figure: a foreground base station's NIC with its background traffic
+   generator, and a background cell with its scheduler, traffic generator
+   and background UEs. The old bgTrafficModel.png shows a background channel
+   model that no longer exists, and bgTrafficModules.png a full-buffer
+   generator that Simu5G does not have. Drawn, not a NED screenshot.
 
 Running an emulation example with Simu5G
 ----------------------------------------
 
-.. note:: Emulation support has been introduced since Simu5G
-   1.2.0. As per INET instructions, emulation is only available on
-   Linux OS.
+.. note:: Emulation runs on Linux only, as INET's emulation support does.
 
-The Simu5G repository comes with three (single-machine)
-emulation examples, which can be used as a basis to develop
-your own emulation testbed. You can find the examples in the
-following folders:
+The ``emulation/`` directory of the Simu5G source tree has single-machine
+emulation examples, which can be used as a basis for an emulation testbed:
 
--  "emulation/extserver"
--  "emulation/extclientserver"
--  "emulation/extclientserver_bgTraffic"
+*  ``emulation/extserver``: a real server exchanges TCP traffic with two
+   simulated UEs, in the downlink and in the uplink;
 
-Description and instructions for the examples can be found in
-the README files included in the above folders.
+*  ``emulation/extclientserver``: two real hosts, one behind a UE and one in
+   the data network, exchange TCP traffic across the emulated 5G network;
+
+*  ``emulation/extclientserver_bgTraffic``: the same with background cells
+   and background UEs around the serving cell, whose interference raises the
+   round-trip time of the real traffic;
+
+*  ``emulation/mec/extUeApp``, ``emulation/mec/extMecApp`` and
+   ``emulation/mec/extUeAppMecApp``: a real UE application, a real MEC
+   application, or both, using the MEC model (see :doc:`mec`).
+
+Each example has a README with its description and instructions, a
+``setup.sh`` script that prepares the host's network, a ``run.sh`` script that
+starts the simulation, and a ``teardown.sh`` script that cleans up.
 
 Configuring the emulated scenario
 ---------------------------------
 
-In the following, we refer to the scenario included in the
-"emulation/extclientserver_bgTraffic" folder. The corresponding
-network is depicted in the figure below: 
+The following refers to the ``emulation/extclientserver_bgTraffic`` example.
+Its network has one gNB with a UPF and a router behind it, one UE, and a
+configurable number of background cells. Two real hosts run on the same
+machine as the simulation, each in a network namespace of its own, connected
+to the simulation through a veth pair: the one in ``ns1`` (192.168.2.2) is
+attached to the router, as a host of the data network, and the one in ``ns2``
+(192.168.3.2) to the UE, as the host behind it:
 
-.. figure:: images/emulation_bgCells.png
-   :figwidth: 70.0%
+.. code:: text
 
-   Simulated network
+   ns1 [veth1] <--> [sim-veth1] router .. gnb .. ue [sim-veth2] <--> [veth2] ns2
 
-In this example the network consists of one UE connected to one
-gNB, one UPF, one NAT router, one router, one external (real)
-server and one external (real) client. The external client
-application (i.e. associated to the UE in the emulation) sends
-10MB using TCP to the external server application, *traversing
-the emulated 5G network*. The 5G network includes a
-(configurable) number of background cells and background UEs.
-IP addresses and routing tables are set up by using mrt files
-(see "routing_files" folder).
-
-The interaction with the real world occurs via two INET’s
-ExtLowerEthernetInterface modules included into the *ue* and
-*router* modules. Such interfaces can receive real packets by
-network interface cards attached to them. In our case, such
-network interfaces are created as Virtual Ethernets (*veth*).
-Data packets directed to the simulator are routed to the
-relative *veth* attached to the ExtLowerEthernetInterface
-modules. Since all the applications run in the same host, the
-*natRouter* module is used to bypass the host operating system
-and steer the traffic towards the simulator. This way, both
-real applications send packet to the IP addresses of the
-*natRouter*, which in turn performs Network Address Translation
-by changing the destination addresses to the proper real
-application’s addresses. The INI configuration for the
-*natRouter* router is:
+The router and the UE each get an :ned:`ExtLowerEthernetInterface`, bound to
+the simulation's end of a veth pair. The UE stands for the real host behind
+it through ``extHostAddress``: traffic to that address is delivered to the UE,
+which forwards it to its external interface.
 
 .. code:: ini
 
-   ############## natRouter configuration ##############
-   *.natRouter.ipv4.natTable.config = xml("<config> \
-            <entry type='prerouting' \
-               packetDataFilter='*Ipv4Header and destAddress=~10.0.2.1' \
-               srcAddress='10.0.3.2' destAddress='192.168.2.2'/> \
-            <entry type='prerouting' \
-               packetDataFilter='*Ipv4Header and destAddress=~10.0.3.2' \
-               srcAddress='10.0.2.1' destAddress='192.168.3.2'/> \
-            </config>")
+   [General]
+   scheduler-class = "inet::RealTimeScheduler"
 
-IP addresses 10.0.2.1 and 10.0.3.2 are the addresses of the
-left and right *natRouter* interfaces, respectively.
-
-Finally, the INI configuration of the ExtLowerEthernetInterface
-modules to allow the communication with the real world is:
-
-.. code:: ini
-
-   ############## Ext Interface configuration ##############
-   # equip the router with an External Ethernet interface 
+   [Config ExtClientServer-bgTraffic]
    *.router.numEthInterfaces = 1
    *.router.eth[0].typename = "ExtLowerEthernetInterface"
-   *.router.eth[0].device = "veth0"
+   *.router.eth[0].device = "sim-veth1"
 
    *.ue.numEthInterfaces = 1
    *.ue.eth[0].typename = "ExtLowerEthernetInterface"
-   *.ue.eth[0].device = "veth2"
+   *.ue.eth[0].device = "sim-veth2"
    *.ue.extHostAddress = "192.168.3.2"
    *.ue.forwarding = true
 
-Configuring the OS environment
-Once the Simu5G environment is configured, the OS of the host
-running all the applications must be configured too. The
-following commands refers to a host equipped with Linux Ubuntu
-20.04 OS. *veth* interfaces are created through the command:
+Real packets carry real checksums, so the example has every simulated node
+compute them (``**.fcsMode``, ``**.checksumMode`` and ``**.crcMode`` set to
+``"computed"``). The routes of the simulated nodes come from routing files
+(``routing/*.mrt``), which also lead to the real hosts' subnets. The background
+cells and their background UEs are configured in the ``MultiCellBackground``
+configuration, which ``ExtClientServer-bgTraffic`` extends.
 
-.. code:: shell
-
-   ip link add veth0 type veth peer name veth1
-   ip link add veth2 type veth peer name veth3
-
-After the interfaces have been created, we assign an IP address
-to them and enable them by:
-
-.. code:: shell
-
-   ip addr add 192.168.2.2 dev veth1
-   ip addr add 192.168.3.2 dev veth3 
-
-and
-
-.. code:: shell
-
-   ip link set veth0 up
-   ip link set veth1 up
-   ip link set veth2 up
-   ip link set veth3 up 
-
-Finally, routes to forward the packets within the simulator and
-its modules have to be added. In particular, packets must reach
-the Device app, the natRouter and the MEC platform modules:
-
-.. code:: shell
-
-   route add -net 192.168.2.0 netmask 255.255.255.0 dev veth1
-   route add -net 192.168.3.0 netmask 255.255.255.0 dev veth3
-   route add -net 10.0.2.0 netmask 255.255.255.0 dev veth3 
-   route add -net 10.0.3.0 netmask 255.255.255.0 dev veth1
+The host side is prepared by ``setup.sh``: it creates the namespaces ``ns1``
+and ``ns2``, the veth pairs, the addresses and the default routes, and turns
+off checksum offloading on the namespaces' interfaces, so that the real hosts
+compute the checksums the simulation checks.
 
 Building Simu5G for real-time emulation
 ---------------------------------------
 
-#. Make sure that the emulation feature is enabled in the INET
-   project.
+#. Make sure that the emulation feature is enabled in the INET project:
 
-   -  *via the IDE*: right-click on the 'inet' folder in the
-      Project Explorer -> Properties; select OMNeT++ -> Project
-      Features; tick the box "Network emulation support".
+   -  *via the IDE*: right-click on the 'inet' folder in the Project
+      Explorer, select Properties, then OMNeT++ > Project Features, and tick
+      the box "Network emulation support";
    -  *via the command line*: in the root INET folder, type
-      'opp_featuretool enable NetworkEmulationSupport'.
+      ``opp_featuretool enable NetworkEmulationSupport``.
 
-   If the feature was disabled, recompile INET with the command
-   'make' (in the root INET folder).
+   If the feature was disabled, rebuild INET (``make`` in the root INET
+   folder).
 
-#. In order to be able to send/receive packets through sockets,
-   set the application permissions:
+#. Give the simulation the right to send and receive packets through raw
+   sockets. Simu5G's ``simu5g`` launcher runs ``opp_run``, so set the
+   capabilities of the OMNeT++ runners:
 
    .. code:: shell
 
-      sudo setcap cap_net_raw,cap_net_admin=eip path/to/opp_run 
+      sudo setcap cap_net_raw,cap_net_admin=eip path/to/opp_run
       sudo setcap cap_net_raw,cap_net_admin=eip path/to/opp_run_dbg
       sudo setcap cap_net_raw,cap_net_admin=eip path/to/opp_run_release
 
-#. Compile Simu5G from the command line by running (in the root
-   Simu5G folder):
+#. Build Simu5G as described in :doc:`usage`: in the root Simu5G folder,
 
    .. code:: shell
 
       $ . setenv
-      $ make makefiles
-      $ make 
+      $ make
 
 Running the emulation
 ---------------------
 
-#. Run the receiver application, e.g. by typing the command:
+In the example's folder:
+
+#. Prepare the host's network:
 
    .. code:: shell
 
-      ./emulation_receiver -p udp
+      ./setup.sh
 
-#. Run the simulation by launching:
+#. Start the simulation:
 
    .. code:: shell
 
       ./run.sh -r <RUN_NUMBER>
 
-   | where:
-   |    RUN_NUMBER=0 --> 3 background cells
-   |    RUN_NUMBER=1 --> 6 background cells
-   |    RUN_NUMBER=2 --> 9 background cells
+   where run 0 has 3 background cells, run 1 has 6, and run 2 has 9.
 
-#. Run the sender application, e.g. by typing the command:
+#. In another terminal, start the real traffic, for example a ping from the
+   host of the data network to the host behind the UE:
 
    .. code:: shell
 
-      ./emulation_sender -h 10.0.2.1 -p udp -s 1000 -t 1 -d 60 -o test
+      sudo ip netns exec ns1 ping 192.168.3.2
 
-   | where:
-   |    -h specifies the address of the NAT router
-   |    -p specifies the L4 protocol
-   |    -s is the size of application messages
-   |    -t is the sending interval
-   |    -d is the total duration of the application
-   |    -o specifies the output subfolder in folder "stats"
+   The round-trip time grows with the number of background cells, through
+   their interference.
 
+#. Clean up the host's network:
+
+   .. code:: shell
+
+      ./teardown.sh
+
+Fidelity
+--------
+
+*  The simulation must keep up with real time. When it falls behind, the real
+   packets it carries are delayed by the processing time, not only by the
+   modeled network, and the measured figures no longer describe the network.
+   Background cells and background UEs exist to keep large scenarios within
+   real time.
+
+*  Background UEs and background cells have no protocol stack: they occupy
+   resource blocks and interfere, but carry no packets (see
+   :doc:`background`).
+
+*  The examples carry IPv4 traffic between the real hosts; the packets must be
+   smaller than the MTU of the veth interfaces (1500 bytes by default).

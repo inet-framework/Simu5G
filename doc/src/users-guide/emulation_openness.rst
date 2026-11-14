@@ -1,11 +1,16 @@
 Setting up an emulation with Simu5G and OpenNESS
 ================================================
 
-| **OpenNESS** is an open-source framework developed by
-   **Intel** that allows one to run applications on a real
-   Multi-access Edge Computing (MEC) environment. More
-   information about the Openness framework can be found on the
-   `OpenNESS website <https://www.openness.org/>`__.
+**OpenNESS** is an open-source framework developed by **Intel** that allows
+one to run applications on a real Multi-access Edge Computing (MEC)
+environment. More information about the OpenNESS framework can be found on the
+`OpenNESS website <https://www.openness.org/>`__.
+
+.. TODO: this page was written for Simu5G 1.x and OpenNESS v20.06, and has
+   not been retested since. Its veth setup relied on a run_wSocket.sh script
+   that the examples no longer have (they use setup.sh, run.sh and
+   teardown.sh, with network namespaces). Whether OpenNESS is still
+   maintained, and whether the page should stay, is to be decided.
 
 This page describes how to setup an emulation scenario where a
 (real) client application communicates with a (real) Edge
@@ -33,7 +38,7 @@ Two scenarios can be deployed:
 -  Client application, i.e. the VLC player app, running on the
    `same <#HAB>`__ host where Simu5G runs (if the hardware
    allows it).
--  Client application, i.e. the VLC player appe, running on a
+-  Client application, i.e. the VLC player app, running on a
    `different <#HABC>`__ host from where Simu5G runs.
 
 You can refer to the configuration files present in the
@@ -142,10 +147,11 @@ B
 
       sudo route add -net 10.16.0.0/24 via 192.168.1.1 dev eth1
 
-.. note:: routes to inject packet into Simu5G, i.e the veth
-   interfaces management, are automatically added by the
-   *run_wSocket.sh* script present in the
-   *emulation/extclientserver* folder.
+.. note:: the veth interfaces of this scenario, and the routes that inject
+   packets into Simu5G through them, must be created by hand. The
+   ``setup.sh`` script of the *emulation/extclientserver* folder shows the
+   commands for that example's own setup, which uses network namespaces and
+   different interface names.
 
 Configure the simulation
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -193,12 +199,12 @@ own configuration.
 
       *.router.ipv4.natTable.config = xml("
                   <config> 
-                        <entry type='prerouting' 
-                           packetDataFilter='*Ipv4Header and destAddress=~10.0.2.1' 
-                           srcAddress='10.0.3.2' destAddress='10.16.0.104'> 
-                        <entry type='prerouting' 
-                           packetDataFilter='*Ipv4Header and destAddress=~10.0.3.2' 
-                           srcAddress='10.0.2.1' destAddress='192.168.3.2'> 
+                  <entry type='prerouting'
+                     packetDataFilter='*Ipv4Header and destAddress=~10.0.2.1'
+                     srcAddress='10.0.3.2' destAddress='10.16.0.104'/>
+                  <entry type='prerouting'
+                     packetDataFilter='*Ipv4Header and destAddress=~10.0.3.2'
+                     srcAddress='10.0.2.1' destAddress='192.168.3.2'/>
                   </config>
                   ") 
 
@@ -207,21 +213,20 @@ Run the scenario
 
 .. note:: the INET framework must be compiled with the Network
    Emulation Support feature enabled! To enable it (if not): open
-   the OMNeT++ IDE > select the inet projet > Projet tab > select
+   the OMNeT++ IDE > select the inet project > Project tab > select
    Project Features > Network Emulation Support
 
-#. In your terminal, navigate to the "simulations/emulation"
+#. In your terminal, navigate to the *emulation/extclientserver*
    folder
 
-#. Run the simulation **with root privileges**, by typing:
+#. Run the simulation by typing:
 
    .. code:: shell
 
-      sudo ./run_wSocket.sh
+      ./run.sh
 
-   This is needed for running the simulation in real time mode.
-   As already mentioned, such script also contains the creation
-   and the management of the veth interfaces.
+   The OMNeT++ runner needs the right to use raw sockets, given with
+   ``setcap`` as described in :doc:`emulation`.
 
 #. Open VLC client > Ctrl-N > enter the network URL as:
    http://10.0.2.1:8080
@@ -334,10 +339,11 @@ On Host A
 
       sudo route add -net 10.0.2.0/24 via 192.168.1.3 dev eth0
 
-.. note:: routes to inject packet into Simu5G, i.e the veth
-   interfaces management, are automatically added by the
-   *run_wSocket.sh* script present in the
-   *emulation/extclientserver* folder.
+.. note:: the veth interfaces of this scenario, and the routes that inject
+   packets into Simu5G through them, must be created by hand. The
+   ``setup.sh`` script of the *emulation/extclientserver* folder shows the
+   commands for that example's own setup, which uses network namespaces and
+   different interface names.
 
 Configure the simulation
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -385,12 +391,12 @@ own configuration.
 
          *.router.ipv4.natTable.config = xml("
                   <config> 
-                  <entry type='prerouting' 
-                        packetDataFilter='*Ipv4Header and destAddress=~10.0.2.1' 
-                        srcAddress='10.0.3.2' destAddress='10.16.0.104'> 
-                  <entry type='prerouting' 
-                        packetDataFilter='*Ipv4Header and destAddress=~10.0.3.2' 
-                        srcAddress='10.0.2.1' destAddress='192.168.1.10'> 
+                  <entry type='prerouting'
+                     packetDataFilter='*Ipv4Header and destAddress=~10.0.2.1'
+                     srcAddress='10.0.3.2' destAddress='10.16.0.104'/>
+                  <entry type='prerouting'
+                     packetDataFilter='*Ipv4Header and destAddress=~10.0.3.2'
+                     srcAddress='10.0.2.1' destAddress='192.168.1.10'/>
                   </config>
                ") 
 
@@ -399,22 +405,21 @@ Run the scenario
 
 .. note:: the INET framework must be compiled with the Network
    Emulation Support feature enabled! To enable it (if not): open
-   the OMNeT++ IDE > select the inet projet > Projet tab > select
+   the OMNeT++ IDE > select the inet project > Project tab > select
    Project Features > Network Emulation Support > recompile the
    inet project
 
-#. In your terminal, navigate to the "simulations/emulation"
+#. In your terminal, navigate to the *emulation/extclientserver*
    folder
 
-#. Run the simulation **with root privileges**, by typing:
+#. Run the simulation by typing:
 
    .. code:: shell
 
-      sudo ./run_wSocket.sh
+      ./run.sh
 
-   This is needed for running the simulation in real time mode.
-   As already mentioned, such script also contains the creation
-   and the management of the veth interfaces.
+   The OMNeT++ runner needs the right to use raw sockets, given with
+   ``setcap`` as described in :doc:`emulation`.
 
 #. Open VLC client on Host A > Ctrl-N > enter the network URL
    as: http://10.0.2.1:8080
