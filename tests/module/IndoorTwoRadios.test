@@ -1,6 +1,6 @@
 %description:
 A known deviation, pinned and not endorsed: an NR UE has two radios (cellularNic.radio,
-which is the LTE leg's, and cellularNic.nrRadio), and with **.insideBuilding = true each
+which is the LTE leg's, and cellularNic.nrRadio), and with *.ue[*].**.insideBuilding = true each
 draws an indoor position of its own: both answer indoors, with different distances from
 the wall and different penetration loss deviates. The two legs of one UE can differ by up
 to 12.5 dB for no physical reason. It is item 14 of tests/doc/model-deviations.md.
@@ -68,7 +68,7 @@ network = IndoorRadioNetwork
 sim-time-limit = 10ms
 *.ue[*].servingNodeId = 0
 *.ue[*].nrServingNodeId = 1
-**.insideBuilding = true
+*.ue[*].**.insideBuilding = true
 
 include ../../lib/defaults.ini
 

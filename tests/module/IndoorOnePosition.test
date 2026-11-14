@@ -1,7 +1,7 @@
 %description:
 An indoor UE has one indoor position: TR 38.901 7.4.3 says "The O2I penetration is
 UT-specifically generated", and 7.4.3.1 "d2D-in shall be UT-specifically generated".
-So the two radios of an NR UE, with **.insideBuilding = true, must answer with the same
+So the two radios of an NR UE, with *.ue[*].**.insideBuilding = true, must answer with the same
 distance from the wall and the same penetration loss deviate.
 
 They do not: each radio draws its own (item 14 of tests/doc/model-deviations.md).
@@ -69,7 +69,7 @@ network = IndoorRadioNetwork
 sim-time-limit = 10ms
 *.ue[*].servingNodeId = 0
 *.ue[*].nrServingNodeId = 1
-**.insideBuilding = true
+*.ue[*].**.insideBuilding = true
 
 include ../../lib/defaults.ini
 

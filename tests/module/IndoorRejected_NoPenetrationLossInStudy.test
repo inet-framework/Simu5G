@@ -1,0 +1,22 @@
+%description:
+TR 36.814 defines an outdoor-to-indoor loss for its urban microcell scenario only. A UE with
+insideBuilding = true under TR 36.814 URBAN_MACROCELL, the default of the LTE channel model, got
+the path loss of an outdoor UE, without a message. The first evaluation of such a link is an
+error.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.EpcSessionTestNetwork
+
+*.ue[*].**.insideBuilding = true
+**.channelModel[*].scenario = "URBAN_MACROCELL"
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+is inside a building (insideBuilding), and TR 36.814 defines no building penetration loss for the scenario URBAN_MACROCELL
+%#--------------------------------------------------------------------------------------------------------------

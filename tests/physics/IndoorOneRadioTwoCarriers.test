@@ -23,8 +23,8 @@ carrier, under the carrier's frequency. The grader computes d from each of them:
 measuredSinrDl (the CQI, evaluated at the gNB, with the UE as the receiver),
 measuredSinrUl (evaluated at the gNB, with the UE as the transmitter), rcvdSinrDl
 (evaluated at the UE) and rcvdSinrUl (evaluated at the gNB). So this also covers
-the rule that a link's penetration loss is its UE end's, for real nodes:
-**.insideBuilding marks the gNB's radio as well, whose own distance is a decoy.
+the rule that a link's penetration loss is its UE end's, for real nodes. Only the
+UEs' radios are marked: on a base station's radio the parameter is an error.
 
 Per UE, all eight values must agree to 1e-9. They must lie in [0, 25), and differ
 between the UEs: the distance is the UE's, not the scenario's. A value of 5 m or
@@ -75,7 +75,7 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 **.vector-recording = false
 
 ############### The sweep ##############
-**.insideBuilding = ${indoor = false, true}
+*.ue[*].**.insideBuilding = ${indoor = false, true}
 
 ############### Two carriers below 6 GHz, both on every node ##############
 *.carrierAggregation.numComponentCarriers = 2

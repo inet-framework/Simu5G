@@ -1,0 +1,26 @@
+%description:
+TR 38.901 defines no building penetration loss for its indoor-office scenario: clause 7.4.3.1
+gives the outdoor-to-indoor loss for UMa, UMi-Street Canyon, RMa and InF, where the base station
+is outdoors. A UE with insideBuilding = true under TR 38.901 INDOOR_HOTSPOT got the urban
+scenarios' wall of 20 dB or more between it and a base station in the same building, without a
+message. The first evaluation of such a link is an error.
+
+Both radios of the NR UE are marked; the LTE one evaluates no link here, so its channel model,
+which is TR 36.814's by default and has no penetration loss either, raises nothing.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+*.ue[*].**.insideBuilding = true
+**.nrChannelModel[*].scenario = "INDOOR_HOTSPOT"
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+is inside a building (insideBuilding), and TR 38.901 defines no building penetration loss for the scenario INDOOR_HOTSPOT
+%#--------------------------------------------------------------------------------------------------------------

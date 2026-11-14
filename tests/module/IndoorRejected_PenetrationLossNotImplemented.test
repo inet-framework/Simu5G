@@ -1,0 +1,24 @@
+%description:
+TR 36.873 defines an outdoor-to-indoor loss for 3D-UMi (clause 7.2.3: PL = PLb + PLtw + PLin, PLtw
+= 20, PLin = 0.5 d2D-in), which the model does not implement: only its 3D-UMa has one. A UE with
+insideBuilding = true under TR 36.873 URBAN_MICROCELL got the path loss of an outdoor UE, without
+a message. The first evaluation of such a link is an error that says that the loss is missing in
+the model, not in the study.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.EpcSessionTestNetwork
+
+*.ue[*].**.insideBuilding = true
+*.radioMedium.channelModelType = "Tr36873ChannelModel"
+**.channelModel[*].scenario = "URBAN_MICROCELL"
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+is inside a building (insideBuilding), and the building penetration loss of TR 36.873 for the scenario URBAN_MICROCELL is not implemented
+%#--------------------------------------------------------------------------------------------------------------

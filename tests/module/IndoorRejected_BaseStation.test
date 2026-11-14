@@ -1,0 +1,21 @@
+%description:
+insideBuilding applies to a UE's radio: a link's building penetration loss is its UE end's, and an
+indoor base station is not modelled. The parameter exists on every radio, so **.insideBuilding =
+true also marks the base stations; there it changed nothing but two random numbers drawn by the
+radio, without a message. On a base station's radio it is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+*.gnb.cellularNic.radio.insideBuilding = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+insideBuilding is set on a base station's radio; an indoor base station is not modelled, and the parameter applies to a UE's radio only
+%#--------------------------------------------------------------------------------------------------------------
