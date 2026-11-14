@@ -109,6 +109,12 @@ class LteAmc : public cSimpleModule
     LteAmc() {}
     virtual ~LteAmc();
 
+    /**
+     * Whether this AMC applies a TDD carrier's split of the slot into downlink and
+     * uplink symbols.
+     */
+    virtual bool supportsTdd() const { return false; }
+
   protected:
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }

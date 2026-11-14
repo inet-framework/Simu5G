@@ -178,6 +178,12 @@ void LteAmc::initialize(int stage)
     cellInfo_ = mac_->getCellInfo();
     numAntennas_ = mac_->getNumAntennas();
 
+    if (!supportsTdd())
+        for (const auto& [carrierFrequency, carrierInfo] : cellInfo_->getCarrierInfoMap())
+            if (binder_->getSlotFormat(carrierFrequency).tdd)
+                throw cRuntimeError("%s: carrier %g GHz is TDD, and TDD is modelled for NR cells only",
+                        mac_->getFullPath().c_str(), carrierFrequency.get());
+
     // Get MacNodeId and MacCellId
     nodeId_ = mac_->getMacNodeId();
     cellId_ = mac_->getMacCellId();

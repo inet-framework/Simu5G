@@ -38,8 +38,13 @@ void BackgroundCellTrafficManager::initialize(int stage)
 
         if (bgScheduler_->isNr())
             bgAmc_ = new BackgroundCellAmcNr(binder_);
-        else
+        else {
+            // the LTE AMC does not apply a TDD carrier's symbol split
+            if (binder_->getSlotFormat(carrierFrequency_).tdd)
+                throw cRuntimeError("%s: carrier %g GHz is TDD, and TDD is modelled for NR cells only",
+                        bgScheduler_->getFullPath().c_str(), carrierFrequency_.get());
             bgAmc_ = new BackgroundCellAmc(binder_);
+        }
     }
 }
 

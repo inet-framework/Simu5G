@@ -45,6 +45,8 @@ class NrAmc : public LteAmc
 
     NrAmc() {}
 
+    bool supportsTdd() const override { return true; }
+
     virtual NrMcsElem getMcsElemPerCqi(Cqi cqi, const Direction dir);
 
     unsigned int computeBitsOnNRbs(MacNodeId id, Band b, unsigned int blocks, const Direction dir, GHz carrierFrequency) override;
