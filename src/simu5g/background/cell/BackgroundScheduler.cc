@@ -42,6 +42,19 @@ void BackgroundScheduler::initialize(int stage)
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         binder_.reference(this, "binderModule", true);
+
+        // the cell occupies the first numBands bands of one of the network's carriers
+        const CarrierInfo *carrier = binder_->findCarrier(carrierFrequency_);
+        if (carrier == nullptr)
+            throw cRuntimeError("%s: no component carrier is at %g GHz (carrierFrequency)",
+                    getFullPath().c_str(), carrierFrequency_.get());
+        if (numBands_ > carrier->numBands)
+            throw cRuntimeError("%s: %u bands (numBands), but the carrier at %g GHz has %u",
+                    getFullPath().c_str(), numBands_, carrierFrequency_.get(), carrier->numBands);
+        if (numerologyIndex_ != carrier->numerologyIndex)
+            throw cRuntimeError("%s: numerology index %u, but the carrier at %g GHz has %u",
+                    getFullPath().c_str(), (unsigned int)numerologyIndex_, carrierFrequency_.get(), (unsigned int)carrier->numerologyIndex);
+
         nodeId_ = binder_->allocatePhantomBaseStationId();
         radio_.reference(this, "radioModule", true);
         radio_->addToMedium(nodeId_);

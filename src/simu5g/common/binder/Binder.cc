@@ -75,6 +75,12 @@ void Binder::registerCarrier(GHz carrierFrequency, unsigned int carrierNumBands,
     carrierUeMap_[carrierFrequency] = {};
 }
 
+const CarrierInfo *Binder::findCarrier(GHz carrierFrequency) const
+{
+    auto it = componentCarriers_.find(carrierFrequency);
+    return it == componentCarriers_.end() ? nullptr : &it->second;
+}
+
 void Binder::registerCarrierUe(GHz carrierFrequency, unsigned int numerologyIndex, MacNodeId ueId)
 {
     // check if carrier exists in the system

@@ -196,6 +196,11 @@ class Binder : public cSimpleModule
     virtual const std::set<NumerologyIndex> *getUeNumerologyIndex(MacNodeId ueId);
 
     /**
+     * Returns the component carrier at the given frequency, or nullptr if there is none
+     */
+    virtual const CarrierInfo *findCarrier(GHz carrierFrequency) const;
+
+    /**
      * Returns the numerology associated to a carrier frequency
      */
     virtual NumerologyIndex getNumerologyIndexFromCarrierFreq(GHz carrierFreq) { return carrierFreqToNumerologyIndex_[carrierFreq]; }

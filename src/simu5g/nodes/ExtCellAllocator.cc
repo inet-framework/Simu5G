@@ -73,6 +73,16 @@ void ExtCellAllocator::initialize(int stage)
 
         WATCH(bandStatus_);
     }
+    if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
+        // the cell occupies the first numBands bands of one of the network's carriers
+        const CarrierInfo *carrier = binder_->findCarrier(carrierFrequency_);
+        if (carrier == nullptr)
+            throw cRuntimeError("%s: no component carrier is at %g GHz (carrierFrequency)",
+                    getParentModule()->getFullPath().c_str(), carrierFrequency_.get());
+        if (numBands_ > carrier->numBands)
+            throw cRuntimeError("%s: %u bands (numBands), but the carrier at %g GHz has %u",
+                    getParentModule()->getFullPath().c_str(), numBands_, carrierFrequency_.get(), carrier->numBands);
+    }
     if (stage == inet::INITSTAGE_SINGLE_MOBILITY && allocationType_ == FULL_ALLOC) {
         // on the radio medium, a transmission on every band that never ends,
         // from where the radio is: the mobility, declared before the
