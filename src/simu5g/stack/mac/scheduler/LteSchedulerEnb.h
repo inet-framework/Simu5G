@@ -235,6 +235,13 @@ class LteSchedulerEnb : public cSimpleModule
     virtual unsigned int readRbOccupation(const MacNodeId id, GHz carrierFrequency, RbMap& rbMap);
 
     /**
+     * Registers a background UE's allocation as its transmission on the radio
+     * medium. The allocation is keyed by the cell's band indices, the
+     * transmission by the carrier's own, counted from the carrier's first band.
+     */
+    virtual void registerBackgroundTransmission(IBackgroundTrafficManager *bgTrafficManager, MacNodeId bgUeId, GHz carrierFrequency, const RbMap& allocatedRbMap);
+
+    /**
      * Schedules retransmission for the Harq Process of the given UE on a set of logical bands.
      * Each band also has an assigned limit amount of bytes: no more than the specified
      * amount will be served on the given band for the acid.

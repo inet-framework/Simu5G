@@ -84,11 +84,6 @@ fingerprints. In the branch they get test hardening only (pins and expected fail
 Recorded, not fixed in the branch, like the items of piece 4; the tests of
 piece 5a pin item 19.
 
-18. **A background UE on a cell's second carrier occupies the wrong bands.**
-   - What the model does: a background UE's allocation is keyed as the scheduler allocates, by the cell-wide band index (CellInfo lists every band of the cell for each carrier, -2 outside it), and the background traffic manager registers it with the medium unchanged. A radio's frame is registered with carrier-local band indices (LteSchedulerEnb::readRbOccupation() subtracts the carrier's first band). On dev the DL interference read the cell's band status, also cell-wide, with the victim carrier's band index.
-   - Effect: with carriers of 6 and 10 bands, a background UE on cell band 6+j is taken as occupying band 6+j of the second carrier: the wrong band for j < 4, none for j >= 4. No row has background UEs on a cell's second carrier.
-   - With uplink interference on, Binder::storeUlTransmissionMap() writes the same cell-wide band into a vector sized by the carrier's bands: for j >= 4 past its end, which was undefined behavior until "Binder: the uplink transmission map deleted". The band beyond the carrier now stops at an assertion in a debug build when the sender is a radio.
-   - Fix shape: subtract the carrier's first band when the allocation is registered.
 20. **A background UE's uplink allocation is on the medium only if its own cell evaluates uplink interference.**
    - What the model does: LteSchedulerEnb registers a background UE's UL allocation with the medium only when its base station's channel model has uplinkInterference on, while every real UE's uplink frame is on the medium.
    - Effect: a neighbour cell with uplinkInterference on, or a D2D receiver, sees a cell's real UEs but not its background UEs when that cell's switch is off. The condition mirrored the Binder's uplink transmission map, deleted in piece 7c, so nothing explains it any more.

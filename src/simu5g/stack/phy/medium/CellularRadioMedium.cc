@@ -152,6 +152,7 @@ simtime_t CellularRadioMedium::getSlotDuration(GHz carrierFrequency)
         if (channelModel == nullptr)
             throw cRuntimeError("CellularRadioMedium: a transmission is on %g GHz, and the medium has no channel model on that carrier", carrierFrequency.get());
         it = slotDurations.emplace(carrierFrequency, SimTime(1, SIMTIME_MS) / (1 << channelModel->getNumerologyIndex())).first;
+        carrierNumBands[carrierFrequency] = channelModel->getNumBands();
     }
     return it->second;
 }
@@ -165,6 +166,11 @@ void CellularRadioMedium::keepTransmission(CellularTransmission *transmission)
     simtime_t slot = getSlotDuration(transmission->carrierFrequency);
     simtime_t slotStart = SimTime::fromRaw(transmission->startTime.raw() - transmission->startTime.raw() % slot.raw());
     ASSERT(transmission->frameType != DATAPKT || transmission->startTime == slotStart);
+
+    // its bands are the carrier's own, counted from the carrier's first band
+    for (const auto& [antenna, bandBlocks] : transmission->grantedBlocks)
+        for (const auto& [band, blocks] : bandBlocks)
+            ASSERT(blocks == 0 || band < carrierNumBands[transmission->carrierFrequency]);
 
     // the slot before it is kept, for the questions about the slot completed last
     simtime_t keptSince = slotStart - slot;

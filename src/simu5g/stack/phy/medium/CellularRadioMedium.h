@@ -53,6 +53,7 @@ class CellularRadioMedium : public cSimpleModule
     double maxInterferenceDistance = 0; // the range of a broadcast
     long nextTransmissionId = 0;
     std::map<GHz, simtime_t> slotDurations; // per carrier, as first asked for
+    std::map<GHz, unsigned int> carrierNumBands; // per carrier, with the slot duration
     std::map<GHz, std::vector<const CellularTransmission *>> transmissions; // per carrier, in creation order; the ones not yet over
     std::map<GHz, ChannelState::LosMap> losMaps; // per carrier: whether each link is in line of sight
     std::map<GHz, ChannelState::ShadowFadingMap> shadowingMaps; // per carrier: the last shadowing sample of each link

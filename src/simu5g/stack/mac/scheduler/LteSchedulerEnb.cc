@@ -778,11 +778,11 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
             ChannelModelBase *channelModel = mac_->getPhy()->getChannelModel(carrierFrequency);
             if (channelModel->isUplinkInterferenceEnabled()) {
                 if (cwAllocatedBytes > 0)
-                    bgTrafficManager->registerTransmission(bgUeId, direction_, carrierFrequency, allocatedRbMap);
+                    registerBackgroundTransmission(bgTrafficManager, bgUeId, carrierFrequency, allocatedRbMap);
             }
         }
         else if (cwAllocatedBytes > 0)
-            bgTrafficManager->registerTransmission(bgUeId, direction_, carrierFrequency, allocatedRbMap);
+            registerBackgroundTransmission(bgTrafficManager, bgUeId, carrierFrequency, allocatedRbMap);
 
         EV << "LteSchedulerEnb::grant Codeword allocation: " << cwAllocatedBytes << " bytes" << endl;
         if (cwAllocatedBytes > 0) {
@@ -841,6 +841,22 @@ unsigned int LteSchedulerEnb::readAvailableRbs(const MacNodeId id,
 unsigned int LteSchedulerEnb::readTotalAvailableRbs()
 {
     return allocator_->computeTotalRbs();
+}
+
+void LteSchedulerEnb::registerBackgroundTransmission(IBackgroundTrafficManager *bgTrafficManager, MacNodeId bgUeId, GHz carrierFrequency, const RbMap& allocatedRbMap)
+{
+    Band firstBand = mac_->getCellInfo()->getCarrierStartingBand(carrierFrequency);
+    Band lastBand = mac_->getCellInfo()->getCarrierLastBand(carrierFrequency);
+    RbMap carrierRbMap;
+    for (const auto& [antenna, bandBlocks] : allocatedRbMap) {
+        for (const auto& [band, blocks] : bandBlocks) {
+            if (blocks == 0)
+                continue;
+            ASSERT(band >= firstBand && band <= lastBand);
+            carrierRbMap[antenna][band - firstBand] = blocks;
+        }
+    }
+    bgTrafficManager->registerTransmission(bgUeId, direction_, carrierFrequency, carrierRbMap);
 }
 
 unsigned int LteSchedulerEnb::readRbOccupation(const MacNodeId id, GHz carrierFrequency, RbMap& rbMap)
@@ -1335,11 +1351,11 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
             if (direction_ == UL) {
                 ChannelModelBase *channelModel = mac_->getPhy()->getChannelModel(carrierFrequency);
                 if (channelModel->isUplinkInterferenceEnabled()) {
-                    bgTrafficManager->registerTransmission(bgUeId, direction_, carrierFrequency, allocatedRbMap);
+                    registerBackgroundTransmission(bgTrafficManager, bgUeId, carrierFrequency, allocatedRbMap);
                 }
             }
             else
-                bgTrafficManager->registerTransmission(bgUeId, direction_, carrierFrequency, allocatedRbMap);
+                registerBackgroundTransmission(bgTrafficManager, bgUeId, carrierFrequency, allocatedRbMap);
 
             return allocatedBytes;
         }
