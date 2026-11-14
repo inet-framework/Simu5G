@@ -40,8 +40,8 @@ Per-link keying is checked because it is the whole point of LinkKey: two links
 of the same node are two independent realizations, not one shared value. The
 shadowing of a link is one realization, kept once per link and read by
 whichever end evaluates it: a DL CQI computed at the base station assumes
-exactly the shadowing the UE then decodes through. And getAttenuation() adds no shadowing at all for a background UE, whose id is at
-or above BGUE_MIN_ID.
+exactly the shadowing the UE then decodes through. A background UE's link, whose
+UE end has an id at or above BGUE_MIN_ID, is shadowed like any other.
 
 %includes:
 #include "SchedulerTestUtil.h"
@@ -338,31 +338,24 @@ const inet::Coord bsPos(0, 0, 25);
 }
 
 //
-// --- background UEs get none ---
+// --- a background UE's link is shadowed like any other ---
 //
 {
-    // At the same geometry and LOS state, a regular UE's attenuation exceeds a
-    // background UE's by exactly the regular UE's shadowing.
+    // At the same geometry and LOS state, the attenuations of a regular UE's
+    // link and of a background UE's differ by their two shadowing values.
     const inet::Coord bsCoord(0, 0, 25), ueCoord(200, 0, 1.5);
     const MacNodeId regular = MacNodeId(1108), background = MacNodeId(BGUE_MIN_ID + 7);
     double attRegular = bs->getAttenuation(linkTo(regular, bsCoord, ueCoord));
-
-    // The path loss may draw on its own account -- the TR 38.901 UMa formula
-    // draws for the environment height h_E on every evaluation, even when the
-    // outcome is certain -- so "draws nothing" is measured against it: evaluated
-    // again at once, the regular UE's shadowing is held, and what it draws is
-    // the path loss's alone.
-    unsigned long before = bs->getRNG(0)->getNumbersDrawn();
-    bs->getAttenuation(linkTo(regular, bsCoord, ueCoord));
-    long long pathLossDraws = bs->getRNG(0)->getNumbersDrawn() - before;
-    before = bs->getRNG(0)->getNumbersDrawn();
     double attBackground = bs->getAttenuation(linkTo(background, bsCoord, ueCoord));
-    long long backgroundDraws = bs->getRNG(0)->getNumbersDrawn() - before;
 
-    c.expectNear("a background UE's attenuation lacks exactly the shadowing a regular UE's has",
-            attRegular - attBackground, bsProbe.shadowingMap().at(LinkKey(MacNodeId(1), regular)).value, 1e-9);
-    c.check("...no shadowing is kept for it", bsProbe.shadowingMap().count(LinkKey(MacNodeId(1), background)) == 0);
-    c.expectValue("...and it draws only what the path loss itself draws", backgroundDraws, pathLossDraws);
+    c.check("a background UE's link has a shadowing realization of its own",
+            bsProbe.shadowingMap().count(LinkKey(MacNodeId(1), background)) == 1);
+    double shadowRegular = bsProbe.shadowingMap().at(LinkKey(MacNodeId(1), regular)).value;
+    double shadowBackground = bsProbe.shadowingMap().count(LinkKey(MacNodeId(1), background)) ? bsProbe.shadowingMap().at(LinkKey(MacNodeId(1), background)).value : 0;
+    c.expectNear("...which its attenuation carries, as a regular UE's carries its own",
+            attBackground - attRegular, shadowBackground - shadowRegular, 1e-9);
+    c.expectNear("...and which is held when the link is evaluated again",
+            bs->getAttenuation(linkTo(background, bsCoord, ueCoord)), attBackground, 1e-9);
 }
 
 c.summary();

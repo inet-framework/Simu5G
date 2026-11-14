@@ -7,13 +7,14 @@ radio medium like any link's, drawn on its first evaluation and decided again
 when an end has moved farther than the correlation distance. The state of the
 link the interference is computed for (the receiver's own serving link) does
 not enter: changing it leaves the phantom's power unchanged. enableExtCellLos
-off makes every phantom link NLOS; shadowing never applies to one.
+off makes every phantom link NLOS. Shadowing is off here;
+ChannelModelPhantomShadowing has a phantom link's shadowing.
 
 The power is graded against the closed form: transmit power, less the
 strategy's path loss in the link's state at its h_E, plus both antennas' gains,
 less the receiver's cable loss. The LOS draw is replayed from an RngSnapshot.
 Draws can be counted exactly: the TR 38.901 UMi path loss draws nothing for an
-outdoor UE, and shadowing, which is on, is not applied to a phantom link.
+outdoor UE, and shadowing is off.
 
 %includes:
 #include "SchedulerTestUtil.h"
@@ -56,10 +57,10 @@ sim-time-limit = 1s
 *.binder.printTrafficGeneratorConfig = false
 
 # LOS is drawn, and nothing else is: the TR 38.901 UMi path loss draws nothing
-# for an outdoor UE, and shadowing, on, does not apply to a phantom link.
+# for an outdoor UE, and shadowing is off.
 **.scenario = "URBAN_MICROCELL"
 **.dynamicLos = true
-**.shadowing = true
+**.shadowing = false
 **.correlationDistance = 50m
 
 %no-default-inifile: 1
@@ -117,8 +118,7 @@ double power;
     bool expected = omnetpp::uniform(snapshot.rng(), 0.0, 1.0) <= p;
     c.check("the phantom link's first evaluation draws its own LOS state against the strategy's LOS probability",
             atUe.losMap().count(phantomLink) == 1 && atUe.losMap().at(phantomLink).los == expected, "p=" + std::to_string(p));
-    c.expectValue("...one draw, and nothing else: no shadowing", drawn(ueModel) - before, 1);
-    c.check("...and no shadowing sample for the link", atUe.shadowingMap().count(phantomLink) == 0);
+    c.expectValue("...one draw, and nothing else", drawn(ueModel) - before, 1);
     phantomLos = atUe.losMap().at(phantomLink).los;
     c.expectNear("the power is the transmit power, less the path loss in that state, plus both gains, less the receiver's cable loss",
             power, expectedPower(atUe, phantomLos), 1e-9);
@@ -160,7 +160,7 @@ double power;
 c.summary();
 
 %contains: stdout
-modelchecks=10 modelfailures=0
+modelchecks=9 modelfailures=0
 
 %not-contains: stdout
 FAILED

@@ -1,0 +1,165 @@
+%description:
+
+The shadowing of the links that have a phantom radio or a background UE at
+one end: an external or a background cell's downlink at a UE, a UE's uplink at
+a background cell, and a background UE's links. TR 38.901 gives every link a
+shadow fading (7.5 Step 4, with the standard deviation of Table 7.4.1-1), and
+a link's shadowing is one realization, read by whichever end evaluates it and
+in whichever direction.
+
+So such a link has a sample in the radio medium's shadowing map under the
+pair of its two node ids, its attenuation carries that sample, and the
+evaluation of the same pair in the other direction, or through the other
+computation, carries the same one and adds none:
+
+ - a background cell's downlink at a UE (phantomPowerAt()), and that UE's
+   uplink at the cell (getAttenuation());
+ - a background UE's uplink at a base station as interference
+   (phantomPowerAt()), and the same UE's own link to that base station
+   (getAttenuation()).
+
+Graded against the closed form: transmit power, less the path loss, less the
+link's shadowing sample, plus both antennas' gains, less the receiver's cable
+loss. The LOS state is fixed, and the TR 38.901 UMi path loss draws nothing
+for an outdoor UE, so a link's first evaluation draws for its shadowing only
+(a normal deviate takes a varying number of draws), and a later one draws
+nothing.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        model: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 3.5GHz
+*.carrierAggregation.componentCarrier[0].numBands = 10
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+**.scenario = "URBAN_MICROCELL"
+**.dynamicLos = false
+**.fixedLos = true
+**.shadowing = true
+**.fading = false
+**.correlationDistance = 50m
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *model = harnessModule<StochasticChannelModel>(this, "model");
+ChannelModelProbe probe(model);
+auto drawn = [&] { return (long long)model->getRNG(0)->getNumbersDrawn(); };
+
+// the path loss of a link in line of sight, at the link's h_E
+auto pathLoss = [&] (const LinkKey& key, const Coord& a, const Coord& b) {
+    PathLossModel::LinkConditions conditions;
+    conditions.environmentHeight = probe.losMap().at(key).environmentHeight;
+    return probe.pathLoss()->computePathLoss(a.distance(b), sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2)), true, conditions);
+};
+auto shadowingOf = [&] (const LinkKey& key) {
+    return probe.shadowingMap().count(key) ? probe.shadowingMap().at(key).value : 0.0;
+};
+auto transmissionFrom = [&] (StubEndpoint& sender, Direction direction) {
+    CellularTransmission transmission;
+    transmission.transmitter = &sender;
+    transmission.phantomCell = this;
+    transmission.sourceId = sender.nodeId;
+    transmission.cellId = MacNodeId(900);
+    transmission.direction = direction;
+    transmission.frameType = DATAPKT;
+    transmission.txPower = sender.txPower;
+    transmission.startPosition = sender.coord;
+    transmission.startTime = omnetpp::simTime();
+    return transmission;
+};
+
+//
+// --- a background cell and a real UE ---
+//
+{
+    StubEndpoint ue, cell;
+    ue.nodeId = MacNodeId(1025);
+    ue.coord = Coord(60, 30, 1.5);
+    ue.cableLoss = 2;
+    cell.nodeId = MacNodeId(900);
+    cell.coord = Coord(300, 200, 25);
+    cell.antennaGain = 18;
+    cell.txPower = 46;
+    const LinkKey link(cell.nodeId, ue.nodeId);
+
+    long long before = drawn();
+    double power = probe.phantomPowerAt(transmissionFrom(cell, DL), &ue);
+    c.check("a background cell's downlink at a UE has a shadowing sample, under the pair of the two node ids",
+            probe.shadowingMap().count(link) == 1);
+    c.check("...drawn on the link's first evaluation", drawn() - before > 0);
+    c.expectNear("...and its power is the closed form less that sample", power,
+            cell.txPower - pathLoss(link, cell.coord, ue.coord) - shadowingOf(link) + cell.antennaGain + ue.antennaGain - ue.cableLoss, 1e-9);
+
+    before = drawn();
+    double attenuation = model->getAttenuation(probe.cellularLink(&cell, ue.nodeId, UL, ue.coord));
+    c.expectNear("the UE's uplink at the cell carries the same sample", attenuation,
+            pathLoss(link, cell.coord, ue.coord) + shadowingOf(link), 1e-9);
+    c.expectValue("...and draws nothing", drawn() - before, 0);
+}
+
+//
+// --- a background UE and a base station ---
+//
+{
+    StubEndpoint bs, bgUe;
+    bs.nodeId = MacNodeId(1);
+    bs.coord = Coord(0, 0, 25);
+    bs.antennaGain = 18;
+    bs.cableLoss = 2;
+    bgUe.nodeId = MacNodeId(BGUE_MIN_ID + 3);
+    bgUe.coord = Coord(120, -50, 1.5);
+    bgUe.txPower = 23;
+    const LinkKey link(bs.nodeId, bgUe.nodeId);
+
+    double power = probe.phantomPowerAt(transmissionFrom(bgUe, UL), &bs);
+    c.check("a background UE's uplink at a base station has a shadowing sample",
+            probe.shadowingMap().count(link) == 1);
+    c.expectNear("...and its power is the closed form less that sample", power,
+            bgUe.txPower - pathLoss(link, bgUe.coord, bs.coord) - shadowingOf(link) + bgUe.antennaGain + bs.antennaGain - bs.cableLoss, 1e-9);
+
+    long long before = drawn();
+    double attenuation = model->getAttenuation(probe.cellularLink(&bs, bgUe.nodeId, UL, bgUe.coord));
+    c.expectNear("the background UE's own link to that base station carries the same sample", attenuation,
+            pathLoss(link, bgUe.coord, bs.coord) + shadowingOf(link), 1e-9);
+    c.expectValue("...and draws nothing", drawn() - before, 0);
+}
+
+c.summary();
+
+%contains: stdout
+modelchecks=9 modelfailures=0
+
+%not-contains: stdout
+FAILED
