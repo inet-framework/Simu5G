@@ -21,21 +21,20 @@ reports channel state information (CSI), whose channel quality indicator
 block error rate. The UE also measures the received power of the cells around
 it, which drives cell selection and handover.
 
-Simu5G models the PHY at the level of transport blocks and resource blocks,
-not OFDM symbols. The radio medium computes the SINR of each resource block of
-a reception (see :doc:`radio-medium`), and the receiver of the node's radio
+Simu5G models the PHY at the level of transport blocks and resource blocks, not
+OFDM symbols. The radio medium computes the SINR of each resource block of a
+reception (see :doc:`radio-medium`), and the receiver of the node's radio
 decides whether the transport block is received, against an error model. The
-default error model, :ned:`BlerCurveErrorModel`, takes the error probability
-of each resource block from BLER curves at the reception's CQI and SINR, and
-stands in for soft combining by reducing the error probability by a fixed
-factor at each HARQ retransmission; :ned:`ConfiguredRateErrorModel` uses a
-configured error rate instead. The UE sends periodic CQI reports, and the base
-stations send beacons, whose received power the UEs measure for cell
-selection and handover. Channel coding, modulation and the CRC are not
-simulated, and transmissions are single-layer: the reported rank is always 1,
-so spatial multiplexing is not modeled. A known deviation is that the CQI has
-no measurement delay, while TS 38.214 5.2.2.5 measures it several slots before
-the report.
+default error model, :ned:`BlerCurveErrorModel`, takes the error probability of
+each resource block from BLER curves at the reception's CQI and SINR, and stands
+in for soft combining by reducing the error probability by a fixed factor at
+each HARQ retransmission; :ned:`ConfiguredRateErrorModel` uses a configured
+error rate instead. The UE sends periodic CQI reports, and the base stations
+send beacons, whose SINR the UEs measure for handover. Channel coding,
+modulation and the CRC are not simulated, and transmissions are single-layer:
+the reported rank is always 1, so spatial multiplexing is not modeled. A known
+deviation is that the CQI has no measurement delay, while TS 38.214 5.2.2.5
+measures it several slots before the report.
 
 This chapter covers the node's side of the radio link: the radio with its
 antenna, transmitter and receiver, the reception decision, the channel quality
@@ -175,9 +174,10 @@ Beacons and cell measurements
 
 A base station can broadcast beacons, frames that carry no data and are sent
 every ``beaconInterval`` (a parameter of the base station's ``cellInfo``, 1
-second by default). A UE leg with handover enabled measures the received
-power of every beacon of its own technology on its primary carrier, and uses
-the measurements for two purposes: to hand over when another cell becomes
+second by default). A UE leg with handover enabled measures every beacon of
+its own technology on its primary carrier: the measurement is the beacon's
+SINR, averaged over the carrier's resource blocks. It uses the measurements
+for two purposes: to hand over when another cell becomes
 stronger by a margin, and to detect that the serving cell is lost, when its
 beacons fall below a minimum. A leg without handover ignores the beacons. The
 decisions themselves are taken by the connection control of the UE leg and of
@@ -330,9 +330,10 @@ Fidelity
 *  Known deviation: the BLER curves are not monotonic at a few points (CQI 1,
    4 and 5), where the error rate rises with the SINR.
 
-*  Known deviation: the beacon's received power, which the handover decision
-   compares, includes the interference of background and external cells, but
-   not that of the real cells.
+*  Known deviation: the handover decision compares the beacons' SINR,
+   averaged over the resource blocks, where TS 38.215 measures the reference
+   signal received power (RSRP). And that SINR counts the interference of
+   background and external cells, but not that of the real cells.
 
 *  Known deviation: a sectorial base station's antenna pattern applies only
    when it transmits; in the uplink, its own UEs and their interference

@@ -190,12 +190,13 @@ Fidelity
 *  A UE has exactly one PDU session (PDN connection), whose type is fixed for
    the whole run.
 
-*  Handover decisions are based on the received power of the base stations'
-   beacons, compared against a minimum (``minRssi``) and with a hysteresis
-   margin (``hysteresisFactor``); the initial cell selection of
-   ``dynamicCellAssociation`` compares the received power of the base stations
-   directly, without beacons. The measurement configuration of 3GPP TS 38.331
-   (measurement objects, reporting events such as A3) is not modeled.
+*  Handover decisions are based on the SINR of the base stations' beacons,
+   averaged over the carrier's resource blocks, compared against a minimum
+   (``minRssi``) and with a hysteresis margin (``hysteresisFactor``); the
+   initial cell selection of ``dynamicCellAssociation`` compares the received
+   power (RSRP) of the base stations directly, without beacons. The measurement
+   configuration of 3GPP TS 38.331 (measurement objects, reporting events such
+   as A3) is not modeled.
 
 *  An attached UE hands over only to a cell that has an X2 link to its
    serving cell. Handover through the core network (S1-based in LTE, N2-based

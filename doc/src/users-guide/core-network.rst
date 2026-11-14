@@ -194,8 +194,9 @@ MEC hosts
 
 A MEC host (:ned:`MecHost`) contains a UPF of its own (``upf_mec``), which
 ends tunnels like an anchor, and is placed behind the core network gateway
-named by its ``gateway`` parameter. The base stations steer the traffic of
-the MEC applications to it (their ``mecHost`` parameter). See :doc:`mec`.
+named by its ``gateway`` parameter. The base stations' traffic flow filters
+steer the uplink traffic addressed to a MEC host into a tunnel to its UPF.
+See :doc:`mec`.
 
 Example simulations
 -------------------

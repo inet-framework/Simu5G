@@ -147,12 +147,16 @@ over X2. See :doc:`dual-connectivity`.
 MEC support
 -----------
 
-A base station takes part in a MEC scenario in two ways. It steers the traffic
-of the MEC applications to the MEC host named in its ``mecHost`` parameter,
-through a link on its ``pppMEHost`` gate. And with ``hasRniSupport = true``, it
-gets the statistics collector from which the MEC platform's Radio Network
-Information service reads the cell's measurements; the service identifies the
-network by the base station's ``mcc`` and ``mnc``. See :doc:`mec`.
+A base station takes part in a MEC scenario in two ways. It steers the uplink
+traffic of the UEs to the MEC applications: its traffic flow filter recognizes
+a packet whose destination is the address of a MEC host, and puts it into a
+tunnel to that host's UPF instead of the tunnel to the core network. The MEC
+hosts register their addresses with the :ned:`Binder`, so no configuration
+of the base station is needed. And with ``hasRniSupport = true``, the base
+station gets the statistics collector from which the MEC platform's Radio
+Network Information service reads the cell's measurements; the service
+identifies the network by the base station's ``mcc`` and ``mnc``. See
+:doc:`mec`.
 
 Statistics
 ----------
