@@ -1,5 +1,5 @@
-Carriers, Numerologies and Duplexing
-====================================
+Spectrum
+========
 
 Overview
 --------
@@ -26,99 +26,196 @@ Simu5G models the carriers of a network in one place, the
 blocks, a numerology from 0 to 4, and FDD or TDD. The PHY of each base station
 and UE leg names the carriers it operates on, the primary one first, and a
 base station with several carriers performs carrier aggregation: it runs a
-scheduler per carrier, at that carrier's slot rate. TDD is modeled as one
-fixed division of every slot's 14 symbols between downlink and uplink, with
-the remaining symbols used as guard; it scales how much data a slot carries in
-each direction. Slot formats that change from slot to slot, and with them the
-delay of waiting for a slot of the right direction, are not modeled, and
-neither are bandwidth parts.
+scheduler per carrier, at that carrier's slot rate. TDD is modeled, on the NR
+legs, as one fixed division of every slot's 14 symbols between downlink and
+uplink, with the remaining symbols used as guard; it scales how much data a
+slot carries in each direction. Slot formats that change from slot to slot,
+and with them the delay of waiting for a slot of the right direction, are not
+modeled, and neither are bandwidth parts.
 
-The interpretation of the numerology in scheduling is described in
-:doc:`mac`, and the channel models of the carriers in :doc:`radio-medium`.
+This chapter describes how carriers are defined, how nodes are bound to them,
+and what numerology and duplexing change in a simulation. How the MAC
+schedules on several carriers is described in :doc:`mac`, and the channel
+models of the carriers in :doc:`radio-medium`.
+
+Modules
+-------
+
+:ned:`CarrierAggregation`
+   The network-level module that holds the network's carriers, as the
+   ``componentCarrier[]`` vector of its submodules; ``numComponentCarriers``
+   sets their number. Every network has exactly one, named
+   ``carrierAggregation``.
+
+:ned:`ComponentCarrier`
+   One carrier: its frequency, its number of resource blocks, its numerology
+   and its duplexing.
 
 Component carriers
 ------------------
 
-The ``CarrierAggregation`` module instantiates
-``componentCarrier[numComponentCarriers]`` submodules of type
-``ComponentCarrier``, each with:
-
-``carrierFrequency``
-   The carrier's center frequency. It doubles as the carrier's unique
-   identifier throughout the stack, so no two CCs may use the same value.
-
-``numBands``
-   The number of resource blocks of the carrier.
-
-``numerologyIndex``
-   The NR numerology (0..4). As in the standard, a radio frame is 10 ms
-   with 1 ms subframes; numerology :math:`\mu` divides each subframe into
-   :math:`2^\mu` slots, which are the scheduling TTIs. Numerology 0
-   corresponds to LTE timing; LTE nodes can only use numerology-0 carriers.
-
-``useTdd``, ``tddNumSymbolsDl``, ``tddNumSymbolsUl``
-   Duplexing. With ``useTdd = false`` (the default), the carrier is FDD,
-   with separate uplink and downlink spectrum of ``numBands`` resource
-   blocks each. With TDD, the 14 symbols of each slot are divided into a
-   downlink part, an uplink part, and (implicitly) guard symbols -- the
-   configured DL and UL symbol counts must sum to at most 14. This models
-   the 3GPP slot-format concept (TS 38.213) at slot granularity.
-
-Example:
+A carrier is described by a few values. Its frequency
+(``carrierFrequency``) is the center frequency; it is also the carrier's
+identity throughout the model, so every carrier of a network needs a
+frequency of its own. Its bandwidth is given as a number of resource blocks
+(``numBands``). Its numerology (``numerologyIndex``, 0 to 4) sets the slot
+length. Its duplexing is FDD by default, or TDD with ``useTdd`` (see
+`Duplexing`_ below).
 
 .. code:: ini
 
    *.carrierAggregation.numComponentCarriers = 2
-   *.carrierAggregation.componentCarrier[0].numerologyIndex = 0
    *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-   *.carrierAggregation.componentCarrier[1].numerologyIndex = 2
+   *.carrierAggregation.componentCarrier[0].numBands = 6
+   *.carrierAggregation.componentCarrier[0].numerologyIndex = 0
    *.carrierAggregation.componentCarrier[1].carrierFrequency = 6GHz
+   *.carrierAggregation.componentCarrier[1].numBands = 6
+   *.carrierAggregation.componentCarrier[1].numerologyIndex = 2
+
+The radio medium has one channel model per carrier and radio access
+technology, ``radioMedium.channelModel[i]`` for LTE and
+``radioMedium.nrChannelModel[i]`` for NR, each bound to
+``carrierAggregation.componentCarrier[i]``. The reference networks therefore
+set ``radioMedium.numCarriers`` from ``carrierAggregation.numComponentCarriers``
+(see :doc:`deployments` and :doc:`radio-medium`).
+
+Numerology and slot timing
+--------------------------
+
+The numerology sets a carrier's slot length: 1 ms divided by
+:math:`2^\mu`, so 1 ms with numerology 0, 0.5 ms with numerology 1, and
+62.5 us with numerology 4. The slot is the unit of scheduling: a base station
+schedules each of its carriers once per slot of that carrier, so a carrier
+with a higher numerology is scheduled more often, with less data per slot. The
+MAC of a base station or a UE runs on the slot of the highest numerology among
+its carriers, and serves each carrier at its own rate within that cycle (see
+:doc:`mac`). A frame's transmission lasts one slot of its carrier.
+
+LTE uses the timing of numerology 0, and the carriers of LTE legs should be
+numerology-0 carriers; the model does not check it.
+
+Duplexing
+---------
+
+With FDD, the default, a carrier has its ``numBands`` resource blocks in the
+downlink and, separately, in the uplink, and every slot can carry data in both
+directions.
+
+With TDD (``useTdd = true``), the 14 symbols of every slot are divided between
+the two directions: ``tddNumSymbolsDl`` symbols for the downlink,
+``tddNumSymbolsUl`` for the uplink (7 and 7 by default), and the remaining
+symbols, if any, as a guard. Their sum must not exceed 14. The division is the
+same in every slot. It scales how much data the resource blocks of a slot
+carry in each direction: the NR link adaptation sizes a transport block from
+the symbols of its direction.
+
+.. code:: ini
+
+   *.carrierAggregation.componentCarrier[0].useTdd = true
+   *.carrierAggregation.componentCarrier[0].tddNumSymbolsDl = 10
+   *.carrierAggregation.componentCarrier[0].tddNumSymbolsUl = 2
+
+The TDD settings take effect on the NR legs only; an LTE leg on a TDD carrier
+is sized as on an FDD one.
 
 Binding nodes to carriers
 -------------------------
 
-Each cellular NIC has a ``numCarriers`` parameter and a matching vector of
-channel model submodules, one per carrier the node uses. The binding is
-made by pointing each channel model at a component carrier:
+Every PHY names the carriers it operates on in its ``componentCarrierModules``
+parameter: module paths of component carriers, separated by spaces, the
+primary carrier first. A base station's PHY is ``cellularNic.phy``; a UE has
+one PHY per leg, ``cellularNic.phy`` for the LTE leg and
+``cellularNic.nrPhy`` for the NR leg, and each is bound on its own. A UE leg
+must be bound to the carriers of the base station it attaches to.
 
 .. code:: ini
 
-   *.gnb.cellularNic.numCarriers = 1
-   *.gnb.cellularNic.channelModel[0].componentCarrierModule = \
-           "carrierAggregation.componentCarrier[1]"
-
-   *.ue[*].cellularNic.channelModel[0].componentCarrierModule = \
+   *.gnb.cellularNic.phy.componentCarrierModules = \
            "carrierAggregation.componentCarrier[0]"
-   *.ue[*].cellularNic.nrChannelModel[0].componentCarrierModule = \
+   *.ue[*].cellularNic.nrPhy.componentCarrierModules = \
+           "carrierAggregation.componentCarrier[0]"
+
+A dual connectivity UE binds its two legs to the carriers of its two base
+stations, which can differ in frequency and numerology; this is how an EN-DC
+UE uses an LTE carrier and an NR carrier at once:
+
+.. code:: ini
+
+   *.masterEnb.cellularNic.phy.componentCarrierModules = \
+           "carrierAggregation.componentCarrier[0]"
+   *.secondaryGnb.cellularNic.phy.componentCarrierModules = \
+           "carrierAggregation.componentCarrier[1]"
+   *.ue[*].cellularNic.phy.componentCarrierModules = \
+           "carrierAggregation.componentCarrier[0]"
+   *.ue[*].cellularNic.nrPhy.componentCarrierModules = \
            "carrierAggregation.componentCarrier[1]"
 
-Note the last two lines: a dual-stack UE binds its LTE leg
-(``channelModel[]``) and its NR leg (``nrChannelModel[]``) independently,
-which is how an EN-DC UE straddles two carriers of different frequency and
-numerology.
+A base station's NIC also has a ``numCarriers`` parameter, the number of
+carriers it serves, which sizes its background traffic generators (one per
+carrier, see :doc:`background`). It must match the number of carriers in the
+PHY's ``componentCarrierModules``.
 
-A base station with ``numCarriers > 1`` performs carrier aggregation: its
-MAC schedules each bound carrier separately, at that carrier's own slot
-timing, and a UE bound to the same carriers can receive grants on all of
-them.
+The primary carrier has a role of its own: a base station sends its beacons
+on its primary carrier, and a UE measures the beacons of its primary carrier
+for cell selection and handover (see :doc:`phy`).
+
+Carrier aggregation
+-------------------
+
+A base station whose PHY lists several carriers performs carrier
+aggregation. Its MAC runs a scheduler for each carrier, at that carrier's
+slot rate, and a HARQ entity for each; a UE whose leg lists the same carriers
+can be scheduled on all of them in the same slot, and reports a CQI per
+carrier. Each carrier is evaluated by its own channel model, so the path loss
+and the interference depend on the carrier's frequency.
+
+.. code:: ini
+
+   *.carrierAggregation.numComponentCarriers = 2
+   *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+   *.carrierAggregation.componentCarrier[1].carrierFrequency = 6GHz
+
+   *.gnb.cellularNic.numCarriers = 2
+   *.gnb.cellularNic.phy.componentCarrierModules = \
+           "carrierAggregation.componentCarrier[0] \
+            carrierAggregation.componentCarrier[1]"
+   *.ue[*].cellularNic.nrPhy.componentCarrierModules = \
+           "carrierAggregation.componentCarrier[0] \
+            carrierAggregation.componentCarrier[1]"
+
+Statistics
+----------
+
+The carriers record no statistics of their own. The per-carrier variants of
+the SINR statistics are described in :doc:`phy`, and the MAC's statistics per
+cell and UE in :doc:`mac`.
 
 Example simulations
 -------------------
 
-Three example directories exercise this machinery and are the recommended
-reference configurations:
+*  ``simulations/nr/test_multiCarrier``: a gNB with one carrier
+   (``SingleCarrier``) and with two (``MultiCarrier``), with downlink and
+   uplink CBR traffic;
 
-*  ``simulations/nr/test_multiCarrier`` -- carrier aggregation;
-*  ``simulations/nr/test_numerology`` -- mixed numerologies across
-   carriers;
-*  ``simulations/nr/test_tdd`` -- TDD slot formats.
+*  ``simulations/nr/test_numerology``: EN-DC with the LTE leg on a
+   numerology-0 carrier and the NR leg on a second carrier whose numerology
+   ranges over 0 to 4;
 
-The CarrierAggregation module
------------------------------
+*  ``simulations/nr/test_tdd``: one carrier, run with FDD and with TDD.
 
-The ``CarrierAggregation`` module (``src/simu5g/common/carrierAggregation/``)
-describes the radio spectrum of the network as a vector of
-``ComponentCarrier`` submodules, each with its own carrier frequency, number
-of resource blocks, numerology and duplexing settings. Base stations and UEs
-refer to these carriers; per-carrier configuration is described in
-:doc:`spectrum`.
+Fidelity
+--------
+
+*  The TDD division of a slot is the same in every slot: slot formats that
+   vary from slot to slot (TS 38.213 11.1), and the waiting for a slot of the
+   right direction, are not modeled; a slot carries both directions, in
+   proportion to their symbols. TDD affects the NR legs only.
+
+*  Bandwidth parts are not modeled: a UE uses its carriers whole.
+
+*  The model does not check that the carriers of an LTE leg have numerology 0.
+
+*  The subcarrier spacing changes only the slot length. A resource block
+   carries the same number of resource elements per slot in every numerology,
+   and the thermal noise does not follow the bandwidth (see
+   :doc:`radio-medium`).
