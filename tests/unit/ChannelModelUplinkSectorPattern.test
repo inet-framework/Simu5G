@@ -1,29 +1,24 @@
 %description:
 
-A deviation of the uplink from TR 38.901, recorded rather than fixed
-(model-deviations.md item 33): a sectorial (ANISOTROPIC) base station's
-antenna pattern is applied only when the base station transmits. When it
-receives, the pattern is applied to nothing: not to its own UEs, and not to
-the interfering UEs (computeUplinkInterference() takes getAttenuation(), which
-has no angular term). So a sector hears the UEs behind it at full gain, which
-matters most in three-sector sites, where every sector has two neighbours
-pointing away from it.
+The antenna pattern of a sectorial (ANISOTROPIC) base station when it
+receives: it applies at the base station's end of every uplink, whoever
+transmits. TR 38.901 7.5 Step 1 d): "Give BS and UT antenna field patterns
+Frx and Ftx in the global coordinate system and array geometries"; Frx is the
+"Receive antenna element u field pattern". The pattern is Table 7.3-1's, so a
+transmitter 300 m behind the sector arrives 29.943020172152938 dB weaker than
+one 300 m in front, as in the downlink; the geometry and the expected value
+are those of ChannelModelSectorPattern.
 
-TR 38.901 7.5 Step 1 d): "Give BS and UT antenna field patterns Frx and Ftx in
-the global coordinate system and array geometries"; Frx is the "Receive
-antenna element u field pattern". The pattern is Table 7.3-1's, so a UE 300 m
-behind the sector arrives 29.943020172152938 dB weaker than one 300 m in
-front, as in the downlink; the geometry and the expected value are those of
-ChannelModelSectorPattern, which pins the current behaviour (no difference).
-
-When fixed, drop the %expected-failure line, and change the pinned check of
-ChannelModelSectorPattern into this one.
-
-%expected-failure: the receive pattern of a sectorial base station is ignored in the uplink
+Checked for the three kinds of uplink at a sectorial base station:
+ - the signal of a UE it serves (getRSRP());
+ - the interference of a UE of another cell (computeUplinkInterference());
+ - the interference of a background UE (phantomPowerAt()).
 
 %includes:
 #include "SchedulerTestUtil.h"
 #include "ChannelModelTestUtil.h"
+#include "simu5g/stack/phy/radio/CellularTransmitter.h"
+#include "simu5g/stack/phy/radio/RadioTransmissionRequest.h"
 
 %global:
 using namespace simu5g;
@@ -42,11 +37,18 @@ static UserControlInfo controlInfo(Direction dir, LtePhyFrameType type, MacNodeI
     return info;
 }
 
+// The protected interference computations of a channel model. Never instantiated: see ChannelModelProbe for the technique.
+struct WalkAccess : StochasticChannelModel
+{
+    static auto uplinkPtr() { return &WalkAccess::computeUplinkInterference; }
+};
+
 %file: harness.ned
 import simu5g.common.binder.Binder;
 import simu5g.stack.phy.medium.CellularRadioMedium;
 import simu5g.common.carrierAggregation.CarrierAggregation;
 import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+import simu5g.stack.phy.radio.CellularTransmitter;
 
 network Harness
 {
@@ -55,6 +57,7 @@ network Harness
         radioMedium: CellularRadioMedium;
         carrierAggregation: CarrierAggregation;
         model: Tr38901ChannelModel;
+        transmitter: CellularTransmitter;
         test: Test;
 }
 
@@ -78,6 +81,8 @@ sim-time-limit = 1s
 **.fixedLos = true
 **.shadowing = false
 **.fading = false
+**.enableExtCellLos = false
+**.extCellInterference = false
 
 %no-default-inifile: 1
 
@@ -94,8 +99,10 @@ bs.txDirection = ANISOTROPIC;
 bs.txAngle = 0;
 front.nodeId = frontId;
 front.coord = Coord(300, 0, 1.5);
+front.txPower = 23;
 behind.nodeId = behindId;
 behind.coord = Coord(-300, 0, 1.5);
+behind.txPower = 23;
 StubRadioRegistration bsRadio(medium, bsId, &bs);
 StubRadioRegistration frontRadio(medium, frontId, &front);
 StubRadioRegistration behindRadio(medium, behindId, &behind);
@@ -104,7 +111,7 @@ ChannelModelProbe probe(model);
 // TR 38.901 Table 7.3-1, A(theta, 0) - A(theta, 180) at theta = 90 + atan(23.5 / 300) deg
 const double patternDifference = 29.943020172152938;
 
-// TR 38.901 7.5 Step 1 d) and Table 7.3-1: the base station's receive pattern
+// the signal of a UE the base station serves
 UserControlInfo fromFront = controlInfo(UL, DATAPKT, frontId, bsId);
 UserControlInfo fromBehind = controlInfo(UL, DATAPKT, behindId, bsId);
 double ulFront = model->getRSRP(probe.linkFor(&bs, &fromFront, front.coord), 23.0)[0];
@@ -112,10 +119,55 @@ double ulBehind = model->getRSRP(probe.linkFor(&bs, &fromBehind, behind.coord), 
 c.expectNear("UL: the UE behind the sector arrives weaker by the pattern of TR 38.901 Table 7.3-1",
         ulFront - ulBehind, patternDifference, 1e-9);
 
+// the interference of a UE of another cell: its uplink data in the slot completed last, for a CQI of the base station
+auto *transmitter = harnessModule<CellularTransmitter>(this, "transmitter");
+const GHz carrier = GHz(3.5);
+const simtime_t slot = SimTime(1, SIMTIME_MS);
+const MacNodeId otherCellId = MacNodeId(2), ownUeId = MacNodeId(1030);
+RbMap band0;
+band0[MACRO][0] = 1;
+auto interferenceOf = [&] (StubEndpoint& sender) {
+    wait(10 * slot);
+    RadioTransmissionRequest request;
+    request.sender = &sender;
+    request.cellId = otherCellId;
+    request.duration = slot;
+    UserControlInfo info = controlInfo(UL, DATAPKT, sender.nodeId, otherCellId);
+    info.setCarrierFrequency(carrier);
+    info.setGrantedBlocks(band0);
+    info.setTxPower(23.0);
+    medium->addTransmission(transmitter->createTransmission(request, info));
+    wait(slot);
+    std::vector<double> perBand(model->getNumBands(), 0.0);
+    (model->*WalkAccess::uplinkPtr())(&bs, bsId, ownUeId, bs.coord, true, carrier, band0, &perBand, true);
+    return linearToDBm(perBand[0]);
+};
+double interferenceFront = interferenceOf(front);
+double interferenceBehind = interferenceOf(behind);
+c.expectNear("UL interference: a UE of another cell behind the sector interferes less by the pattern",
+        interferenceFront - interferenceBehind, patternDifference, 1e-9);
+
+// the interference of a background UE: a phantom radio's uplink transmission
+auto phantomUplinkFrom = [&] (StubEndpoint& sender) {
+    CellularTransmission transmission;
+    transmission.transmitter = &sender;
+    transmission.phantomCell = this;
+    transmission.sourceId = sender.nodeId;
+    transmission.cellId = MacNodeId(900);
+    transmission.direction = UL;
+    transmission.frameType = DATAPKT;
+    transmission.txPower = 23.0;
+    transmission.startPosition = sender.coord;
+    transmission.startTime = omnetpp::simTime();
+    return probe.phantomPowerAt(transmission, &bs);
+};
+c.expectNear("UL interference: a background UE behind the sector interferes less by the pattern",
+        phantomUplinkFrom(front) - phantomUplinkFrom(behind), patternDifference, 1e-9);
+
 c.summary();
 
 %contains: stdout
-modelchecks=1 modelfailures=0
+modelchecks=3 modelfailures=0
 
 %not-contains: stdout
 FAILED

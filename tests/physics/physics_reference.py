@@ -915,12 +915,13 @@ def grade_background_ue_load(grader):
             check_endpoints(grader, row, stat, params, budget.sinr(signalUl, bsNoiseFigure),
                             budget.sinr(signalUl, bsNoiseFigure, interfererUl) if on else None)
 
-    # The background UE's own what-ifs, through the sector in DL and not in UL.
+    # The background UE's own what-ifs, through the sector in both directions.
     # Its interferers are the victim's trickle, which fills no slot, so only
     # their absence has a closed form when the switches are on.
     signalDl = budget.received(cfg['*.gnb2.**.eNodeBTxPower'], gain2, bgGain, bgCable, gnb2, bgUe,
                                sector_attenuation(budget, gnb2, bgUe, boresight))
-    signalUl = budget.received(bgPower, bgGain, gain2, bsCable, bgUe, gnb2)
+    signalUl = budget.received(bgPower, bgGain, gain2, bsCable, bgUe, gnb2,
+                               sector_attenuation(budget, gnb2, bgUe, boresight))
     table = scalar_table(f'module =~ "*.gnb2.cellularNic.bgTrafficGenerator[0].bgUE[0].generator" '
                          'AND (name =~ "bgMeasuredSinrDl:*" OR name =~ "bgMeasuredSinrUl:*")',
                          itervars=('dli', 'uli'))

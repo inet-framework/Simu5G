@@ -7,12 +7,10 @@ same and the difference of their received powers is the pattern alone.
 
  - DL: the base station transmits. The UE behind it receives less by the
    pattern of TR 38.901 Table 7.3-1, A(theta, 0) - A(theta, 180).
- - UL: the base station receives. PINNED DEFECT (model-deviations.md item
-   33): the model applies the pattern only when the base station transmits,
-   so the UE behind the sector arrives as strong as the one in front. TR
-   38.901 7.5 Step 1 d) gives the receive pattern too ("Give BS and UT antenna
-   field patterns Frx and Ftx"), which gives the same 29.94 dB as in the DL;
-   ChannelModelUplinkSectorPattern asserts that, as an expected failure.
+ - UL: the base station receives. TR 38.901 7.5 Step 1 d) gives the receive
+   pattern too ("Give BS and UT antenna field patterns Frx and Ftx"), so the
+   UE behind the sector arrives weaker by the same 29.94 dB;
+   ChannelModelUplinkSectorPattern has the uplink interference as well.
 
 The geometry: the base station at 25 m with its boresight along the x axis,
 the UEs at 1.5 m, 300 m in front and 300 m behind, both on the x axis, so the
@@ -118,8 +116,8 @@ UserControlInfo fromFront = controlInfo(UL, DATAPKT, frontId, bsId);
 UserControlInfo fromBehind = controlInfo(UL, DATAPKT, behindId, bsId);
 double ulFront = model->getRSRP(probe.linkFor(&bs, &fromFront, front.coord), 23.0)[0];
 double ulBehind = model->getRSRP(probe.linkFor(&bs, &fromBehind, behind.coord), 23.0)[0];
-c.expectNear("PINNED DEFECT (model-deviations.md item 33): UL: the UE behind the sector arrives as strong as the one in front; TR 38.901 gives 29.94 dB less",
-        ulFront - ulBehind, 0, 1e-9);
+c.expectNear("UL: the UE behind the sector arrives weaker by the pattern of TR 38.901 Table 7.3-1",
+        ulFront - ulBehind, patternDifference, 1e-9);
 
 c.summary();
 
