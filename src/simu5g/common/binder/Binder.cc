@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <limits>
 
 #include <inet/common/stlutils.h>
 #include <inet/networklayer/common/L3AddressResolver.h>
@@ -795,6 +796,8 @@ MacNodeId Binder::getOrAssignDestIdForMulticastAddress(inet::Ipv4Address multica
         return multicastAddrToDestId_[multicastAddr];
 
     // Allocate new ID
+    if (multicastDestIdCounter_ > std::numeric_limits<unsigned short>::max())
+        throw cRuntimeError("Binder: no multicast destination id is left (%d multicast addresses are in use)", (int)multicastAddrToDestId_.size());
     MacNodeId newDestId = MacNodeId(multicastDestIdCounter_++);
     multicastAddrToDestId_[multicastAddr] = newDestId;
     multicastDestIdToAddr_[newDestId] = multicastAddr;

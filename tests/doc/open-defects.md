@@ -16,7 +16,6 @@ item with the commit that fixes it.
   - It aborts at t = 4.025 s with a check_and_cast of a nullptr to LteMacBase, in LteMacUe::createTxHarqBuffer(), from macPduMake(), from NrMacUe::handleSelfMessage() (the TTI tick). ue[4]'s nrMac (node 2053) has cellId_ = 0, between detach and attach, and still makes a PDU for destination 0.
   - It depends on the seed: a commit that shifts the random numbers can hide it.
 - **LteX2Manager sends a control message for a non-peer out on gate 0.** It reads x2InterfaceTable_[targetEnb] with operator[], which inserts a zero on a miss, so the message goes to another peer.
-- **The multicast destination id counter has no exhaustion check.** After 32768 addresses, Binder::getOrAssignDestIdForMulticastAddress() wraps to 0 (NODEID_NONE) and to base station ids.
 - **Several schedulers erase from the set they iterate.** LteMaxCi, LtePf, LteMaxCiMultiband, LteMaxCiComp and QoSAwareScheduler erase the current element inside a range-for. It is believed to be unreachable.
 - **A band limit of -2 ("not this carrier") is taken as unlimited in a background UE's retransmission.** scheduleBgRtx() lets a background UE's retransmission on a two-carrier cell take the other carrier's resource blocks. The foreground allocateRtxBytes() has the same loop.
 - **Other Binder reads insert on a miss or have no bounds check.** getNumerologyIndexFromCarrierFreq() returns 0 for an unknown carrier, and getUeMaxNumerologyIndex() has no bounds check.
