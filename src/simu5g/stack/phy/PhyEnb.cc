@@ -45,6 +45,12 @@ void PhyEnb::initialize(int stage)
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         cellInfo_ = binder_->getCellInfoByNodeId(nodeId_);
+
+        // a link's building penetration loss is its UE end's
+        if (isInsideBuilding())
+            throw cRuntimeError("%s: insideBuilding is set on a base station's radio; an indoor base station is not modelled, "
+                    "and the parameter applies to a UE's radio only (was it set through **.insideBuilding?)",
+                    radio_->getFullPath().c_str());
     }
     else if (stage == INITSTAGE_SIMU5G_PHYSICAL_LAYER) {
         initializeFeedbackComputation();
