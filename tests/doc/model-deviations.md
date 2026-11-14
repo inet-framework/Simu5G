@@ -84,11 +84,6 @@ fingerprints. In the branch they get test hardening only (pins and expected fail
 Recorded, not fixed in the branch, like the items of piece 4; the tests of
 piece 5a pin item 19.
 
-20. **A background UE's uplink allocation is on the medium only if its own cell evaluates uplink interference.**
-   - What the model does: LteSchedulerEnb registers a background UE's UL allocation with the medium only when its base station's channel model has uplinkInterference on, while every real UE's uplink frame is on the medium.
-   - Effect: a neighbour cell with uplinkInterference on, or a D2D receiver, sees a cell's real UEs but not its background UEs when that cell's switch is off. The condition mirrored the Binder's uplink transmission map, deleted in piece 7c, so nothing explains it any more.
-   - Fix shape: register every allocation; the receiving model's switch decides what it counts.
-
 ## Found in piece 5b (2026-11-07): fix after the full merge
 
 Recorded, not fixed in the branch, like the items of pieces 4 and 5a.

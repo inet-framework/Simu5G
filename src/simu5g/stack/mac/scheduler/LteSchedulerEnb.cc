@@ -772,16 +772,9 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
             toConsume = queueLength - (MAC_HEADER + RLC_HEADER_UM);
         bgTrafficManager->consumeBackloggedUeBytes(bgUeId, toConsume, direction_); // in bytes
 
-        // the allocation, if any, is a transmission of the background UE on the radio medium
-        if (direction_ == UL) {
-            // in UL only if uplink interference is enabled
-            ChannelModelBase *channelModel = mac_->getPhy()->getChannelModel(carrierFrequency);
-            if (channelModel->isUplinkInterferenceEnabled()) {
-                if (cwAllocatedBytes > 0)
-                    registerBackgroundTransmission(bgTrafficManager, bgUeId, carrierFrequency, allocatedRbMap);
-            }
-        }
-        else if (cwAllocatedBytes > 0)
+        // the allocation, if any, is a transmission of the background UE on the radio medium;
+        // which transmissions a receiver counts as interference is the receiver's decision
+        if (cwAllocatedBytes > 0)
             registerBackgroundTransmission(bgTrafficManager, bgUeId, carrierFrequency, allocatedRbMap);
 
         EV << "LteSchedulerEnb::grant Codeword allocation: " << cwAllocatedBytes << " bytes" << endl;
@@ -1346,16 +1339,8 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
             // update rb map
             allocatedRbMap[antenna] = allocatedRbMapEntry;
 
-            // the allocation is a transmission of the background UE on the radio
-            // medium; in UL only if uplink interference is enabled
-            if (direction_ == UL) {
-                ChannelModelBase *channelModel = mac_->getPhy()->getChannelModel(carrierFrequency);
-                if (channelModel->isUplinkInterferenceEnabled()) {
-                    registerBackgroundTransmission(bgTrafficManager, bgUeId, carrierFrequency, allocatedRbMap);
-                }
-            }
-            else
-                registerBackgroundTransmission(bgTrafficManager, bgUeId, carrierFrequency, allocatedRbMap);
+            // the allocation is a transmission of the background UE on the radio medium
+            registerBackgroundTransmission(bgTrafficManager, bgUeId, carrierFrequency, allocatedRbMap);
 
             return allocatedBytes;
         }
