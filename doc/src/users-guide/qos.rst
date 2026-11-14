@@ -431,10 +431,12 @@ Fidelity
 *  A UE has one PDU session, so the QFI mappings and the default bearer are
    per UE, while TS 37.324 scopes them per session.
 
-*  Without SDAP, a flow is identified by its source and destination address
-   and its DSCP, and the packet filters are evaluated on its first packet
-   only. Two applications between the same pair of hosts with the same DSCP
-   share a bearer, even if their ports would match different filters.
+*  Known deviation: without SDAP, a flow is identified by its source and
+   destination address and its DSCP, and the packet filters are evaluated on
+   its first packet only. Two applications between the same pair of hosts with
+   the same DSCP share a bearer, even if their ports would match different
+   filters; in TS 23.401, the packet filters of a TFT, ports included, apply
+   to every packet.
 
 *  The signaling that carries the QoS configuration (NAS, NGAP, RRC, PFCP) is
    not simulated: the configuration is delivered by direct calls at
