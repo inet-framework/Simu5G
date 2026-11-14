@@ -1,0 +1,186 @@
+%description:
+The receiving NR PDCP entity delivers SDUs to the upper layer as TS 38.323 5.2.2.1 and 5.2.2.2
+(V18.5.0) specify, on a single-leg bearer as well as on a two-leg one. Each node holds one NR PDCP
+entity. A script feeds PDCP data PDUs with chosen COUNTs at chosen times into its leg inputs, and a
+recorder at its upper output lists each delivered SDU as COUNT@time. t-Reordering is 100 ms.
+
+The expected deliveries are worked out from the spec text, not from the model:
+- node[0], in-order arrival: each SDU is delivered on arrival.
+- node[1], a gap that is filled: 2 and 3 wait for 1, then all three go up at 40 ms.
+- node[2], a gap that is never filled: t-Reordering, started at 20 ms with RX_REORD = 3, expires
+  at 120 ms and delivers 2 and 3. The late 1 (150 ms) is below RX_DELIV = 4 and is discarded.
+- node[3], duplicates: the second 0 is below RX_DELIV, the second 2 has been received before;
+  both are discarded.
+- node[4], t-Reordering restarted: the first expiry (120 ms) delivers 2, sets RX_DELIV = 3 and,
+  as RX_DELIV < RX_NEXT = 5, restarts the timer with RX_REORD = 5; the second (220 ms) delivers 4.
+- node[5], outOfOrderDelivery: every SDU goes up on arrival, but the duplicates are still
+  discarded (the second 2 has been received before; the second 0 is below RX_DELIV = 3). Each SDU
+  is delivered once: RX_DELIV moves to "the first PDCP SDU which has not been delivered".
+- node[6] and node[7]: the scripts of node[1] and node[2], with the PDUs alternating between
+  the two legs of a split bearer. The result is the same.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: PdcpScript.cc
+#include <inet/common/packet/Packet.h>
+#include <inet/common/packet/chunk/ByteCountChunk.h>
+#include "simu5g/common/LteControlInfo_m.h"
+#include "simu5g/stack/pdcp/packet/LtePdcpPdu_m.h"
+
+using namespace omnetpp;
+using namespace inet;
+using namespace simu5g;
+
+namespace NrPdcpReordering {   // the test's NED namespace (opp_test)
+
+// Sends the PDCP data PDUs of its script. Each item is "<time in ms>:<COUNT>:<leg>".
+class PdcpPduScript : public cSimpleModule
+{
+  protected:
+    struct Item { simtime_t time; unsigned int count; int leg; };
+    std::vector<Item> items_;
+    size_t next_ = 0;
+    cMessage *timer_ = nullptr;
+
+    void initialize() override
+    {
+        cStringTokenizer tokenizer(par("script"));
+        while (tokenizer.hasMoreTokens()) {
+            std::vector<std::string> f = cStringTokenizer(tokenizer.nextToken(), ":").asVector();
+            if (f.size() != 3)
+                throw cRuntimeError("Script items are <ms>:<count>:<leg>");
+            items_.push_back({SimTime(std::stoi(f[0]), SIMTIME_MS), (unsigned int)std::stoul(f[1]), std::stoi(f[2])});
+        }
+        timer_ = new cMessage("next");
+        if (!items_.empty())
+            scheduleAt(items_[0].time, timer_);
+    }
+
+    void handleMessage(cMessage *msg) override
+    {
+        const Item& item = items_[next_++];
+        auto pkt = new Packet(("sdu-" + std::to_string(item.count)).c_str(), makeShared<ByteCountChunk>(B(100)));
+        auto header = makeShared<LtePdcpHeader>();
+        header->setSequenceNumber(item.count);
+        header->setChunkLength(B(2));
+        pkt->insertAtFront(header);
+        auto info = pkt->addTag<FlowControlInfo>();
+        info->setDirection(UL);
+        send(pkt, "out", item.leg);
+        if (next_ < items_.size())
+            scheduleAt(items_[next_].time, msg);
+    }
+
+  public:
+    ~PdcpPduScript() override { cancelAndDelete(timer_); }
+};
+
+// Lists the delivered SDUs as COUNT@time at the end of the run.
+class PdcpSduRecorder : public cSimpleModule
+{
+  protected:
+    std::string deliveries_;
+
+    void handleMessage(cMessage *msg) override
+    {
+        std::string name = msg->getName();
+        deliveries_ += " " + name.substr(4) + "@" + std::to_string(std::llround(simTime().dbl() * 1000)) + "ms";
+        delete msg;
+    }
+
+    void finish() override
+    {
+        std::cout << getParentModule()->getFullName() << " delivered:" << deliveries_ << std::endl;
+    }
+};
+
+Define_Module(PdcpPduScript);
+Define_Module(PdcpSduRecorder);
+
+} // namespace NrPdcpReordering
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.pdcp.NrPdcpEntity;
+
+simple PdcpPduScript
+{
+    parameters:
+        @class(PdcpPduScript);
+        string script;
+    gates:
+        output out[];
+}
+
+simple PdcpSduRecorder
+{
+    parameters:
+        @class(PdcpSduRecorder);
+    gates:
+        input in;
+}
+
+module PdcpTestNode
+{
+    parameters:
+        @networkNode;
+        int macNodeId = 1;
+        int numLegs = default(1);
+        string script;
+        bool outOfOrderDelivery = default(false);
+        entity.rx.outOfOrderDelivery = this.outOfOrderDelivery;
+    submodules:
+        source: PdcpPduScript {
+            script = parent.script;
+        }
+        entity: NrPdcpEntity {
+            numLegs = parent.numLegs;
+        }
+        recorder: PdcpSduRecorder;
+    connections allowunconnected:
+        for i=0..numLegs-1 {
+            source.out++ --> entity.legIn[i];
+        }
+        entity.upperOut --> recorder.in;
+}
+
+network PdcpReorderingTestNetwork
+{
+    submodules:
+        binder: Binder;
+        node[8]: PdcpTestNode;
+}
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = PdcpReorderingTestNetwork
+cmdenv-express-mode = true
+sim-time-limit = 1s
+**.vector-recording = false
+**.scalar-recording = false
+
+*.node[*].entity.rx.timeout = 100ms
+
+*.node[0].script = "10:0:0 20:1:0 30:2:0"
+*.node[1].script = "10:0:0 20:2:0 30:3:0 40:1:0"
+*.node[2].script = "10:0:0 20:2:0 30:3:0 150:1:0 160:4:0"
+*.node[3].script = "10:0:0 20:0:0 30:2:0 40:2:0 50:1:0"
+*.node[4].script = "10:0:0 20:2:0 60:4:0"
+*.node[5].script = "10:0:0 20:2:0 30:2:0 40:1:0 50:0:0"
+*.node[5].outOfOrderDelivery = true
+*.node[6].numLegs = 2
+*.node[6].script = "10:0:0 20:2:1 30:3:0 40:1:1"
+*.node[7].numLegs = 2
+*.node[7].script = "10:0:0 20:2:1 30:3:0 150:1:1 160:4:0"
+
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+node[0] delivered: 0@10ms 1@20ms 2@30ms
+node[1] delivered: 0@10ms 1@40ms 2@40ms 3@40ms
+node[2] delivered: 0@10ms 2@120ms 3@120ms 4@160ms
+node[3] delivered: 0@10ms 1@50ms 2@50ms
+node[4] delivered: 0@10ms 2@120ms 4@220ms
+node[5] delivered: 0@10ms 2@20ms 1@40ms
+node[6] delivered: 0@10ms 1@40ms 2@40ms 3@40ms
+node[7] delivered: 0@10ms 2@120ms 3@120ms 4@160ms
