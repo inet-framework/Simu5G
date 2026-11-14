@@ -392,6 +392,19 @@ double StochasticChannelModel::computeVerticalAngle(Coord center, Coord point)
     return (point.z > center.z) ? 90 - elevation : 90 + elevation;
 }
 
+double StochasticChannelModel::computeSectorAttenuation(TxDirectionType direction, double boresightAngle, const Coord& antennaCoord, const Coord& point)
+{
+    if (direction != ANISOTROPIC)
+        return 0;
+
+    // the angle between the point and the boresight, as seen from the antenna
+    double angle = fabs(boresightAngle - computeAngle(antennaCoord, point));
+    if (angle > 180)
+        angle = 360 - angle;
+
+    return computeAngularAttenuation(angle, computeVerticalAngle(antennaCoord, point));
+}
+
 double StochasticChannelModel::computeAngularAttenuation(double hAngle, double vAngle) {
     return pathLoss_->computeAngularAttenuation(hAngle, vAngle);
 }
@@ -542,31 +555,12 @@ std::vector<double> StochasticChannelModel::getRSRP(const RadioLink& link, doubl
     recvPower -= cableLoss; // (dBm-dB)=dBm
 
     // =============== ANGULAR ATTENUATION =================
-    // Only a base station has a sectorial antenna; a UE-to-UE link never gets here.
-    if (link.txIsBaseStation) {
-        if (tx->getTxDirection() == ANISOTROPIC) {
-            // get tx angle
-            double txAngle = tx->getTxAngle();
-
-            // compute the angle between the receiver position and the reference axis,
-            // considering the transmitting BS as center
-            double ueAngle = computeAngle(link.txCoord, link.rxCoord);
-
-            // compute the reception angle
-            double recvAngle = fabs(txAngle - ueAngle);
-
-            if (recvAngle > 180)
-                recvAngle = 360 - recvAngle;
-
-            double verticalAngle = computeVerticalAngle(link.txCoord, link.rxCoord);
-
-            // compute attenuation due to sectorial tx
-            double angularAtt = computeAngularAttenuation(recvAngle, verticalAngle);
-
-            recvPower -= angularAtt;
-        }
-        // else, antenna is omni-directional
-    }
+    // Only a base station has a sectorial antenna, and its pattern applies whether
+    // it transmits or receives; a UE-to-UE link has none.
+    if (link.txIsBaseStation)
+        recvPower -= computeSectorAttenuation(tx->getTxDirection(), tx->getTxAngle(), link.txCoord, link.rxCoord);
+    else if (link.dir == UL)
+        recvPower -= computeSectorAttenuation(rx->getTxDirection(), rx->getTxAngle(), link.rxCoord, link.txCoord);
     // =============== END ANGULAR ATTENUATION =================
 
     std::vector<double> rsrpVector;
@@ -925,22 +919,11 @@ double StochasticChannelModel::phantomPowerAt(const CellularTransmission& transm
     double att = computePhantomPathLoss(link, conditions);
 
     //=============== ANGULAR ATTENUATION =================
-    double angularAtt = 0;
-    if (transmission.txDirection != OMNI) {
-        // compute the angle between the receiver's position and reference axis, considering the cell as center
-        double ueAngle = computeAngle(c, position);
-
-        // compute the reception angle between the receiver and the cell
-        double recvAngle = fabs(transmission.txAngle - ueAngle);
-
-        if (recvAngle > 180)
-            recvAngle = 360 - recvAngle;
-
-        double verticalAngle = computeVerticalAngle(c, position);
-
-        // compute attenuation due to sectorial tx
-        angularAtt = computeAngularAttenuation(recvAngle, verticalAngle);
-    }
+    // the pattern of the base station's end: the phantom cell's in the downlink,
+    // the receiving base station's in the uplink
+    double angularAtt = transmission.direction == UL
+        ? computeSectorAttenuation(receiver->getTxDirection(), receiver->getTxAngle(), position, c)
+        : computeSectorAttenuation(transmission.txDirection, transmission.txAngle, c, position);
     //=============== END ANGULAR ATTENUATION =================
 
     return transmission.txPower - att - angularAtt + transmitter->getAntennaGain() + receiver->getAntennaGain() - receiver->getCableLoss();
@@ -1130,9 +1113,10 @@ bool StochasticChannelModel::computeUplinkInterference(IRadioEndpoint *radio, Ma
         return interferer.cellId != eNbId;
     };
 
-    // the attenuation from an interfering UE to the base station
+    // the attenuation from an interfering UE to the base station, with the base station's pattern towards it
     auto attenuationFrom = [&] (const InterfererInfo& interferer) {
-        return getAttenuation(radio, interferer.nodeId, UL, interferer.coord);
+        return getAttenuation(radio, interferer.nodeId, UL, interferer.coord)
+               + computeSectorAttenuation(radio->getTxDirection(), radio->getTxAngle(), enbCoord, interferer.coord);
     };
 
     // what an interfering UE adds on the band, at the given attenuation

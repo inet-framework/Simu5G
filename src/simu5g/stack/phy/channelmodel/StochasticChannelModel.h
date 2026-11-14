@@ -206,6 +206,14 @@ class StochasticChannelModel : public ChannelModelBase
      */
     virtual double computeVerticalAngle(Coord center, Coord point);
 
+    /**
+     * The attenuation of a sectorial antenna's pattern towards a point, in dB;
+     * 0 for an omnidirectional antenna. The antenna is at antennaCoord with
+     * its boresight at boresightAngle. It applies at a base station's end of a
+     * link, whichever end transmits.
+     */
+    virtual double computeSectorAttenuation(TxDirectionType direction, double boresightAngle, const Coord& antennaCoord, const Coord& point);
+
     /*
      *  Compute Attenuation caused by transmission direction
      *
