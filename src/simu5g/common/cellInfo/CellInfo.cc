@@ -145,6 +145,13 @@ void CellInfo::registerCarrier(GHz carrierFrequency, unsigned int carrierNumBand
     if (it != carrierMap_.end())
         throw cRuntimeError("CellInfo::registerCarrier - Carrier [%fGHz] already exists on node %hu", carrierFrequency.get(), num(cellId_));
     else {
+        // CQI reports and the AMC's history of them have one size for the whole cell
+        for (const auto& [otherFrequency, otherCarrier] : carrierMap_)
+            if (otherCarrier.numBands != carrierNumBands)
+                throw cRuntimeError("CellInfo: carrier %g GHz has %u bands, but carrier %g GHz of the same cell has %u: "
+                        "carriers of unequal width in one cell are not supported",
+                        carrierFrequency.get(), carrierNumBands, otherFrequency.get(), otherCarrier.numBands);
+
         carriersVector_.push_back(carrierFrequency);
 
         CarrierInfo cInfo;
