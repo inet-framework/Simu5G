@@ -495,9 +495,10 @@ void StochasticChannelModel::computeInterferencePlusNoise(const RadioLink& link,
     // the interference on each band: from other cells' transmissions, external cells' and background cells'
     std::vector<double> interference(numBands_, 0); // Linear value (mW)
     bool isCqi = lteInfo->getFrameType() == FEEDBACKPKT;
-    if (dir == DL)
-        computeDownlinkInterference(eNbId, ueId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, &interference,
-                enableDownlinkInterference_ && lteInfo->getFrameType() != BEACONPKT);
+    if (lteInfo->getFrameType() == BEACONPKT)
+        ; // a beacon is measured against noise only: handover compares the cells' signals, not their surroundings
+    else if (dir == DL)
+        computeDownlinkInterference(eNbId, ueId, ueCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, &interference, enableDownlinkInterference_);
     else if (dir == UL) // at the link's receiver, the base station
         computeUplinkInterference(link.rxRadio, eNbId, ueId, enbCoord, isCqi, lteInfo->getCarrierFrequency(), rbmap, &interference, enableUplinkInterference_);
 

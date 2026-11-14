@@ -93,9 +93,6 @@ piece 5a pin item 19.
    - What the model does: LteSchedulerEnb registers a background UE's UL allocation with the medium only when its base station's channel model has uplinkInterference on, while every real UE's uplink frame is on the medium.
    - Effect: a neighbour cell with uplinkInterference on, or a D2D receiver, sees a cell's real UEs but not its background UEs when that cell's switch is off. The condition mirrored the Binder's uplink transmission map, deleted in piece 7c, so nothing explains it any more.
    - Fix shape: register every allocation; the receiving model's switch decides what it counts.
-21. **The handover beacon's RSSI counts the background cells' interference, but not the real cells'.**
-   - What the model does: from "external and background cells interfere through the downlink and uplink interference computations" on, a beacon's reception, which has no bands, goes through the downlink interference computation with the other cells off and the external and background cells as their switches say.
-   - Open: what the RSSI the handover decision compares is meant to include.
 
 ## Found in piece 5b (2026-11-07): fix after the full merge
 
