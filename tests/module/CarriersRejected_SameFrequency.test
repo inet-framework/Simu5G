@@ -1,0 +1,36 @@
+%description:
+A component carrier's frequency identifies it in the network: the Binder keeps the carriers, and
+the radio medium the transmissions, by frequency. Of two carriers at 3.5 GHz, the Binder kept the
+first, or took the second one's numerology and counted its bands twice when it was the wider, and
+the cells on them disagreed about the number of bands and the slot length without a message. Two
+carriers at one frequency are an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+
+network CarriersRejectedTestNetwork
+{
+    submodules:
+        binder: Binder;
+        carrierAggregation: CarrierAggregation;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = CarriersRejectedTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[*].carrierFrequency = 3.5GHz
+*.carrierAggregation.componentCarrier[0].numBands = 50
+*.carrierAggregation.componentCarrier[1].numBands = 100
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+two component carriers are at 3.5 GHz: a carrier's frequency identifies it
+%#--------------------------------------------------------------------------------------------------------------

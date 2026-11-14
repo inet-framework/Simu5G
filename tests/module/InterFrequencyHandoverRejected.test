@@ -1,0 +1,53 @@
+%description:
+A UE measures cells on its primary carrier only, the first of its carrier list: a base station
+sends its beacon on its own primary carrier, and a UE drops a beacon that arrives on another of
+its carriers. So a UE on the carriers 2 GHz and 3.5 GHz never hands over to a cell whose primary
+carrier is 3.5 GHz, however close the cell is; inter-frequency measurements are not modelled.
+
+The UE here is attached to gnb, on both carriers, has handover enabled, and stands 100 m from
+gnb2, which is on 3.5 GHz only. The first beacon of gnb2 that reaches the UE is an error,
+instead of a run in which the UE silently stays where it is.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.node.ethernet.Eth10G;
+import simu5g.nodes.gNodeB;
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+network SecondFrequencyLayerTestNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        gnb2: gNodeB {
+            @display("p=650,250");
+        }
+    connections:
+        upf.pppg++ <--> Eth10G <--> gnb2.ppp;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = SecondFrequencyLayerTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.gnb.cellularNic.numCarriers = 2
+*.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.gnb2.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[1]"
+*.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+
+# the UE is attached to gnb; gnb2 stands 100 m from it
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+*.gnb2.mobility.initialX = 550m
+*.gnb2.mobility.initialY = 350m
+**.enableHandover = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+on 3.5 GHz, which is not its primary carrier (2 GHz): a UE measures cells on its primary carrier only
+%#--------------------------------------------------------------------------------------------------------------

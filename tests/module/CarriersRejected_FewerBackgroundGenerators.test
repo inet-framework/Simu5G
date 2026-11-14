@@ -1,0 +1,25 @@
+%description:
+A base station has one background traffic generator per carrier: its NIC's numCarriers sizes
+bgTrafficGenerator[], and the MAC gives each carrier the generator of its position. A gNB on two
+carriers with numCarriers left at its default of 1 crashed on the missing second generator. A
+number of generators other than the number of carriers is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+the cell has 2 carriers (phy.componentCarrierModules) but 1 background traffic generators: set the NIC's numCarriers to the number of carriers
+%#--------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,47 @@
+%description:
+TDD is modelled for NR cells only, for background cells too: the AMC of an LTE background cell
+(bgScheduler.isNr = false) does not read the carrier's TDD symbol split, so such a cell on a
+carrier with useTdd = true would have the capacity of FDD in both directions, without a message.
+It is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.nodes.BackgroundCell;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+
+network TddRejectedTestNetwork
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        bgCell: BackgroundCell;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = TddRejectedTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[0].useTdd = true
+*.bgCell.bgScheduler.isNr = false
+*.bgCell.bgScheduler.numBands = 6
+*.bgCell.bgTrafficGenerator.numBgUes = 1
+*.bgCell.bgTrafficGenerator.bgUE[0].generator.startTimeDl = 0.1s
+*.bgCell.mobility.initialX = 250m
+*.bgCell.mobility.initialY = 500m
+*.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialX = 500m
+*.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialY = 400m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+carrier 2 GHz is TDD, and TDD is modelled for NR cells only
+%#--------------------------------------------------------------------------------------------------------------

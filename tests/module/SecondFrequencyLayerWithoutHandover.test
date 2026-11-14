@@ -1,0 +1,51 @@
+%description:
+A second frequency layer with fixed associations is a valid network: a UE without handover does
+not measure cells, so it loses nothing by not hearing a cell on one of its secondary carriers.
+
+The network of InterFrequencyHandoverRejected, with the cells sending their beacons and the UE's
+handover disabled: the UE is attached to gnb on 2 GHz and 3.5 GHz, and gnb2, 100 m from it, is on
+3.5 GHz only. The run reaches its time limit.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.node.ethernet.Eth10G;
+import simu5g.nodes.gNodeB;
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+network SecondFrequencyLayerTestNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        gnb2: gNodeB {
+            @display("p=650,250");
+        }
+    connections:
+        upf.pppg++ <--> Eth10G <--> gnb2.ppp;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = SecondFrequencyLayerTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.gnb.cellularNic.numCarriers = 2
+*.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.gnb2.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[1]"
+*.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+
+# the UE is attached to gnb; gnb2 stands 100 m from it
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+*.gnb2.mobility.initialX = 550m
+*.gnb2.mobility.initialY = 350m
+*.gnb*.cellularNic.phy.enableBeacons = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+Simulation time limit reached
+%#--------------------------------------------------------------------------------------------------------------

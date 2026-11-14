@@ -1,0 +1,21 @@
+%description:
+TDD is modelled for NR cells only: a carrier's TDD symbol split scales the resource elements per
+block in the NR AMC, and the LTE AMC does not read it. An eNodeB on a carrier with useTdd = true
+would have the capacity of FDD in both directions, without a message. It is an error at
+initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.EpcSessionTestNetwork
+
+*.carrierAggregation.componentCarrier[0].useTdd = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+carrier 2 GHz is TDD, and TDD is modelled for NR cells only
+%#--------------------------------------------------------------------------------------------------------------

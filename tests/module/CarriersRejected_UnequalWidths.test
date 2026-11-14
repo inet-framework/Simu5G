@@ -1,0 +1,29 @@
+%description:
+The carriers of a cell have the same number of bands: a cell's CQI reports and the history its
+AMC keeps of them are sized by one of its carriers, for all of them. A gNB on two carriers of 50
+and 100 bands would use the first 50 bands of the wider carrier only, without a message, or, with
+the wider carrier first, read past the end of the narrower one's SINRs. Such a cell is an error
+at initialization, until CQIs are kept per carrier.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 50
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.carrierAggregation.componentCarrier[1].numBands = 100
+*.gnb.cellularNic.numCarriers = 2
+*.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+carrier 3.5 GHz has 100 bands, but carrier 2 GHz of the same cell has 50: carriers of unequal width in one cell are not supported
+%#--------------------------------------------------------------------------------------------------------------
