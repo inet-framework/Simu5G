@@ -188,6 +188,9 @@ void Binder::registerNode(MacNodeId nodeId, cModule *nodeModule, RanNodeType typ
     else if (type == UE) {
         if (getNodeTypeById(nodeId) != UE)
             throw cRuntimeError("Cannot register node %s in Binder: Wrong macNodeId %d: Does not correspond to the range Simu5G reserves for UE nodes", nodeModule->getFullPath().c_str(), num(nodeId));
+        if (num(nodeId) >= BGUE_MIN_ID)
+            throw cRuntimeError("Cannot register node %s in Binder: macNodeId %d is in the range of background UEs (%d and up); at most %d NR UEs have ids",
+                    nodeModule->getFullPath().c_str(), num(nodeId), BGUE_MIN_ID, BGUE_MIN_ID - NR_UE_MIN_ID);
         if (isNr != (num(nodeId) >= NR_UE_MIN_ID))
             throw cRuntimeError("Cannot register node %s in Binder: Wrong macNodeId %d: Technology (LTE/NR) mismatch", nodeModule->getFullPath().c_str(), num(nodeId));
     }

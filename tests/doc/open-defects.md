@@ -15,10 +15,6 @@ item with the commit that fixes it.
     `simu5g_dbg -u Cmdenv -c MultiCell-CBR-UL --repeat=60 -r 29 --sim-time-limit=5s '--*.carrierAggregation.componentCarrier[1].numerologyIndex=2'`
   - It aborts at t = 4.025 s with a check_and_cast of a nullptr to LteMacBase, in LteMacUe::createTxHarqBuffer(), from macPduMake(), from NrMacUe::handleSelfMessage() (the TTI tick). ue[4]'s nrMac (node 2053) has cellId_ = 0, between detach and attach, and still makes a PDU for destination 0.
   - It depends on the seed: a commit that shifts the random numbers can hide it.
-- **The 2049th NR UE gets the first background UE id.**
-  - NrUe.ned gives it the id 4097, which is BGUE_MIN_ID, and Binder::registerNode() checks only the range [1025, 32767]. That UE is then a background UE for the channel model (no shadowing) and for LteMaxCi.
-  - With background UEs in the same run, the phantom radio's registration on the medium fails at startup instead.
-  - Fix shape: registerNode() rejects ids in the background range.
 - **Binder::getX2Port() reads an empty list.** It rejects a node without an entry, but calls front() and pop_front() on an empty list when more X2 clients connect to a node than the node has X2 servers.
 - **LteX2Manager sends a control message for a non-peer out on gate 0.** It reads x2InterfaceTable_[targetEnb] with operator[], which inserts a zero on a miss, so the message goes to another peer.
 - **The multicast destination id counter has no exhaustion check.** After 32768 addresses, Binder::getOrAssignDestIdForMulticastAddress() wraps to 0 (NODEID_NONE) and to base station ids.
