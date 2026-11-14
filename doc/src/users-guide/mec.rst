@@ -34,358 +34,463 @@ measurements.
 
 The aim of the model is to give MEC developers a tool for rapid prototyping of
 MEC applications that use the MEC services Simu5G provides. Since Simu5G can
-run as a real-time network emulator, real MEC applications can also be
-interfaced with it, and tested in a framework that includes the 5G transport,
-a MEC infrastructure, and its MEC services.
+run as a real-time network emulator, real MEC applications and real UE
+applications can also be interfaced with it, and tested in a framework that
+includes the 5G transport, a MEC infrastructure, and its MEC services.
+
+.. figure:: images/mec_architecture.png
+
+   The ETSI MEC reference architecture (GS MEC 003). The operations support
+   system (OSS) is not modeled.
+
+Modules
+-------
+
+System level:
+
+:ned:`MecOrchestrator`
+   The MEC orchestrator. It keeps the onboarded application descriptors,
+   selects the MEC host for each new MEC application, and has the host
+   instantiate and terminate it.
+
+:ned:`Ualcmp`
+   A host that runs the UALCMP application, :ned:`UalcmpApp`, which serves
+   the Mx2 API over HTTP and passes the requests to the MEC orchestrator.
+
+Host level, inside :ned:`MecHost`:
+
+``virtualisationInfrastructure`` (:ned:`VirtualisationInfrastructure`)
+   The host's TCP/IP stack, on which the MEC applications, the MEC services
+   and the Service Registry run.
+
+``vim`` (:ned:`VirtualisationInfrastructureManager`)
+   Accounts for the computing resources of the host, creates and deletes the
+   MEC application modules, and computes their processing times.
+
+``mecPlatformManager`` (:ned:`MecPlatformManager`)
+   The host's interface to the MEC orchestrator.
+
+``mecPlatform`` (:ned:`MecPlatform`)
+   The Service Registry (:ned:`ServiceRegistry`) and the MEC services
+   (``mecService[]``), such as :ned:`RniService` and :ned:`LocationService`.
+
+``upf_mec`` (:ned:`Upf`)
+   The host's UPF, which connects it to the core network.
+
+Applications:
+
+:ned:`DeviceApp`
+   The device application on a UE, which requests MEC applications from the
+   UALCMP on behalf of the UE's own application.
+
+:ned:`MecAppBase`, :ned:`MultiUeMecApp`
+   The base types of MEC applications. Simu5G provides several applications
+   built on them, for example :ned:`MecWarningAlertApp` and
+   :ned:`MecResponseApp`, with their UE-side counterparts (see :doc:`apps`).
 
 MEC system-level modeling
 -------------------------
 
-.. figure:: images/mec_architecture.png
-   
-   MEC system-level model
-
-At the system level, we model the LCM proxy and the MEC
-orchestrator. The LCM proxy is a compound module including the
-TCP/IP stack and one application module that provides the
-RESTful API consumed by the Device app (either internal or
-external to the simulator, through an INET external interface)
-to trigger instantiation and termination of MEC apps via the
-Mx2 reference point. The MEC orchestrator is a simple module
-connected to the LCM proxy via gates. In scenarios with
-multiple MEC systems, the MEC orchestrator manages a subset of
-the MEC hosts in the simulation, specified through the
-mecHostsList parameter, which is a space-separated string
-specifying the names of the MEC hosts under its control. Upon
-receiving a MEC app instantiation request from the LCM proxy
-(which in turn receives the request by a Device app), the MEC
-orchestrator selects the most suitable MEC host among those
-associated with its MEC system, according to the MEC app
-requirements. The latter are specified in the so-called
-AppDescriptor JSON file and can include a list of required MEC
-services and/or computing resources (RAM, CPU and disk), which
-are checked against the available resources of the MEC hosts.
+The UALCMP is a host of its own, with a TCP/IP stack; in the example networks,
+it sits in the data network, on the anchor UPF's N6 link. Its application
+serves three operations of the Mx2 API over HTTP: ``GET /app_list``, which
+lists the available applications, and ``POST /app_contexts`` and
+``DELETE /app_contexts/{contextId}``, which request the creation and the
+deletion of a MEC application. It passes the requests to the MEC orchestrator
+through a pair of gates, which connect the two modules directly.
 
 .. figure:: images/mec_system_level.png
    :figwidth: 70.0%
 
-   MEC orchestrator
+   The UALCMP and the MEC orchestrator, connected by gates; the orchestrator
+   drives the MEC hosts through direct calls.
 
-Once the MEC host has been identified, the MEC orchestrator
-triggers the MEC app instantiation, by dynamically creating the
-OMNeT++ module running the application logic and marking the
-required MEC host resources as allocated. The Device app is
-usually embedded in the UE client. However, its functions are
-quite standard, i.e., managing instantiation/termination of MEC
-apps by interfacing with the LCM proxy. For this reason, our
-MEC model includes a basic Device app able to query the LCM
-proxy via the RESTful API and communicating with the UE app
-over an UDP socket by means of a simple interface including
-messages for creation, termination and related acknowledgments
-regarding a MEC app. This way, a user only needs to code the
-data-plane colloquium between the UE app and the MEC app, as
-well as their logic.
-
-MEC host-level modeling
------------------------
-
-The MEC host module models the MEC host level of the MEC
-architecture. It is configurable (via NED/INI files) with a
-maximum amount of resources, i.e. RAM, storage and CPU, that
-can be allocated to MEC apps. Its main components are the
-Virtualisation Infrastructure Manager (VIM) and the MEC
-platform modules. Communications with the MEC platform can also
-involve real MEC apps when Simu5G runs as an emulator. For this
-reason, all the entities, i.e. MEC service and Service
-Registry, implement a RESTful HTTP server as a TCP application
-running on top of the TCP/IP protocol stack of the
-Virtualisation Infrastructure. Our model provides a module
-called MecServiceBase, which implements all the non-functional
-requirements needed for running an HTTP server (e.g. queueing,
-TCP connection management, gNB connections etc.). This allows
-the user to rapidly deploy an ETSI-compliant MEC service by
-only implementing the HTTP methods (e.g. GET, POST) according
-to the service behavior.
-
-.. figure:: images/mec_host_level_2.png
-   :figwidth: 70.0%
-
-   MEC host level model
-
-Two ETSI MEC services are currently implemented: Radio Network
-Information service (RNIS), that allows users to gather
-up-to-date information regarding radio network condition and
-the UEs connected to the base station associated to the MEC
-host, and the Location service, that provides accurate
-information about UEs and/or base station locations, enabling
-active device location tracking and location-based service
-recommendations. The ServiceRegistry module implements the REST
-resources – and HTTP methods – needed to allow MEC apps to
-discover MEC services via the Mp1 reference point. MEC apps are
-deployed as applications over TCP and UDP transport-layer
-protocols of the Virtualisation Infrastructure compound module.
-Allocated resources are used by the VIM to compute the delay
-used to model processing time: the CPU constraint is expressed
-in terms of instructions per second, so that we can model the
-processing time of a MEC app, i.e. the time required by the MEC
-app to execute a set of instructions, based on the MEC host
-processing speed and load. A MEC host also has an UPF module
-that allows it to be placed anywhere in the CN of the 5G
-network. This is useful, for example, to test different MEC
-host deployments.
-
-Deployment scenarios
---------------------
-
-As already mentioned, Simu5G can run in both simulated and
-emulated mode. So, the user can develop and test MEC-related
-applications in either mode, according to her needs. For
-instance, it could be the case that only a real MEC app should
-be tested, leaving the UE application as a stub method inside
-the simulator, possibly because its behavior is not needed or
-it is not yet available. We report below the configurations
-required to run some MEC scenarios in both Simu5G execution
-modes.
-
-Running a fully simulated system
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. figure:: images/base_network_simulation2.png
-   :figwidth: 70.0%
-
-   Simulated network
-
-The simulated MEC system contains a LCM proxy, a MEC
-orchestrator and two MEC hosts, namely mecHost1 and mecHost2,
-that are associated to a gNB. Car is a vector of UEs, each of
-them running an application called UEWarningAlertApp. The
-latter instantiates a MEC app named MECWarningAlertApp, which
-is supposed to be onboarded in the MEC system during network
-initialization and to send alert messages to cars when they
-enter a danger zone. Cars also run the Device app responsible
-for requesting the MEC app instantiation to the LCM proxy on
-behalf the UEs. Besides the module implementing the logic of
-the MECWarningAlertApp, an AppDescriptor is also required:
+The MEC orchestrator manages the MEC hosts listed in its ``mecHostList``
+parameter, so a network can contain several MEC systems, each with its own
+orchestrator. It knows the applications by their application descriptors,
+JSON files in the style of ETSI's AppD. A descriptor names the application
+(``appDid``, ``appName``), the NED type that implements it (``appProvider``),
+the resources it needs (``virtualComputeDescriptor``: ``virtualMemory`` and
+``virtualDisk`` in MB, ``virtualCpu`` in millions of instructions per second),
+and the MEC services it uses (``appServiceRequired``):
 
 .. code:: json
 
    {
-      "appID" : "WAMECAPP",
-      "appName" : "MECWarningAlertApp",
-      "appProvider" : "simu5g.apps.mec.WarningAlert.MECWarningAlertApp",
-      "virtualComputeDescriptor" :{
-         "virtualDisk" : 10,
-      "virtualCpu" : 1500,
-      "virtualMemory" : 10
-      },
-      "appServiceRequired" : [{
-      "ServiceDependency" :{
-         "serName" : "LocationService",
-         "version" : "v2",
-         "serCategory" : "Location"
-      }
-      }],
+   "appDid" : "WAMECAPP",
+   "appName" : "MecWarningAlertApp",
+   "appProvider" : "simu5g.apps.mec.WarningAlert.MecWarningAlertApp",
+   "virtualComputeDescriptor" :{
+       "virtualDisk": 10,
+       "virtualCpu" : 1500,
+       "virtualMemory":10
+       },
+   "appServiceRequired": [
+       {
+           "ServiceDependency" :{
+               "serName" : "LocationService",
+               "version" : "v2",
+               "serCategory": "Location"
+           }
+       }
+   ]
    }
 
-The MEC app requires 10 MB of RAM, 10 MB of storage, 1500
-instructions per second of CPU and it consumes the Location
-Service. Next, it is necessary to configure both the car[*]
-modules and the MEC entities.
+A descriptor is onboarded either at initialization, when its name is listed
+in the orchestrator's ``mecApplicationPackageList`` (the file is then
+``ApplicationDescriptors/<name>.json``), or on request, when a device
+application sends the path of the descriptor with its creation request.
+
+For each new MEC application, the orchestrator selects a MEC host with the
+policy set in its ``selectionPolicy`` parameter:
+
+``"MecServiceBased"`` (the default)
+   The first host, in the order of ``mecHostList``, that has the resources the
+   application needs and runs the first MEC service its descriptor requires.
+   If no such host has the service, the last host with enough resources.
+
+``"AvailableResourcesBased"``
+   Among the hosts with enough resources, the one with the most CPU left.
+
+``"MecHostBased"``
+   The host at position ``mecHostIndex`` of ``mecHostList``, regardless of its
+   resources.
+
+The orchestrator then has the selected host instantiate the application,
+through the host's MEC platform manager. The lifecycle operations take time:
+``onboardingTime``, ``instantiationTime`` and ``terminationTime``, 50 ms each
+by default, delay the orchestrator's answers.
+
+MEC host-level modeling
+-----------------------
+
+A MEC host (:ned:`MecHost`) has a fixed amount of computing resources: at most
+``maxMecApps`` MEC applications (0 by default, so it must be set), ``maxRam``
+of memory, ``maxDisk`` of storage, and ``maxCpuSpeed`` millions of
+instructions per second. The VIM accounts for them: an application is
+instantiated only if the host has more free memory, storage and CPU than its
+descriptor requires, and its resources are released when it is terminated.
+Background applications (``bgApp[]``, :ned:`BackgroundApp`) reserve resources
+for the whole run without running anything, to model a host that is already
+loaded.
+
+.. figure:: images/mec_host_level_2.png
+   :figwidth: 70.0%
+
+   The MEC host
+
+The VIM also models the processing time of the MEC applications. An
+application that asks it how long a computation takes gets the number of
+instructions divided by the CPU speed it is entitled to: with the VIM's
+``scheduling = "segregation"`` (the default), the CPU its descriptor
+reserved; with ``"fair"``, its reservation scaled up to share all of the
+host's CPU among the running applications.
+
+The MEC platform holds the Service Registry and the MEC services, which are
+HTTP servers running on the host's TCP/IP stack. The number and the types of
+the services are configured per host (``mecPlatform.numMecServices``,
+``mecPlatform.mecService[i].typename``). The services are registered with the
+Service Registry of their host and with the MEC orchestrator, and MEC
+applications discover them through the Service Registry's API
+(``GET .../mec_service_mgmt/v1/services``, GS MEC 011). A service serves its
+requests one at a time, from a queue, and the time it spends on each is drawn
+from an exponential distribution (``requestServiceTime``); with
+``loadGenerator = true``, the service also serves the requests of a
+configurable number of background applications, which delay the real ones.
+
+Two MEC services are implemented:
+
+:ned:`RniService`
+   A subset of the RNIS API (GS MEC 012): the layer-2 measurements query
+   (``GET .../rni/v2/queries/layer2_meas``), filtered by cell or by UE. It
+   reports on the base stations listed in the MEC host's ``bsList``
+   parameter, from the statistics collectors that the base stations and the
+   UEs have when their ``hasRniSupport`` parameter is true.
+
+:ned:`LocationService`
+   The Location API (GS MEC 013): the query of the UEs' positions
+   (``GET .../location/v2/queries/users``), filtered by cell or by UE, and
+   the subscription to a circular area (``POST
+   .../location/v2/subscriptions/area/circle``), which notifies the
+   subscriber when a UE enters or leaves the area, checked every
+   ``locationSubscriptionPeriod``.
+
+The life of a MEC application
+-----------------------------
+
+A MEC application is created on request of a UE:
+
+1. The UE's own application asks its device application (:ned:`DeviceApp`),
+   over UDP, to start a MEC application of a given name.
+
+2. The device application sends a ``POST /app_contexts`` request to the
+   UALCMP, over TCP.
+
+3. The UALCMP passes the request to the MEC orchestrator, which onboards the
+   descriptor if needed and selects a MEC host.
+
+4. The host's VIM reserves the resources and creates the MEC application
+   module inside the host, as an instance of the NED type that the
+   descriptor's ``appProvider`` names.
+
+5. The answer travels back: the orchestrator tells the UALCMP the address and
+   port of the new application, and the device application tells the UE's
+   application, which from then on talks to the MEC application directly.
+
+The MEC application, in turn, finds the MEC services it needs through the
+Service Registry and uses them over HTTP. When the UE's application is done,
+it has the device application send ``DELETE /app_contexts/{contextId}``, and
+the host terminates the MEC application and releases its resources.
+
+A MEC application can also run outside this lifecycle: a host's independent
+MEC applications (``independentMecApp[]``) are created at initialization, and
+a descriptor with an ``emulatedMecApplication`` field stands for a real
+application running outside the simulation (see `Running an emulated system`_
+below).
+
+Traffic steering to the MEC host
+--------------------------------
+
+A MEC host connects to the core network through its UPF, ``upf_mec``: its
+``ppp`` gates link it to a UPF of the core network, typically an intermediate
+UPF near the base stations, and its ``gateway`` parameter names the anchor
+UPF whose sessions it serves. The control plane sets up an uplink tunnel for
+every session of the anchor at each such MEC host UPF, next to the tunnel at
+the anchor itself (see :doc:`core-network`).
+
+The base station decides where an uplink packet goes. Every MEC host
+registers its address with the :ned:`Binder`; when a UE's uplink packet is
+addressed to a MEC host, the base station's traffic flow filter puts it into
+the session's tunnel towards that host's UPF, instead of the tunnel towards
+the anchor. A MEC host of another operator's core network is reached through
+the anchor, as any external destination. The downlink from the MEC
+application goes from the host's UPF to the base station that serves the UE.
+
+The QoS flows of the MEC traffic are classified like any other traffic (see
+:doc:`qos`); the example simulations scope a downlink classification rule to
+the MEC host's UPF with its ``node`` field:
 
 .. code:: ini
 
-   ############ MEC Configuration ############
-   # MEC Hosts
-   **.mecHost*.virtualisationInfrastructure.ipv4.forwarding = true
-   *.mecHost*.maxMECApps = 100     # max ME Apps to instantiate
-   *.mecHost*.maxRam = 32GB            # max KBytes of Ram 
-   *.mecHost*.maxDisk = 100TB      # max KBytes of Disk Space 
-   *.mecHost*.maxCpuSpeed = 400000             # max CPU
-   *.mecHost*.bsList = "gnb1, gnb2"
+   *.bearerConfigurator.dlQfiRules = [
+       {node: "**.upf_mec", filter: "WarningAlert*", qfi: 1},
+       {node: "**.upf_mec", qfi: 0},
+       {dscpAsQfi: true}]
+   *.bearerConfigurator.ulQfiRules = [{filter: "WarningAlert*", qfi: 1}]
 
-   # MEC host 2 services configurations
+Configuration
+-------------
+
+**Add a MEC system to a network.** The network needs a
+:ned:`MecOrchestrator`, a :ned:`Ualcmp` connected to it through its
+``toMecOrchestrator`` and ``fromMecOrchestrator`` gates and linked to the data
+network, and one or more :ned:`MecHost` nodes linked to UPFs of the core
+network. Each MEC host's platform manager must know the orchestrator, and the
+orchestrator its hosts:
+
+.. code:: ini
+
+   *.mecOrchestrator.mecHostList = ["mecHost1", "mecHost2"]
+   *.mecOrchestrator.mecApplicationPackageList = ["WarningAlertApp"]
+   *.mecHost*.mecPlatformManager.mecOrchestrator = "mecOrchestrator"
+
+**Size a MEC host and give it services.**
+
+.. code:: ini
+
+   *.mecHost*.maxMecApps = 100
+   *.mecHost*.maxRam = 32GB
+   *.mecHost*.maxDisk = 100TB
+   *.mecHost1.maxCpuSpeed = 400000
+   *.mecHost*.bsList = ["gnb1", "gnb2"]
+
    *.mecHost2.mecPlatform.numMecServices = 1
    *.mecHost2.mecPlatform.mecService[0].typename = "LocationService"
-   *.mecHost2.mecPlatform.mecService[0].localAddress = "mecHost2.virtualisationInfrastructure" 
+   *.mecHost2.mecPlatform.mecService[0].localAddress = \
+           "mecHost2.virtualisationInfrastructure"
    *.mecHost2.mecPlatform.mecService[0].localPort = 10020
-   *.mecHost2.mecPlatform.serviceRegistry.localAddress = "mecHost2.virtualisationInfrastructure" 
+   *.mecHost2.mecPlatform.serviceRegistry.localAddress = \
+           "mecHost2.virtualisationInfrastructure"
    *.mecHost2.mecPlatform.serviceRegistry.localPort = 10021
 
-   # MEC Orchestrator configuration
-   *.mecOrchestrator.mecHostList = "mecHost1, mecHost2"              # MEC hosts associated to the MEC system
+**Run a MEC application for a UE.** The UE runs a device application and the
+application that uses the MEC application:
 
-   *.mecOrchestrator.mecApplicationPackageList = "WarningAlertApp"   # List of MEC app descriptors to be onboarded at init
-   *.mecHost*.mecPlatformManager.mecOrchestrator = "mecOrchestrator" # the MECPM needs to know the MEC orchestrator
-      
-   #------------UEWarningAlertApp---------------
-   *.car[*].numApps = 2
+.. code:: ini
 
-   # app[0] is the Device App
-   *.car[*].app[0].typename = "DeviceApp"
-   *.car[*].app[0].localPort = 4500
-   *.car[*].app[0].UALCMPAddress = "ualcmp"
-   *.car[*].app[0].UALCMPPort = 1000
-   #optional if the Appdescriptor is not already onboarded (see *.mecOrchestrator.mecApplicationPackageList par)
-   *.car[*].app[0].appPackageSource = "ApplicationDescriptors/WarningAlertApp.json"
+   *.ue[*].numApps = 2
+   *.ue[*].app[0].typename = "DeviceApp"
+   *.ue[*].app[0].localPort = 4500
+   *.ue[*].app[0].ualcmpAddress = "ualcmp"
+   *.ue[*].app[0].ualcmpPort = 1000
+   *.ue[*].app[0].appPackageSource = \
+           "ApplicationDescriptors/WarningAlertApp.json"
+   *.ue[*].app[1].typename = "UeWarningAlertApp"
+   *.ue[*].app[1].deviceAppAddress = "ue["+string(ancestorIndex(1))+"]"
+   *.ue[*].app[1].deviceAppPort = 4500
 
-   # app[1] is the UE App
-   *.car[*].app[1].typename = "UEWarningAlertApp"
+**Choose how the MEC host is selected:**
 
-   # Device App address and port
-   *.car[*].app[1].destAddress = "car["+string(ancestorIndex(1))+"]"
-   *.car[*].app[1].destPort = 4500
-      
+.. code:: ini
 
-Both the MEC hosts have the same computational capacity, but
-only mecHost2 has a Location Service running on its MEC
-platform, hence it will be the one chosen by the MEC
-orchestrator to deploy the MEC app.
-If the user wanted to request the onboarding of the
-appDescriptor file from the Device app, instead of it being
-loaded at initialization time, it has to insert the path to the
-file in the appPackageSource parameter of the Device app and
-remove the appDescriptor file name from the list of the MEC
-orchestrator mecApplicationPackageList parameter.
+   *.mecOrchestrator.selectionPolicy = "AvailableResourcesBased"
 
-The described example is available in the simulation folder in
-Simu5G
-(`here <https://github.com/Unipisa/Simu5G/tree/master/simulations/NR/mec/multiMecHost>`__),
-so you can look at it to have the view of the complete
-configuration.
+**Use the RNIS.** The base stations and the UEs need the statistics
+collectors the service reads:
+
+.. code:: ini
+
+   **.hasRniSupport = true
+   *.mecHost.mecPlatform.mecService[0].typename = "RniService"
+
+Deployment scenarios
+--------------------
+
+Simu5G runs MEC scenarios fully simulated or as an emulation, in which real
+applications exchange their traffic through the simulated network. A user can
+develop and test MEC applications in either mode; for example, a real MEC
+application can be tested against a simulated UE application, or the other
+way around.
+
+Running a fully simulated system
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``MultiMec`` configuration of ``simulations/nr/mec/multiMecHost`` is a
+complete example. Its network has two gNBs, each behind an intermediate UPF
+with a MEC host of its own, and the UALCMP and the MEC orchestrator on the
+anchor UPF. The UEs run a device application and a
+:ned:`UeWarningAlertApp`, which has a :ned:`MecWarningAlertApp` instantiated
+in the MEC system; the MEC application subscribes to the Location Service and
+alerts its UE when the UE enters a danger zone. The application descriptor is
+the one shown above, and the configuration is the one of the
+`Configuration`_ section. Only ``mecHost2`` runs the Location Service, so the
+default ``MecServiceBased`` policy places the MEC applications there; the
+configuration also runs the other two policies, as an iteration variable, for
+comparison.
 
 Running an emulated system
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We now describe the configuration required to run a MEC system
-in emulation mode within Simu5G. More in detail, the following
-operations will be highlighted: routing rules, in both the
-simulator and the host running the real applications, and the
-configuration to instruct the MEC orchestrator to manage the
-instantiation of a real MEC app. In this example, both the UE
-app and the MEC app are real applications running on the same
-host where Simu5G runs. The real applications replicate the
-behavior described in the fully simulated example above and the
-5G scenario includes one UE, i.e the car, and one MEC host. The
-Device app runs inside the UE and communicates with the real UE
-app through the serialization and deserialization of the
-messages feature offered by the OMNeT++ platform.
-
-| The interaction with the real world occurs via two INET’s
-   ExtLowerEthernetInterface modules included into the car and
-   mecHost modules. Such interfaces can receive real packets by
-   network interface cards attached to them. In our case, these
-   network interfaces are created as Virtual Ethernets
-   (`veth <https://man7.org/linux/man-pages/man4/veth.4.html>`__)
-   inside different `Linux
-   namespaces <https://man7.org/linux/man-pages/man7/namespaces.7.html>`__,
-   i.e ns1 for the MEC app, ns2 for the UE app and the default
-   one where Simu5G runs.
-| The figure below describes the setup:
+The examples under ``emulation/mec`` run the same scenario with real
+applications: a real UE application (``extUeApp``), a real MEC application
+(``extMecApp``), or both (``extUeAppMecApp``), written in Python and running
+on the same machine as Simu5G. The real applications reach the simulation
+through INET's :ned:`ExtLowerEthernetInterface` modules in the UE and in the
+MEC host's virtualisation infrastructure, attached to virtual Ethernet (veth)
+interfaces in separate Linux network namespaces:
 
 .. figure:: images/namespaces.png
    :figwidth: 100.0%
 
-   Namespaces
-
-| Data packets directed to the simulator are routed to the
-   relative sim-veth interface attached to the
-   ExtLowerEthernetInterface modules.
-| The INI configuration of the ExtLowerEthernetInterface
-   modules to allow the communication with the real world is:
+   The namespaces of an emulated MEC scenario
 
 .. code:: ini
 
-   ############## Ext Interface configuration ##############
-   # equip the MEC host and UE with an External Ethernet interface 
    *.mecHost1.virtualisationInfrastructure.numExtEthInterfaces = 1
-   *.mecHost1.virtualisationInfrastructure.extEth[0].typename = "ExtLowerEthernetInterface"
+   *.mecHost1.virtualisationInfrastructure.extEth[0].typename = \
+           "ExtLowerEthernetInterface"
    *.mecHost1.virtualisationInfrastructure.extEth[0].device = "sim-veth1"
-   *.mecHost1.virtualisationInfrastructure.ipv4.forwarding = true
-   
+   **.extMeAppsAddress = "192.168.2.0/24"
+
    *.ue.numEthInterfaces = 1
    *.ue.eth[0].typename = "ExtLowerEthernetInterface"
    *.ue.eth[0].device = "sim-veth2"
    *.ue.extHostAddress = "192.168.3.2"
    *.ue.forwarding = true
 
-As far as the MEC system is concerned, to allow the
-instantation of a real MEC app in the appDescriptor file
-related to a real MEC app, a field called
-emulatedMecApplication must be inserted. The latter contains
-the ipAddress and port sub-fields identifying the real MEC app
-endpoint. This way, the MEC orchestrator is made aware that the
-MEC app to instantiate is running outside Simu5G and it does
-not need to request the creation of the MEC app module inside
-the simulator. Then, the MEC orchestrator communicates to the
-Device app the IP-port pair the UE app will need to use to
-communicate with the MEC app, i.e. 192.168.2.2 in this example.
+A real MEC application is described by a descriptor with an
+``emulatedMecApplication`` field, which holds its address and port. The MEC
+orchestrator then reserves the resources on the selected host without
+creating a module, and gives the device application the real application's
+address. The base stations forward the traffic addressed to the real MEC
+applications, whose address range their ``extMeAppsAddress`` parameter
+gives, to the MEC host.
 
-Once the Simu5G environment is configured, the OS of the host
-running all the applications must be configured, too. The
-following commands refers to a host equipped with Linux Ubuntu
-18.04 OS.
-Linux namespaces are created with the following commnad:
+Each example directory contains ``setup.sh`` and ``teardown.sh`` scripts,
+which create and remove the namespaces and the veth interfaces, and a
+``run.sh`` script. In outline, the setup does the following:
 
 .. code:: shell
 
    sudo ip netns add ns1
    sudo ip netns add ns2
-
-veth interfaces are created by the following command:
-
-.. code:: shell
-
-   # create virtual ethernet link: ns1.veth1 <--> sim-veth1 
    sudo ip link add veth1 netns ns1 type veth peer name sim-veth1
-   # create virtual ethernet link: ns2.veth2 <--> sim-veth2 
    sudo ip link add veth2 netns ns2 type veth peer name sim-veth2
-
-Then an IP address and a netmask is assigned to the veth
-interfaces veth1 and veth2:
-
-.. code:: shell
-
-   # Assign the address 192.168.2.2 with netmask 255.255.255.0 to `veth1`
    sudo ip netns exec ns1 ip addr add 192.168.2.2/24 dev veth1
-   # Assign the address 192.168.3.2 with netmask 255.255.255.0 to `veth2`
    sudo ip netns exec ns2 ip addr add 192.168.3.2/24 dev veth2
-
-After bringing up all the new interfaces:
-
-.. code:: shell
-
    sudo ip netns exec ns1 ip link set veth1 up
    sudo ip netns exec ns2 ip link set veth2 up
    sudo ip link set sim-veth1 up
    sudo ip link set sim-veth2 up
-
-we need to add the default IP route within new namespaces
-
-.. code:: shell
-
    sudo ip netns exec ns1 route add default dev veth1
    sudo ip netns exec ns2 route add default dev veth2
 
-These are the main steps to being able to run an emulation of
-Simu5G with the MEC framework. Read the :doc:`Building Simu5G for
-real-time emulation <emulation>`
-section to learn how to launch it. The described example is
-available in the emulation folder in Simu5G
-(`here <https://github.com/Unipisa/Simu5G/tree/master/emulation/mec/extUeAppMecApp>`__),
-so you can look at it to have a complete view of both the
-configuration and the setup.
+Running Simu5G as an emulator is described in :doc:`emulation`.
 
-MEC-enabled networks
---------------------
+Statistics
+----------
 
-Networks can also include ETSI MEC elements -- ``MecHost`` nodes attached
-to the core network, a MEC orchestrator and the related infrastructure.
-These are described in :doc:`mec`.
+The Service Registry, the MEC services and the UALCMP record the response
+time of the requests they serve (``responseTime``) and, with the load
+generator, the number of background requests
+(``loadGeneratorNumBackgroundRequests``). The applications record their own
+measures: for example, :ned:`UeRequestApp` records its requests' response
+time, split into the uplink, the processing and the downlink parts, and the
+real-time video streaming applications record frame and playout statistics.
+See :doc:`apps` and :doc:`results`.
 
-MEC hosts
----------
+Example simulations
+-------------------
 
-``MecHost`` models an ETSI MEC host, containing a virtualisation
-infrastructure with configurable computing resources, a MEC platform hosting
-MEC services, and its own UPF so it can be attached anywhere in the core
-network. It is described in :doc:`mec`.
+*  ``simulations/nr/mec/singleMecHost``: one gNB and one MEC host;
+
+*  ``simulations/nr/mec/multiMecHost``: two cells with a MEC host each, and
+   the three selection policies;
+
+*  ``simulations/nr/mec/multiOperator``: two operators' core networks, each
+   with its MEC host;
+
+*  ``simulations/nr/mec/requestResponseApp``: request-response traffic with
+   processing times from the VIM, background MEC applications and loaded
+   services;
+
+*  ``simulations/nr/mec/rnisTest``: a MEC application that queries the RNIS
+   periodically;
+
+*  ``emulation/mec/extUeApp``, ``extMecApp`` and ``extUeAppMecApp``: real UE
+   and MEC applications.
+
+Fidelity
+--------
+
+*  The reference points between the MEC orchestrator and the MEC hosts
+   (Mm3 and the platform manager's interfaces) are direct calls, and the
+   UALCMP is connected to the orchestrator by gates; the lifecycle operations
+   take the fixed times ``onboardingTime``, ``instantiationTime`` and
+   ``terminationTime``. The OSS and the relocation of MEC applications are not
+   modeled.
+
+*  The APIs are subsets: of Mx2, listing applications and creating and
+   deleting application contexts; of the RNIS, the layer-2 measurements query,
+   without subscriptions; of the Location API, the users query and the
+   circular-area subscription; of the Service Registry, the query of the
+   services. The Mp1 traffic rules and DNS rules are not modeled.
+
+*  The ``MecServiceBased`` policy considers only the first MEC service a
+   descriptor requires, and the ``MecHostBased`` policy does not check the
+   host's resources; an application that does not fit is then refused at
+   instantiation.
+
+*  Processing times are the number of instructions divided by a CPU speed;
+   the host's memory and storage are only accounted for, they do not affect
+   the timing.
+
+*  Known deviation: the base station steers the traffic of the MEC
+   applications, by destination address, into a tunnel towards the MEC
+   host's UPF. In the 5G system (TS 23.501 5.13), the SMF inserts an uplink
+   classifier or a branching point UPF into the session's path, and the base
+   station is not involved.
+
+.. TODO: figure: the configuration of the fully simulated example (the old
+   base_network_simulation2.png was a NED screenshot, which the guide does not
+   use).
