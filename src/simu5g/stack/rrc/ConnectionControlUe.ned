@@ -46,7 +46,8 @@ simple ConnectionControlUe like IConnectionControl
         // Configurable minimum threshold RSSI for attaching to an eNB (meaningful only if minRssiDefault==false)
         double minRssi @unit("dB") = default(-99.0dB);
 
-        double hysteresisFactor = default(10);
+        double hysteresis @unit(dB) = default(3dB); // How much stronger than the serving cell's another cell's beacon must be received for a handover
+        double hysteresisFactor = default(nan); // Replaced by hysteresis; setting it is an error
 
         string binderModule = default("binder");
         string macModule = default("^.^.mac");

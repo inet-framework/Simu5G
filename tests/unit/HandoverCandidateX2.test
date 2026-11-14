@@ -80,7 +80,7 @@ class TestConnectionControl : public ConnectionControlUe
             nodeId_ = MacNodeId(1025);
             enableHandover_ = true;
             minRssi_ = -99.0;
-            hysteresisFactor_ = 0;  // no hysteresis
+            hysteresis_ = 0;  // no hysteresis
             hysteresisThreshold_ = 0;
             handoverStarter_ = new cMessage("handoverStarter");
         }

@@ -11,6 +11,8 @@
 
 #include "ConnectionControlUe.h"
 
+#include <cmath>
+
 #include "simu5g/stack/ip2nic/HandoverPacketHolderUe.h"
 #include "simu5g/stack/phy/PhyUe.h"
 #include "simu5g/stack/rrc/BearerManagement.h"
@@ -53,7 +55,9 @@ void ConnectionControlUe::initialize(int stage)
         enableHandover_ = par("enableHandover");
         handoverDetachmentTime_ = par("handoverDetachmentTime").doubleValue();
         handoverAttachmentTime_ = par("handoverAttachmentTime").doubleValue();
-        hysteresisFactor_ = par("hysteresisFactor").doubleValue();
+        if (!std::isnan(par("hysteresisFactor").doubleValue()))
+            throw cRuntimeError("hysteresisFactor is replaced by hysteresis, in dB: the handover margin is no more a fraction of the serving cell's beacon SINR");
+        hysteresis_ = par("hysteresis").doubleValue();
 
         if (par("minRssiDefault").boolValue())
             minRssi_ = binder_->phyPisaData.minSnr();
@@ -229,14 +233,14 @@ void ConnectionControlUe::beaconReceived(AirFrame *frame, UserControlInfo *lteIn
             servingNodeRssi_ = rssi;
             candidateServingNodeId_ = servingNodeId_;
             candidateServingNodeRssi_ = rssi;
-            updateHysteresisThreshold(servingNodeRssi_);
+            applyHysteresisThreshold();
             cancelEvent(handoverStarter_);
         }
         else {
             // broadcast from another serving node with higher RSSI
             candidateServingNodeId_ = lteInfo->getSourceId();
             candidateServingNodeRssi_ = rssi;
-            updateHysteresisThreshold(rssi);
+            applyHysteresisThreshold();
             triggeredHandover_ = std::make_pair(servingNodeId_, candidateServingNodeId_);
 
             // schedule self message to evaluate handover parameters after
@@ -253,7 +257,7 @@ void ConnectionControlUe::beaconReceived(AirFrame *frame, UserControlInfo *lteIn
             if (rssi >= minRssi_) {
                 servingNodeRssi_ = rssi;
                 candidateServingNodeRssi_ = rssi;
-                updateHysteresisThreshold(rssi);
+                applyHysteresisThreshold();
             }
             else { // lost connection with current serving node
                 if (candidateServingNodeId_ == servingNodeId_) { // trigger detachment
@@ -263,7 +267,7 @@ void ConnectionControlUe::beaconReceived(AirFrame *frame, UserControlInfo *lteIn
                                                    // this ensures that each candidate with is at least as 'bad'
                                                    // as the minRssi_ has a chance.
 
-                    updateHysteresisThreshold(0);
+                    clearHysteresisThreshold();
                     triggeredHandover_ = std::make_pair(servingNodeId_, candidateServingNodeId_);
 
                     if (!handoverStarter_->isScheduled()) {
@@ -449,7 +453,7 @@ void ConnectionControlUe::doHandover()
 
     mac_->doHandover(candidateServingNodeId_);  // do MAC operations for handover
     servingNodeRssi_ = candidateServingNodeRssi_;
-    updateHysteresisThreshold(servingNodeRssi_);
+    applyHysteresisThreshold();
 
     // Update DL feedback generator
     fbGen_->handleHandover(servingNodeId_);
@@ -483,7 +487,7 @@ void ConnectionControlUe::forceHandover()
 {
     candidateServingNodeId_ = NODEID_NONE;
     candidateServingNodeRssi_ = 0.0;
-    updateHysteresisThreshold(servingNodeRssi_);
+    applyHysteresisThreshold();
 
     cancelEvent(handoverStarter_);  // if any
     scheduleAt(NOW, handoverStarter_);
@@ -519,9 +523,14 @@ void ConnectionControlUe::deleteOwnBuffers(MacNodeId servingNodeId, bool localNo
     }
 }
 
-void ConnectionControlUe::updateHysteresisThreshold(double rssi)
+void ConnectionControlUe::applyHysteresisThreshold()
 {
-    hysteresisThreshold_ = (hysteresisFactor_ == 0) ? 0 : rssi / hysteresisFactor_;
+    hysteresisThreshold_ = hysteresis_;
+}
+
+void ConnectionControlUe::clearHysteresisThreshold()
+{
+    hysteresisThreshold_ = 0;
 }
 
 ConnectionControlEnb *ConnectionControlUe::baseStationControl(MacNodeId bsId)

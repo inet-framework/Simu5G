@@ -65,10 +65,10 @@ class ConnectionControlUe : public ConnectionControlBase
     double hysteresisThreshold_ = 0;
 
     /**
-     * Value used to divide currentMasterRssi_ and create a hysteresisTh_.
-     * Use zero to have hysteresisTh_ == 0.
+     * The handover hysteresis in dB: how much stronger than the serving cell's
+     * another cell's beacon must be received.
      */
-    double hysteresisFactor_;
+    double hysteresis_;
 
     /**
      * Time interval elapsing from the reception of the first handover broadcast message
@@ -144,7 +144,11 @@ class ConnectionControlUe : public ConnectionControlBase
      *        insertion/deletion detected".
      */
     virtual void deleteOwnBuffers(MacNodeId servingNodeId, bool localNodeIsBeingDeleted = false);
-    virtual void updateHysteresisThreshold(double rssi);
+    /** The threshold while there is a cell to compare a candidate with: the hysteresis. */
+    virtual void applyHysteresisThreshold();
+
+    /** The threshold while there is none: a UE that lost its cell takes any cell above the minimum. */
+    virtual void clearHysteresisThreshold();
 
     // The control-plane entry point of a base station, through the Binder's node
     // directory; throws if there is none (the UE is attached nowhere)
