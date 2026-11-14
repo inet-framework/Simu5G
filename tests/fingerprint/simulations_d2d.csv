@@ -25,16 +25,16 @@
 /simulations/lte/test_handover/,         -f omnetpp.ini -c VoIP-D2D -r 0,                       15s,         80a1-1fa1/tplx;b8c5-b613/tilx;f19a-f6a2/~tNl;31c4-c6dd/sz, PASS, radio nofading
 /simulations/nr/d2d/,                    -f omnetpp.ini -c MultiplePairs -r 0,                   5s,         9125-0bea/tplx;23fa-96a6/tilx;c078-9cac/~tNl;aaba-9d45/sz, PASS, radio
 /simulations/nr/d2d/,                    -f omnetpp.ini -c MultiplePairs-TCP-D2D -r 0,           5s,         3826-26e4/tplx;0ab2-4334/tilx;825a-0d87/~tNl;a258-80ce/sz, PASS, radio
-/simulations/nr/d2d/,                    -f omnetpp.ini -c MultiplePairs-TCP-D2D-wReuse -r 0,    5s,         274b-aa41/tplx;e0bb-ec0b/tilx;860d-6367/~tNl;f6ea-340e/sz, PASS, radio
+/simulations/nr/d2d/,                    -f omnetpp.ini -c MultiplePairs-TCP-D2D-wReuse -r 0,    5s,         e84c-6978/tplx;1d8f-27b0/tilx;709b-9b6d/~tNl;5685-cce1/sz, PASS, radio
 /simulations/nr/d2d/,                    -f omnetpp.ini -c MultiplePairs-TCP-Infra -r 0,         5s,         9aef-808c/tplx;ebdf-aa84/tilx;b07e-0566/~tNl;24fa-4cc4/sz, PASS, radio
 /simulations/nr/d2d/,                    -f omnetpp.ini -c MultiplePairs-UDP-D2D -r 0,           5s,         40b6-da41/tplx;263b-7479/tilx;0335-85e5/~tNl;4647-4af9/sz, PASS, radio
-/simulations/nr/d2d/,                    -f omnetpp.ini -c MultiplePairs-UDP-D2D-wReuse -r 0,    5s,         a622-9bb4/tplx;c3d9-2f00/tilx;8a0f-18b5/~tNl;be1e-9998/sz, PASS, radio
+/simulations/nr/d2d/,                    -f omnetpp.ini -c MultiplePairs-UDP-D2D-wReuse -r 0,    5s,         e3d2-5de6/tplx;0a8d-ae6a/tilx;8a0f-18b5/~tNl;8e07-a525/sz, PASS, radio
 /simulations/nr/d2d/,                    -f omnetpp.ini -c MultiplePairs-UDP-Infra -r 0,         5s,         582a-3138/tplx;d330-142a/tilx;44da-fb9e/~tNl;920d-35d5/sz, PASS, radio
 /simulations/nr/d2d/,                    -f omnetpp.ini -c SinglePair -r 0,                      5s,         7bc5-04dc/tplx;0147-9f75/tilx;ab0b-1092/~tNl;9e59-e096/sz, PASS, radio
 /simulations/nr/d2d/,                    -f omnetpp.ini -c SinglePair-modeSwitching -r 0,       20s,         52dc-1cd3/tplx;82c8-a79b/tilx;927d-88a1/~tNl;71f9-97ad/sz, PASS, radio nofading
-/simulations/nr/d2d/,                    -f omnetpp.ini -c SinglePair-modeSwitching-TCP -r 0,   20s,         9575-d196/tplx;d915-feb0/tilx;3deb-6ba1/~tNl;001b-38e9/sz, PASS, radio nofading
-/simulations/nr/d2d/,                    -f omnetpp.ini -c SinglePair-modeSwitching-UDP -r 0,   20s,         cd89-c033/tplx;b47c-05cb/tilx;7bdf-bfe7/~tNl;e4e6-111c/sz, PASS, radio nofading
-/simulations/nr/d2d/,                    -f omnetpp.ini -c SinglePair-TCP-D2D -r 0,              5s,         0dfc-50bf/tplx;8e5e-4273/tilx;b272-f4ca/~tNl;d97e-7241/sz, PASS, radio
+/simulations/nr/d2d/,                    -f omnetpp.ini -c SinglePair-modeSwitching-TCP -r 0,   20s,         c881-5ef2/tplx;3a5a-c0d5/tilx;e059-a7d4/~tNl;d0e7-07a9/sz, PASS, radio nofading
+/simulations/nr/d2d/,                    -f omnetpp.ini -c SinglePair-modeSwitching-UDP -r 0,   20s,         593c-5edd/tplx;66ff-1f1a/tilx;7bdf-bfe7/~tNl;34d6-ae37/sz, PASS, radio nofading
+/simulations/nr/d2d/,                    -f omnetpp.ini -c SinglePair-TCP-D2D -r 0,              5s,         5ef2-8927/tplx;f3a3-0dd9/tilx;ff58-cb51/~tNl;f905-31ec/sz, PASS, radio
 /simulations/nr/d2d/,                    -f omnetpp.ini -c SinglePair-TCP-Infra -r 0,            5s,         3f5f-43ee/tplx;2338-2c66/tilx;a733-17c4/~tNl;6999-c276/sz, PASS, radio
 /simulations/nr/d2d/,                    -f omnetpp.ini -c SinglePair-UDP-D2D -r 0,              5s,         d3a7-c0a1/tplx;66c5-b6ec/tilx;6926-f3c4/~tNl;8b8d-24f0/sz, PASS, radio
 /simulations/nr/d2d/,                    -f omnetpp.ini -c SinglePair-UDP-Infra -r 0,            5s,         c5fb-f88a/tplx;10ca-1fd7/tilx;09c3-85cf/~tNl;a458-517b/sz, PASS, radio

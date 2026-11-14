@@ -74,14 +74,11 @@ class NrPdcpRxEntity : public LtePdcpRxEntity
 {
   protected:
 
-    // true on a multi-leg bearer: reorder the SN stream merged from several legs
-    bool reorderingEnabled_ = false;
-
-    // if true, deliver packets to the upper layer without reordering
-    // NOTE: reordering can apply for Split Bearers only
+    // outOfOrderDelivery (TS 38.323): deliver each SDU on arrival instead of in COUNT order
     bool outOfOrderDelivery_;
 
-    // the reception buffer: the stored SDUs not yet delivered, keyed by COUNT
+    // the reception buffer, keyed by COUNT: the stored SDUs not yet delivered, and (as nullptr)
+    // the COUNTs above RX_DELIV that were delivered out of order
     std::map<unsigned int, inet::Packet *> reorderingBuffer_;
 
     // State variables
@@ -106,7 +103,7 @@ class NrPdcpRxEntity : public LtePdcpRxEntity
 
     void handleMessage(cMessage *msg) override;
 
-    bool isEmpty() const override { return reorderingBuffer_.empty(); }
+    bool isEmpty() const override;
 };
 
 } //namespace

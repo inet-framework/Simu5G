@@ -14,10 +14,13 @@
 package simu5g.stack.pdcp;
 
 //
-// Handles the operations related to the NR PDCP (Packet Data Convergence Protocol)
-// layer on the receiving side of a specific connection. It extends the ~LtePdcpRxEntity module.
-// Facilitates the creation of support for Dual Connectivity functionality. In
-// particular, it manages the reordering of out-of-sequence PDCP PDUs in Dual Connectivity deployments.
+// The receiving side of the NR PDCP (Packet Data Convergence Protocol) entity of one bearer.
+// It extends ~LtePdcpRxEntity with the reception buffer of TS 38.323 5.2.2: NR RLC delivers
+// out of order, and so does a bearer with several legs, so the entity stores the SDUs that
+// arrive out of sequence and delivers them in COUNT order. A gap closes when the missing SDU
+// arrives or when t-Reordering expires; an SDU that arrives after that is discarded, as is a
+// duplicate. With outOfOrderDelivery, every SDU goes up on arrival, and duplicates are still
+// discarded.
 //
 simple NrPdcpRxEntity extends LtePdcpRxEntity
 {
@@ -25,8 +28,7 @@ simple NrPdcpRxEntity extends LtePdcpRxEntity
         @dynamic(true);
         @class("NrPdcpRxEntity");
         @display("i=block/layer");
-        bool reorderingEnabled = default(false);   // Set by a multi-leg PdcpEntityBase: reorder the SN stream merged from several legs
-        bool outOfOrderDelivery = default(false);
-        double timeout @unit(s) = default(0.1s);   // Timeout for RX Buffer
+        bool outOfOrderDelivery = default(false);  // Deliver each SDU on arrival instead of in COUNT order (TS 38.331 outOfOrderDelivery)
+        double timeout @unit(s) = default(0.1s);   // t-Reordering; a modeling default, as TS 38.331 applies infinity when the network leaves it out
         int rxWindowSize = default(4096);
 }

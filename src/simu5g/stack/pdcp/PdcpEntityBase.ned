@@ -47,7 +47,6 @@ module PdcpEntityBase
         *.numLegs = this.numLegs;
         *.legs = this.legs;
         *.emitPerSduSignals = !this.hasSplitter;   // Where the splitter is present, it emits the per-leg statistics
-        *.reorderingEnabled = this.numLegs > 1;    // Reorder the SN stream merged from several legs
     gates:
         input upperIn;            // SDUs from IP (via PdcpMux)
         output upperOut;          // Reassembled SDUs to IP (via PdcpMux)
