@@ -1,0 +1,70 @@
+%description:
+A UE that leaves its cell while an uplink grant of that cell is pending makes no PDU for it:
+the grant goes with the cell.
+
+One gNB on two carriers, of numerology 0 and 2, so the UE's MAC ticks every 0.25 ms, and a grant
+on the 2 GHz carrier, which reaches the UE right after a tick, waits up to 1 ms for that
+carrier's next turn. The UE sends a saturating uplink flow and moves away from the gNB at 100
+m/s; with minRssi = 35 dB it loses the cell on the way. handoverDetachmentTime = 23.5 ms puts
+its detachment, at 3.02351 s, between a grant's arrival at 3.023 s and its turn at 3.024 s.
+
+The UE's MAC, detached, then found the grant at its next turn, made a PDU for a pending buffer
+status report, and aborted on the missing cell ("check_and_cast(): Cannot cast nullptr to type
+'simu5g::LteMacBase*'"). The same happened, depending on the seed, to the NR leg of a dual
+connectivity UE in nr/test_numerology, when a handover of its master forced the leg to detach.
+
+The run reaches its time limit.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+sim-time-limit = 4s
+
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numerologyIndex = 0
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 6GHz
+*.carrierAggregation.componentCarrier[1].numerologyIndex = 2
+*.gnb.cellularNic.numCarriers = 2
+*.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+
+# the UE moves away from the gNB and loses it
+*.gnb.mobility.initialX = 100m
+*.gnb.mobility.initialY = 500m
+*.ue[*].mobility.typename = "LinearMobility"
+*.ue[*].mobility.initialX = 150m
+*.ue[*].mobility.initialY = 500m
+*.ue[*].mobility.speed = 100mps
+*.ue[*].mobility.initialMovementHeading = 0deg
+**.shadowing = false
+**.fading = false
+**.dynamicLos = false
+**.enableHandover = true
+**.cellInfo.beaconInterval = 0.1s
+**.minRssiDefault = false
+**.minRssi = 35dB
+**.handoverDetachmentTime = 23.5ms
+*.ue[0].cellularNic.rrc.nrConnectionControl.**.vector-recording = true
+
+# a saturating uplink flow
+*.ue[*].numApps = 1
+*.ue[*].app[0].typename = "CbrSender"
+*.ue[*].app[0].destAddress = "server"
+*.ue[*].app[0].destPort = 1000
+*.ue[*].app[0].packetSize = 1000B
+*.ue[*].app[0].samplingTime = 0.25ms
+*.ue[*].app[0].startTime = 0.05s
+*.server.numApps = 1
+*.server.app[0].typename = "CbrReceiver"
+*.server.app[0].localPort = 1000
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+Simulation time limit reached
+%#--------------------------------------------------------------------------------------------------------------
