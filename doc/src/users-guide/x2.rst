@@ -1,18 +1,249 @@
 X2 and CoMP
 ===========
 
-.. TODO: This chapter covers: LteX2Manager and the X2 applications; CoMP.
+Overview
+--------
+
+The X2 interface (3GPP TS 36.420 to TS 36.425) connects two eNBs, and its NR
+counterpart, the Xn interface (TS 38.420 to TS 38.425), two gNBs. Each has a
+control part and a user part. The control part, X2AP or XnAP over SCTP
+(TS 36.423, TS 38.423), carries the procedures between base stations: the
+setup of the interface itself, handover preparation, the addition and
+release of a dual connectivity secondary node, and the exchange of load and
+interference information that inter-cell interference coordination is built
+on. The user part, X2-U or Xn-U, carries user data in GTP-U tunnels: the
+downlink a handover source forwards to the target, and the PDUs of a dual
+connectivity bearer between the master and the secondary node, with flow
+control between them (TS 38.425). Coordinated multi-point (CoMP, TR 36.819)
+uses the exchange between base stations for coordinated scheduling: the cells
+agree on which of them uses which resources, so that they do not interfere
+with each other's UEs.
+
+Simu5G models an X2 link as a point-to-point link between two base stations
+with the full protocol stack on both ends: X2 applications over SCTP for the
+control part, and GTP-U over UDP for the user part. NR base stations use the
+same stack, so Xn is modeled by X2. Over the control part, only the messages
+of CoMP travel today: handover preparation and dual connectivity setup are
+direct calls between the base stations' control planes, and the X2 peers are
+configured, not discovered by an X2 Setup. The user part carries the
+forwarded downlink of handovers and the PDUs of split bearers. CoMP is
+modeled as coordinated scheduling in the downlink, with one coordination
+algorithm that partitions the resource blocks among the cells in proportion
+to their load. The load information and resource status reporting
+procedures, Xn-U flow control, and the CoMP schemes other than coordinated
+scheduling (joint transmission, coordinated beamforming) are not modeled.
+
+This chapter describes the X2 stack of a base station, what crosses an X2
+link, how base stations become X2 peers, and the CoMP model. How X2 links are
+wired and configured in a network is shown in :doc:`deployments`.
+
+The X2 stack of a base station
+------------------------------
+
+Every X2 link of a base station is a connection on its ``x2`` gate vector,
+and each gets a PPP interface (``x2ppp[]``) of the base station's network
+layer. On top of the network layer, the base station runs two X2 entities:
+
+*  **The X2 applications** (``x2App[]``, :ned:`LteX2App`), one per peer, which
+   carry the X2 control messages over the node's SCTP. Each has a client
+   (:ned:`X2AppClient`), which connects to the peer's server, and a server
+   (:ned:`X2AppServer`), which accepts the peer's client; the server sends,
+   the client receives.
+
+*  **The X2 GTP-U entity** (``gtpUserX2``, :ned:`GtpUserX2`), which carries
+   user data to and from the peers in GTP-U tunnels over UDP.
+
+Inside the cellular NIC, the X2 manager (``x2Manager``, :ned:`LteX2Manager`)
+connects the two to the modules that use X2. It dispatches each incoming X2
+message by its type to the module that registered for it, and sends each
+outgoing one to the X2 application of its peer, or, for user data, to
+``gtpUserX2``. The users of X2 are:
+
+*  the handover forwarder (``handoverX2Forwarder``), which forwards the
+   downlink of a UE in handover (see :doc:`handover`);
+
+*  the dual connectivity forwarder (``dcX2Forwarder``), which carries the PDUs
+   of split bearers between the master and the secondary node (see
+   :doc:`dual-connectivity`);
+
+*  the CoMP manager (``compManager``), present when the NIC's ``compEnabled``
+   parameter is true (see `Coordinated multi-point`_ below).
+
+What crosses an X2 link
+-----------------------
+
+On the control part, over SCTP, travel the requests and replies of CoMP. The
+control messages of handover (the Handover Request and its acknowledgement,
+the UE Context Release) and of dual connectivity (the addition of the
+secondary node's part of a bearer, the setup of its tunnels) are direct calls
+between the base stations' connection controls (see :doc:`control-plane`).
+They take no time and use no capacity of the link.
+
+On the user part, in GTP-U over UDP, travel the downlink packets a handover
+source forwards to the target, and the PDCP PDUs of split bearers between
+the master and the secondary node. These packets load the X2 link like any
+other traffic: its bandwidth and delay are those of the channel that connects
+the two base stations.
+
+X2 peers
+--------
+
+Two base stations are X2 peers when they are connected by an X2 link and
+their X2 applications are configured to reach each other: each X2
+application client is given the address of the peer's X2 interface in its
+``connectAddress`` parameter, and the servers listen on the ports set in their
+``localPort`` parameters. At initialization, each client records the peer's
+address with the :ned:`Binder`, and the server its port. Through these
+records, the user part finds the address of a peer, and a UE's connection
+control learns which cells are X2 peers of its serving cell -- the only cells
+it hands over to (see :doc:`ue`). An X2 link without configured X2
+applications is therefore not usable: it neither carries user data nor makes
+the cells handover candidates of each other.
+
+The configuration of a mesh of three base stations, from
+``simulations/lte/x2``, shows how the interfaces and the applications pair
+up. Each base station has two X2 links, so two X2 applications, and the
+``x2ppp`` index of a link is the index of its connection on the base station's
+``x2`` gate vector:
+
+.. code:: ini
+
+   *.eNodeB*.numX2Apps = 2    # one X2 application per peer
+   *.eNodeB*.x2App[*].server.localPort = 5000 + ancestorIndex(1)
+
+   *.eNodeB1.x2App[0].client.connectAddress = "eNodeB2%x2ppp0"
+   *.eNodeB1.x2App[1].client.connectAddress = "eNodeB3%x2ppp0"
+   *.eNodeB2.x2App[0].client.connectAddress = "eNodeB1%x2ppp0"
+   *.eNodeB2.x2App[1].client.connectAddress = "eNodeB3%x2ppp1"
+   *.eNodeB3.x2App[0].client.connectAddress = "eNodeB1%x2ppp1"
+   *.eNodeB3.x2App[1].client.connectAddress = "eNodeB2%x2ppp1"
+
+The SCTP of the base stations can be tuned like any INET SCTP; the X2
+examples switch off Nagle's algorithm, so that the small CoMP messages are
+not delayed, and the heartbeats:
+
+.. code:: ini
+
+   **.sctp.nagleEnabled = false
+   **.sctp.enableHeartbeats = false
 
 Coordinated multi-point
 -----------------------
 
-For inter-cell interference coordination studies, base stations can be
-equipped with a CoMP manager (``compEnabled = true`` on the base station
-NIC): a coordinator node partitions resource blocks among client cells over
-X2, and the clients schedule within their partition using the
-``"MAXCI_COMP"`` discipline. The provided algorithm
-(``LteCompManagerProportional``) partitions proportionally to load; the
-base class is the extension point for custom coordination schemes.
+The CoMP model of Simu5G was built for a study of how the latency of the X2
+backhaul affects coordinated scheduling (G. Nardini, A. Virdis, G. Stea,
+"Modeling X2 backhauling for LTE-Advanced and assessing its effect on CoMP
+Coordinated Scheduling", IWSLS 2016). Cells that share a coordinator divide
+the resource blocks of the band among themselves, so that neighboring cells
+transmit to their UEs on different resource blocks; the coordination messages
+travel over X2, so a slower backhaul makes the partition lag behind the
+load.
 
-.. TODO: parameters of compManager (coordinatorId, clientList,
-   coordinationPeriod) and a pointer to a runnable CoMP example.
+Each base station's CoMP manager has a role, set by its ``compNodeType``
+parameter:
+
+``COMP_CLIENT``
+   A cell that asks the coordinator for resources and schedules within the
+   share it gets. Its ``coordinatorId`` names the coordinator by node id.
+
+``COMP_COORDINATOR``
+   A base station that only coordinates: it partitions the band among the
+   clients in its ``clientList``.
+
+``COMP_CLIENT_COORDINATOR``
+   A cell that coordinates and takes part as a client too; its own request and
+   reply do not cross X2.
+
+The provided algorithm, :ned:`LteCompManagerProportional`, works in two
+cycles:
+
+*  Every TTI (1 ms), each client estimates how many resource blocks its
+   downlink backlog needs: for each of its downlink connections with data,
+   the buffered bytes divided by the bytes one resource block carries at the
+   UE's channel quality, on the primary carrier. It sends the total to the
+   coordinator over X2.
+
+*  Every ``coordinationPeriod`` (1 ms by default), the coordinator divides the
+   band among the cells in proportion to their latest requests, as
+   contiguous, disjoint ranges of resource blocks, and replies to each cell
+   with the blocks it may use. When no cell needs any resource block, the
+   cells get equal shares.
+
+A client restricts its downlink scheduling to the blocks it may use: the
+``"MAXCI_COMP"`` scheduling discipline (a Max C/I scheduler that honors the
+partition) serves its UEs only on those blocks (see :doc:`mac`).
+
+.. TODO: "contiguous, disjoint ranges" assumes a pending fix of
+   LteCompManagerProportional::doCoordination(): on dev, the offset of each
+   cell's range is the previous cell's share instead of the sum of all
+   previous shares, so with three or more cells (as in simulations/lte/x2)
+   the ranges overlap. Check that the fix has landed before the guide is
+   published.
+
+A different coordination algorithm is written by extending
+:ned:`LteCompManagerBase` and redefining its methods for the client's
+provisional schedule and request, and for the coordinator's partitioning and
+replies.
+
+Configuration
+-------------
+
+**Coordinate three cells with CoMP.** This is the CoMP setup of
+``simulations/lte/x2``: eNodeB1 coordinates and takes part, eNodeB2 and
+eNodeB3 are clients, and every cell schedules with the CoMP-aware discipline.
+The cells must be X2 peers of each other (see `X2 peers`_ above).
+
+.. code:: ini
+
+   *.eNodeB*.cellularNic.compEnabled = true
+   *.eNodeB1.cellularNic.compManager.compNodeType = "COMP_CLIENT_COORDINATOR"
+   *.eNodeB1.cellularNic.compManager.clientList = [2, 3]
+   *.eNodeB*.cellularNic.compManager.coordinatorId = 1
+   **.mac.schedulingDisciplineDl = "MAXCI_COMP"
+
+**Coordinate less often.** A longer ``coordinationPeriod`` lowers the X2
+load and makes the partition follow the load more slowly:
+
+.. code:: ini
+
+   *.eNodeB1.cellularNic.compManager.coordinationPeriod = 10ms
+
+Statistics
+----------
+
+The CoMP manager of each cell records ``compReservedBlocks``, the number of
+resource blocks the cell may use after each reply of the coordinator (mean
+and vector). The X2 applications, the SCTP and the PPP interfaces record the
+usual INET statistics of their traffic; the X2 examples switch the SCTP
+statistics off.
+
+Example simulations
+-------------------
+
+*  ``simulations/lte/x2``: three eNBs in a full X2 mesh, with balanced and
+   unbalanced load (``X2-Mesh-balanced``, ``X2-Mesh-unbalanced``), each run
+   with and without CoMP.
+
+*  ``simulations/lte/test_handover`` and
+   ``simulations/nr/standalone_multicell``: the forwarding of the downlink over
+   X2 during handover.
+
+*  ``simulations/nr/dualConnectivity``: split bearers over X2.
+
+Fidelity
+--------
+
+*  Of the X2AP and XnAP procedures, only CoMP's coordination messages travel
+   over X2; handover preparation and dual connectivity setup are direct
+   calls. The X2 Setup procedure is not modeled: the peers are configured.
+
+*  Xn is modeled by X2: the NR base stations use the same stack and messages.
+
+*  The flow control of Xn-U (TS 38.425) between the master and the secondary
+   node of a split bearer is not modeled.
+
+*  CoMP is coordinated scheduling in the downlink, by partitioning the band
+   among cells; the load information and resource status reporting of X2AP,
+   joint transmission, and coordinated beamforming are not modeled. The
+   clients' requests are made every millisecond, whatever the numerology of
+   the carrier, and the coordination period cannot be shorter than that.
