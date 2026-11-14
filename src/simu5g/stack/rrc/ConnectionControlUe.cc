@@ -151,6 +151,17 @@ void ConnectionControlUe::handleMessage(cMessage *msg)
         throw cRuntimeError("ConnectionControlUe::handleMessage: unknown self-message '%s'", msg->getName());
 }
 
+void ConnectionControlUe::beaconNotMeasured(MacNodeId cellId, GHz carrierFrequency, GHz primaryCarrierFrequency)
+{
+    Enter_Method("beaconNotMeasured");
+
+    if (enableHandover_)
+        throw cRuntimeError("UE %d received the beacon of cell %d on %g GHz, which is not its primary carrier (%g GHz): "
+                "a UE measures cells on its primary carrier only, so it would never hand over to this cell "
+                "(inter-frequency handover is not modelled)",
+                (int)num(nodeId_), (int)num(cellId), carrierFrequency.get(), primaryCarrierFrequency.get());
+}
+
 void ConnectionControlUe::beaconReceived(AirFrame *frame, UserControlInfo *lteInfo)
 {
     Enter_Method("beaconReceived");

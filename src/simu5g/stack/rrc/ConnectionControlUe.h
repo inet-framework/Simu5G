@@ -177,6 +177,13 @@ class ConnectionControlUe : public ConnectionControlBase
     virtual void beaconReceived(AirFrame *frame, UserControlInfo *lteInfo);
 
     /**
+     * The PHY received the beacon of a cell of this leg's technology on one of the UE's
+     * carriers other than its primary one, and did not measure it. With handover enabled
+     * this is an error: the UE would never hand over to that cell.
+     */
+    virtual void beaconNotMeasured(MacNodeId cellId, GHz carrierFrequency, GHz primaryCarrierFrequency);
+
+    /**
      * Used in a DC setup. Called by a ConnectionControlUe to force the
      * other one to do the handover.
      */

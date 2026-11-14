@@ -193,14 +193,6 @@ void PhyUe::handleAirFrame(cMessage *msg)
 
     // Update coordinates of this user
     if (lteInfo->getFrameType() == BEACONPKT) {
-        // Check if the message is on another carrier frequency
-        if (carrierFreq != primaryChannelModel_->getCarrierFrequency()) {
-            EV << "Received beacon packet on a different carrier frequency. Delete it." << endl;
-            delete lteInfo;
-            delete frame;
-            return;
-        }
-
         // Check if the message is from a different cellular technology.
         // Note: beacons are the only frames that carry a meaningful isNr flag (it is stamped
         // solely in PhyEnb::createBeaconMessage()), and the only true channel broadcasts
@@ -208,6 +200,16 @@ void PhyUe::handleAirFrame(cMessage *msg)
         // the sender. Hence the filter is scoped to beacons.
         if (lteInfo->isNr() != isNr_) {
             EV << "Received beacon packet [from NR=" << lteInfo->isNr() << "] from a different radio technology [to NR=" << isNr_ << "]. Delete it." << endl;
+            delete lteInfo;
+            delete frame;
+            return;
+        }
+
+        // A cell is measured on the primary carrier only: the beacon of a cell whose
+        // primary carrier is another of this UE's carriers is not measured
+        if (carrierFreq != primaryChannelModel_->getCarrierFrequency()) {
+            EV << "Received beacon packet on a different carrier frequency. Delete it." << endl;
+            connectionControl_->beaconNotMeasured(sourceId, carrierFreq, primaryChannelModel_->getCarrierFrequency());
             delete lteInfo;
             delete frame;
             return;
