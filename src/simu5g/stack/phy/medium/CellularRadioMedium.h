@@ -52,6 +52,7 @@ class CellularRadioMedium : public cSimpleModule
     std::vector<RadioModule> radioModules; // in the order the radios were added: the order broadcast frames are delivered in, as INET's medium sends to its radios
     double maxInterferenceDistance = 0; // the range of a broadcast
     long nextTransmissionId = 0;
+    std::map<GHz, simtime_t> slotDurations; // per carrier, as first asked for
     std::map<GHz, std::vector<const CellularTransmission *>> transmissions; // per carrier, in creation order; the ones not yet over
     std::map<GHz, ChannelState::LosMap> losMaps; // per carrier: whether each link is in line of sight
     std::map<GHz, ChannelState::ShadowFadingMap> shadowingMaps; // per carrier: the last shadowing sample of each link
@@ -75,6 +76,12 @@ class CellularRadioMedium : public cSimpleModule
      * (a slot) before its start.
      */
     virtual void keepTransmission(CellularTransmission *transmission);
+
+    /**
+     * The length of a slot of the carrier, from the numerology of the
+     * medium's channel model on it.
+     */
+    virtual simtime_t getSlotDuration(GHz carrierFrequency);
 
   public:
     virtual ~CellularRadioMedium();

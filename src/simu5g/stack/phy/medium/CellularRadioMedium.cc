@@ -142,12 +142,32 @@ void CellularRadioMedium::sendToNeighbors(IRadioEndpoint *sender, cSimpleModule 
     delete frame;
 }
 
+simtime_t CellularRadioMedium::getSlotDuration(GHz carrierFrequency)
+{
+    auto it = slotDurations.find(carrierFrequency);
+    if (it == slotDurations.end()) {
+        ChannelModelBase *channelModel = getChannelModel(carrierFrequency, false);
+        if (channelModel == nullptr)
+            channelModel = getChannelModel(carrierFrequency, true);
+        if (channelModel == nullptr)
+            throw cRuntimeError("CellularRadioMedium: a transmission is on %g GHz, and the medium has no channel model on that carrier", carrierFrequency.get());
+        it = slotDurations.emplace(carrierFrequency, SimTime(1, SIMTIME_MS) / (1 << channelModel->getNumerologyIndex())).first;
+    }
+    return it->second;
+}
+
 void CellularRadioMedium::keepTransmission(CellularTransmission *transmission)
 {
     transmission->id = nextTransmissionId++;
     auto& carrierTransmissions = transmissions[transmission->carrierFrequency];
-    // the slot before this one is kept, for the questions about the slot completed last
-    simtime_t keptSince = transmission->startTime - transmission->duration;
+
+    // the slot under way, by the carrier's slot grid; data is sent slot by slot
+    simtime_t slot = getSlotDuration(transmission->carrierFrequency);
+    simtime_t slotStart = SimTime::fromRaw(transmission->startTime.raw() - transmission->startTime.raw() % slot.raw());
+    ASSERT(transmission->frameType != DATAPKT || transmission->startTime == slotStart);
+
+    // the slot before it is kept, for the questions about the slot completed last
+    simtime_t keptSince = slotStart - slot;
     auto ended = std::remove_if(carrierTransmissions.begin(), carrierTransmissions.end(), [keptSince] (const CellularTransmission *t) {
         if (t->getEndTime() < keptSince) {
             delete t;

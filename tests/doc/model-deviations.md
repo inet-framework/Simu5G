@@ -89,12 +89,6 @@ piece 5a pin item 19.
    - Effect: with carriers of 6 and 10 bands, a background UE on cell band 6+j is taken as occupying band 6+j of the second carrier: the wrong band for j < 4, none for j >= 4. No row has background UEs on a cell's second carrier.
    - With uplink interference on, Binder::storeUlTransmissionMap() writes the same cell-wide band into a vector sized by the carrier's bands: for j >= 4 past its end, which was undefined behavior until "Binder: the uplink transmission map deleted". The band beyond the carrier now stops at an assertion in a debug build when the sender is a radio.
    - Fix shape: subtract the carrier's first band when the allocation is registered.
-19. **A transmission between two slot boundaries prunes the slot completed last.**
-   - What the model does: when a transmission is added, the medium drops every transmission of its carrier that ended before the new one's start minus its duration. A beacon takes no air time, so one sent between two boundaries drops the slot completed last, and a CQI computed in the rest of that slot sees none of its interference.
-   - More generally, the medium takes a slot's transmissions by time, which is right only if every data transmission starts on the carrier's slot grid; nothing asserts it. A beacon off the grid also overlaps two of an external cell's 1 ms ticks, and its RSSI counts that cell twice.
-   - Reached only when the beacon interval is not a multiple of the slot; the shipped intervals are. Latent.
-   - Pinned by tests/unit/RadioMediumTransmissionRegistry; tests/unit/RadioMediumTransmissionRegistryOffGrid asserts what the medium should keep, as an expected failure.
-   - Fix shape: keep what overlaps the slot before the current slot boundary, whatever the new transmission's duration; assert that data transmissions start on the grid.
 20. **A background UE's uplink allocation is on the medium only if its own cell evaluates uplink interference.**
    - What the model does: LteSchedulerEnb registers a background UE's UL allocation with the medium only when its base station's channel model has uplinkInterference on, while every real UE's uplink frame is on the medium.
    - Effect: a neighbour cell with uplinkInterference on, or a D2D receiver, sees a cell's real UEs but not its background UEs when that cell's switch is off. The condition mirrored the Binder's uplink transmission map, deleted in piece 7c, so nothing explains it any more.
