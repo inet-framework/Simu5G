@@ -147,13 +147,6 @@ Recorded, not fixed in the branch, like the items of the earlier pieces.
 
 Recorded, not fixed in the branch, like the items of the earlier pieces.
 
-31. **A background UE's links have no shadowing, and a real UE's link to a background cell has it in one direction.**
-   - What the model does: StochasticChannelModel skips shadowing when a link's state node id is at or above BGUE_MIN_ID, and on the phantom links. BackgroundCellChannelModel, deleted in piece 7a, drew it per background UE (sigma 6 dB at UMa NLOS). The UL what-if at a background cell evaluates a real UE's interference through getAttenuation(), which shadows it; the background cell's DL at that same UE goes through phantomPowerAt(), which does not.
-   - What the specification says: TR 38.901 Table 7.4.1-1 has a shadow fading standard deviation for every scenario and LOS state; 7.5 Step 4 generates the large scale parameters, "shadow fading (SF)" among them: "These LSPs for different BS-UT links are uncorrelated, but the LSPs for links from co-sited sectors to a UT are the same."
-   - Effect: the spread of the mean SINR across a cell's background UEs narrows (nr/bgTraffic: DL 10.2 to 8.6 dB, UL 9.7 to 8.5 dB), with the means unchanged, so the cell's load is more even than it would be. The commit that made the change cites a decision of 2026-10-16 that keeps phantom links cheap; item 6 has the same abstraction for the interference.
-   - Reached in every row with a background cell or background UEs computing CQIs; the one-way link in nr/videostreaming_dataset_generator UrbanNetwork (uplink interference on).
-   - Fix shape: decide per link, not per kind of radio: either shadow these links, one realization per link in both directions, or none of them, and say so.
-
 ## Found in piece 7b (2026-11-09): fix after the full merge
 
 32. **A link's heights and scenario are one value per carrier and RAT, and the heights do not follow the positions.**

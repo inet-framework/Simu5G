@@ -63,9 +63,8 @@ struct RadioLink
     LinkKey linkKey;
 
     // stateNodeId is the link's mobile end -- the UE, or a D2D link's
-    // transmitter. It distinguishes background UEs' links, which have no
-    // shadowing. (The Rayleigh fading takes it but ignores it: its value is the
-    // trace's, the same for every node.)
+    // transmitter. (The Rayleigh fading takes it but ignores it: its value is
+    // the trace's, the same for every node.)
     MacNodeId stateNodeId = NODEID_NONE;
 
     // ---- radios ----

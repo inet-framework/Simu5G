@@ -291,9 +291,8 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     conditions.environmentHeight = sample.environmentHeight;
     double attenuation = pathLoss_->computePathLoss(threeDimDistance, twoDimDistance, los, conditions);
 
-    //    Applying shadowing only if it is enabled by configuration
-    //    log-normal shadowing (not available for background UEs)
-    if (num(link.stateNodeId) < BGUE_MIN_ID && shadowing_)
+    // log-normal shadowing, if enabled by configuration: one realization per link
+    if (shadowing_)
         attenuation += computeShadowing(threeDimDistance, twoDimDistance, los, link);
 
     EV << "StochasticChannelModel::getAttenuation - computed attenuation at distance " << threeDimDistance << " for eNB is " << attenuation << endl;
@@ -952,6 +951,10 @@ double StochasticChannelModel::computePhantomPathLoss(const RadioLink& link, Pat
         los = false;
 
     double attenuation = pathLoss_->computePathLoss(d3D, d2D, los, conditions);
+
+    // a phantom link is shadowed like any other, with the link's one realization
+    if (shadowing_)
+        attenuation += computeShadowing(d3D, d2D, los, link);
 
     return attenuation;
 }
