@@ -692,6 +692,7 @@ LteHarqBufferTx *LteMacUe::createTxHarqBuffer(MacNodeId destId, Direction dir)
 {
     if (dir != UL)
         throw cRuntimeError("LteMacUe::createTxHarqBuffer: direction %s not supported", dirToA(dir).c_str());
+    ASSERT(cellId_ != NODEID_NONE); // a detached UE has no grant, so it makes no PDU
     return new LteHarqBufferTx(binder_, (unsigned int)harqProcesses_, this,
             check_and_cast<LteMacBase *>(binder_->getMacByNodeId(cellId_)));
 }
@@ -1178,6 +1179,10 @@ bool LteMacUe::getLowestBackloggedFlow(MacCid& cid, unsigned int& priority)
 
 void LteMacUe::doHandover(MacNodeId targetEnb)
 {
+    // a grant is the serving cell's: none outlives leaving the cell
+    for (auto& [carrierFrequency, grant] : schedulingGrant_)
+        grant = nullptr;
+
     cellId_ = targetEnb;
 }
 
