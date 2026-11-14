@@ -150,7 +150,14 @@ void LteMacEnb::initialize(int stage)
         // reported backlog wakes the UL scheduler's interest in the pseudo-connection
         ulBacklog_.setBacklogCallback([this](MacCid cid) { enbSchedulerUl_->backlog(cid); });
 
+        // one background traffic generator per carrier
         const CarrierInfoMap& carriers = cellInfo_->getCarrierInfoMap();
+        cModule *firstGenerator = getParentModule()->getSubmodule("bgTrafficGenerator", 0);
+        int numGenerators = firstGenerator == nullptr ? 0 : firstGenerator->getVectorSize();
+        if (numGenerators != (int)carriers.size())
+            throw cRuntimeError("%s: the cell has %d carriers (phy.componentCarrierModules) but %d background traffic generators: "
+                    "set the NIC's numCarriers to the number of carriers",
+                    getFullPath().c_str(), (int)carriers.size(), numGenerators);
         int i = 0;
         for (const auto& [carrierKey, carrierInfo] : carriers) {
             GHz carrierFrequency = carrierInfo.carrierFrequency;
