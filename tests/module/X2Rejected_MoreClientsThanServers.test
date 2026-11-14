@@ -1,0 +1,45 @@
+%description:
+Each X2 client connects to an X2 server of its own at the peer: a base station has one X2 app,
+a client and a server, per peer. Here eNB has two X2 apps whose clients both connect to eNB2,
+which has one X2 app, so one server port. The second client read a port from an empty list. It
+is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.node.ethernet.Eth10G;
+import simu5g.nodes.eNodeB;
+import simu5g.test.moduletest.lib.EpcSessionTestNetwork;
+
+network X2RejectedTestNetwork extends EpcSessionTestNetwork
+{
+    submodules:
+        eNB2: eNodeB {
+            @display("p=650,250");
+        }
+    connections:
+        pgw.pppg++ <--> Eth10G <--> eNB2.ppp;
+        eNB.x2++ <--> Eth10G <--> eNB2.x2++;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = X2RejectedTestNetwork
+
+*.ue[*].servingNodeId = 1
+*.eNB2.mobility.initialX = 750m
+*.eNB2.mobility.initialY = 300m
+
+*.eNB.numX2Apps = 2
+*.eNB2.numX2Apps = 1
+*.eNB*.x2App[*].server.localPort = 5000 + ancestorIndex(1)
+*.eNB.x2App[*].client.connectAddress = "eNB2%x2ppp0"
+*.eNB2.x2App[0].client.connectAddress = "eNB%x2ppp0"
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+has no free X2 server port: more X2 clients connect to it than it has X2 apps (numX2Apps)
+%#--------------------------------------------------------------------------------------------------------------

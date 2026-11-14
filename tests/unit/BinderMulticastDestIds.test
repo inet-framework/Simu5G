@@ -1,0 +1,82 @@
+%description:
+
+The destination ids the Binder assigns to multicast addresses
+(Binder::getOrAssignDestIdForMulticastAddress()): an address gets one id, of
+32768 or more, the range above every node id, and different addresses get
+different ids. There are 32768 such ids. When they are used up, a further
+address is an error: an id counter that wraps around hands out 0, which
+means "no node", and then the ids of base stations.
+
+Checked with 32768 addresses, each asked for twice, and one more.
+
+%includes:
+#include <set>
+#include "SchedulerTestUtil.h"
+#include "simu5g/common/binder/Binder.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+*.binder.printTrafficGeneratorConfig = false
+**.cmdenv-log-level = off
+*.test.cmdenv-log-level = info
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+Binder *binder = check_and_cast<Binder *>(getSimulation()->getSystemModule()->getSubmodule("binder"));
+const uint32_t firstAddress = inet::Ipv4Address("224.1.0.0").getInt();
+const int numIds = 32768;
+
+std::set<MacNodeId> ids;
+bool allInRange = true, allStable = true;
+for (int i = 0; i < numIds; i++) {
+    inet::Ipv4Address address(firstAddress + i);
+    MacNodeId id = binder->getOrAssignDestIdForMulticastAddress(address);
+    allInRange = allInRange && num(id) >= 32768;
+    allStable = allStable && binder->getOrAssignDestIdForMulticastAddress(address) == id;
+    ids.insert(id);
+}
+c.check("32768 multicast addresses get ids of 32768 or more", allInRange);
+c.check("...an address keeps its id", allStable);
+c.check("...and no two addresses share one", (int)ids.size() == numIds, std::to_string(ids.size()) + " distinct ids");
+
+std::string message;
+bool thrown = false;
+MacNodeId extraId = NODEID_NONE;
+try {
+    extraId = binder->getOrAssignDestIdForMulticastAddress(inet::Ipv4Address(firstAddress + numIds));
+}
+catch (cRuntimeError& e) {
+    message = e.what();
+    thrown = true;
+}
+c.check("one more address is an error", thrown, "it got the id " + std::to_string(num(extraId)));
+c.check("...that says the ids are used up",
+        message.find("no multicast destination id is left") != std::string::npos, message);
+
+c.summary();
+
+%contains: stdout
+modelchecks=5 modelfailures=0
+
+%not-contains: stdout
+FAILED

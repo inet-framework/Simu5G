@@ -1,0 +1,50 @@
+%description:
+A background cell is on one of the network's component carriers, also when its background UEs
+take their CQIs from a probability distribution (useProbabilisticCqi = true): no what-if on the
+medium is computed then, so the what-if's own check of the carrier (see
+BackgroundCellRejected_NoModelOnCarrier) is not reached, and a cell at 3.5 GHz in a network whose
+only carrier is at 2 GHz stopped later, at its first allocation, on an error that does not name
+the cause. It is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.nodes.BackgroundCell;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+
+network BackgroundCellRejectedTestNetwork
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        bgCell: BackgroundCell;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = BackgroundCellRejectedTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+*.bgCell.bgScheduler.isNr = true
+*.bgCell.bgScheduler.carrierFrequency = 3.5GHz
+*.bgCell.bgScheduler.numBands = 6
+*.bgCell.bgTrafficGenerator.useProbabilisticCqi = true
+*.bgCell.bgTrafficGenerator.numBgUes = 1
+*.bgCell.bgTrafficGenerator.bgUE[0].generator.startTimeDl = 0.1s
+*.bgCell.mobility.initialX = 250m
+*.bgCell.mobility.initialY = 500m
+*.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialX = 500m
+*.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialY = 400m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+no component carrier is at 3.5 GHz (carrierFrequency)
+%#--------------------------------------------------------------------------------------------------------------

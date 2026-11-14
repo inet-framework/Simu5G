@@ -1,0 +1,22 @@
+%description:
+A UE's node id is below the range of background UEs, which starts at 4097. NR UEs get the ids
+2049, 2050, ... by default, so the 2049th NR UE of a network got 4097: the channel model then
+took it for a background UE and gave it no shadowing, and the MAXCI scheduler treated it as one,
+without a message. The id is set directly here, which reaches the same check without 2049 UEs.
+It is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+*.ue[0].nrMacNodeId = 4097
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+macNodeId 4097 is in the range of background UEs (4097 and up)
+%#--------------------------------------------------------------------------------------------------------------

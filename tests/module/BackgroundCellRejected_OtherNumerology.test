@@ -1,0 +1,47 @@
+%description:
+A background cell has the numerology of its carrier: a carrier has one slot length. A background
+cell with numerologyIndex = 2 on a carrier of numerology 0 sent four transmissions in each slot
+of the carrier, whose powers added up in the interference it caused, without a message. It is an
+error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.nodes.BackgroundCell;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+
+network BackgroundCellRejectedTestNetwork
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        bgCell: BackgroundCell;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = BackgroundCellRejectedTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+*.bgCell.bgScheduler.isNr = true
+*.bgCell.bgScheduler.numBands = 6
+*.bgCell.bgScheduler.numerologyIndex = 2
+*.bgCell.bgTrafficGenerator.numBgUes = 1
+*.bgCell.bgTrafficGenerator.bgUE[0].generator.startTimeDl = 0.1s
+*.bgCell.mobility.initialX = 250m
+*.bgCell.mobility.initialY = 500m
+*.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialX = 500m
+*.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialY = 400m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+numerology index 2, but the carrier at 2 GHz has 0
+%#--------------------------------------------------------------------------------------------------------------

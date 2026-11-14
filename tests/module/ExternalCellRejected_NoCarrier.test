@@ -1,0 +1,43 @@
+%description:
+An external cell is on one of the network's component carriers: its transmissions interfere
+with those on the same carrier frequency. An external cell at 3.5 GHz in a network whose only
+carrier is at 2 GHz interfered with nobody, without a message. carrierFrequency has a default,
+2 GHz, so this also is what a network on 3.5 GHz got for not setting it on its external cells.
+It is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.nodes.ExtCell;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+
+network ExternalCellRejectedTestNetwork
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        extCell: ExtCell;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = ExternalCellRejectedTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+*.extCell.carrierFrequency = 3.5GHz
+*.extCell.numBands = 6
+*.extCell.positionX = 250m
+*.extCell.positionY = 500m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+no component carrier is at 3.5 GHz (carrierFrequency)
+%#--------------------------------------------------------------------------------------------------------------

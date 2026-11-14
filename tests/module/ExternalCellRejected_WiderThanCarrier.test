@@ -1,0 +1,41 @@
+%description:
+An external cell has no more bands than its carrier: it occupies the carrier's first numBands
+bands. An external cell of 8 bands on a 6-band carrier was cut to 6 without a message. It is an
+error at initialization. (A cell narrower than its carrier is valid.)
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.nodes.ExtCell;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+
+network ExternalCellRejectedTestNetwork
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        extCell: ExtCell;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = ExternalCellRejectedTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+*.extCell.carrierFrequency = 2GHz
+*.extCell.numBands = 8
+*.extCell.positionX = 250m
+*.extCell.positionY = 500m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+8 bands (numBands), but the carrier at 2 GHz has 6
+%#--------------------------------------------------------------------------------------------------------------
