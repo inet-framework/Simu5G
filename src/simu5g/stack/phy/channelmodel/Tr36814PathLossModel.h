@@ -30,10 +30,10 @@ namespace simu5g {
 class Tr36814PathLossModel : public PathLossModel
 {
   public:
-    void checkPenetrationLoss() const override;
-    double computePathLoss(double d3D, double d2D, bool los, const LinkConditions& conditions) override;
-    double computeLosProbability(double d3D, double d2D) override;
-    double getShadowingStdDev(double d3D, double d2D, bool losState) override;
+    void checkPenetrationLoss(const Deployment& deployment) const override;
+    double computePathLoss(const Deployment& deployment, double d3D, double d2D, bool los, const LinkConditions& conditions) override;
+    double computeLosProbability(const Deployment& deployment, double d3D, double d2D) override;
+    double getShadowingStdDev(const Deployment& deployment, double d3D, double d2D, bool losState) override;
     double computeAngularAttenuation(double hAngle, double vAngle) override;
 
   protected:
@@ -44,14 +44,14 @@ class Tr36814PathLossModel : public PathLossModel
      * calls this; Tr38901PathLossModel reuses it for the scenarios TR 38.901
      * does not cover, after computing its own (differently-defined) breakpoint.
      */
-    double selectStdDev(bool belowBreakpoint, bool losState);
+    double selectStdDev(const Deployment& deployment, bool belowBreakpoint, bool losState);
 
   private:
     double computeIndoor(double d, bool los);
-    double computeUrbanMicro(double d, bool los);
-    double computeUrbanMacro(double d, bool los);
-    double computeSubUrbanMacro(double d, double& dbp, bool los);
-    double computeRuralMacro(double d, double& dbp, bool los);
+    double computeUrbanMicro(const Deployment& deployment, double d, bool los);
+    double computeUrbanMacro(const Deployment& deployment, double d, bool los);
+    double computeSubUrbanMacro(const Deployment& deployment, double d, double& dbp, bool los);
+    double computeRuralMacro(const Deployment& deployment, double d, double& dbp, bool los);
 };
 
 } //namespace

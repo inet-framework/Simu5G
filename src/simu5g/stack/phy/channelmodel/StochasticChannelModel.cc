@@ -81,14 +81,14 @@ void StochasticChannelModel::initialize(int stage)
 {
     ChannelModelBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
-        scenario_ = aToDeploymentScenario(par("scenario").stringValue());
-        hNodeB_ = par("nodebHeight");
+        deployment_.scenario = aToDeploymentScenario(par("scenario").stringValue());
+        deployment_.hNodeB = par("nodebHeight");
         shadowing_ = par("shadowing");
-        hBuilding_ = par("buildingHeight");
+        deployment_.hBuilding = par("buildingHeight");
         tolerateMaxDistViolation_ = par("tolerateMaxDistViolation");
-        hUe_ = par("ueHeight");
+        deployment_.hUe = par("ueHeight");
 
-        wStreet_ = par("streetWidth");
+        deployment_.wStreet = par("streetWidth");
 
         correlationDistance_ = par("correlationDistance");
 
@@ -121,7 +121,7 @@ void StochasticChannelModel::initialize(int stage)
         // carrierFrequencyHz_/GHz_/log10CarrierFrequencyGHz_ have just been set
         // by ChannelModelBase::initialize() above, in this same stage
         pathLoss_ = createPathLossModel();
-        pathLoss_->initialize(this, scenario_, hNodeB_, hUe_, hBuilding_, wStreet_,
+        pathLoss_->initialize(this,
                 carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
                 tolerateMaxDistViolation_);
     }
@@ -289,7 +289,7 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     const ChannelState::LosSample& sample = losMap()[link.linkKey];
     bool los = sample.los;
     conditions.environmentHeight = sample.environmentHeight;
-    double attenuation = pathLoss_->computePathLoss(threeDimDistance, twoDimDistance, los, conditions);
+    double attenuation = pathLoss_->computePathLoss(deployment_, threeDimDistance, twoDimDistance, los, conditions);
 
     // log-normal shadowing, if enabled by configuration: one realization per link
     if (shadowing_)
@@ -315,7 +315,7 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, bool los
     double mean = 0;
 
     // Get std deviation according to LOS/NLOS and selected scenario
-    double stdDev = pathLoss_->getShadowingStdDev(d3D, d2D, los);
+    double stdDev = pathLoss_->getShadowingStdDev(deployment_, d3D, d2D, los);
     double att;
 
     auto it = actualShadowingMap->find(key);
@@ -849,18 +849,18 @@ void StochasticChannelModel::computeLosProbability(double d3D, double d2D,
     if (!dynamicLos_)
         sample.los = fixedLos_;
     else {
-        double p = pathLoss_->computeLosProbability(d3D, d2D);
+        double p = pathLoss_->computeLosProbability(deployment_, d3D, d2D);
         sample.los = (uniform(0.0, 1.0) <= p);
     }
     // the link's UMa environment height is drawn with its LOS state
-    sample.environmentHeight = pathLoss_->drawEnvironmentHeight(d2D);
+    sample.environmentHeight = pathLoss_->drawEnvironmentHeight(deployment_, d2D);
 }
 
 double StochasticChannelModel::computePathLoss(double distance, double dbp, bool los)
 {
     // a path loss outside any link: outdoors, at the environment height a
     // link takes without a draw -- not the facts of the link evaluated last
-    return pathLoss_->computePathLoss(distance, dbp, los, PathLossModel::LinkConditions());
+    return pathLoss_->computePathLoss(deployment_, distance, dbp, los, PathLossModel::LinkConditions());
 }
 
 double StochasticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
@@ -932,7 +932,7 @@ double StochasticChannelModel::computePhantomPathLoss(const RadioLink& link, Pat
     if (!enable_extCell_los_)
         los = false;
 
-    double attenuation = pathLoss_->computePathLoss(d3D, d2D, los, conditions);
+    double attenuation = pathLoss_->computePathLoss(deployment_, d3D, d2D, los, conditions);
 
     // a phantom link is shadowed like any other, with the link's one realization
     if (shadowing_)

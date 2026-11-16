@@ -81,21 +81,14 @@ class StochasticChannelModel : public ChannelModelBase
 {
   protected:
 
-    // eNodeB Height
-    double hNodeB_;
-
-    // UE Height
-    double hUe_;
-
-    // average Building Heights
-    double hBuilding_;
+    // the deployment every link of this model is evaluated in: the scenario, the
+    // heights of the base station and UE antennas, the average building height
+    // and street width
+    PathLossModel::Deployment deployment_;
 
     // flag for using high-loss or low-loss model for building penetration
     // see table 7.4.3-2 in TR 38.901
     bool useBuildingPenetrationHighLossModel_;
-
-    // Average street's width
-    double wStreet_;
 
     // enable/disable the shadowing
     bool shadowing_;
@@ -120,9 +113,6 @@ class StochasticChannelModel : public ChannelModelBase
     LosMap *losMap_ = nullptr; // the LOS state of the links on this model's carrier, kept by the radio medium; see losMap()
     ShadowFadingMap *shadowingMap_ = nullptr; // the shadowing of the links on this model's carrier, kept by the radio medium; see shadowingMap()
     JakesFadingMap *jakesFadingMap_ = nullptr; // the Jakes fading paths of the links on this model's carrier, kept by the radio medium; see jakesFadingMap()
-
-    // Scenario
-    DeploymentScenario scenario_;
 
     // Formulas of the selected 3GPP propagation study; owned, created in initialize()
     PathLossModel *pathLoss_ = nullptr;

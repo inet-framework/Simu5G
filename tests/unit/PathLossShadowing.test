@@ -29,7 +29,7 @@ CaseRecorder probe(this, 0.0);
 ScenarioParams p;
 
 // =================== TR 36.814 ========================================
-Tr36814PathLossModel m814;
+Deployed<Tr36814PathLossModel> m814;
 
 p = ScenarioParams();
 p.scenario = INDOOR_HOTSPOT;
@@ -68,7 +68,7 @@ probe.shadowingStdDev("t814_sigma_sma", m814, p, 2000, true);   // below dBP
 probe.shadowingStdDev("t814_sigma_sma", m814, p, 100, false);
 
 // =================== TR 36.873 ========================================
-Tr36873PathLossModel m873;
+Deployed<Tr36873PathLossModel> m873;
 
 p = ScenarioParams();
 p.scenario = URBAN_MICROCELL;
@@ -92,7 +92,7 @@ probe.shadowingStdDev("t873_sigma_rma", m873, p, 3000.2, 3000, true);   // above
 probe.shadowingStdDev("t873_sigma_rma", m873, p, 3000.2, 3000, false);
 
 // =================== TR 38.901 ========================================
-Tr38901PathLossModel m901;
+Deployed<Tr38901PathLossModel> m901;
 
 p = ScenarioParams();
 p.scenario = INDOOR_HOTSPOT;

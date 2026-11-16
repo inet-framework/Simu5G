@@ -103,7 +103,7 @@ PathLossModel *pathLoss = bsProbe.pathLoss();
 const double dcorr = bs->par("correlationDistance").doubleValue();
 const double d3D = 200.0, d2D = 198.6;
 const inet::Coord bsPos(0, 0, 25);
-const double sigma = pathLoss->getShadowingStdDev(d3D, d2D, false);
+const double sigma = pathLoss->getShadowingStdDev(bsProbe.deployment(), d3D, d2D, false);
 
 // The specification's update of a value `old` over a displacement dx, with the
 // normal deviate the model is about to draw.

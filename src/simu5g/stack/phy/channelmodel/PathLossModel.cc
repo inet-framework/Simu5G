@@ -14,27 +14,21 @@
 
 namespace simu5g {
 
-void PathLossModel::initialize(cComponent *owner, DeploymentScenario scenario,
-        double hNodeB, double hUe, double hBuilding, double wStreet,
+void PathLossModel::initialize(cComponent *owner,
         double carrierFrequencyHz, double carrierFrequencyGHz, double log10CarrierFrequencyGHz,
         bool tolerateMaxDistViolation)
 {
     owner_ = owner;
-    scenario_ = scenario;
-    hNodeB_ = hNodeB;
-    hUe_ = hUe;
-    hBuilding_ = hBuilding;
-    wStreet_ = wStreet;
     carrierFrequencyHz_ = carrierFrequencyHz;
     carrierFrequencyGHz_ = carrierFrequencyGHz;
     log10CarrierFrequencyGHz_ = log10CarrierFrequencyGHz;
     tolerateMaxDistViolation_ = tolerateMaxDistViolation;
 }
 
-void PathLossModel::throwNoPenetrationLoss(const char *study, bool definedInStudy) const
+void PathLossModel::throwNoPenetrationLoss(const Deployment& deployment, const char *study, bool definedInStudy) const
 {
     std::string owner = owner_ != nullptr ? owner_->getFullPath() : "path loss model";
-    std::string scenario = DeploymentScenarioToA(scenario_);
+    std::string scenario = DeploymentScenarioToA(deployment.scenario);
     if (definedInStudy)
         throw cRuntimeError("%s: the UE end of the link is inside a building (insideBuilding), and the building penetration loss of %s for the scenario %s is not implemented",
                 owner.c_str(), study, scenario.c_str());

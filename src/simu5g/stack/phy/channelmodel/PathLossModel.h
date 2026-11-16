@@ -22,28 +22,37 @@ using namespace omnetpp;
 /**
  * Stateless propagation-formula strategy: one concrete subclass per 3GPP
  * propagation study (TR 36.814, TR 36.873, TR 38.901). A channel-model shell
- * owns an instance, feeds it the deployment-scenario parameters once at
- * initialize() time, and calls it per link with the geometry (both
- * distances, LOS state) the shell has already resolved.
+ * owns an instance and calls it per link with the link's deployment (scenario
+ * and heights) and the geometry (both distances, LOS state) it has already
+ * resolved.
  *
  * All per-link state -- LOS map, shadowing history, fading maps, position
  * history -- stays in the owning channel model, and the facts of the link
  * being evaluated that its geometry does not give come with each call as
- * LinkConditions; an instance of this class holds nothing but the cached
- * scenario parameters and a back-pointer to the owner for RNG draws, so that
+ * LinkConditions; an instance of this class holds nothing but the carrier
+ * and a back-pointer to the owner for RNG draws, so that
  * every random draw a formula makes still comes from the same RNG stream as
  * before.
  */
 class PathLossModel
 {
+  public:
+    /**
+     * The deployment a link is evaluated in: the scenario of its cell, and the
+     * heights of its two ends and of the surroundings. It comes with each call.
+     */
+    struct Deployment
+    {
+        DeploymentScenario scenario = UNKNOWN_SCENARIO;
+        double hNodeB = 0;     // the base station antenna's height [m]
+        double hUe = 0;        // the UE antenna's height [m]
+        double hBuilding = 0;  // the average building height [m]
+        double wStreet = 0;    // the average street width [m]
+    };
+
   protected:
     cComponent *owner_ = nullptr;  // RNG + parameter context
 
-    DeploymentScenario scenario_ = UNKNOWN_SCENARIO;
-    double hNodeB_ = 0;
-    double hUe_ = 0;
-    double hBuilding_ = 0;
-    double wStreet_ = 0;
     double carrierFrequencyHz_ = 0;
     double carrierFrequencyGHz_ = 0;
     double log10CarrierFrequencyGHz_ = 0;
@@ -63,7 +72,7 @@ class PathLossModel
      * The error of checkPenetrationLoss(): the study defines no building
      * penetration loss for the scenario, or defines one that the model lacks.
      */
-    [[noreturn]] void throwNoPenetrationLoss(const char *study, bool definedInStudy) const;
+    [[noreturn]] void throwNoPenetrationLoss(const Deployment& deployment, const char *study, bool definedInStudy) const;
 
   public:
     /**
@@ -87,8 +96,7 @@ class PathLossModel
      * ownership stays with the owning channel model; this only receives the
      * values it has already read from its NED parameters.
      */
-    virtual void initialize(cComponent *owner, DeploymentScenario scenario,
-            double hNodeB, double hUe, double hBuilding, double wStreet,
+    virtual void initialize(cComponent *owner,
             double carrierFrequencyHz, double carrierFrequencyGHz, double log10CarrierFrequencyGHz,
             bool tolerateMaxDistViolation);
 
@@ -98,34 +106,34 @@ class PathLossModel
      * NOTE 4), at the given 2D distance. 1 m, without a draw, where the study
      * and scenario have no other value or the probability of 1 m is 1.
      */
-    virtual double drawEnvironmentHeight(double d2D) { return 1.0; }
+    virtual double drawEnvironmentHeight(const Deployment& deployment, double d2D) { return 1.0; }
 
     /*
      * Throws if the model has no building penetration loss for its scenario:
      * a link with its UE end inside a building cannot be evaluated then.
      * computePathLoss() calls it for such a link.
      */
-    virtual void checkPenetrationLoss() const = 0;
+    virtual void checkPenetrationLoss(const Deployment& deployment) const = 0;
 
     /*
      * Compute the path-loss attenuation according to the selected scenario,
      * for a link in the given conditions. A concrete model that needs only
      * one of the two distances ignores the other.
      */
-    virtual double computePathLoss(double d3D, double d2D, bool los, const LinkConditions& conditions) = 0;
+    virtual double computePathLoss(const Deployment& deployment, double d3D, double d2D, bool los, const LinkConditions& conditions) = 0;
 
     /*
      * Compute the LOS probability according to the selected scenario.
      * Returns the probability p; the caller draws against it and stores the
      * outcome.
      */
-    virtual double computeLosProbability(double d3D, double d2D) = 0;
+    virtual double computeLosProbability(const Deployment& deployment, double d3D, double d2D) = 0;
 
     /*
      * Compute the standard deviation of the log-normal shadowing according
      * to the selected scenario and the LOS state of the link.
      */
-    virtual double getShadowingStdDev(double d3D, double d2D, bool losState) = 0;
+    virtual double getShadowingStdDev(const Deployment& deployment, double d3D, double d2D, bool losState) = 0;
 
     /*
      * Compute the attenuation caused by the antenna pattern for a given

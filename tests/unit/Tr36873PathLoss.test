@@ -22,7 +22,7 @@ using namespace simu5g::unittest;
 
 %activity:
 CaseRecorder probe(this, 1e-6);
-Tr36873PathLossModel m;
+Deployed<Tr36873PathLossModel> m;
 ScenarioParams p;
 
 // --- 3D-UMi, hBS = 10 m, hUT = 1.5 m, fc = 2 GHz ----------------------

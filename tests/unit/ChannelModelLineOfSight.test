@@ -105,7 +105,7 @@ const LinkKey link1(MacNodeId(1), MacNodeId(1025)), link2(MacNodeId(2), MacNodeI
     UserControlInfo info = controlInfo(DL, DATAPKT, MacNodeId(1), MacNodeId(1025));
     const double d3D = enb.coord.distance(ue.coord);
     const double d2D = sqrt(pow(ue.coord.x - enb.coord.x, 2) + pow(ue.coord.y - enb.coord.y, 2));
-    double p = atUe.pathLoss()->computeLosProbability(d3D, d2D);
+    double p = atUe.pathLoss()->computeLosProbability(atUe.deployment(), d3D, d2D);
     RngSnapshot snapshot(ueModel);
     long long before = drawn(ueModel);
     ueModel->getAttenuation(atUe.linkFor(&ue, &info, enb.coord));
@@ -187,7 +187,7 @@ c.expectValue("...and the carrier holds exactly the two links", (long long)atUe.
     const Coord movedTo = ue.coord;
     const double d3D = enb.coord.distance(ue.coord);
     const double d2D = sqrt(pow(ue.coord.x - enb.coord.x, 2) + pow(ue.coord.y - enb.coord.y, 2));
-    double p = atUe.pathLoss()->computeLosProbability(d3D, d2D);
+    double p = atUe.pathLoss()->computeLosProbability(atUe.deployment(), d3D, d2D);
     RngSnapshot snapshot(ueModel);
     before = drawn(ueModel);
     evaluateDl();

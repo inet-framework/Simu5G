@@ -16,44 +16,44 @@ namespace simu5g {
 
 using namespace omnetpp;
 
-void Tr38901PathLossModel::checkPenetrationLoss() const
+void Tr38901PathLossModel::checkPenetrationLoss(const Deployment& deployment) const
 {
     // clause 7.4.3.1 has an outdoor-to-indoor loss for UMa, UMi-Street Canyon and RMa (and InF)
-    if (scenario_ != URBAN_MACROCELL && scenario_ != URBAN_MICROCELL && scenario_ != RURAL_MACROCELL)
-        throwNoPenetrationLoss("TR 38.901", false);
+    if (deployment.scenario != URBAN_MACROCELL && deployment.scenario != URBAN_MICROCELL && deployment.scenario != RURAL_MACROCELL)
+        throwNoPenetrationLoss(deployment, "TR 38.901", false);
 }
 
-double Tr38901PathLossModel::computePathLoss(double d3D, double d2D, bool los, const LinkConditions& conditions)
+double Tr38901PathLossModel::computePathLoss(const Deployment& deployment, double d3D, double d2D, bool los, const LinkConditions& conditions)
 {
     if (conditions.indoor)
-        checkPenetrationLoss();
+        checkPenetrationLoss(deployment);
 
     // compute attenuation based on selected scenario and based on LOS or NLOS
     double pathLoss = 0;
-    switch (scenario_) {
+    switch (deployment.scenario) {
         case INDOOR_HOTSPOT:
             pathLoss = computeIndoor3D(d3D, d2D, los, conditions);
             break;
         case URBAN_MICROCELL:
-            pathLoss = computeUrbanMicro3D(d3D, d2D, los, conditions);
+            pathLoss = computeUrbanMicro3D(deployment, d3D, d2D, los, conditions);
             break;
         case URBAN_MACROCELL:
-            pathLoss = computeUrbanMacro3D(d3D, d2D, los, conditions);
+            pathLoss = computeUrbanMacro3D(deployment, d3D, d2D, los, conditions);
             break;
         case RURAL_MACROCELL:
-            pathLoss = computeRuralMacro3D(d3D, d2D, los, conditions);
+            pathLoss = computeRuralMacro3D(deployment, d3D, d2D, los, conditions);
             break;
         default:
-            return Tr36873PathLossModel::computePathLoss(d3D, d2D, los, conditions);
+            return Tr36873PathLossModel::computePathLoss(deployment, d3D, d2D, los, conditions);
     }
     return pathLoss;
 }
 
-double Tr38901PathLossModel::computeLosProbability(double d3D, double d2D)
+double Tr38901PathLossModel::computeLosProbability(const Deployment& deployment, double d3D, double d2D)
 {
     double d = d2D;
     double p = 0;
-    switch (scenario_) {
+    switch (deployment.scenario) {
         case URBAN_MICROCELL:
             if (d <= 18.0)
                 p = 1.0;
@@ -64,7 +64,7 @@ double Tr38901PathLossModel::computeLosProbability(double d3D, double d2D)
             if (d <= 18.0)
                 p = 1.0;
             else {
-                double C = (hUe_ <= 13.0) ? 0 : pow((hUe_ - 13.0) / 10.0, 1.5);
+                double C = (deployment.hUe <= 13.0) ? 0 : pow((deployment.hUe - 13.0) / 10.0, 1.5);
                 p = ((18 / d) + exp(-1 * d / 63) * (1 - (18 / d))) * (1 + C * (5.0 / 4.0) * pow(d / 100.0, 3) * exp(-1 * d / 150.0));
             }
             break;
@@ -83,22 +83,22 @@ double Tr38901PathLossModel::computeLosProbability(double d3D, double d2D)
                 p = 0.54 * exp(-1 * (d - 49.0) / 211.7);
             break;
         default:
-            return Tr36873PathLossModel::computeLosProbability(d3D, d2D);
+            return Tr36873PathLossModel::computeLosProbability(deployment, d3D, d2D);
     }
     return p;
 }
 
-double Tr38901PathLossModel::getShadowingStdDev(double d3D, double d2D, bool losState)
+double Tr38901PathLossModel::getShadowingStdDev(const Deployment& deployment, double d3D, double d2D, bool losState)
 {
     // Breakpoint distance of the RMa path loss (Q3: TR 38.901 uses
     // 2*pi*hNodeB*hUe*fc/c, not the base classes' 4*(hNodeB-1)*(hUe-1)*fc/c);
     // the LOS branch of that scenario uses different sigma values below and
     // above it. The comparison uses the 2D distance (Q1), like the base
     // classes' shadowing breakpoint.
-    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
+    double dbp = 2 * M_PI * deployment.hNodeB * deployment.hUe * (carrierFrequencyHz_ / PROPAGATION_VELOCITY);
     bool belowBreakpoint = d2D < dbp;
 
-    switch (scenario_) {
+    switch (deployment.scenario) {
         case URBAN_MICROCELL:
             if (losState)
                 return 4.;
@@ -126,12 +126,12 @@ double Tr38901PathLossModel::getShadowingStdDev(double d3D, double d2D, bool los
         default:
             // scenarios TR 38.901 does not cover fall back to the shared
             // sigma table, still keyed off this class's own breakpoint.
-            return selectStdDev(belowBreakpoint, losState);
+            return selectStdDev(deployment, belowBreakpoint, losState);
     }
     return 0.0;
 }
 
-double Tr38901PathLossModel::computePenetrationLoss(double threeDimDistance, const LinkConditions& conditions)
+double Tr38901PathLossModel::computePenetrationLoss(const Deployment& deployment, double threeDimDistance, const LinkConditions& conditions)
 {
     double inside_distance = (conditions.indoorDistance < threeDimDistance) ? conditions.indoorDistance : threeDimDistance;
     double pLoss_in = 0.5 * inside_distance;
@@ -141,14 +141,14 @@ double Tr38901PathLossModel::computePenetrationLoss(double threeDimDistance, con
     // compatibility with TR 36.873 -- is offered for UMa and UMi
     // single-frequency simulations below 6 GHz.
     bool singleFrequencyModel = carrierFrequencyGHz_ <= 6.0
-        && (scenario_ == URBAN_MACROCELL || scenario_ == URBAN_MICROCELL);
+        && (deployment.scenario == URBAN_MACROCELL || deployment.scenario == URBAN_MICROCELL);
     if (singleFrequencyModel)
         return 20.0 + pLoss_in;
 
     // Otherwise table 7.4.3-2, whose high-loss variant is not offered for RMa.
     double Lconcrete = 5 + 4 * carrierFrequencyGHz_;
     double pLoss_tw = 0.0;
-    if (useBuildingPenetrationHighLossModel_ && scenario_ != RURAL_MACROCELL) {
+    if (useBuildingPenetrationHighLossModel_ && deployment.scenario != RURAL_MACROCELL) {
         double LiirGlass = 23 + 0.3 * carrierFrequencyGHz_;
         pLoss_tw = 5 - 10 * log10(0.7 * pow(10, (-LiirGlass / 10)) + 0.3 * pow(10, (-Lconcrete / 10))) + 6.5 * conditions.penetrationDeviate;
     }
@@ -159,17 +159,17 @@ double Tr38901PathLossModel::computePenetrationLoss(double threeDimDistance, con
     return pLoss_tw + pLoss_in;
 }
 
-double Tr38901PathLossModel::drawEnvironmentHeight(double d2D)
+double Tr38901PathLossModel::drawEnvironmentHeight(const Deployment& deployment, double d2D)
 {
-    if (scenario_ != URBAN_MACROCELL)
+    if (deployment.scenario != URBAN_MACROCELL)
         return 1.0;
     double G_2d = (d2D < 18.0) ? 0 : (5.0 / 4.0) * pow(d2D / 100.0, 3) * exp(-d2D / 150);
-    double C = (hUe_ < 13.0) ? 0 : pow(((hUe_ - 13.0) / 10.0), 1.5) * G_2d;
+    double C = (deployment.hUe < 13.0) ? 0 : pow(((deployment.hUe - 13.0) / 10.0), 1.5) * G_2d;
     double prob = 1.0 / (1.0 + C);
     // drawn only when it can come out otherwise
     if (prob >= 1.0 || owner_->uniform(0.0, 1.0) < prob)
         return 1.0;
-    double bound = hUe_ - 1.5;
+    double bound = deployment.hUe - 1.5;
     std::vector<double> hVec;
     for (double h = 12; h < bound; h += 3)
         hVec.push_back(h);
@@ -177,7 +177,7 @@ double Tr38901PathLossModel::drawEnvironmentHeight(double d2D)
     return hVec.at(owner_->intuniform(0, hVec.size() - 1));
 }
 
-double Tr38901PathLossModel::computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions)
+double Tr38901PathLossModel::computeUrbanMacro3D(const Deployment& deployment, double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions)
 {
     if (twoDimDistance < 10)
         twoDimDistance = 10;
@@ -191,12 +191,12 @@ double Tr38901PathLossModel::computeUrbanMacro3D(double threeDimDistance, double
     // Compute penetration loss
     double penetrationLoss = 0.0;
     if (conditions.indoor)
-        penetrationLoss = computePenetrationLoss(threeDimDistance, conditions);
+        penetrationLoss = computePenetrationLoss(deployment, threeDimDistance, conditions);
 
     // Compute break-point distance
     double hEnvir = conditions.environmentHeight;
-    double hNodeB = hNodeB_ - hEnvir;
-    double hUe = hUe_ - hEnvir;
+    double hNodeB = deployment.hNodeB - hEnvir;
+    double hUe = deployment.hUe - hEnvir;
     double dbp = 4 * hNodeB * hUe * (carrierFrequencyHz_  / PROPAGATION_VELOCITY);
 
     // Compute LOS path loss
@@ -204,7 +204,7 @@ double Tr38901PathLossModel::computeUrbanMacro3D(double threeDimDistance, double
     if (twoDimDistance < dbp)
         pLoss_los = 28 + 22 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_;
     else
-        pLoss_los = 28 + 40 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_ - 9 * log10((dbp * dbp + (hNodeB_ - hUe_) * (hNodeB_ - hUe_)));
+        pLoss_los = 28 + 40 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_ - 9 * log10((dbp * dbp + (deployment.hNodeB - deployment.hUe) * (deployment.hNodeB - deployment.hUe)));
     pLoss_los += penetrationLoss;
 
     double pLoss = 0.0;
@@ -212,7 +212,7 @@ double Tr38901PathLossModel::computeUrbanMacro3D(double threeDimDistance, double
         pLoss = pLoss_los;
     else {
         // Compute NLOS path loss
-        double pLoss_nlos = 13.54 + 39.08 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_ - 0.6 * (hUe_ - 1.5);
+        double pLoss_nlos = 13.54 + 39.08 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_ - 0.6 * (deployment.hUe - 1.5);
         pLoss_nlos += penetrationLoss;
 
         pLoss = (pLoss_los > pLoss_nlos) ? pLoss_los : pLoss_nlos;
@@ -220,7 +220,7 @@ double Tr38901PathLossModel::computeUrbanMacro3D(double threeDimDistance, double
     return pLoss;
 }
 
-double Tr38901PathLossModel::computeUrbanMicro3D(double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions)
+double Tr38901PathLossModel::computeUrbanMicro3D(const Deployment& deployment, double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions)
 {
     if (twoDimDistance < 10)
         twoDimDistance = 10;
@@ -231,12 +231,12 @@ double Tr38901PathLossModel::computeUrbanMicro3D(double threeDimDistance, double
     // Compute penetration loss
     double penetrationLoss = 0.0;
     if (conditions.indoor)
-        penetrationLoss = computePenetrationLoss(threeDimDistance, conditions);
+        penetrationLoss = computePenetrationLoss(deployment, threeDimDistance, conditions);
 
     // Compute break-point distance
     double hEnvir = 1.0;
-    double hNodeB = hNodeB_ - hEnvir;
-    double hUe = hUe_ - hEnvir;
+    double hNodeB = deployment.hNodeB - hEnvir;
+    double hUe = deployment.hUe - hEnvir;
     double dbp = 4 * hNodeB * hUe * (carrierFrequencyHz_  / PROPAGATION_VELOCITY);
 
     // Compute LOS path loss
@@ -244,7 +244,7 @@ double Tr38901PathLossModel::computeUrbanMicro3D(double threeDimDistance, double
     if (twoDimDistance < dbp)
         pLoss_los = 32.4 + 21 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_;
     else
-        pLoss_los = 32.4 + 40 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_ - 9.5 * log10((dbp * dbp + (hNodeB_ - hUe_) * (hNodeB_ - hUe_)));
+        pLoss_los = 32.4 + 40 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_ - 9.5 * log10((dbp * dbp + (deployment.hNodeB - deployment.hUe) * (deployment.hNodeB - deployment.hUe)));
     pLoss_los += penetrationLoss;
 
     double pLoss = 0.0;
@@ -252,7 +252,7 @@ double Tr38901PathLossModel::computeUrbanMicro3D(double threeDimDistance, double
         pLoss = pLoss_los;
     else {
         // Compute NLOS path loss
-        double pLoss_nlos = 35.3 * log10(threeDimDistance) + 22.4 + 21.3 * log10CarrierFrequencyGHz_ - 0.3 * (hUe_ - 1.5);
+        double pLoss_nlos = 35.3 * log10(threeDimDistance) + 22.4 + 21.3 * log10CarrierFrequencyGHz_ - 0.3 * (deployment.hUe - 1.5);
         pLoss_nlos += penetrationLoss;
 
         pLoss = (pLoss_los > pLoss_nlos) ? pLoss_los : pLoss_nlos;
@@ -260,7 +260,7 @@ double Tr38901PathLossModel::computeUrbanMicro3D(double threeDimDistance, double
     return pLoss;
 }
 
-double Tr38901PathLossModel::computeRuralMacro3D(double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions)
+double Tr38901PathLossModel::computeRuralMacro3D(const Deployment& deployment, double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions)
 {
     if (twoDimDistance < 10)
         twoDimDistance = 10;
@@ -276,11 +276,11 @@ double Tr38901PathLossModel::computeRuralMacro3D(double threeDimDistance, double
     // Compute penetration loss
     double penetrationLoss = 0.0;
     if (conditions.indoor) {
-        penetrationLoss = computePenetrationLoss(threeDimDistance, conditions);
+        penetrationLoss = computePenetrationLoss(deployment, threeDimDistance, conditions);
     }
 
     // Compute break-point distance
-    double dbp = 2 * M_PI * hNodeB_ * hUe_ * (carrierFrequencyHz_  / PROPAGATION_VELOCITY);
+    double dbp = 2 * M_PI * deployment.hNodeB * deployment.hUe * (carrierFrequencyHz_  / PROPAGATION_VELOCITY);
 
     double h = 5.0; // Average building height
     double A = 0.03 * pow(h, 1.72);
@@ -302,9 +302,9 @@ double Tr38901PathLossModel::computeRuralMacro3D(double threeDimDistance, double
         pLoss = pLoss_los;
     else {
         double W = 20.0;  // Average street width
-        double pLoss_nlos = 161.04 - 7.1 * log10(W) + 7.5 * log10(h) - (24.37 - 3.7 * pow(h / hNodeB_, 2)) * log10(hNodeB_)
-            + (43.42 - 3.1 * log10(hNodeB_)) * (log10(threeDimDistance) - 3.0) + 20 * log10CarrierFrequencyGHz_
-            - (3.2 * pow((log10(11.75 * hUe_)), 2) - 4.97);
+        double pLoss_nlos = 161.04 - 7.1 * log10(W) + 7.5 * log10(h) - (24.37 - 3.7 * pow(h / deployment.hNodeB, 2)) * log10(deployment.hNodeB)
+            + (43.42 - 3.1 * log10(deployment.hNodeB)) * (log10(threeDimDistance) - 3.0) + 20 * log10CarrierFrequencyGHz_
+            - (3.2 * pow((log10(11.75 * deployment.hUe)), 2) - 4.97);
         pLoss_nlos += penetrationLoss;
         pLoss = (pLoss_los > pLoss_nlos) ? pLoss_los : pLoss_nlos;
     }

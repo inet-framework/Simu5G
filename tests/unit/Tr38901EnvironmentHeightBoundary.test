@@ -28,7 +28,7 @@ p.scenario = URBAN_MACROCELL;
 p.hNodeB = 25;
 p.hUe = 22.5;
 p.carrierFrequencyGHz = 0.8;
-Tr38901PathLossModel m;
+Deployed<Tr38901PathLossModel> m;
 p.apply(m, this);
 
 long before = getRNG(0)->getNumbersDrawn();

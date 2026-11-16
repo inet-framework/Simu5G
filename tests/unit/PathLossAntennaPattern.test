@@ -30,7 +30,7 @@ CaseRecorder probe(this, 1e-6);
 
 // --- TR 36.814 -----------------------------------------------------------
 // The vertical angle is not part of the TR 36.814 pattern and is ignored.
-Tr36814PathLossModel m814;
+Deployed<Tr36814PathLossModel> m814;
 
 probe.angularAttenuation("t814_antenna", m814, 0, 0);
 probe.angularAttenuation("t814_antenna", m814, 35, 0);
@@ -40,7 +40,7 @@ probe.angularAttenuation("t814_antenna", m814, 120, 0);    // capped at 25
 probe.angularAttenuation("t814_antenna", m814, 35, 155);   // ignores the vertical angle
 
 // --- TR 36.873 -------------------------------------------------------------
-Tr36873PathLossModel m873;
+Deployed<Tr36873PathLossModel> m873;
 
 probe.angularAttenuation("t873_antenna", m873, 0, 90);      // boresight
 probe.angularAttenuation("t873_antenna", m873, 32.5, 90);
@@ -55,7 +55,7 @@ probe.angularAttenuation("t873_antenna", m873, 300, 90);    // A_H capped at 30
 probe.angularAttenuation("t873_antenna", m873, 0, 250);     // A_V capped at 30
 
 // --- TR 38.901 inherits the TR 36.873 pattern --------------------------
-Tr38901PathLossModel m901;
+Deployed<Tr38901PathLossModel> m901;
 
 probe.angularAttenuation("t873_antenna", m901, 0, 90);      // boresight
 probe.angularAttenuation("t873_antenna", m901, 65, 90);

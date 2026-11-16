@@ -162,8 +162,8 @@ const inet::Coord bsPos(0, 0, 25);
     const inet::Coord uePos(200, 0, 1.5);
     const RadioLink losLink = linkTo(MacNodeId(1100), bsPos, uePos);
     const RadioLink nlosLink = linkTo(MacNodeId(1101), bsPos, uePos);
-    double sigmaLos = pathLoss->getShadowingStdDev(d3D, d2D, true);
-    double sigmaNlos = pathLoss->getShadowingStdDev(d3D, d2D, false);
+    double sigmaLos = pathLoss->getShadowingStdDev(bsProbe.deployment(), d3D, d2D, true);
+    double sigmaNlos = pathLoss->getShadowingStdDev(bsProbe.deployment(), d3D, d2D, false);
     c.check("the strategy's sigma differs between LOS and NLOS here, so the next checks discriminate",
             sigmaLos != sigmaNlos,
             "LOS=" + std::to_string(sigmaLos) + " NLOS=" + std::to_string(sigmaNlos));
@@ -213,7 +213,7 @@ const inet::Coord bsPos(0, 0, 25);
 
     // Past it: the recurrence, graded from the replayed draw.
     double old = bsProbe.shadowingMap().at(key).value;
-    double sigma = pathLoss->getShadowingStdDev(d3D, d2D, false);
+    double sigma = pathLoss->getShadowingStdDev(bsProbe.deployment(), d3D, d2D, false);
     RngSnapshot snapshot(bs);
     double updated = bs->computeShadowing(d3D, d2D, false, linkTo(node, bsPos, inet::Coord(260, 0, 1.5)));
     double space = 60.0;
@@ -242,7 +242,7 @@ const inet::Coord bsPos(0, 0, 25);
             && bs->getRNG(0)->getNumbersDrawn() == drawn);
 
     // No time passes: the jump is graded like any other update.
-    double sigma = pathLoss->getShadowingStdDev(d3D, d2D, false);
+    double sigma = pathLoss->getShadowingStdDev(bsProbe.deployment(), d3D, d2D, false);
     RngSnapshot snapshot(bs);
     double jumped = bs->computeShadowing(d3D, d2D, false, linkTo(node, bsPos, inet::Coord(300, 0, 1.5)));
     double space = 100.0;
@@ -262,7 +262,7 @@ const inet::Coord bsPos(0, 0, 25);
     double first = bs->computeShadowing(d3D, d2D, false, d2dLinkBetween(tx, txPos, rx, rxPos));
 
     // Only the receiver moves.
-    double sigma = pathLoss->getShadowingStdDev(d3D, d2D, false);
+    double sigma = pathLoss->getShadowingStdDev(bsProbe.deployment(), d3D, d2D, false);
     RngSnapshot snapshot(bs);
     double updated = bs->computeShadowing(d3D, d2D, false, d2dLinkBetween(tx, txPos, rx, rxMoved));
     double space = 60.0;
@@ -287,7 +287,7 @@ const inet::Coord bsPos(0, 0, 25);
     const inet::Coord txPos(500, 100, 1.5), rxPos(520, 100, 1.5);
     const inet::Coord txMoved(440, 100, 1.5), rxMoved(600, 100, 1.5);
     double first = bs->computeShadowing(d3D, d2D, false, d2dLinkBetween(tx, txPos, rx, rxPos));
-    double sigma = pathLoss->getShadowingStdDev(d3D, d2D, false);
+    double sigma = pathLoss->getShadowingStdDev(bsProbe.deployment(), d3D, d2D, false);
     RngSnapshot snapshot(bs);
     double updated = bs->computeShadowing(d3D, d2D, false, d2dLinkBetween(tx, txMoved, rx, rxMoved));
     double a = exp(-0.5 * (80.0 / dcorr));
@@ -303,7 +303,7 @@ const inet::Coord bsPos(0, 0, 25);
     // Two links of one node are two independent realizations.
     const MacNodeId owner = MacNodeId(1104), peerA = MacNodeId(1105), peerB = MacNodeId(1106);
     const inet::Coord ownerPos(700, 0, 1.5);
-    double sigma = pathLoss->getShadowingStdDev(d3D, d2D, false);
+    double sigma = pathLoss->getShadowingStdDev(bsProbe.deployment(), d3D, d2D, false);
     RngSnapshot snapshot(bs);
     double a = bs->computeShadowing(d3D, d2D, false, d2dLinkBetween(owner, ownerPos, peerA, inet::Coord(720, 0, 1.5)));
     double b = bs->computeShadowing(d3D, d2D, false, d2dLinkBetween(owner, ownerPos, peerB, inet::Coord(740, 0, 1.5)));

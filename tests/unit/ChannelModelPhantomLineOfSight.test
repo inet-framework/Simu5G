@@ -100,7 +100,7 @@ const double d2D = sqrt(pow(ue.coord.x - phantom.coord.x, 2) + pow(ue.coord.y - 
 auto expectedPower = [&](ChannelModelProbe& probe, bool los) {
     PathLossModel::LinkConditions conditions;
     conditions.environmentHeight = probe.losMap().at(phantomLink).environmentHeight;
-    return phantom.txPower - probe.pathLoss()->computePathLoss(d3D, d2D, los, conditions) + phantom.antennaGain + ue.antennaGain - ue.cableLoss;
+    return phantom.txPower - probe.pathLoss()->computePathLoss(probe.deployment(), d3D, d2D, los, conditions) + phantom.antennaGain + ue.antennaGain - ue.cableLoss;
 };
 
 // the serving link has a state of its own, decided elsewhere
@@ -111,7 +111,7 @@ atUe.losMap()[servingLink].positionB = ue.coord;
 bool phantomLos;
 double power;
 {
-    double p = atUe.pathLoss()->computeLosProbability(d3D, d2D);
+    double p = atUe.pathLoss()->computeLosProbability(atUe.deployment(), d3D, d2D);
     RngSnapshot snapshot(ueModel);
     long long before = drawn(ueModel);
     power = atUe.phantomPowerAt(transmission, &ue);

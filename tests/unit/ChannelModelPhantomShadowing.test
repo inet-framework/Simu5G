@@ -81,7 +81,7 @@ auto drawn = [&] { return (long long)model->getRNG(0)->getNumbersDrawn(); };
 auto pathLoss = [&] (const LinkKey& key, const Coord& a, const Coord& b) {
     PathLossModel::LinkConditions conditions;
     conditions.environmentHeight = probe.losMap().at(key).environmentHeight;
-    return probe.pathLoss()->computePathLoss(a.distance(b), sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2)), true, conditions);
+    return probe.pathLoss()->computePathLoss(probe.deployment(), a.distance(b), sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2)), true, conditions);
 };
 auto shadowingOf = [&] (const LinkKey& key) {
     return probe.shadowingMap().count(key) ? probe.shadowingMap().at(key).value : 0.0;

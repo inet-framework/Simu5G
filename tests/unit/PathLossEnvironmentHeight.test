@@ -32,13 +32,13 @@ CaseRecorder probe(this, 1e-6);
 const int N = 40000;
 const double heValues[] = { 1, 12, 15, 18, 21 };
 
-auto pathLossAt = [] (PathLossModel& m, double d3D, double d2D, bool los, double hE) {
+auto pathLossAt = [] (auto& m, double d3D, double d2D, bool los, double hE) {
     PathLossModel::LinkConditions conditions;
     conditions.environmentHeight = hE;
     return m.computePathLoss(d3D, d2D, los, conditions);
 };
 // the frequency of each h_E value over N draws at d2D; returns the number of other values drawn
-auto frequencies = [&] (PathLossModel& m, double d2D, std::map<double, double>& freq) {
+auto frequencies = [&] (auto& m, double d2D, std::map<double, double>& freq) {
     std::map<double, int> counts;
     for (int i = 0; i < N; i++)
         counts[m.drawEnvironmentHeight(d2D)]++;
@@ -49,7 +49,7 @@ auto frequencies = [&] (PathLossModel& m, double d2D, std::map<double, double>& 
     }
     return others;
 };
-auto drawsOf = [&] (PathLossModel& m, double d2D, double& hE) {
+auto drawsOf = [&] (auto& m, double d2D, double& hE) {
     long before = getRNG(0)->getNumbersDrawn();
     hE = m.drawEnvironmentHeight(d2D);
     return (double)(getRNG(0)->getNumbersDrawn() - before);
@@ -62,7 +62,7 @@ p.hUe = 22.5;
 p.carrierFrequencyGHz = 0.8;
 
 // --- TR 38.901 ---------------------------------------------------------
-Tr38901PathLossModel m901;
+Deployed<Tr38901PathLossModel> m901;
 p.apply(m901, this);
 for (double d : { 30.0, 100.0, 200.0 }) {
     std::map<double, double> freq;
@@ -103,7 +103,7 @@ p.scenario = URBAN_MACROCELL;
 p.hNodeB = 25;
 p.hUe = 22.5;
 p.carrierFrequencyGHz = 0.8;
-Tr36873PathLossModel m873;
+Deployed<Tr36873PathLossModel> m873;
 p.apply(m873, this);
 
 // deviation 26: P(1 m) = 1/(1 + ((hUT-13)/10)^1.5) at every distance

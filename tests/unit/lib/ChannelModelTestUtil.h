@@ -156,6 +156,7 @@ class ChannelModelProbe
         static auto shadowingMapPtr() { return &Access::shadowingMap; }
         static auto jakesFadingMapPtr() { return &Access::jakesFadingMap; }
         static auto pathLossPtr() { return &Access::pathLoss_; }
+        static auto deploymentPtr() { return &Access::deployment_; }
         static auto fadingPtr() { return &Access::fading_; }
 
         static auto linkForPtr() { return &Access::linkFor; }
@@ -180,6 +181,8 @@ class ChannelModelProbe
     // the Jakes fading paths of the links on the model's carrier, which the radio medium keeps once per link
     ChannelState::JakesFadingMap& jakesMap() { return (model_->*Access::jakesFadingMapPtr())(); }
     PathLossModel *pathLoss() { return model_->*Access::pathLossPtr(); }
+    // the deployment the model evaluates every link in, which the formulas take with each call
+    const PathLossModel::Deployment& deployment() { return model_->*Access::deploymentPtr(); }
     bool& fading() { return model_->*Access::fadingPtr(); }
 
     // internal steps

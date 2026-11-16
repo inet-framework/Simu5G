@@ -38,11 +38,11 @@ namespace simu5g {
 class Tr38901PathLossModel : public Tr36873PathLossModel
 {
   public:
-    void checkPenetrationLoss() const override;
-    double computePathLoss(double d3D, double d2D, bool los, const LinkConditions& conditions) override;
-    double computeLosProbability(double d3D, double d2D) override;
-    double getShadowingStdDev(double d3D, double d2D, bool losState) override;
-    double drawEnvironmentHeight(double d2D) override;
+    void checkPenetrationLoss(const Deployment& deployment) const override;
+    double computePathLoss(const Deployment& deployment, double d3D, double d2D, bool los, const LinkConditions& conditions) override;
+    double computeLosProbability(const Deployment& deployment, double d3D, double d2D) override;
+    double getShadowingStdDev(const Deployment& deployment, double d3D, double d2D, bool losState) override;
+    double drawEnvironmentHeight(const Deployment& deployment, double d2D) override;
 
     /*
      * Select the low-loss (default) or high-loss building-penetration model
@@ -54,15 +54,15 @@ class Tr38901PathLossModel : public Tr36873PathLossModel
 
   private:
     double computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
-    double computeUrbanMicro3D(double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
-    double computeUrbanMacro3D(double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
-    double computeRuralMacro3D(double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
+    double computeUrbanMicro3D(const Deployment& deployment, double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
+    double computeUrbanMacro3D(const Deployment& deployment, double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
+    double computeRuralMacro3D(const Deployment& deployment, double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
 
     /*
      * Compute the building penetration loss for an indoor UE.
      * See section 7.4.3 of TR 38.901.
      */
-    double computePenetrationLoss(double threeDimDistance, const LinkConditions& conditions);
+    double computePenetrationLoss(const Deployment& deployment, double threeDimDistance, const LinkConditions& conditions);
 
     // flag for using the high-loss or low-loss building-penetration model
     // see table 7.4.3-2 in TR 38.901

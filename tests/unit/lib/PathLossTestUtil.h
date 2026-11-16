@@ -26,6 +26,26 @@ namespace simu5g {
 namespace unittest {
 
 /**
+ * A path-loss strategy with the deployment a test evaluates links in: the
+ * strategy takes the deployment with each call, and a test sets it once
+ * (ScenarioParams::apply()) and calls the formulas with the geometry alone.
+ */
+template<class Model>
+class Deployed : public Model
+{
+  public:
+    PathLossModel::Deployment deployment;
+
+    double computePathLoss(double d3D, double d2D, bool los, const PathLossModel::LinkConditions& conditions)
+    {
+        return Model::computePathLoss(deployment, d3D, d2D, los, conditions);
+    }
+    double computeLosProbability(double d3D, double d2D) { return Model::computeLosProbability(deployment, d3D, d2D); }
+    double getShadowingStdDev(double d3D, double d2D, bool losState) { return Model::getShadowingStdDev(deployment, d3D, d2D, losState); }
+    double drawEnvironmentHeight(double d2D) { return Model::drawEnvironmentHeight(deployment, d2D); }
+};
+
+/**
  * Deployment-scenario parameters of a path-loss model, with the defaults of
  * the StochasticChannelModel NED parameters they mirror, and the UE's indoor
  * facts the model is evaluated with. A test fills in the fields it cares about
@@ -50,11 +70,31 @@ struct ScenarioParams
     double carrierFrequencyGHz = 2.0;   // carrier frequency [GHz]
     bool tolerateMaxDistViolation = false;
 
+    // the deployment the formulas take with each call
+    PathLossModel::Deployment deployment() const
+    {
+        PathLossModel::Deployment d;
+        d.scenario = scenario;
+        d.hNodeB = hNodeB;
+        d.hUe = hUe;
+        d.hBuilding = hBuilding;
+        d.wStreet = wStreet;
+        return d;
+    }
+
+    // the carrier, for a strategy that is then called with deployment() explicitly
     void apply(PathLossModel& model, omnetpp::cComponent *owner) const
     {
-        model.initialize(owner, scenario, hNodeB, hUe, hBuilding, wStreet,
-                carrierFrequencyGHz * 1e9, carrierFrequencyGHz, std::log10(carrierFrequencyGHz),
+        model.initialize(owner, carrierFrequencyGHz * 1e9, carrierFrequencyGHz, std::log10(carrierFrequencyGHz),
                 tolerateMaxDistViolation);
+    }
+
+    // the carrier and the deployment, for a strategy a test calls with the geometry alone
+    template<class Model>
+    void apply(Deployed<Model>& model, omnetpp::cComponent *owner) const
+    {
+        apply(static_cast<PathLossModel&>(model), owner);
+        model.deployment = deployment();
     }
 
     // the indoor facts, for computePathLoss(), at the h_E a link takes without a draw
@@ -169,7 +209,7 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d3D", d3D }, { "d2D", d2D }, { "los", static_cast<double>(los) } },
-                model.computePathLoss(d3D, d2D, los, p.conditions()));
+                model.computePathLoss(p.deployment(), d3D, d2D, los, p.conditions()));
     }
 
     /**
@@ -182,7 +222,7 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d", d }, { "los", static_cast<double>(los) } },
-                model.computePathLoss(d, d, los, p.conditions()));
+                model.computePathLoss(p.deployment(), d, d, los, p.conditions()));
     }
 
     void losProbability(const char *ref, PathLossModel& model, const ScenarioParams& p,
@@ -190,13 +230,13 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d3D", d3D }, { "d2D", d2D } },
-                model.computeLosProbability(d3D, d2D));
+                model.computeLosProbability(p.deployment(), d3D, d2D));
     }
 
     void losProbability(const char *ref, PathLossModel& model, const ScenarioParams& p, double d)
     {
         p.apply(model, owner_);
-        record(ref, p, { { "d", d } }, model.computeLosProbability(d, d));
+        record(ref, p, { { "d", d } }, model.computeLosProbability(p.deployment(), d, d));
     }
 
     void shadowingStdDev(const char *ref, PathLossModel& model, const ScenarioParams& p,
@@ -204,7 +244,7 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d3D", d3D }, { "d2D", d2D }, { "los", static_cast<double>(los) } },
-                model.getShadowingStdDev(d3D, d2D, los));
+                model.getShadowingStdDev(p.deployment(), d3D, d2D, los));
     }
 
     void shadowingStdDev(const char *ref, PathLossModel& model, const ScenarioParams& p,
@@ -212,7 +252,7 @@ class CaseRecorder
     {
         p.apply(model, owner_);
         record(ref, p, { { "d", d }, { "los", static_cast<double>(los) } },
-                model.getShadowingStdDev(d, d, los));
+                model.getShadowingStdDev(p.deployment(), d, d, los));
     }
 
     /**

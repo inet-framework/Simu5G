@@ -37,7 +37,7 @@ using namespace simu5g::unittest;
 
 %activity:
 CaseRecorder probe(this, 1e-6);
-Tr38901PathLossModel m;
+Deployed<Tr38901PathLossModel> m;
 ScenarioParams outdoor, indoor;
 
 // --- fc <= 6 GHz: the deterministic model of table 7.4.3-3 ------------

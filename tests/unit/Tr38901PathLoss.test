@@ -22,7 +22,7 @@ using namespace simu5g::unittest;
 
 %activity:
 CaseRecorder probe(this, 1e-6);
-Tr38901PathLossModel m;
+Deployed<Tr38901PathLossModel> m;
 ScenarioParams p;
 
 // --- InH, fc = 3.5 GHz ------------------------------------------------
