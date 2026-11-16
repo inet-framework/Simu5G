@@ -69,6 +69,7 @@ struct ScenarioParams
     double penetrationDeviate = 0;      // the UE's standard-normal penetration-loss deviate
     double carrierFrequencyGHz = 2.0;   // carrier frequency [GHz]
     bool tolerateMaxDistViolation = false;
+    bool tolerateHeightViolation = false;
 
     // the deployment the formulas take with each call
     PathLossModel::Deployment deployment() const
@@ -86,7 +87,7 @@ struct ScenarioParams
     void apply(PathLossModel& model, omnetpp::cComponent *owner) const
     {
         model.initialize(owner, carrierFrequencyGHz * 1e9, carrierFrequencyGHz, std::log10(carrierFrequencyGHz),
-                tolerateMaxDistViolation);
+                tolerateMaxDistViolation, tolerateHeightViolation);
     }
 
     // the carrier and the deployment, for a strategy a test calls with the geometry alone

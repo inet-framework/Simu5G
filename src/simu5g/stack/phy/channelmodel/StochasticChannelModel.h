@@ -82,8 +82,8 @@ class StochasticChannelModel : public ChannelModelBase
   protected:
 
     // the deployment every link of this model is evaluated in: the scenario, the
-    // heights of the base station and UE antennas, the average building height
-    // and street width
+    // average building height and street width; a link's heights are its own
+    // (see deploymentOf())
     PathLossModel::Deployment deployment_;
 
     // flag for using high-loss or low-loss model for building penetration
@@ -134,6 +134,7 @@ class StochasticChannelModel : public ChannelModelBase
     double delayRMS_;
 
     bool tolerateMaxDistViolation_;
+    bool tolerateHeightViolation_;
 
     enum FadingType
     {
@@ -267,13 +268,22 @@ class StochasticChannelModel : public ChannelModelBase
      */
     bool isReceptionSuccessful(IRadioEndpoint *radio, AirFrame *frame, UserControlInfo *lteI, const std::vector<double>& rsrpVector) override;
 
+    double computeUeToUePathLoss(const inet::Coord& a, const inet::Coord& b, bool los) override;
+
     /*
-     * Compute the path-loss attenuation according to the selected scenario
-     *
-     * @param distance between UE and eNodeB
-     * @param los line-of-sight flag
+     * The deployment a link is evaluated in. Its heights are those of the
+     * link's two ends above the ground (z = 0): the base station's and the
+     * UE's.
      */
-    double computePathLoss(double distance, double dbp, bool los) override;
+    PathLossModel::Deployment deploymentOf(const RadioLink& link) const;
+
+    /*
+     * The deployment of a link between two UEs, at the given positions. No
+     * study here has such a link: the formulas take the base station height
+     * the studies give for the scenario (25 m in an urban macrocell), and the
+     * lower of the two UEs' heights as the UE's, whichever of them transmits.
+     */
+    PathLossModel::Deployment ueToUeDeployment(const inet::Coord& a, const inet::Coord& b) const;
 
     /*
      * Compute Rayleigh fading

@@ -82,11 +82,15 @@ void StochasticChannelModel::initialize(int stage)
     ChannelModelBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
         deployment_.scenario = aToDeploymentScenario(par("scenario").stringValue());
-        deployment_.hNodeB = par("nodebHeight");
         shadowing_ = par("shadowing");
         deployment_.hBuilding = par("buildingHeight");
         tolerateMaxDistViolation_ = par("tolerateMaxDistViolation");
-        deployment_.hUe = par("ueHeight");
+        tolerateHeightViolation_ = par("tolerateHeightViolation");
+        for (const char *name : {"nodebHeight", "ueHeight"})
+            if (!std::isnan(par(name).doubleValue()))
+                throw cRuntimeError("The '%s' parameter is no longer used: the heights of a link are those of its two antennas. "
+                        "Set the height of an antenna above its node in the node's NIC instead (cellularNic.antenna.mobility.offsetZ; "
+                        "radio.antenna.mobility.offsetZ in a background or external cell)", name);
 
         deployment_.wStreet = par("streetWidth");
 
@@ -123,8 +127,28 @@ void StochasticChannelModel::initialize(int stage)
         pathLoss_ = createPathLossModel();
         pathLoss_->initialize(this,
                 carrierFrequencyHz_, carrierFrequencyGHz_, log10CarrierFrequencyGHz_,
-                tolerateMaxDistViolation_);
+                tolerateMaxDistViolation_, tolerateHeightViolation_);
     }
+}
+
+PathLossModel::Deployment StochasticChannelModel::deploymentOf(const RadioLink& link) const
+{
+    if (link.dir == D2D || link.dir == D2D_MULTI)
+        return ueToUeDeployment(link.txCoord, link.rxCoord);
+
+    // the base station's end: the transmitter of a downlink, the receiver of an uplink
+    PathLossModel::Deployment deployment = deployment_;
+    deployment.hNodeB = link.txIsBaseStation ? link.txCoord.z : link.rxCoord.z;
+    deployment.hUe = link.txIsBaseStation ? link.rxCoord.z : link.txCoord.z;
+    return deployment;
+}
+
+PathLossModel::Deployment StochasticChannelModel::ueToUeDeployment(const Coord& a, const Coord& b) const
+{
+    PathLossModel::Deployment deployment = deployment_;
+    deployment.hNodeB = PathLossModel::getDefaultBaseStationHeight(deployment.scenario);
+    deployment.hUe = std::min(a.z, b.z);
+    return deployment;
 }
 
 RadioLink StochasticChannelModel::cellularLink(IRadioEndpoint *radio, MacNodeId ueId, Direction dir, Coord coord)
@@ -270,6 +294,10 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     conditions.indoorDistance = ueEnd != nullptr ? ueEnd->getInsideDistance() : 0.0;
     conditions.penetrationDeviate = ueEnd != nullptr ? ueEnd->getPenetrationLossDeviate() : 0.0;
 
+    // the heights of the link's two ends, with the scenario
+    PathLossModel::Deployment deployment = deploymentOf(link);
+    pathLoss_->checkHeights(deployment);
+
     // COMPUTE 3D and 2D DISTANCE between the two endpoints
     double threeDimDistance = link.txCoord.distance(link.rxCoord);
     double twoDimDistance = getTwoDimDistance(link.txCoord, link.rxCoord);
@@ -289,7 +317,7 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     const ChannelState::LosSample& sample = losMap()[link.linkKey];
     bool los = sample.los;
     conditions.environmentHeight = sample.environmentHeight;
-    double attenuation = pathLoss_->computePathLoss(deployment_, threeDimDistance, twoDimDistance, los, conditions);
+    double attenuation = pathLoss_->computePathLoss(deployment, threeDimDistance, twoDimDistance, los, conditions);
 
     // log-normal shadowing, if enabled by configuration: one realization per link
     if (shadowing_)
@@ -315,7 +343,7 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, bool los
     double mean = 0;
 
     // Get std deviation according to LOS/NLOS and selected scenario
-    double stdDev = pathLoss_->getShadowingStdDev(deployment_, d3D, d2D, los);
+    double stdDev = pathLoss_->getShadowingStdDev(deploymentOf(link), d3D, d2D, los);
     double att;
 
     auto it = actualShadowingMap->find(key);
@@ -849,18 +877,20 @@ void StochasticChannelModel::computeLosProbability(double d3D, double d2D,
     if (!dynamicLos_)
         sample.los = fixedLos_;
     else {
-        double p = pathLoss_->computeLosProbability(deployment_, d3D, d2D);
+        double p = pathLoss_->computeLosProbability(deploymentOf(link), d3D, d2D);
         sample.los = (uniform(0.0, 1.0) <= p);
     }
     // the link's UMa environment height is drawn with its LOS state
-    sample.environmentHeight = pathLoss_->drawEnvironmentHeight(deployment_, d2D);
+    sample.environmentHeight = pathLoss_->drawEnvironmentHeight(deploymentOf(link), d2D);
 }
 
-double StochasticChannelModel::computePathLoss(double distance, double dbp, bool los)
+double StochasticChannelModel::computeUeToUePathLoss(const Coord& a, const Coord& b, bool los)
 {
     // a path loss outside any link: outdoors, at the environment height a
     // link takes without a draw -- not the facts of the link evaluated last
-    return pathLoss_->computePathLoss(deployment_, distance, dbp, los, PathLossModel::LinkConditions());
+    PathLossModel::Deployment deployment = ueToUeDeployment(a, b);
+    pathLoss_->checkHeights(deployment);
+    return pathLoss_->computePathLoss(deployment, a.distance(b), getTwoDimDistance(a, b), los, PathLossModel::LinkConditions());
 }
 
 double StochasticChannelModel::getTwoDimDistance(inet::Coord a, inet::Coord b)
@@ -913,6 +943,9 @@ double StochasticChannelModel::phantomPowerAt(const CellularTransmission& transm
 
 double StochasticChannelModel::computePhantomPathLoss(const RadioLink& link, PathLossModel::LinkConditions conditions)
 {
+    PathLossModel::Deployment deployment = deploymentOf(link);
+    pathLoss_->checkHeights(deployment);
+
     double d3D = link.txCoord.distance(link.rxCoord);
     double d2D = getTwoDimDistance(link.txCoord, link.rxCoord);
 
@@ -932,7 +965,7 @@ double StochasticChannelModel::computePhantomPathLoss(const RadioLink& link, Pat
     if (!enable_extCell_los_)
         los = false;
 
-    double attenuation = pathLoss_->computePathLoss(deployment_, d3D, d2D, los, conditions);
+    double attenuation = pathLoss_->computePathLoss(deployment, d3D, d2D, los, conditions);
 
     // a phantom link is shadowed like any other, with the link's one realization
     if (shadowing_)

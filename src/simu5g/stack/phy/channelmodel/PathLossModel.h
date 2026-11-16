@@ -57,6 +57,7 @@ class PathLossModel
     double carrierFrequencyGHz_ = 0;
     double log10CarrierFrequencyGHz_ = 0;
     bool tolerateMaxDistViolation_ = false;
+    bool tolerateHeightViolation_ = false;
 
     /*
      * Propagation velocity in free space, as the breakpoint-distance notes of
@@ -73,6 +74,21 @@ class PathLossModel
      * penetration loss for the scenario, or defines one that the model lacks.
      */
     [[noreturn]] void throwNoPenetrationLoss(const Deployment& deployment, const char *study, bool definedInStudy) const;
+
+    /*
+     * The checks of checkHeights(). requireDefined() throws when 'ok' does
+     * not hold: the scenario's formulas have no value at the link's heights.
+     * requireInRange() throws when 'ok' does not hold, unless the violation
+     * is tolerated by configuration; 'range' is the range as the study gives it.
+     */
+    void requireDefined(bool ok, const Deployment& deployment, const char *condition) const;
+    void requireInRange(bool ok, const Deployment& deployment, const char *study, const char *range) const;
+
+    /*
+     * Throws if the link's heights are outside the range the study gives
+     * for the scenario; called by checkHeights().
+     */
+    virtual void checkHeightRange(const Deployment& deployment) const = 0;
 
   public:
     /**
@@ -98,7 +114,24 @@ class PathLossModel
      */
     virtual void initialize(cComponent *owner,
             double carrierFrequencyHz, double carrierFrequencyGHz, double log10CarrierFrequencyGHz,
-            bool tolerateMaxDistViolation);
+            bool tolerateMaxDistViolation, bool tolerateHeightViolation);
+
+    /*
+     * The base station antenna height the studies give for a scenario: 10 m
+     * in an urban microcell, 25 m in an urban macrocell, 35 m in a suburban
+     * or rural macrocell (TR 36.814 Table B.1.2.1-1, TR 36.873 Table 7.2-1,
+     * TR 38.901 Table 7.4.1-1), and 3 m, the lowest of TR 36.814's 3-6 m,
+     * in an indoor hotspot.
+     */
+    static double getDefaultBaseStationHeight(DeploymentScenario scenario);
+
+    /*
+     * Throws if the scenario's formulas cannot be evaluated at the link's
+     * heights: where they have no value (an effective antenna height that is
+     * not positive), and outside the range of heights the study gives for the
+     * scenario. The owner calls it for every link it evaluates.
+     */
+    void checkHeights(const Deployment& deployment) const;
 
     /*
      * Draw the effective environment height h_E of a link between a base

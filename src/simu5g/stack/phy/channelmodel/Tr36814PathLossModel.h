@@ -31,6 +31,7 @@ class Tr36814PathLossModel : public PathLossModel
 {
   public:
     void checkPenetrationLoss(const Deployment& deployment) const override;
+    void checkHeightRange(const Deployment& deployment) const override;
     double computePathLoss(const Deployment& deployment, double d3D, double d2D, bool los, const LinkConditions& conditions) override;
     double computeLosProbability(const Deployment& deployment, double d3D, double d2D) override;
     double getShadowingStdDev(const Deployment& deployment, double d3D, double d2D, bool losState) override;

@@ -35,7 +35,7 @@ class DistanceBasedConflictGraph : public ConflictGraph
     double d2dMultiInterferenceRadius_ = -1.0;
 
     // utility function to convert a distance to dBm according to the channel model
-    virtual double getDbmFromDistance(double distance);
+    virtual double getPathLossBetween(const inet::Coord& a, const inet::Coord& b);
 
     // overridden functions
     void findVertices(std::vector<CGVertex>& vertices) override;

@@ -187,14 +187,13 @@ class ChannelModelBase : public cSimpleModule
      */
     virtual double getAttenuation(const RadioLink& link) = 0;
     /*
-     * Compute the path-loss attenuation according to the selected scenario,
-     * outside any link: outdoors, at an environment height of 1 m (the D2D
-     * conflict graph's estimate)
+     * Compute the path-loss attenuation between two UEs at the given
+     * positions, outside any link: outdoors, at an environment height of 1 m
+     * (the D2D conflict graph's estimate)
      *
-     * @param distance between UE and eNodeB
      * @param los line-of-sight flag
      */
-    virtual double computePathLoss(double distance, double dbp, bool los) = 0;
+    virtual double computeUeToUePathLoss(const inet::Coord& a, const inet::Coord& b, bool los) = 0;
     /*
      * Compute SINR for each band for user nodeId according to path loss, shadowing (optional), and multipath fading
      *

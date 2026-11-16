@@ -23,6 +23,31 @@ void Tr38901PathLossModel::checkPenetrationLoss(const Deployment& deployment) co
         throwNoPenetrationLoss(deployment, "TR 38.901", false);
 }
 
+void Tr38901PathLossModel::checkHeightRange(const Deployment& d) const
+{
+    // Table 7.4.1-1, "Applicability range, antenna height default values": the
+    // applicability ranges where the table states them, otherwise the heights
+    // it gives; it gives none for InH-Office
+    const char *study = "TR 38.901 Table 7.4.1-1";
+    switch (d.scenario) {
+        case INDOOR_HOTSPOT:
+            break;
+        case URBAN_MICROCELL:
+            requireInRange(d.hNodeB == 10 && d.hUe >= 1.5 && d.hUe <= 22.5, d, study, "hBS = 10 m, 1.5 m <= hUT <= 22.5 m");
+            break;
+        case URBAN_MACROCELL:
+            requireInRange(d.hNodeB == 25 && d.hUe >= 1.5 && d.hUe <= 22.5, d, study, "hBS = 25 m, 1.5 m <= hUT <= 22.5 m");
+            break;
+        case RURAL_MACROCELL:
+            requireInRange(d.hNodeB >= 10 && d.hNodeB <= 150 && d.hUe >= 1 && d.hUe <= 10, d, study, "10 m <= hBS <= 150 m, 1 m <= hUT <= 10 m");
+            break;
+        default:
+            // the suburban macrocell is TR 36.814's
+            Tr36814PathLossModel::checkHeightRange(d);
+            break;
+    }
+}
+
 double Tr38901PathLossModel::computePathLoss(const Deployment& deployment, double d3D, double d2D, bool los, const LinkConditions& conditions)
 {
     if (conditions.indoor)

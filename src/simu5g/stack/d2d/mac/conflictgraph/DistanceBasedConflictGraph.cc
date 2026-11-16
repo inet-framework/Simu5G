@@ -38,22 +38,17 @@ void DistanceBasedConflictGraph::setThresholds(double d2dInterferenceRadius, dou
     d2dMultiInterferenceRadius_ = d2dMultiInterferenceRadius;
 }
 
-double DistanceBasedConflictGraph::getDbmFromDistance(double distance)
+double DistanceBasedConflictGraph::getPathLossBetween(const Coord& a, const Coord& b)
 {
     bool los = false;    // TODO make it configurable
-    double dbp = 0;
-    double pLoss = 0;
 
     // get the reference to the channel model of the eNB
     ChannelModelBase *channelModel = macEnb_->getPhy()->getChannelModel();
-
-    // obtain path loss in dBm
     if (channelModel == nullptr)
-        throw cRuntimeError("DistanceBasedConflictGraph::getDbmFromDistance - channel model is a null pointer");
-    else
-        pLoss = channelModel->computePathLoss(distance, dbp, los);
+        throw cRuntimeError("DistanceBasedConflictGraph::getPathLossBetween - channel model is a null pointer");
 
-    return pLoss;
+    // the path loss between the two UEs, in dB
+    return channelModel->computeUeToUePathLoss(a, b, los);
 }
 
 void DistanceBasedConflictGraph::findVertices(std::vector<CGVertex>& vertices)
@@ -127,7 +122,7 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
                 else {
                     // compare path-loss attenuations
 
-                    if (getDbmFromDistance(distance1) < d2dDbmThreshold_ || getDbmFromDistance(distance2) < d2dDbmThreshold_) {
+                    if (getPathLossBetween(v1SenderCoord, v2DestCoord) < d2dDbmThreshold_ || getPathLossBetween(v2SenderCoord, v1DestCoord) < d2dDbmThreshold_) {
                         // add edge to the conflict graph
                         conflictGraph_[v1][v2] = true;
                         conflictGraph_[v2][v1] = true;
@@ -162,7 +157,7 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
                 else {
                     // compare path-loss attenuations
 
-                    if (getDbmFromDistance(distance) < d2dMultiTxDbmThreshold_ + d2dDbmThreshold_) {
+                    if (getPathLossBetween(v1SenderCoord, v2SenderCoord) < d2dMultiTxDbmThreshold_ + d2dDbmThreshold_) {
                         // add edge to the conflict graph
                         conflictGraph_[v1][v2] = true;
                         conflictGraph_[v2][v1] = true;
@@ -197,7 +192,7 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
                 else {
                     // compare path-loss attenuations
 
-                    if (getDbmFromDistance(distance) < d2dMultiInterfDbmThreshold_) {
+                    if (getPathLossBetween(v1SenderCoord, v2DestCoord) < d2dMultiInterfDbmThreshold_) {
                         // add edge to the conflict graph
                         conflictGraph_[v1][v2] = true;
                         conflictGraph_[v2][v1] = true;
@@ -232,7 +227,7 @@ void DistanceBasedConflictGraph::findEdges(const std::vector<CGVertex>& vertices
                 else {
                     // compare path-loss attenuations
 
-                    if (getDbmFromDistance(distance) < d2dMultiTxDbmThreshold_ + d2dMultiInterfDbmThreshold_) {
+                    if (getPathLossBetween(v1SenderCoord, v2SenderCoord) < d2dMultiTxDbmThreshold_ + d2dMultiInterfDbmThreshold_) {
                         // add edge to the conflict graph
                         conflictGraph_[v1][v2] = true;
                         conflictGraph_[v2][v1] = true;

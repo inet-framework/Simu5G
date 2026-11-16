@@ -34,7 +34,7 @@ class IdealChannelModel : public ChannelModelBase
     /*
      * Compute the path-loss attenuation according to the selected scenario
      */
-    double computePathLoss(double distance, double dbp, bool los) override
+    double computeUeToUePathLoss(const inet::Coord& a, const inet::Coord& b, bool los) override
     {
         return 0;
     }
