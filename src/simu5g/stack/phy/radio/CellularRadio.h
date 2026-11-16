@@ -16,6 +16,7 @@
 #include <inet/common/ModuleRefByPar.h>
 
 #include "simu5g/stack/phy/medium/CellularRadioMedium.h"
+#include "simu5g/stack/phy/radio/CellularAntenna.h"
 
 namespace simu5g {
 
@@ -38,6 +39,7 @@ class CellularRadio : public cSimpleModule
     int upperLayerInGateId_ = -1;
     int upperLayerOutGateId_ = -1;
     inet::ModuleRefByPar<CellularRadioMedium> radioMedium_;
+    inet::ModuleRefByPar<CellularAntenna> antenna_; // the antenna the radio transmits and receives through
     IRadioEndpoint *endpoint_ = nullptr; // the PHY the radio sends and receives frames for
     bool insideBuilding_ = false; // whether the radio is inside a building, and how far from its wall
     double insideDistance_ = 0.0;
@@ -52,6 +54,9 @@ class CellularRadio : public cSimpleModule
   public:
     /** Sets the PHY the radio sends and receives frames for, whose position is the radio's. */
     virtual void setEndpoint(IRadioEndpoint *endpoint) { endpoint_ = endpoint; }
+
+    /** The antenna the radio transmits and receives through. */
+    CellularAntenna *getAntenna() { return antenna_.get(); }
 
     /** Whether the radio is inside a building. */
     bool isInsideBuilding() const { return insideBuilding_; }

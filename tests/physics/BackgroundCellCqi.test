@@ -146,8 +146,8 @@ description = "${s = realCellOff, realCellOn, neighbour, neighbourOff, narrowCel
 *.gnb.**.eNodeBTxPower = 40dBm
 **.ueTxPower = 25dBm
 **.thermalNoise = -104.5dBm
-*.gnb.cellularNic.radio.antenna.gain = 17dBi
-*.ue[*].cellularNic.*adio.antenna.gain = 1dBi
+*.gnb.cellularNic.antenna.gain = 17dBi
+*.ue[*].cellularNic.antenna.gain = 1dBi
 *.bgCell[*].bgScheduler.isNr = true
 *.bgCell[0].bgScheduler.txPower = 37dBm
 *.bgCell[0].radio.antenna.gain = 15dBi

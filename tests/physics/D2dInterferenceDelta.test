@@ -198,10 +198,10 @@ measurement-label = ${scen = "off", "pair", "sameCellUl", "otherCellUl", "cqiQui
 **.ueTxPower = 26dBm
 *.ueD2DTx[1].**.d2dTxPower = 17dBm
 **.d2dTxPower = 20dBm
-*.ueD2DTx[1].cellularNic.*adio.antenna.gain = 1dBi
-*.ueD2D*[*].cellularNic.*adio.antenna.gain = 3dBi
-*.ueCell[*].cellularNic.*adio.antenna.gain = 5dBi
-*.ueOther[*].cellularNic.*adio.antenna.gain = 5dBi
+*.ueD2DTx[1].cellularNic.antenna.gain = 1dBi
+*.ueD2D*[*].cellularNic.antenna.gain = 3dBi
+*.ueCell[*].cellularNic.antenna.gain = 5dBi
+*.ueOther[*].cellularNic.antenna.gain = 5dBi
 # None of the three is its default, so a key that stops reaching the radios moves the result
 *.ueD2DRx[*].cellularNic.*adio.receiver.cableLoss = 3dB
 **.cableLoss = 1.5dB

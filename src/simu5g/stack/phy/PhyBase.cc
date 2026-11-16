@@ -352,17 +352,17 @@ void PhyBase::sendUnicast(AirFrame *frame, simtime_t duration)
 
 TxDirectionType PhyBase::getTxDirection()
 {
-    return check_and_cast<CellularAntenna *>(radio_->getSubmodule("antenna"))->getTxDirection();
+    return cellularRadio_->getAntenna()->getTxDirection();
 }
 
 double PhyBase::getTxAngle()
 {
-    return check_and_cast<CellularAntenna *>(radio_->getSubmodule("antenna"))->getTxAngle();
+    return cellularRadio_->getAntenna()->getTxAngle();
 }
 
 double PhyBase::getAntennaGain()
 {
-    return check_and_cast<CellularAntenna *>(radio_->getSubmodule("antenna"))->getGain();
+    return cellularRadio_->getAntenna()->getGain();
 }
 
 double PhyBase::getNoiseFigure()

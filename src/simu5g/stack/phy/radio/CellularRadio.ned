@@ -13,7 +13,8 @@ package simu5g.stack.phy.radio;
 
 //
 // The radio of a cellular PHY leg: the node-side counterpart of the radio
-// medium, holding the antenna, the transmitter and the receiver. Every frame
+// medium, holding the transmitter and the receiver; its antenna is the NIC's,
+// which the radios of a NIC share (antennaModule). Every frame
 // the PHY transmits passes through it (the PHY says where it goes), and every
 // frame that arrives for the node's PHY leg enters through it. The radio's
 // receiver decides the reception, against its error model, on the SINR the
@@ -28,6 +29,7 @@ module CellularRadio
 {
     parameters:
         string radioMediumModule = default("radioMedium"); // The network's radio medium
+        string antennaModule = default("^.antenna"); // The antenna the radio transmits and receives through; the radios of a NIC share the NIC's
         bool insideBuilding = default(false); // Whether the radio is inside a building, which counts on a UE's radio: a link's building penetration loss is its UE end's. Its distance from the wall (uniformly in [0, 25] m) and the random term of its penetration loss (standard normal, scaled by the study's sigma_P) are drawn once
         @class(CellularRadio);
         @display("i=device/antennatower");
@@ -36,9 +38,6 @@ module CellularRadio
         input upperLayerIn;         // frames to transmit, from the PHY
         output upperLayerOut;       // received frames, to the PHY
     submodules:
-        antenna: CellularAntenna {
-            @display("p=100,100");
-        }
         transmitter: CellularTransmitter {
             @display("p=100,200");
         }

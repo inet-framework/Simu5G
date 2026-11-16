@@ -22,6 +22,7 @@ import simu5g.stack.pdcp.IPdcpMux;
 import simu5g.stack.phy.IPhy;
 import simu5g.stack.rlc.IRlcMux;
 import simu5g.stack.rrc.IRrc;
+import simu5g.stack.phy.radio.CellularAntenna;
 import simu5g.stack.phy.radio.CellularRadio;
 
 
@@ -102,6 +103,10 @@ module LteNicBase extends NetworkInterface like ICellularNic
         // the radio of the PHY leg
         radio: CellularRadio {
             @display("p=310,830");
+        }
+        // the antenna, which the radios of the NIC share
+        antenna: CellularAntenna {
+            @display("p=440,830");
         }
 
         //# Modules used to take trace of PDCP pkt flow

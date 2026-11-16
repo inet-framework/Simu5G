@@ -29,6 +29,7 @@ void CellularRadio::initialize(int stage)
         upperLayerInGateId_ = findGate("upperLayerIn");
         upperLayerOutGateId_ = findGate("upperLayerOut");
         radioMedium_.reference(this, "radioMediumModule", true);
+        antenna_.reference(this, "antennaModule", true);
         insideBuilding_ = par("insideBuilding");
         if (insideBuilding_) {
             insideDistance_ = uniform(0.0, 25.0);

@@ -359,8 +359,8 @@ class Budget:
     def __init__(self, bs='*.gnb*', ue='*.ue[*]'):
         # bs, ue: the node patterns the ini states the radios' keys on
         self.plr = pathloss_reference()
-        self.bs_gain = f'{bs}.cellularNic.radio.antenna.gain'
-        self.ue_gain = f'{ue}.cellularNic.*adio.antenna.gain'
+        self.bs_gain = f'{bs}.cellularNic.antenna.gain'
+        self.ue_gain = f'{ue}.cellularNic.antenna.gain'
         ue_noise_figure = f'{ue}.cellularNic.*adio.receiver.noiseFigure'
         self.cfg = config_values([
             '**.eNodeBTxPower', self.bs_gain, self.ue_gain, '**.cableLoss',
@@ -647,7 +647,7 @@ def grade_d2d_link_budget(grader):
     ends and the UE's noise figure."""
     plr = pathloss_reference()
     cfg = config_values([
-        '**.d2dTxPower', '*.ueD2D*[*].cellularNic.*adio.antenna.gain', '**.cableLoss',
+        '**.d2dTxPower', '*.ueD2D*[*].cellularNic.antenna.gain', '**.cableLoss',
         '**.thermalNoise', '*.ueD2D*[*].cellularNic.*adio.receiver.noiseFigure',
         '**.nodebHeight', '**.ueHeight',
         '*.carrierAggregation.componentCarrier[0].carrierFrequency',
@@ -678,7 +678,7 @@ def grade_d2d_link_budget(grader):
         grader.check_absolute('single-value', params,
                               row['rcvdSinrD2D:max'] - row['rcvdSinrD2D:min'], 0.0, 1e-9, " dB")
         received = (cfg['**.d2dTxPower'] - plr.t901_umi_los(d, d, fc, hBS, hUT)
-                    + 2 * cfg['*.ueD2D*[*].cellularNic.*adio.antenna.gain'] - cfg['**.cableLoss'])
+                    + 2 * cfg['*.ueD2D*[*].cellularNic.antenna.gain'] - cfg['**.cableLoss'])
         observed = row['rcvdSinrD2D:mean']
         grader.check_absolute('d2d-link-budget', params, observed, received - noise, 1e-9, " dB")
         if previous is not None:
@@ -825,13 +825,13 @@ def grade_background_ue_cqi(grader):
                           [('bgUE[0]', ue0), ('bgUE[1]', ue1), ('ue[0]', realUe)])
     cfg = config_values([
         '*.gnb1.**.eNodeBTxPower', '*.gnb2.**.eNodeBTxPower', '**.ueTxPower',
-        '*.gnb1.cellularNic.radio.antenna.gain', '*.gnb2.cellularNic.radio.antenna.gain',
+        '*.gnb1.cellularNic.antenna.gain', '*.gnb2.cellularNic.antenna.gain',
         '*.gnb*.cellularNic.radio.receiver.noiseFigure', '*.gnb*.cellularNic.radio.receiver.cableLoss',
-        '*.ue[*].cellularNic.*adio.antenna.gain',
+        '*.ue[*].cellularNic.antenna.gain',
         f'{prefix}[0].radio.antenna.gain', f'{prefix}[0].radio.noiseFigure',
         f'{prefix}[0].radio.cableLoss', f'{prefix}[0].generator.txPower',
     ])
-    bsGain = cfg['*.gnb1.cellularNic.radio.antenna.gain']
+    bsGain = cfg['*.gnb1.cellularNic.antenna.gain']
     bsNoiseFigure = cfg['*.gnb*.cellularNic.radio.receiver.noiseFigure']
     bsCable = cfg['*.gnb*.cellularNic.radio.receiver.cableLoss']
     ues = {
@@ -844,10 +844,10 @@ def grade_background_ue_cqi(grader):
                              'AND (name =~ "bgMeasuredSinrDl:*" OR name =~ "bgMeasuredSinrUl:*")',
                              itervars=('dli', 'uli'))
         signalDl = budget.received(cfg['*.gnb1.**.eNodeBTxPower'], bsGain, gain, cable, gnb1, pos)
-        neighbourDl = budget.received(cfg['*.gnb2.**.eNodeBTxPower'], cfg['*.gnb2.cellularNic.radio.antenna.gain'],
+        neighbourDl = budget.received(cfg['*.gnb2.**.eNodeBTxPower'], cfg['*.gnb2.cellularNic.antenna.gain'],
                                       gain, cable, gnb2, pos)
         signalUl = budget.received(txPower, gain, bsGain, bsCable, pos, gnb1)
-        neighbourUl = budget.received(cfg['**.ueTxPower'], cfg['*.ue[*].cellularNic.*adio.antenna.gain'],
+        neighbourUl = budget.received(cfg['**.ueTxPower'], cfg['*.ue[*].cellularNic.antenna.gain'],
                                       bsGain, bsCable, realUe, gnb1)
         quietDl = budget.sinr(signalDl, noiseFigure)
         quietUl = budget.sinr(signalUl, bsNoiseFigure)
@@ -873,20 +873,20 @@ def grade_background_ue_load(grader):
                           [('ue[0]', victim), ('bgUE[0]', bgUe)])
     cfg = config_values([
         '*.gnb1.**.eNodeBTxPower', '*.gnb2.**.eNodeBTxPower', '**.ueTxPower',
-        '*.gnb1.cellularNic.radio.antenna.gain', '*.gnb2.cellularNic.radio.antenna.gain',
-        '*.gnb2.cellularNic.radio.antenna.txAngle',
+        '*.gnb1.cellularNic.antenna.gain', '*.gnb2.cellularNic.antenna.gain',
+        '*.gnb2.cellularNic.antenna.txAngle',
         '*.gnb*.cellularNic.radio.receiver.noiseFigure', '*.gnb*.cellularNic.radio.receiver.cableLoss',
-        '*.ue[*].cellularNic.*adio.antenna.gain', '*.ue[*].cellularNic.*adio.receiver.noiseFigure',
+        '*.ue[*].cellularNic.antenna.gain', '*.ue[*].cellularNic.*adio.receiver.noiseFigure',
         '*.ue[*].cellularNic.*adio.receiver.cableLoss',
         f'{prefix}.radio.antenna.gain', f'{prefix}.radio.noiseFigure',
         f'{prefix}.radio.cableLoss', f'{prefix}.generator.txPower',
     ])
-    gain1 = cfg['*.gnb1.cellularNic.radio.antenna.gain']
-    gain2 = cfg['*.gnb2.cellularNic.radio.antenna.gain']
-    boresight = cfg['*.gnb2.cellularNic.radio.antenna.txAngle']
+    gain1 = cfg['*.gnb1.cellularNic.antenna.gain']
+    gain2 = cfg['*.gnb2.cellularNic.antenna.gain']
+    boresight = cfg['*.gnb2.cellularNic.antenna.txAngle']
     bsNoiseFigure = cfg['*.gnb*.cellularNic.radio.receiver.noiseFigure']
     bsCable = cfg['*.gnb*.cellularNic.radio.receiver.cableLoss']
-    ueGain = cfg['*.ue[*].cellularNic.*adio.antenna.gain']
+    ueGain = cfg['*.ue[*].cellularNic.antenna.gain']
     ueNoiseFigure = cfg['*.ue[*].cellularNic.*adio.receiver.noiseFigure']
     ueCable = cfg['*.ue[*].cellularNic.*adio.receiver.cableLoss']
     bgGain = cfg[f'{prefix}.radio.antenna.gain']
@@ -950,8 +950,8 @@ def grade_background_cell_cqi(grader):
                           [('ue[0]', realUe), ('bgCell[0].bgUE[0]', ue00), ('bgCell[0].bgUE[1]', ue01),
                            ('bgCell[1].bgUE[0]', ue10)])
     cfg = config_values([
-        '*.gnb.**.eNodeBTxPower', '**.ueTxPower', '*.gnb.cellularNic.radio.antenna.gain',
-        '*.ue[*].cellularNic.*adio.antenna.gain',
+        '*.gnb.**.eNodeBTxPower', '**.ueTxPower', '*.gnb.cellularNic.antenna.gain',
+        '*.ue[*].cellularNic.antenna.gain',
         '*.bgCell[0].bgScheduler.txPower', '*.bgCell[1].bgScheduler.txPower',
         '*.bgCell[0].radio.antenna.gain', '*.bgCell[0].radio.noiseFigure', '*.bgCell[0].radio.cableLoss',
         '*.bgCell[0].bgTrafficGenerator.bgUE[*].radio.antenna.gain',
@@ -989,10 +989,10 @@ def grade_background_cell_cqi(grader):
             loadedDl = loadedUl = None
             if s == 'realCellOn':
                 loadedDl = budget.sinr(signalDl, ueNoiseFigure, budget.received(
-                    cfg['*.gnb.**.eNodeBTxPower'], cfg['*.gnb.cellularNic.radio.antenna.gain'],
+                    cfg['*.gnb.**.eNodeBTxPower'], cfg['*.gnb.cellularNic.antenna.gain'],
                     ueGain, ueCable, gnb, pos))
                 loadedUl = budget.sinr(signalUl, noiseFigure0, budget.received(
-                    cfg['**.ueTxPower'], cfg['*.ue[*].cellularNic.*adio.antenna.gain'],
+                    cfg['**.ueTxPower'], cfg['*.ue[*].cellularNic.antenna.gain'],
                     gain0, cable0, realUe, cell0))
             elif s in ('neighbour', 'narrowCell', 'narrowNeighbour'):
                 shared = min(width0, width1)
@@ -1034,14 +1034,14 @@ def grade_d2d_interference_delta(grader):
     beyond fixing the breakpoint itself, which is the model's convention for a
     UE-to-UE link (tests/doc/model-deviations.md, item 4)."""
     plr = pathloss_reference()
-    d2d_gain = '*.ueD2D*[*].cellularNic.*adio.antenna.gain'
-    b_gain = '*.ueD2DTx[1].cellularNic.*adio.antenna.gain'
-    ue_gain = '*.ueOther[*].cellularNic.*adio.antenna.gain'
+    d2d_gain = '*.ueD2D*[*].cellularNic.antenna.gain'
+    b_gain = '*.ueD2DTx[1].cellularNic.antenna.gain'
+    ue_gain = '*.ueOther[*].cellularNic.antenna.gain'
     d2d_power, b_power = '**.d2dTxPower', '*.ueD2DTx[1].**.d2dTxPower'
     noise_figure = '*.ueD2D*[*].cellularNic.*adio.receiver.noiseFigure'
     rx_cable = '*.ueD2DRx[*].cellularNic.*adio.receiver.cableLoss'
     cfg = config_values([
-        d2d_gain, b_gain, ue_gain, '*.ueCell[*].cellularNic.*adio.antenna.gain',
+        d2d_gain, b_gain, ue_gain, '*.ueCell[*].cellularNic.antenna.gain',
         d2d_power, b_power, '**.ueTxPower', noise_figure, rx_cable, '**.thermalNoise',
         '**.nodebHeight', '**.ueHeight',
         '*.carrierAggregation.componentCarrier[0].carrierFrequency',
@@ -1071,7 +1071,7 @@ def grade_d2d_interference_delta(grader):
     for name, d in distances.items():
         grader.check_true('below-breakpoint', name, d < breakpoint, f"{d:.1f} m < {breakpoint:.1f} m")
     grader.check_true('geometry-is-consistent', 'one cellular interferer',
-                      cell_ue == other_ue and cfg['*.ueCell[*].cellularNic.*adio.antenna.gain'] == cfg[ue_gain])
+                      cell_ue == other_ue and cfg['*.ueCell[*].cellularNic.antenna.gain'] == cfg[ue_gain])
 
     def received(tx_power, tx_gain, d):
         return (tx_power - plr.t901_umi_los(d, d, fc, hBS, hUT)
