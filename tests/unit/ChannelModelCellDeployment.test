@@ -1,0 +1,221 @@
+%description:
+
+A link is evaluated in the deployment of its base station: the scenario, the
+average building height and the street width around it.
+
+One carrier, one TR 38.901 channel model, two base stations: a macrocell at
+25 m and a microcell at 10 m (a small cell under a macro layer, which one
+scenario per carrier could not express). A UE between them has a link to each.
+With nothing random (NLOS, no shadowing, no fading) each link's path loss is
+the closed form of its own base station's scenario, in the downlink and in the
+uplink, and the two differ. The interference of the other cell arrives over
+that cell's link, with that cell's scenario: what a what-if at the UE gives
+for either cell's transmission is its closed form too.
+
+A rural macrocell takes the building height and street width of its base
+station (TR 38.901 Table 7.4.1-1 gives the RMa NLOS path loss with h and W):
+two rural base stations that differ only in them give different path losses.
+The TR 38.901 model has the two as the constants 5 m and 20 m, so this part
+runs on a TR 36.814 model, whose rural NLOS formula takes them.
+
+A link between two UEs takes the scenario of its receiver's serving cell.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+#include "PathLossTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+// The model's own D2D link builder, which is protected. Never instantiated: see ChannelModelProbe for the technique.
+struct D2dLinkAccess : StochasticChannelModel
+{
+    static auto d2dLinkPtr() { return &D2dLinkAccess::d2dLink; }
+};
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.StochasticChannelModel;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        model: Tr38901ChannelModel;
+        ruralModel: StochasticChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+# nothing random: every link is NLOS, without shadowing or fading
+**.dynamicLos = false
+**.fixedLos = false
+**.shadowing = false
+**.fading = false
+*.ruralModel.pathLossType = "Tr36814"
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *model = harnessModule<StochasticChannelModel>(this, "model");
+auto *ruralModel = harnessModule<StochasticChannelModel>(this, "ruralModel");
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+auto *binder = harnessModule<Binder>(this, "binder");
+ChannelModelProbe probe(model), ruralProbe(ruralModel);
+
+// a macrocell, a microcell under it, and a UE between them
+StubEndpoint macro, micro, ue;
+macro.nodeId = MacNodeId(1);
+macro.coord = Coord(0, 0, 25);
+macro.scenario = URBAN_MACROCELL;
+micro.nodeId = MacNodeId(2);
+micro.coord = Coord(400, 0, 10);
+micro.scenario = URBAN_MICROCELL;
+ue.nodeId = MacNodeId(1025);
+ue.coord = Coord(200, 0, 1.5);
+StubRadioRegistration macroRadio(medium, macro.nodeId, &macro);
+StubRadioRegistration microRadio(medium, micro.nodeId, &micro);
+StubRadioRegistration ueRadio(medium, ue.nodeId, &ue);
+
+auto d2dOf = [](const Coord& a, const Coord& b) { return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2)); };
+// the closed form between a base station and a position, in the base station's deployment
+auto closedForm = [&](ChannelModelProbe& from, const RadioLink& link, StubEndpoint& baseStation, const Coord& position, double hUe) {
+    PathLossModel::Deployment deployment;
+    deployment.scenario = baseStation.scenario;
+    deployment.hBuilding = baseStation.buildingHeight;
+    deployment.wStreet = baseStation.streetWidth;
+    deployment.hNodeB = baseStation.coord.z;
+    deployment.hUe = hUe;
+    PathLossModel::LinkConditions conditions;
+    conditions.environmentHeight = from.losMap().at(link.linkKey).environmentHeight;
+    return from.pathLoss()->computePathLoss(deployment, baseStation.coord.distance(position), d2dOf(baseStation.coord, position), false, conditions);
+};
+// the downlink from a base station to a UE
+auto downlink = [](ChannelModelProbe& from, StubEndpoint& baseStation, StubEndpoint& to) {
+    RadioLink link = from.cellularLink(&to, to.nodeId, DL, baseStation.coord);
+    link.txRadio = &baseStation; // cellularLink() names the base station by its position only
+    return link;
+};
+
+//
+// --- a macrocell and a microcell on one carrier ---
+//
+RadioLink fromMacro = downlink(probe, macro, ue);
+RadioLink fromMicro = downlink(probe, micro, ue);
+double macroLoss = model->getAttenuation(fromMacro);
+double microLoss = model->getAttenuation(fromMicro);
+c.expectNear("the link to the macrocell: the urban macrocell's closed form", macroLoss, closedForm(probe, fromMacro, macro, ue.coord, 1.5), 1e-9);
+c.expectNear("the link to the microcell: the urban microcell's closed form", microLoss, closedForm(probe, fromMicro, micro, ue.coord, 1.5), 1e-9);
+{
+    // the microcell's link in the macrocell's scenario, which one scenario per carrier gave it
+    StubEndpoint asMacro = micro;
+    asMacro.scenario = URBAN_MACROCELL;
+    c.check("the microcell's link is not the urban macrocell's closed form at its geometry",
+            fabs(microLoss - closedForm(probe, fromMicro, asMacro, ue.coord, 1.5)) > 0.1,
+            std::to_string(microLoss) + " dB against " + std::to_string(closedForm(probe, fromMicro, asMacro, ue.coord, 1.5)) + " dB");
+}
+
+RadioLink toMicro = probe.cellularLink(&micro, ue.nodeId, UL, ue.coord);
+c.expectNear("the uplink to the microcell has its downlink's path loss", model->getAttenuation(toMicro), microLoss, 1e-9);
+RadioLink toMacro = probe.cellularLink(&macro, ue.nodeId, UL, ue.coord);
+c.expectNear("the uplink to the macrocell has its downlink's path loss", model->getAttenuation(toMacro), macroLoss, 1e-9);
+
+// a what-if at the UE for either cell's transmission: over that cell's link, in that cell's scenario
+{
+    RadioLink whatIfMicro = probe.whatIfLink(&ue, dlCqiTransmission(&micro, ue.nodeId));
+    c.expectNear("a what-if of the microcell's transmission at the UE: the microcell's closed form",
+            model->getAttenuation(whatIfMicro), closedForm(probe, whatIfMicro, micro, ue.coord, 1.5), 1e-9);
+    RadioLink whatIfMacro = probe.whatIfLink(&ue, dlCqiTransmission(&macro, ue.nodeId));
+    c.expectNear("a what-if of the macrocell's transmission at the UE: the macrocell's closed form",
+            model->getAttenuation(whatIfMacro), closedForm(probe, whatIfMacro, macro, ue.coord, 1.5), 1e-9);
+}
+
+//
+// --- the building height and street width of the base station ---
+//
+{
+    StubEndpoint village, town, ruralUe;
+    village.nodeId = MacNodeId(3);
+    village.coord = Coord(0, 2000, 35);
+    village.scenario = RURAL_MACROCELL;
+    village.buildingHeight = 5;
+    village.streetWidth = 20;
+    town.nodeId = MacNodeId(4);
+    town.coord = Coord(0, 2000, 35);
+    town.scenario = RURAL_MACROCELL;
+    town.buildingHeight = 15;
+    town.streetWidth = 10;
+    ruralUe.nodeId = MacNodeId(1030);
+    ruralUe.coord = Coord(800, 2000, 1.5);
+    RadioLink fromVillage = downlink(ruralProbe, village, ruralUe);
+    RadioLink fromTown = downlink(ruralProbe, town, ruralUe);
+    double villageLoss = ruralModel->getAttenuation(fromVillage);
+    double townLoss = ruralModel->getAttenuation(fromTown);
+    c.expectNear("a rural base station among 5 m buildings and 20 m streets: its closed form", villageLoss,
+            closedForm(ruralProbe, fromVillage, village, ruralUe.coord, 1.5), 1e-9);
+    c.expectNear("a rural base station among 15 m buildings and 10 m streets: its closed form", townLoss,
+            closedForm(ruralProbe, fromTown, town, ruralUe.coord, 1.5), 1e-9);
+    // TR 36.814 Table B.1.2.1-1, RMa NLOS: - 7.1 log10(W) + 7.5 log10(h) - 3.7 (h/hBS)^2 log10(hBS), the rest equal
+    auto terms = [](double w, double h) { return -7.1 * log10(w) + 7.5 * log10(h) + 3.7 * pow(h / 35, 2) * log10(35.0); };
+    c.expectNear("they differ by the h and W terms of the RMa NLOS formula", townLoss - villageLoss, terms(10, 15) - terms(20, 5), 1e-9);
+}
+
+//
+// --- a link between two UEs: the scenario of the receiver's cell ---
+//
+{
+    StubEndpoint macroUe, microUe;
+    macroUe.nodeId = MacNodeId(1026);
+    macroUe.coord = Coord(150, 40, 1.5);
+    microUe.nodeId = MacNodeId(1027);
+    microUe.coord = Coord(250, 40, 1.5);
+    binder->registerServingNode(macro.nodeId, macroUe.nodeId);
+    binder->registerServingNode(micro.nodeId, microUe.nodeId);
+    auto d2dLoss = [&](ChannelModelProbe& from, StubEndpoint& tx, StubEndpoint& rx, DeploymentScenario scenario) {
+        RadioLink link = (model->*D2dLinkAccess::d2dLinkPtr())(tx.nodeId, tx.coord, rx.nodeId, rx.coord);
+        double loss = model->getAttenuation(link);
+        PathLossModel::Deployment deployment;
+        deployment.scenario = scenario;
+        deployment.hBuilding = 20;
+        deployment.wStreet = 20;
+        deployment.hNodeB = PathLossModel::getDefaultBaseStationHeight(scenario);
+        deployment.hUe = 1.5;
+        PathLossModel::LinkConditions conditions;
+        conditions.environmentHeight = from.losMap().at(link.linkKey).environmentHeight;
+        double expected = from.pathLoss()->computePathLoss(deployment, tx.coord.distance(rx.coord), d2dOf(tx.coord, rx.coord), false, conditions);
+        return std::make_pair(loss, expected);
+    };
+    auto towardsMicro = d2dLoss(probe, macroUe, microUe, URBAN_MICROCELL);
+    c.expectNear("UE to UE, the receiver in the microcell: the urban microcell's closed form", towardsMicro.first, towardsMicro.second, 1e-9);
+    auto towardsMacro = d2dLoss(probe, microUe, macroUe, URBAN_MACROCELL);
+    c.expectNear("UE to UE, the receiver in the macrocell: the urban macrocell's closed form", towardsMacro.first, towardsMacro.second, 1e-9);
+}
+
+c.summary();
+
+%contains: stdout
+modelchecks=12 modelfailures=0
+
+%not-contains: stdout
+FAILED

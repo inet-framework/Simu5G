@@ -1,0 +1,22 @@
+%description:
+scenario was a parameter of the channel model: one scenario for every cell on a carrier. A link is
+now evaluated in the deployment of its base station, which the base station's radio states. An
+ini file that still sets the channel model's parameter would be ignored without a message, and
+the simulation would silently run in the default deployment. Setting it is an error at
+initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+**.nrChannelModel[*].scenario = "URBAN_MICROCELL"
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+The 'scenario' parameter is no longer the channel model's: a link is evaluated in the deployment of its base station
+%#--------------------------------------------------------------------------------------------------------------
