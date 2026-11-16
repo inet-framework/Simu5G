@@ -1,27 +1,18 @@
 %description:
 
-A defect in the azimuth that places a UE in a sectorial antenna pattern,
-recorded rather than fixed. It shows only when the two ends are at different
-heights -- which for a base station and a UE is always.
+The azimuth that places a UE in a sectorial antenna pattern is the horizontal
+angle between the antenna's reference axis and the UE, whatever the heights of
+the two ends: the vertical angle is computed separately by
+computeVerticalAngle(), and the two are passed to the antenna pattern as
+independent arguments, as TR 38.901 7.3 defines it.
 
-computeAngle() is meant to be the horizontal angle, the azimuth: the vertical
-angle is computed separately by computeVerticalAngle(), and the two are passed
-to the antenna pattern as independent arguments, as TR 38.901 7.3 defines it.
-But it takes asin(dy / d) with d the three-dimensional distance, so the height
-difference enlarges the hypotenuse and pulls the result towards the x axis. A
-UE due north of a 25 m mast, 50 m away at 1.5 m, comes out at about 65 degrees
-instead of 90, and a sectorial antenna's attenuation is evaluated 25 degrees
-off. The fix is atan2 on the horizontal components. In the shipped suite it
-would move exactly one row, channelmodel/Anisotropic-36873, the only
-anisotropic scenario with a height difference: the LTE ones keep every node at
-z = 0, which is the one geometry in which the defect cannot show -- and so the
-suite has exercised sectorial antennas almost only where they could not
-reveal it.
-
-When fixed, drop the %expected-failure line and fold the checks into
-ChannelModelGeometry, which is where they belong.
-
-%expected-failure: the azimuth mixes height into the angle
+A UE due north of a 25 m mast, 50 m away at 1.5 m, is at 90 degrees. (The
+azimuth was asin(dy / d) with d the three-dimensional distance, so the height
+difference pulled the result towards the x axis: about 65 degrees here, and a
+sectorial antenna's attenuation was evaluated 25 degrees off.) All four
+quadrants are checked with a height difference, and a point straight above or
+below the antenna, where no direction is defined, is at azimuth 0 and not
+"not a number": co-located sectors ask for it.
 
 %includes:
 #include "SchedulerTestUtil.h"
@@ -72,10 +63,19 @@ c.expectNear("a UE due north of a mast is at azimuth 90, whatever the heights",
 c.expectNear("a UE at 45 degrees is at azimuth 45, whatever the heights",
         m->computeAngle(mast, Coord(50, 50, 1.5)), 45, 1e-9);
 
+c.expectNear("...and at 135 degrees in the second quadrant",
+        m->computeAngle(mast, Coord(-50, 50, 1.5)), 135, 1e-9);
+c.expectNear("...at 225 degrees in the third",
+        m->computeAngle(mast, Coord(-50, -50, 1.5)), 225, 1e-9);
+c.expectNear("...and at 315 degrees in the fourth",
+        m->computeAngle(mast, Coord(50, -50, 1.5)), 315, 1e-9);
+c.expectNear("a point straight below the antenna is at azimuth 0",
+        m->computeAngle(mast, Coord(0, 0, 1.5)), 0, 1e-9);
+
 c.summary();
 
 %contains: stdout
-modelchecks=2 modelfailures=0
+modelchecks=6 modelfailures=0
 
 %not-contains: stdout
 FAILED
