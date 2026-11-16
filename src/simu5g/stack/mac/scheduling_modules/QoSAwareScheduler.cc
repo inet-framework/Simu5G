@@ -142,7 +142,7 @@ void QoSAwareScheduler::prepareSchedule()
 
         const UserTxParams& info = eNbScheduler_->mac_->getAmc()->computeTxParams(nodeId, dir, carrierFrequency_);
         if (info.readCqiVector().empty() || info.readBands().empty()) continue;
-        if (eNbScheduler_->allocatedCws(nodeId) == info.getLayers().size()) continue;
+        if (eNbScheduler_->allocatedCws(carrierFrequency_, nodeId) == info.getLayers().size()) continue;
 
         bool cqiNull = std::any_of(info.readCqiVector().begin(), info.readCqiVector().end(), [](int cqi) { return cqi == 0; });
         if (cqiNull) continue;

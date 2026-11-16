@@ -173,7 +173,7 @@ void LteAllocatorBestFit::prepareSchedule()
             continue;
         }
         // No more free cw
-        if (eNbScheduler_->allocatedCws(nodeId) == codeword) {
+        if (eNbScheduler_->allocatedCws(carrierFrequency_, nodeId) == codeword) {
             EV << NOW << "Allocated codeword, direction: " << dirToA(dir) << endl;
             continue;
         }

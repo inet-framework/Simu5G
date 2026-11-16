@@ -84,12 +84,12 @@ bool NrSchedulerGnbUl::rtxschedule(GHz carrierFrequency, BandLimitVector *bandLi
                     // for each HARQ process
                     LteHarqProcessRx *currProc = currHarq->getProcess(process);
 
-                    if (allocatedCws_[nodeId] == codewords)
+                    if (allocatedCws_[carrierFrequency][nodeId] == codewords)
                         break;
 
                     unsigned int allocatedBytes = 0;
                     for (Codeword cw = 0; (cw < MAX_CODEWORDS) && (codewords > 0); ++cw) {
-                        if (allocatedCws_[nodeId] == codewords)
+                        if (allocatedCws_[carrierFrequency][nodeId] == codewords)
                             break;
 
                         // skip processes which are not in RTX status

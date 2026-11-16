@@ -80,7 +80,7 @@ void LteSchedulerEnb::initialize(int stage)
     WATCH(resourceBlocks_);
     WATCH(utilization_);
     WATCH(activeConnectionSet_);
-    WATCH(allocatedCws_);
+    WATCH_MAP(allocatedCws_);
 }
 
 void LteSchedulerEnb::initializeSchedulerPeriodCounter(NumerologyIndex maxNumerologyIndex)
@@ -223,8 +223,8 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
 
     // search for already allocated codeword
     unsigned int cwAlreadyAllocated = 0;
-    if (allocatedCws_.find(nodeId) != allocatedCws_.end())
-        cwAlreadyAllocated = allocatedCws_.at(nodeId);
+    if (allocatedCws_[carrierFrequency].find(nodeId) != allocatedCws_[carrierFrequency].end())
+        cwAlreadyAllocated = allocatedCws_[carrierFrequency].at(nodeId);
 
     // Check OFDM space
     if (allocator_->computeTotalRbs() == 0)
@@ -234,9 +234,8 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
         return 0;
     }
 
-    // TODO This is just a BAD patch
-    // check how a codeword may be reused (as in the if above) in case of non-empty OFDM space
-    // otherwise check why a UE is stopped being scheduled while its buffer is not empty
+    // a UE gets one transport block per carrier in a slot: the count is this carrier's
+    // TODO check how a codeword may be reused in case of non-empty OFDM space
     if (cwAlreadyAllocated > 0) {
         eligible = false;
         return 0;
@@ -334,8 +333,8 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
             }
 
             // search for already allocated codeword
-            if (allocatedCws_.find(nodeId) != allocatedCws_.end())
-                allocatedCws = allocatedCws_.at(nodeId);
+            if (allocatedCws_[carrierFrequency].find(nodeId) != allocatedCws_[carrierFrequency].end())
+                allocatedCws = allocatedCws_[carrierFrequency].at(nodeId);
 
             unsigned int bandAvailableBytes = 0;
             unsigned int bandAvailableBlocks = 0;
@@ -501,10 +500,10 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
         EV << "LteSchedulerEnb::grant Codeword allocation: " << cwAllocatedBytes << " bytes" << endl;
         if (cwAllocatedBytes > 0) {
             // mark codeword as used
-            if (allocatedCws_.find(nodeId) != allocatedCws_.end())
-                allocatedCws_.at(nodeId)++;
+            if (allocatedCws_[carrierFrequency].find(nodeId) != allocatedCws_[carrierFrequency].end())
+                allocatedCws_[carrierFrequency].at(nodeId)++;
             else
-                allocatedCws_[nodeId] = 1;
+                allocatedCws_[carrierFrequency][nodeId] = 1;
 
             totalAllocatedBytes += cwAllocatedBytes;
 
@@ -523,7 +522,7 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
             scheduleList_[carrierFrequency][scListId] += ((dir == DL) ? vQueueItemCounter : cwAllocatedBlocks);
 
             EV << "LteSchedulerEnb::grant CODEWORD IS NOW BUSY: GO TO NEXT CODEWORD." << endl;
-            if (allocatedCws_.at(nodeId) == MAX_CODEWORDS) {
+            if (allocatedCws_[carrierFrequency].at(nodeId) == MAX_CODEWORDS) {
                 eligible = false;
                 stop = true;
             }
@@ -607,8 +606,8 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
 
     // Search for already allocated codeword
     unsigned int cwAlreadyAllocated = 0;
-    if (allocatedCws_.find(bgUeId) != allocatedCws_.end())
-        cwAlreadyAllocated = allocatedCws_.at(bgUeId);
+    if (allocatedCws_[carrierFrequency].find(bgUeId) != allocatedCws_[carrierFrequency].end())
+        cwAlreadyAllocated = allocatedCws_[carrierFrequency].at(bgUeId);
 
     if (cwAlreadyAllocated > 0) {
         terminate = true;
@@ -679,8 +678,8 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
             }
 
             // Search for already allocated codeword
-            if (allocatedCws_.find(bgUeId) != allocatedCws_.end())
-                allocatedCws = allocatedCws_.at(bgUeId);
+            if (allocatedCws_[carrierFrequency].find(bgUeId) != allocatedCws_[carrierFrequency].end())
+                allocatedCws = allocatedCws_[carrierFrequency].at(bgUeId);
 
             unsigned int bandAvailableBytes = 0;
             unsigned int bandAvailableBlocks = 0;
@@ -780,13 +779,13 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
         EV << "LteSchedulerEnb::grant Codeword allocation: " << cwAllocatedBytes << " bytes" << endl;
         if (cwAllocatedBytes > 0) {
             // Mark codeword as used
-            if (allocatedCws_.find(bgUeId) != allocatedCws_.end())
-                allocatedCws_.at(bgUeId)++;
+            if (allocatedCws_[carrierFrequency].find(bgUeId) != allocatedCws_[carrierFrequency].end())
+                allocatedCws_[carrierFrequency].at(bgUeId)++;
             else
-                allocatedCws_[bgUeId] = 1;
+                allocatedCws_[carrierFrequency][bgUeId] = 1;
 
             totalAllocatedBytes += cwAllocatedBytes;
-            if (allocatedCws_.at(bgUeId) == MAX_CODEWORDS) {
+            if (allocatedCws_[carrierFrequency].at(bgUeId) == MAX_CODEWORDS) {
                 eligible = false;
                 stop = true;
             }
@@ -1173,11 +1172,11 @@ unsigned int LteSchedulerEnb::allocateRtxBytes(MacNodeId nodeId, Direction dir, 
         // schedule list contains number of granted blocks
         scheduleList_[carrierFrequency][scListId] = cwAllocatedBlocks;
         // mark codeword as used
-        if (allocatedCws_.find(nodeId) != allocatedCws_.end()) {
-            allocatedCws_.at(nodeId)++;
+        if (allocatedCws_[carrierFrequency].find(nodeId) != allocatedCws_[carrierFrequency].end()) {
+            allocatedCws_[carrierFrequency].at(nodeId)++;
         }
         else {
-            allocatedCws_[nodeId] = 1;
+            allocatedCws_[carrierFrequency][nodeId] = 1;
         }
 
         EV << NOW << " LteSchedulerEnb::allocateRtxBytes HARQ Process " << (unsigned int)acid << " : " << bytes << " bytes served! " << endl;
@@ -1329,10 +1328,10 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
             // signal a retransmission
 
             // mark codeword as used
-            if (allocatedCws_.find(bgUeId) != allocatedCws_.end())
-                allocatedCws_.at(bgUeId)++;
+            if (allocatedCws_[carrierFrequency].find(bgUeId) != allocatedCws_[carrierFrequency].end())
+                allocatedCws_[carrierFrequency].at(bgUeId)++;
             else
-                allocatedCws_[bgUeId] = 1;
+                allocatedCws_[carrierFrequency][bgUeId] = 1;
 
             EV << NOW << " LteSchedulerEnb::scheduleBgRtx: " << allocatedBytes << " bytes served! " << endl;
 

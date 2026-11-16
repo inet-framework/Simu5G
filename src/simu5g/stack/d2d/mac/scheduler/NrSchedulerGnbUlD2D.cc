@@ -71,7 +71,7 @@ unsigned int NrSchedulerGnbUlD2D::scheduleAdditionalRetransmissions(GHz carrierF
                 // for each HARQ process
                 LteHarqProcessMirrorD2D *currProc = currHarq->getProcess(process);
 
-                if (allocatedCws_[senderId] == codewords)
+                if (allocatedCws_[carrierFrequency][senderId] == codewords)
                     break;
 
                 for (Codeword cw = 0; (cw < MAX_CODEWORDS) && (codewords > 0); ++cw) {

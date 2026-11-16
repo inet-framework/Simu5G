@@ -90,7 +90,7 @@ void LteMaxCiComp::prepareSchedule()
         if (cqiNull)
             continue;
         // no more free cw
-        if (eNbScheduler_->allocatedCws(nodeId) == codeword)
+        if (eNbScheduler_->allocatedCws(carrierFrequency_, nodeId) == codeword)
             continue;
 
         unsigned int availableBlocks = 0;

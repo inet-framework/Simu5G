@@ -118,7 +118,7 @@ class LteSchedulerEnb : public cSimpleModule
     std::map<MacCid, bool> soFrontIsContinuation_;
 
     // Codeword list
-    LteMacAllocatedCws allocatedCws_;
+    std::map<GHz, LteMacAllocatedCws> allocatedCws_;
 
     // Pointer to Harq Tx Buffers (that are in LteMacBase)
     std::map<GHz, HarqTxBuffers> *harqTxBuffers_ = nullptr;
@@ -395,9 +395,9 @@ class LteSchedulerEnb : public cSimpleModule
      */
     virtual unsigned int availableBytesBackgroundUe(const MacNodeId id, const Remote antenna, Band b, Direction dir, GHz carrierFrequency, int limit = -1);
 
-    unsigned int allocatedCws(MacNodeId nodeId)
+    unsigned int allocatedCws(GHz carrierFrequency, MacNodeId nodeId)
     {
-        return allocatedCws_[nodeId];
+        return allocatedCws_[carrierFrequency][nodeId];
     }
 
     // Get the bands already allocated

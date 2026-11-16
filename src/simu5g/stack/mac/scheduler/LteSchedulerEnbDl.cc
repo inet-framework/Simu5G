@@ -125,8 +125,8 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, GHz carrier
 
     Codeword allocatedCw = 0;
     // search for already allocated codeword
-    if (allocatedCws_.find(nodeId) != allocatedCws_.end()) {
-        allocatedCw = allocatedCws_.at(nodeId);
+    if (allocatedCws_[carrierFrequency].find(nodeId) != allocatedCws_[carrierFrequency].end()) {
+        allocatedCw = allocatedCws_[carrierFrequency].at(nodeId);
     }
     // for each band
     unsigned int size = bandLim->size();
@@ -225,11 +225,11 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, GHz carrier
     currHarq->markSelected(signal, codewords);
 
     // mark codeword as used
-    if (allocatedCws_.find(nodeId) != allocatedCws_.end()) {
-        allocatedCws_.at(nodeId)++;
+    if (allocatedCws_[carrierFrequency].find(nodeId) != allocatedCws_[carrierFrequency].end()) {
+        allocatedCws_[carrierFrequency].at(nodeId)++;
     }
     else {
-        allocatedCws_[nodeId] = 1;
+        allocatedCws_[carrierFrequency][nodeId] = 1;
     }
 
     bytes = currHarq->pduLength(acid, cw);
@@ -275,11 +275,11 @@ bool LteSchedulerEnbDl::rtxschedule(GHz carrierFrequency, BandLimitVector *bandL
                 // for each HARQ process
                 LteHarqProcessTx *currProc = (*processes)[process];
 
-                if (allocatedCws_[nodeId] == codewords)
+                if (allocatedCws_[carrierFrequency][nodeId] == codewords)
                     break;
                 for (Codeword cw = 0; cw < codewords; ++cw) {
 
-                    if (allocatedCws_[nodeId] == codewords)
+                    if (allocatedCws_[carrierFrequency][nodeId] == codewords)
                         break;
                     EV << NOW << " LteSchedulerEnbDl::rtxschedule process " << process << endl;
 

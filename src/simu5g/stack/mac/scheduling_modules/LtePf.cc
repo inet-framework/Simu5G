@@ -62,7 +62,7 @@ void LtePf::prepareSchedule()
         const UserTxParams& info = eNbScheduler_->mac_->getAmc()->computeTxParams(nodeId, dir, carrierFrequency_);
         const std::set<Band>& bands = info.readBands();
         unsigned int codeword = info.getLayers().size();
-        if (eNbScheduler_->allocatedCws(nodeId) == codeword)
+        if (eNbScheduler_->allocatedCws(carrierFrequency_, nodeId) == codeword)
             continue;
         auto it = bands.begin(), et = bands.end();
 

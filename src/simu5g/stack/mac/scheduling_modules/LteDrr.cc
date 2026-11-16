@@ -138,7 +138,7 @@ void LteDrr::updateSchedulingInfo()
         bool eligible = true;
         const UserTxParams& info = eNbScheduler_->mac_->getAmc()->computeTxParams(nodeId, direction_, carrierFrequency_);
         unsigned int codeword = info.getLayers().size();
-        if (eNbScheduler_->allocatedCws(nodeId) == codeword)
+        if (eNbScheduler_->allocatedCws(carrierFrequency_, nodeId) == codeword)
             eligible = false;
 
         for (unsigned int i = 0; i < codeword; i++) {
