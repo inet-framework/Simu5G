@@ -125,7 +125,7 @@ void LteMacEnb::initialize(int stage)
 
         eNodeBCount = par("eNodeBCount");
         WATCH(drbQosMap_);
-        WATCH(soExpectedSdus_);
+        WATCH(expectedSdus_);
         WATCH(needRtx_);
         WATCH_EXPR("ulBacklog", ulBacklog_.mirrors());
     }
@@ -212,6 +212,9 @@ void LteMacEnb::macSduRequest()
 {
     EV << "----- START LteMacEnb::macSduRequest -----\n";
 
+    // the requests of this TTI are counted afresh
+    expectedSdus_.clear();
+
     // Ask for a MAC SDU for each scheduled user on each carrier and each codeword
     for (const auto& [carrierFreq, scheduleList] : *scheduleListDl_) { // loop on carriers
 
@@ -219,30 +222,29 @@ void LteMacEnb::macSduRequest()
             MacCid destCid = item.first.first;
             MacNodeId destId = destCid.getNodeId();
 
-            // for each band, count the number of bytes allocated for this UE (should be by CID)
+            // the bytes allocated to this UE on the carrier's bands (should be by CID):
+            // the size of the MAC PDU it gets on this carrier
             unsigned int allocatedBytes = 0;
-            int numBands = cellInfo_->getNumBands();
-            for (Band b = 0; b < numBands; b++) {
-                // get the number of bytes allocated to this connection
-                // (this represents the MAC PDU size)
+            Band firstBand = getCellInfo()->getCarrierStartingBand(carrierFreq);
+            Band lastBand = getCellInfo()->getCarrierLastBand(carrierFreq);
+            for (Band b = firstBand; b <= lastBand; b++)
                 allocatedBytes += enbSchedulerDl_->allocator_->getBytes(MACRO, b, destId);
-            }
 
             // NR-SO DL connections fill the grant with several one-SDU/segment PDUs;
-            // issue one request per planned PDU so the MAC PDU multiplexes them, and
-            // record how many to expect before building. LTE-FI uses one request.
-            const std::vector<unsigned int> *soSizes = enbSchedulerDl_->getScheduledSoPduSizes(destCid);
+            // issue one request per planned PDU so the MAC PDU multiplexes them.
+            // LTE-FI uses one request. How many answers to expect before building is
+            // recorded, over all the carriers the connection is scheduled on.
+            const std::vector<unsigned int> *soSizes = enbSchedulerDl_->getScheduledSoPduSizes(carrierFreq, destCid);
             std::vector<unsigned int> reqSizes;
-            if (soSizes != nullptr && !soSizes->empty()) {
+            if (soSizes != nullptr && !soSizes->empty())
                 reqSizes = *soSizes;
-                soExpectedSdus_[destCid] = reqSizes.size();
-            }
             else {
                 // discount MAC header size from grant; clamp to zero if grant is smaller than MAC header
                 //TODO maybe simply skip sending if grant<=MAC_HEADER (i.e. no room for SDU)
                 unsigned int sduSize = (allocatedBytes > MAC_HEADER) ? (allocatedBytes - MAC_HEADER) : 0;
                 reqSizes.push_back(sduSize);
             }
+            expectedSdus_[destCid] += reqSizes.size();
 
             for (unsigned int reqSize : reqSizes) {
                 // send the request message to the upper layer
@@ -755,14 +757,14 @@ void LteMacEnb::handleUpperMessage(cPacket *pktAux)
 
     if (!isLteRlcPduNewData && packetIsBuffered) {
         // new MAC SDU has been received (was requested by MAC, no need to notify the scheduler)
-        // For an NR-SO cid several RLC PDUs were requested for this grant; build the MAC
-        // PDU only once all of them have arrived (macPduMake pops them all at once).
-        // LTE-FI requests one PDU, so this builds immediately.
-        auto soIt = soExpectedSdus_.find(cid);
-        unsigned int expected = (soIt != soExpectedSdus_.end()) ? soIt->second : 1;
+        // Several RLC PDUs may have been requested for the connection in this slot: one
+        // per carrier it is scheduled on, and for an NR-SO cid one per planned PDU. Build
+        // the MAC PDUs only once all of them have arrived (macPduMake pops them all at once).
+        auto expectedIt = expectedSdus_.find(cid);
+        unsigned int expected = (expectedIt != expectedSdus_.end()) ? expectedIt->second : 1;
         if (connDescOut_[cid].queue->getQueueLength() >= (int)expected) {
-            if (soIt != soExpectedSdus_.end())
-                soExpectedSdus_.erase(soIt);
+            if (expectedIt != expectedSdus_.end())
+                expectedSdus_.erase(expectedIt);
             // creates PDUs from the schedule list and puts them in HARQ buffers
             macPduMake(cid);
         }
