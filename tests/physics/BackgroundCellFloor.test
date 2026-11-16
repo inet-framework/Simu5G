@@ -69,7 +69,7 @@ seed-set = 0
 
 *.gnb.mobility.initialX = 300m
 *.gnb.mobility.initialY = 300m
-*.gnb.mobility.initialZ = 25m
+*.gnb.mobility.initialZ = 10m
 *.numUe = 1
 *.ue[0].servingNodeId = 0
 *.ue[0].nrServingNodeId = 1
@@ -85,8 +85,6 @@ seed-set = 0
 **.mobility.initFromDisplayString = false
 
 **.scenario = "URBAN_MICROCELL"
-**.nodebHeight = 25m
-**.ueHeight = 1.5m
 **.dynamicLos = false
 **.fixedLos = true
 **.fading = false
@@ -110,7 +108,7 @@ seed-set = 0
 *.numBgCells = 1
 *.bgCell[0].mobility.initialX = 900m
 *.bgCell[0].mobility.initialY = 300m
-*.bgCell[0].mobility.initialZ = 25m
+*.bgCell[0].mobility.initialZ = 10m
 *.bgCell[0].bgScheduler.isNr = true
 *.bgCell[0].bgScheduler.txPower = 37dBm
 *.bgCell[0].bgScheduler.txDirection = "OMNI"
@@ -118,6 +116,7 @@ seed-set = 0
 *.bgCell[0].bgTrafficGenerator.numBgUes = 10
 *.bgCell[0].bgTrafficGenerator.bgUE[*].mobility.initialX = uniform(800m,1000m)
 *.bgCell[0].bgTrafficGenerator.bgUE[*].mobility.initialY = uniform(200m,400m)
+*.bgCell[0].bgTrafficGenerator.bgUE[*].mobility.initialZ = 1.5m
 *.bgCell[0].bgTrafficGenerator.bgUE[*].generator.typename = "TrafficGeneratorCbr"
 *.bgCell[0].bgTrafficGenerator.bgUE[*].generator.startTimeDl = uniform(0s,0.05s)
 *.bgCell[0].bgTrafficGenerator.bgUE[*].generator.packetSizeDl = 1000B
@@ -139,7 +138,7 @@ seed-set = 0
 %postrun-command: ../../physics_reference.py --grade results >verdict.txt
 
 %contains: verdict.txt
-graded=6 failures=0
+graded=5 failures=0
 
 %not-contains: verdict.txt
 FAILED

@@ -13,6 +13,8 @@ network = simu5g.test.moduletest.lib.EpcSessionTestNetwork
 *.ue[*].**.insideBuilding = true
 *.radioMedium.channelModelType = "Tr36873ChannelModel"
 **.channelModel[*].scenario = "URBAN_MICROCELL"
+# a microcell base station: TR 36.873 gives 3D-UMi for hBS = 10 m
+*.eNB.cellularNic.antenna.mobility.offsetZ = 10m
 
 include ../../lib/defaults.ini
 

@@ -71,8 +71,6 @@ seed-set = 0
 
 ############### The channel: interference on, state on ##############
 **.scenario = "URBAN_MACROCELL"
-**.nodebHeight = 25m
-**.ueHeight = 1.5m
 **.dynamicLos = false
 **.fixedLos = true
 **.fading = false

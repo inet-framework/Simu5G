@@ -19,8 +19,8 @@ configured constants and one path loss:
 TR 38.901 has no UE-to-UE link, but other specifications do: TR 36.843
 A.2.1.2 (D2D channel models, both antenna heights 1.5 m) and TR 37.885 Table
 6.2.1-1 (whose V2V path loss is reused for P2P). The model uses neither. It
-evaluates a UE-to-UE link with its configured scenario and heights, as a UMi
-link here with the base station's height in the breakpoint distance, and it
+evaluates a UE-to-UE link with its configured scenario, as a UMi link here
+with the serving cell's antenna height in the breakpoint distance, and it
 subtracts cableLoss although no base station is involved. This test grades
 that convention: it is a characterisation of the model, not a specification
 check. The distances are kept below the breakpoint distance, where the UMi
@@ -99,8 +99,6 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 
 ############### The channel: one path loss and nothing else ##############
 **.scenario = "URBAN_MICROCELL"
-**.nodebHeight = 10m
-**.ueHeight = 1.5m
 **.dynamicLos = false
 **.fixedLos = true
 **.fading = false

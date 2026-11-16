@@ -176,8 +176,6 @@ sim-time-limit = 1s
 *.radioMedium.channelModel[*].scenario = "URBAN_MACROCELL"
 *.radioMedium.nrChannelModelType = "Tr38901ChannelModel"
 *.radioMedium.nrChannelModel[*].scenario = "URBAN_MICROCELL"
-*.radioMedium.nrChannelModel[*].nodebHeight = 10m
-**.ueHeight = 1.5m
 **.thermalNoise = -104dBm
 
 # path loss only, NLOS, the UEs' interference only

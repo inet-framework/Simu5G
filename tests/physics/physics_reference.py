@@ -356,7 +356,8 @@ class Budget:
     interference check needs exactly the same arithmetic for the interferer as
     the link-budget check needs for the wanted signal."""
 
-    def __init__(self, bs='*.gnb*', ue='*.ue[*]'):
+    def __init__(self, bs_z, ue_z, bs='*.gnb*', ue='*.ue[*]'):
+        # bs_z, ue_z: the ini keys of the heights of the serving link's two antennas
         # bs, ue: the node patterns the ini states the radios' keys on
         self.plr = pathloss_reference()
         self.bs_gain = f'{bs}.cellularNic.antenna.gain'
@@ -364,11 +365,11 @@ class Budget:
         ue_noise_figure = f'{ue}.cellularNic.*adio.receiver.noiseFigure'
         self.cfg = config_values([
             '**.eNodeBTxPower', self.bs_gain, self.ue_gain, '**.cableLoss',
-            '**.thermalNoise', ue_noise_figure, '**.nodebHeight', '**.ueHeight',
+            '**.thermalNoise', ue_noise_figure, bs_z, ue_z,
             '*.carrierAggregation.componentCarrier[0].carrierFrequency',
         ])
-        self.hBS = self.cfg['**.nodebHeight']
-        self.hUT = self.cfg['**.ueHeight']
+        self.hBS = self.cfg[bs_z]
+        self.hUT = self.cfg[ue_z]
         self.fc = self.cfg['*.carrierAggregation.componentCarrier[0].carrierFrequency']
         self.noise = self.cfg['**.thermalNoise'] + self.cfg[ue_noise_figure]
 
@@ -383,7 +384,7 @@ class Budget:
                 + self.cfg[self.bs_gain] + self.cfg[self.ue_gain]
                 - self.cfg['**.cableLoss'])
 
-    def background_received_power(self, d3D, d2D, tx_power):
+    def background_received_power(self, d3D, d2D, tx_power, h_cell):
         """dBm at the UE from an external or background cell.
 
         Same budget and same propagation study as a real base station's, but
@@ -391,7 +392,7 @@ class Budget:
         interferer's link would take a LOS state of its own. That is the
         model's choice, so the checks built on it characterise the model; no
         specification defines these phantom links."""
-        return (tx_power - self.plr.t901_umi_nlos(d3D, d2D, self.fc, self.hBS, self.hUT)
+        return (tx_power - self.plr.t901_umi_nlos(d3D, d2D, self.fc, h_cell, self.hUT)
                 + self.cfg[self.bs_gain] + self.cfg[self.ue_gain]
                 - self.cfg['**.cableLoss'])
 
@@ -416,16 +417,16 @@ def grade_interference_delta(grader):
     """Two cells, one victim. The interfering cell is not busy in every TTI and
     the model only counts the bands it actually occupied, so the reported SINR
     spans two predictable endpoints rather than sitting at one value."""
-    budget = Budget()
+    budget = Budget('*.gnb1.mobility.initialZ', '*.ue[0].mobility.initialZ')
     pos = config_values(['*.gnb1.mobility.initialX', '*.gnb2.mobility.initialX',
-                         '*.ue[0].mobility.initialX', '*.gnb1.mobility.initialZ',
-                         '*.ue[0].mobility.initialZ', '*.gnb2.**.eNodeBTxPower'])
+                         '*.ue[0].mobility.initialX', '*.gnb2.mobility.initialZ',
+                         '*.gnb2.**.eNodeBTxPower'])
     d_serving = abs(pos['*.ue[0].mobility.initialX'] - pos['*.gnb1.mobility.initialX'])
     d_interferer = abs(pos['*.ue[0].mobility.initialX'] - pos['*.gnb2.mobility.initialX'])
 
-    grader.check_absolute('geometry-is-consistent', 'formula vs coordinates',
-                          pos['*.gnb1.mobility.initialZ'] - pos['*.ue[0].mobility.initialZ'],
-                          budget.hBS - budget.hUT, 0.0, " m")
+    # Tripwire: the budget takes the interfering base station at the serving one's height
+    grader.check_absolute('geometry-is-consistent', 'both base stations at one height',
+                          pos['*.gnb2.mobility.initialZ'], budget.hBS, 0.0, " m")
 
     quiet = budget.sinr(d_serving)
     loaded = budget.sinr(d_serving, d_interferer, pos['*.gnb2.**.eNodeBTxPower'])
@@ -462,14 +463,11 @@ def grade_interference_delta_ul(grader):
     the first, an interfering UE in the second. The interferer is not
     scheduled in every TTI, so the uplink SINR the victim's base station
     computes spans two predictable endpoints."""
-    budget = Budget()
+    budget = Budget('*.gnb1.mobility.initialZ', '*.ue[0].mobility.initialZ')
     cfg = config_values(['**.ueTxPower', '*.ue[1].**.ueTxPower', '*.gnb*.cellularNic.radio.receiver.noiseFigure',
                          '*.gnb1.mobility.initialX', '*.ue[0].mobility.initialX',
-                         '*.ue[1].mobility.initialX', '*.gnb1.mobility.initialZ',
-                         '*.ue[0].mobility.initialZ', '*.ue[1].mobility.initialZ'])
-    grader.check_absolute('geometry-is-consistent', 'formula vs coordinates',
-                          cfg['*.gnb1.mobility.initialZ'] - cfg['*.ue[0].mobility.initialZ'],
-                          budget.hBS - budget.hUT, 0.0, " m")
+                         '*.ue[1].mobility.initialX', '*.ue[1].mobility.initialZ'])
+    # Tripwire: the budget takes the interfering UE at the victim's height
     grader.check_absolute('geometry-is-consistent', 'interferer at UE height',
                           cfg['*.ue[1].mobility.initialZ'], budget.hUT, 0.0, " m")
 
@@ -520,16 +518,7 @@ def grade_link_budget(grader):
     """With fading, shadowing and all interference off, an omnidirectional
     antenna and a fixed LOS state, the reported SINR is a sum of constants and
     one path loss."""
-    budget = Budget()
-    pos = config_values(['*.gnb.mobility.initialZ', '*.ue[0].mobility.initialZ'])
-
-    # Tripwire, not a claim about the model: the heights the formula uses and
-    # the heights the coordinates place the nodes at are independent inputs. If
-    # they disagree the checks below still run -- they just grade a geometry the
-    # model never evaluated.
-    grader.check_absolute('geometry-is-consistent', 'formula vs coordinates',
-                          pos['*.gnb.mobility.initialZ'] - pos['*.ue[0].mobility.initialZ'],
-                          budget.hBS - budget.hUT, 0.0, " m")
+    budget = Budget('*.gnb.mobility.initialZ', '*.ue[0].mobility.initialZ')
 
     table = scalar_table('module =~ "*.nrRadio.receiver" AND name =~ "measuredSinrDl:*"',
                          itervars=('d',))
@@ -552,16 +541,13 @@ def grade_link_budget(grader):
 def grade_background_cell_floor(grader):
     """One real cell, one background cell. The wanted signal and the
     interferer are both closed-form, from the same propagation study."""
-    budget = Budget()
+    budget = Budget('*.gnb.mobility.initialZ', '*.ue[0].mobility.initialZ')
     pos = config_values([
-        '*.gnb.mobility.initialX', '*.gnb.mobility.initialZ',
+        '*.gnb.mobility.initialX',
         '*.ue[0].mobility.initialX', '*.ue[0].mobility.initialZ',
         '*.bgCell[0].mobility.initialX', '*.bgCell[0].mobility.initialZ',
         '*.bgCell[0].bgScheduler.txPower',
     ])
-    grader.check_absolute('geometry-is-consistent', 'formula vs coordinates',
-                          pos['*.gnb.mobility.initialZ'] - pos['*.ue[0].mobility.initialZ'],
-                          budget.hBS - budget.hUT, 0.0, " m")
 
     d_serving = abs(pos['*.ue[0].mobility.initialX'] - pos['*.gnb.mobility.initialX'])
     d_bg_2D = abs(pos['*.bgCell[0].mobility.initialX'] - pos['*.ue[0].mobility.initialX'])
@@ -569,7 +555,8 @@ def grade_background_cell_floor(grader):
                          pos['*.bgCell[0].mobility.initialZ'] - pos['*.ue[0].mobility.initialZ'])
 
     signal = budget.received_power(d_serving)
-    interferer = budget.background_received_power(d_bg_3D, d_bg_2D, pos['*.bgCell[0].bgScheduler.txPower'])
+    interferer = budget.background_received_power(d_bg_3D, d_bg_2D, pos['*.bgCell[0].bgScheduler.txPower'],
+                                                   pos['*.bgCell[0].mobility.initialZ'])
     quiet = budget.over_noise(signal)
     loaded = budget.over_noise(signal, interferer)
 
@@ -597,17 +584,13 @@ def grade_background_cell_floor(grader):
 def grade_ext_cell_floor(grader):
     """One real cell, one external cell occupying every band. The interference
     is a constant, so with or without it the SINR is one closed-form value."""
-    budget = Budget(bs='*.eNodeB*', ue='*.ue*')
+    budget = Budget('*.eNodeB1.mobility.initialZ', '*.ue11.mobility.initialZ', bs='*.eNodeB*', ue='*.ue*')
     pos = config_values([
-        '*.eNodeB1.mobility.initialX', '*.eNodeB1.mobility.initialZ',
+        '*.eNodeB1.mobility.initialX',
         '*.ue11.mobility.initialX', '*.ue11.mobility.initialY', '*.ue11.mobility.initialZ',
         '*.extCell[0].positionX', '*.extCell[0].positionY', '*.extCell[0].positionZ',
         '*.extCell[0].txPower',
     ])
-    grader.check_absolute('geometry-is-consistent', 'formula vs coordinates',
-                          pos['*.eNodeB1.mobility.initialZ'] - pos['*.ue11.mobility.initialZ'],
-                          budget.hBS - budget.hUT, 0.0, " m")
-
     d_serving = abs(pos['*.ue11.mobility.initialX'] - pos['*.eNodeB1.mobility.initialX'])
     d_ext_2D = math.hypot(pos['*.extCell[0].positionX'] - pos['*.ue11.mobility.initialX'],
                           pos['*.extCell[0].positionY'] - pos['*.ue11.mobility.initialY'])
@@ -615,7 +598,8 @@ def grade_ext_cell_floor(grader):
                           pos['*.extCell[0].positionZ'] - pos['*.ue11.mobility.initialZ'])
 
     signal = budget.received_power(d_serving)
-    interferer = budget.background_received_power(d_ext_3D, d_ext_2D, pos['*.extCell[0].txPower'])
+    interferer = budget.background_received_power(d_ext_3D, d_ext_2D, pos['*.extCell[0].txPower'],
+                                                   pos['*.extCell[0].positionZ'])
     quiet = budget.over_noise(signal)
     loaded = budget.over_noise(signal, interferer)
 
@@ -649,19 +633,19 @@ def grade_d2d_link_budget(grader):
     cfg = config_values([
         '**.d2dTxPower', '*.ueD2D*[*].cellularNic.antenna.gain', '**.cableLoss',
         '**.thermalNoise', '*.ueD2D*[*].cellularNic.*adio.receiver.noiseFigure',
-        '**.nodebHeight', '**.ueHeight',
         '*.carrierAggregation.componentCarrier[0].carrierFrequency',
+        '*.gnb.mobility.initialZ',
         '*.ueD2DTx[0].mobility.initialZ', '*.ueD2DRx[0].mobility.initialZ',
     ])
-    hBS, hUT = cfg['**.nodebHeight'], cfg['**.ueHeight']
+    # a UE-to-UE link: the model takes the serving cell's antenna height as the base station's
+    hBS, hUT = cfg['*.gnb.mobility.initialZ'], cfg['*.ueD2DRx[0].mobility.initialZ']
     fc = cfg['*.carrierAggregation.componentCarrier[0].carrierFrequency']
     noise = cfg['**.thermalNoise'] + cfg['*.ueD2D*[*].cellularNic.*adio.receiver.noiseFigure']
 
-    # Tripwire: both UEs stand at the height the formula assumes, so the
-    # distance the model measures between them is the horizontal one.
-    grader.check_true('geometry-is-consistent', 'both UEs at ueHeight',
-                      cfg['*.ueD2DTx[0].mobility.initialZ'] == hUT
-                      and cfg['*.ueD2DRx[0].mobility.initialZ'] == hUT)
+    # Tripwire: both UEs stand at one height, so the distance the model
+    # measures between them is the horizontal one.
+    grader.check_true('geometry-is-consistent', 'both UEs at one height',
+                      cfg['*.ueD2DTx[0].mobility.initialZ'] == hUT)
 
     # The UMi breakpoint for the configured heights. Below it the LOS formula
     # does not involve the heights; past it, a UE-to-UE link would be graded
@@ -691,7 +675,7 @@ def grade_link_reciprocity(grader):
     """The downlink and uplink budgets of one link differ only by constants,
     so their SINRs must differ by that constant whatever the channel does to
     the link -- as long as the channel does the same thing to both ends."""
-    budget = Budget()
+    budget = Budget('*.gnb.mobility.initialZ', '*.ue[0].mobility.initialZ')
     powers = config_values(['**.eNodeBTxPower', '**.ueTxPower',
                             '*.ue[*].cellularNic.*adio.receiver.noiseFigure', '*.gnb*.cellularNic.radio.receiver.noiseFigure'])
     # Antenna gains and cable loss appear in both directions and cancel; what
@@ -737,11 +721,9 @@ class BudgetEnds:
 
     def __init__(self):
         self.plr = pathloss_reference()
-        cfg = config_values(['**.thermalNoise', '**.nodebHeight', '**.ueHeight',
+        cfg = config_values(['**.thermalNoise',
                              '*.carrierAggregation.componentCarrier[0].carrierFrequency'])
         self.thermal = cfg['**.thermalNoise']
-        self.hBS = cfg['**.nodebHeight']
-        self.hUT = cfg['**.ueHeight']
         self.fc = cfg['*.carrierAggregation.componentCarrier[0].carrierFrequency']
 
     def position(self, node):
@@ -751,7 +733,8 @@ class BudgetEnds:
     def path_loss(self, a, b):
         d2D = math.hypot(a[0] - b[0], a[1] - b[1])
         d3D = math.hypot(d2D, a[2] - b[2])
-        return self.plr.t901_umi_nlos(d3D, d2D, self.fc, self.hBS, self.hUT)
+        # the heights are the link's own: the base station is its higher end
+        return self.plr.t901_umi_nlos(d3D, d2D, self.fc, max(a[2], b[2]), min(a[2], b[2]))
 
     def received(self, tx_power, tx_gain, rx_gain, rx_cable_loss, tx_pos, rx_pos, attenuation=0.0):
         """dBm at the receiver: the receiver's cable loss, the gains of both
@@ -766,14 +749,6 @@ class BudgetEnds:
         if interference_dbm is not None:
             denominator += 10 ** (interference_dbm / 10.0)
         return signal_dbm - 10 * math.log10(denominator)
-
-    def check_geometry(self, grader, stations, ues):
-        for name, position in stations:
-            grader.check_absolute('geometry-is-consistent', f'{name} at the formula hBS',
-                                  position[2], self.hBS, 0.0, " m")
-        for name, position in ues:
-            grader.check_absolute('geometry-is-consistent', f'{name} at the formula hUT',
-                                  position[2], self.hUT, 0.0, " m")
 
 
 def sector_attenuation(budget, cell, ue, boresight):
@@ -821,8 +796,6 @@ def grade_background_ue_cqi(grader):
     prefix = '*.gnb1.cellularNic.bgTrafficGenerator[0].bgUE'
     ue0, ue1 = budget.position(f'{prefix}[0]'), budget.position(f'{prefix}[1]')
     realUe = budget.position('*.ue[0]')
-    budget.check_geometry(grader, [('gnb1', gnb1), ('gnb2', gnb2)],
-                          [('bgUE[0]', ue0), ('bgUE[1]', ue1), ('ue[0]', realUe)])
     cfg = config_values([
         '*.gnb1.**.eNodeBTxPower', '*.gnb2.**.eNodeBTxPower', '**.ueTxPower',
         '*.gnb1.cellularNic.antenna.gain', '*.gnb2.cellularNic.antenna.gain',
@@ -869,8 +842,6 @@ def grade_background_ue_load(grader):
     victim = budget.position('*.ue[0]')
     prefix = '*.gnb2.cellularNic.bgTrafficGenerator[0].bgUE[0]'
     bgUe = budget.position(prefix)
-    budget.check_geometry(grader, [('gnb1', gnb1), ('gnb2', gnb2)],
-                          [('ue[0]', victim), ('bgUE[0]', bgUe)])
     cfg = config_values([
         '*.gnb1.**.eNodeBTxPower', '*.gnb2.**.eNodeBTxPower', '**.ueTxPower',
         '*.gnb1.cellularNic.antenna.gain', '*.gnb2.cellularNic.antenna.gain',
@@ -946,9 +917,6 @@ def grade_background_cell_cqi(grader):
     ue00 = budget.position('*.bgCell[0].bgTrafficGenerator.bgUE[0]')
     ue01 = budget.position('*.bgCell[0].bgTrafficGenerator.bgUE[1]')
     ue10 = budget.position('*.bgCell[1].bgTrafficGenerator.bgUE[0]')
-    budget.check_geometry(grader, [('gnb', gnb), ('bgCell[0]', cell0), ('bgCell[1]', cell1)],
-                          [('ue[0]', realUe), ('bgCell[0].bgUE[0]', ue00), ('bgCell[0].bgUE[1]', ue01),
-                           ('bgCell[1].bgUE[0]', ue10)])
     cfg = config_values([
         '*.gnb.**.eNodeBTxPower', '**.ueTxPower', '*.gnb.cellularNic.antenna.gain',
         '*.ue[*].cellularNic.antenna.gain',
@@ -1043,10 +1011,12 @@ def grade_d2d_interference_delta(grader):
     cfg = config_values([
         d2d_gain, b_gain, ue_gain, '*.ueCell[*].cellularNic.antenna.gain',
         d2d_power, b_power, '**.ueTxPower', noise_figure, rx_cable, '**.thermalNoise',
-        '**.nodebHeight', '**.ueHeight',
         '*.carrierAggregation.componentCarrier[0].carrierFrequency',
+        '*.gnb.mobility.initialZ', '*.gnb2.mobility.initialZ', '*.ueD2DRx[0].mobility.initialZ',
     ])
-    hBS, hUT = cfg['**.nodebHeight'], cfg['**.ueHeight']
+    # a UE-to-UE link: the model takes the antenna height of the transmitter's serving cell
+    # as the base station's; a tripwire below says the two cells are at one height
+    hBS, hUT = cfg['*.gnb.mobility.initialZ'], cfg['*.ueD2DRx[0].mobility.initialZ']
     fc = cfg['*.carrierAggregation.componentCarrier[0].carrierFrequency']
     noise = cfg['**.thermalNoise'] + cfg[noise_figure]
 
@@ -1063,8 +1033,9 @@ def grade_d2d_interference_delta(grader):
     # distance is the horizontal one, and every link below the breakpoint. The
     # cellular UE is the same interferer, whichever cell it is in.
     breakpoint = plr._dbp_effective(fc, hBS, hUT)
-    grader.check_true('geometry-is-consistent', 'every UE at ueHeight',
-                      all(p[2] == hUT for p in (tx_a, rx_a, tx_b, rx_b, other_ue, cell_ue)))
+    grader.check_true('geometry-is-consistent', 'every UE at one height, and both cells',
+                      all(p[2] == hUT for p in (tx_a, rx_a, tx_b, rx_b, other_ue, cell_ue))
+                      and cfg['*.gnb2.mobility.initialZ'] == hBS)
     distances = {name: math.hypot(a[0] - b[0], a[1] - b[1]) for name, a, b in [
         ('A', tx_a, rx_a), ('B', tx_b, rx_b), ('B at A', tx_b, rx_a), ('A at B', tx_a, rx_b),
         ('UE at A', other_ue, rx_a)]}

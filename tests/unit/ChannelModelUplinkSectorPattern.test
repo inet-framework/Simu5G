@@ -75,8 +75,8 @@ sim-time-limit = 1s
 *.binder.printTrafficGeneratorConfig = false
 
 **.scenario = "URBAN_MICROCELL"
-**.nodebHeight = 25m
-**.ueHeight = 1.5m
+# the harness keeps its base stations at 25 m, outside the heights TR 38.901 gives for UMi (hBS = 10 m)
+**.tolerateHeightViolation = true
 **.dynamicLos = false
 **.fixedLos = true
 **.shadowing = false

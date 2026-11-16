@@ -105,8 +105,6 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 
 ############### The channel: one path loss and nothing else ##############
 **.scenario = "URBAN_MICROCELL"
-**.nodebHeight = 10m
-**.ueHeight = 1.5m
 **.dynamicLos = false
 **.fixedLos = true
 **.fading = false
@@ -153,7 +151,7 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 %postrun-command: ../../physics_reference.py --grade results >verdict.txt
 
 %contains: verdict.txt
-graded=12 failures=0
+graded=11 failures=0
 
 %not-contains: verdict.txt
 FAILED

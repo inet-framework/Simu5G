@@ -73,10 +73,10 @@ seed-set = 0
 # off in any case.
 *.eNodeB1.mobility.initialX = 300m
 *.eNodeB1.mobility.initialY = 300m
-*.eNodeB1.mobility.initialZ = 25m
+*.eNodeB1.mobility.initialZ = 10m
 *.eNodeB2.mobility.initialX = 1900m
 *.eNodeB2.mobility.initialY = 1900m
-*.eNodeB2.mobility.initialZ = 25m
+*.eNodeB2.mobility.initialZ = 10m
 **.ue1*.servingNodeId = 1
 **.ue2*.servingNodeId = 2
 *.ue11.mobility.initialX = 400m
@@ -99,8 +99,6 @@ seed-set = 0
 ############### The channel: one path loss and nothing else ##############
 *.radioMedium.channelModelType = "Tr38901ChannelModel"
 **.scenario = "URBAN_MICROCELL"
-**.nodebHeight = 25m
-**.ueHeight = 1.5m
 **.dynamicLos = false
 **.fixedLos = true
 **.fading = false
@@ -124,7 +122,7 @@ seed-set = 0
 *.numExtCells = 1
 *.extCell[0].positionX = 900m
 *.extCell[0].positionY = 300m
-*.extCell[0].positionZ = 25m
+*.extCell[0].positionZ = 10m
 *.extCell[0].txPower = 37dBm
 *.extCell[0].txDirection = "OMNI"
 *.extCell[0].carrierFrequency = 2GHz
@@ -149,7 +147,7 @@ seed-set = 0
 %postrun-command: ../../physics_reference.py --grade results >verdict.txt
 
 %contains: verdict.txt
-graded=11 failures=0
+graded=10 failures=0
 
 %not-contains: verdict.txt
 FAILED

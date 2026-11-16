@@ -1,0 +1,23 @@
+%description:
+The breakpoint distance of the urban path loss formulas takes the antenna heights above an
+effective environment height of 1 m or more (TR 38.901 Table 7.4.1-1 Note 1: h'UT = hUT - hE).
+A UE antenna at 1 m has an effective height of zero, where the formula beyond the breakpoint
+has no value; it gave -inf or NaN without a message. The first evaluation of such a link is an
+error, which tolerateHeightViolation does not switch off.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+*.ue[*].cellularNic.antenna.mobility.offsetZ = 1m
+**.nrChannelModel[*].tolerateHeightViolation = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+the path loss of the scenario URBAN_MACROCELL is defined only where both antennas are higher than 1 m
+%#--------------------------------------------------------------------------------------------------------------

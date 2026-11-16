@@ -63,8 +63,6 @@ sim-time-limit = 1s
 *.binder.printTrafficGeneratorConfig = false
 
 **.scenario = "URBAN_MICROCELL"
-**.nodebHeight = 25m
-**.ueHeight = 1.5m
 **.dynamicLos = false
 **.fixedLos = true
 **.shadowing = false
@@ -83,11 +81,11 @@ const GHz carrier = GHz(3.5);
 StubEndpoint bs, ue, external;
 const MacNodeId bsId = MacNodeId(1), ueId = MacNodeId(1025), externalId = MacNodeId(1000);
 bs.nodeId = bsId;
-bs.coord = Coord(0, 0, 25);
+bs.coord = Coord(0, 0, 10);
 ue.nodeId = ueId;
 ue.coord = Coord(300, 0, 1.5);
 external.nodeId = externalId;
-external.coord = Coord(400, 0, 25);
+external.coord = Coord(400, 0, 10);
 StubRadioRegistration bsRadio(medium, bsId, &bs);
 StubRadioRegistration ueRadio(medium, ueId, &ue);
 StubRadioRegistration externalRadio(medium, externalId, &external);

@@ -1,0 +1,21 @@
+%description:
+The configuration AntennaHeightRejected_OutsideStudyRange rejects, a base station antenna at
+30 m in the TR 38.901 urban macrocell, runs when the channel model's tolerateHeightViolation is
+set: the formulas are evaluated at the heights of the link, outside the study's range.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+*.gnb.cellularNic.antenna.mobility.offsetZ = 30m
+**.nrChannelModel[*].tolerateHeightViolation = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+Simulation time limit reached
+%#--------------------------------------------------------------------------------------------------------------

@@ -56,8 +56,6 @@ seed-set = 0
 **.mobility.initFromDisplayString = false
 
 **.scenario = "URBAN_MACROCELL"
-**.nodebHeight = 25m
-**.ueHeight = 1.5m
 **.dynamicLos = false
 **.fixedLos = true
 **.fading = false

@@ -132,11 +132,8 @@ sim-time-limit = 1s
 *.radioMedium.channelModelType = "StochasticChannelModel"
 *.radioMedium.channelModel[*].pathLossType = "Tr36814"
 *.radioMedium.channelModel[*].scenario = "URBAN_MACROCELL"
-*.radioMedium.channelModel[*].nodebHeight = 25m
 *.radioMedium.nrChannelModelType = "Tr38901ChannelModel"
 *.radioMedium.nrChannelModel[*].scenario = "URBAN_MICROCELL"
-*.radioMedium.nrChannelModel[*].nodebHeight = 10m
-**.ueHeight = 1.5m
 **.buildingHeight = 20m
 **.streetWidth = 20m
 

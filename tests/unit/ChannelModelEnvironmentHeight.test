@@ -65,8 +65,6 @@ sim-time-limit = 1s
 *.binder.printTrafficGeneratorConfig = false
 
 **.scenario = "URBAN_MACROCELL"
-**.nodebHeight = 25m
-**.ueHeight = 22.5m
 **.dynamicLos = true
 **.shadowing = false
 **.fading = false

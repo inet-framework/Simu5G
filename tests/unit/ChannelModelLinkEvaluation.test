@@ -70,8 +70,6 @@ sim-time-limit = 1s
 
 # Every per-link draw in play
 **.scenario = "URBAN_MACROCELL"
-**.nodebHeight = 25m
-**.ueHeight = 22.5m
 **.dynamicLos = true
 **.shadowing = true
 **.fading = true

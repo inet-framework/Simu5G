@@ -102,10 +102,10 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 ############### Geometry: the victim and the background UE on the x axis of the cells ##############
 *.gnb1.mobility.initialX = 250m
 *.gnb1.mobility.initialY = 500m
-*.gnb1.mobility.initialZ = 25m
+*.gnb1.mobility.initialZ = 10m
 *.gnb2.mobility.initialX = 750m
 *.gnb2.mobility.initialY = 500m
-*.gnb2.mobility.initialZ = 25m
+*.gnb2.mobility.initialZ = 10m
 *.numUe = 1
 *.ue[*].servingNodeId = 0
 *.ue[*].nrServingNodeId = 1
@@ -129,8 +129,6 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 
 ############### The channel: one NLOS path loss and nothing else ##############
 **.scenario = "URBAN_MICROCELL"
-**.nodebHeight = 25m
-**.ueHeight = 1.5m
 **.dynamicLos = false
 **.fixedLos = false
 **.fading = false
@@ -196,7 +194,7 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 %postrun-command: ../../physics_reference.py --grade results >verdict.txt
 
 %contains: verdict.txt
-graded=27 failures=0
+graded=23 failures=0
 
 %not-contains: verdict.txt
 FAILED

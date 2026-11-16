@@ -100,7 +100,7 @@ description = "${s = realCellOff, realCellOn, neighbour, neighbourOff, narrowCel
 ############### Geometry: a real cell, and background cells to the east ##############
 *.gnb.mobility.initialX = 300m
 *.gnb.mobility.initialY = 300m
-*.gnb.mobility.initialZ = 25m
+*.gnb.mobility.initialZ = 10m
 *.numUe = 1
 *.ue[0].servingNodeId = 0
 *.ue[0].nrServingNodeId = 1
@@ -109,7 +109,7 @@ description = "${s = realCellOff, realCellOn, neighbour, neighbourOff, narrowCel
 *.ue[0].mobility.initialZ = 1.5m
 *.bgCell[0].mobility.initialX = 800m
 *.bgCell[0].mobility.initialY = 300m
-*.bgCell[0].mobility.initialZ = 25m
+*.bgCell[0].mobility.initialZ = 10m
 *.bgCell[0].bgTrafficGenerator.numBgUes = 2
 *.bgCell[0].bgTrafficGenerator.bgUE[0].mobility.initialX = 700m
 *.bgCell[0].bgTrafficGenerator.bgUE[0].mobility.initialY = 400m
@@ -119,7 +119,7 @@ description = "${s = realCellOff, realCellOn, neighbour, neighbourOff, narrowCel
 *.bgCell[0].bgTrafficGenerator.bgUE[1].mobility.initialZ = 1.5m
 *.bgCell[1].mobility.initialX = 1400m
 *.bgCell[1].mobility.initialY = 300m
-*.bgCell[1].mobility.initialZ = 25m
+*.bgCell[1].mobility.initialZ = 10m
 *.bgCell[1].bgTrafficGenerator.numBgUes = 1
 *.bgCell[1].bgTrafficGenerator.bgUE[0].mobility.initialX = 1300m
 *.bgCell[1].bgTrafficGenerator.bgUE[0].mobility.initialY = 300m
@@ -134,8 +134,6 @@ description = "${s = realCellOff, realCellOn, neighbour, neighbourOff, narrowCel
 
 ############### The channel: one NLOS path loss and nothing else ##############
 **.scenario = "URBAN_MICROCELL"
-**.nodebHeight = 25m
-**.ueHeight = 1.5m
 **.dynamicLos = false
 **.fixedLos = false
 **.fading = false
@@ -202,7 +200,7 @@ description = "${s = realCellOff, realCellOn, neighbour, neighbourOff, narrowCel
 %postrun-command: ../../physics_reference.py --grade results >verdict.txt
 
 %contains: verdict.txt
-graded=63 failures=0
+graded=56 failures=0
 
 %not-contains: verdict.txt
 FAILED

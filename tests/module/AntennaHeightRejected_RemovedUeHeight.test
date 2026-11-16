@@ -1,0 +1,21 @@
+%description:
+ueHeight was a parameter of the channel model: one UE height for every link of a carrier,
+whatever the positions of the UEs were. The height of a link's UE end is now its antenna's. An
+ini file that still sets the parameter would be ignored without a message, and the simulation
+would silently run with other heights than it asks for. Setting it is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+**.nrChannelModel[*].ueHeight = 20m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+The 'ueHeight' parameter is no longer used: the heights of a link are those of its two antennas
+%#--------------------------------------------------------------------------------------------------------------

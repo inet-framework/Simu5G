@@ -59,6 +59,8 @@ sim-time-limit = 1s
 # LOS is drawn, and nothing else is: the TR 38.901 UMi path loss draws nothing
 # for an outdoor UE, and shadowing is off.
 **.scenario = "URBAN_MICROCELL"
+# the harness keeps its base stations at 25 m, outside the heights TR 38.901 gives for UMi (hBS = 10 m)
+**.tolerateHeightViolation = true
 **.dynamicLos = true
 **.shadowing = false
 **.correlationDistance = 50m
@@ -100,7 +102,7 @@ const double d2D = sqrt(pow(ue.coord.x - phantom.coord.x, 2) + pow(ue.coord.y - 
 auto expectedPower = [&](ChannelModelProbe& probe, bool los) {
     PathLossModel::LinkConditions conditions;
     conditions.environmentHeight = probe.losMap().at(phantomLink).environmentHeight;
-    return phantom.txPower - probe.pathLoss()->computePathLoss(probe.deployment(), d3D, d2D, los, conditions) + phantom.antennaGain + ue.antennaGain - ue.cableLoss;
+    return phantom.txPower - probe.pathLoss()->computePathLoss(probe.deployment(phantom.coord.z, ue.coord.z), d3D, d2D, los, conditions) + phantom.antennaGain + ue.antennaGain - ue.cableLoss;
 };
 
 // the serving link has a state of its own, decided elsewhere
@@ -111,7 +113,7 @@ atUe.losMap()[servingLink].positionB = ue.coord;
 bool phantomLos;
 double power;
 {
-    double p = atUe.pathLoss()->computeLosProbability(atUe.deployment(), d3D, d2D);
+    double p = atUe.pathLoss()->computeLosProbability(atUe.deployment(phantom.coord.z, ue.coord.z), d3D, d2D);
     RngSnapshot snapshot(ueModel);
     long long before = drawn(ueModel);
     power = atUe.phantomPowerAt(transmission, &ue);

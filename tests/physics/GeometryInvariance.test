@@ -100,8 +100,6 @@ constraint = ($dx == 0) || ($rot == 0)
 
 ############### The channel: randomness left on, on purpose ##############
 **.scenario = "URBAN_MACROCELL"
-**.nodebHeight = 25m
-**.ueHeight = 1.5m
 **.dynamicLos = true
 **.fading = true
 **.fadingType = "JAKES"

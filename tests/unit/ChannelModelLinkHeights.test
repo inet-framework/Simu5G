@@ -1,0 +1,171 @@
+%description:
+
+The heights a path loss formula takes are those of the link's two antennas.
+
+One TR 38.901 urban macrocell model evaluates the links of one base station at
+25 m to two UEs on the same carrier, at 1.5 m and at 20 m. Each link's path loss
+is the closed form at that link's own heights and distances; with nothing
+random (NLOS, no shadowing, no fading) the two differ by the 0.6 dB per metre
+of UE height of the NLOS formula (Table 7.4.1-1) less what the shorter 3D
+distance of the higher UE gives. The uplink of a link has the path loss of its
+downlink: the base station's end is the base station's, whichever end
+transmits.
+
+No study here has a link between two UEs. The model evaluates one with the base
+station height the studies give for the scenario (25 m) and the lower of the
+two UEs' heights, whichever UE transmits (tests/doc/model-deviations.md,
+item 4).
+
+Heights the formulas cannot take are rejected at the link's evaluation: an
+antenna that is not above the 1 m environment height, where the breakpoint
+distance is not positive, and an antenna outside the range the study gives for
+the scenario ("1.5m<=hUT<=22.5m", "hBS=25m"). The second is not rejected by a
+model whose tolerateHeightViolation is set.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+// The model's own D2D link builder, which is protected. Never instantiated: see ChannelModelProbe for the technique.
+struct D2dLinkAccess : StochasticChannelModel
+{
+    static auto d2dLinkPtr() { return &D2dLinkAccess::d2dLink; }
+};
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        model: Tr38901ChannelModel;
+        tolerantModel: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+# nothing random: every link is NLOS, without shadowing or fading
+**.scenario = "URBAN_MACROCELL"
+**.dynamicLos = false
+**.fixedLos = false
+**.shadowing = false
+**.fading = false
+*.tolerantModel.tolerateHeightViolation = true
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *model = harnessModule<StochasticChannelModel>(this, "model");
+auto *tolerant = harnessModule<StochasticChannelModel>(this, "tolerantModel");
+ChannelModelProbe probe(model), tolerantProbe(tolerant);
+
+StubEndpoint bs, low, high;
+bs.nodeId = MacNodeId(1);
+bs.coord = Coord(0, 0, 25);
+low.nodeId = MacNodeId(1025);
+low.coord = Coord(300, 0, 1.5);
+high.nodeId = MacNodeId(1026);
+high.coord = Coord(0, 300, 20);
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+StubRadioRegistration bsRadio(medium, bs.nodeId, &bs);
+StubRadioRegistration lowRadio(medium, low.nodeId, &low);
+StubRadioRegistration highRadio(medium, high.nodeId, &high);
+
+auto d2dOf = [](const Coord& a, const Coord& b) { return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2)); };
+// the closed form of a link between positions a and b, at the given heights and the link's h_E
+auto closedForm = [&](const RadioLink& link, const Coord& a, const Coord& b, double hNodeB, double hUe) {
+    PathLossModel::LinkConditions conditions;
+    conditions.environmentHeight = probe.losMap().at(link.linkKey).environmentHeight;
+    return probe.pathLoss()->computePathLoss(probe.deployment(hNodeB, hUe), a.distance(b), d2dOf(a, b), false, conditions);
+};
+
+//
+// --- two UEs at different heights, on one carrier ---
+//
+RadioLink dlLow = probe.cellularLink(&low, low.nodeId, DL, bs.coord);
+RadioLink dlHigh = probe.cellularLink(&high, high.nodeId, DL, bs.coord);
+double atLow = model->getAttenuation(dlLow);
+double atHigh = model->getAttenuation(dlHigh);
+c.expectNear("the UE at 1.5 m: the closed form at 25 m and 1.5 m", atLow, closedForm(dlLow, bs.coord, low.coord, 25, 1.5), 1e-9);
+c.expectNear("the UE at 20 m: the closed form at 25 m and 20 m", atHigh, closedForm(dlHigh, bs.coord, high.coord, 25, 20), 1e-9);
+c.expectNear("they differ by 0.6 dB per metre of UE height, less the shorter 3D distance (UMa NLOS)", atLow - atHigh,
+        0.6 * (20 - 1.5) + 39.08 * log10(bs.coord.distance(low.coord) / bs.coord.distance(high.coord)), 1e-9);
+
+RadioLink ulHigh = probe.cellularLink(&bs, high.nodeId, UL, high.coord);
+c.expectNear("the uplink of the UE at 20 m has its downlink's path loss", model->getAttenuation(ulHigh), atHigh, 1e-9);
+
+//
+// --- a link between two UEs ---
+//
+auto d2dAttenuation = [&](StubEndpoint& from, StubEndpoint& to) {
+    return model->getAttenuation((model->*D2dLinkAccess::d2dLinkPtr())(from.nodeId, from.coord, to.nodeId, to.coord));
+};
+{
+    RadioLink link = (model->*D2dLinkAccess::d2dLinkPtr())(low.nodeId, low.coord, high.nodeId, high.coord);
+    double lowToHigh = model->getAttenuation(link);
+    c.expectNear("UE to UE: the closed form at the scenario's 25 m and the lower UE's 1.5 m", lowToHigh,
+            closedForm(link, low.coord, high.coord, 25, 1.5), 1e-9);
+    c.expectNear("UE to UE: the same in the other direction", d2dAttenuation(high, low), lowToHigh, 1e-9);
+}
+
+//
+// --- heights the formulas cannot take ---
+//
+StubEndpoint atEnvironment, aboveRange, highBs;
+atEnvironment.nodeId = MacNodeId(1027);
+atEnvironment.coord = Coord(300, 100, 1.0);
+aboveRange.nodeId = MacNodeId(1028);
+aboveRange.coord = Coord(300, 200, 30);
+highBs.nodeId = MacNodeId(2);
+highBs.coord = Coord(0, 0, 30);
+
+c.expectRejected("a UE antenna at the environment height of 1 m", [&] {
+    model->getAttenuation(probe.cellularLink(&atEnvironment, atEnvironment.nodeId, DL, bs.coord)); });
+c.expectRejected("...also by a model that tolerates heights outside the study's range", [&] {
+    tolerant->getAttenuation(tolerantProbe.cellularLink(&atEnvironment, atEnvironment.nodeId, DL, bs.coord)); });
+c.expectRejected("a UE antenna at 30 m, above the study's 22.5 m", [&] {
+    model->getAttenuation(probe.cellularLink(&aboveRange, aboveRange.nodeId, DL, bs.coord)); });
+c.expectRejected("a base station antenna at 30 m, not the study's 25 m", [&] {
+    model->getAttenuation(probe.cellularLink(&low, low.nodeId, DL, highBs.coord)); });
+c.expectRejected("...in the uplink too", [&] {
+    model->getAttenuation(probe.cellularLink(&highBs, low.nodeId, UL, low.coord)); });
+{
+    RadioLink link = tolerantProbe.cellularLink(&low, low.nodeId, DL, highBs.coord);
+    double value = tolerant->getAttenuation(link);
+    PathLossModel::LinkConditions conditions;
+    conditions.environmentHeight = tolerantProbe.losMap().at(link.linkKey).environmentHeight;
+    c.expectNear("a tolerant model evaluates the base station at 30 m, at that height", value,
+            tolerantProbe.pathLoss()->computePathLoss(tolerantProbe.deployment(30, 1.5), highBs.coord.distance(low.coord), d2dOf(highBs.coord, low.coord), false, conditions), 1e-9);
+}
+
+c.summary();
+
+%contains: stdout
+modelchecks=12 modelfailures=0
+
+%not-contains: stdout
+FAILED

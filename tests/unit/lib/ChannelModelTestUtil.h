@@ -181,8 +181,15 @@ class ChannelModelProbe
     // the Jakes fading paths of the links on the model's carrier, which the radio medium keeps once per link
     ChannelState::JakesFadingMap& jakesMap() { return (model_->*Access::jakesFadingMapPtr())(); }
     PathLossModel *pathLoss() { return model_->*Access::pathLossPtr(); }
-    // the deployment the model evaluates every link in, which the formulas take with each call
-    const PathLossModel::Deployment& deployment() { return model_->*Access::deploymentPtr(); }
+    // the deployment the model evaluates a link in, which the formulas take with each call:
+    // the model's scenario, with the heights of the link's base station and UE antennas
+    PathLossModel::Deployment deployment(double hNodeB, double hUe)
+    {
+        PathLossModel::Deployment deployment = model_->*Access::deploymentPtr();
+        deployment.hNodeB = hNodeB;
+        deployment.hUe = hUe;
+        return deployment;
+    }
     bool& fading() { return model_->*Access::fadingPtr(); }
 
     // internal steps
