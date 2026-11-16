@@ -1,0 +1,117 @@
+%description:
+
+A radio is where its antenna is, and an antenna is at its height above its
+node: the antenna's mobility (AntennaMobility) follows the node's mobility at
+an offset, mobility.offsetZ, which defaults to 25 m for a cell and 1.5 m for
+a UE. The nodes themselves stay on the ground. An antenna without a mobility
+of its own is where its node is.
+
+Checked on the radios of a background cell, of its background UE and of two
+external cells, with the nodes at z = 0 and one external cell at positionZ =
+10 m: the radios report the node's x and y, and the node's z plus the offset
+-- the defaults, an offset set in the ini file, and none.
+
+The antenna mobility draws no random number as it initializes, and has no
+constraint area of its own: the constraint area below, which the nodes are
+inside of, does not contain the antennas, and that is no error. (INET's
+AttachedMobility draws a random position from its constraint area as it
+initializes, and fails where the area is unbounded.)
+
+%includes:
+#include <string>
+#include "SchedulerTestUtil.h"
+#include "simu5g/stack/phy/radio/CellularPhantomRadio.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.nodes.BackgroundCell;
+import simu5g.nodes.ExtCell;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        bgCell: BackgroundCell;
+        extCell: ExtCell;
+        raisedExtCell: ExtCell;
+        bareExtCell: ExtCell;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 100ms
+*.binder.printTrafficGeneratorConfig = false
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+**.cellInfoModule = ""
+
+# the nodes move on the ground, in a bounded area
+**.mobility.initFromDisplayString = false
+**.mobility.constraintAreaMinX = 0m
+**.mobility.constraintAreaMinY = 0m
+**.mobility.constraintAreaMinZ = 0m
+**.mobility.constraintAreaMaxX = 1000m
+**.mobility.constraintAreaMaxY = 1000m
+**.mobility.constraintAreaMaxZ = 0m
+
+*.bgCell.mobility.initialX = 250m
+*.bgCell.mobility.initialY = 500m
+*.bgCell.mobility.initialZ = 0m
+*.bgCell.bgTrafficGenerator.numBgUes = 1
+*.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialX = 260m
+*.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialY = 510m
+*.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialZ = 0m
+*.bgCell.bgScheduler.numBands = 6
+
+*.extCell.positionX = 700m
+*.extCell.positionY = 300m
+*.raisedExtCell.positionX = 800m
+*.raisedExtCell.positionY = 300m
+*.raisedExtCell.positionZ = 10m
+*.raisedExtCell.radio.antenna.mobility.offsetZ = 30m
+*.bareExtCell.positionX = 900m
+*.bareExtCell.positionY = 300m
+*.bareExtCell.positionZ = 12m
+*.bareExtCell.radio.antenna.mobility.typename = ""
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+cModule *network = getSimulation()->getSystemModule();
+auto radioAt = [&] (const char *path) { return check_and_cast<CellularPhantomRadio *>(network->getModuleByPath(path)); };
+auto show = [] (const Coord& p) { return "x=" + std::to_string(p.x) + " y=" + std::to_string(p.y) + " z=" + std::to_string(p.z); };
+auto checkAt = [&] (const std::string& what, const char *path, const Coord& expected) {
+    Coord position = radioAt(path)->getCoord();
+    c.check(what, position.distance(expected) < 1e-9, show(position));
+};
+
+long drawn = getRNG(0)->getNumbersDrawn();
+checkAt("a background cell's radio is 25 m above the cell", ".bgCell.radio", Coord(250, 500, 25));
+checkAt("a background UE's radio is 1.5 m above the UE", ".bgCell.bgTrafficGenerator.bgUE[0].radio", Coord(260, 510, 1.5));
+checkAt("an external cell's radio is 25 m above the cell", ".extCell.radio", Coord(700, 300, 25));
+checkAt("...and above the cell's own z, at the offset the ini file gives", ".raisedExtCell.radio", Coord(800, 300, 40));
+checkAt("an antenna without a mobility is where its node is", ".bareExtCell.radio", Coord(900, 300, 12));
+c.expectValue("reading the positions draws no random number", (long)getRNG(0)->getNumbersDrawn() - drawn, 0L);
+
+c.summary();
+
+%contains: stdout
+modelchecks=6 modelfailures=0
+
+%not-contains: stdout
+FAILED
