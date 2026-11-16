@@ -51,6 +51,14 @@ package simu5g.stack.phy.channelmodel;
 // outside what the study gives for the scenario is an error, unless
 // tolerateHeightViolation is set.
 //
+// A link's LOS state, with its effective environment height, and its shadowing
+// belong to the two ends of the channel, not to the radios at them: they are
+// the same on every carrier, for both radios of a dual-stack UE, and for
+// every cell that gives the same site name (the site parameter of a base
+// station's radio: the sectors of a site). The fast fading is drawn per pair
+// of radios and per carrier. The first channel model that evaluates a pair of
+// ends draws their state; a model of another carrier, RAT or study takes it.
+//
 // A link between two UEs (D2D) has no base station, and none of the three
 // studies has such a link. The model evaluates it with the scenario of the
 // receiving UE's serving cell, taking the base station height the studies give for that scenario (10 m in

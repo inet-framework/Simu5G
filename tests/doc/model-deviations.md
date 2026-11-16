@@ -71,6 +71,7 @@ fingerprints. In the branch they get test hardening only (pins and expected fail
    - Moves the four channelmodel Penetration rows (one draw fewer per UE on RNG 0).
    - Recorded in tests/module/IndoorTwoRadios (pin) and IndoorOnePosition (expected failure).
    - Fix shape: one draw per UE, shared by its radios.
+   - Not changed by the fix of item 27: the LOS state and the shadowing are the UE's since then, but the indoor distance and the penetration-loss deviate are still each radio's.
 15. **A D2D link's indoor loss depends on its direction.**
    - What the model does: the penetration loss is the "UE end's", `link.dir == UL ? txRadio : rxRadio` (StochasticChannelModel::getAttenuation), so a D2D link takes the receiver's indoor state: A indoors, B outdoors gives no wall loss on A->B and the full wall loss on B->A. Two indoor UEs get the full outdoor-to-indoor loss.
    - What the spec says: a link's path loss is reciprocal; TR 36.843 A.2.1.2 uses the indoor model between two indoor UEs.
@@ -124,6 +125,13 @@ Recorded, not fixed in the branch, like the items of the earlier pieces.
    - What the specification says: TR 38.901 7.6.5, "Propagation conditions generated in Step 2 are the same for all the frequencies"; Table 7.6.3.4-1 makes the LOS/NLOS state site-specific, and NOTE 1 of Table 7.4.1-1 determines h_E "for every link between BS sites and UTs".
    - Reached in the rows that serve a UE on two carriers of one cell (e.g. nr/test_multiCarrier), and in any network with co-sited cells.
    - Fix shape: key the LOS sample by site and UE, shared by every carrier.
+   - FIXED on topic/site-state (2026-11-16), together with the same fault of the shadowing (findings P1 to P3 of reports/simu5g-2026-11-09_propagation-modeling-errors.md). The LOS state with h_E and the shadowing sample are kept by the two ends of the channel, as the radios name them (IRadioEndpoint::getChannelEndId()): the radios of one UE name the UE ("the two radios of a UE were two UTs to the channel state"), there is one table for all carriers ("a link had a LOS state and a shadowing realization per carrier"), and the cells that give one site name (the `site` parameter of a base station's radio) name the site ("the sectors of a site could not share their LOS state and shadowing"). The Jakes paths stay per radio pair and per carrier, as 7.6.5 has the fast fading. Tests: unit/ChannelModelStateAcrossCarriers (which replaces ChannelModelPerCarrierState, the pin of the wrong reading), unit/ChannelModelSiteState, module/Site*, physics/ThreeSectorSite.
+   - What remains:
+     - The first channel model to evaluate a pair of ends draws their state, and a model of another study takes it: an eNB and a gNB of one site share one LOS state and one shadowing value, drawn with the LOS probability and the sigma of whichever evaluated first (TR 36.814 and TR 38.901 differ: 4 dB against 7.82 dB at UMi NLOS).
+     - The cells of a site must stand within 1 m of each other horizontally and be in one scenario; a site is named explicitly, never inferred from equal positions, so co-located cells without a common name still draw independently.
+     - An end whose radio has left the medium (the sender of a frame still in the air) gets a state of its own from then on.
+     - The azimuth from a mast to a UE straight below or above it is 0 degrees (atan2(0, 0)): the UE is then on the boresight of a sector pointing along the x axis.
+     - The per-link tables are still never erased (item 16).
 
 ## Found in piece 6b (2026-11-08): fix after the full merge
 
