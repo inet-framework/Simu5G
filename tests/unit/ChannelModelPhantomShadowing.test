@@ -115,6 +115,10 @@ auto transmissionFrom = [&] (StubEndpoint& sender, Direction direction) {
     cell.coord = Coord(300, 200, 25);
     cell.antennaGain = 18;
     cell.txPower = 46;
+    // both ends are radios on the medium: the link's state is kept by its two ends
+    auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+    StubRadioRegistration ueRadio(medium, ue.nodeId, &ue);
+    StubRadioRegistration cellRadio(medium, cell.nodeId, &cell);
     const LinkKey link(cell.nodeId, ue.nodeId);
 
     long long before = drawn();
@@ -144,6 +148,9 @@ auto transmissionFrom = [&] (StubEndpoint& sender, Direction direction) {
     bgUe.nodeId = MacNodeId(BGUE_MIN_ID + 3);
     bgUe.coord = Coord(120, -50, 1.5);
     bgUe.txPower = 23;
+    auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+    StubRadioRegistration bsRadio(medium, bs.nodeId, &bs);
+    StubRadioRegistration bgUeRadio(medium, bgUe.nodeId, &bgUe);
     const LinkKey link(bs.nodeId, bgUe.nodeId);
 
     double power = probe.phantomPowerAt(transmissionFrom(bgUe, UL), &bs);

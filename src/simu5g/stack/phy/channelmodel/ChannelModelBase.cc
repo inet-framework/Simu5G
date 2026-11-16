@@ -14,14 +14,21 @@
 
 namespace simu5g {
 
+// An end whose radio is not on the medium (the sender of a frame still in the
+// air has left) is named by its node id, apart from every radio's name.
+static long endWithoutRadio(MacNodeId nodeId)
+{
+    return -1 - (long)num(nodeId);
+}
+
 long RadioLink::txEnd() const
 {
-    return txRadio != nullptr ? txRadio->getChannelEndId() : (long)num(txId);
+    return txRadio != nullptr ? txRadio->getChannelEndId() : endWithoutRadio(txId);
 }
 
 long RadioLink::rxEnd() const
 {
-    return rxRadio != nullptr ? rxRadio->getChannelEndId() : (long)num(rxId);
+    return rxRadio != nullptr ? rxRadio->getChannelEndId() : endWithoutRadio(rxId);
 }
 
 

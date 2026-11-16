@@ -100,6 +100,7 @@ ChannelModelProbe atEnb(bs), atOther(otherBs), atUe(ueModel);
 auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
 StubRadioRegistration enbRadio(medium, enb.nodeId, &enb);
 StubRadioRegistration otherEnbRadio(medium, otherEnb.nodeId, &otherEnb);
+StubRadioRegistration ueRadio(medium, ue.nodeId, &ue);
 
 auto drawn = [](StochasticChannelModel *model) { return (long long)model->getRNG(0)->getNumbersDrawn(); };
 

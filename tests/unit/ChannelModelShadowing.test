@@ -66,6 +66,14 @@ static UserControlInfo controlInfo(Direction dir, LtePhyFrameType type, MacNodeI
 // The base station of every link built here, whose scenario the links take; set by the test.
 static IRadioEndpoint *baseStation = nullptr;
 
+// The radio of a UE named by its node id only: a link's state is kept by its two ends, which its radios name.
+static IRadioEndpoint *radioOf(MacNodeId node)
+{
+    static std::map<MacNodeId, StubEndpoint> radios;
+    radios[node].nodeId = node;
+    return &radios[node];
+}
+
 // The same link geometry for every radio link built here.
 static RadioLink linkTo(MacNodeId node, const inet::Coord& bs, const inet::Coord& ueCoord)
 {
@@ -79,6 +87,7 @@ static RadioLink linkTo(MacNodeId node, const inet::Coord& bs, const inet::Coord
     link.stateNodeId = node;
     link.txIsBaseStation = true;
     link.txRadio = baseStation;
+    link.rxRadio = radioOf(node);
     return link;
 }
 
@@ -95,6 +104,8 @@ static RadioLink d2dLinkBetween(MacNodeId tx, const inet::Coord& txCoord, MacNod
     link.stateNodeId = tx;
     link.txIsBaseStation = false;
     link.cellId = MacNodeId(1); // the UEs' cell is the base station's
+    link.txRadio = radioOf(tx);
+    link.rxRadio = radioOf(rx);
     return link;
 }
 

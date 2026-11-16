@@ -70,7 +70,7 @@ class CellularPhantomRadio : public cModule, public IRadioEndpoint
 
     // IRadioEndpoint
     virtual MacNodeId getMacNodeId() override { return nodeId_; }
-    virtual long getChannelEndId() override { return (long)num(nodeId_); }
+    virtual long getChannelEndId() override { return getParentModule()->getId(); } // the cell or background UE the radio is of
     virtual const inet::Coord& getCoord() const override;
     virtual double getSpeed() override;
     virtual DeploymentScenario getDeploymentScenario() override { return scenario_; }

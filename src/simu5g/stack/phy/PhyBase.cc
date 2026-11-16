@@ -150,6 +150,12 @@ double PhyBase::getSpeed()
     return mobility_ != nullptr ? mobility_->getCurrentVelocity().length() : 0.0;
 }
 
+long PhyBase::getChannelEndId()
+{
+    // the node: the radios of a UE are at one end of the channel
+    return hostModule_->getId();
+}
+
 DeploymentScenario PhyBase::getDeploymentScenario()
 {
     return cellularRadio_->getDeploymentScenario();

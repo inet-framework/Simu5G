@@ -87,8 +87,8 @@ struct RadioLink
     Direction dir = UNKNOWN_DIRECTION;
 
     // The ends of the channel the link is over, as its two radios name them: the
-    // key of its LOS state and of its shadowing. An end without a radio on the
-    // medium is named by its node id.
+    // key of its LOS state and of its shadowing. An end whose radio is not on
+    // the medium (a sender that has left) is named by its node id.
     long txEnd() const;
     long rxEnd() const;
     ChannelEndsKey stateKey() const { return ChannelEndsKey(txEnd(), rxEnd()); }
