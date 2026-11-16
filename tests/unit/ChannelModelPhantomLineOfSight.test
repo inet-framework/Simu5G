@@ -58,7 +58,6 @@ sim-time-limit = 1s
 
 # LOS is drawn, and nothing else is: the TR 38.901 UMi path loss draws nothing
 # for an outdoor UE, and shadowing is off.
-**.scenario = "URBAN_MICROCELL"
 # the harness keeps its base stations at 25 m, outside the heights TR 38.901 gives for UMi (hBS = 10 m)
 **.tolerateHeightViolation = true
 **.dynamicLos = true
@@ -68,6 +67,8 @@ sim-time-limit = 1s
 %no-default-inifile: 1
 
 %activity:
+// every base station here is in an urban microcell
+StubEndpoint::defaultScenario = URBAN_MICROCELL;
 Checker c;
 auto *ueModel = harnessModule<StochasticChannelModel>(this, "ueChannelModel");
 auto *noLosModel = harnessModule<StochasticChannelModel>(this, "noLosChannelModel");

@@ -81,11 +81,6 @@ class StochasticChannelModel : public ChannelModelBase
 {
   protected:
 
-    // the deployment every link of this model is evaluated in: the scenario, the
-    // average building height and street width; a link's heights are its own
-    // (see deploymentOf())
-    PathLossModel::Deployment deployment_;
-
     // flag for using high-loss or low-loss model for building penetration
     // see table 7.4.3-2 in TR 38.901
     bool useBuildingPenetrationHighLossModel_;
@@ -268,22 +263,24 @@ class StochasticChannelModel : public ChannelModelBase
      */
     bool isReceptionSuccessful(IRadioEndpoint *radio, AirFrame *frame, UserControlInfo *lteI, const std::vector<double>& rsrpVector) override;
 
-    double computeUeToUePathLoss(const inet::Coord& a, const inet::Coord& b, bool los) override;
+    double computeUeToUePathLoss(MacNodeId cellId, const inet::Coord& a, const inet::Coord& b, bool los) override;
 
     /*
-     * The deployment a link is evaluated in. Its heights are those of the
-     * link's two ends above the ground (z = 0): the base station's and the
-     * UE's.
+     * The deployment a link is evaluated in. The scenario, the average
+     * building height and the street width are those of the link's base
+     * station end. Its heights are those of the link's two ends above the
+     * ground (z = 0): the base station's and the UE's.
      */
     PathLossModel::Deployment deploymentOf(const RadioLink& link) const;
 
     /*
-     * The deployment of a link between two UEs, at the given positions. No
-     * study here has such a link: the formulas take the base station height
-     * the studies give for the scenario (25 m in an urban macrocell), and the
-     * lower of the two UEs' heights as the UE's, whichever of them transmits.
+     * The deployment of a link between two UEs, at the given positions, in
+     * the given cell: the scenario is the cell's. No study here has such a
+     * link: the formulas take the base station height the studies give for
+     * the scenario (25 m in an urban macrocell), and the lower of the two
+     * UEs' heights as the UE's, whichever of them transmits.
      */
-    PathLossModel::Deployment ueToUeDeployment(const inet::Coord& a, const inet::Coord& b) const;
+    PathLossModel::Deployment ueToUeDeployment(MacNodeId cellId, const inet::Coord& a, const inet::Coord& b) const;
 
     /*
      * Compute Rayleigh fading

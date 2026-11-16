@@ -134,6 +134,10 @@ ue.channelModels[carrier] = ueModel;
 StubRadioRegistration bsRadio(medium, bs.nodeId, &bs);
 StubRadioRegistration ueRadio(medium, ue.nodeId, &ue);
 StubRadioRegistration peerRadio(medium, peer.nodeId, &peer);
+// the two UEs are served by the base station: a link between them takes its scenario
+auto *binder = harnessModule<Binder>(this, "binder");
+binder->registerServingNode(bs.nodeId, ue.nodeId);
+binder->registerServingNode(bs.nodeId, peer.nodeId);
 ChannelModelProbe ueProbe(ueModel);
 
 RbMap bands;

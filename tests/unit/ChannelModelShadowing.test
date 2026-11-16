@@ -63,6 +63,9 @@ static UserControlInfo controlInfo(Direction dir, LtePhyFrameType type, MacNodeI
     return info;
 }
 
+// The base station of every link built here, whose scenario the links take; set by the test.
+static IRadioEndpoint *baseStation = nullptr;
+
 // The same link geometry for every radio link built here.
 static RadioLink linkTo(MacNodeId node, const inet::Coord& bs, const inet::Coord& ueCoord)
 {
@@ -75,6 +78,7 @@ static RadioLink linkTo(MacNodeId node, const inet::Coord& bs, const inet::Coord
     link.linkKey = LinkKey(MacNodeId(1), node);
     link.stateNodeId = node;
     link.txIsBaseStation = true;
+    link.txRadio = baseStation;
     return link;
 }
 
@@ -90,6 +94,7 @@ static RadioLink d2dLinkBetween(MacNodeId tx, const inet::Coord& txCoord, MacNod
     link.linkKey = LinkKey(tx, rx);
     link.stateNodeId = tx;
     link.txIsBaseStation = false;
+    link.cellId = MacNodeId(1); // the UEs' cell is the base station's
     return link;
 }
 
@@ -125,7 +130,6 @@ sim-time-limit = 100s
 
 # Stated rather than inherited. The LOS state is fixed, so that getAttenuation()
 # draws nothing but the shadowing this test is about.
-**.scenario = "URBAN_MACROCELL"
 **.shadowing = true
 **.correlationDistance = 50m
 **.dynamicLos = false
@@ -147,6 +151,10 @@ ueEndpoint.coord = inet::Coord(200, 0, 1.5);
 ueEndpoint.channelModels[ue->getCarrierFrequency()] = ue;
 
 ChannelModelProbe bsProbe(bs), ueProbe(ue);
+// the base station is a radio on the medium: a link takes the scenario of its base station end
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+StubRadioRegistration bsRadio(medium, bsEndpoint.nodeId, &bsEndpoint);
+baseStation = &bsEndpoint;
 PathLossModel *pathLoss = bsProbe.pathLoss();
 const double dcorr = bs->par("correlationDistance").doubleValue();
 const double d3D = 200.0, d2D = 198.6;

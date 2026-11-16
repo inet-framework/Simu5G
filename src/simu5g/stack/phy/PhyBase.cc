@@ -150,6 +150,21 @@ double PhyBase::getSpeed()
     return mobility_ != nullptr ? mobility_->getCurrentVelocity().length() : 0.0;
 }
 
+DeploymentScenario PhyBase::getDeploymentScenario()
+{
+    return cellularRadio_->getDeploymentScenario();
+}
+
+double PhyBase::getBuildingHeight()
+{
+    return cellularRadio_->getBuildingHeight();
+}
+
+double PhyBase::getStreetWidth()
+{
+    return cellularRadio_->getStreetWidth();
+}
+
 bool PhyBase::isInsideBuilding()
 {
     return cellularRadio_->isInsideBuilding();

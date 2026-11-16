@@ -39,6 +39,9 @@ class CellularPhantomRadio : public cModule, public IRadioEndpoint
     CellularAntenna *antenna_ = nullptr;
     bool isNr_ = false;
     double txPower_ = NAN;
+    DeploymentScenario scenario_ = UNKNOWN_SCENARIO; // the deployment of the cell, which counts at a base station
+    double buildingHeight_ = NAN;
+    double streetWidth_ = NAN;
     double noiseFigure_ = NAN;
     double cableLoss_ = NAN;
     mutable inet::Coord position_;
@@ -69,6 +72,9 @@ class CellularPhantomRadio : public cModule, public IRadioEndpoint
     virtual MacNodeId getMacNodeId() override { return nodeId_; }
     virtual const inet::Coord& getCoord() const override;
     virtual double getSpeed() override;
+    virtual DeploymentScenario getDeploymentScenario() override { return scenario_; }
+    virtual double getBuildingHeight() override { return buildingHeight_; }
+    virtual double getStreetWidth() override { return streetWidth_; }
     virtual bool isInsideBuilding() override { return false; }
     virtual double getInsideDistance() override { return 0.0; }
     virtual double getPenetrationLossDeviate() override { return 0.0; }

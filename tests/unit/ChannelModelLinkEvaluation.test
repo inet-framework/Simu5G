@@ -69,7 +69,6 @@ sim-time-limit = 1s
 *.binder.printTrafficGeneratorConfig = false
 
 # Every per-link draw in play
-**.scenario = "URBAN_MACROCELL"
 **.dynamicLos = true
 **.shadowing = true
 **.fading = true

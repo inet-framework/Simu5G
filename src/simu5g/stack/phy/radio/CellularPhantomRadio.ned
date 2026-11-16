@@ -29,6 +29,9 @@ module CellularPhantomRadio
         string mobilityModule = default("^.mobility"); // The mobility of the node; may be absent
         bool isNr = default(false); // Whether its links are evaluated with the medium's NR channel models
         double txPower @unit(dBm); // Transmit power
+        string scenario @enum(INDOOR_HOTSPOT,URBAN_MICROCELL,URBAN_MACROCELL,RURAL_MACROCELL,SUBURBAN_MACROCELL) = default("URBAN_MACROCELL"); // The deployment scenario of the cell, which counts on a base station's radio: a link is evaluated in the scenario of its base station end
+        double buildingHeight @unit(m) = default(20m); // Average building height around the base station, for the path loss formulas that take it
+        double streetWidth @unit(m) = default(20m); // Average street width around the base station, for the path loss formulas that take it
         double noiseFigure @unit(dB) = default(7dB); // Noise figure of a what-if at this radio
         double cableLoss @unit(dB) = default(2dB); // Loss between the antenna and a what-if's receiver
         @class(CellularPhantomRadio);

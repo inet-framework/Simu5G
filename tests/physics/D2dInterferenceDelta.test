@@ -182,7 +182,7 @@ measurement-label = ${scen = "off", "pair", "sameCellUl", "otherCellUl", "cqiQui
 **.mobility.initFromDisplayString = false
 
 ############### The channel: one path loss and nothing else ##############
-**.scenario = "URBAN_MICROCELL"
+**.radio.scenario = "URBAN_MICROCELL"
 **.dynamicLos = false
 **.fixedLos = true
 **.fading = false

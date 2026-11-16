@@ -70,7 +70,6 @@ sim-time-limit = 1s
 *.carrierAggregation.componentCarrier[0].numBands = 10
 *.binder.printTrafficGeneratorConfig = false
 
-**.scenario = "URBAN_MICROCELL"
 # the harness keeps its base stations at 25 m, outside the heights TR 38.901 gives for UMi (hBS = 10 m)
 **.tolerateHeightViolation = true
 **.dynamicLos = false
@@ -81,6 +80,8 @@ sim-time-limit = 1s
 %no-default-inifile: 1
 
 %activity:
+// every base station here is in an urban microcell
+StubEndpoint::defaultScenario = URBAN_MICROCELL;
 Checker c;
 CaseRecorder graded(this, 1e-9);
 auto *model = harnessModule<StochasticChannelModel>(this, "model");

@@ -76,7 +76,6 @@ sim-time-limit = 1s
 **.cellInfoModule = ""
 *.binder.printTrafficGeneratorConfig = false
 
-**.scenario = "URBAN_MACROCELL"
 **.dynamicLos = true
 **.shadowing = true
 **.fading = false

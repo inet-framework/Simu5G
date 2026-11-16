@@ -43,6 +43,9 @@ class CellularRadio : public cSimpleModule
     IRadioEndpoint *endpoint_ = nullptr; // the PHY the radio sends and receives frames for
     bool insideBuilding_ = false; // whether the radio is inside a building, and how far from its wall
     double insideDistance_ = 0.0;
+    DeploymentScenario scenario_ = UNKNOWN_SCENARIO; // the deployment of the cell, which counts at a base station
+    double buildingHeight_ = 0.0;
+    double streetWidth_ = 0.0;
     double penetrationLossDeviate_ = 0.0; // the standard-normal deviate of its building penetration loss
 
   protected:
@@ -57,6 +60,11 @@ class CellularRadio : public cSimpleModule
 
     /** The antenna the radio transmits and receives through. */
     CellularAntenna *getAntenna() { return antenna_.get(); }
+
+    /** The deployment of the cell: its scenario, and the average building height and street width, in m. */
+    DeploymentScenario getDeploymentScenario() const { return scenario_; }
+    double getBuildingHeight() const { return buildingHeight_; }
+    double getStreetWidth() const { return streetWidth_; }
 
     /** Whether the radio is inside a building. */
     bool isInsideBuilding() const { return insideBuilding_; }

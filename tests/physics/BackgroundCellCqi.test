@@ -133,7 +133,7 @@ description = "${s = realCellOff, realCellOn, neighbour, neighbourOff, narrowCel
 **.mobility.initFromDisplayString = false
 
 ############### The channel: one NLOS path loss and nothing else ##############
-**.scenario = "URBAN_MICROCELL"
+**.radio.scenario = "URBAN_MICROCELL"
 **.dynamicLos = false
 **.fixedLos = false
 **.fading = false

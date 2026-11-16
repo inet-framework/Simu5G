@@ -120,8 +120,6 @@ sim-time-limit = 1s
 *.walkModel.componentCarrierModule = "carrierAggregation.componentCarrier[2]"
 *.binder.printTrafficGeneratorConfig = false
 
-*.umaModel.scenario = "URBAN_MACROCELL"
-**.scenario = "URBAN_MICROCELL"
 # the harness keeps its base stations at 25 m, outside the heights TR 38.901 gives for UMi (hBS = 10 m)
 **.tolerateHeightViolation = true
 # the walks draw the LOS state, and nothing else does: UMi draws nothing else for an outdoor UE
@@ -135,6 +133,8 @@ sim-time-limit = 1s
 %no-default-inifile: 1
 
 %activity:
+// every base station here is in an urban microcell
+StubEndpoint::defaultScenario = URBAN_MICROCELL;
 Checker c;
 CaseRecorder graded(this, 1e-9);
 auto *umiModel = harnessModule<StochasticChannelModel>(this, "umiModel");
@@ -215,6 +215,8 @@ const double penetration = 20 + 0.5 * 10;
 // h_E: the first evaluation decides the link's state; the test then sets the h_E kept in it
 //
 {
+    // the phantom cell is an urban macrocell here: a link takes the scenario of its base station end
+    phantom.scenario = URBAN_MACROCELL;
     const double hUe = 22.5;
     ScenarioParams p;
     p.scenario = URBAN_MACROCELL;
@@ -252,6 +254,7 @@ const double penetration = 20 + 0.5 * 10;
     c.expectNear("a first evaluation draws the link's h_E: Note 1, replayed", uma.losMap().at(LinkKey(phantom.nodeId, near.nodeId)).environmentHeight, hE, 0);
     c.expectValue("...with its draws, and no others: fixed LOS", draws, hE1 ? 1 : 2);
     graded.record("t901_uma_los_he", p, { { "d3D", d3D }, { "d2D", d2D }, { "hE", hE } }, txPower - power);
+    phantom.scenario = URBAN_MICROCELL;
 }
 
 //

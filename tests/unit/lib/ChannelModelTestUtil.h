@@ -43,6 +43,12 @@ class StubEndpoint : public IRadioEndpoint
     MacNodeId nodeId = NODEID_NONE;
     inet::Coord coord;
     double speed = 0.0;
+    // the deployment of the cell, which counts at a base station's endpoint; a test whose
+    // base stations are all in one other scenario sets defaultScenario before creating them
+    static inline DeploymentScenario defaultScenario = URBAN_MACROCELL;
+    DeploymentScenario scenario = defaultScenario;
+    double buildingHeight = 20;
+    double streetWidth = 20;
     bool insideBuilding = false;
     double insideDistance = 0.0;
     double penetrationLossDeviate = 0.0;
@@ -58,6 +64,9 @@ class StubEndpoint : public IRadioEndpoint
     MacNodeId getMacNodeId() override { return nodeId; }
     const inet::Coord& getCoord() const override { return coord; }
     double getSpeed() override { return speed; }
+    DeploymentScenario getDeploymentScenario() override { return scenario; }
+    double getBuildingHeight() override { return buildingHeight; }
+    double getStreetWidth() override { return streetWidth; }
     bool isInsideBuilding() override { return insideBuilding; }
     double getInsideDistance() override { return insideDistance; }
     double getPenetrationLossDeviate() override { return penetrationLossDeviate; }
@@ -156,7 +165,6 @@ class ChannelModelProbe
         static auto shadowingMapPtr() { return &Access::shadowingMap; }
         static auto jakesFadingMapPtr() { return &Access::jakesFadingMap; }
         static auto pathLossPtr() { return &Access::pathLoss_; }
-        static auto deploymentPtr() { return &Access::deployment_; }
         static auto fadingPtr() { return &Access::fading_; }
 
         static auto linkForPtr() { return &Access::linkFor; }
@@ -182,10 +190,14 @@ class ChannelModelProbe
     ChannelState::JakesFadingMap& jakesMap() { return (model_->*Access::jakesFadingMapPtr())(); }
     PathLossModel *pathLoss() { return model_->*Access::pathLossPtr(); }
     // the deployment the model evaluates a link in, which the formulas take with each call:
-    // the model's scenario, with the heights of the link's base station and UE antennas
+    // the stub base stations' default scenario, building height and street width, with the
+    // heights of the link's base station and UE antennas
     PathLossModel::Deployment deployment(double hNodeB, double hUe)
     {
-        PathLossModel::Deployment deployment = model_->*Access::deploymentPtr();
+        PathLossModel::Deployment deployment;
+        deployment.scenario = StubEndpoint::defaultScenario;
+        deployment.hBuilding = 20;
+        deployment.wStreet = 20;
         deployment.hNodeB = hNodeB;
         deployment.hUe = hUe;
         return deployment;

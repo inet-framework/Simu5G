@@ -62,7 +62,6 @@ sim-time-limit = 1s
 **.cellInfoModule = ""
 *.binder.printTrafficGeneratorConfig = false
 
-**.scenario = "URBAN_MICROCELL"
 **.dynamicLos = false
 **.fixedLos = true
 **.shadowing = false
@@ -72,6 +71,8 @@ sim-time-limit = 1s
 %no-default-inifile: 1
 
 %activity:
+// every base station here is in an urban microcell
+StubEndpoint::defaultScenario = URBAN_MICROCELL;
 Checker c;
 auto *model = harnessModule<StochasticChannelModel>(this, "model");
 auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");

@@ -98,7 +98,7 @@ seed-set = 0
 
 ############### The channel: one path loss and nothing else ##############
 *.radioMedium.channelModelType = "Tr38901ChannelModel"
-**.scenario = "URBAN_MICROCELL"
+**.radio.scenario = "URBAN_MICROCELL"
 **.dynamicLos = false
 **.fixedLos = true
 **.fading = false

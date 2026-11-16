@@ -81,9 +81,7 @@ void StochasticChannelModel::initialize(int stage)
 {
     ChannelModelBase::initialize(stage);
     if (stage == inet::INITSTAGE_LOCAL) {
-        deployment_.scenario = aToDeploymentScenario(par("scenario").stringValue());
         shadowing_ = par("shadowing");
-        deployment_.hBuilding = par("buildingHeight");
         tolerateMaxDistViolation_ = par("tolerateMaxDistViolation");
         tolerateHeightViolation_ = par("tolerateHeightViolation");
         for (const char *name : {"nodebHeight", "ueHeight"})
@@ -91,8 +89,11 @@ void StochasticChannelModel::initialize(int stage)
                 throw cRuntimeError("The '%s' parameter is no longer used: the heights of a link are those of its two antennas. "
                         "Set the height of an antenna above its node in the node's NIC instead (cellularNic.antenna.mobility.offsetZ; "
                         "radio.antenna.mobility.offsetZ in a background or external cell)", name);
-
-        deployment_.wStreet = par("streetWidth");
+        bool scenarioSet = !opp_isempty(par("scenario").stringValue());
+        for (const char *name : {"scenario", "buildingHeight", "streetWidth"})
+            if (strcmp(name, "scenario") == 0 ? scenarioSet : !std::isnan(par(name).doubleValue()))
+                throw cRuntimeError("The '%s' parameter is no longer the channel model's: a link is evaluated in the deployment of its base station. "
+                        "Set it on the base station's radio instead (cellularNic.radio.%s; radio.%s in a background or external cell)", name, name, name);
 
         correlationDistance_ = par("correlationDistance");
 
@@ -133,19 +134,37 @@ void StochasticChannelModel::initialize(int stage)
 
 PathLossModel::Deployment StochasticChannelModel::deploymentOf(const RadioLink& link) const
 {
-    if (link.dir == D2D || link.dir == D2D_MULTI)
-        return ueToUeDeployment(link.txCoord, link.rxCoord);
+    if (link.dir == D2D || link.dir == D2D_MULTI) {
+        // the cell of a link between two UEs is its receiver's serving cell: the receiver is
+        // there when the link is evaluated, while the transmitter may have left its cell since
+        MacNodeId cellId = link.cellId != NODEID_NONE ? link.cellId : binder_->getServingNode(link.rxId);
+        return ueToUeDeployment(cellId, link.txCoord, link.rxCoord);
+    }
 
     // the base station's end: the transmitter of a downlink, the receiver of an uplink
-    PathLossModel::Deployment deployment = deployment_;
+    IRadioEndpoint *baseStation = link.txIsBaseStation ? link.txRadio : link.rxRadio;
+    if (baseStation == nullptr)
+        throw cRuntimeError("%s: the link from node %d to node %d cannot be evaluated: its base station end is not a radio on the medium, "
+                "whose scenario the link takes", getFullPath().c_str(), (int)num(link.txId), (int)num(link.rxId));
+    PathLossModel::Deployment deployment;
+    deployment.scenario = baseStation->getDeploymentScenario();
+    deployment.hBuilding = baseStation->getBuildingHeight();
+    deployment.wStreet = baseStation->getStreetWidth();
     deployment.hNodeB = link.txIsBaseStation ? link.txCoord.z : link.rxCoord.z;
     deployment.hUe = link.txIsBaseStation ? link.rxCoord.z : link.txCoord.z;
     return deployment;
 }
 
-PathLossModel::Deployment StochasticChannelModel::ueToUeDeployment(const Coord& a, const Coord& b) const
+PathLossModel::Deployment StochasticChannelModel::ueToUeDeployment(MacNodeId cellId, const Coord& a, const Coord& b) const
 {
-    PathLossModel::Deployment deployment = deployment_;
+    IRadioEndpoint *cell = cellId != NODEID_NONE ? radioMedium_->findRadio(cellId) : nullptr;
+    if (cell == nullptr)
+        throw cRuntimeError("%s: a link between two UEs cannot be evaluated: its receiver has no serving cell with a radio on the medium, "
+                "whose scenario the link takes", getFullPath().c_str());
+    PathLossModel::Deployment deployment;
+    deployment.scenario = cell->getDeploymentScenario();
+    deployment.hBuilding = cell->getBuildingHeight();
+    deployment.wStreet = cell->getStreetWidth();
     deployment.hNodeB = PathLossModel::getDefaultBaseStationHeight(deployment.scenario);
     deployment.hUe = std::min(a.z, b.z);
     return deployment;
@@ -884,11 +903,11 @@ void StochasticChannelModel::computeLosProbability(double d3D, double d2D,
     sample.environmentHeight = pathLoss_->drawEnvironmentHeight(deploymentOf(link), d2D);
 }
 
-double StochasticChannelModel::computeUeToUePathLoss(const Coord& a, const Coord& b, bool los)
+double StochasticChannelModel::computeUeToUePathLoss(MacNodeId cellId, const Coord& a, const Coord& b, bool los)
 {
     // a path loss outside any link: outdoors, at the environment height a
     // link takes without a draw -- not the facts of the link evaluated last
-    PathLossModel::Deployment deployment = ueToUeDeployment(a, b);
+    PathLossModel::Deployment deployment = ueToUeDeployment(cellId, a, b);
     pathLoss_->checkHeights(deployment);
     return pathLoss_->computePathLoss(deployment, a.distance(b), getTwoDimDistance(a, b), los, PathLossModel::LinkConditions());
 }
@@ -1347,7 +1366,9 @@ bool StochasticChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId s
 
     // the attenuation from an interfering UE to our receiver
     auto attenuationFrom = [&] (const InterfererInfo& interferer) {
-        return getAttenuation(d2dLink(interferer.nodeId, interferer.coord, destId, destCoord));
+        RadioLink link = d2dLink(interferer.nodeId, interferer.coord, destId, destCoord);
+        link.cellId = eNbId; // the receiver's cell
+        return getAttenuation(link);
     };
 
     // what an interfering UE adds on the band, at the given attenuation

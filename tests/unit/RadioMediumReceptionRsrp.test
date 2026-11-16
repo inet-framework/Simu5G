@@ -131,11 +131,7 @@ sim-time-limit = 1s
 # the two RATs' models on each carrier, configured differently
 *.radioMedium.channelModelType = "StochasticChannelModel"
 *.radioMedium.channelModel[*].pathLossType = "Tr36814"
-*.radioMedium.channelModel[*].scenario = "URBAN_MACROCELL"
 *.radioMedium.nrChannelModelType = "Tr38901ChannelModel"
-*.radioMedium.nrChannelModel[*].scenario = "URBAN_MICROCELL"
-**.buildingHeight = 20m
-**.streetWidth = 20m
 
 # path loss only and NLOS, until the test switches the fading on
 **.dynamicLos = false
@@ -152,6 +148,8 @@ sim-time-limit = 1s
 %no-default-inifile: 1
 
 %activity:
+// every base station here is in an urban microcell
+StubEndpoint::defaultScenario = URBAN_MICROCELL;
 Checker c;
 CaseRecorder graded(this, 1e-6);
 auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
@@ -190,6 +188,20 @@ StubRadioRegistration lteUeRadio(medium, lteUe.nodeId, &lteUe);
 StubRadioRegistration elsewhereUeRadio(medium, elsewhereUe.nodeId, &elsewhereUe);
 StubRadioRegistration unservedUeRadio(medium, unservedUe.nodeId, &unservedUe);
 StubRadioRegistration idealUeRadio(medium, idealUe.nodeId, &idealUe);
+// the receivers' cells: a link between two UEs takes the scenario of its receiver's cell,
+// an urban microcell for the NR receivers and an urban macrocell for the LTE one
+StubEndpoint nrCell, lteCell;
+nrCell.nodeId = MacNodeId(1);
+nrCell.coord = Coord(0, 500, 10);
+lteCell.nodeId = MacNodeId(2);
+lteCell.coord = Coord(0, 500, 25);
+lteCell.scenario = URBAN_MACROCELL;
+StubRadioRegistration nrCellRadio(medium, nrCell.nodeId, &nrCell);
+StubRadioRegistration lteCellRadio(medium, lteCell.nodeId, &lteCell);
+auto *binder = harnessModule<Binder>(this, "binder");
+for (StubEndpoint *ue : {&nrUe, &elsewhereUe, &unservedUe, &idealUe})
+    binder->registerServingNode(nrCell.nodeId, ue->nodeId);
+binder->registerServingNode(lteCell.nodeId, lteUe.nodeId);
 
 // one numerology-2 slot between the frame's start and its decoding
 wait(SimTime(10, SIMTIME_MS));

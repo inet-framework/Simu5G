@@ -125,11 +125,7 @@ sim-time-limit = 1s
 # the two RATs' models on the carrier, configured differently
 *.radioMedium.channelModelType = "StochasticChannelModel"
 *.radioMedium.channelModel[*].pathLossType = "Tr36814"
-*.radioMedium.channelModel[*].scenario = "URBAN_MACROCELL"
-# the base stations are at 10 m, the height of the NR model's UMi, which TR 36.814 excludes for UMa (10 m < hBS)
-*.radioMedium.channelModel[*].tolerateHeightViolation = true
 *.radioMedium.nrChannelModelType = "Tr38901ChannelModel"
-*.radioMedium.nrChannelModel[*].scenario = "URBAN_MICROCELL"
 
 # path loss only, NLOS, the other cells' interference only
 **.dynamicLos = false
@@ -144,6 +140,8 @@ sim-time-limit = 1s
 %no-default-inifile: 1
 
 %activity:
+// every base station here is in an urban microcell
+StubEndpoint::defaultScenario = URBAN_MICROCELL;
 Checker c;
 CaseRecorder graded(this, 1e-6);
 auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");

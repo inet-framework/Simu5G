@@ -128,7 +128,7 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 **.mobility.initFromDisplayString = false
 
 ############### The channel: one NLOS path loss and nothing else ##############
-**.scenario = "URBAN_MICROCELL"
+**.radio.scenario = "URBAN_MICROCELL"
 **.dynamicLos = false
 **.fixedLos = false
 **.fading = false

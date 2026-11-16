@@ -91,7 +91,6 @@ sim-time-limit = 1s
 *.binder.printTrafficGeneratorConfig = false
 
 # A deterministic path loss, so that a change of the received power is the fading's.
-**.scenario = "URBAN_MICROCELL"
 **.fixedLos = true
 **.shadowing = false
 **.fading = true
@@ -102,6 +101,8 @@ sim-time-limit = 1s
 %no-default-inifile: 1
 
 %activity:
+// every base station here is in an urban microcell
+StubEndpoint::defaultScenario = URBAN_MICROCELL;
 Checker c;
 auto *bs = harnessModule<StochasticChannelModel>(this, "bsChannelModel");
 auto *ue = harnessModule<StochasticChannelModel>(this, "ueChannelModel");

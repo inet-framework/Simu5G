@@ -92,7 +92,6 @@ sim-time-limit = 1s
 **.cellInfoModule = ""
 *.binder.printTrafficGeneratorConfig = false
 
-**.scenario = "URBAN_MICROCELL"
 **.dynamicLos = false
 **.fixedLos = false
 **.shadowing = false
@@ -108,6 +107,8 @@ sim-time-limit = 1s
 %no-default-inifile: 1
 
 %activity:
+// every base station here is in an urban microcell
+StubEndpoint::defaultScenario = URBAN_MICROCELL;
 Checker c;
 auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
 auto *model = harnessModule<StochasticChannelModel>(this, "model");
@@ -126,6 +127,10 @@ peer.channelModels[carrier] = model;
 StubRadioRegistration bsRadio(medium, bs.nodeId, &bs);
 StubRadioRegistration ueRadio(medium, ue.nodeId, &ue);
 StubRadioRegistration peerRadio(medium, peer.nodeId, &peer);
+// the two UEs are served by the base station: a link between them takes its scenario
+auto *binder = harnessModule<Binder>(this, "binder");
+binder->registerServingNode(bs.nodeId, ue.nodeId);
+binder->registerServingNode(bs.nodeId, peer.nodeId);
 
 RbMap blocks;
 for (Band b = 0; b < model->getNumBands(); b++)

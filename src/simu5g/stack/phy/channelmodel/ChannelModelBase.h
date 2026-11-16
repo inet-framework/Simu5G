@@ -191,9 +191,10 @@ class ChannelModelBase : public cSimpleModule
      * positions, outside any link: outdoors, at an environment height of 1 m
      * (the D2D conflict graph's estimate)
      *
+     * @param cellId the cell the two UEs are in, whose scenario the estimate takes
      * @param los line-of-sight flag
      */
-    virtual double computeUeToUePathLoss(const inet::Coord& a, const inet::Coord& b, bool los) = 0;
+    virtual double computeUeToUePathLoss(MacNodeId cellId, const inet::Coord& a, const inet::Coord& b, bool los) = 0;
     /*
      * Compute SINR for each band for user nodeId according to path loss, shadowing (optional), and multipath fading
      *

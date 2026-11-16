@@ -25,6 +25,9 @@ void CellularPhantomRadio::initialize(int stage)
         antenna_ = check_and_cast<CellularAntenna *>(getSubmodule("antenna"));
         isNr_ = par("isNr");
         txPower_ = par("txPower");
+        scenario_ = aToDeploymentScenario(par("scenario").stringValue());
+        buildingHeight_ = par("buildingHeight");
+        streetWidth_ = par("streetWidth");
         noiseFigure_ = par("noiseFigure");
         cableLoss_ = par("cableLoss");
         WATCH(nodeId_);

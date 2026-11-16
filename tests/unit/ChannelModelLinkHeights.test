@@ -68,7 +68,6 @@ sim-time-limit = 1s
 *.binder.printTrafficGeneratorConfig = false
 
 # nothing random: every link is NLOS, without shadowing or fading
-**.scenario = "URBAN_MACROCELL"
 **.dynamicLos = false
 **.fixedLos = false
 **.shadowing = false
@@ -103,11 +102,18 @@ auto closedForm = [&](const RadioLink& link, const Coord& a, const Coord& b, dou
     return probe.pathLoss()->computePathLoss(probe.deployment(hNodeB, hUe), a.distance(b), d2dOf(a, b), false, conditions);
 };
 
+// the downlink from a base station to a UE, as the given model's probe builds it
+auto downlink = [](ChannelModelProbe& from, StubEndpoint& baseStation, StubEndpoint& ue) {
+    RadioLink link = from.cellularLink(&ue, ue.nodeId, DL, baseStation.coord);
+    link.txRadio = &baseStation; // cellularLink() names the base station by its position only
+    return link;
+};
+
 //
 // --- two UEs at different heights, on one carrier ---
 //
-RadioLink dlLow = probe.cellularLink(&low, low.nodeId, DL, bs.coord);
-RadioLink dlHigh = probe.cellularLink(&high, high.nodeId, DL, bs.coord);
+RadioLink dlLow = downlink(probe, bs, low);
+RadioLink dlHigh = downlink(probe, bs, high);
 double atLow = model->getAttenuation(dlLow);
 double atHigh = model->getAttenuation(dlHigh);
 c.expectNear("the UE at 1.5 m: the closed form at 25 m and 1.5 m", atLow, closedForm(dlLow, bs.coord, low.coord, 25, 1.5), 1e-9);
@@ -122,10 +128,13 @@ c.expectNear("the uplink of the UE at 20 m has its downlink's path loss", model-
 // --- a link between two UEs ---
 //
 auto d2dAttenuation = [&](StubEndpoint& from, StubEndpoint& to) {
-    return model->getAttenuation((model->*D2dLinkAccess::d2dLinkPtr())(from.nodeId, from.coord, to.nodeId, to.coord));
+    RadioLink link = (model->*D2dLinkAccess::d2dLinkPtr())(from.nodeId, from.coord, to.nodeId, to.coord);
+    link.cellId = bs.nodeId;
+    return model->getAttenuation(link);
 };
 {
     RadioLink link = (model->*D2dLinkAccess::d2dLinkPtr())(low.nodeId, low.coord, high.nodeId, high.coord);
+    link.cellId = bs.nodeId;
     double lowToHigh = model->getAttenuation(link);
     c.expectNear("UE to UE: the closed form at the scenario's 25 m and the lower UE's 1.5 m", lowToHigh,
             closedForm(link, low.coord, high.coord, 25, 1.5), 1e-9);
@@ -144,17 +153,17 @@ highBs.nodeId = MacNodeId(2);
 highBs.coord = Coord(0, 0, 30);
 
 c.expectRejected("a UE antenna at the environment height of 1 m", [&] {
-    model->getAttenuation(probe.cellularLink(&atEnvironment, atEnvironment.nodeId, DL, bs.coord)); });
+    model->getAttenuation(downlink(probe, bs, atEnvironment)); });
 c.expectRejected("...also by a model that tolerates heights outside the study's range", [&] {
-    tolerant->getAttenuation(tolerantProbe.cellularLink(&atEnvironment, atEnvironment.nodeId, DL, bs.coord)); });
+    tolerant->getAttenuation(downlink(tolerantProbe, bs, atEnvironment)); });
 c.expectRejected("a UE antenna at 30 m, above the study's 22.5 m", [&] {
-    model->getAttenuation(probe.cellularLink(&aboveRange, aboveRange.nodeId, DL, bs.coord)); });
+    model->getAttenuation(downlink(probe, bs, aboveRange)); });
 c.expectRejected("a base station antenna at 30 m, not the study's 25 m", [&] {
-    model->getAttenuation(probe.cellularLink(&low, low.nodeId, DL, highBs.coord)); });
+    model->getAttenuation(downlink(probe, highBs, low)); });
 c.expectRejected("...in the uplink too", [&] {
     model->getAttenuation(probe.cellularLink(&highBs, low.nodeId, UL, low.coord)); });
 {
-    RadioLink link = tolerantProbe.cellularLink(&low, low.nodeId, DL, highBs.coord);
+    RadioLink link = downlink(tolerantProbe, highBs, low);
     double value = tolerant->getAttenuation(link);
     PathLossModel::LinkConditions conditions;
     conditions.environmentHeight = tolerantProbe.losMap().at(link.linkKey).environmentHeight;

@@ -70,7 +70,7 @@ seed-set = 0
 **.mobility.initFromDisplayString = false
 
 ############### The channel: interference on, state on ##############
-**.scenario = "URBAN_MACROCELL"
+**.radio.scenario = "URBAN_MACROCELL"
 **.dynamicLos = false
 **.fixedLos = true
 **.fading = false

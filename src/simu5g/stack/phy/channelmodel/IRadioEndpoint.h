@@ -60,6 +60,15 @@ class IRadioEndpoint
     /** The standard-normal deviate of its building penetration loss (drawn once per endpoint). */
     virtual double getPenetrationLossDeviate() = 0;
 
+    /**
+     * The deployment of the cell, which counts at a base station's endpoint:
+     * a link is evaluated in the scenario of its base station end, with the
+     * average building height and street width around it, in m.
+     */
+    virtual DeploymentScenario getDeploymentScenario() = 0;
+    virtual double getBuildingHeight() = 0;
+    virtual double getStreetWidth() = 0;
+
     /** Whether the antenna radiates omnidirectionally or sectorially. */
     virtual TxDirectionType getTxDirection() = 0;
 

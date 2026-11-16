@@ -74,7 +74,6 @@ sim-time-limit = 1s
 
 # LOS is drawn, and nothing else is: the TR 38.901 UMi path loss draws nothing
 # for an outdoor UE, and shadowing is off.
-**.scenario = "URBAN_MICROCELL"
 **.dynamicLos = true
 **.shadowing = false
 **.correlationDistance = 50m
@@ -82,6 +81,8 @@ sim-time-limit = 1s
 %no-default-inifile: 1
 
 %activity:
+// every base station here is in an urban microcell
+StubEndpoint::defaultScenario = URBAN_MICROCELL;
 Checker c;
 auto *bs = harnessModule<StochasticChannelModel>(this, "bsChannelModel");
 auto *otherBs = harnessModule<StochasticChannelModel>(this, "otherBsChannelModel");
@@ -95,6 +96,10 @@ otherEnb.coord = Coord(400, 0, 10);
 ue.nodeId = MacNodeId(1025);
 ue.coord = Coord(60, 30, 1.5);
 ChannelModelProbe atEnb(bs), atOther(otherBs), atUe(ueModel);
+// the base stations are radios on the medium: a link takes the scenario of its base station end
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+StubRadioRegistration enbRadio(medium, enb.nodeId, &enb);
+StubRadioRegistration otherEnbRadio(medium, otherEnb.nodeId, &otherEnb);
 
 auto drawn = [](StochasticChannelModel *model) { return (long long)model->getRNG(0)->getNumbersDrawn(); };
 

@@ -87,7 +87,6 @@ sim-time-limit = 100s
 *.binder.printTrafficGeneratorConfig = false
 
 # Stated rather than inherited, as in ChannelModelShadowing.
-**.scenario = "URBAN_MACROCELL"
 **.shadowing = true
 **.correlationDistance = 50m
 **.dynamicLos = false

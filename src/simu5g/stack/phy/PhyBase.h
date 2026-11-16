@@ -324,6 +324,9 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
      * Whether the node is inside a building, and how far inside, as its
      * radio says
      */
+    DeploymentScenario getDeploymentScenario() override;
+    double getBuildingHeight() override;
+    double getStreetWidth() override;
     bool isInsideBuilding() override;
     double getInsideDistance() override;
     double getPenetrationLossDeviate() override;

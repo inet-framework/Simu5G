@@ -99,7 +99,7 @@ constraint = ($dx == 0) || ($rot == 0)
 **.mobility.initFromDisplayString = false
 
 ############### The channel: randomness left on, on purpose ##############
-**.scenario = "URBAN_MACROCELL"
+**.radio.scenario = "URBAN_MACROCELL"
 **.dynamicLos = true
 **.fading = true
 **.fadingType = "JAKES"

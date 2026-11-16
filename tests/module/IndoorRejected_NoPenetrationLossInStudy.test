@@ -10,7 +10,7 @@ error.
 network = simu5g.test.moduletest.lib.EpcSessionTestNetwork
 
 *.ue[*].**.insideBuilding = true
-**.channelModel[*].scenario = "URBAN_MACROCELL"
+**.radio.scenario = "URBAN_MACROCELL"
 
 include ../../lib/defaults.ini
 

@@ -14,7 +14,7 @@ which is TR 36.814's by default and has no penetration loss either, raises nothi
 network = simu5g.test.moduletest.lib.NrSessionTestNetwork
 
 *.ue[*].**.insideBuilding = true
-**.nrChannelModel[*].scenario = "INDOOR_HOTSPOT"
+**.radio.scenario = "INDOOR_HOTSPOT"
 
 include ../../lib/defaults.ini
 

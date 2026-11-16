@@ -64,17 +64,18 @@ simple StochasticChannelModel extends ChannelModelBase
         // Enable/disable shadowing
         bool shadowing = default(true);
 
-        // Path loss scenario, in ITU terminology
-        string scenario @enum(INDOOR_HOTSPOT,URBAN_MICROCELL,URBAN_MACROCELL,RURAL_MACROCELL,SUBURBAN_MACROCELL,UNKNOWN_SCENARIO) = default("URBAN_MACROCELL");
+        // Removed: the scenario is the base station's (the scenario parameter of its radio); setting it is an error
+        string scenario = default("");
 
         // Removed: the base station's height is its antenna's (antenna.mobility.offsetZ above the node); setting it is an error
         double nodebHeight @unit(m) = default(nan m);
-        // Building height
-        double buildingHeight @unit(m) = default(20m);
+        // Removed: the average building height is the base station's (the buildingHeight parameter of its radio); setting it is an error
+        double buildingHeight @unit(m) = default(nan m);
         // Enable the high-loss building penetration model (table 7.4.3-2 in TR 38.901) for a UE inside a building (see ~CellularRadio); only used with pathLossType="Tr38901"
         bool useBuildingPenetrationHighLossModel = default(false);
 
-        double streetWidth @unit(m) = default(20m);
+        // Removed: the average street width is the base station's (the streetWidth parameter of its radio); setting it is an error
+        double streetWidth @unit(m) = default(nan m);
         // Removed: the UE's height is its antenna's (antenna.mobility.offsetZ above the node); setting it is an error
         double ueHeight @unit(m) = default(nan m);
         bool tolerateMaxDistViolation = default(false);

@@ -48,7 +48,7 @@ double DistanceBasedConflictGraph::getPathLossBetween(const Coord& a, const Coor
         throw cRuntimeError("DistanceBasedConflictGraph::getPathLossBetween - channel model is a null pointer");
 
     // the path loss between the two UEs, in dB
-    return channelModel->computeUeToUePathLoss(a, b, los);
+    return channelModel->computeUeToUePathLoss(macEnb_->getMacNodeId(), a, b, los);
 }
 
 void DistanceBasedConflictGraph::findVertices(std::vector<CGVertex>& vertices)

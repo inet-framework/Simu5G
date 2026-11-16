@@ -83,7 +83,6 @@ sim-time-limit = 1s
 **.cellInfoModule = ""
 *.binder.printTrafficGeneratorConfig = false
 
-**.scenario = "URBAN_MICROCELL"
 **.dynamicLos = false
 **.fixedLos = true
 **.shadowing = false
@@ -92,6 +91,8 @@ sim-time-limit = 1s
 %no-default-inifile: 1
 
 %activity:
+// every base station here is in an urban microcell
+StubEndpoint::defaultScenario = URBAN_MICROCELL;
 Checker c;
 auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
 auto *model = harnessModule<StochasticChannelModel>(this, "model");
@@ -103,9 +104,16 @@ a.coord = Coord(0, 0, 1.5);
 b.coord = Coord(60, 80, 1.5);
 StubRadioRegistration aRadio(medium, a.nodeId, &a);
 StubRadioRegistration bRadio(medium, b.nodeId, &b);
+// the two UEs' cell, whose scenario a link between them takes
+StubEndpoint cell;
+cell.nodeId = MacNodeId(1);
+cell.coord = Coord(200, 0, 10);
+StubRadioRegistration cellRadio(medium, cell.nodeId, &cell);
 
 auto attenuation = [&] (StubEndpoint& from, StubEndpoint& to) {
-    return model->getAttenuation((model->*D2dLinkAccess::d2dLinkPtr())(from.nodeId, from.coord, to.nodeId, to.coord));
+    RadioLink link = (model->*D2dLinkAccess::d2dLinkPtr())(from.nodeId, from.coord, to.nodeId, to.coord);
+    link.cellId = cell.nodeId;
+    return model->getAttenuation(link);
 };
 
 wait(SimTime(10, SIMTIME_MS));
