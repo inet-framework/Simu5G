@@ -42,6 +42,7 @@ class StubEndpoint : public IRadioEndpoint
   public:
     MacNodeId nodeId = NODEID_NONE;
     inet::Coord coord;
+    long channelEndId = -1; // the end of the channel the radio is at; its own node id if not set
     double speed = 0.0;
     // the deployment of the cell, which counts at a base station's endpoint; a test whose
     // base stations are all in one other scenario sets defaultScenario before creating them
@@ -62,6 +63,7 @@ class StubEndpoint : public IRadioEndpoint
     std::map<GHz, ChannelModelBase *> channelModels;  // by carrier frequency
 
     MacNodeId getMacNodeId() override { return nodeId; }
+    long getChannelEndId() override { return channelEndId >= 0 ? channelEndId : (long)num(nodeId); }
     const inet::Coord& getCoord() const override { return coord; }
     double getSpeed() override { return speed; }
     DeploymentScenario getDeploymentScenario() override { return scenario; }

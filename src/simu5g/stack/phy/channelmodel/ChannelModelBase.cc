@@ -14,6 +14,17 @@
 
 namespace simu5g {
 
+long RadioLink::txEnd() const
+{
+    return txRadio != nullptr ? txRadio->getChannelEndId() : (long)num(txId);
+}
+
+long RadioLink::rxEnd() const
+{
+    return rxRadio != nullptr ? rxRadio->getChannelEndId() : (long)num(rxId);
+}
+
+
 
 void ChannelModelBase::initialize(int stage)
 {

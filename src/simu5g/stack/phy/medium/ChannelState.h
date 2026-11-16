@@ -57,6 +57,33 @@ struct LinkKey
     bool operator==(const LinkKey& o) const { return a == o.a && b == o.b; }
 };
 
+/**
+ * The two ends of a channel, in a canonical order: the key of the state that
+ * belongs to the ends and not to the radios at them -- whether they are in
+ * line of sight, and the shadowing between them. An end is named by its
+ * radio (IRadioEndpoint::getChannelEndId()): the radios of one UT name the
+ * UT, the cells of one site name the site. The same value whichever end
+ * transmits.
+ */
+struct ChannelEndsKey
+{
+    long a = -1;
+    long b = -1;
+
+    ChannelEndsKey() = default;
+    ChannelEndsKey(long x, long y) : a(std::min(x, y)), b(std::max(x, y)) {}
+    // the ends of a link whose radios name themselves: each radio is an end of its own
+    ChannelEndsKey(const LinkKey& link) : ChannelEndsKey((long)num(link.a), (long)num(link.b)) {}
+
+    bool operator<(const ChannelEndsKey& o) const { return a != o.a ? a < o.a : b < o.b; }
+    bool operator==(const ChannelEndsKey& o) const { return a == o.a && b == o.b; }
+};
+
+inline std::ostream& operator<<(std::ostream& os, const ChannelEndsKey& k)
+{
+    return os << "[" << k.a << "," << k.b << "]";
+}
+
 inline std::ostream& operator<<(std::ostream& os, const LinkKey& k)
 {
     return num(k.a) == num(k.b) ? (os << k.a) : (os << "[" << k.a << "," << k.b << "]");
@@ -83,12 +110,12 @@ namespace ChannelState
      */
     struct LosSample
     {
-        inet::Coord positionA; // where LinkKey::a was
-        inet::Coord positionB; // where LinkKey::b was
+        inet::Coord positionA; // where ChannelEndsKey::a was
+        inet::Coord positionB; // where ChannelEndsKey::b was
         bool los = false;
         double environmentHeight = 1.0; // the UMa h_E of the link, drawn with its LOS state
     };
-    typedef std::map<LinkKey, LosSample> LosMap;
+    typedef std::map<ChannelEndsKey, LosSample> LosMap;
 
     typedef std::vector<JakesFadingData> JakesFadingVector;          // one entry per band
     typedef std::map<LinkKey, JakesFadingVector> JakesFadingMap;
@@ -99,11 +126,11 @@ namespace ChannelState
     struct ShadowingSample
     {
         simtime_t time;
-        inet::Coord positionA; // where LinkKey::a was
-        inet::Coord positionB; // where LinkKey::b was
+        inet::Coord positionA; // where ChannelEndsKey::a was
+        inet::Coord positionB; // where ChannelEndsKey::b was
         double value = 0;
     };
-    typedef std::map<LinkKey, ShadowingSample> ShadowFadingMap;
+    typedef std::map<ChannelEndsKey, ShadowingSample> ShadowFadingMap;
 
 }
 

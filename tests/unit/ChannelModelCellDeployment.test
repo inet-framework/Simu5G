@@ -108,7 +108,7 @@ auto closedForm = [&](ChannelModelProbe& from, const RadioLink& link, StubEndpoi
     deployment.hNodeB = baseStation.coord.z;
     deployment.hUe = hUe;
     PathLossModel::LinkConditions conditions;
-    conditions.environmentHeight = from.losMap().at(link.linkKey).environmentHeight;
+    conditions.environmentHeight = from.losMap().at(link.stateKey()).environmentHeight;
     return from.pathLoss()->computePathLoss(deployment, baseStation.coord.distance(position), d2dOf(baseStation.coord, position), false, conditions);
 };
 // the downlink from a base station to a UE
@@ -202,7 +202,7 @@ c.expectNear("the uplink to the macrocell has its downlink's path loss", model->
         deployment.hNodeB = PathLossModel::getDefaultBaseStationHeight(scenario);
         deployment.hUe = 1.5;
         PathLossModel::LinkConditions conditions;
-        conditions.environmentHeight = from.losMap().at(link.linkKey).environmentHeight;
+        conditions.environmentHeight = from.losMap().at(link.stateKey()).environmentHeight;
         double expected = from.pathLoss()->computePathLoss(deployment, tx.coord.distance(rx.coord), d2dOf(tx.coord, rx.coord), false, conditions);
         return std::make_pair(loss, expected);
     };

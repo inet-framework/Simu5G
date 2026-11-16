@@ -45,6 +45,12 @@ class IRadioEndpoint
     /** The node id the endpoint is known by on the medium, or NODEID_NONE. */
     virtual MacNodeId getMacNodeId() = 0;
 
+    /**
+     * The end of the channel the endpoint is at, which the state that does not
+     * depend on the radio is kept by (a link's LOS state and shadowing).
+     */
+    virtual long getChannelEndId() = 0;
+
     /** The endpoint's current position. */
     virtual const inet::Coord& getCoord() const = 0;
 

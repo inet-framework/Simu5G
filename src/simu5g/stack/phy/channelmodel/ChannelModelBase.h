@@ -86,9 +86,16 @@ struct RadioLink
     // ---- tag, not a switch ----
     Direction dir = UNKNOWN_DIRECTION;
 
-    // Where the two radios of linkKey are, in the order of the key
-    const inet::Coord& positionA() const { return txId == linkKey.a ? txCoord : rxCoord; }
-    const inet::Coord& positionB() const { return txId == linkKey.a ? rxCoord : txCoord; }
+    // The ends of the channel the link is over, as its two radios name them: the
+    // key of its LOS state and of its shadowing. An end without a radio on the
+    // medium is named by its node id.
+    long txEnd() const;
+    long rxEnd() const;
+    ChannelEndsKey stateKey() const { return ChannelEndsKey(txEnd(), rxEnd()); }
+
+    // Where the two ends of stateKey() are, in the order of the key
+    const inet::Coord& positionA() const { return txEnd() == stateKey().a ? txCoord : rxCoord; }
+    const inet::Coord& positionB() const { return txEnd() == stateKey().a ? rxCoord : txCoord; }
 
     // How far the link has moved since its ends were at positionA0 and
     // positionB0: the farther of its two ends

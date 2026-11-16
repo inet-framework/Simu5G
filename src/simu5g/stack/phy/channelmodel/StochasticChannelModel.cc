@@ -325,7 +325,7 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     // when either of its ends is farther than the correlation distance from
     // where it was then: the UE could have changed its visibility from the
     // other end
-    auto it = losMap().find(link.linkKey);
+    auto it = losMap().find(link.stateKey());
     if (it == losMap().end()
         || link.displacementSince(it->second.positionA, it->second.positionB) > correlationDistance_)
     {
@@ -333,7 +333,7 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     }
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    const ChannelState::LosSample& sample = losMap()[link.linkKey];
+    const ChannelState::LosSample& sample = losMap()[link.stateKey()];
     bool los = sample.los;
     conditions.environmentHeight = sample.environmentHeight;
     double attenuation = pathLoss_->computePathLoss(deployment, threeDimDistance, twoDimDistance, los, conditions);
@@ -349,13 +349,11 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
 
 double StochasticChannelModel::computeShadowing(double d3D, double d2D, bool los, const RadioLink& link)
 {
-    ASSERT(link.linkKey == LinkKey(link.txId, link.rxId));
-
-    // one realization per link, whichever end and whichever direction asks
+    // one realization per pair of ends, whichever radio and whichever direction asks
     ShadowFadingMap *actualShadowingMap = &shadowingMap();
-    const LinkKey& key = link.linkKey;
+    const ChannelEndsKey key = link.stateKey();
 
-    // where the link's two radios are, in the order of its key
+    // where the link's two ends are, in the order of the key
     const Coord& positionA = link.positionA();
     const Coord& positionB = link.positionB();
 
@@ -890,7 +888,7 @@ void StochasticChannelModel::emitRcvdSinr(IRadioEndpoint *radio, Direction dir, 
 void StochasticChannelModel::computeLosProbability(double d3D, double d2D,
         const RadioLink& link)
 {
-    ChannelState::LosSample& sample = losMap()[link.linkKey];
+    ChannelState::LosSample& sample = losMap()[link.stateKey()];
     sample.positionA = link.positionA();
     sample.positionB = link.positionB();
     if (!dynamicLos_)
@@ -969,7 +967,7 @@ double StochasticChannelModel::computePhantomPathLoss(const RadioLink& link, Pat
     double d2D = getTwoDimDistance(link.txCoord, link.rxCoord);
 
     // the link's own LOS state, decided and redrawn as any link's
-    auto it = losMap().find(link.linkKey);
+    auto it = losMap().find(link.stateKey());
     if (it == losMap().end()
         || link.displacementSince(it->second.positionA, it->second.positionB) > correlationDistance_)
     {
@@ -977,7 +975,7 @@ double StochasticChannelModel::computePhantomPathLoss(const RadioLink& link, Pat
     }
 
     //compute attenuation based on selected scenario and based on LOS or NLOS
-    const ChannelState::LosSample& sample = losMap()[link.linkKey];
+    const ChannelState::LosSample& sample = losMap()[link.stateKey()];
     bool los = sample.los;
     conditions.environmentHeight = sample.environmentHeight;
 

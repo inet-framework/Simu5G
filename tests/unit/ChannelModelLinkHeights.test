@@ -98,7 +98,7 @@ auto d2dOf = [](const Coord& a, const Coord& b) { return sqrt(pow(a.x - b.x, 2) 
 // the closed form of a link between positions a and b, at the given heights and the link's h_E
 auto closedForm = [&](const RadioLink& link, const Coord& a, const Coord& b, double hNodeB, double hUe) {
     PathLossModel::LinkConditions conditions;
-    conditions.environmentHeight = probe.losMap().at(link.linkKey).environmentHeight;
+    conditions.environmentHeight = probe.losMap().at(link.stateKey()).environmentHeight;
     return probe.pathLoss()->computePathLoss(probe.deployment(hNodeB, hUe), a.distance(b), d2dOf(a, b), false, conditions);
 };
 
@@ -166,7 +166,7 @@ c.expectRejected("...in the uplink too", [&] {
     RadioLink link = downlink(tolerantProbe, highBs, low);
     double value = tolerant->getAttenuation(link);
     PathLossModel::LinkConditions conditions;
-    conditions.environmentHeight = tolerantProbe.losMap().at(link.linkKey).environmentHeight;
+    conditions.environmentHeight = tolerantProbe.losMap().at(link.stateKey()).environmentHeight;
     c.expectNear("a tolerant model evaluates the base station at 30 m, at that height", value,
             tolerantProbe.pathLoss()->computePathLoss(tolerantProbe.deployment(30, 1.5), highBs.coord.distance(low.coord), d2dOf(highBs.coord, low.coord), false, conditions), 1e-9);
 }
