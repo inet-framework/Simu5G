@@ -234,6 +234,34 @@ IRadioEndpoint *CellularRadioMedium::getRadio(MacNodeId nodeId) const
     return radio;
 }
 
+long CellularRadioMedium::joinSite(const char *name, IRadioEndpoint *cell)
+{
+    Enter_Method_Silent("joinSite");
+    auto it = sites.find(name);
+    if (it == sites.end()) {
+        // apart from the names of the nodes (module ids) and of the ends without a radio
+        Site site;
+        site.id = -1000000 - (long)sites.size();
+        site.firstCell = cell;
+        sites[name] = site;
+        return site.id;
+    }
+
+    IRadioEndpoint *first = it->second.firstCell;
+    inet::Coord a = first->getCoord(), b = cell->getCoord();
+    double apart = sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+    if (apart > 1.0)
+        throw cRuntimeError("the cells of the site '%s' are not at one place: the antennas of nodes %d and %d are %g m apart horizontally. "
+                "The cells of a site share one LOS state and one shadowing realization towards a UE, drawn for one place",
+                name, (int)num(first->getMacNodeId()), (int)num(cell->getMacNodeId()), apart);
+    if (first->getDeploymentScenario() != cell->getDeploymentScenario() || first->getBuildingHeight() != cell->getBuildingHeight()
+        || first->getStreetWidth() != cell->getStreetWidth())
+        throw cRuntimeError("the cells of the site '%s' are not in one deployment: nodes %d and %d differ in scenario, buildingHeight or streetWidth. "
+                "The cells of a site share one LOS state towards a UE, drawn for one scenario",
+                name, (int)num(first->getMacNodeId()), (int)num(cell->getMacNodeId()));
+    return it->second.id;
+}
+
 ChannelState::LosMap& CellularRadioMedium::getLosMap()
 {
     return losMap;

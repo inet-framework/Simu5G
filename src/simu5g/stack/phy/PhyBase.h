@@ -108,6 +108,7 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
 
     /** Node type */
     RanNodeType nodeType_ = UNKNOWN_NODE_TYPE;
+    long siteEndId_ = 0; // a base station's end of the channel, if its radio names a site; 0 if not
 
     /// Reference to Binder
     inet::ModuleRefByPar<Binder> binder_;

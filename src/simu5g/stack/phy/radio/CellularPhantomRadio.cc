@@ -32,6 +32,13 @@ void CellularPhantomRadio::initialize(int stage)
         cableLoss_ = par("cableLoss");
         WATCH(nodeId_);
     }
+    else if (stage == inet::INITSTAGE_LAST) {
+        // the antennas are in place: a cell whose radio names a site joins it
+        if (!opp_isempty(par("site").stringValue())) {
+            radioMedium_.reference(this, "radioMediumModule", true);
+            siteEndId_ = radioMedium_->joinSite(par("site").stringValue(), this);
+        }
+    }
 }
 
 CellularPhantomRadio::~CellularPhantomRadio()

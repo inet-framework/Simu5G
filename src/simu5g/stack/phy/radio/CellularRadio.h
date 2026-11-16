@@ -66,6 +66,9 @@ class CellularRadio : public cSimpleModule
     double getBuildingHeight() const { return buildingHeight_; }
     double getStreetWidth() const { return streetWidth_; }
 
+    /** The site of the cell, where the radio is a base station's; empty for a cell that is a site of its own. */
+    const char *getSite() const { return par("site").stringValue(); }
+
     /** Whether the radio is inside a building. */
     bool isInsideBuilding() const { return insideBuilding_; }
     /** How far inside its building the radio is, in m (drawn once). */

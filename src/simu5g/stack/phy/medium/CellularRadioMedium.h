@@ -57,6 +57,12 @@ class CellularRadioMedium : public cSimpleModule
     std::map<GHz, std::vector<const CellularTransmission *>> transmissions; // per carrier, in creation order; the ones not yet over
     ChannelState::LosMap losMap; // for all carriers: whether the two ends of each channel are in line of sight
     ChannelState::ShadowFadingMap shadowingMap; // for all carriers: the last shadowing sample between the two ends of each channel
+    /** A site: the cells that gave its name, which share their end of the channel. */
+    struct Site {
+        long id = 0;
+        IRadioEndpoint *firstCell = nullptr; // the cell the others are compared with
+    };
+    std::map<std::string, Site> sites;
     std::map<GHz, ChannelState::JakesFadingMap> jakesFadingMaps; // per carrier: the Jakes fading paths of each link
     mutable RxTrace rxTrace; // open when recordReceptionTrace is set; written by the evaluations, also through const paths
 
@@ -171,6 +177,17 @@ class CellularRadioMedium : public cSimpleModule
      * getDataTransmissionsDuring().
      */
     virtual std::vector<const CellularTransmission *> getUplinkTransmissionsDuring(GHz carrierFrequency, simtime_t from, simtime_t to) const;
+
+    /**
+     * Makes a cell one of the cells of the named site, and returns the name
+     * of the end of the channel they share (see
+     * IRadioEndpoint::getChannelEndId()). The cells of a site share one LOS
+     * state and one shadowing realization towards a UE, drawn for one place
+     * and one scenario: a cell that is farther than 1 m horizontally from the
+     * site's first cell, or differs from it in scenario, building height or
+     * street width, is an error.
+     */
+    virtual long joinSite(const char *site, IRadioEndpoint *cell);
 
     /**
      * Whether the two ends of each channel are in line of sight, and where

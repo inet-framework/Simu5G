@@ -130,6 +130,11 @@ void PhyBase::initialize(int stage)
     else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS2) {
         initializeChannelModel();
     }
+    else if (stage == inet::INITSTAGE_LAST) {
+        // the antennas are in place: a base station whose radio names a site joins it
+        if (nodeType_ != UE && !opp_isempty(cellularRadio_->getSite()))
+            siteEndId_ = radioMedium_->joinSite(cellularRadio_->getSite(), this);
+    }
 }
 
 const inet::Coord& PhyBase::getCoord() const
@@ -152,8 +157,9 @@ double PhyBase::getSpeed()
 
 long PhyBase::getChannelEndId()
 {
-    // the node: the radios of a UE are at one end of the channel
-    return hostModule_->getId();
+    // the site a base station's radio names, or else the node: the radios of a UE
+    // are at one end of the channel
+    return siteEndId_ != 0 ? siteEndId_ : hostModule_->getId();
 }
 
 DeploymentScenario PhyBase::getDeploymentScenario()

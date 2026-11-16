@@ -33,6 +33,7 @@ module CellularRadio
         string scenario @enum(INDOOR_HOTSPOT,URBAN_MICROCELL,URBAN_MACROCELL,RURAL_MACROCELL,SUBURBAN_MACROCELL) = default("URBAN_MACROCELL"); // The deployment scenario of the cell, which counts on a base station's radio: a link is evaluated in the scenario of its base station end
         double buildingHeight @unit(m) = default(20m); // Average building height around the base station, for the path loss formulas that take it
         double streetWidth @unit(m) = default(20m); // Average street width around the base station, for the path loss formulas that take it
+        string site = default(""); // The site of the cell, which counts on a base station's radio: cells that give the same name are co-sited (the sectors of a site), and their links to a UE share one LOS state and one shadowing realization. Empty: the cell is a site of its own
         bool insideBuilding = default(false); // Whether the radio is inside a building, which counts on a UE's radio: a link's building penetration loss is its UE end's. Its distance from the wall (uniformly in [0, 25] m) and the random term of its penetration loss (standard normal, scaled by the study's sigma_P) are drawn once
         @class(CellularRadio);
         @display("i=device/antennatower");

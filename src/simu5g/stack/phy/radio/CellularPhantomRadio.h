@@ -38,6 +38,7 @@ class CellularPhantomRadio : public cModule, public IRadioEndpoint
     inet::ModuleRefByPar<inet::IMobility> mobility_; // nullptr if the node has none
     CellularAntenna *antenna_ = nullptr;
     bool isNr_ = false;
+    long siteEndId_ = 0; // the end of the channel of the site the radio names; 0 if it names none
     double txPower_ = NAN;
     DeploymentScenario scenario_ = UNKNOWN_SCENARIO; // the deployment of the cell, which counts at a base station
     double buildingHeight_ = NAN;
@@ -70,7 +71,7 @@ class CellularPhantomRadio : public cModule, public IRadioEndpoint
 
     // IRadioEndpoint
     virtual MacNodeId getMacNodeId() override { return nodeId_; }
-    virtual long getChannelEndId() override { return getParentModule()->getId(); } // the cell or background UE the radio is of
+    virtual long getChannelEndId() override { return siteEndId_ != 0 ? siteEndId_ : getParentModule()->getId(); } // the site the radio names, or else the cell or background UE it is of
     virtual const inet::Coord& getCoord() const override;
     virtual double getSpeed() override;
     virtual DeploymentScenario getDeploymentScenario() override { return scenario_; }
