@@ -1,0 +1,46 @@
+%description:
+Two gNBs that give the same site name are the sectors of one site: a UE's links to them share one
+LOS state and one shadowing realization (TR 38.901 7.5 Step 4: "the LSPs for links from co-sited
+sectors to a UT are the same"). The sectors stand at one position and are in one scenario. The run
+reaches its time limit.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.node.ethernet.Eth10G;
+import simu5g.nodes.gNodeB;
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+network TwoSectorTestNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        gnb2: gNodeB {
+            @display("p=650,250");
+        }
+    connections:
+        upf.pppg++ <--> Eth10G <--> gnb2.ppp;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = TwoSectorTestNetwork
+
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+
+# two sectors on one mast
+*.gnb*.cellularNic.radio.site = "mast"
+*.gnb*.cellularNic.antenna.txDirection = "ANISOTROPIC"
+*.gnb.cellularNic.antenna.txAngle = 60deg
+*.gnb2.cellularNic.antenna.txAngle = 180deg
+**.dynamicLos = true
+*.gnb2.mobility.initialX = 450m
+*.gnb2.mobility.initialY = 300m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+Simulation time limit reached
+%#--------------------------------------------------------------------------------------------------------------

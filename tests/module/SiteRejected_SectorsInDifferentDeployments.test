@@ -1,0 +1,46 @@
+%description:
+The cells of a site share one LOS state towards a UE, drawn with the LOS probability of the
+scenario. Two cells of one site in different scenarios would share a state drawn for one of the
+two scenarios. That is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.node.ethernet.Eth10G;
+import simu5g.nodes.gNodeB;
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+network TwoSectorTestNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        gnb2: gNodeB {
+            @display("p=650,250");
+        }
+    connections:
+        upf.pppg++ <--> Eth10G <--> gnb2.ppp;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = TwoSectorTestNetwork
+
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+
+# two sectors on one mast
+*.gnb*.cellularNic.radio.site = "mast"
+*.gnb*.cellularNic.antenna.txDirection = "ANISOTROPIC"
+*.gnb.cellularNic.antenna.txAngle = 60deg
+*.gnb2.cellularNic.antenna.txAngle = 180deg
+**.dynamicLos = true
+*.gnb2.mobility.initialX = 450m
+*.gnb2.mobility.initialY = 300m
+*.gnb2.cellularNic.radio.scenario = "RURAL_MACROCELL"
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+the cells of the site 'mast' are not in one deployment
+%#--------------------------------------------------------------------------------------------------------------

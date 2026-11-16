@@ -1,0 +1,180 @@
+%description:
+
+A link's LOS state, effective environment height and shadowing belong to its
+site and its UT, not to the pair of radios that happens to evaluate it.
+
+TR 38.901 7.5 Step 4: "These LSPs for different BS-UT links are uncorrelated,
+but the LSPs for links from co-sited sectors to a UT are the same", and shadow
+fading is one of the LSPs. Table 7.4.1-1 NOTE 1 determines h_E "for every link
+between BS sites and UTs. A BS site may be a single BS or multiple co-located
+BSs". Step 2 assigns the propagation condition per BS-UT link; a UT with two
+radios is one UT.
+
+A radio names its end of the channel (getChannelEndId()): the three sectors
+of a site name the site, the two radios of a dual-stack UE name the UE. With
+LOS drawn per link and shadowing on, and no fast fading:
+- the three sectors' links to a UE are one realization: the second and third
+  draw nothing and have the first's attenuation (the sectors stand together,
+  so their closed forms are equal; the antenna pattern is not part of the
+  attenuation);
+- the uplink to a sector is the same realization;
+- a cell that is a site of its own has a realization of its own;
+- the UE's second radio sees the first radio's realization towards the site;
+- a link between two UEs is one realization, whichever of a UE's radios is at
+  its end.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+// The model's own D2D link builder, which is protected. Never instantiated: see ChannelModelProbe for the technique.
+struct D2dLinkAccess : StochasticChannelModel
+{
+    static auto d2dLinkPtr() { return &D2dLinkAccess::d2dLink; }
+};
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        model: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+# the LOS state is drawn per link, and the link is shadowed; no fast fading
+**.dynamicLos = true
+**.shadowing = true
+**.fading = false
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *model = harnessModule<StochasticChannelModel>(this, "model");
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+ChannelModelProbe probe(model);
+auto drawn = [&] { return (long long)model->getRNG(0)->getNumbersDrawn(); };
+
+// three sectors of one site, a cell that is a site of its own, and a dual-stack UE
+const long site = 5000, ut = 7000;
+StubEndpoint sector[3], lone, ueLte, ueNr;
+for (int i = 0; i < 3; i++) {
+    sector[i].nodeId = MacNodeId(1 + i);
+    sector[i].coord = Coord(0, 0, 25);
+    sector[i].channelEndId = site;
+}
+lone.nodeId = MacNodeId(4);
+lone.coord = Coord(0, 0, 25);
+ueLte.nodeId = MacNodeId(1025);
+ueNr.nodeId = MacNodeId(2049);
+ueLte.coord = ueNr.coord = Coord(210, 80, 1.5);
+ueLte.channelEndId = ueNr.channelEndId = ut;
+StubRadioRegistration sector0Radio(medium, sector[0].nodeId, &sector[0]);
+StubRadioRegistration sector1Radio(medium, sector[1].nodeId, &sector[1]);
+StubRadioRegistration sector2Radio(medium, sector[2].nodeId, &sector[2]);
+StubRadioRegistration loneRadio(medium, lone.nodeId, &lone);
+StubRadioRegistration ueLteRadio(medium, ueLte.nodeId, &ueLte);
+StubRadioRegistration ueNrRadio(medium, ueNr.nodeId, &ueNr);
+
+// the downlink from a base station to a UE
+auto downlink = [&](StubEndpoint& baseStation, StubEndpoint& ue) {
+    RadioLink link = probe.cellularLink(&ue, ue.nodeId, DL, baseStation.coord);
+    link.txId = baseStation.nodeId;
+    link.txRadio = &baseStation; // cellularLink() names the base station by its position only
+    link.linkKey = LinkKey(link.txId, link.rxId);
+    return link;
+};
+
+//
+// --- the sectors of a site ---
+//
+long long before = drawn();
+double first = model->getAttenuation(downlink(sector[0], ueNr));
+c.check("the first sector's link draws the realization of the site and the UT", drawn() > before);
+c.check("...kept under the site and the UT", probe.losMap().size() == 1 && probe.losMap().count(ChannelEndsKey(site, ut)) == 1
+        && probe.shadowingMap().size() == 1 && probe.shadowingMap().count(ChannelEndsKey(site, ut)) == 1);
+
+before = drawn();
+double second = model->getAttenuation(downlink(sector[1], ueNr));
+double third = model->getAttenuation(downlink(sector[2], ueNr));
+c.expectValue("the other two sectors' links draw nothing", drawn() - before, 0);
+c.expectNear("the second sector's link has the first's attenuation", second, first, 1e-9);
+c.expectNear("the third sector's link has the first's attenuation", third, first, 1e-9);
+
+before = drawn();
+double uplink = model->getAttenuation(probe.cellularLink(&sector[1], ueNr.nodeId, UL, ueNr.coord));
+c.expectValue("the uplink to a sector draws nothing", drawn() - before, 0);
+c.expectNear("...and has the same attenuation", uplink, first, 1e-9);
+
+//
+// --- a cell that is a site of its own ---
+//
+before = drawn();
+model->getAttenuation(downlink(lone, ueNr));
+c.check("a cell that is a site of its own draws a realization of its own", drawn() > before && probe.losMap().size() == 2 && probe.shadowingMap().size() == 2);
+
+//
+// --- the two radios of a UE ---
+//
+before = drawn();
+double otherRadio = model->getAttenuation(downlink(sector[0], ueLte));
+c.expectValue("the UE's other radio draws nothing towards the site", drawn() - before, 0);
+c.expectNear("...and has the first radio's attenuation", otherRadio, first, 1e-9);
+
+//
+// --- a link between two UEs ---
+//
+{
+    StubEndpoint peer;
+    peer.nodeId = MacNodeId(1026);
+    peer.coord = Coord(260, 80, 1.5);
+    StubRadioRegistration peerRadio(medium, peer.nodeId, &peer);
+    auto d2d = [&](StubEndpoint& from, StubEndpoint& to) {
+        RadioLink link = (model->*D2dLinkAccess::d2dLinkPtr())(from.nodeId, from.coord, to.nodeId, to.coord);
+        link.cellId = lone.nodeId;
+        return model->getAttenuation(link);
+    };
+    size_t samples = probe.losMap().size();
+    double viaNr = d2d(ueNr, peer);
+    c.check("a link between two UEs has a realization of its own", probe.losMap().size() == samples + 1);
+    before = drawn();
+    double viaLte = d2d(ueLte, peer);
+    double reverse = d2d(peer, ueLte);
+    c.expectValue("the UE's other radio, and the other direction, draw nothing", drawn() - before, 0);
+    c.expectNear("the UE's other radio has the same attenuation", viaLte, viaNr, 1e-9);
+    c.expectNear("the other direction has the same attenuation", reverse, viaNr, 1e-9);
+}
+
+c.summary();
+
+%contains: stdout
+modelchecks=14 modelfailures=0
+
+%not-contains: stdout
+FAILED

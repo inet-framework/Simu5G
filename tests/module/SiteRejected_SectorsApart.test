@@ -1,0 +1,46 @@
+%description:
+The cells of a site share one LOS state, one environment height and one shadowing realization
+towards a UE, which are drawn for one position of the site. Two cells 100 m apart that give the
+same site name would share a realization drawn at the distance of one of them. That is an error
+at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.node.ethernet.Eth10G;
+import simu5g.nodes.gNodeB;
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+network TwoSectorTestNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        gnb2: gNodeB {
+            @display("p=650,250");
+        }
+    connections:
+        upf.pppg++ <--> Eth10G <--> gnb2.ppp;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = TwoSectorTestNetwork
+
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+
+# two sectors on one mast
+*.gnb*.cellularNic.radio.site = "mast"
+*.gnb*.cellularNic.antenna.txDirection = "ANISOTROPIC"
+*.gnb.cellularNic.antenna.txAngle = 60deg
+*.gnb2.cellularNic.antenna.txAngle = 180deg
+**.dynamicLos = true
+*.gnb2.mobility.initialX = 550m
+*.gnb2.mobility.initialY = 300m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+the cells of the site 'mast' are not at one place
+%#--------------------------------------------------------------------------------------------------------------
