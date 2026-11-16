@@ -41,6 +41,19 @@ package simu5g.stack.phy.channelmodel;
 // study is selected. The ~Tr36873ChannelModel and ~Tr38901ChannelModel presets
 // differ from this type only in their pathLossType default.
 //
+// The heights the formulas take are those of the link's two antennas above
+// the ground (z = 0): an antenna is at its node's z plus its
+// antenna.mobility.offsetZ (see ~CellularAntenna). A link whose heights are
+// outside what the study gives for the scenario is an error, unless
+// tolerateHeightViolation is set.
+//
+// A link between two UEs (D2D) has no base station, and none of the three
+// studies has such a link. The model evaluates it with the cell's scenario,
+// taking the base station height the studies give for that scenario (10 m in
+// an urban microcell, 25 m in an urban macrocell, 35 m in a suburban or rural
+// macrocell, 3 m in an indoor hotspot) and the lower of the two UEs' antenna
+// heights. This is a convention of the model, not a specification's.
+//
 simple StochasticChannelModel extends ChannelModelBase
 {
     parameters:
