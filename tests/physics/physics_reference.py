@@ -993,6 +993,49 @@ GRADERS.update({
 })
 
 
+def grade_three_sector_site(grader):
+    """The three sectors of one site, a UE on the boundary of two of them, and
+    a noise floor far below everything: the lowest downlink SINR, with both
+    other sectors on the band, is a ratio of antenna patterns. The path loss,
+    the LOS state and the shadowing are the site's, the same in the wanted
+    signal and in both interferers, so they cancel -- which they do only if
+    the three sectors share them."""
+    budget = BudgetEnds()
+    cells = [budget.position(f'*.gnb{i}') for i in (1, 2, 3)]
+    victim = budget.position('*.ue[0]')
+    names = ['*.gnb1.cellularNic.antenna.txAngle', '*.gnb2.cellularNic.antenna.txAngle',
+             '*.gnb3.cellularNic.antenna.txAngle', '**.thermalNoise']
+    cfg = config_values(names)
+    grader.check_true('geometry-is-consistent', 'the three sectors at one position',
+                      cells[0] == cells[1] == cells[2])
+    grader.check_true('noise-is-negligible', 'thermal noise', cfg['**.thermalNoise'] <= -250.0,
+                      f"{cfg['**.thermalNoise']:g} dBm")
+
+    attenuation = [sector_attenuation(budget, cells[i], victim, cfg[names[i]]) for i in range(3)]
+    grader.check_absolute('victim-on-the-boundary', 'the serving and the neighbour sector attenuate alike',
+                          attenuation[0] - attenuation[1], 0.0, 1e-9, " dB")
+    # equal powers, gains and cable loss: only the patterns are left
+    expected = -attenuation[0] - 10 * math.log10(sum(10 ** (-a / 10.0) for a in attenuation[1:]))
+
+    table = scalar_table('module =~ "*.ue[0].*.nrRadio.receiver" '
+                         'AND name =~ "measuredSinrDl:*"', itervars=('seed',))
+    quiet = []
+    for seed, row in table.iterrows():
+        grader.check_absolute('loaded-sinr-is-the-patterns', f'seed={seed:g}',
+                              row['measuredSinrDl:min'], expected, 1e-6, " dB")
+        quiet.append(row['measuredSinrDl:max'])
+    # Tripwire: the seeds are different realizations. The quiet SINR, over the
+    # noise alone, carries the shadowing and the LOS state of the run.
+    grader.check_true('realizations-differ', 'quiet SINR per seed',
+                      len(set(round(q, 6) for q in quiet)) == len(quiet),
+                      ", ".join(f"{q:.3f}" for q in quiet))
+
+
+GRADERS.update({
+    'ThreeSectorSite': grade_three_sector_site,
+})
+
+
 def grade_d2d_interference_delta(grader):
     """Two D2D pairs, a cellular UE in either cell, nothing random: the SINR of a
     D2D reception is the D2D budget of grade_d2d_link_budget over the noise plus

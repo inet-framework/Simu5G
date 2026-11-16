@@ -1,0 +1,164 @@
+%description:
+
+The sectors of a site differ by their antenna patterns, and by nothing else.
+
+TR 38.901 7.5 Step 4: "the LSPs for links from co-sited sectors to a UT are
+the same"; shadow fading is one of them, and the LOS state of Step 2 is the
+site's too. So the ratio of the powers a UE receives from two sectors of one
+site is the ratio of the two antenna patterns towards it. A model that draws
+the shadowing per cell adds the difference of two draws to that ratio: a
+standard deviation of 8.5 dB in an urban macrocell.
+
+The scenario is the three-sector site of simulations/nr/three_sector: three
+gNBs at one position with one site name, their sectors 120 degrees apart. The
+victim UE stands on the boundary of two sectors, 60 degrees off both
+boresights, and is served by one of them; a UE in each of the other two
+sectors keeps its sector busy. Shadowing and the per-link LOS draw are on,
+the fast fading is off, and the thermal noise is set far below everything
+(-300 dBm), so the SINR the victim measures is a ratio of received powers:
+
+    SINR = S1 / (S2 + S3)
+
+with all three over the same path loss, LOS state and shadowing. With both
+other sectors on the band, the lowest SINR measured is therefore
+
+    -A(60 deg) - 10 log10( 10^(-A(60 deg)/10) + 10^(-A(180 deg)/10) )
+
+where A is the antenna pattern of TR 36.873 Table 7.1-1 towards the victim:
+about 0 dB, whatever the seed. The run is repeated with four seeds, and a
+tripwire checks that the seeds are different realizations (the quiet SINR,
+over the noise alone, differs between them).
+
+Characterisation on one point: the model takes the pattern of TR 36.873 for
+a TR 38.901 cell, which the grader reproduces.
+
+%extraargs: -c ThreeSectorSite
+
+%file: demo.xml
+<config>
+    <interface among='eNB* eNodeB* enb* *Enb* gNB* gNodeB* gnb* *Gnb* upf* *Upf* mecHost* pgw*' address='10.x.x.x' netmask='255.255.255.0'/>
+    <interface hosts='*' address='192.168.x.x' netmask='255.255.255.0'/>
+</config>
+
+%inifile: omnetpp.ini
+
+[Config ThreeSectorSite]
+network = simu5g.simulations.nr.networks.ThreeSectorSite_Standalone
+# the positions this test gives the nodes are their antennas': no height offset
+**.antenna.mobility.offsetZ = 0m
+sim-time-limit = 3s
+**.routingRecorder.enabled = false
+cmdenv-express-mode = true
+cmdenv-status-frequency = 10000000s
+**.sctp.**.scalar-recording = false
+**.sctp.nagleEnabled = false
+**.sctp.enableHeartbeats = false
+
+output-scalar-file = results/${iterationvarsf}${repetition}.sca
+output-vector-file = results/${iterationvarsf}${repetition}.vec
+**.vector-recording = false
+**.measuredSinrDl.result-recording-modes = mean,count,min,max
+
+############### The sweep: four realizations ##############
+seed-set = ${seed = 0, 1, 2, 3}
+
+############### The site: three sectors at one position ##############
+*.gnb1.mobility.initialX = 1000m
+*.gnb1.mobility.initialY = 1000m
+*.gnb1.mobility.initialZ = 25m
+*.gnb2.mobility.initialX = 1000m
+*.gnb2.mobility.initialY = 1000m
+*.gnb2.mobility.initialZ = 25m
+*.gnb3.mobility.initialX = 1000m
+*.gnb3.mobility.initialY = 1000m
+*.gnb3.mobility.initialZ = 25m
+*.gnb*.cellularNic.radio.site = "site1"
+*.gnb*.cellularNic.antenna.txDirection = "ANISOTROPIC"
+*.gnb1.cellularNic.antenna.txAngle = 120deg
+*.gnb2.cellularNic.antenna.txAngle = 240deg
+*.gnb3.cellularNic.antenna.txAngle = 0deg
+
+############### The UEs ##############
+# The victim is due west of the mast, 60 degrees off the boresights of gnb1
+# and gnb2 and behind gnb3; the other two UEs are on the boresights of gnb2
+# and gnb3. The associations are fixed.
+*.numUe = 3
+*.ue[*].servingNodeId = 0
+*.ue[0].nrServingNodeId = 1
+*.ue[1].nrServingNodeId = 2
+*.ue[2].nrServingNodeId = 3
+**.dynamicCellAssociation = false
+**.enableHandover = false
+*.ue[0].mobility.initialX = 800m
+*.ue[0].mobility.initialY = 1000m
+*.ue[0].mobility.initialZ = 1.5m
+*.ue[1].mobility.initialX = 900m
+*.ue[1].mobility.initialY = 826.8m
+*.ue[2].mobility.initialX = 1200m
+*.ue[2].mobility.initialY = 1000m
+*.ue[1..2].mobility.initialZ = 1.5m
+**.mobility.constraintAreaMinX = 0m
+**.mobility.constraintAreaMinY = 0m
+**.mobility.constraintAreaMinZ = 0m
+**.mobility.constraintAreaMaxX = 2000m
+**.mobility.constraintAreaMaxY = 2000m
+**.mobility.constraintAreaMaxZ = 50m
+**.mobility.initFromDisplayString = false
+
+############### The channel: the site's large-scale state, and no noise to speak of ##############
+**.radio.scenario = "URBAN_MACROCELL"
+**.dynamicLos = true
+**.shadowing = true
+**.fading = false
+**.downlinkInterference = true
+**.uplinkInterference = false
+**.bgCellInterference = false
+**.extCellInterference = false
+**.thermalNoise = -300dBm
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+**.numBands = 6
+**.eNodeBTxPower = 40dBm
+*.gnb*.cellularNic.antenna.gain = 18dBi
+*.ue[*].cellularNic.antenna.gain = 0dBi
+**.cableLoss = 2dB
+
+############### X2: the mesh of the three sectors ##############
+*.gnb*.numX2Apps = 2
+*.gnb*.x2App[*].server.localPort = 5000 + ancestorIndex(1)
+*.gnb1.x2App[0].client.connectAddress = "gnb2%x2ppp0"
+*.gnb1.x2App[1].client.connectAddress = "gnb3%x2ppp0"
+*.gnb2.x2App[0].client.connectAddress = "gnb1%x2ppp0"
+*.gnb2.x2App[1].client.connectAddress = "gnb3%x2ppp1"
+*.gnb3.x2App[0].client.connectAddress = "gnb1%x2ppp1"
+*.gnb3.x2App[1].client.connectAddress = "gnb2%x2ppp1"
+
+############### Traffic: a trickle to the victim, a flood to the other two sectors ##############
+*.ue[*].numApps = 1
+*.server.numApps = 3
+*.ue[*].app[0].typename = "CbrReceiver"
+*.ue[*].app[0].localPort = 3000
+*.server.app[*].typename = "CbrSender"
+*.server.app[*].destPort = 3000
+*.server.app[*].localPort = 3088 + ancestorIndex(0)
+*.server.app[0].destAddress = "ue[0]"
+*.server.app[0].packetSize = 40B
+*.server.app[0].samplingTime = 0.02s
+*.server.app[0].startTime = 0.1s
+# The floods start late, so that the victim also measures a quiet channel
+*.server.app[1..2].destAddress = "ue[" + string(ancestorIndex(0)) + "]"
+*.server.app[1..2].packetSize = 1000B
+*.server.app[1..2].samplingTime = 0.0002s
+*.server.app[1..2].startTime = 1s
+
+*.configurator.config = xmldoc("./demo.xml")
+
+%postrun-command: ../../physics_reference.py --grade results >verdict.txt
+
+%contains: verdict.txt
+graded=8 failures=0
+
+%not-contains: verdict.txt
+FAILED
