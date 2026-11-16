@@ -26,7 +26,7 @@ package simu5g.stack.phy;
 simple PhyBase like IPhy
 {
     parameters:
-        @display("i=block/wrxtx");
+        @display("i=block/layer");
         bool isNr = default(false);   // True for the NR leg (set by NrNicUe/NrNicEnb on their PHY submodule)
         int macNodeId;                // MacNodeId of the stack leg this PHY belongs to (set by the NIC)
         double ueTxPower @unit(dBm) = default(26dBm);

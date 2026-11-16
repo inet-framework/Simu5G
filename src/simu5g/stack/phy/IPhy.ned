@@ -33,7 +33,7 @@ package simu5g.stack.phy;
 moduleinterface IPhy
 {
     parameters:
-        @display("i=block/wrxtx");
+        @display("i=block/layer");
 
     gates:
         input upperGateIn;

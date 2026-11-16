@@ -36,7 +36,7 @@ module CellularPhantomRadio
         double noiseFigure @unit(dB) = default(7dB); // Noise figure of a what-if at this radio
         double cableLoss @unit(dB) = default(2dB); // Loss between the antenna and a what-if's receiver
         @class(CellularPhantomRadio);
-        @display("i=device/antennatower");
+        @display("i=block/wtx");
     submodules:
         antenna: CellularAntenna {
             @display("p=100,100");

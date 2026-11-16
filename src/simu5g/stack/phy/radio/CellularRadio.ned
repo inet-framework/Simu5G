@@ -36,7 +36,7 @@ module CellularRadio
         string site = default(""); // The site of the cell, which counts on a base station's radio: cells that give the same name are co-sited (the sectors of a site), and their links to a UE share one LOS state and one shadowing realization. Empty: the cell is a site of its own
         bool insideBuilding = default(false); // Whether the radio is inside a building, which counts on a UE's radio: a link's building penetration loss is its UE end's. Its distance from the wall (uniformly in [0, 25] m) and the random term of its penetration loss (standard normal, scaled by the study's sigma_P) are drawn once
         @class(CellularRadio);
-        @display("i=device/antennatower");
+        @display("i=block/wrxtx");
     gates:
         input radioIn @directIn;    // frames from other radios
         input upperLayerIn;         // frames to transmit, from the PHY
