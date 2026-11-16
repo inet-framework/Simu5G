@@ -55,8 +55,8 @@ class CellularRadioMedium : public cSimpleModule
     std::map<GHz, simtime_t> slotDurations; // per carrier, as first asked for
     std::map<GHz, unsigned int> carrierNumBands; // per carrier, with the slot duration
     std::map<GHz, std::vector<const CellularTransmission *>> transmissions; // per carrier, in creation order; the ones not yet over
-    std::map<GHz, ChannelState::LosMap> losMaps; // per carrier: whether each link is in line of sight
-    std::map<GHz, ChannelState::ShadowFadingMap> shadowingMaps; // per carrier: the last shadowing sample of each link
+    ChannelState::LosMap losMap; // for all carriers: whether the two ends of each channel are in line of sight
+    ChannelState::ShadowFadingMap shadowingMap; // for all carriers: the last shadowing sample between the two ends of each channel
     std::map<GHz, ChannelState::JakesFadingMap> jakesFadingMaps; // per carrier: the Jakes fading paths of each link
     mutable RxTrace rxTrace; // open when recordReceptionTrace is set; written by the evaluations, also through const paths
 
@@ -173,26 +173,27 @@ class CellularRadioMedium : public cSimpleModule
     virtual std::vector<const CellularTransmission *> getUplinkTransmissionsDuring(GHz carrierFrequency, simtime_t from, simtime_t to) const;
 
     /**
-     * Whether each link on the carrier is in line of sight, and where its ends
-     * were when that was decided, by link: one state per link, shared by every
-     * channel model evaluating it. Created empty on first use; the reference
-     * stays valid for the lifetime of the medium.
-     * Entries are never removed: node ids are not reused, so the links of a
-     * radio that has left are simply never looked up again.
+     * Whether the two ends of each channel are in line of sight, and where
+     * they were when that was decided: one state per pair of ends, the same on
+     * every carrier, shared by every channel model evaluating a link between
+     * them. The reference stays valid for the lifetime of the medium.
+     * Entries are never removed: an end's name is not reused, so the state of
+     * one that has left is simply never looked up again.
      */
-    virtual ChannelState::LosMap& getLosMap(GHz carrierFrequency);
+    virtual ChannelState::LosMap& getLosMap();
 
     /**
-     * The last shadowing sample of each link on the carrier, with when and
-     * where it was drawn, by link: one per link, shared by every channel model
-     * evaluating it. Created and kept as getLosMap().
+     * The last shadowing sample between the two ends of each channel, with
+     * when and where it was drawn: one per pair of ends, the same on every
+     * carrier. Kept as getLosMap().
      */
-    virtual ChannelState::ShadowFadingMap& getShadowingMap(GHz carrierFrequency);
+    virtual ChannelState::ShadowFadingMap& getShadowingMap();
 
     /**
      * The Jakes fading paths of each link on the carrier, every band's, by
-     * link: one realization per link, shared by every channel model
-     * evaluating it. Created and kept as getLosMap().
+     * the link's two radios: one realization per link and carrier, shared by
+     * every channel model evaluating it. Created empty on first use; kept as
+     * getLosMap().
      */
     virtual ChannelState::JakesFadingMap& getJakesFadingMap(GHz carrierFrequency);
 };

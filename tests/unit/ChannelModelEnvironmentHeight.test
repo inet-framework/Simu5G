@@ -102,7 +102,7 @@ RadioLink atUe = ueProbe.linkFor(&ueEndpoint, &dlData, bsEndpoint.coord);
 RadioLink atBs = bsProbe.whatIfLink(&ueEndpoint, dlCqiTransmission(&bsEndpoint, ueId));
 
 double first = ue->getAttenuation(atUe);
-ChannelState::LosSample& sample = medium->getLosMap(GHz(0.8))[atUe.linkKey];
+ChannelState::LosSample& sample = medium->getLosMap()[atUe.stateKey()];
 double drawn = sample.environmentHeight;
 probe.expectValue("the link's kept h_E is 1 m or one of uniform(12,15,...,21)",
         drawn == 1 || drawn == 12 || drawn == 15 || drawn == 18 || drawn == 21 ? 1 : 0, 1);

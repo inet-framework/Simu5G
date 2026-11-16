@@ -59,14 +59,14 @@ PathLossModel *StochasticChannelModel::createPathLossModel()
 StochasticChannelModel::LosMap& StochasticChannelModel::losMap()
 {
     if (losMap_ == nullptr)
-        losMap_ = &radioMedium_->getLosMap(carrierFrequency_);
+        losMap_ = &radioMedium_->getLosMap();
     return *losMap_;
 }
 
 StochasticChannelModel::ShadowFadingMap& StochasticChannelModel::shadowingMap()
 {
     if (shadowingMap_ == nullptr)
-        shadowingMap_ = &radioMedium_->getShadowingMap(carrierFrequency_);
+        shadowingMap_ = &radioMedium_->getShadowingMap();
     return *shadowingMap_;
 }
 

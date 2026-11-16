@@ -234,14 +234,14 @@ IRadioEndpoint *CellularRadioMedium::getRadio(MacNodeId nodeId) const
     return radio;
 }
 
-ChannelState::LosMap& CellularRadioMedium::getLosMap(GHz carrierFrequency)
+ChannelState::LosMap& CellularRadioMedium::getLosMap()
 {
-    return losMaps[carrierFrequency];
+    return losMap;
 }
 
-ChannelState::ShadowFadingMap& CellularRadioMedium::getShadowingMap(GHz carrierFrequency)
+ChannelState::ShadowFadingMap& CellularRadioMedium::getShadowingMap()
 {
-    return shadowingMaps[carrierFrequency];
+    return shadowingMap;
 }
 
 ChannelState::JakesFadingMap& CellularRadioMedium::getJakesFadingMap(GHz carrierFrequency)
