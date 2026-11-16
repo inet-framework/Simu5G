@@ -48,6 +48,9 @@ to appear to violate both invariances by several decibels.
 
 [Config GeometryInvariance]
 network = simu5g.simulations.nr.networks.SingleCell_Standalone
+
+# the positions this test gives the nodes are their antennas': no height offset
+**.antenna.mobility.offsetZ = 0m
 sim-time-limit = 5s
 **.routingRecorder.enabled = false
 cmdenv-express-mode = true

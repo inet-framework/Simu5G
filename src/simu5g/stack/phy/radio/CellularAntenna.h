@@ -14,6 +14,8 @@
 
 #include <omnetpp.h>
 
+#include <inet/mobility/contract/IMobility.h>
+
 #include "simu5g/common/LteCommon.h"
 
 namespace simu5g {
@@ -29,6 +31,7 @@ class CellularAntenna : public cSimpleModule
     double gain_ = NAN;
     TxDirectionType txDirection_ = OMNI;
     double txAngle_ = NAN;
+    inet::IMobility *mobility_ = nullptr; // the antenna's own mobility, if it has one
 
   protected:
     virtual void initialize() override;
@@ -40,6 +43,8 @@ class CellularAntenna : public cSimpleModule
     TxDirectionType getTxDirection() const { return txDirection_; }
     /** The boresight of a sectorial antenna, in degrees; 0 for an omnidirectional one. */
     double getTxAngle() const { return txAngle_; }
+    /** The antenna's own mobility, which says where it is; nullptr if it is where its node is. */
+    inet::IMobility *getMobility() const { return mobility_; }
 };
 
 } // namespace simu5g

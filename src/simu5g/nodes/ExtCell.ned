@@ -82,6 +82,9 @@ module ExtCell
             antenna.txDirection = parent.txDirection;
             antenna.txAngle = parent.txAngle;
             antenna.gain = default(18dBi);
+            antenna.mobility.typename = default("AntennaMobility");
+            antenna.mobility.mobilityModule = default(absPath("^.mobility"));
+            antenna.mobility.offsetZ = default(25m); // The height of the antenna above the cell's position
             noiseFigure = default(5dB);
             @display("p=60,150");
         }

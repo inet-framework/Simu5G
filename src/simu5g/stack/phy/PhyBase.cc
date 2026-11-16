@@ -134,9 +134,13 @@ void PhyBase::initialize(int stage)
 
 const inet::Coord& PhyBase::getCoord() const
 {
-    // reading the position moves the mobility to this instant, which reports
-    // the new position through receiveSignal()
-    if (mobility_ != nullptr)
+    // the radio is where its antenna is: where the antenna's own mobility says,
+    // or else where the node is. Reading the position moves the node's mobility to
+    // this instant, which reports the new position through receiveSignal()
+    inet::IMobility *antennaMobility = cellularRadio_->getAntenna()->getMobility();
+    if (antennaMobility != nullptr)
+        radioPos_ = antennaMobility->getCurrentPosition();
+    else if (mobility_ != nullptr)
         radioPos_ = mobility_->getCurrentPosition();
     return radioPos_;
 }

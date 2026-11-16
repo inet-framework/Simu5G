@@ -70,6 +70,9 @@ fills its bands in a slot, which is not asserted here.
 
 [Config BackgroundCellCqi]
 network = simu5g.simulations.nr.networks.SingleCell_Standalone
+
+# the positions this test gives the nodes are their antennas': no height offset
+**.antenna.mobility.offsetZ = 0m
 sim-time-limit = 3s
 **.routingRecorder.enabled = false
 cmdenv-express-mode = true

@@ -48,6 +48,9 @@ module BackgroundCell
         radio.txPower = bgScheduler.txPower;
         radio.antenna.txDirection = bgScheduler.txDirection;
         radio.antenna.txAngle = bgScheduler.txAngle;
+        radio.antenna.mobility.typename = default("AntennaMobility");
+        radio.antenna.mobility.mobilityModule = default(absPath(".mobility"));
+        radio.antenna.mobility.offsetZ = default(25m); // The height of the antenna above the cell's position
         bgTrafficGenerator.isNr = bgScheduler.isNr;
 
     submodules:

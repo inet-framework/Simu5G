@@ -17,6 +17,7 @@ Define_Module(CellularAntenna);
 
 void CellularAntenna::initialize()
 {
+    mobility_ = dynamic_cast<inet::IMobility *>(getSubmodule("mobility"));
     gain_ = par("gain");
     const char *txDirection = par("txDirection");
     txDirection_ = static_cast<TxDirectionType>(cEnum::get("simu5g::TxDirectionType")->lookup(txDirection));

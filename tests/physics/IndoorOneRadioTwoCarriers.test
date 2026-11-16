@@ -64,6 +64,9 @@ below the breakpoint distance on both carriers.
 
 [Config IndoorOneRadioTwoCarriers]
 network = simu5g.simulations.nr.networks.SingleCell_Standalone
+
+# the positions this test gives the nodes are their antennas': no height offset
+**.antenna.mobility.offsetZ = 0m
 sim-time-limit = 1s
 **.routingRecorder.enabled = false
 cmdenv-express-mode = true

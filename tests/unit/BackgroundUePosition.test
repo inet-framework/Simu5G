@@ -36,6 +36,9 @@ network Harness
 %inifile: omnetpp.ini
 [General]
 network = Harness
+
+# the positions this test gives the nodes are their antennas': no height offset
+**.antenna.mobility.offsetZ = 0m
 cmdenv-express-mode = false
 cmdenv-log-prefix = ""
 sim-time-limit = 1s

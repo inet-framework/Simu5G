@@ -37,6 +37,9 @@ module LteNicEnb extends LteNicBase
         mac.typename = default("LteMacEnb");
         phy.typename = default("PhyEnb");
         antenna.gain = default(18dBi);
+        antenna.mobility.typename = default("AntennaMobility");
+        antenna.mobility.mobilityModule = default(absPath("^.mobility"));
+        antenna.mobility.offsetZ = default(25m); // The height of the antenna above the node
         radio.receiver.noiseFigure = default(5dB);
         handoverPacketHolder.typename = default("HandoverPacketHolderEnb");
         packetFlowObserver.typename = default("PacketFlowObserverEnb");

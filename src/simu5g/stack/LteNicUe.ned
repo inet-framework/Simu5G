@@ -31,6 +31,9 @@ module LteNicUe extends LteNicBase like IUeCellularNic
         mac.typename = default("LteMacUe");
         phy.typename = default("PhyUe");
         antenna.gain = default(0dBi);
+        antenna.mobility.typename = default("AntennaMobility");
+        antenna.mobility.mobilityModule = default(absPath("^.mobility"));
+        antenna.mobility.offsetZ = default(1.5m); // The height of the antenna above the node
         radio.receiver.noiseFigure = default(7dB);
         handoverPacketHolder.typename = default("HandoverPacketHolderUe");
         packetFlowObserver.typename = default("PacketFlowObserverUe");

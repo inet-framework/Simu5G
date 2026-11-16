@@ -56,6 +56,9 @@ module BackgroundUe
         radio: CellularPhantomRadio {
             @display("p=57,141;is=s");
             antenna.gain = default(0dBi);
+            antenna.mobility.typename = default("AntennaMobility");
+            antenna.mobility.mobilityModule = default(absPath("^.mobility"));
+            antenna.mobility.offsetZ = default(1.5m); // The height of the antenna above the UE's position
             noiseFigure = default(7dB);
         }
 }

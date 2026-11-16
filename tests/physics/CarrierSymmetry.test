@@ -42,6 +42,9 @@ of those belongs to which frequency rather than to which slot.
 output-scalar-file = results/${iterationvarsf}${repetition}.sca
 output-vector-file = results/${iterationvarsf}${repetition}.vec
 network = simu5g.simulations.nr.networks.SingleCell_Standalone
+
+# the positions this test gives the nodes are their antennas': no height offset
+**.antenna.mobility.offsetZ = 0m
 sim-time-limit = 5s
 **.routingRecorder.enabled = false
 cmdenv-express-mode = true

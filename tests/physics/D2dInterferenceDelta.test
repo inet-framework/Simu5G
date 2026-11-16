@@ -100,6 +100,9 @@ network D2dTwoCells extends SingleCell_Standalone_D2D
 
 [Config D2dInterferenceDelta]
 network = D2dTwoCells
+
+# the positions this test gives the nodes are their antennas': no height offset
+**.antenna.mobility.offsetZ = 0m
 sim-time-limit = 1.5s
 **.routingRecorder.enabled = false
 cmdenv-express-mode = true

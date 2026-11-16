@@ -62,7 +62,10 @@ void CellularPhantomRadio::transmit(MacNodeId destId, MacCellId cellId, Directio
 
 const inet::Coord& CellularPhantomRadio::getCoord() const
 {
-    if (mobility_ != nullptr)
+    // where the antenna's own mobility says, or else where the node is
+    if (antenna_->getMobility() != nullptr)
+        position_ = antenna_->getMobility()->getCurrentPosition();
+    else if (mobility_ != nullptr)
         position_ = mobility_->getCurrentPosition();
     return position_;
 }
