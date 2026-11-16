@@ -1,0 +1,132 @@
+%description:
+
+The MAC SDUs an eNB MAC asks RLC for when a connection is scheduled on two
+carriers of the cell in one slot (LteMacEnb::macSduRequest()): one request per
+carrier, each sized by the bytes allocated to the UE on that carrier's bands,
+less the MAC header.
+
+The allocator keeps a UE's bytes per band of the cell, and the bands of a
+cell with two carriers of 6 bands are 0 to 5 and 6 to 11. With 100 bytes on
+band 3 and 300 bytes on band 9, the requests are for 98 and 298 bytes. (The
+MAC summed the UE's bytes over every band of the cell for each carrier's
+request, which is right only as long as a UE has one carrier per slot.)
+
+Checked with the real macSduRequest() on a never-initialize()d eNB MAC that
+records what it sends to RLC, a schedule list with an entry for the connection
+on each carrier, and an allocator filled by hand.
+
+%includes:
+#include <string>
+#include "SchedulerTestUtil.h"
+#include "MacTestStubs.h"
+#include "simu5g/common/cellInfo/CellInfo.h"
+#include "simu5g/stack/mac/allocator/LteAllocationModule.h"
+#include "simu5g/stack/mac/packet/LteMacSduRequest_m.h"
+#include "simu5g/stack/mac/scheduler/LteSchedulerEnbDl.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+// A cell's carriers, registered by hand. Never initialize()d.
+class TestCellInfo : public CellInfo
+{
+  protected:
+    void initialize(int stage) override {}
+};
+
+// A downlink scheduler that is only its allocator.
+class TestSchedulerEnbDl : public LteSchedulerEnbDl
+{
+  public:
+    void setup(LteMacEnb *mac, unsigned int numBands)
+    {
+        mac_ = mac;
+        direction_ = DL;
+        allocator_ = new LteAllocationModule(mac, DL);
+        allocator_->init(numBands, numBands);
+    }
+    LteAllocationModule *allocator() { return allocator_; }
+
+  protected:
+    void initialize(int stage) override {}
+};
+
+// An eNB MAC that records the sizes of the MAC SDUs it asks RLC for.
+class RequestRecordingMac : public StubEnbMac
+{
+  public:
+    TestCellInfo cellInfo;
+    std::vector<unsigned int> requested;
+    std::map<GHz, LteMacScheduleList> scheduleList;
+
+    RequestRecordingMac(std::vector<GHz> carriers, unsigned int numBands, TestSchedulerEnbDl *scheduler)
+    {
+        queueSize_ = 1 << 20;
+        for (GHz carrier : carriers)
+            cellInfo.registerCarrier(carrier, numBands, 0);
+        enbSchedulerDl_ = scheduler;
+        scheduleListDl_ = &scheduleList;
+    }
+    CellInfo *getCellInfo() override { return &cellInfo; }
+
+    MacCid addConnection(MacNodeId ueId)
+    {
+        configureChannel(ueId, DrbId(1), Lcg(0));
+        MacCid cid(ueId, drbIdToLcid(DrbId(1)));
+        simu5g::FlowDescriptor flow;
+        flow.setSourceId(nodeId_);
+        flow.setDestId(ueId);
+        flow.setDirection(DL);
+        createOutgoingConnection(cid, flow);
+        return cid;
+    }
+    void requestSdus() { macSduRequest(); }
+
+  protected:
+    void sendUpperPackets(cPacket *pkt) override
+    {
+        requested.push_back(check_and_cast<inet::Packet *>(pkt)->peekAtFront<LteMacSduRequest>()->getSduSize());
+        delete pkt;
+    }
+};
+
+%activity:
+Checker c;
+const unsigned int numBands = 6;
+const MacNodeId ue = MacNodeId(1025);
+const GHz carrier1 = GHz(2.0), carrier2 = GHz(3.5);
+
+auto *scheduler = new TestSchedulerEnbDl();
+auto *mac = new RequestRecordingMac({carrier1, carrier2}, numBands, scheduler);
+scheduler->setup(mac, 2 * numBands);
+MacCid cid = mac->addConnection(ue);
+
+// the UE has 100 bytes on band 3 of the first carrier and 300 bytes on band 3 of the second (cell band 9)
+scheduler->allocator()->addBlocks(MACRO, Band(3), ue, 1, 100);
+scheduler->allocator()->addBlocks(MACRO, Band(9), ue, 3, 300);
+mac->scheduleList[carrier1][{cid, Codeword(0)}] = 1;
+mac->scheduleList[carrier2][{cid, Codeword(0)}] = 1;
+
+mac->requestSdus();
+
+auto show = [&] {
+    std::string s;
+    for (unsigned int size : mac->requested)
+        s += std::to_string(size) + " ";
+    return s;
+};
+c.check("RLC is asked once per carrier the connection is scheduled on", mac->requested.size() == 2, show());
+c.check("...for the first carrier's bytes less the MAC header", mac->requested.size() == 2 && mac->requested[0] == 100 - MAC_HEADER, show());
+c.check("...and for the second carrier's", mac->requested.size() == 2 && mac->requested[1] == 300 - MAC_HEADER, show());
+
+delete mac;
+delete scheduler;
+
+c.summary();
+
+%contains: stdout
+modelchecks=3 modelfailures=0
+
+%not-contains: stdout
+FAILED
