@@ -40,7 +40,7 @@ module LteNicBase extends NetworkInterface like ICellularNic
 {
     parameters:
         @class(NonlayoutingNetworkInterface);
-        @display("i=block/ifcard;bgb=800,810;bgl=3");
+        @display("i=block/ifcard;bgb=800,925;bgl=3");
         bool isWireless = true;
         string interfaceTableModule;
         string routingTableModule;
@@ -94,19 +94,19 @@ module LteNicBase extends NetworkInterface like ICellularNic
         }
         // MAC Layer
         mac: <> like ILteMac {
-            @display("p=310,660");
+            @display("p=310,680");
         }
         // PHY submodule
         phy: <> like IPhy {
-            @display("p=310,750");
+            @display("p=310,770");
         }
         // the radio of the PHY leg
         radio: CellularRadio {
-            @display("p=310,830");
+            @display("p=310,850");
         }
         // the antenna, which the radios of the NIC share
         antenna: CellularAntenna {
-            @display("p=440,830");
+            @display("p=440,850");
         }
 
         //# Modules used to take trace of PDCP pkt flow

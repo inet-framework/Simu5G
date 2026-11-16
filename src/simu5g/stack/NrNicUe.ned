@@ -87,15 +87,15 @@ module NrNicUe extends LteNicUe
         }
         // MAC Layer
         nrMac: <default("NrMacUe")> like ILteMac {
-            @display("p=570,660");
+            @display("p=570,680");
         }
         // PHY Layer
         nrPhy: <default("PhyUe")> like IPhy {
-            @display("p=570,750");
+            @display("p=570,770");
         }
         // the radio of the NR PHY leg
         nrRadio: CellularRadio {
-            @display("p=570,830");
+            @display("p=570,850");
         }
 
         // Feedback generator submodule
