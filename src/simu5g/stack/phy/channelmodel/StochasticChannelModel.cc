@@ -355,31 +355,13 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, bool los
     return att;
 }
 
-double StochasticChannelModel::computeAngle(Coord center, Coord point) {
-    double relx, rely, arcoSen, angle, dist;
-
-    // compute distance between points
-    dist = point.distance(center);
-
-    // compute distance along the axis
-    relx = point.x - center.x;
-    rely = point.y - center.y;
-
-    // compute the arc sine
-    arcoSen = asin(rely / dist) * 180.0 / M_PI;
-
-    // adjust the angle depending on the quadrants
-    if (relx < 0 && rely > 0) // quadrant II
-        angle = 180.0 - arcoSen;
-    else if (relx < 0 && rely <= 0) // quadrant III
-        angle = 180.0 - arcoSen;
-    else if (relx >= 0 && rely < 0) // quadrant IV, and the negative y axis
-        angle = 360.0 + arcoSen;
-    else
-        // quadrant I
-        angle = arcoSen;
-
-    return angle;
+double StochasticChannelModel::computeAngle(Coord center, Coord point)
+{
+    // the azimuth: the angle of the horizontal direction from the centre to the
+    // point, in [0, 360) degrees from the x axis; 0 where there is none (the
+    // point straight above or below the centre)
+    double angle = atan2(point.y - center.y, point.x - center.x) * 180.0 / M_PI;
+    return angle < 0 ? angle + 360.0 : angle;
 }
 
 double StochasticChannelModel::computeVerticalAngle(Coord center, Coord point)
