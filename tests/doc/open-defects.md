@@ -23,6 +23,13 @@ item with the commit that fixes it.
 - **Nothing checks that what a scheduler booked is what the cell sent.** The downlink band-status peeks, deleted in piece 7c, were a bridge, and were the only thing to catch issue #310, a MAC queue overflow, an unmet NR-SO SDU count, a grant no larger than the MAC header, a frame to a departed destination and a retransmission booked on other bands. A debug check needs no old copy: at the top of the MAC's tick, for each band and UE the DL allocator booked in the slot just completed, if the UE still exists, the medium holds a DL transmission of this node on that band, and the converse. It fires on #310, so it goes in right after that fix, and the drop in LteMacEnb::macPduMake() becomes a throw.
 - **A UE's frame to a departed destination interferes with nobody.** It is discarded before it reaches the radio, so it is not on the medium, though it would have radiated.
 
+- **A UE is served on at most one carrier per slot.**
+  - Reproduced at 3a9cc5b70 ("radio-repairs: fingerprints: test: the 36 rows moved by the uplink sector pattern and the shadowing re-recorded"): on a gNB with two carriers of 50 bands, a lone UE with saturating traffic has 750 downlink receptions on the first carrier and 149 on the second in 900 slots, and 676 uplink receptions on the first and none on the second. Two saturated UEs fill both carriers.
+  - LteSchedulerEnb::schedule() clears allocatedCws_, the number of codewords allocated to each UE, once per slot, and schedules the carriers one after another; scheduleGrant() returns at once for a UE that has a codeword already ("just a BAD patch"). The retransmission paths and the background UEs' path read the same count.
+  - Effect: carrier aggregation never raises a single UE's rate, and a cell's second carrier is idle unless as many UEs are active as the cell has carriers.
+  - Lifting the limit in the scheduler alone aborts the downlink: LteMacEnb sizes its request to RLC from the UE's bytes on the whole cell, and assembles the PDU at RLC's first answer ("Abnormal queue length detected while building MAC PDU").
+  - Asserted by tests/module/CarrierAggregationOneUe and CarrierAggregationRate and tests/unit/SchedulerCodewordPerCarrier, which fail until it is fixed.
+
 ## Cleanups
 
 - **One factory for the what-if transmissions.** PhyEnb::requestFeedback(), PhyEnbD2D::appendExtraFeedback(), PhyUe::findCandidateEnb() and both background traffic managers build a hypothetical CellularTransmission by hand, next to CellularTransmitter::createTransmission(). One factory would keep them from drifting apart.

@@ -1,0 +1,65 @@
+%description:
+A flow that needs more than one carrier and less than two is delivered in full on a cell with
+two carriers, in each direction: the carriers carry different data, none of it is lost, and none
+is delivered twice.
+
+One gNB on two carriers of 50 bands, and one UE close to it, on a channel good enough that H-ARQ
+loses nothing. From 0.1 s to 0.8 s the server sends the UE 1400 bytes every 0.14 ms, 10 MB/s,
+where one carrier carries about 7 MB/s in the downlink; the UE sends the server 1400 bytes
+every 0.18 ms, 7.8 MB/s, where one carrier carries about 5.2 MB/s in the uplink. The run goes on
+to 1 s so that the queues drain.
+
+Checked: each receiver gets every byte its peer sent, 7 001 400 bytes in the downlink and
+5 444 600 in the uplink. (With one carrier per slot for a UE, neither flow was delivered in
+full by the end of the run.)
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+sim-time-limit = 1s
+
+*.*.app[*].**.scalar-recording = true
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.gnb.cellularNic.numCarriers = 2
+*.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+
+# downlink: server.app[0] to ue[0].app[0]; uplink: ue[0].app[1] to server.app[1]
+*.server.numApps = 2
+*.ue[*].numApps = 2
+*.server.app[0].typename = "CbrSender"
+*.server.app[0].destAddress = "ue[0]"
+*.server.app[0].destPort = 1000
+*.ue[*].app[0].typename = "CbrReceiver"
+*.ue[*].app[0].localPort = 1000
+*.ue[*].app[1].typename = "CbrSender"
+*.ue[*].app[1].destAddress = "server"
+*.ue[*].app[1].destPort = 2000
+*.server.app[1].typename = "CbrReceiver"
+*.server.app[1].localPort = 2000
+*.*.app[*].packetSize = 1400B
+*.*.app[*].startTime = 0.1s
+*.*.app[*].finishTime = 0.8s
+*.server.app[0].samplingTime = 0.14ms
+*.ue[*].app[1].samplingTime = 0.18ms
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.server.app[0] cbrGeneratedBytes:sum 7001400
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.ue[0].app[0] cbrReceivedBytes:sum 7001400
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.ue[0].app[1] cbrGeneratedBytes:sum 5444600
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.server.app[1] cbrReceivedBytes:sum 5444600
+%#--------------------------------------------------------------------------------------------------------------

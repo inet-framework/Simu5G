@@ -1,0 +1,146 @@
+%description:
+
+The eNB scheduler's count of the codewords allocated to a UE in a slot is per
+carrier: a UE that has its codeword on one carrier of the cell is still
+eligible on another, and not again on the same one. (The count was per UE: a
+UE served on one carrier was not eligible on any other in that slot, so
+carrier aggregation never gave a UE more than one carrier at a time.)
+
+Checked through the background UEs' path of the real scheduler
+(scheduleGrantBackground()), which shares the count with the real UEs' path
+and needs no AMC, on a cell with two carriers of 6 bands: a background UE with
+backlog is allocated on the first carrier, then, in the same slot, on the
+second, and a third request on the second carrier allocates nothing.
+
+%includes:
+#include <string>
+#include "SchedulerTestUtil.h"
+#include "MacTestStubs.h"
+#include "simu5g/background/trafficGenerator/IBackgroundTrafficManager.h"
+#include "simu5g/common/cellInfo/CellInfo.h"
+#include "simu5g/stack/mac/allocator/LteAllocationModule.h"
+#include "simu5g/stack/mac/scheduler/LteSchedulerEnbDl.h"
+#include "simu5g/stack/mac/scheduler/LteSchedulerEnbUl.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+[[noreturn]] static void unexpected(const char *method)
+{
+    throw omnetpp::cRuntimeError("RecordingBgManager: unexpected call to %s()", method);
+}
+
+// A background traffic manager with one backlogged UE that records the
+// allocation maps registered with it.
+class RecordingBgManager : public IBackgroundTrafficManager
+{
+  public:
+    unsigned int newDataBytes = 100;
+    unsigned int rtxBytes = 8;
+    unsigned int bytesPerBlock = 10;
+    int registrations = 0;
+    RbMap registered;
+
+    unsigned int getBackloggedUeBuffer(MacNodeId bgUeId, Direction dir, bool rtx) override { return rtx ? rtxBytes : newDataBytes; }
+    unsigned int getBackloggedUeBytesPerBlock(MacNodeId bgUeId, Direction dir) override { return bytesPerBlock; }
+    unsigned int consumeBackloggedUeBytes(MacNodeId bgUeId, unsigned int bytes, Direction dir, bool rtx) override { return 0; }
+    void registerTransmission(MacNodeId bgUeId, Direction dir, GHz carrierFrequency, const RbMap& allocatedRbMap) override
+    {
+        registrations++;
+        registered = allocatedRbMap;
+    }
+
+    void setCarrierFrequency(GHz carrierFrequency) override { unexpected("setCarrierFrequency"); }
+    unsigned int getNumBands() override { unexpected("getNumBands"); }
+    void notifyBacklog(int index, Direction dir, bool rtx) override { unexpected("notifyBacklog"); }
+    Cqi computeCqi(int bgUeIndex, Direction dir) override { unexpected("computeCqi"); }
+    Cqi computeCqiFromSinr(double sinr) override { unexpected("computeCqiFromSinr"); }
+    CellularPhantomRadio *getBgUeRadio(MacNodeId bgUeId) override { unexpected("getBgUeRadio"); }
+    MacNodeId getBgUeId(int bgUeIndex) override { unexpected("getBgUeId"); }
+    int getBgUeIndex(MacNodeId bgUeId) override { unexpected("getBgUeIndex"); }
+    std::vector<TrafficGeneratorBase *>::const_iterator getBgUesBegin() override { unexpected("getBgUesBegin"); }
+    std::vector<TrafficGeneratorBase *>::const_iterator getBgUesEnd() override { unexpected("getBgUesEnd"); }
+    std::list<int>::const_iterator getBackloggedUesBegin(Direction dir, bool rtx) override { unexpected("getBackloggedUesBegin"); }
+    std::list<int>::const_iterator getBackloggedUesEnd(Direction dir, bool rtx) override { unexpected("getBackloggedUesEnd"); }
+    std::list<int>::const_iterator getWaitingForRacUesBegin() override { unexpected("getWaitingForRacUesBegin"); }
+    std::list<int>::const_iterator getWaitingForRacUesEnd() override { unexpected("getWaitingForRacUesEnd"); }
+    void racHandled(MacNodeId bgUeId) override { unexpected("racHandled"); }
+};
+
+// A cell's carriers, registered by hand. Never initialize()d.
+class TestCellInfo : public CellInfo
+{
+  protected:
+    void initialize(int stage) override {}
+};
+
+// An eNB MAC whose background traffic manager is the recording stub, in a cell with the given carriers.
+class TestEnbMac : public StubEnbMac
+{
+  public:
+    RecordingBgManager manager;
+    TestCellInfo cellInfo;
+    TestEnbMac(std::vector<GHz> carriers, unsigned int numBands)
+    {
+        for (GHz carrier : carriers)
+            cellInfo.registerCarrier(carrier, numBands, 0);
+    }
+    CellInfo *getCellInfo() override { return &cellInfo; }
+    IBackgroundTrafficManager *getBackgroundTrafficManager(GHz carrierFrequency) override { return &manager; }
+};
+
+// A scheduler of the given direction set up by hand on the given MAC, with its own allocator.
+template<class Base>
+class TestScheduler : public Base
+{
+  public:
+    void setup(LteMacEnb *mac, Direction dir, unsigned int numBands)
+    {
+        this->mac_ = mac;
+        this->direction_ = dir;
+        this->allocator_ = new LteAllocationModule(mac, dir);
+        this->allocator_->init(numBands, numBands);
+    }
+    LteAllocationModule *allocator() { return this->allocator_; }
+
+  protected:
+    void initialize(int stage) override {}
+};
+
+%activity:
+Checker c;
+const unsigned int numBands = 6;
+const MacNodeId bgUe = MacNodeId(4097);
+const GHz carrier1 = GHz(2.0), carrier2 = GHz(3.5);
+
+TestEnbMac *mac = new TestEnbMac({carrier1, carrier2}, numBands);
+auto *scheduler = new TestScheduler<LteSchedulerEnbDl>();
+scheduler->setup(mac, DL, 2 * numBands);
+
+auto grantOn = [&] (GHz carrier, Band band) {
+    BandLimitVector bandLim = { BandLimit(band) };
+    bool terminate = false, active = true, eligible = true;
+    return scheduler->scheduleGrantBackground(MacCid(bgUe, LogicalCid(0)), 1000, terminate, active, eligible, carrier, &bandLim);
+};
+
+unsigned int first = grantOn(carrier1, Band(3));
+c.check("the UE is allocated on the first carrier", first > 0 && mac->manager.registrations == 1,
+        std::to_string(first) + " bytes, " + std::to_string(mac->manager.registrations) + " registrations");
+unsigned int second = grantOn(carrier2, Band(9));
+c.check("...and, in the same slot, on the second carrier", second > 0 && mac->manager.registrations == 2,
+        std::to_string(second) + " bytes, " + std::to_string(mac->manager.registrations) + " registrations");
+unsigned int again = grantOn(carrier2, Band(10));
+c.check("...and not again on a carrier it already has its codeword on", again == 0 && mac->manager.registrations == 2,
+        std::to_string(again) + " bytes, " + std::to_string(mac->manager.registrations) + " registrations");
+
+delete scheduler;
+delete mac;
+
+c.summary();
+
+%contains: stdout
+modelchecks=3 modelfailures=0
+
+%not-contains: stdout
+FAILED

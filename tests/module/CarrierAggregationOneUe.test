@@ -1,0 +1,59 @@
+%description:
+A UE on a cell with two carriers is served on both carriers in the same slot: carrier
+aggregation raises a single UE's rate. (The scheduler gave a UE one carrier per slot: a UE with
+its codeword allocated on one carrier was not eligible on the others, so a lone UE used the
+second carrier only in the slots in which the first could not take it, and in the uplink never.)
+
+One gNB on two carriers of 50 bands, at 2 GHz and 3.5 GHz, and one UE close to it, with a
+saturating flow of 1400 bytes every 0.1 ms in each direction from 0.1 s to 1 s: 900 slots.
+
+Checked by lib/carrier_use_check.py on the reception trace, per direction: the carrier with
+fewer receptions has at least 80% of the receptions of the other, and that one is used in at
+least 60% of the slots. (Not every slot carries a reception on a carrier: the UE's H-ARQ
+processes and, in the uplink, the grant cycle limit it.)
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+sim-time-limit = 1s
+
+*.radioMedium.recordReceptionTrace = true
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.gnb.cellularNic.numCarriers = 2
+*.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+
+# downlink: server.app[0] to ue[0].app[0]; uplink: ue[0].app[1] to server.app[1]
+*.server.numApps = 2
+*.ue[*].numApps = 2
+*.server.app[0].typename = "CbrSender"
+*.server.app[0].destAddress = "ue[0]"
+*.server.app[0].destPort = 1000
+*.ue[*].app[0].typename = "CbrReceiver"
+*.ue[*].app[0].localPort = 1000
+*.ue[*].app[1].typename = "CbrSender"
+*.ue[*].app[1].destAddress = "server"
+*.ue[*].app[1].destPort = 2000
+*.server.app[1].typename = "CbrReceiver"
+*.server.app[1].localPort = 2000
+*.*.app[*].packetSize = 1400B
+*.*.app[*].startTime = 0.1s
+*.*.app[*].samplingTime = 0.1ms
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%postrun-command: python3 ../../lib/carrier_use_check.py results/General-0.rxtrace 900 > verdict.txt
+%#--------------------------------------------------------------------------------------------------------------
+%contains: verdict.txt
+PASS: DL
+%#--------------------------------------------------------------------------------------------------------------
+%contains: verdict.txt
+PASS: UL
+%#--------------------------------------------------------------------------------------------------------------
+%not-contains: verdict.txt
+FAIL
+%#--------------------------------------------------------------------------------------------------------------
