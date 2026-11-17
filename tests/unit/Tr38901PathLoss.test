@@ -81,14 +81,15 @@ probe.pathLoss("t901_uma_nlos", m, p, 1000.28, 1000, false);
 probe.expectRejected("UMa d2D=6000 rejected", [&]() { m.computePathLoss(6000, 6000, true, {}); });
 
 // --- RMa, hBS = 35 m, hUT = 1.5 m, fc = 0.8 GHz -----------------------
-// dBP = 2 pi hBS hUT fc/c = 879.646 m. TR 38.901 fixes the average building
-// height at 5 m and the average street width at 20 m for RMa, so the model
-// ignores its own hBuilding and wStreet parameters here; they are left at
-// their defaults of 20 m, which the graded cases must not be sensitive to.
+// dBP = 2 pi hBS hUT fc/c = 879.646 m. The average building height h and the
+// average street width W are parameters of the RMa formulas (Table 7.4.1-1:
+// defaults "h=5m", "W=20m"; "5m<=h<=50m", "5m<=W<=50m").
 p = ScenarioParams();
 p.scenario = RURAL_MACROCELL;
 p.hNodeB = 35;
 p.hUe = 1.5;
+p.hBuilding = 5;
+p.wStreet = 20;
 p.carrierFrequencyGHz = 0.8;
 
 probe.pathLoss("t901_rma_los",  m, p, 105.6, 100, true);       // below dBP
@@ -96,6 +97,16 @@ probe.pathLoss("t901_rma_los",  m, p, 501.1, 500, true);       // below dBP
 probe.pathLoss("t901_rma_los",  m, p, 3000.19, 3000, true);    // above dBP
 probe.pathLoss("t901_rma_nlos", m, p, 501.1, 500, false);
 probe.pathLoss("t901_rma_nlos", m, p, 3000.19, 3000, false);
+
+// other buildings and streets than the defaults
+p.hBuilding = 15;
+p.wStreet = 10;
+probe.pathLoss("t901_rma_los",  m, p, 501.1, 500, true);       // below dBP
+probe.pathLoss("t901_rma_los",  m, p, 3000.19, 3000, true);    // above dBP
+probe.pathLoss("t901_rma_nlos", m, p, 501.1, 500, false);
+probe.pathLoss("t901_rma_nlos", m, p, 3000.19, 3000, false);
+p.hBuilding = 5;
+p.wStreet = 20;
 
 probe.expectRejected("RMa LOS d2D=11000 rejected", [&]() { m.computePathLoss(11000, 11000, true, {}); });
 probe.expectRejected("RMa NLOS d2D=6000 rejected", [&]() { m.computePathLoss(6000, 6000, false, {}); });
@@ -119,7 +130,7 @@ probe.summary();
 %postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt
 
 %contains: verdict.txt
-graded=24 failures=0
+graded=28 failures=0
 
 %contains: stdout
 modelchecks=5 modelfailures=0

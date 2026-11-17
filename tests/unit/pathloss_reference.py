@@ -39,12 +39,9 @@ test file runs this on its own output as a %postrun-command and matches that
 summary, so no expected value is ever written down: a data point is defined
 once, by the call in the .test file that produces it.
 
-A parameter a report fixes rather than reads is therefore not a parameter of
-the transcribed formula -- the average building height of the TR 38.901 rural
-scenario is a local constant, and what a test sets hBuilding to is ignored for
-those cases. Renaming a formula parameter changes what the record must supply,
-so the two sides cannot drift apart silently: a missing parameter is a graded
-failure, not a wrong number.
+Renaming a formula parameter changes what the record must supply, so the two
+sides cannot drift apart silently: a missing parameter is a graded failure, not
+a wrong number.
 
 To work out the value of a new case, write the case and run the test. The
 failure line prints what the specification says it should have been.
@@ -435,20 +432,17 @@ def t901_uma_nlos(d3D, d2D, fc, hBS, hUT):
                13.54 + 39.08 * log10(d3D) + 20 * log10(fc) - 0.6 * (hUT - 1.5))
 
 
-# TR 38.901 fixes the average building height at h = 5 m and the average street
-# width at W = 20 m for RMa, so neither is a parameter of these two.
-T901_RMA_H = 5.0
-T901_RMA_W = 20.0
+# Table 7.4.1-1, RMa: "h = avg. building height", "W = avg. street width", with
+# the defaults "W=20m", "h=5m" and "The applicability ranges: 5m<=h<=50m,
+# 5m<=W<=50m": both are parameters of the formulas.
+def t901_rma_los(d3D, d2D, fc, hBS, hUT, h):
+    return _rma_los(d3D, d2D, fc, hBS, hUT, h)
 
 
-def t901_rma_los(d3D, d2D, fc, hBS, hUT):
-    return _rma_los(d3D, d2D, fc, hBS, hUT, T901_RMA_H)
-
-
-def t901_rma_nlos(d3D, d2D, fc, hBS, hUT):
+def t901_rma_nlos(d3D, d2D, fc, hBS, hUT, W, h):
     # PL = max(PL_LOS, the shared macrocell NLOS formula)
-    return max(_rma_los(d3D, d2D, fc, hBS, hUT, T901_RMA_H),
-               _macro_nlos(d3D, fc, hBS, hUT, T901_RMA_W, T901_RMA_H))
+    return max(_rma_los(d3D, d2D, fc, hBS, hUT, h),
+               _macro_nlos(d3D, fc, hBS, hUT, W, h))
 
 
 # LOS probability, Table 7.4.2-1. UMi, UMa and RMa are unchanged from

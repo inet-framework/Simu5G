@@ -14,9 +14,8 @@ for either cell's transmission is its closed form too.
 
 A rural macrocell takes the building height and street width of its base
 station (TR 38.901 Table 7.4.1-1 gives the RMa NLOS path loss with h and W):
-two rural base stations that differ only in them give different path losses.
-The TR 38.901 model has the two as the constants 5 m and 20 m, so this part
-runs on a TR 36.814 model, whose rural NLOS formula takes them.
+two rural base stations that differ only in them differ by the h and W terms
+of that formula.
 
 A link between two UEs takes the scenario of its receiver's serving cell.
 
@@ -40,7 +39,6 @@ struct D2dLinkAccess : StochasticChannelModel
 import simu5g.common.binder.Binder;
 import simu5g.stack.phy.medium.CellularRadioMedium;
 import simu5g.common.carrierAggregation.CarrierAggregation;
-import simu5g.stack.phy.channelmodel.StochasticChannelModel;
 import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
 
 network Harness
@@ -50,7 +48,6 @@ network Harness
         radioMedium: CellularRadioMedium;
         carrierAggregation: CarrierAggregation;
         model: Tr38901ChannelModel;
-        ruralModel: StochasticChannelModel;
         test: Test;
 }
 
@@ -72,17 +69,15 @@ sim-time-limit = 1s
 **.fixedLos = false
 **.shadowing = false
 **.fading = false
-*.ruralModel.pathLossType = "Tr36814"
 
 %no-default-inifile: 1
 
 %activity:
 Checker c;
 auto *model = harnessModule<StochasticChannelModel>(this, "model");
-auto *ruralModel = harnessModule<StochasticChannelModel>(this, "ruralModel");
 auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
 auto *binder = harnessModule<Binder>(this, "binder");
-ChannelModelProbe probe(model), ruralProbe(ruralModel);
+ChannelModelProbe probe(model);
 
 // a macrocell, a microcell under it, and a UE between them
 StubEndpoint macro, micro, ue;
@@ -168,15 +163,15 @@ c.expectNear("the uplink to the macrocell has its downlink's path loss", model->
     town.streetWidth = 10;
     ruralUe.nodeId = MacNodeId(1030);
     ruralUe.coord = Coord(800, 2000, 1.5);
-    RadioLink fromVillage = downlink(ruralProbe, village, ruralUe);
-    RadioLink fromTown = downlink(ruralProbe, town, ruralUe);
-    double villageLoss = ruralModel->getAttenuation(fromVillage);
-    double townLoss = ruralModel->getAttenuation(fromTown);
+    RadioLink fromVillage = downlink(probe, village, ruralUe);
+    RadioLink fromTown = downlink(probe, town, ruralUe);
+    double villageLoss = model->getAttenuation(fromVillage);
+    double townLoss = model->getAttenuation(fromTown);
     c.expectNear("a rural base station among 5 m buildings and 20 m streets: its closed form", villageLoss,
-            closedForm(ruralProbe, fromVillage, village, ruralUe.coord, 1.5), 1e-9);
+            closedForm(probe, fromVillage, village, ruralUe.coord, 1.5), 1e-9);
     c.expectNear("a rural base station among 15 m buildings and 10 m streets: its closed form", townLoss,
-            closedForm(ruralProbe, fromTown, town, ruralUe.coord, 1.5), 1e-9);
-    // TR 36.814 Table B.1.2.1-1, RMa NLOS: - 7.1 log10(W) + 7.5 log10(h) - 3.7 (h/hBS)^2 log10(hBS), the rest equal
+            closedForm(probe, fromTown, town, ruralUe.coord, 1.5), 1e-9);
+    // TR 38.901 Table 7.4.1-1, RMa NLOS (the LOS formula is below it at this distance): - 7.1 log10(W) + 7.5 log10(h) - 3.7 (h/hBS)^2 log10(hBS), the rest equal
     auto terms = [](double w, double h) { return -7.1 * log10(w) + 7.5 * log10(h) + 3.7 * pow(h / 35, 2) * log10(35.0); };
     c.expectNear("they differ by the h and W terms of the RMa NLOS formula", townLoss - villageLoss, terms(10, 15) - terms(20, 5), 1e-9);
 }

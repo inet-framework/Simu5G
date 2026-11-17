@@ -1,0 +1,107 @@
+%description:
+
+The average building height of a cell defaults to the value the studies give
+for its scenario.
+
+TR 36.814 Table B.1.2.1-1 gives "W = 20 m, h = 20 m" for the urban macrocell,
+"W = 20 m, h = 10 m" for the suburban and "W = 20 m, h = 5 m" for the rural
+macrocell; TR 36.873 Table 7.2-1 and TR 38.901 Table 7.4.1-1 give the same for
+the scenarios they have. The radio's buildingHeight parameter therefore
+defaults to 20 m, 10 m or 5 m by its scenario parameter, and streetWidth to
+20 m. With one default of 20 m for every scenario, a rural cell ran among
+20 m buildings unless the user knew to set 5 m.
+
+Checked on the radios of base stations (CellularRadio) and of background or
+external cells (CellularPhantomRadio): each scenario's default, and an
+explicit value, which a default does not override.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "simu5g/stack/phy/radio/CellularRadio.h"
+#include "simu5g/stack/phy/radio/CellularPhantomRadio.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.radio.CellularAntenna;
+import simu5g.stack.phy.radio.CellularRadio;
+import simu5g.stack.phy.radio.CellularPhantomRadio;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        antenna: CellularAntenna;
+        urban: CellularRadio;
+        micro: CellularRadio;
+        suburban: CellularRadio;
+        rural: CellularRadio;
+        ruralSet: CellularRadio;
+        phantomUrban: CellularPhantomRadio;
+        phantomSuburban: CellularPhantomRadio;
+        phantomRural: CellularPhantomRadio;
+        phantomRuralSet: CellularPhantomRadio;
+        test: Test;
+    connections allowunconnected:
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+*.binder.printTrafficGeneratorConfig = false
+*.*.antennaModule = "^.antenna"
+*.phantom*.txPower = 40dBm
+*.phantom*.antenna.mobility.typename = ""
+
+*.micro.scenario = "URBAN_MICROCELL"
+*.suburban.scenario = "SUBURBAN_MACROCELL"
+*.rural*.scenario = "RURAL_MACROCELL"
+*.ruralSet.buildingHeight = 12m
+*.ruralSet.streetWidth = 30m
+*.phantomSuburban.scenario = "SUBURBAN_MACROCELL"
+*.phantomRural*.scenario = "RURAL_MACROCELL"
+*.phantomRuralSet.buildingHeight = 12m
+*.phantomRuralSet.streetWidth = 30m
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto radio = [&](const char *name) { return check_and_cast<CellularRadio *>(getParentModule()->getSubmodule(name)); };
+auto phantom = [&](const char *name) { return check_and_cast<CellularPhantomRadio *>(getParentModule()->getSubmodule(name)); };
+
+c.expectNear("an urban macrocell's buildings: 20 m", radio("urban")->getBuildingHeight(), 20, 0);
+c.expectNear("an urban microcell's buildings: 20 m (its formulas take none)", radio("micro")->getBuildingHeight(), 20, 0);
+c.expectNear("a suburban macrocell's buildings: 10 m", radio("suburban")->getBuildingHeight(), 10, 0);
+c.expectNear("a rural macrocell's buildings: 5 m", radio("rural")->getBuildingHeight(), 5, 0);
+c.expectNear("a rural macrocell's streets: 20 m", radio("rural")->getStreetWidth(), 20, 0);
+c.expectNear("an explicit building height stays", radio("ruralSet")->getBuildingHeight(), 12, 0);
+c.expectNear("an explicit street width stays", radio("ruralSet")->getStreetWidth(), 30, 0);
+
+c.expectNear("a background or external urban macrocell's buildings: 20 m", phantom("phantomUrban")->getBuildingHeight(), 20, 0);
+c.expectNear("a background or external suburban macrocell's buildings: 10 m", phantom("phantomSuburban")->getBuildingHeight(), 10, 0);
+c.expectNear("a background or external rural macrocell's buildings: 5 m", phantom("phantomRural")->getBuildingHeight(), 5, 0);
+c.expectNear("an explicit building height stays on it too", phantom("phantomRuralSet")->getBuildingHeight(), 12, 0);
+c.expectNear("an explicit street width stays on it too", phantom("phantomRuralSet")->getStreetWidth(), 30, 0);
+
+c.summary();
+
+%contains: stdout
+modelchecks=12 modelfailures=0
+
+%not-contains: stdout
+FAILED
