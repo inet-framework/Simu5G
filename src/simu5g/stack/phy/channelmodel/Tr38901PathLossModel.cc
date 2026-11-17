@@ -307,7 +307,7 @@ double Tr38901PathLossModel::computeRuralMacro3D(const Deployment& deployment, d
     // Compute break-point distance
     double dbp = 2 * M_PI * deployment.hNodeB * deployment.hUe * (carrierFrequencyHz_  / PROPAGATION_VELOCITY);
 
-    double h = 5.0; // Average building height
+    double h = deployment.hBuilding; // average building height
     double A = 0.03 * pow(h, 1.72);
     double B = 0.044 * pow(h, 1.72);
     double min1 = (A < 10) ? A : 10;
@@ -326,7 +326,7 @@ double Tr38901PathLossModel::computeRuralMacro3D(const Deployment& deployment, d
     if (los)
         pLoss = pLoss_los;
     else {
-        double W = 20.0;  // Average street width
+        double W = deployment.wStreet; // average street width
         double pLoss_nlos = 161.04 - 7.1 * log10(W) + 7.5 * log10(h) - (24.37 - 3.7 * pow(h / deployment.hNodeB, 2)) * log10(deployment.hNodeB)
             + (43.42 - 3.1 * log10(deployment.hNodeB)) * (log10(threeDimDistance) - 3.0) + 20 * log10CarrierFrequencyGHz_
             - (3.2 * pow((log10(11.75 * deployment.hUe)), 2) - 4.97);
