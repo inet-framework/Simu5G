@@ -16,17 +16,17 @@ configured constants and one path loss:
 
     SINR = d2dTxPower - PL(d) + 2 Gue - cableLoss - (thermalNoise + UE noise figure)
 
-TR 38.901 has no UE-to-UE link, but other specifications do: TR 36.843
-A.2.1.2 (D2D channel models, both antenna heights 1.5 m) and TR 37.885 Table
-6.2.1-1 (whose V2V path loss is reused for P2P). The model uses neither. It
+TR 38.901 has no UE-to-UE link, but other specifications do: TR 36.843 A.2.1.2
+(D2D channel models, both antenna heights 1.5 m) and TR 37.885 6.2.1 (which
+reuses the V2V path loss of Table 6.2.1-1 for P2P). The model uses neither. It
 evaluates a UE-to-UE link with its configured scenario, as a UMi link here
 with the serving cell's antenna height in the breakpoint distance, and it
 subtracts cableLoss although no base station is involved. This test grades
 that convention: it is a characterisation of the model, not a specification
-check. The distances are kept below the breakpoint distance, where the UMi
-LOS formula does not depend on the antenna heights beyond fixing the
-breakpoint itself; past it, the answer depends on which heights the model
-gives a UE-to-UE link. A tripwire asserts that the sweep stays below it.
+check. The distances are kept below the breakpoint distance, where the UMi LOS
+formula does not depend on the antenna heights beyond fixing the breakpoint
+itself; past it, the answer depends on which heights the model gives a
+UE-to-UE link. A tripwire asserts that the sweep stays below it.
 
 The SINR is read from rcvdSinrD2D, recorded by the receiving UE's radio
 for every D2D reception. With nothing varying, every reception at one

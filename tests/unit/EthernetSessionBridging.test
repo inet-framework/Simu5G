@@ -2,7 +2,8 @@
 
 The forwarding of a UPF's Ethernet bridge (EthernetSessionBridge) against
 TS 23.501 V20.3.0 clause 5.8.2.5.3, "Support of Ethernet PDU Session type": one
-case per sentence of the clause, each quoting the sentence it checks. The
+case per forwarding rule the clause states, each quoting the sentence it
+checks. The
 expected forwarding is decided from the spec text, not from the implementation
 (INET's BridgingLayer relay).
 

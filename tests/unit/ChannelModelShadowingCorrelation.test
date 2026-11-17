@@ -7,11 +7,11 @@ correlated over its displacement.
 TR 38.901 V16.1.0 clause 7.4.4, eq. (7.4-5), gives the normalized
 autocorrelation of shadow fading over a horizontal displacement dx as
 
-    R(dx) = exp(-dx / d_cor)
+    R(dx) = exp(-|dx| / d_cor)
 
 with d_cor the "correlation distance in the horizontal plane" of Table 7.5-6.
-TR 36.873 clause 7.2.4 and TR 36.814 clause B.1.2.1.1 say the same, after
-Gudmundson and ITU-R P.1816.
+TR 36.873 clause 7.2.4 and TR 36.814 clause B.1.2.1.1 say the same; all three
+cite ITU-R P.1816 for it.
 
 The model updates the value with the first-order recurrence
 

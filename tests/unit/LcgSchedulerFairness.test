@@ -12,8 +12,10 @@ The spec rules:
 - strict priority across groups: a lower-index LCG's backlog is served before
   a higher-index LCG sees any of the grant (the cross-priority protection of
   the full LCP, the PBR token bucket, is not modeled);
-- equal service within a group: "logical channels ... with equal priority
-  should be served equally" -- a connection's share of the grant must not
+- equal service within a group: "Logical channels configured with equal
+  priority should be served equally" (TS 36.321 5.4.3.1; TS 38.321 5.4.3.1.3:
+  "Logical channels with equal applied priority should be served
+  equally") -- a connection's share of the grant must not
   depend on where bearer-establishment order happened to place it in the
   registration map, and no same-LCG connection starves while another one is
   served the whole grant.
@@ -343,7 +345,7 @@ c.check("an SO flow's service does not depend on its registration position",
 
 {
     // A grant that cannot carry a whole SDU segments it. The scheduler reserves
-    // the exact header the RLC TX will emit for each state (TS 38.322 6.2.1.3):
+    // the exact header the RLC TX will emit for each state (TS 38.322 6.2.2.3):
     // a FIRST segment this TTI, and -- because the remainder is a continuation --
     // the LARGER continuation header, carrying the segment offset, next TTI. Get
     // that wrong and the carve and the drain disagree by the SO field's bytes.

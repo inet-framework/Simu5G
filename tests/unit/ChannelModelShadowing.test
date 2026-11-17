@@ -17,7 +17,7 @@ than statistically, including the strict inequality at the boundary.
 
 Both the 0.5 and the hold below dcorr are a known deviation, pinned here as a
 defect and not endorsed: TR 38.901 7.4.4 gives the autocorrelation
-R(dx) = exp(-dx/d_cor), which the recurrence realizes only with
+R(dx) = exp(-|dx|/d_cor), which the recurrence realizes only with
 a = exp(-dx/d_cor) at every displacement. ChannelModelShadowingCorrelation
 asserts the specification as an expected failure. The pins are here so that
 any change to the model's update fails by name; when the model follows the

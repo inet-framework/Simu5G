@@ -411,8 +411,9 @@ cell's interference evaluated with the receiver's model.
   between the faulty commit and their fix. The full unit and physics suites
   at the piece's tip show no failure beyond the recorded expected failures.
 - **Recorded, to be fixed after the merge** (model-deviations.md): items 28
-  (the CQI has no measurement delay: TS 38.214 5.2.2.5 measures nCSI_ref >=
-  4*2^mu slots before the report), 29 (the indoor state ignored by TR 36.814
+  (the CQI has no measurement delay: TS 38.214 5.2.2.5 puts the CSI reference
+  resource nCSI_ref >= 4*2^mu slots before the report, for periodic and
+  semi-persistent reporting with a single CSI-RS/SSB resource), 29 (the indoor state ignored by TR 36.814
   and by TR 36.873 outside UMa) and 30 (a moving base station's interference
   taken from where it is now).
 

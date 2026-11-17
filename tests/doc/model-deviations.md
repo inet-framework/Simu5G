@@ -18,7 +18,7 @@ same mechanism, so that nothing is fixed twice.
 
 1. **The shadowing correlation over distance is wrong.**
    - What the model does: StochasticChannelModel::computeShadowing() updates a moving UE's shadowing as `a*old + sqrt(1-a^2)*N(0,sigma)` with `a = exp(-0.5*d/dcorr)`. It only updates once the UE has moved more than dcorr, and holds the value until then.
-   - What the spec says: TR 38.901 7.4.4, eq. (7.4-5): R(dx) = exp(-dx/d_cor), with d_cor from Table 7.5-6, "correlation distance in the horizontal plane". TR 36.873 7.2.4 and TR 36.814 B.1.2.1.1 say the same (Gudmundson, ITU-R P.1816). No clause has a 0.5 factor or a hold rule.
+   - What the spec says: TR 38.901 7.4.4, eq. (7.4-5): R(dx) = exp(-|dx|/d_cor), with d_cor from Table 7.5-6, "correlation distance in the horizontal plane". TR 36.873 7.2.4 and TR 36.814 B.1.2.1.1 say the same; all three cite ITU-R P.1816 for it. No clause has a 0.5 factor or a hold rule.
    - Effect: the 0.5 doubles the correlation length, and the hold makes R = 1 below d_cor and the process stepwise.
    - Fix shape: `a = exp(-d/dcorr)`. Then decide between updating at every evaluation with that a, or interpolating ("may be interpolated within the coherence length", 7.6.3.2).
    - Later in the branch: "a link's shadowing is redrawn by how far its ends have moved, not by time and speed" keeps the factor "as before", and "a link's shadowing is kept once per link, shared by every channel model evaluating it" makes the shadowing per link. Neither fixes this.
@@ -34,7 +34,7 @@ same mechanism, so that nothing is fixed twice.
    - Pinned by tests/unit/ChannelModelJakesFading, as "tripwires".
 4. **The UE-to-UE (D2D) path loss uses base-station conventions.**
    - What the model does, as the D2dLinkBudget oracle reproduces it: the 38.901 UMi breakpoint is computed with the gNB height (hBS = 10 m, so d'BP = 120 m), and cableLoss (2 dB) is subtracted on a link with no base station.
-   - What the specs say: TR 36.843 A.2.1.2 gives h_BS = h_MS = 1.5 m (effective 0.8 m), and TR 37.885 Table 6.2.1-1 reuses the V2V path loss for P2P (urban LOS: 38.77 + 16.7 log10 d + 18.2 log10 fc).
+   - What the specs say: TR 36.843 A.2.1.2 gives h_BS = h_MS = 1.5 m (effective 0.8 m), and TR 37.885 6.2.1 reuses the V2V path loss of Table 6.2.1-1 for P2P ("Pathloss equation of V2V is reused for that of V2P, P2P, V2R, R2R."; urban LOS: 38.77 + 16.7 log10 d + 18.2 log10 fc).
    - At 50 m and 2 GHz: the model gives 74.10 dB, TR 37.885 72.62 dB, and 38.901 UMi with both heights at 1.5 m 90.73 dB.
    - D2D is legacy (keep alive, no features). Decide whether this is worth fixing at all.
    - Since "the path loss took a link's heights from parameters" (item 32), the rule is explicit: a UE-to-UE link takes the base station height the studies give for the scenario (10 m UMi, 25 m UMa, 35 m SMa and RMa, 3 m InH) and the lower of the two UEs' antenna heights, whichever UE transmits; the scenario is that of the receiving UE's serving cell (the receiver is there when the link is evaluated, the transmitter may have left its cell). With the default heights this is what the parameters gave before. Taking the two UEs' own heights was tried and dropped: at hBS = 1.5 m the TR 36.814 UMa NLOS formula gives 236 dB at 100 m, because its (h/hBS)^2 term is outside the formula's range (10 m < hBS < 150 m). The rule is stated in StochasticChannelModel.ned and tested in tests/unit/ChannelModelLinkHeights.

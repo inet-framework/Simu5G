@@ -1,8 +1,9 @@
 %description:
 
 Path loss of Tr36873PathLossModel, checked against 3GPP TR 36.873 v12.7.0,
-Table 7.2-1, for the 3D-UMi and 3D-UMa deployment scenarios, and against the
-RMa model of TR 38.901 Table 7.4.1-1, which this class implements unchanged.
+Table 7.2-1, for the 3D-UMi, 3D-UMa and 3D-RMa deployment scenarios. (The RMa
+model of TR 38.901 Table 7.4.1-1 is the same, except that its NLOS path loss
+is max(PL_RMa-LOS, PL'_RMa-NLOS); TR 36.873's 3D-RMa NLOS has no max().)
 
 Path loss is a function of the 3D distance, while the breakpoint comparison
 and the validity ranges are functions of the 2D distance, so both are passed

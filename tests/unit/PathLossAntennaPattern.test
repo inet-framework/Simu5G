@@ -4,9 +4,10 @@ Antenna-pattern attenuation of the three path-loss models, checked against
 the antenna radiation pattern of 3GPP TR 36.814 v9.2.0 Table A.2.1.1-2 and
 TR 36.873 v12.7.0 Table 7.1-1.
 
-TR 36.814 has a horizontal pattern only, with a 70 degree half-power
-beamwidth and a 25 dB front-to-back ratio. TR 36.873 adds a vertical pattern,
-uses a 65 degree half-power beamwidth in both planes, and caps the horizontal
+TR 36.814 Table A.2.1.1-2 gives a horizontal pattern with a 70 degree
+half-power beamwidth and A_m = 25 dB; it also gives a vertical pattern and a
+combining rule, which this test does not check. TR 36.873 uses a 65 degree
+half-power beamwidth in both planes, and caps the horizontal
 term, the vertical term and their sum at 30 dB each. Tr38901PathLossModel
 inherits the TR 36.873 pattern unchanged.
 

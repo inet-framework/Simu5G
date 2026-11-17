@@ -25,7 +25,8 @@ Three kinds of ingredient, and only the first is a specification:
 
  - The 3GPP formulas, transcribed verbatim in ../unit/pathloss_reference.py:
    path loss and breakpoint distance, LOS probability, shadowing standard
-   deviation and O2I penetration loss, from TR 38.901 and TR 36.814.
+   deviation and O2I penetration loss, from TR 38.901, TR 36.873 and
+   TR 36.814.
  - The model's own conventions, taken as given rather than derived. The noise
    floor is N = thermalNoise + noise figure, a configured constant that does
    not follow the bandwidth (the default -104.5 dBm is kTB for 50 resource

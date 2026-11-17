@@ -18,7 +18,9 @@ model code, so that the tests compare the model against the specification
 rather than against itself:
 
     3GPP TR 36.814 v9.2.0,  Table A.2.1.1-2, Table B.1.2.1-1 and Table B.1.2.1-2
-    3GPP TR 36.873 v12.7.0, Table 7.1-1, Table 7.2-1, Table 7.2-2 and Table 7.3-6
+    Report ITU-R M.2135-1,  Table A1-3 (the SMa LOS probability, which TR 36.814 lacks)
+    3GPP TR 36.873 v12.7.0, Table 7.1-1, Table 7.2-1, Table 7.2-2, Table 7.3-6 and
+                            Table 7.3-6b
     3GPP TR 38.901 v16.1.0, Table 7.4.1-1, Table 7.4.2-1 and section 7.4.3
 
 Nothing here is adjusted to match the model: where a formula and the model
@@ -106,6 +108,9 @@ def _t814_umi_uma_los(d, fc, hBS, hUT):
     # PL = 22 log10(d) + 28 + 20 log10(fc)                          d < d'BP
     # PL = 40 log10(d) + 7.8 - 18 log10(h'BS) - 18 log10(h'UT)
     #      + 2 log10(fc)                                            d > d'BP
+    # TR 36.814 writes the second formula with d1, and the UMi ranges as
+    # 10 m < d1 < d'BP and d'BP < d1 < 5000 m; ITU-R M.2135-1 Table A1-2 writes
+    # d, as here.
     if d < _dbp_effective(fc, hBS, hUT):
         return 22 * log10(d) + 28 + 20 * log10(fc)
     return 40 * log10(d) + 7.8 - 18 * log10(hBS - 1) - 18 * log10(hUT - 1) + 2 * log10(fc)
@@ -154,10 +159,11 @@ def t814_rma_sma_los(d, fc, hBS, hUT, h):
     return pl1(d) if d < dbp else pl1(dbp) + 40 * log10(d / dbp)
 
 
-# Table B.1.2.1-2. Note: the table is an embedded image in the 3GPP source
-# document. Its entries were read from Table A1-3 of Report ITU-R M.2135, the
-# reference the TR 36.814 primary module is taken from, which carries the same
-# table.
+# Table B.1.2.1-2. Note: its formulas are Equation Editor pictures in the 3GPP
+# source document. Its entries were read from Table A1-3 of Report ITU-R
+# M.2135-1, the reference the TR 36.814 primary module is taken from, which
+# carries the same four rows (InH, UMi, UMa, RMa) plus an SMa row. TR 36.814 has
+# no SMa row: t814_p_los_sma comes from M.2135-1 alone.
 def t814_p_los_inh(d):
     # 1 for d <= 18; exp(-(d-18)/27) for 18 < d < 37; 0.5 for d >= 37
     return 1.0 if d <= 18 else (0.5 if d >= 37 else math.exp(-(d - 18) / 27))
@@ -212,11 +218,11 @@ def t814_sigma_rma(d, fc, hBS, hUT, los):
     return _rural_sigma(d, _dbp_actual(fc, hBS, hUT), los)
 
 
-# Antenna radiation pattern, Table A.2.1.1-2: horizontal only, 70 degree
-# half-power beamwidth, 25 dB front-to-back ratio. Returned as the positive
-# number of dB to subtract.
+# Antenna radiation pattern, Table A.2.1.1-2, horizontal part only (the table
+# also gives a vertical pattern and their combination, not transcribed here).
+# Returned as the positive number of dB to subtract.
 def t814_antenna(phi):
-    # A = min(12 (phi / 70)^2, 25)
+    # A_H(phi) = -min[12 (phi / phi_3dB)^2, A_m], phi_3dB = 70 degrees, A_m = 25 dB
     return min(12 * (phi / 70.0) ** 2, 25)
 
 
@@ -239,8 +245,9 @@ def t873_umi_nlos(d3D, d2D, fc, hBS, hUT):
 
 def t873_uma_los(d3D, d2D, fc, hBS, hUT):
     # Same functional form as 3D-UMi LOS. The effective environment height is
-    # hE = 1 m with probability 1/(1 + C(d2D, hUT)), and C = 0 for hUT < 13 m,
-    # so hE = 1 m deterministically at the UE heights used by the tests.
+    # hE = 1 m with probability 1/(1 + C(d2D, hUT)), and C'(hUT) = 0 for
+    # hUT <= 13 m, so hE = 1 m deterministically at the UE heights used by the
+    # tests.
     return t873_umi_los(d3D, d2D, fc, hBS, hUT)
 
 
@@ -295,7 +302,8 @@ def t873_o2i(dIn):
     return 20.0 + 0.5 * dIn
 
 
-# LOS probability, Table 7.2-2.
+# LOS probability, Table 7.2-2. The table's distance is d2D-out, the outdoor
+# part of the 2D distance; it is d2D for an outdoor UE.
 def t873_p_los_umi(d2D):
     # 1 for d2D <= 18; 18/d2D + exp(-d2D/36) (1 - 18/d2D) otherwise
     return 1.0 if d2D <= 18 else 18 / d2D + math.exp(-d2D / 36) * (1 - 18 / d2D)
@@ -313,7 +321,10 @@ def t873_p_los_uma(d2D, hUT):
 
 
 def _t873_c(d2D, hUT):
-    # C(d2D, hUT) of Table 7.2-2, the factor of the UMa LOS probability above:
+    # C(d2D, hUT): Table 7.2-1 NOTE 4 says it "is defined in Table 7.2-2", but
+    # that table defines only C'(hUT). Taken as the term the UMa LOS
+    # probability adds to 1 in its second bracket, C'(hUT) (5/4) (d2D/100)^3
+    # exp(-d2D/150) -- inferred, not quoted:
     # 0 for hUT <= 13 m; ((hUT-13)/10)^1.5 (5/4) (d2D/100)^3 exp(-d2D/150) for
     # 13 < hUT <= 23 m and d2D > 18 m; 0 for d2D <= 18 m
     if hUT <= 13 or d2D <= 18:
@@ -333,7 +344,8 @@ def t873_p_los_rma(d2D):
     return 1.0 if d2D <= 10 else math.exp(-(d2D - 10) / 1000)
 
 
-# Shadowing standard deviation, Table 7.3-6.
+# Shadowing standard deviation: Table 7.3-6 for 3D-UMi and 3D-UMa; for 3D-RMa,
+# Table 7.3-6b refers to Table 7.2-1 ("See Table 7.2-1").
 def t873_sigma_umi(los):
     return 3.0 if los else 4.0
 
@@ -346,13 +358,15 @@ def t873_sigma_rma(d2D, fc, hBS, hUT, los):
     return _rural_sigma(d2D, _dbp_actual(fc, hBS, hUT), los)
 
 
-# Antenna radiation pattern, Table 7.1-1: 65 degree half-power beamwidth in
-# both planes, each term and their sum capped at 30 dB, electrical downtilt
-# 90 degrees. Returned as the positive number of dB to subtract.
+# Antenna element pattern, Table 7.1-1: 65 degree half-power beamwidth in both
+# planes, each term and their sum capped at 30 dB. theta is the zenith angle;
+# the element boresight is at theta = 90 degrees (the horizon). Returned as the
+# positive number of dB to subtract.
 def t873_antenna(phi, theta):
-    # A_H = min(12 (phi / 65)^2, 30)
-    # A_V = min(12 ((theta - 90) / 65)^2, 30)
-    # A   = min(A_H + A_V, 30)
+    # A_E,H(phi'')  = -min{12 (phi'' / phi_3dB)^2, A_m}, phi_3dB = 65 degrees, A_m = 30 dB
+    # A_E,V(theta'') = -min{12 ((theta'' - 90 degrees) / theta_3dB)^2, SLA_V},
+    #                 theta_3dB = 65 degrees, SLA_V = 30 dB
+    # A''(theta'', phi'') = -min{-[A_E,V(theta'') + A_E,H(phi'')], A_m}
     ah = min(12 * (phi / 65.0) ** 2, 30)
     av = min(12 * ((theta - 90) / 65.0) ** 2, 30)
     return min(ah + av, 30)
@@ -370,9 +384,9 @@ def t901_inh_nlos(d3D, fc):
 
 
 def t901_umi_los(d3D, d2D, fc, hBS, hUT):
-    # PL = 32.4 + 21 log10(d3D) + 20 log10(fc)                      d2D < dBP
+    # PL = 32.4 + 21 log10(d3D) + 20 log10(fc)                      d2D < d'BP
     # PL = 32.4 + 40 log10(d3D) + 20 log10(fc)
-    #      - 9.5 log10(dBP^2 + (hBS - hUT)^2)                        d2D > dBP
+    #      - 9.5 log10(d'BP^2 + (hBS - hUT)^2)                       d2D > d'BP
     dbp = _dbp_effective(fc, hBS, hUT)
     if d2D < dbp:
         return 32.4 + 21 * log10(d3D) + 20 * log10(fc)
@@ -386,9 +400,9 @@ def t901_umi_nlos(d3D, d2D, fc, hBS, hUT):
 
 
 def t901_uma_los(d3D, d2D, fc, hBS, hUT):
-    # PL = 28 + 22 log10(d3D) + 20 log10(fc)                        d2D < dBP
+    # PL = 28 + 22 log10(d3D) + 20 log10(fc)                        d2D < d'BP
     # PL = 28 + 40 log10(d3D) + 20 log10(fc)
-    #      - 9 log10(dBP^2 + (hBS - hUT)^2)                          d2D > dBP
+    #      - 9 log10(d'BP^2 + (hBS - hUT)^2)                         d2D > d'BP
     # hE = 1 m for hUT < 13 m, as in TR 36.873.
     dbp = _dbp_effective(fc, hBS, hUT)
     if d2D < dbp:
@@ -397,7 +411,7 @@ def t901_uma_los(d3D, d2D, fc, hBS, hUT):
 
 
 def t901_uma_los_he(d3D, d2D, fc, hBS, hUT, hE):
-    # As t901_uma_los, with dBP = 4 h'BS h'UT fc/c, h'BS = hBS - hE and
+    # As t901_uma_los, with d'BP = 4 h'BS h'UT fc/c, h'BS = hBS - hE and
     # h'UT = hUT - hE (Table 7.4.1-1 NOTE 1)
     dbp = _dbp_he(fc, hBS, hUT, hE)
     if d2D < dbp:
@@ -446,7 +460,8 @@ def t901_rma_nlos(d3D, d2D, fc, hBS, hUT, W, h):
 
 
 # LOS probability, Table 7.4.2-1. UMi, UMa and RMa are unchanged from
-# TR 36.873; the indoor scenario is new.
+# TR 36.873; the indoor scenario is new. The table's distance is d2D-out for
+# UMi, UMa and RMa (d2D for an outdoor UE) and d2D-in for the indoor scenario.
 def t901_p_los_umi(d2D):
     return t873_p_los_umi(d2D)
 
@@ -499,7 +514,8 @@ def t901_sigma_rma(d2D, fc, hBS, hUT, los):
 #   Table 7.4.3-3 replaces them for UMa and UMi *single-frequency* simulations
 #   below 6 GHz, for backwards compatibility with TR 36.873. It is not offered
 #   for any other scenario. PL_tw = 20 dB, and sigma_P = 0, so the term is
-#   deterministic.
+#   deterministic. Its fourth row, sigma_SF = 7 dB "replacing the respective
+#   value in Table 7.4.1-1", is not transcribed here.
 #
 # The report defines no O2I building penetration loss for the indoor-office
 # scenario, so there is no value to expect there.
