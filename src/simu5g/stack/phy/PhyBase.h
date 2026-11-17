@@ -329,6 +329,9 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
     DeploymentScenario getDeploymentScenario() override;
     double getBuildingHeight() override;
     double getStreetWidth() override;
+    double getClutterDensity() override;
+    double getClutterHeight() override;
+    double getClutterSize() override;
     bool isInsideBuilding() override;
     double getInsideDistance() override;
     double getPenetrationLossDeviate() override;

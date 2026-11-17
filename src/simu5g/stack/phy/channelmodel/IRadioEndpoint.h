@@ -69,11 +69,16 @@ class IRadioEndpoint
     /**
      * The deployment of the cell, which counts at a base station's endpoint:
      * a link is evaluated in the scenario of its base station end, with the
-     * average building height and street width around it, in m.
+     * average building height and street width around it, in m, and, in an
+     * indoor factory, with the clutter of its hall: the fraction of the floor
+     * the clutter covers, and its effective height and typical size, in m.
      */
     virtual DeploymentScenario getDeploymentScenario() = 0;
     virtual double getBuildingHeight() = 0;
     virtual double getStreetWidth() = 0;
+    virtual double getClutterDensity() = 0;
+    virtual double getClutterHeight() = 0;
+    virtual double getClutterSize() = 0;
 
     /** Whether the antenna radiates omnidirectionally or sectorially. */
     virtual TxDirectionType getTxDirection() = 0;

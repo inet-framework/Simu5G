@@ -48,6 +48,9 @@ class PathLossModel
         double hUe = 0;        // the UE antenna's height [m]
         double hBuilding = 0;  // the average building height [m]
         double wStreet = 0;    // the average street width [m]
+        double clutterDensity = 0; // indoor factory: the fraction of the floor the clutter covers (r)
+        double clutterHeight = 0;  // indoor factory: the effective clutter height (h_c) [m]
+        double clutterSize = 0;    // indoor factory: the typical clutter size (d_clutter) [m]
     };
 
   protected:
@@ -74,6 +77,11 @@ class PathLossModel
      * penetration loss for the scenario, or defines one that the model lacks.
      */
     [[noreturn]] void throwNoPenetrationLoss(const Deployment& deployment, const char *study, bool definedInStudy) const;
+
+    /*
+     * The error of a formula asked for a scenario its study does not have.
+     */
+    [[noreturn]] void throwUnknownScenario(const Deployment& deployment) const;
 
     /*
      * The checks of checkHeights(). requireDefined() throws when 'ok' does
@@ -124,6 +132,25 @@ class PathLossModel
      * in an indoor hotspot.
      */
     static double getDefaultBaseStationHeight(DeploymentScenario scenario);
+
+    /*
+     * Whether the scenario is one of the five indoor factory sub-scenarios
+     * of TR 38.901 (InF-SL, InF-DL, InF-SH, InF-DH, InF-HH).
+     */
+    static bool isIndoorFactory(DeploymentScenario scenario)
+    {
+        return scenario == INDOOR_FACTORY_SL || scenario == INDOOR_FACTORY_DL || scenario == INDOOR_FACTORY_SH
+            || scenario == INDOOR_FACTORY_DH || scenario == INDOOR_FACTORY_HH;
+    }
+
+    /*
+     * Throws if the clutter of an indoor factory cell is not what TR 38.901
+     * Table 7.2-4 gives for its sub-scenario: a density below 0.4 in a sparse
+     * and of 0.4 or more in a dense one, an effective height of 0 to 10 m, a
+     * positive size. Nothing is checked for another scenario. The radio of
+     * the cell (owner) calls it with its parameters.
+     */
+    static void checkClutter(const cComponent *owner, DeploymentScenario scenario, double clutterDensity, double clutterHeight, double clutterSize);
 
     /*
      * Throws if the scenario's formulas cannot be evaluated at the link's

@@ -255,8 +255,10 @@ long CellularRadioMedium::joinSite(const char *name, IRadioEndpoint *cell)
                 "The cells of a site share one LOS state and one shadowing realization towards a UE, drawn for one place",
                 name, (int)num(first->getMacNodeId()), (int)num(cell->getMacNodeId()), apart);
     if (first->getDeploymentScenario() != cell->getDeploymentScenario() || first->getBuildingHeight() != cell->getBuildingHeight()
-        || first->getStreetWidth() != cell->getStreetWidth())
-        throw cRuntimeError("the cells of the site '%s' are not in one deployment: nodes %d and %d differ in scenario, buildingHeight or streetWidth. "
+        || first->getStreetWidth() != cell->getStreetWidth() || first->getClutterDensity() != cell->getClutterDensity()
+        || first->getClutterHeight() != cell->getClutterHeight() || first->getClutterSize() != cell->getClutterSize())
+        throw cRuntimeError("the cells of the site '%s' are not in one deployment: nodes %d and %d differ in scenario, buildingHeight, streetWidth, "
+                "clutterDensity, clutterHeight or clutterSize. "
                 "The cells of a site share one LOS state towards a UE, drawn for one scenario",
                 name, (int)num(first->getMacNodeId()), (int)num(cell->getMacNodeId()));
     return it->second.id;

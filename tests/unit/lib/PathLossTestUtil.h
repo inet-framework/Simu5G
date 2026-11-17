@@ -64,6 +64,9 @@ struct ScenarioParams
     double hUe = 1.5;                   // UE antenna height [m]
     double hBuilding = 20;              // average building height [m]
     double wStreet = 20;                // average street width [m]
+    double clutterDensity = 0.2;        // indoor factory: fraction of the floor the clutter covers
+    double clutterHeight = 2;           // indoor factory: effective clutter height [m]
+    double clutterSize = 10;            // indoor factory: typical clutter size [m]
     bool insideBuilding = false;        // whether the UE is indoor
     double insideDistance = 0;          // indoor part of the link length [m]
     double penetrationDeviate = 0;      // the UE's standard-normal penetration-loss deviate
@@ -80,6 +83,9 @@ struct ScenarioParams
         d.hUe = hUe;
         d.hBuilding = hBuilding;
         d.wStreet = wStreet;
+        d.clutterDensity = clutterDensity;
+        d.clutterHeight = clutterHeight;
+        d.clutterSize = clutterSize;
         return d;
     }
 
@@ -116,7 +122,8 @@ struct ScenarioParams
  * evaluated at, and what the model returned:
  *
  *   #CASE ref=t901_umi_los scenario=URBAN_MICROCELL hBS=10 hUT=1.5 h=20 W=20
- *         fc=3.5 d3D=21.5 d2D=20 los=1 actual=71.26256854533 tol=1e-06
+ *         fc=3.5 r=0.2 hc=2 dclutter=10 d3D=21.5 d2D=20 los=1
+ *         actual=71.26256854533 tol=1e-06
  *
  * No expected value appears here or in the .test files: the data point is
  * defined once, by the call that produces it, and the reference script derives
@@ -161,7 +168,9 @@ class CaseRecorder
             std::cout << " scenario=" << DeploymentScenarioToA(p->scenario)
                       << " hBS=" << num(p->hNodeB) << " hUT=" << num(p->hUe)
                       << " h=" << num(p->hBuilding) << " W=" << num(p->wStreet)
-                      << " fc=" << num(p->carrierFrequencyGHz);
+                      << " fc=" << num(p->carrierFrequencyGHz)
+                      << " r=" << num(p->clutterDensity) << " hc=" << num(p->clutterHeight)
+                      << " dclutter=" << num(p->clutterSize);
         for (const auto& arg : args)
             std::cout << " " << arg.first << "=" << num(arg.second);
         std::cout << " actual=" << num(actual) << " tol=" << num(tolerance) << std::endl;
@@ -267,6 +276,31 @@ class CaseRecorder
         conditions.indoor = o2i;
         record(ref, p, { { "los", static_cast<double>(los) }, { "o2i", static_cast<double>(o2i) } },
                 model.getShadowingCorrelationDistance(p.deployment(), los, conditions));
+    }
+
+    /**
+     * Verify that the model's check of a link's antenna heights (and, in an
+     * indoor factory, of their place relative to the clutter) rejects or
+     * accepts the deployment.
+     */
+    void expectHeightsRejected(const std::string& what, PathLossModel& model, const ScenarioParams& p)
+    {
+        p.apply(model, owner_);
+        expectRejected(what, [&]() { model.checkHeights(p.deployment()); });
+    }
+
+    void expectHeightsAccepted(const std::string& what, PathLossModel& model, const ScenarioParams& p)
+    {
+        p.apply(model, owner_);
+        modelChecks_++;
+        try {
+            model.checkHeights(p.deployment());
+            std::cout << "model ok: " << what << " is accepted" << std::endl;
+        }
+        catch (omnetpp::cRuntimeError& e) {
+            modelFailures_++;
+            std::cout << "model FAILED: " << what << ": " << e.what() << std::endl;
+        }
     }
 
     void losCorrelationDistance(const char *ref, PathLossModel& model, const ScenarioParams& p)

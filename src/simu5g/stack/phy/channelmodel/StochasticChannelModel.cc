@@ -152,6 +152,9 @@ PathLossModel::Deployment StochasticChannelModel::deploymentOf(const RadioLink& 
     deployment.scenario = baseStation->getDeploymentScenario();
     deployment.hBuilding = baseStation->getBuildingHeight();
     deployment.wStreet = baseStation->getStreetWidth();
+    deployment.clutterDensity = baseStation->getClutterDensity();
+    deployment.clutterHeight = baseStation->getClutterHeight();
+    deployment.clutterSize = baseStation->getClutterSize();
     deployment.hNodeB = link.txIsBaseStation ? link.txCoord.z : link.rxCoord.z;
     deployment.hUe = link.txIsBaseStation ? link.rxCoord.z : link.txCoord.z;
     return deployment;
@@ -167,6 +170,9 @@ PathLossModel::Deployment StochasticChannelModel::ueToUeDeployment(MacNodeId cel
     deployment.scenario = cell->getDeploymentScenario();
     deployment.hBuilding = cell->getBuildingHeight();
     deployment.wStreet = cell->getStreetWidth();
+    deployment.clutterDensity = cell->getClutterDensity();
+    deployment.clutterHeight = cell->getClutterHeight();
+    deployment.clutterSize = cell->getClutterSize();
     deployment.hNodeB = PathLossModel::getDefaultBaseStationHeight(deployment.scenario);
     deployment.hUe = std::min(a.z, b.z);
     return deployment;

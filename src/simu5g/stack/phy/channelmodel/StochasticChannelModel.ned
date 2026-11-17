@@ -51,6 +51,21 @@ package simu5g.stack.phy.channelmodel;
 // outside what the study gives for the scenario is an error, unless
 // tolerateHeightViolation is set.
 //
+// The Indoor Factory scenarios (INDOOR_FACTORY_SL, _DL, _SH, _DH, _HH: sparse
+// or dense clutter, low or high base station, and both ends above the
+// clutter) are TR 38.901's; a cell in one of them needs pathLossType =
+// "Tr38901". The clutter of the cell's hall -- its density, effective height
+// and typical size -- is given on the base station's radio too, and a link's
+// antennas must be where the sub-scenario places them relative to the clutter
+// height. INDOOR_FACTORY_HH is 100% LOS and has no NLOS path loss: its links
+// need dynamicLos or fixedLos. The path loss formulas hold up to 600 m. They
+// are those of a link inside the hall: a UE with insideBuilding in such a
+// cell is an error, and a hall served from outdoors is an urban cell with an
+// indoor UE and useBuildingPenetrationHighLossModel. The fast fading is not
+// the scenario's: delayRms is one value per carrier (the study's median delay
+// spread in a hall of 120 m x 60 m x 10 m is about 55 ns), there is no
+// Ricean component, and the clutter does not move.
+//
 // A link's LOS state, with its effective environment height, and its shadowing
 // belong to the two ends of the channel, not to the radios at them: they are
 // the same on every carrier, for both radios of a dual-stack UE, and for
@@ -69,14 +84,18 @@ package simu5g.stack.phy.channelmodel;
 // urban microcell, for example. For the LOS state it is the distance of
 // TR 38.901 Table 7.6.3.1-2 (60 m rural, 50 m urban and suburban, 10 m
 // indoor), which is taken under TR 36.814 and TR 36.873 too, since those give
-// none. correlationDistance, when set, replaces both.
+// none. In an indoor factory the shadowing's distance is 10 m and the LOS
+// state's is half the clutter size. correlationDistance, when set, replaces
+// both.
 //
 // A link between two UEs (D2D) has no base station, and none of the three
 // studies has such a link. The model evaluates it with the scenario of the
 // receiving UE's serving cell, taking the base station height the studies give for that scenario (10 m in
 // an urban microcell, 25 m in an urban macrocell, 35 m in a suburban or rural
 // macrocell, 3 m in an indoor hotspot) and the lower of the two UEs' antenna
-// heights. This is a convention of the model, not a specification's.
+// heights. This is a convention of the model, not a specification's. It has
+// no base station height for an indoor factory: a link between two UEs in
+// such a cell is an error.
 //
 simple StochasticChannelModel extends ChannelModelBase
 {
@@ -126,6 +145,7 @@ simple StochasticChannelModel extends ChannelModelBase
         // If Jakes fading, this parameter specifies the number of paths (tap channel)
         int numFadingPaths = default(6);
 
+        // RMS delay spread of the Jakes fading paths; the default is an urban macrocell's
         double delayRms @unit(s) = default(363ns);
 
         // Whether interference from background cells is included in the SINR, in both UL and DL

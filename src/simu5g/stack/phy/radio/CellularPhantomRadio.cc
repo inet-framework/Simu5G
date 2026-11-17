@@ -11,6 +11,7 @@
 
 #include "simu5g/stack/phy/radio/CellularPhantomRadio.h"
 
+#include "simu5g/stack/phy/channelmodel/PathLossModel.h"
 #include "simu5g/stack/phy/radio/CellularAntenna.h"
 #include "simu5g/stack/phy/radio/CellularTransmitter.h"
 
@@ -28,6 +29,10 @@ void CellularPhantomRadio::initialize(int stage)
         scenario_ = aToDeploymentScenario(par("scenario").stringValue());
         buildingHeight_ = par("buildingHeight");
         streetWidth_ = par("streetWidth");
+        clutterDensity_ = par("clutterDensity");
+        clutterHeight_ = par("clutterHeight");
+        clutterSize_ = par("clutterSize");
+        PathLossModel::checkClutter(this, scenario_, clutterDensity_, clutterHeight_, clutterSize_);
         noiseFigure_ = par("noiseFigure");
         cableLoss_ = par("cableLoss");
         WATCH(nodeId_);

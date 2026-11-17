@@ -21,9 +21,16 @@ namespace simu5g {
  * Path-loss, LOS-probability and shadowing-sigma formulas of 3GPP TR 38.901,
  * "Study on channel model for frequencies from 0.5 to 100 GHz", v16.1.0,
  * December 2019, for the Indoor Hotspot (InH), Urban Microcell (UMi-Street
- * Canyon), Urban Macrocell (UMa) and Rural Macrocell (RMa) deployment
- * scenarios, including the building-penetration loss for indoor UEs
- * (section 7.4.3).
+ * Canyon), Urban Macrocell (UMa), Rural Macrocell (RMa) and Indoor Factory
+ * (InF-SL, InF-DL, InF-SH, InF-DH, InF-HH) deployment scenarios, including
+ * the building-penetration loss for indoor UEs (section 7.4.3) where the
+ * model has it.
+ *
+ * An indoor factory link takes the clutter of its base station's hall from
+ * the deployment (density r, effective height h_c, typical size d_clutter of
+ * Table 7.2-4). The sub-scenario with both ends above the clutter, InF-HH,
+ * is 100% LOS and has no NLOS formula: a link of it evaluated as NLOS is an
+ * error.
  *
  * Scenario coverage is partial: Suburban Macrocell is not covered here and
  * falls through to the TR 36.873 formulas this class extends (which in turn
@@ -43,6 +50,8 @@ class Tr38901PathLossModel : public Tr36873PathLossModel
     double computePathLoss(const Deployment& deployment, double d3D, double d2D, bool los, const LinkConditions& conditions) override;
     double computeLosProbability(const Deployment& deployment, double d3D, double d2D) override;
     double getShadowingStdDev(const Deployment& deployment, double d3D, double d2D, bool losState) override;
+    double getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions) override;
+    double getLosCorrelationDistance(const Deployment& deployment) override;
     double drawEnvironmentHeight(const Deployment& deployment, double d2D) override;
 
     /*
@@ -58,6 +67,13 @@ class Tr38901PathLossModel : public Tr36873PathLossModel
     double computeUrbanMicro3D(const Deployment& deployment, double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
     double computeUrbanMacro3D(const Deployment& deployment, double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
     double computeRuralMacro3D(const Deployment& deployment, double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
+    double computeIndoorFactory(const Deployment& deployment, double threeDimDistance, bool los);
+
+    /*
+     * The error of an InF-HH link evaluated as NLOS: the sub-scenario has no
+     * NLOS path loss and no NLOS shadowing.
+     */
+    [[noreturn]] void throwNoNlos(const Deployment& deployment) const;
 
     /*
      * Compute the building penetration loss for an indoor UE.

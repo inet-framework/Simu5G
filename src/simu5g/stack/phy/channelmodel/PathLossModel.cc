@@ -63,6 +63,14 @@ double PathLossModel::getDefaultBaseStationHeight(DeploymentScenario scenario)
         case URBAN_MACROCELL: return 25;
         case SUBURBAN_MACROCELL:
         case RURAL_MACROCELL: return 35;
+        case INDOOR_FACTORY_SL:
+        case INDOOR_FACTORY_DL:
+        case INDOOR_FACTORY_SH:
+        case INDOOR_FACTORY_DH:
+        case INDOOR_FACTORY_HH:
+            throw cRuntimeError("A link between two UEs cannot be evaluated in the scenario %s: no propagation study has such a link, "
+                    "and the model's convention for it, the base station height the studies give for the scenario, has no value in an indoor factory",
+                    DeploymentScenarioToA(scenario).c_str());
         default: throw cRuntimeError("PathLossModel: no base station height for scenario %d", (int)scenario);
     }
 }
@@ -78,6 +86,41 @@ double PathLossModel::getLosCorrelationDistance(const Deployment& deployment)
         case INDOOR_HOTSPOT: return 10;
         default: throw cRuntimeError("PathLossModel: no LOS correlation distance for the scenario %s", DeploymentScenarioToA(deployment.scenario).c_str());
     }
+}
+
+void PathLossModel::checkClutter(const cComponent *owner, DeploymentScenario scenario, double clutterDensity, double clutterHeight, double clutterSize)
+{
+    if (!isIndoorFactory(scenario))
+        return;
+    std::string name = DeploymentScenarioToA(scenario);
+    const char *table = "TR 38.901 Table 7.2-4";
+    // the sub-scenario with both ends above the clutter takes any clutter density
+    if (scenario != INDOOR_FACTORY_HH) {
+        if (!(clutterDensity > 0 && clutterDensity < 1))
+            throw cRuntimeError(owner, "clutterDensity = %g: the clutter density of the scenario %s is the fraction of the floor the clutter covers, above 0 and below 1",
+                    clutterDensity, name.c_str());
+        bool dense = scenario == INDOOR_FACTORY_DL || scenario == INDOOR_FACTORY_DH;
+        if (dense && clutterDensity < 0.4)
+            throw cRuntimeError(owner, "clutterDensity = %g: the scenario %s has dense clutter, a density of 0.4 or more (%s); a hall with less is a sparse sub-scenario (INDOOR_FACTORY_SL, INDOOR_FACTORY_SH)",
+                    clutterDensity, name.c_str(), table);
+        if (!dense && clutterDensity >= 0.4)
+            throw cRuntimeError(owner, "clutterDensity = %g: the scenario %s has sparse clutter, a density below 0.4 (%s); a hall with more is a dense sub-scenario (INDOOR_FACTORY_DL, INDOOR_FACTORY_DH)",
+                    clutterDensity, name.c_str(), table);
+    }
+    if (!(clutterHeight >= 0 && clutterHeight <= 10))
+        throw cRuntimeError(owner, "clutterHeight = %g m: the effective clutter height of the scenario %s is 0 to 10 m (%s)",
+                clutterHeight, name.c_str(), table);
+    if (!(clutterSize > 0))
+        throw cRuntimeError(owner, "clutterSize = %g m: the typical clutter size of the scenario %s must be positive",
+                clutterSize, name.c_str());
+}
+
+void PathLossModel::throwUnknownScenario(const Deployment& deployment) const
+{
+    std::string owner = owner_ != nullptr ? owner_->getFullPath() : "path loss model";
+    throw cRuntimeError("%s: the propagation study the channel model takes its formulas from (pathLossType) has no scenario %s%s",
+            owner.c_str(), DeploymentScenarioToA(deployment.scenario).c_str(),
+            isIndoorFactory(deployment.scenario) ? "; the indoor factory scenarios are TR 38.901's: set pathLossType = \"Tr38901\" on the channel model" : "");
 }
 
 void PathLossModel::checkHeights(const Deployment& deployment) const

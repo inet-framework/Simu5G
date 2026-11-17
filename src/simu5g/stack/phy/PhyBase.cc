@@ -177,6 +177,21 @@ double PhyBase::getStreetWidth()
     return cellularRadio_->getStreetWidth();
 }
 
+double PhyBase::getClutterDensity()
+{
+    return cellularRadio_->getClutterDensity();
+}
+
+double PhyBase::getClutterHeight()
+{
+    return cellularRadio_->getClutterHeight();
+}
+
+double PhyBase::getClutterSize()
+{
+    return cellularRadio_->getClutterSize();
+}
+
 bool PhyBase::isInsideBuilding()
 {
     return cellularRadio_->isInsideBuilding();

@@ -10,15 +10,29 @@
 // and cannot be removed from it.
 //
 
+#include <algorithm>
+#include <sstream>
+
 #include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
 
 namespace simu5g {
 
 using namespace omnetpp;
 
+// "the clutter height of 2 m (clutterHeight)", for the messages of the indoor factory height checks
+static std::string clutterHeightText(double clutterHeight)
+{
+    std::stringstream os;
+    os << "the clutter height of " << clutterHeight << " m (clutterHeight)";
+    return os.str();
+}
+
 void Tr38901PathLossModel::checkPenetrationLoss(const Deployment& deployment) const
 {
-    // clause 7.4.3.1 has an outdoor-to-indoor loss for UMa, UMi-Street Canyon and RMa (and InF)
+    // clause 7.4.3.1 has an outdoor-to-indoor loss for UMa, UMi-Street Canyon and RMa, and for
+    // InF ("Only the high-loss model is applicable to InF"), which the model does not have
+    if (isIndoorFactory(deployment.scenario))
+        throwNoPenetrationLoss(deployment, "TR 38.901", true);
     if (deployment.scenario != URBAN_MACROCELL && deployment.scenario != URBAN_MICROCELL && deployment.scenario != RURAL_MACROCELL)
         throwNoPenetrationLoss(deployment, "TR 38.901", false);
 }
@@ -41,6 +55,29 @@ void Tr38901PathLossModel::checkHeightRange(const Deployment& d) const
         case RURAL_MACROCELL:
             requireInRange(d.hNodeB >= 10 && d.hNodeB <= 150 && d.hUe >= 1 && d.hUe <= 10, d, study, "10 m <= hBS <= 150 m, 1 m <= hUT <= 10 m");
             break;
+        // Table 7.2-4 places the antennas of an indoor factory by the clutter:
+        // "Clutter-embedded, i.e. the BS antenna height is below the average
+        // clutter height", or "Above clutter"
+        case INDOOR_FACTORY_SL:
+        case INDOOR_FACTORY_DL: {
+            std::string range = "both antennas clutter-embedded, below " + clutterHeightText(d.clutterHeight);
+            requireInRange(d.hNodeB < d.clutterHeight && d.hUe < d.clutterHeight, d, "TR 38.901 Table 7.2-4", range.c_str());
+            break;
+        }
+        case INDOOR_FACTORY_SH:
+        case INDOOR_FACTORY_DH: {
+            // the LOS probability's k_subsce has (hBS - hUT) / (hc - hUT)
+            std::string condition = "the UE antenna is below the base station antenna and below " + clutterHeightText(d.clutterHeight);
+            requireDefined(d.hUe < d.hNodeB && d.hUe < d.clutterHeight, d, condition.c_str());
+            std::string range = "base station antenna above " + clutterHeightText(d.clutterHeight) + ", UE antenna clutter-embedded";
+            requireInRange(d.hNodeB > d.clutterHeight, d, "TR 38.901 Table 7.2-4", range.c_str());
+            break;
+        }
+        case INDOOR_FACTORY_HH: {
+            std::string range = "both antennas above " + clutterHeightText(d.clutterHeight);
+            requireInRange(d.hNodeB > d.clutterHeight && d.hUe > d.clutterHeight, d, "TR 38.901 Table 7.2-4", range.c_str());
+            break;
+        }
         default:
             // the suburban macrocell is TR 36.814's
             Tr36814PathLossModel::checkHeightRange(d);
@@ -67,6 +104,13 @@ double Tr38901PathLossModel::computePathLoss(const Deployment& deployment, doubl
             break;
         case RURAL_MACROCELL:
             pathLoss = computeRuralMacro3D(deployment, d3D, d2D, los, conditions);
+            break;
+        case INDOOR_FACTORY_SL:
+        case INDOOR_FACTORY_DL:
+        case INDOOR_FACTORY_SH:
+        case INDOOR_FACTORY_DH:
+        case INDOOR_FACTORY_HH:
+            pathLoss = computeIndoorFactory(deployment, d3D, los);
             break;
         default:
             return Tr36873PathLossModel::computePathLoss(deployment, d3D, d2D, los, conditions);
@@ -106,6 +150,22 @@ double Tr38901PathLossModel::computeLosProbability(const Deployment& deployment,
                 p = exp(-1 * (d - 5.0) / 70.8);
             else
                 p = 0.54 * exp(-1 * (d - 49.0) / 211.7);
+            break;
+        case INDOOR_FACTORY_SL:
+        case INDOOR_FACTORY_DL: {
+            double k = -deployment.clutterSize / log(1 - deployment.clutterDensity);
+            p = exp(-d / k);
+            break;
+        }
+        case INDOOR_FACTORY_SH:
+        case INDOOR_FACTORY_DH: {
+            double k = -deployment.clutterSize / log(1 - deployment.clutterDensity)
+                * (deployment.hNodeB - deployment.hUe) / (deployment.clutterHeight - deployment.hUe);
+            p = exp(-d / k);
+            break;
+        }
+        case INDOOR_FACTORY_HH:
+            p = 1;
             break;
         default:
             return Tr36873PathLossModel::computeLosProbability(deployment, d3D, d2D);
@@ -148,12 +208,48 @@ double Tr38901PathLossModel::getShadowingStdDev(const Deployment& deployment, do
             }
             else
                 return 8.;
+        case INDOOR_FACTORY_SL:
+            return losState ? 4.3 : 5.7;
+        case INDOOR_FACTORY_DL:
+            return losState ? 4.3 : 7.2;
+        case INDOOR_FACTORY_SH:
+            return losState ? 4.3 : 5.9;
+        case INDOOR_FACTORY_DH:
+            return losState ? 4.3 : 4.0;
+        case INDOOR_FACTORY_HH:
+            if (!losState)
+                throwNoNlos(deployment);
+            return 4.3;
         default:
             // scenarios TR 38.901 does not cover fall back to the shared
             // sigma table, still keyed off this class's own breakpoint.
             return selectStdDev(deployment, belowBreakpoint, losState);
     }
     return 0.0;
+}
+
+double Tr38901PathLossModel::getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions)
+{
+    // Table 7.5-6 Part-3: 10 m in an indoor factory, LOS and NLOS
+    if (isIndoorFactory(deployment.scenario))
+        return 10;
+    return Tr36873PathLossModel::getShadowingCorrelationDistance(deployment, losState, conditions);
+}
+
+double Tr38901PathLossModel::getLosCorrelationDistance(const Deployment& deployment)
+{
+    // Table 7.6.3.1-2: d_clutter / 2 in an indoor factory
+    if (isIndoorFactory(deployment.scenario))
+        return deployment.clutterSize / 2;
+    return Tr36873PathLossModel::getLosCorrelationDistance(deployment);
+}
+
+void Tr38901PathLossModel::throwNoNlos(const Deployment& deployment) const
+{
+    std::string owner = owner_ != nullptr ? owner_->getFullPath() : "path loss model";
+    throw cRuntimeError("%s: a link of the scenario %s is evaluated as NLOS, and TR 38.901 has no NLOS path loss for that scenario: both its ends are above the clutter, "
+            "and it is 100%% LOS. Set dynamicLos = true, or fixedLos = true, on the channel model, and leave enableExtCellLos on if a background or external cell is in the scenario",
+            owner.c_str(), DeploymentScenarioToA(deployment.scenario).c_str());
 }
 
 double Tr38901PathLossModel::computePenetrationLoss(const Deployment& deployment, double twoDimDistance, const LinkConditions& conditions)
@@ -360,6 +456,42 @@ double Tr38901PathLossModel::computeIndoor3D(double threeDimDistance, double two
         pLoss = (pLoss_los > pLoss_nlos) ? pLoss_los : pLoss_nlos;
     }
     return pLoss;
+}
+
+double Tr38901PathLossModel::computeIndoorFactory(const Deployment& deployment, double threeDimDistance, bool los)
+{
+    if (threeDimDistance < 1)
+        threeDimDistance = 1;
+
+    if (threeDimDistance > 600 && !tolerateMaxDistViolation_)
+        throw cRuntimeError("Error: Indoor factory path loss model is valid for d<600m only");
+
+    // LOS path loss, the same in every sub-scenario (no penetration loss: see checkPenetrationLoss())
+    double pLoss_los = 31.84 + 21.50 * log10(threeDimDistance) + 19.00 * log10CarrierFrequencyGHz_;
+    if (los)
+        return pLoss_los;
+
+    // NLOS path loss: never below the LOS one, and in dense clutter with a low
+    // base station never below that of sparse clutter either
+    double pLoss_sl = 33 + 25.5 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_;
+    switch (deployment.scenario) {
+        case INDOOR_FACTORY_SL:
+            return std::max(pLoss_sl, pLoss_los);
+        case INDOOR_FACTORY_DL: {
+            double pLoss_dl = 18.6 + 35.7 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_;
+            return std::max({ pLoss_dl, pLoss_los, pLoss_sl });
+        }
+        case INDOOR_FACTORY_SH: {
+            double pLoss_sh = 32.4 + 23.0 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_;
+            return std::max(pLoss_sh, pLoss_los);
+        }
+        case INDOOR_FACTORY_DH: {
+            double pLoss_dh = 33.63 + 21.9 * log10(threeDimDistance) + 20 * log10CarrierFrequencyGHz_;
+            return std::max(pLoss_dh, pLoss_los);
+        }
+        default:
+            throwNoNlos(deployment);
+    }
 }
 
 } //namespace

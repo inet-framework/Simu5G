@@ -20,7 +20,7 @@ package simu5g.stack.phy.channelmodel;
 // pathLossType default; there is no C++ class of its own behind the name. Note
 // that the study supplies the path loss, LOS probability, shadowing and angular
 // attenuation only; the rest of the link model is the same for every
-// propagation study.
+// propagation study. The Indoor Factory scenarios are this study's only.
 //
 // This is the default channel model of the gNodeB NIC and of the NR side of the
 // NR UE NIC.

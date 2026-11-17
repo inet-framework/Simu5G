@@ -50,6 +50,9 @@ class StubEndpoint : public IRadioEndpoint
     DeploymentScenario scenario = defaultScenario;
     double buildingHeight = 20;
     double streetWidth = 20;
+    double clutterDensity = 0.2;   // the clutter of an indoor factory hall
+    double clutterHeight = 2;
+    double clutterSize = 10;
     bool insideBuilding = false;
     double insideDistance = 0.0;
     double penetrationLossDeviate = 0.0;
@@ -69,6 +72,9 @@ class StubEndpoint : public IRadioEndpoint
     DeploymentScenario getDeploymentScenario() override { return scenario; }
     double getBuildingHeight() override { return buildingHeight; }
     double getStreetWidth() override { return streetWidth; }
+    double getClutterDensity() override { return clutterDensity; }
+    double getClutterHeight() override { return clutterHeight; }
+    double getClutterSize() override { return clutterSize; }
     bool isInsideBuilding() override { return insideBuilding; }
     double getInsideDistance() override { return insideDistance; }
     double getPenetrationLossDeviate() override { return penetrationLossDeviate; }

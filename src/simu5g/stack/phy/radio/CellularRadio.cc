@@ -12,6 +12,7 @@
 #include "simu5g/stack/phy/radio/CellularRadio.h"
 
 #include "simu5g/stack/phy/channelmodel/IRadioEndpoint.h"
+#include "simu5g/stack/phy/channelmodel/PathLossModel.h"
 #include "simu5g/stack/phy/packet/AirFrame_m.h"
 #include "simu5g/stack/phy/radio/CellularTransmitter.h"
 #include "simu5g/stack/phy/radio/RadioTransmissionRequest.h"
@@ -33,6 +34,10 @@ void CellularRadio::initialize(int stage)
         scenario_ = aToDeploymentScenario(par("scenario").stringValue());
         buildingHeight_ = par("buildingHeight");
         streetWidth_ = par("streetWidth");
+        clutterDensity_ = par("clutterDensity");
+        clutterHeight_ = par("clutterHeight");
+        clutterSize_ = par("clutterSize");
+        PathLossModel::checkClutter(this, scenario_, clutterDensity_, clutterHeight_, clutterSize_);
         insideBuilding_ = par("insideBuilding");
         if (insideBuilding_) {
             insideDistance_ = uniform(0.0, 25.0);

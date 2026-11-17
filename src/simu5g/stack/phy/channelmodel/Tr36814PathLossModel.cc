@@ -46,6 +46,9 @@ void Tr36814PathLossModel::checkHeightRange(const Deployment& d) const
             requireInRange(d.hNodeB > 10 && d.hNodeB < 150 && d.hUe > 1 && d.hUe < 10, d, study, "10 m < hBS < 150 m, 1 m < hUT < 10 m");
             break;
         default:
+            // a link is checked before any of its formulas is evaluated
+            if (isIndoorFactory(d.scenario))
+                throwUnknownScenario(d);
             break;
     }
 }
@@ -75,7 +78,7 @@ double Tr36814PathLossModel::computePathLoss(const Deployment& deployment, doubl
             pathLoss = computeSubUrbanMacro(deployment, d3D, dbp, los);
             break;
         default:
-            throw cRuntimeError("Wrong value %d for path-loss scenario", deployment.scenario);
+            throwUnknownScenario(deployment);
     }
     return pathLoss;
 }
@@ -117,7 +120,7 @@ double Tr36814PathLossModel::computeLosProbability(const Deployment& deployment,
                 p = exp(-1 * (d - 10) / 200);
             break;
         default:
-            throw cRuntimeError("Wrong path-loss scenario value %d", deployment.scenario);
+            throwUnknownScenario(deployment);
     }
     return p;
 }
@@ -155,7 +158,7 @@ double Tr36814PathLossModel::selectStdDev(const Deployment& deployment, bool bel
             else
                 return 8.;
         default:
-            throw cRuntimeError("Wrong path-loss scenario value %d", deployment.scenario);
+            throwUnknownScenario(deployment);
     }
     return 0.0;
 }
@@ -179,7 +182,7 @@ double Tr36814PathLossModel::getShadowingCorrelationDistance(const Deployment& d
         case RURAL_MACROCELL:
             return losState ? 37 : 120;
         default:
-            throw cRuntimeError("No shadowing correlation distance for the scenario %s", DeploymentScenarioToA(deployment.scenario).c_str());
+            throwUnknownScenario(deployment);
     }
 }
 

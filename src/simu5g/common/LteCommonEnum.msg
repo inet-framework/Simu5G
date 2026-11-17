@@ -150,7 +150,12 @@ enum DeploymentScenario
     URBAN_MACROCELL = 2;
     RURAL_MACROCELL = 3;
     SUBURBAN_MACROCELL = 4;
-    UNKNOWN_SCENARIO = 5;
+    INDOOR_FACTORY_SL = 5; // sparse clutter, low base station
+    INDOOR_FACTORY_DL = 6; // dense clutter, low base station
+    INDOOR_FACTORY_SH = 7; // sparse clutter, high base station
+    INDOOR_FACTORY_DH = 8; // dense clutter, high base station
+    INDOOR_FACTORY_HH = 9; // both ends above the clutter
+    UNKNOWN_SCENARIO = 10;
 };
 
 

@@ -46,6 +46,9 @@ class CellularRadio : public cSimpleModule
     DeploymentScenario scenario_ = UNKNOWN_SCENARIO; // the deployment of the cell, which counts at a base station
     double buildingHeight_ = 0.0;
     double streetWidth_ = 0.0;
+    double clutterDensity_ = 0.0; // the clutter of an indoor factory hall
+    double clutterHeight_ = 0.0;
+    double clutterSize_ = 0.0;
     double penetrationLossDeviate_ = 0.0; // the standard-normal deviate of its building penetration loss
 
   protected:
@@ -65,6 +68,11 @@ class CellularRadio : public cSimpleModule
     DeploymentScenario getDeploymentScenario() const { return scenario_; }
     double getBuildingHeight() const { return buildingHeight_; }
     double getStreetWidth() const { return streetWidth_; }
+
+    /** The clutter of the cell's hall in an indoor factory: the fraction of the floor it covers, and its effective height and typical size, in m. */
+    double getClutterDensity() const { return clutterDensity_; }
+    double getClutterHeight() const { return clutterHeight_; }
+    double getClutterSize() const { return clutterSize_; }
 
     /** The site of the cell, where the radio is a base station's; empty for a cell that is a site of its own. */
     const char *getSite() const { return par("site").stringValue(); }
