@@ -12,8 +12,9 @@ be evaluated at.
 
 For UMa below 6 GHz Table 7.4.3-3 applies, the single-frequency model kept for
 backwards compatibility with TR 36.873: the through-wall term is a constant
-20 dB whose sigma_P is 0, so the whole O2I loss is deterministic. Above 6 GHz
-Table 7.4.3-2 applies, a frequency-dependent median plus sigma_P times a
+20 dB whose sigma_P is 0, so the whole O2I loss is deterministic. From 6 GHz
+up -- 6 GHz itself is not below 6 GHz -- Table 7.4.3-2 applies, a
+frequency-dependent median plus sigma_P times a
 standard-normal variate. The variate is the UE's, drawn once (TR 38.901
 7.4.3.1: "UT-specifically generated") and given to the model, so each case is
 exact: the median at a deviate of 0, and the median plus sigma_P at 1.
@@ -66,17 +67,37 @@ indoor.apply(m, this);
 probe.record("t901_o2i_sub6", indoor, { { "dIn", 25 } },
         m.computePathLoss(102.7, 100, true, indoor.conditions()) - umaLos);
 
-// The indoor distance cannot exceed the length of the link, so a 50 m indoor
-// leg of a 20 m link is graded as the 20 m one it is clamped to.
+// The indoor distance is part of the 2D distance (Figure 7.4.1-2: d2D-out +
+// d2D-in = d2D), so a 50 m indoor leg of a link with d2D = 18 m (d3D = 29.6 m
+// at these heights) is graded as the 18 m one it is clamped to.
 outdoor.apply(m, this);
-double umaShort = m.computePathLoss(20, 18, true, outdoor.conditions());
+double umaShort = m.computePathLoss(29.6, 18, true, outdoor.conditions());
 indoor.insideDistance = 50;
 indoor.apply(m, this);
-probe.record("t901_o2i_sub6", indoor, { { "dIn", 20 } },
-        m.computePathLoss(20, 18, true, indoor.conditions()) - umaShort);
+probe.record("t901_o2i_sub6", indoor, { { "dIn", 18 } },
+        m.computePathLoss(29.6, 18, true, indoor.conditions()) - umaShort);
 
 // --- fc above 6 GHz: the material-based model of table 7.4.3-2 --------
 // Its through-wall term is sigma_P times the UE's standard-normal deviate.
+
+// At exactly 6 GHz the single-frequency model is no longer offered ("below
+// 6 GHz"), so the low-loss median applies.
+outdoor = ScenarioParams();
+outdoor.scenario = URBAN_MACROCELL;
+outdoor.hNodeB = 25;
+outdoor.hUe = 1.5;
+outdoor.carrierFrequencyGHz = 6.0;
+outdoor.apply(m, this);
+double sixGHzOutdoor = m.computePathLoss(102.7, 100, true, outdoor.conditions());
+
+indoor = outdoor;
+indoor.insideBuilding = true;
+indoor.insideDistance = 10;
+indoor.penetrationDeviate = 0;
+indoor.apply(m, this);
+m.setUseBuildingPenetrationHighLossModel(false);
+probe.record("t901_o2i_lowloss", indoor, { { "dIn", 10 }, { "z", 0.0 } },
+        m.computePathLoss(102.7, 100, true, indoor.conditions()) - sixGHzOutdoor);
 
 outdoor = ScenarioParams();
 outdoor.scenario = URBAN_MACROCELL;
@@ -137,7 +158,7 @@ probe.record("t901_o2i_lowloss", indoor, { { "dIn", 10 }, { "z", -1.0 } },
 %postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt
 
 %contains: verdict.txt
-graded=10 failures=0
+graded=11 failures=0
 
 %not-contains: verdict.txt
 FAILED

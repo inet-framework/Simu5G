@@ -84,6 +84,15 @@ indoor.apply(m, this);
 probe.record("t873_o2i", indoor, { { "dIn", 10 } },
         m.computePathLoss(102.7, 100, true, indoor.conditions()) - umaOutdoor28GHz);
 
+// The indoor distance is part of the 2D distance (clause 7.2.3: d2D-out +
+// d2D-in), so a 50 m indoor leg of a link with d2D = 18 m (d3D = 29.6 m at
+// these heights) is graded as the 18 m one it is clamped to.
+double umaShort = m.computePathLoss(29.6, 18, true, p.conditions());
+indoor.insideDistance = 50;
+indoor.apply(m, this);
+probe.record("t873_o2i", indoor, { { "dIn", 18 } },
+        m.computePathLoss(29.6, 18, true, indoor.conditions()) - umaShort);
+
 // --- RMa, hBS = 35 m, hUT = 1.5 m, fc = 0.8 GHz, W = 20 m, h = 5 m ----
 // dBP = 2 pi hBS hUT fc/c = 879.646 m.
 p = ScenarioParams();
@@ -122,7 +131,7 @@ probe.summary();
 %postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt
 
 %contains: verdict.txt
-graded=20 failures=0
+graded=21 failures=0
 
 %contains: stdout
 modelchecks=5 modelfailures=0
