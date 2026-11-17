@@ -73,7 +73,7 @@ changes nothing.
 | PHY `txDirection`, `txAngle` | `cellularNic.antenna.txDirection`, `cellularNic.antenna.txAngle` |
 | channel model `antennaGainUe`, `antennGainEnB` | `cellularNic.antenna.gain` (UE default 0 dBi, base station 18 dBi) |
 | channel model `nodebHeight`, `ueHeight` | the height of each node's antenna: `cellularNic.antenna.mobility.offsetZ` above the node's position (base station default 25 m, UE 1.5 m; `radio.antenna.mobility.offsetZ` on a background or external cell). Setting the old parameters is an error |
-| channel model `scenario`, `buildingHeight`, `streetWidth` | the base station's radio: `cellularNic.radio.scenario` etc. (`radio.scenario` on a background or external cell), same values and defaults; `**.radio.scenario = ...` sets every cell. Setting the old parameters is an error |
+| channel model `scenario`, `buildingHeight`, `streetWidth` | the base station's radio: `cellularNic.radio.scenario` etc. (`radio.scenario` on a background or external cell), same values; `**.radio.scenario = ...` sets every cell. `buildingHeight` now defaults to what the studies give for the scenario (5 m rural, 10 m suburban, 20 m urban macrocell) instead of 20 m everywhere. Setting the old parameters is an error |
 | UE `hysteresisFactor` (a divisor of the serving cell's beacon SINR) | `hysteresis`, the handover margin in dB (default 3 dB). Setting the old parameter is an error |
 | channel model `ueNoiseFigure`, `bsNoiseFigure` | `radio.receiver.noiseFigure` (UE default 7 dB, base station 5 dB) |
 | channel model `cableLoss` | `radio.receiver.cableLoss` (default 2 dB) |
@@ -139,7 +139,11 @@ decided at the configured rate too.
   parameters of the base station's radio, and a link is evaluated in the
   deployment of its base station end. A macro cell and a small cell on one
   carrier, or a background cell of another kind than the cells around it,
-  can be modeled.
+  can be modeled. The building height defaults to the studies' value for the
+  scenario: 5 m in a rural, 10 m in a suburban and 20 m in an urban
+  macrocell (it was 20 m in every scenario, so a rural or suburban cell
+  that does not set it changes its path loss). The TR 38.901 rural formulas
+  take the building height and the street width, which they ignored.
 - **Sites.** Cells whose radios give the same `site` name are the sectors of
   one site: a UE's links to them share one LOS state and one shadowing
   realization, as TR 38.901 has it, and differ by the antenna patterns only.
@@ -286,6 +290,9 @@ Each is a deliberate change; they are listed in user terms.
 - Background UEs' and external or background cells' links had no shadowing.
 - The received-SINR statistics left out the receptions that were lost
   without an error draw (CQI 0, or below the curves), so they read too high.
+- The TR 38.901 rural macrocell formulas ignored the building height and the
+  street width; the building height defaulted to 20 m also in rural and
+  suburban cells, where the studies give 5 m and 10 m.
 - The 2049th NR UE of a network was taken for a background UE, and the
   32769th multicast address got destination id 0; both are now errors.
 - A beacon interval that is not a multiple of the slot dropped the last
@@ -355,8 +362,6 @@ these are the ones a user should know before trusting a result.
   the site has one core connection per sector.
 - **Device-to-device links** are evaluated with base-station formulas (see
   "The deployment of a link"), and a cable loss on a link that has none.
-- **TR 38.901 rural macrocell:** the model's formulas take a building height
-  of 5 m and a street width of 20 m, whatever the radio's parameters say.
 - **Flat ground** at z = 0 is assumed; there is no terrain.
 - **Inter-frequency handover** is not modeled.
 - The users guide's statement that the SINR distribution matches the
