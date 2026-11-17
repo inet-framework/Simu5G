@@ -175,6 +175,17 @@ Recorded, not fixed in the branch, like the items of the earlier pieces.
 
 ## Found 2026-11-12: fix after the full merge
 
+## Indoor Factory (topic/inf, 2026-11-17): what the scenario does not have
+
+33. **The Indoor Factory scenario is its path loss, LOS probability, shadowing and correlation distances only.**
+   - What the model does: Tr38901PathLossModel has the five InF sub-scenarios of TR 38.901 (Table 7.4.1-1, Table 7.4.2-1, Table 7.5-6 Part-3 for the SF correlation distance, Table 7.6.3.1-2 for the LOS state's), with the clutter of Table 7.2-4 as parameters of the base station's radio.
+   - No outdoor-to-indoor loss: TR 38.901 7.4.3.1 says "Only the high-loss model is applicable to InF", and the model rejects a UE with `insideBuilding` in an InF cell ("the building penetration loss of TR 38.901 for the scenario ... is not implemented"). The clause gives no d2D-in range for InF. A hall served from outdoors is a UMa or UMi cell with an indoor UE and useBuildingPenetrationHighLossModel. Recorded in tests/module/IndoorFactoryRejected_IndoorUe.
+   - A hall cell and an outdoor cell on one carrier cannot share an indoor UE: `insideBuilding` is the UE's and applies to all its links, so either the hall link is rejected or the outdoor link has no wall. The same holds for INDOOR_HOTSPOT. Open: an indoor-scenario link of an indoor UE taking no penetration loss.
+   - No link between two UEs: the model's convention for a UE-to-UE link (item 4) needs a base station height per scenario, and has none for InF; such a link is rejected. D2D is legacy.
+   - The fast fading is not InF's: delayRms is one value per carrier and RAT, 363 ns by default, where TR 38.901 Table 7.5-6 Part-3 gives lgDS = log10(26 (V/S) + 14) - 9.35 (LOS) and log10(30 (V/S) + 32) - 9.44 (NLOS), about 55 ns for a hall of 120 m x 60 m x 10 m; there is no Ricean component (K = 7 dB, sigma 8 dB in LOS); the moving scatterers of 7.6.10 are absent, so a stationary UE's channel does not change.
+   - The hall is not modelled: no room size or ceiling height, and the path loss holds to 600 m whatever the hall. A link's antennas must be where Table 7.2-4 places them relative to the clutter height, so a UE antenna that rises above the clutter in a sub-scenario with an embedded UE stops the simulation unless tolerateHeightViolation is set; in InF-SH and InF-DH it stops it always, since k_subsce is then undefined.
+   - Tests: unit/Tr38901IndoorFactory, unit/ChannelModelIndoorFactoryCells, module/IndoorFactory*, module/SiteRejected_SectorsInDifferentClutter.
+
 ## Fixed later in the branch, re-check only
 
 - **The O2I loss's random term redrawn at every evaluation:** accepted with piece 6a. Drawn once per UE from "the random term of a UE's building penetration loss is drawn once, the UE's own"; see item 14 for the per-radio residue.
