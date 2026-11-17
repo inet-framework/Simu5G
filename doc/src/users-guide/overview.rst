@@ -140,8 +140,12 @@ Simu5G currently supports:
    CC and configured via NED/INI. gNBs and UEs can be limited
    to only a subset of numerologies.
 -  **Frequency/Time Division Duplexing (FDD/TDD):** Simu5G
-   supports both FDD and TDD. In FDD, each CC has separate
-   portions for UL and DL spectra. As far as TDD is concerned,
+   supports both FDD and TDD. In FDD, a CC has one carrier
+   frequency and one bandwidth, which the model uses for both
+   directions: the DL and the UL of a CC are evaluated at the
+   same frequency and do not interfere with each other, but
+   they are not modeled as separate spectra. As far as TDD is
+   concerned,
    NR foresees 62 possible slot formats (3GPP - TR 38.213),
    where individual symbols in a slot can be DL, UL or flexible
    (i.e., it can be assigned dynamically to DL or UL
@@ -163,15 +167,17 @@ The architecture of the PHY module in Simu5G mirrors the one of
    :figwidth: 100.0%
 
 When a MAC PDU is sent from a sender to a receiver, an OMNeT++
-message is exchanged between them. On receipt of the latter,
-the receiver applies a channel model to compute the received
+message is exchanged between them, through the radios of the
+two nodes and the network's radio medium. On receipt of the
+latter, the radio medium's channel model computes the received
 power. The channel model can be configured to incorporate
 fading, shadowing, pathloss, etc., and can be made arbitrarily
-complex. From the received power, the receiver computes the
-SINR, asking the radio medium which other nodes were
-transmitting on the same resources. Then, it leverages Block
-Error Rate (BLER) curves to compute the reception probability
-for each RB composing the ongoing transmission. This makes it
+complex. From the received power, the channel model computes
+the SINR, taking from the radio medium which other radios were
+transmitting on the same resources. Then, the receiver of the
+radio leverages Block Error Rate (BLER) curves to compute the
+reception probability for each RB composing the ongoing
+transmission. This makes it
 possible to translate a SINR and a transmission format to a
 probability of correct reception of the entire MAC PDU. The
 above modelling abates the computational complexity of the
@@ -199,7 +205,11 @@ RP-180524 <https://www.3gpp.org/ftp/tsg_ran/TSG_RAN/TSGR_79/Docs/RP-180524.zip>`
 In particular, in the Urban Macro (UMa) scenario with 57 cells,
 30 UEs described in Table 4, config. A of the above document,
 the SINR distribution obtained with Simu5G matches the
-reference one perfectly, as shown in the figure below.
+reference one perfectly, as shown in the figure below. This
+validation was made with an earlier version; it has not been
+repeated with the radio medium introduced in version 1.9.0.
+The known limitations of the radio model are listed in the
+1.9.0 entry of WHATSNEW.md.
 
 .. figure:: images/SINR.png
    :align: center
