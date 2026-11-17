@@ -31,7 +31,7 @@ output, naming the formula below that says what the model ought to have
 returned:
 
     #CASE ref=t901_umi_los scenario=URBAN_MICROCELL hBS=10 hUT=1.5 h=20 W=20
-          fc=3.5 d3D=21.5 d2D=20 los=1 actual=71.26256854533 tol=1e-06
+          fc=3.5 d3D=21.73 d2D=20 los=1 actual=71.35961513974 tol=1e-06
 
     ./pathloss_reference.py --grade work/Tr38901PathLoss/test.out
 

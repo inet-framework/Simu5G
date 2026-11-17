@@ -32,12 +32,12 @@ p.hNodeB = 3;
 p.hUe = 1.5;
 p.carrierFrequencyGHz = 3.5;
 
-probe.pathLoss("t901_inh_los",  m, p, 5, 5, true);
-probe.pathLoss("t901_inh_los",  m, p, 30, 30, true);
-probe.pathLoss("t901_inh_los",  m, p, 100, 100, true);
-probe.pathLoss("t901_inh_nlos", m, p, 5, 5, false);
-probe.pathLoss("t901_inh_nlos", m, p, 30, 30, false);
-probe.pathLoss("t901_inh_nlos", m, p, 100, 100, false);
+probe.pathLoss("t901_inh_los",  m, p, 5.22, 5, true);
+probe.pathLoss("t901_inh_los",  m, p, 30.04, 30, true);
+probe.pathLoss("t901_inh_los",  m, p, 100.01, 100, true);
+probe.pathLoss("t901_inh_nlos", m, p, 5.22, 5, false);
+probe.pathLoss("t901_inh_nlos", m, p, 30.04, 30, false);
+probe.pathLoss("t901_inh_nlos", m, p, 100.01, 100, false);
 
 // Below 1 m the 3D distance is clamped to 1 m, where the report's own
 // formula takes over, so the case is graded at 1 m rather than at 0.5 m.
@@ -54,10 +54,10 @@ p.hNodeB = 10;
 p.hUe = 1.5;
 p.carrierFrequencyGHz = 3.5;
 
-probe.pathLoss("t901_umi_los",  m, p, 21.5, 20, true);         // below dBP
+probe.pathLoss("t901_umi_los",  m, p, 21.73, 20, true);         // below dBP
 probe.pathLoss("t901_umi_los",  m, p, 100.36, 100, true);      // below dBP
 probe.pathLoss("t901_umi_los",  m, p, 1000.04, 1000, true);    // above dBP
-probe.pathLoss("t901_umi_nlos", m, p, 21.5, 20, false);
+probe.pathLoss("t901_umi_nlos", m, p, 21.73, 20, false);
 probe.pathLoss("t901_umi_nlos", m, p, 100.36, 100, false);
 probe.pathLoss("t901_umi_nlos", m, p, 1000.04, 1000, false);
 
@@ -72,7 +72,7 @@ p.hNodeB = 25;
 p.hUe = 1.5;
 p.carrierFrequencyGHz = 2.0;
 
-probe.pathLoss("t901_uma_los",  m, p, 55.9, 50, true);         // below dBP
+probe.pathLoss("t901_uma_los",  m, p, 55.25, 50, true);         // below dBP
 probe.pathLoss("t901_uma_los",  m, p, 102.7, 100, true);       // below dBP
 probe.pathLoss("t901_uma_los",  m, p, 1000.28, 1000, true);    // above dBP
 probe.pathLoss("t901_uma_nlos", m, p, 102.7, 100, false);
@@ -92,7 +92,7 @@ p.hBuilding = 5;
 p.wStreet = 20;
 p.carrierFrequencyGHz = 0.8;
 
-probe.pathLoss("t901_rma_los",  m, p, 105.6, 100, true);       // below dBP
+probe.pathLoss("t901_rma_los",  m, p, 105.46, 100, true);       // below dBP
 probe.pathLoss("t901_rma_los",  m, p, 501.1, 500, true);       // below dBP
 probe.pathLoss("t901_rma_los",  m, p, 3000.19, 3000, true);    // above dBP
 probe.pathLoss("t901_rma_nlos", m, p, 501.1, 500, false);
