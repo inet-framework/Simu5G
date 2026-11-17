@@ -434,8 +434,9 @@ bool LteMacUe::buildStandaloneBsr()
             return false;
 
         // Reported whatever the size: a zero report is the defined way to tell the
-        // scheduler the buffers are empty (TS 36.321 / TS 38.321 5.4.5), and the
-        // specs cancel a BSR on inclusion in a PDU, never because it would be zero.
+        // scheduler the buffers are empty (buffer-size index 0, Table 6.1.3.1-1 of
+        // TS 36.321 / TS 38.321), and the specs cancel a BSR on inclusion in a PDU
+        // (5.4.5), never because it would be zero.
         auto macPkt = new Packet("LteMacPdu");
         auto header = makeShared<LteMacPdu>();
         header->setHeaderLength(MAC_HEADER);
@@ -638,10 +639,10 @@ void LteMacUe::macPduMake(MacCid cid)
 
             auto macPdu = macPkt->removeAtFront<LteMacPdu>();
             // A triggered BSR is reported whatever the remaining size: a zero report is
-            // the defined way (TS 36.321 / TS 38.321 5.4.5, buffer-size index 0) to tell
-            // the scheduler the buffers drained into this very PDU. The specs cancel a
-            // BSR only once it has been included in a PDU, or when the grant cannot fit
-            // the CE -- never because the buffer is empty.
+            // the defined way (buffer-size index 0, Table 6.1.3.1-1 of TS 36.321 /
+            // TS 38.321) to tell the scheduler the buffers drained into this very PDU.
+            // The specs cancel a BSR (5.4.5) only once it has been included in a PDU, or
+            // when the grant cannot fit the CE -- never because the buffer is empty.
             if (isBsrPending() && !bsrAlreadyMade) {
                 // report the WHOLE remaining backlog, scheduled connections or not:
                 // this TTI's scheduling has already drained the virtual buffers, so

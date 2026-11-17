@@ -294,7 +294,7 @@ const unsigned int RLC_HEADER_AM = 2;
 // and adding the 16-bit SO on a non-first (continuation) segment.
 enum NrUmSegState { NRUM_COMPLETE = 0, NRUM_FIRST = 1, NRUM_CONTINUATION = 2 };
 
-// UM (TS 38.322 6.2.1.3): complete SDU = SI+R = 1B (no SN/SO); first segment = SI(2)+SN,
+// UM (TS 38.322 6.2.2.3): complete SDU = SI+R = 1B (no SN/SO); first segment = SI(2)+SN,
 // byte-aligned (6-bit SN -> 1B, 12-bit -> 2B); continuation = that + SO(16b) (3B / 4B).
 inline unsigned int nrUmHeaderBytes(NrUmSegState s, unsigned int snBits)
 {
@@ -304,7 +304,7 @@ inline unsigned int nrUmHeaderBytes(NrUmSegState s, unsigned int snBits)
     return (s == NRUM_CONTINUATION) ? base + 2u : base;     // + SO(16b) on a continuation
 }
 
-// AM (TS 38.322 6.2.1.4): an AMD PDU always carries the SN. complete/first = D/C+P+SI(4)+SN,
+// AM (TS 38.322 6.2.2.4): an AMD PDU always carries the SN. complete/first = D/C+P+SI(4)+SN,
 // byte-aligned (12-bit SN -> 2B, 18-bit -> 3B); continuation adds the SO(16b) (4B / 5B).
 inline unsigned int nrAmHeaderBytes(NrUmSegState s, unsigned int snBits)
 {

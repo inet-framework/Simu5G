@@ -46,7 +46,7 @@ void NrRlcUmTxEntity::rlcPduMake(int pduLength)
     auto rlcPdu = inet::makeShared<NrRlcUmDataPdu>();
 
     // The MAC request is the PDU budget (header + payload). The header is segment-state
-    // dependent (TS 38.322 6.2.1.3): peek the head SDU to choose it before carving so the
+    // dependent (TS 38.322 6.2.2.3): peek the head SDU to choose it before carving so the
     // payload fills the budget exactly, and so it matches the header the scheduler reserved
     // for this same PDU (nrUmHeaderBytes, drain-synced).
     unsigned int rlcHeader = RLC_HEADER_UM;
@@ -101,7 +101,7 @@ void NrRlcUmTxEntity::rlcPduMake(int pduLength)
     FramingInfo fi;
     fi.firstIsFragment = (segment.start > 0);
     fi.lastIsFragment  = (segment.end < segment.totalLength - 1);
-    // A complete SDU carries no SN (TS 38.322 6.2.1.3); segments carry the SDU SN.
+    // A complete SDU carries no SN (TS 38.322 6.2.2.3); segments carry the SDU SN.
     bool carrySn = !complete;
     // Carry the true SDU length so the RX detects byte-coverage completion
     // (TS 38.322 5.2.2.2.3). A complete SDU needs no reassembly.

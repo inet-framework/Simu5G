@@ -327,7 +327,7 @@ void NrRlcAmTxEntity::sendSegment(PendingSegment segment)
     int sduSequenceNumber = pdcpTag->getPdcpSequenceNumber();
 
     rlcPdu->pushSdu(bufferedSdu->dup(), segmentSize);
-    // TS 38.322 6.2.1.4 AM header: a non-first segment (start>0) carries the 16-bit SO (4B);
+    // TS 38.322 6.2.2.4 AM header: a non-first segment (start>0) carries the 16-bit SO (4B);
     // a complete SDU or first segment carries SI+SN only (2B). The carve budget above
     // reserved the same size, so the PDU exactly fills its requested grant slot.
     unsigned int hdr = nrAmHeaderBytes((segment.start > 0) ? NRUM_CONTINUATION : NRUM_FIRST, snFieldLength_);

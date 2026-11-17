@@ -94,7 +94,7 @@ ScheduleList& LcgScheduler::schedule(unsigned int availableBytes, Direction gran
             // flow's SN field length). Only the front SDU can be a continuation.
             // UM: complete=1B (no SN) if the whole remaining SDU fits, else
             // first/continuation per nrUmHeaderBytes. AM always carries the SN
-            // (nrAmHeaderBytes). TS 38.322 6.2.1.3/6.2.1.4.
+            // (nrAmHeaderBytes). TS 38.322 6.2.2.3/6.2.2.4.
             unsigned int snBits = lcConfig.snFieldLength;
             unsigned int rlcHdr;
             if (lcConfig.rlcMode == AM) {
