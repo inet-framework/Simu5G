@@ -44,11 +44,12 @@ Three kinds of ingredient, and only the first is a specification:
    (one indoor distance on all of a radio's carriers). Their descriptions
    say so. They are regression tests of the model's choice.
 
-Most scenarios here use URBAN_MICROCELL with a 25 m base station, outside the
-formulas' stated applicability (TR 38.901 Table 7.4.1-1 and TR 36.814 Table
-B.1.2.1-1: hBS = 10 m). The formulas are still evaluated verbatim at those
-heights, by the model and by the grader alike, so the comparison is exact; it
-is the scenario, not the check, that a specification would not cover.
+Each base station here stands at the height the studies give for its
+scenario: 10 m for URBAN_MICROCELL (TR 38.901 Table 7.4.1-1 UMi-SC and TR 36.814
+Table B.1.2.1-1 UMi: hBS = 10 m) and 25 m for URBAN_MACROCELL (TR 38.901
+Table 7.4.1-1 UMa: hBS = 25 m). The channel model rejects a link outside those
+heights unless its tolerateHeightViolation parameter is set, and no test here
+sets it.
 
 Why this is separate from tests/unit
 ------------------------------------
