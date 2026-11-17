@@ -208,19 +208,14 @@ void NrRlcAmTxEntity::sendPdus(int pduSize)
 
     if (radioLinkFailureDetected_) {
         EV << NOW << " " << nameEntity_ << " NrRlcAmTxEntity::sendPdus() RLF detected, stopping" << endl;
+        sendEmptyPdu();
         return;
     }
 
     int size = pduSize - RLC_HEADER_AM;
 
     if (size < 0) {
-        auto pkt = new inet::Packet("lteRlcFragment (empty)");
-        auto rlcPdu = inet::makeShared<NrRlcAmDataPdu>();
-        rlcPdu->setChunkLength(inet::b(1));
-        pkt->insertAtFront(rlcPdu);
-        if (lteInfo_)
-            *(pkt->addTagIfAbsent<FlowControlInfo>()) = *lteInfo_;
-        sendPduToMac(pkt);
+        sendEmptyPdu();
         return;
     }
 
@@ -269,6 +264,7 @@ void NrRlcAmTxEntity::sendPdus(int pduSize)
         if (sduBuffer_.empty()) {
             EV << NOW << " NrRlcAmTxEntity::sendPdus() buffer empty, wasting grant" << endl;
             emit(wastedGrantedBytesSignal_, size);
+            sendEmptyPdu();
             return;
         }
 
@@ -279,6 +275,7 @@ void NrRlcAmTxEntity::sendPdus(int pduSize)
 
         if (txBuffer_->windowFull()) {
             emit(txWindowFullSignal_, 1);
+            sendEmptyPdu();
             return;
         }
 
@@ -292,12 +289,26 @@ void NrRlcAmTxEntity::sendPdus(int pduSize)
     if (!segment.isValid) {
         EV << NOW << " NrRlcAmTxEntity::sendPdus() no segment fits grant" << endl;
         emit(wastedGrantedBytesSignal_, size);
+        sendEmptyPdu();
         return;
     }
 
     sendSegment(segment);
     emit(txWindowOccupationSignal_, txBuffer_->getTxNext() - txBuffer_->getTxNextAck());
     reportBufferStatus();
+}
+
+void NrRlcAmTxEntity::sendEmptyPdu()
+{
+    // The MAC requested a PDU this entity cannot fill: the MAC accounts for an answer
+    // to every request, so it gets an empty (1-bit) one, which it does not buffer
+    ASSERT(flowControlInfo_ != nullptr);
+    auto pkt = new inet::Packet("lteRlcFragment (empty)");
+    auto rlcPdu = inet::makeShared<NrRlcAmDataPdu>();
+    rlcPdu->setChunkLength(inet::b(1));
+    pkt->insertAtFront(rlcPdu);
+    *(pkt->addTagIfAbsent<FlowControlInfo>()) = *flowControlInfo_;
+    sendPduToMac(pkt);
 }
 
 void NrRlcAmTxEntity::sendSegment(PendingSegment segment)

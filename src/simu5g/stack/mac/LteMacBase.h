@@ -152,6 +152,19 @@ class LteMacBase : public cSimpleModule
     /// Consolidated outgoing connection information (replaces mbuf_, macBuffers_, and connDesc_)
     std::map<MacCid, OutgoingConnectionInfo> connDescOut_;
 
+    /// A MAC SDU request sent to RLC: the carrier and codeword its SDU is for, and its answer
+    struct SduRequest {
+        GHz carrier;
+        Codeword cw = 0;
+        bool answered = false;
+        bool hasSdu = false;   // the answer carried an SDU, now in the connection's queue
+    };
+
+    /// The SDU requests of this slot not yet built into MAC PDUs, per connection, in the
+    /// order they were sent. RLC answers every request once, in that order, so the
+    /// connection's queue holds the SDUs of the answered requests in the same order.
+    std::map<MacCid, std::vector<SduRequest>> sduRequests_;
+
     /// List of pdus finalized for each user on each codeword (one entry per carrier)
     std::map<GHz, MacPduList> macPduList_;
 
@@ -493,6 +506,22 @@ class LteMacBase : public cSimpleModule
 
     virtual void macPduMake(MacCid cid = MacCid()) = 0;
     virtual void macPduUnmake(cPacket *pkt) = 0;
+
+    /// Records an SDU request sent to RLC for the given connection, carrier and codeword
+    virtual void recordSduRequest(MacCid cid, GHz carrier, Codeword cw);
+
+    /**
+     * Records RLC's answer to the connection's oldest unanswered SDU request: an SDU
+     * (buffered in the connection's queue) or an empty answer. Returns true when every
+     * request of the connection has been answered. Throws if none is waiting.
+     */
+    virtual bool recordSduAnswer(MacCid cid, bool hasSdu);
+
+    /// The number of the connection's answered requests for the carrier and codeword that carried an SDU
+    virtual unsigned int getNumAnsweredSdus(MacCid cid, GHz carrier, Codeword cw) const;
+
+    /// Throws if an SDU request of an earlier slot is still waiting for its answer
+    virtual void checkSduRequestsAnswered() const;
 
   public:
     /**

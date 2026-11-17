@@ -10,6 +10,7 @@
 //
 
 #include <inet/common/ProtocolTag_m.h>
+#include <inet/common/packet/chunk/BitCountChunk.h>
 
 #include "simu5g/stack/rlc/tm/RlcTmTxEntity.h"
 #include "simu5g/stack/rlc/packet/LteRlcNewDataTag_m.h"
@@ -99,7 +100,13 @@ void RlcTmTxEntity::handleMacSduRequest(Packet *pkt)
         send(rlcPduPkt, "out");
     }
     else {
+        // the MAC accounts for an answer to every request: send it an empty (1-bit) one
         EV << "RlcTmTxEntity::handleMacSduRequest - no PDUs buffered, nothing to send\n";
+        ASSERT(flowControlInfo_ != nullptr);
+        auto emptyPkt = new Packet("lteRlcFragment (empty)", makeShared<BitCountChunk>(b(1)));
+        *(emptyPkt->addTagIfAbsent<FlowControlInfo>()) = *flowControlInfo_;
+        emptyPkt->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&LteProtocol::rlc);
+        send(emptyPkt, "out");
     }
     delete pkt;
 }

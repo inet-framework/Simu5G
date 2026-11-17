@@ -73,9 +73,15 @@ void NrRlcUmTxEntity::rlcPduMake(int pduLength)
 
     PendingSegmentUM segment = sduBuffer->getSegmentForGrant(size);
     if (!segment.isValid) {
+        // the MAC accounts for an answer to every request: send it an empty (1-bit) one
         EV << NOW << " NrRlcUmTxEntity::rlcPduMake - buffer empty, wasting grant (" << size << "B)" << endl;
         emit(wastedGrantedBytesSignal_, size);
-        delete pkt;
+        pkt->setName("lteRlcFragment (empty)");
+        rlcPdu->setChunkLength(inet::b(1));
+        if (flowControlInfo_)
+            *(pkt->addTagIfAbsent<FlowControlInfo>()) = *flowControlInfo_;
+        pkt->insertAtFront(rlcPdu);
+        sendPduToMac(pkt);
         onTxBufferEmptied();
         return;
     }

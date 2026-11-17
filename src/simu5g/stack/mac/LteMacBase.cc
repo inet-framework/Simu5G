@@ -272,6 +272,51 @@ void LteMacBase::clearOutgoingConnectionBuffers(MacCid cid)
         connInfo.buffer->popFront();
 }
 
+void LteMacBase::recordSduRequest(MacCid cid, GHz carrier, Codeword cw)
+{
+    SduRequest request;
+    request.carrier = carrier;
+    request.cw = cw;
+    sduRequests_[cid].push_back(request);
+}
+
+bool LteMacBase::recordSduAnswer(MacCid cid, bool hasSdu)
+{
+    auto it = sduRequests_.find(cid);
+    if (it != sduRequests_.end()) {
+        for (auto& request : it->second) {
+            if (!request.answered) {
+                request.answered = true;
+                request.hasSdu = hasSdu;
+                return it->second.back().answered;
+            }
+        }
+    }
+    throw cRuntimeError("%s: RLC sent a MAC SDU for connection %s that no SDU request waits for",
+            getFullPath().c_str(), cid.str().c_str());
+}
+
+unsigned int LteMacBase::getNumAnsweredSdus(MacCid cid, GHz carrier, Codeword cw) const
+{
+    auto it = sduRequests_.find(cid);
+    if (it == sduRequests_.end())
+        return 0;
+    unsigned int count = 0;
+    for (const auto& request : it->second)
+        if (request.answered && request.hasSdu && request.carrier == carrier && request.cw == cw)
+            count++;
+    return count;
+}
+
+void LteMacBase::checkSduRequestsAnswered() const
+{
+    for (const auto& [cid, requests] : sduRequests_)
+        for (const auto& request : requests)
+            if (!request.answered)
+                throw cRuntimeError("%s: RLC did not answer the MAC SDU request for connection %s on carrier %g GHz",
+                        getFullPath().c_str(), cid.str().c_str(), request.carrier.get());
+}
+
 void LteMacBase::createIncomingConnection(MacCid cid, const FlowDescriptor& connInfo)
 {
     Enter_Method("createIncomingConnection(%s)", cid.str().c_str());

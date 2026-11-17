@@ -104,6 +104,8 @@ void NrMacUe::handleSelfMessage()
         }
     }
 
+    // the requests of the previous tick have all been answered and built into MAC PDUs
+    checkSduRequestsAnswered();
     scheduleList_.clear();
     requestedSdus_ = 0;
     if (!noSchedulingGrants) { // if a grant is configured

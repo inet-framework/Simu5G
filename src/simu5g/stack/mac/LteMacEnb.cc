@@ -125,7 +125,6 @@ void LteMacEnb::initialize(int stage)
 
         eNodeBCount = par("eNodeBCount");
         WATCH(drbQosMap_);
-        WATCH(expectedSdus_);
         WATCH(needRtx_);
         WATCH_EXPR("ulBacklog", ulBacklog_.mirrors());
     }
@@ -212,14 +211,16 @@ void LteMacEnb::macSduRequest()
 {
     EV << "----- START LteMacEnb::macSduRequest -----\n";
 
-    // the requests of this TTI are counted afresh
-    expectedSdus_.clear();
+    // the requests of the previous slot have all been answered and built into MAC PDUs
+    checkSduRequestsAnswered();
+    sduRequests_.clear();
 
     // Ask for a MAC SDU for each scheduled user on each carrier and each codeword
     for (const auto& [carrierFreq, scheduleList] : *scheduleListDl_) { // loop on carriers
 
         for (const auto& item : scheduleList) { // loop on CIDs
             MacCid destCid = item.first.first;
+            Codeword cw = item.first.second;
             MacNodeId destId = destCid.getNodeId();
 
             // the bytes allocated to this UE on the carrier's bands (should be by CID):
@@ -232,8 +233,8 @@ void LteMacEnb::macSduRequest()
 
             // NR-SO DL connections fill the grant with several one-SDU/segment PDUs;
             // issue one request per planned PDU so the MAC PDU multiplexes them.
-            // LTE-FI uses one request. How many answers to expect before building is
-            // recorded, over all the carriers the connection is scheduled on.
+            // LTE-FI uses one request. Each request is recorded with its carrier and
+            // codeword, so that its answer goes into the MAC PDU it was requested for.
             const std::vector<unsigned int> *soSizes = enbSchedulerDl_->getScheduledSoPduSizes(carrierFreq, destCid);
             std::vector<unsigned int> reqSizes;
             if (soSizes != nullptr && !soSizes->empty())
@@ -244,9 +245,9 @@ void LteMacEnb::macSduRequest()
                 unsigned int sduSize = (allocatedBytes > MAC_HEADER) ? (allocatedBytes - MAC_HEADER) : 0;
                 reqSizes.push_back(sduSize);
             }
-            expectedSdus_[destCid] += reqSizes.size();
 
             for (unsigned int reqSize : reqSizes) {
+                recordSduRequest(destCid, carrierFreq, cw);
                 // send the request message to the upper layer
                 auto pkt = new Packet("LteMacSduRequest");
                 auto macSduRequest = makeShared<LteMacSduRequest>(); //TODO this should be a tag on a Message, not a packet
@@ -487,15 +488,15 @@ void LteMacEnb::macPduMake(MacCid cid)
             if (destCid != cid)
                 continue;
 
-            // Check whether the RLC has sent some data. If not, skip
-            // (e.g. because the size of the MAC PDU would contain only MAC header - MAC SDU requested size = 0B)
-            if (connDescOut_[destCid].queue->getQueueLength() == 0)
-                break;
-
+            // the SDUs RLC sent for this carrier and codeword; none if it answered every
+            // request for them empty (e.g. nothing to send, or no room beyond the headers)
             Codeword cw = it.first.second;
+            unsigned int numSdus = getNumAnsweredSdus(destCid, carrierFreq, cw);
+            if (numSdus == 0)
+                continue;
+
             MacNodeId destId = destCid.getNodeId();
             std::pair<MacNodeId, Codeword> pktId = {destId, cw};
-            unsigned int sduPerCid = it.second;
             unsigned int grantedBlocks = 0;
             TxMode txmode;
 
@@ -542,12 +543,11 @@ void LteMacEnb::macPduMake(MacCid cid)
                 macPacket = pit->second;
             }
 
-            while (sduPerCid > 0) {
-                if ((connDescOut_[destCid].queue->getQueueLength()) < (int)sduPerCid) {
-                    throw cRuntimeError("Abnormal queue length detected while building MAC PDU for cid %s "
-                                        "Queue real SDU length is %d while scheduled SDUs are %d",
-                            destCid.str().c_str(), connDescOut_[destCid].queue->getQueueLength(), sduPerCid);
-                }
+            // the queue holds the answered SDUs in request order, and the requests were
+            // sent in the order of this loop
+            for (unsigned int i = 0; i < numSdus; i++) {
+                if (connDescOut_[destCid].queue->isEmpty())
+                    throw cRuntimeError("LteMacEnb::macPduMake: the MAC queue of cid %s has fewer SDUs than RLC answered with", destCid.str().c_str());
 
                 auto pkt = check_and_cast<Packet *>(connDescOut_[destCid].queue->popFront());
                 ASSERT(pkt != nullptr);
@@ -564,10 +564,12 @@ void LteMacEnb::macPduMake(MacCid cid)
 
                 macPkt->pushSdu(pkt, destCid.getLcid());
                 macPacket->insertAtFront(macPkt);
-                sduPerCid--;
             }
         }
     }
+    if (!connDescOut_[cid].queue->isEmpty())
+        throw cRuntimeError("LteMacEnb::macPduMake: %d SDUs of cid %s are left in the MAC queue, which no request of this slot was for",
+                connDescOut_[cid].queue->getQueueLength(), cid.str().c_str());
 
     for (const auto& [carrierFreq, macPduListPerCarrier] : macPduList_) {
         if (harqTxBuffers_.find(carrierFreq) == harqTxBuffers_.end()) {
@@ -755,21 +757,18 @@ void LteMacEnb::handleUpperMessage(cPacket *pktAux)
 
     bool packetIsBuffered = bufferizePacket(pkt);  // will buffer (or destroy if the queue is full)
 
-    if (!isLteRlcPduNewData && packetIsBuffered) {
-        // new MAC SDU has been received (was requested by MAC, no need to notify the scheduler)
-        // Several RLC PDUs may have been requested for the connection in this slot: one
-        // per carrier it is scheduled on, and for an NR-SO cid one per planned PDU. Build
-        // the MAC PDUs only once all of them have arrived (macPduMake pops them all at once).
-        auto expectedIt = expectedSdus_.find(cid);
-        unsigned int expected = (expectedIt != expectedSdus_.end()) ? expectedIt->second : 1;
-        if (connDescOut_[cid].queue->getQueueLength() >= (int)expected) {
-            if (expectedIt != expectedSdus_.end())
-                expectedSdus_.erase(expectedIt);
+    if (!isLteRlcPduNewData) {
+        // RLC's answer to an SDU request of this slot: an SDU, or empty (not buffered).
+        // Several requests may be out for the connection: one per carrier it is
+        // scheduled on, and for an NR-SO cid one per planned PDU. Build the MAC PDUs
+        // once all of them have been answered.
+        if (recordSduAnswer(cid, packetIsBuffered)) {
             // creates PDUs from the schedule list and puts them in HARQ buffers
             macPduMake(cid);
+            sduRequests_.erase(cid);
         }
     }
-    else if (isLteRlcPduNewData) {
+    else {
         // new data - inform scheduler of the active connection
         enbSchedulerDl_->backlog(cid);
     }

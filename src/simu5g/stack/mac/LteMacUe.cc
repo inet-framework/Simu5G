@@ -235,6 +235,8 @@ int LteMacUe::macSduRequest()
                     reqSizes.push_back(bit->second);
 
                 for (unsigned int reqSize : reqSizes) {
+                    recordSduRequest(destCid, carrierFreq, cw);
+
                     // send the request message to the upper layer
                     // TODO: Replace by tag
                     auto pkt = new Packet("LteMacSduRequest");
@@ -538,7 +540,11 @@ void LteMacUe::macPduMake(MacCid cid)
                     macPkt = pit->second;
                 }
 
-                while (sduPerCid > 0) {
+                // the SDUs RLC sent for this carrier and codeword, in the queue in request
+                // order (the requests were sent in the order of this loop); none if it
+                // answered every request for them empty
+                unsigned int numSdus = getNumAnsweredSdus(destCid, carrierFreq, cw);
+                for (unsigned int i = 0; i < numSdus; i++) {
                     // Add SDU to PDU
                     // Find Mac Pkt
 
@@ -546,13 +552,8 @@ void LteMacUe::macPduMake(MacCid cid)
                         throw cRuntimeError("Unable to find mac buffer for cid %s", destCid.str().c_str());
 
                     OutgoingConnectionInfo& connInfo = connDescOut_.at(destCid);
-                    if (connInfo.queue->isEmpty()) {
-                        // an SO-framing (NR) bearer may legitimately run dry here: the
-                        // scheduler counts segments, not whole SDUs
-                        if (getLogicalChannelConfig(destCid).soFraming)
-                            break;
-                        throw cRuntimeError("Empty buffer for cid %s, while expected SDUs were %d", destCid.str().c_str(), sduPerCid);
-                    }
+                    if (connInfo.queue->isEmpty())
+                        throw cRuntimeError("Empty buffer for cid %s, while RLC answered with %d SDUs", destCid.str().c_str(), numSdus);
 
                     auto pkt = check_and_cast<Packet *>(connInfo.queue->popFront());
 
@@ -577,11 +578,11 @@ void LteMacUe::macPduMake(MacCid cid)
 
                     macPdu->pushSdu(pkt, destCid.getLcid());
                     macPkt->insertAtFront(macPdu);
-                    sduPerCid--;
                 }
             }
         }
     }
+    sduRequests_.clear();
 
     // Put MAC PDUs in H-ARQ buffers
 
@@ -764,11 +765,15 @@ void LteMacUe::handleUpperMessage(cPacket *pktAux)
 {
     auto pkt = check_and_cast<Packet *>(pktAux);
     bool isLteRlcPduNewDataInd = (pkt->findTag<LteRlcNewDataTag>() != nullptr);
+    auto lteInfo = pkt->getTag<FlowControlInfo>();
+    MacCid cid = MacCid(lteInfo->getDestId(), drbIdToLcid(lteInfo->getDrbId()));
 
     // bufferize packet
-    bufferizePacket(pkt);
+    bool packetIsBuffered = bufferizePacket(pkt);
 
     if (!isLteRlcPduNewDataInd) {
+        // RLC's answer to an SDU request of this tick: an SDU, or empty (not buffered)
+        recordSduAnswer(cid, packetIsBuffered);
         requestedSdus_--;
         ASSERT(requestedSdus_ >= 0);
         // build a MAC PDU only after all MAC SDUs have been received from RLC
@@ -855,6 +860,8 @@ void LteMacUe::handleSelfMessage()
         }
     }
 
+    // the requests of the previous tick have all been answered and built into MAC PDUs
+    checkSduRequestsAnswered();
     scheduleList_.clear();
     requestedSdus_ = 0;
     if (!noSchedulingGrants) { // if a grant is configured

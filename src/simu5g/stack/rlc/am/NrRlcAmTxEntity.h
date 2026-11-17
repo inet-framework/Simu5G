@@ -86,6 +86,7 @@ class NrRlcAmTxEntity : public RlcAmTxEntityBase
     virtual void reportBufferStatus();
     virtual bool checkPolling();
     virtual void sendSegment(PendingSegment segment);
+    virtual void sendEmptyPdu();
     virtual void sendPduToMac(inet::Packet *pkt);
     virtual void sendNewDataNotificationNr(inet::Packet *pkt);
 };
