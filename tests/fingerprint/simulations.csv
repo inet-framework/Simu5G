@@ -9,13 +9,13 @@
 /simulations/channelmodel/,              -f omnetpp.ini -c InH-36873 -r 0,               20s,        a4ff-b0e0/tplx;ab53-7da5/tilx;9608-2882/~tNl;8d75-67b9/sz, PASS, radio propagation
 /simulations/channelmodel/,              -f omnetpp.ini -c UMi-36873 -r 0,               20s,        93e0-52b6/tplx;f441-d00b/tilx;7146-8f64/~tNl;b0bd-3551/sz, PASS, radio propagation
 /simulations/channelmodel/,              -f omnetpp.ini -c UMa-36873 -r 0,               20s,        0c78-bfc2/tplx;bbde-0876/tilx;3a80-2a8e/~tNl;1869-9cdc/sz, PASS, radio propagation
-/simulations/channelmodel/,              -f omnetpp.ini -c RMa-36873 -r 0,               20s,        0cf2-f6e5/tplx;9599-ad99/tilx;ae5d-d120/~tNl;3056-96df/sz, PASS, radio propagation
-/simulations/channelmodel/,              -f omnetpp.ini -c SMa-36873 -r 0,               20s,        3d9e-6ca7/tplx;13b3-6acd/tilx;627e-0e02/~tNl;7056-2e48/sz, PASS, radio propagation
+/simulations/channelmodel/,              -f omnetpp.ini -c RMa-36873 -r 0,               20s,        2816-9181/tplx;2766-166e/tilx;a76d-670e/~tNl;5e1f-1357/sz, PASS, radio propagation
+/simulations/channelmodel/,              -f omnetpp.ini -c SMa-36873 -r 0,               20s,        13b7-55af/tplx;436b-6ebb/tilx;8100-1e17/~tNl;3dc2-e85e/sz, PASS, radio propagation
 /simulations/channelmodel/,              -f omnetpp.ini -c InH-36814 -r 0,               20s,        a4ff-b0e0/tplx;ab53-7da5/tilx;9608-2882/~tNl;8d75-67b9/sz, PASS, radio propagation
 /simulations/channelmodel/,              -f omnetpp.ini -c UMi-36814 -r 0,               20s,        93e0-52b6/tplx;f441-d00b/tilx;7146-8f64/~tNl;b0bd-3551/sz, PASS, radio propagation
 /simulations/channelmodel/,              -f omnetpp.ini -c UMa-36814 -r 0,               20s,        b777-b62c/tplx;b144-2d43/tilx;ab98-bd4c/~tNl;4777-c39c/sz, PASS, radio propagation
-/simulations/channelmodel/,              -f omnetpp.ini -c RMa-36814 -r 0,               20s,        0cf2-f6e5/tplx;9599-ad99/tilx;ae5d-d120/~tNl;3056-96df/sz, PASS, radio propagation
-/simulations/channelmodel/,              -f omnetpp.ini -c SMa-36814 -r 0,               20s,        7028-a661/tplx;c3d5-6d69/tilx;d4c3-d33d/~tNl;fb42-9c9b/sz, PASS, radio propagation
+/simulations/channelmodel/,              -f omnetpp.ini -c RMa-36814 -r 0,               20s,        2816-9181/tplx;2766-166e/tilx;a76d-670e/~tNl;5e1f-1357/sz, PASS, radio propagation
+/simulations/channelmodel/,              -f omnetpp.ini -c SMa-36814 -r 0,               20s,        13b7-55af/tplx;436b-6ebb/tilx;8100-1e17/~tNl;daf9-5555/sz, PASS, radio propagation
 /simulations/channelmodel/,              -f omnetpp.ini -c FixedLos-38901 -r 0,          20s,        5dbd-bf7a/tplx;b07d-9076/tilx;3318-90f0/~tNl;1c8c-9d7e/sz, PASS, radio propagation
 /simulations/channelmodel/,              -f omnetpp.ini -c Penetration-36873 -r 0,       20s,        3e81-1943/tplx;6b21-c4dc/tilx;fc6b-16e2/~tNl;cec6-861b/sz, PASS, radio propagation
 /simulations/channelmodel/,              -f omnetpp.ini -c PenetrationLow-38901 -r 0,    20s,        387e-d758/tplx;7020-b7b7/tilx;9c50-a069/~tNl;1fee-3468/sz, PASS, radio propagation
@@ -23,7 +23,7 @@
 /simulations/channelmodel/,              -f omnetpp.ini -c Penetration-MultiCarrier-38901 -r 0, 20s,     a3c7-e682/tplx;cb1a-8cc9/tilx;17f7-bc31/~tNl;5f5c-0231/sz, PASS, radio propagation multicarrier
 /simulations/channelmodel/,              -f omnetpp.ini -c Rayleigh-38901 -r 0,          20s,        0429-e7dd/tplx;6c2c-fce0/tilx;2f8c-dbef/~tNl;5689-9362/sz, PASS, radio propagation
 /simulations/channelmodel/,              -f omnetpp.ini -c Anisotropic-36873 -r 0,       20s,        9989-de88/tplx;8d86-6cb6/tilx;4819-7c69/~tNl;0ef8-154f/sz, PASS, radio propagation anisotropic
-/simulations/channelmodel/,              -f omnetpp.ini -c SMa-38901 -r 0,               20s,        3d9e-6ca7/tplx;13b3-6acd/tilx;627e-0e02/~tNl;7056-2e48/sz, PASS, radio propagation
+/simulations/channelmodel/,              -f omnetpp.ini -c SMa-38901 -r 0,               20s,        13b7-55af/tplx;436b-6ebb/tilx;8100-1e17/~tNl;3dc2-e85e/sz, PASS, radio propagation
 /simulations/channelmodel/,              -f omnetpp.ini -c TallUe-38901 -r 0,            20s,        364f-ceca/tplx;6679-0228/tilx;c5cc-f1f1/~tNl;d4b8-cca7/sz, PASS, radio propagation
 /simulations/channelmodel/,              -f omnetpp.ini -c TallUe-36873 -r 0,            20s,        364f-ceca/tplx;6679-0228/tilx;c5cc-f1f1/~tNl;56f5-7770/sz, PASS, radio propagation
 /simulations/lte/demo/,                  -f omnetpp.ini -c CBR-DL -r 0,                          5s,         ff7a-315f/tplx;9b09-0a85/tilx;eb11-d32f/~tNl;eae8-5893/sz, PASS, radio
