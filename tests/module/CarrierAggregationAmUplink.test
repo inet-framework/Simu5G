@@ -1,0 +1,63 @@
+%description:
+Light uplink traffic over RLC AM from UEs on two narrow carriers is delivered in full: a UE
+granted on both carriers in one slot sends each carrier's data in that carrier's MAC PDU, also
+when its RLC entity has nothing to send for one of the requests.
+
+One gNB on two carriers of 6 bands each, and four UEs in front of it, each with an acknowledged
+mode bearer. From 0.1 s to 0.8 s each UE sends the server 2000 bytes every 20 ms; a packet does
+not fit the bands of one carrier, so a UE is granted on both. The run goes on to 1 s so that the
+queues drain.
+
+Checked: the run ends at its time limit, and the server receives every byte each UE sent,
+72 000 bytes.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+sim-time-limit = 1s
+
+*.numUe = 4
+*.*.app[*].**.scalar-recording = true
+**.numBands = 6
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.gnb.cellularNic.numCarriers = 2
+*.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.bearerConfigurator.onDemandDrbs = [{coreNetwork: "5gc", isDefault: true, suppressSdapHeader: true, lcg: 3, rlcMode: "AM"}]
+
+# uplink: ue[i].app[0] to server.app[i]
+*.server.numApps = 4
+*.ue[*].numApps = 1
+*.ue[*].app[0].typename = "CbrSender"
+*.ue[*].app[0].destAddress = "server"
+*.ue[*].app[0].destPort = 2000 + ancestorIndex(1)
+*.server.app[*].typename = "CbrReceiver"
+*.server.app[*].localPort = 2000 + ancestorIndex(0)
+*.*.app[*].packetSize = 2000B
+*.*.app[*].startTime = 0.1s
+*.*.app[*].finishTime = 0.8s
+*.ue[*].app[0].samplingTime = 20ms
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+Simulation time limit reached
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.server.app[0] cbrReceivedBytes:sum 72000
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.server.app[1] cbrReceivedBytes:sum 72000
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.server.app[2] cbrReceivedBytes:sum 72000
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.server.app[3] cbrReceivedBytes:sum 72000
+%#--------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,66 @@
+%description:
+Light downlink traffic over RLC AM on a gNB with two narrow carriers is delivered in full: a UE
+served on both carriers in one slot gets each carrier's data in that carrier's MAC PDU, also
+when its RLC entity has nothing to send for one of the carrier's requests.
+
+One gNB on two carriers of 6 bands each, and four UEs in front of it, each with an acknowledged
+mode bearer. From 0.1 s to 0.8 s the server sends each UE 2000 bytes every 20 ms; a packet does
+not fit the bands of one carrier, so a UE is scheduled on both, and the RLC entity is often asked
+for data it does not have (an empty buffer, or a segment that does not fit). The run goes on to
+1 s so that the queues drain.
+
+Checked: the run ends at its time limit, and each UE receives every byte sent to it, 72 000
+bytes. (When the gNB MAC waited for an answer to each of its requests and the RLC sent none,
+the PDUs of a later slot took that slot's SDUs, and the run aborted on an occupied H-ARQ
+process.)
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+sim-time-limit = 1s
+
+*.numUe = 4
+*.*.app[*].**.scalar-recording = true
+**.numBands = 6
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.gnb.cellularNic.numCarriers = 2
+*.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.bearerConfigurator.onDemandDrbs = [{coreNetwork: "5gc", isDefault: true, suppressSdapHeader: true, lcg: 3, rlcMode: "AM"}]
+
+# downlink: server.app[i] to ue[i].app[0]
+*.server.numApps = 4
+*.ue[*].numApps = 1
+*.server.app[*].typename = "CbrSender"
+*.server.app[*].destAddress = "ue[" + string(ancestorIndex(0)) + "]"
+*.server.app[*].destPort = 1000
+*.ue[*].app[0].typename = "CbrReceiver"
+*.ue[*].app[0].localPort = 1000
+*.*.app[*].packetSize = 2000B
+*.*.app[*].startTime = 0.1s
+*.*.app[*].finishTime = 0.8s
+*.server.app[*].samplingTime = 20ms
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+Simulation time limit reached
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.ue[0].app[0] cbrReceivedBytes:sum 72000
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.ue[1].app[0] cbrReceivedBytes:sum 72000
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.ue[2].app[0] cbrReceivedBytes:sum 72000
+%#--------------------------------------------------------------------------------------------------------------
+%contains: results/General-#0.sca
+scalar NrSessionTestNetwork.ue[3].app[0] cbrReceivedBytes:sum 72000
+%#--------------------------------------------------------------------------------------------------------------
