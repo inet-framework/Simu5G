@@ -172,3 +172,4 @@
 /simulations/nr/standalone_drb/,         -f omnetpp.ini -c VoIP-DL-MultiQfi-IPv6 -r 0,             5s,        5701-dc6f/tplx;a6ac-2011/tilx;72fd-042d/~tNl;226a-7743/sz, PASS, radio
 /simulations/nr/standalone_drb/,         -f omnetpp.ini -c VoIP-UL-FilterRules-IPv6 -r 0,          5s,        29c2-797e/tplx;060c-07a1/tilx;f347-5652/~tNl;f8fb-699c/sz, PASS, radio
 /simulations/nr/standalone_multicell/,   -f omnetpp.ini -c CBR-DL-IPv6 -r 1,                       20s,       2c6f-606c/tplx;0d7d-6636/tilx;975e-786a/~tNl;3b76-5c15/sz, PASS, radio interference
+/emulation/extclientserver_bgTraffic/, -f omnetpp.ini -c MultiCellBackground -r 0,                2s,         5f9e-56d0/tplx;1036-b584/tilx;ba2f-7ee9/~tNl;dbaa-33d3/sz, PASS, radio interference
