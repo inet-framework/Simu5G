@@ -94,6 +94,11 @@
 /simulations/nr/mec/singleMecHost/,      -f omnetpp.ini -c ThreeFg_NindependentMecApps -r 0 --warmup-period=0s, 5s,         b2b2-a6fe/tplx;6229-2b57/tilx;641d-a8a3/~tNl;9397-a953/sz, PASS, radio
 /simulations/nr/standalone_multicell/,   -f omnetpp.ini -c CBR-DL -r 0,                         20s,         2fba-289f/tplx;e7cb-fe5b/tilx;ba9c-300a/~tNl;b453-cfe8/sz, PASS, radio interference
 /simulations/nr/standalone_multicell/,   -f omnetpp.ini -c CBR-UL -r 0,                         20s,         5a92-de5a/tplx;6886-1219/tilx;a8ee-8e00/~tNl;29de-1b88/sz, PASS, radio interference
+/simulations/nr/indoor_factory/,         -f omnetpp.ini -c InF-SL -r 0,                         4s,          d35e-72c3/tplx;fad1-1e4d/tilx;1a6c-3a5e/~tNl;7c50-654b/sz, PASS, radio propagation interference
+/simulations/nr/indoor_factory/,         -f omnetpp.ini -c InF-DL -r 0,                         4s,          7028-136f/tplx;9cee-5819/tilx;9608-2f02/~tNl;1136-1596/sz, PASS, radio propagation interference
+/simulations/nr/indoor_factory/,         -f omnetpp.ini -c InF-SH -r 0,                         4s,          3f1e-8d30/tplx;4893-1de0/tilx;8bf3-7c4d/~tNl;35f7-52b4/sz, PASS, radio propagation interference
+/simulations/nr/indoor_factory/,         -f omnetpp.ini -c InF-DH -r 0,                         4s,          bb03-4619/tplx;80c3-7f67/tilx;cd5f-70f0/~tNl;3989-4b8c/sz, PASS, radio propagation interference
+/simulations/nr/indoor_factory/,         -f omnetpp.ini -c InF-HH -r 0,                         4s,          3e75-a9ca/tplx;11f4-de79/tilx;cefc-878c/~tNl;ed1e-f9ee/sz, PASS, radio propagation interference
 /simulations/nr/three_sector/,           -f omnetpp.ini -c CBR-DL -r 0,                         20s,         2be2-1181/tplx;15d4-7701/tilx;4729-311a/~tNl;e58a-3ae4/sz, PASS, radio interference anisotropic
 /simulations/nr/standalone/,             -f omnetpp.ini -c Standalone -r 0,                      5s,         3f10-6508/tplx;7f48-adce/tilx;0b51-515e/~tNl;7ef2-9c61/sz, PASS, radio
 /simulations/nr/standalone/,             -f omnetpp.ini -c VoIP-DL -r 0,                         5s,         6fbe-082d/tplx;1ceb-0ee1/tilx;d2b2-c4b8/~tNl;ec52-f4fc/sz, PASS, radio
