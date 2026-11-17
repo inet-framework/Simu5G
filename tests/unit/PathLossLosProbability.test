@@ -2,7 +2,9 @@
 
 LOS probability of the three path-loss models, checked against
 3GPP TR 36.814 v9.2.0 Table B.1.2.1-2, TR 36.873 v12.7.0 Table 7.2-2 and
-TR 38.901 v16.1.0 Table 7.4.2-1.
+TR 38.901 v16.1.0 Table 7.4.2-1. TR 36.814 has no SMa row; its SMa cases are
+checked against ITU-R M.2135-1 Table A1-3, the reference TR 36.814's model is
+taken from, which is what Tr36814PathLossModel implements.
 
 TR 36.814 evaluates the LOS probability over the 3D distance, TR 36.873 and
 TR 38.901 over the 2D distance (d2D-out, the outdoor part of it, which is d2D

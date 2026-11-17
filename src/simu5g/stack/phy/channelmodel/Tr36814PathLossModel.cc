@@ -109,6 +109,8 @@ double Tr36814PathLossModel::computeLosProbability(const Deployment& deployment,
                 p = exp(-1 * (d - 10) / 1000);
             break;
         case SUBURBAN_MACROCELL:
+            // TR 36.814 Table B.1.2.1-2 has no SMa row; this is the SMa row of
+            // ITU-R M.2135-1 Table A1-3, which TR 36.814's model is taken from
             if (d <= 10)
                 p = 1;
             else
