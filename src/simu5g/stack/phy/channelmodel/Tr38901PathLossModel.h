@@ -63,7 +63,7 @@ class Tr38901PathLossModel : public Tr36873PathLossModel
      * Compute the building penetration loss for an indoor UE.
      * See section 7.4.3 of TR 38.901.
      */
-    double computePenetrationLoss(const Deployment& deployment, double threeDimDistance, const LinkConditions& conditions);
+    double computePenetrationLoss(const Deployment& deployment, double twoDimDistance, const LinkConditions& conditions);
 
     // flag for using the high-loss or low-loss building-penetration model
     // see table 7.4.3-2 in TR 38.901

@@ -156,9 +156,10 @@ double Tr38901PathLossModel::getShadowingStdDev(const Deployment& deployment, do
     return 0.0;
 }
 
-double Tr38901PathLossModel::computePenetrationLoss(const Deployment& deployment, double threeDimDistance, const LinkConditions& conditions)
+double Tr38901PathLossModel::computePenetrationLoss(const Deployment& deployment, double twoDimDistance, const LinkConditions& conditions)
 {
-    double inside_distance = (conditions.indoorDistance < threeDimDistance) ? conditions.indoorDistance : threeDimDistance;
+    // d2D-in is part of d2D (Figure 7.4.1-2: d2D-out + d2D-in = d2D)
+    double inside_distance = (conditions.indoorDistance < twoDimDistance) ? conditions.indoorDistance : twoDimDistance;
     double pLoss_in = 0.5 * inside_distance;
 
     // Which through-wall model applies is a function of the scenario. Table
@@ -216,7 +217,7 @@ double Tr38901PathLossModel::computeUrbanMacro3D(const Deployment& deployment, d
     // Compute penetration loss
     double penetrationLoss = 0.0;
     if (conditions.indoor)
-        penetrationLoss = computePenetrationLoss(deployment, threeDimDistance, conditions);
+        penetrationLoss = computePenetrationLoss(deployment, twoDimDistance, conditions);
 
     // Compute break-point distance
     double hEnvir = conditions.environmentHeight;
@@ -256,7 +257,7 @@ double Tr38901PathLossModel::computeUrbanMicro3D(const Deployment& deployment, d
     // Compute penetration loss
     double penetrationLoss = 0.0;
     if (conditions.indoor)
-        penetrationLoss = computePenetrationLoss(deployment, threeDimDistance, conditions);
+        penetrationLoss = computePenetrationLoss(deployment, twoDimDistance, conditions);
 
     // Compute break-point distance
     double hEnvir = 1.0;
@@ -301,7 +302,7 @@ double Tr38901PathLossModel::computeRuralMacro3D(const Deployment& deployment, d
     // Compute penetration loss
     double penetrationLoss = 0.0;
     if (conditions.indoor) {
-        penetrationLoss = computePenetrationLoss(deployment, threeDimDistance, conditions);
+        penetrationLoss = computePenetrationLoss(deployment, twoDimDistance, conditions);
     }
 
     // Compute break-point distance

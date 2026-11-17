@@ -237,9 +237,10 @@ double Tr36873PathLossModel::computeUrbanMacro3D(const Deployment& deployment, d
 
     // O2I penetration loss of clause 7.2.3: a flat 20 dB through the external
     // wall plus 0.5 dB per metre of the distance inside, at every frequency.
+    // d2D-in is part of d2D (clause 7.2.3: "10m < d2D-out + d2D-in < 1000m").
     double penetrationLoss = 0.0;
     if (conditions.indoor) {
-        double inside_distance = (conditions.indoorDistance < threeDimDistance) ? conditions.indoorDistance : threeDimDistance;
+        double inside_distance = (conditions.indoorDistance < twoDimDistance) ? conditions.indoorDistance : twoDimDistance;
         penetrationLoss = 20.0 + 0.5 * inside_distance;
     }
 
