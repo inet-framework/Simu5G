@@ -1,0 +1,202 @@
+%description:
+
+How far an end of a link moves before the channel model draws the link's LOS
+state and its shadowing again: the correlation distances of the selected
+propagation study for the scenario of the link, not one distance for every
+scenario.
+
+TR 38.901 Table 7.5-6 gives the correlation distance of the shadow fading by
+scenario and propagation condition: 10 m (LOS) and 13 m (NLOS) in UMi-Street
+Canyon, 7 m for a UE inside a building (O2I) in UMa, 6 m in Indoor-Office
+NLOS. Table 7.6.3.1-2 gives that of the LOS/NLOS state: 10 m indoor, 60 m in
+RMa. PathLossCorrelationDistance grades the strategies' values against the
+tables; this test shows that the channel model redraws at them, for the
+deployment of each link's base station: the two base stations of a case are
+on one carrier, evaluated by one channel model.
+
+The correlationDistance parameter, when set, replaces both distances.
+
+The redraw rule itself (held up to and at the distance, the 0.5 factor) is the
+pinned defect of ChannelModelShadowing and is not endorsed here; the checks
+below only show which distance enters it.
+
+Counting draws is exact: with shadowing off and the LOS state drawn,
+getAttenuation() draws one number when it decides the state of an InH or RMa
+link, and nothing otherwise; computeShadowing() draws one number per sample.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+// The radio of a UE named by its node id only.
+static StubEndpoint *radioOf(MacNodeId node)
+{
+    static std::map<MacNodeId, StubEndpoint> radios;
+    radios[node].nodeId = node;
+    return &radios[node];
+}
+
+// The downlink from a base station to the UE 'node' at 'ueCoord'.
+static RadioLink linkTo(StubEndpoint *baseStation, MacNodeId node, const Coord& ueCoord)
+{
+    RadioLink link;
+    link.dir = DL;
+    link.txId = baseStation->nodeId;
+    link.rxId = node;
+    link.txCoord = baseStation->coord;
+    link.rxCoord = ueCoord;
+    link.linkKey = LinkKey(baseStation->nodeId, node);
+    link.stateNodeId = node;
+    link.txIsBaseStation = true;
+    link.txRadio = baseStation;
+    link.rxRadio = radioOf(node);
+    return link;
+}
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        studyChannelModel: Tr38901ChannelModel;
+        overrideChannelModel: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 3.5GHz
+*.carrierAggregation.componentCarrier[0].numBands = 10
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+# The LOS state is drawn, and getAttenuation() draws nothing else: shadowing is
+# off there, and the test calls computeShadowing() itself.
+**.dynamicLos = true
+**.shadowing = false
+
+# studyChannelModel leaves correlationDistance unset
+*.overrideChannelModel.correlationDistance = 30m
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *study = harnessModule<StochasticChannelModel>(this, "studyChannelModel");
+auto *overridden = harnessModule<StochasticChannelModel>(this, "overrideChannelModel");
+ChannelModelProbe studyProbe(study);
+PathLossModel *pathLoss = studyProbe.pathLoss();
+
+// four base stations on the carrier, each in its own scenario
+StubEndpoint umi, uma, inh, rma;
+umi.nodeId = MacNodeId(1);
+umi.scenario = URBAN_MICROCELL;
+umi.coord = Coord(0, 0, 10);
+uma.nodeId = MacNodeId(2);
+uma.scenario = URBAN_MACROCELL;
+uma.coord = Coord(0, 0, 25);
+inh.nodeId = MacNodeId(3);
+inh.scenario = INDOOR_HOTSPOT;
+inh.coord = Coord(0, 0, 3);
+rma.nodeId = MacNodeId(4);
+rma.scenario = RURAL_MACROCELL;
+rma.coord = Coord(0, 0, 35);
+
+auto drawn = [](StochasticChannelModel *model) { return (long long)model->getRNG(0)->getNumbersDrawn(); };
+auto deploymentOf = [](const StubEndpoint& baseStation) {
+    PathLossModel::Deployment deployment;
+    deployment.scenario = baseStation.scenario;
+    deployment.hNodeB = baseStation.coord.z;
+    deployment.hUe = 1.5;
+    deployment.hBuilding = baseStation.buildingHeight;
+    deployment.wStreet = baseStation.streetWidth;
+    return deployment;
+};
+
+// The UE starts 100 m from the base station and moves away from it. The
+// shadowing sample is held at 'held' m from where it was drawn and redrawn at
+// 'redrawn' m, with the recurrence taking 'distance' as the correlation distance.
+const double d3D = 100.0, d2D = 100.0;
+auto shadowingRedrawnPast = [&](const std::string& what, StochasticChannelModel *model, StubEndpoint& baseStation,
+        MacNodeId node, bool los, double held, double redrawn, double distance) {
+    double first = model->computeShadowing(d3D, d2D, los, linkTo(&baseStation, node, Coord(100, 0, 1.5)));
+    long long before = drawn(model);
+    double atHeld = model->computeShadowing(d3D, d2D, los, linkTo(&baseStation, node, Coord(100 + held, 0, 1.5)));
+    c.check(what + ": the sample is held " + std::to_string((int)held) + " m from where it was drawn",
+            atHeld == first && drawn(model) == before);
+
+    double sigma = pathLoss->getShadowingStdDev(deploymentOf(baseStation), d3D, d2D, los);
+    RngSnapshot snapshot(model);
+    double updated = model->computeShadowing(d3D, d2D, los, linkTo(&baseStation, node, Coord(100 + redrawn, 0, 1.5)));
+    double a = exp(-0.5 * (redrawn / distance));
+    double expected = a * first + sqrt(1 - pow(a, 2)) * omnetpp::normal(snapshot.rng(), 0, sigma);
+    c.expectNear("..." + std::to_string((int)redrawn) + " m from it, it is redrawn, correlated over "
+            + std::to_string((int)distance) + " m", updated, expected, 0);
+};
+
+// The UE starts 'start' m from the base station and moves away from it. The
+// LOS state is held at 'held' m from where it was decided, and decided again
+// at 'redrawn' m.
+auto losDecidedAgainPast = [&](const std::string& what, StochasticChannelModel *model, StubEndpoint& baseStation,
+        MacNodeId node, double start, double held, double redrawn) {
+    long long before = drawn(model);
+    model->getAttenuation(linkTo(&baseStation, node, Coord(start, 0, 1.5)));
+    c.expectValue(what + ": the first evaluation decides the LOS state, with one draw", drawn(model) - before, 1);
+    before = drawn(model);
+    model->getAttenuation(linkTo(&baseStation, node, Coord(start + held, 0, 1.5)));
+    c.expectValue("..." + std::to_string((int)held) + " m from there the state is held", drawn(model) - before, 0);
+    before = drawn(model);
+    model->getAttenuation(linkTo(&baseStation, node, Coord(start + redrawn, 0, 1.5)));
+    c.expectValue("..." + std::to_string((int)redrawn) + " m from there it is decided again", drawn(model) - before, 1);
+};
+
+//
+// --- the shadowing: the study's distance for the link's scenario and condition ---
+//
+shadowingRedrawnPast("UMi NLOS, 13 m", study, umi, MacNodeId(1100), false, 13, 14, 13);
+shadowingRedrawnPast("UMi LOS, 10 m", study, umi, MacNodeId(1101), true, 10, 11, 10);
+shadowingRedrawnPast("InH NLOS, 6 m", study, inh, MacNodeId(1102), false, 6, 7, 6);
+shadowingRedrawnPast("UMa NLOS, 50 m", study, uma, MacNodeId(1103), false, 50, 51, 50);
+// a UE inside a building: the O2I column, whatever the LOS state
+radioOf(MacNodeId(1104))->insideBuilding = true;
+shadowingRedrawnPast("UMa O2I, 7 m", study, uma, MacNodeId(1104), false, 7, 8, 7);
+
+//
+// --- the LOS state: TR 38.901 Table 7.6.3.1-2 for the link's scenario ---
+//
+losDecidedAgainPast("InH, 10 m", study, inh, MacNodeId(1110), 20, 10, 11);
+losDecidedAgainPast("RMa, 60 m", study, rma, MacNodeId(1111), 500, 60, 61);
+
+//
+// --- correlationDistance, when set, replaces both ---
+//
+shadowingRedrawnPast("UMi NLOS with correlationDistance = 30 m", overridden, umi, MacNodeId(1120), false, 30, 31, 30);
+radioOf(MacNodeId(1123))->insideBuilding = true;
+shadowingRedrawnPast("UMa O2I with correlationDistance = 30 m", overridden, uma, MacNodeId(1123), false, 30, 31, 30);
+losDecidedAgainPast("InH with correlationDistance = 30 m", overridden, inh, MacNodeId(1121), 20, 30, 31);
+losDecidedAgainPast("RMa with correlationDistance = 30 m", overridden, rma, MacNodeId(1122), 500, 30, 31);
+
+c.summary();
+
+%contains: stdout
+modelchecks=26 modelfailures=0
+
+%not-contains: stdout
+FAILED
