@@ -138,9 +138,9 @@
 /simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Clean -r 0,                        5s,         3827-c138/tplx;48d3-6336/tilx;106a-ceb8/~tNl;2b1c-0337/sz, PASS, idealchannel
 /simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Lossy -r 2,                        5s,         fbfb-e6aa/tplx;0867-0194/tilx;4629-edc8/~tNl;924b-c38f/sz, PASS, idealchannel
 /simulations/nr/rlc/,                    -f omnetpp.ini -c AM-Segmentation -r 0,                 5s,         af89-d9c6/tplx;7a16-d483/tilx;9ad8-a8f1/~tNl;16a3-bbbd/sz, PASS, idealchannel
-/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-WindowStall -r 0,                  5s,         dc77-50ca/tplx;b7fc-fd3f/tilx;ae09-2ff4/~tNl;ff34-9aaf/sz, PASS, idealchannel
-/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-RLF -r 0,                          10s,        0fe4-e30f/tplx;0204-a9cd/tilx;32be-a034/~tNl;c0b2-cad4/sz, PASS, idealchannel
-/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-RLF-Reestablish -r 0,              14s,        690d-8db1/tplx;f86b-1068/tilx;8478-f9ba/~tNl;69ea-a75c/sz, PASS, idealchannel
+/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-WindowStall -r 0,                  5s,         d1f8-5c35/tplx;a893-45fe/tilx;ae09-2ff4/~tNl;ff4c-d2af/sz, PASS, idealchannel
+/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-RLF -r 0,                          10s,        b869-b064/tplx;f3af-e6f2/tilx;32be-a034/~tNl;c0b2-cad4/sz, PASS, idealchannel
+/simulations/nr/rlc/,                    -f omnetpp.ini -c AM-RLF-Reestablish -r 0,              14s,        78ac-f588/tplx;32a5-36d2/tilx;8478-f9ba/~tNl;5660-e95c/sz, PASS, idealchannel
 /simulations/nr/rlc/,                    -f omnetpp.ini -c UM-Lossy -r 2,                        5s,         1bf4-d5d1/tplx;73b3-53c6/tilx;b23d-173b/~tNl;2131-6da5/sz, PASS, idealchannel
 /simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Clean -r 0,                        5s,         bbe4-d387/tplx;a76a-af93/tilx;af58-d844/~tNl;6cc9-7115/sz, PASS, idealchannel
 /simulations/lte/rlc/,                   -f omnetpp.ini -c AM-Lossy -r 2,                        5s,         cb1f-8f21/tplx;de10-58cd/tilx;105c-4968/~tNl;2d6d-2634/sz, PASS, idealchannel
