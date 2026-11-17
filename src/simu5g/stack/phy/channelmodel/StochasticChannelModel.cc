@@ -96,6 +96,8 @@ void StochasticChannelModel::initialize(int stage)
                         "Set it on the base station's radio instead (cellularNic.radio.%s; radio.%s in a background or external cell)", name, name, name);
 
         correlationDistance_ = par("correlationDistance");
+        if (correlationDistance_ <= 0)
+            throw cRuntimeError("The 'correlationDistance' parameter must be positive, or left unset for the study's correlation distances");
 
         thermalNoise_ = par("thermalNoise");
         dynamicLos_ = par("dynamicLos");
@@ -327,7 +329,7 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
     // other end
     auto it = losMap().find(link.stateKey());
     if (it == losMap().end()
-        || link.displacementSince(it->second.positionA, it->second.positionB) > correlationDistance_)
+        || link.displacementSince(it->second.positionA, it->second.positionB) > getLosCorrelationDistance(deployment))
     {
         computeLosProbability(threeDimDistance, twoDimDistance, link);
     }
@@ -379,9 +381,10 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, bool los
         double space = link.displacementSince(it->second.positionA, it->second.positionB);
 
         // if either end has moved more than the correlation distance
-        if (space > correlationDistance_) {
+        double correlationDistance = getShadowingCorrelationDistance(link, los);
+        if (space > correlationDistance) {
             //Compute shadowing with an EAW (Exponential Average Window) (step 1)
-            double a = exp(-0.5 * (space / correlationDistance_));
+            double a = exp(-0.5 * (space / correlationDistance));
 
             //Get last shadowing attenuation computed
             double old = it->second.value;
@@ -398,6 +401,22 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, bool los
     }
 
     return att;
+}
+
+double StochasticChannelModel::getLosCorrelationDistance(const PathLossModel::Deployment& deployment)
+{
+    return std::isnan(correlationDistance_) ? pathLoss_->getLosCorrelationDistance(deployment) : correlationDistance_;
+}
+
+double StochasticChannelModel::getShadowingCorrelationDistance(const RadioLink& link, bool los)
+{
+    if (!std::isnan(correlationDistance_))
+        return correlationDistance_;
+    // the UE end of the link, as for its building penetration loss
+    IRadioEndpoint *ueEnd = link.dir == UL ? link.txRadio : link.rxRadio;
+    PathLossModel::LinkConditions conditions;
+    conditions.indoor = ueEnd != nullptr && ueEnd->isInsideBuilding();
+    return pathLoss_->getShadowingCorrelationDistance(deploymentOf(link), los, conditions);
 }
 
 double StochasticChannelModel::computeAngle(Coord center, Coord point)
@@ -969,7 +988,7 @@ double StochasticChannelModel::computePhantomPathLoss(const RadioLink& link, Pat
     // the link's own LOS state, decided and redrawn as any link's
     auto it = losMap().find(link.stateKey());
     if (it == losMap().end()
-        || link.displacementSince(it->second.positionA, it->second.positionB) > correlationDistance_)
+        || link.displacementSince(it->second.positionA, it->second.positionB) > getLosCorrelationDistance(deployment))
     {
         computeLosProbability(d3D, d2D, link);
     }

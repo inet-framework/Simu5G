@@ -67,6 +67,19 @@ double PathLossModel::getDefaultBaseStationHeight(DeploymentScenario scenario)
     }
 }
 
+double PathLossModel::getLosCorrelationDistance(const Deployment& deployment)
+{
+    // TR 38.901 Table 7.6.3.1-2, "LOS/NLOS state"
+    switch (deployment.scenario) {
+        case RURAL_MACROCELL: return 60;
+        case URBAN_MICROCELL:
+        case URBAN_MACROCELL:
+        case SUBURBAN_MACROCELL: return 50;
+        case INDOOR_HOTSPOT: return 10;
+        default: throw cRuntimeError("PathLossModel: no LOS correlation distance for the scenario %s", DeploymentScenarioToA(deployment.scenario).c_str());
+    }
+}
+
 void PathLossModel::checkHeights(const Deployment& deployment) const
 {
     switch (deployment.scenario) {

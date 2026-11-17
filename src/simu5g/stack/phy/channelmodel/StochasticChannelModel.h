@@ -112,8 +112,8 @@ class StochasticChannelModel : public ChannelModelBase
     // Formulas of the selected 3GPP propagation study; owned, created in initialize()
     PathLossModel *pathLoss_ = nullptr;
 
-    // Correlation distance used in shadowing computation and
-    // also used to recompute the probability of LOS
+    // The correlationDistance parameter: when set, it replaces the study's
+    // correlation distances of the LOS state and of the shadowing; NaN otherwise
     double correlationDistance_;
 
     // Thermal noise
@@ -218,6 +218,21 @@ class StochasticChannelModel : public ChannelModelBase
      * @param link the link, whose linkKey keys the sample and whose ends' positions it is drawn at
      */
     virtual double computeShadowing(double d3D, double d2D, bool los, const RadioLink& link);
+
+    /*
+     * How far an end of the link moves before the link's LOS state is decided
+     * again: the correlationDistance parameter if it is set, otherwise the
+     * study's LOS correlation distance for the link's deployment
+     */
+    virtual double getLosCorrelationDistance(const PathLossModel::Deployment& deployment);
+
+    /*
+     * The correlation distance of the link's shadowing: the
+     * correlationDistance parameter if it is set, otherwise the study's for
+     * the link's deployment and propagation condition (LOS, NLOS, or
+     * outdoor-to-indoor when the UE end of the link is inside a building)
+     */
+    virtual double getShadowingCorrelationDistance(const RadioLink& link, bool los);
 
     /*
      * Compute sinr for each band for user nodeId according to pathloss, shadowing (optional) and multipath fading

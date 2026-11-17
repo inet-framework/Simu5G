@@ -169,6 +169,24 @@ class PathLossModel
     virtual double getShadowingStdDev(const Deployment& deployment, double d3D, double d2D, bool losState) = 0;
 
     /*
+     * The correlation distance of a link's shadow fading in the horizontal
+     * plane, in m, as the study's table of channel model parameters gives it
+     * for the scenario and the link's propagation condition: LOS, NLOS, or
+     * outdoor-to-indoor where the table has that column and the UE end of
+     * the link is inside a building.
+     */
+    virtual double getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions) = 0;
+
+    /*
+     * The correlation distance of a link's LOS/NLOS state, in m: how far an
+     * end of the link moves before the state is decided again. Only TR 38.901
+     * gives one (Table 7.6.3.1-2); the two older studies take its values,
+     * which is a convention of the model. The suburban macrocell's value is
+     * that of TR 38.901 v19.5.0, the first version whose table has it.
+     */
+    virtual double getLosCorrelationDistance(const Deployment& deployment);
+
+    /*
      * Compute the attenuation caused by the antenna pattern for a given
      * reception direction.
      */

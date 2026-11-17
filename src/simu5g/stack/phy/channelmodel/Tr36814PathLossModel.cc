@@ -160,6 +160,29 @@ double Tr36814PathLossModel::selectStdDev(const Deployment& deployment, bool bel
     return 0.0;
 }
 
+double Tr36814PathLossModel::getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions)
+{
+    // Table B.1.2.2.1-4, "Correlation distance [m]", SF. The table has no SMa
+    // column; those are the values of ITU-R M.2135-1 Table A1-7, which
+    // TR 36.814's model is taken from
+    switch (deployment.scenario) {
+        case INDOOR_HOTSPOT:
+            return losState ? 10 : 6;
+        case URBAN_MICROCELL:
+            if (conditions.indoor)
+                return 7;
+            return losState ? 10 : 13;
+        case URBAN_MACROCELL:
+            return losState ? 37 : 50;
+        case SUBURBAN_MACROCELL:
+            return losState ? 40 : 50;
+        case RURAL_MACROCELL:
+            return losState ? 37 : 120;
+        default:
+            throw cRuntimeError("No shadowing correlation distance for the scenario %s", DeploymentScenarioToA(deployment.scenario).c_str());
+    }
+}
+
 double Tr36814PathLossModel::computeAngularAttenuation(double hAngle, double vAngle) {
 
     // in this implementation, vertical angle is not considered

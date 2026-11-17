@@ -123,6 +123,19 @@ double Tr36873PathLossModel::getShadowingStdDev(const Deployment& deployment, do
     return selectStdDev(deployment, d2D < dbp, losState);
 }
 
+double Tr36873PathLossModel::getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions)
+{
+    // Tables 7.3-6, 7.3-6a and 7.3-6b, "Correlation distance in the
+    // horizontal plane [m]", SF: the values of TR 36.814, and an O2I column
+    // for 3D-UMa and 3D-RMa too. TR 38.901 Table 7.5-6 Parts 1 and 2 have the
+    // same values
+    if (conditions.indoor && deployment.scenario == URBAN_MACROCELL)
+        return 7;
+    if (conditions.indoor && deployment.scenario == RURAL_MACROCELL)
+        return 120;
+    return Tr36814PathLossModel::getShadowingCorrelationDistance(deployment, losState, conditions);
+}
+
 double Tr36873PathLossModel::computeAngularAttenuation(double hAngle, double vAngle) {
 
     // --- compute horizontal pattern attenuation --- //

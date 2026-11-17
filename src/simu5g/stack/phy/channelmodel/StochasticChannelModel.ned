@@ -59,6 +59,18 @@ package simu5g.stack.phy.channelmodel;
 // of radios and per carrier. The first channel model that evaluates a pair of
 // ends draws their state; a model of another carrier, RAT or study takes it.
 //
+// A link's LOS state is decided again, and its shadowing is redrawn,
+// correlated with the previous sample, when either of its ends has moved
+// farther than a correlation distance from where it was at the last draw. The
+// distances are the selected study's for the scenario of the link. For the
+// shadowing it is the SF correlation distance of the study's table of channel
+// model parameters, by the link's propagation condition (LOS, NLOS, or
+// outdoor-to-indoor for a UE inside a building): 10 m, 13 m and 7 m in an
+// urban microcell, for example. For the LOS state it is the distance of
+// TR 38.901 Table 7.6.3.1-2 (60 m rural, 50 m urban and suburban, 10 m
+// indoor), which is taken under TR 36.814 and TR 36.873 too, since those give
+// none. correlationDistance, when set, replaces both.
+//
 // A link between two UEs (D2D) has no base station, and none of the three
 // studies has such a link. The model evaluates it with the scenario of the
 // receiving UE's serving cell, taking the base station height the studies give for that scenario (10 m in
@@ -94,10 +106,8 @@ simple StochasticChannelModel extends ChannelModelBase
         // Evaluate a link although its antenna heights are outside the range the study gives for the scenario
         bool tolerateHeightViolation = default(false);
 
-        // How far a link's ends must move before its LOS state and its shadowing
-        // are drawn again: the shadowing is redrawn, correlated with the previous
-        // sample, when either end has moved farther than this since that sample
-        double correlationDistance @unit(m) = default(50m);
+        // Replaces the study's correlation distances (see module comment) of a link's LOS state and of its shadowing with one value; unset by default
+        double correlationDistance @unit(m) = default(nan m);
 
         // Target BLER used to compute feedback
         double targetBler = default(0.01);
