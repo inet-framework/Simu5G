@@ -166,7 +166,7 @@ double Tr38901PathLossModel::computePenetrationLoss(const Deployment& deployment
     // 7.4.3-3 -- a flat 20 dB whose sigma_P is 0, kept for backwards
     // compatibility with TR 36.873 -- is offered for UMa and UMi
     // single-frequency simulations below 6 GHz.
-    bool singleFrequencyModel = carrierFrequencyGHz_ <= 6.0
+    bool singleFrequencyModel = carrierFrequencyGHz_ < 6.0
         && (deployment.scenario == URBAN_MACROCELL || deployment.scenario == URBAN_MICROCELL);
     if (singleFrequencyModel)
         return 20.0 + pLoss_in;
