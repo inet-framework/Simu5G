@@ -1,0 +1,24 @@
+%description:
+The Indoor Factory scenarios are TR 38.901's: TR 36.814 and TR 36.873 have none. A cell in one of
+them on a carrier whose channel model takes its formulas from TR 36.814 was an error that named a
+number ("Wrong value 5 for path-loss scenario"). The first evaluation of a link of such a cell is
+an error that names the scenario and the study that has it.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+**.radio.scenario = "INDOOR_FACTORY_SL"
+# clutter-embedded antennas: both below the 2 m clutter height of the scenario's default
+*.gnb.cellularNic.antenna.mobility.offsetZ = 1.5m
+**.nrChannelModel[*].pathLossType = "Tr36814"
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+has no scenario INDOOR_FACTORY_SL; the indoor factory scenarios are TR 38.901's: set pathLossType = "Tr38901" on the channel model
+%#--------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,26 @@
+%description:
+TR 38.901 clause 7.4.3.1 gives an outdoor-to-indoor building penetration loss for the Indoor
+Factory too ("Only the high-loss model is applicable to InF"), and the model does not have it:
+the InF formulas are those of a link inside the hall. A UE with insideBuilding = true in an InF
+cell would be evaluated without a wall, without a message. The first evaluation of such a link is
+an error. A hall served from outdoors is an urban cell with an indoor UE and
+useBuildingPenetrationHighLossModel.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+**.radio.scenario = "INDOOR_FACTORY_SL"
+# clutter-embedded antennas: both below the 2 m clutter height of the scenario's default
+*.gnb.cellularNic.antenna.mobility.offsetZ = 1.5m
+*.ue[*].**.insideBuilding = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+is inside a building (insideBuilding), and the building penetration loss of TR 38.901 for the scenario INDOOR_FACTORY_SL is not implemented
+%#--------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,21 @@
+%description:
+The configuration of IndoorFactoryRejected_AntennaAboveClutter, an InF-SL cell whose base station
+antenna is above the clutter, with tolerateHeightViolation set on the channel model: the link is
+evaluated with the InF-SL formulas, and the simulation runs.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+**.radio.scenario = "INDOOR_FACTORY_SL"
+**.nrChannelModel[*].tolerateHeightViolation = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+Simulation time limit reached
+%#--------------------------------------------------------------------------------------------------------------

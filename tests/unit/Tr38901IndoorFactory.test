@@ -1,0 +1,275 @@
+%description:
+
+The Indoor Factory (InF) scenario of 3GPP TR 38.901 v16.1.0 in
+Tr38901PathLossModel: path loss and shadowing sigma (Table 7.4.1-1), LOS
+probability (Table 7.4.2-1) and correlation distances (Table 7.5-6 Part-3,
+Table 7.6.3.1-2) of the five sub-scenarios InF-SL, InF-DL, InF-SH, InF-DH and
+InF-HH, each graded against the transcription in pathloss_reference.py.
+
+The cases use the clutter of the calibration (Table 7.8-7): density 20 %,
+height 2 m and size 10 m for sparse clutter, 60 %, 6 m and 2 m for dense
+clutter; base stations at 1.5 m (low) and 8 m (high), UEs at 1.5 m; 3.5 and
+28 GHz. The InF-DL formula is bounded by the InF-SL one up to about 26 m, so
+it is probed on both sides of that distance.
+
+What the tables do not give is checked as the model's own:
+ - the path loss holds from 1 m (shorter links are evaluated at 1 m) to 600 m;
+ - InF-HH is 100 % LOS and has no NLOS formula: an NLOS evaluation is an error;
+ - a link's antennas must be where Table 7.2-4 places them relative to the
+   clutter height, unless the violation is tolerated; in InF-SH and InF-DH the
+   LOS probability is undefined for a UE antenna not below both the base
+   station antenna and the clutter height, tolerated or not;
+ - the model has no building penetration loss for InF (clause 7.4.3.1: "Only
+   the high-loss model is applicable to InF"): an indoor UE is an error;
+ - the clutter parameters of a cell must fit its sub-scenario;
+ - TR 36.814 and TR 36.873 have no such scenario;
+ - a link between two UEs cannot be evaluated in it.
+
+%includes:
+#include "PathLossTestUtil.h"
+#include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+// A cell of the sub-scenario with the calibration's clutter and heights.
+static ScenarioParams inf(DeploymentScenario scenario, double fc = 3.5)
+{
+    ScenarioParams p;
+    p.scenario = scenario;
+    p.carrierFrequencyGHz = fc;
+    bool dense = scenario == INDOOR_FACTORY_DL || scenario == INDOOR_FACTORY_DH;
+    bool high = scenario == INDOOR_FACTORY_SH || scenario == INDOOR_FACTORY_DH || scenario == INDOOR_FACTORY_HH;
+    p.clutterDensity = dense ? 0.6 : 0.2;
+    p.clutterHeight = dense ? 6 : 2;
+    p.clutterSize = dense ? 2 : 10;
+    p.hNodeB = high ? 8 : 1.5;
+    p.hUe = scenario == INDOOR_FACTORY_HH ? 3 : 1.5;
+    return p;
+}
+
+%activity:
+CaseRecorder probe(this, 1e-9);
+// the 3D distance of a link of the given 2D distance, between the cell's two antenna heights
+auto d3D = [](const ScenarioParams& p, double d2D) { return std::hypot(d2D, p.hNodeB - p.hUe); };
+Tr38901PathLossModel m901;
+const bool LOS = true, NLOS = false;
+ScenarioParams p;
+
+// =================== path loss =========================================
+for (double fc : { 3.5, 28.0 }) {
+    // LOS: one formula for every sub-scenario
+    for (DeploymentScenario scenario : { INDOOR_FACTORY_SL, INDOOR_FACTORY_DL, INDOOR_FACTORY_SH, INDOOR_FACTORY_DH, INDOOR_FACTORY_HH }) {
+        p = inf(scenario, fc);
+        probe.pathLoss("t901_inf_los", m901, p, d3D(p, 1), 1, LOS);
+        probe.pathLoss("t901_inf_los", m901, p, d3D(p, 20), 20, LOS);
+        probe.pathLoss("t901_inf_los", m901, p, d3D(p, 599), 599, LOS);
+    }
+
+    p = inf(INDOOR_FACTORY_SL, fc);
+    probe.pathLoss("t901_inf_sl_nlos", m901, p, d3D(p, 1), 1, NLOS);
+    probe.pathLoss("t901_inf_sl_nlos", m901, p, d3D(p, 20), 20, NLOS);
+    probe.pathLoss("t901_inf_sl_nlos", m901, p, d3D(p, 100), 100, NLOS);
+    probe.pathLoss("t901_inf_sl_nlos", m901, p, d3D(p, 599), 599, NLOS);
+
+    // on both sides of the distance where the DL term overtakes the SL one
+    p = inf(INDOOR_FACTORY_DL, fc);
+    probe.pathLoss("t901_inf_dl_nlos", m901, p, d3D(p, 1), 1, NLOS);
+    probe.pathLoss("t901_inf_dl_nlos", m901, p, d3D(p, 10), 10, NLOS);
+    probe.pathLoss("t901_inf_dl_nlos", m901, p, d3D(p, 20), 20, NLOS);
+    probe.pathLoss("t901_inf_dl_nlos", m901, p, d3D(p, 30), 30, NLOS);
+    probe.pathLoss("t901_inf_dl_nlos", m901, p, d3D(p, 100), 100, NLOS);
+    probe.pathLoss("t901_inf_dl_nlos", m901, p, d3D(p, 599), 599, NLOS);
+
+    p = inf(INDOOR_FACTORY_SH, fc);
+    probe.pathLoss("t901_inf_sh_nlos", m901, p, d3D(p, 1), 1, NLOS);
+    probe.pathLoss("t901_inf_sh_nlos", m901, p, d3D(p, 20), 20, NLOS);
+    probe.pathLoss("t901_inf_sh_nlos", m901, p, d3D(p, 100), 100, NLOS);
+    probe.pathLoss("t901_inf_sh_nlos", m901, p, d3D(p, 599), 599, NLOS);
+
+    p = inf(INDOOR_FACTORY_DH, fc);
+    probe.pathLoss("t901_inf_dh_nlos", m901, p, d3D(p, 1), 1, NLOS);
+    probe.pathLoss("t901_inf_dh_nlos", m901, p, d3D(p, 20), 20, NLOS);
+    probe.pathLoss("t901_inf_dh_nlos", m901, p, d3D(p, 100), 100, NLOS);
+    probe.pathLoss("t901_inf_dh_nlos", m901, p, d3D(p, 599), 599, NLOS);
+}
+
+// the DL-specific term is what is graded beyond the crossover: there it exceeds the SL formula
+{
+    p = inf(INDOOR_FACTORY_DL);
+    p.apply(m901, this);
+    double dl = m901.computePathLoss(p.deployment(), 100, 100, NLOS, p.conditions()); // both antennas at 1.5 m: d3D = d2D
+    ScenarioParams sl = inf(INDOOR_FACTORY_SL);
+    double slValue = m901.computePathLoss(sl.deployment(), 100, 100, NLOS, sl.conditions());
+    probe.expectValue("at 20 m, the InF-DL NLOS path loss minus the InF-SL one",
+            m901.computePathLoss(p.deployment(), 20, 20, NLOS, p.conditions())
+            - m901.computePathLoss(sl.deployment(), 20, 20, NLOS, sl.conditions()), 0);
+    probe.expectValue("at 100 m, whether the InF-DL NLOS path loss exceeds the InF-SL one", dl > slValue + 1 ? 1 : 0, 1);
+}
+
+// the range of the formulas
+p = inf(INDOOR_FACTORY_SL);
+p.apply(m901, this);
+probe.record("t901_inf_los", p, { {"d3D", 1} }, m901.computePathLoss(p.deployment(), 0.3, 0.3, LOS, p.conditions()));
+probe.record("t901_inf_sl_nlos", p, { {"d3D", 1} }, m901.computePathLoss(p.deployment(), 0.3, 0.3, NLOS, p.conditions()));
+probe.expectRejected("an InF link longer than 600 m",
+        [&]() { m901.computePathLoss(p.deployment(), 600.5, 600.5, LOS, p.conditions()); });
+p.tolerateMaxDistViolation = true;
+p.apply(m901, this);
+probe.record("t901_inf_los", p, { {"d3D", 700} }, m901.computePathLoss(p.deployment(), 700, 700, LOS, p.conditions()));
+
+// InF-HH has no NLOS
+p = inf(INDOOR_FACTORY_HH);
+p.apply(m901, this);
+probe.expectRejected("the NLOS path loss of an InF-HH link",
+        [&]() { m901.computePathLoss(p.deployment(), 20, 20, NLOS, p.conditions()); });
+probe.expectRejected("the NLOS shadowing sigma of an InF-HH link",
+        [&]() { m901.getShadowingStdDev(p.deployment(), 20, 20, NLOS); });
+
+// no building penetration loss
+p = inf(INDOOR_FACTORY_SL);
+p.insideBuilding = true;
+p.insideDistance = 5;
+p.apply(m901, this);
+probe.expectRejected("an InF link whose UE is inside a building",
+        [&]() { m901.computePathLoss(p.deployment(), 20, 20, LOS, p.conditions()); });
+
+// =================== LOS probability ===================================
+p = inf(INDOOR_FACTORY_SL);
+probe.losProbability("t901_p_los_inf_low", m901, p, d3D(p, 5), 5);
+probe.losProbability("t901_p_los_inf_low", m901, p, d3D(p, 20), 20);
+probe.losProbability("t901_p_los_inf_low", m901, p, d3D(p, 100), 100);
+p.clutterDensity = 0.3;
+p.clutterSize = 8;
+probe.losProbability("t901_p_los_inf_low", m901, p, d3D(p, 20), 20);
+
+p = inf(INDOOR_FACTORY_DL);
+probe.losProbability("t901_p_los_inf_low", m901, p, d3D(p, 1), 1);
+probe.losProbability("t901_p_los_inf_low", m901, p, d3D(p, 5), 5);
+probe.losProbability("t901_p_los_inf_low", m901, p, d3D(p, 20), 20);
+
+p = inf(INDOOR_FACTORY_SH);
+probe.losProbability("t901_p_los_inf_high", m901, p, d3D(p, 20), 20);
+probe.losProbability("t901_p_los_inf_high", m901, p, d3D(p, 100), 100);
+p.hNodeB = 5;
+p.hUe = 1;
+p.clutterHeight = 3;
+probe.losProbability("t901_p_los_inf_high", m901, p, d3D(p, 20), 20);
+
+p = inf(INDOOR_FACTORY_DH);
+probe.losProbability("t901_p_los_inf_high", m901, p, d3D(p, 5), 5);
+probe.losProbability("t901_p_los_inf_high", m901, p, d3D(p, 20), 20);
+
+p = inf(INDOOR_FACTORY_HH);
+p.apply(m901, this);
+probe.record("t901_p_los_inf_hh", p, {}, m901.computeLosProbability(p.deployment(), d3D(p, 20), 20));
+probe.record("t901_p_los_inf_hh", p, {}, m901.computeLosProbability(p.deployment(), d3D(p, 500), 500));
+
+// =================== shadowing sigma ===================================
+p = inf(INDOOR_FACTORY_SL);
+probe.shadowingStdDev("t901_sigma_inf_sl", m901, p, 20, 20, LOS);
+probe.shadowingStdDev("t901_sigma_inf_sl", m901, p, 20, 20, NLOS);
+p = inf(INDOOR_FACTORY_DL);
+probe.shadowingStdDev("t901_sigma_inf_dl", m901, p, 20, 20, LOS);
+probe.shadowingStdDev("t901_sigma_inf_dl", m901, p, 20, 20, NLOS);
+p = inf(INDOOR_FACTORY_SH);
+probe.shadowingStdDev("t901_sigma_inf_sh", m901, p, 20, 20, LOS);
+probe.shadowingStdDev("t901_sigma_inf_sh", m901, p, 20, 20, NLOS);
+p = inf(INDOOR_FACTORY_DH);
+probe.shadowingStdDev("t901_sigma_inf_dh", m901, p, 20, 20, LOS);
+probe.shadowingStdDev("t901_sigma_inf_dh", m901, p, 20, 20, NLOS);
+p = inf(INDOOR_FACTORY_HH);
+p.apply(m901, this);
+probe.record("t901_sigma_inf_hh", p, {}, m901.getShadowingStdDev(p.deployment(), 20, 20, LOS));
+
+// =================== correlation distances =============================
+p = inf(INDOOR_FACTORY_SL);
+probe.shadowingCorrelationDistance("t901_dcor_sf_inf", m901, p, LOS, false);
+probe.shadowingCorrelationDistance("t901_dcor_sf_inf", m901, p, NLOS, false);
+probe.losCorrelationDistance("t901_dcor_los_inf", m901, p);
+p = inf(INDOOR_FACTORY_DH);
+probe.shadowingCorrelationDistance("t901_dcor_sf_inf", m901, p, NLOS, false);
+probe.losCorrelationDistance("t901_dcor_los_inf", m901, p);
+
+// =================== the antennas and the clutter ======================
+p = inf(INDOOR_FACTORY_SL);
+probe.expectHeightsAccepted("InF-SL with both antennas at 1.5 m under 2 m clutter", m901, p);
+p.hNodeB = 8;
+probe.expectHeightsRejected("InF-SL with the base station antenna above the clutter", m901, p);
+p.tolerateHeightViolation = true;
+probe.expectHeightsAccepted("...tolerated", m901, p);
+p = inf(INDOOR_FACTORY_DL);
+p.hUe = 7;
+probe.expectHeightsRejected("InF-DL with the UE antenna above the clutter", m901, p);
+
+p = inf(INDOOR_FACTORY_SH);
+probe.expectHeightsAccepted("InF-SH with the base station at 8 m and the UE at 1.5 m, 2 m clutter", m901, p);
+p.hNodeB = 1.9;
+probe.expectHeightsRejected("InF-SH with the base station antenna below the clutter", m901, p);
+p.tolerateHeightViolation = true;
+probe.expectHeightsAccepted("...tolerated", m901, p);
+p = inf(INDOOR_FACTORY_SH);
+p.tolerateHeightViolation = true;
+p.hUe = 3;
+probe.expectHeightsRejected("InF-SH with the UE antenna above the clutter, even if tolerated: k_subsce is undefined", m901, p);
+p = inf(INDOOR_FACTORY_DH);
+p.tolerateHeightViolation = true;
+p.hNodeB = 1.5;
+probe.expectHeightsRejected("InF-DH with the UE antenna as high as the base station's, even if tolerated", m901, p);
+
+p = inf(INDOOR_FACTORY_HH);
+probe.expectHeightsAccepted("InF-HH with the antennas at 8 m and 3 m above 2 m clutter", m901, p);
+p.hUe = 1.5;
+probe.expectHeightsRejected("InF-HH with the UE antenna below the clutter", m901, p);
+
+// the clutter of a cell
+auto clutter = [&](DeploymentScenario scenario, double r, double hc, double size) {
+    PathLossModel::checkClutter(this, scenario, r, hc, size);
+};
+probe.expectRejected("InF-SL with a clutter density of 0.5", [&]() { clutter(INDOOR_FACTORY_SL, 0.5, 2, 10); });
+probe.expectRejected("InF-SH with a clutter density of 0.4", [&]() { clutter(INDOOR_FACTORY_SH, 0.4, 2, 10); });
+probe.expectRejected("InF-DL with a clutter density of 0.2", [&]() { clutter(INDOOR_FACTORY_DL, 0.2, 6, 2); });
+probe.expectRejected("InF-DH with a clutter density of 1", [&]() { clutter(INDOOR_FACTORY_DH, 1, 6, 2); });
+probe.expectRejected("InF-SL with a clutter density of 0", [&]() { clutter(INDOOR_FACTORY_SL, 0, 2, 10); });
+probe.expectRejected("InF-SL with a clutter height of 11 m", [&]() { clutter(INDOOR_FACTORY_SL, 0.2, 11, 10); });
+probe.expectRejected("InF-HH with a clutter size of 0", [&]() { clutter(INDOOR_FACTORY_HH, 0.2, 2, 0); });
+clutter(INDOOR_FACTORY_SL, 0.39, 0, 10);
+clutter(INDOOR_FACTORY_DL, 0.4, 10, 2);
+clutter(INDOOR_FACTORY_HH, 0.9, 2, 10);
+clutter(URBAN_MACROCELL, 5, 50, 0);
+probe.expectValue("the clutter within its sub-scenario's class, any density in InF-HH, and anything outside a factory are accepted", 1, 1);
+
+// =================== outside TR 38.901 =================================
+Tr36814PathLossModel m814;
+Tr36873PathLossModel m873;
+p = inf(INDOOR_FACTORY_SL);
+probe.expectHeightsRejected("an InF link under TR 36.814", m814, p);
+probe.expectHeightsRejected("an InF link under TR 36.873", m873, p);
+p.apply(m814, this);
+probe.expectRejected("the InF path loss under TR 36.814",
+        [&]() { m814.computePathLoss(p.deployment(), 20, 20, LOS, p.conditions()); });
+p.apply(m873, this);
+probe.expectRejected("the InF LOS probability under TR 36.873",
+        [&]() { m873.computeLosProbability(p.deployment(), 20, 20); });
+
+probe.expectRejected("the base station height of a link between two UEs in InF",
+        [&]() { PathLossModel::getDefaultBaseStationHeight(INDOOR_FACTORY_SL); });
+
+probe.summary();
+
+%postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt
+
+%contains: verdict.txt
+graded=97 failures=0
+
+%contains: stdout
+modelchecks=30 modelfailures=0
+
+%not-contains: verdict.txt
+FAILED
+
+%not-contains: stdout
+FAILED

@@ -1,0 +1,22 @@
+%description:
+TR 38.901 Table 7.2-4 places both antennas of an InF-SL link below the clutter ("Clutter-embedded,
+i.e. the BS antenna height is below the average clutter height"). A base station antenna left at
+its default height of 25 m is above the 2 m clutter: the hall would be an InF-SH one. The first
+evaluation of such a link is an error, unless tolerateHeightViolation is set
+(IndoorFactory_AntennaAboveClutterTolerated).
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+**.radio.scenario = "INDOOR_FACTORY_SL"
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+the link's base station antenna is at 25 m and its UE antenna at 1.5 m above the ground (z = 0), outside the range TR 38.901 Table 7.2-4 gives for the scenario INDOOR_FACTORY_SL (both antennas clutter-embedded, below the clutter height of 2 m (clutterHeight))
+%#--------------------------------------------------------------------------------------------------------------

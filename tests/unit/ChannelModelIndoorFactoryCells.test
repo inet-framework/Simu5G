@@ -1,0 +1,158 @@
+%description:
+
+Two indoor factory cells on one carrier, each with the clutter of its own
+hall: a link is evaluated with the sub-scenario and the clutter parameters of
+its base station's radio (clutterDensity, clutterHeight, clutterSize), not
+with one set for the carrier.
+
+One channel model evaluates the links of an InF-SL cell (sparse clutter: 20 %,
+2 m high, 10 m in size) and of an InF-DL cell (dense: 60 %, 6 m, 2 m) to UEs
+20 m away. TR 38.901 Table 7.4.2-1 gives a LOS probability of
+exp(-d2D / k_subsce) with k_subsce = -d_clutter / ln(1 - r): 0.64 in the first
+hall and 1e-4 in the second. Table 7.6.3.1-2 gives the LOS state a correlation
+distance of d_clutter / 2: 5 m and 1 m. The path loss of an NLOS link is that
+of the link's sub-scenario.
+
+The LOS draw is replayed from an RngSnapshot and graded exactly; with
+shadowing off, getAttenuation() draws nothing else.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+// The radio of a UE named by its node id only.
+static StubEndpoint *radioOf(MacNodeId node)
+{
+    static std::map<MacNodeId, StubEndpoint> radios;
+    radios[node].nodeId = node;
+    return &radios[node];
+}
+
+// The downlink from a base station to the UE 'node' at 'ueCoord'.
+static RadioLink linkTo(StubEndpoint *baseStation, MacNodeId node, const Coord& ueCoord)
+{
+    RadioLink link;
+    link.dir = DL;
+    link.txId = baseStation->nodeId;
+    link.rxId = node;
+    link.txCoord = baseStation->coord;
+    link.rxCoord = ueCoord;
+    link.linkKey = LinkKey(baseStation->nodeId, node);
+    link.stateNodeId = node;
+    link.txIsBaseStation = true;
+    link.txRadio = baseStation;
+    link.rxRadio = radioOf(node);
+    return link;
+}
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        channelModel: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 3.5GHz
+*.carrierAggregation.componentCarrier[0].numBands = 10
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+**.dynamicLos = true
+**.shadowing = false
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *model = harnessModule<StochasticChannelModel>(this, "channelModel");
+ChannelModelProbe probe(model);
+PathLossModel *pathLoss = probe.pathLoss();
+
+StubEndpoint sparse, dense;
+sparse.nodeId = MacNodeId(1);
+sparse.scenario = INDOOR_FACTORY_SL;
+sparse.coord = Coord(0, 0, 1.5);
+sparse.clutterDensity = 0.2;
+sparse.clutterHeight = 2;
+sparse.clutterSize = 10;
+dense.nodeId = MacNodeId(2);
+dense.scenario = INDOOR_FACTORY_DL;
+dense.coord = Coord(0, 200, 1.5);
+dense.clutterDensity = 0.6;
+dense.clutterHeight = 6;
+dense.clutterSize = 2;
+
+auto drawn = [&]() { return (long long)model->getRNG(0)->getNumbersDrawn(); };
+auto deploymentOf = [](const StubEndpoint& baseStation) {
+    PathLossModel::Deployment deployment;
+    deployment.scenario = baseStation.scenario;
+    deployment.hNodeB = baseStation.coord.z;
+    deployment.hUe = 1.5;
+    deployment.clutterDensity = baseStation.clutterDensity;
+    deployment.clutterHeight = baseStation.clutterHeight;
+    deployment.clutterSize = baseStation.clutterSize;
+    return deployment;
+};
+
+// A UE 20 m from its base station, along x: the first evaluation draws the LOS
+// state against the hall's probability, and the path loss is the sub-scenario's.
+auto firstEvaluation = [&](const std::string& what, StubEndpoint& baseStation, MacNodeId node, double expectedP) {
+    Coord ueCoord(baseStation.coord.x + 20, baseStation.coord.y, 1.5);
+    double p = pathLoss->computeLosProbability(deploymentOf(baseStation), 20, 20);
+    c.expectNear(what + ": the LOS probability at 20 m is the hall's", p, expectedP, 1e-12);
+    RngSnapshot snapshot(model);
+    long long before = drawn();
+    double attenuation = model->getAttenuation(linkTo(&baseStation, node, ueCoord));
+    bool los = omnetpp::uniform(snapshot.rng(), 0.0, 1.0) <= p;
+    c.expectValue("...the first evaluation draws the LOS state, and nothing else", drawn() - before, 1);
+    c.expectNear("...and the attenuation is the sub-scenario's path loss for the state drawn against that probability",
+            attenuation, pathLoss->computePathLoss(deploymentOf(baseStation), 20, 20, los, PathLossModel::LinkConditions()), 0);
+};
+// The UE moves on from there: the state is held 'held' m away and decided again 'redrawn' m away.
+auto decidedAgainPast = [&](const std::string& what, StubEndpoint& baseStation, MacNodeId node, double held, double redrawn) {
+    long long before = drawn();
+    model->getAttenuation(linkTo(&baseStation, node, Coord(baseStation.coord.x + 20 + held, baseStation.coord.y, 1.5)));
+    c.expectValue(what + ": the LOS state is held " + std::to_string(held).substr(0, 3) + " m from where it was decided", drawn() - before, 0);
+    before = drawn();
+    model->getAttenuation(linkTo(&baseStation, node, Coord(baseStation.coord.x + 20 + redrawn, baseStation.coord.y, 1.5)));
+    c.expectValue("...and decided again " + std::to_string(redrawn).substr(0, 3) + " m from it", drawn() - before, 1);
+};
+
+firstEvaluation("sparse hall", sparse, MacNodeId(1100), exp(-20 / (-10 / log(1 - 0.2))));
+firstEvaluation("dense hall", dense, MacNodeId(1101), exp(-20 / (-2 / log(1 - 0.6))));
+decidedAgainPast("sparse hall, d_clutter / 2 = 5 m", sparse, MacNodeId(1100), 5, 5.5);
+decidedAgainPast("dense hall, d_clutter / 2 = 1 m", dense, MacNodeId(1101), 1, 1.5);
+
+// the two halls differ in the NLOS path loss at 100 m, where the dense formula is its own
+c.check("an NLOS link of 100 m loses more in the dense hall than in the sparse one",
+        pathLoss->computePathLoss(deploymentOf(dense), 100, 100, false, PathLossModel::LinkConditions())
+        > pathLoss->computePathLoss(deploymentOf(sparse), 100, 100, false, PathLossModel::LinkConditions()) + 1);
+
+c.summary();
+
+%contains: stdout
+modelchecks=11 modelfailures=0
+
+%not-contains: stdout
+FAILED

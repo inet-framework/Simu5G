@@ -1,0 +1,50 @@
+%description:
+The cells of a site share one LOS state towards a UE, drawn with the LOS probability of their
+deployment. In an Indoor Factory that probability depends on the clutter of the hall. Two cells
+of one site that differ in the clutter would share a state drawn for one of the two. That is an
+error at initialization, as for two cells in different scenarios
+(SiteRejected_SectorsInDifferentDeployments).
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.node.ethernet.Eth10G;
+import simu5g.nodes.gNodeB;
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+network TwoSectorTestNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        gnb2: gNodeB {
+            @display("p=650,250");
+        }
+    connections:
+        upf.pppg++ <--> Eth10G <--> gnb2.ppp;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = TwoSectorTestNetwork
+
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+
+# two sectors on one mast
+*.gnb*.cellularNic.radio.site = "mast"
+*.gnb*.cellularNic.antenna.txDirection = "ANISOTROPIC"
+*.gnb.cellularNic.antenna.txAngle = 60deg
+*.gnb2.cellularNic.antenna.txAngle = 180deg
+**.dynamicLos = true
+*.gnb2.mobility.initialX = 450m
+*.gnb2.mobility.initialY = 300m
+**.radio.scenario = "INDOOR_FACTORY_SL"
+*.gnb*.cellularNic.antenna.mobility.offsetZ = 1.5m
+*.gnb2.cellularNic.radio.clutterSize = 8m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+the cells of the site 'mast' are not in one deployment
+%#--------------------------------------------------------------------------------------------------------------

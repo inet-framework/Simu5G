@@ -1,0 +1,23 @@
+%description:
+TR 38.901 Table 7.2-4 gives the dense sub-scenarios of the Indoor Factory (InF-DL, InF-DH) a clutter
+density of 40 % or more, and the sparse ones (InF-SL, InF-SH) one below 40 %. A cell that names a
+dense sub-scenario with the clutter of a sparse hall is an error at initialization: its LOS
+probability would be the sparse hall's under the dense hall's path loss.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+**.radio.scenario = "INDOOR_FACTORY_DL"
+**.radio.clutterDensity = 0.2
+*.gnb.cellularNic.antenna.mobility.offsetZ = 1.5m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+clutterDensity = 0.2: the scenario INDOOR_FACTORY_DL has dense clutter, a density of 0.4 or more (TR 38.901 Table 7.2-4)
+%#--------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,25 @@
+%description:
+The InF-HH sub-scenario of TR 38.901, with both ends of a link above the clutter, is "100% LOS"
+(Table 7.2-4): Table 7.4.1-1 has no NLOS path loss for it, and Table 7.4.2-1 gives a LOS
+probability of 1. The channel model's defaults make every link NLOS (dynamicLos = false,
+fixedLos = false). The first evaluation of such a link is an error that names the parameters to
+set.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+**.radio.scenario = "INDOOR_FACTORY_HH"
+# both antennas above the 2 m clutter
+*.gnb.cellularNic.antenna.mobility.offsetZ = 8m
+*.ue[*].cellularNic.antenna.mobility.offsetZ = 3m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+a link of the scenario INDOOR_FACTORY_HH is evaluated as NLOS, and TR 38.901 has no NLOS path loss for that scenario
+%#--------------------------------------------------------------------------------------------------------------

@@ -24,7 +24,7 @@ rather than against itself:
     3GPP TR 36.873 v12.7.0, Table 7.1-1, Table 7.2-1, Table 7.2-2, Table 7.3-6,
                             Table 7.3-6a and Table 7.3-6b
     3GPP TR 38.901 v16.1.0, Table 7.4.1-1, Table 7.4.2-1, section 7.4.3, Table 7.5-6
-                            and Table 7.6.3.1-2
+                            and Table 7.6.3.1-2, with their Indoor Factory (InF) rows
     3GPP TR 38.901 v19.5.0, Table 7.6.3.1-2 (the SMa column, which v16.1.0 lacks)
 
 Nothing here is adjusted to match the model: where a formula and the model
@@ -554,6 +554,89 @@ def t901_o2i_highloss(fc, dIn, z):
     return t901_o2i_highloss_mean(fc, dIn) + 6.5 * z
 
 
+# ========================================== TR 38.901 Indoor Factory (InF)
+# Table 7.4.1-1, InF rows. LOS, the same in every sub-scenario:
+#   PL_LOS = 31.84 + 21.50 log10(d3D) + 19.00 log10(fc), sigma_SF = 4.3
+#   1 <= d3D <= 600 m
+def t901_inf_los(d3D, fc):
+    return 31.84 + 21.50 * log10(d3D) + 19.00 * log10(fc)
+
+
+# NLOS:
+#   InF-SL: PL = 33 + 25.5 log10(d3D) + 20 log10(fc)
+#           PL_NLOS = max(PL, PL_LOS), sigma_SF = 5.7
+#   InF-DL: PL = 18.6 + 35.7 log10(d3D) + 20 log10(fc)
+#           PL_NLOS = max(PL, PL_LOS, PL_InF-SL), sigma_SF = 7.2
+#   InF-SH: PL = 32.4 + 23.0 log10(d3D) + 20 log10(fc)
+#           PL_NLOS = max(PL, PL_LOS), sigma_SF = 5.9
+#   InF-DH: PL = 33.63 + 21.9 log10(d3D) + 20 log10(fc)
+#           PL_NLOS = max(PL, PL_LOS), sigma_SF = 4.0
+# PL_InF-SL in the DL row is read as the SL row's PL, not its PL_NLOS; the two
+# readings give the same maximum, since PL_LOS is in it either way.
+def _t901_inf_sl_pl(d3D, fc):
+    return 33 + 25.5 * log10(d3D) + 20 * log10(fc)
+
+
+def t901_inf_sl_nlos(d3D, fc):
+    return max(_t901_inf_sl_pl(d3D, fc), t901_inf_los(d3D, fc))
+
+
+def t901_inf_dl_nlos(d3D, fc):
+    pl = 18.6 + 35.7 * log10(d3D) + 20 * log10(fc)
+    return max(pl, t901_inf_los(d3D, fc), _t901_inf_sl_pl(d3D, fc))
+
+
+def t901_inf_sh_nlos(d3D, fc):
+    pl = 32.4 + 23.0 * log10(d3D) + 20 * log10(fc)
+    return max(pl, t901_inf_los(d3D, fc))
+
+
+def t901_inf_dh_nlos(d3D, fc):
+    pl = 33.63 + 21.9 * log10(d3D) + 20 * log10(fc)
+    return max(pl, t901_inf_los(d3D, fc))
+
+
+# Table 7.4.2-1, InF rows:
+#   Pr_LOS,subsce(d2D) = exp(-d2D / k_subsce)
+#   k_subsce = -d_clutter / ln(1 - r)                                 for InF-SL and InF-DL
+#   k_subsce = -d_clutter / ln(1 - r) * (hBS - hUT) / (hc - hUT)      for InF-SH and InF-DH
+#   InF-HH: Pr_LOS = 1
+# "The parameters d_clutter, r, and hc are defined in Table 7.2-4".
+def t901_p_los_inf_low(d2D, r, dclutter):
+    k = -dclutter / math.log(1 - r)
+    return math.exp(-d2D / k)
+
+
+def t901_p_los_inf_high(d2D, r, dclutter, hc, hBS, hUT):
+    k = -dclutter / math.log(1 - r) * (hBS - hUT) / (hc - hUT)
+    return math.exp(-d2D / k)
+
+
+def t901_p_los_inf_hh():
+    return 1.0
+
+
+def t901_sigma_inf_sl(los):
+    return 4.3 if los else 5.7
+
+
+def t901_sigma_inf_dl(los):
+    return 4.3 if los else 7.2
+
+
+def t901_sigma_inf_sh(los):
+    return 4.3 if los else 5.9
+
+
+def t901_sigma_inf_dh(los):
+    return 4.3 if los else 4.0
+
+
+# InF-HH is 100% LOS: there is no NLOS value.
+def t901_sigma_inf_hh():
+    return 4.3
+
+
 # ================================================= correlation distances
 # Correlation distance of the shadow fading, in m: the SF row of "Correlation
 # distance [m]" in TR 36.814 Table B.1.2.2.1-4, whose columns are InH (LOS,
@@ -634,6 +717,11 @@ def t901_dcor_sf_inh(los):
     return 10 if los else 6
 
 
+# InF: 10 m, LOS and NLOS (Table 7.5-6 Part-3).
+def t901_dcor_sf_inf(los):
+    return 10
+
+
 # Correlation distance of the LOS/NLOS state, in m: the "LOS/NLOS state" row
 # of TR 38.901 Table 7.6.3.1-2, the same for the LOS, NLOS and O2I columns of
 # a scenario. The SMa column is that of v19.5.0; v16.1.0 has none.
@@ -655,6 +743,11 @@ def t901_dcor_los_sma():
 
 def t901_dcor_los_inh():
     return 10
+
+
+# InF: d_clutter / 2.
+def t901_dcor_los_inf(dclutter):
+    return dclutter / 2
 
 
 # ================================================================= grading
