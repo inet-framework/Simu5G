@@ -17,11 +17,15 @@ The formulas below are transcribed from the specification tables, not from the
 model code, so that the tests compare the model against the specification
 rather than against itself:
 
-    3GPP TR 36.814 v9.2.0,  Table A.2.1.1-2, Table B.1.2.1-1 and Table B.1.2.1-2
+    3GPP TR 36.814 v9.2.0,  Table A.2.1.1-2, Table B.1.2.1-1, Table B.1.2.1-2 and
+                            Table B.1.2.2.1-4
     Report ITU-R M.2135-1,  Table A1-3 (the SMa LOS probability, which TR 36.814 lacks)
-    3GPP TR 36.873 v12.7.0, Table 7.1-1, Table 7.2-1, Table 7.2-2, Table 7.3-6 and
-                            Table 7.3-6b
-    3GPP TR 38.901 v16.1.0, Table 7.4.1-1, Table 7.4.2-1 and section 7.4.3
+                            and Table A1-7 (the SMa correlation distance, likewise)
+    3GPP TR 36.873 v12.7.0, Table 7.1-1, Table 7.2-1, Table 7.2-2, Table 7.3-6,
+                            Table 7.3-6a and Table 7.3-6b
+    3GPP TR 38.901 v16.1.0, Table 7.4.1-1, Table 7.4.2-1, section 7.4.3, Table 7.5-6
+                            and Table 7.6.3.1-2
+    3GPP TR 38.901 v19.5.0, Table 7.6.3.1-2 (the SMa column, which v16.1.0 lacks)
 
 Nothing here is adjusted to match the model: where a formula and the model
 disagreed, the formula won and the model was corrected.
@@ -548,6 +552,109 @@ def t901_o2i_lowloss(fc, dIn, z):
 def t901_o2i_highloss(fc, dIn, z):
     # the high-loss median plus sigma_P = 6.5 dB times the UE's standard-normal deviate z
     return t901_o2i_highloss_mean(fc, dIn) + 6.5 * z
+
+
+# ================================================= correlation distances
+# Correlation distance of the shadow fading, in m: the SF row of "Correlation
+# distance [m]" in TR 36.814 Table B.1.2.2.1-4, whose columns are InH (LOS,
+# NLOS), UMi (LOS, NLOS, O-to-I), UMa (LOS, NLOS) and RMa (LOS, NLOS). A case
+# reports o2i=1 for a UE inside a building; a scenario whose table has no
+# O-to-I column does not read it.
+def t814_dcor_sf_inh(los):
+    return 10 if los else 6
+
+
+def t814_dcor_sf_umi(los, o2i):
+    if o2i:
+        return 7
+    return 10 if los else 13
+
+
+def t814_dcor_sf_uma(los):
+    return 37 if los else 50
+
+
+def t814_dcor_sf_rma(los):
+    return 37 if los else 120
+
+
+# TR 36.814 Table B.1.2.2.1-4 has no SMa column; this is the SMa column of
+# ITU-R M.2135-1 Table A1-7, which TR 36.814's model is taken from.
+def t814_dcor_sf_sma(los):
+    return 40 if los else 50
+
+
+# The SF row of "Correlation distance in the horizontal plane [m]" in
+# TR 36.873 Table 7.3-6 (3D-UMi and 3D-UMa: LOS, NLOS, O2I each), Table 7.3-6a
+# (3D-InH: LOS, NLOS) and Table 7.3-6b (3D-RMa: LOS, NLOS, O2I).
+def t873_dcor_sf_umi(los, o2i):
+    if o2i:
+        return 7
+    return 10 if los else 13
+
+
+def t873_dcor_sf_uma(los, o2i):
+    if o2i:
+        return 7
+    return 37 if los else 50
+
+
+def t873_dcor_sf_inh(los):
+    return 10 if los else 6
+
+
+def t873_dcor_sf_rma(los, o2i):
+    if o2i:
+        return 120
+    return 37 if los else 120
+
+
+# The SF row of "Correlation distance in the horizontal plane [m]" in
+# TR 38.901 Table 7.5-6 Part-1 (UMi-Street Canyon and UMa: LOS, NLOS, O2I
+# each) and Part-2 (RMa: LOS, NLOS, O2I; Indoor-Office: LOS, NLOS).
+def t901_dcor_sf_umi(los, o2i):
+    if o2i:
+        return 7
+    return 10 if los else 13
+
+
+def t901_dcor_sf_uma(los, o2i):
+    if o2i:
+        return 7
+    return 37 if los else 50
+
+
+def t901_dcor_sf_rma(los, o2i):
+    if o2i:
+        return 120
+    return 37 if los else 120
+
+
+def t901_dcor_sf_inh(los):
+    return 10 if los else 6
+
+
+# Correlation distance of the LOS/NLOS state, in m: the "LOS/NLOS state" row
+# of TR 38.901 Table 7.6.3.1-2, the same for the LOS, NLOS and O2I columns of
+# a scenario. The SMa column is that of v19.5.0; v16.1.0 has none.
+def t901_dcor_los_rma():
+    return 60
+
+
+def t901_dcor_los_umi():
+    return 50
+
+
+def t901_dcor_los_uma():
+    return 50
+
+
+def t901_dcor_los_sma():
+    return 50
+
+
+def t901_dcor_los_inh():
+    return 10
 
 
 # ================================================================= grading

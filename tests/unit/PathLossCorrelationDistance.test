@@ -1,0 +1,141 @@
+%description:
+
+Correlation distances of the three path-loss models: how far an end of a link
+moves before the link's shadowing and its LOS state are drawn again.
+
+The correlation distance of the shadow fading is the SF row of the
+"Correlation distance" rows of each study's table of channel model parameters:
+3GPP TR 36.814 v9.2.0 Table B.1.2.2.1-4, TR 36.873 v12.7.0 Tables 7.3-6, 7.3-6a
+and 7.3-6b, and TR 38.901 v16.1.0 Table 7.5-6. It differs by scenario and by
+the link's propagation condition: LOS, NLOS, and outdoor-to-indoor where the
+table has that column. TR 36.814 has no SMa column; its SMa cases are checked
+against ITU-R M.2135-1 Table A1-7, the reference TR 36.814's model is taken
+from. TR 36.873 and TR 38.901 have no SMa at all, and fall through to it.
+
+Only TR 38.901 gives a correlation distance for the LOS/NLOS state (Table
+7.6.3.1-2). The model takes it under the two older studies too, which is a
+convention of the model; the cases are graded against the TR 38.901 table for
+all three. The SMa column of that table is that of v19.5.0.
+
+Each case names the formula of pathloss_reference.py it is to be graded
+against; the tables themselves are quoted there.
+
+%includes:
+#include "PathLossTestUtil.h"
+#include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+CaseRecorder probe(this, 0.0);
+ScenarioParams p;
+const bool LOS = true, NLOS = false, OUTDOOR = false, O2I = true;
+
+// =================== TR 36.814 ========================================
+Tr36814PathLossModel m814;
+
+p.scenario = INDOOR_HOTSPOT;
+probe.shadowingCorrelationDistance("t814_dcor_sf_inh", m814, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t814_dcor_sf_inh", m814, p, NLOS, OUTDOOR);
+
+p.scenario = URBAN_MICROCELL;
+probe.shadowingCorrelationDistance("t814_dcor_sf_umi", m814, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t814_dcor_sf_umi", m814, p, NLOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t814_dcor_sf_umi", m814, p, LOS, O2I);
+probe.shadowingCorrelationDistance("t814_dcor_sf_umi", m814, p, NLOS, O2I);
+
+p.scenario = URBAN_MACROCELL;
+probe.shadowingCorrelationDistance("t814_dcor_sf_uma", m814, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t814_dcor_sf_uma", m814, p, NLOS, OUTDOOR);
+
+p.scenario = RURAL_MACROCELL;
+probe.shadowingCorrelationDistance("t814_dcor_sf_rma", m814, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t814_dcor_sf_rma", m814, p, NLOS, OUTDOOR);
+
+p.scenario = SUBURBAN_MACROCELL;
+probe.shadowingCorrelationDistance("t814_dcor_sf_sma", m814, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t814_dcor_sf_sma", m814, p, NLOS, OUTDOOR);
+
+// =================== TR 36.873 ========================================
+Tr36873PathLossModel m873;
+
+p.scenario = URBAN_MICROCELL;
+probe.shadowingCorrelationDistance("t873_dcor_sf_umi", m873, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t873_dcor_sf_umi", m873, p, NLOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t873_dcor_sf_umi", m873, p, NLOS, O2I);
+
+p.scenario = URBAN_MACROCELL;
+probe.shadowingCorrelationDistance("t873_dcor_sf_uma", m873, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t873_dcor_sf_uma", m873, p, NLOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t873_dcor_sf_uma", m873, p, NLOS, O2I);
+
+p.scenario = INDOOR_HOTSPOT;
+probe.shadowingCorrelationDistance("t873_dcor_sf_inh", m873, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t873_dcor_sf_inh", m873, p, NLOS, OUTDOOR);
+
+p.scenario = RURAL_MACROCELL;
+probe.shadowingCorrelationDistance("t873_dcor_sf_rma", m873, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t873_dcor_sf_rma", m873, p, NLOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t873_dcor_sf_rma", m873, p, LOS, O2I);
+
+// SMa falls through to TR 36.814
+p.scenario = SUBURBAN_MACROCELL;
+probe.shadowingCorrelationDistance("t814_dcor_sf_sma", m873, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t814_dcor_sf_sma", m873, p, NLOS, OUTDOOR);
+
+// =================== TR 38.901 ========================================
+Tr38901PathLossModel m901;
+
+p.scenario = URBAN_MICROCELL;
+probe.shadowingCorrelationDistance("t901_dcor_sf_umi", m901, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t901_dcor_sf_umi", m901, p, NLOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t901_dcor_sf_umi", m901, p, NLOS, O2I);
+
+p.scenario = URBAN_MACROCELL;
+probe.shadowingCorrelationDistance("t901_dcor_sf_uma", m901, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t901_dcor_sf_uma", m901, p, NLOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t901_dcor_sf_uma", m901, p, LOS, O2I);
+
+p.scenario = RURAL_MACROCELL;
+probe.shadowingCorrelationDistance("t901_dcor_sf_rma", m901, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t901_dcor_sf_rma", m901, p, NLOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t901_dcor_sf_rma", m901, p, LOS, O2I);
+
+p.scenario = INDOOR_HOTSPOT;
+probe.shadowingCorrelationDistance("t901_dcor_sf_inh", m901, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t901_dcor_sf_inh", m901, p, NLOS, OUTDOOR);
+
+// SMa falls through to TR 36.814
+p.scenario = SUBURBAN_MACROCELL;
+probe.shadowingCorrelationDistance("t814_dcor_sf_sma", m901, p, LOS, OUTDOOR);
+probe.shadowingCorrelationDistance("t814_dcor_sf_sma", m901, p, NLOS, OUTDOOR);
+
+// =================== the LOS/NLOS state ================================
+// TR 38.901's distance, under each of the three studies.
+for (PathLossModel *model : std::initializer_list<PathLossModel *>{ &m814, &m873, &m901 }) {
+    p.scenario = RURAL_MACROCELL;
+    probe.losCorrelationDistance("t901_dcor_los_rma", *model, p);
+    p.scenario = URBAN_MICROCELL;
+    probe.losCorrelationDistance("t901_dcor_los_umi", *model, p);
+    p.scenario = URBAN_MACROCELL;
+    probe.losCorrelationDistance("t901_dcor_los_uma", *model, p);
+    p.scenario = SUBURBAN_MACROCELL;
+    probe.losCorrelationDistance("t901_dcor_los_sma", *model, p);
+    p.scenario = INDOOR_HOTSPOT;
+    probe.losCorrelationDistance("t901_dcor_los_inh", *model, p);
+}
+
+%postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt
+
+%contains: verdict.txt
+graded=53 failures=0
+
+%not-contains: verdict.txt
+FAILED
+
+%not-contains: stdout
+FAILED

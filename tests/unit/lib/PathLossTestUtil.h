@@ -257,6 +257,25 @@ class CaseRecorder
     }
 
     /**
+     * The correlation distance of the shadow fading, for a UE outdoors or
+     * (o2i) inside a building.
+     */
+    void shadowingCorrelationDistance(const char *ref, PathLossModel& model, const ScenarioParams& p, bool los, bool o2i)
+    {
+        p.apply(model, owner_);
+        PathLossModel::LinkConditions conditions;
+        conditions.indoor = o2i;
+        record(ref, p, { { "los", static_cast<double>(los) }, { "o2i", static_cast<double>(o2i) } },
+                model.getShadowingCorrelationDistance(p.deployment(), los, conditions));
+    }
+
+    void losCorrelationDistance(const char *ref, PathLossModel& model, const ScenarioParams& p)
+    {
+        p.apply(model, owner_);
+        record(ref, p, {}, model.getLosCorrelationDistance(p.deployment()));
+    }
+
+    /**
      * The antenna pattern is a property of the model alone, so this one takes
      * no deployment scenario and leaves the model unconfigured.
      */
