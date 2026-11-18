@@ -37,7 +37,7 @@ void CellularPhantomRadio::initialize(int stage)
         cableLoss_ = par("cableLoss");
         WATCH(nodeId_);
     }
-    else if (stage == inet::INITSTAGE_LAST) {
+    else if (stage == INITSTAGE_SIMU5G_CHANNEL_SITES) {
         // the antennas are in place: a cell whose radio names a site joins it
         if (!opp_isempty(par("site").stringValue())) {
             radioMedium_.reference(this, "radioMediumModule", true);

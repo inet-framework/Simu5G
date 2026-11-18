@@ -23,6 +23,7 @@ extern const inet::InitStage INITSTAGE_SIMU5G_NODE_RELATIONSHIPS;
 extern const inet::InitStage INITSTAGE_SIMU5G_BINDER_ACCESS;
 
 extern const inet::InitStage INITSTAGE_SIMU5G_AMC_SETUP;
+extern const inet::InitStage INITSTAGE_SIMU5G_CHANNEL_SITES;
 extern const inet::InitStage INITSTAGE_SIMU5G_PHYSICAL_LAYER;
 extern const inet::InitStage INITSTAGE_SIMU5G_MAC_SCHEDULER_CREATION;
 extern const inet::InitStage INITSTAGE_SIMU5G_BACKGROUNDTRAFFICMANAGER;

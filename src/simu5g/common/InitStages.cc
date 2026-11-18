@@ -31,8 +31,16 @@ Define_InitStage_Dependency(GROUP_MOBILITY, SIMU5G_BINDER_ACCESS);
 Define_InitStage(SIMU5G_AMC_SETUP)
 Define_InitStage_Dependency(SIMU5G_AMC_SETUP, SIMU5G_BINDER_ACCESS);
 
+// The cells that name a site join it (the sectors of a site share their LOS state
+// and shadowing): after the mobilities, as the join compares the antennas' positions,
+// and before the physical layer, whose initial cell selection evaluates links
+Define_InitStage(SIMU5G_CHANNEL_SITES)
+Define_InitStage_Dependency(SIMU5G_CHANNEL_SITES, SINGLE_MOBILITY);
+Define_InitStage_Dependency(SIMU5G_CHANNEL_SITES, GROUP_MOBILITY);
+
 Define_InitStage(SIMU5G_PHYSICAL_LAYER)
 Define_InitStage_Dependency(SIMU5G_PHYSICAL_LAYER, SIMU5G_AMC_SETUP);
+Define_InitStage_Dependency(SIMU5G_PHYSICAL_LAYER, SIMU5G_CHANNEL_SITES);
 
 Define_InitStage(SIMU5G_MAC_SCHEDULER_CREATION)
 Define_InitStage_Dependency(SIMU5G_MAC_SCHEDULER_CREATION, SIMU5G_PHYSICAL_LAYER);

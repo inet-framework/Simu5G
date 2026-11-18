@@ -130,7 +130,7 @@ void PhyBase::initialize(int stage)
     else if (stage == INITSTAGE_SIMU5G_REGISTRATIONS2) {
         initializeChannelModel();
     }
-    else if (stage == inet::INITSTAGE_LAST) {
+    else if (stage == INITSTAGE_SIMU5G_CHANNEL_SITES) {
         // the antennas are in place: a base station whose radio names a site joins it
         if (nodeType_ != UE && !opp_isempty(cellularRadio_->getSite()))
             siteEndId_ = radioMedium_->joinSite(cellularRadio_->getSite(), this);
