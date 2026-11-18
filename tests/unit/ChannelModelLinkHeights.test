@@ -93,6 +93,10 @@ auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
 StubRadioRegistration bsRadio(medium, bs.nodeId, &bs);
 StubRadioRegistration lowRadio(medium, low.nodeId, &low);
 StubRadioRegistration highRadio(medium, high.nodeId, &high);
+// both UEs are served by the base station, whose scenario a link between them takes
+auto *binder = harnessModule<Binder>(this, "binder");
+binder->registerServingNode(bs.nodeId, low.nodeId);
+binder->registerServingNode(bs.nodeId, high.nodeId);
 
 auto d2dOf = [](const Coord& a, const Coord& b) { return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2)); };
 // the closed form of a link between positions a and b, at the given heights and the link's h_E

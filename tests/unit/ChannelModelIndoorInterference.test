@@ -213,6 +213,9 @@ StubRadioRegistration ueRadio(medium, ue.nodeId, &ue);
 StubRadioRegistration neighbourUeRadio(medium, neighbourUe.nodeId, &neighbourUe);
 StubRadioRegistration pairTxRadio(medium, pairTx.nodeId, &pairTx);
 StubRadioRegistration pairRxRadio(medium, pairRx.nodeId, &pairRx);
+// the D2D pair is served by its cell, whose scenario a link to its receiver takes
+binder->registerServingNode(d2dCellId, pairTx.nodeId);
+binder->registerServingNode(d2dCellId, pairRx.nodeId);
 
 auto setIndoors = [] (StubEndpoint& node, bool indoors, double distance, double deviate) {
     node.insideBuilding = indoors;

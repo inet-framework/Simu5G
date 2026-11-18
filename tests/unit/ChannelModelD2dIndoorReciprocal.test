@@ -104,11 +104,14 @@ a.coord = Coord(0, 0, 1.5);
 b.coord = Coord(60, 80, 1.5);
 StubRadioRegistration aRadio(medium, a.nodeId, &a);
 StubRadioRegistration bRadio(medium, b.nodeId, &b);
-// the two UEs' cell, whose scenario a link between them takes
+// the two UEs' serving cell, whose scenario a link between them takes
 StubEndpoint cell;
 cell.nodeId = MacNodeId(1);
 cell.coord = Coord(200, 0, 10);
 StubRadioRegistration cellRadio(medium, cell.nodeId, &cell);
+auto *binder = harnessModule<Binder>(this, "binder");
+binder->registerServingNode(cell.nodeId, a.nodeId);
+binder->registerServingNode(cell.nodeId, b.nodeId);
 
 auto attenuation = [&] (StubEndpoint& from, StubEndpoint& to) {
     RadioLink link = (model->*D2dLinkAccess::d2dLinkPtr())(from.nodeId, from.coord, to.nodeId, to.coord);

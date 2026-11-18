@@ -155,6 +155,10 @@ c.expectNear("...and has the first radio's attenuation", otherRadio, first, 1e-9
     peer.nodeId = MacNodeId(1026);
     peer.coord = Coord(260, 80, 1.5);
     StubRadioRegistration peerRadio(medium, peer.nodeId, &peer);
+    // the UEs are served by the lone cell, whose scenario a link between them takes
+    auto *binder = harnessModule<Binder>(this, "binder");
+    for (MacNodeId id : {ueNr.nodeId, ueLte.nodeId, peer.nodeId})
+        binder->registerServingNode(lone.nodeId, id);
     auto d2d = [&](StubEndpoint& from, StubEndpoint& to) {
         RadioLink link = (model->*D2dLinkAccess::d2dLinkPtr())(from.nodeId, from.coord, to.nodeId, to.coord);
         link.cellId = lone.nodeId;

@@ -165,6 +165,10 @@ ChannelModelProbe bsProbe(bs), ueProbe(ue);
 // the base station is a radio on the medium: a link takes the scenario of its base station end
 auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
 StubRadioRegistration bsRadio(medium, bsEndpoint.nodeId, &bsEndpoint);
+// the UEs of the links between two UEs below are served by the base station, whose scenario such a link takes
+auto *binder = harnessModule<Binder>(this, "binder");
+for (int id : {1104, 1105, 1106, 1110, 1111, 1112, 1113})
+    binder->registerServingNode(bsEndpoint.nodeId, MacNodeId(id));
 baseStation = &bsEndpoint;
 PathLossModel *pathLoss = bsProbe.pathLoss();
 const double dcorr = bs->par("correlationDistance").doubleValue();

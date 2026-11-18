@@ -17,7 +17,11 @@ station (TR 38.901 Table 7.4.1-1 gives the RMa NLOS path loss with h and W):
 two rural base stations that differ only in them differ by the h and W terms
 of that formula.
 
-A link between two UEs takes the scenario of its receiver's serving cell.
+A link between two UEs takes the scenario of its receiver's serving cell. So
+does a link that names another cell (RadioLink::cellId), the one whose rules
+decide the D2D interference: a D2D reception's SINR names the transmitter's
+cell, for its wanted signal and for each interferer's link, and the two UEs
+may be served by cells of different scenarios.
 
 %includes:
 #include "SchedulerTestUtil.h"
@@ -187,8 +191,9 @@ c.expectNear("the uplink to the macrocell has its downlink's path loss", model->
     microUe.coord = Coord(250, 40, 1.5);
     binder->registerServingNode(macro.nodeId, macroUe.nodeId);
     binder->registerServingNode(micro.nodeId, microUe.nodeId);
-    auto d2dLoss = [&](ChannelModelProbe& from, StubEndpoint& tx, StubEndpoint& rx, DeploymentScenario scenario) {
+    auto d2dLoss = [&](ChannelModelProbe& from, StubEndpoint& tx, StubEndpoint& rx, DeploymentScenario scenario, MacNodeId linkCell = NODEID_NONE) {
         RadioLink link = (model->*D2dLinkAccess::d2dLinkPtr())(tx.nodeId, tx.coord, rx.nodeId, rx.coord);
+        link.cellId = linkCell;
         double loss = model->getAttenuation(link);
         PathLossModel::Deployment deployment;
         deployment.scenario = scenario;
@@ -205,12 +210,20 @@ c.expectNear("the uplink to the macrocell has its downlink's path loss", model->
     c.expectNear("UE to UE, the receiver in the microcell: the urban microcell's closed form", towardsMicro.first, towardsMicro.second, 1e-9);
     auto towardsMacro = d2dLoss(probe, microUe, macroUe, URBAN_MACROCELL);
     c.expectNear("UE to UE, the receiver in the macrocell: the urban macrocell's closed form", towardsMacro.first, towardsMacro.second, 1e-9);
+
+    // as a D2D reception's SINR builds the link: it names the transmitter's cell
+    auto namingTxCellTowardsMicro = d2dLoss(probe, macroUe, microUe, URBAN_MICROCELL, macro.nodeId);
+    c.expectNear("UE to UE naming the transmitter's macrocell, the receiver in the microcell: the urban microcell's closed form",
+            namingTxCellTowardsMicro.first, namingTxCellTowardsMicro.second, 1e-9);
+    auto namingTxCellTowardsMacro = d2dLoss(probe, microUe, macroUe, URBAN_MACROCELL, micro.nodeId);
+    c.expectNear("UE to UE naming the transmitter's microcell, the receiver in the macrocell: the urban macrocell's closed form",
+            namingTxCellTowardsMacro.first, namingTxCellTowardsMacro.second, 1e-9);
 }
 
 c.summary();
 
 %contains: stdout
-modelchecks=12 modelfailures=0
+modelchecks=14 modelfailures=0
 
 %not-contains: stdout
 FAILED
