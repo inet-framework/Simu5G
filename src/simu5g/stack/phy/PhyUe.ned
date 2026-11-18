@@ -29,7 +29,7 @@ simple PhyUe extends PhyBase
         string connectionControlModule = default("^.rrc.connectionControl");
 
         @signal[distance];
-        @statistic[distance](title="distance between UE and serving base station"; unit="meters"; source="distance"; record=mean,vector);
+        @statistic[distance](title="distance between the antennas of the UE and of its serving base station"; unit="meters"; source="distance"; record=mean,vector);
 
         //# CQI statistics
         @signal[averageCqiDl];

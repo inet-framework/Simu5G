@@ -133,14 +133,6 @@ void PhyUe::changeServingNode(MacNodeId servingNodeId)
     MacNodeId oldServingNode = servingNodeId_;
     servingNodeId_ = servingNodeId;
 
-    // update reference to master node's mobility module
-    if (servingNodeId_ == NODEID_NONE)
-        servingNodeMobility_ = nullptr;
-    else {
-        cModule *servingNodeModule = binder_->getModuleByMacNodeId(servingNodeId_);
-        servingNodeMobility_ = check_and_cast<IMobility *>(servingNodeModule->getSubmodule("mobility"));
-    }
-
     // update cellInfo
     if (oldServingNode != NODEID_NONE)
         cellInfo_->detachUser(nodeId_);
@@ -348,10 +340,9 @@ void PhyUe::handleUpperMessage(cMessage *msg)
 
 void PhyUe::emitMobilityStats()
 {
-    if (servingNodeMobility_) {
-        // emit distance from current serving cell
-        inet::Coord masterPos = servingNodeMobility_->getCurrentPosition();
-        double distance = getCoord().distance(masterPos);
+    if (servingNodeId_ != NODEID_NONE) {
+        // the distance between the two antennas, the 3D distance the path loss takes
+        double distance = getCoord().distance(radioMedium_->getRadio(servingNodeId_)->getCoord());
         emit(distanceSignal_, distance);
     }
 }

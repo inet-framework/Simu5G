@@ -29,10 +29,7 @@ class PhyUe : public PhyBase
     /** Serving node MacNodeId */
     MacNodeId servingNodeId_ = NODEID_NONE;
 
-    /** Reference to master node's mobility module */
-    opp_component_ptr<IMobility> servingNodeMobility_;
-
-    /** Statistic for distance from serving cell */
+    /** Statistic for the distance between this UE's antenna and its serving base station's */
     static simsignal_t distanceSignal_;
 
     inet::ModuleRefByPar<ConnectionControlUe> connectionControl_;
