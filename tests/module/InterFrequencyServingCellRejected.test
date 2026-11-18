@@ -1,0 +1,43 @@
+%description:
+A UE measures cells on its primary carrier only, the first of its carrier list, and a base
+station sends its beacon on its own primary carrier, the first of its list. A UE whose serving
+cell lists the same carriers in another order therefore never measures its serving cell, and
+with handover enabled it would compare every candidate against a serving-cell signal it never
+measured.
+
+The UE here is attached to gnb, which lists its carriers as 3.5 GHz and 2 GHz, while the UE
+lists them as 2 GHz and 3.5 GHz, and has handover enabled. The first beacon of its serving cell
+is an error that names the serving cell; the error of InterFrequencyHandoverRejected, which says
+that the UE would never hand over to the cell, would be wrong here.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+network ServingCellCarrierOrderTestNetwork extends NrSessionTestNetwork
+{
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = ServingCellCarrierOrderTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.gnb.cellularNic.numCarriers = 2
+*.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[1] carrierAggregation.componentCarrier[0]"
+*.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+**.enableHandover = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+received the beacon of its serving cell 1 on 3.5 GHz, which is not its primary carrier (2 GHz)
+%#--------------------------------------------------------------------------------------------------------------

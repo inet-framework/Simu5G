@@ -1,0 +1,53 @@
+%description:
+A cell on another of a UE's carriers that has no X2 link to the UE's serving cell is not a
+handover candidate: Simu5G hands over only over X2, so the UE would not hand over to it even if
+it measured it. That the UE does not measure cells on its secondary carriers therefore loses
+nothing here, and the network is valid with handover enabled.
+
+The network of InterFrequencyHandoverRejected without its X2 link: the UE is attached to gnb on
+2 GHz and 3.5 GHz, has handover enabled, and stands 100 m from gnb2, which is on 3.5 GHz only and
+has no X2 link to gnb. The run reaches its time limit.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.node.ethernet.Eth10G;
+import simu5g.nodes.gNodeB;
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+network SecondFrequencyLayerTestNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        gnb2: gNodeB {
+            @display("p=650,250");
+        }
+    connections:
+        upf.pppg++ <--> Eth10G <--> gnb2.ppp;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = SecondFrequencyLayerTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.gnb.cellularNic.numCarriers = 2
+*.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+*.gnb2.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[1]"
+*.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
+
+# the UE is attached to gnb; gnb2 stands 100 m from it, with no X2 link to gnb
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+*.gnb2.mobility.initialX = 550m
+*.gnb2.mobility.initialY = 350m
+**.enableHandover = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+Simulation time limit reached
+%#--------------------------------------------------------------------------------------------------------------

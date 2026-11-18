@@ -5,8 +5,9 @@ its carriers. So a UE on the carriers 2 GHz and 3.5 GHz never hands over to a ce
 carrier is 3.5 GHz, however close the cell is; inter-frequency measurements are not modelled.
 
 The UE here is attached to gnb, on both carriers, has handover enabled, and stands 100 m from
-gnb2, which is on 3.5 GHz only. The first beacon of gnb2 that reaches the UE is an error,
-instead of a run in which the UE silently stays where it is.
+gnb2, which is on 3.5 GHz only. gnb2 has an X2 link to gnb, so it is a handover candidate (see
+InterFrequencyNeighbourWithoutX2 for a cell that is not). The first beacon of gnb2 that reaches
+the UE is an error, instead of a run in which the UE silently stays where it is.
 
 %#--------------------------------------------------------------------------------------------------------------
 %file: test.ned
@@ -22,6 +23,7 @@ network SecondFrequencyLayerTestNetwork extends NrSessionTestNetwork
         }
     connections:
         upf.pppg++ <--> Eth10G <--> gnb2.ppp;
+        gnb.x2++ <--> Eth10G <--> gnb2.x2++;
 }
 %#--------------------------------------------------------------------------------------------------------------
 %inifile: omnetpp.ini
@@ -42,6 +44,15 @@ network = SecondFrequencyLayerTestNetwork
 *.gnb2.mobility.initialX = 550m
 *.gnb2.mobility.initialY = 350m
 **.enableHandover = true
+
+# the X2 link between the two cells
+*.gnb*.numX2Apps = 1
+*.gnb*.x2App[*].server.localPort = 5000 + ancestorIndex(1)
+*.gnb.x2App[0].client.connectAddress = "gnb2%x2ppp0"
+*.gnb2.x2App[0].client.connectAddress = "gnb%x2ppp0"
+**.sctp.nagleEnabled = false
+**.sctp.enableHeartbeats = false
+*.configurator.config = xml("<config><interface among='gnb* upf*' address='10.x.x.x' netmask='255.255.255.0'/><interface hosts='*' address='192.168.x.x' netmask='255.255.255.0'/></config>")
 
 include ../../lib/defaults.ini
 
