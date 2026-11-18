@@ -35,14 +35,14 @@ static std::string describeHeights(const PathLossModel::Deployment& deployment)
     return os.str();
 }
 
-void PathLossModel::requireDefined(bool ok, const Deployment& deployment, const char *condition) const
+void PathLossModel::requireDefined(bool ok, const Deployment& deployment, const char *quantity, const char *condition) const
 {
     if (ok)
         return;
     std::string owner = owner_ != nullptr ? owner_->getFullPath() : "path loss model";
-    throw cRuntimeError("%s: %s above the ground (z = 0), and the path loss of the scenario %s is defined only where %s; "
+    throw cRuntimeError("%s: %s above the ground (z = 0), and the %s of the scenario %s is defined only where %s; "
             "an antenna's height is its node's z plus its antenna.mobility.offsetZ",
-            owner.c_str(), describeHeights(deployment).c_str(), DeploymentScenarioToA(deployment.scenario).c_str(), condition);
+            owner.c_str(), describeHeights(deployment).c_str(), quantity, DeploymentScenarioToA(deployment.scenario).c_str(), condition);
 }
 
 void PathLossModel::requireInRange(bool ok, const Deployment& deployment, const char *study, const char *range) const
@@ -155,11 +155,11 @@ void PathLossModel::checkHeights(const Deployment& deployment) const
         case URBAN_MICROCELL:
         case URBAN_MACROCELL:
             // the breakpoint distance takes the heights above an environment of 1 m or more
-            requireDefined(deployment.hNodeB > 1.0 && deployment.hUe > 1.0, deployment, "both antennas are higher than 1 m");
+            requireDefined(deployment.hNodeB > 1.0 && deployment.hUe > 1.0, deployment, "path loss", "both antennas are higher than 1 m");
             break;
         case RURAL_MACROCELL:
         case SUBURBAN_MACROCELL:
-            requireDefined(deployment.hNodeB > 0.0 && deployment.hUe > 0.0, deployment, "both antennas are above the ground");
+            requireDefined(deployment.hNodeB > 0.0 && deployment.hUe > 0.0, deployment, "path loss", "both antennas are above the ground");
             break;
         default:
             break;

@@ -68,11 +68,10 @@ void Tr38901PathLossModel::checkHeightRange(const Deployment& d) const
         }
         case INDOOR_FACTORY_SH:
         case INDOOR_FACTORY_DH: {
-            // the LOS probability's k_subsce has (hBS - hUT) / (hc - hUT)
-            std::string condition = "the UE antenna is below the base station antenna and below " + clutterHeightText(d.clutterHeight);
-            requireDefined(d.hUe < d.hNodeB && d.hUe < d.clutterHeight, d, condition.c_str());
+            // "Above clutter" and "Clutter-embedded"; whether the LOS probability is
+            // defined at the heights is checked where it is evaluated
             std::string range = "base station antenna above " + clutterHeightText(d.clutterHeight) + ", UE antenna clutter-embedded";
-            requireInRange(d.hNodeB > d.clutterHeight, d, "TR 38.901 Table 7.2-4", range.c_str());
+            requireInRange(d.hNodeB > d.clutterHeight && d.hUe < d.clutterHeight, d, "TR 38.901 Table 7.2-4", range.c_str());
             break;
         }
         case INDOOR_FACTORY_HH: {
@@ -161,6 +160,9 @@ double Tr38901PathLossModel::computeLosProbability(const Deployment& deployment,
         }
         case INDOOR_FACTORY_SH:
         case INDOOR_FACTORY_DH: {
+            std::string condition = "the UE antenna is below the base station antenna and below " + clutterHeightText(deployment.clutterHeight);
+            requireDefined(deployment.hUe < deployment.hNodeB && deployment.hUe < deployment.clutterHeight, deployment,
+                    "LOS probability (its k_subsce has (hBS - hUT) / (hc - hUT))", condition.c_str());
             double k = -deployment.clutterSize / log(1 - deployment.clutterDensity)
                 * (deployment.hNodeB - deployment.hUe) / (deployment.clutterHeight - deployment.hUe);
             p = exp(-d / k);

@@ -85,11 +85,12 @@ class PathLossModel
 
     /*
      * The checks of checkHeights(). requireDefined() throws when 'ok' does
-     * not hold: the scenario's formulas have no value at the link's heights.
+     * not hold: the scenario's formula for 'quantity' (the path loss, the LOS
+     * probability) has no value at the link's heights.
      * requireInRange() throws when 'ok' does not hold, unless the violation
      * is tolerated by configuration; 'range' is the range as the study gives it.
      */
-    void requireDefined(bool ok, const Deployment& deployment, const char *condition) const;
+    void requireDefined(bool ok, const Deployment& deployment, const char *quantity, const char *condition) const;
     void requireInRange(bool ok, const Deployment& deployment, const char *study, const char *range) const;
 
     /*
