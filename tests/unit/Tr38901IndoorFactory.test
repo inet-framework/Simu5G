@@ -211,14 +211,22 @@ p.hNodeB = 1.9;
 probe.expectHeightsRejected("InF-SH with the base station antenna below the clutter", m901, p);
 p.tolerateHeightViolation = true;
 probe.expectHeightsAccepted("...tolerated", m901, p);
+// Table 7.2-4 places the UE of InF-SH and InF-DH in the clutter ("Clutter-embedded"),
+// a range tolerateHeightViolation lifts; the path loss is defined above it too, but
+// the LOS probability's k_subsce, with (hBS - hUT) / (hc - hUT), is not
 p = inf(INDOOR_FACTORY_SH);
-p.tolerateHeightViolation = true;
 p.hUe = 3;
-probe.expectHeightsRejected("InF-SH with the UE antenna above the clutter, even if tolerated: k_subsce is undefined", m901, p);
+probe.expectHeightsRejected("InF-SH with the UE antenna above the clutter", m901, p);
+p.tolerateHeightViolation = true;
+probe.expectHeightsAccepted("...tolerated: its path loss is defined", m901, p);
+probe.expectRejected("...its LOS probability, even if tolerated: k_subsce is undefined",
+        [&]() { p.apply(m901, this); m901.computeLosProbability(p.deployment(), 20, 20); });
 p = inf(INDOOR_FACTORY_DH);
 p.tolerateHeightViolation = true;
 p.hNodeB = 1.5;
-probe.expectHeightsRejected("InF-DH with the UE antenna as high as the base station's, even if tolerated", m901, p);
+probe.expectHeightsAccepted("InF-DH with the base station antenna in the clutter, as high as the UE's, tolerated", m901, p);
+probe.expectRejected("...its LOS probability, even if tolerated: k_subsce is undefined",
+        [&]() { p.apply(m901, this); m901.computeLosProbability(p.deployment(), 20, 20); });
 
 p = inf(INDOOR_FACTORY_HH);
 probe.expectHeightsAccepted("InF-HH with the antennas at 8 m and 3 m above 2 m clutter", m901, p);
@@ -266,7 +274,7 @@ probe.summary();
 graded=97 failures=0
 
 %contains: stdout
-modelchecks=30 modelfailures=0
+modelchecks=33 modelfailures=0
 
 %not-contains: verdict.txt
 FAILED

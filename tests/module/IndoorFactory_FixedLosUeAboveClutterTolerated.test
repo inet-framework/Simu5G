@@ -1,0 +1,28 @@
+%description:
+TR 38.901 Table 7.2-4 places the UE of InF-SH in the clutter ("Clutter-embedded"). A UE antenna
+at 2.5 m over 2 m clutter is outside that placement, which tolerateHeightViolation lifts, as for
+the antenna heights. Its path loss is defined there; only the LOS probability's k_subsce, with
+(hBS - hUT) / (hc - hUT), is not, and with a fixed LOS state (dynamicLos = false) the LOS
+probability is never evaluated. So the run reaches its time limit; with the LOS state drawn it
+is an error (IndoorFactoryRejected_UeAboveClutterLosProbability).
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+# an InF-SH cell (base station antenna at 25 m, above the 2 m clutter) and a UE antenna at 2.5 m
+**.radio.scenario = "INDOOR_FACTORY_SH"
+*.ue[*].cellularNic.antenna.mobility.offsetZ = 2.5m
+**.nrChannelModel[*].tolerateHeightViolation = true
+**.dynamicLos = false
+**.fixedLos = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+Simulation time limit reached
+%#--------------------------------------------------------------------------------------------------------------
