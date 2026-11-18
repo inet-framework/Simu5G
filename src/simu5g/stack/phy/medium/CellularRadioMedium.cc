@@ -248,11 +248,13 @@ long CellularRadioMedium::joinSite(const char *name, IRadioEndpoint *cell)
     }
 
     IRadioEndpoint *first = it->second.firstCell;
-    inet::Coord a = first->getCoord(), b = cell->getCoord();
-    double apart = sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+    // in 3D: a link is drawn again once one of its ends has moved farther than the
+    // correlation distance, and a site's end is where the sector evaluating it is
+    double apart = first->getCoord().distance(cell->getCoord());
     if (apart > 1.0)
-        throw cRuntimeError("the cells of the site '%s' are not at one place: the antennas of nodes %d and %d are %g m apart horizontally. "
-                "The cells of a site share one LOS state and one shadowing realization towards a UE, drawn for one place",
+        throw cRuntimeError("the cells of the site '%s' are not at one place: the antennas of nodes %d and %d are %g m apart. "
+                "The cells of a site share one LOS state and one shadowing realization towards a UE, drawn for one place: "
+                "their antennas must be within 1 m of each other, in height too",
                 name, (int)num(first->getMacNodeId()), (int)num(cell->getMacNodeId()), apart);
     if (first->getDeploymentScenario() != cell->getDeploymentScenario() || first->getBuildingHeight() != cell->getBuildingHeight()
         || first->getStreetWidth() != cell->getStreetWidth() || first->getClutterDensity() != cell->getClutterDensity()

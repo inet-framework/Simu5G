@@ -183,9 +183,9 @@ class CellularRadioMedium : public cSimpleModule
      * of the end of the channel they share (see
      * IRadioEndpoint::getChannelEndId()). The cells of a site share one LOS
      * state and one shadowing realization towards a UE, drawn for one place
-     * and one scenario: a cell that is farther than 1 m horizontally from the
-     * site's first cell, or differs from it in scenario, building height or
-     * street width, is an error.
+     * and one scenario: a cell whose antenna is farther than 1 m from the
+     * site's first cell's, in height too, or that differs from it in scenario,
+     * building height, street width or clutter, is an error.
      */
     virtual long joinSite(const char *site, IRadioEndpoint *cell);
 
