@@ -1,0 +1,131 @@
+%description:
+
+The UE's initial cell selection sees the sectors of a site share their state.
+
+TR 38.901 7.5 Step 4: "the LSPs for links from co-sited sectors to a UT are
+the same"; the LOS state of Step 2 is the site's too. So the powers a UE
+receives from the sectors of one site differ by their antenna patterns only,
+and a UE that selects the strongest cell selects the sector whose pattern
+favours it, whatever the seed. A model that draws the shadowing or the LOS
+state per sector adds the difference of two draws (a standard deviation of
+several dB in an urban macrocell) and sends the UE to the other sector in
+some seeds.
+
+The site of ThreeSectorSite: three gNBs at one position with one site name,
+their sectors 120 degrees apart. Six UEs stand 200 m from the mast, each 55
+degrees off one sector's boresight and 65 degrees off the next one's: the
+first sector's pattern (TR 36.873 Table 7.1-1) is 3.4 dB better. The cell is
+selected at the start of the run (dynamicCellAssociation), with shadowing and
+the per-link LOS draw on, the fast fading off and handover off. The serving
+cell each UE ends up with must be the sector its patterns favour, in each of
+eight seeds.
+
+%extraargs: -c ThreeSectorSiteInitialSelection
+
+%file: demo.xml
+<config>
+    <interface among='eNB* eNodeB* enb* *Enb* gNB* gNodeB* gnb* *Gnb* upf* *Upf* mecHost* pgw*' address='10.x.x.x' netmask='255.255.255.0'/>
+    <interface hosts='*' address='192.168.x.x' netmask='255.255.255.0'/>
+</config>
+
+%inifile: omnetpp.ini
+
+[Config ThreeSectorSiteInitialSelection]
+network = simu5g.simulations.nr.networks.ThreeSectorSite_Standalone
+# the positions this test gives the nodes are their antennas': no height offset
+**.antenna.mobility.offsetZ = 0m
+sim-time-limit = 0.01s
+**.routingRecorder.enabled = false
+cmdenv-express-mode = true
+cmdenv-status-frequency = 10000000s
+**.sctp.**.scalar-recording = false
+**.sctp.nagleEnabled = false
+**.sctp.enableHeartbeats = false
+
+output-scalar-file = results/${iterationvarsf}${repetition}.sca
+output-vector-file = results/${iterationvarsf}${repetition}.vec
+**.vector-recording = false
+**.servingCell.result-recording-modes = last
+
+############### The sweep: eight realizations ##############
+seed-set = ${seed = 0..7}
+
+############### The site: three sectors at one position ##############
+*.gnb1.mobility.initialX = 1000m
+*.gnb1.mobility.initialY = 1000m
+*.gnb1.mobility.initialZ = 25m
+*.gnb2.mobility.initialX = 1000m
+*.gnb2.mobility.initialY = 1000m
+*.gnb2.mobility.initialZ = 25m
+*.gnb3.mobility.initialX = 1000m
+*.gnb3.mobility.initialY = 1000m
+*.gnb3.mobility.initialZ = 25m
+*.gnb*.cellularNic.radio.site = "site1"
+*.gnb*.cellularNic.antenna.txDirection = "ANISOTROPIC"
+*.gnb1.cellularNic.antenna.txAngle = 120deg
+*.gnb2.cellularNic.antenna.txAngle = 240deg
+*.gnb3.cellularNic.antenna.txAngle = 0deg
+
+############### The UEs ##############
+# 200 m from the mast at 55, 65, 175, 185, 295 and 305 degrees: each 55 degrees
+# off one sector's boresight and 65 degrees off the next one's. Each UE selects
+# its cell at the start of the run.
+*.numUe = 6
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+**.dynamicCellAssociation = true
+**.enableHandover = false
+*.ue[0].mobility.initialX = 1114.7m
+*.ue[0].mobility.initialY = 1163.8m
+*.ue[1].mobility.initialX = 1084.5m
+*.ue[1].mobility.initialY = 1181.3m
+*.ue[2].mobility.initialX = 800.8m
+*.ue[2].mobility.initialY = 1017.4m
+*.ue[3].mobility.initialX = 800.8m
+*.ue[3].mobility.initialY = 982.6m
+*.ue[4].mobility.initialX = 1084.5m
+*.ue[4].mobility.initialY = 818.7m
+*.ue[5].mobility.initialX = 1114.7m
+*.ue[5].mobility.initialY = 836.2m
+*.ue[*].mobility.initialZ = 1.5m
+**.mobility.constraintAreaMinX = 0m
+**.mobility.constraintAreaMinY = 0m
+**.mobility.constraintAreaMinZ = 0m
+**.mobility.constraintAreaMaxX = 2000m
+**.mobility.constraintAreaMaxY = 2000m
+**.mobility.constraintAreaMaxZ = 50m
+**.mobility.initFromDisplayString = false
+
+############### The channel: the site's large-scale state ##############
+**.radio.scenario = "URBAN_MACROCELL"
+**.dynamicLos = true
+**.shadowing = true
+**.fading = false
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+**.numBands = 6
+**.eNodeBTxPower = 40dBm
+*.gnb*.cellularNic.antenna.gain = 18dBi
+*.ue[*].cellularNic.antenna.gain = 0dBi
+
+############### X2: the mesh of the three sectors ##############
+*.gnb*.numX2Apps = 2
+*.gnb*.x2App[*].server.localPort = 5000 + ancestorIndex(1)
+*.gnb1.x2App[0].client.connectAddress = "gnb2%x2ppp0"
+*.gnb1.x2App[1].client.connectAddress = "gnb3%x2ppp0"
+*.gnb2.x2App[0].client.connectAddress = "gnb1%x2ppp0"
+*.gnb2.x2App[1].client.connectAddress = "gnb3%x2ppp1"
+*.gnb3.x2App[0].client.connectAddress = "gnb1%x2ppp1"
+*.gnb3.x2App[1].client.connectAddress = "gnb2%x2ppp1"
+
+*.configurator.config = xmldoc("./demo.xml")
+
+%postrun-command: ../../physics_reference.py --grade results >verdict.txt
+
+%contains: verdict.txt
+graded=55 failures=0
+
+%not-contains: verdict.txt
+FAILED

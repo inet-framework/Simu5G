@@ -1031,8 +1031,62 @@ def grade_three_sector_site(grader):
                       ", ".join(f"{q:.3f}" for q in quiet))
 
 
+def grade_three_sector_site_initial_selection(grader):
+    """The three sectors of one site and UEs that select the strongest cell at
+    the start of the run: the powers they receive from the sectors differ by
+    the antenna patterns only, so each UE selects the sector whose pattern
+    favours it, in every seed -- which it does only if the sectors share their
+    LOS state and shadowing when the UEs select."""
+    plr = pathloss_reference()
+
+    def position(node, z_node=None):
+        # z_node: the pattern the height is assigned with, where it is shared
+        names = [f'{node}.mobility.initialX', f'{node}.mobility.initialY', f'{z_node or node}.mobility.initialZ']
+        return [config_values(names)[name] for name in names]
+
+    cells = [position(f'*.gnb{i}') for i in (1, 2, 3)]
+    grader.check_true('geometry-is-consistent', 'the three sectors at one position',
+                      cells[0] == cells[1] == cells[2])
+    mast = cells[0]
+    angles = config_values([f'*.gnb{i}.cellularNic.antenna.txAngle' for i in (1, 2, 3)])
+    boresights = [angles[f'*.gnb{i}.cellularNic.antenna.txAngle'] for i in (1, 2, 3)]
+
+    # the cell id of each sector, as the run recorded it
+    params = scave.get_parameters('module =~ "*.gnb*.cellularNic.rrc.connectionControl" AND name =~ "macNodeId"')
+    cell_ids = {}
+    for _, row in params.iterrows():
+        sector = int(re.search(r'\.gnb(\d)\.', row['module']).group(1))
+        cell_ids.setdefault(sector, set()).add(int(row['value']))
+    if sorted(cell_ids) != [1, 2, 3] or any(len(ids) != 1 for ids in cell_ids.values()):
+        raise LookupError(f"expected one macNodeId per sector gnb1..gnb3, found {cell_ids}")
+    cell_ids = {sector: ids.pop() for sector, ids in cell_ids.items()}
+
+    num_ue = int(config_values(['*.numUe'])['*.numUe'])
+    for i in range(num_ue):
+        ue = position(f'*.ue[{i}]', '*.ue[*]')
+        azimuth = math.degrees(math.atan2(ue[1] - mast[1], ue[0] - mast[0]))
+        theta = 90.0 + math.degrees(math.atan2(mast[2] - ue[2], math.hypot(ue[0] - mast[0], ue[1] - mast[1])))
+        attenuation = []
+        for boresight in boresights:
+            phi = abs((azimuth - boresight + 180.0) % 360.0 - 180.0)
+            attenuation.append(plr.t873_antenna(phi, theta))
+        best = min(range(3), key=lambda k: attenuation[k])
+        margin = sorted(attenuation)[1] - attenuation[best]
+        grader.check_true('patterns-decide', f'ue[{i}]: the best sector is gnb{best + 1} by at least 1 dB',
+                          margin >= 1.0, f"{margin:.2f} dB")
+        rows = scave.get_scalars(f'module =~ "*.ue[{i}].cellularNic.rrc.nrConnectionControl" '
+                                 'AND name =~ "servingCell:last"', include_itervars=True)
+        if rows.empty:
+            raise LookupError(f"no servingCell:last recorded for ue[{i}]")
+        for _, row in rows.iterrows():
+            grader.check_true('selects-the-favoured-sector', f'ue[{i}] seed={row["seed"]}',
+                              int(row['value']) == cell_ids[best + 1],
+                              f"serving cell {int(row['value'])}, expected {cell_ids[best + 1]} (gnb{best + 1})")
+
+
 GRADERS.update({
     'ThreeSectorSite': grade_three_sector_site,
+    'ThreeSectorSiteInitialSelection': grade_three_sector_site_initial_selection,
 })
 
 
