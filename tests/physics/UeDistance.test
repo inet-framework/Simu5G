@@ -1,0 +1,70 @@
+%description:
+
+The UE's distance statistic is the distance between the UE's antenna and its
+serving base station's antenna: the 3D distance the path loss takes, not one
+that measures from the base station node's position on the ground.
+
+One gNB and one UE, both nodes on the ground (z = 0), the gNB's antenna 25 m
+above its node and the UE's 1.5 m above its own. The UE circles the gNB at a
+horizontal distance d (a static UE emits no distance), so every value of the
+statistic, and its recorded mean, is sqrt(d^2 + (25 m - 1.5 m)^2), in each of
+three runs.
+
+%extraargs: -c UeDistance
+
+%file: demo.xml
+<config>
+    <interface among='eNB* eNodeB* enb* *Enb* gNB* gNodeB* gnb* *Gnb* upf* *Upf* mecHost* pgw*' address='10.x.x.x' netmask='255.255.255.0'/>
+    <interface hosts='*' address='192.168.x.x' netmask='255.255.255.0'/>
+</config>
+
+%inifile: omnetpp.ini
+
+[Config UeDistance]
+network = simu5g.simulations.nr.networks.SingleCell_Standalone
+sim-time-limit = 0.1s
+**.routingRecorder.enabled = false
+cmdenv-express-mode = true
+output-scalar-file = results/${iterationvarsf}${repetition}.sca
+output-vector-file = results/${iterationvarsf}${repetition}.vec
+**.vector-recording = false
+**.sctp.**.scalar-recording = false
+
+############### The nodes on the ground, their antennas above them ##############
+*.gnb.mobility.initialX = 1000m
+*.gnb.mobility.initialY = 1000m
+*.gnb.mobility.initialZ = 0m
+*.gnb.cellularNic.antenna.mobility.offsetZ = 25m
+*.numUe = 1
+*.ue[0].servingNodeId = 0
+*.ue[0].nrServingNodeId = 1
+*.ue[0].mobility.typename = "CircleMobility"
+*.ue[0].mobility.cx = 1000m
+*.ue[0].mobility.cy = 1000m
+*.ue[0].mobility.cz = 0m
+*.ue[0].mobility.r = ${d = 50, 200, 400}m
+*.ue[0].mobility.speed = 10mps
+*.ue[0].mobility.startAngle = 0deg
+*.ue[0].cellularNic.antenna.mobility.offsetZ = 1.5m
+**.mobility.constraintAreaMinX = 0m
+**.mobility.constraintAreaMinY = 0m
+**.mobility.constraintAreaMinZ = 0m
+**.mobility.constraintAreaMaxX = 2000m
+**.mobility.constraintAreaMaxY = 2000m
+**.mobility.constraintAreaMaxZ = 50m
+**.mobility.initFromDisplayString = false
+
+############### The channel: an urban macrocell, whose base station is at 25 m ##############
+**.radio.scenario = "URBAN_MACROCELL"
+**.fading = false
+**.shadowing = false
+
+*.configurator.config = xmldoc("./demo.xml")
+
+%postrun-command: ../../physics_reference.py --grade results >verdict.txt
+
+%contains: verdict.txt
+graded=3 failures=0
+
+%not-contains: verdict.txt
+FAILED

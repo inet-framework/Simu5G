@@ -1090,6 +1090,24 @@ GRADERS.update({
 })
 
 
+def grade_ue_distance(grader):
+    """The UE's distance statistic between the two antennas: the nodes on the
+    ground, each antenna at its offset above its node."""
+    cfg = config_values(['*.gnb.mobility.initialZ', '*.gnb.cellularNic.antenna.mobility.offsetZ',
+                         '*.ue[0].mobility.cz', '*.ue[0].cellularNic.antenna.mobility.offsetZ'])
+    height = (cfg['*.gnb.mobility.initialZ'] + cfg['*.gnb.cellularNic.antenna.mobility.offsetZ']
+              - cfg['*.ue[0].mobility.cz'] - cfg['*.ue[0].cellularNic.antenna.mobility.offsetZ'])
+    table = scalar_table('module =~ "*.ue[0].cellularNic.nrPhy" AND name =~ "distance:mean"', itervars=('d',))
+    for d2D, row in table.iterrows():
+        grader.check_absolute('distance-is-antenna-to-antenna', f"d={d2D:g}m", row['distance:mean'],
+                              math.hypot(d2D, height), 1e-9, " m")
+
+
+GRADERS.update({
+    'UeDistance': grade_ue_distance,
+})
+
+
 def grade_d2d_interference_delta(grader):
     """Two D2D pairs, a cellular UE in either cell, nothing random: the SINR of a
     D2D reception is the D2D budget of grade_d2d_link_budget over the noise plus
