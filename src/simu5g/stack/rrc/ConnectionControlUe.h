@@ -161,6 +161,15 @@ class ConnectionControlUe : public ConnectionControlBase
     /// connection control this one must coordinate with in DC scenarios.
     bool hasOtherLeg() const { return otherConnectionControl_ != nullptr; }
 
+    // Whether this UE may attach to the cell as far as dual connectivity goes: false for
+    // the secondary node of a master that the UE's other leg is not attached to
+    virtual bool isAttachableInDc(MacNodeId cellId) const;
+
+    // Whether the UE could hand over to the cell over X2 (Xn), the only handover Simu5G
+    // models: true if the UE is not attached, if the cell is its serving cell, or if the
+    // cell has an X2 link to the serving cell
+    virtual bool isReachableOverX2(MacNodeId cellId) const;
+
     // What this leg reports of itself when it connects to a base station
     virtual UeCapabilities getCapabilities() const { return UeCapabilities(); }
 
@@ -183,7 +192,8 @@ class ConnectionControlUe : public ConnectionControlBase
     /**
      * The PHY received the beacon of a cell of this leg's technology on one of the UE's
      * carriers other than its primary one, and did not measure it. With handover enabled
-     * this is an error: the UE would never hand over to that cell.
+     * this is an error for a cell the UE could hand over to, which it would never hand
+     * over to, and for its serving cell, which it would never measure.
      */
     virtual void beaconNotMeasured(MacNodeId cellId, GHz carrierFrequency, GHz primaryCarrierFrequency);
 

@@ -159,11 +159,39 @@ void ConnectionControlUe::beaconNotMeasured(MacNodeId cellId, GHz carrierFrequen
 {
     Enter_Method("beaconNotMeasured");
 
-    if (enableHandover_)
-        throw cRuntimeError("UE %d received the beacon of cell %d on %g GHz, which is not its primary carrier (%g GHz): "
-                "a UE measures cells on its primary carrier only, so it would never hand over to this cell "
-                "(inter-frequency handover is not modelled)",
+    if (!enableHandover_)
+        return;
+
+    if (cellId == servingNodeId_)
+        throw cRuntimeError("UE %d received the beacon of its serving cell %d on %g GHz, which is not its primary carrier (%g GHz): "
+                "a UE measures cells on its primary carrier only, so it would never measure its serving cell, against which "
+                "it compares every handover candidate. A base station sends its beacon on the first carrier of its "
+                "componentCarrierModules, and a UE measures on the first of its own",
                 (int)num(nodeId_), (int)num(cellId), carrierFrequency.get(), primaryCarrierFrequency.get());
+
+    // a cell the UE could not hand over to anyway loses nothing by not being measured
+    if (!isAttachableInDc(cellId) || !isReachableOverX2(cellId)) {
+        EV << "Cell " << cellId << " is not a handover candidate: not measuring its beacon on " << carrierFrequency << " loses nothing" << endl;
+        return;
+    }
+
+    throw cRuntimeError("UE %d received the beacon of cell %d on %g GHz, which is not its primary carrier (%g GHz): "
+            "a UE measures cells on its primary carrier only, so it would never hand over to this cell "
+            "(inter-frequency handover is not modelled)",
+            (int)num(nodeId_), (int)num(cellId), carrierFrequency.get(), primaryCarrierFrequency.get());
+}
+
+bool ConnectionControlUe::isAttachableInDc(MacNodeId cellId) const
+{
+    if (!hasOtherLeg())
+        return true;
+    MacNodeId masterNodeId = binder_->getMasterNodeOrSelf(cellId);
+    return masterNodeId == cellId || otherConnectionControl_->getServingNodeId() == masterNodeId;
+}
+
+bool ConnectionControlUe::isReachableOverX2(MacNodeId cellId) const
+{
+    return servingNodeId_ == NODEID_NONE || cellId == servingNodeId_ || binder_->hasX2Peer(servingNodeId_, cellId);
 }
 
 void ConnectionControlUe::beaconReceived(AirFrame *frame, UserControlInfo *lteInfo)
@@ -184,20 +212,13 @@ void ConnectionControlUe::beaconReceived(AirFrame *frame, UserControlInfo *lteIn
         return;
     }
 
-    // Dual-stack UE: check if the beacon comes from a DC Secondary node
-    if (hasOtherLeg()) {
-        MacNodeId sourceId = lteInfo->getSourceId();
-        MacNodeId masterNodeId = binder_->getMasterNodeOrSelf(sourceId);
-        if (masterNodeId != sourceId) {
-            // The node has a DC Master node, check if the other PHY of this UE is attached to that Master.
-            // If not, the UE cannot attach to this Secondary node and the packet must be deleted.
-            if (otherConnectionControl_->getServingNodeId() != masterNodeId) {
-                EV << "Received beacon packet from " << sourceId << ", which is a secondary node to a master [" << masterNodeId << "] different from the one this UE is attached to. Delete packet." << endl;
-                delete lteInfo;
-                delete frame;
-                return;
-            }
-        }
+    // Dual-stack UE: the beacon of a DC secondary node is of use only if the other leg is
+    // attached to its master
+    if (!isAttachableInDc(lteInfo->getSourceId())) {
+        EV << "Received beacon packet from " << lteInfo->getSourceId() << ", which is a secondary node to a master different from the one this UE is attached to. Delete packet." << endl;
+        delete lteInfo;
+        delete frame;
+        return;
     }
 
     lteInfo->setDestId(nodeId_);
@@ -220,8 +241,7 @@ void ConnectionControlUe::beaconReceived(AirFrame *frame, UserControlInfo *lteIn
     // attached UE does not hand over to a cell its serving cell has no X2 link
     // to: a limitation of the model, not 3GPP behaviour. (A UE that is not
     // attached may pick any cell.)
-    if (servingNodeId_ != NODEID_NONE && lteInfo->getSourceId() != servingNodeId_
-            && !binder_->hasX2Peer(servingNodeId_, lteInfo->getSourceId())) {
+    if (!isReachableOverX2(lteInfo->getSourceId())) {
         EV << "Cell " << lteInfo->getSourceId() << " has no X2 link to the serving cell " << servingNodeId_ << ": not a handover candidate" << endl;
         delete frame;
         return;
