@@ -93,8 +93,19 @@ class PathLossModel
     void requireInRange(bool ok, const Deployment& deployment, const char *study, const char *range) const;
 
     /*
+     * The checks of the cell's building height h and street width W, for the
+     * scenarios whose formulas take log10(h) and log10(W): requireLayoutDefined()
+     * throws when either is not positive, whatever is tolerated;
+     * requireLayoutInRange() throws when 'ok' does not hold, unless the violation
+     * is tolerated by configuration (tolerateHeightViolation).
+     */
+    void requireLayoutDefined(const Deployment& deployment) const;
+    void requireLayoutInRange(bool ok, const Deployment& deployment, const char *study, const char *range) const;
+
+    /*
      * Throws if the link's heights are outside the range the study gives
-     * for the scenario; called by checkHeights().
+     * for the scenario, and so are the cell's building height and street
+     * width where the scenario's formulas take them; called by checkHeights().
      */
     virtual void checkHeightRange(const Deployment& deployment) const = 0;
 
@@ -156,7 +167,9 @@ class PathLossModel
      * Throws if the scenario's formulas cannot be evaluated at the link's
      * heights: where they have no value (an effective antenna height that is
      * not positive), and outside the range of heights the study gives for the
-     * scenario. The owner calls it for every link it evaluates.
+     * scenario; likewise the cell's building height and street width, where
+     * the scenario's formulas take them. The owner calls it for every link it
+     * evaluates.
      */
     void checkHeights(const Deployment& deployment) const;
 

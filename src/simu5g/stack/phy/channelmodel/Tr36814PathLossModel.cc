@@ -44,6 +44,7 @@ void Tr36814PathLossModel::checkHeightRange(const Deployment& d) const
         case RURAL_MACROCELL:
             // SMa and RMa: "applicability ranges of h, W, hBS, hUT are same as UMa NLOS"
             requireInRange(d.hNodeB > 10 && d.hNodeB < 150 && d.hUe > 1 && d.hUe < 10, d, study, "10 m < hBS < 150 m, 1 m < hUT < 10 m");
+            checkLayoutRange(d, study);
             break;
         default:
             // a link is checked before any of its formulas is evaluated
@@ -51,6 +52,20 @@ void Tr36814PathLossModel::checkHeightRange(const Deployment& d) const
                 throwUnknownScenario(d);
             break;
     }
+}
+
+void Tr36814PathLossModel::checkLayoutRange(const Deployment& d, const char *study) const
+{
+    // UMa NLOS: "5 m < h < 50 m", "5 m < W < 50 m"; SMa and RMa the same. The open
+    // ranges leave out RMa's own default "h = 5 m", so the default values of the
+    // scenario, which the same column gives, are accepted too
+    requireLayoutDefined(d);
+    double defaultHeight = d.scenario == URBAN_MACROCELL ? 20 : d.scenario == SUBURBAN_MACROCELL ? 10 : 5;
+    double defaultWidth = 20;
+    bool heightOk = (d.hBuilding > 5 && d.hBuilding < 50) || d.hBuilding == defaultHeight;
+    bool widthOk = (d.wStreet > 5 && d.wStreet < 50) || d.wStreet == defaultWidth;
+    std::string range = "5 m < h < 50 m, 5 m < W < 50 m, or the default values h = " + std::to_string((int)defaultHeight) + " m, W = 20 m";
+    requireLayoutInRange(heightOk && widthOk, d, study, range.c_str());
 }
 
 double Tr36814PathLossModel::computePathLoss(const Deployment& deployment, double d3D, double d2D, bool los, const LinkConditions& conditions)

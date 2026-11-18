@@ -42,9 +42,11 @@ void Tr36873PathLossModel::checkHeightRange(const Deployment& d) const
             break;
         case URBAN_MACROCELL:
             requireInRange(d.hNodeB > 10 && d.hNodeB < 150 && d.hUe >= 1.5 && d.hUe <= 22.5, d, study, "10 m < hBS < 150 m, 1.5 m <= hUT <= 22.5 m");
+            checkLayoutRange(d, study);
             break;
         case RURAL_MACROCELL:
             requireInRange(d.hNodeB > 10 && d.hNodeB < 150 && d.hUe > 1 && d.hUe < 10, d, study, "10 m < hBS < 150 m, 1 m < hUT < 10 m");
+            checkLayoutRange(d, study);
             break;
         default:
             // the suburban macrocell is TR 36.814's

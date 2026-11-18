@@ -54,6 +54,8 @@ void Tr38901PathLossModel::checkHeightRange(const Deployment& d) const
             break;
         case RURAL_MACROCELL:
             requireInRange(d.hNodeB >= 10 && d.hNodeB <= 150 && d.hUe >= 1 && d.hUe <= 10, d, study, "10 m <= hBS <= 150 m, 1 m <= hUT <= 10 m");
+            requireLayoutDefined(d);
+            requireLayoutInRange(d.hBuilding >= 5 && d.hBuilding <= 50 && d.wStreet >= 5 && d.wStreet <= 50, d, study, "5 m <= h <= 50 m, 5 m <= W <= 50 m");
             break;
         // Table 7.2-4 places the antennas of an indoor factory by the clutter:
         // "Clutter-embedded, i.e. the BS antenna height is below the average

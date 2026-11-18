@@ -55,6 +55,32 @@ void PathLossModel::requireInRange(bool ok, const Deployment& deployment, const 
             owner.c_str(), describeHeights(deployment).c_str(), study, DeploymentScenarioToA(deployment.scenario).c_str(), range);
 }
 
+static std::string describeLayout(const PathLossModel::Deployment& deployment)
+{
+    std::stringstream os;
+    os << "the cell's building height is " << deployment.hBuilding << " m and its street width " << deployment.wStreet
+       << " m (the buildingHeight and streetWidth of its base station's radio)";
+    return os.str();
+}
+
+void PathLossModel::requireLayoutDefined(const Deployment& deployment) const
+{
+    if (deployment.hBuilding > 0 && deployment.wStreet > 0)
+        return;
+    std::string owner = owner_ != nullptr ? owner_->getFullPath() : "path loss model";
+    throw cRuntimeError("%s: %s, and the path loss of the scenario %s takes their logarithms: both must be above 0 m",
+            owner.c_str(), describeLayout(deployment).c_str(), DeploymentScenarioToA(deployment.scenario).c_str());
+}
+
+void PathLossModel::requireLayoutInRange(bool ok, const Deployment& deployment, const char *study, const char *range) const
+{
+    if (ok || tolerateHeightViolation_)
+        return;
+    std::string owner = owner_ != nullptr ? owner_->getFullPath() : "path loss model";
+    throw cRuntimeError("%s: %s, outside the range %s gives for the scenario %s (%s); tolerateHeightViolation switches this check off",
+            owner.c_str(), describeLayout(deployment).c_str(), study, DeploymentScenarioToA(deployment.scenario).c_str(), range);
+}
+
 double PathLossModel::getDefaultBaseStationHeight(DeploymentScenario scenario)
 {
     switch (scenario) {

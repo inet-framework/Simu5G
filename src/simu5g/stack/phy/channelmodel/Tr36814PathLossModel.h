@@ -48,6 +48,13 @@ class Tr36814PathLossModel : public PathLossModel
      */
     double selectStdDev(const Deployment& deployment, bool belowBreakpoint, bool losState);
 
+    /*
+     * The check of the cell's building height and street width for the macro
+     * scenarios of TR 36.814 and TR 36.873, which give the same range and the
+     * same default values; 'study' names the table. Called by checkHeightRange().
+     */
+    virtual void checkLayoutRange(const Deployment& deployment, const char *study) const;
+
   private:
     double computeIndoor(double d, bool los);
     double computeUrbanMicro(const Deployment& deployment, double d, bool los);
