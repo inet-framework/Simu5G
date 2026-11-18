@@ -138,9 +138,9 @@ PathLossModel::Deployment StochasticChannelModel::deploymentOf(const RadioLink& 
 {
     if (link.dir == D2D || link.dir == D2D_MULTI) {
         // the cell of a link between two UEs is its receiver's serving cell: the receiver is
-        // there when the link is evaluated, while the transmitter may have left its cell since
-        MacNodeId cellId = link.cellId != NODEID_NONE ? link.cellId : binder_->getServingNode(link.rxId);
-        return ueToUeDeployment(cellId, link.txCoord, link.rxCoord);
+        // there when the link is evaluated, while the transmitter may have left its cell since.
+        // link.cellId names the cell whose rules decide the D2D interference, not this one
+        return ueToUeDeployment(binder_->getServingNode(link.rxId), link.txCoord, link.rxCoord);
     }
 
     // the base station's end: the transmitter of a downlink, the receiver of an uplink
@@ -1390,7 +1390,7 @@ bool StochasticChannelModel::computeD2DInterference(MacNodeId eNbId, MacNodeId s
     // the attenuation from an interfering UE to our receiver
     auto attenuationFrom = [&] (const InterfererInfo& interferer) {
         RadioLink link = d2dLink(interferer.nodeId, interferer.coord, destId, destCoord);
-        link.cellId = eNbId; // the receiver's cell
+        link.cellId = eNbId; // the cell whose D2D rules apply
         return getAttenuation(link);
     };
 
