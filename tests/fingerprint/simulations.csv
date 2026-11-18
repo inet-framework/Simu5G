@@ -59,7 +59,7 @@
 /simulations/lte/x2/,                    -f omnetpp.ini -c X2-Mesh-balanced -r 0,                5s,         5a51-3694/tplx;673a-736e/tilx;c8b4-1d0f/~tNl;d767-1896/sz, PASS, radio interference anisotropic
 /simulations/lte/x2/,                    -f omnetpp.ini -c X2-Mesh-unbalanced -r 0,              5s,         47ff-4af9/tplx;f47c-11cf/tilx;3150-0712/~tNl;2c82-9ba8/sz, PASS, radio interference anisotropic
 /simulations/lte/x2/,                    -f omnetpp.ini -c X2-MeshTopology -r 0,                 5s,         829a-a5dd/tplx;1335-99c2/tilx;f7ac-b770/~tNl;ee5e-365e/sz, PASS, radio interference anisotropic
-/simulations/lte/three_sector/,          -f omnetpp.ini -c CBR-DL -r 0,                         20s,         b21b-20f2/tplx;0f49-002f/tilx;b6cf-46af/~tNl;8051-f04f/sz, PASS, radio interference anisotropic
+/simulations/lte/three_sector/,          -f omnetpp.ini -c CBR-DL -r 0,                         20s,         c6ea-7d06/tplx;841a-e505/tilx;b3c5-7c83/~tNl;939a-0f7b/sz, PASS, radio interference anisotropic
 /simulations/nr/bgTraffic/,              -f omnetpp.ini -c CBR-DL -r 0,                          5s,         6c9d-f713/tplx;f6ea-c3d7/tilx;e800-b05c/~tNl;b652-70ae/sz, PASS, radio bgcell bgue
 /simulations/nr/bgTraffic/,              -f omnetpp.ini -c CBR-DL -r 1,                          5s,         127a-c27b/tplx;c214-a6a9/tilx;2604-7d7c/~tNl;e5fd-fad0/sz, PASS, radio bgcell bgue
 /simulations/nr/bgTraffic/,              -f omnetpp.ini -c CBR-DL -r 2,                          5s,         9ef4-632d/tplx;8009-6c37/tilx;3918-91af/~tNl;7c89-7417/sz, PASS, radio bgcell bgue
@@ -99,7 +99,7 @@
 /simulations/nr/indoor_factory/,         -f omnetpp.ini -c InF-SH -r 0,                         4s,          3f1e-8d30/tplx;4893-1de0/tilx;8bf3-7c4d/~tNl;35f7-52b4/sz, PASS, radio propagation interference
 /simulations/nr/indoor_factory/,         -f omnetpp.ini -c InF-DH -r 0,                         4s,          bb03-4619/tplx;80c3-7f67/tilx;cd5f-70f0/~tNl;3989-4b8c/sz, PASS, radio propagation interference
 /simulations/nr/indoor_factory/,         -f omnetpp.ini -c InF-HH -r 0,                         4s,          3e75-a9ca/tplx;11f4-de79/tilx;cefc-878c/~tNl;ed1e-f9ee/sz, PASS, radio propagation interference
-/simulations/nr/three_sector/,           -f omnetpp.ini -c CBR-DL -r 0,                         20s,         2be2-1181/tplx;15d4-7701/tilx;4729-311a/~tNl;e58a-3ae4/sz, PASS, radio interference anisotropic
+/simulations/nr/three_sector/,           -f omnetpp.ini -c CBR-DL -r 0,                         20s,         b373-3238/tplx;8e35-b037/tilx;d1ea-3de5/~tNl;d2aa-1ad7/sz, PASS, radio interference anisotropic
 /simulations/nr/standalone/,             -f omnetpp.ini -c Standalone -r 0,                      5s,         3f10-6508/tplx;7f48-adce/tilx;0b51-515e/~tNl;7ef2-9c61/sz, PASS, radio
 /simulations/nr/standalone/,             -f omnetpp.ini -c VoIP-DL -r 0,                         5s,         6fbe-082d/tplx;1ceb-0ee1/tilx;d2b2-c4b8/~tNl;ec52-f4fc/sz, PASS, radio
 /simulations/nr/standalone/,             -f omnetpp.ini -c VoIP-UL -r 0,                         5s,         3064-3b90/tplx;e662-8940/tilx;7622-6402/~tNl;48b2-3cc6/sz, PASS, radio
