@@ -1,0 +1,52 @@
+%description:
+The cells of a site share one LOS state, one environment height and one shadowing realization
+towards a UE, which are drawn for one position of the site. Two sectors on one mast whose
+antennas are 3 m apart in height would share a realization drawn at the position of one of them,
+and a link moved more than the correlation distance since the last draw is drawn again: in an
+Indoor Factory hall (DL, DH: 1 m) at every switch between the sectors, and the shadowing is
+decorrelated by the height difference in every scenario. That is an error at initialization, as
+for sectors apart horizontally (SiteRejected_SectorsApart).
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: test.ned
+import inet.node.ethernet.Eth10G;
+import simu5g.nodes.gNodeB;
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+network TwoSectorTestNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        gnb2: gNodeB {
+            @display("p=650,250");
+        }
+    connections:
+        upf.pppg++ <--> Eth10G <--> gnb2.ppp;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = TwoSectorTestNetwork
+
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+
+# two sectors on one mast
+*.gnb*.cellularNic.radio.site = "mast"
+*.gnb*.cellularNic.antenna.txDirection = "ANISOTROPIC"
+*.gnb.cellularNic.antenna.txAngle = 60deg
+*.gnb2.cellularNic.antenna.txAngle = 180deg
+**.dynamicLos = true
+*.gnb2.mobility.initialX = 450m
+*.gnb2.mobility.initialY = 300m
+*.gnb2.cellularNic.antenna.mobility.offsetZ = 28m
+# 28 m is outside TR 38.901 UMa's "hBS=25m"; the check of a link's heights is not what this tests
+**.nrChannelModel[*].tolerateHeightViolation = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+the cells of the site 'mast' are not at one place: the antennas of nodes 1 and 2 are 3 m apart.
+%#--------------------------------------------------------------------------------------------------------------
