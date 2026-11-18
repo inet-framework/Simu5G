@@ -1,0 +1,22 @@
+%description:
+The cell of CellDeploymentRejected_BuildingHeightOutsideStudyRange, a building height of 60 m
+in a rural macrocell, with tolerateHeightViolation set: the run reaches its time limit.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+# a rural macrocell (TR 38.901 RMa), whose path loss takes the building height and street width
+*.gnb.cellularNic.radio.scenario = "RURAL_MACROCELL"
+*.gnb.cellularNic.radio.buildingHeight = 60m
+**.nrChannelModel[*].tolerateHeightViolation = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+Simulation time limit reached
+%#--------------------------------------------------------------------------------------------------------------

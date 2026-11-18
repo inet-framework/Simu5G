@@ -1,0 +1,24 @@
+%description:
+The TR 38.901 rural macrocell NLOS path loss takes log10(W) of the average street width W: at
+W = 0 m it is -inf, and the path loss of an NLOS link +inf. A street width of 0 m or less is an
+error on the first evaluation of a link of the cell, LOS or not, whatever
+tolerateHeightViolation says.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+# a rural macrocell (TR 38.901 RMa), whose path loss takes the building height and street width
+*.gnb.cellularNic.radio.scenario = "RURAL_MACROCELL"
+*.gnb.cellularNic.radio.streetWidth = 0m
+**.nrChannelModel[*].tolerateHeightViolation = true
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+the cell's building height is 5 m and its street width 0 m (the buildingHeight and streetWidth of its base station's radio), and the path loss of the scenario RURAL_MACROCELL takes their logarithms: both must be above 0 m
+%#--------------------------------------------------------------------------------------------------------------

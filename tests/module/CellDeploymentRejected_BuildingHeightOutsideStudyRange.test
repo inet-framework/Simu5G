@@ -1,0 +1,23 @@
+%description:
+TR 38.901 Table 7.4.1-1 gives its rural macrocell path loss for "5m <= h <= 50m" and
+"5m <= W <= 50m". A building height of 60 m is outside it: the formulas would give a number the
+study does not stand behind. The first evaluation of a link of the cell is an error, unless
+tolerateHeightViolation is set (CellDeployment_OutsideStudyRangeTolerated).
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+# a rural macrocell (TR 38.901 RMa), whose path loss takes the building height and street width
+*.gnb.cellularNic.radio.scenario = "RURAL_MACROCELL"
+*.gnb.cellularNic.radio.buildingHeight = 60m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+the cell's building height is 60 m and its street width 20 m (the buildingHeight and streetWidth of its base station's radio), outside the range TR 38.901 Table 7.4.1-1 gives for the scenario RURAL_MACROCELL (5 m <= h <= 50 m, 5 m <= W <= 50 m)
+%#--------------------------------------------------------------------------------------------------------------

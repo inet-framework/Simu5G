@@ -1,0 +1,123 @@
+%description:
+
+The building height h and the street width W of a cell, checked against the
+applicability ranges of the studies, for the scenarios whose path loss takes
+them (log10(h), log10(W)):
+
+ - TR 38.901 Table 7.4.1-1, RMa: "5m <= h <= 50m", "5m <= W <= 50m".
+ - TR 36.873 Table 7.2-1, UMa NLOS and RMa: "5 m < h < 50 m",
+   "5 m < W < 50 m".
+ - TR 36.814 Table B.1.2.1-1, UMa NLOS: "5 m < h < 50 m", "5 m < W < 50 m";
+   SMa and RMa: "applicability ranges ... same as in UMa NLOS". TR 38.901
+   has no SMa and takes TR 36.814's.
+
+The open ranges of TR 36.873 and TR 36.814 exclude their own RMa default value
+"h = 5 m". The column is "Applicability range, antenna height default values",
+so the model accepts the study's default value as well as its range: h = 20 m
+in UMa, 10 m in SMa, 5 m in RMa, W = 20 m. Outside, the check is an error
+unless tolerateHeightViolation is set. A value of 0 m or less leaves the
+formulas undefined and is an error even then. Scenarios whose formulas take
+neither value do not check them.
+
+The path loss is finite at the limits of the TR 38.901 range.
+
+%includes:
+#include <cmath>
+#include "PathLossTestUtil.h"
+#include "simu5g/stack/phy/channelmodel/Tr36814PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr36873PathLossModel.h"
+#include "simu5g/stack/phy/channelmodel/Tr38901PathLossModel.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+CaseRecorder probe(this, 1e-6);
+Deployed<Tr36814PathLossModel> m814;
+Deployed<Tr36873PathLossModel> m873;
+Deployed<Tr38901PathLossModel> m901;
+
+auto cell = [](DeploymentScenario scenario, double h, double W) {
+    ScenarioParams p;
+    p.scenario = scenario;
+    p.hNodeB = scenario == URBAN_MACROCELL ? 25 : 35;
+    p.hUe = 1.5;
+    p.hBuilding = h;
+    p.wStreet = W;
+    return p;
+};
+auto tolerated = [](ScenarioParams p) { p.tolerateHeightViolation = true; return p; };
+
+// --- TR 38.901 RMa: closed ranges ---------------------------------------
+probe.expectHeightsAccepted("38.901 RMa h=5 W=20", m901, cell(RURAL_MACROCELL, 5, 20));
+probe.expectHeightsAccepted("38.901 RMa h=50 W=20", m901, cell(RURAL_MACROCELL, 50, 20));
+probe.expectHeightsAccepted("38.901 RMa h=20 W=5", m901, cell(RURAL_MACROCELL, 20, 5));
+probe.expectHeightsAccepted("38.901 RMa h=20 W=50", m901, cell(RURAL_MACROCELL, 20, 50));
+probe.expectHeightsRejected("38.901 RMa h=4.9", m901, cell(RURAL_MACROCELL, 4.9, 20));
+probe.expectHeightsRejected("38.901 RMa h=50.1", m901, cell(RURAL_MACROCELL, 50.1, 20));
+probe.expectHeightsRejected("38.901 RMa W=4.9", m901, cell(RURAL_MACROCELL, 20, 4.9));
+probe.expectHeightsRejected("38.901 RMa W=50.1", m901, cell(RURAL_MACROCELL, 20, 50.1));
+probe.expectHeightsAccepted("38.901 RMa h=60 tolerated", m901, tolerated(cell(RURAL_MACROCELL, 60, 20)));
+probe.expectHeightsAccepted("38.901 RMa W=2 tolerated", m901, tolerated(cell(RURAL_MACROCELL, 20, 2)));
+probe.expectHeightsRejected("38.901 RMa h=0 even if tolerated", m901, tolerated(cell(RURAL_MACROCELL, 0, 20)));
+probe.expectHeightsRejected("38.901 RMa W=0 even if tolerated", m901, tolerated(cell(RURAL_MACROCELL, 20, 0)));
+probe.expectHeightsRejected("38.901 RMa h=-1 even if tolerated", m901, tolerated(cell(RURAL_MACROCELL, -1, 20)));
+
+// --- TR 38.901 SMa: TR 36.814's -----------------------------------------
+probe.expectHeightsAccepted("38.901 SMa h=10 (the default)", m901, cell(SUBURBAN_MACROCELL, 10, 20));
+probe.expectHeightsRejected("38.901 SMa h=5", m901, cell(SUBURBAN_MACROCELL, 5, 20));
+
+// --- TR 38.901 UMa and UMi take neither value ---------------------------
+probe.expectHeightsAccepted("38.901 UMa h=0 W=0", m901, cell(URBAN_MACROCELL, 0, 0));
+ScenarioParams umi = cell(URBAN_MICROCELL, 0, 0);
+umi.hNodeB = 10;
+probe.expectHeightsAccepted("38.901 UMi h=0 W=0", m901, umi);
+
+// --- TR 36.873: open ranges, or the default value -----------------------
+probe.expectHeightsAccepted("36.873 UMa h=20 W=20 (the defaults)", m873, cell(URBAN_MACROCELL, 20, 20));
+probe.expectHeightsAccepted("36.873 UMa h=5.1 W=49.9", m873, cell(URBAN_MACROCELL, 5.1, 49.9));
+probe.expectHeightsRejected("36.873 UMa h=5", m873, cell(URBAN_MACROCELL, 5, 20));
+probe.expectHeightsRejected("36.873 UMa h=50", m873, cell(URBAN_MACROCELL, 50, 20));
+probe.expectHeightsRejected("36.873 UMa W=5", m873, cell(URBAN_MACROCELL, 20, 5));
+probe.expectHeightsRejected("36.873 UMa W=50", m873, cell(URBAN_MACROCELL, 20, 50));
+probe.expectHeightsRejected("36.873 UMa h=0 even if tolerated", m873, tolerated(cell(URBAN_MACROCELL, 0, 20)));
+probe.expectHeightsAccepted("36.873 RMa h=5 (the default)", m873, cell(RURAL_MACROCELL, 5, 20));
+probe.expectHeightsAccepted("36.873 RMa h=49.9", m873, cell(RURAL_MACROCELL, 49.9, 20));
+probe.expectHeightsRejected("36.873 RMa h=50", m873, cell(RURAL_MACROCELL, 50, 20));
+probe.expectHeightsRejected("36.873 RMa W=5", m873, cell(RURAL_MACROCELL, 20, 5));
+probe.expectHeightsRejected("36.873 RMa W=0 even if tolerated", m873, tolerated(cell(RURAL_MACROCELL, 20, 0)));
+
+// --- TR 36.814: open ranges, or the default value -----------------------
+probe.expectHeightsAccepted("36.814 UMa h=20 W=20 (the defaults)", m814, cell(URBAN_MACROCELL, 20, 20));
+probe.expectHeightsRejected("36.814 UMa h=5", m814, cell(URBAN_MACROCELL, 5, 20));
+probe.expectHeightsRejected("36.814 UMa W=50", m814, cell(URBAN_MACROCELL, 20, 50));
+probe.expectHeightsAccepted("36.814 SMa h=10 (the default)", m814, cell(SUBURBAN_MACROCELL, 10, 20));
+probe.expectHeightsRejected("36.814 SMa h=5", m814, cell(SUBURBAN_MACROCELL, 5, 20));
+probe.expectHeightsAccepted("36.814 RMa h=5 (the default)", m814, cell(RURAL_MACROCELL, 5, 20));
+probe.expectHeightsRejected("36.814 RMa h=50", m814, cell(RURAL_MACROCELL, 50, 20));
+probe.expectHeightsRejected("36.814 RMa W=5", m814, cell(RURAL_MACROCELL, 20, 5));
+probe.expectHeightsAccepted("36.814 RMa h=60 tolerated", m814, tolerated(cell(RURAL_MACROCELL, 60, 20)));
+probe.expectHeightsRejected("36.814 RMa h=0 even if tolerated", m814, tolerated(cell(RURAL_MACROCELL, 0, 20)));
+probe.expectHeightsRejected("36.814 SMa W=0 even if tolerated", m814, tolerated(cell(SUBURBAN_MACROCELL, 20, 0)));
+
+// --- TR 38.901 RMa: the path loss is finite at the limits ---------------
+for (double h : {5.0, 50.0}) {
+    for (double W : {5.0, 50.0}) {
+        for (bool los : {true, false}) {
+            ScenarioParams p = cell(RURAL_MACROCELL, h, W);
+            p.apply(m901, this);
+            double pathLoss = m901.computePathLoss(500, 500, los, {});
+            std::string what = "38.901 RMa h=" + std::to_string((int)h) + " W=" + std::to_string((int)W) + (los ? " LOS" : " NLOS") + " path loss is finite";
+            probe.expectValue(what, std::isfinite(pathLoss) ? 1.0 : 0.0, 1.0);
+        }
+    }
+}
+
+probe.summary();
+
+%contains: stdout
+modelchecks=48 modelfailures=0
+
+%not-contains: stdout
+FAILED
