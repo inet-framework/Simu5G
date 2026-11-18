@@ -160,18 +160,18 @@ class StochasticChannelModel : public ChannelModelBase
 
 
     /*
-     * Convenience overload for the interference walks, which have a UE id, a
-     * direction and a remote coordinate. Builds a cellular link and forwards, so the
-     * subclass override of getAttenuation(const RadioLink&) still applies.
+     * The attenuation of the uplink from a UE to a base station, for the
+     * interference walks, which have the UE's id and position. Builds the
+     * cellular link and forwards, so the subclass override of
+     * getAttenuation(const RadioLink&) still applies.
      *
-     * @param radio the radio the evaluation is at, the local end of the link
-     * @param nodeId mac node id of UE
-     * @param dir traffic direction
-     * @param coord position of end point communication (if dir==UL is the position of UE else is the position of eNodeB)
+     * @param radio the base station's radio, the receiving end of the link
+     * @param ueId mac node id of the UE
+     * @param ueCoord position of the UE
      */
-    double getAttenuation(IRadioEndpoint *radio, MacNodeId nodeId, Direction dir, inet::Coord coord)
+    double getUplinkAttenuation(IRadioEndpoint *radio, MacNodeId ueId, inet::Coord ueCoord)
     {
-        return getAttenuation(cellularLink(radio, nodeId, dir, coord));
+        return getAttenuation(cellularLink(radio, ueId, UL, ueCoord));
     }
 
     /*

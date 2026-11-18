@@ -1100,7 +1100,7 @@ bool StochasticChannelModel::computeDownlinkInterference(MacNodeId eNbId, MacNod
         // the attenuation, evaluated with the receiving UE's channel model (its
         // RAT's on the carrier), as the medium evaluates every arrival at a
         // receiver -- not with the interfering cell's
-        double att = getAttenuation(cell, ueId, UL, coord);
+        double att = getUplinkAttenuation(cell, ueId, coord);
         EV << "EnbId [" << id << "] - attenuation [" << att << "]" << endl;
 
         for (unsigned int i : bands) {
@@ -1176,7 +1176,7 @@ bool StochasticChannelModel::computeUplinkInterference(IRadioEndpoint *radio, Ma
 
     // the attenuation from an interfering UE to the base station, with the base station's pattern towards it
     auto attenuationFrom = [&] (const InterfererInfo& interferer) {
-        return getAttenuation(radio, interferer.nodeId, UL, interferer.coord)
+        return getUplinkAttenuation(radio, interferer.nodeId, interferer.coord)
                + computeSectorAttenuation(radio->getTxDirection(), radio->getTxAngle(), enbCoord, interferer.coord);
     };
 
