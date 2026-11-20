@@ -1,0 +1,132 @@
+%description:
+
+The outdoor-to-indoor building penetration loss of a UMa cell below 6 GHz in a
+simulation with several carrier frequencies, as TR 38.901 gives it. The model
+deviates: it applies the single-frequency model there too.
+ChannelModelPenetrationMultiCarrier pins what the model does, so that this test
+fails on its checks and not on an abort.
+
+TR 38.901 v16.1.0 7.4.3.1: "For backwards compatibility with TR 36.873 [3], the
+following building penetration model should be used for UMa and UMi
+single-frequency simulations at frequencies below 6 GHz.", followed by "Table
+7.4.3-3. O2I building penetration loss model for single-frequency simulations
+<6 GHz". A simulation with two carrier frequencies is not a single-frequency
+simulation, so Table 7.4.3-3 is not offered to it, and the models of "Table
+7.4.3-2: O2I building penetration loss model" apply:
+
+    Low-loss model:  PL_tw = 5 - 10 log10(0.3 * 10^(-L_glass/10) + 0.7 * 10^(-L_concrete/10)),
+                     PL_in = 0.5 d2D-in, sigma_P = 4.4
+    High-loss model: PL_tw = 5 - 10 log10(0.7 * 10^(-L_IRRglass/10) + 0.3 * 10^(-L_concrete/10)),
+                     PL_in = 0.5 d2D-in, sigma_P = 6.5
+
+with, from Table 7.4.3-1, L_glass = 2 + 0.2 f, L_IRRglass = 23 + 0.3 f and
+L_concrete = 5 + 4 f, f in GHz; "Both low-loss and high-loss models are
+applicable to UMa and UMi-Street Canyon." Which of the two a simulation takes is
+"a simulation parameter that should be determined by the user of the channel
+models": the channel model's useBuildingPenetrationHighLossModel.
+
+Checked in a network with two carriers, 2 GHz and 3.5 GHz, on an indoor UMa UE's
+downlink at 3.5 GHz, 10 m inside its building. The expected values are
+t901_o2i_lowloss(3.5, 10, z) and t901_o2i_highloss(3.5, 10, z) of
+pathloss_reference.py, the transcription of the two rows above, at the UE's
+standard-normal penetration deviate z = 0 and z = 1.
+
+%expected-failure: the single-frequency O2I model of TR 38.901 Table 7.4.3-3 is applied to a UMa cell below 6 GHz in a simulation with two carrier frequencies, where Table 7.4.3-2 applies
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        lowLossModel: Tr38901ChannelModel;
+        highLossModel: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+
+# two carriers: not a single-frequency simulation
+*.carrierAggregation.numComponentCarriers = 2
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 10
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
+*.carrierAggregation.componentCarrier[1].numBands = 10
+*.*Model.componentCarrierModule = "carrierAggregation.componentCarrier[1]"
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+# the path loss alone, on a LOS link
+**.dynamicLos = false
+**.fixedLos = true
+**.shadowing = false
+**.fading = false
+*.highLossModel.useBuildingPenetrationHighLossModel = true
+**.useBuildingPenetrationHighLossModel = false
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *lowLoss = harnessModule<StochasticChannelModel>(this, "lowLossModel");
+auto *highLoss = harnessModule<StochasticChannelModel>(this, "highLossModel");
+
+StubEndpoint bsEndpoint, ueEndpoint;
+const MacNodeId bsId = MacNodeId(1);
+const MacNodeId ueId = MacNodeId(1025);
+bsEndpoint.nodeId = bsId;
+ueEndpoint.nodeId = ueId;
+bsEndpoint.coord = Coord(0, 0, 25);
+ueEndpoint.coord = Coord(100, 0, 1.5);
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+StubRadioRegistration bsRadio(medium, bsId, &bsEndpoint);
+StubRadioRegistration ueRadio(medium, ueId, &ueEndpoint);
+ChannelModelProbe lowProbe(lowLoss), highProbe(highLoss);
+
+wait(0.010);
+
+// the O2I loss of the UE's downlink, on the 3.5 GHz carrier: its attenuation
+// indoors, 10 m from the wall, over its attenuation outdoors at the same place
+RadioLink lowLink = lowProbe.whatIfLink(&ueEndpoint, dlCqiTransmission(&bsEndpoint, ueId));
+RadioLink highLink = highProbe.whatIfLink(&ueEndpoint, dlCqiTransmission(&bsEndpoint, ueId));
+auto o2iLoss = [&] (StochasticChannelModel *model, const RadioLink& link, double deviate) {
+    ueEndpoint.insideBuilding = false;
+    double outdoors = model->getAttenuation(link);
+    ueEndpoint.insideBuilding = true;
+    ueEndpoint.insideDistance = 10.0;
+    ueEndpoint.penetrationLossDeviate = deviate;
+    return model->getAttenuation(link) - outdoors;
+};
+
+c.expectNear("with two carriers, an indoor UMa UE's O2I loss at 3.5 GHz is the low-loss model's of Table 7.4.3-2", o2iLoss(lowLoss, lowLink, 0.0), 17.69750345954387, 1e-9);
+c.expectNear("...with sigma_P = 4.4 dB per unit of the UE's deviate", o2iLoss(lowLoss, lowLink, 1.0), 17.69750345954387 + 4.4, 1e-9);
+c.expectNear("...and the high-loss model's where the channel model is set to it", o2iLoss(highLoss, highLink, 0.0), 31.849786400945717, 1e-9);
+c.expectNear("...with sigma_P = 6.5 dB per unit of the UE's deviate", o2iLoss(highLoss, highLink, 1.0), 31.849786400945717 + 6.5, 1e-9);
+
+c.summary();
+
+%contains: stdout
+modelchecks=4 modelfailures=0
+
+%not-contains: stdout
+FAILED
