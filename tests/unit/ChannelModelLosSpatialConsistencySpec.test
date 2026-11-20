@@ -1,0 +1,140 @@
+%description:
+
+The LOS state of a link as the spatial consistency procedure of TR 38.901 gives
+it: a UE that comes back to a place has the LOS state it had there. The model
+deviates (tests/doc/model-deviations.md, item 1, "What remains"): it draws the
+state again, independently, whenever an end of the link has moved farther than
+the correlation distance. ChannelModelLosSpatialConsistency pins what the model
+does, so that this test fails on its check and not on an abort.
+
+Verbatim, TR 38.901 v16.1.0 7.6.3.3: "The LOS state can be determined according
+to the spatial consistency procedure for random variables as mentioned in Clause
+7.6.3.1, by comparing a realization of a random variable generated with
+distance-dependent LOS probability. If the realization is less than the LOS
+probability, the state is LOS; otherwise NLOS." And 7.6.3.1: "The procedure can
+be considered as a 2D random process (in the horizontal plane) given the UT
+locations based on the parameter-specific correlation distance values for
+spatial consistency, specified in Table 7.6.3.1-2."
+
+Derived from it, and not in the text: a 2D random process given the UT locations
+has one realization per location in a drop. A UE at the same place is at the
+same distance, so it compares the same realization with the same LOS
+probability, and its state is the same. That is all this test asserts. The
+specification gives no autocorrelation function for the process (7.4.4 gives
+one for the shadow fading only), so how often the states at two places a given
+distance apart agree has no value to transcribe, and none is asserted. The
+procedure is optional ("can be determined"); the model implements the
+correlation distance of its Table 7.6.3.1-2, which belongs to this procedure
+alone.
+
+Checked on a UMa cell, on fifty outdoor UEs, each evaluated 100 m from the base
+station, then 60 m farther out (beyond the 50 m of the table), then at the first
+place again: every one of the fifty has its first state again.
+
+%expected-failure: a link's LOS state is drawn again independently beyond the correlation distance, where the spatial consistency procedure of TR 38.901 7.6.3.3 makes it a function of the UT's location
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        channelModel: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 10
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+# the LOS state is drawn, at the study's correlation distance (UMa: 50 m); the
+# first number an evaluation that decides the state draws is the state's
+**.dynamicLos = true
+**.shadowing = false
+**.fading = false
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *model = harnessModule<StochasticChannelModel>(this, "channelModel");
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+ChannelModelProbe probe(model);
+
+// a UMa base station and fifty outdoor UEs, each a link of its own
+const int numUes = 50;
+const Coord home(100, 0, 1.5), away(160, 0, 1.5);   // 60 m apart: more than the 50 m
+StubEndpoint bs;
+bs.nodeId = MacNodeId(1);
+bs.coord = Coord(0, 0, 25);
+StubRadioRegistration bsRadio(medium, bs.nodeId, &bs);
+std::vector<std::unique_ptr<StubEndpoint>> ues;
+std::vector<std::unique_ptr<StubRadioRegistration>> ueRadios;
+for (int i = 0; i < numUes; i++) {
+    ues.push_back(std::make_unique<StubEndpoint>());
+    ues[i]->nodeId = MacNodeId(1025 + i);
+    ueRadios.push_back(std::make_unique<StubRadioRegistration>(medium, ues[i]->nodeId, ues[i].get()));
+}
+auto losProbabilityAt = [&] (const Coord& position) {
+    return probe.pathLoss()->computeLosProbability(probe.deployment(25, 1.5), bs.coord.distance(position),
+            std::hypot(position.x - bs.coord.x, position.y - bs.coord.y));
+};
+
+wait(0.010);
+
+// The LOS state of a UE's downlink evaluated with the UE at a position, and
+// the state an independent draw gives there: the next number of the model's
+// generator, replayed from a copy, against the LOS probability at the position.
+struct Evaluation { bool los; bool independentDraw; };
+auto evaluateAt = [&] (int i, const Coord& position) {
+    ues[i]->coord = position;
+    RadioLink link = probe.whatIfLink(ues[i].get(), dlCqiTransmission(&bs, ues[i]->nodeId));
+    RngSnapshot snapshot(model);
+    model->getAttenuation(link);
+    bool los = probe.losMap().at(link.stateKey()).los;
+    return Evaluation{los, omnetpp::uniform(snapshot.rng(), 0.0, 1.0) <= losProbabilityAt(position)};
+};
+
+// each UE is evaluated at home, then 60 m away, then at home again
+int numIndependentAway = 0, numIndependentBack = 0, numSameBack = 0;
+for (int i = 0; i < numUes; i++) {
+    Evaluation first = evaluateAt(i, home);
+    Evaluation there = evaluateAt(i, away);
+    Evaluation back = evaluateAt(i, home);
+    numIndependentAway += (there.los == there.independentDraw);
+    numIndependentBack += (back.los == back.independentDraw);
+    numSameBack += (back.los == first.los);
+}
+
+c.expectValue("a UE back at the place of its first evaluation has the LOS state it had there: all fifty", numSameBack, numUes);
+
+c.summary();
+
+%contains: stdout
+modelchecks=1 modelfailures=0
+
+%not-contains: stdout
+FAILED
