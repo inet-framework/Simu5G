@@ -42,6 +42,17 @@ and drop the %expected-failure line here.
 using namespace simu5g;
 using namespace simu5g::unittest;
 
+// The base station of every link built here, whose scenario the links take; set by the test.
+static IRadioEndpoint *baseStation = nullptr;
+
+// The radio of a UE named by its node id only: a link's state is kept by its two ends, which its radios name.
+static IRadioEndpoint *radioOf(MacNodeId node)
+{
+    static std::map<MacNodeId, StubEndpoint> radios;
+    radios[node].nodeId = node;
+    return &radios[node];
+}
+
 // A downlink from the base station at 'bs' to the UE 'node' at 'ueCoord'.
 static RadioLink linkTo(MacNodeId node, const inet::Coord& bs, const inet::Coord& ueCoord)
 {
@@ -54,6 +65,8 @@ static RadioLink linkTo(MacNodeId node, const inet::Coord& bs, const inet::Coord
     link.linkKey = LinkKey(MacNodeId(1), node);
     link.stateNodeId = node;
     link.txIsBaseStation = true;
+    link.txRadio = baseStation;
+    link.rxRadio = radioOf(node);
     return link;
 }
 
@@ -98,6 +111,13 @@ sim-time-limit = 100s
 Checker c;
 auto *bs = harnessModule<StochasticChannelModel>(this, "bsChannelModel");
 ChannelModelProbe bsProbe(bs);
+// the base station is a radio on the medium: a link takes the scenario of its base station end
+StubEndpoint bsEndpoint;
+bsEndpoint.nodeId = MacNodeId(1);
+bsEndpoint.coord = inet::Coord(0, 0, 25);
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+StubRadioRegistration bsRadio(medium, bsEndpoint.nodeId, &bsEndpoint);
+baseStation = &bsEndpoint;
 PathLossModel *pathLoss = bsProbe.pathLoss();
 const double dcorr = bs->par("correlationDistance").doubleValue();
 const double d3D = 200.0, d2D = 198.6;
