@@ -15,7 +15,9 @@ import inet.mobility.single.AttachedMobility;
 
 //
 // The mobility of an antenna: where its node's mobility is, at an offset, which
-// is the antenna's height above the node (offsetZ). It is INET's
+// is the antenna's height above the node (offsetZ), whatever the node's
+// orientation: unlike INET's ~AttachedMobility, the offset does not turn with
+// the node (a climbing UAV's antenna stays above it). It is INET's
 // ~AttachedMobility without a position of its own: that one, having no initial
 // position parameters, draws a random position from its constraint area as it
 // initializes, uses it for nothing, and fails where the area is unbounded.

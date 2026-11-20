@@ -24,6 +24,12 @@ class AntennaMobility : public inet::AttachedMobility
   protected:
     // the position is the attached mobility's, at the offset: none is drawn
     virtual void setInitialPosition() override;
+
+  public:
+    // the node's position plus the offset as it is: the offset is the antenna's
+    // height above the node, and does not turn with the node's orientation
+    virtual const inet::Coord& getCurrentPosition() override;
+    virtual const inet::Coord& getCurrentVelocity() override;
 };
 
 } // namespace simu5g

@@ -20,4 +20,16 @@ void AntennaMobility::setInitialPosition()
     lastPosition = inet::Coord::ZERO;
 }
 
+const inet::Coord& AntennaMobility::getCurrentPosition()
+{
+    lastPosition = mobility->getCurrentPosition() + positionOffset;
+    return lastPosition;
+}
+
+const inet::Coord& AntennaMobility::getCurrentVelocity()
+{
+    lastVelocity = mobility->getCurrentVelocity();
+    return lastVelocity;
+}
+
 } // namespace simu5g
