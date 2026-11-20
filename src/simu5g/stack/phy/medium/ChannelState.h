@@ -72,7 +72,7 @@ struct ChannelEndsKey
 
     ChannelEndsKey() = default;
     ChannelEndsKey(long x, long y) : a(std::min(x, y)), b(std::max(x, y)) {}
-    // the ends of a link whose radios name themselves: each radio is an end of its own
+    // the ends of a link whose radios name themselves by their node ids, as the tests' stub endpoints do
     ChannelEndsKey(const LinkKey& link) : ChannelEndsKey((long)num(link.a), (long)num(link.b)) {}
 
     bool operator<(const ChannelEndsKey& o) const { return a != o.a ? a < o.a : b < o.b; }
@@ -90,9 +90,10 @@ inline std::ostream& operator<<(std::ostream& os, const LinkKey& k)
 }
 
 /**
- * The types of the channel state the radio medium keeps once per link and
- * carrier, shared by every channel model evaluating the link: whether it is in
- * line of sight, its shadowing and its Jakes fading paths
+ * The types of the channel state the radio medium keeps, shared by every
+ * channel model evaluating a link: whether it is in line of sight and its
+ * shadowing, once per pair of channel ends for all carriers, and its Jakes
+ * fading paths, once per pair of radios and carrier
  * (CellularRadioMedium::getLosMap(), getShadowingMap(), getJakesFadingMap()).
  */
 namespace ChannelState

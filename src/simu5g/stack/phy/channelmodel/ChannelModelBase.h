@@ -56,10 +56,10 @@ struct RadioLink
     simtime_t startTime;
 
     // ---- channel state ----
-    // linkKey is the link itself: LinkKey(txId, rxId). It indexes the
-    // state the radio medium keeps per link and shares among every channel
-    // model evaluating the link: whether it is in line of sight, its shadowing
-    // and its Jakes fading paths.
+    // linkKey is the pair of radios: LinkKey(txId, rxId). It indexes the
+    // Jakes fading paths the radio medium keeps per pair of radios and carrier.
+    // Whether the link is in line of sight and its shadowing are kept by the
+    // ends of the channel, stateKey().
     LinkKey linkKey;
 
     // stateNodeId is the link's mobile end -- the UE, or a D2D link's

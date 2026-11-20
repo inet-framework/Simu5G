@@ -105,8 +105,8 @@ class StochasticChannelModel : public ChannelModelBase
     typedef ChannelState::ShadowingSample ShadowingSample;
     typedef ChannelState::ShadowFadingMap ShadowFadingMap;
 
-    LosMap *losMap_ = nullptr; // the LOS state of the links on this model's carrier, kept by the radio medium; see losMap()
-    ShadowFadingMap *shadowingMap_ = nullptr; // the shadowing of the links on this model's carrier, kept by the radio medium; see shadowingMap()
+    LosMap *losMap_ = nullptr; // the LOS state of the links, kept by the radio medium for all carriers; see losMap()
+    ShadowFadingMap *shadowingMap_ = nullptr; // the shadowing of the links, kept by the radio medium for all carriers; see shadowingMap()
     JakesFadingMap *jakesFadingMap_ = nullptr; // the Jakes fading paths of the links on this model's carrier, kept by the radio medium; see jakesFadingMap()
 
     // Formulas of the selected 3GPP propagation study; owned, created in initialize()
@@ -347,16 +347,16 @@ class StochasticChannelModel : public ChannelModelBase
     virtual PathLossModel *createPathLossModel();
 
     /*
-     * Whether each link on this model's carrier is in line of sight, by link
-     * (RadioLink::linkKey), which the radio medium keeps once per link for
-     * every channel model evaluating it. Resolved on first use.
+     * Whether each link is in line of sight, by the ends of its channel
+     * (RadioLink::stateKey()), which the radio medium keeps once for all
+     * carriers and every channel model evaluating it. Resolved on first use.
      */
     LosMap& losMap();
 
     /*
-     * The last shadowing sample of each link on this model's carrier, by link
-     * (RadioLink::linkKey), which the radio medium keeps once per link for
-     * every channel model evaluating it. Resolved on first use.
+     * The last shadowing sample of each link, by the ends of its channel
+     * (RadioLink::stateKey()), which the radio medium keeps once for all
+     * carriers and every channel model evaluating it. Resolved on first use.
      */
     ShadowFadingMap& shadowingMap();
 
