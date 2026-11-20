@@ -185,9 +185,10 @@ decoding operation, hence the simulation running time, while
 preserving its correctness.
 
 In Simu5G, each MAC TB is encapsulated within an AirFrame
-message and sent to the destination module, which applies the
-model of the air channel to decide whether the AirFrame is
-received successfully or not. Since a MAC TB is associated with
+message and sent through the radio medium to the destination
+node, whose radio decides, from the SINR that the medium's
+channel model computes, whether the AirFrame is received
+successfully or not. Since a MAC TB is associated with
 a given CC, the corresponding AirFrame is subjected to channel
 effects (e.g. path loss, shadowing etc.) that depend on that
 CC. This means that different channel models have to be applied
