@@ -9,7 +9,9 @@ of its own is where its node is.
 Checked on the radios of a background cell, of its background UE and of two
 external cells, with the nodes at z = 0 and one external cell at positionZ =
 10 m: the radios report the node's x and y, and the node's z plus the offset
--- the defaults, an offset set in the ini file, and none.
+-- the defaults, an offset set in the ini file, and none. The offset is a height:
+it does not turn with the node's orientation, so the antenna of a node pitched
+up (a climbing UAV, whose mobility faces it forward) stays above the node.
 
 The antenna mobility draws no random number as it initializes, and has no
 constraint area of its own: the constraint area below, which the nodes are
@@ -41,6 +43,7 @@ network Harness
         radioMedium: CellularRadioMedium;
         carrierAggregation: CarrierAggregation;
         bgCell: BackgroundCell;
+        tiltedBgCell: BackgroundCell;
         extCell: ExtCell;
         raisedExtCell: ExtCell;
         bareExtCell: ExtCell;
@@ -76,6 +79,13 @@ sim-time-limit = 100ms
 *.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialY = 510m
 *.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialZ = 0m
 *.bgCell.bgScheduler.numBands = 6
+# a node pitched up by 30 degrees, as a climbing UAV's mobility turns it
+*.tiltedBgCell.mobility.initialX = 400m
+*.tiltedBgCell.mobility.initialY = 500m
+*.tiltedBgCell.mobility.initialZ = 0m
+*.tiltedBgCell.mobility.initialElevation = 30deg
+*.tiltedBgCell.bgTrafficGenerator.numBgUes = 0
+*.tiltedBgCell.bgScheduler.numBands = 6
 
 *.extCell.positionX = 700m
 *.extCell.positionY = 300m
@@ -106,12 +116,13 @@ checkAt("a background UE's radio is 1.5 m above the UE", ".bgCell.bgTrafficGener
 checkAt("an external cell's radio is 25 m above the cell", ".extCell.radio", Coord(700, 300, 25));
 checkAt("...and above the cell's own z, at the offset the ini file gives", ".raisedExtCell.radio", Coord(800, 300, 40));
 checkAt("an antenna without a mobility is where its node is", ".bareExtCell.radio", Coord(900, 300, 12));
+checkAt("the antenna of a node pitched up by 30 degrees is still 25 m straight above it", ".tiltedBgCell.radio", Coord(400, 500, 25));
 c.expectValue("reading the positions draws no random number", (long)getRNG(0)->getNumbersDrawn() - drawn, 0L);
 
 c.summary();
 
 %contains: stdout
-modelchecks=6 modelfailures=0
+modelchecks=7 modelfailures=0
 
 %not-contains: stdout
 FAILED
