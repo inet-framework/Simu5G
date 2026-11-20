@@ -1,0 +1,81 @@
+%description:
+
+The transmission-mode count constants against the TxMode enum they count.
+
+The MIMO transmission modes were removed and TxMode shrank to two modes plus
+the UNKNOWN_TX_MODE sentinel, but DL_NUM_TXMODE and UL_NUM_TXMODE stayed at
+the old value 6. The feedback computation sizes its per-mode vectors with
+DL_NUM_TXMODE and stores (TxMode)z for every index, so it writes the values
+3, 4 and 5 into a TxMode: outside the enum's representable range, which the
+C++ standard leaves undefined (UBSan: "load of value 4, which is not a valid
+value for type 'TxMode'", from LteFeedback::setTxMode and
+LteFeedback::isEmptyFeedback on the plant example of factorysim). The AMC
+allocates and iterates one feedback history buffer per counted mode, so the
+stale count also costs memory and time for modes that no longer exist.
+
+The checks: the two constants equal the number of real modes (the sentinel's
+value), and every feedback the realistic computation returns carries a valid
+TxMode, with one entry per real mode.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "simu5g/common/LteCommon.h"
+#include "simu5g/common/binder/Binder.h"
+#include "simu5g/stack/phy/feedback/LteFeedback.h"
+#include "simu5g/stack/phy/feedback/LteFeedbackComputationRealistic.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+static bool validTxMode(TxMode m)
+{
+    int v = static_cast<int>(m);
+    return v >= SINGLE_ANTENNA_PORT0 && v <= UNKNOWN_TX_MODE;
+}
+
+%activity:
+Checker c;
+
+c.expectValue("DL_NUM_TXMODE counts the modes of the TxMode enum", DL_NUM_TXMODE, UNKNOWN_TX_MODE);
+c.expectValue("UL_NUM_TXMODE counts the modes of the TxMode enum", UL_NUM_TXMODE, UNKNOWN_TX_MODE);
+
+{
+    // The feedback computation needs a Binder only to reach its PhyPisaData.
+    Binder *binder = new Binder();
+    LteFeedbackComputationRealistic fbc(binder, 0.01, 1);
+    std::map<Remote, int> antennaCws;
+    antennaCws[MACRO] = 1;
+    std::vector<double> snr(1, 20.0);
+
+    // one feedback per remote and transmission mode (the eNB counts as one remote)
+    LteFeedbackDoubleVector fbvv = fbc.computeFeedback(ALLBANDS, TYPE2_DISTRIBUTED, SINGLE_ANTENNA_PORT0, antennaCws, 1, 0, snr, MacNodeId(1025));
+    c.expectValue("one remote: the eNB", fbvv.size(), 1);
+    c.expectValue("one feedback entry per real transmission mode", fbvv[0].size(), UNKNOWN_TX_MODE);
+    bool allValid = true, modesSeen[UNKNOWN_TX_MODE] = {};
+    for (const LteFeedback& fb : fbvv[0]) {
+        if (!validTxMode(fb.getTxMode()))
+            allValid = false;
+        else if (fb.getTxMode() != UNKNOWN_TX_MODE)
+            modesSeen[fb.getTxMode()] = true;
+    }
+    c.check("every stored TxMode is an enumerator", allValid);
+    c.check("both real modes get a feedback", modesSeen[SINGLE_ANTENNA_PORT0] && modesSeen[TRANSMIT_DIVERSITY]);
+
+    // the per-remote variant
+    LteFeedbackVector fbv = fbc.computeFeedback(MACRO, ALLBANDS, TYPE2_DISTRIBUTED, SINGLE_ANTENNA_PORT0, 1, 1, 0, snr, MacNodeId(1025));
+    c.expectValue("per-remote variant: one entry per real transmission mode", fbv.size(), UNKNOWN_TX_MODE);
+    allValid = true;
+    for (const LteFeedback& fb : fbv)
+        if (!validTxMode(fb.getTxMode()))
+            allValid = false;
+    c.check("per-remote variant: every stored TxMode is an enumerator", allValid);
+    delete binder;
+}
+c.summary();
+
+%contains: stdout
+modelchecks=8 modelfailures=0
+
+%not-contains: stdout
+FAILED
