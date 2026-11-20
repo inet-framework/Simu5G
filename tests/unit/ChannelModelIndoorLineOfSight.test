@@ -1,0 +1,122 @@
+%description:
+
+A deviation of StochasticChannelModel from the specification, pinned and not
+endorsed: the LOS state of an indoor UE's link is drawn against the LOS
+probability at the link's whole 2D distance, where the table takes the outdoor
+part of it.
+
+TR 38.901 v16.1.0 Table 7.4.2-1 ("LOS probability"), row UMa: "Pr_LOS = 1,
+d2D-out <= 18m", and for "18m < d2D-out" a function of d2D-out alone (and of
+h_UT); the rows RMa and UMi - Street canyon are functions of d2D-out likewise.
+Figure 7.4.1-2 ("Definition of d2D-out, d2D-in and d3D-out, d3D-in for indoor
+UTs") has d2D = d2D-out + d2D-in. The model passes the strategy the link's d2D.
+
+Checked on a UMa cell, on fifty indoor UEs 40 m from the base station on the
+ground and 25 m inside their building, so d2D-out = 15 m. Each link's first
+evaluation draws its LOS state; the draw is replayed from a copy of the model's
+generator. Every state is the draw against the probability at d2D = 40 m,
+0.7415, and so some of the links are NLOS; at d2D-out = 15 m the table's
+probability is 1. ChannelModelIndoorLineOfSightSpec asserts the specification as
+an expected failure. When the model follows it, change this test together with
+that one.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        channelModel: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 10
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+# the LOS state is drawn; the first number a link's first evaluation draws is its
+**.dynamicLos = true
+**.shadowing = false
+**.fading = false
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *model = harnessModule<StochasticChannelModel>(this, "channelModel");
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+ChannelModelProbe probe(model);
+
+// a UMa base station, and fifty indoor UEs at one place: 40 m from it on the
+// ground, 25 m inside their building, so 15 m of the 40 are outdoors
+const int numUes = 50;
+const double d2D = 40.0, d2DIn = 25.0;
+StubEndpoint bs;
+bs.nodeId = MacNodeId(1);
+bs.coord = Coord(0, 0, 25);
+StubRadioRegistration bsRadio(medium, bs.nodeId, &bs);
+std::vector<std::unique_ptr<StubEndpoint>> ues;
+std::vector<std::unique_ptr<StubRadioRegistration>> ueRadios;
+for (int i = 0; i < numUes; i++) {
+    ues.push_back(std::make_unique<StubEndpoint>());
+    ues[i]->nodeId = MacNodeId(1025 + i);
+    ues[i]->coord = Coord(d2D, 0, 1.5);
+    ues[i]->insideBuilding = true;
+    ues[i]->insideDistance = d2DIn;
+    ueRadios.push_back(std::make_unique<StubRadioRegistration>(medium, ues[i]->nodeId, ues[i].get()));
+}
+const double d3D = bs.coord.distance(ues[0]->coord);
+// the strategy's LOS probability at the whole 2D distance, and at its outdoor part
+const double pAtD2D = probe.pathLoss()->computeLosProbability(probe.deployment(25, 1.5), d3D, d2D);
+const double pAtD2DOut = probe.pathLoss()->computeLosProbability(probe.deployment(25, 1.5), d3D, d2D - d2DIn);
+
+wait(0.010);
+
+// The first evaluation of each UE's downlink draws its LOS state; the draw is
+// replayed from a copy of the model's generator.
+int numLos = 0, numAsAtD2D = 0;
+for (int i = 0; i < numUes; i++) {
+    RadioLink link = probe.whatIfLink(ues[i].get(), dlCqiTransmission(&bs, ues[i]->nodeId));
+    RngSnapshot snapshot(model);
+    model->getAttenuation(link);
+    bool los = probe.losMap().at(link.stateKey()).los;
+    double u = omnetpp::uniform(snapshot.rng(), 0.0, 1.0);
+    numLos += los;
+    numAsAtD2D += (los == (u <= pAtD2D));
+}
+
+c.expectNear("the strategy's LOS probability at d2D = 40 m, for a 1.5 m UT", pAtD2D, 18.0 / 40 + std::exp(-40.0 / 63) * (1 - 18.0 / 40), 1e-12);
+c.expectNear("...and at d2D-out = 15 m", pAtD2DOut, 1.0, 0);
+c.expectValue("PINNED DEFECT: an indoor UE's LOS state is its draw against the probability at d2D, for every one of the links", numAsAtD2D, numUes);
+c.check("PINNED DEFECT: ...so some of the links are NLOS, 15 m outdoors from the base station", numLos < numUes, std::to_string(numLos) + " of " + std::to_string(numUes) + " in LOS");
+
+c.summary();
+
+%contains: stdout
+modelchecks=4 modelfailures=0
+
+%not-contains: stdout
+FAILED
