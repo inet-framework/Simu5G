@@ -362,6 +362,13 @@ def t873_sigma_rma(d2D, fc, hBS, hUT, los):
     return _rural_sigma(d2D, _dbp_actual(fc, hBS, hUT), los)
 
 
+# Clause 7.2.3, the rows "3D-UMi O2I" and "3D-UMa O2I": "sigma_SF =7". The O2I
+# columns of Table 7.3-6 give the same, "Shadow fading (SF) [dB] sigma_SF ... 7".
+# It is the shadow fading of an indoor UT's link, in LOS and in NLOS alike.
+def t873_sigma_o2i():
+    return 7.0
+
+
 # Antenna element pattern, Table 7.1-1: 65 degree half-power beamwidth in both
 # planes, each term and their sum capped at 30 dB. theta is the zenith angle;
 # the element boresight is at theta = 90 degrees (the horizon). Returned as the
@@ -519,7 +526,7 @@ def t901_sigma_rma(d2D, fc, hBS, hUT, los):
 #   below 6 GHz, for backwards compatibility with TR 36.873. It is not offered
 #   for any other scenario. PL_tw = 20 dB, and sigma_P = 0, so the term is
 #   deterministic. Its fourth row, sigma_SF = 7 dB "replacing the respective
-#   value in Table 7.4.1-1", is not transcribed here.
+#   value in Table 7.4.1-1", is t901_sigma_o2i_sub6 below.
 #
 # The report defines no O2I building penetration loss for the indoor-office
 # scenario, so there is no value to expect there.
@@ -528,6 +535,13 @@ def t901_sigma_rma(d2D, fc, hBS, hUT, los):
 # mean of the loss over many draws has a reference value.
 def t901_o2i_sub6(dIn):
     return 20.0 + 0.5 * dIn
+
+
+# Table 7.4.3-3, fourth row: sigma_SF "7 dB (note: replacing the respective
+# value in Table 7.4.1-1)": the shadow fading of an indoor UT's link under the
+# single-frequency model, in LOS and in NLOS alike.
+def t901_sigma_o2i_sub6():
+    return 7.0
 
 
 def t901_o2i_lowloss_mean(fc, dIn):

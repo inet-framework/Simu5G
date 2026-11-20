@@ -1,0 +1,126 @@
+%description:
+
+The standard deviation of the shadow fading of an indoor UE's link, as TR 36.873
+and the single-frequency model of TR 38.901 give it: 7 dB. The model deviates:
+it takes the outdoor link's value for its LOS state.
+ChannelModelIndoorShadowing pins what the model does, so that this test fails on
+its checks and not on an abort.
+
+TR 36.873 v12.7.0 7.2.3, rows "3D-UMi O2I" and "3D-UMa O2I": "sigma_SF =7"; the
+O2I columns of Table 7.3-6 have the same in "Shadow fading (SF) [dB]".
+TR 38.901 v16.1.0 7.4.3.1: "For backwards compatibility with TR 36.873 [3], the
+following building penetration model should be used for UMa and UMi
+single-frequency simulations at frequencies below 6 GHz.", and in Table 7.4.3-3
+the row sigma_SF: "7 dB (note: replacing the respective value in Table
+7.4.1-1)".
+
+Checked on a UMa cell with one carrier at 2 GHz -- a single-frequency simulation
+below 6 GHz, where Table 7.4.3-3 applies -- on the first shadowing value of the
+links of four indoor UEs, under the TR 38.901 and the TR 36.873 channel model,
+in LOS and in NLOS. The value is one N(0, sigma) draw; it is divided by the
+standard-normal draw replayed from a copy of the model's generator, which gives
+sigma. The cases are graded against t901_sigma_o2i_sub6 and t873_sigma_o2i of
+pathloss_reference.py.
+
+%expected-failure: an indoor UE's shadow fading has the outdoor link's standard deviation (4 or 6 dB for UMa), where TR 36.873 7.2.3 and TR 38.901 Table 7.4.3-3 give 7 dB
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+#include "PathLossTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr36873ChannelModel;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        model901: Tr38901ChannelModel;
+        model873: Tr36873ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+
+# one carrier below 6 GHz: a single-frequency simulation
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 10
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+**.shadowing = true
+**.fading = false
+**.dynamicLos = false
+**.fixedLos = true
+
+%no-default-inifile: 1
+
+%activity:
+auto *model901 = harnessModule<StochasticChannelModel>(this, "model901");
+auto *model873 = harnessModule<StochasticChannelModel>(this, "model873");
+auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
+
+// a UMa base station and four UEs at one place, 100 m from it: a link each, so a
+// first shadowing value each
+StubEndpoint bsEndpoint;
+bsEndpoint.nodeId = MacNodeId(1);
+bsEndpoint.coord = Coord(0, 0, 25);
+StubRadioRegistration bsRadio(medium, bsEndpoint.nodeId, &bsEndpoint);
+StubEndpoint ues[4];
+std::vector<std::unique_ptr<StubRadioRegistration>> ueRadios;
+for (int i = 0; i < 4; i++) {
+    ues[i].nodeId = MacNodeId(1025 + i);
+    ues[i].coord = Coord(100, 0, 1.5);
+    ueRadios.push_back(std::make_unique<StubRadioRegistration>(medium, ues[i].nodeId, &ues[i]));
+}
+const double d2D = 100.0, d3D = std::sqrt(100.0 * 100.0 + 23.5 * 23.5);
+
+wait(0.010);
+
+// The standard deviation a link's first shadowing value was drawn with: the
+// value is one N(0, sigma) draw, replayed here as a standard-normal one from a
+// copy of the model's generator, so their ratio is sigma.
+auto sigmaOf = [&] (StochasticChannelModel *model, StubEndpoint& ue, bool indoor, bool los) {
+    ue.insideBuilding = indoor;
+    ue.insideDistance = indoor ? 10.0 : 0.0;
+    ChannelModelProbe probe(model);
+    RadioLink link = probe.whatIfLink(&ue, dlCqiTransmission(&bsEndpoint, ue.nodeId));
+    RngSnapshot snapshot(model);
+    double value = model->computeShadowing(d3D, d2D, los, link);
+    return value / omnetpp::normal(snapshot.rng(), 0, 1);
+};
+
+CaseRecorder probe(this, 1e-9);
+probe.record("t901_sigma_o2i_sub6", {}, sigmaOf(model901, ues[0], true, true));
+probe.record("t901_sigma_o2i_sub6", {}, sigmaOf(model901, ues[1], true, false));
+probe.record("t873_sigma_o2i", {}, sigmaOf(model873, ues[2], true, true));
+probe.record("t873_sigma_o2i", {}, sigmaOf(model873, ues[3], true, false));
+
+%postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt
+
+%contains: verdict.txt
+graded=4 failures=0
+
+%not-contains: verdict.txt
+FAILED
+
+%not-contains: stdout
+FAILED
