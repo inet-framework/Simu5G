@@ -85,7 +85,7 @@ module LteMacEnb extends LteMacBase
         // Proportional Fair parameters
         double pfAlpha = default(0.95);
 
-        string pilotMode @enum(IN_CQI,MAX_CQI,AVG_CQI,MEDIAN_CQI,ROBUST_CQI) = default("ROBUST_CQI");
+        string pilotMode @enum(MIN_CQI,MAX_CQI,AVG_CQI,MEDIAN_CQI,ROBUST_CQI) = default("ROBUST_CQI");
 
         int numPreambles = default(64);        // Number of RACH preambles available for contention-based random access
 
