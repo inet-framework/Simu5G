@@ -42,6 +42,11 @@ void PhyEnb::initialize(int stage)
         EV << "Local MacNodeId: " << nodeId_ << endl;
 
         nodeType_ = NODEB;
+
+        // the base station node's txPower is read by nothing: setting it is an error
+        if (hostModule_->hasPar("txPower") && !std::isnan(hostModule_->par("txPower").doubleValue()))
+            throw cRuntimeError("The base station node's 'txPower' parameter is read by nothing: the base station transmits with the power of its PHY. "
+                    "Set cellularNic.phy.eNodeBTxPower instead (cellularNic.phy.microTxPower in a micro cell)");
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         cellInfo_ = binder_->getCellInfoByNodeId(nodeId_);

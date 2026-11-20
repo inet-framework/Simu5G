@@ -70,7 +70,8 @@ module eNodeB
         int masterId = default(0);  // ID of the master eNodeB. Used in case of Dual Connectivity
         int macNodeId = default(1+simu5g_seq("eNodeB_macNodeId"));
         int macCellId = default(macNodeId);
-        double txPower @unit(mw) = default(100mw);
+        // Removed: nothing reads it; the base station transmits with cellularNic.phy.eNodeBTxPower (microTxPower in a micro cell). Setting it is an error
+        double txPower @unit(mw) = default(nan mw);
 
         //# D2D support: selects the D2D-capable NIC variant (see the cellularNic submodule).
         //# An explicit cellularNic.typename in the ini file still overrides this.
