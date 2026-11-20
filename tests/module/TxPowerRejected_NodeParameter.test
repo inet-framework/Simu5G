@@ -1,0 +1,23 @@
+%description:
+A base station node (eNodeB, and gNodeB, which extends it) had a txPower parameter, 100mw by
+default, that nothing read: the base station transmits with its PHY's eNodeBTxPower (46 dBm by
+default; microTxPower in a micro cell). An ini file that set the node's txPower ran without a
+message at another power than it asked for. Setting it is an error at initialization, which
+names the parameter to set. The value is written in the parameter's declared unit, mw, the
+form that ran.
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = simu5g.test.moduletest.lib.NrSessionTestNetwork
+
+*.gnb.txPower = 100mw
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+The base station node's 'txPower' parameter is read by nothing: the base station transmits with the power of its PHY. Set cellularNic.phy.eNodeBTxPower instead (cellularNic.phy.microTxPower in a micro cell)
+%#--------------------------------------------------------------------------------------------------------------
