@@ -91,15 +91,11 @@ class BackgroundTrafficManagerBase : public cSimpleModule, public IBackgroundTra
 
     /*************************************/
 
-    static const double nrCqiTable[16];
-
   protected:
 
     void initialize(int stage) override;
     int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     void handleMessage(cMessage *msg) override;
-
-    static double getCqiFromTable(double snr);
 
     virtual double getTtiPeriod() = 0;
     virtual bool isSetBgTrafficManagerInfoInit() = 0;
