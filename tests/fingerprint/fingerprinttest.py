@@ -409,6 +409,8 @@ class SimulationTestCase(unittest.TestCase):
                         raise Exception("Cannot parse fingerprint-related error message: " + err + "\nPattern: >>>"+pattern+'<<<')
             elif re.search("Simulation time limit reached", err):
                 pass
+            elif err.startswith("<!> Warning"):
+                pass    # a warning, e.g. on configuration entries that had no effect, is not an error
             else:
                 errorMsg += "\n" + err
                 wasError = True
