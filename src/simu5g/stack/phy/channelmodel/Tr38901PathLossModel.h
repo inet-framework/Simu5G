@@ -50,6 +50,7 @@ class Tr38901PathLossModel : public Tr36873PathLossModel
     double computePathLoss(const Deployment& deployment, double d3D, double d2D, bool los, const LinkConditions& conditions) override;
     double computeLosProbability(const Deployment& deployment, double d3D, double d2D) override;
     double getShadowingStdDev(const Deployment& deployment, double d3D, double d2D, bool losState) override;
+    double getIndoorShadowingStdDev(const Deployment& deployment) override;
     double getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions) override;
     double getLosCorrelationDistance(const Deployment& deployment) override;
     double drawEnvironmentHeight(const Deployment& deployment, double d2D) override;

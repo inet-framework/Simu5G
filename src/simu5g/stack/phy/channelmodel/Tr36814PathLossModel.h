@@ -35,6 +35,7 @@ class Tr36814PathLossModel : public PathLossModel
     double computePathLoss(const Deployment& deployment, double d3D, double d2D, bool los, const LinkConditions& conditions) override;
     double computeLosProbability(const Deployment& deployment, double d3D, double d2D) override;
     double getShadowingStdDev(const Deployment& deployment, double d3D, double d2D, bool losState) override;
+    double getIndoorShadowingStdDev(const Deployment& deployment) override;
     double getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions) override;
     double computeAngularAttenuation(double hAngle, double vAngle) override;
 

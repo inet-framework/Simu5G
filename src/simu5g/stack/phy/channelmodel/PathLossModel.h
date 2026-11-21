@@ -210,6 +210,14 @@ class PathLossModel
     virtual double getShadowingStdDev(const Deployment& deployment, double d3D, double d2D, bool losState) = 0;
 
     /*
+     * The standard deviation of the log-normal shadowing of a link whose UE end
+     * is inside a building: the study's outdoor-to-indoor value, in LOS and NLOS
+     * alike. An error where the study has no building penetration loss for the
+     * scenario (as checkPenetrationLoss()).
+     */
+    virtual double getIndoorShadowingStdDev(const Deployment& deployment) = 0;
+
+    /*
      * The correlation distance of a link's shadow fading in the horizontal
      * plane, in m, as the study's table of channel model parameters gives it
      * for the scenario and the link's propagation condition: LOS, NLOS, or

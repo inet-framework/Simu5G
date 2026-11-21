@@ -232,6 +232,15 @@ double Tr38901PathLossModel::getShadowingStdDev(const Deployment& deployment, do
     return 0.0;
 }
 
+double Tr38901PathLossModel::getIndoorShadowingStdDev(const Deployment& deployment)
+{
+    // Table 7.5-6, "Shadow fading (SF) [dB]", O2I columns: 7 for UMi - Street
+    // Canyon and UMa (Part-1), 8 for RMa (Part-2). Table 7.4.3-3, the
+    // single-frequency model, gives the same 7 dB
+    checkPenetrationLoss(deployment);
+    return deployment.scenario == RURAL_MACROCELL ? 8 : 7;
+}
+
 double Tr38901PathLossModel::getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions)
 {
     // Table 7.5-6 Part-3: 10 m in an indoor factory, LOS and NLOS

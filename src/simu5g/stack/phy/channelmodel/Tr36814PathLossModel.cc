@@ -148,6 +148,13 @@ double Tr36814PathLossModel::getShadowingStdDev(const Deployment& deployment, do
     return selectStdDev(deployment, d3D < dbp, losState);
 }
 
+double Tr36814PathLossModel::getIndoorShadowingStdDev(const Deployment& deployment)
+{
+    // the model has no outdoor-to-indoor link under TR 36.814
+    checkPenetrationLoss(deployment);
+    throw cRuntimeError("Tr36814PathLossModel: an indoor link passed checkPenetrationLoss()");
+}
+
 double Tr36814PathLossModel::selectStdDev(const Deployment& deployment, bool belowBreakpoint, bool losState)
 {
     switch (deployment.scenario) {

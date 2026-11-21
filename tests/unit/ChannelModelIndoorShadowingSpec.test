@@ -1,10 +1,9 @@
 %description:
 
 The standard deviation of the shadow fading of an indoor UE's link, as TR 36.873
-and TR 38.901 give it: 7 dB in UMa (and UMi), 8 dB in RMa. The model deviates:
-it takes the outdoor link's value for its LOS state.
-ChannelModelIndoorShadowing pins what the model does, so that this test fails
-on its checks and not on an abort.
+and TR 38.901 give it: 7 dB in UMa (and UMi), 8 dB in RMa.
+ChannelModelIndoorShadowing has the outdoor UE's link, which keeps the sigma of
+its LOS state.
 
 TR 36.873 v12.7.0 7.2.3, rows "3D-UMi O2I" and "3D-UMa O2I": "sigma_SF =7"; the
 O2I columns of Table 7.3-6 have the same in "Shadow fading (SF) [dB]".
@@ -22,8 +21,6 @@ N(0, sigma) draw; it is divided by the standard-normal draw replayed from a
 copy of the model's generator, which gives sigma. The cases are graded
 against t901_sigma_o2i_uma, t901_sigma_o2i_rma and t873_sigma_o2i of
 pathloss_reference.py.
-
-%expected-failure: an indoor UE's shadow fading has the outdoor link's standard deviation (4 or 6 dB for UMa), where TR 36.873 7.2.3 and TR 38.901 Table 7.5-6 give 7 dB (8 dB for RMa)
 
 %includes:
 #include "SchedulerTestUtil.h"

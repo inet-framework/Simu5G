@@ -125,6 +125,13 @@ double Tr36873PathLossModel::getShadowingStdDev(const Deployment& deployment, do
     return selectStdDev(deployment, d2D < dbp, losState);
 }
 
+double Tr36873PathLossModel::getIndoorShadowingStdDev(const Deployment& deployment)
+{
+    // clause 7.2.3, rows "3D-UMi O2I" and "3D-UMa O2I": "sigma_SF =7"
+    checkPenetrationLoss(deployment);
+    return 7;
+}
+
 double Tr36873PathLossModel::getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions)
 {
     // Tables 7.3-6, 7.3-6a and 7.3-6b, "Correlation distance in the

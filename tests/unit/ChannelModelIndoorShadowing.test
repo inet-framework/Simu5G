@@ -1,29 +1,18 @@
 %description:
 
-A deviation of StochasticChannelModel from the specifications, pinned and not
-endorsed: the shadow fading of an indoor UE's link has the standard deviation of
-the outdoor link in its LOS state, where TR 36.873 and the single-frequency
-model of TR 38.901 give an indoor UE's link 7 dB, and TR 38.901 Table 7.5-6
-gives it 7 dB in UMa and 8 dB in RMa.
+The shadow fading of an outdoor UE's link has the standard deviation of its LOS
+state, while an indoor UE's link has the study's outdoor-to-indoor value
+(ChannelModelIndoorShadowingSpec): the switch is the UE end's indoor state.
 
-TR 36.873 v12.7.0 7.2.3, rows "3D-UMi O2I" and "3D-UMa O2I": "sigma_SF =7".
-TR 38.901 v16.1.0 Table 7.4.3-3 ("O2I building penetration loss model for
-single-frequency simulations <6 GHz"), row sigma_SF: "7 dB (note: replacing the
-respective value in Table 7.4.1-1)".
+TR 36.873 v12.7.0 Table 7.3-6 and TR 38.901 v16.1.0 Table 7.4.1-1: 4 dB in LOS
+and 6 dB in NLOS for UMa; 4 dB in LOS for RMa below its breakpoint distance.
 
-The model takes the standard deviation from the path-loss strategy's
-getShadowingStdDev(), which is given the deployment, the distances and the LOS
-state, but not whether the UE is indoors: an indoor UMa UE gets the 4 dB (LOS)
-or 6 dB (NLOS) of TR 36.873 Table 7.3-6 and TR 38.901 Table 7.4.1-1.
-
-Checked on the first shadowing value of the links of seven indoor UEs, in LOS
-and in NLOS: under TR 38.901 on a UMa cell at 2 GHz and at 28 GHz, on an RMa
-cell at 2 GHz in LOS (its outdoor NLOS sigma is 8 dB too), and under TR 36.873
-on a UMa cell at 2 GHz. The value is one N(0, sigma) draw; it is divided by
-the standard-normal draw replayed from a copy of the model's generator, which
-gives sigma. ChannelModelIndoorShadowingSpec asserts the specifications as an
-expected failure. When the model follows them, change this test together with
-that one.
+Checked on the first shadowing value of the links of seven outdoor UEs, in LOS
+and in NLOS, on the cases of ChannelModelIndoorShadowingSpec: under TR 38.901
+on a UMa cell at 2 GHz and at 28 GHz, on an RMa cell at 2 GHz in LOS (its NLOS
+sigma is 8 dB indoors and outdoors), and under TR 36.873 on a UMa cell at
+2 GHz. The value is one N(0, sigma) draw; it is divided by the standard-normal
+draw replayed from a copy of the model's generator, which gives sigma.
 
 %includes:
 #include "SchedulerTestUtil.h"
@@ -121,13 +110,13 @@ auto sigmaOf = [&] (StochasticChannelModel *model, StubEndpoint& bs, StubEndpoin
     return value / omnetpp::normal(snapshot.rng(), 0, 1);
 };
 
-c.expectNear("PINNED DEFECT: an indoor UMa UE's shadow fading under TR 38.901 has the outdoor LOS sigma, 4 dB", sigmaOf(model901, bsEndpoint, ues[0], true, true), 4.0, 1e-9);
-c.expectNear("PINNED DEFECT: ...and the outdoor NLOS sigma, 6 dB, in NLOS", sigmaOf(model901, bsEndpoint, ues[1], true, false), 6.0, 1e-9);
-c.expectNear("PINNED DEFECT: ...the same at 28 GHz, 4 dB in LOS", sigmaOf(model901mm, bsEndpoint, ues[2], true, true), 4.0, 1e-9);
-c.expectNear("PINNED DEFECT: ...and 6 dB in NLOS", sigmaOf(model901mm, bsEndpoint, ues[3], true, false), 6.0, 1e-9);
-c.expectNear("PINNED DEFECT: an indoor RMa UE's shadow fading under TR 38.901 has the outdoor LOS sigma, 4 dB", sigmaOf(model901, rmaEndpoint, ues[4], true, true), 4.0, 1e-9);
-c.expectNear("PINNED DEFECT: an indoor UMa UE's shadow fading under TR 36.873 has the outdoor LOS sigma, 4 dB", sigmaOf(model873, bsEndpoint, ues[5], true, true), 4.0, 1e-9);
-c.expectNear("PINNED DEFECT: ...and the outdoor NLOS sigma, 6 dB, in NLOS", sigmaOf(model873, bsEndpoint, ues[6], true, false), 6.0, 1e-9);
+c.expectNear("an outdoor UMa UE's shadow fading under TR 38.901 has the LOS sigma, 4 dB", sigmaOf(model901, bsEndpoint, ues[0], false, true), 4.0, 1e-9);
+c.expectNear("...and the NLOS sigma, 6 dB, in NLOS", sigmaOf(model901, bsEndpoint, ues[1], false, false), 6.0, 1e-9);
+c.expectNear("...the same at 28 GHz, 4 dB in LOS", sigmaOf(model901mm, bsEndpoint, ues[2], false, true), 4.0, 1e-9);
+c.expectNear("...and 6 dB in NLOS", sigmaOf(model901mm, bsEndpoint, ues[3], false, false), 6.0, 1e-9);
+c.expectNear("an outdoor RMa UE's shadow fading under TR 38.901 has the LOS sigma, 4 dB", sigmaOf(model901, rmaEndpoint, ues[4], false, true), 4.0, 1e-9);
+c.expectNear("an outdoor UMa UE's shadow fading under TR 36.873 has the LOS sigma, 4 dB", sigmaOf(model873, bsEndpoint, ues[5], false, true), 4.0, 1e-9);
+c.expectNear("...and the NLOS sigma, 6 dB, in NLOS", sigmaOf(model873, bsEndpoint, ues[6], false, false), 6.0, 1e-9);
 
 c.summary();
 

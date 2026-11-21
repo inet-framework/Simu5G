@@ -142,7 +142,9 @@ auto shadowingRedrawnPast = [&](const std::string& what, StochasticChannelModel 
     c.check(what + ": the sample is held " + std::to_string((int)held) + " m from where it was drawn",
             atHeld == first && drawn(model) == before);
 
-    double sigma = pathLoss->getShadowingStdDev(deploymentOf(baseStation), d3D, d2D, los);
+    // an indoor UE's link has the study's outdoor-to-indoor sigma
+    double sigma = radioOf(node)->insideBuilding ? pathLoss->getIndoorShadowingStdDev(deploymentOf(baseStation))
+            : pathLoss->getShadowingStdDev(deploymentOf(baseStation), d3D, d2D, los);
     RngSnapshot snapshot(model);
     double updated = model->computeShadowing(d3D, d2D, los, linkTo(&baseStation, node, Coord(100 + redrawn, 0, 1.5)));
     double a = exp(-0.5 * (redrawn / distance));

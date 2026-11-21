@@ -366,8 +366,12 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, bool los
 
     double mean = 0;
 
-    // Get std deviation according to LOS/NLOS and selected scenario
-    double stdDev = pathLoss_->getShadowingStdDev(deploymentOf(link), d3D, d2D, los);
+    // Get std deviation according to LOS/NLOS and selected scenario, or the
+    // outdoor-to-indoor one if the UE end is inside a building
+    IRadioEndpoint *ueEnd = ueEndOf(link);
+    double stdDev = ueEnd != nullptr && ueEnd->isInsideBuilding()
+        ? pathLoss_->getIndoorShadowingStdDev(deploymentOf(link))
+        : pathLoss_->getShadowingStdDev(deploymentOf(link), d3D, d2D, los);
     double att;
 
     auto it = actualShadowingMap->find(key);
