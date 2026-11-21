@@ -1293,6 +1293,39 @@ GRADERS.update({
 })
 
 
+
+def grade_indoor_distance_spec(grader):
+    """Outdoors minus indoors, a UE's measured DL SINR is its O2I loss of TR
+    38.901 Table 7.4.3-2, low-loss model: PL_tw + 0.5 d2D-in + 4.4 z. The mean of
+    (difference - PL_tw) / 0.5 over the UEs estimates the mean of d2D-in, which
+    7.4.3.1 makes the minimum of two uniforms in [0, L): L/3."""
+    fc = 28.0
+    l_glass = 2 + 0.2 * fc
+    l_concrete = 5 + 4 * fc
+    pl_tw = 5 - 10 * math.log10(0.3 * 10 ** (-l_glass / 10) + 0.7 * 10 ** (-l_concrete / 10))
+    df = scave.get_scalars('module =~ "*.ue[*].cellularNic.nrRadio.receiver" AND name =~ "measuredSinrDl:mean"',
+                           include_itervars=True, convert_to_base_unit=False)
+    if df.empty:
+        raise LookupError("no measuredSinrDl recorded")
+    sinrs = {(row.scenario.strip('"'), row.indoor, row.module.split('.')[1]): row.value for row in df.itertuples()}
+    for scenario, length in (('URBAN_MACROCELL', 25.0), ('RURAL_MACROCELL', 10.0)):
+        ues = sorted({key[2] for key in sinrs if key[0] == scenario})
+        if len(ues) != 256:
+            raise LookupError(f"expected 256 UEs in {scenario}, found {len(ues)}")
+        # nan fails: a UE without the statistic says nothing
+        estimates = [(sinrs.get((scenario, 'false', ue), float('nan')) - sinrs.get((scenario, 'true', ue), float('nan')) - pl_tw) / 0.5
+                     for ue in ues]
+        mean = sum(estimates) / len(estimates)
+        sigma = math.sqrt(length ** 2 / 18 + 8.8 ** 2) / math.sqrt(len(estimates))
+        grader.check_absolute('mean-indoor-distance', f'{scenario} (minimum of two uniforms in [0, {length:g}) m)',
+                              mean, length / 3, SIGMA_K * sigma, " m")
+
+
+GRADERS.update({
+    'IndoorDistanceSpec': grade_indoor_distance_spec,
+})
+
+
 def main():
     if len(sys.argv) != 3 or sys.argv[1] != '--grade':
         print("usage: physics_reference.py --grade <result-directory>", file=sys.stderr)
@@ -1335,3 +1368,4 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+

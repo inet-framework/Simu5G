@@ -1,0 +1,105 @@
+%description:
+
+The indoor distance d2D-in of a UE under TR 38.901's multi-carrier O2I model,
+through the real PHY: the minimum of two uniform draws, with a range that
+depends on the scenario. The model deviates (model-deviations item 17): it
+draws one uniform in [0, 25) m in every scenario. CellularRadioIndoorDraw pins
+what the radio draws, so that this test fails on its checks and not on an
+abort.
+
+TR 38.901 v16.1.0 7.4.3.1, for the O2I models of Table 7.4.3-2: "d2D-in is
+minimum of two independently generated uniformly distributed variables between
+0 and 25 m for UMa and UMi-Street Canyon, and between 0 and 10 m for RMa. d2D-in
+shall be UT-specifically generated." The single-frequency model of Table 7.4.3-3
+(UMa and UMi below 6 GHz) takes "a single, link-specific, uniformly distributed
+variable between 0 and 25 m" instead; IndoorOneRadioTwoCarriers covers that.
+
+Real NrUe and gNodeB nodes run on one carrier at 28 GHz, where Table 7.4.3-2
+applies in UMa, and in RMa, which has the low-loss model of that table at every
+frequency. 256 UEs stand at one place, 60 m from the base station, indoors and
+outdoors, with a fixed LOS state, and fading, shadowing and interference off.
+Outdoors minus indoors, a UE's measured DL SINR is its O2I loss:
+
+    PL_tw + 0.5 d2D-in + 4.4 z,   PL_tw = 5 - 10 log10(0.3 10^(-L_glass/10) + 0.7 10^(-L_concrete/10))
+
+with z the UE's standard normal deviate (sigma_P = 4.4 dB, low-loss model).
+So (SINR_outdoor - SINR_indoor - PL_tw) / 0.5 is d2D-in + 8.8 z, and its mean
+over the UEs estimates the mean of d2D-in: L/3 for the minimum of two uniforms
+in [0, L), where one uniform has L/2. The mean is graded against L/3, 8.33 m in
+UMa and 3.33 m in RMa, to within 4 standard errors (sqrt(L^2/18 + 8.8^2) /
+sqrt(256): 2.6 m in UMa, 2.3 m in RMa). One uniform in [0, 25) gives 12.5 m.
+
+%expected-failure: an indoor UE's d2D-in is one uniform in [0, 25) m, where TR 38.901 7.4.3.1 takes the minimum of two, in [0, 25) m for UMa and [0, 10) m for RMa
+
+%extraargs: -c IndoorDistanceSpec
+
+%file: demo.xml
+<config>
+    <interface among='eNB* eNodeB* enb* *Enb* gNB* gNodeB* gnb* *Gnb* upf* *Upf* mecHost* pgw*' address='10.x.x.x' netmask='255.255.255.0'/>
+    <interface hosts='*' address='192.168.x.x' netmask='255.255.x.x'/>
+</config>
+
+%inifile: omnetpp.ini
+
+[Config IndoorDistanceSpec]
+network = simu5g.simulations.nr.networks.SingleCell_Standalone
+
+# the positions this test gives the nodes are their antennas': no height offset
+**.antenna.mobility.offsetZ = 0m
+sim-time-limit = 0.1s
+**.routingRecorder.enabled = false
+cmdenv-express-mode = true
+cmdenv-status-frequency = 10000000s
+seed-set = 0
+
+output-scalar-file = results/${iterationvarsf}${repetition}.sca
+output-vector-file = results/${iterationvarsf}${repetition}.vec
+**.vector-recording = false
+
+############### The sweep ##############
+*.ue[*].**.insideBuilding = ${indoor = false, true}
+*.gnb.cellularNic.radio.scenario = ${scenario = "URBAN_MACROCELL", "RURAL_MACROCELL"}
+
+############### One carrier at 28 GHz, under TR 38.901 ##############
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 28GHz
+*.carrierAggregation.componentCarrier[0].numBands = 6
+*.radioMedium.nrChannelModelType = "Tr38901ChannelModel"
+
+############### Geometry: every UE at one place, below the breakpoint distance ##############
+*.gnb.mobility.initialX = 300m
+*.gnb.mobility.initialY = 300m
+*.gnb.mobility.initialZ = 25m
+*.numUe = 256
+*.ue[*].servingNodeId = 0
+*.ue[*].nrServingNodeId = 1
+*.ue[*].mobility.initialX = 360m
+*.ue[*].mobility.initialY = 300m
+*.ue[*].mobility.initialZ = 1.5m
+**.mobility.constraintAreaMinX = 0m
+**.mobility.constraintAreaMinY = 0m
+**.mobility.constraintAreaMinZ = 0m
+**.mobility.constraintAreaMaxX = 1000m
+**.mobility.constraintAreaMaxY = 1000m
+**.mobility.constraintAreaMaxZ = 50m
+**.mobility.initFromDisplayString = false
+
+############### The channel: one path loss and the indoor loss ##############
+**.dynamicLos = false
+**.fixedLos = true
+**.fading = false
+**.shadowing = false
+**.downlinkInterference = false
+**.uplinkInterference = false
+**.bgCellInterference = false
+**.extCellInterference = false
+
+*.configurator.config = xmldoc("./demo.xml")
+
+%postrun-command: ../../physics_reference.py --grade results >verdict.txt
+
+%contains: verdict.txt
+graded=2 failures=0
+
+%not-contains: verdict.txt
+FAILED
