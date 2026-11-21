@@ -289,7 +289,7 @@ double Tr38901PathLossModel::drawEnvironmentHeight(const Deployment& deployment,
 {
     if (deployment.scenario != URBAN_MACROCELL)
         return 1.0;
-    double G_2d = (d2D < 18.0) ? 0 : (5.0 / 4.0) * pow(d2D / 100.0, 3) * exp(-d2D / 150);
+    double G_2d = (d2D <= 18.0) ? 0 : (5.0 / 4.0) * pow(d2D / 100.0, 3) * exp(-d2D / 150);
     double C = (deployment.hUe < 13.0) ? 0 : pow(((deployment.hUe - 13.0) / 10.0), 1.5) * G_2d;
     double prob = 1.0 / (1.0 + C);
     // drawn only when it can come out otherwise

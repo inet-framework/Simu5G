@@ -75,6 +75,8 @@ for (double d : { 30.0, 100.0, 200.0 }) {
 double hE;
 probe.expectValue("TR 38.901: no draw at d2D = 17 m, where C = 0", drawsOf(m901, 17, hE), 0);
 probe.expectValue("...and h_E is 1 m", hE, 1);
+probe.expectValue("TR 38.901: no draw at d2D = 18 m, where g(d2D) = 0", drawsOf(m901, 18, hE), 0);
+probe.expectValue("...and h_E is 1 m", hE, 1);
 
 // d'BP = 4 (25-hE) (22.5-hE) fc/c: 1456 m at hE = 12 m, 64 m at hE = 21 m, 5504 m at hE = 1 m
 for (double hE : { 1.0, 12.0, 21.0 }) {
@@ -136,7 +138,7 @@ probe.summary();
 graded=33 failures=0
 
 %contains: stdout
-modelchecks=17 modelfailures=0
+modelchecks=19 modelfailures=0
 
 %not-contains: verdict.txt
 FAILED
