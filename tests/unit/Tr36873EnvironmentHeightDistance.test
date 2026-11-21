@@ -2,12 +2,22 @@
 
 A deviation of the TR 36.873 UMa environment height from the specification,
 recorded rather than fixed (model deviation 26). TR 36.873 v12.7.0 Table
-7.2-1 NOTE 4 draws h_E = 1 m with probability 1/(1+C(d2D, hUT)), with the
-C(d2D, hUT) of Table 7.2-2, which has a distance term; so does the model's
-own UMa LOS probability. Tr36873PathLossModel::drawEnvironmentHeight() takes
-C without it, ((hUT-13)/10)^1.5, so the probability of 1 m does not depend on
-the distance: at hUT = 22.5 m it is 0.52 everywhere, where the specification
-gives 0.98 at 30 m, 0.63 at 100 m and 0.29 at 200 m.
+7.2-1 NOTE 4: "h_E=1m with a probability equal to 1/(1+C(d2D, hUT)) and
+chosen from a discrete uniform distribution uniform(12,15,...,(hUT-1.5))
+otherwise. The function C(d2D, hUT) is defined in Table 7.2-2. Note that h_E
+depends on d2D and hUT and thus needs to be independently determined for
+every link between BS sites and UTs."
+
+Table 7.2-2 defines no C(d2D, hUT): it defines C'(hUT), 0 for hUT <= 13m and
+((hUT-13)/10)^1.5 for 13m < hUT <= 23m, and uses it in the UMa LOS
+probability as C'(hUT) 5/4 (d2D-out/100)^3 exp(-d2D-out/150). C(d2D, hUT) is
+read as that term, at d2D and 0 for d2D <= 18 m, as pathloss_reference.py
+does (_t873_c, "inferred, not quoted"): the note says h_E depends on d2D, and
+TR 38.901 Table 7.4.1-1 NOTE 1 writes C(d2D, hUT) out so.
+Tr36873PathLossModel::drawEnvironmentHeight() takes C'(hUT) alone, so the
+probability of 1 m does not depend on the distance: at hUT = 22.5 m it is
+0.52 everywhere, where the reading gives 0.98 at 30 m, 0.63 at 100 m and
+0.29 at 200 m.
 
 Graded from the frequencies of 40000 draws, as in PathLossEnvironmentHeight,
 which pins the current distribution. When fixed, drop the %expected-failure
