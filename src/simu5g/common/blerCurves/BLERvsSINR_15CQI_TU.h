@@ -22,6 +22,7 @@
 #ifndef BLERVSSINR_15CQI_TU_H_
 #define BLERVSSINR_15CQI_TU_H_
 
+#include <algorithm>
 #include <iostream>
 
 namespace simu5g {
@@ -124,49 +125,30 @@ static double SINR_15_CQI_TU[15][16] = {
 
 };
 
+// The BLER of a CQI at a SINR: the table at its points, linear between them.
+// The table ends at its first and last points; beyond them the end segment is
+// continued linearly until the BLER reaches 1 (below the first point) or 0
+// (above the last), so the lookup has no jump at either end.
 static double GetBLER_TU(double SINR, int cqi)
 {
-    int row = cqi - 1; // 0-based row index into the 15-row BLER/SINR tables
-    int index = -1;
-    double BLER = 0.0;
-    double R = 0.0;
+    const double *sinr = SINR_15_CQI_TU[cqi - 1]; // 0-based row index into the 15-row BLER/SINR tables
+    const double *bler = BLER_15_CQI_TU[cqi - 1];
 
-    if (SINR <= SINR_15_CQI_TU[row][0]) {
-        BLER = 1.0;
+    if (SINR < sinr[0]) {
+        double slope = (bler[1] - bler[0]) / (sinr[1] - sinr[0]);
+        return std::min(1.0, bler[0] + slope * (SINR - sinr[0]));
     }
-    else if (SINR >= SINR_15_CQI_TU[row][15]) {
-        BLER = 0.0;
+    if (SINR > sinr[15]) {
+        double slope = (bler[15] - bler[14]) / (sinr[15] - sinr[14]);
+        return std::max(0.0, bler[15] + slope * (SINR - sinr[15]));
     }
-    else {
-        for (int i = 0; i < 15; i++) {
-            if (SINR >= SINR_15_CQI_TU[row][i] && SINR < SINR_15_CQI_TU[row][i + 1]) {
-                index = i;
-                //std::cout << SINR_15_CQI_TU [row] [i] << " - " << SINR_15_CQI_TU [row] [i+1] << std::endl;
-            }
-        }
-    }
-
-    if (index != -1) {
-        R = (SINR - SINR_15_CQI_TU[row][index]) / (SINR_15_CQI_TU[row][index + 1] - SINR_15_CQI_TU[row][index]);
-
-        BLER = BLER_15_CQI_TU[row][index] + R * (BLER_15_CQI_TU[row][index + 1] - BLER_15_CQI_TU[row][index]);
-    }
-
-    if (BLER >= 0.1) {
-#ifdef BLER_DEBUG
-        std::cout << "SINR " << SINR << " "
-                  << "CQI " << cqi << " "
-                  << "SINRprec " << SINR_15_CQI_TU[row][index] << " "
-                  << "SINRsucc " << SINR_15_CQI_TU[row][index + 1] << " "
-                  << "BLERprec " << BLER_15_CQI_TU[row][index] << " "
-                  << "BLERsucc " << BLER_15_CQI_TU[row][index + 1] << " "
-                  << "R " << R << " "
-                  << "BLER " << BLER << " "
-                  << std::endl;
-#endif
-    }
-
-    return BLER;
+    int i = 0;
+    while (SINR > sinr[i + 1])
+        i++;
+    if (SINR == sinr[i + 1])
+        return bler[i + 1];
+    double r = (SINR - sinr[i]) / (sinr[i + 1] - sinr[i]);
+    return bler[i] + r * (bler[i + 1] - bler[i]);
 }
 
 } //namespace

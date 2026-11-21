@@ -12,22 +12,15 @@ measured points (BLERvsSINR_15CQI_TU.h), not a closed form, so what is
 checked here are the properties the table and its lookup have to have to
 mean anything, and the model's own stated contracts.
 
-Deliberately included are two things that are arguably defects. The test
-asserts the behaviour as it is today, so that a refactoring which changes it
+The checks state the lookup's contract as it is, so that a change to it
 fails a named check that says what changed, rather than only a fingerprint:
 
- - PhyPisaData's minSnr()/maxSnr() do not agree with the table they are
-   commented as coming from. The checks below locate the real saturation
-   points by probing rather than by trusting either the constants or the
-   table, and then state the disagreement.
- - For CQI 11-15 the table's last point is an error floor, not zero, and
-   the lookup returns zero there anyway. At the other end, CQI 14 and 15
-   tabulate 0.98 and 0.964 at their first points, and the lookup returns 1.
-
-The two lookup defects are pinned here as PINNED DEFECT checks, not endorsed:
-the table is the oracle, and BlerCurveTableEnds asserts it as an expected
-failure. The pins make any change to the lookup fail by name; when the lookup
-honours the end points, change them together with that test.
+ - Where the curves really start and stop, found by probing rather than by
+   trusting PhyPisaData's minSnr()/maxSnr() or the comments on them, and
+   that the two agree with it.
+ - At the ends: the tabulated BLER at each end point (CQI 11-15 end on an
+   error floor, CQI 14 and 15 start below 1), and beyond them the end
+   segment continued to 0 or 1 (BlerCurveContinuity, BlerCurveTableEnds).
 
 The other property that ought to hold and does not -- BLER falling
 monotonically with SINR -- is asserted by BlerCurveMonotonicity.test as an
@@ -134,10 +127,9 @@ PhyPisaData pisa;
 }
 {
     // Where the curves really start and stop, found by probing, against what
-    // PhyPisaData declares. minSnr() agrees. maxSnr() does not: it claims 40
-    // while the last CQI is already error-free at 38, so there is a 2 dB strip
-    // in which getCqi does not take its CQI-15 shortcut and searches instead --
-    // arriving at 15 anyway, because every CQI reports zero BLER there.
+    // PhyPisaData declares. Both agree: the last curve, CQI 15's, falls along
+    // its last segment to 0 at 39.67 dB, so it is error-free from 40 dB, where
+    // maxSnr() puts it and the error model stops reading the curves.
     //
     // The comments in PhyPisaData.h name SINR_15_CQI_TU[0][0] and [14][15] as
     // these two constants; neither matches (-14.5 and 38.0 respectively).
@@ -147,27 +139,24 @@ PhyPisaData pisa;
     int firstErrorFree = lowestErrorFreeSnr(pisa, 15);
     c.expectValue("minSnr() is the last SINR at which even CQI 1 is hopeless",
             pisa.minSnr(), firstUseful - 1);
-    c.expectValue("CQI 15 is error-free from 38 dB up", firstErrorFree, 38);
-    c.check("maxSnr() overshoots the point where the last curve ends",
-            pisa.maxSnr() > firstErrorFree,
+    c.expectValue("CQI 15 is error-free from 40 dB up", firstErrorFree, 40);
+    c.check("maxSnr() is where the last curve ends",
+            pisa.maxSnr() == firstErrorFree,
             "maxSnr=" + std::to_string(pisa.maxSnr()) + " errorFreeFrom=" + std::to_string(firstErrorFree));
 }
 {
-    // What the lookup does at each curve's last tabulated point. GetBLER_TU
-    // returns 0 for any SINR at or above SINR_15_CQI_TU[row][15] and never
-    // reads BLER_15_CQI_TU[row][15]. For CQI 11-15 that value is not 0: the
-    // table ends on an error floor, and the lookup turns it into a cliff --
-    // CQI 11, for one, goes from 0.06 at 20 dB to 0 at 21 dB, where the table
-    // says 0.02. Pinned as the model's current contract, so that holding the
-    // floor (or replacing the curves) fails here and says so.
+    // What the lookup does at each curve's last tabulated point. For CQI 11-15
+    // the table ends on an error floor (CQI 11: 0.02 at 21 dB), and the lookup
+    // gives it there, then continues the last segment down to 0 above it
+    // (BlerCurveContinuity), so that replacing the curves, or holding the
+    // floor, fails here and says so.
     bool tableHasFloor = true;
     bool floorBelowLastPoint = true;
-    bool cliffAtLastPoint = true;
+    bool floorAtLastPoint = true;
     std::string detail;
     for (int cqi = 11; cqi <= 15; cqi++) {
         int row = cqi - 1;
-        // the first integer SINR at or above the last point
-        int lastPoint = (int)std::ceil(SINR_15_CQI_TU[row][15]);
+        double lastPoint = SINR_15_CQI_TU[row][15];
         double tabulated = BLER_15_CQI_TU[row][15];
         double below = pisa.getBler(cqi, lastPoint - 1);
         double at = pisa.getBler(cqi, lastPoint);
@@ -175,22 +164,22 @@ PhyPisaData pisa;
             tableHasFloor = false;
         if (!(below > 0.0))
             floorBelowLastPoint = false;
-        if (at != 0.0)
-            cliffAtLastPoint = false;
+        if (at != tabulated)
+            floorAtLastPoint = false;
         detail += " cqi" + std::to_string(cqi) + ": " + std::to_string(below) + "@" + std::to_string(lastPoint - 1)
                 + "dB -> " + std::to_string(at) + "@" + std::to_string(lastPoint) + "dB (table " + std::to_string(tabulated) + ")";
     }
     c.check("the table ends on a non-zero BLER for CQI 11-15", tableHasFloor, detail);
     c.check("...which the lookup still reports one step below the last point", floorBelowLastPoint, detail);
-    c.check("PINNED DEFECT: ...and replaces with 0 at the last point itself", cliffAtLastPoint, detail);
+    c.check("...and the tabulated value at the last point itself", floorAtLastPoint, detail);
 }
 {
-    // The same at the other end: GetBLER_TU returns 1 for any SINR at or below
-    // SINR_15_CQI_TU[row][0], where CQI 14 and 15 tabulate less than that.
+    // The same at the other end: CQI 14 and 15 tabulate less than 1 at their
+    // first point, and the lookup gives it there.
     bool belowOne = BLER_15_CQI_TU[13][0] < 1.0 && BLER_15_CQI_TU[14][0] < 1.0;
-    bool lookupOne = GetBLER_TU(SINR_15_CQI_TU[13][0], 14) == 1.0 && GetBLER_TU(SINR_15_CQI_TU[14][0], 15) == 1.0;
+    bool lookupTabulated = GetBLER_TU(SINR_15_CQI_TU[13][0], 14) == BLER_15_CQI_TU[13][0] && GetBLER_TU(SINR_15_CQI_TU[14][0], 15) == BLER_15_CQI_TU[14][0];
     c.check("the table starts below BLER 1 for CQI 14 and 15", belowOne);
-    c.check("PINNED DEFECT: ...and the lookup gives 1 at their first point anyway", lookupOne);
+    c.check("...and the lookup gives the tabulated value there", lookupTabulated);
 }
 {
     // The non-monotonic points of the table (BlerCurveMonotonicity asserts the
