@@ -116,10 +116,9 @@ Cqi BackgroundTrafficManagerBase::computeCqi(int bgUeIndex, Direction dir)
 
 Cqi BackgroundTrafficManagerBase::computeCqiFromSinr(double sinr)
 {
-    int newsnr = floor(sinr + 0.5);
-    if (newsnr <= phyPisaData_->minSnr())
+    if (phyPisaData_->isBelowCurves(sinr))
         return 0;
-    if (newsnr > phyPisaData_->maxSnr())
+    if (sinr > phyPisaData_->maxSnr())
         return 15;
 
     std::vector<double> min;
@@ -132,7 +131,7 @@ Cqi BackgroundTrafficManagerBase::computeCqiFromSinr(double sinr)
     double targetBler = 0.01; // TODO get this from parameters
 
     for (int i = 0; i < phyPisaData_->nCqi(); i++) {
-        double tmp = phyPisaData_->getBler(i + 1, newsnr);
+        double tmp = phyPisaData_->getBler(i + 1, sinr);
         double diff = targetBler - tmp;
         min[i] = (diff > 0) ? diff : (diff * -1);
         if (low >= min[i]) {

@@ -109,14 +109,11 @@ PhyPisaData pisa;
     c.expectValue("CQI 15 is error-free far above its curve", (long long)(pisa.getBler(15, 50) * 100), 0);
 }
 {
-    // getBler's SINR parameter is an int, so the curve is only ever sampled at
-    // 1 dB granularity even though GetBLER_TU interpolates on a double. A
-    // refactoring that widens the parameter would start sampling between these
-    // points, which is a behaviour change worth noticing: CQI 7's curve falls
-    // from 0.036 at 10 dB to 0.008 at 11, so 10.9 dB would read differently.
-    double between = 10.9;
-    c.check("the lookup is sampled at integer SINR only",
-            pisa.getBler(7, between) == pisa.getBler(7, 10));
+    // The lookup reads the curve at the SINR as it is, interpolating linearly
+    // between the tabulated points: CQI 7's curve falls from 0.036 at 10 dB to
+    // 0.008 at 11, so 10.9 dB reads 0.036 + 0.9 (0.008 - 0.036).
+    c.expectNear("the lookup interpolates between the tabulated points",
+            pisa.getBler(7, 10.9), pisa.getBler(7, 10) + 0.9 * (pisa.getBler(7, 11) - pisa.getBler(7, 10)), 1e-12);
 }
 {
     // blerShift displaces the curve along the SINR axis, and it does so once:
@@ -169,8 +166,7 @@ PhyPisaData pisa;
     std::string detail;
     for (int cqi = 11; cqi <= 15; cqi++) {
         int row = cqi - 1;
-        // the first integer SINR at or above the last point: the error model
-        // samples the curve at integer SINR only (see above)
+        // the first integer SINR at or above the last point
         int lastPoint = (int)std::ceil(SINR_15_CQI_TU[row][15]);
         double tabulated = BLER_15_CQI_TU[row][15];
         double below = pisa.getBler(cqi, lastPoint - 1);
@@ -235,16 +231,7 @@ PhyPisaData pisa;
             fb.getCqi(pisa.minSnr()), 0);
     c.expectValue("CQI is 15 above the top of the usable range",
             fb.getCqi(pisa.maxSnr() + 1), 15);
-
-    // getCqi ROUNDS its SINR (floor(snr+0.5)), while the error model TRUNCATES
-    // the same quantity (StochasticChannelModel: int snr = snrV[band]). The two
-    // therefore disagree by up to 1 dB about which curve point applies to the
-    // same channel. Pinned as the model's current contract, so that a
-    // refactoring which unifies them fails here and says so.
-    c.expectValue("getCqi rounds a fractional SINR up from .5",
-            fb.getCqi(9.5), fb.getCqi(10.0));
-    c.expectValue("getCqi rounds a fractional SINR down below .5",
-            fb.getCqi(9.49), fb.getCqi(9.0));
+    // That getCqi reads the SINR as the error model does is BlerSinrConversion's.
 
     delete binder;
 }
@@ -273,7 +260,7 @@ PhyPisaData pisa;
 c.summary();
 
 %contains: stdout
-modelchecks=25 modelfailures=0
+modelchecks=23 modelfailures=0
 
 %not-contains: stdout
 FAILED

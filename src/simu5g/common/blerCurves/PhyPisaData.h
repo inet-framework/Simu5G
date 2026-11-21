@@ -33,8 +33,12 @@ class PhyPisaData
     int nCqi() { return 15; }
 
     // BLER of the given CQI (1-15, per 3GPP) at the given SINR (dB), read from the
-    // single TU curve set of BLERvsSINR_15CQI_TU.h, whatever the transmission mode
-    double getBler(int cqi, int sinr) { return GetBLER_TU(sinr + blerShift_, cqi); };
+    // single TU curve set of BLERvsSINR_15CQI_TU.h, whatever the transmission mode,
+    // interpolated linearly between the tabulated points
+    double getBler(int cqi, double sinr) { return GetBLER_TU(sinr + blerShift_, cqi); };
+    // whether a SINR is below the curves: there even CQI 1, the most robust, has a
+    // BLER of 1, so no CQI can carry a block, and a block sent there is lost
+    bool isBelowCurves(double sinr) { return getBler(1, sinr) >= 1.0; }
     int minSnr() { return -14 - blerShift_; }//SINR_15_CQI_TU [0] [0];}
     int maxSnr() { return 40 - blerShift_; }//SINR_15_CQI_TU [14] [15];}
 

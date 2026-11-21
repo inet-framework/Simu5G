@@ -81,10 +81,9 @@ unsigned int LteFeedbackComputationRealistic::computeRank(MacNodeId id)
 
 Cqi LteFeedbackComputationRealistic::getCqi(double snr)
 {
-    int newsnr = floor(snr + 0.5);
-    if (newsnr <= phyPisaData_->minSnr())
+    if (phyPisaData_->isBelowCurves(snr))
         return 0;
-    if (newsnr > phyPisaData_->maxSnr())
+    if (snr > phyPisaData_->maxSnr())
         return 15;
     std::vector<double> min;
     int found = 0;
@@ -92,7 +91,7 @@ Cqi LteFeedbackComputationRealistic::getCqi(double snr)
 
     min = baseMin_;
     for (int i = 0; i < phyPisaData_->nCqi(); i++) {
-        double tmp = phyPisaData_->getBler(i + 1, newsnr);
+        double tmp = phyPisaData_->getBler(i + 1, snr);
         double diff = targetBler_ - tmp;
         min[i] = (diff > 0) ? diff : (diff * -1);
         if (low >= min[i]) {

@@ -36,9 +36,9 @@ std::optional<double> BlerCurveErrorModel::computePacketErrorRate(Direction dire
             if (cqi == 0)
                 return std::nullopt; // CQI 0 means channel below usable quality (e.g. after handover): loss
 
-            int snr = sinrPerBand[band];
+            double snr = sinrPerBand[band];
             double blockErrorRate;
-            if (snr < curves.minSnr())
+            if (curves.isBelowCurves(snr))
                 return std::nullopt;
             else if (snr > curves.maxSnr())
                 blockErrorRate = 0.0;
