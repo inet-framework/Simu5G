@@ -221,7 +221,10 @@ double Tr36873PathLossModel::drawEnvironmentHeight(const Deployment& deployment,
 {
     if (deployment.scenario != URBAN_MACROCELL)
         return 1.0;
-    double C = (deployment.hUe <= 13.0) ? 0 : pow(((deployment.hUe - 13.0) / 10.0), 1.5);
+    // C(d2D, hUT) of NOTE 4: the C'(hUT) of Table 7.2-2 with the distance term of
+    // the table's UMa LOS probability, 0 at d2D <= 18 m
+    double g = (d2D <= 18.0) ? 0 : (5.0 / 4.0) * pow(d2D / 100.0, 3) * exp(-d2D / 150.0);
+    double C = (deployment.hUe <= 13.0) ? 0 : pow(((deployment.hUe - 13.0) / 10.0), 1.5) * g;
     double prob = 1.0 / (1.0 + C);
     // drawn only when it can come out otherwise
     if (prob >= 1.0 || owner_->uniform(0.0, 1.0) < prob)

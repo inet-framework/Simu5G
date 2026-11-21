@@ -13,9 +13,9 @@ frequencies of 40000 draws, at hUT = 22.5 m (the set is then 12, 15, 18 and
 number is drawn. The path loss is graded at h_E = 1, 12 and 21 m on both
 sides of the breakpoint distance, which h_E moves.
 
-The TR 36.873 draw leaves out the distance term of C(d2D, hUT) (model
-deviation 26): its distribution is graded in
-Tr36873EnvironmentHeightDistance, an expected failure, and pinned here.
+TR 36.873 Table 7.2-2 defines C'(hUT) only; C(d2D, hUT) is read as C'(hUT)
+times the distance term of the table's UMa LOS probability, as
+pathloss_reference.py does (_t873_c).
 
 %includes:
 #include <map>
@@ -108,15 +108,15 @@ p.carrierFrequencyGHz = 0.8;
 Deployed<Tr36873PathLossModel> m873;
 p.apply(m873, this);
 
-// deviation 26: P(1 m) = 1/(1 + ((hUT-13)/10)^1.5) at every distance
-const double pinned = 1 / (1 + std::pow((22.5 - 13) / 10, 1.5));
 for (double d : { 30.0, 100.0, 200.0 }) {
     std::map<double, double> freq;
     int others = frequencies(m873, d, freq);
-    probe.expectValue("TR 36.873 (pin, deviation 26): P(h_E = 1 m) does not depend on d2D, at d2D=" + std::to_string((int)d),
-            std::fabs(freq[1] - pinned) <= 0.01 ? 1 : 0, 1);
+    for (double v : heValues)
+        probe.record("t873_p_he", p, { { "d2D", d }, { "hE", v } }, freq[v], 0.01);
     probe.expectValue("TR 36.873: no h_E outside 1 m and uniform(12,15,...,21) at d2D=" + std::to_string((int)d), others, 0);
 }
+probe.expectValue("TR 36.873: no draw at d2D = 18 m, where the distance term is 0", drawsOf(m873, 18, hE), 0);
+probe.expectValue("...and h_E is 1 m", hE, 1);
 
 for (double hE : { 1.0, 12.0, 21.0 }) {
     for (double d2D : { 500.0, 2000.0 }) {
@@ -135,10 +135,10 @@ probe.summary();
 %postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt
 
 %contains: verdict.txt
-graded=33 failures=0
+graded=48 failures=0
 
 %contains: stdout
-modelchecks=19 modelfailures=0
+modelchecks=18 modelfailures=0
 
 %not-contains: verdict.txt
 FAILED
