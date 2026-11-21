@@ -1,0 +1,124 @@
+%description:
+
+The CQI computation and the reception read the BLER curves at the same SINR.
+
+A CQI is chosen as the curve whose BLER is closest to the target BLER
+(LteFeedbackComputationRealistic::getCqi), and the reception then draws its
+error from the BLER of that curve (BlerCurveErrorModel). Both read the same
+table (PhyPisaData::getBler), so for the choice to mean anything they have to
+read it at the same SINR. Two properties, on a 0.1 dB grid from -20 to 45 dB:
+
+ - the CQI chosen at a SINR is the one whose BLER, as the error model reads it
+   at that SINR on one resource block, is closest to the target (ties go to the
+   higher CQI, as in getCqi);
+ - the CQI is 0 exactly where the error model loses the block outright, below
+   the curves.
+
+The reception has no other reading of the SINR than the error model's, so the
+error model is the reference here.
+
+%includes:
+#include <optional>
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+#include "simu5g/common/binder/Binder.h"
+#include "simu5g/stack/phy/radio/BlerCurveErrorModel.h"
+#include "simu5g/stack/phy/feedback/LteFeedbackComputationRealistic.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+// The CQI mapping is a protected seam of the feedback computation, exposed as
+// in BlerCqiRoundTrip.
+class ProbeFeedback : public LteFeedbackComputationRealistic
+{
+  public:
+    using LteFeedbackComputationRealistic::LteFeedbackComputationRealistic;
+    using LteFeedbackComputationRealistic::getCqi;
+};
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.radio.BlerCurveErrorModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        errorModel: BlerCurveErrorModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+*.binder.printTrafficGeneratorConfig = false
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *binder = harnessModule<Binder>(this, "binder");
+auto *errorModel = harnessModule<BlerCurveErrorModel>(this, "errorModel");
+const double targetBler = 0.001;  // PhyEnb's default
+ProbeFeedback feedback(binder, targetBler, 1);
+
+// one resource block on band 0, first transmission: the packet error rate is the BLER
+RbMap blocks;
+blocks[MACRO][Band(0)] = 1;
+auto blerAt = [&] (int cqi, double sinr) {
+    return errorModel->computePacketErrorRate(DL, cqi, std::vector<double>{ sinr }, blocks, 1);
+};
+
+int numChosen = 0, numAgree = 0, numBoundary = 0, numBoundaryAgree = 0;
+std::string firstDisagreement, firstBoundaryDisagreement;
+for (int k = -200; k <= 450; k++) {
+    double sinr = k / 10.0;
+    int cqi = feedback.getCqi(sinr);
+
+    numBoundary++;
+    bool lost = !blerAt(1, sinr).has_value();
+    if ((cqi == 0) == lost)
+        numBoundaryAgree++;
+    else if (firstBoundaryDisagreement.empty())
+        firstBoundaryDisagreement = "at " + std::to_string(sinr) + " dB the CQI is " + std::to_string(cqi) + " and the block is " + (lost ? "lost" : "not lost");
+
+    if (cqi == 0 || lost)
+        continue;
+    // the CQI the error model's reading of the curves gives; its packet error
+    // rate is 1 - (1 - BLER) on one block, which can break a tie between two
+    // curves by a rounding error, so distances within 1e-12 count as a tie
+    int best = 0;
+    double bestDistance = 2;
+    for (int i = 1; i <= 15; i++) {
+        double distance = std::fabs(targetBler - blerAt(i, sinr).value());
+        if (bestDistance >= distance - 1e-12) {
+            best = i;
+            bestDistance = distance;
+        }
+    }
+    numChosen++;
+    if (cqi == best)
+        numAgree++;
+    else if (firstDisagreement.empty())
+        firstDisagreement = "at " + std::to_string(sinr) + " dB the CQI is " + std::to_string(cqi) + ", the error model's reading gives " + std::to_string(best);
+}
+
+c.expectValue("the CQI is the curve whose BLER, read by the error model at the same SINR, is closest to the target", numAgree, numChosen);
+if (!firstDisagreement.empty())
+    std::cout << "first disagreement: " << firstDisagreement << std::endl;
+c.expectValue("the CQI is 0 exactly where the error model loses the block below the curves", numBoundaryAgree, numBoundary);
+if (!firstBoundaryDisagreement.empty())
+    std::cout << "first boundary disagreement: " << firstBoundaryDisagreement << std::endl;
+
+c.summary();
+
+%contains: stdout
+modelchecks=2 modelfailures=0
+
+%not-contains: stdout
+FAILED
