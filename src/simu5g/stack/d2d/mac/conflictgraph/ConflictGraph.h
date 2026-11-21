@@ -77,7 +77,8 @@ class LteMacEnb;
  *  to enable frequency reuse during resource allocation of D2D-capable UEs (i.e. conflicting
  *  UEs should not be allocated on the same resource block).
  *  This module builds a directed CG where vertices are UEs and there is an edge between UE a and
- *  UE b when the power perceived by b from a is above a certain threshold.
+ *  UE b when b is close enough to a to be interfered with: the path loss from a to b is below
+ *  a threshold, or the distance is below a radius.
  */
 class ConflictGraph
 {

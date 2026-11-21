@@ -25,16 +25,16 @@ class DistanceBasedConflictGraph : public ConflictGraph
     D2dBinder *d2dBinder_;
 
     // path loss-based thresholds (used by default)
-    double d2dDbmThreshold_;
-    double d2dMultiTxDbmThreshold_;
-    double d2dMultiInterfDbmThreshold_;
+    double d2dPathLossThreshold_;
+    double d2dMultiTxPathLossThreshold_;
+    double d2dMultiInterfPathLossThreshold_;
 
     // distance-based thresholds
     double d2dInterferenceRadius_ = -1.0;
     double d2dMultiTransmissionRadius_ = -1.0;
     double d2dMultiInterferenceRadius_ = -1.0;
 
-    // utility function to convert a distance to dBm according to the channel model
+    // the path loss between two positions, in dB, according to the channel model
     virtual double getPathLossBetween(const inet::Coord& a, const inet::Coord& b);
 
     // overridden functions
@@ -42,7 +42,7 @@ class DistanceBasedConflictGraph : public ConflictGraph
     void findEdges(const std::vector<CGVertex>& vertices) override;
 
   public:
-    DistanceBasedConflictGraph(Binder *binder, D2dBinder *d2dBinder, LteMacEnb *macEnb, bool reuseD2D, bool reuseD2DMulti, double dbmThresh);
+    DistanceBasedConflictGraph(Binder *binder, D2dBinder *d2dBinder, LteMacEnb *macEnb, bool reuseD2D, bool reuseD2DMulti, double pathLossThreshold);
 
     // set distance thresholds
     virtual void setThresholds(double d2dInterferenceRadius = -1.0, double d2dMultiTransmissionRadius = -1.0, double d2dMultiInterferenceRadius = -1.0);

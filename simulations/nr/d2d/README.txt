@@ -73,7 +73,7 @@ D2D configs move them to the direct link with the knobs below:
       *.gnb.cellularNic.mac.schedulingDisciplineUl = "ALLOCATOR_BESTFIT"
       *.gnb.cellularNic.mac.reuseD2D = true
       *.gnb.cellularNic.mac.conflictGraphUpdatePeriod = 1s
-      *.gnb.cellularNic.mac.conflictGraphThreshold = 90    # dBm
+      *.gnb.cellularNic.mac.conflictGraphThreshold = 90dB    # path loss
       Lets mutually non-interfering D2D pairs reuse the same resource blocks,
       based on a periodically recomputed conflict graph.
 

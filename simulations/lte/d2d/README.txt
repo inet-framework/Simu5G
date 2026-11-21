@@ -71,7 +71,7 @@ nodes; the Infra-only configs set hasD2D = false. The relevant knobs are:
       *.eNB.cellularNic.mac.schedulingDisciplineUl = "ALLOCATOR_BESTFIT"
       *.eNB.cellularNic.mac.reuseD2D = true
       *.eNB.cellularNic.mac.conflictGraphUpdatePeriod = 1s
-      *.eNB.cellularNic.mac.conflictGraphThreshold = 90    # dBm
+      *.eNB.cellularNic.mac.conflictGraphThreshold = 90dB    # path loss
       Lets mutually non-interfering D2D pairs reuse the same resource blocks,
       based on a periodically recomputed conflict graph.
 

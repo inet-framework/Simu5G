@@ -145,7 +145,7 @@ measurement-label = ${scen = "off", "pair", "sameCellUl", "otherCellUl", "cqiQui
 
 # The two pairs share the bands: no edge in the conflict graph
 *.gnb.cellularNic.mac.schedulingDisciplineUl = "ALLOCATOR_BESTFIT"
-*.gnb.cellularNic.mac.conflictGraphThreshold = -1000
+*.gnb.cellularNic.mac.conflictGraphThreshold = -1000dB
 
 ############### Geometry: every link between UEs below the breakpoint distance ##############
 *.gnb.mobility.initialX = 300m

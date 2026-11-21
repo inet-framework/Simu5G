@@ -45,10 +45,10 @@ module LteMacEnbD2D extends LteMacEnb
         bool reuseD2DMulti = default(false);
         double conflictGraphUpdatePeriod @unit(s) = default(1s);
 
-        // CG thresholds can be defined in either dBm or meters
-        // if distances are set to -1.0, then dBm thresholds are used,
-        // otherwise distances have priority on dBm thresholds
-        double conflictGraphThreshold = default(90);                       // dBm
+        // CG thresholds can be defined as a path loss in dB or as distances in meters
+        // if distances are set to -1.0, then the path loss threshold is used,
+        // otherwise distances have priority on the path loss threshold
+        double conflictGraphThreshold @unit(dB) = default(90dB);           // Path loss below which a D2D transmitter conflicts with another D2D link
         double conflictGraphD2DInterferenceRadius @unit(m) = default(-1.0m);         // Meters
         double conflictGraphD2DMultiTxRadius @unit(m) = default(-1.0m);              // Meters
         double conflictGraphD2DMultiInterferenceRadius @unit(m) = default(-1.0m);    // Meters
