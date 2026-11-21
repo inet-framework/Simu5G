@@ -289,6 +289,12 @@ class StochasticChannelModel : public ChannelModelBase
     PathLossModel::Deployment deploymentOf(const RadioLink& link) const;
 
     /*
+     * The UE end of a link, whose indoor state counts: the transmitter of an
+     * uplink, otherwise the receiver (the UE, or a D2D link's receiver)
+     */
+    static IRadioEndpoint *ueEndOf(const RadioLink& link) { return link.dir == UL ? link.txRadio : link.rxRadio; }
+
+    /*
      * The deployment of a link between two UEs, at the given positions, in
      * the given cell: the scenario is the cell's. No study here has such a
      * link: the formulas take the base station height the studies give for
@@ -321,7 +327,9 @@ class StochasticChannelModel : public ChannelModelBase
     /*
      * Decide whether the link is in line of sight -- drawn against the LOS
      * probability, or fixedLos if dynamicLos is off -- and record it in losMap(),
-     * with where the link's ends are and the link's UMa environment height
+     * with where the link's ends are and the link's UMa environment height.
+     * The LOS probability takes the outdoor part of d2D (d2D-out) when the UE
+     * end is inside a building; the environment height takes d2D.
      *
      * @param d3D 3D distance between UE and eNodeB
      * @param d2D 2D distance between UE and eNodeB
