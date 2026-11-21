@@ -3,7 +3,8 @@
 A deviation of StochasticChannelModel from the specifications, pinned and not
 endorsed: the shadow fading of an indoor UE's link has the standard deviation of
 the outdoor link in its LOS state, where TR 36.873 and the single-frequency
-model of TR 38.901 give an indoor UE's link 7 dB.
+model of TR 38.901 give an indoor UE's link 7 dB, and TR 38.901 Table 7.5-6
+gives it 7 dB in UMa and 8 dB in RMa.
 
 TR 36.873 v12.7.0 7.2.3, rows "3D-UMi O2I" and "3D-UMa O2I": "sigma_SF =7".
 TR 38.901 v16.1.0 Table 7.4.3-3 ("O2I building penetration loss model for
@@ -15,9 +16,10 @@ getShadowingStdDev(), which is given the deployment, the distances and the LOS
 state, but not whether the UE is indoors: an indoor UMa UE gets the 4 dB (LOS)
 or 6 dB (NLOS) of TR 36.873 Table 7.3-6 and TR 38.901 Table 7.4.1-1.
 
-Checked on a UMa cell with one carrier at 2 GHz, on the first shadowing value of
-the links of four indoor UEs, under the TR 38.901 and the TR 36.873 channel
-model, in LOS and in NLOS. The value is one N(0, sigma) draw; it is divided by
+Checked on the first shadowing value of the links of seven indoor UEs, in LOS
+and in NLOS: under TR 38.901 on a UMa cell at 2 GHz and at 28 GHz, on an RMa
+cell at 2 GHz in LOS (its outdoor NLOS sigma is 8 dB too), and under TR 36.873
+on a UMa cell at 2 GHz. The value is one N(0, sigma) draw; it is divided by
 the standard-normal draw replayed from a copy of the model's generator, which
 gives sigma. ChannelModelIndoorShadowingSpec asserts the specifications as an
 expected failure. When the model follows them, change this test together with
@@ -47,6 +49,9 @@ network Harness
         radioMedium: CellularRadioMedium;
         carrierAggregation: CarrierAggregation;
         model901: Tr38901ChannelModel;
+        model901mm: Tr38901ChannelModel {
+            componentCarrierModule = "carrierAggregation.componentCarrier[1]";
+        }
         model873: Tr36873ChannelModel;
         test: Test;
 }
@@ -58,10 +63,12 @@ cmdenv-express-mode = false
 cmdenv-log-prefix = ""
 sim-time-limit = 1s
 
-# one carrier below 6 GHz: a single-frequency simulation
-*.carrierAggregation.numComponentCarriers = 1
+# one carrier below 6 GHz and one above
+*.carrierAggregation.numComponentCarriers = 2
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
 *.carrierAggregation.componentCarrier[0].numBands = 10
+*.carrierAggregation.componentCarrier[1].carrierFrequency = 28GHz
+*.carrierAggregation.componentCarrier[1].numBands = 10
 **.cellInfoModule = ""
 *.binder.printTrafficGeneratorConfig = false
 
@@ -75,48 +82,57 @@ sim-time-limit = 1s
 %activity:
 Checker c;
 auto *model901 = harnessModule<StochasticChannelModel>(this, "model901");
+auto *model901mm = harnessModule<StochasticChannelModel>(this, "model901mm");
 auto *model873 = harnessModule<StochasticChannelModel>(this, "model873");
 auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
 
-// a UMa base station and four UEs at one place, 100 m from it: a link each, so a
-// first shadowing value each
+// a UMa and an RMa base station, and UEs at one place, 100 m from them: a link
+// each, so a first shadowing value each
 StubEndpoint bsEndpoint;
 bsEndpoint.nodeId = MacNodeId(1);
 bsEndpoint.coord = Coord(0, 0, 25);
 StubRadioRegistration bsRadio(medium, bsEndpoint.nodeId, &bsEndpoint);
-StubEndpoint ues[4];
+StubEndpoint rmaEndpoint;
+rmaEndpoint.nodeId = MacNodeId(2);
+rmaEndpoint.scenario = RURAL_MACROCELL;
+rmaEndpoint.coord = Coord(0, 0, 35);
+StubRadioRegistration rmaRadio(medium, rmaEndpoint.nodeId, &rmaEndpoint);
+StubEndpoint ues[8];
 std::vector<std::unique_ptr<StubRadioRegistration>> ueRadios;
-for (int i = 0; i < 4; i++) {
+for (int i = 0; i < 8; i++) {
     ues[i].nodeId = MacNodeId(1025 + i);
     ues[i].coord = Coord(100, 0, 1.5);
     ueRadios.push_back(std::make_unique<StubRadioRegistration>(medium, ues[i].nodeId, &ues[i]));
 }
-const double d2D = 100.0, d3D = std::sqrt(100.0 * 100.0 + 23.5 * 23.5);
 
 wait(0.010);
 
 // The standard deviation a link's first shadowing value was drawn with: the
 // value is one N(0, sigma) draw, replayed here as a standard-normal one from a
 // copy of the model's generator, so their ratio is sigma.
-auto sigmaOf = [&] (StochasticChannelModel *model, StubEndpoint& ue, bool indoor, bool los) {
+auto sigmaOf = [&] (StochasticChannelModel *model, StubEndpoint& bs, StubEndpoint& ue, bool indoor, bool los) {
     ue.insideBuilding = indoor;
     ue.insideDistance = indoor ? 10.0 : 0.0;
+    double d2D = 100.0, d3D = std::sqrt(100.0 * 100.0 + (bs.coord.z - 1.5) * (bs.coord.z - 1.5));
     ChannelModelProbe probe(model);
-    RadioLink link = probe.whatIfLink(&ue, dlCqiTransmission(&bsEndpoint, ue.nodeId));
+    RadioLink link = probe.whatIfLink(&ue, dlCqiTransmission(&bs, ue.nodeId));
     RngSnapshot snapshot(model);
     double value = model->computeShadowing(d3D, d2D, los, link);
     return value / omnetpp::normal(snapshot.rng(), 0, 1);
 };
 
-c.expectNear("PINNED DEFECT: an indoor UMa UE's shadow fading under TR 38.901 has the outdoor LOS sigma, 4 dB", sigmaOf(model901, ues[0], true, true), 4.0, 1e-9);
-c.expectNear("PINNED DEFECT: ...and the outdoor NLOS sigma, 6 dB, in NLOS", sigmaOf(model901, ues[1], true, false), 6.0, 1e-9);
-c.expectNear("PINNED DEFECT: an indoor UMa UE's shadow fading under TR 36.873 has the outdoor LOS sigma, 4 dB", sigmaOf(model873, ues[2], true, true), 4.0, 1e-9);
-c.expectNear("PINNED DEFECT: ...and the outdoor NLOS sigma, 6 dB, in NLOS", sigmaOf(model873, ues[3], true, false), 6.0, 1e-9);
+c.expectNear("PINNED DEFECT: an indoor UMa UE's shadow fading under TR 38.901 has the outdoor LOS sigma, 4 dB", sigmaOf(model901, bsEndpoint, ues[0], true, true), 4.0, 1e-9);
+c.expectNear("PINNED DEFECT: ...and the outdoor NLOS sigma, 6 dB, in NLOS", sigmaOf(model901, bsEndpoint, ues[1], true, false), 6.0, 1e-9);
+c.expectNear("PINNED DEFECT: ...the same at 28 GHz, 4 dB in LOS", sigmaOf(model901mm, bsEndpoint, ues[2], true, true), 4.0, 1e-9);
+c.expectNear("PINNED DEFECT: ...and 6 dB in NLOS", sigmaOf(model901mm, bsEndpoint, ues[3], true, false), 6.0, 1e-9);
+c.expectNear("PINNED DEFECT: an indoor RMa UE's shadow fading under TR 38.901 has the outdoor LOS sigma, 4 dB", sigmaOf(model901, rmaEndpoint, ues[4], true, true), 4.0, 1e-9);
+c.expectNear("PINNED DEFECT: an indoor UMa UE's shadow fading under TR 36.873 has the outdoor LOS sigma, 4 dB", sigmaOf(model873, bsEndpoint, ues[5], true, true), 4.0, 1e-9);
+c.expectNear("PINNED DEFECT: ...and the outdoor NLOS sigma, 6 dB, in NLOS", sigmaOf(model873, bsEndpoint, ues[6], true, false), 6.0, 1e-9);
 
 c.summary();
 
 %contains: stdout
-modelchecks=4 modelfailures=0
+modelchecks=7 modelfailures=0
 
 %not-contains: stdout
 FAILED

@@ -544,6 +544,17 @@ def t901_sigma_o2i_sub6():
     return 7.0
 
 
+# Table 7.5-6 ("Channel model parameters"), row "Shadow fading (SF) [dB]",
+# sigma_SF, O2I columns: Part-1 UMi - Street Canyon "7" and UMa "7"; Part-2 RMa
+# "8". The LOS and NLOS columns say "See Table 7.4.1-1", which has no O2I value.
+def t901_sigma_o2i_uma():
+    return 7.0
+
+
+def t901_sigma_o2i_rma():
+    return 8.0
+
+
 def t901_o2i_lowloss_mean(fc, dIn):
     # 5 - 10 log10(0.3 10^(-L_glass/10) + 0.7 10^(-L_concrete/10)), sigma_P = 4.4
     l_glass = 2 + 0.2 * fc
