@@ -1,24 +1,20 @@
 %description:
 
-A deviation of StochasticChannelModel from the specification, pinned and not
-endorsed: the LOS state of an indoor UE's link is drawn against the LOS
-probability at the link's whole 2D distance, where the table takes the outdoor
-part of it.
+The LOS state of an indoor UE's link is drawn against the LOS probability at
+the outdoor part of the link's 2D distance, d2D-out.
 
-TR 38.901 v16.1.0 Table 7.4.2-1 ("LOS probability"), row UMa: "Pr_LOS = 1,
-d2D-out <= 18m", and for "18m < d2D-out" a function of d2D-out alone (and of
-h_UT); the rows RMa and UMi - Street canyon are functions of d2D-out likewise.
-Figure 7.4.1-2 ("Definition of d2D-out, d2D-in and d3D-out, d3D-in for indoor
-UTs") has d2D = d2D-out + d2D-in. The model passes the strategy the link's d2D.
+TR 38.901 v16.1.0 Table 7.4.2-1 ("LOS probability") gives the RMa, UMi - Street
+canyon and UMa probabilities as functions of d2D-out; Figure 7.4.1-2
+("Definition of d2D-out, d2D-in and d3D-out, d3D-in for indoor UTs") has
+d2D = d2D-out + d2D-in.
 
-Checked on a UMa cell, on fifty indoor UEs 40 m from the base station on the
-ground and 25 m inside their building, so d2D-out = 15 m. Each link's first
-evaluation draws its LOS state; the draw is replayed from a copy of the model's
-generator. Every state is the draw against the probability at d2D = 40 m,
-0.7415, and so some of the links are NLOS; at d2D-out = 15 m the table's
-probability is 1. ChannelModelIndoorLineOfSightSpec asserts the specification as
-an expected failure. When the model follows it, change this test together with
-that one.
+Checked on a UMa cell, on fifty indoor UEs 60 m from the base station on the
+ground and 25 m inside their building, so d2D-out = 35 m, where the probability
+is 0.793 (0.570 at d2D = 60 m). Each link's first evaluation draws its LOS
+state; the draw is replayed from a copy of the model's generator. Every state
+is the draw against the probability at d2D-out, and some are not what a draw
+against the probability at d2D would give. ChannelModelIndoorLineOfSightSpec
+has the case d2D-out <= 18 m, where the probability is 1.
 
 %includes:
 #include "SchedulerTestUtil.h"
@@ -70,10 +66,10 @@ auto *model = harnessModule<StochasticChannelModel>(this, "channelModel");
 auto *medium = harnessModule<CellularRadioMedium>(this, "radioMedium");
 ChannelModelProbe probe(model);
 
-// a UMa base station, and fifty indoor UEs at one place: 40 m from it on the
-// ground, 25 m inside their building, so 15 m of the 40 are outdoors
+// a UMa base station, and fifty indoor UEs at one place: 60 m from it on the
+// ground, 25 m inside their building, so 35 m of the 60 are outdoors
 const int numUes = 50;
-const double d2D = 40.0, d2DIn = 25.0;
+const double d2D = 60.0, d2DIn = 25.0;
 StubEndpoint bs;
 bs.nodeId = MacNodeId(1);
 bs.coord = Coord(0, 0, 25);
@@ -97,21 +93,21 @@ wait(0.010);
 
 // The first evaluation of each UE's downlink draws its LOS state; the draw is
 // replayed from a copy of the model's generator.
-int numLos = 0, numAsAtD2D = 0;
+int numAsAtD2D = 0, numAsAtD2DOut = 0;
 for (int i = 0; i < numUes; i++) {
     RadioLink link = probe.whatIfLink(ues[i].get(), dlCqiTransmission(&bs, ues[i]->nodeId));
     RngSnapshot snapshot(model);
     model->getAttenuation(link);
     bool los = probe.losMap().at(link.stateKey()).los;
     double u = omnetpp::uniform(snapshot.rng(), 0.0, 1.0);
-    numLos += los;
     numAsAtD2D += (los == (u <= pAtD2D));
+    numAsAtD2DOut += (los == (u <= pAtD2DOut));
 }
 
-c.expectNear("the strategy's LOS probability at d2D = 40 m, for a 1.5 m UT", pAtD2D, 18.0 / 40 + std::exp(-40.0 / 63) * (1 - 18.0 / 40), 1e-12);
-c.expectNear("...and at d2D-out = 15 m", pAtD2DOut, 1.0, 0);
-c.expectValue("PINNED DEFECT: an indoor UE's LOS state is its draw against the probability at d2D, for every one of the links", numAsAtD2D, numUes);
-c.check("PINNED DEFECT: ...so some of the links are NLOS, 15 m outdoors from the base station", numLos < numUes, std::to_string(numLos) + " of " + std::to_string(numUes) + " in LOS");
+c.expectNear("the strategy's LOS probability at d2D = 60 m, for a 1.5 m UT", pAtD2D, 18.0 / 60 + std::exp(-60.0 / 63) * (1 - 18.0 / 60), 1e-12);
+c.expectNear("...and at d2D-out = 35 m", pAtD2DOut, 18.0 / 35 + std::exp(-35.0 / 63) * (1 - 18.0 / 35), 1e-12);
+c.expectValue("An indoor UE's LOS state is its draw against the probability at d2D-out, for every one of the links", numAsAtD2DOut, numUes);
+c.check("...and for some of them that is not the draw against the probability at d2D", numAsAtD2D < numUes, std::to_string(numAsAtD2D) + " of " + std::to_string(numUes) + " agree with it");
 
 c.summary();
 

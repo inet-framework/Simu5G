@@ -312,10 +312,9 @@ RadioLink StochasticChannelModel::linkFor(IRadioEndpoint *radio, UserControlInfo
 
 double StochasticChannelModel::getAttenuation(const RadioLink& link)
 {
-    // a building's penetration loss is the UE end's: the transmitter of an
-    // uplink, otherwise the receiver (the UE, or a D2D link's receiver); a
-    // phantom radio says it is outdoors
-    IRadioEndpoint *ueEnd = link.dir == UL ? link.txRadio : link.rxRadio;
+    // a building's penetration loss is the UE end's; a phantom radio says it
+    // is outdoors
+    IRadioEndpoint *ueEnd = ueEndOf(link);
     PathLossModel::LinkConditions conditions;
     conditions.indoor = ueEnd != nullptr && ueEnd->isInsideBuilding();
     conditions.indoorDistance = ueEnd != nullptr ? ueEnd->getInsideDistance() : 0.0;
@@ -419,7 +418,7 @@ double StochasticChannelModel::getShadowingCorrelationDistance(const RadioLink& 
     if (!std::isnan(correlationDistance_))
         return correlationDistance_;
     // the UE end of the link, as for its building penetration loss
-    IRadioEndpoint *ueEnd = link.dir == UL ? link.txRadio : link.rxRadio;
+    IRadioEndpoint *ueEnd = ueEndOf(link);
     PathLossModel::LinkConditions conditions;
     conditions.indoor = ueEnd != nullptr && ueEnd->isInsideBuilding();
     return pathLoss_->getShadowingCorrelationDistance(deploymentOf(link), los, conditions);
@@ -919,7 +918,12 @@ void StochasticChannelModel::computeLosProbability(double d3D, double d2D,
     if (!dynamicLos_)
         sample.los = fixedLos_;
     else {
-        double p = pathLoss_->computeLosProbability(deploymentOf(link), d3D, d2D);
+        // d2D-out: the part of d2D outside an indoor UE's building
+        IRadioEndpoint *ueEnd = ueEndOf(link);
+        double d2DOut = d2D;
+        if (ueEnd != nullptr && ueEnd->isInsideBuilding())
+            d2DOut = d2D - std::min(ueEnd->getInsideDistance(), d2D);
+        double p = pathLoss_->computeLosProbability(deploymentOf(link), d3D, d2DOut);
         sample.los = (uniform(0.0, 1.0) <= p);
     }
     // the link's UMa environment height is drawn with its LOS state

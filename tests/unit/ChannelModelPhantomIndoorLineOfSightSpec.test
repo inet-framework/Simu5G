@@ -2,9 +2,7 @@
 
 The LOS state of the link from an external or background cell to an indoor UE,
 as TR 38.901 gives its probability: at the outdoor part of the link's 2D
-distance. The model deviates: it takes the whole 2D distance.
-ChannelModelPhantomIndoorLineOfSight pins what the model does, so that this
-test fails on its check and not on an abort.
+distance.
 
 TR 38.901 v16.1.0 Table 7.4.2-1 ("LOS probability"), row UMa: "Pr_LOS = 1,
 d2D-out <= 18m". Figure 7.4.1-2 ("Definition of d2D-out, d2D-in and d3D-out,
@@ -14,8 +12,6 @@ Checked on a UMa background cell, on fifty indoor UEs 40 m from it on the
 ground and 25 m inside their building, so d2D-out = 15 m, not above 18 m: the
 LOS probability is 1, and every one of the fifty phantom links is in LOS,
 whatever is drawn.
-
-%expected-failure: the LOS state of a phantom link to an indoor UE is drawn against the LOS probability at d2D, where TR 38.901 Table 7.4.2-1 takes d2D-out
 
 %includes:
 #include "SchedulerTestUtil.h"
