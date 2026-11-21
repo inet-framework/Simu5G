@@ -1,0 +1,128 @@
+%description:
+
+A deviation of StochasticChannelModel from the specification, pinned and not
+endorsed, on the phantom links' path: the LOS state of the link from an
+external or background cell to an indoor UE is drawn against the LOS
+probability at the link's whole 2D distance, where the table takes the outdoor
+part of it. ChannelModelIndoorLineOfSight pins the same on a real cell's link.
+
+TR 38.901 v16.1.0 Table 7.4.2-1 ("LOS probability"), row UMa: "Pr_LOS = 1,
+d2D-out <= 18m". Figure 7.4.1-2 has d2D = d2D-out + d2D-in.
+
+Checked on a UMa background cell, on fifty indoor UEs 40 m from it on the
+ground and 25 m inside their building, so d2D-out = 15 m. Each phantom link's
+first evaluation draws its LOS state; the draw is replayed from a copy of the
+model's generator. Every state is the draw against the probability at d2D =
+40 m, 0.7415, and so some of the links are NLOS.
+ChannelModelPhantomIndoorLineOfSightSpec asserts the specification as an
+expected failure. When the model follows it, change this test together with
+that one.
+
+%includes:
+#include "SchedulerTestUtil.h"
+#include "ChannelModelTestUtil.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+using inet::Coord;
+
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.stack.phy.channelmodel.Tr38901ChannelModel;
+
+network Harness
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        channelModel: Tr38901ChannelModel;
+        test: Test;
+}
+
+%inifile: omnetpp.ini
+[General]
+network = Harness
+cmdenv-express-mode = false
+cmdenv-log-prefix = ""
+sim-time-limit = 1s
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.carrierAggregation.componentCarrier[0].numBands = 10
+**.cellInfoModule = ""
+*.binder.printTrafficGeneratorConfig = false
+
+# the LOS state is drawn; the first number a link's first evaluation draws is its
+**.dynamicLos = true
+**.shadowing = false
+**.fading = false
+
+%no-default-inifile: 1
+
+%activity:
+Checker c;
+auto *model = harnessModule<StochasticChannelModel>(this, "channelModel");
+ChannelModelProbe probe(model);
+
+// a UMa background cell's phantom radio, and fifty indoor UEs at one place: 40 m
+// from it on the ground, 25 m inside their building, so 15 m of the 40 are outdoors
+const int numUes = 50;
+const double d2D = 40.0, d2DIn = 25.0;
+StubEndpoint phantom;
+phantom.nodeId = MacNodeId(900);
+phantom.coord = Coord(0, 0, 25);
+phantom.txPower = 46;
+std::vector<std::unique_ptr<StubEndpoint>> ues;
+for (int i = 0; i < numUes; i++) {
+    ues.push_back(std::make_unique<StubEndpoint>());
+    ues[i]->nodeId = MacNodeId(1025 + i);
+    ues[i]->coord = Coord(d2D, 0, 1.5);
+    ues[i]->insideBuilding = true;
+    ues[i]->insideDistance = d2DIn;
+}
+
+CellularTransmission transmission;
+transmission.transmitter = &phantom;
+transmission.phantomCell = this;
+transmission.sourceId = phantom.nodeId;
+transmission.cellId = phantom.nodeId;
+transmission.direction = DL;
+transmission.frameType = DATAPKT;
+transmission.txPower = phantom.txPower;
+transmission.startPosition = phantom.coord;
+transmission.startTime = omnetpp::simTime();
+
+const double d3D = phantom.coord.distance(ues[0]->coord);
+// the strategy's LOS probability at the whole 2D distance, and at its outdoor part
+const double pAtD2D = probe.pathLoss()->computeLosProbability(probe.deployment(25, 1.5), d3D, d2D);
+const double pAtD2DOut = probe.pathLoss()->computeLosProbability(probe.deployment(25, 1.5), d3D, d2D - d2DIn);
+
+wait(0.010);
+
+// The first evaluation of each UE's phantom link draws its LOS state; the draw
+// is replayed from a copy of the model's generator.
+int numLos = 0, numAsAtD2D = 0;
+for (int i = 0; i < numUes; i++) {
+    RngSnapshot snapshot(model);
+    probe.phantomPowerAt(transmission, ues[i].get());
+    bool los = probe.losMap().at(LinkKey(phantom.nodeId, ues[i]->nodeId)).los;
+    double u = omnetpp::uniform(snapshot.rng(), 0.0, 1.0);
+    numLos += los;
+    numAsAtD2D += (los == (u <= pAtD2D));
+}
+
+c.expectNear("the strategy's LOS probability at d2D = 40 m, for a 1.5 m UT", pAtD2D, 18.0 / 40 + std::exp(-40.0 / 63) * (1 - 18.0 / 40), 1e-12);
+c.expectNear("...and at d2D-out = 15 m", pAtD2DOut, 1.0, 0);
+c.expectValue("PINNED DEFECT: an indoor UE's phantom link is in the state of its draw against the probability at d2D, for every one of the links", numAsAtD2D, numUes);
+c.check("PINNED DEFECT: ...so some of the links are NLOS, 15 m outdoors from the background cell", numLos < numUes, std::to_string(numLos) + " of " + std::to_string(numUes) + " in LOS");
+
+c.summary();
+
+%contains: stdout
+modelchecks=4 modelfailures=0
+
+%not-contains: stdout
+FAILED
