@@ -1,0 +1,57 @@
+%description:
+
+The BLER lookup has no jump at either end of a curve, and reaches 0 below the
+error model's top: BlerCurveErrorModel takes a band above maxSnr() (40 dB) as
+error-free without reading the curves, so the curves must be 0 there already.
+
+At its last tabulated point the lookup (GetBLER_TU) fell to 0, where CQI 11 to
+15 tabulate an error floor: CQI 11 went from 0.06 at 20 dB to 0 at 21 dB, a
+cliff a reception just above it fell off. At the first point of CQI 14 and 15
+it jumped to 1, where they tabulate 0.98 and 0.964. The table says nothing
+beyond its end points; the model continues each curve's end segment linearly
+until it reaches 0 (above the last point) or 1 (below the first), so the
+lookup is continuous everywhere and exact at every tabulated point
+(BlerCurveTableEnds has the end points themselves).
+
+Checked on every CQI: around each end point, 1 microdB to either side, the
+BLER stays within 1e-3 of its value at the point; and the BLER is 0 at 40 dB.
+
+%includes:
+#include <cmath>
+#include <string>
+#include "SchedulerTestUtil.h"
+#include "simu5g/common/blerCurves/BLERvsSINR_15CQI_TU.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+Checker c;
+const double eps = 1e-6;
+std::string topDetail, bottomDetail, zeroDetail;
+for (int cqi = 1; cqi <= 15; cqi++) {
+    int row = cqi - 1;
+    double first = SINR_15_CQI_TU[row][0], last = SINR_15_CQI_TU[row][15];
+    // the BLER just below, at, and just above an end point
+    auto around = [&] (double point, std::string& detail) {
+        double lo = GetBLER_TU(point - eps, cqi), at = GetBLER_TU(point, cqi), hi = GetBLER_TU(point + eps, cqi);
+        if (std::fabs(lo - at) > 1e-3 || std::fabs(hi - at) > 1e-3)
+            detail += " cqi" + std::to_string(cqi) + ": " + std::to_string(lo) + ", " + std::to_string(at) + ", " + std::to_string(hi);
+    };
+    around(last, topDetail);
+    around(first, bottomDetail);
+    if (GetBLER_TU(40.0, cqi) != 0.0)
+        zeroDetail += " cqi" + std::to_string(cqi) + ": " + std::to_string(GetBLER_TU(40.0, cqi));
+}
+c.check("no curve jumps at its last tabulated point", topDetail.empty(), topDetail);
+c.check("no curve jumps at its first tabulated point", bottomDetail.empty(), bottomDetail);
+c.check("every curve is 0 at 40 dB, where the error model stops reading the curves", zeroDetail.empty(), zeroDetail);
+
+c.summary();
+
+%contains: stdout
+modelchecks=3 modelfailures=0
+
+%not-contains: stdout
+FAILED
