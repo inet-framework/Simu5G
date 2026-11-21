@@ -197,9 +197,14 @@ bool PhyBase::isInsideBuilding()
     return cellularRadio_->isInsideBuilding();
 }
 
-double PhyBase::getInsideDistance()
+double PhyBase::getInsideDistanceDeviate()
 {
-    return cellularRadio_->getInsideDistance();
+    return cellularRadio_->getInsideDistanceDeviate();
+}
+
+double PhyBase::getSecondInsideDistanceDeviate()
+{
+    return cellularRadio_->getSecondInsideDistanceDeviate();
 }
 
 double PhyBase::getPenetrationLossDeviate()

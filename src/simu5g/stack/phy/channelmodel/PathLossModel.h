@@ -121,7 +121,8 @@ class PathLossModel
     {
         double environmentHeight = 1.0;  // h_E (TR 38.901 Table 7.4.1-1 NOTE 1, TR 36.873 7.2.1 NOTE 4)
         bool indoor = false;             // the UE end is inside a building
-        double indoorDistance = 0.0;     // how far inside (d_2D-in)
+        double insideDistanceDeviate = 0.0;       // the UE's standard uniform deviates of d_2D-in (see computeIndoorDistance())
+        double secondInsideDistanceDeviate = 0.0;
         double penetrationDeviate = 0.0; // the UE's standard-normal penetration-loss deviate (TR 38.901 7.4.3.1)
     };
 
@@ -216,6 +217,15 @@ class PathLossModel
      * scenario (as checkPenetrationLoss()).
      */
     virtual double getIndoorShadowingStdDev(const Deployment& deployment) = 0;
+
+    /*
+     * How far the UE end of a link is inside its building, d2D-in, in m: the
+     * UE's standard uniform deviates in the conditions, scaled to the study's
+     * range by its rule (one uniform, or the minimum of two). An error where the
+     * study has no building penetration loss for the scenario (as
+     * checkPenetrationLoss()).
+     */
+    virtual double computeIndoorDistance(const Deployment& deployment, const LinkConditions& conditions) = 0;
 
     /*
      * The correlation distance of a link's shadow fading in the horizontal

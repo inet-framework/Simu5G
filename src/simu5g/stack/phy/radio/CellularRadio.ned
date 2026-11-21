@@ -37,7 +37,7 @@ module CellularRadio
         double clutterHeight @unit(m) = default(scenario == "INDOOR_FACTORY_DL" || scenario == "INDOOR_FACTORY_DH" ? 6m : 2m); // Effective height of the clutter in an indoor factory hall, 0 to 10 m; the sub-scenario says which antennas are below it
         double clutterSize @unit(m) = default(scenario == "INDOOR_FACTORY_DL" || scenario == "INDOOR_FACTORY_DH" ? 2m : 10m); // Typical size of the clutter in an indoor factory hall
         string site = default(""); // The site of the cell, which counts on a base station's radio: cells that give the same name are co-sited (the sectors of a site), and their links to a UE share one LOS state and one shadowing realization. Empty: the cell is a site of its own
-        bool insideBuilding = default(false); // Whether the radio is inside a building, which counts on a UE's radio: a link's building penetration loss is its UE end's. Its distance from the wall (uniformly in [0, 25] m) and the random term of its penetration loss (standard normal, scaled by the study's sigma_P) are drawn once
+        bool insideBuilding = default(false); // Whether the radio is inside a building, which counts on a UE's radio: a link's building penetration loss is its UE end's. Its distance from the wall (two standard uniforms, which the path loss model scales to the study's d2D-in) and the random term of its penetration loss (standard normal, scaled by the study's sigma_P) are drawn once
         @class(CellularRadio);
         @display("i=block/wrxtx");
     gates:

@@ -51,6 +51,7 @@ class Tr38901PathLossModel : public Tr36873PathLossModel
     double computeLosProbability(const Deployment& deployment, double d3D, double d2D) override;
     double getShadowingStdDev(const Deployment& deployment, double d3D, double d2D, bool losState) override;
     double getIndoorShadowingStdDev(const Deployment& deployment) override;
+    double computeIndoorDistance(const Deployment& deployment, const LinkConditions& conditions) override;
     double getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions) override;
     double getLosCorrelationDistance(const Deployment& deployment) override;
     double drawEnvironmentHeight(const Deployment& deployment, double d2D) override;
@@ -64,6 +65,12 @@ class Tr38901PathLossModel : public Tr36873PathLossModel
     void setUseBuildingPenetrationHighLossModel(bool value) { useBuildingPenetrationHighLossModel_ = value; }
 
   private:
+    /*
+     * Whether the single-frequency O2I model of Table 7.4.3-3 applies, rather
+     * than Table 7.4.3-2: UMa and UMi below 6 GHz
+     */
+    virtual bool isSingleFrequencyO2iModel(const Deployment& deployment) const;
+
     double computeIndoor3D(double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
     double computeUrbanMicro3D(const Deployment& deployment, double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);
     double computeUrbanMacro3D(const Deployment& deployment, double threeDimDistance, double twoDimDistance, bool los, const LinkConditions& conditions);

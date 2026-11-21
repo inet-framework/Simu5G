@@ -314,11 +314,7 @@ double StochasticChannelModel::getAttenuation(const RadioLink& link)
 {
     // a building's penetration loss is the UE end's; a phantom radio says it
     // is outdoors
-    IRadioEndpoint *ueEnd = ueEndOf(link);
-    PathLossModel::LinkConditions conditions;
-    conditions.indoor = ueEnd != nullptr && ueEnd->isInsideBuilding();
-    conditions.indoorDistance = ueEnd != nullptr ? ueEnd->getInsideDistance() : 0.0;
-    conditions.penetrationDeviate = ueEnd != nullptr ? ueEnd->getPenetrationLossDeviate() : 0.0;
+    PathLossModel::LinkConditions conditions = indoorConditionsOf(ueEndOf(link));
 
     // the heights of the link's two ends, with the scenario
     PathLossModel::Deployment deployment = deploymentOf(link);
@@ -415,6 +411,18 @@ double StochasticChannelModel::computeShadowing(double d3D, double d2D, bool los
 double StochasticChannelModel::getLosCorrelationDistance(const PathLossModel::Deployment& deployment)
 {
     return std::isnan(correlationDistance_) ? pathLoss_->getLosCorrelationDistance(deployment) : correlationDistance_;
+}
+
+PathLossModel::LinkConditions StochasticChannelModel::indoorConditionsOf(IRadioEndpoint *ueEnd)
+{
+    PathLossModel::LinkConditions conditions;
+    if (ueEnd != nullptr && ueEnd->isInsideBuilding()) {
+        conditions.indoor = true;
+        conditions.insideDistanceDeviate = ueEnd->getInsideDistanceDeviate();
+        conditions.secondInsideDistanceDeviate = ueEnd->getSecondInsideDistanceDeviate();
+        conditions.penetrationDeviate = ueEnd->getPenetrationLossDeviate();
+    }
+    return conditions;
 }
 
 double StochasticChannelModel::getShadowingCorrelationDistance(const RadioLink& link, bool los)
@@ -923,10 +931,10 @@ void StochasticChannelModel::computeLosProbability(double d3D, double d2D,
         sample.los = fixedLos_;
     else {
         // d2D-out: the part of d2D outside an indoor UE's building
-        IRadioEndpoint *ueEnd = ueEndOf(link);
+        PathLossModel::LinkConditions conditions = indoorConditionsOf(ueEndOf(link));
         double d2DOut = d2D;
-        if (ueEnd != nullptr && ueEnd->isInsideBuilding())
-            d2DOut = d2D - std::min(ueEnd->getInsideDistance(), d2D);
+        if (conditions.indoor)
+            d2DOut = d2D - std::min(pathLoss_->computeIndoorDistance(deploymentOf(link), conditions), d2D);
         double p = pathLoss_->computeLosProbability(deploymentOf(link), d3D, d2DOut);
         sample.los = (uniform(0.0, 1.0) <= p);
     }
@@ -972,10 +980,7 @@ double StochasticChannelModel::phantomPowerAt(const CellularTransmission& transm
 
     // the UE end: the receiver of a cell's downlink, the transmitter of a UE's uplink
     IRadioEndpoint *ue = transmission.direction == UL ? transmitter : receiver;
-    PathLossModel::LinkConditions conditions;
-    conditions.indoor = ue->isInsideBuilding();
-    conditions.indoorDistance = ue->getInsideDistance();
-    conditions.penetrationDeviate = ue->getPenetrationLossDeviate();
+    PathLossModel::LinkConditions conditions = indoorConditionsOf(ue);
 
     // compute attenuation according to some path loss model
     double att = computePhantomPathLoss(link, conditions);

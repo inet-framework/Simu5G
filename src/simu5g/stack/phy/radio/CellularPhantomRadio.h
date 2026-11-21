@@ -84,7 +84,8 @@ class CellularPhantomRadio : public cModule, public IRadioEndpoint
     virtual double getClutterHeight() override { return clutterHeight_; }
     virtual double getClutterSize() override { return clutterSize_; }
     virtual bool isInsideBuilding() override { return false; }
-    virtual double getInsideDistance() override { return 0.0; }
+    virtual double getInsideDistanceDeviate() override { return 0.0; }
+    virtual double getSecondInsideDistanceDeviate() override { return 0.0; }
     virtual double getPenetrationLossDeviate() override { return 0.0; }
     virtual TxDirectionType getTxDirection() override;
     virtual double getTxAngle() override;

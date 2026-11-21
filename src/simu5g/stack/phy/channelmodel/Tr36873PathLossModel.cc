@@ -132,6 +132,13 @@ double Tr36873PathLossModel::getIndoorShadowingStdDev(const Deployment& deployme
     return 7;
 }
 
+double Tr36873PathLossModel::computeIndoorDistance(const Deployment& deployment, const LinkConditions& conditions)
+{
+    // clause 7.2.3, NOTE 3 and NOTE 5: "d2D-in is assumed uniformly distributed between 0 and 25 m"
+    checkPenetrationLoss(deployment);
+    return 25.0 * conditions.insideDistanceDeviate;
+}
+
 double Tr36873PathLossModel::getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions)
 {
     // Tables 7.3-6, 7.3-6a and 7.3-6b, "Correlation distance in the
@@ -265,7 +272,7 @@ double Tr36873PathLossModel::computeUrbanMacro3D(const Deployment& deployment, d
     // d2D-in is part of d2D (clause 7.2.3: "10m < d2D-out + d2D-in < 1000m").
     double penetrationLoss = 0.0;
     if (conditions.indoor) {
-        double inside_distance = (conditions.indoorDistance < twoDimDistance) ? conditions.indoorDistance : twoDimDistance;
+        double inside_distance = std::min(computeIndoorDistance(deployment, conditions), twoDimDistance);
         penetrationLoss = 20.0 + 0.5 * inside_distance;
     }
 

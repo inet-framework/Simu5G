@@ -255,7 +255,7 @@ auto *spareRadio = check_and_cast<CellularPhantomRadio *>(network->getSubmodule(
 c.check("a phantom radio has no receiver", bgRadio->getReceiver() == nullptr);
 
 c.check("a phantom radio answers outdoors, whatever **.insideBuilding says",
-        !bgRadio->isInsideBuilding() && bgRadio->getInsideDistance() == 0 && bgRadio->getPenetrationLossDeviate() == 0);
+        !bgRadio->isInsideBuilding() && bgRadio->getInsideDistanceDeviate() == 0 && bgRadio->getSecondInsideDistanceDeviate() == 0 && bgRadio->getPenetrationLossDeviate() == 0);
 
 {
     auto *realRadio = check_and_cast<CountingRadio *>(network->getSubmodule("realRadio"));

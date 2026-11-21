@@ -295,6 +295,12 @@ class StochasticChannelModel : public ChannelModelBase
     static IRadioEndpoint *ueEndOf(const RadioLink& link) { return link.dir == UL ? link.txRadio : link.rxRadio; }
 
     /*
+     * The building penetration facts of a link's UE end: its indoor state and
+     * its deviates, all 0 outdoors (and for no end); the h_E is left at its default
+     */
+    static PathLossModel::LinkConditions indoorConditionsOf(IRadioEndpoint *ueEnd);
+
+    /*
      * The deployment of a link between two UEs, at the given positions, in
      * the given cell: the scenario is the cell's. No study here has such a
      * link: the formulas take the base station height the studies give for

@@ -109,7 +109,8 @@ struct ScenarioParams
     {
         PathLossModel::LinkConditions c;
         c.indoor = insideBuilding;
-        c.indoorDistance = insideDistance;
+        // two equal deviates: d2D-in is insideDistance wherever the study's range is 25 m
+        c.insideDistanceDeviate = c.secondInsideDistanceDeviate = insideDistance / 25.0;
         c.penetrationDeviate = penetrationDeviate;
         return c;
     }

@@ -133,7 +133,8 @@ outdoor.hUe = 1.5;
 
 indoor = outdoor;
 indoor.insideBuilding = true;
-indoor.insideDistance = 10;
+// two deviates of 0.5 (see ScenarioParams::conditions()): d2D-in is half of RMa's 10 m range
+indoor.insideDistance = 12.5;
 
 outdoor.carrierFrequencyGHz = 2.0;
 outdoor.apply(m, this);
@@ -142,7 +143,7 @@ double rmaOutdoor = m.computePathLoss(501.1, 500, true, outdoor.conditions());
 indoor.carrierFrequencyGHz = 2.0;
 indoor.penetrationDeviate = 1.0;
 indoor.apply(m, this);
-probe.record("t901_o2i_lowloss", indoor, { { "dIn", 10 }, { "z", 1.0 } },
+probe.record("t901_o2i_lowloss", indoor, { { "dIn", 5 }, { "z", 1.0 } },
         m.computePathLoss(501.1, 500, true, indoor.conditions()) - rmaOutdoor);
 
 outdoor.carrierFrequencyGHz = 0.8;
@@ -152,7 +153,7 @@ rmaOutdoor = m.computePathLoss(501.1, 500, true, outdoor.conditions());
 indoor.carrierFrequencyGHz = 0.8;
 indoor.penetrationDeviate = -1.0;
 indoor.apply(m, this);
-probe.record("t901_o2i_lowloss", indoor, { { "dIn", 10 }, { "z", -1.0 } },
+probe.record("t901_o2i_lowloss", indoor, { { "dIn", 5 }, { "z", -1.0 } },
         m.computePathLoss(501.1, 500, true, indoor.conditions()) - rmaOutdoor);
 
 %postrun-command: ../../pathloss_reference.py --grade test.out >verdict.txt

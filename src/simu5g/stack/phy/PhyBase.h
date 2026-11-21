@@ -333,7 +333,8 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
     double getClutterHeight() override;
     double getClutterSize() override;
     bool isInsideBuilding() override;
-    double getInsideDistance() override;
+    double getInsideDistanceDeviate() override;
+    double getSecondInsideDistanceDeviate() override;
     double getPenetrationLossDeviate() override;
     /*
      * Returns the time of the last transmission performed

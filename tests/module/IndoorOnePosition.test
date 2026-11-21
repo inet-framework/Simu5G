@@ -50,9 +50,9 @@ class IndoorRadioProbe : public cSimpleModule
         auto *nrRadio = check_and_cast<CellularRadio *>(nic->getSubmodule("nrRadio"));
         auto yesNo = [] (bool b) { return b ? "yes" : "no"; };
         std::cout << "IndoorRadioProbe: both radios indoors: " << yesNo(radio->isInsideBuilding() && nrRadio->isInsideBuilding()) << std::endl;
-        std::cout << "IndoorRadioProbe: distance from the wall " << radio->getInsideDistance() << " and " << nrRadio->getInsideDistance() << std::endl;
+        std::cout << "IndoorRadioProbe: distance from the wall " << radio->getInsideDistanceDeviate() << " and " << nrRadio->getInsideDistanceDeviate() << std::endl;
         std::cout << "IndoorRadioProbe: penetration loss deviate " << radio->getPenetrationLossDeviate() << " and " << nrRadio->getPenetrationLossDeviate() << std::endl;
-        std::cout << "IndoorRadioProbe: one distance from the wall: " << yesNo(radio->getInsideDistance() == nrRadio->getInsideDistance()) << std::endl;
+        std::cout << "IndoorRadioProbe: one distance from the wall: " << yesNo(radio->getInsideDistanceDeviate() == nrRadio->getInsideDistanceDeviate()) << std::endl;
         std::cout << "IndoorRadioProbe: one penetration loss deviate: " << yesNo(radio->getPenetrationLossDeviate() == nrRadio->getPenetrationLossDeviate()) << std::endl;
     }
 };

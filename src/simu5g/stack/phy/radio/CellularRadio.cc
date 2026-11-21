@@ -40,8 +40,9 @@ void CellularRadio::initialize(int stage)
         PathLossModel::checkClutter(this, scenario_, clutterDensity_, clutterHeight_, clutterSize_);
         insideBuilding_ = par("insideBuilding");
         if (insideBuilding_) {
-            insideDistance_ = uniform(0.0, 25.0);
+            insideDistanceDeviate_ = uniform(0.0, 1.0);
             penetrationLossDeviate_ = normal(0.0, 1.0);
+            secondInsideDistanceDeviate_ = uniform(0.0, 1.0);
         }
     }
 }

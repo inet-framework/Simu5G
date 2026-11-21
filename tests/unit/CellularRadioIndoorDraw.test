@@ -5,11 +5,12 @@ distance from the wall and the deviate of its building penetration loss, as a
 real radio draws them.
 
 A radio with insideBuilding set draws its state once, at initialization: the
-distance uniformly in [0, 25) m (TR 38.901 7.4.3.1: "between 0 and 25 m for UMa
-and UMi-Street Canyon"; that it is one draw and not the minimum of two is item
-17 of tests/doc/model-deviations.md), then the deviate, standard normal. The
-getters only read what was drawn. A radio without it draws nothing, and answers
-outdoors, with 0 for both.
+first standard uniform deviate of its distance from the wall, then the deviate
+of its penetration loss, standard normal, then the second uniform deviate. The
+path loss model scales the two uniforms to the study's d2D-in (one of them, or
+the minimum of both; PathLossModel::computeIndoorDistance()). The getters only
+read what was drawn. A radio without it draws nothing, and answers outdoors,
+with 0 for all three.
 
 The channel model tests give their endpoints these values through StubEndpoint,
 so none of them reaches the radio's draws: a getter that draws at every call, or
@@ -90,32 +91,35 @@ RngSnapshot& snapshot = *harnessModule<RngRecorder>(this, "rngRecorder")->snapsh
 auto drawn = [&] { return (long long)getRNG(0)->getNumbersDrawn(); };
 
 // what initialization ought to have drawn, in that order
-const double distance = omnetpp::uniform(snapshot.rng(), 0.0, 25.0);
+const double distance = omnetpp::uniform(snapshot.rng(), 0.0, 1.0);
 const double deviate = omnetpp::normal(snapshot.rng(), 0.0, 1.0);
-c.expectValue("initialization draws the indoor radio's two values and nothing else", drawn(), (long long)snapshot.rng()->getNumbersDrawn());
+const double second = omnetpp::uniform(snapshot.rng(), 0.0, 1.0);
+c.expectValue("initialization draws the indoor radio's three values and nothing else", drawn(), (long long)snapshot.rng()->getNumbersDrawn());
 
 c.check("the radio with insideBuilding set answers indoors", indoor->isInsideBuilding());
-c.expectNear("its distance from the wall is the first draw, uniform(0, 25)", indoor->getInsideDistance(), distance, 0.0);
+c.expectNear("its distance from the wall is the first draw, uniform(0, 1)", indoor->getInsideDistanceDeviate(), distance, 0.0);
 c.expectNear("its penetration loss deviate is the second, normal(0, 1)", indoor->getPenetrationLossDeviate(), deviate, 0.0);
-c.check("the distance lies in [0, 25)", distance >= 0.0 && distance < 25.0, std::to_string(distance));
+c.expectNear("its second distance deviate is the third, uniform(0, 1)", indoor->getSecondInsideDistanceDeviate(), second, 0.0);
+c.check("the distance deviates lie in [0, 1)", distance >= 0.0 && distance < 1.0 && second >= 0.0 && second < 1.0, std::to_string(distance) + " " + std::to_string(second));
 
 c.check("the radio without it answers outdoors", !outdoor->isInsideBuilding());
-c.expectNear("...with no distance", outdoor->getInsideDistance(), 0.0, 0.0);
+c.expectNear("...with no distance", outdoor->getInsideDistanceDeviate(), 0.0, 0.0);
+c.expectNear("...no second distance deviate", outdoor->getSecondInsideDistanceDeviate(), 0.0, 0.0);
 c.expectNear("...and no deviate", outdoor->getPenetrationLossDeviate(), 0.0, 0.0);
 
 const long long drawnBefore = drawn();
-c.expectNear("a second read gives the same distance", indoor->getInsideDistance(), distance, 0.0);
+c.expectNear("a second read gives the same distance", indoor->getInsideDistanceDeviate(), distance, 0.0);
 c.expectNear("...and the same deviate", indoor->getPenetrationLossDeviate(), deviate, 0.0);
 wait(0.5);
-c.expectNear("later, the same distance", indoor->getInsideDistance(), distance, 0.0);
+c.expectNear("later, the same distance", indoor->getInsideDistanceDeviate(), distance, 0.0);
 c.expectNear("...and the same deviate", indoor->getPenetrationLossDeviate(), deviate, 0.0);
-c.expectNear("...and the outdoor radio's distance is still 0", outdoor->getInsideDistance(), 0.0, 0.0);
+c.expectNear("...and the outdoor radio's distance is still 0", outdoor->getInsideDistanceDeviate(), 0.0, 0.0);
 c.expectValue("reading the state draws nothing", drawn() - drawnBefore, 0);
 
 c.summary();
 
 %contains: stdout
-modelchecks=14 modelfailures=0
+modelchecks=16 modelfailures=0
 
 %not-contains: stdout
 FAILED

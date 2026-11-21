@@ -241,6 +241,27 @@ double Tr38901PathLossModel::getIndoorShadowingStdDev(const Deployment& deployme
     return deployment.scenario == RURAL_MACROCELL ? 8 : 7;
 }
 
+bool Tr38901PathLossModel::isSingleFrequencyO2iModel(const Deployment& deployment) const
+{
+    // Table 7.4.3-3 -- a flat 20 dB whose sigma_P is 0, kept for backwards
+    // compatibility with TR 36.873 -- is offered for UMa and UMi
+    // single-frequency simulations below 6 GHz
+    return carrierFrequencyGHz_ < 6.0
+        && (deployment.scenario == URBAN_MACROCELL || deployment.scenario == URBAN_MICROCELL);
+}
+
+double Tr38901PathLossModel::computeIndoorDistance(const Deployment& deployment, const LinkConditions& conditions)
+{
+    checkPenetrationLoss(deployment);
+    // Table 7.4.3-3: "a single, link-specific, uniformly distributed variable between 0 and 25 m"
+    if (isSingleFrequencyO2iModel(deployment))
+        return 25.0 * conditions.insideDistanceDeviate;
+    // 7.4.3.1, for Table 7.4.3-2: "minimum of two independently generated uniformly distributed
+    // variables between 0 and 25 m for UMa and UMi-Street Canyon, and between 0 and 10 m for RMa"
+    double range = deployment.scenario == RURAL_MACROCELL ? 10.0 : 25.0;
+    return range * std::min(conditions.insideDistanceDeviate, conditions.secondInsideDistanceDeviate);
+}
+
 double Tr38901PathLossModel::getShadowingCorrelationDistance(const Deployment& deployment, bool losState, const LinkConditions& conditions)
 {
     // Table 7.5-6 Part-3: 10 m in an indoor factory, LOS and NLOS
@@ -268,16 +289,11 @@ void Tr38901PathLossModel::throwNoNlos(const Deployment& deployment) const
 double Tr38901PathLossModel::computePenetrationLoss(const Deployment& deployment, double twoDimDistance, const LinkConditions& conditions)
 {
     // d2D-in is part of d2D (Figure 7.4.1-2: d2D-out + d2D-in = d2D)
-    double inside_distance = (conditions.indoorDistance < twoDimDistance) ? conditions.indoorDistance : twoDimDistance;
+    double inside_distance = std::min(computeIndoorDistance(deployment, conditions), twoDimDistance);
     double pLoss_in = 0.5 * inside_distance;
 
-    // Which through-wall model applies is a function of the scenario. Table
-    // 7.4.3-3 -- a flat 20 dB whose sigma_P is 0, kept for backwards
-    // compatibility with TR 36.873 -- is offered for UMa and UMi
-    // single-frequency simulations below 6 GHz.
-    bool singleFrequencyModel = carrierFrequencyGHz_ < 6.0
-        && (deployment.scenario == URBAN_MACROCELL || deployment.scenario == URBAN_MICROCELL);
-    if (singleFrequencyModel)
+    // Which through-wall model applies is a function of the scenario
+    if (isSingleFrequencyO2iModel(deployment))
         return 20.0 + pLoss_in;
 
     // Otherwise table 7.4.3-2, whose high-loss variant is not offered for RMa.

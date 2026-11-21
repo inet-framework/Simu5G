@@ -54,7 +54,7 @@ class StubEndpoint : public IRadioEndpoint
     double clutterHeight = 2;
     double clutterSize = 10;
     bool insideBuilding = false;
-    double insideDistance = 0.0;
+    double insideDistance = 0.0;   // in m: reported as two equal deviates insideDistance/25, so d2D-in is insideDistance wherever the study's range is 25 m
     double penetrationLossDeviate = 0.0;
     TxDirectionType txDirection = OMNI;
     double txAngle = 0.0;
@@ -76,7 +76,8 @@ class StubEndpoint : public IRadioEndpoint
     double getClutterHeight() override { return clutterHeight; }
     double getClutterSize() override { return clutterSize; }
     bool isInsideBuilding() override { return insideBuilding; }
-    double getInsideDistance() override { return insideDistance; }
+    double getInsideDistanceDeviate() override { return insideDistance / 25.0; }
+    double getSecondInsideDistanceDeviate() override { return insideDistance / 25.0; }
     double getPenetrationLossDeviate() override { return penetrationLossDeviate; }
     TxDirectionType getTxDirection() override { return txDirection; }
     double getTxAngle() override { return txAngle; }

@@ -60,8 +60,15 @@ class IRadioEndpoint
     /** Whether the endpoint is inside a building. */
     virtual bool isInsideBuilding() = 0;
 
-    /** How far inside its building the endpoint is, in m (drawn once per endpoint). */
-    virtual double getInsideDistance() = 0;
+    /**
+     * The standard uniform deviate of how far inside its building the endpoint
+     * is (drawn once per endpoint); the path loss model scales it to d2D-in
+     * (PathLossModel::computeIndoorDistance())
+     */
+    virtual double getInsideDistanceDeviate() = 0;
+
+    /** A second, independent one, for d2D-in as the minimum of two (drawn once per endpoint). */
+    virtual double getSecondInsideDistanceDeviate() = 0;
 
     /** The standard-normal deviate of its building penetration loss (drawn once per endpoint). */
     virtual double getPenetrationLossDeviate() = 0;

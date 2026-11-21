@@ -2,10 +2,7 @@
 
 The indoor distance d2D-in of a UE under TR 38.901's multi-carrier O2I model,
 through the real PHY: the minimum of two uniform draws, with a range that
-depends on the scenario. The model deviates (model-deviations item 17): it
-draws one uniform in [0, 25) m in every scenario. CellularRadioIndoorDraw pins
-what the radio draws, so that this test fails on its checks and not on an
-abort.
+depends on the scenario.
 
 TR 38.901 v16.1.0 7.4.3.1, for the O2I models of Table 7.4.3-2: "d2D-in is
 minimum of two independently generated uniformly distributed variables between
@@ -28,8 +25,6 @@ over the UEs estimates the mean of d2D-in: L/3 for the minimum of two uniforms
 in [0, L), where one uniform has L/2. The mean is graded against L/3, 8.33 m in
 UMa and 3.33 m in RMa, to within 4 standard errors (sqrt(L^2/18 + 8.8^2) /
 sqrt(256): 2.6 m in UMa, 2.3 m in RMa). One uniform in [0, 25) gives 12.5 m.
-
-%expected-failure: an indoor UE's d2D-in is one uniform in [0, 25) m, where TR 38.901 7.4.3.1 takes the minimum of two, in [0, 25) m for UMa and [0, 10) m for RMa
 
 %extraargs: -c IndoorDistanceSpec
 

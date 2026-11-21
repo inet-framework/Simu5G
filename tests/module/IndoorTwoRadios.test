@@ -47,11 +47,11 @@ class IndoorRadioProbe : public cSimpleModule
         auto *radio = check_and_cast<CellularRadio *>(nic->getSubmodule("radio"));
         auto *nrRadio = check_and_cast<CellularRadio *>(nic->getSubmodule("nrRadio"));
         // a draw that came out as exactly 0 has a probability of about 2^-32
-        auto drew = [] (CellularRadio *r) { return r->getInsideDistance() != 0.0 && r->getPenetrationLossDeviate() != 0.0; };
+        auto drew = [] (CellularRadio *r) { return r->getInsideDistanceDeviate() != 0.0 && r->getPenetrationLossDeviate() != 0.0; };
         auto yesNo = [] (bool b) { return b ? "yes" : "no"; };
         std::cout << "IndoorRadioProbe: radio indoors, with a drawn position: " << yesNo(radio->isInsideBuilding() && drew(radio)) << std::endl;
         std::cout << "IndoorRadioProbe: nrRadio indoors, with a drawn position: " << yesNo(nrRadio->isInsideBuilding() && drew(nrRadio)) << std::endl;
-        std::cout << "PINNED DEFECT: the two radios have different distances from the wall: " << yesNo(radio->getInsideDistance() != nrRadio->getInsideDistance()) << std::endl;
+        std::cout << "PINNED DEFECT: the two radios have different distances from the wall: " << yesNo(radio->getInsideDistanceDeviate() != nrRadio->getInsideDistanceDeviate()) << std::endl;
         std::cout << "PINNED DEFECT: the two radios have different penetration loss deviates: " << yesNo(radio->getPenetrationLossDeviate() != nrRadio->getPenetrationLossDeviate()) << std::endl;
     }
 };

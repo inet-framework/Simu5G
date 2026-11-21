@@ -41,8 +41,9 @@ class CellularRadio : public cSimpleModule
     inet::ModuleRefByPar<CellularRadioMedium> radioMedium_;
     inet::ModuleRefByPar<CellularAntenna> antenna_; // the antenna the radio transmits and receives through
     IRadioEndpoint *endpoint_ = nullptr; // the PHY the radio sends and receives frames for
-    bool insideBuilding_ = false; // whether the radio is inside a building, and how far from its wall
-    double insideDistance_ = 0.0;
+    bool insideBuilding_ = false; // whether the radio is inside a building, and the standard uniform deviates of how far from its wall
+    double insideDistanceDeviate_ = 0.0;
+    double secondInsideDistanceDeviate_ = 0.0;
     DeploymentScenario scenario_ = UNKNOWN_SCENARIO; // the deployment of the cell, which counts at a base station
     double buildingHeight_ = 0.0;
     double streetWidth_ = 0.0;
@@ -79,8 +80,10 @@ class CellularRadio : public cSimpleModule
 
     /** Whether the radio is inside a building. */
     bool isInsideBuilding() const { return insideBuilding_; }
-    /** How far inside its building the radio is, in m (drawn once). */
-    double getInsideDistance() const { return insideDistance_; }
+    /** The standard uniform deviate of how far inside its building the radio is (drawn once). */
+    double getInsideDistanceDeviate() const { return insideDistanceDeviate_; }
+    /** A second, independent one (drawn once). */
+    double getSecondInsideDistanceDeviate() const { return secondInsideDistanceDeviate_; }
     /** The standard-normal deviate of its building penetration loss (drawn once). */
     double getPenetrationLossDeviate() const { return penetrationLossDeviate_; }
 };
