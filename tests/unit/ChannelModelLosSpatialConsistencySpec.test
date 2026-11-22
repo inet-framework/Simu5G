@@ -2,7 +2,7 @@
 
 The LOS state of a link as the spatial consistency procedure of TR 38.901 gives
 it: a UE that comes back to a place has the LOS state it had there. The model
-deviates (tests/doc/model-deviations.md, item 1, "What remains"): it draws the
+deviates: it draws the
 state again, independently, whenever an end of the link has moved farther than
 the correlation distance. ChannelModelLosSpatialConsistency pins what the model
 does, so that this test fails on its check and not on an abort.

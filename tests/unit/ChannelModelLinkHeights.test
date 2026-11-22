@@ -13,8 +13,7 @@ transmits.
 
 No study here has a link between two UEs. The model evaluates one with the base
 station height the studies give for the scenario (25 m) and the lower of the
-two UEs' heights, whichever UE transmits (tests/doc/model-deviations.md,
-item 4).
+two UEs' heights, whichever UE transmits.
 
 Heights the formulas cannot take are rejected at the link's evaluation: an
 antenna that is not above the 1 m environment height, where the breakpoint

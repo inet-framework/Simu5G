@@ -16,7 +16,7 @@ term is a sum of configured constants and one path loss:
 
 where txPower(i) is the interferer's D2D transmit power, or its ueTxPower if
 it transmits uplink. This takes the model's conventions for a UE-to-UE link,
-as D2dLinkBudget does and tests/doc/model-deviations.md records in item 4: the
+as D2dLinkBudget does: the
 UMi LOS formula with the base station's height in the breakpoint distance, and
 a cable loss on a link with no base station. It is a characterisation test of
 the model, not a specification check. All distances stay below the breakpoint

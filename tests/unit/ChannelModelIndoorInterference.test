@@ -27,7 +27,7 @@ times the UE's deviate), with each UE's own distance and deviate.
  - (b) Uplink: an indoor UE's UL data at a neighbour base station, for the CQI of
    the neighbour's own UE, carries the UE's wall. The neighbour saying that it is
    indoors is a decoy, with both.
- - (c) D2D: this pins item 15 of tests/doc/model-deviations.md, by which a D2D link's
+ - (c) D2D: this pins the known deviation by which a D2D link's
    loss is the receiver's. An indoor interferer at an outdoor receiver carries none,
    and an outdoor interferer at an indoor receiver carries the receiver's.
    ChannelModelD2dIndoorDirection and ChannelModelD2dIndoorReciprocal have the

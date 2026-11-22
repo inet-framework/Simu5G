@@ -4,7 +4,7 @@ UT-specifically generated", and 7.4.3.1 "d2D-in shall be UT-specifically generat
 So the two radios of an NR UE, with *.ue[*].**.insideBuilding = true, must answer with the same
 distance from the wall and the same penetration loss deviate.
 
-They do not: each radio draws its own (item 14 of tests/doc/model-deviations.md).
+They do not: each radio draws its own.
 IndoorTwoRadios pins what the model does today, so that any change to it fails there by
 name, and that the same run ends normally, so this one fails on its comparison and not
 on an abort. When the model follows the specification, update that pin and drop the

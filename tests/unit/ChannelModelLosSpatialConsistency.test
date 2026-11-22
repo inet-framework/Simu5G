@@ -1,7 +1,7 @@
 %description:
 
 A deviation of StochasticChannelModel from the specification, pinned and not
-endorsed (tests/doc/model-deviations.md, item 1, "What remains"): when an end of
+endorsed: when an end of
 a link has moved farther than the LOS correlation distance, the link's LOS state
 is drawn again, independently of the state it had and of where it had it.
 

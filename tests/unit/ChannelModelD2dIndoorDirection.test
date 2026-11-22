@@ -1,7 +1,7 @@
 %description:
 
 A known deviation, pinned, not endorsed: the building penetration loss of a D2D
-link depends on the link's direction (tests/doc/model-deviations.md, item 15).
+link depends on the link's direction.
 
 The loss belongs to "the UE end" of a link, and StochasticChannelModel::
 getAttenuation() takes that end as the transmitter of an uplink and otherwise the
@@ -21,7 +21,7 @@ Checked at 2 GHz, TR 38.901 UMi LOS, with shadowing and fading off, between UEs 
 apart at the UE height, below the breakpoint distance. Below 6 GHz Table 7.4.3-3
 applies: the O2I loss is 20 dB + 0.5 d2D-in, with no random term. The values are
 graded against pathloss_reference.py. The model's UE-to-UE link takes the UMi
-formula with the base station's height in the breakpoint distance (item 4).
+formula with the base station's height in the breakpoint distance.
 
 %includes:
 #include <cmath>

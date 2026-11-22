@@ -333,8 +333,7 @@ Each is a deliberate change; they are listed in user terms.
 ### Known limitations
 
 The radio model deviates from the specifications in ways that matter for
-some studies. The complete, referenced list is `tests/doc/model-deviations.md`;
-these are the ones a user should know before trusting a result.
+some studies. These are the ones a user should know before trusting a result.
 
 - **The receive chain.** The block error of a transmission is computed per
   resource block and multiplied, so it grows with the allocation: wide

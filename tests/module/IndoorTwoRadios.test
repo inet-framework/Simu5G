@@ -3,7 +3,7 @@ A known deviation, pinned and not endorsed: an NR UE has two radios (cellularNic
 which is the LTE leg's, and cellularNic.nrRadio), and with *.ue[*].**.insideBuilding = true each
 draws an indoor position of its own: both answer indoors, with different distances from
 the wall and different penetration loss deviates. The two legs of one UE can differ by up
-to 12.5 dB for no physical reason. It is item 14 of tests/doc/model-deviations.md.
+to 12.5 dB for no physical reason.
 
 IndoorOnePosition asserts the specification as an expected failure. This test pins what
 the model does today, on a real NrUe, so that any change to it fails by name, and shows

@@ -1115,7 +1115,7 @@ def grade_d2d_interference_delta(grader):
     transmit power and antenna gain, and the receiver's gain and cable loss.
     Below the breakpoint the UMi LOS formula does not involve the antenna heights
     beyond fixing the breakpoint itself, which is the model's convention for a
-    UE-to-UE link (tests/doc/model-deviations.md, item 4)."""
+    UE-to-UE link."""
     plr = pathloss_reference()
     d2d_gain = '*.ueD2D*[*].cellularNic.antenna.gain'
     b_gain = '*.ueD2DTx[1].cellularNic.antenna.gain'

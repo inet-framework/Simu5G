@@ -1,7 +1,7 @@
 %description:
 
 A deviation of StochasticChannelModel::getAttenuation() from the specification,
-recorded rather than fixed (tests/doc/model-deviations.md, item 15): the building
+recorded rather than fixed: the building
 penetration loss of a D2D link between an indoor and an outdoor UE depends on which
 of the two transmits.
 
@@ -27,7 +27,7 @@ wall on B -> A.
 
 The checks say that the two directions are equal, and that each has the wall of the
 LOS formula above: 20.0 + 0.5*d_in over the outdoor path loss. The model's outdoor
-path loss differs from PL_B1_tot (item 4), which is not at issue here, so the wall is
+path loss differs from PL_B1_tot, which is not at issue here, so the wall is
 measured against the same link with both ends outdoors. Checked at 2 GHz on a fixed
 LOS link, 100 m between the UEs, with shadowing and fading off.
 
@@ -35,7 +35,7 @@ ChannelModelD2dIndoorDirection pins what the model does today, so that any chang
 it fails there by name. When the model follows the specification, drop that pin and
 this test's line of expected failure.
 
-%expected-failure: a D2D link with one indoor end has the wall in one direction only, not in both (TR 36.843 A.2.1.2; model-deviations item 15)
+%expected-failure: a D2D link with one indoor end has the wall in one direction only, not in both (TR 36.843 A.2.1.2)
 
 %includes:
 #include <cmath>
