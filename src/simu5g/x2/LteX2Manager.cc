@@ -137,8 +137,10 @@ void LteX2Manager::fromStack(Packet *pkt)
         }
         else {
             // select the index for the output gate (it belongs to a vector)
-            int gateIndex = x2InterfaceTable_[targetEnb];
-            outputGate = gate("x2Out", gateIndex);
+            auto it = x2InterfaceTable_.find(targetEnb);
+            if (it == x2InterfaceTable_.end())
+                throw cRuntimeError("LteX2Manager::fromStack(): node %d has no X2 link to node %d", (int)num(nodeId_), (int)num(targetEnb));
+            outputGate = gate("x2Out", it->second);
         }
 
         EV << "fromStack(): sending " << pktDuplicate->getClassAndFullName() << " on " << outputGate->getFullName() << std::endl;
