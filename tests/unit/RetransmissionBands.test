@@ -1,0 +1,186 @@
+%description:
+
+Where the eNB scheduler places a retransmission: on the bands its band vector
+allows, and nowhere else. Three paths take a band vector:
+LteSchedulerEnb::allocateRtxBytes() (an uplink or D2D retransmission),
+scheduleBgRtx() (a background UE's retransmission) and
+LteSchedulerEnbDl::schedulePerAcidRtx() (a downlink retransmission).
+
+In a cell with two carriers of 6 bands, the bands are 0 to 11, and the second
+carrier's are 6 to 11. The vector the scheduler gets for a carrier
+(CellInfo::getCarrierBandLimit()) spans all 12 bands, with the other carrier's
+marked EXCLUDED; a band a UE may not use is EXCLUDED too.
+
+The faults: allocateRtxBytes() and scheduleBgRtx() used an EXCLUDED band as if
+it had no cap, so a retransmission on the second carrier took the first
+carrier's bands; for a background UE that fails the check that its blocks are
+on its carrier. scheduleBgRtx() without a vector built one over all the cell's
+bands. schedulePerAcidRtx() skipped an EXCLUDED band but then booked its
+entries by position in the vector, not by band, so a downlink retransmission
+on the second carrier was booked on the first carrier's bands, and its bytes
+were written back there, overwriting EXCLUDED. This is also the model's own
+path: LteSchedulerEnbDl::rtxschedule() gives it no vector for a UE without
+usable bands, and the vector it then builds has the other carrier's bands
+EXCLUDED.
+
+%includes:
+#include <functional>
+#include <string>
+#include "SchedulerTestUtil.h"
+#include "SchedulerHarness.h"
+#include "simu5g/stack/mac/scheduler/LteSchedulerEnbDl.h"
+#include "simu5g/stack/mac/scheduler/LteSchedulerEnbUl.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+Checker c;
+const unsigned int numBands = 6;
+const GHz carrier1 = GHz(2.0), carrier2 = GHz(3.5);
+const MacNodeId ueId = MacNodeId(1025), bgUe = MacNodeId(4097);
+// 25 bytes at the stub AMC's 10 bytes per block, one block per band: three bands
+const unsigned int rtxBytes = 25;
+
+// the bands, in order, on which the allocator holds blocks of the node
+auto bandsWithBlocks = [] (LteAllocationModule *allocator, MacNodeId nodeId, unsigned int cellBands) {
+    std::string s;
+    for (unsigned int b = 0; b < cellBands; b++)
+        if (allocator->getBlocks(MACRO, Band(b), nodeId) > 0)
+            s += (s.empty() ? "" : " ") + std::to_string(b);
+    return s;
+};
+// the bands, in order, of a map that have blocks
+auto bandsOf = [] (const RbMap& map) {
+    std::string s;
+    auto antenna = map.find(MACRO);
+    if (antenna != map.end())
+        for (const auto& [band, blocks] : antenna->second)
+            if (blocks > 0)
+                s += (s.empty() ? "" : " ") + std::to_string(band);
+    return s;
+};
+// the codeword-0 limits of a vector, band by band
+auto limitsOf = [] (const BandLimitVector& bandLim) {
+    std::string s;
+    for (const auto& elem : bandLim)
+        s += (s.empty() ? "" : " ") + std::to_string(elem.limit_.at(0));
+    return s;
+};
+// an exception in a scenario is a failed check, and the next scenario still runs
+auto scenario = [&] (const std::string& what, std::function<void()> body) {
+    try {
+        body();
+    }
+    catch (std::exception& e) {
+        c.check(what + ": runs through", false, e.what());
+    }
+};
+
+scenario("UL retransmission on the second carrier", [&] {
+    TestEnbMac mac({carrier1, carrier2}, numBands);
+    TestScheduler<LteSchedulerEnbUl> scheduler;
+    scheduler.setup(&mac, UL, 2 * numBands);
+    BandLimitVector bandLim = mac.cellInfo.getCarrierBandLimit(carrier2);
+    bool served = false;
+    unsigned int bytes = scheduler.allocateRtxBytes(ueId, UL, SHORT_BSR, rtxBytes, carrier2, 0, 0, &bandLim, MACRO, served);
+    c.check("UL retransmission on the second carrier: served", served && bytes == rtxBytes, std::to_string(bytes) + " bytes");
+    std::string bands = bandsWithBlocks(scheduler.allocator(), ueId, 2 * numBands);
+    c.check("UL retransmission on the second carrier: on the second carrier's bands", bands == "6 7 8", "blocks on bands " + bands);
+});
+
+scenario("UL retransmission with an excluded band", [&] {
+    TestEnbMac mac({carrier1}, numBands);
+    TestScheduler<LteSchedulerEnbUl> scheduler;
+    scheduler.setup(&mac, UL, numBands);
+    BandLimitVector bandLim = mac.cellInfo.getCarrierBandLimit(carrier1);
+    bandLim.at(0).limit_.at(0) = BandLimit::EXCLUDED;
+    bool served = false;
+    unsigned int bytes = scheduler.allocateRtxBytes(ueId, UL, SHORT_BSR, rtxBytes, carrier1, 0, 0, &bandLim, MACRO, served);
+    c.check("UL retransmission with an excluded band: served", served && bytes == rtxBytes, std::to_string(bytes) + " bytes");
+    std::string bands = bandsWithBlocks(scheduler.allocator(), ueId, numBands);
+    c.check("UL retransmission with an excluded band: not on the excluded band", bands == "1 2 3", "blocks on bands " + bands);
+});
+
+scenario("background UE retransmission on the second carrier", [&] {
+    TestEnbMac mac({carrier1, carrier2}, numBands);
+    mac.manager.rtxBytes = rtxBytes;
+    TestScheduler<LteSchedulerEnbDl> scheduler;
+    scheduler.setup(&mac, DL, 2 * numBands);
+    BandLimitVector bandLim = mac.cellInfo.getCarrierBandLimit(carrier2);
+    unsigned int bytes = scheduler.scheduleBgRtx(bgUe, carrier2, 0, &bandLim);
+    c.check("background UE retransmission on the second carrier: served", bytes == rtxBytes, std::to_string(bytes) + " bytes");
+    std::string bands = bandsWithBlocks(scheduler.allocator(), bgUe, 2 * numBands);
+    c.check("background UE retransmission on the second carrier: on the second carrier's bands", bands == "6 7 8", "blocks on bands " + bands);
+    std::string registered = bandsOf(mac.manager.registered);
+    c.check("background UE retransmission on the second carrier: registered on the carrier's first three bands", registered == "0 1 2", "registered on bands " + registered);
+});
+
+scenario("background UE retransmission without a band vector", [&] {
+    TestEnbMac mac({carrier1, carrier2}, numBands);
+    mac.manager.rtxBytes = rtxBytes;
+    TestScheduler<LteSchedulerEnbDl> scheduler;
+    scheduler.setup(&mac, DL, 2 * numBands);
+    unsigned int bytes = scheduler.scheduleBgRtx(bgUe, carrier2, 0, nullptr);
+    c.check("background UE retransmission without a band vector: served", bytes == rtxBytes, std::to_string(bytes) + " bytes");
+    std::string bands = bandsWithBlocks(scheduler.allocator(), bgUe, 2 * numBands);
+    c.check("background UE retransmission without a band vector: on its carrier's bands", bands == "6 7 8", "blocks on bands " + bands);
+});
+
+scenario("DL retransmission on the second carrier", [&] {
+    TestEnbMac mac({carrier1, carrier2}, numBands);
+    std::set<Band> allBands;
+    for (unsigned int b = 0; b < 2 * numBands; b++)
+        allBands.insert(Band(b));
+    mac.amc.params.writeBands(allBands);
+    mac.addHarqBuffer(carrier2, ueId, rtxBytes);
+    TestScheduler<LteSchedulerEnbDl> scheduler;
+    scheduler.setup(&mac, DL, 2 * numBands);
+    BandLimitVector bandLim = mac.cellInfo.getCarrierBandLimit(carrier2);
+    unsigned int bytes = scheduler.schedulePerAcidRtx(ueId, carrier2, 0, 0, &bandLim);
+    c.check("DL retransmission on the second carrier: served", bytes == rtxBytes, std::to_string(bytes) + " bytes");
+    std::string bands = bandsWithBlocks(scheduler.allocator(), ueId, 2 * numBands);
+    c.check("DL retransmission on the second carrier: booked on the second carrier's bands", bands == "6 7 8", "blocks on bands " + bands);
+    std::string limits = limitsOf(bandLim);
+    c.check("DL retransmission on the second carrier: the bytes are written back on those bands, the first carrier's stay EXCLUDED",
+            limits == "-2 -2 -2 -2 -2 -2 10 10 5 -1 -1 -1", "limits " + limits);
+});
+
+scenario("DL retransmission on the second carrier without a band vector", [&] {
+    // as LteSchedulerEnbDl::rtxschedule() calls it for a UE without usable bands;
+    // the AMC gives a UE the bands of the carrier it computes for
+    TestEnbMac mac({carrier1, carrier2}, numBands);
+    std::set<Band> secondCarrier;
+    for (unsigned int b = numBands; b < 2 * numBands; b++)
+        secondCarrier.insert(Band(b));
+    mac.amc.params.writeBands(secondCarrier);
+    mac.addHarqBuffer(carrier2, ueId, rtxBytes);
+    TestScheduler<LteSchedulerEnbDl> scheduler;
+    scheduler.setup(&mac, DL, 2 * numBands);
+    unsigned int bytes = scheduler.schedulePerAcidRtx(ueId, carrier2, 0, 0, nullptr);
+    c.check("DL retransmission on the second carrier without a band vector: served", bytes == rtxBytes, std::to_string(bytes) + " bytes");
+    std::string bands = bandsWithBlocks(scheduler.allocator(), ueId, 2 * numBands);
+    c.check("DL retransmission on the second carrier without a band vector: booked on the second carrier's bands", bands == "6 7 8", "blocks on bands " + bands);
+});
+
+scenario("DL retransmission with a band the UE may not use", [&] {
+    TestEnbMac mac({carrier1}, numBands);
+    mac.amc.params.writeBands({Band(1), Band(2), Band(3), Band(4), Band(5)});
+    mac.addHarqBuffer(carrier1, ueId, rtxBytes);
+    TestScheduler<LteSchedulerEnbDl> scheduler;
+    scheduler.setup(&mac, DL, numBands);
+    BandLimitVector bandLim = mac.cellInfo.getCarrierBandLimit(carrier1);
+    unsigned int bytes = scheduler.schedulePerAcidRtx(ueId, carrier1, 0, 0, &bandLim);
+    c.check("DL retransmission with a band the UE may not use: served", bytes == rtxBytes, std::to_string(bytes) + " bytes");
+    std::string bands = bandsWithBlocks(scheduler.allocator(), ueId, numBands);
+    c.check("DL retransmission with a band the UE may not use: booked on the bands it was computed on", bands == "1 2 3", "blocks on bands " + bands);
+});
+
+c.summary();
+
+%contains: stdout
+modelchecks=16 modelfailures=0
+
+%not-contains: stdout
+FAILED

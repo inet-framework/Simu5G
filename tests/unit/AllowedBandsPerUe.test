@@ -1,0 +1,122 @@
+%description:
+
+A UE's allowed bands restrict that UE's allocation, and nobody else's.
+LteSchedulerEnb::applyAllowedBandLimits() marks the bands a UE may not use
+EXCLUDED in a band vector, for the uplink RAC grants
+(LteSchedulerEnbUl::racschedule()) and the uplink and D2D retransmissions.
+The vector the scheduler gets is the slot's, shared by every UE of the slot.
+
+The fault: applyAllowedBandLimits() masked that shared vector in place, so the
+bands one UE may not use stayed EXCLUDED for every UE after it in the slot, and
+for the background UEs. With two UEs on disjoint allowed bands, the second
+UE's RAC request found every band EXCLUDED and was not served, and neither was
+a background UE's after them.
+
+%includes:
+#include <string>
+#include "SchedulerTestUtil.h"
+#include "SchedulerHarness.h"
+#include "simu5g/stack/mac/scheduler/LteSchedulerEnbUl.h"
+
+%global:
+using namespace simu5g;
+using namespace simu5g::unittest;
+
+%activity:
+Checker c;
+const unsigned int numBands = 6;
+const GHz carrier = GHz(2.0);
+const MacNodeId ueA = MacNodeId(1025), ueB = MacNodeId(1026);
+
+// a UE's transmission parameters, on the given bands
+auto onBands = [] (std::set<Band> bands) {
+    UserTxParams params;
+    params.writeBands(bands);
+    return params;
+};
+// the bands, in order, on which the allocator holds blocks of the node
+auto bandsWithBlocks = [&] (LteAllocationModule *allocator, MacNodeId nodeId) {
+    std::string s;
+    for (unsigned int b = 0; b < numBands; b++)
+        if (allocator->getBlocks(MACRO, Band(b), nodeId) > 0)
+            s += (s.empty() ? "" : " ") + std::to_string(b);
+    return s;
+};
+// the codeword-0 limits of a vector, band by band
+auto limitsOf = [] (const BandLimitVector& bandLim) {
+    std::string s;
+    for (const auto& elem : bandLim)
+        s += (s.empty() ? "" : " ") + std::to_string(elem.limit_.at(0));
+    return s;
+};
+
+// two UEs on disjoint allowed bands; a RAC grant of one block (60 bytes, at
+// least the minimum RAC grant) on the first band each may use
+{
+    TestEnbMac mac({carrier}, numBands);
+    mac.amc.bytesPerBlock = 60;
+    mac.amc.ueParams[ueA] = onBands({Band(0), Band(1), Band(2)});
+    mac.amc.ueParams[ueB] = onBands({Band(3), Band(4), Band(5)});
+    TestScheduler<LteSchedulerEnbUl> scheduler;
+    scheduler.setup(&mac, UL, numBands);
+    scheduler.signalRac(ueA, carrier);
+    scheduler.signalRac(ueB, carrier);
+    BandLimitVector slotBandLim = mac.cellInfo.getCarrierBandLimit(carrier);
+    scheduler.racschedule(carrier, &slotBandLim);
+    std::string a = bandsWithBlocks(scheduler.allocator(), ueA), b = bandsWithBlocks(scheduler.allocator(), ueB);
+    c.check("two RAC requests in a slot: the first UE's grant is on its first allowed band", a == "0", "blocks on bands " + a);
+    c.check("two RAC requests in a slot: the second UE's grant is on its first allowed band", b == "3", "blocks on bands " + b);
+    std::string limits = limitsOf(slotBandLim);
+    c.check("two RAC requests in a slot: the slot's band vector is unchanged", limits == "-1 -1 -1 -1 -1 -1", "limits " + limits);
+}
+
+// a background UE's RAC request after the two UEs': its grant is on the first band still free
+{
+    TestEnbMac mac({carrier}, numBands);
+    mac.amc.bytesPerBlock = 60;
+    mac.amc.ueParams[ueA] = onBands({Band(0), Band(1), Band(2)});
+    mac.amc.ueParams[ueB] = onBands({Band(3), Band(4), Band(5)});
+    mac.manager.waitingForRac = {0};
+    const MacNodeId bgUe = mac.manager.getBgUeId(0);
+    TestScheduler<LteSchedulerEnbUl> scheduler;
+    scheduler.setup(&mac, UL, numBands);
+    scheduler.signalRac(ueA, carrier);
+    scheduler.signalRac(ueB, carrier);
+    BandLimitVector slotBandLim = mac.cellInfo.getCarrierBandLimit(carrier);
+    scheduler.racschedule(carrier, &slotBandLim);
+    c.check("a background UE's RAC request after two UEs': served", mac.manager.racServed.size() == 1,
+            std::to_string(mac.manager.racServed.size()) + " served");
+    std::string bg = bandsWithBlocks(scheduler.allocator(), bgUe);
+    c.check("a background UE's RAC request after two UEs': on the first free band", bg == "1", "blocks on bands " + bg);
+}
+
+// the mask itself: each UE's on a vector of its own
+{
+    TestEnbMac mac({carrier}, numBands);
+    mac.amc.ueParams[ueA] = onBands({Band(0), Band(1), Band(2)});
+    mac.amc.ueParams[ueB] = onBands({Band(3), Band(4), Band(5)});
+    TestScheduler<LteSchedulerEnbUl> scheduler;
+    scheduler.setup(&mac, UL, numBands);
+    BandLimitVector slotBandLim = mac.cellInfo.getCarrierBandLimit(carrier);
+
+    BandLimitVector storageA, storageB;
+    std::string a = limitsOf(*scheduler.applyAllowedBandLimits(ueA, UL, carrier, &slotBandLim, storageA));
+    std::string slot = limitsOf(slotBandLim);
+    std::string b = limitsOf(*scheduler.applyAllowedBandLimits(ueB, UL, carrier, &slotBandLim, storageB));
+    c.check("the mask: the first UE's bands", a == "-1 -1 -1 -2 -2 -2", "limits " + a);
+    c.check("the mask: the given vector is unchanged", slot == "-1 -1 -1 -1 -1 -1", "limits " + slot);
+    c.check("the mask: the second UE's bands", b == "-2 -2 -2 -1 -1 -1", "limits " + b);
+
+    BandLimitVector withExcluded = mac.cellInfo.getCarrierBandLimit(carrier), storage;
+    withExcluded.at(1).limit_.at(0) = BandLimit::EXCLUDED;
+    std::string e = limitsOf(*scheduler.applyAllowedBandLimits(ueA, UL, carrier, &withExcluded, storage));
+    c.check("the mask: a band EXCLUDED in the given vector stays excluded", e == "-1 -2 -1 -2 -2 -2", "limits " + e);
+}
+
+c.summary();
+
+%contains: stdout
+modelchecks=9 modelfailures=0
+
+%not-contains: stdout
+FAILED
