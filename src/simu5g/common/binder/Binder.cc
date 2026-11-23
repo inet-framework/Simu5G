@@ -114,8 +114,18 @@ const UeSet& Binder::getCarrierUeSet(GHz carrierFrequency)
     return carrierUeMap_[carrierFrequency];
 }
 
+NumerologyIndex Binder::getNumerologyIndexFromCarrierFreq(GHz carrierFreq)
+{
+    auto it = carrierFreqToNumerologyIndex_.find(carrierFreq);
+    if (it == carrierFreqToNumerologyIndex_.end())
+        throw cRuntimeError("Binder::getNumerologyIndexFromCarrierFreq - Carrier [%fGHz] not found", carrierFreq.get());
+    return it->second;
+}
+
 NumerologyIndex Binder::getUeMaxNumerologyIndex(MacNodeId ueId)
 {
+    if (num(ueId) >= ueMaxNumerologyIndex_.size())
+        throw cRuntimeError("Binder::getUeMaxNumerologyIndex - UE %d has no registered numerology", (int)num(ueId));
     return ueMaxNumerologyIndex_[num(ueId)];
 }
 

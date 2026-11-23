@@ -203,7 +203,7 @@ class Binder : public cSimpleModule
     /**
      * Returns the numerology associated to a carrier frequency
      */
-    virtual NumerologyIndex getNumerologyIndexFromCarrierFreq(GHz carrierFreq) { return carrierFreqToNumerologyIndex_[carrierFreq]; }
+    virtual NumerologyIndex getNumerologyIndexFromCarrierFreq(GHz carrierFreq);
 
     /**
      * Returns the slot duration associated to the numerology (in seconds)
