@@ -38,15 +38,16 @@ using namespace simu5g;
 using namespace simu5g::unittest;
 using omnetpp::SimTime;
 
-// The control information a packet from 'source' to 'dest' carries.
+// The control information a packet from 'source' to 'dest' on 'carrier' carries.
 static UserControlInfo controlInfo(Direction dir, LtePhyFrameType type, MacNodeId source,
-        MacNodeId dest)
+        MacNodeId dest, GHz carrier)
 {
     UserControlInfo info;
     info.setDirection(dir);
     info.setFrameType(type);
     info.setSourceId(source);
     info.setDestId(dest);
+    info.setCarrierFrequency(carrier);
     return info;
 }
 
@@ -155,6 +156,13 @@ const double delayRms = bs->par("delayRms").doubleValue();
 const double fHz = inet::units::values::Hz(bs->getCarrierFrequency()).get();
 ChannelModelProbe bsProbe(bs), ueProbe(ue);
 
+// A DL CQI of the base station's, on its carrier: the fading reads the carrier's slot.
+auto dlCqi = [&] (MacNodeId ueId) {
+    CellularTransmission transmission = dlCqiTransmission(&bsEndpoint, ueId);
+    transmission.carrierFrequency = bs->getCarrierFrequency();
+    return transmission;
+};
+
 // Away from t = 0, so that the fading varies with the start time.
 wait(0.010);
 
@@ -227,10 +235,10 @@ wait(0.010);
 {
     // A DL CQI at the base station and the UE's decoding are the same link,
     // evaluated from its two ends, through the real entry point getRSRP().
-    UserControlInfo data = controlInfo(DL, DATAPKT, MacNodeId(1), ueId);
+    UserControlInfo data = controlInfo(DL, DATAPKT, MacNodeId(1), ueId, bs->getCarrierFrequency());
     const LinkKey link(MacNodeId(1), ueId);
 
-    bs->getRSRP(bsProbe.whatIfLink(&ueEndpoint, dlCqiTransmission(&bsEndpoint, ueId)), 30.0);
+    bs->getRSRP(bsProbe.whatIfLink(&ueEndpoint, dlCqi(ueId)), 30.0);
 
     // The path loss and shadowing of this harness may draw on their own
     // account, so "draws nothing" is measured against an identical evaluation
@@ -257,7 +265,7 @@ wait(0.010);
 
     // The uplink of the same pair, received at the base station through the
     // same entry point: it draws no fading paths of its own either.
-    UserControlInfo ul = controlInfo(UL, DATAPKT, ueId, MacNodeId(1));
+    UserControlInfo ul = controlInfo(UL, DATAPKT, ueId, MacNodeId(1), bs->getCarrierFrequency());
     size_t entries = bsProbe.jakesMap().size();
     before = bs->getRNG(0)->getNumbersDrawn();
     bs->getRSRP(bsProbe.linkFor(&bsEndpoint, &ul, ueEndpoint.coord), 30.0);
@@ -291,8 +299,9 @@ wait(0.010);
     ulCqi.txPower = bgUeEndpoint.txPower;
     ulCqi.startPosition = bgUeEndpoint.coord;
     ulCqi.startTime = simTime();
+    ulCqi.carrierFrequency = bs->getCarrierFrequency();
 
-    bs->computeSinr(&bgUeEndpoint, dlCqiTransmission(&bsEndpoint, bgUeId));
+    bs->computeSinr(&bgUeEndpoint, dlCqi(bgUeId));
     c.check("a background UE's DL CQI draws the fading paths of its link to the base station",
             bsProbe.jakesMap().count(link) == 1);
 
