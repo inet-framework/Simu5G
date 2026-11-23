@@ -1056,16 +1056,17 @@ BandLimitVector *LteSchedulerEnb::applyAllowedBandLimits(MacNodeId nodeId, Direc
         }
         return &storage;
     }
-    // mask the provided vector in place; already-excluded entries stay excluded
+    // mask a copy of the provided vector, which other users share; already-excluded entries stay excluded
+    storage = *bandLim;
     for (unsigned int i = 0; i < numBands; i++) {
-        BandLimit& elem = bandLim->at(i);
+        BandLimit& elem = storage.at(i);
         for (unsigned int j = 0; j < MAX_CODEWORDS; j++) {
             if (elem.limit_[j] == BandLimit::EXCLUDED)
                 continue;
             elem.limit_[j] = (allowedBands.find(elem.band_) != allowedBands.end()) ? BandLimit::NO_LIMIT : BandLimit::EXCLUDED;
         }
     }
-    return bandLim;
+    return &storage;
 }
 
 void LteSchedulerEnb::makeUniformBandLimits(BandLimitVector& storage, unsigned int numBands, int limit)

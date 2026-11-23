@@ -367,9 +367,10 @@ class LteSchedulerEnb : public cSimpleModule
 
     /// Applies the user's allowed-band restriction to a band-limit vector:
     /// builds a fresh vector in 'storage' when bandLim is null (NO_LIMIT for
-    /// allowed bands, EXCLUDED otherwise), or masks the provided vector in place
-    /// (already-EXCLUDED entries stay excluded). Returns the effective
-    /// vector. Shared by the RAC and rtx allocation paths.
+    /// allowed bands, EXCLUDED otherwise), or masks a copy of the provided
+    /// vector in 'storage' (already-EXCLUDED entries stay excluded); the
+    /// provided vector is left unchanged. Returns 'storage'. Shared by the RAC
+    /// and rtx allocation paths.
     BandLimitVector *applyAllowedBandLimits(MacNodeId nodeId, Direction dir, GHz carrierFrequency, BandLimitVector *bandLim, BandLimitVector& storage);
 
     /// Fills 'storage' with one BandLimit per band, all codeword limits set

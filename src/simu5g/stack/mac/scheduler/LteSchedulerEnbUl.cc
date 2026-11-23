@@ -92,13 +92,9 @@ bool LteSchedulerEnbUl::racschedule(GHz carrierFrequency, BandLimitVector *bandL
         for (const auto& [nodeId, _] : racStatus) {
             EV << NOW << " LteSchedulerEnbUl::racschedule handling RAC for node " << nodeId << endl;
 
-            // apply the allowed-band restriction for this user
-            // (NOTE: tempBandLim is deliberately loop-local, matching the
-            // historical code, which carried a "FIXME: bandLim is never
-            // deleted" at this spot -- although tempBandLim is a stack local
-            // and bandLim only ever points at it or at a caller-owned vector)
+            // apply the allowed-band restriction for this user, on a vector of its own
             BandLimitVector tempBandLim;
-            bandLim = applyAllowedBandLimits(nodeId, UL, carrierFrequency, bandLim, tempBandLim);
+            BandLimitVector *ueBandLim = applyAllowedBandLimits(nodeId, UL, carrierFrequency, bandLim, tempBandLim);
 
             // FIXME default behavior
             // try to allocate one block to selected UE on at least one logical band of MACRO antenna, first codeword
@@ -116,7 +112,7 @@ bool LteSchedulerEnbUl::racschedule(GHz carrierFrequency, BandLimitVector *bandL
             unsigned int grantedBlocks = 0;
             unsigned int grantedBytes = 0;
 
-            unsigned int size = bandLim->size();
+            unsigned int size = ueBandLim->size();
             // Allocate RBs across bands until the RAC grant is large enough to carry at
             // least a short BSR + MAC header. Each logical band holds a single RB, so we
             // spread the allocation over multiple bands. The grant size the UE receives is
@@ -128,7 +124,7 @@ bool LteSchedulerEnbUl::racschedule(GHz carrierFrequency, BandLimitVector *bandL
             // never transmitted.
             for (Band b = 0; b < size && grantedBytes < minRacBytes; ++b) {
                 // if the limit flag is set to skip, jump off
-                int limit = bandLim->at(b).limit_.at(cw);
+                int limit = ueBandLim->at(b).limit_.at(cw);
                 if (limit == BandLimit::EXCLUDED) {
                     EV << "LteSchedulerEnbUl::racschedule - skipping logical band according to limit value" << endl;
                     continue;
@@ -159,7 +155,7 @@ bool LteSchedulerEnbUl::racschedule(GHz carrierFrequency, BandLimitVector *bandL
             // Msg3 grants which use a predefined robust low MCS.
             if (!allocation) {
                 for (Band b = 0; b < size; ++b) {
-                    int limit = bandLim->at(b).limit_.at(cw);
+                    int limit = ueBandLim->at(b).limit_.at(cw);
                     if (limit == BandLimit::EXCLUDED)
                         continue;
                     if (allocator_->availableBlocks(nodeId, MACRO, b) > 0) {
