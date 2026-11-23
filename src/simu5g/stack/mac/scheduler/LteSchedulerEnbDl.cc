@@ -111,6 +111,8 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, GHz carrier
     std::vector<unsigned int> assignedBlocks;
     // bytes which blocks from the preceding vector are supposed to satisfy
     std::vector<unsigned int> assignedBytes;
+    // the position in bandLim of the band of each entry of the preceding vectors
+    std::vector<unsigned int> assignedPositions;
 
     HarqTxBuffers *harqTxBuff = mac_->getHarqTxBuffers(carrierFrequency);
     if (harqTxBuff == nullptr)
@@ -182,6 +184,7 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, GHz carrier
             // assign only on the first codeword
             assignedBlocks.push_back(blocks);
             assignedBytes.push_back(allocation);
+            assignedPositions.push_back(i);
         }
 
         if (bytes == 0)
@@ -198,12 +201,13 @@ unsigned int LteSchedulerEnbDl::schedulePerAcidRtx(MacNodeId nodeId, GHz carrier
     size = assignedBlocks.size();
     // For each LB with assigned blocks
     for (unsigned int i = 0; i < size; ++i) {
+        BandLimit& elem = bandLim->at(assignedPositions.at(i));
         if (allocatedCw == 0) {
             // allocate the blocks
-            allocator_->addBlocks(antenna, bandLim->at(i).band_, nodeId, assignedBlocks.at(i), assignedBytes.at(i));
+            allocator_->addBlocks(antenna, elem.band_, nodeId, assignedBlocks.at(i), assignedBytes.at(i));
         }
         // store the amount
-        bandLim->at(i).limit_.at(remappedCw) = assignedBytes.at(i);
+        elem.limit_.at(remappedCw) = assignedBytes.at(i);
     }
 
     UnitList signal;
