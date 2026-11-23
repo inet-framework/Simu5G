@@ -27,6 +27,7 @@ void LtePf::prepareSchedule()
 
     // Create a working copy of the active set
     activeConnectionTempSet_ = *activeConnectionSet_;
+    removeDepartedConnections();
 
     // Build the score list by cycling through the active connections.
     ScoreList score;
@@ -35,28 +36,12 @@ void LtePf::prepareSchedule()
         MacNodeId nodeId = cid.getNodeId();
         grantedBytes_[cid] = 0;
 
-        if (nodeId == NODEID_NONE || !binder_->nodeExists(nodeId)) {
-            // node has left the simulation - erase corresponding CIDs
-            activeConnectionSet_->erase(cid);
-            activeConnectionTempSet_.erase(cid);
-            carrierActiveConnectionSet_.erase(cid);
-            continue;
-        }
-
         // if we are allocating the UL subframe, this connection may be either UL or D2D
         Direction dir;
         if (direction_ == UL)
             dir = directionFromBsrLcid(cid.getLcid(), direction_);
         else
             dir = DL;
-
-        // check if node is still a valid node in the simulation - might have been dynamically removed
-        if (!binder_->nodeExists(nodeId)) {
-            activeConnectionTempSet_.erase(cid);
-            carrierActiveConnectionSet_.erase(cid);
-            EV << "CID " << cid << " of node " << nodeId << " removed from active connection set - no such node in Binder";
-            continue;
-        }
 
         // compute available blocks for the current user
         const UserTxParams& info = eNbScheduler_->mac_->getAmc()->computeTxParams(nodeId, dir, carrierFrequency_);

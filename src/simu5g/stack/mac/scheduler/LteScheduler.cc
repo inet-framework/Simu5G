@@ -175,4 +175,19 @@ void LteScheduler::buildCarrierActiveConnectionSet()
     }
 }
 
+void LteScheduler::removeDepartedConnections()
+{
+    for (auto it = carrierActiveConnectionSet_.begin(); it != carrierActiveConnectionSet_.end(); ) {
+        MacNodeId nodeId = it->getNodeId();
+        if (nodeId == NODEID_NONE || !binder_->nodeExists(nodeId)) {
+            EV << "LteScheduler::removeDepartedConnections - CID " << *it << " removed: node " << nodeId << " has left the simulation" << endl;
+            activeConnectionSet_->erase(*it);
+            activeConnectionTempSet_.erase(*it);
+            it = carrierActiveConnectionSet_.erase(it);
+        }
+        else
+            ++it;
+    }
+}
+
 } //namespace

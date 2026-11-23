@@ -118,6 +118,7 @@ void QoSAwareScheduler::prepareSchedule()
 
     grantedBytes_.clear();
     activeConnectionTempSet_ = *activeConnectionSet_;
+    removeDepartedConnections();
 
     // --- Phase 1: Score all eligible CIDs ---
 
@@ -128,13 +129,6 @@ void QoSAwareScheduler::prepareSchedule()
         EV << NOW << " QoSAwareScheduler::CID--->"<< cid << endl;
         MacNodeId nodeId = cid.getNodeId();
         grantedBytes_[cid] = 0;
-
-        if (nodeId == NODEID_NONE || !binder_->nodeExists(nodeId)) {
-            activeConnectionSet_->erase(cid);
-            activeConnectionTempSet_.erase(cid);
-            carrierActiveConnectionSet_.erase(cid);
-            continue;
-        }
 
         Direction dir = (direction_ == UL) ? directionFromBsrLcid(cid.getLcid(), UL) : DL;
 

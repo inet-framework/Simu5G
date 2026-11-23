@@ -25,6 +25,7 @@ bool debug = false;
 void LteMaxCiMultiband::prepareSchedule()
 {
     activeConnectionTempSet_ = *activeConnectionSet_;
+    removeDepartedConnections();
     unsigned int byPs = 0;
     ScoreList score;
 
@@ -41,13 +42,6 @@ void LteMaxCiMultiband::prepareSchedule()
     for (MacCid cid : carrierActiveConnectionSet_) {
         // Current connection.
         MacNodeId nodeId = cid.getNodeId();
-        if (nodeId == NODEID_NONE || !binder_->nodeExists(nodeId)) {
-            // node has left the simulation - erase corresponding CIDs
-            activeConnectionSet_->erase(cid);
-            activeConnectionTempSet_.erase(cid);
-            carrierActiveConnectionSet_.erase(cid);
-            continue;
-        }
         // obtain a vector of CQI, one for each band
         std::vector<Cqi> vect = eNbScheduler_->mac_->getAmc()->readMultiBandCqi(nodeId, direction_, carrierFrequency_);
         if (debug)

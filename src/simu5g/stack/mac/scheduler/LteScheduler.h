@@ -215,6 +215,12 @@ class LteScheduler
      */
     virtual void buildCarrierActiveConnectionSet();
 
+    /*
+     * Remove the connections of the nodes that have left the simulation from the
+     * active connection sets. Used by scheduling modules, after copying the active set
+     */
+    virtual void removeDepartedConnections();
+
 };
 
 } //namespace

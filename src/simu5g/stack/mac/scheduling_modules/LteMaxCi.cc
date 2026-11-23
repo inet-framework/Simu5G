@@ -23,6 +23,7 @@ void LteMaxCi::prepareSchedule()
     EV << NOW << " LteMaxCI::schedule " << eNbScheduler_->mac_->getMacNodeId() << endl;
 
     activeConnectionTempSet_ = *activeConnectionSet_;
+    removeDepartedConnections();
 
     // Build the score list by cycling through the active connections.
     ScoreList score;
@@ -32,13 +33,6 @@ void LteMaxCi::prepareSchedule()
     for (MacCid cid : carrierActiveConnectionSet_) {
         // Current connection.
         MacNodeId nodeId = cid.getNodeId();
-        if (nodeId == NODEID_NONE || !binder_->nodeExists(nodeId)) {
-            // Node has left the simulation - erase corresponding CIDs
-            activeConnectionSet_->erase(cid);
-            activeConnectionTempSet_.erase(cid);
-            carrierActiveConnectionSet_.erase(cid);
-            continue;
-        }
 
         // If we are allocating the UL subframe, this connection may be either UL or D2D
         Direction dir;
