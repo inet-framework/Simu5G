@@ -1100,6 +1100,8 @@ unsigned int LteSchedulerEnb::allocateRtxBytes(MacNodeId nodeId, Direction dir, 
     std::vector<unsigned int> assignedBlocks;
     // bytes which blocks from the preceding vector are supposed to satisfy
     std::vector<unsigned int> assignedBytes;
+    // the band of each entry of the preceding vectors
+    std::vector<Band> assignedBands;
 
     // end loop signal [same as bytes>0, but more secure]
     bool finish = false;
@@ -1109,6 +1111,10 @@ unsigned int LteSchedulerEnb::allocateRtxBytes(MacNodeId nodeId, Direction dir, 
         // save the band and the relative limit
         Band b = bandLim->at(i).band_;
         int limit = bandLim->at(i).limit_.at(cw);
+
+        // a band of another carrier, or one the user may not use
+        if (limit == BandLimit::EXCLUDED)
+            continue;
 
         // TODO add support for multi CW
         unsigned int bandAvailableBytes = availableBytes(nodeId, antenna, b, cw, dir, carrierFrequency);
@@ -1140,6 +1146,7 @@ unsigned int LteSchedulerEnb::allocateRtxBytes(MacNodeId nodeId, Direction dir, 
         // update the structures
         assignedBlocks.push_back(servedBlocks);
         assignedBytes.push_back(servedBytes);
+        assignedBands.push_back(b);
     }
 
     if (toServe > 0) {
@@ -1157,13 +1164,13 @@ unsigned int LteSchedulerEnb::allocateRtxBytes(MacNodeId nodeId, Direction dir, 
 
         for (unsigned int i = 0; i < size; ++i) {
             // For each LB for which blocks have been allocated
-            Band b = bandLim->at(i).band_;
+            Band b = assignedBands.at(i);
 
             cwAllocatedBlocks += assignedBlocks.at(i);
             EV << "\t Cw->" << allocatedCw << "/" << MAX_CODEWORDS << endl;
             //! handle multi-codeword allocation
             if (allocatedCw != MAX_CODEWORDS) {
-                EV << NOW << " LteSchedulerEnb::allocateRtxBytes - adding " << assignedBlocks.at(i) << " to band " << i << endl;
+                EV << NOW << " LteSchedulerEnb::allocateRtxBytes - adding " << assignedBlocks.at(i) << " to band " << b << endl;
                 allocator_->addBlocks(antenna, b, nodeId, assignedBlocks.at(i), assignedBytes.at(i));
             }
             //! TODO check if ok bandLim->at.limit_.at(cw) = assignedBytes.at(i);
@@ -1242,8 +1249,8 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
 
         BandLimitVector tempBandLim;
         if (bandLim == nullptr) {
-            // Create a vector of band limit using all bands
-            makeUniformBandLimits(tempBandLim, mac_->getCellInfo()->getNumBands(), BandLimit::EXCLUDED);
+            // the bands of this carrier
+            tempBandLim = mac_->getCellInfo()->getCarrierBandLimit(carrierFrequency);
             bandLim = &tempBandLim;
         }
 
@@ -1257,6 +1264,8 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
         std::vector<unsigned int> assignedBlocks;
         // bytes which blocks from the preceding vector are supposed to satisfy
         std::vector<unsigned int> assignedBytes;
+        // the band of each entry of the preceding vectors
+        std::vector<Band> assignedBands;
 
         // end loop signal [same as bytes>0, but more secure]
         bool finish = false;
@@ -1266,6 +1275,10 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
             // save the band and the relative limit
             Band b = bandLim->at(i).band_;
             int limit = bandLim->at(i).limit_.at(cw);
+
+            // a band of another carrier, or one the user may not use
+            if (limit == BandLimit::EXCLUDED)
+                continue;
 
             unsigned int bandAvailableBytes = availableBytesBackgroundUe(bgUeId, antenna, b, direction_, carrierFrequency, (limitBl) ? limit : BandLimit::NO_LIMIT); // available space (in bytes)
 
@@ -1298,6 +1311,7 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
             // update the structures
             assignedBlocks.push_back(servedBlocks);
             assignedBytes.push_back(servedBytes);
+            assignedBands.push_back(b);
         }
 
         if (toServe > 0) {
@@ -1313,7 +1327,7 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
             unsigned int allocatedBytes = 0;
             for (unsigned int i = 0; i < size; ++i) {
                 // For each LB for which blocks have been allocated
-                Band b = bandLim->at(i).band_;
+                Band b = assignedBands.at(i);
 
                 allocatedBytes += assignedBytes.at(i);
                 allocatedRbMapEntry[b] = assignedBlocks.at(i);
@@ -1321,7 +1335,7 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
                 EV << "\t Cw->" << allocatedCw << "/" << MAX_CODEWORDS << endl;
                 //! handle multi-codeword allocation
                 if (allocatedCw != MAX_CODEWORDS) {
-                    EV << NOW << " LteSchedulerEnb::scheduleBgRtx - adding " << assignedBlocks.at(i) << " to band " << i << endl;
+                    EV << NOW << " LteSchedulerEnb::scheduleBgRtx - adding " << assignedBlocks.at(i) << " to band " << b << endl;
                     allocator_->addBlocks(antenna, b, bgUeId, assignedBlocks.at(i), assignedBytes.at(i));
                 }
             }
