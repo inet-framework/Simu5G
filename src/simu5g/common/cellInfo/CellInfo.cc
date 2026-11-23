@@ -186,7 +186,7 @@ void CellInfo::registerCarrier(GHz carrierFrequency, unsigned int carrierNumBand
                 elem.band_ = Band(i);
 
                 // check whether band i is in the set of usable bands
-                int limit = (i >= carrierInfo.firstBand && i <= carrierInfo.lastBand) ? -1 : -2;
+                int limit = (i >= carrierInfo.firstBand && i <= carrierInfo.lastBand) ? BandLimit::NO_LIMIT : BandLimit::EXCLUDED;
 
                 elem.limit_.clear();
                 for (unsigned int j = 0; j < MAX_CODEWORDS; j++)

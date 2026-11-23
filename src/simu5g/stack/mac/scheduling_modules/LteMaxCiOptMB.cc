@@ -413,12 +413,12 @@ void LteMaxCiOptMB::readSolution()
         int limit;
 
         // fill the bandLimit and usableBand structures
-        limit = (value.find('1') != std::string::npos) ? -1 : -2;
+        limit = (value.find('1') != std::string::npos) ? BandLimit::NO_LIMIT : BandLimit::EXCLUDED;
         bandLimit.limit_.push_back(limit);
         bandLimit.band_ = bandId;
         schedulingDecision_[ueId].push_back(bandLimit);
 
-        if (limit == -1) {
+        if (limit == BandLimit::NO_LIMIT) {
             usableBands_[ueId].push_back(bandLimit.band_);
             EV << " LteMaxCiOptMB::readSolution - Adding usable band[" << bandLimit.band_ << "] for UE[" << ueId << "]" << std::endl;
         }

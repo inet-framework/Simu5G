@@ -36,13 +36,13 @@ bool LteMaxCiComp::getBandLimit(std::vector<BandLimit> *bandLimit, MacNodeId ueI
         BandLimit elem;
         elem.band_ = Band(i);
 
-        int limit = -2;
+        int limit = BandLimit::EXCLUDED;
 
         // check whether band i is in the set of usable bands
         for (auto band : *usableBands) {
             if (band == i) {
                 // band i must be marked as unlimited
-                limit = -1;
+                limit = BandLimit::NO_LIMIT;
                 break;
             }
         }

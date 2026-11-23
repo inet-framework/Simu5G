@@ -363,12 +363,12 @@ class LteSchedulerEnb : public cSimpleModule
      * @param cw codeword
      * @return available space in bytes
      */
-    virtual unsigned int availableBytes(const MacNodeId id, const Remote antenna, Band b, Codeword cw, Direction dir, GHz carrierFrequency, int limit = -1);
+    virtual unsigned int availableBytes(const MacNodeId id, const Remote antenna, Band b, Codeword cw, Direction dir, GHz carrierFrequency, int limit = BandLimit::NO_LIMIT);
 
     /// Applies the user's allowed-band restriction to a band-limit vector:
-    /// builds a fresh vector in 'storage' when bandLim is null (limit -1 for
-    /// allowed bands, -2 otherwise), or masks the provided vector in place
-    /// (already-excluded (-2) entries stay excluded). Returns the effective
+    /// builds a fresh vector in 'storage' when bandLim is null (NO_LIMIT for
+    /// allowed bands, EXCLUDED otherwise), or masks the provided vector in place
+    /// (already-EXCLUDED entries stay excluded). Returns the effective
     /// vector. Shared by the RAC and rtx allocation paths.
     BandLimitVector *applyAllowedBandLimits(MacNodeId nodeId, Direction dir, GHz carrierFrequency, BandLimitVector *bandLim, BandLimitVector& storage);
 
@@ -393,7 +393,7 @@ class LteSchedulerEnb : public cSimpleModule
      * @param cw codeword
      * @return available space in bytes
      */
-    virtual unsigned int availableBytesBackgroundUe(const MacNodeId id, const Remote antenna, Band b, Direction dir, GHz carrierFrequency, int limit = -1);
+    virtual unsigned int availableBytesBackgroundUe(const MacNodeId id, const Remote antenna, Band b, Direction dir, GHz carrierFrequency, int limit = BandLimit::NO_LIMIT);
 
     unsigned int allocatedCws(GHz carrierFrequency, MacNodeId nodeId)
     {

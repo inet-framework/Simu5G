@@ -238,12 +238,16 @@ typedef std::list<X2InformationElement *> X2InformationElementsList;
 /**
  * The following structure specifies a band and a byte amount which limits the schedulable data
  * on it.
- * If this limit is -1, it is considered an unlimited capping.
- * If this limit is -2, the band cannot be used.
+ * A limit of NO_LIMIT means the band may be used without a cap; EXCLUDED means it cannot be used.
  * Among other modules, the rtxAcid and grant methods of LteSchedulerEnb use this structure.
  */
 struct BandLimit
 {
+    /// The limit of a band that may be used without a cap
+    static constexpr int NO_LIMIT = -1;
+    /// The limit of a band that cannot be used
+    static constexpr int EXCLUDED = -2;
+
     /// Band which the element refers to
     Band band_;
     /// Limit of bytes (per codeword) which can be requested for the current band
@@ -251,13 +255,13 @@ struct BandLimit
 
     BandLimit() : band_(0)
     {
-        limit_.resize(MAX_CODEWORDS, -1);
+        limit_.resize(MAX_CODEWORDS, NO_LIMIT);
     }
 
     // default "from Band" constructor
     BandLimit(Band b) : band_(b)
     {
-        limit_.resize(MAX_CODEWORDS, -1);
+        limit_.resize(MAX_CODEWORDS, NO_LIMIT);
     }
 
     bool operator<(const BandLimit rhs) const

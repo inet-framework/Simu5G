@@ -177,11 +177,11 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
                     EV << "- Codeword " << j << endl;
                     if (allowedBands.find(elem.band_) != allowedBands.end()) {
                         EV << "\t" << i << " " << "yes" << endl;
-                        elem.limit_[j] = -1;
+                        elem.limit_[j] = BandLimit::NO_LIMIT;
                     }
                     else {
                         EV << "\t" << i << " " << "no" << endl;
-                        elem.limit_[j] = -2;
+                        elem.limit_[j] = BandLimit::EXCLUDED;
                     }
                 }
                 emptyBandLim_.push_back(elem);
@@ -196,16 +196,16 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
         for (unsigned int i = 0; i < numBands; i++) {
             BandLimit& elem = bandLim->at(i);
             for (unsigned int j = 0; j < numCodewords; j++) {
-                if (elem.limit_[j] == -2)
+                if (elem.limit_[j] == BandLimit::EXCLUDED)
                     continue;
 
                 if (allowedBands.find(elem.band_) != allowedBands.end()) {
                     EV << "\t" << i << " " << "yes" << endl;
-                    elem.limit_[j] = -1;
+                    elem.limit_[j] = BandLimit::NO_LIMIT;
                 }
                 else {
                     EV << "\t" << i << " " << "no" << endl;
-                    elem.limit_[j] = -2;
+                    elem.limit_[j] = BandLimit::EXCLUDED;
                 }
             }
         }
@@ -327,7 +327,7 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
             EV << "LteSchedulerEnb::grant --- BAND " << b << " LIMIT " << limit << "---" << endl;
 
             // if the limit flag is set to skip, jump off
-            if (limit == -2) {
+            if (limit == BandLimit::EXCLUDED) {
                 EV << "LteSchedulerEnb::grant skipping logical band according to limit value" << endl;
                 continue;
             }
@@ -348,13 +348,13 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
             }
             else { // if limit is expressed in blocks, limit value must be passed to availableBytes function
                 bandAvailableBlocks = allocator_->availableBlocks(nodeId, antenna, b);
-                bandAvailableBytes = (bandAvailableBlocks == 0) ? 0 : availableBytes(nodeId, antenna, b, cw, dir, carrierFrequency, (limitBl) ? limit : -1); // available space (in bytes)
+                bandAvailableBytes = (bandAvailableBlocks == 0) ? 0 : availableBytes(nodeId, antenna, b, cw, dir, carrierFrequency, (limitBl) ? limit : BandLimit::NO_LIMIT); // available space (in bytes)
             }
 
             // if no allocation can be performed, notify to skip the band on next processing (if any)
             if (bandAvailableBytes == 0) {
                 EV << "LteSchedulerEnb::grant Band " << b << " will be skipped since it has no space left." << endl;
-                (*bandLim).at(i).limit_.at(cw) = -2;
+                (*bandLim).at(i).limit_.at(cw) = BandLimit::EXCLUDED;
                 continue;
             }
 
@@ -583,7 +583,7 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
                 EV << "Putting band " << i << endl;
                 // Mark all bands as unlimited
                 for (unsigned int j = 0; j < numCodewords; j++)
-                    elem.limit_[j] = -1;
+                    elem.limit_[j] = BandLimit::NO_LIMIT;
                 emptyBandLim_.push_back(elem);
             }
         }
@@ -672,7 +672,7 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
             EV << "LteSchedulerEnb::scheduleGrantBackground --- BAND " << b << " LIMIT " << limit << "---" << endl;
 
             // If the limit flag is set to skip, jump off
-            if (limit == -2) {
+            if (limit == BandLimit::EXCLUDED) {
                 EV << "LteSchedulerEnb::scheduleGrantBackground skipping logical band according to limit value" << endl;
                 continue;
             }
@@ -694,14 +694,14 @@ unsigned int LteSchedulerEnb::scheduleGrantBackground(MacCid bgCid, unsigned int
                 bandAvailableBytes = bgTrafficManager->getBackloggedUeBytesPerBlock(bgUeId, direction_);
             }
             else { // if limit is expressed in blocks, limit value must be passed to availableBytes function
-                bandAvailableBytes = availableBytesBackgroundUe(bgUeId, antenna, b, direction_, carrierFrequency, (limitBl) ? limit : -1); // available space (in bytes)
+                bandAvailableBytes = availableBytesBackgroundUe(bgUeId, antenna, b, direction_, carrierFrequency, (limitBl) ? limit : BandLimit::NO_LIMIT); // available space (in bytes)
                 bandAvailableBlocks = allocator_->availableBlocks(bgUeId, antenna, b);
             }
 
             // If no allocation can be performed, notify to skip the band on next processing (if any)
             if (bandAvailableBytes == 0) {
                 EV << "LteSchedulerEnb::scheduleGrantBackground Band " << b << " will be skipped since it has no space left." << endl;
-                (*bandLim).at(i).limit_.at(cw) = -2;
+                (*bandLim).at(i).limit_.at(cw) = BandLimit::EXCLUDED;
                 continue;
             }
 
@@ -896,10 +896,10 @@ unsigned int LteSchedulerEnb::availableBytes(const MacNodeId id,
     // Retrieving this user available resource blocks
     int blocks = allocator_->availableBlocks(id, antenna, b);
     // Consistency Check
-    if (limit > blocks && limit != -1)
+    if (limit > blocks && limit != BandLimit::NO_LIMIT)
         throw cRuntimeError("LteSchedulerEnb::availableBytes signaled limit inconsistency with available space band b %d, limit %d, available blocks %d", b, limit, blocks);
 
-    if (limit != -1)
+    if (limit != BandLimit::NO_LIMIT)
         blocks = (blocks > limit) ? limit : blocks;
 
     unsigned int bytes = mac_->getAmc()->computeBytesOnNRbs(id, b, cw, blocks, dir, carrierFrequency);
@@ -919,10 +919,10 @@ unsigned int LteSchedulerEnb::availableBytesBackgroundUe(const MacNodeId id, Rem
     }
 
     // Consistency Check
-    if (limit > blocks && limit != -1)
+    if (limit > blocks && limit != BandLimit::NO_LIMIT)
         throw cRuntimeError("LteSchedulerEnb::availableBytes signaled limit inconsistency with available space band b %d, limit %d, available blocks %d", b, limit, blocks);
 
-    if (limit != -1)
+    if (limit != BandLimit::NO_LIMIT)
         blocks = (blocks > limit) ? limit : blocks;
 
     unsigned int bytesPerBlock = mac_->getBackgroundTrafficManager(carrierFrequency)->getBackloggedUeBytesPerBlock(id, dir);
@@ -1051,7 +1051,7 @@ BandLimitVector *LteSchedulerEnb::applyAllowedBandLimits(MacNodeId nodeId, Direc
             elem.band_ = Band(i);
             EV << "Putting band " << i << endl;
             for (unsigned int j = 0; j < MAX_CODEWORDS; j++)
-                elem.limit_[j] = (allowedBands.find(elem.band_) != allowedBands.end()) ? -1 : -2;
+                elem.limit_[j] = (allowedBands.find(elem.band_) != allowedBands.end()) ? BandLimit::NO_LIMIT : BandLimit::EXCLUDED;
             storage.push_back(elem);
         }
         return &storage;
@@ -1060,9 +1060,9 @@ BandLimitVector *LteSchedulerEnb::applyAllowedBandLimits(MacNodeId nodeId, Direc
     for (unsigned int i = 0; i < numBands; i++) {
         BandLimit& elem = bandLim->at(i);
         for (unsigned int j = 0; j < MAX_CODEWORDS; j++) {
-            if (elem.limit_[j] == -2)
+            if (elem.limit_[j] == BandLimit::EXCLUDED)
                 continue;
-            elem.limit_[j] = (allowedBands.find(elem.band_) != allowedBands.end()) ? -1 : -2;
+            elem.limit_[j] = (allowedBands.find(elem.band_) != allowedBands.end()) ? BandLimit::NO_LIMIT : BandLimit::EXCLUDED;
         }
     }
     return bandLim;
@@ -1242,7 +1242,7 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
         BandLimitVector tempBandLim;
         if (bandLim == nullptr) {
             // Create a vector of band limit using all bands
-            makeUniformBandLimits(tempBandLim, mac_->getCellInfo()->getNumBands(), -2);
+            makeUniformBandLimits(tempBandLim, mac_->getCellInfo()->getNumBands(), BandLimit::EXCLUDED);
             bandLim = &tempBandLim;
         }
 
@@ -1266,7 +1266,7 @@ unsigned int LteSchedulerEnb::scheduleBgRtx(MacNodeId bgUeId, GHz carrierFrequen
             Band b = bandLim->at(i).band_;
             int limit = bandLim->at(i).limit_.at(cw);
 
-            unsigned int bandAvailableBytes = availableBytesBackgroundUe(bgUeId, antenna, b, direction_, carrierFrequency, (limitBl) ? limit : -1); // available space (in bytes)
+            unsigned int bandAvailableBytes = availableBytesBackgroundUe(bgUeId, antenna, b, direction_, carrierFrequency, (limitBl) ? limit : BandLimit::NO_LIMIT); // available space (in bytes)
 
             // use the provided limit as cap for available bytes, if it is not set to unlimited
             if (limit >= 0)

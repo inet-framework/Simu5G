@@ -129,7 +129,7 @@ bool LteSchedulerEnbUl::racschedule(GHz carrierFrequency, BandLimitVector *bandL
             for (Band b = 0; b < size && grantedBytes < minRacBytes; ++b) {
                 // if the limit flag is set to skip, jump off
                 int limit = bandLim->at(b).limit_.at(cw);
-                if (limit == -2) {
+                if (limit == BandLimit::EXCLUDED) {
                     EV << "LteSchedulerEnbUl::racschedule - skipping logical band according to limit value" << endl;
                     continue;
                 }
@@ -160,7 +160,7 @@ bool LteSchedulerEnbUl::racschedule(GHz carrierFrequency, BandLimitVector *bandL
             if (!allocation) {
                 for (Band b = 0; b < size; ++b) {
                     int limit = bandLim->at(b).limit_.at(cw);
-                    if (limit == -2)
+                    if (limit == BandLimit::EXCLUDED)
                         continue;
                     if (allocator_->availableBlocks(nodeId, MACRO, b) > 0) {
                         grantedBlocks = blocks;
@@ -219,7 +219,7 @@ void LteSchedulerEnbUl::racscheduleBackground(unsigned int& racAllocatedBlocks, 
         BandLimitVector tempBandLim;
         if (bandLim == nullptr) {
             // Create a vector of band limit using all bands
-            makeUniformBandLimits(tempBandLim, numBands, -1);
+            makeUniformBandLimits(tempBandLim, numBands, BandLimit::NO_LIMIT);
             bandLim = &tempBandLim;
         }
 
@@ -233,7 +233,7 @@ void LteSchedulerEnbUl::racscheduleBackground(unsigned int& racAllocatedBlocks, 
         for (Band b = 0; b < size; ++b) {
             // if the limit flag is set to skip, jump off
             int limit = bandLim->at(b).limit_.at(cw);
-            if (limit == -2) {
+            if (limit == BandLimit::EXCLUDED) {
                 EV << "LteSchedulerEnbUl::racscheduleBackground - skipping logical band according to limit value" << endl;
                 continue;
             }
