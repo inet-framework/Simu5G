@@ -23,7 +23,7 @@ started, and compared with those literal values.
 
 The radio's own contract, on the radios themselves:
 
- - A second addToMedium() is rejected.
+ - A second addCellToMedium() is rejected.
  - A radio whose id is taken fails with the medium's error, the radio that has
    the id stays on the medium, and deleting the failed radio, as tearing the
    network down after the error does, is harmless: its destructor has nothing
@@ -33,7 +33,7 @@ The radio's own contract, on the radios themselves:
  - It is not among the radios frames go to: a broadcast from a sender standing
    next to the phantom radios, closer than the one real radio on the medium,
    goes to that radio alone. Every copy on its way is counted.
- - It answers outdoors, whatever **.insideBuilding says.
+ - It answers outdoors.
 
 %includes:
 #include <cstring>
@@ -122,7 +122,6 @@ sim-time-limit = 100ms
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
 *.carrierAggregation.componentCarrier[0].numBands = 6
-**.insideBuilding = true
 **.mobility.initFromDisplayString = false
 **.mobility.constraintAreaMinX = 0m
 **.mobility.constraintAreaMaxX = 1000m
@@ -231,7 +230,7 @@ for (const Expected& e : expected) {
 // the radio's own contract
 //
 const MacNodeId unusedId = MacNodeId(3000);
-c.expectRejected("a second addToMedium()", [&] { bgRadio->addToMedium(unusedId); });
+c.expectRejected("a second addCellToMedium()", [&] { bgRadio->addCellToMedium(unusedId); });
 c.check("...which leaves the radio on the medium as it was",
         bgRadio->getMacNodeId() == bgId && medium->findRadio(bgId) == static_cast<IRadioEndpoint *>(bgRadio) && medium->findRadio(unusedId) == nullptr);
 
@@ -239,7 +238,7 @@ auto *spareRadio = check_and_cast<CellularPhantomRadio *>(network->getSubmodule(
 {
     std::string error;
     try {
-        spareRadio->addToMedium(bgId);
+        spareRadio->addUeToMedium(bgId);
     }
     catch (omnetpp::cRuntimeError& e) {
         error = e.what();
@@ -254,7 +253,7 @@ auto *spareRadio = check_and_cast<CellularPhantomRadio *>(network->getSubmodule(
 
 c.check("a phantom radio has no receiver", bgRadio->getReceiver() == nullptr);
 
-c.check("a phantom radio answers outdoors, whatever **.insideBuilding says",
+c.check("a phantom radio answers outdoors",
         !bgRadio->isInsideBuilding() && bgRadio->getInsideDistanceDeviate() == 0 && bgRadio->getSecondInsideDistanceDeviate() == 0 && bgRadio->getPenetrationLossDeviate() == 0);
 
 {

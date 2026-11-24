@@ -116,7 +116,7 @@ seed-set = 0
 **.mobility.initFromDisplayString = false
 
 ############### The channel: interference on, state on ##############
-**.radio.scenario = "URBAN_MACROCELL"
+*.gnb*.scenario = "URBAN_MACROCELL"
 **.dynamicLos = true
 **.fading = true
 **.fadingType = "JAKES"

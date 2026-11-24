@@ -43,9 +43,8 @@ package simu5g.stack.phy.channelmodel;
 //
 // A link is evaluated in the deployment of its base station end: the
 // scenario, the average building height and the street width are parameters
-// of the base station's radio (~CellularRadio, or the ~CellularPhantomRadio of
-// a background or external cell), so the cells of a carrier may differ in
-// them. The heights the formulas take are those of the link's two antennas
+// of the base station node (~eNodeB, ~gNodeB, ~BackgroundCell, ~ExtCell), so
+// the cells of a carrier may differ in them. The heights the formulas take are those of the link's two antennas
 // above the ground (z = 0): an antenna is at its node's z plus its
 // antenna.mobility.offsetZ (see ~CellularAntenna). A link whose heights are
 // outside what the study gives for the scenario is an error, unless
@@ -55,7 +54,7 @@ package simu5g.stack.phy.channelmodel;
 // or dense clutter, low or high base station, and both ends above the
 // clutter) are TR 38.901's; a cell in one of them needs pathLossType =
 // "Tr38901". The clutter of the cell's hall -- its density, effective height
-// and typical size -- is given on the base station's radio too, and a link's
+// and typical size -- is given on the base station node too, and a link's
 // antennas must be where the sub-scenario places them relative to the clutter
 // height. INDOOR_FACTORY_HH is 100% LOS and has no NLOS path loss: its links
 // need dynamicLos or fixedLos. The path loss formulas hold up to 600 m. They
@@ -70,7 +69,7 @@ package simu5g.stack.phy.channelmodel;
 // belong to the two ends of the channel, not to the radios at them: they are
 // the same on every carrier, for both radios of a dual-stack UE, and for
 // every cell that gives the same site name (the site parameter of a base
-// station's radio: the sectors of a site). The fast fading is drawn per pair
+// station node: the sectors of a site). The fast fading is drawn per pair
 // of radios and per carrier. The first channel model that evaluates a pair of
 // ends draws their state; a model of another carrier, RAT or study takes it.
 //
@@ -107,17 +106,17 @@ simple StochasticChannelModel extends ChannelModelBase
         // Enable/disable shadowing
         bool shadowing = default(true);
 
-        // Removed: the scenario is the base station's (the scenario parameter of its radio); setting it is an error
+        // Removed: the scenario is the base station's (the scenario parameter of its node); setting it is an error
         string scenario = default("");
 
         // Removed: the base station's height is its antenna's (antenna.mobility.offsetZ above the node); setting it is an error
         double nodebHeight @unit(m) = default(nan m);
-        // Removed: the average building height is the base station's (the buildingHeight parameter of its radio); setting it is an error
+        // Removed: the average building height is the base station's (the buildingHeight parameter of its node); setting it is an error
         double buildingHeight @unit(m) = default(nan m);
         // Enable the high-loss building penetration model (table 7.4.3-2 in TR 38.901) for a UE inside a building (see ~CellularRadio); only used with pathLossType="Tr38901"
         bool useBuildingPenetrationHighLossModel = default(false);
 
-        // Removed: the average street width is the base station's (the streetWidth parameter of its radio); setting it is an error
+        // Removed: the average street width is the base station's (the streetWidth parameter of its node); setting it is an error
         double streetWidth @unit(m) = default(nan m);
         // Removed: the UE's height is its antenna's (antenna.mobility.offsetZ above the node); setting it is an error
         double ueHeight @unit(m) = default(nan m);

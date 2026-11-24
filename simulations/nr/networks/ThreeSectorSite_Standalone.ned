@@ -30,7 +30,7 @@ import simu5g.stack.phy.medium.CellularRadioMedium;
 // A three-sector site in an NR standalone deployment: three gNBs on one mast
 // (gnb1, gnb2, gnb3), each with a sectorial antenna, connected to a 5G core
 // and to each other over X2, and UEs around the site. The ini file gives the
-// three cells one site name (cellularNic.radio.site), which makes them the
+// three cells one site name (the node parameter site), which makes them the
 // sectors of one site for the channel model: a UE's links to the three share
 // one LOS state and one shadowing realization, and differ by the antenna
 // patterns only.

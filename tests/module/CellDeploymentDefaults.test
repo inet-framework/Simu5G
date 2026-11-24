@@ -1,0 +1,121 @@
+%description:
+The average building height of a cell defaults to the value the studies give
+for its scenario.
+
+TR 36.814 Table B.1.2.1-1 gives "W = 20 m, h = 20 m" for the urban macrocell,
+"W = 20 m, h = 10 m" for the suburban and "W = 20 m, h = 5 m" for the rural
+macrocell; TR 36.873 Table 7.2-1 and TR 38.901 Table 7.4.1-1 give the same for
+the scenarios they have. A base station node's buildingHeight parameter
+therefore defaults to 20 m, 10 m or 5 m by its scenario parameter, and
+streetWidth to 20 m. With one default of 20 m for every scenario, a rural cell
+ran among 20 m buildings unless the user knew to set 5 m.
+
+The default is declared on each kind of base station node, so each is checked,
+through what its link end answers the channel model (the gNB's PHY, the
+background and external cells' phantom radios): on the gNB, the rural default
+and the street width; on four background and four external cells, each
+scenario's default, and an explicit value, which a default does not override.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: DeploymentProbe.ned
+
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+import simu5g.nodes.BackgroundCell;
+import simu5g.nodes.ExtCell;
+
+simple DeploymentProbe
+{
+    @class(DeploymentProbe);
+}
+
+network DeploymentNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        bgCell[4]: BackgroundCell;
+        extCell[4]: ExtCell;
+        probe: DeploymentProbe;
+}
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: DeploymentProbe.cc
+#include <iostream>
+
+#include "simu5g/stack/phy/channelmodel/IRadioEndpoint.h"
+
+using namespace omnetpp;
+using namespace simu5g;
+
+namespace CellDeploymentDefaults {   // the test's NED namespace (opp_test)
+
+// Reports the deployment each base station's link end answers, at the end of the run
+class DeploymentProbe : public cSimpleModule
+{
+  protected:
+    void report(const char *path)
+    {
+        auto *end = check_and_cast<IRadioEndpoint *>(getModuleByPath(path));
+        std::cout << "DeploymentProbe: " << path << " building height " << end->getBuildingHeight() << " m, street width " << end->getStreetWidth() << " m" << std::endl;
+    }
+
+    void finish() override
+    {
+        report("<root>.gnb.cellularNic.phy");
+        for (int i = 0; i < 4; i++)
+            report(("<root>.bgCell[" + std::to_string(i) + "].radio").c_str());
+        for (int i = 0; i < 4; i++)
+            report(("<root>.extCell[" + std::to_string(i) + "].radio").c_str());
+    }
+};
+
+Define_Module(DeploymentProbe);
+
+} // namespace CellDeploymentDefaults
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = DeploymentNetwork
+
+sim-time-limit = 10ms
+
+*.gnb.scenario = "RURAL_MACROCELL"
+
+# cells 0..3: urban (the default), suburban, rural, rural with explicit values
+*.bgCell[1].scenario = "SUBURBAN_MACROCELL"
+*.bgCell[2..3].scenario = "RURAL_MACROCELL"
+*.bgCell[3].buildingHeight = 12m
+*.bgCell[3].streetWidth = 30m
+*.extCell[1].scenario = "SUBURBAN_MACROCELL"
+*.extCell[2..3].scenario = "RURAL_MACROCELL"
+*.extCell[3].buildingHeight = 12m
+*.extCell[3].streetWidth = 30m
+
+*.bgCell[*].bgScheduler.isNr = true
+*.bgCell[*].bgTrafficGenerator.numBgUes = 1
+*.bgCell[*].bgTrafficGenerator.bgUE[0].generator.startTimeDl = 1s
+*.bgCell[*].mobility.initialX = 100m + 100m * ancestorIndex(1)
+*.bgCell[*].mobility.initialY = 700m
+*.bgCell[*].bgTrafficGenerator.bgUE[0].mobility.initialX = 100m + 100m * ancestorIndex(3)
+*.bgCell[*].bgTrafficGenerator.bgUE[0].mobility.initialY = 750m
+*.extCell[*].positionX = 100m + 100m * ancestorIndex(0)
+*.extCell[*].positionY = 900m
+*.extCell[*].carrierFrequency = 2GHz
+*.extCell[*].bandAllocationType = "CONTIGUOUS_ALLOC"
+*.extCell[*].bandUtilization = 0.5
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+DeploymentProbe: <root>.gnb.cellularNic.phy building height 5 m, street width 20 m
+DeploymentProbe: <root>.bgCell[0].radio building height 20 m, street width 20 m
+DeploymentProbe: <root>.bgCell[1].radio building height 10 m, street width 20 m
+DeploymentProbe: <root>.bgCell[2].radio building height 5 m, street width 20 m
+DeploymentProbe: <root>.bgCell[3].radio building height 12 m, street width 30 m
+DeploymentProbe: <root>.extCell[0].radio building height 20 m, street width 20 m
+DeploymentProbe: <root>.extCell[1].radio building height 10 m, street width 20 m
+DeploymentProbe: <root>.extCell[2].radio building height 5 m, street width 20 m
+DeploymentProbe: <root>.extCell[3].radio building height 12 m, street width 30 m
+%#--------------------------------------------------------------------------------------------------------------

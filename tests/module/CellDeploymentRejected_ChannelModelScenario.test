@@ -1,6 +1,6 @@
 %description:
 scenario was a parameter of the channel model: one scenario for every cell on a carrier. A link is
-now evaluated in the deployment of its base station, which the base station's radio states. An
+now evaluated in the deployment of its base station, which the base station node states. An
 ini file that still sets the channel model's parameter would be ignored without a message, and
 the simulation would silently run in the default deployment. Setting it is an error at
 initialization.

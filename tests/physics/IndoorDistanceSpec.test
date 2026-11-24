@@ -52,8 +52,8 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 **.vector-recording = false
 
 ############### The sweep ##############
-*.ue[*].**.insideBuilding = ${indoor = false, true}
-*.gnb.cellularNic.radio.scenario = ${scenario = "URBAN_MACROCELL", "RURAL_MACROCELL"}
+*.ue[*].insideBuilding = ${indoor = false, true}
+*.gnb.scenario = ${scenario = "URBAN_MACROCELL", "RURAL_MACROCELL"}
 
 ############### One carrier at 28 GHz, under TR 38.901 ##############
 *.carrierAggregation.numComponentCarriers = 1

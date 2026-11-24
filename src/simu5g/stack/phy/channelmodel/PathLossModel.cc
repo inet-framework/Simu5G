@@ -59,7 +59,7 @@ static std::string describeLayout(const PathLossModel::Deployment& deployment)
 {
     std::stringstream os;
     os << "the cell's building height is " << deployment.hBuilding << " m and its street width " << deployment.wStreet
-       << " m (the buildingHeight and streetWidth of its base station's radio)";
+       << " m (the buildingHeight and streetWidth of its base station node)";
     return os.str();
 }
 

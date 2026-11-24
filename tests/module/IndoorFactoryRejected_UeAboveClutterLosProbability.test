@@ -11,7 +11,7 @@ that names the LOS probability, whatever tolerateHeightViolation says.
 network = simu5g.test.moduletest.lib.NrSessionTestNetwork
 
 # an InF-SH cell (base station antenna at 25 m, above the 2 m clutter) and a UE antenna at 2.5 m
-**.radio.scenario = "INDOOR_FACTORY_SH"
+*.gnb*.scenario = "INDOOR_FACTORY_SH"
 *.ue[*].cellularNic.antenna.mobility.offsetZ = 2.5m
 **.nrChannelModel[*].tolerateHeightViolation = true
 **.dynamicLos = true

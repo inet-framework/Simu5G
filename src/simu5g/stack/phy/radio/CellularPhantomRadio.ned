@@ -29,13 +29,6 @@ module CellularPhantomRadio
         string mobilityModule = default("^.mobility"); // The mobility of the node; may be absent
         bool isNr = default(false); // Whether its links are evaluated with the medium's NR channel models
         double txPower @unit(dBm); // Transmit power
-        string scenario @enum(INDOOR_HOTSPOT,URBAN_MICROCELL,URBAN_MACROCELL,RURAL_MACROCELL,SUBURBAN_MACROCELL,INDOOR_FACTORY_SL,INDOOR_FACTORY_DL,INDOOR_FACTORY_SH,INDOOR_FACTORY_DH,INDOOR_FACTORY_HH) = default("URBAN_MACROCELL"); // The deployment scenario of the cell, which counts on a base station's radio: a link is evaluated in the scenario of its base station end
-        double buildingHeight @unit(m) = default(scenario == "RURAL_MACROCELL" ? 5m : scenario == "SUBURBAN_MACROCELL" ? 10m : 20m); // Average building height around the base station, for the path loss formulas that take it; by default what the studies give for the scenario: 5 m rural, 10 m suburban, 20 m urban macrocell
-        double streetWidth @unit(m) = default(20m); // Average street width around the base station, for the path loss formulas that take it
-        double clutterDensity = default(scenario == "INDOOR_FACTORY_DL" || scenario == "INDOOR_FACTORY_DH" ? 0.6 : 0.2); // Fraction of the floor of an indoor factory hall that the clutter (machinery, storage) covers, which counts on a base station's radio: below 0.4 in a sparse, 0.4 or more in a dense sub-scenario
-        double clutterHeight @unit(m) = default(scenario == "INDOOR_FACTORY_DL" || scenario == "INDOOR_FACTORY_DH" ? 6m : 2m); // Effective height of the clutter in an indoor factory hall, 0 to 10 m; the sub-scenario says which antennas are below it
-        double clutterSize @unit(m) = default(scenario == "INDOOR_FACTORY_DL" || scenario == "INDOOR_FACTORY_DH" ? 2m : 10m); // Typical size of the clutter in an indoor factory hall
-        string site = default(""); // The site of the cell, which counts on a base station's radio: cells that give the same name are co-sited (the sectors of a site), and their links to a UE share one LOS state and one shadowing realization. Empty: the cell is a site of its own
         double noiseFigure @unit(dB) = default(7dB); // Noise figure of a what-if at this radio
         double cableLoss @unit(dB) = default(2dB); // Loss between the antenna and a what-if's receiver
         @class(CellularPhantomRadio);

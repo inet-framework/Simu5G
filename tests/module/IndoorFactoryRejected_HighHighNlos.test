@@ -10,7 +10,7 @@ set.
 [General]
 network = simu5g.test.moduletest.lib.NrSessionTestNetwork
 
-**.radio.scenario = "INDOOR_FACTORY_HH"
+*.gnb*.scenario = "INDOOR_FACTORY_HH"
 # both antennas above the 2 m clutter
 *.gnb.cellularNic.antenna.mobility.offsetZ = 8m
 *.ue[*].cellularNic.antenna.mobility.offsetZ = 3m

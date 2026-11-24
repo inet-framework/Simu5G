@@ -38,9 +38,11 @@ class CellularPhantomRadio : public cModule, public IRadioEndpoint
     inet::ModuleRefByPar<inet::IMobility> mobility_; // nullptr if the node has none
     CellularAntenna *antenna_ = nullptr;
     bool isNr_ = false;
-    long siteEndId_ = 0; // the end of the channel of the site the radio names; 0 if it names none
+    bool isCell_ = false; // a cell's radio, which has its node's deployment; a background UE's has none
+    long siteEndId_ = 0; // the end of the channel of the site the cell's node names; 0 if it names none
+    std::string site_;
     double txPower_ = NAN;
-    DeploymentScenario scenario_ = UNKNOWN_SCENARIO; // the deployment of the cell, which counts at a base station
+    DeploymentScenario scenario_ = UNKNOWN_SCENARIO; // the deployment of a cell, from its node's parameters
     double buildingHeight_ = NAN;
     double streetWidth_ = NAN;
     double clutterDensity_ = NAN; // the clutter of an indoor factory hall
@@ -53,16 +55,25 @@ class CellularPhantomRadio : public cModule, public IRadioEndpoint
   protected:
     virtual void initialize(int stage) override;
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
+    virtual void addToMedium(MacNodeId nodeId);
 
   public:
     virtual ~CellularPhantomRadio();
 
     /**
-     * Adds the radio to the radio medium under the given node id, the one its
-     * owner's transmissions name. Called once, by the owner, as soon as it
-     * has the id.
+     * Adds the radio of a background or external cell to the radio medium
+     * under the given node id, the one its owner's transmissions name, with
+     * the deployment of the cell: the radio's parent node's parameters. Called
+     * once, by the owner, as soon as it has the id, before the radios join
+     * their sites (INITSTAGE_SIMU5G_CHANNEL_SITES).
      */
-    virtual void addToMedium(MacNodeId nodeId);
+    virtual void addCellToMedium(MacNodeId nodeId);
+
+    /**
+     * Adds the radio of a background UE to the radio medium under the given
+     * node id, as addCellToMedium() does for a cell; a UE has no deployment.
+     */
+    virtual void addUeToMedium(MacNodeId nodeId);
 
     /**
      * Puts on the medium the transmission an allocation of the radio's owner
@@ -77,12 +88,12 @@ class CellularPhantomRadio : public cModule, public IRadioEndpoint
     virtual long getChannelEndId() override { return siteEndId_ != 0 ? siteEndId_ : getParentModule()->getId(); } // the site the radio names, or else the cell or background UE it is of
     virtual const inet::Coord& getCoord() const override;
     virtual double getSpeed() override;
-    virtual DeploymentScenario getDeploymentScenario() override { return scenario_; }
-    virtual double getBuildingHeight() override { return buildingHeight_; }
-    virtual double getStreetWidth() override { return streetWidth_; }
-    virtual double getClutterDensity() override { return clutterDensity_; }
-    virtual double getClutterHeight() override { return clutterHeight_; }
-    virtual double getClutterSize() override { return clutterSize_; }
+    virtual DeploymentScenario getDeploymentScenario() override { ASSERT(isCell_); return scenario_; }
+    virtual double getBuildingHeight() override { ASSERT(isCell_); return buildingHeight_; }
+    virtual double getStreetWidth() override { ASSERT(isCell_); return streetWidth_; }
+    virtual double getClutterDensity() override { ASSERT(isCell_); return clutterDensity_; }
+    virtual double getClutterHeight() override { ASSERT(isCell_); return clutterHeight_; }
+    virtual double getClutterSize() override { ASSERT(isCell_); return clutterSize_; }
     virtual bool isInsideBuilding() override { return false; }
     virtual double getInsideDistanceDeviate() override { return 0.0; }
     virtual double getSecondInsideDistanceDeviate() override { return 0.0; }

@@ -26,23 +26,14 @@ void CellularPhantomRadio::initialize(int stage)
         antenna_ = check_and_cast<CellularAntenna *>(getSubmodule("antenna"));
         isNr_ = par("isNr");
         txPower_ = par("txPower");
-        scenario_ = aToDeploymentScenario(par("scenario").stringValue());
-        buildingHeight_ = par("buildingHeight");
-        streetWidth_ = par("streetWidth");
-        clutterDensity_ = par("clutterDensity");
-        clutterHeight_ = par("clutterHeight");
-        clutterSize_ = par("clutterSize");
-        PathLossModel::checkClutter(this, scenario_, clutterDensity_, clutterHeight_, clutterSize_);
         noiseFigure_ = par("noiseFigure");
         cableLoss_ = par("cableLoss");
         WATCH(nodeId_);
     }
     else if (stage == INITSTAGE_SIMU5G_CHANNEL_SITES) {
-        // the antennas are in place: a cell whose radio names a site joins it
-        if (!opp_isempty(par("site").stringValue())) {
-            radioMedium_.reference(this, "radioMediumModule", true);
-            siteEndId_ = radioMedium_->joinSite(par("site").stringValue(), this);
-        }
+        // the antennas are in place: a cell whose node names a site joins it
+        if (isCell_ && !site_.empty())
+            siteEndId_ = radioMedium_->joinSite(site_.c_str(), this);
     }
 }
 
@@ -53,11 +44,33 @@ CellularPhantomRadio::~CellularPhantomRadio()
         radioMedium_->removeRadio(this);
 }
 
+void CellularPhantomRadio::addCellToMedium(MacNodeId nodeId)
+{
+    Enter_Method("addCellToMedium");
+    addToMedium(nodeId);
+    // the deployment of the cell is its node's
+    cModule *cell = getParentModule();
+    scenario_ = aToDeploymentScenario(cell->par("scenario").stringValue());
+    buildingHeight_ = cell->par("buildingHeight");
+    streetWidth_ = cell->par("streetWidth");
+    clutterDensity_ = cell->par("clutterDensity");
+    clutterHeight_ = cell->par("clutterHeight");
+    clutterSize_ = cell->par("clutterSize");
+    PathLossModel::checkClutter(cell, scenario_, clutterDensity_, clutterHeight_, clutterSize_);
+    site_ = cell->par("site").stdstringValue();
+    isCell_ = true;
+}
+
+void CellularPhantomRadio::addUeToMedium(MacNodeId nodeId)
+{
+    Enter_Method("addUeToMedium");
+    addToMedium(nodeId);
+}
+
 void CellularPhantomRadio::addToMedium(MacNodeId nodeId)
 {
-    Enter_Method("addToMedium");
     if (nodeId_ != NODEID_NONE)
-        throw cRuntimeError("CellularPhantomRadio::addToMedium(): the radio is already on the medium as node %d", (int)num(nodeId_));
+        throw cRuntimeError("CellularPhantomRadio: the radio is already on the medium as node %d", (int)num(nodeId_));
     // resolved here, not at initialization: the owner may add the radio before it has initialized
     radioMedium_.reference(this, "radioMediumModule", true);
     // not a radio frames are sent to: no radio module

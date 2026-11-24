@@ -10,9 +10,9 @@ the model, not in the study.
 [General]
 network = simu5g.test.moduletest.lib.EpcSessionTestNetwork
 
-*.ue[*].**.insideBuilding = true
+*.ue[*].insideBuilding = true
 *.radioMedium.channelModelType = "Tr36873ChannelModel"
-**.radio.scenario = "URBAN_MICROCELL"
+*.eNB*.scenario = "URBAN_MICROCELL"
 # a microcell base station: TR 36.873 gives 3D-UMi for hBS = 10 m
 *.eNB.cellularNic.antenna.mobility.offsetZ = 10m
 

@@ -131,9 +131,9 @@ void PhyBase::initialize(int stage)
         initializeChannelModel();
     }
     else if (stage == INITSTAGE_SIMU5G_CHANNEL_SITES) {
-        // the antennas are in place: a base station whose radio names a site joins it
-        if (nodeType_ != UE && !opp_isempty(cellularRadio_->getSite()))
-            siteEndId_ = radioMedium_->joinSite(cellularRadio_->getSite(), this);
+        // the antennas are in place: a base station whose node names a site joins it
+        if (nodeType_ != UE && !site_.empty())
+            siteEndId_ = radioMedium_->joinSite(site_.c_str(), this);
     }
 }
 
@@ -157,59 +157,65 @@ double PhyBase::getSpeed()
 
 long PhyBase::getChannelEndId()
 {
-    // the site a base station's radio names, or else the node: the radios of a UE
+    // the site a base station's node names, or else the node: the radios of a UE
     // are at one end of the channel
     return siteEndId_ != 0 ? siteEndId_ : hostModule_->getId();
 }
 
 DeploymentScenario PhyBase::getDeploymentScenario()
 {
-    return cellularRadio_->getDeploymentScenario();
+    ASSERT(nodeType_ != UE); // a link is evaluated in the deployment of its base station
+    return scenario_;
 }
 
 double PhyBase::getBuildingHeight()
 {
-    return cellularRadio_->getBuildingHeight();
+    ASSERT(nodeType_ != UE); // a link is evaluated in the deployment of its base station
+    return buildingHeight_;
 }
 
 double PhyBase::getStreetWidth()
 {
-    return cellularRadio_->getStreetWidth();
+    ASSERT(nodeType_ != UE); // a link is evaluated in the deployment of its base station
+    return streetWidth_;
 }
 
 double PhyBase::getClutterDensity()
 {
-    return cellularRadio_->getClutterDensity();
+    ASSERT(nodeType_ != UE); // a link is evaluated in the deployment of its base station
+    return clutterDensity_;
 }
 
 double PhyBase::getClutterHeight()
 {
-    return cellularRadio_->getClutterHeight();
+    ASSERT(nodeType_ != UE); // a link is evaluated in the deployment of its base station
+    return clutterHeight_;
 }
 
 double PhyBase::getClutterSize()
 {
-    return cellularRadio_->getClutterSize();
+    ASSERT(nodeType_ != UE); // a link is evaluated in the deployment of its base station
+    return clutterSize_;
 }
 
 bool PhyBase::isInsideBuilding()
 {
-    return cellularRadio_->isInsideBuilding();
+    return insideBuilding_;
 }
 
 double PhyBase::getInsideDistanceDeviate()
 {
-    return cellularRadio_->getInsideDistanceDeviate();
+    return insideDistanceDeviate_;
 }
 
 double PhyBase::getSecondInsideDistanceDeviate()
 {
-    return cellularRadio_->getSecondInsideDistanceDeviate();
+    return secondInsideDistanceDeviate_;
 }
 
 double PhyBase::getPenetrationLossDeviate()
 {
-    return cellularRadio_->getPenetrationLossDeviate();
+    return penetrationLossDeviate_;
 }
 
 void PhyBase::receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *)

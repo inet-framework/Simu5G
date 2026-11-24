@@ -9,8 +9,8 @@ probability would be the sparse hall's under the dense hall's path loss.
 [General]
 network = simu5g.test.moduletest.lib.NrSessionTestNetwork
 
-**.radio.scenario = "INDOOR_FACTORY_DL"
-**.radio.clutterDensity = 0.2
+*.gnb*.scenario = "INDOOR_FACTORY_DL"
+*.gnb*.clutterDensity = 0.2
 *.gnb.cellularNic.antenna.mobility.offsetZ = 1.5m
 
 include ../../lib/defaults.ini

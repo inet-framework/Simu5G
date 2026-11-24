@@ -9,8 +9,8 @@ error.
 [General]
 network = simu5g.test.moduletest.lib.EpcSessionTestNetwork
 
-*.ue[*].**.insideBuilding = true
-**.radio.scenario = "URBAN_MACROCELL"
+*.ue[*].insideBuilding = true
+*.eNB*.scenario = "URBAN_MACROCELL"
 
 include ../../lib/defaults.ini
 

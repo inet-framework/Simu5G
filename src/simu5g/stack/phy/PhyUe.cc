@@ -60,6 +60,14 @@ void PhyUe::initialize(int stage)
         // get local id
         nodeId_ = MacNodeId(par("macNodeId").intValue());
         EV << "Local MacNodeId: " << nodeId_ << endl;
+
+        // whether the UE is inside a building is the node's; how far inside, this radio's
+        insideBuilding_ = hostModule_->par("insideBuilding");
+        if (insideBuilding_) {
+            insideDistanceDeviate_ = uniform(0.0, 1.0);
+            penetrationLossDeviate_ = normal(0.0, 1.0);
+            secondInsideDistanceDeviate_ = uniform(0.0, 1.0);
+        }
     }
     else if (stage == INITSTAGE_SIMU5G_CELLINFO_CHANNELUPDATE) { //TODO being fwd, eliminate stage
         // get cellInfo at this stage because the next hop of the node is registered in the HandoverPacketHolder module at the INITSTAGE_SIMU5G_NETWORK_LAYER

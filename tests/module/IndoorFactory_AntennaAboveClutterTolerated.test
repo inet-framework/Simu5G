@@ -8,7 +8,7 @@ evaluated with the InF-SL formulas, and the simulation runs.
 [General]
 network = simu5g.test.moduletest.lib.NrSessionTestNetwork
 
-**.radio.scenario = "INDOOR_FACTORY_SL"
+*.gnb*.scenario = "INDOOR_FACTORY_SL"
 **.nrChannelModel[*].tolerateHeightViolation = true
 
 include ../../lib/defaults.ini

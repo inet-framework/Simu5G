@@ -8,8 +8,8 @@ in a rural macrocell, with tolerateHeightViolation set: the run reaches its time
 network = simu5g.test.moduletest.lib.NrSessionTestNetwork
 
 # a rural macrocell (TR 38.901 RMa), whose path loss takes the building height and street width
-*.gnb.cellularNic.radio.scenario = "RURAL_MACROCELL"
-*.gnb.cellularNic.radio.buildingHeight = 60m
+*.gnb.scenario = "RURAL_MACROCELL"
+*.gnb.buildingHeight = 60m
 **.nrChannelModel[*].tolerateHeightViolation = true
 
 include ../../lib/defaults.ini

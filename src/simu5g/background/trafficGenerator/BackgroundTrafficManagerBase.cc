@@ -33,7 +33,7 @@ void BackgroundTrafficManagerBase::initialize(int stage)
             cModule *bgUe = getParentModule()->getSubmodule("bgUE", i);
             bgUe_.push_back(check_and_cast<TrafficGeneratorBase *>(bgUe->getSubmodule("generator")));
             bgUeRadio_.push_back(check_and_cast<CellularPhantomRadio *>(bgUe->getSubmodule("radio")));
-            bgUeRadio_.back()->addToMedium(getBgUeId(i));
+            bgUeRadio_.back()->addUeToMedium(getBgUeId(i));
         }
 
         phyPisaData_ = &(binder_->phyPisaData);

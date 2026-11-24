@@ -55,7 +55,7 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 **.mobility.initFromDisplayString = false
 
 ############### The channel: an urban macrocell, whose base station is at 25 m ##############
-**.radio.scenario = "URBAN_MACROCELL"
+*.gnb*.scenario = "URBAN_MACROCELL"
 **.fading = false
 **.shadowing = false
 

@@ -9,7 +9,7 @@ from the scenario's LOS probability. The UE is 50 m from the base station. The s
 [General]
 network = simu5g.test.moduletest.lib.NrSessionTestNetwork
 
-**.radio.scenario = "INDOOR_FACTORY_SL"
+*.gnb*.scenario = "INDOOR_FACTORY_SL"
 # clutter-embedded antennas: both below the 2 m clutter height of the scenario's default
 *.gnb.cellularNic.antenna.mobility.offsetZ = 1.5m
 **.dynamicLos = true

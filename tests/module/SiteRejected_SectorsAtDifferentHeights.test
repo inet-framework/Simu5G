@@ -31,7 +31,7 @@ network = TwoSectorTestNetwork
 *.ue[*].nrServingNodeId = 1
 
 # two sectors on one mast
-*.gnb*.cellularNic.radio.site = "mast"
+*.gnb*.site = "mast"
 *.gnb*.cellularNic.antenna.txDirection = "ANISOTROPIC"
 *.gnb.cellularNic.antenna.txAngle = 60deg
 *.gnb2.cellularNic.antenna.txAngle = 180deg

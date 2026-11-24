@@ -1,0 +1,118 @@
+%description:
+A UE's indoor state, as the PHY of a real NR UE draws it: whether the UE is
+inside a building (its node's insideBuilding parameter), its distance from the
+wall and the deviate of its building penetration loss.
+
+A PHY whose UE is inside a building draws its state once, at initialization:
+the first standard uniform deviate of its distance from the wall, then the
+deviate of its penetration loss, standard normal, then the second uniform
+deviate. The path loss model scales the two uniforms to the study's d2D-in
+(one of them, or the minimum of both; PathLossModel::computeIndoorDistance()).
+The getters only read what was drawn. A PHY of an outdoor UE draws nothing,
+and answers outdoors, with 0 for all three.
+
+The channel model tests give their endpoints these values through StubEndpoint,
+so none of them reaches the PHY's draws: a getter that draws at every call, or
+drawing the values in another order, passes them. Here they are graded
+exactly: the NR PHY of the indoor UE draws from a physical RNG of its own, and
+the probe replays the same values on another one with the same seed, which
+nothing else draws from. The count of the numbers drawn is graded too, so a
+draw too many fails. The outdoor UE's NR PHY has a physical RNG of its own as
+well, from which nothing may be drawn.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: IndoorDrawProbe.ned
+
+import simu5g.test.moduletest.lib.NrSessionTestNetwork;
+
+simple IndoorDrawProbe
+{
+    @class(IndoorDrawProbe);
+}
+
+network IndoorDrawNetwork extends NrSessionTestNetwork
+{
+    submodules:
+        probe: IndoorDrawProbe;
+}
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: IndoorDrawProbe.cc
+#include <iostream>
+
+#include "simu5g/stack/phy/channelmodel/IRadioEndpoint.h"
+
+using namespace omnetpp;
+using namespace simu5g;
+
+namespace IndoorDraw {   // the test's NED namespace (opp_test)
+
+// Replays the indoor UE's draws on its own fresh RNG and compares, at the end of the run
+class IndoorDrawProbe : public cSimpleModule
+{
+  protected:
+    void finish() override
+    {
+        cModule *indoorPhy = getModuleByPath("<root>.ue[0].cellularNic.nrPhy");
+        cModule *outdoorPhy = getModuleByPath("<root>.ue[1].cellularNic.nrPhy");
+        auto *indoor = check_and_cast<IRadioEndpoint *>(indoorPhy);
+        auto *outdoor = check_and_cast<IRadioEndpoint *>(outdoorPhy);
+        auto yesNo = [] (bool b) { return b ? "yes" : "no"; };
+
+        // what the indoor PHY ought to have drawn, in that order
+        double distance = uniform(0.0, 1.0);
+        double deviate = normal(0.0, 1.0);
+        double second = uniform(0.0, 1.0);
+        auto drawnByIndoor = indoorPhy->getRNG(0)->getNumbersDrawn();
+        std::cout << "IndoorDrawProbe: indoor UE indoors: " << yesNo(indoor->isInsideBuilding()) << std::endl;
+        std::cout << "IndoorDrawProbe: its distance from the wall is the first draw, uniform(0, 1): " << yesNo(indoor->getInsideDistanceDeviate() == distance) << std::endl;
+        std::cout << "IndoorDrawProbe: its penetration loss deviate is the second, normal(0, 1): " << yesNo(indoor->getPenetrationLossDeviate() == deviate) << std::endl;
+        std::cout << "IndoorDrawProbe: its second distance deviate is the third, uniform(0, 1): " << yesNo(indoor->getSecondInsideDistanceDeviate() == second) << std::endl;
+        std::cout << "IndoorDrawProbe: it drew these and nothing else: " << yesNo(drawnByIndoor == getRNG(0)->getNumbersDrawn()) << std::endl;
+        indoor->getInsideDistanceDeviate();
+        indoor->getPenetrationLossDeviate();
+        indoor->getSecondInsideDistanceDeviate();
+        std::cout << "IndoorDrawProbe: reading the state draws nothing: " << yesNo(indoorPhy->getRNG(0)->getNumbersDrawn() == drawnByIndoor) << std::endl;
+        std::cout << "IndoorDrawProbe: outdoor UE outdoors, with no distance and no deviates: "
+                  << yesNo(!outdoor->isInsideBuilding() && outdoor->getInsideDistanceDeviate() == 0 && outdoor->getSecondInsideDistanceDeviate() == 0 && outdoor->getPenetrationLossDeviate() == 0) << std::endl;
+        std::cout << "IndoorDrawProbe: the outdoor UE's PHY drew nothing: " << yesNo(outdoorPhy->getRNG(0)->getNumbersDrawn() == 0) << std::endl;
+    }
+};
+
+Define_Module(IndoorDrawProbe);
+
+} // namespace IndoorDraw
+
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = IndoorDrawNetwork
+
+sim-time-limit = 10ms
+*.numUe = 2
+*.ue[0].insideBuilding = true
+
+# the NR PHYs of the two UEs and the probe each draw from a physical RNG of their own;
+# the indoor PHY's and the probe's have the same seed
+num-rngs = 4
+seed-1-mt = 7
+seed-3-mt = 7
+*.ue[0].cellularNic.nrPhy.rng-0 = 1
+*.ue[1].cellularNic.nrPhy.rng-0 = 2
+*.probe.rng-0 = 3
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 0
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stdout
+IndoorDrawProbe: indoor UE indoors: yes
+IndoorDrawProbe: its distance from the wall is the first draw, uniform(0, 1): yes
+IndoorDrawProbe: its penetration loss deviate is the second, normal(0, 1): yes
+IndoorDrawProbe: its second distance deviate is the third, uniform(0, 1): yes
+IndoorDrawProbe: it drew these and nothing else: yes
+IndoorDrawProbe: reading the state draws nothing: yes
+IndoorDrawProbe: outdoor UE outdoors, with no distance and no deviates: yes
+IndoorDrawProbe: the outdoor UE's PHY drew nothing: yes
+%#--------------------------------------------------------------------------------------------------------------

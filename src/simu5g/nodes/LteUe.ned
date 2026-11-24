@@ -77,6 +77,7 @@ module LteUe extends StandardHost
         //# Node specs
         string nodeType = "UE";  // DO NOT CHANGE
         int servingNodeId = default(0); // The initial serving eNodeB of the UE; 0 if none
+        bool insideBuilding = default(false); // Whether the UE is inside a building: a link's building penetration loss is its UE end's. Each of its radios draws its distance from the wall (two standard uniforms, which the path loss model scales to the study's d2D-in) and the random term of its penetration loss (standard normal, scaled by the study's sigma_P) once
         int macNodeId = default(1025+simu5g_seq("LteUe_macNodeId"));
         string sessionType @enum("IPv4","IPv6","IPv4v6","Ethernet","Unstructured") = default("IPv4");  // The type of the session the UE requests (see the main comment)
         string ethernetMode @enum("host","bridge") = default("host");  // Ethernet sessions only: the UE is an Ethernet host, or a bridge for the devices on its eth[] interfaces (see the main comment)

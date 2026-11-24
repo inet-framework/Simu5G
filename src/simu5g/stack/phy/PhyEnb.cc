@@ -11,6 +11,7 @@
 //
 
 #include "simu5g/stack/phy/PhyEnb.h"
+#include "simu5g/stack/phy/channelmodel/PathLossModel.h"
 #include "simu5g/stack/phy/packet/LteFeedbackPkt.h"
 #include "simu5g/common/LteCommon.h"
 #include "simu5g/common/LteControlInfoTags_m.h"
@@ -43,6 +44,16 @@ void PhyEnb::initialize(int stage)
 
         nodeType_ = NODEB;
 
+        // the deployment of the cell is the node's
+        scenario_ = aToDeploymentScenario(hostModule_->par("scenario").stringValue());
+        buildingHeight_ = hostModule_->par("buildingHeight");
+        streetWidth_ = hostModule_->par("streetWidth");
+        clutterDensity_ = hostModule_->par("clutterDensity");
+        clutterHeight_ = hostModule_->par("clutterHeight");
+        clutterSize_ = hostModule_->par("clutterSize");
+        PathLossModel::checkClutter(hostModule_, scenario_, clutterDensity_, clutterHeight_, clutterSize_);
+        site_ = hostModule_->par("site").stdstringValue();
+
         // the base station node's txPower is read by nothing: setting it is an error
         if (hostModule_->hasPar("txPower") && !std::isnan(hostModule_->par("txPower").doubleValue()))
             throw cRuntimeError("The base station node's 'txPower' parameter is read by nothing: the base station transmits with the power of its PHY. "
@@ -50,12 +61,6 @@ void PhyEnb::initialize(int stage)
     }
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         cellInfo_ = binder_->getCellInfoByNodeId(nodeId_);
-
-        // a link's building penetration loss is its UE end's
-        if (isInsideBuilding())
-            throw cRuntimeError("%s: insideBuilding is set on a base station's radio; an indoor base station is not modelled, "
-                    "and the parameter applies to a UE's radio only (was it set through **.insideBuilding?)",
-                    radio_->getFullPath().c_str());
     }
     else if (stage == INITSTAGE_SIMU5G_PHYSICAL_LAYER) {
         initializeFeedbackComputation();

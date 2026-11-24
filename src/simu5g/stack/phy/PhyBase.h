@@ -84,7 +84,7 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
     int radioOutGate_ = -1;
     /// this leg's radio, which sends the frames this PHY transmits
     opp_component_ptr<cModule> radio_;
-    CellularRadio *cellularRadio_ = nullptr; // radio_, typed: evaluating a link asks it for the indoor state
+    CellularRadio *cellularRadio_ = nullptr; // radio_, typed: its antenna is where the PHY's position is
 
     /// the network's radio medium: this radio is in its registry, and it delivers broadcast frames
     inet::ModuleRefByPar<CellularRadioMedium> radioMedium_;
@@ -108,7 +108,22 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
 
     /** Node type */
     RanNodeType nodeType_ = UNKNOWN_NODE_TYPE;
-    long siteEndId_ = 0; // a base station's end of the channel, if its radio names a site; 0 if not
+    long siteEndId_ = 0; // a base station's end of the channel, if its node names a site; 0 if not
+
+    // a base station's cell, from its node's parameters (PhyEnb): the deployment, and the site it names (empty if none)
+    DeploymentScenario scenario_ = UNKNOWN_SCENARIO;
+    double buildingHeight_ = NAN;
+    double streetWidth_ = NAN;
+    double clutterDensity_ = NAN;
+    double clutterHeight_ = NAN;
+    double clutterSize_ = NAN;
+    std::string site_;
+
+    // whether a UE is inside a building, from its node's parameter, and the deviates of how far inside, which each of its radios' PHY draws once (PhyUe)
+    bool insideBuilding_ = false;
+    double insideDistanceDeviate_ = 0.0;
+    double secondInsideDistanceDeviate_ = 0.0;
+    double penetrationLossDeviate_ = 0.0;
 
     /// Reference to Binder
     inet::ModuleRefByPar<Binder> binder_;
@@ -322,8 +337,9 @@ class PhyBase : public cSimpleModule, public cListener, public IRadioEndpoint
      */
     double getSpeed() override;
     /*
-     * Whether the node is inside a building, and how far inside, as its
-     * radio says
+     * The deployment of a base station's cell (asked of a base station
+     * only), and whether a UE is inside a building and how far (outdoors at
+     * a base station)
      */
     long getChannelEndId() override;
     DeploymentScenario getDeploymentScenario() override;

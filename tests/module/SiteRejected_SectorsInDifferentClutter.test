@@ -29,16 +29,16 @@ network = TwoSectorTestNetwork
 *.ue[*].nrServingNodeId = 1
 
 # two sectors on one mast
-*.gnb*.cellularNic.radio.site = "mast"
+*.gnb*.site = "mast"
 *.gnb*.cellularNic.antenna.txDirection = "ANISOTROPIC"
 *.gnb.cellularNic.antenna.txAngle = 60deg
 *.gnb2.cellularNic.antenna.txAngle = 180deg
 **.dynamicLos = true
 *.gnb2.mobility.initialX = 450m
 *.gnb2.mobility.initialY = 300m
-**.radio.scenario = "INDOOR_FACTORY_SL"
+*.gnb*.scenario = "INDOOR_FACTORY_SL"
 *.gnb*.cellularNic.antenna.mobility.offsetZ = 1.5m
-*.gnb2.cellularNic.radio.clutterSize = 8m
+*.gnb2.clutterSize = 8m
 
 include ../../lib/defaults.ini
 

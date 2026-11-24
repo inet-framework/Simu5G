@@ -27,7 +27,7 @@ void ExtCellAllocator::initialize(int stage)
         binder_.reference(this, "binderModule", true);
         nodeId_ = binder_->allocatePhantomBaseStationId();
         radio_.reference(this, "radioModule", true);
-        radio_->addToMedium(nodeId_);
+        radio_->addCellToMedium(nodeId_);
 
         // initialize band status structures
         bandStatus_.resize(numBands_, 0);

@@ -41,16 +41,6 @@ class CellularRadio : public cSimpleModule
     inet::ModuleRefByPar<CellularRadioMedium> radioMedium_;
     inet::ModuleRefByPar<CellularAntenna> antenna_; // the antenna the radio transmits and receives through
     IRadioEndpoint *endpoint_ = nullptr; // the PHY the radio sends and receives frames for
-    bool insideBuilding_ = false; // whether the radio is inside a building, and the standard uniform deviates of how far from its wall
-    double insideDistanceDeviate_ = 0.0;
-    double secondInsideDistanceDeviate_ = 0.0;
-    DeploymentScenario scenario_ = UNKNOWN_SCENARIO; // the deployment of the cell, which counts at a base station
-    double buildingHeight_ = 0.0;
-    double streetWidth_ = 0.0;
-    double clutterDensity_ = 0.0; // the clutter of an indoor factory hall
-    double clutterHeight_ = 0.0;
-    double clutterSize_ = 0.0;
-    double penetrationLossDeviate_ = 0.0; // the standard-normal deviate of its building penetration loss
 
   protected:
     virtual void initialize(int stage) override;
@@ -64,28 +54,6 @@ class CellularRadio : public cSimpleModule
 
     /** The antenna the radio transmits and receives through. */
     CellularAntenna *getAntenna() { return antenna_.get(); }
-
-    /** The deployment of the cell: its scenario, and the average building height and street width, in m. */
-    DeploymentScenario getDeploymentScenario() const { return scenario_; }
-    double getBuildingHeight() const { return buildingHeight_; }
-    double getStreetWidth() const { return streetWidth_; }
-
-    /** The clutter of the cell's hall in an indoor factory: the fraction of the floor it covers, and its effective height and typical size, in m. */
-    double getClutterDensity() const { return clutterDensity_; }
-    double getClutterHeight() const { return clutterHeight_; }
-    double getClutterSize() const { return clutterSize_; }
-
-    /** The site of the cell, where the radio is a base station's; empty for a cell that is a site of its own. */
-    const char *getSite() const { return par("site").stringValue(); }
-
-    /** Whether the radio is inside a building. */
-    bool isInsideBuilding() const { return insideBuilding_; }
-    /** The standard uniform deviate of how far inside its building the radio is (drawn once). */
-    double getInsideDistanceDeviate() const { return insideDistanceDeviate_; }
-    /** A second, independent one (drawn once). */
-    double getSecondInsideDistanceDeviate() const { return secondInsideDistanceDeviate_; }
-    /** The standard-normal deviate of its building penetration loss (drawn once). */
-    double getPenetrationLossDeviate() const { return penetrationLossDeviate_; }
 };
 
 } // namespace simu5g

@@ -43,7 +43,6 @@ module BackgroundUe
         bool isNr; // Whether the UE is a NR one
         radio.isNr = this.isNr;
         radio.txPower = generator.txPower;
-        radio.site = ""; // a UE is not a site
         *.computeAvgInterference = this.computeAvgInterference;
         *.enablePeriodicCqiUpdate = this.enablePeriodicCqiUpdate;
         *.useProbabilisticCqi = this.useProbabilisticCqi;

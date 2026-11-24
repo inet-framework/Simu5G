@@ -84,7 +84,8 @@ seed-set = 0
 **.mobility.constraintAreaMaxZ = 50m
 **.mobility.initFromDisplayString = false
 
-**.radio.scenario = "URBAN_MICROCELL"
+*.gnb*.scenario = "URBAN_MICROCELL"
+*.bgCell[*].scenario = "URBAN_MICROCELL"
 **.dynamicLos = false
 **.fixedLos = true
 **.fading = false

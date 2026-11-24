@@ -93,7 +93,7 @@ void StochasticChannelModel::initialize(int stage)
         for (const char *name : {"scenario", "buildingHeight", "streetWidth"})
             if (strcmp(name, "scenario") == 0 ? scenarioSet : !std::isnan(par(name).doubleValue()))
                 throw cRuntimeError("The '%s' parameter is no longer the channel model's: a link is evaluated in the deployment of its base station. "
-                        "Set it on the base station's radio instead (cellularNic.radio.%s; radio.%s in a background or external cell)", name, name, name);
+                        "Set it on the base station node instead (e.g. *.gnb.%s), or on the background or external cell", name, name);
 
         correlationDistance_ = par("correlationDistance");
         if (correlationDistance_ <= 0)

@@ -57,7 +57,7 @@ void BackgroundScheduler::initialize(int stage)
 
         nodeId_ = binder_->allocatePhantomBaseStationId();
         radio_.reference(this, "radioModule", true);
-        radio_->addToMedium(nodeId_);
+        radio_->addCellToMedium(nodeId_);
 
         // TODO: if BackgroundScheduler interference is disabled, do not send selfMessages
         // Start TTI tick

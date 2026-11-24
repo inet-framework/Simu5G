@@ -1,6 +1,6 @@
 %description:
 A known deviation, pinned and not endorsed: an NR UE has two radios (cellularNic.radio,
-which is the LTE leg's, and cellularNic.nrRadio), and with *.ue[*].**.insideBuilding = true each
+which is the LTE leg's, and cellularNic.nrRadio), and with *.ue[*].insideBuilding = true each
 draws an indoor position of its own: both answer indoors, with different distances from
 the wall and different penetration loss deviates. The two legs of one UE can differ by up
 to 12.5 dB for no physical reason.
@@ -30,7 +30,7 @@ network IndoorRadioNetwork extends NrSessionTestNetwork
 %file: IndoorRadioProbe.cc
 #include <iostream>
 
-#include "simu5g/stack/phy/radio/CellularRadio.h"
+#include "simu5g/stack/phy/channelmodel/IRadioEndpoint.h"
 
 using namespace omnetpp;
 using namespace simu5g;
@@ -44,10 +44,11 @@ class IndoorRadioProbe : public cSimpleModule
     void finish() override
     {
         cModule *nic = getModuleByPath("<root>.ue[0].cellularNic");
-        auto *radio = check_and_cast<CellularRadio *>(nic->getSubmodule("radio"));
-        auto *nrRadio = check_and_cast<CellularRadio *>(nic->getSubmodule("nrRadio"));
+        // the indoor state of each radio is its PHY's, the link end the channel model asks
+        auto *radio = check_and_cast<IRadioEndpoint *>(nic->getSubmodule("phy"));
+        auto *nrRadio = check_and_cast<IRadioEndpoint *>(nic->getSubmodule("nrPhy"));
         // a draw that came out as exactly 0 has a probability of about 2^-32
-        auto drew = [] (CellularRadio *r) { return r->getInsideDistanceDeviate() != 0.0 && r->getPenetrationLossDeviate() != 0.0; };
+        auto drew = [] (IRadioEndpoint *r) { return r->getInsideDistanceDeviate() != 0.0 && r->getPenetrationLossDeviate() != 0.0; };
         auto yesNo = [] (bool b) { return b ? "yes" : "no"; };
         std::cout << "IndoorRadioProbe: radio indoors, with a drawn position: " << yesNo(radio->isInsideBuilding() && drew(radio)) << std::endl;
         std::cout << "IndoorRadioProbe: nrRadio indoors, with a drawn position: " << yesNo(nrRadio->isInsideBuilding() && drew(nrRadio)) << std::endl;
@@ -68,7 +69,7 @@ network = IndoorRadioNetwork
 sim-time-limit = 10ms
 *.ue[*].servingNodeId = 0
 *.ue[*].nrServingNodeId = 1
-*.ue[*].**.insideBuilding = true
+*.ue[*].insideBuilding = true
 
 include ../../lib/defaults.ini
 

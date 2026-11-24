@@ -72,7 +72,7 @@ seed-set = ${seed = 0, 1, 2, 3}
 *.gnb3.mobility.initialX = 1000m
 *.gnb3.mobility.initialY = 1000m
 *.gnb3.mobility.initialZ = 25m
-*.gnb*.cellularNic.radio.site = "site1"
+*.gnb*.site = "site1"
 *.gnb*.cellularNic.antenna.txDirection = "ANISOTROPIC"
 *.gnb1.cellularNic.antenna.txAngle = 120deg
 *.gnb2.cellularNic.antenna.txAngle = 240deg
@@ -106,7 +106,7 @@ seed-set = ${seed = 0, 1, 2, 3}
 **.mobility.initFromDisplayString = false
 
 ############### The channel: the site's large-scale state, and no noise to speak of ##############
-**.radio.scenario = "URBAN_MACROCELL"
+*.gnb*.scenario = "URBAN_MACROCELL"
 **.dynamicLos = true
 **.shadowing = true
 **.fading = false

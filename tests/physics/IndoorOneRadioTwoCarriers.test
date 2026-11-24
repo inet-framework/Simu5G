@@ -78,7 +78,7 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 **.vector-recording = false
 
 ############### The sweep ##############
-*.ue[*].**.insideBuilding = ${indoor = false, true}
+*.ue[*].insideBuilding = ${indoor = false, true}
 
 ############### Two carriers below 6 GHz, both on every node ##############
 *.carrierAggregation.numComponentCarriers = 2
@@ -115,7 +115,7 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 **.mobility.initFromDisplayString = false
 
 ############### The channel: one path loss and the indoor loss ##############
-**.radio.scenario = "URBAN_MACROCELL"
+*.gnb*.scenario = "URBAN_MACROCELL"
 **.dynamicLos = false
 **.fixedLos = true
 **.fading = false

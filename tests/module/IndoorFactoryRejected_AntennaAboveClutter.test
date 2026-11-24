@@ -10,7 +10,7 @@ evaluation of such a link is an error, unless tolerateHeightViolation is set
 [General]
 network = simu5g.test.moduletest.lib.NrSessionTestNetwork
 
-**.radio.scenario = "INDOOR_FACTORY_SL"
+*.gnb*.scenario = "INDOOR_FACTORY_SL"
 
 include ../../lib/defaults.ini
 
