@@ -25,7 +25,6 @@ sets harqReduction = 1 and perD2D = 0 and carries no D2D traffic. Checked here:
 %includes:
 #include <cmath>
 #include <limits>
-#include <optional>
 #include <string>
 #include <vector>
 #include "SchedulerTestUtil.h"
@@ -42,8 +41,7 @@ static const double TOL = 1e-12;
 static double rateOf(ICellularErrorModel *model, Direction dir, unsigned char attempt)
 {
     try {
-        std::optional<double> rate = model->computePacketErrorRate(dir, 7, std::vector<double>(), RbMap(), attempt);
-        return rate ? *rate : std::numeric_limits<double>::quiet_NaN();
+        return model->computePacketErrorRate(dir, 7, std::vector<double>(), RbMap(), attempt);
     }
     catch (omnetpp::cRuntimeError&) {
         return std::numeric_limits<double>::quiet_NaN();
@@ -118,12 +116,12 @@ auto module = [&] (const char *name) { return check_and_cast<ICellularErrorModel
     std::vector<double> sinr = { -100.0, 0.0, 100.0 };
     RbMap blocks;
     blocks[MACRO][1] = 6;
-    std::optional<double> rate = model->computePacketErrorRate(DL, 15, sinr, blocks, 1);
+    double rate = model->computePacketErrorRate(DL, 15, sinr, blocks, 1);
     c.expectNear("the CQI, the SINR and the allocation do not enter (nothing above; CQI 15, SINRs and blocks here)",
-            rate ? *rate : std::numeric_limits<double>::quiet_NaN(), 0.1, TOL);
+            rate, 0.1, TOL);
     rate = model->computePacketErrorRate(DL, 0, std::vector<double>(), RbMap(), 1);
     c.expectNear("...not even a CQI of 0, which is a certain loss only to the BLER curves",
-            rate ? *rate : std::numeric_limits<double>::quiet_NaN(), 0.1, TOL);
+            rate, 0.1, TOL);
 
     for (const DirectionRow& d : allDirections)
         c.expectRejected(std::string("attempt 0 in ") + d.name, [&] { model->computePacketErrorRate(d.dir, 7, std::vector<double>(), RbMap(), 0); });

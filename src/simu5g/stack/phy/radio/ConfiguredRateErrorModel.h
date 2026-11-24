@@ -40,9 +40,8 @@ class ConfiguredRateErrorModel : public cSimpleModule, public ICellularErrorMode
     /**
      * The configured error rate of the direction, reduced by harqReduction for
      * every retransmission; the CQI, the SINR and the allocation are not used.
-     * Never nullopt.
      */
-    std::optional<double> computePacketErrorRate(Direction direction, Cqi cqi, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
+    double computePacketErrorRate(Direction direction, Cqi cqi, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
             unsigned char transmissionAttempt) const override;
 };
 

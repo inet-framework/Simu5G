@@ -25,7 +25,7 @@ void ConfiguredRateErrorModel::initialize()
     harqReduction_ = par("harqReduction");
 }
 
-std::optional<double> ConfiguredRateErrorModel::computePacketErrorRate(Direction direction, Cqi cqi, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
+double ConfiguredRateErrorModel::computePacketErrorRate(Direction direction, Cqi cqi, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
         unsigned char transmissionAttempt) const
 {
     if (transmissionAttempt == 0)

@@ -23,7 +23,7 @@ void BlerCurveErrorModel::initialize()
     harqReduction_ = par("harqReduction");
 }
 
-std::optional<double> BlerCurveErrorModel::computePacketErrorRate(Direction direction, Cqi cqi, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
+double BlerCurveErrorModel::computePacketErrorRate(Direction direction, Cqi cqi, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
         unsigned char transmissionAttempt) const
 {
     PhyPisaData& curves = binder_->phyPisaData;
@@ -34,12 +34,12 @@ std::optional<double> BlerCurveErrorModel::computePacketErrorRate(Direction dire
             if (allocation == 0)
                 continue;
             if (cqi == 0)
-                return std::nullopt; // CQI 0 means channel below usable quality (e.g. after handover): loss
+                return 1.0; // CQI 0 means channel below usable quality (e.g. after handover): lost at every attempt
 
             double snr = sinrPerBand[band];
             double blockErrorRate;
             if (curves.isBelowCurves(snr))
-                return std::nullopt;
+                return 1.0; // lost at every attempt: the H-ARQ reduction does not apply
             else if (snr > curves.maxSnr())
                 blockErrorRate = 0.0;
             else

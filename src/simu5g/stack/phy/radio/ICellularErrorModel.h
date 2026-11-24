@@ -12,7 +12,6 @@
 #ifndef STACK_PHY_RADIO_ICELLULARERRORMODEL_H_
 #define STACK_PHY_RADIO_ICELLULARERRORMODEL_H_
 
-#include <optional>
 #include <vector>
 
 #include "simu5g/common/LteCommon.h"
@@ -32,10 +31,10 @@ class ICellularErrorModel
     /**
      * The packet error rate of a reception in the given direction, with the
      * given CQI, per-band SINR (dB) and allocation, at the given transmission
-     * attempt (1 for the first transmission); nullopt if the reception is lost
-     * for certain, without a decision to draw.
+     * attempt (1 for the first transmission). A reception lost for certain has
+     * the rate 1; the receiver decides it by a draw like any other.
      */
-    virtual std::optional<double> computePacketErrorRate(Direction direction, Cqi cqi, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
+    virtual double computePacketErrorRate(Direction direction, Cqi cqi, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
             unsigned char transmissionAttempt) const = 0;
 };
 

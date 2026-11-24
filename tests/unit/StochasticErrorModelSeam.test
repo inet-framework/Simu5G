@@ -23,7 +23,7 @@ D2D_MULTI (at the peer UE), through the receiving radio's own error model:
  - the granted blocks and the attempt are the frame's.
 
 And the rate decides. Rate 0 is received and rate 1 is lost, and both still
-take the receiver's one draw; no rate (nullopt) is lost with no draw; rates
+take the receiver's one draw; rates
 between are graded against the draw, on a copy of the receiver's generator
 (see ChannelModelReception), and a series at one fixed rate would be
 contradicted.
@@ -36,7 +36,6 @@ are placeholders that keep the count.
 
 %includes:
 #include <limits>
-#include <optional>
 #include <string>
 #include <vector>
 #include "SchedulerTestUtil.h"
@@ -51,7 +50,7 @@ using namespace simu5g::unittest;
 class RecordingErrorModel : public cSimpleModule, public ICellularErrorModel
 {
   public:
-    std::optional<double> rate = 0.0;
+    double rate = 0.0;
 
     mutable int calls = 0;
     mutable Direction direction = UNKNOWN_DIRECTION;
@@ -60,7 +59,7 @@ class RecordingErrorModel : public cSimpleModule, public ICellularErrorModel
     mutable RbMap blocks;
     mutable int attempt = -1;
 
-    std::optional<double> computePacketErrorRate(Direction direction_, Cqi cqi_, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
+    double computePacketErrorRate(Direction direction_, Cqi cqi_, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
             unsigned char transmissionAttempt) const override
     {
         calls++;
@@ -353,10 +352,6 @@ for (const Link& link : links) {
     draws = drawsDuring(receiver, [&] { received = decide(model, r); });
     c.check(link.name + ": rate 1 is lost, by one draw", !received && draws == 1, "draws=" + std::to_string(draws));
 
-    stub->rate = std::nullopt;
-    draws = drawsDuring(receiver, [&] { received = decide(model, r); });
-    c.check(link.name + ": no rate is lost with no draw", !received && draws == 0, "draws=" + std::to_string(draws));
-
     const double rates[] = { 0.2, 0.5, 0.8 };
     const int count = 300;
     int mismatches = 0, numReceived = 0, contradictsFixedRate = 0;
@@ -415,7 +410,7 @@ for (const Link& link : links) {
 c.summary();
 
 %contains: stdout
-modelchecks=176 modelfailures=0
+modelchecks=172 modelfailures=0
 
 %not-contains: stdout
 FAILED

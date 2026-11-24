@@ -60,12 +60,10 @@ class UserControlInfo;
  *   adjacent bands with an equal value (and allocation) are merged: 3-7:12.5;
  *   an allocation other than one RB per band is written as 3x2:12.5.
  * - per: the error rate compared with the draw; draw: the uniform number;
- *   rng: the number of numbers the drawing RNG had drawn before it; the three
- *   are "-" when the decision draws nothing.
- * - outcome: OK or ERR (decided by the draw), or ERR(nodraw): lost for
- *   certain, without a draw, because the error model gave no error rate. With
- *   the BLER-curve error model that is CQI 0 (cqi=0 on the line) or a band
- *   below the curves.
+ *   rng: the number of numbers the drawing RNG had drawn before it.
+ * - outcome: OK or ERR, decided by the draw. A reception lost for certain has
+ *   per=1; with the BLER-curve error model that is CQI 0 (cqi=0 on the line)
+ *   or a band below the curves.
  * - WI kinds: CQI (the SINR a CQI is computed from), BEACON (the SINR of a
  *   handover beacon), RSRP (initial cell selection), D2D-RSRP (capture
  *   effect), BG-CQI (a background UE's CQI; no interferers recorded).
@@ -126,8 +124,6 @@ class RxTrace
         void setDraw(double draw, uint64_t numbersDrawnBefore);
         /** Writes the line of a decision by the draw. */
         bool finish(bool success);
-        /** Writes the line of a reception lost for certain, without a draw; returns false. */
-        bool finishWithoutDraw();
 
       protected:
         void write(const std::string& outcome);

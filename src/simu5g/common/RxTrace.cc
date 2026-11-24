@@ -229,13 +229,6 @@ bool RxTrace::Reception::finish(bool success)
     return success;
 }
 
-bool RxTrace::Reception::finishWithoutDraw()
-{
-    if (active)
-        write("ERR(nodraw)");
-    return false;
-}
-
 void RxTrace::Reception::write(const std::string& outcome)
 {
     trace.write(formatTime(simTime()) + " RX " + key + " sinr=" + sinrText + " itf=" + interferersText() + " per=" + perText

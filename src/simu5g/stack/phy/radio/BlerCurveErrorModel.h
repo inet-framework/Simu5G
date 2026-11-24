@@ -12,7 +12,6 @@
 #ifndef STACK_PHY_RADIO_BLERCURVEERRORMODEL_H_
 #define STACK_PHY_RADIO_BLERCURVEERRORMODEL_H_
 
-#include <optional>
 #include <vector>
 
 #include <omnetpp.h>
@@ -44,7 +43,7 @@ class BlerCurveErrorModel : public cSimpleModule, public ICellularErrorModel
      * The packet error rate from the BLER curves (see the NED documentation),
      * the same in every direction.
      */
-    std::optional<double> computePacketErrorRate(Direction direction, Cqi cqi, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
+    double computePacketErrorRate(Direction direction, Cqi cqi, const std::vector<double>& sinrPerBand, const RbMap& grantedBlocks,
             unsigned char transmissionAttempt) const override;
 };
 

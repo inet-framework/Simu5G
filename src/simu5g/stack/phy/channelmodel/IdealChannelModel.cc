@@ -72,14 +72,12 @@ bool IdealChannelModel::isReceptionSuccessful(IRadioEndpoint *radio, AirFrame *f
     ASSERT(receiver != nullptr); // no frame reaches a phantom radio
     std::vector<double> sinr = getSINR(radio, frame, lteInfo);
     rec.setSinr(sinr);
-    std::optional<double> packetErrorRate = receiver->getErrorModel()->computePacketErrorRate((Direction)lteInfo->getDirection(), cqi, sinr,
+    double packetErrorRate = receiver->getErrorModel()->computePacketErrorRate((Direction)lteInfo->getDirection(), cqi, sinr,
             lteInfo->getGrantedBlocks(), lteInfo->getTxNumber());
-    if (!packetErrorRate)
-        return rec.finishWithoutDraw(); // lost for certain, no decision to draw
-    rec.setPer(*packetErrorRate);
-    bool success = receiver->decide(*packetErrorRate, &rec);
+    rec.setPer(packetErrorRate);
+    bool success = receiver->decide(packetErrorRate, &rec);
     EV << "IdealChannelModel::isReceptionSuccessful - transmission " << (int)lteInfo->getTxNumber()
-       << ", error probability " << *packetErrorRate << " -> " << (success ? "received" : "lost") << endl;
+       << ", error probability " << packetErrorRate << " -> " << (success ? "received" : "lost") << endl;
     return rec.finish(success);
 }
 

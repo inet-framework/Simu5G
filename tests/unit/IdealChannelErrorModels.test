@@ -14,7 +14,7 @@ above 0": at the fixed SINR, above the curves, the rate is 0 whatever the
 grant and the attempt, and the receiver's draw decides. So every reception at
 CQI 15, for several band allocations and attempts, and at every other CQI
 above 0, is received and takes exactly one draw; at CQI 0, the error model's
-certain loss, it is lost with no draw. The CQI is the codeword's: with two
+certain loss (rate 1), it is lost, by one draw as well. The CQI is the codeword's: with two
 codewords the one the frame was sent on, with one the only one there is.
 
 With ConfiguredRateErrorModel, the verdicts follow the formula of
@@ -229,7 +229,7 @@ for (const auto& [name, blocks] : allocations) {
 
     bool actual = true;
     int draws = drawsDuring(curveReceiver, [&] { actual = decide(model, &curveRadio, reception(blocks, 0, 1)); });
-    c.check("BLER curves, CQI 0, " + name + ": lost with no draw", !actual && draws == 0,
+    c.check("BLER curves, CQI 0, " + name + ": lost, by one draw", !actual && draws == 1,
             "received=" + std::to_string(actual) + " draws=" + std::to_string(draws));
 }
 {

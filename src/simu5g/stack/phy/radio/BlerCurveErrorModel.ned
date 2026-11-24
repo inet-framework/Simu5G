@@ -17,7 +17,7 @@ package simu5g.stack.phy.radio;
 // resource block -- one minus the product of the blocks' success
 // probabilities -- reduced by harqReduction for every retransmission (HARQ
 // soft combining). A reception with CQI 0, or with a block below the curves,
-// is lost for certain.
+// has the packet error rate 1 at every attempt: the reduction does not apply.
 //
 simple BlerCurveErrorModel like ICellularErrorModel
 {

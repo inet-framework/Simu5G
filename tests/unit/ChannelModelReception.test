@@ -27,7 +27,8 @@ to be contradicted by at least one reception.
 
 The SINR is read as it is, interpolated between the curve points, as the CQI
 computation reads it (BlerSinrConversion). Below the curves -- where even CQI
-1's BLER is 1, at -13.5 dB and below -- a band is a loss without a draw.
+1's BLER is 1, at -13.5 dB and below -- a band is a certain loss: the error
+probability is 1, and the draw is taken as for any reception.
 
 A band at BLER 1 is not one loss everywhere, a recorded deviation of the
 model. Below the curves, and at CQI 0, the packet is lost at every attempt:
@@ -39,7 +40,7 @@ reduction scales the error probability instead of combining the attempts'
 SINR -- so there is no expected-failure test for it.
 
 The SINR statistic is recorded for every reception decided, also for a packet
-lost without a draw (to CQI 0, or to a band below the curves), so rcvdSinrDl
+lost for certain (to CQI 0, or to a band below the curves), so rcvdSinrDl
 and rcvdSinrUl include the worst receptions.
 
 %includes:
@@ -156,8 +157,8 @@ static double errorProbability(const Reception& r, double harqReduction, Variant
 // A reception for the series. The SINRs span each CQI's curve from where its
 // BLER is near 1 to past where it reaches 0, with fractional parts, so that
 // reading them as they are, truncating, rounding and flooring disagree; they
-// stay above the curves' bottom (-13.5 dB), so that no reception is lost
-// before the draw.
+// stay above the curves' bottom (-13.5 dB), so that no reception is a
+// certain loss.
 static Reception randomReception(std::mt19937& gen)
 {
     auto pick = [&](int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(gen); };
@@ -256,7 +257,7 @@ base.blocks[MACRO][2] = 4;
 base.sinr[2] = 6.0;
 
 //
-// --- what is decided before the draw, or without the arithmetic ---
+// --- what is decided without the arithmetic ---
 //
 {
     Reception rx = base;
@@ -281,22 +282,34 @@ base.sinr[2] = 6.0;
     rx.cqis = {0};
     bool received = true;
     bool drew = drawsDuring(model, [&] { received = decide(model, &decoder, rx); });
-    c.check("CQI 0 is a loss, decided before the draw", !received && !drew);
+    c.check("CQI 0 is a certain loss, decided by a draw like any other", !received && drew);
 }
 {
     Reception rx = base;
     rx.sinr[2] = -15.0;
     bool received = true;
     bool drew = drawsDuring(model, [&] { received = decide(model, &decoder, rx); });
-    c.check("a band below the curves (-15 dB) is a loss, decided before the draw", !received && !drew);
+    c.check("a band below the curves (-15 dB) is a certain loss, decided by a draw like any other", !received && drew);
 
     rx.sinr[2] = -13.6;
     drew = drawsDuring(model, [&] { received = decide(model, &decoder, rx); });
-    c.check("...and so is one at -13.6 dB, where even CQI 1's BLER is 1", !received && !drew);
+    c.check("...and so is one at -13.6 dB, where even CQI 1's BLER is 1", !received && drew);
 
+    // The boundary shows at the second attempt: CQI 7's BLER is 1 on both
+    // sides of it, but only above it does the HARQ reduction apply.
+    rx.txNumber = 2;
+    int receivedBelow = 0, mismatchesAbove = 0;
+    for (int i = 0; i < 50; i++)
+        receivedBelow += decide(model, &decoder, rx);
     rx.sinr[2] = -13.4;
-    drew = drawsDuring(model, [&] { decide(model, &decoder, rx); });
-    c.check("...while -13.4 dB, where CQI 1's BLER is below 1, goes to the draw", drew);
+    RngSnapshot twin(model);
+    for (int i = 0; i < 50; i++) {
+        double u = omnetpp::uniform(twin.rng(), 0.0, 1.0);
+        mismatchesAbove += decide(model, &decoder, rx) != (u > harqReduction);
+    }
+    c.check("...while at -13.4 dB, where CQI 1's BLER is below 1, a second attempt has the reduced error probability, "
+            "and at -13.6 dB none gets through", receivedBelow == 0 && mismatchesAbove == 0,
+            std::to_string(receivedBelow) + " received below, " + std::to_string(mismatchesAbove) + " mismatches above");
 }
 {
     Reception rx = base;
@@ -349,14 +362,15 @@ base.sinr[2] = 6.0;
             rescued > 0, std::to_string(rescued) + " of 50 received");
 }
 {
-    // Bands with nothing on them hold an SINR that would lose the packet
-    // before the draw, if it were read.
+    // Bands with nothing on them hold an SINR that would lose the packet for
+    // certain, if it were read.
     Reception rx = base;
     rx.blocks[MACRO][5] = 0;
     rx.sinr[5] = -30.0;
     rx.sinr[7] = -30.0;
-    bool drew = drawsDuring(model, [&] { decide(model, &decoder, rx); });
-    c.check("a band the grant gives no blocks, listed or not, is not read", drew);
+    rx.sinr[2] = 41.0;
+    c.check("a band the grant gives no blocks, listed or not, is not read: the one band above the curves decides",
+            decide(model, &decoder, rx));
 }
 
 //
@@ -379,7 +393,7 @@ base.sinr[2] = 6.0;
     recorder.values.clear();
     decide(model, &decoder, zeroCqi);
     decide(model, &decoder, belowCurves);
-    c.check("a packet lost before the draw records its SINR too: the statistic includes the worst receptions",
+    c.check("a packet lost for certain records its SINR too: the statistic includes the worst receptions",
             recorder.values.size() == 2 && recorder.values[0] == (3.7 + 8.1) / 2 && recorder.values[1] == (3.7 + -15.0) / 2);
 }
 
