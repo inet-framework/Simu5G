@@ -244,14 +244,21 @@ See INSTALL.md for how to run the fingerprint, unit and module tests.
 Limitations
 -----------
 
+Like every simulation model, Simu5G is an abstraction of the system it
+represents: it simplifies wherever more detail would cost more than it
+adds. Its results show how a 5G network behaves under the model's
+assumptions, and they are only as valid as those assumptions are for the
+question asked. The limitations below are the ones most likely to matter:
+
 - User Plane only: Control Plane signaling (RRC, NAS, session management)
   is not modeled. Its effects are modeled directly: bearers come from
   configuration, and procedures such as handover and RRC re-establishment
   are modeled by their timers.
-- No MIMO support
+- No physical-layer signal processing: whether a transmission is received
+  is drawn from its SINR through BLER curves
+- No MIMO and no beamforming: an antenna is a gain with an optional
+  sector pattern
+- No uplink power control: a UE transmits at its configured power
+- One cell per base station node: the sectors of a site are separate nodes
 - Device-to-device communication is a research prototype, not based on
   the 3GPP sidelink specifications
-- IPv4 user plane only
-- No scheduling request: a UE without an uplink grant obtains one through
-  the random access procedure
-- No prioritized bit rate in logical channel prioritization
