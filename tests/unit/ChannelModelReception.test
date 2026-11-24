@@ -29,6 +29,15 @@ The SINR is read as it is, interpolated between the curve points, as the CQI
 computation reads it (BlerSinrConversion). Below the curves -- where even CQI
 1's BLER is 1, at -13.5 dB and below -- a band is a loss without a draw.
 
+A band at BLER 1 is not one loss everywhere, a recorded deviation of the
+model. Below the curves, and at CQI 0, the packet is lost at every attempt:
+the HARQ reduction does not apply. A band whose BLER is 1 on the packet's own
+CQI curve, above where CQI 1's is, is scaled by the HARQ reduction like any
+other, so its retransmission can get through. Both are checked, the second as
+a pinned defect. Which of the two is right is a modelling decision -- the
+reduction scales the error probability instead of combining the attempts'
+SINR -- so there is no expected-failure test for it.
+
 The SINR statistic is recorded for every reception decided, also for a packet
 lost without a draw (to CQI 0, or to a band below the curves), so rcvdSinrDl
 and rcvdSinrUl include the worst receptions.
@@ -303,6 +312,43 @@ base.sinr[2] = 6.0;
     c.check("a band at BLER 1 makes the first transmission a certain loss", !decide(model, &decoder, rx));
 }
 {
+    // Below the curves, and at CQI 0, a retransmission is lost too. With the
+    // HARQ reduction applied, about 60 % of the second attempts would get
+    // through.
+    Reception below = base, zeroCqi = base;
+    below.sinr[2] = -15.0;
+    zeroCqi.cqis = {0};
+    int receivedBelow = 0, receivedZeroCqi = 0;
+    for (unsigned char n = 1; n <= 4; n++) {
+        below.txNumber = zeroCqi.txNumber = n;
+        for (int i = 0; i < 50; i++) {
+            receivedBelow += decide(model, &decoder, below);
+            receivedZeroCqi += decide(model, &decoder, zeroCqi);
+        }
+    }
+    c.expectValue("a band below the curves is a loss at every attempt, 1 to 4: the HARQ reduction does not apply",
+            receivedBelow, 0);
+    c.expectValue("...and so is CQI 0", receivedZeroCqi, 0);
+
+    // CQI 7's BLER is 1 at -10 dB, CQI 1's is not: the band is above the
+    // curves, and its second attempt is graded against the draw.
+    Reception bler1 = base;
+    bler1.sinr[2] = -10.0;
+    bler1.txNumber = 2;
+    RngSnapshot twin(model);
+    int mismatches = 0, rescued = 0;
+    for (int i = 0; i < 50; i++) {
+        double u = omnetpp::uniform(twin.rng(), 0.0, 1.0);
+        bool received = decide(model, &decoder, bler1);
+        rescued += received;
+        mismatches += received != (u > harqReduction);
+    }
+    c.expectValue("PINNED DEFECT: a band at BLER 1 above the curves is a certain loss at the first attempt only: "
+            "at the second, its error probability is harqReduction, as for any band", mismatches, 0);
+    c.check("PINNED DEFECT: ...so such a retransmission can get through, where one below the curves never does",
+            rescued > 0, std::to_string(rescued) + " of 50 received");
+}
+{
     // Bands with nothing on them hold an SINR that would lose the packet
     // before the draw, if it were read.
     Reception rx = base;
@@ -378,7 +424,7 @@ receiver->unsubscribe("rcvdSinrDl", &recorder);
 c.summary();
 
 %contains: stdout
-modelchecks=25 modelfailures=0
+modelchecks=29 modelfailures=0
 
 %not-contains: stdout
 FAILED
