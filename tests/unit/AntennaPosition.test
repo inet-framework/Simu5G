@@ -60,6 +60,9 @@ sim-time-limit = 100ms
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
 *.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
+*.extCell.numResourceBlocks = 6
+*.raisedExtCell.numResourceBlocks = 6
+*.bareExtCell.numResourceBlocks = 6
 **.cellInfoModule = ""
 
 # the nodes move on the ground, in a bounded area
