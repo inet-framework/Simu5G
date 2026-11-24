@@ -33,8 +33,8 @@ simple ComponentCarrier
         // Carrier Frequency (GHz)
         double carrierFrequency @unit("GHz") = default(2GHz);
 
-        // Number of bands for this channel
-        int numBands = default(6);
+        int numResourceBlocks = default(6); // Number of resource blocks of the carrier
+        int numBands = default(-1); // Renamed to numResourceBlocks; setting it is an error
 
         // Numerology index
         int numerologyIndex = default(0);

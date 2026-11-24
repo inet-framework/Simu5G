@@ -1,6 +1,6 @@
 %description:
 Component carriers do not overlap in frequency: transmissions interfere when they are on the same
-carrier, and never otherwise. A carrier occupies numBands resource blocks of 12 subcarriers,
+carrier, and never otherwise. A carrier occupies numResourceBlocks resource blocks of 12 subcarriers,
 spaced 15 kHz * 2^numerologyIndex, around its carrier frequency. Two carriers of 100 bands at
 numerology 1 are 36 MHz wide each; at 3.50 GHz and 3.52 GHz they share 16 MHz, and the model
 would let them run without any interference between them. Partly overlapping carriers are an
@@ -25,7 +25,7 @@ network = CarriersRejectedTestNetwork
 *.carrierAggregation.numComponentCarriers = 2
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 3.5GHz
 *.carrierAggregation.componentCarrier[1].carrierFrequency = 3.52GHz
-*.carrierAggregation.componentCarrier[*].numBands = 100
+*.carrierAggregation.componentCarrier[*].numResourceBlocks = 100
 *.carrierAggregation.componentCarrier[*].numerologyIndex = 1
 
 include ../../lib/defaults.ini

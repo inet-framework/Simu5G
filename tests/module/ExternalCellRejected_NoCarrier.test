@@ -27,9 +27,9 @@ network = ExternalCellRejectedTestNetwork
 
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
 *.extCell.carrierFrequency = 3.5GHz
-*.extCell.numBands = 6
+*.extCell.numResourceBlocks = 6
 *.extCell.positionX = 250m
 *.extCell.positionY = 500m
 

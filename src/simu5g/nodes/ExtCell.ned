@@ -53,8 +53,8 @@ module ExtCell
         // Operating carrier
         double carrierFrequency @unit(GHz) = default(2GHz);
 
-        // Carrier bandwidth
-        int numBands = default(6);
+        int numResourceBlocks = default(6); // Number of resource blocks of the cell, the first ones of its carrier
+        int numBands = default(-1); // Renamed to numResourceBlocks; setting it is an error
 
         // Allocation management
         string bandAllocationType @enum(FULL_ALLOC,RANDOM_ALLOC,CONTIGUOUS_ALLOC) = default("FULL_ALLOC");
@@ -100,6 +100,7 @@ module ExtCell
         allocator: ExtCellAllocator {
             binderModule = parent.binderModule;
             carrierFrequency = parent.carrierFrequency;
+            numResourceBlocks = parent.numResourceBlocks;
             numBands = parent.numBands;
             bandAllocationType = parent.bandAllocationType;
             bandUtilization = parent.bandUtilization;

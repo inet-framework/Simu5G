@@ -69,9 +69,9 @@ sim-time-limit = 1s
 # two carriers: not a single-frequency simulation
 *.carrierAggregation.numComponentCarriers = 2
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 10
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 10
 *.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
-*.carrierAggregation.componentCarrier[1].numBands = 10
+*.carrierAggregation.componentCarrier[1].numResourceBlocks = 10
 *.*Model.componentCarrierModule = "carrierAggregation.componentCarrier[1]"
 **.cellInfoModule = ""
 *.binder.printTrafficGeneratorConfig = false

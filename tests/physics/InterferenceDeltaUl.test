@@ -113,8 +113,8 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 ############### The budget terms, stated rather than inherited ##############
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
-**.numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
+**.numResourceBlocks = 6
 **.eNodeBTxPower = 40dBm
 *.ue[1].**.ueTxPower = 23dBm
 **.ueTxPower = 26dBm

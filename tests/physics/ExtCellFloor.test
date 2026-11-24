@@ -109,8 +109,8 @@ seed-set = 0
 ############### The budget terms, stated rather than inherited ##############
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
-**.numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
+**.numResourceBlocks = 6
 **.eNodeBTxPower = 40dBm
 *.eNodeB*.cellularNic.antenna.gain = 18dBi
 *.ue*.cellularNic.antenna.gain = 0dBi
@@ -127,7 +127,7 @@ seed-set = 0
 *.extCell[0].txPower = 37dBm
 *.extCell[0].txDirection = "OMNI"
 *.extCell[0].carrierFrequency = 2GHz
-*.extCell[0].numBands = 6
+*.extCell[0].numResourceBlocks = 6
 *.extCell[0].bandAllocationType = "FULL_ALLOC"
 
 ############### Traffic: a trickle to the victim ##############

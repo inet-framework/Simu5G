@@ -12,9 +12,9 @@ network = simu5g.test.moduletest.lib.NrSessionTestNetwork
 
 *.carrierAggregation.numComponentCarriers = 2
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 50
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 50
 *.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
-*.carrierAggregation.componentCarrier[1].numBands = 100
+*.carrierAggregation.componentCarrier[1].numResourceBlocks = 100
 *.gnb.cellularNic.numCarriers = 2
 *.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
 *.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"

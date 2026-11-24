@@ -27,9 +27,9 @@ network = BackgroundCellRejectedTestNetwork
 
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
 *.bgCell.bgScheduler.isNr = true
-*.bgCell.bgScheduler.numBands = 8
+*.bgCell.bgScheduler.numResourceBlocks = 8
 *.bgCell.bgTrafficGenerator.useProbabilisticCqi = true
 *.bgCell.bgTrafficGenerator.numBgUes = 1
 *.bgCell.bgTrafficGenerator.bgUE[0].generator.startTimeDl = 0.1s
@@ -44,5 +44,5 @@ include ../../lib/defaults.ini
 %exitcode: 1
 %#--------------------------------------------------------------------------------------------------------------
 %contains: stderr
-8 bands (numBands), but the carrier at 2 GHz has 6
+8 resource blocks (numResourceBlocks), but the carrier at 2 GHz has 6
 %#--------------------------------------------------------------------------------------------------------------

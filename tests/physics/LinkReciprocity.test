@@ -73,8 +73,8 @@ seed-set = 0
 
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
-**.numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
+**.numResourceBlocks = 6
 **.eNodeBTxPower = 40dBm
 **.ueTxPower = 26dBm
 *.gnb*.cellularNic.antenna.gain = 18dBi

@@ -121,9 +121,9 @@ sim-time-limit = 1s
 
 *.carrierAggregation.numComponentCarriers = 2
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 4
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 4
 *.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
-*.carrierAggregation.componentCarrier[1].numBands = 4
+*.carrierAggregation.componentCarrier[1].numResourceBlocks = 4
 *.radioMedium.numCarriers = 2
 **.componentCarrierModule = "carrierAggregation.componentCarrier[0]"
 *.binder.printTrafficGeneratorConfig = false

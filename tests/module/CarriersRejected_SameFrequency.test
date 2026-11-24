@@ -23,8 +23,8 @@ network = CarriersRejectedTestNetwork
 
 *.carrierAggregation.numComponentCarriers = 2
 *.carrierAggregation.componentCarrier[*].carrierFrequency = 3.5GHz
-*.carrierAggregation.componentCarrier[0].numBands = 50
-*.carrierAggregation.componentCarrier[1].numBands = 100
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 50
+*.carrierAggregation.componentCarrier[1].numResourceBlocks = 100
 
 include ../../lib/defaults.ini
 

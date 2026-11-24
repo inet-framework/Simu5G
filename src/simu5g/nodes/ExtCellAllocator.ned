@@ -25,7 +25,8 @@ simple ExtCellAllocator
         string binderModule;
         string radioModule = default("^.radio"); // The cell's phantom radio, which sends its transmission
         double carrierFrequency @unit(GHz);
-        int numBands;
+        int numResourceBlocks;
+        int numBands; // Renamed to numResourceBlocks; setting it is an error
         string bandAllocationType @enum(FULL_ALLOC,RANDOM_ALLOC,CONTIGUOUS_ALLOC);
         double bandUtilization;
         int startingOffset;

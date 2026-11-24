@@ -22,7 +22,7 @@ sim-time-limit = 1s
 
 *.numUe = 4
 *.*.app[*].**.scalar-recording = true
-**.numBands = 6
+**.numResourceBlocks = 6
 *.carrierAggregation.numComponentCarriers = 2
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
 *.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz

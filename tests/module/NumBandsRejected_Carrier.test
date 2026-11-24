@@ -1,0 +1,33 @@
+%description:
+numBands, the number of resource blocks of a component carrier, is renamed to numResourceBlocks: in
+3GPP, a band is an operating band, a frequency range such as n78. An ini file that still sets
+numBands would be ignored without a message if the parameter were gone, and the carrier would
+silently have the default width. Setting it is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+
+network NumBandsRejectedTestNetwork
+{
+    submodules:
+        binder: Binder;
+        carrierAggregation: CarrierAggregation;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = NumBandsRejectedTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 1
+**.numBands = 50
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+numBands is renamed to numResourceBlocks
+%#--------------------------------------------------------------------------------------------------------------

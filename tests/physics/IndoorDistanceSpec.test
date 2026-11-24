@@ -58,7 +58,7 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 ############### One carrier at 28 GHz, under TR 38.901 ##############
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 28GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
 *.radioMedium.nrChannelModelType = "Tr38901ChannelModel"
 
 ############### Geometry: every UE at one place, below the breakpoint distance ##############

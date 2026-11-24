@@ -111,8 +111,8 @@ constraint = ($dx == 0) || ($rot == 0)
 
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
-**.numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
+**.numResourceBlocks = 6
 
 ############### Traffic ##############
 *.ue[*].numApps = 1

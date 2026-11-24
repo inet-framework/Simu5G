@@ -23,7 +23,9 @@ void ComponentCarrier::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL) {
         binder_.reference(this, "binderModule", true);
-        numBands_ = par("numBands");
+        if (par("numBands").intValue() != -1)
+            throw cRuntimeError("numBands is renamed to numResourceBlocks");
+        numBands_ = par("numResourceBlocks");
         carrierFrequency_ = GHz(par("carrierFrequency"));
         numerologyIndex_ = par("numerologyIndex");
         if (numerologyIndex_ > 4)

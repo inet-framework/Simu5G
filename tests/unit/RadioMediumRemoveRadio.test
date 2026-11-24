@@ -87,7 +87,7 @@ sim-time-limit = 1s
 *.binder.printTrafficGeneratorConfig = false
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
 **.cellInfoModule = ""
 
 %no-default-inifile: 1

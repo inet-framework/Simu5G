@@ -67,7 +67,7 @@ cmdenv-log-prefix = ""
 sim-time-limit = 1s
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 3.5GHz
-*.carrierAggregation.componentCarrier[0].numBands = 10
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 10
 *.binder.printTrafficGeneratorConfig = false
 
 # the harness keeps its base stations at 25 m, outside the heights TR 38.901 gives for UMi (hBS = 10 m)

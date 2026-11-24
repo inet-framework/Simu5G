@@ -203,7 +203,7 @@ cmdenv-log-prefix = ""
 sim-time-limit = 1s
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 3.5GHz
-*.carrierAggregation.componentCarrier[0].numBands = 4
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 4
 **.componentCarrierModule = "carrierAggregation.componentCarrier[0]"
 *.binder.printTrafficGeneratorConfig = false
 

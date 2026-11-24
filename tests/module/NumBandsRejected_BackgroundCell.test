@@ -1,0 +1,44 @@
+%description:
+numBands, the number of resource blocks of a background cell, is renamed to numResourceBlocks: in
+3GPP, a band is an operating band, a frequency range such as n78. An ini file that still sets
+numBands would be ignored without a message if the parameter were gone, and the cell would silently
+have the default width. Setting it is an error at initialization.
+
+%#--------------------------------------------------------------------------------------------------------------
+%file: harness.ned
+import simu5g.common.binder.Binder;
+import simu5g.common.carrierAggregation.CarrierAggregation;
+import simu5g.nodes.BackgroundCell;
+import simu5g.stack.phy.medium.CellularRadioMedium;
+
+network NumBandsRejectedTestNetwork
+{
+    submodules:
+        binder: Binder;
+        radioMedium: CellularRadioMedium;
+        carrierAggregation: CarrierAggregation;
+        bgCell: BackgroundCell;
+}
+%#--------------------------------------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+[General]
+network = NumBandsRejectedTestNetwork
+
+*.carrierAggregation.numComponentCarriers = 1
+*.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
+*.bgCell.bgScheduler.isNr = true
+*.bgCell.bgScheduler.numBands = 50
+*.bgCell.bgTrafficGenerator.numBgUes = 1
+*.bgCell.mobility.initialX = 250m
+*.bgCell.mobility.initialY = 500m
+*.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialX = 500m
+*.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialY = 400m
+
+include ../../lib/defaults.ini
+
+%#--------------------------------------------------------------------------------------------------------------
+%exitcode: 1
+%#--------------------------------------------------------------------------------------------------------------
+%contains: stderr
+numBands is renamed to numResourceBlocks
+%#--------------------------------------------------------------------------------------------------------------

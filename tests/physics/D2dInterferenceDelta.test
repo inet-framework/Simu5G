@@ -195,7 +195,7 @@ measurement-label = ${scen = "off", "pair", "sameCellUl", "otherCellUl", "cqiQui
 ############### The budget terms, stated rather than inherited ##############
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
 **.ueTxPower = 26dBm
 *.ueD2DTx[1].**.d2dTxPower = 17dBm
 **.d2dTxPower = 20dBm

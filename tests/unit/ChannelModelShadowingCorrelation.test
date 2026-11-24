@@ -95,7 +95,7 @@ sim-time-limit = 100s
 
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 3.5GHz
-*.carrierAggregation.componentCarrier[0].numBands = 10
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 10
 **.cellInfoModule = ""
 *.binder.printTrafficGeneratorConfig = false
 

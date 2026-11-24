@@ -29,7 +29,9 @@ void BackgroundScheduler::initialize(int stage)
         isNr_ = par("isNr");
         numerologyIndex_ = par("numerologyIndex");
         carrierFrequency_ = GHz(par("carrierFrequency").doubleValue());
-        numBands_ = par("numBands");
+        if (par("numBands").intValue() != -1)
+            throw cRuntimeError("numBands is renamed to numResourceBlocks");
+        numBands_ = par("numResourceBlocks");
 
         // initialize band status structures
         bandStatus_[UL].resize(numBands_, 0);
@@ -43,13 +45,13 @@ void BackgroundScheduler::initialize(int stage)
     else if (stage == INITSTAGE_SIMU5G_BINDER_ACCESS) {
         binder_.reference(this, "binderModule", true);
 
-        // the cell occupies the first numBands bands of one of the network's carriers
+        // the cell occupies the first numResourceBlocks resource blocks of one of the network's carriers
         const CarrierInfo *carrier = binder_->findCarrier(carrierFrequency_);
         if (carrier == nullptr)
             throw cRuntimeError("%s: no component carrier is at %g GHz (carrierFrequency)",
                     getFullPath().c_str(), carrierFrequency_.get());
         if (numBands_ > carrier->numBands)
-            throw cRuntimeError("%s: %u bands (numBands), but the carrier at %g GHz has %u",
+            throw cRuntimeError("%s: %u resource blocks (numResourceBlocks), but the carrier at %g GHz has %u",
                     getFullPath().c_str(), numBands_, carrierFrequency_.get(), carrier->numBands);
         if (numerologyIndex_ != carrier->numerologyIndex)
             throw cRuntimeError("%s: numerology index %u, but the carrier at %g GHz has %u",

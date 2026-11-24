@@ -1,7 +1,7 @@
 %description:
-A background cell has no more bands than its carrier: it occupies the carrier's first numBands
-bands, and a CQI of the cell is a what-if on the medium, whose SINRs are per band of the carrier.
-A cell with 8 bands on a 6-band carrier is an error at initialization.
+A background cell has no more bands than its carrier: it occupies the carrier's first
+numResourceBlocks resource blocks, and a CQI of the cell is a what-if on the medium, whose SINRs are
+per band of the carrier. A cell with 8 bands on a 6-band carrier is an error at initialization.
 
 The configuration is the default one of a periodic CQI update, with a background UE with traffic
 in DL; BackgroundCellRejected_WiderThanCarrierProbabilisticCqi is the same cell with CQIs from a
@@ -29,9 +29,9 @@ network = BackgroundCellRejectedTestNetwork
 
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
 *.bgCell.bgScheduler.isNr = true
-*.bgCell.bgScheduler.numBands = 8
+*.bgCell.bgScheduler.numResourceBlocks = 8
 *.bgCell.bgTrafficGenerator.numBgUes = 1
 *.bgCell.bgTrafficGenerator.bgUE[0].generator.startTimeDl = 0.1s
 *.bgCell.mobility.initialX = 250m
@@ -45,5 +45,5 @@ include ../../lib/defaults.ini
 %exitcode: 1
 %#--------------------------------------------------------------------------------------------------------------
 %contains: stderr
-8 bands (numBands), but the carrier at 2 GHz has 6
+8 resource blocks (numResourceBlocks), but the carrier at 2 GHz has 6
 %#--------------------------------------------------------------------------------------------------------------

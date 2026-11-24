@@ -57,9 +57,9 @@ seed-set = 0
 **.swapped = ${swap = 0, 1}
 *.carrierAggregation.numComponentCarriers = 2
 *.carrierAggregation.componentCarrier[0].carrierFrequency = (${swap} == 0 ? 2GHz : 6GHz)
-*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
 *.carrierAggregation.componentCarrier[1].carrierFrequency = (${swap} == 0 ? 6GHz : 2GHz)
-*.carrierAggregation.componentCarrier[1].numBands = 6
+*.carrierAggregation.componentCarrier[1].numResourceBlocks = 6
 
 *.gnb.cellularNic.numCarriers = 2
 *.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
@@ -91,7 +91,7 @@ seed-set = 0
 **.uplinkInterference = false
 **.bgCellInterference = false
 **.extCellInterference = false
-**.numBands = 6
+**.numResourceBlocks = 6
 
 *.ue[*].numApps = 1
 *.server.numApps = 1

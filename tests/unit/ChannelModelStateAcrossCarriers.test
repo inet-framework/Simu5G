@@ -52,9 +52,9 @@ sim-time-limit = 1s
 
 *.carrierAggregation.numComponentCarriers = 2
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 10
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 10
 *.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
-*.carrierAggregation.componentCarrier[1].numBands = 10
+*.carrierAggregation.componentCarrier[1].numResourceBlocks = 10
 *.modelA.componentCarrierModule = "carrierAggregation.componentCarrier[0]"
 *.modelB.componentCarrierModule = "carrierAggregation.componentCarrier[1]"
 **.cellInfoModule = ""

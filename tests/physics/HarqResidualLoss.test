@@ -131,7 +131,7 @@ num-rngs = 2
 *.server.app[0].finishTime = 35s
 
 ############### Radio ##############
-**.numBands = 50
+**.numResourceBlocks = 50
 **.ueTxPower = 26dBm
 **.eNodeBTxPower = 40dBm
 

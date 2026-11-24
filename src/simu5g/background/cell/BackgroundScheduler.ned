@@ -45,8 +45,8 @@ simple BackgroundScheduler
         // Operating carrier
         double carrierFrequency @unit(GHz) = default(2GHz);
 
-        // Carrier bandwidth
-        int numBands = default(6);
+        int numResourceBlocks = default(6); // Number of resource blocks of the cell, the first ones of its carrier
+        int numBands = default(-1); // Renamed to numResourceBlocks; setting it is an error
 
         // Statistics
         @signal[bgAvgServedBlocksDl];

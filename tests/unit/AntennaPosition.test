@@ -59,7 +59,7 @@ sim-time-limit = 100ms
 *.binder.printTrafficGeneratorConfig = false
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
 **.cellInfoModule = ""
 
 # the nodes move on the ground, in a bounded area
@@ -78,14 +78,14 @@ sim-time-limit = 100ms
 *.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialX = 260m
 *.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialY = 510m
 *.bgCell.bgTrafficGenerator.bgUE[0].mobility.initialZ = 0m
-*.bgCell.bgScheduler.numBands = 6
+*.bgCell.bgScheduler.numResourceBlocks = 6
 # a node pitched up by 30 degrees, as a climbing UAV's mobility turns it
 *.tiltedBgCell.mobility.initialX = 400m
 *.tiltedBgCell.mobility.initialY = 500m
 *.tiltedBgCell.mobility.initialZ = 0m
 *.tiltedBgCell.mobility.initialElevation = 30deg
 *.tiltedBgCell.bgTrafficGenerator.numBgUes = 0
-*.tiltedBgCell.bgScheduler.numBands = 6
+*.tiltedBgCell.bgScheduler.numResourceBlocks = 6
 
 *.extCell.positionX = 700m
 *.extCell.positionY = 300m

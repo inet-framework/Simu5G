@@ -26,10 +26,10 @@ network = TddRejectedTestNetwork
 
 *.carrierAggregation.numComponentCarriers = 1
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
 *.carrierAggregation.componentCarrier[0].useTdd = true
 *.bgCell.bgScheduler.isNr = false
-*.bgCell.bgScheduler.numBands = 6
+*.bgCell.bgScheduler.numResourceBlocks = 6
 *.bgCell.bgTrafficGenerator.numBgUes = 1
 *.bgCell.bgTrafficGenerator.bgUE[0].generator.startTimeDl = 0.1s
 *.bgCell.mobility.initialX = 250m

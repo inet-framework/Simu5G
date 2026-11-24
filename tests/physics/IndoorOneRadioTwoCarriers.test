@@ -83,9 +83,9 @@ output-vector-file = results/${iterationvarsf}${repetition}.vec
 ############### Two carriers below 6 GHz, both on every node ##############
 *.carrierAggregation.numComponentCarriers = 2
 *.carrierAggregation.componentCarrier[0].carrierFrequency = 2GHz
-*.carrierAggregation.componentCarrier[0].numBands = 6
+*.carrierAggregation.componentCarrier[0].numResourceBlocks = 6
 *.carrierAggregation.componentCarrier[1].carrierFrequency = 3.5GHz
-*.carrierAggregation.componentCarrier[1].numBands = 6
+*.carrierAggregation.componentCarrier[1].numResourceBlocks = 6
 *.gnb.cellularNic.numCarriers = 2
 *.gnb.cellularNic.phy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
 *.ue[*].cellularNic.nrPhy.componentCarrierModules = "carrierAggregation.componentCarrier[0] carrierAggregation.componentCarrier[1]"
